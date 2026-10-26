@@ -8,7 +8,7 @@ SpiralCore networking prototypes, exact geometric transport research, and preser
 - [Warm-cache networking](projects/spiralcore/warm-cache/README.md): Kuramoto time, Merkle manifests, WarmWire/WGR1 frames, WMX1 multiplexing, WarmSession, and TCP/QUIC prototypes.
 - [SpiralCore/FBS mechanism guide](docs/mechanisms/spiralcore-fbs.md): exact signed-axis transport, ternary-tree binders, experiments, limitations, and source links.
 - [Latest full-rung FBS record](docs/labs/spiralcore-fbs-offline-float-sheet/README.md): the completed four-arm, two-seed offline-float experiment and its receipts.
-- [Provenance and export scope](PROVENANCE.md): source identity, the 233-file manifest, history limits, and exclusions.
+- [Provenance and export scope](PROVENANCE.md): source identity, the 344-file manifest, history limits, and exclusions.
 
 ## Status and claim boundaries
 
@@ -46,4 +46,4 @@ The copied research retains its original paths and wording. Links to unselected 
 
 ## Visibility and licensing
 
-This repository is private while reference licensing and redistribution boundaries remain unreviewed. No license is granted by this import.
+This repository is public at the owner's explicit request. No license is granted by this import.

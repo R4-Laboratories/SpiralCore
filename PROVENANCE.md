@@ -3,10 +3,10 @@
 ## Source identity
 
 - Source repository: [`UOR-Foundation/uor-r4`](https://github.com/UOR-Foundation/uor-r4)
-- Source commit: `c695ad21a72c5b91def22458eebbe796e07d5392`
-- Export time: `2026-10-26T03:21:08Z`
-- Target repository: [`R4-Laboratories/SpiralCore`](https://github.com/R4-Laboratories/SpiralCore), private with default branch `main`
-- Export shape: curated current-state snapshot; 233 copied files plus this import's root metadata
+- Source commit: `b1b1ef6f0a5d59d8198207c198431701fff5fd63`
+- Export time: `2026-10-26T03:52:45Z`
+- Target repository: [`R4-Laboratories/SpiralCore`](https://github.com/R4-Laboratories/SpiralCore), public with default branch `main`
+- Export shape: curated current-state snapshot; 344 copied files plus this import's root metadata
 
 The source commit was checked against both a fresh detached worktree and GitHub's `main` immediately before export. No UOR-R4 source file, branch, issue, or research record was modified or deleted by the export.
 
@@ -52,4 +52,4 @@ The two networking crates under `projects/spiralcore/` are the standalone build 
 
 ## Visibility and licensing
 
-The repository starts private to avoid an irreversible public release while third-party reference licensing and redistribution boundaries remain unreviewed. No new license is asserted by this import. Changing visibility later is a separate owner decision.
+The repository was created privately for import validation. The owner explicitly requested public visibility on 2026-10-26; publication is performed after the import merges and fresh-`main` checks pass. No new license is asserted by this import.
