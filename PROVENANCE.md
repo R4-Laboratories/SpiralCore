@@ -34,15 +34,25 @@ The export contains:
 
 The selection is deliberately not a repository-wide keyword copy; unrelated UOR-R4 model, harness, compute, and governance files are outside the export.
 
+## Owner-supplied additions
+
+On 2026-10-26 the owner supplied 18 attachments and the SpiralCore v69 webpage for explicit public upload. `import-manifest.tsv` records the origin, byte count, and SHA-256 of every addition:
+
+- `references/`: all 18 original attachments, including both original ZIP archives, PDFs, Python source, JSON, text, and the 8-byte continuity file.
+- `references/spiralcore/`: four files extracted from `spiralcore.zip` (`spiralcore.py`, `sessions.json`, and two `.spmc` saves), with each extracted SHA-256 checked against the archive member. `.DS_Store`, `__MACOSX`, and `__pycache__` metadata were not imported.
+- `index.html`: the self-contained page downloaded from `https://spiralcore.netlify.app/`, 1,026,033 bytes, SHA-256 `770142b4f343842cd0693d362d49f95272a5ded029d9682211a5215d64810fd8`. It has no external script, image, stylesheet, worker, or fetch dependency and can serve as a future GitHub Pages entry point from `main` / root.
+
+Both ZIPs passed `unzip -t`. Two JSON files parsed successfully and four supplied Python files passed `py_compile`; no attached Python code was executed. `pypdf` is not installed, so no full structural PDF parse was claimed; PDF file signatures and exact attachment hashes were verified instead. The source webpage was observed loading in the built-in browser before its exact source was copied.
+
 ## History boundary
 
 This is not a full Git-history migration. The available UOR-R4 clone is shallow, and the earlier standalone review repository recorded at `/Users/casey.allard/spiralcore-fbs-review` is not present locally. Current files and their source commit identity are preserved instead of inventing or incompletely rewriting history.
 
 ## Exclusions
 
-Not copied: `.git` internals, caches, build outputs, `.DS_Store`, corpora, model checkpoints, generated certificates or private keys, credentials, and unreviewed external binary artifacts. External reference originals—including PDF/ZIP packages and large HTML sources—were not fetched from Downloads or Hugging Face for republication. Existing notes, hashes, review evidence, and private-store pointers remain preserved.
+The initial UOR-R4 snapshot excluded external reference originals, corpora, checkpoints, credentials, generated keys, caches, and binary artifacts. The later owner-supplied additions explicitly include PDFs, ZIPs, binary saves, and the webpage; these intentional additions are covered by `import-manifest.tsv`. Existing notes, hashes, review evidence, and private-store pointers remain preserved.
 
-Tracked text receipts, bounded logs, JSON results, and historical patches are included as research evidence. Their presence does not mean their historical GPU, WAN, or model runs were repeated during this export.
+Remaining exclusions are unrelated corpora and checkpoints, `.git` internals, generated certificates/private keys, credentials, `.DS_Store`, `__MACOSX`, `__pycache__`, and unrelated build/cache output. Tracked text receipts, bounded logs, JSON results, historical patches, and the explicitly supplied binary files are included as research evidence. Their presence does not mean their historical GPU, WAN, or model runs were repeated during these imports.
 
 ## Links and build boundary
 
@@ -52,4 +62,4 @@ The two networking crates under `projects/spiralcore/` are the standalone build 
 
 ## Visibility and licensing
 
-The repository was created privately for import validation. The owner explicitly requested public visibility on 2026-10-26; publication is performed after the import merges and fresh-`main` checks pass. No new license is asserted by this import.
+The repository was created privately for initial import validation and made public at the owner's explicit request after the initial import merged and fresh-`main` checks passed. The owner also explicitly requested these additional public uploads. No new license is asserted by either import.
