@@ -36,9 +36,9 @@ The selection is deliberately not a repository-wide keyword copy; unrelated UOR-
 
 ## Owner-supplied additions
 
-On 2026-10-26 the owner supplied 17 attachments and the SpiralCore v69 webpage for explicit public upload. `import-manifest.tsv` records the origin, byte count, and SHA-256 of every addition:
+On 2026-10-26 the owner supplied 18 attachments and the SpiralCore v69 webpage for explicit public upload. `import-manifest.tsv` records the origin, byte count, and SHA-256 of every addition:
 
-- `references/`: all 17 original attachments, including both original ZIP archives, PDFs, Python source, JSON, text, and the 8-byte continuity file.
+- `references/`: all 18 original attachments, including both original ZIP archives, PDFs, Python source, JSON, text, and the 8-byte continuity file.
 - `references/spiralcore/`: four files extracted from `spiralcore.zip` (`spiralcore.py`, `sessions.json`, and two `.spmc` saves), with each extracted SHA-256 checked against the archive member. `.DS_Store`, `__MACOSX`, and `__pycache__` metadata were not imported.
 - `index.html`: the self-contained page downloaded from `https://spiralcore.netlify.app/`, 1,026,033 bytes, SHA-256 `770142b4f343842cd0693d362d49f95272a5ded029d9682211a5215d64810fd8`. It has no external script, image, stylesheet, worker, or fetch dependency and can serve as a future GitHub Pages entry point from `main` / root.
 
