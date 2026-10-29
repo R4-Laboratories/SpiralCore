@@ -1,6 +1,6 @@
 # SpiralCore object-transfer delivery
 
-Approved sequence: preserve local originals; establish origin/main; extract the pinned Rust object store; harden transaction/closure/limits/durability; implement the versioned authorized object-transfer profile; bind it to MVM's canonical encrypted mailbox; then add cooperative policy-controlled streams and qualify WAN performance.
+Current approved sequence: preserve local originals; establish origin/main; extract the pinned Rust object store; harden transaction/closure/limits/durability; implement the standalone exact object-transfer profile; measure real two-machine WAN transfers; then return to MVM's canonical encrypted mailbox and cooperative policy-controlled streams.
 
 ## Source and scope
 
@@ -11,7 +11,7 @@ Approved sequence: preserve local originals; establish origin/main; extract the 
 
 ## Current priority
 
-The user prioritized a working standalone SpiralCore transfer system before MVM integration. Finish the exact object engine, cold/warm paths, recovery and runnable local demonstration first. MVM runtime, Iroh, WAN and compliance qualification remain later gates, not prerequisites to the local engine.
+The user prioritized working standalone SpiralCore over MVM integration, then requested real WAN transfers with byte, elapsed-time and compute measurements. The local engine and a real two-machine HTTPS relay campaign now have exact-byte evidence. MVM runtime, direct-peer/shaped-WAN qualification and compliance remain separate gates.
 
 ## Milestones
 
@@ -23,7 +23,9 @@ The user prioritized a working standalone SpiralCore transfer system before MVM 
 | SHA-256 object profile and standalone endpoint | Implemented and tested | Reviewed contract, scoped trusted authority, raw/zstd/DAG, private durable cache, retries/cancel, real TCP CLI and restart equality |
 | Canonical two-MVM encrypted mailbox | Deferred by user priority; upstream prerequisites still open | Actual guest service/transport, no replacement port or plaintext host shortcut |
 | Cooperative FlowMux streams | Deferred | Existing policy gates and byte ordering preserved |
-| WAN and three-peer qualification | Not run | Same secured transport/durability, full byte accounting, actual impairment and MVM boundaries |
+| Real two-host WAN relay experiment | Exact object fidelity and protocol-body measurements verified | 906 successful operations, 30 paired trials per 1 MiB arm, separate 16 MiB smoke; elapsed time and both endpoint CPU measured |
+| Complete per-transfer IP accounting | Incomplete | Reused TCP tuples quarantined; one received/captured counter discrepancy; no all-wire-byte acceptance claim |
+| Direct/shaped WAN and three-peer qualification | Not run | Controlled impairment, recovery across three peers and eventual MVM boundaries |
 | CUI/FIPS deployment qualification | Not claimed | Concrete validated module/OE/mode and contract-specific control assessment |
 
 ## Performance priority
@@ -54,6 +56,8 @@ Use public/synthetic data until deployment qualification. Enumerate envelope, tr
 
 ## Current runnable delivery
 
-Use `crates/spiralcore-transfer` and its `spiralcore` CLI. The new endpoint currently uses a loopback-only public/synthetic-data transport; its policy fixture is not peer authentication or encryption. It is a working object-transfer experiment, not an Internet deployment. The existing warm-cache/wire prototypes remain separate research implementations. The sparse-page encoder, geometric peer selection, MVM and WAN integration remain future work.
+Use `crates/spiralcore-transfer`. Its original `spiralcore` CLI remains a loopback-only public/synthetic-data experiment. The separate WAN binaries use a temporary bearer capability, allowlisted experiment scopes and verified HTTPS through Cloudflare. This bounded synthetic-data adapter is a working Internet transfer experiment, not a general public file service or a production security qualification. The existing warm-cache/wire prototypes remain separate research implementations. The sparse-page encoder, geometric peer selection and MVM integration remain future work.
 
 The release demo transfers 1 MiB cold/repeated/32-byte-mutated content over real TCP, then reopens the cache and checks exact bytes. A separate 16 MiB random cold/repeat run also passed exact recovery. See [validation receipt](validation.json) for source identities, measured bytes, complete test/coverage scope and limitations.
+
+The [real WAN report](wan-results-2026-10-29.md) records the subsequent GitHub Linux → Cloudflare → Mac campaign. Warm DAG mutations reduced HTTP-body bytes substantially but were slower than full raw transfer on that path. Ordinary content-addressed exact-repeat hits reduced both bytes and time. Cold random and prefix-insertion DAG expansion remain explicit negatives. Neither the earlier smoke's original `capture_complete` flag nor a green workflow establishes complete packet accounting; the report retains the later counter reassessment.

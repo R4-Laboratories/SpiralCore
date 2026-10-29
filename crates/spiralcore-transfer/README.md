@@ -5,10 +5,17 @@ send uses raw bytes or bounded zstd chunks. A warm send uses a caller-selected b
 32-byte ternary DAG and transfers new records. Whole-object identity includes the exact byte length
 and full SHA-256; the receiver verifies reconstruction before publishing an object.
 
-The CLI is a **loopback-only experiment for public or synthetic data**. Its fixed Context and local
+The `spiralcore` CLI is a **loopback-only experiment for public or synthetic data**. Its fixed Context and local
 Authority gate are explicit test fixtures. They do not authenticate another process or encrypt traffic.
 Any local process able to connect can use the same demo policy. Internet deployment, MVM integration,
 WAN performance, and FIPS validation are not qualified by this harness.
+
+The separate `spiralcore-wan`, `spiralcore-bench`, and `spiralcore-capture` binaries support a bounded,
+authenticated two-machine experiment over HTTPS. They measure synthetic transfers through a relay,
+including endpoint CPU, time through durable commit, and captured IP bytes. See the
+[WAN instructions](../../docs/network/wan.md) for the transport, scope, and reproducibility limits.
+The WAN receiver accepts only scopes in its generated experiment plan; it is not a general public
+file-upload service.
 
 ## Build and run the demonstration
 

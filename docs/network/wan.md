@@ -1,6 +1,6 @@
 # Two-machine WAN experiment
 
-This experiment connects a standard GitHub Actions Linux runner to a Mac receiver through a temporary Cloudflare Quick Tunnel. It uses public synthetic objects only. Standard hosted runners are free for public repositories; the workflow retains compact evidence for one day. Account artifact-storage quotas still apply. No paid VM is provisioned.
+This experiment connects a standard GitHub Actions Linux runner to a Mac receiver through a temporary Cloudflare Quick Tunnel. It uses public synthetic objects only. Standard hosted runners are free for public repositories; the workflow retains compact evidence for one day. Account artifact-storage quotas still apply. No paid VM is provisioned. See the [October 29 measured results](wan-results-2026-10-29.md) and retained compact evidence.
 
 This is a real Internet relay path, not a shaped-loopback or direct-peer test:
 
@@ -55,7 +55,7 @@ Every operation reports:
 
 Receiver CPU excludes the separate cloudflared process, Cloudflare processing and HTTP socket wait. CPU seconds from ARM and x86 quantify consumed process time, not equal instruction counts or energy. Do not add CPU time to end-to-end wall time: the latter already includes computation.
 
-Packet accounting observes only the runner-to-relay connection. It includes captured IP/TCP/TLS/HTTP traffic, acknowledgments and retransmissions on that leg. It excludes Cloudflare's internal routing and the relay-to-Mac leg. Capture completeness requires matching the pinned peer, classified traffic, zero reported kernel drops and sufficient per-operation payload coverage. Header snapshot length is not packet byte length.
+Packet accounting observes only the runner-to-relay connection. It includes captured IP/TCP/TLS/HTTP traffic, acknowledgments and retransmissions on that leg. It excludes Cloudflare's internal routing and the relay-to-Mac leg. Capture completeness requires matching the pinned peer, classified traffic, unambiguous observed-SYN ownership, zero reported kernel drops, matching captured/received/PCAP-record counts and sufficient per-operation payload coverage. Reused tuples with different initial sequences are quarantined; the analyzer does not yet prove separate TCP epochs. Header snapshot length is not packet byte length. An incomplete capture can still supply observed totals, but cannot qualify a complete per-transfer wire-byte comparison. Inspect `capture_complete` and its reasons separately from workflow success.
 
 ## Exact-byte qualification and cleanup
 
@@ -67,6 +67,6 @@ spiralcore-bench verify --plan plan.json --rows rows.jsonl --cache CACHE
 
 Verification checks receipt identities against the canonical plan, regenerates each public fixture, reopens the persisted cache and compares every byte and length. This independent qualification occurs outside transfer timing and avoids sending reconstructed objects back across the WAN just to verify them.
 
-Stop only the campaign's own tunnel, receiver and capture processes. Delete the temporary Actions secret and four variables. Retain compact source-pinned results, raw drop/offload evidence and the receiver verification result. Keep failed trials and negative workloads in the report. Public runner execution alone is not proof of savings; the remote receipts, complete capture and local exact-byte verification must agree.
+Stop only the campaign's own tunnel, receiver and capture processes. Delete the temporary Actions secret and four variables. Retain compact source-pinned results, raw drop/offload evidence and the receiver verification result. Keep failed trials and negative workloads in the report. Public runner execution alone is not proof of complete wire-byte savings; the remote receipts, complete capture and local exact-byte verification must agree for that claim. Successful protocol-body accounting and exact-byte reconstruction can be reported separately when their own checks pass.
 
 Official service references: [GitHub Actions billing](https://docs.github.com/en/billing/concepts/product-billing/github-actions), [Cloudflare Quick Tunnels](https://developers.cloudflare.com/tunnel/get-started/quick-tunnels/).
