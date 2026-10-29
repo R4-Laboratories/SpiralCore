@@ -128,6 +128,79 @@ pub struct Graph {
     pub manifest: Manifest,
     pub nodes: BTreeMap<Id, Node>,
 }
+
+// Fold-local routing memo, never a content identity or an authorization source.
+// Its owning canonical map is append-only for the entire memo lifetime. Complete
+// Node equality is required on every hit; collisions merely replace a slot.
+// The fixed transient storage fits inside the endpoint's fold scratch allowance.
+struct FoldMemo {
+    slots: [Option<(Node, Id)>; 128],
+    #[cfg(test)]
+    hashes: usize,
+}
+impl FoldMemo {
+    fn new() -> Self {
+        Self {
+            slots: std::array::from_fn(|_| None),
+            #[cfg(test)]
+            hashes: 0,
+        }
+    }
+    fn slot(node: &Node) -> usize {
+        fn mix(state: &mut u64, bytes: &[u8; 32]) {
+            for word in bytes.chunks_exact(8) {
+                let value = u64::from_le_bytes(word.try_into().expect("eight-byte chunk"));
+                *state = (*state ^ value)
+                    .rotate_left(13)
+                    .wrapping_mul(0x9e3779b97f4a7c15);
+            }
+        }
+        let mut state = 0x243f6a8885a308d3 ^ node.scale() as u64;
+        match node {
+            Node::Leaf(bytes) => mix(&mut state, bytes),
+            Node::Parent { children, .. } => {
+                for child in children {
+                    mix(&mut state, child)
+                }
+            }
+        }
+        ((state ^ (state >> 32)) as usize) & 127
+    }
+    fn insert(
+        &mut self,
+        nodes: &mut BTreeMap<Id, Node>,
+        node: Node,
+        max_nodes: usize,
+    ) -> Result<Id> {
+        let slot = Self::slot(&node);
+        if let Some((old, id)) = &self.slots[slot] {
+            if old == &node {
+                return Ok(*id);
+            }
+        }
+        #[cfg(test)]
+        {
+            self.hashes += 1;
+        }
+        let id = node.id();
+        let len = nodes.len();
+        match nodes.entry(id) {
+            std::collections::btree_map::Entry::Occupied(entry) => {
+                if entry.get() != &node {
+                    return Err(Error::Integrity);
+                }
+            }
+            std::collections::btree_map::Entry::Vacant(entry) => {
+                if len >= max_nodes {
+                    return Err(Error::Limit);
+                }
+                entry.insert(node.clone());
+            }
+        }
+        self.slots[slot] = Some((node, id));
+        Ok(id)
+    }
+}
 impl Graph {
     /// Construct the canonical v1 ternary forest directly under full SHA-256 IDs.
     pub fn fold(bytes: &[u8], max_nodes: usize) -> Result<Self> {
@@ -139,28 +212,11 @@ impl Graph {
         max_nodes.checked_mul(49).ok_or(Error::Limit)?;
         let mut nodes = BTreeMap::new();
         let mut roots: Vec<(u8, Id)> = Vec::new();
-        fn insert(nodes: &mut BTreeMap<Id, Node>, node: Node, max_nodes: usize) -> Result<Id> {
-            let id = node.id();
-            let len = nodes.len();
-            match nodes.entry(id) {
-                std::collections::btree_map::Entry::Occupied(entry) => {
-                    if entry.get() != &node {
-                        return Err(Error::Integrity);
-                    }
-                }
-                std::collections::btree_map::Entry::Vacant(entry) => {
-                    if len >= max_nodes {
-                        return Err(Error::Limit);
-                    }
-                    entry.insert(node);
-                }
-            }
-            Ok(id)
-        }
+        let mut memo = FoldMemo::new();
         for chunk in bytes.chunks(32) {
             let mut leaf = [0; 32];
             leaf[..chunk.len()].copy_from_slice(chunk);
-            roots.push((0, insert(&mut nodes, Node::Leaf(leaf), max_nodes)?));
+            roots.push((0, memo.insert(&mut nodes, Node::Leaf(leaf), max_nodes)?));
             while roots.len() >= 3 {
                 let start = roots.len() - 3;
                 let scale = roots[start].0;
@@ -171,7 +227,7 @@ impl Graph {
                 // MAX_OBJECT bounds the tree to scale 13 and the carry stack
                 // to 28 roots, independent of how many nodes deduplicate.
                 let scale = scale + 1;
-                let id = insert(&mut nodes, Node::Parent { scale, children }, max_nodes)?;
+                let id = memo.insert(&mut nodes, Node::Parent { scale, children }, max_nodes)?;
                 roots.truncate(start);
                 roots.push((scale, id));
             }
@@ -272,4 +328,63 @@ pub fn rebuild(manifest: &Manifest, nodes: &BTreeMap<Id, Node>) -> Result<Vec<u8
         return Err(Error::Integrity);
     }
     Ok(out)
+}
+
+#[cfg(test)]
+mod fold_memo_tests {
+    use super::*;
+    #[test]
+    fn hot_memo_reuses_only_exact_nodes_and_preserves_unique_budget() {
+        let mut memo = FoldMemo::new();
+        let mut nodes = BTreeMap::new();
+        let a = Node::Leaf([1; 32]);
+        let b = Node::Leaf([2; 32]);
+        let id = memo.insert(&mut nodes, a.clone(), 1).unwrap();
+        assert_eq!(memo.hashes, 1);
+        assert_eq!(memo.insert(&mut nodes, a.clone(), 1).unwrap(), id);
+        assert_eq!(memo.hashes, 1);
+        assert_eq!(memo.insert(&mut nodes, b.clone(), 1), Err(Error::Limit));
+        // Force a routing-index collision: only complete node equality permits reuse.
+        memo.slots[FoldMemo::slot(&b)] = Some((a, id));
+        assert_eq!(memo.insert(&mut nodes, b.clone(), 2).unwrap(), b.id());
+        assert_eq!(nodes.len(), 2);
+    }
+    #[test]
+    fn rejected_records_never_enter_the_memo() {
+        let mut memo = FoldMemo::new();
+        let mut nodes = BTreeMap::new();
+        let node = Node::Leaf([3; 32]);
+        assert_eq!(memo.insert(&mut nodes, node.clone(), 0), Err(Error::Limit));
+        assert!(memo.slots.iter().all(Option::is_none));
+        nodes.insert(node.id(), Node::Leaf([4; 32]));
+        assert_eq!(memo.insert(&mut nodes, node, 1), Err(Error::Integrity));
+        assert!(memo.slots.iter().all(Option::is_none));
+    }
+    #[test]
+    fn parent_memo_is_exact_and_has_a_fixed_small_allocation_bound() {
+        assert!(std::mem::size_of::<FoldMemo>() <= 20 * 1024);
+        let mut memo = FoldMemo::new();
+        let mut nodes = BTreeMap::new();
+        let a = Node::Parent {
+            scale: 1,
+            children: [[1; 32], [2; 32], [3; 32]],
+        };
+        let id = memo.insert(&mut nodes, a.clone(), 3).unwrap();
+        assert_eq!(memo.insert(&mut nodes, a, 3).unwrap(), id);
+        assert_eq!(memo.hashes, 1);
+        for b in [
+            Node::Parent {
+                scale: 1,
+                children: [[3; 32], [2; 32], [1; 32]],
+            },
+            Node::Parent {
+                scale: 2,
+                children: [[1; 32], [2; 32], [3; 32]],
+            },
+        ] {
+            assert_ne!(memo.insert(&mut nodes, b, 3).unwrap(), id);
+        }
+        assert_eq!(nodes.len(), 3);
+        assert_eq!(memo.hashes, 3);
+    }
 }
