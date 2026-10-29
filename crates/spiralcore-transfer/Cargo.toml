@@ -5,6 +5,11 @@ edition = "2021"
 rust-version = "1.89"
 description = "Experimental exact object transfer at an authenticated mailbox boundary"
 
+[features]
+# Opt-in backend; initial qualification scope: native aarch64-apple-darwin.
+# sha2-asm does not support Windows. This is not a FIPS validation claim.
+hardware-sha256 = ["sha2/asm"]
+
 [dependencies]
 sha2 = "0.10.9"
 zstd = "0.13"
