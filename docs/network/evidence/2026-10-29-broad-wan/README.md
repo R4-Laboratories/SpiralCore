@@ -45,3 +45,19 @@ Raw qualification artifacts, packet captures and diagnostic source are retained
 locally under `/Users/casey.allard/spiralcore/local/broad-wan-20261029/`.
 Compact records bind them by hash. Owned diagnostic text is retired only after
 structured findings are preserved; scientific rows and captures remain.
+
+## Recorded WAN cases
+
+The [current result report](../../broad-wan-results-2026-10-29.md) records two
+completed, independently reviewed cases: [localized](cases/localized_32/README.md)
+and [scattered](cases/scattered_32x32/README.md). Each has thirty pairs across four
+arms and 240 exact seed/update operations. All ten captures are complete under
+the retained criteria. Ten other registered cases remain incomplete.
+
+Final measured source is `9dce4c57d1f41cef7365b297cd690849afce34e7`. The
+[successful producer](qualification/linux-producer-2/README.md) records current
+Linux qualification and 90.526% optimized-profile line coverage. The first
+coverage producer timeout and capture setup failures remain separate history.
+Case packets retain all statistical vectors and independent reviews; raw ZIPs
+and PCAPs remain local and hash-bound. Exact hosted artifact deletion receipts
+are in `cleanup/`; each deletion followed committed local preservation.
