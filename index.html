@@ -3648,6 +3648,9 @@ function routeSpace(from, to, opts={}){
   const distTo = bfsAllDistances(to); // symmetric graph, so this doubles as "distance FROM any node TO `to`"
 
   const shortestResult = enumeratePaths(from, to, shortestHops, distTo, K);
+  // One displayed route does not prove uniqueness. Probe for a second shortest route when K=1;
+  // keep the displayed paths and their cap unchanged, and use this probe only for classification.
+  const shortestMultiplicity = K === 1 ? enumeratePaths(from, to, shortestHops, distTo, 2) : shortestResult;
   const nearBudget = shortestHops + Math.max(delta,0);
   const nearResult = delta > 0 ? enumeratePaths(from, to, nearBudget, distTo, K) : { paths: shortestResult.paths, capped: shortestResult.capped };
   // near-only = paths strictly longer than the shortest set (nearResult already includes the shortest ones)
@@ -3668,7 +3671,7 @@ function routeSpace(from, to, opts={}){
   // If the shortest path is unique, scan increasing delta until a distinct longer path is found (or give up
   // at maxDeltaScan, reported honestly rather than assumed).
   let selectionMargin = 0, marginNote;
-  if (shortestResult.paths.length <= 1){
+  if (shortestMultiplicity.paths.length <= 1){
     let found = null;
     for (let d=1; d<=maxDeltaScan; d++){
       // FIXED: cap was 1, which is NOT a safe "existence check only" — enumeratePaths' DFS can (and on this
@@ -3685,10 +3688,10 @@ function routeSpace(from, to, opts={}){
     selectionMargin = found;
     marginNote = found ? `unique shortest path; next distinct route is ${found} hop(s) longer` : `unique shortest path; no distinct route found within ${maxDeltaScan} extra hops scanned`;
   } else {
-    marginNote = `${shortestResult.paths.length} equally-short routes tie at ${shortestHops} hop(s) — margin is 0 by definition`;
+    marginNote = `${shortestMultiplicity.capped ? 'at least ' : ''}${shortestMultiplicity.paths.length} equally-short routes tie at ${shortestHops} hop(s) — margin is 0 by definition`;
   }
 
-  const status = shortestResult.paths.length > 1 ? 'DEGENERATE — multiple equal-shortest solutions' : (selectionMargin ? `DISTINCTIVE — next alternative is ${selectionMargin} hop(s) longer` : 'DISTINCTIVE — no near alternative found within scan range');
+  const status = shortestMultiplicity.paths.length > 1 ? 'DEGENERATE — multiple equal-shortest solutions' : (selectionMargin ? `DISTINCTIVE — next alternative is ${selectionMargin} hop(s) longer` : 'DISTINCTIVE — no near alternative found within scan range');
 
   return {
     reachable: true, from, to, shortestHops,
@@ -3780,6 +3783,21 @@ function checkRouteSpaceFixtures(){
     const rs = routeSpace(fx.from, fx.to, { K:50, delta:1, maxDeltaScan:3 });
     const pass = rs.reachable && rs.equalShortestCount === 1 && rs.selectionMargin === fx.expectedMargin;
     return { ...fx, reachable: rs.reachable, equalShortestCount: rs.equalShortestCount, reportedMargin: rs.selectionMargin, pass };
+  });
+  // K limits the displayed sample, not the mathematical claim of uniqueness. This pair has
+  // 63 equal-shortest routes; retaining only one must not turn its zero margin into a positive one.
+  const tieRuns = [1,2,100].map(K => routeSpace('DUALFACE:3','ICOSIAN:90',{ K, delta:1, maxDeltaScan:3 }));
+  const fullTie = tieRuns[2];
+  tieRuns.forEach(rs => {
+    const expectedCount = Math.min(rs.K,63);
+    const samePrefix = rs.equalShortestPaths && fullTie.equalShortestPaths && rs.equalShortestPaths.every((path,i) => JSON.stringify(path) === JSON.stringify(fullTie.equalShortestPaths[i]));
+    results.push({from:'DUALFACE:3',to:'ICOSIAN:90',note:'equal-shortest degeneracy is independent of the display cap',reportedK:rs.K,equalShortestCount:rs.equalShortestCount,reportedMargin:rs.selectionMargin,
+      pass:rs.reachable && rs.shortestHops===5 && rs.equalShortestCount===expectedCount && rs.equalShortestPaths.length===expectedCount && rs.equalShortestCapped===(rs.K<63) && samePrefix && rs.selectionMargin===0 && rs.status.startsWith('DEGENERATE') && !rs.marginNote.includes('unique shortest path')});
+  });
+  [1,2,100].forEach(K => {
+    const rs = routeSpace('VERT:0','ICO:0',{ K, delta:1, maxDeltaScan:3 });
+    results.push({from:'VERT:0',to:'ICO:0',note:'a genuinely unique shortest route remains distinctive at every display cap',reportedK:K,equalShortestCount:rs.equalShortestCount,reportedMargin:rs.selectionMargin,
+      pass:rs.reachable && rs.equalShortestCount===1 && rs.equalShortestPaths.length===1 && rs.selectionMargin===1 && rs.status.startsWith('DISTINCTIVE') && rs.marginNote.startsWith('unique shortest path')});
   });
   const malformed=routeSpace('ROOT','ICO:0',null);
   results.push({from:'ROOT',to:'ICO:0',note:'explicit null options return a structured rejection',pass:!malformed.reachable&&!!malformed.problems&&malformed.problems.some(p=>p.includes('options must be an object'))});
