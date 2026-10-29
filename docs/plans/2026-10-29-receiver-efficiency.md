@@ -39,6 +39,20 @@ CPU/wall distributions per stage (Begin, Data, Finish) as well as the complete o
 reopening and exact comparison must pass. Clear the timing boundary around fixture generation,
 transport framing, input allocation and verification. Do not mix production builds/tests with runs.
 
+Before observing results, the bounded diagnostic schedule is: populations 0/64/256/768 unrelated
+32-byte publications, two per unrelated namespace, plus one verified active 1 MiB base; four arms
+(raw/sparse under default/one-node graph policies), with retention disabled in both. Initial baseline
+characterization uses one block (16 updates). The main comparison uses eight interleaved old/new
+blocks with balanced arm order, 128 updates per executable. Every update gets a fresh synced clone
+of its closed template. Record template creation and clone/open/reopen work separately.
+
+The candidate's performance hypothesis is at least 1.10× paired whole-operation CPU improvement for
+sparse updates at population 768 under each graph policy, with at least six of eight pairs favoring
+the candidate. This is a local diagnostic target, not a WAN acceptance gate. Report all populations,
+raw controls, stage CPU, elapsed distributions and regressions even if the target is missed.
+Correctness and byte accounting must remain exact in every observation. Total process CPU already
+contains the handler stage CPU; those overlapping counters must not be added.
+
 ## Conditional implementation
 
 First profile the narrowest candidate: `disk_usage` repeatedly converts the same namespace ID to
