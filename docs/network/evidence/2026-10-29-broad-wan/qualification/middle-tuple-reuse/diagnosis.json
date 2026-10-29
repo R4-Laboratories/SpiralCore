@@ -1,0 +1,648 @@
+{
+  "adjacent_packet_timestamp_inversions": 134,
+  "campaign": {
+    "download_ip_bytes": 1350305,
+    "download_packets": 9384,
+    "packets": 447603,
+    "total_ip_bytes": 629675028,
+    "upload_ip_bytes": 628324723,
+    "upload_packets": 438219
+  },
+  "capture_report_sha256": "0ca5855a79eb560a9ff7db78bd73064485f9198f538b5bccbc73fe8eff96c72f",
+  "case": "middle_4096",
+  "conclusion": "Both outbound SYNs are captured with different initial sequence numbers on the same four-tuple. The frozen parser quarantines every packet on that tuple by design. This explains both zero-owned-packet rows and their body undercoverage; it is not evidence that these two transfers had no captured packets.",
+  "different_isns_on_implicated_tuple": [
+    845141602,
+    1926263598
+  ],
+  "flow": {
+    "local_ip": "10.1.0.84",
+    "local_port": 46852,
+    "protocol": "TCP",
+    "remote_ip": "104.16.230.132",
+    "remote_port": 443
+  },
+  "lifecycle_sha256": "1da5045c35c9c2032f3efb16bdf6bedeeaf5fd46951afa74c68b1e2b1652b253",
+  "limitations": [
+    "Diagnostic SYN-time segments are not approved TCP epoch attribution and do not replace production per-row IP totals",
+    "Equal tcpdump counters and zero kernel drops do not prove uncaptured traffic cannot exist",
+    "This read-only diagnosis does not relax the parser, rerun or replace any performance trial, or change the incomplete result",
+    "Any epoch-aware successor requires a separately specified state machine, sequence/lifecycle ambiguity handling, tests and qualification"
+  ],
+  "observed_outbound_syns": 48,
+  "pcap_sha256": "94ec95900c5e0bc475c19062095a8e488e44b4b180183e6c998c9002ab02ede0",
+  "production_incomplete_reasons": [
+    "packets_without_unambiguous_connection_owner",
+    "measurement_row_without_captured_packets",
+    "capture_below_published_application_body_bytes"
+  ],
+  "production_unattributed": {
+    "download_ip_bytes": 75826,
+    "download_packets": 587,
+    "packets": 24928,
+    "total_ip_bytes": 34974525,
+    "upload_ip_bytes": 34898699,
+    "upload_packets": 24341
+  },
+  "reviewer_executable_sha256": "6b71f93507da526513a010349624ea4bbc8ff838cebd597e8618b0da8bd5f210",
+  "reviewer_source_sha256": "a39d273c02225dd9731ae3b7784086c708d66147104bf60c0f557320be8c248f",
+  "rows_sha256": "15c0d7e45fb346b13443463fe159caffba2453a74ce3f47d6b21700c8cdc8373",
+  "schema": "spiralcore.capture-tuple-reuse-diagnosis.v1",
+  "segments": [
+    {
+      "containing_row": {
+        "metrics": {
+          "application_request_bytes": 16794088,
+          "application_response_bytes": 17690,
+          "base_prepare_cpu_micros": 0,
+          "base_prepare_wall_micros": 0,
+          "data_bytes": 16777216,
+          "fixture_generation_cpu_micros": 17475,
+          "fixture_generation_wall_micros": 17479,
+          "http_requests": 1,
+          "preparation": {
+            "base_resident_charge_bytes": null,
+            "promotion_performed": false,
+            "retained_base_reused": false,
+            "selected_mode": 0,
+            "target_prepare_cpu_micros": 0,
+            "target_prepare_wall_micros": 0,
+            "target_resident_charge_bytes": null
+          },
+          "receiver_cpu_micros": 53312,
+          "receiver_wall_micros": 66809,
+          "records_sent": 0,
+          "request_body_bytes": 16795204,
+          "response_body_bytes": 18822,
+          "sender_cpu_micros": 39090,
+          "wall_micros": 2350579
+        },
+        "phase": "transfer",
+        "status": "published",
+        "task": {
+          "arm": "raw_full",
+          "cache_state": "base_present_target_absent",
+          "case": "middle_4096",
+          "fixture_seed": 10435688606342581131,
+          "id": "16773120-middle_4096-06-raw_full",
+          "pair": "16773120-middle_4096-06",
+          "scope": "379acde279bf2bb087446686e06e200f4d09055975dadcd2ad8dc33ca17680b7",
+          "seed_base": true,
+          "size": 16773120,
+          "trial": 6,
+          "warm_probe": false
+        },
+        "unix_end_nanos": "1793314610433109223",
+        "unix_start_nanos": "1793314608082523588"
+      },
+      "diagnostic_interval_end_exclusive": "1793314677289138639",
+      "first_eight_packets": [
+        {
+          "acknowledgement": 0,
+          "direction": "upload",
+          "flags": 2,
+          "ip_bytes": 60,
+          "local_port": 46852,
+          "record_index": 12496,
+          "sequence": 845141602,
+          "tcp_payload_bytes": 0,
+          "unix_nanos": "1793314608097330677"
+        },
+        {
+          "acknowledgement": 845141603,
+          "direction": "download",
+          "flags": 18,
+          "ip_bytes": 60,
+          "local_port": 46852,
+          "record_index": 12497,
+          "sequence": 3748474987,
+          "tcp_payload_bytes": 0,
+          "unix_nanos": "1793314608103705905"
+        },
+        {
+          "acknowledgement": 3748474988,
+          "direction": "upload",
+          "flags": 16,
+          "ip_bytes": 52,
+          "local_port": 46852,
+          "record_index": 12498,
+          "sequence": 845141603,
+          "tcp_payload_bytes": 0,
+          "unix_nanos": "1793314608103746506"
+        },
+        {
+          "acknowledgement": 3748474988,
+          "direction": "upload",
+          "flags": 24,
+          "ip_bytes": 330,
+          "local_port": 46852,
+          "record_index": 12499,
+          "sequence": 845141603,
+          "tcp_payload_bytes": 278,
+          "unix_nanos": "1793314608103846491"
+        },
+        {
+          "acknowledgement": 845141881,
+          "direction": "download",
+          "flags": 16,
+          "ip_bytes": 52,
+          "local_port": 46852,
+          "record_index": 12500,
+          "sequence": 3748474988,
+          "tcp_payload_bytes": 0,
+          "unix_nanos": "1793314608110040528"
+        },
+        {
+          "acknowledgement": 845141881,
+          "direction": "download",
+          "flags": 16,
+          "ip_bytes": 1480,
+          "local_port": 46852,
+          "record_index": 12501,
+          "sequence": 3748474988,
+          "tcp_payload_bytes": 1428,
+          "unix_nanos": "1793314608113164373"
+        },
+        {
+          "acknowledgement": 845141881,
+          "direction": "download",
+          "flags": 24,
+          "ip_bytes": 1426,
+          "local_port": 46852,
+          "record_index": 12502,
+          "sequence": 3748476416,
+          "tcp_payload_bytes": 1374,
+          "unix_nanos": "1793314608113164423"
+        },
+        {
+          "acknowledgement": 3748476416,
+          "direction": "upload",
+          "flags": 16,
+          "ip_bytes": 52,
+          "local_port": 46852,
+          "record_index": 12503,
+          "sequence": 845141881,
+          "tcp_payload_bytes": 0,
+          "unix_nanos": "1793314608113179646"
+        }
+      ],
+      "gap_until_next_syn_nanos": 66849409911,
+      "last_eight_packets": [
+        {
+          "acknowledgement": 861960170,
+          "direction": "download",
+          "flags": 16,
+          "ip_bytes": 1480,
+          "local_port": 46852,
+          "record_index": 24931,
+          "sequence": 3748493521,
+          "tcp_payload_bytes": 1428,
+          "unix_nanos": "1793314610432970689"
+        },
+        {
+          "acknowledgement": 861960170,
+          "direction": "download",
+          "flags": 24,
+          "ip_bytes": 1369,
+          "local_port": 46852,
+          "record_index": 24932,
+          "sequence": 3748494949,
+          "tcp_payload_bytes": 1317,
+          "unix_nanos": "1793314610432970719"
+        },
+        {
+          "acknowledgement": 861960170,
+          "direction": "download",
+          "flags": 24,
+          "ip_bytes": 1440,
+          "local_port": 46852,
+          "record_index": 24933,
+          "sequence": 3748496266,
+          "tcp_payload_bytes": 1388,
+          "unix_nanos": "1793314610432970749"
+        },
+        {
+          "acknowledgement": 3748494949,
+          "direction": "upload",
+          "flags": 16,
+          "ip_bytes": 52,
+          "local_port": 46852,
+          "record_index": 24934,
+          "sequence": 861960170,
+          "tcp_payload_bytes": 0,
+          "unix_nanos": "1793314610432984049"
+        },
+        {
+          "acknowledgement": 3748497654,
+          "direction": "upload",
+          "flags": 16,
+          "ip_bytes": 52,
+          "local_port": 46852,
+          "record_index": 24935,
+          "sequence": 861960170,
+          "tcp_payload_bytes": 0,
+          "unix_nanos": "1793314610432994120"
+        },
+        {
+          "acknowledgement": 3748497654,
+          "direction": "upload",
+          "flags": 17,
+          "ip_bytes": 52,
+          "local_port": 46852,
+          "record_index": 24936,
+          "sequence": 861960170,
+          "tcp_payload_bytes": 0,
+          "unix_nanos": "1793314610433082913"
+        },
+        {
+          "acknowledgement": 861960171,
+          "direction": "download",
+          "flags": 17,
+          "ip_bytes": 52,
+          "local_port": 46852,
+          "record_index": 24937,
+          "sequence": 3748497654,
+          "tcp_payload_bytes": 0,
+          "unix_nanos": "1793314610439715198"
+        },
+        {
+          "acknowledgement": 3748497655,
+          "direction": "upload",
+          "flags": 16,
+          "ip_bytes": 52,
+          "local_port": 46852,
+          "record_index": 24938,
+          "sequence": 861960171,
+          "tcp_payload_bytes": 0,
+          "unix_nanos": "1793314610439728728"
+        }
+      ],
+      "last_packet_unix_nanos": "1793314610439728728",
+      "packet_totals_in_syn_time_segment": {
+        "download_ip_bytes": 38066,
+        "download_packets": 296,
+        "packets": 12443,
+        "total_ip_bytes": 17488285,
+        "upload_ip_bytes": 17450219,
+        "upload_packets": 12147
+      },
+      "syn": {
+        "acknowledgement": 0,
+        "direction": "upload",
+        "flags": 2,
+        "ip_bytes": 60,
+        "local_port": 46852,
+        "record_index": 12496,
+        "sequence": 845141602,
+        "tcp_payload_bytes": 0,
+        "unix_nanos": "1793314608097330677"
+      },
+      "syn_fin_rst_events": [
+        {
+          "acknowledgement": 0,
+          "direction": "upload",
+          "flags": 2,
+          "ip_bytes": 60,
+          "local_port": 46852,
+          "record_index": 12496,
+          "sequence": 845141602,
+          "tcp_payload_bytes": 0,
+          "unix_nanos": "1793314608097330677"
+        },
+        {
+          "acknowledgement": 845141603,
+          "direction": "download",
+          "flags": 18,
+          "ip_bytes": 60,
+          "local_port": 46852,
+          "record_index": 12497,
+          "sequence": 3748474987,
+          "tcp_payload_bytes": 0,
+          "unix_nanos": "1793314608103705905"
+        },
+        {
+          "acknowledgement": 3748497654,
+          "direction": "upload",
+          "flags": 17,
+          "ip_bytes": 52,
+          "local_port": 46852,
+          "record_index": 24936,
+          "sequence": 861960170,
+          "tcp_payload_bytes": 0,
+          "unix_nanos": "1793314610433082913"
+        },
+        {
+          "acknowledgement": 861960171,
+          "direction": "download",
+          "flags": 17,
+          "ip_bytes": 52,
+          "local_port": 46852,
+          "record_index": 24937,
+          "sequence": 3748497654,
+          "tcp_payload_bytes": 0,
+          "unix_nanos": "1793314610439715198"
+        }
+      ]
+    },
+    {
+      "containing_row": {
+        "metrics": {
+          "application_request_bytes": 16789931,
+          "application_response_bytes": 17626,
+          "base_prepare_cpu_micros": 0,
+          "base_prepare_wall_micros": 0,
+          "data_bytes": 16773120,
+          "fixture_generation_cpu_micros": 12723,
+          "fixture_generation_wall_micros": 12726,
+          "http_requests": 1,
+          "preparation": {
+            "base_resident_charge_bytes": 16773120,
+            "promotion_performed": false,
+            "retained_base_reused": false,
+            "selected_mode": 0,
+            "target_prepare_cpu_micros": 0,
+            "target_prepare_wall_micros": 0,
+            "target_resident_charge_bytes": null
+          },
+          "receiver_cpu_micros": 30393,
+          "receiver_wall_micros": 46502,
+          "records_sent": 0,
+          "request_body_bytes": 16791043,
+          "response_body_bytes": 18754,
+          "sender_cpu_micros": 50139,
+          "wall_micros": 1596842
+        },
+        "phase": "seed",
+        "status": "published",
+        "task": {
+          "arm": "sparse",
+          "cache_state": "base_present_target_absent",
+          "case": "middle_4096",
+          "fixture_seed": 8388109258363924145,
+          "id": "16773120-middle_4096-11-sparse",
+          "pair": "16773120-middle_4096-11",
+          "scope": "3ce0444c841de2242370bbbdbccf84f2d74b16f13d64840cd8ac11002fcdc978",
+          "seed_base": true,
+          "size": 16773120,
+          "trial": 11,
+          "warm_probe": false
+        },
+        "unix_end_nanos": "1793314678864431114",
+        "unix_start_nanos": "1793314677267581942"
+      },
+      "diagnostic_interval_end_exclusive": "18446744073709551615",
+      "first_eight_packets": [
+        {
+          "acknowledgement": 0,
+          "direction": "upload",
+          "flags": 2,
+          "ip_bytes": 60,
+          "local_port": 46852,
+          "record_index": 435097,
+          "sequence": 1926263598,
+          "tcp_payload_bytes": 0,
+          "unix_nanos": "1793314677289138639"
+        },
+        {
+          "acknowledgement": 1926263599,
+          "direction": "download",
+          "flags": 18,
+          "ip_bytes": 60,
+          "local_port": 46852,
+          "record_index": 435098,
+          "sequence": 534638569,
+          "tcp_payload_bytes": 0,
+          "unix_nanos": "1793314677295758278"
+        },
+        {
+          "acknowledgement": 534638570,
+          "direction": "upload",
+          "flags": 16,
+          "ip_bytes": 52,
+          "local_port": 46852,
+          "record_index": 435099,
+          "sequence": 1926263599,
+          "tcp_payload_bytes": 0,
+          "unix_nanos": "1793314677295802545"
+        },
+        {
+          "acknowledgement": 534638570,
+          "direction": "upload",
+          "flags": 24,
+          "ip_bytes": 330,
+          "local_port": 46852,
+          "record_index": 435100,
+          "sequence": 1926263599,
+          "tcp_payload_bytes": 278,
+          "unix_nanos": "1793314677295908399"
+        },
+        {
+          "acknowledgement": 1926263877,
+          "direction": "download",
+          "flags": 16,
+          "ip_bytes": 52,
+          "local_port": 46852,
+          "record_index": 435101,
+          "sequence": 534638570,
+          "tcp_payload_bytes": 0,
+          "unix_nanos": "1793314677302065374"
+        },
+        {
+          "acknowledgement": 1926263877,
+          "direction": "download",
+          "flags": 16,
+          "ip_bytes": 1480,
+          "local_port": 46852,
+          "record_index": 435102,
+          "sequence": 534638570,
+          "tcp_payload_bytes": 1428,
+          "unix_nanos": "1793314677304949497"
+        },
+        {
+          "acknowledgement": 1926263877,
+          "direction": "download",
+          "flags": 24,
+          "ip_bytes": 1426,
+          "local_port": 46852,
+          "record_index": 435103,
+          "sequence": 534639998,
+          "tcp_payload_bytes": 1374,
+          "unix_nanos": "1793314677304949557"
+        },
+        {
+          "acknowledgement": 534639998,
+          "direction": "upload",
+          "flags": 16,
+          "ip_bytes": 52,
+          "local_port": 46852,
+          "record_index": 435104,
+          "sequence": 1926263877,
+          "tcp_payload_bytes": 0,
+          "unix_nanos": "1793314677304966773"
+        }
+      ],
+      "gap_until_next_syn_nanos": null,
+      "last_eight_packets": [
+        {
+          "acknowledgement": 534658284,
+          "direction": "upload",
+          "flags": 16,
+          "ip_bytes": 52,
+          "local_port": 46852,
+          "record_index": 447574,
+          "sequence": 1943077983,
+          "tcp_payload_bytes": 0,
+          "unix_nanos": "1793314678864244924"
+        },
+        {
+          "acknowledgement": 1943077983,
+          "direction": "download",
+          "flags": 24,
+          "ip_bytes": 1406,
+          "local_port": 46852,
+          "record_index": 447575,
+          "sequence": 534658284,
+          "tcp_payload_bytes": 1354,
+          "unix_nanos": "1793314678864250798"
+        },
+        {
+          "acknowledgement": 1943077983,
+          "direction": "download",
+          "flags": 16,
+          "ip_bytes": 1480,
+          "local_port": 46852,
+          "record_index": 447576,
+          "sequence": 534659638,
+          "tcp_payload_bytes": 1428,
+          "unix_nanos": "1793314678864319231"
+        },
+        {
+          "acknowledgement": 1943077983,
+          "direction": "download",
+          "flags": 24,
+          "ip_bytes": 176,
+          "local_port": 46852,
+          "record_index": 447577,
+          "sequence": 534661066,
+          "tcp_payload_bytes": 124,
+          "unix_nanos": "1793314678864319281"
+        },
+        {
+          "acknowledgement": 534661066,
+          "direction": "upload",
+          "flags": 16,
+          "ip_bytes": 52,
+          "local_port": 46852,
+          "record_index": 447578,
+          "sequence": 1943077983,
+          "tcp_payload_bytes": 0,
+          "unix_nanos": "1793314678864331098"
+        },
+        {
+          "acknowledgement": 534661190,
+          "direction": "upload",
+          "flags": 17,
+          "ip_bytes": 52,
+          "local_port": 46852,
+          "record_index": 447579,
+          "sequence": 1943077983,
+          "tcp_payload_bytes": 0,
+          "unix_nanos": "1793314678864406347"
+        },
+        {
+          "acknowledgement": 1943077984,
+          "direction": "download",
+          "flags": 17,
+          "ip_bytes": 52,
+          "local_port": 46852,
+          "record_index": 447580,
+          "sequence": 534661190,
+          "tcp_payload_bytes": 0,
+          "unix_nanos": "1793314678871480259"
+        },
+        {
+          "acknowledgement": 534661191,
+          "direction": "upload",
+          "flags": 16,
+          "ip_bytes": 52,
+          "local_port": 46852,
+          "record_index": 447581,
+          "sequence": 1943077984,
+          "tcp_payload_bytes": 0,
+          "unix_nanos": "1793314678871498256"
+        }
+      ],
+      "last_packet_unix_nanos": "1793314678871498256",
+      "packet_totals_in_syn_time_segment": {
+        "download_ip_bytes": 37760,
+        "download_packets": 291,
+        "packets": 12485,
+        "total_ip_bytes": 17486240,
+        "upload_ip_bytes": 17448480,
+        "upload_packets": 12194
+      },
+      "syn": {
+        "acknowledgement": 0,
+        "direction": "upload",
+        "flags": 2,
+        "ip_bytes": 60,
+        "local_port": 46852,
+        "record_index": 435097,
+        "sequence": 1926263598,
+        "tcp_payload_bytes": 0,
+        "unix_nanos": "1793314677289138639"
+      },
+      "syn_fin_rst_events": [
+        {
+          "acknowledgement": 0,
+          "direction": "upload",
+          "flags": 2,
+          "ip_bytes": 60,
+          "local_port": 46852,
+          "record_index": 435097,
+          "sequence": 1926263598,
+          "tcp_payload_bytes": 0,
+          "unix_nanos": "1793314677289138639"
+        },
+        {
+          "acknowledgement": 1926263599,
+          "direction": "download",
+          "flags": 18,
+          "ip_bytes": 60,
+          "local_port": 46852,
+          "record_index": 435098,
+          "sequence": 534638569,
+          "tcp_payload_bytes": 0,
+          "unix_nanos": "1793314677295758278"
+        },
+        {
+          "acknowledgement": 534661190,
+          "direction": "upload",
+          "flags": 17,
+          "ip_bytes": 52,
+          "local_port": 46852,
+          "record_index": 447579,
+          "sequence": 1943077983,
+          "tcp_payload_bytes": 0,
+          "unix_nanos": "1793314678864406347"
+        },
+        {
+          "acknowledgement": 1943077984,
+          "direction": "download",
+          "flags": 17,
+          "ip_bytes": 52,
+          "local_port": 46852,
+          "record_index": 447580,
+          "sequence": 534661190,
+          "tcp_payload_bytes": 0,
+          "unix_nanos": "1793314678871480259"
+        }
+      ]
+    }
+  ],
+  "shard": 1,
+  "source": "9dce4c57d1f41cef7365b297cd690849afce34e7",
+  "status": "causal_parser_condition_independently_confirmed",
+  "tuples_without_any_observed_syn": 0,
+  "unique_four_tuples": 47
+}

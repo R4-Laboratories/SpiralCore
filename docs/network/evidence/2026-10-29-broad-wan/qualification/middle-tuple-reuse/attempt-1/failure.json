@@ -1,0 +1,11 @@
+{
+  "schema": "spiralcore.offline-diagnostic-attempt.v1",
+  "status": "diagnostic_reader_assumption_failed",
+  "command": "review REMOTE NEW_DIAGNOSIS_JSON",
+  "combined_shell_command_exit": 2,
+  "reviewer_exit_separately_recorded": false,
+  "observed_error": "assertion failed: ns >= previous at review.rs:90",
+  "diagnosis_output_created": false,
+  "interpretation": "The first offline reviewer incorrectly required globally ordered packet timestamps. The production parser does not require that ordering. Preserve this attempt and count timestamp inversions in a successor diagnostic without changing raw capture records.",
+  "raw_evidence_changed": false
+}
