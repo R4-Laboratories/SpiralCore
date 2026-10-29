@@ -1,0 +1,289 @@
+{
+  "schema": "spiralcore.standalone-validation.v1",
+  "recorded_at": "2026-10-29",
+  "objective": "Minimize transmitted bytes with exact reconstruction. Endpoint compute and elapsed time are measured tradeoffs, not first-delivery latency gates.",
+  "status": "standalone experimental milestone verified; MVM and WAN delivery not qualified",
+  "source": {
+    "implementation_commit": "e83096f40569583998f608c2624cd9689872c646",
+    "spiralcore_audit_base": "23380f00afb78a5712306f0001c6ad7499d5fbaa",
+    "uor_import_revision": "b1b1ef6f0a5d59d8198207c198431701fff5fd63",
+    "import_manifest": "../provenance/object-store-import.json",
+    "contract": "../contracts/spiralcore-object-mailbox-v1.md",
+    "origin_main_at_final_fetch": "23380f00afb78a5712306f0001c6ad7499d5fbaa"
+  },
+  "host": {
+    "os": "macOS 27.0 / Darwin 27.0.0",
+    "arch": "arm64",
+    "logical_cpus": 8,
+    "physical_memory_bytes": 17179869184,
+    "rustc": "1.97.1 (8bab26f4f 2026-07-14)",
+    "cargo": "1.97.1 (c980f4866 2026-06-30)"
+  },
+  "executable": {
+    "name": "spiralcore",
+    "profile": "release",
+    "sha256": "18c194f94e21b7e723f912130e4d93b1568e6fefac5b34d55899593d1a2cf76c",
+    "local_path": "/Users/casey.allard/spiralcore/target/release/spiralcore",
+    "build_command": "CARGO_TARGET_DIR=/Users/casey.allard/spiralcore/target /Users/casey.allard/.cargo/bin/cargo build --release --locked --manifest-path crates/spiralcore-transfer/Cargo.toml"
+  },
+  "preservation": {
+    "original_files": 7,
+    "original_bytes": 26048137,
+    "original_and_backup_sha256_matches": true,
+    "backup_manifest": "/Users/casey.allard/.codex/backups/spiralcore/20261029T020616Z/manifest.json",
+    "original_runtime_and_sessions_tracked": false,
+    "immutable_import_fixture_files_verified": 3
+  },
+  "verification": {
+    "rust_tests": {
+      "object_store": 71,
+      "transfer": 31,
+      "total": 102,
+      "failed": 0,
+      "command_template": "cargo test --locked --manifest-path crates/<crate>/Cargo.toml --all-targets",
+      "scope": "native standalone Rust core, protocol, endpoint and CLI tests; real loopback TCP/process tests included"
+    },
+    "example": {
+      "crate": "uor-r4-object-store",
+      "name": "exact_bytes",
+      "status": "passed"
+    },
+    "lint": {
+      "fmt": "passed for both crates",
+      "clippy": "passed for both crates, all targets, warnings denied",
+      "git_diff_check": "passed"
+    },
+    "coverage": {
+      "tool": "cargo-llvm-cov 0.9.1",
+      "command_options": "--locked --all-targets --summary-only --json --fail-under-lines 80",
+      "exclusions": "tests excluded; imported object-store dependency also excluded from transfer coverage",
+      "branches": "not instrumented; zero branch counters are not evidence of branch coverage",
+      "reports": {
+        "object_store": {
+          "totals": {
+            "branches": {
+              "count": 0,
+              "covered": 0,
+              "notcovered": 0,
+              "percent": 0
+            },
+            "functions": {
+              "count": 182,
+              "covered": 141,
+              "percent": 77.47252747252747
+            },
+            "instantiations": {
+              "count": 465,
+              "covered": 256,
+              "percent": 55.053763440860216
+            },
+            "lines": {
+              "count": 2392,
+              "covered": 2117,
+              "percent": 88.50334448160535
+            },
+            "mcdc": {
+              "count": 0,
+              "covered": 0,
+              "notcovered": 0,
+              "percent": 0
+            },
+            "regions": {
+              "count": 3778,
+              "covered": 3303,
+              "notcovered": 475,
+              "percent": 87.42721016410799
+            }
+          },
+          "report_sha256": "57ff54f2c9cee251a034715009810f1fce1b36f702ab10166fc70de56a83b720"
+        },
+        "transfer": {
+          "totals": {
+            "branches": {
+              "count": 0,
+              "covered": 0,
+              "notcovered": 0,
+              "percent": 0
+            },
+            "functions": {
+              "count": 136,
+              "covered": 128,
+              "percent": 94.11764705882352
+            },
+            "instantiations": {
+              "count": 398,
+              "covered": 231,
+              "percent": 58.040201005025125
+            },
+            "lines": {
+              "count": 1733,
+              "covered": 1542,
+              "percent": 88.97864974033467
+            },
+            "mcdc": {
+              "count": 0,
+              "covered": 0,
+              "notcovered": 0,
+              "percent": 0
+            },
+            "regions": {
+              "count": 3454,
+              "covered": 2879,
+              "notcovered": 575,
+              "percent": 83.35263462651997
+            }
+          },
+          "report_sha256": "cccb52ec0877e56544322368b6facb0435d1ae44d7e6a917013449763c654971"
+        }
+      }
+    },
+    "website": {
+      "source": "index.html",
+      "health_fixtures_passed": 256,
+      "route_fixtures_passed": 11,
+      "behavior": "Route tie detection remains degenerate at display limit K=1; increasing the display limit does not establish uniqueness.",
+      "deployment": "local browser verification only; Netlify not updated"
+    },
+    "review": {
+      "legacy_core_and_cli": "independent source review found no remaining actionable blocking findings",
+      "endpoint_and_contract": "independent security/specification review found no remaining blocking findings in the standalone scope",
+      "boundary": "reviews were source inspection; native test evidence was produced by implementation and parent agents"
+    }
+  },
+  "local_tcp_demo": {
+    "command": "./target/release/spiralcore demo --cache local/validated-demo-20261028/cache",
+    "workload": "1 MiB deterministic xorshift bytes, exact repeat, then XOR 0xa5 over offsets [524288,524320)",
+    "trials": 1,
+    "records": [
+      {
+        "event": "transfer",
+        "label": "cold",
+        "object": "02e596fd0e9778f64638b0ae9143e8def095705ac21ba4fc5cc374b4befba5c0",
+        "object_bytes": 1048576,
+        "mode": "raw",
+        "request_bytes": 1049832,
+        "response_bytes": 1306,
+        "data_bytes": 1048576,
+        "records_sent": 0,
+        "requests": 20,
+        "elapsed_micros": 236817,
+        "socket_request_bytes": 1049912,
+        "socket_response_bytes": 1386,
+        "socket_frame_bytes": 1051298
+      },
+      {
+        "event": "transfer",
+        "label": "repeat",
+        "object": "02e596fd0e9778f64638b0ae9143e8def095705ac21ba4fc5cc374b4befba5c0",
+        "object_bytes": 1048576,
+        "mode": "dag",
+        "request_bytes": 705,
+        "response_bytes": 88,
+        "data_bytes": 0,
+        "records_sent": 0,
+        "requests": 1,
+        "elapsed_micros": 134214,
+        "socket_request_bytes": 709,
+        "socket_response_bytes": 92,
+        "socket_frame_bytes": 801
+      },
+      {
+        "event": "transfer",
+        "label": "mutation",
+        "object": "fb16c67c4cff560568f71f53ef1aaeed6d85930e1eb8d56a7193ad5253f39c9c",
+        "object_bytes": 1048576,
+        "mode": "dag",
+        "request_bytes": 2060,
+        "response_bytes": 218,
+        "data_bytes": 1238,
+        "records_sent": 10,
+        "requests": 3,
+        "elapsed_micros": 453296,
+        "socket_request_bytes": 2072,
+        "socket_response_bytes": 230,
+        "socket_frame_bytes": 2302
+      },
+      {
+        "event": "demo_complete",
+        "restart_verified": true,
+        "transfers": 3,
+        "unique_objects": 2,
+        "transport": "tcp_loopback"
+      }
+    ],
+    "total_bytes_including_cold_seed": 1054401,
+    "repeat_byte_reduction_percent": 99.92380847295439,
+    "mutation_byte_reduction_percent": 99.78103259018852,
+    "timing_interpretation": "Recorded single-run elapsed time is diagnostic. Concurrent local checks and excluded setup preclude latency distribution or WAN speed claims. Mutation was slower than cold transfer on loopback."
+  },
+  "random_16m": {
+    "bytes": 16777216,
+    "input_sha256": "194ebf4f4af53344691dbaf6882ca87f22a01ec3841be8304bdbfd2bc4f99d5a",
+    "reconstruction_sha256": "194ebf4f4af53344691dbaf6882ca87f22a01ec3841be8304bdbfd2bc4f99d5a",
+    "exact_equal": true,
+    "runs": [
+      {
+        "event": "transfer",
+        "label": "send",
+        "object": "9652c7045ddb3de52816270eefda4624a59e45650ee941c1dc408ef02ad663b9",
+        "object_bytes": 16777216,
+        "mode": "zstd",
+        "request_bytes": 16794088,
+        "response_bytes": 17690,
+        "data_bytes": 16777216,
+        "records_sent": 0,
+        "requests": 276,
+        "elapsed_micros": 603413,
+        "socket_request_bytes": 16795192,
+        "socket_response_bytes": 18794,
+        "socket_frame_bytes": 16813986
+      },
+      {
+        "event": "transfer",
+        "label": "send",
+        "object": "9652c7045ddb3de52816270eefda4624a59e45650ee941c1dc408ef02ad663b9",
+        "object_bytes": 16777216,
+        "mode": "zstd",
+        "request_bytes": 102,
+        "response_bytes": 88,
+        "data_bytes": 0,
+        "records_sent": 0,
+        "requests": 1,
+        "elapsed_micros": 121493,
+        "socket_request_bytes": 106,
+        "socket_response_bytes": 92,
+        "socket_frame_bytes": 198
+      }
+    ],
+    "scope": "real TCP loopback; 16 MiB random cold zstd/raw fallback and exact repeat; includes private cache restart",
+    "trials": 1,
+    "repeat_byte_reduction_percent": 99.99882240891601,
+    "input_storage": "public random input and recovered output retained locally under local/qualification-16m; source digest identifies this exact trial"
+  },
+  "accounting": {
+    "included": [
+      "both application directions",
+      "all protocol headers, manifests, requests and commit responses",
+      "four-byte TCP wrapper length prefixes",
+      "cold cache seed reported separately and in cumulative demo total"
+    ],
+    "excluded": [
+      "TCP/IP headers and transport ACKs",
+      "operating-system traffic and retransmissions",
+      "authenticated transport overhead (transport is not authenticated)",
+      "input file reads, selected base-graph preparation and connection establishment from elapsed_micros"
+    ],
+    "comparison": "Warm and cold entries use the same local protocol wrapper and durable endpoint. Conventional CAS, rsync/VCDIFF, independently secured raw transfer and shaped WAN baselines were not run."
+  },
+  "limits_and_gaps": [
+    "Loopback-only CLI uses fixed trusted context/authority for public or synthetic data; it provides no peer authentication or encryption.",
+    "Current sender is synchronous. Missing-record repair is tested; request pipelining is not implemented.",
+    "DAG uses fixed 32-byte leaves. Prefix insertion and scattered edits may lose reuse; no general compression or speedup claim.",
+    "The 64 MiB protocol ceiling is not large-object or DAG-cache qualification. The initial functional demonstration reached 16 MiB; random cold data may exceed DAG warming budgets.",
+    "Cache/resident budgets require one Endpoint per process. Returned caller-owned buffers are outside endpoint quota. No peak-RSS qualification was performed.",
+    "Publication verifies exact bytes then syncs and atomically renames within a private owned cache. Partial in-flight transfers are volatile; restart recovery covers complete publications. Physical power-loss storage behavior was not qualified.",
+    "MVM mailbox and FlowMux adapters, three-peer recovery, real WAN impairment, 30 paired trials and conventional baseline comparisons remain future work.",
+    "FIPS 140-3 module validation and CUI deployment controls are not established by this implementation.",
+    "Research mechanisms remain in the audit claim ledger; symbolic discovery, physical time synchronization and routing/compression hypotheses are not promoted to measured network claims."
+  ]
+}
