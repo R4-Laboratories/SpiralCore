@@ -2,7 +2,7 @@
 
 Measured source: `9dce4c57d1f41cef7365b297cd690849afce34e7`.
 Run: `d6aaa0f15da9ccbc62c005a1802532b3e85ad6d901886eea6fbd0076b2d312e4`.
-Two of twelve registered cases are complete and independently reviewed. Remaining
+Three of twelve registered cases are complete and independently reviewed. Remaining
 cases must not be inferred from this result. The complete registration is in the
 [workload plan](../plans/2026-10-29-broader-wan-and-scaling.md).
 
@@ -85,6 +85,33 @@ contains the raw receipts and reviewed statistics. Its five hosted measurement
 artifacts were deleted only after committed, hash-verified local preservation;
 [the exact cleanup receipt](evidence/2026-10-29-broad-wan/cleanup/scattered_32x32.json)
 records those deletions. The raw ZIPs and PCAPs remain locally retained.
+
+## Completed case: 4 KiB prefix insertion
+
+Each base contains 16,773,120 bytes; insertion produces an exact 16,777,216-byte
+target. This changes alignment while preserving a large unchanged suffix. All
+thirty pairs use the same four methods and paid-seed policy.
+
+| Warm update | Median request + reply HTTP-body bytes | Median elapsed, including computation | Median sender + receiver-handler CPU |
+|---|---:|---:|---:|
+| Raw full send | 16,814,026 | 1,686.289 ms | 89.878 ms |
+| Ordinary zstd | 16,809,951 | 1,682.304 ms | 96.987 ms |
+| Zstd prefix delta | 26,221.5 | 231.881 ms | 88.078 ms |
+| Sparse COPY/LITERAL | 4,651 | 226.397 ms | 79.081 ms |
+
+Sparse uses 99.97233857% fewer HTTP-body bytes than raw, with a 7.448386× ratio
+of median elapsed times and approximately 12.01% lower median combined CPU.
+The fractional zstd-prefix byte median is the midpoint of the two central trials;
+individual transfers have integer byte counts. Zstd prefix also achieves substantial
+reuse with similar elapsed time on this fixture.
+
+Including the seed and one update, raw uses a median 33,623,823 body bytes and
+3,422.530 ms; sparse uses 16,814,448 bytes and 1,950.600 ms. All 240 operations
+reopened exactly, totaling 4,026,040,320 compared bytes. Independent review agreed
+with all raw receipts and author statistics, and all five captures were complete.
+The [complete prefix case packet](evidence/2026-10-29-broad-wan/cases/prefix_4096/README.md)
+preserves the thirty pairs and custody. This does not establish arbitrary shifted
+block matching: the current encoder can directly reuse this unchanged suffix.
 
 ## Qualification and measurement boundaries
 
