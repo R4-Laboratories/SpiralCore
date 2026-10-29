@@ -1,0 +1,10 @@
+{
+  "schema": "spiralcore.sha-host-capability.v1",
+  "observed_date": "2026-10-29",
+  "observations": [
+    {"command": ["/usr/sbin/sysctl", "-n", "hw.optional.arm.FEAT_SHA256"], "exit_code": 0, "stdout": "1\n"},
+    {"command": ["/usr/sbin/sysctl", "-n", "machdep.cpu.brand_string"], "exit_code": 0, "stdout": "Apple M1\n"},
+    {"command": ["/usr/bin/uname", "-ms"], "exit_code": 0, "stdout": "Darwin arm64\n"}
+  ],
+  "interpretation": "The measured native host reports SHA-256 instruction support. Exact upstream feature dispatch and Cargo settings are recorded separately. This does not exercise unsupported-hardware fallback or establish a performance result."
+}

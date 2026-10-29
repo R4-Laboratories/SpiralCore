@@ -1,0 +1,440 @@
+{
+  "schema": "spiralcore.hardware-sha-transfer-qualification.v1",
+  "source_revision": "80449939bd92348593cc88555cf7fde0847ceffd",
+  "scope": "Native aarch64-apple-darwin; same production Rust as cb376b8, default-off Cargo feature and one additional known-answer test",
+  "cargo_target_dir": "/Users/casey.allard/spiralcore/target",
+  "checks": [
+    {
+      "backend": "software",
+      "command": [
+        "/Users/casey.allard/.cargo/bin/cargo",
+        "test",
+        "--offline",
+        "--locked",
+        "--manifest-path",
+        "crates/spiralcore-transfer/Cargo.toml",
+        "--all-targets"
+      ],
+      "exit_code": 0,
+      "targets": [
+        {
+          "target": "Running unittests src/lib.rs",
+          "passed": 3,
+          "failed": 0,
+          "ignored": 0,
+          "measured": 0,
+          "filtered": 0
+        },
+        {
+          "target": "Running unittests src/bin/spiralcore.rs",
+          "passed": 1,
+          "failed": 0,
+          "ignored": 0,
+          "measured": 0,
+          "filtered": 0
+        },
+        {
+          "target": "Running unittests src/bin/spiralcore-bench.rs",
+          "passed": 5,
+          "failed": 0,
+          "ignored": 0,
+          "measured": 0,
+          "filtered": 0
+        },
+        {
+          "target": "Running unittests src/bin/spiralcore-capture.rs",
+          "passed": 18,
+          "failed": 0,
+          "ignored": 0,
+          "measured": 0,
+          "filtered": 0
+        },
+        {
+          "target": "Running unittests src/bin/spiralcore-wan.rs",
+          "passed": 0,
+          "failed": 0,
+          "ignored": 0,
+          "measured": 0,
+          "filtered": 0
+        },
+        {
+          "target": "Running tests/batched.rs",
+          "passed": 12,
+          "failed": 0,
+          "ignored": 0,
+          "measured": 0,
+          "filtered": 0
+        },
+        {
+          "target": "Running tests/benchmark.rs",
+          "passed": 5,
+          "failed": 0,
+          "ignored": 0,
+          "measured": 0,
+          "filtered": 0
+        },
+        {
+          "target": "Running tests/cli.rs",
+          "passed": 9,
+          "failed": 0,
+          "ignored": 0,
+          "measured": 0,
+          "filtered": 0
+        },
+        {
+          "target": "Running tests/client_prepared.rs",
+          "passed": 12,
+          "failed": 0,
+          "ignored": 0,
+          "measured": 0,
+          "filtered": 0
+        },
+        {
+          "target": "Running tests/direct_dag.rs",
+          "passed": 5,
+          "failed": 0,
+          "ignored": 0,
+          "measured": 0,
+          "filtered": 0
+        },
+        {
+          "target": "Running tests/endpoint.rs",
+          "passed": 21,
+          "failed": 0,
+          "ignored": 0,
+          "measured": 0,
+          "filtered": 0
+        },
+        {
+          "target": "Running tests/hash_backend.rs",
+          "passed": 1,
+          "failed": 0,
+          "ignored": 0,
+          "measured": 0,
+          "filtered": 0
+        },
+        {
+          "target": "Running tests/prepared.rs",
+          "passed": 9,
+          "failed": 0,
+          "ignored": 0,
+          "measured": 0,
+          "filtered": 0
+        },
+        {
+          "target": "Running tests/profile.rs",
+          "passed": 5,
+          "failed": 0,
+          "ignored": 0,
+          "measured": 0,
+          "filtered": 0
+        },
+        {
+          "target": "Running tests/sparse.rs",
+          "passed": 6,
+          "failed": 0,
+          "ignored": 0,
+          "measured": 0,
+          "filtered": 0
+        },
+        {
+          "target": "Running tests/transfer.rs",
+          "passed": 5,
+          "failed": 0,
+          "ignored": 0,
+          "measured": 0,
+          "filtered": 0
+        },
+        {
+          "target": "Running tests/wan.rs",
+          "passed": 8,
+          "failed": 0,
+          "ignored": 0,
+          "measured": 0,
+          "filtered": 0
+        }
+      ],
+      "passed": 125,
+      "diagnostic_output_sha256": "e822153c05838d0c8757caf86619f99cd48ce04da1087f8ebea11310dca40016"
+    },
+    {
+      "backend": "software",
+      "command": [
+        "/Users/casey.allard/.cargo/bin/cargo",
+        "test",
+        "--offline",
+        "--locked",
+        "--manifest-path",
+        "crates/spiralcore-transfer/Cargo.toml",
+        "--doc"
+      ],
+      "exit_code": 0,
+      "passed": 1,
+      "diagnostic_output_sha256": "07e4889394a169ac3c19bed3427f9ce447c9b01e7ba462822eee60f6848ee8d3"
+    },
+    {
+      "backend": "software",
+      "command": [
+        "/Users/casey.allard/.cargo/bin/cargo",
+        "clippy",
+        "--offline",
+        "--locked",
+        "--manifest-path",
+        "crates/spiralcore-transfer/Cargo.toml",
+        "--all-targets",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit_code": 0,
+      "passed": null,
+      "diagnostic_output_sha256": "a8496ef0978e115e143e8bbe18486a0a0ee8dfd21f74be3d90d38ab0a123fe89"
+    },
+    {
+      "backend": "hardware",
+      "command": [
+        "/Users/casey.allard/.cargo/bin/cargo",
+        "test",
+        "--offline",
+        "--locked",
+        "--manifest-path",
+        "crates/spiralcore-transfer/Cargo.toml",
+        "--all-targets",
+        "--features",
+        "hardware-sha256"
+      ],
+      "exit_code": 0,
+      "targets": [
+        {
+          "target": "Running unittests src/lib.rs",
+          "passed": 3,
+          "failed": 0,
+          "ignored": 0,
+          "measured": 0,
+          "filtered": 0
+        },
+        {
+          "target": "Running unittests src/bin/spiralcore.rs",
+          "passed": 1,
+          "failed": 0,
+          "ignored": 0,
+          "measured": 0,
+          "filtered": 0
+        },
+        {
+          "target": "Running unittests src/bin/spiralcore-bench.rs",
+          "passed": 5,
+          "failed": 0,
+          "ignored": 0,
+          "measured": 0,
+          "filtered": 0
+        },
+        {
+          "target": "Running unittests src/bin/spiralcore-capture.rs",
+          "passed": 18,
+          "failed": 0,
+          "ignored": 0,
+          "measured": 0,
+          "filtered": 0
+        },
+        {
+          "target": "Running unittests src/bin/spiralcore-wan.rs",
+          "passed": 0,
+          "failed": 0,
+          "ignored": 0,
+          "measured": 0,
+          "filtered": 0
+        },
+        {
+          "target": "Running tests/batched.rs",
+          "passed": 12,
+          "failed": 0,
+          "ignored": 0,
+          "measured": 0,
+          "filtered": 0
+        },
+        {
+          "target": "Running tests/benchmark.rs",
+          "passed": 5,
+          "failed": 0,
+          "ignored": 0,
+          "measured": 0,
+          "filtered": 0
+        },
+        {
+          "target": "Running tests/cli.rs",
+          "passed": 9,
+          "failed": 0,
+          "ignored": 0,
+          "measured": 0,
+          "filtered": 0
+        },
+        {
+          "target": "Running tests/client_prepared.rs",
+          "passed": 12,
+          "failed": 0,
+          "ignored": 0,
+          "measured": 0,
+          "filtered": 0
+        },
+        {
+          "target": "Running tests/direct_dag.rs",
+          "passed": 5,
+          "failed": 0,
+          "ignored": 0,
+          "measured": 0,
+          "filtered": 0
+        },
+        {
+          "target": "Running tests/endpoint.rs",
+          "passed": 21,
+          "failed": 0,
+          "ignored": 0,
+          "measured": 0,
+          "filtered": 0
+        },
+        {
+          "target": "Running tests/hash_backend.rs",
+          "passed": 1,
+          "failed": 0,
+          "ignored": 0,
+          "measured": 0,
+          "filtered": 0
+        },
+        {
+          "target": "Running tests/prepared.rs",
+          "passed": 9,
+          "failed": 0,
+          "ignored": 0,
+          "measured": 0,
+          "filtered": 0
+        },
+        {
+          "target": "Running tests/profile.rs",
+          "passed": 5,
+          "failed": 0,
+          "ignored": 0,
+          "measured": 0,
+          "filtered": 0
+        },
+        {
+          "target": "Running tests/sparse.rs",
+          "passed": 6,
+          "failed": 0,
+          "ignored": 0,
+          "measured": 0,
+          "filtered": 0
+        },
+        {
+          "target": "Running tests/transfer.rs",
+          "passed": 5,
+          "failed": 0,
+          "ignored": 0,
+          "measured": 0,
+          "filtered": 0
+        },
+        {
+          "target": "Running tests/wan.rs",
+          "passed": 8,
+          "failed": 0,
+          "ignored": 0,
+          "measured": 0,
+          "filtered": 0
+        }
+      ],
+      "passed": 125,
+      "diagnostic_output_sha256": "94ee3724b3e98371fa94a7d7f92b46cd5adba45451883b2982c18207c9c73792"
+    },
+    {
+      "backend": "hardware",
+      "command": [
+        "/Users/casey.allard/.cargo/bin/cargo",
+        "test",
+        "--offline",
+        "--locked",
+        "--manifest-path",
+        "crates/spiralcore-transfer/Cargo.toml",
+        "--doc",
+        "--features",
+        "hardware-sha256"
+      ],
+      "exit_code": 0,
+      "passed": 1,
+      "diagnostic_output_sha256": "49aa61e707f827272a972e17652d9b605e98630abfa56d4c734151afbfc3c88d"
+    },
+    {
+      "backend": "hardware",
+      "command": [
+        "/Users/casey.allard/.cargo/bin/cargo",
+        "clippy",
+        "--offline",
+        "--locked",
+        "--manifest-path",
+        "crates/spiralcore-transfer/Cargo.toml",
+        "--all-targets",
+        "--features",
+        "hardware-sha256",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit_code": 0,
+      "passed": null,
+      "diagnostic_output_sha256": "1814bce41c59a757ca80d5694c9b5e1b150fa0d79d3305c7141bf3f9564c498d"
+    }
+  ],
+  "fmt": {
+    "command": [
+      "cargo",
+      "fmt",
+      "--manifest-path",
+      "crates/spiralcore-transfer/Cargo.toml",
+      "--",
+      "--check"
+    ],
+    "exit_code": 0
+  },
+  "pre_feature_check": {
+    "command": [
+      "cargo",
+      "check",
+      "--locked",
+      "--manifest-path",
+      "crates/spiralcore-transfer/Cargo.toml",
+      "--features",
+      "hardware-sha256"
+    ],
+    "exit_code": 101,
+    "expected": true,
+    "error": "the package 'spiralcore-transfer' does not contain this feature: hardware-sha256"
+  },
+  "imported_dependency_attempt": {
+    "command": [
+      "cargo",
+      "test",
+      "--offline",
+      "--locked",
+      "--manifest-path",
+      "crates/spiralcore-transfer/Cargo.toml",
+      "-p",
+      "uor-r4-object-store",
+      "--all-targets",
+      "--features",
+      "hardware-sha256"
+    ],
+    "exit_code": 101,
+    "error": "cannot specify features for packages outside of workspace",
+    "tests_run": false,
+    "disposition": "Separate immutable imported-store snapshot qualification; original crate unchanged."
+  },
+  "reviews": {
+    "rust_code": "approved by independent transport reviewer",
+    "architecture_security": "approved; manifest qualification wording corrected before commit"
+  },
+  "limitations": [
+    "Test-suite duration is not a controlled performance measurement.",
+    "No new coverage measurement; earlier 90.316 percent is tied to b552017.",
+    "Diagnostic console logs are hashed here and removed after review; structured test receipts are retained.",
+    "WAN, unsupported hardware fallback, other target platforms, minimum compiler and FIPS qualification are not established by these tests."
+  ]
+}

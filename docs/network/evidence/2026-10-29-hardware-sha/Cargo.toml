@@ -1,0 +1,16 @@
+[package]
+name = "spiralcore-receiver-probe"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.89"
+
+[features]
+hardware-sha256 = ["spiralcore-transfer/hardware-sha256"]
+
+[dependencies]
+spiralcore-transfer = { path = "/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer" }
+cpu-time = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+sha2 = "0.10.9"
+

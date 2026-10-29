@@ -1,0 +1,1 @@
+env CC=/usr/bin/clang CXX=/usr/bin/clang++ AR=/usr/bin/ar RUSTC=/Users/casey.allard/.cargo/bin/rustc /Users/casey.allard/.cargo/bin/cargo clippy --locked --offline --release --target aarch64-apple-darwin --all-targets --target-dir /Users/casey.allard/spiralcore/local/sha-efficiency-20261029/target-hardware --features hardware-sha256 -- -D warnings
