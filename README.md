@@ -5,6 +5,7 @@ SpiralCore networking prototypes, exact geometric transport research, and preser
 ## Start here
 
 - [Run standalone SpiralCore](crates/spiralcore-transfer/README.md): `serve`, `send`, `get`, and a real TCP cold/repeat/delta demonstration with exact restart verification. Reducing transmitted bytes is the primary performance objective.
+- [Two-machine WAN experiment](docs/network/wan.md): authenticated synthetic transfers through a temporary HTTPS relay, paired raw/zstd/cache/DAG workloads, endpoint CPU and durable-commit timing, and packet accounting.
 - [Exact Rust object store](crates/uor-r4-object-store/README.md): independently buildable byte-object storage, ternary DAG replication, `objpeer`, and pinned compatibility vectors.
 - [Delivery plan and implementation status](docs/network/delivery.md): staged storage hardening, MVM integration, WAN acceptance, and qualification gaps.
 - [SpiralCore v69 page](index.html): a self-contained copy of the Netlify page, ready for a future GitHub Pages deployment from `main` / root.

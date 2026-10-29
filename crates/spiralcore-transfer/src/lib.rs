@@ -4,6 +4,7 @@ pub mod client;
 pub mod dag;
 pub mod endpoint;
 pub mod protocol;
+pub mod wan;
 use sha2::{Digest, Sha256};
 pub type Id = [u8; 32];
 pub type Result<T> = std::result::Result<T, Error>;
