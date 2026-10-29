@@ -12,6 +12,10 @@ remain tied to their measured source; later results do not overwrite earlier neg
 
 ## Recording rules
 
+SC-OPT-003 is registered and **NOT_RUN**: [opt-in hardware SHA-256 experiment](../plans/2026-10-29-hardware-sha256.md).
+It compares complete operations from the same source with three joint CPU gates; the earlier
+primitive measurements are motivation only. Its result will be appended after qualification and measurement.
+
 - Before implementation: pin the baseline, hypothesis, expected affected work, correctness gates,
   comparison policies and resource limits. Mark pending or unrun results explicitly.
 - Before measurement: record source and executable hashes, command/configuration, input generator
