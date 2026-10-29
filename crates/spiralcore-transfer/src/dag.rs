@@ -129,64 +129,52 @@ pub struct Graph {
     pub nodes: BTreeMap<Id, Node>,
 }
 impl Graph {
-    /// Reuse the imported exact fold, then reidentify its immutable structure under v1.
+    /// Construct the canonical v1 ternary forest directly under full SHA-256 IDs.
     pub fn fold(bytes: &[u8], max_nodes: usize) -> Result<Self> {
         if bytes.len() as u64 > MAX_OBJECT {
             return Err(Error::Limit);
         }
-        let limits = uor_r4_object_store::Limits {
-            max_object_bytes: MAX_OBJECT,
-            max_records: max_nodes,
-            max_record_bytes: max_nodes.checked_mul(49).ok_or(Error::Limit)?,
-            max_returned_bytes: MAX_OBJECT,
-            max_visits: work_bound(bytes.len() as u64),
-            max_occurrences: work_bound(bytes.len() as u64),
-        };
-        let mut store = uor_r4_object_store::Store::new(limits);
-        let folded = store.fold(bytes).map_err(core_error)?;
-        if store.rebuild(&folded.manifest).map_err(core_error)?.bytes() != bytes {
-            return Err(Error::Integrity);
-        }
-        let mut ids = BTreeMap::new();
+        // Preserve the legacy API's overflow rejection without allocating from
+        // this budget. Only newly encountered unique nodes consume the budget.
+        max_nodes.checked_mul(49).ok_or(Error::Limit)?;
         let mut nodes = BTreeMap::new();
-        fn convert(
-            old: [u8; 12],
-            scale: u8,
-            store: &uor_r4_object_store::Store,
-            ids: &mut BTreeMap<[u8; 12], Id>,
-            nodes: &mut BTreeMap<Id, Node>,
-        ) -> Result<Id> {
-            let raw = store.record_bytes(old).ok_or(Error::Missing)?;
-            let rec = uor_r4_object_store::Record::decode(&raw).map_err(core_error)?;
-            if rec.scale() != scale {
-                return Err(Error::Integrity);
-            }
-            if let Some(id) = ids.get(&old) {
-                return Ok(*id);
-            }
-            let node = if scale == 0 {
-                Node::Leaf(rec.payload().try_into().map_err(|_| Error::Malformed)?)
-            } else {
-                let mut children = [[0; 32]; 3];
-                for (dst, p) in children.iter_mut().zip(rec.payload().chunks_exact(12)) {
-                    *dst = convert(
-                        p.try_into().map_err(|_| Error::Malformed)?,
-                        scale - 1,
-                        store,
-                        ids,
-                        nodes,
-                    )?;
-                }
-                Node::Parent { scale, children }
-            };
+        let mut roots: Vec<(u8, Id)> = Vec::new();
+        fn insert(nodes: &mut BTreeMap<Id, Node>, node: Node, max_nodes: usize) -> Result<Id> {
             let id = node.id();
-            nodes.insert(id, node);
-            ids.insert(old, id);
+            let len = nodes.len();
+            match nodes.entry(id) {
+                std::collections::btree_map::Entry::Occupied(entry) => {
+                    if entry.get() != &node {
+                        return Err(Error::Integrity);
+                    }
+                }
+                std::collections::btree_map::Entry::Vacant(entry) => {
+                    if len >= max_nodes {
+                        return Err(Error::Limit);
+                    }
+                    entry.insert(node);
+                }
+            }
             Ok(id)
         }
-        let mut roots = Vec::new();
-        for (id, scale) in folded.manifest.roots() {
-            roots.push((*scale, convert(*id, *scale, &store, &mut ids, &mut nodes)?));
+        for chunk in bytes.chunks(32) {
+            let mut leaf = [0; 32];
+            leaf[..chunk.len()].copy_from_slice(chunk);
+            roots.push((0, insert(&mut nodes, Node::Leaf(leaf), max_nodes)?));
+            while roots.len() >= 3 {
+                let start = roots.len() - 3;
+                let scale = roots[start].0;
+                if roots[start + 1].0 != scale || roots[start + 2].0 != scale {
+                    break;
+                }
+                let children = [roots[start].1, roots[start + 1].1, roots[start + 2].1];
+                // MAX_OBJECT bounds the tree to scale 13 and the carry stack
+                // to 28 roots, independent of how many nodes deduplicate.
+                let scale = scale + 1;
+                let id = insert(&mut nodes, Node::Parent { scale, children }, max_nodes)?;
+                roots.truncate(start);
+                roots.push((scale, id));
+            }
         }
         Ok(Self {
             manifest: Manifest {
@@ -206,12 +194,6 @@ impl Graph {
             .filter(|(id, _)| !base.nodes.contains_key(*id))
             .map(|(_, n)| n.clone())
             .collect()
-    }
-}
-fn core_error(e: uor_r4_object_store::Error) -> Error {
-    match e {
-        uor_r4_object_store::Error::LimitExceeded(_) => Error::Limit,
-        _ => Error::Integrity,
     }
 }
 pub fn work_bound(len: u64) -> usize {
