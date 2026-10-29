@@ -9,6 +9,12 @@ use std::{
     path::Path,
 };
 type Result<T> = std::result::Result<T, String>;
+#[derive(Clone, Copy, Default, Debug, PartialEq, Eq)]
+struct CaptureStats {
+    captured: Option<u64>,
+    received: Option<u64>,
+    dropped: Option<u64>,
+}
 const MAX_PCAP: usize = 256 * 1024 * 1024;
 const MAX_ROWS_FILE: usize = 16 * 1024 * 1024;
 const MAX_CONNECTIONS: usize = 65536;
@@ -476,14 +482,14 @@ fn scan(
     Ok(())
 }
 #[cfg(test)]
-fn account(pcap: &[u8], text: &str, local: IpAddr, drops: Option<u64>) -> Result<Value> {
-    account_expected(pcap, text, local, drops, None)
+fn account(pcap: &[u8], text: &str, local: IpAddr, stats: CaptureStats) -> Result<Value> {
+    account_expected(pcap, text, local, stats, None)
 }
 fn account_expected(
     pcap: &[u8],
     text: &str,
     local: IpAddr,
-    drops: Option<u64>,
+    stats: CaptureStats,
     expected_remote: Option<IpAddr>,
 ) -> Result<Value> {
     if pcap.len() > MAX_PCAP {
@@ -605,10 +611,28 @@ fn account_expected(
         return Err("campaign/partition sum mismatch".into());
     }
     let mut incomplete = Vec::new();
-    match drops {
+    match stats.dropped {
         None => incomplete.push("tcpdump_kernel_drop_counter_unavailable"),
         Some(0) => {}
         Some(_) => incomplete.push("tcpdump_reported_kernel_drops"),
+    }
+    let record_count_matches = stats.captured.map(|captured| captured == campaign.packets);
+    match record_count_matches {
+        None => incomplete.push("tcpdump_captured_counter_unavailable"),
+        Some(false) => incomplete.push("pcap_record_count_differs_from_tcpdump_captured"),
+        Some(true) => {}
+    }
+    if stats.received.is_none() {
+        incomplete.push("tcpdump_received_counter_unavailable");
+    }
+    let counter_difference = stats
+        .captured
+        .zip(stats.received)
+        .map(|(captured, received)| received.abs_diff(captured));
+    if counter_difference.is_some_and(|difference| difference != 0) {
+        // Linux may include startup packets rejected in userland or unread shutdown buffers.
+        // The final counters cannot identify which packets explain the difference.
+        incomplete.push("unresolved_capture_counter_difference");
     }
     if campaign.unclassified_packets > 0 {
         incomplete.push("unclassified_packets");
@@ -673,8 +697,12 @@ fn account_expected(
         "schema":"spiralcore.pcap-accounting.v1","scope":"runner_to_relay_leg_only","local_ip":local.to_string(),
         "byte_layer":"IP total lengths, not captured snapshot lengths or physical Ethernet wire bytes",
         "includes":"captured TLS/HTTP traffic, TCP ACKs and retransmissions","excludes":"relay-to-receiver leg, relay internals, uncaptured/dropped traffic",
-        "capture_complete":incomplete.is_empty(),"completeness_scope":"parsed selected-flow records have unambiguous observed-SYN ownership; every measurement has packets and published body-byte coverage; tcpdump reports zero kernel drops; offload state and hostname filter require separate provenance",
-        "incomplete_reasons":incomplete,"kernel_reported_drops":drops,"observed_remote_ips":remotes,"expected_remote_ip":expected_remote.map(|ip|ip.to_string()),
+        "capture_complete":incomplete.is_empty(),"completeness_scope":"parsed selected-flow records have unambiguous observed-SYN ownership; every measurement has packets and published body-byte coverage; tcpdump captured and received counters equal the PCAP record count with zero reported kernel drops; offload state, filter installation, interface drops and traffic beyond the capture interval require separate provenance",
+        "incomplete_reasons":incomplete,"kernel_reported_drops":stats.dropped,
+        "tcpdump_captured_packets":stats.captured,"tcpdump_received_by_filter_packets":stats.received,
+        "pcap_record_count_matches_tcpdump_captured":record_count_matches,"capture_counter_difference_packets":counter_difference,
+        "capture_counter_difference_meaning":"absolute received/captured discrepancy; unresolved startup filtering or unread buffers may explain it; not a count of proven lost transfer packets",
+        "observed_remote_ips":remotes,"expected_remote_ip":expected_remote.map(|ip|ip.to_string()),
         "capture_first_packet_unix_nanos":first.map(|n|n.to_string()),"capture_last_packet_unix_nanos":last.map(|n|n.to_string()),
         "timestamp_resolution":if nano{"nanoseconds"}else{"microseconds"},"link_type":format.link,"snaplen":format.snaplen,
         "partition_rule":"outbound SYN assigns a TCP four-tuple to the containing inclusive measurement interval, or setup before the first row; all subsequent connection packets retain that owner through PCAP EOF; missing SYN, changed initial sequence, and SYN outside active intervals are unattributed",
@@ -683,25 +711,29 @@ fn account_expected(
         "setup":setup,"rows":output_rows,"unattributed":unattributed,"campaign":campaign,"partition_sum_verified":true,"unclassified_reasons":reasons,"unattributed_reasons":attribution_reasons
     }))
 }
-fn dropped(text: &str) -> Result<Option<u64>> {
-    let mut found = None;
+fn capture_stats(text: &str) -> Result<CaptureStats> {
+    let mut stats = CaptureStats::default();
     for line in text.lines() {
         let words = line.split_whitespace().collect::<Vec<_>>();
-        if words.len() == 5
-            && matches!(words[1], "packet" | "packets")
-            && words[2..] == ["dropped", "by", "kernel"]
-        {
-            if found.is_some() {
-                return Err("multiple tcpdump drop counters".into());
-            }
-            found = Some(
-                words[0]
-                    .parse()
-                    .map_err(|_| "invalid tcpdump drop counter")?,
-            );
+        if words.len() < 3 || !matches!(words[1], "packet" | "packets") {
+            continue;
         }
+        let field = match &words[2..] {
+            ["captured"] => &mut stats.captured,
+            ["received", "by", "filter"] => &mut stats.received,
+            ["dropped", "by", "kernel"] => &mut stats.dropped,
+            _ => continue,
+        };
+        if field.is_some() {
+            return Err("duplicate tcpdump summary counter".into());
+        }
+        *field = Some(
+            words[0]
+                .parse()
+                .map_err(|_| "invalid tcpdump summary counter")?,
+        );
     }
-    Ok(found)
+    Ok(stats)
 }
 fn bounded_read(path: &Path, max: usize) -> Result<Vec<u8>> {
     let mut file = File::open(path).map_err(|e| format!("{}: {e}", path.display()))?;
@@ -761,17 +793,17 @@ fn run() -> Result<()> {
         .parse()
         .map_err(|_| "invalid IP")?;
     let out = options.remove("--out").ok_or("missing --out")?;
-    let drops = options
+    let stats = options
         .remove("--capture-stats")
         .map(|p| {
             bounded_read(Path::new(&p), 1024 * 1024)
                 .and_then(|b| {
                     String::from_utf8(b).map_err(|_| "capture stats must be UTF-8".into())
                 })
-                .and_then(|s| dropped(&s))
+                .and_then(|s| capture_stats(&s))
         })
         .transpose()?
-        .flatten();
+        .unwrap_or_default();
     let bytes = bounded_read(Path::new(&pcap), MAX_PCAP)?;
     let rows = String::from_utf8(bounded_read(Path::new(&rows), MAX_ROWS_FILE)?)
         .map_err(|_| "rows must be UTF-8")?;
@@ -786,7 +818,7 @@ fn run() -> Result<()> {
                 })
         })
         .transpose()?;
-    let report = account_expected(&bytes, &rows, local, drops, remote)?;
+    let report = account_expected(&bytes, &rows, local, stats, remote)?;
     let mut output = OpenOptions::new()
         .write(true)
         .create_new(true)
@@ -806,6 +838,13 @@ fn main() {
 #[cfg(test)]
 mod tests {
     use super::*;
+    fn stats(records: u64) -> CaptureStats {
+        CaptureStats {
+            captured: Some(records),
+            received: Some(records),
+            dropped: Some(0),
+        }
+    }
     fn rows() -> String {
         [serde_json::json!({"task":{"id":"a"},"phase":"seed","status":"published","metrics":{"request_body_bytes":100,"response_body_bytes":0},"unix_start_nanos":"1000","unix_end_nanos":"1900"}),
          serde_json::json!({"task":{"id":"a"},"phase":"transfer","status":"published","metrics":{"request_body_bytes":0,"response_body_bytes":100},"unix_start_nanos":"3000","unix_end_nanos":"3900"})]
@@ -881,7 +920,7 @@ mod tests {
             false,
             true,
         );
-        let r = account(&b, &rows(), local(), Some(0)).unwrap();
+        let r = account(&b, &rows(), local(), stats(5)).unwrap();
         assert_eq!(r["setup"]["total_ip_bytes"], 1000);
         assert_eq!(r["rows"][0]["upload_ip_bytes"], 900);
         assert_eq!(r["rows"][0]["download_ip_bytes"], 800);
@@ -899,7 +938,7 @@ mod tests {
         for big in [false, true] {
             for nano in [false, true] {
                 let b = pcap(&[(1_234_567_000, packet(true, 700))], big, nano);
-                let r = account(&b, &rows, local(), Some(0)).unwrap();
+                let r = account(&b, &rows, local(), stats(1)).unwrap();
                 assert_eq!(r["capture_last_packet_unix_nanos"], "1234567000");
                 assert_eq!(r["campaign"]["total_ip_bytes"], 700);
             }
@@ -909,17 +948,17 @@ mod tests {
     fn malformed_or_truncated_packet_headers_are_rejected() {
         let good = pcap(&[(1000, packet(true, 900))], false, true);
         for end in [0, 3, 23, 25, 39, 40, 41, good.len() - 1] {
-            assert!(account(&good[..end], &rows(), local(), Some(0)).is_err());
+            assert!(account(&good[..end], &rows(), local(), stats(1)).is_err());
         }
         let mut bad = good.clone();
         bad[36..40].copy_from_slice(&10u32.to_le_bytes());
-        assert!(account(&bad, &rows(), local(), Some(0)).is_err());
+        assert!(account(&bad, &rows(), local(), stats(1)).is_err());
         let mut bad = good.clone();
         bad[28..32].copy_from_slice(&1_000_000_000u32.to_le_bytes());
-        assert!(account(&bad, &rows(), local(), Some(0)).is_err());
+        assert!(account(&bad, &rows(), local(), stats(1)).is_err());
         let mut bad = good;
         bad[40 + 16..40 + 18].copy_from_slice(&10000u16.to_be_bytes());
-        assert!(account(&bad, &rows(), local(), Some(0)).is_err());
+        assert!(account(&bad, &rows(), local(), stats(1)).is_err());
     }
     #[test]
     fn drops_or_missing_drop_summary_never_become_complete() {
@@ -929,7 +968,16 @@ mod tests {
             true,
         );
         for drops in [None, Some(3)] {
-            let r = account(&b, &rows(), local(), drops).unwrap();
+            let r = account(
+                &b,
+                &rows(),
+                local(),
+                CaptureStats {
+                    dropped: drops,
+                    ..stats(2)
+                },
+            )
+            .unwrap();
             assert_eq!(r["capture_complete"], false);
         }
     }
@@ -944,7 +992,7 @@ mod tests {
             cooked.extend_from_slice(&ip[14..]);
             let mut capture = pcap(&[(1000, cooked)], false, true);
             capture[20..24].copy_from_slice(&link.to_le_bytes());
-            let report = account(&capture, &rows(), local(), Some(0)).unwrap();
+            let report = account(&capture, &rows(), local(), stats(1)).unwrap();
             assert_eq!(report["campaign"]["upload_ip_bytes"], 700);
         }
         let ip = packet(true, 900);
@@ -955,7 +1003,7 @@ mod tests {
             &pcap(&[(1000, vlan)], false, true),
             &rows(),
             local(),
-            Some(0),
+            stats(1),
         )
         .unwrap();
         assert_eq!(report["campaign"]["total_ip_bytes"], 900);
@@ -976,7 +1024,7 @@ mod tests {
             &pcap(&[(1000, ipv6)], true, true),
             &rows(),
             destination.into(),
-            Some(0),
+            stats(1),
         )
         .unwrap();
         assert_eq!(report["campaign"]["download_ip_bytes"], 1040);
@@ -990,19 +1038,19 @@ mod tests {
             &pcap(&[(1000, arp)], false, true),
             &rows(),
             local(),
-            Some(0),
+            stats(1),
         )
         .unwrap();
         assert_eq!(report["capture_complete"], false);
         assert_eq!(report["campaign"]["unclassified_packets"], 1);
         assert_eq!(report["campaign"]["unknown_ip_length_packets"], 1);
         let capture = pcap(&[(1000, packet(true, 900))], false, true);
-        assert!(account(&capture, &rows(), "203.0.113.1".parse().unwrap(), Some(0)).is_err());
+        assert!(account(&capture, &rows(), "203.0.113.1".parse().unwrap(), stats(1)).is_err());
         assert!(account_expected(
             &capture,
             &rows(),
             local(),
-            Some(0),
+            stats(1),
             Some("198.51.100.2".parse().unwrap())
         )
         .is_err());
@@ -1010,7 +1058,7 @@ mod tests {
             &capture,
             &rows(),
             local(),
-            Some(0),
+            stats(1),
             Some("198.51.100.1".parse().unwrap())
         )
         .is_ok());
@@ -1020,7 +1068,7 @@ mod tests {
             &pcap(&[(1000, wrong_port)], false, true),
             &rows(),
             local(),
-            Some(0)
+            stats(1)
         )
         .is_err());
     }
@@ -1050,7 +1098,7 @@ mod tests {
             true,
         );
         let rows = rows().replace("\"request_body_bytes\":100", "\"request_body_bytes\":901");
-        let report = account(&capture, &rows, local(), Some(0)).unwrap();
+        let report = account(&capture, &rows, local(), stats(3)).unwrap();
         assert_eq!(report["unattributed"]["packets"], 0);
         assert_eq!(report["capture_complete"], false);
         assert_eq!(
@@ -1063,7 +1111,7 @@ mod tests {
             .contains(&json!("capture_below_published_application_body_bytes")));
         let unavailable = json!({"task":{"id":"x"},"phase":"transfer","status":"published","unix_start_nanos":"1000","unix_end_nanos":"2000"}).to_string();
         assert_eq!(
-            account(&capture, &unavailable, local(), Some(0)).unwrap()["capture_complete"],
+            account(&capture, &unavailable, local(), stats(3)).unwrap()["capture_complete"],
             false
         );
     }
@@ -1071,19 +1119,31 @@ mod tests {
     #[test]
     fn tcpdump_summary_counter_is_preserved_without_guessing() {
         assert_eq!(
-            dropped(
+            capture_stats(
                 "8 packets captured\n8 packets received by filter\n0 packets dropped by kernel\n"
             )
             .unwrap(),
-            Some(0)
+            CaptureStats {
+                captured: Some(8),
+                received: Some(8),
+                dropped: Some(0)
+            }
         );
-        assert_eq!(dropped("5 packets dropped by kernel\n").unwrap(), Some(5));
         assert_eq!(
-            dropped("capture interrupted without summary").unwrap(),
-            None
+            capture_stats("5 packets dropped by kernel\n")
+                .unwrap()
+                .dropped,
+            Some(5)
         );
-        assert!(dropped("invalid packets dropped by kernel").is_err());
-        assert!(dropped("0 packets dropped by kernel\n1 packets dropped by kernel").is_err());
+        assert_eq!(
+            capture_stats("capture interrupted without summary").unwrap(),
+            CaptureStats::default()
+        );
+        assert!(capture_stats("invalid packets dropped by kernel").is_err());
+        assert!(capture_stats("0 packets dropped by kernel\n1 packets dropped by kernel").is_err());
+        assert!(capture_stats("1 packet captured\n1 packet captured").is_err());
+        assert!(capture_stats("1 packet received by filter\n1 packet received by filter").is_err());
+        assert!(capture_stats("18446744073709551616 packets captured").is_err());
     }
 
     #[test]
@@ -1097,7 +1157,7 @@ mod tests {
             &pcap(&[(1000, tagged)], false, true),
             &rows(),
             local(),
-            Some(0),
+            stats(1),
         )
         .unwrap();
         assert_eq!(report["campaign"]["total_ip_bytes"], 40);
@@ -1131,7 +1191,7 @@ mod tests {
             false,
             true,
         );
-        let report = account(&capture, &rows(), local(), Some(0)).unwrap();
+        let report = account(&capture, &rows(), local(), stats(5)).unwrap();
         assert_eq!(report["rows"][0]["download_ip_bytes"], 440);
         assert_eq!(report["rows"][1]["download_ip_bytes"], 800);
         assert_eq!(report["campaign"]["total_ip_bytes"], 1360);
@@ -1148,7 +1208,7 @@ mod tests {
             false,
             true,
         );
-        let report = account(&capture, &rows(), local(), Some(0)).unwrap();
+        let report = account(&capture, &rows(), local(), stats(2)).unwrap();
         assert_eq!(report["rows"][0]["upload_ip_bytes"], 120);
         assert_eq!(report["rows"][1]["upload_ip_bytes"], 0);
     }
@@ -1162,7 +1222,13 @@ mod tests {
                 (3000, connection_packet(true, 60, 50001, 200, 0x02)),
             ],
         ] {
-            let report = account(&pcap(&packets, false, true), &rows(), local(), Some(0)).unwrap();
+            let report = account(
+                &pcap(&packets, false, true),
+                &rows(),
+                local(),
+                stats(packets.len() as u64),
+            )
+            .unwrap();
             assert_eq!(report["unattributed"]["packets"], packets.len());
             assert_eq!(report["capture_complete"], false);
             assert_eq!(report["rows"][0]["total_ip_bytes"], 0);
@@ -1187,7 +1253,7 @@ mod tests {
             false,
             true,
         );
-        let report = account(&capture, &rows(), local(), Some(0)).unwrap();
+        let report = account(&capture, &rows(), local(), stats(8)).unwrap();
         assert_eq!(report["setup"]["total_ip_bytes"], 100);
         assert_eq!(report["rows"][0]["total_ip_bytes"], 160);
         assert_eq!(report["rows"][1]["total_ip_bytes"], 160);
@@ -1211,7 +1277,7 @@ mod tests {
             false,
             true,
         );
-        let report = account(&capture, &rows(), local(), Some(0)).unwrap();
+        let report = account(&capture, &rows(), local(), stats(3)).unwrap();
         assert_eq!(report["rows"][0]["upload_ip_bytes"], 120);
         assert_eq!(report["rows"][1]["packets"], 0);
         assert_eq!(report["unattributed"]["download_ip_bytes"], 40);
@@ -1221,5 +1287,56 @@ mod tests {
         );
         assert_eq!(report["campaign"]["total_ip_bytes"], 160);
         assert_eq!(report["capture_first_packet_unix_nanos"], "900");
+    }
+
+    fn complete_capture(records: usize) -> Vec<u8> {
+        assert!(records >= 3);
+        let mut packets = vec![
+            (1000, connection_packet(true, 200, 50001, 100, 0x02)),
+            (3000, connection_packet(true, 60, 50002, 200, 0x02)),
+            (3100, connection_packet(false, 200, 50002, 900, 0x10)),
+        ];
+        packets.extend((3..records).map(|_| (3500, connection_packet(true, 40, 50002, 201, 0x10))));
+        pcap(&packets, false, true)
+    }
+
+    #[test]
+    fn capture_statistics_smoke_gap_is_unresolved_even_with_zero_kernel_drops() {
+        let capture = complete_capture(87199);
+        let summary = "87199 packets captured\n87204 packets received by filter\n0 packets dropped by kernel\n";
+        let report = account(&capture, &rows(), local(), capture_stats(summary).unwrap()).unwrap();
+        assert_eq!(report["capture_complete"], false);
+        assert_eq!(report["tcpdump_captured_packets"], 87199);
+        assert_eq!(report["tcpdump_received_by_filter_packets"], 87204);
+        assert_eq!(report["capture_counter_difference_packets"], 5);
+        assert!(report["incomplete_reasons"]
+            .as_array()
+            .unwrap()
+            .contains(&json!("unresolved_capture_counter_difference")));
+    }
+
+    #[test]
+    fn capture_statistics_mismatch_and_truncation_are_incomplete() {
+        let capture = complete_capture(3);
+        for summary in [
+            "4 packets captured\n4 packets received by filter\n0 packets dropped by kernel\n",
+            "3 packets captured\n3 packets received by\n0 packets dropped by kernel\n",
+            "0 packets dropped by kernel\n",
+        ] {
+            let report =
+                account(&capture, &rows(), local(), capture_stats(summary).unwrap()).unwrap();
+            assert_eq!(report["capture_complete"], false, "{summary}");
+        }
+    }
+
+    #[test]
+    fn capture_statistics_matching_counts_are_retained_and_verified() {
+        let capture = complete_capture(3);
+        let summary = "tcpdump: listening on eth0\n3 packets captured\n3 packets received by filter\n0 packets dropped by kernel\n";
+        let report = account(&capture, &rows(), local(), capture_stats(summary).unwrap()).unwrap();
+        assert_eq!(report["capture_complete"], true);
+        assert_eq!(report["tcpdump_captured_packets"], 3);
+        assert_eq!(report["tcpdump_received_by_filter_packets"], 3);
+        assert_eq!(report["pcap_record_count_matches_tcpdump_captured"], true);
     }
 }
