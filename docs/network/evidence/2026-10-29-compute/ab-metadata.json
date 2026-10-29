@@ -1,0 +1,79 @@
+{
+  "schema": "spiralcore.local-sha-ab.provenance.v1",
+  "status": "completed local diagnostic; no shipping configuration changed",
+  "source_revision": "397ea5eb9c303d618b0c35d66fa898228e9e0f4b",
+  "parent_metadata": "metadata.json",
+  "probe_source": "probe-verified.rs",
+  "package_manifest": "ab-package/Cargo.toml",
+  "package_lock": "ab-package/Cargo.lock",
+  "compiler": "rustc.txt",
+  "platform": "platform.txt",
+  "hardware": "hardware.txt",
+  "build_commands": [
+    {
+      "cwd": "/Users/casey.allard/spiralcore/local/perf-20261029/ab-package",
+      "argv": [
+        "/Users/casey.allard/.cargo/bin/cargo",
+        "build",
+        "--release",
+        "--locked",
+        "--target-dir",
+        "/Users/casey.allard/spiralcore/local/perf-20261029/software-target"
+      ]
+    },
+    {
+      "cwd": "/Users/casey.allard/spiralcore/local/perf-20261029/ab-package",
+      "argv": [
+        "/Users/casey.allard/.cargo/bin/cargo",
+        "build",
+        "--release",
+        "--locked",
+        "--features",
+        "hardware-sha",
+        "--target-dir",
+        "/Users/casey.allard/spiralcore/local/perf-20261029/hardware-target"
+      ]
+    }
+  ],
+  "lock_initialization": "Copied the shipping Cargo.lock into the local package, then one local unlocked hardware-feature build added sha2-asm 0.6.4. Final software and hardware binaries were built --locked against the same local lock. Shipping Cargo.toml/Cargo.lock were unchanged.",
+  "run_order": [
+    {
+      "argv": [
+        "/Users/casey.allard/spiralcore/local/perf-20261029/software-target/release/perf-probe"
+      ],
+      "stdout": "results-software-verified.jsonl"
+    },
+    {
+      "argv": [
+        "/Users/casey.allard/spiralcore/local/perf-20261029/hardware-target/release/perf-probe"
+      ],
+      "stdout": "results-hardware-verified.jsonl"
+    }
+  ],
+  "features": {
+    "software": "sha2 0.10.9 default/std",
+    "hardware": "same plus asm -> sha2-asm 0.6.4; aarch64 backend detects sha2 at runtime; detected true",
+    "receipts": [
+      "ab-software-features.txt",
+      "ab-hardware-features.txt"
+    ]
+  },
+  "identity_validation": {
+    "fixtures": 5,
+    "fixture_records_identical": true,
+    "original_fixture_records_identical": true,
+    "encoded_graph_fingerprints_identical": true,
+    "total_unique_node_records_covered_across_fixtures": 196598,
+    "hash_order": "BTreeMap node order; SHA256 concatenation of u32LE encoded length and Node::encode() for every node, plus separate SHA256 of Manifest::encode()",
+    "byte_reconstruction": "Every graph was strictly rebuilt and compared byte-for-byte to its input before timing in both executable runs",
+    "comparison": "ab-comparison.json"
+  },
+  "measurements": "One warmup, seven sequential samples per operation; 100 operations per sample only for object hash and copy; allocation/drop included; identical source and fixtures.",
+  "interpretation": [
+    "Whole-object SHA and all-node-ID hashing improved in this run, but full random Graph::fold became slower. No end-to-end DAG improvement is established.",
+    "Several non-hash controls also slowed in the hardware run. Sequential software-then-hardware order on an unisolated host cannot distinguish host scheduling/frequency/memory effects from feature/codegen effects.",
+    "The original packet is preserved unchanged; its checksums all verified before this experiment.",
+    "This is not a WAN rerun, full shipping test qualification, energy measurement, or FIPS validation."
+  ],
+  "checksums": "ab-checksums.sha256"
+}

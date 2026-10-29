@@ -1,0 +1,21 @@
+[package]
+name = "spiralcore-local-sha-ab"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+[[bin]]
+name = "perf-probe"
+path = "../probe-verified.rs"
+
+[features]
+hardware-sha = ["sha2/asm"]
+
+[dependencies]
+spiralcore-transfer = { path = "/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer" }
+uor-r4-object-store = { path = "/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/uor-r4-object-store" }
+cpu-time = "=1.0.0"
+sha2 = "=0.10.9"
+
+[profile.release]
+opt-level = 3
