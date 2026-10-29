@@ -1,6 +1,7 @@
 # SC-OPT-002 receiver cost evidence
 
-Status at this checkpoint: baseline characterization complete; candidate comparison pending.
+Status: paired comparison complete, exactness passed, registered joint CPU target missed.
+Candidate `b4a1860` was reverted from the active branch by `cb376b8`; its source and evidence remain.
 See the [registered plan](../../../plans/2026-10-29-receiver-efficiency.md) and
 [optimization ledger](../../optimization-ledger.md).
 
@@ -30,3 +31,18 @@ policies disable graph retention. Population N means N unrelated objects plus on
 an empty cache. Modeled frame bytes are not observed network traffic. Handler CPU is a subset of
 the local-operation CPU and must not be added again. Other host activity and OS caches are
 uncontrolled; all observations are retained. No WAN or energy claim follows from this diagnostic.
+
+`paired/` preserves all 16 process receipts and host snapshots, the exact execution schedule and
+hashes. It contains 256 exact update observations plus their independently verified bases.
+`paired-analysis.json` retains all 224 metric summaries and original arrays; `paired-summary.md`
+is the analysis author's original narrative. [The disposition report](../../receiver-cost-results-2026-10-29.md)
+records the independent review and reversion. `build-new/` preserves candidate build inputs; its
+executable remains local with SHA-256
+`cc97a06faed936c19fd74341dd59f3d481fcb40ad19adef4894b53b4db4fbc7b`.
+
+The independent reviewer regenerated fixture identities, reply bodies, modeled frame sizes,
+inventories, all paired arrays/quantiles and both failed gates. Modeled application-frame totals
+remain exactly 1,051,138 bytes for raw and 536 for sparse in both versions; they are not observed
+network bytes. Empty diagnostic stdout/stderr files and the initial empty failed-setup directory
+were removed after their status was recorded. Verbatim source snapshots, including Cargo.toml's
+trailing blank line, are not whitespace-normalized because their original hashes are evidence.

@@ -1,6 +1,7 @@
 # SC-OPT-002: remove repeated receiver work with recorded controls
 
-Status: profiling plan. User authorized continued optimization and persistent reviewable results.
+Status: completed experiment; exactness passed, registered performance target missed, candidate
+reverted. User authorized continued optimization and persistent reviewable results.
 Baseline: `fedf38a8e308f3064b6ca3006aaf721a418c0d80` (same production code measured at `b552017`).
 Use the current managed worktree. Preserve the completed SC-OPT-001 source and evidence.
 
@@ -82,3 +83,13 @@ Add source/executable/configuration identities, raw rows, independent calculatio
 resource tests, review outcome and remaining gaps under a new evidence directory. Update
 `docs/network/optimization-ledger.md` as each phase completes. Keep earlier measured artifacts
 unchanged. A final report must identify which cost moved and which cost remains.
+
+## Observed outcome
+
+Baseline characterization: 16 exact observations. Main comparison: 256 exact observations across
+the registered eight paired blocks, no failed process, retry, filtering or normalization. Candidate
+`b4a1860` passed 124 transfer tests, fmt/clippy, release build and independent code/security review.
+The joint CPU target failed: N768 normal sparse 1.079686×/6 wins; N768 one-node sparse 1.037647×/4
+wins. Raw/normal and low-population controls include regressions. `cb376b8` restored the previous
+production source. [Full results and disposition](../network/receiver-cost-results-2026-10-29.md)
+preserve all rows, host variation and limits.
