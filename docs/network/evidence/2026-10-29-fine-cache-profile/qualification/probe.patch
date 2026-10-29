@@ -1,0 +1,405 @@
+diff --git prior/qualification/original-probe-lib.rs fine/src/lib.rs
+index 3ec0a67..d6731e2 100644
+--- prior/qualification/original-probe-lib.rs
++++ fine/src/lib.rs
+@@ -17,6 +17,34 @@ use std::{
+ };
+ pub type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
+ pub const POPULATIONS: [usize; 4] = [0, 64, 256, 768];
++#[derive(Debug, Clone, Copy, Serialize)]
++pub struct Layout {
++    pub name: &'static str,
++    pub objects: usize,
++    pub namespaces: usize,
++}
++pub const LAYOUTS: [Layout; 4] = [
++    Layout {
++        name: "empty",
++        objects: 0,
++        namespaces: 0,
++    },
++    Layout {
++        name: "compact64",
++        objects: 64,
++        namespaces: 1,
++    },
++    Layout {
++        name: "compact768",
++        objects: 768,
++        namespaces: 1,
++    },
++    Layout {
++        name: "spread768",
++        objects: 768,
++        namespaces: 384,
++    },
++];
+ const OWNED: &[u8] = b"SpiralCore receiver diagnostic owned directory v1\n";
+ pub const SOURCE_REVISION: &str = match option_env!("SPIRAL_PROBE_LIBRARY_REVISION") {
+     Some(s) => s,
+@@ -392,19 +420,26 @@ pub fn inventory(root: &Path, active: Id) -> Result<Inventory> {
+     Ok(result)
+ }
+ pub fn prepare(root: &Path) -> Result<()> {
++    scan_profile::configure(scan_profile::Mode::Counters);
+     mkdir(root)?;
+     let mut marker = output(&root.join(".probe-owned"))?;
+     marker.write_all(OWNED)?;
+     marker.sync_all()?;
+-    mkdir(&root.join("templates"))?;
+-    mkdir(&root.join("working"))?;
+     let mut log = output(&root.join("setup.jsonl"))?;
+     let (base, _) = fixture(42);
+     let active = context("active");
+-    for n in POPULATIONS {
++    for layout in LAYOUTS {
++        let n = layout.objects;
++        let layout_root = root.join(layout.name);
++        mkdir(&layout_root)?;
++        let mut marker = output(&layout_root.join(".probe-owned"))?;
++        marker.write_all(OWNED)?;
++        marker.sync_all()?;
++        mkdir(&layout_root.join("templates"))?;
++        mkdir(&layout_root.join("working"))?;
+         let cpu = ProcessTime::now();
+         let wall = Instant::now();
+-        let dir = root.join("templates").join(n.to_string());
++        let dir = layout_root.join("templates").join(n.to_string());
+         let mut ep = Endpoint::open(
+             &dir,
+             Limits {
+@@ -420,7 +455,7 @@ pub fn prepare(root: &Path) -> Result<()> {
+                 b"spiralcore.receiver.background.v1\0",
+                 &[&(i as u64).to_le_bytes()],
+             );
+-            let c = context(&format!("background-{}", i / 2));
++            let c = context(&format!("background-{}", i / (n / layout.namespaces)));
+             send(
+                 &mut ep,
+                 &c,
+@@ -441,7 +476,7 @@ pub fn prepare(root: &Path) -> Result<()> {
+         let cost = elapsed(cpu, wall, 0);
+         let inv = inventory(&dir, active.namespace()?)?;
+         if inv.publications != n + 1
+-            || inv.namespaces != n / 2 + 1
++            || inv.namespaces != layout.namespaces + 1
+             || inv.active_publications != 1
+             || inv.manifests != n + 1
+         {
+@@ -449,7 +484,7 @@ pub fn prepare(root: &Path) -> Result<()> {
+         }
+         append(
+             &mut log,
+-            &serde_json::json!({"kind":"template","population":n,"cost":cost,"inventory":inv,"base_object":hex(&object_id(&base)),"base_bytes":base.len(),"policy":"setup default graph budget; no graph retention; all publication files synchronized by Endpoint API"}),
++            &serde_json::json!({"kind":"template","layout":layout,"population":n,"cost":cost,"inventory":inv,"base_object":hex(&object_id(&base)),"base_bytes":base.len(),"policy":"setup default graph budget; no graph retention; all publication files synchronized by Endpoint API; setup clocks excluded from performance observations"}),
+         )?;
+     }
+     File::open(root)?.sync_all()?;
+@@ -519,6 +554,35 @@ fn check_scan_profile(kind: u8, p: ScanProfile, before: &Inventory) -> Result<()
+     {
+         return Err("quota scan counters differ from exact pre-publication inventory".into());
+     }
++    let roots = before.namespaces as u64 + 2;
++    let entries = before.publications as u64;
++    let namespaces = before.namespaces as u64;
++    let expected = [
++        roots + entries + 2 + 2 * namespaces,
++        roots + entries,
++        namespaces,
++        entries,
++        entries,
++        entries,
++    ];
++    let fine_cpu = p
++        .spans
++        .iter()
++        .try_fold(0u64, |sum, s| sum.checked_add(s.cpu_ns))
++        .ok_or("fine CPU sum overflow")?;
++    let fine_wall = p
++        .spans
++        .iter()
++        .try_fold(0u64, |sum, s| sum.checked_add(s.wall_ns))
++        .ok_or("fine wall sum overflow")?;
++    if p.spans.map(|s| s.calls) != expected
++        || fine_cpu > p.cpu_ns
++        || fine_wall > p.wall_ns
++        || (p.mode == scan_profile::Mode::Counters
++            && p.spans.iter().any(|s| s.cpu_ns != 0 || s.wall_ns != 0))
++    {
++        return Err("fine scan category count or containing-clock mismatch".into());
++    }
+     Ok(())
+ }
+ #[derive(Debug, Serialize)]
+@@ -527,6 +591,7 @@ pub struct Observation {
+     pub variant: String,
+     pub block: usize,
+     pub population: usize,
++    pub background_namespaces: usize,
+     pub arm: Arm,
+     pub arm_label: String,
+     pub base_object: String,
+@@ -558,6 +623,19 @@ pub fn observe(
+     arm: Arm,
+     base: &[u8],
+     target: &[u8],
++) -> Observation {
++    observe_layout(root, variant, block, n, n / 2, arm, base, target)
++}
++#[allow(clippy::too_many_arguments)]
++pub fn observe_layout(
++    root: &Path,
++    variant: &str,
++    block: usize,
++    n: usize,
++    background_namespaces: usize,
++    arm: Arm,
++    base: &[u8],
++    target: &[u8],
+ ) -> Observation {
+     let active = context("active");
+     let ns = active.namespace().expect("constant context");
+@@ -572,6 +650,7 @@ pub fn observe(
+         variant: variant.into(),
+         block,
+         population: n,
++        background_namespaces,
+         arm,
+         arm_label: arm.label(),
+         base_object: hex(&object_id(base)),
+@@ -605,7 +684,9 @@ pub fn observe(
+         cloned?;
+         row.error_stage = "inventory_before".into();
+         let inv = inventory(&work, ns)?;
+-        if inv.publications != n + 1 || inv.namespaces != n / 2 + 1 || inv.active_publications != 1
++        if inv.publications != n + 1
++            || inv.namespaces != background_namespaces + 1
++            || inv.active_publications != 1
+         {
+             return Err("unexpected before inventory".into());
+         }
+@@ -706,7 +787,9 @@ pub fn observe(
+         row.close_reopen_verify = elapsed(cpu, wall, 0);
+         row.error_stage = "inventory_after".into();
+         let inv = inventory(&work, ns)?;
+-        if inv.publications != n + 2 || inv.namespaces != n / 2 + 1 || inv.active_publications != 2
++        if inv.publications != n + 2
++            || inv.namespaces != background_namespaces + 1
++            || inv.active_publications != 2
+         {
+             return Err("unexpected after inventory".into());
+         }
+@@ -735,9 +818,16 @@ pub fn observe(
+     row
+ }
+ pub fn run_block(root: &Path, out: &Path, variant: &str, block: usize) -> Result<()> {
+-    if block >= 2 || variant != "diagnostic" {
+-        return Err("only diagnostic blocks 0 and 1 registered".into());
++    if block >= 3 {
++        return Err("only diagnostic blocks0..2 registered".into());
+     }
++    let mode = match variant {
++        "counters" => scan_profile::Mode::Counters,
++        "fine" => scan_profile::Mode::Fine,
++        "empty" => scan_profile::Mode::Empty,
++        _ => return Err("unknown instrumentation configuration".into()),
++    };
++    scan_profile::configure(mode);
+     owned(root)?;
+     let mut log = output(out)?;
+     let cpu = ProcessTime::now();
+@@ -749,12 +839,25 @@ pub fn run_block(root: &Path, out: &Path, variant: &str, block: usize) -> Result
+     let exe_hash = hex(&Sha256::digest(fs::read(exe)?).into());
+     append(
+         &mut log,
+-        &serde_json::json!({"kind":"metadata","schema":"spiralcore.cache-scan-probe.v1","library_revision":SOURCE_REVISION,"library_source_sha256":SOURCE_SHA256,"executable_sha256":exe_hash,"variant":variant,"block":block,"fixture_generator":"xorshift64-low-byte-per-step-v1","fixture_seed":42,"distinct_from_wan_fixture":true,"fixture_generation":generation,"policies":{"normal_nodes":262144,"tiny_nodes":1,"graph_cache_entries":0,"graph_cache_bytes":0},"timing":"local_operation_total.cpu_ns includes preparation, instrumented handlers, profile reset/take and checks, validated Published and request-buffer teardown. Handler cost includes snapshot scan instrumentation; disk_usage clocks are a subset, never summed again. Profile reset and take are outside handler clocks. No per-entry clock, output or allocation is added. Counts are Rust API call sites, not OS syscall counts.","boundaries":"private template clone and every file/directory sync precede open/timing; fixture generation, clone/sync, Endpoint open, and exact reopened comparison are separate. OS page caches uncontrolled; no network or energy. Tiny node budget changes graph admission/reservation and readiness; not a pure warming toggle. Sparse always skips graph warming; both policies disable graph retention. Instrumentation changes code generation and adds counter/timer overhead: this is attribution only, not a production speed comparison.","ordering":"Two complete blocks 0 then 1; population order and four-arm order rotate by block as in the prior helper. All 32 observations retained; no retry or filtering."}),
++        &serde_json::json!({"kind":"metadata","schema":"spiralcore.fine-cache-scan-probe.v1","library_revision":SOURCE_REVISION,"library_source_sha256":SOURCE_SHA256,"executable_sha256":exe_hash,"variant":variant,"block":block,"fixture_generator":"xorshift64-low-byte-per-step-v1","fixture_seed":42,"distinct_from_wan_fixture":true,"fixture_generation":generation,"layouts":LAYOUTS,"categories":scan_profile::CATEGORY_NAMES,"policies":{"nodes":262144,"graph_cache_entries":0,"graph_cache_bytes":0},"timing":"Operation includes recipe/frame prep, instrumented handlers, profile reset/take, validations and request-buffer teardown. Scan and six source-expression clocks are nested subsets. Fine brackets expressions; empty brackets black_box(()) then executes the same expression; counters executes expressions without fine clocks. All fixed counters remain. No per-entry allocation/logging added. Do not subtract empty spans as exact overhead correction.","boundaries":"Clone/sync, fixture generation, open and exact reopened bytes are separate. Only Rust API call sites counted; actual syscalls/allocator events UNMEASURED. OS caches uncontrolled; no WAN or energy. Raw warms optional DAG; sparse does not; normal node budget and zero retention remain fixed.","ordering":"Three blocks0..2; configuration order rotates by block externally; layouts and raw/sparse order rotate. All72 observations retained without filtering or retry."}),
+     )?;
+     for i in 0..4 {
+-        let n = POPULATIONS[(i + block) % 4];
+-        for arm in ordered_arms(block, n) {
+-            let row = observe(root, variant, block, n, arm, &base, &target);
++        let layout = LAYOUTS[(i + block) % 4];
++        for j in 0..2 {
++            let arm = Arm {
++                sparse: (j + block + i) % 2 == 1,
++                tiny: false,
++            };
++            let row = observe_layout(
++                &root.join(layout.name),
++                variant,
++                block,
++                layout.objects,
++                layout.namespaces,
++                arm,
++                &base,
++                &target,
++            );
+             append(&mut log, &row)?;
+             if row.status != "exact" {
+                 return Err(format!(
+@@ -789,6 +892,10 @@ mod tests {
+             manifests: 1,
+         };
+         let valid = ScanProfile {
++            spans: [8, 4, 1, 1, 1, 1].map(|calls| scan_profile::Span {
++                calls,
++                ..Default::default()
++            }),
+             calls: 1,
+             successes: 1,
+             root_read_dir_calls: 1,
+@@ -970,6 +1077,153 @@ mod tests {
+         assert_ne!(fixture(43).0, fixture(42).0);
+     }
+     #[test]
++    fn registered_layouts_separate_namespace_count_from_object_count() {
++        assert_eq!(
++            LAYOUTS.map(|l| (l.objects, l.namespaces)),
++            [(0, 0), (64, 1), (768, 1), (768, 384)]
++        );
++        for l in LAYOUTS {
++            if l.objects == 0 {
++                assert_eq!(l.namespaces, 0);
++                continue;
++            }
++            assert_eq!(l.objects % l.namespaces, 0);
++            let groups: std::collections::BTreeSet<_> = (0..l.objects)
++                .map(|i| i / (l.objects / l.namespaces))
++                .collect();
++            assert_eq!(groups.len(), l.namespaces);
++        }
++    }
++    #[test]
++    fn all_clock_controls_keep_exact_bodies_and_reopened_bytes() {
++        let (base, target) = fixture(42);
++        let temp = Temp::new(&base);
++        for (variant, mode) in [
++            ("counters", scan_profile::Mode::Counters),
++            ("fine", scan_profile::Mode::Fine),
++            ("empty", scan_profile::Mode::Empty),
++        ] {
++            scan_profile::configure(mode);
++            for sparse in [false, true] {
++                let r = observe_layout(
++                    &temp.0,
++                    variant,
++                    0,
++                    0,
++                    0,
++                    Arm {
++                        sparse,
++                        tiny: false,
++                    },
++                    &base,
++                    &target,
++                );
++                assert_eq!(r.status, "exact", "{:?}", r.error);
++                let bytes: usize = r
++                    .frame_samples
++                    .iter()
++                    .map(|f| f.request_bytes + f.reply_bytes.unwrap())
++                    .sum();
++                assert_eq!(bytes, if sparse { 536 } else { 1051138 });
++                assert_eq!(r.frame_samples[0].disk_usage.mode, mode);
++                assert_eq!(r.frame_samples.last().unwrap().disk_usage.mode, mode);
++            }
++        }
++        scan_profile::configure(scan_profile::Mode::Counters);
++    }
++    #[test]
++    fn all_modes_observe_external_growth_addition_and_deletion_before_finish() {
++        let (base, _) = fixture(42);
++        let temp = Temp::new(&base);
++        for (mi, mode) in [
++            scan_profile::Mode::Counters,
++            scan_profile::Mode::Fine,
++            scan_profile::Mode::Empty,
++        ]
++        .into_iter()
++        .enumerate()
++        {
++            for mutation in ["grow", "add", "delete"] {
++                scan_profile::configure(mode);
++                let root = temp.0.join(format!("external-{mi}-{mutation}"));
++                let mut ep = Endpoint::open(
++                    &root,
++                    Limits {
++                        cache_bytes: 200,
++                        graph_cache_entries: 0,
++                        graph_cache_bytes: 0,
++                        ..Limits::default()
++                    },
++                    Policy,
++                )
++                .unwrap();
++                let foreign = root.join(hex(&[0xee; 32]));
++                mkdir(&foreign).unwrap();
++                let existing = foreign.join("not-an-id.object");
++                fs::write(&existing, b"x").unwrap();
++                let target = b"q";
++                let requests = frames(&[], target, false, [0xcd; 32]).unwrap();
++                let c = context("active");
++                let mut accepted = 0;
++                let reply = ep.handle(&c, &requests[0], 0).unwrap();
++                check_reply(
++                    &requests[0],
++                    &reply,
++                    object_id(target),
++                    target.len(),
++                    &mut accepted,
++                )
++                .unwrap();
++                match mutation {
++                    "grow" => fs::write(&existing, vec![0; 220]).unwrap(),
++                    "add" => fs::write(foreign.join("new.object"), vec![0; 220]).unwrap(),
++                    "delete" => fs::remove_file(&existing).unwrap(),
++                    _ => unreachable!(),
++                }
++                let reply = ep.handle(&c, &requests[1], 0).unwrap();
++                check_reply(
++                    &requests[1],
++                    &reply,
++                    object_id(target),
++                    target.len(),
++                    &mut accepted,
++                )
++                .unwrap();
++                scan_profile::reset();
++                let finish = ep.handle(&c, &requests[2], 0);
++                let profile = scan_profile::take();
++                assert_eq!(
++                    (profile.calls, profile.successes, profile.errors),
++                    (1, 1, 0)
++                );
++                assert_eq!(
++                    profile.returned_all_bytes,
++                    match mutation {
++                        "grow" => 220,
++                        "add" => 221,
++                        _ => 0,
++                    }
++                );
++                assert_eq!(profile.mode, mode);
++                if mutation == "delete" {
++                    check_reply(
++                        &requests[2],
++                        &finish.unwrap(),
++                        object_id(target),
++                        target.len(),
++                        &mut accepted,
++                    )
++                    .unwrap();
++                    assert_eq!(ep.read_object(&c, object_id(target)).unwrap(), target);
++                } else {
++                    assert_eq!(finish, Err(spiralcore_transfer::Error::Limit));
++                    assert!(ep.read_object(&c, object_id(target)).is_err());
++                }
++            }
++        }
++        scan_profile::configure(scan_profile::Mode::Counters);
++    }
++    #[test]
+     fn stage_accounting_is_exact_and_rejects_unknown_or_overflow() {
+         let mut s = Stages::default();
+         for (kind, wall, cpu) in [(1, 9, 3), (2, 10, 4), (2, 13, 7), (3, 19, 5)] {

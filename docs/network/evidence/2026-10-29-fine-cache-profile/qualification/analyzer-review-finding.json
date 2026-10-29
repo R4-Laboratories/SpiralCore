@@ -1,0 +1,9 @@
+{
+ "schema":"spiralcore.fine-profile-review-finding.v1",
+ "reviewer":"transport_audit",
+ "finding":"Unchecked integer accumulations and unbounded whole-file reads in the analysis path could wrap in release or consume uncontrolled memory on corrupt receipts.",
+ "scope":"Analysis and qualification only; measured receiver/probe code and schedule unchanged.",
+ "response":"Bound text reads to16MiB with growth detection; stream hashes in64KiB chunks with128MiB maximum; use checked additions/sums/subtractions for frame/span/stage/campaign/test totals; hash the same text bytes that are parsed.",
+ "qualification":"Two runtime negative safety tests failed before the fix; final results retained separately.",
+ "first_release_build":"build-qualification-attempt-1; never used for a performance observation"
+}

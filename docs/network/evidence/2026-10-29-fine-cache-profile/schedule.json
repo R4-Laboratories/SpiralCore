@@ -1,0 +1,20 @@
+{
+  "schema":"spiralcore.fine-cache-profile-schedule.v1",
+  "source_revision":"d03fe1630bba787a28cc3fa3ae201c4a1a75388b",
+  "registration_revision":"9c9650dc156cd2511ba74932537f691a68fdada4",
+  "observations":72,
+  "blocks":3,
+  "feature":"hardware-sha256",
+  "layouts":[{"name":"empty","objects":0,"background_namespaces":0},{"name":"compact64","objects":64,"background_namespaces":1},{"name":"compact768","objects":768,"background_namespaces":1},{"name":"spread768","objects":768,"background_namespaces":384}],
+  "arms":["raw","sparse"],
+  "node_budget":262144,
+  "graph_cache_entries":0,
+  "graph_cache_bytes":0,
+  "invocations":[{"block":0,"variant":"counters"},{"block":0,"variant":"fine"},{"block":0,"variant":"empty"},{"block":1,"variant":"fine"},{"block":1,"variant":"empty"},{"block":1,"variant":"counters"},{"block":2,"variant":"empty"},{"block":2,"variant":"counters"},{"block":2,"variant":"fine"}],
+  "within_process_order":"layout index=(i+block)%4; sparse=(j+block+i)%2==1 for i0..3,j0..1",
+  "fixture":{"generator":"xorshift64-low-byte-per-step-v1","seed":42,"bytes":1048576,"mutation_offset":524288,"mutation_bytes":32,"xor":165},
+  "base_object":"c7fceaf53550e0ab1393604c2bc88eabd267676766ae90ad52459ece381822c0",
+  "target_object":"227bbf10e522740c837d03da96838331a00fe3dac2ca77c095ba1044467b0ebf",
+  "attribution_screen":{"primary_cell":"spread768/sparse","all_fine_spans_exceed_empty":true,"median_fine_over_positive_empty_minimum":4.0,"median_fine_span_over_counter_operation_minimum":0.10,"median_fine_operation_over_counter_operation_maximum":1.25,"production_candidate_adoption":false},
+  "limits":["no retries/filtering","source-expression/API-call attribution only","actual syscall and allocation counts unmeasured","empty spans are not subtracted as exact correction","three descriptive observations per cell","nonUTF8 filesystem entry NOT_RUN on this host"]
+}
