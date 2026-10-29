@@ -1,0 +1,48 @@
+{
+  "schema": "spiralcore.large-wan.report-review.v1",
+  "reviewer": "mvm_architect_security",
+  "reviewed_at_utc": "2026-10-29 18:00:37 UTC",
+  "verdict": "approved_as_scoped",
+  "blocking_findings": [],
+  "report": {
+    "path": "docs/network/large-wan-results-2026-10-29.md",
+    "sha256": "a802e947ee035688e646a9903f2b32c1794dd96bf8956f6f97c5a202075cc104",
+    "measured_source": "f4e5e9afe6f3628ffe82e4553a88111f5bd6d126",
+    "run": "c86dc240664d7e66d840f313d7ebf258812a13f9a5f839f3ab6407dc742189e4"
+  },
+  "input_sha256": {
+    "aggregate.json": "57d8fff51d5068e7184bf89b4829c8f140127dc90a5c9528ce5a238731a22e25",
+    "independent-review-with-ip-subset.json": "942730ffca3822eff94aa5366f815cf3478d0b73cde747385f9176146d678027",
+    "independent-pcap-review.json": "2f578ba40bddf36a81f4abd091549c75ea2f411a8b4bc0f308a677b67bbe9446",
+    "independent-review.rs": "558c89dfe3b76e39b212bdff5d3dae1c869fbfb9428d36bfa8096b6fd1b2eecc",
+    "independent-pcap-review.rs": "832e8966d3d7ce04d0a7b3df341ca85bab13cb03e99164c57fdacc52785b0300",
+    "receiver-qualification.json": "2168ddeef26f484269f89147b1a246f3b437984a955e2d3113b22b99e6b1f04c",
+    "coverage.json": "00ea588e8260f8f2ba0048fbcc11de73d27c864d2f509ba9728aa1f338777dc8",
+    "independent-qualification.json": "72a7d3cba8dc39042db6114b51fb59ca4361051c59c4f26b278f58ffedae9cfa",
+    "cleanup.json": "648d607ad5d38317d1d6567ad5730978213aba29dc5bfe9fc1fa47c5afd8a681",
+    "shard-0/verification.json": "50f1baa940830de54c956a29d89dce0bf9b3252cb094ad7d6798f661b419596b",
+    "shard-1/verification.json": "515719d57a48bd9348f845e9aa2b41a54ef03aee622b9f54ed782e945b117405",
+    "shard-2/verification.json": "0d5cf881e2ef5033215e1842308dff82199ee3a14b26613d5297a1c1cd9c63ec",
+    "shard-0/remote/capture.json": "ae6d562251fe3978bfd610a4e17dceb86fb71f892a52602521fbddc851ba2dda",
+    "shard-1/remote/capture.json": "bd451c05f99eff17a8df31653f961ff1b9857f89771c835f4e639797adecba66",
+    "shard-2/remote/capture.json": "d98fde92d689f442c2ea724fbe863217c033d6bbf299990989a4a69c91062af9"
+  },
+  "checks": {
+    "full_campaign": "Report matches all 180 successful operations and three separate 60-operation exact reopen receipts, totaling 3019898880 compared bytes. All 30 application/CPU/wall pairs remain present.",
+    "statistics": "Displayed midpoint medians, nearest-rank p95, paired geometric means, wins/losses and seeded lifecycle totals agree with the aggregate. Combined CPU and seed-plus-update costs are formed before statistics. Marginal medians are not substituted for paired ratios.",
+    "warm_result": "600 versus 16814026 total HTTP-body bytes; 99.99643155% reduction; raw/sparse elapsed ratio 8.734144 and combined CPU 3.165958, with 30/30 wins. Sender-only two losses remain disclosed.",
+    "lifecycle": "Actual seed-plus-update bytes and ratios match evidence: approximately 50% body reduction and raw/sparse elapsed 1.811394, combined CPU 1.529030. No unmeasured successor-chain amortization is claimed.",
+    "capture": "Saved/header-derived IP totals match all three capture records and independent raw-replay output. Shard 2 remains incomplete: 622806 saved versus 622809 received, zero reported kernel drops. No combined 30-pair IP result is qualified.",
+    "descriptive_subset": "Final paragraph matches the separately labeled post-run subset: shards 0 and 1, trials 0..19, n=20; median total IP bytes 17488180.5 raw, 17489477.5 zstd, 5907 sparse; paired raw/sparse ratio 2956.08755 and median per-pair reduction 99.96622044%. Dynamic-n source preserves full30 non-IP vectors and suppresses full30 IP output.",
+    "boundaries": "Report distinguishes HTTP bodies, header-derived IP length and physical/full-path traffic; records runner-to-relay scope and dependence on reviewed SYN ownership. It makes no energy, peak-RSS, network-only-time, matched conventional-delta, MVM or cryptographic certification claim.",
+    "qualification": "128 routine tests and one doctest are supported by the producer qualification receipt. Coverage totals/file list match 12 source files: 89.3488% lines, 91.0788% functions, 86.1250% regions; branch coverage not collected. Initial PATH discovery failure is correctly separated.",
+    "scan_profile": "SC004 interpretation remains instrumented attribution only, does not select an optimization or identify the dominant internal scan component, and preserves filesystem observation behavior.",
+    "operations": "Source/run identifiers, runner CPU model order, resource limits and cleanup statements agree with retained records. Credential deletion and shutdown were reviewed from cleanup evidence, not re-executed or queried live."
+  },
+  "scope_limits": [
+    "This was a read-only report, method and source review; this reviewer did not rerun builds, tests, WAN transfers, persisted-byte comparison or PCAP analysis.",
+    "Independent checker execution and exact persisted-byte checks are producer evidence, bound to the reviewed inputs; the source and stated interpretation boundaries were independently inspected.",
+    "The twenty-pair IP subset is descriptive and cannot satisfy or replace complete thirty-pair IP qualification.",
+    "The earlier independent source-review record is preserved separately as independent-source-review.json with SHA256 9321de9e1a36d2c05b71781cb1861e94614a1bf4dbb46398d66c01062f02953b."
+  ]
+}

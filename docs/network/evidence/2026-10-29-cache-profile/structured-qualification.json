@@ -1,0 +1,707 @@
+{
+  "frozen_binding_status": "Original premeasurement receipts remain unchanged. Removed diagnostic paths and hashes are historical. Rerunning their former checksum/qualification commands will fail until a new explicitly registered qualification is generated; do not rewrite old bindings.",
+  "original_qualification_sha256": "f02cbb5722e69553567c10636d3754fea82a564431c0668d321847585e7a3295",
+  "records": [
+    {
+      "command": "/Users/casey.allard/.cargo/bin/cargo test --locked --offline --manifest-path snapshot/crates/spiralcore-transfer/Cargo.toml --lib scan_diagnostic_tests --features hardware-sha256 --target-dir target-qualification",
+      "exit_code": 101,
+      "failure_details": [
+        {
+          "kind": "test_assertion",
+          "lines": [
+            "thread 'endpoint::scan_diagnostic_tests::diagnostic_storage_error_is_retained_without_entries' (54056837) panicked at src/endpoint.rs:1097:9:",
+            "assertion `left == right` failed",
+            "  left: (0, 0, 0, 0, 0)",
+            " right: (1, 0, 1, 1, 0)",
+            "note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace",
+            ""
+          ]
+        },
+        {
+          "kind": "test_assertion",
+          "lines": [
+            "thread 'endpoint::scan_diagnostic_tests::diagnostic_limit_error_is_retained_with_partial_counts' (54056836) panicked at src/endpoint.rs:1082:9:",
+            "assertion `left == right` failed",
+            "  left: (0, 0, 0)",
+            " right: (1, 0, 1)",
+            "",
+            "---- endpoint::scan_diagnostic_tests::diagnostic_success_exact_counts_ignored_entries_and_reset stdout ----"
+          ]
+        },
+        {
+          "kind": "test_assertion",
+          "lines": [
+            "thread 'endpoint::scan_diagnostic_tests::diagnostic_success_exact_counts_ignored_entries_and_reset' (54056838) panicked at src/endpoint.rs:1061:9:",
+            "assertion `left == right` failed",
+            "  left: (0, 0, 0)",
+            " right: (1, 1, 0)",
+            "",
+            ""
+          ]
+        }
+      ],
+      "historical_path": "qualification/red.log",
+      "original_bytes": 4661,
+      "original_sha256": "3283176f4255a6a06dd884f96a65c8fef2bb1eac7758c3af3ae7cf2e03ea377c",
+      "source_limit": "Intermediate setup executions are labeled explicitly; only final source/build/test bindings establish frozen qualification.",
+      "source_manifest": "qualification/red-source.sha256",
+      "source_manifest_sha256": "7197de3b57ece3bc46f5613168ccaf48bdf115738922e9c37af75ddbc3b63469",
+      "test_cases": [
+        {
+          "name": "endpoint::scan_diagnostic_tests::diagnostic_storage_error_is_retained_without_entries",
+          "status": "FAILED"
+        },
+        {
+          "name": "endpoint::scan_diagnostic_tests::diagnostic_limit_error_is_retained_with_partial_counts",
+          "status": "FAILED"
+        },
+        {
+          "name": "endpoint::scan_diagnostic_tests::diagnostic_success_exact_counts_ignored_entries_and_reset",
+          "status": "FAILED"
+        }
+      ],
+      "test_summaries": [
+        {
+          "failed": 3,
+          "original_summary": "test result: FAILED. 0 passed; 3 failed; 0 ignored; 0 measured; 3 filtered out; finished in 0.04s",
+          "passed": 0,
+          "status": "FAILED"
+        }
+      ],
+      "working_directory": "/Users/casey.allard/spiralcore/local/cache-profile-20261029"
+    },
+    {
+      "command": "/Users/casey.allard/.cargo/bin/cargo test --locked --offline --manifest-path snapshot/crates/spiralcore-transfer/Cargo.toml --lib diagnostic --features hardware-sha256 --target-dir target-qualification",
+      "exit_code": 0,
+      "failure_details": [],
+      "historical_path": "qualification/green-counter.log",
+      "original_bytes": 730,
+      "original_sha256": "86fb444299d6ec5210008c51ca1565702beb1e4d15f496dcbf0a75c62f82fe7d",
+      "source_limit": "Intermediate setup executions are labeled explicitly; only final source/build/test bindings establish frozen qualification.",
+      "source_manifest": "intermediate-not-individually-source-frozen",
+      "source_manifest_sha256": null,
+      "test_cases": [
+        {
+          "name": "endpoint::scan_diagnostic_tests::diagnostic_limit_error_is_retained_with_partial_counts",
+          "status": "ok"
+        },
+        {
+          "name": "endpoint::scan_diagnostic_tests::diagnostic_storage_error_is_retained_without_entries",
+          "status": "ok"
+        },
+        {
+          "name": "endpoint::scan_diagnostic_tests::diagnostic_success_exact_counts_ignored_entries_and_reset",
+          "status": "ok"
+        }
+      ],
+      "test_summaries": [
+        {
+          "failed": 0,
+          "original_summary": "test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 5 filtered out; finished in 0.04s",
+          "passed": 3,
+          "status": "ok"
+        }
+      ],
+      "working_directory": "/Users/casey.allard/spiralcore/local/cache-profile-20261029"
+    },
+    {
+      "command": "/Users/casey.allard/.cargo/bin/cargo test --locked --offline --lib actual_api_receipts --features hardware-sha256 --target-dir target-qualification",
+      "exit_code": 101,
+      "failure_details": [
+        {
+          "kind": "test_assertion",
+          "lines": [
+            "thread 'tests::actual_api_receipts_match_stages_readiness_and_reopened_bytes' (54064734) panicked at src/lib.rs:963:21:",
+            "assertion `left == right` failed",
+            "  left: (0, 0, 0)",
+            " right: (1, 1, 0)",
+            "note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace",
+            ""
+          ]
+        }
+      ],
+      "historical_path": "qualification/red-probe.log",
+      "original_bytes": 1623,
+      "original_sha256": "706b13b9d4e024de93a35de6586045917d1545cb963dc041dc9fda157738ae0c",
+      "source_limit": "Intermediate setup executions are labeled explicitly; only final source/build/test bindings establish frozen qualification.",
+      "source_manifest": "qualification/red-probe-source.sha256",
+      "source_manifest_sha256": "fbc296c24e46bb11aa2592508de119beb9a51c16ca29b286972710f73d0b38ff",
+      "test_cases": [
+        {
+          "name": "tests::actual_api_receipts_match_stages_readiness_and_reopened_bytes",
+          "status": "FAILED"
+        }
+      ],
+      "test_summaries": [
+        {
+          "failed": 1,
+          "original_summary": "test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 6 filtered out; finished in 1.20s",
+          "passed": 0,
+          "status": "FAILED"
+        }
+      ],
+      "working_directory": "/Users/casey.allard/spiralcore/local/cache-profile-20261029"
+    },
+    {
+      "command": "/Users/casey.allard/.cargo/bin/cargo test --locked --offline --lib --features hardware-sha256 --target-dir target-qualification",
+      "exit_code": 0,
+      "failure_details": [],
+      "historical_path": "qualification/green-probe.log",
+      "original_bytes": 937,
+      "original_sha256": "9bf41f9c7f359dd18db0563a37d78504425ec7dd38bd63aa783c6393585c026a",
+      "source_limit": "Intermediate setup executions are labeled explicitly; only final source/build/test bindings establish frozen qualification.",
+      "source_manifest": "intermediate-not-individually-source-frozen",
+      "source_manifest_sha256": null,
+      "test_cases": [
+        {
+          "name": "tests::stage_accounting_is_exact_and_rejects_unknown_or_overflow",
+          "status": "ok"
+        },
+        {
+          "name": "tests::fixture_changes_exactly_32_bytes_and_is_reproducible",
+          "status": "ok"
+        },
+        {
+          "name": "tests::accepted_rejects_wrong_expanded_count_and_trailing_body",
+          "status": "ok"
+        },
+        {
+          "name": "tests::request_and_order_fixtures_have_exact_expected_shapes",
+          "status": "ok"
+        },
+        {
+          "name": "tests::ready_rejects_wrong_mode_pin_sequence_and_trailing_body",
+          "status": "ok"
+        },
+        {
+          "name": "tests::corrupted_base_keeps_failed_handler_receipt_and_owned_cache",
+          "status": "ok"
+        },
+        {
+          "name": "tests::actual_api_receipts_match_stages_readiness_and_reopened_bytes",
+          "status": "ok"
+        }
+      ],
+      "test_summaries": [
+        {
+          "failed": 0,
+          "original_summary": "test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.65s",
+          "passed": 7,
+          "status": "ok"
+        }
+      ],
+      "working_directory": "/Users/casey.allard/spiralcore/local/cache-profile-20261029"
+    },
+    {
+      "command": "/Users/casey.allard/.cargo/bin/cargo test --locked --offline --all-targets --features hardware-sha256 --target-dir target-qualification",
+      "exit_code": 0,
+      "failure_details": [],
+      "historical_path": "qualification/final-probe.log",
+      "original_bytes": 1746,
+      "original_sha256": "c8341345191951faafc35606370ef3bbbe6005c509486bca77dd93edb6814466",
+      "source_limit": "Intermediate setup executions are labeled explicitly; only final source/build/test bindings establish frozen qualification.",
+      "source_manifest": "intermediate-not-individually-source-frozen",
+      "source_manifest_sha256": null,
+      "test_cases": [
+        {
+          "name": "tests::profile_validation_rejects_extra_calls_and_wrong_inventory",
+          "status": "ok"
+        },
+        {
+          "name": "tests::stage_accounting_is_exact_and_rejects_unknown_or_overflow",
+          "status": "ok"
+        },
+        {
+          "name": "tests::fixture_changes_exactly_32_bytes_and_is_reproducible",
+          "status": "ok"
+        },
+        {
+          "name": "tests::accepted_rejects_wrong_expanded_count_and_trailing_body",
+          "status": "ok"
+        },
+        {
+          "name": "tests::ready_rejects_wrong_mode_pin_sequence_and_trailing_body",
+          "status": "ok"
+        },
+        {
+          "name": "tests::request_and_order_fixtures_have_exact_expected_shapes",
+          "status": "ok"
+        },
+        {
+          "name": "tests::corrupted_base_keeps_failed_handler_receipt_and_owned_cache",
+          "status": "ok"
+        },
+        {
+          "name": "tests::actual_api_receipts_match_stages_readiness_and_reopened_bytes",
+          "status": "ok"
+        },
+        {
+          "name": "tests::malformed_counters_do_not_become_zero_or_success",
+          "status": "ok"
+        },
+        {
+          "name": "tests::two_observations_use_midpoint_and_preserve_order",
+          "status": "ok"
+        }
+      ],
+      "test_summaries": [
+        {
+          "failed": 0,
+          "original_summary": "test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.65s",
+          "passed": 8,
+          "status": "ok"
+        },
+        {
+          "failed": 0,
+          "original_summary": "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+          "passed": 2,
+          "status": "ok"
+        },
+        {
+          "failed": 0,
+          "original_summary": "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+          "passed": 0,
+          "status": "ok"
+        }
+      ],
+      "working_directory": "/Users/casey.allard/spiralcore/local/cache-profile-20261029"
+    },
+    {
+      "command": "/Users/casey.allard/.cargo/bin/cargo test --locked --offline --all-targets --features hardware-sha256 --target-dir target-qualification",
+      "exit_code": 0,
+      "failure_details": [],
+      "historical_path": "qualification/probe-before-binder.log",
+      "original_bytes": 1746,
+      "original_sha256": "7dae6a9ddb83c0827f1d2f1ac0482a262808e5606160def7fd4aecce0c523956",
+      "source_limit": "Intermediate setup executions are labeled explicitly; only final source/build/test bindings establish frozen qualification.",
+      "source_manifest": "intermediate-not-individually-source-frozen",
+      "source_manifest_sha256": null,
+      "test_cases": [
+        {
+          "name": "tests::stage_accounting_is_exact_and_rejects_unknown_or_overflow",
+          "status": "ok"
+        },
+        {
+          "name": "tests::profile_validation_rejects_extra_calls_and_wrong_inventory",
+          "status": "ok"
+        },
+        {
+          "name": "tests::fixture_changes_exactly_32_bytes_and_is_reproducible",
+          "status": "ok"
+        },
+        {
+          "name": "tests::accepted_rejects_wrong_expanded_count_and_trailing_body",
+          "status": "ok"
+        },
+        {
+          "name": "tests::ready_rejects_wrong_mode_pin_sequence_and_trailing_body",
+          "status": "ok"
+        },
+        {
+          "name": "tests::request_and_order_fixtures_have_exact_expected_shapes",
+          "status": "ok"
+        },
+        {
+          "name": "tests::corrupted_base_keeps_failed_handler_receipt_and_owned_cache",
+          "status": "ok"
+        },
+        {
+          "name": "tests::actual_api_receipts_match_stages_readiness_and_reopened_bytes",
+          "status": "ok"
+        },
+        {
+          "name": "tests::malformed_counters_do_not_become_zero_or_success",
+          "status": "ok"
+        },
+        {
+          "name": "tests::two_observations_use_midpoint_and_preserve_order",
+          "status": "ok"
+        }
+      ],
+      "test_summaries": [
+        {
+          "failed": 0,
+          "original_summary": "test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.77s",
+          "passed": 8,
+          "status": "ok"
+        },
+        {
+          "failed": 0,
+          "original_summary": "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+          "passed": 2,
+          "status": "ok"
+        },
+        {
+          "failed": 0,
+          "original_summary": "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+          "passed": 0,
+          "status": "ok"
+        }
+      ],
+      "working_directory": "/Users/casey.allard/spiralcore/local/cache-profile-20261029"
+    },
+    {
+      "command": "/Users/casey.allard/.cargo/bin/cargo test --locked --offline --all-targets --features hardware-sha256 --target-dir target-qualification",
+      "exit_code": 0,
+      "failure_details": [],
+      "historical_path": "qualification/final-probe-2.log",
+      "original_bytes": 1608,
+      "original_sha256": "e36c4122d07aed8defca090358a7e52be16768e57ed96fc7b1e179d578639249",
+      "source_limit": "Intermediate setup executions are labeled explicitly; only final source/build/test bindings establish frozen qualification.",
+      "source_manifest": "build-diagnostic/helper-files.sha256",
+      "source_manifest_sha256": "cd83c6f59268ac1f82bb74810db2fc24d7e43fbe0b6bdfba0dd8df060e92cbef",
+      "test_cases": [
+        {
+          "name": "tests::profile_validation_rejects_extra_calls_and_wrong_inventory",
+          "status": "ok"
+        },
+        {
+          "name": "tests::stage_accounting_is_exact_and_rejects_unknown_or_overflow",
+          "status": "ok"
+        },
+        {
+          "name": "tests::fixture_changes_exactly_32_bytes_and_is_reproducible",
+          "status": "ok"
+        },
+        {
+          "name": "tests::request_and_order_fixtures_have_exact_expected_shapes",
+          "status": "ok"
+        },
+        {
+          "name": "tests::accepted_rejects_wrong_expanded_count_and_trailing_body",
+          "status": "ok"
+        },
+        {
+          "name": "tests::ready_rejects_wrong_mode_pin_sequence_and_trailing_body",
+          "status": "ok"
+        },
+        {
+          "name": "tests::corrupted_base_keeps_failed_handler_receipt_and_owned_cache",
+          "status": "ok"
+        },
+        {
+          "name": "tests::actual_api_receipts_match_stages_readiness_and_reopened_bytes",
+          "status": "ok"
+        },
+        {
+          "name": "tests::two_observations_use_midpoint_and_preserve_order",
+          "status": "ok"
+        },
+        {
+          "name": "tests::malformed_counters_do_not_become_zero_or_success",
+          "status": "ok"
+        }
+      ],
+      "test_summaries": [
+        {
+          "failed": 0,
+          "original_summary": "test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.11s",
+          "passed": 8,
+          "status": "ok"
+        },
+        {
+          "failed": 0,
+          "original_summary": "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+          "passed": 2,
+          "status": "ok"
+        },
+        {
+          "failed": 0,
+          "original_summary": "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+          "passed": 0,
+          "status": "ok"
+        }
+      ],
+      "working_directory": "/Users/casey.allard/spiralcore/local/cache-profile-20261029"
+    },
+    {
+      "command": "/Users/casey.allard/.cargo/bin/cargo test --locked --offline --manifest-path snapshot/crates/spiralcore-transfer/Cargo.toml --lib --features hardware-sha256 --target-dir target-qualification",
+      "exit_code": 0,
+      "failure_details": [],
+      "historical_path": "qualification/final-snapshot.log",
+      "original_bytes": 1157,
+      "original_sha256": "32e56dc64ec462c592ed43d9b08bede35666435254682477a507008170676bbb",
+      "source_limit": "Intermediate setup executions are labeled explicitly; only final source/build/test bindings establish frozen qualification.",
+      "source_manifest": "intermediate-not-individually-source-frozen",
+      "source_manifest_sha256": null,
+      "test_cases": [
+        {
+          "name": "scan_profile::tests::aggregation_is_bounded_marks_overflow_and_preserves_error",
+          "status": "ok"
+        },
+        {
+          "name": "dag::fold_memo_tests::hot_memo_reuses_only_exact_nodes_and_preserves_unique_budget",
+          "status": "ok"
+        },
+        {
+          "name": "dag::fold_memo_tests::rejected_records_never_enter_the_memo",
+          "status": "ok"
+        },
+        {
+          "name": "scan_profile::tests::observations_are_isolated_between_threads",
+          "status": "ok"
+        },
+        {
+          "name": "dag::fold_memo_tests::parent_memo_is_exact_and_has_a_fixed_small_allocation_bound",
+          "status": "ok"
+        },
+        {
+          "name": "endpoint::scan_diagnostic_tests::diagnostic_limit_error_is_retained_with_partial_counts",
+          "status": "ok"
+        },
+        {
+          "name": "endpoint::scan_diagnostic_tests::diagnostic_storage_error_is_retained_without_entries",
+          "status": "ok"
+        },
+        {
+          "name": "endpoint::scan_diagnostic_tests::diagnostic_success_exact_counts_ignored_entries_and_reset",
+          "status": "ok"
+        }
+      ],
+      "test_summaries": [
+        {
+          "failed": 0,
+          "original_summary": "test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s",
+          "passed": 8,
+          "status": "ok"
+        }
+      ],
+      "working_directory": "/Users/casey.allard/spiralcore/local/cache-profile-20261029"
+    },
+    {
+      "command": "/Users/casey.allard/.cargo/bin/cargo test --locked --offline --manifest-path snapshot/crates/spiralcore-transfer/Cargo.toml --lib --features hardware-sha256 --target-dir target-qualification",
+      "exit_code": 0,
+      "failure_details": [],
+      "historical_path": "qualification/final-snapshot-2.log",
+      "original_bytes": 1157,
+      "original_sha256": "ce7558d5fb51a35dd267ffcb5b4d2e94c541c4343466f1bf59d12fe465525912",
+      "source_limit": "Intermediate setup executions are labeled explicitly; only final source/build/test bindings establish frozen qualification.",
+      "source_manifest": "snapshot-established.sha256",
+      "source_manifest_sha256": "ee30d87dc2f1657b3bf23834a7487bcce373b7e5a0e3b3efc07178dbd46ac20b",
+      "test_cases": [
+        {
+          "name": "scan_profile::tests::aggregation_is_bounded_marks_overflow_and_preserves_error",
+          "status": "ok"
+        },
+        {
+          "name": "dag::fold_memo_tests::rejected_records_never_enter_the_memo",
+          "status": "ok"
+        },
+        {
+          "name": "scan_profile::tests::observations_are_isolated_between_threads",
+          "status": "ok"
+        },
+        {
+          "name": "dag::fold_memo_tests::hot_memo_reuses_only_exact_nodes_and_preserves_unique_budget",
+          "status": "ok"
+        },
+        {
+          "name": "dag::fold_memo_tests::parent_memo_is_exact_and_has_a_fixed_small_allocation_bound",
+          "status": "ok"
+        },
+        {
+          "name": "endpoint::scan_diagnostic_tests::diagnostic_storage_error_is_retained_without_entries",
+          "status": "ok"
+        },
+        {
+          "name": "endpoint::scan_diagnostic_tests::diagnostic_limit_error_is_retained_with_partial_counts",
+          "status": "ok"
+        },
+        {
+          "name": "endpoint::scan_diagnostic_tests::diagnostic_success_exact_counts_ignored_entries_and_reset",
+          "status": "ok"
+        }
+      ],
+      "test_summaries": [
+        {
+          "failed": 0,
+          "original_summary": "test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s",
+          "passed": 8,
+          "status": "ok"
+        }
+      ],
+      "working_directory": "/Users/casey.allard/spiralcore/local/cache-profile-20261029"
+    },
+    {
+      "command": "/Users/casey.allard/.cargo/bin/cargo clippy --locked --offline --all-targets --features hardware-sha256 --target-dir target-qualification -- -D warnings",
+      "exit_code": 101,
+      "failure_details": [
+        {
+          "kind": "compiler_or_lint",
+          "lines": [
+            "error: manual implementation of `.is_multiple_of()`",
+            "  --> src/bin/profile-analysis.rs:25:8",
+            "   |",
+            "25 |     if s.len() % 2 == 0 {",
+            "   |        ^^^^^^^^^^^^^^^^ help: replace with: `s.len().is_multiple_of(2)`",
+            "   |",
+            "   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.97.0/index.html#manual_is_multiple_of",
+            "   = note: `-D clippy::manual-is-multiple-of` implied by `-D warnings`",
+            "   = help: to override `-D warnings` add `#[allow(clippy::manual_is_multiple_of)]`",
+            "",
+            "error: could not compile `spiralcore-receiver-probe` (bin \"profile-analysis\" test) due to 1 previous error",
+            "warning: build failed, waiting for other jobs to finish...",
+            "error: could not compile `spiralcore-receiver-probe` (bin \"profile-analysis\") due to 1 previous error"
+          ]
+        }
+      ],
+      "historical_path": "qualification/clippy-attempt-1.log",
+      "original_bytes": 3071,
+      "original_sha256": "2cf89b126d499adb9d78246a96c38acd311a3940f7289118c6987c3ee9f72c5e",
+      "source_limit": "Intermediate setup executions are labeled explicitly; only final source/build/test bindings establish frozen qualification.",
+      "source_manifest": "intermediate-not-individually-source-frozen",
+      "source_manifest_sha256": null,
+      "test_cases": [],
+      "test_summaries": [],
+      "working_directory": "/Users/casey.allard/spiralcore/local/cache-profile-20261029"
+    },
+    {
+      "command": "/Users/casey.allard/.cargo/bin/cargo clippy --locked --offline --all-targets --features hardware-sha256 --target-dir target-qualification -- -D warnings",
+      "exit_code": 0,
+      "failure_details": [],
+      "historical_path": "qualification/clippy-before-binder.log",
+      "original_bytes": 180,
+      "original_sha256": "61440f05fbae82dbc095f7055ac8d59c36b08c9a0851c1ebad981471b012b72d",
+      "source_limit": "Intermediate setup executions are labeled explicitly; only final source/build/test bindings establish frozen qualification.",
+      "source_manifest": "intermediate-not-individually-source-frozen",
+      "source_manifest_sha256": null,
+      "test_cases": [],
+      "test_summaries": [],
+      "working_directory": "/Users/casey.allard/spiralcore/local/cache-profile-20261029"
+    },
+    {
+      "command": "/Users/casey.allard/.cargo/bin/cargo clippy --locked --offline --all-targets --features hardware-sha256 --target-dir target-qualification -- -D warnings",
+      "exit_code": 0,
+      "failure_details": [],
+      "historical_path": "qualification/final-clippy.log",
+      "original_bytes": 318,
+      "original_sha256": "d7b4e036380aae87cced276d058200054513b4dac840ee671a1f30504707a236",
+      "source_limit": "Intermediate setup executions are labeled explicitly; only final source/build/test bindings establish frozen qualification.",
+      "source_manifest": "build-diagnostic/helper-files.sha256",
+      "source_manifest_sha256": "cd83c6f59268ac1f82bb74810db2fc24d7e43fbe0b6bdfba0dd8df060e92cbef",
+      "test_cases": [],
+      "test_summaries": [],
+      "working_directory": "/Users/casey.allard/spiralcore/local/cache-profile-20261029"
+    },
+    {
+      "command": "/Users/casey.allard/.cargo/bin/cargo clippy --locked --offline --manifest-path snapshot/crates/spiralcore-transfer/Cargo.toml --lib --tests --features hardware-sha256 --target-dir target-qualification -- -D warnings",
+      "exit_code": 101,
+      "failure_details": [
+        {
+          "kind": "compiler_or_lint",
+          "lines": [
+            "error: items after a test module",
+            "    --> src/endpoint.rs:1077:1",
+            "     |",
+            "1077 | mod scan_diagnostic_tests {",
+            "     | ^^^^^^^^^^^^^^^^^^^^^^^^^",
+            "...",
+            "1221 | fn canonical_namespace(s: &str) -> bool {",
+            "     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^",
+            "...",
+            "1226 | fn owned_stage(s: &str) -> bool {",
+            "     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^",
+            "...",
+            "1235 | fn private_options() -> OpenOptions {",
+            "     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^"
+          ]
+        }
+      ],
+      "historical_path": "qualification/snapshot-clippy-attempt-1.log",
+      "original_bytes": 1688,
+      "original_sha256": "eaa054b28d0f1a0dce6e2e745687b288bb0b4d8f8af792dedb60d1bb6c3cc061",
+      "source_limit": "Intermediate setup executions are labeled explicitly; only final source/build/test bindings establish frozen qualification.",
+      "source_manifest": "intermediate-not-individually-source-frozen",
+      "source_manifest_sha256": null,
+      "test_cases": [],
+      "test_summaries": [],
+      "working_directory": "/Users/casey.allard/spiralcore/local/cache-profile-20261029"
+    },
+    {
+      "command": "/Users/casey.allard/.cargo/bin/cargo clippy --locked --offline --manifest-path snapshot/crates/spiralcore-transfer/Cargo.toml --lib --tests --features hardware-sha256 --target-dir target-qualification -- -D warnings",
+      "exit_code": 0,
+      "failure_details": [],
+      "historical_path": "qualification/final-snapshot-clippy.log",
+      "original_bytes": 210,
+      "original_sha256": "d797ca4532f3b5385e681822a1c5f0e04d0661225b4063260f9a58a19986fa15",
+      "source_limit": "Intermediate setup executions are labeled explicitly; only final source/build/test bindings establish frozen qualification.",
+      "source_manifest": "snapshot-established.sha256",
+      "source_manifest_sha256": "ee30d87dc2f1657b3bf23834a7487bcce373b7e5a0e3b3efc07178dbd46ac20b",
+      "test_cases": [],
+      "test_summaries": [],
+      "working_directory": "/Users/casey.allard/spiralcore/local/cache-profile-20261029"
+    },
+    {
+      "command": "/Users/casey.allard/.cargo/bin/cargo fmt --all -- --check",
+      "exit_code": 0,
+      "failure_details": [],
+      "historical_path": "qualification/final-fmt.log",
+      "original_bytes": 0,
+      "original_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "source_limit": "Intermediate setup executions are labeled explicitly; only final source/build/test bindings establish frozen qualification.",
+      "source_manifest": "build-diagnostic/helper-files.sha256",
+      "source_manifest_sha256": "cd83c6f59268ac1f82bb74810db2fc24d7e43fbe0b6bdfba0dd8df060e92cbef",
+      "test_cases": [],
+      "test_summaries": [],
+      "working_directory": "/Users/casey.allard/spiralcore/local/cache-profile-20261029"
+    },
+    {
+      "command": "bash build.sh; exact compiler invocation retained in build-diagnostic/command.txt",
+      "exit_code": 0,
+      "failure_details": [],
+      "historical_path": "receipts/build.log",
+      "original_bytes": 3032,
+      "original_sha256": "82d8c91fb6c5eccb758675edb221117fffcb20dd4f583838811f3b0f6f31ef14",
+      "source_limit": "Intermediate setup executions are labeled explicitly; only final source/build/test bindings establish frozen qualification.",
+      "source_manifest": "build-diagnostic/production-source-files.sha256",
+      "source_manifest_sha256": "93e6cfb9ee5a88d5eb724d6c290296d22c444c6a9a50b3b0ce7bbff5dbba5539",
+      "test_cases": [],
+      "test_summaries": [],
+      "working_directory": "/Users/casey.allard/spiralcore/local/cache-profile-20261029"
+    },
+    {
+      "command": "build-diagnostic/receiver-probe run --root /Users/casey.allard/spiralcore/local/cache-profile-20261029/experiment --out /Users/casey.allard/spiralcore/local/cache-profile-20261029/measured/block0-diagnostic.jsonl --block 0 --variant diagnostic",
+      "diagnostic_stream": "stdout",
+      "exit_code": 0,
+      "historical_path": "measured/block0-diagnostic.stdout",
+      "original_bytes": 0,
+      "original_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "recorded_exit_evidence": "measured/execution.jsonl",
+      "working_directory": "/Users/casey.allard/spiralcore/local/cache-profile-20261029"
+    },
+    {
+      "command": "build-diagnostic/receiver-probe run --root /Users/casey.allard/spiralcore/local/cache-profile-20261029/experiment --out /Users/casey.allard/spiralcore/local/cache-profile-20261029/measured/block0-diagnostic.jsonl --block 0 --variant diagnostic",
+      "diagnostic_stream": "stderr",
+      "exit_code": 0,
+      "historical_path": "measured/block0-diagnostic.stderr",
+      "original_bytes": 0,
+      "original_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "recorded_exit_evidence": "measured/execution.jsonl",
+      "working_directory": "/Users/casey.allard/spiralcore/local/cache-profile-20261029"
+    },
+    {
+      "command": "build-diagnostic/receiver-probe run --root /Users/casey.allard/spiralcore/local/cache-profile-20261029/experiment --out /Users/casey.allard/spiralcore/local/cache-profile-20261029/measured/block1-diagnostic.jsonl --block 1 --variant diagnostic",
+      "diagnostic_stream": "stdout",
+      "exit_code": 0,
+      "historical_path": "measured/block1-diagnostic.stdout",
+      "original_bytes": 0,
+      "original_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "recorded_exit_evidence": "measured/execution.jsonl",
+      "working_directory": "/Users/casey.allard/spiralcore/local/cache-profile-20261029"
+    },
+    {
+      "command": "build-diagnostic/receiver-probe run --root /Users/casey.allard/spiralcore/local/cache-profile-20261029/experiment --out /Users/casey.allard/spiralcore/local/cache-profile-20261029/measured/block1-diagnostic.jsonl --block 1 --variant diagnostic",
+      "diagnostic_stream": "stderr",
+      "exit_code": 0,
+      "historical_path": "measured/block1-diagnostic.stderr",
+      "original_bytes": 0,
+      "original_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "recorded_exit_evidence": "measured/execution.jsonl",
+      "working_directory": "/Users/casey.allard/spiralcore/local/cache-profile-20261029"
+    }
+  ],
+  "schema": "spiralcore.cache-profile-structured-qualification.v1",
+  "scientific_evidence": "All raw JSONL, analysis, sources, manifests, test source hashes, fixture/template/binary identities and independent reviews remain.",
+  "source_revision": "f0966ebedcb8994f0985b54e9a2b961eeb8be914",
+  "status": "reviewed_diagnostic_logs_retired"
+}

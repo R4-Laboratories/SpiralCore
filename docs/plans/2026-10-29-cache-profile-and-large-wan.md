@@ -106,3 +106,17 @@ DAG preparation, while sparse skips it; preserve and disclose that CPU asymmetry
 - Bytes, CPU and wall time are reported together, including seed cost and negatives.
 - Larger real-WAN evidence is repeatable and quota-safe; comparisons state the
   transport, readiness and packet-accounting boundaries.
+
+## Observed outcome
+
+SC-OPT-004 completed 32/32 exact instrumented observations and independent Rust
+review. Quota scans account for 84.3912% of the populated sparse operation's CPU
+in the two-observation attribution; no production optimization was selected.
+See [the full profile](../network/cache-profile-results-2026-10-29.md).
+
+SC-WAN-002 completed all three shards at `f4e5e9a`: 180 exact reopened operations,
+thirty retained pairs, 99.99643155% fewer update HTTP-body bytes, raw/sparse paired
+elapsed 8.734144× and combined CPU 3.165958×. The registered body/time gate passed.
+The third packet capture has an unresolved three-packet counter difference, so
+complete thirty-pair IP reduction remains unqualified; it was not rerun or omitted
+from the body/time/CPU result. See [the full WAN result](../network/large-wan-results-2026-10-29.md).

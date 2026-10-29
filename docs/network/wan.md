@@ -1,6 +1,6 @@
 # Two-machine WAN experiment
 
-This experiment connects a standard GitHub Actions Linux runner to a Mac receiver through a temporary Cloudflare Quick Tunnel. It uses public synthetic objects only. Standard hosted runners are free for public repositories; the workflow retains compact evidence for one day. Account artifact-storage quotas still apply. No paid VM is provisioned. See the [latest efficiency results](efficiency-results-2026-10-29.md), [earlier October 29 baseline](wan-results-2026-10-29.md) and retained compact evidence.
+This experiment connects a standard GitHub Actions Linux runner to a Mac receiver through a temporary Cloudflare Quick Tunnel. It uses public synthetic objects only. Standard hosted runners are free for public repositories; the workflow retains compact evidence for one day. Account artifact-storage quotas still apply. No paid VM is provisioned. See the [latest 16 MiB results](large-wan-results-2026-10-29.md), [earlier 1 MiB efficiency results](efficiency-results-2026-10-29.md), [earlier October 29 baseline](wan-results-2026-10-29.md) and retained compact evidence.
 
 This is a real Internet relay path, not a shaped-loopback or direct-peer test:
 
