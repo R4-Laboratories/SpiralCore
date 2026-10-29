@@ -1,0 +1,130 @@
+{
+  "schema": "spiralcore.wan.smoke-receipt.v1",
+  "source_revision": "edb59b15e75430c4b92d7fd2a6147052e13d6a71",
+  "github_run": "https://github.com/R4-Laboratories/SpiralCore/actions/runs/40816452563",
+  "path": "GitHub Actions Linux -> Cloudflare Quick Tunnel -> Mac receiver",
+  "status": "verified",
+  "remote_summary": {
+    "expected_rows": 36,
+    "failed_rows": 0,
+    "limitations": [
+      "Published receipts require separate local byte-for-byte qualification before exactness is claimed",
+      "Body bytes exclude HTTP headers, TLS, TCP/IP and tunnel overhead; packet evidence is joined separately",
+      "Failed rows contain attempted upload body bytes and completely received response bodies, not proven link bytes",
+      "No WAN speed claim follows from running this summarizer",
+      "Break-even extrapolates constant per-transfer savings; it is not a measured sequence",
+      "16 MiB cases are one-trial smoke checks, not 30-trial performance qualification",
+      "Receiver process CPU excludes relay/cloudflared and socket wait; sender CPU includes HTTP/TLS",
+      "Failed pairs remain in receipts but are excluded from ratios; inspect failures before interpreting success-only statistics"
+    ],
+    "missing_rows": 0,
+    "plan_trials": 1,
+    "rows": 36,
+    "run": "82039ef93d39a00ad498e1f8932f535ed7621650a3d4ac12f83672f6710d4f9c",
+    "schema": "spiralcore.wan.summary.v1"
+  },
+  "receiver_verification": {
+    "bytes_compared": 132120579,
+    "comparison": "byte-for-byte after reopening receiver cache",
+    "qualification_outside_transfer_timing": true,
+    "receipts_verified": 36,
+    "run": "82039ef93d39a00ad498e1f8932f535ed7621650a3d4ac12f83672f6710d4f9c",
+    "schema": "spiralcore.wan.verification.v1",
+    "status": "exact"
+  },
+  "packet_capture": {
+    "capture_complete": true,
+    "incomplete_reasons": [],
+    "campaign": {
+      "download_ip_bytes": 432250,
+      "download_packets": 3064,
+      "packets": 87199,
+      "total_ip_bytes": 120954384,
+      "unclassified_ip_bytes": 0,
+      "unclassified_packets": 0,
+      "unknown_ip_length_packets": 0,
+      "upload_ip_bytes": 120522134,
+      "upload_packets": 84135
+    },
+    "setup": {
+      "download_ip_bytes": 0,
+      "download_packets": 0,
+      "packets": 0,
+      "total_ip_bytes": 0,
+      "unclassified_ip_bytes": 0,
+      "unclassified_packets": 0,
+      "unknown_ip_length_packets": 0,
+      "upload_ip_bytes": 0,
+      "upload_packets": 0
+    },
+    "unattributed": {
+      "download_ip_bytes": 0,
+      "download_packets": 0,
+      "packets": 0,
+      "total_ip_bytes": 0,
+      "unclassified_ip_bytes": 0,
+      "unclassified_packets": 0,
+      "unknown_ip_length_packets": 0,
+      "upload_ip_bytes": 0,
+      "upload_packets": 0
+    },
+    "partition_sum_verified": true
+  },
+  "local_coverage": {
+    "branches": {
+      "count": 0,
+      "covered": 0,
+      "notcovered": 0,
+      "percent": 0
+    },
+    "functions": {
+      "count": 347,
+      "covered": 313,
+      "percent": 90.20172910662824
+    },
+    "instantiations": {
+      "count": 955,
+      "covered": 574,
+      "percent": 60.10471204188481
+    },
+    "lines": {
+      "count": 4328,
+      "covered": 3834,
+      "percent": 88.58595194085026
+    },
+    "mcdc": {
+      "count": 0,
+      "covered": 0,
+      "notcovered": 0,
+      "percent": 0
+    },
+    "regions": {
+      "count": 8375,
+      "covered": 7103,
+      "notcovered": 1272,
+      "percent": 84.81194029850747
+    }
+  },
+  "artifact_sha256": {
+    "headers.pcap": "d2a8a80752535dd6f82b83879dbc5d9d0075a0602e3c2253fe81e7ef230fea1f",
+    "summary.json": "e5979414480ced099755b85ac692e3fa10b4e63f3fe591bd2284b6a9078a372e",
+    "offload-state.txt": "6e2cc5847b22756d64f58357406af3d7e85475a53be64e51352cfe5c07e8bdde",
+    "rows.jsonl": "fbdbf87f9f28227d0b97c4012870a796237da0d1e5c79e15f0c8623cdabe7c9e",
+    "platform.txt": "a64b6d81308dc728b286592ae78f6594e185e6db8c474be3c8886f7694f38bb7",
+    "plan.json": "aca2acbdd1f2f2b1b534487f82852314eaafd56a733421028fe0140578654957",
+    "binary-sha256.txt": "a746bb682355705b54ab7b5d9ff44c20c6ab04c636717e9565351569df25e2db",
+    "capture.json": "189310f56925f178a71b8827717542269cb74a64ed664da712c8699f0ea11191",
+    "source-revision.txt": "38dc641d345301506c1d20b2270e27aad43252b2de932374b18f4a9c540360e4",
+    "tcpdump-stats.txt": "a7c4369fc46b3478eddf6967d4064ac66ab074cdf29292cc08d05c9726da3050",
+    "cpu.json": "0b9e580d732fdcf1959faae008e4d0d7ff5c47a032dad454b5c5642206d666e7",
+    "rust-version.txt": "4ad84f16acc2f3bdcfbc7b0788f1e74a4e649b962154a585b8f8d0b28eb0dd06",
+    "capture-sha256.txt": "c98b27b0493c43c8e99b128e92d230292483d851530e9096a98010b3c5e444d2",
+    "pinned-addresses.txt": "c076d86752af870016161b1be305983250b04a95f0bd31154609da5140bb9734",
+    "capture-route.txt": "06907e28f57f0956754523649947ed58c5dd3708c457395f8640bbee38f948f0",
+    "offload-change.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "relay-addresses.txt": "c0191e282e46a037f0741b792181b03ecbde95694a707cf6c361b50573654715"
+  },
+  "local_artifacts": "local/wan-20261029-smoke/",
+  "timing_limit": "one-trial connectivity smoke, not performance qualification; local coverage run overlapped part of smoke campaign",
+  "scope_limit": "IP bytes only on runner-to-relay leg; full receiver exact comparison is outside transfer timing; synthetic data; no MVM/FIPS claim"
+}
