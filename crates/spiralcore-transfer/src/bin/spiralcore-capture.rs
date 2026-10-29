@@ -856,6 +856,26 @@ fn bounded_read(path: &Path, max: usize) -> Result<Vec<u8>> {
         }
     }
 }
+fn qualify_scope(
+    report: &mut Value,
+    topology: &str,
+    local: IpAddr,
+    remote: Option<IpAddr>,
+    port: u16,
+) -> Result<()> {
+    if topology != "veth"
+        || local != IpAddr::V4(Ipv4Addr::new(198, 18, 0, 1))
+        || remote != Some(IpAddr::V4(Ipv4Addr::new(198, 18, 0, 2)))
+        || port != 443
+    {
+        return Err("veth qualification requires exactly198.18.0.1 to198.18.0.2 TCP443".into());
+    }
+    report["scope"] = json!("isolated_veth_capture_qualification_only");
+    report["qualification_traffic"] = json!("synthetic plaintext TCP; no WAN or TLS claim");
+    report["includes"] = json!("captured synthetic TCP payload, ACKs and retransmissions");
+    report["excludes"] = json!("traffic outside the isolated fixture and capture interval");
+    Ok(())
+}
 fn run() -> Result<()> {
     let mut args = std::env::args_os().skip(1);
     let mut options = BTreeMap::new();
@@ -875,6 +895,7 @@ fn run() -> Result<()> {
                 | "--remote-ip"
                 | "--capture-lifecycle"
                 | "--qualification-port"
+                | "--qualification-topology"
         ) {
             return Err(format!("unknown option {k}"));
         }
@@ -928,6 +949,15 @@ fn run() -> Result<()> {
         .transpose()?
         .unwrap_or(443);
     let mut report = account_selected(&bytes, &rows, local, stats, remote, port)?;
+    if let Some(topology) = options.remove("--qualification-topology") {
+        qualify_scope(
+            &mut report,
+            topology.to_str().ok_or("invalid qualification topology")?,
+            local,
+            remote,
+            port,
+        )?;
+    }
     if let Some(path) = options.remove("--capture-lifecycle") {
         apply_lifecycle(
             &mut report,
@@ -955,6 +985,44 @@ fn main() {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn isolated_veth_scope_is_exact_and_never_relaxes_the_wan_port() {
+        let mut report = json!({"scope":"runner_to_relay_leg_only"});
+        assert!(qualify_scope(
+            &mut report,
+            "veth",
+            "198.18.0.1".parse().unwrap(),
+            Some("198.18.0.2".parse().unwrap()),
+            443
+        )
+        .is_ok());
+        assert_eq!(report["scope"], "isolated_veth_capture_qualification_only");
+        assert!(!report["includes"].as_str().unwrap().contains("TLS"));
+        assert!(qualify_scope(
+            &mut report,
+            "veth",
+            "198.18.0.1".parse().unwrap(),
+            Some("198.18.0.2".parse().unwrap()),
+            444
+        )
+        .is_err());
+        assert!(qualify_scope(
+            &mut report,
+            "veth",
+            "192.0.2.1".parse().unwrap(),
+            Some("198.18.0.2".parse().unwrap()),
+            443
+        )
+        .is_err());
+        assert!(qualify_scope(
+            &mut report,
+            "other",
+            "198.18.0.1".parse().unwrap(),
+            Some("198.18.0.2".parse().unwrap()),
+            443
+        )
+        .is_err());
+    }
     #[test]
     fn qualification_port_is_loopback_only_and_wan_default_remains_443() {
         let mut p = connection_packet(true, 200, 50001, 42, 0x02);

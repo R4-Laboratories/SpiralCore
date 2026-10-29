@@ -1,5 +1,7 @@
 //! Linux-only experiment supervisor. This observes bounded quiet intervals; it cannot
 //! prove that the network is drained or that traffic outside the interval was captured.
+#[path = "../capture_fixture.rs"]
+mod capture_fixture;
 #[allow(dead_code)]
 #[path = "../capture_lifecycle.rs"]
 mod capture_lifecycle;
@@ -134,14 +136,8 @@ impl Capture {
         if self.identity.as_ref() != Some(&process_identity(pid)?) {
             return Err("capture PID identity changed".into());
         }
-        let status = Command::new(SUDO)
-            .args(["-n", "/bin/kill", signal, &pid.to_string()])
-            .stdin(Stdio::null())
-            .stdout(Stdio::null())
-            .stderr(Stdio::null())
-            .status()
-            .map_err(error)?;
-        if !status.success() {
+        let status = capture_fixture::bounded_signal(pid, signal)?;
+        if status["success"] != true {
             return Err(format!("capture signal {signal} failed"));
         }
         Ok(())
@@ -354,6 +350,9 @@ fn options(mut args: impl Iterator<Item = OsString>) -> Result<Options> {
         interrupt_for_qualification: false,
     })
 }
+fn capture_filter(remote: &str, port: u16) -> String {
+    format!("host {remote} and tcp port {port}")
+}
 fn execute(options: Options) -> Result<()> {
     if !cfg!(target_os = "linux") {
         return Err("capture control requires Linux /proc and tcpdump signals".into());
@@ -407,19 +406,7 @@ fn execute(options: Options) -> Result<()> {
     {
         return Err("invalid capture drop user".into());
     }
-    // libpcap discards duplicate loopback outgoing packets in user space.
-    // Filter those duplicates in the kernel for the loopback qualification;
-    // the WAN interface retains both directions with the ordinary host filter.
-    let filter = format!(
-        "host {} and tcp port {}{}",
-        options.remote,
-        options.port,
-        if options.interface == "lo" {
-            " and inbound"
-        } else {
-            ""
-        }
-    );
+    let filter = capture_filter(&options.remote, options.port);
     let flags = vec![
         "--immediate-mode".into(),
         "-B".into(),
@@ -593,7 +580,9 @@ fn main() {
         return;
     }
     let result = if args.first().is_some_and(|s| s == "--qualify") && args.len() == 2 {
-        qualify(Path::new(&args[1]))
+        capture_fixture::qualify(Path::new(&args[1]))
+    } else if args.first().is_some_and(|s| s == "--fixture-server") && args.len() == 2 {
+        capture_fixture::fixture_server(&args[1])
     } else if args.first().is_some_and(|s| s == "--fixture-client") && args.len() == 4 {
         fixture_client(&args[1], Path::new(&args[2]), &args[3])
     } else {
@@ -612,7 +601,8 @@ fn nanos() -> Result<String> {
         .to_string())
 }
 fn fixture_exchange(addr: &str) -> Result<()> {
-    let mut stream = TcpStream::connect(addr).map_err(error)?;
+    let addr = addr.parse::<std::net::SocketAddr>().map_err(error)?;
+    let mut stream = TcpStream::connect_timeout(&addr, Duration::from_secs(2)).map_err(error)?;
     stream.set_nodelay(true).map_err(error)?;
     stream
         .set_read_timeout(Some(Duration::from_secs(2)))
@@ -633,8 +623,8 @@ fn fixture_exchange(addr: &str) -> Result<()> {
 }
 fn fixture_client(addr: &OsString, out: &Path, _kind: &OsString) -> Result<()> {
     let addr = addr.to_str().ok_or("invalid fixture address")?;
-    if !addr.starts_with("127.0.0.2:") {
-        return Err("fixture only permits its loopback address".into());
+    if addr != capture_fixture::FIXTURE_ADDR {
+        return Err("fixture only permits its isolated namespace address".into());
     }
     let start = nanos()?;
     fixture_exchange(addr)?;
@@ -644,174 +634,6 @@ fn fixture_client(addr: &OsString, out: &Path, _kind: &OsString) -> Result<()> {
     writeln!(f, "{row}").map_err(error)?;
     drop(new_file(&out.join("client-finished"))?);
     Ok(())
-}
-fn qualify(out: &Path) -> Result<()> {
-    if !cfg!(target_os = "linux") {
-        return Err("live capture qualification requires Linux".into());
-    }
-    fs::create_dir(out).map_err(error)?;
-    let out = fs::canonicalize(out).map_err(error)?;
-    let executable = std::env::current_exe().map_err(error)?;
-    let mut outcomes = Vec::new();
-    for kind in ["normal", "interrupted", "ongoing"] {
-        let dir = out.join(kind);
-        fs::create_dir(&dir).map_err(error)?;
-        let listener = TcpListener::bind("127.0.0.2:0").map_err(error)?;
-        listener.set_nonblocking(true).map_err(error)?;
-        let addr = listener.local_addr().map_err(error)?.to_string();
-        let server = thread::spawn(move || -> Result<()> {
-            let deadline = Instant::now() + Duration::from_secs(25);
-            let mut count = 0;
-            let expected = if kind == "ongoing" { 2 } else { 1 };
-            while count < expected {
-                let (mut stream, _) = match listener.accept() {
-                    Ok(v) => v,
-                    Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => {
-                        if Instant::now() >= deadline {
-                            return Err("fixture accept timeout".into());
-                        }
-                        thread::sleep(POLL);
-                        continue;
-                    }
-                    Err(e) => return Err(error(e)),
-                };
-                stream
-                    .set_read_timeout(Some(Duration::from_secs(2)))
-                    .map_err(error)?;
-                stream
-                    .set_write_timeout(Some(Duration::from_secs(2)))
-                    .map_err(error)?;
-                stream.set_nodelay(true).map_err(error)?;
-                if count == 0 {
-                    for _ in 0..64 {
-                        let mut bytes = [0; 1024];
-                        stream.read_exact(&mut bytes).map_err(error)?;
-                        stream.write_all(&bytes).map_err(error)?;
-                    }
-                    thread::sleep(Duration::from_millis(700));
-                } else {
-                    let mut b = [0];
-                    loop {
-                        match stream.read_exact(&mut b) {
-                            Ok(()) => stream.write_all(&b).map_err(error)?,
-                            Err(e) if e.kind() == std::io::ErrorKind::UnexpectedEof => break,
-                            Err(e) => return Err(error(e)),
-                        }
-                    }
-                }
-                count += 1;
-            }
-            Ok(())
-        });
-        let marker = dir.join("client-finished");
-        let pulse_addr = addr.clone();
-        let traffic = if kind == "ongoing" {
-            Some(thread::spawn(move || -> Result<()> {
-                let until = Instant::now() + Duration::from_secs(15);
-                while !marker.exists() {
-                    if Instant::now() >= until {
-                        return Err("fixture marker timeout".into());
-                    }
-                    thread::sleep(POLL);
-                }
-                let mut stream = TcpStream::connect(pulse_addr).map_err(error)?;
-                stream
-                    .set_read_timeout(Some(Duration::from_secs(2)))
-                    .map_err(error)?;
-                stream
-                    .set_write_timeout(Some(Duration::from_secs(2)))
-                    .map_err(error)?;
-                for _ in 0..120 {
-                    stream.write_all(&[0x6b]).map_err(error)?;
-                    let mut b = [0];
-                    stream.read_exact(&mut b).map_err(error)?;
-                    if b != [0x6b] {
-                        return Err("pulse differs".into());
-                    }
-                    thread::sleep(Duration::from_millis(100));
-                }
-                Ok(())
-            }))
-        } else {
-            None
-        };
-        let result = execute(Options {
-            out: dir.clone(),
-            interface: "lo".into(),
-            local: "127.0.0.1".into(),
-            remote: "127.0.0.2".into(),
-            port: addr.rsplit(':').next().unwrap().parse().map_err(error)?,
-            command: vec![
-                executable.as_os_str().into(),
-                "--fixture-client".into(),
-                addr.into(),
-                dir.as_os_str().into(),
-                kind.into(),
-            ],
-            interrupt_for_qualification: kind == "interrupted",
-        });
-        // Capture has already been stopped/reaped and its lifecycle preserved.
-        // Do not mask setup failure with the synthetic server's accept timeout.
-        // This private CLI returns to main's exit, terminating its waiting threads.
-        if result.is_err() && !dir.join("rows.jsonl").is_file() {
-            return result.map_err(|e| format!("capture setup failed before fixture: {e}"));
-        }
-        server.join().map_err(|_| "fixture server panic")??;
-        if let Some(t) = traffic {
-            t.join().map_err(|_| "fixture pulse panic")??;
-        }
-        let evidence = bounded(&dir.join("capture-lifecycle.json"), MAX_LOG)?;
-        let lifecycle: Lifecycle = serde_json::from_slice(&evidence).map_err(error)?;
-        let status = Command::new(executable.with_file_name("spiralcore-capture"))
-            .args(["--pcap"])
-            .arg(dir.join("headers.pcap"))
-            .arg("--rows")
-            .arg(dir.join("rows.jsonl"))
-            .args([
-                "--local-ip",
-                "127.0.0.1",
-                "--remote-ip",
-                "127.0.0.2",
-                "--capture-stats",
-            ])
-            .arg(dir.join("tcpdump-stats.txt"))
-            .arg("--capture-lifecycle")
-            .arg(dir.join("capture-lifecycle.json"))
-            .arg("--qualification-port")
-            .arg(lifecycle.port.to_string())
-            .arg("--out")
-            .arg(dir.join("capture.json"))
-            .status()
-            .map_err(error)?;
-        if !status.success() {
-            return Err(format!("{kind} parser qualification failed"));
-        }
-        let report: serde_json::Value =
-            serde_json::from_slice(&bounded(&dir.join("capture.json"), MAX_LOG)?).map_err(error)?;
-        let complete = report["capture_complete"]
-            .as_bool()
-            .ok_or("missing completeness")?;
-        let expected = kind == "normal";
-        if result.is_ok() != expected || complete != expected {
-            return Err(format!(
-                "{kind} lifecycle/completeness qualification differs: {result:?}"
-            ));
-        }
-        if kind == "ongoing"
-            && !lifecycle
-                .errors
-                .iter()
-                .any(|e| e == "post-client quiet interval timed out")
-        {
-            return Err("ongoing fixture did not exercise quiet timeout".into());
-        }
-        outcomes.push(serde_json::json!({"case":kind,"controller_success":result.is_ok(),"capture_complete":complete,"expected_success":expected,"lifecycle_sha256":format!("{:x}",Sha256::digest(&evidence)),"errors":lifecycle.errors}));
-    }
-    let result = serde_json::json!({"schema":"spiralcore.capture-qualification.v1","scope":"Linux loopback lifecycle qualification only; not WAN throughput evidence","controller_sha256":digest(&executable,64*1024*1024)?,"cases":outcomes,"passed":true});
-    let mut file = new_file(&out.join("qualification.json"))?;
-    serde_json::to_writer_pretty(&mut file, &result).map_err(error)?;
-    file.write_all(b"\n").map_err(error)?;
-    file.sync_all().map_err(error)
 }
 #[cfg(test)]
 mod tests {
@@ -847,5 +669,12 @@ mod tests {
         assert!(options(args("eth0; false", "443")).is_err());
         assert!(options(args("eth0", "0")).is_err());
         assert!(options(args("eth0", "443")).is_ok());
+    }
+    #[test]
+    fn ethernet_capture_filter_has_no_direction_metadata_load() {
+        assert_eq!(
+            capture_filter("198.18.0.2", 443),
+            "host 198.18.0.2 and tcp port 443"
+        );
     }
 }
