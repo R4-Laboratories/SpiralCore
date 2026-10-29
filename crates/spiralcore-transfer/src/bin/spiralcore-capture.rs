@@ -1,6 +1,10 @@
 //! Bounded classical-PCAP accounting. No packet payload is emitted or treated as a wire-byte proxy.
+#[allow(dead_code)]
+#[path = "../capture_lifecycle.rs"]
+mod capture_lifecycle;
 use serde::Serialize;
 use serde_json::{json, Value};
+use sha2::{Digest, Sha256};
 use std::{
     collections::{BTreeMap, BTreeSet},
     fs::{File, OpenOptions},
@@ -263,6 +267,7 @@ fn packet(
     link: u32,
     local: IpAddr,
     expected_remote: Option<IpAddr>,
+    expected_port: u16,
 ) -> Result<Packet> {
     let (mut offset, mut ethertype) = match link {
         1 => {
@@ -404,9 +409,9 @@ fn packet(
             destination_port
         } else {
             source_port
-        }) != 443
+        }) != expected_port as usize
     {
-        return Err("unexpected flow: remote TCP port is not 443".into());
+        return Err("unexpected flow: remote TCP port differs from selected port".into());
     }
     Ok(Packet {
         upload: Some(upload),
@@ -422,7 +427,7 @@ fn packet(
                 } else {
                     destination_port
                 }) as u16,
-                remote_port: 443,
+                remote_port: expected_port,
             },
             sequence: u32::from_be_bytes([tcp[4], tcp[5], tcp[6], tcp[7]]),
             flags: tcp[13],
@@ -436,6 +441,7 @@ fn scan(
     format: Format,
     local: IpAddr,
     expected_remote: Option<IpAddr>,
+    expected_port: u16,
     mut visit: impl FnMut(u64, Packet) -> Result<()>,
 ) -> Result<()> {
     let mut pos = 24;
@@ -476,7 +482,14 @@ fn scan(
         pos = end;
         visit(
             nanos,
-            packet(data, original, format.link, local, expected_remote)?,
+            packet(
+                data,
+                original,
+                format.link,
+                local,
+                expected_remote,
+                expected_port,
+            )?,
         )?;
     }
     Ok(())
@@ -485,13 +498,30 @@ fn scan(
 fn account(pcap: &[u8], text: &str, local: IpAddr, stats: CaptureStats) -> Result<Value> {
     account_expected(pcap, text, local, stats, None)
 }
+#[cfg(test)]
 fn account_expected(
     pcap: &[u8],
     text: &str,
     local: IpAddr,
     stats: CaptureStats,
-    expected_remote: Option<IpAddr>,
+    remote: Option<IpAddr>,
 ) -> Result<Value> {
+    account_selected(pcap, text, local, stats, remote, 443)
+}
+fn account_selected(
+    pcap: &[u8],
+    text: &str,
+    local: IpAddr,
+    stats: CaptureStats,
+    expected_remote: Option<IpAddr>,
+    expected_port: u16,
+) -> Result<Value> {
+    if expected_port == 0
+        || (expected_port != 443
+            && !(local.is_loopback() && expected_remote.is_some_and(|ip| ip.is_loopback())))
+    {
+        return Err("non-443 qualification port requires two loopback IPs".into());
+    }
     if pcap.len() > MAX_PCAP {
         return Err("pcap exceeds 256 MiB".into());
     }
@@ -521,36 +551,43 @@ fn account_expected(
     }
     let mut rows = read_rows(text)?;
     let mut connections = BTreeMap::<ConnectionKey, Connection>::new();
-    scan(pcap, format, local, expected_remote, |ns, packet| {
-        if let Some(tcp) = packet
-            .tcp
-            .filter(|tcp| packet.upload == Some(true) && tcp.flags & 0x12 == 0x02)
-        {
-            if let Some(connection) = connections.get_mut(&tcp.key) {
-                if connection.initial_sequence != tcp.sequence {
-                    // Do not guess TCP epochs: quarantine every packet on the reused tuple.
-                    connection.ambiguous = true;
-                } else if ns < connection.syn_nanos {
-                    connection.syn_nanos = ns;
-                    connection.owner = syn_owner(&rows, ns);
+    scan(
+        pcap,
+        format,
+        local,
+        expected_remote,
+        expected_port,
+        |ns, packet| {
+            if let Some(tcp) = packet
+                .tcp
+                .filter(|tcp| packet.upload == Some(true) && tcp.flags & 0x12 == 0x02)
+            {
+                if let Some(connection) = connections.get_mut(&tcp.key) {
+                    if connection.initial_sequence != tcp.sequence {
+                        // Do not guess TCP epochs: quarantine every packet on the reused tuple.
+                        connection.ambiguous = true;
+                    } else if ns < connection.syn_nanos {
+                        connection.syn_nanos = ns;
+                        connection.owner = syn_owner(&rows, ns);
+                    }
+                } else {
+                    if connections.len() >= MAX_CONNECTIONS {
+                        return Err("more than 65536 TCP connections".into());
+                    }
+                    connections.insert(
+                        tcp.key,
+                        Connection {
+                            initial_sequence: tcp.sequence,
+                            syn_nanos: ns,
+                            owner: syn_owner(&rows, ns),
+                            ambiguous: false,
+                        },
+                    );
                 }
-            } else {
-                if connections.len() >= MAX_CONNECTIONS {
-                    return Err("more than 65536 TCP connections".into());
-                }
-                connections.insert(
-                    tcp.key,
-                    Connection {
-                        initial_sequence: tcp.sequence,
-                        syn_nanos: ns,
-                        owner: syn_owner(&rows, ns),
-                        ambiguous: false,
-                    },
-                );
             }
-        }
-        Ok(())
-    })?;
+            Ok(())
+        },
+    )?;
     let mut setup = Counters::default();
     let mut unattributed = Counters::default();
     let mut campaign = Counters::default();
@@ -559,49 +596,56 @@ fn account_expected(
     let mut remotes = BTreeSet::new();
     let mut first = None;
     let mut last = None;
-    scan(pcap, format, local, expected_remote, |ns, packet| {
-        first = Some(first.map_or(ns, |old: u64| old.min(ns)));
-        last = Some(last.map_or(ns, |old: u64| old.max(ns)));
-        if let Some(ip) = packet.remote {
-            remotes.insert(ip.to_string());
-        }
-        if let Some(reason) = packet.unclassified {
-            add(reasons.entry(reason).or_default(), 1)?;
-        }
-        campaign.packet(&packet)?;
-        let owner = match packet.tcp {
-            None => Err("unclassified_tcp_connection"),
-            Some(tcp) => match connections.get(&tcp.key) {
-                None => Err("no_observed_outbound_syn"),
-                Some(connection) if connection.ambiguous => {
-                    Err("reused_tuple_with_different_initial_sequence")
-                }
-                Some(connection) if ns < connection.syn_nanos => {
-                    Err("packet_precedes_observed_syn")
-                }
-                Some(connection) => match connection.owner {
-                    Owner::OutsideMeasurement => Err("syn_outside_active_measurement"),
-                    owner => Ok(owner),
+    scan(
+        pcap,
+        format,
+        local,
+        expected_remote,
+        expected_port,
+        |ns, packet| {
+            first = Some(first.map_or(ns, |old: u64| old.min(ns)));
+            last = Some(last.map_or(ns, |old: u64| old.max(ns)));
+            if let Some(ip) = packet.remote {
+                remotes.insert(ip.to_string());
+            }
+            if let Some(reason) = packet.unclassified {
+                add(reasons.entry(reason).or_default(), 1)?;
+            }
+            campaign.packet(&packet)?;
+            let owner = match packet.tcp {
+                None => Err("unclassified_tcp_connection"),
+                Some(tcp) => match connections.get(&tcp.key) {
+                    None => Err("no_observed_outbound_syn"),
+                    Some(connection) if connection.ambiguous => {
+                        Err("reused_tuple_with_different_initial_sequence")
+                    }
+                    Some(connection) if ns < connection.syn_nanos => {
+                        Err("packet_precedes_observed_syn")
+                    }
+                    Some(connection) => match connection.owner {
+                        Owner::OutsideMeasurement => Err("syn_outside_active_measurement"),
+                        owner => Ok(owner),
+                    },
                 },
-            },
-        };
-        match owner {
-            Ok(Owner::Setup) => setup.packet(&packet)?,
-            Ok(Owner::Row(index)) => {
-                let row = &mut rows[index];
-                row.counters.packet(&packet)?;
-                if ns >= row.start && ns <= row.end {
-                    add(&mut row.measurement_packets, 1)?;
+            };
+            match owner {
+                Ok(Owner::Setup) => setup.packet(&packet)?,
+                Ok(Owner::Row(index)) => {
+                    let row = &mut rows[index];
+                    row.counters.packet(&packet)?;
+                    if ns >= row.start && ns <= row.end {
+                        add(&mut row.measurement_packets, 1)?;
+                    }
                 }
+                Err(reason) => {
+                    unattributed.packet(&packet)?;
+                    add(attribution_reasons.entry(reason).or_default(), 1)?;
+                }
+                Ok(Owner::OutsideMeasurement) => return Err("invalid attribution state".into()),
             }
-            Err(reason) => {
-                unattributed.packet(&packet)?;
-                add(attribution_reasons.entry(reason).or_default(), 1)?;
-            }
-            Ok(Owner::OutsideMeasurement) => return Err("invalid attribution state".into()),
-        }
-        Ok(())
-    })?;
+            Ok(())
+        },
+    )?;
     let mut sum = setup.clone();
     sum.sum(&unattributed)?;
     for row in &rows {
@@ -693,7 +737,7 @@ fn account_expected(
             Ok(v)
         })
         .collect::<Result<Vec<_>>>()?;
-    Ok(json!({
+    let mut report = json!({
         "schema":"spiralcore.pcap-accounting.v1","scope":"runner_to_relay_leg_only","local_ip":local.to_string(),
         "byte_layer":"IP total lengths, not captured snapshot lengths or physical Ethernet wire bytes",
         "includes":"captured TLS/HTTP traffic, TCP ACKs and retransmissions","excludes":"relay-to-receiver leg, relay internals, uncaptured/dropped traffic",
@@ -709,7 +753,12 @@ fn account_expected(
         "attribution_precondition":"client opens fresh connections per measurement; connections are not shared between operations",
         "observed_syn_connections":connections.len(),"ambiguous_connections":connections.values().filter(|connection|connection.ambiguous).count(),
         "setup":setup,"rows":output_rows,"unattributed":unattributed,"campaign":campaign,"partition_sum_verified":true,"unclassified_reasons":reasons,"unattributed_reasons":attribution_reasons
-    }))
+    });
+    if expected_port != 443 {
+        report["expected_remote_port"] = json!(expected_port);
+        report["scope"] = json!("loopback_capture_qualification_only");
+    }
+    Ok(report)
 }
 fn capture_stats(text: &str) -> Result<CaptureStats> {
     let mut stats = CaptureStats::default();
@@ -734,6 +783,50 @@ fn capture_stats(text: &str) -> Result<CaptureStats> {
         );
     }
     Ok(stats)
+}
+fn apply_lifecycle(
+    report: &mut Value,
+    pcap: &[u8],
+    stats: CaptureStats,
+    evidence: &[u8],
+) -> Result<()> {
+    let lifecycle: capture_lifecycle::Lifecycle =
+        serde_json::from_slice(evidence).map_err(|e| format!("invalid lifecycle evidence: {e}"))?;
+    let final_counters = stats.captured.zip(stats.received).zip(stats.dropped).map(
+        |((captured, received), dropped)| capture_lifecycle::Counters {
+            captured,
+            received,
+            dropped,
+        },
+    );
+    let mut failures = lifecycle.failure_reasons(final_counters, pcap.len() as u64);
+    if lifecycle.pcap_sha256.as_deref() != Some(format!("{:x}", Sha256::digest(pcap)).as_str()) {
+        failures.push("lifecycle_pcap_hash_mismatch".into());
+    }
+    if report["local_ip"].as_str() != Some(lifecycle.local_ip.as_str())
+        || report["expected_remote_ip"].as_str() != Some(lifecycle.remote_ip.as_str())
+    {
+        failures.push("lifecycle_capture_endpoint_mismatch".into());
+    }
+    if report
+        .get("expected_remote_port")
+        .and_then(Value::as_u64)
+        .unwrap_or(443)
+        != u64::from(lifecycle.port)
+    {
+        failures.push("lifecycle_capture_port_mismatch".into());
+    }
+    report["capture_lifecycle_verified"] = json!(failures.is_empty());
+    report["capture_lifecycle_sha256"] = json!(format!("{:x}", Sha256::digest(evidence)));
+    report["capture_lifecycle_scope"]=json!("bounded ready, preflight and post-client quiet observations, clean interrupt/reap and independently emitted final statistics; does not prove network drain or coverage outside the capture interval");
+    if !failures.is_empty() {
+        report["capture_complete"] = json!(false);
+        report["incomplete_reasons"]
+            .as_array_mut()
+            .ok_or("invalid capture report")?
+            .extend(failures.into_iter().map(Value::String));
+    }
+    Ok(())
 }
 fn bounded_read(path: &Path, max: usize) -> Result<Vec<u8>> {
     let mut file = File::open(path).map_err(|e| format!("{}: {e}", path.display()))?;
@@ -769,12 +862,19 @@ fn run() -> Result<()> {
     while let Some(k) = args.next() {
         let k = k.into_string().map_err(|_| "option must be UTF-8")?;
         if k == "--help" {
-            println!("spiralcore-capture --pcap FILE --rows JSONL --local-ip IP --out NEW_JSON [--capture-stats FILE] [--remote-ip IP]\nClassical PCAP only, at most256 MiB; <=4096 ordered rows; header-only IP-byte accounting for the runner-to-relay leg.");
+            println!("spiralcore-capture --pcap FILE --rows JSONL --local-ip IP --out NEW_JSON [--capture-stats FILE] [--remote-ip IP] [--capture-lifecycle FILE] [--qualification-port PORT]\nClassical PCAP only, at most256 MiB; <=4096 ordered rows; WAN selected remote port is443. A different qualification port requires two loopback IPs.");
             return Ok(());
         }
         if !matches!(
             k.as_str(),
-            "--pcap" | "--rows" | "--local-ip" | "--out" | "--capture-stats" | "--remote-ip"
+            "--pcap"
+                | "--rows"
+                | "--local-ip"
+                | "--out"
+                | "--capture-stats"
+                | "--remote-ip"
+                | "--capture-lifecycle"
+                | "--qualification-port"
         ) {
             return Err(format!("unknown option {k}"));
         }
@@ -818,7 +918,24 @@ fn run() -> Result<()> {
                 })
         })
         .transpose()?;
-    let report = account_expected(&bytes, &rows, local, stats, remote)?;
+    let port = options
+        .remove("--qualification-port")
+        .map(|s| {
+            s.into_string()
+                .map_err(|_| "invalid port")
+                .and_then(|s| s.parse::<u16>().map_err(|_| "invalid port"))
+        })
+        .transpose()?
+        .unwrap_or(443);
+    let mut report = account_selected(&bytes, &rows, local, stats, remote, port)?;
+    if let Some(path) = options.remove("--capture-lifecycle") {
+        apply_lifecycle(
+            &mut report,
+            &bytes,
+            stats,
+            &bounded_read(Path::new(&path), 1024 * 1024)?,
+        )?;
+    }
     let mut output = OpenOptions::new()
         .write(true)
         .create_new(true)
@@ -838,6 +955,83 @@ fn main() {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn qualification_port_is_loopback_only_and_wan_default_remains_443() {
+        let mut p = connection_packet(true, 200, 50001, 42, 0x02);
+        p[26..30].copy_from_slice(&[127, 0, 0, 1]);
+        p[30..34].copy_from_slice(&[127, 0, 0, 2]);
+        p[36..38].copy_from_slice(&19043u16.to_be_bytes());
+        let bytes = pcap(&[(1000, p)], false, true);
+        let local = "127.0.0.1".parse().unwrap();
+        let remote = Some("127.0.0.2".parse().unwrap());
+        assert!(account_expected(&bytes, &rows(), local, stats(1), remote).is_err());
+        let report = account_selected(&bytes, &rows(), local, stats(1), remote, 19043).unwrap();
+        assert_eq!(report["expected_remote_port"], 19043);
+        assert_eq!(report["scope"], "loopback_capture_qualification_only");
+        assert!(account_selected(
+            &bytes,
+            &rows(),
+            "192.0.2.10".parse().unwrap(),
+            stats(1),
+            remote,
+            19043
+        )
+        .is_err());
+    }
+    #[test]
+    fn lifecycle_failure_can_never_leave_an_equal_counter_capture_complete() {
+        let mut report = json!({"capture_complete":true,"incomplete_reasons":[],"local_ip":"10.0.0.1","expected_remote_ip":"10.0.0.2"});
+        let mut lifecycle = capture_lifecycle::tests::valid();
+        lifecycle.pcap_sha256 = Some(format!("{:x}", Sha256::digest(vec![0; 1144])));
+        lifecycle.forced_cleanup = true;
+        let evidence = serde_json::to_vec(&lifecycle).unwrap();
+        apply_lifecycle(
+            &mut report,
+            &vec![0; 1144],
+            CaptureStats {
+                captured: Some(10),
+                received: Some(10),
+                dropped: Some(0),
+            },
+            &evidence,
+        )
+        .unwrap();
+        assert_eq!(report["capture_complete"], false);
+        assert_eq!(report["capture_lifecycle_verified"], false);
+        assert!(report["incomplete_reasons"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|s| s == "capture_failed_or_not_cleanly_reaped"));
+    }
+    #[test]
+    fn lifecycle_is_bound_to_the_same_pcap_endpoints_and_final_counters() {
+        let pcap = vec![0; 1144];
+        let mut lifecycle = capture_lifecycle::tests::valid();
+        lifecycle.pcap_sha256 = Some(format!("{:x}", Sha256::digest(&pcap)));
+        for mutation in 0..6 {
+            let mut l = lifecycle.clone();
+            let mut s = stats(10);
+            let mut report = json!({"capture_complete":true,"incomplete_reasons":[],"local_ip":"10.0.0.1","expected_remote_ip":"10.0.0.2"});
+            match mutation {
+                1 => l.pcap_sha256 = Some("d".repeat(64)),
+                2 => l.remote_ip = "10.0.0.3".into(),
+                3 => s.received = Some(13),
+                4 => {
+                    l.final_snapshot.as_mut().unwrap().stderr_text = "10 packets captured\n".into()
+                }
+                5 => l.port = 19043,
+                _ => {}
+            }
+            apply_lifecycle(&mut report, &pcap, s, &serde_json::to_vec(&l).unwrap()).unwrap();
+            assert_eq!(
+                report["capture_complete"],
+                mutation == 0,
+                "mutation {mutation}"
+            );
+            assert_eq!(report["capture_lifecycle_verified"], mutation == 0);
+        }
+    }
     fn stats(records: u64) -> CaptureStats {
         CaptureStats {
             captured: Some(records),

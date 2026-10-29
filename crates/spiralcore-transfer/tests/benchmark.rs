@@ -79,6 +79,80 @@ fn large_plan(t: &Temp, shard: u32) -> Value {
     serde_json::from_slice(&fs::read(out).unwrap()).unwrap()
 }
 #[test]
+fn broad16_plans_isolate_all_controls_and_bound_each_fresh_cache() {
+    let t = Temp::new();
+    let cases = [
+        "localized_32",
+        "scattered_32x32",
+        "prefix_4096",
+        "middle_4096",
+        "delete_4096",
+        "append_4096",
+        "truncate_4096",
+        "replace_1m",
+        "structured_localized_32",
+        "compressed_localized_32",
+        "cold_random",
+        "cold_structured",
+    ];
+    let mut scopes = std::collections::BTreeSet::new();
+    for case in cases {
+        let mut trials = std::collections::BTreeSet::new();
+        for shard in 0..5 {
+            let out = t.0.join(format!("broad-{case}-{shard}.json"));
+            let result = command()
+                .args([
+                    "plan",
+                    "--suite",
+                    &format!("broad16-{case}"),
+                    "--trials",
+                    "30",
+                    "--shard",
+                    &shard.to_string(),
+                    "--run",
+                    &"ab".repeat(32),
+                    "--out",
+                ])
+                .arg(&out)
+                .output()
+                .unwrap();
+            assert!(
+                result.status.success(),
+                "{}",
+                String::from_utf8_lossy(&result.stderr)
+            );
+            let plan: Value = serde_json::from_slice(&fs::read(&out).unwrap()).unwrap();
+            assert_eq!(plan["schema"], "spiralcore.wan.plan.v4");
+            assert_eq!(plan["cold_graph_warming"], false);
+            assert_eq!(plan["shard"], shard);
+            let tasks = plan["tasks"].as_array().unwrap();
+            assert_eq!(tasks.len(), 24);
+            assert!(plan["retained_payload_bytes"].as_u64().unwrap() + 48 * 4096 < 1 << 30);
+            for pair in tasks.chunks_exact(4) {
+                let trial = pair[0]["trial"].as_u64().unwrap();
+                assert!((shard * 6..(shard + 1) * 6).contains(&trial));
+                assert!(trials.insert(trial));
+                let arms: std::collections::BTreeSet<_> =
+                    pair.iter().map(|v| v["arm"].as_str().unwrap()).collect();
+                assert_eq!(
+                    arms,
+                    ["raw_full", "zstd_full", "zstd_prefix", "sparse"].into()
+                );
+                for task in pair {
+                    assert_eq!(task["case"], case);
+                    assert_eq!(task["pair"], pair[0]["pair"]);
+                    assert_eq!(task["fixture_seed"], pair[0]["fixture_seed"]);
+                    assert_eq!(task["seed_base"], !case.starts_with("cold_"));
+                    assert_eq!(task["warm_probe"], false);
+                    assert!(scopes.insert(task["scope"].as_str().unwrap().to_owned()));
+                }
+            }
+        }
+        assert_eq!(trials, (0..30).collect());
+    }
+    assert_eq!(scopes.len(), cases.len() * 30 * 4);
+}
+#[test]
 fn large16_shards_cover_thirty_pairs_with_balanced_orders_and_bounded_caches() {
     let t = Temp::new();
     let mut scopes = std::collections::BTreeSet::new();

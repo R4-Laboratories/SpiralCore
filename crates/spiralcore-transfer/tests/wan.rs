@@ -17,6 +17,25 @@ use std::{
 };
 static NEXT: AtomicU64 = AtomicU64::new(0);
 const TOKEN: &str = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+#[test]
+fn campaign_origin_rejects_ambiguous_warming_policy_before_creating_cache() {
+    let t = Temp::new();
+    for (i, plan) in [
+        serde_json::json!({"schema":"spiralcore.wan.plan.v4","allowed_scopes":[hex(&[1;32])]}),
+        serde_json::json!({"schema":"spiralcore.wan.plan.v4","cold_graph_warming":true,"allowed_scopes":[hex(&[1;32])]}),
+        serde_json::json!({"schema":"spiralcore.wan.plan.v3","cold_graph_warming":false,"allowed_scopes":[hex(&[1;32])]}),
+    ].into_iter().enumerate() {
+        let path = t.0.join(format!("plan-{i}.json"));
+        let cache = t.0.join(format!("cache-{i}"));
+        fs::write(&path, serde_json::to_vec(&plan).unwrap()).unwrap();
+        let out = std::process::Command::new(env!("CARGO_BIN_EXE_spiralcore-wan"))
+            .args(["serve", "--cache"]).arg(&cache).arg("--plan").arg(&path)
+            .args(["--seconds", "1"]).env("SPIRALCORE_WAN_TOKEN", TOKEN).output().unwrap();
+        assert!(!out.status.success(), "unsupported policy was accepted");
+        assert!(String::from_utf8_lossy(&out.stderr).contains("warming policy"));
+        assert!(!cache.exists());
+    }
+}
 struct Temp(PathBuf);
 impl Temp {
     fn new() -> Self {

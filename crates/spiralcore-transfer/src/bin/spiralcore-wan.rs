@@ -1,6 +1,6 @@
 //! Short-lived loopback origin for an authenticated synthetic WAN campaign.
 use spiralcore_transfer::{
-    endpoint::Endpoint,
+    endpoint::{ColdGraphPolicy, Endpoint},
     wan::{self, BenchAuthority},
 };
 use std::{collections::BTreeSet, io::Write, net::TcpListener, path::Path, time::Duration};
@@ -42,6 +42,18 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     wan::parse_id(&token).map_err(|_| "capability must be 64 lowercase hexadecimal characters")?;
     let plan: serde_json::Value =
         serde_json::from_slice(&std::fs::read(plan.ok_or("--plan required")?)?)?;
+    let policy = match (
+        plan.get("schema").and_then(|v| v.as_str()),
+        plan.get("cold_graph_warming"),
+    ) {
+        (Some("spiralcore.wan.plan.v4"), Some(serde_json::Value::Bool(false))) => {
+            ColdGraphPolicy::Disabled
+        }
+        (Some("spiralcore.wan.plan.v4"), _) | (_, Some(_)) => {
+            return Err("unsupported or missing warming policy".into())
+        }
+        _ => ColdGraphPolicy::EagerBounded,
+    };
     let scopes = plan
         .get("allowed_scopes")
         .and_then(|x| x.as_array())
@@ -60,8 +72,9 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                 .into(),
         );
     }
-    let endpoint = Endpoint::open(cache, wan::limits(), BenchAuthority)?;
+    let endpoint = Endpoint::open_with_policy(cache, wan::limits(), BenchAuthority, policy)?;
     let listener = TcpListener::bind(addr)?;
+    eprintln!("POLICY cold_graph_policy={policy:?}");
     println!("READY addr={}", listener.local_addr()?);
     std::io::stdout().flush()?;
     wan::serve(

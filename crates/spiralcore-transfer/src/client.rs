@@ -94,7 +94,7 @@ pub fn transfer<F: FnMut(&Frame) -> Result<Frame>>(
     exchange: F,
 ) -> Result<Stats> {
     let start = Instant::now();
-    if mode == Mode::SparseV1 {
+    if matches!(mode, Mode::SparseV1 | Mode::ZstdPrefixV1) {
         return Err(Error::Unsupported);
     }
     if bytes.len() as u64 > MAX_OBJECT {
@@ -479,7 +479,7 @@ pub fn transfer_batched<F: FnMut(&[Frame]) -> Result<Vec<Frame>>>(
     exchange: F,
 ) -> Result<Stats> {
     let start = Instant::now();
-    if mode == Mode::SparseV1 {
+    if matches!(mode, Mode::SparseV1 | Mode::ZstdPrefixV1) {
         return Err(Error::Unsupported);
     }
     if bytes.len() > MAX_BATCHED_OBJECT
@@ -603,11 +603,64 @@ pub fn transfer_sparse_batched<F: FnMut(&[Frame]) -> Result<Vec<Frame>>>(
     )
 }
 
+/// Transfer a whole-base zstd prefix frame with the version-one bounded profile.
+/// Encoding and fallback selection are included in elapsed sender time. A patch
+/// is selected only when complete object-protocol traffic is cheaper than Raw;
+/// a missing remote base is returned without retry or changing the offer.
+pub fn transfer_zstd_prefix_batched<F: FnMut(&[Frame]) -> Result<Vec<Frame>>>(
+    base: &[u8],
+    target: &[u8],
+    transfer_id: Id,
+    warm_probe: bool,
+    exchange: F,
+) -> Result<Stats> {
+    let start = Instant::now();
+    if base.len() > MAX_BATCHED_OBJECT || target.len() > MAX_BATCHED_OBJECT {
+        return Err(Error::Limit);
+    }
+    let encoded = if base == target {
+        Vec::new()
+    } else {
+        crate::zstd_prefix::encode(base, target)?
+    };
+    // Each Data contributes its frame (56 + encoding/length/version), an
+    // Accepted frame (64), and two batch length prefixes (8). Prefix Begin has
+    // 32 more bytes for the required base ID. Common Begin/Finish and batch
+    // headers cancel. Both complete transfers fit one batch at this ceiling.
+    let prefix_cost = encoded.len() + encoded.len().div_ceil(MAX_CHUNK) * 134 + 32;
+    let raw_cost = target.len() + target.len().div_ceil(MAX_CHUNK) * 133;
+    if encoded.is_empty() || prefix_cost >= raw_cost {
+        drop(encoded);
+        let mut stats =
+            transfer_batched(target, Mode::Raw, None, transfer_id, warm_probe, exchange)?;
+        stats.elapsed_micros = start.elapsed().as_micros();
+        return Ok(stats);
+    }
+    let offer = Offer {
+        mode: Mode::ZstdPrefixV1,
+        len: target.len() as u64,
+        object: crate::object_id(target),
+        manifest: None,
+        base: Some(crate::object_id(base)),
+    };
+    let frames = crate::zstd_prefix::chunks(&encoded)?;
+    drop(encoded);
+    send_batched(
+        offer,
+        BatchedPayload::Prefix(frames),
+        transfer_id,
+        warm_probe,
+        exchange,
+        start,
+    )
+}
+
 enum BatchedPayload<'a> {
     Bytes(&'a [u8]),
     Graph(&'a Graph, Option<&'a Graph>),
     Prepared(&'a PreparedDelta),
     Sparse(crate::delta::Recipe),
+    Prefix(Vec<Vec<u8>>),
 }
 
 fn send_batched<F: FnMut(&[Frame]) -> Result<Vec<Frame>>>(
@@ -690,6 +743,11 @@ fn send_batched<F: FnMut(&[Frame]) -> Result<Vec<Frame>>>(
                 frames.push(sender.frame(2, body)?);
             }
         }
+        BatchedPayload::Prefix(bodies) => {
+            for body in std::mem::take(bodies) {
+                frames.push(sender.frame(2, body)?);
+            }
+        }
     }
     for repair in 0..=2 {
         frames.push(sender.frame(3, vec![])?);
@@ -704,9 +762,9 @@ fn send_batched<F: FnMut(&[Frame]) -> Result<Vec<Frame>>>(
                     BatchedPayload::Prepared(target) => {
                         repair_nodes_from(ids, target.node_count(), |id| target.node(id))?
                     }
-                    BatchedPayload::Bytes(_) | BatchedPayload::Sparse(_) => {
-                        return Err(Error::Integrity)
-                    }
+                    BatchedPayload::Bytes(_)
+                    | BatchedPayload::Sparse(_)
+                    | BatchedPayload::Prefix(_) => return Err(Error::Integrity),
                 };
                 frames.clear();
                 sender.records(&nodes, &mut frames)?;

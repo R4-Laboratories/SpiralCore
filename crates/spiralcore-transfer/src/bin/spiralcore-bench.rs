@@ -45,6 +45,8 @@ struct Task {
 struct Plan {
     schema: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    cold_graph_warming: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     suite: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     shard: Option<u8>,
@@ -99,6 +101,8 @@ impl Metrics {
 struct Row {
     schema: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    cold_graph_warming: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     suite: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     shard: Option<u8>,
@@ -144,13 +148,26 @@ fn base_fixture(size: usize, seed: u64, structured: bool) -> Vec<u8> {
     b
 }
 fn fixture(task: &Task, phase: &str) -> Vec<u8> {
-    let mut b = base_fixture(task.size, task.fixture_seed, task.case == "cold_structured");
+    let mut b = if task.case == "compressed_localized_32" {
+        zstd::bulk::compress(&base_fixture(task.size - 4096, task.fixture_seed, false), 3)
+            .expect("bounded deterministic compressed fixture")
+    } else {
+        base_fixture(
+            task.size,
+            task.fixture_seed,
+            matches!(
+                task.case.as_str(),
+                "cold_structured" | "structured_localized_32"
+            ),
+        )
+    };
     if phase == "seed" {
         return b;
     }
     match task.case.as_str() {
-        "localized_32" => {
-            for x in &mut b[task.size / 2..task.size / 2 + 32] {
+        "localized_32" | "structured_localized_32" | "compressed_localized_32" => {
+            let at = b.len() / 2;
+            for x in &mut b[at..at + 32] {
                 *x ^= 0xa5;
             }
         }
@@ -163,6 +180,25 @@ fn fixture(task: &Task, phase: &str) -> Vec<u8> {
             }
         }
         "prefix_1" => b.insert(0, 0x5a),
+        "prefix_4096" => {
+            b.splice(..0, [0x5a; 4096]);
+        }
+        "middle_4096" => {
+            let at = b.len() / 2;
+            b.splice(at..at, [0x5a; 4096]);
+        }
+        "delete_4096" => {
+            let at = b.len() / 2;
+            b.drain(at..at + 4096);
+        }
+        "append_4096" => b.extend_from_slice(&[0x5a; 4096]),
+        "truncate_4096" => b.truncate(b.len() - 4096),
+        "replace_1m" => {
+            let at = b.len() / 2;
+            for x in &mut b[at..at + MIB] {
+                *x ^= 0xa5;
+            }
+        }
         _ => {}
     }
     b
@@ -269,7 +305,7 @@ fn make_plan(run: &str, trials: u32) -> Result<Plan> {
         );
     }
     Ok(Plan {
-        schema: "spiralcore.wan.plan.v1".into(), suite: None, shard: None, run: hex(&run_id), trials, fixture_version: "xorshift64-v1".into(),
+        schema: "spiralcore.wan.plan.v1".into(), cold_graph_warming: None, suite: None, shard: None, run: hex(&run_id), trials, fixture_version: "xorshift64-v1".into(),
         retained_payload_bytes, allowed_scopes: tasks.iter().map(|t| t.scope.clone()).collect(), tasks,
         limitations: vec![
             "16 MiB random DAG exceeds the current node cap; only raw/zstd and raw-CAS smoke checks are planned".into(),
@@ -369,7 +405,7 @@ fn selected_plan(run: &str, trials: u32, suite: Option<&str>) -> Result<Plan> {
         return Err("efficiency suite exceeds the isolated 1 GiB cache budget".into());
     }
     Ok(Plan {
-        schema: "spiralcore.wan.plan.v2".into(), suite: Some(suite.into()), shard: None,
+        schema: "spiralcore.wan.plan.v2".into(), cold_graph_warming: None, suite: Some(suite.into()), shard: None,
         run: hex(&run_id), trials, fixture_version: "xorshift64-v1".into(), retained_payload_bytes,
         allowed_scopes: tasks.iter().map(|t| t.scope.clone()).collect(), tasks,
         limitations: vec![
@@ -391,6 +427,9 @@ fn selected_plan(run: &str, trials: u32, suite: Option<&str>) -> Result<Plan> {
     })
 }
 fn profile_plan(run: &str, trials: u32, suite: Option<&str>, shard: Option<u8>) -> Result<Plan> {
+    if let Some(suite) = suite.filter(|s| s.starts_with("broad16-")) {
+        return broad_plan(run, trials, suite, shard);
+    }
     if suite != Some("large16-localized") {
         if shard.is_some() {
             return Err("--shard is valid only for --suite large16-localized".into());
@@ -454,7 +493,7 @@ fn profile_plan(run: &str, trials: u32, suite: Option<&str>, shard: Option<u8>) 
         return Err("large16 shard exceeds its isolated 1 GiB cache budget".into());
     }
     Ok(Plan {
-        schema: "spiralcore.wan.plan.v3".into(), suite: Some("large16-localized".into()), shard: Some(shard),
+        schema: "spiralcore.wan.plan.v3".into(), cold_graph_warming: None, suite: Some("large16-localized".into()), shard: Some(shard),
         run: hex(&run_id), trials, fixture_version: "xorshift64-v1".into(), retained_payload_bytes,
         allowed_scopes: tasks.iter().map(|t| t.scope.clone()).collect(), tasks,
         limitations: vec![
@@ -469,6 +508,112 @@ fn profile_plan(run: &str, trials: u32, suite: Option<&str>, shard: Option<u8>) 
             "Application cache state is controlled; OS page/disk caches, relay scheduling and thermal state are not controlled".into(),
             "Receiver CPU covers decode/handle/encode; relay/cloudflared and socket waits are excluded; CPU is not energy".into(),
             "HTTP body counts exclude packet/link overhead; failed-upload counts are attempted body bytes".into(),
+        ],
+    })
+}
+const BROAD_CASES: [&str; 12] = [
+    "localized_32",
+    "scattered_32x32",
+    "prefix_4096",
+    "middle_4096",
+    "delete_4096",
+    "append_4096",
+    "truncate_4096",
+    "replace_1m",
+    "structured_localized_32",
+    "compressed_localized_32",
+    "cold_random",
+    "cold_structured",
+];
+fn broad_plan(run: &str, trials: u32, suite: &str, shard: Option<u8>) -> Result<Plan> {
+    let case = suite
+        .strip_prefix("broad16-")
+        .ok_or("invalid broad suite")?;
+    if !BROAD_CASES.contains(&case) || trials != 30 {
+        return Err("broad16 requires a registered case and 30 global trials".into());
+    }
+    let shard = shard
+        .filter(|s| *s < 5)
+        .ok_or("broad16 requires shard 0..4")?;
+    let run_id = wan::parse_id(run)?;
+    let size = if matches!(case, "prefix_4096" | "middle_4096" | "append_4096") {
+        16 * MIB - 4096
+    } else {
+        16 * MIB
+    };
+    let arms = ["raw_full", "zstd_full", "zstd_prefix", "sparse"];
+    let mut permutations = Vec::new();
+    for a in 0..4 {
+        for b in 0..4 {
+            for c in 0..4 {
+                for d in 0..4 {
+                    if BTreeSet::from([a, b, c, d]).len() == 4 {
+                        permutations.push([a, b, c, d]);
+                    }
+                }
+            }
+        }
+    }
+    let offset = hash(b"spiralcore.bench.order.v4\0", &[&run_id, suite.as_bytes()])[0] as usize;
+    let seed_base = !case.starts_with("cold_");
+    let mut tasks = Vec::new();
+    for trial in u32::from(shard) * 6..u32::from(shard + 1) * 6 {
+        let pair = format!("{size}-{case}-{trial:02}");
+        let seed = hash(
+            b"spiralcore.bench.fixture.v4\0",
+            &[&run_id, case.as_bytes(), &trial.to_le_bytes()],
+        );
+        let fixture_seed = u64::from_le_bytes(seed[..8].try_into()?).max(1);
+        for i in permutations[(offset + trial as usize) % permutations.len()] {
+            let arm = arms[i];
+            let id = format!("{pair}-{arm}");
+            let scope = hex(&hash(
+                b"spiralcore.bench.scope.v4\0",
+                &[&run_id, suite.as_bytes(), &[shard], id.as_bytes()],
+            ));
+            tasks.push(Task {
+                id,
+                pair: pair.clone(),
+                trial,
+                case: case.into(),
+                size,
+                arm: arm.into(),
+                scope,
+                fixture_seed,
+                seed_base,
+                warm_probe: false,
+                cache_state: if seed_base {
+                    "base_present_target_absent"
+                } else {
+                    "cold"
+                }
+                .into(),
+            });
+        }
+    }
+    // Conservative accounting uses the full 16 MiB bound for every publication,
+    // including the shorter base for insertions and the compressed fixture.
+    let publications = tasks.len() as u64 * (1 + u64::from(seed_base));
+    let retained_payload_bytes = publications * 16 * MIB as u64;
+    if retained_payload_bytes + publications * 4096 >= 1 << 30 {
+        return Err("broad16 shard exceeds its isolated cache quota".into());
+    }
+    Ok(Plan {
+        schema: "spiralcore.wan.plan.v4".into(), cold_graph_warming: Some(false),
+        suite: Some(suite.into()), shard: Some(shard), run: hex(&run_id), trials,
+        fixture_version: "xorshift64-v1-broad-v1".into(), retained_payload_bytes,
+        allowed_scopes: tasks.iter().map(|t| t.scope.clone()).collect(), tasks,
+        limitations: vec![
+            "Five fresh-cache shards of six pairs form thirty trials per case; retain all failures".into(),
+            "All arms disable optional cold DAG warming; durable verified bytes have equal readiness".into(),
+            "Each warm arm owns an identical separately charged raw seed; cold arms have no base".into(),
+            "All 24 arm permutations occur before repetition; 30 trials are not a fully balanced carryover design".into(),
+            "Insertions use a 16 MiB minus 4096-byte base; compressed input is zstd of 16 MiB minus 4096 pseudorandom bytes; exact actual lengths are in receipts".into(),
+            "Zstd prefix is the configured pinned-library engine, not rsync/VCDIFF or exact CLI patch-from equivalence".into(),
+            "All encoding and retained-state teardown is timed; fixture generation and independent reopened verification are separate".into(),
+            "Cold sparse uses raw and cold prefix uses ordinary zstd; warm recipes can select raw fallback before Begin".into(),
+            "Receiver handler CPU excludes HTTP ingress, socket writes and relay/tunnel work; no network-only time or energy claim".into(),
+            "HTTP bodies exclude TLS, headers and packet overhead; capture completeness and relay leg scope are separate".into(),
         ],
     })
 }
@@ -607,6 +752,7 @@ fn run_phase(
     };
     Ok(Row {
         schema: "spiralcore.wan.row.v1".into(),
+        cold_graph_warming: None,
         suite: None,
         shard: None,
         run: plan.run.clone(),
@@ -715,20 +861,39 @@ fn run_efficiency_phase(
             // This experiment ends after one durable update; no successor graph
             // is needed. Delta destruction remains inside the transfer timer.
             client::transfer_prepared_batched(&delta, transfer_id, task.warm_probe, exchange)
-        } else if phase == "transfer" && task.arm == "sparse" {
+        } else if phase == "transfer"
+            && task.seed_base
+            && matches!(task.arm.as_str(), "sparse" | "zstd_prefix")
+        {
             let base = retained.sparse.as_deref().ok_or(Error::Missing)?;
             preparation.retained_base_reused = true;
             preparation.base_resident_charge_bytes = Some(base.len() as u64);
-            client::transfer_sparse_batched(base, &bytes, transfer_id, task.warm_probe, exchange)
+            if task.arm == "zstd_prefix" {
+                client::transfer_zstd_prefix_batched(
+                    base,
+                    &bytes,
+                    transfer_id,
+                    task.warm_probe,
+                    exchange,
+                )
+            } else {
+                client::transfer_sparse_batched(
+                    base,
+                    &bytes,
+                    transfer_id,
+                    task.warm_probe,
+                    exchange,
+                )
+            }
         } else {
-            if phase == "seed" && task.arm == "sparse" {
+            if phase == "seed" && matches!(task.arm.as_str(), "sparse" | "zstd_prefix") {
                 // Move this already-generated buffer into per-task ownership
                 // after producing the receipt; no copy or hidden index build.
                 preparation.base_resident_charge_bytes = Some(bytes.len() as u64);
             }
             let mode = match (phase, task.arm.as_str()) {
                 ("transfer", "dag") => Mode::Dag,
-                ("transfer", "zstd_full") => Mode::Zstd,
+                ("transfer", "zstd_full" | "zstd_prefix") => Mode::Zstd,
                 _ => Mode::Raw,
             };
             client::transfer_batched(
@@ -754,12 +919,15 @@ fn run_efficiency_phase(
     let stats = outcome.as_ref().ok();
     preparation.selected_mode = stats.map(|s| s.mode as u8);
     let row = Row {
-        schema: if plan.shard.is_some() {
+        schema: if plan.cold_graph_warming.is_some() {
+            "spiralcore.wan.row.v4"
+        } else if plan.shard.is_some() {
             "spiralcore.wan.row.v3"
         } else {
             "spiralcore.wan.row.v2"
         }
         .into(),
+        cold_graph_warming: plan.cold_graph_warming,
         suite: plan.suite.clone(),
         shard: plan.shard,
         run: plan.run.clone(),
@@ -806,7 +974,10 @@ fn run_efficiency_phase(
         os: env::consts::OS.into(),
         architecture: env::consts::ARCH.into(),
     };
-    if phase == "seed" && task.arm == "sparse" && row.status == "published" {
+    if phase == "seed"
+        && matches!(task.arm.as_str(), "sparse" | "zstd_prefix")
+        && row.status == "published"
+    {
         retained.sparse = Some(bytes);
     }
     Ok(row)
@@ -886,22 +1057,32 @@ fn read_rows(path: &Path) -> Result<Vec<Row>> {
 }
 fn valid_row_profile(row: &Row) -> bool {
     match (&row.suite, &row.metrics.preparation) {
-        (None, None) => row.schema == "spiralcore.wan.row.v1" && row.shard.is_none(),
+        (None, None) => {
+            row.schema == "spiralcore.wan.row.v1"
+                && row.shard.is_none()
+                && row.cold_graph_warming.is_none()
+        }
         (Some(suite), Some(p)) => {
+            let broad = suite.starts_with("broad16-");
             ((row.schema == "spiralcore.wan.row.v2" && row.shard.is_none()
+                && row.cold_graph_warming.is_none()
                 && matches!(suite.as_str(), "efficient-warm" | "efficient-prefix"))
                 || (row.schema == "spiralcore.wan.row.v3" && suite == "large16-localized"
-                    && row.shard.is_some_and(|s| s < 3)))
+                    && row.cold_graph_warming.is_none() && row.shard.is_some_and(|s| s < 3))
+                || (row.schema == "spiralcore.wan.row.v4" && broad
+                    && row.cold_graph_warming == Some(false) && row.shard.is_some_and(|s| s < 5)))
                 && !p.promotion_performed
                 // A failed operation may stop before reaching retained state.
                 && (row.status != "published" || p.retained_base_reused ==
-                    (row.phase == "transfer" && matches!(row.task.arm.as_str(), "prepared" | "sparse")))
+                    (row.phase == "transfer" && (!broad || row.task.seed_base)
+                        && matches!(row.task.arm.as_str(), "prepared" | "sparse" | "zstd_prefix")))
                 && (row.status != "published" || p.selected_mode.is_some_and(|mode| match (row.phase.as_str(), row.task.arm.as_str(), row.task.case.as_str()) {
                     ("seed", _, _) | (_, "raw_full" | "raw_cas", _) | (_, "prepared", "repeat") => mode == 0,
                     (_, "zstd_full", _) => mode == 1,
+                    (_, "zstd_prefix", _) if broad => if row.task.seed_base { mode == 4 || mode == 0 } else { mode == 1 },
                     (_, "dag" | "prepared", _) => mode == 2,
                     (_, "sparse", "repeat") => mode == 0,
-                    (_, "sparse", _) => mode == 3 || (mode == 0 && row.shard.is_none()),
+                    (_, "sparse", _) => if broad && !row.task.seed_base { mode == 0 } else { mode == 3 || (mode == 0 && (broad || row.shard.is_none())) },
                     _ => false,
                 }))
         }
@@ -957,6 +1138,10 @@ fn verify(plan: &Plan, rows: &[Row], cache: &Path) -> Result<Value> {
     if let Some(shard) = plan.shard {
         report["schema"] = "spiralcore.wan.verification.v3".into();
         report["shard"] = shard.into();
+    }
+    if let Some(warming) = plan.cold_graph_warming {
+        report["schema"] = "spiralcore.wan.verification.v4".into();
+        report["cold_graph_warming"] = warming.into();
     }
     Ok(report)
 }
@@ -1192,6 +1377,12 @@ fn summarize(rows: &[Row]) -> Result<Value> {
         report["shard_trial_start"] = (u32::from(shard) * 10).into();
         report["shard_trial_count"] = 10.into();
     }
+    if let Some(warming) = plan.cold_graph_warming {
+        report["schema"] = "spiralcore.wan.summary.v4".into();
+        report["cold_graph_warming"] = warming.into();
+        report["shard_trial_start"] = (u32::from(plan.shard.unwrap()) * 6).into();
+        report["shard_trial_count"] = 6.into();
+    }
     Ok(report)
 }
 fn receipt_plan(rows: &[Row]) -> Result<Plan> {
@@ -1210,6 +1401,7 @@ fn receipt_plan(rows: &[Row]) -> Result<Plan> {
             .get(row.task.id.as_str())
             .ok_or("receipt task is not in plan")?;
         if !valid_row_profile(row)
+            || row.cold_graph_warming != plan.cold_graph_warming
             || row.suite != plan.suite
             || row.shard != plan.shard
             || row.run != plan.run
@@ -1227,8 +1419,11 @@ fn receipt_plan(rows: &[Row]) -> Result<Plan> {
                 "receipt metadata differs from canonical plan or repeats an operation".into(),
             );
         }
-        let expected_len =
-            task.size + usize::from(row.phase == "transfer" && task.case == "prefix_1");
+        let expected_len = if plan.cold_graph_warming.is_some() {
+            fixture(task, &row.phase).len()
+        } else {
+            task.size + usize::from(row.phase == "transfer" && task.case == "prefix_1")
+        };
         if row.object_bytes != expected_len {
             return Err("receipt fixture length differs from the plan".into());
         }
@@ -1340,6 +1535,150 @@ fn main() {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    #[ignore = "88 real 16 MiB-class HTTP operations; explicitly run in release"]
+    fn broad_local_http_first_pair_for_every_case_reopens_exactly() {
+        for case in BROAD_CASES {
+            let p = broad_plan(&"01".repeat(32), 30, &format!("broad16-{case}"), Some(0)).unwrap();
+            let root = env::temp_dir().join(format!(
+                "spiral-broad-{}-{}",
+                std::process::id(),
+                unix_nanos().unwrap()
+            ));
+            let endpoint = Endpoint::open_with_policy(
+                &root,
+                wan::limits(),
+                wan::BenchAuthority,
+                spiralcore_transfer::endpoint::ColdGraphPolicy::Disabled,
+            )
+            .unwrap();
+            let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+            let url = format!("http://{}", listener.local_addr().unwrap());
+            let scopes = p
+                .tasks
+                .iter()
+                .take(4)
+                .map(|t| wan::parse_id(&t.scope).unwrap())
+                .collect();
+            let token = "ab".repeat(32);
+            let server_token = token.clone();
+            let count = if p.tasks[0].seed_base { 8 } else { 4 };
+            let server = std::thread::spawn(move || {
+                wan::serve(
+                    listener,
+                    endpoint,
+                    &server_token,
+                    &scopes,
+                    std::time::Duration::from_secs(180),
+                    count,
+                )
+            });
+            let execution = Execution {
+                url: &url,
+                token: &token,
+                binary: &"00".repeat(32),
+                revision: "qualification-test",
+            };
+            let mut rows = Vec::new();
+            for task in p.tasks.iter().take(4) {
+                let mut retained = Retained::default();
+                let phases: &[&str] = if task.seed_base {
+                    &["seed", "transfer"]
+                } else {
+                    &["transfer"]
+                };
+                for phase in phases {
+                    rows.push(
+                        run_efficiency_phase(&p, task, phase, &execution, &mut retained).unwrap(),
+                    );
+                }
+            }
+            server.join().unwrap().unwrap();
+            let mut endpoint = Endpoint::open(&root, wan::limits(), wan::BenchAuthority).unwrap();
+            for row in &rows {
+                assert_eq!(row.status, "published", "{case}: {:?}", row.error);
+                assert_eq!(row.schema, "spiralcore.wan.row.v4");
+                let expected_mode = if row.phase == "seed" || row.task.arm == "raw_full" {
+                    0
+                } else {
+                    match row.task.arm.as_str() {
+                        "zstd_full" => 1,
+                        "zstd_prefix" => {
+                            if row.task.seed_base {
+                                4
+                            } else {
+                                1
+                            }
+                        }
+                        "sparse" => {
+                            if row.task.seed_base {
+                                3
+                            } else {
+                                0
+                            }
+                        }
+                        _ => unreachable!(),
+                    }
+                };
+                assert_eq!(
+                    row.metrics.preparation.as_ref().unwrap().selected_mode,
+                    Some(expected_mode),
+                    "{case}: {}",
+                    row.task.arm
+                );
+                assert_eq!(
+                    endpoint
+                        .read_object(
+                            &wan::context(wan::parse_id(&row.task.scope).unwrap()),
+                            wan::parse_id(&row.object).unwrap()
+                        )
+                        .unwrap(),
+                    fixture(&row.task, &row.phase)
+                );
+            }
+            assert_eq!(receipt_plan(&rows).unwrap(), p);
+            drop(endpoint);
+            std::fs::remove_dir_all(root).unwrap();
+        }
+    }
+    #[test]
+    fn broad_receipts_bind_policy_actual_length_and_fixture_identity() {
+        let p = broad_plan(&"01".repeat(32), 30, "broad16-prefix_4096", Some(0)).unwrap();
+        let task = p.tasks.iter().find(|t| t.arm == "sparse").unwrap();
+        let mut rows = Vec::new();
+        for phase in ["seed", "transfer"] {
+            let mut value = serde_json::to_value(row(&p, task, phase, 600)).unwrap();
+            value["schema"] = "spiralcore.wan.row.v4".into();
+            value["suite"] = p.suite.clone().unwrap().into();
+            value["shard"] = 0.into();
+            value["cold_graph_warming"] = false.into();
+            let bytes = fixture(task, phase);
+            value["object"] = hex(&object_id(&bytes)).into();
+            value["object_bytes"] = bytes.len().into();
+            value["metrics"]["preparation"] = serde_json::to_value(Preparation {
+                retained_base_reused: phase == "transfer",
+                selected_mode: Some(if phase == "seed" { 0 } else { 3 }),
+                ..Default::default()
+            })
+            .unwrap();
+            rows.push(serde_json::from_value::<Row>(value).expect("v4 receipt should decode"));
+        }
+        assert_eq!(receipt_plan(&rows).unwrap(), p);
+        let report = summarize(&rows).unwrap();
+        assert_eq!(report["schema"], "spiralcore.wan.summary.v4");
+        assert_eq!(report["cold_graph_warming"], false);
+        assert_eq!(report["shard_trial_count"], 6);
+        for (key, value) in [
+            ("cold_graph_warming", json!(true)),
+            ("object_bytes", json!(16 * MIB - 4096)),
+            ("object", json!("ff".repeat(32))),
+        ] {
+            let mut encoded = serde_json::to_value(&rows).unwrap();
+            encoded[1][key] = value;
+            let changed: Vec<Row> = serde_json::from_value(encoded).unwrap();
+            assert!(receipt_plan(&changed).is_err(), "accepted changed {key}");
+        }
+    }
     #[test]
     fn large16_receipts_require_shard_and_canonical_ids_without_legacy_drift() {
         let p = profile_plan(&"01".repeat(32), 30, Some("large16-localized"), Some(0)).unwrap();
@@ -1556,6 +1895,62 @@ mod tests {
         );
     }
     #[test]
+    fn broad_fixtures_cover_length_changes_and_existing_compressed_content() {
+        for case in BROAD_CASES {
+            let p = broad_plan(&"01".repeat(32), 30, &format!("broad16-{case}"), Some(0)).unwrap();
+            let task = &p.tasks[0];
+            let base = fixture(task, "seed");
+            let target = fixture(task, "transfer");
+            assert!(base.len() <= 16 * MIB && target.len() <= 16 * MIB);
+            assert_eq!(target, fixture(task, "transfer"));
+            match case {
+                "prefix_4096" => {
+                    assert_eq!(target.len(), base.len() + 4096);
+                    assert_eq!(target[4096..], base);
+                }
+                "middle_4096" => {
+                    let at = base.len() / 2;
+                    assert_eq!(target.len(), base.len() + 4096);
+                    assert_eq!(target[..at], base[..at]);
+                    assert_eq!(target[at + 4096..], base[at..]);
+                }
+                "delete_4096" => {
+                    let at = base.len() / 2;
+                    assert_eq!(target.len(), base.len() - 4096);
+                    assert_eq!(target[..at], base[..at]);
+                    assert_eq!(target[at..], base[at + 4096..]);
+                }
+                "append_4096" => {
+                    assert_eq!(target.len(), base.len() + 4096);
+                    assert_eq!(target[..base.len()], base);
+                }
+                "truncate_4096" => {
+                    assert_eq!(target.len(), base.len() - 4096);
+                    assert_eq!(target, base[..target.len()]);
+                }
+                "replace_1m" => assert_eq!(
+                    base.iter().zip(&target).filter(|(a, b)| a != b).count(),
+                    MIB
+                ),
+                "scattered_32x32" => assert_eq!(
+                    base.iter().zip(&target).filter(|(a, b)| a != b).count(),
+                    1024
+                ),
+                "localized_32" | "structured_localized_32" | "compressed_localized_32" => {
+                    assert_eq!(base.len(), target.len());
+                    assert_eq!(base.iter().zip(&target).filter(|(a, b)| a != b).count(), 32);
+                    if case == "compressed_localized_32" {
+                        assert_eq!(
+                            zstd::bulk::decompress(&base, 16 * MIB).unwrap(),
+                            base_fixture(16 * MIB - 4096, task.fixture_seed, false)
+                        );
+                    }
+                }
+                _ => assert_eq!(base, target),
+            }
+        }
+    }
+    #[test]
     fn fixture_mutations_are_exact_and_reproducible() {
         assert_eq!(
             base_fixture(8, 1, false),
@@ -1592,6 +1987,7 @@ mod tests {
     fn row(plan: &Plan, task: &Task, phase: &str, body: u64) -> Row {
         Row {
             schema: "spiralcore.wan.row.v1".into(),
+            cold_graph_warming: None,
             suite: None,
             shard: None,
             run: plan.run.clone(),

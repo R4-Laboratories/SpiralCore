@@ -1,0 +1,81 @@
+{
+  "schema": "spiralcore.capture-local-qualification.v1",
+  "status": "local_tests_passed_linux_live_qualification_not_run",
+  "date": "2026-10-29",
+  "observed_worktree_base": "9c9650dc156cd2511ba74932537f691a68fdada4",
+  "qualification_scope": "Uncommitted source identified by hashes; no live Linux capture or WAN performance claim.",
+  "sources": {
+    ".github/workflows/spiralcore-wan.yml": "4f4e29d266ae16c8fddeed6ba7871b933a86b9457bb760335e0f17fa34ef48dc",
+    "crates/spiralcore-transfer/src/capture_lifecycle.rs": "b06d45a755a40741bf426c0ead3f9b8b2f752fc8acef0ffcf248ddf84761d722",
+    "crates/spiralcore-transfer/src/bin/spiralcore-capture-control.rs": "187ee12c792c775575a820506901b6f0e8147962ff7d8df55712e6303b52ec64",
+    "crates/spiralcore-transfer/src/bin/spiralcore-capture.rs": "747b734cb6ab0dcf99437536221835d51396b790c059e7e8e604879529946dd3"
+  },
+  "red": [
+    {
+      "command": "/Users/casey.allard/.cargo/bin/cargo test --locked --manifest-path crates/spiralcore-transfer/Cargo.toml --bin spiralcore-capture-control",
+      "exit": 101,
+      "passed": 2,
+      "failed": 2,
+      "reason": "Runtime RED: valid lifecycle and complete counter block rejected by missing implementation."
+    },
+    {
+      "command": "/Users/casey.allard/.cargo/bin/cargo test --locked --manifest-path crates/spiralcore-transfer/Cargo.toml --bin spiralcore-capture lifecycle_failure_can_never",
+      "exit": 101,
+      "passed": 0,
+      "failed": 1,
+      "reason": "Runtime RED: an incomplete lifecycle left capture_complete true."
+    },
+    {
+      "command": "/Users/casey.allard/.cargo/bin/cargo test --locked --manifest-path crates/spiralcore-transfer/Cargo.toml --bin spiralcore-capture qualification_port_is_loopback_only",
+      "exit": 101,
+      "passed": 0,
+      "failed": 1,
+      "reason": "Runtime RED: existing WAN port443 restriction rejected the loopback ephemeral qualification port."
+    }
+  ],
+  "implementation_setup_failures": [
+    {
+      "kind": "Rust compile error",
+      "detail": "E0283 closure return type ambiguity; explicit Result<String> annotation then required braces. Corrected before GREEN. No measurement occurred."
+    }
+  ],
+  "final": [
+    {
+      "command": "/Users/casey.allard/.cargo/bin/cargo test --locked --manifest-path crates/spiralcore-transfer/Cargo.toml --bin spiralcore-capture --bin spiralcore-capture-control",
+      "exit": 0,
+      "parser_passed": 25,
+      "controller_passed": 6,
+      "failed": 0,
+      "note": "Four shared lifecycle tests execute in each binary:31 executions,27 distinct test functions."
+    },
+    {
+      "command": "/Users/casey.allard/.cargo/bin/cargo clippy --locked --manifest-path crates/spiralcore-transfer/Cargo.toml --bin spiralcore-capture --bin spiralcore-capture-control -- -D warnings",
+      "exit": 0
+    }
+  ],
+  "workflow_guard": {
+    "command": "bash local/broad-wan-20261029/qualification/check-workflow-configuration.sh",
+    "checks": 80,
+    "failed": 0,
+    "method_sha256": "e5d23b98cf7e318614374f868aede7fb0f6fee1b88ccb60fad950c81ddf38a6e",
+    "result_sha256": "52c1700cb4b4616738ce34bbeb7986e796ac82c3e45aad1487748ea2d3771a44"
+  },
+  "historical_replay": {
+    "artifact": "qualification/historical-shard2-capture.json",
+    "sha256": "d98fde92d689f442c2ea724fbe863217c033d6bbf299990989a4a69c91062af9",
+    "comparison": "cmp against original shard-2/remote/capture.json exited0; byte-identical JSON",
+    "captured": 622806,
+    "received": 622809,
+    "kernel_drops": 0,
+    "capture_complete": false,
+    "cause": "unresolved; no packet-loss inference or startup subtraction"
+  },
+  "limitations": [
+    "Linux signal handling and actual libpcap buffering require the new qualification-only job; NOT_RUN locally.",
+    "Quiet samples are bounded observations, not proof of network drain or future silence.",
+    "Historical +3 discrepancy remains incomplete; new evidence cannot retroactively qualify it.",
+    "PCAP scope remains selected runner-to-relay IP traffic, not physical Ethernet or full relay-to-receiver path.",
+    "No source commit, WAN launch, credentials or resource provisioning performed by this subagent."
+  ],
+  "next_gate": "Parent exact-source Linux qualification-only workflow, normal/interrupted/ongoing cases, before a broader WAN campaign."
+}

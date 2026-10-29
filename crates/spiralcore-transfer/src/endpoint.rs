@@ -56,6 +56,14 @@ pub trait Authority {
     fn authorize(&self, context: &Context) -> Result<()>;
 }
 
+/// Local receiver choice for optional graph construction after a cold publication.
+/// Explicit DAG transfers remain fully verified under either policy.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ColdGraphPolicy {
+    EagerBounded,
+    Disabled,
+}
+
 #[derive(Debug, Clone)]
 pub struct Limits {
     pub max_nodes: usize,
@@ -106,6 +114,8 @@ struct Attempt {
     base_graph: Option<Arc<VerifiedGraph>>,
     base_bytes: Vec<u8>,
     sparse_operations: usize,
+    prefix_encoded: Vec<u8>,
+    prefix_chunks: usize,
 }
 impl Attempt {
     fn node(&self, id: &Id) -> Option<&Node> {
@@ -118,6 +128,7 @@ impl Attempt {
         self.nodes = BTreeMap::new();
         self.base_graph = None;
         self.base_bytes = Vec::new();
+        self.prefix_encoded = Vec::new();
         self.reserved = 0;
     }
     fn reject(&mut self, e: Error) {
@@ -130,6 +141,7 @@ pub struct Endpoint<A: Authority> {
     root: PathBuf,
     _owner: File,
     limits: Limits,
+    cold_graph_policy: ColdGraphPolicy,
     authority: A,
     attempts: BTreeMap<(Id, Id), Attempt>,
     graphs: BTreeMap<(Id, Id), (Arc<VerifiedGraph>, u64)>,
@@ -154,6 +166,14 @@ static TEMP: AtomicU64 = AtomicU64::new(0);
 
 impl<A: Authority> Endpoint<A> {
     pub fn open(root: &Path, limits: Limits, authority: A) -> Result<Self> {
+        Self::open_with_policy(root, limits, authority, ColdGraphPolicy::EagerBounded)
+    }
+    pub fn open_with_policy(
+        root: &Path,
+        limits: Limits,
+        authority: A,
+        cold_graph_policy: ColdGraphPolicy,
+    ) -> Result<Self> {
         if limits.max_active == 0
             || limits.max_active > 4
             || limits.max_nodes == 0
@@ -216,6 +236,7 @@ impl<A: Authority> Endpoint<A> {
             root: root.to_path_buf(),
             _owner: owner,
             limits,
+            cold_graph_policy,
             authority,
             attempts: BTreeMap::new(),
             graphs: BTreeMap::new(),
@@ -417,7 +438,11 @@ impl<A: Authority> Endpoint<A> {
         }
         // Charge conservative peak allocations, including construction/indexes and two output buffers.
         let mut charge = offer.len.checked_mul(2).ok_or(Error::Limit)?;
-        let warming = if offer.mode == Mode::SparseV1 || existing.is_ok() {
+        let warming = if matches!(offer.mode, Mode::SparseV1 | Mode::ZstdPrefixV1)
+            || (matches!(offer.mode, Mode::Raw | Mode::Zstd)
+                && self.cold_graph_policy == ColdGraphPolicy::Disabled)
+            || existing.is_ok()
+        {
             0
         } else {
             dag::work_bound(offer.len).min(self.limits.max_nodes) as u64
@@ -429,6 +454,12 @@ impl<A: Authority> Endpoint<A> {
             .checked_add(warming.checked_mul(per_node).ok_or(Error::Limit)?)
             .and_then(|x| x.checked_add(2 << 20))
             .ok_or(Error::Limit)?;
+        if offer.mode == Mode::ZstdPrefixV1 && existing.is_err() {
+            charge = charge
+                .checked_add(crate::zstd_prefix::encoded_cap(offer.len as usize)? as u64)
+                .and_then(|n| n.checked_add(crate::zstd_prefix::DECODER_ALLOWANCE))
+                .ok_or(Error::Limit)?;
+        }
         let cached = if offer.mode == Mode::Dag && existing.is_err() {
             offer
                 .base
@@ -441,7 +472,7 @@ impl<A: Authority> Endpoint<A> {
             None
         };
         let base = if let Some(mid) = offer.base.filter(|_| existing.is_err()) {
-            let p = if offer.mode == Mode::SparseV1 {
+            let p = if matches!(offer.mode, Mode::SparseV1 | Mode::ZstdPrefixV1) {
                 self.publication(ns, mid).map_err(|e| {
                     if e == Error::Unknown {
                         Error::Missing
@@ -469,11 +500,17 @@ impl<A: Authority> Endpoint<A> {
             None
         };
         if let Some(p) = &base {
-            let base_nodes = if offer.mode == Mode::SparseV1 || cached.is_some() {
-                0
-            } else {
-                dag::work_bound(p.len).min(self.limits.max_nodes) as u64
-            };
+            if offer.mode == Mode::ZstdPrefixV1
+                && p.len > crate::zstd_prefix::MAX_PREFIX_OBJECT as u64
+            {
+                return Err(Error::Limit);
+            }
+            let base_nodes =
+                if matches!(offer.mode, Mode::SparseV1 | Mode::ZstdPrefixV1) || cached.is_some() {
+                    0
+                } else {
+                    dag::work_bound(p.len).min(self.limits.max_nodes) as u64
+                };
             charge = charge
                 .checked_add(p.len * 2 + base_nodes * 512)
                 .ok_or(Error::Limit)?;
@@ -497,6 +534,8 @@ impl<A: Authority> Endpoint<A> {
             base_graph: None,
             base_bytes: Vec::new(),
             sparse_operations: 0,
+            prefix_encoded: Vec::new(),
+            prefix_chunks: 0,
         };
         let reply = match existing {
             Ok(p) => {
@@ -511,7 +550,7 @@ impl<A: Authority> Endpoint<A> {
             Err(Error::Unknown) => {
                 if let Some(p) = base {
                     let bytes = read_publication(&p)?;
-                    if offer.mode == Mode::SparseV1 {
+                    if matches!(offer.mode, Mode::SparseV1 | Mode::ZstdPrefixV1) {
                         s.base_bytes = bytes;
                     } else {
                         let g = if let Some(g) = cached {
@@ -528,7 +567,11 @@ impl<A: Authority> Endpoint<A> {
                     }
                     s.base_pinned = true;
                 }
-                if offer.mode != Mode::Dag {
+                if offer.mode == Mode::ZstdPrefixV1 {
+                    s.prefix_encoded
+                        .try_reserve_exact(crate::zstd_prefix::encoded_cap(offer.len as usize)?)
+                        .map_err(|_| Error::Limit)?;
+                } else if offer.mode != Mode::Dag {
                     s.bytes
                         .try_reserve_exact(offer.len as usize)
                         .map_err(|_| Error::Limit)?;
@@ -585,6 +628,13 @@ impl<A: Authority> Endpoint<A> {
                     return Err(Error::Malformed);
                 }
                 let mut retained = None;
+                if s.offer.mode == Mode::ZstdPrefixV1 {
+                    s.bytes = crate::zstd_prefix::decode(
+                        &s.base_bytes,
+                        &s.prefix_encoded,
+                        s.offer.len as usize,
+                    )?;
+                }
                 if s.offer.mode == Mode::Dag {
                     let m = s.offer.manifest.as_ref().ok_or(Error::Malformed)?;
                     let (absent, closure) = verified_closure(m, s, self.limits.max_nodes)?;
@@ -615,7 +665,10 @@ impl<A: Authority> Endpoint<A> {
                 }
                 let mid = if let Some(m) = &s.offer.manifest {
                     Some(m.id())
-                } else if s.offer.mode == Mode::SparseV1 {
+                } else if matches!(s.offer.mode, Mode::SparseV1 | Mode::ZstdPrefixV1)
+                    || (matches!(s.offer.mode, Mode::Raw | Mode::Zstd)
+                        && self.cold_graph_policy == ColdGraphPolicy::Disabled)
+                {
                     None
                 } else {
                     match VerifiedGraph::fold(&s.bytes, self.limits.max_nodes) {
@@ -672,6 +725,16 @@ impl<A: Authority> Endpoint<A> {
         }
     }
     fn data(&self, s: &mut Attempt, b: &[u8]) -> Result<()> {
+        if s.offer.mode == Mode::ZstdPrefixV1 {
+            crate::zstd_prefix::append(
+                &mut s.prefix_encoded,
+                &mut s.prefix_chunks,
+                s.offer.len as usize,
+                b,
+            )?;
+            s.accepted = s.prefix_encoded.len() as u64;
+            return Ok(());
+        }
         if s.offer.mode == Mode::SparseV1 {
             crate::delta::apply(
                 &s.base_bytes,

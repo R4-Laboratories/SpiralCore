@@ -129,3 +129,43 @@ reuse; these are hypotheses, not promises across all edits. Cold targets remain
 at most 5% extra bytes and 10% extra p95 time relative to the fair secured raw path.
 Separate source changes, qualification, scientific measurement and interpretation.
 Each phase produces reviewable commits, raw receipts and an updated claim ledger.
+
+## Registered broad16 workload schedule
+
+The v4 suite names are `broad16-` followed by one of `localized_32`,
+`scattered_32x32`, `prefix_4096`, `middle_4096`, `delete_4096`, `append_4096`,
+`truncate_4096`, `replace_1m`, `structured_localized_32`,
+`compressed_localized_32`, `cold_random`, `cold_structured`.
+Each case has 30 global trials split into five fresh-cache shards of six trials,
+four arms (raw_full, zstd_full, zstd_prefix, sparse), and identical paired inputs.
+Warm arms each have a separate raw seed immediately before the update; cold arms
+have no seed. Thus the complete matrix has 2,640 operations across 60 shards.
+This is a broad qualification workload, not a promise that every arm/case wins.
+
+Each suite uses all 24 arm permutations before repeating; the 30-trial design is
+not fully balanced for carryover. A single campaign ID derives seeds and order.
+Insertion/append bases are 16 MiB minus 4096 bytes and targets exactly 16 MiB.
+Deletion/truncation targets are 4096 bytes shorter than their 16 MiB bases.
+The compressed fixture is a valid zstd frame of 16 MiB minus 4096 pseudorandom
+bytes, followed by a 32-byte opaque midpoint mutation. Its target is not claimed
+to remain a valid compressed stream. Actual lengths and identities are recorded.
+
+All four arms use `cold_graph_warming=false`, bound by receiver plan, source,
+executable and startup-policy evidence. Warm sparse and prefix retain exactly
+their owned base bytes from the seed and destroy that retained state inside the
+update timer. Prefix setup/encoding and raw fallback selection are timed. Cold
+sparse uses raw; cold prefix uses ordinary zstd. This deliberately exposes the
+limitations of fixed codec selection; it is not an adaptive-best-codec claim.
+
+Per-shard maximum payload is 768 MiB plus bounded publication headers, below the
+unchanged 1 GiB cache quota. Fresh caches, same source/settings, exact reopened
+verification and all observations are mandatory. No performance trial is replaced
+because of a poor result. Setup failure before the first measured operation is
+recorded separately. A partially executed shard remains incomplete evidence.
+
+Preserve raw receipts, packet files, exact verification and per-publication hashes.
+After independent reopen verification and hashing, completed new synthetic cache
+directories may be removed to keep this campaign within local disk space. Record
+that cleanup explicitly; do not remove any prior campaign cache or evidence.
+Raw PCAPs remain local and hash-bound to compact committed records. Hosted artifact
+retention is one day. No paid host is provisioned.

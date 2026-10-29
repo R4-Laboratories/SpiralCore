@@ -21,6 +21,7 @@ jobs:
       SPIRALCORE_WAN_TRIALS: ${{ vars.SPIRALCORE_WAN_TRIALS }}
       SPIRALCORE_WAN_SUITE: ${{ vars.SPIRALCORE_WAN_SUITE }}
       SPIRALCORE_WAN_SHARD: ${{ vars.SPIRALCORE_WAN_SHARD }}
+      SPIRALCORE_WAN_QUALIFY_ONLY: ${{ vars.SPIRALCORE_WAN_QUALIFY_ONLY }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
@@ -28,11 +29,23 @@ jobs:
       - name: Validate bounded experiment configuration
         shell: bash
         run: |
+          [[ -z "$SPIRALCORE_WAN_QUALIFY_ONLY" || "$SPIRALCORE_WAN_QUALIFY_ONLY" == 1 ]]
+          if [[ "$SPIRALCORE_WAN_QUALIFY_ONLY" == 1 ]]; then
+            [[ -z "$SPIRALCORE_WAN_URL" && -z "$SPIRALCORE_WAN_RUN" && -z "$SPIRALCORE_WAN_TRIALS" && -z "$SPIRALCORE_WAN_SUITE" && -z "$SPIRALCORE_WAN_SHARD" ]]
+            exit 0
+          fi
           [[ "$SPIRALCORE_WAN_URL" =~ ^https://[a-z0-9-]+\.trycloudflare\.com/?$ ]]
           [[ "$SPIRALCORE_WAN_RUN" =~ ^[0-9a-f]{64}$ ]]
           [[ "$SPIRALCORE_WAN_TRIALS" == 1 || "$SPIRALCORE_WAN_TRIALS" == 30 ]]
           if [[ "$GITHUB_REF" == refs/heads/codex/spiralcore-efficient ]]; then
-            if [[ "$SPIRALCORE_WAN_SUITE" == large16-localized ]]; then
+            if [[ "$SPIRALCORE_WAN_SUITE" == broad16-* ]]; then
+              case "$SPIRALCORE_WAN_SUITE" in
+                broad16-localized_32|broad16-scattered_32x32|broad16-prefix_4096|broad16-middle_4096|broad16-delete_4096|broad16-append_4096|broad16-truncate_4096|broad16-replace_1m|broad16-structured_localized_32|broad16-compressed_localized_32|broad16-cold_random|broad16-cold_structured) ;;
+                *) exit 1 ;;
+              esac
+              [[ "$SPIRALCORE_WAN_TRIALS" == 30 ]]
+              [[ "$SPIRALCORE_WAN_SHARD" =~ ^[0-4]$ ]]
+            elif [[ "$SPIRALCORE_WAN_SUITE" == large16-localized ]]; then
               [[ "$SPIRALCORE_WAN_TRIALS" == 30 ]]
               [[ "$SPIRALCORE_WAN_SHARD" =~ ^[0-2]$ ]]
             else
@@ -60,12 +73,18 @@ jobs:
           lscpu -J > wan-results/cpu.json
           cargo +1.97.1 tree --locked --manifest-path crates/spiralcore-transfer/Cargo.toml -e features > wan-results/features.txt
           printf '%s\n' 'Linux sender: default Cargo features; native sha2 CPU dispatch. Mac receiver build is recorded separately.' > wan-results/build-profile.txt
-          sha256sum target/release/spiralcore-bench target/release/spiralcore-capture > wan-results/binary-sha256.txt
-          suite=()
-          if [[ -n "$SPIRALCORE_WAN_SUITE" ]]; then suite=(--suite "$SPIRALCORE_WAN_SUITE"); fi
-          if [[ -n "$SPIRALCORE_WAN_SHARD" ]]; then suite+=(--shard "$SPIRALCORE_WAN_SHARD"); fi
-          target/release/spiralcore-bench plan --trials "$SPIRALCORE_WAN_TRIALS" --run "$SPIRALCORE_WAN_RUN" --out wan-results/plan.json "${suite[@]}"
+          sha256sum target/release/spiralcore-bench target/release/spiralcore-capture target/release/spiralcore-capture-control > wan-results/binary-sha256.txt
+          if [[ "$SPIRALCORE_WAN_QUALIFY_ONLY" != 1 ]]; then
+            suite=()
+            if [[ -n "$SPIRALCORE_WAN_SUITE" ]]; then suite=(--suite "$SPIRALCORE_WAN_SUITE"); fi
+            if [[ -n "$SPIRALCORE_WAN_SHARD" ]]; then suite+=(--shard "$SPIRALCORE_WAN_SHARD"); fi
+            target/release/spiralcore-bench plan --trials "$SPIRALCORE_WAN_TRIALS" --run "$SPIRALCORE_WAN_RUN" --out wan-results/plan.json "${suite[@]}"
+          fi
+      - name: Qualify the Linux capture lifecycle before any WAN transfer
+        run: |
+          target/release/spiralcore-capture-control --qualify wan-results/capture-qualification
       - name: Transfer over the WAN and capture the encrypted runner leg
+        if: env.SPIRALCORE_WAN_QUALIFY_ONLY != '1'
         env:
           SPIRALCORE_WAN_TOKEN: ${{ secrets.SPIRALCORE_WAN_TOKEN }}
         shell: bash
@@ -90,26 +109,17 @@ jobs:
           for flag in tcp-segmentation-offload generic-segmentation-offload generic-receive-offload; do
             awk -v key="$flag:" '$1 == key && $2 == "off" {found=1} END {exit !found}' wan-results/offload-state.txt
           done
-          sudo tcpdump -i "$interface" -s 96 --time-stamp-precision=nano -U -w wan-results/headers.pcap "host $relay_ip and tcp port 443" 2>wan-results/tcpdump-stats.txt &
-          capture_pid=$!
-          stop_capture() {
-            sudo kill -INT "$capture_pid" 2>/dev/null || true
-            wait "$capture_pid" 2>/dev/null || true
-            sudo chown "$(id -u):$(id -g)" wan-results/headers.pcap 2>/dev/null || true
-          }
-          trap stop_capture EXIT
-          sleep 2
-          kill -0 "$capture_pid"
           set +e
-          target/release/spiralcore-bench run --plan wan-results/plan.json --url "$SPIRALCORE_WAN_URL" --out wan-results/rows.jsonl
+          target/release/spiralcore-capture-control --out-dir wan-results --interface "$interface" --local-ip "$local_ip" --remote-ip "$relay_ip" -- \
+            target/release/spiralcore-bench run --plan wan-results/plan.json --url "$SPIRALCORE_WAN_URL" --out wan-results/rows.jsonl
           result=$?
           set -e
-          sleep 1
-          stop_capture
-          trap - EXIT
-          target/release/spiralcore-capture --pcap wan-results/headers.pcap --rows wan-results/rows.jsonl --local-ip "$local_ip" --remote-ip "$relay_ip" --capture-stats wan-results/tcpdump-stats.txt --out wan-results/capture.json
-          target/release/spiralcore-bench summarize --rows wan-results/rows.jsonl --out wan-results/summary.json
-          sha256sum wan-results/headers.pcap > wan-results/capture-sha256.txt
+          # Preserve failure metadata even if readiness failed before the client ran.
+          if [[ -s wan-results/rows.jsonl ]]; then
+            target/release/spiralcore-capture --pcap wan-results/headers.pcap --rows wan-results/rows.jsonl --local-ip "$local_ip" --remote-ip "$relay_ip" --capture-stats wan-results/tcpdump-stats.txt --capture-lifecycle wan-results/capture-lifecycle.json --out wan-results/capture.json
+            target/release/spiralcore-bench summarize --rows wan-results/rows.jsonl --out wan-results/summary.json
+          fi
+          if [[ -f wan-results/headers.pcap ]]; then sha256sum wan-results/headers.pcap > wan-results/capture-sha256.txt; fi
           exit "$result"
       - name: Retain compact experiment evidence
         if: always()
