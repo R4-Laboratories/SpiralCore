@@ -1,8 +1,10 @@
 #![forbid(unsafe_code)]
 
 pub mod client;
+pub mod delta;
 pub mod dag;
 pub mod endpoint;
+pub mod prepared;
 pub mod protocol;
 pub mod wan;
 use sha2::{Digest, Sha256};
