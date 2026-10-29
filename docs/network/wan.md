@@ -32,7 +32,8 @@ Start `spiralcore-wan serve --cache NEW_CACHE --plan plan.json --bind 127.0.0.1:
 - `SPIRALCORE_WAN_URL`: the current HTTPS trycloudflare.com URL.
 - `SPIRALCORE_WAN_RUN`: the same run ID used to generate the receiver plan.
 - `SPIRALCORE_WAN_TRIALS`: 1 or 30, matching the receiver plan.
-- `SPIRALCORE_WAN_SUITE`: `efficient-warm` or `efficient-prefix` on `codex/spiralcore-efficient`; leave absent for the legacy WAN branch.
+- `SPIRALCORE_WAN_SUITE`: `efficient-warm`, `efficient-prefix`, or `large16-localized` on `codex/spiralcore-efficient`; leave absent for the legacy WAN branch.
+- `SPIRALCORE_WAN_SHARD`: `0`, `1`, or `2` for `large16-localized`, which requires thirty global trials. Leave absent for other suites.
 
 The separate Actions secret `SPIRALCORE_WAN_TOKEN` contains the capability. Configure it from the private local file, not a shell literal. The workflow executes only reviewed repository code, grants read-only repository permissions and pins external actions. Triggering another campaign requires a new run ID, capability, empty receiver cache and source pin. Automatic retries are deliberately excluded.
 
@@ -49,6 +50,28 @@ run/trials/out options. At thirty trials, the warm suite contains 480 tasks/900 
 of retained payload; the prefix suite contains 120 tasks/240 operations and approximately 240 MiB.
 Run each suite against a fresh receiver cache and capability. Combining both under one cache would
 exceed the quota once publication allowances are included.
+
+The v3 `large16-localized` suite uses `--trials 30 --shard 0|1|2`. Generate all three
+plans with one campaign ID. Each shard contains ten consecutive global trials of
+the same 16 MiB base with a 32-byte midpoint edit, comparing `raw_full`, `zstd_full`
+and `sparse`. All six arm permutations occur five times across the thirty trials.
+Each arm gets its own raw seed and isolated authorization scope; every update
+target is initially absent. Each shard retains 960 MiB plus publication headers
+and requires a separate fresh receiver cache and temporary capability. Verify all
+sixty seed/update receipts after stopping that shard's receiver, before proceeding
+to the next shard. Do not combine shards in one cache or mix their receipt files.
+
+For this experiment the Mac receiver uses the locally qualified native
+`hardware-sha256` feature. The Linux sender retains default Cargo features and
+sha2's native CPU dispatch. Record the feature trees, compiler/target, exact source
+and binary hashes at both ends. Raw/zstd attempt bounded optional DAG preparation;
+sparse skips it. At this object size the random DAG exceeds the node cap, so equal
+durable-byte readiness does not mean equal preparation work. Report this CPU
+comparison boundary alongside the measurements. The suite changes no protocol,
+cache, namespace, resident-memory or HTTP-batch limit.
+
+After the larger campaign, remove `SPIRALCORE_WAN_SHARD` along with the other
+temporary variables and capability. Retain each shard's plan and receipts.
 
 Efficiency arms compare raw, zstd, ordinary exact-object cache reuse, current full-fold DAG sends,
 retained prepared DAG updates and sparse recipes as applicable. Prepared sender base construction is

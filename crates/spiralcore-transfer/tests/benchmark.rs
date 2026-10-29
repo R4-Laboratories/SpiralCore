@@ -55,6 +55,133 @@ fn suite_plan(t: &Temp, trials: &str, filename: &str, suite: Option<&str>) -> Va
     );
     serde_json::from_slice(&fs::read(out).unwrap()).unwrap()
 }
+fn large_plan(t: &Temp, shard: u32) -> Value {
+    let out = t.0.join(format!("large-{shard}.json"));
+    let result = command()
+        .args([
+            "plan",
+            "--suite",
+            "large16-localized",
+            "--trials",
+            "30",
+            "--shard",
+        ])
+        .arg(shard.to_string())
+        .args(["--run", &"ab".repeat(32), "--out"])
+        .arg(&out)
+        .output()
+        .unwrap();
+    assert!(
+        result.status.success(),
+        "{}",
+        String::from_utf8_lossy(&result.stderr)
+    );
+    serde_json::from_slice(&fs::read(out).unwrap()).unwrap()
+}
+#[test]
+fn large16_shards_cover_thirty_pairs_with_balanced_orders_and_bounded_caches() {
+    let t = Temp::new();
+    let mut scopes = std::collections::BTreeSet::new();
+    let mut orders = std::collections::BTreeMap::<Vec<String>, usize>::new();
+    let mut trials = std::collections::BTreeSet::new();
+    for shard in 0..3 {
+        let p = large_plan(&t, shard);
+        assert_eq!(p["schema"], "spiralcore.wan.plan.v3");
+        assert_eq!(p["suite"], "large16-localized");
+        assert_eq!(p["shard"], shard);
+        assert_eq!(p["trials"], 30);
+        assert_eq!(p["retained_payload_bytes"], 960 * 1024 * 1024u64);
+        let tasks = p["tasks"].as_array().unwrap();
+        assert_eq!(tasks.len(), 30);
+        assert!(p["retained_payload_bytes"].as_u64().unwrap() + 60 * 4096 < 1 << 30);
+        for pair in tasks.chunks_exact(3) {
+            let trial = pair[0]["trial"].as_u64().unwrap();
+            assert!((u64::from(shard) * 10..u64::from(shard + 1) * 10).contains(&trial));
+            assert!(trials.insert(trial));
+            let mut order = Vec::new();
+            for task in pair {
+                assert_eq!(task["trial"], trial);
+                assert_eq!(task["pair"], pair[0]["pair"]);
+                assert_eq!(task["fixture_seed"], pair[0]["fixture_seed"]);
+                assert_eq!(task["size"], 16 * 1024 * 1024);
+                assert_eq!(task["case"], "localized_32");
+                assert_eq!(task["seed_base"], true);
+                assert_eq!(task["warm_probe"], false);
+                assert_eq!(task["cache_state"], "base_present_target_absent");
+                assert!(scopes.insert(task["scope"].as_str().unwrap().to_owned()));
+                order.push(task["arm"].as_str().unwrap().to_owned());
+            }
+            assert_eq!(
+                order
+                    .iter()
+                    .map(String::as_str)
+                    .collect::<std::collections::BTreeSet<_>>(),
+                std::collections::BTreeSet::from(["raw_full", "zstd_full", "sparse"])
+            );
+            *orders.entry(order).or_default() += 1;
+        }
+    }
+    assert_eq!(trials, (0..30).collect());
+    assert_eq!(scopes.len(), 90);
+    assert_eq!(orders.len(), 6);
+    assert!(orders.values().all(|count| *count == 5));
+}
+#[test]
+fn large16_shard_arguments_are_strict_and_canonical() {
+    let t = Temp::new();
+    for args in [
+        vec!["--suite", "large16-localized", "--trials", "30"],
+        vec![
+            "--suite",
+            "large16-localized",
+            "--trials",
+            "30",
+            "--shard",
+            "3",
+        ],
+        vec![
+            "--suite",
+            "large16-localized",
+            "--trials",
+            "1",
+            "--shard",
+            "0",
+        ],
+        vec![
+            "--suite",
+            "efficient-warm",
+            "--trials",
+            "30",
+            "--shard",
+            "0",
+        ],
+        vec!["--trials", "30", "--shard", "0"],
+    ] {
+        assert!(!command()
+            .arg("plan")
+            .args(args)
+            .args(["--run", &"ab".repeat(32), "--out"])
+            .arg(t.0.join("invalid.json"))
+            .output()
+            .unwrap()
+            .status
+            .success());
+        assert!(!t.0.join("invalid.json").exists());
+    }
+    let mut p = large_plan(&t, 0);
+    p["tasks"][0]["fixture_seed"] = 7.into();
+    fs::write(t.0.join("changed.json"), serde_json::to_vec(&p).unwrap()).unwrap();
+    let result = command()
+        .args(["run", "--plan"])
+        .arg(t.0.join("changed.json"))
+        .args(["--url", "http://127.0.0.1:9", "--out"])
+        .arg(t.0.join("rows.jsonl"))
+        .output()
+        .unwrap();
+    assert!(!result.status.success());
+    assert!(String::from_utf8_lossy(&result.stderr).contains("canonical generated plan"));
+    assert!(!t.0.join("rows.jsonl").exists());
+}
 #[test]
 fn efficiency_suites_preserve_v1_and_bound_each_thirty_trial_cache() {
     let t = Temp::new();
@@ -78,6 +205,19 @@ fn efficiency_suites_preserve_v1_and_bound_each_thirty_trial_cache() {
         let p = suite_plan(&t, "30", &format!("{suite}.json"), Some(suite));
         assert_eq!(p["schema"], "spiralcore.wan.plan.v2");
         assert_eq!(p["suite"], suite);
+        assert!(p.get("shard").is_none());
+        // Captured from f0966eb before implementing the v3 profile.
+        assert_eq!(
+            format!(
+                "{:x}",
+                Sha256::digest(fs::read(t.0.join(format!("{suite}.json"))).unwrap())
+            ),
+            if suite == "efficient-warm" {
+                "1f12e93820b09b2d1e8dd840d74fe3900799e48ca575962b8728a1b7c055352d"
+            } else {
+                "4f5c1298f4f9d816c4319fb0389d8d6e30c1ad302c422d5e492ff788fb48d80b"
+            }
+        );
         assert_eq!(
             p,
             suite_plan(&t, "30", &format!("{suite}-again.json"), Some(suite))

@@ -37,7 +37,7 @@ quota, authorization, corruption, staging or durable-publication behavior.
 
 ## Phase 2: 16 MiB WAN qualification (SC-WAN-002)
 
-1. Extend `crates/spiralcore-transfer/src/benchmark.rs`, its CLI and
+1. Extend `crates/spiralcore-transfer/src/bin/spiralcore-bench.rs` and
    `tests/benchmark.rs` only as necessary for quota-safe shards of larger paired
    workloads. First test deterministic pairing, unique scopes, size/limit checks
    and bounded retained cache footprint. Preserve old suites. Dependency: plan
@@ -70,6 +70,33 @@ quota, authorization, corruption, staging or durable-publication behavior.
 64 MiB remains a protocol ceiling until a separate resource qualification and
 bounded smoke run succeed. Do not raise default limits or call an unrun size
 qualified. The first deliverable here is repeated 16 MiB sparse-edit WAN evidence.
+
+## Registered 16 MiB schedule
+
+The canonical v3 suite is `large16-localized`, with `--trials 30 --shard 0|1|2`.
+One fresh random campaign ID determines all 30 fixture seeds and the order offset.
+Each shard contains ten consecutive global trials, three arms (`raw_full`,
+`zstd_full`, `sparse`) and two operations per arm (raw seed, then update): 60 rows.
+Each trial changes exactly 32 bytes at the midpoint of the same 16 MiB random base.
+Each of the six arm permutations occurs five times over the full campaign. Every
+arm has a distinct authorized namespace, its own base, and an absent update target.
+All three shards use the same pinned source and campaign ID, but separate fresh
+caches, tokens and temporary tunnel sessions. No target probing or DAG/prepared arm.
+
+Retained payload is 960 MiB per shard. Sixty 4 KiB conservative publication allowances
+leave over 63 MiB below the 1 GiB cache quota. Each namespace retains 32 MiB. Existing
+16 MiB raw batches fit the unchanged 20 MiB/512-frame HTTP batch bounds. The Mac uses
+the qualified native `hardware-sha256` feature; the Linux sender uses its existing
+default sha2 CPU dispatch. Record both actual feature trees and executables.
+
+Accept the larger warm byte/time hypothesis only if all 180 operations publish and
+reopen exactly, all 30 pairs are retained, sparse reduces median total HTTP-body
+bytes by at least 90% and has a paired geometric-mean elapsed ratio of at least 2
+against raw. Report the corresponding zstd comparison, CPU ratios and wins, p95,
+seed-plus-update totals and every failure regardless of this gate's outcome. This
+is an unshaped relay WAN experiment; neither a fixed 80 ms/10 Mbps result nor a
+claim against tuned rsync follows from it. Raw/zstd still attempt bounded optional
+DAG preparation, while sparse skips it; preserve and disclose that CPU asymmetry.
 
 ## Success criteria
 

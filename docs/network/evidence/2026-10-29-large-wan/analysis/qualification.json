@@ -1,0 +1,16 @@
+{
+  "schema": "spiralcore.analysis.qualification.v1",
+  "language": "Rust",
+  "tests": [
+    {"name": "midpoint_median_nearest_rank_p95_and_ratios_are_explicit", "red": "runtime failure: not implemented", "green": "passed"},
+    {"name": "full_campaign_is_paired_and_every_corrupt_or_missing_row_fails_closed", "red": "runtime failure: not implemented", "green": "passed"},
+    {"name": "input_read_is_bounded_before_parsing", "red": "oversized input accepted before adding bounded read", "green": "passed; read stops at 8 MiB plus one byte"}
+  ],
+  "test_command": "cargo test --locked --offline --manifest-path analysis/Cargo.toml",
+  "test_result": {"passed": 3, "failed": 0},
+  "lint_command": "cargo clippy --locked --offline --manifest-path analysis/Cargo.toml --all-targets -- -D warnings",
+  "lint_result": "passed after replacing manual evenness check with is_multiple_of(2); no change to median arithmetic",
+  "build_command": "cargo build --release --locked --offline --manifest-path analysis/Cargo.toml",
+  "build_result": "passed",
+  "boundaries": "The helper requires complete successful 180-row receipts with paired objects and one executable per shard. Canonical-plan validation and exact reopened cache comparisons are separately required from spiralcore-bench verify. It does not inspect packet capture or measure energy."
+}

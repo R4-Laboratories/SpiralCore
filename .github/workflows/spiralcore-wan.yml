@@ -20,6 +20,7 @@ jobs:
       SPIRALCORE_WAN_RUN: ${{ vars.SPIRALCORE_WAN_RUN }}
       SPIRALCORE_WAN_TRIALS: ${{ vars.SPIRALCORE_WAN_TRIALS }}
       SPIRALCORE_WAN_SUITE: ${{ vars.SPIRALCORE_WAN_SUITE }}
+      SPIRALCORE_WAN_SHARD: ${{ vars.SPIRALCORE_WAN_SHARD }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
@@ -31,9 +32,16 @@ jobs:
           [[ "$SPIRALCORE_WAN_RUN" =~ ^[0-9a-f]{64}$ ]]
           [[ "$SPIRALCORE_WAN_TRIALS" == 1 || "$SPIRALCORE_WAN_TRIALS" == 30 ]]
           if [[ "$GITHUB_REF" == refs/heads/codex/spiralcore-efficient ]]; then
-            [[ "$SPIRALCORE_WAN_SUITE" == efficient-warm || "$SPIRALCORE_WAN_SUITE" == efficient-prefix ]]
+            if [[ "$SPIRALCORE_WAN_SUITE" == large16-localized ]]; then
+              [[ "$SPIRALCORE_WAN_TRIALS" == 30 ]]
+              [[ "$SPIRALCORE_WAN_SHARD" =~ ^[0-2]$ ]]
+            else
+              [[ "$SPIRALCORE_WAN_SUITE" == efficient-warm || "$SPIRALCORE_WAN_SUITE" == efficient-prefix ]]
+              [[ -z "$SPIRALCORE_WAN_SHARD" ]]
+            fi
           else
             [[ -z "$SPIRALCORE_WAN_SUITE" ]]
+            [[ -z "$SPIRALCORE_WAN_SHARD" ]]
           fi
       - name: Install pinned Rust and capture tools
         run: |
@@ -50,9 +58,12 @@ jobs:
           rustc +1.97.1 --version > wan-results/rust-version.txt
           uname -a > wan-results/platform.txt
           lscpu -J > wan-results/cpu.json
+          cargo +1.97.1 tree --locked --manifest-path crates/spiralcore-transfer/Cargo.toml -e features > wan-results/features.txt
+          printf '%s\n' 'Linux sender: default Cargo features; native sha2 CPU dispatch. Mac receiver build is recorded separately.' > wan-results/build-profile.txt
           sha256sum target/release/spiralcore-bench target/release/spiralcore-capture > wan-results/binary-sha256.txt
           suite=()
           if [[ -n "$SPIRALCORE_WAN_SUITE" ]]; then suite=(--suite "$SPIRALCORE_WAN_SUITE"); fi
+          if [[ -n "$SPIRALCORE_WAN_SHARD" ]]; then suite+=(--shard "$SPIRALCORE_WAN_SHARD"); fi
           target/release/spiralcore-bench plan --trials "$SPIRALCORE_WAN_TRIALS" --run "$SPIRALCORE_WAN_RUN" --out wan-results/plan.json "${suite[@]}"
       - name: Transfer over the WAN and capture the encrypted runner leg
         env:
