@@ -55,9 +55,12 @@ fn usage() {
         "SpiralCore loopback experiment — public/synthetic data only; no peer authentication\n\
 serve --cache PATH [--bind 127.0.0.1:PORT] [--sessions N]\n\
 send --addr LOOPBACK:PORT --file PATH [--base PATH | --mode raw|zstd]\n\
+send --addr LOOPBACK:PORT --file PATH --base PATH --mode sparse\n\
 get --cache PATH --object HEX --out NEW_PATH\n\
 demo --cache PATH\n\
-Loopback IP literals only. Stop serve before get: the cache has one exclusive owner."
+Loopback IP literals only. Stop serve before get: the cache has one exclusive owner.\n\
+Sparse base and target are limited to 16 MiB. CLI frames use sequential receipts;\n\
+the WAN HTTP adapter batches requests. This CLI does not pipeline frames."
     );
 }
 fn options() -> CliResult<(String, BTreeMap<String, OsString>)> {
@@ -134,28 +137,35 @@ fn run() -> CliResult<()> {
             let file = required(&mut options, "--file")?;
             let base = options.remove("--base");
             let explicit_mode = options.remove("--mode");
-            if base.is_some() && explicit_mode.is_some() {
-                return Err("--base selects DAG; --mode is only for cold raw/zstd sends".into());
-            }
             let mode_text = explicit_mode
                 .as_deref()
                 .map(|v| v.to_str().ok_or("mode must be UTF-8"))
-                .transpose()?
-                .unwrap_or("raw");
-            let mode = match mode_text {
-                "raw" => Mode::Raw,
-                "zstd" => Mode::Zstd,
-                _ => return Err("--mode must be raw or zstd".into()),
+                .transpose()?;
+            let mode = match (mode_text, base.is_some()) {
+                (None, true) => Mode::Dag,
+                (None | Some("raw"), false) => Mode::Raw,
+                (Some("zstd"), false) => Mode::Zstd,
+                (Some("sparse"), true) => Mode::SparseV1,
+                (Some("sparse"), false) => return Err("--mode sparse requires --base PATH".into()),
+                (Some("raw" | "zstd"), true) => {
+                    return Err("--base selects DAG unless --mode sparse is explicit".into())
+                }
+                _ => return Err("--mode must be raw, zstd or sparse".into()),
             };
             no_extra(&options)?;
             let bytes = read_bounded(Path::new(&file))?;
-            let base = base
-                .map(|path| {
-                    read_bounded(Path::new(&path)).and_then(|bytes| Graph::fold(&bytes, MAX_NODES))
-                })
-                .transpose()?;
-            let mode = if base.is_some() { Mode::Dag } else { mode };
-            let stats = send(addr, &bytes, mode, base.as_ref())?;
+            let stats = if mode == Mode::SparseV1 {
+                let base = read_bounded(Path::new(base.as_ref().ok_or(Error::Malformed)?))?;
+                send_sparse(addr, &base, &bytes)?
+            } else {
+                let base = base
+                    .map(|path| {
+                        read_bounded(Path::new(&path))
+                            .and_then(|bytes| Graph::fold(&bytes, MAX_NODES))
+                    })
+                    .transpose()?;
+                send(addr, &bytes, mode, base.as_ref())?
+            };
             print_stats("send", bytes.len(), &stats);
         }
         "get" => {
@@ -331,6 +341,37 @@ struct TransferStats {
     socket_response_bytes: u64,
 }
 fn send(addr: SocketAddr, bytes: &[u8], mode: Mode, base: Option<&Graph>) -> Result<TransferStats> {
+    send_with(addr, |transfer_id, exchange| {
+        client::transfer(bytes, mode, base, transfer_id, exchange)
+    })
+}
+fn send_sparse(addr: SocketAddr, base: &[u8], target: &[u8]) -> Result<TransferStats> {
+    if base.len() > client::MAX_BATCHED_OBJECT || target.len() > client::MAX_BATCHED_OBJECT {
+        return Err(Error::Limit);
+    }
+    send_with(addr, |transfer_id, exchange| {
+        // This local stream adapter is deliberately sequential. Begin is probed
+        // separately, so every successful batch uploads all planned frames and
+        // its accounting matches the actual socket traffic. HTTP WAN batching
+        // is provided by the separate HttpClient adapter.
+        client::transfer_sparse_batched(base, target, transfer_id, true, |frames| {
+            let mut replies = Vec::with_capacity(frames.len());
+            for frame in frames {
+                let reply = exchange(frame)?;
+                let terminal = matches!(reply.kind, 103 | 127);
+                replies.push(reply);
+                if terminal {
+                    break;
+                }
+            }
+            Ok(replies)
+        })
+    })
+}
+fn send_with(
+    addr: SocketAddr,
+    perform: impl FnOnce(Id, &mut dyn FnMut(&Frame) -> Result<Frame>) -> Result<Stats>,
+) -> Result<TransferStats> {
     if !addr.ip().is_loopback() {
         return Err(Error::Unauthorized);
     }
@@ -350,7 +391,7 @@ fn send(addr: SocketAddr, bytes: &[u8], mode: Mode, base: Option<&Graph>) -> Res
     );
     let mut socket_request_bytes = 0;
     let mut socket_response_bytes = 0;
-    let stats = client::transfer(bytes, mode, base, transfer_id, |request| {
+    let stats = perform(transfer_id, &mut |request| {
         socket_request_bytes += write_frame(&mut stream, request)? as u64;
         let (reply, count) = read_frame(&mut stream)?.ok_or(Error::Malformed)?;
         socket_response_bytes += count as u64;
@@ -373,6 +414,7 @@ fn print_stats(label: &str, object_bytes: usize, report: &TransferStats) {
         Mode::Raw => "raw",
         Mode::Zstd => "zstd",
         Mode::Dag => "dag",
+        Mode::SparseV1 => "sparse-v1",
     };
     println!("{{\"event\":\"transfer\",\"label\":\"{label}\",\"object\":\"{}\",\"object_bytes\":{object_bytes},\"mode\":\"{mode}\",\"request_bytes\":{},\"response_bytes\":{},\"data_bytes\":{},\"records_sent\":{},\"requests\":{},\"elapsed_micros\":{},\"socket_request_bytes\":{},\"socket_response_bytes\":{},\"socket_frame_bytes\":{}}}",
         hex(&s.object), s.request_bytes, s.response_bytes, s.data_bytes, s.records_sent, s.requests,

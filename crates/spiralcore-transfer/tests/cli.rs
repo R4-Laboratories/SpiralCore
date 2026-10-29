@@ -315,3 +315,134 @@ fn protocol_error_reply_preserves_request_identity() {
     drop(stream);
     server.wait();
 }
+
+#[test]
+fn explicit_sparse_cli_preserves_insertions_and_socket_accounting() {
+    let t = Temp::new();
+    let cache = t.0.join("cache");
+    let base = t.0.join("base");
+    let target = t.0.join("target");
+    let mut bytes: Vec<u8> = (0..65537usize)
+        .map(|i| ((i * 73 + i / 256) & 255) as u8)
+        .collect();
+    bytes[65534..].fill(0);
+    let mut edited = bytes.clone();
+    edited.splice(32768..32768, [9, 0, 8]);
+    fs::write(&base, &bytes).unwrap();
+    fs::write(&target, &edited).unwrap();
+    let mut server = Server::start(&cache, 2);
+    send(&server.addr, &base, None, Some("raw"));
+    let stats = send(&server.addr, &target, Some(&base), Some("sparse"));
+    server.wait();
+    assert_eq!(stats["mode"], "sparse-v1");
+    assert_eq!(stats["records_sent"], 0);
+    assert!(stats["data_bytes"].as_u64().unwrap() < 256);
+    let requests = stats["requests"].as_u64().unwrap();
+    assert_eq!(
+        stats["socket_request_bytes"].as_u64().unwrap(),
+        stats["request_bytes"].as_u64().unwrap() + 4 * requests
+    );
+    assert_eq!(
+        stats["socket_response_bytes"].as_u64().unwrap(),
+        stats["response_bytes"].as_u64().unwrap() + 4 * requests
+    );
+    let out = t.0.join("recovered");
+    let recovered = command()
+        .args(["get", "--cache"])
+        .arg(&cache)
+        .args(["--object", &hex(&object_id(&edited)), "--out"])
+        .arg(&out)
+        .output()
+        .unwrap();
+    assert!(
+        recovered.status.success(),
+        "{}",
+        String::from_utf8_lossy(&recovered.stderr)
+    );
+    assert_eq!(fs::read(out).unwrap(), edited);
+}
+
+#[test]
+fn sparse_mode_requires_a_base_and_preserves_other_mode_validation() {
+    for (mode, base, expected) in [
+        ("sparse", false, "requires --base"),
+        ("raw", true, "--base selects DAG"),
+        ("zstd", true, "--base selects DAG"),
+        ("dag", true, "--mode must be"),
+    ] {
+        let mut cmd = command();
+        cmd.args([
+            "send",
+            "--addr",
+            "127.0.0.1:1",
+            "--file",
+            "unused",
+            "--mode",
+            mode,
+        ]);
+        if base {
+            cmd.args(["--base", "unused-base"]);
+        }
+        let output = cmd.output().unwrap();
+        assert!(!output.status.success());
+        assert!(
+            String::from_utf8_lossy(&output.stderr).contains(expected),
+            "{}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+    }
+    let t = Temp::new();
+    let large = t.0.join("large");
+    let small = t.0.join("small");
+    fs::File::create(&large)
+        .unwrap()
+        .set_len(16 * 1024 * 1024 + 1)
+        .unwrap();
+    fs::write(&small, b"a").unwrap();
+    for (base, target) in [(&large, &small), (&small, &large)] {
+        let output = command()
+            .args(["send", "--addr", "127.0.0.1:1", "--file"])
+            .arg(target)
+            .arg("--base")
+            .arg(base)
+            .args(["--mode", "sparse"])
+            .output()
+            .unwrap();
+        assert!(!output.status.success());
+        assert!(
+            String::from_utf8_lossy(&output.stderr).contains("Limit"),
+            "{}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+    }
+}
+
+#[test]
+fn sparse_cli_raw_fallback_and_exact_repeat_keep_socket_accounting() {
+    let t = Temp::new();
+    let cache = t.0.join("cache");
+    let base = t.0.join("base");
+    let target = t.0.join("target");
+    fs::write(&base, [0; 4096]).unwrap();
+    fs::write(&target, [1; 4096]).unwrap();
+    // The base is absent remotely; an inefficient recipe chooses raw before Begin.
+    let mut server = Server::start(&cache, 2);
+    let cold = send(&server.addr, &target, Some(&base), Some("sparse"));
+    let repeated = send(&server.addr, &target, Some(&target), Some("sparse"));
+    server.wait();
+    assert_eq!(cold["mode"], "raw");
+    assert_eq!(repeated["mode"], "raw");
+    assert_eq!(repeated["requests"], 1);
+    assert_eq!(repeated["data_bytes"], 0);
+    for stats in [cold, repeated] {
+        let requests = stats["requests"].as_u64().unwrap();
+        assert_eq!(
+            stats["socket_request_bytes"].as_u64().unwrap(),
+            stats["request_bytes"].as_u64().unwrap() + 4 * requests
+        );
+        assert_eq!(
+            stats["socket_response_bytes"].as_u64().unwrap(),
+            stats["response_bytes"].as_u64().unwrap() + 4 * requests
+        );
+    }
+}

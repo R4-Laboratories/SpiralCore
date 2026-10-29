@@ -1,6 +1,7 @@
 //! Synchronous bounded sender. The exchange implementation owns transport authentication.
 use crate::{
     dag::{Graph, Node},
+    prepared::PreparedDelta,
     protocol::{Frame, Mode, Offer, Reader},
     Error, Id, Result, MAX_CHUNK, MAX_OBJECT,
 };
@@ -93,6 +94,9 @@ pub fn transfer<F: FnMut(&Frame) -> Result<Frame>>(
     exchange: F,
 ) -> Result<Stats> {
     let start = Instant::now();
+    if mode == Mode::SparseV1 {
+        return Err(Error::Unsupported);
+    }
     if bytes.len() as u64 > MAX_OBJECT {
         return Err(Error::Limit);
     }
@@ -432,22 +436,29 @@ fn need_ids(body: &[u8]) -> Result<Vec<Id>> {
     reader.end()?;
     Ok(ids)
 }
-fn repair_nodes(graph: &Graph, mut pending: Vec<Id>) -> Result<Vec<Node>> {
+fn repair_nodes(graph: &Graph, pending: Vec<Id>) -> Result<Vec<Node>> {
+    repair_nodes_from(pending, graph.nodes.len(), |id| graph.nodes.get(id))
+}
+fn repair_nodes_from<'a>(
+    mut pending: Vec<Id>,
+    max_nodes: usize,
+    lookup: impl Fn(&Id) -> Option<&'a Node>,
+) -> Result<Vec<Node>> {
     let mut seen = BTreeSet::new();
     while let Some(id) = pending.pop() {
         if !seen.insert(id) {
             continue;
         }
-        let node = graph.nodes.get(&id).ok_or(Error::Integrity)?;
+        let node = lookup(&id).ok_or(Error::Integrity)?;
         if let Node::Parent { children, .. } = node {
             pending.extend_from_slice(children);
         }
-        if seen.len() > graph.nodes.len() {
+        if seen.len() > max_nodes {
             return Err(Error::Limit);
         }
     }
     seen.into_iter()
-        .map(|id| graph.nodes.get(&id).cloned().ok_or(Error::Integrity))
+        .map(|id| lookup(&id).cloned().ok_or(Error::Integrity))
         .collect()
 }
 
@@ -468,6 +479,9 @@ pub fn transfer_batched<F: FnMut(&[Frame]) -> Result<Vec<Frame>>>(
     exchange: F,
 ) -> Result<Stats> {
     let start = Instant::now();
+    if mode == Mode::SparseV1 {
+        return Err(Error::Unsupported);
+    }
     if bytes.len() > MAX_BATCHED_OBJECT
         || base
             .is_some_and(|g| g.manifest.len > MAX_BATCHED_OBJECT as u64 || g.nodes.len() > 262144)
@@ -493,12 +507,124 @@ pub fn transfer_batched<F: FnMut(&[Frame]) -> Result<Vec<Frame>>>(
     } else {
         Offer::cold(bytes, mode)
     };
+    let payload = match &graph {
+        Some(graph) => BatchedPayload::Graph(graph, base),
+        None => BatchedPayload::Bytes(bytes),
+    };
+    send_batched(offer, payload, transfer_id, warm_probe, exchange, start)
+}
+
+/// Send a locally prepared, immutable same-length DAG update using the existing
+/// DAG wire format. Exact repeats use a raw identity offer; `warm_probe` retains
+/// its usual control over whether Begin is uploaded separately.
+///
+/// Preparation time is outside these sender statistics. Missing-base errors are
+/// returned without retrying a different offer under the same transfer ID.
+pub fn transfer_prepared_batched<F: FnMut(&[Frame]) -> Result<Vec<Frame>>>(
+    target: &PreparedDelta,
+    transfer_id: Id,
+    warm_probe: bool,
+    exchange: F,
+) -> Result<Stats> {
+    let start = Instant::now();
+    if target.bytes().len() > MAX_BATCHED_OBJECT || target.node_count() > 262144 {
+        return Err(Error::Limit);
+    }
+    if target.is_repeat() {
+        return transfer_batched(
+            target.bytes(),
+            Mode::Raw,
+            None,
+            transfer_id,
+            warm_probe,
+            exchange,
+        );
+    }
+    let offer = Offer {
+        mode: Mode::Dag,
+        len: target.manifest().len,
+        object: target.manifest().object,
+        manifest: Some(target.manifest().clone()),
+        base: Some(target.base_manifest().id()),
+    };
+    send_batched(
+        offer,
+        BatchedPayload::Prepared(target),
+        transfer_id,
+        warm_probe,
+        exchange,
+        start,
+    )
+}
+
+/// Transfer a bounded COPY/LITERAL recipe against caller-owned local base bytes.
+///
+/// The base identity is computed from these exact bytes. The receiving endpoint
+/// must authorize and possess that base in the same context. An inefficient
+/// recipe falls back to Raw before any exchange; a missing remote base is an
+/// error and never triggers another offer under the same transfer ID.
+/// Exact repeats use Raw identity probes according to `warm_probe`.
+pub fn transfer_sparse_batched<F: FnMut(&[Frame]) -> Result<Vec<Frame>>>(
+    base: &[u8],
+    target: &[u8],
+    transfer_id: Id,
+    warm_probe: bool,
+    exchange: F,
+) -> Result<Stats> {
+    let start = Instant::now();
+    if base.len() > MAX_BATCHED_OBJECT || target.len() > MAX_BATCHED_OBJECT {
+        return Err(Error::Limit);
+    }
+    let recipe = if base == target {
+        None
+    } else {
+        crate::delta::encode(base, target)?
+    };
+    let Some(recipe) = recipe else {
+        let mut stats =
+            transfer_batched(target, Mode::Raw, None, transfer_id, warm_probe, exchange)?;
+        stats.elapsed_micros = start.elapsed().as_micros();
+        return Ok(stats);
+    };
+    let offer = Offer {
+        mode: Mode::SparseV1,
+        len: target.len() as u64,
+        object: crate::object_id(target),
+        manifest: None,
+        base: Some(crate::object_id(base)),
+    };
+    send_batched(
+        offer,
+        BatchedPayload::Sparse(recipe),
+        transfer_id,
+        warm_probe,
+        exchange,
+        start,
+    )
+}
+
+enum BatchedPayload<'a> {
+    Bytes(&'a [u8]),
+    Graph(&'a Graph, Option<&'a Graph>),
+    Prepared(&'a PreparedDelta),
+    Sparse(crate::delta::Recipe),
+}
+
+fn send_batched<F: FnMut(&[Frame]) -> Result<Vec<Frame>>>(
+    offer: Offer,
+    mut payload: BatchedPayload<'_>,
+    transfer_id: Id,
+    warm_probe: bool,
+    exchange: F,
+    start: Instant,
+) -> Result<Stats> {
+    let mode = offer.mode;
     let mut sender = BatchSender {
         exchange,
         transfer: transfer_id,
         next: 0,
         mode,
-        has_base: base.is_some(),
+        has_base: offer.base.is_some(),
         accepted: 0,
         accepted_upper: 0,
         stats: Stats {
@@ -526,28 +652,43 @@ pub fn transfer_batched<F: FnMut(&[Frame]) -> Result<Vec<Frame>>>(
     } else {
         frames.push(begin);
     }
-    if let Some(graph) = &graph {
-        let nodes = if let Some(base) = base {
-            graph.delta(base)
-        } else {
-            graph.nodes.values().cloned().collect()
-        };
-        sender.records(&nodes, &mut frames)?;
-    } else {
-        for chunk in bytes.chunks(MAX_CHUNK) {
-            let compressed = if mode == Mode::Zstd {
-                Some(zstd::bulk::compress(chunk, 1).map_err(|_| Error::Malformed)?)
+    match &mut payload {
+        BatchedPayload::Graph(graph, base) => {
+            let nodes = if let Some(base) = base {
+                graph.delta(base)
             } else {
-                None
+                graph.nodes.values().cloned().collect()
             };
-            let (encoding, payload) = match &compressed {
-                Some(b) if b.len() < chunk.len() => (1, b.as_slice()),
-                _ => (0, chunk),
-            };
-            let mut body = vec![encoding];
-            body.extend_from_slice(&(chunk.len() as u32).to_le_bytes());
-            body.extend_from_slice(payload);
-            frames.push(sender.frame(2, body)?);
+            sender.records(&nodes, &mut frames)?;
+        }
+        BatchedPayload::Prepared(target) => {
+            let nodes = target
+                .new_records()
+                .map(|(_, n)| n.clone())
+                .collect::<Vec<_>>();
+            sender.records(&nodes, &mut frames)?;
+        }
+        BatchedPayload::Bytes(bytes) => {
+            for chunk in bytes.chunks(MAX_CHUNK) {
+                let compressed = if mode == Mode::Zstd {
+                    Some(zstd::bulk::compress(chunk, 1).map_err(|_| Error::Malformed)?)
+                } else {
+                    None
+                };
+                let (encoding, payload) = match &compressed {
+                    Some(b) if b.len() < chunk.len() => (1, b.as_slice()),
+                    _ => (0, chunk),
+                };
+                let mut body = vec![encoding];
+                body.extend_from_slice(&(chunk.len() as u32).to_le_bytes());
+                body.extend_from_slice(payload);
+                frames.push(sender.frame(2, body)?);
+            }
+        }
+        BatchedPayload::Sparse(recipe) => {
+            for body in std::mem::take(&mut recipe.frames) {
+                frames.push(sender.frame(2, body)?);
+            }
         }
     }
     for repair in 0..=2 {
@@ -558,8 +699,15 @@ pub fn transfer_batched<F: FnMut(&[Frame]) -> Result<Vec<Frame>>>(
                 return Ok(sender.stats);
             }
             BatchOutcome::Need(ids) if repair < 2 => {
-                let graph = graph.as_ref().ok_or(Error::Integrity)?;
-                let nodes = repair_nodes(graph, ids)?;
+                let nodes = match &payload {
+                    BatchedPayload::Graph(graph, _) => repair_nodes(graph, ids)?,
+                    BatchedPayload::Prepared(target) => {
+                        repair_nodes_from(ids, target.node_count(), |id| target.node(id))?
+                    }
+                    BatchedPayload::Bytes(_) | BatchedPayload::Sparse(_) => {
+                        return Err(Error::Integrity)
+                    }
+                };
                 frames.clear();
                 sender.records(&nodes, &mut frames)?;
             }

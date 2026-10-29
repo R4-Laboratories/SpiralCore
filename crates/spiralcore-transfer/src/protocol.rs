@@ -67,6 +67,7 @@ pub enum Mode {
     Raw = 0,
     Zstd = 1,
     Dag = 2,
+    SparseV1 = 3,
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Offer {
@@ -110,6 +111,7 @@ impl Offer {
             0 => Mode::Raw,
             1 => Mode::Zstd,
             2 => Mode::Dag,
+            3 => Mode::SparseV1,
             _ => return Err(Error::Unsupported),
         };
         let len = r.u64()?;
@@ -146,6 +148,7 @@ impl Offer {
         match (self.mode, &self.manifest) {
             (Mode::Dag, Some(m)) if m.len == self.len && m.object == self.object => m.validate(),
             (Mode::Raw | Mode::Zstd, None) if self.base.is_none() => Ok(()),
+            (Mode::SparseV1, None) if self.base.is_some() => Ok(()),
             _ => Err(Error::Malformed),
         }
     }

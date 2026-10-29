@@ -1,17 +1,19 @@
 //! Stateful application endpoint. The caller supplies authenticated context and current authority.
 //! This module does not authenticate sockets, implement a mailbox envelope, or claim FIPS validation.
 use crate::{
-    dag::{self, Graph, Node},
+    dag::{self, Node},
     hash, hex, object_id,
+    prepared::{self, VerifiedGraph},
     protocol::{Frame, Mode, Offer, Reader},
     Error, Id, Result, MAX_CHUNK, MAX_OBJECT,
 };
 use std::{
-    collections::BTreeMap,
+    collections::{BTreeMap, BTreeSet},
     fs::{self, File, OpenOptions},
     io::{Read, Write},
     path::{Path, PathBuf},
     sync::atomic::{AtomicU64, Ordering},
+    sync::Arc,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -61,6 +63,9 @@ pub struct Limits {
     pub resident_bytes: u64,
     pub namespace_bytes: u64,
     pub cache_bytes: u64,
+    /// Verified graph retention is charged inside resident_bytes, never in addition to it.
+    pub graph_cache_bytes: u64,
+    pub graph_cache_entries: usize,
     pub max_states: usize,
     pub max_publications: usize,
     pub idle_seconds: u64,
@@ -74,6 +79,8 @@ impl Default for Limits {
             resident_bytes: 512 << 20,
             namespace_bytes: 512 << 20,
             cache_bytes: 1 << 30,
+            graph_cache_bytes: 64 << 20,
+            graph_cache_entries: 32,
             max_states: 128,
             max_publications: 4096,
             idle_seconds: 30,
@@ -96,11 +103,21 @@ struct Attempt {
     repair: u8,
     base_pinned: bool,
     staged_nodes: usize,
+    base_graph: Option<Arc<VerifiedGraph>>,
+    base_bytes: Vec<u8>,
+    sparse_operations: usize,
 }
 impl Attempt {
+    fn node(&self, id: &Id) -> Option<&Node> {
+        self.nodes
+            .get(id)
+            .or_else(|| self.base_graph.as_ref().and_then(|g| g.node(id)))
+    }
     fn clear(&mut self) {
         self.bytes = Vec::new();
         self.nodes = BTreeMap::new();
+        self.base_graph = None;
+        self.base_bytes = Vec::new();
         self.reserved = 0;
     }
     fn reject(&mut self, e: Error) {
@@ -115,6 +132,16 @@ pub struct Endpoint<A: Authority> {
     limits: Limits,
     authority: A,
     attempts: BTreeMap<(Id, Id), Attempt>,
+    graphs: BTreeMap<(Id, Id), (Arc<VerifiedGraph>, u64)>,
+    graph_stats: GraphCacheStats,
+}
+#[derive(Debug, Clone, Copy, Default)]
+pub struct GraphCacheStats {
+    pub hits: u64,
+    pub misses: u64,
+    pub evictions: u64,
+    pub resident_bytes: u64,
+    pub entries: usize,
 }
 #[derive(Clone)]
 struct Publication {
@@ -131,6 +158,8 @@ impl<A: Authority> Endpoint<A> {
             || limits.max_active > 4
             || limits.max_nodes == 0
             || limits.max_states < limits.max_active
+            || limits.graph_cache_bytes > 64 << 20
+            || limits.graph_cache_entries > 32
         {
             return Err(Error::Limit);
         }
@@ -189,6 +218,8 @@ impl<A: Authority> Endpoint<A> {
             limits,
             authority,
             attempts: BTreeMap::new(),
+            graphs: BTreeMap::new(),
+            graph_stats: GraphCacheStats::default(),
         })
     }
     fn path(&self, ns: Id, id: Id) -> PathBuf {
@@ -197,16 +228,67 @@ impl<A: Authority> Endpoint<A> {
             .join(format!("{}.object", hex(&id)))
     }
     fn charged(&self) -> u64 {
-        self.attempts
-            .values()
-            .map(|s| {
-                if s.state == 0 {
-                    s.reserved
-                } else {
-                    history_charge(s)
-                }
-            })
-            .sum()
+        self.graph_cache_stats().resident_bytes
+            + self
+                .attempts
+                .values()
+                .map(|s| {
+                    if s.state == 0 {
+                        s.reserved
+                    } else {
+                        history_charge(s)
+                    }
+                })
+                .sum::<u64>()
+    }
+    pub fn graph_cache_stats(&self) -> GraphCacheStats {
+        GraphCacheStats {
+            resident_bytes: self.graphs.values().map(|(g, _)| g.resident_charge()).sum(),
+            entries: self.graphs.len(),
+            ..self.graph_stats
+        }
+    }
+    fn evict_graph(&mut self) -> bool {
+        let victim = self
+            .graphs
+            .iter()
+            .filter(|(_, (g, _))| Arc::strong_count(g) == 1)
+            .min_by_key(|(_, (_, age))| *age)
+            .map(|(key, _)| *key);
+        if let Some(key) = victim {
+            self.graphs.remove(&key);
+            self.graph_stats.evictions += 1;
+            true
+        } else {
+            false
+        }
+    }
+    fn reserve_with_eviction(&mut self, n: u64) -> Result<()> {
+        while self.reserve(n).is_err() {
+            if !self.evict_graph() {
+                return Err(Error::Limit);
+            }
+        }
+        Ok(())
+    }
+    fn retain_graph(&mut self, ns: Id, graph: Arc<VerifiedGraph>, extra: u64, age: u64) {
+        let key = (ns, graph.manifest().id());
+        if self.graphs.contains_key(&key)
+            || graph.resident_charge() > self.limits.graph_cache_bytes
+            || self.limits.graph_cache_entries == 0
+        {
+            return;
+        }
+        while self.graphs.len() >= self.limits.graph_cache_entries
+            || self.graph_cache_stats().resident_bytes + graph.resident_charge()
+                > self.limits.graph_cache_bytes
+            || self.reserve(extra + graph.resident_charge()).is_err()
+        {
+            if !self.evict_graph() {
+                return;
+            }
+        }
+        self.graphs.insert(key, (graph, age));
     }
     fn reserve(&self, n: u64) -> Result<()> {
         if self.charged().checked_add(n).ok_or(Error::Limit)? > self.limits.resident_bytes {
@@ -253,7 +335,7 @@ impl<A: Authority> Endpoint<A> {
                     return Err(Error::Integrity);
                 }
                 let p = self.publication(ns, offer.object)?;
-                self.reserve(p.len.checked_mul(2).ok_or(Error::Limit)?)?;
+                self.reserve_with_eviction(p.len.checked_mul(2).ok_or(Error::Limit)?)?;
                 let bytes = read_publication(&p)?;
                 if bytes.len() as u64 != offer.len {
                     return Err(Error::Integrity);
@@ -335,24 +417,68 @@ impl<A: Authority> Endpoint<A> {
         }
         // Charge conservative peak allocations, including construction/indexes and two output buffers.
         let mut charge = offer.len.checked_mul(2).ok_or(Error::Limit)?;
-        let warming = dag::work_bound(offer.len).min(self.limits.max_nodes) as u64;
+        let warming = if offer.mode == Mode::SparseV1 || existing.is_ok() {
+            0
+        } else {
+            dag::work_bound(offer.len).min(self.limits.max_nodes) as u64
+        };
+        // DAG admission covers staging, a target closure set and a detached retained
+        // index simultaneously. Raw warming constructs only one graph.
+        let per_node = if offer.mode == Mode::Dag { 1152 } else { 512 };
         charge = charge
-            .checked_add(warming.checked_mul(512).ok_or(Error::Limit)?)
+            .checked_add(warming.checked_mul(per_node).ok_or(Error::Limit)?)
             .and_then(|x| x.checked_add(2 << 20))
             .ok_or(Error::Limit)?;
+        let cached = if offer.mode == Mode::Dag && existing.is_err() {
+            offer
+                .base
+                .and_then(|mid| self.graphs.get_mut(&(ns, mid)))
+                .map(|(g, age)| {
+                    *age = now;
+                    Arc::clone(g)
+                })
+        } else {
+            None
+        };
         let base = if let Some(mid) = offer.base.filter(|_| existing.is_err()) {
-            Some(self.find_base(ns, mid)?)
+            let p = if offer.mode == Mode::SparseV1 {
+                self.publication(ns, mid).map_err(|e| {
+                    if e == Error::Unknown {
+                        Error::Missing
+                    } else {
+                        e
+                    }
+                })?
+            } else if let Some(g) = &cached {
+                let p = self.publication(ns, g.manifest().object).map_err(|e| {
+                    if e == Error::Unknown {
+                        Error::Missing
+                    } else {
+                        e
+                    }
+                })?;
+                if p.manifest != Some(mid) {
+                    return Err(Error::Integrity);
+                }
+                p
+            } else {
+                self.find_base(ns, mid)?
+            };
+            Some(p)
         } else {
             None
         };
         if let Some(p) = &base {
+            let base_nodes = if offer.mode == Mode::SparseV1 || cached.is_some() {
+                0
+            } else {
+                dag::work_bound(p.len).min(self.limits.max_nodes) as u64
+            };
             charge = charge
-                .checked_add(
-                    p.len * 2 + (dag::work_bound(p.len).min(self.limits.max_nodes) as u64) * 512,
-                )
+                .checked_add(p.len * 2 + base_nodes * 512)
                 .ok_or(Error::Limit)?;
         }
-        self.reserve(charge)?;
+        self.reserve_with_eviction(charge)?;
         let mut s = Attempt {
             offer: offer.clone(),
             next: 1,
@@ -368,6 +494,9 @@ impl<A: Authority> Endpoint<A> {
             repair: 0,
             base_pinned: false,
             staged_nodes: 0,
+            base_graph: None,
+            base_bytes: Vec::new(),
+            sparse_operations: 0,
         };
         let reply = match existing {
             Ok(p) => {
@@ -382,11 +511,21 @@ impl<A: Authority> Endpoint<A> {
             Err(Error::Unknown) => {
                 if let Some(p) = base {
                     let bytes = read_publication(&p)?;
-                    let g = Graph::fold(&bytes, self.limits.max_nodes)?;
-                    if Some(g.manifest.id()) != offer.base {
-                        return Err(Error::Integrity);
+                    if offer.mode == Mode::SparseV1 {
+                        s.base_bytes = bytes;
+                    } else {
+                        let g = if let Some(g) = cached {
+                            self.graph_stats.hits += 1;
+                            g
+                        } else {
+                            self.graph_stats.misses += 1;
+                            Arc::new(VerifiedGraph::fold(&bytes, self.limits.max_nodes)?)
+                        };
+                        if Some(g.manifest().id()) != offer.base {
+                            return Err(Error::Integrity);
+                        }
+                        s.base_graph = Some(g);
                     }
-                    s.nodes = g.nodes;
                     s.base_pinned = true;
                 }
                 if offer.mode != Mode::Dag {
@@ -415,7 +554,7 @@ impl<A: Authority> Endpoint<A> {
                     return Err(Error::Integrity);
                 }
                 let p = self.publication(ns, offer.object)?;
-                self.reserve(
+                self.reserve_with_eviction(
                     p.len
                         .checked_mul(2)
                         .and_then(|n| n.checked_add(history_charge(s)))
@@ -445,9 +584,10 @@ impl<A: Authority> Endpoint<A> {
                 if !f.body.is_empty() {
                     return Err(Error::Malformed);
                 }
+                let mut retained = None;
                 if s.offer.mode == Mode::Dag {
                     let m = s.offer.manifest.as_ref().ok_or(Error::Malformed)?;
-                    let absent = dag::missing(m, &s.nodes)?;
+                    let (absent, closure) = verified_closure(m, s, self.limits.max_nodes)?;
                     if !absent.is_empty() {
                         if s.repair >= 2 {
                             return Err(Error::Missing);
@@ -459,16 +599,31 @@ impl<A: Authority> Endpoint<A> {
                         }
                         return Ok(f.reply(104, b));
                     }
-                    s.bytes = dag::rebuild(m, &s.nodes)?;
+                    s.bytes = prepared::rebuild_verified(m, |id| s.node(id))?;
+                    // Only closure-owned, previously verified nodes enter trusted retention.
+                    let nodes = closure
+                        .into_iter()
+                        .map(|id| Ok((id, s.node(&id).ok_or(Error::Missing)?.clone())))
+                        .collect::<Result<BTreeMap<_, _>>>()?;
+                    retained = Some(Arc::new(VerifiedGraph::from_validated_parts(
+                        m.clone(),
+                        nodes,
+                    )));
                 }
                 if s.bytes.len() as u64 != s.offer.len || object_id(&s.bytes) != s.offer.object {
                     return Err(Error::Integrity);
                 }
                 let mid = if let Some(m) = &s.offer.manifest {
                     Some(m.id())
+                } else if s.offer.mode == Mode::SparseV1 {
+                    None
                 } else {
-                    match Graph::fold(&s.bytes, self.limits.max_nodes) {
-                        Ok(g) => Some(g.manifest.id()),
+                    match VerifiedGraph::fold(&s.bytes, self.limits.max_nodes) {
+                        Ok(g) => {
+                            let mid = g.manifest().id();
+                            retained = Some(Arc::new(g));
+                            Some(mid)
+                        }
                         Err(Error::Limit) => None,
                         Err(e) => return Err(e),
                     }
@@ -477,6 +632,15 @@ impl<A: Authority> Endpoint<A> {
                 self.publish(c, ns, &s.offer, &s.bytes, mid)?;
                 s.state = 1;
                 s.clear();
+                if let Some(g) = retained {
+                    // Retention is optional after a successful durable publication.
+                    self.retain_graph(
+                        ns,
+                        g,
+                        history_charge(s) + 256 + crate::MAX_FRAME as u64,
+                        s.last,
+                    );
+                }
                 Ok(f.reply(103, s.offer.object.to_vec()))
             }
             4 => {
@@ -508,6 +672,17 @@ impl<A: Authority> Endpoint<A> {
         }
     }
     fn data(&self, s: &mut Attempt, b: &[u8]) -> Result<()> {
+        if s.offer.mode == Mode::SparseV1 {
+            crate::delta::apply(
+                &s.base_bytes,
+                &mut s.bytes,
+                s.offer.len as usize,
+                &mut s.sparse_operations,
+                b,
+            )?;
+            s.accepted = s.bytes.len() as u64;
+            return Ok(());
+        }
         let mut r = Reader::new(b);
         let encoding = r.u8()?;
         let decoded = r.u32()? as usize;
@@ -531,8 +706,8 @@ impl<A: Authority> Endpoint<A> {
                 raw.extend_from_slice(p.take(n)?);
                 encoded += raw.len();
                 let node = Node::decode(&raw)?;
-                let id = node.id();
-                if let Some(old) = s.nodes.get(&id).or_else(|| staged.get(&id)) {
+                let id: Id = raw[..32].try_into().map_err(|_| Error::Malformed)?;
+                if let Some(old) = s.node(&id).or_else(|| staged.get(&id)) {
                     if old != &node {
                         return Err(Error::Integrity);
                     }
@@ -553,7 +728,11 @@ impl<A: Authority> Endpoint<A> {
             for (id, node) in staged {
                 s.accepted = s
                     .accepted
-                    .checked_add(node.encode().len() as u64)
+                    .checked_add(if matches!(node, Node::Leaf(_)) {
+                        66
+                    } else {
+                        130
+                    })
                     .ok_or(Error::Limit)?;
                 s.nodes.insert(id, node);
             }
@@ -711,7 +890,7 @@ impl<A: Authority> Endpoint<A> {
     pub fn read_object(&mut self, c: &Context, id: Id) -> Result<Vec<u8>> {
         self.authority.authorize(c)?;
         let p = self.publication(c.namespace()?, id)?;
-        self.reserve(p.len.checked_mul(2).ok_or(Error::Limit)?)?;
+        self.reserve_with_eviction(p.len.checked_mul(2).ok_or(Error::Limit)?)?;
         let bytes = read_publication(&p)?;
         self.authority.authorize(c)?;
         Ok(bytes)
@@ -743,6 +922,48 @@ impl<A: Authority> Endpoint<A> {
         }
         Ok(())
     }
+}
+/// All values came from Node::decode or immutable verified ownership. Never use
+/// this traversal with an externally mutable Graph or unverified map.
+fn verified_closure(
+    m: &dag::Manifest,
+    s: &Attempt,
+    max_nodes: usize,
+) -> Result<(Vec<Id>, BTreeSet<Id>)> {
+    m.validate()?;
+    let mut seen = BTreeSet::new();
+    let mut missing = BTreeSet::new();
+    let mut stack = m.roots.clone();
+    let mut visits = 0;
+    while let Some((scale, id)) = stack.pop() {
+        visits += 1;
+        if visits > dag::work_bound(m.len) {
+            return Err(Error::Limit);
+        }
+        let Some(node) = s.node(&id) else {
+            missing.insert(id);
+            if missing.len() > 1024 {
+                return Err(Error::Limit);
+            }
+            continue;
+        };
+        if node.scale() != scale {
+            return Err(Error::Integrity);
+        }
+        if !seen.insert(id) {
+            continue;
+        }
+        if seen.len() > max_nodes {
+            return Err(Error::Limit);
+        }
+        if let Node::Parent { children, .. } = node {
+            let child_scale = scale.checked_sub(1).ok_or(Error::Integrity)?;
+            for child in children {
+                stack.push((child_scale, *child));
+            }
+        }
+    }
+    Ok((missing.into_iter().collect(), seen))
 }
 fn history_charge(s: &Attempt) -> u64 {
     512 + s
