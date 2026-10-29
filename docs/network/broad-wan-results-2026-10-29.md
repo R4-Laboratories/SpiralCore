@@ -2,7 +2,7 @@
 
 Measured source: `9dce4c57d1f41cef7365b297cd690849afce34e7`.
 Run: `d6aaa0f15da9ccbc62c005a1802532b3e85ad6d901886eea6fbd0076b2d312e4`.
-Four of twelve registered cases are complete and independently reviewed. Remaining
+Five of twelve registered cases are complete and independently reviewed. Remaining
 cases must not be inferred from this result. The complete registration is in the
 [workload plan](../plans/2026-10-29-broader-wan-and-scaling.md).
 
@@ -144,7 +144,36 @@ There is no complete thirty-pair IP-byte result and no silently substituted
 four-shard ratio. The original failure remains in the
 [complete middle-insertion packet](evidence/2026-10-29-broad-wan/cases/middle_4096/README.md).
 This capture limitation does not remove any recorded application transfer or
-change its exact-recovery, body-byte, elapsed or CPU observation.
+change its exact-recovery, body-byte, elapsed or CPU observation. The separately
+reviewed [tuple-reuse diagnosis](evidence/2026-10-29-broad-wan/qualification/middle-tuple-reuse/README.md)
+preserves the observed handshakes and parser condition without replacing the
+original incomplete accounting result.
+
+## Completed case: 4 KiB deletion
+
+Each base contains 16,777,216 bytes; deletion produces a 16,773,120-byte target.
+All thirty pairs preserve that shorter length exactly. The four methods pay for
+their own seed under the same publication policy.
+
+| Warm update | Median request + reply HTTP-body bytes | Median elapsed, including computation | Median sender + receiver-handler CPU |
+|---|---:|---:|---:|
+| Raw full send | 16,809,797 | 1,859.642 ms | 92.330 ms |
+| Ordinary zstd | 16,809,797 | 1,770.188 ms | 89.979 ms |
+| Zstd prefix delta | 26,185 | 255.436 ms | 93.433 ms |
+| Sparse COPY/LITERAL | 563 | 237.681 ms | 77.855 ms |
+
+Sparse uses 99.99665076% fewer HTTP-body bytes than raw, with a 7.824109× ratio
+of median elapsed times and approximately 15.68% lower median combined CPU.
+Including seed and one update, raw uses median 33,623,823 body bytes and
+3,502.654 ms; sparse uses 16,814,589 bytes and 2,127.901 ms. Zstd prefix uses
+16,840,211 bytes and 2,045.040 ms for that lifecycle, so its median paid-seed
+elapsed time is lower than sparse despite the sparse warm update being faster.
+
+All 240 operations reopened exactly, totaling 4,026,040,320 compared bytes.
+Independent analysis agrees with the raw receipts and author statistics; all five
+captures meet the completeness criteria. The
+[complete deletion packet](evidence/2026-10-29-broad-wan/cases/delete_4096/README.md)
+retains all observations and their custody.
 
 ## Qualification and measurement boundaries
 
