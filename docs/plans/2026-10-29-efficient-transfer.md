@@ -33,4 +33,13 @@ Each phase uses RED→GREEN tests, followed by spec and Rust/security review. Im
 
 - Baseline full transfer suite: 77 tests passed in this turn.
 - Baseline executable hashes retained in `local/efficiency-20261029/baseline.json` in the primary checkout.
-- Phases 1–6: in progress; results will be recorded as implemented and measured.
+- Phases 1–5 implemented, adversarially tested and independently reviewed. Direct v1 construction
+  preserves the legacy oracle's output; prepared state and receiver retention are bounded; mode 3
+  specifies exact sparse COPY/LITERAL transfer. The first direct builder's repetitive-data regression
+  was measured and repaired with a bounded exact-node memo.
+- Phase 6: final code at `b5520171ab1cfbc988e16b2b79f41ab831d3668a` passed 124 transfer tests,
+  one compile-fail doctest, 71 object-store tests, exact-byte example, fmt/clippy/release build and
+  90.316% transfer line coverage. Two actual WAN campaigns completed 1,140 operations with exact
+  reopened-cache verification. Thirty paired trials per arm measured body bytes, elapsed time and
+  both endpoint CPU costs. Prefix capture qualified the runner-to-relay leg; warm capture attribution
+  remains incomplete. See [results and remaining gates](../network/efficiency-results-2026-10-29.md).

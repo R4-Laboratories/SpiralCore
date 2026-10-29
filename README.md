@@ -6,8 +6,9 @@ SpiralCore networking prototypes, exact geometric transport research, and preser
 
 - [Run standalone SpiralCore](crates/spiralcore-transfer/README.md): `serve`, `send`, `get`, and a real TCP cold/repeat/delta demonstration with exact restart verification. Reducing transmitted bytes is the primary performance objective.
 - [Two-machine WAN experiment](docs/network/wan.md): authenticated synthetic transfers through a temporary HTTPS relay, paired raw/zstd/cache/DAG workloads, endpoint CPU and durable-commit timing, and packet accounting.
-- [Measured WAN results, October 29](docs/network/wan-results-2026-10-29.md): 906 successful operations with exact persisted-byte verification; substantial warm payload savings, compute costs, negative cases, and explicit packet-accounting limitations.
-- [Compute costs and efficiency path](docs/network/compute-efficiency-2026-10-29.md): measured graph/verification costs, retained-state and incremental-update design, and a separate hardware-SHA feature-build diagnostic.
+- [Latest efficiency and WAN results, October 29](docs/network/efficiency-results-2026-10-29.md): direct graph construction, retained verified state and sparse exact deltas; 1,140 successful operations, 99.80–99.98% warm protocol-body savings and 1.83–2.58× paired elapsed improvement, including computation. Cache seeding and packet-accounting limits are reported separately.
+- [Earlier WAN baseline](docs/network/wan-results-2026-10-29.md): 906 successful operations with exact persisted-byte verification; the measured compute costs and negative cases that motivated the efficiency work.
+- [Original compute audit and efficiency plan](docs/network/compute-efficiency-2026-10-29.md): baseline graph/verification costs, retained-state and incremental-update design, and a separate hardware-SHA feature-build diagnostic.
 - [Exact Rust object store](crates/uor-r4-object-store/README.md): independently buildable byte-object storage, ternary DAG replication, `objpeer`, and pinned compatibility vectors.
 - [Delivery plan and implementation status](docs/network/delivery.md): staged storage hardening, MVM integration, WAN acceptance, and qualification gaps.
 - [SpiralCore v69 page](index.html): a self-contained copy of the Netlify page, ready for a future GitHub Pages deployment from `main` / root.
@@ -57,7 +58,7 @@ The wire smoke tools live in `projects/spiralcore/wire/tools/`. The imported obj
 - `docs/`: current research guides, pre-registrations, task records, lab records, and receipts.
 - `archive/`: preserved research reviews, evidence, historical patches, and archived GitHub discussions.
 - `crates/uor-r4-object-store/`: standalone exact object storage and peer protocol, with its own MIT license and source provenance.
-- `crates/spiralcore-transfer/`: versioned SHA-256 object transfer, durable scoped cache, bounded raw/zstd/DAG decoding, and loopback CLI.
+- `crates/spiralcore-transfer/`: versioned SHA-256 object transfer, durable scoped cache, bounded raw/zstd/DAG/sparse decoding, prepared Rust APIs, loopback CLI and bounded WAN experiment harness.
 - Other directories under `crates/`: SpiralCore-related model-source references and integration points, not a complete model build.
 - `source-manifest.tsv`: source-relative paths and source Git blob IDs for the 344 UOR-R4 files.
 - `import-manifest.tsv`: origins, byte counts, and SHA-256 hashes for the 18 attachments, four extracted files, and webpage.

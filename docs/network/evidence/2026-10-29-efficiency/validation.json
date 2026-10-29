@@ -1,0 +1,124 @@
+{
+  "schema": "spiralcore.efficiency.validation.v1",
+  "implementation_revision": "b5520171ab1cfbc988e16b2b79f41ab831d3668a",
+  "baseline_revision": "354b616257eda62cd6bdcc2fb37902fc4cb4a5e8",
+  "platforms": [
+    "aarch64-apple-darwin",
+    "x86_64-unknown-linux-gnu (GitHub runner)"
+  ],
+  "checks": [
+    {
+      "command": "cargo test --locked --manifest-path crates/spiralcore-transfer/Cargo.toml --all-targets",
+      "status": "passed",
+      "tests": 124,
+      "failed": 0,
+      "independent_linux_reruns": [
+        40884300401,
+        40886610208
+      ]
+    },
+    {
+      "command": "cargo test --locked --manifest-path crates/spiralcore-transfer/Cargo.toml --doc",
+      "status": "passed",
+      "compile_fail_doctests": 1,
+      "failed": 0
+    },
+    {
+      "command": "cargo test --locked --manifest-path crates/uor-r4-object-store/Cargo.toml --all-targets",
+      "status": "passed",
+      "tests": 71,
+      "failed": 0
+    },
+    {
+      "command": "cargo run --release --locked --manifest-path crates/uor-r4-object-store/Cargo.toml --example exact_bytes",
+      "status": "passed"
+    },
+    {
+      "command": "cargo fmt --manifest-path crates/spiralcore-transfer/Cargo.toml -- --check",
+      "status": "passed"
+    },
+    {
+      "command": "cargo clippy --locked --manifest-path crates/spiralcore-transfer/Cargo.toml --all-targets -- -D warnings",
+      "status": "passed"
+    },
+    {
+      "command": "cargo build --release --locked --manifest-path crates/spiralcore-transfer/Cargo.toml --bins",
+      "status": "passed"
+    },
+    {
+      "command": "cargo llvm-cov --locked --manifest-path crates/spiralcore-transfer/Cargo.toml --all-targets --json --summary-only --ignore-filename-regex '(/tests/|uor-r4-object-store)' --fail-under-lines 80",
+      "status": "passed",
+      "line_covered": 5167,
+      "line_count": 5721,
+      "line_percent": 90.31637825554972,
+      "branch_instrumentation": false
+    },
+    {
+      "command": "standalone rustc rsync helper --test, final warning-denied build",
+      "status": "passed",
+      "tests": 9,
+      "failed": 0,
+      "source_sha256": "ecd46cb734174bd3fd08daf209a876ef71d674a868577322f7b66801450c5c32"
+    }
+  ],
+  "compatibility": {
+    "v1_plan_sha256": "77e500ff33a7401b44a06a6f98911e6d244bdf6ce9f43ea7b9094a71100963ed",
+    "v1_graph_legacy_oracle": "passed retained/boundary/randomized exact encodings",
+    "historical_v1_rows_summarized": 906
+  },
+  "campaigns": [
+    {
+      "suite": "efficient-warm",
+      "github_run": 40884300401,
+      "operations": 900,
+      "bytes_compared": 943718400,
+      "verification": "exact after reopening cache",
+      "capture_complete": false
+    },
+    {
+      "suite": "efficient-prefix",
+      "github_run": 40886610208,
+      "operations": 240,
+      "bytes_compared": 251658360,
+      "verification": "exact after reopening cache",
+      "capture_complete": true,
+      "capture_scope": "runner to Cloudflare leg only"
+    },
+    {
+      "suite": "local rsync control",
+      "pairs": 90,
+      "operations": 360,
+      "pilot_operations_excluded": 4,
+      "verification": "exact bytes, ObjectIds match WAN fixtures, file and directory sync",
+      "transport": "local process pipes"
+    }
+  ],
+  "review": {
+    "roles": [
+      "Rust code/API",
+      "security/input handling",
+      "architecture",
+      "infra/workflow",
+      "performance measurement"
+    ],
+    "completed_before_measurement": true,
+    "final_claim_review": "completed; independent source, fixture, receipt arithmetic and claim-boundary review; no unresolved actionable blockers"
+  },
+  "cleanup": {
+    "owned_receivers_and_tunnels_stopped": true,
+    "temporary_github_secret_and_five_variables_removed": true,
+    "capability_files_deleted": true,
+    "scientific_receipts_preserved": true,
+    "diagnostic_debris": "generated compiler/test console logs and empty rsync working directories removed; scientific receipts and original PCAPs retained"
+  },
+  "limitations": [
+    "No energy or joule measurement",
+    "No matched rsync/VCDIFF WAN head-to-head",
+    "Warm capture incomplete; neither suite captures both relay legs",
+    "Raw/zstd synchronously warm DAG; sparse does not",
+    "Caller-owned preparation not covered by endpoint resident limit; no peak memory qualification",
+    "One update per base; no successor promotion in WAN timing",
+    "No new 30-trial cold/no-reuse qualification",
+    "No direct/shaped WAN, MVM or CUI/FIPS qualification"
+  ]
+}

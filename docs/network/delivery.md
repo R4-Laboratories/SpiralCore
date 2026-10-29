@@ -23,8 +23,9 @@ The user prioritized working standalone SpiralCore over MVM integration, then re
 | SHA-256 object profile and standalone endpoint | Implemented and tested | Reviewed contract, scoped trusted authority, raw/zstd/DAG, private durable cache, retries/cancel, real TCP CLI and restart equality |
 | Canonical two-MVM encrypted mailbox | Deferred by user priority; upstream prerequisites still open | Actual guest service/transport, no replacement port or plaintext host shortcut |
 | Cooperative FlowMux streams | Deferred | Existing policy gates and byte ordering preserved |
-| Real two-host WAN relay experiment | Exact object fidelity and protocol-body measurements verified | 906 successful operations, 30 paired trials per 1 MiB arm, separate 16 MiB smoke; elapsed time and both endpoint CPU measured |
-| Complete per-transfer IP accounting | Incomplete | Reused TCP tuples quarantined; one received/captured counter discrepancy; no all-wire-byte acceptance claim |
+| Real two-host WAN relay experiment | Exact object fidelity and protocol-body measurements verified | Original 906 operations plus 1,140 efficiency-campaign operations; 30 paired trials per 1 MiB arm; elapsed time and both endpoint CPU measured |
+| Efficient exact updates | Implemented and measured | Direct canonical builder, retained verified state, ordinary repeat hits and versioned sparse COPY/LITERAL; warm body savings and end-to-end improvements with seed costs retained |
+| Complete per-transfer IP accounting | Qualified only for the new prefix campaign's runner-to-relay leg | Prefix capture counters and ownership agree; other captures retain attribution/counter limitations; no whole-path all-wire-byte acceptance claim |
 | Direct/shaped WAN and three-peer qualification | Not run | Controlled impairment, recovery across three peers and eventual MVM boundaries |
 | CUI/FIPS deployment qualification | Not claimed | Concrete validated module/OE/mode and contract-specific control assessment |
 
@@ -36,7 +37,7 @@ The user explicitly prioritized fewer bytes over the link, allowing additional c
 
 `Decode(verified_receiver_state, recipe, residual) == original_bytes`, including original length. Object identity is independent of representation. Every record and complete reconstruction must validate before publication or commit acknowledgment. Cache existence does not grant authority. Resume revalidates principal, recipient, namespace and policy/execution epoch. Cards and source code are never executable network recipes.
 
-Cold content uses raw/zstd bytes; warm content uses batched missing-record exchange. The current sender is synchronous; pipelining is a later optimization. A later sparse-page encoder shares the same identity and commit contract. Legacy UOROBJ01 remains explicitly distinct from a full-SHA256 mailbox profile. Cache, staging, message, output, work and concurrency budgets are separate and reserved before admission.
+Cold content uses raw/zstd bytes; warm content uses batched missing-record exchange or versioned sparse COPY/LITERAL recipes. The current sender is synchronous; further pipelining is a later optimization. The sparse encoder shares the same identity and commit contract. Legacy UOROBJ01 remains explicitly distinct from the full-SHA256 transfer profile. Cache, staging, message, output, work and concurrency budgets are separate and reserved before admission.
 
 The mailbox profile uses at most 64 KiB application bodies, a 64 MiB object ceiling, four active transfers per peer within a shared 1 GiB cache quota and 512 MiB resident budget. Initial mandatory demonstration: objects through 16 MiB. Larger-object claims require qualification. Object commit, mailbox admission, delivery and application processing are separate events; no exactly-once execution claim.
 
@@ -56,8 +57,16 @@ Use public/synthetic data until deployment qualification. Enumerate envelope, tr
 
 ## Current runnable delivery
 
-Use `crates/spiralcore-transfer`. Its original `spiralcore` CLI remains a loopback-only public/synthetic-data experiment. The separate WAN binaries use a temporary bearer capability, allowlisted experiment scopes and verified HTTPS through Cloudflare. This bounded synthetic-data adapter is a working Internet transfer experiment, not a general public file service or a production security qualification. The existing warm-cache/wire prototypes remain separate research implementations. The sparse-page encoder, geometric peer selection and MVM integration remain future work.
+Use `crates/spiralcore-transfer`. Its original `spiralcore` CLI remains a loopback-only public/synthetic-data experiment, now with explicit sparse sends. The separate WAN binaries use a temporary bearer capability, allowlisted experiment scopes and verified HTTPS through Cloudflare. This bounded synthetic-data adapter is a working Internet transfer experiment, not a general public file service or a production security qualification. The existing warm-cache/wire prototypes remain separate research implementations. Geometric peer selection and MVM integration remain future work.
 
 The release demo transfers 1 MiB cold/repeated/32-byte-mutated content over real TCP, then reopens the cache and checks exact bytes. A separate 16 MiB random cold/repeat run also passed exact recovery. See [validation receipt](validation.json) for source identities, measured bytes, complete test/coverage scope and limitations.
 
 The [real WAN report](wan-results-2026-10-29.md) records the subsequent GitHub Linux → Cloudflare → Mac campaign. Warm DAG mutations reduced HTTP-body bytes substantially but were slower than full raw transfer on that path. Ordinary content-addressed exact-repeat hits reduced both bytes and time. Cold random and prefix-insertion DAG expansion remain explicit negatives. Neither the earlier smoke's original `capture_complete` flag nor a green workflow establishes complete packet accounting; the report retains the later counter reassessment.
+
+The [subsequent efficiency report](efficiency-results-2026-10-29.md) records direct graph construction,
+prepared state and sparse recipes at `b5520171ab1cfbc988e16b2b79f41ab831d3668a`. Sparse warm updates
+save 99.80–99.98% of protocol-body bytes and complete 1.83–2.58 times faster than the current full-raw
+arm in matched trials. Seed-plus-update gains are smaller and explicitly measured. Raw/zstd currently
+warm a DAG synchronously while sparse publication skips it, so equal durable-object fidelity does
+not imply equal future DAG readiness. Exact repeats also match ordinary CAS. These results do not
+establish superiority over a matched rsync/VCDIFF WAN implementation or energy savings.

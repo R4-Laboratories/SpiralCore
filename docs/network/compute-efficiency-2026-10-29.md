@@ -1,6 +1,6 @@
 # Making warm transfers computationally cheap
 
-Status: source audit and bounded diagnostics following the real WAN campaign. The optimizations below are proposed; they are not shipping performance results. The WAN implementation and its measured source remain unchanged.
+Historical status: source audit and bounded diagnostics at `354b616257eda62cd6bdcc2fb37902fc4cb4a5e8`, following the first real WAN campaign. The descriptions of the active implementation below refer to that pinned baseline. The proposed changes have since been implemented and measured in [the subsequent efficiency report](efficiency-results-2026-10-29.md); retain this document as the original cost analysis and plan.
 
 ## What executes today
 

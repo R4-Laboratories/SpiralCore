@@ -1,0 +1,1540 @@
+{
+  "schema": "spiralcore.builder-paired.v1",
+  "baseline": "354b616257eda62cd6bdcc2fb37902fc4cb4a5e8",
+  "candidate": "2563742402774673f0ed7d2498b6d999607021c9",
+  "paired_fixture_checks": 50,
+  "all_fixture_descriptions_equal": true,
+  "method": "Ten alternating old/new release process pairs (1..10), five AB/five BA; each operation reports median of seven internal samples. Pair0 retained but excluded because review tests overlapped its start. Background host activity and OS caches uncontrolled. No network or publication timing and no energy measurement.",
+  "groups": [
+    {
+      "operation": "object_id_random_1MiB",
+      "independent_pairs": 10,
+      "old_cpu_median_us": 3006.725,
+      "new_cpu_median_us": 3005.305,
+      "paired_cpu_speedup_median": 0.9953027733845157,
+      "paired_cpu_speedup_geomean": 1.0013562519082408,
+      "old_wall_median_us": 3020.7741699999997,
+      "new_wall_median_us": 3027.399165,
+      "pairs": [
+        {
+          "pair": 1,
+          "old_cpu": 2963.52,
+          "new_cpu": 3003.07,
+          "old_wall": 2968.6291699999997,
+          "new_wall": 3027.11333,
+          "cpu_ratio": 0.9868301438194913,
+          "wall_ratio": 0.9806798908318374
+        },
+        {
+          "pair": 2,
+          "old_cpu": 2995.1,
+          "new_cpu": 3005.47,
+          "old_wall": 3009.24667,
+          "new_wall": 3027.685,
+          "cpu_ratio": 0.9965496245179623,
+          "wall_ratio": 0.9939100897220153
+        },
+        {
+          "pair": 3,
+          "old_cpu": 3018.35,
+          "new_cpu": 2975.99,
+          "old_wall": 3032.30167,
+          "new_wall": 2988.9975,
+          "cpu_ratio": 1.0142339187967702,
+          "wall_ratio": 1.0144878575509013
+        },
+        {
+          "pair": 4,
+          "old_cpu": 2976.75,
+          "new_cpu": 3004.62,
+          "old_wall": 2988.8825,
+          "new_wall": 3018.86417,
+          "cpu_ratio": 0.9907242846017134,
+          "wall_ratio": 0.9900685594608917
+        },
+        {
+          "pair": 5,
+          "old_cpu": 2975.98,
+          "new_cpu": 2984.55,
+          "old_wall": 2983.99459,
+          "new_wall": 2991.47125,
+          "cpu_ratio": 0.9971285453418438,
+          "wall_ratio": 0.9975006746262394
+        },
+        {
+          "pair": 6,
+          "old_cpu": 3020.21,
+          "new_cpu": 3040.03,
+          "old_wall": 3040.85542,
+          "new_wall": 3067.87959,
+          "cpu_ratio": 0.9934803274967681,
+          "wall_ratio": 0.9911912546737207
+        },
+        {
+          "pair": 7,
+          "old_cpu": 3180.26,
+          "new_cpu": 3005.14,
+          "old_wall": 3228.7825,
+          "new_wall": 3020.55625,
+          "cpu_ratio": 1.0582734914180372,
+          "wall_ratio": 1.0689363920966544
+        },
+        {
+          "pair": 8,
+          "old_cpu": 2981.25,
+          "new_cpu": 3027.26,
+          "old_wall": 2994.46333,
+          "new_wall": 3055.48708,
+          "cpu_ratio": 0.9848014376036415,
+          "wall_ratio": 0.9800281433361518
+        },
+        {
+          "pair": 9,
+          "old_cpu": 3028.62,
+          "new_cpu": 3046.73,
+          "old_wall": 3048.47583,
+          "new_wall": 3076.3595800000003,
+          "cpu_ratio": 0.9940559222510691,
+          "wall_ratio": 0.9909361213229825
+        },
+        {
+          "pair": 10,
+          "old_cpu": 3023.52,
+          "new_cpu": 3025.01,
+          "old_wall": 3055.7375,
+          "new_wall": 3046.13333,
+          "cpu_ratio": 0.9995074396448276,
+          "wall_ratio": 1.003152905326045
+        }
+      ]
+    },
+    {
+      "operation": "copy_vec_random_1MiB",
+      "independent_pairs": 10,
+      "old_cpu_median_us": 18.939999999999998,
+      "new_cpu_median_us": 19.555,
+      "paired_cpu_speedup_median": 1.1042389453865864,
+      "paired_cpu_speedup_geomean": 0.9920243592183955,
+      "old_wall_median_us": 18.923335,
+      "new_wall_median_us": 19.540005,
+      "pairs": [
+        {
+          "pair": 1,
+          "old_cpu": 18.47,
+          "new_cpu": 16.7,
+          "old_wall": 18.465419999999998,
+          "new_wall": 16.685830000000003,
+          "cpu_ratio": 1.1059880239520958,
+          "wall_ratio": 1.1066527706443128
+        },
+        {
+          "pair": 2,
+          "old_cpu": 23.4,
+          "new_cpu": 20.71,
+          "old_wall": 23.4025,
+          "new_wall": 20.73416,
+          "cpu_ratio": 1.1298889425398357,
+          "wall_ratio": 1.1286929395741134
+        },
+        {
+          "pair": 3,
+          "old_cpu": 17.45,
+          "new_cpu": 23.69,
+          "old_wall": 17.44875,
+          "new_wall": 23.67375,
+          "cpu_ratio": 0.7365977205571971,
+          "wall_ratio": 0.7370505306510376
+        },
+        {
+          "pair": 4,
+          "old_cpu": 19.04,
+          "new_cpu": 17.27,
+          "old_wall": 19.025830000000003,
+          "new_wall": 17.26417,
+          "cpu_ratio": 1.102489866821077,
+          "wall_ratio": 1.1020413955608641
+        },
+        {
+          "pair": 5,
+          "old_cpu": 26.42,
+          "new_cpu": 23.69,
+          "old_wall": 27.32375,
+          "new_wall": 23.689169999999997,
+          "cpu_ratio": 1.1152384972562264,
+          "wall_ratio": 1.1534279166387005
+        },
+        {
+          "pair": 6,
+          "old_cpu": 19.4,
+          "new_cpu": 16.59,
+          "old_wall": 19.39416,
+          "new_wall": 16.54416,
+          "cpu_ratio": 1.1693791440626884,
+          "wall_ratio": 1.1722662256651288
+        },
+        {
+          "pair": 7,
+          "old_cpu": 23.54,
+          "new_cpu": 19.92,
+          "old_wall": 23.544169999999998,
+          "new_wall": 19.89584,
+          "cpu_ratio": 1.181726907630522,
+          "wall_ratio": 1.183371498765571
+        },
+        {
+          "pair": 8,
+          "old_cpu": 18.58,
+          "new_cpu": 18.44,
+          "old_wall": 18.579169999999998,
+          "new_wall": 18.44167,
+          "cpu_ratio": 1.0075921908893708,
+          "wall_ratio": 1.0074559408123016
+        },
+        {
+          "pair": 9,
+          "old_cpu": 18.84,
+          "new_cpu": 19.19,
+          "old_wall": 18.82084,
+          "new_wall": 19.184169999999998,
+          "cpu_ratio": 0.9817613340281396,
+          "wall_ratio": 0.9810609476458978
+        },
+        {
+          "pair": 10,
+          "old_cpu": 18.03,
+          "new_cpu": 30.22,
+          "old_wall": 18.12,
+          "new_wall": 31.10542,
+          "cpu_ratio": 0.5966247518199869,
+          "wall_ratio": 0.582535133748395
+        }
+      ]
+    },
+    {
+      "operation": "legacy_store_fold_random_1MiB",
+      "independent_pairs": 10,
+      "old_cpu_median_us": 19638,
+      "new_cpu_median_us": 20222.5,
+      "paired_cpu_speedup_median": 0.9781463482965523,
+      "paired_cpu_speedup_geomean": 0.9935338462446186,
+      "old_wall_median_us": 19679.5205,
+      "new_wall_median_us": 20375.9795,
+      "pairs": [
+        {
+          "pair": 1,
+          "old_cpu": 19398,
+          "new_cpu": 20899,
+          "old_wall": 19445.667,
+          "new_wall": 21343.709,
+          "cpu_ratio": 0.9281783817407532,
+          "wall_ratio": 0.9110725319577775
+        },
+        {
+          "pair": 2,
+          "old_cpu": 20068,
+          "new_cpu": 21120,
+          "old_wall": 20165.875,
+          "new_wall": 21471.916,
+          "cpu_ratio": 0.950189393939394,
+          "wall_ratio": 0.9391744546690662
+        },
+        {
+          "pair": 3,
+          "old_cpu": 23601,
+          "new_cpu": 19306,
+          "old_wall": 24226.459,
+          "new_wall": 19307.916,
+          "cpu_ratio": 1.2224696985393142,
+          "wall_ratio": 1.254742303623032
+        },
+        {
+          "pair": 4,
+          "old_cpu": 19303,
+          "new_cpu": 19652,
+          "old_wall": 19306.833,
+          "new_wall": 19766.875,
+          "cpu_ratio": 0.9822409932831264,
+          "wall_ratio": 0.9767266196604166
+        },
+        {
+          "pair": 5,
+          "old_cpu": 19546,
+          "new_cpu": 19282,
+          "old_wall": 19623.166,
+          "new_wall": 19279.583,
+          "cpu_ratio": 1.0136915257753345,
+          "wall_ratio": 1.0178210804663153
+        },
+        {
+          "pair": 6,
+          "old_cpu": 19683,
+          "new_cpu": 19825,
+          "old_wall": 19735.875,
+          "new_wall": 19859.708,
+          "cpu_ratio": 0.9928373266078184,
+          "wall_ratio": 0.9937646112420183
+        },
+        {
+          "pair": 7,
+          "old_cpu": 19404,
+          "new_cpu": 20266,
+          "old_wall": 19444.208,
+          "new_wall": 20386.917,
+          "cpu_ratio": 0.9574657061087536,
+          "wall_ratio": 0.9537591191448906
+        },
+        {
+          "pair": 8,
+          "old_cpu": 19593,
+          "new_cpu": 20893,
+          "old_wall": 19620.625,
+          "new_wall": 21115.417,
+          "cpu_ratio": 0.9377782032259608,
+          "wall_ratio": 0.9292085020153757
+        },
+        {
+          "pair": 9,
+          "old_cpu": 20288,
+          "new_cpu": 20179,
+          "old_wall": 20452.375,
+          "new_wall": 20365.042,
+          "cpu_ratio": 1.0054016551860845,
+          "wall_ratio": 1.004288378094187
+        },
+        {
+          "pair": 10,
+          "old_cpu": 20158,
+          "new_cpu": 20695,
+          "old_wall": 20261.166,
+          "new_wall": 20999.666,
+          "cpu_ratio": 0.9740517033099783,
+          "wall_ratio": 0.9648327740069771
+        }
+      ]
+    },
+    {
+      "operation": "legacy_store_rebuild_random_1MiB",
+      "independent_pairs": 10,
+      "old_cpu_median_us": 13014.5,
+      "new_cpu_median_us": 13381,
+      "paired_cpu_speedup_median": 0.9684142394176369,
+      "paired_cpu_speedup_geomean": 0.9920580770710871,
+      "old_wall_median_us": 13042.437,
+      "new_wall_median_us": 13473.125,
+      "pairs": [
+        {
+          "pair": 1,
+          "old_cpu": 13073,
+          "new_cpu": 14268,
+          "old_wall": 13157.542,
+          "new_wall": 14468.792,
+          "cpu_ratio": 0.9162461452200729,
+          "wall_ratio": 0.9093739131781008
+        },
+        {
+          "pair": 2,
+          "old_cpu": 13063,
+          "new_cpu": 13846,
+          "old_wall": 13117.208,
+          "new_wall": 13979.833,
+          "cpu_ratio": 0.9434493716596851,
+          "wall_ratio": 0.9382950425802654
+        },
+        {
+          "pair": 3,
+          "old_cpu": 16014,
+          "new_cpu": 12888,
+          "old_wall": 16184.917,
+          "new_wall": 12926.75,
+          "cpu_ratio": 1.2425512104283054,
+          "wall_ratio": 1.2520484267120506
+        },
+        {
+          "pair": 4,
+          "old_cpu": 12689,
+          "new_cpu": 13166,
+          "old_wall": 12686.75,
+          "new_wall": 13197.25,
+          "cpu_ratio": 0.9637703174844295,
+          "wall_ratio": 0.9613176987629999
+        },
+        {
+          "pair": 5,
+          "old_cpu": 12860,
+          "new_cpu": 12814,
+          "old_wall": 12880.792,
+          "new_wall": 12826.416,
+          "cpu_ratio": 1.0035898236304042,
+          "wall_ratio": 1.0042393759878052
+        },
+        {
+          "pair": 6,
+          "old_cpu": 12966,
+          "new_cpu": 13325,
+          "old_wall": 12967.666,
+          "new_wall": 13453.667,
+          "cpu_ratio": 0.9730581613508443,
+          "wall_ratio": 0.9638759454950089
+        },
+        {
+          "pair": 7,
+          "old_cpu": 12725,
+          "new_cpu": 13437,
+          "old_wall": 12725.584,
+          "new_wall": 13492.583,
+          "cpu_ratio": 0.9470119818411847,
+          "wall_ratio": 0.9431540276609749
+        },
+        {
+          "pair": 8,
+          "old_cpu": 12869,
+          "new_cpu": 14039,
+          "old_wall": 12934.916,
+          "new_wall": 14201.542,
+          "cpu_ratio": 0.9166607308212835,
+          "wall_ratio": 0.9108106711228964
+        },
+        {
+          "pair": 9,
+          "old_cpu": 14164,
+          "new_cpu": 13508,
+          "old_wall": 14437.75,
+          "new_wall": 13599.75,
+          "cpu_ratio": 1.0485638140361266,
+          "wall_ratio": 1.061618779756981
+        },
+        {
+          "pair": 10,
+          "old_cpu": 13356,
+          "new_cpu": 13310,
+          "old_wall": 13480.834,
+          "new_wall": 13432.75,
+          "cpu_ratio": 1.0034560480841472,
+          "wall_ratio": 1.0035796095363942
+        }
+      ]
+    },
+    {
+      "operation": "graph_fold_random_1MiB",
+      "independent_pairs": 10,
+      "old_cpu_median_us": 100217,
+      "new_cpu_median_us": 37876,
+      "paired_cpu_speedup_median": 2.609643255595577,
+      "paired_cpu_speedup_geomean": 2.6931670745310208,
+      "old_wall_median_us": 100928.54149999999,
+      "new_wall_median_us": 38182.8545,
+      "pairs": [
+        {
+          "pair": 1,
+          "old_cpu": 98662,
+          "new_cpu": 38178,
+          "old_wall": 99285.625,
+          "new_wall": 38490.458,
+          "cpu_ratio": 2.5842631882235843,
+          "wall_ratio": 2.5794867133043726
+        },
+        {
+          "pair": 2,
+          "old_cpu": 118740,
+          "new_cpu": 39274,
+          "old_wall": 122176.542,
+          "new_wall": 39532.708,
+          "cpu_ratio": 3.0233742425014003,
+          "wall_ratio": 3.0905179073490237
+        },
+        {
+          "pair": 3,
+          "old_cpu": 132335,
+          "new_cpu": 35506,
+          "old_wall": 134731.25,
+          "new_wall": 35542.125,
+          "cpu_ratio": 3.727116543682758,
+          "wall_ratio": 3.7907483021907105
+        },
+        {
+          "pair": 4,
+          "old_cpu": 107622,
+          "new_cpu": 36705,
+          "old_wall": 108656.75,
+          "new_wall": 36920.75,
+          "cpu_ratio": 2.9320800980792807,
+          "wall_ratio": 2.9429724477428003
+        },
+        {
+          "pair": 5,
+          "old_cpu": 94903,
+          "new_cpu": 36016,
+          "old_wall": 94962.875,
+          "new_wall": 36104,
+          "cpu_ratio": 2.63502332296757,
+          "wall_ratio": 2.6302591125637047
+        },
+        {
+          "pair": 6,
+          "old_cpu": 95814,
+          "new_cpu": 37752,
+          "old_wall": 96032.083,
+          "new_wall": 37955.042,
+          "cpu_ratio": 2.537984742530197,
+          "wall_ratio": 2.530153516889798
+        },
+        {
+          "pair": 7,
+          "old_cpu": 95709,
+          "new_cpu": 37664,
+          "old_wall": 95853.541,
+          "new_wall": 38035.584,
+          "cpu_ratio": 2.5411268054375533,
+          "wall_ratio": 2.5201017289493963
+        },
+        {
+          "pair": 8,
+          "old_cpu": 96980,
+          "new_cpu": 40025,
+          "old_wall": 97098.792,
+          "new_wall": 40707,
+          "cpu_ratio": 2.4229856339787634,
+          "wall_ratio": 2.385309455376225
+        },
+        {
+          "pair": 9,
+          "old_cpu": 101980,
+          "new_cpu": 38000,
+          "old_wall": 102571.458,
+          "new_wall": 38330.125,
+          "cpu_ratio": 2.683684210526316,
+          "wall_ratio": 2.676001134877593
+        },
+        {
+          "pair": 10,
+          "old_cpu": 101772,
+          "new_cpu": 47836,
+          "old_wall": 102585.542,
+          "new_wall": 48403.375,
+          "cpu_ratio": 2.1275190233297097,
+          "wall_ratio": 2.119388203818432
+        }
+      ]
+    },
+    {
+      "operation": "graph_fold_localized_32",
+      "independent_pairs": 10,
+      "old_cpu_median_us": 98760.5,
+      "new_cpu_median_us": 37363.5,
+      "paired_cpu_speedup_median": 2.671355940483502,
+      "paired_cpu_speedup_geomean": 2.6818554889621553,
+      "old_wall_median_us": 99164.1875,
+      "new_wall_median_us": 37594.938,
+      "pairs": [
+        {
+          "pair": 1,
+          "old_cpu": 95115,
+          "new_cpu": 35822,
+          "old_wall": 95302.417,
+          "new_wall": 35889.792,
+          "cpu_ratio": 2.6552118809670033,
+          "wall_ratio": 2.655418482224695
+        },
+        {
+          "pair": 2,
+          "old_cpu": 98245,
+          "new_cpu": 37296,
+          "old_wall": 98627.083,
+          "new_wall": 37551.917,
+          "cpu_ratio": 2.6341966966966965,
+          "wall_ratio": 2.626419391585255
+        },
+        {
+          "pair": 3,
+          "old_cpu": 97287,
+          "new_cpu": 35852,
+          "old_wall": 97607,
+          "new_wall": 36016.125,
+          "cpu_ratio": 2.713572464576593,
+          "wall_ratio": 2.710091660332698
+        },
+        {
+          "pair": 4,
+          "old_cpu": 99677,
+          "new_cpu": 36227,
+          "old_wall": 100154.458,
+          "new_wall": 36361.583,
+          "cpu_ratio": 2.7514560962817787,
+          "wall_ratio": 2.7544031292587015
+        },
+        {
+          "pair": 5,
+          "old_cpu": 98793,
+          "new_cpu": 37431,
+          "old_wall": 99121.583,
+          "new_wall": 37637.959,
+          "cpu_ratio": 2.6393363789372444,
+          "wall_ratio": 2.633553615380685
+        },
+        {
+          "pair": 6,
+          "old_cpu": 95219,
+          "new_cpu": 37672,
+          "old_wall": 95324.583,
+          "new_wall": 37888.417,
+          "cpu_ratio": 2.527580165640263,
+          "wall_ratio": 2.5159294198013074
+        },
+        {
+          "pair": 7,
+          "old_cpu": 98728,
+          "new_cpu": 36736,
+          "old_wall": 99206.792,
+          "new_wall": 36986.958,
+          "cpu_ratio": 2.6875,
+          "wall_ratio": 2.682210091459806
+        },
+        {
+          "pair": 8,
+          "old_cpu": 112709,
+          "new_cpu": 39148,
+          "old_wall": 114753.167,
+          "new_wall": 39668.042,
+          "cpu_ratio": 2.8790487381219987,
+          "wall_ratio": 2.892836681981934
+        },
+        {
+          "pair": 9,
+          "old_cpu": 102969,
+          "new_cpu": 37823,
+          "old_wall": 103922.5,
+          "new_wall": 38053.375,
+          "cpu_ratio": 2.722391137667557,
+          "wall_ratio": 2.7309667013766847
+        },
+        {
+          "pair": 10,
+          "old_cpu": 101235,
+          "new_cpu": 38599,
+          "old_wall": 101985.417,
+          "new_wall": 38937.416,
+          "cpu_ratio": 2.6227363403196975,
+          "wall_ratio": 2.6192137916907483
+        }
+      ]
+    },
+    {
+      "operation": "graph_clone_random_1MiB",
+      "independent_pairs": 10,
+      "old_cpu_median_us": 1438.5,
+      "new_cpu_median_us": 1404.5,
+      "paired_cpu_speedup_median": 1.0202396089608594,
+      "paired_cpu_speedup_geomean": 1.0027711993579247,
+      "old_wall_median_us": 1433.2085,
+      "new_wall_median_us": 1403.958,
+      "pairs": [
+        {
+          "pair": 1,
+          "old_cpu": 1424,
+          "new_cpu": 1430,
+          "old_wall": 1418.792,
+          "new_wall": 1429.625,
+          "cpu_ratio": 0.9958041958041958,
+          "wall_ratio": 0.9924224884147941
+        },
+        {
+          "pair": 2,
+          "old_cpu": 1371,
+          "new_cpu": 1664,
+          "old_wall": 1370.667,
+          "new_wall": 1660.333,
+          "cpu_ratio": 0.8239182692307693,
+          "wall_ratio": 0.8255374072550505
+        },
+        {
+          "pair": 3,
+          "old_cpu": 1482,
+          "new_cpu": 1373,
+          "old_wall": 1482.333,
+          "new_wall": 1369.875,
+          "cpu_ratio": 1.079388201019665,
+          "wall_ratio": 1.0820936216808104
+        },
+        {
+          "pair": 4,
+          "old_cpu": 1410,
+          "new_cpu": 1357,
+          "old_wall": 1409.709,
+          "new_wall": 1356.459,
+          "cpu_ratio": 1.0390567428150332,
+          "wall_ratio": 1.0392566233111358
+        },
+        {
+          "pair": 5,
+          "old_cpu": 1453,
+          "new_cpu": 1359,
+          "old_wall": 1447.625,
+          "new_wall": 1358.834,
+          "cpu_ratio": 1.069168506254599,
+          "wall_ratio": 1.065343522461169
+        },
+        {
+          "pair": 6,
+          "old_cpu": 1465,
+          "new_cpu": 1389,
+          "old_wall": 1464.833,
+          "new_wall": 1388.125,
+          "cpu_ratio": 1.05471562275018,
+          "wall_ratio": 1.0552601530841963
+        },
+        {
+          "pair": 7,
+          "old_cpu": 1408,
+          "new_cpu": 1406,
+          "old_wall": 1408.125,
+          "new_wall": 1406.625,
+          "cpu_ratio": 1.0014224751066856,
+          "wall_ratio": 1.001066382298054
+        },
+        {
+          "pair": 8,
+          "old_cpu": 1390,
+          "new_cpu": 1467,
+          "old_wall": 1390.25,
+          "new_wall": 1463.125,
+          "cpu_ratio": 0.9475119291070211,
+          "wall_ratio": 0.950192225544639
+        },
+        {
+          "pair": 9,
+          "old_cpu": 1456,
+          "new_cpu": 1467,
+          "old_wall": 1453.584,
+          "new_wall": 1466.75,
+          "cpu_ratio": 0.9925017041581459,
+          "wall_ratio": 0.9910236918356912
+        },
+        {
+          "pair": 10,
+          "old_cpu": 1476,
+          "new_cpu": 1403,
+          "old_wall": 1471.042,
+          "new_wall": 1401.291,
+          "cpu_ratio": 1.0520313613684962,
+          "wall_ratio": 1.04977624205108
+        }
+      ]
+    },
+    {
+      "operation": "graph_rebuild_random_1MiB",
+      "independent_pairs": 10,
+      "old_cpu_median_us": 35470,
+      "new_cpu_median_us": 35464.5,
+      "paired_cpu_speedup_median": 1.0064129546785123,
+      "paired_cpu_speedup_geomean": 0.9972898884249046,
+      "old_wall_median_us": 35584.438,
+      "new_wall_median_us": 35646.479,
+      "pairs": [
+        {
+          "pair": 1,
+          "old_cpu": 34706,
+          "new_cpu": 34828,
+          "old_wall": 34822.167,
+          "new_wall": 34846.375,
+          "cpu_ratio": 0.9964970713219249,
+          "wall_ratio": 0.9993052935922316
+        },
+        {
+          "pair": 2,
+          "old_cpu": 35563,
+          "new_cpu": 39332,
+          "old_wall": 35657.834,
+          "new_wall": 39773.25,
+          "cpu_ratio": 0.9041747177870436,
+          "wall_ratio": 0.8965280433457161
+        },
+        {
+          "pair": 3,
+          "old_cpu": 34688,
+          "new_cpu": 34113,
+          "old_wall": 34735.666,
+          "new_wall": 34122.459,
+          "cpu_ratio": 1.016855744144461,
+          "wall_ratio": 1.0179707740289172
+        },
+        {
+          "pair": 4,
+          "old_cpu": 35800,
+          "new_cpu": 35496,
+          "old_wall": 35996.917,
+          "new_wall": 35735.208,
+          "cpu_ratio": 1.0085643452783413,
+          "wall_ratio": 1.0073235616818015
+        },
+        {
+          "pair": 5,
+          "old_cpu": 35340,
+          "new_cpu": 34475,
+          "old_wall": 35511.042,
+          "new_wall": 34483.958,
+          "cpu_ratio": 1.025090645395214,
+          "wall_ratio": 1.029784400038998
+        },
+        {
+          "pair": 6,
+          "old_cpu": 34568,
+          "new_cpu": 36524,
+          "old_wall": 34602.125,
+          "new_wall": 36859.834,
+          "cpu_ratio": 0.9464461723798051,
+          "wall_ratio": 0.938748801744468
+        },
+        {
+          "pair": 7,
+          "old_cpu": 35377,
+          "new_cpu": 36140,
+          "old_wall": 35495.834,
+          "new_wall": 36463.208,
+          "cpu_ratio": 0.9788876591034864,
+          "wall_ratio": 0.973469860358968
+        },
+        {
+          "pair": 8,
+          "old_cpu": 35584,
+          "new_cpu": 35433,
+          "old_wall": 35689.291,
+          "new_wall": 35557.75,
+          "cpu_ratio": 1.0042615640786836,
+          "wall_ratio": 1.0036993623049826
+        },
+        {
+          "pair": 9,
+          "old_cpu": 37366,
+          "new_cpu": 36391,
+          "old_wall": 37733.916,
+          "new_wall": 36424.667,
+          "cpu_ratio": 1.0267923387650792,
+          "wall_ratio": 1.0359440211217303
+        },
+        {
+          "pair": 10,
+          "old_cpu": 36975,
+          "new_cpu": 34380,
+          "old_wall": 37314.542,
+          "new_wall": 34487.75,
+          "cpu_ratio": 1.075479930191972,
+          "wall_ratio": 1.081965103551261
+        }
+      ]
+    },
+    {
+      "operation": "graph_missing_random_1MiB",
+      "independent_pairs": 10,
+      "old_cpu_median_us": 38559,
+      "new_cpu_median_us": 39054.5,
+      "paired_cpu_speedup_median": 0.9886140591309418,
+      "paired_cpu_speedup_geomean": 0.9690987426206361,
+      "old_wall_median_us": 38685.5835,
+      "new_wall_median_us": 39292.2295,
+      "pairs": [
+        {
+          "pair": 1,
+          "old_cpu": 37526,
+          "new_cpu": 37861,
+          "old_wall": 37541.75,
+          "new_wall": 37913.041,
+          "cpu_ratio": 0.991151844906368,
+          "wall_ratio": 0.9902067734424153
+        },
+        {
+          "pair": 2,
+          "old_cpu": 38526,
+          "new_cpu": 39070,
+          "old_wall": 38660.292,
+          "new_wall": 39375.25,
+          "cpu_ratio": 0.9860762733555157,
+          "wall_ratio": 0.9818424517939569
+        },
+        {
+          "pair": 3,
+          "old_cpu": 37598,
+          "new_cpu": 37330,
+          "old_wall": 37645.125,
+          "new_wall": 37356.125,
+          "cpu_ratio": 1.0071792124296812,
+          "wall_ratio": 1.007736348456913
+        },
+        {
+          "pair": 4,
+          "old_cpu": 38592,
+          "new_cpu": 39999,
+          "old_wall": 38710.875,
+          "new_wall": 40242,
+          "cpu_ratio": 0.964824120603015,
+          "wall_ratio": 0.9619520650067094
+        },
+        {
+          "pair": 5,
+          "old_cpu": 38909,
+          "new_cpu": 38656,
+          "old_wall": 39026.167,
+          "new_wall": 38716.834,
+          "cpu_ratio": 1.0065449089403973,
+          "wall_ratio": 1.0079896253913736
+        },
+        {
+          "pair": 6,
+          "old_cpu": 37398,
+          "new_cpu": 41344,
+          "old_wall": 37413.417,
+          "new_wall": 41777.542,
+          "cpu_ratio": 0.9045568885448917,
+          "wall_ratio": 0.895538971632175
+        },
+        {
+          "pair": 7,
+          "old_cpu": 38140,
+          "new_cpu": 39039,
+          "old_wall": 38163.583,
+          "new_wall": 39209.209,
+          "cpu_ratio": 0.9769717462025155,
+          "wall_ratio": 0.9733321322549505
+        },
+        {
+          "pair": 8,
+          "old_cpu": 38845,
+          "new_cpu": 47336,
+          "old_wall": 38996.166,
+          "new_wall": 48100.5,
+          "cpu_ratio": 0.8206227818151091,
+          "wall_ratio": 0.810722674400474
+        },
+        {
+          "pair": 9,
+          "old_cpu": 40142,
+          "new_cpu": 39927,
+          "old_wall": 40371.791,
+          "new_wall": 40093.708,
+          "cpu_ratio": 1.0053848273098405,
+          "wall_ratio": 1.0069358264394004
+        },
+        {
+          "pair": 10,
+          "old_cpu": 39703,
+          "new_cpu": 37877,
+          "old_wall": 39930.25,
+          "new_wall": 37886.75,
+          "cpu_ratio": 1.0482086754494813,
+          "wall_ratio": 1.0539370624294773
+        }
+      ]
+    },
+    {
+      "operation": "all_node_ids_random_1MiB",
+      "independent_pairs": 10,
+      "old_cpu_median_us": 25562.5,
+      "new_cpu_median_us": 25490.5,
+      "paired_cpu_speedup_median": 1.0032853871228573,
+      "paired_cpu_speedup_geomean": 0.9968576576217708,
+      "old_wall_median_us": 25683.5625,
+      "new_wall_median_us": 25592.9585,
+      "pairs": [
+        {
+          "pair": 1,
+          "old_cpu": 26465,
+          "new_cpu": 25374,
+          "old_wall": 26826.625,
+          "new_wall": 25475.875,
+          "cpu_ratio": 1.0429967683455506,
+          "wall_ratio": 1.0530207500233064
+        },
+        {
+          "pair": 2,
+          "old_cpu": 25177,
+          "new_cpu": 25611,
+          "old_wall": 25203.791,
+          "new_wall": 25644.042,
+          "cpu_ratio": 0.9830541564171645,
+          "wall_ratio": 0.9828322305820588
+        },
+        {
+          "pair": 3,
+          "old_cpu": 25857,
+          "new_cpu": 25247,
+          "old_wall": 25975.334,
+          "new_wall": 25263.792,
+          "cpu_ratio": 1.0241612864894838,
+          "wall_ratio": 1.028164497237786
+        },
+        {
+          "pair": 4,
+          "old_cpu": 25439,
+          "new_cpu": 25419,
+          "old_wall": 25557.375,
+          "new_wall": 25541.875,
+          "cpu_ratio": 1.0007868130138873,
+          "wall_ratio": 1.0006068465999463
+        },
+        {
+          "pair": 5,
+          "old_cpu": 25250,
+          "new_cpu": 25243,
+          "old_wall": 25275.875,
+          "new_wall": 25306.125,
+          "cpu_ratio": 1.0002773045992948,
+          "wall_ratio": 0.9988046372172745
+        },
+        {
+          "pair": 6,
+          "old_cpu": 25131,
+          "new_cpu": 26103,
+          "old_wall": 25149.75,
+          "new_wall": 26386,
+          "cpu_ratio": 0.9627629008159981,
+          "wall_ratio": 0.9531475024634276
+        },
+        {
+          "pair": 7,
+          "old_cpu": 26763,
+          "new_cpu": 25562,
+          "old_wall": 26860.917,
+          "new_wall": 25725.625,
+          "cpu_ratio": 1.0469838040841875,
+          "wall_ratio": 1.044130783994558
+        },
+        {
+          "pair": 8,
+          "old_cpu": 25355,
+          "new_cpu": 28434,
+          "old_wall": 25406.583,
+          "new_wall": 28928.709,
+          "cpu_ratio": 0.891714145037631,
+          "wall_ratio": 0.8782480752943382
+        },
+        {
+          "pair": 9,
+          "old_cpu": 25736,
+          "new_cpu": 25588,
+          "old_wall": 25970.875,
+          "new_wall": 25669.833,
+          "cpu_ratio": 1.0057839612318273,
+          "wall_ratio": 1.0117274623485084
+        },
+        {
+          "pair": 10,
+          "old_cpu": 25686,
+          "new_cpu": 25191,
+          "old_wall": 25809.75,
+          "new_wall": 25200.834,
+          "cpu_ratio": 1.019649874955341,
+          "wall_ratio": 1.0241625336685287
+        }
+      ]
+    },
+    {
+      "operation": "all_node_encodes_random_1MiB",
+      "independent_pairs": 10,
+      "old_cpu_median_us": 31433.5,
+      "new_cpu_median_us": 31189,
+      "paired_cpu_speedup_median": 1.003563855909773,
+      "paired_cpu_speedup_geomean": 1.0087745792062484,
+      "old_wall_median_us": 31582.2085,
+      "new_wall_median_us": 31320.499499999998,
+      "pairs": [
+        {
+          "pair": 1,
+          "old_cpu": 34141,
+          "new_cpu": 31126,
+          "old_wall": 34992.416,
+          "new_wall": 31261.958,
+          "cpu_ratio": 1.096864357771638,
+          "wall_ratio": 1.1193289940444549
+        },
+        {
+          "pair": 2,
+          "old_cpu": 30867,
+          "new_cpu": 30966,
+          "old_wall": 30944.792,
+          "new_wall": 31014.708,
+          "cpu_ratio": 0.9968029451656656,
+          "wall_ratio": 0.9977457147105819
+        },
+        {
+          "pair": 3,
+          "old_cpu": 30932,
+          "new_cpu": 31107,
+          "old_wall": 30948,
+          "new_wall": 31137.5,
+          "cpu_ratio": 0.9943742565981933,
+          "wall_ratio": 0.9939140907266159
+        },
+        {
+          "pair": 4,
+          "old_cpu": 31116,
+          "new_cpu": 31334,
+          "old_wall": 31243.791,
+          "new_wall": 31422.417,
+          "cpu_ratio": 0.993042701219123,
+          "wall_ratio": 0.9943153322674064
+        },
+        {
+          "pair": 5,
+          "old_cpu": 32147,
+          "new_cpu": 30830,
+          "old_wall": 32302.125,
+          "new_wall": 30844.334,
+          "cpu_ratio": 1.0427181316899123,
+          "wall_ratio": 1.047262845746645
+        },
+        {
+          "pair": 6,
+          "old_cpu": 30932,
+          "new_cpu": 31563,
+          "old_wall": 31005.625,
+          "new_wall": 31736,
+          "cpu_ratio": 0.9800082374932675,
+          "wall_ratio": 0.9769859150491556
+        },
+        {
+          "pair": 7,
+          "old_cpu": 31835,
+          "new_cpu": 31252,
+          "old_wall": 31845.708,
+          "new_wall": 31379.041,
+          "cpu_ratio": 1.01865480609241,
+          "wall_ratio": 1.0148719331479887
+        },
+        {
+          "pair": 8,
+          "old_cpu": 31260,
+          "new_cpu": 33273,
+          "old_wall": 31427.5,
+          "new_wall": 33922.291,
+          "cpu_ratio": 0.9395004958975746,
+          "wall_ratio": 0.9264557043036982
+        },
+        {
+          "pair": 9,
+          "old_cpu": 31607,
+          "new_cpu": 31284,
+          "old_wall": 31736.917,
+          "new_wall": 31387.75,
+          "cpu_ratio": 1.0103247666538806,
+          "wall_ratio": 1.011124308050115
+        },
+        {
+          "pair": 10,
+          "old_cpu": 31745,
+          "new_cpu": 31031,
+          "old_wall": 32072.417,
+          "new_wall": 31067.375,
+          "cpu_ratio": 1.0230092488157003,
+          "wall_ratio": 1.0323503997360575
+        }
+      ]
+    },
+    {
+      "operation": "delta_exact_same_base",
+      "independent_pairs": 10,
+      "old_cpu_median_us": 2299,
+      "new_cpu_median_us": 2274,
+      "paired_cpu_speedup_median": 1.0091647370592411,
+      "paired_cpu_speedup_geomean": 1.0529940214613316,
+      "old_wall_median_us": 2297.2290000000003,
+      "new_wall_median_us": 2274.0415000000003,
+      "pairs": [
+        {
+          "pair": 1,
+          "old_cpu": 4251,
+          "new_cpu": 2549,
+          "old_wall": 5509.542,
+          "new_wall": 2543.417,
+          "cpu_ratio": 1.6677128285602196,
+          "wall_ratio": 2.166196891819155
+        },
+        {
+          "pair": 2,
+          "old_cpu": 2235,
+          "new_cpu": 2262,
+          "old_wall": 2235.375,
+          "new_wall": 2262.25,
+          "cpu_ratio": 0.9880636604774535,
+          "wall_ratio": 0.9881202342800309
+        },
+        {
+          "pair": 3,
+          "old_cpu": 2261,
+          "new_cpu": 2250,
+          "old_wall": 2257.166,
+          "new_wall": 2245.958,
+          "cpu_ratio": 1.004888888888889,
+          "wall_ratio": 1.0049902981266792
+        },
+        {
+          "pair": 4,
+          "old_cpu": 2272,
+          "new_cpu": 2260,
+          "old_wall": 2272.459,
+          "new_wall": 2257.458,
+          "cpu_ratio": 1.0053097345132744,
+          "wall_ratio": 1.0066450848697959
+        },
+        {
+          "pair": 5,
+          "old_cpu": 2542,
+          "new_cpu": 2286,
+          "old_wall": 2540.791,
+          "new_wall": 2285.833,
+          "cpu_ratio": 1.1119860017497813,
+          "wall_ratio": 1.1115383319778829
+        },
+        {
+          "pair": 6,
+          "old_cpu": 2235,
+          "new_cpu": 2288,
+          "old_wall": 2235.042,
+          "new_wall": 2286.792,
+          "cpu_ratio": 0.9768356643356644,
+          "wall_ratio": 0.9773700450237713
+        },
+        {
+          "pair": 7,
+          "old_cpu": 2284,
+          "new_cpu": 2235,
+          "old_wall": 2282.708,
+          "new_wall": 2233.166,
+          "cpu_ratio": 1.021923937360179,
+          "wall_ratio": 1.0221846472676013
+        },
+        {
+          "pair": 8,
+          "old_cpu": 2314,
+          "new_cpu": 2690,
+          "old_wall": 2311.75,
+          "new_wall": 2689.041,
+          "cpu_ratio": 0.8602230483271376,
+          "wall_ratio": 0.8596931024852353
+        },
+        {
+          "pair": 9,
+          "old_cpu": 2412,
+          "new_cpu": 2381,
+          "old_wall": 2411.625,
+          "new_wall": 2378.958,
+          "cpu_ratio": 1.0130197396052079,
+          "wall_ratio": 1.0137316421727496
+        },
+        {
+          "pair": 10,
+          "old_cpu": 2347,
+          "new_cpu": 2255,
+          "old_wall": 2346.875,
+          "new_wall": 2254.459,
+          "cpu_ratio": 1.0407982261640798,
+          "wall_ratio": 1.040992539673598
+        }
+      ]
+    },
+    {
+      "operation": "delta_localized_against_reused_base",
+      "independent_pairs": 10,
+      "old_cpu_median_us": 2666,
+      "new_cpu_median_us": 2732.5,
+      "paired_cpu_speedup_median": 0.9333993086918182,
+      "paired_cpu_speedup_geomean": 0.9691169526549063,
+      "old_wall_median_us": 2665.5005,
+      "new_wall_median_us": 2732.2705,
+      "pairs": [
+        {
+          "pair": 1,
+          "old_cpu": 2720,
+          "new_cpu": 3012,
+          "old_wall": 2718.375,
+          "new_wall": 3009.167,
+          "cpu_ratio": 0.9030544488711819,
+          "wall_ratio": 0.9033646188463452
+        },
+        {
+          "pair": 2,
+          "old_cpu": 2543,
+          "new_cpu": 2721,
+          "old_wall": 2539.584,
+          "new_wall": 2720.75,
+          "cpu_ratio": 0.9345828739434031,
+          "wall_ratio": 0.9334132132684002
+        },
+        {
+          "pair": 3,
+          "old_cpu": 2621,
+          "new_cpu": 2682,
+          "old_wall": 2620.542,
+          "new_wall": 2681.542,
+          "cpu_ratio": 0.977255779269202,
+          "wall_ratio": 0.9772518946188424
+        },
+        {
+          "pair": 4,
+          "old_cpu": 2558,
+          "new_cpu": 2744,
+          "old_wall": 2556.458,
+          "new_wall": 2743.791,
+          "cpu_ratio": 0.9322157434402333,
+          "wall_ratio": 0.931724756003646
+        },
+        {
+          "pair": 5,
+          "old_cpu": 2641,
+          "new_cpu": 2504,
+          "old_wall": 2640.459,
+          "new_wall": 2503.375,
+          "cpu_ratio": 1.0547124600638977,
+          "wall_ratio": 1.0547596744395067
+        },
+        {
+          "pair": 6,
+          "old_cpu": 2691,
+          "new_cpu": 2913,
+          "old_wall": 2690.542,
+          "new_wall": 2912.375,
+          "cpu_ratio": 0.9237899073120495,
+          "wall_ratio": 0.9238308940297867
+        },
+        {
+          "pair": 7,
+          "old_cpu": 2576,
+          "new_cpu": 2884,
+          "old_wall": 2572.708,
+          "new_wall": 2883.208,
+          "cpu_ratio": 0.8932038834951457,
+          "wall_ratio": 0.8923074575264774
+        },
+        {
+          "pair": 8,
+          "old_cpu": 2774,
+          "new_cpu": 3062,
+          "old_wall": 2813.583,
+          "new_wall": 3061.542,
+          "cpu_ratio": 0.9059438275636839,
+          "wall_ratio": 0.919008460442483
+        },
+        {
+          "pair": 9,
+          "old_cpu": 3024,
+          "new_cpu": 2683,
+          "old_wall": 3033.041,
+          "new_wall": 2681.875,
+          "cpu_ratio": 1.1270965337308982,
+          "wall_ratio": 1.1309404800745748
+        },
+        {
+          "pair": 10,
+          "old_cpu": 2908,
+          "new_cpu": 2719,
+          "old_wall": 2908.125,
+          "new_wall": 2718.417,
+          "cpu_ratio": 1.0695108495770504,
+          "wall_ratio": 1.069786202779044
+        }
+      ]
+    },
+    {
+      "operation": "graph_fold_periodic_64_1MiB",
+      "independent_pairs": 10,
+      "old_cpu_median_us": 17467,
+      "new_cpu_median_us": 28933,
+      "paired_cpu_speedup_median": 0.6026289803778866,
+      "paired_cpu_speedup_geomean": 0.5926185907640391,
+      "old_wall_median_us": 17524.6455,
+      "new_wall_median_us": 29006.896,
+      "pairs": [
+        {
+          "pair": 1,
+          "old_cpu": 17483,
+          "new_cpu": 28972,
+          "old_wall": 17785.708,
+          "new_wall": 29088.625,
+          "cpu_ratio": 0.6034447052326384,
+          "wall_ratio": 0.6114317194435969
+        },
+        {
+          "pair": 2,
+          "old_cpu": 17283,
+          "new_cpu": 28794,
+          "old_wall": 17307.125,
+          "new_wall": 28863.083,
+          "cpu_ratio": 0.6002292144196708,
+          "wall_ratio": 0.5996284250022772
+        },
+        {
+          "pair": 3,
+          "old_cpu": 17325,
+          "new_cpu": 28788,
+          "old_wall": 17356.916,
+          "new_wall": 28925.167,
+          "cpu_ratio": 0.6018132555231347,
+          "wall_ratio": 0.6000627757827639
+        },
+        {
+          "pair": 4,
+          "old_cpu": 17327,
+          "new_cpu": 28683,
+          "old_wall": 17361.125,
+          "new_wall": 28709.5,
+          "cpu_ratio": 0.6040860439981871,
+          "wall_ratio": 0.6047170797122904
+        },
+        {
+          "pair": 5,
+          "old_cpu": 17664,
+          "new_cpu": 28733,
+          "old_wall": 17724.166,
+          "new_wall": 28771.75,
+          "cpu_ratio": 0.6147635123377302,
+          "wall_ratio": 0.6160266928497572
+        },
+        {
+          "pair": 6,
+          "old_cpu": 17339,
+          "new_cpu": 33232,
+          "old_wall": 17384.5,
+          "new_wall": 34887.292,
+          "cpu_ratio": 0.521756138661531,
+          "wall_ratio": 0.49830465488694275
+        },
+        {
+          "pair": 7,
+          "old_cpu": 17451,
+          "new_cpu": 29047,
+          "old_wall": 17498.583,
+          "new_wall": 29130.25,
+          "cpu_ratio": 0.6007849347609048,
+          "wall_ratio": 0.6007014357926896
+        },
+        {
+          "pair": 8,
+          "old_cpu": 17503,
+          "new_cpu": 30654,
+          "old_wall": 17550.708,
+          "new_wall": 31167.375,
+          "cpu_ratio": 0.5709858419782083,
+          "wall_ratio": 0.5631115228664588
+        },
+        {
+          "pair": 9,
+          "old_cpu": 17667,
+          "new_cpu": 29191,
+          "old_wall": 17768.75,
+          "new_wall": 29450.917,
+          "cpu_ratio": 0.6052207872289405,
+          "wall_ratio": 0.6033343545805382
+        },
+        {
+          "pair": 10,
+          "old_cpu": 17604,
+          "new_cpu": 28894,
+          "old_wall": 17684.917,
+          "new_wall": 28910.792,
+          "cpu_ratio": 0.6092614383609054,
+          "wall_ratio": 0.6117064174513103
+        }
+      ]
+    },
+    {
+      "operation": "graph_rebuild_periodic_64_1MiB",
+      "independent_pairs": 10,
+      "old_cpu_median_us": 28158.5,
+      "new_cpu_median_us": 28243.5,
+      "paired_cpu_speedup_median": 0.9971063736485615,
+      "paired_cpu_speedup_geomean": 1.0013998702571867,
+      "old_wall_median_us": 28260.4585,
+      "new_wall_median_us": 28355.061999999998,
+      "pairs": [
+        {
+          "pair": 1,
+          "old_cpu": 28141,
+          "new_cpu": 28173,
+          "old_wall": 28212.25,
+          "new_wall": 28219,
+          "cpu_ratio": 0.9988641607212579,
+          "wall_ratio": 0.9997607994613559
+        },
+        {
+          "pair": 2,
+          "old_cpu": 28063,
+          "new_cpu": 28115,
+          "old_wall": 28152.375,
+          "new_wall": 28131.334,
+          "cpu_ratio": 0.9981504534945759,
+          "wall_ratio": 1.0007479559981052
+        },
+        {
+          "pair": 3,
+          "old_cpu": 28078,
+          "new_cpu": 28189,
+          "old_wall": 28110.25,
+          "new_wall": 28293.375,
+          "cpu_ratio": 0.9960622938025471,
+          "wall_ratio": 0.9935276367700919
+        },
+        {
+          "pair": 4,
+          "old_cpu": 28085,
+          "new_cpu": 28253,
+          "old_wall": 28137.709,
+          "new_wall": 28370.791,
+          "cpu_ratio": 0.9940537288075603,
+          "wall_ratio": 0.991784437733865
+        },
+        {
+          "pair": 5,
+          "old_cpu": 28737,
+          "new_cpu": 28033,
+          "old_wall": 28903.833,
+          "new_wall": 28058.292,
+          "cpu_ratio": 1.025113259372882,
+          "wall_ratio": 1.0301351557678564
+        },
+        {
+          "pair": 6,
+          "old_cpu": 28176,
+          "new_cpu": 31158,
+          "old_wall": 28308.667,
+          "new_wall": 32440.583,
+          "cpu_ratio": 0.9042942422491816,
+          "wall_ratio": 0.8726312655971689
+        },
+        {
+          "pair": 7,
+          "old_cpu": 28027,
+          "new_cpu": 28510,
+          "old_wall": 28076.5,
+          "new_wall": 28518.917,
+          "cpu_ratio": 0.9830585759382673,
+          "wall_ratio": 0.9844868933837845
+        },
+        {
+          "pair": 8,
+          "old_cpu": 28245,
+          "new_cpu": 29917,
+          "old_wall": 28361.666,
+          "new_wall": 30241.125,
+          "cpu_ratio": 0.9441120433198515,
+          "wall_ratio": 0.937850890137189
+        },
+        {
+          "pair": 9,
+          "old_cpu": 32162,
+          "new_cpu": 28435,
+          "old_wall": 32695.667,
+          "new_wall": 28554.167,
+          "cpu_ratio": 1.131070863372604,
+          "wall_ratio": 1.1450401267177572
+        },
+        {
+          "pair": 10,
+          "old_cpu": 29804,
+          "new_cpu": 28234,
+          "old_wall": 29975.167,
+          "new_wall": 28339.333,
+          "cpu_ratio": 1.055606715307785,
+          "wall_ratio": 1.057723094612001
+        }
+      ]
+    }
+  ]
+}

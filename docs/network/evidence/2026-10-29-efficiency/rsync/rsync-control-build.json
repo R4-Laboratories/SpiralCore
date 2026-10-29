@@ -1,0 +1,105 @@
+{
+  "schema": "spiralcore.local.rsync.build.v1",
+  "status": "VERIFIED_FINAL_BUILD",
+  "source_includes_parent_directory_sync_fix": true,
+  "production_changes": false,
+  "compile_argv": [
+    "/Users/casey.allard/.cargo/bin/rustc",
+    "--edition=2021",
+    "-D",
+    "warnings",
+    "-O",
+    "-L",
+    "dependency=/Users/casey.allard/spiralcore/target/release/deps",
+    "--extern",
+    "spiralcore_transfer=/Users/casey.allard/spiralcore/target/release/deps/libspiralcore_transfer-b57fa0a95019e9e4.rlib",
+    "--extern",
+    "serde_json=/Users/casey.allard/spiralcore/target/release/deps/libserde_json-7b84c26f6fdfe0d8.rlib",
+    "--extern",
+    "libc=/Users/casey.allard/spiralcore/target/release/deps/liblibc-1a835f303ff15e3b.rlib",
+    "--extern",
+    "sha2=/Users/casey.allard/spiralcore/target/release/deps/libsha2-f36cf336257c43fa.rlib",
+    "/Users/casey.allard/spiralcore/local/efficiency-20261029/rsync_control.rs",
+    "-o",
+    "/Users/casey.allard/spiralcore/local/efficiency-20261029/rsync-control"
+  ],
+  "test_compile_argv": [
+    "/Users/casey.allard/.cargo/bin/rustc",
+    "--edition=2021",
+    "-D",
+    "warnings",
+    "-O",
+    "-L",
+    "dependency=/Users/casey.allard/spiralcore/target/release/deps",
+    "--extern",
+    "spiralcore_transfer=/Users/casey.allard/spiralcore/target/release/deps/libspiralcore_transfer-b57fa0a95019e9e4.rlib",
+    "--extern",
+    "serde_json=/Users/casey.allard/spiralcore/target/release/deps/libserde_json-7b84c26f6fdfe0d8.rlib",
+    "--extern",
+    "libc=/Users/casey.allard/spiralcore/target/release/deps/liblibc-1a835f303ff15e3b.rlib",
+    "--extern",
+    "sha2=/Users/casey.allard/spiralcore/target/release/deps/libsha2-f36cf336257c43fa.rlib",
+    "/Users/casey.allard/spiralcore/local/efficiency-20261029/rsync_control.rs",
+    "--test",
+    "-o",
+    "/Users/casey.allard/spiralcore/local/efficiency-20261029/rsync-control-tests"
+  ],
+  "test_run_argv": [
+    "/Users/casey.allard/spiralcore/local/efficiency-20261029/rsync-control-tests"
+  ],
+  "compile_exit_code": 0,
+  "test_compile_exit_code": 0,
+  "test_result": {
+    "passed": 9,
+    "failed": 0,
+    "log": "/Users/casey.allard/spiralcore/local/efficiency-20261029/rsync-control-tests.txt"
+  },
+  "compiler_and_rsync_version": "rustc 1.97.1 (8bab26f4f 2026-07-14)\nbinary: rustc\ncommit-hash: 8bab26f4f68e0e26f0bb7960be334d5b520ea452\ncommit-date: 2026-07-14\nhost: aarch64-apple-darwin\nrelease: 1.97.1\nLLVM version: 22.1.6\nopenrsync: protocol version 29\nrsync version 2.6.9 compatible\n",
+  "identities": [
+    {
+      "path": "/Users/casey.allard/spiralcore/local/efficiency-20261029/rsync_control.rs",
+      "sha256": "ecd46cb734174bd3fd08daf209a876ef71d674a868577322f7b66801450c5c32"
+    },
+    {
+      "path": "/Users/casey.allard/spiralcore/local/efficiency-20261029/rsync-control",
+      "sha256": "404778036917896a346266d594b82f160b3a246ef6dbf2839af07db14f36f61b"
+    },
+    {
+      "path": "/Users/casey.allard/spiralcore/local/efficiency-20261029/rsync-control-tests",
+      "sha256": "521bba3c123e7d99028525015aae380759b560022806a845588a768c1f184785"
+    },
+    {
+      "path": "/Users/casey.allard/.rustup/toolchains/stable-aarch64-apple-darwin/bin/rustc",
+      "sha256": "210df6794001b73ec3d453878707fa1e0bdcb63c427024a6e6574bbe5615a4da"
+    },
+    {
+      "path": "/usr/bin/rsync",
+      "sha256": "34e91ec4f122d6dab584cddd40403fc1872229f126ad88ed07382297e5a64332"
+    },
+    {
+      "path": "/Users/casey.allard/spiralcore/target/release/deps/libspiralcore_transfer-b57fa0a95019e9e4.rlib",
+      "sha256": "81a6f3b1b6aa82a3077563141645779190861d54266d3a29b2c4f5d4c89f6e89"
+    },
+    {
+      "path": "/Users/casey.allard/spiralcore/target/release/deps/libserde_json-7b84c26f6fdfe0d8.rlib",
+      "sha256": "61f20bdd557479849975378ab4dadfd42016aaa8b2bbde4d3a279ad2a141cafd"
+    },
+    {
+      "path": "/Users/casey.allard/spiralcore/target/release/deps/liblibc-1a835f303ff15e3b.rlib",
+      "sha256": "d4df2eb99f49ca53943e75b157015f0a37dfc60bda7ed56ab7053fbd3367268b"
+    },
+    {
+      "path": "/Users/casey.allard/spiralcore/target/release/deps/libsha2-f36cf336257c43fa.rlib",
+      "sha256": "4281ad47869f3f5a74f1315fa494a8b39fb02c776538c62902c2e61a44a61524"
+    },
+    {
+      "path": "/Users/casey.allard/spiralcore/local/efficiency-20261029/wan-warm/plan.json",
+      "sha256": "133b97ddd04c39a084c4bc00cb4dfddd2eb586599e5c6aa2a5eaaa5726e2dd97"
+    },
+    {
+      "path": "/Users/casey.allard/spiralcore/local/efficiency-20261029/wan-prefix/plan.json",
+      "sha256": "c16c615f3a0a3b332e8102010e1b17a3318ee3befc7c1876ae8f9a0e4eafd0e8"
+    }
+  ],
+  "scope": "Standalone diagnostic; final compile/tests completed after both WAN suites and receiver/tunnel shutdown and before the first pilot. Subsequent measurements are retained under rsync-runs and summarized in rsync-summary.json."
+}

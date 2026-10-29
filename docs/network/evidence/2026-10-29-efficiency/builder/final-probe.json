@@ -1,0 +1,32 @@
+{
+  "schema": "spiralcore.builder-probe.build.v1",
+  "source_revision": "f016b26e6a8ad83be459814c296be42b8aed2ea6",
+  "probe_source": "probe.rs",
+  "probe_source_sha256": "e177c55df37135566df9d3e043a4dc8773847a2fd4e80bc124f00a2c8a4aa008",
+  "executable": "/Users/casey.allard/spiralcore/local/efficiency-20261029/final-builder-probe",
+  "executable_sha256": "80f5f9b09b5aac0f25842adf60626054b5bf369abb5f2bb1b8d993c8305b7510",
+  "spiralcore_rlib_sha256_recorded_at_build": "45e59d13a2a8691b7acdcc3d75275c33a6df0cab0dbd05b0e82d12365fc082c0",
+  "rlib_note": "Shared target libraries were rebuilt later. This identity was recorded when the retained probe executable was built; it is not the present shared rlib identity.",
+  "compiler": "rustc 1.97.1 (8bab26f4f 2026-07-14)",
+  "compile_argv": [
+    "rustc",
+    "--edition=2021",
+    "-C",
+    "opt-level=3",
+    "-L",
+    "dependency=/Users/casey.allard/spiralcore/target/release/deps",
+    "--extern",
+    "spiralcore_transfer=/Users/casey.allard/spiralcore/target/release/libspiralcore_transfer.rlib",
+    "--extern",
+    "uor_r4_object_store=/Users/casey.allard/spiralcore/target/release/deps/libuor_r4_object_store-e938ba7f40198ee3.rlib",
+    "--extern",
+    "cpu_time=/Users/casey.allard/spiralcore/target/release/deps/libcpu_time-cc58d96298bfdd0e.rlib",
+    "/Users/casey.allard/spiralcore/local/perf-20261029/probe.rs",
+    "-o",
+    "/Users/casey.allard/spiralcore/local/efficiency-20261029/final-builder-probe"
+  ],
+  "feature_change": "none",
+  "paired_order": "final/order.txt",
+  "measurements": "final/{0..9}-{old,new}.jsonl",
+  "summary": "../builder-final-paired.json"
+}
