@@ -1,6 +1,7 @@
 # SC-OPT-003: optional hardware SHA-256 backend
 
-Status: proposed opt-in backend and registered local experiment; no full-operation result yet.
+Status: accepted opt-in backend; native Apple M1 qualification and all registered local CPU gates passed.
+The [result report](hardware-sha-results-2026-10-29.md) records measurements and scope; the feature remains default-off.
 Decision baseline: `7975b9d`, after the SC-OPT-002 candidate was reverted by `cb376b8`.
 The failed SC-OPT-002 experiment and its candidate remain preserved in the
 [receiver-cost report](receiver-cost-results-2026-10-29.md) and

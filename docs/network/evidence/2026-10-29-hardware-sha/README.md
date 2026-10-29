@@ -93,3 +93,36 @@ additional committed files. Scientific measurement JSONL will be preserved in fu
 The helper scripts retain the original host paths and native target. Reproduction
 on another checkout requires explicit path adaptation and new source/build
 receipts; it must not silently reuse the identities of these frozen executables.
+
+## Completed measurement
+
+The fixed campaign ran 2026-10-29T16:16:09Z through 16:25:05Z. All 256 observations
+were exact, all 16 processes exited zero, and the 1,100-entry template manifest
+remained unchanged. All three registered CPU gates passed. The complete result is
+in [the main report](../../hardware-sha-results-2026-10-29.md).
+
+`paired/` preserves all raw JSONL, execution order/exits, host snapshots and hashes.
+`paired-analysis.json` retains all 16 cells and 21 metrics per cell; `paired-summary.md`
+is the original author summary. `independent-measurement-review.json` and
+`independent-analysis-crosscheck.json` record the separate analysis and exhaustive
+336-metric cross-check. Their Python files are one-off evidence-analysis procedures,
+not production or timed benchmark implementations; those remain Rust.
+
+All integer samples and order statistics match. Three derived binary64 values
+across two records differ by at most 8.88e-16 between independent calculations;
+these differences are recorded and affect no gate or conclusion. The original
+summary says 126/128 "observations" for wall wins; the main report corrects this to
+126/128 paired comparisons, out of 256 total observations.
+
+`release-validation.json` records the post-campaign native hardware release build
+and 17 CLI/transport functional checks. It does not add WAN performance samples.
+The qualification checkpoint above remains a historical premeasurement record;
+its NOT_RUN fields are intentionally unchanged. Current disposition is measured,
+independently reviewed, and default-off.
+
+Independent code/security review also approved the analysis procedure and claim
+scope. Run the retained Python analysis with optimization disabled: no `-O` and
+no active `PYTHONOPTIMIZE`, since its validations use `assert`. The original script
+and completed receipt are pinned together; this caveat does not edit their hashes.
+The main report also clarifies that identical recorded compiler/build settings do
+not imply controlled runtime host load, scheduling or thermal conditions.
