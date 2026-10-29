@@ -2,7 +2,7 @@
 
 Measured source: `9dce4c57d1f41cef7365b297cd690849afce34e7`.
 Run: `d6aaa0f15da9ccbc62c005a1802532b3e85ad6d901886eea6fbd0076b2d312e4`.
-Three of twelve registered cases are complete and independently reviewed. Remaining
+Four of twelve registered cases are complete and independently reviewed. Remaining
 cases must not be inferred from this result. The complete registration is in the
 [workload plan](../plans/2026-10-29-broader-wan-and-scaling.md).
 
@@ -112,6 +112,39 @@ with all raw receipts and author statistics, and all five captures were complete
 The [complete prefix case packet](evidence/2026-10-29-broad-wan/cases/prefix_4096/README.md)
 preserves the thirty pairs and custody. This does not establish arbitrary shifted
 block matching: the current encoder can directly reuse this unchanged suffix.
+
+## Completed transfers: 4 KiB middle insertion
+
+Bases contain 16,773,120 bytes; inserting 4 KiB in the middle produces exact
+16,777,216-byte targets. All thirty pairs and 240 seed/update operations are
+retained and reopened exactly, totaling 4,026,040,320 compared bytes.
+
+| Warm update | Median request + reply HTTP-body bytes | Median elapsed, including computation | Median sender + receiver-handler CPU |
+|---|---:|---:|---:|
+| Raw full send | 16,814,026 | 1,600.969 ms | 93.113 ms |
+| Ordinary zstd | 16,810,128 | 1,662.860 ms | 99.168 ms |
+| Zstd prefix delta | 26,222 | 205.980 ms | 101.474 ms |
+| Sparse COPY/LITERAL | 4,664 | 199.853 ms | 87.463 ms |
+
+Sparse uses 99.97226125% fewer HTTP-body bytes than raw and has an 8.010733×
+ratio of median elapsed times, with approximately 6.07% lower median combined
+CPU. Zstd prefix also reduces elapsed time substantially, but uses more median
+CPU than raw in this case. Including paid seed and one update, raw uses median
+33,623,823 body bytes and 3,457.029 ms; sparse uses 16,814,461 bytes and
+1,875.199 ms; zstd prefix uses 16,836,019 bytes and 1,861.559 ms.
+
+Independent review agrees with all raw receipts and author statistics. Packet
+attribution is incomplete for shard 1: one reused TCP tuple is quarantined by
+the parser, leaving two measured rows without assigned packets (trial 6 raw
+transfer and trial 11 sparse seed). The 24,928 quarantined packets leave assigned
+bytes below the application-body lower bound. All 447,603 saved, captured and
+received packet counts match, with zero reported drops; this is attribution
+ambiguity, not evidenced capture loss. Shards 0, 2, 3 and 4 meet the completeness checks.
+There is no complete thirty-pair IP-byte result and no silently substituted
+four-shard ratio. The original failure remains in the
+[complete middle-insertion packet](evidence/2026-10-29-broad-wan/cases/middle_4096/README.md).
+This capture limitation does not remove any recorded application transfer or
+change its exact-recovery, body-byte, elapsed or CPU observation.
 
 ## Qualification and measurement boundaries
 
