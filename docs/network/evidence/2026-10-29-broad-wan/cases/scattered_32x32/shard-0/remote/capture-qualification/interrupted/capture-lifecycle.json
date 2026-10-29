@@ -1,0 +1,77 @@
+{
+  "schema": "spiralcore.capture-lifecycle.v1",
+  "scope": "selected_capture_interval_only",
+  "interface": "sch10fb3412983c",
+  "local_ip": "198.18.0.1",
+  "remote_ip": "198.18.0.2",
+  "port": 443,
+  "capture_pid": 4438,
+  "tool_versions": "tcpdump version 4.99.4\nlibpcap version 1.10.4 (with TPACKET_V3)\nOpenSSL 3.0.13 30 Jan 2024\n",
+  "tcpdump_sha256": "0d28d014ffd7839852a426cfde6448bda549aef90a4937f787673a6ca3152cf0",
+  "pcap_sha256": "313f83814036329985f6b50d36094d2d3b06c47aab0778854b30e663bbd68a39",
+  "stderr_sha256": "91115b8c1beba5f209449a97899b9bb7468e81527b709a8530b990e9c63ba485",
+  "flags": [
+    "--immediate-mode",
+    "-B",
+    "4096",
+    "-U",
+    "-s",
+    "96",
+    "--time-stamp-precision=nano",
+    "-i",
+    "sch10fb3412983c",
+    "-Z",
+    "runner",
+    "-w",
+    "/home/runner/work/SpiralCore/SpiralCore/wan-results/capture-qualification/interrupted/headers.pcap",
+    "host 198.18.0.2 and tcp port 443"
+  ],
+  "ready": true,
+  "ready_elapsed_millis": 24,
+  "preflight": [
+    {
+      "elapsed_millis": 64,
+      "stderr_end": 253,
+      "file_bytes": 24,
+      "counters": {
+        "captured": 0,
+        "received": 0,
+        "dropped": 0
+      },
+      "stderr_text": "tcpdump: 0 packets captured, 0 packets received by filter, 0 packets dropped by kernel\n"
+    },
+    {
+      "elapsed_millis": 605,
+      "stderr_end": 340,
+      "file_bytes": 24,
+      "counters": {
+        "captured": 0,
+        "received": 0,
+        "dropped": 0
+      },
+      "stderr_text": "tcpdump: 0 packets captured, 0 packets received by filter, 0 packets dropped by kernel\n"
+    }
+  ],
+  "client_started_elapsed_millis": 605,
+  "client_ended_elapsed_millis": 610,
+  "client_exit_code": 0,
+  "quiescence": [],
+  "interrupt_elapsed_millis": 730,
+  "capture_exit_code": 0,
+  "forced_cleanup": false,
+  "final_snapshot": {
+    "elapsed_millis": 730,
+    "stderr_end": 420,
+    "file_bytes": 14868,
+    "counters": {
+      "captured": 134,
+      "received": 134,
+      "dropped": 0
+    },
+    "stderr_text": "134 packets captured\n134 packets received by filter\n0 packets dropped by kernel\n"
+  },
+  "errors": [
+    "capture child exited before -USR2",
+    "capture child exited before -INT"
+  ]
+}
