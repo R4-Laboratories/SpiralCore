@@ -1,0 +1,78 @@
+{
+  "cases": [
+    {
+      "capture_complete": true,
+      "case": "normal",
+      "cleanup_verified": true,
+      "download_ip_bytes": 69080,
+      "expected_result_verified": true,
+      "fixture_sha256": "f7b678b2a5907c9ee86308e5ede448a7a27fb10748f2a7243c6ee14b91ca4cf7",
+      "lifecycle_sha256": "f30d672e439e5924ed6871e853440a8b213f839e8b75e487bd7af659a3622734",
+      "observed_syn_connections": 1,
+      "offload_states_verified": 2,
+      "packets": 137,
+      "pcap_sha256": "971556a354cec4f5abc3e883a1740bb87de1291555aa3b27e85625c745d9b7f8",
+      "topology_command_count": 27,
+      "total_ip_bytes": 138212,
+      "unattributed_packets": 0,
+      "upload_ip_bytes": 69132
+    },
+    {
+      "capture_complete": false,
+      "case": "interrupted",
+      "cleanup_verified": true,
+      "download_ip_bytes": 68976,
+      "expected_result_verified": true,
+      "fixture_sha256": "4e0c517cb3dce37d26b1bb29c52a630860ea949d34d41224fc418b5ae8d17725",
+      "lifecycle_sha256": "bbabb1fe2ebb05853be52bf29cb12a762129a8fe42e799ccf808b800c5e772d9",
+      "observed_syn_connections": 1,
+      "offload_states_verified": 2,
+      "packets": 134,
+      "pcap_sha256": "3ae6daa1e172eda68e43adbf57375272acae88dcc5759ce94a9fe369b4da6939",
+      "topology_command_count": 27,
+      "total_ip_bytes": 138056,
+      "unattributed_packets": 0,
+      "upload_ip_bytes": 69080
+    },
+    {
+      "capture_complete": false,
+      "case": "ongoing",
+      "cleanup_verified": true,
+      "download_ip_bytes": 73484,
+      "expected_result_verified": true,
+      "fixture_sha256": "5438c7b12ceaaecf94b899f3a2084e695eec56435eecf1c1a5a2a67d3045017e",
+      "lifecycle_sha256": "81c9fff3c63b33a790de033f73b6adf27b3477d1045f06ad74962c414616cd6d",
+      "observed_syn_connections": 2,
+      "offload_states_verified": 2,
+      "packets": 382,
+      "pcap_sha256": "f41caf8703e1ae752bad864ac9da4c392af689b30b58b71e1a3e33e5495842ad",
+      "topology_command_count": 27,
+      "total_ip_bytes": 151128,
+      "unattributed_packets": 245,
+      "upload_ip_bytes": 77644
+    }
+  ],
+  "checks": [
+    "full PCAP boundaries and IPv4 total lengths independent of snaplen",
+    "independent SYN ownership for this single-row fixed-endpoint fixture, including delayed packets and ongoing out-of-row connection",
+    "PCAP and lifecycle SHA256 bindings, final stats exact text, final counter equality",
+    "exact fixture-case copies and source/producer checksum-file binding",
+    "bounded successful topology commands, offloads, empty namespace process list, owned link/namespace deletions and final absence",
+    "server PID/starttime/exit/reap and expected complete/incomplete outcomes"
+  ],
+  "controller_receipt_sha256": "807e808eb10c7b9b462960abc34aa10444253a9507467d98ecb346e61a20478f",
+  "limitations": [
+    "synthetic local Ethernet and plaintext TCP only; no WAN, TLS throughput or energy measurement",
+    "ordinary release identity is bound to producer checksum receipt and independently downloaded binary in separate custody review; instrumented executable identity is receipt-only",
+    "full stderr prefix is not retained, so its full-stream digest is not independently reconstructed",
+    "does not reinterpret failed prior captures or qualify a later workflow source"
+  ],
+  "qualification_kind": "capture-qualification",
+  "qualification_sha256": "fd3f5cb78ea33a2ed65e97b4c6b4c3989b5b47146b8cc81bfce3a875a54ecc0f",
+  "reviewer_executable_sha256": "66608cab404deadbd2da9ff9db2c800ecae03bc8b7510956fb940556da5dcca9",
+  "reviewer_source_sha256": "88b4c69286d66e9f4c0b49a089a8b29f9f7365627f528b06b680f2174ef10f3a",
+  "run_id": 40947946641,
+  "schema": "spiralcore.capture-qualification-independent-review.v1",
+  "source_revision": "16fe9f44e858053a202b396fb7fca628dfcfd97c",
+  "status": "passed"
+}

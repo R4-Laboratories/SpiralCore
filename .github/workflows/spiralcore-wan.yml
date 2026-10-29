@@ -184,13 +184,13 @@ jobs:
             coverage_env=$(cargo +1.97.1 llvm-cov show-env --sh --manifest-path crates/spiralcore-transfer/Cargo.toml)
             eval "$coverage_env"
             printf '%s\n' all_target_tests_including_ignored > wan-results/coverage-stage.txt
-            timeout 300s cargo +1.97.1 test --locked --manifest-path crates/spiralcore-transfer/Cargo.toml --all-targets -- --include-ignored
+            timeout 300s cargo +1.97.1 test --release --locked --manifest-path crates/spiralcore-transfer/Cargo.toml --all-targets -- --include-ignored
             printf '%s\n' instrumented_binaries > wan-results/coverage-stage.txt
-            timeout 300s cargo +1.97.1 build --locked --manifest-path crates/spiralcore-transfer/Cargo.toml --bins
+            timeout 300s cargo +1.97.1 build --release --locked --manifest-path crates/spiralcore-transfer/Cargo.toml --bins
             printf '%s\n' instrumented_capture_qualification > wan-results/coverage-stage.txt
-            timeout 180s "$CARGO_TARGET_DIR/debug/spiralcore-capture-control" --qualify "$GITHUB_WORKSPACE/wan-results/instrumented-capture-qualification"
+            timeout 180s "$CARGO_TARGET_DIR/release/spiralcore-capture-control" --qualify "$GITHUB_WORKSPACE/wan-results/instrumented-capture-qualification"
             printf '%s\n' coverage_report > wan-results/coverage-stage.txt
-            cargo +1.97.1 llvm-cov report --manifest-path crates/spiralcore-transfer/Cargo.toml --json --summary-only --output-path "$GITHUB_WORKSPACE/wan-results/coverage.json"
+            cargo +1.97.1 llvm-cov report --release --manifest-path crates/spiralcore-transfer/Cargo.toml --json --summary-only --output-path "$GITHUB_WORKSPACE/wan-results/coverage.json"
             printf '%s\n' complete > wan-results/coverage-stage.txt
           )
           result=$?

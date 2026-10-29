@@ -172,3 +172,38 @@ fn build_pins_are_paired_numeric_and_forbidden_in_qualification() {
     }
     assert!(!allowed("1", "", "", "", "", "", "123", "456"));
 }
+
+#[test]
+fn isolated_coverage_uses_one_release_profile_for_every_stage() {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .ancestors()
+        .nth(2)
+        .unwrap();
+    let text = std::fs::read_to_string(root.join(".github/workflows/spiralcore-wan.yml")).unwrap();
+    let step = text
+        .split("      - name: Record isolated qualification-only source coverage\n")
+        .nth(1)
+        .unwrap()
+        .split("      - name: Seal the qualification-only sender build\n")
+        .next()
+        .unwrap();
+    for command in [
+        "cargo +1.97.1 test ",
+        "cargo +1.97.1 build ",
+        "cargo +1.97.1 llvm-cov report ",
+    ] {
+        let lines: Vec<_> = step.lines().filter(|line| line.contains(command)).collect();
+        assert_eq!(lines.len(), 1, "expected exactly one {command}");
+        assert!(
+            lines[0].split_whitespace().any(|word| word == "--release"),
+            "coverage profile mismatch: {}",
+            lines[0]
+        );
+    }
+    assert!(step.contains(
+        "timeout 180s \"$CARGO_TARGET_DIR/release/spiralcore-capture-control\" --qualify"
+    ));
+    assert!(!step.contains("$CARGO_TARGET_DIR/debug/"));
+    assert!(step.contains("export CARGO_TARGET_DIR=\"$RUNNER_TEMP/spiralcore-coverage\""));
+    assert!(step.contains("--all-targets -- --include-ignored"));
+}
