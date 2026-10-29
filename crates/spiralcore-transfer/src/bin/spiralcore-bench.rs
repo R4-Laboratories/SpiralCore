@@ -8,6 +8,7 @@ use spiralcore_transfer::{
     dag::Graph,
     endpoint::Endpoint,
     hash, hex, object_id,
+    prepared::PreparedObject,
     protocol::{Frame, Mode},
     wan, Error, Id,
 };
@@ -43,6 +44,8 @@ struct Task {
 #[serde(deny_unknown_fields)]
 struct Plan {
     schema: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    suite: Option<String>,
     run: String,
     trials: u32,
     fixture_version: String,
@@ -69,6 +72,19 @@ struct Metrics {
     data_bytes: Option<u64>,
     records_sent: Option<usize>,
     http_requests: u64,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    preparation: Option<Preparation>,
+}
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct Preparation {
+    retained_base_reused: bool,
+    base_resident_charge_bytes: Option<u64>,
+    target_prepare_wall_micros: u64,
+    target_prepare_cpu_micros: u64,
+    target_resident_charge_bytes: Option<u64>,
+    promotion_performed: bool,
+    selected_mode: Option<u8>,
 }
 impl Metrics {
     fn body_bytes(&self) -> u64 {
@@ -80,6 +96,8 @@ impl Metrics {
 #[serde(deny_unknown_fields)]
 struct Row {
     schema: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    suite: Option<String>,
     run: String,
     plan_trials: u32,
     task: Task,
@@ -247,7 +265,7 @@ fn make_plan(run: &str, trials: u32) -> Result<Plan> {
         );
     }
     Ok(Plan {
-        schema: "spiralcore.wan.plan.v1".into(), run: hex(&run_id), trials, fixture_version: "xorshift64-v1".into(),
+        schema: "spiralcore.wan.plan.v1".into(), suite: None, run: hex(&run_id), trials, fixture_version: "xorshift64-v1".into(),
         retained_payload_bytes, allowed_scopes: tasks.iter().map(|t| t.scope.clone()).collect(), tasks,
         limitations: vec![
             "16 MiB random DAG exceeds the current node cap; only raw/zstd and raw-CAS smoke checks are planned".into(),
@@ -262,6 +280,112 @@ fn make_plan(run: &str, trials: u32) -> Result<Plan> {
         ],
     })
 }
+fn selected_plan(run: &str, trials: u32, suite: Option<&str>) -> Result<Plan> {
+    let Some(suite) = suite else {
+        return make_plan(run, trials);
+    };
+    let cases: &[&str] = match suite {
+        "efficient-warm" => &["repeat", "localized_32", "scattered_32x32"],
+        "efficient-prefix" => &["prefix_1"],
+        _ => return Err("--suite must be efficient-warm or efficient-prefix".into()),
+    };
+    let run_id = wan::parse_id(run)?;
+    if !(1..=30).contains(&trials) {
+        return Err("--trials must be between 1 and 30".into());
+    }
+    let mut tasks = Vec::new();
+    let mut retained_payload_bytes = 0;
+    for &case in cases {
+        let mut arms = vec!["raw_full", "zstd_full"];
+        if case == "repeat" {
+            arms.push("raw_cas");
+        }
+        arms.push("dag");
+        if case != "prefix_1" {
+            arms.push("prepared");
+        }
+        arms.push("sparse");
+        let offset = hash(
+            b"spiralcore.bench.order.v2\0",
+            &[&run_id, suite.as_bytes(), case.as_bytes()],
+        )[0] as usize
+            % arms.len();
+        for trial in 0..trials {
+            let pair = format!("{MIB}-{case}-{trial:02}");
+            // Match v1 fixtures for a given run and trial; suite-specific scopes
+            // isolate the experiment even if both suites use the same run ID.
+            let seed_id = hash(
+                b"spiralcore.bench.fixture.v1\0",
+                &[&run_id, &(MIB as u64).to_le_bytes(), &trial.to_le_bytes()],
+            );
+            let fixture_seed = u64::from_le_bytes(seed_id[..8].try_into()?).max(1);
+            // Cyclic counterbalancing gives every arm each position equally
+            // often for 5/6-arm 30-trial blocks (within one for four arms).
+            for position in 0..arms.len() {
+                let arm = arms[(offset + trial as usize + position) % arms.len()];
+                let id = format!("{pair}-{arm}");
+                let scope = hex(&hash(
+                    b"spiralcore.bench.scope.v2\0",
+                    &[&run_id, suite.as_bytes(), id.as_bytes()],
+                ));
+                let warm_probe = case == "repeat" && !matches!(arm, "raw_full" | "zstd_full");
+                let seed_base = case != "repeat" || warm_probe;
+                retained_payload_bytes += (MIB + usize::from(case == "prefix_1")) as u64;
+                if seed_base && case != "repeat" {
+                    retained_payload_bytes += MIB as u64;
+                }
+                tasks.push(Task {
+                    id,
+                    pair: pair.clone(),
+                    trial,
+                    case: case.into(),
+                    size: MIB,
+                    arm: arm.into(),
+                    scope,
+                    fixture_seed,
+                    seed_base,
+                    warm_probe,
+                    cache_state: if !seed_base {
+                        "target_absent"
+                    } else if case == "repeat" {
+                        "target_present"
+                    } else {
+                        "base_present_target_absent"
+                    }
+                    .into(),
+                });
+            }
+        }
+    }
+    let publications = tasks
+        .iter()
+        .map(|t| 1 + usize::from(t.seed_base && t.case != "repeat"))
+        .sum::<usize>();
+    if retained_payload_bytes + publications as u64 * 4096 >= 1 << 30 {
+        return Err("efficiency suite exceeds the isolated 1 GiB cache budget".into());
+    }
+    Ok(Plan {
+        schema: "spiralcore.wan.plan.v2".into(), suite: Some(suite.into()),
+        run: hex(&run_id), trials, fixture_version: "xorshift64-v1".into(), retained_payload_bytes,
+        allowed_scopes: tasks.iter().map(|t| t.scope.clone()).collect(), tasks,
+        limitations: vec![
+            "Each suite requires a fresh isolated receiver cache; suites are not combined under one cache quota".into(),
+            "Application cache state is controlled; OS page/disk caches are not flushed".into(),
+            "The DAG arm uses the current executable's full-fold path, not the historical pre-optimization binary".into(),
+            "Prepared base construction is charged inside the seed timer; the same owned state survives into its immediately following transfer".into(),
+            "Prepared target comparison/hash/closure work and terminal retained-state teardown are timed; this one-update experiment performs no successor promotion".into(),
+            "Resident charges are conservative owned-state accounting, not process RSS or preparation peak memory; shared graphs may be counted twice".into(),
+            "Sparse encoding, comparison and fallback selection are timed; sparse is an aligned/prefix/suffix recipe, not content-defined chunking".into(),
+            "Repeat full-copy controls have empty target scopes; raw-CAS, DAG, prepared and sparse share the general object-cache shortcut".into(),
+            "Localized edits change 32 bytes; scattered edits change 1024 bytes, not an equal edit budget".into(),
+            "Transfer timing starts with generated in-memory inputs before graph/codec preparation; fixture generation is measured separately".into(),
+            "Arms use seeded cyclic counterbalanced paired order, not an independent random shuffle or balanced carryover design".into(),
+            "Begin cache hits are valid only for seeded repeat targets; hits during seeds or modified-target uploads invalidate those operations".into(),
+            "Receiver CPU covers decode/handle/encode; relay/cloudflared CPU and socket wait are excluded; CPU is not an energy measurement".into(),
+            "HTTP body counts are not packet/link bytes; failed-upload counts are attempted body bytes".into(),
+        ],
+    })
+}
 fn read_limited(path: &Path, limit: u64) -> Result<Vec<u8>> {
     let mut b = Vec::new();
     File::open(path)?.take(limit + 1).read_to_end(&mut b)?;
@@ -272,7 +396,7 @@ fn read_limited(path: &Path, limit: u64) -> Result<Vec<u8>> {
 }
 fn read_plan(path: &Path) -> Result<Plan> {
     let p: Plan = serde_json::from_slice(&read_limited(path, 2 << 20)?)?;
-    if p != make_plan(&p.run, p.trials)? {
+    if p != selected_plan(&p.run, p.trials, p.suite.as_deref())? {
         return Err("plan differs from canonical generated plan".into());
     }
     Ok(p)
@@ -308,7 +432,7 @@ fn fresh_transfer_id(scope: Id, phase: &str, unix_start_nanos: &str) -> Id {
 fn unexpected_begin_cache_hit(task: &Task, phase: &str, sent: &[Frame], replies: &[Frame]) -> bool {
     let allowed = phase == "transfer"
         && task.case == "repeat"
-        && matches!(task.arm.as_str(), "raw_cas" | "dag");
+        && matches!(task.arm.as_str(), "raw_cas" | "dag" | "prepared" | "sparse");
     !allowed
         && sent
             .iter()
@@ -393,9 +517,11 @@ fn run_phase(
         data_bytes: stats.map(|s| s.data_bytes),
         records_sent: stats.map(|s| s.records_sent),
         http_requests: m.http_requests,
+        preparation: None,
     };
     Ok(Row {
         schema: "spiralcore.wan.row.v1".into(),
+        suite: None,
         run: plan.run.clone(),
         plan_trials: plan.trials,
         task: task.clone(),
@@ -424,6 +550,174 @@ fn run_phase(
         architecture: env::consts::ARCH.into(),
     })
 }
+#[derive(Default)]
+struct Retained {
+    prepared: Option<PreparedObject>,
+    sparse: Option<Vec<u8>>,
+}
+struct Execution<'a> {
+    url: &'a str,
+    token: &'a str,
+    binary: &'a str,
+    revision: &'a str,
+}
+fn run_efficiency_phase(
+    plan: &Plan,
+    task: &Task,
+    phase: &str,
+    execution: &Execution<'_>,
+    retained: &mut Retained,
+) -> Result<Row> {
+    let fixture_wall = Instant::now();
+    let fixture_cpu = ProcessTime::now();
+    let bytes = fixture(task, phase);
+    let base_bytes =
+        (phase == "transfer" && task.seed_base && task.arm == "dag").then(|| fixture(task, "seed"));
+    let fixture_generation_cpu_micros = micros(fixture_cpu.elapsed().as_micros());
+    let fixture_generation_wall_micros = micros(fixture_wall.elapsed().as_micros());
+    let scope = wan::parse_id(&task.scope)?;
+    let unix_start_nanos = unix_nanos()?;
+    let transfer_id = fresh_transfer_id(scope, phase, &unix_start_nanos);
+    let wall = Instant::now();
+    let cpu = ProcessTime::now();
+    let mut http = wan::HttpClient::new(execution.url, execution.token, scope)?;
+    let mut preparation = Preparation::default();
+    let mut base_prepare_wall_micros = 0;
+    let mut base_prepare_cpu_micros = 0;
+    let mut unexpected_cache_hit = false;
+    let outcome = (|| -> spiralcore_transfer::Result<client::Stats> {
+        if phase == "seed" && task.arm == "prepared" {
+            let start = Instant::now();
+            let cpu = ProcessTime::now();
+            let prepared = PreparedObject::new(&bytes, 262144);
+            base_prepare_cpu_micros = micros(cpu.elapsed().as_micros());
+            base_prepare_wall_micros = micros(start.elapsed().as_micros());
+            let prepared = prepared?;
+            preparation.base_resident_charge_bytes = Some(prepared.resident_charge());
+            retained.prepared = Some(prepared);
+        }
+        let graph = if let Some(base) = &base_bytes {
+            let start = Instant::now();
+            let cpu = ProcessTime::now();
+            let graph = Graph::fold(base, 262144);
+            base_prepare_cpu_micros = micros(cpu.elapsed().as_micros());
+            base_prepare_wall_micros = micros(start.elapsed().as_micros());
+            Some(graph?)
+        } else {
+            None
+        };
+        let exchange = |frames: &[Frame]| {
+            let replies = http.exchange(frames)?;
+            if unexpected_begin_cache_hit(task, phase, frames, &replies) {
+                unexpected_cache_hit = true;
+                return Err(Error::Integrity);
+            }
+            Ok(replies)
+        };
+        if phase == "transfer" && task.arm == "prepared" {
+            let base = retained.prepared.as_ref().ok_or(Error::Missing)?;
+            preparation.retained_base_reused = true;
+            preparation.base_resident_charge_bytes = Some(base.resident_charge());
+            let start = Instant::now();
+            let cpu = ProcessTime::now();
+            let delta = base.prepare_delta(&bytes);
+            preparation.target_prepare_cpu_micros = micros(cpu.elapsed().as_micros());
+            preparation.target_prepare_wall_micros = micros(start.elapsed().as_micros());
+            let delta = delta?;
+            preparation.target_resident_charge_bytes = Some(delta.resident_charge());
+            // This experiment ends after one durable update; no successor graph
+            // is needed. Delta destruction remains inside the transfer timer.
+            client::transfer_prepared_batched(&delta, transfer_id, task.warm_probe, exchange)
+        } else if phase == "transfer" && task.arm == "sparse" {
+            let base = retained.sparse.as_deref().ok_or(Error::Missing)?;
+            preparation.retained_base_reused = true;
+            preparation.base_resident_charge_bytes = Some(base.len() as u64);
+            client::transfer_sparse_batched(base, &bytes, transfer_id, task.warm_probe, exchange)
+        } else {
+            if phase == "seed" && task.arm == "sparse" {
+                // Move this already-generated buffer into per-task ownership
+                // after producing the receipt; no copy or hidden index build.
+                preparation.base_resident_charge_bytes = Some(bytes.len() as u64);
+            }
+            let mode = match (phase, task.arm.as_str()) {
+                ("transfer", "dag") => Mode::Dag,
+                ("transfer", "zstd_full") => Mode::Zstd,
+                _ => Mode::Raw,
+            };
+            client::transfer_batched(
+                &bytes,
+                mode,
+                graph.as_ref(),
+                transfer_id,
+                phase == "transfer" && task.warm_probe,
+                exchange,
+            )
+        }
+    })();
+    if phase == "transfer" {
+        // No successor is retained by this one-update experiment. Charge the
+        // terminal cleanup rather than moving its CPU outside all receipts.
+        drop(std::mem::take(retained));
+    }
+    let m = http.metrics();
+    drop(http);
+    let sender_cpu_micros = micros(cpu.elapsed().as_micros());
+    let wall_micros = micros(wall.elapsed().as_micros());
+    let unix_end_nanos = unix_nanos()?;
+    let stats = outcome.as_ref().ok();
+    preparation.selected_mode = stats.map(|s| s.mode as u8);
+    let row = Row {
+        schema: "spiralcore.wan.row.v2".into(),
+        suite: plan.suite.clone(),
+        run: plan.run.clone(),
+        plan_trials: plan.trials,
+        task: task.clone(),
+        phase: phase.into(),
+        object: hex(&object_id(&bytes)),
+        object_bytes: bytes.len(),
+        status: if outcome.is_ok() {
+            "published"
+        } else {
+            "failed"
+        }
+        .into(),
+        error: outcome.as_ref().err().map(|e| {
+            if unexpected_cache_hit {
+                "unexpected_begin_cache_hit".into()
+            } else {
+                e.to_string()
+            }
+        }),
+        unix_start_nanos,
+        unix_end_nanos,
+        metrics: Metrics {
+            fixture_generation_wall_micros,
+            fixture_generation_cpu_micros,
+            wall_micros,
+            sender_cpu_micros,
+            base_prepare_wall_micros,
+            base_prepare_cpu_micros,
+            receiver_cpu_micros: m.receiver_cpu_micros,
+            receiver_wall_micros: m.receiver_wall_micros,
+            request_body_bytes: m.request_body_bytes,
+            response_body_bytes: m.response_body_bytes,
+            application_request_bytes: stats.map(|s| s.request_bytes),
+            application_response_bytes: stats.map(|s| s.response_bytes),
+            data_bytes: stats.map(|s| s.data_bytes),
+            records_sent: stats.map(|s| s.records_sent),
+            http_requests: m.http_requests,
+            preparation: Some(preparation),
+        },
+        source_revision: execution.revision.into(),
+        executable_sha256: execution.binary.into(),
+        os: env::consts::OS.into(),
+        architecture: env::consts::ARCH.into(),
+    };
+    if phase == "seed" && task.arm == "sparse" && row.status == "published" {
+        retained.sparse = Some(bytes);
+    }
+    Ok(row)
+}
 fn run(plan: &Plan, url: &str, output: &Path) -> Result<()> {
     let token = env::var("SPIRALCORE_WAN_TOKEN").map_err(|_| "SPIRALCORE_WAN_TOKEN is required")?;
     let binary = hex(&Sha256::digest(read_limited(&env::current_exe()?, 256 << 20)?).into());
@@ -434,14 +728,27 @@ fn run(plan: &Plan, url: &str, output: &Path) -> Result<()> {
         .create_new(true)
         .open(output)?;
     let mut failed = 0;
+    let execution = Execution {
+        url,
+        token: &token,
+        binary: &binary,
+        revision: &revision,
+    };
     for task in &plan.tasks {
+        // State belongs to one arm/trial only. Seed and transfer are adjacent,
+        // and all sender state is dropped before the next arm starts.
+        let mut retained = Retained::default();
         let phases: &[&str] = if task.seed_base {
             &["seed", "transfer"]
         } else {
             &["transfer"]
         };
         for phase in phases {
-            let row = run_phase(plan, task, phase, url, &token, &binary, &revision)?;
+            let row = if plan.suite.is_some() {
+                run_efficiency_phase(plan, task, phase, &execution, &mut retained)?
+            } else {
+                run_phase(plan, task, phase, url, &token, &binary, &revision)?
+            };
             if row.status != "published" {
                 failed += 1;
             }
@@ -467,7 +774,7 @@ fn read_rows(path: &Path) -> Result<Vec<Row>> {
     let mut keys = BTreeSet::new();
     for line in BufReader::new(bytes.as_slice()).lines() {
         let row: Row = serde_json::from_str(&line?)?;
-        if row.schema != "spiralcore.wan.row.v1"
+        if !valid_row_profile(&row)
             || !matches!(row.phase.as_str(), "seed" | "transfer")
             || !matches!(row.status.as_str(), "published" | "failed")
             || (row.status == "published") != row.error.is_none()
@@ -483,6 +790,28 @@ fn read_rows(path: &Path) -> Result<Vec<Row>> {
         return Err("receipt count outside 1..=2048".into());
     }
     Ok(rows)
+}
+fn valid_row_profile(row: &Row) -> bool {
+    match (&row.suite, &row.metrics.preparation) {
+        (None, None) => row.schema == "spiralcore.wan.row.v1",
+        (Some(suite), Some(p)) => {
+            row.schema == "spiralcore.wan.row.v2"
+                && matches!(suite.as_str(), "efficient-warm" | "efficient-prefix")
+                && !p.promotion_performed
+                // A failed operation may stop before reaching retained state.
+                && (row.status != "published" || p.retained_base_reused ==
+                    (row.phase == "transfer" && matches!(row.task.arm.as_str(), "prepared" | "sparse")))
+                && (row.status != "published" || p.selected_mode.is_some_and(|mode| match (row.phase.as_str(), row.task.arm.as_str(), row.task.case.as_str()) {
+                    ("seed", _, _) | (_, "raw_full" | "raw_cas", _) | (_, "prepared", "repeat") => mode == 0,
+                    (_, "zstd_full", _) => mode == 1,
+                    (_, "dag" | "prepared", _) => mode == 2,
+                    (_, "sparse", "repeat") => mode == 0,
+                    (_, "sparse", _) => mode == 0 || mode == 3,
+                    _ => false,
+                }))
+        }
+        _ => false,
+    }
 }
 fn verify(plan: &Plan, rows: &[Row], cache: &Path) -> Result<Value> {
     if receipt_plan(rows)? != *plan {
@@ -525,9 +854,12 @@ fn verify(plan: &Plan, rows: &[Row], cache: &Path) -> Result<Value> {
         verified += 1;
         bytes_verified += expected.len() as u64;
     }
-    Ok(
-        json!({"schema":"spiralcore.wan.verification.v1","run":plan.run,"status":"exact","receipts_verified":verified,"bytes_compared":bytes_verified,"comparison":"byte-for-byte after reopening receiver cache","qualification_outside_transfer_timing":true}),
-    )
+    let mut report = json!({"schema":"spiralcore.wan.verification.v1","run":plan.run,"status":"exact","receipts_verified":verified,"bytes_compared":bytes_verified,"comparison":"byte-for-byte after reopening receiver cache","qualification_outside_transfer_timing":true});
+    if let Some(suite) = &plan.suite {
+        report["schema"] = "spiralcore.wan.verification.v2".into();
+        report["suite"] = suite.clone().into();
+    }
+    Ok(report)
 }
 fn percentile(v: &[f64], n: usize, d: usize) -> Option<f64> {
     if v.is_empty() {
@@ -620,19 +952,124 @@ fn summarize(rows: &[Row]) -> Result<Value> {
                 );
             }
         }
-        summaries.push(json!({"size":size,"case":case,"arm":arm,"attempted":group.len(),"published":ok.len(),"failed":group.len()-ok.len(),
+        let mut summary = json!({"size":size,"case":case,"arm":arm,"attempted":group.len(),"published":ok.len(),"failed":group.len()-ok.len(),
             "transfer_wall_micros":distribution(&metric(|m|m.wall_micros)),"sender_cpu_micros":distribution(&metric(|m|m.sender_cpu_micros)),"receiver_cpu_micros":distribution(&metric(|m|m.receiver_cpu_micros)),
             "http_body_bytes_both_directions":distribution(&metric(Metrics::body_bytes)),
             "seed_plus_transfer_wall_micros":distribution(&cumulative(|m|m.wall_micros)),"seed_plus_transfer_sender_cpu_micros":distribution(&cumulative(|m|m.sender_cpu_micros)),"seed_plus_transfer_receiver_cpu_micros":distribution(&cumulative(|m|m.receiver_cpu_micros)),"seed_plus_transfer_http_body_bytes":distribution(&cumulative(Metrics::body_bytes)),
-            "paired_raw_over_candidate_wall":ratios(&wall),"paired_raw_over_candidate_body_bytes":ratios(&body),"paired_seed_plus_transfer_body_bytes":ratios(&total),"additional_seed_cost_break_even_repetitions":distribution(&break_even)}));
+            "paired_raw_over_candidate_wall":ratios(&wall),"paired_raw_over_candidate_body_bytes":ratios(&body),"paired_seed_plus_transfer_body_bytes":ratios(&total),"additional_seed_cost_break_even_repetitions":distribution(&break_even)});
+        if plan.suite.is_some() {
+            summary["base_prepare_cpu_micros"] =
+                distribution(&metric(|m| m.base_prepare_cpu_micros));
+            summary["base_prepare_wall_micros"] =
+                distribution(&metric(|m| m.base_prepare_wall_micros));
+            let prep_metric = |f: fn(&Preparation) -> u64| {
+                ok.iter()
+                    .filter_map(|r| r.metrics.preparation.as_ref().map(|p| f(p) as f64))
+                    .collect::<Vec<_>>()
+            };
+            summary["target_prepare_cpu_micros"] =
+                distribution(&prep_metric(|p| p.target_prepare_cpu_micros));
+            summary["target_prepare_wall_micros"] =
+                distribution(&prep_metric(|p| p.target_prepare_wall_micros));
+            for (name, baseline) in [
+                ("raw", "raw_full"),
+                ("zstd", "zstd_full"),
+                ("raw_cas", "raw_cas"),
+                ("dag", "dag"),
+            ] {
+                for (label, get_metric) in [
+                    ("wall", (|m: &Metrics| m.wall_micros) as fn(&Metrics) -> u64),
+                    ("sender_cpu", |m: &Metrics| m.sender_cpu_micros),
+                    ("receiver_cpu", |m: &Metrics| m.receiver_cpu_micros),
+                    ("body_bytes", Metrics::body_bytes),
+                ] {
+                    let pairs: Vec<_> = ok
+                        .iter()
+                        .filter_map(|r| {
+                            let b = targets.get(&(r.task.pair.as_str(), baseline))?;
+                            (b.status == "published").then_some((
+                                get_metric(&b.metrics) as f64,
+                                get_metric(&r.metrics) as f64,
+                            ))
+                        })
+                        .collect();
+                    summary[format!("paired_{name}_over_candidate_{label}")] = ratios(&pairs);
+                    let pairs: Vec<_> = ok
+                        .iter()
+                        .filter_map(|r| {
+                            let b = targets.get(&(r.task.pair.as_str(), baseline))?;
+                            let cost = |row: &Row| {
+                                get_metric(&row.metrics).saturating_add(
+                                    seeds
+                                        .get(row.task.id.as_str())
+                                        .map_or(0, |s| get_metric(&s.metrics)),
+                                ) as f64
+                            };
+                            (b.status == "published").then_some((cost(b), cost(r)))
+                        })
+                        .collect();
+                    summary[format!("paired_seed_plus_transfer_{name}_over_candidate_{label}")] =
+                        ratios(&pairs);
+                }
+            }
+            summary["seed_base_prepare_cpu_micros"] = distribution(
+                &ok.iter()
+                    .filter_map(|r| {
+                        seeds
+                            .get(r.task.id.as_str())
+                            .map(|s| s.metrics.base_prepare_cpu_micros as f64)
+                    })
+                    .collect::<Vec<_>>(),
+            );
+            summary["seed_base_prepare_wall_micros"] = distribution(
+                &ok.iter()
+                    .filter_map(|r| {
+                        seeds
+                            .get(r.task.id.as_str())
+                            .map(|s| s.metrics.base_prepare_wall_micros as f64)
+                    })
+                    .collect::<Vec<_>>(),
+            );
+            let mut selected_modes: BTreeMap<u8, usize> = BTreeMap::new();
+            for mode in ok
+                .iter()
+                .filter_map(|r| r.metrics.preparation.as_ref()?.selected_mode)
+            {
+                *selected_modes.entry(mode).or_default() += 1;
+            }
+            summary["selected_wire_mode_counts"] = serde_json::to_value(selected_modes)?;
+            summary["base_resident_charge_bytes"] = distribution(
+                &ok.iter()
+                    .filter_map(|r| {
+                        r.metrics
+                            .preparation
+                            .as_ref()?
+                            .base_resident_charge_bytes
+                            .map(|n| n as f64)
+                    })
+                    .collect::<Vec<_>>(),
+            );
+            summary["target_resident_charge_bytes"] = distribution(
+                &ok.iter()
+                    .filter_map(|r| {
+                        r.metrics
+                            .preparation
+                            .as_ref()?
+                            .target_resident_charge_bytes
+                            .map(|n| n as f64)
+                    })
+                    .collect::<Vec<_>>(),
+            );
+            summary["promotion_performed"] = false.into();
+        }
+        summaries.push(summary);
     }
     let expected_rows: usize = plan
         .tasks
         .iter()
         .map(|t| 1 + usize::from(t.seed_base))
         .sum();
-    Ok(
-        json!({"schema":"spiralcore.wan.summary.v1","run":run,"plan_trials":plan.trials,"rows":rows.len(),"expected_rows":expected_rows,"missing_rows":expected_rows.saturating_sub(rows.len()),"failed_rows":rows.iter().filter(|r|r.status!="published").count(),"groups":summaries,"limitations":[
+    let mut report = json!({"schema":"spiralcore.wan.summary.v1","run":run,"plan_trials":plan.trials,"rows":rows.len(),"expected_rows":expected_rows,"missing_rows":expected_rows.saturating_sub(rows.len()),"failed_rows":rows.iter().filter(|r|r.status!="published").count(),"groups":summaries,"limitations":[
         "Published receipts require separate local byte-for-byte qualification before exactness is claimed",
         "Body bytes exclude HTTP headers, TLS, TCP/IP and tunnel overhead; packet evidence is joined separately",
         "Failed rows contain attempted upload body bytes and completely received response bodies, not proven link bytes",
@@ -640,19 +1077,30 @@ fn summarize(rows: &[Row]) -> Result<Value> {
         "Break-even extrapolates constant per-transfer savings; it is not a measured sequence",
         "16 MiB cases are one-trial smoke checks, not 30-trial performance qualification",
         "Receiver process CPU excludes relay/cloudflared and socket wait; sender CPU includes HTTP/TLS",
-        "Failed pairs remain in receipts but are excluded from ratios; inspect failures before interpreting success-only statistics"]}),
-    )
+        "Failed pairs remain in receipts but are excluded from ratios; inspect failures before interpreting success-only statistics"]});
+    if let Some(suite) = &plan.suite {
+        report["schema"] = "spiralcore.wan.summary.v2".into();
+        report["suite"] = suite.clone().into();
+        report["quantiles"] =
+            "nearest rank: sorted[ceil(n*p)-1], including lower middle for even-n median".into();
+        let limitations = report["limitations"].as_array_mut().unwrap();
+        limitations.retain(|v| !v.as_str().is_some_and(|s| s.starts_with("16 MiB")));
+        limitations.extend(plan.limitations.iter().cloned().map(Value::String));
+    }
+    Ok(report)
 }
 fn receipt_plan(rows: &[Row]) -> Result<Plan> {
     let first = rows.first().ok_or("no receipts")?;
-    let plan = make_plan(&first.run, first.plan_trials)?;
+    let plan = selected_plan(&first.run, first.plan_trials, first.suite.as_deref())?;
     let tasks: BTreeMap<_, _> = plan.tasks.iter().map(|t| (t.id.as_str(), t)).collect();
     let mut seen = BTreeSet::new();
     for row in rows {
         let task = tasks
             .get(row.task.id.as_str())
             .ok_or("receipt task is not in plan")?;
-        if row.run != plan.run
+        if !valid_row_profile(row)
+            || row.suite != plan.suite
+            || row.run != plan.run
             || row.plan_trials != plan.trials
             || row.source_revision != first.source_revision
             || row.executable_sha256 != first.executable_sha256
@@ -703,7 +1151,7 @@ fn arguments() -> Result<(String, BTreeMap<String, String>)> {
         .next()
         .ok_or("expected plan, run, verify or summarize")?;
     let allowed: &[&str] = match command.as_str() {
-        "plan" => &["--trials", "--run", "--out"],
+        "plan" => &["--trials", "--run", "--out", "--suite"],
         "run" => &["--plan", "--url", "--out"],
         "verify" => &["--plan", "--rows", "--cache"],
         "summarize" => &["--rows", "--out"],
@@ -731,9 +1179,10 @@ fn execute() -> Result<()> {
     match command.as_str() {
         "plan" => write_json(
             Path::new(get("--out")?),
-            &make_plan(
+            &selected_plan(
                 get("--run")?,
                 opts.get("--trials").map_or(Ok(30), |s| s.parse::<u32>())?,
+                opts.get("--suite").map(String::as_str),
             )?,
         ),
         "run" => run(
@@ -774,7 +1223,11 @@ mod tests {
             fresh_transfer_id([1; 32], "transfer", "1"),
             fresh_transfer_id([1; 32], "transfer", "1")
         );
-        let plan = make_plan(&"01".repeat(32), 1).unwrap();
+        let plans = [
+            selected_plan(&"01".repeat(32), 1, None).unwrap(),
+            selected_plan(&"01".repeat(32), 1, Some("efficient-warm")).unwrap(),
+            selected_plan(&"01".repeat(32), 1, Some("efficient-prefix")).unwrap(),
+        ];
         let begin = Frame {
             kind: 1,
             transfer: [2; 32],
@@ -782,7 +1235,7 @@ mod tests {
             body: Vec::new(),
         };
         let hit = begin.reply(103, vec![0; 32]);
-        for task in &plan.tasks {
+        for task in plans.iter().flat_map(|p| &p.tasks) {
             assert!(unexpected_begin_cache_hit(
                 task,
                 "seed",
@@ -890,6 +1343,7 @@ mod tests {
     fn row(plan: &Plan, task: &Task, phase: &str, body: u64) -> Row {
         Row {
             schema: "spiralcore.wan.row.v1".into(),
+            suite: None,
             run: plan.run.clone(),
             plan_trials: plan.trials,
             task: task.clone(),
