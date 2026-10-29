@@ -86,6 +86,18 @@ accepts local base/target slices. Prepared state is immutable; promotion creates
 successor index. Whole-object comparison/hash and closure traversal remain linear work. Sender
 preparation and its temporary allocations belong to the caller's timing and memory budget.
 
+The Rust API also exposes `client::transfer_zstd_prefix_batched` as a conventional delta control.
+It encodes one bounded zstd frame against the authorized exact base, and selects raw before Begin
+when the complete object-protocol encoding would not be smaller. Both inputs remain capped at
+16 MiB. This mode is available through the API and the broad16 benchmark; the loopback CLI has no
+prefix-mode flag. See the [versioned prefix contract](../../docs/specs/zstd-prefix-v1.md).
+
+`Endpoint::open_with_policy(..., ColdGraphPolicy::Disabled)` disables optional Raw/Zstd DAG warming
+for a minimal byte-publication comparison. Existing `Endpoint::open` preserves eager bounded
+warming. The receiver chooses this immutable policy; a remote sender cannot change it. Hash,
+authorization, quota and durable-publication checks apply under either policy. New broad16 plans
+bind the disabled policy equally across raw, ordinary zstd, zstd prefix and sparse methods.
+
 The receiver retains at most 64 MiB/32 verified graphs inside its existing resident-memory budget.
 Active attempts pin their bases; unpinned graphs are evictable, and restart rebuilds them from verified
 durable bytes. Every base use still checks namespace authorization and on-disk integrity.

@@ -5,6 +5,7 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+  actions: read
 concurrency:
   group: spiralcore-wan-experiment
   cancel-in-progress: false
@@ -22,6 +23,8 @@ jobs:
       SPIRALCORE_WAN_SUITE: ${{ vars.SPIRALCORE_WAN_SUITE }}
       SPIRALCORE_WAN_SHARD: ${{ vars.SPIRALCORE_WAN_SHARD }}
       SPIRALCORE_WAN_QUALIFY_ONLY: ${{ vars.SPIRALCORE_WAN_QUALIFY_ONLY }}
+      SPIRALCORE_WAN_BUILD_RUN: ${{ vars.SPIRALCORE_WAN_BUILD_RUN }}
+      SPIRALCORE_WAN_BUILD_ARTIFACT: ${{ vars.SPIRALCORE_WAN_BUILD_ARTIFACT }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
@@ -29,50 +32,125 @@ jobs:
       - name: Validate bounded experiment configuration
         shell: bash
         run: |
-          [[ -z "$SPIRALCORE_WAN_QUALIFY_ONLY" || "$SPIRALCORE_WAN_QUALIFY_ONLY" == 1 ]]
+          build_run="${SPIRALCORE_WAN_BUILD_RUN:-}"
+          build_artifact="${SPIRALCORE_WAN_BUILD_ARTIFACT:-}"
+          if [[ -n "$build_run" || -n "$build_artifact" ]]; then
+            [[ "$build_run" =~ ^[1-9][0-9]{0,17}$ && "$build_artifact" =~ ^[1-9][0-9]{0,17}$ ]] || exit 1
+            [[ -z "$SPIRALCORE_WAN_QUALIFY_ONLY" ]] || exit 1
+          fi
+          [[ -z "$SPIRALCORE_WAN_QUALIFY_ONLY" || "$SPIRALCORE_WAN_QUALIFY_ONLY" == 1 ]] || exit 1
           if [[ "$SPIRALCORE_WAN_QUALIFY_ONLY" == 1 ]]; then
-            [[ -z "$SPIRALCORE_WAN_URL" && -z "$SPIRALCORE_WAN_RUN" && -z "$SPIRALCORE_WAN_TRIALS" && -z "$SPIRALCORE_WAN_SUITE" && -z "$SPIRALCORE_WAN_SHARD" ]]
+            [[ -z "$SPIRALCORE_WAN_URL" && -z "$SPIRALCORE_WAN_RUN" && -z "$SPIRALCORE_WAN_TRIALS" && -z "$SPIRALCORE_WAN_SUITE" && -z "$SPIRALCORE_WAN_SHARD" ]] || exit 1
             exit 0
           fi
-          [[ "$SPIRALCORE_WAN_URL" =~ ^https://[a-z0-9-]+\.trycloudflare\.com/?$ ]]
-          [[ "$SPIRALCORE_WAN_RUN" =~ ^[0-9a-f]{64}$ ]]
-          [[ "$SPIRALCORE_WAN_TRIALS" == 1 || "$SPIRALCORE_WAN_TRIALS" == 30 ]]
+          [[ "$SPIRALCORE_WAN_URL" =~ ^https://[a-z0-9-]+\.trycloudflare\.com/?$ ]] || exit 1
+          [[ "$SPIRALCORE_WAN_RUN" =~ ^[0-9a-f]{64}$ ]] || exit 1
+          [[ "$SPIRALCORE_WAN_TRIALS" == 1 || "$SPIRALCORE_WAN_TRIALS" == 30 ]] || exit 1
           if [[ "$GITHUB_REF" == refs/heads/codex/spiralcore-efficient ]]; then
             if [[ "$SPIRALCORE_WAN_SUITE" == broad16-* ]]; then
               case "$SPIRALCORE_WAN_SUITE" in
                 broad16-localized_32|broad16-scattered_32x32|broad16-prefix_4096|broad16-middle_4096|broad16-delete_4096|broad16-append_4096|broad16-truncate_4096|broad16-replace_1m|broad16-structured_localized_32|broad16-compressed_localized_32|broad16-cold_random|broad16-cold_structured) ;;
                 *) exit 1 ;;
               esac
-              [[ "$SPIRALCORE_WAN_TRIALS" == 30 ]]
-              [[ "$SPIRALCORE_WAN_SHARD" =~ ^[0-4]$ ]]
+              [[ "$SPIRALCORE_WAN_TRIALS" == 30 ]] || exit 1
+              [[ "$SPIRALCORE_WAN_SHARD" =~ ^[0-4]$ ]] || exit 1
             elif [[ "$SPIRALCORE_WAN_SUITE" == large16-localized ]]; then
-              [[ "$SPIRALCORE_WAN_TRIALS" == 30 ]]
-              [[ "$SPIRALCORE_WAN_SHARD" =~ ^[0-2]$ ]]
+              [[ "$SPIRALCORE_WAN_TRIALS" == 30 ]] || exit 1
+              [[ "$SPIRALCORE_WAN_SHARD" =~ ^[0-2]$ ]] || exit 1
             else
-              [[ "$SPIRALCORE_WAN_SUITE" == efficient-warm || "$SPIRALCORE_WAN_SUITE" == efficient-prefix ]]
-              [[ -z "$SPIRALCORE_WAN_SHARD" ]]
+              [[ "$SPIRALCORE_WAN_SUITE" == efficient-warm || "$SPIRALCORE_WAN_SUITE" == efficient-prefix ]] || exit 1
+              [[ -z "$SPIRALCORE_WAN_SHARD" ]] || exit 1
             fi
           else
-            [[ -z "$SPIRALCORE_WAN_SUITE" ]]
-            [[ -z "$SPIRALCORE_WAN_SHARD" ]]
+            [[ -z "$SPIRALCORE_WAN_SUITE" ]] || exit 1
+            [[ -z "$SPIRALCORE_WAN_SHARD" ]] || exit 1
           fi
       - name: Install pinned Rust and capture tools
         run: |
           rustup toolchain install 1.97.1 --profile minimal --component clippy
           sudo apt-get update -qq
-          sudo apt-get install -y -qq tcpdump ethtool
+          sudo apt-get install -y -qq tcpdump ethtool iproute2 unzip
+      - name: Build the checked-out provenance validator and record current runner
+        run: |
+          set -euo pipefail
+          [[ -z "${RUSTFLAGS:-}${CARGO_ENCODED_RUSTFLAGS:-}${RUSTC_WRAPPER:-}${RUSTC_WORKSPACE_WRAPPER:-}${CARGO_BUILD_TARGET:-}" ]] || exit 1
+          cargo +1.97.1 test --locked --manifest-path tools/wan-build-manifest/Cargo.toml --all-targets
+          cargo +1.97.1 clippy --locked --manifest-path tools/wan-build-manifest/Cargo.toml --all-targets -- -D warnings
+          cargo +1.97.1 build --locked --manifest-path tools/wan-build-manifest/Cargo.toml
+          mkdir wan-results
+          git rev-parse HEAD > wan-results/source-revision.txt
+          rustc +1.97.1 --version > wan-results/rust-version.txt
+          rustc +1.97.1 -vV > wan-results/current-rustc.txt
+          uname -a > wan-results/platform.txt
+          lscpu -J > wan-results/cpu.json
+          cargo +1.97.1 tree --locked --manifest-path crates/spiralcore-transfer/Cargo.toml -e features > wan-results/features.txt
+          compiler=$(cat wan-results/rust-version.txt)
+          target=$(sed -n 's/^host: //p' wan-results/current-rustc.txt)
+          features=$(sha256sum wan-results/features.txt | cut -d ' ' -f1)
+          lock=$(sha256sum crates/spiralcore-transfer/Cargo.lock | cut -d ' ' -f1)
+          producer_run="${SPIRALCORE_WAN_BUILD_RUN:-$GITHUB_RUN_ID}"
+          artifact="${SPIRALCORE_WAN_BUILD_ARTIFACT:-null}"
+          jq -n --arg source "$GITHUB_SHA" --arg repository "$GITHUB_REPOSITORY" \
+            --arg workflow '.github/workflows/spiralcore-wan.yml' --argjson run "$producer_run" \
+            --arg compiler "$compiler" --arg target "$target" --arg features "$features" --arg lock "$lock" --argjson artifact "$artifact" \
+            '{identity:{source:$source,repository:$repository,workflow:$workflow,run_id:$run,run_attempt:1,compiler:$compiler,target:$target,features_sha256:$features,lock_sha256:$lock},artifact_id:$artifact}' > wan-results/expected-build.json
       - name: Validate and build the exact revision
+        if: env.SPIRALCORE_WAN_BUILD_RUN == ''
         run: |
           cargo +1.97.1 test --locked --manifest-path crates/spiralcore-transfer/Cargo.toml --all-targets
           cargo +1.97.1 clippy --locked --manifest-path crates/spiralcore-transfer/Cargo.toml --all-targets -- -D warnings
           cargo +1.97.1 build --release --locked --manifest-path crates/spiralcore-transfer/Cargo.toml --bins
-          mkdir -p wan-results
-          git rev-parse HEAD > wan-results/source-revision.txt
-          rustc +1.97.1 --version > wan-results/rust-version.txt
-          uname -a > wan-results/platform.txt
-          lscpu -J > wan-results/cpu.json
-          cargo +1.97.1 tree --locked --manifest-path crates/spiralcore-transfer/Cargo.toml -e features > wan-results/features.txt
-          printf '%s\n' 'Linux sender: default Cargo features; native sha2 CPU dispatch. Mac receiver build is recorded separately.' > wan-results/build-profile.txt
+          printf '%s\n' 'fresh source build on this runner; default Cargo features; native sha2 CPU dispatch' > wan-results/build-profile.txt
+      - name: Verify the exact producer and artifact before download
+        if: env.SPIRALCORE_WAN_BUILD_RUN != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir build-api
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$SPIRALCORE_WAN_BUILD_RUN" > build-api/run.json
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$SPIRALCORE_WAN_BUILD_RUN/jobs?filter=latest&per_page=100" > build-api/jobs.json
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$SPIRALCORE_WAN_BUILD_ARTIFACT" > build-api/artifact.json
+          for evidence in build-api/run.json build-api/jobs.json build-api/artifact.json; do
+            [[ $(wc -c < "$evidence") -le 2097152 ]] || exit 1
+          done
+          # Trusted GitHub API projections retain only explicit nonsecret evidence.
+          jq -e --slurpfile jobs build-api/jobs.json \
+            'if ($jobs[0].total_count == 1 and ($jobs[0].jobs|length) == 1) then {id,head_sha,run_attempt,path,status,conclusion,repository:.repository.full_name,head_repository:.head_repository.full_name,
+            capture_successes:([$jobs[0].jobs[].steps[] | select(.name == "Qualify the Linux capture lifecycle before any WAN transfer" and .conclusion == "success")]|length),
+            source_build_successes:([$jobs[0].jobs[].steps[] | select(.name == "Validate and build the exact revision" and .conclusion == "success")]|length)} else error("unexpected producer job set") end' \
+            build-api/run.json > wan-results/producer-run.json
+          jq -e '{id,name,size_in_bytes,expired,digest,workflow_run_id:.workflow_run.id,head_sha:.workflow_run.head_sha}' build-api/artifact.json > wan-results/producer-artifact.json
+          target/debug/spiralcore-build-manifest proofs wan-results/expected-build.json wan-results/producer-run.json wan-results/producer-artifact.json wan-results/producer-proof-validation.json
+      - name: Download only the selected immutable sender artifact
+        if: env.SPIRALCORE_WAN_BUILD_RUN != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          # Cap the downloaded file even if the API's declared size is false.
+          (ulimit -f 102400; timeout 120s gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$SPIRALCORE_WAN_BUILD_ARTIFACT/zip" > sender.zip)
+          target/debug/spiralcore-build-manifest archive wan-results/expected-build.json wan-results/producer-run.json wan-results/producer-artifact.json sender.zip wan-results/sender-archive-validation.json
+          umask 077
+          mkdir reused-sender
+          # Fixed output paths and redirection discard archived permissions entirely.
+          for entry in spiralcore-bench spiralcore-capture spiralcore-capture-control manifest.json; do
+            (ulimit -f 32768; unzip -p sender.zip "$entry" > "reused-sender/$entry")
+          done
+      - name: Verify every downloaded byte before enabling execution
+        if: env.SPIRALCORE_WAN_BUILD_RUN != ''
+        run: |
+          set -euo pipefail
+          target/debug/spiralcore-build-manifest verify wan-results/expected-build.json wan-results/producer-run.json wan-results/producer-artifact.json reused-sender wan-results/build-reuse-validation.json
+          cp reused-sender/manifest.json wan-results/producer-build-manifest.json
+          mkdir -p target/release
+          for binary in spiralcore-bench spiralcore-capture spiralcore-capture-control; do
+            cp "reused-sender/$binary" "target/release/$binary"
+            chmod 700 "target/release/$binary"
+          done
+          printf '%s\n' 'reused exact-source producer binaries; producer-build-manifest.json is build provenance; platform.txt/cpu.json/current-rustc.txt describe this consumer runner' > wan-results/build-profile.txt
+      - name: Record sender identities and generate the unchanged shard plan
+        run: |
           sha256sum target/release/spiralcore-bench target/release/spiralcore-capture target/release/spiralcore-capture-control > wan-results/binary-sha256.txt
           if [[ "$SPIRALCORE_WAN_QUALIFY_ONLY" != 1 ]]; then
             suite=()
@@ -83,6 +161,77 @@ jobs:
       - name: Qualify the Linux capture lifecycle before any WAN transfer
         run: |
           target/release/spiralcore-capture-control --qualify wan-results/capture-qualification
+      - name: Record isolated qualification-only source coverage
+        if: env.SPIRALCORE_WAN_QUALIFY_ONLY == '1'
+        shell: bash
+        run: |
+          set -uo pipefail
+          printf '%s\n' release_identity_before > wan-results/coverage-stage.txt
+          if ! sha256sum -c wan-results/binary-sha256.txt > wan-results/release-before-coverage.txt 2>&1; then
+            jq -n '{schema:"spiralcore.source-coverage.v1",stage:"release_identity_before",exit:1,release_unchanged:false}' > wan-results/coverage-status.json
+            exit 1
+          fi
+          set +e
+          (
+            set -euo pipefail
+            printf '%s\n' install_tools > wan-results/coverage-stage.txt
+            rustup component add llvm-tools-preview --toolchain 1.97.1
+            CARGO_TARGET_DIR="$RUNNER_TEMP/coverage-install-target" cargo +1.97.1 install cargo-llvm-cov --version 0.9.1 --locked --root "$RUNNER_TEMP/coverage-tools"
+            export PATH="$RUNNER_TEMP/coverage-tools/bin:$PATH"
+            export CARGO_TARGET_DIR="$RUNNER_TEMP/spiralcore-coverage"
+            export CARGO_LLVM_COV_TARGET_DIR="$CARGO_TARGET_DIR"
+            # Instrumentation variables are confined to this subshell and fresh target.
+            coverage_env=$(cargo +1.97.1 llvm-cov show-env --sh --manifest-path crates/spiralcore-transfer/Cargo.toml)
+            eval "$coverage_env"
+            printf '%s\n' all_target_tests_including_ignored > wan-results/coverage-stage.txt
+            timeout 300s cargo +1.97.1 test --locked --manifest-path crates/spiralcore-transfer/Cargo.toml --all-targets -- --include-ignored
+            printf '%s\n' instrumented_binaries > wan-results/coverage-stage.txt
+            timeout 300s cargo +1.97.1 build --locked --manifest-path crates/spiralcore-transfer/Cargo.toml --bins
+            printf '%s\n' instrumented_capture_qualification > wan-results/coverage-stage.txt
+            timeout 180s "$CARGO_TARGET_DIR/debug/spiralcore-capture-control" --qualify "$GITHUB_WORKSPACE/wan-results/instrumented-capture-qualification"
+            printf '%s\n' coverage_report > wan-results/coverage-stage.txt
+            cargo +1.97.1 llvm-cov report --manifest-path crates/spiralcore-transfer/Cargo.toml --json --summary-only --output-path "$GITHUB_WORKSPACE/wan-results/coverage.json"
+            printf '%s\n' complete > wan-results/coverage-stage.txt
+          )
+          result=$?
+          # Check the release binaries even when instrumentation or qualification failed.
+          unchanged=false
+          if sha256sum -c wan-results/binary-sha256.txt > wan-results/release-after-coverage.txt 2>&1; then
+            unchanged=true
+          else
+            result=1
+          fi
+          jq -n --arg stage "$(cat wan-results/coverage-stage.txt)" --argjson result "$result" --argjson unchanged "$unchanged" \
+            '{schema:"spiralcore.source-coverage.v1",stage:$stage,exit:$result,release_unchanged:$unchanged,coverage_tool:"cargo-llvm-cov 0.9.1",coverage_gate:"report_only",scope:"separate instrumented target; ordinary release capture qualification remains separate"}' > wan-results/coverage-status.json || exit 1
+          exit "$result"
+      - name: Seal the qualification-only sender build
+        if: env.SPIRALCORE_WAN_QUALIFY_ONLY == '1'
+        run: |
+          set -euo pipefail
+          mkdir sender-artifact
+          for binary in spiralcore-bench spiralcore-capture spiralcore-capture-control; do
+            cp "target/release/$binary" "sender-artifact/$binary"
+          done
+          target/debug/spiralcore-build-manifest create wan-results/expected-build.json sender-artifact wan-results/capture-qualification/qualification.json
+          cp sender-artifact/manifest.json wan-results/producer-build-manifest.json
+      - name: Retain the immutable source-qualified sender build
+        if: env.SPIRALCORE_WAN_QUALIFY_ONLY == '1'
+        id: sender_build
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: spiralcore-wan-sender-${{ github.sha }}
+          path: sender-artifact/
+          if-no-files-found: error
+          retention-days: 1
+          compression-level: 0
+      - name: Record producer artifact custody identity
+        if: env.SPIRALCORE_WAN_QUALIFY_ONLY == '1'
+        env:
+          ARTIFACT_ID: ${{ steps.sender_build.outputs.artifact-id }}
+          ARTIFACT_DIGEST: ${{ steps.sender_build.outputs.artifact-digest }}
+        run: |
+          jq -n --argjson id "$ARTIFACT_ID" --arg digest "$ARTIFACT_DIGEST" --arg source "$GITHUB_SHA" --argjson run "$GITHUB_RUN_ID" \
+            '{schema:"spiralcore.sender-artifact-custody.v1",artifact_id:$id,artifact_digest:$digest,source:$source,producer_run:$run,retention_days:1}' > wan-results/sender-artifact-custody.json
       - name: Transfer over the WAN and capture the encrypted runner leg
         if: env.SPIRALCORE_WAN_QUALIFY_ONLY != '1'
         env:
@@ -90,7 +239,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          [[ "$SPIRALCORE_WAN_TOKEN" =~ ^[0-9a-f]{64}$ ]]
+          [[ "$SPIRALCORE_WAN_TOKEN" =~ ^[0-9a-f]{64}$ ]] || exit 1
           host="${SPIRALCORE_WAN_URL#https://}"
           host="${host%/}"
           getent ahostsv4 "$host" > wan-results/relay-addresses.txt
@@ -102,7 +251,7 @@ jobs:
           route="$(ip -4 route get "$relay_ip")"
           interface="$(awk '{for(i=1;i<=NF;i++)if($i=="dev"){print $(i+1);exit}}' <<< "$route")"
           local_ip="$(awk '{for(i=1;i<=NF;i++)if($i=="src"){print $(i+1);exit}}' <<< "$route")"
-          [[ -n "$interface" && -n "$local_ip" ]]
+          [[ -n "$interface" && -n "$local_ip" ]] || exit 1
           printf '%s\n' "$route" > wan-results/capture-route.txt
           sudo ethtool -K "$interface" tso off gso off gro off > wan-results/offload-change.txt 2>&1
           sudo ethtool -k "$interface" > wan-results/offload-state.txt

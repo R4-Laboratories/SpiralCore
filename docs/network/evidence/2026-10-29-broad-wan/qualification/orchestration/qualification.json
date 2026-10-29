@@ -1,0 +1,41 @@
+{
+  "schema": "spiralcore.local-shard-producer-integration.v1",
+  "date": "2026-10-29",
+  "repository_base_revision": "bc8c5722d634a34dddc643c19301ef00064eea84",
+  "scope": "Only producer preflight, per-shard checkpoint and downloaded-evidence validation blocks in the local runner",
+  "script": "/Users/casey.allard/spiralcore/local/broad-wan-20261029/run-shard.sh",
+  "script_sha256": "05fee9bc61ff45a9b68b5d61ce67bb3b1f04e0681f7875d4eb610e6b4bf2db57",
+  "tests_source_sha256": "ac2f7095f20704d944d4d55d07b553cccc36642ce029f4e1e85589dae9048ffb",
+  "tests_executable_sha256": "e0b812941ea4779ae6f6c8010d99facd2a780bc424ae50da325d3b0b389b2447",
+  "red": {
+    "exit_code": 101,
+    "failed_tests": 3,
+    "observed_failures": [
+      "Prior preflight accepted a mismatched mocked repository producer run",
+      "Prior runner did not preserve qualification and producer manifest copies",
+      "Prior download handling accepted a reuse receipt with status failed"
+    ],
+    "earlier_harness_setup_failure": "Missing marked source blocks; retained as setup history, not the behavioral RED claim"
+  },
+  "green": {
+    "test_functions_passed": 3,
+    "synthetic_subprocess_cases": 29,
+    "failed": 0,
+    "exit_code": 0,
+    "bash_syntax_exit_code": 0,
+    "shell": "GNU Bash3.2.57(1)-release, arm64-apple-darwin26"
+  },
+  "contract": {
+    "qualification_file": "qualification/linux-qualified.json",
+    "manifest_file": "qualification/producer-build-manifest.json",
+    "ids": "Canonical positive decimal strings up to18digits, or exact safe integer JSON numbers; both repository BUILD variables must match",
+    "digest": "sha256: followed by64 lowercase hex digits",
+    "before_resources": "Bounded regular nonsymlink qualification/manifest inputs, passed matching source, matching producer run/attempt and qualification, matching repository build pins",
+    "per_shard": "Preserve exact qualification and frozen manifest copies with SHA256 equality checks",
+    "after_download": "Reuse, proof and archive status/schema/source/run/artifact/digest/size consistency; manifest equality against frozen producer before publication-cache verification or removal"
+  },
+  "independent_source_review": "PENDING",
+  "no_wan_execution": true,
+  "no_real_gh_calls_in_tests": true,
+  "no_credentials_or_origins_created": true
+}

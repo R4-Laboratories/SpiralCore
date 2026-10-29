@@ -1,0 +1,56 @@
+{
+  "schema": "spiralcore.capture-linux-repair.v1",
+  "date": "2026-10-29",
+  "failed_attempt": {
+    "github_run": 40936471396,
+    "source": "c58efe2970219f38f5ebfac2eb9eec165c29baa7",
+    "tools": {
+      "tcpdump": "4.99.4",
+      "libpcap": "1.10.4"
+    },
+    "artifacts": "qualification/linux-attempt-1",
+    "ready_elapsed_millis": 163,
+    "client_started": false,
+    "wan_ran": false,
+    "controller_error": "missing, partial, duplicate or invalid statistics sample",
+    "masked_cli_error": "fixture accept timeout",
+    "cause": "SIGUSR1 uses tcpdump's single inline comma-separated statistics form; implementation parsed only the shutdown three-line form."
+  },
+  "evidence": "Retained final_snapshot.stderr_text contains the unconsumed inline sample followed by shutdown counters; failed attempt artifacts unchanged.",
+  "repair": {
+    "scope": [
+      "src/capture_lifecycle.rs",
+      "src/bin/spiralcore-capture-control.rs"
+    ],
+    "intermediate": "Exact bounded inline sample parsing (and distinct complete three-line samples), rejecting repeated, partial or mixed text.",
+    "final": "Only independent three-line counter suffix is accepted; leftover inline/sample text rejects.",
+    "diagnostics": "Surface capture setup result before waiting for synthetic fixture server accept timeout."
+  },
+  "red": {
+    "command": "/Users/casey.allard/.cargo/bin/cargo test --locked --manifest-path crates/spiralcore-transfer/Cargo.toml --bin spiralcore-capture-control linux_tcpdump_inline_usr1",
+    "exit": 101,
+    "passed": 0,
+    "failed": 1,
+    "reason": "Observed exact Linux sample rejected as incomplete counter block."
+  },
+  "green": {
+    "command": "/Users/casey.allard/.cargo/bin/cargo test --locked --manifest-path crates/spiralcore-transfer/Cargo.toml --bin spiralcore-capture --bin spiralcore-capture-control",
+    "exit": 0,
+    "parser_passed": 26,
+    "controller_passed": 7,
+    "failed": 0,
+    "note": "Five shared lifecycle tests run in each binary;33 executions/28 distinct functions.",
+    "clippy_command": "/Users/casey.allard/.cargo/bin/cargo clippy --locked --manifest-path crates/spiralcore-transfer/Cargo.toml --bin spiralcore-capture --bin spiralcore-capture-control -- -D warnings",
+    "clippy_exit": 0
+  },
+  "source_hashes": {
+    "src/capture_lifecycle.rs": "a7ac530994ae2369a6b27a0654d2063477d820df37003dd9221d4c5dde34017d",
+    "src/bin/spiralcore-capture-control.rs": "4d636cfbf2b5f628bcdd99e33caf550e1c51452c30aa70274e0fcfd80f3706c1"
+  },
+  "limitations": [
+    "Repaired Linux live qualification still requires a new exact-source run.",
+    "Original failed source/artifacts and historical shard2 +3 discrepancy remain unchanged.",
+    "Legacy packet-accounting parser file is unchanged by this repair; prior byte-identical historical replay is preserved, not represented as rerun."
+  ],
+  "coordination": "Targeted compilation completed before profiler timing authorization; subsequent local builds/tests held."
+}

@@ -18,7 +18,7 @@ Use Rust 1.97.1, the compiler pinned in the test workflow:
 cargo +1.97.1 build --release --locked --manifest-path crates/spiralcore-transfer/Cargo.toml --bins
 ```
 
-The binaries are `spiralcore-wan` (temporary receiver), `spiralcore-bench` (plan/run/verify/summarize) and `spiralcore-capture` (packet accounting). The `spiralcore` loopback CLI also supports explicit sparse sends; its frame exchanges remain sequential.
+The binaries are `spiralcore-wan` (temporary receiver), `spiralcore-bench` (plan/run/verify/summarize), `spiralcore-capture` (packet accounting) and `spiralcore-capture-control` (Linux capture lifecycle and qualification). The `spiralcore` loopback CLI also supports explicit sparse sends; its frame exchanges remain sequential.
 
 For every campaign, generate a new random 64-character lowercase hexadecimal run ID and a separate random 256-bit capability. Keep the capability in a private file/environment variable named `SPIRALCORE_WAN_TOKEN`; never put it in the URL, command line or a tracked file. Create a plan with `spiralcore-bench plan --run RUN_HEX --trials 1 --out plan.json`. Use one trial for connectivity and thirty for the paired campaign. Plan outputs are exclusive and never overwritten.
 
@@ -32,8 +32,9 @@ Start `spiralcore-wan serve --cache NEW_CACHE --plan plan.json --bind 127.0.0.1:
 - `SPIRALCORE_WAN_URL`: the current HTTPS trycloudflare.com URL.
 - `SPIRALCORE_WAN_RUN`: the same run ID used to generate the receiver plan.
 - `SPIRALCORE_WAN_TRIALS`: 1 or 30, matching the receiver plan.
-- `SPIRALCORE_WAN_SUITE`: `efficient-warm`, `efficient-prefix`, or `large16-localized` on `codex/spiralcore-efficient`; leave absent for the legacy WAN branch.
-- `SPIRALCORE_WAN_SHARD`: `0`, `1`, or `2` for `large16-localized`, which requires thirty global trials. Leave absent for other suites.
+- `SPIRALCORE_WAN_SUITE`: `efficient-warm`, `efficient-prefix`, `large16-localized`, or a registered `broad16-*` case on `codex/spiralcore-efficient`; leave absent for the legacy WAN branch.
+- `SPIRALCORE_WAN_SHARD`: `0..2` for `large16-localized` or `0..4` for `broad16-*`; both require thirty global trials. Leave absent for the other suites.
+- `SPIRALCORE_WAN_QUALIFY_ONLY`: set to `1` for a source-pinned Linux build/test/capture-qualification job with no WAN transfer. URL, run ID, trial count, suite and shard variables must all be absent. Omit this variable for measured campaigns.
 
 The separate Actions secret `SPIRALCORE_WAN_TOKEN` contains the capability. Configure it from the private local file, not a shell literal. The workflow executes only reviewed repository code, grants read-only repository permissions and pins external actions. Triggering another campaign requires a new run ID, capability, empty receiver cache and source pin. Automatic retries are deliberately excluded.
 
@@ -72,6 +73,22 @@ cache, namespace, resident-memory or HTTP-batch limit.
 
 After the larger campaign, remove `SPIRALCORE_WAN_SHARD` along with the other
 temporary variables and capability. Retain each shard's plan and receipts.
+
+The v4 `broad16-*` matrix compares raw, ordinary zstd, zstd prefix and sparse at
+16 MiB-class lengths. It disables optional raw/zstd DAG warming equally at the
+receiver. There are twelve registered cases and five fresh-cache shards per case,
+with six global trials per shard. Warm cases seed each arm separately; cold cases
+do not. Insertions/appends start with shorter bases so the target stays within
+16 MiB. See the [exact registered schedule](../plans/2026-10-29-broader-wan-and-scaling.md#registered-broad16-workload-schedule)
+for fixture definitions, resource bounds, ordering and cleanup policy. This is a
+new comparison profile; do not merge its results with the eager-warming v3 rows.
+
+New captures require the lifecycle receipt as well as the packet parser's existing
+checks. The supervisor verifies readiness, counter stability and bounded shutdown,
+and separately records intermediate samples and final counters. Quiet samples are
+not proof of a drained network. Before new WAN measurements, the exact Linux build
+must pass live normal, interrupted and continuing-traffic qualification cases.
+See the [capture investigation and contract](capture-lifecycle-decision.md).
 
 Efficiency arms compare raw, zstd, ordinary exact-object cache reuse, current full-fold DAG sends,
 retained prepared DAG updates and sparse recipes as applicable. Prepared sender base construction is
