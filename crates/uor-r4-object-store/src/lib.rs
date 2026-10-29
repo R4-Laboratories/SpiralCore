@@ -15,7 +15,7 @@ pub use peer::{
 pub use record::Record;
 use std::fmt;
 pub use store::{
-    FoldStats, Folded, ImportStats, RangeVerifiedAgainstRoot, ReadStats, Store,
+    FoldStats, Folded, ImportStats, RangeVerifiedAgainstRoot, ReadStats, Store, StoreWriter,
     WholeObjectDigestVerified,
 };
 pub type NodeId = [u8; 12];

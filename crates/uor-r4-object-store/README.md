@@ -11,8 +11,26 @@ cargo build --release --locked --manifest-path crates/uor-r4-object-store/Cargo.
 OBJPEER="$PWD/target/release/objpeer" bash crates/uor-r4-object-store/tools/fleet_maintenance.sh
 ```
 
-Commands run from the repository root. The example performs byte/data-structure work and optionally accepts an output path to exercise save/restart. The fleet helper starts only loopback listeners and removes its temporary files. Legacy helpers use ordinary shell tools and Python 3 for timing/JSON assertions; the crate and its test vectors do not require Python.
+Commands run from the repository root with Rust 1.89 or newer. The example performs byte/data-structure work and optionally accepts an output path to exercise save/restart. The fleet helper starts only loopback listeners and removes its temporary files. Legacy helpers use ordinary shell tools and Python 3 for timing/JSON assertions; the crate and its test vectors do not require Python.
 
 The extraction excludes tokenizer bindings, model consumers, CUDA and training machinery. Dependencies are SHA-256 and test-only JSON parsing. See [protocol](PROTOCOL.md), [fixture provenance](tests/fixtures/README.md), [MIT license](LICENSE), and [import identities](../../docs/provenance/object-store-import.json).
 
 The [delivery record](../../docs/network/delivery.md) distinguishes compatibility import, subsequent hardening, the new mailbox profile, and unrun MVM/WAN acceptance. No historical timing is presented as a fresh result.
+
+Peer pulls stage immutable records and validate the full cached/staged closure, declared scales,
+canonical padding, exact length and whole-object digest before committing records. Cached parents are
+traversed, so an evicted child is fetched again. Framing rejects partial headers/bodies and nonempty
+DONE. `PeerLimits` offers separate message, staged-count/bytes, cumulative-work, request and in-flight
+budgets; existing public APIs and default storage limits remain available.
+
+For a read/modify/save lifecycle, acquire `StoreWriter::open(path)` before loading and keep the guard
+until saving finishes. `Store::save(path)` provides ownership for that save alone. Saves stream to an
+owned temporary file, sync it, atomically replace the canonical snapshot, and sync the directory.
+The persistent `.uor-lock` sidecar must not be unlinked. Restart validates the canonical snapshot and
+ignores abandoned temporary files. This is cooperative local ownership in a trusted directory. Crash-durability assumes its directory
+ancestry was durably provisioned; CLI-created ancestors are not individually synced.
+
+Legacy DONE acknowledges a verified in-memory commit. Disk persistence is separate, and a failed DONE
+write can leave a valid committed cache with uncertain peer receipt. A directory-sync error after
+rename likewise requires reconciliation; neither error is silently described as a rolled-back commit.
+These semantics are distinct from the new authenticated object-transfer profile.

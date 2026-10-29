@@ -37,7 +37,7 @@ node_id(scale, payload) is a BLAKE2b variant with a 12-byte digest over a 128-by
     H[i] = h[i] ^ v[i] ^ v[i+8]          for i in 0..8
     id = little-endian(H[0]) (8 bytes) || first 4 bytes of little-endian(H[1])
 
-IV and SIG (sigma) are the standard BLAKE2b constants. The digest length is 12 bytes and the fanout
+IV and SIG (sigma) are the standard BLAKE2b constants. The digest length is 12 bytes and the digest-length
 byte in h[0] is 0x0c; the custom counter and padding are the compatibility-critical details. A port
 must reproduce this function exactly, or ids will not match existing stores.
 
@@ -87,16 +87,20 @@ An unknown selector receives ERROR and the session stays open; the client report
 2. Read MANIFEST; decode and validate it. If the caller supplied ExpectedObject pins (native length,
    manifest version and/or whole-object SHA-256), every supplied pin must match or the pull fails with
    BindingMismatch before any record is fetched.
-3. Compute the missing frontier: walk the manifest roots, skip nodes already in the local store, stop
-   at nodes that are missing locally without descending, deduplicate ids. Request missing ids in
+3. Compute the missing frontier: walk the manifest roots through both cached and staged records,
+   checking each expected child scale. A cached parent does not imply its descendants are present.
+   Stop at absent nodes without descending; deduplicate ids. Request missing ids in
    FETCH batches derived from the store's limits (the reference client defaults to 4096; `objpeer
    pull --batch N` raises it up to the frame count cap of 65535); every response must contain exactly the
    requested ids, in order, with no duplicates and no trailing bytes.
 4. Stage records in memory (do not import yet), recompute the missing frontier, repeat until none.
-5. Assemble the object from the store plus staged records, concatenate leaf payloads in frontier order,
-   trim to the manifest length, compute SHA-256 and compare with the manifest value.
-6. Only after the digest matches, import all staged records atomically and send DONE. A failed pull
-   must leave the store unchanged.
+5. Reconstruct from the cached/staged overlay with the strict store walker. Validate expected scales,
+   exact declared length, canonical zero padding in the final leaf, and whole-object SHA-256 before
+   publishing any staged record.
+6. Validate retained-store quotas and move all staged records into the store atomically, then send
+   DONE. Validation, decoding and budget failures leave the store unchanged. A DONE write failure can
+   occur after a valid in-memory commit; the caller must reconcile that uncertain receipt. DONE does
+   not claim persistence, mailbox delivery, or application processing. Durable save is a separate step.
 
 ## 7. Client flow: verify and verify_series
 
@@ -118,11 +122,27 @@ and imported before the next. Store load/save is the caller's cost, not the prot
 
 ## 9. Server behavior
 
-serve(store, manifest) is serve_many(store, [manifest]) with one entry. serve_many precomputes the
-closure of each manifest, then loops: a MANIFEST_REQUEST selects an object (empty body = first), a FETCH
-is answered only for ids in the selected object's closure, DONE returns normally, EOF also returns
-normally, and any schema violation terminates the session with an error. Request count, served bytes
-and per-message size are bounded by Limits.
+serve(store, manifest) is serve_many(store, [manifest]) with one entry. A MANIFEST_REQUEST selects an
+object (empty body = first). The server validates and retains only the selected object's closure,
+replacing it when selection changes. FETCH is answered only for ids in that closure. Empty-body DONE
+and EOF at a frame boundary end the session; a partial header/body or nonempty DONE is an error.
+
+`PeerLimits` separates maximum message-body bytes, staged record count, staged serialized bytes,
+cumulative traversal/decoding work, request count, and in-flight response bytes. The configured entry
+points are `pull_selected_with_limits` and `serve_many_with_limits`. Legacy APIs derive peer defaults
+from the store limits: message bodies <= min(64 MiB, max_record_bytes), staged count/bytes <= storage
+count/bytes, work <= 64 * max_visits (saturating), requests <= max_visits, and in-flight responses <=
+8 MiB. A client reduces batch/window sizes to fit message and in-flight limits. Pending FETCH request
+bytes are bounded by max(256 KiB, one bounded FETCH frame); an explicit large batch remains compatible
+and uses a window of one when its frame alone exceeds 256 KiB. Per-transfer discovery work is cumulative across rounds;
+strict reconstruction uses the remaining work budget. The server budgets total served records/bytes
+and requests per session. A request means MANIFEST_REQUEST or FETCH; terminal DONE is excluded
+from both client and server request counts. Pull-series commits each object separately with its own transfer budget;
+series length is bounded before allocating results. Serialized byte quotas are not RSS estimates.
+
+All allocations based on network lengths are capped before allocating the body, and staged-map
+count/bytes are checked before insertion. Full-object reconstruction/output and retained-store limits
+remain independent. No limit implies authority to read an object.
 
 Default Limits: max_object_bytes 16 MiB, max_records 1,000,000, max_record_bytes 64 MiB,
 max_returned_bytes 16 MiB, max_visits 1,000,000, max_occurrences 1,000,000. The product CLI raises
@@ -153,7 +173,7 @@ fetch and imports are atomic, so a wrong/stale peer cannot corrupt a store under
 - Keep the DAG dedupe rule: identical subtrees share ids; request each missing id once.
 - Stage records, verify the object digest, then import atomically; never expose partial pulls.
 - Correlate NODES count and ids to the request; reject duplicates and leftover bytes.
-- Treat DONE/EOF as clean session ends; ERROR is per-selector for unknown objects.
+- Accept only empty DONE or frame-boundary EOF as clean session ends; ERROR is per-selector for unknown objects.
 - Do not add a version field to the frame in v1; new capabilities use new kinds or selector bodies.
 
 ## 13. Reference files
@@ -164,3 +184,33 @@ fetch and imports are atomic, so a wrong/stale peer cannot corrupt a store under
     crates/uor-r4-object-store/src/hash.rs      custom BLAKE2b-96 node id
     crates/uor-r4-object-store/src/store.rs     fold, missing, rebuild, import, persistence
     crates/uor-r4-object-store/src/bin/objpeer.rs  product CLI (info/serve/pull/verify/sync)
+
+## Snapshot ownership and recovery
+
+`Store::save` acquires one-operation exclusive advisory ownership on a persistent `<snapshot>.uor-lock`
+sidecar. `StoreWriter::open` holds that ownership across load/modify/save; the CLI uses this lifecycle
+for mutations and releases it before serving its immutable in-memory snapshot. Locks are nonblocking:
+a live owner produces a typed `Io { kind: WouldBlock, .. }`. The OS releases ownership on process exit,
+even if Rust destructors do not run. Never unlink the sidecar while another process may use the path.
+A trusted caller-controlled directory is required; advisory locking does not resist hostile filesystem
+mutation. Rust 1.89 or newer is required for standard-library file locking.
+
+Saving streams records to an exclusively created temporary file in the same directory, syncs the file,
+renames it onto the canonical snapshot, then syncs the parent directory. Success requires every step.
+Errors before rename leave the old snapshot intact. If directory sync fails after rename, the new
+snapshot may be visible: re-open and validate the canonical file before deciding to retry. Filesystems
+must support the required locking, atomic same-directory replacement and directory sync semantics.
+Crash-durability also assumes the snapshot directory and its ancestors were already durably provisioned;
+the CLI may create missing directories, but does not sync every newly created ancestor entry. Such new
+directory ancestry requires separate provisioning before making a power-loss durability claim. All
+errors are propagated, never converted into a durable-success claim.
+
+Recovery loads and validates only the canonical snapshot. Abandoned temporary files are ignored and
+never automatically promoted or deleted. The owner may inspect/remove stale temporary files under its
+separate cleanup policy. The current tests exercise live-owner exclusion, process-exit release,
+canonical restart, malformed-load atomicity and abandoned-temp handling. They do not simulate power
+loss or establish physical-media durability beyond the OS/filesystem sync contract.
+
+The CLI `join` command folds the same in-memory buffer whose SHA-256 and optional length passed its
+caller-supplied pins. It never reopens the source path between pin validation and folding, including
+for one-pass input such as `/dev/stdin`.

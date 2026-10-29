@@ -127,6 +127,46 @@ fn packaged_cli_info_folds_an_artifact() {
     assert!(stdout.contains("records="), "{}", stdout);
 }
 
+#[cfg(unix)]
+#[test]
+fn packaged_cli_join_folds_the_exact_bytes_that_passed_its_pin() {
+    use sha2::{Digest, Sha256};
+    let dir = tmp_dir("join-read-once");
+    let payload = b"one-pass pinned artifact\0\0";
+    let digest: String = Sha256::digest(payload)
+        .iter()
+        .map(|b| format!("{b:02x}"))
+        .collect();
+    let path = dir.join("store");
+    let mut child = Command::new(env!("CARGO_BIN_EXE_objpeer"))
+        .args([
+            "join",
+            "--object",
+            "/dev/stdin",
+            "--expect-sha256",
+            &digest,
+            "--store",
+        ])
+        .arg(&path)
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .unwrap();
+    child.stdin.take().unwrap().write_all(payload).unwrap();
+    let output = child.wait_with_output().unwrap();
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let mut expected = Store::new(Limits::default());
+    let manifest = expected.fold(payload).unwrap().manifest;
+    let mut actual = Store::new(Limits::default());
+    actual.load(&path).unwrap();
+    assert_eq!(actual.rebuild(&manifest).unwrap().bytes(), payload);
+}
+
 #[test]
 fn packaged_cli_enforces_a_whole_sha256_pin() {
     use sha2::{Digest, Sha256};

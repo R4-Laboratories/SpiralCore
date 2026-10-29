@@ -7,7 +7,7 @@ use std::{
     fs::{self, File, OpenOptions},
     io::{Read, Write},
     ops::Range,
-    path::Path,
+    path::{Path, PathBuf},
     sync::atomic::{AtomicU64, Ordering},
 };
 
@@ -347,7 +347,15 @@ impl Store {
         })
     }
     pub fn rebuild(&self, manifest: &Manifest) -> Result<WholeObjectDigestVerified> {
-        let result = self.range(manifest, 0..manifest.byte_len())?;
+        Self::rebuild_from(self, manifest, &self.limits)
+    }
+    /// Strict reconstruction from a validated record overlay, without publishing its records.
+    pub fn rebuild_from<B: RecordBackend>(
+        backend: &B,
+        manifest: &Manifest,
+        limits: &Limits,
+    ) -> Result<WholeObjectDigestVerified> {
+        let result = Self::range_from(backend, manifest, 0..manifest.byte_len(), limits)?;
         let digest: [u8; 32] = Sha256::digest(result.bytes()).into();
         if digest != manifest.whole_sha256() {
             return Err(Error::IntegrityFailure);
@@ -360,22 +368,30 @@ impl Store {
     }
     /// Currently discoverable missing frontier; descendants of absent parents are unknown.
     pub fn missing(&self, manifest: &Manifest) -> Result<Vec<NodeId>> {
-        manifest.validate(&self.limits)?;
+        Self::missing_from(self, manifest, &self.limits, &mut 0)
+    }
+    pub(crate) fn missing_from<B: RecordBackend>(
+        backend: &B,
+        manifest: &Manifest,
+        limits: &Limits,
+        visits: &mut usize,
+    ) -> Result<Vec<NodeId>> {
+        manifest.validate(limits)?;
         let mut seen = BTreeMap::new();
         let mut missing = BTreeSet::new();
-        let mut visits = 0;
-        fn visit(
-            store: &Store,
+        fn visit<B: RecordBackend>(
+            backend: &B,
             id: NodeId,
             scale: u8,
             seen: &mut BTreeMap<NodeId, u8>,
             missing: &mut BTreeSet<NodeId>,
             visits: &mut usize,
+            limits: &Limits,
         ) -> Result<()> {
             *visits = visits
                 .checked_add(1)
                 .ok_or(Error::LimitExceeded("visits"))?;
-            if *visits > store.limits.max_visits {
+            if *visits > limits.max_visits {
                 return Err(Error::LimitExceeded("visits"));
             }
             if let Some(previous) = seen.get(&id) {
@@ -385,8 +401,11 @@ impl Store {
                     Err(Error::SchemaMismatch)
                 };
             }
+            if seen.len() >= limits.max_records {
+                return Err(Error::LimitExceeded("closure records"));
+            }
             seen.insert(id, scale);
-            match store.fetch(id)? {
+            match backend.fetch(id)? {
                 None => {
                     missing.insert(id);
                 }
@@ -396,7 +415,7 @@ impl Store {
                     }
                     if scale > 0 {
                         for child in r.children()? {
-                            visit(store, child, scale - 1, seen, missing, visits)?;
+                            visit(backend, child, scale - 1, seen, missing, visits, limits)?;
                         }
                     }
                 }
@@ -404,36 +423,46 @@ impl Store {
             Ok(())
         }
         for &(id, scale) in manifest.roots() {
-            visit(self, id, scale, &mut seen, &mut missing, &mut visits)?;
+            visit(backend, id, scale, &mut seen, &mut missing, visits, limits)?;
         }
         Ok(missing.into_iter().collect())
     }
-    /// Atomic replacement after validation and sync. Concurrent writers and crash durability
-    /// across directory metadata loss are not guaranteed by this prototype.
-    pub fn save(&self, path: impl AsRef<Path>) -> Result<()> {
-        static SEQ: AtomicU64 = AtomicU64::new(0);
-        let bytes = self.export_records()?;
-        let path = path.as_ref();
-        let name = path.file_name().ok_or(Error::SchemaMismatch)?;
-        let mut tmp_name = name.to_os_string();
-        tmp_name.push(format!(
-            ".uor-tmp-{}-{}",
-            std::process::id(),
-            SEQ.fetch_add(1, Ordering::Relaxed)
-        ));
-        let tmp = path.with_file_name(tmp_name);
-        let mut file = OpenOptions::new().write(true).create_new(true).open(&tmp)?;
-        let result = (|| -> Result<()> {
-            file.write_all(&bytes)?;
-            file.sync_all()?;
-            drop(file);
-            fs::rename(&tmp, path)?;
-            Ok(())
-        })();
-        if result.is_err() {
-            let _ = fs::remove_file(&tmp);
+    /// Validate the entire pending map before moving records into the store. The caller must
+    /// separately validate the object's manifest, shape, padding and whole-object digest.
+    pub(crate) fn commit_staged(&mut self, mut pending: BTreeMap<NodeId, Record>) -> Result<()> {
+        let mut count = self.records.len();
+        let mut bytes = self.wire_bytes;
+        for (id, record) in &pending {
+            if let Some(existing) = self.records.get(id) {
+                if existing != record {
+                    return Err(Error::IntegrityFailure);
+                }
+            } else {
+                count = count
+                    .checked_add(1)
+                    .ok_or(Error::LimitExceeded("records"))?;
+                bytes = bytes
+                    .checked_add(record.wire_len())
+                    .ok_or(Error::LimitExceeded("record bytes"))?;
+                if count > self.limits.max_records {
+                    return Err(Error::LimitExceeded("records"));
+                }
+                if bytes > self.limits.max_record_bytes {
+                    return Err(Error::LimitExceeded("record bytes"));
+                }
+            }
         }
-        result
+        self.records.append(&mut pending);
+        self.wire_bytes = bytes;
+        Ok(())
+    }
+    /// Atomically replace a snapshot under one-operation writer ownership, then sync its parent
+    /// directory. To exclude stale read/modify/write cycles, acquire `StoreWriter` before loading.
+    /// An error after rename may mean the new snapshot is visible but directory sync failed; callers
+    /// must re-open and validate the canonical snapshot before retrying. Temporary files are never
+    /// automatically promoted during recovery.
+    pub fn save(&self, path: impl AsRef<Path>) -> Result<()> {
+        StoreWriter::open(path)?.save(self)
     }
     pub fn load(&mut self, path: impl AsRef<Path>) -> Result<ImportStats> {
         let mut file = File::open(path)?;
@@ -453,6 +482,87 @@ impl Store {
         self.import_records(&bytes)
     }
 }
+/// Exclusive cooperative ownership of a canonical snapshot path for a load/modify/save lifecycle.
+/// The OS releases the advisory lock on drop or process exit. Keep the persistent `.uor-lock`
+/// sidecar: unlinking it would allow two processes to lock different inodes for the same snapshot.
+/// The directory must be controlled by the caller; this is not a defense against hostile filesystem
+/// mutations. Recovery reads only the canonical snapshot and ignores any abandoned temporary files.
+#[derive(Debug)]
+pub struct StoreWriter {
+    path: PathBuf,
+    _lock: File,
+    directory: File,
+}
+impl StoreWriter {
+    pub fn open(path: impl AsRef<Path>) -> Result<Self> {
+        let path = path.as_ref();
+        let name = path.file_name().ok_or(Error::SchemaMismatch)?;
+        let parent = path
+            .parent()
+            .filter(|p| !p.as_os_str().is_empty())
+            .unwrap_or(Path::new("."));
+        let parent = fs::canonicalize(parent)?;
+        let path = parent.join(name);
+        let directory = File::open(&parent)?;
+        let mut lock_name = name.to_os_string();
+        lock_name.push(".uor-lock");
+        let lock = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .create(true)
+            .truncate(false)
+            .open(parent.join(lock_name))?;
+        lock.try_lock().map_err(|error| match error {
+            std::fs::TryLockError::WouldBlock => {
+                Error::from(std::io::Error::from(std::io::ErrorKind::WouldBlock))
+            }
+            std::fs::TryLockError::Error(error) => Error::from(error),
+        })?;
+        Ok(Self {
+            path,
+            _lock: lock,
+            directory,
+        })
+    }
+    /// Read only the last canonical snapshot; absence remains a typed NotFound error.
+    pub fn load(&self, limits: Limits) -> Result<Store> {
+        let mut store = Store::new(limits);
+        store.load(&self.path)?;
+        Ok(store)
+    }
+    /// Stream records to an owned temporary file, sync it, publish by rename, then sync the parent.
+    /// No second full serialized-store buffer is allocated. Success means all sync operations passed.
+    pub fn save(&mut self, store: &Store) -> Result<()> {
+        static SEQ: AtomicU64 = AtomicU64::new(0);
+        let mut tmp_name = self
+            .path
+            .file_name()
+            .ok_or(Error::SchemaMismatch)?
+            .to_os_string();
+        tmp_name.push(format!(
+            ".uor-tmp-{}-{}",
+            std::process::id(),
+            SEQ.fetch_add(1, Ordering::Relaxed)
+        ));
+        let tmp = self.path.with_file_name(tmp_name);
+        let mut file = OpenOptions::new().write(true).create_new(true).open(&tmp)?;
+        let result = (|| -> Result<()> {
+            for record in store.records.values() {
+                file.write_all(&record.encode())?;
+            }
+            file.sync_all()?;
+            drop(file);
+            fs::rename(&tmp, &self.path)?;
+            self.directory.sync_all()?;
+            Ok(())
+        })();
+        if result.is_err() {
+            let _ = fs::remove_file(&tmp);
+        }
+        result
+    }
+}
+
 struct Walk<'a, B> {
     backend: &'a B,
     manifest: &'a Manifest,

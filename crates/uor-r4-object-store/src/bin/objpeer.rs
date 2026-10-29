@@ -12,7 +12,7 @@ use std::path::Path;
 use std::thread;
 
 use sha2::{Digest, Sha256};
-use uor_r4_object_store::{peer, Error, ExpectedObject, Limits, Manifest, Store};
+use uor_r4_object_store::{peer, Error, ExpectedObject, Limits, Manifest, Store, StoreWriter};
 
 fn limits() -> Limits {
     Limits {
@@ -72,25 +72,30 @@ impl<S: Write> Write for Counted<S> {
     }
 }
 
-fn load_store(path: &str) -> Store {
-    let mut store = Store::new(limits());
-    if Path::new(path).exists() {
-        store
-            .load(path)
-            .unwrap_or_else(|e| die(&format!("load store {}: {:?}", path, e)));
+fn load_store(path: &str) -> (Store, StoreWriter) {
+    if let Some(parent) = Path::new(path)
+        .parent()
+        .filter(|p| !p.as_os_str().is_empty())
+    {
+        fs::create_dir_all(parent).unwrap_or_else(|e| die(&format!("create store directory: {e}")));
     }
-    store
+    let owner =
+        StoreWriter::open(path).unwrap_or_else(|e| die(&format!("own store {path}: {e:?}")));
+    let store = match owner.load(limits()) {
+        Ok(store) => store,
+        Err(Error::Io {
+            kind: std::io::ErrorKind::NotFound,
+            ..
+        }) => Store::new(limits()),
+        Err(error) => die(&format!("load store {path}: {error:?}")),
+    };
+    (store, owner)
 }
 
-fn save_store(store: &Store, path: &str) {
-    if let Some(parent) = Path::new(path).parent() {
-        if !parent.as_os_str().is_empty() {
-            fs::create_dir_all(parent).ok();
-        }
-    }
-    store
-        .save(path)
-        .unwrap_or_else(|e| die(&format!("save store {}: {:?}", path, e)));
+fn save_store(store: &Store, owner: &mut StoreWriter) {
+    owner
+        .save(store)
+        .unwrap_or_else(|e| die(&format!("save owned store: {e:?}")));
 }
 
 fn fold_file(store: &mut Store, path: &str) -> Manifest {
@@ -221,9 +226,14 @@ fn main() {
                     die("join: BindingMismatch (object length does not match --expect-bytes)");
                 }
             }
-            let mut store = load_store(&store_path);
-            let manifest = fold_file(&mut store, &object);
-            save_store(&store, &store_path);
+            let (mut store, mut store_owner) = load_store(&store_path);
+            // Bind publication to the very buffer whose digest/length passed the caller's pins.
+            // Reopening the path could read changed bytes (or EOF for a one-pass stream).
+            let manifest = store
+                .fold(&bytes)
+                .unwrap_or_else(|e| die(&format!("fold pinned object {object}: {e:?}")))
+                .manifest;
+            save_store(&store, &mut store_owner);
             let millis = started.elapsed().as_millis();
             if json {
                 println!(
@@ -252,9 +262,9 @@ fn main() {
                 .first()
                 .cloned()
                 .unwrap_or_else(|| die("info requires --object"));
-            let mut store = load_store(&store_path);
+            let (mut store, mut store_owner) = load_store(&store_path);
             let manifest = fold_file(&mut store, &object);
-            save_store(&store, &store_path);
+            save_store(&store, &mut store_owner);
             println!(
                 "INFO object_bytes={} roots={} records={} sha256={}",
                 manifest.byte_len(),
@@ -267,12 +277,13 @@ fn main() {
             if objects.is_empty() {
                 die("serve requires at least one --object");
             }
-            let mut store = load_store(&store_path);
+            let (mut store, mut store_owner) = load_store(&store_path);
             let mut manifests = Vec::new();
             for path in &objects {
                 manifests.push(fold_file(&mut store, path));
             }
-            save_store(&store, &store_path);
+            save_store(&store, &mut store_owner);
+            drop(store_owner);
             let listener =
                 TcpListener::bind(&bind).unwrap_or_else(|e| die(&format!("bind {}: {}", bind, e)));
             println!(
@@ -331,7 +342,7 @@ fn main() {
             if addrs.is_empty() || targets.is_empty() || out_dir.is_empty() {
                 die("sync requires --addr, --targets and --out-dir");
             }
-            let mut store = load_store(&store_path);
+            let (mut store, mut store_owner) = load_store(&store_path);
             if !have.is_empty() {
                 fold_file(&mut store, &have);
             }
@@ -439,7 +450,7 @@ fn main() {
                     );
                 }
             }
-            save_store(&store, &store_path);
+            save_store(&store, &mut store_owner);
             if json {
                 println!(
                     "{{\"artifacts\":{},\"nodes\":{},\"record_bytes\":{},\"wire_bytes\":{},\"replica\":\"{}\",\"output_dir\":\"{}\"}}",
@@ -465,7 +476,7 @@ fn main() {
             if addrs.is_empty() {
                 die("verify requires --addr");
             }
-            let mut store = load_store(&store_path);
+            let (mut store, _store_owner) = load_store(&store_path);
             if !have.is_empty() {
                 fold_file(&mut store, &have);
             }
@@ -736,7 +747,7 @@ fn main() {
             if addrs.is_empty() || targets.is_empty() {
                 die("repair requires at least one --addr and --targets");
             }
-            let mut store = load_store(&store_path);
+            let (mut store, mut store_owner) = load_store(&store_path);
             if !have.is_empty() {
                 fold_file(&mut store, &have);
             }
@@ -897,7 +908,7 @@ fn main() {
                     failed += indexes.len();
                 }
             }
-            save_store(&store, &store_path);
+            save_store(&store, &mut store_owner);
             let repaired = results
                 .iter()
                 .filter(|(status, _)| *status == RepairStatus::Repaired)
@@ -971,11 +982,11 @@ fn main() {
             if addr.is_empty() || out.is_empty() {
                 die("pull requires --addr and --out");
             }
-            let mut store = load_store(&store_path);
+            let (mut store, mut store_owner) = load_store(&store_path);
             if !have.is_empty() {
                 fold_file(&mut store, &have);
             }
-            save_store(&store, &store_path);
+            save_store(&store, &mut store_owner);
             let expected =
                 if expect_sha.is_none() && expect_version.is_none() && expect_bytes.is_none() {
                     None
@@ -1031,7 +1042,7 @@ fn main() {
                     Err(error) => die(&format!("pull: {:?}", error)),
                 }
             };
-            save_store(&store, &store_path);
+            save_store(&store, &mut store_owner);
             let verified = store
                 .rebuild(&manifest)
                 .unwrap_or_else(|e| die(&format!("rebuild: {:?}", e)));

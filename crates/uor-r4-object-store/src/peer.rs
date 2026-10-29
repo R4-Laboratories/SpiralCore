@@ -20,9 +20,7 @@
 use std::collections::{BTreeMap, HashSet};
 use std::io::{Read, Write};
 
-use sha2::{Digest, Sha256};
-
-use crate::{Error, Limits, Manifest, NodeId, ObjectVersion, Record, Result, Store};
+use crate::{Error, Limits, Manifest, NodeId, ObjectVersion, Record, RecordBackend, Result, Store};
 
 const MANIFEST_REQUEST: u8 = 20;
 const MANIFEST: u8 = 21;
@@ -32,6 +30,62 @@ const DONE: u8 = 24;
 const ERROR: u8 = 25;
 const MAX_MESSAGE: usize = 64 * 1024 * 1024;
 const DESIRED_BATCH: usize = 4096;
+
+/// Independent peer budgets. Serialized record bytes are not a resident-memory estimate.
+/// Legacy APIs derive conservative defaults from `Store::limits`; configured APIs may tighten each
+/// budget independently without changing record, manifest or frame encoding.
+#[derive(Debug, Clone)]
+pub struct PeerLimits {
+    pub max_message_bytes: usize,
+    pub max_staged_records: usize,
+    pub max_staged_bytes: usize,
+    /// Cumulative node visits across discovery, decoding and strict reconstruction.
+    pub max_work: usize,
+    /// MANIFEST_REQUEST and FETCH frames; terminal DONE is not a request.
+    pub max_requests: usize,
+    pub max_in_flight_response_bytes: usize,
+}
+impl PeerLimits {
+    pub fn for_store(limits: &Limits) -> Self {
+        Self {
+            max_message_bytes: MAX_MESSAGE.min(limits.max_record_bytes),
+            max_staged_records: limits.max_records,
+            max_staged_bytes: limits.max_record_bytes,
+            max_work: limits.max_visits.saturating_mul(64),
+            max_requests: limits.max_visits,
+            max_in_flight_response_bytes: 8 * 1024 * 1024,
+        }
+    }
+}
+impl Default for PeerLimits {
+    fn default() -> Self {
+        Self::for_store(&Limits::default())
+    }
+}
+
+/// Pull with independent message, staging and cumulative-work budgets.
+pub fn pull_selected_with_limits<R: Read, W: Write>(
+    store: &mut Store,
+    expected: Option<ExpectedObject>,
+    selector: Option<[u8; 32]>,
+    peer_limits: &PeerLimits,
+    reader: &mut R,
+    writer: &mut W,
+) -> Result<(Manifest, PullStats)> {
+    pull_one(
+        store,
+        expected,
+        selector,
+        PullOptions {
+            send_done: true,
+            batch: None,
+            window: DEFAULT_FETCH_WINDOW,
+            peer_limits: Some(peer_limits.clone()),
+        },
+        reader,
+        writer,
+    )
+}
 
 /// The result of one verify check in a batched series.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -125,24 +179,49 @@ impl ExpectedObject {
 }
 
 fn write_msg<W: Write>(writer: &mut W, kind: u8, body: &[u8]) -> Result<()> {
+    write_msg_limited(writer, kind, body, MAX_MESSAGE)
+}
+fn write_msg_limited<W: Write>(writer: &mut W, kind: u8, body: &[u8], cap: usize) -> Result<()> {
+    let length = u32::try_from(body.len()).map_err(|_| Error::LimitExceeded("peer message"))?;
+    if body.len() > cap.min(MAX_MESSAGE) {
+        return Err(Error::LimitExceeded("peer message"));
+    }
     writer.write_all(&[kind])?;
-    writer.write_all(&(body.len() as u32).to_be_bytes())?;
+    writer.write_all(&length.to_be_bytes())?;
     writer.write_all(body)?;
     writer.flush()?;
     Ok(())
 }
 
 fn read_msg<R: Read>(reader: &mut R, limits: &Limits) -> Result<(u8, Vec<u8>)> {
+    read_msg_bounded(reader, MAX_MESSAGE.min(limits.max_record_bytes))
+}
+fn read_msg_bounded<R: Read>(reader: &mut R, cap: usize) -> Result<(u8, Vec<u8>)> {
+    read_msg_or_eof(reader, cap)?
+        .ok_or_else(|| std::io::Error::from(std::io::ErrorKind::UnexpectedEof).into())
+}
+
+fn read_msg_or_eof<R: Read>(reader: &mut R, cap: usize) -> Result<Option<(u8, Vec<u8>)>> {
     let mut head = [0u8; 5];
-    reader.read_exact(&mut head)?;
-    let kind = head[0];
-    let len = u32::from_be_bytes([head[1], head[2], head[3], head[4]]) as usize;
-    if len > MAX_MESSAGE || len > limits.max_record_bytes {
+    // Only absence of the first byte is clean EOF. Every partial header/body is a failure.
+    loop {
+        match reader.read(&mut head[..1]) {
+            Ok(0) => return Ok(None),
+            Ok(_) => break,
+            Err(error) if error.kind() == std::io::ErrorKind::Interrupted => continue,
+            Err(error) => return Err(error.into()),
+        }
+    }
+    reader.read_exact(&mut head[1..])?;
+    let len = u32::from_be_bytes(head[1..].try_into().map_err(|_| Error::SchemaMismatch)?) as usize;
+    if len > MAX_MESSAGE.min(cap) {
         return Err(Error::LimitExceeded("peer message"));
     }
-    let mut body = vec![0u8; len];
+    let mut body = Vec::new();
+    crate::reserve(&mut body, len)?;
+    body.resize(len, 0);
     reader.read_exact(&mut body)?;
-    Ok((kind, body))
+    Ok(Some((head[0], body)))
 }
 
 fn record_size(first_byte: u8) -> usize {
@@ -164,12 +243,13 @@ fn batch_size(limits: &Limits) -> usize {
     DESIRED_BATCH.min(by_response).min(by_request).max(1)
 }
 
+#[cfg(test)]
 fn allowed_ids(store: &Store, manifest: &Manifest) -> Result<HashSet<NodeId>> {
     let limits = store.limits();
     let mut allowed = HashSet::new();
     let mut visits = 0usize;
-    for (root, _) in manifest.roots() {
-        collect_closure(store, *root, &mut allowed, &mut visits, limits)?;
+    for (root, scale) in manifest.roots() {
+        collect_closure(store, *root, *scale, &mut allowed, &mut visits, limits)?;
     }
     Ok(allowed)
 }
@@ -177,24 +257,33 @@ fn allowed_ids(store: &Store, manifest: &Manifest) -> Result<HashSet<NodeId>> {
 fn collect_closure(
     store: &Store,
     id: NodeId,
+    scale: u8,
     allowed: &mut HashSet<NodeId>,
     visits: &mut usize,
     limits: &Limits,
 ) -> Result<()> {
-    if allowed.contains(&id) {
-        return Ok(());
-    }
-    *visits += 1;
+    *visits = visits
+        .checked_add(1)
+        .ok_or(Error::LimitExceeded("closure visits"))?;
     if *visits > limits.max_visits {
         return Err(Error::LimitExceeded("closure visits"));
     }
     let record = record_from_store(store, id)?;
+    if record.scale() != scale {
+        return Err(Error::IntegrityFailure);
+    }
+    if allowed.contains(&id) {
+        return Ok(());
+    }
+    if allowed.len() >= limits.max_records {
+        return Err(Error::LimitExceeded("closure records"));
+    }
     allowed.insert(id);
     if record.scale() > 0 {
         for child in record.payload().chunks_exact(12) {
             let mut child_id = [0u8; 12];
             child_id.copy_from_slice(child);
-            collect_closure(store, child_id, allowed, visits, limits)?;
+            collect_closure(store, child_id, scale - 1, allowed, visits, limits)?;
         }
     }
     Ok(())
@@ -220,30 +309,45 @@ pub fn serve_many<R: Read, W: Write>(
     reader: &mut R,
     writer: &mut W,
 ) -> Result<()> {
+    serve_many_with_limits(
+        store,
+        manifests,
+        &PeerLimits::for_store(store.limits()),
+        reader,
+        writer,
+    )
+}
+
+/// Serve a session with independent frame, total transfer and work budgets.
+pub fn serve_many_with_limits<R: Read, W: Write>(
+    store: &Store,
+    manifests: &[Manifest],
+    peer_limits: &PeerLimits,
+    reader: &mut R,
+    writer: &mut W,
+) -> Result<()> {
     if manifests.is_empty() {
         return Err(Error::SchemaMismatch);
     }
     let limits = store.limits().clone();
-    let mut closures = Vec::with_capacity(manifests.len());
-    for manifest in manifests {
-        closures.push(allowed_ids(store, manifest)?);
-    }
+    let mut allowed = HashSet::new();
     let mut current: Option<usize> = None;
-    let mut requests = 0u64;
+    let mut work = 0;
+    let mut requests = 0usize;
     let mut served_bytes = 0usize;
+    let mut served_records = 0usize;
     loop {
-        let (kind, body) = match read_msg(reader, &limits) {
-            Ok(value) => value,
-            Err(Error::Io {
-                kind: std::io::ErrorKind::UnexpectedEof,
-                ..
-            }) => return Ok(()),
-            Err(error) => return Err(error),
+        let Some((kind, body)) = read_msg_or_eof(reader, peer_limits.max_message_bytes)? else {
+            return Ok(());
         };
-        requests += 1;
-        if requests > limits.max_visits as u64 {
-            return Err(Error::LimitExceeded("serve requests"));
+        if kind == DONE {
+            return if body.is_empty() {
+                Ok(())
+            } else {
+                Err(Error::SchemaMismatch)
+            };
         }
+        spend(&mut requests, 1, peer_limits.max_requests, "serve requests")?;
         match kind {
             MANIFEST_REQUEST => {
                 let selected = if body.is_empty() {
@@ -251,22 +355,59 @@ pub fn serve_many<R: Read, W: Write>(
                 } else if body.len() == 32 {
                     let mut selector = [0u8; 32];
                     selector.copy_from_slice(&body);
-                    manifests.iter().position(|manifest| {
-                        manifest.whole_sha256() == selector || manifest.version() == selector
-                    })
+                    let mut selected = None;
+                    for (index, manifest) in manifests.iter().enumerate() {
+                        spend(&mut work, 1, peer_limits.max_work, "peer work")?;
+                        if manifest.whole_sha256() == selector || manifest.version() == selector {
+                            selected = Some(index);
+                            break;
+                        }
+                    }
+                    selected
                 } else {
                     return Err(Error::SchemaMismatch);
                 };
                 let Some(index) = selected else {
-                    write_msg(writer, ERROR, b"unknown object")?;
+                    write_msg_limited(
+                        writer,
+                        ERROR,
+                        b"unknown object",
+                        peer_limits.max_message_bytes,
+                    )?;
                     current = None;
+                    allowed.clear();
                     continue;
                 };
+                if current != Some(index) {
+                    allowed.clear();
+                    let mut closure_limits = limits.clone();
+                    closure_limits.max_visits = closure_limits
+                        .max_visits
+                        .min(peer_limits.max_work.saturating_sub(work));
+                    let mut visits = 0;
+                    manifests[index].validate(&limits)?;
+                    for (root, scale) in manifests[index].roots() {
+                        collect_closure(
+                            store,
+                            *root,
+                            *scale,
+                            &mut allowed,
+                            &mut visits,
+                            &closure_limits,
+                        )?;
+                    }
+                    spend(&mut work, visits, peer_limits.max_work, "peer work")?;
+                }
                 current = Some(index);
-                write_msg(writer, MANIFEST, &manifests[index].encode())?;
+                write_msg_limited(
+                    writer,
+                    MANIFEST,
+                    &manifests[index].encode(),
+                    peer_limits.max_message_bytes,
+                )?;
             }
             FETCH => {
-                let Some(selected) = current else {
+                let Some(_) = current else {
                     return Err(Error::SchemaMismatch);
                 };
                 if body.len() < 2 {
@@ -276,8 +417,27 @@ pub fn serve_many<R: Read, W: Write>(
                 if body.len() != 2 + 12 * count {
                     return Err(Error::SchemaMismatch);
                 }
-                let allowed = &closures[selected];
-                let mut out = Vec::with_capacity(2 + count * 49);
+                if count == 0 {
+                    return Err(Error::SchemaMismatch);
+                }
+                spend(
+                    &mut served_records,
+                    count,
+                    peer_limits.max_staged_records,
+                    "serve records",
+                )?;
+                let response_cap = 2 + count * 49;
+                if response_cap > peer_limits.max_message_bytes.min(MAX_MESSAGE) {
+                    return Err(Error::LimitExceeded("peer message"));
+                }
+                if served_bytes
+                    .checked_add(count * 45)
+                    .is_none_or(|n| n > peer_limits.max_staged_bytes)
+                {
+                    return Err(Error::LimitExceeded("serve bytes"));
+                }
+                let mut out = Vec::new();
+                crate::reserve(&mut out, response_cap)?;
                 out.extend_from_slice(&(count as u16).to_be_bytes());
                 for index in 0..count {
                     let mut id = [0u8; 12];
@@ -286,15 +446,17 @@ pub fn serve_many<R: Read, W: Write>(
                         return Err(Error::SchemaMismatch);
                     }
                     let record = store.record_bytes(id).ok_or(Error::Missing(id))?;
-                    served_bytes += record.len();
-                    if served_bytes > limits.max_record_bytes {
-                        return Err(Error::LimitExceeded("serve bytes"));
-                    }
+                    spend(&mut work, 1, peer_limits.max_work, "peer work")?;
+                    spend(
+                        &mut served_bytes,
+                        record.len(),
+                        peer_limits.max_staged_bytes,
+                        "serve bytes",
+                    )?;
                     out.extend_from_slice(&record);
                 }
-                write_msg(writer, NODES, &out)?;
+                write_msg_limited(writer, NODES, &out, peer_limits.max_message_bytes)?;
             }
-            DONE => return Ok(()),
             _ => return Err(Error::SchemaMismatch),
         }
     }
@@ -338,6 +500,7 @@ pub fn pull_selected<R: Read, W: Write>(
         expected,
         selector,
         PullOptions {
+            peer_limits: None,
             send_done: true,
             batch: None,
             window: DEFAULT_FETCH_WINDOW,
@@ -361,6 +524,7 @@ pub fn pull_selected_with_window<R: Read, W: Write>(
         expected,
         selector,
         PullOptions {
+            peer_limits: None,
             send_done: true,
             batch: None,
             window,
@@ -405,6 +569,7 @@ pub fn pull_selected_with_batch_window<R: Read, W: Write>(
         expected,
         selector,
         PullOptions {
+            peer_limits: None,
             send_done: true,
             batch: Some(batch),
             window,
@@ -453,13 +618,18 @@ pub fn pull_series_with_batch_window<R: Read, W: Write>(
     reader: &mut R,
     writer: &mut W,
 ) -> Result<Vec<(Manifest, PullStats)>> {
-    let mut results = Vec::with_capacity(requests.len());
+    if requests.len() > store.limits().max_visits {
+        return Err(Error::LimitExceeded("series requests"));
+    }
+    let mut results = Vec::new();
+    crate::reserve(&mut results, requests.len())?;
     for request in requests {
         results.push(pull_one(
             store,
             request.expected,
             request.selector,
             PullOptions {
+                peer_limits: None,
                 send_done: false,
                 batch,
                 window,
@@ -472,7 +642,17 @@ pub fn pull_series_with_batch_window<R: Read, W: Write>(
     Ok(results)
 }
 
+fn spend(used: &mut usize, amount: usize, cap: usize, name: &'static str) -> Result<()> {
+    let total = used.checked_add(amount).ok_or(Error::LimitExceeded(name))?;
+    if total > cap {
+        return Err(Error::LimitExceeded(name));
+    }
+    *used = total;
+    Ok(())
+}
+
 struct PullOptions {
+    peer_limits: Option<PeerLimits>,
     send_done: bool,
     batch: Option<usize>,
     window: usize,
@@ -487,9 +667,20 @@ fn pull_one<R: Read, W: Write>(
     writer: &mut W,
 ) -> Result<(Manifest, PullStats)> {
     let limits = store.limits().clone();
+    let peer_limits = options
+        .peer_limits
+        .unwrap_or_else(|| PeerLimits::for_store(&limits));
+    let mut requests = 0;
+    let mut work = 0;
+    spend(&mut requests, 1, peer_limits.max_requests, "peer requests")?;
     let request = selector.map(|value| value.to_vec()).unwrap_or_default();
-    write_msg(writer, MANIFEST_REQUEST, &request)?;
-    let (kind, body) = read_msg(reader, &limits)?;
+    write_msg_limited(
+        writer,
+        MANIFEST_REQUEST,
+        &request,
+        peer_limits.max_message_bytes,
+    )?;
+    let (kind, body) = read_msg_bounded(reader, peer_limits.max_message_bytes)?;
     if kind == ERROR {
         return Err(Error::UnknownObject);
     }
@@ -503,111 +694,161 @@ fn pull_one<R: Read, W: Write>(
         }
     }
 
+    let mut fetched: BTreeMap<NodeId, Record> = BTreeMap::new();
+    let mut stats = PullStats::default();
+    // The largest response (49-byte records) and request must both fit before allocating a batch.
+    let body_cap = peer_limits.max_message_bytes.min(MAX_MESSAGE);
+    let batch_cap = (body_cap.saturating_sub(2) / 49)
+        .min(peer_limits.max_in_flight_response_bytes.saturating_sub(7) / 49);
     let batch = options
         .batch
         .unwrap_or_else(|| batch_size(&limits))
-        .clamp(1, u16::MAX as usize);
-    let mut fetched: BTreeMap<NodeId, Record> = BTreeMap::new();
-    let mut stats = PullStats::default();
-    // Bound in-flight request bytes as well as frame count: a window of huge batches could fill the
-    // socket buffers and block the reply path. 256 KiB of outstanding FETCH requests is conservative;
-    // very large batches therefore degrade to lock-step instead of risking a stall.
-    let window = options
-        .window
-        .max(1)
-        .min((262_144 / (2 + 12 * batch)).max(1));
+        .clamp(1, u16::MAX as usize)
+        .min(batch_cap);
+    // Fully cached and empty objects need no FETCH budget at all.
     loop {
-        let missing = missing_nodes(store, &manifest, &fetched)?;
+        let mut traversal_limits = limits.clone();
+        traversal_limits.max_visits = traversal_limits
+            .max_visits
+            .min(peer_limits.max_work.saturating_sub(work));
+        let mut visits = 0;
+        let missing = Store::missing_from(
+            &Overlay {
+                store,
+                fetched: &fetched,
+            },
+            &manifest,
+            &traversal_limits,
+            &mut visits,
+        )?;
+        spend(&mut work, visits, peer_limits.max_work, "peer work")?;
         if missing.is_empty() {
             break;
         }
+        if batch == 0 {
+            return Err(Error::LimitExceeded("peer message"));
+        }
+        let response_size = 5 + 2 + 49 * batch;
+        let response_window = peer_limits.max_in_flight_response_bytes / response_size;
+        if response_window == 0 {
+            return Err(Error::LimitExceeded("in-flight responses"));
+        }
+        let window = options
+            .window
+            .max(1)
+            .min(response_window)
+            .min((262_144 / (7 + 12 * batch)).max(1));
         let chunks: Vec<&[NodeId]> = missing.chunks(batch).collect();
         for group in chunks.chunks(window) {
+            // Reserve the group's minimum record bytes/count before issuing any of its requests.
+            let count: usize = group.iter().map(|chunk| chunk.len()).sum();
+            if fetched
+                .len()
+                .checked_add(count)
+                .is_none_or(|n| n > peer_limits.max_staged_records.min(limits.max_records))
+                || (stats.record_bytes as usize)
+                    .checked_add(count * 45)
+                    .is_none_or(|n| n > peer_limits.max_staged_bytes.min(limits.max_record_bytes))
+            {
+                return Err(Error::LimitExceeded("peer staging"));
+            }
             for chunk in group {
-                let mut request = Vec::with_capacity(2 + 12 * chunk.len());
+                spend(&mut requests, 1, peer_limits.max_requests, "peer requests")?;
+                let mut request = Vec::new();
+                crate::reserve(&mut request, 2 + 12 * chunk.len())?;
                 request.extend_from_slice(&(chunk.len() as u16).to_be_bytes());
                 for id in *chunk {
                     request.extend_from_slice(id);
                 }
-                write_msg(writer, FETCH, &request)?;
+                write_msg_limited(writer, FETCH, &request, peer_limits.max_message_bytes)?;
             }
             for chunk in group {
-                read_fetch_response(reader, &limits, chunk, &mut fetched, &mut stats)?;
-                if stats.nodes_requested > limits.max_records as u64
-                    || stats.record_bytes > limits.max_record_bytes as u64
-                {
-                    return Err(Error::LimitExceeded("pull budget"));
-                }
+                read_fetch_response(
+                    reader,
+                    &limits,
+                    &peer_limits,
+                    chunk,
+                    &mut fetched,
+                    &mut stats,
+                    &mut work,
+                )?;
             }
         }
     }
 
-    let mut bytes = Vec::new();
-    let mut visits = 0usize;
-    for (root, _) in manifest.roots() {
-        assemble_object(store, &fetched, *root, &mut bytes, &mut visits, &limits)?;
-    }
-    if bytes.len() < manifest.byte_len() as usize {
-        return Err(Error::IntegrityFailure);
-    }
-    bytes.truncate(manifest.byte_len() as usize);
-    let digest: [u8; 32] = Sha256::digest(&bytes).into();
-    if digest != manifest.whole_sha256() {
-        return Err(Error::IntegrityFailure);
-    }
-
-    let mut encoded = Vec::with_capacity(stats.record_bytes as usize);
-    for record in fetched.values() {
-        encoded.extend_from_slice(&record.encode());
-    }
-    store.import_records(&encoded)?;
+    // The strict walker checks the declared scales, exact length, final-leaf padding and digest
+    // against the staged overlay. No cache mutation or commit receipt precedes this check.
+    let overlay = Overlay {
+        store,
+        fetched: &fetched,
+    };
+    let mut reconstruction_limits = limits.clone();
+    reconstruction_limits.max_visits = reconstruction_limits
+        .max_visits
+        .min(peer_limits.max_work.saturating_sub(work));
+    Store::rebuild_from(&overlay, &manifest, &reconstruction_limits)?;
+    store.commit_staged(fetched)?;
+    stats.verified = true;
     if options.send_done {
-        write_msg(writer, DONE, &[])?;
+        write_msg_limited(writer, DONE, &[], peer_limits.max_message_bytes)?;
     }
 
-    let verified = store.rebuild(&manifest)?;
-    stats.verified = verified.whole_object_digest_verified();
-    if !stats.verified {
-        return Err(Error::IntegrityFailure);
-    }
     Ok((manifest, stats))
 }
 
 fn read_fetch_response<R: Read>(
     reader: &mut R,
     limits: &Limits,
+    peer_limits: &PeerLimits,
     chunk: &[NodeId],
     fetched: &mut BTreeMap<NodeId, Record>,
     stats: &mut PullStats,
+    work: &mut usize,
 ) -> Result<()> {
-    let (kind, body) = read_msg(reader, limits)?;
-    if kind != NODES {
-        return Err(Error::SchemaMismatch);
-    }
-    if body.len() < 2 {
+    let remaining = peer_limits
+        .max_staged_bytes
+        .min(limits.max_record_bytes)
+        .saturating_sub(stats.record_bytes as usize);
+    let cap = peer_limits
+        .max_message_bytes
+        .min(2 + chunk.len() * 49)
+        .min(remaining.saturating_add(2));
+    let (kind, body) = read_msg_bounded(reader, cap)?;
+    if kind != NODES || body.len() < 2 {
         return Err(Error::SchemaMismatch);
     }
     let count = u16::from_be_bytes([body[0], body[1]]) as usize;
     if count != chunk.len() {
         return Err(Error::IntegrityFailure);
     }
+    // The protocol returns records in request order. This makes correlation linear, with no
+    // attacker-controlled quadratic chunk.contains scan or separate response membership index.
     let mut offset = 2usize;
-    for _ in 0..count {
+    for expected_id in chunk {
         if offset >= body.len() {
             return Err(Error::SchemaMismatch);
         }
         let size = record_size(body[offset]);
         let end = offset.checked_add(size).ok_or(Error::SchemaMismatch)?;
+        spend(work, 1, peer_limits.max_work, "peer work")?;
+        if fetched.len() >= peer_limits.max_staged_records.min(limits.max_records) {
+            return Err(Error::LimitExceeded("peer staging"));
+        }
         let record = Record::decode(body.get(offset..end).ok_or(Error::SchemaMismatch)?)?;
-        offset = end;
-        if !chunk.contains(&record.id()) {
+        if record.id() != *expected_id || fetched.contains_key(expected_id) {
             return Err(Error::IntegrityFailure);
         }
-        if fetched.insert(record.id(), record).is_some() {
-            return Err(Error::IntegrityFailure);
+        let total = stats
+            .record_bytes
+            .checked_add(size as u64)
+            .ok_or(Error::LimitExceeded("peer staging"))?;
+        if total > peer_limits.max_staged_bytes.min(limits.max_record_bytes) as u64 {
+            return Err(Error::LimitExceeded("peer staging"));
         }
+        fetched.insert(record.id(), record);
         stats.nodes_requested += 1;
-        stats.record_bytes += size as u64;
+        stats.record_bytes = total;
+        offset = end;
     }
     if offset != body.len() {
         return Err(Error::SchemaMismatch);
@@ -663,7 +904,13 @@ pub fn verify_series<R: Read, W: Write>(
 ) -> Result<Vec<VerifyOutcome>> {
     const WINDOW: usize = 64;
     let limits = store.limits().clone();
-    let mut outcomes = Vec::with_capacity(requests.len());
+    if requests.len() > limits.max_visits {
+        return Err(Error::LimitExceeded("series requests"));
+    }
+    let peer_limits = PeerLimits::for_store(&limits);
+    let mut work = 0;
+    let mut outcomes = Vec::new();
+    crate::reserve(&mut outcomes, requests.len())?;
     let mut start = 0usize;
     while start < requests.len() {
         let end = (start + WINDOW).min(requests.len());
@@ -691,7 +938,21 @@ pub fn verify_series<R: Read, W: Write>(
                 }
             }
             let fetched = BTreeMap::new();
-            let missing = missing_nodes(store, &manifest, &fetched)?;
+            let mut traversal_limits = limits.clone();
+            traversal_limits.max_visits = traversal_limits
+                .max_visits
+                .min(peer_limits.max_work.saturating_sub(work));
+            let mut visits = 0;
+            let missing = Store::missing_from(
+                &Overlay {
+                    store,
+                    fetched: &fetched,
+                },
+                &manifest,
+                &traversal_limits,
+                &mut visits,
+            )?;
+            spend(&mut work, visits, peer_limits.max_work, "peer work")?;
             outcomes.push(if missing.is_empty() {
                 VerifyOutcome::Verified { missing: 0 }
             } else {
@@ -706,79 +967,30 @@ pub fn verify_series<R: Read, W: Write>(
     Ok(outcomes)
 }
 
+struct Overlay<'a> {
+    store: &'a Store,
+    fetched: &'a BTreeMap<NodeId, Record>,
+}
+impl RecordBackend for Overlay<'_> {
+    fn fetch(&self, id: NodeId) -> Result<Option<Record>> {
+        match self.fetched.get(&id) {
+            Some(record) => Ok(Some(record.clone())),
+            None => self.store.fetch(id),
+        }
+    }
+}
+
 fn missing_nodes(
     store: &Store,
     manifest: &Manifest,
     fetched: &BTreeMap<NodeId, Record>,
 ) -> Result<Vec<NodeId>> {
-    let limits = store.limits();
-    let mut missing = Vec::new();
-    let mut visits = 0usize;
-    for (root, _) in manifest.roots() {
-        walk_missing(store, *root, fetched, &mut missing, &mut visits, limits)?;
-    }
-    // Deduplicated repeated content makes the tree a DAG: the same missing node can be reached by
-    // several paths, so request each id exactly once.
-    let mut seen = HashSet::new();
-    missing.retain(|id| seen.insert(*id));
-    Ok(missing)
-}
-
-fn walk_missing(
-    store: &Store,
-    id: NodeId,
-    fetched: &BTreeMap<NodeId, Record>,
-    missing: &mut Vec<NodeId>,
-    visits: &mut usize,
-    limits: &Limits,
-) -> Result<()> {
-    *visits += 1;
-    if *visits > limits.max_visits || missing.len() > limits.max_records {
-        return Err(Error::LimitExceeded("missing visits"));
-    }
-    if store.has_record(id) {
-        return Ok(());
-    }
-    if let Some(record) = fetched.get(&id) {
-        if record.scale() > 0 {
-            for child in record.payload().chunks_exact(12) {
-                let mut child_id = [0u8; 12];
-                child_id.copy_from_slice(child);
-                walk_missing(store, child_id, fetched, missing, visits, limits)?;
-            }
-        }
-        return Ok(());
-    }
-    missing.push(id);
-    Ok(())
-}
-
-fn assemble_object(
-    store: &Store,
-    fetched: &BTreeMap<NodeId, Record>,
-    id: NodeId,
-    out: &mut Vec<u8>,
-    visits: &mut usize,
-    limits: &Limits,
-) -> Result<()> {
-    *visits += 1;
-    if *visits > limits.max_visits || out.len() > limits.max_object_bytes as usize {
-        return Err(Error::LimitExceeded("assemble visits"));
-    }
-    let record = match fetched.get(&id) {
-        Some(record) => record.clone(),
-        None => record_from_store(store, id)?,
-    };
-    if record.scale() == 0 {
-        out.extend_from_slice(record.payload());
-    } else {
-        for child in record.payload().chunks_exact(12) {
-            let mut child_id = [0u8; 12];
-            child_id.copy_from_slice(child);
-            assemble_object(store, fetched, child_id, out, visits, limits)?;
-        }
-    }
-    Ok(())
+    Store::missing_from(
+        &Overlay { store, fetched },
+        manifest,
+        store.limits(),
+        &mut 0,
+    )
 }
 
 #[cfg(test)]

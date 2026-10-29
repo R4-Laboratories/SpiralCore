@@ -265,7 +265,13 @@ fn bounded_restart_and_failed_load_preserve_existing_store() -> Result {
         std::fs::create_dir(&blocked)?;
         assert!(s.save(&blocked).is_err());
         assert!(blocked.is_dir());
-        assert_eq!(std::fs::read_dir(&dir)?.count(), 2);
+        assert!(std::fs::read_dir(&dir)?.all(|entry| {
+            !entry
+                .unwrap()
+                .file_name()
+                .to_string_lossy()
+                .contains(".uor-tmp-")
+        }));
         Ok(())
     })();
     std::fs::remove_dir_all(&dir)?;
