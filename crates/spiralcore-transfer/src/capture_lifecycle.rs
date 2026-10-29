@@ -178,7 +178,9 @@ impl Lifecycle {
             "lifecycle_counters_or_offsets_regressed",
         );
         check(
-            samples.iter().all(|s| {
+            self.preflight.iter().chain(&self.quiescence).all(|s| {
+                s.stderr_text.len() <= 4096 && parse_stats_sample(&s.stderr_text) == Ok(s.counters)
+            }) && self.final_snapshot.as_ref().is_some_and(|s| {
                 s.stderr_text.len() <= 4096 && parse_counter_block(&s.stderr_text) == Ok(s.counters)
             }),
             "snapshot_text_counter_mismatch",
@@ -230,13 +232,13 @@ pub fn parse_counter_block(text: &str) -> Result<Counters, String> {
     for line in text.lines() {
         let words = line.split_whitespace().collect::<Vec<_>>();
         if words.len() < 3 || !matches!(words[1], "packet" | "packets") {
-            continue;
+            return Err("unexpected text in final counter block".into());
         }
         let index = match &words[2..] {
             ["captured"] => 0,
             ["received", "by", "filter"] => 1,
             ["dropped", "by", "kernel"] => 2,
-            _ => continue,
+            _ => return Err("unexpected final counter field".into()),
         };
         if index != values.len() {
             return Err("duplicate or out-of-order counter block".into());
@@ -254,6 +256,23 @@ pub fn parse_counter_block(text: &str) -> Result<Counters, String> {
         received: values[1],
         dropped: values[2],
     })
+}
+pub fn parse_stats_sample(text: &str) -> Result<Counters, String> {
+    if let Some(inline) = text.strip_prefix("tcpdump: ") {
+        if text.len() > 4096 || !inline.ends_with('\n') || inline.lines().count() != 1 {
+            return Err("truncated or repeated inline statistics".into());
+        }
+        let fields = inline
+            .strip_suffix('\n')
+            .unwrap()
+            .split(", ")
+            .collect::<Vec<_>>();
+        if fields.len() != 3 {
+            return Err("incomplete inline statistics".into());
+        }
+        return parse_counter_block(&(fields.join("\n") + "\n"));
+    }
+    parse_counter_block(text)
 }
 
 #[cfg(test)]
@@ -373,6 +392,29 @@ pub(crate) mod tests {
             parse_counter_block("10 packets captured\n10 packets received by filter\n").is_err()
         );
         assert!(parse_counter_block("1 packets captured\n18446744073709551616 packets received by filter\n0 packets dropped by kernel\n").is_err());
+    }
+    #[test]
+    fn linux_tcpdump_inline_usr1_is_separate_from_the_final_three_line_block() {
+        // Exact observed form from Linux qualification run40936471396, tcpdump4.99.4.
+        let inline="tcpdump: 0 packets captured, 0 packets received by filter, 0 packets dropped by kernel\n";
+        let final_block =
+            "0 packets captured\n0 packets received by filter\n0 packets dropped by kernel\n";
+        assert_eq!(
+            parse_stats_sample(inline).unwrap(),
+            Counters {
+                captured: 0,
+                received: 0,
+                dropped: 0
+            }
+        );
+        assert!(parse_counter_block(inline).is_err());
+        assert!(parse_counter_block(&(inline.to_owned() + final_block)).is_err());
+        assert!(parse_stats_sample(&(inline.to_owned() + inline)).is_err());
+        assert!(
+            parse_stats_sample("tcpdump: 0 packets captured, 0 packets received by filter\n")
+                .is_err()
+        );
+        assert!(parse_stats_sample("tcpdump: 0 packets captured, 0 packets received by filter, 0 packets dropped by kernel").is_err());
     }
     #[test]
     fn changing_or_regressing_counters_are_not_a_quiet_interval() {

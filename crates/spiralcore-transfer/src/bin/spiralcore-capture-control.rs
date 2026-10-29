@@ -3,7 +3,7 @@
 #[allow(dead_code)]
 #[path = "../capture_lifecycle.rs"]
 mod capture_lifecycle;
-use capture_lifecycle::{parse_counter_block, quiet, Lifecycle, Snapshot};
+use capture_lifecycle::{parse_counter_block, parse_stats_sample, quiet, Lifecycle, Snapshot};
 use sha2::{Digest, Sha256};
 #[cfg(unix)]
 use std::os::unix::fs::{DirBuilderExt, OpenOptionsExt};
@@ -170,7 +170,7 @@ impl Capture {
             if text.len() > 4096 {
                 return Err("statistics sample exceeds text bound".into());
             }
-            if let Ok(counters) = parse_counter_block(text) {
+            if let Ok(counters) = parse_stats_sample(text) {
                 let stderr_text = text.to_owned();
                 self.offset = bytes.len();
                 return Ok(Snapshot {
@@ -750,6 +750,12 @@ fn qualify(out: &Path) -> Result<()> {
             ],
             interrupt_for_qualification: kind == "interrupted",
         });
+        // Capture has already been stopped/reaped and its lifecycle preserved.
+        // Do not mask setup failure with the synthetic server's accept timeout.
+        // This private CLI returns to main's exit, terminating its waiting threads.
+        if result.is_err() && !dir.join("rows.jsonl").is_file() {
+            return result.map_err(|e| format!("capture setup failed before fixture: {e}"));
+        }
         server.join().map_err(|_| "fixture server panic")??;
         if let Some(t) = traffic {
             t.join().map_err(|_| "fixture pulse panic")??;
