@@ -2,7 +2,8 @@
 
 This standalone Rust prototype transfers exact byte objects into a persistent endpoint cache. A cold
 send uses raw bytes or bounded zstd chunks. A warm send uses a caller-selected base object's ordered
-32-byte ternary DAG and transfers new records. Whole-object identity includes the exact byte length
+32-byte ternary DAG and transfers new records, or uses a versioned sparse COPY/LITERAL recipe.
+Whole-object identity includes the exact byte length
 and full SHA-256; the receiver verifies reconstruction before publishing an object.
 
 The `spiralcore` CLI is a **loopback-only experiment for public or synthetic data**. Its fixed Context and local
@@ -61,9 +62,33 @@ or zstd transfer remains separate from that admission. The current DAG node limi
 64 MiB protocol ceiling does not imply every 64 MiB object can use a DAG base.
 
 Use `--mode zstd` instead of `raw` for a cold compressed send. Each chunk falls back to raw when
-compression does not make that chunk smaller. `--mode` and `--base` are mutually exclusive. The
+compression does not make that chunk smaller. Raw/zstd modes cannot be combined with `--base`. The
 default cold mode is raw. Files are read once into a buffer with a 64 MiB ceiling and a bounded extra
 byte check; the bytes used for identity are the bytes transferred.
+
+To preserve reuse across insertions, deletions and changed lengths, explicitly select sparse mode:
+
+```sh
+"$BIN" send --addr 127.0.0.1:7777 --file ./changed.bin --base ./base.bin --mode sparse
+```
+
+Sparse mode requires a verified whole-object base at the receiver and currently limits both local
+inputs to 16 MiB. It compares aligned runs and common prefix/suffix regions, sends bounded COPY and
+LITERAL operations, and checks final length/SHA-256 before durable publication. Poor recipes select
+raw before Begin; a missing remote base is an explicit error requiring a new transfer. Sparse
+publications skip optional DAG warming, so a subsequent sparse transfer can use their ObjectId
+without building a DAG. The CLI exchanges frame receipts sequentially; the WAN adapter batches them.
+See the [binary contract](../../docs/network/sparse-v1.md).
+
+Rust callers can retain a `prepared::PreparedObject` across same-length changes and call
+`prepare_delta` followed by `client::transfer_prepared_batched`. `client::transfer_sparse_batched`
+accepts local base/target slices. Prepared state is immutable; promotion creates a bounded flat
+successor index. Whole-object comparison/hash and closure traversal remain linear work. Sender
+preparation and its temporary allocations belong to the caller's timing and memory budget.
+
+The receiver retains at most 64 MiB/32 verified graphs inside its existing resident-memory budget.
+Active attempts pin their bases; unpinned graphs are evictable, and restart rebuilds them from verified
+durable bytes. Every base use still checks namespace authorization and on-disk integrity.
 
 `--sessions N` stops the serial server after N accepted connections, including rejected connections.
 Omit it to keep serving until interrupted. Each connection may carry multiple request/response frames.

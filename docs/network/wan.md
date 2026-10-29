@@ -18,7 +18,7 @@ Use Rust 1.97.1, the compiler pinned in the test workflow:
 cargo +1.97.1 build --release --locked --manifest-path crates/spiralcore-transfer/Cargo.toml --bins
 ```
 
-The binaries are `spiralcore-wan` (temporary receiver), `spiralcore-bench` (plan/run/verify/summarize) and `spiralcore-capture` (packet accounting). The original `spiralcore` loopback CLI is unchanged.
+The binaries are `spiralcore-wan` (temporary receiver), `spiralcore-bench` (plan/run/verify/summarize) and `spiralcore-capture` (packet accounting). The `spiralcore` loopback CLI also supports explicit sparse sends; its frame exchanges remain sequential.
 
 For every campaign, generate a new random 64-character lowercase hexadecimal run ID and a separate random 256-bit capability. Keep the capability in a private file/environment variable named `SPIRALCORE_WAN_TOKEN`; never put it in the URL, command line or a tracked file. Create a plan with `spiralcore-bench plan --run RUN_HEX --trials 1 --out plan.json`. Use one trial for connectivity and thirty for the paired campaign. Plan outputs are exclusive and never overwritten.
 
@@ -32,6 +32,7 @@ Start `spiralcore-wan serve --cache NEW_CACHE --plan plan.json --bind 127.0.0.1:
 - `SPIRALCORE_WAN_URL`: the current HTTPS trycloudflare.com URL.
 - `SPIRALCORE_WAN_RUN`: the same run ID used to generate the receiver plan.
 - `SPIRALCORE_WAN_TRIALS`: 1 or 30, matching the receiver plan.
+- `SPIRALCORE_WAN_SUITE`: `efficient-warm` or `efficient-prefix` on `codex/spiralcore-efficient`; leave absent for the legacy WAN branch.
 
 The separate Actions secret `SPIRALCORE_WAN_TOKEN` contains the capability. Configure it from the private local file, not a shell literal. The workflow executes only reviewed repository code, grants read-only repository permissions and pins external actions. Triggering another campaign requires a new run ID, capability, empty receiver cache and source pin. Automatic retries are deliberately excluded.
 
@@ -41,7 +42,21 @@ The runner executes `spiralcore-bench run --plan plan.json --url HTTPS_URL --out
 
 ## Workloads and timing
 
-The thirty-trial plan contains 575 isolated tasks and 906 seed/transfer operations. It includes 1 MiB cold random/structured data, exact repeats, localized edits, scattered edits and prefix insertion, plus a separate 16 MiB raw/zstd/cached-repeat smoke case. The quota forecast includes approximately 920 MiB of object payload plus publication overhead, below the one-GiB cache ceiling.
+The default v1 thirty-trial plan contains 575 isolated tasks and 906 seed/transfer operations. It includes 1 MiB cold random/structured data, exact repeats, localized edits, scattered edits and prefix insertion, plus a separate 16 MiB raw/zstd/cached-repeat smoke case. The quota forecast includes approximately 920 MiB of object payload plus publication overhead, below the one-GiB cache ceiling.
+
+The v2 efficiency suites use `plan --suite efficient-warm` or `--suite efficient-prefix`, with the same
+run/trials/out options. At thirty trials, the warm suite contains 480 tasks/900 operations and 780 MiB
+of retained payload; the prefix suite contains 120 tasks/240 operations and approximately 240 MiB.
+Run each suite against a fresh receiver cache and capability. Combining both under one cache would
+exceed the quota once publication allowances are included.
+
+Efficiency arms compare raw, zstd, ordinary exact-object cache reuse, current full-fold DAG sends,
+retained prepared DAG updates and sparse recipes as applicable. Prepared sender base construction is
+inside seed timing; the same object survives into transfer, whose timing includes target preparation
+and terminal cleanup. Sparse arms retain the original base bytes. These are one-update experiments:
+successor promotion is not performed. Reported resident charges are conservative owned-state
+accounting, not preparation peak RSS. The full-fold DAG control uses the current executable, not the
+historical pre-optimization binary; historical comparisons need their own source-pinned evidence.
 
 Each pair uses identical fixture bytes and a seeded counterbalanced arm order. Cold raw/zstd uploads batch Begin/Data/Finish so the baseline is not penalized by one network round trip per chunk. DAG known-absent targets use the same batching opportunity. Only intentional exact-repeat arms probe first. Whole-object cache hits are shared with ordinary content-addressed reuse and are not credited as DAG-specific savings. The larger smoke case does not qualify a random 16 MiB DAG under the current node limit.
 
@@ -67,6 +82,6 @@ spiralcore-bench verify --plan plan.json --rows rows.jsonl --cache CACHE
 
 Verification checks receipt identities against the canonical plan, regenerates each public fixture, reopens the persisted cache and compares every byte and length. This independent qualification occurs outside transfer timing and avoids sending reconstructed objects back across the WAN just to verify them.
 
-Stop only the campaign's own tunnel, receiver and capture processes. Delete the temporary Actions secret and four variables. Retain compact source-pinned results, raw drop/offload evidence and the receiver verification result. Keep failed trials and negative workloads in the report. Public runner execution alone is not proof of complete wire-byte savings; the remote receipts, complete capture and local exact-byte verification must agree for that claim. Successful protocol-body accounting and exact-byte reconstruction can be reported separately when their own checks pass.
+Stop only the campaign's own tunnel, receiver and capture processes. Delete the temporary Actions secret and all campaign variables, including the optional suite variable. Retain compact source-pinned results, raw drop/offload evidence and the receiver verification result. Keep failed trials and negative workloads in the report. Public runner execution alone is not proof of complete wire-byte savings; the remote receipts, complete capture and local exact-byte verification must agree for that claim. Successful protocol-body accounting and exact-byte reconstruction can be reported separately when their own checks pass.
 
 Official service references: [GitHub Actions billing](https://docs.github.com/en/billing/concepts/product-billing/github-actions), [Cloudflare Quick Tunnels](https://developers.cloudflare.com/tunnel/get-started/quick-tunnels/).

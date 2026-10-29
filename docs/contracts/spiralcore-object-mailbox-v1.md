@@ -4,6 +4,12 @@ Status: reviewed by architect/planner and approved for bounded experimental impl
 
 ## Identity and data structures
 
+The standalone implementation also supports [Sparse COPY/LITERAL v1](../network/sparse-v1.md),
+an explicit mode-3 extension. The original modes 0–2, identities and binary vectors below are
+unchanged. Mode 3 uses a full ObjectId as its base and has its own bounded Data encoding; an older
+receiver rejects the new mode as Unsupported. The current HTTPS experiment is documented separately
+in [WAN instructions](../network/wan.md); it does not implement the future MVM envelope.
+
 All integers little-endian. Hash is SHA-256; implementation is experimental, not a validated cryptographic module. Fixed domains include their terminal NUL.
 
 - ObjectId32 = H(`spiralcore.object.bytes.v1\0` || byte_len:u64 || original bytes).
