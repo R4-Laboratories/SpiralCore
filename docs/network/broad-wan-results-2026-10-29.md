@@ -2,7 +2,7 @@
 
 Measured source: `9dce4c57d1f41cef7365b297cd690849afce34e7`.
 Run: `d6aaa0f15da9ccbc62c005a1802532b3e85ad6d901886eea6fbd0076b2d312e4`.
-Five of twelve registered cases are complete and independently reviewed. Remaining
+Six of twelve registered cases are complete and independently reviewed. Remaining
 cases must not be inferred from this result. The complete registration is in the
 [workload plan](../plans/2026-10-29-broader-wan-and-scaling.md).
 
@@ -174,6 +174,30 @@ Independent analysis agrees with the raw receipts and author statistics; all fiv
 captures meet the completeness criteria. The
 [complete deletion packet](evidence/2026-10-29-broad-wan/cases/delete_4096/README.md)
 retains all observations and their custody.
+
+## Completed case: 4 KiB append
+
+Appending 4 KiB to each 16,773,120-byte base produces an exact 16,777,216-byte
+target. Thirty paired trials use the unchanged four-method and paid-seed policy.
+
+| Warm update | Median request + reply HTTP-body bytes | Median elapsed, including computation | Median sender + receiver-handler CPU |
+|---|---:|---:|---:|
+| Raw full send | 16,814,026 | 1,871.920 ms | 89.128 ms |
+| Ordinary zstd | 16,809,949 | 1,917.746 ms | 91.971 ms |
+| Zstd prefix delta | 26,202 | 252.625 ms | 89.854 ms |
+| Sparse COPY/LITERAL | 4,651 | 222.133 ms | 74.978 ms |
+
+Sparse uses 99.97233857% fewer HTTP-body bytes than raw, with an 8.427023×
+ratio of median elapsed times and approximately 15.88% lower median combined
+CPU. Including seed and one update, raw uses median 33,623,823 body bytes and
+3,747.770 ms; sparse uses 16,814,448 bytes and 2,169.994 ms; zstd prefix uses
+16,835,999 bytes and 2,187.982 ms.
+
+All 240 operations reopened exactly, totaling 4,026,040,320 compared bytes.
+The unchanged independent checker agrees with raw receipts and author statistics,
+and all five captures meet the completeness criteria. The
+[complete append packet](evidence/2026-10-29-broad-wan/cases/append_4096/README.md)
+retains the complete observations and custody.
 
 ## Qualification and measurement boundaries
 
