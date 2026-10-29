@@ -4,6 +4,7 @@ SpiralCore networking prototypes, exact geometric transport research, and preser
 
 ## Start here
 
+- [Ongoing optimization ledger](docs/network/optimization-ledger.md): source-pinned experiments, recorded results, regressions and the next active measurement plan.
 - [Run standalone SpiralCore](crates/spiralcore-transfer/README.md): `serve`, `send`, `get`, and a real TCP cold/repeat/delta demonstration with exact restart verification. Reducing transmitted bytes is the primary performance objective.
 - [Two-machine WAN experiment](docs/network/wan.md): authenticated synthetic transfers through a temporary HTTPS relay, paired raw/zstd/cache/DAG workloads, endpoint CPU and durable-commit timing, and packet accounting.
 - [Latest efficiency and WAN results, October 29](docs/network/efficiency-results-2026-10-29.md): direct graph construction, retained verified state and sparse exact deltas; 1,140 successful operations, 99.80–99.98% warm protocol-body savings and 1.83–2.58× paired elapsed improvement, including computation. Cache seeding and packet-accounting limits are reported separately.
