@@ -804,11 +804,13 @@ impl<A: Authority> Endpoint<A> {
         let mut all = 0u64;
         let mut scoped = 0u64;
         let mut count = 0;
+        let namespace = hex(&ns);
         for d in fs::read_dir(&self.root)? {
             let d = d?;
             if !d.file_type()?.is_dir() || !canonical_namespace(&d.file_name().to_string_lossy()) {
                 continue;
             }
+            let is_scoped = d.file_name() == namespace.as_str();
             for f in fs::read_dir(d.path())? {
                 let f = f?;
                 if !f.file_type()?.is_file() || f.path().extension().is_none_or(|s| s != "object") {
@@ -816,7 +818,7 @@ impl<A: Authority> Endpoint<A> {
                 }
                 let n = f.metadata()?.len();
                 all = all.checked_add(n).ok_or(Error::Limit)?;
-                if d.file_name() == hex(&ns).as_str() {
+                if is_scoped {
                     scoped = scoped.checked_add(n).ok_or(Error::Limit)?;
                 }
                 count += 1;
