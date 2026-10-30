@@ -23,9 +23,9 @@ The user prioritized working standalone SpiralCore over MVM integration, then re
 | SHA-256 object profile and standalone endpoint | Implemented and tested | Reviewed contract, scoped trusted authority, raw/zstd/DAG, private durable cache, retries/cancel, real TCP CLI and restart equality |
 | Canonical two-MVM encrypted mailbox | Deferred by user priority; upstream prerequisites still open | Actual guest service/transport, no replacement port or plaintext host shortcut |
 | Cooperative FlowMux streams | Deferred | Existing policy gates and byte ordering preserved |
-| Real two-host WAN relay experiment | Exact object fidelity and protocol-body measurements verified | Original 906 operations plus 1,140 efficiency-campaign operations; 30 paired trials per 1 MiB arm; elapsed time and both endpoint CPU measured |
+| Real two-host WAN relay experiment | Registered broad 16 MiB campaign completed | Twelve cases, four methods and thirty pairs per case; all 2,640 operations exact after reopening. Body bytes, elapsed time including compute, endpoint CPU and seed costs retained. Earlier 906-operation and 1,140-operation campaigns remain distinct historical records. [Final broad report](broad-wan-results-2026-10-29.md). |
 | Efficient exact updates | Implemented and measured | Direct canonical builder, retained verified state, ordinary repeat hits and versioned sparse COPY/LITERAL; warm body savings and end-to-end improvements with seed costs retained |
-| Complete per-transfer IP accounting | Qualified only for the new prefix campaign's runner-to-relay leg | Prefix capture counters and ownership agree; other captures retain attribution/counter limitations; no whole-path all-wire-byte acceptance claim |
+| Per-transfer IP accounting | Fifty-nine of sixty broad-campaign captures complete for the runner-to-relay leg | Middle-insertion shard 1 retains ambiguous TCP tuple reuse and no whole-case IP statistic. Earlier campaigns retain their original limitations. No whole-path or physical-link byte claim. |
 | Direct/shaped WAN and three-peer qualification | Not run | Controlled impairment, recovery across three peers and eventual MVM boundaries |
 | CUI/FIPS deployment qualification | Not claimed | Concrete validated module/OE/mode and contract-specific control assessment |
 
@@ -43,7 +43,7 @@ The object protocol uses complete frames of at most 64 KiB, including its 56-byt
 
 ## Acceptance matrix
 
-Exact equality: empty, NUL/trailing zero, chunk boundaries, append/truncate, insert/delete, localized/scattered changes, compressed bytes and ciphertext. Negative cases: malformed/oversized/truncated frames; missing or evicted descendants; corrupt/conflicting records; scale/padding faults; wrong recipient; revoke/epoch/replay; restart/cancel/crash before and after publication. No failed transfer may expose a committed object.
+Exact equality: empty, NUL/trailing zero, chunk boundaries, append/truncate, insert/delete, localized/scattered changes, compressed bytes and ciphertext. Negative cases: malformed/oversized/truncated frames; missing or evicted descendants; corrupt/conflicting records; scale/padding faults; wrong recipient; revoke/epoch/replay; restart/cancel/crash before and after publication. No unverified or invalid object may be published. A transport or post-rename durability error can leave an uncertain commit outcome, which must be resolved through authorized verification.
 
 Performance: compare raw, zstd, conventional CAS and rsync/VCDIFF over identical authenticated transport and durability. Time encoding through durable verified commit. Count both directions, metadata, requests, receipts, security, repair, retransmission and relay overhead. Report seeding cost, cache/storage, CPU/RSS and latency distributions. Use 30 randomized paired trials per acceptance workload, proper bidirectional impairment, then real direct/relay hosts and MVMs.
 

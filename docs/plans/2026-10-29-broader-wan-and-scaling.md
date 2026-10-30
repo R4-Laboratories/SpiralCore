@@ -1,7 +1,13 @@
 # Broader exact-transfer qualification and scaling
 
 Starting source: `d03fe1630bba787a28cc3fa3ae201c4a1a75388b`.
-Status: implementation/qualification in progress; new performance results NOT_RUN.
+Original registration status: implementation/qualification in progress; performance results NOT_RUN.
+Execution update: the registered twelve-case 16 MiB WAN campaign is complete; see
+[the final measured report](../network/broad-wan-results-2026-10-29.md). The finer
+cache diagnostic completed without an adopted candidate. The 64 MiB client remains
+a design, and sustained recovery, shaped/direct WAN and MVM integration remain
+future work. The measured registration is retained at source `9dce4c5`; its sample
+counts, workloads and acceptance rules were not changed during measurement.
 The user approved this roadmap and explicitly deferred WASM. The final target is
 MVM integration, including a bridge to the canonical vsock mailbox that also works
 for a small multi-MVM environment and its orchestrator.

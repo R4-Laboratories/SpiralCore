@@ -11,6 +11,10 @@ The registration is in
 [build custody](../../../plans/2026-10-29-broad-wan-build-reuse.md).
 Qualification records alone do not establish WAN performance.
 
+The [completion receipt](completion.json) binds the final report and all twelve
+case manifests, aggregates and independent reviews. It records fresh verification
+of 4,546 compact case checksum entries and the complete operation/capture census.
+
 The original shell-only `workflow-configuration-review.json` does not qualify
 negative rejection paths: native Bash 3.2 continued after failing standalone
 `[[ ... ]]` checks despite `set -e`. Preserve that historical receipt, but use
@@ -48,7 +52,7 @@ structured findings are preserved; scientific rows and captures remain.
 
 ## Recorded WAN cases
 
-The [current result report](../../broad-wan-results-2026-10-29.md) records eleven
+The [final result report](../../broad-wan-results-2026-10-29.md) records all twelve
 completed, independently reviewed transfer cases: [localized](cases/localized_32/README.md),
 [scattered](cases/scattered_32x32/README.md), [prefix insertion](cases/prefix_4096/README.md),
 [middle insertion](cases/middle_4096/README.md), [deletion](cases/delete_4096/README.md),
@@ -56,13 +60,16 @@ completed, independently reviewed transfer cases: [localized](cases/localized_32
 [1 MiB overwrite](cases/replace_1m/README.md),
 [structured bytes](cases/structured_localized_32/README.md), and
 [opaque compressed bytes](cases/compressed_localized_32/README.md), and
-[cold random bytes](cases/cold_random/README.md).
+[cold random bytes](cases/cold_random/README.md), and
+[cold structured bytes](cases/cold_structured/README.md).
 Each has thirty pairs across four arms. Warm cases have 240 exact seed/update
-operations each; cold random has 120 exact transfers without seeds.
-Fifty-four of fifty-five captures are complete. Middle-insertion shard 1 has
+operations each; each cold case has 120 exact transfers without seeds. All 2,640
+operations reopened exactly, totaling 44,288,504,160 cumulative compared bytes.
+Fifty-nine of sixty measured captures are complete. Middle-insertion shard 1 has
 ambiguous tuple-reuse attribution and no complete whole-case IP statistic; its
 [separate diagnosis](qualification/middle-tuple-reuse/README.md) preserves the
-original failure. Cold structured remains incomplete.
+original failure. All registered transfer cases are complete; no timed observation
+was replaced, and no incomplete-capture subset is promoted to a whole-case IP claim.
 
 The first cold-random setup failed before launching the measurement client. Its
 [separate packet](qualification/cold-random-preflight-attempt-1/README.md) records

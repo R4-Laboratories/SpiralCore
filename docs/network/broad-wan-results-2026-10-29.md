@@ -1,9 +1,14 @@
-# Broad 16 MiB WAN results — campaign in progress
+# Broad 16 MiB WAN results — completed registered campaign
 
 Measured source: `9dce4c57d1f41cef7365b297cd690849afce34e7`.
 Run: `d6aaa0f15da9ccbc62c005a1802532b3e85ad6d901886eea6fbd0076b2d312e4`.
-Eleven of twelve registered cases are complete and independently reviewed. Remaining
-cases must not be inferred from this result. The complete registration is in the
+All twelve registered cases are complete and independently reviewed: thirty paired
+trials per case, four methods, sixty measured shards and 2,640 exact operations.
+The receiver reopened and compared 44,288,504,160 cumulative object bytes, including
+seeds and repeated content. Fifty-nine measured captures are complete; the middle
+insertion case retains one incomplete attribution and no whole-case IP statistic.
+One additional setup failed before measurement and is preserved separately.
+The complete registration is in the
 [workload plan](../plans/2026-10-29-broader-wan-and-scaling.md).
 
 This v4 comparison uses the same mandatory verified-byte publication policy for
@@ -394,6 +399,36 @@ All five measured captures are complete. Each observed cache inventory contains
 [complete cold-random packet](evidence/2026-10-29-broad-wan/cases/cold_random/README.md)
 retains these results separately from the pre-measurement setup failure described
 below. No measured observation was replaced.
+
+## Completed case: cold structured object
+
+This 16,777,216-byte fixture repeats the seed-derived 4 KiB template and sixteen
+little-endian record-counter variants described in the warm structured case, with
+no midpoint edit and no reusable base. The two cold zstd arms use the same
+independent-chunk codec. Sparse's registered cold fallback is raw, so it cannot
+take advantage of this fixture's compressibility.
+
+| Cold transfer | Median request + reply HTTP-body bytes | Median elapsed, including computation | Elapsed p95 | Median sender + receiver-handler CPU |
+|---|---:|---:|---:|---:|
+| Raw full send | 16,814,026 | 1,860.539 ms | 2,641.675 ms | 97.983 ms |
+| Zstd, 60 KiB chunks | 1,179,589 | 344.853 ms | 861.643 ms | 56.954 ms |
+| Zstd prefix arm, cold chunk fallback | 1,179,589 | 386.755 ms | 643.742 ms | 54.782 ms |
+| Sparse arm, cold raw fallback | 16,814,026 | 1,938.738 ms | 2,520.609 ms | 102.275 ms |
+
+All candidate arms pass both cold byte/p95 checks, but those non-regression gates
+do not establish that every arm chooses an efficient encoding. Ordinary chunked
+zstd uses 92.984494% fewer body bytes than raw, has a 5.395165× ratio of median
+elapsed times, and uses 41.87% less median combined CPU. Sparse sends the entire
+object and has higher median elapsed and CPU than raw. The two zstd arms use the
+same cold encoding; their different timings are observed sample results, not a
+different cold-prefix algorithm.
+
+All thirty pairs and 120 transfers reopened exactly, totaling 2,013,265,920 bytes.
+All five captures are complete, with 24 publications and two control files in each
+observed cache inventory. The [complete cold-structured packet](evidence/2026-10-29-broad-wan/cases/cold_structured/README.md)
+retains every observation. Together with the warm cases, this supports a next
+step of explicit codec selection based on full protocol cost and measured compute;
+the current fixed sparse arm is not an adaptive best-codec implementation.
 
 ## Qualification and measurement boundaries
 
