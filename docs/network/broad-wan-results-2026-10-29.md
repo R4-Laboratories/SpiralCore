@@ -2,7 +2,7 @@
 
 Measured source: `9dce4c57d1f41cef7365b297cd690849afce34e7`.
 Run: `d6aaa0f15da9ccbc62c005a1802532b3e85ad6d901886eea6fbd0076b2d312e4`.
-Eight of twelve registered cases are complete and independently reviewed. Remaining
+Nine of twelve registered cases are complete and independently reviewed. Remaining
 cases must not be inferred from this result. The complete registration is in the
 [workload plan](../plans/2026-10-29-broader-wan-and-scaling.md).
 
@@ -30,7 +30,9 @@ there is no base.
 These are configured bounded encodings under the same mandatory publication
 policy. Compression level, history scope, window configuration and prior-base
 access differ between the zstd methods. The experiment does not establish the
-best whole-file or streaming zstd configuration or isolate caching alone.
+best whole-file or streaming zstd configuration or isolate caching alone. Every
+warm arm uses a raw seed by registration; lifecycle statistics charge that actual
+seed, not an optimized compressed first delivery.
 See [chunk encoding](../../crates/spiralcore-transfer/src/client.rs),
 [prefix configuration](../../crates/spiralcore-transfer/src/zstd_prefix.rs), and
 [benchmark arm selection](../../crates/spiralcore-transfer/src/bin/spiralcore-bench.rs).
@@ -274,6 +276,41 @@ totaling 4,026,531,840 compared bytes. Independent review agrees with the raw
 receipts and author statistics; all five captures meet the completeness criteria.
 The [complete larger-overwrite packet](evidence/2026-10-29-broad-wan/cases/replace_1m/README.md)
 retains the fixture identity, measurements and custody.
+
+## Completed case: structured data with a 32-byte edit
+
+The 16 MiB fixture repeats a seed-derived 4 KiB pseudorandom template. Each
+record's first eight bytes contain its index modulo 16 as a little-endian integer,
+creating sixteen recurring record variants. The update XORs 32 midpoint bytes
+with 0xa5. It is a compressible synthetic record distribution, not all zeros.
+
+| Warm update | Median request + reply HTTP-body bytes | Median elapsed, including computation | Median sender + receiver-handler CPU |
+|---|---:|---:|---:|
+| Raw full send | 16,814,026 | 1,599.656 ms | 82.522 ms |
+| Zstd, 60 KiB chunks | 1,179,617 | 256.258 ms | 45.037 ms |
+| Zstd prefix delta | 2,239 | 222.383 ms | 100.111 ms |
+| Sparse COPY/LITERAL | 600 | 182.454 ms | 67.579 ms |
+
+Sparse uses 99.99643155% fewer HTTP-body bytes than raw, with an 8.767448×
+ratio of median elapsed times. Against the chunked-zstd control, sparse sends
+far fewer bytes and has lower median elapsed time, but uses approximately 50.05%
+more median combined CPU. Chunked zstd therefore wins the measured compute
+comparison; sparse wins bytes and elapsed time in this case. The whole-frame
+prefix control also achieves substantial reuse, with its configured setup cost
+included. These are distinct measured tradeoffs, not a universal codec ranking.
+
+With the standardized raw seed plus one update, raw uses median 33,628,052 body
+bytes and 3,133.282 ms; sparse uses 16,814,626 bytes and 1,777.323 ms; chunked
+zstd uses 17,993,643 bytes and 1,768.712 ms; prefix uses 16,816,265 bytes and
+1,884.117 ms. Chunked zstd has a slightly lower lifecycle median than sparse.
+All warm-case seeds are deliberately raw for a common cache-establishment policy;
+these paid-seed numbers do not represent an optimized compressed first delivery.
+
+All thirty pairs and 240 operations reopened exactly, totaling 4,026,531,840
+compared bytes. Independent review agrees with the raw receipts and author
+statistics, and all five captures meet the completeness criteria. The
+[complete structured-data packet](evidence/2026-10-29-broad-wan/cases/structured_localized_32/README.md)
+retains every observation and its custody.
 
 ## Qualification and measurement boundaries
 
