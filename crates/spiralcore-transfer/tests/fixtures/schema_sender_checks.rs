@@ -125,3 +125,64 @@ fn deterministic_mixed_sequences_preserve_matching_and_fallback_bytes() {
     }
     check(&artifact, &target);
 }
+
+#[test]
+fn first_match_preserves_exact_charge_and_terminal_work_budget() {
+    let row = b"{\"identifier\":7,\"status\":true}\n";
+    let artifact = fit(&[row]);
+    let templates = super::read_artifact(&artifact).unwrap();
+    let record = super::parse_record(row).unwrap();
+    let charge = 2 * templates.items[0].literal_len;
+    for start in [
+        0,
+        super::MAX_MATCH_WORK - charge - 1,
+        super::MAX_MATCH_WORK - charge,
+        super::MAX_MATCH_WORK - charge + 1,
+        super::MAX_MATCH_WORK,
+    ] {
+        let mut expected_work = start;
+        let matched = if start < super::MAX_MATCH_WORK {
+            templates.find(&record.template, &mut expected_work)
+        } else {
+            None
+        };
+        let expected = if matched.is_some() {
+            baseline::encode(&artifact, row).unwrap()[48..].to_vec()
+        } else {
+            let mut bytes = Vec::new();
+            super::write_literal(&mut bytes, row);
+            bytes
+        };
+        let mut work = start;
+        let mut actual = Vec::new();
+        if !super::write_first_template(&templates.items[0], row, &mut work, &mut actual) {
+            super::write_literal(&mut actual, row);
+        }
+        assert_eq!(work, expected_work, "starting work {start}");
+        assert_eq!(actual, expected, "starting work {start}");
+    }
+}
+
+#[test]
+fn failed_speculation_never_spends_work_or_emits_partial_bytes() {
+    let row = b"{\"identifier\":7,\"status\":true}\n";
+    let artifact = fit(&[row]);
+    let templates = super::read_artifact(&artifact).unwrap();
+    for bytes in [
+        b"{\"identifier\":7,\"status\":true}\nextra".as_slice(),
+        b"{\"identifier\":7, \"status\":true}\n",
+        b"{\"identifier\":7,\"status\":tru}\n",
+        b"{\"identifier\":7,\"status\":\"\xff\"}\n",
+    ] {
+        let mut work = super::MAX_MATCH_WORK - 1;
+        let mut encoded = vec![17, 23];
+        assert!(!super::write_first_template(
+            &templates.items[0],
+            bytes,
+            &mut work,
+            &mut encoded
+        ));
+        assert_eq!(work, super::MAX_MATCH_WORK - 1);
+        assert_eq!(encoded, [17, 23]);
+    }
+}
