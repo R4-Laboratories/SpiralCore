@@ -42,3 +42,15 @@ Reuse the existing isolated worktree and shared build targets. Keep at least
 stores. Preserve original runtime/saves and historical evidence. The user has
 already authorized implementation and publication; routine implementation
 choices within this scope need no further approval pause.
+
+The matching proof is local: artifact admission already validates the first
+template's flat JSON skeleton; exact fragments plus the existing deterministic
+primitive parser establish the same token boundaries and layout as the general
+parser. Complete record coverage is mandatory. Index zero is first in any
+fingerprint bucket, so a verified match skips no earlier collision candidate.
+Only a successful match charges `2 * literal_len`, matching the old lookup.
+An over-budget match emits a literal and terminates future matching; an exact
+budget fit may still encode the current record. Unprofitable matches retain the
+same strict size comparison and their original work charge. A failed speculative
+match leaves the counter unchanged and runs the old path, adding at most one
+bounded record scan. Controls must expose that possible regression.

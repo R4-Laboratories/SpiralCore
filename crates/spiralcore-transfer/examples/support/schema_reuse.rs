@@ -51,7 +51,7 @@ fn reuse_sources() -> Value {
     result
 }
 
-fn reuse_plan() -> Result<Value> {
+pub(super) fn reuse_plan() -> Result<Value> {
     let training = training_records();
     let mut targets = Vec::new();
     for trial in 0..10 {
@@ -115,6 +115,9 @@ fn persistent_operation(
     position: Option<usize>,
 ) -> Value {
     channel.metrics = Metrics::default();
+    if let Some(wire) = &mut channel.wire {
+        wire.clear();
+    }
     let seed = position.is_none();
     let cache_before = cache_stats(channel);
     let transfer = hash(
@@ -179,6 +182,14 @@ fn persistent_operation(
     })();
     let cpu_us = cpu.elapsed().as_micros();
     let wall_us = wall.elapsed().as_micros();
+    let wire_sha256 = channel.wire.as_ref().map(|wire| {
+        let mut digest = Sha256::new();
+        for body in wire {
+            digest.update((body.len() as u64).to_le_bytes());
+            digest.update(body);
+        }
+        hex(&digest.finalize().into())
+    });
     let cache_after = cache_stats(channel);
     let (sender_retained_bytes, sender_retained_charge) = retained_sender(sender);
     let mut error = result.as_ref().err().map(ToString::to_string);
@@ -212,7 +223,7 @@ fn persistent_operation(
         "mode":result.as_ref().ok().map(|s|format!("{:?}",s.mode)),"raw_fallback":!seed&&fitted_kind(arm).is_some()&&result.as_ref().is_ok_and(|s|s.mode==Mode::Raw),
         "exact_immediate":exact,"verification_cpu_us":verification_cpu,"verification_wall_us":verification_wall,"error":error,
         "receiver_cache_enabled":prepared_arm(arm),"cache_before":cache_before,"cache_after":cache_after,
-        "sender_retained_bytes":sender_retained_bytes,"sender_retained_charge":sender_retained_charge})
+        "sender_retained_bytes":sender_retained_bytes,"sender_retained_charge":sender_retained_charge,"wire_sha256":wire_sha256})
 }
 
 fn write_session_row(
@@ -231,18 +242,22 @@ fn write_session_row(
 fn session(
     out: &mut File,
     dir: &Path,
-    scope: Id,
+    scope_recording: (Id, bool),
     arm: &str,
     trial: usize,
     large: bool,
     artifact: Option<&[u8]>,
 ) -> Result<()> {
+    let (scope, recording) = scope_recording;
     let targets = SEQUENCE
         .iter()
         .enumerate()
         .map(|(p, f)| fixture(f, large, session_index(trial, p)?))
         .collect::<Result<Vec<_>>>()?;
     let mut channel = Channel::open(dir, scope)?;
+    if recording {
+        channel.wire = Some(Vec::new());
+    }
     channel
         .endpoint
         .set_codec_cache_enabled(prepared_arm(arm))?;
@@ -346,6 +361,17 @@ fn launch_session(
     large: bool,
     artifact: Option<&[u8]>,
 ) -> Result<()> {
+    launch_recorded_session(out, cache, arm, trial, large, artifact, false)
+}
+pub(super) fn launch_recorded_session(
+    out: &mut File,
+    cache: &Path,
+    arm: &str,
+    trial: usize,
+    large: bool,
+    artifact: Option<&[u8]>,
+    recording: bool,
+) -> Result<()> {
     let dir = cache.join(format!("{trial}-{large}-{arm}"));
     let scope = hash(
         b"spiralcore.schema-reuse.scope.v1\0",
@@ -355,7 +381,7 @@ fn launch_session(
             &[u8::from(large)],
         ],
     );
-    session(out, &dir, scope, arm, trial, large, artifact)
+    session(out, &dir, (scope, recording), arm, trial, large, artifact)
 }
 
 fn run_reuse(
@@ -471,7 +497,7 @@ fn one_row<'a>(
     }
     Ok(row)
 }
-fn validate_operation(row: &Value, reference: &Value) -> Result<()> {
+pub(super) fn validate_operation(row: &Value, reference: &Value) -> Result<()> {
     if row["object"] != reference["object"]
         || row["bytes"] != reference["bytes"]
         || row["exact_immediate"] != true
@@ -515,7 +541,7 @@ const METRICS: [&str; 13] = [
     "sender_retained_bytes",
     "sender_retained_charge",
 ];
-fn describe(group: &[&Value]) -> Result<Value> {
+pub(super) fn describe(group: &[&Value]) -> Result<Value> {
     let mut result = json!({"n":group.len(),"raw_fallbacks":group.iter().filter(|r|r["raw_fallback"]==true).count()});
     for key in METRICS {
         result[key] = dist(
