@@ -153,6 +153,14 @@ observations and store. Artifacts and compact measurements remain reproducible.
 
 ## Compressed schema streams and prepared codec reuse
 
+The schema encoder directly matches the first validated template and stores its
+raw primitive values on the stack, avoiding repeated layout allocation and
+hashing. Other layouts retain the general parser. This preserves the exact
+SCVAL stream, zstd frame and existing public APIs. The
+[paired sender CPU result](../../docs/network/schema-sender-results-2026-10-30.md)
+records unchanged bytes, a 32.06% matching-batch sender CPU reduction, and all
+setup/control costs; ordinary zstd still uses less CPU and local completion time.
+
 `client::transfer_schema_zstd_batched` compresses the exact schema value/literal
 stream using a bounded, checksummed zstd frame. It has the same artifact, target,
 transfer-ID, probe and exchange arguments as the other fitted senders. The

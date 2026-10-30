@@ -20,6 +20,8 @@ use std::{
 
 #[path = "support/schema_reuse.rs"]
 mod schema_reuse;
+#[path = "support/schema_sender.rs"]
+mod schema_sender;
 
 fn sha(bytes: &[u8]) -> String {
     hex(&Sha256::digest(bytes).into())
@@ -82,6 +84,7 @@ struct Channel {
     endpoint: Endpoint<BenchAuthority>,
     scope: Id,
     metrics: Metrics,
+    wire: Option<Vec<Vec<u8>>>,
 }
 impl Channel {
     fn open(path: &Path, scope: Id) -> Result<Self> {
@@ -94,6 +97,7 @@ impl Channel {
             )?,
             scope,
             metrics: Metrics::default(),
+            wire: None,
         })
     }
     fn exchange(&mut self, frames: &[Frame]) -> spiralcore_transfer::Result<Vec<Frame>> {
@@ -122,6 +126,10 @@ impl Channel {
         self.metrics.receiver_wall += receiver_wall.elapsed().as_micros();
         self.metrics.response += response.len() as u64 + 16;
         let decoded = wan::decode_batch(&response);
+        if let Some(wire) = &mut self.wire {
+            wire.push(request);
+            wire.push(response);
+        }
         self.metrics.exchange_cpu += cpu.elapsed().as_micros();
         self.metrics.exchange_wall += wall.elapsed().as_micros();
         decoded
@@ -516,6 +524,9 @@ fn command() -> Result<()> {
     let args: Vec<_> = std::env::args().collect();
     if args.get(1).is_some_and(|s| s.starts_with("reuse-")) {
         return schema_reuse::command(&args);
+    }
+    if args.get(1).is_some_and(|s| s.starts_with("sender-")) {
+        return schema_sender::command(&args);
     }
     match args.get(1).map(String::as_str) {
         Some("plan") if args.len()==3=>{let mut out=fresh(Path::new(&args[2]))?;write_row(&mut out,&plan()?)},

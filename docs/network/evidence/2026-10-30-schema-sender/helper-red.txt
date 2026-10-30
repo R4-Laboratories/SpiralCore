@@ -1,0 +1,41 @@
+warning: unused import: `super::*`
+ --> crates/spiralcore-transfer/examples/support/schema_sender.rs:3:9
+  |
+3 |     use super::*;
+  |         ^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+error[E0425]: cannot find function `session_order` in this scope
+ --> crates/spiralcore-transfer/examples/support/schema_sender.rs:9:27
+  |
+9 |                 let order=session_order(trial,large).unwrap();
+  |                           ^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `session_order` in this scope
+  --> crates/spiralcore-transfer/examples/support/schema_sender.rs:10:34
+   |
+10 |                 assert_eq!(order,session_order(trial,large).unwrap());
+   |                                  ^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `session_order` in this scope
+  --> crates/spiralcore-transfer/examples/support/schema_sender.rs:18:20
+   |
+18 |         assert_ne!(session_order(0,false).unwrap()[0].0,session_order(0,true).unwrap()[0].0);
+   |                    ^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `session_order` in this scope
+  --> crates/spiralcore-transfer/examples/support/schema_sender.rs:18:57
+   |
+18 |         assert_ne!(session_order(0,false).unwrap()[0].0,session_order(0,true).unwrap()[0].0);
+   |                                                         ^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `session_order` in this scope
+  --> crates/spiralcore-transfer/examples/support/schema_sender.rs:19:17
+   |
+19 |         assert!(session_order(10,false).is_err());
+   |                 ^^^^^^^^^^^^^ not found in this scope
+
+error: aborting due to 5 previous errors; 1 warning emitted
+
+For more information about this error, try `rustc --explain E0425`.

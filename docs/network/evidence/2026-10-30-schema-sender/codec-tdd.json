@@ -1,0 +1,47 @@
+{
+  "milestone": "SC-OPT-013",
+  "scope": "first validated template encoder fast path; no receiver, wire, zstd profile or API changes",
+  "baseline": "97b01a1fd9086b284b2e25a9807c1b8a145564a2",
+  "profile_freeze": "4dacb487cd2b3b132aa6bbf015eb0e5f893e69e0",
+  "red": {
+    "log": "codec-red.txt",
+    "exit": 101,
+    "observed": "1 matching record performed 4 allocations; expected only 1 output allocation",
+    "counter_test_passed": true
+  },
+  "green": {
+    "log": "codec-green-attempt1.txt",
+    "exit": 0,
+    "passed": 44,
+    "targets": {
+      "lib": 21,
+      "schema_codec": 10,
+      "schema_prepared": 6,
+      "schema_reuse": 5,
+      "schema_sender": 2
+    }
+  },
+  "checks": [
+    "Frozen source byte-for-byte oracle for SCVAL and complete zstd frame parity",
+    "Exact reconstruction using current and frozen decoders",
+    "Lexical, malformed, binary, empty, zero-slot, 32-slot/overflow, record-size, line-count and mixed fallback cases",
+    "Exact/insufficient/terminal comparison budget and failed-speculation no-output/no-charge",
+    "Prepared matching 1/128/4096 records allocates exactly one output buffer"
+  ],
+  "limits": [
+    "Focused correctness/resource qualification; no candidate timing result yet",
+    "Allocation counter is test-only thread-local Rust System allocation requests, not RSS or zstd allocation measurement",
+    "Budget-edge tests inject private counter states to directly exercise the defensive terminal behavior"
+  ],
+  "files": {
+    "crates/spiralcore-transfer/src/schema.rs": "8c81c80b94faf4579a9875a825e47575b61652b9e4c03130ab6bc783e2905109",
+    "crates/spiralcore-transfer/tests/schema_sender.rs": "b8237d9098b19e436afa32dd48d85f8a952b0f6e01dc94720f96bc6982012685",
+    "crates/spiralcore-transfer/tests/fixtures/schema_sender_checks.rs": "8ec6c46f2e3f37d30753b2ebd45570053dd232962abdfd1e768e7bf4b345d4d4",
+    "crates/spiralcore-transfer/tests/fixtures/schema_sender_baseline.rs": "6c228201197e1ce26a6ac8137da490e0040ed26ab06d4576b330e8b240a2577a"
+  },
+  "evidence": {
+    "codec-green-attempt1.txt": "db8db4d87c986ccf786fb865e2e1de59871a5476b617f3a5336cdf362e41e3f1",
+    "codec-red.txt": "226cc4a3eedbc490f48d20ce060bf70e17ce0237ca03903392bb09729b455578"
+  },
+  "procedural_note": "Four codec RED/GREEN log/exit files were moved byte-preservingly from mistakenly named schema-sender-cpu evidence directory to registered schema-sender directory; no overwrite; empty mistaken directory removed."
+}
