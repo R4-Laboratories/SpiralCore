@@ -13,6 +13,8 @@ Current approved sequence: preserve local originals; establish origin/main; extr
 
 The user prioritized working standalone SpiralCore over MVM integration, then requested real WAN transfers with byte, elapsed-time and compute measurements. The next central mechanism is the existing coupled ternary/Kuramoto/cellular-automaton runtime, now ported into Rust and connected to verified checkpoint replay plus exact residual transfer. These mechanisms are part of the active transfer design. The earlier object-transfer engine and real two-machine HTTPS relay campaign have exact-byte evidence; the new runtime's qualification and measurements are recorded separately. MVM runtime, direct-peer/shaped-WAN qualification and compliance remain subsequent gates.
 
+Jeff Venable's [schema-fitting direction](schema-fitting-direction.md) proposes bounded shared templates/dictionaries alongside the coupled runtime, with exact residuals and measured fitting/amortization costs. It remains unimplemented and unmeasured.
+
 ## Milestones
 
 | Milestone | Status | Acceptance |
