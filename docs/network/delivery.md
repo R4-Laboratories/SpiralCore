@@ -58,6 +58,15 @@ drift/fallback controls and zstd timing variation are recorded separately.
 
 ## Performance priority
 
+The compressed-schema WAN follow-up is complete: 1,920 independently reopened
+exact objects and 660 unchanged before/after body/mode pairs across thirty trials
+per size. The optimized sender cuts matching-batch sender CPU by 31.67% versus
+the old encoder. Its 2.28% body advantage versus the configured ordinary-zstd
+profile costs more CPU; mixed ten-object sessions remain slower. See the
+[real-WAN result](schema-wan-results-2026-10-30.md) for paid setup, losses and
+measurement limits. The WAN origin now supports an explicit prepared-codec cache
+and credential-free observation records; its default remains unchanged.
+
 The user explicitly prioritized fewer bytes over the link, allowing additional computation at either endpoint. Exact reconstruction is mandatory. Transferred bytes are the primary performance acceptance metric; CPU, memory and elapsed time remain measured tradeoffs. A slower loopback mutation is not a failure if it materially reduces transmitted bytes. The earlier 2x latency target is a later optimization target, not a gate for the first working delivery.
 
 ## Invariants

@@ -18,6 +18,14 @@ including endpoint CPU, time through durable commit, and captured IP bytes. See 
 The WAN receiver accepts only scopes in its generated experiment plan; it is not a general public
 file-upload service.
 
+The `schema_fitting` example also runs registered persistent schema sessions over
+this WAN adapter. Its `wan-plan`, `wan-paired`, `wan-verify`, and `wan-summary`
+commands compare source-pinned senders and require exact reopened objects before
+reporting completion. The [thirty-trial WAN result](../../docs/network/schema-wan-results-2026-10-30.md)
+records 1,920 exact objects, preserved body savings, lower sender CPU versus the
+old encoder, and the remaining CPU/setup disadvantage versus ordinary zstd.
+That campaign measures HTTP-body bytes, not packet or complete-path bytes.
+
 ## Build and run the demonstration
 
 Run from the repository root with Rust 1.89 or newer:

@@ -1,0 +1,41 @@
+   Compiling spiralcore-transfer v0.1.0 (/home/runner/work/SpiralCore/SpiralCore/crates/spiralcore-transfer)
+    Finished `release` profile [optimized] target(s) in 14.52s
+     Running tests/schema_codec.rs (target/release/deps/schema_codec-766c296b8b6af71b)
+
+running 10 tests
+test duplicate_keys_whitespace_crlf_escapes_and_numeric_spellings_are_preserved ... ok
+test frozen_training_template_preserves_held_out_raw_tokens ... ok
+test hostile_stream_counts_indices_tokens_and_lengths_fail_preflight ... ok
+test arbitrary_bytes_layout_drift_and_nested_values_remain_exact_literals ... ok
+test invalid_primitive_spellings_and_slot_overflow_are_literals ... ok
+test malformed_artifact_is_rejected_even_for_a_literal_target ... ok
+test malformed_templates_duplicates_and_profile_caps_are_rejected ... ok
+test wrong_schema_and_encoded_lengths_are_rejected ... ok
+test empty_mixed_and_newline_heavy_objects_have_exact_fallback ... ok
+test training_limits_and_template_count_are_bounded ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/schema_prepared.rs (target/release/deps/schema_prepared-b4ce61827badb4f2)
+
+running 6 tests
+test prepared_schema_owns_artifact_and_preserves_existing_stream_bytes ... ok
+test schema_zstd_rejects_hostile_frames_then_decodes_a_valid_frame ... ok
+test schema_zstd_reuses_contexts_and_preserves_exact_values_and_fallback ... ok
+test prepared_encoders_recover_after_rejected_oversize_input ... ok
+test prepared_dictionary_matches_fresh_bytes_after_alternating_inputs_and_errors ... ok
+test target_specific_intermediate_cap_covers_maximum_literal_record_overhead ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.11s
+
+     Running tests/schema_reuse.rs (target/release/deps/schema_reuse-e4eb889480c30d43)
+
+running 5 tests
+test compressed_schema_offer_is_versioned_and_bounded ... ok
+test bad_compressed_transfer_cannot_publish_and_cached_decoder_recovers ... ok
+test warm_decoder_does_not_hide_corrupt_missing_or_unauthorized_artifact ... ok
+test codec_cache_is_bounded_pinned_and_released_without_exceeding_shared_budget ... ok
+test persistent_prepared_senders_and_receiver_reuse_exact_objects_then_restart ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.05s
+

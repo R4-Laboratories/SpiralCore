@@ -12,6 +12,17 @@ Cloudflare terminates HTTPS and can see payloads and the temporary bearer capabi
 
 ## Build and prepare
 
+For the separate compressed-schema comparison, use
+`.github/workflows/spiralcore-schema-wan.yml` and the `schema_fitting` example.
+A v4 plan can explicitly enable `codec_cache_enabled: true`; omission preserves
+the previous default. This enables retained decoder state and compact admitted
+request/cache observations on stderr without changing wire framing. Keep the
+receiver supervisor alive throughout all sessions, confirm the actual HTTPS
+origins respond before dispatch, and stop receivers before independent readback.
+The [registered commands and evidence](evidence/2026-10-30-schema-wan/README.md)
+and [measured result](schema-wan-results-2026-10-30.md) describe the three bounded
+shards, source-derived baseline, persistent state, body accounting and CPU scope.
+
 Use Rust 1.97.1, the compiler pinned in the test workflow:
 
 ```sh
