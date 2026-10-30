@@ -21,6 +21,18 @@ remain tied to their measured source; later results do not overwrite earlier neg
 
 ## Measured object sizes
 
+SC-WAN-005 rechecks actual prior-object reuse against matched whole-object zstd
+at `605ee6f1b2f5012c497e65fd56a0499f2de94253`, without changing production codecs.
+All 240 seed/update objects reopen exactly across thirty pairs at each of 1 and
+16 MiB. Sparse sends 600 body bytes for each 32-byte change; Whole attempts
+compression then selects Raw. At 16 MiB, update medians are 54.5955 ms CPU and
+201.771 ms completion versus 85.9755 ms and 1,626.617 ms. Sparse wins CPU in all
+thirty large pairs and elapsed in 29; the outlier is retained. Seed-plus-update
+body savings are approximately 50%, compared with the update-only 99.9964%.
+The 1 MiB median elapsed gain is 1.73x, below the proposed 2x time target.
+[Full result](warm-object-results-2026-10-30.md),
+[raw evidence and review](evidence/2026-10-30-warm-object-recheck/README.md).
+
 SC-OPT-014 adds exact Raw/Whole/Schema selection and a matched whole-object zstd
 control at `58d71cf10a45fb9f1ad19ae2557135d53a1edc1d`. The real-WAN campaign
 completed 1,800 targets and 60 seeds with exact stopped-store readback. All 600
@@ -29,8 +41,8 @@ wins, even removing its seed charge. Large paid-session selector/whole paired
 ratios are 2.1028 sender CPU, 1.3223 measured CPU subtotal and 1.0676 elapsed.
 This is codec-context reuse on distinct new objects, **not prior-object delta
 reuse**, and does not establish regression of the earlier 600-byte warm-update
-path. The successor comparison returns to verified object bases and exact
-deltas against the matched control. [Result](schema-selection-results-2026-10-30.md),
+path. SC-WAN-005 above supplies the subsequent matched verified-base comparison.
+[Result](schema-selection-results-2026-10-30.md),
 [raw evidence and review](evidence/2026-10-30-schema-selection/README.md).
 
 SC-WAN-004 validates the compressed-schema sender optimization over real WAN

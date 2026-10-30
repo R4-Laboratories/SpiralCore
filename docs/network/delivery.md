@@ -40,10 +40,14 @@ The [matched whole-object control and selector](schema-selection-results-2026-10
 now have real-WAN evidence: 1,860 exact transferred objects. Whole/Raw wins every
 selector decision on that new-object corpus; selection adds CPU without further
 byte reduction. This warms codec contexts only and does not test the earlier
-verified-base sparse/prefix or shared-runtime mechanisms. The next comparison
-returns to those warm-object mechanisms, with the tuned whole-object zstd
-control and actual seed-plus-update costs. Existing warm-cache WAN gains remain
-separately recorded; they must not be conflated with this schema experiment.
+verified-base sparse/prefix or shared-runtime mechanisms. The subsequent
+[warm-object recheck](warm-object-results-2026-10-30.md) now completes thirty
+pairs at 1 and 16 MiB with 240 exact reopened seed/update objects. The existing
+sparse path sends 600 body bytes and, at 16 MiB, uses 54.5955 ms median CPU and
+201.771 ms completion versus 85.9755 ms and 1,626.617 ms for tuned Whole/Raw.
+Actual paid seed-plus-update costs, the one large elapsed loss and all small-case
+results remain recorded. This measures prior-object reuse separately from the
+schema experiment and changes no production encoder or decoder.
 
 | Milestone | Status | Acceptance |
 |---|---|---|
