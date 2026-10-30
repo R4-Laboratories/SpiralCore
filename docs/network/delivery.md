@@ -36,6 +36,15 @@ drift/fallback controls and zstd timing variation are recorded separately.
 
 ## Milestones
 
+The [matched whole-object control and selector](schema-selection-results-2026-10-30.md)
+now have real-WAN evidence: 1,860 exact transferred objects. Whole/Raw wins every
+selector decision on that new-object corpus; selection adds CPU without further
+byte reduction. This warms codec contexts only and does not test the earlier
+verified-base sparse/prefix or shared-runtime mechanisms. The next comparison
+returns to those warm-object mechanisms, with the tuned whole-object zstd
+control and actual seed-plus-update costs. Existing warm-cache WAN gains remain
+separately recorded; they must not be conflated with this schema experiment.
+
 | Milestone | Status | Acceptance |
 |---|---|---|
 | Preservation and origin/main checkout | Complete | Original seven files preserved and backup hashes match |

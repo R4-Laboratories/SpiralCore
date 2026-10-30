@@ -1,0 +1,91 @@
+{
+  "milestone": "SC-OPT-014",
+  "verdict": "PASS",
+  "publication_verdict": "APPROVE scoped implementation and faithful negative WAN report",
+  "reviewer": "selector_tests",
+  "completed_utc": "2026-10-30T22:22:02.656363+00:00",
+  "source_commit": "58d71cf10a45fb9f1ad19ae2557135d53a1edc1d",
+  "github_run": 41135473115,
+  "artifact_id": 13016707357,
+  "prior_gate": {
+    "procedural": "PASS before source reviews",
+    "independent_code_rust": "PASS",
+    "premeasurement_review_sha256": "0201e792df3dda0633de9040107f368be00f16ba198e2cc225a8477cdecf80c2",
+    "production_security_sha256": "8b1e8d6f6cef7ba255d86897faec3b8ff6fc32a1933e54147be57f921ff5d16a",
+    "harness_workflow_security_sha256": "42efe941e16d95859a4585b65f3c864ad7b1c45c840e2a0ebc21c04d7de2bee4",
+    "reviewed_source_unchanged": true
+  },
+  "results_review": {
+    "verdict": "PASS",
+    "blocking_findings": [],
+    "method": "Bounded read-only independent arithmetic directly over existing nested raw operations, plans, receiver telemetry and stopped-store verification; no producer analyzer rerun, new tests/builds/measurements or analyzer project.",
+    "checked": {
+      "targets": 1800,
+      "actual_seeds": 60,
+      "selector_lazy_seeds": 0,
+      "exact_reopened_objects": 1860,
+      "unseeded_optional_artifacts_confirmed_absent": 60,
+      "presence_checks": 1920,
+      "sessions": 180,
+      "context_setups": 180,
+      "operation_scope_identity_cache_joins": 1860,
+      "target_body_mode_pairs": 600,
+      "session_body_pairs": 60,
+      "cell_and_paired_distributions_recomputed": 678,
+      "session_totals_recomputed": 180,
+      "actual_use_totals_recomputed": 6,
+      "numeric_report_table_rows": 12,
+      "source_git_blobs_verified": 81,
+      "downloaded_artifact_members_verified": 36,
+      "hosted_receiver_plans_byte_identical": 3
+    },
+    "selected_modes": {
+      "ZstdWholeV1": 480,
+      "Raw": 120,
+      "SchemaZstdV1": 0
+    },
+    "cold_seed_accounting": "Each forced-schema session pays169 artifact bytes/670 HTTP-body bytes exactly once; no selector seed was sent; all180 context constructions included once in paid-session totals.",
+    "schema_without_seed_cost": {
+      "basis": "Arithmetic from measured candidate receipts, not another warm transfer",
+      "wins": 0,
+      "ties": 0,
+      "comparisons": 600,
+      "small_excess_range_bytes": [
+        56,
+        120
+      ],
+      "large_excess_range_bytes": [
+        1160,
+        21293
+      ]
+    },
+    "large_paid_session_selector_over_whole": {
+      "body_bytes_geometric_mean": 1.0,
+      "sender_cpu_geometric_mean": 2.102796624253026,
+      "cpu_subtotal_geometric_mean": 1.3223202303210502,
+      "elapsed_geometric_mean": 1.0676429669710787,
+      "elapsed_wins": 12,
+      "pairs": 30
+    },
+    "claim_limits": "Negative selector outcome remains explicit. No extra byte saving versus equally tuned whole/Raw; added candidate work costs sender CPU. Small unpaired medians are not described as paired wins. CPU handler scope, nested exchange time, shared desktop/relay jitter, setup and absence of positive WAN schema selection remain explicit; no energy/full-packet/controlled-network/MVM claim.",
+    "reviewer_arithmetic_correction": "An initial read-only assertion used64KiB chunking; source MAX_CHUNK is60KiB. Corrected independent check passed; no campaign data, source or results changed.",
+    "failures_discarded": 0,
+    "report_sha256": "6eaae2c833d03df107ec81c9445726ea875906df11b3d60276ede76ccba348a9",
+    "scope_clarification": "Final prose explicitly distinguishes prepared codec-context reuse on distinct new objects from prior-object sparse/prefix/DAG/shared-runtime reuse. This campaign tests no regression of those warm-object mechanisms. Historical16MiB numbers were checked against the linked retained report and remain labeled historical with its baseline/readiness/capture limits; no new experiment is implied."
+  },
+  "evidence_sha256": {
+    "wan/summary.json": "974e90f11a3273cf1238567f0612c3315d15269c5a2ef8ea9b58c5685055ec6f",
+    "wan/custody.json": "19d1ceeec4ddd51c368b85a8a60cfa462485fb152d1721d395d56cd7fb7087ac",
+    "wan/candidate-cost-analysis.json": "000e949e3e5806b86d5d49c7e5b092d64163fc87348258d263daa4043172d639",
+    "wan/github-completed.json": "30bb97eb062ff3ddb6342ac3ce5c105c43d6494a5297241ed30189f6ab0c2967",
+    "wan/hosted/observations-0.jsonl": "0cb9cd955c516c3927715bf8146a40dd574a2e7a073fe5ad0078512627617c2b",
+    "wan/hosted/observations-1.jsonl": "5ee3d45bdb28ee399a00cb0c0d7fd31a45bb3e53624acf056ac9ff7d40300ff8",
+    "wan/hosted/observations-2.jsonl": "ed730e6b12742d5189ddc1a71ad4306ca25ce107111f8cfaa36233881ace6e80",
+    "wan/verification-0.jsonl": "86caabea598a58456896b23c4084ccc257c1fda3c5a32ae319a93e47be918ffe",
+    "wan/verification-1.jsonl": "4c639348ccacfdc1b923ddd3850dad9c30c3e7cd8c0ad756c242fb77905e7bd6",
+    "wan/verification-2.jsonl": "7361a86b8c3b3bf74340d2ea7f714a4f8d911906e11e8b6877934d7e1ace37eb"
+  },
+  "sender_executable_sha256": "85dee51c4e283a5132b958b408b5493dcf4226bcf3cd78e665e7c4d1cd0afd55",
+  "receiver_executable_sha256": "572667bda7eba40c269e92c58e7bc6747e96a026c5cc92d06532328e4d26620c",
+  "cleanup": "Owned process/secret cleanup is separately recorded by parent; not an algorithm-review claim."
+}
