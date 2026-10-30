@@ -1,0 +1,47 @@
+{
+  "milestone": "SC-OPT-015",
+  "verdict": "PASS_SCOPED_PREMEASUREMENT_SECURITY_INFRA",
+  "reviewer": "selector_architect",
+  "completed_utc": "2026-10-30T23:25:45.493764+00:00",
+  "source_commit": "389accd2be2f8913ff6995f0c79c8867577ec6c1",
+  "procedural_gate": "PASS observed before content review",
+  "roles": "Fresh roster verify d1927d9e7ce51354 and Agent security-reviewer / infra-reviewer checks passed; both profiles read.",
+  "scope": "Independent review of cross-author warm-object measurement profile changes, dispatch, workflow, actual workflow guard tests and campaign supervisor. Own production selector explicitly excluded.",
+  "sha256": {
+    "crates/spiralcore-transfer/examples/support/warm_object.rs": "7381a1b8f6735d843e4593a3ef87658e53b76a68e3ab8ae7938166ed9b36a04f",
+    "crates/spiralcore-transfer/examples/schema_fitting.rs": "69acd5bf906347c603b3db2fc803b9c200e6aa77b910e77daff3a7bb2b396084",
+    "crates/spiralcore-transfer/examples/support/schema_selection.rs": "900f52aeee18d3a4785c63c2f7967167a77f98deff2cba88aa063a4e1bb49ac7",
+    "crates/spiralcore-transfer/examples/support/schema_wan.rs": "88b4be6aa9524ceb5f31cad52c25eaae645ca67b5e5ebd4911d655057aecc717",
+    ".github/workflows/spiralcore-warm-selection.yml": "7f5a676388d76abc7e6b155cb08b5911231b3137c7766243399e1393397f321c",
+    "crates/spiralcore-transfer/tests/warm_selection_workflow.rs": "090985bd6935bfe6bdd5ce754f842e8fcb546f50129b2e7d6d81f33b97285e33",
+    "docs/network/evidence/2026-10-30-warm-selection/qualification/supervisor.sh": "2d662a294cfe122745601656805706df7a30c2561b4e7cf1b4dafbfe66bdd962",
+    "docs/network/evidence/2026-10-30-warm-selection/measurement-contract.md": "f321f56213086f8c88db429958827b314b8b31d31ab5202cde58812d961decde",
+    "docs/network/evidence/2026-10-30-warm-selection/qualification/procedural-review.json": "3c0fe2ee341f096d1db792878d789c97eb1bb421b9942226aed06992c38be135",
+    "docs/network/evidence/2026-10-30-warm-selection/qualification/harness-tdd.json": "862a5a03e842375825917adae096e0e1b64232ba5cb2c15b5f6c31bc0a5452eb",
+    "docs/network/evidence/2026-10-30-warm-selection/qualification/workflow.json": "71f05fe7abbc4273cca116ecf1be07d1d77929c43babfb165a1bde6517502ba5"
+  },
+  "blocking_findings": [],
+  "checks": [
+    "Explicit warm-selection.v1 profile retains old warm-object profile, uses distinct scope domains and reconstructs complete registered plans before paired execution, verification and summary. Old source/test compatibility is retained in the recorded 30-test harness GREEN.",
+    "Six shards each register 30 scoped sessions and 60 transfers: 510 MiB retained payload plus conservative overhead totals 566.234375 MiB, below the 768 MiB campaign bound. The three-arm order is reproducibly counterbalanced. Actual fixed dose is 180 paid base seeds plus 180 absent-target updates.",
+    "Every selector session generates the frozen training corpus, actually fits its artifact and constructs contexts inside one setup timer. All three arms pay identical Raw base seeds. Target preparation, selected transfer, hashing and small receipt clone remain within the target timer. Unexpected schema seeding fails closed instead of silently enlarging the registered campaign.",
+    "Exact costs and pruned lower bounds are distinct typed receipt lists. Validation binds expected cold schema charge, known structural lower bounds, selected Sparse mode and actual 600-byte body receipt. Summary joins selector to forced Sparse and Whole: small evaluated Whole cost matches its actual control or Raw fallback; large pruned Whole bound must not exceed actual control.",
+    "Sender process CPU and disjoint receiver-handler CPU are added once. Exchange CPU/wall are retained subsets. Setup-plus-seed-plus-update lifecycle is labelled as a disjoint phase sum, not continuous process lifetime or pure wire latency.",
+    "Fresh evidence files/directories fail on collisions. Driver stops on failure without retries, retains raw error receipts, binds source/plan/executable metadata, and requires complete unique ordered operations plus independent stopped-store byte/length/hash readback. Cache removal occurs only after successful local reopen and summary.",
+    "Workflow is push-only on the specific branch, exact configured source SHA and attempt one; checkout/artifact actions use immutable SHAs, repository permissions are read-only and credentials are not persisted. All six receiver origins require HTTPS at a bounded trycloudflare.com hostname with no credentials/path/query/port. Bearer capability is injected only into the transfer step and is never printed by reviewed code.",
+    "Workflow source and executable inventories are checked before/after build or transfers; all three arms use one sender executable. Six shards execute sequentially with job/step timeouts. Failure artifacts are always sealed and uploaded; no production deployment or additional cloud allocation is present.",
+    "Supervisor uses fixed owned paths, a fresh evidence directory, existing disk floor, loopback origins, explicit capability environment and registered scopes. It remains alive to own children, traps termination and kills/waits only its own recorded children. Existing receiver quota, authorization, disabled DAG policy and bounded codec cache are unchanged."
+  ],
+  "retained_qualification_reviewed": {
+    "harness": "Missing-helper RED and 30/30 GREEN plus Clippy receipt inspected; no reviewer reruns.",
+    "workflow": "Actual YAML CONFIG/AUTH gate tests cover source/ref/attempt/token plus six invalid-origin families; retained three-test GREEN and six shell syntax blocks inspected.",
+    "parent_final": "Procedural receipt records 341 release passes, no failures, two preexisting ignored, all-target Clippy/build pass and focused coverage. This reviewer did not rerun them."
+  },
+  "limits": [
+    "This approves the bounded public/synthetic campaign harness and launch configuration, not the reviewer-authored selector, general production deployment, cryptographic-module compliance or any speed claim.",
+    "Receiver executable hash is operator-supplied and bound to preserved local executable/process custody, not remotely attested by the protocol. Final source/executable/plan match and stopped-store readback remain required before a WAN result is accepted.",
+    "Body-byte accounting excludes HTTP/TLS/TCP/IP, retransmissions and extra relay hops. Receiver-handler CPU excludes origin HTTP/logging and relay CPU; sender timing includes its exchange. Energy is not measured.",
+    "The general WAN receiver retains its existing one-hour/16384-request service cap and shared quotas; the campaign accepts exactly 60 successful registered requests per shard. The harness registration and final observation census enforce the narrower scientific dose.",
+    "No builds, tests, traffic, new experiments or changes to production were performed in this review. The concurrent registered local run was not treated as completed evidence."
+  ]
+}

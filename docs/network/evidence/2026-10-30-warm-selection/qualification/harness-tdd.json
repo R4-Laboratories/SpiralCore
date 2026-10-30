@@ -1,0 +1,36 @@
+{
+  "schema": "spiralcore.warm-selection.harness-qualification.v1",
+  "utc": "2026-10-30 23:17:41 UTC",
+  "verdict": "FOCUSED_GREEN_SOURCE_RELEASED",
+  "design_commit": "a438fc7658a823a48fe2a83efb502e2e8c87d331",
+  "implementation_committed": false,
+  "scope": "Adapt existing warm-object harness to the explicit three-arm/six-shard profile; preserve old commands and tests. No production changes by measurement owner.",
+  "sources": {
+    "examples/support/warm_object.rs": "7381a1b8f6735d843e4593a3ef87658e53b76a68e3ab8ae7938166ed9b36a04f",
+    "examples/schema_fitting.rs": "69acd5bf906347c603b3db2fc803b9c200e6aa77b910e77daff3a7bb2b396084",
+    "measurement-contract.md": "f321f56213086f8c88db429958827b314b8b31d31ab5202cde58812d961decde"
+  },
+  "environment": {
+    "cargo": "/Users/casey.allard/.cargo/bin/cargo +1.97.1",
+    "CARGO_TARGET_DIR": "/Users/casey.allard/spiralcore/target",
+    "CARGO_INCREMENTAL": "0",
+    "common_arguments": "--release --locked --target aarch64-apple-darwin --features hardware-sha256 --manifest-path crates/spiralcore-transfer/Cargo.toml",
+    "disk_floor_checked": "26 GiB free before GREEN"
+  },
+  "receipts": [
+    {"path":"harness-red.txt","sha256":"0a3f2d0786d098aec4776d7494961a2eda8727b14c3e875e24a271775d36efac","exit":101,"arguments":"test COMMON --example schema_fitting warm_selection_","reason":"E0425 missing selection_plan, selection_order and validate_warm_choice before their implementation"},
+    {"path":"harness-green-attempt1.txt","sha256":"03d142e646e9c4e85e7f5407ac9ba31d3d8d558a9d1dcef4ab6cfb73a863c504","exit":0,"arguments":"test COMMON --example schema_fitting","passed":30,"failed":0,"historical_tests":26,"new_tests":4},
+    {"path":"harness-clippy.txt","sha256":"bbf35678e0960a5d2e51cfa9e4560ebd65ff594ef5b339725861e4a3531bac0d","exit":0,"arguments":"clippy COMMON --example schema_fitting -- -D warnings"}
+  ],
+  "checks": [
+    "Six bounded shards; 30 sessions/60 transfers and 510 MiB payload/566.234375 MiB allowance per shard; six permutations each appear five times per size",
+    "Incorrect pruning bounds, omitted cold-artifact setup, unexpected seed requirement and incorrect small/large evaluation paths reject",
+    "Actual frozen training fit yields the169-byte artifact; prepared selector sends600 HTTP-body bytes; stopped store reopens exact target and confirms schema artifact absent",
+    "Complete synthetic36-object local summary validates all three arms, eighteen metric cells and eighteen paired comparisons, charges setup once and rejects unpaid fit or missing decision",
+    "All26 historical example tests pass, including original warm fixture/order/scope/readback/accounting checks",
+    "Rustfmt and scoped git diff checks pass"
+  ],
+  "registered_local_campaign": "NOT_RUN; waits for implementation commit, frozen executable and parent release",
+  "registered_wan_campaign": "NOT_RUN",
+  "limitations": "Test transfers and synthetic receipt timings are not performance measurements. The parent owns final all-target qualification, source freeze, actual local/WAN runs and publication."
+}

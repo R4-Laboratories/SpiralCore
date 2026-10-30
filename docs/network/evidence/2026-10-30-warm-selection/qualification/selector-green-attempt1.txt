@@ -1,0 +1,38 @@
+/Users/casey.allard/.cargo/bin/cargo +1.97.1 test --manifest-path crates/spiralcore-transfer/Cargo.toml --release --locked --target aarch64-apple-darwin --features hardware-sha256 --test warm_selection --test warm_selection_client --test schema_selection
+   Compiling spiralcore-transfer v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer)
+    Finished `release` profile [optimized] target(s) in 11.37s
+     Running tests/schema_selection.rs (/Users/casey.allard/spiralcore/target/aarch64-apple-darwin/release/deps/schema_selection-6c8f9ea8e8007c06)
+
+running 8 tests
+test whole_zstd_mode_is_explicit_and_requires_no_artifact ... ok
+test whole_contexts_preserve_parameters_bytes_and_recover_after_bad_frames ... ok
+test exact_candidate_costs_and_raw_tie_match_independent_frame_lengths ... ok
+test whole_codec_accepts_exact_sixteen_mib_and_rejects_larger_before_encode ... ok
+test unseeded_claimed_warm_schema_is_rejected_and_whole_cache_is_scoped ... ok
+test lazy_schema_seed_is_paid_once_then_ready_schema_commits_exactly ... ok
+test whole_receiver_rejects_corruption_then_reuses_bounded_contexts ... ok
+test prepared_selection_is_minimum_charges_seed_and_matches_serialized_transfer ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.78s
+
+     Running tests/warm_selection.rs (/Users/casey.allard/spiralcore/target/aarch64-apple-darwin/release/deps/warm_selection-a70ee5df199fc08f)
+
+running 7 tests
+test raw_ties_and_old_api_results_survive_interleaved_warm_calls_and_limits ... ok
+test verified_base_makes_sparse_an_exact_scored_candidate ... ok
+test all_four_winners_match_exhaustive_selected_frame_bytes ... ok
+test earlier_whole_priority_is_evaluated_when_its_bound_ties_sparse ... ok
+test boundaries_length_changes_and_context_reuse_preserve_exhaustive_minimum ... ok
+test cold_schema_can_win_after_paying_seed_instead_of_greedily_using_sparse ... ok
+test structural_bounds_skip_only_candidates_that_cannot_win ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.31s
+
+     Running tests/warm_selection_client.rs (/Users/casey.allard/spiralcore/target/aarch64-apple-darwin/release/deps/warm_selection_client-4e5674bd39686e49)
+
+running 2 tests
+test unavailable_selected_base_or_transport_failure_never_reoffers ... ok
+test selected_warm_plan_sends_exact_cost_without_reencoding_and_reopens ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.15s
+

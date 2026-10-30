@@ -36,6 +36,16 @@ drift/fallback controls and zstd timing variation are recorded separately.
 
 ## Milestones
 
+The [integrated warm selector](warm-selection-results-2026-10-30.md) now carries
+that verified-base path into automatic Raw/Whole/Sparse/Schema selection. All
+360 WAN seed/update objects reopen exactly, with thirty pairs per size and all
+sixty selector updates costing 600 body bytes. At 16 MiB, selector median
+CPU/completion is 51.178/179.8485 ms versus tuned Whole/Raw 85.8375/1,840.930 ms.
+The winning plan is consumed without duplicate encoding/hashing; proven size
+bounds skip sixty cold-schema and thirty large Whole candidates. Small-object
+selection still costs more CPU than forced Sparse, and the small paid lifecycle
+uses more CPU than Whole. Actual seed/setup and all negative trials are retained.
+
 The [matched whole-object control and selector](schema-selection-results-2026-10-30.md)
 now have real-WAN evidence: 1,860 exact transferred objects. Whole/Raw wins every
 selector decision on that new-object corpus; selection adds CPU without further

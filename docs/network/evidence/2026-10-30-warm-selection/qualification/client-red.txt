@@ -1,0 +1,82 @@
+   Compiling spiralcore-transfer v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer)
+warning: fields `offer`, `payload`, and `warm_probe` are never read
+  --> src/schema_selection.rs:43:16
+   |
+42 | pub struct PreparedWarmTransfer {
+   |            -------------------- fields in this struct
+43 |     pub(crate) offer: Offer,
+   |                ^^^^^
+44 |     pub(crate) payload: Payload,
+   |                ^^^^^^^
+45 |     pub(crate) warm_probe: bool,
+   |                ^^^^^^^^^^
+   |
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `spiralcore-transfer` (lib) generated 1 warning
+error[E0425]: cannot find function `transfer_warm_selection_batched` in module `client`
+   --> tests/warm_selection_client.rs:106:29
+    |
+106 |           let stats = client::transfer_warm_selection_batched(plan, [40 + index as u8; 32], |f| {
+    |                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+   ::: src/client.rs:711:1
+    |
+711 | / pub fn transfer_schema_selection_batched<F: FnMut(&[Frame]) -> Result<Vec<Frame>>>(
+712 | |     prepared: crate::schema_selection::PreparedTransfer,
+713 | |     transfer_id: Id,
+714 | |     exchange: F,
+715 | | ) -> Result<Stats> {
+    | |__________________- similarly named function `transfer_schema_selection_batched` defined here
+    |
+help: a function with a similar name exists
+    |
+106 -         let stats = client::transfer_warm_selection_batched(plan, [40 + index as u8; 32], |f| {
+106 +         let stats = client::transfer_schema_selection_batched(plan, [40 + index as u8; 32], |f| {
+    |
+
+error[E0425]: cannot find function `transfer_warm_selection_batched` in module `client`
+   --> tests/warm_selection_client.rs:131:26
+    |
+131 |       let result = client::transfer_warm_selection_batched(plan, [2; 32], |f| {
+    |                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+   ::: src/client.rs:711:1
+    |
+711 | / pub fn transfer_schema_selection_batched<F: FnMut(&[Frame]) -> Result<Vec<Frame>>>(
+712 | |     prepared: crate::schema_selection::PreparedTransfer,
+713 | |     transfer_id: Id,
+714 | |     exchange: F,
+715 | | ) -> Result<Stats> {
+    | |__________________- similarly named function `transfer_schema_selection_batched` defined here
+    |
+help: a function with a similar name exists
+    |
+131 -     let result = client::transfer_warm_selection_batched(plan, [2; 32], |f| {
+131 +     let result = client::transfer_schema_selection_batched(plan, [2; 32], |f| {
+    |
+
+error[E0425]: cannot find function `transfer_warm_selection_batched` in module `client`
+   --> tests/warm_selection_client.rs:140:26
+    |
+140 |       let result = client::transfer_warm_selection_batched(plan, [3; 32], |_| {
+    |                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+   ::: src/client.rs:711:1
+    |
+711 | / pub fn transfer_schema_selection_batched<F: FnMut(&[Frame]) -> Result<Vec<Frame>>>(
+712 | |     prepared: crate::schema_selection::PreparedTransfer,
+713 | |     transfer_id: Id,
+714 | |     exchange: F,
+715 | | ) -> Result<Stats> {
+    | |__________________- similarly named function `transfer_schema_selection_batched` defined here
+    |
+help: a function with a similar name exists
+    |
+140 -     let result = client::transfer_warm_selection_batched(plan, [3; 32], |_| {
+140 +     let result = client::transfer_schema_selection_batched(plan, [3; 32], |_| {
+    |
+
+For more information about this error, try `rustc --explain E0425`.
+error: could not compile `spiralcore-transfer` (test "warm_selection_client") due to 3 previous errors
+warning: build failed, waiting for other jobs to finish...

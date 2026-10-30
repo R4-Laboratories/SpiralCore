@@ -1,0 +1,21 @@
+/Users/casey.allard/.cargo/bin/cargo +1.97.1 test --manifest-path crates/spiralcore-transfer/Cargo.toml --release --locked --target aarch64-apple-darwin --features hardware-sha256 --test warm_selection
+   Compiling spiralcore-transfer v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer)
+error[E0599]: no method named `prepare_warm` found for struct `PreparedSelector` in the current scope
+  --> tests/warm_selection.rs:12:25
+   |
+12 |     let plan = selector.prepare_warm(&target, Some(&base), false, false).unwrap();
+   |                         ^^^^^^^^^^^^
+   |
+help: there is a method `prepare` with a similar name, but with different arguments
+  --> src/schema_selection.rs:62:5
+   |
+62 | /     pub fn prepare(
+63 | |         &mut self,
+64 | |         target: &[u8],
+65 | |         schema_ready: bool,
+66 | |         warm_probe: bool,
+67 | |     ) -> Result<PreparedTransfer> {
+   | |_________________________________^
+
+For more information about this error, try `rustc --explain E0599`.
+error: could not compile `spiralcore-transfer` (test "warm_selection") due to 1 previous error

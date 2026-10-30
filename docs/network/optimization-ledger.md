@@ -21,6 +21,18 @@ remain tied to their measured source; later results do not overwrite earlier neg
 
 ## Measured object sizes
 
+SC-OPT-015 integrates verified-base Sparse into the prepared selector and consumes
+the winning plan without reencoding or rehashing. At measured source
+`8bf2d85f6ece94013e66f7df9b6e1d6cddc8c43c`, all 360 WAN seeds/updates reopened
+exactly. Thirty pairs per size preserve 600 body bytes for every selector update;
+all sixty cold-schema and thirty large Whole encodings are safely pruned.
+At 16 MiB, median CPU/completion is 51.178/179.8485 ms versus Whole/Raw
+85.8375/1,840.930 ms. Small selector sender CPU remains 1.432347 times forced
+Sparse by the median paired ratio; small paid lifecycle CPU also loses to Whole.
+Actual seed/setup costs reduce byte savings to about 50%. No energy or full-path
+packet claim. [Result](warm-selection-results-2026-10-30.md),
+[raw evidence and review](evidence/2026-10-30-warm-selection/README.md).
+
 SC-WAN-005 rechecks actual prior-object reuse against matched whole-object zstd
 at `605ee6f1b2f5012c497e65fd56a0499f2de94253`, without changing production codecs.
 All 240 seed/update objects reopen exactly across thirty pairs at each of 1 and

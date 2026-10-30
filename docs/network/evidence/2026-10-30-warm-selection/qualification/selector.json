@@ -1,0 +1,47 @@
+{
+  "status": "SELECTOR_IMPLEMENTED_FOCUSED_GREEN",
+  "design_commit": "a438fc7658a823a48fe2a83efb502e2e8c87d331",
+  "owner": "selector_architect",
+  "source_sha256": {
+    "crates/spiralcore-transfer/src/schema_selection.rs": "884955623eed88c2665874fa0f921ecf713d34d053b55410b893c89d8013ebb7",
+    "crates/spiralcore-transfer/tests/warm_selection.rs": "e2b1dece34327d27d4ed5a6f85bea85a1c7319ca300f17b504ee1674a2c7b784"
+  },
+  "scope": "Additive PreparedSelector::prepare_warm plus owned immutable plan and separate exact/pruned receipts; old prepare API unchanged. Parent owns consuming client and endpoint integration tests.",
+  "red": {
+    "log": "selector-red.txt",
+    "sha256": "a81b6aed19c7e3132ff438ff8960c8798498a48df1203a447910a8c8cc666388",
+    "exit": 101,
+    "observed": "Missing prepare_warm API E0599 before implementation"
+  },
+  "green": {
+    "log": "selector-green-attempt1.txt",
+    "sha256": "f1737528e98f495e000b1b55d34e9867ab45eb0751fb8fdde4a4ed88b85c790b",
+    "exit": 0,
+    "total_passed": 17,
+    "targets": {
+      "warm_selection": 7,
+      "warm_selection_client": 2,
+      "schema_selection": 8
+    },
+    "note": "Parent subsequently added a third client test; it is outside this earlier17-test snapshot and belongs to final qualification."
+  },
+  "qualified_behavior": [
+    "Independent exhaustive unchanged encoders and independently constructed protocol bodies agree with chosen mode, exact evaluated costs and selected Data bytes for Raw, Whole, Sparse and Schema winners.",
+    "Pruned receipts contain sound structural lower bounds and actual schema setup costs, sorted in original tie order; no fabricated compressed size.",
+    "16MiB localized Sparse excludes Whole by896B minimum;1MiB536B minimum cannot exclude Whole. Already-ready schema remains evaluated when its547B minimum can win.",
+    "A real569B lower-bound tie with a one-byte Sparse update evaluates Whole because its priority is earlier. Actual Raw/Whole encoded-cost ties prefer Raw.",
+    "Empty and chunk/block boundaries, append/truncate/insertion/scattered edits, binary/lexical content, cold Schema seed winner, repeated prepared contexts, original prepare parity and oversized-input rejection are covered.",
+    "Parent integration targets in this run exercised all four actual wire modes, exact durable reopen, selected owned-plan lifetime, wrong-scope base and transport errors without reoffer."
+  ],
+  "implementation_constraints": [
+    "No capped compression, aborted compression recovery mechanism, prepared-base cache, receiver/wire/auth changes or extra codec candidates.",
+    "Full evaluated codec errors propagate. Skipping uses only reviewed structural bounds plus explicit schema seed charge.",
+    "Target is hashed once; borrowed base is hashed only if Sparse wins. Caller still supplies previously admitted base and handles explicit schema seeding."
+  ],
+  "limits": [
+    "No performance or WAN claim follows from these focused tests.",
+    "The single-batch successful-miss cost scope excludes HTTP/TLS/IP and may exceed actual early target-hit traffic.",
+    "This is an author implementation receipt, not independent approval. Parent owns final all-target/Clippy/build/coverage and cross-author review."
+  ],
+  "build_lane": "Released to measurement; no active build/test from this author."
+}

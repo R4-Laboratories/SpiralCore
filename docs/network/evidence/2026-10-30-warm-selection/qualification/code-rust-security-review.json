@@ -1,0 +1,113 @@
+{
+  "milestone": "SC-OPT-015",
+  "stage": "Independent code/Rust/production-security review after procedural PASS, with local results consistency",
+  "verdict": "PASS_SCOPED_PREMEASUREMENT",
+  "reviewer": "selector_tests",
+  "completed_utc": "2026-10-30T23:27:48.140353+00:00",
+  "source_commit": "389accd2be2f8913ff6995f0c79c8867577ec6c1",
+  "procedural_receipt_sha256": "3c0fe2ee341f096d1db792878d789c97eb1bb421b9942226aed06992c38be135",
+  "separate_harness_security_sha256": "1abc42c75071714f7fdb0cb572b3338d91679041f93b28d1c9c3bb64ab300e83",
+  "source_sha256": {
+    "crates/spiralcore-transfer/src/schema_selection.rs": "884955623eed88c2665874fa0f921ecf713d34d053b55410b893c89d8013ebb7",
+    "crates/spiralcore-transfer/src/client.rs": "b3657a07343825f3ef57c5cce8e65bb87481ddcc8f0cd3c18b15c5e560a244f5",
+    "crates/spiralcore-transfer/tests/warm_selection.rs": "e2b1dece34327d27d4ed5a6f85bea85a1c7319ca300f17b504ee1674a2c7b784",
+    "crates/spiralcore-transfer/tests/warm_selection_client.rs": "64b82eb111bc99a0081cb1f12e17a570f36d89cfd38010224a3a7910bf1f46a3",
+    "crates/spiralcore-transfer/tests/warm_selection_workflow.rs": "090985bd6935bfe6bdd5ce754f842e8fcb546f50129b2e7d6d81f33b97285e33",
+    "crates/spiralcore-transfer/examples/support/warm_object.rs": "7381a1b8f6735d843e4593a3ef87658e53b76a68e3ab8ae7938166ed9b36a04f",
+    "crates/spiralcore-transfer/examples/schema_fitting.rs": "69acd5bf906347c603b3db2fc803b9c200e6aa77b910e77daff3a7bb2b396084",
+    ".github/workflows/spiralcore-warm-selection.yml": "7f5a676388d76abc7e6b155cb08b5911231b3137c7766243399e1393397f321c"
+  },
+  "blocking_findings": [],
+  "checks": [
+    "Raw/Whole/Sparse/Schema exact eligible selection preserves strict tie priority. Conservative Whole lower bounds536/896 and schema547 plus actual seed cost allow skipping only proven nonwinners; equal earlier-priority Whole remains evaluated. Exact and pruned costs are distinctly typed.",
+    "Target/base16MiB limits precede codec work; checked cost additions, bounded chunking, private immutable Offer/payload and consuming client preserve exact reconstruction without rehashing or reencoding after prepare. No new unsafe code, dependency, wire or receiver change.",
+    "Readiness hints do not authorize. Missing bases, false warm artifact, revoked epochs and transport errors propagate without silent retry/reoffer; unchanged receiver verifies scoped capability, exact object length/digest and durable publication.",
+    "Independent source review includes changed harness, workflow gates and tests. Fixed paired fixtures, six permutations of the three arms, actual selector training/fitting inside setup timer, identical paid Raw base seeds, all preparation inside target timer, and unexpected schema seed fail-closed are consistent with contract.",
+    "Existing tests cover all four winners, chunk boundaries, malformed readiness/scope, exact serialized costs, tuple ties and private prepared plan ownership. No tests/builds/measurements were rerun by reviewer.",
+    "Local raw records independently joined with registered ordered sessions, fixture byte/hash identities, all36 stopped-store exact readbacks and36 receiver requests. All180 cell metric distributions and108 paired metric distributions independently recomputed;18 paid lifecycle sums,6 fits and6 selector decisions match summary."
+  ],
+  "local": {
+    "operations": 36,
+    "seed_operations": 18,
+    "target_operations": 18,
+    "sessions": 18,
+    "fits": 6,
+    "selector_sparse_choices": 6,
+    "schema_seeds": 0,
+    "large_whole_prunes": 3,
+    "small_whole_evaluations": 3,
+    "exact_reopened": 36,
+    "discarded": 0,
+    "cell_distributions_recomputed": 180,
+    "paired_distributions_recomputed": 108,
+    "target_medians": [
+      {
+        "large": false,
+        "arm": "sparse",
+        "body_bytes": 600.0,
+        "sender_cpu_us": 1270.0,
+        "cpu_us": 3962.0,
+        "wall_us": 24660.0
+      },
+      {
+        "large": false,
+        "arm": "selector",
+        "body_bytes": 600.0,
+        "sender_cpu_us": 2598.0,
+        "cpu_us": 5290.0,
+        "wall_us": 20490.0
+      },
+      {
+        "large": false,
+        "arm": "whole",
+        "body_bytes": 1051338.0,
+        "sender_cpu_us": 2427.0,
+        "cpu_us": 5329.0,
+        "wall_us": 20070.0
+      },
+      {
+        "large": true,
+        "arm": "sparse",
+        "body_bytes": 600.0,
+        "sender_cpu_us": 18059.0,
+        "cpu_us": 40864.0,
+        "wall_us": 62528.0
+      },
+      {
+        "large": true,
+        "arm": "selector",
+        "body_bytes": 600.0,
+        "sender_cpu_us": 18394.0,
+        "cpu_us": 43072.0,
+        "wall_us": 70737.0
+      },
+      {
+        "large": true,
+        "arm": "whole",
+        "body_bytes": 16814026.0,
+        "sender_cpu_us": 38407.0,
+        "cpu_us": 64095.0,
+        "wall_us": 85027.0
+      }
+    ],
+    "sender_and_local_receiver_binary_sha256": "b8d1917c2ae2efdee82178c287df045264fac11b586a4aa11c4eda4e4b85b994",
+    "cleanup": "Owned cache removed only after all36 exact reopen checks."
+  },
+  "limitations": [
+    "Local qualification has three pairs per size, not WAN evidence or an energy claim. Measured HTTP bodies exclude headers/TLS/relay packet overhead.",
+    "Selector preserves600-byte Sparse transfer but costs more sender CPU than forced Sparse; small-object total CPU advantage over Whole is negligible. Setup/fitting and initial base seeding remain separately paid in lifecycle totals.",
+    "Exchange timing is nested in full target timing, not pure wire time; sender process CPU plus disjoint receiver-handler CPU is a subtotal, not machine energy or full tunnel CPU.",
+    "Current successful fixture selections do not establish schema benefit or guarantee speed for other workloads. WAN360 launch remains separately registered and has not yet been reviewed."
+  ],
+  "local_sha256": {
+    "plan.json": "13dbf0797df1f16051e4615479e5a753ec9d77b0223ca2aabacfadeb4ba31787",
+    "paired.jsonl": "ffbc914ee3fc58873f51639a583bce2298ddaf4844a9e54ebb79a6394dce8810",
+    "verification.jsonl": "c52b338772db68a1255b821afb587b36a966c8d5f67d177f66b90e13c489e08f",
+    "receiver.jsonl": "f92a3878a3be162028fc3d6d295af46ef093bdc278e0f6b1261503e92952c02e",
+    "summary.json": "10287e7f68bde78d32a770dbb33ee41d6ad9bf4a3e9e7df261c3c5d6467e0f05",
+    "driver-status.json": "d22a12155110e780092a46d5b0ed2d01b2697ae133d0ad209e33a628e5a9e9d6",
+    "receiver-status.json": "d22a12155110e780092a46d5b0ed2d01b2697ae133d0ad209e33a628e5a9e9d6",
+    "cleanup.json": "399f776233ab986101f7a1ce2d36161c74055fe9ff82acc9f836493210ece0ae"
+  },
+  "launch_verdict": "No blocking code/Rust/production-security or local-consistency finding; registered WAN may proceed subject to parent operational custody."
+}
