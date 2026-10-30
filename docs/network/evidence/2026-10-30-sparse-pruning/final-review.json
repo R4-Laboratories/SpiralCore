@@ -1,0 +1,184 @@
+{
+  "schema": "spiralcore.sparse-pruning.final-review.v1",
+  "date": "2026-10-30",
+  "status": "APPROVED_RESTORED_BASELINE_AND_NEGATIVE_RESULT_PACKET",
+  "reviewer": "/root/selector_architect",
+  "roles": [
+    "code-reviewer",
+    "rust-reviewer",
+    "security-reviewer"
+  ],
+  "role_note": "One reviewer applied all three profiles; this is not three independent reviewers. Production, test, and measurement implementations were authored by other agents.",
+  "roster": "c36b79c68e575d7b",
+  "head_at_review": "5bd7c51832710176cca30bfd17ce071cfc80b6af",
+  "identity_note": "Rollback, report and final evidence were pending commit. Exact hashes define this approval; publication is parent-owned and remains to be verified separately.",
+  "audit": {
+    "status": "PASS_PIPELINE_AUDIT",
+    "path": "audit.json",
+    "sha256": "48ed12c14d0a639844f7f0c63e6a6c3cff2a5a015157b4a351cca3684d406339",
+    "agent_sync_audit_sha256": "95c8738f58c7ee4289bff2e1c5bc75c8e81c130f9338dc667f8645f76afff00c",
+    "candidate_acceptance": "FAIL_CPU_GATES",
+    "independently_read_after_seal": true
+  },
+  "reviewed_delivery": {
+    "baseline_revision": "cc0199ffd255b9e2e002afe8c96f10462a3e474f",
+    "measured_candidate_revision": "317c7f75b8b8355fbb2c74b4bad1944e4f0cb1e8",
+    "active_encoder_sha256": "af31026c806c9046d62735b3ebdd03472e667103011a06b6f49ff76edb19e18e",
+    "active_production_src_diff_against_baseline": "empty; independently checked after audit seal",
+    "normal_harness_sha256": "dcfdc7766fb40cf5ff61a90a9c88189b0f4b2b6d19e824f61fb5c0be7d4fbacb",
+    "diagnostic_allocator_sha256": "5f4d2759779ca3519c9944b034c493b050974b8b91d409ce072583bc41c18ff8",
+    "oracle_encoder_sha256": "af31026c806c9046d62735b3ebdd03472e667103011a06b6f49ff76edb19e18e",
+    "oracle_protocol_sha256": "65fa50275a1487b937040c0f03de3cdeba8e49ce563e78d0bcb3763006804e6a",
+    "archived_candidate": [
+      {
+        "path": "candidate-source/delta.rs",
+        "sha256": "8d24c10c96de770d40d8c1ea24d5ae5427c95576d99936637c886ecf07d12735"
+      },
+      {
+        "path": "candidate-source/pruning_tests.rs",
+        "sha256": "6a34ba6391d14ed104a55c04bb2fdc6d0abc0e1c112bbccd1bf08392387b1e46"
+      },
+      {
+        "path": "candidate-source/sparse_pruning.rs",
+        "sha256": "0132b4833de7dc76949c4c39e245de29d983c03735ac53971789f58ac05be35f"
+      }
+    ],
+    "archives_match_git_measured_revision": true,
+    "post_rollback_receipt_sha256": "bba4699238047297789f56a9d7cffee95c852b788f32d00f4b1e9638ead8e653",
+    "preserved_executables_independently_rehashed": {
+      "normal": "e30407365f46bad4e6271382fc22961d984449f5176eef9322defeb4f9393592",
+      "diagnostic": "f1c523cfc575a759a311013f7b5881a404dbd09e40fc0af6af0592a04730604c"
+    }
+  },
+  "reviewed_reporting": {
+    "report": "docs/network/sparse-pruning-results-2026-10-30.md",
+    "report_sha256": "bd711e631d3ee495bdca903858b76eca88aadc365e408ea4cfe60c3d9f09acc8",
+    "delivery_sha256": "665ec0a4df0df918f83147f5f35b220864fbbcb06f880d92432a3ecf66b91a09",
+    "optimization_ledger_sha256": "64b6aff1b761e1fec51e024d330fce0f7d92aa2bd5e1e77a27abe4637e20472a",
+    "pr_body": "Reviewed /Users/casey.allard/spiralcore/local/sparse-pruning-20261030/pr-body.md; negative disposition, counts and limitations agree with report. Actual publication not yet performed.",
+    "measurements_sha256": "a8ef89bc65705abf76f19555592858567ba4e8d6ac0ec64aa7e23d74c395266d",
+    "allocations_sha256": "5e1c2fb43c4e6e54a678687824fd4054299857e71a4182d973a8179d2a990820",
+    "independent_packet_manifest_sha256": "f0e68eaba6a1122b7ba33466c7131dd7398125abf4408f2517734d3b9fe0ef86",
+    "method": "Reviewer independently grouped raw records by case/pair and recomputed midpoint medians, nearest-rank p95 (maximum for n=10), exp(mean(log(paired CPU ratio))), strict wins, paired input/recipe agreement, peak capacities, lifecycle zeros and drop medians. These calculations did not invoke the audit checker's implementation.",
+    "all_seven_median_rows_match": true,
+    "all_seven_cpu_and_wall_p95_rows_match": true,
+    "all_seven_memory_and_recipe_rows_match": true,
+    "drop_median_range_matches": true,
+    "source_and_executable_hashes_match": true,
+    "paired_timing_recipe_and_input_matches": 70,
+    "paired_diagnostic_recipe_matches": 70,
+    "diagnostic_after_drop_live_and_active_zero": true
+  },
+  "independently_recomputed_cells": [
+    {
+      "case": "prefix_insert",
+      "old_cpu_median_ms": 17.7005,
+      "candidate_cpu_median_ms": 15.494,
+      "old_wall_median_ms": 18.326,
+      "candidate_wall_median_ms": 15.586,
+      "old_over_candidate_cpu_geometric_mean": 1.1160349930172275,
+      "candidate_cpu_wins": 8,
+      "old_peak_bytes": 16789290,
+      "candidate_peak_bytes": 12330,
+      "cpu_gate": "PASS"
+    },
+    {
+      "case": "middle_insert",
+      "old_cpu_median_ms": 13.984,
+      "candidate_cpu_median_ms": 12.976,
+      "old_wall_median_ms": 14.08,
+      "candidate_wall_median_ms": 13.026,
+      "old_over_candidate_cpu_geometric_mean": 1.0920434294816324,
+      "candidate_cpu_wins": 10,
+      "old_peak_bytes": 8400851,
+      "candidate_peak_bytes": 12369,
+      "cpu_gate": "FAIL_PRIMARY_RATIO"
+    },
+    {
+      "case": "unrelated",
+      "old_cpu_median_ms": 12.618,
+      "candidate_cpu_median_ms": 7.3935,
+      "old_wall_median_ms": 15.837,
+      "candidate_wall_median_ms": 8.368,
+      "old_over_candidate_cpu_geometric_mean": 1.5141006127150103,
+      "candidate_cpu_wins": 9,
+      "old_peak_bytes": 33562122,
+      "candidate_peak_bytes": 0,
+      "cpu_gate": "PASS"
+    },
+    {
+      "case": "repeat",
+      "old_cpu_median_ms": 11.197,
+      "candidate_cpu_median_ms": 11.3475,
+      "old_wall_median_ms": 11.2855,
+      "candidate_wall_median_ms": 11.447,
+      "candidate_over_old_cpu_geometric_mean": 1.068160775866264,
+      "candidate_cpu_wins": 3,
+      "old_peak_bytes": 90,
+      "candidate_peak_bytes": 54,
+      "cpu_gate": "FAIL_CONTROL_RATIO"
+    },
+    {
+      "case": "localized",
+      "old_cpu_median_ms": 13.222,
+      "candidate_cpu_median_ms": 12.821,
+      "old_wall_median_ms": 13.3375,
+      "candidate_wall_median_ms": 12.931,
+      "old_over_candidate_cpu_geometric_mean": 1.0446494708311826,
+      "candidate_cpu_wins": 7,
+      "old_peak_bytes": 180,
+      "candidate_peak_bytes": 108,
+      "cpu_gate": "PASS"
+    },
+    {
+      "case": "scattered",
+      "old_cpu_median_ms": 7.247,
+      "candidate_cpu_median_ms": 7.258,
+      "old_wall_median_ms": 7.265,
+      "candidate_wall_median_ms": 7.2655,
+      "old_over_candidate_cpu_geometric_mean": 1.0220497982694678,
+      "candidate_cpu_wins": 6,
+      "old_peak_bytes": 16822601,
+      "candidate_peak_bytes": 16822601,
+      "cpu_gate": "PASS"
+    },
+    {
+      "case": "periodic",
+      "old_cpu_median_ms": 13.8075,
+      "candidate_cpu_median_ms": 13.8125,
+      "old_wall_median_ms": 13.8675,
+      "candidate_wall_median_ms": 13.834,
+      "candidate_over_old_cpu_geometric_mean": 1.06401472144002,
+      "candidate_cpu_wins": 4,
+      "old_peak_bytes": 20550,
+      "candidate_peak_bytes": 12330,
+      "cpu_gate": "FAIL_CONTROL_RATIO"
+    }
+  ],
+  "final_code_rust_security_confirmation": [
+    "The active production source is identical to the published baseline; the rejected pruning code and its 14 candidate-specific tests are archived, not compiled as active delivery code.",
+    "The retained harness and diagnostic allocator have unchanged hashes from the completed pre-measurement source review. The documented custom diagnostic allocator is excluded from the normal executable.",
+    "No dependency, protocol, authentication, authorization, missing-base, decoder, cache-publication or client-size-limit change is introduced by the restored delivery.",
+    "The current harness imports the restored active encoder and therefore compares baseline against baseline. Historical candidate reproduction requires the measured commit; the report and archive README state that revision labels do not select code.",
+    "The failed CPU gates remain decisive under the registered procedure despite passing exact-output and diagnostic-memory gates. Unfavorable observations are retained; no hypothesis about host noise is used to erase them.",
+    "Raw fallbacks are correctly separated from actual recipe reconstruction. Each campaign has 120 reconstructed recipes and 20 Raw decisions, not 140 transfers.",
+    "Frame-buffer capacity under the forced-moving diagnostic allocator is not production allocator peak or RSS. Local encoder timings are not full sender, durable commit, WAN, energy or MVM results."
+  ],
+  "verification": {
+    "reviewer_restored_checks_receipt": "restored-review-checks.json",
+    "reviewer_restored_checks_sha256": "996f0ead36d165b04c7fa6f424de60ed90fc8137545bab92b2bbe670b637181b",
+    "reviewer_normal_all_target_check_exit": 0,
+    "reviewer_normal_all_target_clippy_warnings_denied_exit": 0,
+    "restored_release_tests_independently_counted": 188,
+    "restored_doctests_independently_read": 1,
+    "restored_serial_diagnostic_tests_independently_read": 10,
+    "unchanged_imported_store_tests_independently_read": 71,
+    "test_execution_note": "Parent executed full restored suites; reviewer read retained logs and independently ran check/Clippy. The unchanged imported store's earlier 71-test pass is not represented as another run.",
+    "post_audit_runtime_changes_observed": false,
+    "new_timing_runs_performed_by_reviewer": false
+  },
+  "closed_editorial_issue": "Changed '188 active release targets' to '188 tests across all active release targets'; final report correctly distinguishes tests from targets.",
+  "findings": [],
+  "approval_scope": "Approve parent-controlled publication of the restored baseline plus the complete negative-result evidence and reproducibility harness. This does not approve adopting the failed candidate or implementing the future prefix-bound hypothesis.",
+  "remaining_gate": "Parent must verify the eventual published origin/main revision and packet identities."
+}

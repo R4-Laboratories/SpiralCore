@@ -1,0 +1,32 @@
+   Compiling spiralcore-transfer v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer)
+    Finished `release` profile [optimized] target(s) in 7.10s
+     Running unittests src/lib.rs (/Users/casey.allard/spiralcore/target/aarch64-apple-darwin/release/deps/spiralcore_transfer-b31251e827fa19e8)
+
+running 9 tests
+test dag::fold_memo_tests::hot_memo_reuses_only_exact_nodes_and_preserves_unique_budget ... ok
+test dag::fold_memo_tests::parent_memo_is_exact_and_has_a_fixed_small_allocation_bound ... ok
+test dag::fold_memo_tests::rejected_records_never_enter_the_memo ... ok
+test delta::pruning_tests::strict_tie_and_raw_threshold_costs_are_not_rounded ... ok
+test delta::pruning_tests::bound_empty_positive_copy_literal_and_overflow ... ok
+test delta::pruning_tests::current_frame_and_literal_caps_make_body_size_branch_unreachable ... ok
+test zstd_prefix::tests::chunk_validation_is_atomic_and_count_and_encoded_bounds_are_independent ... ok
+test delta::pruning_tests::pack_op_limits_and_literal_splitting_remain_in_force ... ok
+test delta::pruning_tests::positive_operation_bound_never_exceeds_materialized_cost ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/sparse_pruning.rs (/Users/casey.allard/spiralcore/target/aarch64-apple-darwin/release/deps/sparse_pruning-c6733f589c4cbb82)
+
+running 9 tests
+test aligned_tie_is_not_materialized_after_a_simple_incumbent ... ok
+test strict_raw_boundary_and_equal_cost_tie_keep_legacy_decisions ... ok
+test unchanged_decoder_rejects_same_malformed_bytes_atomically ... ok
+test provably_raw_replacement_does_not_materialize_sparse_frame_buffers ... ok
+test constructed_simple_aligned_and_raw_winners_preserve_bytes ... ok
+test generated_aligned_plans_at_frame_and_total_operation_boundaries ... ok
+test exact_legacy_recipes_for_seeded_edits_periodic_and_compressed_content ... ok
+test exact_legacy_recipe_matrix_covers_lengths_edits_and_binary_content ... ok
+test sender_limit_precedes_exchange_and_core_limit_is_unchanged ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.06s
+

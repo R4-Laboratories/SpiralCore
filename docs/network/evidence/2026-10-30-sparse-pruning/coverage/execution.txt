@@ -1,0 +1,144 @@
+info: cargo-llvm-cov currently setting cfg(coverage); you can opt-out it by passing --no-cfg-coverage
+   Compiling libc v0.2.191
+   Compiling proc-macro2 v1.0.107
+   Compiling quote v1.0.47
+   Compiling unicode-ident v1.0.27
+   Compiling find-msvc-tools v0.1.15
+   Compiling shlex v2.0.1
+   Compiling stable_deref_trait v1.2.1
+   Compiling version_check v0.9.5
+   Compiling litemap v0.8.3
+   Compiling writeable v0.6.4
+   Compiling cfg-if v1.0.5
+   Compiling utf8_iter v1.0.4
+   Compiling typenum v1.20.1
+   Compiling generic-array v0.14.7
+   Compiling icu_normalizer_data v2.4.0
+   Compiling icu_properties_data v2.4.0
+   Compiling pkg-config v0.3.34
+   Compiling zeroize v1.9.1
+   Compiling rustls-pki-types v1.15.1
+   Compiling httparse v1.10.1
+   Compiling untrusted v0.9.0
+   Compiling smallvec v1.16.4
+   Compiling itoa v1.0.18
+   Compiling serde_core v1.0.229
+   Compiling syn v3.0.9
+   Compiling percent-encoding v2.3.2
+   Compiling zmij v1.0.23
+   Compiling jobserver v0.1.35
+   Compiling bytes v1.12.1
+   Compiling getrandom v0.2.17
+   Compiling zstd-safe v7.3.0
+   Compiling log v0.4.34
+   Compiling cc v1.10.0
+   Compiling rustls v0.23.46
+   Compiling cpufeatures v0.2.17
+   Compiling crypto-common v0.1.7
+   Compiling block-buffer v0.10.4
+   Compiling digest v0.10.7
+   Compiling once_cell v1.21.4
+   Compiling serde v1.0.229
+   Compiling http v1.5.0
+   Compiling serde_json v1.0.154
+   Compiling subtle v2.6.1
+   Compiling base64 v0.23.1
+   Compiling form_urlencoded v1.2.2
+   Compiling webpki-roots v1.0.11
+   Compiling utf8-zero v0.8.1
+   Compiling memchr v2.8.3
+   Compiling cpu-time v1.0.0
+   Compiling ureq-proto v0.6.5
+   Compiling ring v0.17.14
+   Compiling zstd-sys v2.1.2+zstd.1.5.7
+   Compiling sha2-asm v0.6.4
+   Compiling synstructure v0.14.0
+   Compiling zerofrom-derive v0.1.8
+   Compiling yoke-derive v0.8.4
+   Compiling zerovec-derive v0.11.7
+   Compiling zerofrom v0.1.8
+   Compiling displaydoc v0.2.7
+   Compiling yoke v0.8.4
+   Compiling sha2 v0.10.9
+   Compiling zerotrie v0.2.5
+   Compiling serde_derive v1.0.229
+   Compiling zerovec v0.11.9
+   Compiling uor-r4-object-store v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/uor-r4-object-store)
+   Compiling tinystr v0.8.5
+   Compiling potential_utf v0.1.6
+   Compiling icu_locale_core v2.4.0
+   Compiling icu_collections v2.4.0
+   Compiling icu_provider v2.4.0
+   Compiling rustls-webpki v0.103.16
+   Compiling icu_normalizer v2.4.0
+   Compiling icu_properties v2.4.0
+   Compiling idna_adapter v1.2.2
+   Compiling idna v1.1.0
+   Compiling url v2.5.8
+   Compiling zstd v0.13.3
+   Compiling ureq v3.5.0
+   Compiling spiralcore-transfer v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer)
+    Finished `release` profile [optimized] target(s) in 26.89s
+     Running unittests src/lib.rs (/Users/casey.allard/spiralcore/local/sparse-pruning-20261030/coverage-target/llvm-cov-target/aarch64-apple-darwin/release/deps/spiralcore_transfer-b31251e827fa19e8)
+
+running 9 tests
+test dag::fold_memo_tests::hot_memo_reuses_only_exact_nodes_and_preserves_unique_budget ... ok
+test dag::fold_memo_tests::parent_memo_is_exact_and_has_a_fixed_small_allocation_bound ... ok
+test delta::pruning_tests::bound_empty_positive_copy_literal_and_overflow ... ok
+test dag::fold_memo_tests::rejected_records_never_enter_the_memo ... ok
+test delta::pruning_tests::current_frame_and_literal_caps_make_body_size_branch_unreachable ... ok
+test delta::pruning_tests::strict_tie_and_raw_threshold_costs_are_not_rounded ... ok
+test zstd_prefix::tests::chunk_validation_is_atomic_and_count_and_encoded_bounds_are_independent ... ok
+test delta::pruning_tests::pack_op_limits_and_literal_splitting_remain_in_force ... ok
+test delta::pruning_tests::positive_operation_bound_never_exceeds_materialized_cost ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/adaptive.rs (/Users/casey.allard/spiralcore/local/sparse-pruning-20261030/coverage-target/llvm-cov-target/aarch64-apple-darwin/release/deps/adaptive-21255b00fe9dd5bb)
+
+running 13 tests
+test oversized_inputs_fail_before_any_exchange ... ok
+test cold_structured_data_selects_zstd_before_begin ... ok
+test repeat_probe_with_evicted_remote_object_completes_the_original_raw_offer ... ok
+test missing_base_and_changed_scope_do_not_reoffer_or_publish ... ok
+test real_http_codec_selection_cost_matches_bodies_and_reopens_exactly ... ok
+test revoked_authority_and_transport_failure_never_retry_selection ... ok
+test exact_repeat_probe_sends_raw_identity_only_and_unprobed_hit_counts_upload ... ok
+test malicious_receipts_are_checked_after_selection ... ok
+test warm_local_edits_choose_sparse_and_reordered_data_choose_prefix ... ok
+test small_localized_edit_uses_prefix_when_it_costs_less_than_sparse ... ok
+test empty_and_incompressible_ties_prefer_raw_with_exact_full_cost ... ok
+test selector_cost_matches_actual_forced_arms_and_minimizes_eligible_bytes ... ok
+test exact_bytes_and_length_survive_boundaries_and_length_changes_after_restart ... ok
+
+test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.48s
+
+     Running tests/sparse.rs (/Users/casey.allard/spiralcore/local/sparse-pruning-20261030/coverage-target/llvm-cov-target/aarch64-apple-darwin/release/deps/sparse-c118bc05f23bd059)
+
+running 6 tests
+test malformed_recipe_is_atomic ... ok
+test hostile_versions_lengths_ops_and_truncation_fail_closed ... ok
+test exact_operation_literal_and_object_limits_are_enforced ... ok
+test prefix_insertion_uses_a_small_exact_recipe ... ok
+test edits_lengths_and_fallback_preserve_every_byte ... ok
+test literal_frames_split_and_large_copy_remains_small ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.09s
+
+     Running tests/sparse_pruning.rs (/Users/casey.allard/spiralcore/local/sparse-pruning-20261030/coverage-target/llvm-cov-target/aarch64-apple-darwin/release/deps/sparse_pruning-c6733f589c4cbb82)
+
+running 9 tests
+test aligned_tie_is_not_materialized_after_a_simple_incumbent ... ok
+test strict_raw_boundary_and_equal_cost_tie_keep_legacy_decisions ... ok
+test unchanged_decoder_rejects_same_malformed_bytes_atomically ... ok
+test provably_raw_replacement_does_not_materialize_sparse_frame_buffers ... ok
+test generated_aligned_plans_at_frame_and_total_operation_boundaries ... ok
+test constructed_simple_aligned_and_raw_winners_preserve_bytes ... ok
+test exact_legacy_recipes_for_seeded_edits_periodic_and_compressed_content ... ok
+test exact_legacy_recipe_matrix_covers_lengths_edits_and_binary_content ... ok
+test sender_limit_precedes_exchange_and_core_limit_is_unchanged ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.19s
+
+
+    Finished report saved to /Users/casey.allard/spiralcore/local/sparse-pruning-20261030/coverage-target/full-coverage.json

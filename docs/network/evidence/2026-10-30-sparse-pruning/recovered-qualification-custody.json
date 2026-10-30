@@ -1,0 +1,41 @@
+{
+  "schema": "spiralcore.sparse-pruning.recovered-qualification-custody.v1",
+  "recovery_date": "2026-10-30",
+  "method": "Recovered original CommandExecution completion records and their exact decoded aggregated_output strings from retained local session history. No command was rerun, reconstructed or simulated for this recovery.",
+  "source_history": {
+    "session_id": "01a18ac5-26ad-70b3-864a-d226befd3bfa",
+    "agent_path": "/root/selector_measurement",
+    "path": "/Users/casey.allard/.codex/sessions/2026/10/29/rollout-2026-10-29T23-05-38-01a18ac5-26ad-70b3-864a-d226befd3bfa.jsonl",
+    "prefix_lines": 602,
+    "prefix_sha256": "3ed50f252e3720387e9fe8bf252215aac819c094c6089e15205a727d379f60c4",
+    "portable_selected_records": "recovered-qualification-history.jsonl",
+    "portable_selected_records_sha256": "a497fe4ddd3060f648b2dfb02dd7fe790a5c00b198e907daf57f584c912b15e1",
+    "selected_record_format": "Exact original JSONL lines including newline; source line equals ordinal plus one. Includes full commands, timestamps, exit codes and one intervening driver-only FileChange record."
+  },
+  "records": [
+    {"ordinal":438,"output":"baseline-harness-red.txt","sha256":"f7a479529a03f8d178461d4da77057f77ff5f15db59d85050c993f0d2c90d490","exit_code":101},
+    {"ordinal":450,"output":"baseline-harness-green-two.txt","sha256":"dc2f2fe43bc1ee175f2b239338ca98d397396d835bcff390b083d88842a2b3c1","exit_code":0},
+    {"ordinal":458,"output":"baseline-harness-green-three-build.txt","sha256":"115dec920baf2a6d429eb73f6642e523eed1455d8e092a2e5ac3a7fa87e883a5","exit_code":0},
+    {"ordinal":463,"output":"baseline-harness-initial-hashes.txt","sha256":"99875c28f1762ad2ef92e28609a63ab165c825bc5d47407b37b2b610ec7bbe67","exit_code":0},
+    {"ordinal":472,"record_type":"FileChange","scope":"Driver spawn/JSON failure evidence preservation only; no fixture, encoder, decoder or timer change."},
+    {"ordinal":475,"output":"baseline-harness-final-build.txt","sha256":"be570ab5e9764627d5606fd96905cc5125a3f6d369e74c4d045df239a6167c0a","exit_code":0},
+    {"ordinal":498,"output":"baseline-harness-measurement-launch.txt","sha256":"118e4aa5e8c58d71b027da3bd54518e5dd8246d9517b8d155bb000e87596d623","exit_code":0},
+    {"ordinal":513,"output":"baseline-harness-preservation.txt","sha256":"457ed8f3dd1605ada8265fb23b6552c1c6a416acade0fa00d382ad64a2b985dc","exit_code":0},
+    {"ordinal":531,"output":"diagnostic-initial-red.txt","sha256":"9b29b24dd50b1240c0a8ad90e906019fb952738489486ecf342fd973aa6bbf03","exit_code":101},
+    {"ordinal":548,"output":"diagnostic-initial-green-one.txt","sha256":"ed045b9f517661a14576a00de8e7eb263a78069e6f496b239d697d4e97c9424b","exit_code":0},
+    {"ordinal":571,"output":"diagnostic-dispatch-red.txt","sha256":"4f6d420152ef52ca1c3a2530fbf9f87449c72ebd51b61dab872b9b0d3b06007f","exit_code":101},
+    {"ordinal":581,"output":"diagnostic-initial-green-seven.txt","sha256":"9959daafdf2d78e85295c0cf1e5558f48c79f6d872f5d80553893f9be583c350","exit_code":0},
+    {"ordinal":601,"output":"diagnostic-initial-build-clippy.txt","sha256":"6193ef7f42424eceefaabce86be75e9c81fe7541af5b3dfd36e96e7f5bf7476c","exit_code":0}
+  ],
+  "baseline_scope_correction": {
+    "three_test_run_harness_sha256": "b1786e59ba88ccb03c45f5f6cde91456d6de03fe11da40cd2709db290b77ee7c",
+    "measured_baseline_harness_sha256": "8acc34b19eb34ba38d25153027070e9e40fd4f556248efacf524e9af9132199c",
+    "explanation": "The three-test qualification preceded the driver-only failure-recording patch at ordinal 472. The resulting measured harness was rebuilt successfully at ordinal 475 and source/executable identities checked at measurement launch. No second three-test run occurred before baseline collection. All three existing tests, fixture generation, recipe verification and timers were unchanged by that patch. Later diagnostic and final normal qualification runs cover the retained driver."
+  },
+  "limits": [
+    "These are historical tool-history outputs, not originally redirected standalone log files.",
+    "Only task-relevant selected history records are distributed; the full session is not copied into the repository.",
+    "Initial seven-test diagnostic qualification is superseded by the separately retained ten-test diagnostic guard qualification.",
+    "These logs establish observed command outcomes and custody; they are not an additional performance campaign."
+  ]
+}

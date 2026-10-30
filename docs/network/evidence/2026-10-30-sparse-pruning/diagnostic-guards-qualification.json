@@ -1,0 +1,52 @@
+{
+  "schema": "spiralcore.sparse-pruning.diagnostic-guards-qualification.v1",
+  "status": "PASS_QUALIFICATION",
+  "source_head": "f4c0c48c2ff735a139241fee6ca61b0e9148bbdb",
+  "dirty": true,
+  "normal_example_sha256": "dcfdc7766fb40cf5ff61a90a9c88189b0f4b2b6d19e824f61fb5c0be7d4fbacb",
+  "allocation_source_sha256": "5f4d2759779ca3519c9944b034c493b050974b8b91d409ce072583bc41c18ff8",
+  "measurement_contract_sha256": "9f9874e00e61dcbe7aa6cab336fa22d35c0f888b8fa33980d7163ef85dc564e4",
+  "configuration": {
+    "toolchain": "1.97.1",
+    "target": "aarch64-apple-darwin",
+    "features": ["hardware-sha256"],
+    "profile": "release",
+    "locked": true,
+    "rustflags": "--cfg sparse_allocation_diagnostic",
+    "cargo_target_dir": "/Users/casey.allard/spiralcore/local/sparse-pruning-20261030/diagnostic-target",
+    "test_threads": 1
+  },
+  "evidence": [
+    {
+      "path": "diagnostic-guards-red.txt",
+      "sha256": "7a80431b178dc4b8324849248597832ea4a813b4754d65898a1b7c3b1e2ab673",
+      "exit_code": 101,
+      "scope": "Test-first compile failure: requested allocation-failure injection hook did not exist."
+    },
+    {
+      "path": "diagnostic-guards-green.txt",
+      "sha256": "9e1976ae60bd9fa2e53a40621367058646dc18f0a56f837fd54bca3911dcb53c",
+      "exit_code": 0,
+      "passed": 10,
+      "failed": 0,
+      "scope": "Single-threaded release example tests including diagnostic failure branches and exact fixture reconstruction."
+    },
+    {
+      "path": "diagnostic-guards-clippy.txt",
+      "sha256": "645810181b984481eed8b9f3fcb74804acbf3cfbdc328d438c633cdcfa6dc5bb",
+      "exit_code": 0,
+      "scope": "Diagnostic release example Clippy with -D warnings."
+    }
+  ],
+  "new_guard_checks": [
+    "Injected allocation failure returns null from the actual tracked realloc failure branch while preserving original pointer, bytes, live/peak/cumulative counters and final deallocation.",
+    "Missing tracked growth entry sets registry_failed without changing live bytes or successful realloc/free counts.",
+    "Reentrant TLS borrow causes callback failure; snapshot and stop_discovery fail until an explicit fresh empty session."
+  ],
+  "limitations": [
+    "The diagnostic is single-threaded; process-wide enable/failure flags do not support simultaneous tracking sessions.",
+    "Allocation failure is controlled test-only injection, not a physical out-of-memory experiment.",
+    "This receipt is qualification of dirty source, not a frozen acceptance campaign or performance result.",
+    "Normal timed executable excludes this diagnostic allocator. Diagnostic peak capacities are not production allocator peaks or RSS."
+  ]
+}

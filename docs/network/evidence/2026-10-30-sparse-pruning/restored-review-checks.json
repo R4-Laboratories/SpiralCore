@@ -1,0 +1,50 @@
+{
+  "schema": "spiralcore.sparse-pruning.restored-review-checks.v1",
+  "date": "2026-10-30",
+  "reviewer": "/root/selector_architect",
+  "status": "CHECKS_PASS_FINAL_AUDIT_REVIEW_PENDING",
+  "active_delta_sha256": "af31026c806c9046d62735b3ebdd03472e667103011a06b6f49ff76edb19e18e",
+  "active_src_diff_against_cc0199f": "empty",
+  "cwd": "/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore",
+  "environment": {
+    "CARGO_TARGET_DIR": "/Users/casey.allard/spiralcore/target"
+  },
+  "commands": [
+    {
+      "command": "/Users/casey.allard/.cargo/bin/cargo +1.97.1 check --manifest-path crates/spiralcore-transfer/Cargo.toml --all-targets --target aarch64-apple-darwin --features hardware-sha256 --locked",
+      "exit_code": 0,
+      "output": "final-review-check.txt",
+      "output_sha256": "0e6f1fee8d406fbb46e76cb14662b151bd57024fc2e991b5532a522e7d37f145"
+    },
+    {
+      "command": "/Users/casey.allard/.cargo/bin/cargo +1.97.1 clippy --manifest-path crates/spiralcore-transfer/Cargo.toml --all-targets --target aarch64-apple-darwin --features hardware-sha256 --locked -- -D warnings",
+      "exit_code": 0,
+      "output": "final-review-clippy.txt",
+      "output_sha256": "a5e09006a5680e76216497f122af3af0708a07b41cf6f31bf83b610230029207"
+    }
+  ],
+  "qualification_evidence_independently_read": [
+    {
+      "path": "restored-tests.txt",
+      "sha256": "efdbb01242c64f78e7de0c20ac292cdb5eb86eb24fca0973a73a75ac7b37c910",
+      "tests_passed": 188
+    },
+    {
+      "path": "restored-doctest.txt",
+      "sha256": "e0fd57ea990959149a1e5cf65de43ce75cff93a4e9850839108681fdc3af7008",
+      "tests_passed": 1
+    },
+    {
+      "path": "restored-diagnostic-tests.txt",
+      "sha256": "2a75fd3e6a5692fd714480ffa083fc27893581af5f5e3d11fffcd30d00b192a1",
+      "tests_passed": 10
+    },
+    {
+      "path": "qualification-object-store.txt",
+      "sha256": "66ba17b2544a5ad9f1de2c6423782a53d8b7309013c0369bd96e9d9894edf458",
+      "tests_passed": 71,
+      "note": "Earlier qualification of unchanged imported-store source; not represented as a second execution."
+    }
+  ],
+  "scope": "Normal restored source check/Clippy run by this reviewer after rollback. Parent-executed test logs read and counts checked. No measurements rerun; no performance acceptance implied."
+}

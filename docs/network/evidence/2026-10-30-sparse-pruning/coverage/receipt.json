@@ -1,0 +1,38 @@
+{
+  "schema": "spiralcore.sparse-pruning.focused-coverage.v1",
+  "status": "PASS",
+  "command": "PATH=/Users/casey.allard/spiralcore/local/tools/bin:/Users/casey.allard/.cargo/bin:$PATH CARGO_TARGET_DIR=/Users/casey.allard/spiralcore/local/sparse-pruning-20261030/coverage-target /Users/casey.allard/.cargo/bin/cargo +1.97.1 llvm-cov --locked --release --manifest-path crates/spiralcore-transfer/Cargo.toml --target aarch64-apple-darwin --features hardware-sha256 --lib --test sparse_pruning --test sparse --test adaptive --ignore-filename-regex '/tests/support/.*_legacy_cc0199f.rs$' --json --output-path /Users/casey.allard/spiralcore/local/sparse-pruning-20261030/coverage-target/full-coverage.json",
+  "exit_code": 0,
+  "tests": {"library": 9, "adaptive": 13, "sparse": 6, "sparse_pruning": 9, "total_passed": 37, "failed": 0, "ignored": 0},
+  "toolchain": "Rust1.97.1, LLVM22.1.6, cargo-llvm-cov0.9.1",
+  "profile": "optimized instrumented release",
+  "production_target_modified": false,
+  "source_manifests": {"before": "source-before.sha256", "after": "source-after.sha256", "files": 7, "byte_identical": true, "comparison_exit_code": 0},
+  "delta_source_sha256": "8d24c10c96de770d40d8c1ea24d5ae5427c95576d99936637c886ecf07d12735",
+  "delta_file": {
+    "lines": {"covered": 228, "count": 233, "percent": 97.85407725321888},
+    "functions": {"covered": 14, "count": 14, "percent": 100, "definition": "LLVM source functions including closures"},
+    "regions": {"covered": 438, "count": 461, "percent": 95.01084598698482},
+    "instantiations": {"covered": 21, "count": 28, "percent": 75}
+  },
+  "lower_bound": {
+    "invocations": 830,
+    "source_regions_union": {"covered": 43, "count": 45},
+    "uncovered_regions": [[115,70,115,71],[122,29,122,30]],
+    "uncovered_scope": "Defensive prefix-sum and frame-overhead overflow error propagation; generated operation vectors are bounded and cannot reach these failures",
+    "method": "Group exported lower_bound function regions across unit/integration instantiations by source range, file IDs and kind; covered if any count is positive. This is a derived region union, not branch coverage."
+  },
+  "branch_and_mcdc": "NOT_COLLECTED on this stable run; zero exported counters are not a measured branch score",
+  "statements": "NOT_SEPARATELY_REPORTED; LLVM regions are not relabeled as statements",
+  "oracle_exclusion": "Both immutable tests/support/*_legacy_cc0199f.rs sources explicitly excluded from reporting; zero oracle files appear in the export. Oracle execution still serves equivalence tests.",
+  "artifacts": {
+    "complete_export": "full-coverage.json.gz",
+    "complete_export_uncompressed_sha256": "3c699b98e9e86918332e2b66879814affb7986ac48d06adbfc6a71a6097558a2",
+    "compact_delta_export": "delta-coverage.json",
+    "compact_delta_export_sha256": "c9475d4dd3952d2b3f38244e5c6e0985a2e4a58192319388b249b03d8022f929",
+    "execution": "execution.txt",
+    "execution_sha256": "e0a2fd508e7799e7aa61460b570252c938d973e2640a53148946fb734c243da2",
+    "lower_bound_extraction": "lower-bound-summary.json"
+  },
+  "limitations": ["Focused targets, not whole repository or all client paths", "Instrumented timing is qualification only", "No claim of meeting an 80 percent threshold for uncollected branches/MC/DC/statements"]
+}

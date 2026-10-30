@@ -1,0 +1,21 @@
+   Compiling spiralcore-transfer v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer)
+    Finished `release` profile [optimized] target(s) in 1.44s
+     Running tests/sparse_pruning.rs (/Users/casey.allard/spiralcore/target/aarch64-apple-darwin/release/deps/sparse_pruning-c6733f589c4cbb82)
+
+running 1 test
+
+thread 'provably_raw_replacement_does_not_materialize_sparse_frame_buffers' (59791000) panicked at tests/sparse_pruning.rs:81:5:
+assertion `left == right` failed: a bound-rejected sparse candidate must not create a frame buffer; legacy allocated 8 headers
+  left: 8
+ right: 0
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test provably_raw_replacement_does_not_materialize_sparse_frame_buffers ... FAILED
+
+failures:
+
+failures:
+    provably_raw_replacement_does_not_materialize_sparse_frame_buffers
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `--test sparse_pruning`

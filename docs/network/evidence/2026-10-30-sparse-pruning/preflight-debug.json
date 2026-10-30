@@ -1,0 +1,18 @@
+{
+  "schema": "spiralcore.sparse-pruning.preflight-debug.v1",
+  "role": "debugger",
+  "scope": "Two isolated nonmutating zsh processes",
+  "path_case": {
+    "command": "zsh -fc: path=/nonexistent; command -v cargo",
+    "exit": 1,
+    "cause": "zsh path is the special array tied to PATH; assigning a loop variable named path replaces command search directories",
+    "receipt": "shell-path-diagnosis.txt"
+  },
+  "status_case": {
+    "command": "zsh -fc: status=0",
+    "exit": 1,
+    "cause": "zsh status is a read-only special parameter",
+    "receipt": "shell-status-diagnosis.txt"
+  },
+  "resolution": "Use task-specific variable names task_instruction_path and pruning_test_exit; no runtime source or host configuration changes"
+}
