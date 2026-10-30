@@ -1,0 +1,73 @@
+{
+  "milestone": "SC-OPT-015",
+  "stage": "procedural audit before content review",
+  "verdict": "PASS",
+  "reviewer": "selector_tests",
+  "completed_utc": "2026-10-30T23:23:55.023658+00:00",
+  "roles": "Roster d1927d9e7ce51354 freshly verified; harness-optimizer, code-reviewer, rust-reviewer and security-reviewer active",
+  "base": "531df9ee7cf721a0b706a0d741627c468792dede",
+  "design_plan_commit": "a438fc7658a823a48fe2a83efb502e2e8c87d331",
+  "approved_scope": "Additive exact warm-object selector and consuming client; existing wire/receiver unchanged; matched forced Sparse/Whole comparisons with actual setup and seeds.",
+  "observed_receipts": {
+    "all_target_release": {
+      "passed": 341,
+      "failed": 0,
+      "preexisting_ignored": 2,
+      "targets": 43,
+      "exit": 0
+    },
+    "clippy_all_targets_exit": 0,
+    "release_build_exit": 0,
+    "selector_initial_combined_green": 17,
+    "client_false_warm_test": "Third client test added after17-test snapshot; covered by final341 and focused18.",
+    "harness_green": 30,
+    "new_harness_tests": 4,
+    "workflow_actual_gates": 3,
+    "workflow_bash_syntax_blocks": 6,
+    "focused_instrumented_tests": 18,
+    "coverage_exit": 0,
+    "selector_lines": "192/195",
+    "selector_functions": "20/20",
+    "selector_regions": "327/358",
+    "new_client_deduplicated_regions": "25/25",
+    "coverage_scope": "Three fresh profiles and exactly current objects; existing client file27.49% lines under focused suite, not full module qualification; branch/MC/DC not collected."
+  },
+  "retained_failures_corrections": [
+    "Selector missing prepare_warm API E0599 RED.",
+    "Consuming client missing-function E0425 RED.",
+    "Harness missing selection-plan/order/receipt helpers E0425 RED.",
+    "Three actual workflow tests fail while workflow absent, then same gate binary passes.",
+    "Coverage summarizer initially rejected a zero-count generic placeholder; corrected interpretation retained six called instances plus the placeholder with no rerun or suppression."
+  ],
+  "source_sha256": {
+    "crates/spiralcore-transfer/src/schema_selection.rs": "884955623eed88c2665874fa0f921ecf713d34d053b55410b893c89d8013ebb7",
+    "crates/spiralcore-transfer/src/client.rs": "b3657a07343825f3ef57c5cce8e65bb87481ddcc8f0cd3c18b15c5e560a244f5",
+    "crates/spiralcore-transfer/tests/warm_selection.rs": "e2b1dece34327d27d4ed5a6f85bea85a1c7319ca300f17b504ee1674a2c7b784",
+    "crates/spiralcore-transfer/tests/warm_selection_client.rs": "64b82eb111bc99a0081cb1f12e17a570f36d89cfd38010224a3a7910bf1f46a3",
+    "crates/spiralcore-transfer/tests/warm_selection_workflow.rs": "090985bd6935bfe6bdd5ce754f842e8fcb546f50129b2e7d6d81f33b97285e33",
+    "crates/spiralcore-transfer/examples/support/warm_object.rs": "7381a1b8f6735d843e4593a3ef87658e53b76a68e3ab8ae7938166ed9b36a04f",
+    "crates/spiralcore-transfer/examples/schema_fitting.rs": "69acd5bf906347c603b3db2fc803b9c200e6aa77b910e77daff3a7bb2b396084",
+    ".github/workflows/spiralcore-warm-selection.yml": "7f5a676388d76abc7e6b155cb08b5911231b3137c7766243399e1393397f321c"
+  },
+  "receipt_sha256": {
+    "all-targets.txt": "41ab6613b312091e6dd3aa905e7dc9bb6ecd4f6247f785837dbe96516fd69665",
+    "all-targets.exit": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+    "clippy.txt": "8ed2f9b3bbb4be57c8e835806b6134f4ec85d420c408ea27a84b26bfde9981d5",
+    "clippy.exit": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+    "build.txt": "b7dde2194af01103948677e3de5eb42de663a868afa2e08246fff8783be453b5",
+    "build.exit": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+    "selector-red.txt": "a81b6aed19c7e3132ff438ff8960c8798498a48df1203a447910a8c8cc666388",
+    "client-red.txt": "595c3200bb787d16935d4c00ee8a7934851bfeaa0bc7fc0229468546c6d4a0aa",
+    "selector-green-attempt1.txt": "f1737528e98f495e000b1b55d34e9867ab45eb0751fb8fdde4a4ed88b85c790b",
+    "harness-red.txt": "0a3f2d0786d098aec4776d7494961a2eda8727b14c3e875e24a271775d36efac",
+    "harness-green-attempt1.txt": "03d142e646e9c4e85e7f5407ac9ba31d3d8d558a9d1dcef4ab6cfb73a863c504",
+    "workflow-red.txt": "50f62331c27d89bca6b1aed64ef7d4f1ed4986380e28b015b9122dbee72dfd12",
+    "workflow-green.txt": "ae8fcaeca5b1aebdffd3a0a6d700e3c07ce79742f56c098626bcdc836492a18d",
+    "coverage-tests.txt": "9819cb5be60d73220a495e0fd12b7a8b77a2efa43f3cbfd5dc9f8609555c7a83",
+    "coverage-tests.exit": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+    "coverage.json": "b1360e29bff9eb57d04d88b472e1216f8fb454cbe5f201abcf1d59e78e670b24"
+  },
+  "registration_status": "No registered local36 or WAN360 measurement at inspection; frozen source/executable/plan required before launch.",
+  "execution_constraints": "Existing Rust1.97.1 native shared build target, incremental-off and separate fresh coverage profile directory. Formal raw logs retained per user instruction. No reviewer tests/builds, content review, broad audit or new framework.",
+  "next_stage": "Procedural PASS must be notified before independent code/Rust/production-security review; separate cross-author harness/workflow security follows. No source/performance approval is implied by this procedural gate."
+}
