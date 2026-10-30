@@ -1,0 +1,97 @@
+{
+  "schema": "spiralcore.selector.post-audit-code-security-report-review.v1",
+  "review_date": "2026-10-29",
+  "reviewer": "/root/selector_architect",
+  "roles": ["code-reviewer", "rust-reviewer", "security-reviewer"],
+  "scope": "SC-OPT-006 only: unchanged adaptive sender, its tests/harness, final numeric report and evidence boundaries",
+  "source_revision": "850272f01d580d1cf7564d25fb628fd50f58d956",
+  "preregistration_revision": "791ec790eca25bd3f79cc21bdb38cfa27013b32a",
+  "status": "PASS_POST_AUDIT_CODE_SECURITY_AND_REPORT",
+  "critical_findings": 0,
+  "high_findings": 0,
+  "unresolved_findings": [],
+  "audit_precondition": {
+    "file": "audit.json",
+    "sha256": "db344718d46b9c047e1197f50e9e46e4abaf66ce180e8061f1a910dc0d7bedc6",
+    "observed_status": "PASS_PIPELINE_AUDIT",
+    "read_before_this_final_review": true,
+    "local_AUDIT_md_status": "PASS_PIPELINE_AUDIT"
+  },
+  "bound_artifacts": {
+    "../../codec-selection-results-2026-10-29.md": "502e3427546ef0dcb5eeb5177c3f23616b3ccabfa978df25180cb2c1e2ee9084",
+    "README.md": "4db2268ee4f571c74b6ef7caad7b5e9a70c6e0a9925a498d586128704e410d02",
+    "review.json": "1050aca3be0261185deda6789eaff32d5e23531c10554ffca6b5886c3745f7c3",
+    "qualification.json": "ea5615134853c182a18e05ce4477dda5ebaf0343d78bedaa3199d971725cf660",
+    "independent-review/result.json": "a4fb9efc54cfb5816917cdeed640dda234a2029e2983f2bc1f316f30432de26e",
+    "measurements.jsonl": "f2e3f74af52b89da1b8197a588f0d2c5ebc20595df632a43098000b6e641387d"
+  },
+  "source_confirmation": {
+    "diff_from_measured_revision_across_crates": "EMPTY",
+    "reviewed_five_file_hashes_match_preliminary_review": true,
+    "files_sha256": {
+      "crates/spiralcore-transfer/src/selection.rs": "62bc75f3370f4d36e2df5aabdbd2aa545ec27557fe96742a07e98e29ba9dae2e",
+      "crates/spiralcore-transfer/src/client.rs": "2d18f85f4762eded66c36eda64fb0d9078d4141618ecf59f2d937b6b1008757f",
+      "crates/spiralcore-transfer/src/lib.rs": "e7e311b453105158a103772535c4ca35f81cb56744625add6578140f42ec75cb",
+      "crates/spiralcore-transfer/tests/adaptive.rs": "c72b51a9704a500238e65f82b42723c90d0ef1b83f367dffa84ea2b5e94b8143",
+      "crates/spiralcore-transfer/examples/codec_selection.rs": "ae62780923e98b7b23dce839c8e00035c4c7e58f7630ff5a21c159478854a7c7"
+    },
+    "fresh_builds_repeated_during_final_review": false,
+    "reason": "Runtime unchanged from the independently checked/Clippy-reviewed source and parent-run fresh qualification. No redundant builds were needed."
+  },
+  "qualification_output_review": {
+    "release_tests_passed": 185,
+    "release_test_targets": 22,
+    "release_tests_failed": 0,
+    "release_tests_ignored": 0,
+    "separate_doctests_passed": 1,
+    "imported_store_tests_passed": 71,
+    "parent_output_files_read": ["release-tests.txt", "doctests.txt", "imported-store-tests.txt", "qualification.json"],
+    "independently_executed_check_and_clippy": "Previously passed on identical five-file source; commands/results bound in review.json",
+    "coverage_scope_accurately_reported": "95/100 selector lines, 7/7 functions, 166/184 regions; focused adaptive target, not full crate; branch/MC/DC not collected"
+  },
+  "report_numeric_review": {
+    "method": "Independently transcribed report tables were programmatically compared with exact JSONL summary fields. Unit conversion, body-reduction and CPU-change rounding were recomputed. Raw event counts and verified-byte sum were separately recomputed using jq. The independent checker additionally reproduces all complete summaries from raw operation rows.",
+    "selection_table_rows_checked": 8,
+    "raw_adaptive_cpu_wall_p95_rows_checked": 8,
+    "fixed_winner_comparison_rows_checked": 6,
+    "paid_seed_lifecycle_rows_checked": 4,
+    "all_table_values_equal": true,
+    "selected_mode_counts_checked": true,
+    "percentages_checked": true,
+    "lifecycle_medians_are_medians_of_paired_sums": true,
+    "raw_rows": 3043,
+    "operations": 1800,
+    "cleanup_rows": 1200,
+    "summary_rows": 40,
+    "verified_byte_sum": 16043212800,
+    "all_operation_receipts_exact_after_reopen": true,
+    "independent_checker_mutations_rejected": 9,
+    "interpretation_of_verification": "Receipt/statistic verification, not a second reconstruction of deleted synthetic caches"
+  },
+  "negative_result_confirmation": {
+    "case": "localized_32",
+    "size_bytes": 16777216,
+    "adaptive_body_equivalent_bytes": 600,
+    "forced_sparse_cpu_median_ms": 51.455,
+    "adaptive_cpu_median_ms": 86.4015,
+    "adaptive_cpu_increase_vs_forced_sparse_percent_rounded": 67.92,
+    "raw_wall_median_ms": 48.9755,
+    "adaptive_wall_median_ms": 99.909,
+    "negative_is_explicit_in_report": true,
+    "general_cpu_or_elapsed_win_claimed": false
+  },
+  "security_and_claim_boundaries": [
+    "The opt-in sender retains the existing wire, receiver authority, namespace/base permissions, whole-object identity, exact reconstruction, resource and publication contracts.",
+    "No changed offer/retry is hidden after Missing, denial or transport failure. Exact-repeat Raw probing is explicitly distinct from minimum full-miss encoding.",
+    "Serialized HTTP-body-equivalent counts are local; real loopback HTTP correctness testing does not establish new WAN speed.",
+    "Shared-host timing, cyclic ordering, excluded setup/reopen/cleanup work, nested CPU counters and paid seeds are disclosed.",
+    "Unrelated structured prefix wins can reflect whole-object framing and level-three parameters rather than useful base reuse; the missing whole-object no-base control is disclosed.",
+    "No peak-memory, energy, global vulnerability, production, CUI/FIPS, larger-client or MVM qualification is inferred."
+  ],
+  "resolved_report_note": "Retained material is correctly described as receipts for targets and Raw seeds; synthetic cache objects were removed only after native exact reopen checks.",
+  "remaining_parent_actions": [
+    "Seal and verify the packet checksums without modifying bound scientific artifacts",
+    "Publish through the user's authorized Git path and verify the actual origin/main revision",
+    "Preserve and verify the user's original local runtime/sessions during checkout synchronization"
+  ]
+}

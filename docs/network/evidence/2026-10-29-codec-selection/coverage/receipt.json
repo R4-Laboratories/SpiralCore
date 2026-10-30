@@ -1,0 +1,66 @@
+{
+  "schema": "spiralcore.selector.focused-coverage.v1",
+  "status": "passed",
+  "command": "PATH=/Users/casey.allard/spiralcore/local/tools/bin:/Users/casey.allard/.cargo/bin:$PATH CARGO_TARGET_DIR=/Users/casey.allard/spiralcore/local/codec-selection-20261029/coverage-target /Users/casey.allard/.cargo/bin/cargo +1.97.1 llvm-cov --locked --release --manifest-path crates/spiralcore-transfer/Cargo.toml --target aarch64-apple-darwin --features hardware-sha256 --test adaptive --json --output-path docs/network/evidence/2026-10-29-codec-selection/coverage/llvm-cov.json",
+  "command_exit_code": 0,
+  "tests": {"passed": 13, "failed": 0, "ignored": 0},
+  "tool": {
+    "cargo_llvm_cov": "0.9.1",
+    "cargo_llvm_cov_sha256": "ab085eba1d135466a6890a42df19f4bd6983290a915df9d68cde9654c2bb2bcd",
+    "rustc": "1.97.1 (8bab26f4f68e0e26f0bb7960be334d5b520ea452)",
+    "llvm": "22.1.6",
+    "profile": "optimized instrumented release",
+    "target": "aarch64-apple-darwin",
+    "features": ["hardware-sha256"],
+    "target_dir": "/Users/casey.allard/spiralcore/local/codec-selection-20261029/coverage-target",
+    "production_target_modified": false
+  },
+  "source": {
+    "before_manifest": "source-before.sha256",
+    "after_manifest": "source-after.sha256",
+    "manifests_byte_identical": true,
+    "manifest_comparison_exit_code": 0
+  },
+  "selector": {
+    "file": "crates/spiralcore-transfer/src/selection.rs",
+    "lines": {"covered": 95, "count": 100, "percent": 95.0},
+    "functions": {"covered": 7, "count": 7, "percent": 100.0},
+    "regions": {"covered": 166, "count": 184, "percent": 90.21739130434783},
+    "uncovered_line_numbers": [46, 54, 86, 114, 120],
+    "uncovered_scope": "Defensive internal candidate/frame limits and error-propagation paths. Allocation and codec failures were not injected. This is not complete exceptional-path coverage."
+  },
+  "adaptive_entry": {
+    "function": "client::transfer_adaptive_batched",
+    "source_lines": [674, 705],
+    "generic_instantiations": 9,
+    "invocations": 78,
+    "source_regions_union": {"covered": 41, "count": 42},
+    "region_union_method": "Group all matching exported function regions by source range, file IDs and kind; covered if any instantiation has a positive count. This is a derived source-region union, not an LLVM branch metric.",
+    "uncovered_region": [685, 59, 685, 60],
+    "uncovered_scope": "Integrity error propagation if an internally selected base-dependent mode lacks its base; public selection does not produce that state."
+  },
+  "existing_client_file": {
+    "file": "crates/spiralcore-transfer/src/client.rs",
+    "lines": {"covered": 286, "count": 627, "percent": 45.614035087719294},
+    "functions": {"covered": 10, "count": 27, "percent": 37.03703703703704},
+    "regions": {"covered": 432, "count": 1061, "percent": 40.71630537229029},
+    "limitation": "Only the adaptive integration target ran. Legacy DAG, sequential and repair paths are not fully exercised by this focused target. These are not whole-suite or repository coverage results."
+  },
+  "branch_coverage": "NOT_COLLECTED; stable run did not enable unstable --branch or --mcdc. Zero exported branch counters do not mean tested branches failed.",
+  "statements_coverage": "NOT_SEPARATELY_REPORTED by this LLVM export; regions are reported without relabeling them as statements.",
+  "performance_use": "Instrumented times are qualification output only, never performance evidence.",
+  "artifacts": {
+    "raw_report": "llvm-cov.json",
+    "raw_report_sha256": "3b269d22ea2ea48614ad44bffd892d06294b6bec9df6276e108360a6d8a865e1",
+    "extraction": "focused-summary.json",
+    "extraction_sha256": "431e57c434245e3fc2a0703dff60e0c084e0bc3a6b2c83b60db1b20a08b4f927",
+    "execution": "execution.txt",
+    "execution_sha256": "6b4836b17b79411e90695dadd1041883025fc92e22c94bf7c8f69d191f4a0d57",
+    "annotated_selector": "selected-source.txt",
+    "tool_and_profile_identities": "instrumented-tools.sha256"
+  },
+  "preparatory_and_optional_command_failures": [
+    {"command": "cargo-llvm-cov --version", "exit_code": 1, "reason": "Direct binary expects the llvm-cov subcommand; cargo-llvm-cov llvm-cov --version succeeded."},
+    {"command": "cargo +1.97.1 llvm-cov report --locked --release --manifest-path crates/spiralcore-transfer/Cargo.toml --target aarch64-apple-darwin --features hardware-sha256 --text --ignore-filename-regex '(bin/|dag.rs|delta.rs|endpoint.rs|prepared.rs|protocol.rs|wan.rs|zstd_prefix.rs|lib.rs)' --output-path docs/network/evidence/2026-10-29-codec-selection/coverage/selected-source.txt", "exit_code": 1, "reason": "Optional report subcommand rejected --features although its help lists the option; no test rerun or profile modification occurred. Annotated selector produced directly with the pinned LLVM tool."}
+  ]
+}

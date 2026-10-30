@@ -1,0 +1,26 @@
+   Compiling spiralcore-transfer v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.49s
+     Running tests/adaptive.rs (/Users/casey.allard/spiralcore/target/aarch64-apple-darwin/debug/deps/adaptive-152a3eea1274ebda)
+
+running 1 test
+test warm_local_edits_choose_sparse_and_reordered_data_choose_prefix ... FAILED
+
+failures:
+
+---- warm_local_edits_choose_sparse_and_reordered_data_choose_prefix stdout ----
+
+thread 'warm_local_edits_choose_sparse_and_reordered_data_choose_prefix' (59565033) panicked at tests/adaptive.rs:195:5:
+assertion `left == right` failed: Selection { candidates: [CandidateCost { mode: Raw, http_body_bytes: 131839 }, CandidateCost { mode: Zstd, http_body_bytes: 131839 }, CandidateCost { mode: SparseV1, http_body_bytes: 600 }, CandidateCost { mode: ZstdPrefixV1, http_body_bytes: 569 }], selected: ZstdPrefixV1, expected_http_body_bytes: 569, exact_repeat_probe: false }
+  left: ZstdPrefixV1
+ right: SparseV1
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    warm_local_edits_choose_sparse_and_reordered_data_choose_prefix
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 10 filtered out; finished in 0.06s
+
+error: test failed, to rerun pass `--test adaptive`
+
+EXIT_STATUS=101

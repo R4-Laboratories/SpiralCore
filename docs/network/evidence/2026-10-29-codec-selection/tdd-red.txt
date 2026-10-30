@@ -1,0 +1,28 @@
+   Compiling spiralcore-transfer v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer)
+error[E0425]: cannot find function `transfer_adaptive_batched` in module `client`
+   --> tests/adaptive.rs:24:26
+    |
+ 24 |       let result = client::transfer_adaptive_batched(&target, None, [1; 32], false, |frames| {
+    |                            ^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+   ::: src/client.rs:567:1
+    |
+567 | / pub fn transfer_sparse_batched<F: FnMut(&[Frame]) -> Result<Vec<Frame>>>(
+568 | |     base: &[u8],
+569 | |     target: &[u8],
+570 | |     transfer_id: Id,
+571 | |     warm_probe: bool,
+572 | |     exchange: F,
+573 | | ) -> Result<Stats> {
+    | |__________________- similarly named function `transfer_sparse_batched` defined here
+    |
+help: a function with a similar name exists
+    |
+ 24 -     let result = client::transfer_adaptive_batched(&target, None, [1; 32], false, |frames| {
+ 24 +     let result = client::transfer_sparse_batched(&target, None, [1; 32], false, |frames| {
+    |
+
+For more information about this error, try `rustc --explain E0425`.
+error: could not compile `spiralcore-transfer` (test "adaptive") due to 1 previous error
+
+EXIT_STATUS=101

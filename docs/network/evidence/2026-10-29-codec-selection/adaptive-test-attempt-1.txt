@@ -1,0 +1,52 @@
+   Compiling spiralcore-transfer v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.39s
+     Running tests/adaptive.rs (/Users/casey.allard/spiralcore/target/aarch64-apple-darwin/debug/deps/adaptive-152a3eea1274ebda)
+
+running 11 tests
+test oversized_inputs_fail_before_any_exchange ... ok
+test missing_base_and_changed_scope_do_not_reoffer_or_publish ... FAILED
+test cold_structured_data_selects_zstd_before_begin ... ok
+test revoked_authority_and_transport_failure_never_retry_selection ... ok
+test real_http_codec_selection_cost_matches_bodies_and_reopens_exactly ... FAILED
+test exact_repeat_probe_sends_raw_identity_only_and_unprobed_hit_counts_upload ... ok
+test warm_local_edits_choose_sparse_and_reordered_data_choose_prefix ... FAILED
+test malicious_receipts_are_checked_after_selection ... ok
+test empty_and_incompressible_ties_prefer_raw_with_exact_full_cost ... ok
+test exact_bytes_and_length_survive_boundaries_and_length_changes_after_restart ... ok
+test selector_cost_matches_actual_forced_arms_and_minimizes_eligible_bytes ... ok
+
+failures:
+
+---- missing_base_and_changed_scope_do_not_reoffer_or_publish stdout ----
+
+thread 'missing_base_and_changed_scope_do_not_reoffer_or_publish' (59560298) panicked at tests/adaptive.rs:317:13:
+assertion `left == right` failed
+  left: ZstdPrefixV1
+ right: SparseV1
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- real_http_codec_selection_cost_matches_bodies_and_reopens_exactly stdout ----
+
+thread 'real_http_codec_selection_cost_matches_bodies_and_reopens_exactly' (59560300) panicked at tests/adaptive.rs:424:5:
+assertion `left == right` failed
+  left: ZstdPrefixV1
+ right: SparseV1
+
+---- warm_local_edits_choose_sparse_and_reordered_data_choose_prefix stdout ----
+
+thread 'warm_local_edits_choose_sparse_and_reordered_data_choose_prefix' (59560306) panicked at tests/adaptive.rs:195:5:
+assertion `left == right` failed
+  left: ZstdPrefixV1
+ right: SparseV1
+
+
+failures:
+    missing_base_and_changed_scope_do_not_reoffer_or_publish
+    real_http_codec_selection_cost_matches_bodies_and_reopens_exactly
+    warm_local_edits_choose_sparse_and_reordered_data_choose_prefix
+
+test result: FAILED. 8 passed; 3 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.56s
+
+error: test failed, to rerun pass `--test adaptive`
+
+EXIT_STATUS=101

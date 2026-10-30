@@ -1,0 +1,97 @@
+{
+  "schema": "spiralcore.selector.pipeline-audit.v1",
+  "status": "PASS_PIPELINE_AUDIT",
+  "audit_local_date": "2026-10-29",
+  "auditor": "/root/selector_tests",
+  "role": "harness-optimizer",
+  "roster_id": "c36b79c68e575d7b",
+  "scope": "SC-OPT-006 in this isolated SpiralCore worktree only; no other labs",
+  "source_revision": "850272f01d580d1cf7564d25fb628fd50f58d956",
+  "preregistration_revision": "791ec790eca25bd3f79cc21bdb38cfa27013b32a",
+  "source_manifest_sha256": "bd6da625a913220774b68b0e87558e80f1f4358d2965943cd787de770faee4ce",
+  "executable_sha256": "c165a97205f858578f3c25d02464a725503660e21cf7c318811201f548c4d3fd",
+  "measurements_sha256": "f2e3f74af52b89da1b8197a588f0d2c5ebc20595df632a43098000b6e641387d",
+  "evidence_method": {
+    "actual_execution_records_accessible": true,
+    "source": "Native Codex parent/child command events, retained test/build/coverage outputs, reviewed source identities and independent raw-row arithmetic",
+    "selected_command_events": "independent-review/command-events.jsonl",
+    "selected_command_event_count": 14,
+    "full_private_transcripts_copied": false,
+    "agent_status_alone_accepted_as_execution": false,
+    "daily_markers": "No absent DAILY.md markers relied upon; native task ownership and command events used"
+  },
+  "execution_checks": {
+    "roster_verified_before_roles": true,
+    "audit_role_user_approval_scope": "This chat/worktree only",
+    "red_before_implementation": {"exit_code": 101, "diagnostic": "E0425 absent API", "receipt": "tdd-red.txt"},
+    "retained_intermediate_failures": "Test-only E0308 authority type and three incorrect winner assumptions retained with diagnosis in adaptive-test-disposition.json",
+    "final_adaptive_tests": {"passed": 13, "failed": 0, "receipt": "adaptive-test-final.txt"},
+    "full_release_tests": {"exit_code": 0, "targets": 22, "passed": 185, "failed": 0, "ignored": 0},
+    "doctests": {"exit_code": 0, "passed": 1},
+    "imported_store_tests": {"exit_code": 0, "passed": 71},
+    "release_build_exit": 0,
+    "format_check_exit": 0,
+    "independent_cargo_check_exit": 0,
+    "independent_clippy_deny_warnings_exit": 0,
+    "qualification_receipt": "qualification.json",
+    "preliminary_independent_review": "review.json",
+    "runtime_unchanged_since_source_revision": true,
+    "source_manifest_files_verified": 60,
+    "custody_receipt": "independent-review/custody.json"
+  },
+  "focused_coverage": {
+    "receipt": "coverage/receipt.json",
+    "tests_passed": 13,
+    "selector_lines": {"covered": 95, "total": 100},
+    "selector_functions": {"covered": 7, "total": 7},
+    "selector_regions": {"covered": 166, "total": 184},
+    "branch_and_mcdc": "NOT_COLLECTED",
+    "scope": "Adaptive integration target only; no full-crate coverage claim; uncovered exceptional paths disclosed",
+    "instrumented_times_used_as_performance_evidence": false
+  },
+  "independent_numeric_verification": {
+    "implementation": "independent-review/verify.jq",
+    "result": "independent-review/result.json",
+    "exit_code": 0,
+    "rows": 3043,
+    "operations_exact": 1800,
+    "targets": 1200,
+    "paid_raw_seeds": 600,
+    "compared_bytes": 16043212800,
+    "paired_inputs": 240,
+    "adaptive_equals_predicted_and_best_configured_fixed_body": 240,
+    "complete_summary_objects_recomputed_and_equal": 40,
+    "cleanup_rows_verified": 1200,
+    "mutation_tests": {"rejected_as_expected": 9, "total": 9, "receipt": "independent-review/negative-tests.jsonl"},
+    "scope": "Independent receipt arithmetic and statistics; not independent re-execution of every reconstruction or fixture generation"
+  },
+  "cleanup": {
+    "measurement_root_only_owner_marker": true,
+    "smoke_root_only_owner_marker": true,
+    "owner_markers_match_registrations": true,
+    "measurement_per_arm_cleanup_receipts": 1200,
+    "smoke_per_arm_cleanup_receipts": 120,
+    "failed_measurement_operations": 0,
+    "all_observations_preserved": true,
+    "other_labs_modified_by_audit": false
+  },
+  "findings": {
+    "evasion": [],
+    "stale_completed_file_claims": [],
+    "blocking_pipeline_findings": [],
+    "negative_performance_result_retained": "16 MiB localized: adaptive 600 body-equivalent bytes, CPU median 86.4015 ms versus Raw 35.2865 ms; wall median 99.909 ms versus Raw 48.9755 ms. Unrelated structured adaptive also costs more CPU.",
+    "interpretation": "Pass establishes byte-minimum correctness over configured candidates and recorded exact reconstruction; it does not establish a general CPU or elapsed-time win."
+  },
+  "limitations": [
+    "Local, serial, same-process measurement on a shared developer host; no new WAN result.",
+    "Body equivalents omit transport headers, TLS, TCP/IP, retransmission and relays; no pure network-send-time result.",
+    "CPU includes receiver work and nested timers are not additive; no energy or peak-memory qualification.",
+    "Whole-file no-base zstd comparator absent; unrelated-prefix wins do not prove useful cache reuse.",
+    "Not a global vulnerability, CUI/FIPS, production security or MVM integration assessment.",
+    "Historical WAN results remain prior evidence, not current selector measurements."
+  ],
+  "remaining_gates": [
+    "Final post-audit code/security confirmation of unchanged source and final report",
+    "Parent-owned packet checksum, publication and verification of published origin/main revision"
+  ]
+}
