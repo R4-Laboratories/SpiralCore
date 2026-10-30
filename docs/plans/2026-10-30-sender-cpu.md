@@ -1,0 +1,10 @@
+# SC-OPT-010 implementation plan
+
+Implement the user-approved [sender CPU design](../specs/2026-10-30-sender-cpu-design.md) against preserved baseline `11fb809`. Keep evidence compact and do not repeat broad audits.
+
+1. **Selection owner — bounded runtime selection.** Add focused RED tests in `crates/spiralcore-transfer/src/selection.rs` for original tie priority, skipped lower-bound receipts and exhaustive winner/body equality. Implement runtime-first preparation with proved Zstd/Sparse bounds, retain uncapped Prefix and leave ordinary adaptive selection exhaustive. Integrate identity callbacks inside timed `src/client.rs` runtime sending. Risk: medium; compare exact frames and equality boundaries.
+2. **Parent owner — residual and immutable identity reuse.** In `src/delta.rs`, replace scalar scan work after baseline-oracle RED tests. In `src/shared_transfer.rs`, retain checkpoint/prediction IDs and expose crate-visible accessors, with cached prediction ID restricted to full byte equality. Test unchanged, edited, append/truncate and malformed/oversized cases. Risk: medium; keep wire bytes and fallbacks identical.
+3. **Focused qualification.** Retain RED/GREEN receipts under `docs/network/evidence/2026-10-30-sender-cpu`, run relevant existing adaptive/runtime/prefix tests plus new comparisons, then one coordinated full Rust qualification and independent review of the changed source. No production changes during timed runs.
+4. **Measurement owner — one registered local campaign.** Compare archived baseline and candidate with the same input cells, authenticated transport and durable verification. Include preparation, selected-body bytes, outside-exchange sender CPU, receiver CPU, wall time and retained-memory scope. Record adverse results as well as gains. No new WAN claim without a new WAN run.
+
+Completion means exact winner/body/reconstruction agreement, preserved input/error boundaries, and an honest recorded performance disposition. Capped-prefix work is explicitly excluded because the required cost proof does not follow from its capacity error.
