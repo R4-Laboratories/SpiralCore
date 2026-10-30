@@ -1,0 +1,32 @@
+error: unknown start of token: \
+   --> docs/network/evidence/2026-10-30-shared-runtime/wan-analysis/analyze.rs:550:105
+    |
+550 | ...   "paired_sender_cpu_inflation_runtime_over_baseline":summary(values("operation_cpu_us",false)),\n          "paired_cpu_subtota...
+    |                                                                                                     ^
+
+error: expected one of `!`, `)`, `,`, `.`, `::`, `?`, `{`, or an operator, found `"paired_cpu_subtotal_inflation_runtime_over_baseline"`
+   --> docs/network/evidence/2026-10-30-shared-runtime/wan-analysis/analyze.rs:550:117
+    |
+550 | ..._us",false)),\n          "paired_cpu_subtotal_inflation_runtime_over_baseline":summary(values("cpu_subtotal_us",false)),
+    |                   -         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected one of 8 possible tokens
+    |                   |
+    |                   help: missing `,`
+
+error[E0425]: cannot find value `n` in this scope
+   --> docs/network/evidence/2026-10-30-shared-runtime/wan-analysis/analyze.rs:550:106
+    |
+ 42 | fn s<'a>(v: &'a Value, k: &str) -> R<&'a str> {
+    | --------------------------------------------- similarly named function `s` defined here
+...
+550 |           "paired_sender_cpu_inflation_runtime_over_baseline":summary(values("operation_cpu_us",false)),\n          "paired_cpu_sub...
+    |                                                                                                          ^
+    |
+help: a function with a similar name exists
+    |
+550 -           "paired_sender_cpu_inflation_runtime_over_baseline":summary(values("operation_cpu_us",false)),\n          "paired_cpu_subtotal_inflation_runtime_over_baseline":summary(values("cpu_subtotal_us",false)),
+550 +           "paired_sender_cpu_inflation_runtime_over_baseline":summary(values("operation_cpu_us",false)),\s          "paired_cpu_subtotal_inflation_runtime_over_baseline":summary(values("cpu_subtotal_us",false)),
+    |
+
+error: aborting due to 3 previous errors
+
+For more information about this error, try `rustc --explain E0425`.

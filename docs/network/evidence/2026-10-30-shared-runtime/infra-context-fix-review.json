@@ -1,0 +1,55 @@
+{
+  "schema": "spiralcore.shared-runtime.independent-infra-context-review.v1",
+  "verdict": "APPROVED_SCOPED_WORKFLOW_CORRECTION",
+  "reviewer": "selector_architect",
+  "role": "infra-reviewer",
+  "role_verified_active": true,
+  "date": "2026-10-30",
+  "failed_run": {
+    "id": 41061178351,
+    "url": "https://github.com/R4-Laboratories/SpiralCore/actions/runs/41061178351",
+    "source": "b6627deb7fb8c80a46c0e89d5e074afaf50f37f0",
+    "observation": "Reviewer independently opened the public run page and observed the line16/column25 runner.temp expression annotation. This is workflow validation failure, not a transfer observation."
+  },
+  "root_cause": "Prior infrastructure review and local YAML/Bash/ShellCheck qualification did not check GitHub Actions context availability at job-level env. GitHub rejected runner.temp before jobs ran.",
+  "primary_source": {
+    "url": "https://docs.github.com/en/actions/reference/workflows-and-actions/contexts#context-availability",
+    "verified": "Official table permits github, needs, strategy, matrix, vars, secrets, inputs at jobs.<job_id>.env; runner is not permitted."
+  },
+  "change": {
+    "before": "CARGO_TARGET_DIR: ${{ runner.temp }}/spiralcore-runtime-target",
+    "after": "CARGO_TARGET_DIR: ${{ github.workspace }}/target",
+    "assessment": "Supported context; bounded dedicated Cargo directory remains guarded as nonexistent before build. Source/auth/attempt/dose/retention controls are unchanged."
+  },
+  "reviewed_sha256": {
+    ".github/workflows/spiralcore-shared-runtime.yml": "9a8c8ba1fd3c29e3dce902882fdfe15183f1dbba69cd25e3aff5c2da6ab43f44",
+    "docs/network/evidence/2026-10-30-shared-runtime/qualification/workflow/check-gates.sh": "4e30fb868f5c6b65f529b87c98d62d805e0faf9f8f841a53a9312d9bb0ccfd07",
+    "docs/network/evidence/2026-10-30-shared-runtime/qualification/workflow/context-fix.json": "5e4e1e827105ab808e538d7621146295854a04b49586919edfe37f17b29c0339",
+    "docs/network/evidence/2026-10-30-shared-runtime/qualification/workflow/context-red.log": "07c0000d64712a5554c2d792f55da4d151a3673b719fddb9ca0bc23a091f9d82",
+    "docs/network/evidence/2026-10-30-shared-runtime/qualification/workflow/context-green.log": "8988381a28d48aa0505898882120839b726861b9df26ca098deabc6750759593",
+    "docs/network/evidence/2026-10-30-shared-runtime/qualification/workflow/independent-context-gates.log": "8988381a28d48aa0505898882120839b726861b9df26ca098deabc6750759593"
+  },
+  "qualification": {
+    "independent_command": "bash docs/network/evidence/2026-10-30-shared-runtime/qualification/workflow/check-gates.sh .github/workflows/spiralcore-shared-runtime.yml",
+    "exit": 0,
+    "result": "Actual YAML, supported job-env reference roots, embedded Bash/ShellCheck, valid fixture inputs, and17 rejected source/origin/capability cases pass. Author RED/ GREEN receipts were inspected."
+  },
+  "measured_code_unchanged": {
+    "baseline": "b6627deb7fb8c80a46c0e89d5e074afaf50f37f0",
+    "command": "git diff b6627deb7fb8c80a46c0e89d5e074afaf50f37f0 -- crates/spiralcore-transfer/src crates/spiralcore-transfer/examples/shared_runtime.rs crates/spiralcore-transfer/Cargo.toml crates/spiralcore-transfer/Cargo.lock",
+    "result": "empty",
+    "rust_rebuild_performed": false,
+    "measurement_performed": false
+  },
+  "findings": [],
+  "remaining_requirements": [
+    "Use a new source commit/public run identifier and fresh receiver state; do not rerun the rejected GitHub attempt.",
+    "Retain failed-run evidence and both original and corrected review receipts.",
+    "A successful hosted source/vector/test qualification and a completed remote run remain unproven until actually observed.",
+    "Join successful sender rows to independent stopped-receiver exact verification before claiming WAN fidelity."
+  ],
+  "limitations": [
+    "The added regex check is targeted to expression context roots used here; it is not a complete GitHub Actions parser.",
+    "No push, workflow rerun, secret/variable mutation, receiver/tunnel start, or remote transfer was performed by this reviewer."
+  ]
+}

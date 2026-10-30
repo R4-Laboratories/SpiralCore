@@ -1,0 +1,63 @@
+{
+  "schema": "spiralcore.shared-runtime.post-audit-runtime-review.v1",
+  "date": "2026-10-30",
+  "head": "35114daef384186dacd6123221ec9b5db60b3fcc",
+  "roster": "d1927d9e7ce51354",
+  "reviewer": "selector_measurement",
+  "roles": ["code-reviewer", "rust-reviewer", "security-reviewer"],
+  "verdict": "APPROVED_SCOPED_POST_AUDIT_REVIEW",
+  "blocking_findings": [],
+  "scope": "Independent review of the separately authored runtime engine, transfer integration, relevant regression tests, and final byte/CPU/time claims. Reviewed the final production diff and material trust boundaries after the pipeline audit passed; reused retained qualification rather than repeating builds or measurements.",
+  "independence": {
+    "runtime_or_transport_authored_by_reviewer": false,
+    "results_report_authored_by_reviewer": false,
+    "measurement_harness_and_workflow_authored_by_reviewer": true,
+    "measurement_harness_and_workflow_independently_approved_here": false
+  },
+  "audit": {
+    "status": "PASS_PIPELINE_AUDIT",
+    "path": "docs/network/evidence/2026-10-30-shared-runtime/pipeline-audit.json",
+    "sha256": "c928fb631fe804cd13a9631b841970400d7ba5ad385e20ff841f5c8b28f208d2",
+    "audit_md_sha256": "c83fcf14d11704a15d694ea54000ec24320b95f2587e7f9c59b629d93dd068bd"
+  },
+  "reviewed_contracts": [
+    "Canonical checkpoints and recipes reject unsupported formats, truncation, trailing bytes, nonfinite/noncanonical floats, invalid dimensions, padding and reserved fields. Replay executes fixed Rust equations, without received code, external clock, filesystem or network input.",
+    "Replay bounds checkpoint size, steps, width, logical count, retained roots, work and output. Integer shape preflight precedes oscillator/CA work; exact output reservation and final produced-length checks retain the corrected memory bound.",
+    "The ternary root fold is a lossy numeric summary. Exact object reconstruction instead comes from the verified checkpoint, deterministic recipe, COPY/LITERAL residual and final object identity. The report does not confuse these contracts.",
+    "Runtime mode requires a checkpoint base and no DAG manifest. Endpoint authorization and namespace/epoch binding apply before admission and every handled request. The verified checkpoint must be published in that namespace; replay/output resources are reserved before decoding and replay.",
+    "Runtime setup binds the regenerated prediction length and digest. Residual decoding remains bounded by target length and operation limits. Missing setup, malformed prediction, incorrect final length or digest cannot reach publication.",
+    "Finish verifies target length and object digest before publication. Publication rechecks authority, syncs the staged file, renames it and syncs directories before returning the committed-object acknowledgment. Cancellation and failed transfers do not publish output.",
+    "The client compares complete framed-body costs and sends only the selected mode. It adds no implicit retry or fallback after a failed runtime exchange. Losing prediction work remains part of reported computation cost.",
+    "Regression coverage includes checkpoint namespace isolation, resource rejection, malformed setup, digest failure, replay/cancellation, changed lengths, revoked authority, epoch changes and exact reopen. Existing review and qualification receipts cover the full test matrix; this review adds no execution results."
+  ],
+  "claims_disposition": [
+    "The reported 747-byte generated and 766-byte edited runtime bodies are conditional on a shared checkpoint and include recipe/residual framing. The 3,883-byte checkpoint seed is separately retained and included in cold-start comparisons.",
+    "The report keeps the 142,738-byte and 14,851,384-byte local workloads separate from the three-trial relay WAN pilot. It reports exact recovery and favorable byte savings without calling the pilot 30-trial WAN acceptance.",
+    "The report preserves negative results: runtime replay loses local CPU/wall comparisons to raw transfer, loses WAN wall comparisons to zstd/adaptive, and has no byte benefit for unrelated data while retaining losing prediction CPU cost.",
+    "WAN endpoint CPU is a per-trial sender-plus-receiver-handler subtotal; exchange duration is nested within transfer duration, not pure transmission time. HTTP body bytes exclude headers, TLS/IP/TCP, retransmissions and unobserved relay traffic. No energy or total infrastructure CPU improvement is claimed.",
+    "Frozen vectors and actual plan agreement qualify the inspected Apple ARM64/macOS and x86_64/Linux builds only. Python equation agreement is tolerance-based for floating point, not Python/Rust byte identity or universal platform determinism. MVM and FIPS/CUI qualification remain undelivered."
+  ],
+  "reused_evidence": [
+    "docs/network/evidence/2026-10-30-shared-runtime/reference/engine-review.json",
+    "docs/network/evidence/2026-10-30-shared-runtime/pre-measurement-review.json",
+    "docs/network/evidence/2026-10-30-shared-runtime/pipeline-audit.json"
+  ],
+  "source_sha256": {
+    "crates/spiralcore-transfer/src/shared_runtime.rs": "c956c80f88e401751f594b7540c587e6213b8fe33e70a776d663c7259992bbb8",
+    "crates/spiralcore-transfer/src/shared_transfer.rs": "89c10ccf5ada59043ad6cf406fad4d7dda819affcdf43e179fc5f6ea80bcd7c3",
+    "crates/spiralcore-transfer/src/client.rs": "6d47427000a982e95ec632d446ffa35209dfbfab3893d422097b70d0f57e6d3a",
+    "crates/spiralcore-transfer/src/endpoint.rs": "897c25a33507d7368420887b29a984b8b6d9879276182dcf7ff4150a36a60d98",
+    "crates/spiralcore-transfer/src/protocol.rs": "87f8335a7abf614ecb78444b31764bb3a1be6bd46811fd0fa97b65c14f11fe30",
+    "crates/spiralcore-transfer/src/selection.rs": "f247fd34b0472f9a5e3211738859ff1508f782965585d2f07d2c33ac2d4d8193",
+    "crates/spiralcore-transfer/Cargo.toml": "19a8559241a9c216bdc63b26a69ebf236848bdefda5906e06263bae9ed9924ef",
+    "crates/spiralcore-transfer/Cargo.lock": "2edee014903d73fd6f61950c4c6bcd56a2b807ec95513c9ac39bf14e9f9004c0",
+    "crates/spiralcore-transfer/tests/shared_runtime.rs": "12c1ce04bec15b688539ec43544f8f48bae42f3d4fe7c5e52a712353181e6b76",
+    "crates/spiralcore-transfer/tests/shared_transfer.rs": "c99a455100c0935aed64d9a9c0cbedfbf442795fa204356a85cca0bb81b525db",
+    "docs/network/shared-runtime-results-2026-10-30.md": "2f013dd43f7e76b17f84be42a860192cf099abd13f2586bd79cb345ddbc6b985"
+  },
+  "limits": [
+    "Scoped source and claim review, not formal verification, whole-repository security certification or a new measurement.",
+    "Existing test/check/Clippy and independent numerical analysis receipts were reused; no builds, tests, experiments or production edits were performed during this review.",
+    "The separately authored post-audit integration review owns independent approval of this reviewer's measurement harness and workflow."
+  ]
+}

@@ -1,0 +1,41 @@
+   Compiling spiralcore-transfer v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer)
+error[E0422]: cannot find struct, variant or union type `Config` in this scope
+  --> examples/shared_runtime.rs:65:22
+   |
+65 |         let config = Config {
+   |                      ^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `make_plan` in this scope
+  --> examples/shared_runtime.rs:74:20
+   |
+74 |         let plan = make_plan(&config).unwrap();
+   |                    ^^^^^^^^^ not found in this scope
+
+error[E0433]: cannot find type `Fixture` in this scope
+  --> examples/shared_runtime.rs:87:23
+   |
+87 |         let fixture = Fixture::new(48, 3, "generated", 0).unwrap();
+   |                       ^^^^^^^ use of undeclared type `Fixture`
+
+error[E0425]: cannot find function `sha` in this scope
+  --> examples/shared_runtime.rs:89:58
+   |
+89 |         assert_eq!(plan["fixtures"][0]["target_sha256"], sha(&fixture.target));
+   |                                                          ^^^ not found in this scope
+
+error[E0425]: cannot find function `make_plan` in this scope
+  --> examples/shared_runtime.rs:92:17
+   |
+92 |         assert!(make_plan(&duplicate).is_err());
+   |                 ^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `make_plan` in this scope
+  --> examples/shared_runtime.rs:99:17
+   |
+99 |         assert!(make_plan(&too_large).is_err());
+   |                 ^^^^^^^^^ not found in this scope
+
+Some errors have detailed explanations: E0422, E0425, E0433.
+For more information about an error, try `rustc --explain E0422`.
+error: could not compile `spiralcore-transfer` (example "shared_runtime" test) due to 6 previous errors
+warning: build failed, waiting for other jobs to finish...

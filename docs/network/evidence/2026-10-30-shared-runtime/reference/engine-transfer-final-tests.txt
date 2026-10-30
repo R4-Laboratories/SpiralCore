@@ -1,0 +1,43 @@
+   Compiling spiralcore-transfer v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer)
+    Finished `release` profile [optimized] target(s) in 9.94s
+     Running tests/shared_runtime.rs (/Users/casey.allard/spiralcore/target/aarch64-apple-darwin/release/deps/shared_runtime-c8edf3bb61376ae7)
+
+running 22 tests
+test checkpoint_rejects_every_truncation_trailing_bytes_and_bad_magic ... ok
+test checkpoint_rejects_noncanonical_float_padding_flags_and_root_count ... ok
+test fold_values_preserve_observed_unweighted_summary_semantics ... ok
+test historical_root_retention_cap_drops_oldest_summary_without_exceeding_bounds ... ok
+test invalid_dimensions_rings_and_nonfinite_state_are_refused ... ok
+test invalid_frequency_coupling_clock_root_and_payload_are_refused ... ok
+test checkpoints_roundtrip_every_resume_boundary_without_fidelity_loss ... ok
+test logical_step_root_and_replay_limits_are_bounded ... ok
+test recipe_rejects_noncanonical_payload_reserved_bits_and_output_kind ... ok
+test memory_coupler_affects_phases_without_changing_ca_or_leaf_count ... ok
+test recipe_roundtrip_rejects_truncation_trailing_and_unknown_header ... ok
+test native_canonical_checkpoint_and_trace_vectors_are_stable ... ok
+test root_counts_and_phase_bounds_are_validated ... ok
+test trace_contains_every_complete_post_step_checkpoint_in_order ... ok
+test exact_replay_final_checkpoint_matches_explicit_steps ... ok
+test trace_reserves_exact_required_output_instead_of_entire_admission_ceiling ... ok
+test zero_step_final_replay_is_identity_and_zero_step_trace_is_header_only ... ok
+test splitting_replay_across_independent_checkpoint_receivers_is_exact ... ok
+test seeded_default_ca_row_matches_pinned_python_reference ... ok
+test full_transition_matches_pinned_python_ca_fold_clock_and_memory_fields ... ok
+test every_valid_reference_ring_evolves_exactly_for_all_three_rules ... ok
+test replay_exact_output_budget_succeeds_and_one_byte_short_fails ... ok
+
+test result: ok. 22 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running tests/shared_transfer.rs (/Users/casey.allard/spiralcore/target/aarch64-apple-darwin/release/deps/shared_transfer-9ba49b4b7c72da7c)
+
+running 7 tests
+test setup_truncations_versions_digest_and_resource_lies_are_rejected ... ok
+test different_lengths_and_final_checkpoint_use_exact_residuals ... ok
+test replay_is_idempotent_and_cancel_discards_output ... ok
+test revoked_authority_and_changed_epoch_cannot_finish_an_admitted_replay ... ok
+test runtime_recipe_crosses_transfer_boundary_and_reopens_exact_bytes ... ok
+test checkpoint_must_be_authorized_present_and_within_replay_budget ... ok
+test malformed_setup_missing_setup_and_failed_final_digest_never_publish ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.21s
+

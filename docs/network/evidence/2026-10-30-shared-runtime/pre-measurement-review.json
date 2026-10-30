@@ -1,0 +1,96 @@
+{
+  "schema": "spiralcore.shared-runtime.independent-source-review.v1",
+  "status": "PASS_SOURCE_REVIEW",
+  "reviewer": "selector_architect",
+  "date": "2026-10-30",
+  "roles": [
+    "code-reviewer",
+    "rust-reviewer",
+    "security-reviewer",
+    "python-reviewer"
+  ],
+  "roster_verified": "d1927d9e7ce51354",
+  "scope": "Independent review of parent-authored transfer integration, separately authored measurement harness, and Python reference extraction/qualification. This is source/qualification review, not a performance result or final pipeline audit.",
+  "reviewed_sha256": {
+    "crates/spiralcore-transfer/src/shared_transfer.rs": "89c10ccf5ada59043ad6cf406fad4d7dda819affcdf43e179fc5f6ea80bcd7c3",
+    "crates/spiralcore-transfer/src/client.rs": "6d47427000a982e95ec632d446ffa35209dfbfab3893d422097b70d0f57e6d3a",
+    "crates/spiralcore-transfer/src/endpoint.rs": "897c25a33507d7368420887b29a984b8b6d9879276182dcf7ff4150a36a60d98",
+    "crates/spiralcore-transfer/src/protocol.rs": "87f8335a7abf614ecb78444b31764bb3a1be6bd46811fd0fa97b65c14f11fe30",
+    "crates/spiralcore-transfer/src/selection.rs": "f247fd34b0472f9a5e3211738859ff1508f782965585d2f07d2c33ac2d4d8193",
+    "crates/spiralcore-transfer/examples/shared_runtime.rs": "fd870f19f84566fcedc1a616502f16aa2da6e25a8cf9995f6fb92cd139e876cd",
+    "docs/network/evidence/2026-10-30-shared-runtime/measurement-contract.md": "05ecf253e7aa1700cf1042c5dd815d4e7f06439a960530e53b8898ce3b0dda83",
+    "docs/network/evidence/2026-10-30-shared-runtime/reference/generate_reference.py": "06bdf32c0ae0562e29566313d92298978c7b0aad9ac5ee88f91af441a0735df5",
+    "docs/network/evidence/2026-10-30-shared-runtime/reference/test_generator.py": "b4a16cab7ef433761e0952dc05b8376fb83a5db5900fa3a270c8b33bae1a785f",
+    "docs/network/evidence/2026-10-30-shared-runtime/reference/README.md": "36476125b20ced32fc640a7180e03c8c73c72157c57f8b667f4377eb913dead6"
+  },
+  "independence_exclusion": {
+    "path": "crates/spiralcore-transfer/src/shared_runtime.rs",
+    "reason": "Reviewer authored the engine and size preflight. Independent engine review belongs to selector_tests; no self-approval is claimed here.",
+    "observed_engine_sha256": "c956c80f88e401751f594b7540c587e6213b8fe33e70a776d663c7259992bbb8"
+  },
+  "findings": [],
+  "resolved_findings": [
+    {
+      "id": "SC-RUNTIME-REVIEW-01",
+      "issue": "Cold-start comparison could charge unnecessary checkpoint seeds to raw/zstd baselines.",
+      "resolution": "Contract now distinguishes equal-setup measured totals from practical runtime(seed+target) versus raw/zstd(target-only); adaptive checkpoint seed remains required."
+    },
+    {
+      "id": "SC-RUNTIME-REVIEW-02",
+      "issue": "Fixture generation could be mistaken for unavoidable existing-file transfer cost.",
+      "resolution": "Contract identifies generation as workload construction and permits application-to-ack composition only for an application that actually generates its data this way."
+    },
+    {
+      "id": "SC-RUNTIME-REVIEW-03",
+      "issue": "Python oracle reproduction depends on originals outside a fresh clone.",
+      "resolution": "Reference README explicitly states non-self-contained Python reproduction and pinned local source dependency. Originals remain local under the publication boundary; bundled excerpts/vectors and Rust tests are portable and inspectable."
+    }
+  ],
+  "verified_properties": [
+    "Runtime checkpoint lookup and all request handling use the existing authenticated context namespace and authority checks.",
+    "Replay resource reservation precedes generation; setup produces Accepted(0) and does not acknowledge object publication.",
+    "Prediction digest/length are checked before replacement of the residual base; final target length/digest, authorization recheck, and durable publication remain mandatory.",
+    "Missing checkpoint and malformed/digest failures propagate; there is no implicit network retry or cross-namespace fallback.",
+    "Runtime candidate is considered after existing candidates, uses exact complete HTTP-body cost, and loses equal-cost ties.",
+    "Local harness serializes actual protocol batches and adds the exact 16-byte receiver metric envelope difference; values are labeled HTTP-body-equivalent, not network wire bytes.",
+    "Remote body counts exclude HTTP/TLS/IP/retransmission overhead; remote receiver CPU is a handler subtotal, not total remote host CPU.",
+    "Local operation CPU already contains receiver work; exchange and receiver timers are nested and must not be added again.",
+    "Successful local transfers close/reopen the store and compare every byte before owned cache cleanup; remote acknowledgements remain explicitly pending stopped-receiver exact verification.",
+    "Plan/config/fixture/source/executable identities, fresh scopes, create_new evidence, failed-operation rows, and final completion rows support later independent audit.",
+    "Python generator checks pinned source hashes before selected-AST compilation and excludes original startup, saved cards, router/audio, network, and wall-clock execution."
+  ],
+  "observed_checks": [
+    {
+      "path": "qualification/python-independent-review.txt",
+      "exit": 0,
+      "result": "8/8 independent Python oracle qualification tests; executed by this reviewer"
+    },
+    {
+      "path": "reference/review-all-target-check.txt",
+      "exit": 0,
+      "result": "Actual successful all-target Cargo check output inspected; command executed by selector_tests"
+    },
+    {
+      "path": "reference/review-all-target-clippy.txt",
+      "exit": 0,
+      "result": "Actual successful all-target Clippy output inspected; command executed by selector_tests"
+    },
+    {
+      "path": "reference/preflight-green.txt",
+      "exit": 0,
+      "result": "22/22 engine tests executed by this reviewer as implementer, not independent engine approval; native golden bytes unchanged"
+    }
+  ],
+  "limitations": [
+    "Current qualified target is native 64-bit aarch64-apple-darwin; no wasm/32-bit or cross-architecture runtime qualification is claimed.",
+    "Pure byte-on-line time, complete network wire bytes, energy, and total remote/relay CPU are not measured by this harness.",
+    "Generated traces are favorable shared-state workloads; unrelated controls and losing candidate computation must remain in reports.",
+    "Operator-provided revision and remote executable identifiers require retained build/source custody evidence; source hashes alone do not prove a clean checkout.",
+    "No new local acceptance campaign or WAN performance conclusion is asserted by this review."
+  ],
+  "prerequisites_before_timing": [
+    "Parent completes and retains frozen release qualification and executable/source identity.",
+    "Any changed reviewed source receives a scoped review update.",
+    "No builds, tests, profilers, or other measurement jobs run during timed trials."
+  ]
+}

@@ -71,3 +71,28 @@ The owner authorized importing the model-independent object-store core from UOR-
 The five core modules, CLI, example, selected tests, immutable fixtures, and protocol documentation were extracted from Git objects. Model/tokenizer bindings and their tests were excluded. The package retains the UOR Foundation [MIT license](crates/uor-r4-object-store/LICENSE). This license applies to that imported implementation and does not relicense the repository's unrelated materials.
 
 The original `source-manifest.tsv` and `import-manifest.tsv` remain historical records of their original exports. Subsequent changes are recorded in Git and the delivery record rather than silently changing those original identities.
+
+## Coupled shared-runtime Rust port (2026-10-30)
+
+The owner requested that the existing ternary/Kuramoto/cellular-automaton runtime
+be central to the working transfer implementation. The source reference is the
+preserved local `spiralcore.py` wrapper, SHA-256
+`77076e195d3f93d91b79b653e946af58b215c52166382269de9360da83226ad0`, whose embedded
+`spiralcore_kernel` has SHA-256
+`2e11825b16a825f066bc249d785d436c3345abe4fd2c0958fbdb156dea9eb269`.
+
+The [reference packet](docs/network/evidence/2026-10-30-shared-runtime/reference/README.md)
+retains the extraction manifest, selected source excerpts with line numbers and
+hashes, the restricted reference generator, observed vectors and qualification
+receipts. The complete local wrapper, sessions and saved cards remain preserved
+outside this port. Repeating the original Python extraction requires those
+pinned local sources; the bundled Rust/vector tests run from the repository.
+
+`crates/spiralcore-transfer/src/shared_runtime.rs` ports the finite transition
+equations and their ordering, with a separately versioned canonical checkpoint
+format, bounded logical time and pinned software math. It does not claim byte
+identity with Python cards or reproduce UI, audio, wall-clock, routing, UUID or
+source-execution behavior. Python numerical comparisons and Rust exact-byte
+compatibility checks are distinct. The existing lossy root-value averaging is
+preserved as observed, and is never substituted for exact object reconstruction.
+No additional license is asserted for the owner-supplied source by this port.

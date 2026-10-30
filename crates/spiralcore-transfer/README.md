@@ -105,6 +105,55 @@ See the [selection decision](../../docs/network/codec-selection-decision.md) and
 [local measurement method](../../docs/network/codec-selection-measurement.md).
 The existing CLI and historical WAN plans retain their explicit codec behavior.
 
+## Shared ternary, Kuramoto and cellular-automaton replay
+
+`shared_runtime` ports the coupled finite core of the retained Python runtime:
+the observed ternary folding order, phase-sum memory feedback, 16 Kuramoto
+oscillators, and six periodic CA rows for rules 184, 110 and 30. A canonical
+checkpoint carries the state required to continue it. A bounded recipe specifies
+the step count, payload and either a final checkpoint or a full state trace.
+Logical time advances from the checkpoint; synchronized physical clocks are not
+required for reconstruction. The wire decoder accepts data and fixed operations,
+never Python or saved-card source.
+
+`client::transfer_runtime_batched(checkpoint, target, recipe, transfer_id,
+warm_probe, exchange)` adds this replay mechanism to the byte-first selector.
+The receiver first needs the checkpoint as an ordinary authorized, verified
+object. When replay wins, the sender sends the checkpoint reference, a 24-byte
+recipe, a prediction digest and exact COPY/LITERAL corrections. Protocol framing
+and acknowledgments add to that recipe size. The receiver regenerates the
+prediction, applies the residual, verifies the target's exact length and digest,
+and publishes through the same durable commit path. The returned selection
+includes the ordinary raw/zstd/sparse/prefix alternatives. Evaluating a losing
+runtime candidate still costs CPU and is included in transfer timing.
+
+This profile reproduces the specified Rust state bytes. Python floating-point
+comparisons use a documented tolerance; original Python cards, wall-clock
+timestamps and UI state are outside this checkpoint format. Reference and
+canonical-byte tests keep those claims separate. See the
+[runtime/wire contract](../../docs/specs/2026-10-30-shared-runtime-design.md).
+
+The Rust example runs reproducible comparisons through serialized protocol
+batches, then reopens the cache and compares every byte. From the repository root:
+
+```sh
+cargo build --release --locked --manifest-path crates/spiralcore-transfer/Cargo.toml --example shared_runtime
+RUNTIME=crates/spiralcore-transfer/target/release/examples/shared_runtime
+"$RUNTIME" plan --source "$(git rev-parse HEAD)" --run-id local-runtime-demo \
+  --widths 48 --steps 243 --cases generated,edited,unrelated --trials 1 \
+  --transport local-mechanism --out /tmp/spiralcore-runtime-plan.json
+"$RUNTIME" local --plan /tmp/spiralcore-runtime-plan.json \
+  --cache /tmp/spiralcore-runtime-cache --out /tmp/spiralcore-runtime-results.jsonl
+```
+
+All three output paths must be new. If using `CARGO_TARGET_DIR`, adjust `RUNTIME`
+to that target directory. This local comparison reports protocol-body-equivalent
+bytes and combined sender/receiver CPU; it is not a WAN measurement. The same
+example supports `remote` through the allowlisted HTTPS experiment adapter and
+`verify` against a stopped receiver. The
+[measurement contract](../../docs/network/evidence/2026-10-30-shared-runtime/measurement-contract.md)
+defines scope, controls, seeding and interpretation.
+
 The Rust API also exposes `client::transfer_zstd_prefix_batched` as a conventional delta control.
 It encodes one bounded zstd frame against the authorized exact base, and selects raw before Begin
 when the complete object-protocol encoding would not be smaller. Both inputs remain capped at

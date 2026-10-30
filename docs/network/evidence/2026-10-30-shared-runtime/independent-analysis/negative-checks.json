@@ -1,0 +1,91 @@
+{
+  "clean_input_passes": true,
+  "negative_cases": [
+    {
+      "mutation": "missing_row",
+      "reason": "row4 expectedoperation, saw\"operation_started\"",
+      "rejected": true
+    },
+    {
+      "mutation": "duplicate_row",
+      "reason": "row5 expectedoperation_started, saw\"operation\"",
+      "rejected": true
+    },
+    {
+      "mutation": "failed_operation",
+      "reason": "failed/missing exact reopen",
+      "rejected": true
+    },
+    {
+      "mutation": "false_reopen",
+      "reason": "failed/missing exact reopen",
+      "rejected": true
+    },
+    {
+      "mutation": "wrong_source",
+      "reason": "run source/plan/executable binding",
+      "rejected": true
+    },
+    {
+      "mutation": "wrong_executable",
+      "reason": "run source/plan/executable binding",
+      "rejected": true
+    },
+    {
+      "mutation": "wrong_plan_hash",
+      "reason": "run source/plan/executable binding",
+      "rejected": true
+    },
+    {
+      "mutation": "wrong_scope",
+      "reason": "operation identity/order w48-s243-generated-t0/raw/seed",
+      "rejected": true
+    },
+    {
+      "mutation": "wrong_fixture",
+      "reason": "observed vs registered object identity",
+      "rejected": true
+    },
+    {
+      "mutation": "wrong_mode",
+      "reason": "strict-min winner/actual projected cost",
+      "rejected": true
+    },
+    {
+      "mutation": "wrong_cost",
+      "reason": "strict-min winner/actual projected cost",
+      "rejected": true
+    },
+    {
+      "mutation": "wrong_order",
+      "reason": "operation identity/order w48-s243-generated-t0/raw/seed",
+      "rejected": true
+    },
+    {
+      "mutation": "wrong_metric_scope",
+      "reason": "metric scope",
+      "rejected": true
+    },
+    {
+      "mutation": "missing_cleanup",
+      "reason": "row7 expectedcleanup, saw\"operation_started\"",
+      "rejected": true
+    },
+    {
+      "mutation": "wrong_completion",
+      "reason": "completion semantics",
+      "rejected": true
+    },
+    {
+      "mutation": "extra_event",
+      "reason": "no dropped/extra rows or operations",
+      "rejected": true
+    },
+    {
+      "mutation": "missing_control_case",
+      "reason": "registered plan dose/source",
+      "rejected": true
+    }
+  ],
+  "passed": 17
+}

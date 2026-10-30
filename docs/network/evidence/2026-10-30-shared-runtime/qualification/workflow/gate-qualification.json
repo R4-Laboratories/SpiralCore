@@ -1,0 +1,38 @@
+{
+  "schema": "spiralcore.shared-runtime.workflow-qualification.v1",
+  "verdict": "PASS_LOCAL_STATIC_AND_GATE_QUALIFICATION",
+  "workflow_sha256": "20aaceabd47ca3741c3b6931ae5fb649bc03751e98a0d9058cf7829355729285",
+  "measurement_contract_sha256": "05ecf253e7aa1700cf1042c5dd815d4e7f06439a960530e53b8898ce3b0dda83",
+  "checker_sha256": "0c56767ab751875b596487287428798773956b9102736253832977cf0f2c96e9",
+  "final_log_sha256": "994622bcb625ed97afa36e8d624c1d2312c38c283c02a70e6018bf5090e457c2",
+  "command": "bash docs/network/evidence/2026-10-30-shared-runtime/qualification/workflow/check-gates.sh .github/workflows/spiralcore-shared-runtime.yml",
+  "tools": {"ruby": "2.6.10p210 universal.arm64e-darwin26", "shellcheck": "0.11.0", "yaml_parser": "Ruby standard-library YAML/Psych"},
+  "role_checks": {"planner": "active", "architect": "active", "infra-reviewer": "active", "profiles_read": true},
+  "observations": [
+    {"phase": "RED_before_workflow_creation", "exit_code": 1, "log": "gates-red.log", "reason": "workflow source missing"},
+    {"phase": "GREEN_after_implementation", "exit_code": 0, "log": "gates-green.log"},
+    {"phase": "GREEN_final", "exit_code": 0, "log": "gates-final.log", "note": "Reran after adding the fresh-target-directory guard; both successful outputs are byte-identical to the retained final-log hash."}
+  ],
+  "checks": {
+    "actual_yaml_parsed": true,
+    "push_branch_only": true,
+    "exact_source_and_attempt_one_job_gates": true,
+    "separate_concurrency_and_read_only_permissions": true,
+    "pinned_checkout_and_upload_actions": true,
+    "frozen_vector_and_locked_all_target_test_gates": true,
+    "dedicated_secret_only_in_remote_step": true,
+    "existing_campaign_variable_names_not_referenced": true,
+    "always_upload": true,
+    "embedded_bash_syntax": true,
+    "embedded_shellcheck_warning_gate": true,
+    "valid_config_and_public_fixture_capability_accepted": true,
+    "invalid_config_and_capability_cases_rejected": 17
+  },
+  "limitations": [
+    "This is author qualification, not independent infrastructure approval.",
+    "No workflow push, dispatch, remote request, tunnel, receiver process, account, secret or variable mutation occurred.",
+    "No hosted-runner build or test result is claimed by these local checks.",
+    "Source/configuration gates were exercised with public synthetic fixture values; no live credential was read.",
+    "GitHub Actions execution, actual receiver identity, exact cross-architecture replay and remote measurements remain unrun."
+  ]
+}

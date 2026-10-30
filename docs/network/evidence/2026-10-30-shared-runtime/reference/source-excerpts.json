@@ -1,0 +1,122 @@
+[
+  {
+    "modification": "none",
+    "name": "valuation_3",
+    "source": "def valuation_3(n: int) -> int:\n    \"\"\"\n    Compute the 3-adic valuation v_3(n): the highest exponent v such that 3^v divides n.\n    Raises ValueError if n == 0.\n    \"\"\"\n    if n == 0:\n        raise ValueError(\"v_3(0) is undefined\")\n    n = abs(int(n))\n    v = 0\n    while n % 3 == 0:\n        v += 1\n        n //= 3\n    return v",
+    "source_end_line": 204,
+    "source_sha256": "ebdc54b1e7bf630f9bf9abe2f0cb8fbc6ca982c8884e7fdb68fd1ae4544afad9",
+    "source_start_line": 192
+  },
+  {
+    "modification": "none",
+    "name": "encode_binary_assumption_row",
+    "source": "def encode_binary_assumption_row(row: List[int]) -> Tuple[List[List[int]], List[int]]:\n    signed_forward: List[List[int]] = []\n    counterfactual_row: List[int] = []\n    for val in row:\n        b = 1 if (int(val) & 1) else 0\n        signed_forward.append([1, -1] if b == 1 else [-1, 1])\n        counterfactual_row.append(1 - b)\n    return signed_forward, counterfactual_row",
+    "source_end_line": 247,
+    "source_sha256": "3d5bf1bf8ff8abfa2879a7883700e571f8907e649dd2fc792893805fe7e5652b",
+    "source_start_line": 240
+  },
+  {
+    "modification": "none",
+    "name": "rule_184",
+    "source": "def rule_184(l: int, c: int, r: int) -> int:\n    return (l & (1 - c)) | (c & r)",
+    "source_end_line": 251,
+    "source_sha256": "17112e6cacef7cf24d29adb8f5a5b64ae80d0b06073f3410c95e05cac2350cc5",
+    "source_start_line": 250
+  },
+  {
+    "modification": "none",
+    "name": "rule_110",
+    "source": "def rule_110(l: int, c: int, r: int) -> int:\n    return (c ^ r) | (c & (1 - l))",
+    "source_end_line": 255,
+    "source_sha256": "b47093460dd03a3918e8f2cc32ac8c9a27348bc3528c9361ff3fd30dcb15168c",
+    "source_start_line": 254
+  },
+  {
+    "modification": "none",
+    "name": "rule_30",
+    "source": "def rule_30(l: int, c: int, r: int) -> int:\n    return l ^ (c | r)",
+    "source_end_line": 259,
+    "source_sha256": "2f1711626b1a33d048b8afb63e3376c3900f0363ff061823e41786646e94241b",
+    "source_start_line": 258
+  },
+  {
+    "modification": "none",
+    "name": "step_ca",
+    "source": "def step_ca(state: List[int], rule_fn: Callable[[int, int, int], int]) -> List[int]:\n    n = len(state)\n    if n == 0:\n        return []\n    return [\n        int(rule_fn(int(state[(i - 1) % n]) & 1, int(state[i]) & 1, int(state[(i + 1) % n]) & 1)) & 1\n        for i in range(n)\n    ]",
+    "source_end_line": 269,
+    "source_sha256": "ebd637ed13afd38b7470ae8102c5ded28f98ffce07b61439354ae4f0d7b5918c",
+    "source_start_line": 262
+  },
+  {
+    "modification": "none",
+    "name": "kuramoto_n2_field_step",
+    "source": "def kuramoto_n2_field_step(\n    theta1: float,\n    theta2: float,\n    omega1: float,\n    omega2: float,\n    K: float,\n    dt: float,\n) -> Tuple[float, float, float]:\n    \"\"\"\n    Carolina Johnson (2025) Field-Based Correction for N = 2 Kuramoto Oscillators.\n\n    Mathematics:\n      Phi = (theta1 + theta2) / 2                          [Shared Field Attractor]\n      dtheta1/dt = omega1 + K * sin(Phi - theta1)        [= omega1 + K * sin((theta2 - theta1) / 2)]\n      dtheta2/dt = omega2 + K * sin(Phi - theta2)        [= omega2 + K * sin((theta1 - theta2) / 2)]\n      dDelta/dt  = (omega2 - omega1) - 2 * K * sin(Delta / 2)  [Phase Difference Dynamics]\n    \"\"\"\n    two_pi = 2.0 * math.pi\n\n    # 1. Compute the shared phase field midpoint (attractor)\n    Phi = (theta1 + theta2) / 2.0\n\n    # 2. Field-coupled phase velocities\n    dtheta1_dt = omega1 + K * math.sin(Phi - theta1)\n    dtheta2_dt = omega2 + K * math.sin(Phi - theta2)\n\n    # 3. Step phase positions forward by dt\n    theta1_new = (theta1 + dtheta1_dt * dt) % two_pi\n    theta2_new = (theta2 + dtheta2_dt * dt) % two_pi\n\n    # 4. Phase difference Delta wrapped to [-pi, pi]\n    delta = (theta2_new - theta1_new + math.pi) % two_pi - math.pi\n\n    return theta1_new, theta2_new, delta",
+    "source_end_line": 320,
+    "source_sha256": "de4b1996eea22c35ffefe2a3f0f1579552409859284bfad1868612452a4d0ccc",
+    "source_start_line": 287
+  },
+  {
+    "modification": "none",
+    "name": "kuramoto_step",
+    "source": "def kuramoto_step(\n    phases: List[float],\n    omegas: List[float],\n    K: float,\n    dt: float,\n) -> Tuple[List[float], float]:\n    n = len(phases)\n    if n == 0:\n        return [], 0.0\n    safe_dt = max(1e-4, min(float(dt), 0.5))\n    two_pi = 2.0 * math.pi\n\n    sum_re = 0.0\n    sum_im = 0.0\n    for ph in phases:\n        sum_re += math.cos(ph)\n        sum_im += math.sin(ph)\n    mean_re = sum_re / n\n    mean_im = sum_im / n\n\n    r_field = math.hypot(mean_re, mean_im)\n    psi = math.atan2(mean_im, mean_re)\n\n    new_phases: List[float] = []\n    for ph, om in zip(phases, omegas):\n        coupling = (K * math.sin(psi - ph)) if r_field > 1e-12 else 0.0\n        vel = om + coupling\n        nph = (ph + vel * safe_dt) % two_pi\n        new_phases.append(nph)\n\n    new_re = sum(math.cos(ph) for ph in new_phases) / n\n    new_im = sum(math.sin(ph) for ph in new_phases) / n\n    R = math.hypot(new_re, new_im)\n\n    return new_phases, float(R)",
+    "source_end_line": 357,
+    "source_sha256": "5c280efb91892fae9e1ecf5f8fcdcaa2acb7a983aba6e6d6d14954e33cc2766a",
+    "source_start_line": 323
+  },
+  {
+    "modification": "remove staticmethod decorator; preserve function body",
+    "name": "_bytes_to_bits",
+    "source": "def _bytes_to_bits(block: bytes) -> List[int]:\n        bits: List[int] = []\n        for b in block:\n            for shift in range(7, -1, -1):\n                bits.append((b >> shift) & 1)\n        return bits",
+    "source_end_line": 875,
+    "source_sha256": "c252954ef33954f01f581ab7ea19ac3009f23bcc7cf7468e5576e6c0a563f5db",
+    "source_start_line": 870
+  },
+  {
+    "modification": "wrap exact init_row expression in function(ca_width)",
+    "name": "reference_default_row",
+    "source": "init_row = [1 if (i % 2 == 0 and not (ca_width // 3 <= i < (2 * ca_width) // 3 and i % 3 == 0)) else 0 for i in range(ca_width)]",
+    "source_end_line": 1445,
+    "source_sha256": "be141af9725354fd8ad0067d73e0d42e7bd857f64146bb1556429b58ac4c31f8",
+    "source_start_line": 1445
+  },
+  {
+    "modification": "rename function; retain exact original prefix through root cap; append return folded_event",
+    "name": "reference_fold_prefix",
+    "source": "def step(self, payload_value: float = 1.0, label: str = \"\") -> Dict[str, Any]:\n        self.N += 1\n        v3 = self.valuation_3(self.N)\n\n        root_phase_vec = [cmath.exp(1j * self.phases[i % len(self.phases)]) for i in range(self.n_cores)]\n\n        self.active_roots.append({\n            \"id\": self.N,\n            \"label\": label or f\"R({self.N})\",\n            \"value\": float(payload_value),\n            \"valuation\": v3,\n            \"memory_count\": 1,\n            \"phase_sum\": list(root_phase_vec),\n        })\n\n        folded_event: Optional[Dict[str, Any]] = None\n        if v3 > 0 and len(self.active_roots) >= 3:\n            num_to_fold = min(len(self.active_roots), 3 ** v3)\n            if num_to_fold >= 2:\n                folded = self.active_roots[-num_to_fold:]\n                self.active_roots = self.active_roots[:-num_to_fold]\n\n                avg_val = sum(float(r[\"value\"]) for r in folded) / len(folded)\n                total_mem_count = sum(int(r.get(\"memory_count\", 1)) for r in folded)\n                combined_phase_sum = [0j for _ in range(self.n_cores)]\n                for r in folded:\n                    psum = r.get(\"phase_sum\", [0j] * self.n_cores)\n                    for c_i in range(self.n_cores):\n                        combined_phase_sum[c_i] += psum[c_i]\n\n                parent_node = {\n                    \"id\": f\"folded_{self.N}\",\n                    \"label\": f\"F3({num_to_fold})\",\n                    \"value\": float(avg_val),\n                    \"valuation\": v3,\n                    \"memory_count\": int(total_mem_count),\n                    \"phase_sum\": combined_phase_sum,\n                }\n                self.active_roots.append(parent_node)\n                folded_event = {\n                    \"folded_id\": parent_node[\"id\"],\n                    \"label\": parent_node[\"label\"],\n                    \"num_folded\": num_to_fold,\n                    \"avg_value\": round(avg_val, 6),\n                    \"v3\": v3,\n                }\n\n        if len(self.active_roots) > 81:\n            self.active_roots = self.active_roots[-81:]",
+    "source_end_line": 1611,
+    "source_sha256": "ac5c189c3c886cfcf43c1bab23e9cf10225cbf4aa890583bdaa00cf89ed028cc",
+    "source_start_line": 1563
+  },
+  {
+    "modification": "bind unchanged method to minimal reference state",
+    "name": "memory_field",
+    "source": "def memory_field(self) -> Tuple[List[complex], int]:\n        count = sum(int(root.get(\"memory_count\", 1)) for root in self.roots)\n        field_vec = [0j for _ in range(self.n_cores)]\n        for root in self.roots:\n            psum = root.get(\"phase_sum\", [0j] * self.n_cores)\n            for c_i in range(min(self.n_cores, len(psum))):\n                field_vec[c_i] += psum[c_i]\n        rot = cmath.exp(1j * self.clock)\n        rotated = [((val / count) if count > 0 else val) * rot for val in field_vec]\n        return rotated, count",
+    "source_end_line": 1522,
+    "source_sha256": "48363d74638b6adb10a9ac54d0cc4e1453294f41805fe5896d63c0c9255c4819",
+    "source_start_line": 1513
+  },
+  {
+    "modification": "bind unchanged method to minimal reference state",
+    "name": "think",
+    "source": "def think(self, dt: float = 0.05) -> Dict[str, Any]:\n        field_vec, recalled_count = self.memory_field()\n        recall_gain = self.memory_gain if self.memory_enabled else 0.0\n        n_osc = len(self.phases)\n        recall_field = [field_vec[i % self.n_cores] for i in range(n_osc)]\n\n        if n_osc > 0:\n            mean_re = sum(math.cos(p) for p in self.phases) / n_osc\n            mean_im = sum(math.sin(p) for p in self.phases) / n_osc\n            r_field = math.hypot(mean_re, mean_im)\n            psi = math.atan2(mean_im, mean_re)\n        else:\n            r_field = 0.0\n            psi = 0.0\n\n        new_phases: List[float] = []\n        abs_tau_sum = 0.0\n        two_pi = 2.0 * math.pi\n        for i in range(n_osc):\n            pi = self.phases[i]\n            intrinsic = (self.K_coupling * math.sin(psi - pi)) if r_field > 1e-12 else 0.0\n            mem_pull = (recall_field[i] * cmath.exp(-1j * pi)).imag\n            tau_i = intrinsic + recall_gain * mem_pull\n            abs_tau_sum += abs(tau_i)\n            new_phases.append((pi + tau_i * dt) % two_pi)\n\n        self.phases = new_phases\n        if n_osc > 0:\n            post_re = sum(math.cos(p) for p in self.phases) / n_osc\n            post_im = sum(math.sin(p) for p in self.phases) / n_osc\n            self.kuramoto_R = float(math.hypot(post_re, post_im))\n        else:\n            self.kuramoto_R = 0.0\n        return {\n            \"recalled_count\": int(recalled_count),\n            \"recall_gain\": float(recall_gain),\n            \"mean_torque\": round(abs_tau_sum / max(1, n_osc), 6),\n        }",
+    "source_end_line": 1561,
+    "source_sha256": "540795a9e4a78afd4b687df82bb0cc8d7f27ce40a3dc41f70843137efef21914",
+    "source_start_line": 1524
+  },
+  {
+    "modification": "unchanged method; fixed_dt always provided, time module unavailable",
+    "name": "sync_system_to_kuramoto",
+    "source": "def sync_system_to_kuramoto(self):\n        # Same v6.3 equations and clamp. Only the wall-time source is selectable.\n        now = (self.system_start_time + self.N * self.fixed_dt if self.fixed_dt is not None\n               else time.time() - self._wall_time_offset)\n        raw_elapsed = now - self.last_system_time\n        self.last_system_time = now\n        dt = max(0.005, min(raw_elapsed if raw_elapsed > 0.0 else 0.05, 0.25))\n        self.clock = now % (2.0 * math.pi)\n        self.phases, self.kuramoto_R = kuramoto_step(self.phases, self.omegas, self.kuramoto_K, dt)\n        sys_uptime = max(0.0, now - self.system_start_time)\n        mean_phase = math.atan2(sum(math.sin(p) for p in self.phases), sum(math.cos(p) for p in self.phases))\n        phase_offset_s = (mean_phase / (2.0 * math.pi)) * dt * (1.0 - self.kuramoto_R)\n        self.kuramoto_strata_time = sys_uptime + phase_offset_s\n        self.sync_drift_ms = round(phase_offset_s * 1000.0, 3)\n        return dt",
+    "source_end_line": 2603,
+    "source_sha256": "aa5c222353f02a0e4f1c8fcad1bd6a68fde1ef5322efcad5a45f031e416bab3f",
+    "source_start_line": 2589
+  },
+  {
+    "modification": "rename function; exact step prefix through CA invariant, before router; append return folded_event",
+    "name": "reference_full_step",
+    "source": "def step(self, payload_value: float = 1.0, label: str = \"\") -> Dict[str, Any]:\n        self.N += 1\n        v3 = self.valuation_3(self.N)\n\n        root_phase_vec = [cmath.exp(1j * self.phases[i % len(self.phases)]) for i in range(self.n_cores)]\n\n        self.active_roots.append({\n            \"id\": self.N,\n            \"label\": label or f\"R({self.N})\",\n            \"value\": float(payload_value),\n            \"valuation\": v3,\n            \"memory_count\": 1,\n            \"phase_sum\": list(root_phase_vec),\n        })\n\n        folded_event: Optional[Dict[str, Any]] = None\n        if v3 > 0 and len(self.active_roots) >= 3:\n            num_to_fold = min(len(self.active_roots), 3 ** v3)\n            if num_to_fold >= 2:\n                folded = self.active_roots[-num_to_fold:]\n                self.active_roots = self.active_roots[:-num_to_fold]\n\n                avg_val = sum(float(r[\"value\"]) for r in folded) / len(folded)\n                total_mem_count = sum(int(r.get(\"memory_count\", 1)) for r in folded)\n                combined_phase_sum = [0j for _ in range(self.n_cores)]\n                for r in folded:\n                    psum = r.get(\"phase_sum\", [0j] * self.n_cores)\n                    for c_i in range(self.n_cores):\n                        combined_phase_sum[c_i] += psum[c_i]\n\n                parent_node = {\n                    \"id\": f\"folded_{self.N}\",\n                    \"label\": f\"F3({num_to_fold})\",\n                    \"value\": float(avg_val),\n                    \"valuation\": v3,\n                    \"memory_count\": int(total_mem_count),\n                    \"phase_sum\": combined_phase_sum,\n                }\n                self.active_roots.append(parent_node)\n                folded_event = {\n                    \"folded_id\": parent_node[\"id\"],\n                    \"label\": parent_node[\"label\"],\n                    \"num_folded\": num_to_fold,\n                    \"avg_value\": round(avg_val, 6),\n                    \"v3\": v3,\n                }\n\n        if len(self.active_roots) > 81:\n            self.active_roots = self.active_roots[-81:]\n\n        dt = self.sync_system_to_kuramoto()\n        think_info = self.think(dt=dt)\n        if self.phases:\n            sys_uptime = max(0.0, self.last_system_time - self.system_start_time)\n            mean_phase = math.atan2(\n                sum(math.sin(p) for p in self.phases),\n                sum(math.cos(p) for p in self.phases),\n            )\n            phase_offset_s = (mean_phase / (2.0 * math.pi)) * dt * (1.0 - self.kuramoto_R)\n            self.kuramoto_strata_time = sys_uptime + phase_offset_s\n            self.sync_drift_ms = round(phase_offset_s * 1000.0, 3)\n\n        prev_184 = self.ca184_history[-1]\n        prev_184_cf = self.ca184_cf_history[-1]\n        density_fwd = sum(prev_184) / max(1, self.ca_width)\n        predicted_flux = int(round(min(density_fwd, 1.0 - density_fwd) * self.ca_width))\n        actual_flux_before = sum(\n            1 for i in range(self.ca_width) if prev_184[i] == 1 and prev_184[(i + 1) % self.ca_width] == 0\n        )\n\n        next_184 = step_ca(prev_184, rule_184)\n        next_184_cf = step_ca(prev_184_cf, rule_184)\n        next_110 = step_ca(self.ca110_history[-1], rule_110)\n        next_110_cf = step_ca(self.ca110_cf_history[-1], rule_110)\n        next_30 = step_ca(self.ca30_history[-1], rule_30)\n        next_30_cf = step_ca(self.ca30_cf_history[-1], rule_30)\n\n        for hist, nxt in (\n            (self.ca184_history, next_184),\n            (self.ca184_cf_history, next_184_cf),\n            (self.ca110_history, next_110),\n            (self.ca110_cf_history, next_110_cf),\n            (self.ca30_history, next_30),\n            (self.ca30_cf_history, next_30_cf),\n        ):\n            hist.append(nxt)\n            if len(hist) > 36:\n                del hist[:-36]\n\n        particles_fwd = sum(next_184)\n        particles_cf = sum(next_184_cf)\n        signed_pairs, _ = encode_binary_assumption_row(next_184)\n        ca184_truth_valid = (\n            particles_fwd == self.initial_ca184_particles\n            and particles_cf == self.initial_ca184_cf_particles\n            and (particles_fwd + particles_cf) == self.ca_width\n        )",
+    "source_end_line": 1659,
+    "source_sha256": "b624bf8a786b23b0b48456769bffaed5e8693ba6a6b353960e8fe6dd8088ca84",
+    "source_start_line": 1563
+  }
+]

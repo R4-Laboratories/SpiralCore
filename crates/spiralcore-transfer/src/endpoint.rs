@@ -116,6 +116,7 @@ struct Attempt {
     sparse_operations: usize,
     prefix_encoded: Vec<u8>,
     prefix_chunks: usize,
+    runtime_ready: bool,
 }
 impl Attempt {
     fn node(&self, id: &Id) -> Option<&Node> {
@@ -129,6 +130,7 @@ impl Attempt {
         self.base_graph = None;
         self.base_bytes = Vec::new();
         self.prefix_encoded = Vec::new();
+        self.runtime_ready = false;
         self.reserved = 0;
     }
     fn reject(&mut self, e: Error) {
@@ -438,9 +440,11 @@ impl<A: Authority> Endpoint<A> {
         }
         // Charge conservative peak allocations, including construction/indexes and two output buffers.
         let mut charge = offer.len.checked_mul(2).ok_or(Error::Limit)?;
-        let warming = if matches!(offer.mode, Mode::SparseV1 | Mode::ZstdPrefixV1)
-            || (matches!(offer.mode, Mode::Raw | Mode::Zstd)
-                && self.cold_graph_policy == ColdGraphPolicy::Disabled)
+        let warming = if matches!(
+            offer.mode,
+            Mode::SparseV1 | Mode::ZstdPrefixV1 | Mode::RuntimeV1
+        ) || (matches!(offer.mode, Mode::Raw | Mode::Zstd)
+            && self.cold_graph_policy == ColdGraphPolicy::Disabled)
             || existing.is_ok()
         {
             0
@@ -460,6 +464,14 @@ impl<A: Authority> Endpoint<A> {
                 .and_then(|n| n.checked_add(crate::zstd_prefix::DECODER_ALLOWANCE))
                 .ok_or(Error::Limit)?;
         }
+        if offer.mode == Mode::RuntimeV1 && existing.is_err() {
+            // A prediction may be larger than the target after a truncation.
+            // Reserve the bounded generator's capacity/growth separately from
+            // target output, checkpoint bytes and the existing scratch allowance.
+            charge = charge
+                .checked_add(2 * crate::shared_runtime::MAX_OUTPUT as u64)
+                .ok_or(Error::Limit)?;
+        }
         let cached = if offer.mode == Mode::Dag && existing.is_err() {
             offer
                 .base
@@ -472,7 +484,10 @@ impl<A: Authority> Endpoint<A> {
             None
         };
         let base = if let Some(mid) = offer.base.filter(|_| existing.is_err()) {
-            let p = if matches!(offer.mode, Mode::SparseV1 | Mode::ZstdPrefixV1) {
+            let p = if matches!(
+                offer.mode,
+                Mode::SparseV1 | Mode::ZstdPrefixV1 | Mode::RuntimeV1
+            ) {
                 self.publication(ns, mid).map_err(|e| {
                     if e == Error::Unknown {
                         Error::Missing
@@ -500,17 +515,24 @@ impl<A: Authority> Endpoint<A> {
             None
         };
         if let Some(p) = &base {
+            if offer.mode == Mode::RuntimeV1 && p.len > crate::shared_runtime::MAX_CHECKPOINT as u64
+            {
+                return Err(Error::Limit);
+            }
             if offer.mode == Mode::ZstdPrefixV1
                 && p.len > crate::zstd_prefix::MAX_PREFIX_OBJECT as u64
             {
                 return Err(Error::Limit);
             }
-            let base_nodes =
-                if matches!(offer.mode, Mode::SparseV1 | Mode::ZstdPrefixV1) || cached.is_some() {
-                    0
-                } else {
-                    dag::work_bound(p.len).min(self.limits.max_nodes) as u64
-                };
+            let base_nodes = if matches!(
+                offer.mode,
+                Mode::SparseV1 | Mode::ZstdPrefixV1 | Mode::RuntimeV1
+            ) || cached.is_some()
+            {
+                0
+            } else {
+                dag::work_bound(p.len).min(self.limits.max_nodes) as u64
+            };
             charge = charge
                 .checked_add(p.len * 2 + base_nodes * 512)
                 .ok_or(Error::Limit)?;
@@ -536,6 +558,7 @@ impl<A: Authority> Endpoint<A> {
             sparse_operations: 0,
             prefix_encoded: Vec::new(),
             prefix_chunks: 0,
+            runtime_ready: false,
         };
         let reply = match existing {
             Ok(p) => {
@@ -550,7 +573,10 @@ impl<A: Authority> Endpoint<A> {
             Err(Error::Unknown) => {
                 if let Some(p) = base {
                     let bytes = read_publication(&p)?;
-                    if matches!(offer.mode, Mode::SparseV1 | Mode::ZstdPrefixV1) {
+                    if matches!(
+                        offer.mode,
+                        Mode::SparseV1 | Mode::ZstdPrefixV1 | Mode::RuntimeV1
+                    ) {
                         s.base_bytes = bytes;
                     } else {
                         let g = if let Some(g) = cached {
@@ -628,6 +654,9 @@ impl<A: Authority> Endpoint<A> {
                     return Err(Error::Malformed);
                 }
                 let mut retained = None;
+                if s.offer.mode == Mode::RuntimeV1 && !s.runtime_ready {
+                    return Err(Error::Malformed);
+                }
                 if s.offer.mode == Mode::ZstdPrefixV1 {
                     s.bytes = crate::zstd_prefix::decode(
                         &s.base_bytes,
@@ -665,9 +694,11 @@ impl<A: Authority> Endpoint<A> {
                 }
                 let mid = if let Some(m) = &s.offer.manifest {
                     Some(m.id())
-                } else if matches!(s.offer.mode, Mode::SparseV1 | Mode::ZstdPrefixV1)
-                    || (matches!(s.offer.mode, Mode::Raw | Mode::Zstd)
-                        && self.cold_graph_policy == ColdGraphPolicy::Disabled)
+                } else if matches!(
+                    s.offer.mode,
+                    Mode::SparseV1 | Mode::ZstdPrefixV1 | Mode::RuntimeV1
+                ) || (matches!(s.offer.mode, Mode::Raw | Mode::Zstd)
+                    && self.cold_graph_policy == ColdGraphPolicy::Disabled)
                 {
                     None
                 } else {
@@ -725,6 +756,12 @@ impl<A: Authority> Endpoint<A> {
         }
     }
     fn data(&self, s: &mut Attempt, b: &[u8]) -> Result<()> {
+        if s.offer.mode == Mode::RuntimeV1 && !s.runtime_ready {
+            let prediction = crate::shared_transfer::replay_frame(&s.base_bytes, b)?;
+            s.base_bytes = prediction;
+            s.runtime_ready = true;
+            return Ok(());
+        }
         if s.offer.mode == Mode::ZstdPrefixV1 {
             crate::zstd_prefix::append(
                 &mut s.prefix_encoded,
@@ -735,7 +772,7 @@ impl<A: Authority> Endpoint<A> {
             s.accepted = s.prefix_encoded.len() as u64;
             return Ok(());
         }
-        if s.offer.mode == Mode::SparseV1 {
+        if matches!(s.offer.mode, Mode::SparseV1 | Mode::RuntimeV1) {
             crate::delta::apply(
                 &s.base_bytes,
                 &mut s.bytes,

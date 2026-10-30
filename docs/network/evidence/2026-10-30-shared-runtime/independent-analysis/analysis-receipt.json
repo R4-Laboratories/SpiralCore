@@ -1,0 +1,62 @@
+{
+  "schema": "spiralcore.shared-runtime.independent-analysis-receipt.v1",
+  "status": "PASS",
+  "scope": "Independent completeness, custody, fidelity-receipt, candidate-cost and statistical analysis of the two completed local campaigns; no new measurement execution",
+  "working_directory": "/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore",
+  "measured_source_revision": "b6627deb7fb8c80a46c0e89d5e074afaf50f37f0",
+  "analyzer": {
+    "source": "analyze.rs",
+    "source_sha256": "2a1fd6f2221e72aa51f76824704e739ec1c9a07d2055e780e064bd32e6458c53",
+    "language": "Rust",
+    "toolchain": "1.97.1",
+    "target": "aarch64-apple-darwin",
+    "optimization": "opt-level=1",
+    "build_command": "/Users/casey.allard/.cargo/bin/rustc +1.97.1 --edition 2021 --target aarch64-apple-darwin -C opt-level=1 docs/network/evidence/2026-10-30-shared-runtime/independent-analysis/analyze.rs -L dependency=/Users/casey.allard/spiralcore/target/aarch64-apple-darwin/release/deps --extern serde_json=/Users/casey.allard/spiralcore/target/aarch64-apple-darwin/release/deps/libserde_json-1526d65a4d76f4d2.rlib --extern sha2=/Users/casey.allard/spiralcore/target/aarch64-apple-darwin/release/deps/libsha2-ac5edfbdd095406a.rlib -o docs/network/evidence/2026-10-30-shared-runtime/independent-analysis/analyze",
+    "build_exit_code": 0,
+    "build_output": "build.txt",
+    "original_run_command": "docs/network/evidence/2026-10-30-shared-runtime/independent-analysis/analyze /Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore docs/network/evidence/2026-10-30-shared-runtime/independent-analysis",
+    "run_exit_code": 0,
+    "run_output": "verification.txt",
+    "retained_executable": "/Users/casey.allard/spiralcore/local/shared-state-20261030/independent-analysis/analyze",
+    "executable_sha256": "5d656e33fd77f21e0b248b21aadc21dd905f9da57adaffffd08872a024f2a246",
+    "executable_bytes": 874904,
+    "relocation": "Copied with cp -p from the evidence directory to the task-owned local tooling directory; cmp -s succeeded before the original copy was removed. The retained copy SHA-256 was read again after relocation. No executable is included in the Git evidence packet.",
+    "dependencies": [
+      {
+        "path": "/Users/casey.allard/spiralcore/target/aarch64-apple-darwin/release/deps/libserde_json-1526d65a4d76f4d2.rlib",
+        "sha256": "a28ac8b51960841a58911c759147f9350781938425d6879283884c5f482d07c1"
+      },
+      {
+        "path": "/Users/casey.allard/spiralcore/target/aarch64-apple-darwin/release/deps/libsha2-ac5edfbdd095406a.rlib",
+        "sha256": "cbe53b68a2c1615181b3a19df66a3522d6c0056286c7dc03284d10c7aa9398ee"
+      }
+    ]
+  },
+  "qualification": {
+    "clean_dataset_passes": true,
+    "malformed_variants_rejected": 17,
+    "failures_dropped": 0,
+    "negative_result_file": "negative-checks.json",
+    "statistical_crosscheck_command": "jq -s --slurpfile expected docs/network/evidence/2026-10-30-shared-runtime/independent-analysis/results.json -f docs/network/evidence/2026-10-30-shared-runtime/independent-analysis/crosscheck.jq docs/network/evidence/2026-10-30-shared-runtime/local/small-observations.jsonl docs/network/evidence/2026-10-30-shared-runtime/local/large-observations.jsonl",
+    "statistical_crosscheck_exit_code": 0,
+    "statistical_crosscheck_groups": 72,
+    "metrics_per_group": 12,
+    "statistical_crosscheck_mismatches": 0,
+    "statistical_crosscheck_file": "statistics-crosscheck.json"
+  },
+  "data_integrity": {
+    "raw_inputs_modified": false,
+    "measured_program_executed_by_analyzer": false,
+    "source_manifest_verification": "56 files read through git show at the measured revision, not the mutable current checkout",
+    "exact_reopen_scope": "480 source-bound measured receipts validated; byte comparisons not independently repeated after measured cache cleanup",
+    "custody_file": "custody.json",
+    "results_file": "results.json"
+  },
+  "measurement_outcome": {
+    "conditional_body_byte_savings": true,
+    "local_target_only_cpu_win_against_raw": false,
+    "local_target_only_wall_win_against_raw": false,
+    "wan_claim": false,
+    "energy_claim": false
+  }
+}
