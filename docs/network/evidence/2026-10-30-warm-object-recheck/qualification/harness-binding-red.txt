@@ -1,0 +1,22 @@
+   Compiling spiralcore-transfer v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer)
+    Finished `release` profile [optimized] target(s) in 9.67s
+     Running unittests examples/schema_fitting.rs (/Users/casey.allard/spiralcore/target/aarch64-apple-darwin/release/examples/schema_fitting-7613bc07ce0df06f)
+
+running 1 test
+test warm_object::tests::warm_complete_receipts_reject_dose_scope_seed_and_cost_corruption ... FAILED
+
+failures:
+
+---- warm_object::tests::warm_complete_receipts_reject_dose_scope_seed_and_cost_corruption stdout ----
+
+thread 'warm_object::tests::warm_complete_receipts_reject_dose_scope_seed_and_cost_corruption' (65180427) panicked at examples/support/warm_object.rs:874:9:
+assertion failed: validate_receipts(&p, "plan", &wrong, &verified).is_err()
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    warm_object::tests::warm_complete_receipts_reject_dose_scope_seed_and_cost_corruption
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 22 filtered out; finished in 0.19s
+
+error: test failed, to rerun pass `--example schema_fitting`

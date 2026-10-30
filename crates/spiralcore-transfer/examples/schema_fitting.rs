@@ -26,6 +26,8 @@ mod schema_selection;
 mod schema_sender;
 #[path = "support/schema_wan.rs"]
 mod schema_wan;
+#[path = "support/warm_object.rs"]
+mod warm_object;
 
 fn sha(bytes: &[u8]) -> String {
     hex(&Sha256::digest(bytes).into())
@@ -526,6 +528,9 @@ fn summarize(rows: &[Value]) -> Result<Value> {
 }
 fn command() -> Result<()> {
     let args: Vec<_> = std::env::args().collect();
+    if args.get(1).is_some_and(|s| s.starts_with("warm-")) {
+        return warm_object::command(&args);
+    }
     if args.get(1).is_some_and(|s| s.starts_with("reuse-")) {
         return schema_reuse::command(&args);
     }

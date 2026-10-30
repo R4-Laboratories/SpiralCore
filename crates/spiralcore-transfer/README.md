@@ -26,6 +26,15 @@ records 1,920 exact objects, preserved body savings, lower sender CPU versus the
 old encoder, and the remaining CPU/setup disadvantage versus ordinary zstd.
 That campaign measures HTTP-body bytes, not packet or complete-path bytes.
 
+The same example's `warm-plan`, `warm-paired`, `warm-verify`, and `warm-summary`
+commands now compare actual prior-object sparse reuse with matched whole-object
+zstd/Raw. The [warm-object WAN recheck](../../docs/network/warm-object-results-2026-10-30.md)
+records 240 exact seed/update transfers at 1 and 16 MiB. At 16 MiB, a 32-byte
+update sends 600 body bytes with 54.5955 ms median measured CPU and 201.771 ms
+completion, versus 16,814,026 bytes, 85.9755 ms and 1,626.617 ms for Whole/Raw.
+Paid seeds and timing losses are retained; these commands are a bounded benchmark,
+and do not change automatic codec selection or the existing sender APIs.
+
 ## Build and run the demonstration
 
 Run from the repository root with Rust 1.89 or newer:

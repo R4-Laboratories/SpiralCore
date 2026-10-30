@@ -1,0 +1,37 @@
+    Blocking waiting for file lock on package cache
+   Compiling spiralcore-transfer v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer)
+    Finished `release` profile [optimized] target(s) in 4.57s
+     Running tests/warm_object_workflow.rs (/Users/casey.allard/spiralcore/target/aarch64-apple-darwin/release/deps/warm_object_workflow-671b8b72421bdc64)
+
+running 3 tests
+test warm_object_workflow_accepts_only_the_pinned_first_attempt ... FAILED
+test warm_object_workflow_restricts_every_receiver_url ... FAILED
+test warm_object_workflow_requires_a_full_secret_without_fallback ... FAILED
+
+failures:
+
+---- warm_object_workflow_accepts_only_the_pinned_first_attempt stdout ----
+
+thread 'warm_object_workflow_accepts_only_the_pinned_first_attempt' (65128623) panicked at tests/warm_object_workflow.rs:7:45:
+schema WAN workflow must exist: Os { code: 2, kind: NotFound, message: "No such file or directory" }
+
+---- warm_object_workflow_restricts_every_receiver_url stdout ----
+
+thread 'warm_object_workflow_restricts_every_receiver_url' (65128625) panicked at tests/warm_object_workflow.rs:7:45:
+schema WAN workflow must exist: Os { code: 2, kind: NotFound, message: "No such file or directory" }
+
+---- warm_object_workflow_requires_a_full_secret_without_fallback stdout ----
+
+thread 'warm_object_workflow_requires_a_full_secret_without_fallback' (65128624) panicked at tests/warm_object_workflow.rs:7:45:
+schema WAN workflow must exist: Os { code: 2, kind: NotFound, message: "No such file or directory" }
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    warm_object_workflow_accepts_only_the_pinned_first_attempt
+    warm_object_workflow_requires_a_full_secret_without_fallback
+    warm_object_workflow_restricts_every_receiver_url
+
+test result: FAILED. 0 passed; 3 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `--test warm_object_workflow`

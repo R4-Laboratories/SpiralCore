@@ -1,0 +1,74 @@
+{
+  "milestone": "SC-WAN-005",
+  "verdict": "PASS",
+  "scope": "Independent code/Rust review after procedural PASS, plus existing frozen local qualification consistency",
+  "reviewer": "selector_tests",
+  "completed_utc": "2026-10-30T22:45:35.771680+00:00",
+  "source_commit": "5a4f141ac64aa09533a6561d6ae72b3f04856e95",
+  "procedural_receipt_sha256": "c800a27889379b1674c0aad78cfdace44e85f22e97c773f55a1efa6b19c9ad5c",
+  "reviewed_sources_unchanged": {
+    "crates/spiralcore-transfer/examples/support/warm_object.rs": "ca59170c6bc3080c227e754217769d410e5c37820d6d4f9f47ad94602ab6e231",
+    "crates/spiralcore-transfer/examples/schema_fitting.rs": "8d1888e7d1921d8fc383007e7a7d41d85e3327bc0a49a22dc682d02044a432ca",
+    "crates/spiralcore-transfer/examples/support/schema_selection.rs": "900f52aeee18d3a4785c63c2f7967167a77f98deff2cba88aa063a4e1bb49ac7",
+    "crates/spiralcore-transfer/tests/warm_object_workflow.rs": "584ada1981e17d8387ea027dea9542e69dcdca37c6489fa4d80e3eb52a310fec",
+    ".github/workflows/spiralcore-warm-object.yml": "294d349af88430854024b781cf2bddc51e3038d40c219dd12aa3f451bc8963c2",
+    "docs/specs/2026-10-30-warm-object-recheck-design.md": "307a0db7f48e69b834f738720ac35a248ab560ac2b09fa00176d7872ead0e99d",
+    "docs/network/evidence/2026-10-30-warm-object-recheck/measurement-contract.md": "b9de6aa996e09ab9a438ae5bc956a8911fcdcf0f95e0bba3457beda598b5b3a8"
+  },
+  "blocking_findings": [],
+  "reviewed": [
+    "Deterministic distinct1MiB/16MiB base/target identities and exactly32 changed midpoint bytes; bounded plans and balanced randomized pair ordering.",
+    "Both scopes pay identical actual Raw seeds; forced Sparse and matched prepared Whole use existing APIs, no adaptive candidate work, no production changes. Setup charged once; sender/receiver are separate processes and CPU is added once.",
+    "Fresh scopes and stores, actual600-byte sparse mode/cost gate, complete source/plan/receiver identities, failed child output retained and no retry. Stopped-store exact readback and telemetry joins are mandatory before cleanup.",
+    "Local child ownership/normal shutdown/cleanup, shared helpers changed only for visibility, pinned hosted first-attempt source/URL/token gates, sequential bounded jobs and always-retained artifacts.",
+    "Six meaningful harness tests and actual workflow guards reviewed without rerunning them; equivalent Clippy predicate correction preserves validation semantics."
+  ],
+  "local_qualification": {
+    "verdict": "PASS",
+    "exact_transfers": 24,
+    "sessions": 12,
+    "paired_trials_per_size": 3,
+    "readback_and_telemetry_joins": 24,
+    "cell_distributions_recomputed": 120,
+    "paired_distributions_recomputed": 36,
+    "actual_lifecycles_recomputed": 12,
+    "source_plan_executable_bindings": "match",
+    "driver_and_receiver_exit": 0,
+    "cache_removed_only_after_exact_readback": true,
+    "target_medians": {
+      "1MiB_sparse": {
+        "body_bytes": 600,
+        "cpu_subtotal_us": 4640,
+        "wall_us": 21327
+      },
+      "1MiB_whole_raw": {
+        "body_bytes": 1051338,
+        "cpu_subtotal_us": 6160,
+        "wall_us": 23543
+      },
+      "16MiB_sparse": {
+        "body_bytes": 600,
+        "cpu_subtotal_us": 42488,
+        "wall_us": 78081
+      },
+      "16MiB_whole_raw": {
+        "body_bytes": 16814026,
+        "cpu_subtotal_us": 68448,
+        "wall_us": 103116
+      }
+    },
+    "receipt_sha256": {
+      "plan.json": "19c6885bbbbd94ad3b7a8445cb1f48fbcd244e4c2f9caee8ed171e4dc52303a4",
+      "paired.jsonl": "be6f896a63c82e21b264bc4fffe7287d72d2cb47a23055744b35307c793de9c9",
+      "verification.jsonl": "1d9dd177b71ef2ea7757bc1451d23dc86d791194865702d6099715180f5f4daf",
+      "receiver.jsonl": "9d59012bb9470eac7efb73bdef79542c20918e5b15b1bb54b3c6535cc91d34d7",
+      "summary.json": "41e453c47b5852567757cbfa788a1bb67dac10abb9ab82d27b07aab4f4001b6d",
+      "driver-status.json": "d22a12155110e780092a46d5b0ed2d01b2697ae133d0ad209e33a628e5a9e9d6",
+      "receiver-status.json": "d22a12155110e780092a46d5b0ed2d01b2697ae133d0ad209e33a628e5a9e9d6",
+      "cleanup.json": "8386d4504102d3670e7f726e94a18d521c77122b97ebee46c917547a33a6bc6d"
+    },
+    "limitation": "Three local pairs qualify mechanism/accounting only; no WAN or robust performance acceptance claim."
+  },
+  "reviewer_execution": "Read-only source/receipt inspection and bounded inline arithmetic. Initial inline expression had a syntax typo and executed no analysis; corrected expression passed. No tests/builds/benchmark reruns or new framework.",
+  "launch_verdict": "Code/Rust/local gates approved; separate security/infra approval and final frozen WAN custody remain parent launch prerequisites."
+}
