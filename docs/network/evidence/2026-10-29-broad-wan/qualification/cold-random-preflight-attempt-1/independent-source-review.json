@@ -1,0 +1,38 @@
+{
+  "schema": "spiralcore.preflight-independent-source-review.v1",
+  "reviewer": "/root/transport_audit",
+  "status": "no_blocker_to_recorded_setup_failure_disposition",
+  "source": "9dce4c57d1f41cef7365b297cd690849afce34e7",
+  "run_id": 40984573497,
+  "review_scope": "Read-only source and observed receipt review; no new measurement or test execution",
+  "findings": [
+    {
+      "claim": "Preflight rejection precedes measured client launch",
+      "source": "crates/spiralcore-transfer/src/bin/spiralcore-capture-control.rs:513-524",
+      "observed": "Samples at 159/700 ms both report captured 0, received 4, dropped 0, file extent 24; client timestamps and exit are null"
+    },
+    {
+      "claim": "Cold plan has 24 tasks and no seeds",
+      "source": "plan.json",
+      "observed": "All seed_base fields false; receiver cache has only owner and profile controls"
+    },
+    {
+      "claim": "Local verifier ENOENT is secondary, not a cold-seed bug",
+      "source": "source/run-shard.sh:203,218; crates/spiralcore-transfer/src/bin/spiralcore-bench.rs:1099-1104,1117,1515-1517",
+      "observed": "Verifier reads absent rows before verification; zero-byte local output was retained"
+    },
+    {
+      "claim": "Setup failure qualifies for separate recording",
+      "source": "source/2026-10-29-broader-wan-and-scaling.md:160-164",
+      "observed": "No measured client ran; no measured observation is replaced"
+    }
+  ],
+  "unresolved": "Cause of four received-but-unsaved packets remains unproven",
+  "future_attempt_conditions": [
+    "preserve original failed directory and cache bytes",
+    "record explicit old-to-new directory mapping before fresh setup",
+    "use fresh isolated runtime resources",
+    "retain unchanged full plan, source and capture gates"
+  ],
+  "future_attempt_executed_by_reviewer": false
+}

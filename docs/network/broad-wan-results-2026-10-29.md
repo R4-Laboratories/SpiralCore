@@ -11,6 +11,33 @@ raw, ordinary zstd, zstd prefix delta and sparse COPY/LITERAL. Optional raw/zstd
 DAG warming is disabled equally. Earlier v3 CPU results included that additional
 raw/zstd work and must not be substituted for this fairer comparison.
 
+## Warm-update comparison at a glance
+
+Each row summarizes thirty paired trials. Sizes are approximately 16 MiB;
+the detailed sections define each fixture and exact length. Body counts include
+requests and replies. Elapsed already includes computation; CPU is a separate
+sum of sender-process and receiver-handler CPU, not an additional latency charge.
+
+| Change | Sparse body bytes | Fewer body bytes than raw | Raw elapsed | Sparse elapsed | Raw CPU | Sparse CPU |
+|---|---:|---:|---:|---:|---:|---:|
+| 32-byte localized edit | 600 | 99.99643% | 1,594.631 ms | 237.108 ms | 100.872 ms | 79.839 ms |
+| 32 scattered 32-byte edits | 2,137 | 99.98729% | 1,679.259 ms | 248.104 ms | 100.112 ms | 80.241 ms |
+| 4 KiB prefix insertion | 4,651 | 99.97234% | 1,686.289 ms | 226.397 ms | 89.878 ms | 79.081 ms |
+| 4 KiB middle insertion | 4,664 | 99.97226% | 1,600.969 ms | 199.853 ms | 93.113 ms | 87.463 ms |
+| 4 KiB deletion | 563 | 99.99665% | 1,859.642 ms | 237.681 ms | 92.330 ms | 77.855 ms |
+| 4 KiB append | 4,651 | 99.97234% | 1,871.920 ms | 222.133 ms | 89.128 ms | 74.978 ms |
+| 4 KiB truncation | 550 | 99.99673% | 1,975.651 ms | 227.314 ms | 93.868 ms | 70.224 ms |
+| 1 MiB XOR overwrite | 1,051,558 | 93.74595% | 1,968.257 ms | 351.888 ms | 91.357 ms | 69.775 ms |
+| Structured bytes, 32-byte edit | 600 | 99.99643% | 1,599.656 ms | 182.454 ms | 82.522 ms | 67.579 ms |
+| Opaque compressed bytes, 32-byte edit | 600 | 99.99643% | 1,781.628 ms | 221.013 ms | 95.216 ms | 78.240 ms |
+
+Body, elapsed and CPU values are medians; percentage reductions are computed from
+the raw and sparse body medians. These ten cases pass the registered warm-update body and
+elapsed thresholds against raw. Conventional prefix compression is often close
+in elapsed time, and chunked zstd uses less CPU on structured data. Paid seed
+costs and all four comparison arms appear below; the warm-update table alone
+does not establish first-transfer or universal codec superiority.
+
 ## Compression configurations
 
 The `zstd_full` arm independently compresses each chunk of at most 61,440 input
@@ -355,6 +382,16 @@ ratio of median completion times; the paired geometric mean is descriptive. Afte
 the first case, independent review exposed a checker-only task-projection mismatch.
 Its failed output, original executable/source identity, regression and successful
 v2 review are preserved. No transfer was rerun or omitted to repair analysis.
+
+The first cold-random setup, run `40984573497`, stopped before the measurement
+client was launched. Its capture preflight and final counters report zero saved
+packets, four received and zero dropped; the PCAP contains only its 24-byte header.
+There are no measurement rows or object publications. The frozen controller
+correctly rejects this mismatch; its underlying cause remains unresolved. The
+local orchestration subsequently reported a missing rows file while attempting
+verification. The [setup-failure packet](evidence/2026-10-29-broad-wan/qualification/cold-random-preflight-attempt-1/README.md)
+preserves both events. A fresh setup under unchanged checks is permitted by the
+registration's pre-measurement failure rule; it does not replace a timed trial.
 
 Elapsed starts after fixture generation, with inputs in memory, and ends after
 verified durable publication acknowledgment and timed retained-state teardown.
