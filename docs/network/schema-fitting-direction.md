@@ -1,6 +1,6 @@
 # Schema fitting as shared prediction state
 
-**Proposal; unimplemented and unmeasured.** Recorded 2026-10-30 following Jeff Venable's suggestion, against SpiralCore `773f7cc5f5ea23044053fec6a41e70f52e092534`. This note adds no codec, package, protocol change or experiment.
+**Historical proposal, subsequently implemented and measured in SC-OPT-011.** The original direction below was recorded 2026-10-30 following Jeff Venable's suggestion, against SpiralCore `773f7cc5f5ea23044053fec6a41e70f52e092534`. The later [Rust prototype and results](schema-fitting-results-2026-10-30.md) preserve the exact-byte contract: 640 operations reopened exactly, but the template-only family loses to conventional compression on these held-out fixtures. The original proposal itself added no codec, package, protocol change or experiment.
 
 A shared schema can make recurring structure cheaper to describe and cheaper to predict. The useful hypothesis is that endpoints retain the same bounded layout, literal dictionary or template, then exchange only the values and exact residual needed for each record. A schema describes regularity; it does not supply unpredictable information. Its benefit must include the cost of fitting, distributing and retaining that shared state.
 

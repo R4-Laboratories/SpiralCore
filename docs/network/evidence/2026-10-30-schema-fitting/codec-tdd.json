@@ -1,0 +1,78 @@
+{
+  "schema": "spiralcore.schema-fitting.codec-tdd.v1",
+  "status": "PASS_FOCUSED_CODEC_AND_INTEGRATION",
+  "date": "2026-10-30",
+  "baseline": "409a226357ec242bd5e8e5f72e4ae0b8fff155f1",
+  "roster": "d1927d9e7ce51354",
+  "source_sha256": {
+    "crates/spiralcore-transfer/src/schema.rs": "5bd11882021a48679c3c91b610e398c4f4a74e97ab2507e3bbf4317f4bf13496",
+    "crates/spiralcore-transfer/tests/schema_codec.rs": "2d59bc526e10791c002317cd0b6e24798399ea5401c2ee5f4bc0faa3ac7450ad",
+    "docs/specs/2026-10-30-schema-fitting-design.md": "1d0fecff8a6d8f6320efd1fc1d5c6a2a9dd5cb11839fdd65c9630cf2ce0bfc1f",
+    "docs/plans/2026-10-30-schema-fitting.md": "5783ad4886f604a60f2a48215fb53f843a520046ed6bd95a993b16185441a297"
+  },
+  "api": [
+    "fit(training: &[&[u8]]) -> Result<Vec<u8>>",
+    "encode(artifact: &[u8], target: &[u8]) -> Result<Vec<u8>>",
+    "decode(artifact: &[u8], encoded: &[u8], target_len: usize) -> Result<Vec<u8>>"
+  ],
+  "bounds": {
+    "schema_bytes": 65536,
+    "target_bytes": 16777216,
+    "training_bytes": 4194304,
+    "training_records": 4096,
+    "templates": 64,
+    "slots_per_template": 32,
+    "templated_record_bytes": 65536,
+    "encoded_records": 65536,
+    "encoded_bytes": 17104944,
+    "layout_comparison_bytes": 67108864
+  },
+  "format": {
+    "artifact": "SCSCH001 +u16 profile1 +u16 count; bounded exact literal fragments",
+    "target": "SCVAL001 +32B artifact object ID +u32 original length +u32 record count; exact raw primitive slots or literal bytes"
+  },
+  "qualification": {
+    "command": "CARGO_INCREMENTAL=0 CARGO_TARGET_DIR=/Users/casey.allard/spiralcore/target /Users/casey.allard/.cargo/bin/cargo +1.97.1 test --manifest-path crates/spiralcore-transfer/Cargo.toml --locked --release --target aarch64-apple-darwin --features hardware-sha256 --test schema_codec --test zstd_dictionary --test fitted_transfer",
+    "red": "Expected unresolved schema module before implementation.",
+    "intermediate_build_failure": "Parent fitted_transfer test reopened Endpoint without mutable binding; parent applied the one-binding fix. No codec assertion or compilation failure.",
+    "final_passed": 17,
+    "breakdown": {
+      "schema_codec": 10,
+      "fitted_transfer": 5,
+      "zstd_dictionary": 2
+    },
+    "coverage": [
+      "Held-out frozen-layout raw-token preservation",
+      "Duplicate keys, whitespace, CRLF, escapes, numeric spellings",
+      "Binary, malformed, nested and drift literal fallback",
+      "Empty/newline-heavy/oversized records",
+      "Training/template/slot/encoded-count limits",
+      "Truncated and malformed schema/stream, wrong artifact ID, hostile lengths and tokens",
+      "Output-size preflight before allocation"
+    ],
+    "validation": "Scoped git diff --check passed; no additional build or timing from codec author."
+  },
+  "receipts": [
+    {
+      "path": "codec-red.txt",
+      "exit_code": 101,
+      "sha256": "bfd86d7e96e887c27ff1abbdaf6399032049cf5a9f0aafc44091c0ac54bcc3a8"
+    },
+    {
+      "path": "codec-integration-green-attempt1.txt",
+      "exit_code": 101,
+      "sha256": "acfc2235642db33cc48245cc6c4fbe778f2ac4252a4305c59e374f252daba677"
+    },
+    {
+      "path": "codec-integration-green-attempt2.txt",
+      "exit_code": 0,
+      "sha256": "21dd7d154a22c191b13f12539c502d3180e5e3d6aad8cffe54d71b50181a798c"
+    }
+  ],
+  "scope_limits": [
+    "Author qualification, not independent review.",
+    "Wire/admission/commit and trained-zstd implementation are parent-owned.",
+    "Flat one-line JSON objects only for templates; all other bounded target bytes remain exact literals.",
+    "No new performance, WAN, consensus, MVM or energy result claimed."
+  ]
+}

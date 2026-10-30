@@ -94,7 +94,14 @@ pub fn transfer<F: FnMut(&Frame) -> Result<Frame>>(
     exchange: F,
 ) -> Result<Stats> {
     let start = Instant::now();
-    if matches!(mode, Mode::SparseV1 | Mode::ZstdPrefixV1 | Mode::RuntimeV1) {
+    if matches!(
+        mode,
+        Mode::SparseV1
+            | Mode::ZstdPrefixV1
+            | Mode::RuntimeV1
+            | Mode::SchemaV1
+            | Mode::ZstdDictionaryV1
+    ) {
         return Err(Error::Unsupported);
     }
     if bytes.len() as u64 > MAX_OBJECT {
@@ -479,7 +486,14 @@ pub fn transfer_batched<F: FnMut(&[Frame]) -> Result<Vec<Frame>>>(
     exchange: F,
 ) -> Result<Stats> {
     let start = Instant::now();
-    if matches!(mode, Mode::SparseV1 | Mode::ZstdPrefixV1 | Mode::RuntimeV1) {
+    if matches!(
+        mode,
+        Mode::SparseV1
+            | Mode::ZstdPrefixV1
+            | Mode::RuntimeV1
+            | Mode::SchemaV1
+            | Mode::ZstdDictionaryV1
+    ) {
         return Err(Error::Unsupported);
     }
     if bytes.len() > MAX_BATCHED_OBJECT
@@ -655,6 +669,94 @@ pub fn transfer_zstd_prefix_batched<F: FnMut(&[Frame]) -> Result<Vec<Frame>>>(
     )
 }
 
+/// Transfer exact bytes using a frozen fitted schema, or Raw if the full
+/// successful-miss body cost would not improve. Fit/seed explicitly beforehand.
+pub fn transfer_schema_batched<F: FnMut(&[Frame]) -> Result<Vec<Frame>>>(
+    artifact: &[u8],
+    target: &[u8],
+    transfer_id: Id,
+    warm_probe: bool,
+    exchange: F,
+) -> Result<Stats> {
+    transfer_fitted_batched(
+        Mode::SchemaV1,
+        artifact,
+        target,
+        transfer_id,
+        warm_probe,
+        exchange,
+    )
+}
+
+/// Like `transfer_schema_batched`, with a genuinely trained zstd dictionary.
+/// Context loading, artifact/target hashing and discarded candidate work are
+/// included in elapsed time. A remote artifact miss never changes the offer.
+pub fn transfer_zstd_dictionary_batched<F: FnMut(&[Frame]) -> Result<Vec<Frame>>>(
+    artifact: &[u8],
+    target: &[u8],
+    transfer_id: Id,
+    warm_probe: bool,
+    exchange: F,
+) -> Result<Stats> {
+    transfer_fitted_batched(
+        Mode::ZstdDictionaryV1,
+        artifact,
+        target,
+        transfer_id,
+        warm_probe,
+        exchange,
+    )
+}
+
+fn transfer_fitted_batched<F: FnMut(&[Frame]) -> Result<Vec<Frame>>>(
+    mode: Mode,
+    artifact: &[u8],
+    target: &[u8],
+    transfer_id: Id,
+    warm_probe: bool,
+    exchange: F,
+) -> Result<Stats> {
+    let start = Instant::now();
+    if artifact.len() > 64 * 1024 || target.len() > MAX_BATCHED_OBJECT {
+        return Err(Error::Limit);
+    }
+    let encoded = match mode {
+        Mode::SchemaV1 => crate::schema::encode(artifact, target)?,
+        Mode::ZstdDictionaryV1 => crate::zstd_dictionary::encode(artifact, target)?,
+        _ => return Err(Error::Unsupported),
+    };
+    let cap = crate::fitted_transfer::encoded_cap(mode, target.len())?;
+    if encoded.len() > cap {
+        return Err(Error::Limit);
+    }
+    let candidate_cost = encoded.len() + encoded.len().div_ceil(MAX_CHUNK) * 134 + 32;
+    let raw_cost = target.len() + target.len().div_ceil(MAX_CHUNK) * 133;
+    if candidate_cost >= raw_cost {
+        drop(encoded);
+        let mut stats =
+            transfer_batched(target, Mode::Raw, None, transfer_id, warm_probe, exchange)?;
+        stats.elapsed_micros = start.elapsed().as_micros();
+        return Ok(stats);
+    }
+    let offer = Offer {
+        mode,
+        len: target.len() as u64,
+        object: crate::object_id(target),
+        manifest: None,
+        base: Some(crate::object_id(artifact)),
+    };
+    let bodies = crate::fitted_transfer::chunks(mode, &encoded)?;
+    drop(encoded);
+    send_batched(
+        offer,
+        BatchedPayload::Encoded(bodies),
+        transfer_id,
+        warm_probe,
+        exchange,
+        start,
+    )
+}
+
 /// Transfer outcome and the local pre-Begin selection receipt.
 #[derive(Debug, Clone)]
 pub struct AdaptiveStats {
@@ -739,7 +841,11 @@ where
     let mode = prepared.selection.selected;
     let (object, base) = identities(matches!(
         mode,
-        Mode::SparseV1 | Mode::ZstdPrefixV1 | Mode::RuntimeV1
+        Mode::SparseV1
+            | Mode::ZstdPrefixV1
+            | Mode::RuntimeV1
+            | Mode::SchemaV1
+            | Mode::ZstdDictionaryV1
     ));
     let offer = Offer {
         mode,

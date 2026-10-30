@@ -1,0 +1,59 @@
+warning: unused import: `super::*`
+ --> crates/spiralcore-transfer/examples/schema_fitting.rs:5:9
+  |
+5 |     use super::*;
+  |         ^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+error[E0425]: cannot find function `training_records` in this scope
+ --> crates/spiralcore-transfer/examples/schema_fitting.rs:8:22
+  |
+8 |         let training=training_records();
+  |                      ^^^^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `training_records` in this scope
+  --> crates/spiralcore-transfer/examples/schema_fitting.rs:10:29
+   |
+10 |         assert_eq!(training,training_records());
+   |                             ^^^^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `fixture` in this scope
+  --> crates/spiralcore-transfer/examples/schema_fitting.rs:13:24
+   |
+13 |             let target=fixture("normal",false,trial).unwrap();
+   |                        ^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `fixture` in this scope
+  --> crates/spiralcore-transfer/examples/schema_fitting.rs:21:24
+   |
+21 |             let target=fixture(family,true,2).unwrap();
+   |                        ^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `fixture` in this scope
+  --> crates/spiralcore-transfer/examples/schema_fitting.rs:26:20
+   |
+26 |         let normal=fixture("normal",true,2).unwrap();
+   |                    ^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `fixture` in this scope
+  --> crates/spiralcore-transfer/examples/schema_fitting.rs:27:23
+   |
+27 |         let unrelated=fixture("unrelated",true,2).unwrap();
+   |                       ^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `fixture` in this scope
+  --> crates/spiralcore-transfer/examples/schema_fitting.rs:31:36
+   |
+31 |         assert_eq!(unrelated.bytes,fixture("unrelated",true,2).unwrap().bytes);
+   |                                    ^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `fixture` in this scope
+  --> crates/spiralcore-transfer/examples/schema_fitting.rs:32:17
+   |
+32 |         assert!(fixture("unknown",false,0).is_err());
+   |                 ^^^^^^^ not found in this scope
+
+error: aborting due to 8 previous errors; 1 warning emitted
+
+For more information about this error, try `rustc --explain E0425`.

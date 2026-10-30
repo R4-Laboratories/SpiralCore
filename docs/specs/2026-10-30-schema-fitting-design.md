@@ -1,0 +1,37 @@
+# SC-OPT-011: Bounded exact JSON template family
+
+Accepted under the user's approval of [schema fitting](../network/schema-fitting-direction.md), with implementation API agreed by the parent on 2026-10-30. Base: `409a226357ec242bd5e8e5f72e4ae0b8fff155f1`. The coupled ternary/Kuramoto/CA runtime remains an active family. This adds a declarative literal-template family under the existing exact-object commit contract; it does not introduce received code or network-wide consensus.
+
+## Codec API and bounds
+
+The standalone Rust module exposes `fit(training: &[&[u8]]) -> Result<Vec<u8>>`, `encode(artifact: &[u8], target: &[u8]) -> Result<Vec<u8>>`, and `decode(artifact: &[u8], encoded: &[u8], target_len: usize) -> Result<Vec<u8>>`.
+
+Limits: artifact 64 KiB; target 16 MiB; training 4 MiB and 4096 newline-delimited records; at most 64 templates and 32 slots per template; templated records at most 64 KiB; encoded target at most 65,536 records. Encoded bytes are capped at `16 MiB + 5*65,536 + 48`. Fit is deterministic for the ordered training input and keeps the first admissible distinct layouts that fit the artifact limits. Held-out input never changes the artifact. Unsupported training records do not contribute templates.
+
+Recognized records are flat, single-line JSON objects with string keys and primitive string/number/boolean/null values. Arrays, nested objects, malformed JSON, invalid UTF-8 and binary input remain literal bytes. Strings and numbers are scanned lexically; values are never converted to floating point or normalized. Keys, their order (including duplicates), punctuation, whitespace, escapes, raw value spelling and record endings are preserved exactly. Layout drift is a literal fallback unless an already-fitted template matches. The template family predicts structure, not unknown values.
+
+## Frozen formats
+
+All integers are little-endian. Artifact header: magic `SCSCH001`, decoder-profile version `u16=1`, template count `u16`. Each template contains slot count `u16`, then `slots+1` fragments, each `u32 length` followed by exact literal bytes. The parser checks all caps, duplicate layouts, valid flat-JSON layout with placeholder values, versions and trailing bytes before use. The full existing `object_id(artifact)` binds artifact bytes, length and decoder profile.
+
+Encoded target header: magic `SCVAL001`, the full 32-byte artifact object ID, original length `u32`, record count `u32` (48 bytes total). Record tag 0 carries `u32 length` and literal bytes. Tag 1 carries template index `u16`, then one `u32 length` plus exact raw primitive token per declared slot. A template record is used only if smaller than a literal record. Empty input has zero records. More than 65,536 input line boundaries uses one whole-object literal record; a very long or unsupported record is also literal. Whole-transfer Raw selection remains a parent-owned pre-Begin decision, since codec headers and seed costs can outweigh savings.
+
+## Resource and trust boundaries
+
+Artifact errors are returned even when target data would otherwise fall back. Encoding scans each record once, indexes exact layouts by a domain-separated SHA-256 layout fingerprint, and confirms literal equality before referencing a template. Fingerprint collisions cannot change output; total literal-comparison work is capped at 64 MiB per operation, after which encoding uses literals and fitting admits no further new layouts. Count and byte caps bound parsing and hashing independently. Decoder references are inert bytes, not executable code.
+
+Decode first validates the complete encoded stream and computes checked output lengths before allocating or copying the output. Template indices, token syntax, record counts, per-record size, original length, artifact ID and trailing bytes are checked. The second pass writes into one exact-sized bounded reservation. The endpoint still owns prior authorization/admission, scope/epoch checks, cache-miss behavior and final whole-object digest verification before durable publication. Artifact possession does not grant access; no implicit retry changes are introduced by the codec.
+
+## Transfer and trained-dictionary profiles
+
+`SchemaV1=6` and `ZstdDictionaryV1=7` extend the existing Offer. Both require the full artifact object ID in `base`, forbid a manifest, and cap output at 16 MiB. Data bodies are opcode (6 or 7), `u32` encoded chunk length, profile byte 1, and 1–61,440 encoded bytes. At most 512 chunks and the codec's aggregate encoded bound are admitted. Accepted receipts count encoded bytes. Finish decodes and verifies exact output length and object ID before the unchanged durable publication. An artifact miss fails the attempt; the sender can explicitly seed it first. No new authentication or transport endpoint is introduced.
+
+The trained-zstd artifact is `SCZDICT1`, `u32` dictionary byte length, then a genuine trained zstd dictionary, total at most 64 KiB. Training accepts at most 4096 samples and 4 MiB. `train(samples, max_size)` returns these immutable serialized bytes. This comparison uses an 8192-byte dictionary limit. The pinned zstd trainer is `zstd::dict::from_samples` (zstd 1.5.7); no held-out fitting or parameter search. Compression uses level 3, window log 25, long-distance matching, no workers, declared content size and checksum. The short dictionary-ID field is suppressed because Offer binds the full artifact SHA-256 identity. Strict single-frame validation and one-shot bounded output decoding reuse the existing prefix profile; dictionary loading adds at most 64 KiB plus fixed tables within a conservative 4 MiB decoder allowance. Dictionary parsing/loading, hashing and context preparation are charged on each send/decode in this first prototype.
+
+Both new public batched senders encode before Begin and compare the complete successful-miss protocol cost against Raw, including the extra artifact reference and chunk receipts. They use Raw on ties or expansion. This preserves byte-first fallback but does not refund failed candidate CPU. Schema versus ordinary zstd/dictionary selection is measured explicitly in separate arms, not inferred. Receiver admission reserves encoded input, output, artifact and decoder scratch within shared limits before reading artifact bytes; artifact size is checked from publication metadata. Artifact validation precedes codec use. Existing modes and their byte encodings remain unchanged.
+
+## Alternatives and qualification
+
+Generic COPY/LITERAL already exists, but repeatedly carrying offsets and matching arbitrary substrings adds work and misses the simple shared-layout case. This profile instead sends a compact template index plus raw slots, retaining literal fallback. Typed semantic serialization and inferred defaults are excluded because they complicate byte fidelity and independent benefit attribution.
+
+Focused RED/GREEN tests cover frozen training/held-out use, exact lexical variants, unsupported/drift/binary fallback, empty and newline-heavy input, malformed/truncated/oversized artifacts and streams, wrong artifact IDs and checked output lengths. The measurement owner compares held-out records and batches against raw, zstd, existing prefix/delta and trained-zstd dictionaries, including fitting, seeding, drift/fallback, CPU, retained memory and verified durable completion. No WAN, superiority or energy claim follows from implementation alone.

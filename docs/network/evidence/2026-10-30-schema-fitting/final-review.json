@@ -1,0 +1,105 @@
+{
+  "schema": "spiralcore.schema-fitting.final-review.v1",
+  "reviewer": "/root/selector_tests",
+  "roster": "d1927d9e7ce51354",
+  "baseline_commit": "409a226357ec242bd5e8e5f72e4ae0b8fff155f1",
+  "design_commit": "bf9753c3812ae5c40fa31af65394a5aa204e0ac1",
+  "reviewed_commit": "fe98bf0a40cad50f513652690548f7f0bb4f948f",
+  "reviewer_authored_implementation_harness_or_tests": false,
+  "sequence": [
+    {
+      "stage": 1,
+      "role": "harness-optimizer",
+      "verdict": "PASS",
+      "record": ".agent-sync/AUDIT.md",
+      "scope": "Approved design/API before code; retained native RED/GREEN and final qualification receipts; shared targets and disk constraints. Recorded before independent source review."
+    },
+    {
+      "stage": 2,
+      "roles": [
+        "code-reviewer",
+        "rust-reviewer",
+        "security-reviewer"
+      ],
+      "verdict": "APPROVED",
+      "blocking_findings": [
+
+      ]
+    },
+    {
+      "stage": 3,
+      "role": "independent-results-consistency-review",
+      "verdict": "PASS",
+      "scope": "Completed registered campaign, report and delivery claims only."
+    }
+  ],
+  "existing_results_observed": {
+    "focused_codec_dictionary_transfer_tests": 17,
+    "full_lib_and_integration_tests_passed": 241,
+    "failed": 0,
+    "preexisting_ignored": 2,
+    "doctests_passed": 1,
+    "focused_coverage_tests_passed": 129,
+    "harness_fixture_tests_passed": 2,
+    "final_all_target_clippy_exit": 0,
+    "harness_release_build": "PASS",
+    "resolved_retained_failures": [
+      "Initial missing-API/unsupported-mode RED",
+      "Mutable endpoint binding in integration test",
+      "Equivalent fixture modulo expression required by Clippy"
+    ]
+  },
+  "source_sha256": {
+    "src/schema.rs": "5bd11882021a48679c3c91b610e398c4f4a74e97ab2507e3bbf4317f4bf13496",
+    "src/zstd_dictionary.rs": "f93f993c7d58fc237b15d441f2d83362a092c0a8b925d6ad0abcde3eef90a02d",
+    "src/fitted_transfer.rs": "876df56ba81e3396bd1677b39ff24eb92f2b7055b2ce04d9e2038dbb434579d4",
+    "src/client.rs": "8858479594b2fcea6b5d97bbb9c121737b30835fb8125db0ebd09b94ca78a68a",
+    "src/endpoint.rs": "caf3050207e6fdb62a1939d2c7294db4d99b73e41697c6a5e7fa02abd51491ee",
+    "src/protocol.rs": "5cd033556fdea0d72e4f2d4d85893e9fa89f79f8724e05a2b17cf3ef8e0379bf",
+    "src/selection.rs": "9f7d677fd067b39e826eac55933931d931c3ec850c008d3f70b5147655c0d6bb",
+    "src/zstd_prefix.rs": "83a91639a87387f3cb83ed972a6e1f92822b2a6f3b9db880d4b64632ffab5b8a",
+    "examples/schema_fitting.rs": "fca02b0b9c838075a0708bbb9b4ef33120626e1ed160557818bfbea518a73fc0"
+  },
+  "measurement_contract_sha256": "492f714198c6c7d6b925cfb14a9ecf052d12a848281c975981c8cdc800f3dec2",
+  "review": [
+    "Schema fitting is limited to supplied training. Literal fragments and raw primitive spans preserve exact lexical bytes, including duplicate keys and numeric/escape spellings; unsupported or drifting layouts remain literal. Fingerprints only index layouts; full fragment equality determines a match. Artifact count/size, record/slot/output and comparison-work limits bound parsing and matching.",
+    "Decode validates artifact identity/version, all record counts, indices, tokens, lengths and trailing bytes in a complete first pass before allocating the bounded final output. The second pass copies identical validated fragments and values; no received code or mutable decoder registry is introduced.",
+    "Dictionary artifacts are bounded and require a trained-dictionary identifier. The pinned zstd loader validates tables; strict single-frame, declared-output-size, checksum and window validation remain enforced. Endpoint admission accounts for artifact, encoded input, output and decoder allowance before artifact loading.",
+    "New wire modes require an artifact base and forbid a manifest. Chunk length/count/aggregate bounds are independently enforced before appending. Artifact lookup stays in the authorized namespace. Existing replay/epoch/cancellation paths are reused, authorization is rechecked, and exact output length/digest are verified before durable publication.",
+    "Both explicit senders compare the complete successful-miss candidate framing cost against Raw and prefer Raw on ties/expansion. Candidate parsing/compression and discarded-work CPU remain inside timing. Invalid artifacts and missing remote bases are errors; no implicit retry or decoder substitution is added. Existing adaptive and coupled-runtime selectors do not silently opt into the prototype.",
+    "The benchmark freezes 512 training samples independently of 80 held-out target fixtures, fits once, uses the same training slices for an 8192-byte trained-zstd dictionary, and compares five real client/endpoint paths. Record-sized and whole-record approximately 1 MiB batches include lexical/layout variation, drift and unrelated bytes. Ordinary zstd versus dictionary differences include framing/window effects, explicitly disclosed with the whole-prefix adaptive control.",
+    "Each target is compared after closing/reopening the store. Three learned/base arms seed explicitly even on later Raw fallback. Fit/training plus serialization, all destination seeds, actual 80-use amortization and per-trial cold sums remain distinct. Total process CPU counts sender and receiver once; nested exchange/receiver scopes are not added again. Both directions' serialized body-equivalent bytes are counted. Failures preserve observations and owned stores."
+  ],
+  "limits": [
+    "The initial source review preceded measurement. The later bounded results-consistency check validates the completed registered local campaign and its reported limitations; it does not establish a general performance guarantee.",
+    "One registered local campaign completed: 400 target transfers plus 240 seeds, with all results and negative cases retained. No new WAN, packet-total, energy, MVM or compliance claim follows.",
+    "Coverage is focused, with no branch or whole-repository coverage claim; two historical tests remain explicitly ignored.",
+    "Template support is intentionally flat primitive JSON; arbitrary input is preserved via literal/Raw fallback, which can still consume attempted-codec CPU and prior artifact-seeding cost.",
+    "The reviewer used existing tests/build receipts and source inspection; no new test, build, experiment, analyzer or archive was added."
+  ],
+  "final_verdict": "APPROVED_FOR_PUBLICATION",
+  "results_review": {
+    "verdict": "PASS",
+    "reviewed_report": "docs/network/schema-fitting-results-2026-10-30.md",
+    "report_sha256": "d407f56393bc3977ac77c7650f9f8142ecffef95792c9e52a7d023a0aa473409",
+    "source_commit": "fe98bf0a40cad50f513652690548f7f0bb4f948f",
+    "method": "One bounded inline JSON consistency calculation over the existing raw rows, plan and summary; no new test, build, measurement, analyzer project or archive.",
+    "confirmed": [
+      "640 exact reopened operations (400 targets and 240 seeds), zero reported errors, and 400 unique successful cleanup joins",
+      "All 80 target identities and lengths match the registered plan across the five arms; seed identities match their fitted artifact or training corpus",
+      "Both directional byte totals and total >= exchange >= receiver CPU hold for every operation; sender CPU equals total minus exchange",
+      "All 40 cell medians/minima/maxima/p95 and per-trial cold sums match raw observations; all five actual 80-use totals and amortized costs match raw operations plus one fit",
+      "Registration, source map, plan, raw JSONL, summary, frozen executable and stored training/artifact hashes match their pins; implementation/harness/tests remain unchanged from reviewed source"
+    ],
+    "headline_recalculation": {
+      "schema_normal_batch_byte_saving_vs_raw_percent": 24.221441604494377,
+      "schema_normal_batch_bytes_over_zstd": 6.108707985770363,
+      "schema_normal_batch_cpu_over_zstd": 2.622448979591837,
+      "dictionary_normal_small_byte_saving_vs_zstd_percent": 11.610486891385763
+    },
+    "interpretation": "Report and delivery/ledger/direction/README claims are appropriately conditional and local. Schema loses to conventional compression on this workload. Dictionary improves seeded small-record bytes but has higher CPU, cold cost and total mixture cost than ordinary zstd. Cold means an initially unfitted sender plus a new destination, not retraining for every destination. Actual 80-use totals count one fitting cost and 80 actual seeds; receiver reuse was not measured.",
+    "blocking_findings": [
+
+    ]
+  }
+}

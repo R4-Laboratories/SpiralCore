@@ -1,0 +1,10 @@
+# SC-OPT-011 implementation plan
+
+Implement the approved [bounded schema design](../specs/2026-10-30-schema-fitting-design.md) in the existing worktree. No new approval pause, packages or target tree is needed. Keep the recorded experiment and review scope bounded.
+
+1. **Codec owner:** add failing API and exact-byte tests in `crates/spiralcore-transfer/tests/schema_codec.rs`, retaining RED under `docs/network/evidence/2026-10-30-schema-fitting`. Implement only `src/schema.rs`: bounded lexical scanner, deterministic training artifact, exact slot stream/literal fallback, strict artifact/stream readers, and output preflight. Risk: medium; malformed lengths and lexical fidelity receive explicit regressions. Parent supplies the library export.
+2. **Parent:** integrate the artifact reference, versioned wire mode, sender choice and receiver admission/reservation into the existing transfer/commit path. Add the trained-zstd comparison codec and focused integration tests. Preserve missing-base/revocation/restart and digest behavior. Risk: medium; no codec helper establishes authorization or publishes objects.
+3. **Measurement owner:** freeze disjoint training and held-out fixtures before fitting. Implement the agreed Rust comparison with normal, lexical/layout drift and unrelated controls, explicit seed costs and independent fitting/encode/decode/total timings. Fit once from training; no held-out refitting. Risk: low with source/configuration and exact output recorded.
+4. **Qualification:** codec-focused GREEN first, then parent integration checks and one coordinated full qualification/review. Use the existing primary Cargo target with `CARGO_INCREMENTAL=0`; stop new builds below the 4 GiB disk floor. Builds, coverage and experiments never overlap timed runs. Keep concise evidence and record negative results without expanding the campaign to seek a win.
+
+Done means an implemented bounded family with exact recovery and preserved commit controls, followed by recorded measured results. MVM remains later integration work; this prototype does not replace the central coupled runtime or establish global schema consensus.

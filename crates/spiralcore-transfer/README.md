@@ -105,6 +105,52 @@ See the [selection decision](../../docs/network/codec-selection-decision.md) and
 [local measurement method](../../docs/network/codec-selection-measurement.md).
 The existing CLI and historical WAN plans retain their explicit codec behavior.
 
+## Fitted schemas and trained zstd dictionaries
+
+The opt-in Rust prototype exposes `schema::fit(&training_samples)` and
+`zstd_dictionary::train(&training_samples, dictionary_size)`, returning immutable
+serialized artifacts. Fit only on a separate training split. Send the artifact
+once as an ordinary Raw object in the recipient's authorized namespace, then use
+`client::transfer_schema_batched(artifact, target, transfer_id, warm_probe, exchange)`
+or the identically shaped `client::transfer_zstd_dictionary_batched` API.
+
+The schema family retains literal JSON layout and carries exact raw primitive
+tokens. It preserves whitespace, order, escapes, numeric spelling and line
+endings; unfamiliar or nested records remain literal. It does not normalize JSON
+or execute supplied code. The dictionary family loads a genuinely trained zstd
+dictionary, distinct from the existing whole-base raw-prefix codec.
+
+Artifacts are at most 64 KiB and targets at most 16 MiB. An artifact ID identifies
+exact bytes and a decoder version; it is not authorization. Both senders include
+candidate encoding and hashing in elapsed time, and choose Raw before Begin on
+ties or expansion. Their explicit profiles do not automatically compare against
+all other codecs. A missing artifact fails without a hidden retry. The receiver
+reserves input/output/decoder resources, verifies length and the whole-object
+digest, and publishes durably through the existing path. No new CLI mode is
+implied; these are library APIs and the `schema_fitting` comparison example.
+See the [format and bounds](../../docs/specs/2026-10-30-schema-fitting-design.md)
+and [registered measurement contract](../../docs/network/evidence/2026-10-30-schema-fitting/measurement-contract.md).
+
+Reproduce the fixed, ten-trial local comparison with fresh output paths:
+
+```sh
+cargo build --release --locked --manifest-path crates/spiralcore-transfer/Cargo.toml --example schema_fitting
+SCHEMA=crates/spiralcore-transfer/target/release/examples/schema_fitting
+"$SCHEMA" plan /tmp/spiralcore-schema-plan.json
+"$SCHEMA" run /tmp/spiralcore-schema-plan.json "$(git rev-parse HEAD)" \
+  /tmp/spiralcore-schema-results.jsonl /tmp/spiralcore-schema-cache /tmp/spiralcore-schema-artifacts
+"$SCHEMA" summarize /tmp/spiralcore-schema-results.jsonl /tmp/spiralcore-schema-summary.json
+```
+
+Adjust `SCHEMA` if using `CARGO_TARGET_DIR` or an explicit Cargo target triple.
+The plan embeds source and fixture hashes; the run checks it before fitting.
+This runs actual serialized client/receiver operations and durable commits,
+then closes/reopens each store for exact byte comparison. It reports both
+directions' protocol-body-equivalent bytes and process CPU, including fit and
+artifact seeding separately. It uses no network sockets and measures no WAN
+send time. Successful temporary stores are removed; failures retain their
+observations and store. Artifacts and compact measurements remain reproducible.
+
 ## Shared ternary, Kuramoto and cellular-automaton replay
 
 `shared_runtime` ports the coupled finite core of the retained Python runtime:
