@@ -675,13 +675,55 @@ pub fn transfer_runtime_batched<F: FnMut(&[Frame]) -> Result<Vec<Frame>>>(
     warm_probe: bool,
     exchange: F,
 ) -> Result<AdaptiveStats> {
+    transfer_runtime_candidate_batched(
+        checkpoint,
+        target,
+        transfer_id,
+        warm_probe,
+        exchange,
+        || crate::shared_transfer::prepare(checkpoint, target, recipe),
+    )
+}
+
+/// Reuse an immutable sender prediction while retaining normal selection,
+/// receiver authorization, replay and exact durable publication. Elapsed time
+/// covers this send; initial prediction preparation is a separate caller cost.
+pub fn transfer_prepared_runtime_batched<F: FnMut(&[Frame]) -> Result<Vec<Frame>>>(
+    prediction: &crate::shared_transfer::PreparedPrediction,
+    target: &[u8],
+    transfer_id: Id,
+    warm_probe: bool,
+    exchange: F,
+) -> Result<AdaptiveStats> {
+    transfer_runtime_candidate_batched(
+        prediction.checkpoint(),
+        target,
+        transfer_id,
+        warm_probe,
+        exchange,
+        || prediction.prepare(target),
+    )
+}
+
+fn transfer_runtime_candidate_batched<F, P>(
+    checkpoint: &[u8],
+    target: &[u8],
+    transfer_id: Id,
+    warm_probe: bool,
+    exchange: F,
+    runtime: P,
+) -> Result<AdaptiveStats>
+where
+    F: FnMut(&[Frame]) -> Result<Vec<Frame>>,
+    P: FnOnce() -> Result<Option<Vec<Vec<u8>>>>,
+{
     let start = Instant::now();
     if checkpoint.len() > crate::shared_runtime::MAX_CHECKPOINT {
         return Err(Error::Limit);
     }
     let mut prepared = crate::selection::prepare(target, Some(checkpoint), warm_probe)?;
     if !prepared.selection.exact_repeat_probe {
-        if let Some(bodies) = crate::shared_transfer::prepare(checkpoint, target, recipe)? {
+        if let Some(bodies) = runtime()? {
             prepared.consider(Mode::RuntimeV1, bodies, warm_probe)?;
         }
     }

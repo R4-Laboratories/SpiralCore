@@ -358,3 +358,113 @@ fn runtime_recipe_crosses_transfer_boundary_and_reopens_exact_bytes() {
         target
     );
 }
+
+#[test]
+fn prepared_prediction_owns_its_state_and_preserves_residual_bytes() {
+    use spiralcore_transfer::shared_transfer::{prepare, PreparedPrediction};
+    let mut checkpoint = State::seeded(65).unwrap().encode().unwrap();
+    let original = checkpoint.clone();
+    let mut recipe = recipe();
+    let original_recipe = recipe;
+    let prepared = PreparedPrediction::new(&checkpoint, &recipe).unwrap();
+    let prediction =
+        shared_runtime::replay(&original, &recipe, shared_runtime::MAX_OUTPUT).unwrap();
+    assert_eq!(prepared.prediction(), prediction);
+    assert_eq!(prepared.checkpoint(), original);
+    assert!(prepared.retained_bytes() >= prediction.len() + original.len());
+    assert!(prepared.retained_bytes() <= prediction.len() + original.len() + 128);
+    checkpoint.fill(0);
+    recipe.steps = 0;
+    let mut edited = prediction.clone();
+    edited[101] ^= 1;
+    let targets = [
+        prediction.clone(),
+        edited,
+        prediction[1..].to_vec(),
+        [prediction.as_slice(), &[0, 0, 7, 0]].concat(),
+        Vec::new(),
+    ];
+    for target in targets {
+        assert_eq!(
+            prepared.prepare(&target).unwrap(),
+            prepare(&original, &target, &original_recipe).unwrap()
+        );
+        assert_eq!(prepared.prediction(), prediction);
+    }
+    assert_ne!(recipe.steps, original_recipe.steps);
+}
+
+#[test]
+fn prepared_prediction_transfers_repeated_edits_without_granting_authority() {
+    use spiralcore_transfer::shared_transfer::PreparedPrediction;
+    let checkpoint = State::seeded(48).unwrap().encode().unwrap();
+    let prepared = PreparedPrediction::new(&checkpoint, &recipe()).unwrap();
+    let dir = Temp::new();
+    let mut receiver = seeded(&dir, &checkpoint);
+    let c = context();
+    let mut targets = Vec::new();
+    for (i, value) in [0, 1, 2].into_iter().enumerate() {
+        let mut target = prepared.prediction().to_vec();
+        target[101] ^= value;
+        let stats = client::transfer_prepared_runtime_batched(
+            &prepared,
+            &target,
+            [i as u8 + 2; 32],
+            false,
+            |frames| frames.iter().map(|f| receiver.handle(&c, f, 2)).collect(),
+        )
+        .unwrap();
+        assert_eq!(stats.transfer.mode, Mode::RuntimeV1);
+        assert_eq!(
+            receiver.read_object(&c, object_id(&target)).unwrap(),
+            target
+        );
+        targets.push(target);
+    }
+    let mut changed = c.clone();
+    changed.policy_epoch += 1;
+    let err = client::transfer_prepared_runtime_batched(
+        &prepared,
+        &targets[0],
+        [8; 32],
+        false,
+        |frames| {
+            frames
+                .iter()
+                .map(|f| receiver.handle(&changed, f, 3))
+                .collect()
+        },
+    )
+    .unwrap_err();
+    assert_eq!(err, Error::Missing);
+    drop(receiver);
+    let mut reopened =
+        Endpoint::open_with_policy(&dir.0, Limits::default(), Allow, ColdGraphPolicy::Disabled)
+            .unwrap();
+    for target in targets {
+        assert_eq!(
+            reopened.read_object(&c, object_id(&target)).unwrap(),
+            target
+        );
+    }
+}
+
+#[test]
+fn prepared_prediction_rejects_invalid_state_and_oversize_targets() {
+    use spiralcore_transfer::shared_transfer::PreparedPrediction;
+    assert!(PreparedPrediction::new(&[], &recipe()).is_err());
+    let checkpoint = State::seeded(48).unwrap().encode().unwrap();
+    assert!(PreparedPrediction::new(
+        &checkpoint,
+        &Recipe {
+            steps: shared_runtime::MAX_STEPS + 1,
+            ..recipe()
+        }
+    )
+    .is_err());
+    let prepared = PreparedPrediction::new(&checkpoint, &recipe()).unwrap();
+    assert_eq!(
+        prepared.prepare(&vec![0; shared_runtime::MAX_OUTPUT + 1]),
+        Err(Error::Limit)
+    );
+}

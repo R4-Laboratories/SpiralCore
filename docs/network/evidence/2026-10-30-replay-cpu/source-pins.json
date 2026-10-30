@@ -1,0 +1,32 @@
+{
+  "schema": "spiralcore.replay-cpu.source-pins.v1",
+  "baseline_commit": "d4532b0fade8e41b4beb17e6b00572d436cfe444",
+  "baseline_archive_sha256": "b6f3e9a2f0e20091edbac602c8c29ca57e1712d1b8114aece4d8da22d7df4a36",
+  "archive_contents": ["crates/spiralcore-transfer", "crates/uor-r4-object-store"],
+  "archive_preserved_before_production_edits": true,
+  "harness_sha256": "c824102ac3f617d4deb1eecd65867b9b2083143c96e8b0fe58b2edc1f04ae2c4",
+  "measurement_contract_sha256": "f90a90e85135e02f10cf3e32c9aec180e791c78adc326aec7783a2dd1dd3f7ef",
+  "baseline_executable_sha256": "d42f395b88c27870987060c696290645771f88dbcc297d281a432346b0ea877a",
+  "candidate_executable_sha256": "4ea4437b52b4b84111250e0fb7c2a0a031135705d83477db1d27a34b6218ac21",
+  "candidate_source_sha256": {
+    "src/shared_runtime.rs": "9c125e8dda66be18f166da2ab8b83836725c082039d8cc07cfd44e66c2874929",
+    "src/shared_transfer.rs": "db13340e77979881fa558752d60cae233f43970b6867de395073cff07ae3d476",
+    "src/client.rs": "fe140ed98c2c202ba0502d1cd88ad69ba97e45a130add40998f40567cda9a210"
+  },
+  "platform": "Apple M1, Darwin arm64, aarch64-apple-darwin",
+  "compiler": "rustc 1.97.1 (8bab26f4f 2026-07-14), LLVM 22.1.6",
+  "build_common": "cargo +1.97.1 build --locked --release --features hardware-sha256 --example replay_cpu",
+  "candidate_rustflags": "--cfg replay_cpu_prepared",
+  "baseline_rustflags": "unset",
+  "baseline_target": "local/replay-cpu-20261030/baseline/crates/spiralcore-transfer/target",
+  "candidate_target": "local/replay-cpu-20261030/candidate-target",
+  "qualification": {
+    "harness_red": "harness-red.txt: expected missing fixture/order helpers, exit101",
+    "summary_red": "summary-red.txt: expected missing summary/distribution helpers, exit101",
+    "final_example_tests": "harness-final-tests.txt: 3 passed",
+    "all_target_clippy": "clippy-final.txt: passed with -D warnings",
+    "retained_command_failure": "harness-command-failure.txt: PATH cargo resolved to cargo-ai; rerun used explicit Rust cargo path",
+    "retained_clippy_failure": "clippy.txt: baseline placeholder drop_non_drop; corrected by conditional compiled drop"
+  },
+  "interpretation": "Standalone replay compares the engine change. One-shot transfer compares the complete candidate path, including the small setup-helper/vector refactor; it does not isolate every saved cycle to CA. Prepared adds explicit sender prediction reuse. No timing results are asserted by this source receipt."
+}

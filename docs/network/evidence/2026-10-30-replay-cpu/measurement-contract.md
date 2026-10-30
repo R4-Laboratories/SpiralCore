@@ -1,0 +1,30 @@
+# Replay CPU comparison
+
+This is a bounded local CPU and serialized-transfer experiment for packed CA replay and explicitly reused sender predictions. It is not a WAN latency, full-wire-byte, energy or process-RSS measurement. No warm-up observations are discarded. All successful and failed process outputs are retained.
+
+The baseline is source `d4532b0fade8e41b4beb17e6b00572d436cfe444`, preserved before production edits in `baseline-d4532b0.tar` (transfer crate and its object-store dependency), SHA-256 `b6f3e9a2f0e20091edbac602c8c29ca57e1712d1b8114aece4d8da22d7df4a36`. The same `examples/replay_cpu.rs` source is compiled against that source and the candidate. The candidate alone enables `--cfg replay_cpu_prepared`, which exposes its new API to the harness. Both use Rust 1.97.1, locked dependencies, release optimization and `hardware-sha256`. The raw records bind executable, harness, runtime, transfer, client, endpoint, selection and lockfile hashes.
+
+The campaign has two cells: width 48 × 243 steps produces exactly 142,738 bytes; width 4096 × 4096 steps produces exactly 14,851,384 bytes. These are unpadded canonical `SCTRAC01` traces, payload 1.0, `State::seeded` checkpoints. Each worker creates the trace once and records that replay's CPU and elapsed duration separately. All arms retain the same canonical fixture allocation while transferring.
+
+Ten paired trials run six arms: baseline runtime, packed runtime, packed prepared runtime, raw, zstd and conventional adaptive. A fixed seeded Fisher–Yates shuffle changes arm order per trial and width. Each worker transfers generated trace, one-bit middle edit and unrelated pseudorandom target, in that order. The unrelated fixture uses the prior shared-runtime experiment's seed derivation and xorshift bytes; all paired arms receive identical inputs. Pairing requires identical target identities and lengths, and identical body costs for the three runtime arms. Negative or slower observations remain in the results.
+
+The prepared worker constructs one `PreparedPrediction`, records construction CPU/elapsed and its `retained_bytes()` result, then actually reuses that same object for all three target transfers. A prepared object is not retained or reused by the receiver. Retained bytes describe the API's owned checkpoint, prediction and 69-byte setup buffers, not total process memory or peak allocation. Fixture buffers, endpoint buffers and allocator overhead are outside this figure.
+
+Each case uses a new receiver directory and namespace. Its checkpoint is seeded by an ordinary raw transfer, separately timed. Each target then uses the measured arm with no prior target publication and no exact-repeat probe. `ColdGraphPolicy::Disabled` applies to every arm. After each seed and target acknowledgment, the endpoint is closed, reopened and its entire object compared with the original bytes. Verification is separately timed outside the transfer interval. Only newly created case directories are removed after success; failures retain their cache and raw output. Exactly 360 target transfers plus 360 seed transfers are registered. There are 120 worker rows, 20 preparation rows, 720 operation rows and 120 successful cleanup rows, plus registration/completion rows.
+
+The exchange serializes and decodes every request and reply batch through `wan::encode_batch`/`decode_batch`, invokes the real endpoint handler and includes durable publication. Reply accounting adds the two u64 metrics that `SCWREP01` carries: 16 bytes per exchange. These are HTTP-body-equivalent bytes from an in-process mechanism; no actual HTTP/TCP connection or relay is used. Selection's expected complete-body cost must equal the serialized count for adaptive/runtime arms.
+
+`cpu_us` is single-process CPU from sender preparation/selection through verified durable acknowledgment; it includes receiver CPU exactly once. `wall_us` covers the same interval. `exchange_*` is a nested subset from batch serialization through response decoding. `receiver_*` is a further nested subset covering decoded request processing and response serialization. These subsets must not be added to the total. Total minus exchange CPU is a useful sender non-exchange phase estimate, not a separately isolated algorithm benchmark. Standalone fixture replay and explicit prepared construction form the remaining bounded phase profile. No phase claims to isolate CA from all oscillator/checkpoint work.
+
+Report target-only medians and p95 by cell/case/arm, all paired baseline-to-candidate CPU ratios, and bytes/exactness. For prepared operation, also report preparation plus each target, and the sum of preparation plus all three actual target transfers divided by three. These are explicit workload-specific amortizations. A practical cold comparison includes checkpoint seed plus preparation plus runtime target, versus raw/zstd target without their unnecessary experimental seed. Application trace generation is separate; it is not silently added to ordinary file-transfer cost or credited as eliminated work.
+
+Before the candidate campaign, `profile` runs baseline alone for three trials per size, preserving 18 targets plus 18 seeds and six standalone replay durations. This is a separately labelled bounded phase profile, not a replacement or selection filter for the ten paired trials. There are no timing runs while owned builds, tests or other experiments are active. Unrelated host activity remains uncontrolled.
+
+Commands (all output/cache destinations must be new):
+
+```text
+replay_cpu profile BASELINE_EXE BASELINE_EXE baseline-profile.jsonl NEW_CACHE
+replay_cpu run BASELINE_EXE CANDIDATE_EXE paired.jsonl NEW_CACHE
+```
+
+The driver fails on a child error, malformed/empty JSON or spawn failure and records stdout/stderr before stopping. The driver does not retry, prune outliers, select favorable trials or repeat the campaign based on the observed result. Existing exact-byte tests and this harness's fixture/order tests qualify the source before measurement. Focused coverage of the changed modules uses a separate instrumented build; those timings are not performance observations.

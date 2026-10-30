@@ -1,0 +1,21 @@
+   Compiling spiralcore-transfer v0.1.0 (/Users/casey.allard/spiralcore/local/replay-cpu-20261030/baseline/crates/spiralcore-transfer)
+error[E0425]: cannot find function `summarize` in this scope
+   --> examples/replay_cpu.rs:493:17
+    |
+493 |         assert!(summarize(&[]).is_err());
+    |                 ^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `distribution` in this scope
+   --> examples/replay_cpu.rs:494:20
+    |
+494 |         assert_eq!(distribution(vec![10.0, 1.0, 4.0, 2.0])["median"], 3.0);
+    |                    ^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `distribution` in this scope
+   --> examples/replay_cpu.rs:495:20
+    |
+495 |         assert_eq!(distribution(vec![10.0, 1.0, 4.0, 2.0])["p95"], 10.0);
+    |                    ^^^^^^^^^^^^ not found in this scope
+
+For more information about this error, try `rustc --explain E0425`.
+error: could not compile `spiralcore-transfer` (example "replay_cpu" test) due to 3 previous errors
