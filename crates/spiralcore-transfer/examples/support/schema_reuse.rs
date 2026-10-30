@@ -338,6 +338,26 @@ fn session(
     )
 }
 
+fn launch_session(
+    out: &mut File,
+    cache: &Path,
+    arm: &str,
+    trial: usize,
+    large: bool,
+    artifact: Option<&[u8]>,
+) -> Result<()> {
+    let dir = cache.join(format!("{trial}-{large}-{arm}"));
+    let scope = hash(
+        b"spiralcore.schema-reuse.scope.v1\0",
+        &[
+            arm.as_bytes(),
+            &(trial as u64).to_le_bytes(),
+            &[u8::from(large)],
+        ],
+    );
+    session(out, &dir, scope, arm, trial, large, artifact)
+}
+
 fn run_reuse(
     plan_path: &Path,
     source: &str,
@@ -410,17 +430,7 @@ fn run_reuse(
                     _ if arm == "adaptive" => Some(corpus.as_slice()),
                     _ => None,
                 };
-                let dir = cache.join(format!("{trial}-{large}-{arm}"));
-                fs::create_dir(&dir)?;
-                let scope = hash(
-                    b"spiralcore.schema-reuse.scope.v1\0",
-                    &[
-                        arm.as_bytes(),
-                        &(trial as u64).to_le_bytes(),
-                        &[u8::from(large)],
-                    ],
-                );
-                if let Err(e) = session(&mut out, &dir, scope, arm, trial, large, artifact) {
+                if let Err(e) = launch_session(&mut out, cache, arm, trial, large, artifact) {
                     write_session_row(
                         &mut out,
                         json!({"event":"session_failure","error":e.to_string(),"cache_preserved":true}),
@@ -817,5 +827,45 @@ mod tests {
             None
         )
         .is_err());
+    }
+
+    #[test]
+    fn real_session_owns_private_store_and_reopens_every_distinct_target() {
+        let nonce = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let root = std::env::temp_dir().join(format!(
+            "spiralcore-reuse-test-{}-{nonce}",
+            std::process::id()
+        ));
+        fs::create_dir(&root).unwrap();
+        let training = training_records();
+        let artifact =
+            schema::fit(&training.iter().map(Vec::as_slice).collect::<Vec<_>>()).unwrap();
+        let output = root.join("rows.jsonl");
+        let mut out = fresh(&output).unwrap();
+        launch_session(&mut out, &root, "schema", 0, false, Some(&artifact)).unwrap();
+        drop(out);
+        let rows = fs::read_to_string(&output)
+            .unwrap()
+            .lines()
+            .map(|line| serde_json::from_str::<Value>(line).unwrap())
+            .collect::<Vec<_>>();
+        assert_eq!(
+            rows.iter()
+                .filter(|r| r["event"] == "operation" && r["exact_immediate"] == true)
+                .count(),
+            11
+        );
+        let verified = rows
+            .iter()
+            .find(|r| r["event"] == "session_verified")
+            .unwrap();
+        assert!(verified["error"].is_null());
+        assert_eq!(verified["reopened_objects"].as_array().unwrap().len(), 11);
+        assert_eq!(rows.last().unwrap()["owned_store_removed"], true);
+        assert!(!root.join("0-false-schema").exists());
+        fs::remove_dir_all(&root).unwrap();
     }
 }

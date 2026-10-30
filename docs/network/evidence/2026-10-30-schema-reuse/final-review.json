@@ -1,0 +1,78 @@
+{
+  "schema": "spiralcore.schema-reuse.final-review.v1",
+  "reviewer": "/root/selector_tests",
+  "roster": "d1927d9e7ce51354",
+  "baseline_commit": "e0a29bc18a09e1aeff4f3a36d2d801ffca346255",
+  "design_commit": "e8bad952e2117ea38858a11456f1443ff08305ec",
+  "reviewed_commit": "cd0aceff7d835ef4e3ba6478db5e87ae9a230a63",
+  "reviewer_authored_implementation_harness_or_tests": false,
+  "sequence": [
+    {
+      "stage": 1,
+      "role": "harness-optimizer",
+      "verdict": "PASS",
+      "record": ".agent-sync/AUDIT.md",
+      "scope": "User-approved design/API before code, actual retained RED/GREEN and final qualification receipts, shared build targets and disk constraints. Recorded before independent source review."
+    },
+    {
+      "stage": 2,
+      "roles": [
+        "code-reviewer",
+        "rust-reviewer",
+        "security-reviewer"
+      ],
+      "verdict": "APPROVED",
+      "blocking_findings": [
+
+      ]
+    }
+  ],
+  "qualification_observed": {
+    "focused_tests_passed": 23,
+    "all_target_tests_passed": 277,
+    "failed": 0,
+    "preexisting_ignored": 2,
+    "doctests_passed": 1,
+    "focused_coverage_tests_passed": 140,
+    "harness_tests_passed": 6,
+    "final_all_target_clippy_exit": 0,
+    "frozen_release_build_exit": 0,
+    "resolved_retained_events": [
+      "Expected missing-API and unsupported-mode RED",
+      "Test-file ownership collision resolved with separate codec and integration targets",
+      "cargo-ai PATH invocation failure followed by explicit Rust-toolchain success"
+    ]
+  },
+  "source_sha256": {
+    "src/schema.rs": "6c228201197e1ce26a6ac8137da490e0040ed26ab06d4576b330e8b240a2577a",
+    "src/schema_zstd.rs": "b7815a0d6c1633a39f3a9f769e0d2ccc3cda7a6cbc444f169978d20b9149a94b",
+    "src/zstd_dictionary.rs": "c179959d1851535c478b45f833b086e8a65755625aee7faee33c3a227ddc1f78",
+    "src/fitted_transfer.rs": "830ebffc0abc8878617f9170b6a8b822ac09d285c86c8dd5484daa450a7b145c",
+    "src/client.rs": "9a42ef492b3f7cfa8c4b7e009f98cabcada80b3984f7e2cb78e29a26989a036f",
+    "src/endpoint.rs": "53adb135153adc3651fdace5b3e4acd872075db41f7c140123dd72e65f839a68",
+    "src/protocol.rs": "c79ac462b72059f20bb24144eaee5e204c5e1629b04bdc50ca637aae2e1f7f46",
+    "src/selection.rs": "3431f49f94eec04a83c432f548a0a66299636d270c160f114bb0639ec1c92384",
+    "examples/schema_fitting.rs": "9b828cb8d6b76c5b86022c715305ff148d69ddeb52ae04f22584bf201c725081",
+    "examples/support/schema_reuse.rs": "6a0377271e86acbdce67ff665330c83771b4bee4f6c8b9774844e22d78f81065"
+  },
+  "measurement_contract_sha256": "005fad58c1ce695510cff5f0715ddc2874e3d75a4db8c6a56dc4a7abf561ec4e",
+  "frozen_executable_sha256": "4f89658ab4db6e483f663c2e2bc5c930bb80a24e9664bd37a466cbd4fe1330c7",
+  "review": [
+    "PreparedSchema owns validated artifact bytes, immutable identity, Cow-owned literal fragments and layout index without unsafe self-reference. Existing free APIs use the same lexical stream helpers; prepared and fresh contexts have exact byte parity tests on alternating, empty, binary and rejected inputs.",
+    "SchemaZstdV1 validates a single standard checksummed frame, descriptor flags, known content size, target-specific intermediate cap, window and exact frame extent before decompression allocation. One-shot decoding then applies the unchanged schema artifact/length/token preflight and exact final output rules. The separate intermediate reservation covers the maximum 17,104,944-byte lexical stream for a 16 MiB target.",
+    "Prepared encoder/decoder contexts are separate and own copied dictionaries or schemas. Session reset preserves loaded dictionary state without making prior targets implicit bases. Context sizeof drift guards drop oversized contexts fail-closed; documented charges are conservative accounting, not a hard custom-allocator/RSS guarantee. Intermediate/output buffers are per-call temporaries.",
+    "Receiver retention defaults off, uses namespace/mode/full-artifact-ID keys, rereads verified artifact publication before lookup, admits five MiB per entry within the shared quota before construction, and caps entries at eight. Active Arc handles pin entries against eviction; pressure can decline optional retention and use already-admitted unprepared decoding. Toggling during active transfer is rejected. Namespace epochs, authorization checks and final digest/length verification before durable publication remain enforced.",
+    "New prepared senders time encode/hash/send work while exposing construction as explicit setup. Prepared artifact identity is constructor-derived and immutable. They share the exact full framing-cost Raw fallback with unprepared senders, including discarded-candidate CPU; no implicit receiver retry or decoder substitution is added.",
+    "The registered harness has 200 distinct planned targets across eight arms, in 160 persistent ten-target sessions. It seeds each dependent session once, prepares only the two prepared sender arms, enables receiver retention only for those same arms, and records cache counters and sender retained size/charge outside operation timing. Consequently it measures combined sender-plus-receiver reuse, not isolated sender benefit.",
+    "Immediate full-byte comparisons preserve the live receiver; session-end close/reopen verifies the seed and ten targets before owned-store cleanup. The summary requires complete counts, distinct session identities, paired bytes, prepared/unprepared mode and body-cost equality, nested CPU/body accounting and exact ordered reopen identities. Session sums include actual seed and preparation before aggregation. Per-arm campaign totals charge one appropriate fit for independent comparison and explicitly must not be summed as the actual global fit count.",
+    "Frozen training and historical fixture identities are retained. Randomized arm order, mixed-family sequence, first-versus-later positions, fallback CPU, all seeds, preparation and actual observed reuse are explicit. The mixed later-position aggregate does not isolate warm-up from content. Failures retain rows and stores; the run cannot silently continue or discard a failed observation."
+  ],
+  "limits": [
+    "Premeasurement approval only: no performance, byte-saving or superiority result is established by this receipt.",
+    "One registered local serialized durable-transfer campaign is authorized: 1,600 targets, 120 seeds, 40 preparations, 160 sessions, 1,720 exact immediate comparisons and 1,720 exact reopened comparisons. No new WAN, packet-total, energy, MVM or compliance result.",
+    "Prepared arm differences combine sender and receiver reuse. Receiver cache bytes are conservative quota charges; sender retained bytes exclude Rust/allocator metadata. Neither is measured RSS or peak memory.",
+    "Coverage is focused with separately reported line/function metrics and no branch or whole-repository assurance claim; two historical tests remain ignored.",
+    "The reviewer read existing outputs and source only; no new build, test, benchmark, analyzer project or archive was added."
+  ],
+  "final_verdict": "APPROVED_FOR_REGISTERED_LOCAL_CAMPAIGN"
+}
