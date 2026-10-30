@@ -1,0 +1,108 @@
+{
+  "schema": "spiralcore.capture-lifecycle.v1",
+  "scope": "selected_capture_interval_only",
+  "interface": "eth0",
+  "local_ip": "10.1.0.224",
+  "remote_ip": "104.16.230.132",
+  "port": 443,
+  "capture_pid": 4889,
+  "tool_versions": "tcpdump version 4.99.4\nlibpcap version 1.10.4 (with TPACKET_V3)\nOpenSSL 3.0.13 30 Jan 2024\n",
+  "tcpdump_sha256": "0d28d014ffd7839852a426cfde6448bda549aef90a4937f787673a6ca3152cf0",
+  "pcap_sha256": "44f8128e1d621174096f48e75079c22786e0911f3001287cd09659b05eae2d00",
+  "stderr_sha256": "8a8d46670c751e317a6763824c2a1aadb515fb389f7c2df498a59aa1743c0e8f",
+  "flags": [
+    "--immediate-mode",
+    "-B",
+    "4096",
+    "-U",
+    "-s",
+    "96",
+    "--time-stamp-precision=nano",
+    "-i",
+    "eth0",
+    "-Z",
+    "runner",
+    "-w",
+    "/home/runner/work/SpiralCore/SpiralCore/wan-results/headers.pcap",
+    "host 104.16.230.132 and tcp port 443"
+  ],
+  "ready": true,
+  "ready_elapsed_millis": 23,
+  "preflight": [
+    {
+      "elapsed_millis": 64,
+      "stderr_end": 242,
+      "file_bytes": 24,
+      "counters": {
+        "captured": 0,
+        "received": 0,
+        "dropped": 0
+      },
+      "stderr_text": "tcpdump: 0 packets captured, 0 packets received by filter, 0 packets dropped by kernel\n"
+    },
+    {
+      "elapsed_millis": 605,
+      "stderr_end": 329,
+      "file_bytes": 24,
+      "counters": {
+        "captured": 0,
+        "received": 0,
+        "dropped": 0
+      },
+      "stderr_text": "tcpdump: 0 packets captured, 0 packets received by filter, 0 packets dropped by kernel\n"
+    }
+  ],
+  "client_started_elapsed_millis": 605,
+  "client_ended_elapsed_millis": 81989,
+  "client_exit_code": 0,
+  "quiescence": [
+    {
+      "elapsed_millis": 82030,
+      "stderr_end": 426,
+      "file_bytes": 51203561,
+      "counters": {
+        "captured": 460128,
+        "received": 460128,
+        "dropped": 0
+      },
+      "stderr_text": "tcpdump: 460128 packets captured, 460128 packets received by filter, 0 packets dropped by kernel\n"
+    },
+    {
+      "elapsed_millis": 82571,
+      "stderr_end": 523,
+      "file_bytes": 51203561,
+      "counters": {
+        "captured": 460128,
+        "received": 460128,
+        "dropped": 0
+      },
+      "stderr_text": "tcpdump: 460128 packets captured, 460128 packets received by filter, 0 packets dropped by kernel\n"
+    },
+    {
+      "elapsed_millis": 83112,
+      "stderr_end": 620,
+      "file_bytes": 51203561,
+      "counters": {
+        "captured": 460128,
+        "received": 460128,
+        "dropped": 0
+      },
+      "stderr_text": "tcpdump: 460128 packets captured, 460128 packets received by filter, 0 packets dropped by kernel\n"
+    }
+  ],
+  "interrupt_elapsed_millis": 83112,
+  "capture_exit_code": 0,
+  "forced_cleanup": false,
+  "final_snapshot": {
+    "elapsed_millis": 83132,
+    "stderr_end": 706,
+    "file_bytes": 51203561,
+    "counters": {
+      "captured": 460128,
+      "received": 460128,
+      "dropped": 0
+    },
+    "stderr_text": "460128 packets captured\n460128 packets received by filter\n0 packets dropped by kernel\n"
+  },
+  "errors": []
+}

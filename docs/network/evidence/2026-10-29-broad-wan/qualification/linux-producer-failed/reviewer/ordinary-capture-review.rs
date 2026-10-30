@@ -1,0 +1,402 @@
+use serde_json::{json, Value};
+use sha2::{Digest, Sha256};
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    fs::{File, OpenOptions},
+    io::{Read, Write},
+    path::{Path, PathBuf},
+};
+type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
+fn read(p: &Path) -> Result<Vec<u8>> {
+    let mut b = Vec::new();
+    let f = File::open(p)?;
+    assert!(f.metadata()?.is_file() && f.metadata()?.len() <= 16 * 1024 * 1024);
+    f.take(16 * 1024 * 1024 + 1).read_to_end(&mut b)?;
+    assert!(b.len() <= 16 * 1024 * 1024);
+    Ok(b)
+}
+fn value(p: &Path) -> Result<Value> {
+    Ok(serde_json::from_slice(&read(p)?)?)
+}
+fn hash(b: &[u8]) -> String {
+    format!("{:x}", Sha256::digest(b))
+}
+fn n(v: &Value) -> u64 {
+    v.as_u64().expect("expected bounded nonnegative integer")
+}
+fn s(v: &Value) -> &str {
+    v.as_str().expect("expected string")
+}
+fn arr(v: &Value) -> &Vec<Value> {
+    v.as_array().expect("expected array")
+}
+fn plus(a: u64, b: u64) -> u64 {
+    a.checked_add(b).expect("overflow")
+}
+fn command<'a>(commands: &'a [Value], args: &[&str]) -> &'a Value {
+    let matches = commands
+        .iter()
+        .filter(|v| v["args"] == json!(args))
+        .collect::<Vec<_>>();
+    assert_eq!(matches.len(), 1, "command{args:?}");
+    matches[0]
+}
+fn last_command<'a>(commands: &'a [Value], args: &[&str]) -> &'a Value {
+    commands
+        .iter()
+        .rev()
+        .find(|v| v["args"] == json!(args))
+        .expect("last command")
+}
+fn le(b: &[u8], o: usize) -> u32 {
+    u32::from_le_bytes(b[o..o + 4].try_into().unwrap())
+}
+fn be16(b: &[u8], o: usize) -> u16 {
+    u16::from_be_bytes(b[o..o + 2].try_into().unwrap())
+}
+#[derive(Default, Clone, Debug)]
+struct Count {
+    packets: u64,
+    up: u64,
+    down: u64,
+    up_packets: u64,
+    down_packets: u64,
+}
+impl Count {
+    fn add(&mut self, up: bool, len: u64) {
+        self.packets = plus(self.packets, 1);
+        if up {
+            self.up = plus(self.up, len);
+            self.up_packets += 1
+        } else {
+            self.down = plus(self.down, len);
+            self.down_packets += 1
+        }
+    }
+    fn total(&self) -> u64 {
+        plus(self.up, self.down)
+    }
+    fn check(&self, v: &Value) {
+        assert_eq!(self.packets, n(&v["packets"]));
+        assert_eq!(self.up, n(&v["upload_ip_bytes"]));
+        assert_eq!(self.down, n(&v["download_ip_bytes"]));
+        assert_eq!(self.total(), n(&v["total_ip_bytes"]));
+        assert_eq!(self.up_packets, n(&v["upload_packets"]));
+        assert_eq!(self.down_packets, n(&v["download_packets"]));
+        assert_eq!(v["unclassified_packets"], 0);
+    }
+}
+fn pcap(b: &[u8], start: u64, end: u64) -> (Count, Count, Count, usize, u64, u64) {
+    assert!(b.len() >= 24);
+    assert_eq!(&b[..4], &[0x4d, 0x3c, 0xb2, 0xa1]);
+    assert_eq!(le(b, 20), 1);
+    assert_eq!(le(b, 16), 96);
+    let mut cursor = 24;
+    let mut campaign = Count::default();
+    let mut owned = Count::default();
+    let mut unknown = Count::default();
+    let mut syns = BTreeMap::new();
+    let mut first = 0;
+    let mut last = 0;
+    while cursor < b.len() {
+        assert!(cursor + 16 <= b.len());
+        let ts = plus(
+            u64::from(le(b, cursor)).checked_mul(1_000_000_000).unwrap(),
+            u64::from(le(b, cursor + 4)),
+        );
+        assert!(le(b, cursor + 4) < 1_000_000_000);
+        let cap = le(b, cursor + 8) as usize;
+        let orig = le(b, cursor + 12) as usize;
+        assert!(cap <= 96 && cap <= orig && cap >= 54);
+        cursor += 16;
+        assert!(cursor + cap <= b.len());
+        let p = &b[cursor..cursor + cap];
+        cursor += cap;
+        assert_eq!(be16(p, 12), 0x800);
+        assert_eq!(p[14] >> 4, 4);
+        assert_eq!(p[23], 6);
+        let ihl = usize::from(p[14] & 15) * 4;
+        assert!(ihl >= 20 && 14 + ihl + 20 <= cap);
+        let len = u64::from(be16(p, 16));
+        assert!(len >= ihl as u64 + 20 && orig >= 14 + len as usize);
+        assert_eq!(be16(p, 20) & 0x3fff, 0);
+        let up = if p[26..30] == [198, 18, 0, 1] && p[30..34] == [198, 18, 0, 2] {
+            true
+        } else {
+            assert_eq!(&p[26..30], &[198, 18, 0, 2]);
+            assert_eq!(&p[30..34], &[198, 18, 0, 1]);
+            false
+        };
+        let t = 14 + ihl;
+        let local_port = be16(p, t + if up { 0 } else { 2 });
+        assert_eq!(be16(p, t + if up { 2 } else { 0 }), 443);
+        let flags = p[t + 13];
+        if up && flags & 0x12 == 2 {
+            let sequence = u32::from_be_bytes(p[t + 4..t + 8].try_into().unwrap());
+            let entry = (sequence, ts >= start && ts <= end);
+            if let Some(old) = syns.get(&local_port) {
+                assert_eq!(old, &entry)
+            } else {
+                syns.insert(local_port, entry);
+            }
+        }
+        campaign.add(up, len);
+        if syns.get(&local_port).is_some_and(|(_, owner)| *owner) {
+            owned.add(up, len)
+        } else {
+            unknown.add(up, len)
+        }
+        if first == 0 {
+            first = ts;
+        }
+        assert!(ts >= last);
+        last = ts;
+    }
+    (campaign, owned, unknown, syns.len(), first, last)
+}
+fn check(root: &Path, kind: &str) -> Result<Value> {
+    let source = String::from_utf8(read(&root.join("source-revision.txt"))?)?;
+    assert_eq!(source.trim(), "16fe9f44e858053a202b396fb7fca628dfcfd97c");
+    let binaries = String::from_utf8(read(&root.join("binary-sha256.txt"))?)?;
+    let qual_dir = root.join(kind);
+    let qual_bytes = read(&qual_dir.join("qualification.json"))?;
+    let qual: Value = serde_json::from_slice(&qual_bytes)?;
+    assert_eq!(qual["schema"], "spiralcore.capture-qualification.v2");
+    assert_eq!(qual["passed"], true);
+    assert!(s(&qual["scope"]).contains("synthetic plaintext TCP"));
+    assert_eq!(arr(&qual["cases"]).len(), 3);
+    if kind == "capture-qualification" {
+        assert!(binaries.lines().any(|line| line
+            == format!(
+                "{}  target/release/spiralcore-capture-control",
+                s(&qual["controller_sha256"])
+            )));
+    }
+    let mut names = BTreeSet::new();
+    let mut outputs = Vec::new();
+    for (index, kind) in ["normal", "interrupted", "ongoing"].iter().enumerate() {
+        let dir = qual_dir.join(kind);
+        let fixture = value(&dir.join("fixture.json"))?;
+        assert_eq!(fixture, qual["cases"][index]);
+        assert_eq!(fixture["case"], *kind);
+        assert_eq!(fixture["passed"], true);
+        assert_eq!(fixture["cleanup_success"], true);
+        for key in ["cleanup_error", "error", "server_error"] {
+            assert!(fixture[key].is_null());
+        }
+        let server = &fixture["server"];
+        assert_eq!(server["exit_code"], 0);
+        assert_eq!(server["reaped"], true);
+        assert_eq!(server["forced_cleanup"], false);
+        assert!(arr(&server["errors"]).is_empty());
+        assert!(arr(&server["signals"]).is_empty());
+        assert_eq!(s(&server["stdout"]), "ready\n");
+        assert_eq!(s(&server["stderr"]), "");
+        assert_eq!(
+            String::from_utf8(read(&dir.join("fixture-server.pid"))?)?
+                .trim()
+                .parse::<u64>()?,
+            n(&server["pid"])
+        );
+        assert!(s(&server["starttime"]).bytes().all(|b| b.is_ascii_digit()));
+        let topo = &fixture["topology"];
+        assert_eq!(topo["local"], "198.18.0.1");
+        assert_eq!(topo["remote"], "198.18.0.2");
+        assert_eq!(topo["port"], 443);
+        for key in ["host", "peer", "namespace"] {
+            let name = s(&topo[key]);
+            assert_eq!(name.len(), 15);
+            assert!(name.bytes().all(|b| b.is_ascii_alphanumeric()));
+            assert!(names.insert(name.to_owned()));
+        }
+        let host = s(&topo["host"]);
+        let peer = s(&topo["peer"]);
+        let ns = s(&topo["namespace"]);
+        let commands = arr(&topo["commands"]);
+        assert!(commands.len() <= 64);
+        for c in commands {
+            assert_eq!(c["exit_code"], 0);
+            assert_eq!(c["success"], true);
+            assert_eq!(c["reaped"], true);
+            assert_eq!(c["command_tree_settled"], true);
+            assert_eq!(c["outer_timeout"], false);
+            assert!(c["output_error"].is_null());
+            assert!(s(&c["stdout"]).len() <= 65536 && s(&c["stderr"]).len() <= 65536);
+            assert!(["/usr/bin/timeout", "/usr/sbin/ip", "/usr/sbin/ethtool"]
+                .contains(&s(&c["program"])));
+            if c["privileged"] == true {
+                assert_eq!(c["root_timeout_seconds"], 5);
+                assert_eq!(c["root_kill_after_seconds"], 1);
+            }
+        }
+        let command_lines = String::from_utf8(read(&dir.join("topology-commands.jsonl"))?)?
+            .lines()
+            .map(serde_json::from_str::<Value>)
+            .collect::<std::result::Result<Vec<_>, _>>()?;
+        assert_eq!(
+            command_lines
+                .iter()
+                .filter(|v| v.get("creation_intent").is_some())
+                .count(),
+            2
+        );
+        assert_eq!(
+            command_lines
+                .iter()
+                .filter(|v| v.get("creation_intent").is_none())
+                .cloned()
+                .collect::<Vec<_>>(),
+            *commands
+        );
+        command(commands, &["netns", "add", ns]);
+        command(
+            commands,
+            &["link", "add", host, "type", "veth", "peer", "name", peer],
+        );
+        assert_eq!(s(&command(commands, &["netns", "pids", ns])["stdout"]), "");
+        command(commands, &["link", "delete", host]);
+        command(commands, &["netns", "delete", ns]);
+        assert_eq!(s(&last_command(commands, &["netns", "list"])["stdout"]), "");
+        let links: Value =
+            serde_json::from_str(s(&last_command(commands, &["-j", "link", "show"])["stdout"]))?;
+        assert!(!arr(&links)
+            .iter()
+            .any(|v| [host, peer].contains(&s(&v["ifname"]))));
+        let mut offload_states = 0;
+        for c in commands {
+            if arr(&c["args"]).iter().any(|v| v == "-k") {
+                let text = s(&c["stdout"]);
+                for flag in [
+                    "tcp-segmentation-offload:",
+                    "generic-segmentation-offload:",
+                    "generic-receive-offload:",
+                    "large-receive-offload:",
+                ] {
+                    let rows = text
+                        .lines()
+                        .filter(|line| line.split_whitespace().next() == Some(flag))
+                        .collect::<Vec<_>>();
+                    assert_eq!(rows.len(), 1);
+                    assert_eq!(rows[0].split_whitespace().nth(1), Some("off"));
+                }
+                offload_states += 1;
+            }
+        }
+        assert_eq!(offload_states, 2);
+        let lifecycle_bytes = read(&dir.join("capture-lifecycle.json"))?;
+        let lifecycle: Value = serde_json::from_slice(&lifecycle_bytes)?;
+        let report = value(&dir.join("capture.json"))?;
+        let pcap_bytes = read(&dir.join("headers.pcap"))?;
+        assert_eq!(lifecycle["pcap_sha256"], hash(&pcap_bytes));
+        assert_eq!(report["capture_lifecycle_sha256"], hash(&lifecycle_bytes));
+        assert_eq!(
+            fixture["observation"]["lifecycle_sha256"],
+            hash(&lifecycle_bytes)
+        );
+        assert_eq!(lifecycle["local_ip"], "198.18.0.1");
+        assert_eq!(lifecycle["remote_ip"], "198.18.0.2");
+        assert_eq!(lifecycle["port"], 443);
+        assert_eq!(lifecycle["interface"], host);
+        assert_eq!(
+            arr(&lifecycle["flags"]).last().unwrap(),
+            "host 198.18.0.2 and tcp port 443"
+        );
+        assert_eq!(lifecycle["ready"], true);
+        assert_eq!(lifecycle["client_exit_code"], 0);
+        assert_eq!(lifecycle["capture_exit_code"], 0);
+        assert_eq!(lifecycle["forced_cleanup"], false);
+        assert_eq!(arr(&lifecycle["preflight"]).len(), 2);
+        let pre = arr(&lifecycle["preflight"]);
+        assert!(n(&pre[1]["elapsed_millis"]) >= n(&pre[0]["elapsed_millis"]) + 500);
+        for p in pre {
+            assert_eq!(
+                p["counters"],
+                json!({"captured":0,"received":0,"dropped":0})
+            );
+            assert_eq!(p["file_bytes"], 24);
+        }
+        let stats = String::from_utf8(read(&dir.join("tcpdump-stats.txt"))?)?;
+        assert_eq!(lifecycle["final_snapshot"]["stderr_text"], stats);
+        let counters = stats
+            .lines()
+            .map(|line| line.split_whitespace().next().unwrap().parse::<u64>())
+            .collect::<std::result::Result<Vec<_>, _>>()?;
+        assert_eq!(counters.len(), 3);
+        assert_eq!(counters[0], counters[1]);
+        assert_eq!(counters[2], 0);
+        assert_eq!(report["tcpdump_captured_packets"], counters[0]);
+        assert_eq!(report["tcpdump_received_by_filter_packets"], counters[1]);
+        assert_eq!(report["kernel_reported_drops"], 0);
+        let row_bytes = read(&dir.join("rows.jsonl"))?;
+        let rows = String::from_utf8(row_bytes)?
+            .lines()
+            .map(serde_json::from_str::<Value>)
+            .collect::<std::result::Result<Vec<_>, _>>()?;
+        assert_eq!(rows.len(), 1);
+        let row = &rows[0];
+        assert_eq!(row["status"], "published");
+        assert_eq!(row["metrics"]["request_body_bytes"], 65536);
+        assert_eq!(row["metrics"]["response_body_bytes"], 65536);
+        let start = s(&row["unix_start_nanos"]).parse::<u64>()?;
+        let end = s(&row["unix_end_nanos"]).parse::<u64>()?;
+        assert!(start <= end);
+        let (campaign, owned, unknown, syns, first, last) = pcap(&pcap_bytes, start, end);
+        campaign.check(&report["campaign"]);
+        owned.check(&report["rows"][0]);
+        unknown.check(&report["unattributed"]);
+        assert_eq!(campaign.packets, counters[0]);
+        assert_eq!(report["observed_syn_connections"], syns);
+        assert_eq!(report["capture_first_packet_unix_nanos"], first.to_string());
+        assert_eq!(report["capture_last_packet_unix_nanos"], last.to_string());
+        assert_eq!(report["setup"]["packets"], 0);
+        assert_eq!(report["ambiguous_connections"], 0);
+        assert_eq!(report["partition_sum_verified"], true);
+        assert_eq!(report["scope"], "isolated_veth_capture_qualification_only");
+        assert!(!s(&report["includes"]).contains("TLS"));
+        assert!(owned.up >= 65536 && owned.down >= 65536);
+        assert_eq!(
+            report["rows"][0]["application_body_coverage_verified"],
+            true
+        );
+        let expected = *kind == "normal";
+        assert_eq!(report["capture_complete"], expected);
+        assert_eq!(report["capture_lifecycle_verified"], expected);
+        if expected {
+            assert!(arr(&report["incomplete_reasons"]).is_empty());
+            assert_eq!(syns, 1);
+            assert_eq!(unknown.packets, 0);
+        } else {
+            assert!(!arr(&report["incomplete_reasons"]).is_empty());
+        }
+        if *kind == "ongoing" {
+            assert!(
+                arr(&lifecycle["errors"]).contains(&json!("post-client quiet interval timed out"))
+            );
+            assert_eq!(syns, 2);
+            assert!(unknown.packets > 0);
+        }
+        outputs.push(json!({"case":kind,"expected_result_verified":true,"capture_complete":expected,"packets":campaign.packets,"upload_ip_bytes":campaign.up,"download_ip_bytes":campaign.down,"total_ip_bytes":campaign.total(),"observed_syn_connections":syns,"unattributed_packets":unknown.packets,"pcap_sha256":hash(&pcap_bytes),"lifecycle_sha256":hash(&lifecycle_bytes),"fixture_sha256":hash(&read(&dir.join("fixture.json"))?),"cleanup_verified":true,"offload_states_verified":offload_states,"topology_command_count":commands.len()}));
+    }
+    Ok(
+        json!({"schema":"spiralcore.capture-qualification-independent-review.v1","run_id":40947946641u64,"source_revision":source.trim(),"status":"passed","qualification_kind":kind,"qualification_sha256":hash(&qual_bytes),"controller_receipt_sha256":qual["controller_sha256"],"cases":outputs,"checks":["full PCAP boundaries and IPv4 total lengths independent of snaplen","independent SYN ownership for this single-row fixed-endpoint fixture, including delayed packets and ongoing out-of-row connection","PCAP and lifecycle SHA256 bindings, final stats exact text, final counter equality","exact fixture-case copies and source/producer checksum-file binding","bounded successful topology commands, offloads, empty namespace process list, owned link/namespace deletions and final absence","server PID/starttime/exit/reap and expected complete/incomplete outcomes"],"limitations":["synthetic local Ethernet and plaintext TCP only; no WAN, TLS throughput or energy measurement","ordinary release identity is bound to producer checksum receipt and independently downloaded binary in separate custody review; instrumented executable identity is receipt-only","full stderr prefix is not retained, so its full-stream digest is not independently reconstructed","does not reinterpret failed prior captures or qualify a later workflow source"]}),
+    )
+}
+fn main() -> Result<()> {
+    let args = std::env::args_os().skip(1).collect::<Vec<_>>();
+    assert_eq!(args.len(), 2);
+    let root = PathBuf::from(&args[0]);
+    let mut result = check(&root, "capture-qualification")?;
+    result["reviewer_source_sha256"] = json!(hash(include_bytes!("ordinary-capture-review.rs")));
+    result["reviewer_executable_sha256"] = json!(hash(&read(&std::env::current_exe()?)?));
+    let mut f = OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(&args[1])?;
+    serde_json::to_writer_pretty(&mut f, &result)?;
+    f.write_all(b"\n")?;
+    f.sync_all()?;
+    println!(
+        "PASS:3 ordinary cases, independent PCAP/IP/SYN accounting, receipts and cleanup verified"
+    );
+    Ok(())
+}

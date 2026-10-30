@@ -1,0 +1,70 @@
+{
+  "schema": "spiralcore.independent-large-wan-qualification.v1",
+  "status": "passed",
+  "date": "2026-10-29",
+  "execution_scope": "Post-run Rust-only evidence analysis; no WAN, endpoint, benchmark or production build rerun",
+  "source_revision_reviewed": "f4e5e9afe6f3628ffe82e4553a88111f5bd6d126",
+  "compiler": {
+    "release": "1.97.1",
+    "commit": "8bab26f4f68e0e26f0bb7960be334d5b520ea452",
+    "native_target": "aarch64-apple-darwin",
+    "llvm": "22.1.6",
+    "flags": ["--edition", "2021", "-O"]
+  },
+  "hashes": {
+    "independent-review.rs": "558c89dfe3b76e39b212bdff5d3dae1c869fbfb9428d36bfa8096b6fd1b2eecc",
+    "independent-pcap-review.rs": "832e8966d3d7ce04d0a7b3df341ca85bab13cb03e99164c57fdacc52785b0300",
+    "independent-review-subset": "c5bfd4c5ecb3e29763f9d4e827891c2779de21425c825faedae8696a5fa01bd1",
+    "independent-review-subset-tests": "80d1883cfd7e4560f58e2dbea9e13382f59c3aff5cdc112f18ea4c29a734753a",
+    "independent-pcap-review": "1bd876fb8e183aec8b772a140bacc059c9b5c8979a22c2fdc2c5d95f9c438657",
+    "independent-review-with-ip-subset.json": "942730ffca3822eff94aa5366f815cf3478d0b73cde747385f9176146d678027",
+    "independent-pcap-review.json": "2f578ba40bddf36a81f4abd091549c75ea2f411a8b4bc0f308a677b67bbe9446",
+    "aggregate.json": "57d8fff51d5068e7184bf89b4829c8f140127dc90a5c9528ce5a238731a22e25"
+  },
+  "dependency_rlib_sha256": {
+    "libserde_json-1526d65a4d76f4d2.rlib": "2102453d1e47447f2d192f73b9ba71039752c02d6362b4810c6e0d3488e32da0",
+    "libsha2-edcd0ba55ef603fc.rlib": "ae7bb622357e3b2a2f6293cb3d361623f776928ef71c2ca77529bdb734830f87"
+  },
+  "results": {
+    "final_compile_exit_codes": [0, 0, 0],
+    "tests_passed": 4,
+    "tests_failed": 0,
+    "receipt_analysis_exit_code": 0,
+    "pcap_analysis_exit_code": 0,
+    "positive_input_setup_failures": 0,
+    "altered_aggregate_identity_rejected": ["schema", "run", "source", "rows"],
+    "overflow_rejected_in_optimized_tests": true,
+    "truncated_pcap_exit_code": 101,
+    "truncated_pcap_error": "UnexpectedEof: failed to fill whole buffer",
+    "truncated_pcap_success_output_bytes": 0
+  },
+  "verified": {
+    "canonical_operations": 180,
+    "global_paired_trials": 30,
+    "published_objects": 180,
+    "reopened_bytes_from_bound_verification_receipts": 3019898880,
+    "request_frames": 41490,
+    "reply_frames": 41490,
+    "author_metric_records_compared": 75,
+    "pcap_records_per_shard": [623204, 622210, 622806],
+    "pcap_ip_bytes_per_shard": [874670762, 874481754, 874556220],
+    "complete_capture_shards": [0, 1],
+    "combined_30_pair_ip_qualified": false,
+    "shard2_counter_difference_packets": 3,
+    "shard2_counter_difference_disposition": "unresolved; not proven missing transfer packets",
+    "descriptive_complete_subset_pairs": 20,
+    "descriptive_complete_subset_is_registered_30_pair_claim": false
+  },
+  "reproduction": "review-method.md",
+  "diagnostic_log_cleanup": {
+    "scope": "Only this reviewer's independent-*-build/run/test/negative text logs",
+    "preserved": "Actual commands/outcomes, expected negative error, source/executable identities, all scientific JSON and original packet captures",
+    "historical_artifacts": "The earlier independent-review executable and independent-review.json predate the subset addition; final qualification binds independent-review-subset and independent-review-with-ip-subset.json only."
+  },
+  "limitations": [
+    "Independent PCAP replay verifies campaign totals, not TCP row ownership; the latter relies on the separately reviewed strict capture parser.",
+    "Exact persisted-byte comparison was performed by the parent and bound by verification/checksum receipts, not rerun by this analysis.",
+    "Complete-shard subset is explicitly descriptive; the full thirty-pair IP claim remains unqualified.",
+    "Only the runner-to-Cloudflare relay leg is captured; full-path traffic and energy are not measured."
+  ]
+}

@@ -1,0 +1,87 @@
+{
+  "schema": "spiralcore.capture-linux-repair.v1",
+  "date": "2026-10-29",
+  "failed_attempt": {
+    "run_id": 40938652003,
+    "source_revision": "d96f458d49dc7d176972aa99c62cd9cb7c0f2d55",
+    "artifact_directory": "linux-attempt-2/capture-qualification/normal",
+    "tcpdump": "4.99.4",
+    "libpcap": "1.10.4",
+    "captured": 136,
+    "received": 137,
+    "reported_kernel_drops": 0,
+    "observed_syn_connections": 0,
+    "unattributed_packets": 136,
+    "first_packet": "SYN-ACK; initiating SYN absent",
+    "pcap_sha256": "22a3cf5b3ad846606866842dbd9106cf02e90d826ad536b7b086bd5e7f626004",
+    "capture_lifecycle_sha256": "058370494401539800d1aea4abf45318a0263c5ab9dc88e4c9c02d0162695f9b",
+    "capture_complete": false,
+    "wan_ran": false,
+    "artifacts_modified": false
+  },
+  "diagnosis": {
+    "classification": "source-supported inference consistent with missing first SYN; not instrumented distro-binary proof",
+    "mechanism": "libpcap temporarily filters at least one mmap frame in userspace after kernel filter installation; Ethernet inbound uses Linux PKTTYPE metadata halfword load unsupported by userspace BPF interpreter",
+    "historical_wan_gap_explained": false,
+    "counter_tolerance_or_subtraction": false
+  },
+  "repair": {
+    "fixture": "owned Linux veth and network namespace;198.18.0.1/30 to198.18.0.2/30 TCP443",
+    "filter": "host198.18.0.2 and tcp port443; no direction qualifier",
+    "scope": "synthetic plaintext Ethernet lifecycle qualification only; not WAN/TLS evidence",
+    "resources": "generated exclusive48bitnonce names, overlap checks, rootGNUtimeout5s+1sKILL process-group supervisor, outer8s deadline,64KiBpertoolstream, ownedPID/starttime, verifiedcleanup",
+    "strict_accounting_unchanged": true,
+    "linux_execution_status": "NOT_RUN",
+    "independent_source_review_status": "APPROVED by mvm_architect_security against final listed hashes; actual Linux runtime NOT_RUN",
+    "uncertain_ownership": "failed/timeout creation with present name is retained as uncertainownership/cleanupunverified; no deletion withoutattestedownership; failedqualification"
+  },
+  "red": [
+    {
+      "command": "cargo test --locked --manifest-path crates/spiralcore-transfer/Cargo.toml --bin spiralcore-capture-control",
+      "exit_code": 101,
+      "observed": "missing check_collisions, offloads_disabled and capture_filter functions"
+    },
+    {
+      "command": "cargo test --locked --manifest-path crates/spiralcore-transfer/Cargo.toml --bin spiralcore-capture isolated_veth_scope",
+      "exit_code": 101,
+      "observed": "missing qualify_scope function"
+    },
+    {
+      "command": "cargo test --locked --manifest-path crates/spiralcore-transfer/Cargo.toml --bin spiralcore-capture-control successful_creation_remains_owned",
+      "exit_code": 101,
+      "observed": "missing creation-aware command and privilegedtimeout helpers before source-review repair"
+    }
+  ],
+  "green": [
+    {
+      "command": "/Users/casey.allard/.cargo/bin/cargo test --locked --manifest-path crates/spiralcore-transfer/Cargo.toml --bin spiralcore-capture --bin spiralcore-capture-control",
+      "exit_code": 0,
+      "parser_passed": 27,
+      "controller_passed": 13,
+      "failed": 0,
+      "distinct_test_functions": 35
+    },
+    {
+      "command": "/Users/casey.allard/.cargo/bin/cargo clippy --locked --manifest-path crates/spiralcore-transfer/Cargo.toml --bin spiralcore-capture --bin spiralcore-capture-control -- -D warnings",
+      "exit_code": 0
+    }
+  ],
+  "source_sha256": {
+    "crates/spiralcore-transfer/src/capture_fixture.rs": "e5540d09d0a8a0c01d320dcbb51411cbee94e61feb0c95a323f9c6e1b4e968b9",
+    "crates/spiralcore-transfer/src/bin/spiralcore-capture-control.rs": "fd77d75fa485ed11b7763e6313d28d2ae6503dc1419c6f985777027c64ff517b",
+    "crates/spiralcore-transfer/src/bin/spiralcore-capture.rs": "de0b0c1a83960041841a9f36baaa9cfbf4d4b870898d8b49f0e82cae411e6518",
+    "crates/spiralcore-transfer/src/capture_lifecycle.rs": "a7ac530994ae2369a6b27a0654d2063477d820df37003dd9221d4c5dde34017d"
+  },
+  "review_findings_addressed": [
+    "privilegedactualcommandtree bounded underrootGNUtimeout; fixtureserverandcapturesignals use sameboundedpath",
+    "successfulrawcreationexit marksownershipbeforefalliblepipe/logprocessing; runtime readonlylogfailure test",
+    "creationintentprecedescall; uncertainownership/settlementfailsclosedwithoutunsafe deletion",
+    "syntheticreportincludes/excludes wording noTLSorrelayclaim"
+  ],
+  "review_completed": {
+    "reviewer": "mvm_architect_security",
+    "mode": "read-only source review; no reviewer tests or builds",
+    "prior_blockers_closed": true,
+    "live_linux_qualification_required": true
+  }
+}

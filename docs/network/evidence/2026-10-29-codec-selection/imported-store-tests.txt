@@ -1,0 +1,134 @@
+   Compiling libc v0.2.191
+   Compiling serde_core v1.0.229
+   Compiling cpufeatures v0.2.17
+   Compiling sha2 v0.10.9
+   Compiling uor-r4-object-store v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/uor-r4-object-store)
+   Compiling serde_json v1.0.154
+    Finished `release` profile [optimized] target(s) in 7.60s
+     Running unittests src/lib.rs (/Users/casey.allard/spiralcore/target/aarch64-apple-darwin/release/deps/uor_r4_object_store-6242997d105f4b9f)
+
+running 1 test
+test peer::tests::closure_excludes_records_from_other_objects ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/bin/objpeer.rs (/Users/casey.allard/spiralcore/target/aarch64-apple-darwin/release/deps/objpeer-41e19e57d95cc8ab)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/controls.rs (/Users/casey.allard/spiralcore/target/aarch64-apple-darwin/release/deps/controls-81a6700bf9a13cad)
+
+running 10 tests
+test backend_cannot_substitute_another_valid_record ... ok
+test io_failure_retains_machine_readable_kind_and_os_code ... ok
+test limits_refuse_before_fetch_or_publication ... ok
+test malformed_imports_are_atomic_and_export_order_is_independent ... ok
+test missing_frontier_and_unrelated_absence_are_explicit ... ok
+test partial_integrity_is_not_whole_integrity_or_utf8 ... ok
+test shape_padding_scale_and_manifest_tampering_refuse ... ok
+test repeated_content_keeps_occurrence_multiplicity ... ok
+test bounded_restart_and_failed_load_preserve_existing_store ... ok
+test every_small_range_and_carry_boundary_is_exact ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.14s
+
+     Running tests/hardening.rs (/Users/casey.allard/spiralcore/target/aarch64-apple-darwin/release/deps/hardening-182142c3bbd20ab3)
+
+running 16 tests
+test done_does_not_consume_a_manifest_or_fetch_request_budget ... ok
+test only_eof_at_a_frame_boundary_is_clean ... ok
+test configured_peer_budgets_fail_without_publication ... ok
+test invalid_padding_is_rejected_before_publication_or_done ... ok
+test done_requires_an_empty_body ... ok
+test cached_parent_does_not_hide_missing_descendants ... ok
+test corrupt_truncated_and_oversized_responses_do_not_publish ... ok
+test retained_store_quota_failure_preserves_existing_cache ... ok
+test serving_enforces_selected_closure_and_independent_response_budgets ... ok
+test small_in_flight_budget_reduces_batch_instead_of_rejecting_a_single_record ... ok
+test verify_traverses_below_cached_parents ... ok
+test whole_transfer_work_is_cumulative_and_exactly_bounded ... ok
+test wrong_root_scale_cannot_be_committed ... ok
+test save_respects_live_writer_ownership ... ok
+
+running 1 test
+test ownership_is_released_by_process_exit_without_drop ... ok
+test guarded_restart_ignores_abandoned_temporary_files ... ok
+
+test result: ok. 16 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/objpeer_cli.rs (/Users/casey.allard/spiralcore/target/aarch64-apple-darwin/release/deps/objpeer_cli-11e7091731595af6)
+
+running 23 tests
+test packaged_cli_join_rejects_a_wrong_pin_without_writing_the_store ... ok
+test packaged_cli_join_folds_the_exact_bytes_that_passed_its_pin ... ok
+test packaged_cli_info_folds_an_artifact ... ok
+test packaged_cli_fleet_verify_and_select ... ok
+test packaged_cli_rejects_flags_that_the_subcommand_ignores ... ok
+test packaged_cli_join_pins_a_local_artifact ... ok
+test packaged_cli_multi_replica_audit ... ok
+test packaged_cli_multi_replica_reports_unknown_on_one_replica ... ok
+test packaged_cli_batch_verify_uses_one_session ... ok
+test packaged_cli_repair_reports_unavailable_targets ... ok
+test packaged_cli_sync_fails_over_from_a_dead_replica ... ok
+test packaged_cli_sync_fails_over_when_first_replica_lacks_the_target ... ok
+test packaged_cli_repair_restores_split_targets ... ok
+test packaged_cli_sync_batch_flag_pulls_exactly ... ok
+test packaged_cli_verify_reports_a_stale_store ... ok
+test packaged_cli_verify_retries_after_a_cut_connection ... ok
+test packaged_cli_sync_targets_into_directory ... ok
+test packaged_cli_pull_batch_flag_pulls_exactly ... ok
+test packaged_cli_verify_targets_file_with_json ... ok
+test packaged_cli_retries_after_a_cut_connection ... ok
+test packaged_cli_enforces_a_whole_sha256_pin ... ok
+test packaged_cli_replicates_a_delta_between_processes ... ok
+test packaged_cli_fetch_window_pipelines_under_latency ... ok
+
+test result: ok. 23 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 5.95s
+
+     Running tests/peer.rs (/Users/casey.allard/spiralcore/target/aarch64-apple-darwin/release/deps/peer-37f55579875ca5c3)
+
+running 15 tests
+test a_wrong_expected_identity_is_rejected_before_import ... ok
+test record_accessors_expose_native_record_bytes ... ok
+test multi_object_serve_selects_by_sha_and_rejects_unknown ... ok
+test pull_series_fetches_two_objects_on_one_session ... ok
+test verify_reports_a_stale_store_without_fetching ... ok
+test identical_store_pulls_no_records ... ok
+test verify_series_checks_several_objects_on_one_session ... ok
+test verify_series_continues_after_an_unknown_selector ... ok
+test verify_series_pipelines_more_than_one_window ... ok
+test concurrent_sessions_share_one_read_only_store ... ok
+test whole_sha256_pin_accepts_the_right_object_and_rejects_another ... ok
+test deduplicated_dag_nodes_are_requested_once ... ok
+test cold_pull_completes_a_one_mib_object ... ok
+test partial_store_pulls_only_novel_records_and_rebuilds_exactly ... ok
+test scattered_edits_cost_paths_not_payload ... ok
+
+test result: ok. 15 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.30s
+
+     Running tests/protocol_vectors.rs (/Users/casey.allard/spiralcore/target/aarch64-apple-darwin/release/deps/protocol_vectors-bf08878f882a9d01)
+
+running 1 test
+test protocol_v1_vectors_are_stable ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/showcase.rs (/Users/casey.allard/spiralcore/target/aarch64-apple-darwin/release/deps/showcase-5ea6cd89e36b20e6)
+
+running 5 tests
+test blake2b_96_record_identity_matches_supplied_leaf_and_parent_answers ... ok
+test retained_known_answers_are_hash_pinned ... ok
+test all_four_original_fixture_records_match_the_historical_wire_hashes ... ok
+test supplied_fold_known_answers_cover_padding_and_ternary_carries ... ok
+test supplied_reference_and_novel_mebibyte_roots_match ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.11s
+
+     Running unittests examples/exact_bytes.rs (/Users/casey.allard/spiralcore/target/aarch64-apple-darwin/release/examples/exact_bytes-a877d9d8c3feebc6)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

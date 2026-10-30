@@ -1,0 +1,36 @@
+{
+  "schema": "spiralcore.large-wan.receiver-qualification.v1",
+  "source": "f4e5e9afe6f3628ffe82e4553a88111f5bd6d126",
+  "target": "aarch64-apple-darwin",
+  "toolchain": "1.97.1",
+  "features": ["hardware-sha256"],
+  "cargo_target_dir": "/Users/casey.allard/spiralcore/target",
+  "test_command": "cargo +1.97.1 test --release --locked --manifest-path crates/spiralcore-transfer/Cargo.toml --target aarch64-apple-darwin --features hardware-sha256 --all-targets",
+  "routine_tests": {"passed":128,"failed":0,"explicit_large_qualification_excluded_from_routine_suite":1},
+  "doctest": {"passed":1,"failed":0},
+  "clippy_all_targets_warnings_denied": "passed",
+  "format_check": "passed",
+  "release_bins": "passed",
+  "full_local_shard": {
+    "plan":"local-check/plan.json",
+    "receipts":"local-check/rows.jsonl",
+    "verification":"local-check/verification.json",
+    "status":"exact",
+    "operations":60,
+    "bytes_reopened_and_compared":1006632960,
+    "method":"same canonical v3 shard, separate fresh local-only run ID and cache; raw/zstd/sparse, ten paired trials; actual loopback HTTP; closed/reopened durable byte comparison"
+  },
+  "coverage_discovery_attempt": {
+    "outcome":"no coverage produced",
+    "cause":"coverage tool subprocess resolved bare cargo to cargo-ai",
+    "repair":"command-local PATH prepends /Users/casey.allard/.cargo/bin; source and coverage options unchanged",
+    "rerun":"passed; separate coverage.json",
+    "covered_lines":5310,
+    "total_lines":5943,
+    "line_percent":89.34881373043916,
+    "function_percent":91.07883817427386,
+    "region_percent":86.12504478681477,
+    "branch_coverage":"not collected; no branch percentage claim"
+  },
+  "production_change_scope":"benchmark/workflow only; endpoint, codecs, client, WAN adapter and default limits unchanged from f0966eb"
+}

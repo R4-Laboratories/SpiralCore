@@ -1,0 +1,82 @@
+{
+  "schema": "spiralcore.wan.qualification.v1",
+  "measured_source_revision": "55ded7630f4a53476118bb00a9355fcd26952793",
+  "github_run": "https://github.com/R4-Laboratories/SpiralCore/actions/runs/40817487041",
+  "status": {
+    "object_fidelity": "verified_exact",
+    "protocol_body_measurements": "906_successful_operations",
+    "per_transfer_ip_accounting": "incomplete",
+    "mvm": "not_run"
+  },
+  "verification": {
+    "bytes_compared": 1044381786,
+    "comparison": "byte-for-byte after reopening receiver cache",
+    "qualification_outside_transfer_timing": true,
+    "receipts_verified": 906,
+    "run": "856ac06cdac471ac8e6452343154bd35fa80d263128d1fd0b8563f080194f1b6",
+    "schema": "spiralcore.wan.verification.v1",
+    "status": "exact"
+  },
+  "expected_tasks": 575,
+  "distinct_publications": 845,
+  "retained_payload_bytes": 964690010,
+  "retained_object_files_bytes": 964758295,
+  "campaign_wall_seconds": 473.640059853,
+  "seed_operations": 331,
+  "transfer_operations": 575,
+  "total_http_body_bytes": 1045067178,
+  "sender_cpu_seconds_sum": 34.996381,
+  "receiver_handler_cpu_seconds_sum": 138.904275,
+  "receiver_origin_process_cpu_seconds_delta": 144.82,
+  "receiver_tunnel_process_cpu_seconds_delta": 53.91,
+  "receiver_rss_sampled_max_kib": 123120,
+  "tunnel_rss_sampled_max_kib": 49200,
+  "rss_limit": "5-second samples; not proven peaks; sender RSS not sampled",
+  "captured_runner_leg_ip_bytes": 1094144794,
+  "capture_complete": false,
+  "capture_incomplete_reasons": [
+    "unresolved_capture_counter_difference",
+    "packets_without_unambiguous_connection_owner",
+    "measurement_row_without_captured_packets",
+    "capture_below_published_application_body_bytes"
+  ],
+  "unattributed_captured_ip_bytes": 62277586,
+  "capture_reanalysis": {
+    "source_revision": "32a486797c8008f9b01766dfd7dec04f2d97efba",
+    "binary_sha256": "eb31b2c64f85ee4368cb9ee52866c82227bce3667ced3ba60cbfac393222e800",
+    "captured": 840479,
+    "received": 840480,
+    "kernel_drops": 0
+  },
+  "cleanup": {
+    "owned_origin_and_tunnel_stopped": true,
+    "temporary_github_variables_deleted": true,
+    "temporary_github_secret_deleted": true,
+    "private_capabilities_deleted": true,
+    "paid_vm_provisioned": false
+  },
+  "limitations": [
+    "Synthetic public data on one actual Internet relay path, without deliberate shaping",
+    "HTTP-body bytes include binary protocol framing and both directions; exclude HTTP headers, TLS and IP overhead",
+    "No complete per-transfer IP accounting claim; original capture reports are retained unchanged",
+    "Cloudflare terminates TLS; no end-to-end encryption or FIPS claim",
+    "30 paired trials per 1 MiB arm; 16 MiB arms have one trial only",
+    "No rsync/VCDIFF baseline, direct peer path, three-peer recovery or MVM run",
+    "Receiver handler CPU excludes relay/socket work; whole-process deltas include idle/setup intervals",
+    "Exactness is established for tested bytes by independent persisted-cache comparison; no universal performance claim"
+  ],
+  "validation": {
+    "measured_revision_transfer_tests_passed": 74,
+    "reanalysis_revision_transfer_tests_passed": 77,
+    "test_command": "cargo test --locked --manifest-path crates/spiralcore-transfer/Cargo.toml --all-targets",
+    "clippy_all_targets_warnings_denied": "passed",
+    "cargo_fmt_check": "passed",
+    "release_all_bins": "passed",
+    "rustc": "rustc 1.97.1 (8bab26f4f 2026-07-14)",
+    "coverage_scope": "88.58595194085026 percent line coverage at the measured implementation before the three capture-counter regressions; branch coverage was not instrumented",
+    "original_local_files_preserved_sha256": 7,
+    "fresh_origin_main": "23380f00afb78a5712306f0001c6ad7499d5fbaa"
+  },
+  "distinct_publications_meaning": "distinct (scope, ObjectId) entries",
+  "distinct_content_object_ids": 151
+}

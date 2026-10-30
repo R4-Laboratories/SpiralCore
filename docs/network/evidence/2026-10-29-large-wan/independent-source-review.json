@@ -1,0 +1,81 @@
+{
+  "schema": "spiralcore.independent-source-review.v1",
+  "review_date": "2026-10-29",
+  "reviewer": "mvm_architect_security",
+  "verdict": "approved_source_review_no_blocking_findings",
+  "observed_worktree_head": "867ad3338b6e8c0ba708259cb8103fd4dac0f5d0",
+  "baseline": "f0966ebedcb8994f0985b54e9a2b961eeb8be914",
+  "reviewed_files": [
+    {
+      "path": "/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer/src/bin/spiralcore-bench.rs",
+      "sha256": "8c1f8f123f7f442083171d6e927046b17ba00b15bfdca2e3d521c11193c9f648"
+    },
+    {
+      "path": "/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer/tests/benchmark.rs",
+      "sha256": "bb1c20379aa20202109a4d962ba299aff624cec154f134f18f5199f4641cd11d"
+    },
+    {
+      "path": "/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/.github/workflows/spiralcore-wan.yml",
+      "sha256": "fe445b46b4f84417fde0459874bdebea38ac286543e09341fcb28a14d3a6e596"
+    },
+    {
+      "path": "/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/docs/plans/2026-10-29-cache-profile-and-large-wan.md",
+      "sha256": "83973a4ce0a256b2076f1a17d440ad5e70f491100ce0bf27bbd0f703c67df5dc"
+    },
+    {
+      "path": "/Users/casey.allard/spiralcore/local/large-wan-20261029/analysis/src/main.rs",
+      "sha256": "cd9157fb14f4416a0072953a4b533279e0a7f8fc0fbf04dcbd68e8f2b29c680b"
+    },
+    {
+      "path": "/Users/casey.allard/spiralcore/local/cache-profile-20261029/snapshot/crates/spiralcore-transfer/src/endpoint.rs",
+      "sha256": "65cf91031ba6eec30d55ffc07fb38b506941d992fcaf53bdef4bbb0e50019468"
+    },
+    {
+      "path": "/Users/casey.allard/spiralcore/local/cache-profile-20261029/snapshot/crates/spiralcore-transfer/src/scan_profile.rs",
+      "sha256": "f65290619a74067b426df3b6b248a9b39fed367bafd26cbbacca0a681bd35fe2"
+    },
+    {
+      "path": "/Users/casey.allard/spiralcore/local/cache-profile-20261029/src/lib.rs",
+      "sha256": "ae1f48d670c6f0ad41e6a527ed74ee428e601e42dcfeb44622e07154bc93ab47"
+    }
+  ],
+  "analysis_identity": {
+    "manifest_sha256": "4df9b8b043faeabc30b8859eaf9a1cc214fbcb4d36a903c8fae18d7c40ee3fd7",
+    "lock_sha256": "8b085b0f09354e391fcc3489888c2fe720a0c4e1367cfd65842252389fdf978f",
+    "executable_sha256": "d10758bcf1db6f2bc683d6cbd39b898cbff8b1c508a4df250edd1da87a32fba4",
+    "qualification_sha256": "64c9161cc1e32f7d5b85abc3e27d4ada9fb4a84b2b1ef0af0a700180fe52817d",
+    "executable_hash_rechecked": true
+  },
+  "review_checks": {
+    "benchmark": "Canonical v3 shard/task/scope/seed equality and canonical fixture ObjectId validation; isolated real Raw seeds, absent modified targets, sparse mode required, timed retained-state teardown; six arm permutations each five times globally. Existing v1/v2 None-shard serialization preserved.",
+    "quotas": "Each shard has 30 tasks and 60 publications: 960 MiB payload plus 240 KiB conservative allowance below existing 1 GiB cache quota; each namespace retains 32 MiB. Existing 16 MiB batched-object, 20 MiB/512-frame HTTP and endpoint limits unchanged.",
+    "workflow": "Exact-source and first-attempt gates, restricted quoted shard arguments, task-scoped capability, no persisted checkout credential, TLS hostname with IP pinning, mandatory offload checks and capture cleanup retained. Sender and receiver features recorded separately.",
+    "analysis": "Complete 180-row matrix, global trial pairing, midpoint medians, nearest-rank p95, checked per-row combined CPU and seed-plus-update sums; paired geometric means and registered median-body/wall gate correct. No production mutations or external actions.",
+    "instrumentation": "Original scan filesystem calls, predicate order, checked sums and errors retained inside snapshot-only closure. Fixed-size thread-local counters add no per-entry heap allocation. Reset/take outside handler clocks; scan clock is a handler subset. Counts represent Rust API call sites, not OS syscalls."
+  },
+  "resolved_findings": [
+    {
+      "issue": "Analysis input cap was checked after reading the full file.",
+      "resolution": "Re-reviewed bounded_text: File::open then Read::take(8 MiB + 1), followed by size rejection before parsing. Valid-data calculations unchanged.",
+      "status": "closed"
+    }
+  ],
+  "qualification_evidence": {
+    "reviewer_reran_builds_tests_or_measurements": false,
+    "analysis_producer_record": "qualification.json reports three RED-to-GREEN tests passing, strict clippy and release build passing; independently read, not rerun.",
+    "benchmark_producer_report": "transport_audit reports final formatted source; six unit tests plus seven integration tests passed, and explicit release first-pair qualification passed six real 16 MiB HTTP operations across all three arms with exact reopened bytes and one HTTP request per row. Strict clippy and format checks passed. These executions were not rerun by this reviewer."
+  },
+  "remaining_gates": [
+    "Parent's complete 60-operation local-shard qualification and required full checks before WAN dispatch.",
+    "Three fresh receiver caches/tokens/tunnels and exact source pins for the measured campaign.",
+    "Per-shard canonical receipt and exact reopen verification, with hashes binding verification to the same rows used by analysis.",
+    "Separate capture completeness qualification before any packet/IP byte claim."
+  ],
+  "limitations": [
+    "Source approval is not a measured WAN result or production scan speedup.",
+    "Instrumented scan timing includes diagnostic overhead and cannot establish an uninstrumented optimization gain.",
+    "Analysis counts HTTP bodies, not complete path traffic; CPU is sender plus receiver handler, not energy.",
+    "Raw/zstd attempt bounded optional DAG preparation while sparse skips it; readiness/CPU asymmetry remains disclosed.",
+    "Analysis does not replace canonical plan or exact reopened-byte verification."
+  ]
+}

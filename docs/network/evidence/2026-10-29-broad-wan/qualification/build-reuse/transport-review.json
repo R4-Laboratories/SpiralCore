@@ -1,0 +1,51 @@
+{
+  "schema": "spiralcore.source-review.v1",
+  "reviewer": "transport_audit",
+  "date": "2026-10-29",
+  "status": "approved_source_and_local_guard_checks; fresh_source_pinned_producer_and_consumer_qualification_required",
+  "scope": "Artifact-reuse workflow and native provenance validator; no WAN execution",
+  "source_sha256": {
+    ".github/workflows/spiralcore-wan.yml": "03d5e15d77da17c13aa039c3d20ea825721d310de6fe8017115f458847650937",
+    "tools/wan-build-manifest/src/lib.rs": "4ce4a9da355593deaf3e168588516d1f163a197e0aba7f170f286b702f188207",
+    "tools/wan-build-manifest/src/main.rs": "b41113de53202d4c356765a017690aed838adf4878fe5616c2531fe704240397",
+    "tools/wan-build-manifest/Cargo.toml": "a74c67297ac710c49f796c3baedc7c4348a057b62911637bb34efe073b9d1520",
+    "tools/wan-build-manifest/Cargo.lock": "68189d3b0f27d3674ab64020c2d813eff1a8754323c4584ff1496cda79fe201f",
+    "tools/wan-build-manifest/tests/cli.rs": "4285cd6852fef05ae85e4d3d6426e73a9da8ca03a137e822b04e88ba46651875",
+    "tools/wan-build-manifest/tests/workflow_guard.rs": "a027dc82bc8f8133684ffd83a8989ae4b3e79e4fcb57e8a664d54546f40a8879"
+  },
+  "checked": [
+    "Paired explicit numeric producer run/artifact pins; no reuse pins during qualification-only mode",
+    "Completed first-attempt same-source same-repository workflow proof with successful fresh source build and capture step",
+    "Exact immutable artifact ID/name/run/source/lifetime and authenticated SHA256/size before ZIP parsing",
+    "Bounded central-directory metadata, exactly four distinct flat regular nonencrypted entries, no overlapping data ranges",
+    "Fixed private output paths and per-file extraction size limits; archived permissions discarded",
+    "Typed bounded manifest, compiler/target/features/lock identity and every binary length/hash verified before copying/chmod/execution",
+    "Capture qualification binds packaged controller hash; fresh consumer capture qualification still runs",
+    "Capability token remains restricted to the WAN step; no token is put in sender artifacts",
+    "Existing per-shard plan/measurement semantics and no measured-retry policy remain unchanged"
+  ],
+  "finding_closed": {
+    "description": "Wrong-schema/passed-false CLI tests omitted required controller digest and failed deserialization before intended branches",
+    "repair": "Both mutations now include the valid packaged-controller digest; independent wrong-controller negative remains",
+    "author_targeted_cli_tests_passed": 5
+  },
+  "reviewer_executed": [
+    {"command": "/Users/casey.allard/.cargo/bin/cargo test --locked --manifest-path tools/wan-build-manifest/Cargo.toml --test workflow_guard", "exit_code": 0, "test_functions_passed": 2, "configuration_cases_checked": 91},
+    {"command": "/bin/bash -n local/broad-wan-20261029/run-shard.sh", "exit_code": 0},
+    {"command": "/bin/bash local/broad-wan-20261029/run-shard.sh invalid-case 0", "exit_code": 2, "expected_rejection_before_network_or_file_work": true},
+    {"command": "/bin/bash local/broad-wan-20261029/run-shard.sh localized_32 5", "exit_code": 1, "expected_rejection_before_network_or_file_work": true}
+  ],
+  "shell": "GNU Bash3.2.57(1)-release, arm64-apple-darwin26",
+  "script_checkpoint": {
+    "path": "local/broad-wan-20261029/run-shard.sh",
+    "sha256": "52babc4d71be1789c066160517397593d7687adc3f13150e1320befe56dc816c",
+    "status": "Explicit-exit successor checked; future producer-custody integration requires refreshed hash/review",
+    "recommendation": "Check both selected BUILD_RUN and BUILD_ARTIFACT against local producer custody before starting origin/tunnel"
+  },
+  "limitations": [
+    "Source review and local guard execution do not establish the new artifact producer/download path on GitHub",
+    "The reviewer read the author's20-test final log but independently reran only the two guard test functions",
+    "The original80-case shell receipt and earlier source-only orchestrator review are superseded as operational rejection evidence",
+    "No WAN transfer, credential creation or remote resource launch was performed by this review"
+  ]
+}

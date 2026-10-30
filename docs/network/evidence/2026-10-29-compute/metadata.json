@@ -1,0 +1,82 @@
+{
+  "schema": "spiralcore.local-cpu-diagnostic.v1",
+  "date": "2026-10-29",
+  "source_revision": "397ea5eb9c303d618b0c35d66fa898228e9e0f4b",
+  "library_build_started_at_revision": "32a486797c8008f9b01766dfd7dec04f2d97efba",
+  "wan_reference_revision": "55ded7630f4a53476118bb00a9355fcd26952793",
+  "source_identity_check": "git diff --stat was empty across all three revisions for spiralcore-transfer dag/client/endpoint/lib and all uor-r4-object-store src files",
+  "library_build": {
+    "cwd": "/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer",
+    "argv": [
+      "/Users/casey.allard/.cargo/bin/cargo",
+      "build",
+      "--release",
+      "--lib",
+      "--locked"
+    ]
+  },
+  "probe_compile_argv": [
+    "/Users/casey.allard/.cargo/bin/rustc",
+    "--edition=2021",
+    "-C",
+    "opt-level=3",
+    "-L",
+    "dependency=/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer/target/release/deps",
+    "--extern",
+    "spiralcore_transfer=/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer/target/release/deps/libspiralcore_transfer-b57fa0a95019e9e4.rlib",
+    "--extern",
+    "uor_r4_object_store=/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer/target/release/deps/libuor_r4_object_store-e938ba7f40198ee3.rlib",
+    "--extern",
+    "cpu_time=/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer/target/release/deps/libcpu_time-cc58d96298bfdd0e.rlib",
+    "/Users/casey.allard/spiralcore/local/perf-20261029/probe.rs",
+    "-o",
+    "/Users/casey.allard/spiralcore/local/perf-20261029/probe"
+  ],
+  "probe_run_argv": [
+    "/Users/casey.allard/spiralcore/local/perf-20261029/probe"
+  ],
+  "probe_stdout_path": "/Users/casey.allard/spiralcore/local/perf-20261029/results.jsonl",
+  "platform": {
+    "cpu": "Apple M1",
+    "logical_cpus": 8,
+    "memory_bytes": 17179869184,
+    "rustc": "1.97.1 (8bab26f4f 2026-07-14)",
+    "target": "aarch64-apple-darwin",
+    "llvm": "22.1.6"
+  },
+  "timing": {
+    "clock": "std::time::Instant wall time and cpu_time::ProcessTime CPU time",
+    "warmups": 1,
+    "sequential_samples_per_operation": 7,
+    "batch": "100 operations per sample for whole-object hash and Vec clone; one operation per sample otherwise",
+    "reported": "per-operation min/median/max microseconds, seven sequential samples",
+    "deallocation": "returned values are black_box'ed and dropped inside timed interval"
+  },
+  "fixture": {
+    "bytes": 1048576,
+    "generator": "xorshift64 from state 0x9e3779b97f4a7c15; shifts 13,7,17; emit low byte after each update",
+    "localized": "XOR 0xa5 into bytes 524288..524320",
+    "scattered": "XOR 0xa5 into 32 bytes at each i*32768, i=0..31",
+    "prefix": "prepend 0xa5; length becomes 1048577",
+    "periodic": "byte[i] = i % 64",
+    "fidelity": "strict graph rebuild equality asserted for every fixture before timing"
+  },
+  "limitations": [
+    "Local diagnostic for cost ranking only; not a new WAN experiment or a measured optimization.",
+    "No energy, power, temperature, frequency, receiver publication, network, disk fsync or relay costs were measured.",
+    "Host was not isolated. Legacy fold wall samples show large scheduling/wait outliers; prefer CPU columns for this diagnostic.",
+    "Graph phases overlap in functionality: separately measured component medians must not be added or subtracted as an exact decomposition.",
+    "Repeated operations share warm process/page caches. No production sources, protocol identifiers or hash algorithms were changed.",
+    "sha2 0.10.9 was built with default/std features and no asm feature; installed source selects the soft backend on aarch64 in this configuration."
+  ],
+  "files": {
+    "probe_source": "probe.rs",
+    "probe_executable": "probe",
+    "results": "results.jsonl",
+    "hashes": "checksums.sha256",
+    "compiler": "rustc.txt",
+    "platform": "platform.txt",
+    "hardware": "hardware.txt",
+    "sha2_features": "sha2-features.txt"
+  }
+}

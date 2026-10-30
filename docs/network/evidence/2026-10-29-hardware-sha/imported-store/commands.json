@@ -1,0 +1,91 @@
+{
+  "schema": "spiralcore.imported-store.commands.v1",
+  "working_directory": "/Users/casey.allard/spiralcore",
+  "commands": [
+    {
+      "mode": "software",
+      "kind": "all-targets",
+      "argv": [
+        "/Users/casey.allard/.cargo/bin/cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "--manifest-path",
+        "/Users/casey.allard/spiralcore/local/sha-qualification-20261029/imported-store/snapshot/Cargo.toml",
+        "--target",
+        "aarch64-apple-darwin",
+        "--target-dir",
+        "/Users/casey.allard/spiralcore/local/sha-qualification-20261029/imported-store/target",
+        "--all-targets"
+      ]
+    },
+    {
+      "mode": "hardware",
+      "kind": "all-targets",
+      "argv": [
+        "/Users/casey.allard/.cargo/bin/cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "--manifest-path",
+        "/Users/casey.allard/spiralcore/local/sha-qualification-20261029/imported-store/snapshot/Cargo.toml",
+        "--target",
+        "aarch64-apple-darwin",
+        "--target-dir",
+        "/Users/casey.allard/spiralcore/local/sha-qualification-20261029/imported-store/target",
+        "--all-targets",
+        "--features",
+        "hardware-sha256"
+      ]
+    },
+    {
+      "mode": "software",
+      "kind": "exact_bytes",
+      "argv": [
+        "/Users/casey.allard/.cargo/bin/cargo",
+        "run",
+        "--locked",
+        "--offline",
+        "--manifest-path",
+        "/Users/casey.allard/spiralcore/local/sha-qualification-20261029/imported-store/snapshot/Cargo.toml",
+        "--target",
+        "aarch64-apple-darwin",
+        "--target-dir",
+        "/Users/casey.allard/spiralcore/local/sha-qualification-20261029/imported-store/target",
+        "--example",
+        "exact_bytes",
+        "--",
+        "/Users/casey.allard/spiralcore/local/sha-qualification-20261029/imported-store/software-exact-bytes.store"
+      ]
+    },
+    {
+      "mode": "hardware",
+      "kind": "exact_bytes",
+      "argv": [
+        "/Users/casey.allard/.cargo/bin/cargo",
+        "run",
+        "--locked",
+        "--offline",
+        "--manifest-path",
+        "/Users/casey.allard/spiralcore/local/sha-qualification-20261029/imported-store/snapshot/Cargo.toml",
+        "--target",
+        "aarch64-apple-darwin",
+        "--target-dir",
+        "/Users/casey.allard/spiralcore/local/sha-qualification-20261029/imported-store/target",
+        "--example",
+        "exact_bytes",
+        "--features",
+        "hardware-sha256",
+        "--",
+        "/Users/casey.allard/spiralcore/local/sha-qualification-20261029/imported-store/hardware-exact-bytes.store"
+      ]
+    }
+  ],
+  "exit_codes": [
+    0,
+    0,
+    0,
+    0
+  ],
+  "tests_are_not_measurements": true
+}

@@ -1,0 +1,59 @@
+{
+  "schema": "spiralcore.sha-independent-author-analysis-crosscheck.v1",
+  "status": "passed",
+  "experiment": "SC-OPT-003",
+  "independent_first_review_sha256": "97cfffe2211381603c31d31ef44cc094913d097272f11601e13018d5060f8584",
+  "author_analysis_sha256": "e7979a66aca6a64d6c642b2b8b922cddb91246e27f70b86a1876dd59de894c75",
+  "author_summary_sha256": "80c257a7d8662c0eac003797e8ec35882627127531c96a7403fc918d2ec942ea",
+  "crosscheck_method_sha256": "58116fbdaf0323d0690397dc547d0bec320dcf01337e374b2aeaeac905cd1e22",
+  "cells": 16,
+  "metrics_per_cell": 21,
+  "complete_metric_records_verified": 336,
+  "complete_metric_records_exactly_equal": 334,
+  "floating_rounding_differences": [
+    {
+      "population": 0,
+      "arm": "raw-node-budget-262144",
+      "metric": "dispatch_wall_ns",
+      "field": "paired_software_over_hardware_geomean",
+      "independent": 1.7972658007201998,
+      "author": 1.7972658007202,
+      "absolute_difference": 2.220446049250313e-16,
+      "binary64_steps": 1.0
+    },
+    {
+      "population": 64,
+      "arm": "raw-node-budget-262144",
+      "metric": "reopen_verify_wall_ns",
+      "field": "paired_software_over_hardware_geomean",
+      "independent": 3.008846511991057,
+      "author": 3.0088465119910577,
+      "absolute_difference": 8.881784197001252e-16,
+      "binary64_steps": 2.0
+    },
+    {
+      "population": 64,
+      "arm": "raw-node-budget-262144",
+      "metric": "reopen_verify_wall_ns",
+      "field": "geomean_implied_reduction_fraction",
+      "independent": 0.667646722418464,
+      "author": 0.6676467224184641,
+      "absolute_difference": 1.1102230246251565e-16,
+      "binary64_steps": 1.0
+    }
+  ],
+  "raw_clock_metrics": 320,
+  "independently_derived_begin_plus_finish_metrics": 16,
+  "checks": [
+    "All eight original values and paired ratios per metric match.",
+    "All midpoint medians, p95/maxima, paired median/min/max, wins and ties match exactly.",
+    "Derived geometric means and reduction fractions agree within at most two binary64 steps in three fields; every other scalar is exact.",
+    "All three registered gates, source/executable identities and seven artifact pins match."
+  ],
+  "report_wording_review": {
+    "blockers": [],
+    "editorial_note": "The author summary phrase \"126/128 observations\" refers to 128 paired wall comparisons across 256 observations; the parent will use paired comparisons in the main report. Displayed millisecond rounding is not authoritative over retained exact nanosecond arrays.",
+    "scope": "The author summary distinguishes local process scope, unchanged modeled bytes, excluded setup/reopen work, small-stage negatives, default-off deployment, and unqualified WAN/energy/FIPS claims."
+  },
+  "no_additional_measurements": true
+}

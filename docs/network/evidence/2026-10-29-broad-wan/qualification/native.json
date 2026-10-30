@@ -1,0 +1,100 @@
+{
+  "schema": "spiralcore.broad-wan.native-qualification.v1",
+  "registered_revision": "9c9650d",
+  "source_binding": "Tested working-tree SHA256s; final commit follows these tests.",
+  "source_sha256": {
+    ".github/workflows/spiralcore-wan.yml": "4f4e29d266ae16c8fddeed6ba7871b933a86b9457bb760335e0f17fa34ef48dc",
+    "crates/spiralcore-transfer/src/bin/spiralcore-bench.rs": "aea8bb8169ab116758a1e727a16298906d3a3cb220b8135c7104a46c6a5752c4",
+    "crates/spiralcore-transfer/src/bin/spiralcore-capture.rs": "747b734cb6ab0dcf99437536221835d51396b790c059e7e8e604879529946dd3",
+    "crates/spiralcore-transfer/src/bin/spiralcore-wan.rs": "34520e8f7908ae5cce73daf885b80cb493c2bf23e0823e47e5de55b8198a68e1",
+    "crates/spiralcore-transfer/src/bin/spiralcore.rs": "69bd904b005de1a0b8711e1040e1a2f2cdcbaefa5d711af134061a3aa0466432",
+    "crates/spiralcore-transfer/src/client.rs": "ed61e65e25e3ce2af71775f005dbd3c214ac448b38f64b7a819a59315e83d556",
+    "crates/spiralcore-transfer/src/endpoint.rs": "2e7ba232ea4be8d22a7b90a1a601037be1520fb70175f494fea989fa98a8c5b4",
+    "crates/spiralcore-transfer/src/lib.rs": "8f966af9ce09cabb6ef315d0b0ebf65f9bfa6b4b53e85ed506c854d3e0f5dd3d",
+    "crates/spiralcore-transfer/src/protocol.rs": "65fa50275a1487b937040c0f03de3cdeba8e49ce563e78d0bcb3763006804e6a",
+    "crates/spiralcore-transfer/tests/benchmark.rs": "c427f0567ccfbf13d4f2adfb763f6def472ea8b770c51913f1bd400e4d22a11b",
+    "crates/spiralcore-transfer/tests/wan.rs": "4c5f3a7246819e4716ffac3ac027163eb8beb5d6ab43d1f196e6715e0432354a",
+    "crates/spiralcore-transfer/src/bin/spiralcore-capture-control.rs": "187ee12c792c775575a820506901b6f0e8147962ff7d8df55712e6303b52ec64",
+    "crates/spiralcore-transfer/src/capture_lifecycle.rs": "b06d45a755a40741bf426c0ead3f9b8b2f752fc8acef0ffcf248ddf84761d722",
+    "crates/spiralcore-transfer/src/zstd_prefix.rs": "9dc354aa1b7fce59a73839a5299a4f5f5f245115ec00744e18ecfb2452077569",
+    "crates/spiralcore-transfer/tests/warm_policy.rs": "74c8dbd14d877dc5af2bd07fc2d24b7497b6c63d1aec85e21f357aa334debde4",
+    "crates/spiralcore-transfer/tests/zstd_prefix.rs": "57a49200f5a088a5b332391f6d1433fe5af7720739d009e47d41d77b08372994"
+  },
+  "target": "aarch64-apple-darwin",
+  "toolchain": "1.97.1",
+  "features": [
+    "hardware-sha256"
+  ],
+  "profile": "release",
+  "locked": true,
+  "all_targets": {
+    "test_binaries": 20,
+    "passed": 156,
+    "failed": 0,
+    "ignored": 2
+  },
+  "explicit_broad_http": {
+    "test": "broad_local_http_first_pair_for_every_case_reopens_exactly",
+    "passed": 1,
+    "actual_operations": 88,
+    "cases": 12,
+    "arms": 4,
+    "comparison": "exact after reopening",
+    "performance_claim": false
+  },
+  "doctest": {
+    "passed": 1,
+    "failed": 0
+  },
+  "clippy_all_targets_warnings_denied": "passed",
+  "cargo_fmt_check": "passed",
+  "git_diff_check": "passed",
+  "release_bins": "passed",
+  "red_green": [
+    {
+      "test": "broad16_plans_isolate_all_controls_and_bound_each_fresh_cache",
+      "red": "unsupported shard",
+      "green": "passed"
+    },
+    {
+      "test": "broad_fixtures_cover_length_changes_and_existing_compressed_content",
+      "red": "prefix length mismatch before implementation",
+      "green": "passed"
+    },
+    {
+      "test": "broad_receipts_bind_policy_actual_length_and_fixture_identity",
+      "red": "unknown policy field before implementation",
+      "green": "passed"
+    },
+    {
+      "test": "broad_local_http_first_pair_for_every_case_reopens_exactly",
+      "red": "prefix arm selected raw before routing implementation",
+      "green": "88 operations exact"
+    },
+    {
+      "test": "campaign_origin_rejects_ambiguous_warming_policy_before_creating_cache",
+      "red": "unsupported policy accepted before implementation",
+      "green": "passed"
+    }
+  ],
+  "limitations": [
+    "No new WAN result yet.",
+    "Routine suite excludes two explicitly marked large HTTP qualifications; new broad one was run separately.",
+    "No process-peak-memory, energy or pure-network-time claim.",
+    "Live Linux capture qualification remains a separate required gate."
+  ],
+  "explicit_legacy_large_http": {
+    "test": "large16_local_http_first_pair_reopens_exact_bytes_for_all_arms",
+    "passed": 1,
+    "actual_operations": 6,
+    "performance_claim": false
+  },
+  "coverage": {
+    "report": "coverage.json",
+    "lines": 82.04630707541068,
+    "functions": 87.2852233676976,
+    "regions": 78.90239666550886,
+    "branch_coverage": "not collected",
+    "scope": "native all-target tests; Linux-only live controller execution is not covered by this Mac report"
+  }
+}

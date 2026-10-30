@@ -1,0 +1,66 @@
+{
+  "schema": "spiralcore.selector.independent-code-security-review.v1",
+  "review_date": "2026-10-29",
+  "reviewer": "/root/selector_architect",
+  "roles": ["code-reviewer", "rust-reviewer", "security-reviewer"],
+  "roster_id": "c36b79c68e575d7b",
+  "base_revision": "eb4feb930d6910466dbc3dc90bfa3cead51f6b5e",
+  "review_identity": "working-tree files bound below; not a claim about unreviewed later changes",
+  "authorship_boundary": "Reviewer authored the design/plan documents, but did not implement or edit runtime code, tests, or measurement harness.",
+  "verdict": "APPROVE_SCOPED_CODE_AND_SECURITY",
+  "critical_findings": 0,
+  "high_findings": 0,
+  "open_actionable_findings": [],
+  "reviewed_files_sha256": {
+    "crates/spiralcore-transfer/src/selection.rs": "62bc75f3370f4d36e2df5aabdbd2aa545ec27557fe96742a07e98e29ba9dae2e",
+    "crates/spiralcore-transfer/src/client.rs": "2d18f85f4762eded66c36eda64fb0d9078d4141618ecf59f2d937b6b1008757f",
+    "crates/spiralcore-transfer/src/lib.rs": "e7e311b453105158a103772535c4ca35f81cb56744625add6578140f42ec75cb",
+    "crates/spiralcore-transfer/tests/adaptive.rs": "c72b51a9704a500238e65f82b42723c90d0ef1b83f367dffa84ea2b5e94b8143",
+    "crates/spiralcore-transfer/examples/codec_selection.rs": "ae62780923e98b7b23dce839c8e00035c4c7e58f7630ff5a21c159478854a7c7"
+  },
+  "checks_executed_by_reviewer": [
+    {
+      "command": "python3 scripts/roster.py verify; check Agent code-reviewer; check Agent rust-reviewer; check Agent security-reviewer",
+      "result": "Active roles verified; roster later refreshed and verified as c36b79c68e575d7b"
+    },
+    {
+      "command": "git diff --check",
+      "exit_code": 0,
+      "result": "No tracked-diff whitespace error"
+    },
+    {
+      "command": "CARGO_TARGET_DIR=/Users/casey.allard/spiralcore/target /Users/casey.allard/.cargo/bin/cargo +1.97.1 check --manifest-path crates/spiralcore-transfer/Cargo.toml --all-targets --target aarch64-apple-darwin --features hardware-sha256 --locked",
+      "exit_code": 0,
+      "result": "Finished dev profile in 3.43s"
+    },
+    {
+      "command": "CARGO_TARGET_DIR=/Users/casey.allard/spiralcore/target /Users/casey.allard/.cargo/bin/cargo +1.97.1 clippy --manifest-path crates/spiralcore-transfer/Cargo.toml --all-targets --target aarch64-apple-darwin --features hardware-sha256 --locked -- -D warnings",
+      "exit_code": 0,
+      "result": "Finished dev profile in 3.64s; no warning"
+    }
+  ],
+  "source_findings": [
+    "Successful-miss cost includes the 28-byte reply header: common cost 368, base identity 32, Data body plus 128 per Data/Accepted pair, separate probe-miss envelopes 40.",
+    "Raw, chunked-zstd, sparse and prefix ties are strict and deterministic. Sparse None cannot beat Raw and is now documented as an omitted entry; unexpected encoder failures propagate.",
+    "Preparation finishes before exchange; winning encoded bodies are reused. Input, frame and request-batch bounds are checked before contacting the receiver.",
+    "Private prepared payload cannot be externally mutated away from its selected mode. Object and base identities bind the exact supplied immutable byte strings.",
+    "No receiver, wire-format, authorization, cryptography, dependency, quota or publication implementation changes were introduced.",
+    "Missing-base, policy, malformed-reply and transport failures use the existing sender validation and are not retried under a changed offer.",
+    "Exact-repeat probes explicitly report their Raw shortcut; unexpected receiver miss continues the original Raw offer, not a claim to minimum encoded miss cost.",
+    "The local measurement driver uses owned fresh per-arm caches, matching inputs, separately measured Raw seeds, exact reopen before cleanup, create-new output, explicit source-pin verification limitation, and preserved failure rows.",
+    "Measurement CPU is one serial process total; exchange and receiver clocks are nested subsets. Body-equivalent accounting and no-WAN scope are explicit. Cyclic order balances positions rather than all carryover permutations. Summary validates paired identity and adaptive body equality with the best configured fixed arm."
+  ],
+  "resolved_review_notes": [
+    "Corrected ADR prefix compression bound to permit 275 chunks, versus 274 Raw/chunked-zstd chunks.",
+    "Documented omitted sparse candidate meaning instead of implying every attempted engine always has a scored entry.",
+    "Added exact-repeat/probe receiver-miss regression retaining the original Raw offer."
+  ],
+  "limitations_and_pending_gates": [
+    "This is a source/check/Clippy review; parent-owned fresh full test, ignored-test, doctest, release build and audit receipts remain separate final merge gates.",
+    "No new timed experiment or WAN capture was run by this reviewer. No CPU, latency, memory or energy improvement is approved by this code receipt.",
+    "Only the configured candidate engines are compared. Whole-object prefix compression may win on unrelated structured content because its framing/level differs from chunked zstd; that does not establish useful base reuse.",
+    "Candidate retention is bounded at the input/encoded representation level, not a measured process-RSS or complete allocator reservation. Small-MVM resource and mailbox integration remain future qualification.",
+    "No global dependency vulnerability audit, production-security assessment, CUI/FIPS qualification, HTTP/TLS/TCP/IP whole-path byte claim, or pure network-send-time claim is made.",
+    "A forged or lost reply can produce a sender error after a valid object was published; existing uncertain-commit semantics remain applicable."
+  ]
+}

@@ -1,0 +1,95 @@
+# SC-OPT-002: remove repeated receiver work with recorded controls
+
+Status: completed experiment; exactness passed, registered performance target missed, candidate
+reverted. User authorized continued optimization and persistent reviewable results.
+Baseline: `fedf38a8e308f3064b6ca3006aaf721a418c0d80` (same production code measured at `b552017`).
+Use the current managed worktree. Preserve the completed SC-OPT-001 source and evidence.
+
+## Hypotheses and boundaries
+
+1. `Endpoint::disk_usage` enumerates every namespace and publication at admission and publication.
+   The completed WAN campaign accumulated hundreds of publications. This may make an unrelated
+   object's commit cost proportional to cache population. The exact share is unmeasured.
+2. Raw/zstd Finish currently constructs a DAG; sparse Finish does not. Measure this readiness-policy
+   difference explicitly before attributing total CPU savings to byte encoding alone.
+3. Sparse mutations already upload Begin, Data and Finish in one HTTP batch. There is no redundant
+   application round trip in that measured path. Connection setup and relay latency remain separate.
+
+The invariants stay fixed: complete byte/length/digest checks, authorization, shared quota admission,
+bounded staging, exclusive cache ownership, atomic publication and directory/file synchronization.
+Do not change the wire format, digest or trusted-cache rules merely to improve a benchmark.
+
+## First experiment: baseline receiver cost
+
+Implement a standalone Rust diagnostic against the pinned public API, with tests for fixture,
+receipt and stage accounting. Use public deterministic 1 MiB targets and a verified base. Populate
+fresh caches through the public API with small unrelated objects, using controlled namespace counts
+to model the WAN campaign. Sample empty/small/medium/large cache populations; record actual object,
+directory and byte counts rather than the requested population alone.
+
+Measure raw and sparse updates under the default graph budget and a separate `max_nodes=1`
+graph-admission policy. The latter prevents the random 1 MiB object from obtaining a DAG manifest,
+but empty/one-leaf objects can still be folded. It also changes reservation/admission constraints,
+so it is not a pure warming toggle or a drop-in general-purpose policy. Set graph retention to zero
+in both policies; record actual graph stats and publication sizes/readiness. Use identical budgets
+when comparing baseline and candidate. Include seed/setup costs separately. The diagnostic measures
+local endpoint work, not WAN or joules.
+
+Use counterbalanced trial ordering, retain every observation and exact output identity, and compare
+CPU/wall distributions per stage (Begin, Data, Finish) as well as the complete operation. Object
+reopening and exact comparison must pass. Clear the timing boundary around fixture generation,
+transport framing, input allocation and verification. Do not mix production builds/tests with runs.
+
+Before observing results, the bounded diagnostic schedule is: populations 0/64/256/768 unrelated
+32-byte publications, two per unrelated namespace, plus one verified active 1 MiB base; four arms
+(raw/sparse under default/one-node graph policies), with retention disabled in both. Initial baseline
+characterization uses one block (16 updates). The main comparison uses eight interleaved old/new
+blocks with balanced arm order, 128 updates per executable. Every update gets a fresh synced clone
+of its closed template. Record template creation and clone/open/reopen work separately.
+
+The candidate's performance hypothesis is at least 1.10× paired whole-operation CPU improvement for
+sparse updates at population 768 under each graph policy, with at least six of eight pairs favoring
+the candidate. This is a local diagnostic target, not a WAN acceptance gate. Report all populations,
+raw controls, stage CPU, elapsed distributions and regressions even if the target is missed.
+Correctness and byte accounting must remain exact in every observation. Total process CPU already
+contains the handler stage CPU; those overlapping counters must not be added.
+
+## Conditional implementation
+
+First profile the narrowest candidate: `disk_usage` repeatedly converts the same namespace ID to
+hexadecimal inside the per-publication loop. Hoisting that conversion once per scan and the
+namespace match once per directory preserves every filesystem enumeration/stat and quota check.
+Use existing quota/admission adversarial tests and paired measurements for this loop-invariant
+refactor; do not add a test that merely asserts the source-code layout.
+The architecture decision and invariants are in
+[receiver-quota-scan-decision.md](../network/receiver-quota-scan-decision.md).
+
+After recording baseline results, select one demonstrated hotspot. A bounded cache-usage catalog
+is a later candidate, not an approved shortcut: it requires a startup scan under exclusive ownership,
+checked counters and namespace accounting, correct pending reservations, publication failure/crash
+handling, idempotent retry and bounded metadata memory. Read/verify cached bytes as before. Review
+the threat boundary for external filesystem edits and preserve or explicitly strengthen existing
+behavior. If proof obligations do not fit a bounded change, retain the finding and choose a safer
+optimization.
+
+Write failing tests first, then implement one change, then run Rust/security review. Preserve the
+old probe executable and repeat paired old/new release measurements with the same fixtures and
+cache policies. Report the effect at each population and on raw versus sparse, including negatives.
+Only claim a WAN improvement after a new matched WAN campaign; a local CPU improvement is not one.
+
+## Delivery
+
+Add source/executable/configuration identities, raw rows, independent calculations, correctness and
+resource tests, review outcome and remaining gaps under a new evidence directory. Update
+`docs/network/optimization-ledger.md` as each phase completes. Keep earlier measured artifacts
+unchanged. A final report must identify which cost moved and which cost remains.
+
+## Observed outcome
+
+Baseline characterization: 16 exact observations. Main comparison: 256 exact observations across
+the registered eight paired blocks, no failed process, retry, filtering or normalization. Candidate
+`b4a1860` passed 124 transfer tests, fmt/clippy, release build and independent code/security review.
+The joint CPU target failed: N768 normal sparse 1.079686×/6 wins; N768 one-node sparse 1.037647×/4
+wins. Raw/normal and low-population controls include regressions. `cb376b8` restored the previous
+production source. [Full results and disposition](../network/receiver-cost-results-2026-10-29.md)
+preserve all rows, host variation and limits.

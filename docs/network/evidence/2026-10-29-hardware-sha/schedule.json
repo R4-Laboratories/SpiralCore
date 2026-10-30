@@ -1,0 +1,112 @@
+{
+  "schema": "spiralcore.sha-backend-schedule.v1",
+  "experiment": "SC-OPT-003",
+  "preregistration_revision": "f6a01442e9a0a6d4e1ce2cc4a9698409fe7258a2",
+  "primary_metric": "local_operation_total.cpu_ns",
+  "configuration_mapping": {
+    "old": "software; default features; hardware-sha256 disabled",
+    "new": "hardware; spiralcore-transfer/hardware-sha256 enabled"
+  },
+  "joint_target": {
+    "all_cells_required": true,
+    "minimum_hardware_faster_pairs": 6,
+    "pairs": 8,
+    "cells": [
+      {
+        "population": 0,
+        "arm": "raw-node-budget-262144",
+        "minimum_paired_software_over_hardware_geometric_mean": 1.1
+      },
+      {
+        "population": 0,
+        "arm": "sparse-node-budget-262144",
+        "minimum_paired_software_over_hardware_geometric_mean": 1.5
+      },
+      {
+        "population": 768,
+        "arm": "sparse-node-budget-262144",
+        "minimum_paired_software_over_hardware_geometric_mean": 1.2
+      }
+    ]
+  },
+  "pairs": [
+    {
+      "block": 0,
+      "order": [
+        "software",
+        "hardware"
+      ]
+    },
+    {
+      "block": 1,
+      "order": [
+        "hardware",
+        "software"
+      ]
+    },
+    {
+      "block": 2,
+      "order": [
+        "software",
+        "hardware"
+      ]
+    },
+    {
+      "block": 3,
+      "order": [
+        "hardware",
+        "software"
+      ]
+    },
+    {
+      "block": 4,
+      "order": [
+        "software",
+        "hardware"
+      ]
+    },
+    {
+      "block": 5,
+      "order": [
+        "hardware",
+        "software"
+      ]
+    },
+    {
+      "block": 6,
+      "order": [
+        "software",
+        "hardware"
+      ]
+    },
+    {
+      "block": 7,
+      "order": [
+        "hardware",
+        "software"
+      ]
+    }
+  ],
+  "populations": [
+    0,
+    64,
+    256,
+    768
+  ],
+  "fixture": {
+    "generator": "xorshift64-low-byte-per-step-v1",
+    "seed": 42,
+    "bytes": 1048576,
+    "mutation_offset": 524288,
+    "mutation_bytes": 32,
+    "xor": 165
+  },
+  "templates": "/Users/casey.allard/spiralcore/local/receiver-efficiency-20261029/experiment/templates",
+  "limitations": [
+    "All 16 cells retained, no filtering/retry or post-hoc substitute gates",
+    "Whole process operation CPU includes handler CPU; never sum again",
+    "Both binaries use identical committed production source, expanded dependency lock and measurement Rust source",
+    "No network or energy measurement",
+    "Only local Apple ARM target qualified; optional upstream assembly dependency rejects Windows"
+  ]
+}

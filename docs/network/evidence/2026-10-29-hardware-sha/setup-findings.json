@@ -1,0 +1,29 @@
+{
+  "schema": "spiralcore.sha-helper-setup.v1",
+  "timed_observations": 0,
+  "findings": [
+    {
+      "id": "bash3-empty-array-nounset",
+      "status": "fixed_before_compilation",
+      "observation": "Apple Bash3 with nounset treats expansion of an empty feature_args array as unbound. The first software build stopped during metadata setup, before invoking cargo build.",
+      "resolution": "Represent the software configuration with the explicit empty Cargo feature argument --features empty-string. Both arrays then have two elements; the hardware value alone differs.",
+      "retained_build_directory": "build-software-setup-array-failure",
+      "retained_log": "logs/build-software-setup-array-failure.log",
+      "timed_observations": 0
+    },
+    {
+      "id": "dependency-feature-lock-resolution",
+      "status": "resolved_before_build",
+      "observation": "With the unchanged probe manifest, CLI dependency-feature selection resolved asm in metadata but did not retain sha2-asm in Cargo.lock. Locked resolution rejected an explicitly expanded lock, and unlocked resolution removed that expansion.",
+      "resolution": "Parent approved a default-off probe feature alias hardware-sha256 forwarding to spiralcore-transfer/hardware-sha256. Cargo then generated and retained exactly the expected optional package/edge, with no existing dependency drift.",
+      "retained_attempt": "expanded-lock-attempt.lock",
+      "measured_rust_changed": false
+    },
+    {
+      "id": "apple-ar-version-interface",
+      "status": "provenance_alternative",
+      "observation": "Apple ar accepts neither --version nor -V; both read-only attempts returned usage text.",
+      "resolution": "Record configured and xcrun-selected executable paths and SHA256 values, plus the Apple Command Line Tools package version. Clang's actual version output is recorded."
+    }
+  ]
+}

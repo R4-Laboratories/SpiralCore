@@ -1,0 +1,13 @@
+diff --git original/qualification/original-transfer-lib.rs diagnostic/snapshot/crates/spiralcore-transfer/src/lib.rs
+index 23bc884..3879edd 100644
+--- original/qualification/original-transfer-lib.rs
++++ diagnostic/snapshot/crates/spiralcore-transfer/src/lib.rs
+@@ -6,6 +6,8 @@ pub mod delta;
+ pub mod endpoint;
+ pub mod prepared;
+ pub mod protocol;
++/// Diagnostic snapshot only; not part of the production API.
++pub mod scan_profile;
+ pub mod wan;
+ use sha2::{Digest, Sha256};
+ pub type Id = [u8; 32];

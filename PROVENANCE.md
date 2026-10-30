@@ -58,8 +58,16 @@ Remaining exclusions are unrelated corpora and checkpoints, `.git` internals, ge
 
 Copied research is byte-identical and retains its original links. Some relative links point to UOR-R4 material outside this selective export; the source repository is the full-context authority. Those links were not silently rewritten to disguise missing context.
 
-The two networking crates under `projects/spiralcore/` are the standalone build targets. Files under `crates/` are model-source references and integration context, not a complete independently buildable model.
+The two networking crates under `projects/spiralcore/` and the separately imported `crates/uor-r4-object-store` are standalone build targets. Other files under `crates/` remain model-source references and integration context, not a complete independently buildable model.
 
 ## Visibility and licensing
 
 The repository was created privately for initial import validation and made public at the owner's explicit request after the initial import merged and fresh-`main` checks passed. The owner also explicitly requested these additional public uploads. No new license is asserted by either import.
+
+## Rust object-store import (2026-10-28)
+
+The owner authorized importing the model-independent object-store core from UOR-R4 revision `b1b1ef6f0a5d59d8198207c198431701fff5fd63`. The source crate tree is `d1392e09e07200009a6b50b6f09067c2ef8a853b`. [The dedicated import manifest](docs/provenance/object-store-import.json) records each source blob, original SHA-256, extraction SHA-256, and adaptation. Extraction hashes describe the compatibility-import baseline, before separately reviewed hardening changes.
+
+The five core modules, CLI, example, selected tests, immutable fixtures, and protocol documentation were extracted from Git objects. Model/tokenizer bindings and their tests were excluded. The package retains the UOR Foundation [MIT license](crates/uor-r4-object-store/LICENSE). This license applies to that imported implementation and does not relicense the repository's unrelated materials.
+
+The original `source-manifest.tsv` and `import-manifest.tsv` remain historical records of their original exports. Subsequent changes are recorded in Git and the delivery record rather than silently changing those original identities.

@@ -1,0 +1,1155 @@
+{
+  "schema": "spiralcore.independent.efficiency-wan-summary.v1",
+  "source_revision": "b5520171ab1cfbc988e16b2b79f41ab831d3668a",
+  "warm_analysis": "/Users/casey.allard/spiralcore/local/efficiency-20261029/independent-warm-analysis.json",
+  "prefix_analysis": "/Users/casey.allard/spiralcore/local/efficiency-20261029/independent-prefix-analysis.json",
+  "primary_comparison_units": {
+    "wall": "measured elapsed microseconds including sender preparation and synchronous Publish plus teardown",
+    "cpu": "sender process CPU plus receiver timed-handler CPU in microseconds, formed per row; not pure network time or energy",
+    "bytes": "HTTP bodies both directions; complete prefix capture additionally provides runner-to-relay IP totals"
+  },
+  "selected": [
+    {
+      "case": "repeat",
+      "medians": {
+        "prepared": {
+          "wall_us": 162054,
+          "sender_cpu_us": 4368,
+          "receiver_cpu_us": 8023,
+          "endpoint_cpu_sum_us": 12580,
+          "http_body_bytes": 238
+        },
+        "raw_cas": {
+          "wall_us": 157501,
+          "sender_cpu_us": 2417,
+          "receiver_cpu_us": 6670,
+          "endpoint_cpu_sum_us": 9087,
+          "http_body_bytes": 238
+        },
+        "raw_full": {
+          "wall_us": 327478,
+          "sender_cpu_us": 3654,
+          "receiver_cpu_us": 79906,
+          "endpoint_cpu_sum_us": 83631,
+          "http_body_bytes": 1051338
+        },
+        "sparse": {
+          "wall_us": 152675,
+          "sender_cpu_us": 2505,
+          "receiver_cpu_us": 6943,
+          "endpoint_cpu_sum_us": 9515,
+          "http_body_bytes": 238
+        }
+      },
+      "p95": {
+        "prepared": {
+          "wall_us": 278320,
+          "sender_cpu_us": 4989,
+          "receiver_cpu_us": 10717,
+          "endpoint_cpu_sum_us": 14699,
+          "http_body_bytes": 238
+        },
+        "raw_cas": {
+          "wall_us": 213200,
+          "sender_cpu_us": 2659,
+          "receiver_cpu_us": 10307,
+          "endpoint_cpu_sum_us": 12803,
+          "http_body_bytes": 238
+        },
+        "raw_full": {
+          "wall_us": 705012,
+          "sender_cpu_us": 4152,
+          "receiver_cpu_us": 90830,
+          "endpoint_cpu_sum_us": 94324,
+          "http_body_bytes": 1051338
+        },
+        "sparse": {
+          "wall_us": 297179,
+          "sender_cpu_us": 2617,
+          "receiver_cpu_us": 10189,
+          "endpoint_cpu_sum_us": 12678,
+          "http_body_bytes": 238
+        }
+      },
+      "seed_medians": {
+        "prepared": {
+          "wall_us": 355054,
+          "sender_cpu_us": 30082,
+          "receiver_cpu_us": 80962,
+          "endpoint_cpu_sum_us": 111342,
+          "http_body_bytes": 1051338
+        },
+        "raw_cas": {
+          "wall_us": 336462,
+          "sender_cpu_us": 3797,
+          "receiver_cpu_us": 83100,
+          "endpoint_cpu_sum_us": 87311,
+          "http_body_bytes": 1051338
+        },
+        "raw_full": {
+          "wall_us": null,
+          "sender_cpu_us": null,
+          "receiver_cpu_us": null,
+          "endpoint_cpu_sum_us": null,
+          "http_body_bytes": null
+        },
+        "sparse": {
+          "wall_us": 326617,
+          "sender_cpu_us": 3619,
+          "receiver_cpu_us": 84036,
+          "endpoint_cpu_sum_us": 87369,
+          "http_body_bytes": 1051338
+        }
+      },
+      "pairs": [
+        {
+          "candidate": "prepared",
+          "baseline": "raw_full",
+          "transfer": {
+            "wall_us": {
+              "baseline_over_candidate_geomean": 2.129381650719658,
+              "candidate_wins": 29,
+              "n": 30
+            },
+            "sender_cpu_us": {
+              "baseline_over_candidate_geomean": 0.8456120648724379,
+              "candidate_wins": 1,
+              "n": 30
+            },
+            "receiver_cpu_us": {
+              "baseline_over_candidate_geomean": 9.8133432449261,
+              "candidate_wins": 30,
+              "n": 30
+            },
+            "endpoint_cpu_sum_us": {
+              "baseline_over_candidate_geomean": 6.37901785707086,
+              "candidate_wins": 30,
+              "n": 30
+            },
+            "http_body_bytes": {
+              "baseline_over_candidate_geomean": 4417.386554621847,
+              "candidate_wins": 30,
+              "n": 30
+            }
+          },
+          "repeat_lifecycle_comparison_qualified": false
+        },
+        {
+          "candidate": "prepared",
+          "baseline": "raw_cas",
+          "transfer": {
+            "wall_us": {
+              "baseline_over_candidate_geomean": 0.8996535086631849,
+              "candidate_wins": 11,
+              "n": 30
+            },
+            "sender_cpu_us": {
+              "baseline_over_candidate_geomean": 0.5503977177499825,
+              "candidate_wins": 0,
+              "n": 30
+            },
+            "receiver_cpu_us": {
+              "baseline_over_candidate_geomean": 0.8605314731892928,
+              "candidate_wins": 7,
+              "n": 30
+            },
+            "endpoint_cpu_sum_us": {
+              "baseline_over_candidate_geomean": 0.7434277546416954,
+              "candidate_wins": 3,
+              "n": 30
+            },
+            "http_body_bytes": {
+              "baseline_over_candidate_geomean": 1.0,
+              "candidate_wins": 0,
+              "n": 30
+            }
+          },
+          "seed_plus_one_transfer": {
+            "wall_us": 0.9059715601129081,
+            "endpoint_cpu_sum_us": 0.792168330873696,
+            "http_body_bytes": 1.0
+          }
+        },
+        {
+          "candidate": "prepared",
+          "baseline": "dag",
+          "transfer": {
+            "wall_us": {
+              "baseline_over_candidate_geomean": 1.2814846043113362,
+              "candidate_wins": 25,
+              "n": 30
+            },
+            "sender_cpu_us": {
+              "baseline_over_candidate_geomean": 13.09726618765378,
+              "candidate_wins": 30,
+              "n": 30
+            },
+            "receiver_cpu_us": {
+              "baseline_over_candidate_geomean": 1.0500800526242144,
+              "candidate_wins": 16,
+              "n": 30
+            },
+            "endpoint_cpu_sum_us": {
+              "baseline_over_candidate_geomean": 5.509311977156346,
+              "candidate_wins": 30,
+              "n": 30
+            },
+            "http_body_bytes": {
+              "baseline_over_candidate_geomean": 3.5336134453781503,
+              "candidate_wins": 30,
+              "n": 30
+            }
+          },
+          "seed_plus_one_transfer": {
+            "wall_us": 1.1365844759967687,
+            "endpoint_cpu_sum_us": 1.2395974681675173,
+            "http_body_bytes": 1.0005734250306206
+          }
+        },
+        {
+          "candidate": "raw_cas",
+          "baseline": "raw_full",
+          "transfer": {
+            "wall_us": {
+              "baseline_over_candidate_geomean": 2.3668908421018147,
+              "candidate_wins": 30,
+              "n": 30
+            },
+            "sender_cpu_us": {
+              "baseline_over_candidate_geomean": 1.5363655000774479,
+              "candidate_wins": 30,
+              "n": 30
+            },
+            "receiver_cpu_us": {
+              "baseline_over_candidate_geomean": 11.403816769834101,
+              "candidate_wins": 30,
+              "n": 30
+            },
+            "endpoint_cpu_sum_us": {
+              "baseline_over_candidate_geomean": 8.5805484355979,
+              "candidate_wins": 30,
+              "n": 30
+            },
+            "http_body_bytes": {
+              "baseline_over_candidate_geomean": 4417.386554621847,
+              "candidate_wins": 30,
+              "n": 30
+            }
+          },
+          "repeat_lifecycle_comparison_qualified": false
+        },
+        {
+          "candidate": "raw_cas",
+          "baseline": "dag",
+          "transfer": {
+            "wall_us": {
+              "baseline_over_candidate_geomean": 1.4244201706227129,
+              "candidate_wins": 28,
+              "n": 30
+            },
+            "sender_cpu_us": {
+              "baseline_over_candidate_geomean": 23.796003808291943,
+              "candidate_wins": 30,
+              "n": 30
+            },
+            "receiver_cpu_us": {
+              "baseline_over_candidate_geomean": 1.220269200302946,
+              "candidate_wins": 21,
+              "n": 30
+            },
+            "endpoint_cpu_sum_us": {
+              "baseline_over_candidate_geomean": 7.410689125820477,
+              "candidate_wins": 30,
+              "n": 30
+            },
+            "http_body_bytes": {
+              "baseline_over_candidate_geomean": 3.5336134453781503,
+              "candidate_wins": 30,
+              "n": 30
+            }
+          },
+          "seed_plus_one_transfer": {
+            "wall_us": 1.2545476326598155,
+            "endpoint_cpu_sum_us": 1.5648157340502922,
+            "http_body_bytes": 1.0005734250306206
+          }
+        },
+        {
+          "candidate": "sparse",
+          "baseline": "raw_full",
+          "transfer": {
+            "wall_us": {
+              "baseline_over_candidate_geomean": 2.3818897780076753,
+              "candidate_wins": 30,
+              "n": 30
+            },
+            "sender_cpu_us": {
+              "baseline_over_candidate_geomean": 1.5004461849544204,
+              "candidate_wins": 30,
+              "n": 30
+            },
+            "receiver_cpu_us": {
+              "baseline_over_candidate_geomean": 11.369136344172997,
+              "candidate_wins": 30,
+              "n": 30
+            },
+            "endpoint_cpu_sum_us": {
+              "baseline_over_candidate_geomean": 8.501211504058995,
+              "candidate_wins": 30,
+              "n": 30
+            },
+            "http_body_bytes": {
+              "baseline_over_candidate_geomean": 4417.386554621847,
+              "candidate_wins": 30,
+              "n": 30
+            }
+          },
+          "repeat_lifecycle_comparison_qualified": false
+        },
+        {
+          "candidate": "sparse",
+          "baseline": "raw_cas",
+          "transfer": {
+            "wall_us": {
+              "baseline_over_candidate_geomean": 1.0063369783004195,
+              "candidate_wins": 15,
+              "n": 30
+            },
+            "sender_cpu_us": {
+              "baseline_over_candidate_geomean": 0.9766205924819213,
+              "candidate_wins": 10,
+              "n": 30
+            },
+            "receiver_cpu_us": {
+              "baseline_over_candidate_geomean": 0.9969588755798984,
+              "candidate_wins": 11,
+              "n": 30
+            },
+            "endpoint_cpu_sum_us": {
+              "baseline_over_candidate_geomean": 0.9907538623976805,
+              "candidate_wins": 12,
+              "n": 30
+            },
+            "http_body_bytes": {
+              "baseline_over_candidate_geomean": 1.0,
+              "candidate_wins": 0,
+              "n": 30
+            }
+          },
+          "seed_plus_one_transfer": {
+            "wall_us": 0.9925060330057859,
+            "endpoint_cpu_sum_us": 1.0299718672026734,
+            "http_body_bytes": 1.0
+          }
+        },
+        {
+          "candidate": "sparse",
+          "baseline": "dag",
+          "transfer": {
+            "wall_us": {
+              "baseline_over_candidate_geomean": 1.4334466903346288,
+              "candidate_wins": 29,
+              "n": 30
+            },
+            "sender_cpu_us": {
+              "baseline_over_candidate_geomean": 23.239667337956142,
+              "candidate_wins": 30,
+              "n": 30
+            },
+            "receiver_cpu_us": {
+              "baseline_over_candidate_geomean": 1.2165582098388068,
+              "candidate_wins": 21,
+              "n": 30
+            },
+            "endpoint_cpu_sum_us": {
+              "baseline_over_candidate_geomean": 7.342168874435127,
+              "candidate_wins": 30,
+              "n": 30
+            },
+            "http_body_bytes": {
+              "baseline_over_candidate_geomean": 3.5336134453781503,
+              "candidate_wins": 30,
+              "n": 30
+            }
+          },
+          "seed_plus_one_transfer": {
+            "wall_us": 1.2451460941079933,
+            "endpoint_cpu_sum_us": 1.6117161834279015,
+            "http_body_bytes": 1.0005734250306206
+          }
+        }
+      ]
+    },
+    {
+      "case": "localized_32",
+      "medians": {
+        "dag": {
+          "wall_us": 292204,
+          "sender_cpu_us": 63476,
+          "receiver_cpu_us": 72439,
+          "endpoint_cpu_sum_us": 136429,
+          "http_body_bytes": 2342
+        },
+        "prepared": {
+          "wall_us": 238365,
+          "sender_cpu_us": 25762,
+          "receiver_cpu_us": 69800,
+          "endpoint_cpu_sum_us": 96337,
+          "http_body_bytes": 2342
+        },
+        "raw_full": {
+          "wall_us": 315017,
+          "sender_cpu_us": 3861,
+          "receiver_cpu_us": 84192,
+          "endpoint_cpu_sum_us": 87856,
+          "http_body_bytes": 1051338
+        },
+        "sparse": {
+          "wall_us": 180530,
+          "sender_cpu_us": 4164,
+          "receiver_cpu_us": 32733,
+          "endpoint_cpu_sum_us": 36724,
+          "http_body_bytes": 600
+        }
+      },
+      "p95": {
+        "dag": {
+          "wall_us": 432927,
+          "sender_cpu_us": 64574,
+          "receiver_cpu_us": 117257,
+          "endpoint_cpu_sum_us": 181158,
+          "http_body_bytes": 2342
+        },
+        "prepared": {
+          "wall_us": 345134,
+          "sender_cpu_us": 27678,
+          "receiver_cpu_us": 92085,
+          "endpoint_cpu_sum_us": 117212,
+          "http_body_bytes": 2342
+        },
+        "raw_full": {
+          "wall_us": 610580,
+          "sender_cpu_us": 4217,
+          "receiver_cpu_us": 133080,
+          "endpoint_cpu_sum_us": 136994,
+          "http_body_bytes": 1051338
+        },
+        "sparse": {
+          "wall_us": 281390,
+          "sender_cpu_us": 4362,
+          "receiver_cpu_us": 44336,
+          "endpoint_cpu_sum_us": 48318,
+          "http_body_bytes": 600
+        }
+      },
+      "seed_medians": {
+        "dag": {
+          "wall_us": 339869,
+          "sender_cpu_us": 3736,
+          "receiver_cpu_us": 89423,
+          "endpoint_cpu_sum_us": 93387,
+          "http_body_bytes": 1051338
+        },
+        "prepared": {
+          "wall_us": 370210,
+          "sender_cpu_us": 30392,
+          "receiver_cpu_us": 83564,
+          "endpoint_cpu_sum_us": 113998,
+          "http_body_bytes": 1051338
+        },
+        "raw_full": {
+          "wall_us": 326065,
+          "sender_cpu_us": 3676,
+          "receiver_cpu_us": 80419,
+          "endpoint_cpu_sum_us": 84001,
+          "http_body_bytes": 1051338
+        },
+        "sparse": {
+          "wall_us": 361137,
+          "sender_cpu_us": 3682,
+          "receiver_cpu_us": 91464,
+          "endpoint_cpu_sum_us": 94902,
+          "http_body_bytes": 1051338
+        }
+      },
+      "pairs": [
+        {
+          "candidate": "dag",
+          "baseline": "raw_full",
+          "transfer": {
+            "wall_us": {
+              "baseline_over_candidate_geomean": 1.1823272802225226,
+              "candidate_wins": 22,
+              "n": 30
+            },
+            "sender_cpu_us": {
+              "baseline_over_candidate_geomean": 0.060047924910733116,
+              "candidate_wins": 0,
+              "n": 30
+            },
+            "receiver_cpu_us": {
+              "baseline_over_candidate_geomean": 1.1805157102209258,
+              "candidate_wins": 26,
+              "n": 30
+            },
+            "endpoint_cpu_sum_us": {
+              "baseline_over_candidate_geomean": 0.6481664940597641,
+              "candidate_wins": 1,
+              "n": 30
+            },
+            "http_body_bytes": {
+              "baseline_over_candidate_geomean": 448.9060631938514,
+              "candidate_wins": 30,
+              "n": 30
+            }
+          },
+          "seed_plus_one_transfer": {
+            "wall_us": 1.0550024540528846,
+            "endpoint_cpu_sum_us": 0.7829146125001141,
+            "http_body_bytes": 1.9955546275909195
+          }
+        },
+        {
+          "candidate": "prepared",
+          "baseline": "raw_full",
+          "transfer": {
+            "wall_us": {
+              "baseline_over_candidate_geomean": 1.4386940098448229,
+              "candidate_wins": 29,
+              "n": 30
+            },
+            "sender_cpu_us": {
+              "baseline_over_candidate_geomean": 0.14681301923749268,
+              "candidate_wins": 0,
+              "n": 30
+            },
+            "receiver_cpu_us": {
+              "baseline_over_candidate_geomean": 1.2127199046197261,
+              "candidate_wins": 26,
+              "n": 30
+            },
+            "endpoint_cpu_sum_us": {
+              "baseline_over_candidate_geomean": 0.9196522686441154,
+              "candidate_wins": 5,
+              "n": 30
+            },
+            "http_body_bytes": {
+              "baseline_over_candidate_geomean": 448.9060631938514,
+              "candidate_wins": 30,
+              "n": 30
+            }
+          },
+          "seed_plus_one_transfer": {
+            "wall_us": 1.172834885933463,
+            "endpoint_cpu_sum_us": 0.8342407453367318,
+            "http_body_bytes": 1.9955546275909195
+          }
+        },
+        {
+          "candidate": "prepared",
+          "baseline": "dag",
+          "transfer": {
+            "wall_us": {
+              "baseline_over_candidate_geomean": 1.2168322882426006,
+              "candidate_wins": 26,
+              "n": 30
+            },
+            "sender_cpu_us": {
+              "baseline_over_candidate_geomean": 2.44493076914388,
+              "candidate_wins": 30,
+              "n": 30
+            },
+            "receiver_cpu_us": {
+              "baseline_over_candidate_geomean": 1.0272797677489387,
+              "candidate_wins": 18,
+              "n": 30
+            },
+            "endpoint_cpu_sum_us": {
+              "baseline_over_candidate_geomean": 1.4188519108476454,
+              "candidate_wins": 30,
+              "n": 30
+            },
+            "http_body_bytes": {
+              "baseline_over_candidate_geomean": 1.0,
+              "candidate_wins": 0,
+              "n": 30
+            }
+          },
+          "seed_plus_one_transfer": {
+            "wall_us": 1.1116892490893409,
+            "endpoint_cpu_sum_us": 1.0655577658369613,
+            "http_body_bytes": 1.0
+          }
+        },
+        {
+          "candidate": "sparse",
+          "baseline": "raw_full",
+          "transfer": {
+            "wall_us": {
+              "baseline_over_candidate_geomean": 1.8347259850905158,
+              "candidate_wins": 29,
+              "n": 30
+            },
+            "sender_cpu_us": {
+              "baseline_over_candidate_geomean": 0.9152144733689532,
+              "candidate_wins": 1,
+              "n": 30
+            },
+            "receiver_cpu_us": {
+              "baseline_over_candidate_geomean": 2.719872288832351,
+              "candidate_wins": 30,
+              "n": 30
+            },
+            "endpoint_cpu_sum_us": {
+              "baseline_over_candidate_geomean": 2.497910763532859,
+              "candidate_wins": 30,
+              "n": 30
+            },
+            "http_body_bytes": {
+              "baseline_over_candidate_geomean": 1752.23,
+              "candidate_wins": 30,
+              "n": 30
+            }
+          },
+          "seed_plus_one_transfer": {
+            "wall_us": 1.203366062925841,
+            "endpoint_cpu_sum_us": 1.366933761517992,
+            "http_body_bytes": 1.9988592483587435
+          }
+        },
+        {
+          "candidate": "sparse",
+          "baseline": "dag",
+          "transfer": {
+            "wall_us": {
+              "baseline_over_candidate_geomean": 1.551791974845752,
+              "candidate_wins": 30,
+              "n": 30
+            },
+            "sender_cpu_us": {
+              "baseline_over_candidate_geomean": 15.241400510167594,
+              "candidate_wins": 30,
+              "n": 30
+            },
+            "receiver_cpu_us": {
+              "baseline_over_candidate_geomean": 2.303969583194572,
+              "candidate_wins": 30,
+              "n": 30
+            },
+            "endpoint_cpu_sum_us": {
+              "baseline_over_candidate_geomean": 3.8538103811681124,
+              "candidate_wins": 30,
+              "n": 30
+            },
+            "http_body_bytes": {
+              "baseline_over_candidate_geomean": 3.9033333333333333,
+              "candidate_wins": 30,
+              "n": 30
+            }
+          },
+          "seed_plus_one_transfer": {
+            "wall_us": 1.1406286860310177,
+            "endpoint_cpu_sum_us": 1.745955101224775,
+            "http_body_bytes": 1.0016559911325573
+          }
+        }
+      ]
+    },
+    {
+      "case": "scattered_32x32",
+      "medians": {
+        "dag": {
+          "wall_us": 312400,
+          "sender_cpu_us": 63844,
+          "receiver_cpu_us": 94549,
+          "endpoint_cpu_sum_us": 158393,
+          "http_body_bytes": 30648
+        },
+        "prepared": {
+          "wall_us": 284043,
+          "sender_cpu_us": 28614,
+          "receiver_cpu_us": 89303,
+          "endpoint_cpu_sum_us": 118174,
+          "http_body_bytes": 30648
+        },
+        "raw_full": {
+          "wall_us": 382994,
+          "sender_cpu_us": 3776,
+          "receiver_cpu_us": 101740,
+          "endpoint_cpu_sum_us": 105516,
+          "http_body_bytes": 1051338
+        },
+        "sparse": {
+          "wall_us": 213299,
+          "sender_cpu_us": 3761,
+          "receiver_cpu_us": 48032,
+          "endpoint_cpu_sum_us": 51665,
+          "http_body_bytes": 2137
+        }
+      },
+      "p95": {
+        "dag": {
+          "wall_us": 367889,
+          "sender_cpu_us": 64764,
+          "receiver_cpu_us": 98170,
+          "endpoint_cpu_sum_us": 162213,
+          "http_body_bytes": 30648
+        },
+        "prepared": {
+          "wall_us": 446545,
+          "sender_cpu_us": 30377,
+          "receiver_cpu_us": 99476,
+          "endpoint_cpu_sum_us": 128639,
+          "http_body_bytes": 30648
+        },
+        "raw_full": {
+          "wall_us": 791729,
+          "sender_cpu_us": 4183,
+          "receiver_cpu_us": 109221,
+          "endpoint_cpu_sum_us": 113337,
+          "http_body_bytes": 1051338
+        },
+        "sparse": {
+          "wall_us": 261248,
+          "sender_cpu_us": 3925,
+          "receiver_cpu_us": 59604,
+          "endpoint_cpu_sum_us": 63495,
+          "http_body_bytes": 2137
+        }
+      },
+      "seed_medians": {
+        "dag": {
+          "wall_us": 348981,
+          "sender_cpu_us": 3837,
+          "receiver_cpu_us": 100784,
+          "endpoint_cpu_sum_us": 104628,
+          "http_body_bytes": 1051338
+        },
+        "prepared": {
+          "wall_us": 364430,
+          "sender_cpu_us": 30328,
+          "receiver_cpu_us": 102242,
+          "endpoint_cpu_sum_us": 132311,
+          "http_body_bytes": 1051338
+        },
+        "raw_full": {
+          "wall_us": 357692,
+          "sender_cpu_us": 3763,
+          "receiver_cpu_us": 101054,
+          "endpoint_cpu_sum_us": 104773,
+          "http_body_bytes": 1051338
+        },
+        "sparse": {
+          "wall_us": 369533,
+          "sender_cpu_us": 3836,
+          "receiver_cpu_us": 102125,
+          "endpoint_cpu_sum_us": 105749,
+          "http_body_bytes": 1051338
+        }
+      },
+      "pairs": [
+        {
+          "candidate": "dag",
+          "baseline": "raw_full",
+          "transfer": {
+            "wall_us": {
+              "baseline_over_candidate_geomean": 1.4543264690094193,
+              "candidate_wins": 26,
+              "n": 30
+            },
+            "sender_cpu_us": {
+              "baseline_over_candidate_geomean": 0.05971464651827734,
+              "candidate_wins": 0,
+              "n": 30
+            },
+            "receiver_cpu_us": {
+              "baseline_over_candidate_geomean": 1.0720270892502441,
+              "candidate_wins": 25,
+              "n": 30
+            },
+            "endpoint_cpu_sum_us": {
+              "baseline_over_candidate_geomean": 0.6476549613229753,
+              "candidate_wins": 0,
+              "n": 30
+            },
+            "http_body_bytes": {
+              "baseline_over_candidate_geomean": 34.30364134690682,
+              "candidate_wins": 30,
+              "n": 30
+            }
+          },
+          "seed_plus_one_transfer": {
+            "wall_us": 1.2694184538643147,
+            "endpoint_cpu_sum_us": 0.7862677707102433,
+            "http_body_bytes": 1.9433486200375976
+          }
+        },
+        {
+          "candidate": "prepared",
+          "baseline": "raw_full",
+          "transfer": {
+            "wall_us": {
+              "baseline_over_candidate_geomean": 1.578047009252442,
+              "candidate_wins": 27,
+              "n": 30
+            },
+            "sender_cpu_us": {
+              "baseline_over_candidate_geomean": 0.13294364791197952,
+              "candidate_wins": 0,
+              "n": 30
+            },
+            "receiver_cpu_us": {
+              "baseline_over_candidate_geomean": 1.1301263822372796,
+              "candidate_wins": 26,
+              "n": 30
+            },
+            "endpoint_cpu_sum_us": {
+              "baseline_over_candidate_geomean": 0.8755164819449147,
+              "candidate_wins": 3,
+              "n": 30
+            },
+            "http_body_bytes": {
+              "baseline_over_candidate_geomean": 34.30364134690682,
+              "candidate_wins": 30,
+              "n": 30
+            }
+          },
+          "seed_plus_one_transfer": {
+            "wall_us": 1.2569173352106595,
+            "endpoint_cpu_sum_us": 0.8309139817208974,
+            "http_body_bytes": 1.9433486200375976
+          }
+        },
+        {
+          "candidate": "prepared",
+          "baseline": "dag",
+          "transfer": {
+            "wall_us": {
+              "baseline_over_candidate_geomean": 1.085070679025248,
+              "candidate_wins": 22,
+              "n": 30
+            },
+            "sender_cpu_us": {
+              "baseline_over_candidate_geomean": 2.226315580236893,
+              "candidate_wins": 30,
+              "n": 30
+            },
+            "receiver_cpu_us": {
+              "baseline_over_candidate_geomean": 1.0541957321504523,
+              "candidate_wins": 19,
+              "n": 30
+            },
+            "endpoint_cpu_sum_us": {
+              "baseline_over_candidate_geomean": 1.3518254846013733,
+              "candidate_wins": 30,
+              "n": 30
+            },
+            "http_body_bytes": {
+              "baseline_over_candidate_geomean": 1.0,
+              "candidate_wins": 0,
+              "n": 30
+            }
+          },
+          "seed_plus_one_transfer": {
+            "wall_us": 0.990152090025476,
+            "endpoint_cpu_sum_us": 1.0567824508059445,
+            "http_body_bytes": 1.0
+          }
+        },
+        {
+          "candidate": "sparse",
+          "baseline": "raw_full",
+          "transfer": {
+            "wall_us": {
+              "baseline_over_candidate_geomean": 2.1381073154523405,
+              "candidate_wins": 29,
+              "n": 30
+            },
+            "sender_cpu_us": {
+              "baseline_over_candidate_geomean": 1.0162422403141038,
+              "candidate_wins": 15,
+              "n": 30
+            },
+            "receiver_cpu_us": {
+              "baseline_over_candidate_geomean": 2.135612654184878,
+              "candidate_wins": 30,
+              "n": 30
+            },
+            "endpoint_cpu_sum_us": {
+              "baseline_over_candidate_geomean": 2.0441165565566743,
+              "candidate_wins": 30,
+              "n": 30
+            },
+            "http_body_bytes": {
+              "baseline_over_candidate_geomean": 491.96911558259234,
+              "candidate_wins": 30,
+              "n": 30
+            }
+          },
+          "seed_plus_one_transfer": {
+            "wall_us": 1.4333172965845673,
+            "endpoint_cpu_sum_us": 1.3193871452629673,
+            "http_body_bytes": 1.9959429507107431
+          }
+        },
+        {
+          "candidate": "sparse",
+          "baseline": "dag",
+          "transfer": {
+            "wall_us": {
+              "baseline_over_candidate_geomean": 1.4701701172424255,
+              "candidate_wins": 29,
+              "n": 30
+            },
+            "sender_cpu_us": {
+              "baseline_over_candidate_geomean": 17.018307895418165,
+              "candidate_wins": 30,
+              "n": 30
+            },
+            "receiver_cpu_us": {
+              "baseline_over_candidate_geomean": 1.9921256427190528,
+              "candidate_wins": 30,
+              "n": 30
+            },
+            "endpoint_cpu_sum_us": {
+              "baseline_over_candidate_geomean": 3.1561814216340203,
+              "candidate_wins": 30,
+              "n": 30
+            },
+            "http_body_bytes": {
+              "baseline_over_candidate_geomean": 14.341600374356576,
+              "candidate_wins": 30,
+              "n": 30
+            }
+          },
+          "seed_plus_one_transfer": {
+            "wall_us": 1.129113329195206,
+            "endpoint_cpu_sum_us": 1.6780379336560518,
+            "http_body_bytes": 1.027063765158167
+          }
+        }
+      ]
+    },
+    {
+      "case": "prefix_1",
+      "medians": {
+        "raw_full": {
+          "wall_us": 546781,
+          "sender_cpu_us": 2835,
+          "receiver_cpu_us": 65024,
+          "endpoint_cpu_sum_us": 67936,
+          "http_body_bytes": 1051339,
+          "captured_ip_bytes": 1099936
+        },
+        "dag": {
+          "wall_us": 791680,
+          "sender_cpu_us": 65533,
+          "receiver_cpu_us": 123056,
+          "endpoint_cpu_sum_us": 188158,
+          "http_body_bytes": 4306671,
+          "captured_ip_bytes": 4485293
+        },
+        "sparse": {
+          "wall_us": 205751,
+          "sender_cpu_us": 3013,
+          "receiver_cpu_us": 16035,
+          "endpoint_cpu_sum_us": 18863,
+          "http_body_bytes": 556,
+          "captured_ip_bytes": 5859
+        }
+      },
+      "p95": {
+        "raw_full": {
+          "wall_us": 957908,
+          "sender_cpu_us": 3682,
+          "receiver_cpu_us": 123065,
+          "endpoint_cpu_sum_us": 125927,
+          "http_body_bytes": 1051339,
+          "captured_ip_bytes": 1101029
+        },
+        "dag": {
+          "wall_us": 1087329,
+          "sender_cpu_us": 73432,
+          "receiver_cpu_us": 201656,
+          "endpoint_cpu_sum_us": 272362,
+          "http_body_bytes": 4306671,
+          "captured_ip_bytes": 4486749
+        },
+        "sparse": {
+          "wall_us": 300928,
+          "sender_cpu_us": 3300,
+          "receiver_cpu_us": 25330,
+          "endpoint_cpu_sum_us": 28289,
+          "http_body_bytes": 556,
+          "captured_ip_bytes": 5912
+        }
+      },
+      "seed_medians": {
+        "raw_full": {
+          "wall_us": 401605,
+          "sender_cpu_us": 2711,
+          "receiver_cpu_us": 59916,
+          "endpoint_cpu_sum_us": 62634,
+          "http_body_bytes": 1051338,
+          "captured_ip_bytes": 1099937
+        },
+        "dag": {
+          "wall_us": 476850,
+          "sender_cpu_us": 2714,
+          "receiver_cpu_us": 60741,
+          "endpoint_cpu_sum_us": 63387,
+          "http_body_bytes": 1051338,
+          "captured_ip_bytes": 1099987
+        },
+        "sparse": {
+          "wall_us": 409023,
+          "sender_cpu_us": 2756,
+          "receiver_cpu_us": 68156,
+          "endpoint_cpu_sum_us": 71037,
+          "http_body_bytes": 1051338,
+          "captured_ip_bytes": 1099988
+        }
+      },
+      "pairs": [
+        {
+          "candidate": "dag",
+          "baseline": "raw_full",
+          "transfer": {
+            "wall_us": {
+              "baseline_over_candidate_geomean": 0.6636187744899487,
+              "candidate_wins": 3,
+              "n": 30
+            },
+            "sender_cpu_us": {
+              "baseline_over_candidate_geomean": 0.04307101981324886,
+              "candidate_wins": 0,
+              "n": 30
+            },
+            "receiver_cpu_us": {
+              "baseline_over_candidate_geomean": 0.5280189608831259,
+              "candidate_wins": 1,
+              "n": 30
+            },
+            "endpoint_cpu_sum_us": {
+              "baseline_over_candidate_geomean": 0.366402461342765,
+              "candidate_wins": 0,
+              "n": 30
+            },
+            "http_body_bytes": {
+              "baseline_over_candidate_geomean": 0.24411871721800896,
+              "candidate_wins": 0,
+              "n": 30
+            },
+            "captured_ip_bytes": {
+              "baseline_over_candidate_geomean": 0.24513159180664978,
+              "candidate_wins": 0,
+              "n": 30
+            }
+          },
+          "seed_plus_one_transfer": {
+            "wall_us": 0.7752636771511425,
+            "sender_cpu_us": 0.08060709977505216,
+            "receiver_cpu_us": 0.693850705361011,
+            "endpoint_cpu_sum_us": 0.5375789335979679,
+            "http_body_bytes": 0.3924362575725424,
+            "captured_ip_bytes": 0.3936490568636171
+          }
+        },
+        {
+          "candidate": "sparse",
+          "baseline": "raw_full",
+          "transfer": {
+            "wall_us": {
+              "baseline_over_candidate_geomean": 2.5809110695403703,
+              "candidate_wins": 30,
+              "n": 30
+            },
+            "sender_cpu_us": {
+              "baseline_over_candidate_geomean": 0.9409852476005466,
+              "candidate_wins": 6,
+              "n": 30
+            },
+            "receiver_cpu_us": {
+              "baseline_over_candidate_geomean": 4.547284420381483,
+              "candidate_wins": 30,
+              "n": 30
+            },
+            "endpoint_cpu_sum_us": {
+              "baseline_over_candidate_geomean": 3.9492790227649563,
+              "candidate_wins": 30,
+              "n": 30
+            },
+            "http_body_bytes": {
+              "baseline_over_candidate_geomean": 1889.441286779711,
+              "candidate_wins": 30,
+              "n": 30
+            },
+            "captured_ip_bytes": {
+              "baseline_over_candidate_geomean": 187.07126693907486,
+              "candidate_wins": 30,
+              "n": 30
+            }
+          },
+          "seed_plus_one_transfer": {
+            "wall_us": 1.504786879244101,
+            "sender_cpu_us": 0.9508321106702639,
+            "receiver_cpu_us": 1.5878023909450378,
+            "endpoint_cpu_sum_us": 1.5476748199577564,
+            "http_body_bytes": 1.9989429864573298,
+            "captured_ip_bytes": 1.9891932108709427
+          }
+        },
+        {
+          "candidate": "sparse",
+          "baseline": "dag",
+          "transfer": {
+            "wall_us": {
+              "baseline_over_candidate_geomean": 3.8891471560973163,
+              "candidate_wins": 30,
+              "n": 30
+            },
+            "sender_cpu_us": {
+              "baseline_over_candidate_geomean": 21.84729434502721,
+              "candidate_wins": 30,
+              "n": 30
+            },
+            "receiver_cpu_us": {
+              "baseline_over_candidate_geomean": 8.611971836723493,
+              "candidate_wins": 30,
+              "n": 30
+            },
+            "endpoint_cpu_sum_us": {
+              "baseline_over_candidate_geomean": 10.778527546708958,
+              "candidate_wins": 30,
+              "n": 30
+            },
+            "http_body_bytes": {
+              "baseline_over_candidate_geomean": 7739.846040122986,
+              "candidate_wins": 30,
+              "n": 30
+            },
+            "captured_ip_bytes": {
+              "baseline_over_candidate_geomean": 763.1462985261785,
+              "candidate_wins": 30,
+              "n": 30
+            }
+          },
+          "seed_plus_one_transfer": {
+            "wall_us": 1.9410001056333939,
+            "sender_cpu_us": 11.795885391283434,
+            "receiver_cpu_us": 2.2883919821323855,
+            "endpoint_cpu_sum_us": 2.878972227574668,
+            "http_body_bytes": 5.093675591603109,
+            "captured_ip_bytes": 5.053214725623272
+          }
+        }
+      ]
+    }
+  ],
+  "limitations": [
+    "Raw/zstd Finish synchronously constructs and attempts to retain an optional DAG; SparseV1 Finish intentionally skips DAG warming. The observed CPU advantage includes that implementation-policy difference and is not an isolated comparison against a minimal raw durable byte sink.",
+    "For repeat versus raw_full/zstd_full, candidate seed plus repeat contains two deliveries, whereas the unseeded full-copy control contains one. Their cumulative cost tally is not an equal-work lifecycle head-to-head; seed costs and marginal warm-transfer ratios should be reported separately.",
+    "No derived wall-minus-CPU residual is interpreted as network time; sender CPU, receiver CPU and socket waits may overlap.",
+    "Warm packet attribution is incomplete; prefix capture independently matches all240 row byte/packet counts, but covers only the runner-Cloudflare leg."
+  ]
+}

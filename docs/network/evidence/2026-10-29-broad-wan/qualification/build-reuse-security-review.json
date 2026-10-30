@@ -1,0 +1,29 @@
+{
+  "schema": "spiralcore.build-reuse.security-review.v1",
+  "status": "source_review_passed",
+  "reviewer": "mvm_architect_security",
+  "reviewed_sha256": {
+    ".github/workflows/spiralcore-wan.yml": "4c8455b19186f595aea91edc4695b39bcca91adc396e42af8725d2fa3c111a34",
+    "tools/wan-build-manifest/src/lib.rs": "4ce4a9da355593deaf3e168588516d1f163a197e0aba7f170f286b702f188207",
+    "tools/wan-build-manifest/src/main.rs": "b41113de53202d4c356765a017690aed838adf4878fe5616c2531fe704240397",
+    "tools/wan-build-manifest/Cargo.lock": "68189d3b0f27d3674ab64020c2d813eff1a8754323c4584ff1496cda79fe201f",
+    "tools/wan-build-manifest/tests/cli.rs": "dfc093ed0bdebbaed750e9de0fd56fb6db3be0fb10217204248e3d575fa96af7",
+    "local/broad-wan-20261029/run-shard.sh": "05fee9bc61ff45a9b68b5d61ce67bb3b1f04e0681f7875d4eb610e6b4bf2db57"
+  },
+  "blocking_findings": [],
+  "reviewed_boundaries": [
+    "Checked-out Rust validator bootstraps authentication of exact repository, workflow, source, producer run and attempt, completed source build and ordinary capture qualification.",
+    "Authenticated GitHub artifact digest and size are checked against actual ZIP bytes before bounded four-entry metadata inspection and fixed-path extraction.",
+    "Strict manifest and extracted executable lengths and hashes are checked before chmod or execution; controller identity is bound to producer capture qualification.",
+    "Consumer reruns capture qualification; source build inputs and producer provenance remain distinct from current runner hardware.",
+    "Qualification-only coverage uses a separate target and subshell, records actual stage and exit, checks ordinary release hashes before and after even on failure, and gates sealing on successful execution without a percentage threshold.",
+    "Local orchestration validates frozen producer pins before creating resources, checkpoints them into each owned shard, and cross-checks downloaded proof, archive, reuse and manifest receipts.",
+    "Artifact download or verification failure preserves receiver cache. Exact reopened byte comparison and checked publication hashes precede deletion of the new owned synthetic cache.",
+    "Bearer cleanup is verified; owned child process identity is checked before termination. The receiver has a finite one-hour lifetime. No measured retry or automatic build fallback is introduced."
+  ],
+  "limitations": [
+    "This is source review; exact-source final Linux producer, isolated coverage and actual artifact reuse execution are NOT_RUN at review time.",
+    "GitHub CLI network calls during local cleanup lack a separate local timeout; cleanup failures are reported and the receiver has a finite lifetime.",
+    "Trust includes the authenticated GitHub service, pinned workflow source, reviewed compiler/dependency inputs and exclusive ownership of the local campaign directory. This is not remote attestation or a FIPS claim."
+  ]
+}

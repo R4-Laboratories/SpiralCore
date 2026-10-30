@@ -1,0 +1,21 @@
+{
+  "schema": "spiralcore.receiver-diagnostic-schedule.v1",
+  "preregistration_revision": "74ee59d",
+  "primary_metric": "local_operation_total.cpu_ns",
+  "primary_cell": {"population": 768, "sparse": true, "max_nodes": 262144},
+  "supporting_cell": {"population": 768, "sparse": true, "max_nodes": 1},
+  "joint_target": {"both_cells_required": true, "minimum_paired_old_over_new_geometric_mean": 1.10, "minimum_new_faster_pairs": 6, "pairs": 8},
+  "pairs": [
+    {"block": 0, "order": ["old", "new"]},
+    {"block": 1, "order": ["new", "old"]},
+    {"block": 2, "order": ["old", "new"]},
+    {"block": 3, "order": ["new", "old"]},
+    {"block": 4, "order": ["old", "new"]},
+    {"block": 5, "order": ["new", "old"]},
+    {"block": 6, "order": ["old", "new"]},
+    {"block": 7, "order": ["new", "old"]}
+  ],
+  "populations": [0, 64, 256, 768],
+  "fixture": {"generator": "xorshift64-low-byte-per-step-v1", "seed": 42, "bytes": 1048576, "mutation_offset": 524288, "mutation_bytes": 32, "xor": 165},
+  "limitations": ["No outlier deletion or selecting a winning population after results", "Whole process operation CPU includes handler CPU; never sum them again", "No WAN or energy claim"]
+}

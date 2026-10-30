@@ -1,0 +1,70 @@
+{
+  "schema": "spiralcore.independent-custody-checker-qualification.v1",
+  "status": "passed",
+  "runtime_source_unchanged": "9dce4c57d1f41cef7365b297cd690849afce34e7",
+  "review_source_sha256": "aa88a6fb35d90f9be2c657a48e7f3a6f8e4bff347fd3b9a050f2769b204593a2",
+  "review_executable_sha256": "a3c7cda3aa87758b2614739c0e4ac5e214458def7e88cd83ae62811ae786161a",
+  "test_executable_sha256": "8d93df9e91a8f7a6d7ded2cb8670b5a1c3ded36e7c5d8b9479daca5ce6b7b231",
+  "comparison_source_sha256": "8f30a1478bb4b2c6c508253b3b9ef00fbc3d481a4dade848c08f3bb3718c3b87",
+  "comparison_executable_sha256": "ebf04459949165662972a731c377f7aee84da31c52604c5b47535d665cd20433",
+  "independent_review_sha256": "8a84c3366ed22f144c9f52729bba9c7f9ffa853c9512c64ed0a90d9db3bef598",
+  "author_crosscheck_sha256": "2099493460692f1ff4c636ef6d2c5af8443192ae363b357251ce8d1b0a0ca80f",
+  "compiler": "rustc 1.97.1 (8bab26f4f68e0e26f0bb7960be334d5b520ea452), aarch64-apple-darwin, LLVM 22.1.6",
+  "platform": "macOS 27.0 build 26A5378n",
+  "extractor": {
+    "path": "/usr/bin/tar",
+    "version": "bsdtar 3.5.3 - libarchive 3.7.4 zlib/1.2.12 liblzma/5.4.3 bz2lib/1.0.8",
+    "sha256": "52fd679243185850dbf37bf3ee5d17ce8c14ac65af7814ff7fafcc72a0945116"
+  },
+  "rlibs": {
+    "libzip-1ebc74230b0f80e1.rlib": "ab791d949b54a03bbc3b5039d5f1dfb5ba9f7be7820cab92e3a5293086cb398d",
+    "libserde_json-f11651c4b5834b4e.rlib": "c8752da542071c7d2e30c79c43602cf4b9a626d19cce3a1b33647055adc9a666",
+    "libsha2-11f7c61dcc994809.rlib": "f330242bbe618610a480be8d6467841cc2c6acc06ff71d93c7d278cf702c0f02"
+  },
+  "red": {
+    "command": "./review --assert-old /Users/casey.allard/spiralcore/local/broad-wan-20261029/campaign/compressed_localized_32/shard-0/evidence-remote-files.sha256",
+    "actual_exit": 1,
+    "stderr": "independent custody: old manifest is empty or has wrong count",
+    "before_recovery_run": true,
+    "meaning": "The actual defective historical manifest cannot satisfy the mandatory positive member-count gate. The author's separate minimal historical reproducer preserves the missing-redirection false-success behavior."
+  },
+  "tests": {
+    "command": "./review-tests --test-threads=1",
+    "actual_exit": 0,
+    "passed": 5,
+    "failed": 0,
+    "ignored": 0,
+    "cases": ["actual_extraction_exact_bytes_pass", "changed_bytes_rejected", "missing_member_rejected", "empty_iteration_rejected", "supplied_count_cannot_hide_missing_work"],
+    "initial_tests_before_actual_recovery": true,
+    "final_formatted_source_tests_repeated_successfully": true
+  },
+  "actual_recovery": {
+    "command": "./review /Users/casey.allard/spiralcore/local/broad-wan-20261029 > independent-review.json",
+    "actual_exit": 0,
+    "archives": 11,
+    "members": 613,
+    "uncompressed_bytes_compared": 425385845,
+    "all_retained_api_zip_digests_and_lengths_match": true,
+    "all_zip_member_bytes_equal_existing_files": true
+  },
+  "author_comparison": {
+    "command": "./compare-author /Users/casey.allard/spiralcore/local/broad-wan-20261029/qualification/artifact-member-custody-correction > author-crosscheck.json",
+    "actual_exit": 0,
+    "all_613_member_lines_and_11_manifest_hashes_equal": true,
+    "all_archive_sizes_hashes_counts_and_uncompressed_totals_equal": true
+  },
+  "independent_scope_census": {
+    "campaign_manifests": 56,
+    "empty": 11,
+    "populated": 45,
+    "each_populated_bytes": 5546,
+    "each_populated_lines": 56,
+    "populated_cases": ["localized_32", "scattered_32x32", "prefix_4096", "middle_4096", "delete_4096", "append_4096", "truncate_4096", "replace_1m", "structured_localized_32"],
+    "scope": "Metadata and line-count census only for the earlier 45 archives; no additional byte recheck of them in this review."
+  },
+  "disposition": "Withdraw the eleven historical per-member match claims. The authenticated archive hashes and sizes remain valid. The new additive correction and independent direct-byte checks recover member-level custody without rewriting the old receipts or changing scientific observations.",
+  "original_artifacts_modified": false,
+  "production_changes": false,
+  "new_transfer_or_measurement": false,
+  "limitations": ["Retained authenticated API responses were checked locally; no new network/API authentication occurred in this review.", "Passing archive/file comparisons do not change failed or incomplete packet capture results.", "The helper is a bounded investigation tool for the explicitly enumerated eleven retained archives, not a general archive extraction service."]
+}

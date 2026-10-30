@@ -1,0 +1,99 @@
+{
+  "schema": "spiralcore.preflight-failure-diagnosis.v1",
+  "source": "9dce4c57d1f41cef7365b297cd690849afce34e7",
+  "suite": "broad16-cold_random",
+  "shard": 0,
+  "attempt": 1,
+  "run_id": 40984573497,
+  "status": "setup_failed_before_measured_client_launch",
+  "classification_basis": {
+    "registration": "source/2026-10-29-broader-wan-and-scaling.md:163",
+    "controller": "source/spiralcore-capture-control.rs:513",
+    "predicate": "source/capture_lifecycle.rs:216",
+    "lifecycle_sha256": "b4e4fb07dd835c74f9364beca2b3c231fbdfe3105d4ee9055027d2310213ddb2",
+    "plan_sha256": "ad73f3f28d23770c86e953b932e4d5a59a0274170d9708b6edec90adbd51df1c"
+  },
+  "observations": {
+    "ready": true,
+    "preflight": [
+      {
+        "elapsed_millis": 159,
+        "stderr_end": 242,
+        "file_bytes": 24,
+        "counters": {
+          "captured": 0,
+          "received": 4,
+          "dropped": 0
+        },
+        "stderr_text": "tcpdump: 0 packets captured, 4 packets received by filter, 0 packets dropped by kernel\n"
+      },
+      {
+        "elapsed_millis": 700,
+        "stderr_end": 329,
+        "file_bytes": 24,
+        "counters": {
+          "captured": 0,
+          "received": 4,
+          "dropped": 0
+        },
+        "stderr_text": "tcpdump: 0 packets captured, 4 packets received by filter, 0 packets dropped by kernel\n"
+      }
+    ],
+    "client_started_elapsed_millis": null,
+    "client_ended_elapsed_millis": null,
+    "client_exit_code": null,
+    "quiescence": [],
+    "capture_exit_code": 0,
+    "forced_cleanup": false,
+    "final_snapshot": {
+      "elapsed_millis": 720,
+      "stderr_end": 405,
+      "file_bytes": 24,
+      "counters": {
+        "captured": 0,
+        "received": 4,
+        "dropped": 0
+      },
+      "stderr_text": "0 packets captured\n4 packets received by filter\n0 packets dropped by kernel\n"
+    },
+    "errors": [
+      "startup counters or file extent are not quiet and complete"
+    ],
+    "measurement_rows_file_present": false,
+    "measurement_summary_present": false,
+    "measurement_capture_report_present": false,
+    "measurement_pcap_bytes": 24,
+    "local_verification_output_bytes": 0,
+    "cache_files": 2,
+    "cache_object_publications": 0,
+    "cold_plan_tasks": 24,
+    "all_seed_base_false": true
+  },
+  "interpretation": {
+    "failed_predicate": "Both samples are stable and separated by 541 ms, but captured 0 does not equal received 4; quiet() therefore returns false before Command::new launches the benchmark client",
+    "measured_operation_started": false,
+    "underlying_counter_discrepancy_cause": "UNPROVEN; lifecycle alone does not identify these packets or establish filter-attachment, unread-buffer, kernel or application cause",
+    "kernel_drop_count_is_not_transfer_loss_proof": true,
+    "measurement_performance_metrics": "NOT_AVAILABLE; no measured rows or fabricated full-case statistics",
+    "qualification_pcaps": "The three nested capture-qualification PCAPs belong to the earlier synthetic Linux qualification; they are not failed-run WAN measurement rows"
+  },
+  "secondary_local_error": {
+    "reported_error": "ENOENT opening absent remote/rows.jsonl",
+    "report_authority": "Parent observed local verifier failure; absent rows and empty verification output independently checked during preservation",
+    "source_path": "source/run-shard.sh",
+    "source_sha256": "05fee9bc61ff45a9b68b5d61ce67bb3b1f04e0681f7875d4eb610e6b4bf2db57",
+    "source_scope": "Frozen local orchestration helper, not asserted to be a file from the measured Git revision",
+    "source_line": 203,
+    "explanation": "The local helper invokes offline verification after download without first stopping on the failed watch status; its output redirection creates an empty verification.json. The final watch-status check occurs later. This secondary failure neither launched the measured client nor invalidates the retained preflight boundary"
+  },
+  "cleanup": {
+    "cleanup_failed": 0,
+    "operation_exit": 1
+  },
+  "failed_shard_directory_moved": false,
+  "failed_shard_cache_removed": false,
+  "hosted_artifact_deleted": false,
+  "source_or_measurement_code_changed": false,
+  "measurements_retried": false,
+  "independent_review": "independent-source-review.json"
+}

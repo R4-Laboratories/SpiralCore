@@ -1,0 +1,104 @@
+{
+  "schema": "spiralcore.build-reuse-native-qualification.v1",
+  "status": "passed",
+  "base_head": "bc8c5722d634a34dddc643c19301ef00064eea84",
+  "source_state": "uncommitted source bound by source-files.sha256",
+  "source_manifest_sha256": "1bfcc485210e459831887309dbbd2a0ea4bd1cda612a48f439cc2b7a6cb3c9b6",
+  "tests": {
+    "passed": 21,
+    "failed": 0,
+    "ignored": 0,
+    "manifest_archive_unit": 13,
+    "cli": 6,
+    "workflow_guard_tests": 2,
+    "workflow_guard_cases": 91
+  },
+  "test_log_sha256": "328c5d9939796535f524c20f474e82ff1666c33da2ccd548d7dca100cb6007a3",
+  "clippy": {
+    "exit": 0,
+    "log_sha256": "2a49abbad83b9eee714823a0e1fe033d94f5978254fc14c65b9043610fe09e32"
+  },
+  "format_exit": 0,
+  "diff_check_exit": 0,
+  "coverage": {
+    "sha256": "054bb8c4c82ba2c4fa2775bcbb16a0eb51d8a2c7304be16efbe535f1e084b45a",
+    "summary": {
+      "branches": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0
+      },
+      "functions": {
+        "count": 58,
+        "covered": 57,
+        "percent": 98.27586206896551
+      },
+      "instantiations": {
+        "count": 109,
+        "covered": 92,
+        "percent": 84.40366972477065
+      },
+      "lines": {
+        "count": 714,
+        "covered": 695,
+        "percent": 97.3389355742297
+      },
+      "mcdc": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0
+      },
+      "regions": {
+        "count": 1312,
+        "covered": 1245,
+        "notcovered": 67,
+        "percent": 94.89329268292683
+      }
+    },
+    "branch_coverage": "NOT_REPORTED"
+  },
+  "red_results": {
+    "manifest": {
+      "passed": 2,
+      "failed": 5
+    },
+    "capture_binding": {
+      "passed": 0,
+      "failed": 1
+    },
+    "archive": {
+      "passed": 1,
+      "failed": 3
+    },
+    "guard": {
+      "passed": 0,
+      "failed": 2,
+      "meaning": "unsupported reuse pin and discovered Bash3 compound-test rejection gap"
+    }
+  },
+  "review_fix": "Capture-schema and failed-status test mutations now retain valid controller digest, so deserialization cannot mask the intended checks",
+  "limitations": [
+    "Final exact-source Linux producer and authenticated artifact reuse still require qualification",
+    "Native evidence is not WAN performance",
+    "No source changes in transport/capture implementation owned by this task",
+    "Historical Bash3.2 guard rejection claims are not credited solely from set -e"
+  ],
+  "independent_review": {
+    "reviewer": "mvm_architect_security",
+    "status": "source_review_approved",
+    "workflow_sha256": "4c8455b19186f595aea91edc4695b39bcca91adc396e42af8725d2fa3c111a34",
+    "scope": "workflow and unchanged helper source/lock; masked negative repaired",
+    "runtime_boundary": "exact-source Linux producer and actual reuse remain to qualify"
+  },
+  "final_workflow_qualification": {
+    "configuration_guard_tests": 2,
+    "configuration_guard_cases": 91,
+    "failed": 0,
+    "log_sha256": "62831a9d25b6bee021169f1204627c4580b5b24bbc5b0a6b6f8be2fae3a17fd5",
+    "bash_syntax_exit": 0,
+    "extracted_coverage_step_sha256": "4633c832c47f0f94313dfcbeef12d1fe08799b04529a570472e7cace1955a587",
+    "live_linux_instrumented_coverage": "NOT_RUN; parent owns final producer qualification"
+  }
+}

@@ -1,0 +1,44 @@
+{
+  "schema": "spiralcore.coverage-profile-repair.v1",
+  "failed_producer": {
+    "run_id": 40947946641,
+    "source": "16fe9f44e858053a202b396fb7fca628dfcfd97c",
+    "stage": "all_target_tests_including_ignored",
+    "exit": 124,
+    "release_unchanged": true,
+    "instrumented_compilation_seconds": 33.45,
+    "instrumented_compilation_finished_utc": "2026-10-29T20:24:56.2074821Z",
+    "timeout_exit_utc": "2026-10-29T20:29:22.7795697Z",
+    "completed_instrumented_tests": {"library": 4, "cli_unit": 1, "benchmark_unit": 9},
+    "unfinished_test": "tests::broad_local_http_first_pair_for_every_case_reopens_exactly",
+    "unfinished_test_contract": "88 real 16 MiB-class HTTP operations; explicitly run in release",
+    "assertion_failure_observed": false,
+    "instrumented_capture_ran": false,
+    "coverage_report_created": false,
+    "sender_artifact_sealed": false,
+    "wan_transfer_ran": false,
+    "diagnostic_sha256": "b909c17431862b1efca12ee7b554496967d30d60ff93aac4ecb4a6e73bb67a3f",
+    "coverage_status_sha256": "4165549ef142172b6364af28b90b057456dc27a4eb41a88d76c48ade86f5228c",
+    "release_before_and_after_sha256": "197f7bbfc86e2d951575b25c5b4ef7ac0ebcb7c21773f251496345f863e7ee98"
+  },
+  "diagnosis": "The 300-second combined instrumented build/test command exhausted its budget during the debug-profile 88-operation test. It did not reach instrumented capture qualification. The log contains no Rust assertion failure; termination does not prove the unfinished test would pass.",
+  "repair": {
+    "scope": "Four workflow sites only: test/build/report use --release, and the instrumented capture path uses the same isolated target/release directory",
+    "workflow_sha256": "55dc685020919a04f253e8f354004402170fd7043604454cb04b34e8091c97a3",
+    "regression_source_sha256": "adf7e550dd8b06d572e088ee9c34b8e3a8d1810efcef270e1755c26b06aacca0",
+    "unchanged": ["all 167 source tests including ignored large fixtures", "300-second test command limit", "300-second instrumented build limit", "180-second instrumented capture limit", "ordinary source tests and release capture qualification", "production release executable checksums before and after", "production transfer and capture source"],
+    "show_env": "Profile-independent; pinned tool help does not expose a release argument. Report supports --release.",
+    "linux_runtime_requalification": "NOT_RUN at this receipt"
+  },
+  "native_regression": {
+    "test": "isolated_coverage_uses_one_release_profile_for_every_stage",
+    "red": {"exit": 101, "passed": 0, "failed": 1, "assertion": "coverage profile mismatch: instrumented cargo test command omitted --release", "output_sha256": "f9ad3a458706dd40204cac8598adf2e6a8ae12c78dac985ff82e9b7fd8e0d114"},
+    "green": {"exit": 0, "passed": 3, "failed": 0, "configuration_cases": 91, "output_sha256": "c05e5f9d8463253b9f93a41a93496b9ad7060a42e54bd950c7e4aacc83fe7473"},
+    "command": "cargo +1.97.1 test --locked --offline --manifest-path tools/wan-build-manifest/Cargo.toml --test workflow_guard",
+    "bash_syntax_exit": 0,
+    "diff_check_exit": 0,
+    "clippy_all_targets_deny_warnings_exit": 0,
+    "clippy_output_sha256": "547f6c1b83d3fc04ff795f29f04982806c524e663116d952c1c75434e567623f"
+  },
+  "custody": "The transport investigator alone downloaded producer evidence. Its original raw evidence and the previous qualification packet remain unchanged. This receipt is a successor correction, not a rewrite of the failed run."
+}

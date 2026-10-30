@@ -1,0 +1,17 @@
+{
+  "schema": "spiralcore.cache-profile-schedule.v1",
+  "experiment": "SC-OPT-004-attribution",
+  "source_revision": "f0966ebedcb8994f0985b54e9a2b961eeb8be914",
+  "registration_revision": "867ad3338b6e8c0ba708259cb8103fd4dac0f5d0",
+  "configuration": "snapshot-only scan instrumentation; hardware SHA enabled",
+  "blocks": [0, 1],
+  "populations": [0, 64, 256, 768],
+  "arms": ["raw-node-budget-262144", "sparse-node-budget-262144", "raw-node-budget-1", "sparse-node-budget-1"],
+  "observations": 32,
+  "fixture": {"generator": "xorshift64-low-byte-per-step-v1", "seed": 42, "bytes": 1048576, "mutation_offset": 524288, "mutation_bytes": 32, "xor": 165},
+  "base_object": "c7fceaf53550e0ab1393604c2bc88eabd267676766ae90ad52459ece381822c0",
+  "target_object": "227bbf10e522740c837d03da96838331a00fe3dac2ca77c095ba1044467b0ebf",
+  "templates_sha256": "e329c457e6b3308229332eca5987bdfdc25ff298d541ab74d377e8a95f9c8790",
+  "ordering": "fixed blocks 0,1; populations rotate by block and four arms rotate by block plus population index",
+  "boundaries": ["attribution only, no production speed comparison", "retain all observations and stop without retry on failure", "scan clocks include counter overhead and may change code generation", "API call counts are not syscall counts", "no WAN or energy measurement"]
+}

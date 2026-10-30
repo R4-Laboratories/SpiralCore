@@ -1,0 +1,20 @@
+Working directory: /Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore
+Guard RED: /Users/casey.allard/.cargo/bin/cargo test --locked --offline --manifest-path tools/wan-build-manifest/Cargo.toml --test workflow_guard
+Manifest RED: /Users/casey.allard/.cargo/bin/cargo test --locked --offline --manifest-path tools/wan-build-manifest/Cargo.toml --lib
+Controller-binding RED: /Users/casey.allard/.cargo/bin/cargo test --locked --offline --manifest-path tools/wan-build-manifest/Cargo.toml --test cli capture_qualification_must
+Archive RED: /Users/casey.allard/.cargo/bin/cargo test --locked --offline --manifest-path tools/wan-build-manifest/Cargo.toml --lib archive_tests
+Final all-targets GREEN + isolated coverage:
+PATH=/Users/casey.allard/spiralcore/local/tools/bin:/Users/casey.allard/.cargo/bin:$PATH CARGO_TARGET_DIR=/Users/casey.allard/spiralcore/local/broad-wan-20261029/build-reuse/coverage-target /Users/casey.allard/.cargo/bin/cargo +1.97.1 llvm-cov --locked --offline --manifest-path tools/wan-build-manifest/Cargo.toml --all-targets --json --summary-only --output-path /Users/casey.allard/spiralcore/local/broad-wan-20261029/build-reuse/coverage.json
+Final Clippy: /Users/casey.allard/.cargo/bin/cargo clippy --locked --offline --manifest-path tools/wan-build-manifest/Cargo.toml --all-targets -- -D warnings
+Format: /Users/casey.allard/.cargo/bin/cargo fmt --check --manifest-path tools/wan-build-manifest/Cargo.toml
+Whitespace: git diff --check
+Final source/hash manifest: source-files.sha256
+Initial test-wrapper compile errors and macOS Bash3.2 compound-command errexit discrepancy were setup findings, not accepted RED evidence. Runtime RED logs are preserved separately.
+No WAN measurement, profile rerun, GitHub mutation, source commit, or artifact deletion performed by this task.
+
+Final workflow freeze (source-files.sha256 binds the source):
+PATH=/Users/casey.allard/.cargo/bin:$PATH CARGO_TARGET_DIR=/Users/casey.allard/spiralcore/local/broad-wan-20261029/build-reuse/target cargo +1.97.1 test --locked --offline --manifest-path tools/wan-build-manifest/Cargo.toml --test workflow_guard
+Observed: exit0, 2 tests, all91 original/reuse cases. Output: final-workflow-guard.log.
+Exact isolated coverage run block extracted into coverage-step.sh; bash -n coverage-step.sh exit0.
+git diff --check: exit0.
+Live Linux instrumented coverage has NOT_RUN locally and will be qualified by the parent's exact-source producer. No coverage percentage gate is presumed.

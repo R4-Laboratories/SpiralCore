@@ -1,0 +1,50 @@
+{
+  "schema": "spiralcore.independent-broad-review.median-correction.v1",
+  "status": "qualified_before_measurement",
+  "measurement_status": "NOT_RUN_no_broad_WAN_data_exists",
+  "reason": "Align the gate with the original accepted requirement of at least twofold lower median completion time. The threshold is unchanged; the geometric mean remains a descriptive statistic.",
+  "definition": {
+    "median_wall_ratio": "raw_full transfer wall midpoint median divided by sparse transfer wall midpoint median",
+    "paired_wall_ratio": "geometric mean of 30 paired raw_full/sparse wall ratios, descriptive only",
+    "performance_thresholds_pass": "median_wall_ratio >= 2.0 AND sparse median HTTP-body bytes <= 0.1 * raw_full median HTTP-body bytes",
+    "separate_requirements": ["exact reopened identity verification", "packet-capture and full-path scope qualification"]
+  },
+  "predecessor_preserved": {
+    "directory": "pre-median-correction",
+    "source_sha256": "974b5e654b27994c617a00cb6372c1a9a86d6a2c6df4e5f226b187327df580f8",
+    "executable_sha256": "2cf10ee8378d1b3bc26a85e573a593bf1bb7e77ef235882ac1dcc034c4416f9e",
+    "qualification_sha256": "60655cb66e0bde4eedcb20405119e902bedb97bcc290ecb24edb31410bbc5c85",
+    "preservation_verified": "byte equality checked after copying source and executable; original hashes match"
+  },
+  "red": {
+    "test": "minority_wall_outliers_cannot_substitute_geometric_mean_for_median_gate",
+    "exit": 101,
+    "passed": 0,
+    "failed": 1,
+    "observed_assertion": "left Bool(true), right false",
+    "fixture": "24 raw wall observations of 600 and six of 60000 versus 30 sparse wall observations of 400; HTTP-body reduction is 99 percent",
+    "median_wall_ratio": 1.5,
+    "paired_geometric_mean": "greater than 2.0",
+    "raw_log_location": "tool result retained in task conversation; no standalone diagnostic log authored"
+  },
+  "green": {
+    "all_targets_passed": 9,
+    "failed": 0,
+    "additional_boundary": "median ratio exactly 2.0 passes with the byte gate satisfied",
+    "clippy_all_targets_deny_warnings": "passed",
+    "release_build": "passed",
+    "rustfmt": "passed"
+  },
+  "current_sha256": {
+    "src/main.rs": "c4690d8bd8e2949f9da4bdabe61430cc0a802a82ddc74730094fb314abc80b08",
+    "target/release/spiralcore-broad-independent-review": "8b7ca4313a9d9d924bb901f1790157e87d37fb5ad2442462dd93cef79cc7ba8d",
+    "unchanged_target/release/pcap-review": "3dc645f6b63e1d8e3723243358edcbcd9f52971d2e5b663b0d54a18bb52eb5dd"
+  },
+  "parent_analysis_review": {
+    "status": "source_review_passed",
+    "source_sha256": "1f08a058ed21da4be97115fcb00388f52e7a788d1a43a4b4d54e40976657d101",
+    "observed": "The gate now uses the ratio of midpoint medians. Paired geometric mean remains reported and does not determine acceptance. Fourteen high raw-time outliers in the separate author regression make its geometric mean exceed two while its median ratio is 1.1; this must fail.",
+    "blocking_findings": []
+  },
+  "unchanged": ["canonical fixtures and task ordering", "byte and CPU statistics", "cold gates", "capture accounting", "source and artifact custody checks", "production runtime", "workflow", "dependency lock"]
+}

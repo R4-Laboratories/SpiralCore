@@ -1,0 +1,70 @@
+{
+  "schema": "spiralcore.independent-broad-review.capture-projection-repair.v1",
+  "status": "qualified_and_localized_v2_review_passed",
+  "scope": "Local offline evidence checker only; no production changes, measurement retries, altered campaign inputs, or acceptance-threshold changes.",
+  "phase1_root_cause": {
+    "production_definition": "crates/spiralcore-transfer/src/bin/spiralcore-capture.rs Row at line 111 retains id; line 712 emits task as exactly json!({id:row.id}).",
+    "checker_defects": [
+      "The predecessor main.rs line 503 compared this projected task with the full canonical raw-receipt task.",
+      "The later IP statistics mapping tried to read trial and arm directly from the same id-only capture projection."
+    ],
+    "first_runtime_failure": "Full object equality assertion failed at the first capture row; the correctly emitted projection contained only id.",
+    "classification": "Checker schema mismatch; no observed transfer, fidelity, capture, or numerical-statistics failure."
+  },
+  "preserved_failure": {
+    "directory": "pre-capture-projection-correction",
+    "source_sha256": "c4690d8bd8e2949f9da4bdabe61430cc0a802a82ddc74730094fb314abc80b08",
+    "executable_sha256": "8b7ca4313a9d9d924bb901f1790157e87d37fb5ad2442462dd93cef79cc7ba8d",
+    "failed_v1_output": "campaign/localized_32/independent-review.json remains unchanged; byte-exact empty copy retained in predecessor directory",
+    "failed_output_bytes": 0,
+    "failed_output_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "repair": {
+    "join": "One shared capture_receipt helper for both validation and IP indexing.",
+    "required_bindings": ["exact task projection with only id", "exactly one matching source receipt by id and phase", "status", "start timestamp", "end timestamp", "upload application-body bytes", "download application-body bytes"],
+    "canonical_identity": "Full task, trial/arm, scope, object bytes/hash, source and executable remain validated in raw receipts before capture processing. IP indexing takes trial/arm from that matched canonical receipt.",
+    "duplicate_rejection": "Existing duplicate capture id/phase check retained; shared join also rejects duplicate source matches.",
+    "source_sha256": "43a7518381625dae591ed563fddd35c631b81cf29d4bb22b5f00ba22b437efd8",
+    "executable_sha256": "9fed056621881f942d256a5277e9bf34187c5766dc5f7cea3e912f73640ae241"
+  },
+  "representative_fixture": {
+    "capture_source": "campaign/localized_32/shard-0/remote/capture.json first row",
+    "capture_source_sha256": "a6f70e5e9d07026f3d2a5cac37d6b2354d2118adc5b228908e9d217b409d0395",
+    "raw_source": "campaign/localized_32/shard-0/remote/rows.jsonl first line",
+    "raw_source_sha256": "d355db864f16bcbcacb87459f303e264d43ddeedc683d9e8c7ed733d1bf248ac",
+    "retained_capture_fixture_sha256": "861fa01081416f3d81c2733ee6ef495bb69eaf8506b16fa6e8d4e64d3a2359db",
+    "retained_receipt_fixture_sha256": "47a5e2c7d9f314d865657561419eaca18bb449a22362a19edeb81d7dbdb02676"
+  },
+  "regression": {
+    "test": "actual_capture_projection_binds_full_source_receipt_and_rejects_mutations",
+    "initial_test_build_correction": "E0515 temporary duplicate-receipt array lifetime fixed before runtime RED; this compile failure was not counted as the defect reproduction.",
+    "runtime_red": {"exit":101,"passed":0,"failed":1,"assertion":"actual {id} projection differs from the full raw Task","source_sha256":"aa166ed264608f0bef9532a17195a19b5317a14a668c8352fb4a59b7a1d19a53"},
+    "green": {"all_targets_passed":10,"failed":0,"clippy_deny_warnings":"passed","release_build":"passed","rustfmt":"passed"},
+    "negative_cases": ["wrong id", "wrong phase", "wrong start time", "wrong end time", "wrong upload body total", "unexpected extra task key", "failed status", "duplicate matching source receipts"]
+  },
+  "independent_source_review": {
+    "reviewer": "transport_audit",
+    "status": "approved_before_dataset_rerun",
+    "reviewed_source_sha256": "43a7518381625dae591ed563fddd35c631b81cf29d4bb22b5f00ba22b437efd8",
+    "blocking_findings": []
+  },
+  "localized_v2_execution": {
+    "exit": 0,
+    "stderr_bytes": 0,
+    "output": "campaign/localized_32/independent-review-v2.json",
+    "output_sha256": "b2af084e4ab9781cd245093cd9a7037349890e72600117c5c0c1ad85cefb6bc5",
+    "author_aggregate_sha256": "6c2b4098fbd91188207312d6c6486a544b6a345ba811b73639b013bbf55ce667",
+    "independent_pcap_review_sha256": "98e2cda0a61da522601e2eb9d1deaf53d0c748eca203519330f947adc7641df6",
+    "status": "raw_receipts_and_author_statistics_agree",
+    "receipts": 240,
+    "trials_per_arm": 30,
+    "shards": 5,
+    "expected_reopened_bytes": 4026531840,
+    "all_five_captures_complete": true,
+    "median_wall_ratio": 6.725348207036893,
+    "descriptive_paired_wall_geometric_mean": 7.116084987809051,
+    "median_HTTP_body_fraction_reduction": 0.9999643155065896,
+    "registered_HTTP_body_and_median_wall_gate": "passed",
+    "scope": "Localized 32-byte edit of a 16 MiB fixture; all four arms and paid seeds retained. Complete IP statistics concern the selected runner-to-relay leg only. This review cross-checks retained exact-reopen receipts; caches were already removed after the original exact comparison."
+  }
+}

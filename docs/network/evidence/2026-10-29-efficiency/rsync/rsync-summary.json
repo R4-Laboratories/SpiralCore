@@ -1,0 +1,779 @@
+{
+  "schema": "spiralcore.local.rsync.summary.v1",
+  "status": "qualified_local_diagnostic",
+  "rows": 360,
+  "trial_pairs": 90,
+  "phase_counts": {
+    "seed": 180,
+    "update": 180
+  },
+  "pilot_rows_excluded": 4,
+  "all_exact_verified_and_file_parent_synced": true,
+  "all_object_ids_match_corresponding_published_WAN_raw_full_rows": true,
+  "all_reported_protocol_bytes_gte_unmatched": true,
+  "all_arm_orders_balanced_15_first_each": true,
+  "artifacts": [
+    {
+      "name": "localized-30",
+      "path": "/Users/casey.allard/spiralcore/local/efficiency-20261029/rsync-runs/localized-30/rows.jsonl",
+      "sha256": "86c089a0984af6fbdd39cd729b8ddace074ee693e09141195f42018190ad4469",
+      "bytes": 272223,
+      "row_count": 120,
+      "complete": {
+        "finished_unix_nanos": "1793282764550503000",
+        "rows": 120,
+        "schema": "spiralcore.local.rsync.complete.v1",
+        "status": "verified_synced"
+      },
+      "source_sha256": "ecd46cb734174bd3fd08daf209a876ef71d674a868577322f7b66801450c5c32",
+      "helper_sha256": "404778036917896a346266d594b82f160b3a246ef6dbf2839af07db14f36f61b",
+      "plan": {
+        "bytes": 236336,
+        "path": "/Users/casey.allard/spiralcore/local/efficiency-20261029/wan-warm/plan.json",
+        "sha256": "133b97ddd04c39a084c4bc00cb4dfddd2eb586599e5c6aa2a5eaaa5726e2dd97"
+      },
+      "rsync": {
+        "path": "/usr/bin/rsync",
+        "sha256": "34e91ec4f122d6dab584cddd40403fc1872229f126ad88ed07382297e5a64332",
+        "version": "openrsync: protocol version 29\nrsync version 2.6.9 compatible\n"
+      }
+    },
+    {
+      "name": "scattered-30",
+      "path": "/Users/casey.allard/spiralcore/local/efficiency-20261029/rsync-runs/scattered-30/rows.jsonl",
+      "sha256": "02a161b452c79a2bd5f9918789c5dc0a5a0e12839d06db886f339fe3e2b41fc1",
+      "bytes": 274555,
+      "row_count": 120,
+      "complete": {
+        "finished_unix_nanos": "1793282769688635000",
+        "rows": 120,
+        "schema": "spiralcore.local.rsync.complete.v1",
+        "status": "verified_synced"
+      },
+      "source_sha256": "ecd46cb734174bd3fd08daf209a876ef71d674a868577322f7b66801450c5c32",
+      "helper_sha256": "404778036917896a346266d594b82f160b3a246ef6dbf2839af07db14f36f61b",
+      "plan": {
+        "bytes": 236336,
+        "path": "/Users/casey.allard/spiralcore/local/efficiency-20261029/wan-warm/plan.json",
+        "sha256": "133b97ddd04c39a084c4bc00cb4dfddd2eb586599e5c6aa2a5eaaa5726e2dd97"
+      },
+      "rsync": {
+        "path": "/usr/bin/rsync",
+        "sha256": "34e91ec4f122d6dab584cddd40403fc1872229f126ad88ed07382297e5a64332",
+        "version": "openrsync: protocol version 29\nrsync version 2.6.9 compatible\n"
+      }
+    },
+    {
+      "name": "prefix-30",
+      "path": "/Users/casey.allard/spiralcore/local/efficiency-20261029/rsync-runs/prefix-30/rows.jsonl",
+      "sha256": "45c84cb088ce19ecdb2521a9d938ae0b5f677cbd1e1ec0de1c3b6edf7e83e017",
+      "bytes": 268502,
+      "row_count": 120,
+      "complete": {
+        "finished_unix_nanos": "1793282775195568000",
+        "rows": 120,
+        "schema": "spiralcore.local.rsync.complete.v1",
+        "status": "verified_synced"
+      },
+      "source_sha256": "ecd46cb734174bd3fd08daf209a876ef71d674a868577322f7b66801450c5c32",
+      "helper_sha256": "404778036917896a346266d594b82f160b3a246ef6dbf2839af07db14f36f61b",
+      "plan": {
+        "bytes": 60164,
+        "path": "/Users/casey.allard/spiralcore/local/efficiency-20261029/wan-prefix/plan.json",
+        "sha256": "c16c615f3a0a3b332e8102010e1b17a3318ee3befc7c1876ae8f9a0e4eafd0e8"
+      },
+      "rsync": {
+        "path": "/usr/bin/rsync",
+        "sha256": "34e91ec4f122d6dab584cddd40403fc1872229f126ad88ed07382297e5a64332",
+        "version": "openrsync: protocol version 29\nrsync version 2.6.9 compatible\n"
+      }
+    }
+  ],
+  "totals": {
+    "reported_protocol_bytes": 285133260,
+    "verified_output_bytes": 377487420,
+    "summed_operation_wall_ns": 8790664671,
+    "summed_local_process_cpu_ns": 6300484000
+  },
+  "method": {
+    "quantiles": "median averages the two middle observations for n=30; p95 uses nearest rank ceil(0.95*n)",
+    "pairing": "derived seed+update costs and ratios formed per trial before summarization; sums of independent medians are not used",
+    "counterbalance": "each case alternates first arm by trial parity, 15 delta-first and 15 whole-file-first",
+    "fixtures": "exact selected WAN-plan xorshift64-v1 raw_full tasks; warm and prefix retain their distinct run IDs",
+    "transport": "local pipes/process transport, not WAN; counters are rsync-reported sent+received, not packet captures",
+    "cpu": "local aggregate of helper SELF plus waited CHILDREN user+system; no endpoint split and no energy measurement",
+    "durability": "file sync_all plus destination directory sync_all inside timing; ancestor directory setup synced before timing",
+    "limits": "Single Mac; source pages warmed by fixture preparation; OS caches not flushed; no WAN speed ranking, general novelty, FIPS, energy or power-loss proof"
+  },
+  "cases": [
+    {
+      "case": "localized_32",
+      "arms": {
+        "delta": {
+          "trials": 30,
+          "first_position_count": 15,
+          "update": {
+            "protocol_bytes": {
+              "min": 11396,
+              "median": 11396,
+              "p95_nearest_rank": 11396,
+              "max": 11396,
+              "sum": 341880
+            },
+            "matched_bytes": {
+              "min": 1047552,
+              "median": 1047552,
+              "p95_nearest_rank": 1047552,
+              "max": 1047552,
+              "sum": 31426560
+            },
+            "unmatched_bytes": {
+              "min": 1024,
+              "median": 1024,
+              "p95_nearest_rank": 1024,
+              "max": 1024,
+              "sum": 30720
+            },
+            "wall_ms": {
+              "min": 25.276083,
+              "median": 27.2786255,
+              "p95_nearest_rank": 49.192833,
+              "max": 58.371416,
+              "sum": 865.8799149999998
+            },
+            "cpu_ms": {
+              "min": 25.469,
+              "median": 26.9105,
+              "p95_nearest_rank": 32.694,
+              "max": 33.84,
+              "sum": 819.286
+            }
+          },
+          "seed": {
+            "protocol_bytes": {
+              "min": 1048836,
+              "median": 1048836,
+              "p95_nearest_rank": 1048836,
+              "max": 1048836,
+              "sum": 31465080
+            },
+            "wall_ms": {
+              "min": 19.779958,
+              "median": 21.993083,
+              "p95_nearest_rank": 25.045167,
+              "max": 53.495834,
+              "sum": 685.1171689999999
+            },
+            "cpu_ms": {
+              "min": 12.331,
+              "median": 13.975,
+              "p95_nearest_rank": 15.198,
+              "max": 16.297,
+              "sum": 422.2120000000001
+            }
+          },
+          "seed_plus_update": {
+            "protocol_bytes": {
+              "min": 1060232,
+              "median": 1060232,
+              "p95_nearest_rank": 1060232,
+              "max": 1060232,
+              "sum": 31806960
+            },
+            "wall_ms": {
+              "min": 46.254875,
+              "median": 48.692208,
+              "p95_nearest_rank": 78.771917,
+              "max": 79.433874,
+              "sum": 1550.997084
+            },
+            "cpu_ms": {
+              "min": 38.39,
+              "median": 40.9475,
+              "p95_nearest_rank": 47.458,
+              "max": 47.744,
+              "sum": 1241.498
+            }
+          }
+        },
+        "whole_file": {
+          "trials": 30,
+          "first_position_count": 15,
+          "update": {
+            "protocol_bytes": {
+              "min": 1048836,
+              "median": 1048836,
+              "p95_nearest_rank": 1048836,
+              "max": 1048836,
+              "sum": 31465080
+            },
+            "matched_bytes": {
+              "min": 0,
+              "median": 0,
+              "p95_nearest_rank": 0,
+              "max": 0,
+              "sum": 0
+            },
+            "unmatched_bytes": {
+              "min": 1048576,
+              "median": 1048576,
+              "p95_nearest_rank": 1048576,
+              "max": 1048576,
+              "sum": 31457280
+            },
+            "wall_ms": {
+              "min": 19.252834,
+              "median": 21.891479,
+              "p95_nearest_rank": 23.342041,
+              "max": 26.348375,
+              "sum": 655.4807069999998
+            },
+            "cpu_ms": {
+              "min": 13.146,
+              "median": 13.73,
+              "p95_nearest_rank": 14.975,
+              "max": 15.015,
+              "sum": 415.1940000000001
+            }
+          },
+          "seed": {
+            "protocol_bytes": {
+              "min": 1048836,
+              "median": 1048836,
+              "p95_nearest_rank": 1048836,
+              "max": 1048836,
+              "sum": 31465080
+            },
+            "wall_ms": {
+              "min": 19.988542,
+              "median": 22.0457705,
+              "p95_nearest_rank": 23.679166,
+              "max": 29.723709,
+              "sum": 662.1330430000002
+            },
+            "cpu_ms": {
+              "min": 13.348,
+              "median": 13.963000000000001,
+              "p95_nearest_rank": 16.731,
+              "max": 17.128,
+              "sum": 425.7659999999999
+            }
+          },
+          "seed_plus_update": {
+            "protocol_bytes": {
+              "min": 2097672,
+              "median": 2097672,
+              "p95_nearest_rank": 2097672,
+              "max": 2097672,
+              "sum": 62930160
+            },
+            "wall_ms": {
+              "min": 40.250834,
+              "median": 43.65102,
+              "p95_nearest_rank": 49.41225,
+              "max": 51.384709,
+              "sum": 1317.6137500000004
+            },
+            "cpu_ms": {
+              "min": 26.902,
+              "median": 27.700499999999998,
+              "p95_nearest_rank": 30.747,
+              "max": 30.861,
+              "sum": 840.9600000000002
+            }
+          }
+        }
+      },
+      "paired_trial_comparisons": {
+        "update_byte_saving_fraction": {
+          "min": 0.9891346216186324,
+          "median": 0.9891346216186324,
+          "p95_nearest_rank": 0.9891346216186324,
+          "max": 0.9891346216186324,
+          "sum": 29.674038648558966
+        },
+        "update_wall_ratio_delta_to_whole": {
+          "min": 1.0392133860247548,
+          "median": 1.2612816558564985,
+          "p95_nearest_rank": 2.224385118865941,
+          "max": 2.726802675555912,
+          "sum": 39.74580077366889
+        },
+        "update_cpu_ratio_delta_to_whole": {
+          "min": 1.7355311355311356,
+          "median": 1.961244549209645,
+          "p95_nearest_rank": 2.3273063781321186,
+          "max": 2.407684098185699,
+          "sum": 59.23920023738192
+        },
+        "seed_plus_update_byte_saving_fraction": {
+          "min": 0.49456731080931626,
+          "median": 0.49456731080931626,
+          "p95_nearest_rank": 0.49456731080931626,
+          "max": 0.49456731080931626,
+          "sum": 14.837019324279483
+        },
+        "seed_plus_update_wall_ratio_delta_to_whole": {
+          "min": 0.9114003545295937,
+          "median": 1.1163571245084905,
+          "p95_nearest_rank": 1.8282550576590357,
+          "max": 1.855678182867652,
+          "sum": 35.42241273368414
+        },
+        "seed_plus_update_cpu_ratio_delta_to_whole": {
+          "min": 1.2537483331707158,
+          "median": 1.4800044359198643,
+          "p95_nearest_rank": 1.6788803713341305,
+          "max": 1.6808812070553234,
+          "sum": 44.345891120268675
+        }
+      }
+    },
+    {
+      "case": "scattered_32x32",
+      "arms": {
+        "delta": {
+          "trials": 30,
+          "first_position_count": 15,
+          "update": {
+            "protocol_bytes": {
+              "min": 43140,
+              "median": 43140,
+              "p95_nearest_rank": 43140,
+              "max": 43140,
+              "sum": 1294200
+            },
+            "matched_bytes": {
+              "min": 1015808,
+              "median": 1015808,
+              "p95_nearest_rank": 1015808,
+              "max": 1015808,
+              "sum": 30474240
+            },
+            "unmatched_bytes": {
+              "min": 32768,
+              "median": 32768,
+              "p95_nearest_rank": 32768,
+              "max": 32768,
+              "sum": 983040
+            },
+            "wall_ms": {
+              "min": 24.586208,
+              "median": 27.752771000000003,
+              "p95_nearest_rank": 34.365708,
+              "max": 45.300458,
+              "sum": 853.077167
+            },
+            "cpu_ms": {
+              "min": 26.419,
+              "median": 27.2235,
+              "p95_nearest_rank": 31.91,
+              "max": 38.326,
+              "sum": 834.818
+            }
+          },
+          "seed": {
+            "protocol_bytes": {
+              "min": 1048836,
+              "median": 1048836,
+              "p95_nearest_rank": 1048836,
+              "max": 1048836,
+              "sum": 31465080
+            },
+            "wall_ms": {
+              "min": 20.342958,
+              "median": 22.017167,
+              "p95_nearest_rank": 24.060125,
+              "max": 24.947084,
+              "sum": 664.1949600000002
+            },
+            "cpu_ms": {
+              "min": 12.998,
+              "median": 13.889,
+              "p95_nearest_rank": 15.536,
+              "max": 15.809,
+              "sum": 422.202
+            }
+          },
+          "seed_plus_update": {
+            "protocol_bytes": {
+              "min": 1091976,
+              "median": 1091976,
+              "p95_nearest_rank": 1091976,
+              "max": 1091976,
+              "sum": 32759280
+            },
+            "wall_ms": {
+              "min": 45.614625,
+              "median": 49.7687495,
+              "p95_nearest_rank": 57.517833,
+              "max": 68.402999,
+              "sum": 1517.2721269999997
+            },
+            "cpu_ms": {
+              "min": 40.11,
+              "median": 41.3045,
+              "p95_nearest_rank": 45.64,
+              "max": 53.862,
+              "sum": 1257.0199999999998
+            }
+          }
+        },
+        "whole_file": {
+          "trials": 30,
+          "first_position_count": 15,
+          "update": {
+            "protocol_bytes": {
+              "min": 1048836,
+              "median": 1048836,
+              "p95_nearest_rank": 1048836,
+              "max": 1048836,
+              "sum": 31465080
+            },
+            "matched_bytes": {
+              "min": 0,
+              "median": 0,
+              "p95_nearest_rank": 0,
+              "max": 0,
+              "sum": 0
+            },
+            "unmatched_bytes": {
+              "min": 1048576,
+              "median": 1048576,
+              "p95_nearest_rank": 1048576,
+              "max": 1048576,
+              "sum": 31457280
+            },
+            "wall_ms": {
+              "min": 20.17825,
+              "median": 22.105187,
+              "p95_nearest_rank": 24.118666,
+              "max": 25.192833,
+              "sum": 662.292373
+            },
+            "cpu_ms": {
+              "min": 13.369,
+              "median": 13.8565,
+              "p95_nearest_rank": 14.799,
+              "max": 14.939,
+              "sum": 418.0469999999999
+            }
+          },
+          "seed": {
+            "protocol_bytes": {
+              "min": 1048836,
+              "median": 1048836,
+              "p95_nearest_rank": 1048836,
+              "max": 1048836,
+              "sum": 31465080
+            },
+            "wall_ms": {
+              "min": 18.163333,
+              "median": 22.1142915,
+              "p95_nearest_rank": 23.156875,
+              "max": 23.167708,
+              "sum": 652.6243319999999
+            },
+            "cpu_ms": {
+              "min": 13.402,
+              "median": 13.968,
+              "p95_nearest_rank": 14.801,
+              "max": 15.659,
+              "sum": 421.83700000000005
+            }
+          },
+          "seed_plus_update": {
+            "protocol_bytes": {
+              "min": 2097672,
+              "median": 2097672,
+              "p95_nearest_rank": 2097672,
+              "max": 2097672,
+              "sum": 62930160
+            },
+            "wall_ms": {
+              "min": 39.453958,
+              "median": 43.6522085,
+              "p95_nearest_rank": 47.122457,
+              "max": 48.349708,
+              "sum": 1314.9167049999999
+            },
+            "cpu_ms": {
+              "min": 26.771,
+              "median": 27.8555,
+              "p95_nearest_rank": 29.6,
+              "max": 30.315,
+              "sum": 839.8839999999999
+            }
+          }
+        }
+      },
+      "paired_trial_comparisons": {
+        "update_byte_saving_fraction": {
+          "min": 0.9588686887177785,
+          "median": 0.9588686887177785,
+          "p95_nearest_rank": 0.9588686887177785,
+          "max": 0.9588686887177785,
+          "sum": 28.766060661533356
+        },
+        "update_wall_ratio_delta_to_whole": {
+          "min": 1.1110569430619992,
+          "median": 1.2619902142041926,
+          "p95_nearest_rank": 1.6221302244710096,
+          "max": 1.7981486242535725,
+          "sum": 38.637188906172156
+        },
+        "update_cpu_ratio_delta_to_whole": {
+          "min": 1.7851881883911076,
+          "median": 1.9693420206026657,
+          "p95_nearest_rank": 2.29783250522071,
+          "max": 2.5654996987750183,
+          "sum": 59.90609102390002
+        },
+        "seed_plus_update_byte_saving_fraction": {
+          "min": 0.4794343443588893,
+          "median": 0.4794343443588893,
+          "p95_nearest_rank": 0.4794343443588893,
+          "max": 0.4794343443588893,
+          "sum": 14.38303033076668
+        },
+        "seed_plus_update_wall_ratio_delta_to_whole": {
+          "min": 1.0456660287042292,
+          "median": 1.1465519978824026,
+          "p95_nearest_rank": 1.3639406878764746,
+          "max": 1.4147551625337633,
+          "sum": 34.631456737940965
+        },
+        "seed_plus_update_cpu_ratio_delta_to_whole": {
+          "min": 1.3398647534223982,
+          "median": 1.4930691066255921,
+          "p95_nearest_rank": 1.6227555555555555,
+          "max": 1.824099160119209,
+          "sum": 44.90539318229785
+        }
+      }
+    },
+    {
+      "case": "prefix_1",
+      "arms": {
+        "delta": {
+          "trials": 30,
+          "first_position_count": 15,
+          "update": {
+            "protocol_bytes": {
+              "min": 10377,
+              "median": 10377,
+              "p95_nearest_rank": 10377,
+              "max": 10377,
+              "sum": 311310
+            },
+            "matched_bytes": {
+              "min": 1048576,
+              "median": 1048576,
+              "p95_nearest_rank": 1048576,
+              "max": 1048576,
+              "sum": 31457280
+            },
+            "unmatched_bytes": {
+              "min": 1,
+              "median": 1,
+              "p95_nearest_rank": 1,
+              "max": 1,
+              "sum": 30
+            },
+            "wall_ms": {
+              "min": 26.267959,
+              "median": 28.298958,
+              "p95_nearest_rank": 36.318875,
+              "max": 52.319833,
+              "sum": 885.8055410000002
+            },
+            "cpu_ms": {
+              "min": 26.418,
+              "median": 26.965,
+              "p95_nearest_rank": 31.551,
+              "max": 40.384,
+              "sum": 838.6719999999999
+            }
+          },
+          "seed": {
+            "protocol_bytes": {
+              "min": 1048836,
+              "median": 1048836,
+              "p95_nearest_rank": 1048836,
+              "max": 1048836,
+              "sum": 31465080
+            },
+            "wall_ms": {
+              "min": 20.268709,
+              "median": 21.9707505,
+              "p95_nearest_rank": 25.7745,
+              "max": 41.140458,
+              "sum": 674.7324590000001
+            },
+            "cpu_ms": {
+              "min": 12.639,
+              "median": 13.9445,
+              "p95_nearest_rank": 16.622,
+              "max": 22.837,
+              "sum": 429.592
+            }
+          },
+          "seed_plus_update": {
+            "protocol_bytes": {
+              "min": 1059213,
+              "median": 1059213,
+              "p95_nearest_rank": 1059213,
+              "max": 1059213,
+              "sum": 31776390
+            },
+            "wall_ms": {
+              "min": 47.508583,
+              "median": 49.896229,
+              "p95_nearest_rank": 73.014416,
+              "max": 77.021958,
+              "sum": 1560.538
+            },
+            "cpu_ms": {
+              "min": 40.103,
+              "median": 41.012,
+              "p95_nearest_rank": 53.395,
+              "max": 54.304,
+              "sum": 1268.2640000000004
+            }
+          }
+        },
+        "whole_file": {
+          "trials": 30,
+          "first_position_count": 15,
+          "update": {
+            "protocol_bytes": {
+              "min": 1048841,
+              "median": 1048841,
+              "p95_nearest_rank": 1048841,
+              "max": 1048841,
+              "sum": 31465230
+            },
+            "matched_bytes": {
+              "min": 0,
+              "median": 0,
+              "p95_nearest_rank": 0,
+              "max": 0,
+              "sum": 0
+            },
+            "unmatched_bytes": {
+              "min": 1048577,
+              "median": 1048577,
+              "p95_nearest_rank": 1048577,
+              "max": 1048577,
+              "sum": 31457310
+            },
+            "wall_ms": {
+              "min": 20.376084,
+              "median": 22.307271,
+              "p95_nearest_rank": 30.776417,
+              "max": 31.539666,
+              "sum": 685.68992
+            },
+            "cpu_ms": {
+              "min": 13.505,
+              "median": 13.8245,
+              "p95_nearest_rank": 17.424,
+              "max": 17.496,
+              "sum": 424.41700000000003
+            }
+          },
+          "seed": {
+            "protocol_bytes": {
+              "min": 1048836,
+              "median": 1048836,
+              "p95_nearest_rank": 1048836,
+              "max": 1048836,
+              "sum": 31465080
+            },
+            "wall_ms": {
+              "min": 19.320542,
+              "median": 22.041667,
+              "p95_nearest_rank": 39.769041,
+              "max": 195.64825,
+              "sum": 843.6370850000002
+            },
+            "cpu_ms": {
+              "min": 13.056,
+              "median": 13.878499999999999,
+              "p95_nearest_rank": 17.867,
+              "max": 20.862,
+              "sum": 428.44100000000003
+            }
+          },
+          "seed_plus_update": {
+            "protocol_bytes": {
+              "min": 2097677,
+              "median": 2097677,
+              "p95_nearest_rank": 2097677,
+              "max": 2097677,
+              "sum": 62930310
+            },
+            "wall_ms": {
+              "min": 41.683542,
+              "median": 43.765666499999995,
+              "p95_nearest_rank": 70.545458,
+              "max": 227.187916,
+              "sum": 1529.3270050000003
+            },
+            "cpu_ms": {
+              "min": 26.638,
+              "median": 27.740000000000002,
+              "p95_nearest_rank": 35.363,
+              "max": 38.286,
+              "sum": 852.8580000000002
+            }
+          }
+        }
+      },
+      "paired_trial_comparisons": {
+        "update_byte_saving_fraction": {
+          "min": 0.9901062220107719,
+          "median": 0.9901062220107719,
+          "p95_nearest_rank": 0.9901062220107719,
+          "max": 0.9901062220107719,
+          "sum": 29.70318666032317
+        },
+        "update_wall_ratio_delta_to_whole": {
+          "min": 1.0356617536082904,
+          "median": 1.2686009478458615,
+          "p95_nearest_rank": 1.502803325070913,
+          "max": 1.6588581819477732,
+          "sum": 38.74859630247923
+        },
+        "update_cpu_ratio_delta_to_whole": {
+          "min": 1.753787878787879,
+          "median": 1.9567757814623723,
+          "p95_nearest_rank": 2.297458676181461,
+          "max": 2.3081847279378143,
+          "sum": 59.291189631069415
+        },
+        "seed_plus_update_byte_saving_fraction": {
+          "min": 0.49505429100857756,
+          "median": 0.49505429100857756,
+          "p95_nearest_rank": 0.49505429100857756,
+          "max": 0.49505429100857756,
+          "sum": 14.851628730257321
+        },
+        "seed_plus_update_wall_ratio_delta_to_whole": {
+          "min": 0.3390231283251879,
+          "median": 1.1194570810762525,
+          "p95_nearest_rank": 1.240526753723484,
+          "max": 1.3463735292283208,
+          "sum": 33.471368084009185
+        },
+        "seed_plus_update_cpu_ratio_delta_to_whole": {
+          "min": 1.3946351146633233,
+          "median": 1.4745609805511282,
+          "p95_nearest_rank": 1.654413649178047,
+          "max": 1.7470155417073354,
+          "sum": 44.66309093516204
+        }
+      }
+    }
+  ]
+}

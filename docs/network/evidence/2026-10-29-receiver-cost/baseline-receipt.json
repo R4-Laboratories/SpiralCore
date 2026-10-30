@@ -1,0 +1,84 @@
+{
+  "schema": "spiralcore.receiver-baseline-qualification.v1",
+  "status": "baseline_characterization_complete",
+  "production_edits_by_helper": false,
+  "library_revision": "74ee59df7b7a55476fa573b17f5d947fc28fb030",
+  "production_source_fingerprint_sha256": "403bae4347bae04f1833d32ee6877978e1c18c97cf13651b870ef0f1546b0b74",
+  "helper_manifest_sha256": "6c1b6fc6237f6c75aa60cfb1334955bb1f1f95f89b1d35eef3671da6794403d8",
+  "executable_sha256": "eed98c450a926a8c3caaf564efc2fbeecfea972b71f2745f258815e4f30eb198",
+  "compiler": "rustc 1.97.1 (8bab26f4f 2026-07-14), LLVM 22.1.6, aarch64-apple-darwin",
+  "validation": {
+    "execution_record": "Tests and clippy completed in preceding tool transcript; raw stdout not separately retained. This file records their observed outcomes, not a rerun.",
+    "tests_passed": 7,
+    "tests_failed_final": 0,
+    "test_topics": [
+      "deterministic 1MiB fixture and exact 32-byte mutation",
+      "atomic exact stage accounting, checked overflow, unknown stage rejection",
+      "20 raw frames/3 sparse frames and counterbalanced positions",
+      "actual Endpoint four arms, exact reopen, inventory and readiness",
+      "corrupted base failure receipt and owned cache retained",
+      "Ready exact mode/base-pin/next-sequence/body-length negative tests",
+      "Accepted cumulative length/nonmonotone/trailing-byte negative tests"
+    ],
+    "tdd": "Initial fixture and stage stubs failed before implementation. Exact Ready/Accepted negative tests failed before protocol body validation fix. Final tests passed.",
+    "clippy": "cargo clippy --locked --offline --all-targets -- -D warnings passed",
+    "format": "rustfmt applied; build-probe.sh syntax check passed",
+    "source_reviews": [
+      {
+        "reviewer": "/root/transport_audit",
+        "scope": "measurement boundaries and helper source",
+        "status": "no remaining blocker"
+      },
+      {
+        "reviewer": "/root/mvm_architect_security",
+        "scope": "reply validation, failure receipts, driver provenance",
+        "status": "no remaining blocker; explicit native target and target directory verified"
+      }
+    ],
+    "post_measurement_helper_hash_check": "all six inputs matched preserved helper manifest"
+  },
+  "measurement": {
+    "characterization_only": true,
+    "rows": 16,
+    "exact": 16,
+    "failures": 0,
+    "working_copies_remaining": 0,
+    "baseline_rows_sha256": "91b695295b9ef295c11d885252005d2da5450ea5e896c9c579de0a8844b85a02",
+    "setup_rows_sha256": "2382781a2479b8ba18d96348660f85230b0069cfe665ede9d2810f97b1e765eb",
+    "host_before": "baseline-host-before.txt",
+    "observed_host_load_averages": [
+      11.32,
+      10.68,
+      9.49
+    ],
+    "host_load_caveat": "Other host activity was not controlled. No team builds/measurements ran during the observed block; CPU/wall variability remains."
+  },
+  "findings": [
+    {
+      "id": "helper-ready-accepted-validation",
+      "status": "fixed_before_measurement",
+      "detail": "Added exact reply body validation and negative RED-to-GREEN tests."
+    },
+    {
+      "id": "helper-reply-byte-evidence",
+      "status": "fixed_before_measurement",
+      "detail": "Modeled reply bytes and bounded response prefix retained; no actual transport claim."
+    },
+    {
+      "id": "helper-stale-binary-risk",
+      "status": "fixed_before_measurement",
+      "detail": "Explicit owned target directory and rustc native target; copy matching binary. Pre-guard build retained but not measured."
+    },
+    {
+      "id": "setup-relative-root",
+      "status": "resolved_by_absolute_paths",
+      "detail": "Initial empty root created then failed parent-directory sync before any templates/measurements. Failure receipt and empty directory retained."
+    },
+    {
+      "id": "characterization-background-scaling",
+      "status": "observed_single_sample",
+      "detail": "P768 sparse local CPU 37.189-39.654ms vs P0 16.823-16.961ms; Begin+Finish account for 77.5-78.7% at P768."
+    }
+  ],
+  "next": "Parent-owned narrow production hoist, reviews, tests and committed candidate before build-new or paired schedule. Eight alternating AB/BA blocks remain NOT_RUN."
+}

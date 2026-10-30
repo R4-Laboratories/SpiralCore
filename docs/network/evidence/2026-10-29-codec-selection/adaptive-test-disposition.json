@@ -1,0 +1,43 @@
+{
+  "schema": "spiralcore.selector.test-disposition.v1",
+  "status": "13 focused integration tests passed",
+  "test_file": "crates/spiralcore-transfer/tests/adaptive.rs",
+  "command": "CARGO_TARGET_DIR=/Users/casey.allard/spiralcore/target /Users/casey.allard/.cargo/bin/cargo +1.97.1 test --locked --manifest-path crates/spiralcore-transfer/Cargo.toml --target aarch64-apple-darwin --features hardware-sha256 --test adaptive",
+  "initial_red": {
+    "artifact": "tdd-red.txt",
+    "exit_code": 101,
+    "reason": "E0425: transfer_adaptive_batched did not exist before implementation"
+  },
+  "test_compilation_failure": {
+    "exit_code": 101,
+    "code": "E0308",
+    "location_at_failure": "tests/adaptive.rs:399",
+    "reason": "HTTP test passed Endpoint<Policy> to wan::serve, which requires Endpoint<BenchAuthority>",
+    "repair": "Construct the HTTP test endpoint with existing wan::BenchAuthority; no production change",
+    "evidence_scope": "Observed compiler output summarized here; original output was returned in the tool transcript rather than saved as a raw artifact"
+  },
+  "first_runtime_attempt": {
+    "artifact": "adaptive-test-attempt-1.txt",
+    "passed": 8,
+    "failed": 3,
+    "reason": "Three new tests assumed sparse always wins small localized edits; candidate cost evidence contradicted that test assumption"
+  },
+  "diagnosis": {
+    "artifact": "adaptive-small-fixture-diagnosis.txt",
+    "fixture": "131072-byte deterministic xorshift base; bytes [65536,65568) filled with zero",
+    "raw_http_body_bytes": 131839,
+    "chunked_zstd_http_body_bytes": 131839,
+    "sparse_http_body_bytes": 600,
+    "prefix_http_body_bytes": 569,
+    "correct_selected_mode": "ZstdPrefixV1",
+    "repair": "Retain this small fixture as an explicit prefix-over-sparse regression. Use the 1 MiB localized fixture to exercise the sparse winner. Missing-base and HTTP tests accept either valid base-dependent selected mode and verify their actual costs and semantics.",
+    "production_change_for_this_failure": false
+  },
+  "final": {
+    "artifact": "adaptive-test-final.txt",
+    "passed": 13,
+    "failed": 0,
+    "exit_code": 0,
+    "scope": "Local endpoint and real loopback HTTP integration; not WAN performance evidence"
+  }
+}

@@ -1,0 +1,1348 @@
+{
+  "schema": "spiralcore.receiver-baseline-characterization.v1",
+  "status": "16 exact observations; no performance effect estimate",
+  "metadata": {
+    "block": 0,
+    "boundaries": "private template clone and every file/directory sync precede open/timing; fixture generation, clone/sync, Endpoint open, and exact reopened comparison are separate. OS page caches uncontrolled; no network or energy. Tiny node budget changes graph admission/reservation and readiness; not a pure warming toggle. Sparse always skips graph warming; both policies disable graph retention.",
+    "distinct_from_wan_fixture": true,
+    "executable_sha256": "eed98c450a926a8c3caaf564efc2fbeecfea972b71f2745f258815e4f30eb198",
+    "fixture_generation": {
+      "cpu_ns": 2245000,
+      "frames": 0,
+      "wall_ns": 2243291
+    },
+    "fixture_generator": "xorshift64-low-byte-per-step-v1",
+    "fixture_seed": 42,
+    "kind": "metadata",
+    "library_revision": "74ee59df7b7a55476fa573b17f5d947fc28fb030",
+    "library_source_sha256": "403bae4347bae04f1833d32ee6877978e1c18c97cf13651b870ef0f1546b0b74",
+    "ordering": "8blocks; four arms cyclically counterbalanced, population order rotated by block; same block order for old and new; external even blocks old/new and odd blocks new/old, schedule.json pinned before measurements",
+    "policies": {
+      "graph_cache_bytes": 0,
+      "graph_cache_entries": 0,
+      "normal_nodes": 262144,
+      "tiny_nodes": 1
+    },
+    "schema": "spiralcore.receiver-stage-probe.v1",
+    "timing": "PRIMARY local_operation_total.cpu_ns: whole-process CPU from before recipe/frame preparation through validated Published and request-buffer teardown. Handler stage CPU is a subset; never add it to the primary total. dispatch includes handler plus instrumentation/reply checks. Frame samples bracket Endpoint::handle without hot instrumentation allocation.",
+    "variant": "baseline"
+  },
+  "receipt_pins": [
+    "91b695295b9ef295c11d885252005d2da5450ea5e896c9c579de0a8844b85a02  baseline-block0.jsonl",
+    "a4a37c517d557377fb5a053bbb6ac8cd25b0650baeb3111b6ecafd3b5d429a29  schedule.json",
+    "2382781a2479b8ba18d96348660f85230b0069cfe665ede9d2810f97b1e765eb  experiment/setup.jsonl"
+  ],
+  "coverage": {
+    "observations": 16,
+    "successful": 16,
+    "failed": 0,
+    "background_populations": [
+      0,
+      64,
+      256,
+      768
+    ],
+    "arms": 4,
+    "one_observation_per_configuration": true,
+    "exact_reopened_base_and_target": true,
+    "inventory_checked": true,
+    "stage_totals_checked": true,
+    "zero_graph_retention_checked": true
+  },
+  "interpretation": [
+    "One observation per cell identifies stage costs only; all rows retained, no confidence interval or optimization success claim.",
+    "At population 768 sparse normal: local operation CPU 39.654 ms, Begin+Finish CPU 31.220 ms; tiny-node policy: 37.189 and 28.825 ms respectively.",
+    "At population 0 sparse normal: local operation CPU 16.961 ms and Begin+Finish CPU 8.630 ms; tiny-node policy 16.823 and 8.134 ms.",
+    "Raw normal Finish CPU 46.934 to 64.397 ms in these observations includes optional canonical graph preparation even with graph retention disabled; tiny-node policy changes graph admission and readiness.",
+    "Per-cell frame preparation varies despite identical fixtures (e.g. sparse normal 7.187 to 17.563 ms), demonstrating host/process timing variability. Paired blocks are required.",
+    "Whole-process local operation includes recipe/frame preparation and handler cost; handler stages are subsets and must not be summed again with the total.",
+    "No network, packet capture, energy measurement, cold OS-cache control, or hardware performance counters."
+  ],
+  "initial_setup_error": {
+    "artifact": "setup-attempt-1-error.json",
+    "measurement_observations": 0,
+    "resolution": "Absolute paths; retry successful. Empty failed directory retained."
+  },
+  "rows": [
+    {
+      "population": 0,
+      "arm_label": "raw-node-budget-262144",
+      "status": "exact",
+      "error": null,
+      "local_operation_total": {
+        "wall_ns": 63836666,
+        "cpu_ns": 55069000,
+        "frames": 20
+      },
+      "frame_preparation": {
+        "wall_ns": 3682541,
+        "cpu_ns": 3683000,
+        "frames": 0
+      },
+      "handler_stages": {
+        "begin": {
+          "wall_ns": 90166,
+          "cpu_ns": 91000,
+          "frames": 1
+        },
+        "data": {
+          "wall_ns": 4469333,
+          "cpu_ns": 4327000,
+          "frames": 18
+        },
+        "finish": {
+          "wall_ns": 55543209,
+          "cpu_ns": 46934000,
+          "frames": 1
+        },
+        "total": {
+          "wall_ns": 60102708,
+          "cpu_ns": 51352000,
+          "frames": 20
+        }
+      },
+      "endpoint_open": {
+        "wall_ns": 135875,
+        "cpu_ns": 137000,
+        "frames": 0
+      },
+      "clone_and_sync": {
+        "wall_ns": 22688917,
+        "cpu_ns": 2417000,
+        "frames": 0
+      },
+      "close_reopen_verify": {
+        "wall_ns": 14046542,
+        "cpu_ns": 14007000,
+        "frames": 0
+      },
+      "before": {
+        "namespaces": 1,
+        "publications": 1,
+        "publication_bytes": 1048657,
+        "active_publications": 1,
+        "active_bytes": 1048657,
+        "manifests": 1
+      },
+      "after": {
+        "namespaces": 1,
+        "publications": 2,
+        "publication_bytes": 2097314,
+        "active_publications": 2,
+        "active_bytes": 2097314,
+        "manifests": 2
+      },
+      "target_manifest_present": true,
+      "graph_cache_after": {
+        "entries": 0,
+        "evictions": 0,
+        "hits": 0,
+        "misses": 0,
+        "resident_bytes": 0
+      },
+      "sample_count": 20,
+      "request_bytes": 1049832,
+      "reply_bytes": 1306
+    },
+    {
+      "population": 0,
+      "arm_label": "sparse-node-budget-262144",
+      "status": "exact",
+      "error": null,
+      "local_operation_total": {
+        "wall_ns": 30852917,
+        "cpu_ns": 16961000,
+        "frames": 3
+      },
+      "frame_preparation": {
+        "wall_ns": 8337833,
+        "cpu_ns": 8230000,
+        "frames": 0
+      },
+      "handler_stages": {
+        "begin": {
+          "wall_ns": 3818000,
+          "cpu_ns": 3818000,
+          "frames": 1
+        },
+        "data": {
+          "wall_ns": 87125,
+          "cpu_ns": 87000,
+          "frames": 1
+        },
+        "finish": {
+          "wall_ns": 18595500,
+          "cpu_ns": 4812000,
+          "frames": 1
+        },
+        "total": {
+          "wall_ns": 22500625,
+          "cpu_ns": 8717000,
+          "frames": 3
+        }
+      },
+      "endpoint_open": {
+        "wall_ns": 109458,
+        "cpu_ns": 110000,
+        "frames": 0
+      },
+      "clone_and_sync": {
+        "wall_ns": 20081750,
+        "cpu_ns": 2105000,
+        "frames": 0
+      },
+      "close_reopen_verify": {
+        "wall_ns": 17266208,
+        "cpu_ns": 16162000,
+        "frames": 0
+      },
+      "before": {
+        "namespaces": 1,
+        "publications": 1,
+        "publication_bytes": 1048657,
+        "active_publications": 1,
+        "active_bytes": 1048657,
+        "manifests": 1
+      },
+      "after": {
+        "namespaces": 1,
+        "publications": 2,
+        "publication_bytes": 2097282,
+        "active_publications": 2,
+        "active_bytes": 2097282,
+        "manifests": 1
+      },
+      "target_manifest_present": false,
+      "graph_cache_after": {
+        "entries": 0,
+        "evictions": 0,
+        "hits": 0,
+        "misses": 0,
+        "resident_bytes": 0
+      },
+      "sample_count": 3,
+      "request_bytes": 318,
+      "reply_bytes": 218
+    },
+    {
+      "population": 0,
+      "arm_label": "raw-node-budget-1",
+      "status": "exact",
+      "error": null,
+      "local_operation_total": {
+        "wall_ns": 18734000,
+        "cpu_ns": 12062000,
+        "frames": 20
+      },
+      "frame_preparation": {
+        "wall_ns": 3844417,
+        "cpu_ns": 3845000,
+        "frames": 0
+      },
+      "handler_stages": {
+        "begin": {
+          "wall_ns": 126250,
+          "cpu_ns": 127000,
+          "frames": 1
+        },
+        "data": {
+          "wall_ns": 3818752,
+          "cpu_ns": 3826000,
+          "frames": 18
+        },
+        "finish": {
+          "wall_ns": 10917833,
+          "cpu_ns": 4246000,
+          "frames": 1
+        },
+        "total": {
+          "wall_ns": 14862835,
+          "cpu_ns": 8199000,
+          "frames": 20
+        }
+      },
+      "endpoint_open": {
+        "wall_ns": 111833,
+        "cpu_ns": 113000,
+        "frames": 0
+      },
+      "clone_and_sync": {
+        "wall_ns": 16898000,
+        "cpu_ns": 2127000,
+        "frames": 0
+      },
+      "close_reopen_verify": {
+        "wall_ns": 14696291,
+        "cpu_ns": 14696000,
+        "frames": 0
+      },
+      "before": {
+        "namespaces": 1,
+        "publications": 1,
+        "publication_bytes": 1048657,
+        "active_publications": 1,
+        "active_bytes": 1048657,
+        "manifests": 1
+      },
+      "after": {
+        "namespaces": 1,
+        "publications": 2,
+        "publication_bytes": 2097282,
+        "active_publications": 2,
+        "active_bytes": 2097282,
+        "manifests": 1
+      },
+      "target_manifest_present": false,
+      "graph_cache_after": {
+        "entries": 0,
+        "evictions": 0,
+        "hits": 0,
+        "misses": 0,
+        "resident_bytes": 0
+      },
+      "sample_count": 20,
+      "request_bytes": 1049832,
+      "reply_bytes": 1306
+    },
+    {
+      "population": 0,
+      "arm_label": "sparse-node-budget-1",
+      "status": "exact",
+      "error": null,
+      "local_operation_total": {
+        "wall_ns": 24722292,
+        "cpu_ns": 16823000,
+        "frames": 3
+      },
+      "frame_preparation": {
+        "wall_ns": 8608791,
+        "cpu_ns": 8605000,
+        "frames": 0
+      },
+      "handler_stages": {
+        "begin": {
+          "wall_ns": 4037750,
+          "cpu_ns": 4038000,
+          "frames": 1
+        },
+        "data": {
+          "wall_ns": 75709,
+          "cpu_ns": 77000,
+          "frames": 1
+        },
+        "finish": {
+          "wall_ns": 11989334,
+          "cpu_ns": 4096000,
+          "frames": 1
+        },
+        "total": {
+          "wall_ns": 16102793,
+          "cpu_ns": 8211000,
+          "frames": 3
+        }
+      },
+      "endpoint_open": {
+        "wall_ns": 124875,
+        "cpu_ns": 127000,
+        "frames": 0
+      },
+      "clone_and_sync": {
+        "wall_ns": 24036792,
+        "cpu_ns": 2066000,
+        "frames": 0
+      },
+      "close_reopen_verify": {
+        "wall_ns": 14907500,
+        "cpu_ns": 14847000,
+        "frames": 0
+      },
+      "before": {
+        "namespaces": 1,
+        "publications": 1,
+        "publication_bytes": 1048657,
+        "active_publications": 1,
+        "active_bytes": 1048657,
+        "manifests": 1
+      },
+      "after": {
+        "namespaces": 1,
+        "publications": 2,
+        "publication_bytes": 2097282,
+        "active_publications": 2,
+        "active_bytes": 2097282,
+        "manifests": 1
+      },
+      "target_manifest_present": false,
+      "graph_cache_after": {
+        "entries": 0,
+        "evictions": 0,
+        "hits": 0,
+        "misses": 0,
+        "resident_bytes": 0
+      },
+      "sample_count": 3,
+      "request_bytes": 318,
+      "reply_bytes": 218
+    },
+    {
+      "population": 64,
+      "arm_label": "sparse-node-budget-262144",
+      "status": "exact",
+      "error": null,
+      "local_operation_total": {
+        "wall_ns": 42042375,
+        "cpu_ns": 34162000,
+        "frames": 3
+      },
+      "frame_preparation": {
+        "wall_ns": 17590750,
+        "cpu_ns": 17563000,
+        "frames": 0
+      },
+      "handler_stages": {
+        "begin": {
+          "wall_ns": 8722875,
+          "cpu_ns": 8723000,
+          "frames": 1
+        },
+        "data": {
+          "wall_ns": 51084,
+          "cpu_ns": 51000,
+          "frames": 1
+        },
+        "finish": {
+          "wall_ns": 15661459,
+          "cpu_ns": 7809000,
+          "frames": 1
+        },
+        "total": {
+          "wall_ns": 24435418,
+          "cpu_ns": 16583000,
+          "frames": 3
+        }
+      },
+      "endpoint_open": {
+        "wall_ns": 2216292,
+        "cpu_ns": 2219000,
+        "frames": 0
+      },
+      "clone_and_sync": {
+        "wall_ns": 404148417,
+        "cpu_ns": 45037000,
+        "frames": 0
+      },
+      "close_reopen_verify": {
+        "wall_ns": 21368833,
+        "cpu_ns": 21336000,
+        "frames": 0
+      },
+      "before": {
+        "namespaces": 33,
+        "publications": 65,
+        "publication_bytes": 1055889,
+        "active_publications": 1,
+        "active_bytes": 1048657,
+        "manifests": 65
+      },
+      "after": {
+        "namespaces": 33,
+        "publications": 66,
+        "publication_bytes": 2104514,
+        "active_publications": 2,
+        "active_bytes": 2097282,
+        "manifests": 65
+      },
+      "target_manifest_present": false,
+      "graph_cache_after": {
+        "entries": 0,
+        "evictions": 0,
+        "hits": 0,
+        "misses": 0,
+        "resident_bytes": 0
+      },
+      "sample_count": 3,
+      "request_bytes": 318,
+      "reply_bytes": 218
+    },
+    {
+      "population": 64,
+      "arm_label": "raw-node-budget-1",
+      "status": "exact",
+      "error": null,
+      "local_operation_total": {
+        "wall_ns": 22513000,
+        "cpu_ns": 14406000,
+        "frames": 20
+      },
+      "frame_preparation": {
+        "wall_ns": 3989542,
+        "cpu_ns": 3989000,
+        "frames": 0
+      },
+      "handler_stages": {
+        "begin": {
+          "wall_ns": 1167959,
+          "cpu_ns": 1168000,
+          "frames": 1
+        },
+        "data": {
+          "wall_ns": 3870919,
+          "cpu_ns": 3862000,
+          "frames": 18
+        },
+        "finish": {
+          "wall_ns": 13455667,
+          "cpu_ns": 5363000,
+          "frames": 1
+        },
+        "total": {
+          "wall_ns": 18494545,
+          "cpu_ns": 10393000,
+          "frames": 20
+        }
+      },
+      "endpoint_open": {
+        "wall_ns": 964833,
+        "cpu_ns": 966000,
+        "frames": 0
+      },
+      "clone_and_sync": {
+        "wall_ns": 405635833,
+        "cpu_ns": 35980000,
+        "frames": 0
+      },
+      "close_reopen_verify": {
+        "wall_ns": 15486458,
+        "cpu_ns": 15462000,
+        "frames": 0
+      },
+      "before": {
+        "namespaces": 33,
+        "publications": 65,
+        "publication_bytes": 1055889,
+        "active_publications": 1,
+        "active_bytes": 1048657,
+        "manifests": 65
+      },
+      "after": {
+        "namespaces": 33,
+        "publications": 66,
+        "publication_bytes": 2104514,
+        "active_publications": 2,
+        "active_bytes": 2097282,
+        "manifests": 65
+      },
+      "target_manifest_present": false,
+      "graph_cache_after": {
+        "entries": 0,
+        "evictions": 0,
+        "hits": 0,
+        "misses": 0,
+        "resident_bytes": 0
+      },
+      "sample_count": 20,
+      "request_bytes": 1049832,
+      "reply_bytes": 1306
+    },
+    {
+      "population": 64,
+      "arm_label": "sparse-node-budget-1",
+      "status": "exact",
+      "error": null,
+      "local_operation_total": {
+        "wall_ns": 41016250,
+        "cpu_ns": 33754000,
+        "frames": 3
+      },
+      "frame_preparation": {
+        "wall_ns": 17224500,
+        "cpu_ns": 17226000,
+        "frames": 0
+      },
+      "handler_stages": {
+        "begin": {
+          "wall_ns": 8512375,
+          "cpu_ns": 8514000,
+          "frames": 1
+        },
+        "data": {
+          "wall_ns": 43834,
+          "cpu_ns": 44000,
+          "frames": 1
+        },
+        "finish": {
+          "wall_ns": 15216875,
+          "cpu_ns": 7955000,
+          "frames": 1
+        },
+        "total": {
+          "wall_ns": 23773084,
+          "cpu_ns": 16513000,
+          "frames": 3
+        }
+      },
+      "endpoint_open": {
+        "wall_ns": 2253500,
+        "cpu_ns": 2258000,
+        "frames": 0
+      },
+      "clone_and_sync": {
+        "wall_ns": 425156375,
+        "cpu_ns": 48661000,
+        "frames": 0
+      },
+      "close_reopen_verify": {
+        "wall_ns": 21958833,
+        "cpu_ns": 21877000,
+        "frames": 0
+      },
+      "before": {
+        "namespaces": 33,
+        "publications": 65,
+        "publication_bytes": 1055889,
+        "active_publications": 1,
+        "active_bytes": 1048657,
+        "manifests": 65
+      },
+      "after": {
+        "namespaces": 33,
+        "publications": 66,
+        "publication_bytes": 2104514,
+        "active_publications": 2,
+        "active_bytes": 2097282,
+        "manifests": 65
+      },
+      "target_manifest_present": false,
+      "graph_cache_after": {
+        "entries": 0,
+        "evictions": 0,
+        "hits": 0,
+        "misses": 0,
+        "resident_bytes": 0
+      },
+      "sample_count": 3,
+      "request_bytes": 318,
+      "reply_bytes": 218
+    },
+    {
+      "population": 64,
+      "arm_label": "raw-node-budget-262144",
+      "status": "exact",
+      "error": null,
+      "local_operation_total": {
+        "wall_ns": 95976167,
+        "cpu_ns": 84342000,
+        "frames": 20
+      },
+      "frame_preparation": {
+        "wall_ns": 9105583,
+        "cpu_ns": 9085000,
+        "frames": 0
+      },
+      "handler_stages": {
+        "begin": {
+          "wall_ns": 3484875,
+          "cpu_ns": 3184000,
+          "frames": 1
+        },
+        "data": {
+          "wall_ns": 7619919,
+          "cpu_ns": 7633000,
+          "frames": 18
+        },
+        "finish": {
+          "wall_ns": 75705916,
+          "cpu_ns": 64397000,
+          "frames": 1
+        },
+        "total": {
+          "wall_ns": 86810710,
+          "cpu_ns": 75214000,
+          "frames": 20
+        }
+      },
+      "endpoint_open": {
+        "wall_ns": 2396541,
+        "cpu_ns": 2403000,
+        "frames": 0
+      },
+      "clone_and_sync": {
+        "wall_ns": 434801834,
+        "cpu_ns": 55237000,
+        "frames": 0
+      },
+      "close_reopen_verify": {
+        "wall_ns": 15656041,
+        "cpu_ns": 15549000,
+        "frames": 0
+      },
+      "before": {
+        "namespaces": 33,
+        "publications": 65,
+        "publication_bytes": 1055889,
+        "active_publications": 1,
+        "active_bytes": 1048657,
+        "manifests": 65
+      },
+      "after": {
+        "namespaces": 33,
+        "publications": 66,
+        "publication_bytes": 2104546,
+        "active_publications": 2,
+        "active_bytes": 2097314,
+        "manifests": 66
+      },
+      "target_manifest_present": true,
+      "graph_cache_after": {
+        "entries": 0,
+        "evictions": 0,
+        "hits": 0,
+        "misses": 0,
+        "resident_bytes": 0
+      },
+      "sample_count": 20,
+      "request_bytes": 1049832,
+      "reply_bytes": 1306
+    },
+    {
+      "population": 256,
+      "arm_label": "raw-node-budget-1",
+      "status": "exact",
+      "error": null,
+      "local_operation_total": {
+        "wall_ns": 35688000,
+        "cpu_ns": 27630000,
+        "frames": 20
+      },
+      "frame_preparation": {
+        "wall_ns": 5629375,
+        "cpu_ns": 5630000,
+        "frames": 0
+      },
+      "handler_stages": {
+        "begin": {
+          "wall_ns": 6220250,
+          "cpu_ns": 6222000,
+          "frames": 1
+        },
+        "data": {
+          "wall_ns": 5302541,
+          "cpu_ns": 5263000,
+          "frames": 18
+        },
+        "finish": {
+          "wall_ns": 18485250,
+          "cpu_ns": 10478000,
+          "frames": 1
+        },
+        "total": {
+          "wall_ns": 30008041,
+          "cpu_ns": 21963000,
+          "frames": 20
+        }
+      },
+      "endpoint_open": {
+        "wall_ns": 6385625,
+        "cpu_ns": 6350000,
+        "frames": 0
+      },
+      "clone_and_sync": {
+        "wall_ns": 1910061375,
+        "cpu_ns": 219977000,
+        "frames": 0
+      },
+      "close_reopen_verify": {
+        "wall_ns": 20118292,
+        "cpu_ns": 20091000,
+        "frames": 0
+      },
+      "before": {
+        "namespaces": 129,
+        "publications": 257,
+        "publication_bytes": 1077585,
+        "active_publications": 1,
+        "active_bytes": 1048657,
+        "manifests": 257
+      },
+      "after": {
+        "namespaces": 129,
+        "publications": 258,
+        "publication_bytes": 2126210,
+        "active_publications": 2,
+        "active_bytes": 2097282,
+        "manifests": 257
+      },
+      "target_manifest_present": false,
+      "graph_cache_after": {
+        "entries": 0,
+        "evictions": 0,
+        "hits": 0,
+        "misses": 0,
+        "resident_bytes": 0
+      },
+      "sample_count": 20,
+      "request_bytes": 1049832,
+      "reply_bytes": 1306
+    },
+    {
+      "population": 256,
+      "arm_label": "sparse-node-budget-1",
+      "status": "exact",
+      "error": null,
+      "local_operation_total": {
+        "wall_ns": 42784709,
+        "cpu_ns": 34799000,
+        "frames": 3
+      },
+      "frame_preparation": {
+        "wall_ns": 13742792,
+        "cpu_ns": 13422000,
+        "frames": 0
+      },
+      "handler_stages": {
+        "begin": {
+          "wall_ns": 11245417,
+          "cpu_ns": 11247000,
+          "frames": 1
+        },
+        "data": {
+          "wall_ns": 134250,
+          "cpu_ns": 134000,
+          "frames": 1
+        },
+        "finish": {
+          "wall_ns": 17646709,
+          "cpu_ns": 9983000,
+          "frames": 1
+        },
+        "total": {
+          "wall_ns": 29026376,
+          "cpu_ns": 21364000,
+          "frames": 3
+        }
+      },
+      "endpoint_open": {
+        "wall_ns": 6190541,
+        "cpu_ns": 6194000,
+        "frames": 0
+      },
+      "clone_and_sync": {
+        "wall_ns": 2160988958,
+        "cpu_ns": 267829000,
+        "frames": 0
+      },
+      "close_reopen_verify": {
+        "wall_ns": 18969708,
+        "cpu_ns": 18951000,
+        "frames": 0
+      },
+      "before": {
+        "namespaces": 129,
+        "publications": 257,
+        "publication_bytes": 1077585,
+        "active_publications": 1,
+        "active_bytes": 1048657,
+        "manifests": 257
+      },
+      "after": {
+        "namespaces": 129,
+        "publications": 258,
+        "publication_bytes": 2126210,
+        "active_publications": 2,
+        "active_bytes": 2097282,
+        "manifests": 257
+      },
+      "target_manifest_present": false,
+      "graph_cache_after": {
+        "entries": 0,
+        "evictions": 0,
+        "hits": 0,
+        "misses": 0,
+        "resident_bytes": 0
+      },
+      "sample_count": 3,
+      "request_bytes": 318,
+      "reply_bytes": 218
+    },
+    {
+      "population": 256,
+      "arm_label": "raw-node-budget-262144",
+      "status": "exact",
+      "error": null,
+      "local_operation_total": {
+        "wall_ns": 74824125,
+        "cpu_ns": 63310000,
+        "frames": 20
+      },
+      "frame_preparation": {
+        "wall_ns": 3189791,
+        "cpu_ns": 3191000,
+        "frames": 0
+      },
+      "handler_stages": {
+        "begin": {
+          "wall_ns": 3443333,
+          "cpu_ns": 3443000,
+          "frames": 1
+        },
+        "data": {
+          "wall_ns": 3423914,
+          "cpu_ns": 3345000,
+          "frames": 18
+        },
+        "finish": {
+          "wall_ns": 64734375,
+          "cpu_ns": 53305000,
+          "frames": 1
+        },
+        "total": {
+          "wall_ns": 71601622,
+          "cpu_ns": 60093000,
+          "frames": 20
+        }
+      },
+      "endpoint_open": {
+        "wall_ns": 2901666,
+        "cpu_ns": 2904000,
+        "frames": 0
+      },
+      "clone_and_sync": {
+        "wall_ns": 1774336709,
+        "cpu_ns": 216192000,
+        "frames": 0
+      },
+      "close_reopen_verify": {
+        "wall_ns": 16794250,
+        "cpu_ns": 16734000,
+        "frames": 0
+      },
+      "before": {
+        "namespaces": 129,
+        "publications": 257,
+        "publication_bytes": 1077585,
+        "active_publications": 1,
+        "active_bytes": 1048657,
+        "manifests": 257
+      },
+      "after": {
+        "namespaces": 129,
+        "publications": 258,
+        "publication_bytes": 2126242,
+        "active_publications": 2,
+        "active_bytes": 2097314,
+        "manifests": 258
+      },
+      "target_manifest_present": true,
+      "graph_cache_after": {
+        "entries": 0,
+        "evictions": 0,
+        "hits": 0,
+        "misses": 0,
+        "resident_bytes": 0
+      },
+      "sample_count": 20,
+      "request_bytes": 1049832,
+      "reply_bytes": 1306
+    },
+    {
+      "population": 256,
+      "arm_label": "sparse-node-budget-262144",
+      "status": "exact",
+      "error": null,
+      "local_operation_total": {
+        "wall_ns": 41422792,
+        "cpu_ns": 27358000,
+        "frames": 3
+      },
+      "frame_preparation": {
+        "wall_ns": 7271500,
+        "cpu_ns": 7187000,
+        "frames": 0
+      },
+      "handler_stages": {
+        "begin": {
+          "wall_ns": 10198292,
+          "cpu_ns": 8347000,
+          "frames": 1
+        },
+        "data": {
+          "wall_ns": 45459,
+          "cpu_ns": 43000,
+          "frames": 1
+        },
+        "finish": {
+          "wall_ns": 23889750,
+          "cpu_ns": 11766000,
+          "frames": 1
+        },
+        "total": {
+          "wall_ns": 34133501,
+          "cpu_ns": 20156000,
+          "frames": 3
+        }
+      },
+      "endpoint_open": {
+        "wall_ns": 7281708,
+        "cpu_ns": 4507000,
+        "frames": 0
+      },
+      "clone_and_sync": {
+        "wall_ns": 2699400125,
+        "cpu_ns": 237164000,
+        "frames": 0
+      },
+      "close_reopen_verify": {
+        "wall_ns": 29224000,
+        "cpu_ns": 20057000,
+        "frames": 0
+      },
+      "before": {
+        "namespaces": 129,
+        "publications": 257,
+        "publication_bytes": 1077585,
+        "active_publications": 1,
+        "active_bytes": 1048657,
+        "manifests": 257
+      },
+      "after": {
+        "namespaces": 129,
+        "publications": 258,
+        "publication_bytes": 2126210,
+        "active_publications": 2,
+        "active_bytes": 2097282,
+        "manifests": 257
+      },
+      "target_manifest_present": false,
+      "graph_cache_after": {
+        "entries": 0,
+        "evictions": 0,
+        "hits": 0,
+        "misses": 0,
+        "resident_bytes": 0
+      },
+      "sample_count": 3,
+      "request_bytes": 318,
+      "reply_bytes": 218
+    },
+    {
+      "population": 768,
+      "arm_label": "sparse-node-budget-1",
+      "status": "exact",
+      "error": null,
+      "local_operation_total": {
+        "wall_ns": 46605917,
+        "cpu_ns": 37189000,
+        "frames": 3
+      },
+      "frame_preparation": {
+        "wall_ns": 8333625,
+        "cpu_ns": 8334000,
+        "frames": 0
+      },
+      "handler_stages": {
+        "begin": {
+          "wall_ns": 14891625,
+          "cpu_ns": 14892000,
+          "frames": 1
+        },
+        "data": {
+          "wall_ns": 22125,
+          "cpu_ns": 22000,
+          "frames": 1
+        },
+        "finish": {
+          "wall_ns": 23348625,
+          "cpu_ns": 13933000,
+          "frames": 1
+        },
+        "total": {
+          "wall_ns": 38262375,
+          "cpu_ns": 28847000,
+          "frames": 3
+        }
+      },
+      "endpoint_open": {
+        "wall_ns": 10969625,
+        "cpu_ns": 10973000,
+        "frames": 0
+      },
+      "clone_and_sync": {
+        "wall_ns": 6451494291,
+        "cpu_ns": 906396000,
+        "frames": 0
+      },
+      "close_reopen_verify": {
+        "wall_ns": 22588084,
+        "cpu_ns": 22588000,
+        "frames": 0
+      },
+      "before": {
+        "namespaces": 385,
+        "publications": 769,
+        "publication_bytes": 1135441,
+        "active_publications": 1,
+        "active_bytes": 1048657,
+        "manifests": 769
+      },
+      "after": {
+        "namespaces": 385,
+        "publications": 770,
+        "publication_bytes": 2184066,
+        "active_publications": 2,
+        "active_bytes": 2097282,
+        "manifests": 769
+      },
+      "target_manifest_present": false,
+      "graph_cache_after": {
+        "entries": 0,
+        "evictions": 0,
+        "hits": 0,
+        "misses": 0,
+        "resident_bytes": 0
+      },
+      "sample_count": 3,
+      "request_bytes": 318,
+      "reply_bytes": 218
+    },
+    {
+      "population": 768,
+      "arm_label": "raw-node-budget-262144",
+      "status": "exact",
+      "error": null,
+      "local_operation_total": {
+        "wall_ns": 82074166,
+        "cpu_ns": 74073000,
+        "frames": 20
+      },
+      "frame_preparation": {
+        "wall_ns": 4452958,
+        "cpu_ns": 4454000,
+        "frames": 0
+      },
+      "handler_stages": {
+        "begin": {
+          "wall_ns": 12284292,
+          "cpu_ns": 12284000,
+          "frames": 1
+        },
+        "data": {
+          "wall_ns": 3802499,
+          "cpu_ns": 3812000,
+          "frames": 18
+        },
+        "finish": {
+          "wall_ns": 61500208,
+          "cpu_ns": 53500000,
+          "frames": 1
+        },
+        "total": {
+          "wall_ns": 77586999,
+          "cpu_ns": 69596000,
+          "frames": 20
+        }
+      },
+      "endpoint_open": {
+        "wall_ns": 12418042,
+        "cpu_ns": 12422000,
+        "frames": 0
+      },
+      "clone_and_sync": {
+        "wall_ns": 5705038000,
+        "cpu_ns": 862957000,
+        "frames": 0
+      },
+      "close_reopen_verify": {
+        "wall_ns": 22282667,
+        "cpu_ns": 22283000,
+        "frames": 0
+      },
+      "before": {
+        "namespaces": 385,
+        "publications": 769,
+        "publication_bytes": 1135441,
+        "active_publications": 1,
+        "active_bytes": 1048657,
+        "manifests": 769
+      },
+      "after": {
+        "namespaces": 385,
+        "publications": 770,
+        "publication_bytes": 2184098,
+        "active_publications": 2,
+        "active_bytes": 2097314,
+        "manifests": 770
+      },
+      "target_manifest_present": true,
+      "graph_cache_after": {
+        "entries": 0,
+        "evictions": 0,
+        "hits": 0,
+        "misses": 0,
+        "resident_bytes": 0
+      },
+      "sample_count": 20,
+      "request_bytes": 1049832,
+      "reply_bytes": 1306
+    },
+    {
+      "population": 768,
+      "arm_label": "sparse-node-budget-262144",
+      "status": "exact",
+      "error": null,
+      "local_operation_total": {
+        "wall_ns": 48176667,
+        "cpu_ns": 39654000,
+        "frames": 3
+      },
+      "frame_preparation": {
+        "wall_ns": 8893625,
+        "cpu_ns": 8388000,
+        "frames": 0
+      },
+      "handler_stages": {
+        "begin": {
+          "wall_ns": 15429125,
+          "cpu_ns": 15359000,
+          "frames": 1
+        },
+        "data": {
+          "wall_ns": 31417,
+          "cpu_ns": 31000,
+          "frames": 1
+        },
+        "finish": {
+          "wall_ns": 23806542,
+          "cpu_ns": 15861000,
+          "frames": 1
+        },
+        "total": {
+          "wall_ns": 39267084,
+          "cpu_ns": 31251000,
+          "frames": 3
+        }
+      },
+      "endpoint_open": {
+        "wall_ns": 13411416,
+        "cpu_ns": 11796000,
+        "frames": 0
+      },
+      "clone_and_sync": {
+        "wall_ns": 5456519959,
+        "cpu_ns": 898460000,
+        "frames": 0
+      },
+      "close_reopen_verify": {
+        "wall_ns": 27647833,
+        "cpu_ns": 26375000,
+        "frames": 0
+      },
+      "before": {
+        "namespaces": 385,
+        "publications": 769,
+        "publication_bytes": 1135441,
+        "active_publications": 1,
+        "active_bytes": 1048657,
+        "manifests": 769
+      },
+      "after": {
+        "namespaces": 385,
+        "publications": 770,
+        "publication_bytes": 2184066,
+        "active_publications": 2,
+        "active_bytes": 2097282,
+        "manifests": 769
+      },
+      "target_manifest_present": false,
+      "graph_cache_after": {
+        "entries": 0,
+        "evictions": 0,
+        "hits": 0,
+        "misses": 0,
+        "resident_bytes": 0
+      },
+      "sample_count": 3,
+      "request_bytes": 318,
+      "reply_bytes": 218
+    },
+    {
+      "population": 768,
+      "arm_label": "raw-node-budget-1",
+      "status": "exact",
+      "error": null,
+      "local_operation_total": {
+        "wall_ns": 42844542,
+        "cpu_ns": 34842000,
+        "frames": 20
+      },
+      "frame_preparation": {
+        "wall_ns": 4119333,
+        "cpu_ns": 4120000,
+        "frames": 0
+      },
+      "handler_stages": {
+        "begin": {
+          "wall_ns": 11609792,
+          "cpu_ns": 11611000,
+          "frames": 1
+        },
+        "data": {
+          "wall_ns": 3638167,
+          "cpu_ns": 3649000,
+          "frames": 18
+        },
+        "finish": {
+          "wall_ns": 23445167,
+          "cpu_ns": 15442000,
+          "frames": 1
+        },
+        "total": {
+          "wall_ns": 38693126,
+          "cpu_ns": 30702000,
+          "frames": 20
+        }
+      },
+      "endpoint_open": {
+        "wall_ns": 11738708,
+        "cpu_ns": 11731000,
+        "frames": 0
+      },
+      "clone_and_sync": {
+        "wall_ns": 5878106291,
+        "cpu_ns": 940194000,
+        "frames": 0
+      },
+      "close_reopen_verify": {
+        "wall_ns": 30454541,
+        "cpu_ns": 27453000,
+        "frames": 0
+      },
+      "before": {
+        "namespaces": 385,
+        "publications": 769,
+        "publication_bytes": 1135441,
+        "active_publications": 1,
+        "active_bytes": 1048657,
+        "manifests": 769
+      },
+      "after": {
+        "namespaces": 385,
+        "publications": 770,
+        "publication_bytes": 2184066,
+        "active_publications": 2,
+        "active_bytes": 2097282,
+        "manifests": 769
+      },
+      "target_manifest_present": false,
+      "graph_cache_after": {
+        "entries": 0,
+        "evictions": 0,
+        "hits": 0,
+        "misses": 0,
+        "resident_bytes": 0
+      },
+      "sample_count": 20,
+      "request_bytes": 1049832,
+      "reply_bytes": 1306
+    }
+  ]
+}

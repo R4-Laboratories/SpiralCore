@@ -1,0 +1,257 @@
+diff --git original/qualification/original-endpoint.rs diagnostic/snapshot/crates/spiralcore-transfer/src/endpoint.rs
+index 0bb3220..bd02309 100644
+--- original/qualification/original-endpoint.rs
++++ diagnostic/snapshot/crates/spiralcore-transfer/src/endpoint.rs
+@@ -801,31 +801,84 @@ impl<A: Authority> Endpoint<A> {
+         Err(Error::Missing)
+     }
+     fn disk_usage(&self, ns: Id) -> Result<(u64, u64, usize)> {
+-        let mut all = 0u64;
+-        let mut scoped = 0u64;
+-        let mut count = 0;
+-        for d in fs::read_dir(&self.root)? {
+-            let d = d?;
+-            if !d.file_type()?.is_dir() || !canonical_namespace(&d.file_name().to_string_lossy()) {
+-                continue;
+-            }
+-            for f in fs::read_dir(d.path())? {
+-                let f = f?;
+-                if !f.file_type()?.is_file() || f.path().extension().is_none_or(|s| s != "object") {
++        // Diagnostic snapshot only: original enumeration and decisions stay in this closure.
++        let mut profile = crate::scan_profile::ScanProfile {
++            calls: 1,
++            ..Default::default()
++        };
++        let mut stage = "root_read_dir";
++        let cpu = cpu_time::ProcessTime::now();
++        let wall = std::time::Instant::now();
++        let result = (|| {
++            let mut all = 0u64;
++            let mut scoped = 0u64;
++            let mut count = 0;
++            profile.root_read_dir_calls += 1;
++            for d in fs::read_dir(&self.root)? {
++                stage = "root_entry";
++                let d = d?;
++                profile.root_entries += 1;
++                profile.root_file_type_calls += 1;
++                stage = "root_file_type";
++                if !d.file_type()?.is_dir()
++                    || !canonical_namespace(&d.file_name().to_string_lossy())
++                {
+                     continue;
+                 }
+-                let n = f.metadata()?.len();
+-                all = all.checked_add(n).ok_or(Error::Limit)?;
+-                if d.file_name() == hex(&ns).as_str() {
+-                    scoped = scoped.checked_add(n).ok_or(Error::Limit)?;
+-                }
+-                count += 1;
+-                if count > self.limits.max_publications {
+-                    return Err(Error::Limit);
++                profile.namespace_read_dir_calls += 1;
++                stage = "namespace_read_dir";
++                for f in fs::read_dir(d.path())? {
++                    stage = "namespace_entry";
++                    let f = f?;
++                    profile.namespace_entries += 1;
++                    profile.object_file_type_calls += 1;
++                    stage = "object_file_type";
++                    if !f.file_type()?.is_file()
++                        || f.path().extension().is_none_or(|s| s != "object")
++                    {
++                        continue;
++                    }
++                    profile.metadata_calls += 1;
++                    stage = "metadata";
++                    let n = f.metadata()?.len();
++                    profile.metadata_successes += 1;
++                    stage = "global_byte_sum";
++                    all = all.checked_add(n).ok_or(Error::Limit)?;
++                    profile.namespace_comparisons += 1;
++                    if d.file_name() == hex(&ns).as_str() {
++                        stage = "scoped_byte_sum";
++                        scoped = scoped.checked_add(n).ok_or(Error::Limit)?;
++                    }
++                    count += 1;
++                    profile.objects_counted += 1;
++                    stage = "publication_count";
++                    if count > self.limits.max_publications {
++                        return Err(Error::Limit);
++                    }
+                 }
+             }
++            Ok((scoped, all, count))
++        })();
++        let wall_ns = wall.elapsed().as_nanos();
++        let cpu_ns = cpu.elapsed().as_nanos();
++        profile.overflow = wall_ns > u64::MAX as u128 || cpu_ns > u64::MAX as u128;
++        profile.wall_ns = wall_ns.min(u64::MAX as u128) as u64;
++        profile.cpu_ns = cpu_ns.min(u64::MAX as u128) as u64;
++        match result {
++            Ok((scoped, all, count)) => {
++                profile.successes = 1;
++                profile.returned_scoped_bytes = scoped;
++                profile.returned_all_bytes = all;
++                profile.returned_objects = count as u64;
++            }
++            Err(error) => {
++                profile.errors = 1;
++                profile.last_error = Some(error as u16);
++                profile.last_error_stage = Some(stage);
++            }
+         }
+-        Ok((scoped, all, count))
++        crate::scan_profile::record(profile);
++        result
+     }
+     fn publish(
+         &self,
+@@ -1142,3 +1195,147 @@ pub fn decode_zstd(b: &[u8], decoded: usize) -> Result<Vec<u8>> {
+     }
+     Ok(out)
+ }
++#[cfg(test)]
++mod scan_diagnostic_tests {
++    use super::*;
++    use crate::scan_profile;
++
++    struct Policy;
++    impl Authority for Policy {
++        fn authorize(&self, _: &Context) -> Result<()> {
++            Ok(())
++        }
++    }
++    struct Temp(PathBuf);
++    impl Temp {
++        fn new() -> Self {
++            let path = std::env::temp_dir().join(format!(
++                "sc-scan-qualification-{}-{}",
++                std::process::id(),
++                TEMP.fetch_add(1, Ordering::Relaxed)
++            ));
++            assert!(!path.exists());
++            Self(path)
++        }
++    }
++    impl Drop for Temp {
++        fn drop(&mut self) {
++            let _ = fs::remove_dir_all(&self.0);
++        }
++    }
++    #[test]
++    fn diagnostic_success_exact_counts_ignored_entries_and_reset() {
++        let temp = Temp::new();
++        let ep = Endpoint::open(&temp.0, Limits::default(), Policy).unwrap();
++        let active = temp.0.join(hex(&[1; 32]));
++        let other = temp.0.join(hex(&[2; 32]));
++        fs::create_dir(&active).unwrap();
++        fs::create_dir(&other).unwrap();
++        fs::create_dir(temp.0.join("ignored-dir")).unwrap();
++        fs::write(temp.0.join("root-noise"), b"ignored").unwrap();
++        fs::write(active.join("a.object"), b"123").unwrap();
++        fs::write(active.join("b.object"), b"12345").unwrap();
++        fs::write(active.join("skip.txt"), b"1234567").unwrap();
++        fs::create_dir(active.join("directory.object")).unwrap();
++        fs::write(other.join("c.object"), b"123456789").unwrap();
++        scan_profile::reset();
++        assert_eq!(ep.disk_usage([1; 32]), Ok((8, 17, 3)));
++        let p = scan_profile::take();
++        assert_eq!((p.calls, p.successes, p.errors), (1, 1, 0));
++        assert_eq!(
++            (
++                p.root_read_dir_calls,
++                p.root_entries,
++                p.root_file_type_calls
++            ),
++            (1, 6, 6)
++        );
++        assert_eq!(
++            (
++                p.namespace_read_dir_calls,
++                p.namespace_entries,
++                p.object_file_type_calls
++            ),
++            (2, 5, 5)
++        );
++        assert_eq!(
++            (
++                p.metadata_calls,
++                p.metadata_successes,
++                p.namespace_comparisons,
++                p.objects_counted
++            ),
++            (3, 3, 3, 3)
++        );
++        assert_eq!(
++            (
++                p.returned_scoped_bytes,
++                p.returned_all_bytes,
++                p.returned_objects
++            ),
++            (8, 17, 3)
++        );
++        assert_eq!(p.last_error, None);
++        assert!(!p.overflow);
++        assert!(p.wall_ns > 0);
++        assert_eq!(scan_profile::take(), Default::default());
++    }
++    #[test]
++    fn diagnostic_limit_error_is_retained_with_partial_counts() {
++        let temp = Temp::new();
++        let ep = Endpoint::open(
++            &temp.0,
++            Limits {
++                max_publications: 1,
++                ..Limits::default()
++            },
++            Policy,
++        )
++        .unwrap();
++        let active = temp.0.join(hex(&[1; 32]));
++        fs::create_dir(&active).unwrap();
++        fs::write(active.join("a.object"), b"123").unwrap();
++        fs::write(active.join("b.object"), b"12345").unwrap();
++        scan_profile::reset();
++        assert_eq!(ep.disk_usage([1; 32]), Err(Error::Limit));
++        let p = scan_profile::take();
++        assert_eq!((p.calls, p.successes, p.errors), (1, 0, 1));
++        assert_eq!(
++            (p.metadata_calls, p.metadata_successes, p.objects_counted),
++            (2, 2, 2)
++        );
++        assert_eq!(
++            (
++                p.returned_scoped_bytes,
++                p.returned_all_bytes,
++                p.returned_objects
++            ),
++            (0, 0, 0)
++        );
++        assert_eq!(p.last_error, Some(Error::Limit as u16));
++        assert_eq!(p.last_error_stage, Some("publication_count"));
++        assert!(!p.overflow);
++    }
++    #[test]
++    fn diagnostic_storage_error_is_retained_without_entries() {
++        let temp = Temp::new();
++        let ep = Endpoint::open(&temp.0, Limits::default(), Policy).unwrap();
++        fs::remove_dir_all(&temp.0).unwrap();
++        scan_profile::reset();
++        assert_eq!(ep.disk_usage([1; 32]), Err(Error::Storage));
++        let p = scan_profile::take();
++        assert_eq!(
++            (
++                p.calls,
++                p.successes,
++                p.errors,
++                p.root_read_dir_calls,
++                p.root_entries
++            ),
++            (1, 0, 1, 1, 0)
++        );
++        assert_eq!(p.last_error, Some(Error::Storage as u16));
++        assert_eq!(p.last_error_stage, Some("root_read_dir"));
++        assert!(!p.overflow);
++    }
++}

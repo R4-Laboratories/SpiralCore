@@ -1,0 +1,60 @@
+{
+  "schema": "spiralcore.selector.final-security-review.v1",
+  "review_local_date": "2026-10-29",
+  "reviewer": "/root/selector_measurement",
+  "role": "security-reviewer",
+  "roster_id": "c36b79c68e575d7b",
+  "verdict": "APPROVE_SCOPED_POST_AUDIT_SECURITY",
+  "source_revision": "850272f01d580d1cf7564d25fb628fd50f58d956",
+  "preregistration_revision": "791ec790eca25bd3f79cc21bdb38cfa27013b32a",
+  "comparison_base": "eb4feb930d6910466dbc3dc90bfa3cead51f6b5e",
+  "authorship_boundary": "Reviewer authored the local measurement example and its measurement contract. This approval independently reviews the selector runtime, client/lib changes, adaptive integration tests and final publication claims. It is not an independent review of the authored measurement harness; that review is separately recorded in review.json by /root/selector_architect.",
+  "post_audit_condition": {
+    "file": "audit.json",
+    "sha256": "db344718d46b9c047e1197f50e9e46e4abaf66ce180e8061f1a910dc0d7bedc6",
+    "observed_status": "PASS_PIPELINE_AUDIT",
+    "blocking_pipeline_findings": 0,
+    "read_before_this_approval": true
+  },
+  "reviewed_files_sha256": {
+    "crates/spiralcore-transfer/src/selection.rs": "62bc75f3370f4d36e2df5aabdbd2aa545ec27557fe96742a07e98e29ba9dae2e",
+    "crates/spiralcore-transfer/src/client.rs": "2d18f85f4762eded66c36eda64fb0d9078d4141618ecf59f2d937b6b1008757f",
+    "crates/spiralcore-transfer/src/lib.rs": "e7e311b453105158a103772535c4ca35f81cb56744625add6578140f42ec75cb",
+    "crates/spiralcore-transfer/tests/adaptive.rs": "c72b51a9704a500238e65f82b42723c90d0ef1b83f367dffa84ea2b5e94b8143",
+    "docs/network/codec-selection-results-2026-10-29.md": "502e3427546ef0dcb5eeb5177c3f23616b3ccabfa978df25180cb2c1e2ee9084",
+    "/Users/casey.allard/spiralcore/local/codec-selection-20261029/pr-body.md": "82046ed512536dbfcc9e84c60e922376412d4f0430c4d8ab488f6170a91caa02"
+  },
+  "fresh_checks": [
+    "Verified active local roster and security-reviewer eligibility before review.",
+    "Read the complete selector, adaptive client integration, adaptive tests, final report, PR description and completed pipeline audit.",
+    "git diff --exit-code 850272f across transfer src/tests/examples/Cargo.toml/Cargo.lock returned zero after the audit: the qualified implementation is unchanged.",
+    "git diff --exit-code eb4feb9 across endpoint, protocol, WAN adapter, sparse codec, prefix codec and Cargo manifest/lockfile returned zero: these security/dependency surfaces are unchanged by this selector milestone.",
+    "Recomputed SHA-256 identities of selector, client, lib, adaptive tests, final report, PR body and audit; they match the identities in this receipt.",
+    "Rechecked qualification.json hashes for release tests, doctest, imported-store tests and release build against their retained command outputs: all four passed.",
+    "Inspected the recorded test-result lines supporting 185 optimized target tests, one doctest and 71 imported-store tests. This final security pass did not rerun tests or claim to have independently executed those commands."
+  ],
+  "security_findings": [
+    "The new policy is opt-in and sender-local. The receiver, authorization decisions, scoped base lookup, cryptographic identity, publication/durability code and existing quotas are unchanged.",
+    "Both supplied byte slices are capped at 16 MiB before candidate encoders run. Candidate frame and request-batch bounds are checked before the first exchange. Winning preencoded bodies are private internal state and retain the selected mode.",
+    "Base and object identities are recomputed from the exact supplied immutable bytes. A local base is not treated as remote authorization or possession; base-dependent modes continue through the existing scoped receiver checks.",
+    "Missing-base, revoked-policy, encoding, transport and malformed-reply errors propagate without changing an offer or implicitly retrying. Existing transfer/sequence/mode/acknowledgment/final-object checks remain active.",
+    "Exact-repeat probing is an explicitly documented Raw shortcut. An evicted receiver object continues that same Raw offer and cannot silently become a different base-dependent transaction.",
+    "The new runtime contains no command execution, downloaded code, credentials, network discovery, new endpoint, tenant membership probe or executable recipe mechanism. Public fixed tokens in integration tests are synthetic loopback fixtures, not deployment credentials.",
+    "Final report and PR distinguish historical WAN evidence from new local body-equivalent/CPU/wall results, disclose the measured CPU regressions, avoid attributing unrelated-base prefix compression to cache reuse, and retain MVM/CUI/FIPS/energy/resource qualification gaps."
+  ],
+  "critical_findings": 0,
+  "high_findings": 0,
+  "open_actionable_findings": [],
+  "limits": [
+    "Scoped static review of this selector milestone; not a complete re-audit of the imported object store or all historical PR changes.",
+    "No new dependency vulnerability scan, penetration test, production security certification, CUI control assessment or FIPS module validation was performed. No dependency or cryptographic implementation changed.",
+    "Input and representation bounds are not a measurement of sender peak RSS or proof of a shared sender allocation budget; future small-MVM environments require resource qualification.",
+    "The existing HTTPS relay terminates TLS at the relay and uses public/synthetic data. The later canonical encrypted mailbox/vsock bridge and small-MVM orchestrator remain unimplemented integration work.",
+    "A lost or forged final response can return a sender error after valid publication; uncertain commit must be resolved by authorized verification. This approval does not promise that every failed caller result means no committed object exists.",
+    "New measurements establish local codec decisions and exact reopened bytes, not adaptive WAN speed, network-only send time, energy, 64 MiB client support or universal optimal compression."
+  ],
+  "remaining_delivery_steps": [
+    "Parent must seal the final evidence packet and publish the reviewed source and records.",
+    "Verify the actual origin/main revision after publication; this receipt does not claim that publication has occurred."
+  ]
+}

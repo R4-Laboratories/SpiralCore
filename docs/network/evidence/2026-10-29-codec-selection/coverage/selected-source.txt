@@ -1,0 +1,223 @@
+    1|       |//! Opt-in byte-first selection among the existing bounded transfer encodings.
+    2|       |//!
+    3|       |//! Costs describe a successful target-cache miss using the WAN HTTP body
+    4|       |//! envelopes, not TLS/IP traffic or elapsed time. All candidate work is local.
+    5|       |use crate::{client, protocol::Mode, Error, Result, MAX_CHUNK, MAX_FRAME};
+    6|       |
+    7|       |#[derive(Debug, Clone)]
+    8|       |pub struct CandidateCost {
+    9|       |    pub mode: Mode,
+   10|       |    pub http_body_bytes: u64,
+   11|       |}
+   12|       |
+   13|       |#[derive(Debug, Clone)]
+   14|       |pub struct Selection {
+   15|       |    /// Scored eligible encodings in tie order. Without a base, sparse/prefix
+   16|       |    /// are not evaluated. With a base, an omitted sparse entry means its
+   17|       |    /// bounded encoder returned None (no recipe cheaper than Raw). Encoder
+   18|       |    /// errors propagate. For an exact-repeat probe only Raw is evaluated.
+   19|       |    pub candidates: Vec<CandidateCost>,
+   20|       |    pub selected: Mode,
+   21|       |    /// Successful full-transfer body cost. An early Published/error reply can
+   22|       |    /// change actual traffic. The exact-repeat shortcut reports the Raw miss
+   23|       |    /// cost, not a minimum over encodings it deliberately did not evaluate.
+   24|       |    pub expected_http_body_bytes: u64,
+   25|       |    pub exact_repeat_probe: bool,
+   26|       |}
+   27|       |
+   28|       |pub(crate) struct Prepared {
+   29|       |    pub selection: Selection,
+   30|       |    // None borrows the caller's target for Raw. Only the incumbent and the
+   31|       |    // candidate being evaluated coexist; rejected candidate buffers are dropped.
+   32|       |    pub bodies: Option<Vec<Vec<u8>>>,
+   33|       |}
+   34|       |
+   35|       |/// Exact successful-miss cost at the current one-batch object ceiling. Reject
+   36|       |/// any candidate that violates that assumption before contacting the receiver.
+   37|    256|fn cost(mode: Mode, sizes: impl Iterator<Item = usize>, warm_probe: bool) -> Result<u64> {
+   38|    256|    let base = usize::from(matches!(mode, Mode::SparseV1 | Mode::ZstdPrefixV1)) * 32;
+   39|       |    // Begin/Ready/Finish/Published frame bytes: 102 + 66 + 56 + 88.
+   40|       |    // Four frame length words: 16. SCWBAT01 header: 12. SCWREP01 header: 28.
+   41|    256|    let mut total = 368 + base + usize::from(warm_probe) * 40;
+   42|    256|    let mut request = 12 + 4 + 102 + base + 4 + 56;
+   43|    256|    let mut frames = 2usize;
+   44|    355|    for size in sizes {
+   45|    355|        if size > MAX_FRAME - 56 {
+   46|      0|            return Err(Error::Limit);
+   47|    355|        }
+   48|    355|        frames = frames.checked_add(1).ok_or(Error::Limit)?;
+   49|    355|        request = request.checked_add(60 + size).ok_or(Error::Limit)?;
+   50|       |        // Data header56 + Accepted64 + two length words8.
+   51|    355|        total = total.checked_add(128 + size).ok_or(Error::Limit)?;
+   52|       |    }
+   53|    256|    if frames > client::MAX_BATCH_FRAMES || request > client::MAX_BATCH_BYTES {
+   54|      0|        return Err(Error::Limit);
+   55|    256|    }
+   56|    256|    Ok(total as u64)
+   57|    256|}
+  ------------------
+  | _RINvNtCs2UHSIZlb6I6_19spiralcore_transfer9selection4costINtNtNtNtCsgtPOCBgevO_4core4iter8adapters3map3MapINtNtNtB11_5slice4iter4IterINtNtCslJsSqIQKwiA_5alloc3vec3VechEENvMs_B29_B26_3lenEEB4_:
+  |   37|    117|fn cost(mode: Mode, sizes: impl Iterator<Item = usize>, warm_probe: bool) -> Result<u64> {
+  |   38|    117|    let base = usize::from(matches!(mode, Mode::SparseV1 | Mode::ZstdPrefixV1)) * 32;
+  |   39|       |    // Begin/Ready/Finish/Published frame bytes: 102 + 66 + 56 + 88.
+  |   40|       |    // Four frame length words: 16. SCWBAT01 header: 12. SCWREP01 header: 28.
+  |   41|    117|    let mut total = 368 + base + usize::from(warm_probe) * 40;
+  |   42|    117|    let mut request = 12 + 4 + 102 + base + 4 + 56;
+  |   43|    117|    let mut frames = 2usize;
+  |   44|    165|    for size in sizes {
+  |   45|    165|        if size > MAX_FRAME - 56 {
+  |   46|      0|            return Err(Error::Limit);
+  |   47|    165|        }
+  |   48|    165|        frames = frames.checked_add(1).ok_or(Error::Limit)?;
+  |   49|    165|        request = request.checked_add(60 + size).ok_or(Error::Limit)?;
+  |   50|       |        // Data header56 + Accepted64 + two length words8.
+  |   51|    165|        total = total.checked_add(128 + size).ok_or(Error::Limit)?;
+  |   52|       |    }
+  |   53|    117|    if frames > client::MAX_BATCH_FRAMES || request > client::MAX_BATCH_BYTES {
+  |   54|      0|        return Err(Error::Limit);
+  |   55|    117|    }
+  |   56|    117|    Ok(total as u64)
+  |   57|    117|}
+  ------------------
+  | _RINvNtCs2UHSIZlb6I6_19spiralcore_transfer9selection4costINtNtNtNtCsgtPOCBgevO_4core4iter8adapters3map3MapINtNtNtB11_5slice4iter6ChunkshENCNvB2_7prepares0_0EEB4_:
+  |   37|     63|fn cost(mode: Mode, sizes: impl Iterator<Item = usize>, warm_probe: bool) -> Result<u64> {
+  |   38|     63|    let base = usize::from(matches!(mode, Mode::SparseV1 | Mode::ZstdPrefixV1)) * 32;
+  |   39|       |    // Begin/Ready/Finish/Published frame bytes: 102 + 66 + 56 + 88.
+  |   40|       |    // Four frame length words: 16. SCWBAT01 header: 12. SCWREP01 header: 28.
+  |   41|     63|    let mut total = 368 + base + usize::from(warm_probe) * 40;
+  |   42|     63|    let mut request = 12 + 4 + 102 + base + 4 + 56;
+  |   43|     63|    let mut frames = 2usize;
+  |   44|     64|    for size in sizes {
+  |   45|     64|        if size > MAX_FRAME - 56 {
+  |   46|      0|            return Err(Error::Limit);
+  |   47|     64|        }
+  |   48|     64|        frames = frames.checked_add(1).ok_or(Error::Limit)?;
+  |   49|     64|        request = request.checked_add(60 + size).ok_or(Error::Limit)?;
+  |   50|       |        // Data header56 + Accepted64 + two length words8.
+  |   51|     64|        total = total.checked_add(128 + size).ok_or(Error::Limit)?;
+  |   52|       |    }
+  |   53|     63|    if frames > client::MAX_BATCH_FRAMES || request > client::MAX_BATCH_BYTES {
+  |   54|      0|        return Err(Error::Limit);
+  |   55|     63|    }
+  |   56|     63|    Ok(total as u64)
+  |   57|     63|}
+  ------------------
+  | _RINvNtCs2UHSIZlb6I6_19spiralcore_transfer9selection4costINtNtNtNtCsgtPOCBgevO_4core4iter8adapters3map3MapINtNtNtB11_5slice4iter6ChunkshENCNvB2_7prepares_0EEB4_:
+  |   37|     76|fn cost(mode: Mode, sizes: impl Iterator<Item = usize>, warm_probe: bool) -> Result<u64> {
+  |   38|     76|    let base = usize::from(matches!(mode, Mode::SparseV1 | Mode::ZstdPrefixV1)) * 32;
+  |   39|       |    // Begin/Ready/Finish/Published frame bytes: 102 + 66 + 56 + 88.
+  |   40|       |    // Four frame length words: 16. SCWBAT01 header: 12. SCWREP01 header: 28.
+  |   41|     76|    let mut total = 368 + base + usize::from(warm_probe) * 40;
+  |   42|     76|    let mut request = 12 + 4 + 102 + base + 4 + 56;
+  |   43|     76|    let mut frames = 2usize;
+  |   44|    126|    for size in sizes {
+  |   45|    126|        if size > MAX_FRAME - 56 {
+  |   46|      0|            return Err(Error::Limit);
+  |   47|    126|        }
+  |   48|    126|        frames = frames.checked_add(1).ok_or(Error::Limit)?;
+  |   49|    126|        request = request.checked_add(60 + size).ok_or(Error::Limit)?;
+  |   50|       |        // Data header56 + Accepted64 + two length words8.
+  |   51|    126|        total = total.checked_add(128 + size).ok_or(Error::Limit)?;
+  |   52|       |    }
+  |   53|     76|    if frames > client::MAX_BATCH_FRAMES || request > client::MAX_BATCH_BYTES {
+  |   54|      0|        return Err(Error::Limit);
+  |   55|     76|    }
+  |   56|     76|    Ok(total as u64)
+  |   57|     76|}
+  ------------------
+   58|       |
+   59|       |impl Prepared {
+   60|    117|    fn consider(&mut self, mode: Mode, bodies: Vec<Vec<u8>>, warm_probe: bool) -> Result<()> {
+   61|    117|        let http_body_bytes = cost(mode, bodies.iter().map(Vec::len), warm_probe)?;
+   62|    117|        self.selection.candidates.push(CandidateCost {
+   63|    117|            mode,
+   64|    117|            http_body_bytes,
+   65|    117|        });
+   66|       |        // Stable ties prefer Raw, then chunked Zstd, Sparse and Prefix.
+   67|    117|        if http_body_bytes < self.selection.expected_http_body_bytes {
+   68|     56|            self.selection.selected = mode;
+   69|     56|            self.selection.expected_http_body_bytes = http_body_bytes;
+   70|     56|            self.bodies = Some(bodies);
+   71|     61|        }
+   72|    117|        Ok(())
+   73|    117|    }
+   74|       |}
+   75|       |
+   76|     78|pub(crate) fn prepare(target: &[u8], base: Option<&[u8]>, warm_probe: bool) -> Result<Prepared> {
+   77|     78|    if target.len() > client::MAX_BATCHED_OBJECT
+   78|     77|        || base.is_some_and(|b| b.len() > client::MAX_BATCHED_OBJECT)
+   79|       |    {
+   80|      2|        return Err(Error::Limit);
+   81|     76|    }
+   82|     76|    let raw = cost(
+   83|     76|        Mode::Raw,
+   84|    126|        target.chunks(MAX_CHUNK).map(|c| c.len() + 5),
+   85|     76|        warm_probe,
+   86|      0|    )?;
+   87|     76|    let mut best = Prepared {
+   88|       |        selection: Selection {
+   89|     76|            candidates: vec![CandidateCost {
+   90|     76|                mode: Mode::Raw,
+   91|     76|                http_body_bytes: raw,
+   92|     76|            }],
+   93|     76|            selected: Mode::Raw,
+   94|     76|            expected_http_body_bytes: raw,
+   95|     76|            exact_repeat_probe: warm_probe && base == Some(target),
+   96|       |        },
+   97|     76|        bodies: None,
+   98|       |    };
+   99|     76|    if best.selection.exact_repeat_probe {
+  100|      2|        return Ok(best);
+  101|     74|    }
+  102|     74|    best.consider(Mode::Zstd, compressed_chunks(target)?, warm_probe)?;
+  103|     74|    if let Some(base) = base {
+  104|     63|        if let Some(recipe) = crate::delta::encode(base, target)? {
+  105|     24|            best.consider(Mode::SparseV1, recipe.frames, warm_probe)?;
+  106|     39|        }
+  107|     63|        let encoded = crate::zstd_prefix::encode(base, target)?;
+  108|       |        // Cost the contiguous encoded candidate first. Only materialize its
+  109|       |        // transport bodies when it wins, avoiding another full losing copy.
+  110|     63|        let prefix_cost = cost(
+  111|     63|            Mode::ZstdPrefixV1,
+  112|     64|            encoded.chunks(MAX_CHUNK).map(|c| c.len() + 6),
+  113|     63|            warm_probe,
+  114|      0|        )?;
+  115|     63|        if prefix_cost < best.selection.expected_http_body_bytes {
+  116|     19|            best.consider(
+  117|     19|                Mode::ZstdPrefixV1,
+  118|     19|                crate::zstd_prefix::chunks(&encoded)?,
+  119|     19|                warm_probe,
+  120|      0|            )?;
+  121|     44|        } else {
+  122|     44|            best.selection.candidates.push(CandidateCost {
+  123|     44|                mode: Mode::ZstdPrefixV1,
+  124|     44|                http_body_bytes: prefix_cost,
+  125|     44|            });
+  126|     44|        }
+  127|     11|    }
+  128|     74|    Ok(best)
+  129|     78|}
+  130|       |
+  131|     74|fn compressed_chunks(target: &[u8]) -> Result<Vec<Vec<u8>>> {
+  132|     74|    let mut bodies = Vec::new();
+  133|     74|    bodies
+  134|     74|        .try_reserve_exact(target.len().div_ceil(MAX_CHUNK))
+  135|     74|        .map_err(|_| Error::Limit)?;
+  136|    122|    for chunk in target.chunks(MAX_CHUNK) {
+  137|    122|        let compressed = zstd::bulk::compress(chunk, 1).map_err(|_| Error::Malformed)?;
+  138|    122|        let (encoding, payload) = if compressed.len() < chunk.len() {
+  139|     22|            (1, compressed.as_slice())
+  140|       |        } else {
+  141|    100|            (0, chunk)
+  142|       |        };
+  143|    122|        let mut body = Vec::new();
+  144|    122|        body.try_reserve_exact(5 + payload.len())
+  145|    122|            .map_err(|_| Error::Limit)?;
+  146|    122|        body.push(encoding);
+  147|    122|        body.extend_from_slice(&(chunk.len() as u32).to_le_bytes());
+  148|    122|        body.extend_from_slice(payload);
+  149|    122|        bodies.push(body);
+  150|       |    }
+  151|     74|    Ok(bodies)
+  152|     74|}
+

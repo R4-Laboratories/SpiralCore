@@ -1,0 +1,50 @@
+{
+  "architecture": "aarch64",
+  "arguments": [
+    "--plan",
+    "/Users/casey.allard/spiralcore/local/efficiency-20261029/wan-warm/plan.json",
+    "--out-name",
+    "localized-30",
+    "--trials",
+    "30",
+    "--case",
+    "localized_32"
+  ],
+  "case": "localized_32",
+  "helper": {
+    "path": "/Users/casey.allard/spiralcore/local/efficiency-20261029/rsync-control",
+    "sha256": "404778036917896a346266d594b82f160b3a246ef6dbf2839af07db14f36f61b",
+    "source_path": "/Users/casey.allard/spiralcore/local/efficiency-20261029/rsync_control.rs",
+    "source_sha256": "ecd46cb734174bd3fd08daf209a876ef71d674a868577322f7b66801450c5c32"
+  },
+  "method": {
+    "cache": "--cache explicitly enables buffered I/O; source preparation warms source pages; no OS cache flush",
+    "claims": "local conventional-delta diagnostic only; no WAN ranking, novelty, energy, FIPS, or production-security claim",
+    "clock": "fixture generation, source replacement, directory setup, result logging and cleanup excluded; spawn, wait, stats parsing, exact bytes, target ObjectId, file+parent sync and output-buffer teardown included",
+    "cpu": "RUSAGE_SELF plus RUSAGE_CHILDREN deltas after synchronous child wait; local aggregate, not separate endpoint CPU",
+    "limits": "synthetic 1MiB base, prefix target 1MiB+1; at most 90 selected tasks and 360 rows; fixed absolute executable and generated owned paths",
+    "order": "per case, alternate delta/whole_file first with trial parity; odd trial counts differ by one",
+    "seed": "each arm independently protocol-transfers the base into an empty destination before its update; no destination copy credited",
+    "sync": "file sync_all plus destination parent sync_all after exact validation; OS sync boundary, not power-loss proof",
+    "timeout": "rsync --timeout=30 is an I/O timeout, not hard CPU preemption",
+    "transport": "local rsync process transport; reported protocol counters are not captured physical wire bytes"
+  },
+  "os": "macos",
+  "pilot": false,
+  "plans": [
+    {
+      "bytes": 236336,
+      "path": "/Users/casey.allard/spiralcore/local/efficiency-20261029/wan-warm/plan.json",
+      "sha256": "133b97ddd04c39a084c4bc00cb4dfddd2eb586599e5c6aa2a5eaaa5726e2dd97"
+    }
+  ],
+  "rsync": {
+    "path": "/usr/bin/rsync",
+    "sha256": "34e91ec4f122d6dab584cddd40403fc1872229f126ad88ed07382297e5a64332",
+    "version": "openrsync: protocol version 29\nrsync version 2.6.9 compatible\n"
+  },
+  "schema": "spiralcore.local.rsync.run.v1",
+  "selected_tasks": 30,
+  "started_unix_nanos": "1793282759408374000",
+  "trials": 30
+}

@@ -1,0 +1,10 @@
+{
+  "schema": "spiralcore.fine-profile-setup-findings.v1",
+  "findings": [{
+    "id": "non-utf8-filesystem-name-unavailable",
+    "operation": "fs::write of basename bytes 78 ff 2e 6f 62 6a 65 63 74 inside the owned temporary fixture",
+    "observed_error": "OS code92, Illegal byte sequence",
+    "disposition": "Retain initial test failure. Use a valid Unicode filename in the actual filesystem matrix; separately qualify non-UTF8 Path/OsString extension and namespace classification without creating a file.",
+    "qualification_boundary": "An actual non-UTF8 directory entry on this host remains NOT_RUN; pure path checks do not establish that filesystem case."
+  }]
+}

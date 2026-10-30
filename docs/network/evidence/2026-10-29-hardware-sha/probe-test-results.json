@@ -1,0 +1,78 @@
+{
+  "schema": "spiralcore.sha-probe-functional-test-results.v1",
+  "source_revision": "80449939bd92348593cc88555cf7fde0847ceffd",
+  "configurations": {
+    "software": {
+      "test_cases": [
+        {
+          "name": "tests::stage_accounting_is_exact_and_rejects_unknown_or_overflow",
+          "result": "ok"
+        },
+        {
+          "name": "tests::fixture_changes_exactly_32_bytes_and_is_reproducible",
+          "result": "ok"
+        },
+        {
+          "name": "tests::request_and_order_fixtures_have_exact_expected_shapes",
+          "result": "ok"
+        },
+        {
+          "name": "tests::accepted_rejects_wrong_expanded_count_and_trailing_body",
+          "result": "ok"
+        },
+        {
+          "name": "tests::ready_rejects_wrong_mode_pin_sequence_and_trailing_body",
+          "result": "ok"
+        },
+        {
+          "name": "tests::corrupted_base_keeps_failed_handler_receipt_and_owned_cache",
+          "result": "ok"
+        },
+        {
+          "name": "tests::actual_api_receipts_match_stages_readiness_and_reopened_bytes",
+          "result": "ok"
+        }
+      ],
+      "passed": 7,
+      "failed": 0,
+      "diagnostic_output_sha256": "977ce765c03fbf8563d41ccbd0b47916b947dd16a201fb555bac19e3e201e860",
+      "command": "env CC=/usr/bin/clang CXX=/usr/bin/clang++ AR=/usr/bin/ar RUSTC=/Users/casey.allard/.cargo/bin/rustc SPIRAL_PROBE_LIBRARY_REVISION=80449939bd92348593cc88555cf7fde0847ceffd SPIRAL_PROBE_LIBRARY_SHA256=b5c52cf74affeded9fa5fa2bfdeb65e8f7852dcf6b9096cacb671bbcd01f0532 /Users/casey.allard/.cargo/bin/cargo test --locked --offline --release --target-dir /Users/casey.allard/spiralcore/local/sha-efficiency-20261029/target-software --target aarch64-apple-darwin --lib --features ''"
+    },
+    "hardware": {
+      "test_cases": [
+        {
+          "name": "tests::stage_accounting_is_exact_and_rejects_unknown_or_overflow",
+          "result": "ok"
+        },
+        {
+          "name": "tests::accepted_rejects_wrong_expanded_count_and_trailing_body",
+          "result": "ok"
+        },
+        {
+          "name": "tests::ready_rejects_wrong_mode_pin_sequence_and_trailing_body",
+          "result": "ok"
+        },
+        {
+          "name": "tests::request_and_order_fixtures_have_exact_expected_shapes",
+          "result": "ok"
+        },
+        {
+          "name": "tests::fixture_changes_exactly_32_bytes_and_is_reproducible",
+          "result": "ok"
+        },
+        {
+          "name": "tests::corrupted_base_keeps_failed_handler_receipt_and_owned_cache",
+          "result": "ok"
+        },
+        {
+          "name": "tests::actual_api_receipts_match_stages_readiness_and_reopened_bytes",
+          "result": "ok"
+        }
+      ],
+      "passed": 7,
+      "failed": 0,
+      "diagnostic_output_sha256": "43285e2c82dbab040395772b5da038270bf5595e96cdf85271f9cf01a8c42b52",
+      "command": "env CC=/usr/bin/clang CXX=/usr/bin/clang++ AR=/usr/bin/ar RUSTC=/Users/casey.allard/.cargo/bin/rustc SPIRAL_PROBE_LIBRARY_REVISION=80449939bd92348593cc88555cf7fde0847ceffd SPIRAL_PROBE_LIBRARY_SHA256=b5c52cf74affeded9fa5fa2bfdeb65e8f7852dcf6b9096cacb671bbcd01f0532 /Users/casey.allard/.cargo/bin/cargo test --locked --offline --release --target-dir /Users/casey.allard/spiralcore/local/sha-efficiency-20261029/target-hardware --target aarch64-apple-darwin --lib --features hardware-sha256"
+    }
+  }
+}

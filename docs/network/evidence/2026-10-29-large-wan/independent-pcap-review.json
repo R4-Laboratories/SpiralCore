@@ -1,0 +1,59 @@
+{
+  "limitations": [
+    "Only selected runner-to-relay TCP443 leg; not full path or physical Ethernet wire bytes",
+    "Independent replay verifies all packet lengths/directions and campaign totals, not individual TCP connection ownership",
+    "Per-row capture qualification additionally depends on production parser's strict observed-SYN ownership and accounting, checked separately",
+    "Zero kernel drops and matching counters do not prove interface/offload/filter provenance or uncaptured traffic"
+  ],
+  "schema": "spiralcore.independent-large-wan-pcap-review.v1",
+  "shards": [
+    {
+      "capture_complete_as_reported": true,
+      "capture_report_sha256": "ae6d562251fe3978bfd610a4e17dceb86fb71f892a52602521fbddc851ba2dda",
+      "download_ip_bytes": 1923500,
+      "download_packets": 14365,
+      "incomplete_reasons": [],
+      "outbound_syn_packets_including_retransmissions": 60,
+      "pcap_file_bytes": 69379089,
+      "pcap_sha256": "c317a089b038945dd7031ac2f7bcd79be314bdc05620b634c804dcd0f472d600",
+      "records": 623204,
+      "shard": 0,
+      "total_ip_bytes": 874670762,
+      "upload_ip_bytes": 872747262,
+      "upload_packets": 608839
+    },
+    {
+      "capture_complete_as_reported": true,
+      "capture_report_sha256": "bd451c05f99eff17a8df31653f961ff1b9857f89771c835f4e639797adecba66",
+      "download_ip_bytes": 1896186,
+      "download_packets": 13896,
+      "incomplete_reasons": [],
+      "outbound_syn_packets_including_retransmissions": 60,
+      "pcap_file_bytes": 69278365,
+      "pcap_sha256": "0ad86b1587b985c0c07f19949ce796813261269c7f99946b8ffec251a226a2f5",
+      "records": 622210,
+      "shard": 1,
+      "total_ip_bytes": 874481754,
+      "upload_ip_bytes": 872585568,
+      "upload_packets": 608314
+    },
+    {
+      "capture_complete_as_reported": false,
+      "capture_report_sha256": "d98fde92d689f442c2ea724fbe863217c033d6bbf299990989a4a69c91062af9",
+      "download_ip_bytes": 1904390,
+      "download_packets": 14054,
+      "incomplete_reasons": [
+        "unresolved_capture_counter_difference"
+      ],
+      "outbound_syn_packets_including_retransmissions": 60,
+      "pcap_file_bytes": 69340557,
+      "pcap_sha256": "a6b53f806ad2cc09ee07e3f10f3286910c426efd5803e1efcbddb2762f9c40bd",
+      "records": 622806,
+      "shard": 2,
+      "total_ip_bytes": 874556220,
+      "upload_ip_bytes": 872651830,
+      "upload_packets": 608752
+    }
+  ],
+  "status": "campaign_totals_match_raw_header_replay"
+}

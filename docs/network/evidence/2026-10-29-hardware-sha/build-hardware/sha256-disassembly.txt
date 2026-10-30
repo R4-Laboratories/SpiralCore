@@ -1,0 +1,145 @@
+
+build-hardware/receiver-probe:	file format mach-o arm64
+
+Disassembly of section __TEXT,__text:
+
+000000010006f2ec <__RNvNtCs2sRLgxE5xER_4sha26sha25611compress256>:
+10006f2ec: ad400400    	ldp	q0, q1, [x0]
+10006f2f0: b4001102    	cbz	x2, 0x10006f510 <__RNvNtCs2sRLgxE5xER_4sha26sha25611compress256+0x224>
+10006f2f4: 6dbf23e9    	stp	d9, d8, [sp, #-0x10]!
+10006f2f8: 90000248    	adrp	x8, 0x1000b7000 <_LL_bits+0x84>
+10006f2fc: 3dc26102    	ldr	q2, [x8, #0x980]
+10006f300: 90000248    	adrp	x8, 0x1000b7000 <_LL_bits+0x84>
+10006f304: 3dc26503    	ldr	q3, [x8, #0x990]
+10006f308: 8b021828    	add	x8, x1, x2, lsl #6
+10006f30c: 90000249    	adrp	x9, 0x1000b7000 <_LL_bits+0x84>
+10006f310: 3dc26924    	ldr	q4, [x9, #0x9a0]
+10006f314: 90000249    	adrp	x9, 0x1000b7000 <_LL_bits+0x84>
+10006f318: 3dc26d25    	ldr	q5, [x9, #0x9b0]
+10006f31c: 90000249    	adrp	x9, 0x1000b7000 <_LL_bits+0x84>
+10006f320: 3dc27126    	ldr	q6, [x9, #0x9c0]
+10006f324: 90000249    	adrp	x9, 0x1000b7000 <_LL_bits+0x84>
+10006f328: 3dc27527    	ldr	q7, [x9, #0x9d0]
+10006f32c: 90000249    	adrp	x9, 0x1000b7000 <_LL_bits+0x84>
+10006f330: 3dc27930    	ldr	q16, [x9, #0x9e0]
+10006f334: 90000249    	adrp	x9, 0x1000b7000 <_LL_bits+0x84>
+10006f338: 3dc27d31    	ldr	q17, [x9, #0x9f0]
+10006f33c: 90000249    	adrp	x9, 0x1000b7000 <_LL_bits+0x84>
+10006f340: 3dc28132    	ldr	q18, [x9, #0xa00]
+10006f344: 90000249    	adrp	x9, 0x1000b7000 <_LL_bits+0x84>
+10006f348: 3dc28533    	ldr	q19, [x9, #0xa10]
+10006f34c: 90000249    	adrp	x9, 0x1000b7000 <_LL_bits+0x84>
+10006f350: 3dc28934    	ldr	q20, [x9, #0xa20]
+10006f354: 90000249    	adrp	x9, 0x1000b7000 <_LL_bits+0x84>
+10006f358: 3dc28d35    	ldr	q21, [x9, #0xa30]
+10006f35c: 90000249    	adrp	x9, 0x1000b7000 <_LL_bits+0x84>
+10006f360: 3dc29136    	ldr	q22, [x9, #0xa40]
+10006f364: 90000249    	adrp	x9, 0x1000b7000 <_LL_bits+0x84>
+10006f368: 3dc29537    	ldr	q23, [x9, #0xa50]
+10006f36c: 90000249    	adrp	x9, 0x1000b7000 <_LL_bits+0x84>
+10006f370: 3dc29938    	ldr	q24, [x9, #0xa60]
+10006f374: 90000249    	adrp	x9, 0x1000b7000 <_LL_bits+0x84>
+10006f378: 3dc29d39    	ldr	q25, [x9, #0xa70]
+10006f37c: ad406c3a    	ldp	q26, q27, [x1]
+10006f380: 6e200b5d    	rev32.16b	v29, v26
+10006f384: 6e200b7c    	rev32.16b	v28, v27
+10006f388: ad41783a    	ldp	q26, q30, [x1, #0x20]
+10006f38c: 6e200b5b    	rev32.16b	v27, v26
+10006f390: 6e200bda    	rev32.16b	v26, v30
+10006f394: 4ea287be    	add.4s	v30, v29, v2
+10006f398: 4ea01c1f    	mov.16b	v31, v0
+10006f39c: 5e1e403f    	sha256h.4s	q31, q1, v30
+10006f3a0: 4ea11c28    	mov.16b	v8, v1
+10006f3a4: 5e1e5008    	sha256h2.4s	q8, q0, v30
+10006f3a8: 4ea3879e    	add.4s	v30, v28, v3
+10006f3ac: 4ebf1fe9    	mov.16b	v9, v31
+10006f3b0: 5e1e4109    	sha256h.4s	q9, q8, v30
+10006f3b4: 5e1e53e8    	sha256h2.4s	q8, q31, v30
+10006f3b8: 4ea4877e    	add.4s	v30, v27, v4
+10006f3bc: 4ea91d3f    	mov.16b	v31, v9
+10006f3c0: 5e1e411f    	sha256h.4s	q31, q8, v30
+10006f3c4: 5e1e5128    	sha256h2.4s	q8, q9, v30
+10006f3c8: 4ea5875e    	add.4s	v30, v26, v5
+10006f3cc: 4ebf1fe9    	mov.16b	v9, v31
+10006f3d0: 5e1e4109    	sha256h.4s	q9, q8, v30
+10006f3d4: 5e1e53e8    	sha256h2.4s	q8, q31, v30
+10006f3d8: 5e282b9d    	sha256su0.4s	v29, v28
+10006f3dc: 5e1a637d    	sha256su1.4s	v29, v27, v26
+10006f3e0: 5e282b7c    	sha256su0.4s	v28, v27
+10006f3e4: 5e1d635c    	sha256su1.4s	v28, v26, v29
+10006f3e8: 5e282b5b    	sha256su0.4s	v27, v26
+10006f3ec: 5e1c63bb    	sha256su1.4s	v27, v29, v28
+10006f3f0: 5e282bba    	sha256su0.4s	v26, v29
+10006f3f4: 5e1b639a    	sha256su1.4s	v26, v28, v27
+10006f3f8: 4ea687be    	add.4s	v30, v29, v6
+10006f3fc: 4ea81d1f    	mov.16b	v31, v8
+10006f400: 5e1e513f    	sha256h2.4s	q31, q9, v30
+10006f404: 5e1e4109    	sha256h.4s	q9, q8, v30
+10006f408: 4ea7879e    	add.4s	v30, v28, v7
+10006f40c: 4ebf1fe8    	mov.16b	v8, v31
+10006f410: 5e1e5128    	sha256h2.4s	q8, q9, v30
+10006f414: 5e1e43e9    	sha256h.4s	q9, q31, v30
+10006f418: 4eb0877e    	add.4s	v30, v27, v16
+10006f41c: 4ea81d1f    	mov.16b	v31, v8
+10006f420: 5e1e513f    	sha256h2.4s	q31, q9, v30
+10006f424: 5e1e4109    	sha256h.4s	q9, q8, v30
+10006f428: 4eb1875e    	add.4s	v30, v26, v17
+10006f42c: 4ea91d28    	mov.16b	v8, v9
+10006f430: 5e1e43e8    	sha256h.4s	q8, q31, v30
+10006f434: 5e1e513f    	sha256h2.4s	q31, q9, v30
+10006f438: 5e282b9d    	sha256su0.4s	v29, v28
+10006f43c: 5e1a637d    	sha256su1.4s	v29, v27, v26
+10006f440: 5e282b7c    	sha256su0.4s	v28, v27
+10006f444: 5e1d635c    	sha256su1.4s	v28, v26, v29
+10006f448: 5e282b5b    	sha256su0.4s	v27, v26
+10006f44c: 5e1c63bb    	sha256su1.4s	v27, v29, v28
+10006f450: 5e282bba    	sha256su0.4s	v26, v29
+10006f454: 5e1b639a    	sha256su1.4s	v26, v28, v27
+10006f458: 4eb287be    	add.4s	v30, v29, v18
+10006f45c: 4ebf1fe9    	mov.16b	v9, v31
+10006f460: 5e1e5109    	sha256h2.4s	q9, q8, v30
+10006f464: 5e1e43e8    	sha256h.4s	q8, q31, v30
+10006f468: 4eb3879e    	add.4s	v30, v28, v19
+10006f46c: 4ea91d3f    	mov.16b	v31, v9
+10006f470: 5e1e511f    	sha256h2.4s	q31, q8, v30
+10006f474: 5e1e4128    	sha256h.4s	q8, q9, v30
+10006f478: 4eb4877e    	add.4s	v30, v27, v20
+10006f47c: 4ebf1fe9    	mov.16b	v9, v31
+10006f480: 5e1e5109    	sha256h2.4s	q9, q8, v30
+10006f484: 5e1e43e8    	sha256h.4s	q8, q31, v30
+10006f488: 4eb5875e    	add.4s	v30, v26, v21
+10006f48c: 4ea81d1f    	mov.16b	v31, v8
+10006f490: 5e1e413f    	sha256h.4s	q31, q9, v30
+10006f494: 5e1e5109    	sha256h2.4s	q9, q8, v30
+10006f498: 5e282b9d    	sha256su0.4s	v29, v28
+10006f49c: 5e1a637d    	sha256su1.4s	v29, v27, v26
+10006f4a0: 5e282b7c    	sha256su0.4s	v28, v27
+10006f4a4: 5e1d635c    	sha256su1.4s	v28, v26, v29
+10006f4a8: 5e282b5b    	sha256su0.4s	v27, v26
+10006f4ac: 5e1c63bb    	sha256su1.4s	v27, v29, v28
+10006f4b0: 5e282bba    	sha256su0.4s	v26, v29
+10006f4b4: 5e1b639a    	sha256su1.4s	v26, v28, v27
+10006f4b8: 4eb687bd    	add.4s	v29, v29, v22
+10006f4bc: 4ea91d3e    	mov.16b	v30, v9
+10006f4c0: 5e1d53fe    	sha256h2.4s	q30, q31, v29
+10006f4c4: 5e1d413f    	sha256h.4s	q31, q9, v29
+10006f4c8: 4eb7879c    	add.4s	v28, v28, v23
+10006f4cc: 4ebe1fdd    	mov.16b	v29, v30
+10006f4d0: 5e1c53fd    	sha256h2.4s	q29, q31, v28
+10006f4d4: 5e1c43df    	sha256h.4s	q31, q30, v28
+10006f4d8: 4eb8877b    	add.4s	v27, v27, v24
+10006f4dc: 4ebd1fbc    	mov.16b	v28, v29
+10006f4e0: 5e1b53fc    	sha256h2.4s	q28, q31, v27
+10006f4e4: 5e1b43bf    	sha256h.4s	q31, q29, v27
+10006f4e8: 4eb9875a    	add.4s	v26, v26, v25
+10006f4ec: 4ebf1ffb    	mov.16b	v27, v31
+10006f4f0: 5e1a439b    	sha256h.4s	q27, q28, v26
+10006f4f4: 5e1a53fc    	sha256h2.4s	q28, q31, v26
+10006f4f8: 4ea08760    	add.4s	v0, v27, v0
+10006f4fc: 4ea18781    	add.4s	v1, v28, v1
+10006f500: 91010021    	add	x1, x1, #0x40
+10006f504: eb08003f    	cmp	x1, x8
+10006f508: 54fff3a1    	b.ne	0x10006f37c <__RNvNtCs2sRLgxE5xER_4sha26sha25611compress256+0x90>
+10006f50c: 6cc123e9    	ldp	d9, d8, [sp], #0x10
+10006f510: ad000400    	stp	q0, q1, [x0]
+10006f514: d65f03c0    	ret

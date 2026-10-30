@@ -1,0 +1,23 @@
+{
+  "schema":"spiralcore.codec-selection.qualification.v1",
+  "source_revision":"850272f01d580d1cf7564d25fb628fd50f58d956",
+  "runtime_unchanged_after_registration":true,
+  "toolchain":"1.97.1",
+  "target":"aarch64-apple-darwin",
+  "feature":"hardware-sha256",
+  "command_prefix":"CARGO_TARGET_DIR=/Users/casey.allard/spiralcore/target /Users/casey.allard/.cargo/bin/cargo +1.97.1",
+  "checks":[
+    {"args":"test --locked --release --all-targets --manifest-path crates/spiralcore-transfer/Cargo.toml --target aarch64-apple-darwin --features hardware-sha256 -- --include-ignored","exit":0,"passed":185,"failed":0,"ignored":0,"output":"release-tests.txt","output_sha256":"a582ad8abda74d2ca889a4b5b9095fc3b470621b65454011a87677460e78488b"},
+    {"args":"test --locked --release --doc --manifest-path crates/spiralcore-transfer/Cargo.toml --target aarch64-apple-darwin --features hardware-sha256","exit":0,"passed":1,"failed":0,"output":"doctests.txt","output_sha256":"fda12daa8c321770899fb5d33140d64f5f8a92d9f769f076bd4d864d5ca016f9"},
+    {"args":"test --locked --release --all-targets --manifest-path crates/uor-r4-object-store/Cargo.toml --target aarch64-apple-darwin","exit":0,"passed":71,"failed":0,"output":"imported-store-tests.txt","output_sha256":"fb4731b3dde8c67e4df829dac3299b80e5cc4107d504151f7a7972fa870bd1e4"},
+    {"args":"build --locked --release --manifest-path crates/spiralcore-transfer/Cargo.toml --target aarch64-apple-darwin --features hardware-sha256 --example codec_selection","exit":0,"output":"release-build.txt","output_sha256":"62bac1032b42485fee88355518c174650d18871595b9f036c076e83a448b5770"},
+    {"args":"fmt --check --manifest-path crates/spiralcore-transfer/Cargo.toml","exit":0,"stdout":"empty"}
+  ],
+  "independently_run_check_and_clippy":"review.json",
+  "focused_coverage":"coverage/receipt.json",
+  "coverage_limits":"New selection module:95% lines,100% functions,90.217% regions. Focused adaptive tests only; no full-crate branch/MC/DC/statement coverage claim.",
+  "smoke":{"file":"smoke.jsonl","sha256":"2cf6ac8f1e9cf2d0a662ec0a8897b4904ec7afad6c00663c6e940ae84f3e7555","exit":0,"operations_exact":180,"performance_sample":false},
+  "registered_measurement":{"file":"measurements.jsonl","sha256":"f2e3f74af52b89da1b8197a588f0d2c5ebc20595df632a43098000b6e641387d","exit":0,"operations_exact":1800,"bytes_compared":16043212800,"paired_inputs":240,"summary_cells":40},
+  "prior_wan_report_unchanged":{"file":"../../broad-wan-results-2026-10-29.md","sha256":"4b9fc69c9ca47a91dc4934ba2063859a84cded511fb518752e84dd163fec0a09"},
+  "limits":["local timing only","shared developer host","same-process CPU includes receiver","no new WAN speed qualification","no energy or peak-memory qualification","MVM integration deferred"]
+}

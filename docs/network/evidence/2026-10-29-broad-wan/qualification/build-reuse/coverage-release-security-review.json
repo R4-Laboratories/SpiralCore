@@ -1,0 +1,37 @@
+{
+  "schema": "spiralcore.coverage-profile.security-review.v1",
+  "status": "source_review_passed",
+  "reviewer": "mvm_architect_security",
+  "base_revision": "16fe9f44e858053a202b396fb7fca628dfcfd97c",
+  "workflow_sha256": "55dc685020919a04f253e8f354004402170fd7043604454cb04b34e8091c97a3",
+  "regression_test_sha256": "adf7e550dd8b06d572e088ee9c34b8e3a8d1810efcef270e1755c26b06aacca0",
+  "scope": "Supplemental independent source review of the coverage-only release-profile repair; prior approval and failed-run evidence remain unchanged.",
+  "observed_diff": [
+    "Instrumented cargo test adds --release, retaining --all-targets and --include-ignored.",
+    "Instrumented cargo build adds --release.",
+    "Instrumented capture executes the binary from the same isolated target/release directory.",
+    "llvm-cov report adds --release to select the same instrumented profile.",
+    "A focused test requires exactly one test/build/report command with the release flag, the release capture path, the isolated target, and the complete test selection."
+  ],
+  "blocking_findings": [],
+  "reasoning": [
+    "The four workflow changes make all coverage stages use one profile. They address the recorded debug-profile timeout without removing tests, extending bounds, or changing production source.",
+    "Coverage remains qualification-only in an isolated target and subshell. Ordinary source tests and ordinary release capture qualification are unchanged.",
+    "The 300-second test, 300-second build and 180-second live-capture limits remain unchanged. A timeout or failure still prevents sealing a sender artifact.",
+    "Ordinary release hashes are checked before coverage and again after success or failure. The instrumented binaries are not packaged as sender binaries.",
+    "The percentage remains a report-only observation. Optimized-profile coverage must be identified as such and is not interchangeable with historical debug-profile coverage."
+  ],
+  "failure_evidence_reviewed": {
+    "receipt": "coverage-release-repair.json",
+    "producer_run": 40947946641,
+    "reported_exit": 124,
+    "reported_stage": "all_target_tests_including_ignored",
+    "reported_unfinished_test": "tests::broad_local_http_first_pair_for_every_case_reopens_exactly",
+    "interpretation": "The retained diagnosis supports profile correction. Timeout without an assertion failure does not establish that the unfinished test passes."
+  },
+  "verification_boundary": {
+    "reviewer_executed_builds_tests_or_timing": false,
+    "new_linux_runtime_qualification": "NOT_RUN at review time; fresh exact-source producer required",
+    "independent_broad_checker": "unchanged and frozen"
+  }
+}

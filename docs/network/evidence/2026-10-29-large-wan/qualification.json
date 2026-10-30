@@ -1,0 +1,103 @@
+{
+  "schema": "spiralcore.large16-benchmark-qualification.v1",
+  "status": "passed_bounded_local_qualification",
+  "recorded_date": "2026-10-29",
+  "worktree": "/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore",
+  "baseline_revision": "f0966ebedcb8994f0985b54e9a2b961eeb8be914",
+  "registration_revision": "867ad3338b6e8c0ba708259cb8103fd4dac0f5d0",
+  "receipt_time_head": "f4e5e9afe6f3628ffe82e4553a88111f5bd6d126",
+  "source_binding_note": "Commands ran against the authored working-tree files before their final commit. The SHA256 bindings below identify those tested files; receipt_time_head is observed later and is not asserted to be the revision at test execution.",
+  "source_sha256": {
+    "crates/spiralcore-transfer/src/bin/spiralcore-bench.rs": "8c1f8f123f7f442083171d6e927046b17ba00b15bfdca2e3d521c11193c9f648",
+    "crates/spiralcore-transfer/tests/benchmark.rs": "bb1c20379aa20202109a4d962ba299aff624cec154f134f18f5199f4641cd11d"
+  },
+  "commands": [
+    {
+      "stage": "RED_before_implementation",
+      "command": "/Users/casey.allard/.cargo/bin/cargo test --locked --manifest-path crates/spiralcore-transfer/Cargo.toml --test benchmark large16_ -- --nocapture",
+      "exit_code": 101,
+      "passed": 1,
+      "failed": 1,
+      "failure_test": "large16_shards_cover_thirty_pairs_with_balanced_orders_and_bounded_caches",
+      "failure_evidence": "benchmark: unknown option --shard"
+    },
+    {
+      "stage": "GREEN_after_implementation",
+      "command": "/Users/casey.allard/.cargo/bin/cargo test --locked --manifest-path crates/spiralcore-transfer/Cargo.toml --test benchmark large16_ -- --nocapture",
+      "exit_code": 0,
+      "passed": 2,
+      "failed": 0
+    },
+    {
+      "stage": "final_targeted_suite",
+      "command": "/Users/casey.allard/.cargo/bin/cargo test --locked --manifest-path crates/spiralcore-transfer/Cargo.toml --bin spiralcore-bench --test benchmark --no-fail-fast",
+      "exit_code": 0,
+      "binary_tests": {"passed": 6, "failed": 0, "ignored": 1},
+      "integration_tests": {"passed": 7, "failed": 0, "ignored": 0},
+      "ignored_note": "The bounded 16 MiB HTTP test was subsequently run explicitly in release mode, recorded below."
+    },
+    {
+      "stage": "release_exact_16MiB_first_pair",
+      "command": "/Users/casey.allard/.cargo/bin/cargo test --release --locked --manifest-path crates/spiralcore-transfer/Cargo.toml --bin spiralcore-bench large16_local_http_first_pair_reopens_exact_bytes_for_all_arms -- --ignored --exact tests::large16_local_http_first_pair_reopens_exact_bytes_for_all_arms",
+      "exit_code": 0,
+      "passed": 1,
+      "failed": 0,
+      "ignored": 0,
+      "filtered": 6,
+      "test_executable": "crates/spiralcore-transfer/target/release/deps/spiralcore_bench-72baa6285ce9516b",
+      "test_executable_sha256": "0974ffaf54a68b8d5ad7db8d7c6ae0cb7b3270c6b08811a1c42c1aa7e4fd2b37"
+    },
+    {
+      "stage": "lint",
+      "command": "/Users/casey.allard/.cargo/bin/cargo clippy --locked --manifest-path crates/spiralcore-transfer/Cargo.toml --bin spiralcore-bench --test benchmark -- -D warnings",
+      "exit_code": 0
+    },
+    {
+      "stage": "format_check",
+      "command": "/Users/casey.allard/.cargo/bin/rustfmt --check --edition 2021 crates/spiralcore-transfer/src/bin/spiralcore-bench.rs crates/spiralcore-transfer/tests/benchmark.rs",
+      "exit_code": 0
+    },
+    {"stage": "diff_check", "command": "git diff --check", "exit_code": 0}
+  ],
+  "legacy_canonical_plan_sha256": {
+    "run": "abababababababababababababababababababababababababababababababab",
+    "trials": 30,
+    "v1_default": "77e500ff33a7401b44a06a6f98911e6d244bdf6ce9f43ea7b9094a71100963ed",
+    "v2_efficient_warm": "1f12e93820b09b2d1e8dd840d74fe3900799e48ca575962b8728a1b7c055352d",
+    "v2_efficient_prefix": "4f5c1298f4f9d816c4319fb0389d8d6e30c1ad302c422d5e492ff788fb48d80b",
+    "result": "All three unchanged golden serializations passed in the final targeted integration suite."
+  },
+  "release_exact_summary": {
+    "transport": "real local HTTP loopback using current WAN limits",
+    "object_bytes": 16777216,
+    "fixture_case": "localized_32",
+    "arms": ["raw_full", "zstd_full", "sparse"],
+    "operations": 6,
+    "real_raw_seeds": 3,
+    "updates": 3,
+    "reopened_exact_byte_comparisons": 6,
+    "http_requests_per_operation": 1,
+    "seed_and_raw_zstd_update_request_plus_response_body_bytes": 16814026,
+    "sparse_update_request_plus_response_body_bytes": 600,
+    "sparse_update_selected_mode": 3,
+    "row_validation": "Canonical v3 plan/receipt validation including fixture ObjectIds",
+    "durability": "Endpoint reopened and every base/target compared byte-for-byte; no crash or power-loss injection",
+    "performance_claim": "None. Test runtime is not a registered performance measurement."
+  },
+  "plan_contract": {
+    "suite": "large16-localized",
+    "global_trials": 30,
+    "required_shards": [0, 1, 2],
+    "global_trials_per_shard": 10,
+    "tasks_per_shard": 30,
+    "published_rows_per_shard": 60,
+    "retained_payload_bytes_per_shard": 1006632960,
+    "six_arm_permutations_global_count_each": 5
+  },
+  "limitations": [
+    "This is a compact contemporaneous tool-result receipt; raw console logs were not separately retained by this author.",
+    "Full 60-operation shard, hardware-feature qualification and WAN campaign are separate parent-owned steps, not claimed by this six-operation receipt.",
+    "Raw/zstd attempt bounded optional DAG warming; sparse skips it. The receiver paths do not perform identical CPU work.",
+    "Application HTTP-body bytes exclude HTTP/TLS/IP overhead; packet accounting is separate."
+  ]
+}

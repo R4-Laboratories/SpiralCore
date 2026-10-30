@@ -1,0 +1,163 @@
+{
+  "schema": "spiralcore.local-sha-ab.v1",
+  "fixture_records_identical": true,
+  "original_fixture_records_identical": true,
+  "encoded_graph_fingerprints_identical": true,
+  "fixtures": [
+    {
+      "fingerprint_fixture": "random_1MiB",
+      "encoded_manifest_sha256": "3e9bbfae2d1112e7398b5f50cc3cba5f0485eb93d6d9441bb0a990edd1aaa0c6",
+      "canonical_length_delimited_encoded_nodes_sha256": "2a306a772251fd74ab8b680d20ceab7ec8a4892d3740a2256c8914a6249f6968"
+    },
+    {
+      "fingerprint_fixture": "localized_32",
+      "encoded_manifest_sha256": "03ad7af1e63ba87dfcc1f427f53c51f5a5ebfc6f29883f8c1c53368ccf5ffbec",
+      "canonical_length_delimited_encoded_nodes_sha256": "3057a999fb4f6e8c5ebb7ca6b299c388d8455da95576a2d3c5542983e048b0f9"
+    },
+    {
+      "fingerprint_fixture": "scattered_32x32",
+      "encoded_manifest_sha256": "2a39d8f124f07180e9d4ce26df56078b4a40d9406547b46b85f9b77b94a98864",
+      "canonical_length_delimited_encoded_nodes_sha256": "f1e4e503f7905b1cf159107df79d3fb593814ef6fd94653a990aee6887d17f96"
+    },
+    {
+      "fingerprint_fixture": "prefix_1",
+      "encoded_manifest_sha256": "52368160a242b217860e5733fa78e3b4d3e4568a49f9420f41343fe31a7a12ff",
+      "canonical_length_delimited_encoded_nodes_sha256": "d5514f886a8ced6297d243e06f541371ef24c852ee72be7123a51778913f0247"
+    },
+    {
+      "fingerprint_fixture": "periodic_64",
+      "encoded_manifest_sha256": "c3efdbb9c4659f15bc1113e610c217eb7b51b8b4ace4e171317f733dc8b04bbe",
+      "canonical_length_delimited_encoded_nodes_sha256": "f0c86024d42ca029300c96b66797b4493202e5106c04c1ae2a59eb0e7c80573e"
+    }
+  ],
+  "software_backend": {
+    "ab_hardware_sha_feature": false,
+    "runtime_aarch64_sha2_detected": true
+  },
+  "hardware_backend": {
+    "ab_hardware_sha_feature": true,
+    "runtime_aarch64_sha2_detected": true
+  },
+  "operations": [
+    {
+      "operation": "object_id_random_1MiB",
+      "software_cpu_micros_median": 3080.57,
+      "hardware_cpu_micros_median": 614.92,
+      "cpu_ratio_software_over_hardware": 5.009708579977884,
+      "software_wall_micros_median": 3106.84208,
+      "hardware_wall_micros_median": 650.8645799999999
+    },
+    {
+      "operation": "copy_vec_random_1MiB",
+      "software_cpu_micros_median": 24.98,
+      "hardware_cpu_micros_median": 34.56,
+      "cpu_ratio_software_over_hardware": 0.7228009259259259,
+      "software_wall_micros_median": 24.97625,
+      "hardware_wall_micros_median": 52.87458
+    },
+    {
+      "operation": "legacy_store_fold_random_1MiB",
+      "software_cpu_micros_median": 25780,
+      "hardware_cpu_micros_median": 32614,
+      "cpu_ratio_software_over_hardware": 0.7904580854847612,
+      "software_wall_micros_median": 26888.166,
+      "hardware_wall_micros_median": 36389.5
+    },
+    {
+      "operation": "legacy_store_rebuild_random_1MiB",
+      "software_cpu_micros_median": 18402,
+      "hardware_cpu_micros_median": 20733,
+      "cpu_ratio_software_over_hardware": 0.8875705397192881,
+      "software_wall_micros_median": 18922.291,
+      "hardware_wall_micros_median": 21079.584
+    },
+    {
+      "operation": "graph_fold_random_1MiB",
+      "software_cpu_micros_median": 111506,
+      "hardware_cpu_micros_median": 154133,
+      "cpu_ratio_software_over_hardware": 0.7234401458480663,
+      "software_wall_micros_median": 112811.75,
+      "hardware_wall_micros_median": 176129.583
+    },
+    {
+      "operation": "graph_fold_localized_32",
+      "software_cpu_micros_median": 111977,
+      "hardware_cpu_micros_median": 146450,
+      "cpu_ratio_software_over_hardware": 0.7646090815978149,
+      "software_wall_micros_median": 113833.709,
+      "hardware_wall_micros_median": 154599.042
+    },
+    {
+      "operation": "graph_clone_random_1MiB",
+      "software_cpu_micros_median": 2395,
+      "hardware_cpu_micros_median": 2216,
+      "cpu_ratio_software_over_hardware": 1.0807761732851986,
+      "software_wall_micros_median": 2394.791,
+      "hardware_wall_micros_median": 2211.334
+    },
+    {
+      "operation": "graph_rebuild_random_1MiB",
+      "software_cpu_micros_median": 39372,
+      "hardware_cpu_micros_median": 34178,
+      "cpu_ratio_software_over_hardware": 1.1519691029317105,
+      "software_wall_micros_median": 40090.209,
+      "hardware_wall_micros_median": 37005.5
+    },
+    {
+      "operation": "graph_missing_random_1MiB",
+      "software_cpu_micros_median": 43642,
+      "hardware_cpu_micros_median": 42939,
+      "cpu_ratio_software_over_hardware": 1.0163720626935886,
+      "software_wall_micros_median": 43921.209,
+      "hardware_wall_micros_median": 45785.083
+    },
+    {
+      "operation": "all_node_ids_random_1MiB",
+      "software_cpu_micros_median": 26228,
+      "hardware_cpu_micros_median": 12390,
+      "cpu_ratio_software_over_hardware": 2.116868442292171,
+      "software_wall_micros_median": 26486.208,
+      "hardware_wall_micros_median": 12815
+    },
+    {
+      "operation": "all_node_encodes_random_1MiB",
+      "software_cpu_micros_median": 32208,
+      "hardware_cpu_micros_median": 25372,
+      "cpu_ratio_software_over_hardware": 1.269430868674129,
+      "software_wall_micros_median": 32353.5,
+      "hardware_wall_micros_median": 28429
+    },
+    {
+      "operation": "delta_exact_same_base",
+      "software_cpu_micros_median": 2568,
+      "hardware_cpu_micros_median": 4361,
+      "cpu_ratio_software_over_hardware": 0.5888557670259115,
+      "software_wall_micros_median": 2567.916,
+      "hardware_wall_micros_median": 4709.167
+    },
+    {
+      "operation": "delta_localized_against_reused_base",
+      "software_cpu_micros_median": 3400,
+      "hardware_cpu_micros_median": 4286,
+      "cpu_ratio_software_over_hardware": 0.7932804479701353,
+      "software_wall_micros_median": 3411.708,
+      "hardware_wall_micros_median": 4701.917
+    },
+    {
+      "operation": "graph_fold_periodic_64_1MiB",
+      "software_cpu_micros_median": 18606,
+      "hardware_cpu_micros_median": 16603,
+      "cpu_ratio_software_over_hardware": 1.120640848039511,
+      "software_wall_micros_median": 18950.084,
+      "hardware_wall_micros_median": 18941.208
+    },
+    {
+      "operation": "graph_rebuild_periodic_64_1MiB",
+      "software_cpu_micros_median": 29708,
+      "hardware_cpu_micros_median": 10399,
+      "cpu_ratio_software_over_hardware": 2.8568131551110683,
+      "software_wall_micros_median": 30127.125,
+      "hardware_wall_micros_median": 12455.792
+    }
+  ]
+}

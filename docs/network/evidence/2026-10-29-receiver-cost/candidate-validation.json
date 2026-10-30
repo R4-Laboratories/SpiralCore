@@ -1,0 +1,44 @@
+{
+  "schema": "spiralcore.receiver-candidate-validation.v1",
+  "candidate_revision": "b4a18602c04863bac2ba404450c401109dbee3ea",
+  "baseline_probe_compile_revision": "74ee59df7b7a55476fa573b17f5d947fc28fb030",
+  "production_scope": "Only Endpoint::disk_usage loop-invariant namespace formatting and directory matching; all scans/stat/quota/durability behavior retained.",
+  "checks": [
+    {
+      "command": "cargo test --locked --manifest-path crates/spiralcore-transfer/Cargo.toml --all-targets",
+      "status": "passed",
+      "passed": 124,
+      "failed": 0,
+      "endpoint_tests": 21
+    },
+    {
+      "command": "cargo fmt --manifest-path crates/spiralcore-transfer/Cargo.toml -- --check",
+      "status": "passed"
+    },
+    {
+      "command": "cargo clippy --locked --manifest-path crates/spiralcore-transfer/Cargo.toml --all-targets -- -D warnings",
+      "status": "passed"
+    },
+    {
+      "command": "git diff --check -- crates/spiralcore-transfer",
+      "status": "passed"
+    },
+    {
+      "command": "cargo build --release --locked --manifest-path crates/spiralcore-transfer/Cargo.toml --bins",
+      "status": "passed"
+    }
+  ],
+  "reviews": {
+    "rust": "approved actual diff, no findings",
+    "security": "approved actual diff, no findings",
+    "probe_measurement": "approved helper and fixed schedule",
+    "probe_security": "approved after exact receipt-body and target-directory/native-target fixes"
+  },
+  "coverage": "Not rerun for this loop-invariant change; 90.316% is the earlier b552017 measurement, not a fresh candidate measurement.",
+  "other_crate_tests": "Imported object-store source unchanged; prior71 passing tests not repeated for this change.",
+  "performance_status": "registered joint target missed; all256 observations exact; candidate reverted by cb376b80dd5f54decdac124611c3ff24417e7fd1",
+  "baseline_executable_sha256": "eed98c450a926a8c3caaf564efc2fbeecfea972b71f2745f258815e4f30eb198",
+  "candidate_executable_sha256": "cc97a06faed936c19fd74341dd59f3d481fcb40ad19adef4894b53b4db4fbc7b",
+  "source_fingerprint_baseline": "403bae4347bae04f1833d32ee6877978e1c18c97cf13651b870ef0f1546b0b74",
+  "source_fingerprint_candidate": "87c4ce0ae34184d872968fe74326c81e3ad5f45624b32d7905ecbc7f1aa5a0af"
+}

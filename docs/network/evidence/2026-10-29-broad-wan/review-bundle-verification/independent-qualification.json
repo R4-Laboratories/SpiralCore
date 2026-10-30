@@ -1,0 +1,55 @@
+{
+  "schema": "spiralcore.portable-bundle-independent-qualification.v1",
+  "status": "passed",
+  "reviewer": "transport_audit",
+  "review_source_sha256": "6d7a42f03e17c9574ff7601ff2e7a77e4d7c9255963dcfb2ff63976b07618135",
+  "review_executable_sha256": "5e910cbe72d247dc5b81e28b1cdcd490f5cbf112b03395dfbadd2f04d4bbd813",
+  "test_executable_sha256": "77e09eb6ef5b6938b565077c92f743a59389d88567467308020141f07cf30c4c",
+  "result_sha256": "3861c1ab960538792824c95761c9d7ecc78189f18e94755fe57a20af39095c16",
+  "expected_members_manifest_sha256": "c74f6826b79cc38943c34267bb2f939cfa5ab1e8e2f1fdaa948c49e6d46011f2",
+  "compiler": "rustc 1.97.1 (8bab26f4f68e0e26f0bb7960be334d5b520ea452), aarch64-apple-darwin, LLVM22.1.6",
+  "git": "git version2.54.0 (Apple Git-157)",
+  "compilation": "rustc --edition2021 -Dwarnings -Copt-level=2, using existing pinned debug-profile dependency rlibs; exact command in independent-review-method.md",
+  "dependencies": {
+    "libserde_json-f11651c4b5834b4e.rlib": "c8752da542071c7d2e30c79c43602cf4b9a626d19cce3a1b33647055adc9a666",
+    "libsha2-11f7c61dcc994809.rlib": "f330242bbe618610a480be8d6467841cc2c6acc06ff71d93c7d278cf702c0f02"
+  },
+  "qualification_tests": {
+    "command": "./independent-review-tests --test-threads=1",
+    "exit": 0,
+    "passed": 6,
+    "failed": 0,
+    "ignored": 0,
+    "before_actual_archive_run": true,
+    "cases": ["exact", "corrupted_payload", "truncated", "missing_member", "duplicate_member", "zero_work_rejected"]
+  },
+  "actual_run": {
+    "command": "./independent-review /Users/casey.allard/spiralcore/local/broad-wan-20261029 /Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore > independent-review.json",
+    "exit": 0,
+    "archive_bytes": 1224990720,
+    "archive_sha256": "f976473d124d3f5989efa3ce7176176d7eb19d4166bae9567bad4062777aa8eb",
+    "regular_members_verified": 68,
+    "checksum_entries_verified": 67,
+    "measured_artifact_zips": 60,
+    "preserved_failed_setup_zips": 1,
+    "qualified_producer_zips": 1,
+    "custody_references_checked": 62,
+    "inner_git_archives_regenerated_identically": 2,
+    "compact_git_files": 5563,
+    "measured_source_git_files": 67,
+    "records_revision": "8e46471f8aacf74a931b0152ebacf656f7690376",
+    "measured_revision": "9dce4c57d1f41cef7365b297cd690849afce34e7"
+  },
+  "original_inputs_modified": false,
+  "full_archive_loaded_into_memory": false,
+  "expanded_files_extracted": false,
+  "inner_zip_contents_requalified": false,
+  "network_or_performance_execution": false,
+  "scope_limits": [
+    "Bounded outer-package integrity and Git/custody consistency; original scientific and capture qualifications remain separate.",
+    "Custody references were checked from the frozen Git records without new external authentication.",
+    "The original caches were previously removed; exact-reopen receipts are preserved but this review does not rerun their historical verification.",
+    "Reproduction of the Git consistency checks needs repository objects for both pinned commits; no Git database or complete toolchain/vendor archive is in the bundle.",
+    "The source helper is diagnostic review code and is not linked into any measured runtime."
+  ]
+}

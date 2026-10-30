@@ -1,0 +1,13 @@
+# Qualified producer: 40950252067
+
+Source `9dce4c57d1f41cef7365b297cd690849afce34e7`; first attempt; GitHub conclusion **success**. This compact packet preserves the independent producer runtime and artifact-custody review, both synthetic capture reviews, exact producer manifest, authenticated artifact identity/proofs, archive/file validation receipts, optimized coverage and native reviewer sources.
+
+The sender artifact is **12931876271**, exactly **6,982,485 bytes**, with authenticated digest `sha256:bc0d2c339fd4060321ec584f0f1cbc28973c285a863346c781c121ea9f016e51`. The native validator checked actual ZIP bytes and the four bounded flat entries; every extracted binary hash/length agrees with the manifest and original release checksum receipt. The downloaded Linux binaries remain nonexecutable and were not executed on macOS. The manifest SHA256 is `ddf224f86ec70c52ea01b0988847e15276464008c8627926c52489445f955f36`.
+
+Optimized instrumented all-target qualification passed exactly 167 tests in 20 test binaries, including both ignored large-transfer qualifications. The ordinary suite passed 165 with two ignored. All 33 transfer-source hashes agree with the frozen native qualification. Ordinary release hashes remained unchanged across instrumentation. Coverage is 7,673/8,476 lines (90.526%), 600/648 functions (92.593%) and 13,856/15,873 regions (87.293%); branch and MC/DC coverage were not collected. Coverage is reported, not treated as performance or energy evidence.
+
+The independent reviewer replayed all 1,306 PCAP records across ordinary and instrumented capture qualifications. In each, normal is complete, interrupted and ongoing are correctly incomplete, and all owned topology/process cleanup checks pass. These are local synthetic plaintext TCP qualifications. Every measurement consumer must still qualify its own capture lifecycle. This packet contains no WAN performance result and does not reinterpret any earlier incomplete capture.
+
+Raw API evidence, whole-job diagnostic, six case fixtures/PCAPs, exact ZIP and nonexecutable Linux binaries remain at `/Users/casey.allard/spiralcore/local/broad-wan-20261029/qualification/linux-producer-2`. They are not duplicated here. The JSON inventories bind their exact hashes. `review-method.md` describes reproduction from that full local directory; relative paths inside the retained results refer to it. Reviewer executables and raw logs are omitted from this compact packet.
+
+The prior failed producer remains separate and unchanged. The reviewer did not write campaign gate files or alter GitHub variables/secrets. The parent task created the campaign gate only after receiving this exact approved receipt and manifest.

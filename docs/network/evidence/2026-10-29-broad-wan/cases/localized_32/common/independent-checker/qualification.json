@@ -1,0 +1,64 @@
+{
+  "schema": "spiralcore.broad-independent-review.qualification.v1",
+  "status": "prepared_and_locally_qualified",
+  "actual_broad_wan_evidence_review": "NOT_RUN_no_campaign_data_yet",
+  "production_files_changed": false,
+  "performance_claims": false,
+  "source_review": {
+    "reviewer": "transport_audit",
+    "status": "no_blocking_finding",
+    "scope": "canonical v4 fixtures, order, scopes, source/body/custody bindings, checked arithmetic, strict complete-case IP gate and inherited independent packet-total replay",
+    "limitation": "intermediate lifecycle text requires observed Linux inline USR1 form"
+  },
+  "sha256": {
+    "src/main.rs": "974b5e654b27994c617a00cb6372c1a9a86d6a2c6df4e5f226b187327df580f8",
+    "src/bin/pcap-review.rs": "7f46fb195c0e00d76a04c77ecbf5ff1d6ec2355fd84ab37045cd991b9da5b5b5",
+    "Cargo.toml": "8be6eafc9720930f2eb9a1712b631cc7f4cfca883a32af799d1af7698a18874c",
+    "Cargo.lock": "c60cf720a34fe8bb4da63be96a1f70dee7ed9ca362e9b663fff443a451447d81",
+    "target/release/spiralcore-broad-independent-review": "2cf10ee8378d1b3bc26a85e573a593bf1bb7e77ef235882ac1dcc034c4416f9e",
+    "target/release/pcap-review": "3dc645f6b63e1d8e3723243358edcbcd9f52971d2e5b663b0d54a18bb52eb5dd",
+    "qualification/plan-checks.jsonl": "35ec7e2921aba3e704c79042e8a4a01b2518dd51c53a5462c32f3c38b3a87dd8",
+    "frozen_production_benchmark_for_plan_crosscheck": "672d28df27c90a6e26bb22b0ee122e6034641427c32d11fc3a9d579cf5722c6b"
+  },
+  "compiler": "rustc 1.97.1 (8bab26f4f 2026-07-14)",
+  "target": "aarch64-apple-darwin",
+  "test_results": {
+    "all_targets_tests_passed": 8,
+    "all_targets_failed": 0,
+    "test_names": [
+      "missing_counter_and_invalid_hash_rejected",
+      "midpoint_stats_ratio_and_overflow",
+      "byte_receipt_arithmetic_and_authorship_mutations",
+      "mutation_and_exact_hash_bind_length",
+      "retained_real_linux_lifecycle_and_mutations",
+      "full_lifecycle_costs_and_negative_author_values",
+      "canonical_tasks_are_unique_and_permutations_exhaustive",
+      "previously_measured_localized_fixture_golden_ids"
+    ],
+    "canonical_plan_crosschecks": 60,
+    "canonical_tasks_crosschecked": 1440,
+    "truncated_pcap": {
+      "bytes": 32,
+      "exit": 101,
+      "error": "UnexpectedEof: failed to fill whole buffer",
+      "stdout_empty": true,
+      "fixture_sha256": "8c743203fcb8b87fb13d8380a00f8c2937498177a3ed4d80b72ad44124aca7b4"
+    }
+  },
+  "checks": {
+    "offline_locked_release_build": "passed",
+    "clippy_all_targets_deny_warnings": "passed",
+    "rustfmt": "passed"
+  },
+  "commands": [
+    "/Users/casey.allard/.cargo/bin/cargo test --offline --locked --manifest-path /Users/casey.allard/spiralcore/local/broad-wan-20261029/independent-review/Cargo.toml --all-targets",
+    "/Users/casey.allard/.cargo/bin/cargo clippy --offline --locked --manifest-path /Users/casey.allard/spiralcore/local/broad-wan-20261029/independent-review/Cargo.toml --all-targets -- -D warnings",
+    "/Users/casey.allard/.cargo/bin/cargo fmt --manifest-path /Users/casey.allard/spiralcore/local/broad-wan-20261029/independent-review/Cargo.toml",
+    "/Users/casey.allard/.cargo/bin/cargo build --offline --locked --release --manifest-path /Users/casey.allard/spiralcore/local/broad-wan-20261029/independent-review/Cargo.toml --bins"
+  ],
+  "historical_fixture_provenance": {
+    "linux_lifecycle": "local/broad-wan-20261029/qualification/linux-attempt-3/capture-qualification/{normal,interrupted,ongoing}",
+    "localized_golden": "local/large-wan-20261029/shard-0/remote/rows.jsonl trial 0",
+    "measurement_reuse": false
+  }
+}

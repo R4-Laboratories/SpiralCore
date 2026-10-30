@@ -1,0 +1,74 @@
+{
+  "schema": "spiralcore.broad-wan.independent-source-review.v1",
+  "date": "2026-10-29",
+  "reviewer": "mvm_architect_security",
+  "baseline_commit": "d03fe1630bba787a28cc3fa3ae201c4a1a75388b",
+  "verdict": "No remaining source-review blocker for qualification; actual Linux capture lifecycle and final frozen-source verification are still required before WAN interpretation.",
+  "reviewed_worktree_sources": {
+    ".github/workflows/spiralcore-wan.yml": "4f4e29d266ae16c8fddeed6ba7871b933a86b9457bb760335e0f17fa34ef48dc",
+    "crates/spiralcore-transfer/src/capture_lifecycle.rs": "b06d45a755a40741bf426c0ead3f9b8b2f752fc8acef0ffcf248ddf84761d722",
+    "crates/spiralcore-transfer/src/bin/spiralcore-capture-control.rs": "187ee12c792c775575a820506901b6f0e8147962ff7d8df55712e6303b52ec64",
+    "crates/spiralcore-transfer/src/bin/spiralcore-capture.rs": "747b734cb6ab0dcf99437536221835d51396b790c059e7e8e604879529946dd3",
+    "crates/spiralcore-transfer/src/bin/spiralcore-bench.rs": "aea8bb8169ab116758a1e727a16298906d3a3cb220b8135c7104a46c6a5752c4",
+    "crates/spiralcore-transfer/src/bin/spiralcore-wan.rs": "34520e8f7908ae5cce73daf885b80cb493c2bf23e0823e47e5de55b8198a68e1",
+    "crates/spiralcore-transfer/tests/benchmark.rs": "c427f0567ccfbf13d4f2adfb763f6def472ea8b770c51913f1bd400e4d22a11b",
+    "crates/spiralcore-transfer/tests/wan.rs": "4c5f3a7246819e4716ffac3ac027163eb8beb5d6ab43d1f196e6715e0432354a",
+    "docs/specs/zstd-prefix-v1.md": "b12cb98078d0b469923b0909c77fb7addda6ac7d372128ada5721f612094035e"
+  },
+  "reviewed_local_sources": {
+    "/Users/casey.allard/spiralcore/local/broad-wan-20261029/analysis/src/main.rs": "f3a1e944c48093cf304fa0fb7f3318634143a699a490ffb4c641060071c5d7d2",
+    "/Users/casey.allard/spiralcore/local/broad-wan-20261029/cache-profile/DESIGN.md": "13a84d443b04ce2734942f8a372b80ed9e9a5a898e11484bad192f3a85e839c3",
+    "/Users/casey.allard/spiralcore/local/broad-wan-20261029/cache-profile/snapshot/crates/spiralcore-transfer/src/endpoint.rs": "2cf3526e2f9ce20b5cfb97773826595a5197b40b07366560fd3bc24a5df9af09",
+    "/Users/casey.allard/spiralcore/local/broad-wan-20261029/cache-profile/snapshot/crates/spiralcore-transfer/src/scan_profile.rs": "3f2f8e30c88e15b98eaf9ad8b3cba3356bf21571e34f4375d860e3c8edffdfb4",
+    "/Users/casey.allard/spiralcore/local/broad-wan-20261029/cache-profile/src/lib.rs": "d46a68fe52f434c702be6568cd0b53a0963d45aee47e5348aaf89b822d119f0a"
+  },
+  "independent_review_scope": [
+    "Parent-authored canonical v4 plans, 12 workloads, four controls, five shards, fixture lengths/identities, selected-mode receipts, seed and teardown timing, minimal receiver policy CLI.",
+    "Transport-authored capture lifecycle/controller, parser extension and Actions infrastructure.",
+    "Parent-authored Rust statistical layer, after separate canonical receipt and exact reopened-byte verification.",
+    "Research-agent snapshot-only six-category quota-scan instrumentation and driver timing boundaries."
+  ],
+  "findings": [
+    {
+      "severity": "blocking",
+      "issue": "Linux qualification originally selected an ephemeral TCP port while parser required443.",
+      "resolution": "Transport added loopback-only qualification port; WAN default443 preserved, selected port bound to lifecycle and regression exercised RED then GREEN.",
+      "status": "resolved_at_reviewed_hash"
+    }
+  ],
+  "constraints": [
+    "Controller receipts prove bounded observed quiet intervals and strict final accounting, not network drain or capture outside the interval.",
+    "Actual Linux normal/interrupted/ongoing lifecycle qualification is NOT_RUN by this reviewer.",
+    "Prior historical three-packet counter gap remains incomplete; no tolerance/subtraction is accepted.",
+    "Lifecycle phase times are relative monotonic milliseconds; packet and row UTC timestamps are separate.",
+    "The compressed-localized target mutates compressed bytes and is not claimed to remain a valid compressed stream.",
+    "Receiver policy requires plan, POLICY log and source/executable provenance; row metadata alone does not establish actual policy.",
+    "Statistics helper is not an independent canonical fixture validator; warm byte reduction is one minus the ratio of median body bytes, while wall/CPU ratios are paired geometric means.",
+    "Fine scan categories are Rust-expression timings/API counts, not allocator or syscall counts; empty-span costs are descriptive and must not be subtracted as exact production overhead.",
+    "No new WAN, energy,64MiB,MVM,FIPS or CUI deployment claim follows from source review."
+  ],
+  "own_implementation_separate_from_independent_review": {
+    "files": [
+      "src/endpoint.rs",
+      "src/protocol.rs",
+      "src/client.rs",
+      "src/zstd_prefix.rs",
+      "src/lib.rs",
+      "tests/warm_policy.rs",
+      "tests/zstd_prefix.rs",
+      "src/bin/spiralcore.rs exhaustive mode-label arm",
+      "docs/specs/zstd-prefix-v1.md"
+    ],
+    "independent_reviewer": "transport_audit",
+    "independent_verdict": "No blocker reported after source review.",
+    "observed_checks": {
+      "selected_tests_passed": 58,
+      "command": "/Users/casey.allard/.cargo/bin/cargo test --manifest-path crates/spiralcore-transfer/Cargo.toml --lib --test zstd_prefix --test warm_policy --test endpoint --test transfer --test batched --test sparse",
+      "targeted_clippy": "PASS with -D warnings",
+      "owned_rustfmt_check": "PASS",
+      "git_diff_check": "PASS",
+      "red_green": "Observed runtime RED then GREEN for Disabled warming/admission, mode4 endpoint and client.",
+      "full_final_all_target_hardware_coverage_and_88_operation_rerun": "Parent-owned pending final source freeze."
+    }
+  }
+}

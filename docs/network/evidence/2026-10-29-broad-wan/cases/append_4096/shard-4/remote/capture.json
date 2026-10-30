@@ -1,0 +1,1223 @@
+{
+  "ambiguous_connections": 0,
+  "attribution_precondition": "client opens fresh connections per measurement; connections are not shared between operations",
+  "byte_layer": "IP total lengths, not captured snapshot lengths or physical Ethernet wire bytes",
+  "campaign": {
+    "download_ip_bytes": 1395194,
+    "download_packets": 10248,
+    "packets": 448319,
+    "total_ip_bytes": 629727605,
+    "unclassified_ip_bytes": 0,
+    "unclassified_packets": 0,
+    "unknown_ip_length_packets": 0,
+    "upload_ip_bytes": 628332411,
+    "upload_packets": 438071
+  },
+  "capture_complete": true,
+  "capture_counter_difference_meaning": "absolute received/captured discrepancy; unresolved startup filtering or unread buffers may explain it; not a count of proven lost transfer packets",
+  "capture_counter_difference_packets": 0,
+  "capture_first_packet_unix_nanos": "1793317429019030010",
+  "capture_last_packet_unix_nanos": "1793317521394100327",
+  "capture_lifecycle_scope": "bounded ready, preflight and post-client quiet observations, clean interrupt/reap and independently emitted final statistics; does not prove network drain or coverage outside the capture interval",
+  "capture_lifecycle_sha256": "f341b1d426cb3123d12a495a98a500df1c01d0ce7632e751772647411baac1b3",
+  "capture_lifecycle_verified": true,
+  "completeness_scope": "parsed selected-flow records have unambiguous observed-SYN ownership; every measurement has packets and published body-byte coverage; tcpdump captured and received counters equal the PCAP record count with zero reported kernel drops; offload state, filter installation, interface drops and traffic beyond the capture interval require separate provenance",
+  "excludes": "relay-to-receiver leg, relay internals, uncaptured/dropped traffic",
+  "expected_remote_ip": "104.16.231.132",
+  "includes": "captured TLS/HTTP traffic, TCP ACKs and retransmissions",
+  "incomplete_reasons": [],
+  "kernel_reported_drops": 0,
+  "link_type": 1,
+  "local_ip": "10.1.0.166",
+  "observed_remote_ips": [
+    "104.16.231.132"
+  ],
+  "observed_syn_connections": 48,
+  "partition_rule": "outbound SYN assigns a TCP four-tuple to the containing inclusive measurement interval, or setup before the first row; all subsequent connection packets retain that owner through PCAP EOF; missing SYN, changed initial sequence, and SYN outside active intervals are unattributed",
+  "partition_sum_verified": true,
+  "pcap_record_count_matches_tcpdump_captured": true,
+  "rows": [
+    {
+      "application_body_coverage_verified": true,
+      "download_ip_bytes": 34737,
+      "download_packets": 231,
+      "expected_application_body_bytes": {
+        "download": 18754,
+        "upload": 16791043
+      },
+      "packets": 12384,
+      "packets_within_measurement": 12382,
+      "phase": "seed",
+      "status": "published",
+      "task": {
+        "id": "16773120-append_4096-24-zstd_full"
+      },
+      "total_ip_bytes": 17481073,
+      "unclassified_ip_bytes": 0,
+      "unclassified_packets": 0,
+      "unix_end_nanos": "1793317434543138134",
+      "unix_start_nanos": "1793317428982893592",
+      "unknown_ip_length_packets": 0,
+      "upload_ip_bytes": 17446336,
+      "upload_packets": 12153
+    },
+    {
+      "application_body_coverage_verified": true,
+      "download_ip_bytes": 35456,
+      "download_packets": 245,
+      "expected_application_body_bytes": {
+        "download": 18822,
+        "upload": 16791127
+      },
+      "packets": 12406,
+      "packets_within_measurement": 12404,
+      "phase": "transfer",
+      "status": "published",
+      "task": {
+        "id": "16773120-append_4096-24-zstd_full"
+      },
+      "total_ip_bytes": 17482292,
+      "unclassified_ip_bytes": 0,
+      "unclassified_packets": 0,
+      "unix_end_nanos": "1793317437598374654",
+      "unix_start_nanos": "1793317434575327893",
+      "unknown_ip_length_packets": 0,
+      "upload_ip_bytes": 17446836,
+      "upload_packets": 12161
+    },
+    {
+      "application_body_coverage_verified": true,
+      "download_ip_bytes": 43842,
+      "download_packets": 405,
+      "expected_application_body_bytes": {
+        "download": 18754,
+        "upload": 16791043
+      },
+      "packets": 12587,
+      "packets_within_measurement": 12585,
+      "phase": "seed",
+      "status": "published",
+      "task": {
+        "id": "16773120-append_4096-24-zstd_prefix"
+      },
+      "total_ip_bytes": 17491686,
+      "unclassified_ip_bytes": 0,
+      "unclassified_packets": 0,
+      "unix_end_nanos": "1793317440381401735",
+      "unix_start_nanos": "1793317437618998780",
+      "unknown_ip_length_packets": 0,
+      "upload_ip_bytes": 17447844,
+      "upload_packets": 12182
+    },
+    {
+      "application_body_coverage_verified": true,
+      "download_ip_bytes": 4289,
+      "download_packets": 9,
+      "expected_application_body_bytes": {
+        "download": 258,
+        "upload": 25931
+      },
+      "packets": 38,
+      "packets_within_measurement": 36,
+      "phase": "transfer",
+      "status": "published",
+      "task": {
+        "id": "16773120-append_4096-24-zstd_prefix"
+      },
+      "total_ip_bytes": 32556,
+      "unclassified_ip_bytes": 0,
+      "unclassified_packets": 0,
+      "unix_end_nanos": "1793317440702048494",
+      "unix_start_nanos": "1793317440400715358",
+      "unknown_ip_length_packets": 0,
+      "upload_ip_bytes": 28267,
+      "upload_packets": 29
+    },
+    {
+      "application_body_coverage_verified": true,
+      "download_ip_bytes": 34743,
+      "download_packets": 233,
+      "expected_application_body_bytes": {
+        "download": 18754,
+        "upload": 16791043
+      },
+      "packets": 12388,
+      "packets_within_measurement": 12386,
+      "phase": "seed",
+      "status": "published",
+      "task": {
+        "id": "16773120-append_4096-24-sparse"
+      },
+      "total_ip_bytes": 17481183,
+      "unclassified_ip_bytes": 0,
+      "unclassified_packets": 0,
+      "unix_end_nanos": "1793317443139561203",
+      "unix_start_nanos": "1793317440730801526",
+      "unknown_ip_length_packets": 0,
+      "upload_ip_bytes": 17446440,
+      "upload_packets": 12155
+    },
+    {
+      "application_body_coverage_verified": true,
+      "download_ip_bytes": 4237,
+      "download_packets": 8,
+      "expected_application_body_bytes": {
+        "download": 258,
+        "upload": 4393
+      },
+      "packets": 22,
+      "packets_within_measurement": 20,
+      "phase": "transfer",
+      "status": "published",
+      "task": {
+        "id": "16773120-append_4096-24-sparse"
+      },
+      "total_ip_bytes": 10163,
+      "unclassified_ip_bytes": 0,
+      "unclassified_packets": 0,
+      "unix_end_nanos": "1793317443359903154",
+      "unix_start_nanos": "1793317443158869966",
+      "unknown_ip_length_packets": 0,
+      "upload_ip_bytes": 5926,
+      "upload_packets": 14
+    },
+    {
+      "application_body_coverage_verified": true,
+      "download_ip_bytes": 35678,
+      "download_packets": 251,
+      "expected_application_body_bytes": {
+        "download": 18754,
+        "upload": 16791043
+      },
+      "packets": 12395,
+      "packets_within_measurement": 12393,
+      "phase": "seed",
+      "status": "published",
+      "task": {
+        "id": "16773120-append_4096-24-raw_full"
+      },
+      "total_ip_bytes": 17481546,
+      "unclassified_ip_bytes": 0,
+      "unclassified_packets": 0,
+      "unix_end_nanos": "1793317445389737813",
+      "unix_start_nanos": "1793317443379512612",
+      "unknown_ip_length_packets": 0,
+      "upload_ip_bytes": 17445868,
+      "upload_packets": 12144
+    },
+    {
+      "application_body_coverage_verified": true,
+      "download_ip_bytes": 35656,
+      "download_packets": 249,
+      "expected_application_body_bytes": {
+        "download": 18822,
+        "upload": 16795204
+      },
+      "packets": 12432,
+      "packets_within_measurement": 12430,
+      "phase": "transfer",
+      "status": "published",
+      "task": {
+        "id": "16773120-append_4096-24-raw_full"
+      },
+      "total_ip_bytes": 17488987,
+      "unclassified_ip_bytes": 0,
+      "unclassified_packets": 0,
+      "unix_end_nanos": "1793317447416516087",
+      "unix_start_nanos": "1793317445408951750",
+      "unknown_ip_length_packets": 0,
+      "upload_ip_bytes": 17453331,
+      "upload_packets": 12183
+    },
+    {
+      "application_body_coverage_verified": true,
+      "download_ip_bytes": 40654,
+      "download_packets": 343,
+      "expected_application_body_bytes": {
+        "download": 18754,
+        "upload": 16791043
+      },
+      "packets": 12522,
+      "packets_within_measurement": 12520,
+      "phase": "seed",
+      "status": "published",
+      "task": {
+        "id": "16773120-append_4096-25-zstd_full"
+      },
+      "total_ip_bytes": 17492594,
+      "unclassified_ip_bytes": 0,
+      "unclassified_packets": 0,
+      "unix_end_nanos": "1793317449350382635",
+      "unix_start_nanos": "1793317447447172869",
+      "unknown_ip_length_packets": 0,
+      "upload_ip_bytes": 17451940,
+      "upload_packets": 12179
+    },
+    {
+      "application_body_coverage_verified": true,
+      "download_ip_bytes": 33719,
+      "download_packets": 212,
+      "expected_application_body_bytes": {
+        "download": 18822,
+        "upload": 16791127
+      },
+      "packets": 12349,
+      "packets_within_measurement": 12347,
+      "phase": "transfer",
+      "status": "published",
+      "task": {
+        "id": "16773120-append_4096-25-zstd_full"
+      },
+      "total_ip_bytes": 17479307,
+      "unclassified_ip_bytes": 0,
+      "unclassified_packets": 0,
+      "unix_end_nanos": "1793317451117745700",
+      "unix_start_nanos": "1793317449369583568",
+      "unknown_ip_length_packets": 0,
+      "upload_ip_bytes": 17445588,
+      "upload_packets": 12137
+    },
+    {
+      "application_body_coverage_verified": true,
+      "download_ip_bytes": 36749,
+      "download_packets": 272,
+      "expected_application_body_bytes": {
+        "download": 18754,
+        "upload": 16791043
+      },
+      "packets": 12421,
+      "packets_within_measurement": 12419,
+      "phase": "seed",
+      "status": "published",
+      "task": {
+        "id": "16773120-append_4096-25-sparse"
+      },
+      "total_ip_bytes": 17482877,
+      "unclassified_ip_bytes": 0,
+      "unclassified_packets": 0,
+      "unix_end_nanos": "1793317453004692221",
+      "unix_start_nanos": "1793317451148305785",
+      "unknown_ip_length_packets": 0,
+      "upload_ip_bytes": 17446128,
+      "upload_packets": 12149
+    },
+    {
+      "application_body_coverage_verified": true,
+      "download_ip_bytes": 4184,
+      "download_packets": 7,
+      "expected_application_body_bytes": {
+        "download": 258,
+        "upload": 4393
+      },
+      "packets": 21,
+      "packets_within_measurement": 19,
+      "phase": "transfer",
+      "status": "published",
+      "task": {
+        "id": "16773120-append_4096-25-sparse"
+      },
+      "total_ip_bytes": 10110,
+      "unclassified_ip_bytes": 0,
+      "unclassified_packets": 0,
+      "unix_end_nanos": "1793317453240069325",
+      "unix_start_nanos": "1793317453024079371",
+      "unknown_ip_length_packets": 0,
+      "upload_ip_bytes": 5926,
+      "upload_packets": 14
+    },
+    {
+      "application_body_coverage_verified": true,
+      "download_ip_bytes": 36854,
+      "download_packets": 274,
+      "expected_application_body_bytes": {
+        "download": 18754,
+        "upload": 16791043
+      },
+      "packets": 12432,
+      "packets_within_measurement": 12430,
+      "phase": "seed",
+      "status": "published",
+      "task": {
+        "id": "16773120-append_4096-25-raw_full"
+      },
+      "total_ip_bytes": 17483450,
+      "unclassified_ip_bytes": 0,
+      "unclassified_packets": 0,
+      "unix_end_nanos": "1793317454747504743",
+      "unix_start_nanos": "1793317453259697701",
+      "unknown_ip_length_packets": 0,
+      "upload_ip_bytes": 17446596,
+      "upload_packets": 12158
+    },
+    {
+      "application_body_coverage_verified": true,
+      "download_ip_bytes": 35030,
+      "download_packets": 237,
+      "expected_application_body_bytes": {
+        "download": 18822,
+        "upload": 16795204
+      },
+      "packets": 12404,
+      "packets_within_measurement": 12402,
+      "phase": "transfer",
+      "status": "published",
+      "task": {
+        "id": "16773120-append_4096-25-raw_full"
+      },
+      "total_ip_bytes": 17486877,
+      "unclassified_ip_bytes": 0,
+      "unclassified_packets": 0,
+      "unix_end_nanos": "1793317456568045024",
+      "unix_start_nanos": "1793317454766816973",
+      "unknown_ip_length_packets": 0,
+      "upload_ip_bytes": 17451847,
+      "upload_packets": 12167
+    },
+    {
+      "application_body_coverage_verified": true,
+      "download_ip_bytes": 40091,
+      "download_packets": 334,
+      "expected_application_body_bytes": {
+        "download": 18754,
+        "upload": 16791043
+      },
+      "packets": 12496,
+      "packets_within_measurement": 12494,
+      "phase": "seed",
+      "status": "published",
+      "task": {
+        "id": "16773120-append_4096-25-zstd_prefix"
+      },
+      "total_ip_bytes": 17486895,
+      "unclassified_ip_bytes": 0,
+      "unclassified_packets": 0,
+      "unix_end_nanos": "1793317458246421801",
+      "unix_start_nanos": "1793317456597866729",
+      "unknown_ip_length_packets": 0,
+      "upload_ip_bytes": 17446804,
+      "upload_packets": 12162
+    },
+    {
+      "application_body_coverage_verified": true,
+      "download_ip_bytes": 4290,
+      "download_packets": 9,
+      "expected_application_body_bytes": {
+        "download": 258,
+        "upload": 25905
+      },
+      "packets": 38,
+      "packets_within_measurement": 36,
+      "phase": "transfer",
+      "status": "published",
+      "task": {
+        "id": "16773120-append_4096-25-zstd_prefix"
+      },
+      "total_ip_bytes": 32531,
+      "unclassified_ip_bytes": 0,
+      "unclassified_packets": 0,
+      "unix_end_nanos": "1793317458467351824",
+      "unix_start_nanos": "1793317458265822213",
+      "unknown_ip_length_packets": 0,
+      "upload_ip_bytes": 28241,
+      "upload_packets": 29
+    },
+    {
+      "application_body_coverage_verified": true,
+      "download_ip_bytes": 35867,
+      "download_packets": 253,
+      "expected_application_body_bytes": {
+        "download": 18754,
+        "upload": 16791043
+      },
+      "packets": 12406,
+      "packets_within_measurement": 12404,
+      "phase": "seed",
+      "status": "published",
+      "task": {
+        "id": "16773120-append_4096-26-zstd_full"
+      },
+      "total_ip_bytes": 17482203,
+      "unclassified_ip_bytes": 0,
+      "unclassified_packets": 0,
+      "unix_end_nanos": "1793317460173594953",
+      "unix_start_nanos": "1793317458496623414",
+      "unknown_ip_length_packets": 0,
+      "upload_ip_bytes": 17446336,
+      "upload_packets": 12153
+    },
+    {
+      "application_body_coverage_verified": true,
+      "download_ip_bytes": 37007,
+      "download_packets": 275,
+      "expected_application_body_bytes": {
+        "download": 18822,
+        "upload": 16791127
+      },
+      "packets": 12441,
+      "packets_within_measurement": 12439,
+      "phase": "transfer",
+      "status": "published",
+      "task": {
+        "id": "16773120-append_4096-26-zstd_full"
+      },
+      "total_ip_bytes": 17485111,
+      "unclassified_ip_bytes": 0,
+      "unclassified_packets": 0,
+      "unix_end_nanos": "1793317462896052989",
+      "unix_start_nanos": "1793317460192833174",
+      "unknown_ip_length_packets": 0,
+      "upload_ip_bytes": 17448104,
+      "upload_packets": 12166
+    },
+    {
+      "application_body_coverage_verified": true,
+      "download_ip_bytes": 34638,
+      "download_packets": 231,
+      "expected_application_body_bytes": {
+        "download": 18754,
+        "upload": 16791043
+      },
+      "packets": 12380,
+      "packets_within_measurement": 12378,
+      "phase": "seed",
+      "status": "published",
+      "task": {
+        "id": "16773120-append_4096-26-sparse"
+      },
+      "total_ip_bytes": 17480766,
+      "unclassified_ip_bytes": 0,
+      "unclassified_packets": 0,
+      "unix_end_nanos": "1793317468172137856",
+      "unix_start_nanos": "1793317462926607770",
+      "unknown_ip_length_packets": 0,
+      "upload_ip_bytes": 17446128,
+      "upload_packets": 12149
+    },
+    {
+      "application_body_coverage_verified": true,
+      "download_ip_bytes": 4185,
+      "download_packets": 7,
+      "expected_application_body_bytes": {
+        "download": 258,
+        "upload": 4393
+      },
+      "packets": 21,
+      "packets_within_measurement": 19,
+      "phase": "transfer",
+      "status": "published",
+      "task": {
+        "id": "16773120-append_4096-26-sparse"
+      },
+      "total_ip_bytes": 10111,
+      "unclassified_ip_bytes": 0,
+      "unclassified_packets": 0,
+      "unix_end_nanos": "1793317468707492913",
+      "unix_start_nanos": "1793317468191379374",
+      "unknown_ip_length_packets": 0,
+      "upload_ip_bytes": 5926,
+      "upload_packets": 14
+    },
+    {
+      "application_body_coverage_verified": true,
+      "download_ip_bytes": 39862,
+      "download_packets": 331,
+      "expected_application_body_bytes": {
+        "download": 18754,
+        "upload": 16791043
+      },
+      "packets": 12466,
+      "packets_within_measurement": 12464,
+      "phase": "seed",
+      "status": "published",
+      "task": {
+        "id": "16773120-append_4096-26-zstd_prefix"
+      },
+      "total_ip_bytes": 17485262,
+      "unclassified_ip_bytes": 0,
+      "unclassified_packets": 0,
+      "unix_end_nanos": "1793317474519832424",
+      "unix_start_nanos": "1793317468727328443",
+      "unknown_ip_length_packets": 0,
+      "upload_ip_bytes": 17445400,
+      "upload_packets": 12135
+    },
+    {
+      "application_body_coverage_verified": true,
+      "download_ip_bytes": 4341,
+      "download_packets": 10,
+      "expected_application_body_bytes": {
+        "download": 258,
+        "upload": 25931
+      },
+      "packets": 39,
+      "packets_within_measurement": 37,
+      "phase": "transfer",
+      "status": "published",
+      "task": {
+        "id": "16773120-append_4096-26-zstd_prefix"
+      },
+      "total_ip_bytes": 32608,
+      "unclassified_ip_bytes": 0,
+      "unclassified_packets": 0,
+      "unix_end_nanos": "1793317474866081425",
+      "unix_start_nanos": "1793317474539354854",
+      "unknown_ip_length_packets": 0,
+      "upload_ip_bytes": 28267,
+      "upload_packets": 29
+    },
+    {
+      "application_body_coverage_verified": true,
+      "download_ip_bytes": 34900,
+      "download_packets": 236,
+      "expected_application_body_bytes": {
+        "download": 18754,
+        "upload": 16791043
+      },
+      "packets": 12389,
+      "packets_within_measurement": 12387,
+      "phase": "seed",
+      "status": "published",
+      "task": {
+        "id": "16773120-append_4096-26-raw_full"
+      },
+      "total_ip_bytes": 17481236,
+      "unclassified_ip_bytes": 0,
+      "unclassified_packets": 0,
+      "unix_end_nanos": "1793317478069904692",
+      "unix_start_nanos": "1793317474894987459",
+      "unknown_ip_length_packets": 0,
+      "upload_ip_bytes": 17446336,
+      "upload_packets": 12153
+    },
+    {
+      "application_body_coverage_verified": true,
+      "download_ip_bytes": 37152,
+      "download_packets": 278,
+      "expected_application_body_bytes": {
+        "download": 18822,
+        "upload": 16795204
+      },
+      "packets": 12417,
+      "packets_within_measurement": 12415,
+      "phase": "transfer",
+      "status": "published",
+      "task": {
+        "id": "16773120-append_4096-26-raw_full"
+      },
+      "total_ip_bytes": 17486943,
+      "unclassified_ip_bytes": 0,
+      "unclassified_packets": 0,
+      "unix_end_nanos": "1793317480355043933",
+      "unix_start_nanos": "1793317478089361039",
+      "unknown_ip_length_packets": 0,
+      "upload_ip_bytes": 17449791,
+      "upload_packets": 12139
+    },
+    {
+      "application_body_coverage_verified": true,
+      "download_ip_bytes": 35732,
+      "download_packets": 252,
+      "expected_application_body_bytes": {
+        "download": 18754,
+        "upload": 16791043
+      },
+      "packets": 12429,
+      "packets_within_measurement": 12427,
+      "phase": "seed",
+      "status": "published",
+      "task": {
+        "id": "16773120-append_4096-27-zstd_prefix"
+      },
+      "total_ip_bytes": 17483316,
+      "unclassified_ip_bytes": 0,
+      "unclassified_packets": 0,
+      "unix_end_nanos": "1793317482600030938",
+      "unix_start_nanos": "1793317480384950703",
+      "unknown_ip_length_packets": 0,
+      "upload_ip_bytes": 17447584,
+      "upload_packets": 12177
+    },
+    {
+      "application_body_coverage_verified": true,
+      "download_ip_bytes": 4394,
+      "download_packets": 11,
+      "expected_application_body_bytes": {
+        "download": 258,
+        "upload": 25970
+      },
+      "packets": 40,
+      "packets_within_measurement": 38,
+      "phase": "transfer",
+      "status": "published",
+      "task": {
+        "id": "16773120-append_4096-27-zstd_prefix"
+      },
+      "total_ip_bytes": 32700,
+      "unclassified_ip_bytes": 0,
+      "unclassified_packets": 0,
+      "unix_end_nanos": "1793317482864585266",
+      "unix_start_nanos": "1793317482619489509",
+      "unknown_ip_length_packets": 0,
+      "upload_ip_bytes": 28306,
+      "upload_packets": 29
+    },
+    {
+      "application_body_coverage_verified": true,
+      "download_ip_bytes": 46151,
+      "download_packets": 448,
+      "expected_application_body_bytes": {
+        "download": 18754,
+        "upload": 16791043
+      },
+      "packets": 12653,
+      "packets_within_measurement": 12651,
+      "phase": "seed",
+      "status": "published",
+      "task": {
+        "id": "16773120-append_4096-27-raw_full"
+      },
+      "total_ip_bytes": 17495763,
+      "unclassified_ip_bytes": 0,
+      "unclassified_packets": 0,
+      "unix_end_nanos": "1793317485427146339",
+      "unix_start_nanos": "1793317482892843237",
+      "unknown_ip_length_packets": 0,
+      "upload_ip_bytes": 17449612,
+      "upload_packets": 12205
+    },
+    {
+      "application_body_coverage_verified": true,
+      "download_ip_bytes": 34667,
+      "download_packets": 230,
+      "expected_application_body_bytes": {
+        "download": 18822,
+        "upload": 16795204
+      },
+      "packets": 12404,
+      "packets_within_measurement": 12402,
+      "phase": "transfer",
+      "status": "published",
+      "task": {
+        "id": "16773120-append_4096-27-raw_full"
+      },
+      "total_ip_bytes": 17487394,
+      "unclassified_ip_bytes": 0,
+      "unclassified_packets": 0,
+      "unix_end_nanos": "1793317487763491815",
+      "unix_start_nanos": "1793317485446532456",
+      "unknown_ip_length_packets": 0,
+      "upload_ip_bytes": 17452727,
+      "upload_packets": 12174
+    },
+    {
+      "application_body_coverage_verified": true,
+      "download_ip_bytes": 36927,
+      "download_packets": 275,
+      "expected_application_body_bytes": {
+        "download": 18754,
+        "upload": 16791043
+      },
+      "packets": 12411,
+      "packets_within_measurement": 12409,
+      "phase": "seed",
+      "status": "published",
+      "task": {
+        "id": "16773120-append_4096-27-zstd_full"
+      },
+      "total_ip_bytes": 17482379,
+      "unclassified_ip_bytes": 0,
+      "unclassified_packets": 0,
+      "unix_end_nanos": "1793317489514568997",
+      "unix_start_nanos": "1793317487794574248",
+      "unknown_ip_length_packets": 0,
+      "upload_ip_bytes": 17445452,
+      "upload_packets": 12136
+    },
+    {
+      "application_body_coverage_verified": true,
+      "download_ip_bytes": 45431,
+      "download_packets": 437,
+      "expected_application_body_bytes": {
+        "download": 18822,
+        "upload": 16791127
+      },
+      "packets": 12625,
+      "packets_within_measurement": 12623,
+      "phase": "transfer",
+      "status": "published",
+      "task": {
+        "id": "16773120-append_4096-27-zstd_full"
+      },
+      "total_ip_bytes": 17494951,
+      "unclassified_ip_bytes": 0,
+      "unclassified_packets": 0,
+      "unix_end_nanos": "1793317491585592324",
+      "unix_start_nanos": "1793317489533836424",
+      "unknown_ip_length_packets": 0,
+      "upload_ip_bytes": 17449520,
+      "upload_packets": 12188
+    },
+    {
+      "application_body_coverage_verified": true,
+      "download_ip_bytes": 35224,
+      "download_packets": 242,
+      "expected_application_body_bytes": {
+        "download": 18754,
+        "upload": 16791043
+      },
+      "packets": 12401,
+      "packets_within_measurement": 12399,
+      "phase": "seed",
+      "status": "published",
+      "task": {
+        "id": "16773120-append_4096-27-sparse"
+      },
+      "total_ip_bytes": 17481956,
+      "unclassified_ip_bytes": 0,
+      "unclassified_packets": 0,
+      "unix_end_nanos": "1793317494085954030",
+      "unix_start_nanos": "1793317491614947273",
+      "unknown_ip_length_packets": 0,
+      "upload_ip_bytes": 17446732,
+      "upload_packets": 12159
+    },
+    {
+      "application_body_coverage_verified": true,
+      "download_ip_bytes": 4184,
+      "download_packets": 7,
+      "expected_application_body_bytes": {
+        "download": 258,
+        "upload": 4393
+      },
+      "packets": 21,
+      "packets_within_measurement": 19,
+      "phase": "transfer",
+      "status": "published",
+      "task": {
+        "id": "16773120-append_4096-27-sparse"
+      },
+      "total_ip_bytes": 10110,
+      "unclassified_ip_bytes": 0,
+      "unclassified_packets": 0,
+      "unix_end_nanos": "1793317494312436131",
+      "unix_start_nanos": "1793317494105285106",
+      "unknown_ip_length_packets": 0,
+      "upload_ip_bytes": 5926,
+      "upload_packets": 14
+    },
+    {
+      "application_body_coverage_verified": true,
+      "download_ip_bytes": 38011,
+      "download_packets": 294,
+      "expected_application_body_bytes": {
+        "download": 18754,
+        "upload": 16791043
+      },
+      "packets": 12441,
+      "packets_within_measurement": 12439,
+      "phase": "seed",
+      "status": "published",
+      "task": {
+        "id": "16773120-append_4096-28-zstd_prefix"
+      },
+      "total_ip_bytes": 17484035,
+      "unclassified_ip_bytes": 0,
+      "unclassified_packets": 0,
+      "unix_end_nanos": "1793317496185352151",
+      "unix_start_nanos": "1793317494332068405",
+      "unknown_ip_length_packets": 0,
+      "upload_ip_bytes": 17446024,
+      "upload_packets": 12147
+    },
+    {
+      "application_body_coverage_verified": true,
+      "download_ip_bytes": 4342,
+      "download_packets": 10,
+      "expected_application_body_bytes": {
+        "download": 258,
+        "upload": 25905
+      },
+      "packets": 39,
+      "packets_within_measurement": 37,
+      "phase": "transfer",
+      "status": "published",
+      "task": {
+        "id": "16773120-append_4096-28-zstd_prefix"
+      },
+      "total_ip_bytes": 32583,
+      "unclassified_ip_bytes": 0,
+      "unclassified_packets": 0,
+      "unix_end_nanos": "1793317496422296236",
+      "unix_start_nanos": "1793317496204604531",
+      "unknown_ip_length_packets": 0,
+      "upload_ip_bytes": 28241,
+      "upload_packets": 29
+    },
+    {
+      "application_body_coverage_verified": true,
+      "download_ip_bytes": 35472,
+      "download_packets": 247,
+      "expected_application_body_bytes": {
+        "download": 18754,
+        "upload": 16791043
+      },
+      "packets": 12395,
+      "packets_within_measurement": 12393,
+      "phase": "seed",
+      "status": "published",
+      "task": {
+        "id": "16773120-append_4096-28-raw_full"
+      },
+      "total_ip_bytes": 17481548,
+      "unclassified_ip_bytes": 0,
+      "unclassified_packets": 0,
+      "unix_end_nanos": "1793317498149389241",
+      "unix_start_nanos": "1793317496451281089",
+      "unknown_ip_length_packets": 0,
+      "upload_ip_bytes": 17446076,
+      "upload_packets": 12148
+    },
+    {
+      "application_body_coverage_verified": true,
+      "download_ip_bytes": 39105,
+      "download_packets": 316,
+      "expected_application_body_bytes": {
+        "download": 18822,
+        "upload": 16795204
+      },
+      "packets": 12482,
+      "packets_within_measurement": 12480,
+      "phase": "transfer",
+      "status": "published",
+      "task": {
+        "id": "16773120-append_4096-28-raw_full"
+      },
+      "total_ip_bytes": 17490300,
+      "unclassified_ip_bytes": 0,
+      "unclassified_packets": 0,
+      "unix_end_nanos": "1793317500061743714",
+      "unix_start_nanos": "1793317498168633095",
+      "unknown_ip_length_packets": 0,
+      "upload_ip_bytes": 17451195,
+      "upload_packets": 12166
+    },
+    {
+      "application_body_coverage_verified": true,
+      "download_ip_bytes": 34145,
+      "download_packets": 221,
+      "expected_application_body_bytes": {
+        "download": 18754,
+        "upload": 16791043
+      },
+      "packets": 12389,
+      "packets_within_measurement": 12387,
+      "phase": "seed",
+      "status": "published",
+      "task": {
+        "id": "16773120-append_4096-28-sparse"
+      },
+      "total_ip_bytes": 17484693,
+      "unclassified_ip_bytes": 0,
+      "unclassified_packets": 0,
+      "unix_end_nanos": "1793317503421943905",
+      "unix_start_nanos": "1793317500092465784",
+      "unknown_ip_length_packets": 0,
+      "upload_ip_bytes": 17450548,
+      "upload_packets": 12168
+    },
+    {
+      "application_body_coverage_verified": true,
+      "download_ip_bytes": 4185,
+      "download_packets": 7,
+      "expected_application_body_bytes": {
+        "download": 258,
+        "upload": 4393
+      },
+      "packets": 21,
+      "packets_within_measurement": 19,
+      "phase": "transfer",
+      "status": "published",
+      "task": {
+        "id": "16773120-append_4096-28-sparse"
+      },
+      "total_ip_bytes": 10111,
+      "unclassified_ip_bytes": 0,
+      "unclassified_packets": 0,
+      "unix_end_nanos": "1793317503714328721",
+      "unix_start_nanos": "1793317503441311518",
+      "unknown_ip_length_packets": 0,
+      "upload_ip_bytes": 5926,
+      "upload_packets": 14
+    },
+    {
+      "application_body_coverage_verified": true,
+      "download_ip_bytes": 35564,
+      "download_packets": 249,
+      "expected_application_body_bytes": {
+        "download": 18754,
+        "upload": 16791043
+      },
+      "packets": 12400,
+      "packets_within_measurement": 12398,
+      "phase": "seed",
+      "status": "published",
+      "task": {
+        "id": "16773120-append_4096-28-zstd_full"
+      },
+      "total_ip_bytes": 17483132,
+      "unclassified_ip_bytes": 0,
+      "unclassified_packets": 0,
+      "unix_end_nanos": "1793317505894381612",
+      "unix_start_nanos": "1793317503733696645",
+      "unknown_ip_length_packets": 0,
+      "upload_ip_bytes": 17447568,
+      "upload_packets": 12151
+    },
+    {
+      "application_body_coverage_verified": true,
+      "download_ip_bytes": 36737,
+      "download_packets": 270,
+      "expected_application_body_bytes": {
+        "download": 18822,
+        "upload": 16791127
+      },
+      "packets": 12457,
+      "packets_within_measurement": 12455,
+      "phase": "transfer",
+      "status": "published",
+      "task": {
+        "id": "16773120-append_4096-28-zstd_full"
+      },
+      "total_ip_bytes": 17487701,
+      "unclassified_ip_bytes": 0,
+      "unclassified_packets": 0,
+      "unix_end_nanos": "1793317508274729533",
+      "unix_start_nanos": "1793317505913557939",
+      "unknown_ip_length_packets": 0,
+      "upload_ip_bytes": 17450964,
+      "upload_packets": 12187
+    },
+    {
+      "application_body_coverage_verified": true,
+      "download_ip_bytes": 41459,
+      "download_packets": 361,
+      "expected_application_body_bytes": {
+        "download": 18754,
+        "upload": 16791043
+      },
+      "packets": 12510,
+      "packets_within_measurement": 12508,
+      "phase": "seed",
+      "status": "published",
+      "task": {
+        "id": "16773120-append_4096-29-zstd_prefix"
+      },
+      "total_ip_bytes": 17487587,
+      "unclassified_ip_bytes": 0,
+      "unclassified_packets": 0,
+      "unix_end_nanos": "1793317510393385090",
+      "unix_start_nanos": "1793317508304909490",
+      "unknown_ip_length_packets": 0,
+      "upload_ip_bytes": 17446128,
+      "upload_packets": 12149
+    },
+    {
+      "application_body_coverage_verified": true,
+      "download_ip_bytes": 4238,
+      "download_packets": 8,
+      "expected_application_body_bytes": {
+        "download": 258,
+        "upload": 25931
+      },
+      "packets": 37,
+      "packets_within_measurement": 35,
+      "phase": "transfer",
+      "status": "published",
+      "task": {
+        "id": "16773120-append_4096-29-zstd_prefix"
+      },
+      "total_ip_bytes": 32505,
+      "unclassified_ip_bytes": 0,
+      "unclassified_packets": 0,
+      "unix_end_nanos": "1793317510659003686",
+      "unix_start_nanos": "1793317510412717146",
+      "unknown_ip_length_packets": 0,
+      "upload_ip_bytes": 28267,
+      "upload_packets": 29
+    },
+    {
+      "application_body_coverage_verified": true,
+      "download_ip_bytes": 34586,
+      "download_packets": 230,
+      "expected_application_body_bytes": {
+        "download": 18754,
+        "upload": 16791043
+      },
+      "packets": 12400,
+      "packets_within_measurement": 12398,
+      "phase": "seed",
+      "status": "published",
+      "task": {
+        "id": "16773120-append_4096-29-zstd_full"
+      },
+      "total_ip_bytes": 17481806,
+      "unclassified_ip_bytes": 0,
+      "unclassified_packets": 0,
+      "unix_end_nanos": "1793317513323358541",
+      "unix_start_nanos": "1793317510687331456",
+      "unknown_ip_length_packets": 0,
+      "upload_ip_bytes": 17447220,
+      "upload_packets": 12170
+    },
+    {
+      "application_body_coverage_verified": true,
+      "download_ip_bytes": 35695,
+      "download_packets": 250,
+      "expected_application_body_bytes": {
+        "download": 18822,
+        "upload": 16791127
+      },
+      "packets": 12382,
+      "packets_within_measurement": 12380,
+      "phase": "transfer",
+      "status": "published",
+      "task": {
+        "id": "16773120-append_4096-29-zstd_full"
+      },
+      "total_ip_bytes": 17481023,
+      "unclassified_ip_bytes": 0,
+      "unclassified_packets": 0,
+      "unix_end_nanos": "1793317515035785844",
+      "unix_start_nanos": "1793317513342726564",
+      "unknown_ip_length_packets": 0,
+      "upload_ip_bytes": 17445328,
+      "upload_packets": 12132
+    },
+    {
+      "application_body_coverage_verified": true,
+      "download_ip_bytes": 46702,
+      "download_packets": 463,
+      "expected_application_body_bytes": {
+        "download": 18754,
+        "upload": 16791043
+      },
+      "packets": 12650,
+      "packets_within_measurement": 12648,
+      "phase": "seed",
+      "status": "published",
+      "task": {
+        "id": "16773120-append_4096-29-raw_full"
+      },
+      "total_ip_bytes": 17494806,
+      "unclassified_ip_bytes": 0,
+      "unclassified_packets": 0,
+      "unix_end_nanos": "1793317517295015739",
+      "unix_start_nanos": "1793317515067153077",
+      "unknown_ip_length_packets": 0,
+      "upload_ip_bytes": 17448104,
+      "upload_packets": 12187
+    },
+    {
+      "application_body_coverage_verified": true,
+      "download_ip_bytes": 34582,
+      "download_packets": 229,
+      "expected_application_body_bytes": {
+        "download": 18822,
+        "upload": 16795204
+      },
+      "packets": 12390,
+      "packets_within_measurement": 12388,
+      "phase": "transfer",
+      "status": "published",
+      "task": {
+        "id": "16773120-append_4096-29-raw_full"
+      },
+      "total_ip_bytes": 17485517,
+      "unclassified_ip_bytes": 0,
+      "unclassified_packets": 0,
+      "unix_end_nanos": "1793317519205634697",
+      "unix_start_nanos": "1793317517314474383",
+      "unknown_ip_length_packets": 0,
+      "upload_ip_bytes": 17450935,
+      "upload_packets": 12161
+    },
+    {
+      "application_body_coverage_verified": true,
+      "download_ip_bytes": 35263,
+      "download_packets": 243,
+      "expected_application_body_bytes": {
+        "download": 18754,
+        "upload": 16791043
+      },
+      "packets": 12426,
+      "packets_within_measurement": 12424,
+      "phase": "seed",
+      "status": "published",
+      "task": {
+        "id": "16773120-append_4096-29-sparse"
+      },
+      "total_ip_bytes": 17483159,
+      "unclassified_ip_bytes": 0,
+      "unclassified_packets": 0,
+      "unix_end_nanos": "1793317521177962919",
+      "unix_start_nanos": "1793317519235245631",
+      "unknown_ip_length_packets": 0,
+      "upload_ip_bytes": 17447896,
+      "upload_packets": 12183
+    },
+    {
+      "application_body_coverage_verified": true,
+      "download_ip_bytes": 4237,
+      "download_packets": 8,
+      "expected_application_body_bytes": {
+        "download": 258,
+        "upload": 4393
+      },
+      "packets": 22,
+      "packets_within_measurement": 20,
+      "phase": "transfer",
+      "status": "published",
+      "task": {
+        "id": "16773120-append_4096-29-sparse"
+      },
+      "total_ip_bytes": 10163,
+      "unclassified_ip_bytes": 0,
+      "unclassified_packets": 0,
+      "unix_end_nanos": "1793317521389878255",
+      "unix_start_nanos": "1793317521197375195",
+      "unknown_ip_length_packets": 0,
+      "upload_ip_bytes": 5926,
+      "upload_packets": 14
+    }
+  ],
+  "schema": "spiralcore.pcap-accounting.v1",
+  "scope": "runner_to_relay_leg_only",
+  "setup": {
+    "download_ip_bytes": 0,
+    "download_packets": 0,
+    "packets": 0,
+    "total_ip_bytes": 0,
+    "unclassified_ip_bytes": 0,
+    "unclassified_packets": 0,
+    "unknown_ip_length_packets": 0,
+    "upload_ip_bytes": 0,
+    "upload_packets": 0
+  },
+  "snaplen": 96,
+  "tcpdump_captured_packets": 448319,
+  "tcpdump_received_by_filter_packets": 448319,
+  "timestamp_resolution": "nanoseconds",
+  "unattributed": {
+    "download_ip_bytes": 0,
+    "download_packets": 0,
+    "packets": 0,
+    "total_ip_bytes": 0,
+    "unclassified_ip_bytes": 0,
+    "unclassified_packets": 0,
+    "unknown_ip_length_packets": 0,
+    "upload_ip_bytes": 0,
+    "upload_packets": 0
+  },
+  "unattributed_reasons": {},
+  "unclassified_reasons": {}
+}
