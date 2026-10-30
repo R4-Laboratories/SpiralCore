@@ -1,0 +1,72 @@
+   Compiling spiralcore-transfer v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer)
+    Finished `release` profile [optimized] target(s) in 13.51s
+     Running unittests src/lib.rs (/Users/casey.allard/spiralcore/target/aarch64-apple-darwin/release/deps/spiralcore_transfer-0a2ce90059667e27)
+
+running 15 tests
+test dag::fold_memo_tests::hot_memo_reuses_only_exact_nodes_and_preserves_unique_budget ... ok
+test dag::fold_memo_tests::parent_memo_is_exact_and_has_a_fixed_small_allocation_bound ... ok
+test selection::runtime_selection_tests::lower_bound_ties_preserve_original_codec_priority ... ok
+test dag::fold_memo_tests::rejected_records_never_enter_the_memo ... ok
+test selection::runtime_selection_tests::runtime_repeat_shortcut_and_errors_keep_pre_begin_behavior ... ok
+test shared_transfer::identity_tests::prepared_identity_matches_full_hash_for_equal_edited_and_length_changed_bytes ... ok
+test delta::scan_tests::bulk_scans_handle_different_lengths_and_zero_byte_borrows ... ok
+test selection::runtime_selection_tests::encoded_lower_bounds_hold_for_empty_small_and_chunk_boundary_inputs ... ok
+test zstd_prefix::tests::chunk_validation_is_atomic_and_count_and_encoded_bounds_are_independent ... ok
+test delta::scan_tests::bulk_scans_match_scalar_at_every_short_boundary ... ok
+test selection::runtime_selection_tests::runtime_first_preserves_exhaustive_winner_and_body_bytes ... ok
+test shared_runtime::packed_tests::packed_rules_match_scalar_tables_at_periodic_word_boundaries ... ok
+test selection::runtime_selection_tests::prefix_structure_bound_prunes_large_runtime_without_changing_bytes ... ok
+test delta::sender_delta_checks::optimized_delta_preserves_all_frames_across_changes_and_boundaries ... ok
+test zstd_prefix::tests::profile_minimum_size_holds_at_empty_and_decoded_block_boundaries ... ok
+
+test result: ok. 15 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.19s
+
+     Running tests/adaptive.rs (/Users/casey.allard/spiralcore/target/aarch64-apple-darwin/release/deps/adaptive-d32315d14a995e58)
+
+running 13 tests
+test oversized_inputs_fail_before_any_exchange ... ok
+test cold_structured_data_selects_zstd_before_begin ... ok
+test repeat_probe_with_evicted_remote_object_completes_the_original_raw_offer ... ok
+test missing_base_and_changed_scope_do_not_reoffer_or_publish ... ok
+test real_http_codec_selection_cost_matches_bodies_and_reopens_exactly ... ok
+test revoked_authority_and_transport_failure_never_retry_selection ... ok
+test exact_repeat_probe_sends_raw_identity_only_and_unprobed_hit_counts_upload ... ok
+test small_localized_edit_uses_prefix_when_it_costs_less_than_sparse ... ok
+test malicious_receipts_are_checked_after_selection ... ok
+test warm_local_edits_choose_sparse_and_reordered_data_choose_prefix ... ok
+test empty_and_incompressible_ties_prefer_raw_with_exact_full_cost ... ok
+test selector_cost_matches_actual_forced_arms_and_minimizes_eligible_bytes ... ok
+test exact_bytes_and_length_survive_boundaries_and_length_changes_after_restart ... ok
+
+test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.57s
+
+     Running tests/shared_transfer.rs (/Users/casey.allard/spiralcore/target/aarch64-apple-darwin/release/deps/shared_transfer-9ba49b4b7c72da7c)
+
+running 10 tests
+test prepared_prediction_rejects_invalid_state_and_oversize_targets ... ok
+test prepared_prediction_owns_its_state_and_preserves_residual_bytes ... ok
+test different_lengths_and_final_checkpoint_use_exact_residuals ... ok
+test setup_truncations_versions_digest_and_resource_lies_are_rejected ... ok
+test replay_is_idempotent_and_cancel_discards_output ... ok
+test revoked_authority_and_changed_epoch_cannot_finish_an_admitted_replay ... ok
+test checkpoint_must_be_authorized_present_and_within_replay_budget ... ok
+test runtime_recipe_crosses_transfer_boundary_and_reopens_exact_bytes ... ok
+test prepared_prediction_transfers_repeated_edits_without_granting_authority ... ok
+test malformed_setup_missing_setup_and_failed_final_digest_never_publish ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.24s
+
+     Running tests/zstd_prefix.rs (/Users/casey.allard/spiralcore/target/aarch64-apple-darwin/release/deps/zstd_prefix-4cc3ed0eb40789ad)
+
+running 8 tests
+test rejects_wrong_base_damage_trailing_frames_and_unbounded_header ... ok
+test sender_rejects_wrong_cumulative_encoded_receipt ... ok
+test whole_prefix_roundtrips_empty_edits_insertions_and_unrelated_data ... ok
+test prefix_reservations_are_shared_and_cancel_releases_them ... ok
+test prefix_offer_and_encoded_stream_are_strictly_versioned_and_bounded ... ok
+test prefix_admission_precedes_corrupt_base_read_and_final_hash_is_mandatory ... ok
+test endpoint_prefix_pins_authorized_base_and_publishes_only_verified_complete_bytes ... ok
+test batched_prefix_reports_selection_and_falls_back_only_before_begin ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.15s
+

@@ -60,6 +60,16 @@ Use public/synthetic data until deployment qualification. Enumerate envelope, tr
 
 ## Current runnable delivery
 
+The latest sender optimization evaluates the runtime candidate first and skips
+other codecs only when a proved bound rules out a smaller transfer. Bulk residual
+scans and immutable identity reuse preserve the selected frames. The new paired
+local comparison reduces prepared large generated-transfer CPU from 111.437 to
+35.039 ms and elapsed time from 127.094 to 49.678 ms, with the same 747-byte body.
+All 840 operations reopen exactly. The [sender result](sender-cpu-results-2026-10-30.md)
+records edited/unrelated controls, regressions, cold setup and preparation. These
+changes still need a new WAN qualification; earlier WAN observations remain tied
+to their original revisions.
+
 The coupled runtime now uses packed CA replay and supports immutable prepared
 sender predictions. In the recorded local comparison, large-trace replay CPU fell
 from 228.305 to 12.184 ms, with exact bytes and unchanged wire format. Complete

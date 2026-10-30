@@ -1,0 +1,52 @@
+    Blocking waiting for file lock on build directory
+   Compiling spiralcore-transfer v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer)
+error[E0425]: cannot find function `prepare_runtime` in this scope
+   --> src/selection.rs:193:30
+    |
+193 |                 let actual = prepare_runtime(target, &checkpoint, warm_probe, runtime).unwrap();
+    |                              ^^^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `wins` in this scope
+   --> src/selection.rs:201:30
+    |
+201 |                     assert!(!wins(pruned.mode, pruned.http_body_lower_bound,
+    |                              ^^^^ not found in this scope
+
+error[E0425]: cannot find function `wins` in this scope
+   --> src/selection.rs:219:28
+    |
+219 |                 assert_eq!(wins(*mode, 700, *incumbent, 700), i < j);
+    |                            ^^^^ not found in this scope
+
+error[E0425]: cannot find function `wins` in this scope
+   --> src/selection.rs:220:25
+    |
+220 |                 assert!(wins(*mode, 699, *incumbent, 700));
+    |                         ^^^^ not found in this scope
+
+error[E0425]: cannot find function `wins` in this scope
+   --> src/selection.rs:221:26
+    |
+221 |                 assert!(!wins(*mode, 701, *incumbent, 700));
+    |                          ^^^^ not found in this scope
+
+error[E0425]: cannot find function `prepare_runtime` in this scope
+   --> src/selection.rs:229:22
+    |
+229 |         let result = prepare_runtime(&checkpoint, &checkpoint, true, || panic!("exact repeat must not replay")).unwrap();
+    |                      ^^^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `prepare_runtime` in this scope
+   --> src/selection.rs:233:26
+    |
+233 |         assert!(matches!(prepare_runtime(b"target", &checkpoint, false, || Err(Error::Malformed)), Err(Error::Malformed)));
+    |                          ^^^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `prepare_runtime` in this scope
+   --> src/selection.rs:235:26
+    |
+235 |         assert!(matches!(prepare_runtime(&oversized, &checkpoint, false, || panic!("reject size first")), Err(Error::Limit)));
+    |                          ^^^^^^^^^^^^^^^ not found in this scope
+
+For more information about this error, try `rustc --explain E0425`.
+error: could not compile `spiralcore-transfer` (lib test) due to 8 previous errors

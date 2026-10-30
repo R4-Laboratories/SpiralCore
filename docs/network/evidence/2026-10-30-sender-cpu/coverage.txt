@@ -1,0 +1,213 @@
+info: cargo-llvm-cov currently setting cfg(coverage); you can opt-out it by passing --no-cfg-coverage
+   Compiling libc v0.2.191
+   Compiling proc-macro2 v1.0.107
+   Compiling unicode-ident v1.0.27
+   Compiling quote v1.0.47
+   Compiling shlex v2.0.1
+   Compiling find-msvc-tools v0.1.15
+   Compiling stable_deref_trait v1.2.1
+   Compiling version_check v0.9.5
+   Compiling litemap v0.8.3
+   Compiling writeable v0.6.4
+   Compiling cfg-if v1.0.5
+   Compiling utf8_iter v1.0.4
+   Compiling pkg-config v0.3.34
+   Compiling typenum v1.20.1
+   Compiling icu_normalizer_data v2.4.0
+   Compiling icu_properties_data v2.4.0
+   Compiling generic-array v0.14.7
+   Compiling zeroize v1.9.1
+   Compiling rustls-pki-types v1.15.1
+   Compiling httparse v1.10.1
+   Compiling itoa v1.0.18
+   Compiling untrusted v0.9.0
+   Compiling smallvec v1.16.4
+   Compiling serde_core v1.0.229
+   Compiling syn v3.0.9
+   Compiling zstd-safe v7.3.0
+   Compiling percent-encoding v2.3.2
+   Compiling zmij v1.0.23
+   Compiling bytes v1.12.1
+   Compiling log v0.4.34
+   Compiling jobserver v0.1.35
+   Compiling rustls v0.23.46
+   Compiling base64 v0.23.1
+   Compiling getrandom v0.2.17
+   Compiling cc v1.10.0
+   Compiling cpufeatures v0.2.17
+   Compiling once_cell v1.21.4
+   Compiling subtle v2.6.1
+   Compiling libm v0.2.16
+   Compiling serde v1.0.229
+   Compiling serde_json v1.0.154
+   Compiling http v1.5.0
+   Compiling form_urlencoded v1.2.2
+   Compiling block-buffer v0.10.4
+   Compiling crypto-common v0.1.7
+   Compiling webpki-roots v1.0.11
+   Compiling digest v0.10.7
+   Compiling utf8-zero v0.8.1
+   Compiling memchr v2.8.3
+   Compiling cpu-time v1.0.0
+   Compiling ureq-proto v0.6.5
+   Compiling synstructure v0.14.0
+   Compiling ring v0.17.14
+   Compiling zstd-sys v2.1.2+zstd.1.5.7
+   Compiling sha2-asm v0.6.4
+   Compiling zerofrom-derive v0.1.8
+   Compiling yoke-derive v0.8.4
+   Compiling zerovec-derive v0.11.7
+   Compiling displaydoc v0.2.7
+   Compiling sha2 v0.10.9
+   Compiling zerofrom v0.1.8
+   Compiling yoke v0.8.4
+   Compiling serde_derive v1.0.229
+   Compiling uor-r4-object-store v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/uor-r4-object-store)
+   Compiling zerotrie v0.2.5
+   Compiling zerovec v0.11.9
+   Compiling tinystr v0.8.5
+   Compiling icu_locale_core v2.4.0
+   Compiling potential_utf v0.1.6
+   Compiling rustls-webpki v0.103.16
+   Compiling icu_collections v2.4.0
+   Compiling icu_provider v2.4.0
+   Compiling icu_properties v2.4.0
+   Compiling icu_normalizer v2.4.0
+   Compiling zstd v0.13.3
+   Compiling idna_adapter v1.2.2
+   Compiling idna v1.1.0
+   Compiling url v2.5.8
+   Compiling ureq v3.5.0
+   Compiling spiralcore-transfer v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 30.11s
+     Running unittests src/lib.rs (/Users/casey.allard/spiralcore/local/shared-state-20261030/coverage-target/llvm-cov-target/aarch64-apple-darwin/debug/deps/spiralcore_transfer-a4e2706c7d1db296)
+
+running 15 tests
+test selection::runtime_selection_tests::lower_bound_ties_preserve_original_codec_priority ... ok
+test dag::fold_memo_tests::rejected_records_never_enter_the_memo ... ok
+test dag::fold_memo_tests::parent_memo_is_exact_and_has_a_fixed_small_allocation_bound ... ok
+test dag::fold_memo_tests::hot_memo_reuses_only_exact_nodes_and_preserves_unique_budget ... ok
+test selection::runtime_selection_tests::runtime_repeat_shortcut_and_errors_keep_pre_begin_behavior ... ok
+test delta::scan_tests::bulk_scans_handle_different_lengths_and_zero_byte_borrows ... ok
+test selection::runtime_selection_tests::encoded_lower_bounds_hold_for_empty_small_and_chunk_boundary_inputs ... ok
+test zstd_prefix::tests::chunk_validation_is_atomic_and_count_and_encoded_bounds_are_independent ... ok
+test shared_transfer::identity_tests::prepared_identity_matches_full_hash_for_equal_edited_and_length_changed_bytes ... ok
+test delta::scan_tests::bulk_scans_match_scalar_at_every_short_boundary ... ok
+test selection::runtime_selection_tests::runtime_first_preserves_exhaustive_winner_and_body_bytes ... ok
+test shared_runtime::packed_tests::packed_rules_match_scalar_tables_at_periodic_word_boundaries ... ok
+test selection::runtime_selection_tests::prefix_structure_bound_prunes_large_runtime_without_changing_bytes ... ok
+test zstd_prefix::tests::profile_minimum_size_holds_at_empty_and_decoded_block_boundaries ... ok
+test delta::sender_delta_checks::optimized_delta_preserves_all_frames_across_changes_and_boundaries ... ok
+
+test result: ok. 15 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 4.47s
+
+     Running tests/adaptive.rs (/Users/casey.allard/spiralcore/local/shared-state-20261030/coverage-target/llvm-cov-target/aarch64-apple-darwin/debug/deps/adaptive-5ab52e1f3ee4d21c)
+
+running 13 tests
+test oversized_inputs_fail_before_any_exchange ... ok
+test cold_structured_data_selects_zstd_before_begin ... ok
+test repeat_probe_with_evicted_remote_object_completes_the_original_raw_offer ... ok
+test missing_base_and_changed_scope_do_not_reoffer_or_publish ... ok
+test real_http_codec_selection_cost_matches_bodies_and_reopens_exactly ... ok
+test revoked_authority_and_transport_failure_never_retry_selection ... ok
+test exact_repeat_probe_sends_raw_identity_only_and_unprobed_hit_counts_upload ... ok
+test malicious_receipts_are_checked_after_selection ... ok
+test small_localized_edit_uses_prefix_when_it_costs_less_than_sparse ... ok
+test empty_and_incompressible_ties_prefer_raw_with_exact_full_cost ... ok
+test warm_local_edits_choose_sparse_and_reordered_data_choose_prefix ... ok
+test exact_bytes_and_length_survive_boundaries_and_length_changes_after_restart ... ok
+test selector_cost_matches_actual_forced_arms_and_minimizes_eligible_bytes ... ok
+
+test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 4.22s
+
+     Running tests/batched.rs (/Users/casey.allard/spiralcore/local/shared-state-20261030/coverage-target/llvm-cov-target/aarch64-apple-darwin/debug/deps/batched-70aa80ddb5904d62)
+
+running 12 tests
+test oversized_campaign_object_is_rejected_before_exchange ... ok
+test published_on_data_is_not_a_valid_terminal_prefix ... ok
+test terminal_error_prefix_is_allowed_but_replies_after_it_are_rejected ... ok
+test unsuccessful_repair_stops_after_two_rounds ... ok
+test peer_cannot_request_a_record_outside_the_offered_graph ... ok
+test empty_object_uses_begin_and_finish_without_fabricated_data ... ok
+test missing_or_extra_nonterminal_replies_are_rejected ... ok
+test cold_raw_and_zstd_each_use_one_exact_batch ... ok
+test warm_probe_skips_data_but_unprobed_cache_hit_counts_the_actual_upload ... ok
+test reply_identity_ready_ack_and_published_digest_are_checked ... ok
+test warm_dag_change_is_exact_and_repairs_missing_descendant_closure ... ok
+test large_dag_is_split_with_bounded_batches_and_exact_sequence ... ok
+
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 18.95s
+
+     Running tests/client_prepared.rs (/Users/casey.allard/spiralcore/local/shared-state-20261030/coverage-target/llvm-cov-target/aarch64-apple-darwin/debug/deps/client_prepared-9c885bd4abc485d3)
+
+running 12 tests
+test generic_senders_reject_sparse_without_the_owned_base_bytes_api ... ok
+test sparse_bounds_are_checked_before_any_exchange ... ok
+test missing_base_is_an_error_without_reoffering_the_transfer_id ... ok
+test prepared_repeat_uses_raw_identity_probe ... ok
+test prepared_cache_hit_counts_every_already_uploaded_frame ... ok
+test prepared_peer_cannot_request_an_unreachable_old_base_record ... ok
+test sparse_probe_and_unprobed_cache_hit_have_exact_upload_accounting ... ok
+test prepared_missing_descendants_are_repaired_from_target_closure ... ok
+test prepared_sender_matches_canonical_offer_and_actual_accounting ... ok
+test sparse_raw_fallback_happens_before_exchange_without_requiring_remote_base ... ok
+test sparse_ack_and_need_responses_obey_strict_mode_rules ... ok
+test sparse_sender_handles_edits_insertions_and_deletions_exactly ... ok
+
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.31s
+
+     Running tests/shared_transfer.rs (/Users/casey.allard/spiralcore/local/shared-state-20261030/coverage-target/llvm-cov-target/aarch64-apple-darwin/debug/deps/shared_transfer-b7bd2f6daacb935a)
+
+running 10 tests
+test prepared_prediction_rejects_invalid_state_and_oversize_targets ... ok
+test prepared_prediction_owns_its_state_and_preserves_residual_bytes ... ok
+test different_lengths_and_final_checkpoint_use_exact_residuals ... ok
+test setup_truncations_versions_digest_and_resource_lies_are_rejected ... ok
+test revoked_authority_and_changed_epoch_cannot_finish_an_admitted_replay ... ok
+test replay_is_idempotent_and_cancel_discards_output ... ok
+test checkpoint_must_be_authorized_present_and_within_replay_budget ... ok
+test runtime_recipe_crosses_transfer_boundary_and_reopens_exact_bytes ... ok
+test prepared_prediction_transfers_repeated_edits_without_granting_authority ... ok
+test malformed_setup_missing_setup_and_failed_final_digest_never_publish ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.33s
+
+     Running tests/sparse.rs (/Users/casey.allard/spiralcore/local/shared-state-20261030/coverage-target/llvm-cov-target/aarch64-apple-darwin/debug/deps/sparse-db8b8986605cd565)
+
+running 6 tests
+test malformed_recipe_is_atomic ... ok
+test hostile_versions_lengths_ops_and_truncation_fail_closed ... ok
+test literal_frames_split_and_large_copy_remains_small ... ok
+test prefix_insertion_uses_a_small_exact_recipe ... ok
+test exact_operation_literal_and_object_limits_are_enforced ... ok
+test edits_lengths_and_fallback_preserve_every_byte ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.12s
+
+     Running tests/transfer.rs (/Users/casey.allard/spiralcore/local/shared-state-20261030/coverage-target/llvm-cov-target/aarch64-apple-darwin/debug/deps/transfer-47d50840617f1074)
+
+running 5 tests
+test unrelated_reply_and_zstd_trailing_frames_are_rejected ... ok
+test peer_cannot_request_records_outside_the_offered_object ... ok
+test zstd_decoder_enforces_actual_window_limit ... ok
+test missing_record_batch_is_repaired_with_complete_descendants ... ok
+test raw_zstd_repeat_and_warm_delta_reconstruct_exactly ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.14s
+
+     Running tests/zstd_prefix.rs (/Users/casey.allard/spiralcore/local/shared-state-20261030/coverage-target/llvm-cov-target/aarch64-apple-darwin/debug/deps/zstd_prefix-61e4a734ead75c5f)
+
+running 8 tests
+test sender_rejects_wrong_cumulative_encoded_receipt ... ok
+test rejects_wrong_base_damage_trailing_frames_and_unbounded_header ... ok
+test whole_prefix_roundtrips_empty_edits_insertions_and_unrelated_data ... ok
+test prefix_offer_and_encoded_stream_are_strictly_versioned_and_bounded ... ok
+test prefix_admission_precedes_corrupt_base_read_and_final_hash_is_mandatory ... ok
+test prefix_reservations_are_shared_and_cancel_releases_them ... ok
+test endpoint_prefix_pins_authorized_base_and_publishes_only_verified_complete_bytes ... ok
+test batched_prefix_reports_selection_and_falls_back_only_before_begin ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.12s
+
+
+    Finished report saved to docs/network/evidence/2026-10-30-sender-cpu/coverage-summary.json
