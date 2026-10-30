@@ -12,6 +12,17 @@ raise 'unexpected triggers' unless trigger.keys == ['push'] && trigger['push']['
 raise 'excess permissions' unless doc['permissions'] == {'contents'=>'read'}
 raise 'wrong concurrency' unless doc.dig('concurrency','group') == 'spiralcore-shared-runtime-pilot' && doc.dig('concurrency','cancel-in-progress') == false
 job = doc.fetch('jobs').fetch('pilot')
+# GitHub evaluates job-level env before runner contexts exist. These roots are
+# the documented jobs.<job_id>.env context allowlist; check both dot/bracket refs.
+# https://docs.github.com/en/actions/reference/workflows-and-actions/contexts#context-availability
+allowed_job_env_contexts = %w[github needs strategy matrix vars secrets inputs]
+job.fetch('env',{}).each do |name,value|
+  value.to_s.scan(/\$\{\{(.*?)\}\}/m).flatten.each do |expression|
+    expression.scan(/(?<![A-Za-z_0-9.])([A-Za-z_][A-Za-z_0-9]*)\s*(?:\.|\[)/).flatten.each do |context|
+      raise "unsupported job env context #{context} in #{name}" unless allowed_job_env_contexts.include?(context)
+    end
+  end
+end
 raise 'wrong budget' unless job['timeout-minutes'] == 20
 gate = job.fetch('if')
 %w[github.sha vars.SPIRALCORE_RUNTIME_SOURCE github.run_attempt].each { |s| raise "missing #{s}" unless gate.include?(s) }
@@ -40,7 +51,7 @@ all = steps.map { |s| s.fetch('run','') }.join("\n")
   raise "missing #{name} gate" unless body
   File.write(File.join(scratch,"#{name}.sh"),body)
 end
-puts 'PASS: workflow structure, source/attempt gates, secret isolation and retention'
+puts 'PASS: workflow structure, supported job-env contexts, source/attempt gates, secret isolation and retention'
 RUBY
 for script in "$scratch"/step-*.sh; do
   bash -n "$script"

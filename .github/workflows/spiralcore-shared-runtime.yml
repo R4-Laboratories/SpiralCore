@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
-      CARGO_TARGET_DIR: ${{ runner.temp }}/spiralcore-runtime-target
+      CARGO_TARGET_DIR: ${{ github.workspace }}/target
       CARGO_INCREMENTAL: 0
       RUNTIME_SOURCE: ${{ vars.SPIRALCORE_RUNTIME_SOURCE }}
       RUNTIME_URL: ${{ vars.SPIRALCORE_RUNTIME_URL }}

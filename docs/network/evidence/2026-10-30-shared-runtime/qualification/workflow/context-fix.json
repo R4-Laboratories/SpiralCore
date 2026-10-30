@@ -1,0 +1,42 @@
+{
+  "schema": "spiralcore.shared-runtime.workflow-context-fix.v1",
+  "failed_launch": {
+    "run_id": 41061178351,
+    "source": "b6627deb7fb8c80a46c0e89d5e074afaf50f37f0",
+    "run_attempt": 1,
+    "url": "https://github.com/R4-Laboratories/SpiralCore/actions/runs/41061178351",
+    "conclusion": "failure",
+    "public_annotation": "(Line: 16, Col: 25): Unrecognized named-value: 'runner'. Located at position 1 within expression: runner.temp",
+    "annotation_observation": "Read from public GitHub run page Annotations; not inferred from status alone.",
+    "jobs_api": "https://api.github.com/repos/R4-Laboratories/SpiralCore/actions/runs/41061178351/jobs",
+    "jobs_response": {"total_count": 0, "jobs": []},
+    "classification": "workflow validation failure before job allocation; no WAN transfer observation"
+  },
+  "root_cause": "Job-level env cannot reference runner context. The prior YAML/Bash/ShellCheck gate did not validate GitHub expression-context availability.",
+  "primary_reference": "https://docs.github.com/en/actions/reference/workflows-and-actions/contexts#context-availability",
+  "documented_jobs_env_contexts": ["github", "needs", "strategy", "matrix", "vars", "secrets", "inputs"],
+  "fix": {
+    "file": ".github/workflows/spiralcore-shared-runtime.yml",
+    "line": 16,
+    "before": "CARGO_TARGET_DIR: ${{ runner.temp }}/spiralcore-runtime-target",
+    "after": "CARGO_TARGET_DIR: ${{ github.workspace }}/target",
+    "scope": "one workflow value; existing fresh-directory guard, all source/auth/resource gates, fixed workload and measured Rust code unchanged"
+  },
+  "regression": {
+    "checker": "check-gates.sh",
+    "change": "Reject job-env expression reference roots outside the documented allowlist; check dot and bracket references used by this workflow.",
+    "red": {"log": "context-red.log", "exit_code": 1, "sha256": "07c0000d64712a5554c2d792f55da4d151a3673b719fddb9ca0bc23a091f9d82", "reason": "unsupported job env context runner in CARGO_TARGET_DIR"},
+    "green": {"log": "context-green.log", "exit_code": 0, "sha256": "8988381a28d48aa0505898882120839b726861b9df26ca098deabc6750759593"},
+    "preserved_checks": "YAML structure, branch/source/attempt gates, secret isolation, pinned actions, always retention, Bash syntax, ShellCheck and all 17 negative source/origin/authentication cases"
+  },
+  "workflow_sha256": "9a8c8ba1fd3c29e3dce902882fdfe15183f1dbba69cd25e3aff5c2da6ab43f44",
+  "checker_sha256": "4e30fb868f5c6b65f529b87c98d62d805e0faf9f8f841a53a9312d9bb0ccfd07",
+  "measured_runtime_source_diff_against_b6627de": "empty for src/, examples/shared_runtime.rs, Cargo.toml and Cargo.lock",
+  "limitations": [
+    "This targeted semantic check is not a complete implementation of the GitHub Actions expression validator.",
+    "Local qualification does not prove that a future hosted job or remote transfer will succeed.",
+    "The failed launch and original qualification receipts remain retained; no previous result was relabeled.",
+    "No commit, push, workflow rerun, variable/secret change or remote transfer was performed by this fix author.",
+    "Parent must use a new source commit and public run ID with fresh receiver state for the next launch."
+  ]
+}
