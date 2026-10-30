@@ -11,6 +11,30 @@ raw, ordinary zstd, zstd prefix delta and sparse COPY/LITERAL. Optional raw/zstd
 DAG warming is disabled equally. Earlier v3 CPU results included that additional
 raw/zstd work and must not be substituted for this fairer comparison.
 
+## Compression configurations
+
+The `zstd_full` arm independently compresses each chunk of at most 61,440 input
+bytes at level 1, using a fresh compressor with no shared dictionary or history
+between chunks. A chunk is sent literally if its compressed representation is
+not smaller. The table label "Zstd, 60 KiB chunks" identifies this configuration.
+
+Warm zstd prefix delta uses one whole-target frame against the authorized immutable
+base, at level 3 with a 32 MiB configured window, long-distance matching enabled
+and no worker threads. It includes content size and checksum. Transport fragments
+split this encoded frame without resetting compression history. A prefix candidate
+falls back to raw before transmission when its complete object-protocol traffic
+would not be smaller; discarded encoding work remains inside CPU/elapsed timing.
+In cold cases the `zstd_prefix` arm uses ordinary independent-chunk zstd, since
+there is no base.
+
+These are configured bounded encodings under the same mandatory publication
+policy. Compression level, history scope, window configuration and prior-base
+access differ between the zstd methods. The experiment does not establish the
+best whole-file or streaming zstd configuration or isolate caching alone.
+See [chunk encoding](../../crates/spiralcore-transfer/src/client.rs),
+[prefix configuration](../../crates/spiralcore-transfer/src/zstd_prefix.rs), and
+[benchmark arm selection](../../crates/spiralcore-transfer/src/bin/spiralcore-bench.rs).
+
 ## Completed case: 32-byte localized edit
 
 Thirty paired trials use campaign-derived arm-order permutations: all 24 orders
@@ -22,7 +46,7 @@ a temporary Cloudflare tunnel to the native Apple M1 receiver.
 | Warm update | Median request + reply HTTP-body bytes | Median elapsed, including computation | Median sender + receiver-handler CPU |
 |---|---:|---:|---:|
 | Raw full send | 16,814,026 | 1,594.631 ms | 100.872 ms |
-| Ordinary zstd | 16,814,026 | 1,599.863 ms | 95.911 ms |
+| Zstd, 60 KiB chunks | 16,814,026 | 1,599.863 ms | 95.911 ms |
 | Zstd prefix delta | 26,245 | 240.178 ms | 101.087 ms |
 | Sparse COPY/LITERAL | 600 | 237.108 ms | 79.839 ms |
 
@@ -64,7 +88,7 @@ reopening match the localized case.
 | Warm update | Median request + reply HTTP-body bytes | Median elapsed, including computation | Median sender + receiver-handler CPU |
 |---|---:|---:|---:|
 | Raw full send | 16,814,026 | 1,679.259 ms | 100.112 ms |
-| Ordinary zstd | 16,814,026 | 1,726.421 ms | 100.562 ms |
+| Zstd, 60 KiB chunks | 16,814,026 | 1,726.421 ms | 100.562 ms |
 | Zstd prefix delta | 27,304 | 276.078 ms | 104.242 ms |
 | Sparse COPY/LITERAL | 2,137 | 248.104 ms | 80.241 ms |
 
@@ -95,7 +119,7 @@ thirty pairs use the same four methods and paid-seed policy.
 | Warm update | Median request + reply HTTP-body bytes | Median elapsed, including computation | Median sender + receiver-handler CPU |
 |---|---:|---:|---:|
 | Raw full send | 16,814,026 | 1,686.289 ms | 89.878 ms |
-| Ordinary zstd | 16,809,951 | 1,682.304 ms | 96.987 ms |
+| Zstd, 60 KiB chunks | 16,809,951 | 1,682.304 ms | 96.987 ms |
 | Zstd prefix delta | 26,221.5 | 231.881 ms | 88.078 ms |
 | Sparse COPY/LITERAL | 4,651 | 226.397 ms | 79.081 ms |
 
@@ -122,7 +146,7 @@ retained and reopened exactly, totaling 4,026,040,320 compared bytes.
 | Warm update | Median request + reply HTTP-body bytes | Median elapsed, including computation | Median sender + receiver-handler CPU |
 |---|---:|---:|---:|
 | Raw full send | 16,814,026 | 1,600.969 ms | 93.113 ms |
-| Ordinary zstd | 16,810,128 | 1,662.860 ms | 99.168 ms |
+| Zstd, 60 KiB chunks | 16,810,128 | 1,662.860 ms | 99.168 ms |
 | Zstd prefix delta | 26,222 | 205.980 ms | 101.474 ms |
 | Sparse COPY/LITERAL | 4,664 | 199.853 ms | 87.463 ms |
 
@@ -158,7 +182,7 @@ their own seed under the same publication policy.
 | Warm update | Median request + reply HTTP-body bytes | Median elapsed, including computation | Median sender + receiver-handler CPU |
 |---|---:|---:|---:|
 | Raw full send | 16,809,797 | 1,859.642 ms | 92.330 ms |
-| Ordinary zstd | 16,809,797 | 1,770.188 ms | 89.979 ms |
+| Zstd, 60 KiB chunks | 16,809,797 | 1,770.188 ms | 89.979 ms |
 | Zstd prefix delta | 26,185 | 255.436 ms | 93.433 ms |
 | Sparse COPY/LITERAL | 563 | 237.681 ms | 77.855 ms |
 
@@ -183,7 +207,7 @@ target. Thirty paired trials use the unchanged four-method and paid-seed policy.
 | Warm update | Median request + reply HTTP-body bytes | Median elapsed, including computation | Median sender + receiver-handler CPU |
 |---|---:|---:|---:|
 | Raw full send | 16,814,026 | 1,871.920 ms | 89.128 ms |
-| Ordinary zstd | 16,809,949 | 1,917.746 ms | 91.971 ms |
+| Zstd, 60 KiB chunks | 16,809,949 | 1,917.746 ms | 91.971 ms |
 | Zstd prefix delta | 26,202 | 252.625 ms | 89.854 ms |
 | Sparse COPY/LITERAL | 4,651 | 222.133 ms | 74.978 ms |
 
@@ -207,7 +231,7 @@ paired trials retain the same four methods and separate paid seeds.
 | Warm update | Median request + reply HTTP-body bytes | Median elapsed, including computation | Median sender + receiver-handler CPU |
 |---|---:|---:|---:|
 | Raw full send | 16,809,797 | 1,975.651 ms | 93.868 ms |
-| Ordinary zstd | 16,809,797 | 1,946.954 ms | 94.925 ms |
+| Zstd, 60 KiB chunks | 16,809,797 | 1,946.954 ms | 94.925 ms |
 | Zstd prefix delta | 26,198 | 249.798 ms | 96.581 ms |
 | Sparse COPY/LITERAL | 550 | 227.314 ms | 70.224 ms |
 
@@ -234,7 +258,7 @@ the same bytes; no fixture-specific XOR operation is part of the wire codec.
 | Warm update | Median request + reply HTTP-body bytes | Median elapsed, including computation | Median sender + receiver-handler CPU |
 |---|---:|---:|---:|
 | Raw full send | 16,814,026 | 1,968.257 ms | 91.357 ms |
-| Ordinary zstd | 16,814,026 | 1,943.532 ms | 87.086 ms |
+| Zstd, 60 KiB chunks | 16,814,026 | 1,943.532 ms | 87.086 ms |
 | Zstd prefix delta | 1,075,847.5 | 383.472 ms | 103.026 ms |
 | Sparse COPY/LITERAL | 1,051,558 | 351.888 ms | 69.775 ms |
 
