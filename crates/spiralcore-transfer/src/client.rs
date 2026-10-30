@@ -736,6 +736,38 @@ pub fn transfer_schema_selection_batched<F: FnMut(&[Frame]) -> Result<Vec<Frame>
     }
 }
 
+/// Consume the winning warm-object plan without encoding or hashing again.
+/// Callers time preparation and explicitly seed any required schema first.
+/// A selected prior-object base must already be admitted in the receiving
+/// context; failures do not retry with another encoding or offer.
+pub fn transfer_warm_selection_batched<F: FnMut(&[Frame]) -> Result<Vec<Frame>>>(
+    prepared: crate::schema_selection::PreparedWarmTransfer,
+    transfer_id: Id,
+    exchange: F,
+) -> Result<Stats> {
+    let start = Instant::now();
+    let offer = prepared.offer;
+    let warm_probe = prepared.warm_probe;
+    match prepared.payload {
+        crate::schema_selection::Payload::Raw(bytes) => send_batched(
+            offer,
+            BatchedPayload::Bytes(&bytes),
+            transfer_id,
+            warm_probe,
+            exchange,
+            start,
+        ),
+        crate::schema_selection::Payload::Encoded(bodies) => send_batched(
+            offer,
+            BatchedPayload::Encoded(bodies),
+            transfer_id,
+            warm_probe,
+            exchange,
+            start,
+        ),
+    }
+}
+
 /// Transfer exact bytes using a frozen fitted schema, or Raw if the full
 /// successful-miss body cost would not improve. Fit/seed explicitly beforehand.
 pub fn transfer_schema_batched<F: FnMut(&[Frame]) -> Result<Vec<Frame>>>(

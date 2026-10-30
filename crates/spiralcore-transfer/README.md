@@ -199,6 +199,32 @@ commands. Actual bytes are both-direction HTTP bodies; elapsed time runs through
 durable acknowledgment and includes candidate computation. Receiver stores must
 also pass independent exact readback before a run is reported as successful.
 
+The same selector now accepts a prior-object candidate through
+`prepare_warm(target, base, schema_ready, warm_probe)`, where `base` is
+`Option<&[u8]>`. Supply `Some(base)` only when that exact object is expected to
+be admitted in the receiving authorization context; `None` disables Sparse.
+The method compares Raw, Whole zstd, Sparse and Schema zstd, in that tie order.
+It evaluates Sparse first, then skips another encoder only when a proven
+format-size lower bound, including any schema seed, cannot beat the incumbent.
+For example, a 600-byte sparse update excludes Whole at 16 MiB because Whole
+needs at least 896 body bytes. Whole still runs at 1 MiB, where its bound is 536.
+
+`PreparedWarmTransfer::selection()` exposes exact evaluated `candidates`
+separately from `pruned` lower-bound receipts. A pruned bound is not an observed
+compressed size. If `needs_schema_seed` is true, explicitly commit the artifact
+first. Consume the immutable plan with
+`client::transfer_warm_selection_batched(plan, transfer_id, exchange)`; sending
+does not repeat encoding or hashing. Preparation, required seeding and sender
+context construction belong in the caller's CPU and completion measurements.
+The target is hashed once; the base is hashed only when Sparse wins.
+
+Missing or revoked state fails without a hidden retry or fallback reoffer.
+Receiver authorization, resource admission, exact reconstruction and durable
+publication are unchanged. The original `prepare` API remains available.
+The [warm-selection design](../../docs/specs/2026-10-30-warm-selection-design.md)
+and [measurement contract](../../docs/network/evidence/2026-10-30-warm-selection/measurement-contract.md)
+define the guarantees and the `warmselect-*` three-arm benchmark commands.
+
 ## Compressed schema streams and prepared codec reuse
 
 The schema encoder directly matches the first validated template and stores its

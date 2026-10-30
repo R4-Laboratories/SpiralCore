@@ -1,0 +1,32 @@
+
+running 3 tests
+test warm_selection_workflow_accepts_only_the_pinned_first_attempt ... FAILED
+test warm_selection_workflow_requires_a_full_secret_without_fallback ... FAILED
+test warm_selection_workflow_restricts_every_receiver_url ... FAILED
+
+failures:
+
+---- warm_selection_workflow_accepts_only_the_pinned_first_attempt stdout ----
+
+thread 'warm_selection_workflow_accepts_only_the_pinned_first_attempt' (65490452) panicked at crates/spiralcore-transfer/tests/warm_selection_workflow.rs:7:45:
+warm selection workflow must exist: Os { code: 2, kind: NotFound, message: "No such file or directory" }
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- warm_selection_workflow_requires_a_full_secret_without_fallback stdout ----
+
+thread 'warm_selection_workflow_requires_a_full_secret_without_fallback' (65490453) panicked at crates/spiralcore-transfer/tests/warm_selection_workflow.rs:7:45:
+warm selection workflow must exist: Os { code: 2, kind: NotFound, message: "No such file or directory" }
+
+---- warm_selection_workflow_restricts_every_receiver_url stdout ----
+
+thread 'warm_selection_workflow_restricts_every_receiver_url' (65490454) panicked at crates/spiralcore-transfer/tests/warm_selection_workflow.rs:7:45:
+warm selection workflow must exist: Os { code: 2, kind: NotFound, message: "No such file or directory" }
+
+
+failures:
+    warm_selection_workflow_accepts_only_the_pinned_first_attempt
+    warm_selection_workflow_requires_a_full_secret_without_fallback
+    warm_selection_workflow_restricts_every_receiver_url
+
+test result: FAILED. 0 passed; 3 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

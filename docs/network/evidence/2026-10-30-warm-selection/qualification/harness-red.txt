@@ -1,0 +1,51 @@
+   Compiling spiralcore-transfer v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer)
+error[E0425]: cannot find function `selection_plan` in this scope
+   --> examples/support/warm_object.rs:849:15
+    |
+849 |         let p=selection_plan("selection-qualification",5,&"1".repeat(40),false).unwrap();
+    |               ^^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `selection_plan` in this scope
+   --> examples/support/warm_object.rs:855:19
+    |
+855 |         let local=selection_plan("selection-local",0,&"1".repeat(40),true).unwrap();
+    |                   ^^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `selection_order` in this scope
+   --> examples/support/warm_object.rs:859:48
+    |
+859 |             for trial in 0..30 { *counts.entry(selection_order(trial,large).unwrap()).or_insert(0)+=1; }
+    |                                                ^^^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `validate_warm_choice` in this scope
+   --> examples/support/warm_object.rs:872:9
+    |
+872 |         validate_warm_choice(&row,16<<20).unwrap();
+    |         ^^^^^^^^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `validate_warm_choice` in this scope
+   --> examples/support/warm_object.rs:874:17
+    |
+874 |         assert!(validate_warm_choice(&wrong,16<<20).is_err());
+    |                 ^^^^^^^^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `validate_warm_choice` in this scope
+   --> examples/support/warm_object.rs:876:17
+    |
+876 |         assert!(validate_warm_choice(&wrong,16<<20).is_err());
+    |                 ^^^^^^^^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `validate_warm_choice` in this scope
+   --> examples/support/warm_object.rs:878:17
+    |
+878 |         assert!(validate_warm_choice(&wrong,16<<20).is_err());
+    |                 ^^^^^^^^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `validate_warm_choice` in this scope
+   --> examples/support/warm_object.rs:879:17
+    |
+879 |         assert!(validate_warm_choice(&row,1<<20).is_err());
+    |                 ^^^^^^^^^^^^^^^^^^^^ not found in this scope
+
+For more information about this error, try `rustc --explain E0425`.
+error: could not compile `spiralcore-transfer` (example "schema_fitting" test) due to 8 previous errors

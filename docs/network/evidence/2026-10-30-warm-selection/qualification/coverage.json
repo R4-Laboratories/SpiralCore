@@ -1,0 +1,159 @@
+{
+  "schema": "spiralcore.warm-selection.coverage.v1",
+  "status": "FOCUSED_CURRENT_SOURCE_PASS",
+  "tests": 18,
+  "test_exit": 0,
+  "commands": [
+    [
+      "/Users/casey.allard/.rustup/toolchains/1.97.1-aarch64-apple-darwin/lib/rustlib/aarch64-apple-darwin/bin/llvm-profdata",
+      "merge",
+      "-sparse",
+      "/Users/casey.allard/spiralcore/local/warm-selection-20261030/coverage/warm-selection-74963-10861141064309915157_0.profraw",
+      "/Users/casey.allard/spiralcore/local/warm-selection-20261030/coverage/warm-selection-74968-16021466217849289388_0.profraw",
+      "/Users/casey.allard/spiralcore/local/warm-selection-20261030/coverage/warm-selection-74975-15414957958992169528_0.profraw",
+      "-o",
+      "/Users/casey.allard/spiralcore/local/warm-selection-20261030/coverage/current.profdata"
+    ],
+    [
+      "/Users/casey.allard/.rustup/toolchains/1.97.1-aarch64-apple-darwin/lib/rustlib/aarch64-apple-darwin/bin/llvm-cov",
+      "export",
+      "-format=text",
+      "-instr-profile=/Users/casey.allard/spiralcore/local/warm-selection-20261030/coverage/current.profdata",
+      "-object",
+      "/Users/casey.allard/spiralcore/local/shared-state-20261030/coverage-target/aarch64-apple-darwin/debug/deps/schema_selection-9ced9ac1502a81b0",
+      "-object",
+      "/Users/casey.allard/spiralcore/local/shared-state-20261030/coverage-target/aarch64-apple-darwin/debug/deps/warm_selection-47e3cd695d6251d9",
+      "-object",
+      "/Users/casey.allard/spiralcore/local/shared-state-20261030/coverage-target/aarch64-apple-darwin/debug/deps/warm_selection_client-606e5f39d2fff5e8"
+    ]
+  ],
+  "source_summaries": {
+    "/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer/src/client.rs": {
+      "sha256": "b3657a07343825f3ef57c5cce8e65bb87481ddcc8f0cd3c18b15c5e560a244f5",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "functions": {
+          "count": 49,
+          "covered": 10,
+          "percent": 20.408163265306122
+        },
+        "instantiations": {
+          "count": 247,
+          "covered": 87,
+          "percent": 35.22267206477733
+        },
+        "lines": {
+          "count": 935,
+          "covered": 257,
+          "percent": 27.48663101604278
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "regions": {
+          "count": 1402,
+          "covered": 371,
+          "notcovered": 1031,
+          "percent": 26.462196861626246
+        }
+      }
+    },
+    "/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer/src/schema_selection.rs": {
+      "sha256": "884955623eed88c2665874fa0f921ecf713d34d053b55410b893c89d8013ebb7",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "functions": {
+          "count": 20,
+          "covered": 20,
+          "percent": 100
+        },
+        "instantiations": {
+          "count": 20,
+          "covered": 20,
+          "percent": 100
+        },
+        "lines": {
+          "count": 195,
+          "covered": 192,
+          "percent": 98.46153846153847
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "regions": {
+          "count": 358,
+          "covered": 327,
+          "notcovered": 31,
+          "percent": 91.34078212290503
+        }
+      }
+    }
+  },
+  "new_client_function_instances": [
+    {
+      "name": "_RINvNtCsbiESM4dvagB_19spiralcore_transfer6client31transfer_warm_selection_batchedpEB4_",
+      "count": 0
+    },
+    {
+      "name": "_RINvNtCsbiESM4dvagB_19spiralcore_transfer6client31transfer_warm_selection_batchedNCNvCs2POGL5eNB8r_14warm_selection7compares_0EB1l_",
+      "count": 49
+    },
+    {
+      "name": "_RINvNtCsbiESM4dvagB_19spiralcore_transfer6client31transfer_warm_selection_batchedNCNvCs5g4BwfNP0Nu_21warm_selection_clients_61unavailable_selected_base_or_transport_failure_never_reofferss0_0EB1l_",
+      "count": 1
+    },
+    {
+      "name": "_RINvNtCsbiESM4dvagB_19spiralcore_transfer6client31transfer_warm_selection_batchedNCNvCs5g4BwfNP0Nu_21warm_selection_clients_61unavailable_selected_base_or_transport_failure_never_reofferss_0EB1l_",
+      "count": 1
+    },
+    {
+      "name": "_RINvNtCsbiESM4dvagB_19spiralcore_transfer6client31transfer_warm_selection_batchedNCNvCs5g4BwfNP0Nu_21warm_selection_clients_61warm_hints_do_not_authorize_missing_schema_or_revoked_contexts1_0EB1l_",
+      "count": 1
+    },
+    {
+      "name": "_RINvNtCsbiESM4dvagB_19spiralcore_transfer6client31transfer_warm_selection_batchedNCNvCs5g4BwfNP0Nu_21warm_selection_clients_61warm_hints_do_not_authorize_missing_schema_or_revoked_contexts_0EB1l_",
+      "count": 1
+    },
+    {
+      "name": "_RINvNtCsbiESM4dvagB_19spiralcore_transfer6client31transfer_warm_selection_batchedNCNvCs5g4BwfNP0Nu_21warm_selection_clients_66selected_warm_plan_sends_exact_cost_without_reencoding_and_reopenss1_0EB1l_",
+      "count": 4
+    }
+  ],
+  "new_client_deduplicated_regions": {
+    "count": 25,
+    "covered": 25
+  },
+  "objects_sha256": {
+    "/Users/casey.allard/spiralcore/local/shared-state-20261030/coverage-target/aarch64-apple-darwin/debug/deps/schema_selection-9ced9ac1502a81b0": "8524910fbbf70eb6ed387b11cc78c68c791ccdcf0c700eeeb07827bb6e2770e4",
+    "/Users/casey.allard/spiralcore/local/shared-state-20261030/coverage-target/aarch64-apple-darwin/debug/deps/warm_selection-47e3cd695d6251d9": "069f7dccb4320edb98e524a46136d871bc83ce23dcd00a5b695cadcbd8f05769",
+    "/Users/casey.allard/spiralcore/local/shared-state-20261030/coverage-target/aarch64-apple-darwin/debug/deps/warm_selection_client-606e5f39d2fff5e8": "01a192bb2a8bcaf76243be41d5e48db60ed44589d7fbe8f762e1a40da291710d"
+  },
+  "profiles_sha256": {
+    "/Users/casey.allard/spiralcore/local/warm-selection-20261030/coverage/warm-selection-74963-10861141064309915157_0.profraw": "16bf776df3e7fd991b31484d05a746ead9d3090b075a17db8e89ab0e5dc4349c",
+    "/Users/casey.allard/spiralcore/local/warm-selection-20261030/coverage/warm-selection-74968-16021466217849289388_0.profraw": "0b45d6dac6ae4800a8520570de683331040ccbb1d2f59782fb9057eb2c8bc86a",
+    "/Users/casey.allard/spiralcore/local/warm-selection-20261030/coverage/warm-selection-74975-15414957958992169528_0.profraw": "fccff9cb3ad80590cbd1b882e3eacab60d6c7602f9e1142b0d7541356525e3ed"
+  },
+  "detail_sha256": "6e7307d7207f4acd5d8b1c754a42e9e186119fecadddd71ccb4ea9b1fd8b2eab",
+  "limitations": [
+    "Focused line/function/region instrumentation, not branch or MC/DC coverage.",
+    "Three new profiles and current test objects only; old target profiles untouched.",
+    "Existing large client module coverage is partial; new function has six called instances and one zero-count generic placeholder. All deduplicated new-function regions executed.",
+    "Initial summarizer rejected the zero-count generic placeholder; inspection corrected that interpretation without rerunning tests or suppressing it."
+  ]
+}
