@@ -22,8 +22,6 @@ Artifact errors are returned even when target data would otherwise fall back. En
 
 Decode first validates the complete encoded stream and computes checked output lengths before allocating or copying the output. Template indices, token syntax, record counts, per-record size, original length, artifact ID and trailing bytes are checked. The second pass writes into one exact-sized bounded reservation. The endpoint still owns prior authorization/admission, scope/epoch checks, cache-miss behavior and final whole-object digest verification before durable publication. Artifact possession does not grant access; no implicit retry changes are introduced by the codec.
 
-## Alternatives and qualification
-
 ## Transfer and trained-dictionary profiles
 
 `SchemaV1=6` and `ZstdDictionaryV1=7` extend the existing Offer. Both require the full artifact object ID in `base`, forbid a manifest, and cap output at 16 MiB. Data bodies are opcode (6 or 7), `u32` encoded chunk length, profile byte 1, and 1–61,440 encoded bytes. At most 512 chunks and the codec's aggregate encoded bound are admitted. Accepted receipts count encoded bytes. Finish decodes and verifies exact output length and object ID before the unchanged durable publication. An artifact miss fails the attempt; the sender can explicitly seed it first. No new authentication or transport endpoint is introduced.
@@ -31,6 +29,8 @@ Decode first validates the complete encoded stream and computes checked output l
 The trained-zstd artifact is `SCZDICT1`, `u32` dictionary byte length, then a genuine trained zstd dictionary, total at most 64 KiB. Training accepts at most 4096 samples and 4 MiB. `train(samples, max_size)` returns these immutable serialized bytes. This comparison uses an 8192-byte dictionary limit. The pinned zstd trainer is `zstd::dict::from_samples` (zstd 1.5.7); no held-out fitting or parameter search. Compression uses level 3, window log 25, long-distance matching, no workers, declared content size and checksum. The short dictionary-ID field is suppressed because Offer binds the full artifact SHA-256 identity. Strict single-frame validation and one-shot bounded output decoding reuse the existing prefix profile; dictionary loading adds at most 64 KiB plus fixed tables within a conservative 4 MiB decoder allowance. Dictionary parsing/loading, hashing and context preparation are charged on each send/decode in this first prototype.
 
 Both new public batched senders encode before Begin and compare the complete successful-miss protocol cost against Raw, including the extra artifact reference and chunk receipts. They use Raw on ties or expansion. This preserves byte-first fallback but does not refund failed candidate CPU. Schema versus ordinary zstd/dictionary selection is measured explicitly in separate arms, not inferred. Receiver admission reserves encoded input, output, artifact and decoder scratch within shared limits before reading artifact bytes; artifact size is checked from publication metadata. Artifact validation precedes codec use. Existing modes and their byte encodings remain unchanged.
+
+## Alternatives and qualification
 
 Generic COPY/LITERAL already exists, but repeatedly carrying offsets and matching arbitrary substrings adds work and misses the simple shared-layout case. This profile instead sends a compact template index plus raw slots, retaining literal fallback. Typed semantic serialization and inferred defaults are excluded because they complicate byte fidelity and independent benefit attribution.
 

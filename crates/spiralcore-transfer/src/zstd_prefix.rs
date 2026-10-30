@@ -58,7 +58,7 @@ pub fn encode(base: &[u8], target: &[u8]) -> Result<Vec<u8>> {
     Ok(encoded)
 }
 
-fn validate_frame(encoded: &[u8], target_len: usize) -> Result<()> {
+pub(crate) fn validate_frame(encoded: &[u8], target_len: usize) -> Result<()> {
     if encoded.len() > encoded_cap(target_len)? {
         return Err(Error::Limit);
     }

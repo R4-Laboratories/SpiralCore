@@ -146,7 +146,7 @@ fn forced(target: &[u8], base: Option<&[u8]>, mode: Mode, probe: bool) -> (Stats
         Mode::ZstdPrefixV1 => {
             client::transfer_zstd_prefix_batched(base.unwrap(), target, [2; 32], probe, exchange)
         }
-        Mode::Dag | Mode::RuntimeV1 => unreachable!(),
+        Mode::Dag | Mode::RuntimeV1 | Mode::SchemaV1 | Mode::ZstdDictionaryV1 => unreachable!(),
     }
     .unwrap();
     drop(endpoint);

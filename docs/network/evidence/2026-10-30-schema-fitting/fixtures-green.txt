@@ -1,0 +1,17 @@
+warning: constant `ARMS` is never used
+ --> crates/spiralcore-transfer/examples/schema_fitting.rs:5:7
+  |
+5 | const ARMS: [&str; 5] = ["raw", "zstd", "adaptive", "schema", "dictionary"];
+  |       ^^^^
+  |
+  = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: 1 warning emitted
+
+
+running 2 tests
+test tests::training_is_frozen_and_disjoint_from_held_out_records ... ok
+test tests::whole_record_batches_and_binary_controls_preserve_actual_lengths ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.18s
+

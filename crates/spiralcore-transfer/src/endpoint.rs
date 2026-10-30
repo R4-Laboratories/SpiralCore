@@ -442,7 +442,11 @@ impl<A: Authority> Endpoint<A> {
         let mut charge = offer.len.checked_mul(2).ok_or(Error::Limit)?;
         let warming = if matches!(
             offer.mode,
-            Mode::SparseV1 | Mode::ZstdPrefixV1 | Mode::RuntimeV1
+            Mode::SparseV1
+                | Mode::ZstdPrefixV1
+                | Mode::RuntimeV1
+                | Mode::SchemaV1
+                | Mode::ZstdDictionaryV1
         ) || (matches!(offer.mode, Mode::Raw | Mode::Zstd)
             && self.cold_graph_policy == ColdGraphPolicy::Disabled)
             || existing.is_ok()
@@ -461,6 +465,14 @@ impl<A: Authority> Endpoint<A> {
         if offer.mode == Mode::ZstdPrefixV1 && existing.is_err() {
             charge = charge
                 .checked_add(crate::zstd_prefix::encoded_cap(offer.len as usize)? as u64)
+                .and_then(|n| n.checked_add(crate::zstd_prefix::DECODER_ALLOWANCE))
+                .ok_or(Error::Limit)?;
+        }
+        if crate::fitted_transfer::is_fitted(offer.mode) && existing.is_err() {
+            charge = charge
+                .checked_add(
+                    crate::fitted_transfer::encoded_cap(offer.mode, offer.len as usize)? as u64,
+                )
                 .and_then(|n| n.checked_add(crate::zstd_prefix::DECODER_ALLOWANCE))
                 .ok_or(Error::Limit)?;
         }
@@ -486,7 +498,11 @@ impl<A: Authority> Endpoint<A> {
         let base = if let Some(mid) = offer.base.filter(|_| existing.is_err()) {
             let p = if matches!(
                 offer.mode,
-                Mode::SparseV1 | Mode::ZstdPrefixV1 | Mode::RuntimeV1
+                Mode::SparseV1
+                    | Mode::ZstdPrefixV1
+                    | Mode::RuntimeV1
+                    | Mode::SchemaV1
+                    | Mode::ZstdDictionaryV1
             ) {
                 self.publication(ns, mid).map_err(|e| {
                     if e == Error::Unknown {
@@ -515,6 +531,9 @@ impl<A: Authority> Endpoint<A> {
             None
         };
         if let Some(p) = &base {
+            if crate::fitted_transfer::is_fitted(offer.mode) && p.len > 64 * 1024 {
+                return Err(Error::Limit);
+            }
             if offer.mode == Mode::RuntimeV1 && p.len > crate::shared_runtime::MAX_CHECKPOINT as u64
             {
                 return Err(Error::Limit);
@@ -526,7 +545,11 @@ impl<A: Authority> Endpoint<A> {
             }
             let base_nodes = if matches!(
                 offer.mode,
-                Mode::SparseV1 | Mode::ZstdPrefixV1 | Mode::RuntimeV1
+                Mode::SparseV1
+                    | Mode::ZstdPrefixV1
+                    | Mode::RuntimeV1
+                    | Mode::SchemaV1
+                    | Mode::ZstdDictionaryV1
             ) || cached.is_some()
             {
                 0
@@ -575,7 +598,11 @@ impl<A: Authority> Endpoint<A> {
                     let bytes = read_publication(&p)?;
                     if matches!(
                         offer.mode,
-                        Mode::SparseV1 | Mode::ZstdPrefixV1 | Mode::RuntimeV1
+                        Mode::SparseV1
+                            | Mode::ZstdPrefixV1
+                            | Mode::RuntimeV1
+                            | Mode::SchemaV1
+                            | Mode::ZstdDictionaryV1
                     ) {
                         s.base_bytes = bytes;
                     } else {
@@ -596,6 +623,13 @@ impl<A: Authority> Endpoint<A> {
                 if offer.mode == Mode::ZstdPrefixV1 {
                     s.prefix_encoded
                         .try_reserve_exact(crate::zstd_prefix::encoded_cap(offer.len as usize)?)
+                        .map_err(|_| Error::Limit)?;
+                } else if crate::fitted_transfer::is_fitted(offer.mode) {
+                    s.prefix_encoded
+                        .try_reserve_exact(crate::fitted_transfer::encoded_cap(
+                            offer.mode,
+                            offer.len as usize,
+                        )?)
                         .map_err(|_| Error::Limit)?;
                 } else if offer.mode != Mode::Dag {
                     s.bytes
@@ -664,6 +698,14 @@ impl<A: Authority> Endpoint<A> {
                         s.offer.len as usize,
                     )?;
                 }
+                if crate::fitted_transfer::is_fitted(s.offer.mode) {
+                    s.bytes = crate::fitted_transfer::decode(
+                        s.offer.mode,
+                        &s.base_bytes,
+                        &s.prefix_encoded,
+                        s.offer.len as usize,
+                    )?;
+                }
                 if s.offer.mode == Mode::Dag {
                     let m = s.offer.manifest.as_ref().ok_or(Error::Malformed)?;
                     let (absent, closure) = verified_closure(m, s, self.limits.max_nodes)?;
@@ -696,7 +738,11 @@ impl<A: Authority> Endpoint<A> {
                     Some(m.id())
                 } else if matches!(
                     s.offer.mode,
-                    Mode::SparseV1 | Mode::ZstdPrefixV1 | Mode::RuntimeV1
+                    Mode::SparseV1
+                        | Mode::ZstdPrefixV1
+                        | Mode::RuntimeV1
+                        | Mode::SchemaV1
+                        | Mode::ZstdDictionaryV1
                 ) || (matches!(s.offer.mode, Mode::Raw | Mode::Zstd)
                     && self.cold_graph_policy == ColdGraphPolicy::Disabled)
                 {
@@ -756,6 +802,17 @@ impl<A: Authority> Endpoint<A> {
         }
     }
     fn data(&self, s: &mut Attempt, b: &[u8]) -> Result<()> {
+        if crate::fitted_transfer::is_fitted(s.offer.mode) {
+            crate::fitted_transfer::append(
+                s.offer.mode,
+                &mut s.prefix_encoded,
+                &mut s.prefix_chunks,
+                s.offer.len as usize,
+                b,
+            )?;
+            s.accepted = s.prefix_encoded.len() as u64;
+            return Ok(());
+        }
         if s.offer.mode == Mode::RuntimeV1 && !s.runtime_ready {
             let prediction = crate::shared_transfer::replay_frame(&s.base_bytes, b)?;
             s.base_bytes = prediction;

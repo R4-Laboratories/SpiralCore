@@ -417,6 +417,8 @@ fn print_stats(label: &str, object_bytes: usize, report: &TransferStats) {
         Mode::SparseV1 => "sparse-v1",
         Mode::ZstdPrefixV1 => "zstd-prefix-v1",
         Mode::RuntimeV1 => "runtime-v1",
+        Mode::SchemaV1 => "schema-v1",
+        Mode::ZstdDictionaryV1 => "zstd-dictionary-v1",
     };
     println!("{{\"event\":\"transfer\",\"label\":\"{label}\",\"object\":\"{}\",\"object_bytes\":{object_bytes},\"mode\":\"{mode}\",\"request_bytes\":{},\"response_bytes\":{},\"data_bytes\":{},\"records_sent\":{},\"requests\":{},\"elapsed_micros\":{},\"socket_request_bytes\":{},\"socket_response_bytes\":{},\"socket_frame_bytes\":{}}}",
         hex(&s.object), s.request_bytes, s.response_bytes, s.data_bytes, s.records_sent, s.requests,

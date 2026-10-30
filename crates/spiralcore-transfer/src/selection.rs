@@ -120,7 +120,9 @@ fn priority(mode: Mode) -> u8 {
         Mode::SparseV1 => 2,
         Mode::ZstdPrefixV1 => 3,
         Mode::RuntimeV1 => 4,
-        Mode::Dag => 5, // Not eligible for this selector.
+        Mode::Dag => 5,      // Not eligible for this selector.
+        Mode::SchemaV1 => 6, // Explicit prototype sender only.
+        Mode::ZstdDictionaryV1 => 7,
     }
 }
 
