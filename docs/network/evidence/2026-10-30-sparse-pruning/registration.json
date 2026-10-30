@@ -1,0 +1,76 @@
+{
+  "schema": "spiralcore.sparse-pruning.registration.v1",
+  "status_at_registration": "NOT_RUN",
+  "registered_at_utc": "2026-10-30T04:25:00Z",
+  "baseline_revision": "cc0199ffd255b9e2e002afe8c96f10462a3e474f",
+  "candidate_revision": "317c7f75b8b8355fbb2c74b4bad1944e4f0cb1e8",
+  "source_manifest": "source-manifest.sha256",
+  "source_manifest_entries": 67,
+  "candidate_delta_sha256": "8d24c10c96de770d40d8c1ea24d5ae5427c95576d99936637c886ecf07d12735",
+  "legacy_delta_sha256": "af31026c806c9046d62735b3ebdd03472e667103011a06b6f49ff76edb19e18e",
+  "harness_sha256": "dcfdc7766fb40cf5ff61a90a9c88189b0f4b2b6d19e824f61fb5c0be7d4fbacb",
+  "allocator_sha256": "5f4d2759779ca3519c9944b034c493b050974b8b91d409ce072583bc41c18ff8",
+  "normal_executable": "/Users/casey.allard/spiralcore/local/sparse-pruning-20261030/bin/sparse-pruning-normal",
+  "normal_executable_sha256": "e30407365f46bad4e6271382fc22961d984449f5176eef9322defeb4f9393592",
+  "diagnostic_executable": "/Users/casey.allard/spiralcore/local/sparse-pruning-20261030/bin/sparse-pruning-diagnostic",
+  "diagnostic_executable_sha256": "f1c523cfc575a759a311013f7b5881a404dbd09e40fc0af6af0592a04730604c",
+  "build": {
+    "toolchain": "Rust 1.97.1 (8bab26f4f68e0e26f0bb7960be334d5b520ea452)",
+    "target": "aarch64-apple-darwin",
+    "profile": "release",
+    "features": ["hardware-sha256"],
+    "locked": true,
+    "normal_rustflags": "unset",
+    "diagnostic_rustflags": "--cfg sparse_allocation_diagnostic",
+    "normal_has_custom_allocator": false,
+    "diagnostic_single_threaded": true
+  },
+  "fixtures": {
+    "target_bytes": 16777216,
+    "primaries": ["prefix_insert", "middle_insert", "unrelated"],
+    "controls": ["repeat", "localized", "scattered", "periodic"],
+    "seed_expression": "0x704e1039a268bd15 XOR ((pair+1)<<32) XOR ((case_index+1)<<16)",
+    "generator": "Frozen sparse_pruning.rs fixture() and random(); case order as above",
+    "pairs_per_case": 10,
+    "pair_indices": [0,1,2,3,4,5,6,7,8,9],
+    "calls_per_process": 1,
+    "schedule": "case-major; even pair old/new, odd pair new/old; fresh child process each sample",
+    "replacement_or_discard_policy": "None; retain every observation and failure"
+  },
+  "run_order": [
+    "Frozen untimed allocation campaign: 140 rows, all seven cases and ten pairs. Verify all registered fixtures preserve recipe identity, complete lifetimes and intended primary rejection before any acceptance timing.",
+    "Frozen normal timing campaign: 140 rows in the same fixed schedule. No owned build, test, profile or other benchmark runs concurrently."
+  ],
+  "commands": {
+    "allocation": "sparse-pruning-diagnostic allocations --source 317c7f75b8b8355fbb2c74b4bad1944e4f0cb1e8 --out docs/network/evidence/2026-10-30-sparse-pruning/allocations.jsonl",
+    "timing": "sparse-pruning-normal campaign --source 317c7f75b8b8355fbb2c74b4bad1944e4f0cb1e8 --out docs/network/evidence/2026-10-30-sparse-pruning/measurements.jsonl"
+  },
+  "gates": {
+    "correctness": "All paired decisions and ordered recipe bytes/operation counts match; selected recipes reconstruct exact original bytes with the frozen decoder; fixtures and source/executable identities match",
+    "primary_cpu": "In each primary: paired geometric mean legacy/candidate encode CPU >= 1.10 AND at least seven strict candidate CPU wins out of ten",
+    "control_cpu": "In each control: paired geometric mean candidate/legacy encode CPU <= 1.05",
+    "clock_resolution": "Each measured encode CPU interval >= 100 microseconds; otherwise qualification fails without replacement",
+    "primary_memory": "Every one of ten pairs in each primary reduces diagnostic peak requested frame-buffer capacity by >=50 percent",
+    "materialization": "Primary candidate header allocations equal recipe frames+1, or zero for Raw; losing candidates materialize no frame buffers",
+    "allocation_lifecycle": "Registry and callback success, retained live bytes equal actual returned frame capacities, every tracked allocation freed and final live/active zero"
+  },
+  "timing_scope": "Encode entry through return. Verify actual output outside that timer; measure drop separately. Any encode_plus_drop is a sum of disjoint scopes. Continuous entry-to-release explicitly includes verification and is not the encoder acceptance metric.",
+  "memory_scope": "Actual requested frame Vec capacities and forced-moving alloc-copy-free overlap under the diagnostic allocator; excludes inputs, operation vectors, receiver, production allocator internals and RSS",
+  "pre_measurement_qualification": {
+    "release_all_target_tests_passed": 202,
+    "doctests_passed": 1,
+    "imported_store_tests_passed": 71,
+    "diagnostic_serial_tests_passed": 10,
+    "normal_and_diagnostic_check_clippy": "passed; independent pre-measurement review",
+    "focused_coverage": "37 tests; delta 228/233 lines and 14/14 LLVM functions; branch/MC/DC/statements not separately collected",
+    "baseline_observations": 21,
+    "prior_untimed_smoke_rows": 14
+  },
+  "limitations": [
+    "Shared Apple M1 developer host; other labs and user applications remain untouched.",
+    "Local encoder-only comparison, not complete adaptive sender, transport, WAN or durable endpoint timing.",
+    "Raw fallback retains original bytes and is not counted as a decoded or transferred recipe.",
+    "No energy, production memory, larger-client, MVM or compliance qualification.",
+    "Failure of any registered gate prevents adoption as a qualified optimization; preserve the negative result rather than changing workloads or thresholds."
+  ]
+}
