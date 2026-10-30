@@ -18,6 +18,9 @@ use std::{
     time::Instant,
 };
 
+#[path = "support/schema_reuse.rs"]
+mod schema_reuse;
+
 fn sha(bytes: &[u8]) -> String {
     hex(&Sha256::digest(bytes).into())
 }
@@ -511,6 +514,9 @@ fn summarize(rows: &[Value]) -> Result<Value> {
 }
 fn command() -> Result<()> {
     let args: Vec<_> = std::env::args().collect();
+    if args.get(1).is_some_and(|s| s.starts_with("reuse-")) {
+        return schema_reuse::command(&args);
+    }
     match args.get(1).map(String::as_str) {
         Some("plan") if args.len()==3=>{let mut out=fresh(Path::new(&args[2]))?;write_row(&mut out,&plan()?)},
         Some("run") if args.len()==7=>run(Path::new(&args[2]),&args[3],Path::new(&args[4]),Path::new(&args[5]),Path::new(&args[6])),
@@ -632,7 +638,7 @@ fn training_records() -> Vec<Vec<u8>> {
     (0..512).map(|i| record(true, i, 0, "normal")).collect()
 }
 fn fixture(family: &str, large: bool, trial: usize) -> Result<Fixture> {
-    if !FAMILIES.contains(&family) || trial >= 10 {
+    if !FAMILIES.contains(&family) || trial >= 100 {
         return Err("invalid fixture configuration".into());
     }
     let mut bytes = Vec::new();

@@ -1,0 +1,28 @@
+   Compiling spiralcore-transfer v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer)
+error[E0432]: unresolved import `spiralcore_transfer::schema_zstd`
+ --> tests/schema_reuse.rs:1:35
+  |
+1 | use spiralcore_transfer::{schema, schema_zstd, zstd_dictionary, Error};
+  |                                   ^^^^^^^^^^^ no `schema_zstd` in the root
+
+error[E0433]: cannot find `PreparedSchema` in `schema`
+  --> tests/schema_reuse.rs:13:28
+   |
+13 |     let prepared = schema::PreparedSchema::new(&artifact).unwrap();
+   |                            ^^^^^^^^^^^^^^ could not find `PreparedSchema` in `schema`
+
+error[E0433]: cannot find `PreparedEncoder` in `zstd_dictionary`
+  --> tests/schema_reuse.rs:50:38
+   |
+50 |     let mut encoder=zstd_dictionary::PreparedEncoder::new(&artifact).unwrap();
+   |                                      ^^^^^^^^^^^^^^^ could not find `PreparedEncoder` in `zstd_dictionary`
+
+error[E0433]: cannot find `PreparedDecoder` in `zstd_dictionary`
+  --> tests/schema_reuse.rs:51:38
+   |
+51 |     let mut decoder=zstd_dictionary::PreparedDecoder::new(&artifact).unwrap();
+   |                                      ^^^^^^^^^^^^^^^ could not find `PreparedDecoder` in `zstd_dictionary`
+
+Some errors have detailed explanations: E0432, E0433.
+For more information about an error, try `rustc --explain E0432`.
+error: could not compile `spiralcore-transfer` (test "schema_reuse") due to 4 previous errors

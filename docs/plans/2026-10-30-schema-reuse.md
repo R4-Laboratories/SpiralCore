@@ -1,0 +1,10 @@
+# SC-OPT-012 implementation plan
+
+Execute the approved [schema reuse design](../specs/2026-10-30-schema-reuse-design.md) in the existing worktree, with no new approval pause or package additions.
+
+1. **Codec owner:** add focused failing tests, retain RED, then implement owned `PreparedSchema` in `src/schema.rs`, strict compressed `SCVAL001` framing and prepared contexts in new `src/schema_zstd.rs`, and loaded-once dictionary contexts in `src/zstd_dictionary.rs`. Preserve existing free APIs and dictionary encoded bytes. Risk: medium; exact byte parity, bounds and post-error reuse are explicit tests.
+2. **Parent:** export the new module and integrate mode 8, prepared sender calls and the opt-in scoped receiver cache in protocol/client/endpoint/fitted-transfer code. Admit intermediate buffers separately from charged retained contexts; reverify artifact bytes and authorization before reuse. Test persistent sequences, cache eviction/pinning and failed commits. Risk: medium; no decoder helper can authorize or publish.
+3. **Measurement owner:** retain the frozen training/held-out distinction and compare cold construction with reused sender/receiver sequences. Count schema/dictionary seeding, all object-protocol bodies, setup/encode/decode CPU, conservative retained charge and durable elapsed time. Preserve drift/unrelated controls and regressions. Risk: low with explicit timing scopes; no new WAN claim.
+4. **Qualification:** codec RED/GREEN first, then parent integration and one coordinated full check/review. Reuse `/Users/casey.allard/spiralcore/target`, `CARGO_INCREMENTAL=0`, Rust 1.97.1 and hardware SHA-256; start no builds below 4 GiB free. Build/coverage work never overlaps timing. Keep receipts compact and do not expand the campaign to chase a favorable result.
+
+Completion requires exact reconstruction and preserved wire/commit behavior, bounded retained/intermediate state, and recorded measured performance. The current coupled-runtime mechanism and later MVM integration remain in scope as previously agreed.

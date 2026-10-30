@@ -151,6 +151,47 @@ artifact seeding separately. It uses no network sockets and measures no WAN
 send time. Successful temporary stores are removed; failures retain their
 observations and store. Artifacts and compact measurements remain reproducible.
 
+## Compressed schema streams and prepared codec reuse
+
+`client::transfer_schema_zstd_batched` compresses the exact schema value/literal
+stream using a bounded, checksummed zstd frame. It has the same artifact, target,
+transfer-ID, probe and exchange arguments as the other fitted senders. The
+receiver checks the intermediate length against the target-specific schema
+bound before allocating, then applies the existing schema and final object
+checks. Before Begin, the sender uses Raw unless the complete successful-miss
+body cost is smaller. Cache-hit and rejection replies can change actual traffic.
+
+For repeated objects, construct `schema_zstd::PreparedEncoder::new(artifact)` or
+`zstd_dictionary::PreparedEncoder::new(artifact)` once. Use the mutable prepared
+state with `client::transfer_prepared_schema_zstd_batched` or
+`client::transfer_prepared_zstd_dictionary_batched`. The remaining arguments are
+`target, transfer_id, warm_probe, exchange`. Each logical transfer needs its own
+ID. Account for construction CPU separately and for `retained_charge()` in the
+sender's memory budget; `retained_bytes()` reports owned payload plus zstd's
+context-size estimate, excluding Rust/allocator bookkeeping. Compression
+workspaces grow on first use, and that first encode remains timed. Prepared and
+fresh senders emit the same bytes for the same profile and target. Prior targets
+do not silently become dictionaries or reconstruction dependencies.
+
+Enable optional receiver reuse with `endpoint.set_codec_cache_enabled(true)`
+before transferring the artifact. Keep the endpoint open across the sequence.
+`codec_cache_stats()` exposes hits, misses, preparations, evictions, entry count
+and conservative charged bytes. Entries are scoped by namespace, mode and full
+artifact ID; the receiver still reads and verifies the artifact at every Begin.
+Eight entries at most are charged 5 MiB each inside the shared memory quota.
+Active transfers pin their entries. Under memory pressure, retention can be
+skipped and the ordinary bounded decoder used. Disabling retention requires no
+active transfers and releases the entries; restart begins with an empty codec
+cache while durable objects remain available.
+
+The [design and bounds](../../docs/specs/2026-10-30-schema-reuse-design.md) and
+[persistent measurement contract](../../docs/network/evidence/2026-10-30-schema-reuse/measurement-contract.md)
+define the new profile and comparison. The `schema_fitting` example adds
+`reuse-plan`, `reuse-run` and `reuse-summarize` subcommands with the same positional
+arguments as `plan`, `run` and `summarize` above. Each arm uses one receiver for ten
+distinct targets, with one artifact seed. Immediate exact reads and a final
+close/reopen comparison are separately recorded outside target timing.
+
 ## Shared ternary, Kuramoto and cellular-automaton replay
 
 `shared_runtime` ports the coupled finite core of the retained Python runtime:

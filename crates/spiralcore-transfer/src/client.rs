@@ -101,6 +101,7 @@ pub fn transfer<F: FnMut(&Frame) -> Result<Frame>>(
             | Mode::RuntimeV1
             | Mode::SchemaV1
             | Mode::ZstdDictionaryV1
+            | Mode::SchemaZstdV1
     ) {
         return Err(Error::Unsupported);
     }
@@ -493,6 +494,7 @@ pub fn transfer_batched<F: FnMut(&[Frame]) -> Result<Vec<Frame>>>(
             | Mode::RuntimeV1
             | Mode::SchemaV1
             | Mode::ZstdDictionaryV1
+            | Mode::SchemaZstdV1
     ) {
         return Err(Error::Unsupported);
     }
@@ -708,6 +710,80 @@ pub fn transfer_zstd_dictionary_batched<F: FnMut(&[Frame]) -> Result<Vec<Frame>>
     )
 }
 
+/// Compress the exact schema value/literal stream before transfer.
+pub fn transfer_schema_zstd_batched<F: FnMut(&[Frame]) -> Result<Vec<Frame>>>(
+    artifact: &[u8],
+    target: &[u8],
+    transfer_id: Id,
+    warm_probe: bool,
+    exchange: F,
+) -> Result<Stats> {
+    transfer_fitted_batched(
+        Mode::SchemaZstdV1,
+        artifact,
+        target,
+        transfer_id,
+        warm_probe,
+        exchange,
+    )
+}
+
+/// Reuse a previously prepared schema and zstd compression context. Construction
+/// belongs to the caller's setup accounting; every encode/hash/send stays timed.
+pub fn transfer_prepared_schema_zstd_batched<F: FnMut(&[Frame]) -> Result<Vec<Frame>>>(
+    prepared: &mut crate::schema_zstd::PreparedEncoder,
+    target: &[u8],
+    transfer_id: Id,
+    warm_probe: bool,
+    exchange: F,
+) -> Result<Stats> {
+    let start = Instant::now();
+    let encoded = prepared.encode(target)?;
+    send_fitted(
+        FittedCandidate {
+            mode: Mode::SchemaZstdV1,
+            encoded,
+            artifact_id: || prepared.artifact_id(),
+        },
+        target,
+        transfer_id,
+        warm_probe,
+        exchange,
+        start,
+    )
+}
+
+/// Reuse a loaded trained dictionary and compression context under the same
+/// exact-byte/fallback contract as the unprepared dictionary sender.
+pub fn transfer_prepared_zstd_dictionary_batched<F: FnMut(&[Frame]) -> Result<Vec<Frame>>>(
+    prepared: &mut crate::zstd_dictionary::PreparedEncoder,
+    target: &[u8],
+    transfer_id: Id,
+    warm_probe: bool,
+    exchange: F,
+) -> Result<Stats> {
+    let start = Instant::now();
+    let encoded = prepared.encode(target)?;
+    send_fitted(
+        FittedCandidate {
+            mode: Mode::ZstdDictionaryV1,
+            encoded,
+            artifact_id: || prepared.artifact_id(),
+        },
+        target,
+        transfer_id,
+        warm_probe,
+        exchange,
+        start,
+    )
+}
+
+struct FittedCandidate<I> {
+    mode: Mode,
+    encoded: Vec<u8>,
+    artifact_id: I,
+}
+
 fn transfer_fitted_batched<F: FnMut(&[Frame]) -> Result<Vec<Frame>>>(
     mode: Mode,
     artifact: &[u8],
@@ -723,8 +799,36 @@ fn transfer_fitted_batched<F: FnMut(&[Frame]) -> Result<Vec<Frame>>>(
     let encoded = match mode {
         Mode::SchemaV1 => crate::schema::encode(artifact, target)?,
         Mode::ZstdDictionaryV1 => crate::zstd_dictionary::encode(artifact, target)?,
+        Mode::SchemaZstdV1 => crate::schema_zstd::encode(artifact, target)?,
         _ => return Err(Error::Unsupported),
     };
+    send_fitted(
+        FittedCandidate {
+            mode,
+            encoded,
+            artifact_id: || crate::object_id(artifact),
+        },
+        target,
+        transfer_id,
+        warm_probe,
+        exchange,
+        start,
+    )
+}
+
+fn send_fitted<I: FnOnce() -> Id, F: FnMut(&[Frame]) -> Result<Vec<Frame>>>(
+    candidate: FittedCandidate<I>,
+    target: &[u8],
+    transfer_id: Id,
+    warm_probe: bool,
+    exchange: F,
+    start: Instant,
+) -> Result<Stats> {
+    let FittedCandidate {
+        mode,
+        encoded,
+        artifact_id,
+    } = candidate;
     let cap = crate::fitted_transfer::encoded_cap(mode, target.len())?;
     if encoded.len() > cap {
         return Err(Error::Limit);
@@ -743,7 +847,7 @@ fn transfer_fitted_batched<F: FnMut(&[Frame]) -> Result<Vec<Frame>>>(
         len: target.len() as u64,
         object: crate::object_id(target),
         manifest: None,
-        base: Some(crate::object_id(artifact)),
+        base: Some(artifact_id()),
     };
     let bodies = crate::fitted_transfer::chunks(mode, &encoded)?;
     drop(encoded);
@@ -846,6 +950,7 @@ where
             | Mode::RuntimeV1
             | Mode::SchemaV1
             | Mode::ZstdDictionaryV1
+            | Mode::SchemaZstdV1
     ));
     let offer = Offer {
         mode,

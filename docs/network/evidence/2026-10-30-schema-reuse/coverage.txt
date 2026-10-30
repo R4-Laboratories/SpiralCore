@@ -1,0 +1,241 @@
+info: cargo-llvm-cov currently setting cfg(coverage); you can opt-out it by passing --no-cfg-coverage
+warning: process didn't exit successfully: `/Users/casey.allard/.rustup/toolchains/1.97.1-aarch64-apple-darwin/bin/cargo clean --package spiralcore-transfer --color never --manifest-path /Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer/Cargo.toml --target-dir /Users/casey.allard/spiralcore/local/shared-state-20261030/coverage-target --locked` (exit status: 101)
+--- stderr
+error: cannot clean `/Users/casey.allard/spiralcore/local/shared-state-20261030/coverage-target`: missing or invalid `CACHEDIR.TAG` file
+  |
+  = note: cleaning has been aborted to prevent accidental deletion of unrelated files
+
+   Compiling spiralcore-transfer v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 7.71s
+     Running unittests src/lib.rs (/Users/casey.allard/spiralcore/local/shared-state-20261030/coverage-target/debug/deps/spiralcore_transfer-8c1cd638300fd572)
+
+running 16 tests
+test dag::fold_memo_tests::rejected_records_never_enter_the_memo ... ok
+test dag::fold_memo_tests::parent_memo_is_exact_and_has_a_fixed_small_allocation_bound ... ok
+test dag::fold_memo_tests::hot_memo_reuses_only_exact_nodes_and_preserves_unique_budget ... ok
+test selection::runtime_selection_tests::lower_bound_ties_preserve_original_codec_priority ... ok
+test fitted_transfer::tests::frame_validation_is_atomic_and_separately_bounds_count_and_bytes ... ok
+test selection::runtime_selection_tests::runtime_repeat_shortcut_and_errors_keep_pre_begin_behavior ... ok
+test delta::scan_tests::bulk_scans_handle_different_lengths_and_zero_byte_borrows ... ok
+test zstd_prefix::tests::chunk_validation_is_atomic_and_count_and_encoded_bounds_are_independent ... ok
+test selection::runtime_selection_tests::encoded_lower_bounds_hold_for_empty_small_and_chunk_boundary_inputs ... ok
+test shared_transfer::identity_tests::prepared_identity_matches_full_hash_for_equal_edited_and_length_changed_bytes ... ok
+test delta::scan_tests::bulk_scans_match_scalar_at_every_short_boundary ... ok
+test selection::runtime_selection_tests::runtime_first_preserves_exhaustive_winner_and_body_bytes ... ok
+test shared_runtime::packed_tests::packed_rules_match_scalar_tables_at_periodic_word_boundaries ... ok
+test zstd_prefix::tests::profile_minimum_size_holds_at_empty_and_decoded_block_boundaries ... ok
+test selection::runtime_selection_tests::prefix_structure_bound_prunes_large_runtime_without_changing_bytes ... ok
+test delta::sender_delta_checks::optimized_delta_preserves_all_frames_across_changes_and_boundaries ... ok
+
+test result: ok. 16 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.82s
+
+     Running tests/adaptive.rs (/Users/casey.allard/spiralcore/local/shared-state-20261030/coverage-target/debug/deps/adaptive-27969fc3aa33a351)
+
+running 13 tests
+test oversized_inputs_fail_before_any_exchange ... ok
+test cold_structured_data_selects_zstd_before_begin ... ok
+test repeat_probe_with_evicted_remote_object_completes_the_original_raw_offer ... ok
+test missing_base_and_changed_scope_do_not_reoffer_or_publish ... ok
+test revoked_authority_and_transport_failure_never_retry_selection ... ok
+test real_http_codec_selection_cost_matches_bodies_and_reopens_exactly ... ok
+test exact_repeat_probe_sends_raw_identity_only_and_unprobed_hit_counts_upload ... ok
+test malicious_receipts_are_checked_after_selection ... ok
+test small_localized_edit_uses_prefix_when_it_costs_less_than_sparse ... ok
+test empty_and_incompressible_ties_prefer_raw_with_exact_full_cost ... ok
+test warm_local_edits_choose_sparse_and_reordered_data_choose_prefix ... ok
+test exact_bytes_and_length_survive_boundaries_and_length_changes_after_restart ... ok
+test selector_cost_matches_actual_forced_arms_and_minimizes_eligible_bytes ... ok
+
+test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.45s
+
+     Running tests/batched.rs (/Users/casey.allard/spiralcore/local/shared-state-20261030/coverage-target/debug/deps/batched-e6aeaf0e6a47e249)
+
+running 12 tests
+test oversized_campaign_object_is_rejected_before_exchange ... ok
+test published_on_data_is_not_a_valid_terminal_prefix ... ok
+test peer_cannot_request_a_record_outside_the_offered_graph ... ok
+test unsuccessful_repair_stops_after_two_rounds ... ok
+test terminal_error_prefix_is_allowed_but_replies_after_it_are_rejected ... ok
+test empty_object_uses_begin_and_finish_without_fabricated_data ... ok
+test missing_or_extra_nonterminal_replies_are_rejected ... ok
+test cold_raw_and_zstd_each_use_one_exact_batch ... ok
+test warm_probe_skips_data_but_unprobed_cache_hit_counts_the_actual_upload ... ok
+test warm_dag_change_is_exact_and_repairs_missing_descendant_closure ... ok
+test reply_identity_ready_ack_and_published_digest_are_checked ... ok
+test large_dag_is_split_with_bounded_batches_and_exact_sequence ... ok
+
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 6.66s
+
+     Running tests/client_prepared.rs (/Users/casey.allard/spiralcore/local/shared-state-20261030/coverage-target/debug/deps/client_prepared-45e36f5fd8a5b2a1)
+
+running 12 tests
+test generic_senders_reject_sparse_without_the_owned_base_bytes_api ... ok
+test sparse_bounds_are_checked_before_any_exchange ... ok
+test prepared_repeat_uses_raw_identity_probe ... ok
+test missing_base_is_an_error_without_reoffering_the_transfer_id ... ok
+test prepared_peer_cannot_request_an_unreachable_old_base_record ... ok
+test prepared_missing_descendants_are_repaired_from_target_closure ... ok
+test prepared_cache_hit_counts_every_already_uploaded_frame ... ok
+test prepared_sender_matches_canonical_offer_and_actual_accounting ... ok
+test sparse_probe_and_unprobed_cache_hit_have_exact_upload_accounting ... ok
+test sparse_raw_fallback_happens_before_exchange_without_requiring_remote_base ... ok
+test sparse_ack_and_need_responses_obey_strict_mode_rules ... ok
+test sparse_sender_handles_edits_insertions_and_deletions_exactly ... ok
+
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.33s
+
+     Running tests/endpoint.rs (/Users/casey.allard/spiralcore/local/shared-state-20261030/coverage-target/debug/deps/endpoint-1bbd4dc23498fcc6)
+
+running 21 tests
+test object_identity_cannot_shrink_an_existing_disk_reservation ... ok
+test auth_conflict_and_corruption_do_not_publish ... ok
+test disk_quota_is_reserved_at_admission ... ok
+test durable_cold_transfer_retry_and_restart ... ok
+test authorization_is_checked_at_publication ... ok
+test authorization_is_rechecked_after_read ... ok
+test cached_graph_never_bypasses_disk_integrity_or_namespace ... ok
+test repair_exhaustion_is_terminal ... ok
+test plaintext_cache_is_private ... ok
+test published_resume_respects_other_active_reservations ... ok
+test tiny_dag_cannot_admit_unreserved_unrelated_nodes ... ok
+test sparse_replay_cancel_bad_digest_and_revocation_never_commit ... ok
+test sparse_needs_no_dag_and_rejects_unreserved_target ... ok
+test sparse_copy_insert_is_durable_and_base_scoped ... ok
+test retained_graph_is_used_and_eviction_is_recoverable ... ok
+test unowned_staging_is_never_removed ... ok
+test pinned_graph_survives_eviction_pressure_then_releases_after_cancel ... ok
+test two_attempts_publish_one_immutable_object ... ok
+test writer_quota_cancel_and_expiry_are_bounded ... ok
+test optional_graphs_are_evicted_for_verified_reads_and_published_resume ... ok
+test terminal_reply_ledgers_cannot_outgrow_quota ... ok
+
+test result: ok. 21 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.03s
+
+     Running tests/fitted_transfer.rs (/Users/casey.allard/spiralcore/local/shared-state-20261030/coverage-target/debug/deps/fitted_transfer-a4e6a23992ba8c11)
+
+running 5 tests
+test fitted_offer_requires_artifact_and_bounded_output ... ok
+test fitted_admission_precedes_corrupt_artifact_read_and_cancel_releases_budget ... ok
+test fitted_transfer_is_exact_durable_and_scoped_to_artifact_namespace ... ok
+test fitted_sender_falls_back_before_begin_and_rejects_false_receipts ... ok
+test fitted_finish_rechecks_authority_and_digest_without_partial_publication ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.36s
+
+     Running tests/prepared.rs (/Users/casey.allard/spiralcore/local/shared-state-20261030/coverage-target/debug/deps/prepared-93593f3b965f2dc4)
+
+running 9 tests
+test owned_data_and_public_clones_cannot_poison_verified_nodes ... ok
+test exact_repeat_shares_flat_graph_and_bytes_including_empty_and_nul ... ok
+test conservative_charges_include_shared_base_overlay_index_and_bytes ... ok
+test length_and_unique_target_limits_fail_without_mutating_base ... ok
+test repair_authorization_is_target_closure_not_every_base_node ... ok
+test promotion_is_budgeted_and_detaches_the_old_base ... ok
+test same_length_delta_matches_full_fold_and_reconstructs_exactly ... ok
+test randomized_boundary_edits_preserve_every_record_and_manifest ... ok
+test one_changed_leaf_has_only_its_ten_new_records ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.79s
+
+     Running tests/schema_codec.rs (/Users/casey.allard/spiralcore/local/shared-state-20261030/coverage-target/debug/deps/schema_codec-7803f3bae0414395)
+
+running 10 tests
+test malformed_templates_duplicates_and_profile_caps_are_rejected ... ok
+test frozen_training_template_preserves_held_out_raw_tokens ... ok
+test malformed_artifact_is_rejected_even_for_a_literal_target ... ok
+test arbitrary_bytes_layout_drift_and_nested_values_remain_exact_literals ... ok
+test hostile_stream_counts_indices_tokens_and_lengths_fail_preflight ... ok
+test invalid_primitive_spellings_and_slot_overflow_are_literals ... ok
+test duplicate_keys_whitespace_crlf_escapes_and_numeric_spellings_are_preserved ... ok
+test wrong_schema_and_encoded_lengths_are_rejected ... ok
+test empty_mixed_and_newline_heavy_objects_have_exact_fallback ... ok
+test training_limits_and_template_count_are_bounded ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/schema_prepared.rs (/Users/casey.allard/spiralcore/local/shared-state-20261030/coverage-target/debug/deps/schema_prepared-f76bcaf035e77854)
+
+running 6 tests
+test prepared_schema_owns_artifact_and_preserves_existing_stream_bytes ... ok
+test schema_zstd_rejects_hostile_frames_then_decodes_a_valid_frame ... ok
+test prepared_encoders_recover_after_rejected_oversize_input ... ok
+test schema_zstd_reuses_contexts_and_preserves_exact_values_and_fallback ... ok
+test prepared_dictionary_matches_fresh_bytes_after_alternating_inputs_and_errors ... ok
+test target_specific_intermediate_cap_covers_maximum_literal_record_overhead ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.63s
+
+     Running tests/schema_reuse.rs (/Users/casey.allard/spiralcore/local/shared-state-20261030/coverage-target/debug/deps/schema_reuse-bb89eb65237a8347)
+
+running 5 tests
+test compressed_schema_offer_is_versioned_and_bounded ... ok
+test bad_compressed_transfer_cannot_publish_and_cached_decoder_recovers ... ok
+test warm_decoder_does_not_hide_corrupt_missing_or_unauthorized_artifact ... ok
+test persistent_prepared_senders_and_receiver_reuse_exact_objects_then_restart ... ok
+test codec_cache_is_bounded_pinned_and_released_without_exceeding_shared_budget ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.48s
+
+     Running tests/shared_transfer.rs (/Users/casey.allard/spiralcore/local/shared-state-20261030/coverage-target/debug/deps/shared_transfer-8980f6b8480d07f7)
+
+running 10 tests
+test prepared_prediction_rejects_invalid_state_and_oversize_targets ... ok
+test prepared_prediction_owns_its_state_and_preserves_residual_bytes ... ok
+test different_lengths_and_final_checkpoint_use_exact_residuals ... ok
+test setup_truncations_versions_digest_and_resource_lies_are_rejected ... ok
+test revoked_authority_and_changed_epoch_cannot_finish_an_admitted_replay ... ok
+test replay_is_idempotent_and_cancel_discards_output ... ok
+test checkpoint_must_be_authorized_present_and_within_replay_budget ... ok
+test runtime_recipe_crosses_transfer_boundary_and_reopens_exact_bytes ... ok
+test prepared_prediction_transfers_repeated_edits_without_granting_authority ... ok
+test malformed_setup_missing_setup_and_failed_final_digest_never_publish ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.25s
+
+     Running tests/sparse.rs (/Users/casey.allard/spiralcore/local/shared-state-20261030/coverage-target/debug/deps/sparse-e34b0e507a56bec2)
+
+running 6 tests
+test malformed_recipe_is_atomic ... ok
+test hostile_versions_lengths_ops_and_truncation_fail_closed ... ok
+test exact_operation_literal_and_object_limits_are_enforced ... ok
+test literal_frames_split_and_large_copy_remains_small ... ok
+test prefix_insertion_uses_a_small_exact_recipe ... ok
+test edits_lengths_and_fallback_preserve_every_byte ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.12s
+
+     Running tests/transfer.rs (/Users/casey.allard/spiralcore/local/shared-state-20261030/coverage-target/debug/deps/transfer-5ca9ad5b2599da8a)
+
+running 5 tests
+test peer_cannot_request_records_outside_the_offered_object ... ok
+test zstd_decoder_enforces_actual_window_limit ... ok
+test unrelated_reply_and_zstd_trailing_frames_are_rejected ... ok
+test missing_record_batch_is_repaired_with_complete_descendants ... ok
+test raw_zstd_repeat_and_warm_delta_reconstruct_exactly ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.14s
+
+     Running tests/zstd_dictionary.rs (/Users/casey.allard/spiralcore/local/shared-state-20261030/coverage-target/debug/deps/zstd_dictionary-689759032780bd44)
+
+running 2 tests
+test dictionary_rejects_malformed_artifacts_and_resource_expansion ... ok
+test trained_dictionary_exactly_recovers_held_out_and_arbitrary_bytes ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.07s
+
+     Running tests/zstd_prefix.rs (/Users/casey.allard/spiralcore/local/shared-state-20261030/coverage-target/debug/deps/zstd_prefix-4256e0e49eefbedb)
+
+running 8 tests
+test sender_rejects_wrong_cumulative_encoded_receipt ... ok
+test rejects_wrong_base_damage_trailing_frames_and_unbounded_header ... ok
+test whole_prefix_roundtrips_empty_edits_insertions_and_unrelated_data ... ok
+test prefix_offer_and_encoded_stream_are_strictly_versioned_and_bounded ... ok
+test prefix_admission_precedes_corrupt_base_read_and_final_hash_is_mandatory ... ok
+test prefix_reservations_are_shared_and_cancel_releases_them ... ok
+test endpoint_prefix_pins_authorized_base_and_publishes_only_verified_complete_bytes ... ok
+test batched_prefix_reports_selection_and_falls_back_only_before_begin ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.15s
+
+
+    Finished report saved to docs/network/evidence/2026-10-30-schema-reuse/coverage-summary.json
