@@ -1,0 +1,22 @@
+/Users/casey.allard/.cargo/bin/cargo +1.97.1 llvm-cov --manifest-path crates/spiralcore-transfer/Cargo.toml --locked --target aarch64-apple-darwin --features hardware-sha256 --test wan --no-report
+info: cargo-llvm-cov currently setting cfg(coverage); you can opt-out it by passing --no-cfg-coverage
+   Compiling spiralcore-transfer v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.71s
+     Running tests/wan.rs (/Users/casey.allard/spiralcore/local/shared-state-20261030/coverage-target/aarch64-apple-darwin/debug/deps/wan-8f1c69e841dcc770)
+
+running 12 tests
+test batch_bounds_and_canonical_framing ... ok
+test client_rejects_a_truncated_nonterminal_reply_prefix ... ok
+test client_rejects_unsafe_urls_and_short_capabilities ... ok
+test authenticated_batch_commits_exact_bytes_with_measured_receiver_work ... ok
+test an_idle_completed_connection_cannot_block_another_client ... ok
+test authentication_and_scope_fail_before_reading_body ... ok
+test campaign_origin_refuses_to_reuse_a_populated_cache ... ok
+test campaign_origin_rejects_ambiguous_warming_policy_before_creating_cache ... ok
+test campaign_origin_rejects_invalid_codec_cache_configuration_before_creating_cache ... ok
+test hostile_http_headers_and_truncation_are_rejected ... ok
+test observed_origin_rejects_failed_logging_and_does_not_observe_unauthorized_requests ... ok
+test codec_cache_cli_is_opt_in_and_records_persistent_hits_without_credentials ... ok
+
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 6.21s
+

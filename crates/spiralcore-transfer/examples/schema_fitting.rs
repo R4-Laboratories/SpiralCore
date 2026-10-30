@@ -22,6 +22,8 @@ use std::{
 mod schema_reuse;
 #[path = "support/schema_sender.rs"]
 mod schema_sender;
+#[path = "support/schema_wan.rs"]
+mod schema_wan;
 
 fn sha(bytes: &[u8]) -> String {
     hex(&Sha256::digest(bytes).into())
@@ -528,6 +530,9 @@ fn command() -> Result<()> {
     if args.get(1).is_some_and(|s| s.starts_with("sender-")) {
         return schema_sender::command(&args);
     }
+    if args.get(1).is_some_and(|s| s.starts_with("wan-")) {
+        return schema_wan::command(&args);
+    }
     match args.get(1).map(String::as_str) {
         Some("plan") if args.len()==3=>{let mut out=fresh(Path::new(&args[2]))?;write_row(&mut out,&plan()?)},
         Some("run") if args.len()==7=>run(Path::new(&args[2]),&args[3],Path::new(&args[4]),Path::new(&args[5]),Path::new(&args[6])),
@@ -649,7 +654,7 @@ fn training_records() -> Vec<Vec<u8>> {
     (0..512).map(|i| record(true, i, 0, "normal")).collect()
 }
 fn fixture(family: &str, large: bool, trial: usize) -> Result<Fixture> {
-    if !FAMILIES.contains(&family) || trial >= 100 {
+    if !FAMILIES.contains(&family) || trial >= 300 {
         return Err("invalid fixture configuration".into());
     }
     let mut bytes = Vec::new();

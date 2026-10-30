@@ -8,7 +8,7 @@ use spiralcore_transfer::{
 use std::{
     collections::BTreeSet,
     fs,
-    io::{Read, Write},
+    io::{BufRead, Read, Write},
     net::{Shutdown, TcpListener, TcpStream},
     path::PathBuf,
     sync::atomic::{AtomicU64, Ordering},
@@ -17,6 +17,41 @@ use std::{
 };
 static NEXT: AtomicU64 = AtomicU64::new(0);
 const TOKEN: &str = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+#[test]
+fn campaign_origin_rejects_invalid_codec_cache_configuration_before_creating_cache() {
+    let t = Temp::new();
+    for (index, value) in [
+        serde_json::Value::Null,
+        serde_json::json!("true"),
+        serde_json::json!(1),
+        serde_json::json!({}),
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let plan = serde_json::json!({"schema":"spiralcore.wan.plan.v4",
+            "cold_graph_warming":false,"allowed_scopes":[hex(&[1;32])],
+            "codec_cache_enabled":value});
+        let path = t.0.join(format!("codec-plan-{index}.json"));
+        let cache = t.0.join(format!("codec-cache-{index}"));
+        fs::write(&path, serde_json::to_vec(&plan).unwrap()).unwrap();
+        let out = std::process::Command::new(env!("CARGO_BIN_EXE_spiralcore-wan"))
+            .args(["serve", "--cache"])
+            .arg(&cache)
+            .arg("--plan")
+            .arg(&path)
+            .args(["--seconds", "1"])
+            .env("SPIRALCORE_WAN_TOKEN", TOKEN)
+            .output()
+            .unwrap();
+        assert!(
+            !out.status.success(),
+            "invalid codec cache setting was accepted"
+        );
+        assert!(String::from_utf8_lossy(&out.stderr).contains("codec cache"));
+        assert!(!cache.exists());
+    }
+}
 #[test]
 fn campaign_origin_rejects_ambiguous_warming_policy_before_creating_cache() {
     let t = Temp::new();
@@ -69,6 +104,133 @@ fn server(t: &Temp, requests: usize) -> (String, thread::JoinHandle<()>) {
         .unwrap()
     });
     (url, task)
+}
+
+#[test]
+fn codec_cache_cli_is_opt_in_and_records_persistent_hits_without_credentials() {
+    use spiralcore_transfer::{client, schema, schema_zstd};
+    for enabled in [None, Some(false), Some(true)] {
+        let t = Temp::new();
+        let mut plan = serde_json::json!({"schema":"spiralcore.wan.plan.v4",
+            "cold_graph_warming":false,"allowed_scopes":[hex(&[1;32])]});
+        if let Some(value) = enabled {
+            plan["codec_cache_enabled"] = serde_json::json!(value);
+        }
+        let path = t.0.join("plan.json");
+        let cache = t.0.join("cache");
+        fs::write(&path, serde_json::to_vec(&plan).unwrap()).unwrap();
+        let mut child = std::process::Command::new(env!("CARGO_BIN_EXE_spiralcore-wan"))
+            .args(["serve", "--cache"])
+            .arg(&cache)
+            .arg("--plan")
+            .arg(&path)
+            .args(["--seconds", "2"])
+            .env("SPIRALCORE_WAN_TOKEN", TOKEN)
+            .stdout(std::process::Stdio::piped())
+            .stderr(std::process::Stdio::piped())
+            .spawn()
+            .unwrap();
+        let mut ready = String::new();
+        std::io::BufReader::new(child.stdout.take().unwrap())
+            .read_line(&mut ready)
+            .unwrap();
+        let addr = ready.trim().strip_prefix("READY addr=").unwrap();
+        let mut http = HttpClient::new(&format!("http://{addr}"), TOKEN, [1; 32]).unwrap();
+        let training = b"{\"long_identifier\":0,\"status_message\":\"training-value\",\"enabled_flag\":true}\n";
+        let artifact = schema::fit(&[training]).unwrap();
+        client::transfer_batched(&artifact, Mode::Raw, None, [11; 32], false, |f| {
+            http.exchange(f)
+        })
+        .unwrap();
+        let mut prepared = schema_zstd::PreparedEncoder::new(&artifact).unwrap();
+        let mut targets = Vec::new();
+        for i in 0..2 {
+            let bytes = format!("{{\"long_identifier\":{i},\"status_message\":\"held-out-{i}\",\"enabled_flag\":false}}\n").repeat(128).into_bytes();
+            let stats = client::transfer_prepared_schema_zstd_batched(
+                &mut prepared,
+                &bytes,
+                [12 + i; 32],
+                false,
+                |f| http.exchange(f),
+            )
+            .unwrap();
+            assert_eq!(stats.mode, Mode::SchemaZstdV1);
+            targets.push(bytes);
+        }
+        let output = child.wait_with_output().unwrap();
+        assert!(output.status.success(), "{:?}", output);
+        let stderr = String::from_utf8(output.stderr).unwrap();
+        assert!(!stderr.contains(TOKEN));
+        let rows: Vec<serde_json::Value> = stderr
+            .lines()
+            .filter(|s| s.starts_with('{'))
+            .map(|s| serde_json::from_str(s).unwrap())
+            .collect();
+        if enabled == Some(true) {
+            assert_eq!(rows.len(), 3);
+            for (index, row) in rows.iter().enumerate() {
+                assert_eq!(row["event"], "wan_request");
+                assert_eq!(row["request_ordinal"], index + 1);
+                assert_eq!(row["scope"], hex(&[1; 32]));
+                assert_eq!(row["http_status"], 200);
+            }
+            assert_eq!(rows[0]["codec_cache"]["preparations"], 0);
+            assert_eq!(rows[1]["codec_cache"]["preparations"], 1);
+            assert_eq!(rows[2]["codec_cache"]["preparations"], 1);
+            assert_eq!(rows[2]["codec_cache"]["hits"], 1);
+        } else {
+            assert!(rows.is_empty());
+        }
+        let mut reopened = Endpoint::open(&cache, Limits::default(), BenchAuthority).unwrap();
+        for bytes in std::iter::once(&artifact).chain(targets.iter()) {
+            assert_eq!(
+                reopened
+                    .read_object(&wan::context([1; 32]), object_id(bytes))
+                    .unwrap(),
+                *bytes
+            );
+        }
+    }
+}
+
+#[test]
+fn observed_origin_rejects_failed_logging_and_does_not_observe_unauthorized_requests() {
+    for authorized in [false, true] {
+        let t = Temp::new();
+        let endpoint =
+            Endpoint::open(&t.0.join("cache"), Limits::default(), BenchAuthority).unwrap();
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let url = format!("http://{}", listener.local_addr().unwrap());
+        let task = thread::spawn(move || {
+            let mut observed = 0;
+            let result = wan::serve_observed(
+                listener,
+                endpoint,
+                TOKEN,
+                &BTreeSet::from([[1; 32]]),
+                Duration::from_secs(10),
+                1,
+                |observation| {
+                    observed += 1;
+                    assert_eq!(observation.scope, [1; 32]);
+                    assert_eq!(observation.request_ordinal, 1);
+                    assert_eq!(observation.http_status, 200);
+                    Err(Error::Storage)
+                },
+            );
+            (result, observed)
+        });
+        let mut http =
+            HttpClient::new(&url, TOKEN, if authorized { [1; 32] } else { [9; 32] }).unwrap();
+        assert!(http.exchange(&frames(b"observed payload")).is_err());
+        let (result, observed) = task.join().unwrap();
+        assert_eq!(observed, usize::from(authorized));
+        if authorized {
+            assert!(matches!(result, Err(Error::Storage)));
+        } else {
+            assert!(result.is_ok());
+        }
+    }
 }
 fn frames(bytes: &[u8]) -> Vec<Frame> {
     let mut body = vec![0];

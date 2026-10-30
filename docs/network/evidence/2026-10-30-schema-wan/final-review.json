@@ -1,0 +1,45 @@
+{
+  "milestone": "SC-WAN-004",
+  "reviewer": "selector_tests",
+  "procedural_audit": {
+    "status": "PASS",
+    "sequence": "Recorded before independent code/Rust and split-author security reviews.",
+    "approved_design_plan_commit": "07ef94df8c85779e46c2668cf54ad5a30eff66b7",
+    "actual_receipts": {"all_target_passed":299,"failed":0,"historical_ignored":2,"doctests_passed":1,"final_harness_tests_passed":16,"final_clippy_exit":0,"final_build_exit":0,"server_focused_passed":12,"workflow_gate_passed":3},
+    "native_initial_qualification_command": "exec-c9a623a9-ca2c-4eeb-a58a-177f66352c4b",
+    "focused_coverage": {"wan_lines":[426,470],"wan_functions":[33,35],"cli_lines":[101,108],"cli_functions":[7,7],"branch_mcdc":"not collected"},
+    "retained_resolved_failures": ["Behavioral server RED and missing-API harness RED retained.","E0689 request index corrected with usize annotation.","Bash3.2 conditional errexit issue corrected with explicit guard exits; original failure and successful rerun retained.","Unsupported --no-report/--no-clean combination rejected before tests, then corrected current-object coverage collected.","First Clippy redundant closure failure retained; minimal replacement and final16-test/Clippy/build qualification passed."],
+    "independence": "Parent separately reviewed selector_tests-authored explicit-exit workflow correction; remaining review is independent of source authors.",
+    "scope": "Existing native execution receipts and retained qualification only. Formal outputs preserved per user; no new broad tests, build, measurement, analyzer or archive.",
+    "blockers": []
+  },
+  "code_rust_review": {
+    "status":"PASS",
+    "performed_after_procedural_pass":true,
+    "baseline_design_commit":"07ef94df8c85779e46c2668cf54ad5a30eff66b7",
+    "source_sha256": {
+      "src/wan.rs":"36f4126d188c7fc9e2e81f88dfac4e9212afb3e9263fd058556611ce8e803867",
+      "src/bin/spiralcore-wan.rs":"35d7c308e53734a9662fda5e170a81aff4397cc99c084e3c30978aa263366b38",
+      "examples/schema_fitting.rs":"416c9cb10dacc296b7ae1b7cee77862ba8a3379629e625da8502148906321978",
+      "examples/support/schema_wan.rs":"ae9a20f8aa5e2b7964b82548da75ca28e9a2675ae91b0e0a85c8cdc89865473d",
+      ".github/workflows/spiralcore-schema-wan.yml":"a92de45d97c41e80cbd339aceb00f77c3ca6c9b34c75bd437e8b59ae72d3bf42",
+      "tests/schema_wan_workflow.rs":"26cc39451e763ff59f2c9a2fef79e4b139cf9e7cb213d00f043c4c9e50763d25",
+      "tests/wan.rs":"b362197da7277cdc3d774b824da518d21878b66c4a9ffe2b0b35bbe1fb7a5654"
+    },
+    "reviewed": [
+      "Strict v4 boolean cache admission before store creation; old serve API remains a no-observer wrapper over the same authenticated bounded loop.",
+      "Only admitted complete requests are observed, after handler timing and before response I/O; credentials/payloads are absent, ordinal gaps remain visible, observer errors abort instead of dropping evidence.",
+      "Plans regenerate bounded artifact/fixture/scope identities, conservative storage charges and operation limits. Thirty trial blocks per size balance all six source-arm permutations; sessions have isolated scopes and ten distinct targets.",
+      "Source-derived baseline permits only the frozen schema replacement, with same platform/features and common harness. Frozen artifacts, no refitting, no silent retry or dropped worker failure.",
+      "Sender CPU includes local HTTP/TLS; receiver-handler CPU is disjoint and summed once. Exchange elapsed is nested, observer cost is excluded only from handler metrics, and actual preparations/seeds enter session totals.",
+      "Successful remote publication is explicitly pending stopped-store verification. Final summary requires all three shards,1920 exact regenerated readbacks, complete ordered request/cache telemetry and660 before/after body/mode pairs; malformed family/identity/accounting/parity receipts fail.",
+      "Workflow pins source/attempt/actions, limits permissions and secret scope, restores the sole baseline substitution, checks frozen binaries and retains partial evidence. Parent independently reviewed this reviewer's explicit-exit guard correction. Final workflow names the existing schema_prepared baseline test target and accurately describes shared dependency artifacts."
+    ],
+    "findings":[],
+    "limits":["No new reviewer builds/tests or performance runs during this gate; uses existing actual qualification.","Source reviewed at these content hashes before final commit freeze; campaign still requires exact frozen executable/plan custody and split-author security approval.","HTTP bodies and bounded CPU subtotal only; no complete packet-path, pure wire-time, energy, FIPS or MVM claim."],
+    "premeasurement_verdict":"APPROVED_SUBJECT_TO_SECURITY_AND_FROZEN_CUSTODY"
+  },
+  "security_review": {"status":"SEPARATE_REVIEWS_PENDING"},
+  "measurement_status": "NOT_RUN",
+  "publication_status": "PENDING_POST_AUDIT_REVIEWS_AND_RESULTS"
+}

@@ -1,0 +1,46 @@
+{
+  "role": "independent security-reviewer",
+  "roster": "d1927d9e7ce51354",
+  "status": "APPROVED_SCOPED_SECURITY_AFTER_RESOLVED_WORKFLOW_FINDING",
+  "head_at_review": "07ef94df8c85779e46c2668cf54ad5a30eff66b7",
+  "scope": "WAN harness, schema_fitting dispatch/fixture guard and workflow; excludes reviewer-authored wan.rs/server/tests",
+  "reviewed_files": {
+    "crates/spiralcore-transfer/examples/support/schema_wan.rs": "ae9a20f8aa5e2b7964b82548da75ca28e9a2675ae91b0e0a85c8cdc89865473d",
+    "crates/spiralcore-transfer/examples/schema_fitting.rs": "416c9cb10dacc296b7ae1b7cee77862ba8a3379629e625da8502148906321978",
+    ".github/workflows/spiralcore-schema-wan.yml": "a92de45d97c41e80cbd339aceb00f77c3ca6c9b34c75bd437e8b59ae72d3bf42"
+  },
+  "procedural_audit_sha256": "2658d304396ed03ee2dadbd76e7de4001aa1881a079ab341f1f26f3ac220c135",
+  "retained_qualification": {
+    "qualification/harness-tdd.json": "eab57da3af53f993880f4ab11daeb69cb573ce0d305ee973753b1854ad339a24",
+    "qualification/harness-green-final.txt": "0904732bfea048ea20c6d6822326180b268342c94b089621dd2e89e451cfeaa2",
+    "qualification/clippy-attempt2.txt": "e3561ca84447050abb63858b52d3afe274c00ea5f03de0b58c32889160ca74e2",
+    "qualification/build.txt": "1e49cf0991193f84fcd8d90cc9742cd0a750ad885c56c882c554797a65ae69e8",
+    "qualification/workflow-final.txt": "8449feb052fffd3994475c8ba1f0e30facae1ae3f1e933773048e288d70a7581"
+  },
+  "checks": [
+    "Credential exists only in the final workflow transfer step environment; no token arguments or intentional secret output. Receiver URLs are constrained to HTTPS trycloudflare origins by workflow and the shared HttpClient rejects redirects, embedded credentials, query/fragment and non-loopback plaintext HTTP.",
+    "Pinned checkout/upload actions, source/ref/first-attempt gates, read-only repository permission, fresh target and compiler/feature capture. Baseline substitutes only the pinned old schema source, captures diff, restores current source and checks all recorded source hashes.",
+    "Plan regenerates deterministic 30-trial/three-shard bounded fixture registrations. Each shard has60 isolated scopes,600 targets40seeds, conservative storage below768MiB; fixed fixture range and unchanged receiver resource limits bound actual transfers.",
+    "Session identities bind source maps, executable digests, platform/features, plan and receiver identity labels. The baseline is explicitly source-derived, not a claimed unchanged historical checkout.",
+    "No shell interpolation of child arguments; fresh create_new outputs and scoped session scratch directory; child failures and partial rows retained without retries. Successful consolidated rows retain child content hashes.",
+    "Stopped-store verifier regenerates all640 expected objects per shard and compares full byte strings. Summary requires1920 unique exact readbacks, registered row order/counts/family labels, body/mode parity, source identities and per-operation receiver cache counter progression.",
+    "Sender process CPU and reported receiver handler CPU are disjoint; exchange time is a subset; setup included in session totals; packet/full-path/energy/compliance claims are not made."
+  ],
+  "findings": [],
+  "resolved_findings": [
+    {
+      "severity": "blocking execution defect",
+      "path": ".github/workflows/spiralcore-schema-wan.yml",
+      "finding": "Baseline qualification named nonexistent test target schema_zstd, which would stop the job before WAN execution.",
+      "resolution": "Parent replaced it with existing schema_prepared; current command targets schema_codec/schema_prepared/schema_reuse. Reviewer inspected actual test paths and retained workflow-final.txt shows3/3guard tests passed.",
+      "verified_current_workflow_sha256": "a92de45d97c41e80cbd339aceb00f77c3ca6c9b34c75bd437e8b59ae72d3bf42"
+    }
+  ],
+  "limitations": [
+    "No review of reviewer-authored server implementation; independent server review is separate.",
+    "No new builds, tests, experiments or dependency audit were run by this reviewer. Observed existing qualification includes16 harness tests, successful Clippy/build and3 final workflow guard tests.",
+    "Plans, executable paths, local evidence files and the operator-controlled receiver are trusted measurement inputs. Source/executable hashes establish custody, not remote hardware attestation. Receiver binary hash is operator supplied.",
+    "HTTPS terminates at the relay. This is public synthetic benchmark traffic, not end-to-end encryption or FIPS/CUI qualification.",
+    "Approval covers premeasurement harness/workflow security, not a WAN result. Actual workflow execution, stopped-store verification and final results consistency remain required."
+  ]
+}

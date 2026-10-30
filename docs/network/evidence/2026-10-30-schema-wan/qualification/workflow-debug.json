@@ -1,0 +1,31 @@
+{
+  "milestone": "SC-WAN-004",
+  "status": "RESOLVED",
+  "scope": "Actual workflow CONFIG/AUTH gates and existing local contract-test executable only.",
+  "original_failure": {
+    "log": "workflow-green.txt",
+    "sha256": "cbe011c48a39a6302fa70e283c459d9b2f1fec3268bcb0e80ade7b6d4cd87e9a",
+    "exit": 101,
+    "result": "Two tests accepted an invalid branch or empty first receiver URL; AUTH test passed. Original output is preserved unchanged."
+  },
+  "root_cause": "On the installed /bin/bash 3.2.57, errexit did not stop execution after standalone failing [[ ... ]] expressions. The CONFIG fragment's later successful checks masked earlier failures. Marker extraction and whitespace were not the cause.",
+  "reproduction": {
+    "native_output_chunk": "f4dec4",
+    "minimal_command": "/usr/bin/env -i /bin/bash -eu -o pipefail -c '[[ bad == good ]]; true'",
+    "observed_exit": 0,
+    "actual_extracted_gate": "Same CONFIG gate with synthetic public environment and GITHUB_REF=refs/heads/main, /bin/bash -eux -o pipefail; trace shows failed initial comparison, subsequent checks execute, final status 0. No real credential was used or printed."
+  },
+  "fix": "Append explicit || exit 1 to each actual CONFIG/AUTH guard, making rejection independent of shell errexit behavior. No Rust test or production source changed.",
+  "verification": {
+    "command": "/Users/casey.allard/spiralcore/target/aarch64-apple-darwin/release/deps/schema_wan_workflow-ea0ab124cca30cbb",
+    "log": "workflow-green-attempt2.txt",
+    "sha256": "145a762342ab93b9eb5a93f2f1c8009fcac8dc8dec3cae6dab3b7dd4d59c70d3",
+    "exit": 0,
+    "passed": 3,
+    "failed": 0,
+    "build_performed": false
+  },
+  "test_source_sha256": "26cc39451e763ff59f2c9a2fef79e4b139cf9e7cb213d00f043c4c9e50763d25",
+  "workflow_after_fix_sha256": "71e53212348e030019b1485ac14dac24fef281274af50fe3c8503f1bed8a67de",
+  "review_independence": "selector_tests authored only this narrow explicit-exit correction while acting as debugger; parent must review these changed guard lines independently. The remaining workflow infrastructure review is separate."
+}

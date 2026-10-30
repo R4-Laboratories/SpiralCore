@@ -1,0 +1,36 @@
+   Compiling spiralcore-transfer v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer)
+    Finished `release` profile [optimized] target(s) in 1.58s
+     Running tests/schema_wan_workflow.rs (/Users/casey.allard/spiralcore/target/aarch64-apple-darwin/release/deps/schema_wan_workflow-ea0ab124cca30cbb)
+
+running 3 tests
+test schema_wan_workflow_requires_a_full_secret_without_fallback ... FAILED
+test schema_wan_workflow_accepts_only_the_pinned_first_attempt ... FAILED
+test schema_wan_workflow_restricts_every_receiver_url ... FAILED
+
+failures:
+
+---- schema_wan_workflow_requires_a_full_secret_without_fallback stdout ----
+
+thread 'schema_wan_workflow_requires_a_full_secret_without_fallback' (64663095) panicked at tests/schema_wan_workflow.rs:7:45:
+schema WAN workflow must exist: Os { code: 2, kind: NotFound, message: "No such file or directory" }
+
+---- schema_wan_workflow_accepts_only_the_pinned_first_attempt stdout ----
+
+thread 'schema_wan_workflow_accepts_only_the_pinned_first_attempt' (64663094) panicked at tests/schema_wan_workflow.rs:7:45:
+schema WAN workflow must exist: Os { code: 2, kind: NotFound, message: "No such file or directory" }
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- schema_wan_workflow_restricts_every_receiver_url stdout ----
+
+thread 'schema_wan_workflow_restricts_every_receiver_url' (64663096) panicked at tests/schema_wan_workflow.rs:7:45:
+schema WAN workflow must exist: Os { code: 2, kind: NotFound, message: "No such file or directory" }
+
+
+failures:
+    schema_wan_workflow_accepts_only_the_pinned_first_attempt
+    schema_wan_workflow_requires_a_full_secret_without_fallback
+    schema_wan_workflow_restricts_every_receiver_url
+
+test result: FAILED. 0 passed; 3 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `--test schema_wan_workflow`
