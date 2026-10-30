@@ -20,6 +20,19 @@ remain tied to their measured source; later results do not overwrite earlier neg
 
 ## Measured object sizes
 
+SC-OPT-009 implements packed CA evolution and immutable prepared sender predictions
+at source `384ad3af2a41e87643bd0678120b854e5fe7244b`, compared with `d4532b0`.
+The single ten-trial paired campaign completed 360 targets and 360 seeds with exact
+reopened bytes and unchanged runtime body costs. Large standalone replay CPU fell
+from 228.305 to 12.184 ms; generated transfer CPU fell from 559.601 to 139.071 ms
+with packed replay and to 117.050 ms with prepared reuse. Preparation costs
+19.228 ms CPU and retains 14,854,835 bytes, actually reused across three sends.
+Raw/zstd/adaptive still use less CPU locally. See the
+[full result](replay-cpu-results-2026-10-30.md) and
+[raw observations](evidence/2026-10-30-replay-cpu/paired.jsonl).
+The separate 36-operation baseline phase profile is retained; no extra WAN or
+energy claim is made. Targeted validation logs are retained as formal evidence.
+
 | Size | Executed evidence | Qualification boundary |
 |---|---|---|
 | 142,738 bytes and 14,851,384 bytes | SC-OPT-008: actual coupled-runtime trace sizes; ten paired local trials per case and three paired real-WAN trials per large case. All 552 seed/target operations exact after reopen. | [Runtime result](shared-runtime-results-2026-10-30.md). Conditional model-generated workload savings; local CPU/wall losses and WAN losses to zstd retained. |
