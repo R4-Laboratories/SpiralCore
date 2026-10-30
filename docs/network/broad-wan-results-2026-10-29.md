@@ -2,7 +2,7 @@
 
 Measured source: `9dce4c57d1f41cef7365b297cd690849afce34e7`.
 Run: `d6aaa0f15da9ccbc62c005a1802532b3e85ad6d901886eea6fbd0076b2d312e4`.
-Six of twelve registered cases are complete and independently reviewed. Remaining
+Seven of twelve registered cases are complete and independently reviewed. Remaining
 cases must not be inferred from this result. The complete registration is in the
 [workload plan](../plans/2026-10-29-broader-wan-and-scaling.md).
 
@@ -198,6 +198,30 @@ The unchanged independent checker agrees with raw receipts and author statistics
 and all five captures meet the completeness criteria. The
 [complete append packet](evidence/2026-10-29-broad-wan/cases/append_4096/README.md)
 retains the complete observations and custody.
+
+## Completed case: 4 KiB truncation
+
+Truncating each 16,777,216-byte base produces a 16,773,120-byte target. Thirty
+paired trials retain the same four methods and separate paid seeds.
+
+| Warm update | Median request + reply HTTP-body bytes | Median elapsed, including computation | Median sender + receiver-handler CPU |
+|---|---:|---:|---:|
+| Raw full send | 16,809,797 | 1,975.651 ms | 93.868 ms |
+| Ordinary zstd | 16,809,797 | 1,946.954 ms | 94.925 ms |
+| Zstd prefix delta | 26,198 | 249.798 ms | 96.581 ms |
+| Sparse COPY/LITERAL | 550 | 227.314 ms | 70.224 ms |
+
+Sparse uses 99.99672810% fewer HTTP-body bytes than raw, with an 8.691284×
+ratio of median elapsed times and approximately 25.19% lower median combined
+CPU. Including seed and one update, raw uses median 33,623,823 body bytes and
+3,938.798 ms; sparse uses 16,814,576 bytes and 2,170.173 ms; zstd prefix uses
+16,840,224 bytes and 2,216.160 ms.
+
+All 240 operations reopened exactly, totaling 4,026,040,320 compared bytes.
+Independent review agrees with every raw receipt and the author statistics;
+all five captures meet the completeness criteria. The
+[complete truncation packet](evidence/2026-10-29-broad-wan/cases/truncate_4096/README.md)
+retains the observations, verification and custody.
 
 ## Qualification and measurement boundaries
 
