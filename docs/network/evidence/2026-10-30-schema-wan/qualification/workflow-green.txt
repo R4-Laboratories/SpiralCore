@@ -1,0 +1,26 @@
+
+running 3 tests
+test schema_wan_workflow_restricts_every_receiver_url ... FAILED
+test schema_wan_workflow_accepts_only_the_pinned_first_attempt ... FAILED
+test schema_wan_workflow_requires_a_full_secret_without_fallback ... ok
+
+failures:
+
+---- schema_wan_workflow_restricts_every_receiver_url stdout ----
+
+thread 'schema_wan_workflow_restricts_every_receiver_url' (64668988) panicked at tests/schema_wan_workflow.rs:72:13:
+accepted SCHEMA_URL_0: 
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- schema_wan_workflow_accepts_only_the_pinned_first_attempt stdout ----
+
+thread 'schema_wan_workflow_accepts_only_the_pinned_first_attempt' (64668986) panicked at tests/schema_wan_workflow.rs:58:9:
+accepted GITHUB_REF
+
+
+failures:
+    schema_wan_workflow_accepts_only_the_pinned_first_attempt
+    schema_wan_workflow_restricts_every_receiver_url
+
+test result: FAILED. 1 passed; 2 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+

@@ -1,0 +1,48 @@
+{
+  "schema": "spiralcore.sc-wan-004.security-review.v1",
+  "verdict": "APPROVE_SCOPED_SERVER_CHANGES",
+  "blocking_findings": [],
+  "reviewer_role": "security-reviewer",
+  "roster": "d1927d9e7ce51354",
+  "independence": "Reviewer authored the measurement harness, not these production server changes. This approval excludes that harness, workflow and performance results.",
+  "comparison_base": "cf490d3b4acdd9c3a417784042bd8e3a2d9c3640",
+  "review_context_head": "07ef94df8c85779e46c2668cf54ad5a30eff66b7",
+  "source_scope": "Exact working-tree file hashes below; implementation not yet committed at review time",
+  "post_procedural_audit": {
+    "verdict": "PASS",
+    "path": ".agent-sync/AUDIT.md",
+    "sha256_at_review": "73e630abdc85ef2ab5a32b8d5a51868e0515d271e6ea30ab622438406c78f9fd"
+  },
+  "files": {
+    "crates/spiralcore-transfer/src/wan.rs": "36f4126d188c7fc9e2e81f88dfac4e9212afb3e9263fd058556611ce8e803867",
+    "crates/spiralcore-transfer/src/bin/spiralcore-wan.rs": "35d7c308e53734a9662fda5e170a81aff4397cc99c084e3c30978aa263366b38",
+    "crates/spiralcore-transfer/tests/wan.rs": "b362197da7277cdc3d774b824da518d21878b66c4a9ffe2b0b35bbe1fb7a5654"
+  },
+  "reviewed_invariants": [
+    "Missing codec_cache_enabled remains false; explicit configuration requires a boolean under the known v4 plan. Invalid values fail before cache creation. Enablement occurs before serving.",
+    "The unchanged constant-time bearer check and admitted-scope check run before request-body allocation/processing and before observation. Rejected authorization and incomplete bodies never invoke the observer.",
+    "Observation exposes only the admitted opaque scope, request ordinal, HTTP status and numeric cache counters. The CLI serializes fixed JSON keys and no token, headers or payload. Policy output contains only the enum and boolean.",
+    "process() completes and seals its receiver CPU/wall fields before the callback. Logging is outside handler timing but inside client-observed completion latency, as documented.",
+    "Serialization, newline-write or flush errors propagate and terminate observed serving. A failed observer does not send a success reply or silently continue. Durable publication may already have happened before such a failure; this remains an interrupted acknowledgment, not rollback.",
+    "The existing serve API delegates with no observer; that path does not collect codec statistics. HTTP framing, request limits, loopback binding, close-after-response behavior and default cache behavior remain intact.",
+    "No authentication, decoder, object publication, dependency or resource-limit implementation changed. Existing namespace-keyed codec retention and shared quota enforcement remain in Endpoint."
+  ],
+  "validation_reused": {
+    "receipt": "qualification/server-green-attempt1.txt",
+    "passed": 12,
+    "failed": 0,
+    "relevant_cases": [
+      "invalid cache settings rejected before store creation",
+      "absent/false cache configuration retains no-observer behavior",
+      "explicit cache reuse records one preparation and a later hit, without the token in logs",
+      "unauthorized scopes do not reach the callback",
+      "observer failure terminates serving",
+      "exact bytes survive stopped-store reopening"
+    ]
+  },
+  "limits": [
+    "Read-only source/security review with existing test receipts; no new builds, tests or transfers were run by this review.",
+    "The observer runs after handler completion; HTTP status 200 alone is not a protocol commit or client receipt proof.",
+    "This bounded public-synthetic relay experiment is not a production deployment, end-to-end confidentiality assessment, FIPS qualification or WAN performance result."
+  ]
+}

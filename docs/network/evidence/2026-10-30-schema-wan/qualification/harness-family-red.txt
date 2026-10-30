@@ -1,0 +1,22 @@
+   Compiling spiralcore-transfer v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer)
+    Finished `release` profile [optimized] target(s) in 4.71s
+     Running unittests examples/schema_fitting.rs (/Users/casey.allard/spiralcore/target/aarch64-apple-darwin/release/examples/schema_fitting-7613bc07ce0df06f)
+
+running 1 test
+test schema_wan::tests::family_label_must_match_the_frozen_target ... FAILED
+
+failures:
+
+---- schema_wan::tests::family_label_must_match_the_frozen_target stdout ----
+
+thread 'schema_wan::tests::family_label_must_match_the_frozen_target' (64712527) panicked at examples/support/schema_wan.rs:1054:9:
+assertion failed: validate_shard(&p, "unit-test-digest", &raw, &verified).is_err()
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    schema_wan::tests::family_label_must_match_the_frozen_target
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 15 filtered out; finished in 1.09s
+
+error: test failed, to rerun pass `--example schema_fitting`

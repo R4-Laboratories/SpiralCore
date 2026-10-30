@@ -1,0 +1,87 @@
+{
+  "milestone": "SC-WAN-004",
+  "reviewer": "selector_tests",
+  "procedural_audit": {
+    "status": "PASS",
+    "sequence": "Recorded before independent code/Rust and split-author security reviews.",
+    "approved_design_plan_commit": "07ef94df8c85779e46c2668cf54ad5a30eff66b7",
+    "actual_receipts": {"all_target_passed":299,"failed":0,"historical_ignored":2,"doctests_passed":1,"final_harness_tests_passed":16,"final_clippy_exit":0,"final_build_exit":0,"server_focused_passed":12,"workflow_gate_passed":3},
+    "native_initial_qualification_command": "exec-c9a623a9-ca2c-4eeb-a58a-177f66352c4b",
+    "focused_coverage": {"wan_lines":[426,470],"wan_functions":[33,35],"cli_lines":[101,108],"cli_functions":[7,7],"branch_mcdc":"not collected"},
+    "retained_resolved_failures": ["Behavioral server RED and missing-API harness RED retained.","E0689 request index corrected with usize annotation.","Bash3.2 conditional errexit issue corrected with explicit guard exits; original failure and successful rerun retained.","Unsupported --no-report/--no-clean combination rejected before tests, then corrected current-object coverage collected.","First Clippy redundant closure failure retained; minimal replacement and final16-test/Clippy/build qualification passed."],
+    "independence": "Parent separately reviewed selector_tests-authored explicit-exit workflow correction; remaining review is independent of source authors.",
+    "scope": "Existing native execution receipts and retained qualification only. Formal outputs preserved per user; no new broad tests, build, measurement, analyzer or archive.",
+    "blockers": []
+  },
+  "code_rust_review": {
+    "status":"PASS",
+    "performed_after_procedural_pass":true,
+    "baseline_design_commit":"07ef94df8c85779e46c2668cf54ad5a30eff66b7",
+    "source_sha256": {
+      "src/wan.rs":"36f4126d188c7fc9e2e81f88dfac4e9212afb3e9263fd058556611ce8e803867",
+      "src/bin/spiralcore-wan.rs":"35d7c308e53734a9662fda5e170a81aff4397cc99c084e3c30978aa263366b38",
+      "examples/schema_fitting.rs":"416c9cb10dacc296b7ae1b7cee77862ba8a3379629e625da8502148906321978",
+      "examples/support/schema_wan.rs":"ae9a20f8aa5e2b7964b82548da75ca28e9a2675ae91b0e0a85c8cdc89865473d",
+      ".github/workflows/spiralcore-schema-wan.yml":"a92de45d97c41e80cbd339aceb00f77c3ca6c9b34c75bd437e8b59ae72d3bf42",
+      "tests/schema_wan_workflow.rs":"26cc39451e763ff59f2c9a2fef79e4b139cf9e7cb213d00f043c4c9e50763d25",
+      "tests/wan.rs":"b362197da7277cdc3d774b824da518d21878b66c4a9ffe2b0b35bbe1fb7a5654"
+    },
+    "reviewed": [
+      "Strict v4 boolean cache admission before store creation; old serve API remains a no-observer wrapper over the same authenticated bounded loop.",
+      "Only admitted complete requests are observed, after handler timing and before response I/O; credentials/payloads are absent, ordinal gaps remain visible, observer errors abort instead of dropping evidence.",
+      "Plans regenerate bounded artifact/fixture/scope identities, conservative storage charges and operation limits. Thirty trial blocks per size balance all six source-arm permutations; sessions have isolated scopes and ten distinct targets.",
+      "Source-derived baseline permits only the frozen schema replacement, with same platform/features and common harness. Frozen artifacts, no refitting, no silent retry or dropped worker failure.",
+      "Sender CPU includes local HTTP/TLS; receiver-handler CPU is disjoint and summed once. Exchange elapsed is nested, observer cost is excluded only from handler metrics, and actual preparations/seeds enter session totals.",
+      "Successful remote publication is explicitly pending stopped-store verification. Final summary requires all three shards,1920 exact regenerated readbacks, complete ordered request/cache telemetry and660 before/after body/mode pairs; malformed family/identity/accounting/parity receipts fail.",
+      "Workflow pins source/attempt/actions, limits permissions and secret scope, restores the sole baseline substitution, checks frozen binaries and retains partial evidence. Parent independently reviewed this reviewer's explicit-exit guard correction. Final workflow names the existing schema_prepared baseline test target and accurately describes shared dependency artifacts."
+    ],
+    "findings":[],
+    "limits":["No new reviewer builds/tests or performance runs during this gate; uses existing actual qualification.","Source reviewed at these content hashes before final commit freeze; campaign still requires exact frozen executable/plan custody and split-author security approval.","HTTP bodies and bounded CPU subtotal only; no complete packet-path, pure wire-time, energy, FIPS or MVM claim."],
+    "premeasurement_verdict":"APPROVED_SUBJECT_TO_SECURITY_AND_FROZEN_CUSTODY"
+  },
+  "security_review": {
+    "status":"PASS",
+    "independence":"Split-author reviews: measurement owner reviewed production server; server owner reviewed harness/workflow.",
+    "server_receipt_sha256":"f0a3b577041caace4b62e73750bb6e5326b494bb31aef851d770af6b24205e9d",
+    "harness_receipt_sha256":"c5e1aee6e0f9321413dbcd30329504184269cea7f22b7d71c3b3a339e8519a58"
+  },
+  "results_review": {
+    "status":"PASS",
+    "method":"Bounded read-only jq recomputation and existing source/artifact checksum checks; no new tests, builds, measurements or analyzer project.",
+    "measured_source":"2fcfb0dae9524c073f6aab8982736fb4b9242173",
+    "github_run":41128434555,
+    "github_conclusion":"success",
+    "artifact_id":13012237353,
+    "downloaded_artifact_members_verified":41,
+    "source_files_verified":76,
+    "summary_sha256":"5a55be2789edb3c50a1e768dd5099f1163949322d7361ffecd659cad37ffab66",
+    "raw_shard_sha256":["c424694af177a7057f82a8f3a596426c280ff16ba87714141710bcb544afe2ae","cc06adbcf319b27ff1fd587be0be0f75dc182fefda1b1317ac5101d88cfdb8ef","ae396cdef5e9288425a49d5f170da9c8ddd20b06da79922751b15497febcf1fc"],
+    "report_sha256":"cc6934e6900a253341fde496d8ffbf7984feb9299a4f772b22b33c6c097eaa90",
+    "frozen_executable_sha256": {
+      "linux_baseline":"a646958e2ba2e651937ac265b89cb280c28cc0e989e716ee7c5899b5dc7fe8c2",
+      "linux_candidate":"ab967ead820af3cca47552d0bd66a9e9f114ee7860128f9c925dc1bbbbcbe576",
+      "macos_receiver":"c6ae8bf6c516367166fe2bb5f43f4dff016f5d0b22998f0acc3c3e280dce5e90",
+      "macos_verifier":"3ef632e38b699c91f7c223570355e4a0990695f50c3f72899778a9ff38d2c77a"
+    },
+    "verified": {
+      "shards":3,"sessions":180,"nested_observations":2400,"targets":1800,"seeds":120,"preparations":120,
+      "unique_exact_stopped_store_readbacks":1920,"source_pair_body_mode_checks":660,"ordered_http_observations":1920,
+      "cell_metric_distributions":400,"setup_inclusive_session_totals":180,"paired_family_ratio_distributions":120,
+      "paired_setup_ratio_distributions":30,"actual_use_total_cells":6,"numeric_report_table_rows":14,
+      "successful_campaign_error_rows":0,"decoder_preparations":120,"decoder_hits":470,"decoder_evictions":96
+    },
+    "normal_large_paired_candidate_over_baseline": {"sender_cpu":0.6833234452844276,"cpu_subtotal":0.9002409358379674,"elapsed":0.888096945217898,"body_bytes":1.0},
+    "normal_large_paired_candidate_over_zstd": {"cpu_subtotal":1.4836557047216812,"elapsed":0.9705160840942147,"body_bytes":0.9772346127597415},
+    "conclusion":"All raw/plan/source/executable identities, ordered scopes, full readback joins, cache progression, distributions, paired ratios, setup totals and displayed report values agree. Local and hosted plans are byte-identical; product/harness source is unchanged between implementation and measured commits. README/delivery/ledger claims remain consistent.",
+    "failures_and_limits_preserved":[
+      "Earlier service launch was cancelled before the transfer step; its actual failure and empty-store evidence remain preserved. Successful campaign contains no discarded or retried measured operation.",
+      "Each receiver has one ordinal gap matching the retained unauthenticated reachability probe; actual640 admitted request rows per shard match embedded verification telemetry.",
+      "Ordinary zstd retains lower CPU and faster paid mixed-session totals. First-use connection costs, small/drift losses and WAN/shared-desktop variability are explicit.",
+      "Comparator profiles differ (chunked level1 zstd versus level3 compressed schema), so no isolated schema benefit over equally tuned whole-object compression is claimed.",
+      "HTTP-body bytes and disjoint sender-plus-handler CPU subtotal only; no complete-path bytes, pure-wire time, energy, shaped acceptance, FIPS or MVM qualification."
+    ],
+    "blockers":[]
+  },
+  "measurement_status": "COMPLETE_EXACT_PAIRED_WAN_CAMPAIGN",
+  "publication_status": "APPROVED_CODE_RUST_SECURITY_AND_RESULTS"
+}

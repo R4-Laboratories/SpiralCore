@@ -1,7 +1,7 @@
 //! Bounded HTTP relay adapter for public, synthetic two-host experiments.
 //! HTTPS terminates at the configured relay; this is not end-to-end encryption.
 use crate::{
-    endpoint::{Authority, Context, Endpoint, Limits},
+    endpoint::{Authority, CodecCacheStats, Context, Endpoint, Limits},
     hex,
     protocol::Frame,
     Error, Id, Result, MAX_FRAME,
@@ -409,13 +409,64 @@ fn process(
     out[16..24].copy_from_slice(&(wall.elapsed().as_micros() as u64).to_le_bytes());
     Ok(out)
 }
+/// Optional experiment telemetry. No request payload or credential is included.
+#[derive(Debug, Clone, Copy)]
+pub struct RequestObservation {
+    pub request_ordinal: usize,
+    pub scope: Id,
+    pub http_status: u16,
+    pub codec_cache: CodecCacheStats,
+}
+
 pub fn serve(
+    listener: TcpListener,
+    endpoint: Endpoint<BenchAuthority>,
+    token: &str,
+    scopes: &BTreeSet<Id>,
+    duration: Duration,
+    max_requests: usize,
+) -> Result<()> {
+    serve_inner(
+        listener,
+        endpoint,
+        token,
+        scopes,
+        duration,
+        max_requests,
+        None,
+    )
+}
+
+/// Observe admitted, fully received requests after handler timing and before
+/// response I/O. Observer errors terminate the run rather than lose evidence.
+pub fn serve_observed(
+    listener: TcpListener,
+    endpoint: Endpoint<BenchAuthority>,
+    token: &str,
+    scopes: &BTreeSet<Id>,
+    duration: Duration,
+    max_requests: usize,
+    mut observer: impl FnMut(RequestObservation) -> Result<()>,
+) -> Result<()> {
+    serve_inner(
+        listener,
+        endpoint,
+        token,
+        scopes,
+        duration,
+        max_requests,
+        Some(&mut observer),
+    )
+}
+
+fn serve_inner(
     listener: TcpListener,
     mut endpoint: Endpoint<BenchAuthority>,
     token: &str,
     scopes: &BTreeSet<Id>,
     duration: Duration,
     max_requests: usize,
+    mut observer: Option<&mut dyn FnMut(RequestObservation) -> Result<()>>,
 ) -> Result<()> {
     parse_id(token).map_err(|_| Error::Unauthorized)?;
     if !listener.local_addr()?.ip().is_loopback()
@@ -490,6 +541,14 @@ pub fn serve(
                 Ok(b) => (200, b),
                 Err(_) => (400, Vec::new()),
             };
+            if let Some(observe) = observer.as_mut() {
+                observe(RequestObservation {
+                    request_ordinal: requests,
+                    scope,
+                    http_status: status,
+                    codec_cache: endpoint.codec_cache_stats(),
+                })?;
+            }
             // Do not let an idle pooled origin connection monopolize this serial endpoint.
             let _ = response(reader.get_mut(), status, &body, true, deadline);
         }

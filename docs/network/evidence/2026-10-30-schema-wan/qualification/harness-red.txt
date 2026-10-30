@@ -1,0 +1,66 @@
+   Compiling spiralcore-transfer v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer)
+error[E0425]: cannot find value `ARMS_WAN` in this scope
+  --> examples/support/schema_wan.rs:14:28
+   |
+14 |                 for arm in ARMS_WAN {
+   |                            ^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `scope` in this scope
+  --> examples/support/schema_wan.rs:15:43
+   |
+15 |                     assert!(scopes.insert(scope("qualified-run", trial, large, arm)));
+   |                                           ^^^^^
+   |
+help: a local variable with a similar name exists
+   |
+15 |                     assert!(scopes.insert(scopes("qualified-run", trial, large, arm)));
+   |                                                +
+help: consider importing this function
+   |
+ 6 +     use std::thread::scope;
+   |
+
+error[E0425]: cannot find function `scope` in this scope
+  --> examples/support/schema_wan.rs:23:20
+   |
+23 |         assert_ne!(scope("run-a", 0, false, "baseline"), scope("run-b", 0, false, "baseline"));
+   |                    ^^^^^
+   |
+help: a local variable with a similar name exists
+   |
+23 |         assert_ne!(scopes("run-a", 0, false, "baseline"), scope("run-b", 0, false, "baseline"));
+   |                         +
+help: consider importing this function
+   |
+ 6 +     use std::thread::scope;
+   |
+
+error[E0425]: cannot find function `scope` in this scope
+  --> examples/support/schema_wan.rs:23:58
+   |
+23 |         assert_ne!(scope("run-a", 0, false, "baseline"), scope("run-b", 0, false, "baseline"));
+   |                                                          ^^^^^
+   |
+help: a local variable with a similar name exists
+   |
+23 |         assert_ne!(scope("run-a", 0, false, "baseline"), scopes("run-b", 0, false, "baseline"));
+   |                                                               +
+help: consider importing this function
+   |
+ 6 +     use std::thread::scope;
+   |
+
+error[E0425]: cannot find function `order` in this scope
+  --> examples/support/schema_wan.rs:13:31
+   |
+13 |                 *counts.entry(order(trial, large).unwrap()).or_insert(0) += 1;
+   |                               ^^^^^ not found in this scope
+
+error[E0425]: cannot find function `order` in this scope
+  --> examples/support/schema_wan.rs:22:17
+   |
+22 |         assert!(order(30, false).is_err());
+   |                 ^^^^^ not found in this scope
+
+For more information about this error, try `rustc --explain E0425`.
+error: could not compile `spiralcore-transfer` (example "schema_fitting" test) due to 6 previous errors

@@ -1,0 +1,23 @@
+/Users/casey.allard/.cargo/bin/cargo +1.97.1 test --manifest-path crates/spiralcore-transfer/Cargo.toml --locked --release --target aarch64-apple-darwin --features hardware-sha256 --test wan campaign_origin_rejects_invalid_codec_cache_configuration_before_creating_cache -- --exact
+   Compiling spiralcore-transfer v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer)
+    Finished `release` profile [optimized] target(s) in 2.44s
+     Running tests/wan.rs (/Users/casey.allard/spiralcore/target/aarch64-apple-darwin/release/deps/wan-389577c4a414869b)
+
+running 1 test
+test campaign_origin_rejects_invalid_codec_cache_configuration_before_creating_cache ... FAILED
+
+failures:
+
+---- campaign_origin_rejects_invalid_codec_cache_configuration_before_creating_cache stdout ----
+
+thread 'campaign_origin_rejects_invalid_codec_cache_configuration_before_creating_cache' (64664343) panicked at tests/wan.rs:38:9:
+invalid codec cache setting was accepted
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    campaign_origin_rejects_invalid_codec_cache_configuration_before_creating_cache
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 9 filtered out; finished in 1.12s
+
+error: test failed, to rerun pass `--test wan`

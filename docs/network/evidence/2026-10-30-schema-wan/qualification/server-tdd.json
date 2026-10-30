@@ -1,0 +1,53 @@
+{
+  "status": "FOCUSED_GREEN",
+  "plan_revision": "07ef94d",
+  "scope": "Explicit receiver codec cache and optional request telemetry, unchanged protocol and default serving behavior",
+  "red": {
+    "log": "server-red.txt",
+    "exit": 101,
+    "expected_failure": "Malformed codec_cache_enabled was accepted before cache creation"
+  },
+  "green": {
+    "log": "server-green-attempt1.txt",
+    "exit": 0,
+    "tests_passed": 12
+  },
+  "checks": [
+    "Strict malformed option rejection before cache creation",
+    "Absent/false opt-out and true opt-in through actual CLI HTTP server",
+    "Artifact seed and two distinct prepared compressed schema transfers retain one decoder: preparations1,hits1",
+    "Exact artifact and target bytes after server shutdown and store reopen",
+    "No credentials in observer output",
+    "Observer write failure stops serving and unauthorized requests are not observed",
+    "Existing authentication, framing, HTTP, fresh-cache and ordinary serving tests pass"
+  ],
+  "telemetry": {
+    "event": "wan_request",
+    "fields": [
+      "request_ordinal",
+      "scope",
+      "http_status",
+      "codec_cache.hits",
+      "codec_cache.misses",
+      "codec_cache.preparations",
+      "codec_cache.evictions",
+      "codec_cache.entries",
+      "codec_cache.resident_bytes"
+    ],
+    "scope": "after process timing, before response; cumulative namespace-partitioned cache counters; request ordinal includes rejected request attempts, so gaps are visible"
+  },
+  "files": {
+    "crates/spiralcore-transfer/src/wan.rs": "36f4126d188c7fc9e2e81f88dfac4e9212afb3e9263fd058556611ce8e803867",
+    "crates/spiralcore-transfer/src/bin/spiralcore-wan.rs": "35d7c308e53734a9662fda5e170a81aff4397cc99c084e3c30978aa263366b38",
+    "crates/spiralcore-transfer/tests/wan.rs": "b362197da7277cdc3d774b824da518d21878b66c4a9ffe2b0b35bbe1fb7a5654"
+  },
+  "evidence": {
+    "server-green-attempt1.txt": "c872c5ca47baca1cd0fa35dedbb4c6bf6df02038886cf25104fc7ca378837234",
+    "server-red.txt": "8c0299a2381b883eb2646f0c564e21d2c403ffc994123e3ca37ef790f1a005b0"
+  },
+  "limitations": [
+    "Local loopback qualification; no WAN results from these tests",
+    "No public transfer ID field or new wire telemetry; scope/request ordering joins the serialized campaign",
+    "No packet-level byte or TCP keep-alive claim"
+  ]
+}

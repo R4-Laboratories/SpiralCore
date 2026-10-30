@@ -21,6 +21,19 @@ remain tied to their measured source; later results do not overwrite earlier neg
 
 ## Measured object sizes
 
+SC-WAN-004 validates the compressed-schema sender optimization over real WAN
+transfers at source `2fcfb0dae9524c073f6aab8982736fb4b9242173`. All 1,800 targets
+and 120 seeds reopen byte-exactly; all 660 old/new body/mode pairs agree. Thirty
+paired matching ~1 MiB trial blocks show 31.67% less sender CPU, 9.98% less combined
+measured CPU and 11.19% less elapsed than the old encoder. Against the existing
+chunked-zstd profile, matching schema sends 2.28% fewer body bytes but consumes
+48.37% more combined CPU; single-transfer elapsed medians are nearly equal.
+Paid ten-target mixed sessions remain slower than zstd. Small and drift losses,
+the cancelled pretransfer launch, scope limits and all raw rows are retained in
+the [WAN result](schema-wan-results-2026-10-30.md) and
+[evidence](evidence/2026-10-30-schema-wan/README.md). This is a protocol-body,
+CPU and durable-time comparison, not complete-path byte or energy qualification.
+
 SC-OPT-013 reduces repeated layout parsing, allocation and hashing with an exact
 first-template match, preserving the complete SCVAL stream and zstd frames.
 Candidate `983bf181adda8dc922d0187e53652717d61d38b6` versus baseline harness

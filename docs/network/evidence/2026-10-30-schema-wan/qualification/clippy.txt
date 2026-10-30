@@ -1,0 +1,39 @@
+    Checking spiralcore-transfer v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer)
+error: try not to call a closure in the expression where it is declared
+   --> examples/support/schema_wan.rs:202:18
+    |
+202 |       let result = (|| {
+    |  __________________^
+203 | |         let exchange = |frames: &[Frame]| {
+204 | |             let w = Instant::now();
+205 | |             let c = ProcessTime::now();
+...   |
+218 | |     })();
+    | |________^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.97.0/index.html#redundant_closure_call
+    = note: `-D clippy::redundant-closure-call` implied by `-D warnings`
+    = help: to override `-D warnings` add `#[allow(clippy::redundant_closure_call)]`
+help: try doing something like
+    |
+202 ~     let result = {
+203 +         let exchange = |frames: &[Frame]| {
+204 +             let w = Instant::now();
+205 +             let c = ProcessTime::now();
+206 +             let result = client.exchange(frames);
+207 +             exchange_cpu += c.elapsed().as_micros();
+208 +             exchange_wall += w.elapsed().as_micros();
+209 +             result
+210 +         };
+211 +         if seed {
+212 +             client::transfer_batched(bytes, Mode::Raw, None, transfer, false, exchange)
+213 +         } else if let Some(p) = prepared {
+214 +             client::transfer_prepared_schema_zstd_batched(p, bytes, transfer, false, exchange)
+215 +         } else {
+216 +             client::transfer_batched(bytes, Mode::Zstd, None, transfer, false, exchange)
+217 +         }
+218 ~     };
+    |
+
+error: could not compile `spiralcore-transfer` (example "schema_fitting") due to 1 previous error
+warning: build failed, waiting for other jobs to finish...

@@ -1,0 +1,66 @@
+{
+  "scope": "SC013 WAN harness qualification before measurements",
+  "role": "performance-profiler; scoped build-error-resolver for E0689",
+  "roster": "d1927d9e7ce51354",
+  "toolchain": "Rust 1.97.1",
+  "target": "aarch64-apple-darwin",
+  "features": ["hardware-sha256"],
+  "cargo_target_dir": "/Users/casey.allard/spiralcore/target",
+  "incremental": false,
+  "red": {
+    "log": "harness-red.txt",
+    "sha256": "f193ef5996fc73fcc00bf24d539d42a54b45b1980c104948b1a0055e98bcdd00",
+    "exit": 101,
+    "observed": "Missing order, scope and ARMS_WAN before their implementation"
+  },
+  "initial_compile_failure": {
+    "log": "harness-green-attempt1.txt",
+    "sha256": "51a947da781353612e9b6b7f2c267a5ef9158fd52e6f42d0090a0e86dac4e69f",
+    "exit": 101,
+    "observed": "E0689: request_index.checked_add had an ambiguous integer type",
+    "correction": "Annotate the existing slice/request index as usize"
+  },
+  "green": {
+    "log": "harness-green-attempt2.txt",
+    "sha256": "bf64558e042086c1cb50d0facdf5349570ce4ae6c48840027efb493db5bfab46",
+    "exit": 0,
+    "passed": 15,
+    "failed": 0,
+    "new_wan_tests": 5,
+    "example_sha256_at_this_run": "416c9cb10dacc296b7ae1b7cee77862ba8a3379629e625da8502148906321978",
+    "support_sha256_at_this_run": "7fd34b15ff056cecc5673afa4d1dcc9c36cb0e68ed84f5532a5d9b6391ee9a03"
+  },
+  "final_family_guard": {
+    "red_log": "harness-family-red.txt",
+    "red_sha256": "4f35e3957db4d83fb54396182c72c22ec7b91ffa34165b790cc4b29c73d0d4d0",
+    "red_exit": 101,
+    "observed": "A changed family label with unchanged object/hash/length was accepted before explicit planned-family equality",
+    "green_log": "harness-green-final.txt",
+    "green_sha256": "0904732bfea048ea20c6d6822326180b268342c94b089621dd2e89e451cfeaa2",
+    "green_exit": 0,
+    "passed": 16,
+    "failed": 0,
+    "final_support_sha256": "ae9a20f8aa5e2b7964b82548da75ca28e9a2675ae91b0e0a85c8cdc89865473d"
+  },
+  "final_build": {
+    "clippy_log": "clippy-attempt2.txt",
+    "clippy_sha256": "e3561ca84447050abb63858b52d3afe274c00ea5f03de0b58c32889160ca74e2",
+    "clippy_exit": 0,
+    "build_log": "build.txt",
+    "build_exit": 0,
+    "correction": "Removed a redundant immediately invoked closure around the timed operation; unchanged timing and transfer semantics",
+    "targets": ["example schema_fitting", "bin spiralcore-wan"]
+  },
+  "qualified": [
+    "Thirty trial blocks cover each arm permutation five times and all scopes are distinct",
+    "Fixture indices through 299 work; index 300 fails; historical indices retain exact hashes",
+    "Shard operation/storage limits and negative source/accounting guards",
+    "Complete fabricated three-shard summary success and missing, corrupted, identity and body-parity rejection",
+    "Real loopback HTTP artifact plus ten distinct targets using one prepared encoder and retained receiver decoder, followed by exact reopened comparison"
+  ],
+  "limits": [
+    "Fabricated summary receipts exist only in unit-test temporary directories and are not performance observations",
+    "Loopback qualification establishes integration and fidelity, not WAN performance",
+    "Final source/build qualification and frozen campaign pins are recorded separately"
+  ]
+}

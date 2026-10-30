@@ -1,0 +1,94 @@
+diff --git a/crates/spiralcore-transfer/src/schema.rs b/crates/spiralcore-transfer/src/schema.rs
+index c2e3a05..2228b33 100644
+--- a/crates/spiralcore-transfer/src/schema.rs
++++ b/crates/spiralcore-transfer/src/schema.rs
+@@ -6,10 +6,6 @@ use sha2::{Digest, Sha256};
+ use std::borrow::Cow;
+ use std::collections::BTreeMap;
+ 
+-#[cfg(test)]
+-#[path = "../tests/fixtures/schema_sender_checks.rs"]
+-mod sender_checks;
+-
+ pub const MAX_SCHEMA: usize = 64 * 1024;
+ pub const MAX_TARGET: usize = 16 * 1024 * 1024;
+ pub const MAX_TRAINING_BYTES: usize = 4 * 1024 * 1024;
+@@ -319,13 +315,6 @@ fn encode_with(templates: &Templates<'_>, artifact_id: Id, target: &[u8]) -> Res
+     }
+     let mut work = 0;
+     for bytes in target.split_inclusive(|&b| b == b'\n') {
+-        if templates
+-            .items
+-            .first()
+-            .is_some_and(|template| write_first_template(template, bytes, &mut work, &mut encoded))
+-        {
+-            continue;
+-        }
+         let record = if work < MAX_MATCH_WORK {
+             parse_record(bytes)
+         } else {
+@@ -351,64 +340,6 @@ fn encode_with(templates: &Templates<'_>, artifact_id: Id, target: &[u8]) -> Res
+     Ok(encoded)
+ }
+ 
+-// Artifact validation established the JSON skeleton. Exact literal fragments
+-// and the same primitive parser establish identical layout/token boundaries,
+-// without allocating a Record or hashing its layout again. A mismatch changes
+-// neither output nor the legacy comparison budget; the general path handles it.
+-fn write_first_template(
+-    template: &Template<'_>,
+-    bytes: &[u8],
+-    work: &mut usize,
+-    encoded: &mut Vec<u8>,
+-) -> bool {
+-    if *work >= MAX_MATCH_WORK
+-        || bytes.len() > MAX_TEMPLATE_RECORD
+-        || std::str::from_utf8(bytes).is_err()
+-    {
+-        return false;
+-    }
+-    let mut values = [&[][..]; MAX_SLOTS];
+-    let mut remaining = bytes;
+-    for (index, fragment) in template.fragments.iter().enumerate() {
+-        let Some(tail) = remaining.strip_prefix(fragment.as_ref()) else {
+-            return false;
+-        };
+-        remaining = tail;
+-        if index < template.slots() {
+-            let Some(end) = primitive_end(remaining, 0) else {
+-                return false;
+-            };
+-            values[index] = &remaining[..end];
+-            remaining = &remaining[end..];
+-        }
+-    }
+-    if !remaining.is_empty() {
+-        return false;
+-    }
+-    // Index zero is the first candidate even if another layout shares its hash.
+-    // Preserve find's exact charge and terminal behavior only on a proven match.
+-    let charge = 2 * template.literal_len;
+-    if charge > MAX_MATCH_WORK.saturating_sub(*work) {
+-        *work = MAX_MATCH_WORK;
+-        write_literal(encoded, bytes);
+-        return true;
+-    }
+-    *work += charge;
+-    let values = &values[..template.slots()];
+-    let size = 3 + values.iter().map(|value| 4 + value.len()).sum::<usize>();
+-    if size < 5 + bytes.len() {
+-        encoded.push(1);
+-        encoded.extend_from_slice(&0u16.to_le_bytes());
+-        for value in values {
+-            encoded.extend_from_slice(&(value.len() as u32).to_le_bytes());
+-            encoded.extend_from_slice(value);
+-        }
+-    } else {
+-        write_literal(encoded, bytes);
+-    }
+-    true
+-}
+-
+ fn write_literal(encoded: &mut Vec<u8>, bytes: &[u8]) {
+     encoded.push(0);
+     encoded.extend_from_slice(&(bytes.len() as u32).to_le_bytes());

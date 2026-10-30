@@ -54,6 +54,15 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         }
         _ => ColdGraphPolicy::EagerBounded,
     };
+    let codec_cache_enabled = match plan.get("codec_cache_enabled") {
+        None => false,
+        Some(serde_json::Value::Bool(enabled))
+            if plan.get("schema").and_then(|v| v.as_str()) == Some("spiralcore.wan.plan.v4") =>
+        {
+            *enabled
+        }
+        _ => return Err("invalid codec cache configuration; v4 boolean required".into()),
+    };
     let scopes = plan
         .get("allowed_scopes")
         .and_then(|x| x.as_array())
@@ -72,18 +81,43 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                 .into(),
         );
     }
-    let endpoint = Endpoint::open_with_policy(cache, wan::limits(), BenchAuthority, policy)?;
+    let mut endpoint = Endpoint::open_with_policy(cache, wan::limits(), BenchAuthority, policy)?;
+    endpoint.set_codec_cache_enabled(codec_cache_enabled)?;
     let listener = TcpListener::bind(addr)?;
-    eprintln!("POLICY cold_graph_policy={policy:?}");
+    eprintln!("POLICY cold_graph_policy={policy:?} codec_cache_enabled={codec_cache_enabled}");
     println!("READY addr={}", listener.local_addr()?);
     std::io::stdout().flush()?;
-    wan::serve(
-        listener,
-        endpoint,
-        &token,
-        &scopes,
-        Duration::from_secs(seconds),
-        16384,
-    )?;
+    if codec_cache_enabled {
+        wan::serve_observed(
+            listener,
+            endpoint,
+            &token,
+            &scopes,
+            Duration::from_secs(seconds),
+            16384,
+            |observation| {
+                let stats = observation.codec_cache;
+                let row = serde_json::json!({"event":"wan_request", "request_ordinal":observation.request_ordinal,
+                "scope":spiralcore_transfer::hex(&observation.scope), "http_status":observation.http_status,
+                "codec_cache":{"hits":stats.hits,"misses":stats.misses,"preparations":stats.preparations,
+                    "evictions":stats.evictions,"entries":stats.entries,"resident_bytes":stats.resident_bytes}});
+                let mut output = std::io::stderr().lock();
+                serde_json::to_writer(&mut output, &row)
+                    .map_err(|_| spiralcore_transfer::Error::Storage)?;
+                writeln!(output)?;
+                output.flush()?;
+                Ok(())
+            },
+        )?;
+    } else {
+        wan::serve(
+            listener,
+            endpoint,
+            &token,
+            &scopes,
+            Duration::from_secs(seconds),
+            16384,
+        )?;
+    }
     Ok(())
 }
