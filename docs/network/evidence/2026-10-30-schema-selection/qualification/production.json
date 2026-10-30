@@ -1,0 +1,71 @@
+{
+  "status": "IMPLEMENTED_FOCUSED_QUALIFICATION_PASSED",
+  "parent_design_commit": "e353688",
+  "scope": "SC-OPT-014 whole-object zstd and exact Raw/Whole/Schema selection with lazy paid schema admission",
+  "source_sha256": {
+    "src/schema_selection.rs": "234faa49436eeeae316caabcf6a7b96f425c4e26c9a45a5087ed114737905407",
+    "src/zstd_whole.rs": "0e0293bdf3ecfa0916bb9c0e611e1e968b4cb2f209cd150e461990b4551943be",
+    "src/client.rs": "61976e205fe1bdc969be651cbec2ee52a1f7dbf45a7464fcc55df9c9299f1f64",
+    "src/endpoint.rs": "97470a8096b593432bce434bdafe6c1bc3442f32f366cc6c00478a056e8a4a2b",
+    "src/fitted_transfer.rs": "5ce0e465a309f28440cf1cf781d66343487e7ccde990d35543d639f031db58cf",
+    "src/protocol.rs": "634ae4749b5c829506c406b8360f16f4aab65fec4474c8731f226a3d96d198f7",
+    "src/selection.rs": "207a6916daa57921525c2130b85e7ee32705f62d8530b460789f12ba40a37b9f",
+    "src/lib.rs": "08c54e46b6e2cd4a7af8537974ef889b54ec9f23763714bc91e0df72ea233152",
+    "src/bin/spiralcore.rs": "83aad84f4f271e793ff50ca81d9cd5e517e99078e81c1f1eb4bcf03b1fff9000",
+    "tests/schema_selection.rs": "ae76d4be5ccf772335ad9e06cfc5b56085efa47793c1fc0ad2ec6c203f208ac4",
+    "tests/adaptive.rs": "39430bc56ad0109fa5d8746d895c6d11eec7ce36aca353c5138cb261de340068"
+  },
+  "red": {
+    "log": "production-red.txt",
+    "exit": 101,
+    "observed": "Mode 9 decoded as Unsupported before implementation"
+  },
+  "green": [
+    {
+      "log": "production-green-attempt3.txt",
+      "exit": 0,
+      "tests": 27,
+      "targets": {
+        "schema_selection": 7,
+        "schema_reuse": 5,
+        "schema_sender": 2,
+        "adaptive": 13
+      }
+    },
+    {
+      "log": "production-lazy-seed-attempt1.txt",
+      "exit": 0,
+      "tests": 1,
+      "scope": "Positive cold Schema selection pays actual Raw seed plus target; distinct ready target pays no seed and reopens exactly"
+    },
+    {
+      "log": "coverage-tests.txt",
+      "exit": 0,
+      "tests": 13,
+      "targets": {
+        "schema_selection": 8,
+        "schema_reuse": 5
+      }
+    }
+  ],
+  "compile_corrections": [
+    {
+      "log": "production-green-attempt1.txt",
+      "cause": "Existing adaptive forced-arm test match omitted new non-adaptive Mode 9",
+      "fix": "Add unreachable Mode 9 arm to the existing test helper; adaptive eligibility unchanged"
+    },
+    {
+      "log": "production-green-attempt2.txt",
+      "cause": "Existing CLI stats display match omitted Mode 9",
+      "fix": "Add zstd-whole-v1 display string; no new CLI option or adaptive eligibility"
+    }
+  ],
+  "coverage_receipt": "coverage.json",
+  "coverage_receipt_sha256": "1a63bddbb9f954c6629b7361ee91063f2f296f04dd9e09881746c5e78b16693f",
+  "limitations": [
+    "No new WAN or performance claim; measurements belong to the separately frozen harness.",
+    "Selected cost is exact successful-miss HTTP protocol body cost including optional one-time Raw artifact seed. It excludes HTTP/TLS/IP framing and future session optimality.",
+    "Sender context construction and all candidate encoding remain chargeable compute; selected immutable plan avoids re-encoding at send.",
+    "No independent approval of this author-owned production source is implied by this implementation receipt."
+  ]
+}

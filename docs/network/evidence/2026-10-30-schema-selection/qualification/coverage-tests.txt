@@ -1,0 +1,29 @@
+/Users/casey.allard/.cargo/bin/cargo +1.97.1 llvm-cov --manifest-path crates/spiralcore-transfer/Cargo.toml --locked --target aarch64-apple-darwin --features hardware-sha256 --test schema_selection --test schema_reuse --no-report
+info: cargo-llvm-cov currently setting cfg(coverage); you can opt-out it by passing --no-cfg-coverage
+   Compiling spiralcore-transfer v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.76s
+     Running tests/schema_reuse.rs (/Users/casey.allard/spiralcore/local/shared-state-20261030/coverage-target/aarch64-apple-darwin/debug/deps/schema_reuse-8b2ebdd3c07e5ba8)
+
+running 5 tests
+test compressed_schema_offer_is_versioned_and_bounded ... ok
+test bad_compressed_transfer_cannot_publish_and_cached_decoder_recovers ... ok
+test warm_decoder_does_not_hide_corrupt_missing_or_unauthorized_artifact ... ok
+test persistent_prepared_senders_and_receiver_reuse_exact_objects_then_restart ... ok
+test codec_cache_is_bounded_pinned_and_released_without_exceeding_shared_budget ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.47s
+
+     Running tests/schema_selection.rs (/Users/casey.allard/spiralcore/local/shared-state-20261030/coverage-target/aarch64-apple-darwin/debug/deps/schema_selection-9ced9ac1502a81b0)
+
+running 8 tests
+test whole_zstd_mode_is_explicit_and_requires_no_artifact ... ok
+test exact_candidate_costs_and_raw_tie_match_independent_frame_lengths ... ok
+test whole_contexts_preserve_parameters_bytes_and_recover_after_bad_frames ... ok
+test unseeded_claimed_warm_schema_is_rejected_and_whole_cache_is_scoped ... ok
+test whole_codec_accepts_exact_sixteen_mib_and_rejects_larger_before_encode ... ok
+test whole_receiver_rejects_corruption_then_reuses_bounded_contexts ... ok
+test lazy_schema_seed_is_paid_once_then_ready_schema_commits_exactly ... ok
+test prepared_selection_is_minimum_charges_seed_and_matches_serialized_transfer ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.79s
+

@@ -1,0 +1,382 @@
+{
+  "status": "FOCUSED_CURRENT_OBJECT_COVERAGE",
+  "tests": 13,
+  "test_exit": 0,
+  "scope": "schema_selection and schema_reuse only",
+  "commands": [
+    [
+      "/Users/casey.allard/.cargo/bin/cargo",
+      "+1.97.1",
+      "llvm-cov",
+      "--manifest-path",
+      "crates/spiralcore-transfer/Cargo.toml",
+      "--locked",
+      "--target",
+      "aarch64-apple-darwin",
+      "--features",
+      "hardware-sha256",
+      "--test",
+      "schema_selection",
+      "--test",
+      "schema_reuse",
+      "--no-report"
+    ],
+    [
+      "/Users/casey.allard/.rustup/toolchains/1.97.1-aarch64-apple-darwin/lib/rustlib/aarch64-apple-darwin/bin/llvm-profdata",
+      "merge",
+      "-sparse",
+      "/Users/casey.allard/spiralcore/local/shared-state-20261030/coverage-target/spiralcore-transfer-23380-11061955746476246897_0.profraw",
+      "/Users/casey.allard/spiralcore/local/shared-state-20261030/coverage-target/spiralcore-transfer-23389-10861052003868065301_0.profraw",
+      "-o",
+      "/Users/casey.allard/spiralcore/local/shared-state-20261030/coverage-target/schema-selection-current.profdata"
+    ],
+    [
+      "/Users/casey.allard/.rustup/toolchains/1.97.1-aarch64-apple-darwin/lib/rustlib/aarch64-apple-darwin/bin/llvm-cov",
+      "export",
+      "-format=text",
+      "-summary-only",
+      "-instr-profile=/Users/casey.allard/spiralcore/local/shared-state-20261030/coverage-target/schema-selection-current.profdata",
+      "-object",
+      "/Users/casey.allard/spiralcore/local/shared-state-20261030/coverage-target/aarch64-apple-darwin/debug/deps/schema_reuse-8b2ebdd3c07e5ba8",
+      "-object",
+      "/Users/casey.allard/spiralcore/local/shared-state-20261030/coverage-target/aarch64-apple-darwin/debug/deps/schema_selection-9ced9ac1502a81b0"
+    ],
+    [
+      "/Users/casey.allard/.rustup/toolchains/1.97.1-aarch64-apple-darwin/lib/rustlib/aarch64-apple-darwin/bin/llvm-cov",
+      "export",
+      "-format=text",
+      "-instr-profile=/Users/casey.allard/spiralcore/local/shared-state-20261030/coverage-target/schema-selection-current.profdata",
+      "-object",
+      "/Users/casey.allard/spiralcore/local/shared-state-20261030/coverage-target/aarch64-apple-darwin/debug/deps/schema_reuse-8b2ebdd3c07e5ba8",
+      "-object",
+      "/Users/casey.allard/spiralcore/local/shared-state-20261030/coverage-target/aarch64-apple-darwin/debug/deps/schema_selection-9ced9ac1502a81b0"
+    ]
+  ],
+  "objects_sha256": {
+    "/Users/casey.allard/spiralcore/local/shared-state-20261030/coverage-target/aarch64-apple-darwin/debug/deps/schema_reuse-8b2ebdd3c07e5ba8": "ab9f72703a4388b3fa0f486ba5600ed487002c9b4fb8fc40142b4682b1ffd579",
+    "/Users/casey.allard/spiralcore/local/shared-state-20261030/coverage-target/aarch64-apple-darwin/debug/deps/schema_selection-9ced9ac1502a81b0": "e3efa89bc7defa57903cb10b78feda835538fcd566d7883c2b17401a0c8651a7"
+  },
+  "profiles_sha256": {
+    "/Users/casey.allard/spiralcore/local/shared-state-20261030/coverage-target/spiralcore-transfer-23380-11061955746476246897_0.profraw": "c9ec14dae8e48cec0f2a9f8a9fd3bd5f98c844dc4582cc7eef03f8e47159390c",
+    "/Users/casey.allard/spiralcore/local/shared-state-20261030/coverage-target/spiralcore-transfer-23389-10861052003868065301_0.profraw": "046fdbe65fd673b4dabb539ec89d49b67bf34ad6b4265bd4ccc37757d6fd7557"
+  },
+  "merged_profile_sha256": "43ca91d8201a5c141b1f5dd51fe075f1852578fe4b995235c6532f04cb33de6e",
+  "summary_sha256": "f4a4a18bbf141127021085d3f1937aed54f73b193f88871457477e64d90e5376",
+  "detail_sha256": "e01f92f9bbf70a470e9d1a3c0387fbd4af758158b807f636cd355e597185a9cf",
+  "sources": {
+    "schema_selection.rs": {
+      "sha256": "234faa49436eeeae316caabcf6a7b96f425c4e26c9a45a5087ed114737905407",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "functions": {
+          "count": 13,
+          "covered": 13,
+          "percent": 100
+        },
+        "instantiations": {
+          "count": 13,
+          "covered": 13,
+          "percent": 100
+        },
+        "lines": {
+          "count": 92,
+          "covered": 92,
+          "percent": 100
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "regions": {
+          "count": 161,
+          "covered": 147,
+          "notcovered": 14,
+          "percent": 91.30434782608695
+        }
+      }
+    },
+    "zstd_whole.rs": {
+      "sha256": "0e0293bdf3ecfa0916bb9c0e611e1e968b4cb2f209cd150e461990b4551943be",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "functions": {
+          "count": 11,
+          "covered": 11,
+          "percent": 100
+        },
+        "instantiations": {
+          "count": 11,
+          "covered": 11,
+          "percent": 100
+        },
+        "lines": {
+          "count": 72,
+          "covered": 65,
+          "percent": 90.27777777777779
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "regions": {
+          "count": 136,
+          "covered": 116,
+          "notcovered": 20,
+          "percent": 85.29411764705883
+        }
+      }
+    },
+    "endpoint.rs": {
+      "sha256": "97470a8096b593432bce434bdafe6c1bc3442f32f366cc6c00478a056e8a4a2b",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "functions": {
+          "count": 74,
+          "covered": 50,
+          "percent": 67.56756756756756
+        },
+        "instantiations": {
+          "count": 125,
+          "covered": 83,
+          "percent": 66.4
+        },
+        "lines": {
+          "count": 1139,
+          "covered": 701,
+          "percent": 61.545215100965756
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "regions": {
+          "count": 2097,
+          "covered": 1162,
+          "notcovered": 935,
+          "percent": 55.41249403910348
+        }
+      }
+    },
+    "client.rs": {
+      "sha256": "61976e205fe1bdc969be651cbec2ee52a1f7dbf45a7464fcc55df9c9299f1f64",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "functions": {
+          "count": 48,
+          "covered": 18,
+          "percent": 37.5
+        },
+        "instantiations": {
+          "count": 224,
+          "covered": 77,
+          "percent": 34.375
+        },
+        "lines": {
+          "count": 911,
+          "covered": 360,
+          "percent": 39.51701427003293
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "regions": {
+          "count": 1377,
+          "covered": 469,
+          "notcovered": 908,
+          "percent": 34.059549745824256
+        }
+      }
+    },
+    "fitted_transfer.rs": {
+      "sha256": "5ce0e465a309f28440cf1cf781d66343487e7ccde990d35543d639f031db58cf",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "functions": {
+          "count": 10,
+          "covered": 10,
+          "percent": 100
+        },
+        "instantiations": {
+          "count": 10,
+          "covered": 10,
+          "percent": 100
+        },
+        "lines": {
+          "count": 100,
+          "covered": 82,
+          "percent": 82
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "regions": {
+          "count": 186,
+          "covered": 141,
+          "notcovered": 45,
+          "percent": 75.80645161290323
+        }
+      }
+    },
+    "protocol.rs": {
+      "sha256": "634ae4749b5c829506c406b8360f16f4aab65fec4474c8731f226a3d96d198f7",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "functions": {
+          "count": 17,
+          "covered": 15,
+          "percent": 88.23529411764706
+        },
+        "instantiations": {
+          "count": 17,
+          "covered": 15,
+          "percent": 88.23529411764706
+        },
+        "lines": {
+          "count": 175,
+          "covered": 127,
+          "percent": 72.57142857142857
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "regions": {
+          "count": 320,
+          "covered": 203,
+          "notcovered": 117,
+          "percent": 63.4375
+        }
+      }
+    },
+    "selection.rs": {
+      "sha256": "207a6916daa57921525c2130b85e7ee32705f62d8530b460789f12ba40a37b9f",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "functions": {
+          "count": 17,
+          "covered": 1,
+          "percent": 5.88235294117647
+        },
+        "instantiations": {
+          "count": 21,
+          "covered": 2,
+          "percent": 9.523809523809524
+        },
+        "lines": {
+          "count": 213,
+          "covered": 20,
+          "percent": 9.389671361502346
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "regions": {
+          "count": 323,
+          "covered": 35,
+          "notcovered": 288,
+          "percent": 10.8359133126935
+        }
+      }
+    }
+  },
+  "limitations": [
+    "Line/function/region instrumentation only; no branch or MC/DC qualification.",
+    "Only the two tested current executables and their two new profiles were exported. Existing reused-target objects and profiles were excluded without deletion.",
+    "Coverage of existing large integration modules reflects these focused tests, not repository-wide coverage.",
+    "Source and integration test both named schema_selection.rs are distinguished by complete canonical path, not basename."
+  ],
+  "changed_endpoint_function_instances": [
+    {
+      "name": "_RNvMs1_NtCsbiESM4dvagB_19spiralcore_transfer8endpointINtB5_8EndpointNtCs7FQWou5865D_12schema_reuse5AllowE13prepare_codecB16_",
+      "count": 42,
+      "source": "/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer/src/endpoint.rs"
+    },
+    {
+      "name": "_RNvMs1_NtCsbiESM4dvagB_19spiralcore_transfer8endpointINtB5_8EndpointNtCs7FQWou5865D_12schema_reuse5AllowE4dataB16_",
+      "count": 41,
+      "source": "/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer/src/endpoint.rs"
+    },
+    {
+      "name": "_RNvMs1_NtCsbiESM4dvagB_19spiralcore_transfer8endpointINtB5_8EndpointNtCs7FQWou5865D_12schema_reuse5AllowE5beginB16_",
+      "count": 50,
+      "source": "/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer/src/endpoint.rs"
+    },
+    {
+      "name": "_RNvMs1_NtCsbiESM4dvagB_19spiralcore_transfer8endpointINtB5_8EndpointNtCs7FQWou5865D_12schema_reuse5AllowE7publishB16_",
+      "count": 40,
+      "source": "/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer/src/endpoint.rs"
+    },
+    {
+      "name": "_RNvMs1_NtCsbiESM4dvagB_19spiralcore_transfer8endpointINtB5_8EndpointNtNtB7_3wan14BenchAuthorityE13prepare_codecB7_",
+      "count": 43,
+      "source": "/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer/src/endpoint.rs"
+    },
+    {
+      "name": "_RNvMs1_NtCsbiESM4dvagB_19spiralcore_transfer8endpointINtB5_8EndpointNtNtB7_3wan14BenchAuthorityE4dataB7_",
+      "count": 53,
+      "source": "/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer/src/endpoint.rs"
+    },
+    {
+      "name": "_RNvMs1_NtCsbiESM4dvagB_19spiralcore_transfer8endpointINtB5_8EndpointNtNtB7_3wan14BenchAuthorityE5beginB7_",
+      "count": 44,
+      "source": "/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer/src/endpoint.rs"
+    },
+    {
+      "name": "_RNvMs1_NtCsbiESM4dvagB_19spiralcore_transfer8endpointINtB5_8EndpointNtNtB7_3wan14BenchAuthorityE7publishB7_",
+      "count": 42,
+      "source": "/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer/src/endpoint.rs"
+    }
+  ]
+}

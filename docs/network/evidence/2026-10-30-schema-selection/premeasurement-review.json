@@ -1,0 +1,102 @@
+{
+  "milestone": "SC-OPT-014",
+  "scope": "Premeasurement sequential procedural audit then independent code/Rust review",
+  "reviewer": "selector_tests",
+  "baseline": "3fd3199ef46984ef889b800630f721c2518af0e3",
+  "design_plan_commit": "e353688ff55d81ed56f06a296f6aa589117bdc79",
+  "source_sha256": {
+    "crates/spiralcore-transfer/src/schema_selection.rs": "234faa49436eeeae316caabcf6a7b96f425c4e26c9a45a5087ed114737905407",
+    "crates/spiralcore-transfer/src/zstd_whole.rs": "0e0293bdf3ecfa0916bb9c0e611e1e968b4cb2f209cd150e461990b4551943be",
+    "crates/spiralcore-transfer/src/client.rs": "61976e205fe1bdc969be651cbec2ee52a1f7dbf45a7464fcc55df9c9299f1f64",
+    "crates/spiralcore-transfer/src/endpoint.rs": "97470a8096b593432bce434bdafe6c1bc3442f32f366cc6c00478a056e8a4a2b",
+    "crates/spiralcore-transfer/src/fitted_transfer.rs": "5ce0e465a309f28440cf1cf781d66343487e7ccde990d35543d639f031db58cf",
+    "crates/spiralcore-transfer/src/protocol.rs": "634ae4749b5c829506c406b8360f16f4aab65fec4474c8731f226a3d96d198f7",
+    "crates/spiralcore-transfer/src/selection.rs": "207a6916daa57921525c2130b85e7ee32705f62d8530b460789f12ba40a37b9f",
+    "crates/spiralcore-transfer/src/lib.rs": "08c54e46b6e2cd4a7af8537974ef889b54ec9f23763714bc91e0df72ea233152",
+    "crates/spiralcore-transfer/src/bin/spiralcore.rs": "83aad84f4f271e793ff50ca81d9cd5e517e99078e81c1f1eb4bcf03b1fff9000",
+    "crates/spiralcore-transfer/examples/schema_fitting.rs": "84eb6ced51ad22648837760692060c83137983e37b84e4376cd1fd447a81cb8f",
+    "crates/spiralcore-transfer/examples/support/schema_selection.rs": "ddd5b948aa6dd3bb87155a4109cdfb3ea3efff0414764ade6a3a48a444ffa504",
+    "crates/spiralcore-transfer/examples/support/schema_wan.rs": "88b4be6aa9524ceb5f31cad52c25eaae645ca67b5e5ebd4911d655057aecc717",
+    "crates/spiralcore-transfer/tests/schema_selection.rs": "ae76d4be5ccf772335ad9e06cfc5b56085efa47793c1fc0ad2ec6c203f208ac4",
+    "crates/spiralcore-transfer/tests/schema_selection_workflow.rs": "73b570eeed080814a25b3accd20da92d2c9c068827ae31889691eafdfcc7a724",
+    "crates/spiralcore-transfer/tests/adaptive.rs": "39430bc56ad0109fa5d8746d895c6d11eec7ce36aca353c5138cb261de340068",
+    ".github/workflows/spiralcore-schema-selection.yml": "ed28d1063f5c750cb12a75318ad5aee3082ca51c8109c8ca0fbeef7971f99811"
+  },
+  "procedural_audit": {
+    "verdict": "PASS",
+    "completed_utc": "2026-10-30T21:59:02.815248+00:00",
+    "roles_verified": "d1927d9e7ce51354: harness-optimizer, code-reviewer, rust-reviewer active",
+    "evidence": "Read approved design/plan/measurement contract, actual RED/GREEN logs, final all-target/Clippy/build outputs and current-object focused coverage; no new runs.",
+    "qualification": {
+      "all_targets": {
+        "passed": 315,
+        "failed": 0,
+        "preexisting_ignored": 2,
+        "exit": 0
+      },
+      "clippy_exit": 0,
+      "release_build_exit": 0,
+      "new_production_tests": 8,
+      "harness_green": 20,
+      "workflow_gates": 3,
+      "workflow_syntax_blocks": 6,
+      "focused_coverage_tests": 13,
+      "schema_selection_lines": "92/92",
+      "schema_selection_functions": "13/13",
+      "zstd_whole_lines": "65/72",
+      "zstd_whole_functions": "11/11",
+      "branch_mcdc": "not collected",
+      "whole_repository_coverage": "not claimed"
+    },
+    "retained_failures": [
+      "Production unsupported Mode9 behavioral RED",
+      "Existing adaptive helper and CLI exhaustive-match compile fixes",
+      "Harness missing cold seed-charge behavioral RED",
+      "Missing workflow behavioral RED",
+      "Ephemeral Ruby syntax checker filter_map compatibility correction before validation"
+    ],
+    "reviewer_query_note": "Read-only history jq query initially assumed command string; command is an array. Corrected with tostring; no inputs or receipts modified.",
+    "measurement_status": "NOT_RUN; loopback31 exact objects and fabricated summary rows are qualification only",
+    "retention": "Formal failed/successful logs retained per user; shared targets used; no new archive or analyzer.",
+    "native_receipt_check": "Existing exact-chat CommandExecution metadata corroborates successful qualification exits; optional native IDs omitted for receipt portability.",
+    "receipt_sha256": {
+      "all-targets.txt": "9e79f8582382e6b50f756dc106fa6c7653c10ee4fe27e15a984e9610ace1485c",
+      "all-targets.exit": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+      "clippy.txt": "56678e410b8156e2a72d7ad83eebede245de7403f179a827e37229127149d046",
+      "clippy.exit": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+      "build.txt": "3b925b3c4319fdab5b2e61a642e2c72f5e1143f370b735e04abd2dbad6828cf7",
+      "build.exit": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+      "coverage.json": "1a63bddbb9f954c6629b7361ee91063f2f296f04dd9e09881746c5e78b16693f",
+      "production.json": "ce09b4b215031798c7e783d44fd7941ac6fd0f1c7dfafda048481efad1a19c42",
+      "harness-tdd.json": "9f863ffbf44611398b3dce23aaa181642ba659448501c95cd0c196d6cfd3a136",
+      "workflow.json": "9af2d01ae7f7b0fdc6e15c5fc683606b8cdc6861b039e0c492f19bf4923103f9",
+      "workflow-syntax.json": "c55de5a82f642d7c9fb27068dbb3ed53ec650ab0b096a54aa70a99d90f025105",
+      "local-final.json": "0f2b459e42268ac680ced5e8eb7a016058264dcd79c0aefa7c28115df178e2ed"
+    }
+  },
+  "code_rust_review": {
+    "verdict": "PASS",
+    "completed_utc": "2026-10-30T22:00:42.032880+00:00",
+    "blocking_findings": [],
+    "scope": "Changed production, explicit Mode9 dispatch, client APIs, receiver admission/cache integration, tests, three-arm harness, workflow and supervisor; comparison against baseline3fd3199 and committed design.",
+    "checked": [
+      "Whole codec shares exact configured encoder parameters and validates a single checksummed content-size-bound frame before bounded allocation; exact output identity remains mandatory before publication.",
+      "Immutable private prepared payload retains the selected encoding; Raw/Whole/Schema strict comparison preserves tie order, cold raw seed is charged, target length and batch limits are checked, and no send-time recompression is introduced.",
+      "Whole mode forbids base/manifest; prepared receiver state stays namespace/mode scoped with bounded opt-in retention, shared-quota admission and existing authentication/publication behavior. Existing adaptive candidate eligibility is unchanged.",
+      "Harness times outer selection/encode through commit ACK, including any lazy seed once; context construction and forced upfront seed enter session totals. Candidate receipts are checked against actual forced-arm bodies and stopped-store exact readback joins.",
+      "Same executable/configuration for all three arms, registered distinct targets and balanced order, fixed source/attempt gates, secret scoped to transfer step, fresh receiver ownership, sequential no-retry collection, and always-retained failure artifacts.",
+      "Eight new production tests cover exact data/zero/size limits, strict cost tie, genuine paid schema seed, scoped cache reuse, corruption/recovery and missing-base rejection; harness real31-object qualification and negative receipt fixtures remain separate from performance results."
+    ],
+    "limitations": [
+      "Review is scoped to this change, not whole-project formal verification.",
+      "Readiness is caller knowledge and cannot authorize an object; missing or revoked state fails without a retry/reoffer.",
+      "Selection minimizes this transfer successful-miss HTTP-body cost, not total packet traffic, CPU, elapsed time or future globally optimal seed placement.",
+      "Encoder selection computes both candidates; any CPU or WAN speed benefit is unmeasured at this gate. Receiver CPU is handler-only and exchange wall includes remote work/waiting.",
+      "Current coverage is focused lines/functions, with no branch or MC/DC claim."
+    ],
+    "reviewer_runs": "No new tests, builds, measurements, analyzer or history archive."
+  },
+  "security_review": "separate cross-author review after procedural PASS",
+  "performance_claims": "none; frozen campaign and stopped-store exact readback remain required",
+  "premeasurement_verdict": "APPROVED_BY_CODE_RUST_REVIEW; separate security reviews and final source/executable/plan freeze required before launch"
+}

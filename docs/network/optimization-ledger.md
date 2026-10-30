@@ -21,6 +21,18 @@ remain tied to their measured source; later results do not overwrite earlier neg
 
 ## Measured object sizes
 
+SC-OPT-014 adds exact Raw/Whole/Schema selection and a matched whole-object zstd
+control at `58d71cf10a45fb9f1ad19ae2557135d53a1edc1d`. The real-WAN campaign
+completed 1,800 targets and 60 seeds with exact stopped-store readback. All 600
+selector choices and 60 paid sessions match Whole/Raw body bytes; Schema never
+wins, even removing its seed charge. Large paid-session selector/whole paired
+ratios are 2.1028 sender CPU, 1.3223 measured CPU subtotal and 1.0676 elapsed.
+This is codec-context reuse on distinct new objects, **not prior-object delta
+reuse**, and does not establish regression of the earlier 600-byte warm-update
+path. The successor comparison returns to verified object bases and exact
+deltas against the matched control. [Result](schema-selection-results-2026-10-30.md),
+[raw evidence and review](evidence/2026-10-30-schema-selection/README.md).
+
 SC-WAN-004 validates the compressed-schema sender optimization over real WAN
 transfers at source `2fcfb0dae9524c073f6aab8982736fb4b9242173`. All 1,800 targets
 and 120 seeds reopen byte-exactly; all 660 old/new body/mode pairs agree. Thirty

@@ -11,6 +11,10 @@ pub(crate) fn is_fitted(mode: Mode) -> bool {
     )
 }
 
+pub(crate) fn is_buffered(mode: Mode) -> bool {
+    is_fitted(mode) || mode == Mode::ZstdWholeV1
+}
+
 pub(crate) fn encoded_cap(mode: Mode, len: usize) -> Result<usize> {
     if len > crate::client::MAX_BATCHED_OBJECT {
         return Err(Error::Limit);
@@ -19,12 +23,13 @@ pub(crate) fn encoded_cap(mode: Mode, len: usize) -> Result<usize> {
         Mode::SchemaV1 => Ok(len + 5 * len.min(65536) + 48),
         Mode::ZstdDictionaryV1 => crate::zstd_prefix::encoded_cap(len),
         Mode::SchemaZstdV1 => crate::schema_zstd::encoded_cap(len),
+        Mode::ZstdWholeV1 => crate::zstd_whole::encoded_cap(len),
         _ => Err(Error::Unsupported),
     }
 }
 
 pub(crate) fn chunks(mode: Mode, encoded: &[u8]) -> Result<Vec<Vec<u8>>> {
-    if !is_fitted(mode) {
+    if !is_buffered(mode) {
         return Err(Error::Unsupported);
     }
     if encoded.is_empty() || encoded.len().div_ceil(MAX_CHUNK) > 512 {
@@ -77,6 +82,7 @@ pub(crate) fn decode(mode: Mode, artifact: &[u8], encoded: &[u8], len: usize) ->
         Mode::SchemaV1 => crate::schema::decode(artifact, encoded, len),
         Mode::ZstdDictionaryV1 => crate::zstd_dictionary::decode(artifact, encoded, len),
         Mode::SchemaZstdV1 => crate::schema_zstd::decode(artifact, encoded, len),
+        Mode::ZstdWholeV1 => crate::zstd_whole::decode(encoded, len),
         _ => Err(Error::Unsupported),
     }
 }
@@ -87,6 +93,7 @@ pub(crate) enum PreparedDecoder {
     Schema(crate::schema::PreparedSchema),
     Dictionary(crate::zstd_dictionary::PreparedDecoder),
     CompressedSchema(crate::schema_zstd::PreparedDecoder),
+    Whole(crate::zstd_whole::PreparedDecoder),
 }
 impl PreparedDecoder {
     pub(crate) fn new(mode: Mode, artifact: &[u8]) -> Result<Self> {
@@ -98,6 +105,7 @@ impl PreparedDecoder {
             Mode::SchemaZstdV1 => {
                 Self::CompressedSchema(crate::schema_zstd::PreparedDecoder::new(artifact)?)
             }
+            Mode::ZstdWholeV1 => Self::Whole(crate::zstd_whole::PreparedDecoder::new()?),
             _ => return Err(Error::Unsupported),
         };
         if decoder.charge() > CODEC_CHARGE {
@@ -110,6 +118,7 @@ impl PreparedDecoder {
             Self::Schema(p) => p.retained_charge(),
             Self::Dictionary(p) => p.retained_charge(),
             Self::CompressedSchema(p) => p.retained_charge(),
+            Self::Whole(p) => p.retained_charge(),
         }
     }
     pub(crate) fn decode(&mut self, encoded: &[u8], len: usize) -> Result<Vec<u8>> {
@@ -117,6 +126,7 @@ impl PreparedDecoder {
             Self::Schema(p) => p.decode(encoded, len),
             Self::Dictionary(p) => p.decode(encoded, len),
             Self::CompressedSchema(p) => p.decode(encoded, len),
+            Self::Whole(p) => p.decode(encoded, len),
         }
     }
 }

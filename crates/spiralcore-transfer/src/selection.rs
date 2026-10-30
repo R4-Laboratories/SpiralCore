@@ -46,10 +46,19 @@ pub(crate) struct Prepared {
 
 /// Exact successful-miss cost at the current one-batch object ceiling. Reject
 /// any candidate that violates that assumption before contacting the receiver.
-fn cost(mode: Mode, sizes: impl Iterator<Item = usize>, warm_probe: bool) -> Result<u64> {
+pub(crate) fn cost(
+    mode: Mode,
+    sizes: impl Iterator<Item = usize>,
+    warm_probe: bool,
+) -> Result<u64> {
     let base = usize::from(matches!(
         mode,
-        Mode::SparseV1 | Mode::ZstdPrefixV1 | Mode::RuntimeV1
+        Mode::SparseV1
+            | Mode::ZstdPrefixV1
+            | Mode::RuntimeV1
+            | Mode::SchemaV1
+            | Mode::ZstdDictionaryV1
+            | Mode::SchemaZstdV1
     )) * 32;
     // Begin/Ready/Finish/Published frame bytes: 102 + 66 + 56 + 88.
     // Four frame length words: 16. SCWBAT01 header: 12. SCWREP01 header: 28.
@@ -124,6 +133,7 @@ fn priority(mode: Mode) -> u8 {
         Mode::SchemaV1 => 6, // Explicit prototype sender only.
         Mode::ZstdDictionaryV1 => 7,
         Mode::SchemaZstdV1 => 8,
+        Mode::ZstdWholeV1 => 9, // Explicit whole-object/selector API only.
     }
 }
 

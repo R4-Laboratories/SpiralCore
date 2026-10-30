@@ -1,0 +1,51 @@
+{
+  "schema": "spiralcore.sc-opt-014.security-review.v1",
+  "verdict": "APPROVE_SCOPED_PRODUCTION_CHANGES",
+  "blocking_findings": [],
+  "role": "security-reviewer",
+  "roster": "d1927d9e7ce51354",
+  "independence": "Reviewer authored the measurement harness, not the production codec, selection, client or endpoint changes. This review excludes that harness and the workflow.",
+  "comparison_base": "3fd3199ef46984ef889b800630f721c2518af0e3",
+  "review_context_head": "e353688ff55d81ed56f06a296f6aa589117bdc79",
+  "source_scope": "Exact working-tree hashes below, after the recorded procedural PASS and before the implementation commit",
+  "procedural_gate": "PASS in .agent-sync/AUDIT.md and premeasurement-review.json, read before this review",
+  "files": {
+    "src/zstd_whole.rs": "0e0293bdf3ecfa0916bb9c0e611e1e968b4cb2f209cd150e461990b4551943be",
+    "src/schema_selection.rs": "234faa49436eeeae316caabcf6a7b96f425c4e26c9a45a5087ed114737905407",
+    "src/protocol.rs": "634ae4749b5c829506c406b8360f16f4aab65fec4474c8731f226a3d96d198f7",
+    "src/fitted_transfer.rs": "5ce0e465a309f28440cf1cf781d66343487e7ccde990d35543d639f031db58cf",
+    "src/endpoint.rs": "97470a8096b593432bce434bdafe6c1bc3442f32f366cc6c00478a056e8a4a2b",
+    "src/client.rs": "61976e205fe1bdc969be651cbec2ee52a1f7dbf45a7464fcc55df9c9299f1f64",
+    "src/selection.rs": "207a6916daa57921525c2130b85e7ee32705f62d8530b460789f12ba40a37b9f",
+    "tests/schema_selection.rs": "ae76d4be5ccf772335ad9e06cfc5b56085efa47793c1fc0ad2ec6c203f208ac4"
+  },
+  "reviewed_invariants": [
+    "Mode9 is explicit, limited to 16 MiB, and rejects both manifest and base identifiers. Existing generic senders/CLI do not silently activate it.",
+    "Whole decoding validates compressed-size bounds, one exact zstd frame, required checksum, forbidden dictionary/reserved flags, exact declared output length and the 32 MiB window ceiling before output allocation. Decompression checksum and written length are checked. Session-only reset permits recovery after a malformed frame without importing a previous target as a dictionary.",
+    "Buffered Data retains canonical mode/length/flag checks, bounded chunk count and cumulative compressed capacity. Begin reserves encoded input, output and decoder allowance under the existing shared budget before acceptance.",
+    "Whole and schema prepared decoders use the existing opt-in cache with eight entries, 5 MiB admission charge, pinned handles and pressure fallback. Whole's no-artifact sentinel is separated by namespace and mode; it is not an authorization token.",
+    "Endpoint authorization still runs before handling and before publication. Schema Begin still locates and verifies the authorized artifact before cached codec reuse. Caller-supplied schema_ready changes cost estimation only; absent or unauthorized state still fails at the receiver.",
+    "Finish checks exact reconstructed length and whole-object digest before the unchanged private staging, file synchronization, authorization recheck, atomic rename and directory synchronization. Published is returned only after publication succeeds; corrupted frames do not expose a committed object.",
+    "PreparedTransfer's offer/payload are private outside the crate and the consuming client cannot receive replacement target bytes. Preparation binds the original object once; the receipt is read-only and cannot mutate the selected transfer. Checked cost totals and strict comparisons preserve Raw/Whole/Schema tie order.",
+    "Selection computes all eligible candidates and charges a separate successful Raw seed when cold. It does not automatically seed or treat readiness as permission. The caller must complete an explicit seed before consuming a schema plan. Encoded and Raw payload paths reject repair requests rather than reoffer or silently retry; transport and missing-state errors propagate.",
+    "No cryptographic implementation, dependency, authentication mechanism or existing on-disk publication format changed. Existing adaptive selection remains separate from the new explicit API."
+  ],
+  "qualification_reused": {
+    "all_target_release": "315 passed, 0 failed, 2 preexisting ignored; retained all-targets.txt",
+    "focused_production": "27 focused tests plus the separately added positive lazy-seed test passed; retained production-green-attempt3.txt and production-lazy-seed-attempt1.txt",
+    "focused_coverage": "13 current-object tests; schema_selection 92/92 lines and 13/13 functions, zstd_whole 65/72 lines and 11/11 functions",
+    "relevant_cases": [
+      "exact 16 MiB accepted and larger input rejected before encoding",
+      "empty/trailing-zero data, checksum corruption, truncation, extra frames, wrong lengths and forbidden frame flags",
+      "unseeded claimed-warm schema rejected without publication",
+      "namespace-separated Whole decoder reuse, quota pressure/eviction, policy denial and exact restart readback",
+      "candidate costs checked against independent serialized frame lengths, cold seed paid once and subsequent exact warm transfer"
+    ]
+  },
+  "limits": [
+    "Read-only review using existing qualification; no new tests, builds, profiling or transfers were run.",
+    "Sender retained_charge describes context allowance; input and bounded candidate buffers are additional caller-owned memory. zstd sizeof checks are drift guards, not an allocator-enforced process-RSS ceiling.",
+    "Selection is a greedy successful-miss body-cost decision, not a future-optimal policy or a CPU/latency guarantee. Failed or interrupted transfers require retained evidence; seed success does not promise target delivery.",
+    "No branch/MC/DC, whole-repository security proof, WAN performance, energy, production-deployment or FIPS qualification is claimed."
+  ]
+}

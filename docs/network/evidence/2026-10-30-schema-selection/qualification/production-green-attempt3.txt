@@ -1,0 +1,54 @@
+/Users/casey.allard/.cargo/bin/cargo +1.97.1 test --manifest-path crates/spiralcore-transfer/Cargo.toml --release --locked --target aarch64-apple-darwin --features hardware-sha256 --test schema_selection --test schema_reuse --test schema_sender --test adaptive
+   Compiling spiralcore-transfer v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer)
+    Finished `release` profile [optimized] target(s) in 2.77s
+     Running tests/adaptive.rs (/Users/casey.allard/spiralcore/target/aarch64-apple-darwin/release/deps/adaptive-d32315d14a995e58)
+
+running 13 tests
+test oversized_inputs_fail_before_any_exchange ... ok
+test repeat_probe_with_evicted_remote_object_completes_the_original_raw_offer ... ok
+test cold_structured_data_selects_zstd_before_begin ... ok
+test missing_base_and_changed_scope_do_not_reoffer_or_publish ... ok
+test real_http_codec_selection_cost_matches_bodies_and_reopens_exactly ... ok
+test revoked_authority_and_transport_failure_never_retry_selection ... ok
+test exact_repeat_probe_sends_raw_identity_only_and_unprobed_hit_counts_upload ... ok
+test malicious_receipts_are_checked_after_selection ... ok
+test small_localized_edit_uses_prefix_when_it_costs_less_than_sparse ... ok
+test warm_local_edits_choose_sparse_and_reordered_data_choose_prefix ... ok
+test empty_and_incompressible_ties_prefer_raw_with_exact_full_cost ... ok
+test selector_cost_matches_actual_forced_arms_and_minimizes_eligible_bytes ... ok
+test exact_bytes_and_length_survive_boundaries_and_length_changes_after_restart ... ok
+
+test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.54s
+
+     Running tests/schema_reuse.rs (/Users/casey.allard/spiralcore/target/aarch64-apple-darwin/release/deps/schema_reuse-00df528d40540592)
+
+running 5 tests
+test compressed_schema_offer_is_versioned_and_bounded ... ok
+test bad_compressed_transfer_cannot_publish_and_cached_decoder_recovers ... ok
+test warm_decoder_does_not_hide_corrupt_missing_or_unauthorized_artifact ... ok
+test persistent_prepared_senders_and_receiver_reuse_exact_objects_then_restart ... ok
+test codec_cache_is_bounded_pinned_and_released_without_exceeding_shared_budget ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.46s
+
+     Running tests/schema_selection.rs (/Users/casey.allard/spiralcore/target/aarch64-apple-darwin/release/deps/schema_selection-6c8f9ea8e8007c06)
+
+running 7 tests
+test whole_zstd_mode_is_explicit_and_requires_no_artifact ... ok
+test exact_candidate_costs_and_raw_tie_match_independent_frame_lengths ... ok
+test whole_contexts_preserve_parameters_bytes_and_recover_after_bad_frames ... ok
+test whole_codec_accepts_exact_sixteen_mib_and_rejects_larger_before_encode ... ok
+test unseeded_claimed_warm_schema_is_rejected_and_whole_cache_is_scoped ... ok
+test whole_receiver_rejects_corruption_then_reuses_bounded_contexts ... ok
+test prepared_selection_is_minimum_charges_seed_and_matches_serialized_transfer ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.72s
+
+     Running tests/schema_sender.rs (/Users/casey.allard/spiralcore/target/aarch64-apple-darwin/release/deps/schema_sender-dac9e8822c34ce4a)
+
+running 2 tests
+test allocation_counter_is_local_and_disabled_outside_the_scope ... ok
+test matching_prepared_records_allocate_only_the_output_buffer ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

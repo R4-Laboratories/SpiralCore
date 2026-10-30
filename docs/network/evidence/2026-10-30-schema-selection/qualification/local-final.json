@@ -1,0 +1,32 @@
+{
+  "schema": "spiralcore.schema-selection.final-local-qualification.v1",
+  "tests": {
+    "passed": 315,
+    "failed": 0,
+    "ignored": 2,
+    "note": "The two ignored tests predate this task; all targets ran."
+  },
+  "exits": {
+    "test": 0,
+    "clippy": 0,
+    "build": 0
+  },
+  "compiler": "Rust1.97.1",
+  "target": "aarch64-apple-darwin",
+  "features": [
+    "hardware-sha256"
+  ],
+  "cargo_target_dir": "/Users/casey.allard/spiralcore/target",
+  "incremental": false,
+  "profile": "release for tests and measurement executables; default dev for Clippy",
+  "commands": [
+    "cargo +1.97.1 test --release --locked --target aarch64-apple-darwin --features hardware-sha256 --manifest-path crates/spiralcore-transfer/Cargo.toml --all-targets",
+    "cargo +1.97.1 clippy --locked --target aarch64-apple-darwin --features hardware-sha256 --manifest-path crates/spiralcore-transfer/Cargo.toml --all-targets -- -D warnings",
+    "cargo +1.97.1 build --release --locked --target aarch64-apple-darwin --features hardware-sha256 --manifest-path crates/spiralcore-transfer/Cargo.toml --example schema_fitting --bin spiralcore-wan"
+  ],
+  "hashes": {
+    "all-targets.txt": "9e79f8582382e6b50f756dc106fa6c7653c10ee4fe27e15a984e9610ace1485c",
+    "clippy.txt": "56678e410b8156e2a72d7ad83eebede245de7403f179a827e37229127149d046",
+    "build.txt": "3b925b3c4319fdab5b2e61a642e2c72f5e1143f370b735e04abd2dbad6828cf7"
+  }
+}
