@@ -21,6 +21,19 @@ remain tied to their measured source; later results do not overwrite earlier neg
 
 ## Measured object sizes
 
+SC-OPT-011 adds frozen flat-JSON literal templates and genuinely trained-zstd
+dictionaries at source `fe98bf0a40cad50f513652690548f7f0bb4f948f`. One held-out,
+ten-trial comparison completed 400 targets and 240 seeds with exact reopened
+bytes. Matching ~1 MiB batches use 796,771 median body bytes with schema fitting,
+against 1,051,446.5 raw and 130,432 ordinary zstd; schema CPU is 15.677 ms against
+4.009 ms raw and 5.978 ms zstd. Small normal records use 590 median body bytes
+with the trained dictionary versus 667.5 zstd, before the 8,705-byte destination
+seed. The template prototype is functional but is not a demonstrated improvement
+over conventional compression. Fit, drift, fallback and actual sender reuse plus
+all destination seeds are included in the [complete result](schema-fitting-results-2026-10-30.md)
+and [raw measurements](evidence/2026-10-30-schema-fitting/paired.jsonl).
+These are local serialized durable transfers, not a new WAN or energy result.
+
 SC-OPT-009 implements packed CA evolution and immutable prepared sender predictions
 at source `384ad3af2a41e87643bd0678120b854e5fe7244b`, compared with `d4532b0`.
 The single ten-trial paired campaign completed 360 targets and 360 seeds with exact
