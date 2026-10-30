@@ -213,8 +213,8 @@ fn raw_body_cost(len: u64) -> u64 {
     368 + len + 133 * len.div_ceil(spiralcore_transfer::MAX_CHUNK as u64)
 }
 
-struct Measured {
-    result: spiralcore_transfer::Result<client::Stats>,
+pub(super) struct Measured {
+    pub(super) result: spiralcore_transfer::Result<client::Stats>,
     sender_cpu: u128,
     wall: u128,
     exchange_cpu: u128,
@@ -222,7 +222,7 @@ struct Measured {
     before: WireMetrics,
     after: WireMetrics,
 }
-fn measure<F>(http: &mut HttpClient, call: F) -> Measured
+pub(super) fn measure<F>(http: &mut HttpClient, call: F) -> Measured
 where
     F: FnOnce(
         &mut dyn FnMut(&[Frame]) -> spiralcore_transfer::Result<Vec<Frame>>,
@@ -255,7 +255,7 @@ where
     }
 }
 impl Measured {
-    fn row(&self, phase: &str, position: Option<usize>, bytes: &[u8]) -> Value {
+    pub(super) fn row(&self, phase: &str, position: Option<usize>, bytes: &[u8]) -> Value {
         let request = self.after.request_body_bytes - self.before.request_body_bytes;
         let response = self.after.response_body_bytes - self.before.response_body_bytes;
         let receiver = self.after.receiver_cpu_micros - self.before.receiver_cpu_micros;

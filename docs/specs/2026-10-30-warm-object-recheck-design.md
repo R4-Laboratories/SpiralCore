@@ -38,8 +38,8 @@ This is one update per seeded object, not a long update-sequence qualification.
 
 ## Dose, proof and measurement
 
-Run **30 paired trials per size**, with deterministic counterbalanced A/B and
-B/A ordering (15 each). Three shards contain ten trials per size apiece. Total:
+Run **30 paired trials per size**, with a fixed-seed shuffle of counterbalanced
+A/B and B/A ordering (15 each per size). Three shards contain ten trials per size apiece. Total:
 **120 sessions, 120 seeds, 120 changed targets, 240 transfers**. Each shard has
 40 scopes and 80 transfers. Retained payload is exactly **680 MiB** per shard;
 adding 40 MiB decoder retention, 16 MiB slack and 80 × 4 KiB publication/header

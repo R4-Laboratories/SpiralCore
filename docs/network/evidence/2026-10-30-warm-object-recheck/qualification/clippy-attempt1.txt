@@ -1,0 +1,23 @@
+    Checking spiralcore-transfer v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer)
+error: this `if` statement can be collapsed
+   --> examples/support/warm_object.rs:202:5
+    |
+202 | /     if seed || row["mode"] == "Raw" {
+203 | |         if row["mode"] != "Raw" || row["body_bytes"] != raw_cost(len) {
+204 | |             return Err("raw seed/fallback cost mismatch".into());
+205 | |         }
+206 | |     }
+    | |_____^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.97.0/index.html#collapsible_if
+    = note: `-D clippy::collapsible-if` implied by `-D warnings`
+    = help: to override `-D warnings` add `#[allow(clippy::collapsible_if)]`
+help: collapse nested if block
+    |
+202 ~     if (seed || row["mode"] == "Raw") {
+203 ~         && (row["mode"] != "Raw" || row["body_bytes"] != raw_cost(len)) {
+204 |             return Err("raw seed/fallback cost mismatch".into());
+205 ~         }
+    |
+
+error: could not compile `spiralcore-transfer` (example "schema_fitting") due to 1 previous error
