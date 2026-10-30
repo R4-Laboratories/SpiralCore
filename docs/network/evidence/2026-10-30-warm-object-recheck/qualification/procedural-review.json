@@ -1,0 +1,69 @@
+{
+  "milestone": "SC-WAN-005",
+  "stage": "procedural audit only; before independent content review",
+  "verdict": "PASS",
+  "reviewer": "selector_tests",
+  "completed_utc": "2026-10-30T22:42:56.355089+00:00",
+  "roster": "d1927d9e7ce51354 freshly verified; harness-optimizer active",
+  "base": "921d971589d8dca267f150a727be0fc52510ca32",
+  "approved_plan_commit": "83527eec6fea9a870405205e14bd45849ccefa5c",
+  "scope": "User-approved verified prior-object sparse versus matched whole-object zstd recheck; harness/workflow only.",
+  "observed_qualification": {
+    "all_targets": {
+      "passed": 324,
+      "failed": 0,
+      "preexisting_ignored": 2,
+      "exit": 0
+    },
+    "example_green_before_style_fix": 26,
+    "new_harness_tests": 6,
+    "final_focused_tests_after_style_fix": 6,
+    "final_clippy_exit": 0,
+    "release_build_exit": 0,
+    "workflow_red_failed": 3,
+    "workflow_green_passed": 3,
+    "workflow_bash_syntax_blocks": 6,
+    "production_src_diff_vs_base": "empty",
+    "coverage": "Existing source-identical SC-OPT-014 production coverage retained; no new harness, branch or whole-repository coverage claimed."
+  },
+  "retained_red_and_corrections": [
+    "Initial missing fixture_pair/validate_operation APIs (E0425, exit101).",
+    "Behavioral receipt-binding RED: altered dose incorrectly accepted, then fixed and GREEN.",
+    "Three workflow guards initially fail on absent required workflow, same gate tests GREEN after creation.",
+    "First all-target Clippy failed collapsible_if; original clippy-attempt1 retained, equivalent predicate collapse followed by six focused tests, final all-target Clippy and release build exit0."
+  ],
+  "execution_constraints": "Existing shared target, explicit Rust1.97.1 native target and incremental-off. Formal raw outputs retained under user instruction. No reviewer tests/builds/content review or new archive.",
+  "registration_status": {
+    "local_24_transfers": "NOT_RUN; source/executable freeze and next gates required",
+    "wan_240_transfers": "NOT_RUN; no performance claim"
+  },
+  "scope_contract": "30 pairs/size,1MiB and16MiB, verified32-byte midpoint edits,15AB/15BA shuffled orders, separate paid Raw seeds,600 actual sparse body bytes required; report warm update and full lifecycle separately. Local receiver is a separate process; CPU added once. Source/binary/plan and stopped-store exact readbacks mandatory.",
+  "source_sha256": {
+    "crates/spiralcore-transfer/examples/support/warm_object.rs": "ca59170c6bc3080c227e754217769d410e5c37820d6d4f9f47ad94602ab6e231",
+    "crates/spiralcore-transfer/examples/schema_fitting.rs": "8d1888e7d1921d8fc383007e7a7d41d85e3327bc0a49a22dc682d02044a432ca",
+    "crates/spiralcore-transfer/examples/support/schema_selection.rs": "900f52aeee18d3a4785c63c2f7967167a77f98deff2cba88aa063a4e1bb49ac7",
+    "crates/spiralcore-transfer/tests/warm_object_workflow.rs": "584ada1981e17d8387ea027dea9542e69dcdca37c6489fa4d80e3eb52a310fec",
+    ".github/workflows/spiralcore-warm-object.yml": "294d349af88430854024b781cf2bddc51e3038d40c219dd12aa3f451bc8963c2",
+    "docs/specs/2026-10-30-warm-object-recheck-design.md": "307a0db7f48e69b834f738720ac35a248ab560ac2b09fa00176d7872ead0e99d",
+    "docs/network/evidence/2026-10-30-warm-object-recheck/measurement-contract.md": "b9de6aa996e09ab9a438ae5bc956a8911fcdcf0f95e0bba3457beda598b5b3a8"
+  },
+  "receipt_sha256": {
+    "all-targets.txt": "8e9382f85549231cde9eb6343ad249a68acdd9aa586605366b470ecd5eef67da",
+    "all-targets.exit": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+    "harness-red.txt": "54fc790580ab6a9307e84f81ad3324ce257ffedee4a7a1a838ad1f5665ec158c",
+    "harness-binding-red.txt": "d89a47fdcdb9e8b22f667554211bab98303f18aaadefa4dfe601f32396a57bcf",
+    "harness-green.txt": "9665fea0818954959d1e030bd5f96c49d50f5d3c4bca7153b0cad8c971b432af",
+    "harness-final.txt": "e20913b4f274455400c396c35daa2777f5155f38480594cec97117fbae6955dc",
+    "harness-final.exit": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+    "clippy-attempt1.txt": "8aacc9ab934aff779a406978fd7f63c10025052de20cb87cb2c8cbede7110099",
+    "clippy-attempt1.exit": "39b8dc3fc8b44765c8e6f1adee04c5b465e555ab791cc42d0d9e810d5b64297c",
+    "clippy.txt": "e2a78579f4f91a34db47825b50f73ce3e6e16836134e6c847c8746259661fedd",
+    "clippy.exit": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+    "build.txt": "608380acf568e32f0c1ce0852261e165d801558e55695aff8c5ded04ccfb4dea",
+    "build.exit": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+    "workflow-red.txt": "1f1674bbedc47d235126bd790e48a1b6bbbdd4c4983eab3569669da352bb8c2b",
+    "workflow-green.txt": "ae0df6731cb7e4777a35d5a119ad23930580ea0f1c8dd14cde3acdd31a1fb5ef",
+    "workflow.json": "68c2fb29b9ffd5cb62b8b8bd46b230f6dfdaeb77e635ee092579365709991b28"
+  },
+  "next_stage": "Independent code/Rust and cross-author security/infra reviews may begin after this procedural PASS notification; this receipt does not approve source content or measurement results."
+}
