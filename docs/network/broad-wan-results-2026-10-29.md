@@ -2,7 +2,7 @@
 
 Measured source: `9dce4c57d1f41cef7365b297cd690849afce34e7`.
 Run: `d6aaa0f15da9ccbc62c005a1802532b3e85ad6d901886eea6fbd0076b2d312e4`.
-Nine of twelve registered cases are complete and independently reviewed. Remaining
+Ten of twelve registered cases are complete and independently reviewed. Remaining
 cases must not be inferred from this result. The complete registration is in the
 [workload plan](../plans/2026-10-29-broader-wan-and-scaling.md).
 
@@ -310,6 +310,34 @@ All thirty pairs and 240 operations reopened exactly, totaling 4,026,531,840
 compared bytes. Independent review agrees with the raw receipts and author
 statistics, and all five captures meet the completeness criteria. The
 [complete structured-data packet](evidence/2026-10-29-broad-wan/cases/structured_localized_32/README.md)
+retains every observation and its custody.
+
+## Completed case: localized edit to opaque compressed bytes
+
+The base is a zstd level-3 frame encoding 16 MiB minus 4 KiB of pseudorandom
+input. The transferred base and target are each 16,773,514 bytes. The target
+changes 32 midpoint bytes by XOR with `0xa5`. This tests reuse of an opaque
+compressed byte string; the edited target is not claimed to be a valid zstd
+stream or a model of editing plaintext and recompressing it.
+
+| Warm update | Median request + reply HTTP-body bytes | Median elapsed, including computation | Median sender + receiver-handler CPU |
+|---|---:|---:|---:|
+| Raw full send | 16,810,324 | 1,781.628 ms | 95.216 ms |
+| Zstd, 60 KiB chunks | 16,810,324 | 1,652.429 ms | 95.238 ms |
+| Zstd prefix delta | 26,263 | 245.896 ms | 100.529 ms |
+| Sparse COPY/LITERAL | 600 | 221.013 ms | 78.240 ms |
+
+Sparse uses 99.99643076% fewer HTTP-body bytes than raw, with an 8.061191×
+ratio of median elapsed times and approximately 17.83% lower median combined CPU.
+Including the actual raw seed and one update, raw uses 33,620,648 body bytes
+and 3,586.694 ms; sparse uses 16,810,924 bytes and 2,059.913 ms; prefix uses
+16,836,587 bytes and 1,991.584 ms. Prefix has the lower lifecycle median on
+this case despite sparse's lower warm-update median.
+
+All thirty pairs and 240 operations reopened exactly, totaling 4,025,643,360
+compared bytes. Independent review agrees with the raw receipts and author
+statistics, and all five captures meet the completeness criteria. The
+[complete compressed-byte packet](evidence/2026-10-29-broad-wan/cases/compressed_localized_32/README.md)
 retains every observation and its custody.
 
 ## Qualification and measurement boundaries
