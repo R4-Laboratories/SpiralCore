@@ -69,6 +69,7 @@ pub enum Mode {
     Dag = 2,
     SparseV1 = 3,
     ZstdPrefixV1 = 4,
+    RuntimeV1 = 5,
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Offer {
@@ -114,6 +115,7 @@ impl Offer {
             2 => Mode::Dag,
             3 => Mode::SparseV1,
             4 => Mode::ZstdPrefixV1,
+            5 => Mode::RuntimeV1,
             _ => return Err(Error::Unsupported),
         };
         let len = r.u64()?;
@@ -147,7 +149,7 @@ impl Offer {
         if self.len > MAX_OBJECT {
             return Err(Error::Limit);
         }
-        if self.mode == Mode::ZstdPrefixV1
+        if matches!(self.mode, Mode::ZstdPrefixV1 | Mode::RuntimeV1)
             && self.len > crate::zstd_prefix::MAX_PREFIX_OBJECT as u64
         {
             return Err(Error::Limit);
@@ -157,6 +159,7 @@ impl Offer {
             (Mode::Raw | Mode::Zstd, None) if self.base.is_none() => Ok(()),
             (Mode::SparseV1, None) if self.base.is_some() => Ok(()),
             (Mode::ZstdPrefixV1, None) if self.base.is_some() => Ok(()),
+            (Mode::RuntimeV1, None) if self.base.is_some() => Ok(()),
             _ => Err(Error::Malformed),
         }
     }

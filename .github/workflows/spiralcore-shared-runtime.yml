@@ -1,0 +1,147 @@
+name: SpiralCore shared-runtime WAN pilot
+on:
+  push:
+    branches: [codex/spiralcore-shared-runtime]
+permissions:
+  contents: read
+concurrency:
+  group: spiralcore-shared-runtime-pilot
+  cancel-in-progress: false
+jobs:
+  pilot:
+    if: github.ref == 'refs/heads/codex/spiralcore-shared-runtime' && github.sha == vars.SPIRALCORE_RUNTIME_SOURCE && github.run_attempt == 1
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      CARGO_TARGET_DIR: ${{ runner.temp }}/spiralcore-runtime-target
+      CARGO_INCREMENTAL: 0
+      RUNTIME_SOURCE: ${{ vars.SPIRALCORE_RUNTIME_SOURCE }}
+      RUNTIME_URL: ${{ vars.SPIRALCORE_RUNTIME_URL }}
+      RUNTIME_RUN: ${{ vars.SPIRALCORE_RUNTIME_RUN }}
+      RUNTIME_RECEIVER_SHA: ${{ vars.SPIRALCORE_RUNTIME_RECEIVER_SHA256 }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Validate exact source and bounded configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir runtime-pilot
+          # BEGIN CONFIG GATE
+          validate_runtime_config() {
+            [[ "$GITHUB_REF" == refs/heads/codex/spiralcore-shared-runtime ]] || return 1
+            [[ "$GITHUB_RUN_ATTEMPT" == 1 ]] || return 1
+            [[ "$GITHUB_SHA" =~ ^[0-9a-f]{40}$ && "$GITHUB_SHA" == "$RUNTIME_SOURCE" ]] || return 1
+            [[ "$RUNTIME_URL" =~ ^https://[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.trycloudflare\.com/?$ ]] || return 1
+            [[ "$RUNTIME_RUN" =~ ^[a-zA-Z0-9][a-zA-Z0-9-]{0,63}$ ]] || return 1
+            [[ "$RUNTIME_RECEIVER_SHA" =~ ^[0-9a-f]{64}$ ]] || return 1
+          }
+          validate_runtime_config || { printf '%s\n' 'Invalid bounded runtime pilot configuration' >&2; exit 1; }
+          # END CONFIG GATE
+          [[ "$(git rev-parse HEAD)" == "$GITHUB_SHA" ]]
+          [[ ! -e "$CARGO_TARGET_DIR" ]]
+          [[ -z "${RUSTFLAGS:-}${CARGO_ENCODED_RUSTFLAGS:-}${RUSTC_WRAPPER:-}${RUSTC_WORKSPACE_WRAPPER:-}${CARGO_BUILD_TARGET:-}" ]]
+          git diff --exit-code > runtime-pilot/tracked-source-clean.log
+          git rev-parse HEAD > runtime-pilot/source-revision.txt
+          jq -n --arg source "$GITHUB_SHA" --arg run "$RUNTIME_RUN" \
+            --arg receiver "$RUNTIME_RECEIVER_SHA" --arg url "$RUNTIME_URL" \
+            --arg workflow_run "$GITHUB_RUN_ID" \
+            '{schema:"spiralcore.shared-runtime.wan-pilot.v1",source:$source,public_run_id:$run,
+              receiver_executable_sha256_operator_supplied:$receiver,url:$url,
+              github_run_id:$workflow_run,github_run_attempt:1,width:4096,steps:4096,
+              cases:["generated","edited","unrelated"],trials:3,methods:["raw","zstd","adaptive","runtime"],
+              scopes:36,seed_operations:36,target_operations:36,
+              interpretation:"pilot HTTP body bytes; no packet/full-path byte or acceptance claim"}' \
+            > runtime-pilot/registration.json
+      - name: Install exact Rust compiler and record runner
+        timeout-minutes: 3
+        shell: bash
+        run: |
+          set -euo pipefail
+          rustup toolchain install 1.97.1 --profile minimal --component clippy 2>&1 | tee runtime-pilot/toolchain-install.log
+          rustc +1.97.1 -vV > runtime-pilot/rustc.txt
+          [[ "$(sed -n 's/^host: //p' runtime-pilot/rustc.txt)" == x86_64-unknown-linux-gnu ]]
+          uname -a > runtime-pilot/platform.txt
+          lscpu -J > runtime-pilot/cpu.json
+          printf '%s\n' 'fresh source build; release; default Cargo features; no binary/build reuse; no instrumentation' > runtime-pilot/build-profile.txt
+          cargo +1.97.1 tree --locked --manifest-path crates/spiralcore-transfer/Cargo.toml -e features > runtime-pilot/features.txt
+          git ls-files -z -- crates/spiralcore-transfer/src crates/spiralcore-transfer/tests \
+            crates/spiralcore-transfer/examples/shared_runtime.rs crates/spiralcore-transfer/Cargo.toml \
+            crates/spiralcore-transfer/Cargo.lock crates/uor-r4-object-store/src \
+            .github/workflows/spiralcore-shared-runtime.yml \
+            | sort -z | xargs -0 sha256sum > runtime-pilot/source-files.sha256
+      - name: Qualify checked-out source and frozen replay vectors before networking
+        timeout-minutes: 8
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo +1.97.1 check --locked --manifest-path crates/spiralcore-transfer/Cargo.toml --all-targets 2>&1 | tee runtime-pilot/check.log
+          cargo +1.97.1 clippy --locked --manifest-path crates/spiralcore-transfer/Cargo.toml --all-targets -- -D warnings 2>&1 | tee runtime-pilot/clippy.log
+          cargo +1.97.1 test --release --locked --manifest-path crates/spiralcore-transfer/Cargo.toml --test shared_runtime native_canonical_checkpoint_and_trace_vectors_are_stable -- --exact 2>&1 | tee runtime-pilot/frozen-vectors.log
+          cargo +1.97.1 test --release --locked --manifest-path crates/spiralcore-transfer/Cargo.toml --all-targets -- --include-ignored 2>&1 | tee runtime-pilot/release-tests.log
+          cargo +1.97.1 build --release --locked --manifest-path crates/spiralcore-transfer/Cargo.toml --example shared_runtime --bin spiralcore-wan 2>&1 | tee runtime-pilot/release-build.log
+          cp "$CARGO_TARGET_DIR/release/examples/shared_runtime" runtime-pilot/shared_runtime-linux-x86_64
+          sha256sum runtime-pilot/shared_runtime-linux-x86_64 "$CARGO_TARGET_DIR/release/spiralcore-wan" > runtime-pilot/binaries.sha256
+          git diff --exit-code > runtime-pilot/tracked-source-after-build.log
+          sha256sum -c runtime-pilot/source-files.sha256 > runtime-pilot/source-after-build.log
+      - name: Generate and verify the exact fixed-dose pilot plan
+        timeout-minutes: 2
+        shell: bash
+        run: |
+          set -euo pipefail
+          runtime-pilot/shared_runtime-linux-x86_64 plan --out runtime-pilot/plan.json \
+            --source "$GITHUB_SHA" --run-id "$RUNTIME_RUN" --transport remote-http \
+            --widths 4096 --steps 4096 --cases generated,edited,unrelated --trials 3 \
+            2>&1 | tee runtime-pilot/plan.log
+          jq -e --arg source "$GITHUB_SHA" --arg run "$RUNTIME_RUN" \
+            '.schema=="spiralcore.wan.plan.v4" and .cold_graph_warming==false and
+              .config.source==$source and .config.run_id==$run and .config.transport=="remote-http" and
+              .config.widths==[4096] and .config.steps==[4096] and
+              .config.cases==["generated","edited","unrelated"] and .config.trials==3 and
+              .methods==["raw","zstd","adaptive","runtime"] and
+              (.allowed_scopes|length)==36 and (.allowed_scopes|unique|length)==36 and
+              (.fixtures|length)==9 and .expected_operations==72 and
+              all(.fixtures[]; .target_bytes>0 and .target_bytes<=16777216)' \
+            runtime-pilot/plan.json > runtime-pilot/plan-gate.log
+          sha256sum runtime-pilot/plan.json > runtime-pilot/plan.sha256
+      - name: Run one authenticated remote pilot without retries
+        timeout-minutes: 5
+        env:
+          SPIRALCORE_WAN_TOKEN: ${{ secrets.SPIRALCORE_RUNTIME_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          # BEGIN AUTH GATE
+          [[ "${SPIRALCORE_WAN_TOKEN:-}" =~ ^[0-9a-f]{64}$ ]] || { printf '%s\n' 'Missing or invalid runtime capability' >&2; exit 1; }
+          # END AUTH GATE
+          sha256sum -c runtime-pilot/binaries.sha256 > runtime-pilot/binaries-before-transfer.log
+          runtime-pilot/shared_runtime-linux-x86_64 remote --plan runtime-pilot/plan.json \
+            --out runtime-pilot/observations.jsonl --url "$RUNTIME_URL" \
+            --receiver-exe-sha256 "$RUNTIME_RECEIVER_SHA" \
+            2>&1 | tee runtime-pilot/remote.log
+          sha256sum -c runtime-pilot/binaries.sha256 > runtime-pilot/binaries-after-transfer.log
+          jq -s -e '([.[]|select(.event=="operation")]|length)==72 and
+            ([.[]|select(.event=="operation")]|all(.status=="ok")) and
+            ([.[]|select(.event=="complete")]|length)==1 and
+            any(.[];.event=="complete" and .operations==72 and .remote_verification_pending==true)' \
+            runtime-pilot/observations.jsonl > runtime-pilot/completeness-gate.log
+          printf '%s\n' 'Sender pilot complete. Receiver shutdown/reopen exact verification and evidence join remain required.' > runtime-pilot/receiver-verification-pending.txt
+      - name: Seal available evidence including failures
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p runtime-pilot
+          find runtime-pilot -type f ! -name artifact-sha256.txt -print0 \
+            | sort -z | xargs -0 -r sha256sum > runtime-pilot/artifact-sha256.txt
+      - name: Retain pilot evidence and sender executable
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: spiralcore-shared-runtime-${{ github.run_id }}-${{ github.sha }}
+          path: runtime-pilot/
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 1

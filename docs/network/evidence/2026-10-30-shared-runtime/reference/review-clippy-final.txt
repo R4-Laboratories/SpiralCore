@@ -1,0 +1,18 @@
+    Checking spiralcore-transfer v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer)
+error: field assignment outside of initializer for an instance created with Default::default()
+  --> tests/shared_transfer.rs:97:5
+   |
+97 |     limits.resident_bytes = 2 << 20;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+note: consider initializing the variable with `spiralcore_transfer::endpoint::Limits { resident_bytes: 2 << 20, ..Default::default() }` and removing relevant reassignments
+  --> tests/shared_transfer.rs:96:5
+   |
+96 |     let mut limits = Limits::default();
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.97.0/index.html#field_reassign_with_default
+   = note: `-D clippy::field-reassign-with-default` implied by `-D warnings`
+   = help: to override `-D warnings` add `#[allow(clippy::field_reassign_with_default)]`
+
+error: could not compile `spiralcore-transfer` (test "shared_transfer") due to 1 previous error
+warning: build failed, waiting for other jobs to finish...

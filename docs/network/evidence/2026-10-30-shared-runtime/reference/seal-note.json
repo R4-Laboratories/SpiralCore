@@ -1,0 +1,15 @@
+{
+  "initial_verification": {
+    "command": "shasum -a 256 -c SHA256SUMS",
+    "working_directory": "repository root",
+    "exit_code": 2,
+    "observed_error": "shasum: SHA256SUMS: No such file or directory",
+    "cause": "The manifest contains reference-directory-relative filenames; verification was initially invoked from the wrong directory.",
+    "effect": "No source or receipt was changed by the failed read-only verification."
+  },
+  "corrected_verification": {
+    "command": "shasum -a 256 -c SHA256SUMS",
+    "working_directory": "docs/network/evidence/2026-10-30-shared-runtime/reference",
+    "result_location": "actual tool result; manifest intentionally excludes only itself"
+  }
+}

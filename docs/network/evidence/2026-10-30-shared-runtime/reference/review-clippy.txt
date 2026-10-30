@@ -1,0 +1,22 @@
+    Checking spiralcore-transfer v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer)
+error: manual implementation of `.is_multiple_of()`
+   --> src/shared_runtime.rs:499:8
+    |
+499 |     if n % 3 != 0 || roots < 3 {
+    |        ^^^^^^^^^^ help: replace with: `!n.is_multiple_of(3)`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.97.0/index.html#manual_is_multiple_of
+    = note: `-D clippy::manual-is-multiple-of` implied by `-D warnings`
+    = help: to override `-D warnings` add `#[allow(clippy::manual_is_multiple_of)]`
+
+error: manual implementation of `.is_multiple_of()`
+   --> src/shared_runtime.rs:504:11
+    |
+504 |     while quotient % 3 == 0 {
+    |           ^^^^^^^^^^^^^^^^^ help: replace with: `quotient.is_multiple_of(3)`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.97.0/index.html#manual_is_multiple_of
+
+error: could not compile `spiralcore-transfer` (lib) due to 2 previous errors
+warning: build failed, waiting for other jobs to finish...
+error: could not compile `spiralcore-transfer` (lib test) due to 2 previous errors

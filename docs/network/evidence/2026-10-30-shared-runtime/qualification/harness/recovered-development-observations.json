@@ -1,0 +1,103 @@
+{
+  "schema": "spiralcore.harness.development-observations.v1",
+  "custody": "Recovered from this agent's original exec_command/write_stdin tool results; not rerun or reconstructed as if historical commands had just executed.",
+  "output_scope": "Selected exact output excerpts. Compiler warnings and repeated undefined-symbol diagnostics are omitted where noted; these are not represented as complete original logs.",
+  "source_binding": "Intermediate uncommitted examples/shared_runtime.rs states. No exact pre-command source hash was retained for these development iterations. The later frozen-source qualification must be bound separately.",
+  "observations": [
+    {
+      "phase": "tool-resolution-failure",
+      "command": "cargo test --manifest-path crates/spiralcore-transfer/Cargo.toml --example shared_runtime fixture_edits_keep_every_unmodified_byte_and_bind_trial",
+      "session_id": 11922,
+      "chunk_id": "4eb3a9",
+      "exit_code": 1,
+      "output": "error: unknown command 'test'\nCoding agents: install the Cargo skills with `npx skills add getcargohq/cargo-skills`\nRun \"cargo-ai --help\" for the full command list.\n",
+      "resolution": "All subsequent Rust commands use /Users/casey.allard/.cargo/bin/cargo explicitly."
+    },
+    {
+      "phase": "fixture-test-red",
+      "command": "/Users/casey.allard/.cargo/bin/cargo test --manifest-path crates/spiralcore-transfer/Cargo.toml --example shared_runtime fixture_edits_keep_every_unmodified_byte_and_bind_trial",
+      "session_id": 15758,
+      "chunk_id": "defabe",
+      "exit_code": 101,
+      "output": "error[E0425]: cannot find function `target_for` in this scope\n  --> examples/shared_runtime.rs:11:22\n   |\n11 |         let edited = target_for(\"edited\", &prediction, 7).unwrap();\n   |                      ^^^^^^^^^^ not found in this scope\n",
+      "omitted": "Seven repeated target_for undefined-function errors, one unused-import warning, and Cargo footer."
+    },
+    {
+      "phase": "fixture-test-green",
+      "chunk_id": "f05ce4",
+      "exit_code": 0,
+      "output": "running 1 test\ntest tests::fixture_edits_keep_every_unmodified_byte_and_bind_trial ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s\n"
+    },
+    {
+      "phase": "plan-test-red",
+      "command": "/Users/casey.allard/.cargo/bin/cargo test --manifest-path crates/spiralcore-transfer/Cargo.toml --example shared_runtime",
+      "session_id": 15058,
+      "chunk_id": "5a8a92",
+      "exit_code": 101,
+      "output": "error[E0422]: cannot find struct, variant or union type `Config` in this scope\n  --> examples/shared_runtime.rs:52:22\n   |\n52 |         let config = Config {\n   |                      ^^^^^^ not found in this scope\n",
+      "omitted": "Undefined make_plan, Fixture, sha, and repeated make_plan diagnostics; Cargo footer."
+    },
+    {
+      "phase": "fixture-plan-green",
+      "session_id": 46673,
+      "chunk_id": "201e89",
+      "exit_code": 0,
+      "output": "running 2 tests\ntest tests::fixture_edits_keep_every_unmodified_byte_and_bind_trial ... ok\ntest tests::plan_binds_unique_scopes_and_actual_fixture_sizes ... ok\n\ntest result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s\n"
+    },
+    {
+      "phase": "local-operation-test-red",
+      "command": "/Users/casey.allard/.cargo/bin/cargo test --manifest-path crates/spiralcore-transfer/Cargo.toml --example shared_runtime serialized_runtime_transfer_cost_and_exact_reopen_are_measured",
+      "session_id": 96208,
+      "chunk_id": "6cbe3b",
+      "exit_code": 101,
+      "output": "error[E0433]: cannot find type `Destination` in this scope\n   --> examples/shared_runtime.rs:165:27\n    |\n165 |         let destination = Destination::Local(root.clone());\n    |                           ^^^^^^^^^^^ use of undeclared type `Destination`\n",
+      "omitted": "Three undefined operation diagnostics and unused-import warnings; Cargo footer."
+    },
+    {
+      "phase": "local-operation-first-implementation-failed",
+      "session_id": 25776,
+      "chunk_id": "01c2da",
+      "exit_code": 101,
+      "output": "running 1 test\ntest tests::serialized_runtime_transfer_cost_and_exact_reopen_are_measured ... FAILED\n\nfailures:\n\n---- tests::serialized_runtime_transfer_cost_and_exact_reopen_are_measured stdout ----\n\nthread 'tests::serialized_runtime_transfer_cost_and_exact_reopen_are_measured' (62022866) panicked at examples/shared_runtime.rs:304:82:\ncalled `Result::unwrap()` on an `Err` value: Storage\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n\n\nfailures:\n    tests::serialized_runtime_transfer_cost_and_exact_reopen_are_measured\n\ntest result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 2 filtered out; finished in 0.00s\n\nerror: test failed, to rerun pass `--example shared_runtime`\n",
+      "resolution": "The test had precreated its endpoint directory with ordinary permissions. It now passes a new child path so Endpoint creates and verifies the private cache directory. Failed temporary fixture directory was not silently removed."
+    },
+    {
+      "phase": "local-operation-green",
+      "session_id": 89628,
+      "chunk_id": "8a893e",
+      "exit_code": 0,
+      "output": "running 1 test\ntest tests::serialized_runtime_transfer_cost_and_exact_reopen_are_measured ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2 filtered out; finished in 0.07s\n"
+    },
+    {
+      "phase": "output-binding-test-red",
+      "chunk_id": "e9dddc",
+      "exit_code": 101,
+      "output": "error[E0425]: cannot find function `new_output` in this scope\n   --> examples/shared_runtime.rs:301:26\n    |\n301 |         let mut output = new_output(&path).unwrap();\n    |                          ^^^^^^^^^^ not found in this scope\n",
+      "omitted": "Undefined write_row, new_output, validate_fixture and arm_order diagnostics, unused-import warnings and Cargo footer."
+    },
+    {
+      "phase": "driver-compilation-failure",
+      "session_id": 7310,
+      "chunk_id": "54b778",
+      "exit_code": 101,
+      "output": "error[E0106]: missing lifetime specifier\n   --> examples/shared_runtime.rs:302:99\n    |\n302 | fn planned_fixture(plan: &Value, width: usize, steps: u32, case: &str, trial: usize) -> BoxResult<&Value> {\n    |                          ------                                  ----                             ^ expected named lifetime parameter\n",
+      "resolution": "Bound returned fixture lifetime explicitly to the borrowed plan; no behavioral or measurement change."
+    },
+    {
+      "phase": "four-test-green",
+      "session_id": 31087,
+      "chunk_id": "ec6ba7",
+      "exit_code": 0,
+      "output": "running 4 tests\ntest tests::fixture_edits_keep_every_unmodified_byte_and_bind_trial ... ok\ntest tests::plan_binds_unique_scopes_and_actual_fixture_sizes ... ok\ntest tests::output_creation_never_overwrites_and_fixture_binding_rejects_changes ... ok\ntest tests::serialized_runtime_transfer_cost_and_exact_reopen_are_measured ... ok\n\ntest result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.07s\n"
+    },
+    {
+      "phase": "http-and-receiver-verification-green",
+      "session_id": 12479,
+      "chunk_id": "1b9048",
+      "exit_code": 0,
+      "output": "running 5 tests\ntest tests::fixture_edits_keep_every_unmodified_byte_and_bind_trial ... ok\ntest tests::plan_binds_unique_scopes_and_actual_fixture_sizes ... ok\ntest tests::output_creation_never_overwrites_and_fixture_binding_rejects_changes ... ok\ntest tests::serialized_runtime_transfer_cost_and_exact_reopen_are_measured ... ok\ntest tests::remote_http_ack_is_separate_from_stopped_receiver_exact_verification ... ok\n\ntest result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.36s\n",
+      "interpretation": "Functional qualification only. Unit/integration test durations are not acceptance performance observations."
+    }
+  ],
+  "acceptance_performance_runs_by_harness_author": 0
+}

@@ -1,0 +1,75 @@
+Diff in /Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer/tests/shared_transfer.rs:216:
+             &[target.as_slice(), &[0, 0, 7, 0]].concat(),
+         ] {
+             let frames = spiralcore_transfer::shared_transfer::prepare(&base, bytes, &recipe)
+-                .unwrap().expect("these known replay cases must produce an exact residual");
++                .unwrap()
++                .expect("these known replay cases must produce an exact residual");
+             let prediction =
+                 spiralcore_transfer::shared_transfer::replay_frame(&base, &frames[0]).unwrap();
+             let mut decoded = Vec::new();
+Diff in /Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer/tests/shared_transfer.rs:238:
+ 
+ #[test]
+ fn revoked_authority_and_changed_epoch_cannot_finish_an_admitted_replay() {
+-    use std::sync::{Arc, atomic::AtomicBool};
++    use std::sync::{atomic::AtomicBool, Arc};
+     struct Gate(Arc<AtomicBool>);
+     impl Authority for Gate {
+         fn authorize(&self, _: &Context) -> Result<()> {
+Diff in /Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer/tests/shared_transfer.rs:245:
+-            if self.0.load(Ordering::SeqCst) { Ok(()) } else { Err(Error::Unauthorized) }
++            if self.0.load(Ordering::SeqCst) {
++                Ok(())
++            } else {
++                Err(Error::Unauthorized)
++            }
+         }
+     }
+     let allowed = Arc::new(AtomicBool::new(true));
+Diff in /Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer/tests/shared_transfer.rs:249:
+     let dir = Temp::new();
+-    let mut ep = Endpoint::open_with_policy(&dir.0, Limits::default(), Gate(allowed.clone()), ColdGraphPolicy::Disabled).unwrap();
++    let mut ep = Endpoint::open_with_policy(
++        &dir.0,
++        Limits::default(),
++        Gate(allowed.clone()),
++        ColdGraphPolicy::Disabled,
++    )
++    .unwrap();
+     let c = context();
+     let base = State::seeded(48).unwrap().encode().unwrap();
+     let target = shared_runtime::replay(&base, &recipe(), shared_runtime::MAX_OUTPUT).unwrap();
+Diff in /Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer/tests/shared_transfer.rs:254:
+-    client::transfer(&base, Mode::Raw, None, [1;32], |f| ep.handle(&c,f,0)).unwrap();
+-    let bodies = spiralcore_transfer::shared_transfer::prepare(&base,&target,&recipe()).unwrap().unwrap();
+-    ep.handle(&c,&offer(&base,&target),1).unwrap();
+-    ep.handle(&c,&frame(2,1,bodies[0].clone()),2).unwrap();
+-    let mut newer = c.clone(); newer.execution_epoch += 1;
+-    assert_eq!(ep.handle(&newer,&frame(2,2,bodies[1].clone()),3),Err(Error::Unknown));
+-    allowed.store(false,Ordering::SeqCst);
+-    assert_eq!(ep.handle(&c,&frame(2,2,bodies[1].clone()),3),Err(Error::Unauthorized));
+-    allowed.store(true,Ordering::SeqCst);
+-    assert_eq!(ep.read_object(&c,object_id(&target)),Err(Error::Unknown));
++    client::transfer(&base, Mode::Raw, None, [1; 32], |f| ep.handle(&c, f, 0)).unwrap();
++    let bodies = spiralcore_transfer::shared_transfer::prepare(&base, &target, &recipe())
++        .unwrap()
++        .unwrap();
++    ep.handle(&c, &offer(&base, &target), 1).unwrap();
++    ep.handle(&c, &frame(2, 1, bodies[0].clone()), 2).unwrap();
++    let mut newer = c.clone();
++    newer.execution_epoch += 1;
++    assert_eq!(
++        ep.handle(&newer, &frame(2, 2, bodies[1].clone()), 3),
++        Err(Error::Unknown)
++    );
++    allowed.store(false, Ordering::SeqCst);
++    assert_eq!(
++        ep.handle(&c, &frame(2, 2, bodies[1].clone()), 3),
++        Err(Error::Unauthorized)
++    );
++    allowed.store(true, Ordering::SeqCst);
++    assert_eq!(ep.read_object(&c, object_id(&target)), Err(Error::Unknown));
+ }
+ impl Drop for Temp {
+     fn drop(&mut self) {

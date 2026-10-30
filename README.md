@@ -6,6 +6,7 @@ SpiralCore networking prototypes, exact geometric transport research, and preser
 
 - [Ongoing optimization ledger](docs/network/optimization-ledger.md): source-pinned experiments, recorded results, regressions and the next active measurement plan.
 - [Run standalone SpiralCore](crates/spiralcore-transfer/README.md): `serve`, `send`, `get`, and a real TCP cold/repeat/delta demonstration with exact restart verification. Reducing transmitted bytes is the primary performance objective.
+- [Coupled ternary/Kuramoto/CA transfer](docs/specs/2026-10-30-shared-runtime-design.md): the retained Python runtime's finite core is ported to Rust and connected to verified checkpoint replay plus exact residuals. The [runnable Rust example](crates/spiralcore-transfer/README.md#shared-ternary-kuramoto-and-cellular-automaton-replay) compares bytes, computation and durable-commit time under a [registered measurement contract](docs/network/evidence/2026-10-30-shared-runtime/measurement-contract.md). MVM integration follows this active mechanism.
 - [Byte-first codec selection, October 29](docs/network/codec-selection-results-2026-10-29.md): opt-in Rust API chooses Raw, chunked zstd, sparse or zstd prefix before Begin. All 240 local paired inputs matched minimum configured body cost and all 1,800 operations reopened exactly. CPU penalties and paid seeds are recorded; these are local results, separate from WAN qualification.
 - [Two-machine WAN experiment](docs/network/wan.md): authenticated synthetic transfers through a temporary HTTPS relay, paired raw/zstd/cache/DAG workloads, endpoint CPU and durable-commit timing, and packet accounting.
 - [Broad 16 MiB WAN campaign, October 29](docs/network/broad-wan-results-2026-10-29.md): four methods with matched verified-byte publication policy, including a conventional zstd shared-base delta control. All twelve registered cases are independently reviewed: 2,640 exact operations, with CPU, elapsed time, cold controls and conventional delta comparisons. Read the report for exact byte, elapsed, CPU, paid-seed and capture results.
@@ -66,7 +67,7 @@ The wire smoke tools live in `projects/spiralcore/wire/tools/`. The imported obj
 - `docs/`: current research guides, pre-registrations, task records, lab records, and receipts.
 - `archive/`: preserved research reviews, evidence, historical patches, and archived GitHub discussions.
 - `crates/uor-r4-object-store/`: standalone exact object storage and peer protocol, with its own MIT license and source provenance.
-- `crates/spiralcore-transfer/`: versioned SHA-256 object transfer, durable scoped cache, bounded raw/zstd/DAG/sparse and zstd-prefix decoding, prepared Rust APIs, loopback CLI and bounded WAN experiment harness.
+- `crates/spiralcore-transfer/`: versioned SHA-256 object transfer, durable scoped cache, bounded raw/zstd/DAG/sparse/zstd-prefix and shared-runtime decoding, coupled ternary/Kuramoto/CA replay, prepared Rust APIs, loopback CLI and bounded WAN experiment harness.
 - Other directories under `crates/`: SpiralCore-related model-source references and integration points, not a complete model build.
 - `source-manifest.tsv`: source-relative paths and source Git blob IDs for the 344 UOR-R4 files.
 - `import-manifest.tsv`: origins, byte counts, and SHA-256 hashes for the 18 attachments, four extracted files, and webpage.

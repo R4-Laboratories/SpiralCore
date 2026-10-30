@@ -1,0 +1,77 @@
+{
+  "schema": "spiralcore.shared-runtime.independent-infra-review.v1",
+  "verdict": "APPROVED_SCOPED_PILOT_SOURCE",
+  "reviewer": "selector_architect",
+  "date": "2026-10-30",
+  "role": "infra-reviewer",
+  "role_verified_active": true,
+  "roster": "d1927d9e7ce51354",
+  "reviewed_sha256": {
+    ".github/workflows/spiralcore-shared-runtime.yml": "20aaceabd47ca3741c3b6931ae5fb649bc03751e98a0d9058cf7829355729285",
+    "docs/network/evidence/2026-10-30-shared-runtime/measurement-contract.md": "05ecf253e7aa1700cf1042c5dd815d4e7f06439a960530e53b8898ce3b0dda83",
+    "docs/network/evidence/2026-10-30-shared-runtime/qualification/workflow/check-gates.sh": "0c56767ab751875b596487287428798773956b9102736253832977cf0f2c96e9",
+    "docs/network/evidence/2026-10-30-shared-runtime/qualification/workflow/independent-gates.log": "994622bcb625ed97afa36e8d624c1d2312c38c283c02a70e6018bf5090e457c2",
+    "docs/network/evidence/2026-10-30-shared-runtime/qualification/workflow/independent-gates.exit": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+  },
+  "findings": [],
+  "approved_scope": {
+    "trigger": "One push on codex/spiralcore-shared-runtime whose exact SHA matches SPIRALCORE_RUNTIME_SOURCE; attempt one only.",
+    "dose": {
+      "width": 4096,
+      "steps": 4096,
+      "cases": [
+        "generated",
+        "edited",
+        "unrelated"
+      ],
+      "trials": 3,
+      "methods": [
+        "raw",
+        "zstd",
+        "adaptive",
+        "runtime"
+      ],
+      "scopes": 36,
+      "seed_operations": 36,
+      "target_operations": 36,
+      "total_operations": 72
+    },
+    "job_minutes": 20,
+    "network_minutes": 5,
+    "transport": "Existing authorized HTTPS trycloudflare origin and separately prepared receiver; HTTP body accounting only.",
+    "authorization_boundary": "This source review authorizes no account creation, tunnel/server startup, secret mutation, push, or remote execution by this reviewer. Parent coordinates authorized execution after local qualification/source freeze."
+  },
+  "verified_controls": [
+    "Push-only branch trigger, exact-source and first-attempt checks both at job level and in executable shell gate.",
+    "Read-only repository permissions, dedicated non-cancelling concurrency group, and commit-pinned checkout/upload actions.",
+    "Dedicated runtime variable/secret namespace; benchmark capability injected only into final transfer step, never source build/test steps.",
+    "Strict HTTPS origin allowlist excludes credentials, port, path, query, fragment, lookalike suffix, and malformed hostname.",
+    "Fresh target-directory guard and compiler/target/wrapper override rejection; locked Rust 1.97.1 source compilation on x86_64 Linux.",
+    "Frozen canonical-vector test plus complete relevant release suite/check/Clippy before benchmark credential use.",
+    "Fixed plan independently checked for expected source/run/configuration, nine fixtures, 36 unique scopes, and 72 operations.",
+    "Tracked source hashes and executable hashes checked before transfer; executable hashes checked afterward.",
+    "No explicit retry; bounded execution and a non-replayable run-attempt gate.",
+    "Always-seal and always-upload steps preserve available evidence; missing upload or incomplete records never imply success.",
+    "Sender completion expressly remains pending stopped-receiver exact object verification and joined evidence.",
+    "Pilot contract explicitly excludes 30-pair acceptance, reliable tail claims, pure byte-on-line timing, complete path traffic, and energy."
+  ],
+  "independent_qualification": {
+    "command": "bash docs/network/evidence/2026-10-30-shared-runtime/qualification/workflow/check-gates.sh .github/workflows/spiralcore-shared-runtime.yml",
+    "exit_code": 0,
+    "result": "Actual YAML parsed; all embedded Bash passed syntax/ShellCheck warning gate; valid synthetic configuration/capability accepted; all 17 invalid fixture cases rejected.",
+    "network_or_cloud_actions_performed": false
+  },
+  "remaining_execution_requirements": [
+    "Freeze source and retain exact local and hosted executable/configuration custody.",
+    "Use a fresh receiver cache and the same exact plan; corroborate operator-supplied receiver executable hash.",
+    "Retain raw workflow and receiver evidence, including failures, beyond hosted artifact expiry.",
+    "After server shutdown, compare all 72 receiver objects and join their scope/identity receipts to sender records.",
+    "Report observed byte, CPU, and time axes independently, with practical cold-start baseline and unfavorable controls."
+  ],
+  "limitations": [
+    "Hosted job has not run in this review; a future successful workflow run is not assumed.",
+    "GitHub runner loss or timeout may prevent always-step completion; missing artifacts mean an incomplete pilot.",
+    "Repository variables, source revision, endpoint readiness, live credentials, hosted account budgets, and actual receiver identity were not mutated or verified here.",
+    "The gate checker is qualification of this reviewed workflow; it is not a formal proof of arbitrary future YAML."
+  ]
+}

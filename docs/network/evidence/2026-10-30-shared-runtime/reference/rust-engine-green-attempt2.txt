@@ -1,0 +1,99 @@
+   Compiling stable_deref_trait v1.2.1
+   Compiling libc v0.2.191
+   Compiling litemap v0.8.3
+   Compiling writeable v0.6.4
+   Compiling cfg-if v1.0.5
+   Compiling generic-array v0.14.7
+   Compiling zerofrom v0.1.8
+   Compiling typenum v1.20.1
+   Compiling utf8_iter v1.0.4
+   Compiling icu_properties_data v2.4.0
+   Compiling icu_normalizer_data v2.4.0
+   Compiling yoke v0.8.4
+   Compiling ring v0.17.14
+   Compiling zeroize v1.9.1
+   Compiling zstd-sys v2.1.2+zstd.1.5.7
+   Compiling zerovec v0.11.9
+   Compiling zerotrie v0.2.5
+   Compiling rustls-pki-types v1.15.1
+   Compiling sha2-asm v0.6.4
+   Compiling getrandom v0.2.17
+   Compiling untrusted v0.9.0
+   Compiling itoa v1.0.18
+   Compiling smallvec v1.16.4
+   Compiling serde_core v1.0.229
+   Compiling tinystr v0.8.5
+   Compiling potential_utf v0.1.6
+   Compiling httparse v1.10.1
+   Compiling icu_collections v2.4.0
+   Compiling bytes v1.12.1
+   Compiling icu_locale_core v2.4.0
+   Compiling crypto-common v0.1.7
+   Compiling block-buffer v0.10.4
+   Compiling percent-encoding v2.3.2
+   Compiling log v0.4.34
+   Compiling zmij v1.0.23
+   Compiling digest v0.10.7
+   Compiling cpufeatures v0.2.17
+   Compiling http v1.5.0
+   Compiling libm v0.2.16
+   Compiling subtle v2.6.1
+   Compiling once_cell v1.21.4
+   Compiling base64 v0.23.1
+   Compiling serde_json v1.0.154
+   Compiling serde v1.0.229
+   Compiling sha2 v0.10.9
+   Compiling icu_provider v2.4.0
+   Compiling form_urlencoded v1.2.2
+   Compiling webpki-roots v1.0.11
+   Compiling utf8-zero v0.8.1
+   Compiling ureq-proto v0.6.5
+   Compiling memchr v2.8.3
+   Compiling icu_normalizer v2.4.0
+   Compiling icu_properties v2.4.0
+   Compiling uor-r4-object-store v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/uor-r4-object-store)
+   Compiling rustls v0.23.46
+   Compiling idna_adapter v1.2.2
+   Compiling idna v1.1.0
+   Compiling cpu-time v1.0.0
+   Compiling url v2.5.8
+   Compiling rustls-webpki v0.103.16
+   Compiling zstd-safe v7.3.0
+   Compiling zstd v0.13.3
+   Compiling ureq v3.5.0
+   Compiling spiralcore-transfer v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer)
+    Finished `release` profile [optimized] target(s) in 27.26s
+     Running tests/shared_runtime.rs (crates/spiralcore-transfer/target/aarch64-apple-darwin/release/deps/shared_runtime-c8edf3bb61376ae7)
+
+running 15 tests
+test checkpoint_rejects_every_truncation_trailing_bytes_and_bad_magic ... ok
+test fold_values_preserve_observed_unweighted_summary_semantics ... ok
+test exact_replay_final_checkpoint_matches_explicit_steps ... ok
+test invalid_dimensions_rings_and_nonfinite_state_are_refused ... ok
+test invalid_frequency_coupling_clock_root_and_payload_are_refused ... ok
+test memory_coupler_affects_phases_without_changing_ca_or_leaf_count ... ok
+test checkpoints_roundtrip_every_resume_boundary_without_fidelity_loss ... ok
+test recipe_roundtrip_rejects_truncation_trailing_and_unknown_header ... ok
+test root_counts_and_phase_bounds_are_validated ... ok
+test trace_contains_every_complete_post_step_checkpoint_in_order ... ok
+test zero_step_final_replay_is_identity_and_zero_step_trace_is_header_only ... ok
+test full_transition_matches_pinned_python_ca_fold_clock_and_memory_fields ... ok
+test seeded_default_ca_row_matches_pinned_python_reference ... ok
+test every_valid_reference_ring_evolves_exactly_for_all_three_rules ... ok
+test logical_step_root_and_replay_limits_are_bounded ... FAILED
+
+failures:
+
+---- logical_step_root_and_replay_limits_are_bounded stdout ----
+
+thread 'logical_step_root_and_replay_limits_are_bounded' (61999509) panicked at tests/shared_runtime.rs:370:5:
+assertion failed: replay(&checkpoint, &large_trace, MAX_OUTPUT).is_err()
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    logical_step_root_and_replay_limits_are_bounded
+
+test result: FAILED. 14 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.23s
+
+error: test failed, to rerun pass `--test shared_runtime`

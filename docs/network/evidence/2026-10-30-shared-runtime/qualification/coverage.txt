@@ -1,0 +1,136 @@
+info: cargo-llvm-cov currently setting cfg(coverage); you can opt-out it by passing --no-cfg-coverage
+   Compiling libc v0.2.191
+   Compiling proc-macro2 v1.0.107
+   Compiling unicode-ident v1.0.27
+   Compiling quote v1.0.47
+   Compiling shlex v2.0.1
+   Compiling find-msvc-tools v0.1.15
+   Compiling stable_deref_trait v1.2.1
+   Compiling version_check v0.9.5
+   Compiling litemap v0.8.3
+   Compiling cfg-if v1.0.5
+   Compiling writeable v0.6.4
+   Compiling icu_properties_data v2.4.0
+   Compiling typenum v1.20.1
+   Compiling generic-array v0.14.7
+   Compiling icu_normalizer_data v2.4.0
+   Compiling pkg-config v0.3.34
+   Compiling utf8_iter v1.0.4
+   Compiling zeroize v1.9.1
+   Compiling rustls-pki-types v1.15.1
+   Compiling smallvec v1.16.4
+   Compiling httparse v1.10.1
+   Compiling itoa v1.0.18
+   Compiling serde_core v1.0.229
+   Compiling untrusted v0.9.0
+   Compiling jobserver v0.1.35
+   Compiling log v0.4.34
+   Compiling syn v3.0.9
+   Compiling getrandom v0.2.17
+   Compiling cc v1.10.0
+   Compiling block-buffer v0.10.4
+   Compiling crypto-common v0.1.7
+   Compiling rustls v0.23.46
+   Compiling percent-encoding v2.3.2
+   Compiling zstd-safe v7.3.0
+   Compiling zmij v1.0.23
+   Compiling bytes v1.12.1
+   Compiling digest v0.10.7
+   Compiling cpufeatures v0.2.17
+   Compiling serde_json v1.0.154
+   Compiling base64 v0.23.1
+   Compiling libm v0.2.16
+   Compiling subtle v2.6.1
+   Compiling serde v1.0.229
+   Compiling once_cell v1.21.4
+   Compiling http v1.5.0
+   Compiling form_urlencoded v1.2.2
+   Compiling webpki-roots v1.0.11
+   Compiling memchr v2.8.3
+   Compiling utf8-zero v0.8.1
+   Compiling cpu-time v1.0.0
+   Compiling ring v0.17.14
+   Compiling zstd-sys v2.1.2+zstd.1.5.7
+   Compiling sha2-asm v0.6.4
+   Compiling ureq-proto v0.6.5
+   Compiling sha2 v0.10.9
+   Compiling synstructure v0.14.0
+   Compiling uor-r4-object-store v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/uor-r4-object-store)
+   Compiling zerofrom-derive v0.1.8
+   Compiling yoke-derive v0.8.4
+   Compiling zerofrom v0.1.8
+   Compiling zerovec-derive v0.11.7
+   Compiling yoke v0.8.4
+   Compiling displaydoc v0.2.7
+   Compiling serde_derive v1.0.229
+   Compiling zerotrie v0.2.5
+   Compiling zerovec v0.11.9
+   Compiling tinystr v0.8.5
+   Compiling potential_utf v0.1.6
+   Compiling icu_collections v2.4.0
+   Compiling icu_locale_core v2.4.0
+   Compiling rustls-webpki v0.103.16
+   Compiling icu_provider v2.4.0
+   Compiling icu_normalizer v2.4.0
+   Compiling icu_properties v2.4.0
+   Compiling idna_adapter v1.2.2
+   Compiling idna v1.1.0
+   Compiling url v2.5.8
+   Compiling zstd v0.13.3
+   Compiling ureq v3.5.0
+   Compiling spiralcore-transfer v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer)
+    Finished `release` profile [optimized] target(s) in 44.40s
+     Running tests/shared_runtime.rs (/Users/casey.allard/spiralcore/local/shared-state-20261030/coverage-target/llvm-cov-target/aarch64-apple-darwin/release/deps/shared_runtime-c8edf3bb61376ae7)
+
+running 22 tests
+test checkpoint_rejects_noncanonical_float_padding_flags_and_root_count ... ok
+test fold_values_preserve_observed_unweighted_summary_semantics ... ok
+test historical_root_retention_cap_drops_oldest_summary_without_exceeding_bounds ... ok
+test invalid_dimensions_rings_and_nonfinite_state_are_refused ... ok
+test invalid_frequency_coupling_clock_root_and_payload_are_refused ... ok
+test checkpoint_rejects_every_truncation_trailing_bytes_and_bad_magic ... ok
+test recipe_rejects_noncanonical_payload_reserved_bits_and_output_kind ... ok
+test memory_coupler_affects_phases_without_changing_ca_or_leaf_count ... ok
+test recipe_roundtrip_rejects_truncation_trailing_and_unknown_header ... ok
+test logical_step_root_and_replay_limits_are_bounded ... ok
+test root_counts_and_phase_bounds_are_validated ... ok
+test exact_replay_final_checkpoint_matches_explicit_steps ... ok
+test native_canonical_checkpoint_and_trace_vectors_are_stable ... ok
+test trace_contains_every_complete_post_step_checkpoint_in_order ... ok
+test trace_reserves_exact_required_output_instead_of_entire_admission_ceiling ... ok
+test checkpoints_roundtrip_every_resume_boundary_without_fidelity_loss ... ok
+test zero_step_final_replay_is_identity_and_zero_step_trace_is_header_only ... ok
+test seeded_default_ca_row_matches_pinned_python_reference ... ok
+test full_transition_matches_pinned_python_ca_fold_clock_and_memory_fields ... ok
+test every_valid_reference_ring_evolves_exactly_for_all_three_rules ... ok
+test splitting_replay_across_independent_checkpoint_receivers_is_exact ... ok
+test replay_exact_output_budget_succeeds_and_one_byte_short_fails ... ok
+
+test result: ok. 22 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.08s
+
+     Running tests/shared_transfer.rs (/Users/casey.allard/spiralcore/local/shared-state-20261030/coverage-target/llvm-cov-target/aarch64-apple-darwin/release/deps/shared_transfer-9ba49b4b7c72da7c)
+
+running 7 tests
+test setup_truncations_versions_digest_and_resource_lies_are_rejected ... ok
+test different_lengths_and_final_checkpoint_use_exact_residuals ... ok
+test revoked_authority_and_changed_epoch_cannot_finish_an_admitted_replay ... ok
+test replay_is_idempotent_and_cancel_discards_output ... ok
+test runtime_recipe_crosses_transfer_boundary_and_reopens_exact_bytes ... ok
+test checkpoint_must_be_authorized_present_and_within_replay_budget ... ok
+test malformed_setup_missing_setup_and_failed_final_digest_never_publish ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.18s
+
+     Running unittests examples/shared_runtime.rs (/Users/casey.allard/spiralcore/local/shared-state-20261030/coverage-target/llvm-cov-target/aarch64-apple-darwin/release/examples/shared_runtime-b7ac06c5fb636007)
+
+running 5 tests
+test tests::fixture_edits_keep_every_unmodified_byte_and_bind_trial ... ok
+test tests::plan_binds_unique_scopes_and_actual_fixture_sizes ... ok
+test tests::output_creation_never_overwrites_and_fixture_binding_rejects_changes ... ok
+test tests::serialized_runtime_transfer_cost_and_exact_reopen_are_measured ... ok
+test tests::remote_http_ack_is_separate_from_stopped_receiver_exact_verification ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.34s
+
+
+    Finished report saved to docs/network/evidence/2026-10-30-shared-runtime/qualification/coverage.json

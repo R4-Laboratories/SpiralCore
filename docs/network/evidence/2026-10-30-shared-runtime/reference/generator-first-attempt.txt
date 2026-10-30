@@ -1,0 +1,22 @@
+test_default_row_and_msb_byte_order (__main__.ReferenceExtractionTests.test_default_row_and_msb_byte_order) ... ok
+test_empty_and_small_periodic_rings_and_mask (__main__.ReferenceExtractionTests.test_empty_and_small_periodic_rings_and_mask) ... ok
+test_kuramoto_clamp_and_historical_length_mismatch (__main__.ReferenceExtractionTests.test_kuramoto_clamp_and_historical_length_mismatch) ... ok
+test_observed_fold_is_unweighted_lossy_summary (__main__.ReferenceExtractionTests.test_observed_fold_is_unweighted_lossy_summary) ... ERROR
+test_rejects_unpinned_source_before_execution (__main__.ReferenceExtractionTests.test_rejects_unpinned_source_before_execution) ... ok
+test_rules_match_independent_elementary_truth_table (__main__.ReferenceExtractionTests.test_rules_match_independent_elementary_truth_table) ... ok
+test_scope_excludes_runtime_io_and_initialization (__main__.ReferenceExtractionTests.test_scope_excludes_runtime_io_and_initialization) ... ok
+
+======================================================================
+ERROR: test_observed_fold_is_unweighted_lossy_summary (__main__.ReferenceExtractionTests.test_observed_fold_is_unweighted_lossy_summary)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/docs/network/evidence/2026-10-30-shared-runtime/reference/test_generator.py", line 51, in test_observed_fold_is_unweighted_lossy_summary
+    self.ns['reference_fold_prefix'](state, float(value), '')
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<pinned-reference-definitions>", line 1606, in reference_fold_prefix
+NameError: name 'round' is not defined
+
+----------------------------------------------------------------------
+Ran 7 tests in 0.049s
+
+FAILED (errors=1)

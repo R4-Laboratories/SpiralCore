@@ -35,7 +35,10 @@ pub(crate) struct Prepared {
 /// Exact successful-miss cost at the current one-batch object ceiling. Reject
 /// any candidate that violates that assumption before contacting the receiver.
 fn cost(mode: Mode, sizes: impl Iterator<Item = usize>, warm_probe: bool) -> Result<u64> {
-    let base = usize::from(matches!(mode, Mode::SparseV1 | Mode::ZstdPrefixV1)) * 32;
+    let base = usize::from(matches!(
+        mode,
+        Mode::SparseV1 | Mode::ZstdPrefixV1 | Mode::RuntimeV1
+    )) * 32;
     // Begin/Ready/Finish/Published frame bytes: 102 + 66 + 56 + 88.
     // Four frame length words: 16. SCWBAT01 header: 12. SCWREP01 header: 28.
     let mut total = 368 + base + usize::from(warm_probe) * 40;
@@ -57,7 +60,12 @@ fn cost(mode: Mode, sizes: impl Iterator<Item = usize>, warm_probe: bool) -> Res
 }
 
 impl Prepared {
-    fn consider(&mut self, mode: Mode, bodies: Vec<Vec<u8>>, warm_probe: bool) -> Result<()> {
+    pub(crate) fn consider(
+        &mut self,
+        mode: Mode,
+        bodies: Vec<Vec<u8>>,
+        warm_probe: bool,
+    ) -> Result<()> {
         let http_body_bytes = cost(mode, bodies.iter().map(Vec::len), warm_probe)?;
         self.selection.candidates.push(CandidateCost {
             mode,

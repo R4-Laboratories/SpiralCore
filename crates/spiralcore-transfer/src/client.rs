@@ -94,7 +94,7 @@ pub fn transfer<F: FnMut(&Frame) -> Result<Frame>>(
     exchange: F,
 ) -> Result<Stats> {
     let start = Instant::now();
-    if matches!(mode, Mode::SparseV1 | Mode::ZstdPrefixV1) {
+    if matches!(mode, Mode::SparseV1 | Mode::ZstdPrefixV1 | Mode::RuntimeV1) {
         return Err(Error::Unsupported);
     }
     if bytes.len() as u64 > MAX_OBJECT {
@@ -479,7 +479,7 @@ pub fn transfer_batched<F: FnMut(&[Frame]) -> Result<Vec<Frame>>>(
     exchange: F,
 ) -> Result<Stats> {
     let start = Instant::now();
-    if matches!(mode, Mode::SparseV1 | Mode::ZstdPrefixV1) {
+    if matches!(mode, Mode::SparseV1 | Mode::ZstdPrefixV1 | Mode::RuntimeV1) {
         return Err(Error::Unsupported);
     }
     if bytes.len() > MAX_BATCHED_OBJECT
@@ -660,6 +660,53 @@ pub fn transfer_zstd_prefix_batched<F: FnMut(&[Frame]) -> Result<Vec<Frame>>>(
 pub struct AdaptiveStats {
     pub transfer: Stats,
     pub selection: crate::selection::Selection,
+}
+
+/// Byte-first transfer with the shared ternary/Kuramoto/CA runtime as an active
+/// candidate. A recipe is explicit application knowledge, never guessed by an
+/// unbounded search. All candidate computation is included in elapsed time.
+/// The checkpoint must already be authorized and verified at the receiver if
+/// the runtime candidate wins. Missing state never triggers an implicit reoffer.
+pub fn transfer_runtime_batched<F: FnMut(&[Frame]) -> Result<Vec<Frame>>>(
+    checkpoint: &[u8],
+    target: &[u8],
+    recipe: &crate::shared_runtime::Recipe,
+    transfer_id: Id,
+    warm_probe: bool,
+    exchange: F,
+) -> Result<AdaptiveStats> {
+    let start = Instant::now();
+    if checkpoint.len() > crate::shared_runtime::MAX_CHECKPOINT {
+        return Err(Error::Limit);
+    }
+    let mut prepared = crate::selection::prepare(target, Some(checkpoint), warm_probe)?;
+    if !prepared.selection.exact_repeat_probe {
+        if let Some(bodies) = crate::shared_transfer::prepare(checkpoint, target, recipe)? {
+            prepared.consider(Mode::RuntimeV1, bodies, warm_probe)?;
+        }
+    }
+    let mode = prepared.selection.selected;
+    let base = if matches!(mode, Mode::SparseV1 | Mode::ZstdPrefixV1 | Mode::RuntimeV1) {
+        Some(crate::object_id(checkpoint))
+    } else {
+        None
+    };
+    let offer = Offer {
+        mode,
+        len: target.len() as u64,
+        object: crate::object_id(target),
+        manifest: None,
+        base,
+    };
+    let payload = match prepared.bodies {
+        Some(bodies) => BatchedPayload::Encoded(bodies),
+        None => BatchedPayload::Bytes(target),
+    };
+    let transfer = send_batched(offer, payload, transfer_id, warm_probe, exchange, start)?;
+    Ok(AdaptiveStats {
+        transfer,
+        selection: prepared.selection,
+    })
 }
 
 /// Select the smallest eligible successful-miss HTTP body representation before

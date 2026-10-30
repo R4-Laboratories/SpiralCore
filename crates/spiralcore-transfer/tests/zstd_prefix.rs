@@ -375,7 +375,7 @@ fn prefix_offer_and_encoded_stream_are_strictly_versioned_and_bounded() {
     let mut valid = offer(&base, &target);
     let decoded = Offer::decode(&valid).unwrap();
     assert_eq!(decoded.mode, Mode::ZstdPrefixV1);
-    valid[0] = 5;
+    valid[0] = u8::MAX;
     assert_eq!(Offer::decode(&valid), Err(Error::Unsupported));
     let mut oversized = decoded.clone();
     oversized.len = prefix::MAX_PREFIX_OBJECT as u64 + 1;

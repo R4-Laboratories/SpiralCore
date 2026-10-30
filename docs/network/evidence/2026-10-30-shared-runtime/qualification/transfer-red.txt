@@ -1,0 +1,39 @@
+   Compiling spiralcore-transfer v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer)
+error[E0432]: unresolved import `spiralcore_transfer::shared_runtime`
+ --> tests/shared_transfer.rs:5:5
+  |
+5 |     shared_runtime::{self, OutputKind, Recipe, State},
+  |     ^^^^^^^^^^^^^^ could not find `shared_runtime` in `spiralcore_transfer`
+
+error[E0425]: cannot find function `transfer_runtime_batched` in module `client`
+   --> tests/shared_transfer.rs:43:26
+    |
+ 43 |       let result = client::transfer_runtime_batched(&checkpoint, &target, &recipe(), [2;32], false, |frames| {
+    |                            ^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+   ::: src/client.rs:674:1
+    |
+674 | / pub fn transfer_adaptive_batched<F: FnMut(&[Frame]) -> Result<Vec<Frame>>>(
+675 | |     target: &[u8],
+676 | |     base: Option<&[u8]>,
+677 | |     transfer_id: Id,
+678 | |     warm_probe: bool,
+679 | |     exchange: F,
+680 | | ) -> Result<AdaptiveStats> {
+    | |__________________________- similarly named function `transfer_adaptive_batched` defined here
+    |
+help: a function with a similar name exists
+    |
+ 43 -     let result = client::transfer_runtime_batched(&checkpoint, &target, &recipe(), [2;32], false, |frames| {
+ 43 +     let result = client::transfer_adaptive_batched(&checkpoint, &target, &recipe(), [2;32], false, |frames| {
+    |
+
+error[E0599]: no variant, associated function, or constant named `RuntimeV1` found for enum `Mode` in the current scope
+  --> tests/shared_transfer.rs:46:44
+   |
+46 |     assert_eq!(result.transfer.mode, Mode::RuntimeV1);
+   |                                            ^^^^^^^^^ variant, associated function, or constant not found in `Mode`
+
+Some errors have detailed explanations: E0425, E0432, E0599.
+For more information about an error, try `rustc --explain E0425`.
+error: could not compile `spiralcore-transfer` (test "shared_transfer") due to 3 previous errors

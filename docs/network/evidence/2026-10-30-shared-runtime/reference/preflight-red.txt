@@ -1,0 +1,24 @@
+   Compiling spiralcore-transfer v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer)
+    Finished `release` profile [optimized] target(s) in 1.73s
+     Running tests/shared_runtime.rs (/Users/casey.allard/spiralcore/target/aarch64-apple-darwin/release/deps/shared_runtime-c8edf3bb61376ae7)
+
+running 1 test
+test trace_reserves_exact_required_output_instead_of_entire_admission_ceiling ... FAILED
+
+failures:
+
+---- trace_reserves_exact_required_output_instead_of_entire_admission_ceiling stdout ----
+
+thread 'trace_reserves_exact_required_output_instead_of_entire_admission_ceiling' (62051494) panicked at tests/shared_runtime.rs:590:5:
+assertion `left == right` failed: qualified allocator capacity should track required bytes, not16MiB ceiling
+  left: 16777216
+ right: 4678
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    trace_reserves_exact_required_output_instead_of_entire_admission_ceiling
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 21 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `--test shared_runtime`

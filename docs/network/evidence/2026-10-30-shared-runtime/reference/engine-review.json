@@ -1,0 +1,185 @@
+{
+  "author_separation": {
+    "own_generator_or_tests_independently_approved_here": false,
+    "production_engine_authored_by_reviewer": false,
+    "reference_generator_and_engine_tests_authored_by_reviewer": true
+  },
+  "base_revision": "2e796844c99303a6d7971a64bfcf8319f3d0e4f6",
+  "blocking_findings": [],
+  "checks": [
+    {
+      "exit_code": 0,
+      "exit_file": "generator-green.exit",
+      "name": "reference_generator",
+      "output": "generator-green.txt",
+      "output_sha256": "c88634d960aeeefcd84190670cdac62e01810c41de9df7b532392dd4b20451b3",
+      "scope": "8 unittest cases, pinned AST extraction"
+    },
+    {
+      "exit_code": 0,
+      "exit_file": "generation.exit",
+      "name": "reference_generation",
+      "output": "generation.txt",
+      "output_sha256": "80e1a50cf920591183cd9e2ce63c8bf1b457da2448a1d141024d6cb25b3337c2",
+      "scope": "63 CA cases, 123 full mathematical transitions, raw Random184 phase bits"
+    },
+    {
+      "exit_code": 0,
+      "exit_file": "review-all-target-check.exit",
+      "name": "cargo_check",
+      "output": "review-all-target-check.txt",
+      "output_sha256": "e75d081f6dfb1d9e3c87558b4a5dbcce8ebc90629ba033046df67e9071fdd90b",
+      "scope": "all targets, locked, aarch64-apple-darwin, hardware-sha256"
+    },
+    {
+      "exit_code": 0,
+      "exit_file": "review-all-target-clippy.exit",
+      "name": "cargo_clippy",
+      "output": "review-all-target-clippy.txt",
+      "output_sha256": "12120e47d85a9ba44088e134272171651bfa6958b5762d082b3e3e58f93dfe8a",
+      "scope": "all targets, locked, aarch64-apple-darwin, hardware-sha256, -D warnings"
+    },
+    {
+      "exit_code": 0,
+      "exit_file": "engine-transfer-post-review-tests.exit",
+      "name": "focused_release_tests",
+      "output": "engine-transfer-post-review-tests.txt",
+      "output_sha256": "185a0452c313c287863e4b4b5bdb75fc854b9f49c5c81cc463b63972f98c656d",
+      "scope": "22 engine tests and7 transfer tests"
+    }
+  ],
+  "date": "2026-10-30",
+  "legacy_regression_fix": {
+    "active_roster_verified": true,
+    "edit": "Changed only test byte from5 to u8::MAX (255); no production decoder changes.",
+    "failure_exit_code": 101,
+    "failure_receipt": "../qualification/all-targets-final.txt",
+    "file": "crates/spiralcore-transfer/tests/zstd_prefix.rs",
+    "focused_exit_code": 0,
+    "focused_output": "legacy-prefix-regression-green.txt",
+    "focused_output_sha256": "20a9f29129a255bbf74fd932da6e46c9d261591ac78b6861598cccbc0c35286a",
+    "focused_passed": 8,
+    "role": "debugger",
+    "root_cause": "Historical test treated mode5 as unsupported; mode5 now explicitly maps to RuntimeV1.",
+    "source_sha256": "c933da60fe729335fc23677d6f4b250d7ce5062ef0c79b5f2ff69f3af27ccdf3"
+  },
+  "not_in_scope": [
+    "whole-repository security audit",
+    "cryptographic module validation",
+    "complete transport author-independent review",
+    "cross-platform byte compatibility qualification",
+    "WAN or energy performance acceptance",
+    "coverage percentage certification"
+  ],
+  "reference_sha256": {
+    "extraction.json": "6e93c987cdea648e35c1be0567b647f524a6f3a5a39999e82bd05a1fbb9945bd",
+    "generate_reference.py": "06bdf32c0ae0562e29566313d92298978c7b0aad9ac5ee88f91af441a0735df5",
+    "generation.json": "fe176cd534d8163912c8ba00804a4c5aa4d82393cfcef3c01336ae0828d96ad1",
+    "native-vectors.json": "3ff90d71199b4ed6de8f9daa68ed5cc199e5e73349261bfd789b172271c64c32",
+    "source-excerpts.json": "cc4c1318bf8069daf5e09b816b9158fe7db4a4629c2870a6552e26f52f057172",
+    "test_generator.py": "b4a16cab7ef433761e0952dc05b8376fb83a5db5900fa3a270c8b33bae1a785f",
+    "vectors.json": "323b5729d74c3fe7733e514dd19f5297b972df7f3fcbbb95c8906a77b5051b34"
+  },
+  "remaining_limitations": [
+    "CA andfold reference coverage bounded tolistedfixtures; no whole desktop application verification.",
+    "Historical fold is lossy numeric summary, not object DAG replacement.",
+    "Native golden vectors produced bycurrent Rust implementation, not independent derivation orPythonbitidentity.",
+    "Exactbyte continuity qualified only current Rust1.97.1 aarch64-apple-darwin release profile.",
+    "No networked physical-time synchronization, MVM integration, newWAN or energy result inferred."
+  ],
+  "resolved_findings": [
+    {
+      "finding": "Trace reserved full16MiB allowance for4678-byte output; impossible final budgets reached rejection after numerical replay.",
+      "green_receipts": [
+        "preflight-green.txt",
+        "engine-transfer-post-review-tests.txt"
+      ],
+      "id": "SR-R1",
+      "red_receipt": "preflight-red.txt",
+      "resolution": "Integer-only exact-length preflight andexact output reservation.",
+      "severity": "medium",
+      "wire_compatibility": "all4 native golden byte hashes unchanged"
+    },
+    {
+      "failure_receipt": "review-clippy.txt",
+      "finding": "Clippy manual_is_multiple_of on shared fold helper.",
+      "id": "SR-R2",
+      "resolution": "Semantically equivalent integer is_multiple_of; all-target Clippy passes.",
+      "severity": "verification"
+    }
+  ],
+  "retained_non_engine_failures": [
+    {
+      "reason": "Reference generator not implemented yet.",
+      "receipt": "generator-red.txt"
+    },
+    {
+      "reason": "Restricted reference namespace omitted round; added required builtin only.",
+      "receipt": "generator-first-attempt.txt"
+    },
+    {
+      "reason": "Full-transition reference helper not implemented yet.",
+      "receipt": "full-transition-red.txt"
+    },
+    {
+      "reason": "Production shared_runtime module not implemented yet.",
+      "receipt": "rust-engine-red.txt"
+    },
+    {
+      "reason": "PATH resolved cargo-ai wrapper ratherthan Rust cargo; no Rust test ran.",
+      "receipt": "rust-engine-green-attempt1.txt"
+    },
+    {
+      "reason": "Test assumed4096-cell/4096-step bit-packed trace exceeds16MiB. Corrected toexplicitinsufficientbudget; not fidelity failure.",
+      "receipt": "rust-engine-green-attempt2.txt"
+    },
+    {
+      "reason": "Deliberate empty golden fixture during initial native output capture; populated from retained actual output.",
+      "receipt": "native-vector-capture.txt"
+    },
+    {
+      "reason": "Existing adaptive forced-arm helper required explicit exclusion ofnew RuntimeV1 enumvariant.",
+      "receipt": "review-cargo-check.txt"
+    },
+    {
+      "reason": "Parent-owned transfer test needed Limits struct initializer ratherthan field reassignment.",
+      "receipt": "review-clippy-final.txt"
+    }
+  ],
+  "review_scope": [
+    "shared_runtime.rs production mathematical transition and checkpoint/recipe parsers",
+    "state completeness and split/restart replay",
+    "bounded CPU-work/output/allocation preflight",
+    "portable math dependency configuration",
+    "caller context in shared_transfer.rs and endpoint admission viewed for engine boundary only"
+  ],
+  "reviewed_invariants": [
+    "Whole source hash checked before selected Python AST definitions are compiled. No runtime initialization, UI, cards, autosave, network or physical clock is executed for reference vectors.",
+    "Checkpoint decode rejects oversized input before allocation; width<=4096, roots<=81, binary row padding canonical, finite bounded floats, canonical positive zero, reserved flags and trailing bytes checked.",
+    "Recipe permits only declared output kinds, steps<=4096, finite payload magnitude<=1e12; decoder has no executable or arbitrary program input.",
+    "State has fixed16 phases/frequencies and4 phase-memory components, all six CA rings, roots, logical N, dt and coupling parameters. Future transition is determined by these bytes and recipe; clock is derived from N*dt.",
+    "N+steps is checked before replay. fold_size receives positive N only; validated N and root caps bound all internal arithmetic. Phasor totals and memory counts are bounded by N<=1e9.",
+    "Exact output preflight uses310 fixed checkpoint bytes +80 bytes/root +6*ceil(width/8), and trace magic8 plus4-byte lengths. Shared fold_size and81-root truncation match actual transition. Final output budget is checked after shape simulation, allowing final shrinkage.",
+    "Output shape simulation is integer-only and precedes oscillator/CA work. One try_reserve_exact(required) bounds reported trace capacity; runtime then checks produced length equals preflight.",
+    "Pinned libm0.2.16 withdefault-features=false andforce-soft-floats disables architecture-specific andunstableintrinsic paths in inspected configure.rs83-99; this is not evidence allhostplatforms havebeen qualified.",
+    "8 replay split boundaries,81 checkpoint encode/decode boundaries and4 frozen native output hashes pass onthe qualified aarch64-apple-darwin target. Python comparisons use1e-10*(1+abs(expected)) tolerance andexactinteger/CA comparisons.",
+    "Pure engine owns no authorization; verified checkpoint namespace and object publication remain endpoint responsibilities. No host path, system clock or network call exists in engine execution."
+  ],
+  "reviewer_roles": [
+    "code-reviewer",
+    "rust-reviewer",
+    "security-reviewer"
+  ],
+  "roster": "c36b79c68e575d7b",
+  "schema": "spiralcore.shared-runtime.engine-review.v1",
+  "source_sha256": {
+    "crates/spiralcore-transfer/Cargo.lock": "2edee014903d73fd6f61950c4c6bcd56a2b807ec95513c9ac39bf14e9f9004c0",
+    "crates/spiralcore-transfer/Cargo.toml": "19a8559241a9c216bdc63b26a69ebf236848bdefda5906e06263bae9ed9924ef",
+    "crates/spiralcore-transfer/src/shared_runtime.rs": "c956c80f88e401751f594b7540c587e6213b8fe33e70a776d663c7259992bbb8",
+    "crates/spiralcore-transfer/src/shared_transfer.rs": "89c10ccf5ada59043ad6cf406fad4d7dda819affcdf43e179fc5f6ea80bcd7c3",
+    "crates/spiralcore-transfer/tests/shared_runtime.rs": "12c1ce04bec15b688539ec43544f8f48bae42f3d4fe7c5e52a712353181e6b76",
+    "crates/spiralcore-transfer/tests/shared_transfer.rs": "2a31f16530a5647c791218542c8941236543f23829fd4b84082c9c9d8587e909"
+  },
+  "source_state": "working tree content identified by SHA-256; parent publication commit not yet assigned",
+  "verdict": "APPROVED_SCOPED_ENGINE"
+}
