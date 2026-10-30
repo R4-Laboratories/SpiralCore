@@ -1,0 +1,30 @@
+{
+  "schema": "spiralcore.sparse-pruning.restored-delivery.v1",
+  "decision": "CANDIDATE_NOT_ADOPTED_AFTER_REGISTERED_CPU_FAILURE",
+  "measured_candidate_revision": "317c7f75b8b8355fbb2c74b4bad1944e4f0cb1e8",
+  "registration_revision": "5bd7c51832710176cca30bfd17ce071cfc80b6af",
+  "restored_from": "cc0199ffd255b9e2e002afe8c96f10462a3e474f",
+  "active_encoder_sha256": "af31026c806c9046d62735b3ebdd03472e667103011a06b6f49ff76edb19e18e",
+  "active_production_src_diff_against_baseline": "empty",
+  "archive": [
+    {"path":"candidate-source/delta.rs","sha256":"8d24c10c96de770d40d8c1ea24d5ae5427c95576d99936637c886ecf07d12735"},
+    {"path":"candidate-source/pruning_tests.rs","sha256":"6a34ba6391d14ed104a55c04bb2fdc6d0abc0e1c112bbccd1bf08392387b1e46"},
+    {"path":"candidate-source/sparse_pruning.rs","sha256":"0132b4833de7dc76949c4c39e245de29d983c03735ac53971789f58ac05be35f"}
+  ],
+  "pruning_specific_active_tests_removed": 14,
+  "reproduction": "Checkout the measured candidate revision in isolation; archived flattened source is evidence. On restored delivery the current harness new arm imports the restored encoder, so both arms are baseline. Revision arguments do not select code.",
+  "restored_qualification": {
+    "all_target_release_tests": {"path":"restored-tests.txt","passed":188,"failed":0,"ignored":0,"exit_code":0},
+    "doctest": {"path":"restored-doctest.txt","passed":1,"failed":0,"exit_code":0},
+    "release_build": {"path":"restored-build.txt","scope":"all targets","exit_code":0},
+    "diagnostic_serial_tests": {"path":"restored-diagnostic-tests.txt","passed":10,"failed":0,"test_threads":1,"exit_code":0},
+    "cargo_check": {"path":"final-review-check.txt","scope":"all targets","exit_code":0},
+    "cargo_clippy": {"path":"final-review-clippy.txt","scope":"all targets; -D warnings","exit_code":0},
+    "cargo_fmt_check": {"exit_code":0,"stdout":"empty"},
+    "unchanged_imported_store": {"path":"qualification-object-store.txt","passed":71,"failed":0,"exit_code":0,"note":"Ran earlier in this milestone; imported crate unchanged by candidate or rollback"}
+  },
+  "measurement_custody": "Candidate source67-entry manifest and frozen binaries verified before rollback; independent actual-custody.json records that moment. They do not describe the intentionally restored current tree.",
+  "observations_replaced_or_discarded": 0,
+  "performance_rerun_after_failure": false,
+  "limits": ["No new WAN or end-to-end adaptive timing", "No energy or production-memory claim", "Final publication and post-audit reviews remain separate receipts"]
+}

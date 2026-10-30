@@ -56,3 +56,15 @@ result files are synthetic checker tests only. The diagnostic policy uses actual
 allocate-copy-free growth and includes old/new overlap; it does not reproduce
 the production System allocator's potential in-place reallocations or measure
 process RSS.
+
+The frozen actual campaigns both passed record verification, with all 140
+diagnostic rows matching their normal counterparts. Their **registered overall
+optimization acceptance failed CPU gates**: middle insertion reached a 1.092043
+legacy/candidate geometric ratio, below 1.10; repeat and periodic controls had
+candidate/legacy ratios 1.068161 and 1.064015, exceeding 1.05. These are retained
+negative results, not malformed observations. All 30 primary memory pairs passed.
+See `timing-result.json`, `allocation-result.json`, `timing-summary.tsv` and
+`actual-custody.json` for complete values and source/executable/input identities.
+Each campaign contains 120 decoded recipes (2,013,265,920 bytes checked) and 20
+Raw fallbacks. Raw fallbacks retain the original bytes; they are not counted as
+decoded or transferred objects. No observation was discarded or replaced.

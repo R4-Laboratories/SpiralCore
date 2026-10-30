@@ -1,5 +1,14 @@
 # Sparse candidate pruning: local measurement contract
 
+Post-experiment disposition: the candidate failed its registered CPU gates and
+the active encoder was restored to the published baseline. The unchanged
+prospective contract below describes the recorded experiment. Reproduce the
+historical candidate at commit `317c7f75b8b8355fbb2c74b4bad1944e4f0cb1e8` in an
+isolated checkout. On the restored delivery tree, this harness's `new` arm imports
+the restored public encoder, so it compares baseline against baseline; passing an
+old revision string does not change which code executes. See the
+[full result](sparse-pruning-results-2026-10-30.md).
+
 SC-OPT-007 compares the unchanged legacy sparse encoder at
 `cc0199ffd255b9e2e002afe8c96f10462a3e474f` with the candidate public
 `delta::encode`. The [proposal](sparse-candidate-pruning-proposal.md) supplies

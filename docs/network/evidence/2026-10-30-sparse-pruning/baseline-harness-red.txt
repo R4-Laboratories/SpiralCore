@@ -1,0 +1,27 @@
+   Compiling spiralcore-transfer v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer)
+error[E0425]: cannot find function `fixture` in module `super`
+ --> examples/sparse_pruning.rs:7:37
+  |
+7 |         let (base, target) = super::fixture("prefix_insert", 0).unwrap();
+  |                                     ^^^^^^^ not found in `super`
+
+error[E0425]: cannot find function `fixture` in module `super`
+  --> examples/sparse_pruning.rs:11:37
+   |
+11 |         let (base, target) = super::fixture("localized", 0).unwrap();
+   |                                     ^^^^^^^ not found in `super`
+
+error[E0425]: cannot find function `schedule` in module `super`
+  --> examples/sparse_pruning.rs:17:27
+   |
+17 |         let jobs = super::schedule(false);
+   |                           ^^^^^^^^ not found in `super`
+
+error[E0425]: cannot find function `schedule` in module `super`
+  --> examples/sparse_pruning.rs:23:27
+   |
+23 |         assert_eq!(super::schedule(true).len(), 21);
+   |                           ^^^^^^^^ not found in `super`
+
+For more information about this error, try `rustc --explain E0425`.
+error: could not compile `spiralcore-transfer` (example "sparse_pruning" test) due to 4 previous errors

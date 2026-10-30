@@ -1,0 +1,1459 @@
+{
+  "schema": "spiralcore.sparse-pruning.independent-timing-verification.v1",
+  "status": "VALID_RECORDS",
+  "source_revision": "317c7f75b8b8355fbb2c74b4bad1944e4f0cb1e8",
+  "executable_sha256": "e30407365f46bad4e6271382fc22961d984449f5176eef9322defeb4f9393592",
+  "samples": 140,
+  "pairs": 70,
+  "exact_pair_decisions_and_frames": 70,
+  "cpu_acceptance_pass": false,
+  "cells": [
+    {
+      "case": "prefix_insert",
+      "pairs": 10,
+      "primary": true,
+      "cpu_resolution_qualified": true,
+      "legacy_over_candidate_cpu_geometric_mean": 1.1160349930172275,
+      "candidate_over_legacy_cpu_geometric_mean": 0.8960292520008498,
+      "candidate_cpu_wins": 8,
+      "cpu_gate_pass": true,
+      "paired_cpu_ratios": [
+        {
+          "pair": 0,
+          "legacy_over_candidate_cpu": 1.2377655283678408,
+          "candidate_win": true
+        },
+        {
+          "pair": 1,
+          "legacy_over_candidate_cpu": 1.0846153846153845,
+          "candidate_win": true
+        },
+        {
+          "pair": 2,
+          "legacy_over_candidate_cpu": 1.1453353367026362,
+          "candidate_win": true
+        },
+        {
+          "pair": 3,
+          "legacy_over_candidate_cpu": 1.102147971360382,
+          "candidate_win": true
+        },
+        {
+          "pair": 4,
+          "legacy_over_candidate_cpu": 0.8023789952129975,
+          "candidate_win": false
+        },
+        {
+          "pair": 5,
+          "legacy_over_candidate_cpu": 1.1296863415105896,
+          "candidate_win": true
+        },
+        {
+          "pair": 6,
+          "legacy_over_candidate_cpu": 1.35487242837459,
+          "candidate_win": true
+        },
+        {
+          "pair": 7,
+          "legacy_over_candidate_cpu": 0.9924073246985261,
+          "candidate_win": false
+        },
+        {
+          "pair": 8,
+          "legacy_over_candidate_cpu": 1.3479547547020914,
+          "candidate_win": true
+        },
+        {
+          "pair": 9,
+          "legacy_over_candidate_cpu": 1.0766890607174546,
+          "candidate_win": true
+        }
+      ],
+      "old": {
+        "encode_cpu_micros": {
+          "count": 10,
+          "min": 16163,
+          "median": 17700.5,
+          "p95": 35044,
+          "max": 35044
+        },
+        "encode_wall_micros": {
+          "count": 10,
+          "min": 16176,
+          "median": 18326,
+          "p95": 53672,
+          "max": 53672
+        },
+        "drop_cpu_micros": {
+          "count": 10,
+          "min": 0,
+          "median": 1,
+          "p95": 6,
+          "max": 6
+        },
+        "drop_wall_micros": {
+          "count": 10,
+          "min": 1,
+          "median": 1,
+          "p95": 5,
+          "max": 5
+        },
+        "encode_plus_drop_cpu_micros": {
+          "count": 10,
+          "min": 16163,
+          "median": 17701.5,
+          "p95": 35049,
+          "max": 35049
+        },
+        "encode_plus_drop_wall_micros": {
+          "count": 10,
+          "min": 16177,
+          "median": 18327,
+          "p95": 53677,
+          "max": 53677
+        },
+        "verification_cpu_micros": {
+          "count": 10,
+          "min": 2198,
+          "median": 4289.5,
+          "p95": 7876,
+          "max": 7876
+        },
+        "verification_wall_micros": {
+          "count": 10,
+          "min": 2199,
+          "median": 4524.5,
+          "p95": 14347,
+          "max": 14347
+        },
+        "entry_to_release_including_verification_cpu_micros": {
+          "count": 10,
+          "min": 18368,
+          "median": 22527,
+          "p95": 42942,
+          "max": 42942
+        },
+        "entry_to_release_including_verification_wall_micros": {
+          "count": 10,
+          "min": 18377,
+          "median": 23287,
+          "p95": 68026,
+          "max": 68026
+        }
+      },
+      "new": {
+        "encode_cpu_micros": {
+          "count": 10,
+          "min": 14642,
+          "median": 15494,
+          "p95": 31021,
+          "max": 31021
+        },
+        "encode_wall_micros": {
+          "count": 10,
+          "min": 14671,
+          "median": 15586,
+          "p95": 42179,
+          "max": 42179
+        },
+        "drop_cpu_micros": {
+          "count": 10,
+          "min": 0,
+          "median": 3.5,
+          "p95": 8,
+          "max": 8
+        },
+        "drop_wall_micros": {
+          "count": 10,
+          "min": 1,
+          "median": 4,
+          "p95": 9,
+          "max": 9
+        },
+        "encode_plus_drop_cpu_micros": {
+          "count": 10,
+          "min": 14642,
+          "median": 15499.5,
+          "p95": 31023,
+          "max": 31023
+        },
+        "encode_plus_drop_wall_micros": {
+          "count": 10,
+          "min": 14672,
+          "median": 15589.5,
+          "p95": 42180,
+          "max": 42180
+        },
+        "verification_cpu_micros": {
+          "count": 10,
+          "min": 2387,
+          "median": 3689,
+          "p95": 6327,
+          "max": 6327
+        },
+        "verification_wall_micros": {
+          "count": 10,
+          "min": 2390,
+          "median": 3706.5,
+          "p95": 8539,
+          "max": 8539
+        },
+        "entry_to_release_including_verification_cpu_micros": {
+          "count": 10,
+          "min": 17056,
+          "median": 19194.5,
+          "p95": 35413,
+          "max": 35413
+        },
+        "entry_to_release_including_verification_wall_micros": {
+          "count": 10,
+          "min": 17082,
+          "median": 19291,
+          "p95": 46843,
+          "max": 46843
+        }
+      }
+    },
+    {
+      "case": "middle_insert",
+      "pairs": 10,
+      "primary": true,
+      "cpu_resolution_qualified": true,
+      "legacy_over_candidate_cpu_geometric_mean": 1.0920434294816324,
+      "candidate_over_legacy_cpu_geometric_mean": 0.9157144972473089,
+      "candidate_cpu_wins": 10,
+      "cpu_gate_pass": false,
+      "paired_cpu_ratios": [
+        {
+          "pair": 0,
+          "legacy_over_candidate_cpu": 1.2065549297686096,
+          "candidate_win": true
+        },
+        {
+          "pair": 1,
+          "legacy_over_candidate_cpu": 1.0982517749446523,
+          "candidate_win": true
+        },
+        {
+          "pair": 2,
+          "legacy_over_candidate_cpu": 1.093470308973461,
+          "candidate_win": true
+        },
+        {
+          "pair": 3,
+          "legacy_over_candidate_cpu": 1.0291734197730957,
+          "candidate_win": true
+        },
+        {
+          "pair": 4,
+          "legacy_over_candidate_cpu": 1.0808169103623648,
+          "candidate_win": true
+        },
+        {
+          "pair": 5,
+          "legacy_over_candidate_cpu": 1.1098238374861134,
+          "candidate_win": true
+        },
+        {
+          "pair": 6,
+          "legacy_over_candidate_cpu": 1.122142186031945,
+          "candidate_win": true
+        },
+        {
+          "pair": 7,
+          "legacy_over_candidate_cpu": 1.024998167289788,
+          "candidate_win": true
+        },
+        {
+          "pair": 8,
+          "legacy_over_candidate_cpu": 1.0850310705576969,
+          "candidate_win": true
+        },
+        {
+          "pair": 9,
+          "legacy_over_candidate_cpu": 1.0805259472496693,
+          "candidate_win": true
+        }
+      ],
+      "old": {
+        "encode_cpu_micros": {
+          "count": 10,
+          "min": 13601,
+          "median": 13984,
+          "p95": 17915,
+          "max": 17915
+        },
+        "encode_wall_micros": {
+          "count": 10,
+          "min": 13610,
+          "median": 14080,
+          "p95": 20692,
+          "max": 20692
+        },
+        "drop_cpu_micros": {
+          "count": 10,
+          "min": 1,
+          "median": 1.5,
+          "p95": 3,
+          "max": 3
+        },
+        "drop_wall_micros": {
+          "count": 10,
+          "min": 1,
+          "median": 1,
+          "p95": 3,
+          "max": 3
+        },
+        "encode_plus_drop_cpu_micros": {
+          "count": 10,
+          "min": 13602,
+          "median": 13986,
+          "p95": 17917,
+          "max": 17917
+        },
+        "encode_plus_drop_wall_micros": {
+          "count": 10,
+          "min": 13611,
+          "median": 14081,
+          "p95": 20694,
+          "max": 20694
+        },
+        "verification_cpu_micros": {
+          "count": 10,
+          "min": 2321,
+          "median": 3519,
+          "p95": 4495,
+          "max": 4495
+        },
+        "verification_wall_micros": {
+          "count": 10,
+          "min": 2324,
+          "median": 3523.5,
+          "p95": 4775,
+          "max": 4775
+        },
+        "entry_to_release_including_verification_cpu_micros": {
+          "count": 10,
+          "min": 16218,
+          "median": 17593.5,
+          "p95": 21655,
+          "max": 21655
+        },
+        "entry_to_release_including_verification_wall_micros": {
+          "count": 10,
+          "min": 16238,
+          "median": 17709.5,
+          "p95": 24340,
+          "max": 24340
+        }
+      },
+      "new": {
+        "encode_cpu_micros": {
+          "count": 10,
+          "min": 12584,
+          "median": 12976,
+          "p95": 15965,
+          "max": 15965
+        },
+        "encode_wall_micros": {
+          "count": 10,
+          "min": 12596,
+          "median": 13026,
+          "p95": 16301,
+          "max": 16301
+        },
+        "drop_cpu_micros": {
+          "count": 10,
+          "min": 0,
+          "median": 2,
+          "p95": 6,
+          "max": 6
+        },
+        "drop_wall_micros": {
+          "count": 10,
+          "min": 1,
+          "median": 2,
+          "p95": 6,
+          "max": 6
+        },
+        "encode_plus_drop_cpu_micros": {
+          "count": 10,
+          "min": 12585,
+          "median": 12977.5,
+          "p95": 15971,
+          "max": 15971
+        },
+        "encode_plus_drop_wall_micros": {
+          "count": 10,
+          "min": 12597,
+          "median": 13027.5,
+          "p95": 16307,
+          "max": 16307
+        },
+        "verification_cpu_micros": {
+          "count": 10,
+          "min": 2339,
+          "median": 2875,
+          "p95": 5387,
+          "max": 5387
+        },
+        "verification_wall_micros": {
+          "count": 10,
+          "min": 2341,
+          "median": 2884.5,
+          "p95": 6747,
+          "max": 6747
+        },
+        "entry_to_release_including_verification_cpu_micros": {
+          "count": 10,
+          "min": 15059,
+          "median": 15668,
+          "p95": 21370,
+          "max": 21370
+        },
+        "entry_to_release_including_verification_wall_micros": {
+          "count": 10,
+          "min": 15092,
+          "median": 15687.5,
+          "p95": 23056,
+          "max": 23056
+        }
+      }
+    },
+    {
+      "case": "unrelated",
+      "pairs": 10,
+      "primary": true,
+      "cpu_resolution_qualified": true,
+      "legacy_over_candidate_cpu_geometric_mean": 1.5141006127150103,
+      "candidate_over_legacy_cpu_geometric_mean": 0.66045809083113,
+      "candidate_cpu_wins": 9,
+      "cpu_gate_pass": true,
+      "paired_cpu_ratios": [
+        {
+          "pair": 0,
+          "legacy_over_candidate_cpu": 1.9069580372704116,
+          "candidate_win": true
+        },
+        {
+          "pair": 1,
+          "legacy_over_candidate_cpu": 0.6488645920941968,
+          "candidate_win": false
+        },
+        {
+          "pair": 2,
+          "legacy_over_candidate_cpu": 1.3002715786987837,
+          "candidate_win": true
+        },
+        {
+          "pair": 3,
+          "legacy_over_candidate_cpu": 1.4157534888077175,
+          "candidate_win": true
+        },
+        {
+          "pair": 4,
+          "legacy_over_candidate_cpu": 1.8112755314714464,
+          "candidate_win": true
+        },
+        {
+          "pair": 5,
+          "legacy_over_candidate_cpu": 2.16659793814433,
+          "candidate_win": true
+        },
+        {
+          "pair": 6,
+          "legacy_over_candidate_cpu": 2.1255458515283845,
+          "candidate_win": true
+        },
+        {
+          "pair": 7,
+          "legacy_over_candidate_cpu": 1.51755280407866,
+          "candidate_win": true
+        },
+        {
+          "pair": 8,
+          "legacy_over_candidate_cpu": 1.439900686432014,
+          "candidate_win": true
+        },
+        {
+          "pair": 9,
+          "legacy_over_candidate_cpu": 1.5251787842669846,
+          "candidate_win": true
+        }
+      ],
+      "old": {
+        "encode_cpu_micros": {
+          "count": 10,
+          "min": 9859,
+          "median": 12618,
+          "p95": 17381,
+          "max": 17381
+        },
+        "encode_wall_micros": {
+          "count": 10,
+          "min": 9964,
+          "median": 15837,
+          "p95": 23458,
+          "max": 23458
+        },
+        "drop_cpu_micros": {
+          "count": 10,
+          "min": 0,
+          "median": 0,
+          "p95": 1,
+          "max": 1
+        },
+        "drop_wall_micros": {
+          "count": 10,
+          "min": 0,
+          "median": 0,
+          "p95": 0,
+          "max": 0
+        },
+        "encode_plus_drop_cpu_micros": {
+          "count": 10,
+          "min": 9859,
+          "median": 12618.5,
+          "p95": 17381,
+          "max": 17381
+        },
+        "encode_plus_drop_wall_micros": {
+          "count": 10,
+          "min": 9964,
+          "median": 15837,
+          "p95": 23458,
+          "max": 23458
+        },
+        "verification_cpu_micros": {
+          "count": 10,
+          "min": 2,
+          "median": 2,
+          "p95": 5,
+          "max": 5
+        },
+        "verification_wall_micros": {
+          "count": 10,
+          "min": 2,
+          "median": 2,
+          "p95": 5,
+          "max": 5
+        },
+        "entry_to_release_including_verification_cpu_micros": {
+          "count": 10,
+          "min": 9865,
+          "median": 12625,
+          "p95": 17389,
+          "max": 17389
+        },
+        "entry_to_release_including_verification_wall_micros": {
+          "count": 10,
+          "min": 9968,
+          "median": 15841.5,
+          "p95": 23463,
+          "max": 23463
+        }
+      },
+      "new": {
+        "encode_cpu_micros": {
+          "count": 10,
+          "min": 6712,
+          "median": 7393.5,
+          "p95": 16646,
+          "max": 16646
+        },
+        "encode_wall_micros": {
+          "count": 10,
+          "min": 6719,
+          "median": 8368,
+          "p95": 25415,
+          "max": 25415
+        },
+        "drop_cpu_micros": {
+          "count": 10,
+          "min": 0,
+          "median": 1,
+          "p95": 2,
+          "max": 2
+        },
+        "drop_wall_micros": {
+          "count": 10,
+          "min": 0,
+          "median": 0,
+          "p95": 1,
+          "max": 1
+        },
+        "encode_plus_drop_cpu_micros": {
+          "count": 10,
+          "min": 6712,
+          "median": 7395,
+          "p95": 16647,
+          "max": 16647
+        },
+        "encode_plus_drop_wall_micros": {
+          "count": 10,
+          "min": 6719,
+          "median": 8369,
+          "p95": 25416,
+          "max": 25416
+        },
+        "verification_cpu_micros": {
+          "count": 10,
+          "min": 2,
+          "median": 3,
+          "p95": 6,
+          "max": 6
+        },
+        "verification_wall_micros": {
+          "count": 10,
+          "min": 2,
+          "median": 2.5,
+          "p95": 6,
+          "max": 6
+        },
+        "entry_to_release_including_verification_cpu_micros": {
+          "count": 10,
+          "min": 6716,
+          "median": 7401,
+          "p95": 16663,
+          "max": 16663
+        },
+        "entry_to_release_including_verification_wall_micros": {
+          "count": 10,
+          "min": 6722,
+          "median": 8375,
+          "p95": 25425,
+          "max": 25425
+        }
+      }
+    },
+    {
+      "case": "repeat",
+      "pairs": 10,
+      "primary": false,
+      "cpu_resolution_qualified": true,
+      "legacy_over_candidate_cpu_geometric_mean": 0.936188654923238,
+      "candidate_over_legacy_cpu_geometric_mean": 1.068160775866264,
+      "candidate_cpu_wins": 3,
+      "cpu_gate_pass": false,
+      "paired_cpu_ratios": [
+        {
+          "pair": 0,
+          "legacy_over_candidate_cpu": 0.9737096632374923,
+          "candidate_win": false
+        },
+        {
+          "pair": 1,
+          "legacy_over_candidate_cpu": 0.9828429269966543,
+          "candidate_win": false
+        },
+        {
+          "pair": 2,
+          "legacy_over_candidate_cpu": 0.9526586023844749,
+          "candidate_win": false
+        },
+        {
+          "pair": 3,
+          "legacy_over_candidate_cpu": 0.4747360786525909,
+          "candidate_win": false
+        },
+        {
+          "pair": 4,
+          "legacy_over_candidate_cpu": 1.0135553129548762,
+          "candidate_win": true
+        },
+        {
+          "pair": 5,
+          "legacy_over_candidate_cpu": 0.999458972046889,
+          "candidate_win": false
+        },
+        {
+          "pair": 6,
+          "legacy_over_candidate_cpu": 0.9939056703762587,
+          "candidate_win": false
+        },
+        {
+          "pair": 7,
+          "legacy_over_candidate_cpu": 0.9933065595716198,
+          "candidate_win": false
+        },
+        {
+          "pair": 8,
+          "legacy_over_candidate_cpu": 1.0545742156604272,
+          "candidate_win": true
+        },
+        {
+          "pair": 9,
+          "legacy_over_candidate_cpu": 1.1329547503154858,
+          "candidate_win": true
+        }
+      ],
+      "old": {
+        "encode_cpu_micros": {
+          "count": 10,
+          "min": 10947,
+          "median": 11197,
+          "p95": 12569,
+          "max": 12569
+        },
+        "encode_wall_micros": {
+          "count": 10,
+          "min": 10993,
+          "median": 11285.5,
+          "p95": 12854,
+          "max": 12854
+        },
+        "drop_cpu_micros": {
+          "count": 10,
+          "min": 0,
+          "median": 0.5,
+          "p95": 2,
+          "max": 2
+        },
+        "drop_wall_micros": {
+          "count": 10,
+          "min": 0,
+          "median": 0,
+          "p95": 1,
+          "max": 1
+        },
+        "encode_plus_drop_cpu_micros": {
+          "count": 10,
+          "min": 10947,
+          "median": 11198.5,
+          "p95": 12570,
+          "max": 12570
+        },
+        "encode_plus_drop_wall_micros": {
+          "count": 10,
+          "min": 10993,
+          "median": 11285.5,
+          "p95": 12855,
+          "max": 12855
+        },
+        "verification_cpu_micros": {
+          "count": 10,
+          "min": 2279,
+          "median": 2400,
+          "p95": 3255,
+          "max": 3255
+        },
+        "verification_wall_micros": {
+          "count": 10,
+          "min": 2281,
+          "median": 2402,
+          "p95": 3884,
+          "max": 3884
+        },
+        "entry_to_release_including_verification_cpu_micros": {
+          "count": 10,
+          "min": 13232,
+          "median": 13598.5,
+          "p95": 15832,
+          "max": 15832
+        },
+        "entry_to_release_including_verification_wall_micros": {
+          "count": 10,
+          "min": 13275,
+          "median": 13661,
+          "p95": 16740,
+          "max": 16740
+        }
+      },
+      "new": {
+        "encode_cpu_micros": {
+          "count": 10,
+          "min": 10992,
+          "median": 11347.5,
+          "p95": 24818,
+          "max": 24818
+        },
+        "encode_wall_micros": {
+          "count": 10,
+          "min": 11008,
+          "median": 11447,
+          "p95": 38420,
+          "max": 38420
+        },
+        "drop_cpu_micros": {
+          "count": 10,
+          "min": 0,
+          "median": 0,
+          "p95": 1,
+          "max": 1
+        },
+        "drop_wall_micros": {
+          "count": 10,
+          "min": 0,
+          "median": 0,
+          "p95": 1,
+          "max": 1
+        },
+        "encode_plus_drop_cpu_micros": {
+          "count": 10,
+          "min": 10993,
+          "median": 11348,
+          "p95": 24818,
+          "max": 24818
+        },
+        "encode_plus_drop_wall_micros": {
+          "count": 10,
+          "min": 11008,
+          "median": 11447,
+          "p95": 38421,
+          "max": 38421
+        },
+        "verification_cpu_micros": {
+          "count": 10,
+          "min": 2202,
+          "median": 2575.5,
+          "p95": 5009,
+          "max": 5009
+        },
+        "verification_wall_micros": {
+          "count": 10,
+          "min": 2229,
+          "median": 2632.5,
+          "p95": 29949,
+          "max": 29949
+        },
+        "entry_to_release_including_verification_cpu_micros": {
+          "count": 10,
+          "min": 13310,
+          "median": 13992.5,
+          "p95": 29841,
+          "max": 29841
+        },
+        "entry_to_release_including_verification_wall_micros": {
+          "count": 10,
+          "min": 13367,
+          "median": 14111,
+          "p95": 68374,
+          "max": 68374
+        }
+      }
+    },
+    {
+      "case": "localized",
+      "pairs": 10,
+      "primary": false,
+      "cpu_resolution_qualified": true,
+      "legacy_over_candidate_cpu_geometric_mean": 1.0446494708311826,
+      "candidate_over_legacy_cpu_geometric_mean": 0.9572588968090349,
+      "candidate_cpu_wins": 7,
+      "cpu_gate_pass": true,
+      "paired_cpu_ratios": [
+        {
+          "pair": 0,
+          "legacy_over_candidate_cpu": 2.545095561522666,
+          "candidate_win": true
+        },
+        {
+          "pair": 1,
+          "legacy_over_candidate_cpu": 0.9261194571449307,
+          "candidate_win": false
+        },
+        {
+          "pair": 2,
+          "legacy_over_candidate_cpu": 1.033330675384738,
+          "candidate_win": true
+        },
+        {
+          "pair": 3,
+          "legacy_over_candidate_cpu": 0.5883804119896385,
+          "candidate_win": false
+        },
+        {
+          "pair": 4,
+          "legacy_over_candidate_cpu": 1.0143832276938078,
+          "candidate_win": true
+        },
+        {
+          "pair": 5,
+          "legacy_over_candidate_cpu": 1.032470663880405,
+          "candidate_win": true
+        },
+        {
+          "pair": 6,
+          "legacy_over_candidate_cpu": 1.0027497078435417,
+          "candidate_win": true
+        },
+        {
+          "pair": 7,
+          "legacy_over_candidate_cpu": 1.0069444444444444,
+          "candidate_win": true
+        },
+        {
+          "pair": 8,
+          "legacy_over_candidate_cpu": 1.042989214175655,
+          "candidate_win": true
+        },
+        {
+          "pair": 9,
+          "legacy_over_candidate_cpu": 0.9792184867206932,
+          "candidate_win": false
+        }
+      ],
+      "old": {
+        "encode_cpu_micros": {
+          "count": 10,
+          "min": 12204,
+          "median": 13222,
+          "p95": 32226,
+          "max": 32226
+        },
+        "encode_wall_micros": {
+          "count": 10,
+          "min": 12212,
+          "median": 13337.5,
+          "p95": 35557,
+          "max": 35557
+        },
+        "drop_cpu_micros": {
+          "count": 10,
+          "min": 0,
+          "median": 1,
+          "p95": 2,
+          "max": 2
+        },
+        "drop_wall_micros": {
+          "count": 10,
+          "min": 0,
+          "median": 0,
+          "p95": 2,
+          "max": 2
+        },
+        "encode_plus_drop_cpu_micros": {
+          "count": 10,
+          "min": 12205,
+          "median": 13223,
+          "p95": 32228,
+          "max": 32228
+        },
+        "encode_plus_drop_wall_micros": {
+          "count": 10,
+          "min": 12212,
+          "median": 13339,
+          "p95": 35558,
+          "max": 35558
+        },
+        "verification_cpu_micros": {
+          "count": 10,
+          "min": 2377,
+          "median": 3318,
+          "p95": 5966,
+          "max": 5966
+        },
+        "verification_wall_micros": {
+          "count": 10,
+          "min": 2379,
+          "median": 3409,
+          "p95": 6929,
+          "max": 6929
+        },
+        "entry_to_release_including_verification_cpu_micros": {
+          "count": 10,
+          "min": 14867,
+          "median": 16942,
+          "p95": 36803,
+          "max": 36803
+        },
+        "entry_to_release_including_verification_wall_micros": {
+          "count": 10,
+          "min": 14920,
+          "median": 17229,
+          "p95": 41458,
+          "max": 41458
+        }
+      },
+      "new": {
+        "encode_cpu_micros": {
+          "count": 10,
+          "min": 12306,
+          "median": 12821,
+          "p95": 24321,
+          "max": 24321
+        },
+        "encode_wall_micros": {
+          "count": 10,
+          "min": 12388,
+          "median": 12931,
+          "p95": 24997,
+          "max": 24997
+        },
+        "drop_cpu_micros": {
+          "count": 10,
+          "min": 0,
+          "median": 0.5,
+          "p95": 2,
+          "max": 2
+        },
+        "drop_wall_micros": {
+          "count": 10,
+          "min": 0,
+          "median": 0,
+          "p95": 1,
+          "max": 1
+        },
+        "encode_plus_drop_cpu_micros": {
+          "count": 10,
+          "min": 12308,
+          "median": 12821.5,
+          "p95": 24322,
+          "max": 24322
+        },
+        "encode_plus_drop_wall_micros": {
+          "count": 10,
+          "min": 12388,
+          "median": 12931,
+          "p95": 24997,
+          "max": 24997
+        },
+        "verification_cpu_micros": {
+          "count": 10,
+          "min": 2297,
+          "median": 2834,
+          "p95": 6198,
+          "max": 6198
+        },
+        "verification_wall_micros": {
+          "count": 10,
+          "min": 2298,
+          "median": 2868,
+          "p95": 6547,
+          "max": 6547
+        },
+        "entry_to_release_including_verification_cpu_micros": {
+          "count": 10,
+          "min": 14688,
+          "median": 15935,
+          "p95": 29131,
+          "max": 29131
+        },
+        "entry_to_release_including_verification_wall_micros": {
+          "count": 10,
+          "min": 14767,
+          "median": 16041.5,
+          "p95": 31546,
+          "max": 31546
+        }
+      }
+    },
+    {
+      "case": "scattered",
+      "pairs": 10,
+      "primary": false,
+      "cpu_resolution_qualified": true,
+      "legacy_over_candidate_cpu_geometric_mean": 1.0220497982694678,
+      "candidate_over_legacy_cpu_geometric_mean": 0.9784259061478193,
+      "candidate_cpu_wins": 6,
+      "cpu_gate_pass": true,
+      "paired_cpu_ratios": [
+        {
+          "pair": 0,
+          "legacy_over_candidate_cpu": 1.052307270984527,
+          "candidate_win": true
+        },
+        {
+          "pair": 1,
+          "legacy_over_candidate_cpu": 1.0606867181261646,
+          "candidate_win": true
+        },
+        {
+          "pair": 2,
+          "legacy_over_candidate_cpu": 1.1107128084930373,
+          "candidate_win": true
+        },
+        {
+          "pair": 3,
+          "legacy_over_candidate_cpu": 1.0100741569889464,
+          "candidate_win": true
+        },
+        {
+          "pair": 4,
+          "legacy_over_candidate_cpu": 0.9927027399146359,
+          "candidate_win": false
+        },
+        {
+          "pair": 5,
+          "legacy_over_candidate_cpu": 1.0325077399380804,
+          "candidate_win": true
+        },
+        {
+          "pair": 6,
+          "legacy_over_candidate_cpu": 0.9966239977493319,
+          "candidate_win": false
+        },
+        {
+          "pair": 7,
+          "legacy_over_candidate_cpu": 0.9833928081251716,
+          "candidate_win": false
+        },
+        {
+          "pair": 8,
+          "legacy_over_candidate_cpu": 0.972936030617824,
+          "candidate_win": false
+        },
+        {
+          "pair": 9,
+          "legacy_over_candidate_cpu": 1.0162033803603856,
+          "candidate_win": true
+        }
+      ],
+      "old": {
+        "encode_cpu_micros": {
+          "count": 10,
+          "min": 7085,
+          "median": 7247,
+          "p95": 8056,
+          "max": 8056
+        },
+        "encode_wall_micros": {
+          "count": 10,
+          "min": 7091,
+          "median": 7265,
+          "p95": 8083,
+          "max": 8083
+        },
+        "drop_cpu_micros": {
+          "count": 10,
+          "min": 1,
+          "median": 2,
+          "p95": 5,
+          "max": 5
+        },
+        "drop_wall_micros": {
+          "count": 10,
+          "min": 1,
+          "median": 1,
+          "p95": 5,
+          "max": 5
+        },
+        "encode_plus_drop_cpu_micros": {
+          "count": 10,
+          "min": 7086,
+          "median": 7249,
+          "p95": 8059,
+          "max": 8059
+        },
+        "encode_plus_drop_wall_micros": {
+          "count": 10,
+          "min": 7092,
+          "median": 7266,
+          "p95": 8086,
+          "max": 8086
+        },
+        "verification_cpu_micros": {
+          "count": 10,
+          "min": 2222,
+          "median": 2428,
+          "p95": 3901,
+          "max": 3901
+        },
+        "verification_wall_micros": {
+          "count": 10,
+          "min": 2225,
+          "median": 2433.5,
+          "p95": 3942,
+          "max": 3942
+        },
+        "entry_to_release_including_verification_cpu_micros": {
+          "count": 10,
+          "min": 9396,
+          "median": 9626,
+          "p95": 11882,
+          "max": 11882
+        },
+        "entry_to_release_including_verification_wall_micros": {
+          "count": 10,
+          "min": 9406,
+          "median": 9642,
+          "p95": 12012,
+          "max": 12012
+        }
+      },
+      "new": {
+        "encode_cpu_micros": {
+          "count": 10,
+          "min": 7106,
+          "median": 7258,
+          "p95": 7514,
+          "max": 7514
+        },
+        "encode_wall_micros": {
+          "count": 10,
+          "min": 7120,
+          "median": 7265.5,
+          "p95": 7546,
+          "max": 7546
+        },
+        "drop_cpu_micros": {
+          "count": 10,
+          "min": 1,
+          "median": 1,
+          "p95": 5,
+          "max": 5
+        },
+        "drop_wall_micros": {
+          "count": 10,
+          "min": 1,
+          "median": 1,
+          "p95": 5,
+          "max": 5
+        },
+        "encode_plus_drop_cpu_micros": {
+          "count": 10,
+          "min": 7107,
+          "median": 7259.5,
+          "p95": 7515,
+          "max": 7515
+        },
+        "encode_plus_drop_wall_micros": {
+          "count": 10,
+          "min": 7121,
+          "median": 7267,
+          "p95": 7547,
+          "max": 7547
+        },
+        "verification_cpu_micros": {
+          "count": 10,
+          "min": 2226,
+          "median": 2299.5,
+          "p95": 3792,
+          "max": 3792
+        },
+        "verification_wall_micros": {
+          "count": 10,
+          "min": 2228,
+          "median": 2303.5,
+          "p95": 4979,
+          "max": 4979
+        },
+        "entry_to_release_including_verification_cpu_micros": {
+          "count": 10,
+          "min": 9405,
+          "median": 9593,
+          "p95": 10951,
+          "max": 10951
+        },
+        "entry_to_release_including_verification_wall_micros": {
+          "count": 10,
+          "min": 9421,
+          "median": 9598,
+          "p95": 12174,
+          "max": 12174
+        }
+      }
+    },
+    {
+      "case": "periodic",
+      "pairs": 10,
+      "primary": false,
+      "cpu_resolution_qualified": true,
+      "legacy_over_candidate_cpu_geometric_mean": 0.9398366205371824,
+      "candidate_over_legacy_cpu_geometric_mean": 1.06401472144002,
+      "candidate_cpu_wins": 4,
+      "cpu_gate_pass": false,
+      "paired_cpu_ratios": [
+        {
+          "pair": 0,
+          "legacy_over_candidate_cpu": 0.99134522121913,
+          "candidate_win": false
+        },
+        {
+          "pair": 1,
+          "legacy_over_candidate_cpu": 1.0039649884042792,
+          "candidate_win": true
+        },
+        {
+          "pair": 2,
+          "legacy_over_candidate_cpu": 1.0015606420927468,
+          "candidate_win": true
+        },
+        {
+          "pair": 3,
+          "legacy_over_candidate_cpu": 0.9992063492063492,
+          "candidate_win": false
+        },
+        {
+          "pair": 4,
+          "legacy_over_candidate_cpu": 1.016629213483146,
+          "candidate_win": true
+        },
+        {
+          "pair": 5,
+          "legacy_over_candidate_cpu": 0.9850852272727273,
+          "candidate_win": false
+        },
+        {
+          "pair": 6,
+          "legacy_over_candidate_cpu": 0.8467736974841606,
+          "candidate_win": false
+        },
+        {
+          "pair": 7,
+          "legacy_over_candidate_cpu": 0.8595876409088254,
+          "candidate_win": false
+        },
+        {
+          "pair": 8,
+          "legacy_over_candidate_cpu": 1.0571013439883763,
+          "candidate_win": true
+        },
+        {
+          "pair": 9,
+          "legacy_over_candidate_cpu": 0.7005468318868209,
+          "candidate_win": false
+        }
+      ],
+      "old": {
+        "encode_cpu_micros": {
+          "count": 10,
+          "min": 13287,
+          "median": 13807.5,
+          "p95": 14717,
+          "max": 14717
+        },
+        "encode_wall_micros": {
+          "count": 10,
+          "min": 13297,
+          "median": 13867.5,
+          "p95": 14768,
+          "max": 14768
+        },
+        "drop_cpu_micros": {
+          "count": 10,
+          "min": 0,
+          "median": 3,
+          "p95": 9,
+          "max": 9
+        },
+        "drop_wall_micros": {
+          "count": 10,
+          "min": 1,
+          "median": 3,
+          "p95": 9,
+          "max": 9
+        },
+        "encode_plus_drop_cpu_micros": {
+          "count": 10,
+          "min": 13287,
+          "median": 13812.5,
+          "p95": 14721,
+          "max": 14721
+        },
+        "encode_plus_drop_wall_micros": {
+          "count": 10,
+          "min": 13298,
+          "median": 13873.5,
+          "p95": 14771,
+          "max": 14771
+        },
+        "verification_cpu_micros": {
+          "count": 10,
+          "min": 2193,
+          "median": 2475.5,
+          "p95": 4296,
+          "max": 4296
+        },
+        "verification_wall_micros": {
+          "count": 10,
+          "min": 2194,
+          "median": 2478.5,
+          "p95": 4327,
+          "max": 4327
+        },
+        "entry_to_release_including_verification_cpu_micros": {
+          "count": 10,
+          "min": 15738,
+          "median": 16340,
+          "p95": 18860,
+          "max": 18860
+        },
+        "entry_to_release_including_verification_wall_micros": {
+          "count": 10,
+          "min": 15741,
+          "median": 16413.5,
+          "p95": 18943,
+          "max": 18943
+        }
+      },
+      "new": {
+        "encode_cpu_micros": {
+          "count": 10,
+          "min": 13350,
+          "median": 13812.5,
+          "p95": 19933,
+          "max": 19933
+        },
+        "encode_wall_micros": {
+          "count": 10,
+          "min": 13358,
+          "median": 13834,
+          "p95": 23380,
+          "max": 23380
+        },
+        "drop_cpu_micros": {
+          "count": 10,
+          "min": 1,
+          "median": 2,
+          "p95": 6,
+          "max": 6
+        },
+        "drop_wall_micros": {
+          "count": 10,
+          "min": 1,
+          "median": 2,
+          "p95": 5,
+          "max": 5
+        },
+        "encode_plus_drop_cpu_micros": {
+          "count": 10,
+          "min": 13352,
+          "median": 13815,
+          "p95": 19939,
+          "max": 19939
+        },
+        "encode_plus_drop_wall_micros": {
+          "count": 10,
+          "min": 13360,
+          "median": 13836.5,
+          "p95": 23385,
+          "max": 23385
+        },
+        "verification_cpu_micros": {
+          "count": 10,
+          "min": 2228,
+          "median": 2714,
+          "p95": 7439,
+          "max": 7439
+        },
+        "verification_wall_micros": {
+          "count": 10,
+          "min": 2229,
+          "median": 2741.5,
+          "p95": 9989,
+          "max": 9989
+        },
+        "entry_to_release_including_verification_cpu_micros": {
+          "count": 10,
+          "min": 15636,
+          "median": 16496,
+          "p95": 27389,
+          "max": 27389
+        },
+        "entry_to_release_including_verification_wall_micros": {
+          "count": 10,
+          "min": 15639,
+          "median": 16515,
+          "p95": 33376,
+          "max": 33376
+        }
+      }
+    }
+  ],
+  "limitations": [
+    "Receipt and statistical verification; no independent fixture regeneration or repeat of all decoded byte comparisons.",
+    "Encoder CPU/wall and separate recipe-drop times only; no WAN, complete transfer, total RSS or energy result.",
+    "Allocation acceptance is a separate diagnostic gate and is not inferred from this timing record."
+  ]
+}

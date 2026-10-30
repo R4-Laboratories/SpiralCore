@@ -1,6 +1,24 @@
 # SC-OPT-007 sparse candidate pruning evidence
 
-Status: work in progress. No performance acceptance or WAN result is claimed.
+Status: **completed experiment; FAIL_CPU_GATES; candidate not adopted**. Exact
+output and diagnostic-memory gates passed, while middle insertion and two
+control CPU gates failed. The active encoder is restored to the published
+baseline. See the [full result](../../sparse-pruning-results-2026-10-30.md),
+[frozen registration](registration.json), and
+[independent analysis](independent-review/actual-custody.json).
+
+Measured candidate: `317c7f75b8b8355fbb2c74b4bad1944e4f0cb1e8`. Registration:
+`5bd7c51832710176cca30bfd17ce071cfc80b6af`. `measurements.jsonl` and
+`allocations.jsonl` each contain 140 observations. All 70 old/new pairs match;
+each campaign verifies 120 decoded recipes plus 20 Raw decisions. No observations
+were discarded or replaced. This is not a new WAN measurement.
+
+The candidate-specific source/test snapshots are in `candidate-source/`. Their
+hashes and the 67-entry source manifest identify the measured candidate, not the
+post-rollback delivery tree. Reproduction requires checking out the measured
+commit; the retained harness's `new` arm imports whichever encoder is active.
+The [recovered qualification custody](recovered-qualification-custody.json)
+clarifies the exact baseline test/build order from original session records.
 
 Baseline: `cc0199ffd255b9e2e002afe8c96f10462a3e474f`, freshly fetched from
 `origin/main` before work. This milestone operates in the existing isolated

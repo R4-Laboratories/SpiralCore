@@ -1,0 +1,434 @@
+{
+  "schema": "spiralcore.sparse-pruning.performance-disposition.v1",
+  "status": "REJECT_CANDIDATE_UNDER_REGISTERED_CPU_GATES",
+  "role": "performance-profiler; author of the measurement harness, not an independent harness reviewer",
+  "candidate_revision": "317c7f75b8b8355fbb2c74b4bad1944e4f0cb1e8",
+  "registration_revision": "5bd7c51832710176cca30bfd17ce071cfc80b6af",
+  "registration_sha256": "c41a2b43eb89f701a0b163e14d9da4f1c66d8e894b705bea01445f6487bd3a2d",
+  "measurements_sha256": "a8ef89bc65705abf76f19555592858567ba4e8d6ac0ec64aa7e23d74c395266d",
+  "allocations_sha256": "5e1c2fb43c4e6e54a678687824fd4054299857e71a4182d973a8179d2a990820",
+  "normal_executable_sha256": "e30407365f46bad4e6271382fc22961d984449f5176eef9322defeb4f9393592",
+  "diagnostic_executable_sha256": "f1c523cfc575a759a311013f7b5881a404dbd09e40fc0af6af0592a04730604c",
+  "sample_count": 140,
+  "pair_count": 70,
+  "observations_discarded": 0,
+  "reruns_performed_for_this_disposition": 0,
+  "minimum_encode_cpu_us": 6712,
+  "arithmetic": "Geometric mean = exp(mean(log(candidate_cpu/legacy_cpu))); paired median and ratio of separate arm medians are separately labeled descriptive statistics. All ten pairs contribute to every registered cell gate.",
+  "cells": [
+    {
+      "case": "localized",
+      "pairs": 10,
+      "candidate_cpu_wins": 7,
+      "candidate_over_legacy_cpu_geometric_mean": 0.9572588968090349,
+      "legacy_over_candidate_cpu_geometric_mean": 1.0446494708311826,
+      "median_paired_candidate_over_legacy_cpu": 0.9894620822249294,
+      "legacy_cpu_median_us": 13222,
+      "candidate_cpu_median_us": 12821,
+      "ratio_of_arm_cpu_medians": 0.9696717591892301,
+      "legacy_wall_median_us": 13337.5,
+      "candidate_wall_median_us": 12931
+    },
+    {
+      "case": "middle_insert",
+      "pairs": 10,
+      "candidate_cpu_wins": 10,
+      "candidate_over_legacy_cpu_geometric_mean": 0.9157144972473088,
+      "legacy_over_candidate_cpu_geometric_mean": 1.0920434294816324,
+      "median_paired_candidate_over_legacy_cpu": 0.9180760834175672,
+      "legacy_cpu_median_us": 13984,
+      "candidate_cpu_median_us": 12976,
+      "ratio_of_arm_cpu_medians": 0.9279176201372997,
+      "legacy_wall_median_us": 14080,
+      "candidate_wall_median_us": 13026
+    },
+    {
+      "case": "periodic",
+      "pairs": 10,
+      "candidate_cpu_wins": 4,
+      "candidate_over_legacy_cpu_geometric_mean": 1.06401472144002,
+      "legacy_over_candidate_cpu_geometric_mean": 0.9398366205371824,
+      "median_paired_candidate_over_legacy_cpu": 1.0047623095499114,
+      "legacy_cpu_median_us": 13807.5,
+      "candidate_cpu_median_us": 13812.5,
+      "ratio_of_arm_cpu_medians": 1.0003621220351258,
+      "legacy_wall_median_us": 13867.5,
+      "candidate_wall_median_us": 13834
+    },
+    {
+      "case": "prefix_insert",
+      "pairs": 10,
+      "candidate_cpu_wins": 8,
+      "candidate_over_legacy_cpu_geometric_mean": 0.8960292520008498,
+      "legacy_over_candidate_cpu_geometric_mean": 1.1160349930172275,
+      "median_paired_candidate_over_legacy_cpu": 0.8962603234075739,
+      "legacy_cpu_median_us": 17700.5,
+      "candidate_cpu_median_us": 15494,
+      "ratio_of_arm_cpu_medians": 0.8753425044490268,
+      "legacy_wall_median_us": 18326,
+      "candidate_wall_median_us": 15586
+    },
+    {
+      "case": "repeat",
+      "pairs": 10,
+      "candidate_cpu_wins": 3,
+      "candidate_over_legacy_cpu_geometric_mean": 1.068160775866264,
+      "legacy_over_candidate_cpu_geometric_mean": 0.936188654923238,
+      "median_paired_candidate_over_legacy_cpu": 1.0064351213441016,
+      "legacy_cpu_median_us": 11197,
+      "candidate_cpu_median_us": 11347.5,
+      "ratio_of_arm_cpu_medians": 1.013441100294722,
+      "legacy_wall_median_us": 11285.5,
+      "candidate_wall_median_us": 11447
+    },
+    {
+      "case": "scattered",
+      "pairs": 10,
+      "candidate_cpu_wins": 6,
+      "candidate_over_legacy_cpu_geometric_mean": 0.9784259061478192,
+      "legacy_over_candidate_cpu_geometric_mean": 1.0220497982694678,
+      "median_paired_candidate_over_legacy_cpu": 0.9870406511263471,
+      "legacy_cpu_median_us": 7247,
+      "candidate_cpu_median_us": 7258,
+      "ratio_of_arm_cpu_medians": 1.001517869463226,
+      "legacy_wall_median_us": 7265,
+      "candidate_wall_median_us": 7265.5
+    },
+    {
+      "case": "unrelated",
+      "pairs": 10,
+      "candidate_cpu_wins": 9,
+      "candidate_over_legacy_cpu_geometric_mean": 0.6604580908311302,
+      "legacy_over_candidate_cpu_geometric_mean": 1.5141006127150103,
+      "median_paired_candidate_over_legacy_cpu": 0.6573082459062511,
+      "legacy_cpu_median_us": 12618,
+      "candidate_cpu_median_us": 7393.5,
+      "ratio_of_arm_cpu_medians": 0.5859486447931527,
+      "legacy_wall_median_us": 15837,
+      "candidate_wall_median_us": 8368
+    }
+  ],
+  "failed_gate_pairs": [
+    {
+      "case": "middle_insert",
+      "all_pairs": [
+        {
+          "pair": 0,
+          "order": "AB",
+          "legacy_encode_cpu_us": 17781,
+          "candidate_encode_cpu_us": 14737,
+          "legacy_encode_wall_us": 18636,
+          "candidate_encode_wall_us": 15210,
+          "candidate_over_legacy_cpu": 0.8288060289072605
+        },
+        {
+          "pair": 1,
+          "order": "BA",
+          "legacy_encode_cpu_us": 14386,
+          "candidate_encode_cpu_us": 13099,
+          "legacy_encode_wall_us": 14561,
+          "candidate_encode_wall_us": 13134,
+          "candidate_over_legacy_cpu": 0.9105380230779925
+        },
+        {
+          "pair": 2,
+          "order": "AB",
+          "legacy_encode_cpu_us": 14050,
+          "candidate_encode_cpu_us": 12849,
+          "legacy_encode_wall_us": 14089,
+          "candidate_encode_wall_us": 12897,
+          "candidate_over_legacy_cpu": 0.9145195729537366
+        },
+        {
+          "pair": 3,
+          "order": "BA",
+          "legacy_encode_cpu_us": 13970,
+          "candidate_encode_cpu_us": 13574,
+          "legacy_encode_wall_us": 14071,
+          "candidate_encode_wall_us": 13789,
+          "candidate_over_legacy_cpu": 0.9716535433070866
+        },
+        {
+          "pair": 4,
+          "order": "AB",
+          "legacy_encode_cpu_us": 13601,
+          "candidate_encode_cpu_us": 12584,
+          "legacy_encode_wall_us": 13610,
+          "candidate_encode_wall_us": 12596,
+          "candidate_over_legacy_cpu": 0.9252260863171825
+        },
+        {
+          "pair": 5,
+          "order": "BA",
+          "legacy_encode_cpu_us": 13986,
+          "candidate_encode_cpu_us": 12602,
+          "legacy_encode_wall_us": 14123,
+          "candidate_encode_wall_us": 12612,
+          "candidate_over_legacy_cpu": 0.9010439010439011
+        },
+        {
+          "pair": 6,
+          "order": "AB",
+          "legacy_encode_cpu_us": 17915,
+          "candidate_encode_cpu_us": 15965,
+          "legacy_encode_wall_us": 20692,
+          "candidate_encode_wall_us": 16301,
+          "candidate_over_legacy_cpu": 0.8911526653642199
+        },
+        {
+          "pair": 7,
+          "order": "BA",
+          "legacy_encode_cpu_us": 13982,
+          "candidate_encode_cpu_us": 13641,
+          "legacy_encode_wall_us": 14030,
+          "candidate_encode_wall_us": 13694,
+          "candidate_over_legacy_cpu": 0.9756115005006437
+        },
+        {
+          "pair": 8,
+          "order": "AB",
+          "legacy_encode_cpu_us": 13794,
+          "candidate_encode_cpu_us": 12713,
+          "legacy_encode_wall_us": 13825,
+          "candidate_encode_wall_us": 12749,
+          "candidate_over_legacy_cpu": 0.9216325938813977
+        },
+        {
+          "pair": 9,
+          "order": "BA",
+          "legacy_encode_cpu_us": 13888,
+          "candidate_encode_cpu_us": 12853,
+          "legacy_encode_wall_us": 13913,
+          "candidate_encode_wall_us": 12918,
+          "candidate_over_legacy_cpu": 0.9254752304147466
+        }
+      ]
+    },
+    {
+      "case": "periodic",
+      "all_pairs": [
+        {
+          "pair": 0,
+          "order": "AB",
+          "legacy_encode_cpu_us": 13287,
+          "candidate_encode_cpu_us": 13403,
+          "legacy_encode_wall_us": 13297,
+          "candidate_encode_wall_us": 13408,
+          "candidate_over_legacy_cpu": 1.008730337924287
+        },
+        {
+          "pair": 1,
+          "order": "BA",
+          "legacy_encode_cpu_us": 13420,
+          "candidate_encode_cpu_us": 13367,
+          "legacy_encode_wall_us": 13430,
+          "candidate_encode_wall_us": 13373,
+          "candidate_over_legacy_cpu": 0.9960506706408345
+        },
+        {
+          "pair": 2,
+          "order": "AB",
+          "legacy_encode_cpu_us": 13477,
+          "candidate_encode_cpu_us": 13456,
+          "legacy_encode_wall_us": 13482,
+          "candidate_encode_wall_us": 13462,
+          "candidate_over_legacy_cpu": 0.9984417897158121
+        },
+        {
+          "pair": 3,
+          "order": "BA",
+          "legacy_encode_cpu_us": 13849,
+          "candidate_encode_cpu_us": 13860,
+          "legacy_encode_wall_us": 13938,
+          "candidate_encode_wall_us": 13890,
+          "candidate_over_legacy_cpu": 1.0007942811755361
+        },
+        {
+          "pair": 4,
+          "order": "AB",
+          "legacy_encode_cpu_us": 13572,
+          "candidate_encode_cpu_us": 13350,
+          "legacy_encode_wall_us": 13599,
+          "candidate_encode_wall_us": 13358,
+          "candidate_over_legacy_cpu": 0.9836427939876216
+        },
+        {
+          "pair": 5,
+          "order": "BA",
+          "legacy_encode_cpu_us": 13870,
+          "candidate_encode_cpu_us": 14080,
+          "legacy_encode_wall_us": 13915,
+          "candidate_encode_wall_us": 14106,
+          "candidate_over_legacy_cpu": 1.0151405912040374
+        },
+        {
+          "pair": 6,
+          "order": "AB",
+          "legacy_encode_cpu_us": 13766,
+          "candidate_encode_cpu_us": 16257,
+          "legacy_encode_wall_us": 13820,
+          "candidate_encode_wall_us": 17091,
+          "candidate_over_legacy_cpu": 1.1809530727880284
+        },
+        {
+          "pair": 7,
+          "order": "BA",
+          "legacy_encode_cpu_us": 14717,
+          "candidate_encode_cpu_us": 17121,
+          "legacy_encode_wall_us": 14768,
+          "candidate_encode_wall_us": 19413,
+          "candidate_over_legacy_cpu": 1.1633485085275532
+        },
+        {
+          "pair": 8,
+          "order": "AB",
+          "legacy_encode_cpu_us": 14551,
+          "candidate_encode_cpu_us": 13765,
+          "legacy_encode_wall_us": 14610,
+          "candidate_encode_wall_us": 13778,
+          "candidate_over_legacy_cpu": 0.9459830939454333
+        },
+        {
+          "pair": 9,
+          "order": "BA",
+          "legacy_encode_cpu_us": 13964,
+          "candidate_encode_cpu_us": 19933,
+          "legacy_encode_wall_us": 14068,
+          "candidate_encode_wall_us": 23380,
+          "candidate_over_legacy_cpu": 1.4274563162417646
+        }
+      ]
+    },
+    {
+      "case": "repeat",
+      "all_pairs": [
+        {
+          "pair": 0,
+          "order": "AB",
+          "legacy_encode_cpu_us": 11074,
+          "candidate_encode_cpu_us": 11373,
+          "legacy_encode_wall_us": 11123,
+          "candidate_encode_wall_us": 11518,
+          "candidate_over_legacy_cpu": 1.0270001806032147
+        },
+        {
+          "pair": 1,
+          "order": "BA",
+          "legacy_encode_cpu_us": 11457,
+          "candidate_encode_cpu_us": 11657,
+          "legacy_encode_wall_us": 11463,
+          "candidate_encode_wall_us": 11800,
+          "candidate_over_legacy_cpu": 1.0174565767652963
+        },
+        {
+          "pair": 2,
+          "order": "AB",
+          "legacy_encode_cpu_us": 10947,
+          "candidate_encode_cpu_us": 11491,
+          "legacy_encode_wall_us": 10993,
+          "candidate_encode_wall_us": 11582,
+          "candidate_over_legacy_cpu": 1.0496939800858682
+        },
+        {
+          "pair": 3,
+          "order": "BA",
+          "legacy_encode_cpu_us": 11782,
+          "candidate_encode_cpu_us": 24818,
+          "legacy_encode_wall_us": 12027,
+          "candidate_encode_wall_us": 38420,
+          "candidate_over_legacy_cpu": 2.1064335426922423
+        },
+        {
+          "pair": 4,
+          "order": "AB",
+          "legacy_encode_cpu_us": 11141,
+          "candidate_encode_cpu_us": 10992,
+          "legacy_encode_wall_us": 11262,
+          "candidate_encode_wall_us": 11008,
+          "candidate_over_legacy_cpu": 0.9866259761242259
+        },
+        {
+          "pair": 5,
+          "order": "BA",
+          "legacy_encode_cpu_us": 11084,
+          "candidate_encode_cpu_us": 11090,
+          "legacy_encode_wall_us": 11134,
+          "candidate_encode_wall_us": 11160,
+          "candidate_over_legacy_cpu": 1.0005413208228076
+        },
+        {
+          "pair": 6,
+          "order": "AB",
+          "legacy_encode_cpu_us": 11253,
+          "candidate_encode_cpu_us": 11322,
+          "legacy_encode_wall_us": 11309,
+          "candidate_encode_wall_us": 11384,
+          "candidate_over_legacy_cpu": 1.0061316982138095
+        },
+        {
+          "pair": 7,
+          "order": "BA",
+          "legacy_encode_cpu_us": 11130,
+          "candidate_encode_cpu_us": 11205,
+          "legacy_encode_wall_us": 11206,
+          "candidate_encode_wall_us": 11330,
+          "candidate_over_legacy_cpu": 1.0067385444743935
+        },
+        {
+          "pair": 8,
+          "order": "AB",
+          "legacy_encode_cpu_us": 12000,
+          "candidate_encode_cpu_us": 11379,
+          "legacy_encode_wall_us": 12100,
+          "candidate_encode_wall_us": 11510,
+          "candidate_over_legacy_cpu": 0.94825
+        },
+        {
+          "pair": 9,
+          "order": "BA",
+          "legacy_encode_cpu_us": 12569,
+          "candidate_encode_cpu_us": 11094,
+          "legacy_encode_wall_us": 12854,
+          "candidate_encode_wall_us": 11136,
+          "candidate_over_legacy_cpu": 0.8826477842310446
+        }
+      ]
+    }
+  ],
+  "findings": [
+    "The middle-insertion candidate used less encode CPU in all ten recorded pairs, but legacy/candidate geometric mean 1.0920434294816324 misses the required 1.10. This is a measured improvement below the registered admission threshold, not a passed gate.",
+    "Repeat fails its 1.05 candidate/legacy cap at 1.068160775866264. Its arm medians differ by only 1.3441 percent, and its median paired ratio differs by 0.6435 percent. These statistics answer different questions and cannot replace the registered geometric mean.",
+    "Periodic fails its 1.05 candidate/legacy cap at 1.06401472144002. Its arm medians differ by only 0.0362 percent and median paired ratio by 0.4762 percent. Near-equal medians do not establish a passed control.",
+    "Repeat pair 3 records legacy 11782 versus candidate 24818 microseconds CPU (ratio 2.1064335426922423) and wall 12027 versus 38420 microseconds. The entire observation remains included.",
+    "Periodic pairs 6, 7 and 9 record candidate/legacy CPU ratios 1.1809530727880284, 1.1633485085275532 and 1.4274563162417646. All remain included along with candidate-favorable pairs.",
+    "The controls are not uniformly slower by six percent in every pair: repeat has three candidate wins and periodic four. The registered aggregate nevertheless fails. Passing controls and primary gains also retain their unfavorable observations.",
+    "Independent record verification reports exact paired decisions/recipes, successful selected-recipe byte reconstruction, complete allocation lifetimes and all thirty primary diagnostic memory pairs passing. Those results do not override failed CPU gates."
+  ],
+  "method_assessment": {
+    "observed_invalidating_defect": false,
+    "verdict": "No inspected timing-scope, identity, arithmetic, observation-selection or allocator-contamination defect invalidates this recorded campaign. It is valid evidence of failure under its preregistered local acceptance procedure; it does not isolate the cause of the unfavorable control samples.",
+    "checks": [
+      "Inspected all seventy CPU/wall pairs; raw files match independently recorded hashes and frozen source/executable registration.",
+      "Input construction and object hashing precede the timed encode; recipe verification and drop are separately recorded after return. Normal timing excludes custom allocation instrumentation.",
+      "One encode per fresh child process, matching pair inputs, fixed AB/BA order and the minimum 100-microsecond CPU resolution floor were registered before collection; actual minimum is recorded above.",
+      "No failed pair was removed, replaced, relabeled as warmup or converted into a median-only acceptance result."
+    ],
+    "attribution_limits": [
+      "There is no CPU instruction/cycle profile, core-placement trace, thermal/frequency trace or controlled host intervention in this run. The data therefore do not distinguish algorithm overhead, code generation and host execution conditions as causes of the unfavorable samples.",
+      "The shared-host load snapshots and wall-minus-process-CPU differences show environmental context and timing differences, not proof that host interference caused the CPU result. Process CPU is not a hardware instruction count.",
+      "Alternating AB/BA balances arm position across five pairs each; it does not guarantee identical execution conditions or remove fixture/time interactions. Cases are measured in fixed case-major blocks.",
+      "Legacy is included as a local module and candidate is the public library call. That frozen comparison has not received an A/A code-generation-context calibration; potential influence is unresolved, not a demonstrated invalidating defect.",
+      "Ten pairs supply the registered finite decision, not a population-wide confidence or significance claim. The p95 from ten observations is a sparse empirical tail summary, not a precise tail estimate."
+    ]
+  },
+  "disposition": {
+    "production": "Restore the published encoder as the preregistered failure rule requires; retain candidate source, tests and complete measurements for review.",
+    "research": "Candidate demonstrates exact output parity and large frame-buffer-capacity reduction under the diagnostic allocator. CPU qualification remains failed overall.",
+    "future_work": "Any causal investigation or revised implementation requires a separately recorded plan and new results. An A/A context check and controlled profiling could address the identified attribution gaps; no new run is authorized or performed by this disposition.",
+    "exclusions": [
+      "No WAN, transfer-time or byte-reduction benefit is established by this candidate: serialized recipes are unchanged.",
+      "No energy or production RSS savings are established.",
+      "No claim that a host effect explains away the failure."
+    ]
+  }
+}

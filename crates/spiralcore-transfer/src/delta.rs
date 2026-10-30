@@ -3,12 +3,6 @@ use crate::{protocol::Reader, Error, Result, MAX_CHUNK, MAX_FRAME, MAX_OBJECT};
 
 pub const MAX_OPS: usize = 8192;
 const FRAME_OPS: usize = 256;
-const FRAME_HEADER_BYTES: usize = 9;
-const COPY_BYTES: usize = 13;
-const LITERAL_HEADER_BYTES: usize = 5;
-// Data request, Accepted reply and their two length words, excluding the body.
-const FRAME_EXCHANGE_BYTES: usize = 128;
-const BASE_ID_BYTES: usize = 32;
 #[derive(Debug)]
 pub struct Recipe {
     pub frames: Vec<Vec<u8>>,
@@ -71,59 +65,19 @@ pub fn encode(base: &[u8], target: &[u8]) -> Result<Option<Recipe>> {
     if literal < target.len() {
         aligned.push(Op::Literal(literal, target.len() - literal));
     }
-    let raw_cost = target.len() + target.len().div_ceil(MAX_CHUNK) * 133;
-    let eligible_cost = raw_cost.saturating_sub(BASE_ID_BYTES);
-    let mut best = if lower_bound(&simple)? < eligible_cost {
-        pack(&simple, target)?
-    } else {
-        None
-    };
+    let mut best = pack(&simple, target)?;
     if aligned.len() <= MAX_OPS {
-        let ceiling = best
-            .as_ref()
-            .map_or(eligible_cost, |b| cost(b).min(eligible_cost));
-        if lower_bound(&aligned)? < ceiling {
-            if let Some(candidate) = pack(&aligned, target)? {
-                if best.as_ref().is_none_or(|b| cost(&candidate) < cost(b)) {
-                    best = Some(candidate);
-                }
+        if let Some(candidate) = pack(&aligned, target)? {
+            if best.as_ref().is_none_or(|b| cost(&candidate) < cost(b)) {
+                best = Some(candidate);
             }
         }
     }
-    Ok(best.filter(|r| cost(r) + BASE_ID_BYTES < raw_cost))
+    let raw_cost = target.len() + target.len().div_ceil(MAX_CHUNK) * 133;
+    Ok(best.filter(|r| cost(r) + 32 < raw_cost))
 }
 fn cost(r: &Recipe) -> usize {
-    r.frames
-        .iter()
-        .map(|b| b.len() + FRAME_EXCHANGE_BYTES)
-        .sum()
-}
-// Generated operations have positive lengths. Splitting literals can only add
-// prefixes and frames: B + 13*C + 5*L + 137*max(ceil(B/MAX_CHUNK), ceil(ops/256))
-// is therefore a lower bound, never an estimate used to admit a candidate.
-fn lower_bound(ops: &[Op]) -> Result<usize> {
-    let mut literals = 0usize;
-    let mut prefixes = 0usize;
-    for op in ops {
-        let overhead = match *op {
-            Op::Copy(_, _) => COPY_BYTES,
-            Op::Literal(_, n) => {
-                literals = literals.checked_add(n).ok_or(Error::Limit)?;
-                LITERAL_HEADER_BYTES
-            }
-        };
-        prefixes = prefixes.checked_add(overhead).ok_or(Error::Limit)?;
-    }
-    let frames = literals
-        .div_ceil(MAX_CHUNK)
-        .max(ops.len().div_ceil(FRAME_OPS));
-    let frame_bytes = frames
-        .checked_mul(FRAME_HEADER_BYTES + FRAME_EXCHANGE_BYTES)
-        .ok_or(Error::Limit)?;
-    literals
-        .checked_add(prefixes)
-        .and_then(|n| n.checked_add(frame_bytes))
-        .ok_or(Error::Limit)
+    r.frames.iter().map(|b| b.len() + 128).sum()
 }
 fn header() -> Vec<u8> {
     vec![3, 0, 0, 0, 0, 1, 0, 0, 0]
@@ -151,11 +105,7 @@ fn pack(ops: &[Op], target: &[u8]) -> Result<Option<Recipe>> {
             Op::Literal(s, n) => (s, n, false),
         };
         while left > 0 {
-            let overhead = if copy {
-                COPY_BYTES
-            } else {
-                LITERAL_HEADER_BYTES
-            };
+            let overhead = if copy { 13 } else { 5 };
             if count == FRAME_OPS
                 || body.len() + overhead + usize::from(!copy) > MAX_FRAME - 56
                 || (!copy && literals == MAX_CHUNK)
@@ -167,7 +117,7 @@ fn pack(ops: &[Op], target: &[u8]) -> Result<Option<Recipe>> {
                 left
             } else {
                 left.min(MAX_CHUNK - literals)
-                    .min(MAX_FRAME - 56 - body.len() - LITERAL_HEADER_BYTES)
+                    .min(MAX_FRAME - 56 - body.len() - 5)
             };
             total += 1;
             if total > MAX_OPS {
@@ -280,7 +230,3 @@ pub fn apply(
     *operations += count;
     Ok(())
 }
-
-#[cfg(test)]
-#[path = "delta/pruning_tests.rs"]
-mod pruning_tests;

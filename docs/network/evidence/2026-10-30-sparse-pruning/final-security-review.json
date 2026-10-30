@@ -1,0 +1,62 @@
+{
+  "schema": "spiralcore.sparse-pruning.final-security-review.v1",
+  "status": "PASS_FINAL_POST_AUDIT_SECURITY_REVIEW",
+  "review_date": "2026-10-30",
+  "reviewer": "/root/selector_measurement",
+  "role": "security-reviewer",
+  "roster": "c36b79c68e575d7b",
+  "roster_verify_and_role_check": "passed immediately before this review",
+  "independence_boundary": "Independent review of the parent-authored production rollback, report and publication scope. This reviewer authored the measurement harness and does not claim independent harness/allocator review; that review belongs to selector_architect. Recovered-history privacy inspection is a publication-scope check, not an independent certification of this reviewer's extraction implementation.",
+  "review_after_audit": {
+    "status_read": "PASS_PIPELINE_AUDIT",
+    "audit_json_sha256": "48ed12c14d0a639844f7f0c63e6a6c3cff2a5a015157b4a351cca3684d406339",
+    "audit_markdown_sha256": "95c8738f58c7ee4289bff2e1c5bc75c8e81c130f9338dc667f8645f76afff00c"
+  },
+  "bindings": {
+    "published_baseline_revision": "cc0199ffd255b9e2e002afe8c96f10462a3e474f",
+    "measured_rejected_candidate_revision": "317c7f75b8b8355fbb2c74b4bad1944e4f0cb1e8",
+    "registration_revision": "5bd7c51832710176cca30bfd17ce071cfc80b6af",
+    "active_encoder_sha256": "af31026c806c9046d62735b3ebdd03472e667103011a06b6f49ff76edb19e18e",
+    "report_path": "docs/network/sparse-pruning-results-2026-10-30.md",
+    "report_sha256": "bd711e631d3ee495bdca903858b76eca88aadc365e408ea4cfe60c3d9f09acc8",
+    "recovered_history_sha256": "a497fe4ddd3060f648b2dfb02dd7fe790a5c00b198e907daf57f584c912b15e1",
+    "archived_candidate_encoder_sha256": "8d24c10c96de770d40d8c1ea24d5ae5427c95576d99936637c886ecf07d12735",
+    "archived_private_tests_sha256": "6a34ba6391d14ed104a55c04bb2fdc6d0abc0e1c112bbccd1bf08392387b1e46",
+    "archived_integration_tests_sha256": "0132b4833de7dc76949c4c39e245de29d983c03735ac53971789f58ac05be35f"
+  },
+  "production_checks": {
+    "command": "git diff --exit-code cc0199ffd255b9e2e002afe8c96f10462a3e474f -- crates/spiralcore-transfer/src crates/spiralcore-transfer/Cargo.toml crates/spiralcore-transfer/Cargo.lock crates/uor-r4-object-store",
+    "exit_code": 0,
+    "diff": "empty",
+    "conclusions": [
+      "Active runtime source, dependency declarations/lockfile and imported-store source match the published baseline in the reviewed scope.",
+      "No authentication, authorization, transport, receiver, decoder or publication-transaction behavior is newly introduced by this restored delivery.",
+      "No implicit retry, downgrade or new unauthenticated listener is introduced.",
+      "Rejected candidate and its fourteen pruning-specific tests remain archived evidence rather than active source or active test claims."
+    ]
+  },
+  "report_checks": [
+    "Report states FAIL_CPU_GATES and non-adoption prominently, preserves all observations, and distinguishes control geometric means from descriptive medians.",
+    "Exact recipe/byte evidence and diagnostic allocator-capacity results are not promoted to new WAN performance, production RSS or energy claims.",
+    "Host interference is explicitly unproven as a cause of the failed controls.",
+    "Historical measured candidate and restored runtime identities are separate; current harness baseline-versus-baseline behavior and non-operative revision label are clear.",
+    "No FIPS validation, CUI qualification, MVM integration or security-clearance compliance is claimed."
+  ],
+  "artifact_publication_checks": {
+    "selected_history_records": 13,
+    "history_contents": "Twelve compile/test/hash/preservation command-completion records and one driver patch record. No conversation transcript, credentials, environment dump or external customer data is included in those selected records.",
+    "metadata_present": "Expected local project paths, developer username, command/session identifiers, timestamps, compiler output, hashes and synthetic-fixture measurements remain as provenance.",
+    "secret_pattern_scan": "No private-key block, supported token/key pattern, bearer credential or credential-assignment match found in the evidence directory and report; compressed coverage JSON was additionally decompressed to a read-only stream and scanned with no match.",
+    "data_scope": "Experiment uses deterministic synthetic fixtures. Reviewed publication artifacts do not contain transferred customer/CUI payloads.",
+    "unrelated_worktree_metadata": "The untracked .serena/project.yml is outside this reviewed publication packet and was not staged when checked."
+  },
+  "findings": [],
+  "blocking_findings": [],
+  "disposition": "Approved for parent-owned publication of the reviewed restored source, rejected-candidate archive and bounded evidence/report packet. This review does not itself publish or certify the subsequently published revision.",
+  "limits": [
+    "No new tests, builds, measurements or dependency-advisory scans were performed in this final read-only review; recorded qualification was reviewed and the unchanged production diff independently verified.",
+    "Pattern scanning and manual inspection are bounded review, not a guarantee of absence of every possible secret or vulnerability.",
+    "No independent review of this author's harness is claimed.",
+    "This approval binds the listed artifact hashes; later changes require the relevant scope to be checked again."
+  ]
+}
