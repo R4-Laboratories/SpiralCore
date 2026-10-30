@@ -1,0 +1,17 @@
+{
+  "schema": "spiralcore.sparse-pruning.build-error-resolution.v1",
+  "role": "build-error-resolver",
+  "roster_verified_active": true,
+  "diagnostic": "E0425 cannot find crate::object_id at frozen protocol snapshot line86",
+  "cause": "Immutable protocol snapshot relies on its embedding crate root to reexport object_id; initial test wrapper omitted that import",
+  "fix": "Add object_id to root pub use spiralcore_transfer import; no snapshot or production changes",
+  "original_output": "oracle-wiring-failure.txt",
+  "original_exit": 101,
+  "resolved_by": "Subsequent focused test compiled successfully and reached the intended materialization runtime assertion",
+  "subsequent_output": "tdd-red.txt",
+  "subsequent_exit": 101,
+  "subsequent_failure_is_expected_red": true,
+  "production_source_changed": false,
+  "oracle_delta_sha256": "af31026c806c9046d62735b3ebdd03472e667103011a06b6f49ff76edb19e18e",
+  "oracle_protocol_sha256": "65fa50275a1487b937040c0f03de3cdeba8e49ce563e78d0bcb3763006804e6a"
+}

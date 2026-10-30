@@ -1,0 +1,53 @@
+{
+  "schema": "spiralcore.sparse-pruning.test-qualification.v1",
+  "legacy_revision": "cc0199ffd255b9e2e002afe8c96f10462a3e474f",
+  "oracle_source": "crates/spiralcore-transfer/tests/support/delta_legacy_cc0199f.rs",
+  "oracle_sha256": "af31026c806c9046d62735b3ebdd03472e667103011a06b6f49ff76edb19e18e",
+  "oracle_protocol_sha256": "65fa50275a1487b937040c0f03de3cdeba8e49ce563e78d0bcb3763006804e6a",
+  "oracle_portability_edits": "None inside snapshots; test/example roots reexport required public symbols and include pinned protocol module",
+  "public_test_file": "crates/spiralcore-transfer/tests/sparse_pruning.rs",
+  "public_tests": 9,
+  "private_test_file": "crates/spiralcore-transfer/src/delta/pruning_tests.rs",
+  "private_tests": 5,
+  "matrix": [
+    "Empty base/target, repeat, single byte, 31/32/33, 48/49/50, 255/256/257, 61439/61440/61441, 131073 bytes",
+    "Prefix and middle insertion, append with trailing zeros, prefix/middle deletion, truncate, localized/scattered edits, full complement replacement",
+    "24 fixed-seed edit cases, periodic data, already-zstd-compressed arbitrary bytes",
+    "Exact frame-byte and operation-count equivalence with frozen encoder; both current and frozen decoders reconstruct each selected recipe exactly",
+    "Simple COPY13+LITERAL32+COPY128 versus aligned LITERAL45+COPY128: equal200 costs with different bytes, original simple bytes retained",
+    "Raw strict eligibility threshold n48/49/50: equality at49 rejected,50 admitted",
+    "Constructed compact simple shift, aligned scattered winner, both-lose-to-Raw replacement",
+    "Generated aligned plans and direct pack limits at255/256/257 and8191/8192/8193 operations",
+    "Literal splits at61439/61440/61441 and splits crossing total8192 operations",
+    "Positive-operation lower bound never exceeds actual packed cost across fixed generated operation vectors; empty bound0 and checked overflow",
+    "Malformed/truncated/invalid-tag/overflow-offset recipes retain matching error and validate-before-mutate behavior",
+    "Sender input16MiB+1 fails before exchange; core still accepts that size and rejects either input above64MiB"
+  ],
+  "red": {
+    "receipt": "tdd-red.txt",
+    "exit": 101,
+    "meaningful_runtime_failure": "Both legacy and current encoder returned Raw fallback, but current allocated8 nine-byte frame headers when the expected optimized count is0",
+    "allocator_scope": "Test-only System forwarding allocator with thread-local observation, active only during encode",
+    "attribution_limit": "Initial nine-byte allocations identify this pinned header materialization; not full Vec-capacity accounting, process RSS or energy",
+    "initial_wrapper_compile_failure": "Separate oracle-wiring-failure.txt E0425 retained; resolved by object_id reexport only, before meaningful RED"
+  },
+  "green": {
+    "receipt": "tdd-green.txt",
+    "executed_by": "parent agent after implementation",
+    "exit": 0,
+    "new_tests_passed": 14,
+    "preexisting_library_tests_also_passed": 4,
+    "output_independently_read": true
+  },
+  "unreachable_requested_fixture": {
+    "request": "Generated mixture reaches serialized body limit before literal or operation limits",
+    "reason": "With pinned constants, body <=9+13*256+61440=64777 <MAX_FRAME-56=65480; this fixture cannot be generated",
+    "treatment": "Explicit constants/proof regression retained; defensive body check remains unchanged"
+  },
+  "limitations": [
+    "Finite deterministic qualification is not exhaustive equivalence for every accepted input",
+    "Private bound property domain is positive generated operation lengths; zero-length operations are not generated and decoder rejects them",
+    "Unit/integration elapsed times are qualification only, not performance evidence",
+    "Larger-than16MiB core API qualification does not increase the network sender ceiling or qualify larger networking"
+  ]
+}

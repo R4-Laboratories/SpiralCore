@@ -1,0 +1,10 @@
+{"test":"missing_sample","status":"PASS_REJECTED","mutation":"del(.[2])|.[]","expected_error":"allocation row cardinality","actual_error":"jq: error (at <stdin>:141): allocation row cardinality","exit_code":5}
+{"test":"wrong_pair","status":"PASS_REJECTED","mutation":".[2].pair=9|.[]","expected_error":"allocation pair identity or schedule","actual_error":"jq: error (at <stdin>:142): allocation pair identity or schedule","exit_code":5}
+{"test":"wrong_candidate_source","status":"PASS_REJECTED","mutation":".[2].candidate_source_sha256=(\"0\"*64)|.[]","expected_error":"allocation sample identity","actual_error":"jq: error (at <stdin>:142): allocation sample identity or timing use","exit_code":5}
+{"test":"wrong_output_join","status":"PASS_REJECTED","mutation":".[2].target_object=(\"0\"*64)|.[]","expected_error":"normal and diagnostic output join","actual_error":"jq: error (at <stdin>:142): normal and diagnostic output join","exit_code":5}
+{"test":"leaked_buffer","status":"PASS_REJECTED","mutation":".[2].after_drop.live_bytes=1|.[]","expected_error":"allocation lifetime arithmetic","actual_error":"jq: error (at <stdin>:142): allocation lifetime arithmetic, registry or leak","exit_code":5}
+{"test":"registry_failure","status":"PASS_REJECTED","mutation":".[2].at_return.registry_failed=true|.[]","expected_error":"allocation lifetime arithmetic","actual_error":"jq: error (at <stdin>:142): allocation lifetime arithmetic, registry or leak","exit_code":5}
+{"test":"wrong_retained_capacity","status":"PASS_REJECTED","mutation":".[2].at_return.live_bytes=18|.[]","expected_error":"allocation lifetime arithmetic","actual_error":"jq: error (at <stdin>:142): allocation lifetime arithmetic, registry or leak","exit_code":5}
+{"test":"wrong_completion","status":"PASS_REJECTED","mutation":".[-1].allocation_diagnostic=false|.[]","expected_error":"allocation completion disagrees","actual_error":"jq: error (at <stdin>:142): allocation completion disagrees","exit_code":5}
+{"test":"retain_one_pair_memory_gate_failure","status":"PASS_NEGATIVE_RESULT_RETAINED"}
+{"test":"retain_rejected_candidate_materialization_failure","status":"PASS_NEGATIVE_RESULT_RETAINED"}

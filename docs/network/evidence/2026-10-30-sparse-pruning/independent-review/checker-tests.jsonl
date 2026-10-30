@@ -1,0 +1,9 @@
+{"test":"missing_sample","status":"PASS_REJECTED","mutation":"del(.[2])|.[]","expected_error":"row cardinality","actual_error":"jq: error (at <stdin>:141): row cardinality","exit_code":5}
+{"test":"wrong_pair","status":"PASS_REJECTED","mutation":".[2].pair=9|.[]","expected_error":"pair identity or AB/BA schedule","actual_error":"jq: error (at <stdin>:142): pair identity or AB/BA schedule","exit_code":5}
+{"test":"wrong_source","status":"PASS_REJECTED","mutation":".[2].source_revision=(\"0\"*40)|.[]","expected_error":"sample source or executable pin","actual_error":"jq: error (at <stdin>:142): sample source or executable pin","exit_code":5}
+{"test":"wrong_binary","status":"PASS_REJECTED","mutation":".[2].executable_sha256=(\"0\"*64)|.[]","expected_error":"sample source or executable pin","actual_error":"jq: error (at <stdin>:142): sample source or executable pin","exit_code":5}
+{"test":"wrong_output","status":"PASS_REJECTED","mutation":".[2].recipe.frame_sha256=(\"0\"*64)|.[]","expected_error":"paired fixture or output mismatch","actual_error":"jq: error (at <stdin>:142): paired fixture or output mismatch","exit_code":5}
+{"test":"wrong_base","status":"PASS_REJECTED","mutation":".[2].base_object=(\"0\"*64)|.[]","expected_error":"paired fixture or output mismatch","actual_error":"jq: error (at <stdin>:142): paired fixture or output mismatch","exit_code":5}
+{"test":"wrong_arithmetic","status":"PASS_REJECTED","mutation":".[2].encode_plus_drop_cpu_micros+=1|.[]","expected_error":"timing arithmetic or resolution label","actual_error":"jq: error (at <stdin>:142): timing arithmetic or resolution label","exit_code":5}
+{"test":"forged_completion","status":"PASS_REJECTED","mutation":".[-1].samples=139|.[]","expected_error":"producer completion disagrees","actual_error":"jq: error (at <stdin>:142): producer completion disagrees with independent counts","exit_code":5}
+{"test":"retain_valid_control_regression","status":"PASS_NEGATIVE_RESULT_RETAINED"}

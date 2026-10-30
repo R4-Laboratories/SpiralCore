@@ -9,9 +9,10 @@ adaptive byte decisions must remain identical.
 
 ## Phase 1: freeze the reference and prove the tests
 
-1. **Immutable oracle** (`crates/spiralcore-transfer/tests/fixtures/sparse_legacy.rs`).
-   Preserve the baseline encoder/packer independently of the new rejection logic.
-   Record original blob/hash and only necessary import/type portability edits in
+1. **Immutable oracle** (`crates/spiralcore-transfer/tests/support/delta_legacy_cc0199f.rs`
+   and `tests/support/protocol_legacy_cc0199f.rs`). Preserve the baseline files
+   byte-for-byte, independently of the new rejection logic; adapt imports only
+   through a wrapper. Record original blob/hash and wrapper identity in
    `docs/network/evidence/2026-10-30-sparse-pruning/oracle.json`. Verify the oracle
    matches the unchanged production encoder before editing it. Dependency: none.
    Risk: medium; a shared changed helper would invalidate independence.
@@ -26,9 +27,10 @@ adaptive byte decisions must remain identical.
    fixtures, input ownership, process ordering, timer scopes and result identities
    before the production change. Dependency: step 1. Risk: medium.
 
-The oracle path above is the canonical planned location. If the shared test and
-example build requires a common support directory, record that purely structural
-placement in the extraction receipt before use; never duplicate drifting copies.
+The pre-edit baseline diagnostic contains 21 observations in `baseline.jsonl`.
+It establishes the recorded starting behavior and CPU/wall samples; it is not a
+full profiler attribution or a claim about what percentage of CPU belongs to
+packing. The registered paired acceptance remains a separate subsequent run.
 
 ## Phase 2: minimal production change
 
