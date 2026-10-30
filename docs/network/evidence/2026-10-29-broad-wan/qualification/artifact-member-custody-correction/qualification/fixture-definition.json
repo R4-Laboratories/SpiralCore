@@ -1,0 +1,61 @@
+{
+  "schema": "spiralcore.member-checker-fixture-definition.v1",
+  "checker": {
+    "path": "source/check-members.sh",
+    "sha256": "c982061e98d73be3000b09122c6eeb96b5b70635c6cd48b17a51e4a58e24b111",
+    "interpreter": "/bin/bash",
+    "stdin": "/dev/null",
+    "arguments": [
+      "archive",
+      "remote directory",
+      "member list",
+      "expected count",
+      "fresh output directory"
+    ]
+  },
+  "historical_reproducer": {
+    "path": "source/bug-reproducer.sh",
+    "sha256": "4406cc5e10bb3f5c244bff79c9bae5c9558b95999f30903963b6126ce18eaafd",
+    "scope": "Minimal exact missing-redirection mechanism, not a complete historical command reconstruction"
+  },
+  "fixture": {
+    "files": [
+      {
+        "path": "alpha.txt",
+        "utf8": "alpha\n"
+      },
+      {
+        "path": "nested/beta.txt",
+        "utf8": "beta\n"
+      }
+    ],
+    "archive_creation": {
+      "cwd": "fixture/remote",
+      "program": "/usr/bin/zip",
+      "arguments": [
+        "-q",
+        "../fixture.zip",
+        "alpha.txt",
+        "nested/beta.txt"
+      ]
+    },
+    "actual_archive_sha256": "53c62f0ec701c460ff8b064cf108724a92201a85aea2265d3b3a6ef151664d04",
+    "archive_retained_locally": true,
+    "archive_not_copied_to_git": true,
+    "full_member_list": "alpha.txt\nnested/beta.txt\n",
+    "expected_count": 2
+  },
+  "negative_inputs": {
+    "empty_list": "zero-byte list",
+    "missing_member_list": "alpha.txt only",
+    "wrong_count": 3,
+    "wrong_content": "alpha.txt replaced by wrong newline; nested beta unchanged",
+    "missing_file": "nested/beta.txt absent"
+  },
+  "qualification_receipts": [
+    "qualification/historical-red.json",
+    "qualification/green.json",
+    "qualification/known-fixture-recheck.json"
+  ],
+  "qualification_note": "Original stdout/stderr strings are embedded in structured receipts; no standalone diagnostic logs are copied into Git"
+}

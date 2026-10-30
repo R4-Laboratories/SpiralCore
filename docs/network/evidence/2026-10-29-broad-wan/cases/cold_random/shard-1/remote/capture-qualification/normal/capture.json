@@ -1,0 +1,96 @@
+{
+  "ambiguous_connections": 0,
+  "attribution_precondition": "client opens fresh connections per measurement; connections are not shared between operations",
+  "byte_layer": "IP total lengths, not captured snapshot lengths or physical Ethernet wire bytes",
+  "campaign": {
+    "download_ip_bytes": 69080,
+    "download_packets": 68,
+    "packets": 137,
+    "total_ip_bytes": 138212,
+    "unclassified_ip_bytes": 0,
+    "unclassified_packets": 0,
+    "unknown_ip_length_packets": 0,
+    "upload_ip_bytes": 69132,
+    "upload_packets": 69
+  },
+  "capture_complete": true,
+  "capture_counter_difference_meaning": "absolute received/captured discrepancy; unresolved startup filtering or unread buffers may explain it; not a count of proven lost transfer packets",
+  "capture_counter_difference_packets": 0,
+  "capture_first_packet_unix_nanos": "1793323445383775347",
+  "capture_last_packet_unix_nanos": "1793323446103116018",
+  "capture_lifecycle_scope": "bounded ready, preflight and post-client quiet observations, clean interrupt/reap and independently emitted final statistics; does not prove network drain or coverage outside the capture interval",
+  "capture_lifecycle_sha256": "ea989ad8455abce8144da8e32fbb6bc9bc2f1ec2c817ce968621045c669e9b29",
+  "capture_lifecycle_verified": true,
+  "completeness_scope": "parsed selected-flow records have unambiguous observed-SYN ownership; every measurement has packets and published body-byte coverage; tcpdump captured and received counters equal the PCAP record count with zero reported kernel drops; offload state, filter installation, interface drops and traffic beyond the capture interval require separate provenance",
+  "excludes": "traffic outside the isolated fixture and capture interval",
+  "expected_remote_ip": "198.18.0.2",
+  "includes": "captured synthetic TCP payload, ACKs and retransmissions",
+  "incomplete_reasons": [],
+  "kernel_reported_drops": 0,
+  "link_type": 1,
+  "local_ip": "198.18.0.1",
+  "observed_remote_ips": [
+    "198.18.0.2"
+  ],
+  "observed_syn_connections": 1,
+  "partition_rule": "outbound SYN assigns a TCP four-tuple to the containing inclusive measurement interval, or setup before the first row; all subsequent connection packets retain that owner through PCAP EOF; missing SYN, changed initial sequence, and SYN outside active intervals are unattributed",
+  "partition_sum_verified": true,
+  "pcap_record_count_matches_tcpdump_captured": true,
+  "qualification_traffic": "synthetic plaintext TCP; no WAN or TLS claim",
+  "rows": [
+    {
+      "application_body_coverage_verified": true,
+      "download_ip_bytes": 69080,
+      "download_packets": 68,
+      "expected_application_body_bytes": {
+        "download": 65536,
+        "upload": 65536
+      },
+      "packets": 137,
+      "packets_within_measurement": 134,
+      "phase": "transfer",
+      "status": "published",
+      "task": {
+        "id": "capture-qualification"
+      },
+      "total_ip_bytes": 138212,
+      "unclassified_ip_bytes": 0,
+      "unclassified_packets": 0,
+      "unix_end_nanos": "1793323445402922251",
+      "unix_start_nanos": "1793323445383694536",
+      "unknown_ip_length_packets": 0,
+      "upload_ip_bytes": 69132,
+      "upload_packets": 69
+    }
+  ],
+  "schema": "spiralcore.pcap-accounting.v1",
+  "scope": "isolated_veth_capture_qualification_only",
+  "setup": {
+    "download_ip_bytes": 0,
+    "download_packets": 0,
+    "packets": 0,
+    "total_ip_bytes": 0,
+    "unclassified_ip_bytes": 0,
+    "unclassified_packets": 0,
+    "unknown_ip_length_packets": 0,
+    "upload_ip_bytes": 0,
+    "upload_packets": 0
+  },
+  "snaplen": 96,
+  "tcpdump_captured_packets": 137,
+  "tcpdump_received_by_filter_packets": 137,
+  "timestamp_resolution": "nanoseconds",
+  "unattributed": {
+    "download_ip_bytes": 0,
+    "download_packets": 0,
+    "packets": 0,
+    "total_ip_bytes": 0,
+    "unclassified_ip_bytes": 0,
+    "unclassified_packets": 0,
+    "unknown_ip_length_packets": 0,
+    "upload_ip_bytes": 0,
+    "upload_packets": 0
+  },
+  "unattributed_reasons": {},
+  "unclassified_reasons": {}
+}

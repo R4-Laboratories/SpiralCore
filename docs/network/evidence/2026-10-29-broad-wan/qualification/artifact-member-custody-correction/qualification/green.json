@@ -1,0 +1,85 @@
+{
+  "schema": "spiralcore.artifact-member-checker-qualification.v1",
+  "checks": [
+    {
+      "name": "empty_list",
+      "arguments": {
+        "remote_directory": "/Users/casey.allard/spiralcore/local/broad-wan-20261029/qualification/artifact-member-custody-correction/qualification/fixture/remote",
+        "member_list": "/Users/casey.allard/spiralcore/local/broad-wan-20261029/qualification/artifact-member-custody-correction/qualification/fixture/empty-members.txt",
+        "expected_count": "2"
+      },
+      "actual_exit": 1,
+      "expected_exit": 1,
+      "passed": true,
+      "stdout": "",
+      "stderr": "cmp: EOF on /Users/casey.allard/spiralcore/local/broad-wan-20261029/qualification/artifact-member-custody-correction/qualification/result-empty_list/supplied-members.txt\n"
+    },
+    {
+      "name": "missing_member_list",
+      "arguments": {
+        "remote_directory": "/Users/casey.allard/spiralcore/local/broad-wan-20261029/qualification/artifact-member-custody-correction/qualification/fixture/remote",
+        "member_list": "/Users/casey.allard/spiralcore/local/broad-wan-20261029/qualification/artifact-member-custody-correction/qualification/fixture/missing-member.txt",
+        "expected_count": "2"
+      },
+      "actual_exit": 1,
+      "expected_exit": 1,
+      "passed": true,
+      "stdout": "",
+      "stderr": "cmp: EOF on /Users/casey.allard/spiralcore/local/broad-wan-20261029/qualification/artifact-member-custody-correction/qualification/result-missing_member_list/supplied-members.txt\n"
+    },
+    {
+      "name": "wrong_count",
+      "arguments": {
+        "remote_directory": "/Users/casey.allard/spiralcore/local/broad-wan-20261029/qualification/artifact-member-custody-correction/qualification/fixture/remote",
+        "member_list": "/Users/casey.allard/spiralcore/local/broad-wan-20261029/qualification/artifact-member-custody-correction/qualification/fixture/members.txt",
+        "expected_count": "3"
+      },
+      "actual_exit": 1,
+      "expected_exit": 1,
+      "passed": true,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "name": "wrong_content",
+      "arguments": {
+        "remote_directory": "/Users/casey.allard/spiralcore/local/broad-wan-20261029/qualification/artifact-member-custody-correction/qualification/wrong-content",
+        "member_list": "/Users/casey.allard/spiralcore/local/broad-wan-20261029/qualification/artifact-member-custody-correction/qualification/fixture/members.txt",
+        "expected_count": "2"
+      },
+      "actual_exit": 1,
+      "expected_exit": 1,
+      "passed": true,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "name": "missing_file",
+      "arguments": {
+        "remote_directory": "/Users/casey.allard/spiralcore/local/broad-wan-20261029/qualification/artifact-member-custody-correction/qualification/missing-file",
+        "member_list": "/Users/casey.allard/spiralcore/local/broad-wan-20261029/qualification/artifact-member-custody-correction/qualification/fixture/members.txt",
+        "expected_count": "2"
+      },
+      "actual_exit": 1,
+      "expected_exit": 1,
+      "passed": true,
+      "stdout": "",
+      "stderr": "cmp: EOF on /Users/casey.allard/spiralcore/local/broad-wan-20261029/qualification/artifact-member-custody-correction/qualification/result-missing_file/remote-members.txt\n"
+    },
+    {
+      "name": "known_fixture",
+      "arguments": {
+        "remote_directory": "/Users/casey.allard/spiralcore/local/broad-wan-20261029/qualification/artifact-member-custody-correction/qualification/fixture/remote",
+        "member_list": "/Users/casey.allard/spiralcore/local/broad-wan-20261029/qualification/artifact-member-custody-correction/qualification/fixture/members.txt",
+        "expected_count": "2"
+      },
+      "actual_exit": 0,
+      "expected_exit": 0,
+      "passed": true,
+      "stdout": "",
+      "stderr": ""
+    }
+  ],
+  "passed": true,
+  "checks_count": 6
+}

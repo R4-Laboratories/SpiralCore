@@ -48,16 +48,36 @@ structured findings are preserved; scientific rows and captures remain.
 
 ## Recorded WAN cases
 
-The [current result report](../../broad-wan-results-2026-10-29.md) records seven
+The [current result report](../../broad-wan-results-2026-10-29.md) records eleven
 completed, independently reviewed transfer cases: [localized](cases/localized_32/README.md),
 [scattered](cases/scattered_32x32/README.md), [prefix insertion](cases/prefix_4096/README.md),
 [middle insertion](cases/middle_4096/README.md), [deletion](cases/delete_4096/README.md),
-[append](cases/append_4096/README.md), and [truncation](cases/truncate_4096/README.md).
-Each has thirty pairs across four arms and 240 exact seed/update operations.
-Thirty-four of thirty-five captures are complete. Middle-insertion shard 1 has
+[append](cases/append_4096/README.md), [truncation](cases/truncate_4096/README.md),
+[1 MiB overwrite](cases/replace_1m/README.md),
+[structured bytes](cases/structured_localized_32/README.md), and
+[opaque compressed bytes](cases/compressed_localized_32/README.md), and
+[cold random bytes](cases/cold_random/README.md).
+Each has thirty pairs across four arms. Warm cases have 240 exact seed/update
+operations each; cold random has 120 exact transfers without seeds.
+Fifty-four of fifty-five captures are complete. Middle-insertion shard 1 has
 ambiguous tuple-reuse attribution and no complete whole-case IP statistic; its
 [separate diagnosis](qualification/middle-tuple-reuse/README.md) preserves the
-original failure. Five registered cases remain incomplete.
+original failure. Cold structured remains incomplete.
+
+The first cold-random setup failed before launching the measurement client. Its
+[separate packet](qualification/cold-random-preflight-attempt-1/README.md) records
+the unchanged capture gate's rejection and zero measured operations. The
+[path-preservation receipt](cleanup/cold_random_setup_attempt_1_preservation.json)
+maps its original local directory to `shard-0-attempt-1-preflight-failure`, verifies
+every moved file, and keeps the packet's original paths interpretable. The fresh
+setup uses the same canonical plan; this does not replace a measured trial.
+
+Read the [archive-member custody correction](qualification/artifact-member-custody-correction/README.md)
+alongside the compressed-byte and failed-setup packets. Their original empty
+member manifests remain historical evidence; the correction supersedes the
+unexecuted per-member assertions with two actual matching checks. All 613 affected
+members agree, including the five cold-random archives checked before sealing.
+Archive identities and scientific measurements remain unchanged.
 
 Final measured source is `9dce4c57d1f41cef7365b297cd690849afce34e7`. The
 [successful producer](qualification/linux-producer-2/README.md) records current

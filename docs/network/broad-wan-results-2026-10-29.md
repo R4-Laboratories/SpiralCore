@@ -2,7 +2,7 @@
 
 Measured source: `9dce4c57d1f41cef7365b297cd690849afce34e7`.
 Run: `d6aaa0f15da9ccbc62c005a1802532b3e85ad6d901886eea6fbd0076b2d312e4`.
-Ten of twelve registered cases are complete and independently reviewed. Remaining
+Eleven of twelve registered cases are complete and independently reviewed. Remaining
 cases must not be inferred from this result. The complete registration is in the
 [workload plan](../plans/2026-10-29-broader-wan-and-scaling.md).
 
@@ -367,6 +367,34 @@ statistics, and all five captures meet the completeness criteria. The
 [complete compressed-byte packet](evidence/2026-10-29-broad-wan/cases/compressed_localized_32/README.md)
 retains every observation and its custody.
 
+## Completed case: cold pseudorandom object
+
+Each arm sends the same 16,777,216-byte pseudorandom object into a fresh authorized
+scope without a seed or reusable base. Sparse uses its raw fallback; the cold
+prefix arm uses ordinary independent-chunk zstd. Every arm sends the same number
+of HTTP-body bytes. This is evidence of bounded cold fallback, not a compression
+or warm-cache speedup.
+
+| Cold transfer | Median request + reply HTTP-body bytes | Median elapsed, including computation | Elapsed p95 | Median sender + receiver-handler CPU |
+|---|---:|---:|---:|---:|
+| Raw full send | 16,814,026 | 1,967.221 ms | 2,831.473 ms | 96.844 ms |
+| Zstd, 60 KiB chunks | 16,814,026 | 1,944.455 ms | 2,783.859 ms | 102.180 ms |
+| Zstd prefix arm, cold chunk fallback | 16,814,026 | 1,945.240 ms | 2,571.113 ms | 92.805 ms |
+| Sparse arm, cold raw fallback | 16,814,026 | 1,936.377 ms | 2,706.432 ms | 100.184 ms |
+
+All three candidate arms pass both registered cold checks: median body bytes
+are at most 105% of raw and elapsed p95 is at most 110% of raw. The p95 statistic
+is the 29th sorted observation among thirty. Sparse's median CPU is approximately
+3.45% above raw in this sample; the near-raw timing results do not establish an
+algorithmic cold-transfer advantage.
+
+All thirty pairs and 120 transfers reopened exactly, totaling 2,013,265,920 bytes.
+All five measured captures are complete. Each observed cache inventory contains
+24 object publications and the two ownership/profile controls. The
+[complete cold-random packet](evidence/2026-10-29-broad-wan/cases/cold_random/README.md)
+retains these results separately from the pre-measurement setup failure described
+below. No measured observation was replaced.
+
 ## Qualification and measurement boundaries
 
 The source-qualified producer passed 167 tests including both large HTTP tests,
@@ -392,6 +420,20 @@ local orchestration subsequently reported a missing rows file while attempting
 verification. The [setup-failure packet](evidence/2026-10-29-broad-wan/qualification/cold-random-preflight-attempt-1/README.md)
 preserves both events. A fresh setup under unchanged checks is permitted by the
 registration's pre-measurement failure rule; it does not replace a timed trial.
+
+An archive-custody audit found a separate verification-command defect: a shell
+loop lacked its input redirection, so eleven recent per-member manifests were
+empty despite successful archive digest, size and member-name checks. Six of
+those archive receipts had already been frozen. Their original per-member-check
+claims are superseded by an [additive correction](evidence/2026-10-29-broad-wan/qualification/artifact-member-custody-correction/README.md).
+The defective receipts remain intact. Parent checksum checks had established
+internal file-hash consistency, including empty files, without checking the
+required member count. The corrected procedure requires both positive iteration
+and exact manifest counts. Independent ZIP enumeration and direct byte comparison
+agree with the corrected checks for all 613 affected members, totaling 425,385,845
+uncompressed bytes. Rejection tests include empty, missing and changed input.
+This custody repair changes no measured rows, capture
+files, exact-reopen results or timed trials.
 
 Elapsed starts after fixture generation, with inputs in memory, and ends after
 verified durable publication acknowledgment and timed retained-state teardown.

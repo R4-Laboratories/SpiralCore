@@ -37,9 +37,9 @@ The user explicitly prioritized fewer bytes over the link, allowing additional c
 
 `Decode(verified_receiver_state, recipe, residual) == original_bytes`, including original length. Object identity is independent of representation. Every record and complete reconstruction must validate before publication or commit acknowledgment. Cache existence does not grant authority. Resume revalidates principal, recipient, namespace and policy/execution epoch. Cards and source code are never executable network recipes.
 
-Cold content uses raw/zstd bytes; warm content uses batched missing-record exchange or versioned sparse COPY/LITERAL recipes. The current sender is synchronous; further pipelining is a later optimization. The sparse encoder shares the same identity and commit contract. Legacy UOROBJ01 remains explicitly distinct from the full-SHA256 transfer profile. Cache, staging, message, output, work and concurrency budgets are separate and reserved before admission.
+Cold content uses raw/zstd bytes; warm content uses batched missing-record exchange, versioned sparse COPY/LITERAL recipes, or the bounded zstd prefix mode. The WAN sender batches protocol frames into bounded HTTP exchanges; a streaming sender with independently bounded memory remains a later qualification. These encodings share the same identity and commit contract. Legacy UOROBJ01 remains explicitly distinct from the full-SHA256 transfer profile. Cache, staging, message, output, work and concurrency budgets are separate and reserved before admission.
 
-The mailbox profile uses at most 64 KiB application bodies, a 64 MiB object ceiling, four active transfers per peer within a shared 1 GiB cache quota and 512 MiB resident budget. Initial mandatory demonstration: objects through 16 MiB. Larger-object claims require qualification. Object commit, mailbox admission, delivery and application processing are separate events; no exactly-once execution claim.
+The object protocol uses complete frames of at most 64 KiB, including its 56-byte header; an HTTP batch may contain multiple frames. Its core object ceiling is 64 MiB, with four active transfers per peer within a shared 1 GiB cache quota and 512 MiB resident budget. The batched client remains bounded to 16 MiB. Larger-object claims and the final mailbox adapter require separate qualification. Object commit, mailbox admission, delivery and application processing are separate events; no exactly-once execution claim.
 
 ## Acceptance matrix
 
@@ -66,7 +66,23 @@ The [real WAN report](wan-results-2026-10-29.md) records the subsequent GitHub L
 The [subsequent efficiency report](efficiency-results-2026-10-29.md) records direct graph construction,
 prepared state and sparse recipes at `b5520171ab1cfbc988e16b2b79f41ab831d3668a`. Sparse warm updates
 save 99.80–99.98% of protocol-body bytes and complete 1.83–2.58 times faster than the current full-raw
-arm in matched trials. Seed-plus-update gains are smaller and explicitly measured. Raw/zstd currently
+arm in matched trials. Seed-plus-update gains are smaller and explicitly measured. In that campaign, raw/zstd
 warm a DAG synchronously while sparse publication skips it, so equal durable-object fidelity does
 not imply equal future DAG readiness. Exact repeats also match ordinary CAS. These results do not
 establish superiority over a matched rsync/VCDIFF WAN implementation or energy savings.
+
+The [broad v4 report](broad-wan-results-2026-10-29.md) supersedes that comparison's
+publication-readiness mismatch: optional DAG warming is disabled equally for all
+four methods. It registers thirty paired trials per workload, including a
+conventional zstd shared-base control, and retains warm-update and paid-seed
+statistics separately. Its measured scope is the bounded 16 MiB batched client;
+the [64 MiB design](64m-client-design.md) is not an implemented or measured claim.
+
+The later MVM adapter must support a small multi-MVM environment and its
+orchestrator. It maps authenticated node, recipient, tenant/capability and epoch
+identities to the canonical mailbox/vsock route; a reusable vsock CID is not an
+identity. Bound queue bytes and concurrency, propagate backpressure, and define
+restart/rebind/revocation and persistent idempotency. Preserve the canonical
+encrypted envelope boundary and separate object commit, mailbox admission,
+delivery and application processing. Small-VM memory budgets require explicit
+qualification; the host experiment's budget is not an assumed guest budget.
