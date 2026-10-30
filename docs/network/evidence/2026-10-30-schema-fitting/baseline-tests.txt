@@ -1,0 +1,35 @@
+   Compiling spiralcore-transfer v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer)
+    Finished `release` profile [optimized] target(s) in 11.46s
+     Running tests/adaptive.rs (/Users/casey.allard/spiralcore/target/aarch64-apple-darwin/release/deps/adaptive-d32315d14a995e58)
+
+running 13 tests
+test oversized_inputs_fail_before_any_exchange ... ok
+test cold_structured_data_selects_zstd_before_begin ... ok
+test repeat_probe_with_evicted_remote_object_completes_the_original_raw_offer ... ok
+test real_http_codec_selection_cost_matches_bodies_and_reopens_exactly ... ok
+test missing_base_and_changed_scope_do_not_reoffer_or_publish ... ok
+test exact_repeat_probe_sends_raw_identity_only_and_unprobed_hit_counts_upload ... ok
+test revoked_authority_and_transport_failure_never_retry_selection ... ok
+test small_localized_edit_uses_prefix_when_it_costs_less_than_sparse ... ok
+test malicious_receipts_are_checked_after_selection ... ok
+test warm_local_edits_choose_sparse_and_reordered_data_choose_prefix ... ok
+test empty_and_incompressible_ties_prefer_raw_with_exact_full_cost ... ok
+test selector_cost_matches_actual_forced_arms_and_minimizes_eligible_bytes ... ok
+test exact_bytes_and_length_survive_boundaries_and_length_changes_after_restart ... ok
+
+test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.79s
+
+     Running tests/zstd_prefix.rs (/Users/casey.allard/spiralcore/target/aarch64-apple-darwin/release/deps/zstd_prefix-4cc3ed0eb40789ad)
+
+running 8 tests
+test rejects_wrong_base_damage_trailing_frames_and_unbounded_header ... ok
+test sender_rejects_wrong_cumulative_encoded_receipt ... ok
+test whole_prefix_roundtrips_empty_edits_insertions_and_unrelated_data ... ok
+test prefix_offer_and_encoded_stream_are_strictly_versioned_and_bounded ... ok
+test prefix_reservations_are_shared_and_cancel_releases_them ... ok
+test prefix_admission_precedes_corrupt_base_read_and_final_hash_is_mandatory ... ok
+test endpoint_prefix_pins_authorized_base_and_publishes_only_verified_complete_bytes ... ok
+test batched_prefix_reports_selection_and_falls_back_only_before_begin ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.12s
+
