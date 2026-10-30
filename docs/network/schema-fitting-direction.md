@@ -2,6 +2,13 @@
 
 **Historical proposal, subsequently implemented and measured in SC-OPT-011.** The original direction below was recorded 2026-10-30 following Jeff Venable's suggestion, against SpiralCore `773f7cc5f5ea23044053fec6a41e70f52e092534`. The later [Rust prototype and results](schema-fitting-results-2026-10-30.md) preserve the exact-byte contract: 640 operations reopened exactly, but the template-only family loses to conventional compression on these held-out fixtures. The original proposal itself added no codec, package, protocol change or experiment.
 
+The [SC-OPT-012 follow-up](schema-reuse-results-2026-10-30.md) compresses the
+exact value/residual stream and reuses prepared codecs across persistent receiver
+sessions. It narrows the matching-batch body below ordinary zstd, with higher CPU
+and local durable elapsed time. All 1,720 seed/target operations reconstruct
+exactly. The report charges observed setup and preserves small-message and
+unrelated-content losses; it does not establish a new WAN speed gain.
+
 A shared schema can make recurring structure cheaper to describe and cheaper to predict. The useful hypothesis is that endpoints retain the same bounded layout, literal dictionary or template, then exchange only the values and exact residual needed for each record. A schema describes regularity; it does not supply unpredictable information. Its benefit must include the cost of fitting, distributing and retaining that shared state.
 
 This extends the existing `verified state + recipe + exact residual → original bytes` design. The coupled ternary/Kuramoto/cellular-automaton runtime remains central: its versioned transition profile and checkpoint form a dynamic schema family. Declarative record templates and dictionaries would be additional families using the same identity, admission and durable-commit contract. The first implementation should use a small allowlisted Rust decoder with bounded operations, output, depth and retained state. Received schemas are data, never source code or arbitrary executable decoders.

@@ -4,7 +4,7 @@
   "roster": "d1927d9e7ce51354",
   "baseline_commit": "e0a29bc18a09e1aeff4f3a36d2d801ffca346255",
   "design_commit": "e8bad952e2117ea38858a11456f1443ff08305ec",
-  "reviewed_commit": "cd0aceff7d835ef4e3ba6478db5e87ae9a230a63",
+  "reviewed_commit": "fa0b0abdde0200c9faf62701daa28f9727cc62b4",
   "reviewer_authored_implementation_harness_or_tests": false,
   "sequence": [
     {
@@ -25,6 +25,18 @@
       "blocking_findings": [
 
       ]
+    },
+    {
+      "stage": 3,
+      "role": "narrow-harness-correction-and-custody-review",
+      "verdict": "PASS",
+      "scope": "Retained pre-transfer failure, exact launcher regression RED/GREEN, unchanged production, corrected explicit-target executable and unchanged fixture plan."
+    },
+    {
+      "stage": 4,
+      "role": "independent-results-consistency-review",
+      "verdict": "PASS",
+      "scope": "Completed corrected campaign, unchanged implementation, frozen pins, report tables and public claims, with failed-startup custody preserved."
     }
   ],
   "qualification_observed": {
@@ -53,10 +65,10 @@
     "src/protocol.rs": "c79ac462b72059f20bb24144eaee5e204c5e1629b04bdc50ca637aae2e1f7f46",
     "src/selection.rs": "3431f49f94eec04a83c432f548a0a66299636d270c160f114bb0639ec1c92384",
     "examples/schema_fitting.rs": "9b828cb8d6b76c5b86022c715305ff148d69ddeb52ae04f22584bf201c725081",
-    "examples/support/schema_reuse.rs": "6a0377271e86acbdce67ff665330c83771b4bee4f6c8b9774844e22d78f81065"
+    "examples/support/schema_reuse.rs": "cc530426e46c9f8843e4cee1cc5aa6300421b8ab56248ee54463ea28cbcc8ad8"
   },
   "measurement_contract_sha256": "005fad58c1ce695510cff5f0715ddc2874e3d75a4db8c6a56dc4a7abf561ec4e",
-  "frozen_executable_sha256": "4f89658ab4db6e483f663c2e2bc5c930bb80a24e9664bd37a466cbd4fe1330c7",
+  "frozen_executable_sha256": "f43aed1bc353b6f2d47b0937a2e1e933fc7f313aae027683c52c8fc8482ec8aa",
   "review": [
     "PreparedSchema owns validated artifact bytes, immutable identity, Cow-owned literal fragments and layout index without unsafe self-reference. Existing free APIs use the same lexical stream helpers; prepared and fresh contexts have exact byte parity tests on alternating, empty, binary and rejected inputs.",
     "SchemaZstdV1 validates a single standard checksummed frame, descriptor flags, known content size, target-specific intermediate cap, window and exact frame extent before decompression allocation. One-shot decoding then applies the unchanged schema artifact/length/token preflight and exact final output rules. The separate intermediate reservation covers the maximum 17,104,944-byte lexical stream for a 16 MiB target.",
@@ -68,11 +80,95 @@
     "Frozen training and historical fixture identities are retained. Randomized arm order, mixed-family sequence, first-versus-later positions, fallback CPU, all seeds, preparation and actual observed reuse are explicit. The mixed later-position aggregate does not isolate warm-up from content. Failures retain rows and stores; the run cannot silently continue or discard a failed observation."
   ],
   "limits": [
-    "Premeasurement approval only: no performance, byte-saving or superiority result is established by this receipt.",
-    "One registered local serialized durable-transfer campaign is authorized: 1,600 targets, 120 seeds, 40 preparations, 160 sessions, 1,720 exact immediate comparisons and 1,720 exact reopened comparisons. No new WAN, packet-total, energy, MVM or compliance result.",
+    "The premeasurement code/Rust/security review and narrow harness correction review remain approved. The completed corrected campaign received a separate bounded results-consistency PASS; no general performance guarantee is established.",
+    "One corrected local campaign completed 1,600 targets, 120 seeds, 40 preparations and 160 sessions with 1,720 exact immediate and reopened comparisons. One earlier failed pre-transfer launch remains preserved. No new WAN, packet-total, energy, MVM or compliance result.",
     "Prepared arm differences combine sender and receiver reuse. Receiver cache bytes are conservative quota charges; sender retained bytes exclude Rust/allocator metadata. Neither is measured RSS or peak memory.",
     "Coverage is focused with separately reported line/function metrics and no branch or whole-repository assurance claim; two historical tests remain ignored.",
     "The reviewer read existing outputs and source only; no new build, test, benchmark, analyzer project or archive was added."
   ],
-  "final_verdict": "APPROVED_FOR_REGISTERED_LOCAL_CAMPAIGN"
+  "final_verdict": "CODE_RUST_SECURITY_AND_RESULTS_PASS_APPROVED_FOR_PUBLICATION",
+  "failed_attempt_review": {
+    "verdict": "FAILURE_PRESERVED_AND_NARROW_CORRECTION_APPROVED",
+    "failed_source_commit": "cd0aceff7d835ef4e3ba6478db5e87ae9a230a63",
+    "failed_executable_sha256": "4f89658ab4db6e483f663c2e2bc5c930bb80a24e9664bd37a466cbd4fe1330c7",
+    "failed_attempt_receipt": "attempt1-failure.json",
+    "observed_run_exit": 1,
+    "observed_error": "Storage",
+    "completed_fit_observations": 2,
+    "realized_seed_transfers": 0,
+    "realized_target_transfers": 0,
+    "realized_sender_preparations": 0,
+    "accounting": "The original four-row JSONL, fit observations, artifacts and failure remain preserved. Fit-row use counters were planned counts, not realized uses. This is one failed pre-transfer campaign launch, not zero attempted failures; no transfer timing was discarded.",
+    "correction": "Extracted the actual launcher for a regression that first reproduced Storage. Removed only session-directory precreation so Endpoint creates its required private directory. Production code and private-directory rejection remain unchanged; the main run invokes this tested helper.",
+    "corrected_harness_sha256": "cc530426e46c9f8843e4cee1cc5aa6300421b8ab56248ee54463ea28cbcc8ad8",
+    "observed_regression_red_exit": 101,
+    "corrected_harness_tests_passed": 7,
+    "corrected_harness_build_exit": 0,
+    "regression_scope": "One real artifact seed plus ten distinct small targets, immediate exact reads, final close/reopen of all eleven objects and successful owned-store cleanup.",
+    "new_reviewer_tests_or_builds": false,
+    "blocking_findings": [
+
+    ]
+  },
+  "initial_reviewed_commit": "cd0aceff7d835ef4e3ba6478db5e87ae9a230a63",
+  "corrected_campaign_release": {
+    "verdict": "APPROVED",
+    "source_commit": "fa0b0abdde0200c9faf62701daa28f9727cc62b4",
+    "executable_sha256": "f43aed1bc353b6f2d47b0937a2e1e933fc7f313aae027683c52c8fc8482ec8aa",
+    "plan": "plan-corrected.json",
+    "plan_sha256": "daf2d9e9411759fb8636fad4a19e426ca6087b3d7d5906a50dc552a8403c3a19",
+    "explicit_target": "aarch64-apple-darwin",
+    "build_exit": 0,
+    "source_harness_and_embedded_plan_match": true,
+    "targets_sequence_arms_and_training_unchanged": true,
+    "stale_plan": "plan-stale-target.json",
+    "stale_plan_disposition": "Retained custody correction: a stale executable from a different Cargo target directory was detected before any corrected run or transfer; explicit-target rebuild and new pins now match.",
+    "scope": "One corrected registered campaign with fresh output/cache/artifact paths. Preserve the original failed launch and two fit observations separately; do not report zero attempted failures."
+  },
+  "results_review": {
+    "verdict": "PASS",
+    "reviewed_report": "docs/network/schema-reuse-results-2026-10-30.md",
+    "report_sha256": "7a90863007f7bce14a3aeabef4ef6f49ff70aeb982b0c762924404a6e57817a7",
+    "source_commit": "fa0b0abdde0200c9faf62701daa28f9727cc62b4",
+    "executable_sha256": "f43aed1bc353b6f2d47b0937a2e1e933fc7f313aae027683c52c8fc8482ec8aa",
+    "plan_sha256": "daf2d9e9411759fb8636fad4a19e426ca6087b3d7d5906a50dc552a8403c3a19",
+    "raw_sha256": "e41ce987a666d632d3744bdbd57f9cdcbfe992953702f9f750d95ceaf09d4d18",
+    "summary_sha256": "8f65552d2ff45d3700a5ae6c42317a077e034ffe5ee099050418b4c31ecb414e",
+    "method": "Bounded inline calculations over the existing raw JSONL, plan and summary, followed by all report tables and public-claim review. No new tests, builds, experiment, analyzer project or archive.",
+    "confirmed": {
+      "raw_rows": 2084,
+      "targets": 1600,
+      "seeds": 120,
+      "sender_preparations": 40,
+      "sessions_and_unique_cleanups": 160,
+      "immediate_exact": 1720,
+      "reopened_exact": 1720,
+      "paired_target_fixtures": 200,
+      "prepared_fresh_mode_and_directional_body_pairs": 400,
+      "family_distributions_checked": 64,
+      "position_distributions_checked": 160,
+      "session_distributions_checked": 16,
+      "actual_arm_totals_checked": 8,
+      "report_numeric_table_rows_checked": 29
+    },
+    "checks": [
+      "Every target identity, length, family and record count matches its frozen fixture across eight arms; ten target IDs are distinct within each session. Artifact and adaptive-corpus seed identities are bound to the retained exact bytes.",
+      "Every immediate comparison succeeds; final reopened identity lists exactly join each session seed and all ten targets. Each session has one successful owned-store cleanup. No transfer error or observation was dropped.",
+      "Prepared and fresh modes, request bytes, response bytes and total body costs agree for all 400 paired targets. CPU and elapsed scopes satisfy total >= exchange >= receiver, with sender CPU equal to total minus exchange.",
+      "Cache before/after continuity, final snapshots, enabled/disabled behavior, entry/quota limits and actual decode lookup counts agree. Prepared schema has 79 hits, 20 misses/preparations; prepared dictionary has 140 hits, 20 misses/preparations; neither evicts in this campaign.",
+      "All family and position distributions, raw fallbacks, session sums including actual seed/preparation, and per-arm totals including one appropriate fit agree with the raw rows. All 29 numeric report table rows match those independently checked values at displayed precision.",
+      "Source/executable/plan/raw/summary/training/artifact pins match. Corrected run and summary exit 0. Production, tests and harness remain at the reviewed corrected source; only documentation/evidence changed.",
+      "Report, delivery, ledger, original-direction update and README preserve local-only scope, attempted-encoding costs, combined sender/receiver reuse, retained bytes versus conservative quota, mixed-family later-use interpretation, and negative CPU/time results."
+    ],
+    "headline_recalculation": {
+      "normal_batch_compressed_schema_body_saving_vs_zstd_percent": 2.217699433884879,
+      "normal_batch_prepared_compressed_schema_cpu_over_zstd": 3.06526261050442,
+      "actual_mixed_campaign_compressed_schema_body_saving_vs_zstd_percent": 0.42828541412673893
+    },
+    "failure_accounting": "One completed corrected transfer campaign and one preserved failed pre-transfer launch. The first launch retains both fit observations with zero realized transfers/uses. The stale-target plan was caught before execution. Zero performance reruns does not mean zero attempted launch failures.",
+    "qualification_scope": "Original full all-target277/doc1/coverage140 qualification covers unchanged production. The isolated launcher correction subsequently passed seven harness tests, corrected Clippy and the pinned explicit-target build; no redundant full-suite rerun is claimed.",
+    "blocking_findings": [
+
+    ]
+  }
 }

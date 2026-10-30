@@ -21,6 +21,23 @@ remain tied to their measured source; later results do not overwrite earlier neg
 
 ## Measured object sizes
 
+SC-OPT-012 compresses the exact schema value/residual stream and adds prepared
+sender contexts plus an opt-in, bounded receiver codec cache. The corrected
+campaign at `fa0b0abdde0200c9faf62701daa28f9727cc62b4` completed 1,600 target
+transfers and 120 seeds in 160 persistent sessions with ten distinct targets per
+receiver. All 1,720
+operations matched immediately and again after reopening. Matching ~1 MiB
+batches shrink from 796,723 median body bytes with schema V1 to 127,557.5 with
+compressed schema, versus 130,450.5 ordinary zstd. Prepared compressed schema
+uses 11.789 ms median CPU and 20.1545 ms durable elapsed versus zstd's 3.846 ms
+and 12.2465 ms. Preparation preserves body costs but provides no substantial
+combined CPU gain in this campaign. Ten-send totals charge actual seeding and
+preparation; small-message setup losses, drift and unrelated controls remain
+visible. One failed launch before any transfer and a stale build-path pin caught
+before execution are preserved with the [full result](schema-reuse-results-2026-10-30.md)
+and [evidence index](evidence/2026-10-30-schema-reuse/README.md).
+This is local serialized durable transfer, not new WAN, packet or energy evidence.
+
 SC-OPT-011 adds frozen flat-JSON literal templates and genuinely trained-zstd
 dictionaries at source `fe98bf0a40cad50f513652690548f7f0bb4f948f`. One held-out,
 ten-trial comparison completed 400 targets and 240 seeds with exact reopened

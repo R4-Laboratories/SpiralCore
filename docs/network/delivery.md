@@ -15,6 +15,16 @@ The user prioritized working standalone SpiralCore over MVM integration, then re
 
 Jeff Venable's [schema-fitting direction](schema-fitting-direction.md) now has an opt-in Rust template profile and a genuine trained-zstd dictionary profile alongside the coupled runtime. The [held-out comparison](schema-fitting-results-2026-10-30.md) records 400 exact target transfers and 240 exact artifact seeds. The template family saves bytes versus raw on matching batches but loses to conventional compression; trained dictionaries help small records conditionally on shared setup. Fitting, seeding, CPU, durable elapsed time and drift/fallback negatives are recorded. These new profiles have local qualification only.
 
+The subsequent [compressed-schema and persistent-receiver result](schema-reuse-results-2026-10-30.md)
+adds a compressed exact value/residual stream and reusable sender/receiver codec
+state. All 1,600 targets and 120 seeds matched immediately and after reopening.
+Matching ~1 MiB batches use 127,557.5 median body bytes versus 130,450.5 with
+ordinary zstd, but prepared schema CPU/elapsed are 11.789/20.1545 ms versus
+3.846/12.2465 ms for zstd. Reuse retains identical body costs; it has not yet
+produced a substantial combined CPU gain. The report includes actual ten-send
+setup amortization, retained state and negative controls. No new WAN result is
+claimed for these changes.
+
 ## Milestones
 
 | Milestone | Status | Acceptance |
@@ -31,6 +41,7 @@ Jeff Venable's [schema-fitting direction](schema-fitting-direction.md) now has a
 | Sparse candidate allocation pruning | Experiment complete; candidate not adopted | Exact output and diagnostic memory gates pass, but three CPU gates fail. Active encoder restored to the published baseline; source, 140 timing observations, 140 diagnostic observations and all negatives preserved. [Result](sparse-pruning-results-2026-10-30.md). |
 | Coupled ternary/Kuramoto/CA transfer | Implemented; local comparisons and real WAN pilot verified | 480 exact local and 72 exact WAN operations. A 14.16 MiB generated/edited trace uses 747/766 body bytes, or 4,630/4,649 with checkpoint seeding. WAN completion improves versus raw, but zstd is faster and runtime CPU is higher. Native ARM64 and Linux x86-64 golden vectors/plans agree. [Result](shared-runtime-results-2026-10-30.md), [contract](../specs/2026-10-30-shared-runtime-design.md). Three-trial WAN pilot, not full acceptance. |
 | Schema fitting and trained dictionaries | Implemented opt-in; local held-out comparison complete | Ten paired trials per family/size/arm, all 640 operations exact after reopen. Matching ~1 MiB batches: template 796,771 median body bytes versus raw 1,051,446.5 and zstd 130,432. Small normal records: trained dictionary 590 bytes versus zstd 667.5, before 8,705-byte per-destination seed. CPU and cold costs prevent an unconditional win. [Result](schema-fitting-results-2026-10-30.md). |
+| Compressed schema and prepared codec reuse | Implemented opt-in; persistent local campaign complete | 160 ten-target sessions, 1,600 targets and 120 seeds all exact immediately and after reopening. Matching ~1 MiB body falls 796,723→127,557.5 bytes; prepared CPU 11.789 ms remains above ordinary zstd 3.846 ms. Prepared/fresh bodies match; actual setup, cache hits and losses are retained. [Result](schema-reuse-results-2026-10-30.md). |
 | Per-transfer IP accounting | Fifty-nine of sixty broad-campaign captures complete for the runner-to-relay leg | Middle-insertion shard 1 retains ambiguous TCP tuple reuse and no whole-case IP statistic. Earlier campaigns retain their original limitations. No whole-path or physical-link byte claim. |
 | Direct/shaped WAN and three-peer qualification | Not run | Controlled impairment, recovery across three peers and eventual MVM boundaries |
 | CUI/FIPS deployment qualification | Not claimed | Concrete validated module/OE/mode and contract-specific control assessment |
