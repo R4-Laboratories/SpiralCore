@@ -48,13 +48,16 @@ structured findings are preserved; scientific rows and captures remain.
 
 ## Recorded WAN cases
 
-The [current result report](../../broad-wan-results-2026-10-29.md) records four
+The [current result report](../../broad-wan-results-2026-10-29.md) records seven
 completed, independently reviewed transfer cases: [localized](cases/localized_32/README.md),
 [scattered](cases/scattered_32x32/README.md), [prefix insertion](cases/prefix_4096/README.md),
-and [middle insertion](cases/middle_4096/README.md). Each has thirty pairs across
-four arms and 240 exact seed/update operations. Nineteen of twenty captures are
-complete; middle-insertion shard 1 has ambiguous connection attribution and no
-complete whole-case IP statistic. Eight registered cases remain incomplete.
+[middle insertion](cases/middle_4096/README.md), [deletion](cases/delete_4096/README.md),
+[append](cases/append_4096/README.md), and [truncation](cases/truncate_4096/README.md).
+Each has thirty pairs across four arms and 240 exact seed/update operations.
+Thirty-four of thirty-five captures are complete. Middle-insertion shard 1 has
+ambiguous tuple-reuse attribution and no complete whole-case IP statistic; its
+[separate diagnosis](qualification/middle-tuple-reuse/README.md) preserves the
+original failure. Five registered cases remain incomplete.
 
 Final measured source is `9dce4c57d1f41cef7365b297cd690849afce34e7`. The
 [successful producer](qualification/linux-producer-2/README.md) records current
