@@ -1,0 +1,57 @@
+{
+  "schema": "spiralcore.shared-runtime.post-audit-integration-review.v1",
+  "status": "APPROVED_POST_AUDIT",
+  "reviewer": "selector_architect",
+  "roles": [
+    "code-reviewer",
+    "rust-reviewer",
+    "security-reviewer",
+    "python-reviewer",
+    "infra-reviewer"
+  ],
+  "roster": "d1927d9e7ce51354",
+  "date": "2026-10-30",
+  "reviewed_head": "35114daef384186dacd6123221ec9b5db60b3fcc",
+  "snapshot_scope": "HEAD production/workflow plus current staged analyzer/report contents bound below; not a claim that staged evidence is already committed or published.",
+  "audit_status_observed": "PASS_PIPELINE_AUDIT",
+  "reviewed_sha256": {
+    ".agent-sync/AUDIT.md": "c83fcf14d11704a15d694ea54000ec24320b95f2587e7f9c59b629d93dd068bd",
+    "docs/network/evidence/2026-10-30-shared-runtime/pipeline-audit.json": "c928fb631fe804cd13a9631b841970400d7ba5ad385e20ff841f5c8b28f208d2",
+    "crates/spiralcore-transfer/src/shared_transfer.rs": "89c10ccf5ada59043ad6cf406fad4d7dda819affcdf43e179fc5f6ea80bcd7c3",
+    "crates/spiralcore-transfer/src/client.rs": "6d47427000a982e95ec632d446ffa35209dfbfab3893d422097b70d0f57e6d3a",
+    "crates/spiralcore-transfer/src/endpoint.rs": "897c25a33507d7368420887b29a984b8b6d9879276182dcf7ff4150a36a60d98",
+    "crates/spiralcore-transfer/src/protocol.rs": "87f8335a7abf614ecb78444b31764bb3a1be6bd46811fd0fa97b65c14f11fe30",
+    "crates/spiralcore-transfer/src/selection.rs": "f247fd34b0472f9a5e3211738859ff1508f782965585d2f07d2c33ac2d4d8193",
+    "crates/spiralcore-transfer/examples/shared_runtime.rs": "fd870f19f84566fcedc1a616502f16aa2da6e25a8cf9995f6fb92cd139e876cd",
+    "docs/network/evidence/2026-10-30-shared-runtime/reference/generate_reference.py": "06bdf32c0ae0562e29566313d92298978c7b0aad9ac5ee88f91af441a0735df5",
+    "docs/network/evidence/2026-10-30-shared-runtime/reference/test_generator.py": "b4a16cab7ef433761e0952dc05b8376fb83a5db5900fa3a270c8b33bae1a785f",
+    ".github/workflows/spiralcore-shared-runtime.yml": "9a8c8ba1fd3c29e3dce902882fdfe15183f1dbba69cd25e3aff5c2da6ab43f44",
+    "docs/network/evidence/2026-10-30-shared-runtime/qualification/workflow/check-gates.sh": "4e30fb868f5c6b65f529b87c98d62d805e0faf9f8f841a53a9312d9bb0ccfd07",
+    "docs/network/evidence/2026-10-30-shared-runtime/independent-analysis/analyze.rs": "2a1fd6f2221e72aa51f76824704e739ec1c9a07d2055e780e064bd32e6458c53",
+    "docs/network/evidence/2026-10-30-shared-runtime/independent-analysis/crosscheck.jq": "8428bf564bab1fc69c87ca3796fb52f30e0798b18009073e0c0b7ac0014dccee",
+    "docs/network/evidence/2026-10-30-shared-runtime/independent-analysis/results.json": "12b4f26f9b60d48b5817a4b13fdb98daf264d903a7aabaaa413bf49ffc70465c",
+    "docs/network/evidence/2026-10-30-shared-runtime/wan-analysis/analyze.rs": "29700443300b19ab44f65e6253d79ddafee95cd25487bd329e0449d897d78d24",
+    "docs/network/evidence/2026-10-30-shared-runtime/wan-analysis/crosscheck.jq": "f1f81f1ea51b5e743df34e83ce61241fcc758c791021d6c28ad1768e7baf2af7",
+    "docs/network/evidence/2026-10-30-shared-runtime/wan-analysis/results.json": "f6359eda7f44cc00ec628f6cb4ca68fd72ff770d36736633cae3a5763dcf3b61",
+    "docs/network/shared-runtime-results-2026-10-30.md": "2f013dd43f7e76b17f84be42a860192cf099abd13f2586bd79cb345ddbc6b985"
+  },
+  "blocking_findings": [],
+  "independence_exclusion": "This reviewer authored src/shared_runtime.rs and does not independently approve that engine. Its independent review belongs to selector_tests.",
+  "review_basis": [
+    "Reused the completed pre-measurement integration/harness/Python review and the corrected workflow's independent infrastructure review.",
+    "Confirmed no final production, harness, Cargo, or reference change from the measured source; the only launcher difference from b662 is the already reviewed github.workspace target-directory fix.",
+    "Inspected local and WAN analyzer validation, candidate-cost selection checks, per-trial aggregation, paired ratios, seed scenarios, scope/identity joins, source custody paths and retained jq cross-check implementations.",
+    "Inspected actual PASS audit record and existing independent-statistics results; no experiment, analyzer execution, or broad test rerun was performed for this bounded review.",
+    "Compared final report table values and favorable cold-start win counts with retained analysis results."
+  ],
+  "conclusions": [
+    "Transport authorization, verified checkpoint lookup, bounded setup/replay, prediction digest, exact residual application, final target verification and durable commit remain as previously approved.",
+    "Local CPU already includes receiver work; remote CPU subtotal is sender plus reported receiver-handler CPU computed per observation before statistics. Exchange/receiver times remain nested subsets.",
+    "Cold-start runtime includes checkpoint seed; raw/zstd practical baselines exclude unnecessary seeds. Generation remains separate workload construction.",
+    "Final report preserves byte savings, the raw-relative WAN time improvement, greater CPU and slower performance than zstd/adaptive, and the unrelated control's absent byte savings.",
+    "Claims remain limited to the measured model-derived fixtures and three-trial relay pilot; no pure wire time, full-path byte, energy, universal compression, MVM or CUI/FIPS qualification is asserted.",
+    "Receiver exact-read joins are distinguished from commit acknowledgements, and the failed pre-job workflow launch remains retained.",
+    "Python oracle remains pinned and isolated, with local-original reproduction dependency explicit; production and measurement harness remain Rust."
+  ],
+  "delivery_boundary": "No blocking issue found in this review scope. This is post-audit technical approval, not a statement that final publication/merge has occurred."
+}

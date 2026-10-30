@@ -1,0 +1,149 @@
+{
+  "receiver": {
+    "clean_input_passes": true,
+    "negative_cases": [
+      {
+        "mutation": "receiver_missing_read",
+        "reason": "receiver row count",
+        "rejected": true
+      },
+      {
+        "mutation": "receiver_duplicate_read",
+        "reason": "duplicate receiver read",
+        "rejected": true
+      },
+      {
+        "mutation": "receiver_false_exact",
+        "reason": "receiver failed/missing exact read",
+        "rejected": true
+      },
+      {
+        "mutation": "receiver_wrong_scope",
+        "reason": "receiver read has no transferred operation",
+        "rejected": true
+      },
+      {
+        "mutation": "receiver_wrong_object",
+        "reason": "receiver exact read/transfer identity mismatch",
+        "rejected": true
+      },
+      {
+        "mutation": "receiver_wrong_length",
+        "reason": "receiver exact read/transfer identity mismatch",
+        "rejected": true
+      },
+      {
+        "mutation": "receiver_wrong_hash",
+        "reason": "receiver exact read/transfer identity mismatch",
+        "rejected": true
+      },
+      {
+        "mutation": "receiver_wrong_source",
+        "reason": "receiver run/source/plan/executable binding",
+        "rejected": true
+      },
+      {
+        "mutation": "receiver_wrong_executable",
+        "reason": "receiver run/source/plan/executable binding",
+        "rejected": true
+      },
+      {
+        "mutation": "receiver_wrong_plan",
+        "reason": "receiver run/source/plan/executable binding",
+        "rejected": true
+      },
+      {
+        "mutation": "receiver_failed_completion",
+        "reason": "receiver terminal completion",
+        "rejected": true
+      }
+    ],
+    "passed": 11
+  },
+  "sender": {
+    "clean_input_passes": true,
+    "negative_cases": [
+      {
+        "mutation": "missing_row",
+        "reason": "row4 expectedoperation, saw\"operation_started\"",
+        "rejected": true
+      },
+      {
+        "mutation": "duplicate_row",
+        "reason": "row5 expectedoperation_started, saw\"operation\"",
+        "rejected": true
+      },
+      {
+        "mutation": "failed_operation",
+        "reason": "failed/missing pending remote commit",
+        "rejected": true
+      },
+      {
+        "mutation": "false_reopen",
+        "reason": "failed/missing pending remote commit",
+        "rejected": true
+      },
+      {
+        "mutation": "wrong_source",
+        "reason": "run source/plan/executable binding",
+        "rejected": true
+      },
+      {
+        "mutation": "wrong_executable",
+        "reason": "run source/plan/executable binding",
+        "rejected": true
+      },
+      {
+        "mutation": "wrong_plan_hash",
+        "reason": "run source/plan/executable binding",
+        "rejected": true
+      },
+      {
+        "mutation": "wrong_scope",
+        "reason": "operation identity/order w4096-s4096-generated-t0/raw/seed",
+        "rejected": true
+      },
+      {
+        "mutation": "wrong_fixture",
+        "reason": "observed vs registered object identity",
+        "rejected": true
+      },
+      {
+        "mutation": "wrong_mode",
+        "reason": "strict-min winner/actual projected cost",
+        "rejected": true
+      },
+      {
+        "mutation": "wrong_cost",
+        "reason": "strict-min winner/actual projected cost",
+        "rejected": true
+      },
+      {
+        "mutation": "wrong_order",
+        "reason": "operation identity/order w4096-s4096-generated-t0/raw/seed",
+        "rejected": true
+      },
+      {
+        "mutation": "wrong_metric_scope",
+        "reason": "metric scope",
+        "rejected": true
+      },
+      {
+        "mutation": "wrong_completion",
+        "reason": "completion semantics",
+        "rejected": true
+      },
+      {
+        "mutation": "extra_event",
+        "reason": "no dropped/extra rows or operations",
+        "rejected": true
+      },
+      {
+        "mutation": "missing_control_case",
+        "reason": "registered plan dose/source",
+        "rejected": true
+      }
+    ],
+    "passed": 16
+  }
+}

@@ -1,0 +1,80 @@
+{
+  "schema": "spiralcore.shared-runtime.wan-independent-analysis-receipt.v1",
+  "status": "PASS",
+  "scope": "Independent validation and arithmetic of the completed WAN pilot, joined to stopped-receiver exact reads; no new transfer or timing run",
+  "working_directory": "/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore",
+  "measured_source_revision": "35114daef384186dacd6123221ec9b5db60b3fcc",
+  "github_run_id": 41062532491,
+  "analyzer": {
+    "source": "analyze.rs",
+    "source_sha256": "29700443300b19ab44f65e6253d79ddafee95cd25487bd329e0449d897d78d24",
+    "derived_from": "The separately qualified local independent-analysis/analyze.rs, preserved unchanged in its sealed packet",
+    "language": "Rust",
+    "toolchain": "1.97.1",
+    "target": "aarch64-apple-darwin",
+    "build_command": "/Users/casey.allard/.cargo/bin/rustc +1.97.1 --edition 2021 --target aarch64-apple-darwin -C opt-level=1 docs/network/evidence/2026-10-30-shared-runtime/wan-analysis/analyze.rs -L dependency=/Users/casey.allard/spiralcore/target/aarch64-apple-darwin/release/deps --extern serde_json=/Users/casey.allard/spiralcore/target/aarch64-apple-darwin/release/deps/libserde_json-1526d65a4d76f4d2.rlib --extern sha2=/Users/casey.allard/spiralcore/target/aarch64-apple-darwin/release/deps/libsha2-ac5edfbdd095406a.rlib -o /Users/casey.allard/spiralcore/local/shared-state-20261030/wan-analysis/analyze",
+    "builds": [
+      {"attempt": 1, "exit_code": 1, "output": "build-attempt1.txt", "diagnosis": "Generated analyzer edit inserted literal backslash-n between JSON fields; parser failed before execution", "resolution": "Minimal correction to a real newline, followed by rustfmt and rebuild; no production or input-data edits"},
+      {"attempt": 2, "exit_code": 0, "output": "build-attempt2.txt"}
+    ],
+    "run_command": "/Users/casey.allard/spiralcore/local/shared-state-20261030/wan-analysis/analyze /Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore docs/network/evidence/2026-10-30-shared-runtime/wan-analysis",
+    "run_exit_code": 0,
+    "run_output": "verification.txt",
+    "retained_executable": "/Users/casey.allard/spiralcore/local/shared-state-20261030/wan-analysis/analyze",
+    "executable_sha256": "313a46cd4886b856595d76dfc541c2f3932c61423cd3d331ecd1884ee5a79856",
+    "executable_bytes": 928888,
+    "executable_committed_to_git": false,
+    "dependencies": [
+      {"path": "/Users/casey.allard/spiralcore/target/aarch64-apple-darwin/release/deps/libserde_json-1526d65a4d76f4d2.rlib", "sha256": "a28ac8b51960841a58911c759147f9350781938425d6879283884c5f482d07c1"},
+      {"path": "/Users/casey.allard/spiralcore/target/aarch64-apple-darwin/release/deps/libsha2-ac5edfbdd095406a.rlib", "sha256": "cbe53b68a2c1615181b3a19df66a3522d6c0056286c7dc03284d10c7aa9398ee"}
+    ]
+  },
+  "qualification": {
+    "clean_inputs_pass": true,
+    "sender_negative_variants_rejected": 16,
+    "receiver_negative_variants_rejected": 11,
+    "negative_cases_file": "negative-checks.json",
+    "crosscheck_command": "jq -s --slurpfile expected docs/network/evidence/2026-10-30-shared-runtime/wan-analysis/results.json -f docs/network/evidence/2026-10-30-shared-runtime/wan-analysis/crosscheck.jq docs/network/evidence/2026-10-30-shared-runtime/wan/attempt2/remote/observations.jsonl",
+    "crosscheck_exit_code": 0,
+    "crosscheck_metric_cells": 36,
+    "crosscheck_metrics_per_cell": 13,
+    "crosscheck_paired_comparisons": 24,
+    "crosscheck_mismatches": 0,
+    "crosscheck_ratio_tolerance": "relative or absolute 1e-12; metric cells match exactly",
+    "crosscheck_file": "statistics-crosscheck.json"
+  },
+  "custody": {
+    "file": "custody.json",
+    "source_manifest_files_verified": 50,
+    "artifact_members_verified": 29,
+    "actual_sender_executable_verified": true,
+    "actual_native_receiver_and_verifier_executables_verified": true,
+    "native_sender_source_parity": "Entire transfer crate and reference packet unchanged between b6627deb and 35114dae",
+    "sender_receiver_plan_byte_identity": true,
+    "source_verification_method": "Read each recorded source through git show at the pinned measured revision",
+    "raw_inputs_modified": false,
+    "measured_program_executed_by_analyzer": false,
+    "sender_rows": 164,
+    "receiver_rows": 74,
+    "operations": 72,
+    "receiver_exact_read_joins": 72,
+    "compared_bytes_in_measured_receiver_verification": 534771576,
+    "selected_cost_equalities": 18,
+    "cleanup_events": 0,
+    "physical_receiver_reads_repeated_by_analyzer": false
+  },
+  "interpretation": {
+    "body_bytes_are_actual_http_payloads": true,
+    "complete_wire_bytes_measured": false,
+    "favorable_runtime_wall_win_against_raw": true,
+    "favorable_runtime_wall_win_against_zstd": false,
+    "runtime_cpu_subtotal_win_against_any_baseline": false,
+    "energy_measured": false,
+    "randomized_thirty_trial_acceptance": false
+  },
+  "notes": [
+    "Initial read-only discovery tried a nonexistent artifact-receipt.json path and returned exit 1. The actual retained artifacts-api.json and archive member manifest were then read and independently verified; no data mutation occurred.",
+    "A progress message initially reused the local manifest count of 56. The actual WAN custody result has 50; this was explicitly corrected before sealing the report.",
+    "All analyzer builds and execution occurred after the parent confirmed WAN transfer completion. The sealed local independent-analysis packet remains unchanged."
+  ]
+}

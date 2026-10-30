@@ -7,6 +7,12 @@ precise treatment of ternary updates and a shared CA/Kuramoto base. Byte reducti
 and exact reconstruction remain primary; elapsed time and both endpoint CPU
 remain required measurements.
 
+Subsequent implementation: the user prioritized the existing coupled runtime
+before the MVM adapter. The [Rust runtime contract](../specs/2026-10-30-shared-runtime-design.md)
+and [recorded local/WAN results](shared-runtime-results-2026-10-30.md) now implement
+and measure that mechanism. This note remains the earlier source-inspection
+snapshot and proposed MVM boundary; it is not a claim that the adapter has shipped.
+
 ## Snapshot and scope
 
 - SpiralCore: `fdc7586214260d9d09bf63820614dd62a0bade5b`, including the published

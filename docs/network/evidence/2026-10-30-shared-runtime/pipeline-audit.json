@@ -1,0 +1,191 @@
+{
+  "schema": "spiralcore.shared-runtime.pipeline-audit.v1",
+  "milestone": "SC-OPT-008",
+  "status": "PASS_PIPELINE_AUDIT",
+  "date": "2026-10-30",
+  "auditor": "/root/selector_tests",
+  "role": "harness-optimizer",
+  "roster": "d1927d9e7ce51354",
+  "scope": "Procedural audit of this worktree and milestone only; subsequent independent code/Rust/security reviews and publication remain required",
+  "findings": [
+
+  ],
+  "stale_claims": [
+
+  ],
+  "authority": {
+    "profile": ".claude/agents/harness-optimizer.md",
+    "quality_gate": "/Users/casey.allard/spiralcore/local/codec-selection-20261029/a-team-bootstrap/.claude/commands/quality-gate.md",
+    "verification_skill": "/Users/casey.allard/.codex/plugins/cache/awesome-codex-plugins/a-team/1.4.1/skills/verification-before-completion/SKILL.md",
+    "role_checked_active": true,
+    "previous_audit_copy": "/Users/casey.allard/spiralcore/local/shared-state-20261030/audit/SC-OPT-007-AUDIT.md",
+    "previous_audit_sha256": "95c8738f58c7ee4289bff2e1c5bc75c8e81c130f9338dc667f8645f76afff00c"
+  },
+  "execution_evidence": {
+    "native_command_history_accessible": true,
+    "legacy_claude_history_absent": true,
+    "agent_status_alone_accepted": false,
+    "history_scope": "Exact parent thread 01a1853d-9e6e-7523-abf5-b3853b47ad5b and its three SpiralCore children; commands, exits, output and ordering inspected",
+    "history_prefixes": "/Users/casey.allard/spiralcore/local/shared-state-20261030/audit/history-source-prefixes.json",
+    "history_prefixes_sha256": "5f61e3e205e8a87a69bc29aedfc676e3549cd5b61e5cd261b8a0c919b9587f7d",
+    "selected_events": "/Users/casey.allard/spiralcore/local/shared-state-20261030/audit/selected-command-events.json",
+    "selected_events_sha256": "7b8ca6dbcd9109d49dbbd5698d426e42fc7fe50fb5f7a8f0f7dc974b1b543797",
+    "all_four_history_prefixes_rechecked": true,
+    "actual_event_ids": {
+      "engine_red": "exec-9ae7b4fc-dbd5-4e1d-a7c9-47ddfb176e2c",
+      "transfer_red_wrapper": "exec-4fa4befd-e5a8-43b2-9437-3d1dd541eebf",
+      "preflight_red": "exec-26bd699f-02ff-4133-b0e3-402009caf606",
+      "final_native_tests": "exec-8e00ce54-3f0a-44aa-a8f2-44b71df8b75b",
+      "release_build": "exec-3aca51f4-beeb-4c4b-b081-1e3ea0163356",
+      "doctest": "exec-314b0ed9-83e2-45fb-a770-f4655b31cd9c",
+      "imported_store": "exec-66bdf542-d808-488b-ab2a-859b5fdc6117",
+      "focused_coverage": "exec-61189948-bb2a-40e7-b0ca-8036d0d7fe9c",
+      "all_target_check_clippy_focused": "exec-4debae2b-2c93-408b-94f6-902cc1018241",
+      "local_campaigns": "exec-5f7be18b-61fc-4a64-997c-76bf19478b16",
+      "receiver_stop": "exec-907af0d2-4996-403c-a962-b6a5a3ee25d8",
+      "stopped_receiver_verify": "exec-864232ee-bb89-4803-8f59-7ffd56a9b633",
+      "secret_variable_capability_cleanup": "exec-b187ac1e-dd03-4206-9e80-0245c45d83e3"
+    },
+    "exit_interpretation": "Successful final verification/campaign commands exit zero. RED cargo failures are retained as 101; transfer RED wrapper intentionally succeeds only when inner cargo fails. Receiver interruption and absent-PID ps checks return nonzero without being failed transfer observations."
+  },
+  "qualification": {
+    "native": {
+      "passed": 220,
+      "ignored": 2,
+      "failed": 0,
+      "targets": 26,
+      "doctests_passed": 1,
+      "imported_store_passed": 71,
+      "imported_store_targets": 9,
+      "all_target_check": "PASS",
+      "all_target_clippy": "PASS",
+      "release_build": "PASS",
+      "new_file_format": "PASS",
+      "format_only_test_followup_passed": 7
+    },
+    "linux": {
+      "passed": 222,
+      "ignored": 0,
+      "failed": 0,
+      "targets": 26,
+      "frozen_native_vector_passed": 1,
+      "source_build_and_job": "PASS"
+    },
+    "focused_coverage": {
+      "tests": 34,
+      "runtime": {
+        "lines_covered": 428,
+        "lines_total": 437,
+        "functions_covered": 31,
+        "functions_total": 31,
+        "regions_covered": 787,
+        "regions_total": 807
+      },
+      "transfer": {
+        "lines_covered": 50,
+        "lines_total": 54,
+        "functions_covered": 2,
+        "functions_total": 2,
+        "regions_covered": 101,
+        "regions_total": 109
+      },
+      "branch_mcdc_statement": "NOT_MEASURED",
+      "whole_repository_percentage_claim": false
+    }
+  },
+  "source_and_sequence": {
+    "local_source": "b6627deb7fb8c80a46c0e89d5e074afaf50f37f0",
+    "local_commit_utc": "2026-10-30T13:05:21Z",
+    "local_campaign_utc": [
+      "2026-10-30T13:07:21Z",
+      "2026-10-30T13:08:09Z"
+    ],
+    "wan_source": "35114daef384186dacd6123221ec9b5db60b3fcc",
+    "wan_commit_utc": "2026-10-30T13:18:52Z",
+    "wan_run": 41062532491,
+    "failed_pre_job_run_preserved": 41061178351,
+    "measured_transfer_crate_and_reference_diff": "empty between local and WAN revisions",
+    "current_production_crates_diff_against_wan": "empty",
+    "known_owned_build_test_profile_overlap": false,
+    "lightweight_status_json_io_during_wan": true,
+    "shared_host_activity_exclusion_not_claimed": true
+  },
+  "review_boundaries": {
+    "engine": "reference/engine-review.json independently reviews production engine, not its own authored tests/oracle",
+    "integration_harness_reference": "pre-measurement-review.json independently reviews parent integration and separately authored harness/reference",
+    "workflow": "infra-review.json retained as historical; infra-context-fix-review.json matches corrected current workflow",
+    "procedural_auditor_authored_analyzers": true,
+    "independent_analyzer_code_approval_claimed": false,
+    "post_audit_independent_reviews": "PENDING_REQUIRED"
+  },
+  "observations": {
+    "local_operations": 480,
+    "local_paired_inputs": 60,
+    "local_exact_reopen_receipts": 480,
+    "local_compared_bytes": 1799742000,
+    "local_selected_cost_equalities": 120,
+    "local_cleanup_events": 240,
+    "wan_operations": 72,
+    "wan_paired_inputs": 9,
+    "wan_unique_stopped_receiver_joins": 72,
+    "wan_compared_bytes": 534771576,
+    "wan_selected_cost_equalities": 18,
+    "wan_source_manifest_files": 50,
+    "wan_artifact_members": 29,
+    "wan_artifact_api_zip_digest_matches": true,
+    "local_negative_variants_rejected": 17,
+    "wan_negative_variants_rejected": 27,
+    "local_second_implementation_cells": 72,
+    "local_metrics_per_cell": 12,
+    "wan_second_implementation_cells": 36,
+    "wan_metrics_per_cell": 13,
+    "wan_second_implementation_paired_comparisons": 24,
+    "second_implementation_mismatches": 0
+  },
+  "interpretation": {
+    "report": "docs/network/shared-runtime-results-2026-10-30.md",
+    "report_sha256": "2f013dd43f7e76b17f84be42a860192cf099abd13f2586bd79cb345ddbc6b985",
+    "favorable_body_reduction_and_wan_raw_time_win": true,
+    "zstd_and_adaptive_wan_time_losses_retained": true,
+    "cpu_losses_retained": true,
+    "unrelated_control_loss_retained": true,
+    "practical_cold_seed_accounting_correct": true,
+    "generation_separate": true,
+    "body_vs_complete_wire_distinction": true,
+    "exchange_not_pure_wire_time": true,
+    "three_trial_p95_is_maximum": true,
+    "energy_mvm_cui_fips_claims": false
+  },
+  "retention_and_cleanup": {
+    "formal_failures_and_raw_logs_retained_by_user_instruction": true,
+    "original_wrapper_sha256": "77076e195d3f93d91b79b653e946af58b215c52166382269de9360da83226ad0",
+    "original_kernel_sha256": "2e11825b16a825f066bc249d785d436c3345abe4fd2c0958fbdb156dea9eb269",
+    "original_hashes_freshly_verified": true,
+    "receiver_pids_absent": 2,
+    "tunnel_pids_absent": 2,
+    "local_capability_files_absent": 2,
+    "task_github_secret_deleted": true,
+    "task_github_variables_deleted": 4,
+    "prior_and_final_task_specific_lists_empty": true,
+    "verified_cache_frozen_binaries_downloaded_artifact_retained": true,
+    "analyzer_binaries_outside_git": true,
+    "prior_sealed_packets_unchanged": true,
+    "other_lab_mutation": false
+  },
+  "manifests": {
+    "reference": "3e8908158c9bfb1aa2b88eb2f209986e800df9ce38d727a2dfbf40c5c4e9fef3",
+    "local_analysis": "af2bd69a9b260fd7d462829323db39587fede5c5b05f94e84f4613ecca3d58ce",
+    "wan_analysis": "3c43e6ca40cc0d74b4c680c9bb383272fe3dd990a9394ea0c3d36a602b88131a"
+  },
+  "delivery": {
+    "all_file_claims_completed": true,
+    "observed_origin_main": "fdc7586214260d9d09bf63820614dd62a0bade5b",
+    "observed_origin_main_ancestor": true,
+    "subsequent_gates": [
+      "Independent post-audit code/Rust/security reviews, including analyzers by another agent",
+      "Final publication source/base and packet identity check",
+      "Publish and verify requested origin/main delivery"
+    ],
+    "merge_already_claimed": false
+  }
+}
