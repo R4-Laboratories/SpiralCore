@@ -334,10 +334,15 @@ impl<A: Authority> Endpoint<A> {
         extra: u64,
         now: u64,
     ) -> Result<Option<CodecHandle>> {
-        if !self.codec_cache_enabled || !crate::fitted_transfer::is_fitted(offer.mode) {
+        if !self.codec_cache_enabled || !crate::fitted_transfer::is_buffered(offer.mode) {
             return Ok(None);
         }
-        let key = (ns, offer.mode as u8, offer.base.ok_or(Error::Malformed)?);
+        let artifact = if offer.mode == Mode::ZstdWholeV1 {
+            [0; 32]
+        } else {
+            offer.base.ok_or(Error::Malformed)?
+        };
+        let key = (ns, offer.mode as u8, artifact);
         if let Some((p, age)) = self.codecs.get_mut(&key) {
             *age = now;
             self.codec_stats.hits += 1;
@@ -547,6 +552,7 @@ impl<A: Authority> Endpoint<A> {
                 | Mode::SchemaV1
                 | Mode::ZstdDictionaryV1
                 | Mode::SchemaZstdV1
+                | Mode::ZstdWholeV1
         ) || (matches!(offer.mode, Mode::Raw | Mode::Zstd)
             && self.cold_graph_policy == ColdGraphPolicy::Disabled)
             || existing.is_ok()
@@ -568,7 +574,7 @@ impl<A: Authority> Endpoint<A> {
                 .and_then(|n| n.checked_add(crate::zstd_prefix::DECODER_ALLOWANCE))
                 .ok_or(Error::Limit)?;
         }
-        if crate::fitted_transfer::is_fitted(offer.mode) && existing.is_err() {
+        if crate::fitted_transfer::is_buffered(offer.mode) && existing.is_err() {
             charge = charge
                 .checked_add(
                     crate::fitted_transfer::encoded_cap(offer.mode, offer.len as usize)? as u64,
@@ -737,7 +743,7 @@ impl<A: Authority> Endpoint<A> {
                     s.prefix_encoded
                         .try_reserve_exact(crate::zstd_prefix::encoded_cap(offer.len as usize)?)
                         .map_err(|_| Error::Limit)?;
-                } else if crate::fitted_transfer::is_fitted(offer.mode) {
+                } else if crate::fitted_transfer::is_buffered(offer.mode) {
                     s.prefix_encoded
                         .try_reserve_exact(crate::fitted_transfer::encoded_cap(
                             offer.mode,
@@ -811,7 +817,7 @@ impl<A: Authority> Endpoint<A> {
                         s.offer.len as usize,
                     )?;
                 }
-                if crate::fitted_transfer::is_fitted(s.offer.mode) {
+                if crate::fitted_transfer::is_buffered(s.offer.mode) {
                     s.bytes = if let Some(codec) = &s.codec {
                         codec
                             .lock()
@@ -864,6 +870,7 @@ impl<A: Authority> Endpoint<A> {
                         | Mode::SchemaV1
                         | Mode::ZstdDictionaryV1
                         | Mode::SchemaZstdV1
+                        | Mode::ZstdWholeV1
                 ) || (matches!(s.offer.mode, Mode::Raw | Mode::Zstd)
                     && self.cold_graph_policy == ColdGraphPolicy::Disabled)
                 {
@@ -923,7 +930,7 @@ impl<A: Authority> Endpoint<A> {
         }
     }
     fn data(&self, s: &mut Attempt, b: &[u8]) -> Result<()> {
-        if crate::fitted_transfer::is_fitted(s.offer.mode) {
+        if crate::fitted_transfer::is_buffered(s.offer.mode) {
             crate::fitted_transfer::append(
                 s.offer.mode,
                 &mut s.prefix_encoded,

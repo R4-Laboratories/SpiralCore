@@ -22,7 +22,7 @@ const ARTIFACT: &[u8] = include_bytes!(
     "../../../../docs/network/evidence/2026-10-30-schema-reuse/artifacts-corrected/schema.artifact"
 );
 
-fn order(trial: usize, large: bool) -> Result<[&'static str; 3]> {
+pub(super) fn order(trial: usize, large: bool) -> Result<[&'static str; 3]> {
     if trial >= 30 {
         return Err("trial outside registered dose".into());
     }
@@ -330,7 +330,7 @@ fn session(
         &json!({"event":"session_complete","target_operations":10,"seed_operations":usize::from(arm=="schema"),"status":"commit-acknowledged-reopen-pending"}),
     )
 }
-fn rows(bytes: &[u8]) -> Result<Vec<Value>> {
+pub(super) fn rows(bytes: &[u8]) -> Result<Vec<Value>> {
     std::str::from_utf8(bytes)?
         .lines()
         .map(|s| Ok(serde_json::from_str(s)?))
@@ -443,7 +443,7 @@ fn paired(
     }
     Ok(())
 }
-fn observations(p: &Value, bytes: &[u8]) -> Result<Vec<Value>> {
+pub(super) fn observations(p: &Value, bytes: &[u8]) -> Result<Vec<Value>> {
     let allowed = p["allowed_scopes"].as_array().ok_or("scope list missing")?;
     let mut result = Vec::new();
     let mut previous = json!({"hits":0,"misses":0,"preparations":0,"evictions":0});
@@ -553,7 +553,7 @@ fn verify(plan_path: &Path, cache: &Path, out_path: &Path) -> Result<()> {
     }
     Ok(())
 }
-const METRICS_WAN: [&str; 10] = [
+pub(super) const METRICS_WAN: [&str; 10] = [
     "sender_cpu_us",
     "receiver_cpu_us",
     "cpu_us",
@@ -565,7 +565,7 @@ const METRICS_WAN: [&str; 10] = [
     "response_body_bytes",
     "batches",
 ];
-fn describe(group: &[&Value]) -> Result<Value> {
+pub(super) fn describe(group: &[&Value]) -> Result<Value> {
     let mut value = json!({"n":group.len(),"raw_fallbacks":group.iter().filter(|r|r["raw_fallback"]==true).count()});
     for metric in METRICS_WAN {
         value[metric] = dist(
@@ -821,7 +821,7 @@ fn validate_shard(
     }
     Ok((operations, totals))
 }
-fn ratios(values: Vec<f64>) -> Result<Value> {
+pub(super) fn ratios(values: Vec<f64>) -> Result<Value> {
     if values.len() != 30 || values.iter().any(|v| !v.is_finite() || *v <= 0.0) {
         return Err("thirty positive paired ratios required".into());
     }

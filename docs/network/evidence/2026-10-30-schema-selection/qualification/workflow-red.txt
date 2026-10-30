@@ -1,0 +1,36 @@
+   Compiling spiralcore-transfer v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer)
+    Finished `release` profile [optimized] target(s) in 1.64s
+     Running tests/schema_selection_workflow.rs (/Users/casey.allard/spiralcore/target/aarch64-apple-darwin/release/deps/schema_selection_workflow-91edb5beb0075461)
+
+running 3 tests
+test schema_selection_workflow_accepts_only_the_pinned_first_attempt ... FAILED
+test schema_selection_workflow_requires_a_full_secret_without_fallback ... FAILED
+test schema_selection_workflow_restricts_every_receiver_url ... FAILED
+
+failures:
+
+---- schema_selection_workflow_accepts_only_the_pinned_first_attempt stdout ----
+
+thread 'schema_selection_workflow_accepts_only_the_pinned_first_attempt' (64873739) panicked at tests/schema_selection_workflow.rs:7:45:
+schema WAN workflow must exist: Os { code: 2, kind: NotFound, message: "No such file or directory" }
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- schema_selection_workflow_requires_a_full_secret_without_fallback stdout ----
+
+thread 'schema_selection_workflow_requires_a_full_secret_without_fallback' (64873740) panicked at tests/schema_selection_workflow.rs:7:45:
+schema WAN workflow must exist: Os { code: 2, kind: NotFound, message: "No such file or directory" }
+
+---- schema_selection_workflow_restricts_every_receiver_url stdout ----
+
+thread 'schema_selection_workflow_restricts_every_receiver_url' (64873741) panicked at tests/schema_selection_workflow.rs:7:45:
+schema WAN workflow must exist: Os { code: 2, kind: NotFound, message: "No such file or directory" }
+
+
+failures:
+    schema_selection_workflow_accepts_only_the_pinned_first_attempt
+    schema_selection_workflow_requires_a_full_secret_without_fallback
+    schema_selection_workflow_restricts_every_receiver_url
+
+test result: FAILED. 0 passed; 3 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `--test schema_selection_workflow`

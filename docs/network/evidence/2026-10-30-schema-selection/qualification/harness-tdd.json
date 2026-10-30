@@ -1,0 +1,46 @@
+{
+  "schema": "spiralcore.sc-opt-014.harness-qualification.v1",
+  "status": "FOCUSED_GREEN_READY_FOR_PARENT_QUALIFICATION",
+  "role": "performance-profiler",
+  "roster": "d1927d9e7ce51354",
+  "toolchain": "Rust 1.97.1",
+  "target": "aarch64-apple-darwin",
+  "features": ["hardware-sha256"],
+  "cargo_target_dir": "/Users/casey.allard/spiralcore/target",
+  "incremental": false,
+  "red": {
+    "log": "harness-red.txt",
+    "sha256": "bcfcf6b0fb83d21eeaed2e1769a1fe18d4e167b07b7dfd0a853d95ba8a12ea95",
+    "exit": 101,
+    "observed": "The test-first receipt validator accepted a cold schema candidate that omitted its required artifact seed charge",
+    "correction": "Require three ordered candidates, checked target-plus-setup arithmetic, computed cold artifact cost, deterministic minimum/tie selection and matching seed requirement"
+  },
+  "green": {
+    "log": "harness-green-attempt1.txt",
+    "sha256": "848381ed45fa8dcb5d5838b4132985a01c1172a2949872e83a10118edcf648d8",
+    "exit": 0,
+    "passed": 20,
+    "failed": 0,
+    "new_selection_tests": 4
+  },
+  "sources_at_focused_green": {
+    "examples/schema_fitting.rs": "84eb6ced51ad22648837760692060c83137983e37b84e4376cd1fd447a81cb8f",
+    "examples/support/schema_selection.rs": "ddd5b948aa6dd3bb87155a4109cdfb3ea3efff0414764ade6a3a48a444ffa504",
+    "examples/support/schema_wan.rs": "88b4be6aa9524ceb5f31cad52c25eaae645ca67b5e5ebd4911d655057aecc717",
+    "measurement_contract": "c984f7d98acf7a4cc57d324fe2f2de79a0af83d56829d9ed91d4f6b509425829"
+  },
+  "qualified": [
+    "Cold setup cannot be omitted; warm/cold thresholds, ties and duplicate candidate rejection",
+    "Actual loopback HTTP persistent sessions for all three arms: thirty distinct target transfers plus one forced-schema seed, then exact reopened comparisons",
+    "Small selector session transfers no artifact seed; its absent artifact is the specific Unknown-publication result after reopening",
+    "Complete fabricated three-shard summary with dynamic seeds, 1800 targets, 90 seeds and 1890 exact objects",
+    "Fabricated missing readback, unseeded artifact presence and corrupted seed-cost receipts fail validation",
+    "Historical WAN, persistent-reuse and sender fixture/summary tests remain passing"
+  ],
+  "limits": [
+    "Fabricated receipts are test data only and temporary files are removed after successful qualification",
+    "Loopback observations qualify integration and fidelity, not performance or WAN behavior",
+    "Shared historical WAN changes are visibility-only helper exports",
+    "Parent owns final full qualification, source freeze, independent review and the one registered WAN run; none has been substituted by this focused result"
+  ]
+}

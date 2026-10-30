@@ -1,0 +1,23 @@
+/Users/casey.allard/.cargo/bin/cargo +1.97.1 test --manifest-path crates/spiralcore-transfer/Cargo.toml --release --locked --target aarch64-apple-darwin --features hardware-sha256 --test schema_selection
+   Compiling spiralcore-transfer v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer)
+    Finished `release` profile [optimized] target(s) in 1.22s
+     Running tests/schema_selection.rs (/Users/casey.allard/spiralcore/target/aarch64-apple-darwin/release/deps/schema_selection-6c8f9ea8e8007c06)
+
+running 1 test
+test whole_zstd_mode_is_explicit_and_requires_no_artifact ... FAILED
+
+failures:
+
+---- whole_zstd_mode_is_explicit_and_requires_no_artifact stdout ----
+
+thread 'whole_zstd_mode_is_explicit_and_requires_no_artifact' (64877668) panicked at tests/schema_selection.rs:7:40:
+Mode9 must admit a bounded whole-object frame: Unsupported
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    whole_zstd_mode_is_explicit_and_requires_no_artifact
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `--test schema_selection`

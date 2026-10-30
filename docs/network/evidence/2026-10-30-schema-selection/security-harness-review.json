@@ -1,0 +1,58 @@
+{
+  "milestone": "SC-OPT-014",
+  "verdict": "APPROVED_PREMEASUREMENT_SCOPED_SECURITY_INFRA",
+  "reviewer": "selector_architect",
+  "completed_utc": "2026-10-30T22:01:09.460834+00:00",
+  "head_observed": "e353688ff55d81ed56f06a296f6aa589117bdc79",
+  "roster": "d1927d9e7ce51354; security-reviewer and infra-reviewer active; profiles read",
+  "procedural_gate": "PASS already recorded by selector_tests before this independent source review",
+  "scope": "Cross-author measurement harness, minimal historical helper visibility changes, hosted workflow and actual persistent local supervisor. Author-owned production implementation excluded.",
+  "source_sha256": {
+    "crates/spiralcore-transfer/examples/support/schema_selection.rs": "ddd5b948aa6dd3bb87155a4109cdfb3ea3efff0414764ade6a3a48a444ffa504",
+    "crates/spiralcore-transfer/examples/schema_fitting.rs": "84eb6ced51ad22648837760692060c83137983e37b84e4376cd1fd447a81cb8f",
+    "crates/spiralcore-transfer/examples/support/schema_wan.rs": "88b4be6aa9524ceb5f31cad52c25eaae645ca67b5e5ebd4911d655057aecc717",
+    ".github/workflows/spiralcore-schema-selection.yml": "ed28d1063f5c750cb12a75318ad5aee3082ca51c8109c8ca0fbeef7971f99811",
+    "crates/spiralcore-transfer/tests/schema_selection_workflow.rs": "73b570eeed080814a25b3accd20da92d2c9c068827ae31889691eafdfcc7a724",
+    "docs/network/evidence/2026-10-30-schema-selection/qualification/supervisor.sh": "dee472ebd9a1c06106f4d46b92279514b29a9474063ad13ddd5eb9b1c3154701",
+    "docs/network/evidence/2026-10-30-schema-selection/measurement-contract.md": "c984f7d98acf7a4cc57d324fe2f2de79a0af83d56829d9ed91d4f6b509425829"
+  },
+  "qualification_read": {
+    "harness-green-attempt1.txt": {
+      "sha256": "848381ed45fa8dcb5d5838b4132985a01c1172a2949872e83a10118edcf648d8",
+      "observed_tests": 20,
+      "observed_failures": 0
+    },
+    "clippy.txt": {
+      "sha256": "56678e410b8156e2a72d7ad83eebede245de7403f179a827e37229127149d046",
+      "exit": 0
+    },
+    "workflow-green.txt": {
+      "sha256": "bfd93026e063d9f6b838ecf27c6a74d63abbf1457eb1cb1c18a67d2f362c3baf",
+      "observed_tests": 3
+    },
+    "premeasurement-review.json": {
+      "sha256_at_review": "0201e792df3dda0633de9040107f368be00f16ba198e2cc225a8477cdecf80c2",
+      "observed_all_target_passes": 315,
+      "observed_preexisting_ignored": 2
+    }
+  },
+  "findings": [],
+  "reviewed_controls": [
+    "Pinned branch/source/first-attempt job and executable/source checks; read-only permissions and SHA-pinned actions; credential supplied only to the transfer step after qualification.",
+    "All three HTTPS receiver URLs allow only explicit trycloudflare subdomains; inherited HttpClient rejects userinfo/query/fragments, disables proxies/redirects, bounds response size/time, and avoids serializing the capability.",
+    "Fresh output files/session directories; bounded sequential child sessions and no explicit failed-transfer retry; partial failures retained and successful child rows copied before owned scratch removal.",
+    "Frozen artifact and target hashes, deterministic 30-trial counterbalanced plans, at most 640 operations per shard, and conservative storage cap below 768 MiB per receiver.",
+    "Candidate preparation, optional seed, and preencoded send all fall inside the outer measured target interval. Sender and receiver-handler CPU are disjoint; phase sums are supplementary. Forced-schema upfront seed and lazy selector seed each enter setup-inclusive totals exactly once.",
+    "Summary validates actual directional HTTP-body costs against all candidate costs and paired forced controls, enforces per-target and session byte minima, checks per-mode persistent decoder preparations/hits, and requires all three shards.",
+    "Independent stopped-store reopening compares exact target bytes; optional selector artifact absence accepts only Error::Unknown and must agree with observed paid seed. Missing, duplicate or mismatched results fail.",
+    "Actual supervisor holds foreground shell with wait, owns only recorded receiver/tunnel children, limits receivers to 3600 seconds, retains fresh evidence paths, and installs cleanup traps. Read-only filesystem check confirmed run directory0700 and capability0600 without reading secret contents."
+  ],
+  "limitations": [
+    "No reviewer builds, tests, benchmarks, deployments or remote transfers were run. Qualification results were read from retained receipts.",
+    "This approval does not establish WAN performance, actual frozen executable/source custody, or completed exact readback. Parent must bind final source, binaries, plans and hosted attempt before launch and stop/reopen receivers afterward.",
+    "The supplied receiver executable hash is an operator custody claim, not cryptographic remote attestation; source/plan files and local output paths are trusted campaign inputs.",
+    "HTTP protocol-body byte counts exclude HTTP/TLS/TCP/IP and relay-hop overhead. Exchange elapsed includes remote computation and waiting. CPU excludes receiver HTTP/socket/logging and relay processing; no full-system energy or FIPS claim.",
+    "Loopback and fabricated analyzer fixtures are qualification only; no new WAN result is approved."
+  ],
+  "procedural_note": "Initial roster check invocation omitted the required Agent kind; corrected read-only checks both returned Active. No code or test was changed."
+}

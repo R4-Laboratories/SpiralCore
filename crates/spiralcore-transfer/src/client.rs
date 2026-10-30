@@ -102,6 +102,7 @@ pub fn transfer<F: FnMut(&Frame) -> Result<Frame>>(
             | Mode::SchemaV1
             | Mode::ZstdDictionaryV1
             | Mode::SchemaZstdV1
+            | Mode::ZstdWholeV1
     ) {
         return Err(Error::Unsupported);
     }
@@ -495,6 +496,7 @@ pub fn transfer_batched<F: FnMut(&[Frame]) -> Result<Vec<Frame>>>(
             | Mode::SchemaV1
             | Mode::ZstdDictionaryV1
             | Mode::SchemaZstdV1
+            | Mode::ZstdWholeV1
     ) {
         return Err(Error::Unsupported);
     }
@@ -669,6 +671,69 @@ pub fn transfer_zstd_prefix_batched<F: FnMut(&[Frame]) -> Result<Vec<Frame>>>(
         exchange,
         start,
     )
+}
+
+/// Equally tuned no-artifact whole-object zstd with exact Raw fallback. Context
+/// construction is caller setup; encode/hash/send are included in this elapsed.
+pub fn transfer_prepared_zstd_whole_batched<F: FnMut(&[Frame]) -> Result<Vec<Frame>>>(
+    prepared: &mut crate::zstd_whole::PreparedEncoder,
+    target: &[u8],
+    transfer_id: Id,
+    warm_probe: bool,
+    exchange: F,
+) -> Result<Stats> {
+    let start = Instant::now();
+    let encoded = prepared.encode(target)?;
+    if crate::schema_selection::encoded_cost(Mode::ZstdWholeV1, &encoded, warm_probe)?
+        >= crate::schema_selection::raw_cost(target, warm_probe)?
+    {
+        drop(encoded);
+        let mut stats =
+            transfer_batched(target, Mode::Raw, None, transfer_id, warm_probe, exchange)?;
+        stats.elapsed_micros = start.elapsed().as_micros();
+        return Ok(stats);
+    }
+    let offer = Offer::cold(target, Mode::ZstdWholeV1);
+    let bodies = crate::fitted_transfer::chunks(Mode::ZstdWholeV1, &encoded)?;
+    drop(encoded);
+    send_batched(
+        offer,
+        BatchedPayload::Encoded(bodies),
+        transfer_id,
+        warm_probe,
+        exchange,
+        start,
+    )
+}
+
+/// Consume a preencoded immutable selection. Callers must separately time and
+/// charge preparation and any required seed; this elapsed covers sending only.
+pub fn transfer_schema_selection_batched<F: FnMut(&[Frame]) -> Result<Vec<Frame>>>(
+    prepared: crate::schema_selection::PreparedTransfer,
+    transfer_id: Id,
+    exchange: F,
+) -> Result<Stats> {
+    let start = Instant::now();
+    let offer = prepared.offer;
+    let warm_probe = prepared.warm_probe;
+    match prepared.payload {
+        crate::schema_selection::Payload::Raw(bytes) => send_batched(
+            offer,
+            BatchedPayload::Bytes(&bytes),
+            transfer_id,
+            warm_probe,
+            exchange,
+            start,
+        ),
+        crate::schema_selection::Payload::Encoded(bodies) => send_batched(
+            offer,
+            BatchedPayload::Encoded(bodies),
+            transfer_id,
+            warm_probe,
+            exchange,
+            start,
+        ),
+    }
 }
 
 /// Transfer exact bytes using a frozen fitted schema, or Raw if the full

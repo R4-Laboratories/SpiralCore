@@ -150,7 +150,8 @@ fn forced(target: &[u8], base: Option<&[u8]>, mode: Mode, probe: bool) -> (Stats
         | Mode::RuntimeV1
         | Mode::SchemaV1
         | Mode::ZstdDictionaryV1
-        | Mode::SchemaZstdV1 => unreachable!(),
+        | Mode::SchemaZstdV1
+        | Mode::ZstdWholeV1 => unreachable!(),
     }
     .unwrap();
     drop(endpoint);

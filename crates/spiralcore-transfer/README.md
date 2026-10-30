@@ -159,6 +159,37 @@ artifact seeding separately. It uses no network sockets and measures no WAN
 send time. Successful temporary stores are removed; failures retain their
 observations and store. Artifacts and compact measurements remain reproducible.
 
+## Byte-first schema selection and matched whole-object zstd
+
+`schema_selection::PreparedSelector::new(artifact)` compares Raw,
+`ZstdWholeV1` (mode 9), and `SchemaZstdV1` before sending. Whole-object zstd and
+compressed schema use the same level 3, window, long-distance matching,
+single-thread, content-size and checksum settings. Mode 9 needs no artifact or
+base; existing mode 1 retains its historical chunked level-1 behavior.
+
+Call `prepare(target, schema_ready, warm_probe)` to obtain an immutable prepared
+transfer and its candidate-cost receipt. If the schema is not ready, its cost
+includes a separate raw artifact transfer. Seed only when the receipt requires
+it, and mark readiness only after a successful durable commit. Then consume the
+prepared transfer with `client::transfer_schema_selection_batched`; it does not
+repeat compression or target hashing. Receiver authorization and exact final
+identity verification still apply, regardless of the caller's readiness flag.
+
+The equally tuned control uses `zstd_whole::PreparedEncoder` and
+`client::transfer_prepared_zstd_whole_batched`, with raw fallback. Both decoders
+can reuse the same bounded, namespace-scoped receiver cache. A selector retains
+two sender contexts; their setup and all discarded candidate work are real CPU
+costs. The byte policy is greedy for the current successful transfer, including
+any required seed. It does not claim minimum latency or a future-aware optimum.
+
+The [design](../../docs/specs/2026-10-30-schema-selection-design.md) and
+[WAN measurement contract](../../docs/network/evidence/2026-10-30-schema-selection/measurement-contract.md)
+define the bounds and three-arm comparison. The `schema_fitting` example exposes
+`selection-plan`, `selection-paired`, `selection-verify`, and `selection-summary`
+commands. Actual bytes are both-direction HTTP bodies; elapsed time runs through
+durable acknowledgment and includes candidate computation. Receiver stores must
+also pass independent exact readback before a run is reported as successful.
+
 ## Compressed schema streams and prepared codec reuse
 
 The schema encoder directly matches the first validated template and stores its

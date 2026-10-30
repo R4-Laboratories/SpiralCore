@@ -73,6 +73,7 @@ pub enum Mode {
     SchemaV1 = 6,
     ZstdDictionaryV1 = 7,
     SchemaZstdV1 = 8,
+    ZstdWholeV1 = 9,
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Offer {
@@ -122,6 +123,7 @@ impl Offer {
             6 => Mode::SchemaV1,
             7 => Mode::ZstdDictionaryV1,
             8 => Mode::SchemaZstdV1,
+            9 => Mode::ZstdWholeV1,
             _ => return Err(Error::Unsupported),
         };
         let len = r.u64()?;
@@ -162,13 +164,14 @@ impl Offer {
                 | Mode::SchemaV1
                 | Mode::ZstdDictionaryV1
                 | Mode::SchemaZstdV1
+                | Mode::ZstdWholeV1
         ) && self.len > crate::zstd_prefix::MAX_PREFIX_OBJECT as u64
         {
             return Err(Error::Limit);
         }
         match (self.mode, &self.manifest) {
             (Mode::Dag, Some(m)) if m.len == self.len && m.object == self.object => m.validate(),
-            (Mode::Raw | Mode::Zstd, None) if self.base.is_none() => Ok(()),
+            (Mode::Raw | Mode::Zstd | Mode::ZstdWholeV1, None) if self.base.is_none() => Ok(()),
             (Mode::SparseV1, None) if self.base.is_some() => Ok(()),
             (Mode::ZstdPrefixV1, None) if self.base.is_some() => Ok(()),
             (Mode::RuntimeV1, None) if self.base.is_some() => Ok(()),

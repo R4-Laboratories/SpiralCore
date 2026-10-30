@@ -20,6 +20,8 @@ use std::{
 
 #[path = "support/schema_reuse.rs"]
 mod schema_reuse;
+#[path = "support/schema_selection.rs"]
+mod schema_selection;
 #[path = "support/schema_sender.rs"]
 mod schema_sender;
 #[path = "support/schema_wan.rs"]
@@ -532,6 +534,9 @@ fn command() -> Result<()> {
     }
     if args.get(1).is_some_and(|s| s.starts_with("wan-")) {
         return schema_wan::command(&args);
+    }
+    if args.get(1).is_some_and(|s| s.starts_with("selection-")) {
+        return schema_selection::command(&args);
     }
     match args.get(1).map(String::as_str) {
         Some("plan") if args.len()==3=>{let mut out=fresh(Path::new(&args[2]))?;write_row(&mut out,&plan()?)},
