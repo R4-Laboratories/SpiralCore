@@ -682,6 +682,12 @@ pub fn transfer_runtime_batched<F: FnMut(&[Frame]) -> Result<Vec<Frame>>>(
         warm_probe,
         exchange,
         || crate::shared_transfer::prepare(checkpoint, target, recipe),
+        |needs_base| {
+            (
+                crate::object_id(target),
+                needs_base.then(|| crate::object_id(checkpoint)),
+            )
+        },
     )
 }
 
@@ -702,41 +708,43 @@ pub fn transfer_prepared_runtime_batched<F: FnMut(&[Frame]) -> Result<Vec<Frame>
         warm_probe,
         exchange,
         || prediction.prepare(target),
+        |needs_base| {
+            (
+                prediction.object_id_for(target),
+                needs_base.then(|| prediction.checkpoint_id()),
+            )
+        },
     )
 }
 
-fn transfer_runtime_candidate_batched<F, P>(
+fn transfer_runtime_candidate_batched<F, P, I>(
     checkpoint: &[u8],
     target: &[u8],
     transfer_id: Id,
     warm_probe: bool,
     exchange: F,
     runtime: P,
+    identities: I,
 ) -> Result<AdaptiveStats>
 where
     F: FnMut(&[Frame]) -> Result<Vec<Frame>>,
     P: FnOnce() -> Result<Option<Vec<Vec<u8>>>>,
+    I: FnOnce(bool) -> (Id, Option<Id>),
 {
     let start = Instant::now();
     if checkpoint.len() > crate::shared_runtime::MAX_CHECKPOINT {
         return Err(Error::Limit);
     }
-    let mut prepared = crate::selection::prepare(target, Some(checkpoint), warm_probe)?;
-    if !prepared.selection.exact_repeat_probe {
-        if let Some(bodies) = runtime()? {
-            prepared.consider(Mode::RuntimeV1, bodies, warm_probe)?;
-        }
-    }
+    let prepared = crate::selection::prepare_runtime(target, checkpoint, warm_probe, runtime)?;
     let mode = prepared.selection.selected;
-    let base = if matches!(mode, Mode::SparseV1 | Mode::ZstdPrefixV1 | Mode::RuntimeV1) {
-        Some(crate::object_id(checkpoint))
-    } else {
-        None
-    };
+    let (object, base) = identities(matches!(
+        mode,
+        Mode::SparseV1 | Mode::ZstdPrefixV1 | Mode::RuntimeV1
+    ));
     let offer = Offer {
         mode,
         len: target.len() as u64,
-        object: crate::object_id(target),
+        object,
         manifest: None,
         base,
     };

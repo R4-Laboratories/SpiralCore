@@ -11,6 +11,16 @@ pub const MAX_PREFIX_CHUNKS: usize = 512;
 pub const DECODER_ALLOWANCE: u64 = 4 * 1024 * 1024;
 const MAX_WINDOW: u64 = 32 * 1024 * 1024;
 
+/// RFC 8878 sections 3.1.1 and 3.1.1.2: magic4 + frame header>=2 + our
+/// mandatory checksum4, plus a three-byte header for every <=128KiB decoded
+/// block. Even an empty frame has one block. No block payload bytes are counted.
+pub(crate) fn minimum_encoded_size(target_len: usize) -> Result<usize> {
+    if target_len > MAX_PREFIX_OBJECT {
+        return Err(Error::Limit);
+    }
+    Ok(10 + 3 * target_len.div_ceil(128 * 1024).max(1))
+}
+
 pub fn encoded_cap(target_len: usize) -> Result<usize> {
     if target_len > MAX_PREFIX_OBJECT {
         return Err(Error::Limit);
@@ -167,6 +177,51 @@ pub(crate) fn append(
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn profile_minimum_size_holds_at_empty_and_decoded_block_boundaries() {
+        assert_eq!(minimum_encoded_size(0).unwrap(), 13);
+        assert_eq!(minimum_encoded_size(128 * 1024).unwrap(), 13);
+        assert_eq!(minimum_encoded_size(128 * 1024 + 1).unwrap(), 16);
+        assert_eq!(minimum_encoded_size(MAX_PREFIX_OBJECT).unwrap(), 394);
+        assert_eq!(
+            minimum_encoded_size(MAX_PREFIX_OBJECT + 1),
+            Err(Error::Limit)
+        );
+        for len in [
+            0,
+            1,
+            128 * 1024 - 1,
+            128 * 1024,
+            128 * 1024 + 1,
+            256 * 1024,
+            MAX_PREFIX_OBJECT,
+        ] {
+            for pattern in 0..3 {
+                let mut seed = 0x413f_0a3b_943b_1211u64;
+                let target: Vec<u8> = (0..len)
+                    .map(|i| {
+                        seed ^= seed << 13;
+                        seed ^= seed >> 7;
+                        seed ^= seed << 17;
+                        match pattern {
+                            0 => 0,
+                            1 => (i % 251) as u8,
+                            _ => seed as u8,
+                        }
+                    })
+                    .collect();
+                for base in [&[][..], &target[..target.len().min(4096)]] {
+                    let encoded = encode(base, &target).unwrap();
+                    assert!(
+                        encoded.len() >= minimum_encoded_size(len).unwrap(),
+                        "len={len}, pattern={pattern}, base={}",
+                        base.len()
+                    );
+                }
+            }
+        }
+    }
+
     #[test]
     fn chunk_validation_is_atomic_and_count_and_encoded_bounds_are_independent() {
         let good = chunks(&[7]).unwrap().remove(0);

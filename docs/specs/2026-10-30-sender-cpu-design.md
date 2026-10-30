@@ -12,9 +12,13 @@ For nonempty targets, Sparse costs at least `400+W+137+ceil(13*N/max(B,13))`. At
 
 `Selection.candidates` contains exact costs only for evaluated candidates, in original tie order. A separate `Selection.pruned` list records the skipped mode and its proved HTTP-body lower bound. A bound is never presented as an encoded size. The ordinary adaptive API retains exhaustive behavior, limiting this optimization to runtime senders. The exact-repeat warm-probe shortcut is unchanged.
 
-## Prefix decision
+## Prefix structural bound
 
-Prefix compression remains uncapped with identical settings. A `compress2` destination-capacity failure does not establish that the usual encoded output exceeds that capacity: pinned zstd 1.5.7 `lib/compress/zstd_compress.c` requires the maximum frame-header space at line 4712 before writing a potentially shorter actual header, and lines 3023–3027 include capacity-dependent raw-block fallback. Safely recognizing the destination-too-small error would not prove the required inequality or byte parity. Capped or streaming prefix pruning is deferred; there is no heuristic prefix skip.
+The prefix frame contains four magic bytes, a frame header of at least two bytes and the profile's mandatory four-byte checksum. Each block has a three-byte header and can emit at most 128 KiB of decompressed data. This gives `encoded >= 10+3*max(1,ceil(N/131072))`, ignoring all block payload bytes. These requirements are specified in [RFC 8878 sections 3.1.1 and 3.1.1.2](https://www.rfc-editor.org/rfc/rfc8878.html#section-3.1.1). Pinned zstd 1.5.7 `lib/zstd.h` lines 147–148 defines `ZSTD_BLOCKSIZE_MAX = 1<<17`; `lib/compress/zstd_compress.c` lines 1714 and 1816 bounds block size by that limit and the window.
+
+At least one prefix transport frame adds six codec bytes and 128 framing bytes. Therefore its complete body cost is at least `544+W+3*max(1,ceil(N/131072))`. At 14,851,384 target bytes this is 886 bytes before warm-probe overhead, exceeding the matching runtime candidate's 747 bytes. The same original tie rule applies to this bound. It is a structural minimum, not the measured encoded cost.
+
+When eligible, prefix compression remains uncapped with identical settings. A `compress2` destination-capacity failure does not establish that the usual encoded output exceeds that capacity: pinned zstd 1.5.7 `lib/compress/zstd_compress.c` requires the maximum frame-header space at line 4712 before writing a potentially shorter actual header, and lines 3023–3027 include capacity-dependent raw-block fallback. Safely recognizing the destination-too-small error would not prove the required inequality or byte parity. Capacity-based and streaming pruning are excluded.
 
 ## Other bounded changes
 

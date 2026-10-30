@@ -1,6 +1,50 @@
 //! Versioned, bounded COPY/LITERAL recipes. See docs/network/sparse-v1.md.
 use crate::{protocol::Reader, Error, Result, MAX_CHUNK, MAX_FRAME, MAX_OBJECT};
 
+#[cfg(test)]
+#[path = "../tests/fixtures/sender_delta_checks.rs"]
+mod sender_delta_checks;
+
+#[cfg(test)]
+mod scan_tests {
+    use super::*;
+
+    #[test]
+    fn bulk_scans_match_scalar_at_every_short_boundary() {
+        for n in 0..=257 {
+            let a: Vec<u8> = (0..n).map(|i| i as u8).collect();
+            for at in 0..=n {
+                let mut b = a.clone();
+                if at < n {
+                    b[at] ^= 1;
+                }
+                assert_eq!(common_prefix(&a, &b), at);
+                assert_eq!(common_suffix(&a, &b), if at < n { n - at - 1 } else { n });
+                let mut unequal: Vec<u8> = a.iter().map(|x| x ^ 1).collect();
+                if at < n {
+                    unequal[at] = a[at];
+                }
+                assert_eq!(unequal_prefix(&a, &unequal), at);
+            }
+        }
+    }
+
+    #[test]
+    fn bulk_scans_handle_different_lengths_and_zero_byte_borrows() {
+        for n in [1, 7, 8, 9, 63, 64, 65, 255, 256, 257, 4096] {
+            for byte in 0..=255u8 {
+                let a = vec![byte; n];
+                let b = vec![byte.wrapping_add(1); n + 3];
+                assert_eq!(unequal_prefix(&a, &b), n);
+                assert_eq!(common_prefix(&a, &b), 0);
+                assert_eq!(common_suffix(&a, &b), 0);
+                assert_eq!(common_prefix(&a, &a[..n / 2]), n / 2);
+                assert_eq!(common_suffix(&a, &a[..n / 2]), n / 2);
+            }
+        }
+    }
+}
+
 pub const MAX_OPS: usize = 8192;
 const FRAME_OPS: usize = 256;
 #[derive(Debug)]
@@ -23,13 +67,8 @@ pub fn encode(base: &[u8], target: &[u8]) -> Result<Option<Recipe>> {
     if target.is_empty() {
         return Ok(None);
     }
-    let prefix = base.iter().zip(target).take_while(|(a, b)| a == b).count();
-    let suffix = base[prefix..]
-        .iter()
-        .rev()
-        .zip(target[prefix..].iter().rev())
-        .take_while(|(a, b)| a == b)
-        .count();
+    let prefix = common_prefix(base, target);
+    let suffix = common_suffix(&base[prefix..], &target[prefix..]);
     let mut simple = Vec::new();
     if prefix > 0 {
         simple.push(Op::Copy(0, prefix));
@@ -46,14 +85,18 @@ pub fn encode(base: &[u8], target: &[u8]) -> Result<Option<Recipe>> {
     let mut literal = 0;
     let common = base.len().min(target.len());
     while i < common && aligned.len() <= MAX_OPS {
-        if base[i] != target[i] {
-            i += 1;
-            continue;
+        i += unequal_prefix(&base[i..common], &target[i..common]);
+        if i == common {
+            break;
         }
         let start = i;
-        while i < common && base[i] == target[i] {
-            i += 1;
-        }
+        // Reuse the prefix already established above rather than scanning a
+        // full exact-repeat object twice. Later runs use the same bulk scan.
+        i += if i == 0 {
+            prefix
+        } else {
+            common_prefix(&base[i..common], &target[i..common])
+        };
         if i - start >= 32 {
             if literal < start {
                 aligned.push(Op::Literal(literal, start - literal));
@@ -75,6 +118,51 @@ pub fn encode(base: &[u8], target: &[u8]) -> Result<Option<Recipe>> {
     }
     let raw_cost = target.len() + target.len().div_ceil(MAX_CHUNK) * 133;
     Ok(best.filter(|r| cost(r) + 32 < raw_cost))
+}
+
+// Slice equality permits the compiler/library's word/vector comparison while
+// the scalar remainder locates the exact first mismatch, preserving recipes.
+fn common_prefix(a: &[u8], b: &[u8]) -> usize {
+    let n = a.len().min(b.len());
+    let mut i = 0;
+    while n - i >= 64 && a[i..i + 64] == b[i..i + 64] {
+        i += 64;
+    }
+    while i < n && a[i] == b[i] {
+        i += 1;
+    }
+    i
+}
+
+fn common_suffix(a: &[u8], b: &[u8]) -> usize {
+    let n = a.len().min(b.len());
+    let mut i = 0;
+    while n - i >= 64 && a[a.len() - i - 64..a.len() - i] == b[b.len() - i - 64..b.len() - i] {
+        i += 64;
+    }
+    while i < n && a[a.len() - i - 1] == b[b.len() - i - 1] {
+        i += 1;
+    }
+    i
+}
+
+fn unequal_prefix(a: &[u8], b: &[u8]) -> usize {
+    let n = a.len().min(b.len());
+    let mut i = 0;
+    while n - i >= 8 {
+        let x = u64::from_le_bytes(a[i..i + 8].try_into().unwrap())
+            ^ u64::from_le_bytes(b[i..i + 8].try_into().unwrap());
+        // Zero-byte detection answers only "any equal byte?"; borrow can mark
+        // extra positions, so locate the first actual equality scalarly below.
+        if x.wrapping_sub(0x0101_0101_0101_0101) & !x & 0x8080_8080_8080_8080 != 0 {
+            break;
+        }
+        i += 8;
+    }
+    while i < n && a[i] != b[i] {
+        i += 1;
+    }
+    i
 }
 fn cost(r: &Recipe) -> usize {
     r.frames.iter().map(|b| b.len() + 128).sum()
