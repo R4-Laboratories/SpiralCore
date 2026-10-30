@@ -655,12 +655,62 @@ pub fn transfer_zstd_prefix_batched<F: FnMut(&[Frame]) -> Result<Vec<Frame>>>(
     )
 }
 
+/// Transfer outcome and the local pre-Begin selection receipt.
+#[derive(Debug, Clone)]
+pub struct AdaptiveStats {
+    pub transfer: Stats,
+    pub selection: crate::selection::Selection,
+}
+
+/// Select the smallest eligible successful-miss HTTP body representation before
+/// Begin, then send the already encoded winner. Raw/Zstd/Sparse/Prefix are the
+/// deterministic tie order. This opt-in policy minimizes bytes, not CPU/time.
+///
+/// A locally exact base/target repeat with `warm_probe` uses a Raw identity probe
+/// without evaluating codecs; if evicted remotely it sends Raw. Base possession
+/// is never authorization. Missing-base, revoked-policy and transport errors are
+/// returned unchanged, without another offer or hidden retry. Elapsed time
+/// includes discarded candidate work and object hashing through commit response.
+pub fn transfer_adaptive_batched<F: FnMut(&[Frame]) -> Result<Vec<Frame>>>(
+    target: &[u8],
+    base: Option<&[u8]>,
+    transfer_id: Id,
+    warm_probe: bool,
+    exchange: F,
+) -> Result<AdaptiveStats> {
+    let start = Instant::now();
+    let prepared = crate::selection::prepare(target, base, warm_probe)?;
+    let mode = prepared.selection.selected;
+    let base_id = if matches!(mode, Mode::SparseV1 | Mode::ZstdPrefixV1) {
+        Some(crate::object_id(base.ok_or(Error::Integrity)?))
+    } else {
+        None
+    };
+    let offer = Offer {
+        mode,
+        len: target.len() as u64,
+        object: crate::object_id(target),
+        manifest: None,
+        base: base_id,
+    };
+    let payload = match prepared.bodies {
+        Some(bodies) => BatchedPayload::Encoded(bodies),
+        None => BatchedPayload::Bytes(target),
+    };
+    let transfer = send_batched(offer, payload, transfer_id, warm_probe, exchange, start)?;
+    Ok(AdaptiveStats {
+        transfer,
+        selection: prepared.selection,
+    })
+}
+
 enum BatchedPayload<'a> {
     Bytes(&'a [u8]),
     Graph(&'a Graph, Option<&'a Graph>),
     Prepared(&'a PreparedDelta),
     Sparse(crate::delta::Recipe),
     Prefix(Vec<Vec<u8>>),
+    Encoded(Vec<Vec<u8>>),
 }
 
 fn send_batched<F: FnMut(&[Frame]) -> Result<Vec<Frame>>>(
@@ -743,7 +793,7 @@ fn send_batched<F: FnMut(&[Frame]) -> Result<Vec<Frame>>>(
                 frames.push(sender.frame(2, body)?);
             }
         }
-        BatchedPayload::Prefix(bodies) => {
+        BatchedPayload::Prefix(bodies) | BatchedPayload::Encoded(bodies) => {
             for body in std::mem::take(bodies) {
                 frames.push(sender.frame(2, body)?);
             }
@@ -764,7 +814,8 @@ fn send_batched<F: FnMut(&[Frame]) -> Result<Vec<Frame>>>(
                     }
                     BatchedPayload::Bytes(_)
                     | BatchedPayload::Sparse(_)
-                    | BatchedPayload::Prefix(_) => return Err(Error::Integrity),
+                    | BatchedPayload::Prefix(_)
+                    | BatchedPayload::Encoded(_) => return Err(Error::Integrity),
                 };
                 frames.clear();
                 sender.records(&nodes, &mut frames)?;

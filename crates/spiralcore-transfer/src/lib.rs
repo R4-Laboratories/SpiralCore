@@ -6,6 +6,7 @@ pub mod delta;
 pub mod endpoint;
 pub mod prepared;
 pub mod protocol;
+pub mod selection;
 pub mod wan;
 pub mod zstd_prefix;
 use sha2::{Digest, Sha256};

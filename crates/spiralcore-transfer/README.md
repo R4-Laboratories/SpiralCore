@@ -86,6 +86,25 @@ accepts local base/target slices. Prepared state is immutable; promotion creates
 successor index. Whole-object comparison/hash and closure traversal remain linear work. Sender
 preparation and its temporary allocations belong to the caller's timing and memory budget.
 
+The opt-in Rust API `client::transfer_adaptive_batched(target, base, transfer_id,
+warm_probe, exchange)` chooses among raw, chunked zstd, sparse and zstd prefix
+before Begin. `base` is `Option<&[u8]>`; `exchange` accepts the existing batch of
+frames and returns its replies. For the HTTPS experiment adapter, pass
+`|frames| http_client.exchange(frames)`. An already authorized receiver must have
+the same base for a selected sparse/prefix offer. Missing-base and authorization
+errors are returned without a hidden retry.
+
+The returned `AdaptiveStats` contains `transfer` (actual protocol-frame statistics)
+and `selection` (candidate costs and selected mode). Selection minimizes projected
+successful-miss HTTP body bytes among the configured encodings, including replies;
+actual HTTP body counts come from `HttpClient::metrics()`. It evaluates losing
+encodings too, so its CPU cost can exceed a well-chosen explicit codec. Both inputs
+remain bounded to 16 MiB. An exact local repeat with `warm_probe=true` takes a
+separate raw identity-probe shortcut; an evicted receiver then gets raw bytes.
+See the [selection decision](../../docs/network/codec-selection-decision.md) and
+[local measurement method](../../docs/network/codec-selection-measurement.md).
+The existing CLI and historical WAN plans retain their explicit codec behavior.
+
 The Rust API also exposes `client::transfer_zstd_prefix_batched` as a conventional delta control.
 It encodes one bounded zstd frame against the authorized exact base, and selects raw before Begin
 when the complete object-protocol encoding would not be smaller. Both inputs remain capped at
