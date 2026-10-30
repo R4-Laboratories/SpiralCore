@@ -1,0 +1,121 @@
+   Compiling spiralcore-transfer v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer)
+warning: unused import: `super::*`
+ --> src/delta.rs:6:9
+  |
+6 |     use super::*;
+  |         ^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+error[E0425]: cannot find function `common_prefix` in this scope
+  --> src/delta.rs:15:28
+   |
+15 |                 assert_eq!(common_prefix(&a, &b), at);
+   |                            ^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `common_suffix` in this scope
+  --> src/delta.rs:16:28
+   |
+16 |                 assert_eq!(common_suffix(&a, &b), if at < n { n - at - 1 } else { n });
+   |                            ^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `unequal_prefix` in this scope
+  --> src/delta.rs:19:28
+   |
+19 |                 assert_eq!(unequal_prefix(&a, &unequal), at);
+   |                            ^^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `unequal_prefix` in this scope
+  --> src/delta.rs:30:28
+   |
+30 |                 assert_eq!(unequal_prefix(&a, &b), n);
+   |                            ^^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `common_prefix` in this scope
+  --> src/delta.rs:31:28
+   |
+31 |                 assert_eq!(common_prefix(&a, &b), 0);
+   |                            ^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `common_suffix` in this scope
+  --> src/delta.rs:32:28
+   |
+32 |                 assert_eq!(common_suffix(&a, &b), 0);
+   |                            ^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `common_prefix` in this scope
+  --> src/delta.rs:33:28
+   |
+33 |                 assert_eq!(common_prefix(&a, &a[..n / 2]), n / 2);
+   |                            ^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `common_suffix` in this scope
+  --> src/delta.rs:34:28
+   |
+34 |                 assert_eq!(common_suffix(&a, &a[..n / 2]), n / 2);
+   |                            ^^^^^^^^^^^^^ not found in this scope
+
+error[E0599]: no method named `checkpoint_id` found for struct `shared_transfer::PreparedPrediction` in the current scope
+  --> src/shared_transfer.rs:19:22
+   |
+19 |         assert_eq!(p.checkpoint_id(), object_id(&checkpoint));
+   |                      ^^^^^^^^^^^^^
+...
+42 | pub struct PreparedPrediction {
+   | ----------------------------- method `checkpoint_id` not found for this struct
+   |
+help: there is a method `checkpoint` with a similar name
+   |
+19 -         assert_eq!(p.checkpoint_id(), object_id(&checkpoint));
+19 +         assert_eq!(p.checkpoint(), object_id(&checkpoint));
+   |
+
+error[E0599]: no method named `object_id_for` found for struct `shared_transfer::PreparedPrediction` in the current scope
+  --> src/shared_transfer.rs:20:22
+   |
+20 |         assert_eq!(p.object_id_for(p.prediction()), object_id(p.prediction()));
+   |                      ^^^^^^^^^^^^^ method not found in `shared_transfer::PreparedPrediction`
+...
+42 | pub struct PreparedPrediction {
+   | ----------------------------- method `object_id_for` not found for this struct
+
+error[E0599]: no method named `object_id_for` found for struct `shared_transfer::PreparedPrediction` in the current scope
+  --> src/shared_transfer.rs:24:26
+   |
+24 |             assert_eq!(p.object_id_for(&changed), object_id(&changed));
+   |                          ^^^^^^^^^^^^^ method not found in `shared_transfer::PreparedPrediction`
+...
+42 | pub struct PreparedPrediction {
+   | ----------------------------- method `object_id_for` not found for this struct
+
+error[E0599]: no method named `object_id_for` found for struct `shared_transfer::PreparedPrediction` in the current scope
+  --> src/shared_transfer.rs:25:26
+   |
+25 |             assert_ne!(p.object_id_for(&changed), p.object_id_for(p.prediction()));
+   |                          ^^^^^^^^^^^^^ method not found in `shared_transfer::PreparedPrediction`
+...
+42 | pub struct PreparedPrediction {
+   | ----------------------------- method `object_id_for` not found for this struct
+
+error[E0599]: no method named `object_id_for` found for struct `shared_transfer::PreparedPrediction` in the current scope
+  --> src/shared_transfer.rs:25:53
+   |
+25 |             assert_ne!(p.object_id_for(&changed), p.object_id_for(p.prediction()));
+   |                                                     ^^^^^^^^^^^^^ method not found in `shared_transfer::PreparedPrediction`
+...
+42 | pub struct PreparedPrediction {
+   | ----------------------------- method `object_id_for` not found for this struct
+
+error[E0599]: no method named `object_id_for` found for struct `shared_transfer::PreparedPrediction` in the current scope
+  --> src/shared_transfer.rs:28:26
+   |
+28 |             assert_eq!(p.object_id_for(&changed), object_id(&changed));
+   |                          ^^^^^^^^^^^^^ method not found in `shared_transfer::PreparedPrediction`
+...
+42 | pub struct PreparedPrediction {
+   | ----------------------------- method `object_id_for` not found for this struct
+
+Some errors have detailed explanations: E0425, E0599.
+For more information about an error, try `rustc --explain E0425`.
+warning: `spiralcore-transfer` (lib test) generated 1 warning
+error: could not compile `spiralcore-transfer` (lib test) due to 14 previous errors; 1 warning emitted

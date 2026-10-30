@@ -21,8 +21,26 @@ use std::{
     time::Instant,
 };
 type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
+#[cfg(not(sender_cpu))]
 const ARMS: [&str; 6] = ["baseline", "packed", "prepared", "raw", "zstd", "adaptive"];
+#[cfg(sender_cpu)]
+const ARMS: [&str; 7] = [
+    "baseline",
+    "packed",
+    "baseline-prepared",
+    "prepared",
+    "raw",
+    "zstd",
+    "adaptive",
+];
 const CASES: [&str; 3] = ["generated", "edited", "unrelated"];
+#[cfg(not(sender_cpu))]
+const PREPARED_ARMS: &[&str] = &["prepared"];
+#[cfg(sender_cpu)]
+const PREPARED_ARMS: &[&str] = &["baseline-prepared", "prepared"];
+fn baseline_arm(arm: &str) -> bool {
+    matches!(arm, "baseline" | "baseline-prepared")
+}
 
 fn sha(b: &[u8]) -> String {
     hex(&Sha256::digest(b).into())
@@ -33,7 +51,7 @@ fn next(random: &mut u64) -> u64 {
     *random ^= *random << 17;
     *random
 }
-fn target_for(case: &str, prediction: &[u8], seed: u64) -> Result<Vec<u8>> {
+pub(crate) fn target_for(case: &str, prediction: &[u8], seed: u64) -> Result<Vec<u8>> {
     if prediction.len() < 18 {
         return Err("prediction too short".into());
     }
@@ -51,8 +69,8 @@ fn target_for(case: &str, prediction: &[u8], seed: u64) -> Result<Vec<u8>> {
     }
     Ok(target)
 }
-fn arm_order(width: usize, trial: usize) -> [&'static str; 6] {
-    let mut arms = ARMS;
+fn arm_order(width: usize, trial: usize) -> Vec<&'static str> {
+    let mut arms = ARMS.to_vec();
     let mut random = 0xc810_53ca_f645_1885 ^ (width as u64).rotate_left(27) ^ trial as u64;
     for i in (1..arms.len()).rev() {
         arms.swap(i, next(&mut random) as usize % (i + 1));
@@ -73,8 +91,21 @@ fn pins() -> Value {
         "client":sha(include_bytes!("../src/client.rs")),
         "endpoint":sha(include_bytes!("../src/endpoint.rs")),
         "selection":sha(include_bytes!("../src/selection.rs")),
+        "delta":sha(include_bytes!("../src/delta.rs")),
+        "prefix":sha(include_bytes!("../src/zstd_prefix.rs")),
         "lockfile":sha(include_bytes!("../Cargo.lock")),
-        "prepared_api":cfg!(replay_cpu_prepared)})
+        "prepared_api":cfg!(replay_cpu_prepared),"sender_campaign":cfg!(sender_cpu),"pruning_receipts":cfg!(sender_candidate)})
+}
+fn pruned_receipt(selection: &spiralcore_transfer::selection::Selection) -> Value {
+    #[cfg(sender_candidate)]
+    {
+        json!(selection.pruned.iter().map(|p|json!({"mode":format!("{:?}",p.mode),"http_body_lower_bound":p.http_body_lower_bound})).collect::<Vec<_>>())
+    }
+    #[cfg(not(sender_candidate))]
+    {
+        let _ = selection;
+        Value::Null
+    }
 }
 
 #[derive(Default)]
@@ -86,6 +117,10 @@ struct Metrics {
     receiver_cpu: u128,
     receiver_wall: u128,
     batches: usize,
+    #[cfg(sender_cpu)]
+    request_transcript: Vec<Vec<u8>>,
+    #[cfg(sender_cpu)]
+    response_transcript: Vec<Vec<u8>>,
 }
 struct Channel {
     endpoint: Endpoint<BenchAuthority>,
@@ -132,10 +167,33 @@ impl Channel {
         // SCWREP01 contains the same frames plus two u64 receiver metrics.
         self.metrics.response += response.len() as u64 + 16;
         let decoded = wan::decode_batch(&response);
+        #[cfg(sender_cpu)]
+        {
+            self.metrics.request_transcript.push(request);
+            self.metrics.response_transcript.push(response);
+        }
         self.metrics.exchange_cpu += cpu.elapsed().as_micros();
         self.metrics.exchange_wall += wall.elapsed().as_micros();
         decoded
     }
+}
+
+#[cfg(sender_cpu)]
+fn normalized_frames(batches: &[Vec<u8>]) -> Result<String> {
+    let mut digest = Sha256::new();
+    digest.update(b"spiralcore.measurement.normalized-frames.v1\0");
+    digest.update((batches.len() as u64).to_le_bytes());
+    for batch in batches {
+        let frames = wan::decode_batch(batch)?;
+        digest.update((frames.len() as u64).to_le_bytes());
+        for frame in frames {
+            digest.update([frame.kind]);
+            digest.update(frame.seq.to_le_bytes());
+            digest.update((frame.body.len() as u64).to_le_bytes());
+            digest.update(&frame.body);
+        }
+    }
+    Ok(hex(&digest.finalize().into()))
 }
 
 #[cfg(replay_cpu_prepared)]
@@ -168,6 +226,7 @@ fn operation(
     );
     let mut channel = Channel::open(cache, scope)?;
     let mut selected_cost = None;
+    let mut selection_record = None;
     let wall = Instant::now();
     let cpu = ProcessTime::now();
     let result = (|| -> spiralcore_transfer::Result<client::Stats> {
@@ -194,7 +253,7 @@ fn operation(
                 false,
                 exchange,
             ),
-            "prepared" => {
+            "prepared" | "baseline-prepared" => {
                 #[cfg(replay_cpu_prepared)]
                 {
                     client::transfer_prepared_runtime_batched(
@@ -214,10 +273,15 @@ fn operation(
             _ => Err(spiralcore_transfer::Error::Malformed),
         }?;
         selected_cost = Some(result.selection.expected_http_body_bytes);
+        selection_record = Some(result.selection);
         Ok(result.transfer)
     })();
     let cpu_us = cpu.elapsed().as_micros();
     let wall_us = wall.elapsed().as_micros();
+    let pruned = selection_record
+        .as_ref()
+        .map(pruned_receipt)
+        .unwrap_or(Value::Null);
     let m = channel.metrics;
     drop(channel.endpoint);
     let mut error = result.as_ref().err().map(ToString::to_string);
@@ -239,13 +303,20 @@ fn operation(
     if selected_cost.is_some_and(|n| n != m.request + m.response) {
         error = Some("selected body cost differs from serialized exchange".into());
     }
+    #[cfg(sender_cpu)]
+    let transcript = json!({"request_sha256":normalized_frames(&m.request_transcript)?,
+        "response_sha256":normalized_frames(&m.response_transcript)?,
+        "retained_bytes":m.request_transcript.iter().chain(&m.response_transcript).map(Vec::len).sum::<usize>()});
+    #[cfg(not(sender_cpu))]
+    let transcript = Value::Null;
     Ok(
         json!({"event":"operation", "phase":phase, "bytes":bytes.len(), "object":hex(&object_id(bytes)),
         "cpu_us":cpu_us,"wall_us":wall_us,"exchange_cpu_us":m.exchange_cpu,
+        "sender_cpu_us":cpu_us.saturating_sub(m.exchange_cpu),"transcript":transcript,
         "exchange_wall_us":m.exchange_wall,"receiver_cpu_us":m.receiver_cpu,
         "receiver_wall_us":m.receiver_wall,"request_body_bytes":m.request,
         "response_body_bytes":m.response,"body_bytes":m.request+m.response,"batches":m.batches,
-        "selected":result.as_ref().ok().map(|s| format!("{:?}",s.mode)),"selected_cost":selected_cost,
+        "selected":result.as_ref().ok().map(|s| format!("{:?}",s.mode)),"selected_cost":selected_cost,"pruned":pruned,
         "exact_reopen":exact,"verification_cpu_us":check_cpu.elapsed().as_micros(),
         "verification_wall_us":check_wall.elapsed().as_micros(),"error":error}),
     )
@@ -255,7 +326,7 @@ fn worker(arm: &str, width: usize, trial: usize, cache: &Path) -> Result<()> {
     if !ARMS.contains(&arm) || ![48, 4096].contains(&width) || trial >= 10 {
         return Err("invalid worker configuration".into());
     }
-    if arm == "prepared" && !cfg!(replay_cpu_prepared) {
+    if PREPARED_ARMS.contains(&arm) && !cfg!(replay_cpu_prepared) {
         return Err("baseline binary has no prepared API".into());
     }
     fs::create_dir(cache)?;
@@ -300,7 +371,7 @@ fn worker(arm: &str, width: usize, trial: usize, cache: &Path) -> Result<()> {
     let prepared: Option<Prepared>;
     #[cfg(replay_cpu_prepared)]
     {
-        prepared = if arm == "prepared" {
+        prepared = if PREPARED_ARMS.contains(&arm) {
             let wall = Instant::now();
             let cpu = ProcessTime::now();
             let p = Prepared::new(&fixture.checkpoint, &fixture.recipe)?;
@@ -311,7 +382,7 @@ fn worker(arm: &str, width: usize, trial: usize, cache: &Path) -> Result<()> {
             }
             emit(
                 &json!({"event":"preparation","arm":arm,"width":width,"trial":trial,
-            "cpu_us":cpu_us,"wall_us":wall_us,"retained_bytes":p.retained_bytes(),"actual_uses":3}),
+            "cpu_us":cpu_us,"wall_us":wall_us,"retained_bytes":p.retained_bytes(),"struct_bytes":std::mem::size_of::<Prepared>(),"actual_uses":3}),
             )?;
             Some(p)
         } else {
@@ -384,10 +455,10 @@ fn run(baseline: &Path, candidate: &Path, out: &Path, cache: &Path, profile: boo
             let order = if profile {
                 vec!["baseline"]
             } else {
-                arm_order(width, trial).to_vec()
+                arm_order(width, trial)
             };
             for arm in order {
-                let exe = if arm == "baseline" {
+                let exe = if baseline_arm(arm) {
                     baseline
                 } else {
                     candidate
@@ -473,6 +544,14 @@ fn one<'a>(
     Ok(row)
 }
 fn number(row: &Value, key: &str) -> Result<f64> {
+    if key == "sender_cpu_us" && row[key].is_null() {
+        return row["cpu_us"]
+            .as_f64()
+            .zip(row["exchange_cpu_us"].as_f64())
+            .map(|(total, exchange)| total - exchange)
+            .filter(|n| n.is_finite() && *n >= 0.0)
+            .ok_or_else(|| "invalid historical sender CPU scope".into());
+    }
     row[key]
         .as_f64()
         .filter(|v| v.is_finite() && *v >= 0.0)
@@ -480,15 +559,18 @@ fn number(row: &Value, key: &str) -> Result<f64> {
 }
 fn summarize(rows: &[Value]) -> Result<Value> {
     let count = |event| rows.iter().filter(|r| r["event"] == event).count();
+    let workers = 20 * ARMS.len();
+    let preparations = 20 * PREPARED_ARMS.len();
+    let operations = workers * 6;
     if count("registration") != 1
         || count("complete") != 1
-        || count("worker") != 120
-        || count("preparation") != 20
-        || count("operation") != 720
-        || count("cleanup") != 120
-        || rows.len() != 982
+        || count("worker") != workers
+        || count("preparation") != preparations
+        || count("operation") != operations
+        || count("cleanup") != workers
+        || rows.len() != workers * 2 + preparations + operations + 2
     {
-        return Err("campaign must contain exactly 120 workers,20 preparations,720 operations,120 cleanups and two bookends".into());
+        return Err("campaign counts differ from registered arms/trials and two bookends".into());
     }
     let registration = &rows[0];
     if registration["event"] != "registration"
@@ -515,7 +597,7 @@ fn summarize(rows: &[Value]) -> Result<Value> {
                         return Err(format!("paired {key} differs").into());
                     }
                 }
-                let expected_exe = if arm == "baseline" {
+                let expected_exe = if baseline_arm(arm) {
                     &registration["baseline_executable_sha256"]
                 } else {
                     &registration["candidate_executable_sha256"]
@@ -523,9 +605,13 @@ fn summarize(rows: &[Value]) -> Result<Value> {
                 if &worker["executable_sha256"] != expected_exe {
                     return Err("worker executable pin differs".into());
                 }
-                if arm == "baseline" {
-                    if worker["source"]["runtime"]
-                        != "c956c80f88e401751f594b7540c587e6213b8fe33e70a776d663c7259992bbb8"
+                if baseline_arm(arm) {
+                    let expected_runtime = if cfg!(sender_cpu) {
+                        "9c125e8dda66be18f166da2ab8b83836725c082039d8cc07cfd44e66c2874929"
+                    } else {
+                        "c956c80f88e401751f594b7540c587e6213b8fe33e70a776d663c7259992bbb8"
+                    };
+                    if worker["source"]["runtime"] != expected_runtime
                         || worker["source"]
                             != one(rows, "worker", 48, 0, "baseline", None, None)?["source"]
                     {
@@ -575,10 +661,17 @@ fn summarize(rows: &[Value]) -> Result<Value> {
                         {
                             return Err("generated trace differs".into());
                         }
-                        if ["baseline", "packed", "prepared"].contains(&arm)
+                        if ["baseline", "baseline-prepared", "packed", "prepared"].contains(&arm)
                             && row["body_bytes"] != paired["body_bytes"]
                         {
                             return Err("runtime paired byte cost differs".into());
+                        }
+                        #[cfg(sender_cpu)]
+                        if ["baseline", "baseline-prepared", "packed", "prepared"].contains(&arm)
+                            && (row["selected"] != paired["selected"]
+                                || row["transcript"] != paired["transcript"])
+                        {
+                            return Err("normalized runtime frames/selection differ".into());
                         }
                         if number(row, "body_bytes")?
                             != number(row, "request_body_bytes")?
@@ -601,12 +694,16 @@ fn summarize(rows: &[Value]) -> Result<Value> {
                     }
                 }
             }
-            let prep = one(rows, "preparation", width, trial, "prepared", None, None)?;
-            if prep["actual_uses"] != 3
-                || number(prep, "retained_bytes")?
-                    != number(base, "prediction_bytes")? + number(base, "checkpoint_bytes")? + 69.0
-            {
-                return Err("preparation retention/use count differs".into());
+            for arm in PREPARED_ARMS {
+                let prep = one(rows, "preparation", width, trial, arm, None, None)?;
+                if prep["actual_uses"] != 3
+                    || number(prep, "retained_bytes")?
+                        != number(base, "prediction_bytes")?
+                            + number(base, "checkpoint_bytes")?
+                            + 69.0
+                {
+                    return Err("preparation retention/use count differs".into());
+                }
             }
         }
     }
@@ -628,6 +725,7 @@ fn summarize(rows: &[Value]) -> Result<Value> {
                     .collect::<Result<Vec<_>>>()?;
                 for metric in [
                     "body_bytes",
+                    "sender_cpu_us",
                     "cpu_us",
                     "wall_us",
                     "exchange_cpu_us",
@@ -648,6 +746,14 @@ fn summarize(rows: &[Value]) -> Result<Value> {
                 let mut practical_cpu = Vec::new();
                 let mut practical_wall = Vec::new();
                 let mut practical_body = Vec::new();
+                let previous_arm = if cfg!(sender_cpu) && PREPARED_ARMS.contains(&arm) {
+                    "baseline-prepared"
+                } else {
+                    "baseline"
+                };
+                let mut previous_cpu_ratio = Vec::new();
+                let mut previous_sender_ratio = Vec::new();
+                let mut previous_wall_ratio = Vec::new();
                 for trial in 0..10 {
                     let row = group[trial as usize];
                     let base = one(
@@ -660,6 +766,20 @@ fn summarize(rows: &[Value]) -> Result<Value> {
                         Some("target"),
                     )?;
                     ratios.push(number(base, "cpu_us")? / number(row, "cpu_us")?);
+                    let previous = one(
+                        rows,
+                        "operation",
+                        width,
+                        trial,
+                        previous_arm,
+                        Some(case),
+                        Some("target"),
+                    )?;
+                    previous_cpu_ratio.push(number(previous, "cpu_us")? / number(row, "cpu_us")?);
+                    previous_sender_ratio
+                        .push(number(previous, "sender_cpu_us")? / number(row, "sender_cpu_us")?);
+                    previous_wall_ratio
+                        .push(number(previous, "wall_us")? / number(row, "wall_us")?);
                     let seed = one(
                         rows,
                         "operation",
@@ -682,7 +802,7 @@ fn summarize(rows: &[Value]) -> Result<Value> {
                         } else {
                             0.0
                         };
-                    if arm == "prepared" {
+                    if PREPARED_ARMS.contains(&arm) {
                         let prep = one(rows, "preparation", width, trial, arm, None, None)?;
                         cold_cpu.push(number(prep, "cpu_us")? + number(row, "cpu_us")?);
                         cold_wall.push(number(prep, "wall_us")? + number(row, "wall_us")?);
@@ -703,50 +823,62 @@ fn summarize(rows: &[Value]) -> Result<Value> {
                 cell["paired_baseline_cpu_speedup"] = distribution(ratios.clone());
                 cell["paired_baseline_cpu_speedup_geomean"] =
                     json!((ratios.iter().map(|v| v.ln()).sum::<f64>() / 10.0).exp());
+                cell["previous_path_arm"] = json!(previous_arm);
+                for (key, values) in [
+                    ("paired_previous_cpu_speedup", previous_cpu_ratio),
+                    ("paired_previous_sender_cpu_speedup", previous_sender_ratio),
+                    ("paired_previous_wall_speedup", previous_wall_ratio),
+                ] {
+                    cell[format!("{key}_geomean")] =
+                        json!((values.iter().map(|v| v.ln()).sum::<f64>() / 10.0).exp());
+                    cell[key] = distribution(values);
+                }
                 cell["practical_cold_cpu_us"] = distribution(practical_cpu);
                 cell["practical_cold_wall_us"] = distribution(practical_wall);
                 cell["practical_cold_body_bytes"] = distribution(practical_body);
-                if arm == "prepared" {
+                if PREPARED_ARMS.contains(&arm) {
                     cell["preparation_plus_target_cpu_us"] = distribution(cold_cpu);
                     cell["preparation_plus_target_wall_us"] = distribution(cold_wall);
                 }
                 cells.push(cell);
             }
         }
-        let mut per_use_cpu = Vec::new();
-        let mut per_use_wall = Vec::new();
-        let mut prep_cpu = Vec::new();
-        let mut prep_wall = Vec::new();
-        let mut retention = Vec::new();
-        for trial in 0..10 {
-            let prep = one(rows, "preparation", width, trial, "prepared", None, None)?;
-            let mut cpu = number(prep, "cpu_us")?;
-            let mut wall = number(prep, "wall_us")?;
-            prep_cpu.push(cpu);
-            prep_wall.push(wall);
-            retention.push(number(prep, "retained_bytes")?);
-            for case in CASES {
-                let row = one(
-                    rows,
-                    "operation",
-                    width,
-                    trial,
-                    "prepared",
-                    Some(case),
-                    Some("target"),
-                )?;
-                cpu += number(row, "cpu_us")?;
-                wall += number(row, "wall_us")?;
+        for &prepared_arm in PREPARED_ARMS {
+            let mut per_use_cpu = Vec::new();
+            let mut per_use_wall = Vec::new();
+            let mut prep_cpu = Vec::new();
+            let mut prep_wall = Vec::new();
+            let mut retention = Vec::new();
+            for trial in 0..10 {
+                let prep = one(rows, "preparation", width, trial, prepared_arm, None, None)?;
+                let mut cpu = number(prep, "cpu_us")?;
+                let mut wall = number(prep, "wall_us")?;
+                prep_cpu.push(cpu);
+                prep_wall.push(wall);
+                retention.push(number(prep, "retained_bytes")?);
+                for case in CASES {
+                    let row = one(
+                        rows,
+                        "operation",
+                        width,
+                        trial,
+                        prepared_arm,
+                        Some(case),
+                        Some("target"),
+                    )?;
+                    cpu += number(row, "cpu_us")?;
+                    wall += number(row, "wall_us")?;
+                }
+                per_use_cpu.push(cpu / 3.0);
+                per_use_wall.push(wall / 3.0);
             }
-            per_use_cpu.push(cpu / 3.0);
-            per_use_wall.push(wall / 3.0);
-        }
-        amortized.push(json!({"width":width,"actual_uses":3,"preparation_cpu_us":distribution(prep_cpu),"preparation_wall_us":distribution(prep_wall),
+            amortized.push(json!({"width":width,"arm":prepared_arm,"actual_uses":3,"preparation_cpu_us":distribution(prep_cpu),"preparation_wall_us":distribution(prep_wall),
             "retained_bytes":distribution(retention),"preparation_plus_three_targets_cpu_us_per_use":distribution(per_use_cpu),"preparation_plus_three_targets_wall_us_per_use":distribution(per_use_wall)}));
+        }
     }
     Ok(
-        json!({"schema":"spiralcore.replay-cpu.summary.v1","verdict":"PAIRED_EXACTNESS_AND_BODY_COST_PASS","target_operations":360,"seed_operations":360,
-        "workers":120,"discarded_observations":0,"replay":replay,"cells":cells,"preparation_and_actual_reuse":amortized}),
+        json!({"schema":"spiralcore.replay-cpu.summary.v1","sender_campaign":cfg!(sender_cpu),"verdict":"PAIRED_EXACTNESS_AND_BODY_COST_PASS","target_operations":operations/2,"seed_operations":operations/2,
+        "workers":workers,"discarded_observations":0,"replay":replay,"cells":cells,"preparation_and_actual_reuse":amortized}),
     )
 }
 fn command() -> Result<()> {
@@ -801,9 +933,23 @@ mod tests {
         assert_eq!(first, arm_order(48, 0));
         assert_ne!(first, arm_order(48, 1));
         first.sort();
+        #[cfg(not(sender_cpu))]
         assert_eq!(
             first,
             ["adaptive", "baseline", "packed", "prepared", "raw", "zstd"]
+        );
+        #[cfg(sender_cpu)]
+        assert_eq!(
+            first,
+            [
+                "adaptive",
+                "baseline",
+                "baseline-prepared",
+                "packed",
+                "prepared",
+                "raw",
+                "zstd"
+            ]
         );
     }
     #[test]
@@ -811,5 +957,27 @@ mod tests {
         assert!(summarize(&[]).is_err());
         assert_eq!(distribution(vec![10.0, 1.0, 4.0, 2.0])["median"], 3.0);
         assert_eq!(distribution(vec![10.0, 1.0, 4.0, 2.0])["p95"], 10.0);
+    }
+    #[cfg(sender_cpu)]
+    #[test]
+    fn normalized_frames_ignore_transfer_ids_but_bind_kind_sequence_and_body() {
+        let a = Frame {
+            kind: 2,
+            transfer: [1; 32],
+            seq: 7,
+            body: vec![3, 4, 5],
+        };
+        let mut b = a.clone();
+        b.transfer = [2; 32];
+        assert_eq!(
+            normalized_frames(&[wan::encode_batch(&[a]).unwrap()]).unwrap(),
+            normalized_frames(&[wan::encode_batch(&[b.clone()]).unwrap()]).unwrap()
+        );
+        let first = normalized_frames(&[wan::encode_batch(&[b.clone()]).unwrap()]).unwrap();
+        b.body[0] ^= 1;
+        assert_ne!(
+            first,
+            normalized_frames(&[wan::encode_batch(&[b]).unwrap()]).unwrap()
+        );
     }
 }

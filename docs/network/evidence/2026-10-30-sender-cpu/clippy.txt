@@ -1,0 +1,37 @@
+    Checking spiralcore-transfer v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer)
+error: items after a test module
+   --> src/shared_transfer.rs:9:1
+    |
+  9 |   mod identity_tests {
+    |   ^^^^^^^^^^^^^^^^^^
+...
+ 48 |   pub struct PreparedPrediction {
+    |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+ 56 |   impl PreparedPrediction {
+    |   ^^^^^^^^^^^^^^^^^^^^^^^
+...
+118 | / pub fn prepare(
+119 | |     checkpoint: &[u8],
+120 | |     target: &[u8],
+121 | |     recipe: &shared_runtime::Recipe,
+122 | | ) -> Result<Option<Vec<Vec<u8>>>> {
+    | |_________________________________^
+...
+144 | / fn setup_frame(
+145 | |     recipe: &shared_runtime::Recipe,
+146 | |     prediction_len: usize,
+147 | |     prediction_id: Id,
+148 | | ) -> Result<Vec<u8>> {
+    | |____________________^
+...
+161 |   pub fn replay_frame(checkpoint: &[u8], body: &[u8]) -> Result<Vec<u8>> {
+    |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.97.0/index.html#items_after_test_module
+    = note: `-D clippy::items-after-test-module` implied by `-D warnings`
+    = help: to override `-D warnings` add `#[allow(clippy::items_after_test_module)]`
+    = help: move the items to before the test module was defined
+
+error: could not compile `spiralcore-transfer` (lib test) due to 1 previous error
+warning: build failed, waiting for other jobs to finish...

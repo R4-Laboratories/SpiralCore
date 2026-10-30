@@ -1,0 +1,22 @@
+   Compiling spiralcore-transfer v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer)
+    Finished `release` profile [optimized] target(s) in 5.39s
+     Running unittests src/lib.rs (/Users/casey.allard/spiralcore/target/aarch64-apple-darwin/release/deps/spiralcore_transfer-0a2ce90059667e27)
+
+running 1 test
+test selection::runtime_selection_tests::prefix_structure_bound_prunes_large_runtime_without_changing_bytes ... FAILED
+
+failures:
+
+---- selection::runtime_selection_tests::prefix_structure_bound_prunes_large_runtime_without_changing_bytes stdout ----
+
+thread 'selection::runtime_selection_tests::prefix_structure_bound_prunes_large_runtime_without_changing_bytes' (63024188) panicked at src/selection.rs:478:14:
+format minimum proves prefix cannot win this runtime transfer
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    selection::runtime_selection_tests::prefix_structure_bound_prunes_large_runtime_without_changing_bytes
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 13 filtered out; finished in 0.22s
+
+error: test failed, to rerun pass `--lib`

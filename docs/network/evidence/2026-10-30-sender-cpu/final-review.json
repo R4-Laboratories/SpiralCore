@@ -1,0 +1,80 @@
+{
+  "schema": "spiralcore.sender-cpu.final-review.v1",
+  "milestone": "SC-OPT-010",
+  "reviewer": "/root/selector_tests",
+  "roster": "d1927d9e7ce51354",
+  "baseline_commit": "11fb80931a97b06f3c1b40621b7e8c40710274e5",
+  "reviewed_commit": "d13db98d8b09bf9ce79a42f69a8ac60430668164",
+  "independence": "Reviewer authored none of this iteration's production code, benchmark or tests. Existing execution evidence was inspected; no new tests, measurements, analyzer or archive was generated.",
+  "sequence": [
+    {
+      "stage": 1,
+      "role": "harness-optimizer",
+      "verdict": "PASS",
+      "record": ".agent-sync/AUDIT.md",
+      "basis": "Existing native command receipts and actual retained outputs establish RED/GREEN progression, final qualification, source/executable custody, the single campaign and retained negative outcomes. This PASS was recorded before the independent source review began."
+    },
+    {
+      "stage": 2,
+      "roles": ["code-reviewer", "rust-reviewer", "security-reviewer"],
+      "verdict": "APPROVED",
+      "blocking_findings": []
+    }
+  ],
+  "qualification_observed": {
+    "all_target_passed": 242,
+    "all_target_ignored": 2,
+    "all_target_failed": 0,
+    "test_targets": 29,
+    "doctests_passed": 1,
+    "focused_coverage_tests_passed": 81,
+    "final_clippy_exit": 0,
+    "post_relocation_identity_test_passed": 1,
+    "harness_tests_passed": 4,
+    "campaign_exit": 0,
+    "summary_exit": 0,
+    "operations": 840,
+    "exact_reopened_operations": 840,
+    "operation_errors": 0,
+    "workers_and_successful_cleanups": 140,
+    "trials_per_cell": 10,
+    "discarded_observations": 0,
+    "performance_reruns": 0
+  },
+  "source_review": [
+    {
+      "files": ["src/selection.rs", "src/zstd_prefix.rs"],
+      "result": "Runtime-first evaluation preserves explicit Raw, Zstd, Sparse, Prefix, Runtime priority on equal cost. A candidate is pruned only when its conservative lower bound cannot win under that same priority. Zstd counts minimum nonempty chunk overhead; sparse uses bounded output per COPY or LITERAL; prefix counts mandatory checksum/frame/block structure. Existing object ceilings bound the arithmetic. Exact candidate costs and pruned lower bounds are separately reported; conventional adaptive selection remains exhaustive."
+    },
+    {
+      "files": ["src/delta.rs", "tests/fixtures/sender_delta_baseline.rs", "tests/fixtures/sender_delta_checks.rs"],
+      "result": "Bulk equal/unequal scans retain scalar boundary resolution, including zero-byte-detection borrow ambiguity. Prefix reuse cannot skip a mismatch; suffix scans preserve independent tail alignment. No packer, operation threshold or decoder rule changed. The frozen oracle file is byte-identical to baseline delta.rs (SHA-256 af31026c806c9046d62735b3ebdd03472e667103011a06b6f49ff76edb19e18e). Retained tests compare exact frames and operation counts across length/edit/frame boundaries and 16 MiB controls, then apply recipes exactly."
+    },
+    {
+      "files": ["src/shared_transfer.rs", "src/client.rs"],
+      "result": "Cached checkpoint and prediction identities originate in the bounded constructor and immutable private buffers. Prediction identity reuse requires full slice equality, including length; other targets are hashed normally. Preparation accounting includes the added hashes, and retained-buffer accounting explicitly excludes the two cached IDs in struct metadata. Client timing begins before selection and identity work and ends after the commit response. Receiver authorization, namespace, publication verification, parser and replay limits are unchanged."
+    },
+    {
+      "files": ["examples/replay_cpu.rs", "examples/sender_profile.rs"],
+      "result": "Both binaries use the same harness source. Arm dispatch distinguishes baseline one-shot/prepared from optimized arms. Fixture/source/executable joins, expected row counts and exact reopen checks reject incomplete campaigns. Normalized request/reply hashes bind batch boundaries, kind, sequence, body length and bytes, excluding only transfer IDs; matched runtime arms must also agree on mode and body count. Transcript hashing and pruning JSON occur after timing, with matched retained transcript buffers. Profile phases are independent observations, not additive transfer costs."
+    }
+  ],
+  "measurement_review": {
+    "raw_sha256": "8c8d772c6abd16ad416fcff5509adc6f090d90e462cfe90fedad0ff6eb0f2763",
+    "summary_sha256": "a91163117a758939dc33904337b12357446c1c06bda855f651c3eea5b43ab1bf",
+    "baseline_executable_sha256": "4ceb3aea871ab4fff6b613e22e66839f6b03c1762df39a16a968baaa5de28ceb",
+    "candidate_executable_sha256": "26cfbf14bb1bcb686b22f2365bd6f2d92463123b88985d41eb7da55a593a1e38",
+    "matched_harness_sha256": "9671dbb309fbf39dfc5f9ef6c28402d3d20baeb07e744fefb5d77a5bc962e327",
+    "result": "The report distinguishes target-only prepared performance, preparation plus actual reuse, and practical cold seed/preparation/target costs. It retains unrelated/edited regressions and raw/zstd losses. All 840 operation rows report exact reopened bytes and no error; source-pinned retained summary establishes normalized frame parity and unchanged runtime body counts. No universal CPU or speed claim is supported or made."
+  },
+  "limits": [
+    "Single-host serialized durable transfers; this iteration is not a new WAN, energy or total-network-byte qualification.",
+    "Total measured process CPU includes both local endpoints once. Sender CPU is total minus nested exchange CPU; exchange time is not pure wire time.",
+    "Prepared warm results exclude setup by design; setup, extra struct storage and cold-start tradeoffs are reported separately.",
+    "Ten trials per cell, p95 is the maximum at this sample size; all observations and outliers are retained.",
+    "Coverage was measured before a pure test-module relocation; final identity test and Clippy passed after relocation. Branch coverage and whole-program assurance are not claimed.",
+    "This is a bounded source/receipt review, not a new independent measurement campaign or exhaustive proof.",
+    "Post-timing archival of older WAN directories is outside this algorithm-review scope."
+  ],
+  "final_verdict": "APPROVED_FOR_PUBLICATION"
+}

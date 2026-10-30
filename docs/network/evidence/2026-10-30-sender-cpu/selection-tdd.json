@@ -1,0 +1,76 @@
+{
+  "schema": "spiralcore.sender-cpu.selection-tdd.v1",
+  "status": "PASS_FOCUSED_SELECTION_AND_INTEGRATION",
+  "date": "2026-10-30",
+  "baseline_commit": "11fb80931a97b06f3c1b40621b7e8c40710274e5",
+  "roster": "d1927d9e7ce51354",
+  "source_sha256": {
+    "crates/spiralcore-transfer/src/selection.rs": "fb6d90b5b865f88820bef5257c4786f057b101faadb753cf29764d5c27c0ae2d",
+    "crates/spiralcore-transfer/src/zstd_prefix.rs": "9facc670c8ff8110d0a43f91907d64084e636d9167e3db7a25bd33c1aba51ed3",
+    "crates/spiralcore-transfer/src/client.rs": "c9e3db615eda586937015b8cf5608d195f30df9cd50cd5d5d3355a4ce14b74e6",
+    "crates/spiralcore-transfer/src/delta.rs": "734caf02ac51a29d6181fc46e35baafd8de0002c26eddce15355b1ef78478ef7",
+    "crates/spiralcore-transfer/src/shared_transfer.rs": "c7243c7ae8a17081e39b259fd69aa265976d5f39ce799fb2d9b18247065dc1c4",
+    "crates/spiralcore-transfer/tests/fixtures/sender_delta_baseline.rs": "af31026c806c9046d62735b3ebdd03472e667103011a06b6f49ff76edb19e18e",
+    "crates/spiralcore-transfer/tests/fixtures/sender_delta_checks.rs": "9597860d7027314a97e62eb63fb46c31550d92dac8a7f7f0cb1d56aeaa4eb0bc",
+    "docs/specs/2026-10-30-sender-cpu-design.md": "69b3b39eab45b506ac766650e0b5002898f2ea16b5be2b07834a2d9ef2e4f40b",
+    "docs/plans/2026-10-30-sender-cpu.md": "a5cbd9ad85f932e881f6fd911edca11f66ab2f1704601a047ff4940a9bf7ced6"
+  },
+  "scope": [
+    "Runtime candidate evaluated before conventional encoders; original explicit codec priority retained.",
+    "Skip only when a proved Zstd, Sparse or Prefix lower bound cannot win, including original tie priority.",
+    "Separate pruned lower-bound receipts; evaluated exact costs retain original ordering.",
+    "Prepared identity callbacks execute inside sender timing after bounds checks; identity implementation is parent-owned.",
+    "Ordinary adaptive selection remains exhaustive; eligible encoders emit unchanged bytes.",
+    "Parent-requested test-scaffolding move compiles immutable baseline delta oracle as a private unit module without exposing protocol Reader."
+  ],
+  "bounds": {
+    "symbols": "N=target bytes, B=base bytes, C=MAX_CHUNK, W=40 for warm probe else0",
+    "zstd": "368+W+134*ceil(N/C)",
+    "sparse_nonempty": "400+W+137+ceil(13*N/max(B,13))",
+    "prefix": "544+W+3*max(1,ceil(N/131072))",
+    "prefix_source": "https://www.rfc-editor.org/rfc/rfc8878.html#section-3.1.1.2.4",
+    "pinned_source": "zstd-sys2.1.2+zstd.1.5.7 lib/zstd.h147-148; lib/compress/zstd_compress.c1714,1816",
+    "capacity_error_pruning": "NOT_USED: output capacity errors do not prove uncapped size or byte parity"
+  },
+  "qualification": {
+    "toolchain": "Rust1.97.1",
+    "profile": "release",
+    "target": "aarch64-apple-darwin",
+    "features": [
+      "hardware-sha256"
+    ],
+    "command": "CARGO_INCREMENTAL=0 CARGO_TARGET_DIR=/Users/casey.allard/spiralcore/target /Users/casey.allard/.cargo/bin/cargo +1.97.1 test --manifest-path crates/spiralcore-transfer/Cargo.toml --locked --release --target aarch64-apple-darwin --features hardware-sha256 --lib --test adaptive --test shared_transfer --test zstd_prefix",
+    "final_passed": 46,
+    "breakdown": {
+      "lib": 15,
+      "adaptive": 13,
+      "shared_transfer": 10,
+      "zstd_prefix": 8
+    },
+    "selection_red": "Expected missing prepare_runtime/wins before implementation.",
+    "prefix_red": "Existing exhaustive parity passed, then assertion failed because structural Prefix pruning receipt did not yet exist.",
+    "limits": "Focused author qualification; full checks and independent review are parent-owned. No new performance/WAN/energy claim."
+  },
+  "receipts": [
+    {
+      "path": "selection-red.txt",
+      "exit_code": 101,
+      "sha256": "2d230be783ead6445710d2a54337599e8309e50078a8ee066d1e83ead76ee766"
+    },
+    {
+      "path": "selection-combined-green.txt",
+      "exit_code": 0,
+      "sha256": "7fd71bea4545c658128e0fe59945d42c19a005135a6854f9361b7a52536d83c6"
+    },
+    {
+      "path": "prefix-bound-red.txt",
+      "exit_code": 101,
+      "sha256": "ed1b75b972e0f532d86badc9dbff0cfd49a665eae83535e9447acb5daed35605"
+    },
+    {
+      "path": "selection-final-green.txt",
+      "exit_code": 0,
+      "sha256": "7571a4d91ab6363e2fca213afd5090c0f2133d6d5b5e55e63fa5642c83ef926f"
+    }
+  ]
+}

@@ -1,0 +1,43 @@
+{
+  "schema": "spiralcore.sender-cpu.source-pins.v1",
+  "baseline_commit": "11fb80931a97b06f3c1b40621b7e8c40710274e5",
+  "candidate_commit": "d13db98d8b09bf9ce79a42f69a8ac60430668164",
+  "baseline_archive_sha256": "c47e3f5d10d02400dc86564ef25a5fccfb99b780553fce3c238d6a35466673c0",
+  "baseline_executable_sha256": "4ceb3aea871ab4fff6b613e22e66839f6b03c1762df39a16a968baaa5de28ceb",
+  "candidate_executable_sha256": "26cfbf14bb1bcb686b22f2365bd6f2d92463123b88985d41eb7da55a593a1e38",
+  "baseline_source": {
+    "client": "fe140ed98c2c202ba0502d1cd88ad69ba97e45a130add40998f40567cda9a210",
+    "delta": "af31026c806c9046d62735b3ebdd03472e667103011a06b6f49ff76edb19e18e",
+    "endpoint": "897c25a33507d7368420887b29a984b8b6d9879276182dcf7ff4150a36a60d98",
+    "harness": "9671dbb309fbf39dfc5f9ef6c28402d3d20baeb07e744fefb5d77a5bc962e327",
+    "lockfile": "2edee014903d73fd6f61950c4c6bcd56a2b807ec95513c9ac39bf14e9f9004c0",
+    "prefix": "9dc354aa1b7fce59a73839a5299a4f5f5f245115ec00744e18ecfb2452077569",
+    "prepared_api": true,
+    "pruning_receipts": false,
+    "runtime": "9c125e8dda66be18f166da2ab8b83836725c082039d8cc07cfd44e66c2874929",
+    "selection": "f247fd34b0472f9a5e3211738859ff1508f782965585d2f07d2c33ac2d4d8193",
+    "sender_campaign": true,
+    "transfer": "db13340e77979881fa558752d60cae233f43970b6867de395073cff07ae3d476"
+  },
+  "candidate_source": {
+    "client": "c9e3db615eda586937015b8cf5608d195f30df9cd50cd5d5d3355a4ce14b74e6",
+    "delta": "734caf02ac51a29d6181fc46e35baafd8de0002c26eddce15355b1ef78478ef7",
+    "endpoint": "897c25a33507d7368420887b29a984b8b6d9879276182dcf7ff4150a36a60d98",
+    "harness": "9671dbb309fbf39dfc5f9ef6c28402d3d20baeb07e744fefb5d77a5bc962e327",
+    "lockfile": "2edee014903d73fd6f61950c4c6bcd56a2b807ec95513c9ac39bf14e9f9004c0",
+    "prefix": "9facc670c8ff8110d0a43f91907d64084e636d9167e3db7a25bd33c1aba51ed3",
+    "prepared_api": true,
+    "pruning_receipts": true,
+    "runtime": "9c125e8dda66be18f166da2ab8b83836725c082039d8cc07cfd44e66c2874929",
+    "selection": "fb6d90b5b865f88820bef5257c4786f057b101faadb753cf29764d5c27c0ae2d",
+    "sender_campaign": true,
+    "transfer": "9d1238fa0a2b2dc7bef420fb9ee8dae6f1425964f8c3d2f1f9d098edf811fb58"
+  },
+  "toolchain": "rustc1.97.1,release,locked,hardware-sha256,AppleM1/aarch64-apple-darwin",
+  "common_environment": "CARGO_INCREMENTAL=0; RUSTFLAGS=--cfg sender_cpu --cfg replay_cpu_prepared",
+  "candidate_final_example_args": "cargo rustc --example replay_cpu -- --cfg sender_candidate",
+  "baseline_build": "cargo build --locked --release --features hardware-sha256 --example replay_cpu",
+  "target_reuse": "Both built sequentially in existing local/sender-cpu-20261030/baseline-target; final executable files preserved separately",
+  "harness_green": "4 tests passed; observed missing-normalized_frames RED before implementation",
+  "run_scope": "one registered local campaign, no warmup discard, no WAN or energy result"
+}

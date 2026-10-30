@@ -1,0 +1,72 @@
+{
+  "schema": "spiralcore.sender-cpu.run.v1",
+  "baseline_commit": "11fb80931a97b06f3c1b40621b7e8c40710274e5",
+  "candidate_commit": "d13db98d8b09bf9ce79a42f69a8ac60430668164",
+  "profile_start_utc": "2026-10-30T15:30:59Z",
+  "profile_end_utc": "2026-10-30T15:31:14Z",
+  "profile": {"direct_phase_rows":90,"preparations":6,"adaptive_workers":6,"adaptive_target_operations":18,"adaptive_seed_operations":18,"both_commands_exit_code":0},
+  "paired_start_utc": "2026-10-30T15:48:42Z",
+  "paired_end_utc": "2026-10-30T15:49:35Z",
+  "campaign_exit_code": 0,
+  "summary_exit_code": 0,
+  "verdict": "PAIRED_EXACTNESS_AND_BODY_COST_PASS",
+  "trials_per_cell": 10,
+  "workers": 140,
+  "preparations": 40,
+  "target_operations": 420,
+  "seed_operations": 420,
+  "exact_reopen_operations": 840,
+  "worker_cleanups": 140,
+  "discarded_observations": 0,
+  "performance_reruns": 0,
+  "all_runtime_normalized_frame_hashes_selected_modes_and_body_counts_match": true,
+  "raw_sha256": "8c8d772c6abd16ad416fcff5509adc6f090d90e462cfe90fedad0ff6eb0f2763",
+  "summary_sha256": "a91163117a758939dc33904337b12357446c1c06bda855f651c3eea5b43ab1bf",
+  "executable_pins_unchanged_after_run": {
+    "baseline": "4ceb3aea871ab4fff6b613e22e66839f6b03c1762df39a16a968baaa5de28ceb",
+    "candidate": "26cfbf14bb1bcb686b22f2365bd6f2d92463123b88985d41eb7da55a593a1e38"
+  },
+  "reused_parent_qualification": {
+    "all_target_passed": 242,
+    "all_target_ignored": 2,
+    "doctest_passed": 1,
+    "focused_passed": 46,
+    "coverage_tests_passed": 81,
+    "final_clippy": "PASS",
+    "post_test_module_relocation_identity_test_passed": 1,
+    "coverage_before_test_only_relocation_line_percent": {
+      "client": 82.27,
+      "delta": 96.875,
+      "selection": 97.537,
+      "shared_transfer": 96.875,
+      "prefix": 95.755
+    },
+    "harness_focused_passed": 4
+  },
+  "large_prepared_generated": {
+    "body_bytes_before_and_after": 747,
+    "median_total_cpu_ms_before": 111.4365,
+    "median_total_cpu_ms_after": 35.039,
+    "median_sender_cpu_ms_before": 81.552,
+    "median_sender_cpu_ms_after": 1.64,
+    "median_elapsed_ms_before": 127.094,
+    "median_elapsed_ms_after": 49.6775,
+    "new_cpu_and_elapsed_pairs_better_than_raw": 8,
+    "cold_seed_plus_preparation_plus_target_cpu_ms": 55.447,
+    "cold_seed_plus_preparation_plus_target_elapsed_ms": 84.8155
+  },
+  "negative_results": [
+    "Large unrelated prepared median CPU increased63.1215 to67.137ms; elapsed75.909 to81.3075ms. Only3/10 CPU pairs improved despite1.011 paired geometric mean speedup.",
+    "Large edited prepared retains766 body bytes but loses local CPU/time to raw/zstd controls.",
+    "Small prepared unrelated median CPU increased1.5185 to1.5875ms; edited/unrelated elapsed medians also increased.",
+    "Prepared cold costs remain higher than raw/zstd local CPU/time; target-only prepared benefits are conditional on already prepared sender state."
+  ],
+  "limits": [
+    "Single-host serialized durable transfer, not WAN, energy or total-network-byte qualification.",
+    "CPU includes both endpoints once; sender outside exchange is a subtraction of nested scopes.",
+    "Pruned receipts are proven lower bounds, not exact measured costs for skipped candidates.",
+    "Transcript hashing and pruning JSON are outside transfer timers; retained transcript buffers are matched harness overhead.",
+    "One10-trial campaign, no outlier removal; unrelated host activity uncontrolled.",
+    "All timing finished before subsequent compression/upload of older experiment directories; no remote upload was part of this experiment."
+  ]
+}
