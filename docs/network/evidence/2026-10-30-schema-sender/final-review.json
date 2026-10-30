@@ -1,0 +1,96 @@
+{
+  "milestone": "SC-OPT-013",
+  "reviewer": "selector_tests",
+  "procedural_audit": {
+    "status": "PASS",
+    "sequence": "Recorded before independent code/Rust review and separate security review.",
+    "baseline": "97b01a1fd9086b284b2e25a9807c1b8a145564a2",
+    "design_commit": "8c2c720ffd05b58c9e0816f8b0a81e767ca554fe",
+    "harness_oracle_commit": "4dacb487cd2b3b132aa6bbf015eb0e5f893e69e0",
+    "production_schema_sha256": "8c81c80b94faf4579a9875a825e47575b61652b9e4c03130ab6bc783e2905109",
+    "observed_receipts": {
+      "codec_red_exit": 101,
+      "codec_red_allocations_actual_expected": [4, 1],
+      "focused_green_passed": 44,
+      "all_target_passed": 288,
+      "all_target_failed": 0,
+      "preexisting_ignored": 2,
+      "doctest_passed": 1,
+      "clippy_exit": 0,
+      "harness_tests_passed": 10,
+      "baseline_build_exit": 0,
+      "baseline_profile_exit": 0,
+      "baseline_profile_rows": 650,
+      "coverage_exit": 0,
+      "coverage_tests_passed": 44,
+      "corrected_schema_coverage": {"lines": [508, 524], "functions": [46, 46], "regions": [874, 904], "branch_mcdc": "not collected"}
+    },
+    "native_all_target_doc_clippy_command": "exec-0b399683-9662-4860-9ed8-93cec2fec307",
+    "resolved_items": ["Receipt-directory correction preserved RED/GREEN bytes and failure status.", "Mixed old/current coverage object maps corrected using unchanged profdata and exactly five tested executable objects, no exclusion or rerun; initial report retained."],
+    "coverage_correction_sha256": "5c82bc2bf9fc911372351c8d6b87a078da8787a22618d845c5848580f2688d38",
+    "limits": ["Focused file coverage only.", "No paired campaign or performance conclusion yet.", "No extra reviewer tests, builds, experiments, analyzer or archive."],
+    "blockers": []
+  },
+  "code_rust_review": {
+    "status": "PASS",
+    "performed_after_procedural_pass": true,
+    "source_commit": "983bf181adda8dc922d0187e53652717d61d38b6",
+    "candidate_executable_sha256": "5dc69edc6208011e89d5f6c98a7a1f19ea1a98c28f70f91074683a818c4c03b5",
+    "candidate_plan_sha256": "7ddaf8abf8f2807de6321faa8d38c16cfabf0f23fe5d61ecdba7d48c8fe5b614",
+    "source_sha256": {
+      "schema.rs": "8c81c80b94faf4579a9875a825e47575b61652b9e4c03130ab6bc783e2905109",
+      "schema_sender_baseline.rs": "6c228201197e1ce26a6ac8137da490e0040ed26ab06d4576b330e8b240a2577a",
+      "schema_sender_checks.rs": "8ec6c46f2e3f37d30753b2ebd45570053dd232962abdfd1e768e7bf4b345d4d4",
+      "tests/schema_sender.rs": "b8237d9098b19e436afa32dd48d85f8a952b0f6e01dc94720f96bc6982012685",
+      "examples/schema_fitting.rs": "d097218073abc8a58a5d3d22ca8541720adb2aac968ea7b4b42b1d5095a9b473",
+      "examples/support/schema_sender.rs": "ddeee8b752364ba01dc14144de23eb96be316364ce41b706916160348eb2651c",
+      "examples/support/schema_reuse.rs": "b68b31468122fb0a1b326b68d7a12510816710b8f89eb793c0d03e73856f051e"
+    },
+    "findings": [],
+    "reviewed": [
+      "Validated first-template literal fragments and unchanged primitive parser preserve token/layout boundaries, lexical bytes and complete record coverage; fixed 32-slot storage is bounded by artifact admission.",
+      "UTF-8, record/target/count limits and strict encoded-size fallback remain intact. Successful speculation reproduces first-candidate work charge, exact-budget success and terminal overflow; failed speculation emits and charges nothing before generic fallback.",
+      "Frozen oracle is byte-identical to baseline schema.rs. Existing observed tests cover SCVAL and complete zstd frame equality, both decoders, malformed/lexical/size/slot/count boundaries, mixed fallback and one output allocation for 1/128/4096 prepared matching records.",
+      "No receiver, authentication, public API, wire format or zstd profile production change. Candidate crate tree matches the frozen source.",
+      "Same harness in baseline/candidate with balanced source order, exact immediate/reopen checks, bounded fresh owned stores and retained failures. Captured body buffers move without cloning; transcript hashing follows timers. Matched capture changes buffer lifetime versus prior campaigns, so only this paired comparison supports the optimization claim.",
+      "Sender CPU excludes nested exchange; receiver CPU is nested in exchange. Profile calls are independent and not additive stages. Actual seed/preparation totals remain separate from target-only figures. Baseline/candidate plans match after removing only the schema source hash."
+    ],
+    "limits": ["Performance gate remains unmeasured; this is local synthetic qualification, not WAN speed evidence.", "Failed first-template speculation adds a bounded scan; variant/drift/unrelated and ordinary-zstd controls must remain visible.", "Allocation count concerns test-thread Rust System requests only, not RSS, zstd internal allocation or energy.", "One read-only jq comparison initially failed due expression grouping (exit 5); corrected grouping returned true without modifying data."],
+    "premeasurement_verdict": "APPROVED_SUBJECT_TO_SEPARATE_SECURITY_PASS"
+  },
+  "security_review": {
+    "status": "PASS",
+    "independent_reviewer": "selector_measurement; production-only scope excludes its authored harness",
+    "receipt": "security-review.json",
+    "receipt_sha256": "362edb55c03d9e624073043400ed1215edb5333325e336b3724c86a0af1fba58"
+  },
+  "results_review": {
+    "status": "PASS",
+    "method": "Read existing raw rows, summary, run/pin receipts and report; bounded read-only jq recomputation, no test/build/benchmark rerun or new analyzer project.",
+    "raw_sha256": "239fe8c22fbf23dddc26807d86b72663a1a39286dee0e69021fb2d9a0d60bf07",
+    "summary_sha256": "a50c1ba4d1905f27b1192131d360d4d27b905b673558a70c25b387b0612fa877",
+    "report_sha256": "38b2a776356f672f387950ae4c3b5b92646f7f508ca1884367c47cb512c670f5",
+    "run_receipt_sha256": "370f2c9a6c079a1a4a7e9e47aaf98b36049a864b6230ddb164743873bba0ee00",
+    "verified": {
+      "outer_rows": 82,
+      "nested_observations": 1040,
+      "unique_sessions_and_cleanups": 80,
+      "targets": 800,
+      "seeds": 40,
+      "preparations": 40,
+      "exact_immediate_and_reopened_objects": 840,
+      "source_arm_transcript_mode_directional_body_pairs": 420,
+      "cell_metric_distributions": 416,
+      "setup_inclusive_session_totals": 80,
+      "numeric_result_table_rows": 15,
+      "primary_candidate_over_baseline_geomean": 0.6793671223306162,
+      "registered_maximum": 0.9,
+      "primary_pass": true,
+      "failure_rows": 0
+    },
+    "conclusion": "All source/executable and planned fixture identities, exactness, paired frame costs, timer nesting, primary ratios, report values, seed/preparation totals and cache/retention claims agree. Delivery, optimization ledger and crate README are consistent with the measured result.",
+    "limits_preserved": ["Unchanged body bytes; improvement is matching-layout sender CPU.", "Ordinary zstd still uses less CPU and local elapsed time; its own wall-time variation prevents attributing the whole elapsed shift solely to code.", "Drift and small unrelated regressions remain visible; setup is charged for actual sessions and no refit cost is invented.", "Local serialized durable transfers only; no new WAN, energy, RSS, larger-object or MVM claim."],
+    "blockers": []
+  },
+  "publication_status": "APPROVED_CODE_RUST_SECURITY_AND_RESULTS"
+}

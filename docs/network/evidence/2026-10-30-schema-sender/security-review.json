@@ -1,0 +1,26 @@
+{
+  "schema": "spiralcore.source-security-review.v1",
+  "milestone": "SC-OPT-013",
+  "reviewer": "selector_measurement acting as security-reviewer",
+  "roster": "d1927d9e7ce51354; security-reviewer active",
+  "profile": "/Users/casey.allard/spiralcore/local/codec-selection-20261029/a-team-bootstrap/.claude/agents/security-reviewer.md",
+  "candidate_source": "983bf181adda8dc922d0187e53652717d61d38b6",
+  "baseline_source": "4dacb487cd2b3b132aa6bbf015eb0e5f893e69e0",
+  "file": "crates/spiralcore-transfer/src/schema.rs",
+  "source_lines": {"legacy_lookup": 103, "artifact_validation": 235, "bounded_writer": 297, "fast_path": 358, "general_parser": 515, "primitive_parser": 594},
+  "candidate_sha256": "8c81c80b94faf4579a9875a825e47575b61652b9e4c03130ab6bc783e2905109",
+  "procedural_precondition": "final-review.json procedural_audit.status=PASS read before this approval",
+  "status": "APPROVE_NO_BLOCKING_FINDINGS",
+  "findings": [],
+  "reviewed_invariants": [
+    "The private fast path receives only validated Templates: read_artifact bounds slots to 32, fragments to slots+1, literal/sample sizes to 64 KiB, and reparses a null-filled skeleton to require identical fragment boundaries. PreparedSchema owns the validated result; no public constructor permits an unchecked Template.",
+    "Exact strip_prefix comparisons, the unchanged primitive_end parser, full-record UTF-8 validation and empty remaining input establish the same lexical layout and token slices. Truncation, invalid tokens, extra suffix bytes and invalid UTF-8 cannot partially emit output through a failed fast path.",
+    "The fixed 32-slot array and all slices are bounded by validated slot counts and parser endpoints. Record size limits bound index arithmetic; literal_len*2 is at most 128 KiB, and selected compact-record size is strictly less than the reserved literal-record allowance. The 16 MiB target and 65,536-record/fallback bounds remain unchanged.",
+    "On a proven first-template match, legacy lookup would encounter index 0 first even with a fingerprint collision. The fast path charges exactly twice the matching literal length and preserves terminal work-budget saturation and literal fallback. A speculative mismatch leaves both output and the legacy lookup budget unchanged.",
+    "Uncharged speculative matching inspects only one template per bounded record; prefix successes consume disjoint input and any failed prefix is bounded by remaining input. This adds bounded input-scanning work, not an unbounded template search. Nonmatching performance remains an empirical control rather than a guaranteed optimization.",
+    "The delta adds no unsafe code, executable recipe, dependency, authentication, decoder, cache-admission or publication change. Full original-byte identity and receiver commit checks remain outside this sender-only modification."
+  ],
+  "validation_used": "Read the current diff and relevant unchanged validators/parser/output bounds; reused final-review.json's 44 focused and 288 all-target test receipts. No new tests, builds, experiments or broad security scan were run.",
+  "independence": "Reviewer did not author production schema.rs. Reviewer authored the measurement harness; that harness is explicitly excluded from this approval and belongs to selector_tests' independent review.",
+  "limits": "Bounded source-security review, not formal verification, FIPS qualification or a performance conclusion. Candidate timing remains unreleased until the parent completes the independent gates."
+}

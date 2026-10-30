@@ -25,6 +25,15 @@ produced a substantial combined CPU gain. The report includes actual ten-send
 setup amortization, retained state and negative controls. No new WAN result is
 claimed for these changes.
 
+The [sender follow-up](schema-sender-results-2026-10-30.md) now matches the first
+prepared layout directly, avoiding repeated layout allocations and hashing while
+preserving every encoded byte. In the paired local run, matching ~1 MiB sender
+CPU fell 32.06% by the registered paired metric; median total CPU fell
+11.8645→9.5525 ms and durable elapsed 19.841→16.989 ms. All 800 targets and 40
+seeds matched immediately and after reopening, with unchanged protocol frames.
+Ordinary zstd still uses less CPU and local elapsed time. Full session setup,
+drift/fallback controls and zstd timing variation are recorded separately.
+
 ## Milestones
 
 | Milestone | Status | Acceptance |
@@ -42,6 +51,7 @@ claimed for these changes.
 | Coupled ternary/Kuramoto/CA transfer | Implemented; local comparisons and real WAN pilot verified | 480 exact local and 72 exact WAN operations. A 14.16 MiB generated/edited trace uses 747/766 body bytes, or 4,630/4,649 with checkpoint seeding. WAN completion improves versus raw, but zstd is faster and runtime CPU is higher. Native ARM64 and Linux x86-64 golden vectors/plans agree. [Result](shared-runtime-results-2026-10-30.md), [contract](../specs/2026-10-30-shared-runtime-design.md). Three-trial WAN pilot, not full acceptance. |
 | Schema fitting and trained dictionaries | Implemented opt-in; local held-out comparison complete | Ten paired trials per family/size/arm, all 640 operations exact after reopen. Matching ~1 MiB batches: template 796,771 median body bytes versus raw 1,051,446.5 and zstd 130,432. Small normal records: trained dictionary 590 bytes versus zstd 667.5, before 8,705-byte per-destination seed. CPU and cold costs prevent an unconditional win. [Result](schema-fitting-results-2026-10-30.md). |
 | Compressed schema and prepared codec reuse | Implemented opt-in; persistent local campaign complete | 160 ten-target sessions, 1,600 targets and 120 seeds all exact immediately and after reopening. Matching ~1 MiB body falls 796,723→127,557.5 bytes; prepared CPU 11.789 ms remains above ordinary zstd 3.846 ms. Prepared/fresh bodies match; actual setup, cache hits and losses are retained. [Result](schema-reuse-results-2026-10-30.md). |
+| Exact prepared-layout sender optimization | Implemented; registered paired local CPU goal passed | Matching ~1 MiB sender CPU falls 32.06% by ten paired session ratios; total median CPU 11.8645→9.5525 ms and elapsed 19.841→16.989 ms. All 840 operations reopen exactly; complete protocol frames and 127,557.5-byte matching-batch body remain unchanged. Zstd remains cheaper in CPU/local time. [Result](schema-sender-results-2026-10-30.md). |
 | Per-transfer IP accounting | Fifty-nine of sixty broad-campaign captures complete for the runner-to-relay leg | Middle-insertion shard 1 retains ambiguous TCP tuple reuse and no whole-case IP statistic. Earlier campaigns retain their original limitations. No whole-path or physical-link byte claim. |
 | Direct/shaped WAN and three-peer qualification | Not run | Controlled impairment, recovery across three peers and eventual MVM boundaries |
 | CUI/FIPS deployment qualification | Not claimed | Concrete validated module/OE/mode and contract-specific control assessment |

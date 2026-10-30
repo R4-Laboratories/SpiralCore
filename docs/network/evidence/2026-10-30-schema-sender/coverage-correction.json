@@ -1,0 +1,112 @@
+{
+  "milestone": "SC-OPT-013",
+  "status": "CORRECTED_OBJECT_SELECTION_NO_TEST_RERUN",
+  "source_sha256": "8c81c80b94faf4579a9875a825e47575b61652b9e4c03130ab6bc783e2905109",
+  "source_revision": "983bf181adda8dc922d0187e53652717d61d38b6",
+  "root_cause": "cargo-llvm-cov 0.9.1 src/report.rs:467-478 collects both host and explicit-target object directories. Reused host debug/deps contains old 17:43Z SC-OPT-012 objects while five tested explicit-target objects were built at 19:37Z. The existing merged profile uses only the five current profraw files. Old object maps inflate line/function denominators.",
+  "correction": "Export the unchanged merged profdata with exactly five executables named in the retained successful coverage run. No files or functions are excluded from this direct export. No tests, builds, source edits or cleanup were performed.",
+  "command": [
+    "/Users/casey.allard/.rustup/toolchains/1.97.1-aarch64-apple-darwin/lib/rustlib/aarch64-apple-darwin/bin/llvm-cov",
+    "export",
+    "-format=text",
+    "-summary-only",
+    "-instr-profile=/Users/casey.allard/spiralcore/local/shared-state-20261030/coverage-target/spiralcore-transfer.profdata",
+    "-object",
+    "/Users/casey.allard/spiralcore/local/shared-state-20261030/coverage-target/aarch64-apple-darwin/debug/deps/spiralcore_transfer-a4e2706c7d1db296",
+    "-object",
+    "/Users/casey.allard/spiralcore/local/shared-state-20261030/coverage-target/aarch64-apple-darwin/debug/deps/schema_codec-10a84afc3046f0db",
+    "-object",
+    "/Users/casey.allard/spiralcore/local/shared-state-20261030/coverage-target/aarch64-apple-darwin/debug/deps/schema_prepared-83afd90d08ad9181",
+    "-object",
+    "/Users/casey.allard/spiralcore/local/shared-state-20261030/coverage-target/aarch64-apple-darwin/debug/deps/schema_reuse-8b2ebdd3c07e5ba8",
+    "-object",
+    "/Users/casey.allard/spiralcore/local/shared-state-20261030/coverage-target/aarch64-apple-darwin/debug/deps/schema_sender-a559471dd0e929d2"
+  ],
+  "exit": 0,
+  "objects_sha256": {
+    "/Users/casey.allard/spiralcore/local/shared-state-20261030/coverage-target/aarch64-apple-darwin/debug/deps/spiralcore_transfer-a4e2706c7d1db296": "17d1691c289d8d7abff0dc2023365d45ea48fa75b1d3d8114b3e40d9d99050e0",
+    "/Users/casey.allard/spiralcore/local/shared-state-20261030/coverage-target/aarch64-apple-darwin/debug/deps/schema_codec-10a84afc3046f0db": "c34b3f0aa81cfc46b077b16fa816a32049cf98d9f9cd17aa6452a6f4ebcbda45",
+    "/Users/casey.allard/spiralcore/local/shared-state-20261030/coverage-target/aarch64-apple-darwin/debug/deps/schema_prepared-83afd90d08ad9181": "33cad38d5fe8dd4f9d629b7a529395131657e67e355855951877a01171b1a2bf",
+    "/Users/casey.allard/spiralcore/local/shared-state-20261030/coverage-target/aarch64-apple-darwin/debug/deps/schema_reuse-8b2ebdd3c07e5ba8": "21911af5c4cdfb211589840eee61767f3290ae176b6230f5f72e5ef6d557719f",
+    "/Users/casey.allard/spiralcore/local/shared-state-20261030/coverage-target/aarch64-apple-darwin/debug/deps/schema_sender-a559471dd0e929d2": "53b257f1f0c43671ba4a0e8a4a311fccff6708c496618e57788ee78fd75d0c5c"
+  },
+  "profdata_sha256": "ca8ee5bad21564a50dc010e90ee90c51fce4b6294d308a354bbbc79572f7ae91",
+  "profraw_list_sha256": "3abc331bb7185430226ae53d578338f2a7a621d92f1fc0ac62c75affcac7427f",
+  "original_report_sha256": "f6ce85bef305ff5f32c42100c6306817afc4f4441d45292192fd83a85ce7f3c2",
+  "corrected_report_sha256": "b798ac6b454bab5fe76ee24e6b35eeb4c232a2640efc9904ee3df7554a322d45",
+  "original_schema_summary": {
+    "branches": {
+      "count": 0,
+      "covered": 0,
+      "notcovered": 0,
+      "percent": 0.0
+    },
+    "mcdc": {
+      "count": 0,
+      "covered": 0,
+      "notcovered": 0,
+      "percent": 0.0
+    },
+    "functions": {
+      "count": 88,
+      "covered": 46,
+      "percent": 52.27272727272727
+    },
+    "instantiations": {
+      "count": 181,
+      "covered": 89,
+      "percent": 49.17127071823205
+    },
+    "lines": {
+      "count": 990,
+      "covered": 508,
+      "percent": 51.313131313131315
+    },
+    "regions": {
+      "count": 1724,
+      "covered": 874,
+      "notcovered": 850,
+      "percent": 50.696055684454755
+    }
+  },
+  "corrected_schema_summary": {
+    "branches": {
+      "count": 0,
+      "covered": 0,
+      "notcovered": 0,
+      "percent": 0
+    },
+    "functions": {
+      "count": 46,
+      "covered": 46,
+      "percent": 100
+    },
+    "instantiations": {
+      "count": 94,
+      "covered": 89,
+      "percent": 94.68085106382979
+    },
+    "lines": {
+      "count": 524,
+      "covered": 508,
+      "percent": 96.94656488549617
+    },
+    "mcdc": {
+      "count": 0,
+      "covered": 0,
+      "notcovered": 0,
+      "percent": 0
+    },
+    "regions": {
+      "count": 904,
+      "covered": 874,
+      "notcovered": 30,
+      "percent": 96.68141592920354
+    }
+  },
+  "limitations": [
+    "Coverage is the same focused 44-test run, not whole-project coverage.",
+    "Branch and MC/DC instrumentation were not enabled.",
+    "The original mixed-object report remains unchanged for review."
+  ]
+}

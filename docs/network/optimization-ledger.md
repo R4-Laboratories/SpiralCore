@@ -21,6 +21,21 @@ remain tied to their measured source; later results do not overwrite earlier neg
 
 ## Measured object sizes
 
+SC-OPT-013 reduces repeated layout parsing, allocation and hashing with an exact
+first-template match, preserving the complete SCVAL stream and zstd frames.
+Candidate `983bf181adda8dc922d0187e53652717d61d38b6` versus baseline harness
+`4dacb487cd2b3b132aa6bbf015eb0e5f893e69e0` passed the registered sender CPU goal:
+the geometric mean of ten paired normal-batch session ratios was 0.679367,
+or 32.06% less sender CPU. All 800 targets and 40 seeds matched immediately and
+after reopening, with identical baseline/candidate protocol transcripts, modes
+and body costs. Matching ~1 MiB medians: sender CPU 7.570→5.172 ms, total CPU
+11.8645→9.5525 ms, durable elapsed 19.841→16.989 ms, body unchanged at 127,557.5
+bytes. Candidate zstd used 130,450.5 bytes, 4.045 ms CPU and 11.976 ms elapsed.
+Zstd control timing variation and drift/fallback costs remain in the
+[full result](schema-sender-results-2026-10-30.md) and
+[recorded evidence](evidence/2026-10-30-schema-sender/README.md).
+This is a paired local persistent-receiver result, not new WAN or energy evidence.
+
 SC-OPT-012 compresses the exact schema value/residual stream and adds prepared
 sender contexts plus an opt-in, bounded receiver codec cache. The corrected
 campaign at `fa0b0abdde0200c9faf62701daa28f9727cc62b4` completed 1,600 target
