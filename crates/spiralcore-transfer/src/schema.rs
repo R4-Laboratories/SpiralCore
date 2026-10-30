@@ -3,6 +3,7 @@
 //! endpoint. A matching layout is neither permission nor a prediction of values.
 use crate::{object_id, protocol::Reader, Error, Id, Result};
 use sha2::{Digest, Sha256};
+use std::borrow::Cow;
 use std::collections::BTreeMap;
 
 pub const MAX_SCHEMA: usize = 64 * 1024;
@@ -14,12 +15,13 @@ pub const MAX_SLOTS: usize = 32;
 pub const MAX_TEMPLATE_RECORD: usize = 64 * 1024;
 pub const MAX_RECORDS: usize = 65536;
 pub const MAX_ENCODED: usize = MAX_TARGET + 5 * MAX_RECORDS + 48;
+pub const PREPARED_CHARGE: u64 = 512 * 1024;
 const MAX_MATCH_WORK: usize = 64 * 1024 * 1024;
 const ARTIFACT_MAGIC: &[u8; 8] = b"SCSCH001";
 const STREAM_MAGIC: &[u8; 8] = b"SCVAL001";
 
 struct Template<'a> {
-    fragments: Vec<&'a [u8]>,
+    fragments: Vec<Cow<'a, [u8]>>,
     literal_len: usize,
     key: Id,
 }
@@ -35,7 +37,7 @@ impl<'a> Template<'a> {
         }
         Self {
             literal_len: fragments.iter().map(|f| f.len()).sum(),
-            fragments,
+            fragments: fragments.into_iter().map(Cow::Borrowed).collect(),
             key: hasher.finalize().into(),
         }
     }
@@ -60,6 +62,25 @@ struct Templates<'a> {
 }
 
 impl<'a> Templates<'a> {
+    fn into_owned(self) -> Templates<'static> {
+        Templates {
+            items: self
+                .items
+                .into_iter()
+                .map(|template| Template {
+                    fragments: template
+                        .fragments
+                        .into_iter()
+                        .map(|fragment| Cow::Owned(fragment.into_owned()))
+                        .collect(),
+                    literal_len: template.literal_len,
+                    key: template.key,
+                })
+                .collect(),
+            index: self.index,
+        }
+    }
+
     fn new() -> Self {
         Self {
             items: Vec::new(),
@@ -91,6 +112,59 @@ impl<'a> Templates<'a> {
         }
         None
     }
+}
+
+/// Fully owned validated layouts. Retained payload bytes exclude container and
+/// allocator bookkeeping; PREPARED_CHARGE conservatively covers that metadata.
+pub struct PreparedSchema {
+    artifact: Box<[u8]>,
+    artifact_id: Id,
+    templates: Templates<'static>,
+}
+
+impl PreparedSchema {
+    pub fn new(artifact: &[u8]) -> Result<Self> {
+        let templates = read_artifact(artifact)?.into_owned();
+        Ok(Self {
+            artifact: artifact.into(),
+            artifact_id: object_id(artifact),
+            templates,
+        })
+    }
+
+    pub fn artifact(&self) -> &[u8] {
+        &self.artifact
+    }
+    pub fn artifact_id(&self) -> Id {
+        self.artifact_id
+    }
+    pub fn retained_bytes(&self) -> usize {
+        self.artifact.len()
+            + self
+                .templates
+                .items
+                .iter()
+                .map(|t| t.literal_len)
+                .sum::<usize>()
+    }
+    pub fn retained_charge(&self) -> u64 {
+        PREPARED_CHARGE
+    }
+    pub fn encode(&self, target: &[u8]) -> Result<Vec<u8>> {
+        encode_with(&self.templates, self.artifact_id, target)
+    }
+    pub fn decode(&self, encoded: &[u8], target_len: usize) -> Result<Vec<u8>> {
+        decode_with(&self.templates, self.artifact_id, encoded, target_len)
+    }
+}
+
+/// Every nonempty record consumes >=1 target byte. Too many line boundaries
+/// becomes one whole literal, so this also bounds that fallback and empty data.
+pub fn encoded_cap(target_len: usize) -> Result<usize> {
+    if target_len > MAX_TARGET {
+        return Err(Error::Limit);
+    }
+    Ok(target_len + 5 * target_len.min(MAX_RECORDS) + 48)
 }
 
 /// Fit only the supplied, ordered training samples. New target data never edits
@@ -213,6 +287,10 @@ fn read_artifact(artifact: &[u8]) -> Result<Templates<'_>> {
 /// may exceed raw bytes; sender selection must include actual protocol costs.
 pub fn encode(artifact: &[u8], target: &[u8]) -> Result<Vec<u8>> {
     let templates = read_artifact(artifact)?;
+    encode_with(&templates, object_id(artifact), target)
+}
+
+fn encode_with(templates: &Templates<'_>, artifact_id: Id, target: &[u8]) -> Result<Vec<u8>> {
     if target.len() > MAX_TARGET {
         return Err(Error::Limit);
     }
@@ -228,7 +306,7 @@ pub fn encode(artifact: &[u8], target: &[u8]) -> Result<Vec<u8>> {
         .try_reserve_exact(capacity)
         .map_err(|_| Error::Limit)?;
     encoded.extend_from_slice(STREAM_MAGIC);
-    encoded.extend_from_slice(&object_id(artifact));
+    encoded.extend_from_slice(&artifact_id);
     encoded.extend_from_slice(&(target.len() as u32).to_le_bytes());
     encoded.extend_from_slice(&(records as u32).to_le_bytes());
     if whole_literal {
@@ -272,6 +350,15 @@ fn write_literal(encoded: &mut Vec<u8>, bytes: &[u8]) {
 /// the final whole-object digest and durable publication independently.
 pub fn decode(artifact: &[u8], encoded: &[u8], target_len: usize) -> Result<Vec<u8>> {
     let templates = read_artifact(artifact)?;
+    decode_with(&templates, object_id(artifact), encoded, target_len)
+}
+
+fn decode_with(
+    templates: &Templates<'_>,
+    artifact_id: Id,
+    encoded: &[u8],
+    target_len: usize,
+) -> Result<Vec<u8>> {
     if target_len > MAX_TARGET || encoded.len() > MAX_ENCODED {
         return Err(Error::Limit);
     }
@@ -279,7 +366,7 @@ pub fn decode(artifact: &[u8], encoded: &[u8], target_len: usize) -> Result<Vec<
     if r.take(8)? != STREAM_MAGIC {
         return Err(Error::Unsupported);
     }
-    if r.id()? != object_id(artifact) || r.u32()? as usize != target_len {
+    if r.id()? != artifact_id || r.u32()? as usize != target_len {
         return Err(Error::Integrity);
     }
     let count = r.u32()? as usize;
@@ -287,12 +374,12 @@ pub fn decode(artifact: &[u8], encoded: &[u8], target_len: usize) -> Result<Vec<
         return Err(Error::Limit);
     }
     let records = r.remaining();
-    visit_records(&templates, records, count, target_len, |_| {})?;
+    visit_records(templates, records, count, target_len, |_| {})?;
     let mut output = Vec::new();
     output
         .try_reserve_exact(target_len)
         .map_err(|_| Error::Limit)?;
-    visit_records(&templates, records, count, target_len, |bytes| {
+    visit_records(templates, records, count, target_len, |bytes| {
         output.extend_from_slice(bytes)
     })?;
     Ok(output)

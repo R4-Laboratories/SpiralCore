@@ -123,6 +123,7 @@ fn priority(mode: Mode) -> u8 {
         Mode::Dag => 5,      // Not eligible for this selector.
         Mode::SchemaV1 => 6, // Explicit prototype sender only.
         Mode::ZstdDictionaryV1 => 7,
+        Mode::SchemaZstdV1 => 8,
     }
 }
 

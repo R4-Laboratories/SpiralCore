@@ -1,0 +1,73 @@
+{
+  "schema": "spiralcore.schema-reuse.codec-tdd.v1",
+  "status": "PASS_FOCUSED_CODEC_AND_INTEGRATION",
+  "date": "2026-10-30",
+  "baseline": "e0a29bc18a09e1aeff4f3a36d2d801ffca346255",
+  "roster": "d1927d9e7ce51354",
+  "source_sha256": {
+    "crates/spiralcore-transfer/src/schema.rs": "6c228201197e1ce26a6ac8137da490e0040ed26ab06d4576b330e8b240a2577a",
+    "crates/spiralcore-transfer/src/schema_zstd.rs": "b7815a0d6c1633a39f3a9f769e0d2ccc3cda7a6cbc444f169978d20b9149a94b",
+    "crates/spiralcore-transfer/src/zstd_dictionary.rs": "c179959d1851535c478b45f833b086e8a65755625aee7faee33c3a227ddc1f78",
+    "crates/spiralcore-transfer/tests/schema_prepared.rs": "e9b4da450ca6d61f7927a5b99050d5dd1660389730b797df6add7b0b5671d70a",
+    "docs/specs/2026-10-30-schema-reuse-design.md": "347e4c3cb4f5397951e36376fa3d44ada31ec83fd7428adfce508fc753513a8c",
+    "docs/plans/2026-10-30-schema-reuse.md": "f215226578840bbab6273746c4d3ffe1032513ffcd3a76ccb6bf14fcc7118e84"
+  },
+  "implementation": [
+    "Owned PreparedSchema with cached artifact identity and owned Cow fragments; no unsafe self-reference.",
+    "Strict one-frame checksummed zstd over unchanged SCVAL001, with target-specific intermediate bound before allocation.",
+    "Separate prepared compression/decompression contexts; trained dictionaries copied once per context.",
+    "Existing dictionary encoding remains available and matches reused-context output on tested alternating/repeated inputs.",
+    "Context sizeof drift guard drops an oversized context fail-closed; this is not a custom allocator or RSS cap."
+  ],
+  "bounds": {
+    "target": 16777216,
+    "intermediate_formula": "N+5*min(N,65536)+48",
+    "maximum_intermediate": 17104944,
+    "maximum_window": 33554432,
+    "schema_charge": 524288,
+    "context_decoder_allowance": 4194304,
+    "context_encoder_allowance": 134217728
+  },
+  "accounting": "retained_bytes reports owned payload bytes and zstd sizeof where applicable, excluding Rust/allocator bookkeeping; retained_charge is conservative admission accounting. Construction and temporary buffers are separate.",
+  "qualification": {
+    "command": "CARGO_INCREMENTAL=0 CARGO_TARGET_DIR=/Users/casey.allard/spiralcore/target /Users/casey.allard/.cargo/bin/cargo +1.97.1 test --manifest-path crates/spiralcore-transfer/Cargo.toml --locked --release --target aarch64-apple-darwin --features hardware-sha256 --test schema_prepared --test schema_codec --test zstd_dictionary --test schema_reuse",
+    "red": "Expected missing PreparedSchema, schema_zstd and prepared-dictionary APIs.",
+    "green_passed": 23,
+    "breakdown": {
+      "schema_codec": 10,
+      "schema_prepared": 6,
+      "schema_reuse_parent_integration": 5,
+      "zstd_dictionary": 2
+    },
+    "observations": [
+      "Prepared artifact ownership survives mutation of caller buffer.",
+      "Prepared schema versus existing free-API stream parity; dictionary versus fresh-context byte parity.",
+      "Repeated/alternating input sizes, binary and empty targets.",
+      "Recovery after checksum failures, truncated/invalid frames and rejected oversized input.",
+      "Wrong schema, missing checksum/content-size, dictionary-ID flag, trailing frames/data, oversized window and hostile intermediate lengths rejected.",
+      "Maximum literal overhead intermediate above16MiB decodes exactly.",
+      "Parent integration tests cover persistent reuse/restart, missing/corrupt/unauthorized artifacts, bounded pinned cache, budget fallback and failed-publication recovery."
+    ],
+    "scoped_diff_check": "PASS",
+    "timing": "No performance measurements by codec author."
+  },
+  "procedural_note": "Initial codec RED used tests/schema_reuse.rs before a filename ownership collision was identified. Codec tests were moved intact to tests/schema_prepared.rs; parent recreated the endpoint/cache integration file at schema_reuse.rs. Final combined GREEN runs both distinct targets. No production changes were needed to resolve the collision.",
+  "receipts": [
+    {
+      "path": "codec-red.txt",
+      "exit_code": 101,
+      "sha256": "f80932e002cc8e87f232bdda78f9dd86627882f5b17254cf3b2855f282fa87d3"
+    },
+    {
+      "path": "codec-integration-green-attempt1.txt",
+      "exit_code": 0,
+      "sha256": "2f4f3e553d21fc3003b20598c93196b452b6864f08c988bbc8e0f9f4579bfe81"
+    }
+  ],
+  "limits": [
+    "Focused author qualification is not independent review or a full test run.",
+    "Parent owns wire mode/client/receiver cache/admission/publication.",
+    "Retained charge is not measured RSS or energy.",
+    "Performance, amortization and durable elapsed comparisons await the registered campaign; no new WAN claim."
+  ]
+}

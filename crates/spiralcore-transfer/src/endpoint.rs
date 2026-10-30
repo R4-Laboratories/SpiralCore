@@ -13,7 +13,7 @@ use std::{
     io::{Read, Write},
     path::{Path, PathBuf},
     sync::atomic::{AtomicU64, Ordering},
-    sync::Arc,
+    sync::{Arc, Mutex},
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -117,6 +117,7 @@ struct Attempt {
     prefix_encoded: Vec<u8>,
     prefix_chunks: usize,
     runtime_ready: bool,
+    codec: Option<CodecHandle>,
 }
 impl Attempt {
     fn node(&self, id: &Id) -> Option<&Node> {
@@ -131,6 +132,7 @@ impl Attempt {
         self.base_bytes = Vec::new();
         self.prefix_encoded = Vec::new();
         self.runtime_ready = false;
+        self.codec = None;
         self.reserved = 0;
     }
     fn reject(&mut self, e: Error) {
@@ -148,6 +150,20 @@ pub struct Endpoint<A: Authority> {
     attempts: BTreeMap<(Id, Id), Attempt>,
     graphs: BTreeMap<(Id, Id), (Arc<VerifiedGraph>, u64)>,
     graph_stats: GraphCacheStats,
+    codec_cache_enabled: bool,
+    codecs: BTreeMap<(Id, u8, Id), (CodecHandle, u64)>,
+    codec_stats: CodecCacheStats,
+}
+type CodecHandle = Arc<Mutex<crate::fitted_transfer::PreparedDecoder>>;
+#[derive(Debug, Clone, Copy, Default)]
+pub struct CodecCacheStats {
+    pub hits: u64,
+    pub misses: u64,
+    pub preparations: u64,
+    pub evictions: u64,
+    /// Conservative admission charge, not process RSS.
+    pub resident_bytes: u64,
+    pub entries: usize,
 }
 #[derive(Debug, Clone, Copy, Default)]
 pub struct GraphCacheStats {
@@ -243,6 +259,9 @@ impl<A: Authority> Endpoint<A> {
             attempts: BTreeMap::new(),
             graphs: BTreeMap::new(),
             graph_stats: GraphCacheStats::default(),
+            codec_cache_enabled: false,
+            codecs: BTreeMap::new(),
+            codec_stats: CodecCacheStats::default(),
         })
     }
     fn path(&self, ns: Id, id: Id) -> PathBuf {
@@ -252,6 +271,7 @@ impl<A: Authority> Endpoint<A> {
     }
     fn charged(&self) -> u64 {
         self.graph_cache_stats().resident_bytes
+            + self.codec_cache_stats().resident_bytes
             + self
                 .attempts
                 .values()
@@ -271,6 +291,85 @@ impl<A: Authority> Endpoint<A> {
             ..self.graph_stats
         }
     }
+    /// Opt-in retention of validated fitted decoder state. Changes are allowed
+    /// only with no active transfer; disabling drops all unpinned state.
+    pub fn set_codec_cache_enabled(&mut self, enabled: bool) -> Result<()> {
+        if self.attempts.values().any(|s| s.state == 0) {
+            return Err(Error::Sequence);
+        }
+        self.codec_cache_enabled = enabled;
+        if !enabled {
+            self.codec_stats.evictions += self.codecs.len() as u64;
+            self.codecs.clear();
+        }
+        Ok(())
+    }
+    pub fn codec_cache_stats(&self) -> CodecCacheStats {
+        CodecCacheStats {
+            resident_bytes: self.codecs.len() as u64 * crate::fitted_transfer::CODEC_CHARGE,
+            entries: self.codecs.len(),
+            ..self.codec_stats
+        }
+    }
+    fn evict_codec(&mut self) -> bool {
+        let victim = self
+            .codecs
+            .iter()
+            .filter(|(_, (p, _))| Arc::strong_count(p) == 1)
+            .min_by_key(|(_, (_, age))| *age)
+            .map(|(key, _)| *key);
+        if let Some(key) = victim {
+            self.codecs.remove(&key);
+            self.codec_stats.evictions += 1;
+            true
+        } else {
+            false
+        }
+    }
+    fn prepare_codec(
+        &mut self,
+        ns: Id,
+        offer: &Offer,
+        verified_artifact: &[u8],
+        extra: u64,
+        now: u64,
+    ) -> Result<Option<CodecHandle>> {
+        if !self.codec_cache_enabled || !crate::fitted_transfer::is_fitted(offer.mode) {
+            return Ok(None);
+        }
+        let key = (ns, offer.mode as u8, offer.base.ok_or(Error::Malformed)?);
+        if let Some((p, age)) = self.codecs.get_mut(&key) {
+            *age = now;
+            self.codec_stats.hits += 1;
+            return Ok(Some(Arc::clone(p)));
+        }
+        self.codec_stats.misses += 1;
+        while self.codecs.len() >= 8 {
+            if !self.evict_codec() {
+                return Ok(None);
+            }
+        }
+        // Charge the retained entry BEFORE construction, in addition to the
+        // active attempt's conservative scratch charge. Under pressure reuse
+        // is optional; the already-admitted unprepared decoder still works.
+        if self
+            .reserve_with_eviction(
+                extra
+                    .checked_add(crate::fitted_transfer::CODEC_CHARGE)
+                    .ok_or(Error::Limit)?,
+            )
+            .is_err()
+        {
+            return Ok(None);
+        }
+        let decoder = Arc::new(Mutex::new(crate::fitted_transfer::PreparedDecoder::new(
+            offer.mode,
+            verified_artifact,
+        )?));
+        self.codecs.insert(key, (Arc::clone(&decoder), now));
+        self.codec_stats.preparations += 1;
+        Ok(Some(decoder))
+    }
     fn evict_graph(&mut self) -> bool {
         let victim = self
             .graphs
@@ -288,7 +387,7 @@ impl<A: Authority> Endpoint<A> {
     }
     fn reserve_with_eviction(&mut self, n: u64) -> Result<()> {
         while self.reserve(n).is_err() {
-            if !self.evict_graph() {
+            if !self.evict_graph() && !self.evict_codec() {
                 return Err(Error::Limit);
             }
         }
@@ -447,6 +546,7 @@ impl<A: Authority> Endpoint<A> {
                 | Mode::RuntimeV1
                 | Mode::SchemaV1
                 | Mode::ZstdDictionaryV1
+                | Mode::SchemaZstdV1
         ) || (matches!(offer.mode, Mode::Raw | Mode::Zstd)
             && self.cold_graph_policy == ColdGraphPolicy::Disabled)
             || existing.is_ok()
@@ -476,6 +576,14 @@ impl<A: Authority> Endpoint<A> {
                 .and_then(|n| n.checked_add(crate::zstd_prefix::DECODER_ALLOWANCE))
                 .ok_or(Error::Limit)?;
         }
+        if offer.mode == Mode::SchemaZstdV1 && existing.is_err() {
+            // Encoded input, expanded SCVAL001 intermediate, final output and
+            // prepared-template scratch are independent admitted allocations.
+            charge = charge
+                .checked_add(crate::schema::encoded_cap(offer.len as usize)? as u64)
+                .and_then(|n| n.checked_add(1 << 20))
+                .ok_or(Error::Limit)?;
+        }
         if offer.mode == Mode::RuntimeV1 && existing.is_err() {
             // A prediction may be larger than the target after a truncation.
             // Reserve the bounded generator's capacity/growth separately from
@@ -503,6 +611,7 @@ impl<A: Authority> Endpoint<A> {
                     | Mode::RuntimeV1
                     | Mode::SchemaV1
                     | Mode::ZstdDictionaryV1
+                    | Mode::SchemaZstdV1
             ) {
                 self.publication(ns, mid).map_err(|e| {
                     if e == Error::Unknown {
@@ -550,6 +659,7 @@ impl<A: Authority> Endpoint<A> {
                     | Mode::RuntimeV1
                     | Mode::SchemaV1
                     | Mode::ZstdDictionaryV1
+                    | Mode::SchemaZstdV1
             ) || cached.is_some()
             {
                 0
@@ -582,6 +692,7 @@ impl<A: Authority> Endpoint<A> {
             prefix_encoded: Vec::new(),
             prefix_chunks: 0,
             runtime_ready: false,
+            codec: None,
         };
         let reply = match existing {
             Ok(p) => {
@@ -603,6 +714,7 @@ impl<A: Authority> Endpoint<A> {
                             | Mode::RuntimeV1
                             | Mode::SchemaV1
                             | Mode::ZstdDictionaryV1
+                            | Mode::SchemaZstdV1
                     ) {
                         s.base_bytes = bytes;
                     } else {
@@ -620,6 +732,7 @@ impl<A: Authority> Endpoint<A> {
                     }
                     s.base_pinned = true;
                 }
+                s.codec = self.prepare_codec(ns, &offer, &s.base_bytes, s.reserved, now)?;
                 if offer.mode == Mode::ZstdPrefixV1 {
                     s.prefix_encoded
                         .try_reserve_exact(crate::zstd_prefix::encoded_cap(offer.len as usize)?)
@@ -699,12 +812,19 @@ impl<A: Authority> Endpoint<A> {
                     )?;
                 }
                 if crate::fitted_transfer::is_fitted(s.offer.mode) {
-                    s.bytes = crate::fitted_transfer::decode(
-                        s.offer.mode,
-                        &s.base_bytes,
-                        &s.prefix_encoded,
-                        s.offer.len as usize,
-                    )?;
+                    s.bytes = if let Some(codec) = &s.codec {
+                        codec
+                            .lock()
+                            .map_err(|_| Error::Storage)?
+                            .decode(&s.prefix_encoded, s.offer.len as usize)?
+                    } else {
+                        crate::fitted_transfer::decode(
+                            s.offer.mode,
+                            &s.base_bytes,
+                            &s.prefix_encoded,
+                            s.offer.len as usize,
+                        )?
+                    };
                 }
                 if s.offer.mode == Mode::Dag {
                     let m = s.offer.manifest.as_ref().ok_or(Error::Malformed)?;
@@ -743,6 +863,7 @@ impl<A: Authority> Endpoint<A> {
                         | Mode::RuntimeV1
                         | Mode::SchemaV1
                         | Mode::ZstdDictionaryV1
+                        | Mode::SchemaZstdV1
                 ) || (matches!(s.offer.mode, Mode::Raw | Mode::Zstd)
                     && self.cold_graph_policy == ColdGraphPolicy::Disabled)
                 {

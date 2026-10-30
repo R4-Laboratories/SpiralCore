@@ -8,6 +8,7 @@ mod fitted_transfer;
 pub mod prepared;
 pub mod protocol;
 pub mod schema;
+pub mod schema_zstd;
 pub mod selection;
 pub mod shared_runtime;
 pub mod shared_transfer;

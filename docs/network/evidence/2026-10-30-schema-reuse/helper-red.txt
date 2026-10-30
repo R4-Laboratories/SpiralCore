@@ -1,0 +1,41 @@
+warning: unused import: `super::*`
+ --> crates/spiralcore-transfer/examples/support/schema_reuse.rs:3:9
+  |
+3 |     use super::*;
+  |         ^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+error[E0425]: cannot find function `session_index` in this scope
+  --> crates/spiralcore-transfer/examples/support/schema_reuse.rs:10:40
+   |
+10 |                 assert!(indexes.insert(session_index(trial, position).unwrap()));
+   |                                        ^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `session_index` in this scope
+  --> crates/spiralcore-transfer/examples/support/schema_reuse.rs:14:17
+   |
+14 |         assert!(session_index(10, 0).is_err());
+   |                 ^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `session_index` in this scope
+  --> crates/spiralcore-transfer/examples/support/schema_reuse.rs:15:17
+   |
+15 |         assert!(session_index(0, 10).is_err());
+   |                 ^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `ordered_arms` in this scope
+  --> crates/spiralcore-transfer/examples/support/schema_reuse.rs:23:29
+   |
+23 |                 let order = ordered_arms(trial, large);
+   |                             ^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `ordered_arms` in this scope
+  --> crates/spiralcore-transfer/examples/support/schema_reuse.rs:24:35
+   |
+24 |                 assert_eq!(order, ordered_arms(trial, large));
+   |                                   ^^^^^^^^^^^^ not found in this scope
+
+error: aborting due to 5 previous errors; 1 warning emitted
+
+For more information about this error, try `rustc --explain E0425`.
