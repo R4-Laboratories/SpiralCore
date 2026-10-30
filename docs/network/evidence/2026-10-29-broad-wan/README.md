@@ -15,6 +15,21 @@ The [completion receipt](completion.json) binds the final report and all twelve
 case manifests, aggregates and independent reviews. It records fresh verification
 of 4,546 compact case checksum entries and the complete operation/capture census.
 
+## Portable local review bundle
+
+`broad-wan-20261029-review.tar` is a 1,224,990,720-byte local archive for sharing.
+The [bundle receipt](review-bundle.json) records its location, SHA-256, all member
+identities and reproduction limits. It contains the sixty original measured-run
+ZIPs, the separate failed-setup ZIP, the qualified producer ZIP, compact records
+at `8e46471`, and measured source at `9dce4c5`.
+
+An [independent streaming review](review-bundle-verification/independent-review-method.md)
+verified all 68 regular-file members, 67 checksum entries, 62 artifact custody
+references and both byte-identical regenerated Git archives. This packaging check
+does not repeat the performance experiments or change their limitations. The
+large archive and raw PCAPs are local artifacts; they have not been published as
+persistent public downloads. The original archives remain retained separately.
+
 The original shell-only `workflow-configuration-review.json` does not qualify
 negative rejection paths: native Bash 3.2 continued after failing standalone
 `[[ ... ]]` checks despite `set -e`. Preserve that historical receipt, but use
