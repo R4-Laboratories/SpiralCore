@@ -2,7 +2,7 @@
 
 Measured source: `9dce4c57d1f41cef7365b297cd690849afce34e7`.
 Run: `d6aaa0f15da9ccbc62c005a1802532b3e85ad6d901886eea6fbd0076b2d312e4`.
-Seven of twelve registered cases are complete and independently reviewed. Remaining
+Eight of twelve registered cases are complete and independently reviewed. Remaining
 cases must not be inferred from this result. The complete registration is in the
 [workload plan](../plans/2026-10-29-broader-wan-and-scaling.md).
 
@@ -222,6 +222,34 @@ Independent review agrees with every raw receipt and the author statistics;
 all five captures meet the completeness criteria. The
 [complete truncation packet](evidence/2026-10-29-broad-wan/cases/truncate_4096/README.md)
 retains the observations, verification and custody.
+
+## Completed case: 1 MiB XOR overwrite
+
+The registered case ID is `replace_1m`. The fixture XORs every byte in
+[8 MiB, 9 MiB) with 0xa5 inside a 16 MiB pseudorandom base. It is a controlled
+1 MiB changed region, not an independently generated replacement or a claim
+about arbitrary real-world edit distributions. All four current encoders receive
+the same bytes; no fixture-specific XOR operation is part of the wire codec.
+
+| Warm update | Median request + reply HTTP-body bytes | Median elapsed, including computation | Median sender + receiver-handler CPU |
+|---|---:|---:|---:|
+| Raw full send | 16,814,026 | 1,968.257 ms | 91.357 ms |
+| Ordinary zstd | 16,814,026 | 1,943.532 ms | 87.086 ms |
+| Zstd prefix delta | 1,075,847.5 | 383.472 ms | 103.026 ms |
+| Sparse COPY/LITERAL | 1,051,558 | 351.888 ms | 69.775 ms |
+
+Sparse uses 93.74594758% fewer HTTP-body bytes than raw, with a 5.593425×
+ratio of median elapsed times and approximately 23.62% lower median combined
+CPU. Both delta methods transmit a substantial residual and show a smaller elapsed-time
+advantage here than in the smaller-edit cases. Including seed and one update, raw
+uses median 33,628,052 body bytes and 4,161.421 ms; sparse uses 17,865,584 bytes
+and 2,275.975 ms; zstd prefix uses 17,889,873.5 bytes and 2,480.406 ms.
+
+All thirty pairs and 240 seed/update operations are retained and reopened exactly,
+totaling 4,026,531,840 compared bytes. Independent review agrees with the raw
+receipts and author statistics; all five captures meet the completeness criteria.
+The [complete larger-overwrite packet](evidence/2026-10-29-broad-wan/cases/replace_1m/README.md)
+retains the fixture identity, measurements and custody.
 
 ## Qualification and measurement boundaries
 
