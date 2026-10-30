@@ -1,0 +1,83 @@
+{
+  "schema": "spiralcore.replay-cpu.final-review.v1",
+  "milestone": "SC-OPT-009",
+  "status": "APPROVED_SCOPED_CODE_RUST_SECURITY",
+  "reviewer": "/root/selector_tests",
+  "roles": ["harness-optimizer", "code-reviewer", "rust-reviewer", "security-reviewer"],
+  "roster": "d1927d9e7ce51354",
+  "source_revision": "384ad3af2a41e87643bd0678120b854e5fe7244b",
+  "baseline_revision": "d4532b0fade8e41b4beb17e6b00572d436cfe444",
+  "sequence": [
+    {"stage": "procedural_pipeline_audit", "status": "PASS_PIPELINE_AUDIT", "record": ".agent-sync/AUDIT.md", "basis": "Existing native command events and actual RED/GREEN, final test, Clippy, build and completed measurement outputs inspected; no new test, measurement, history archive or analyzer"},
+    {"stage": "independent_code_rust_security_review", "status": "APPROVED", "basis": "Changed production and benchmark reviewed after procedural PASS; reviewer authored none of this iteration's production changes, benchmark or new tests"}
+  ],
+  "reviewed_files": [
+    "crates/spiralcore-transfer/src/shared_runtime.rs",
+    "crates/spiralcore-transfer/src/shared_transfer.rs",
+    "crates/spiralcore-transfer/src/client.rs",
+    "crates/spiralcore-transfer/tests/replay_cpu.rs",
+    "crates/spiralcore-transfer/tests/shared_transfer.rs",
+    "crates/spiralcore-transfer/examples/replay_cpu.rs",
+    "docs/network/evidence/2026-10-30-replay-cpu/measurement-contract.md",
+    "docs/network/evidence/2026-10-30-replay-cpu/summary.json"
+  ],
+  "source_sha256": {
+    "shared_runtime.rs": "9c125e8dda66be18f166da2ab8b83836725c082039d8cc07cfd44e66c2874929",
+    "shared_transfer.rs": "db13340e77979881fa558752d60cae233f43970b6867de395073cff07ae3d476",
+    "client.rs": "fe140ed98c2c202ba0502d1cd88ad69ba97e45a130add40998f40567cda9a210",
+    "examples/replay_cpu.rs": "c824102ac3f617d4deb1eecd65867b9b2083143c96e8b0fe58b2edc1f04ae2c4"
+  },
+  "findings": [],
+  "blocking_findings": 0,
+  "reviewed_invariants": [
+    "Packed left/right neighbors wrap at the actual valid ring width. Width one, width two, full words and partial final words preserve MSB-first semantics; final padding is masked after every step and serialized canonically.",
+    "Scratch storage is overwritten for every word before each swap. Packed rows are created only from fully decoded/validated state, cannot change width, and are not exposed to callers.",
+    "Scalar State::step retains its behavior. Numeric transitions and header emission share unchanged floating-point operation order; stale scalar seed rings are never emitted by packed replay.",
+    "Exact output-size preflight, step/work/object limits and final produced-length check remain in force. Packed replay reserves the exact output once and adds only bounded word/scratch storage.",
+    "PreparedPrediction owns private immutable boxed checkpoint, prediction and setup buffers. Mutating caller inputs after construction cannot alter retained state; callers receive only read-only slices.",
+    "Prepared construction validates/replays/hashes once, and target preparation applies the existing bounded exact residual encoder. The original and prepared APIs share identical byte-first selection, offering and acknowledgement paths.",
+    "Prepared state conveys no authority. Receiver namespace, epoch, admission, replay validation, final digest and durable publication checks are unchanged. No receiver replay cache or global unbounded prediction cache is introduced.",
+    "Retained-byte accounting explicitly excludes allocator metadata, temporary buffers and total process memory; multiple retained predictions require a caller-wide budget.",
+    "The benchmark transfers all arms through the real endpoint and batch codec, reopens every seed and target, counts both body directions plus reply timing fields, and verifies selected-body costs.",
+    "A fixed seeded shuffle varies arm order. Baseline and candidate use identical benchmark source, and the candidate-only cfg selects its new prepared API. Failed workers retain output/cache and stop the driver without retry or outlier removal.",
+    "CPU/wall totals include receiver work once; exchange and receiver timers are nested. Preparation, standalone fixture replay and post-commit exact verification are separate measured scopes.",
+    "The same prepared object is actually reused for three targets. Per-use amortization adds preparation once and divides the three-target sum by three. Practical cold totals include required seed and preparation while raw/zstd exclude unnecessary experimental seeds."
+  ],
+  "observed_qualification": {
+    "native_all_target_tests": {"passed": 229, "failed": 0, "ignored": 2, "targets": 28, "exit": 0},
+    "doctests": {"passed": 1, "exit": 0},
+    "final_benchmark_tests": {"passed": 3, "exit": 0},
+    "all_target_clippy_after_benchmark_cfg_fix": "PASS, warnings denied",
+    "baseline_and_candidate_final_builds": "PASS",
+    "existing_native_golden_vectors": "unchanged and passing",
+    "focused_runtime_line_coverage_percent": 98.54014598540147,
+    "focused_transfer_line_coverage_percent": 93.10344827586206,
+    "branch_mcdc_coverage": "NOT_MEASURED",
+    "retained_failure": "Initial combined parent command passed tests then failed benchmark drop_non_drop Clippy. cfg-only drop correction was followed by three example tests, all-target Clippy and both final benchmark builds."
+  },
+  "observed_measurement": {
+    "profile_exit": 0,
+    "paired_campaign_exit": 0,
+    "campaigns_repeated_for_better_results": false,
+    "worker_rows": 120,
+    "preparation_rows": 20,
+    "target_operations": 360,
+    "seed_operations": 360,
+    "exact_reopened_operations": 720,
+    "cleanup_rows": 120,
+    "paired_runtime_body_costs": "unchanged for baseline, packed and prepared arms",
+    "discarded_observations": 0,
+    "summary_verdict": "PAIRED_EXACTNESS_AND_BODY_COST_PASS",
+    "scope": "Local serialized durable endpoint mechanism; not a new WAN experiment"
+  },
+  "limits": [
+    "Large favorable runtime CPU improves substantially versus the prior runtime but remains above raw, zstd and conventional adaptive CPU; small and unrelated results and unfavorable tails remain in the data.",
+    "Prepared send timings exclude initial construction unless an explicitly labeled cold or amortized total includes it.",
+    "HTTP-body-equivalent counts are not actual network/full-wire bytes. Exchange time is not pure transmission time.",
+    "Retained buffer bytes are not RSS or peak-memory measurements; no energy claim is supported.",
+    "Ten paired trials and a separate baseline profile are bounded local evidence. This review does not extend them to WAN, other hardware, MVM or compliance qualification.",
+    "The existing benchmark summary is reviewed and its raw census inspected; no new independently implemented statistical analyzer was commissioned for this iteration."
+  ],
+  "file_claims": "Parent confirmed all three completed implementation/measurement claims released before final verdict",
+  "next_step": "Publish after the parent's normal final source/base check; no additional review campaign requested"
+}

@@ -1,0 +1,37 @@
+   Compiling spiralcore-transfer v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer)
+    Finished `release` profile [optimized] target(s) in 15.09s
+     Running tests/adaptive.rs (/Users/casey.allard/spiralcore/target/aarch64-apple-darwin/release/deps/adaptive-d32315d14a995e58)
+
+running 13 tests
+test oversized_inputs_fail_before_any_exchange ... ok
+test cold_structured_data_selects_zstd_before_begin ... ok
+test repeat_probe_with_evicted_remote_object_completes_the_original_raw_offer ... ok
+test missing_base_and_changed_scope_do_not_reoffer_or_publish ... ok
+test real_http_codec_selection_cost_matches_bodies_and_reopens_exactly ... ok
+test revoked_authority_and_transport_failure_never_retry_selection ... ok
+test exact_repeat_probe_sends_raw_identity_only_and_unprobed_hit_counts_upload ... ok
+test malicious_receipts_are_checked_after_selection ... ok
+test small_localized_edit_uses_prefix_when_it_costs_less_than_sparse ... ok
+test warm_local_edits_choose_sparse_and_reordered_data_choose_prefix ... ok
+test empty_and_incompressible_ties_prefer_raw_with_exact_full_cost ... ok
+test selector_cost_matches_actual_forced_arms_and_minimizes_eligible_bytes ... ok
+test exact_bytes_and_length_survive_boundaries_and_length_changes_after_restart ... ok
+
+test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.27s
+
+     Running tests/shared_transfer.rs (/Users/casey.allard/spiralcore/target/aarch64-apple-darwin/release/deps/shared_transfer-9ba49b4b7c72da7c)
+
+running 10 tests
+test prepared_prediction_rejects_invalid_state_and_oversize_targets ... ok
+test prepared_prediction_owns_its_state_and_preserves_residual_bytes ... ok
+test setup_truncations_versions_digest_and_resource_lies_are_rejected ... ok
+test different_lengths_and_final_checkpoint_use_exact_residuals ... ok
+test replay_is_idempotent_and_cancel_discards_output ... ok
+test revoked_authority_and_changed_epoch_cannot_finish_an_admitted_replay ... ok
+test runtime_recipe_crosses_transfer_boundary_and_reopens_exact_bytes ... ok
+test checkpoint_must_be_authorized_present_and_within_replay_budget ... ok
+test prepared_prediction_transfers_repeated_edits_without_granting_authority ... ok
+test malformed_setup_missing_setup_and_failed_final_digest_never_publish ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.22s
+

@@ -1,0 +1,82 @@
+   Compiling spiralcore-transfer v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer)
+error[E0609]: no field `rings` on type `&shared_runtime::Recipe`
+  --> src/shared_runtime.rs:57:26
+   |
+57 |         for row in &self.rings {
+   |                          ^^^^^ unknown field
+   |
+   = note: available fields are: `steps`, `payload`, `output`
+
+error[E0609]: no field `width` on type `&shared_runtime::Recipe`
+  --> src/shared_runtime.rs:58:34
+   |
+58 |             if row.len() != self.width || row.iter().any(|&b| b > 1) {
+   |                                  ^^^^^ unknown field
+   |
+   = note: available fields are: `steps`, `payload`, `output`
+
+error[E0599]: no method named `validate_fields` found for struct `shared_runtime::State` in the current scope
+   --> src/shared_runtime.rs:552:19
+    |
+119 | pub struct State {
+    | ---------------- method `validate_fields` not found for this struct
+...
+552 |             state.validate_fields()?;
+    |                   ^^^^^^^^^^^^^^^
+    |
+help: there is a method `validate` with a similar name
+    |
+552 -             state.validate_fields()?;
+552 +             state.validate()?;
+    |
+
+error[E0599]: no method named `validate_fields` found for struct `State` in the current scope
+   --> src/shared_runtime.rs:552:19
+    |
+119 | pub struct State {
+    | ---------------- method `validate_fields` not found for this struct
+...
+552 |             state.validate_fields()?;
+    |                   ^^^^^^^^^^^^^^^
+    |
+help: there is a method `validate` with a similar name
+    |
+552 -             state.validate_fields()?;
+552 +             state.validate()?;
+    |
+
+error[E0599]: no method named `validate_fields` found for struct `State` in the current scope
+   --> src/shared_runtime.rs:568:15
+    |
+119 | pub struct State {
+    | ---------------- method `validate_fields` not found for this struct
+...
+568 |         state.validate_fields()?;
+    |               ^^^^^^^^^^^^^^^
+    |
+help: there is a method `validate` with a similar name
+    |
+568 -         state.validate_fields()?;
+568 +         state.validate()?;
+    |
+
+error[E0599]: no method named `validate_fields` found for struct `shared_runtime::State` in the current scope
+   --> src/shared_runtime.rs:568:15
+    |
+119 | pub struct State {
+    | ---------------- method `validate_fields` not found for this struct
+...
+568 |         state.validate_fields()?;
+    |               ^^^^^^^^^^^^^^^
+    |
+help: there is a method `validate` with a similar name
+    |
+568 -         state.validate_fields()?;
+568 +         state.validate()?;
+    |
+
+Some errors have detailed explanations: E0599, E0609.
+For more information about an error, try `rustc --explain E0599`.
+error: could not compile `spiralcore-transfer` (lib test) due to 4 previous errors
+warning: build failed, waiting for other jobs to finish...
+error: could not compile `spiralcore-transfer` (lib) due to 4 previous errors

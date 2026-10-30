@@ -154,6 +154,19 @@ example supports `remote` through the allowlisted HTTPS experiment adapter and
 [measurement contract](../../docs/network/evidence/2026-10-30-shared-runtime/measurement-contract.md)
 defines scope, controls, seeding and interpretation.
 
+For repeated related targets, construct
+`shared_transfer::PreparedPrediction::new(&checkpoint, &recipe)` once and call
+`client::transfer_prepared_runtime_batched(&prepared, &target, transfer_id,
+warm_probe, exchange)` for each target. This reuses the sender's immutable
+prediction and setup digest. Charge `prepared.retained_bytes()` to the caller's
+memory budget and measure construction separately from repeated sends; it can
+retain a full 16 MiB prediction. The receiver still loads the authorized
+checkpoint, replays, verifies, and durably commits each target. This API does not
+create a receiver cache or bypass namespace/epoch checks.
+
+Replay now evolves the six CA rings in packed words and emits their canonical
+bytes directly. The public scalar `State::step` and wire format remain compatible.
+
 The Rust API also exposes `client::transfer_zstd_prefix_batched` as a conventional delta control.
 It encodes one bounded zstd frame against the authorized exact base, and selects raw before Begin
 when the complete object-protocol encoding would not be smaller. Both inputs remain capped at

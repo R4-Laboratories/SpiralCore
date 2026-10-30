@@ -154,6 +154,16 @@ impl State {
     }
 
     fn validate(&self) -> Result<()> {
+        self.validate_fields()?;
+        for row in &self.rings {
+            if row.len() != self.width || row.iter().any(|&b| b > 1) {
+                return Err(Error::Malformed);
+            }
+        }
+        Ok(())
+    }
+
+    fn validate_fields(&self) -> Result<()> {
         if !(1..=MAX_WIDTH).contains(&self.width) || self.n > MAX_N || self.roots.len() > MAX_ROOTS
         {
             return Err(Error::Limit);
@@ -188,40 +198,13 @@ impl State {
         if count > self.n {
             return Err(Error::Malformed);
         }
-        for row in &self.rings {
-            if row.len() != self.width || row.iter().any(|&b| b > 1) {
-                return Err(Error::Malformed);
-            }
-        }
         Ok(())
     }
 
     pub fn encode(&self) -> Result<Vec<u8>> {
         self.validate()?;
         let mut b = Vec::with_capacity(checkpoint_size(self.width, self.roots.len()));
-        b.extend_from_slice(CHECKPOINT_MAGIC);
-        b.extend_from_slice(&self.n.to_le_bytes());
-        b.extend_from_slice(&(self.width as u16).to_le_bytes());
-        b.extend_from_slice(&[u8::from(self.memory_enabled), 0]);
-        for value in [
-            self.fixed_dt,
-            self.memory_gain,
-            self.k_coupling,
-            self.kuramoto_k,
-        ] {
-            put_float(&mut b, value);
-        }
-        for value in self.phases.iter().chain(self.omegas.iter()) {
-            put_float(&mut b, *value);
-        }
-        b.extend_from_slice(&(self.roots.len() as u16).to_le_bytes());
-        for root in &self.roots {
-            put_float(&mut b, root.value);
-            b.extend_from_slice(&root.memory_count.to_le_bytes());
-            for value in root.phase_sum.iter().flatten() {
-                put_float(&mut b, *value);
-            }
-        }
+        self.write_header(&mut b);
         for row in &self.rings {
             for chunk in row.chunks(8) {
                 let mut byte = 0;
@@ -232,6 +215,34 @@ impl State {
             }
         }
         Ok(b)
+    }
+
+    // Callers validate scalar fields first. Packed replay writes its rings
+    // separately, so it never serializes the unchanged scalar seed rows.
+    fn write_header(&self, b: &mut Vec<u8>) {
+        b.extend_from_slice(CHECKPOINT_MAGIC);
+        b.extend_from_slice(&self.n.to_le_bytes());
+        b.extend_from_slice(&(self.width as u16).to_le_bytes());
+        b.extend_from_slice(&[u8::from(self.memory_enabled), 0]);
+        for value in [
+            self.fixed_dt,
+            self.memory_gain,
+            self.k_coupling,
+            self.kuramoto_k,
+        ] {
+            put_float(b, value);
+        }
+        for value in self.phases.iter().chain(self.omegas.iter()) {
+            put_float(b, *value);
+        }
+        b.extend_from_slice(&(self.roots.len() as u16).to_le_bytes());
+        for root in &self.roots {
+            put_float(b, root.value);
+            b.extend_from_slice(&root.memory_count.to_le_bytes());
+            for value in root.phase_sum.iter().flatten() {
+                put_float(b, *value);
+            }
+        }
     }
 
     pub fn decode(bytes: &[u8]) -> Result<Self> {
@@ -316,26 +327,7 @@ impl State {
         if self.n == MAX_N {
             return Err(Error::Limit);
         }
-        self.step_validated(payload);
-        Ok(())
-    }
-
-    fn step_validated(&mut self, payload: f64) {
-        self.n += 1;
-        self.roots.push(Root {
-            value: payload,
-            memory_count: 1,
-            phase_sum: std::array::from_fn(|i| {
-                [libm::cos(self.phases[i]), libm::sin(self.phases[i])]
-            }),
-        });
-        self.fold_roots();
-        let now = self.n as f64 * self.fixed_dt;
-        let previous = (self.n - 1) as f64 * self.fixed_dt;
-        let elapsed = now - previous;
-        let dt = (if elapsed > 0.0 { elapsed } else { 0.05 }).clamp(0.005, 0.25);
-        self.kuramoto(dt);
-        self.think(dt, wrap(now));
+        self.step_fields(payload);
         for (i, row) in self.rings.iter_mut().enumerate() {
             let mut next = Vec::with_capacity(self.width);
             for at in 0..self.width {
@@ -351,6 +343,27 @@ impl State {
             }
             *row = next;
         }
+        Ok(())
+    }
+
+    // CA evolution is independent of these fields. Keep their floating-point
+    // operation order identical for both public scalar steps and packed replay.
+    fn step_fields(&mut self, payload: f64) {
+        self.n += 1;
+        self.roots.push(Root {
+            value: payload,
+            memory_count: 1,
+            phase_sum: std::array::from_fn(|i| {
+                [libm::cos(self.phases[i]), libm::sin(self.phases[i])]
+            }),
+        });
+        self.fold_roots();
+        let now = self.n as f64 * self.fixed_dt;
+        let previous = (self.n - 1) as f64 * self.fixed_dt;
+        let elapsed = now - previous;
+        let dt = (if elapsed > 0.0 { elapsed } else { 0.05 }).clamp(0.005, 0.25);
+        self.kuramoto(dt);
+        self.think(dt, wrap(now));
     }
 
     fn fold_roots(&mut self) {
@@ -430,6 +443,74 @@ impl State {
     }
 }
 
+// Internal replay representation: logical cell zero is the high bit of word
+// zero. This matches checkpoint byte order and avoids unpacking on every step.
+// Construct only from a validated State; width never changes during replay.
+struct PackedRings {
+    rows: [Vec<u64>; 6],
+    scratch: Vec<u64>,
+    tail_shift: u32,
+    tail_mask: u64,
+    row_bytes: usize,
+}
+
+impl PackedRings {
+    fn new(state: &State) -> Self {
+        let words = state.width.div_ceil(64);
+        let tail_shift = (64 - ((state.width - 1) % 64 + 1)) as u32;
+        Self {
+            rows: std::array::from_fn(|i| {
+                let mut packed = vec![0; words];
+                for (at, bit) in state.rings[i].iter().enumerate() {
+                    packed[at / 64] |= u64::from(*bit) << (63 - at % 64);
+                }
+                packed
+            }),
+            scratch: vec![0; words],
+            tail_shift,
+            tail_mask: u64::MAX << tail_shift,
+            row_bytes: state.width.div_ceil(8),
+        }
+    }
+
+    fn step(&mut self) {
+        let last = self.scratch.len() - 1;
+        for (rule_index, row) in self.rows.iter_mut().enumerate() {
+            for at in 0..row.len() {
+                let c = row[at];
+                let previous = if at == 0 {
+                    (row[last] >> self.tail_shift) & 1
+                } else {
+                    row[at - 1] & 1
+                };
+                let l = (c >> 1) | (previous << 63);
+                let r = (c << 1)
+                    | if at == last {
+                        (row[0] >> 63) << self.tail_shift
+                    } else {
+                        row[at + 1] >> 63
+                    };
+                self.scratch[at] = match rule_index / 2 {
+                    0 => (l & !c) | (c & r),
+                    1 => (c ^ r) | (c & !l),
+                    _ => l ^ (c | r),
+                };
+            }
+            self.scratch[last] &= self.tail_mask;
+            std::mem::swap(row, &mut self.scratch);
+        }
+    }
+
+    fn write(&self, output: &mut Vec<u8>) {
+        for row in &self.rows {
+            for (at, word) in row.iter().enumerate() {
+                let count = (self.row_bytes - at * 8).min(8);
+                output.extend_from_slice(&word.to_be_bytes()[..count]);
+            }
+        }
+    }
+}
+
 /// Replay a bounded recipe, returning canonical state or full-state trace bytes.
 /// `output_limit` is independent of the eventual residual target's length.
 pub fn replay(checkpoint: &[u8], recipe: &Recipe, output_limit: usize) -> Result<Vec<u8>> {
@@ -455,32 +536,38 @@ pub fn replay(checkpoint: &[u8], recipe: &Recipe, output_limit: usize) -> Result
     // Integer-only shape preflight precedes all oscillator and CA work.
     let required = replay_size(&state, recipe, output_limit)?;
     let mut output = Vec::new();
+    // One bounded reservation prevents geometric Vec growth from briefly
+    // retaining both old and oversized new buffers beyond admission budget.
+    output
+        .try_reserve_exact(required)
+        .map_err(|_| Error::Limit)?;
+    let mut rings = PackedRings::new(&state);
     if recipe.output == OutputKind::Trace {
-        // One bounded reservation prevents geometric Vec growth from briefly
-        // retaining both old and oversized new buffers beyond admission budget.
-        output
-            .try_reserve_exact(required)
-            .map_err(|_| Error::Limit)?;
         output.extend_from_slice(TRACE_MAGIC);
     }
     for _ in 0..recipe.steps {
-        state.step_validated(recipe.payload);
+        state.step_fields(recipe.payload);
+        rings.step();
         if recipe.output == OutputKind::Trace {
-            let encoded = state.encode()?;
+            state.validate_fields()?;
+            let encoded_len = checkpoint_size(state.width, state.roots.len());
             let next_len = output
                 .len()
                 .checked_add(4)
-                .and_then(|n| n.checked_add(encoded.len()))
+                .and_then(|n| n.checked_add(encoded_len))
                 .ok_or(Error::Limit)?;
             if next_len > required {
                 return Err(Error::Integrity);
             }
-            output.extend_from_slice(&(encoded.len() as u32).to_le_bytes());
-            output.extend_from_slice(&encoded);
+            output.extend_from_slice(&(encoded_len as u32).to_le_bytes());
+            state.write_header(&mut output);
+            rings.write(&mut output);
         }
     }
     if recipe.output == OutputKind::FinalCheckpoint {
-        output = state.encode()?;
+        state.validate_fields()?;
+        state.write_header(&mut output);
+        rings.write(&mut output);
     }
     if output.len() != required {
         return Err(Error::Integrity);
@@ -587,4 +674,74 @@ fn read_float(r: &mut Reader<'_>) -> Result<f64> {
         return Err(Error::Malformed);
     }
     Ok(value)
+}
+
+#[cfg(test)]
+mod packed_tests {
+    use super::*;
+
+    // Independent rule-table oracle, rather than the packed Boolean formulas.
+    fn scalar_step(row: &[u8], rule: u8) -> Vec<u8> {
+        (0..row.len())
+            .map(|i| {
+                let neighborhood = (row[(i + row.len() - 1) % row.len()] << 2)
+                    | (row[i] << 1)
+                    | row[(i + 1) % row.len()];
+                (rule >> neighborhood) & 1
+            })
+            .collect()
+    }
+
+    fn scalar_bytes(rows: &[Vec<u8>; 6]) -> Vec<u8> {
+        rows.iter()
+            .flat_map(|row| {
+                row.chunks(8).map(|chunk| {
+                    chunk
+                        .iter()
+                        .enumerate()
+                        .fold(0, |byte, (i, bit)| byte | (bit << (7 - i)))
+                })
+            })
+            .collect()
+    }
+
+    #[test]
+    fn packed_rules_match_scalar_tables_at_periodic_word_boundaries() {
+        for width in [
+            1, 2, 7, 8, 9, 31, 32, 33, 63, 64, 65, 127, 128, 129, 255, 256, 257, 4089, 4095, 4096,
+        ] {
+            for pattern in 0..5 {
+                let mut state = State::seeded(width).unwrap();
+                let mut seed = 0x1234_5678_9abc_def0u64;
+                for (index, row) in state.rings.iter_mut().enumerate() {
+                    for (i, bit) in row.iter_mut().enumerate() {
+                        seed ^= seed << 13;
+                        seed ^= seed >> 7;
+                        seed ^= seed << 17;
+                        *bit = match pattern {
+                            0 => 0,
+                            1 => 1,
+                            2 => u8::from(i == 0 || i == width - 1),
+                            3 => ((i + index) % 2) as u8,
+                            _ => (seed & 1) as u8,
+                        };
+                    }
+                }
+                let mut packed = PackedRings::new(&state);
+                for step in 0..33 {
+                    let mut actual = Vec::new();
+                    packed.write(&mut actual);
+                    assert_eq!(
+                        actual,
+                        scalar_bytes(&state.rings),
+                        "width={width}, pattern={pattern}, step={step}"
+                    );
+                    packed.step();
+                    for (i, row) in state.rings.iter_mut().enumerate() {
+                        *row = scalar_step(row, [184, 110, 30][i / 2]);
+                    }
+                }
+            }
+        }
+    }
 }

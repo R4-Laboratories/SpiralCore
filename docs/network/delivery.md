@@ -60,6 +60,14 @@ Use public/synthetic data until deployment qualification. Enumerate envelope, tr
 
 ## Current runnable delivery
 
+The coupled runtime now uses packed CA replay and supports immutable prepared
+sender predictions. In the recorded local comparison, large-trace replay CPU fell
+from 228.305 to 12.184 ms, with exact bytes and unchanged wire format. Complete
+generated-transfer CPU fell from 559.601 to 117.050 ms when preparation was reused;
+the separate 19.228 ms preparation cost and 14,854,835 retained bytes are recorded
+in the [CPU optimization result](replay-cpu-results-2026-10-30.md). Receiver replay,
+authorization, resource limits and durable verification remain enforced.
+
 Use `crates/spiralcore-transfer`. Its original `spiralcore` CLI remains a loopback-only public/synthetic-data experiment, now with explicit sparse sends. The separate WAN binaries use a temporary bearer capability, allowlisted experiment scopes and verified HTTPS through Cloudflare. This bounded synthetic-data adapter is a working Internet transfer experiment, not a general public file service or a production security qualification. The existing warm-cache/wire prototypes remain separate research implementations. Geometric peer selection and MVM integration remain future work.
 
 The release demo transfers 1 MiB cold/repeated/32-byte-mutated content over real TCP, then reopens the cache and checks exact bytes. A separate 16 MiB random cold/repeat run also passed exact recovery. See [validation receipt](validation.json) for source identities, measured bytes, complete test/coverage scope and limitations.

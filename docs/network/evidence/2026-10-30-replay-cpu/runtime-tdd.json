@@ -1,0 +1,123 @@
+{
+  "schema": "spiralcore.replay-cpu.runtime-tdd.v1",
+  "status": "PASS_FOCUSED_RUNTIME",
+  "date": "2026-10-30",
+  "baseline_commit": "d4532b0fade8e41b4beb17e6b00572d436cfe444",
+  "roster": "d1927d9e7ce51354",
+  "source_sha256": {
+    "crates/spiralcore-transfer/src/shared_runtime.rs": "9c125e8dda66be18f166da2ab8b83836725c082039d8cc07cfd44e66c2874929",
+    "crates/spiralcore-transfer/tests/replay_cpu.rs": "1bf231f0a8856f29e8b11ba91764b6669328aab870ad70704154f662bd862641",
+    "docs/specs/2026-10-30-replay-cpu-design.md": "2a16c6435640fef8729a2fd826cf9280f7c28c3f8c498aae414e18b4237141c7",
+    "docs/plans/2026-10-30-replay-cpu.md": "d573935cd0772da8f483b44e57b88af55c01b3f421e915f7b4672f9848c7ff41"
+  },
+  "qualification": {
+    "toolchain": "Rust 1.97.1",
+    "target": "aarch64-apple-darwin",
+    "profile": "release",
+    "features": [
+      "hardware-sha256"
+    ],
+    "command": "CARGO_TARGET_DIR=/Users/casey.allard/spiralcore/target /Users/casey.allard/.cargo/bin/cargo +1.97.1 test --manifest-path crates/spiralcore-transfer/Cargo.toml --locked --release --target aarch64-apple-darwin --features hardware-sha256 --lib --test replay_cpu --test shared_runtime",
+    "final_passed": 29,
+    "red": "Expected E0433: private packed transformation type did not exist before implementation.",
+    "intermediate_failure": "First GREEN build exposed a patch context mistake: State validation wrapper was inserted into Recipe. Moved wrapper to State; no test assertion failures occurred.",
+    "final": "29 tests passed after final test-module placement and rustfmt; exact native vectors unchanged; scoped git diff --check passed."
+  },
+  "receipts": [
+    {
+      "path": "packed-red.txt",
+      "exit_code": 101,
+      "sha256": "73a430df1560d301ba66d05c69766bebbd57913e026bb9edc9848d09c4612a9c"
+    },
+    {
+      "path": "packed-green-attempt1.txt",
+      "exit_code": 101,
+      "sha256": "2a05dd6f5d15cc3e59d92d39c17faef3cc6dd50a538635b6c50bf6d3a1ac7ab1"
+    },
+    {
+      "path": "packed-green-attempt2.txt",
+      "exit_code": 0,
+      "sha256": "c0395225444dfabfea3c485ff7734d9cc78688db2877ed7367390b9a7a0267b5"
+    },
+    {
+      "path": "packed-green.txt",
+      "exit_code": 0,
+      "sha256": "43c13c839cdab51bc8e4b1b2e798994943b738d5f79e067c9300452a642c8e9d"
+    }
+  ],
+  "coverage_scope": {
+    "packed_rule_table_oracle": {
+      "widths": [
+        1,
+        2,
+        7,
+        8,
+        9,
+        31,
+        32,
+        33,
+        63,
+        64,
+        65,
+        127,
+        128,
+        129,
+        255,
+        256,
+        257,
+        4089,
+        4095,
+        4096
+      ],
+      "initial_patterns": 5,
+      "observations_per_pattern": 33,
+      "rings": 6,
+      "rules": [
+        184,
+        110,
+        30
+      ]
+    },
+    "complete_replay_scalar_oracle": {
+      "widths": [
+        1,
+        2,
+        7,
+        8,
+        63,
+        64,
+        65,
+        127,
+        4095,
+        4096
+      ],
+      "steps": [
+        0,
+        1,
+        2,
+        3,
+        9,
+        81
+      ],
+      "output_kinds": [
+        "FinalCheckpoint",
+        "Trace"
+      ],
+      "exact_budget_and_one_byte_short": true,
+      "extreme_clock_memory_cases": 4
+    },
+    "existing_runtime_suite": 22,
+    "instrumented_coverage": "NOT_RUN_BY_RUNTIME_AUTHOR"
+  },
+  "implementation_scope": [
+    "Private MSB-first packed CA rows and reusable scratch; periodic boundary uses actual width.",
+    "Public State::step remains scalar; numeric operations and canonical encoding order preserved.",
+    "Replay writes directly to exact-sized output without per-step scalar unpack or temporary checkpoint.",
+    "Existing decode, scalar-field validation, output-size/work/step bounds retained."
+  ],
+  "limits": [
+    "Author qualification is not independent review.",
+    "No performance or WAN claim; measurements pending independent campaign.",
+    "Prepared sender implementation is parent-owned and outside this runtime receipt."
+  ]
+}

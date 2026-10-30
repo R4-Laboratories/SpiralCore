@@ -1,0 +1,90 @@
+   Compiling spiralcore-transfer v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer)
+error[E0432]: unresolved import `spiralcore_transfer::shared_transfer::PreparedPrediction`
+   --> tests/shared_transfer.rs:364:57
+    |
+364 |     use spiralcore_transfer::shared_transfer::{prepare, PreparedPrediction};
+    |                                                         ^^^^^^^^^^^^^^^^^^ no `PreparedPrediction` in `shared_transfer`
+
+error[E0432]: unresolved import `spiralcore_transfer::shared_transfer::PreparedPrediction`
+   --> tests/shared_transfer.rs:398:9
+    |
+398 |     use spiralcore_transfer::shared_transfer::PreparedPrediction;
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ no `PreparedPrediction` in `shared_transfer`
+
+error[E0432]: unresolved import `spiralcore_transfer::shared_transfer::PreparedPrediction`
+   --> tests/shared_transfer.rs:436:9
+    |
+436 |     use spiralcore_transfer::shared_transfer::PreparedPrediction;
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ no `PreparedPrediction` in `shared_transfer`
+
+error[E0425]: cannot find function `transfer_prepared_runtime_batched` in module `client`
+   --> tests/shared_transfer.rs:408:29
+    |
+408 |           let stats = client::transfer_prepared_runtime_batched(
+    |                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+   ::: src/client.rs:523:1
+    |
+523 | / pub fn transfer_prepared_batched<F: FnMut(&[Frame]) -> Result<Vec<Frame>>>(
+524 | |     target: &PreparedDelta,
+525 | |     transfer_id: Id,
+526 | |     warm_probe: bool,
+527 | |     exchange: F,
+528 | | ) -> Result<Stats> {
+    | |__________________- similarly named function `transfer_prepared_batched` defined here
+    |
+help: a function with a similar name exists
+    |
+408 -         let stats = client::transfer_prepared_runtime_batched(
+408 +         let stats = client::transfer_prepared_batched(
+    |
+
+error[E0425]: cannot find function `transfer_prepared_runtime_batched` in module `client`
+   --> tests/shared_transfer.rs:419:23
+    |
+419 |       let err = client::transfer_prepared_runtime_batched(
+    |                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+   ::: src/client.rs:523:1
+    |
+523 | / pub fn transfer_prepared_batched<F: FnMut(&[Frame]) -> Result<Vec<Frame>>>(
+524 | |     target: &PreparedDelta,
+525 | |     transfer_id: Id,
+526 | |     warm_probe: bool,
+527 | |     exchange: F,
+528 | | ) -> Result<Stats> {
+    | |__________________- similarly named function `transfer_prepared_batched` defined here
+    |
+help: a function with a similar name exists
+    |
+419 -     let err = client::transfer_prepared_runtime_batched(
+419 +     let err = client::transfer_prepared_batched(
+    |
+
+error[E0277]: the size for values of type `[u8]` cannot be known at compilation time
+   --> tests/shared_transfer.rs:429:9
+    |
+429 |     for target in targets {
+    |         ^^^^^^ doesn't have a size known at compile-time
+    |
+    = help: the trait `Sized` is not implemented for `[u8]`
+    = note: all local variables must have a statically known size
+
+error[E0277]: the size for values of type `[u8]` cannot be known at compilation time
+   --> tests/shared_transfer.rs:429:5
+    |
+429 | /     for target in targets {
+430 | |         assert_eq!(reopened.read_object(&c, object_id(&target)).unwrap(), target);
+431 | |     }
+    | |_____^ doesn't have a size known at compile-time
+    |
+    = help: the trait `Sized` is not implemented for `[u8]`
+note: required by an implicit `Sized` bound in `Option`
+   --> /Users/casey.allard/.rustup/toolchains/1.97.1-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/option.rs:597:17
+    |
+597 | pub enum Option<T> {
+    |                 ^ required by the implicit `Sized` requirement on this type parameter in `Option`
+
+Some errors have detailed explanations: E0277, E0425, E0432.
+For more information about an error, try `rustc --explain E0277`.
+error: could not compile `spiralcore-transfer` (test "shared_transfer") due to 7 previous errors

@@ -1,0 +1,49 @@
+   Compiling spiralcore-transfer v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer)
+    Finished `release` profile [optimized] target(s) in 7.49s
+     Running unittests src/lib.rs (/Users/casey.allard/spiralcore/target/aarch64-apple-darwin/release/deps/spiralcore_transfer-0a2ce90059667e27)
+
+running 5 tests
+test dag::fold_memo_tests::hot_memo_reuses_only_exact_nodes_and_preserves_unique_budget ... ok
+test dag::fold_memo_tests::parent_memo_is_exact_and_has_a_fixed_small_allocation_bound ... ok
+test dag::fold_memo_tests::rejected_records_never_enter_the_memo ... ok
+test zstd_prefix::tests::chunk_validation_is_atomic_and_count_and_encoded_bounds_are_independent ... ok
+test shared_runtime::packed_tests::packed_rules_match_scalar_tables_at_periodic_word_boundaries ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.05s
+
+     Running tests/replay_cpu.rs (/Users/casey.allard/spiralcore/target/aarch64-apple-darwin/release/deps/replay_cpu-b22479ad87497053)
+
+running 2 tests
+test packed_replay_preserves_extreme_valid_clock_and_memory_settings ... ok
+test packed_replay_is_byte_identical_to_public_scalar_steps ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.05s
+
+     Running tests/shared_runtime.rs (/Users/casey.allard/spiralcore/target/aarch64-apple-darwin/release/deps/shared_runtime-c8edf3bb61376ae7)
+
+running 22 tests
+test checkpoint_rejects_noncanonical_float_padding_flags_and_root_count ... ok
+test historical_root_retention_cap_drops_oldest_summary_without_exceeding_bounds ... ok
+test fold_values_preserve_observed_unweighted_summary_semantics ... ok
+test checkpoint_rejects_every_truncation_trailing_bytes_and_bad_magic ... ok
+test exact_replay_final_checkpoint_matches_explicit_steps ... ok
+test invalid_dimensions_rings_and_nonfinite_state_are_refused ... ok
+test invalid_frequency_coupling_clock_root_and_payload_are_refused ... ok
+test recipe_rejects_noncanonical_payload_reserved_bits_and_output_kind ... ok
+test logical_step_root_and_replay_limits_are_bounded ... ok
+test memory_coupler_affects_phases_without_changing_ca_or_leaf_count ... ok
+test recipe_roundtrip_rejects_truncation_trailing_and_unknown_header ... ok
+test root_counts_and_phase_bounds_are_validated ... ok
+test checkpoints_roundtrip_every_resume_boundary_without_fidelity_loss ... ok
+test trace_contains_every_complete_post_step_checkpoint_in_order ... ok
+test native_canonical_checkpoint_and_trace_vectors_are_stable ... ok
+test zero_step_final_replay_is_identity_and_zero_step_trace_is_header_only ... ok
+test trace_reserves_exact_required_output_instead_of_entire_admission_ceiling ... ok
+test splitting_replay_across_independent_checkpoint_receivers_is_exact ... ok
+test replay_exact_output_budget_succeeds_and_one_byte_short_fails ... ok
+test seeded_default_ca_row_matches_pinned_python_reference ... ok
+test full_transition_matches_pinned_python_ca_fold_clock_and_memory_fields ... ok
+test every_valid_reference_ring_evolves_exactly_for_all_three_rules ... ok
+
+test result: ok. 22 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+

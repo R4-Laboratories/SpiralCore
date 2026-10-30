@@ -1,0 +1,56 @@
+{
+  "schema": "spiralcore.replay-cpu.run.v1",
+  "source_commit": "384ad3af2a41e87643bd0678120b854e5fe7244b",
+  "baseline_commit": "d4532b0fade8e41b4beb17e6b00572d436cfe444",
+  "profile": {
+    "start_utc": "2026-10-30T15:03:58Z",
+    "end_utc": "2026-10-30T15:04:04Z",
+    "exit_code": 0,
+    "workers": 6,
+    "targets": 18,
+    "seeds": 18,
+    "raw_sha256": "f9587da2cd374c5e211a37b0658b836e5691b2b281bcddaca9248410975c6eba"
+  },
+  "paired": {
+    "start_utc": "2026-10-30T15:04:17Z",
+    "end_utc": "2026-10-30T15:05:14Z",
+    "exit_code": 0,
+    "trials_per_cell": 10,
+    "workers": 120,
+    "targets": 360,
+    "seeds": 360,
+    "preparations": 20,
+    "exact_reopen_operations": 720,
+    "owned_worker_caches_removed": 120,
+    "discarded_observations": 0,
+    "performance_reruns": 0,
+    "raw_sha256": "c3cc613ceaa1ef1906d8b9adef2104328bbfdf1101e31d457a1d99ab9c8c49b1",
+    "summary_sha256": "6451f67ac78c5d1d36ef2a639a871ef4bafe6e889ad40008916202fd0e1fb77f",
+    "summary_exit_code": 0,
+    "verdict": "PAIRED_EXACTNESS_AND_BODY_COST_PASS"
+  },
+  "executables_after_measurement": {
+    "baseline_sha256": "d42f395b88c27870987060c696290645771f88dbcc297d281a432346b0ea877a",
+    "candidate_sha256": "4ea4437b52b4b84111250e0fb7c2a0a031135705d83477db1d27a34b6218ac21",
+    "match_pre_measurement_pins": true
+  },
+  "interpretation": {
+    "large_replay_median_cpu_ms_before": 228.3045,
+    "large_replay_median_cpu_ms_after": 12.184,
+    "large_generated_median_cpu_ms": {"baseline":559.6005,"packed":139.0705,"prepared":117.05},
+    "large_generated_median_elapsed_ms": {"baseline":578.524,"packed":158.894,"prepared":134.8985},
+    "runtime_body_bytes_unchanged": true,
+    "all_large_cpu_pairs_improved": true,
+    "small_packed_unrelated_cpu_and_elapsed_medians_regressed": true,
+    "large_runtime_cpu_or_elapsed_win_against_raw_zstd": false,
+    "wan_or_energy_claim": false
+  },
+  "limitations": [
+    "Local serialized durable mechanism, not TCP/HTTP or WAN timing.",
+    "HTTP-body-equivalent accounting, not complete network packet bytes.",
+    "One Apple M1 host and ten trials per cell; unrelated host activity uncontrolled.",
+    "Preparation and seed costs are separate measured scopes; compound medians use per-trial sums.",
+    "Prepared prediction owns bounded sender buffers, with no implicit receiver prediction cache.",
+    "No measurements overlapped owned builds, tests or other experiments; no results were discarded."
+  ]
+}
