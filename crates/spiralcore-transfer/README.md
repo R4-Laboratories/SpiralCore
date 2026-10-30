@@ -225,6 +225,14 @@ The [warm-selection design](../../docs/specs/2026-10-30-warm-selection-design.md
 and [measurement contract](../../docs/network/evidence/2026-10-30-warm-selection/measurement-contract.md)
 define the guarantees and the `warmselect-*` three-arm benchmark commands.
 
+The [warm-selection WAN result](../../docs/network/warm-selection-results-2026-10-30.md)
+records thirty paired trials at each of 1 and 16 MiB, with all 360 seed/update
+objects byte-exact after reopening. Every selector update preserves the direct
+Sparse path's 600 body bytes. At 16 MiB, median measured CPU/completion is
+51.178/179.8485 ms versus 85.8375/1,840.930 ms for matched Whole/Raw. Small-object
+selection still adds CPU over forced Sparse; actual seed and setup costs remain
+charged, and HTTP-body bytes are distinct from full network traffic.
+
 ## Compressed schema streams and prepared codec reuse
 
 The schema encoder directly matches the first validated template and stores its
