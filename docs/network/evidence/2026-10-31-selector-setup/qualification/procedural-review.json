@@ -1,0 +1,205 @@
+{
+  "milestone": "SC-OPT-017",
+  "stage": "Step1 procedural audit only",
+  "verdict": "PENDING_ALL_TARGETS_AND_CLIPPY",
+  "reviewer": "selector_tests",
+  "updated_utc": "2026-10-31T01:40:40.113414+00:00",
+  "roles": "Fresh roster d1927d9e7ce51354 verify and Agent harness-optimizer check passed. Existing harness-optimizer/quality-gate instructions govern sequential procedural-before-content review.",
+  "base": "4bb79f976e0939f3ef8b48c3830b07086b98f280",
+  "design_commit": "c5f446fa69634ce8cab89025eb7df2bf7cc7acf6",
+  "documents_sha256": {
+    "docs/specs/2026-10-31-selector-setup-design.md": "9a68446dba4ad8c57108afba9c50042e91cf898ea14cfd4dc2936970597ff321",
+    "docs/plans/2026-10-31-selector-setup.md": "53cf782a9b4f0342365da2939bb6d44b478ee00bf04cf02cbae2855d618222e8",
+    "docs/network/evidence/2026-10-31-selector-setup/measurement-contract.md": "be4cea734ba42b510ffef5b8e14cc07738ef74eb3e94e087efa19346d117fde7",
+    "docs/network/evidence/2026-10-31-selector-setup/qualification/freeze.sh": "7ab6d59082075664d6fefaafa8b4aca84f0efa077c2bca3fffa8e6ef79db9b4d"
+  },
+  "observed_receipts": {
+    "profile-red": {
+      "exit": 101,
+      "test_counts": null,
+      "targets": 0,
+      "log_sha256": "68471fd2539f4dbe51a85634a414cc5ee8c8e43955bc80a7b0ff3e3e72416e8e",
+      "exit_sha256": "39b8dc3fc8b44765c8e6f1adee04c5b465e555ab791cc42d0d9e810d5b64297c"
+    },
+    "profile-green": {
+      "exit": 101,
+      "test_counts": null,
+      "targets": 0,
+      "log_sha256": "87e48038a38c5960b1a902cbd368951427458f517f8df4ec271128f1e54ad2b6",
+      "exit_sha256": "39b8dc3fc8b44765c8e6f1adee04c5b465e555ab791cc42d0d9e810d5b64297c"
+    },
+    "profile-green-attempt2": {
+      "exit": 0,
+      "test_counts": [
+        1,
+        0,
+        0
+      ],
+      "targets": 1,
+      "log_sha256": "b7486371a883e2cc9d2d62191fed46de457cbf9290b65bf292a4f88976dbc596",
+      "exit_sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    "schema_sender-red": {
+      "exit": 101,
+      "test_counts": [
+        2,
+        1,
+        0
+      ],
+      "targets": 1,
+      "log_sha256": "9b77ae845926d2deb787c5efce71b1571763674a5e5df5eabb8fd30e26aa0355",
+      "exit_sha256": "39b8dc3fc8b44765c8e6f1adee04c5b465e555ab791cc42d0d9e810d5b64297c"
+    },
+    "warm_selection-red": {
+      "exit": 101,
+      "test_counts": [
+        8,
+        1,
+        0
+      ],
+      "targets": 1,
+      "log_sha256": "87b7d7824752937e51b64c5d0c54a7f4f5af6355247682c47d4caf4fede20b05",
+      "exit_sha256": "39b8dc3fc8b44765c8e6f1adee04c5b465e555ab791cc42d0d9e810d5b64297c"
+    },
+    "production-green": {
+      "exit": 0,
+      "test_counts": [
+        69,
+        0,
+        0
+      ],
+      "targets": 8,
+      "log_sha256": "ac9f0f716e49e5ca071bd4a3f48227fd9769f693b908d6860f205d17c125e0fc",
+      "exit_sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    "harness-red": {
+      "exit": 101,
+      "test_counts": null,
+      "targets": 0,
+      "log_sha256": "13d38c709b2a29de170292674b3b543b71e17a06f1b9abbfa996f25b49b944dc",
+      "exit_sha256": "39b8dc3fc8b44765c8e6f1adee04c5b465e555ab791cc42d0d9e810d5b64297c"
+    },
+    "harness-green": {
+      "exit": 0,
+      "test_counts": [
+        6,
+        0,
+        0
+      ],
+      "targets": 1,
+      "log_sha256": "1a03d4031fefb5fd1d50b540192c070c3059d0ab5cecf755c516b8912889a570",
+      "exit_sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    "workflow-red": {
+      "exit": 101,
+      "test_counts": [
+        0,
+        3,
+        0
+      ],
+      "targets": 1,
+      "log_sha256": "2daa46fe0acdf183a9ef56ab4c6e803b93781a28715ff649c1cbdaca4bf973c9",
+      "exit_sha256": "39b8dc3fc8b44765c8e6f1adee04c5b465e555ab791cc42d0d9e810d5b64297c"
+    },
+    "workflow-green": {
+      "exit": 0,
+      "test_counts": [
+        3,
+        0,
+        0
+      ],
+      "targets": 1,
+      "log_sha256": "a66e7341e0b67d4ea468055b909ec810b97112ad8ccc37ae4fb502b53798de1b",
+      "exit_sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    "coverage-tests": {
+      "exit": 0,
+      "test_counts": [
+        69,
+        0,
+        0
+      ],
+      "targets": 8,
+      "log_sha256": "25ca1db5ec9945a3abfea28c9dd47577a1b3667d99264a35bf0ea05e37ac7e67",
+      "exit_sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    }
+  },
+  "coverage": {
+    "tests": 69,
+    "objects": 8,
+    "fresh_profiles": 8,
+    "files": [
+      {
+        "file": "/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer/src/schema.rs",
+        "sha256": "034e0424cbf7b95a83e8579b7b7d75b584758f0eb514a00b51840a202c993359",
+        "lines": {
+          "count": 541,
+          "covered": 524,
+          "percent": 96.85767097966729
+        },
+        "functions": {
+          "count": 48,
+          "covered": 48,
+          "percent": 100
+        },
+        "regions": {
+          "count": 931,
+          "covered": 902,
+          "notcovered": 29,
+          "percent": 96.88506981740065
+        }
+      },
+      {
+        "file": "/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer/src/schema_selection.rs",
+        "sha256": "575d93eed205987b40f09c10ec57ef5decf10257599bb56237d2d3183bcc2253",
+        "lines": {
+          "count": 272,
+          "covered": 264,
+          "percent": 97.05882352941177
+        },
+        "functions": {
+          "count": 28,
+          "covered": 28,
+          "percent": 100
+        },
+        "regions": {
+          "count": 512,
+          "covered": 469,
+          "notcovered": 43,
+          "percent": 91.6015625
+        }
+      }
+    ],
+    "receipt_sha256": "a3a192e789e0fa7af9518c609ee0cee912a00528b658dfcc8226e6c6bb7d3931",
+    "limits": "Focused source coverage includes embedded unit tests; no branch/MC-DC or whole-repository claim. Current objects and eight fresh task profiles only."
+  },
+  "baseline_profile": {
+    "samples": 20,
+    "actual_fits": 20,
+    "all_iterations_retained": true,
+    "binary_sha256": "2d8ccb54785a50fb357a143134a8bafcf49c0513c46bea09e68000ae9c19fee0",
+    "source_sha256": {
+      "schema_fitting.rs": "9cdfcfb8f4d535e4842063c89c2c07ce698b19a5ca473e7deb607e74c456df06",
+      "warm_object.rs": "25fe2fe8a386509843307b8ffc199f334bfeb39422f74147ea0657b0b393d0d5",
+      "README.md": "a2334db4ae7f1ed834e1012949dc72bab5b49d9f64327898b58dff43d24531c2"
+    },
+    "raw_sha256": "ac522a5f8c7301992b871e8fa5ef694978447861240de138520e6bbcc1c2c752",
+    "scope": "Pre-change staged setup attribution, not randomized paired gate. Exact recovered source snapshots match frozen binary registration; subsequent profiler test commit is not misrepresented as exact source snapshot."
+  },
+  "retained_failures": [
+    "Profiler missing-function RED E0425; first GREEN attempt E0505 borrow/move error; corrected ownership then focused profiler test PASS.",
+    "Fit allocation behavioral RED:128 matching records allocate388 versus7 forone; prior sender-allocation tests passed.",
+    "Probe scheduling behavioral RED: deceptive short-period samples previously produced Whole pruning instead of exact full evaluation.",
+    "Harness missing setup helpers E0425 RED.",
+    "Three actual workflow tests fail before workflow is available then pass."
+  ],
+  "prospective_measurement": "Three cells with180 local/540 WAN transfers, real setup/fits and seeds; separate60 control samples/120 exact objects. Local advancement requires registered random1m setup<=0.80, zero-control preparation<=0.95 and random1m update senderCPU<=1.05 paired medians plus exactness. No candidate performance accepted yet.",
+  "file_claims": "SC-OPT-017 production/harness/delivery owners remain active for unfinished work; no completed-task stale claim observed. Other labs excluded.",
+  "pending": [
+    "Complete all-target command and exit receipt.",
+    "Final all-target Clippy command and exit receipt."
+  ],
+  "freeze_script_status": "Read only, not treated as executed. Same explicit Rust1.97.1 target/shared cache/incremental0/4GiB floor; overlays exactly schema.rs+schema_selection.rs, both native-probe-enabled, restores source via trap and hashes. Source/executable freeze remains a prerequisite before candidate measurement.",
+  "constraints": "Formal historical/raw evidence retained per user instruction. No reviewer Cargo/tests/benchmarks/reruns/new analyzer or content review.",
+  "next_stage": "Wait for final receipts; notify procedural verdict, then stop for explicit parent release to content review."
+}

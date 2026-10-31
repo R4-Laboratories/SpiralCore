@@ -216,6 +216,67 @@ fn verified_base_makes_sparse_an_exact_scored_candidate() {
 }
 
 #[test]
+fn sampled_short_period_repetition_schedules_full_encoding_without_pruning() {
+    let artifact = schema::fit(&[b"{\"value\":0}\n"]).unwrap();
+    let mut selector = PreparedSelector::new(&artifact).unwrap();
+    for period in [1, 2, 4, 8] {
+        // Deliberately deceptive: only the sampled windows repeat, while their
+        // gaps and the rest of the object remain incompressible. Scheduling may
+        // cost CPU; it must still retain the completed exact Whole candidate.
+        let mut base = random(1 << 20);
+        for window in 0..8 {
+            for i in 0..64 {
+                base[window * 16384 + i] = (i % period) as u8;
+            }
+        }
+        let mut target = base.clone();
+        for byte in &mut target[(1 << 19)..(1 << 19) + 32] {
+            *byte ^= 0xa5;
+        }
+        let reference = exhaustive(&artifact, Some(&base), &target, false, false);
+        let plan = selector
+            .prepare_warm(&target, Some(&base), false, false)
+            .unwrap();
+        let receipt = plan.selection();
+        check_receipt(receipt, &reference, false);
+        assert_eq!(receipt.selected_mode, Mode::SparseV1);
+        assert!(
+            receipt
+                .candidates
+                .iter()
+                .any(|c| c.mode == Mode::ZstdWholeV1),
+            "short-period samples must schedule full encoding, never act as a bound: {receipt:?}"
+        );
+        assert!(!receipt.pruned.iter().any(|p| p.mode == Mode::ZstdWholeV1));
+        compare(&artifact, Some(&base), &target, false, false, &mut selector);
+    }
+}
+
+#[test]
+fn period64_without_short_period_still_uses_actual_rejection_certificate() {
+    let artifact = schema::fit(&[b"{\"value\":0}\n"]).unwrap();
+    let base: Vec<u8> = (0..1 << 20).map(|i| (i % 64) as u8).collect();
+    let mut target = base.clone();
+    for byte in &mut target[(1 << 19)..(1 << 19) + 32] {
+        *byte ^= 0xa5;
+    }
+    let mut selector = PreparedSelector::new(&artifact).unwrap();
+    let reference = exhaustive(&artifact, Some(&base), &target, false, false);
+    let plan = selector
+        .prepare_warm(&target, Some(&base), false, false)
+        .unwrap();
+    check_receipt(plan.selection(), &reference, false);
+    if zstd_whole::first_block_probe_available() {
+        assert!(plan
+            .selection()
+            .pruned
+            .iter()
+            .any(|p| { p.mode == Mode::ZstdWholeV1 && p.target_http_body_lower_bound > 600 }));
+    }
+    compare(&artifact, Some(&base), &target, false, false, &mut selector);
+}
+
+#[test]
 fn all_four_winners_match_exhaustive_selected_frame_bytes() {
     let key: String = random(2048)
         .iter()

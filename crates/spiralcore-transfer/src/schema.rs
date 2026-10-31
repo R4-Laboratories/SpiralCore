@@ -199,6 +199,14 @@ pub fn fit(training: &[&[u8]]) -> Result<Vec<u8>> {
             if templates.items.len() == MAX_TEMPLATES || work == MAX_MATCH_WORK {
                 break 'samples;
             }
+            if let Some(first) = templates.items.first() {
+                if first_template_values(first, bytes).is_some() {
+                    if !charge_first_match(first, &mut work) {
+                        break 'samples;
+                    }
+                    continue;
+                }
+            }
             let Some(record) = parse_record(bytes) else {
                 continue;
             };
@@ -351,49 +359,57 @@ fn encode_with(templates: &Templates<'_>, artifact_id: Id, target: &[u8]) -> Res
     Ok(encoded)
 }
 
-// Artifact validation established the JSON skeleton. Exact literal fragments
-// and the same primitive parser establish identical layout/token boundaries,
-// without allocating a Record or hashing its layout again. A mismatch changes
-// neither output nor the legacy comparison budget; the general path handles it.
+// Both learned and validated templates have a valid JSON skeleton. Exact
+// fragments, primitive parsing and complete coverage recognize that same
+// layout without rebuilding/hashing it. This pure check spends no match budget.
+fn first_template_values<'a>(
+    template: &Template<'_>,
+    bytes: &'a [u8],
+) -> Option<[&'a [u8]; MAX_SLOTS]> {
+    if bytes.len() > MAX_TEMPLATE_RECORD || std::str::from_utf8(bytes).is_err() {
+        return None;
+    }
+    let mut values = [&[][..]; MAX_SLOTS];
+    let mut remaining = bytes;
+    for (index, fragment) in template.fragments.iter().enumerate() {
+        remaining = remaining.strip_prefix(fragment.as_ref())?;
+        if index < template.slots() {
+            let end = primitive_end(remaining, 0)?;
+            values[index] = &remaining[..end];
+            remaining = &remaining[end..];
+        }
+    }
+    remaining.is_empty().then_some(values)
+}
+
+fn charge_first_match(template: &Template<'_>, work: &mut usize) -> bool {
+    // Index zero is the first candidate even if another layout shares its hash.
+    // Preserve find's exact charge and terminal behavior only on a proven match.
+    let charge = 2 * template.literal_len;
+    if charge > MAX_MATCH_WORK.saturating_sub(*work) {
+        *work = MAX_MATCH_WORK;
+        return false;
+    }
+    *work += charge;
+    true
+}
+
 fn write_first_template(
     template: &Template<'_>,
     bytes: &[u8],
     work: &mut usize,
     encoded: &mut Vec<u8>,
 ) -> bool {
-    if *work >= MAX_MATCH_WORK
-        || bytes.len() > MAX_TEMPLATE_RECORD
-        || std::str::from_utf8(bytes).is_err()
-    {
+    if *work >= MAX_MATCH_WORK {
         return false;
     }
-    let mut values = [&[][..]; MAX_SLOTS];
-    let mut remaining = bytes;
-    for (index, fragment) in template.fragments.iter().enumerate() {
-        let Some(tail) = remaining.strip_prefix(fragment.as_ref()) else {
-            return false;
-        };
-        remaining = tail;
-        if index < template.slots() {
-            let Some(end) = primitive_end(remaining, 0) else {
-                return false;
-            };
-            values[index] = &remaining[..end];
-            remaining = &remaining[end..];
-        }
-    }
-    if !remaining.is_empty() {
+    let Some(values) = first_template_values(template, bytes) else {
         return false;
-    }
-    // Index zero is the first candidate even if another layout shares its hash.
-    // Preserve find's exact charge and terminal behavior only on a proven match.
-    let charge = 2 * template.literal_len;
-    if charge > MAX_MATCH_WORK.saturating_sub(*work) {
-        *work = MAX_MATCH_WORK;
+    };
+    if !charge_first_match(template, work) {
         write_literal(encoded, bytes);
         return true;
     }
-    *work += charge;
     let values = &values[..template.slots()];
     let size = 3 + values.iter().map(|value| 4 + value.len()).sum::<usize>();
     if size < 5 + bytes.len() {

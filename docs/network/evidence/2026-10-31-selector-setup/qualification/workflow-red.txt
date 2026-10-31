@@ -1,0 +1,32 @@
+
+running 3 tests
+test selector_setup_workflow_accepts_only_the_pinned_first_attempt ... FAILED
+test selector_setup_workflow_requires_a_full_secret_without_fallback ... FAILED
+test selector_setup_workflow_restricts_every_receiver_url ... FAILED
+
+failures:
+
+---- selector_setup_workflow_accepts_only_the_pinned_first_attempt stdout ----
+
+thread 'selector_setup_workflow_accepts_only_the_pinned_first_attempt' (66386528) panicked at crates/spiralcore-transfer/tests/selector_setup_workflow.rs:7:45:
+selector setup workflow must exist: Os { code: 2, kind: NotFound, message: "No such file or directory" }
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- selector_setup_workflow_requires_a_full_secret_without_fallback stdout ----
+
+thread 'selector_setup_workflow_requires_a_full_secret_without_fallback' (66386529) panicked at crates/spiralcore-transfer/tests/selector_setup_workflow.rs:7:45:
+selector setup workflow must exist: Os { code: 2, kind: NotFound, message: "No such file or directory" }
+
+---- selector_setup_workflow_restricts_every_receiver_url stdout ----
+
+thread 'selector_setup_workflow_restricts_every_receiver_url' (66386530) panicked at crates/spiralcore-transfer/tests/selector_setup_workflow.rs:7:45:
+selector setup workflow must exist: Os { code: 2, kind: NotFound, message: "No such file or directory" }
+
+
+failures:
+    selector_setup_workflow_accepts_only_the_pinned_first_attempt
+    selector_setup_workflow_requires_a_full_secret_without_fallback
+    selector_setup_workflow_restricts_every_receiver_url
+
+test result: FAILED. 0 passed; 3 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+

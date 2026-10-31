@@ -1,0 +1,143 @@
+{
+  "schema": "spiralcore.selector-setup.coverage.v1",
+  "commands": [
+    [
+      "/Users/casey.allard/.rustup/toolchains/1.97.1-aarch64-apple-darwin/lib/rustlib/aarch64-apple-darwin/bin/llvm-profdata",
+      "merge",
+      "-sparse",
+      "/Users/casey.allard/spiralcore/local/selector-setup-20261031/coverage/setup-20430-2084607639278272801_0.profraw",
+      "/Users/casey.allard/spiralcore/local/selector-setup-20261031/coverage/setup-22403-13479332853108586825_0.profraw",
+      "/Users/casey.allard/spiralcore/local/selector-setup-20261031/coverage/setup-22419-2954414880994538301_0.profraw",
+      "/Users/casey.allard/spiralcore/local/selector-setup-20261031/coverage/setup-22448-4822211234096370216_0.profraw",
+      "/Users/casey.allard/spiralcore/local/selector-setup-20261031/coverage/setup-22513-16099428967623015751_0.profraw",
+      "/Users/casey.allard/spiralcore/local/selector-setup-20261031/coverage/setup-22515-831463150551763928_0.profraw",
+      "/Users/casey.allard/spiralcore/local/selector-setup-20261031/coverage/setup-22586-10659348922911787270_0.profraw",
+      "/Users/casey.allard/spiralcore/local/selector-setup-20261031/coverage/setup-22588-2014577043433611032_0.profraw",
+      "-o",
+      "/Users/casey.allard/spiralcore/local/selector-setup-20261031/coverage/current.profdata"
+    ],
+    [
+      "/Users/casey.allard/.rustup/toolchains/1.97.1-aarch64-apple-darwin/lib/rustlib/aarch64-apple-darwin/bin/llvm-cov",
+      "export",
+      "-format=text",
+      "-instr-profile=/Users/casey.allard/spiralcore/local/selector-setup-20261031/coverage/current.profdata",
+      "-object",
+      "/Users/casey.allard/spiralcore/local/shared-state-20261030/coverage-target/aarch64-apple-darwin/debug/deps/spiralcore_transfer-4b983470cc57a484",
+      "-object",
+      "/Users/casey.allard/spiralcore/local/shared-state-20261030/coverage-target/aarch64-apple-darwin/debug/deps/schema_sender-216742caa9f5466a",
+      "-object",
+      "/Users/casey.allard/spiralcore/local/shared-state-20261030/coverage-target/aarch64-apple-darwin/debug/deps/schema_prepared-51a5809d78ed5838",
+      "-object",
+      "/Users/casey.allard/spiralcore/local/shared-state-20261030/coverage-target/aarch64-apple-darwin/debug/deps/zstd_whole_probe-f242b923af8f4419",
+      "-object",
+      "/Users/casey.allard/spiralcore/local/shared-state-20261030/coverage-target/aarch64-apple-darwin/debug/deps/warm_selection-572d5cd3ff94cab1",
+      "-object",
+      "/Users/casey.allard/spiralcore/local/shared-state-20261030/coverage-target/aarch64-apple-darwin/debug/deps/schema_selection-0a88015c525764ff",
+      "-object",
+      "/Users/casey.allard/spiralcore/local/shared-state-20261030/coverage-target/aarch64-apple-darwin/debug/deps/schema_codec-3f274c8a232382da",
+      "-object",
+      "/Users/casey.allard/spiralcore/local/shared-state-20261030/coverage-target/aarch64-apple-darwin/debug/deps/warm_selection_client-7faa8080989d3542"
+    ]
+  ],
+  "test_objects": {
+    "/Users/casey.allard/spiralcore/local/shared-state-20261030/coverage-target/aarch64-apple-darwin/debug/deps/spiralcore_transfer-4b983470cc57a484": "82b0544ee5ed5d712677e983a0c7e52fa7a945531a8844d6906290b27e9c9352",
+    "/Users/casey.allard/spiralcore/local/shared-state-20261030/coverage-target/aarch64-apple-darwin/debug/deps/schema_sender-216742caa9f5466a": "7bddafa6f9656b08bf0112004bd07582beb202413944152df332293910af2719",
+    "/Users/casey.allard/spiralcore/local/shared-state-20261030/coverage-target/aarch64-apple-darwin/debug/deps/schema_prepared-51a5809d78ed5838": "23e6dfa227ef46046ec32830b338ac9b0739e9ac0fc427dbfb0acfcf15f414b7",
+    "/Users/casey.allard/spiralcore/local/shared-state-20261030/coverage-target/aarch64-apple-darwin/debug/deps/zstd_whole_probe-f242b923af8f4419": "41bc8edc1b39619f05939607f51b798a4195433dc117f69b0cb8dcb67d8a7da2",
+    "/Users/casey.allard/spiralcore/local/shared-state-20261030/coverage-target/aarch64-apple-darwin/debug/deps/warm_selection-572d5cd3ff94cab1": "9e3ecc4f9012101b703494a7742d7f4da081c76a6b84a2c495e0bd5d23ecb710",
+    "/Users/casey.allard/spiralcore/local/shared-state-20261030/coverage-target/aarch64-apple-darwin/debug/deps/schema_selection-0a88015c525764ff": "2f10b18b8c0772caaa1c00b231b1d72a55e45f7d1867da16c9a13739d3703940",
+    "/Users/casey.allard/spiralcore/local/shared-state-20261030/coverage-target/aarch64-apple-darwin/debug/deps/schema_codec-3f274c8a232382da": "05c556f4bd4933ff79fde48fd2f8214527f57eb7f9086888256b9b8629bcf324",
+    "/Users/casey.allard/spiralcore/local/shared-state-20261030/coverage-target/aarch64-apple-darwin/debug/deps/warm_selection_client-7faa8080989d3542": "d6c027927fc4f8eaec610ac62dd608167d5ed0984d1b19925994fd48518f4df6"
+  },
+  "fresh_profiles": {
+    "/Users/casey.allard/spiralcore/local/selector-setup-20261031/coverage/setup-20430-2084607639278272801_0.profraw": "81289c90701d0abca04a01c55f79b1eabc64f100eb74734884038c8710a53ed5",
+    "/Users/casey.allard/spiralcore/local/selector-setup-20261031/coverage/setup-22403-13479332853108586825_0.profraw": "8a539fce1a7b3f57afc7ebb110548516b52275dcc62e41de51c5e3f62519b497",
+    "/Users/casey.allard/spiralcore/local/selector-setup-20261031/coverage/setup-22419-2954414880994538301_0.profraw": "d0366c8b9bd2567ed6c8a0f66d15253dd16318feafa1877db8926cf1e900ba91",
+    "/Users/casey.allard/spiralcore/local/selector-setup-20261031/coverage/setup-22448-4822211234096370216_0.profraw": "f7e09be2ffc77794a0efc1c2c82256919dacfa1a34a3cf36c47ca20550834b9c",
+    "/Users/casey.allard/spiralcore/local/selector-setup-20261031/coverage/setup-22513-16099428967623015751_0.profraw": "4c559a1d1edd5a38528f6a5cc12b34a41ce9ea028d36692da8c53f551a52c1e8",
+    "/Users/casey.allard/spiralcore/local/selector-setup-20261031/coverage/setup-22515-831463150551763928_0.profraw": "1df31d082037c5073bda77f46d2cba6c9dff4291de63da3d75eaf9ea5570e19d",
+    "/Users/casey.allard/spiralcore/local/selector-setup-20261031/coverage/setup-22586-10659348922911787270_0.profraw": "333813b0b8f671d987986723a129fd610bc26fe7a2d60dd790ac16e2873853d7",
+    "/Users/casey.allard/spiralcore/local/selector-setup-20261031/coverage/setup-22588-2014577043433611032_0.profraw": "638de60c5056c77b6f17b733475adf3cfee12ac2c9bea2a5cf7573e0183d82fa"
+  },
+  "files": [
+    {
+      "file": "/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer/src/schema.rs",
+      "sha256": "034e0424cbf7b95a83e8579b7b7d75b584758f0eb514a00b51840a202c993359",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "functions": {
+          "count": 48,
+          "covered": 48,
+          "percent": 100
+        },
+        "instantiations": {
+          "count": 98,
+          "covered": 93,
+          "percent": 94.89795918367348
+        },
+        "lines": {
+          "count": 541,
+          "covered": 524,
+          "percent": 96.85767097966729
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "regions": {
+          "count": 931,
+          "covered": 902,
+          "notcovered": 29,
+          "percent": 96.88506981740065
+        }
+      }
+    },
+    {
+      "file": "/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer/src/schema_selection.rs",
+      "sha256": "575d93eed205987b40f09c10ec57ef5decf10257599bb56237d2d3183bcc2253",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "functions": {
+          "count": 28,
+          "covered": 28,
+          "percent": 100
+        },
+        "instantiations": {
+          "count": 54,
+          "covered": 35,
+          "percent": 64.81481481481481
+        },
+        "lines": {
+          "count": 272,
+          "covered": 264,
+          "percent": 97.05882352941177
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "regions": {
+          "count": 512,
+          "covered": 469,
+          "notcovered": 43,
+          "percent": 91.6015625
+        }
+      }
+    }
+  ],
+  "limits": "Focused source coverage includes embedded unit tests; no branch/MC-DC or whole-repository claim. Only these eight fresh profiles and current tested objects are merged."
+}

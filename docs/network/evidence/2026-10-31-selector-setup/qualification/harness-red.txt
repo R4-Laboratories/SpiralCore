@@ -1,0 +1,117 @@
+   Compiling spiralcore-transfer v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer)
+error[E0425]: cannot find function `setup_plan` in this scope
+    --> examples/support/warm_object.rs:1890:17
+     |
+1890 |         let p = setup_plan("setup-qualification", 5, &"1".repeat(40), false).unwrap();
+     |                 ^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `setup_fixture_pair` in this scope
+    --> examples/support/warm_object.rs:1901:20
+     |
+ 100 | fn fixture_pair(trial: usize, large: bool) -> Result<(Vec<u8>, Vec<u8>)> {
+     | ------------------------------------------------------------------------ similarly named function `fixture_pair` defined here
+...
+1901 |         assert_eq!(setup_fixture_pair(0, "random-1m").unwrap(), fixture_pair(0, false).unwrap());
+     |                    ^^^^^^^^^^^^^^^^^^
+     |
+help: a function with a similar name exists
+     |
+1901 -         assert_eq!(setup_fixture_pair(0, "random-1m").unwrap(), fixture_pair(0, false).unwrap());
+1901 +         assert_eq!(fixture_pair(0, "random-1m").unwrap(), fixture_pair(0, false).unwrap());
+     |
+
+error[E0425]: cannot find function `setup_fixture_pair` in this scope
+    --> examples/support/warm_object.rs:1902:20
+     |
+ 100 | fn fixture_pair(trial: usize, large: bool) -> Result<(Vec<u8>, Vec<u8>)> {
+     | ------------------------------------------------------------------------ similarly named function `fixture_pair` defined here
+...
+1902 |         assert_eq!(setup_fixture_pair(0, "random-16m").unwrap(), fixture_pair(0, true).unwrap());
+     |                    ^^^^^^^^^^^^^^^^^^
+     |
+help: a function with a similar name exists
+     |
+1902 -         assert_eq!(setup_fixture_pair(0, "random-16m").unwrap(), fixture_pair(0, true).unwrap());
+1902 +         assert_eq!(fixture_pair(0, "random-16m").unwrap(), fixture_pair(0, true).unwrap());
+     |
+
+error[E0425]: cannot find function `setup_fixture_pair` in this scope
+    --> examples/support/warm_object.rs:1903:30
+     |
+ 100 | fn fixture_pair(trial: usize, large: bool) -> Result<(Vec<u8>, Vec<u8>)> {
+     | ------------------------------------------------------------------------ similarly named function `fixture_pair` defined here
+...
+1903 |         let (base, target) = setup_fixture_pair(0, "zero-1m").unwrap();
+     |                              ^^^^^^^^^^^^^^^^^^
+     |
+help: a function with a similar name exists
+     |
+1903 -         let (base, target) = setup_fixture_pair(0, "zero-1m").unwrap();
+1903 +         let (base, target) = fixture_pair(0, "zero-1m").unwrap();
+     |
+
+error[E0425]: cannot find function `setup_fixture_pair` in this scope
+    --> examples/support/warm_object.rs:1908:17
+     |
+ 100 | fn fixture_pair(trial: usize, large: bool) -> Result<(Vec<u8>, Vec<u8>)> {
+     | ------------------------------------------------------------------------ similarly named function `fixture_pair` defined here
+...
+1908 |         assert!(setup_fixture_pair(0, "unknown").is_err());
+     |                 ^^^^^^^^^^^^^^^^^^
+     |
+help: a function with a similar name exists
+     |
+1908 -         assert!(setup_fixture_pair(0, "unknown").is_err());
+1908 +         assert!(fixture_pair(0, "unknown").is_err());
+     |
+
+error[E0425]: cannot find function `setup_plan` in this scope
+    --> examples/support/warm_object.rs:1910:24
+     |
+1910 |             assert_eq!(setup_plan("setup-local", shard, &"1".repeat(40), true).unwrap()["operations"], 90);
+     |                        ^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `setup_plan` in this scope
+    --> examples/support/warm_object.rs:1912:17
+     |
+1912 |         assert!(setup_plan("setup-local", 2, &"1".repeat(40), true).is_err());
+     |                 ^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `setup_ratio_gate` in this scope
+    --> examples/support/warm_object.rs:1925:20
+     |
+1925 |         assert_eq!(setup_ratio_gate(&[0.80;10], 0.80).unwrap()["passed"], true);
+     |                    ^^^^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `setup_ratio_gate` in this scope
+    --> examples/support/warm_object.rs:1926:20
+     |
+1926 |         assert_eq!(setup_ratio_gate(&[0.81;10], 0.80).unwrap()["passed"], false);
+     |                    ^^^^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `setup_ratio_gate` in this scope
+    --> examples/support/warm_object.rs:1927:20
+     |
+1927 |         assert_eq!(setup_ratio_gate(&[0.95;10], 0.95).unwrap()["passed"], true);
+     |                    ^^^^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `setup_ratio_gate` in this scope
+    --> examples/support/warm_object.rs:1928:20
+     |
+1928 |         assert_eq!(setup_ratio_gate(&[1.06;10], 1.05).unwrap()["passed"], false);
+     |                    ^^^^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `setup_ratio_gate` in this scope
+    --> examples/support/warm_object.rs:1929:17
+     |
+1929 |         assert!(setup_ratio_gate(&[0.1;9], 0.80).is_err());
+     |                 ^^^^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `setup_ratio_gate` in this scope
+    --> examples/support/warm_object.rs:1930:17
+     |
+1930 |         assert!(setup_ratio_gate(&[f64::NAN;10], 0.80).is_err());
+     |                 ^^^^^^^^^^^^^^^^ not found in this scope
+
+For more information about this error, try `rustc --explain E0425`.
+error: could not compile `spiralcore-transfer` (example "schema_fitting" test) due to 13 previous errors
