@@ -165,8 +165,11 @@ orchestrator, two actual hosts, then three-peer recovery with the same contract.
 `Policy::new(OpenContext)`, `snapshot()` and `replace(OpenContext)` provide a
 shared generation-counted current policy. A replacement invalidates previously
 opened messages, including a revocation or epoch change between open and publish.
-`DirectionConfig` owns policy, signed capability/binding, signing/encryption keys,
-authority verifying key, boot/key IDs, exact message kind and optional reply route.
+`DirectionConfig` owns policy, signed capability/binding, an optional local signing
+key, the expected sender verifying key, encryption key, authority verifying key,
+boot/key IDs, exact message kind and optional reply route. Receive-only directions
+need no remote signing secret. A configured signing key must match the expected
+sender verifying key; sending without a signing key fails closed.
 `Direction::new` validates the restricted profile; `send(frame, transport, cancel)`
 reauthorizes the signed route against current policy/time, prepares and authorizes
 the canonical envelope, then calls the upstream channel. `open(wire)` returns

@@ -1,0 +1,41 @@
+   Compiling spiralcore-mvm-adapter v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-mvm-adapter)
+    Finished `test` profile [unoptimized] target(s) in 2.37s
+     Running unittests src/lib.rs (/Users/casey.allard/spiralcore/target/debug/deps/spiralcore_mvm_adapter-ebcedc0724d851ea)
+
+running 1 test
+test direction::tests::replay_capacity_refuses_new_identity_without_evicting_prior_entries ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/canonical.rs (/Users/casey.allard/spiralcore/target/debug/deps/canonical-5ebc66ffdca9e079)
+
+running 9 tests
+test configuration_refuses_ambiguous_kind_content_and_mismatching_signer ... ok
+test receiver_only_configuration_opens_without_the_remote_signing_secret ... ok
+test altered_ciphertext_and_wrong_verification_key_are_rejected_before_authority ... ok
+test canonical_call_and_independent_reply_preserve_exact_application_frames ... ok
+test changed_recipient_epoch_or_revocation_fails_on_open_and_on_outbound ... ok
+test revocation_between_open_and_dispatch_invalidates_the_verified_message ... ok
+test malformed_or_oversized_authenticated_payload_cannot_mint_authority ... ok
+test open_before_dispatch_and_lost_commit_reply_require_fresh_envelope_retries ... ok
+test maximum_frame_fits_and_oversize_cancellation_and_queue_pressure_refuse ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.18s
+
+     Running tests/transfer.rs (/Users/casey.allard/spiralcore/target/debug/deps/transfer-e9b70c4c5ccd36d2)
+
+running 3 tests
+test existing_ternary_kuramoto_ca_checkpoint_and_residual_cross_canonical_envelopes ... ok
+test lost_published_reply_does_not_promote_sender_and_recovery_reopens_committed_bytes ... ok
+test persistent_warm_mixed_objects_keep_selected_frames_and_reopen_exactly ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.06s
+
+     Running unittests examples/mailbox_transfer.rs (/Users/casey.allard/spiralcore/target/debug/examples/mailbox_transfer-09c7ee9a78a6347b)
+
+running 2 tests
+test tests::failed_evidence_sync_retains_verified_store ... ok
+test tests::mixed_session_records_exact_reopened_objects_and_canonical_bytes ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.26s
+

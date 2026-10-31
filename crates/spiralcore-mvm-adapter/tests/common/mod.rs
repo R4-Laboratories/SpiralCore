@@ -1,14 +1,15 @@
+#![allow(dead_code)] // Shared fixtures are compiled separately for each integration target.
+
 use ed25519_dalek::SigningKey;
 use mvm_contract::protocol::mailbox::*;
 use mvm_core::{
     crypto::aead::Key,
     mailbox::{
-        sign_capability,
+        OpenContext, sign_capability,
         transport::{
-            sign_transport_binding, RouteId, RouteLocator, TransportAssurance,
-            TransportBindingClaims, TransportIdentity, TransportPath,
+            RouteId, RouteLocator, TransportAssurance, TransportBindingClaims, TransportIdentity,
+            TransportPath, sign_transport_binding,
         },
-        OpenContext,
     },
 };
 use spiralcore_mvm_adapter::{DirectionConfig, Policy};
@@ -81,9 +82,12 @@ pub fn config(kind: MailboxMessageKind) -> DirectionConfig {
             transport_identity: TransportIdentity::from_bytes([if reply { 29 } else { 19 }; 32]),
             route_id: RouteId::from_bytes([if reply { 30 } else { 20 }; 32]),
             authorization_domain_route_label: AuthorizationDomainRouteLabel::from_bytes([15; 32]),
-            destination_route_token: DestinationRouteToken::from_bytes([if reply { 26 } else { 16 }; 32]),
+            destination_route_token: DestinationRouteToken::from_bytes(
+                [if reply { 26 } else { 16 }; 32],
+            ),
             path: TransportPath::Direct,
-            locator: RouteLocator::parse(if reply { "memory:reply" } else { "memory:call" }).unwrap(),
+            locator: RouteLocator::parse(if reply { "memory:reply" } else { "memory:call" })
+                .unwrap(),
             assurance: TransportAssurance::Development,
             policy_epoch: 4,
             not_before_unix_ms: 900,
@@ -92,11 +96,13 @@ pub fn config(kind: MailboxMessageKind) -> DirectionConfig {
         &authority,
     )
     .unwrap();
+    let signing_key = SigningKey::from_bytes(&[if reply { 24 } else { 21 }; 32]);
     DirectionConfig {
         policy,
         capability,
         binding,
-        signing_key: SigningKey::from_bytes(&[if reply { 24 } else { 21 }; 32]),
+        sender_verifying_key: signing_key.verifying_key(),
+        signing_key: Some(signing_key),
         encryption_key: Key::from_bytes([if reply { 25 } else { 23 }; 32]),
         authority_key: authority.verifying_key(),
         boot: BootId::from_bytes([if reply { 15 } else { 5 }; 32]),
@@ -115,4 +121,108 @@ pub fn config(kind: MailboxMessageKind) -> DirectionConfig {
             })
         },
     }
+}
+
+pub fn sealed_payload(config: &DirectionConfig, payload: &[u8]) -> Vec<u8> {
+    use mvm_core::mailbox::{SealRequest, encode_envelope, seal_envelope};
+    let context = config.policy.snapshot().unwrap();
+    let route = &config.binding.claims;
+    let envelope = seal_envelope(
+        SealRequest {
+            routing: MailboxRoutingFrame {
+                protocol_version: ProtocolVersion::V1,
+                authorization_domain_route_label: route.authorization_domain_route_label,
+                destination_route_token: route.destination_route_token,
+                delivery_id: DeliveryId::from_bytes(rand::random()),
+                ciphertext_len: 0,
+                padding: CiphertextPadding::Exact,
+                expires_at_unix_ms: 2_000,
+                hop_limit: 8,
+                transport_binding_id: route.binding_id,
+            },
+            header: MailboxEnvelopeHeader {
+                protocol_version: ProtocolVersion::V1,
+                signature_algorithm: SignatureAlgorithm::ED25519,
+                tenant: context.expected_tenant,
+                authorization_domain: context.expected_authorization_domain,
+                sender: context.expected_sender,
+                recipient: context.expected_recipient,
+                mailbox: context.expected_mailbox,
+                sender_boot: config.boot,
+                execution_epoch: context.current_execution_epoch,
+                message_id: MessageId::from_bytes(rand::random()),
+                correlation_id: CorrelationId::from_bytes(rand::random()),
+                causation_id: CausationId::from_bytes([0; 32]),
+                kind: config.kind,
+                reply_to: config.reply_to,
+                ordering_scope: OrderingScope::parse("conformance").unwrap(),
+                sequence: SequenceNumber::new(1).unwrap(),
+                issued_at_unix_ms: 1_000,
+                expires_at_unix_ms: 2_000,
+                nonce: ReplayNonce::from_bytes(rand::random()),
+                content_type: config.capability.grant.content_types[0].clone(),
+                capability_id: config.capability.grant.capability_id,
+                policy_epoch: context.current_policy_epoch,
+                encryption: EncryptionContext {
+                    algorithm: EncryptionAlgorithm::AES_256_GCM,
+                    key_id: config.key_id,
+                },
+                plaintext_len: payload.len().try_into().unwrap(),
+            },
+            plaintext: payload,
+        },
+        &config.encryption_key,
+        config.signing_key.as_ref().unwrap(),
+    )
+    .unwrap();
+    encode_envelope(&envelope).unwrap()
+}
+
+pub struct Store(pub std::path::PathBuf);
+impl Store {
+    pub fn new() -> Self {
+        Self(std::env::temp_dir().join(format!(
+            "spiral-mvm-tests-{}-{}",
+            std::process::id(),
+            rand::random::<u64>()
+        )))
+    }
+    pub fn open(
+        &self,
+        authority: spiralcore_mvm_adapter::MailboxAuthority,
+    ) -> spiralcore_transfer::endpoint::Endpoint<spiralcore_mvm_adapter::MailboxAuthority> {
+        use spiralcore_transfer::endpoint::{ColdGraphPolicy, Endpoint, Limits};
+        Endpoint::open_with_policy(
+            &self.0,
+            Limits::default(),
+            authority,
+            ColdGraphPolicy::Disabled,
+        )
+        .unwrap()
+    }
+}
+impl Drop for Store {
+    fn drop(&mut self) {
+        let _ = std::fs::remove_dir_all(&self.0);
+    }
+}
+
+pub fn random(len: usize, mut seed: u64) -> Vec<u8> {
+    (0..len)
+        .map(|_| {
+            seed ^= seed << 13;
+            seed ^= seed >> 7;
+            seed ^= seed << 17;
+            seed as u8
+        })
+        .collect()
+}
+
+pub fn edited(bytes: &[u8]) -> Vec<u8> {
+    let mut result = bytes.to_vec();
+    let middle = result.len() / 2;
+    for byte in &mut result[middle..middle + 32] {
+        *byte ^= 0xa5;
+    }
+    result
 }

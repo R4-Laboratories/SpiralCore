@@ -1,0 +1,20 @@
+{
+  "stage": "example_cleanup_delta_and_qualification_refresh",
+  "verdict": "PASS_FOR_BOUNDED_HOST_CONFORMANCE",
+  "blocking_findings": [],
+  "prior_review_sha256": "48fe9d17988de8b3481a4b58e1f49ae60748c4198e63d936abf224472766c3b4",
+  "unchanged_production": ["src/lib.rs", "src/policy.rs", "src/direction.rs", "src/conformance.rs"],
+  "example_sha256": "fe66caceede3c129204c344f9f6a0c1f09ba086ffd2997652e808fd26d601987",
+  "reviewed_delta": "The example writes all exact reopened verification rows and syncs the evidence file before dropping the endpoint and removing its newly created owned store. A failed persist returns before cleanup. It then writes and syncs the session cleanup record. The overall root removal precedes the final complete marker. No production protocol, authority, codec or measurement timing scope changed.",
+  "observed_receipts": {
+    "evidence_sync_red_exit": 101,
+    "evidence_sync_red": "The injected persist failure test observed the prior incorrect success and failed with evidence must be durable before cleanup.",
+    "final_all_targets_exit": 0,
+    "final_tests": {"passed": 15, "failed": 0, "ignored": 0, "targets": 4},
+    "default_check_exit": 0,
+    "coverage_exit": 0,
+    "coverage": {"scope": "four adapter src files, including their module unit-test lines", "lines_covered": 580, "lines_count": 623, "line_percent": 93.09791332263242, "branch_or_mcdc_claim": false, "example_in_this_coverage": false}
+  },
+  "limitations": "The original host-only security/lifecycle limitations remain. This checks file synchronization and cleanup ordering; it is not fault-injected power-loss/filesystem qualification. Final release build, source/executable freeze and the registered campaign remain parent-owned prerequisites.",
+  "reviewer_reran_tests_builds_coverage_or_measurements": false
+}
