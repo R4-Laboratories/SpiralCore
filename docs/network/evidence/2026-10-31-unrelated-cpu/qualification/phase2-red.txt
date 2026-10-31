@@ -1,0 +1,94 @@
+   Compiling spiralcore-transfer v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer)
+error[E0425]: cannot find function `possible_record` in module `super`
+   --> src/../tests/fixtures/schema_sender_checks.rs:105:20
+    |
+105 |             super::possible_record(&bytes),
+    |                    ^^^^^^^^^^^^^^^
+    |
+   ::: src/schema.rs:541:1
+    |
+541 | fn parse_record(bytes: &[u8]) -> Option<Record<'_>> {
+    | --------------------------------------------------- similarly named function `parse_record` defined here
+    |
+help: a function with a similar name exists
+    |
+105 -             super::possible_record(&bytes),
+105 +             super::parse_record(&bytes),
+    |
+
+error[E0425]: cannot find function `possible_record` in module `super`
+   --> src/../tests/fixtures/schema_sender_checks.rs:111:25
+    |
+111 |         assert!(!super::possible_record(bytes));
+    |                         ^^^^^^^^^^^^^^^
+    |
+   ::: src/schema.rs:541:1
+    |
+541 | fn parse_record(bytes: &[u8]) -> Option<Record<'_>> {
+    | --------------------------------------------------- similarly named function `parse_record` defined here
+    |
+help: a function with a similar name exists
+    |
+111 -         assert!(!super::possible_record(bytes));
+111 +         assert!(!super::parse_record(bytes));
+    |
+
+error[E0425]: cannot find function `possible_record` in module `super`
+   --> src/../tests/fixtures/schema_sender_checks.rs:115:24
+    |
+115 |         assert!(super::possible_record(bytes));
+    |                        ^^^^^^^^^^^^^^^
+    |
+   ::: src/schema.rs:541:1
+    |
+541 | fn parse_record(bytes: &[u8]) -> Option<Record<'_>> {
+    | --------------------------------------------------- similarly named function `parse_record` defined here
+    |
+help: a function with a similar name exists
+    |
+115 -         assert!(super::possible_record(bytes));
+115 +         assert!(super::parse_record(bytes));
+    |
+
+error[E0425]: cannot find function `possible_record` in module `super`
+   --> src/../tests/fixtures/schema_sender_checks.rs:119:20
+    |
+119 |     assert!(super::possible_record(&bytes));
+    |                    ^^^^^^^^^^^^^^^
+    |
+   ::: src/schema.rs:541:1
+    |
+541 | fn parse_record(bytes: &[u8]) -> Option<Record<'_>> {
+    | --------------------------------------------------- similarly named function `parse_record` defined here
+    |
+help: a function with a similar name exists
+    |
+119 -     assert!(super::possible_record(&bytes));
+119 +     assert!(super::parse_record(&bytes));
+    |
+
+error[E0425]: cannot find function `possible_record` in module `super`
+   --> src/../tests/fixtures/schema_sender_checks.rs:121:21
+    |
+121 |     assert!(!super::possible_record(&bytes));
+    |                     ^^^^^^^^^^^^^^^
+    |
+   ::: src/schema.rs:541:1
+    |
+541 | fn parse_record(bytes: &[u8]) -> Option<Record<'_>> {
+    | --------------------------------------------------- similarly named function `parse_record` defined here
+    |
+help: a function with a similar name exists
+    |
+121 -     assert!(!super::possible_record(&bytes));
+121 +     assert!(!super::parse_record(&bytes));
+    |
+
+error[E0425]: cannot find function `record_count` in module `super`
+   --> src/../tests/fixtures/schema_sender_checks.rs:131:27
+    |
+131 |         assert_eq!(super::record_count(bytes), expected, "length {}", bytes.len());
+    |                           ^^^^^^^^^^^^ not found in `super`
+
+For more information about this error, try `rustc --explain E0425`.
+error: could not compile `spiralcore-transfer` (lib test) due to 6 previous errors

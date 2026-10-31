@@ -1,0 +1,60 @@
+{
+  "milestone": "SC-OPT-019",
+  "stage": "final_security_gate",
+  "verdict": "PASS_SCOPED_SECURITY_REVIEW",
+  "reviewed_utc": "2026-10-31T06:46:19.122280+00:00",
+  "launch_source": "c83f7656e2a9f92b7d6bc8557af987391d147516",
+  "runtime_source": "f662f5a54886365de20be17e6ef8219d94157362",
+  "github_run": 41177063558,
+  "roster": {
+    "identity": "d1927d9e7ce51354",
+    "security_reviewer": "verified active"
+  },
+  "scope": "Retained WAN evidence, source/security continuity, owned cleanup and credential removal; following final procedural PASS.",
+  "blocking_findings": [],
+  "observations": [
+    "Production, runtime harness and Cargo files remain unchanged from the sealed phase-2 code/Rust/security review. The later declaration-only workflow change already has a separate independent infra review; this receipt does not self-approve the reviewer-authored workflow.",
+    "Retained launch/registration bind exact source, first attempt, six fixed HTTPS relay origins, frozen sender/receiver hashes and 420 transfers. Capability enters via environment/stdin, not registration or command arguments. Existing namespace authorization, quotas, timeouts and durable verification are unchanged.",
+    "Bounded scan of all 126 retained WAN files (1,679,188 bytes) found no private-key headers, recognized GitHub/AWS credential literals, literal bearer/capability assignments, or nonempty credential-valued JSON fields. Script token references are variable/file references; retained origins and synthetic object/source hashes are not credentials.",
+    "Live name-only GitHub checks found zero SPIRALCORE_UNRELATED_* variables and zero SPIRALCORE_UNRELATED_TOKEN secrets. Independently observed local capability.txt absent, all six cache directories absent and all twelve recorded receiver/tunnel PIDs not running.",
+    "Cleanup is restricted to six explicitly owned non-symlink stores and requires exact 420-transfer summary plus failed advancement and stopped recorded processes. Six retained removal records follow stopped-store exact verification.",
+    "Diagnostic registration keeps local_advancement=false and performance_acceptance=false. Both local failures remain retained; current report states the candidate is unqualified and results cannot retroactively satisfy local acceptance."
+  ],
+  "evidence_scan": {
+    "files": 126,
+    "bytes": 1679188,
+    "sorted_path_size_sha256_manifest_sha256": "831b6a001301f785063b185adcafd68e5750f965a3343b6abae004502c7bf4e0",
+    "detected_secret_patterns": 0,
+    "credential_valued_json_fields": 0
+  },
+  "live_cleanup_checks": {
+    "github_temporary_variable_count": 0,
+    "github_temporary_secret_count": 0,
+    "local_capability_exists": false,
+    "remaining_store_count": 0,
+    "recorded_running_process_count": 0
+  },
+  "prior_review_reuse": "The phase-2 source and diagnostic-declaration independent reviews remain valid; no new dependency, decoder, authorization or transport-policy changes were introduced.",
+  "limitations": [
+    "This is a bounded security/evidence review, not a penetration test or cryptographic/FIPS/compliance certification.",
+    "Pattern and structured-field inspection found no credential exposure; it is not a proof that arbitrary opaque data can never encode a secret. The temporary capability had already been removed and was neither retrieved nor reproduced by this reviewer.",
+    "Final performance arithmetic and completed report tables are owned by the independent result reviewer and are outside this security verdict. The report hash records the file present when this receipt was written; it does not attest independent numerical review.",
+    "No builds, tests, measurements, workflow reruns, network transfer or policy changes were performed by this reviewer; only read-only GitHub metadata queries were used for cleanup verification."
+  ],
+  "evidence_sha256": {
+    "qualification/final-procedural-review.json": "5c33a78e85a61a4ae336bf154bd9634e95809982833a00ac1f542699228f6212",
+    "qualification/phase2-code-rust-security-review.json": "244be935faf2a9648d160f9aba6a3158e834be319a3cdb9dd216aec5c88a809a",
+    "qualification/wan-diagnostic-review.json": "68fd248679443fc68f4422ab9c9bbbf0b2863beb611b81cbd747535cc6e1443b",
+    "wan-pilot-01/cleanup-command.sh": "936a62ce901ab25290a4a0e3b482dced1d3eba60c6dbaaf350f390d776249f2c",
+    "wan-pilot-01/cleanup.jsonl": "698480fdb17ed6157e888d3e7d826a4d374466eda769ecfe093570263376d783",
+    "wan-pilot-01/cleanup-completed-utc.txt": "ce307021f05408d10d09e6100e017d86531d8efc159c017532ceef9f45c128db",
+    "wan-pilot-01/temporary-secret-absent.txt": "a17fcf0a2f50e2d495e4f90ce263410edc183add6c62699a2facbccf60410f74",
+    "wan-pilot-01/temporary-variables-absent.txt": "a17fcf0a2f50e2d495e4f90ce263410edc183add6c62699a2facbccf60410f74",
+    "wan-pilot-01/launch-command.sh": "5b4cdb84caeb97c41f370a124170fb4c60031a33252d7673720d626edde48aa4",
+    "wan-pilot-01/supervise-command.sh": "6be2b1a62e6e2de4b2d8a20fa9eb894ea4084d722bbc6fa300a1d927cf9f3526",
+    "wan-pilot-01/hosted/registration.json": "5622721b17f3d988670f9b8065f4475d7a304802035647046f7b42e1852c0d0b",
+    "wan-pilot-01/summary.json": "5d37bed14a236866aa8ef84ea8c9000e3c215f965a115592869363cd72ae8a95",
+    "wan-diagnostic-contract.md": "126e79fee1d85313a5502bf29331b4e6b64a7267dfb0bb92b9f1f7448055e756"
+  },
+  "report_security_wording_snapshot_sha256": "ed5e4c736ad2955a106c91ee2c0393fbce3dca69db816b7ac09eef66fed0b333"
+}

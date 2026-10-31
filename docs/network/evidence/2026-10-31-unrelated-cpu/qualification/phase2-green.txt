@@ -1,0 +1,191 @@
+   Compiling spiralcore-transfer v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer)
+    Finished `release` profile [optimized] target(s) in 34.20s
+     Running unittests src/lib.rs (/Users/casey.allard/spiralcore/target/aarch64-apple-darwin/release/deps/spiralcore_transfer-5212578443409bca)
+
+running 34 tests
+test dag::fold_memo_tests::parent_memo_is_exact_and_has_a_fixed_small_allocation_bound ... ok
+test dag::fold_memo_tests::rejected_records_never_enter_the_memo ... ok
+test dag::fold_memo_tests::hot_memo_reuses_only_exact_nodes_and_preserves_unique_budget ... ok
+test fitted_transfer::tests::frame_validation_is_atomic_and_separately_bounds_count_and_bytes ... ok
+test delta::sender_delta_checks::unrelated_rejection_preserves_short_equal_runs_and_shifted_edge_reuse ... ok
+test delta::scan_tests::bulk_scans_handle_different_lengths_and_zero_byte_borrows ... ok
+test schema::sender_checks::first_match_preserves_exact_charge_and_terminal_work_budget ... ok
+test schema::sender_checks::failed_speculation_never_spends_work_or_emits_partial_bytes ... ok
+test schema::sender_checks::deterministic_mixed_sequences_preserve_matching_and_fallback_bytes ... ok
+test schema::sender_checks::fit_duplicate_mixed_lexical_and_invalid_records_keep_original_artifact ... ok
+test schema::sender_checks::possible_record_is_only_a_conservative_length_and_json_prefix_check ... ok
+test schema::sender_checks::lexical_layouts_invalid_tokens_and_every_truncation_preserve_old_bytes ... ok
+test schema::sender_checks::fit_order_and_training_schema_limits_match_original ... ok
+test schema_selection::probe_eligibility_tests::computed_length_cost_matches_real_chunk_framing_without_materializing_bytes ... ok
+test delta::scan_tests::bulk_scans_match_scalar_at_every_short_boundary ... ok
+test schema::sender_checks::impossible_record_preflight_keeps_complete_frozen_encoder_bytes ... ok
+test schema::sender_checks::newline_iterator_capped_count_matches_original_record_limit ... ok
+test schema::sender_checks::newline_iterator_preserves_exact_inclusive_slices_and_scan_boundaries ... ok
+test schema::sender_checks::record_count_matches_iterator_at_chunk_boundaries_and_saturation ... ok
+test schema_selection::probe_eligibility_tests::impossible_certificates_skip_probe_and_earlier_whole_ties_still_encode ... ok
+test selection::runtime_selection_tests::encoded_lower_bounds_hold_for_empty_small_and_chunk_boundary_inputs ... ok
+test selection::runtime_selection_tests::lower_bound_ties_preserve_original_codec_priority ... ok
+test selection::runtime_selection_tests::runtime_repeat_shortcut_and_errors_keep_pre_begin_behavior ... ok
+test zstd_prefix::tests::chunk_validation_is_atomic_and_count_and_encoded_bounds_are_independent ... ok
+test shared_transfer::identity_tests::prepared_identity_matches_full_hash_for_equal_edited_and_length_changed_bytes ... ok
+test zstd_whole::probe_tests::certificate_parser_counts_only_actual_first_payload_and_required_remainder ... ok
+test zstd_whole::probe_tests::guard_version_size_and_unavailable_context_do_not_authorize_a_bound ... ok
+test selection::runtime_selection_tests::runtime_first_preserves_exhaustive_winner_and_body_bytes ... ok
+test shared_runtime::packed_tests::packed_rules_match_scalar_tables_at_periodic_word_boundaries ... ok
+test schema::sender_checks::slots_record_sizes_and_line_limit_preserve_old_bytes ... ok
+test zstd_whole::probe_tests::qualified_first_header_and_bound_match_uncapped_encoder_then_reset_exactly ... ok
+test selection::runtime_selection_tests::prefix_structure_bound_prunes_large_runtime_without_changing_bytes ... ok
+test zstd_prefix::tests::profile_minimum_size_holds_at_empty_and_decoded_block_boundaries ... ok
+test delta::sender_delta_checks::optimized_delta_preserves_all_frames_across_changes_and_boundaries ... ok
+
+test result: ok. 34 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.45s
+
+     Running tests/persistent_session.rs (/Users/casey.allard/spiralcore/target/aarch64-apple-darwin/release/deps/persistent_session-58978401b1d50c34)
+
+running 7 tests
+test input_capacity_limits_precede_network_and_do_not_destroy_known_base ... ok
+test lost_ack_never_promotes_and_explicit_recovery_confirms_committed_target ... ok
+test schema_seed_is_explicit_auxiliary_and_context_change_discards_scoped_state ... ok
+test runtime_session_reuses_fixed_prediction_and_requires_checkpoint_ack ... ok
+test missing_or_corrupt_base_does_not_retry_and_recovery_cold_sends_explicitly ... ok
+test context_changes_and_invalid_ack_invalidate_hints_without_promotion ... ok
+test rolling_owned_base_advances_only_on_ack_and_matches_existing_sender_frames ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.31s
+
+     Running tests/schema_codec.rs (/Users/casey.allard/spiralcore/target/aarch64-apple-darwin/release/deps/schema_codec-01f9466a0dbd0828)
+
+running 10 tests
+test frozen_training_template_preserves_held_out_raw_tokens ... ok
+test arbitrary_bytes_layout_drift_and_nested_values_remain_exact_literals ... ok
+test hostile_stream_counts_indices_tokens_and_lengths_fail_preflight ... ok
+test invalid_primitive_spellings_and_slot_overflow_are_literals ... ok
+test malformed_artifact_is_rejected_even_for_a_literal_target ... ok
+test malformed_templates_duplicates_and_profile_caps_are_rejected ... ok
+test duplicate_keys_whitespace_crlf_escapes_and_numeric_spellings_are_preserved ... ok
+test empty_mixed_and_newline_heavy_objects_have_exact_fallback ... ok
+test wrong_schema_and_encoded_lengths_are_rejected ... ok
+test training_limits_and_template_count_are_bounded ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/schema_prepared.rs (/Users/casey.allard/spiralcore/target/aarch64-apple-darwin/release/deps/schema_prepared-e7abf42fa06627a4)
+
+running 6 tests
+test prepared_schema_owns_artifact_and_preserves_existing_stream_bytes ... ok
+test schema_zstd_rejects_hostile_frames_then_decodes_a_valid_frame ... ok
+test schema_zstd_reuses_contexts_and_preserves_exact_values_and_fallback ... ok
+test prepared_dictionary_matches_fresh_bytes_after_alternating_inputs_and_errors ... ok
+test prepared_encoders_recover_after_rejected_oversize_input ... ok
+test target_specific_intermediate_cap_covers_maximum_literal_record_overhead ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+
+     Running tests/schema_reuse.rs (/Users/casey.allard/spiralcore/target/aarch64-apple-darwin/release/deps/schema_reuse-32b050583073d210)
+
+running 5 tests
+test compressed_schema_offer_is_versioned_and_bounded ... ok
+test bad_compressed_transfer_cannot_publish_and_cached_decoder_recovers ... ok
+test warm_decoder_does_not_hide_corrupt_missing_or_unauthorized_artifact ... ok
+test persistent_prepared_senders_and_receiver_reuse_exact_objects_then_restart ... ok
+test codec_cache_is_bounded_pinned_and_released_without_exceeding_shared_budget ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.43s
+
+     Running tests/schema_selection.rs (/Users/casey.allard/spiralcore/target/aarch64-apple-darwin/release/deps/schema_selection-8f1f4d2e3756d7fd)
+
+running 8 tests
+test whole_zstd_mode_is_explicit_and_requires_no_artifact ... ok
+test whole_contexts_preserve_parameters_bytes_and_recover_after_bad_frames ... ok
+test exact_candidate_costs_and_raw_tie_match_independent_frame_lengths ... ok
+test whole_codec_accepts_exact_sixteen_mib_and_rejects_larger_before_encode ... ok
+test unseeded_claimed_warm_schema_is_rejected_and_whole_cache_is_scoped ... ok
+test lazy_schema_seed_is_paid_once_then_ready_schema_commits_exactly ... ok
+test whole_receiver_rejects_corruption_then_reuses_bounded_contexts ... ok
+test prepared_selection_is_minimum_charges_seed_and_matches_serialized_transfer ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.42s
+
+     Running tests/schema_sender.rs (/Users/casey.allard/spiralcore/target/aarch64-apple-darwin/release/deps/schema_sender-9542bbbe6b3265fa)
+
+running 3 tests
+test allocation_counter_is_local_and_disabled_outside_the_scope ... ok
+test fitting_repeated_first_layout_has_constant_temporary_allocations ... ok
+test matching_prepared_records_allocate_only_the_output_buffer ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/warm_selection.rs (/Users/casey.allard/spiralcore/target/aarch64-apple-darwin/release/deps/warm_selection-eb8336a613fc7321)
+
+running 9 tests
+test raw_ties_and_old_api_results_survive_interleaved_warm_calls_and_limits ... ok
+test verified_base_makes_sparse_an_exact_scored_candidate ... ok
+test all_four_winners_match_exhaustive_selected_frame_bytes ... ok
+test period64_without_short_period_still_uses_actual_rejection_certificate ... ok
+test static_tie_requires_whole_evaluation_or_a_stronger_actual_bound ... ok
+test boundaries_length_changes_and_context_reuse_preserve_exhaustive_minimum ... ok
+test sampled_short_period_repetition_schedules_full_encoding_without_pruning ... ok
+test cold_schema_can_win_after_paying_seed_instead_of_greedily_using_sparse ... ok
+test structural_bounds_skip_only_candidates_that_cannot_win ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.51s
+
+     Running unittests examples/schema_fitting.rs (/Users/casey.allard/spiralcore/target/aarch64-apple-darwin/release/examples/schema_fitting-693014515424b95c)
+
+running 53 tests
+test persistent_session::tests::unrelated_cpu_gates_preserve_negative_controls_and_require_all_pairs ... ok
+test persistent_session::tests::unrelated_sequence_keeps_exact_warm_edits_and_held_out_shapes ... ok
+test schema_reuse::tests::observation_validation_rejects_false_fidelity_and_double_counting ... ok
+test schema_reuse::tests::randomized_orders_preserve_all_arms_and_are_repeatable ... ok
+test persistent_session::tests::persistent_rolling_objects_survive_real_serialized_store_reopen ... ok
+test schema_reuse::tests::sessions_assign_distinct_held_out_indexes_and_reject_bad_bounds ... ok
+test schema_selection::tests::cold_seed_charge_cannot_be_omitted ... ok
+test schema_selection::tests::cold_threshold_ties_and_extra_candidates_are_rejected ... ok
+test schema_reuse::tests::real_session_owns_private_store_and_reopens_every_distinct_target ... ok
+test schema_selection::tests::measured_transport_failure_is_sanitized_and_not_reused_without_exchange ... ok
+test persistent_session::tests::unrelated_mixed_session_publishes_schema_and_reopens_all_exact_objects ... ok
+test persistent_session::tests::persistent_complete_receipts_reject_missing_fits_costs_and_fidelity ... ok
+test schema_sender::tests::pairing_balances_source_order_and_rejects_invalid_cells ... ok
+test persistent_session::tests::persistent_campaign_summary_keeps_unfavorable_gate ... ok
+test schema_sender::tests::standalone_profile_compressor_matches_the_production_frame ... ok
+test schema_sender::tests::recorded_sessions_keep_exact_transcripts_and_strict_output_creation ... ok
+test persistent_session::tests::unrelated_plan_charges_real_artifact_publication_and_fixed_dose ... ok
+test persistent_session::tests::unrelated_complete_receipts_require_paid_publication_roles_and_negative_gates ... ok
+test schema_wan::tests::loopback_persistent_session_reopens_all_ten_exact_targets ... ok
+test schema_wan::tests::thirty_trials_cover_six_orders_and_isolate_every_scope ... ok
+test tests::training_is_frozen_and_disjoint_from_held_out_records ... ok
+test tests::whole_record_batches_and_binary_controls_preserve_actual_lengths ... ok
+test schema_wan::tests::family_label_must_match_the_frozen_target ... ok
+test schema_reuse::tests::historical_fixture_identities_are_unchanged ... ok
+test warm_object::tests::bounded_cpu_gate_requires_ten_complete_pairs_and_preserves_negatives ... ok
+test schema_wan::tests::expanded_fixture_range_keeps_historical_identity ... ok
+test warm_object::tests::bounded_receipt_keeps_completed_cost_distinct_from_rejection_certificate ... ok
+test warm_object::tests::persistent_accounting_charges_setup_once_and_keeps_generation_in_outer ... ok
+test warm_object::tests::bounded_compressible_control_uses_completed_whole_and_exact_reopen ... ok
+test warm_object::tests::persistent_sequence_escapes_once_then_recovers_nine_distinct_warm_edits ... ok
+test warm_object::tests::persistent_shared_budget_rejects_retained_future_targets ... ok
+test schema_wan::tests::shard_budget_and_summary_guards_are_fail_closed ... ok
+test warm_object::tests::bounded_profile_binds_two_production_sources_and_retains_bounded_doses ... ok
+test warm_object::tests::setup_gates_preserve_all_ten_pairs_and_negative_outcomes ... ok
+test warm_object::tests::persistent_plan_binds_once_fitted_sessions_and_bounded_pilot ... ok
+test warm_object::tests::setup_profile_keeps_all_fits_and_separates_constructor_from_training ... ok
+test schema_selection::tests::real_persistent_small_sessions_skip_selector_seed_and_reopen_exactly ... ok
+test warm_object::tests::warm_fixture_changes_exactly_32_midpoint_bytes_and_has_unique_identity ... ok
+test warm_object::tests::setup_controls_reopen_actual_targets_and_label_deceptive_sampling ... ok
+test warm_object::tests::warm_complete_receipts_reject_dose_scope_seed_and_cost_corruption ... ok
+test warm_object::tests::warm_selection_actual_fit_and_consumed_plan_preserve_scoped_exact_bytes ... ok
+test warm_object::tests::warm_selection_receipt_rejects_fake_bounds_and_omitted_cold_setup ... ok
+test warm_object::tests::warm_selection_plan_has_six_bounded_shards_and_all_permutations ... ok
+test warm_object::tests::warm_randomized_pair_orders_are_reproducible_and_exactly_balanced ... ok
+test warm_object::tests::warm_success_cost_requires_real_seed_and_changed_sparse_update ... ok
+test warm_object::tests::warm_sparse_requires_scoped_base_then_commits_absent_target_exactly ... ok
+test warm_object::tests::warm_selection_summary_joins_controls_and_rejects_unpaid_fit_and_decision_changes ... ok
+test warm_object::tests::bounded_complete_local_summary_checks_roles_frames_fit_and_all_ten_pairs ... ok
+test warm_object::tests::warm_summary_accepts_complete_local_receipts_and_charges_setup_once ... ok
+test warm_object::tests::setup_three_cases_bind_paid_dose_and_original_fixtures ... ok
+test warm_object::tests::setup_complete_summary_checks_three_cases_and_rejects_relabeling ... ok
+test schema_selection::tests::complete_dynamic_seed_summary_and_corruptions ... ok
+test schema_wan::tests::complete_summary_accepts_all_shards_and_rejects_missing_or_corrupt_rows ... ok
+
+test result: ok. 53 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 25.14s
+

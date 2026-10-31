@@ -108,9 +108,9 @@ pub fn encode(base: &[u8], target: &[u8]) -> Result<Option<Recipe>> {
     if literal < target.len() {
         aligned.push(Op::Literal(literal, target.len() - literal));
     }
-    let mut best = pack(&simple, target)?;
+    let mut best = pack_candidate(&simple, target)?;
     if aligned.len() <= MAX_OPS {
-        if let Some(candidate) = pack(&aligned, target)? {
+        if let Some(candidate) = pack_candidate(&aligned, target)? {
             if best.as_ref().is_none_or(|b| cost(&candidate) < cost(b)) {
                 best = Some(candidate);
             }
@@ -166,6 +166,15 @@ fn unequal_prefix(a: &[u8], b: &[u8]) -> usize {
 }
 fn cost(r: &Recipe) -> usize {
     r.frames.iter().map(|b| b.len() + 128).sum()
+}
+fn pack_candidate(ops: &[Op], target: &[u8]) -> Result<Option<Recipe>> {
+    // A whole-target literal costs N + 142 * ceil(N / MAX_CHUNK), plus
+    // the 32-byte base ID. Raw costs N + 133 * ceil(N / MAX_CHUNK).
+    // It cannot survive the final Raw filter, so do not allocate its frames.
+    if matches!(ops, [Op::Literal(0, n)] if *n > 0 && *n == target.len()) {
+        return Ok(None);
+    }
+    pack(ops, target)
 }
 fn header() -> Vec<u8> {
     vec![3, 0, 0, 0, 0, 1, 0, 0, 0]

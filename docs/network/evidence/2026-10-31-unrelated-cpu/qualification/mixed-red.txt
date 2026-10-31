@@ -1,0 +1,51 @@
+   Compiling spiralcore-transfer v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer)
+error[E0425]: cannot find function `mixed_next` in this scope
+    --> examples/support/persistent_session.rs:1467:26
+     |
+1467 |             let target = mixed_next(0, false, position, &base).unwrap();
+     |                          ^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `mixed_next` in this scope
+    --> examples/support/persistent_session.rs:1482:21
+     |
+1482 |         let large = mixed_next(0, true, 6, &vec![0; 16 << 20]).unwrap();
+     |                     ^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `mixed_next` in this scope
+    --> examples/support/persistent_session.rs:1485:17
+     |
+1485 |         assert!(mixed_next(10, false, 1, &base).is_err());
+     |                 ^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `unrelated_plan` in this scope
+    --> examples/support/persistent_session.rs:1489:20
+     |
+1489 |         let plan = unrelated_plan("mixed-red", 0, &"1".repeat(40), true).unwrap();
+     |                    ^^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `unrelated_cpu_gates` in this scope
+    --> examples/support/persistent_session.rs:1503:20
+     |
+1503 |         let good = unrelated_cpu_gates(&[0.9; 10], &[1.0; 10], &[1.0; 10]).unwrap();
+     |                    ^^^^^^^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `unrelated_cpu_gates` in this scope
+    --> examples/support/persistent_session.rs:1505:22
+     |
+1505 |         let slower = unrelated_cpu_gates(&[0.9; 10], &[1.06; 10], &[1.0; 10]).unwrap();
+     |                      ^^^^^^^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `unrelated_cpu_gates` in this scope
+    --> examples/support/persistent_session.rs:1509:17
+     |
+1509 |         assert!(unrelated_cpu_gates(&[0.9; 9], &[1.0; 10], &[1.0; 10]).is_err());
+     |                 ^^^^^^^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `unrelated_cpu_gates` in this scope
+    --> examples/support/persistent_session.rs:1510:17
+     |
+1510 |         assert!(unrelated_cpu_gates(&[f64::NAN; 10], &[1.0; 10], &[1.0; 10]).is_err());
+     |                 ^^^^^^^^^^^^^^^^^^^ not found in this scope
+
+For more information about this error, try `rustc --explain E0425`.
+error: could not compile `spiralcore-transfer` (example "schema_fitting" test) due to 8 previous errors

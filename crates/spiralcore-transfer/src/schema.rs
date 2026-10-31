@@ -302,17 +302,43 @@ pub fn encode(artifact: &[u8], target: &[u8]) -> Result<Vec<u8>> {
     encode_with(&templates, object_id(artifact), target)
 }
 
+fn records(bytes: &[u8]) -> impl Iterator<Item = &[u8]> {
+    let tail = (!bytes.is_empty() && bytes.last() != Some(&b'\n')).then_some(bytes.len());
+    let mut start = 0;
+    memchr::memchr_iter(b'\n', bytes)
+        .map(|end| end + 1)
+        .chain(tail)
+        .map(move |end| {
+            let record = &bytes[start..end];
+            start = end;
+            record
+        })
+}
+
+fn record_count(bytes: &[u8]) -> usize {
+    let mut count = 0;
+    for block in bytes.chunks(64 * 1024) {
+        // memchr's count specialization scans blocks without visiting each LF.
+        count += memchr::memchr_iter(b'\n', block).count();
+        if count > MAX_RECORDS {
+            return MAX_RECORDS + 1;
+        }
+    }
+    count + usize::from(!bytes.is_empty() && bytes.last() != Some(&b'\n'))
+}
+
+fn possible_record(bytes: &[u8]) -> bool {
+    bytes.len() <= MAX_TEMPLATE_RECORD && bytes.get(whitespace(bytes, 0)) == Some(&b'{')
+}
+
 fn encode_with(templates: &Templates<'_>, artifact_id: Id, target: &[u8]) -> Result<Vec<u8>> {
     if target.len() > MAX_TARGET {
         return Err(Error::Limit);
     }
-    let count = target
-        .split_inclusive(|&b| b == b'\n')
-        .take(MAX_RECORDS + 1)
-        .count();
+    let count = record_count(target);
     let whole_literal = count > MAX_RECORDS;
-    let records = if whole_literal { 1 } else { count };
-    let capacity = 48 + 5 * records + target.len();
+    let record_count = if whole_literal { 1 } else { count };
+    let capacity = 48 + 5 * record_count + target.len();
     let mut encoded = Vec::new();
     encoded
         .try_reserve_exact(capacity)
@@ -320,13 +346,19 @@ fn encode_with(templates: &Templates<'_>, artifact_id: Id, target: &[u8]) -> Res
     encoded.extend_from_slice(STREAM_MAGIC);
     encoded.extend_from_slice(&artifact_id);
     encoded.extend_from_slice(&(target.len() as u32).to_le_bytes());
-    encoded.extend_from_slice(&(records as u32).to_le_bytes());
+    encoded.extend_from_slice(&(record_count as u32).to_le_bytes());
     if whole_literal {
         write_literal(&mut encoded, target);
         return Ok(encoded);
     }
     let mut work = 0;
-    for bytes in target.split_inclusive(|&b| b == b'\n') {
+    for bytes in records(target) {
+        // Every validated template and parsed record begins with a JSON object.
+        // These literals cannot match or spend the comparison work budget.
+        if work < MAX_MATCH_WORK && !possible_record(bytes) {
+            write_literal(&mut encoded, bytes);
+            continue;
+        }
         if templates
             .items
             .first()
