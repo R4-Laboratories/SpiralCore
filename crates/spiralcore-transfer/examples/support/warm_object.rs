@@ -55,7 +55,7 @@ fn arms(p: &Value) -> &'static [&'static str] {
         &ARMS_WARM
     }
 }
-fn pins() -> Value {
+pub(super) fn pins() -> Value {
     let mut p = sources();
     p.as_object_mut().unwrap().remove("hardware_sha256");
     for (name, bytes) in [
@@ -93,14 +93,14 @@ fn pins() -> Value {
     }
     p
 }
-fn identity() -> Result<Value> {
+pub(super) fn identity() -> Result<Value> {
     Ok(
         json!({"sources":pins(),"executable_sha256":sha(&fs::read(std::env::current_exe()?)?),
         "platform":format!("{}-{}",std::env::consts::ARCH,std::env::consts::OS),
         "hardware_sha256":cfg!(feature="hardware-sha256"),"first_block_probe_available":cfg!(spiralcore_bundled_zstd_probe)}),
     )
 }
-fn fixture_seed(trial: usize, large: bool) -> u64 {
+pub(super) fn fixture_seed(trial: usize, large: bool) -> u64 {
     let h = hash(
         b"spiralcore.warm-object.fixture.v1\0",
         &[&(trial as u64).to_le_bytes(), &[u8::from(large)]],
@@ -161,7 +161,7 @@ fn case_fixture(p: &Value, trial: usize, case: &str) -> Result<(Vec<u8>, Vec<u8>
         fixture_pair(trial, case == "random-16m")
     }
 }
-fn metadata(bytes: &[u8]) -> Value {
+pub(super) fn metadata(bytes: &[u8]) -> Value {
     json!({"bytes":bytes.len(),"object":hex(&object_id(bytes)),"sha256":sha(bytes)})
 }
 fn order(trial: usize, large: bool) -> [&'static str; 2] {
@@ -466,7 +466,7 @@ fn check_identity(row: &Value, expected: &Value) -> Result<()> {
     }
     Ok(())
 }
-fn raw_cost(len: u64) -> u64 {
+pub(super) fn raw_cost(len: u64) -> u64 {
     368 + len + 133 * len.div_ceil(spiralcore_transfer::MAX_CHUNK as u64)
 }
 fn validate_operation(row: &Value, arm: &str, seed: bool, len: u64) -> Result<()> {
@@ -706,7 +706,7 @@ fn validate_role(p: &Value, role: &str, id: &Value) -> Result<()> {
     }
     Ok(())
 }
-fn normalized_frames(frames: &[Frame]) -> Result<String> {
+pub(super) fn normalized_frames(frames: &[Frame]) -> Result<String> {
     let mut digest = Sha256::new();
     digest.update(b"spiralcore.normalized-winning-frames.v1\0");
     for f in frames {
@@ -1619,7 +1619,7 @@ fn summary(paths: &[String], local: bool) -> Result<Value> {
     Ok(result)
 }
 
-struct ChildGuard(Child);
+pub(super) struct ChildGuard(pub(super) Child);
 impl Drop for ChildGuard {
     fn drop(&mut self) {
         let _ = self.0.kill();
@@ -2312,7 +2312,111 @@ pub(super) fn command(args: &[String]) -> Result<()> {
 }
 #[cfg(test)]
 mod tests {
+    use super::super::persistent_session::{
+        persistent_next, persistent_peak_charge, persistent_plan, persistent_totals,
+    };
     use super::*;
+
+    #[test]
+    fn persistent_plan_binds_once_fitted_sessions_and_bounded_pilot() {
+        let p = persistent_plan("persistent-qualification", 5, &"1".repeat(40), false).unwrap();
+        assert_eq!(p["experiment"], "persistent-session.v1");
+        assert_eq!(p["dose"], "wan-pilot");
+        assert_eq!(p["sessions"].as_array().unwrap().len(), 6);
+        assert_eq!(p["seeds"], 6);
+        assert_eq!(p["targets"], 60);
+        assert_eq!(p["operations"], 66);
+        assert_eq!(p["schema_fits"], 4);
+        assert_eq!(p["updates_per_session"], 10);
+        assert_eq!(p["retained_payload_bytes"], 561u64 << 20);
+        assert_eq!(p["conservative_storage_bound"], (617u64 << 20) + 66 * 4096);
+        assert_eq!(
+            p["http_keep_alive"],
+            json!({"max_requests_per_connection":32,"idle_timeout_ms":500})
+        );
+        let labels = p["sessions"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|s| s["arm"].as_str().unwrap())
+            .collect::<BTreeSet<_>>();
+        assert_eq!(
+            labels,
+            BTreeSet::from(["fresh-selector", "persistent-selector", "whole"])
+        );
+        assert!(persistent_plan("persistent-qualification", 6, &"1".repeat(40), false).is_err());
+        assert_eq!(
+            persistent_plan("persistent-local", 9, &"1".repeat(40), true).unwrap()["operations"],
+            66
+        );
+        assert!(persistent_plan("persistent-local", 10, &"1".repeat(40), true).is_err());
+    }
+
+    #[test]
+    fn persistent_sequence_escapes_once_then_recovers_nine_distinct_warm_edits() {
+        let mut canonical = fixture_pair(0, false).unwrap().0;
+        let seed = canonical.clone();
+        let mut ids = BTreeSet::from([object_id(&canonical)]);
+        for position in 1..=10 {
+            let previous = canonical.clone();
+            let target = persistent_next(0, false, position, &canonical).unwrap();
+            assert_eq!(canonical, previous);
+            assert_eq!(target.len(), 1 << 20);
+            assert!(target.capacity() <= 1 << 20);
+            assert!(ids.insert(object_id(&target)));
+            let changed = previous.iter().zip(&target).filter(|(a, b)| a != b).count();
+            if position == 5 {
+                assert!(changed > target.len() / 2);
+            } else {
+                assert_eq!(changed, 32);
+            }
+            canonical = target;
+        }
+        assert_eq!(ids.len(), 11);
+        let before = canonical.clone();
+        assert!(persistent_next(0, false, 11, &canonical).is_err());
+        assert_eq!(canonical, before);
+        let mut replay = seed;
+        for position in 1..=10 {
+            replay = persistent_next(0, false, position, &replay).unwrap();
+        }
+        assert_eq!(replay, canonical);
+    }
+
+    #[test]
+    fn persistent_shared_budget_rejects_retained_future_targets() {
+        let retention = (256u64 << 20) + (512 << 10) + (16 << 20) + 4096;
+        let charged = persistent_peak_charge(retention, 16 << 20, 36 << 20).unwrap();
+        assert!(charged <= 512 << 20);
+        // An eager eleven-object fixture history is not hidden outside session accounting.
+        assert!(persistent_peak_charge(retention, 16 << 20, 176 << 20).is_err());
+        assert!(persistent_peak_charge(retention, 17 << 20, 1 << 20).is_err());
+        assert!(persistent_peak_charge(500 << 20, 16 << 20, 1 << 20).is_err());
+    }
+
+    #[test]
+    fn persistent_accounting_charges_setup_once_and_keeps_generation_in_outer() {
+        let setup = json!({"cpu_us":10,"wall_us":10});
+        let mut seed = json!({"phase":"seed","sender_cpu_us":20,"receiver_cpu_us":7,"cpu_us":27,"wall_us":20,"body_bytes":100,"request_body_bytes":80,"response_body_bytes":20,"exchange_cpu_us":1,"exchange_wall_us":10,"batches":1});
+        let updates=(1..=10).map(|position|json!({"position":position,"phase":"target","sender_cpu_us":30,"receiver_cpu_us":3,"cpu_us":33,"wall_us":30,"body_bytes":600,"request_body_bytes":400,"response_body_bytes":200,"exchange_cpu_us":1,"exchange_wall_us":20,"batches":1})).collect::<Vec<_>>();
+        let generation = (1..=10)
+            .map(|position| json!({"position":position,"cpu_us":5,"wall_us":5}))
+            .collect::<Vec<_>>();
+        let outer = json!({"cpu_us":400,"wall_us":500});
+        let totals = persistent_totals(&setup, &seed, &updates, &generation, &outer).unwrap();
+        assert_eq!(totals["setup_and_updates_sender_cpu_us"], 310.0);
+        assert_eq!(totals["paid_lifecycle_sender_cpu_us"], 330.0);
+        assert_eq!(totals["generation_cpu_us"], 50.0);
+        assert_eq!(totals["outer_sender_cpu_us"], 400.0);
+        assert_eq!(totals["outer_cpu_subtotal_us"], 437.0);
+        assert_eq!(totals["body_bytes"], 6100.0);
+        assert!(persistent_totals(&setup, &seed, &updates[..9], &generation, &outer).is_err());
+        let mut wrong = generation.clone();
+        wrong[9]["position"] = json!(9);
+        assert!(persistent_totals(&setup, &seed, &updates, &wrong, &outer).is_err());
+        seed["cpu_us"] = json!(99);
+        assert!(persistent_totals(&setup, &seed, &updates, &generation, &outer).is_err());
+    }
 
     #[test]
     fn setup_three_cases_bind_paid_dose_and_original_fixtures() {

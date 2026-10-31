@@ -476,7 +476,6 @@ impl ServeConfig {
     fn validate(self) -> Result<()> {
         if self.max_requests == 0
             || self.max_requests > 16384
-            || self.duration.is_zero()
             || self.duration > Duration::from_secs(3600)
         {
             return Err(Error::Limit);

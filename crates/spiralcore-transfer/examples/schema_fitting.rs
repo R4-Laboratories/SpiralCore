@@ -18,6 +18,8 @@ use std::{
     time::Instant,
 };
 
+#[path = "support/persistent_session.rs"]
+mod persistent_session;
 #[path = "support/schema_reuse.rs"]
 mod schema_reuse;
 #[path = "support/schema_selection.rs"]
@@ -528,6 +530,9 @@ fn summarize(rows: &[Value]) -> Result<Value> {
 }
 fn command() -> Result<()> {
     let args: Vec<_> = std::env::args().collect();
+    if args.get(1).is_some_and(|s| s.starts_with("persistent-")) {
+        return persistent_session::command(&args);
+    }
     if args.get(1).is_some_and(|s| {
         s.starts_with("warm-")
             || s.starts_with("warmselect-")

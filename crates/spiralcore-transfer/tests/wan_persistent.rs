@@ -34,12 +34,13 @@ impl Drop for Store {
         let _ = fs::remove_dir_all(&self.0);
     }
 }
+type OriginTask = thread::JoinHandle<Vec<(usize, usize, usize)>>;
 fn origin(
     store: &Store,
     total: usize,
     per_connection: usize,
     idle_ms: u64,
-) -> (String, thread::JoinHandle<Vec<(usize, usize, usize)>>) {
+) -> (String, OriginTask) {
     let endpoint = Endpoint::open_with_policy(
         &store.0.join("cache"),
         wan::limits(),
@@ -136,6 +137,65 @@ fn reply(reader: &mut BufReader<TcpStream>) -> (String, Vec<u8>) {
     let mut body = vec![0; len];
     reader.read_exact(&mut body).unwrap();
     (header, body)
+}
+
+#[test]
+fn legacy_zero_duration_returns_ok_without_accepting_or_processing_requests() {
+    for observed in [false, true] {
+        let store = Store::new();
+        let endpoint = Endpoint::open_with_policy(
+            &store.0.join("cache"),
+            wan::limits(),
+            BenchAuthority,
+            ColdGraphPolicy::Disabled,
+        )
+        .unwrap();
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let backlog = listener.try_clone().unwrap();
+        let mut client = socket(&listener.local_addr().unwrap().to_string());
+        write_request(&mut client, 1, "");
+        let mut observations = 0;
+        let result = if observed {
+            wan::serve_observed(
+                listener,
+                endpoint,
+                TOKEN,
+                &BTreeSet::from([[1; 32]]),
+                Duration::ZERO,
+                1,
+                |_| {
+                    observations += 1;
+                    Ok(())
+                },
+            )
+        } else {
+            wan::serve(
+                listener,
+                endpoint,
+                TOKEN,
+                &BTreeSet::from([[1; 32]]),
+                Duration::ZERO,
+                1,
+            )
+        };
+        assert_eq!(result, Ok(()));
+        assert_eq!(observations, 0);
+        backlog.set_nonblocking(true).unwrap();
+        assert!(
+            backlog.accept().is_ok(),
+            "the queued connection must remain unaccepted"
+        );
+        let mut reopened = Endpoint::open_with_policy(
+            &store.0.join("cache"),
+            wan::limits(),
+            BenchAuthority,
+            ColdGraphPolicy::Disabled,
+        )
+        .unwrap();
+        assert!(reopened
+            .read_object(&wan::context([1; 32]), object_id(&[1, 0, 255, 0]))
+            .is_err());
+    }
 }
 
 #[test]

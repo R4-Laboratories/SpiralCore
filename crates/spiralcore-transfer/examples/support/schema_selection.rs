@@ -256,10 +256,22 @@ where
 }
 impl Measured {
     pub(super) fn row(&self, phase: &str, position: Option<usize>, bytes: &[u8]) -> Value {
+        self.row_with_metadata(
+            phase,
+            position,
+            &json!({"bytes":bytes.len(),"object":hex(&object_id(bytes)),"sha256":sha(bytes)}),
+        )
+    }
+    pub(super) fn row_with_metadata(
+        &self,
+        phase: &str,
+        position: Option<usize>,
+        expected: &Value,
+    ) -> Value {
         let request = self.after.request_body_bytes - self.before.request_body_bytes;
         let response = self.after.response_body_bytes - self.before.response_body_bytes;
         let receiver = self.after.receiver_cpu_micros - self.before.receiver_cpu_micros;
-        json!({"event":"operation","phase":phase,"position":position,"bytes":bytes.len(),"object":hex(&object_id(bytes)),"sha256":sha(bytes),"sender_cpu_us":self.sender_cpu,"receiver_cpu_us":receiver,"cpu_us":self.sender_cpu+receiver as u128,"wall_us":self.wall,
+        json!({"event":"operation","phase":phase,"position":position,"bytes":expected["bytes"],"object":expected["object"],"sha256":expected["sha256"],"sender_cpu_us":self.sender_cpu,"receiver_cpu_us":receiver,"cpu_us":self.sender_cpu+receiver as u128,"wall_us":self.wall,
             "exchange_cpu_us":self.exchange_cpu,"exchange_wall_us":self.exchange_wall,"receiver_wall_us":self.after.receiver_wall_micros-self.before.receiver_wall_micros,"request_body_bytes":request,"response_body_bytes":response,"body_bytes":request+response,"batches":self.after.http_requests-self.before.http_requests,
             "mode":self.result.as_ref().ok().map(|s|format!("{:?}",s.mode)),"error":self.result.as_ref().err().map(ToString::to_string),"verification":"commit-acknowledged-independent-reopen-pending"})
     }
