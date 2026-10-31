@@ -1,0 +1,12 @@
+    Checking spiralcore-mvm-adapter v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-mvm-adapter)
+error: manual `!RangeInclusive::contains` implementation
+   --> examples/mailbox_transfer.rs:133:44
+    |
+133 |     if !matches!(arm, "warm" | "whole") || size < 64 || size > (16 << 20) {
+    |                                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: use: `!(64..=(16 << 20)).contains(&size)`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.97.0/index.html#manual_range_contains
+    = note: `-D clippy::manual-range-contains` implied by `-D warnings`
+    = help: to override `-D warnings` add `#[allow(clippy::manual_range_contains)]`
+
+error: could not compile `spiralcore-mvm-adapter` (example "mailbox_transfer") due to 1 previous error

@@ -1,0 +1,18 @@
+    Checking sha2-asm v0.6.4
+    Checking sha2 v0.10.9
+    Checking uor-r4-object-store v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/uor-r4-object-store)
+    Checking spiralcore-transfer v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer)
+    Checking spiralcore-mvm-adapter v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-mvm-adapter)
+error: using `clone` on type `Option<ReplyRoute>` which implements the `Copy` trait
+   --> src/direction.rs:225:23
+    |
+225 |             reply_to: self.config.reply_to.clone(),
+    |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: try removing the `clone` call: `self.config.reply_to`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.97.0/index.html#clone_on_copy
+    = note: `-D clippy::clone-on-copy` implied by `-D warnings`
+    = help: to override `-D warnings` add `#[allow(clippy::clone_on_copy)]`
+
+error: could not compile `spiralcore-mvm-adapter` (lib) due to 1 previous error
+warning: build failed, waiting for other jobs to finish...
+error: could not compile `spiralcore-mvm-adapter` (lib test) due to 1 previous error

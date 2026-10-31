@@ -1,0 +1,46 @@
+{
+  "issue": {
+    "url": "https://github.com/tinylabscom/mvm/issues/4633",
+    "title": "Implement Iroh mailbox transport with explicit relay policy",
+    "issue_number": 4633,
+    "body": "<!-- agent-pickup-triage:v1 -->\n## Agent pickup triage\n\n**Category: ready.** This classifies the next task, not completion or a verified current-source pass.\n\n**Next bounded step:** Confirm #4632/#4628 landed API shapes, then implement the Iroh adapter against the canonical envelope and explicit relay policy; no guest-network fallback.\n\nRead the linked handoff and coordinate any active owner before implementation. Preserve the original acceptance criteria below; this triage grants no spending, credentials, publication, host reconfiguration, or landing authority.\n\n---\n\nParent: #4622\n\nDepends on #4632 and #4628.\n\n## Outcome\n\nImplement Iroh as the first cross-host mailbox byte transport while preserving MVM-owned identity, authorization, encryption, delivery semantics, and audit evidence.\n\nThis is a message-envelope transport, not a guest NIC, host bridge, general IP overlay, FlowMux replacement, or implementation of #4607.\n\nIroh transports the canonical encoded MVM envelope unchanged. Neither Iroh nor `mvmd` defines a second mailbox envelope, signature domain, ACK format, or payload schema.\n\n## Scope\n\n- Direct local/LAN and NAT-traversed connections.\n- Customer-configured relays as the no-account relay path.\n- Public Iroh relay infrastructure only through explicit configuration.\n- Binding between rotatable Iroh endpoint identity and stable MVM identity, tenant, assurance tier, policy epoch, and expiry.\n- Connection reuse, reconnection, bounded concurrent streams, path classification, resource limits, and clean shutdown.\n- Ciphertext-only relay behavior and payload-free audit events.\n\n## Acceptance criteria\n\n- [ ] Two hosts exchange mailbox envelopes directly and through a customer-configured relay using the same mailbox contract.\n- [ ] Public relay use is disabled by default and cannot occur as a silent fallback.\n- [ ] Wrong, expired, revoked, stale-epoch, or cross-tenant transport bindings are rejected.\n- [ ] Iroh or relay compromise cannot forge a mailbox sender, alter accepted content, or manufacture a destination receipt.\n- [ ] Resource limits cover peers, streams, queued bytes, retries, reconnect work, and relay usage.\n- [ ] Tests cover direct, relay, reconnect, partition, identity rotation, revocation, tamper, overload, and shutdown paths.\n- [ ] The implementation exposes no packet-forwarding or guest-network fallback when mailbox delivery is unavailable.\n- [ ] Direct and relayed paths interoperate with the standalone local mailbox service using the same `mvm-contract` fixtures, with no `mvmd-types` dependency in the MVM transport implementation.\n",
+    "state": "open",
+    "user": {
+      "login": "auser",
+      "name": "auser",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/529?v=4",
+      "id": 529
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "enhancement",
+        "color": "a2eeef",
+        "description": "New feature or request"
+      },
+      {
+        "name": "mailboxes",
+        "color": "5319e7",
+        "description": "Signed pass-by-value mailbox program"
+      },
+      {
+        "name": "mailbox-phase-3",
+        "color": "fbca04",
+        "description": "Mailbox cross-host transport and migration"
+      }
+    ],
+    "milestone": null,
+    "state_reason": null,
+    "comments": 0,
+    "created_at": "2026-10-22T19:45:01Z",
+    "updated_at": "2026-10-27T22:53:01Z",
+    "closed_at": null,
+    "display_url": "https://github.com/tinylabscom/mvm/issues/4633",
+    "display_title": "Implement Iroh mailbox transport with explicit relay policy"
+  },
+  "url": "https://github.com/tinylabscom/mvm/issues/4633",
+  "title": "Implement Iroh mailbox transport with explicit relay policy",
+  "display_url": "https://github.com/tinylabscom/mvm/issues/4633",
+  "display_title": "Implement Iroh mailbox transport with explicit relay policy"
+}

@@ -1,0 +1,31 @@
+   Compiling spiralcore-mvm-adapter v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-mvm-adapter)
+warning: trait `DurableWrite` is never used
+  --> examples/mailbox_transfer.rs:17:7
+   |
+17 | trait DurableWrite: Write {
+   |       ^^^^^^^^^^^^
+   |
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `spiralcore-mvm-adapter` (example "mailbox_transfer" test) generated 1 warning
+    Finished `test` profile [unoptimized] target(s) in 2.83s
+     Running unittests examples/mailbox_transfer.rs (/Users/casey.allard/spiralcore/target/debug/examples/mailbox_transfer-09c7ee9a78a6347b)
+
+running 1 test
+test tests::failed_evidence_sync_retains_verified_store ... FAILED
+
+failures:
+
+---- tests::failed_evidence_sync_retains_verified_store stdout ----
+
+thread 'tests::failed_evidence_sync_retains_verified_store' (70457918) panicked at examples/mailbox_transfer.rs:353:9:
+evidence must be durable before cleanup
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    tests::failed_evidence_sync_retains_verified_store
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 1 filtered out; finished in 0.23s
+
+error: test failed, to rerun pass `--example mailbox_transfer`

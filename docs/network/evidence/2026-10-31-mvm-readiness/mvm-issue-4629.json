@@ -1,0 +1,46 @@
+{
+  "issue": {
+    "url": "https://github.com/tinylabscom/mvm/issues/4629",
+    "title": "Add dedicated bounded mailbox vsock service and call/cast API",
+    "issue_number": 4629,
+    "body": "<!-- agent-pickup-triage:v1 -->\n## Agent pickup triage\n\n**Category: ready.** This classifies the next task, not completion or a verified current-source pass.\n\n**Next bounded step:** Verify merged #4694 canonical-envelope and #4698 transport contracts, then implement the standalone bounded local vsock call/cast service with isolation tests.\n\nRead the linked handoff and coordinate any active owner before implementation. Preserve the original acceptance criteria below; this triage grants no spending, credentials, publication, host reconfiguration, or landing authority.\n\n---\n\nParent: #4622\n\nDepends on #4627 and #4628.\n\n## Outcome\n\nAdd a dedicated typed mailbox service over vsock with independent queues, credits, lifecycle, and authorization. It must work in standalone `mvm` without `mvmd` and must not share FlowMux, telemetry, or machine-control queues.\n\nThis service consumes `mvm-contract::protocol::mailbox` directly. It owns the workload-facing call/cast/reply behavior and local admission; it must not call into `mvmd-types` or require an `mvmd` process for identity, crypto, delivery, or receipts.\n\n## Scope\n\n- A separately registered mailbox vsock service and bounded framing.\n- Guest and host APIs for `call` and `cast`, plus a separately named lossy operation only if the ADR admits one.\n- Correlation IDs, reply routing, monotonic deadlines, cancellation, and safe disposal of late replies.\n- Per-mailbox, per-sender, per-tenant, and host aggregate admission limits.\n- Explicit local outcomes for full, backpressured, unauthorized, expired, unavailable, and shutting-down destinations.\n- Clean boot, reconnect, shutdown, and teardown behavior.\n\n## Acceptance criteria\n\n- [ ] A guest and host can exchange typed calls and casts without `mvmd` or a guest NIC.\n- [ ] Guest, host, and mock-I/O tests exchange the same canonical MVM envelope later consumed opaquely by cross-host transports and `mvmd` wrappers.\n- [ ] Calls return correlated replies or typed timeout/cancellation results; late replies cannot satisfy a later call.\n- [ ] Casts return after local admission and produce no application reply.\n- [ ] A full queue fails according to the ADR and never silently drops an accepted normal message.\n- [ ] Mailbox saturation cannot consume the configured credits or queues of control, telemetry, or FlowMux services.\n- [ ] Malformed frames, unauthorized operations, oversized values, disconnects, and teardown are covered by integration tests over mock I/O and the supported vsock boundary.\n- [ ] Dependency checks prove no MVM crate imports `mvmd-types` and no local mailbox path falls back to an `mvmd` API.\n",
+    "state": "open",
+    "user": {
+      "login": "auser",
+      "name": "auser",
+      "email": null,
+      "avatar_url": "https://avatars.githubusercontent.com/u/529?v=4",
+      "id": 529
+    },
+    "assignees": null,
+    "labels": [
+      {
+        "name": "enhancement",
+        "color": "a2eeef",
+        "description": "New feature or request"
+      },
+      {
+        "name": "mailboxes",
+        "color": "5319e7",
+        "description": "Signed pass-by-value mailbox program"
+      },
+      {
+        "name": "mailbox-phase-2",
+        "color": "0e8a16",
+        "description": "Mailbox local runtime and durable state"
+      }
+    ],
+    "milestone": null,
+    "state_reason": null,
+    "comments": 0,
+    "created_at": "2026-10-22T19:44:52Z",
+    "updated_at": "2026-10-27T22:53:30Z",
+    "closed_at": null,
+    "display_url": "https://github.com/tinylabscom/mvm/issues/4629",
+    "display_title": "Add dedicated bounded mailbox vsock service and call/cast API"
+  },
+  "url": "https://github.com/tinylabscom/mvm/issues/4629",
+  "title": "Add dedicated bounded mailbox vsock service and call/cast API",
+  "display_url": "https://github.com/tinylabscom/mvm/issues/4629",
+  "display_title": "Add dedicated bounded mailbox vsock service and call/cast API"
+}

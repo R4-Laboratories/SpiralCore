@@ -1,0 +1,61 @@
+{
+  "stage": "independent_retained_measurement_and_report_review",
+  "verdict": "PASS_FOR_RECORDED_HOST_CONFORMANCE_RESULT",
+  "blocking_findings": [],
+  "source_commit": "3553af21ea8a2bd2cde70ab7a6c1317e0dbf0dad",
+  "mvm_revision": "3104a12c5b071a6851323fa8115d2afaf3f0bb8b",
+  "source_identity": {
+    "all_eight_frozen_sha256_entries_match_current_files": true,
+    "executable_sha256": "602b09ec3ebf4f4323f0fd1493ee0e0497cb7e4240fa30454e1b6a82cecc47fb",
+    "executable_domain_separated_object_id_independently_recomputed": "1eeb81e775d3eb141e17c54052e0a77e072b6a88a63056b9067b85d593966ee8",
+    "core_crates_unchanged_from_b2dacc6": true
+  },
+  "reviewed_sha256": {
+    "transfers.jsonl": "72f8c2778e368c2da47387b2e8ade945be9c07660b2a443fcbd7496ed5332444",
+    "summary.json": "f0349318a881ce250707a543130d4b1a9cff66851f1de9d6486d5f871ad321f3",
+    "analyze.jq": "b0a48dbdfc97f85d31c87e7c659d047a1c7cad0e799160275d2ae5da99164142",
+    "mvm-readiness-results-2026-10-31.md": "1fe5db03079af75794f56e30cf73dadde579dd7a4e6f99c3bc23f02400997a88"
+  },
+  "independent_checks": {
+    "method": "Read retained JSONL and independently recomputed medians, paired ratios, joins and sums in JavaScript without invoking the campaign or its jq aggregator; inspected analyze.jq and compared every summary cell and six report table rows plus paired-result prose.",
+    "rows": 182,
+    "registration": 1,
+    "setups": 12,
+    "operations": 78,
+    "exact_reopened_object_length_and_identity_matches": 78,
+    "session_complete": 12,
+    "final_complete": 1,
+    "operation_pairs_with_equal_target_identity_and_length": 36,
+    "lifecycle_pairs": 6,
+    "every_distribution_has_three_trials": true,
+    "alternating_arm_order_and_expected_operation_sequence_match": true,
+    "all_operation_sent_and_received_envelope_bytes_match": true,
+    "all_setup_sent_and_received_envelope_bytes_match": true,
+    "every_lifecycle_sum_equals_setup_plus_all_own_operations": true,
+    "all_verification_rows_follow_their_operation_and_precede_cleanup": true,
+    "all_twelve_owned_store_removed_flags_and_final_counters_agree": true,
+    "all_summary_numeric_cells_match": true,
+    "all_report_numeric_cells_and_paired_result_prose_match": true,
+    "run_exit": 0
+  },
+  "preserved_results": {
+    "localized_warm_operations": 12,
+    "localized_application_frame_bytes": 536,
+    "localized_historical_modeled_http_body_bytes": 600,
+    "localized_actual_canonical_envelope_range_bytes": [22534, 22687],
+    "unrelated_1m_paired_cpu_ratios": [0.787489918876607, 1.4054745137491615, 1.129161518093557],
+    "unrelated_1m_median_paired_cpu_ratio": 1.129161518093557,
+    "unrelated_1m_independent_cpu_medians_ms": {"warm": 66.398, "whole": 71.568},
+    "lifecycle_1m_warm_to_whole": {"bytes": 0.34289618865993426, "cpu": 0.4785585953889684, "elapsed": 0.45856523524427173},
+    "lifecycle_16m_warm_to_whole": {"bytes": 0.3339223782771071, "cpu": 0.4154633817380749, "elapsed": 0.41212031787969805}
+  },
+  "interpretation_checks": [
+    "Pairing uses matching size, trial and workload, never operation position or a ratio of separate medians. The jq helper can drop malformed pair groups, so all actual groups were independently checked for exactly one warm and one whole observation.",
+    "Whole is equally prepared whole-object zstd with Raw fallback. Every Whole object operation chose Raw on these incompressible fixtures. Seed and unrelated application frames/counts agree between arms; tiny envelope differences are not a compression benefit.",
+    "The warm arm pays its extra schema publication. All setup, probe, seed and operation costs are included in lifecycle sums; fixture generation and final reporting/readback/cleanup remain outside these timing sums as documented.",
+    "The 1 MiB unrelated paired CPU penalty is retained despite the opposite ordering of separate medians. Three trials provide an observed result, not general performance acceptance.",
+    "The 600-byte HTTP model is distinct from roughly 22.6 KB canonical warm envelopes and roughly 31.9 MB full 16 MiB canonical exchanges. Selector optimality under the new framing is not claimed.",
+    "This is one host InMemoryPeerTransport campaign. No live guest/vsock, network-send time, WAN, separate endpoint CPU, energy, FIPS/CUI or production mailbox lifecycle qualification is implied."
+  ],
+  "reviewer_reran_tests_builds_coverage_or_measurements": false
+}

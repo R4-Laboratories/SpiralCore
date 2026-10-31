@@ -1,0 +1,41 @@
+{
+  "stage": "independent_static_rust_and_security_review_before_registered_measurement",
+  "verdict": "PASS_FOR_BOUNDED_HOST_CONFORMANCE",
+  "blocking_findings": [],
+  "reviewer_authored_implementation": false,
+  "scope": "New default adapter, opt-in synthetic conformance harness, example, pinned upstream canonical APIs and current design; existing SpiralCore codecs/storage unchanged.",
+  "observations": [
+    "direction.rs:185-300 sends only existing bounded Frame encodings through real prepare_mailbox_envelope, authorize_route, authorize_outbound and PeerChannel::try_send. Trusted configuration supplies identities/routes; no arbitrary raw-write bypass or invented mailbox port exists.",
+    "direction.rs:303-369 bounds the encoded envelope before canonical decode, checks encryption key and signed binding routing fields, invokes canonical authenticated open, then validates Frame bytes/kind before installing authority. Exact capability/content/kind restrictions and expected sender verification key are retained. Receive-only directions need no remote signing key.",
+    "policy.rs checks a generation-counted current policy under a consistent policy-to-lease lock order. VerifiedFrame rechecks its generation and Endpoint reuses the authority hook. Policy replacement invalidates prior proofs and namespace leases. This is not a concurrent revocation/publication transaction; the README states that live-service gap.",
+    "Replay uses the upstream authenticated ReplayIdentity, rejects duplicates and refuses capacity exhaustion without eviction. Application retries require a fresh canonical envelope; replay state is process-local and restart is not durable mailbox admission. Sequence and traffic counters use checked arithmetic.",
+    "The library forbids unsafe code. Production adapter paths propagate typed errors and have no panic/unwrap path. Example-only internal JSON counter unwraps consume values produced by its own typed counter conversion, not attacker-provided data; fixed-dose arithmetic is bounded. No shell execution, credential logging or network listener was added.",
+    "conformance.rs is feature-gated and uses ephemeral fixture keys with actual upstream cryptography and bounded InMemoryPeerTransport. It derives initial context after a counted canonical scope probe, forwards requests in order, checks response transfer/sequence/kind, and reopens the existing durable Endpoint for exact readback.",
+    "mailbox_transfer.rs separately records frame and canonical-envelope bytes, checks both received/sent counts, times sequential process CPU through durable application acknowledgment, and charges setup/schema/base traffic. It verifies every retained original byte before removing only freshly created owned stores. No WAN, pure wire-time, full-system energy or guest-isolation claim is made.",
+    "Existing direct-vs-adapter frame comparison, canonical tamper/recipient/epoch/revocation/oversize/cancellation/queue tests, lost-reply recovery and ternary/Kuramoto/CA RuntimeSession conformance cover the requested boundaries. Existing production transfer/store source diff from b2dacc6 is empty."
+  ],
+  "explicit_live_deployment_limits": [
+    "The trusted control plane must refresh current policy/time; the deterministic conformance fixture does not advance clock-driven expiry.",
+    "General verified reply handles, durable inbox/replay, admission/rate limits, key provisioning and epoch/boot lifecycle remain upstream/integration work.",
+    "The current synchronous send holds a policy mutex across connect/try_send. Future transports must avoid policy re-entry and define bounded blocking/cancellation; the reviewed in-memory path is bounded.",
+    "The selector still minimizes the earlier HTTP-body cost model, not proven minimum canonical-envelope bytes. Actual envelope overhead must be measured.",
+    "No dependency advisory-database audit, FIPS validation, CUI qualification, actual vsock guest or network transport acceptance is asserted."
+  ],
+  "observed_qualification": {
+    "all_targets": {"passed": 14, "failed": 0, "ignored": 0, "targets": 4, "exit": 0},
+    "clippy_attempts": [101, 101, 0],
+    "clippy_final": "qualification/clippy-03.txt records successful completion; earlier diagnostics remain retained",
+    "reviewer_reran_tests_builds_or_measurements": false,
+    "pending": "Root-owned final default cargo check, release build, changed-file coverage and exact source/executable freeze remain prerequisites for measurement. Result arithmetic review follows retained campaign rows."
+  },
+  "source_sha256": {
+    "src/lib.rs": "c801d87f96641a2cb44dc86334c0866987199dd3b8e4b73152c2ed05386e4c0f",
+    "src/policy.rs": "1841dbcbddc8e8b50223c91afbee07c1c6b37aaa0851aaf0c86d916353572ced",
+    "src/direction.rs": "568ffca4d3f9962fc509bfd96ff8b8c2f32eda403618e797cb3ccffe47113979",
+    "src/conformance.rs": "f0c0c3f53686531bd2546302e69418a00894056ffc84ec9570fc095b7570a678",
+    "examples/mailbox_transfer.rs": "1006b06555b4cdcbb7ab2c0ec5f7ed622255bd218da5e4608ca88625f615b12a",
+    "Cargo.toml": "043a637fc18d7ad2f1401796fca449a966d0a83bd284339739079d7947f80c43",
+    "Cargo.lock": "27a267a37d919b578989ff79a31b21fe529d9be2058df7728aca805a8728f334"
+  },
+  "design_sha256": "a4ee87bde8918b2be1c4e352f64d9071072deba420ce2a2312cef5ef1b22ba15"
+}

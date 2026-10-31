@@ -11,7 +11,24 @@ Current approved sequence: preserve local originals; establish origin/main; extr
 
 ## Current priority
 
-The user prioritized working standalone SpiralCore over MVM integration, then requested real WAN transfers with byte, elapsed-time and compute measurements. The next central mechanism is the existing coupled ternary/Kuramoto/cellular-automaton runtime, now ported into Rust and connected to verified checkpoint replay plus exact residual transfer. These mechanisms are part of the active transfer design. The earlier object-transfer engine and real two-machine HTTPS relay campaign have exact-byte evidence; the new runtime's qualification and measurements are recorded separately. MVM runtime, direct-peer/shaped-WAN qualification and compliance remain subsequent gates.
+The user has now requested finishing this optimization phase and moving toward
+MVM integration. Codec policy is frozen at `b2dacc6`: the existing Rust warm
+session, schema and coupled ternary/Kuramoto/CA implementations remain active.
+The new [canonical MVM adapter](../../crates/spiralcore-mvm-adapter/README.md)
+wraps their bounded frames using the real MVM core at
+`3104a12c5b071a6851323fa8115d2afaf3f0bb8b`. This is a host conformance milestone;
+the dedicated guest mailbox service, live vsock/Iroh, durable mailbox admission,
+direct/shaped WAN qualification and compliance remain subsequent gates. Earlier
+HTTP WAN results and the new canonical-envelope measurements have distinct scope.
+
+The [first canonical-envelope result](mvm-readiness-results-2026-10-31.md)
+records 78/78 exact stopped-store readbacks and fifteen passing adapter tests,
+including the existing ternary/Kuramoto/CA path. Complete paid mixed host sessions
+use 65.710%/66.608% fewer canonical envelope bytes at 1/16 MiB versus prepared
+Whole/Raw. The small unrelated-object CPU penalty, about 22.6 KB of actual warm
+envelopes, fixed fixture clock and pending live guest boundaries remain explicit.
+This advances integration without reopening codec optimization or claiming WAN
+speed from an in-memory host test.
 
 Jeff Venable's [schema-fitting direction](schema-fitting-direction.md) now has an opt-in Rust template profile and a genuine trained-zstd dictionary profile alongside the coupled runtime. The [held-out comparison](schema-fitting-results-2026-10-30.md) records 400 exact target transfers and 240 exact artifact seeds. The template family saves bytes versus raw on matching batches but loses to conventional compression; trained dictionaries help small records conditionally on shared setup. Fitting, seeding, CPU, durable elapsed time and drift/fallback negatives are recorded. These new profiles have local qualification only.
 
@@ -57,7 +74,7 @@ prepared Whole/Raw. Paid seed-plus-ten-update sequences and CPU are recorded.
 Sender CPU improves against fresh selection, while large-object outer elapsed
 slightly regresses. An initial failed pilot remains unresolved; a separate
 66-object diagnostic and the subsequent pilot do not establish a transport fix.
-All failures, replacement penalties and scopes remain in the report. MVM/vsock
+All failures, replacement penalties and scopes remain in the report. Live MVM/vsock
 integration and production transport reliability remain subsequent work.
 
 The [setup and compressible-fallback follow-up](selector-setup-results-2026-10-31.md)
@@ -109,7 +126,7 @@ schema experiment and changes no production encoder or decoder.
 | Standalone compatibility import | Complete | 54 retained tests, exact-byte example and loopback fleet; immutable vectors unchanged |
 | Strict precommit, closure repair, bounded decoding and durable save | Complete for experimental core | 71 tests pass including adversarial, guarded restart, process-exit lock release and read-once pinned input |
 | SHA-256 object profile and standalone endpoint | Implemented and tested | Reviewed contract, scoped trusted authority, raw/zstd/DAG, private durable cache, retries/cancel, real TCP CLI and restart equality |
-| Canonical two-MVM encrypted mailbox | Deferred by user priority; upstream prerequisites still open | Actual guest service/transport, no replacement port or plaintext host shortcut |
+| Canonical MVM envelope adapter | Implemented host conformance integration; live guest prerequisites still open | Real pinned sealing/opening, bounded authorization, existing transfer engine; actual guest service/transport still required |
 | Cooperative FlowMux streams | Deferred | Existing policy gates and byte ordering preserved |
 | Real two-host WAN relay experiment | Registered broad 16 MiB campaign completed | Twelve cases, four methods and thirty pairs per case; all 2,640 operations exact after reopening. Body bytes, elapsed time including compute, endpoint CPU and seed costs retained. Earlier 906-operation and 1,140-operation campaigns remain distinct historical records. [Final broad report](broad-wan-results-2026-10-29.md). |
 | Efficient exact updates | Implemented and measured | Direct canonical builder, retained verified state, ordinary repeat hits and versioned sparse COPY/LITERAL; warm body savings and end-to-end improvements with seed costs retained |
@@ -199,7 +216,7 @@ conventional zstd shared-base control, and retains warm-update and paid-seed
 statistics separately. Its measured scope is the bounded 16 MiB batched client;
 the [64 MiB design](64m-client-design.md) is not an implemented or measured claim.
 
-The later MVM adapter must support a small multi-MVM environment and its
+The live MVM adapter must support a small multi-MVM environment and its
 orchestrator. It maps authenticated node, recipient, tenant/capability and epoch
 identities to the canonical mailbox/vsock route; a reusable vsock CID is not an
 identity. Bound queue bytes and concurrency, propagate backpressure, and define

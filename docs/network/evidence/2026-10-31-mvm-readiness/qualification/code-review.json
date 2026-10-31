@@ -1,0 +1,48 @@
+{
+  "stage": "independent_static_production_and_example_review_before_registered_measurement",
+  "reviewer": "mvm_tests acting as code-reviewer",
+  "verdict": "PASS_FOR_BOUNDED_HOST_CONFORMANCE",
+  "blocking_findings": [],
+  "reviewer_authored_reviewed_implementation": false,
+  "scope": "New adapter production source, opt-in conformance harness and parent-authored measurement example. Reviewer-authored tests/canonical.rs, tests/common/mod.rs and tests/transfer.rs were excluded from independent approval.",
+  "resolved_findings": [
+    {
+      "severity": "MEDIUM",
+      "title": "Persist recorded verification before deleting the session store",
+      "original_location": "examples/mailbox_transfer.rs:267-271 before the fix",
+      "issue": "Session cleanup preceded session completion output and the only file sync occurred after the entire campaign, allowing an evidence write/sync failure after store deletion.",
+      "resolution": "DurableWrite for File invokes sync_all. run_session persists all operation and exact stopped-store verification rows before dropping/removing the store, then writes and persists session_complete. The campaign root is removed before the global complete marker.",
+      "reviewed_locations": [
+        "examples/mailbox_transfer.rs:17-23",
+        "examples/mailbox_transfer.rs:264-285",
+        "examples/mailbox_transfer.rs:323-328"
+      ],
+      "retained_red": "qualification/evidence-sync-red.txt and evidence-sync-red.exit record the injected sync failure test failing because the prior implementation returned success; exit 101",
+      "retained_green": "qualification/final-tests.txt and final-tests.exit record failed_evidence_sync_retains_verified_store and the mixed-session recording test passing; exit 0",
+      "independent_check": "The reviewer read the fix and both retained execution logs without rerunning commands. Vec persistence is implemented only inside the test module; the executable uses File.sync_all."
+    }
+  ],
+  "review_observations": [
+    "The 64 KiB application frame limit and 256 KiB encoded envelope/queue cap remain separate. Exact directional message kinds, accepted content type and configured signer/public-key consistency are enforced.",
+    "The send and open paths use pinned canonical MVM envelope cryptography and transport authorization. Receive-only configuration needs no remote signing secret. A canonical open plus bounded Frame decoding precedes authority installation.",
+    "Policy generations invalidate old leases and VerifiedFrames. The README correctly excludes an atomic concurrent revocation/publication transaction and requires current policy/time refresh before live deployment.",
+    "Replay capacity fails closed without evicting prior identities. Successful-send counters and attempted inbound-byte counters have distinct semantics; the example requires successful send/open totals to agree and counts each sent envelope only once.",
+    "The conformance harness is feature-gated, uses ephemeral keys, checks application transfer/sequence/reply kinds and reopens the existing store while retaining process-local crypto/replay state.",
+    "The registered measurement alternates arm order, preserves prepared state, records setup and the equal raw seed separately, charges warm schema publication, and compares every original byte after reopening. The 600-byte value is only an HTTP body model; actual canonical-envelope bytes and combined sequential host CPU/elapsed time are separately recorded.",
+    "The fixed example persists verified evidence before removing only directories it freshly created. A pre-cleanup evidence sync error returns with the verified cache still present."
+  ],
+  "explicit_limits": [
+    "No live guest/vsock, network-send time, WAN performance, FIPS/CUI qualification or production security approval is established by this review.",
+    "The fixture uses fixed time and epochs. Replay and accepted-message state are not durable across a process crash.",
+    "Upstream verified reply handles, mailbox admission/rate enforcement, key provisioning and the concurrent revocation/publication boundary remain integration work.",
+    "The unchanged selector's HTTP body cost model is not proven optimal for canonical MVM envelope bytes.",
+    "No build, test or measurement was run by the reviewer; root-owned retained logs were inspected."
+  ],
+  "source_sha256": {
+    "src/lib.rs": "c801d87f96641a2cb44dc86334c0866987199dd3b8e4b73152c2ed05386e4c0f",
+    "src/direction.rs": "568ffca4d3f9962fc509bfd96ff8b8c2f32eda403618e797cb3ccffe47113979",
+    "src/policy.rs": "1841dbcbddc8e8b50223c91afbee07c1c6b37aaa0851aaf0c86d916353572ced",
+    "src/conformance.rs": "f0c0c3f53686531bd2546302e69418a00894056ffc84ec9570fc095b7570a678",
+    "examples/mailbox_transfer.rs": "fe66caceede3c129204c344f9f6a0c1f09ba086ffd2997652e808fd26d601987"
+  }
+}
