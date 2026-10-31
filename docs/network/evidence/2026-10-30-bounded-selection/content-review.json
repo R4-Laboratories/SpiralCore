@@ -1,0 +1,53 @@
+{
+  "milestone": "SC-OPT-016",
+  "verdict": "PASS_SCOPED_PREMEASUREMENT",
+  "reviewer": "selector_tests",
+  "roles": [
+    "code-reviewer",
+    "rust-reviewer",
+    "security-reviewer"
+  ],
+  "completed_utc": "2026-10-31T00:57:20.799673+00:00",
+  "source_commit": "eccb104d8d5dbdf56ad2fdb37a920b0424edbceb",
+  "baseline": "4234591e25b4ca87db6a4670bdf407f48a581575",
+  "procedural_pass_sha256": "da72b488f2a131a709dda01b9fe324445e38411aa568a4ebb8445197b1883236",
+  "scope": "Independent review of changed production Whole encoder/probe, warm selector, parent-authored exact-source build guard, Cargo pins and associated tests. Harness/workflow excluded from this content verdict and assigned separate cross-author review.",
+  "source_sha256": {
+    "crates/spiralcore-transfer/src/schema_selection.rs": "f5fb4a17015ac795af32c08b1daac128a1f861acded57671217c6ef5477940cc",
+    "crates/spiralcore-transfer/src/zstd_whole.rs": "d59962679493b8a7cd16dc7dd09b2a8e723a3e55dddbf068f33154fd1c2da66c",
+    "crates/spiralcore-transfer/build.rs": "23340ba05ac01d409910c434867682638c456a0d91901464ba822d2fefa10095",
+    "crates/spiralcore-transfer/build_support/zstd_probe_guard.rs": "5e0516b143456bbd61d71d5b3df32f3ae22928d7795d4c334b58e53dfc1d5ee1",
+    "crates/spiralcore-transfer/Cargo.toml": "fdc1715045fc3d914ca04a4c41a4750e778ce3eef82ce391bcf82c553648739b",
+    "crates/spiralcore-transfer/Cargo.lock": "6cf795bc12285eea4083d64da4a3b7264d675a95b45d545751eec38708d87896",
+    "crates/spiralcore-transfer/tests/zstd_probe_guard.rs": "46d5bc4da36e1d7c4a47af7681d2ac88c82adff522ee27b694a0eb148741c7ae",
+    "crates/spiralcore-transfer/tests/zstd_whole_probe.rs": "4ff1b365be7e7d11db040bcfa6c0132147328bbde9a38438f3e767026454cc5a",
+    "crates/spiralcore-transfer/tests/warm_selection.rs": "3207fd3c4a8d3d27897dfd4684ed406cd0a86248751d298cb96a88155c8afe69"
+  },
+  "blocking_findings": [],
+  "checks": [
+    "Byte-minimum preservation: the actual first-block certificate runs only after static pruning and only when its maximum possible certificate could exclude Whole. Monotone chunk-framing cost and original Raw/Whole/Sparse/Schema tuple priority preserve earlier Whole ties; inconclusive shape/bound or disabled guard executes unchanged compress2.",
+    "Certificate parser checks bounded input length, exact12-byte output, exactly128KiB consumed, magic/flags, full content length, legal nonfinal first block and nonzero bounded payload. Raw/RLE decoded size must equal128KiB. The bound counts actual first payload, checksum and minimum remaining block headers; it does not assume future payload compression or use destination-too-small as evidence.",
+    "Pinned bundled implementation inspected at compress2/stream initialization, direct-versus-buffered output, internal compressBound(block)+1 workspace, first unsplit block, and block-local LDM/dfast limits. Both paths use full-source End parameter selection. Only the first-block size relation is relied on; no full streaming-frame equivalence is assumed.",
+    "Both pre/post probe resets are explicit; codec/reset/resource errors propagate. Workspace drift drops the context. Probe returns only an integer bound, never candidate bytes. Winning frames, target/base identity, consuming client, receiver authorization, exact reconstruction and durable publication remain unchanged.",
+    "Exact source guard independently rehashed90 bundled C/header/build files. Direct pinned zstd-sys vendored metadata and exact include shape bind the tree; missing/mutated/foreign source, explicit pkg-config, known CFLAGS forms, disabled baseline and numeric version mismatch disable optimization. Cargo rerun directives cover used target/host CFLAGS and source changes.",
+    "All checked arithmetic is bounded by the preexisting16MiB admission limit; certificate length stays below132KiB, chunk-cost computation allocates no encoded payload, and private context ownership prevents concurrent mutation. No new unsafe block, network input parser, capability bypass or secret handling was introduced.",
+    "Existing recorded tests include actual behavioral RED, enabled/disabled paths, malformed header rejection, block boundaries, random/zero/structured/mixed first/tail inputs,40 repeated probe-to-full exact frame checks, all four selector winners, target/base limits and tie behavior. Post-lint guard/example39pass and360-test full qualification are retained; reviewer performed no rerun."
+  ],
+  "dependency_custody": {
+    "zstd_sys": "2.1.2+zstd.1.5.7",
+    "source_files": 90,
+    "source_tree_digest": "6434f9d74ec3cfb7fbdf62420716c8912451c046805f932e4b4ba7d02b2834de",
+    "inspected_proof_sources": {
+      "zstd/lib/compress/zstd_compress.c": "10c315ae609d49b2fc431521aa95908086e69fd917991c5ed9a875af3d1208e8",
+      "zstd/lib/compress/zstd_ldm.c": "4a2bef3612ae4a9e15a78a55541a152091fa8ba160410db24d495bd6dd57249e",
+      "zstd/lib/compress/zstd_double_fast.c": "9f6d003c2fe1208737bec685910324220424ba47d0323fa30d9d5f53c50e91da",
+      "zstd/lib/compress/clevels.h": "d764daa89b7a636d26fe96ff3536c5075e9867fb5dddbf8c9d57023a8ff4a155"
+    }
+  },
+  "limitations": [
+    "Correctness review is scoped to the exact guarded bundled source and unchanged codec parameters; disabled or unavailable profiles retain the full encoder. No proof of arbitrary streaming/one-shot byte equivalence is claimed.",
+    "Native allocator/reset failure branches were not newly fault-injected; existing recorded coverage explicitly excludes branch/MC/DC and complete build-script flow coverage.",
+    "No performance or WAN result is approved here. The registered local ten-pair1MiB sender-CPU median ratio<=0.80 and all exact/frame checks must pass before WAN; compressible fallback control and all negative outcomes remain required."
+  ],
+  "launch_verdict": "No blocking production code/Rust/security finding. Registered local qualification may proceed after parent confirms separate harness/workflow review and operational custody."
+}
