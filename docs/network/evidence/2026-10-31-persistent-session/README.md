@@ -2,7 +2,8 @@
 
 Read the [results report](../../persistent-session-results-2026-10-31.md) and
 [registered contract](measurement-contract.md) before interpreting raw timings.
-The completed local experiment and incomplete first WAN pilot are separate.
+The completed local experiment, incomplete first WAN pilot, bounded diagnostic
+and completed subsequent pilot remain separate datasets.
 
 | Evidence | Binding and status |
 |---|---|
@@ -16,6 +17,9 @@ The completed local experiment and incomplete first WAN pilot are separate.
 | `diagnostic-contract.md` | Separate one-shard, at-most-66-transfer transport diagnostic registration |
 | `qualification/transport-diagnostic/` | New diagnostic source `dbdbc709f0311a06efe5ffac43e5b334ca8a1a87`, frozen binaries, scripts and hashes |
 | `qualification/diagnostic-*` | Actual RED/GREEN, full 410/0/2 test result, Clippy, focused coverage and scoped reviews |
+| `wan-diagnostic-01/` | GitHub 41168897547: all 66 objects exact; no reproduction of the earlier failure; store/services cleaned |
+| `pilot-02-contract.md`, `qualification/pilot-02/` | One subsequent pilot registered before launch; unchanged 99 source files and qualified binaries |
+| `wan-pilot-02/` | GitHub 41169424060: all 396 objects exact, complete paired summary, 53 artifact members verified, six stores/services cleaned |
 
 The local fixtures are regenerated deterministically; no expanded object history
 is committed. The failed first WAN store and archived Linux binary remain in the

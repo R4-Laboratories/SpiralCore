@@ -35,6 +35,23 @@ completion, versus 16,814,026 bytes, 85.9755 ms and 1,626.617 ms for Whole/Raw.
 Paid seeds and timing losses are retained; these commands are a bounded benchmark,
 and do not change automatic codec selection or the existing sender APIs.
 
+`session::WarmSession` now owns the last validated acknowledged base and reuses
+prepared selector state. Context/epoch changes invalidate scoped state; transport
+failure requires explicit recovery before warm reuse. `RuntimeSession` separately
+retains an immutable CA prediction and checkpoint. These APIs do not advance
+research clocks or change the exact reconstruction contract.
+
+The `persistent-plan`, `persistent-paired`, `persistent-verify` and
+`persistent-summary` commands measure actual seed-plus-ten-update sequences with
+all three arms using persistent clients. The
+[persistent-session result](../../docs/network/persistent-session-results-2026-10-31.md)
+records 660 exact local objects and a subsequent 396-object WAN pilot, preserved
+600-byte localized updates, CPU savings, and negative replacement/time cases.
+The first pilot's unresolved transport failure and a separate 66-object diagnostic
+are retained. Optional `spiralcore-wan --connection-log PATH` writes sanitized
+close/rejection metadata to an exclusively created file; it does not change
+timeouts or add retries.
+
 ## Build and run the demonstration
 
 Run from the repository root with Rust 1.89 or newer:

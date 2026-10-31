@@ -4,8 +4,10 @@ The local qualification completed **660 exact transfers**. Reusing acknowledged
 state reduced median paired setup-plus-ten-update sender CPU by **23.15% at
 1 MiB and 31.02% at 16 MiB**, relative to constructing the selector for each
 update. All localized selector updates retain the **600-byte** bidirectional
-HTTP-body representation. The first relayed WAN attempt failed during transport;
-it does not establish a completed WAN result for this milestone.
+HTTP-body representation. A subsequent six-pair WAN pilot completed **396 exact
+transfers**, with lower CPU and elapsed time than prepared Whole zstd on the
+measured warm workload. The first pilot failed during transport; its cause
+remains unresolved and that failure is retained separately.
 
 ## Implementation and measurement contract
 
@@ -116,6 +118,76 @@ failed pilot was **not reproduced**, and its cause remains unresolved. The
 diagnostic is not pooled with performance trials. Its store was removed after
 exact verification, and all temporary services and credentials were retired.
 See [diagnostic evidence](evidence/2026-10-31-persistent-session/wan-diagnostic-01/remote/custody.json).
+
+## Completed subsequent WAN pilot
+
+[GitHub run 41169424060](https://github.com/R4-Laboratories/SpiralCore/actions/runs/41169424060)
+completed the one subsequently registered pilot at
+`9a6d7f758fb724b848ca1f24c1c27f5088da671d`. All 99 source-manifest
+entries match qualified `dbdbc709`; only documentation/evidence changed. The
+Linux sender used Rust 1.97.1 release/default features; the Mac receiver retained
+its qualified hardware-SHA executable. All three arms share those endpoints,
+transport and durability settings. Six pairs per size use all six arm orders.
+This is a pilot, not thirty-pair acceptance or a direct-host network qualification.
+
+All **396 objects**, **36 sessions**, **24 actual fits**, and **120 paired winning
+frame comparisons** passed the existing verifier after receiver shutdown. All
+216 localized selector updates cost 600 body bytes. Every session and unfavorable
+sample is retained. The 53-member artifact manifest and ZIP digest were verified.
+The [full summary](evidence/2026-10-31-persistent-session/wan-pilot-02/summary.json)
+and [raw artifact custody](evidence/2026-10-31-persistent-session/wan-pilot-02/remote/custody.json)
+bind the measurement. The earlier failed pilot and 66-operation diagnostic are
+not pooled with these timing results.
+
+Localized-update cohort medians follow, in milliseconds except bytes. Each
+arm/size has 54 localized updates; those repeated updates are not 54 independent
+session trials. Completion includes encoding, hashing and the durable ACK;
+exchange is its nested transport/receiver interval. Pure wire time is unmeasured.
+
+| Size | Arm | Body B | Sender CPU ms | Receiver CPU ms | CPU subtotal ms | Exchange ms | Completion ms | Completion p95 ms |
+|---|---|---:|---:|---:|---:|---:|---:|---:|
+| 1 MiB | fresh-selector | 600 | 2.3405 | 4.9145 | 7.2610 | 54.6355 | 56.4620 | 89.5960 |
+| 1 MiB | persistent-selector | 600 | 1.6415 | 5.0240 | 6.7495 | 54.9915 | 56.0905 | 70.8060 |
+| 1 MiB | whole | 1,051,338 | 3.8145 | 4.5815 | 8.4665 | 130.1030 | 132.8555 | 179.8110 |
+| 16 MiB | fresh-selector | 600 | 23.5335 | 26.0360 | 49.7555 | 83.4815 | 106.2685 | 148.1050 |
+| 16 MiB | persistent-selector | 600 | 12.9395 | 32.4505 | 45.5365 | 93.6155 | 106.6970 | 180.2930 |
+| 16 MiB | whole | 16,814,026 | 53.2025 | 39.7960 | 90.8980 | 1,122.0270 | 1,159.6070 | 1,471.0870 |
+
+Each following row is the median of six complete seed-plus-ten-update sessions.
+Whole pays the same actual seed, although it does not require that prior state.
+The outer interval includes generation and setup; independently computed medians
+need not add or have the same ratio as paired medians.
+
+| Size | Arm | Setup + updates sender CPU ms | Outer CPU subtotal ms | Outer completion ms | Paid body B |
+|---|---|---:|---:|---:|---:|
+| 1 MiB | fresh-selector | 32.4865 | 92.5390 | 917.7620 | 2,108,076 |
+| 1 MiB | persistent-selector | 26.1330 | 84.5315 | 836.6065 | 2,108,076 |
+| 1 MiB | whole | 39.9040 | 95.7385 | 1,643.2110 | 11,564,718 |
+| 16 MiB | fresh-selector | 355.4025 | 730.9600 | 3,562.6935 | 33,633,452 |
+| 16 MiB | persistent-selector | 260.1590 | 705.8775 | 3,737.6900 | 33,633,452 |
+| 16 MiB | whole | 514.1880 | 1,042.4225 | 13,383.2270 | 184,954,286 |
+
+Against fresh selection, median paired setup-plus-update sender CPU falls **19.05%**
+and **26.98%** at 1/16 MiB, with six of six wins at each size. Outer CPU subtotal
+ratios are 0.946371 and 0.932264 (five of six wins each). Outer elapsed ratios are
+0.970712 (five wins) and **1.008108 (three wins)**: the large persistent arm is
+slightly slower in the paired median. It also has a worse localized-update p95
+than fresh at 16 MiB. These results do not establish an incremental WAN time win
+over fresh selection at both sizes.
+
+Against Whole, complete paid sequences use **81.77% and 81.82% fewer body bytes**.
+Median paired outer elapsed ratios are **0.580578 and 0.270910**; CPU subtotal
+ratios are **0.911386 and 0.674791**, all six pairs favoring persistent selection.
+These are observed warm-sequence gains, including actual seeding, a full
+replacement and compute; they are not universal compression or energy claims.
+
+The unrelated replacement remains unfavorable against Whole: 1/16 MiB median
+sender CPU is 9.4845/140.4305 ms for persistent selection versus 3.7970/47.2230 ms
+for Whole. Completion is 132.2885/1,276.6885 ms versus 120.9745/1,209.5020 ms,
+with identical Raw body bytes. The initial failed pilot still prevents any claim
+that the transport defect was fixed or its reliability qualified. Successful
+connection logs show only preflight rejection, request-cap closes and empty idle
+closes; they do not explain the original failure.
 
 ## Separate receiver-stage diagnostic
 

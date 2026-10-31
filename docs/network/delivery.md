@@ -36,6 +36,18 @@ drift/fallback controls and zstd timing variation are recorded separately.
 
 ## Milestones
 
+The [persistent-session follow-up](persistent-session-results-2026-10-31.md)
+retains acknowledged base ownership and prepared selector/runtime state, with
+bounded optional HTTP reuse. It verifies 660 local and 396 subsequent WAN objects
+exactly. WAN localized updates remain 600 body bytes; median completion is
+56.0905/106.6970 ms at 1/16 MiB versus 132.8555/1,159.6070 ms for matched
+prepared Whole/Raw. Paid seed-plus-ten-update sequences and CPU are recorded.
+Sender CPU improves against fresh selection, while large-object outer elapsed
+slightly regresses. An initial failed pilot remains unresolved; a separate
+66-object diagnostic and the subsequent pilot do not establish a transport fix.
+All failures, replacement penalties and scopes remain in the report. MVM/vsock
+integration and production transport reliability remain subsequent work.
+
 The [setup and compressible-fallback follow-up](selector-setup-results-2026-10-31.md)
 preserves the 600-byte warm path and verifies 540 more WAN objects exactly.
 Measured setup CPU falls about 21%; compressible-update sender CPU falls 3.44%
