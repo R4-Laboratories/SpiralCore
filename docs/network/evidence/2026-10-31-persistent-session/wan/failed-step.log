@@ -1,0 +1,34 @@
+measure	Run all paired sessions sequentially without retries	﻿2026-10-31T04:06:23.9722675Z ##[group]Run set -euo pipefail
+measure	Run all paired sessions sequentially without retries	2026-10-31T04:06:23.9722900Z ^[[36;1mset -euo pipefail^[[0m
+measure	Run all paired sessions sequentially without retries	2026-10-31T04:06:23.9723033Z ^[[36;1m# BEGIN AUTH GATE^[[0m
+measure	Run all paired sessions sequentially without retries	2026-10-31T04:06:23.9723201Z ^[[36;1m[[ "${SPIRALCORE_WAN_TOKEN:-}" =~ ^[0-9a-f]{64}$ ]] || exit 1^[[0m
+measure	Run all paired sessions sequentially without retries	2026-10-31T04:06:23.9723394Z ^[[36;1m# END AUTH GATE^[[0m
+measure	Run all paired sessions sequentially without retries	2026-10-31T04:06:23.9723644Z ^[[36;1msha256sum -c persistent-session/binaries.sha256 > persistent-session/binaries-before-transfer.log^[[0m
+measure	Run all paired sessions sequentially without retries	2026-10-31T04:06:23.9723915Z ^[[36;1mfor shard in 0 1 2 3 4 5; do^[[0m
+measure	Run all paired sessions sequentially without retries	2026-10-31T04:06:23.9724066Z ^[[36;1m  key="PERSISTENT_URL_$shard"^[[0m
+measure	Run all paired sessions sequentially without retries	2026-10-31T04:06:23.9724259Z ^[[36;1m  date -u +%FT%TZ > "persistent-session/start-$shard.txt"^[[0m
+measure	Run all paired sessions sequentially without retries	2026-10-31T04:06:23.9724556Z ^[[36;1m  persistent-session/frozen/candidate persistent-paired "persistent-session/plan-$shard.json" \^[[0m
+measure	Run all paired sessions sequentially without retries	2026-10-31T04:06:23.9724843Z ^[[36;1m    persistent-session/frozen/candidate "${!key}" \^[[0m
+measure	Run all paired sessions sequentially without retries	2026-10-31T04:06:23.9725095Z ^[[36;1m    "$PERSISTENT_RECEIVER_SHA" "persistent-session/observations-$shard.jsonl" \^[[0m
+measure	Run all paired sessions sequentially without retries	2026-10-31T04:06:23.9725385Z ^[[36;1m    2>&1 | tee "persistent-session/remote-$shard.log"^[[0m
+measure	Run all paired sessions sequentially without retries	2026-10-31T04:06:23.9725592Z ^[[36;1m  date -u +%FT%TZ > "persistent-session/end-$shard.txt"^[[0m
+measure	Run all paired sessions sequentially without retries	2026-10-31T04:06:23.9725763Z ^[[36;1mdone^[[0m
+measure	Run all paired sessions sequentially without retries	2026-10-31T04:06:23.9725990Z ^[[36;1msha256sum -c persistent-session/binaries.sha256 > persistent-session/binaries-after-transfer.log^[[0m
+measure	Run all paired sessions sequentially without retries	2026-10-31T04:06:23.9726494Z ^[[36;1mprintf '%s\n' 'Sender complete. Stop receivers and regenerate/reopen every object before asserting exact-byte WAN success.' > persistent-session/receiver-verification-pending.txt^[[0m
+measure	Run all paired sessions sequentially without retries	2026-10-31T04:06:23.9741931Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+measure	Run all paired sessions sequentially without retries	2026-10-31T04:06:23.9742108Z env:
+measure	Run all paired sessions sequentially without retries	2026-10-31T04:06:23.9742412Z   CARGO_TARGET_DIR: /home/runner/work/SpiralCore/SpiralCore/target
+measure	Run all paired sessions sequentially without retries	2026-10-31T04:06:23.9742609Z   CARGO_INCREMENTAL: 0
+measure	Run all paired sessions sequentially without retries	2026-10-31T04:06:23.9742792Z   SPIRALCORE_PERSISTENT_SOURCE: 58990cec4d190f815fccd51df9cadf94029ab78f
+measure	Run all paired sessions sequentially without retries	2026-10-31T04:06:23.9743084Z   SPIRALCORE_PERSISTENT_RUN: 363f0308a0c824994bbf2c333a38d794a8e0cd0c0893d94cd17be8a77345342c
+measure	Run all paired sessions sequentially without retries	2026-10-31T04:06:23.9743421Z   PERSISTENT_RECEIVER_SHA: 1bf29f59ee989cc46125bd64222dd77c669fb28f28db809a96ffc86e37d14156
+measure	Run all paired sessions sequentially without retries	2026-10-31T04:06:23.9743740Z   PERSISTENT_URL_0: https://karen-dining-adding-remains.trycloudflare.com
+measure	Run all paired sessions sequentially without retries	2026-10-31T04:06:23.9744018Z   PERSISTENT_URL_1: https://juvenile-should-geek-coleman.trycloudflare.com
+measure	Run all paired sessions sequentially without retries	2026-10-31T04:06:23.9744310Z   PERSISTENT_URL_2: https://spine-institutions-mode-invitations.trycloudflare.com
+measure	Run all paired sessions sequentially without retries	2026-10-31T04:06:23.9744615Z   PERSISTENT_URL_3: https://freight-placed-fixed-conditioning.trycloudflare.com
+measure	Run all paired sessions sequentially without retries	2026-10-31T04:06:23.9745021Z   PERSISTENT_URL_4: https://minute-born-raw-movies.trycloudflare.com
+measure	Run all paired sessions sequentially without retries	2026-10-31T04:06:23.9745280Z   PERSISTENT_URL_5: https://resort-refuse-taking-grows.trycloudflare.com
+measure	Run all paired sessions sequentially without retries	2026-10-31T04:06:23.9745808Z   SPIRALCORE_WAN_TOKEN: ***
+measure	Run all paired sessions sequentially without retries	2026-10-31T04:06:23.9745939Z ##[endgroup]
+measure	Run all paired sessions sequentially without retries	2026-10-31T04:06:36.3472480Z session failed; no retry
+measure	Run all paired sessions sequentially without retries	2026-10-31T04:06:36.3495403Z ##[error]Process completed with exit code 1.

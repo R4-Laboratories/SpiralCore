@@ -1,0 +1,231 @@
+{
+  "schema": "spiralcore.sc-opt-018.final-results-review.v1",
+  "reviewer": "selector_architect",
+  "utc": "2026-10-31T04:53:49.900867+00:00",
+  "verdict": "PASS_BOUNDED_FINAL_RESULTS_REVIEW",
+  "source_commit": "9a6d7f758fb724b848ca1f24c1c27f5088da671d",
+  "qualified_diagnostic_source": "dbdbc709f0311a06efe5ffac43e5b334ca8a1a87",
+  "github_run": 41169424060,
+  "report": "docs/network/persistent-session-results-2026-10-31.md",
+  "report_sha256": "522df5e883b1f98f34251806d8d7f6f921dd3621780d5b98f45e41517769dcf2",
+  "scope": "Independent recomputation of existing final WAN JSON and comparison with report; prior independent code/security/infra gates retained. No reviewer builds, tests, transfers, fixture generation, source edits or self-approval of authored session code.",
+  "method": "Read existing JSON; independently join every operation to plan fixture, receiver admission and stopped-store verification; derive session sums, nearest-rank p95 distributions and trial-paired ratios using arithmetic/statistics; verify downloaded member hashes, ZIP digest and measured git blobs. Existing original failure, diagnostic and local evidence remain separate.",
+  "checks": {
+    "wan_sessions": 36,
+    "seeds": 36,
+    "targets": 360,
+    "exact_stopped_store_verification_joins": 396,
+    "schema_fits": 24,
+    "unique_scopes": 36,
+    "distinct_arm_orders_per_size": 6,
+    "localized_selector_600_body_byte_rows": 216,
+    "fresh_persistent_target_frame_and_choice_pairs": 120,
+    "session_totals_recomputed": 36,
+    "target_metric_distributions_recomputed": 360,
+    "lifecycle_metric_distributions_recomputed": 126,
+    "paired_distributions_recomputed": 28,
+    "all_report_numeric_table_cells_checked": 90,
+    "source_manifest_entries_equal_at_qualified_and_WAN_revisions": 99,
+    "downloaded_artifact_members_rehashed": 53,
+    "downloaded_zip_digest_verified": true,
+    "all_six_stores_below_registered_768_MiB_conservative_bound": true,
+    "all_operation_sender_charges_at_most_512_MiB": true,
+    "all_396_admitted_requests_joined": true,
+    "unexpected_transport_failures_in_successful_pilot": 0
+  },
+  "accounting": "Bidirectional HTTP bodies; operation completion includes encoding through durable ACK. Exchange is nested and is not pure wire time. Sender process CPU plus disjoint receiver handler CPU is the reported subtotal; receiver socket/logging and relay CPU are outside it. Setup plus updates, paid seed-inclusive lifecycle and outer including target generation are independently recomputed; no nested interval is double-counted.",
+  "selected_recomputed_paired_metrics": [
+    {
+      "large": false,
+      "denominator": "fresh-selector",
+      "metric": "setup_and_updates_sender_cpu_us",
+      "median": 0.8095127231215957,
+      "wins": 6
+    },
+    {
+      "large": false,
+      "denominator": "fresh-selector",
+      "metric": "outer_cpu_subtotal_us",
+      "median": 0.9463714041334752,
+      "wins": 5
+    },
+    {
+      "large": false,
+      "denominator": "fresh-selector",
+      "metric": "outer_wall_us",
+      "median": 0.9707117665044421,
+      "wins": 5
+    },
+    {
+      "large": false,
+      "denominator": "fresh-selector",
+      "metric": "body_bytes",
+      "median": 1.0,
+      "wins": 0
+    },
+    {
+      "large": false,
+      "denominator": "whole",
+      "metric": "setup_and_updates_sender_cpu_us",
+      "median": 0.6534280079709602,
+      "wins": 6
+    },
+    {
+      "large": false,
+      "denominator": "whole",
+      "metric": "outer_cpu_subtotal_us",
+      "median": 0.9113859472483157,
+      "wins": 6
+    },
+    {
+      "large": false,
+      "denominator": "whole",
+      "metric": "outer_wall_us",
+      "median": 0.5805775570903212,
+      "wins": 6
+    },
+    {
+      "large": false,
+      "denominator": "whole",
+      "metric": "body_bytes",
+      "median": 0.18228511927398489,
+      "wins": 6
+    },
+    {
+      "large": true,
+      "denominator": "fresh-selector",
+      "metric": "setup_and_updates_sender_cpu_us",
+      "median": 0.7301518505344546,
+      "wins": 6
+    },
+    {
+      "large": true,
+      "denominator": "fresh-selector",
+      "metric": "outer_cpu_subtotal_us",
+      "median": 0.9322639078205321,
+      "wins": 5
+    },
+    {
+      "large": true,
+      "denominator": "fresh-selector",
+      "metric": "outer_wall_us",
+      "median": 1.0081078138790387,
+      "wins": 3
+    },
+    {
+      "large": true,
+      "denominator": "fresh-selector",
+      "metric": "body_bytes",
+      "median": 1.0,
+      "wins": 0
+    },
+    {
+      "large": true,
+      "denominator": "whole",
+      "metric": "setup_and_updates_sender_cpu_us",
+      "median": 0.4994803415230224,
+      "wins": 6
+    },
+    {
+      "large": true,
+      "denominator": "whole",
+      "metric": "outer_cpu_subtotal_us",
+      "median": 0.6747912739810804,
+      "wins": 6
+    },
+    {
+      "large": true,
+      "denominator": "whole",
+      "metric": "outer_wall_us",
+      "median": 0.27090959778779494,
+      "wins": 6
+    },
+    {
+      "large": true,
+      "denominator": "whole",
+      "metric": "body_bytes",
+      "median": 0.18184737822188127,
+      "wins": 6
+    }
+  ],
+  "retained_negatives": [
+    "The original 37-acknowledgment pilot failed at the next large update; cause remains unresolved. Its data are not pooled with final pilot or diagnostic.",
+    "The separate diagnostic recovered 66 objects exactly without reproducing the failure; this does not establish a transport fix or reliability qualification.",
+    "Persistent/fresh 16 MiB outer elapsed paired median is 1.0081078138790387 with only 3/6 wins; localized p95 is 180.293 ms versus fresh 148.105 ms.",
+    "Persistent/fresh 16 MiB setup-plus-updates elapsed ratio is 1.0359122964761824 with 1/6 wins.",
+    "Unrelated replacements use identical Raw body bytes but persistent sender CPU/completion lose to Whole at both sizes; exact values agree with the report.",
+    "Large receiver-stage attribution screen failed at 1.102040816; no receiver optimization or qualified large-stage attribution is claimed."
+  ],
+  "limitations": [
+    "Six paired WAN sessions per size are a pilot; repeated updates are not independent session trials, and no thirty-pair acceptance or direct-host network qualification is claimed.",
+    "Whole pays an actual seed for equal prior-state comparison although Whole does not require it; this is not optimal cold Whole.",
+    "Synthetic deterministic pseudorandom warm-edit/replacement workload over a temporary Cloudflare relay; general compression gains, physical wire savings and energy remain unmeasured.",
+    "WAN local_gates fields are explicitly unregistered descriptive ratios and do not create new WAN acceptance gates.",
+    "Current crate README differs from the measured 99-entry manifest due to postmeasurement documentation updates; all 99 measured blobs match both qualified dbdbc709 and WAN 9a6d7f75 commits. Production hashes are unchanged."
+  ],
+  "cleanup": {
+    "receipt_inspected": true,
+    "receiver_and_tunnel_processes_stopped": 12,
+    "temporary_repository_configuration_and_local_capability_removed": true,
+    "verified_final_stores_removed": 6,
+    "bytes_removed": 3529526430,
+    "original_failed_store_preserved": true,
+    "cleanup_scope": "Retained receipts checked; no reviewer deletion or service operation."
+  },
+  "findings": [],
+  "reviewer_analysis_note": "An initial working-tree manifest assertion identified the expected postmeasurement README documentation change. Rechecking all 99 measured git blobs at both pinned revisions passed; no measured source drift was found.",
+  "evidence_sha256": {
+    "docs/network/persistent-session-results-2026-10-31.md": "522df5e883b1f98f34251806d8d7f6f921dd3621780d5b98f45e41517769dcf2",
+    "docs/network/evidence/2026-10-31-persistent-session/wan-pilot-02/summary.json": "9d9d57acea10945981ad973dec8efa5d06e94fc270cec0c1ab4b88ff4d3eff64",
+    "docs/network/evidence/2026-10-31-persistent-session/wan-pilot-02/remote/custody.json": "c67af0ebc9205bb6149eafd9d64eb7715a6ba61b58ada8ed45c54963e3f15672",
+    "docs/network/evidence/2026-10-31-persistent-session/wan-pilot-02/remote/source-files.sha256": "f919fe4546d3e358d13a2f465314f034de897b0f9325d7f8d784de6064ab1a6f",
+    "docs/network/evidence/2026-10-31-persistent-session/wan-pilot-02/remote/binaries.sha256": "f0aee8d2a2a8dbc895b3da150bd8f03b2fcf979f299dad91929d8a09d194ce5b",
+    "docs/network/evidence/2026-10-31-persistent-session/wan-pilot-02/receiver-binaries.sha256": "bd7a5a6b569dbd846c6504bbfaf548fc45da931bfbbbf1d3d6f1dd9403866d8e",
+    "docs/network/evidence/2026-10-31-persistent-session/wan-pilot-02/launch.json": "b63f5ba91fa542247b78563c6ba8472593d7d50c6dfb694340b2dbf946831f15",
+    "docs/network/evidence/2026-10-31-persistent-session/wan-pilot-02/github-run.json": "6d1dfffd89ca1a2f9eb48c67964d9f436d85589ffe9bf6cf8a95a2f9b2b7f4f4",
+    "docs/network/evidence/2026-10-31-persistent-session/wan-pilot-02/cleanup-services.json": "c0aa57309d7572eb159d189d642d3ba2fbb03cb9228578fbc0264ab6f89e0e5c",
+    "docs/network/evidence/2026-10-31-persistent-session/wan-pilot-02/cleanup-stores.json": "50c8393a2e51e93472686aaddf626a00fa9fede9ed27dfcf433bd2b74bf70d94",
+    "docs/network/evidence/2026-10-31-persistent-session/local-review.json": "36ad42306b95614c732ceae35d0ac12780778358205152c1fa776e969d00c642",
+    "docs/network/evidence/2026-10-31-persistent-session/local/summary.json": "934bdc52c0e3f707136b780bc4eddc7b1f61435b5979c97d851ce268865bb4c8",
+    "docs/network/evidence/2026-10-31-persistent-session/qualification/wan-attempt1-diagnosis.json": "17f62f0fb3804f37f784fb2dcab78e04b930dc6695b76add410765628801f3cd",
+    "docs/network/evidence/2026-10-31-persistent-session/wan-diagnostic-01/verification-0.jsonl": "2192f0210855f4273e1e4effd74549a9f15cb308da9772457ebcae532d31fd56",
+    "docs/network/evidence/2026-10-31-persistent-session/wan-diagnostic-01/cleanup-store.json": "b0c46ca7c185f349a28c16a37376b617da3b9cb9f085f1bdce34ac03fb336b9c",
+    "docs/network/evidence/2026-10-31-persistent-session/wan-diagnostic-01/remote/custody.json": "95e956fa1947c7890cfc1da395749d1a2df068a200aaed52b0afc522a18045a3",
+    "docs/network/evidence/2026-10-31-persistent-session/qualification/code-rust-security-review.json": "15a0f9a175f76f03fe1b573bda1c4a90140ff4b66c2ca670438267605fcd4905",
+    "docs/network/evidence/2026-10-31-persistent-session/qualification/diagnostic-harness-infra-review.json": "40943b2253cfa59b7b9a4d0da1f0f683bdfa573b49b1cdba7d818a67a1cecd9f",
+    "docs/network/evidence/2026-10-31-persistent-session/qualification/procedural-review.json": "2d5d4f9e7d6165bd7a9868504cd7f8f692bc62b66be98584e0f2352d8ac7497f",
+    "docs/network/evidence/2026-10-31-persistent-session/qualification/diagnostic-procedural-review.json": "6cd4e0d8734020aa8a94aaf561a90f1b89d61a09fb0bb366c1204ce3355e38e9",
+    "docs/network/evidence/2026-10-31-persistent-session/qualification/diagnostic-infra-review.json": "c023c45937fdae9470b3755bc99b8796daddc55f4230b5ea6196b2c7bf07f7ac",
+    "docs/network/evidence/2026-10-31-persistent-session/qualification/diagnostic-transport-review.json": "bbd5d1bda4987ce4d9f186e1782e5c0843aae53de7154761b0426b7995ca6c2d",
+    "docs/network/evidence/2026-10-31-persistent-session/wan-pilot-02/plan-0.json": "fe2525291d1d28fe28b0cfd6ecc8c3cfd788cafb0ab2dce6a3f73dcd3eec60ec",
+    "docs/network/evidence/2026-10-31-persistent-session/wan-pilot-02/remote/observations-0.jsonl": "a043cefc7c62cef483aacdd922e3259220e140d401d53aade6c02ed6160798a7",
+    "docs/network/evidence/2026-10-31-persistent-session/wan-pilot-02/verification-0.jsonl": "fbcd53dd41db5b543cbcf796bdf3c564b50bc452e4c2bd6df84bd7a74ba67a98",
+    "docs/network/evidence/2026-10-31-persistent-session/wan-pilot-02/receiver-0.jsonl": "597526f0110418efc305a66f84a2f3ebfedaef70a5abdd2d52998a767dbb85d6",
+    "docs/network/evidence/2026-10-31-persistent-session/wan-pilot-02/connections-0.jsonl": "a9f7bd17603091e4e04bc33f033908bad14bbd375b2a2698707ea781e1d766a9",
+    "docs/network/evidence/2026-10-31-persistent-session/wan-pilot-02/plan-1.json": "0102a33baf715bac850fa2397f02abbb6795379ee50047408d7c5cc23b0e022d",
+    "docs/network/evidence/2026-10-31-persistent-session/wan-pilot-02/remote/observations-1.jsonl": "932f430348b56a930ffcd254d446ce1b62c77e485b03b14d5151727720d310e0",
+    "docs/network/evidence/2026-10-31-persistent-session/wan-pilot-02/verification-1.jsonl": "afd15e72d27e3473110adec923138746e6d60ed219c516961e45d65ddc3cf230",
+    "docs/network/evidence/2026-10-31-persistent-session/wan-pilot-02/receiver-1.jsonl": "150dd0bce427d758776abbc7084421c1ca1a9cb08db89e5d2db020c2245ebb61",
+    "docs/network/evidence/2026-10-31-persistent-session/wan-pilot-02/connections-1.jsonl": "d3f2aefae4d57968ce4272edf609125066c35ab4669d73e092e28795e44df1b2",
+    "docs/network/evidence/2026-10-31-persistent-session/wan-pilot-02/plan-2.json": "05f7ef4207796cd8c68e4bb4467ba31738e43d74f9aa0c2af0c77a004048fb00",
+    "docs/network/evidence/2026-10-31-persistent-session/wan-pilot-02/remote/observations-2.jsonl": "57bdb07975803d6e894ebec7a20434165c460fc44eb77405d1618d92ee46c303",
+    "docs/network/evidence/2026-10-31-persistent-session/wan-pilot-02/verification-2.jsonl": "02ddf7a737605e125b9307c0a7903fb7106406e3af712e72bd8d1585c47d9d43",
+    "docs/network/evidence/2026-10-31-persistent-session/wan-pilot-02/receiver-2.jsonl": "12cc5834375eea161363e28cb9fb4eb815454b2244da9c01819e0bacd36da490",
+    "docs/network/evidence/2026-10-31-persistent-session/wan-pilot-02/connections-2.jsonl": "d048bfbbde38e144498a9c33ee601b0b4259421c8514a4cfc6931ff62a9c0275",
+    "docs/network/evidence/2026-10-31-persistent-session/wan-pilot-02/plan-3.json": "cc324a6cb3dc248697c534b18fe0c3ac40fa6cba84176b48949e644d2e124389",
+    "docs/network/evidence/2026-10-31-persistent-session/wan-pilot-02/remote/observations-3.jsonl": "6ec7011bc6c56a01bb10d3ab51f586058bf8cc89493e4c4993944061bd5516aa",
+    "docs/network/evidence/2026-10-31-persistent-session/wan-pilot-02/verification-3.jsonl": "97607f810061d39e1d1f94b1bfc0aacc2f3cf1af4a6061ffa7751d3eb2d87ca1",
+    "docs/network/evidence/2026-10-31-persistent-session/wan-pilot-02/receiver-3.jsonl": "89a2f5bf803b95262231ff397c912f08459c62747a1e5a6793c3dbb61039af35",
+    "docs/network/evidence/2026-10-31-persistent-session/wan-pilot-02/connections-3.jsonl": "b9ed9d9b442ba059c62111b9eec23e63b38dbde516c5e4e5c88bcaee9804b6b3",
+    "docs/network/evidence/2026-10-31-persistent-session/wan-pilot-02/plan-4.json": "141d7415301f6e339eb364f1a4b2e5fc9542ced55bb8d1d2e1c13f8448196044",
+    "docs/network/evidence/2026-10-31-persistent-session/wan-pilot-02/remote/observations-4.jsonl": "81e9c4bb343becf1862da3c70692362307569bd08b536f38619636d2b159de13",
+    "docs/network/evidence/2026-10-31-persistent-session/wan-pilot-02/verification-4.jsonl": "de3fc592622243cab99b29f7efc137d43ffea95a4b55d9de1939f128cf4b78f1",
+    "docs/network/evidence/2026-10-31-persistent-session/wan-pilot-02/receiver-4.jsonl": "429e1b6c7490ef364630746637db8015931ee91dddc382e2bc199d70436f1bbf",
+    "docs/network/evidence/2026-10-31-persistent-session/wan-pilot-02/connections-4.jsonl": "a3839e74a765e1f4d285cb82b241861eb41436d5d46227dcd5cd01ce029d23b1",
+    "docs/network/evidence/2026-10-31-persistent-session/wan-pilot-02/plan-5.json": "2666b2227cccfb713213bbae21dd1c3136490e640a7f4b977a2745eef523ed05",
+    "docs/network/evidence/2026-10-31-persistent-session/wan-pilot-02/remote/observations-5.jsonl": "2cde0d2014dd10d7061f3a5d54133a049c116f47d877e6644cd9a3c0d90df45a",
+    "docs/network/evidence/2026-10-31-persistent-session/wan-pilot-02/verification-5.jsonl": "d12cf4b04d42e3562fcba5d8db246e41b514917b942f0089066c979a9fe4462c",
+    "docs/network/evidence/2026-10-31-persistent-session/wan-pilot-02/receiver-5.jsonl": "49b701aa4d94fd0ee340dfe6de504fc31e24d440f2e9dfe54112608325fd4de6",
+    "docs/network/evidence/2026-10-31-persistent-session/wan-pilot-02/connections-5.jsonl": "7e87a7b8840ad78cfe4064c09d24b1a6e52c8ca8b51702f2549068a570ed9126"
+  }
+}

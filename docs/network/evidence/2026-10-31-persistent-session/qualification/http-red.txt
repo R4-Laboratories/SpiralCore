@@ -1,0 +1,18 @@
+   Compiling spiralcore-transfer v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer)
+error[E0432]: unresolved imports `spiralcore_transfer::wan::ConnectionPolicy`, `spiralcore_transfer::wan::ServeConfig`
+ --> tests/wan_persistent.rs:5:33
+  |
+5 |     wan::{self, BenchAuthority, ConnectionPolicy, ServeConfig},
+  |                                 ^^^^^^^^^^^^^^^^  ^^^^^^^^^^^ no `ServeConfig` in `wan`
+  |                                 |
+  |                                 no `ConnectionPolicy` in `wan`
+
+error[E0425]: cannot find function `serve_observed_configured` in module `wan`
+  --> tests/wan_persistent.rs:50:14
+   |
+50 |         wan::serve_observed_configured(listener, endpoint, TOKEN, &BTreeSet::from([[1; 32]]),
+   |              ^^^^^^^^^^^^^^^^^^^^^^^^^ not found in `wan`
+
+Some errors have detailed explanations: E0425, E0432.
+For more information about an error, try `rustc --explain E0425`.
+error: could not compile `spiralcore-transfer` (test "wan_persistent") due to 2 previous errors

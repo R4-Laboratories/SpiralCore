@@ -1,0 +1,45 @@
+{
+  "schema": "spiralcore.persistent-session.diagnostic-infra-review.v1",
+  "source_commit": "58990cec4d190f815fccd51df9cadf94029ab78f",
+  "verdict": "PASS_SCOPED_CODE_RUST_INFRA_REVIEW",
+  "reviewer": "selector_measurement",
+  "roles": ["code-reviewer", "rust-reviewer", "infra-reviewer"],
+  "independence": "Reviewed only the receiver diagnostic, its method document, the hosted workflow and gate tests, and parent-owned operational scripts. Reviewer authored the persistent-session measurement harness; that harness and its claims are excluded from this independent review.",
+  "procedural_gate": {
+    "verdict": "PASS_PROCEDURAL_READY_FOR_CONTENT_REVIEW",
+    "receipt": "procedural-review.json",
+    "sha256": "2d5d4f9e7d6165bd7a9868504cd7f8f692bc62b66be98584e0f2352d8ac7497f",
+    "ordering": "Procedural PASS and released file claims were read before this content review. Required local role profiles were read. Existing check, Clippy, workflow-test, diagnostic-test and freeze receipts were inspected; no tests or measurements were rerun."
+  },
+  "source_sha256": {
+    "crates/spiralcore-transfer/examples/receiver_stages.rs": "4601c84809a22a78a0edd4160f8a4353e3597afb0ce99c5f35b62e53d989a388",
+    "docs/network/receiver-stages-method-2026-10-31.md": "52689e3ace08683ec1b0e0678bcd35e0066fc68ad5f7167f55f67dc0a91c0fd8",
+    ".github/workflows/spiralcore-persistent-session.yml": "23dfdede4eba9b8df1f608b2783dcde17c9ebf1b8bec64519e4dcf990788599a",
+    "crates/spiralcore-transfer/tests/persistent_session_workflow.rs": "0cc09387adbc601a24b053134b113018f39dc43eccf40feeb3248f28f8daebca",
+    "/Users/casey.allard/spiralcore/local/persistent-session-20261031/freeze.sh": "b7eb0fdd80f24317cf19c77f556e662b185f4c851d76d866c04b538ff50dfe7e",
+    "/Users/casey.allard/spiralcore/local/persistent-session-20261031/supervise-receivers.sh": "d114cca7b26b18ddbf097c80099516411833950b32454dc3114bc8db5e493585"
+  },
+  "receiver_diagnostic": {
+    "execution_source": "066e6cfacd92d6a761741c9fa4b61df01aa4ba00",
+    "diagnostic_source_unchanged_at_review": true,
+    "raw_sha256": "f007826c6eeb322d3961b72d0949d7f5d09434816cba4c0797fb571083d00cb2",
+    "summary_sha256": "dea7ddcffcbc571df292c6008999adcff0c744c258295bcdfa49c87228fffd08",
+    "actual_operation_rows": 44,
+    "actual_exact_verification_rows": 44,
+    "actual_successful_cleanup_rows": 4,
+    "discarded_observations": 0,
+    "clock_scope": "Prepared frames and expected replies precede the timer. Begin, all Data frames as one group, and Finish clocks are nested inside the unchanged Endpoint handler sequence. Reply validation, logging and reopened comparisons are outside that interval. No production per-frame or per-byte instrumentation was added.",
+    "failed_screen_retained": "The 16 MiB median staged/outer-only CPU ratio is 1.1020408163265305, exceeding the registered 1.10 screen. Its stage values are retained but not qualified for attribution; no receiver optimization, relaxed gate or rerun is claimed.",
+    "limits": "One sequence per size/mode; positions are different updates, not independent replicate trials. In-process modeled HTTP-body sizes are not transmitted WAN bytes. No RSS, power or energy measurement."
+  },
+  "launch_controls": {
+    "source": "Branch, exact source SHA and first attempt checked both at job admission and by executable Bash gate; checkout credentials are not persisted; actions are SHA-pinned and contents permission is read-only.",
+    "credentials": "Dedicated capability enters only the transfer step and receiver environment. It is validated without printing its value. Six URLs require bounded HTTPS trycloudflare hostnames without userinfo, custom ports, query or path. Local capability storage is outside uploaded evidence.",
+    "dose": "Six sequential shards, six paired trials per size, 36 sessions, 36 actual seeds and 360 updates: 396 transfers. Workflow labels this a six-pair pilot and does not claim thirty-pair acceptance.",
+    "failures": "Shell pipefail, exclusive evidence directories, no transfer retries, always-uploaded available artifacts, and a final receiver-verification-pending marker. Local freeze pins source and executable hashes and fails on changed tracked source. Supervisor binds loopback receivers, owns only its direct child processes, preserves stores/logs and does not auto-restart failed receivers.",
+    "connections": "CLI plan parsing recognizes the registered bounded keep-alive configuration. Same common executable and HttpClient policy apply to every arm; observed receiver-hop reuse does not prove one end-to-end relay socket.",
+    "operational_boundary": "The supervisor intentionally remains active pending owner shutdown. Sender success alone is not WAN exactness: stopped-store verification and final joined receipts remain required. This review neither launches the campaign nor certifies unexecuted performance."
+  },
+  "findings": [],
+  "blocking_findings": 0
+}

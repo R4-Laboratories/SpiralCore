@@ -11,6 +11,7 @@ pub mod schema;
 pub mod schema_selection;
 pub mod schema_zstd;
 pub mod selection;
+pub mod session;
 pub mod shared_runtime;
 pub mod shared_transfer;
 pub mod wan;

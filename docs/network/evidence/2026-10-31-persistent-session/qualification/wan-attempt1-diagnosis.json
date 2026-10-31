@@ -1,0 +1,51 @@
+{
+  "schema": "spiralcore.persistent-session.failure-diagnosis.v1",
+  "reviewer": "selector_tests",
+  "role": "debugger",
+  "github_run": 41167011759,
+  "source_commit": "58990cec4d190f815fccd51df9cadf94029ab78f",
+  "status": "FAILURE_BOUNDARY_ESTABLISHED_TRANSPORT_CAUSE_NOT_RETAINED",
+  "first_failed_operation": {
+    "shard": 0,
+    "session_index": 3,
+    "arm": "fresh-selector",
+    "trial": 0,
+    "object_bytes": 16777216,
+    "position": 4,
+    "kind": "localized",
+    "selected_mode": "SparseV1",
+    "projected_http_body_bytes": 600,
+    "attempted_request_body_bytes": 342,
+    "recorded_response_body_bytes": 0,
+    "recorded_error": "Storage",
+    "exchange_wall_us": 500452,
+    "operation_wall_us": 516444,
+    "expected_object": "abce2c2b1488f02ba743c815035920bb2c226063dca6d4eae08d07a7f74819b9"
+  },
+  "timeline": [
+    "One preflight GET was rejected with HTTP 400, consuming request ordinal 1 without an admitted-request observation.",
+    "Three complete 1 MiB sessions account for 33 acknowledged operations and receiver ordinals 2 through 34.",
+    "The 16 MiB fresh-selector seed succeeded at ordinal 35; localized updates 1 through 3 succeeded at ordinals 36 through 38 on connection 3.",
+    "Localized update 4 failed in HttpClient::exchange at the ureq send call, before response body parsing or codec reply validation. It has no admitted receiver observation.",
+    "There are 37 admitted receiver rows, not 38; the separate POLICY line and preflight ordinal must not be counted as successful transfers.",
+    "The previous update-3 publication filename exists in the stopped cache. The failed update-4 publication filename is absent. This filename check is not an exact-byte readback qualification.",
+    "The retained tunnel log has no transfer-time error. Its connection-terminated messages occur during the later operator shutdown."
+  ],
+  "source_boundary": {
+    "client": "src/wan.rs: HttpClient::exchange maps every ureq .send error to Error::Storage, losing HTTP status, I/O kind, and timeout phase.",
+    "receiver": "src/wan.rs:620-644 uses the configured idle deadline for the entire reused-connection header and does not emit RequestObservation for header read/rejection failures.",
+    "proven": "The first failure precedes an admitted receiver record and any parsed receiver reply; no codec corruption or false publication acknowledgment has been demonstrated.",
+    "unproven": "500.452 ms is consistent with the configured 500 ms idle/header window, but the retained evidence cannot distinguish an origin/relay HTTP rejection from a pooled-connection I/O failure. A causal timeout attribution would be speculation."
+  },
+  "next_bounded_step": "Preserve sanitized client transport error category/status and server header/close reason before any diagnostic reproduction. Keep the failed source, raw observations, plans, and cache intact. No timeout relaxation, automatic retry, or codec change is justified by these records alone; any later campaign requires fresh registration.",
+  "reviewer_actions": "Read-only source/log/filename inspection plus this receipt; no builds, tests, reruns, measurements, source edits, or cleanup.",
+  "evidence_sha256": {
+    "hosted_observations-0.jsonl": "3b37cc94d3db064f504275aa900c80d640b97244a6a4f071926b81addc011f8c",
+    "hosted_observations-0.sessions/03.jsonl": "54426b44cf536b46efe5a878825605ae285942a81c76fdfa615fc84949d0d94b",
+    "hosted_remote-0.log": "4a48d7a2bd7dd6fac3b9c0f4705e5ed623b1e507feb3b2d0e99b8bf9597e2161",
+    "hosted_plan-0.json": "41fd4e21cdeb3469ddf998e3ec5baa75c0695acd4dc77d00f18a8564a0cb28b1",
+    "receiver-0.jsonl": "6652b5233002299b2e00aab1a365889c04097f16b747cf7b56de04b4b3444383",
+    "tunnel-0.log": "548d6ae87452e9644eacbf5383ab12bc3f1a0cb67a917a8081cc16a7a30b21dc"
+  },
+  "interpretation": "Failed incomplete campaign; successful partial rows remain evidence and must not be promoted into a completed paired WAN performance result."
+}

@@ -1,0 +1,70 @@
+{
+  "schema": "spiralcore.persistent-session.content-review.v1",
+  "milestone": "SC-OPT-018",
+  "reviewed_at_utc": "2026-10-31T03:59:11Z",
+  "reviewer": "selector_tests",
+  "roles": ["code-reviewer", "rust-reviewer", "security-reviewer"],
+  "roster": "d1927d9e7ce51354",
+  "base_commit": "28a373ddb7ab9d236fd4b872db128559d4404cb8",
+  "source_commit": "58990cec4d190f815fccd51df9cadf94029ab78f",
+  "verdict": "PASS_READY_FOR_REGISTERED_LOCAL_CAMPAIGN",
+  "blocking_findings": [],
+  "sequence": {
+    "procedural_pass_preceded_content_review": true,
+    "procedural_review_sha256": "2d5d4f9e7d6165bd7a9868504cd7f8f692bc62b66be98584e0f2352d8ac7497f",
+    "reviewed_source_unchanged_from_frozen_commit": true,
+    "reviewer_ran_no_tests_builds_profiles_or_measurements": true
+  },
+  "scope": {
+    "included": "New session ownership and private identity reuse, bounded HTTP persistence and CLI configuration, their tests, persistent-session measurement harness and changed helpers, workflow gates, and measurement contract.",
+    "excluded_authored_by_this_reviewer": ["crates/spiralcore-transfer/examples/receiver_stages.rs", "docs/network/receiver-stages-method-2026-10-31.md"],
+    "diagnostic_independent_review": "diagnostic-infra-review.json",
+    "changes_made_by_reviewer": "This receipt only."
+  },
+  "review_conclusions": [
+    "Only successful existing client publication validation promotes the owned Vec and its identity. No mutable base accessor or public arbitrary cached-ID constructor was added. The public selector path retains its previous base hashing behavior.",
+    "Namespace or epoch changes clear scoped state and readiness before I/O. Attempted exchange failures preserve the previous local bytes but invalidate receiver readiness; pre-I/O admission failures preserve known readiness. Recovery and auxiliary schema/checkpoint seeds are explicit, with no session retry or same-ID reoffer mechanism.",
+    "Capacity admission uses checked arithmetic and the 16 MiB input ceiling with conservative transient allowances. The API documents that multiple sessions need a shared application budget; these charges are not RSS measurements. RuntimeSession retains one fixed verified prediction and does not silently advance logical time.",
+    "HTTP reuse remains opt-in and bounded by request count, idle timeout, global request count, and absolute deadlines. Each request rechecks bearer authorization and scope before body allocation, each frame retains Endpoint authorization, and invalid/truncated requests close the connection. Legacy close behavior and zero-duration behavior remain covered.",
+    "The harness fits each selector once per session, charges fresh context construction and destruction within each update, charges persistent construction in setup, and retains only the acknowledged base plus one generated target. Selector frame capture is bounded and equal between the two selector arms; Whole avoids this diagnostic capture and its control comparison retains that limitation.",
+    "Complete session accounting keeps initial generation separate, update generation inside the true outer interval, setup and seed explicit, exchange timing nested, and receiver handler CPU added once. Named setup-plus-update gates exclude generation and seed by contract; paid lifecycle and generation-inclusive outer totals remain separate. Whole's equal-state seed is unnecessary for a practical cold baseline and is identified as such.",
+    "Receipt validation requires all registered sessions, 11 distinct exact objects per session, ordered rolling positions, minimum-cost selection receipts, identical fresh/persistent selected modes and normalized full-frame hashes, source/executable/plan bindings, and stopped-store exact byte readback. Local cleanup follows successful readback and validation; failures stop without retries and preserve available evidence.",
+    "Workflow execution is pinned to branch, commit, first attempt, toolchain, validated receiver URLs, and operator-supplied receiver executable identity. Credentials are scoped to the transfer step; artifact retention runs on failure. Cross-platform source/plan comparison and stopped-receiver verification remain required execution steps before any WAN success claim."
+  ],
+  "existing_qualification_inspected": {
+    "all_targets": {"passed": 402, "failed": 0, "preexisting_ignored": 2, "targets": 51, "exit_code": 0},
+    "post_lint": {"passed": 54, "failed": 0, "targets": 2, "exit_code": 0},
+    "check_exit": 0,
+    "clippy_exit": 0,
+    "freeze_exit": 0,
+    "focused_coverage_lines_percent": {"session.rs": 88.0, "schema_selection.rs": 95.69536423841059, "wan.rs": 92.02127659574468, "spiralcore-wan.rs": 91.85185185185185},
+    "coverage_limit": "Focused current-source line/function coverage; no branch, MC/DC, whole-repository, or full security proof claim.",
+    "receipt_sha256": {
+      "all-targets.txt": "45cd6aa19c164e5b320554c601ce38149e9df419fdea7b82fc7434264b0b0249",
+      "lint-fix-tests.txt": "717c03b1c16b64995a91f919a984c8d706474fde9fbb987f23438d0cacf7b24f",
+      "clippy.txt": "7ce6bd34ac164b8ab7dadfc997c0a5ffb34afd26c0e1eab4a4bd0bacaf624be0",
+      "check.txt": "c81d90fc3ad89cba396a1163f6d87cac4da380dd83fdac42ac4180473a8221a1",
+      "build.txt": "e3e3f00d0e4b21ce8ec938512d13ff904f9618dea097d096a70afafcd49f59f7",
+      "coverage-final.json": "fea2f71ea50787ec88ff638634262a860e898604f09bccc926e17a9056a285af",
+      "source-files.sha256": "b0e8fc465ec4626bccd6651f2c7e8e0a106a3388f0d2d4a5744ddd73c669a234",
+      "binaries.sha256": "cdba8ccacc6aa336799fdf759cbc0b44dac68c3c9713a9fdba2e441d12f1027a"
+    }
+  },
+  "reviewed_file_sha256": {
+    "crates/spiralcore-transfer/src/session.rs": "3f92b61e600f312eed6c8ec19c08da6f26a438ab0f9a846e5d34d43887a90158",
+    "crates/spiralcore-transfer/src/schema_selection.rs": "35d140a589a147b387270bd402ea7579c0258c95baa3775d4d8936940cfbf67e",
+    "crates/spiralcore-transfer/src/wan.rs": "e2ebae5a408e9e199811babb9eb0be65df5fdf772a44d5e6445c4211fd4c3c72",
+    "crates/spiralcore-transfer/src/lib.rs": "f34825d7d0523e3786c95edfb6f16f47781d30eb96f0f5ed93d659ce3bb73cbc",
+    "crates/spiralcore-transfer/src/bin/spiralcore-wan.rs": "d0ff43d12f37752553a008645e4bd5a192d886032f94bed1d54dd02287e18f41",
+    "crates/spiralcore-transfer/tests/persistent_session.rs": "fc5e3661785477d3a657726b296b62aeba886429e64ff923b6654aed66cc77b0",
+    "crates/spiralcore-transfer/tests/wan_persistent.rs": "c0b2dbf00e1619784ad233c413dc90ec97364f950820c2491f07bf83e1e7bfaf",
+    "crates/spiralcore-transfer/tests/persistent_session_workflow.rs": "0cc09387adbc601a24b053134b113018f39dc43eccf40feeb3248f28f8daebca",
+    "crates/spiralcore-transfer/examples/schema_fitting.rs": "d055b636d1eae10ecbcc907902e9f654b9aeca502936516d357d6f23adbe6dc0",
+    "crates/spiralcore-transfer/examples/support/persistent_session.rs": "abee386fbf31de5878582f88dfcd7385081f831d9beda71f33d45654426f38b6",
+    "crates/spiralcore-transfer/examples/support/schema_selection.rs": "72143aab764ee6135c3257575686bc9d96f46a196bf27f4fefa52018f7c9f96e",
+    "crates/spiralcore-transfer/examples/support/warm_object.rs": "ac711345b22d9553814d0608d3c71c3d87fe30c161d9ff79f4ba505ce08512ef",
+    ".github/workflows/spiralcore-persistent-session.yml": "23dfdede4eba9b8df1f608b2783dcde17c9ebf1b8bec64519e4dcf990788599a",
+    "docs/network/evidence/2026-10-31-persistent-session/measurement-contract.md": "d9ae975b16245bd1eeaebbf574c73955ebfe08a1ba4b8c800ca6af9b7cc00be7"
+  },
+  "release_scope": "Registered 660-operation local comparison may proceed. This content review supplies no performance result or WAN acceptance; the local gates and subsequent 396-operation, six-pair-per-size WAN pilot remain separate. HTTP body counts exclude full-path packets; receiver CPU excludes tunnel/TLS and other host work. No FIPS, MVM integration, energy, or RSS qualification is implied."
+}

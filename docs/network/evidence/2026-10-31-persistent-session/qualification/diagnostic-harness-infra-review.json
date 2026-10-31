@@ -1,0 +1,37 @@
+{
+  "schema": "spiralcore.persistent-session.diagnostic-harness-review.v1",
+  "reviewed_at_utc": "2026-10-31T04:30:02Z",
+  "reviewer": "selector_tests",
+  "roles": ["code-reviewer", "rust-reviewer", "security-reviewer", "infra-reviewer"],
+  "source_commit": "dbdbc709f0311a06efe5ffac43e5b334ca8a1a87",
+  "base_commit": "58990cec4d190f815fccd51df9cadf94029ab78f",
+  "verdict": "PASS_BOUNDED_DIAGNOSTIC_HARNESS_AND_LAUNCH",
+  "blocking_findings": [],
+  "procedural_pass_preceded_review": true,
+  "procedural_receipt_sha256": "6cd4e0d8734020aa8a94aaf561a90f1b89d61a09fb0bb366c1204ce3355e38e9",
+  "scope": "Independent review of Measured's diagnostic serialization and regression test, workflow purpose/dose gates and tests, diagnostic contract, and freeze/supervisor/launcher scripts. Excludes src/wan.rs and tests/wan_persistent.rs authored by this reviewer; independent production/CLI review is separate.",
+  "conclusions": [
+    "Measured copies the transport failure only after its existing timers finish, when the operation failed and the HTTP request counter advanced. Local no-exchange failures and successful operations serialize null instead of reusing stale diagnostics. Existing CPU, wall and body accounting is unchanged.",
+    "The retained HTTP429 regression checks the exact five sanitized fields and excludes token, URL, header and body sentinels. This review does not self-approve the underlying transport sanitizer.",
+    "The workflow validates diagnostic versus pilot purpose and derives a fixed shard list. Diagnostic mode executes only shard 0, at most six sessions and 66 transfers, with first-attempt/source gates and no transfer retry. Generating all six deterministic plan files does not execute the other shards.",
+    "The launcher explicitly sets diagnostic purpose, pins the frozen source and actual receiver digest, validates the single HTTPS relay URL and rejected preflight, and uses a fresh registration. The secret is supplied through stdin to gh secret and the transfer-step environment; it is not emitted in receipts or shell tracing.",
+    "The supervisor uses dedicated task paths, a 4 GiB free-space floor, exclusive evidence-directory creation, and a bounded receiver lifetime. Its cleanup trap sends signals only to recorded children still parented by that supervisor, then waits. It does not remove the failed campaign's cache or evidence.",
+    "The diagnostic retains the 500 ms policy, existing workload and failure behavior. Always-run checksum/artifact steps retain partial failures. A completed diagnostic would not qualify as a replacement performance campaign or establish a timeout cause by itself."
+  ],
+  "qualification_reused": {
+    "all_targets": {"passed": 410, "failed": 0, "preexisting_ignored": 2, "exit": 0},
+    "clippy_exit": 0,
+    "freeze_exit": 0,
+    "reviewer_ran_tests_builds_or_measurements": false,
+    "reviewed_tracked_sources_match_frozen_commit": true
+  },
+  "file_sha256": {
+    "crates/spiralcore-transfer/examples/support/schema_selection.rs": "bbd57c8422057500f833aaa8acc4f51a9e7d7f2cfa8531a64049e3fefae54b55",
+    "crates/spiralcore-transfer/tests/persistent_session_workflow.rs": "01b7ff2f2cbaf86ea74bf00677368ac94a34b8c5ff207d58d4d15335966f9bad",
+    ".github/workflows/spiralcore-persistent-session.yml": "4092b5b221baebf7bdc3090a4214d274694c04d0d5996a05a7b7698436d9f484",
+    "transport-diagnostic/supervise-diagnostic.sh": "417f3a22879b3c5c6c90c8736d0bcaf29ae6d3a23d5333baf04160beec6304a6",
+    "transport-diagnostic/launch-diagnostic.sh": "2bf97d4c3f37c7b346032f6f9204769bdb94e253f4a767f855c7ea2f3527bd3f",
+    "transport-diagnostic/freeze-diagnostic.sh": "61220dd1afc9c5e34eeb13b19abd6e7b4457e1c491f80e2e5ec91b20fd066494"
+  },
+  "release_limit": "One newly registered diagnostic, at most 66 transfers, after the separate independent transport/CLI approval. Preserve the original incomplete run and all new outcomes. No performance, WAN acceptance, timeout-causation, or production security certification claim."
+}

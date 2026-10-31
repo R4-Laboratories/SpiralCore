@@ -1,0 +1,71 @@
+{
+  "schema": "spiralcore.receiver-stages.summary.v1",
+  "exact_objects": 44,
+  "sizes": [
+    {
+      "bytes": 1048576,
+      "warm_updates": 9,
+      "attribution_qualified": true,
+      "median_stage_cpu_ms": {
+        "begin": 0.812,
+        "data": 0.02,
+        "finish": 1.125,
+        "outer": 1.965
+      }
+    },
+    {
+      "bytes": 16777216,
+      "warm_updates": 9,
+      "attribution_qualified": false,
+      "median_stage_cpu_ms": {
+        "begin": 11.364,
+        "data": 1.155,
+        "finish": 13.037,
+        "outer": 26.148
+      }
+    }
+  ],
+  "gates": [
+    {
+      "attribution_qualified": true,
+      "bytes": 1048576,
+      "median_staged_over_outer_cpu_ratio": 0.8744993324432577,
+      "paired_positions": 11,
+      "ratios": [
+        0.6552470248827984,
+        0.9218543046357616,
+        0.8493948901837741,
+        0.8097269624573379,
+        0.8907882241215574,
+        0.6920991479473276,
+        0.761632341723875,
+        0.9484848484848485,
+        0.8744993324432577,
+        1.0401422764227641,
+        1.0118635689569946
+      ],
+      "threshold": 1.1
+    },
+    {
+      "attribution_qualified": false,
+      "bytes": 16777216,
+      "median_staged_over_outer_cpu_ratio": 1.1020408163265305,
+      "paired_positions": 11,
+      "ratios": [
+        1.1583416821716521,
+        1.1242683475911752,
+        1.0712156791907514,
+        1.0399109050411381,
+        1.0464264725826138,
+        1.1209594517418617,
+        1.1020408163265305,
+        0.990642167077098,
+        1.249774377927715,
+        0.9841022139861504,
+        1.1488145476866416
+      ],
+      "threshold": 1.1
+    }
+  ],
+  "decision": "No receiver production optimization in this milestone: 16 MiB overhead screen failed; retain first observations, no relaxed gate or rerun. One paired sequence per size; shared-host load recorded."
+}

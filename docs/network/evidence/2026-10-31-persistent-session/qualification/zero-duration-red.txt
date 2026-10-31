@@ -1,0 +1,24 @@
+   Compiling spiralcore-transfer v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer)
+    Finished `release` profile [optimized] target(s) in 3.12s
+     Running tests/wan_persistent.rs (/Users/casey.allard/spiralcore/target/aarch64-apple-darwin/release/deps/wan_persistent-96036367071eeb5c)
+
+running 1 test
+test legacy_zero_duration_returns_ok_without_accepting_or_processing_requests ... FAILED
+
+failures:
+
+---- legacy_zero_duration_returns_ok_without_accepting_or_processing_requests stdout ----
+
+thread 'legacy_zero_duration_returns_ok_without_accepting_or_processing_requests' (67066722) panicked at tests/wan_persistent.rs:180:9:
+assertion `left == right` failed
+  left: Err(Limit)
+ right: Ok(())
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    legacy_zero_duration_returns_ok_without_accepting_or_processing_requests
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 6 filtered out; finished in 0.02s
+
+error: test failed, to rerun pass `--test wan_persistent`

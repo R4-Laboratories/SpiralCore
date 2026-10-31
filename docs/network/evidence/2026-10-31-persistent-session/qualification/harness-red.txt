@@ -1,0 +1,93 @@
+   Compiling spiralcore-transfer v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer)
+error[E0425]: cannot find function `persistent_plan` in this scope
+    --> examples/support/warm_object.rs:2319:15
+     |
+2319 |         let p=persistent_plan("persistent-qualification",5,&"1".repeat(40),false).unwrap();
+     |               ^^^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `persistent_plan` in this scope
+    --> examples/support/warm_object.rs:2333:17
+     |
+2333 |         assert!(persistent_plan("persistent-qualification",6,&"1".repeat(40),false).is_err());
+     |                 ^^^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `persistent_plan` in this scope
+    --> examples/support/warm_object.rs:2334:20
+     |
+2334 |         assert_eq!(persistent_plan("persistent-local",9,&"1".repeat(40),true).unwrap()["operations"],66);
+     |                    ^^^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `persistent_plan` in this scope
+    --> examples/support/warm_object.rs:2335:17
+     |
+2335 |         assert!(persistent_plan("persistent-local",10,&"1".repeat(40),true).is_err());
+     |                 ^^^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `persistent_next` in this scope
+    --> examples/support/warm_object.rs:2345:24
+     |
+2345 |             let target=persistent_next(0,false,position,&canonical).unwrap();
+     |                        ^^^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `persistent_next` in this scope
+    --> examples/support/warm_object.rs:2356:17
+     |
+2356 |         assert!(persistent_next(0,false,11,&canonical).is_err());
+     |                 ^^^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `persistent_next` in this scope
+    --> examples/support/warm_object.rs:2359:40
+     |
+2359 |         for position in 1..=10 {replay=persistent_next(0,false,position,&replay).unwrap();}
+     |                                        ^^^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `persistent_peak_charge` in this scope
+    --> examples/support/warm_object.rs:2366:21
+     |
+2366 |         let charged=persistent_peak_charge(retention,16<<20,36<<20).unwrap();
+     |                     ^^^^^^^^^^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `persistent_peak_charge` in this scope
+    --> examples/support/warm_object.rs:2369:17
+     |
+2369 |         assert!(persistent_peak_charge(retention,16<<20,176<<20).is_err());
+     |                 ^^^^^^^^^^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `persistent_peak_charge` in this scope
+    --> examples/support/warm_object.rs:2370:17
+     |
+2370 |         assert!(persistent_peak_charge(retention,17<<20,1<<20).is_err());
+     |                 ^^^^^^^^^^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `persistent_peak_charge` in this scope
+    --> examples/support/warm_object.rs:2371:17
+     |
+2371 |         assert!(persistent_peak_charge(500<<20,16<<20,1<<20).is_err());
+     |                 ^^^^^^^^^^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `persistent_totals` in this scope
+    --> examples/support/warm_object.rs:2381:20
+     |
+2381 |         let totals=persistent_totals(&setup,&seed,&updates,&generation,&outer).unwrap();
+     |                    ^^^^^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `persistent_totals` in this scope
+    --> examples/support/warm_object.rs:2388:17
+     |
+2388 |         assert!(persistent_totals(&setup,&seed,&updates[..9],&generation,&outer).is_err());
+     |                 ^^^^^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `persistent_totals` in this scope
+    --> examples/support/warm_object.rs:2390:17
+     |
+2390 |         assert!(persistent_totals(&setup,&seed,&updates,&wrong,&outer).is_err());
+     |                 ^^^^^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `persistent_totals` in this scope
+    --> examples/support/warm_object.rs:2392:17
+     |
+2392 |         assert!(persistent_totals(&setup,&seed,&updates,&generation,&outer).is_err());
+     |                 ^^^^^^^^^^^^^^^^^ not found in this scope
+
+For more information about this error, try `rustc --explain E0425`.
+error: could not compile `spiralcore-transfer` (example "schema_fitting" test) due to 15 previous errors

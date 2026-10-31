@@ -1,0 +1,34 @@
+{
+  "schema": "spiralcore.persistent-session.core-checkpoint.v1",
+  "baseline": "28a373ddb7ab9d236fd4b872db128559d4404cb8",
+  "core_commit_prefix": "066e6cf",
+  "status": "Core implemented and focused qualification observed; sequence harness, full qualification, independent review and main WAN pilot remain pending",
+  "toolchain": "Rust 1.97.1, locked dependencies, aarch64-apple-darwin, hardware-sha256",
+  "red": {
+    "http-red": "exit101: missing ConnectionPolicy, ServeConfig and configured server APIs",
+    "session-red": "exit101: missing session module",
+    "harness-red": "exit101: missing persistent plan, sequence, budget and accounting helpers",
+    "stages-red": "exit101: missing external diagnostic helpers",
+    "workflow-red": "exit101: missing pinned workflow"
+  },
+  "observed_green_receipts": {
+    "baseline-tests": {"exit":0,"tests":43},
+    "http-green": {"exit":0,"tests":18},
+    "session-green": {"exit":0,"tests":10},
+    "focused": {"exit":0,"tests":40,"includes_strengthened_runtime_assertions":true},
+    "workflow-green": {"exit":0,"tests":3},
+    "stages-green": {"exit":0,"tests":5},
+    "coverage-tests": {"exit":0,"tests":65},
+    "stages-build": {"exit":0}
+  },
+  "receipt_paths": "Each named receipt has its original .txt and .exit file in this directory; counts overlap and are not summed into distinct tests",
+  "coverage": "coverage.json, coverage-objects.sha256 and coverage-profiles.sha256 bind focused current source coverage to fresh task profiles; no whole-repository or branch-coverage claim",
+  "diagnostic": {
+    "exact_objects":44,
+    "stores_removed_only_after_exact_reopen":true,
+    "one_mib_stage_attribution_screen_passed":true,
+    "sixteen_mib_stage_attribution_screen_passed":false,
+    "receiver_production_optimization":"Not applied; failed large-object attribution screen retained without rerun or threshold change"
+  },
+  "evidence_retention":"User explicitly requires recorded results; original official test and measurement receipts are retained, including expected RED and negative observations"
+}

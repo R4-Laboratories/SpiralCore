@@ -1,0 +1,24 @@
+   Compiling spiralcore-transfer v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer)
+    Finished `release` profile [optimized] target(s) in 15.41s
+     Running tests/persistent_session.rs (/Users/casey.allard/spiralcore/target/aarch64-apple-darwin/release/deps/persistent_session-bc21031eda173095)
+
+running 7 tests
+test input_capacity_limits_precede_network_and_do_not_destroy_known_base ... ok
+test lost_ack_never_promotes_and_explicit_recovery_confirms_committed_target ... ok
+test runtime_session_reuses_fixed_prediction_and_requires_checkpoint_ack ... ok
+test schema_seed_is_explicit_auxiliary_and_context_change_discards_scoped_state ... ok
+test context_changes_and_invalid_ack_invalidate_hints_without_promotion ... ok
+test missing_or_corrupt_base_does_not_retry_and_recovery_cold_sends_explicitly ... ok
+test rolling_owned_base_advances_only_on_ack_and_matches_existing_sender_frames ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.28s
+
+     Running tests/warm_selection_client.rs (/Users/casey.allard/spiralcore/target/aarch64-apple-darwin/release/deps/warm_selection_client-c737d976b899d141)
+
+running 3 tests
+test unavailable_selected_base_or_transport_failure_never_reoffers ... ok
+test warm_hints_do_not_authorize_missing_schema_or_revoked_context ... ok
+test selected_warm_plan_sends_exact_cost_without_reencoding_and_reopens ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.18s
+

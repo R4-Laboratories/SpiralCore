@@ -1,0 +1,797 @@
+   Compiling proc-macro2 v1.0.107
+   Compiling quote v1.0.47
+   Compiling unicode-ident v1.0.27
+   Compiling libc v0.2.191
+   Compiling version_check v0.9.5
+   Compiling find-msvc-tools v0.1.15
+   Compiling generic-array v0.14.7
+   Compiling shlex v2.0.1
+   Compiling stable_deref_trait v1.2.1
+   Compiling pkg-config v0.3.34
+   Compiling typenum v1.20.1
+   Compiling writeable v0.6.4
+   Compiling syn v3.0.9
+   Compiling cfg-if v1.0.5
+   Compiling litemap v0.8.3
+   Compiling jobserver v0.1.35
+   Compiling cc v1.10.0
+   Compiling utf8_iter v1.0.4
+   Compiling icu_properties_data v2.4.0
+   Compiling icu_normalizer_data v2.4.0
+   Compiling zeroize v1.9.1
+   Compiling rustls-pki-types v1.15.1
+   Compiling synstructure v0.14.0
+   Compiling ring v0.17.14
+   Compiling zstd-sys v2.1.2+zstd.1.5.7
+   Compiling getrandom v0.2.17
+   Compiling crypto-common v0.1.7
+   Compiling block-buffer v0.10.4
+   Compiling itoa v1.0.18
+   Compiling zerofrom-derive v0.1.8
+   Compiling yoke-derive v0.8.4
+   Compiling zerofrom v0.1.8
+   Compiling zerovec-derive v0.11.7
+   Compiling yoke v0.8.4
+   Compiling displaydoc v0.2.7
+   Compiling zerotrie v0.2.5
+   Compiling zerovec v0.11.9
+   Compiling smallvec v1.16.4
+   Compiling untrusted v0.9.0
+   Compiling serde_core v1.0.229
+   Compiling tinystr v0.8.5
+   Compiling potential_utf v0.1.6
+   Compiling icu_locale_core v2.4.0
+   Compiling icu_collections v2.4.0
+   Compiling httparse v1.10.1
+   Compiling icu_provider v2.4.0
+   Compiling icu_properties v2.4.0
+   Compiling icu_normalizer v2.4.0
+   Compiling digest v0.10.7
+   Compiling percent-encoding v2.3.2
+   Compiling rustls v0.23.46
+   Compiling cpufeatures v0.2.17
+   Compiling bytes v1.12.1
+   Compiling zmij v1.0.23
+   Compiling zstd-safe v7.3.0
+   Compiling log v0.4.34
+   Compiling sha2 v0.10.9
+   Compiling http v1.5.0
+   Compiling idna_adapter v1.2.2
+   Compiling libm v0.2.16
+   Compiling base64 v0.23.1
+   Compiling serde v1.0.229
+   Compiling once_cell v1.21.4
+   Compiling serde_json v1.0.154
+   Compiling subtle v2.6.1
+   Compiling ureq-proto v0.6.5
+   Compiling idna v1.1.0
+   Compiling rustls-webpki v0.103.16
+   Compiling spiralcore-transfer v0.1.0 (/home/runner/work/SpiralCore/SpiralCore/crates/spiralcore-transfer)
+   Compiling form_urlencoded v1.2.2
+   Compiling serde_derive v1.0.229
+   Compiling webpki-roots v1.0.11
+   Compiling memchr v2.8.3
+   Compiling utf8-zero v0.8.1
+   Compiling ureq v3.5.0
+   Compiling url v2.5.8
+   Compiling uor-r4-object-store v0.1.0 (/home/runner/work/SpiralCore/SpiralCore/crates/uor-r4-object-store)
+   Compiling cpu-time v1.0.0
+   Compiling zstd v0.13.3
+    Finished `release` profile [optimized] target(s) in 1m 11s
+     Running unittests src/lib.rs (target/release/deps/spiralcore_transfer-8b7f83e2a222847a)
+
+running 28 tests
+test dag::fold_memo_tests::hot_memo_reuses_only_exact_nodes_and_preserves_unique_budget ... ok
+test dag::fold_memo_tests::parent_memo_is_exact_and_has_a_fixed_small_allocation_bound ... ok
+test dag::fold_memo_tests::rejected_records_never_enter_the_memo ... ok
+test delta::scan_tests::bulk_scans_handle_different_lengths_and_zero_byte_borrows ... ok
+test fitted_transfer::tests::frame_validation_is_atomic_and_separately_bounds_count_and_bytes ... ok
+test schema::sender_checks::failed_speculation_never_spends_work_or_emits_partial_bytes ... ok
+test schema::sender_checks::first_match_preserves_exact_charge_and_terminal_work_budget ... ok
+test schema::sender_checks::deterministic_mixed_sequences_preserve_matching_and_fallback_bytes ... ok
+test delta::scan_tests::bulk_scans_match_scalar_at_every_short_boundary ... ok
+test schema::sender_checks::fit_duplicate_mixed_lexical_and_invalid_records_keep_original_artifact ... ok
+test schema::sender_checks::lexical_layouts_invalid_tokens_and_every_truncation_preserve_old_bytes ... ok
+test schema_selection::probe_eligibility_tests::computed_length_cost_matches_real_chunk_framing_without_materializing_bytes ... ok
+test schema_selection::probe_eligibility_tests::impossible_certificates_skip_probe_and_earlier_whole_ties_still_encode ... ok
+test selection::runtime_selection_tests::encoded_lower_bounds_hold_for_empty_small_and_chunk_boundary_inputs ... ok
+test selection::runtime_selection_tests::lower_bound_ties_preserve_original_codec_priority ... ok
+test schema::sender_checks::fit_order_and_training_schema_limits_match_original ... ok
+test selection::runtime_selection_tests::runtime_first_preserves_exhaustive_winner_and_body_bytes ... ok
+test selection::runtime_selection_tests::runtime_repeat_shortcut_and_errors_keep_pre_begin_behavior ... ok
+test schema::sender_checks::slots_record_sizes_and_line_limit_preserve_old_bytes ... ok
+test shared_transfer::identity_tests::prepared_identity_matches_full_hash_for_equal_edited_and_length_changed_bytes ... ok
+test zstd_prefix::tests::chunk_validation_is_atomic_and_count_and_encoded_bounds_are_independent ... ok
+test shared_runtime::packed_tests::packed_rules_match_scalar_tables_at_periodic_word_boundaries ... ok
+test zstd_whole::probe_tests::certificate_parser_counts_only_actual_first_payload_and_required_remainder ... ok
+test zstd_whole::probe_tests::guard_version_size_and_unavailable_context_do_not_authorize_a_bound ... ok
+test zstd_whole::probe_tests::qualified_first_header_and_bound_match_uncapped_encoder_then_reset_exactly ... ok
+test selection::runtime_selection_tests::prefix_structure_bound_prunes_large_runtime_without_changing_bytes ... ok
+test zstd_prefix::tests::profile_minimum_size_holds_at_empty_and_decoded_block_boundaries ... ok
+test delta::sender_delta_checks::optimized_delta_preserves_all_frames_across_changes_and_boundaries ... ok
+
+test result: ok. 28 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.27s
+
+     Running unittests src/bin/spiralcore.rs (target/release/deps/spiralcore-7a858977bb313b05)
+
+running 1 test
+test tests::frame_deadline_does_not_restart_after_a_partial_read ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.10s
+
+     Running unittests src/bin/spiralcore-bench.rs (target/release/deps/spiralcore_bench-6eaf129b4ce13cb7)
+
+running 10 tests
+test tests::broad_local_http_first_pair_for_every_case_reopens_exactly ... ignored, 88 real 16 MiB-class HTTP operations; explicitly run in release
+test tests::large16_local_http_first_pair_reopens_exact_bytes_for_all_arms ... ignored, bounded 16 MiB HTTP qualification; explicitly run with --release --ignored
+test tests::fixture_mutations_are_exact_and_reproducible ... ok
+test tests::paired_ratios_are_not_ratios_of_unpaired_means ... ok
+test tests::rerun_against_populated_receiver_is_a_retained_failure ... ok
+test tests::summary_includes_seed_cost_and_rejects_missing_seed_or_wrong_pair ... ok
+test tests::transfer_identity_is_fresh_and_cache_hit_policy_covers_every_arm ... ok
+test tests::large16_receipts_require_shard_and_canonical_ids_without_legacy_drift ... ok
+test tests::broad_receipts_bind_policy_actual_length_and_fixture_identity ... ok
+test tests::broad_fixtures_cover_length_changes_and_existing_compressed_content ... ok
+
+test result: ok. 8 passed; 0 failed; 2 ignored; 0 measured; 0 filtered out; finished in 0.28s
+
+     Running unittests src/bin/spiralcore-capture.rs (target/release/deps/spiralcore_capture-1c0b943de1c2b8d4)
+
+running 27 tests
+test capture_lifecycle::tests::changing_or_regressing_counters_are_not_a_quiet_interval ... ok
+test capture_lifecycle::tests::linux_tcpdump_inline_usr1_is_separate_from_the_final_three_line_block ... ok
+test capture_lifecycle::tests::old_counter_gap_is_not_normalized_by_new_control_evidence ... ok
+test capture_lifecycle::tests::qualified_control_evidence_requires_a_complete_ordered_lifecycle ... ok
+test tests::capture_statistics_matching_counts_are_retained_and_verified ... ok
+test capture_lifecycle::tests::stats_samples_must_be_complete_separate_blocks ... ok
+test tests::both_endiannesses_and_timestamp_resolutions_are_supported ... ok
+test tests::capture_statistics_mismatch_and_truncation_are_incomplete ... ok
+test tests::delayed_fin_is_charged_to_the_connection_owner_not_the_next_row ... ok
+test tests::cooked_headers_vlan_and_ipv6_use_the_ip_length ... ok
+test tests::double_vlan_minimum_frame_padding_is_not_counted_as_ip_bytes ... ok
+test tests::drops_or_missing_drop_summary_never_become_complete ... ok
+test tests::lifecycle_failure_can_never_leave_an_equal_counter_capture_complete ... ok
+test tests::isolated_veth_scope_is_exact_and_never_relaxes_the_wan_port ... ok
+test tests::malformed_or_truncated_packet_headers_are_rejected ... ok
+test tests::missing_syn_and_reused_tuple_are_unattributed_and_incomplete ... ok
+test tests::packet_record_order_does_not_change_owner_and_pre_syn_packets_are_unattributed ... ok
+test tests::lifecycle_is_bound_to_the_same_pcap_endpoints_and_final_counters ... ok
+test tests::published_body_coverage_is_a_required_lower_bound ... ok
+test tests::retransmitted_syn_keeps_its_first_owner ... ok
+test tests::qualification_port_is_loopback_only_and_wan_default_remains_443 ... ok
+test tests::setup_and_multiple_connections_keep_ownership_while_gap_syn_is_unattributed ... ok
+test tests::tcpdump_summary_counter_is_preserved_without_guessing ... ok
+test tests::snaplen_is_not_ip_length_and_connection_totals_include_delayed_packets ... ok
+test tests::unknown_packets_are_visible_and_unexpected_flows_are_rejected ... ok
+test tests::row_order_duplicates_and_timestamp_overflow_are_rejected ... ok
+test tests::capture_statistics_smoke_gap_is_unresolved_even_with_zero_kernel_drops ... ok
+
+test result: ok. 27 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running unittests src/bin/spiralcore-capture-control.rs (target/release/deps/spiralcore_capture_control-20b2a94bc781585c)
+
+running 13 tests
+test capture_fixture::tests::all_required_offloads_must_be_explicitly_disabled ... ok
+test capture_fixture::tests::fixture_tool_output_is_bounded_before_collection_finishes ... ok
+test capture_fixture::tests::privileged_deadline_wraps_the_actual_tool_without_foreground_escape ... ok
+test capture_lifecycle::tests::changing_or_regressing_counters_are_not_a_quiet_interval ... ok
+test capture_fixture::tests::fixture_collision_check_accepts_default_route_but_rejects_overlaps ... ok
+test capture_lifecycle::tests::linux_tcpdump_inline_usr1_is_separate_from_the_final_three_line_block ... ok
+test capture_lifecycle::tests::old_counter_gap_is_not_normalized_by_new_control_evidence ... ok
+test capture_lifecycle::tests::stats_samples_must_be_complete_separate_blocks ... ok
+test capture_lifecycle::tests::qualified_control_evidence_requires_a_complete_ordered_lifecycle ... ok
+test tests::ethernet_capture_filter_has_no_direction_metadata_load ... ok
+test tests::no_shell_text_can_enter_the_interface_and_port ... ok
+test tests::stderr_collection_is_bounded_even_for_a_noisy_child ... ok
+test capture_fixture::tests::successful_creation_remains_owned_when_receipt_writing_fails ... ok
+
+test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running unittests src/bin/spiralcore-wan.rs (target/release/deps/spiralcore_wan-b5f24d106ca61d98)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/adaptive.rs (target/release/deps/adaptive-cd90d124186b5594)
+
+running 13 tests
+test cold_structured_data_selects_zstd_before_begin ... ok
+test exact_repeat_probe_sends_raw_identity_only_and_unprobed_hit_counts_upload ... ok
+test missing_base_and_changed_scope_do_not_reoffer_or_publish ... ok
+test oversized_inputs_fail_before_any_exchange ... ok
+test malicious_receipts_are_checked_after_selection ... ok
+test repeat_probe_with_evicted_remote_object_completes_the_original_raw_offer ... ok
+test empty_and_incompressible_ties_prefer_raw_with_exact_full_cost ... ok
+test revoked_authority_and_transport_failure_never_retry_selection ... ok
+test small_localized_edit_uses_prefix_when_it_costs_less_than_sparse ... ok
+test real_http_codec_selection_cost_matches_bodies_and_reopens_exactly ... ok
+test warm_local_edits_choose_sparse_and_reordered_data_choose_prefix ... ok
+test exact_bytes_and_length_survive_boundaries_and_length_changes_after_restart ... ok
+test selector_cost_matches_actual_forced_arms_and_minimizes_eligible_bytes ... ok
+
+test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.32s
+
+     Running tests/batched.rs (target/release/deps/batched-0374aeffb3846289)
+
+running 12 tests
+test missing_or_extra_nonterminal_replies_are_rejected ... ok
+test oversized_campaign_object_is_rejected_before_exchange ... ok
+test empty_object_uses_begin_and_finish_without_fabricated_data ... ok
+test published_on_data_is_not_a_valid_terminal_prefix ... ok
+test cold_raw_and_zstd_each_use_one_exact_batch ... ok
+test peer_cannot_request_a_record_outside_the_offered_graph ... ok
+test terminal_error_prefix_is_allowed_but_replies_after_it_are_rejected ... ok
+test unsuccessful_repair_stops_after_two_rounds ... ok
+test warm_probe_skips_data_but_unprobed_cache_hit_counts_the_actual_upload ... ok
+test warm_dag_change_is_exact_and_repairs_missing_descendant_closure ... ok
+test reply_identity_ready_ack_and_published_digest_are_checked ... ok
+test large_dag_is_split_with_bounded_batches_and_exact_sequence ... ok
+
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.75s
+
+     Running tests/benchmark.rs (target/release/deps/benchmark-cf5f982fbe70411d)
+
+running 8 tests
+test deterministic_plan_is_bounded_and_uses_isolated_scopes ... ok
+test efficiency_suites_preserve_v1_and_bound_each_thirty_trial_cache ... ok
+test large16_shard_arguments_are_strict_and_canonical ... ok
+test large16_shards_cover_thirty_pairs_with_balanced_orders_and_bounded_caches ... ok
+benchmark: --trials must be between 1 and 30
+benchmark: --trials must be between 1 and 30
+benchmark: --trials must be between 1 and 30
+benchmark: File exists (os error 17)
+test plan_rejects_unbounded_trials_and_does_not_replace_output ... ok
+test broad16_plans_isolate_all_controls_and_bound_each_fresh_cache ... ok
+benchmark: invalid receipt schema, phase or outcome
+benchmark: invalid receipt schema, phase or outcome
+test efficiency_campaigns_retain_prepared_state_and_reopen_exact_bytes ... ok
+benchmark: receipt metadata differs from canonical plan or repeats an operation
+test full_one_trial_http_campaign_qualifies_exact_bytes_after_restart ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.41s
+
+     Running tests/bounded_selection_workflow.rs (target/release/deps/bounded_selection_workflow-44c8b84e1950046f)
+
+running 3 tests
+test bounded_selection_workflow_requires_a_full_secret_without_fallback ... ok
+test bounded_selection_workflow_accepts_only_the_pinned_first_attempt ... ok
+test bounded_selection_workflow_restricts_every_receiver_url ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.08s
+
+     Running tests/cli.rs (target/release/deps/cli-d9a3fc35346f2efd)
+
+running 9 tests
+test partial_and_oversized_socket_frames_close_without_publication ... ok
+test protocol_error_reply_preserves_request_identity ... ok
+test sparse_cli_raw_fallback_and_exact_repeat_keep_socket_accounting ... ok
+test explicit_sparse_cli_preserves_insertions_and_socket_accounting ... ok
+test unsafe_addresses_bad_options_and_oversized_files_are_rejected ... ok
+test zstd_send_and_get_preserve_trailing_zeroes ... ok
+test real_loopback_cold_warm_mutation_and_exclusive_restart_read ... ok
+test sparse_mode_requires_a_base_and_preserves_other_mode_validation ... ok
+test demo_uses_tcp_and_verifies_all_three_objects_after_restart ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.15s
+
+     Running tests/client_prepared.rs (target/release/deps/client_prepared-881b6172e00bde2e)
+
+running 12 tests
+test generic_senders_reject_sparse_without_the_owned_base_bytes_api ... ok
+test missing_base_is_an_error_without_reoffering_the_transfer_id ... ok
+test prepared_peer_cannot_request_an_unreachable_old_base_record ... ok
+test prepared_cache_hit_counts_every_already_uploaded_frame ... ok
+test prepared_missing_descendants_are_repaired_from_target_closure ... ok
+test sparse_bounds_are_checked_before_any_exchange ... ok
+test prepared_repeat_uses_raw_identity_probe ... ok
+test sparse_probe_and_unprobed_cache_hit_have_exact_upload_accounting ... ok
+test sparse_raw_fallback_happens_before_exchange_without_requiring_remote_base ... ok
+test prepared_sender_matches_canonical_offer_and_actual_accounting ... ok
+test sparse_ack_and_need_responses_obey_strict_mode_rules ... ok
+test sparse_sender_handles_edits_insertions_and_deletions_exactly ... ok
+
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running tests/direct_dag.rs (target/release/deps/direct_dag-ac55a1e8456c22d1)
+
+running 5 tests
+test oversized_object_is_rejected_before_folding ... ok
+test zero_and_overflowing_budgets_preserve_legacy_behavior ... ok
+test unique_node_budget_matches_legacy_at_every_small_boundary ... ok
+test repeated_occurrences_only_consume_unique_node_budget ... ok
+test direct_builder_matches_legacy_canonical_graph ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+
+     Running tests/endpoint.rs (target/release/deps/endpoint-e8ddbafa47959c63)
+
+running 21 tests
+test auth_conflict_and_corruption_do_not_publish ... ok
+test disk_quota_is_reserved_at_admission ... ok
+test authorization_is_checked_at_publication ... ok
+test authorization_is_rechecked_after_read ... ok
+test cached_graph_never_bypasses_disk_integrity_or_namespace ... ok
+test object_identity_cannot_shrink_an_existing_disk_reservation ... ok
+test durable_cold_transfer_retry_and_restart ... ok
+test plaintext_cache_is_private ... ok
+test published_resume_respects_other_active_reservations ... ok
+test repair_exhaustion_is_terminal ... ok
+test pinned_graph_survives_eviction_pressure_then_releases_after_cancel ... ok
+test sparse_copy_insert_is_durable_and_base_scoped ... ok
+test retained_graph_is_used_and_eviction_is_recoverable ... ok
+test sparse_needs_no_dag_and_rejects_unreserved_target ... ok
+test tiny_dag_cannot_admit_unreserved_unrelated_nodes ... ok
+test sparse_replay_cancel_bad_digest_and_revocation_never_commit ... ok
+test unowned_staging_is_never_removed ... ok
+test writer_quota_cancel_and_expiry_are_bounded ... ok
+test two_attempts_publish_one_immutable_object ... ok
+test optional_graphs_are_evicted_for_verified_reads_and_published_resume ... ok
+test terminal_reply_ledgers_cannot_outgrow_quota ... ok
+
+test result: ok. 21 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.10s
+
+     Running tests/fitted_transfer.rs (target/release/deps/fitted_transfer-157175c81641884c)
+
+running 5 tests
+test fitted_offer_requires_artifact_and_bounded_output ... ok
+test fitted_admission_precedes_corrupt_artifact_read_and_cancel_releases_budget ... ok
+test fitted_transfer_is_exact_durable_and_scoped_to_artifact_namespace ... ok
+test fitted_finish_rechecks_authority_and_digest_without_partial_publication ... ok
+test fitted_sender_falls_back_before_begin_and_rejects_false_receipts ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+
+     Running tests/hash_backend.rs (target/release/deps/hash_backend-b9bb6337bb99b82b)
+
+running 1 test
+test sha256_known_answers_survive_backend_selection ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/persistent_session.rs (target/release/deps/persistent_session-bb874d6788f1b7ff)
+
+running 7 tests
+test input_capacity_limits_precede_network_and_do_not_destroy_known_base ... ok
+test lost_ack_never_promotes_and_explicit_recovery_confirms_committed_target ... ok
+test missing_or_corrupt_base_does_not_retry_and_recovery_cold_sends_explicitly ... ok
+test context_changes_and_invalid_ack_invalidate_hints_without_promotion ... ok
+test runtime_session_reuses_fixed_prediction_and_requires_checkpoint_ack ... ok
+test schema_seed_is_explicit_auxiliary_and_context_change_discards_scoped_state ... ok
+test rolling_owned_base_advances_only_on_ack_and_matches_existing_sender_frames ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.09s
+
+     Running tests/persistent_session_workflow.rs (target/release/deps/persistent_session_workflow-bff92dca35112ef5)
+
+running 3 tests
+test persistent_session_workflow_requires_a_full_secret_without_fallback ... ok
+test persistent_session_workflow_accepts_only_the_pinned_first_attempt ... ok
+test persistent_session_workflow_restricts_every_receiver_url ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.08s
+
+     Running tests/prepared.rs (target/release/deps/prepared-e7ccdee96457fb09)
+
+running 9 tests
+test conservative_charges_include_shared_base_overlay_index_and_bytes ... ok
+test exact_repeat_shares_flat_graph_and_bytes_including_empty_and_nul ... ok
+test owned_data_and_public_clones_cannot_poison_verified_nodes ... ok
+test length_and_unique_target_limits_fail_without_mutating_base ... ok
+test repair_authorization_is_target_closure_not_every_base_node ... ok
+test promotion_is_budgeted_and_detaches_the_old_base ... ok
+test same_length_delta_matches_full_fold_and_reconstructs_exactly ... ok
+test randomized_boundary_edits_preserve_every_record_and_manifest ... ok
+test one_changed_leaf_has_only_its_ten_new_records ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.17s
+
+     Running tests/profile.rs (target/release/deps/profile-33866aba42fc211c)
+
+running 5 tests
+test independent_sha256_binary_vectors_are_stable ... ok
+test profile_rejects_missing_corrupt_scale_and_padding ... ok
+test framing_is_bounded_and_canonical ... ok
+test public_invalid_parent_never_panics ... ok
+test exact_sha_profile_preserves_length_and_all_byte_edits ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/replay_cpu.rs (target/release/deps/replay_cpu-a4fd5ee7a1c52534)
+
+running 2 tests
+test packed_replay_preserves_extreme_valid_clock_and_memory_settings ... ok
+test packed_replay_is_byte_identical_to_public_scalar_steps ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+
+     Running tests/schema_codec.rs (target/release/deps/schema_codec-8402023b29c39b9e)
+
+running 10 tests
+test frozen_training_template_preserves_held_out_raw_tokens ... ok
+test arbitrary_bytes_layout_drift_and_nested_values_remain_exact_literals ... ok
+test duplicate_keys_whitespace_crlf_escapes_and_numeric_spellings_are_preserved ... ok
+test empty_mixed_and_newline_heavy_objects_have_exact_fallback ... ok
+test hostile_stream_counts_indices_tokens_and_lengths_fail_preflight ... ok
+test invalid_primitive_spellings_and_slot_overflow_are_literals ... ok
+test malformed_templates_duplicates_and_profile_caps_are_rejected ... ok
+test malformed_artifact_is_rejected_even_for_a_literal_target ... ok
+test training_limits_and_template_count_are_bounded ... ok
+test wrong_schema_and_encoded_lengths_are_rejected ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/schema_prepared.rs (target/release/deps/schema_prepared-4ccb479e9948dff6)
+
+running 6 tests
+test prepared_schema_owns_artifact_and_preserves_existing_stream_bytes ... ok
+test schema_zstd_rejects_hostile_frames_then_decodes_a_valid_frame ... ok
+test schema_zstd_reuses_contexts_and_preserves_exact_values_and_fallback ... ok
+test prepared_dictionary_matches_fresh_bytes_after_alternating_inputs_and_errors ... ok
+test prepared_encoders_recover_after_rejected_oversize_input ... ok
+test target_specific_intermediate_cap_covers_maximum_literal_record_overhead ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.07s
+
+     Running tests/schema_reuse.rs (target/release/deps/schema_reuse-5db3461fa5e7988c)
+
+running 5 tests
+test compressed_schema_offer_is_versioned_and_bounded ... ok
+test bad_compressed_transfer_cannot_publish_and_cached_decoder_recovers ... ok
+test codec_cache_is_bounded_pinned_and_released_without_exceeding_shared_budget ... ok
+test warm_decoder_does_not_hide_corrupt_missing_or_unauthorized_artifact ... ok
+test persistent_prepared_senders_and_receiver_reuse_exact_objects_then_restart ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+
+     Running tests/schema_selection.rs (target/release/deps/schema_selection-150d0f03c5d3aa89)
+
+running 8 tests
+test exact_candidate_costs_and_raw_tie_match_independent_frame_lengths ... ok
+test unseeded_claimed_warm_schema_is_rejected_and_whole_cache_is_scoped ... ok
+test whole_contexts_preserve_parameters_bytes_and_recover_after_bad_frames ... ok
+test whole_codec_accepts_exact_sixteen_mib_and_rejects_larger_before_encode ... ok
+test whole_zstd_mode_is_explicit_and_requires_no_artifact ... ok
+test whole_receiver_rejects_corruption_then_reuses_bounded_contexts ... ok
+test lazy_schema_seed_is_paid_once_then_ready_schema_commits_exactly ... ok
+test prepared_selection_is_minimum_charges_seed_and_matches_serialized_transfer ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.09s
+
+     Running tests/schema_selection_workflow.rs (target/release/deps/schema_selection_workflow-2da8f7e2d61a22b1)
+
+running 3 tests
+test schema_selection_workflow_requires_a_full_secret_without_fallback ... ok
+test schema_selection_workflow_accepts_only_the_pinned_first_attempt ... ok
+test schema_selection_workflow_restricts_every_receiver_url ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+
+     Running tests/schema_sender.rs (target/release/deps/schema_sender-9f57e5f86236790c)
+
+running 3 tests
+test allocation_counter_is_local_and_disabled_outside_the_scope ... ok
+test matching_prepared_records_allocate_only_the_output_buffer ... ok
+test fitting_repeated_first_layout_has_constant_temporary_allocations ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/schema_wan_workflow.rs (target/release/deps/schema_wan_workflow-e49e067cee2c24d5)
+
+running 3 tests
+test schema_wan_workflow_requires_a_full_secret_without_fallback ... ok
+test schema_wan_workflow_accepts_only_the_pinned_first_attempt ... ok
+test schema_wan_workflow_restricts_every_receiver_url ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+
+     Running tests/selector_setup_workflow.rs (target/release/deps/selector_setup_workflow-8f65c87f69399c68)
+
+running 3 tests
+test selector_setup_workflow_requires_a_full_secret_without_fallback ... ok
+test selector_setup_workflow_accepts_only_the_pinned_first_attempt ... ok
+test selector_setup_workflow_restricts_every_receiver_url ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.08s
+
+     Running tests/shared_runtime.rs (target/release/deps/shared_runtime-5f849755ea5281dc)
+
+running 22 tests
+test checkpoint_rejects_every_truncation_trailing_bytes_and_bad_magic ... ok
+test checkpoint_rejects_noncanonical_float_padding_flags_and_root_count ... ok
+test fold_values_preserve_observed_unweighted_summary_semantics ... ok
+test checkpoints_roundtrip_every_resume_boundary_without_fidelity_loss ... ok
+test historical_root_retention_cap_drops_oldest_summary_without_exceeding_bounds ... ok
+test invalid_dimensions_rings_and_nonfinite_state_are_refused ... ok
+test invalid_frequency_coupling_clock_root_and_payload_are_refused ... ok
+test logical_step_root_and_replay_limits_are_bounded ... ok
+test memory_coupler_affects_phases_without_changing_ca_or_leaf_count ... ok
+test exact_replay_final_checkpoint_matches_explicit_steps ... ok
+test recipe_rejects_noncanonical_payload_reserved_bits_and_output_kind ... ok
+test recipe_roundtrip_rejects_truncation_trailing_and_unknown_header ... ok
+test native_canonical_checkpoint_and_trace_vectors_are_stable ... ok
+test root_counts_and_phase_bounds_are_validated ... ok
+test replay_exact_output_budget_succeeds_and_one_byte_short_fails ... ok
+test splitting_replay_across_independent_checkpoint_receivers_is_exact ... ok
+test trace_contains_every_complete_post_step_checkpoint_in_order ... ok
+test trace_reserves_exact_required_output_instead_of_entire_admission_ceiling ... ok
+test zero_step_final_replay_is_identity_and_zero_step_trace_is_header_only ... ok
+test every_valid_reference_ring_evolves_exactly_for_all_three_rules ... ok
+test full_transition_matches_pinned_python_ca_fold_clock_and_memory_fields ... ok
+test seeded_default_ca_row_matches_pinned_python_reference ... ok
+
+test result: ok. 22 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/shared_transfer.rs (target/release/deps/shared_transfer-a56577ccd1649a11)
+
+running 10 tests
+test prepared_prediction_owns_its_state_and_preserves_residual_bytes ... ok
+test prepared_prediction_rejects_invalid_state_and_oversize_targets ... ok
+test different_lengths_and_final_checkpoint_use_exact_residuals ... ok
+test replay_is_idempotent_and_cancel_discards_output ... ok
+test checkpoint_must_be_authorized_present_and_within_replay_budget ... ok
+test revoked_authority_and_changed_epoch_cannot_finish_an_admitted_replay ... ok
+test setup_truncations_versions_digest_and_resource_lies_are_rejected ... ok
+test prepared_prediction_transfers_repeated_edits_without_granting_authority ... ok
+test runtime_recipe_crosses_transfer_boundary_and_reopens_exact_bytes ... ok
+test malformed_setup_missing_setup_and_failed_final_digest_never_publish ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running tests/sparse.rs (target/release/deps/sparse-80b2c77a45c41301)
+
+running 6 tests
+test hostile_versions_lengths_ops_and_truncation_fail_closed ... ok
+test malformed_recipe_is_atomic ... ok
+test literal_frames_split_and_large_copy_remains_small ... ok
+test edits_lengths_and_fallback_preserve_every_byte ... ok
+test prefix_insertion_uses_a_small_exact_recipe ... ok
+test exact_operation_literal_and_object_limits_are_enforced ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.06s
+
+     Running tests/transfer.rs (target/release/deps/transfer-195e9e4672d19b72)
+
+running 5 tests
+test peer_cannot_request_records_outside_the_offered_object ... ok
+test unrelated_reply_and_zstd_trailing_frames_are_rejected ... ok
+test zstd_decoder_enforces_actual_window_limit ... ok
+test missing_record_batch_is_repaired_with_complete_descendants ... ok
+test raw_zstd_repeat_and_warm_delta_reconstruct_exactly ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/wan.rs (target/release/deps/wan-52c5fb40857b7a7a)
+
+running 12 tests
+test batch_bounds_and_canonical_framing ... ok
+test campaign_origin_refuses_to_reuse_a_populated_cache ... ok
+test campaign_origin_rejects_ambiguous_warming_policy_before_creating_cache ... ok
+test campaign_origin_rejects_invalid_codec_cache_configuration_before_creating_cache ... ok
+test client_rejects_a_truncated_nonterminal_reply_prefix ... ok
+test client_rejects_unsafe_urls_and_short_capabilities ... ok
+test authenticated_batch_commits_exact_bytes_with_measured_receiver_work ... ok
+test authentication_and_scope_fail_before_reading_body ... ok
+test an_idle_completed_connection_cannot_block_another_client ... ok
+test observed_origin_rejects_failed_logging_and_does_not_observe_unauthorized_requests ... ok
+test hostile_http_headers_and_truncation_are_rejected ... ok
+test codec_cache_cli_is_opt_in_and_records_persistent_hits_without_credentials ... ok
+
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 6.03s
+
+     Running tests/wan_persistent.rs (target/release/deps/wan_persistent-0ee3ae977cdef3ab)
+
+running 7 tests
+test invalid_keep_alive_plan_is_rejected_before_cache_creation ... ok
+test legacy_zero_duration_returns_ok_without_accepting_or_processing_requests ... ok
+test malformed_or_truncated_second_request_closes_connection ... ok
+test idle_connection_releases_serial_origin_without_consuming_a_request ... ok
+test connection_cap_and_client_close_are_honored ... ok
+test reused_connection_rechecks_auth_and_scope_before_body ... ok
+test eleven_transfers_reuse_one_connection_and_reopen_exactly ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.42s
+
+     Running tests/warm_object_workflow.rs (target/release/deps/warm_object_workflow-10c45efe56649240)
+
+running 3 tests
+test warm_object_workflow_requires_a_full_secret_without_fallback ... ok
+test warm_object_workflow_accepts_only_the_pinned_first_attempt ... ok
+test warm_object_workflow_restricts_every_receiver_url ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+
+     Running tests/warm_policy.rs (target/release/deps/warm_policy-f7c50612c4595986)
+
+running 2 tests
+test default_policy_preserves_graph_readiness_and_disabled_reduces_admission_only ... ok
+test disabled_skips_only_optional_raw_and_zstd_graph_warming ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/warm_selection.rs (target/release/deps/warm_selection-ec76962a2d2ab1d2)
+
+running 9 tests
+test period64_without_short_period_still_uses_actual_rejection_certificate ... ok
+test raw_ties_and_old_api_results_survive_interleaved_warm_calls_and_limits ... ok
+test all_four_winners_match_exhaustive_selected_frame_bytes ... ok
+test boundaries_length_changes_and_context_reuse_preserve_exhaustive_minimum ... ok
+test static_tie_requires_whole_evaluation_or_a_stronger_actual_bound ... ok
+test verified_base_makes_sparse_an_exact_scored_candidate ... ok
+test cold_schema_can_win_after_paying_seed_instead_of_greedily_using_sparse ... ok
+test sampled_short_period_repetition_schedules_full_encoding_without_pruning ... ok
+test structural_bounds_skip_only_candidates_that_cannot_win ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.27s
+
+     Running tests/warm_selection_client.rs (target/release/deps/warm_selection_client-621a7ed985abe98e)
+
+running 3 tests
+test warm_hints_do_not_authorize_missing_schema_or_revoked_context ... ok
+test unavailable_selected_base_or_transport_failure_never_reoffers ... ok
+test selected_warm_plan_sends_exact_cost_without_reencoding_and_reopens ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.13s
+
+     Running tests/warm_selection_workflow.rs (target/release/deps/warm_selection_workflow-3ec12ba9a679df5a)
+
+running 3 tests
+test warm_selection_workflow_requires_a_full_secret_without_fallback ... ok
+test warm_selection_workflow_accepts_only_the_pinned_first_attempt ... ok
+test warm_selection_workflow_restricts_every_receiver_url ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.08s
+
+     Running tests/zstd_dictionary.rs (target/release/deps/zstd_dictionary-70077da31f787236)
+
+running 2 tests
+test dictionary_rejects_malformed_artifacts_and_resource_expansion ... ok
+test trained_dictionary_exactly_recovers_held_out_and_arbitrary_bytes ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running tests/zstd_prefix.rs (target/release/deps/zstd_prefix-aa5b7bd74c0ae474)
+
+running 8 tests
+test prefix_offer_and_encoded_stream_are_strictly_versioned_and_bounded ... ok
+test prefix_admission_precedes_corrupt_base_read_and_final_hash_is_mandatory ... ok
+test rejects_wrong_base_damage_trailing_frames_and_unbounded_header ... ok
+test sender_rejects_wrong_cumulative_encoded_receipt ... ok
+test endpoint_prefix_pins_authorized_base_and_publishes_only_verified_complete_bytes ... ok
+test prefix_reservations_are_shared_and_cancel_releases_them ... ok
+test batched_prefix_reports_selection_and_falls_back_only_before_begin ... ok
+test whole_prefix_roundtrips_empty_edits_insertions_and_unrelated_data ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/zstd_probe_guard.rs (target/release/deps/zstd_probe_guard-679286996dbb0b58)
+
+running 4 tests
+test qualification_can_require_the_enabled_or_disabled_build_path ... ok
+test source_guard_rejects_missing_or_foreign_trees ... ok
+test system_linkage_and_native_overrides_disable_the_certificate ... ok
+test qualified_build_records_the_exact_source_tree ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/zstd_whole_probe.rs (target/release/deps/zstd_whole_probe-f306684dce0c4528)
+
+running 2 tests
+test compressible_whole_winner_keeps_uncapped_frame_after_inconclusive_probe ... ok
+test first_block_excludes_random_one_mib_without_full_whole_candidate ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running unittests examples/codec_selection.rs (target/release/examples/codec_selection-fb148335f19363ad)
+
+running 5 tests
+test tests::configuration_rejects_ambiguous_or_out_of_bounds_inputs ... ok
+test tests::distribution_uses_midpoint_median_and_nearest_rank_p95 ... ok
+test tests::fixtures_are_paired_and_localized_changes_have_exact_extent ... ok
+test tests::workload_cardinality_and_order_are_exact_and_balanced ... ok
+test tests::one_trial_serial_transfer_reopens_exact_bytes_and_preserves_existing_output ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.11s
+
+     Running unittests examples/receiver_stages.rs (target/release/examples/receiver_stages-a09f2b1de1516e48)
+
+running 5 tests
+test tests::existing_root_is_rejected_without_deleting_user_files ... ok
+test tests::prepared_frames_are_complete_and_exact_before_receiver_timing ... ok
+test tests::rolling_fixture_has_nine_local_edits_one_escape_and_no_duplicate_object ... ok
+test tests::malformed_data_stops_before_finish_and_never_publishes ... ok
+test tests::each_clock_mode_runs_one_seed_ten_updates_and_reopens_all_exactly ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running unittests examples/replay_cpu.rs (target/release/examples/replay_cpu-513737ac53c14ff5)
+
+running 3 tests
+test tests::registered_order_is_repeatable_complete_and_varies_across_trials ... ok
+test tests::fixtures_change_exactly_one_bit_or_replace_every_byte_deterministically ... ok
+test tests::summary_rejects_missing_trials_and_quantiles_retain_extremes ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests examples/schema_fitting.rs (target/release/examples/schema_fitting-1d72543606705917)
+
+running 47 tests
+test persistent_session::tests::persistent_rolling_objects_survive_real_serialized_store_reopen ... ok
+test schema_reuse::tests::observation_validation_rejects_false_fidelity_and_double_counting ... ok
+test schema_reuse::tests::randomized_orders_preserve_all_arms_and_are_repeatable ... ok
+test schema_reuse::tests::real_session_owns_private_store_and_reopens_every_distinct_target ... ok
+test schema_reuse::tests::sessions_assign_distinct_held_out_indexes_and_reject_bad_bounds ... ok
+test schema_selection::tests::cold_seed_charge_cannot_be_omitted ... ok
+test schema_selection::tests::cold_threshold_ties_and_extra_candidates_are_rejected ... ok
+test persistent_session::tests::persistent_complete_receipts_reject_missing_fits_costs_and_fidelity ... ok
+test persistent_session::tests::persistent_campaign_summary_keeps_unfavorable_gate ... ok
+test schema_sender::tests::pairing_balances_source_order_and_rejects_invalid_cells ... ok
+test schema_sender::tests::recorded_sessions_keep_exact_transcripts_and_strict_output_creation ... ok
+test schema_sender::tests::standalone_profile_compressor_matches_the_production_frame ... ok
+test schema_reuse::tests::historical_fixture_identities_are_unchanged ... ok
+test schema_selection::tests::real_persistent_small_sessions_skip_selector_seed_and_reopen_exactly ... ok
+test schema_wan::tests::expanded_fixture_range_keeps_historical_identity ... ok
+test schema_wan::tests::loopback_persistent_session_reopens_all_ten_exact_targets ... ok
+test schema_wan::tests::family_label_must_match_the_frozen_target ... ok
+test schema_wan::tests::thirty_trials_cover_six_orders_and_isolate_every_scope ... ok
+test tests::training_is_frozen_and_disjoint_from_held_out_records ... ok
+test tests::whole_record_batches_and_binary_controls_preserve_actual_lengths ... ok
+test schema_wan::tests::shard_budget_and_summary_guards_are_fail_closed ... ok
+test warm_object::tests::bounded_compressible_control_uses_completed_whole_and_exact_reopen ... ok
+test warm_object::tests::bounded_cpu_gate_requires_ten_complete_pairs_and_preserves_negatives ... ok
+test warm_object::tests::bounded_profile_binds_two_production_sources_and_retains_bounded_doses ... ok
+test warm_object::tests::bounded_receipt_keeps_completed_cost_distinct_from_rejection_certificate ... ok
+test warm_object::tests::persistent_accounting_charges_setup_once_and_keeps_generation_in_outer ... ok
+test warm_object::tests::bounded_complete_local_summary_checks_roles_frames_fit_and_all_ten_pairs ... ok
+test warm_object::tests::persistent_sequence_escapes_once_then_recovers_nine_distinct_warm_edits ... ok
+test warm_object::tests::persistent_shared_budget_rejects_retained_future_targets ... ok
+test warm_object::tests::persistent_plan_binds_once_fitted_sessions_and_bounded_pilot ... ok
+test warm_object::tests::setup_controls_reopen_actual_targets_and_label_deceptive_sampling ... ok
+test warm_object::tests::setup_gates_preserve_all_ten_pairs_and_negative_outcomes ... ok
+test warm_object::tests::setup_profile_keeps_all_fits_and_separates_constructor_from_training ... ok
+test warm_object::tests::setup_three_cases_bind_paid_dose_and_original_fixtures ... ok
+test warm_object::tests::setup_complete_summary_checks_three_cases_and_rejects_relabeling ... ok
+test warm_object::tests::warm_fixture_changes_exactly_32_midpoint_bytes_and_has_unique_identity ... ok
+test warm_object::tests::warm_complete_receipts_reject_dose_scope_seed_and_cost_corruption ... ok
+test warm_object::tests::warm_selection_actual_fit_and_consumed_plan_preserve_scoped_exact_bytes ... ok
+test warm_object::tests::warm_selection_plan_has_six_bounded_shards_and_all_permutations ... ok
+test warm_object::tests::warm_selection_receipt_rejects_fake_bounds_and_omitted_cold_setup ... ok
+test warm_object::tests::warm_randomized_pair_orders_are_reproducible_and_exactly_balanced ... ok
+test warm_object::tests::warm_sparse_requires_scoped_base_then_commits_absent_target_exactly ... ok
+test warm_object::tests::warm_success_cost_requires_real_seed_and_changed_sparse_update ... ok
+test warm_object::tests::warm_selection_summary_joins_controls_and_rejects_unpaid_fit_and_decision_changes ... ok
+test warm_object::tests::warm_summary_accepts_complete_local_receipts_and_charges_setup_once ... ok
+test schema_selection::tests::complete_dynamic_seed_summary_and_corruptions ... ok
+test schema_wan::tests::complete_summary_accepts_all_shards_and_rejects_missing_or_corrupt_rows ... ok
+
+test result: ok. 47 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 9.96s
+
+     Running unittests examples/sender_profile.rs (target/release/examples/sender_profile-7c3453c866bd447b)
+
+running 3 tests
+test harness::tests::fixtures_change_exactly_one_bit_or_replace_every_byte_deterministically ... ok
+test harness::tests::registered_order_is_repeatable_complete_and_varies_across_trials ... ok
+test harness::tests::summary_rejects_missing_trials_and_quantiles_retain_extremes ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests examples/shared_runtime.rs (target/release/examples/shared_runtime-099b4dcd9d83784d)
+
+running 5 tests
+test tests::fixture_edits_keep_every_unmodified_byte_and_bind_trial ... ok
+test tests::plan_binds_unique_scopes_and_actual_fixture_sizes ... ok
+test tests::output_creation_never_overwrites_and_fixture_binding_rejects_changes ... ok
+test tests::serialized_runtime_transfer_cost_and_exact_reopen_are_measured ... ok
+test tests::remote_http_ack_is_separate_from_stopped_receiver_exact_verification ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.10s
+
+     Running unittests examples/sparse_pruning.rs (target/release/examples/sparse_pruning-5758b204d87de020)
+
+running 3 tests
+test tests::schedule_is_ten_interleaved_ab_ba_pairs_per_cell ... ok
+test tests::fixtures_have_registered_lengths_and_changes ... ok
+test tests::every_registered_fixture_has_exact_legacy_and_current_receipts ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.40s
+

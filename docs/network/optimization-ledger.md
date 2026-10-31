@@ -21,6 +21,19 @@ remain tied to their measured source; later results do not overwrite earlier neg
 
 ## Measured object sizes
 
+SC-OPT-018 adds acknowledged owned sessions, prepared runtime retention and bounded
+HTTP connection reuse. The local run verifies 660 objects exactly; a subsequent
+six-pair WAN pilot verifies 396. All localized selector updates retain 600 body
+bytes. WAN paired setup-plus-update sender CPU falls 19.05%/26.98% at 1/16 MiB
+against fresh selection. Complete paid sequences use 81.77%/81.82% fewer body
+bytes than prepared Whole/Raw, with paired outer elapsed ratios 0.580578/0.270910
+and CPU-subtotal ratios 0.911386/0.674791. Large-object outer elapsed is slightly
+worse than fresh selection (ratio 1.008108); unrelated replacement still loses
+CPU/time against Whole. The first pilot failed after 37 acknowledged operations;
+its cause remains unresolved despite a separately successful 66-object diagnostic.
+No reliability fix or general speedup is claimed. [Full result](persistent-session-results-2026-10-31.md),
+[all evidence and failures](evidence/2026-10-31-persistent-session/README.md).
+
 SC-OPT-017 reduces actual repeated-layout fitting and skips an optional probe on
 short-period repetitive input, preserving the full encoder and selected bytes.
 At WAN source `aa22837a2bbfc0ab9c4cee7d380a768cab768e16`, all 540 objects reopen

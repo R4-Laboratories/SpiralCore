@@ -1,0 +1,25 @@
+    Blocking waiting for file lock on build directory
+   Compiling spiralcore-transfer v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer)
+    Finished `release` profile [optimized] target(s) in 1m 31s
+     Running unittests examples/schema_fitting.rs (/Users/casey.allard/spiralcore/target/aarch64-apple-darwin/release/examples/schema_fitting-928bcc7859ecdab8)
+
+running 1 test
+test schema_selection::tests::measured_transport_failure_is_sanitized_and_not_reused_without_exchange ... FAILED
+
+failures:
+
+---- schema_selection::tests::measured_transport_failure_is_sanitized_and_not_reused_without_exchange stdout ----
+
+thread 'schema_selection::tests::measured_transport_failure_is_sanitized_and_not_reused_without_exchange' (67372857) panicked at examples/support/schema_selection.rs:1316:9:
+assertion `left == right` failed
+  left: Null
+ right: Object {"category": String("http_status"), "http_status": Number(429), "io_kind": Null, "stage": String("send"), "timeout_phase": Null}
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    schema_selection::tests::measured_transport_failure_is_sanitized_and_not_reused_without_exchange
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 47 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `--example schema_fitting`

@@ -1,0 +1,176 @@
+{
+  "schema": "spiralcore.persistent-session.transport-diagnostic-procedural-review.v1",
+  "reviewed_utc": "2026-10-31T04:28:44.595038+00:00",
+  "verdict": "PASS_PROCEDURAL_READY_FOR_DIAGNOSTIC_CONTENT_REVIEW",
+  "source": "dbdbc709f0311a06efe5ffac43e5b334ca8a1a87",
+  "prior_qualified_source": "58990cec4d190f815fccd51df9cadf94029ab78f",
+  "scope": "Quality-gate Step1 recheck of sanitized transport/client/CLI/harness/workflow diagnostic delta only. Prior unchanged core gate retained; no new content or performance approval.",
+  "reviewer": {
+    "agent": "selector_architect",
+    "role": "harness-optimizer",
+    "roster": "d1927d9e7ce51354",
+    "fresh_verify_and_role_check": "passed",
+    "independence": "Reviewer authored diagnostic design addendum, not diagnostic production/harness/workflow implementation. This receipt concerns procedure only."
+  },
+  "evidence_basis": "Retained actual terminal stdout and exit files, current source/object/profile/executable manifests, prior gate and released file claims; no reviewer commands executed tests, builds or measurements.",
+  "ordering": {
+    "diagnosis_preceded_change": true,
+    "design_addendum": "docs/specs/2026-10-31-persistent-session-design.md",
+    "red_observed": [
+      "missing diagnostic transport API",
+      "CLI missing exclusive connection-log support",
+      "HTTP429 diagnostics incorrectly serialized Null",
+      "workflow missing purpose and one-shard dose gate"
+    ],
+    "green_observed": "Transport/CLI12 pass; complete final qualification includes diagnostic row and all5 workflow gate tests.",
+    "content_reviews": "Still pending, to follow this Step1 PASS; not falsely marked complete."
+  },
+  "qualification": {
+    "release_all_targets": {
+      "passed": 410,
+      "failed": 0,
+      "ignored": 2,
+      "targets": 52
+    },
+    "all_target_clippy_exit": 0,
+    "release_freeze_exit": 0,
+    "focused_coverage": {
+      "passed": 24,
+      "failed": 0,
+      "targets": 3
+    },
+    "scope_note": "Two unchanged historical ignored HTTP tests remain disclosed. No new separate cargo check claimed; final all-target Clippy, release tests and frozen release build compile the delta."
+  },
+  "coverage": {
+    "files": [
+      {
+        "file": "crates/spiralcore-transfer/src/bin/spiralcore-wan.rs",
+        "lines": {
+          "count": 166,
+          "covered": 153,
+          "percent": 92.16867469879519
+        },
+        "functions": {
+          "count": 12,
+          "covered": 12,
+          "percent": 100
+        }
+      },
+      {
+        "file": "crates/spiralcore-transfer/src/wan.rs",
+        "lines": {
+          "count": 792,
+          "covered": 678,
+          "percent": 85.60606060606061
+        },
+        "functions": {
+          "count": 50,
+          "covered": 46,
+          "percent": 92
+        }
+      }
+    ],
+    "json_sha256": "f29174306d5e655deafc351240f36bb15e101a67af81e5217da9ebe313f854e8",
+    "tests_sha256": "3b0429496e118e5b0176190edb5925faea2c9e4c106e6c9a7aabd18c6187d509",
+    "scope": "Fresh diagnostic profiles and current objects reported by this Cargo invocation; direct LLVM export. No branch/MC-DC or whole-repository coverage claim."
+  },
+  "freeze": {
+    "transport-diagnostic/source-files.sha256": {
+      "entries": 99,
+      "sha256": "f919fe4546d3e358d13a2f465314f034de897b0f9325d7f8d784de6064ab1a6f",
+      "all_match": true
+    },
+    "transport-diagnostic/binaries.sha256": {
+      "entries": 2,
+      "sha256": "bd7a5a6b569dbd846c6504bbfaf548fc45da931bfbbbf1d3d6f1dd9403866d8e",
+      "all_match": true
+    },
+    "diagnostic-coverage-sources.sha256": {
+      "entries": 2,
+      "sha256": "382c77ef9cfd2a36ad3ac088763228ebbd80ebb5bdab0ea497d42f010402f40c",
+      "all_match": true
+    },
+    "diagnostic-coverage-objects.sha256": {
+      "entries": 8,
+      "sha256": "f5325c8abbfe23a2caaa7d02ee98307959247e030a39e426b4feceec1fd589a7",
+      "all_match": true
+    },
+    "diagnostic-coverage-profiles.sha256": {
+      "entries": 23,
+      "sha256": "3cc5a8fcbc5f69ca0a1369c4784dc1ebd46961779cbad0def8b6d3b2f65b8970",
+      "all_match": true
+    }
+  },
+  "receipts": {
+    "transport-diagnostics-red": {
+      "exit": 101,
+      "exit_sha256": "39b8dc3fc8b44765c8e6f1adee04c5b465e555ab791cc42d0d9e810d5b64297c",
+      "output_file": "transport-diagnostics-red.txt",
+      "output_sha256": "e45f300202469f3ada58b270c2a2a5704ec51baf133064dc2d14d4f1df7c7f14"
+    },
+    "diagnostic-cli-red": {
+      "exit": 101,
+      "exit_sha256": "39b8dc3fc8b44765c8e6f1adee04c5b465e555ab791cc42d0d9e810d5b64297c",
+      "output_file": "diagnostic-cli-red.txt",
+      "output_sha256": "0eb4d3cd48e4ad9728e8a393dcaf1c86e73855f334c8fd1884ba899340535ffd"
+    },
+    "diagnostic-row-red": {
+      "exit": 101,
+      "exit_sha256": "39b8dc3fc8b44765c8e6f1adee04c5b465e555ab791cc42d0d9e810d5b64297c",
+      "output_file": "diagnostic-row-red.txt",
+      "output_sha256": "7d266a09936628b4a5af335f2670a4a62de78d4bb8adb1b5aa317b3ea56c6ed6"
+    },
+    "diagnostic-workflow-red": {
+      "exit": 101,
+      "exit_sha256": "39b8dc3fc8b44765c8e6f1adee04c5b465e555ab791cc42d0d9e810d5b64297c",
+      "output_file": "diagnostic-workflow-red.txt",
+      "output_sha256": "9fd8f7cb1969b33a00c85f514a0ebfeddc16eeb51a86a75b62433c48749b5a67"
+    },
+    "transport-diagnostics-green": {
+      "exit": 0,
+      "exit_sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+      "output_file": "transport-diagnostics-green.txt",
+      "output_sha256": "cf5aef8a8887e177a3ffb3fad3407e11d40f8229f191575ce60327a8a285a7a5"
+    },
+    "diagnostic-all-targets": {
+      "exit": 0,
+      "exit_sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+      "output_file": "diagnostic-all-targets.txt",
+      "output_sha256": "18f1975e9d169b020f916ff5d38b2ffc56ae1ef7e8a463c291385acbcfa7556d"
+    },
+    "diagnostic-clippy": {
+      "exit": 0,
+      "exit_sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+      "output_file": "diagnostic-clippy.txt",
+      "output_sha256": "d53f98a7be77b776facc653e3c06e9e475d8d8059f11d20b6755a02e284f8d8e"
+    },
+    "diagnostic-freeze": {
+      "exit": 0,
+      "exit_sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+      "output_file": "diagnostic-freeze.stdout",
+      "output_sha256": "47a08b7a49f92ec18599451ba6d8797b698ba77db5ab914835fbc554be8542a4"
+    },
+    "diagnostic-coverage": {
+      "exit": 0,
+      "exit_sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+      "output_file": "diagnostic-coverage.stdout",
+      "output_sha256": "108e34fc3cea7787cb2384340da93abadd61bec65436936fd6867f07629e07e6"
+    }
+  },
+  "release_build_output_sha256": "2c9e4e9608e3c57fafae201cb192bf9c487dcdfe7f3d4facc59353fa675c3bd5",
+  "diagnostic_contract_sha256": "dd813b93b3346e29ea40a48848e82e744e19bb67df3718f89047e470a4dfff20",
+  "design_addendum_sha256": "1f723f51a13a780634f755b5020082377948695686502c7d47c50393e7b4f367",
+  "prior_gate_sha256": "2d5d4f9e7d6165bd7a9868504cd7f8f692bc62b66be98584e0f2352d8ac7497f",
+  "failure_retention": {
+    "attempt1_diagnosis_sha256": "17f62f0fb3804f37f784fb2dcab78e04b930dc6695b76add410765628801f3cd",
+    "five_original_failure_files_match_diagnosis": true,
+    "scope": "Original failed attempt remains incomplete; no old result is relabeled successful. Tunnel log/store custody is not re-audited by this narrow delta check."
+  },
+  "claims": "Relevant implementation claims are released for review; this diagnostic recheck does not approve launch or infer timeout causation.",
+  "findings": [],
+  "pending": [
+    "Independent diagnostic code/Rust/security and CLI/harness/workflow reviews",
+    "New source/run registration for bounded diagnostic reproduction",
+    "Interpret first retained diagnostic outcome before any transport policy correction"
+  ]
+}

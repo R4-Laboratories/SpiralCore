@@ -17,6 +17,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     }
     let mut cache = None;
     let mut plan = None;
+    let mut connection_log = None;
     let mut bind = "127.0.0.1:0".to_string();
     let mut seconds = 3600u64;
     let mut seen = BTreeSet::new();
@@ -28,6 +29,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         match k.as_str() {
             "--cache" => cache = Some(v),
             "--plan" => plan = Some(v),
+            "--connection-log" => connection_log = Some(v),
             "--bind" => bind = v,
             "--seconds" => seconds = v.parse()?,
             _ => return Err("unknown option".into()),
@@ -63,6 +65,38 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         }
         _ => return Err("invalid codec cache configuration; v4 boolean required".into()),
     };
+    let connection_policy = match plan.get("http_keep_alive") {
+        None => wan::ConnectionPolicy::Close,
+        Some(value) => {
+            let config = value.as_object().ok_or("invalid keep-alive object")?;
+            if plan.get("schema").and_then(|v| v.as_str()) != Some("spiralcore.wan.plan.v4")
+                || !codec_cache_enabled
+                || config.len() != 2
+            {
+                return Err("keep-alive requires v4 codec cache and exactly two fields".into());
+            }
+            let count = config
+                .get("max_requests_per_connection")
+                .and_then(|v| v.as_u64())
+                .ok_or("invalid keep-alive request limit")?;
+            let idle = config
+                .get("idle_timeout_ms")
+                .and_then(|v| v.as_u64())
+                .ok_or("invalid keep-alive idle timeout")?;
+            if !(1..=64).contains(&count) || !(1..=1000).contains(&idle) {
+                return Err("keep-alive limits require 1..64 requests and 1..1000 ms idle".into());
+            }
+            wan::ConnectionPolicy::KeepAlive {
+                max_requests_per_connection: count as usize,
+                idle_timeout: Duration::from_millis(idle),
+            }
+        }
+    };
+    let serve_config = wan::ServeConfig {
+        duration: Duration::from_secs(seconds),
+        max_requests: 16384,
+        connection_policy,
+    };
     let scopes = plan
         .get("allowed_scopes")
         .and_then(|x| x.as_array())
@@ -81,43 +115,64 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                 .into(),
         );
     }
+    // Exclusive diagnostic output: never overwrite an earlier attempt's evidence.
+    let connection_log = connection_log
+        .map(|path| {
+            std::fs::OpenOptions::new()
+                .write(true)
+                .create_new(true)
+                .open(path)
+        })
+        .transpose()?;
     let mut endpoint = Endpoint::open_with_policy(cache, wan::limits(), BenchAuthority, policy)?;
     endpoint.set_codec_cache_enabled(codec_cache_enabled)?;
     let listener = TcpListener::bind(addr)?;
-    eprintln!("POLICY cold_graph_policy={policy:?} codec_cache_enabled={codec_cache_enabled}");
+    eprintln!("POLICY cold_graph_policy={policy:?} codec_cache_enabled={codec_cache_enabled} connection_policy={connection_policy:?}");
     println!("READY addr={}", listener.local_addr()?);
     std::io::stdout().flush()?;
-    if codec_cache_enabled {
-        wan::serve_observed(
+    let observe_request = |observation: wan::RequestObservation| {
+        if codec_cache_enabled {
+            let stats = observation.codec_cache;
+            let row = serde_json::json!({"event":"wan_request", "request_ordinal":observation.request_ordinal,
+                "connection_ordinal":observation.connection_ordinal, "request_on_connection":observation.request_on_connection,
+                "scope":spiralcore_transfer::hex(&observation.scope), "http_status":observation.http_status,
+                "codec_cache":{"hits":stats.hits,"misses":stats.misses,"preparations":stats.preparations,
+                    "evictions":stats.evictions,"entries":stats.entries,"resident_bytes":stats.resident_bytes}});
+            let mut output = std::io::stderr().lock();
+            serde_json::to_writer(&mut output, &row)
+                .map_err(|_| spiralcore_transfer::Error::Storage)?;
+            writeln!(output)?;
+            output.flush()?;
+        }
+        Ok(())
+    };
+    if let Some(mut output) = connection_log {
+        wan::serve_diagnosed_configured(
             listener,
             endpoint,
             &token,
             &scopes,
-            Duration::from_secs(seconds),
-            16384,
+            serve_config,
+            observe_request,
             |observation| {
-                let stats = observation.codec_cache;
-                let row = serde_json::json!({"event":"wan_request", "request_ordinal":observation.request_ordinal,
-                "scope":spiralcore_transfer::hex(&observation.scope), "http_status":observation.http_status,
-                "codec_cache":{"hits":stats.hits,"misses":stats.misses,"preparations":stats.preparations,
-                    "evictions":stats.evictions,"entries":stats.entries,"resident_bytes":stats.resident_bytes}});
-                let mut output = std::io::stderr().lock();
-                serde_json::to_writer(&mut output, &row)
+                serde_json::to_writer(&mut output, &observation)
                     .map_err(|_| spiralcore_transfer::Error::Storage)?;
                 writeln!(output)?;
                 output.flush()?;
                 Ok(())
             },
         )?;
-    } else {
-        wan::serve(
+    } else if codec_cache_enabled {
+        wan::serve_observed_configured(
             listener,
             endpoint,
             &token,
             &scopes,
-            Duration::from_secs(seconds),
-            16384,
+            serve_config,
+            observe_request,
         )?;
+    } else {
+        wan::serve_configured(listener, endpoint, &token, &scopes, serve_config)?;
     }
     Ok(())
 }

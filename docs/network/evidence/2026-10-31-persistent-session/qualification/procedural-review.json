@@ -1,0 +1,227 @@
+{
+  "schema": "spiralcore.persistent-session.procedural-review.v1",
+  "milestone": "SC-OPT-018",
+  "reviewed_utc": "2026-10-31T03:55:13.957905+00:00",
+  "verdict": "PASS_PROCEDURAL_READY_FOR_CONTENT_REVIEW",
+  "source": "58990cec4d190f815fccd51df9cadf94029ab78f",
+  "baseline": "28a373ddb7ab9d236fd4b872db128559d4404cb8",
+  "scope": "Quality-gate Step 1 only: executed qualification, TDD chronology, source/receipt custody and released claims. No code, security, performance-result or merge approval.",
+  "reviewer": {
+    "agent": "selector_architect",
+    "role": "harness-optimizer",
+    "roster": "d1927d9e7ce51354",
+    "verify_and_check": "Both executed successfully during this review",
+    "independence": "Reviewer authored session and narrow zero-duration correction; this receipt audits procedure only. Independent content reviewers are still required."
+  },
+  "authority": {
+    "role_profile_sha256": "e5c6b6cfcffd948c2cb7acfd06f75fe0618dc56ed5684a843e92d3148242225a",
+    "quality_gate_sha256": "782904a6cf0e74c2782e7e241bed7b6a1adfd4a33e0c6b3c445be79a6f5d12c7",
+    "ordering": "Quality-gate command explicitly requires this procedural audit before content review; pending Step 2 reviews are not marked completed."
+  },
+  "evidence_basis": {
+    "raw_results": "Actual retained parent terminal stdout and exit receipts read and counted; direct task tool history includes observed session RED/GREEN and zero-duration RED/fix. Parent supplied execution-session identifiers are recorded below as corroboration.",
+    "legacy_log_locations": "Claude bash-commands.log, DAILY.md and .agent-sync/results are absent in this Codex session. Formal task results are intentionally retained under this qualification directory instead.",
+    "parent_execution_sessions": {
+      "all_targets": 35307,
+      "clippy": 11386,
+      "check": 60749,
+      "post_lint_tests": 38617,
+      "final_coverage": 28796,
+      "frozen_build": 69191
+    }
+  },
+  "chronology": {
+    "design_plan_commit": "1bc30b66689903d41e4e8cc91e3b9f2fb1c65d62",
+    "core_commit": "066e6cfacd92d6a761741c9fa4b61df01aa4ba00",
+    "design_preceded_code": true,
+    "red": "Missing APIs/helpers and absent workflow failed before implementation; later zero-duration behavior regression was observed Err(Limit) versus Ok before one-line fix.",
+    "preserved_failure": "Initial Clippy type-complexity and needless-range-loop findings remain retained; final Clippy and changed-file tests pass.",
+    "base_ancestry": "Current origin/main equals baseline and is ancestor of reviewed source; tracked source is clean."
+  },
+  "qualification": {
+    "all_targets": {
+      "passed": 402,
+      "failed": 0,
+      "ignored": 2,
+      "targets": 51
+    },
+    "post_lint_changed_targets": {
+      "passed": 54,
+      "failed": 0,
+      "targets": 2
+    },
+    "check_exit": 0,
+    "clippy_exit": 0,
+    "release_build_and_freeze_exit": 0,
+    "ignored_scope": "Two existing large/broad HTTP benchmark tests; unchanged ignored annotations, not newly skipped tests.",
+    "focused_final_coverage_tests": 66,
+    "overlap": "Focused counts overlap all-target tests and are not summed into distinct-test totals."
+  },
+  "coverage": {
+    "files": [
+      {
+        "file": "crates/spiralcore-transfer/src/bin/spiralcore-wan.rs",
+        "lines": {
+          "count": 135,
+          "covered": 124,
+          "percent": 91.85185185185185
+        },
+        "functions": {
+          "count": 10,
+          "covered": 10,
+          "percent": 100
+        }
+      },
+      {
+        "file": "crates/spiralcore-transfer/src/schema_selection.rs",
+        "lines": {
+          "count": 302,
+          "covered": 289,
+          "percent": 95.69536423841059
+        },
+        "functions": {
+          "count": 32,
+          "covered": 31,
+          "percent": 96.875
+        }
+      },
+      {
+        "file": "crates/spiralcore-transfer/src/session.rs",
+        "lines": {
+          "count": 325,
+          "covered": 286,
+          "percent": 88
+        },
+        "functions": {
+          "count": 43,
+          "covered": 42,
+          "percent": 97.67441860465115
+        }
+      },
+      {
+        "file": "crates/spiralcore-transfer/src/wan.rs",
+        "lines": {
+          "count": 564,
+          "covered": 519,
+          "percent": 92.02127659574468
+        },
+        "functions": {
+          "count": 39,
+          "covered": 37,
+          "percent": 94.87179487179486
+        }
+      }
+    ],
+    "scope": "Fresh task profiles and exact current executed objects; no branch, MC/DC or whole-repository coverage claim.",
+    "summary_sha256": "fea2f71ea50787ec88ff638634262a860e898604f09bccc926e17a9056a285af",
+    "custody": "All 4 source hashes, 7 object hashes and 25 profile/profdata hashes independently matched retained manifests."
+  },
+  "freeze": {
+    "source-files.sha256": {
+      "entries": 98,
+      "all_match": true,
+      "sha256": "b0e8fc465ec4626bccd6651f2c7e8e0a106a3388f0d2d4a5744ddd73c669a234"
+    },
+    "binaries.sha256": {
+      "entries": 3,
+      "all_match": true,
+      "sha256": "cdba8ccacc6aa336799fdf759cbc0b44dac68c3c9713a9fdba2e441d12f1027a"
+    }
+  },
+  "receipt_hashes": {
+    "baseline-tests": {
+      "output_sha256": "60785e555cee784522d85f50bfe90d3d70ff7a9be361281afee95820f7dbe02a",
+      "exit": 0,
+      "exit_sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    "http-red": {
+      "output_sha256": "96afda19485bfa61eeb125f6371da1987f614c66df078b1cfedf91ff84c576f5",
+      "exit": 101,
+      "exit_sha256": "39b8dc3fc8b44765c8e6f1adee04c5b465e555ab791cc42d0d9e810d5b64297c"
+    },
+    "session-red": {
+      "output_sha256": "b928ec146f349db1810d4c46b5e0f3647bbb435a85714fcf83fdb339bc94c0bd",
+      "exit": 101,
+      "exit_sha256": "39b8dc3fc8b44765c8e6f1adee04c5b465e555ab791cc42d0d9e810d5b64297c"
+    },
+    "harness-red": {
+      "output_sha256": "07bf2cded6077eca7eacc4ccdc9604487324227a30d951e6f26074873e13907e",
+      "exit": 101,
+      "exit_sha256": "39b8dc3fc8b44765c8e6f1adee04c5b465e555ab791cc42d0d9e810d5b64297c"
+    },
+    "stages-red": {
+      "output_sha256": "b7a2abaaa5ea11f22f7522706349ad95f6a8b6ffe5618c5f398c0957575be7ad",
+      "exit": 101,
+      "exit_sha256": "39b8dc3fc8b44765c8e6f1adee04c5b465e555ab791cc42d0d9e810d5b64297c"
+    },
+    "workflow-red": {
+      "output_sha256": "948fdf0c73707a85728b26d5abbe9ccb180cd98ae15d109283a2d9dd5983da9a",
+      "exit": 101,
+      "exit_sha256": "39b8dc3fc8b44765c8e6f1adee04c5b465e555ab791cc42d0d9e810d5b64297c"
+    },
+    "zero-duration-red": {
+      "output_sha256": "534d18a87aa9f6f3ed82950ddda6eef073a84a39a3d29ade9f8ad13f1a162f8e",
+      "exit": 101,
+      "exit_sha256": "39b8dc3fc8b44765c8e6f1adee04c5b465e555ab791cc42d0d9e810d5b64297c"
+    },
+    "all-targets": {
+      "output_sha256": "45cd6aa19c164e5b320554c601ce38149e9df419fdea7b82fc7434264b0b0249",
+      "exit": 0,
+      "exit_sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    "lint-fix-tests": {
+      "output_sha256": "717c03b1c16b64995a91f919a984c8d706474fde9fbb987f23438d0cacf7b24f",
+      "exit": 0,
+      "exit_sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    "clippy-attempt1": {
+      "output_sha256": "96628eb0aca88ac7c1d699c479402e63a4bf902206d18b05ac1640cf6ec5ce16",
+      "exit": 101,
+      "exit_sha256": "39b8dc3fc8b44765c8e6f1adee04c5b465e555ab791cc42d0d9e810d5b64297c"
+    },
+    "clippy": {
+      "output_sha256": "7ce6bd34ac164b8ab7dadfc997c0a5ffb34afd26c0e1eab4a4bd0bacaf624be0",
+      "exit": 0,
+      "exit_sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    "check": {
+      "output_sha256": "c81d90fc3ad89cba396a1163f6d87cac4da380dd83fdac42ac4180473a8221a1",
+      "exit": 0,
+      "exit_sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    "coverage-tests-final": {
+      "output_sha256": "664649629d456ad321e4fa260503b92d7738ef9f5f55aa2fbf435b20bf689259",
+      "exit": 0,
+      "exit_sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    "freeze": {
+      "output_sha256": "47a08b7a49f92ec18599451ba6d8797b698ba77db5ab914835fbc554be8542a4",
+      "exit": 0,
+      "exit_sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    "build": {
+      "output_sha256": "e3e3f00d0e4b21ce8ec938512d13ff904f9618dea097d096a70afafcd49f59f7",
+      "observed": "release build finished successfully; subsequent freeze.exit is 0"
+    }
+  },
+  "receiver_diagnostic": {
+    "raw_sha256": "f007826c6eeb322d3961b72d0949d7f5d09434816cba4c0797fb571083d00cb2",
+    "summary_sha256": "dea7ddcffcbc571df292c6008999adcff0c744c258295bcdfa49c87228fffd08",
+    "verified_exact_objects": 44,
+    "sixteen_mib_overhead_ratio": 1.1020408163265305,
+    "threshold": 1.1,
+    "disposition": "Failed attribution screen retained. No receiver production optimization, rerun or threshold relaxation; one sequence per size/mode is not independent-trial acceptance."
+  },
+  "claims": {
+    "current_implementation_claims": "All three SC-OPT-018 rows are released for review, not in-progress or falsely marked complete.",
+    "formal_evidence": "Raw official outputs, expected REDs and negative diagnostic results retained as explicitly requested by user; no cleanup deletion performed.",
+    "main_campaign": "Local 660-transfer and WAN 396-transfer pilot have not run."
+  },
+  "findings": [],
+  "pending": [
+    "Independent code/Rust/security and cross-author harness/infra content reviews",
+    "Registered local campaign and gate evaluation",
+    "WAN pilot only if local/source gates qualify",
+    "Postmeasurement raw-result/claim review and final publication gate"
+  ]
+}

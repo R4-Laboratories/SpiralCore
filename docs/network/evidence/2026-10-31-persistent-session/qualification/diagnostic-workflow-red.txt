@@ -1,0 +1,28 @@
+
+running 5 tests
+test persistent_session_workflow_dose_is_six_or_only_shard_zero ... FAILED
+test persistent_session_workflow_rejects_unknown_purpose ... FAILED
+test persistent_session_workflow_requires_a_full_secret_without_fallback ... ok
+test persistent_session_workflow_accepts_only_the_pinned_first_attempt ... ok
+test persistent_session_workflow_restricts_every_receiver_url ... ok
+
+failures:
+
+---- persistent_session_workflow_dose_is_six_or_only_shard_zero stdout ----
+
+thread 'persistent_session_workflow_dose_is_six_or_only_shard_zero' (67353346) panicked at crates/spiralcore-transfer/tests/persistent_session_workflow.rs:12:10:
+gate start
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- persistent_session_workflow_rejects_unknown_purpose stdout ----
+
+thread 'persistent_session_workflow_rejects_unknown_purpose' (67353347) panicked at crates/spiralcore-transfer/tests/persistent_session_workflow.rs:133:9:
+assertion failed: !accepted("CONFIG", &[("SPIRALCORE_PERSISTENT_PURPOSE", value)])
+
+
+failures:
+    persistent_session_workflow_dose_is_six_or_only_shard_zero
+    persistent_session_workflow_rejects_unknown_purpose
+
+test result: FAILED. 3 passed; 2 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.35s
+

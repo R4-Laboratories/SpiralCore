@@ -1,0 +1,54 @@
+   Compiling spiralcore-transfer v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer)
+warning: unused import: `Frame`
+ --> examples/receiver_stages.rs:2:37
+  |
+2 | use spiralcore_transfer::protocol::{Frame, Mode, Offer};
+  |                                     ^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+error[E0425]: cannot find function `fixture` in this scope
+  --> examples/receiver_stages.rs:25:25
+   |
+25 |         let mut prior = fixture(65536, 0x4189_83f1_097a_22e1);
+   |                         ^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `next_target` in this scope
+  --> examples/receiver_stages.rs:28:24
+   |
+28 |             let next = next_target(&prior, update).unwrap();
+   |                        ^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `fixture` in this scope
+  --> examples/receiver_stages.rs:45:20
+   |
+45 |         let base = fixture(65536, 0x4189_83f1_097a_22e1);
+   |                    ^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `next_target` in this scope
+  --> examples/receiver_stages.rs:47:26
+   |
+47 |             let target = next_target(&base, update).unwrap();
+   |                          ^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `prepare_frames` in this scope
+  --> examples/receiver_stages.rs:48:26
+   |
+48 |             let frames = prepare_frames(Some(&base), &target, [7;32]).unwrap();
+   |                          ^^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `run_sequence` in this scope
+  --> examples/receiver_stages.rs:75:24
+   |
+75 |             assert_eq!(run_sequence(&root, 4096, mode, &mut log).unwrap(), 11);
+   |                        ^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `run_sequence` in this scope
+   --> examples/receiver_stages.rs:100:17
+    |
+100 |         assert!(run_sequence(&root, 4096, ClockMode::OuterOnly, &mut log).is_err());
+    |                 ^^^^^^^^^^^^ not found in this scope
+
+For more information about this error, try `rustc --explain E0425`.
+warning: `spiralcore-transfer` (example "receiver_stages" test) generated 1 warning
+error: could not compile `spiralcore-transfer` (example "receiver_stages" test) due to 7 previous errors; 1 warning emitted
