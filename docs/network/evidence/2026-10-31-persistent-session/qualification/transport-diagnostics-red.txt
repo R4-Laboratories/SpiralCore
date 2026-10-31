@@ -1,0 +1,51 @@
+   Compiling spiralcore-transfer v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer)
+error[E0425]: cannot find type `ConnectionObservation` in module `wan`
+   --> tests/wan_persistent.rs:430:64
+    |
+430 | type DiagnosticTask = thread::JoinHandle<(Vec<usize>, Vec<wan::ConnectionObservation>)>;
+    |                                                                ^^^^^^^^^^^^^^^^^^^^^ not found in `wan`
+
+error[E0425]: cannot find function `serve_diagnosed_configured` in module `wan`
+   --> tests/wan_persistent.rs:443:14
+    |
+443 |           wan::serve_diagnosed_configured(
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+   ::: src/wan.rs:509:1
+    |
+509 | / pub fn serve_observed_configured(
+510 | |     listener: TcpListener,
+511 | |     endpoint: Endpoint<BenchAuthority>,
+512 | |     token: &str,
+...   |
+515 | |     mut observer: impl FnMut(RequestObservation) -> Result<()>,
+516 | | ) -> Result<()> {
+    | |_______________- similarly named function `serve_observed_configured` defined here
+    |
+help: a function with a similar name exists
+    |
+443 -         wan::serve_diagnosed_configured(
+443 +         wan::serve_observed_configured(
+    |
+
+error[E0599]: no method named `last_transport_failure` found for struct `HttpClient` in the current scope
+   --> tests/wan_persistent.rs:386:30
+    |
+386 |         let failure = client.last_transport_failure().unwrap();
+    |                              ^^^^^^^^^^^^^^^^^^^^^^ method not found in `HttpClient`
+
+error[E0599]: no method named `last_transport_failure` found for struct `HttpClient` in the current scope
+   --> tests/wan_persistent.rs:397:24
+    |
+397 |         assert!(client.last_transport_failure().is_none());
+    |                        ^^^^^^^^^^^^^^^^^^^^^^ method not found in `HttpClient`
+
+error[E0599]: no method named `last_transport_failure` found for struct `HttpClient` in the current scope
+   --> tests/wan_persistent.rs:422:26
+    |
+422 |     let failure = client.last_transport_failure().unwrap();
+    |                          ^^^^^^^^^^^^^^^^^^^^^^ method not found in `HttpClient`
+
+Some errors have detailed explanations: E0425, E0599.
+For more information about an error, try `rustc --explain E0425`.
+error: could not compile `spiralcore-transfer` (test "wan_persistent") due to 5 previous errors

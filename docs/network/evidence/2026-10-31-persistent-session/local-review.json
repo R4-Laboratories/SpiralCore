@@ -1,0 +1,320 @@
+{
+  "schema": "spiralcore.persistent-session.local-review.v1",
+  "verdict": "PASS_LOCAL_RESULTS_AND_REGISTERED_ADVANCEMENT_GATES",
+  "source": "58990cec4d190f815fccd51df9cadf94029ab78f",
+  "binding": {
+    "executable_sha256": "f73aee9270058663ab6ce3d696b0a884100ea78e5ec9e93c62b1195c680ce496",
+    "summary_sha256": "934bdc52c0e3f707136b780bc4eddc7b1f61435b5979c97d851ce268865bb4c8",
+    "contract_sha256": "d9ae975b16245bd1eeaebbf574c73955ebfe08a1ba4b8c800ca6af9b7cc00be7"
+  },
+  "scope": "Read-only independent recomputation from existing JSON; no transfer/build/test/fixture generation, no gate change. Local results only; WAN remains a separate pilot.",
+  "checks": {
+    "sessions": 60,
+    "fits": 40,
+    "constructors_persistent-selector": 20,
+    "seed": 60,
+    "operations": 660,
+    "target": 600,
+    "localized_selector_600": 360,
+    "constructors_fresh-selector": 200,
+    "constructors_whole": 20,
+    "verified": 660,
+    "cleanups": 10,
+    "normalized_frame_pairs": 200,
+    "target_distribution_metrics": 360,
+    "paired_distributions": 28
+  },
+  "accounting": "All 60 complete session totals reproduced from disjoint setup/seed/update/generation records. CPU=sender+receiver, directional body sums, outer inclusion, exact seeded expectations, selected costs and discarded-lower-bound receipts checked. All 28 paired distributions and 360 target metric distributions reproduced.",
+  "gates": [
+    {
+      "large": false,
+      "median_ratio": 0.7684541486044776,
+      "pairs": 10,
+      "passed": true,
+      "registered_gate": true,
+      "threshold": 1.05
+    },
+    {
+      "large": true,
+      "median_ratio": 0.6897717335086377,
+      "pairs": 10,
+      "passed": true,
+      "registered_gate": true,
+      "threshold": 1.05
+    }
+  ],
+  "connections": "All 60 local sessions show one observed connection with request positions 1..11; all 660 responses recorded status200. This establishes local origin reuse only.",
+  "negatives_retained": [
+    {
+      "large": false,
+      "metric": "setup_and_updates_wall_us",
+      "denominator": "fresh-selector",
+      "candidate_wins": 8,
+      "distribution": {
+        "max": 1.1133067396521419,
+        "median": 0.9430190209981417,
+        "min": 0.8303325298637653,
+        "n": 10,
+        "p95": 1.1133067396521419
+      }
+    },
+    {
+      "large": false,
+      "metric": "paid_lifecycle_wall_us",
+      "denominator": "fresh-selector",
+      "candidate_wins": 7,
+      "distribution": {
+        "max": 1.042998385794996,
+        "median": 0.9571554840105754,
+        "min": 0.8291207481642057,
+        "n": 10,
+        "p95": 1.042998385794996
+      }
+    },
+    {
+      "large": false,
+      "metric": "outer_wall_us",
+      "denominator": "fresh-selector",
+      "candidate_wins": 7,
+      "distribution": {
+        "max": 1.042880729406889,
+        "median": 0.9578529236379896,
+        "min": 0.8289718677003284,
+        "n": 10,
+        "p95": 1.042880729406889
+      }
+    },
+    {
+      "large": false,
+      "metric": "paid_lifecycle_wall_us",
+      "denominator": "whole",
+      "candidate_wins": 8,
+      "distribution": {
+        "max": 1.0701760208145277,
+        "median": 0.8970105310727696,
+        "min": 0.5549006208683387,
+        "n": 10,
+        "p95": 1.0701760208145277
+      }
+    },
+    {
+      "large": false,
+      "metric": "outer_wall_us",
+      "denominator": "whole",
+      "candidate_wins": 8,
+      "distribution": {
+        "max": 1.0699788723095207,
+        "median": 0.8977267683943828,
+        "min": 0.5137633200203228,
+        "n": 10,
+        "p95": 1.0699788723095207
+      }
+    },
+    {
+      "large": true,
+      "metric": "setup_and_updates_sender_cpu_us",
+      "denominator": "fresh-selector",
+      "candidate_wins": 9,
+      "distribution": {
+        "max": 1.0258882810632817,
+        "median": 0.6897717335086377,
+        "min": 0.5909389021011597,
+        "n": 10,
+        "p95": 1.0258882810632817
+      }
+    },
+    {
+      "large": true,
+      "metric": "setup_and_updates_wall_us",
+      "denominator": "fresh-selector",
+      "candidate_wins": 7,
+      "distribution": {
+        "max": 1.3114655233932162,
+        "median": 0.8749375181036951,
+        "min": 0.49837750942529613,
+        "n": 10,
+        "p95": 1.3114655233932162
+      }
+    },
+    {
+      "large": true,
+      "metric": "paid_lifecycle_cpu_us",
+      "denominator": "fresh-selector",
+      "candidate_wins": 9,
+      "distribution": {
+        "max": 1.0424684695867483,
+        "median": 0.84723318767926,
+        "min": 0.7333347225116343,
+        "n": 10,
+        "p95": 1.0424684695867483
+      }
+    },
+    {
+      "large": true,
+      "metric": "paid_lifecycle_wall_us",
+      "denominator": "fresh-selector",
+      "candidate_wins": 8,
+      "distribution": {
+        "max": 1.2808079746456915,
+        "median": 0.8771462069417719,
+        "min": 0.514686531884032,
+        "n": 10,
+        "p95": 1.2808079746456915
+      }
+    },
+    {
+      "large": true,
+      "metric": "outer_cpu_subtotal_us",
+      "denominator": "fresh-selector",
+      "candidate_wins": 8,
+      "distribution": {
+        "max": 1.0458828048665803,
+        "median": 0.8517871459244251,
+        "min": 0.7403591523744023,
+        "n": 10,
+        "p95": 1.0458828048665803
+      }
+    },
+    {
+      "large": true,
+      "metric": "outer_wall_us",
+      "denominator": "fresh-selector",
+      "candidate_wins": 8,
+      "distribution": {
+        "max": 1.2815140445126632,
+        "median": 0.8799187617251373,
+        "min": 0.521342736280175,
+        "n": 10,
+        "p95": 1.2815140445126632
+      }
+    },
+    {
+      "large": true,
+      "metric": "setup_and_updates_wall_us",
+      "denominator": "whole",
+      "candidate_wins": 9,
+      "distribution": {
+        "max": 1.1314484929754391,
+        "median": 0.6466125436697384,
+        "min": 0.4119940434793281,
+        "n": 10,
+        "p95": 1.1314484929754391
+      }
+    },
+    {
+      "large": true,
+      "metric": "paid_lifecycle_wall_us",
+      "denominator": "whole",
+      "candidate_wins": 9,
+      "distribution": {
+        "max": 1.1245630046508552,
+        "median": 0.6608274162705954,
+        "min": 0.46323621659702185,
+        "n": 10,
+        "p95": 1.1245630046508552
+      }
+    },
+    {
+      "large": true,
+      "metric": "outer_wall_us",
+      "denominator": "whole",
+      "candidate_wins": 9,
+      "distribution": {
+        "max": 1.1213581233587733,
+        "median": 0.6684759621899214,
+        "min": 0.4607924876036684,
+        "n": 10,
+        "p95": 1.1213581233587733
+      }
+    }
+  ],
+  "limits": [
+    "Wire-frame parity compares retained normalized transcript SHA256 receipts; no new encoding or full-object regeneration performed.",
+    "Exactness uses existing independent stopped-store byte-comparison receipts joined to every planned/acknowledged object, not a new disk readback.",
+    "HTTP-body bytes exclude transport overhead; exchange time is nested; Whole seed is paid only for equal prior state and is not required by Whole.",
+    "No general WAN, energy, RSS or receiver-stage attribution claim follows from this local gate."
+  ],
+  "shards": [
+    {
+      "shard": 0,
+      "plan.json": "a35b8088765d88b458c8dfb6dcfd518b1d1baf0745958ea7aa2f80870763fa97",
+      "paired.jsonl": "ff47ca97dbafa6978131c4d93be65f31fdcc5581240016586f309203b3087af5",
+      "verification.jsonl": "64bbdc41f7a22bf1e2343fb7a477c7059273b41ef22afe799852b2e9d9c5341d",
+      "receiver.jsonl": "ac8f187bffd40421d2d48d2a24d45f751288f1aaa9e3827faa40c81f85a5066d",
+      "cleanup.json": "033840f76cebe5597fea770030f42b19567096a5007d866f9161f733e11167df"
+    },
+    {
+      "shard": 1,
+      "plan.json": "dc69f40a853edc2febef0f5cc23e3270f08ad2eb217347dfb6a7d976f7a988ca",
+      "paired.jsonl": "c4cd89079816357ee69bd55570b0a02e3c9dcbc9ce1ebbaf2a7760e802883139",
+      "verification.jsonl": "3d0413cb1713ffe11e9500be3181e7570d103c38fdb75535bb2df0ecdd9e2dfa",
+      "receiver.jsonl": "b413d634aed5502bc61bdbbf036d75e8d1abef9f7c05929b839c81f20bf7da18",
+      "cleanup.json": "033840f76cebe5597fea770030f42b19567096a5007d866f9161f733e11167df"
+    },
+    {
+      "shard": 2,
+      "plan.json": "d8c54460205888f753829dae477466c6f8a3068e3dd74d9da4e1b543c5f74759",
+      "paired.jsonl": "f17f19eb12ff70a62339ef156212757ac808e14e3d321041c4ba05d4b81997f1",
+      "verification.jsonl": "0ad7e8122e11b54a31d179e73cc3811a6b859a53a141678212ca3c9aee630006",
+      "receiver.jsonl": "710ce3fff218e69891904f4eb88af3990d047220c1a46dafbd2764781982b5f5",
+      "cleanup.json": "033840f76cebe5597fea770030f42b19567096a5007d866f9161f733e11167df"
+    },
+    {
+      "shard": 3,
+      "plan.json": "9d369f9ed3fd7e31f23da9615f398ab968140043d3645099a49d27c9e0db2909",
+      "paired.jsonl": "ca1c3c6fa57f202c5bb67057521e99b786024a9c4428cc6dfa5e8c453b58c79a",
+      "verification.jsonl": "e4e4c690163542665e4671ab3e031a5fd2363122077f3166fa8078391d49d846",
+      "receiver.jsonl": "7e3ade85b65fb192dee4943236273e9e42fdb6f1dd1ce40ff651f57674b4be41",
+      "cleanup.json": "033840f76cebe5597fea770030f42b19567096a5007d866f9161f733e11167df"
+    },
+    {
+      "shard": 4,
+      "plan.json": "5682c9da829ec60b5fd6b88652a2070dffb5e716f8b284cf5c4b1015154b4fe2",
+      "paired.jsonl": "f77ae42336a8bb7a00b8c2736991ec15ef31950a5b7654a80a6a6f7728b28ebb",
+      "verification.jsonl": "03ea67fc0ff4617b8c08a3d0634d459ef5a34fb70f1f4fa72d72459bce584b31",
+      "receiver.jsonl": "0a73c3f9c974a4b9832a939ba96395edc78982b3239e92f2290913ce300f04e0",
+      "cleanup.json": "033840f76cebe5597fea770030f42b19567096a5007d866f9161f733e11167df"
+    },
+    {
+      "shard": 5,
+      "plan.json": "904fed7a1a49a60a8926a28af181f52ace3f0adda0cfd49ad53d134500907e02",
+      "paired.jsonl": "0e50aeac369d9e08bea1623b926248194915f3d9f9ed1da6046907e08a73904b",
+      "verification.jsonl": "ecff392c0b4bf7190d5187448b50ab29884aed0e748f94e06dfcd85f28fccac9",
+      "receiver.jsonl": "e90e1b7c224627144d9a63f5774c9983ddc1fa153392cb40fefe249d1f1042d0",
+      "cleanup.json": "033840f76cebe5597fea770030f42b19567096a5007d866f9161f733e11167df"
+    },
+    {
+      "shard": 6,
+      "plan.json": "0f725838633581049a7e24460b542b08813d5f9097a7428732c24a71d8d05f2c",
+      "paired.jsonl": "64b0230d5b6557fa3b51623633f1915db2108a1c915275a06759d2390d993bfb",
+      "verification.jsonl": "31fc9702f607ef86a2d1ce3a874a827095624f5e379c463b1d78ded467b7d8d8",
+      "receiver.jsonl": "79c710ab027729f8bb71323dd4beab6ac3202d722d4770a5570e9fd128f90f31",
+      "cleanup.json": "033840f76cebe5597fea770030f42b19567096a5007d866f9161f733e11167df"
+    },
+    {
+      "shard": 7,
+      "plan.json": "f9f79f88b72afa5f517198b35249b167edd32979904d227040a48d47d71057a9",
+      "paired.jsonl": "3b6d4153f494930537df2672d0b720046462471f17db4e790a2d068b12273a6a",
+      "verification.jsonl": "d13aab2282b6084c370e47213e25b26b4efc256d9a3e22ee7cc3bb9ee1efdb9b",
+      "receiver.jsonl": "a113fc2e552ca6e0904b37973ba42612210c3f0b68c3f2ec069628c145fbaf50",
+      "cleanup.json": "033840f76cebe5597fea770030f42b19567096a5007d866f9161f733e11167df"
+    },
+    {
+      "shard": 8,
+      "plan.json": "030a7c7b06281f98799bc160638e2459dd5745582c243675c129bdd6b76de477",
+      "paired.jsonl": "d00738040df5c87a2615394ad60e8f90f912248e91ab113110af2927027c45be",
+      "verification.jsonl": "f404215bbb087c62e6624ec7c46b4148e8a106de77ae3bdd031f32aa873628f6",
+      "receiver.jsonl": "86246c5b9c49f638bd18a2bff5531d3850758ebfd89d126e3837e6654e4056d4",
+      "cleanup.json": "033840f76cebe5597fea770030f42b19567096a5007d866f9161f733e11167df"
+    },
+    {
+      "shard": 9,
+      "plan.json": "d30cdb07bb13369c753fa5e6be6aeec43f815372b0c1d9cde3c345366e27aae1",
+      "paired.jsonl": "3c728b438b538b0802d6d696bd57225ab0687decc7038e82b1016a33bc468622",
+      "verification.jsonl": "d866a6f0d57193880d287d308754b3288ddb8950ee5fce03ce3067e53fa5dc6c",
+      "receiver.jsonl": "89b29e7e34ebc29b949f15a7db4207971d9e64c6e5ee1c9816693602aa8f8ff7",
+      "cleanup.json": "033840f76cebe5597fea770030f42b19567096a5007d866f9161f733e11167df"
+    }
+  ],
+  "findings": []
+}

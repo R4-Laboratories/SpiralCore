@@ -1,0 +1,36 @@
+{
+  "schema": "spiralcore.persistent-session.diagnostic-transport-review.v1",
+  "source_commit": "dbdbc709f0311a06efe5ffac43e5b334ca8a1a87",
+  "baseline_commit": "58990cec4d190f815fccd51df9cadf94029ab78f",
+  "verdict": "PASS_SCOPED_CODE_RUST_SECURITY_REVIEW",
+  "reviewer": "selector_measurement",
+  "roles": ["code-reviewer", "rust-reviewer", "security-reviewer"],
+  "scope": "Independent review of the sanitized transport-diagnostic production delta, receiver CLI and its focused transport/CLI tests. Reviewer did not author these changes. Reviewer-authored Measured helper, workflow and workflow tests are explicitly excluded.",
+  "procedure": {
+    "prior_gate": "PASS_PROCEDURAL_READY_FOR_DIAGNOSTIC_CONTENT_REVIEW",
+    "prior_gate_sha256": "6cd4e0d8734020aa8a94aaf561a90f1b89d61a09fb0bb366c1204ce3355e38e9",
+    "claims": "Relevant files are released for review; tracked diff is clean at the reviewed commit.",
+    "execution": "Read-only source review using retained qualification; no tests, builds, experiments, source mutations or measurement reruns."
+  },
+  "source_sha256": {
+    "crates/spiralcore-transfer/src/wan.rs": "5028b35c949b0e27ed79ba9d1f2a91d4540bdd0160528545e44afdd14aba8f71",
+    "crates/spiralcore-transfer/src/bin/spiralcore-wan.rs": "a31cd66380a1ab9d3941f8774f49741f59452ba55fb4b55b448bb9eb1e476cfc",
+    "crates/spiralcore-transfer/tests/wan_persistent.rs": "361c2fa31dc546325675a447134a42f7aecdb71629523a32a41bef9b97599da9",
+    "crates/spiralcore-transfer/tests/wan_diagnostics_cli.rs": "7d7f7078cd0258c0f77e87ea43b84568719a104de6bdcd12e488684b843edd8e"
+  },
+  "confirmed": [
+    "Client failure stages/categories, I/O kinds and timeout phases are fixed local labels. HTTP status is numeric; arbitrary ureq Display/Debug/source strings, URL, credentials, headers and body text are not copied into diagnostics.",
+    "The previous failure is cleared before every exchange, including an encoding rejection. Successful exchanges cannot retain an earlier transport failure. Existing Storage/Integrity/Malformed return classifications remain unchanged.",
+    "Header, idle, body, response and connection-close events retain bounded metadata and fixed reasons. Authorization and scope validation still precede body processing; rejected-request diagnostics expose no scope, bearer token, header or payload content.",
+    "Deadline values, request counting, keep-alive limits, close behavior and automatic-retry policy are unchanged. New observations report the existing failure boundary rather than relaxing it. Diagnostic callbacks are outside Endpoint processing metrics, and callback errors terminate serving.",
+    "The optional --connection-log uses exclusive create_new output before cache creation. Existing output is preserved; ordinary request observations retain their prior stderr stream and behavior. Without the option, existing serving wrappers remain available.",
+    "Focused tests exercise HTTP400/502 sanitization and success reset, truncated response bodies, empty idle versus rejected authorization, partial-header timeout versus EOF, and exclusive CLI log preservation. The retained transport/CLI GREEN reports 12 passed and final Clippy exits zero. The procedural gate additionally records 410 all-target passes with two unchanged historical ignored tests."
+  ],
+  "limits": [
+    "These diagnostics do not establish the cause of the earlier failed WAN attempt. Preserve that attempt as incomplete, and interpret the separately registered diagnostic outcome before changing transport policy.",
+    "An origin-side status or close event is not proof that the client received an ACK. No successful WAN transfer, latency improvement, power saving or FIPS qualification is inferred from this source review.",
+    "Review supports the bounded one-shard diagnostic launch after the separate harness/workflow gate. It does not authorize a full performance rerun or suppress failures."
+  ],
+  "findings": [],
+  "blocking_findings": 0
+}

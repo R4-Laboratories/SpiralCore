@@ -1,0 +1,29 @@
+    Checking spiralcore-transfer v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer)
+error: very complex type used. Consider factoring parts into `type` definitions
+  --> tests/wan_persistent.rs:42:6
+   |
+42 | ) -> (String, thread::JoinHandle<Vec<(usize, usize, usize)>>) {
+   |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.97.0/index.html#type_complexity
+   = note: `-D clippy::type-complexity` implied by `-D warnings`
+   = help: to override `-D warnings` add `#[allow(clippy::type_complexity)]`
+
+error: could not compile `spiralcore-transfer` (test "wan_persistent") due to 1 previous error
+warning: build failed, waiting for other jobs to finish...
+error: the loop variable `position` is used to index `expected_ids`
+   --> examples/support/persistent_session.rs:463:29
+    |
+463 |             for position in 1..=10 {
+    |                             ^^^^^^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.97.0/index.html#needless_range_loop
+    = note: `-D clippy::needless-range-loop` implied by `-D warnings`
+    = help: to override `-D warnings` add `#[allow(clippy::needless_range_loop)]`
+help: consider using an iterator and enumerate()
+    |
+463 -             for position in 1..=10 {
+463 +             for (position, <item>) in expected_ids.iter().enumerate().take(10 + 1).skip(1) {
+    |
+
+error: could not compile `spiralcore-transfer` (example "schema_fitting") due to 1 previous error

@@ -1,0 +1,78 @@
+   Compiling spiralcore-transfer v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer)
+    Finished `release` profile [optimized] target(s) in 12.87s
+     Running tests/persistent_session.rs (/Users/casey.allard/spiralcore/target/aarch64-apple-darwin/release/deps/persistent_session-bc21031eda173095)
+
+running 7 tests
+test input_capacity_limits_precede_network_and_do_not_destroy_known_base ... ok
+test lost_ack_never_promotes_and_explicit_recovery_confirms_committed_target ... ok
+test schema_seed_is_explicit_auxiliary_and_context_change_discards_scoped_state ... ok
+test runtime_session_reuses_fixed_prediction_and_requires_checkpoint_ack ... ok
+test context_changes_and_invalid_ack_invalidate_hints_without_promotion ... ok
+test missing_or_corrupt_base_does_not_retry_and_recovery_cold_sends_explicitly ... ok
+test rolling_owned_base_advances_only_on_ack_and_matches_existing_sender_frames ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.51s
+
+     Running tests/persistent_session_workflow.rs (/Users/casey.allard/spiralcore/target/aarch64-apple-darwin/release/deps/persistent_session_workflow-a0d1bce38a0346f1)
+
+running 3 tests
+test persistent_session_workflow_requires_a_full_secret_without_fallback ... ok
+test persistent_session_workflow_accepts_only_the_pinned_first_attempt ... ok
+test persistent_session_workflow_restricts_every_receiver_url ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.75s
+
+     Running tests/wan.rs (/Users/casey.allard/spiralcore/target/aarch64-apple-darwin/release/deps/wan-83a384a56f9eb2ec)
+
+running 12 tests
+test batch_bounds_and_canonical_framing ... ok
+test client_rejects_unsafe_urls_and_short_capabilities ... ok
+test client_rejects_a_truncated_nonterminal_reply_prefix ... ok
+test authentication_and_scope_fail_before_reading_body ... ok
+test campaign_origin_refuses_to_reuse_a_populated_cache ... ok
+test an_idle_completed_connection_cannot_block_another_client ... ok
+test authenticated_batch_commits_exact_bytes_with_measured_receiver_work ... ok
+test campaign_origin_rejects_ambiguous_warming_policy_before_creating_cache ... ok
+test campaign_origin_rejects_invalid_codec_cache_configuration_before_creating_cache ... ok
+test hostile_http_headers_and_truncation_are_rejected ... ok
+test observed_origin_rejects_failed_logging_and_does_not_observe_unauthorized_requests ... ok
+test codec_cache_cli_is_opt_in_and_records_persistent_hits_without_credentials ... ok
+
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 6.23s
+
+     Running tests/wan_persistent.rs (/Users/casey.allard/spiralcore/target/aarch64-apple-darwin/release/deps/wan_persistent-96036367071eeb5c)
+
+running 6 tests
+test invalid_keep_alive_plan_is_rejected_before_cache_creation ... ok
+test reused_connection_rechecks_auth_and_scope_before_body ... ok
+test idle_connection_releases_serial_origin_without_consuming_a_request ... ok
+test malformed_or_truncated_second_request_closes_connection ... ok
+test connection_cap_and_client_close_are_honored ... ok
+test eleven_transfers_reuse_one_connection_and_reopen_exactly ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.34s
+
+     Running tests/warm_selection.rs (/Users/casey.allard/spiralcore/target/aarch64-apple-darwin/release/deps/warm_selection-252a556d5c4e643c)
+
+running 9 tests
+test raw_ties_and_old_api_results_survive_interleaved_warm_calls_and_limits ... ok
+test verified_base_makes_sparse_an_exact_scored_candidate ... ok
+test all_four_winners_match_exhaustive_selected_frame_bytes ... ok
+test period64_without_short_period_still_uses_actual_rejection_certificate ... ok
+test static_tie_requires_whole_evaluation_or_a_stronger_actual_bound ... ok
+test boundaries_length_changes_and_context_reuse_preserve_exhaustive_minimum ... ok
+test cold_schema_can_win_after_paying_seed_instead_of_greedily_using_sparse ... ok
+test sampled_short_period_repetition_schedules_full_encoding_without_pruning ... ok
+test structural_bounds_skip_only_candidates_that_cannot_win ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.41s
+
+     Running tests/warm_selection_client.rs (/Users/casey.allard/spiralcore/target/aarch64-apple-darwin/release/deps/warm_selection_client-c737d976b899d141)
+
+running 3 tests
+test warm_hints_do_not_authorize_missing_schema_or_revoked_context ... ok
+test unavailable_selected_base_or_transport_failure_never_reoffers ... ok
+test selected_warm_plan_sends_exact_cost_without_reencoding_and_reopens ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.24s
+
