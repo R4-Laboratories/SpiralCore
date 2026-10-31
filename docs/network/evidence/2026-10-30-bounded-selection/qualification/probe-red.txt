@@ -1,0 +1,35 @@
+   Compiling generic-array v0.14.7
+   Compiling typenum v1.20.1
+   Compiling zstd-sys v2.1.2+zstd.1.5.7
+   Compiling sha2-asm v0.6.4
+   Compiling cpufeatures v0.2.17
+   Compiling cfg-if v1.0.5
+   Compiling block-buffer v0.10.4
+   Compiling crypto-common v0.1.7
+   Compiling digest v0.10.7
+   Compiling sha2 v0.10.9
+   Compiling spiralcore-transfer v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer)
+   Compiling zstd-safe v7.3.0
+   Compiling zstd v0.13.3
+    Finished `release` profile [optimized] target(s) in 50.80s
+     Running tests/zstd_whole_probe.rs (/Users/casey.allard/spiralcore/target/aarch64-apple-darwin/release/deps/zstd_whole_probe-1b58b526d511da58)
+
+running 2 tests
+test compressible_whole_winner_keeps_uncapped_frame_after_inconclusive_probe ... ok
+test first_block_excludes_random_one_mib_without_full_whole_candidate ... FAILED
+
+failures:
+
+---- first_block_excludes_random_one_mib_without_full_whole_candidate stdout ----
+
+thread 'first_block_excludes_random_one_mib_without_full_whole_candidate' (66116190) panicked at tests/zstd_whole_probe.rs:46:5:
+Whole must be pruned from its actual first block, not fully encoded: WarmSelection { candidates: [CandidateCost { mode: Raw, target_http_body_bytes: 1051338, setup_http_body_bytes: 0, total_http_body_bytes: 1051338 }, CandidateCost { mode: ZstdWholeV1, target_http_body_bytes: 1051393, setup_http_body_bytes: 0, total_http_body_bytes: 1051393 }, CandidateCost { mode: SparseV1, target_http_body_bytes: 600, setup_http_body_bytes: 0, total_http_body_bytes: 600 }], pruned: [PrunedCandidate { mode: SchemaZstdV1, target_http_body_lower_bound: 547, setup_http_body_bytes: 534, total_http_body_lower_bound: 1081 }], selected_mode: SparseV1, needs_schema_seed: false }
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    first_block_excludes_random_one_mib_without_full_whole_candidate
+
+test result: FAILED. 1 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+error: test failed, to rerun pass `--test zstd_whole_probe`

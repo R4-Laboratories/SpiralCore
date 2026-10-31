@@ -1,0 +1,54 @@
+   Compiling generic-array v0.14.7
+   Compiling typenum v1.20.1
+   Compiling zstd-sys v2.1.2+zstd.1.5.7
+   Compiling sha2-asm v0.6.4
+   Compiling cpufeatures v0.2.17
+   Compiling cfg-if v1.0.5
+   Compiling block-buffer v0.10.4
+   Compiling crypto-common v0.1.7
+   Compiling digest v0.10.7
+   Compiling sha2 v0.10.9
+   Compiling spiralcore-transfer v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer)
+   Compiling zstd-safe v7.3.0
+    Checking zstd v0.13.3
+error: this assertion has a constant value
+  --> tests/zstd_probe_guard.rs:48:13
+   |
+48 |             assert!(cfg!(spiralcore_bundled_zstd_probe));
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: consider moving this into a const block: `const { assert!(..) }`
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.97.0/index.html#assertions_on_constants
+   = note: `-D clippy::assertions-on-constants` implied by `-D warnings`
+   = help: to override `-D warnings` add `#[allow(clippy::assertions_on_constants)]`
+
+error: this assertion has a constant value
+  --> tests/zstd_probe_guard.rs:51:27
+   |
+51 |         Ok("disabled") => assert!(!cfg!(spiralcore_bundled_zstd_probe)),
+   |                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: consider moving this into a const block: `const { assert!(..) }`
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.97.0/index.html#assertions_on_constants
+
+error: could not compile `spiralcore-transfer` (test "zstd_probe_guard") due to 2 previous errors
+warning: build failed, waiting for other jobs to finish...
+error: this expression creates a reference which is immediately dereferenced by the compiler
+    --> examples/support/warm_object.rs:1456:40
+     |
+1456 |     write_row(&mut fresh(&plan_path)?, &p)?;
+     |                                        ^^ help: change this to: `p`
+     |
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.97.0/index.html#needless_borrow
+     = note: `-D clippy::needless-borrow` implied by `-D warnings`
+     = help: to override `-D warnings` add `#[allow(clippy::needless_borrow)]`
+
+error: this expression creates a reference which is immediately dereferenced by the compiler
+    --> examples/support/warm_object.rs:1464:50
+     |
+1464 |         .arg(format!("{}-local-receiver", prefix(&p)))
+     |                                                  ^^ help: change this to: `p`
+     |
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.97.0/index.html#needless_borrow
+
+error: could not compile `spiralcore-transfer` (example "schema_fitting") due to 2 previous errors

@@ -48,6 +48,12 @@ closed. Preserve the existing workspace allowance and drop a context exceeding
 it. No probe runs at/below128 KiB or when the static bound already excludes Whole
 (as on the registered16 MiB sparse fixture).
 
+Before starting the probe, substitute the largest legal first-block payload,
+128 KiB, into the same certificate formula. If even that maximum certificate
+cannot exclude Whole under the tie rule, skip the probe and use full encoding.
+This avoids duplicate first-block work on the registered 1 MiB cold Raw path
+and on sufficiently large sparse residuals, without changing candidate selection.
+
 ## Pinned implementation argument
 
 The inspected dependency is `zstd-safe7.3.0` / `zstd-sys2.1.2+zstd.1.5.7`, whose
@@ -86,6 +92,10 @@ starts with `spiralcore.zstd.bundled-source.v1\0`, then sorted package-relative
 UTF8 path lengthLE-u64/path/content lengthLE-u64/content. No native source,
 experimental zstd feature or protocol toggle is added; the current codec
 parameter profile remains a prerequisite.
+The direct dependency enables its `vendored` feature so a unified `pkg-config`
+feature cannot silently choose a foreign library. An explicit pkg-config
+environment override still disables the optimization. Qualification separately
+requires and executes both enabled and disabled paths.
 
 ## Acceptance
 
