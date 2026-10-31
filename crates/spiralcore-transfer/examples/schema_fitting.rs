@@ -530,7 +530,10 @@ fn summarize(rows: &[Value]) -> Result<Value> {
 }
 fn command() -> Result<()> {
     let args: Vec<_> = std::env::args().collect();
-    if args.get(1).is_some_and(|s| s.starts_with("persistent-")) {
+    if args
+        .get(1)
+        .is_some_and(|s| s.starts_with("persistent-") || s.starts_with("unrelated-"))
+    {
         return persistent_session::command(&args);
     }
     if args.get(1).is_some_and(|s| {

@@ -1,0 +1,64 @@
+# SC-OPT-019: unrelated-object sender CPU
+
+The production change removes payload allocation for a provably losing
+whole-literal sparse recipe and accelerates the schema encoder's two exact
+newline scans. Sparse scans and useful COPY candidates, schema formatting,
+compression settings, byte-cost selection, authentication, decoding and durable
+commit remain unchanged. The direct `memchr = 2.8.3` dependency uses the package
+already present in the lockfile; no package version was upgraded.
+
+The production baseline is `56e15db5c77fe2ecdc03476d8e09664cd4213fd1`.
+The [measurement contract](evidence/2026-10-31-unrelated-cpu/measurement-contract.md)
+fixes the mixed workload, byte/frame parity, CPU gates and bounded WAN dose.
+The comparison uses the same new harness with the four explicit production
+files overlaid from that baseline. Both selector arms use persistent WarmSession;
+Whole uses one equally configured prepared zstd encoder.
+
+## Independent stage diagnostics
+
+Each diagnostic retained 72 observations: three fixed seeds, two sizes,
+localized and unrelated inputs, and six independently executed public calls.
+Every codec output passed post-timer exact reconstruction; selector plans
+passed real local endpoint transfer and closed/reopened byte comparison.
+These are separate unpaired diagnostic runs, not randomized transfer trials.
+Do not add the stage clocks: schema-zstd and selector calls repeat other work.
+
+Unrelated-input median process CPU, milliseconds:
+
+| Size | Stage | Baseline | Delta-only | Combined |
+|---|---|---:|---:|---:|
+| 1 MiB | Sparse encoding | 0.258 | 0.172 | 0.169 |
+| 16 MiB | Sparse encoding | 5.268 | 2.656 | 2.633 |
+| 1 MiB | Schema intermediate | 1.005 | — | 0.355 |
+| 16 MiB | Schema intermediate | 15.994 | — | 5.586 |
+| 1 MiB | Complete public warm preparation | 5.687 | 11.132 | 4.589 |
+| 16 MiB | Complete public warm preparation | 124.473 | 141.411 | 96.103 |
+
+The delta-only whole-selector diagnostic regressed despite its lower isolated
+sparse cost. All observations, including first-use and negative results, remain
+in [baseline](evidence/2026-10-31-unrelated-cpu/baseline-profile.jsonl),
+[delta-only](evidence/2026-10-31-unrelated-cpu/delta-profile.jsonl) and
+[combined](evidence/2026-10-31-unrelated-cpu/combined-profile.jsonl) raw files.
+The baseline diagnostic's caller-supplied revision was mistyped. Its original
+registration is unchanged; the [correction](evidence/2026-10-31-unrelated-cpu/profile-provenance-correction.json)
+records the verified source revision, supported by all nine embedded source
+hashes. No timing rows were edited or rerun for that metadata error.
+
+## Qualification
+
+The allocation regression first observed four payload-sized allocations for a
+131,073-byte uniformly unrelated pair. The optimized encoder makes zero such
+allocations. Existing immutable oracles compare complete sparse recipes,
+SCVAL001 streams and compressed-schema bytes. Added checks cover borrowed LF
+slice offsets, empty/adjacent/trailing lines, binary data, scan boundaries and
+the unchanged record-count cutoff.
+
+Focused LLVM coverage on the changed production files is 97.33% of delta lines
+and 96.91% of schema lines, with 100% of functions in each. Region coverage is
+96.25% and 96.96%. These are focused file metrics; branch/MC/DC and whole-project
+coverage are not claimed. The first schema qualification command named a
+nonexistent `schema_zstd` test target and failed before compilation; the
+corrected command used `schema_reuse`. Both receipts are retained.
+
+Mixed local and WAN transfer results are pending. No end-to-end, WAN or energy
+improvement is established by the diagnostics alone.

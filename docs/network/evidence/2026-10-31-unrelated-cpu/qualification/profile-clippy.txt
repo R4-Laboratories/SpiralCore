@@ -1,0 +1,24 @@
+   Compiling spiralcore-transfer v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer)
+error: large size difference between variants
+   --> examples/unrelated_profile.rs:141:1
+    |
+141 | / enum Output {
+142 | |     Delta(Option<delta::Recipe>),
+    | |     ---------------------------- the second-largest variant contains at least 32 bytes
+143 | |     Bytes(Vec<u8>),
+144 | |     Identity(Id),
+145 | |     Selector(Option<schema_selection::PreparedWarmTransfer>),
+    | |     -------------------------------------------------------- the largest variant contains at least 240 bytes
+146 | | }
+    | |_^ the entire enum is at least 240 bytes
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.97.0/index.html#large_enum_variant
+    = note: `-D clippy::large-enum-variant` implied by `-D warnings`
+    = help: to override `-D warnings` add `#[allow(clippy::large_enum_variant)]`
+help: consider boxing the large fields or introducing indirection in some other way to reduce the total size of the enum
+    |
+145 -     Selector(Option<schema_selection::PreparedWarmTransfer>),
+145 +     Selector(Box<Option<schema_selection::PreparedWarmTransfer>>),
+    |
+
+error: could not compile `spiralcore-transfer` (example "unrelated_profile") due to 1 previous error

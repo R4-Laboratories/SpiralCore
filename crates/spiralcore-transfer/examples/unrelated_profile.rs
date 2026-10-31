@@ -138,6 +138,9 @@ impl Context {
         })
     }
 }
+// Preserve the inline result used by the retained profiles. Boxing the selector
+// would add an allocation inside encode's measured interval and alter the work.
+#[allow(clippy::large_enum_variant)]
 enum Output {
     Delta(Option<delta::Recipe>),
     Bytes(Vec<u8>),
