@@ -1,0 +1,97 @@
+{
+  "schema": "spiralcore.procedural-review.v1",
+  "milestone": "SC-OPT-019",
+  "phase": 2,
+  "verdict": "PASS",
+  "blocking_findings": [],
+  "source_revision": "f662f5a54886365de20be17e6ef8219d94157362",
+  "prior_procedural_receipt_sha256": "d459dbb0da8863cf4ae13d7cc3b53a711ab601f9de26f39c8c4211095a2cf587",
+  "scope": "Incremental procedural audit only: amended schema implementation, its three focused tests, fresh qualification and source-derived baseline freeze. Prior unchanged source/harness review remains separate.",
+  "ordering": [
+    "Phase-1 local campaign retained with 700 exact operations and advance_to_wan=false; its 16 MiB replacement ratio 0.9599936918364103 misses the original <=0.95 threshold.",
+    "Design/phase-2 contract commits 9f7e3ee and 9bc8dfc precede source f662f5a. The old campaign was force-staged despite the general local-directory ignore rule.",
+    "Observed missing possible_record/record_count RED precedes implementation; fresh focused GREEN and Clippy precede candidate/baseline freeze.",
+    "Fresh phase-2 coverage uses current executable/source/profile manifests; these hashes independently match after baseline overlay restoration. No performance retry or WAN run has occurred under phase 2."
+  ],
+  "qualification": {
+    "expected_red_exit": 101,
+    "focused_green": {
+      "exit": 0,
+      "passed": 135,
+      "failed": 0,
+      "targets": 9,
+      "harness_tests_included": 53
+    },
+    "all_target_clippy_exit": 0,
+    "freeze_exit": 0,
+    "identity_parity": true,
+    "candidate_restored": true,
+    "focused_instrumented_tests": {
+      "exit": 0,
+      "passed": 75,
+      "failed": 0,
+      "targets": 8
+    },
+    "coverage": {
+      "schema.rs": {
+        "lines": [
+          549,
+          566
+        ],
+        "functions": [
+          51,
+          51
+        ],
+        "regions": [
+          951,
+          980
+        ]
+      },
+      "delta.rs": {
+        "lines": [
+          255,
+          262
+        ],
+        "functions": [
+          17,
+          17
+        ],
+        "regions": [
+          539,
+          560
+        ]
+      },
+      "branches": "Not collected",
+      "mcdc": "Not collected"
+    },
+    "earlier_all_targets": "428 passed, 0 failed, 2 historical ignored on the prior source; not represented as a new phase-2 full-suite run."
+  },
+  "phase1_preservation": {
+    "summary_sha256": "6453a9b9d8d10726a0353589ee20c365ad54e4eabf7a6847970519cd8acaaf12",
+    "operations": 700,
+    "discarded": 0,
+    "advance_to_wan": false,
+    "pooling": "Forbidden; phase-2 observations must use a separate registered output directory and the original gates."
+  },
+  "independence": "This is procedural review of retained outcomes, not independent approval of tests authored by this reviewer. Parent reviewed those test semantics; architect code/Rust/security delta review follows PASS.",
+  "reviewer_new_tests_builds_measurements": false,
+  "remaining": "Independent phase-2 source review, then one registered changed-source local campaign. No phase-2 performance acceptance is implied.",
+  "evidence_sha256": {
+    "phase2-contract.md": "626d60dfc293c69a6596a8512bf5e43ee40dddccbc9eafc31319df5269e669cc",
+    "qualification/phase2-red.txt": "1a5487455e62989f5f3f5fe0ef1d63676c35aea701e312f1db1fe6de69d8b290",
+    "qualification/phase2-red.exit": "39b8dc3fc8b44765c8e6f1adee04c5b465e555ab791cc42d0d9e810d5b64297c",
+    "qualification/phase2-green.txt": "6813e2f5d7a93daf2d7cc064bffda8cad42f0d9a01497f0d3bf4fda75e0f6671",
+    "qualification/phase2-green.exit": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+    "qualification/phase2-clippy.txt": "64f83e8279a1c5e2f94d3af6b5565d49f7b2b16af4676c0cb183fea7a2e29311",
+    "qualification/phase2-clippy.exit": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+    "qualification/phase2-freeze.exit": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+    "qualification/phase2-coverage.exit": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+    "qualification/phase2/coverage-command.sh": "233e5161586696baec8fae707be06066f78ce779c104397ed6879bf19bbfbcca",
+    "qualification/phase2/coverage-changed-files.json": "041d0703d78d8d0d83e116c1c06852a55344a00d9743656ab94d745a3a2e06c1",
+    "qualification/phase2/coverage-objects.sha256": "7ccbd3bf306324b6f7a5a2000e3411d1f13b66758427ed43fd785a96170ca926",
+    "qualification/phase2/coverage-sources-profiles.sha256": "71055b533625ca0084f56446154ccda58bb6c6d7c067bbee9a7aaca0770e4d1d",
+    "qualification/frozen-phase2/binaries.sha256": "4a5d0c0536c1528c87e303239d26f8f839b77d05b902a1a69b1d94ebe1367980",
+    "qualification/frozen-phase2/source-files.sha256": "3e07155921eae0f214824931138b72ffd09a6f3c282e50d3ed8446535d398fbc",
+    "qualification/frozen-phase2/source-after-build.txt": "dfcb6592de36ecacbdb7bc28dee9bc33c3219843068bf929969aadd90c5f6a73"
+  }
+}

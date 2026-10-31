@@ -85,3 +85,9 @@ Freeze new candidate source/binaries with the same four-file original baseline.
 Run a separately named 700-operation local campaign under unchanged fixtures,
 clocks and gates; preserve phase 1 independently. No WAN run follows unless the
 new candidate passes. No receiver, transport or codec-selection redesign.
+
+The original acceptance path remains blocked after phase 2. Execute only the
+separately registered [unqualified-candidate WAN diagnostic](../network/evidence/2026-10-31-unrelated-cpu/wan-diagnostic-contract.md)
+under the user's existing WAN-measurement authorization. Preserve both failed
+local campaigns and all original gates; label the workflow registration/results
+diagnostic and never promote this run into acceptance. No further core iteration.

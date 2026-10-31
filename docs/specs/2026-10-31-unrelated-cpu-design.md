@@ -216,3 +216,9 @@ registered phase-2 local campaign with the same ten-pair mixed sequence, 700
 operations and original gates; do not pool phase-1 samples or rerun unchanged
 code to erase its failure. Only a passing phase-2 result may release the original
 six-pair/420-operation WAN pilot. The four-file baseline overlay stays unchanged.
+
+After the second retained local failure, the original acceptance pilot remains
+blocked. A [separate prospective WAN diagnostic](../network/evidence/2026-10-31-unrelated-cpu/wan-diagnostic-contract.md)
+fulfills the user's explicit WAN-measurement request without changing either
+failed gate or qualifying the candidate. It has its own diagnostic designation,
+one fixed dose, no retries/pooling and no further production optimization.

@@ -1,0 +1,26 @@
+   Compiling spiralcore-transfer v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer)
+    Finished `release` profile [optimized] target(s) in 8.76s
+     Running tests/unrelated_cpu_workflow.rs (/Users/casey.allard/spiralcore/target/aarch64-apple-darwin/release/deps/unrelated_cpu_workflow-0bddd22a96d73f50)
+
+running 5 tests
+test unrelated_workflow_pins_overlay_restore_and_always_retains_failures ... ok
+test unrelated_workflow_fixes_one_six_shard_pilot_and_storage_cap ... FAILED
+test unrelated_workflow_requires_the_complete_capability ... ok
+test unrelated_workflow_requires_exact_source_branch_and_first_attempt ... ok
+test unrelated_workflow_restricts_all_six_receiver_origins ... ok
+
+failures:
+
+---- unrelated_workflow_fixes_one_six_shard_pilot_and_storage_cap stdout ----
+
+thread 'unrelated_workflow_fixes_one_six_shard_pilot_and_storage_cap' (68225433) panicked at tests/unrelated_cpu_workflow.rs:145:5:
+assertion failed: source.contains("local_advancement:false")
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    unrelated_workflow_fixes_one_six_shard_pilot_and_storage_cap
+
+test result: FAILED. 4 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.23s
+
+error: test failed, to rerun pass `--test unrelated_cpu_workflow`

@@ -141,6 +141,11 @@ fn unrelated_workflow_fixes_one_six_shard_pilot_and_storage_cap() {
         String::from_utf8(output.stdout).unwrap(),
         "0 1 2 3 4 5\n6\n70\n420\n805306368\n"
     );
+    let source = workflow();
+    assert!(source.contains("local_advancement:false"));
+    assert!(source.contains(
+        "designation:\"one six-pair WAN diagnostic; local gates failed; not accepted\""
+    ));
 }
 
 #[test]

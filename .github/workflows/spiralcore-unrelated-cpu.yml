@@ -1,4 +1,4 @@
-name: SpiralCore unrelated-object CPU WAN pilot
+name: SpiralCore unrelated-object CPU WAN diagnostic (unqualified candidate)
 on:
   push:
     branches: [codex/spiralcore-unrelated-cpu]
@@ -72,7 +72,8 @@ jobs:
               shards:6,trials_per_size:$trials,sizes:[1048576,16777216],sessions:36,targets:360,base_seeds:36,
               max_artifact_seeds:24,max_total_transfers:$operations,max_transfers_per_shard:$per_shard,
               max_store_bytes:$store_bytes,updates_per_session:10,
-              designation:"one six-pair WAN pilot after local gates; not thirty-pair acceptance",
+              purpose:"unqualified-candidate-wan-diagnostic",local_advancement:false,performance_acceptance:false,
+              designation:"one six-pair WAN diagnostic; local gates failed; not accepted",
               byte_scope:"request and response HTTP bodies; not full-path packet bytes"}' \
             > unrelated-cpu/registration.json
       - name: Install compiler and record the Linux sender
@@ -147,7 +148,7 @@ jobs:
               "unrelated-cpu/plan-$shard.json" > "unrelated-cpu/plan-$shard-qualified.txt"
           done
           sha256sum unrelated-cpu/plan-*.json > unrelated-cpu/plans.sha256
-      - name: Run the one registered pilot sequentially without retries
+      - name: Run the one registered diagnostic sequentially without retries
         timeout-minutes: 20
         env:
           SPIRALCORE_WAN_TOKEN: ${{ secrets.SPIRALCORE_UNRELATED_TOKEN }}
@@ -182,7 +183,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: spiralcore-unrelated-cpu-${{ github.run_id }}-${{ github.sha }}
+          name: spiralcore-unrelated-cpu-diagnostic-${{ github.run_id }}-${{ github.sha }}
           path: unrelated-cpu/
           if-no-files-found: error
           retention-days: 30

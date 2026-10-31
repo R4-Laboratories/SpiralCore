@@ -1,8 +1,9 @@
 # SC-OPT-019: unrelated-object sender CPU
 
 The production change removes payload allocation for a provably losing
-whole-literal sparse recipe and accelerates the schema encoder's two exact
-newline scans. Sparse scans and useful COPY candidates, schema formatting,
+whole-literal sparse recipe, accelerates exact schema record scanning/counting,
+and rejects impossible JSON-object matches before UTF-8 parsing. Sparse scans
+and useful COPY candidates, schema formatting,
 compression settings, byte-cost selection, authentication, decoding and durable
 commit remain unchanged. The direct `memchr = 2.8.3` dependency uses the package
 already present in the lockfile; no package version was upgraded.
@@ -84,4 +85,36 @@ trial ratios; they are not ratios of separately aggregated medians.
 The [phase-2 contract](evidence/2026-10-31-unrelated-cpu/phase2-contract.md)
 registers two additional exact schema changes and a separate campaign under the
 same thresholds. Phase 1 is not discarded, relabelled or pooled with phase 2.
-WAN remains unrun pending a passing local gate. No energy saving is claimed.
+No energy saving is claimed.
+
+## Phase 2 mixed local comparison
+
+The additional exact prefix preflight and chunked count were tested in a
+separate 700-operation campaign at source
+`f662f5a54886365de20be17e6ef8219d94157362`. All 700 objects again reopened
+exactly, baseline/candidate normalized frame hashes and body costs matched,
+and the localized-random exchanges stayed at 600 bytes. All ten stores were
+removed after verification. [Complete phase-2 records and summary](evidence/2026-10-31-unrelated-cpu/local-phase2/summary.json).
+
+| Paired sender CPU, candidate/baseline median ratio | 1 MiB | 16 MiB | Gate |
+|---|---:|---:|---|
+| Unrelated replacement | 0.836511 | **0.960263** | At most 0.95 |
+| Sum of the two localized-random updates | 1.034534 | 0.999395 | At most 1.05 |
+| Setup, schema publication and ten updates | 0.900670 | 0.916298 | At most 1.05 |
+
+**Phase 2 also failed advancement.** Its small replacement paired CPU gain is
+16.35%; the large gain is 3.97%, below the unchanged 5% gate. Both warm and
+mixed CPU controls pass. This is not a reason to discard phase 1 or repeat
+phase 2 until it passes. Local large-replacement median completion also worsened
+from 152.914 to 175.134 ms; sender CPU improvement does not establish a latency
+win. Prepared Whole remains cheaper for unrelated data.
+
+## Separately registered WAN diagnostic
+
+The user's requested before/after WAN comparison remains useful for measuring
+this limitation. The [prospective diagnostic amendment](evidence/2026-10-31-unrelated-cpu/wan-diagnostic-contract.md)
+therefore registers one six-pair, 420-operation diagnostic of the unqualified
+phase-2 build. This explicitly changes the earlier stop-before-WAN plan without
+lowering the local gate. Registration states `local_advancement:false` and
+`performance_acceptance:false`. Results cannot retroactively qualify either
+local campaign and will not be pooled with them. WAN results are pending.
