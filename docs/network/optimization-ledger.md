@@ -21,6 +21,17 @@ remain tied to their measured source; later results do not overwrite earlier neg
 
 ## Measured object sizes
 
+SC-OPT-016 adds a source-qualified first-block Whole rejection certificate while
+retaining the full encoder when inconclusive. At WAN source
+`8e4b87329ea2a72ad5a408e39869bb36285befe8`, all 360 objects reopen exactly and
+all sixty old/new winning-frame pairs agree. Small-update sender CPU improves
+28.0% by the median paired ratio (30/30 wins), completion 9.0% (20/30 wins),
+with identical 600-byte updates. The 16 MiB path is an unchanged control, not a
+new large-object compute win. Compressible preparation costs 10.15% more CPU;
+small paid lifecycle completion versus the old selector and CPU versus Whole
+do not improve by their paired medians. [Full result](bounded-selection-results-2026-10-30.md),
+[raw evidence and review](evidence/2026-10-30-bounded-selection/README.md).
+
 SC-OPT-015 integrates verified-base Sparse into the prepared selector and consumes
 the winning plan without reencoding or rehashing. At measured source
 `8bf2d85f6ece94013e66f7df9b6e1d6cddc8c43c`, all 360 WAN seeds/updates reopened

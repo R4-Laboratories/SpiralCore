@@ -13,6 +13,8 @@ hardware-sha256 = ["sha2/asm"]
 [dependencies]
 sha2 = "0.10.9"
 zstd = "0.13"
+# Direct dependency supplies bundled source metadata to the proof guard.
+zstd-sys = { version = "=2.1.2", default-features = false, features = ["vendored"] }
 uor-r4-object-store = { path = "../uor-r4-object-store" }
 cpu-time = "1.0"
 httparse = "1.10"
@@ -24,3 +26,6 @@ ureq = { version = "3", default-features = false, features = ["rustls"] }
 url = "2.5"
 
 [dev-dependencies]
+
+[build-dependencies]
+sha2 = "0.10.9"

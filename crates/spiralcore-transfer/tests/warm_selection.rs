@@ -340,6 +340,9 @@ fn structural_bounds_skip_only_candidates_that_cannot_win() {
                     whole.target_http_body_lower_bound,
                     expected_bound + u64::from(probe) * 40
                 );
+            } else if zstd_whole::first_block_probe_available() {
+                assert!(r.pruned.iter().any(|p| p.mode == Mode::ZstdWholeV1
+                    && p.target_http_body_lower_bound > 600 + u64::from(probe) * 40));
             } else {
                 assert!(r.candidates.iter().any(|c| c.mode == Mode::ZstdWholeV1));
             }
@@ -359,7 +362,7 @@ fn structural_bounds_skip_only_candidates_that_cannot_win() {
 }
 
 #[test]
-fn earlier_whole_priority_is_evaluated_when_its_bound_ties_sparse() {
+fn static_tie_requires_whole_evaluation_or_a_stronger_actual_bound() {
     let len = 19 * 131072;
     let base = random(len);
     let mut target = base.clone();
@@ -379,8 +382,17 @@ fn earlier_whole_priority_is_evaluated_when_its_bound_ties_sparse() {
             .target_http_body_bytes,
         569
     );
-    assert!(r.candidates.iter().any(|c| c.mode == Mode::ZstdWholeV1));
-    assert!(!r.pruned.iter().any(|p| p.mode == Mode::ZstdWholeV1));
+    if zstd_whole::first_block_probe_available() {
+        let bound = r
+            .pruned
+            .iter()
+            .find(|p| p.mode == Mode::ZstdWholeV1)
+            .unwrap();
+        assert!(bound.target_http_body_lower_bound > 569);
+    } else {
+        assert!(r.candidates.iter().any(|c| c.mode == Mode::ZstdWholeV1));
+        assert!(!r.pruned.iter().any(|p| p.mode == Mode::ZstdWholeV1));
+    }
     check_receipt(
         r,
         &exhaustive(&artifact, Some(&base), &target, false, false),

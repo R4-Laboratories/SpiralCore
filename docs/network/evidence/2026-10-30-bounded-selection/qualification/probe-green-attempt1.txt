@@ -1,0 +1,15 @@
+   Compiling spiralcore-transfer v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer)
+error[E0689]: can't call method `div_ceil` on ambiguous numeric type `{integer}`
+   --> src/schema_selection.rs:360:54
+    |
+360 |         let raw = 368 + length as u64 + 133 * length.div_ceil(MAX_CHUNK) as u64;
+    |                                                      ^^^^^^^^
+    |
+help: you must specify a type for this binding, like `i32`
+    |
+359 |         let length: i32 = 1 << 20;
+    |                   +++++
+
+For more information about this error, try `rustc --explain E0689`.
+error: could not compile `spiralcore-transfer` (lib test) due to 1 previous error
+warning: build failed, waiting for other jobs to finish...

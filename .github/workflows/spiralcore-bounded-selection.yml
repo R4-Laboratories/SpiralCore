@@ -1,0 +1,152 @@
+name: SpiralCore bounded first-block selection WAN
+on:
+  push:
+    branches: [codex/spiralcore-bounded-selection]
+permissions:
+  contents: read
+concurrency:
+  group: spiralcore-bounded-selection
+  cancel-in-progress: false
+jobs:
+  measure:
+    if: github.ref == 'refs/heads/codex/spiralcore-bounded-selection' && github.sha == vars.SPIRALCORE_BOUNDED_SOURCE && github.run_attempt == 1
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    env:
+      CARGO_TARGET_DIR: ${{ github.workspace }}/target
+      CARGO_INCREMENTAL: 0
+      SPIRALCORE_BOUNDED_SOURCE: ${{ vars.SPIRALCORE_BOUNDED_SOURCE }}
+      SPIRALCORE_BOUNDED_RUN: ${{ vars.SPIRALCORE_BOUNDED_RUN }}
+      BOUNDED_RECEIVER_SHA: ${{ vars.SPIRALCORE_BOUNDED_RECEIVER_SHA256 }}
+      BOUNDED_URL_0: ${{ vars.SPIRALCORE_BOUNDED_URL_0 }}
+      BOUNDED_URL_1: ${{ vars.SPIRALCORE_BOUNDED_URL_1 }}
+      BOUNDED_URL_2: ${{ vars.SPIRALCORE_BOUNDED_URL_2 }}
+      BOUNDED_URL_3: ${{ vars.SPIRALCORE_BOUNDED_URL_3 }}
+      BOUNDED_URL_4: ${{ vars.SPIRALCORE_BOUNDED_URL_4 }}
+      BOUNDED_URL_5: ${{ vars.SPIRALCORE_BOUNDED_URL_5 }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Validate source and bounded receiver configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir bounded-selection
+          # BEGIN CONFIG GATE
+          [[ "$GITHUB_REF" == refs/heads/codex/spiralcore-bounded-selection ]] || exit 1
+          [[ "$GITHUB_RUN_ATTEMPT" == 1 ]] || exit 1
+          [[ "$GITHUB_SHA" =~ ^[0-9a-f]{40}$ && "$GITHUB_SHA" == "$SPIRALCORE_BOUNDED_SOURCE" ]] || exit 1
+          [[ "$SPIRALCORE_BOUNDED_RUN" =~ ^[0-9a-f]{64}$ ]] || exit 1
+          [[ "$BOUNDED_RECEIVER_SHA" =~ ^[0-9a-f]{64}$ ]] || exit 1
+          for key in BOUNDED_URL_0 BOUNDED_URL_1 BOUNDED_URL_2 BOUNDED_URL_3 BOUNDED_URL_4 BOUNDED_URL_5; do
+            url="${!key}"
+            [[ "$url" =~ ^https://[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.trycloudflare\.com/?$ ]] || exit 1
+          done
+          # END CONFIG GATE
+          [[ "$(git rev-parse HEAD)" == "$GITHUB_SHA" ]] || exit 1
+          [[ ! -e "$CARGO_TARGET_DIR" ]] || exit 1
+          [[ -z "${RUSTFLAGS:-}${CARGO_ENCODED_RUSTFLAGS:-}${RUSTC_WRAPPER:-}${RUSTC_WORKSPACE_WRAPPER:-}${CARGO_BUILD_TARGET:-}" ]] || exit 1
+          git diff --exit-code > bounded-selection/source-clean-before.log
+          git rev-parse HEAD > bounded-selection/source-revision.txt
+          jq -n --arg source "$GITHUB_SHA" --arg run "$SPIRALCORE_BOUNDED_RUN" \
+            --arg receiver "$BOUNDED_RECEIVER_SHA" --arg workflow_run "$GITHUB_RUN_ID" \
+            --arg url0 "$BOUNDED_URL_0" --arg url1 "$BOUNDED_URL_1" --arg url2 "$BOUNDED_URL_2" \
+            --arg url3 "$BOUNDED_URL_3" --arg url4 "$BOUNDED_URL_4" --arg url5 "$BOUNDED_URL_5" \
+            '{schema:"spiralcore.bounded-selection.workflow.v1",source:$source,run:$run,
+              receiver_executable_sha256_operator_supplied:$receiver,
+              urls:[$url0,$url1,$url2,$url3,$url4,$url5],github_run_id:$workflow_run,github_run_attempt:1,
+              shards:6,trials_per_size:30,sessions:180,targets:180,seeds:180,total_transfers:360,
+              byte_scope:"request and response HTTP bodies; not full-path packet bytes"}' \
+            > bounded-selection/registration.json
+      - name: Install compiler and record the Linux sender
+        shell: bash
+        run: |
+          set -euo pipefail
+          rustup toolchain install 1.97.1 --profile minimal --component clippy 2>&1 | tee bounded-selection/toolchain-install.log
+          rustc +1.97.1 -vV > bounded-selection/rustc.txt
+          [[ "$(sed -n 's/^host: //p' bounded-selection/rustc.txt)" == x86_64-unknown-linux-gnu ]] || exit 1
+          uname -a > bounded-selection/platform.txt
+          lscpu -J > bounded-selection/cpu.json
+          cargo +1.97.1 tree --locked --manifest-path crates/spiralcore-transfer/Cargo.toml -e features > bounded-selection/features.txt
+          git ls-files -z -- crates/spiralcore-transfer crates/uor-r4-object-store/src \
+            .github/workflows/spiralcore-bounded-selection.yml \
+            | sort -z | xargs -0 sha256sum > bounded-selection/source-files.sha256
+      - name: Qualify candidate and freeze matched baseline and candidate senders
+        timeout-minutes: 10
+        shell: bash
+        run: |
+          set -euo pipefail
+          SPIRALCORE_EXPECT_ZSTD_PROBE=enabled cargo +1.97.1 test --release --locked --manifest-path crates/spiralcore-transfer/Cargo.toml --all-targets 2>&1 | tee bounded-selection/candidate-tests.log
+          cargo +1.97.1 clippy --locked --manifest-path crates/spiralcore-transfer/Cargo.toml --all-targets -- -D warnings 2>&1 | tee bounded-selection/clippy.log
+          cargo +1.97.1 build --release --locked --manifest-path crates/spiralcore-transfer/Cargo.toml --example schema_fitting 2>&1 | tee bounded-selection/candidate-build.log
+          mkdir bounded-selection/frozen
+          cp "$CARGO_TARGET_DIR/release/examples/schema_fitting" bounded-selection/frozen/candidate
+          warm_id=crates/spiralcore-transfer
+          baseline=4234591e25b4ca87db6a4670bdf407f48a581575
+          printf '%s\n' "$baseline" > bounded-selection/baseline-production-revision.txt
+          for file in src/zstd_whole.rs src/schema_selection.rs; do
+            git show "$baseline:$warm_id/$file" > "$warm_id/$file"
+          done
+          sha256sum "$warm_id/src/zstd_whole.rs" "$warm_id/src/schema_selection.rs" > bounded-selection/baseline-overlay.sha256
+          SPIRALCORE_DISABLE_ZSTD_PROBE=1 cargo +1.97.1 build --release --locked --manifest-path "$warm_id/Cargo.toml" --example schema_fitting 2>&1 | tee bounded-selection/baseline-build.log
+          cp "$CARGO_TARGET_DIR/release/examples/schema_fitting" bounded-selection/frozen/baseline
+          for file in src/zstd_whole.rs src/schema_selection.rs; do
+            git show "$GITHUB_SHA:$warm_id/$file" > "$warm_id/$file"
+          done
+          bounded-selection/frozen/candidate bounded-identity > bounded-selection/candidate-identity.json
+          bounded-selection/frozen/baseline bounded-identity > bounded-selection/baseline-identity.json
+          jq -e '.first_block_probe_available == true' bounded-selection/candidate-identity.json > bounded-selection/candidate-probe-enabled.txt
+          jq -e '.first_block_probe_available == false' bounded-selection/baseline-identity.json > bounded-selection/baseline-probe-disabled.txt
+          sha256sum -c bounded-selection/source-files.sha256 > bounded-selection/source-after-build.log
+          git diff --exit-code > bounded-selection/source-clean-after.log
+          sha256sum bounded-selection/frozen/baseline bounded-selection/frozen/candidate > bounded-selection/binaries.sha256
+          printf '%s\n' 'Common current harness; baseline overlays exactly two production files from4234591 with probe disabled, candidate uses qualified bundled first-block pruning, Whole control uses candidate unchanged full encoder. All arms pay fit/context and actual Raw seed. Same Rust1.97.1 release/default features; no instrumentation.' > bounded-selection/build-profile.txt
+      - name: Generate the six registered shard plans
+        shell: bash
+        run: |
+          set -euo pipefail
+          for shard in 0 1 2 3 4 5; do
+            bounded-selection/frozen/candidate bounded-plan "$SPIRALCORE_BOUNDED_RUN" "$shard" "bounded-selection/plan-$shard.json"
+          done
+          sha256sum bounded-selection/plan-*.json > bounded-selection/plans.sha256
+      - name: Run all paired sessions sequentially without retries
+        timeout-minutes: 20
+        env:
+          SPIRALCORE_WAN_TOKEN: ${{ secrets.SPIRALCORE_BOUNDED_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          # BEGIN AUTH GATE
+          [[ "${SPIRALCORE_WAN_TOKEN:-}" =~ ^[0-9a-f]{64}$ ]] || exit 1
+          # END AUTH GATE
+          sha256sum -c bounded-selection/binaries.sha256 > bounded-selection/binaries-before-transfer.log
+          for shard in 0 1 2 3 4 5; do
+            key="BOUNDED_URL_$shard"
+            date -u +%FT%TZ > "bounded-selection/start-$shard.txt"
+            bounded-selection/frozen/candidate bounded-paired "bounded-selection/plan-$shard.json" bounded-selection/frozen/baseline \
+              bounded-selection/frozen/candidate "${!key}" \
+              "$BOUNDED_RECEIVER_SHA" "bounded-selection/observations-$shard.jsonl" \
+              2>&1 | tee "bounded-selection/remote-$shard.log"
+            date -u +%FT%TZ > "bounded-selection/end-$shard.txt"
+          done
+          sha256sum -c bounded-selection/binaries.sha256 > bounded-selection/binaries-after-transfer.log
+          printf '%s\n' 'Sender complete. Stop receivers and regenerate/reopen every object before asserting exact-byte WAN success.' > bounded-selection/receiver-verification-pending.txt
+      - name: Seal all available evidence including failures
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p bounded-selection
+          find bounded-selection -type f ! -name artifact-sha256.txt -print0 \
+            | sort -z | xargs -0 -r sha256sum > bounded-selection/artifact-sha256.txt
+      - name: Retain results and the frozen sender executable
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: spiralcore-bounded-selection-${{ github.run_id }}-${{ github.sha }}
+          path: bounded-selection/
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 1

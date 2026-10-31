@@ -154,6 +154,22 @@ impl PreparedSelector {
                 });
                 continue;
             }
+            if mode == Mode::ZstdWholeV1
+                && first_block_probe_can_exclude(target.len(), warm_probe, selected, best_cost)?
+            {
+                if let Some(bound) = self.whole.first_block_encoded_lower_bound(target)? {
+                    let lower = encoded_length_cost(mode, bound, warm_probe)?;
+                    if !warm_wins(mode, lower, selected, best_cost) {
+                        pruned.push(PrunedCandidate {
+                            mode,
+                            target_http_body_lower_bound: lower,
+                            setup_http_body_bytes: 0,
+                            total_http_body_lower_bound: lower,
+                        });
+                        continue;
+                    }
+                }
+            }
             let encoded = if mode == Mode::ZstdWholeV1 {
                 self.whole.encode(target)?
             } else {
@@ -302,4 +318,71 @@ pub(crate) fn encoded_cost(mode: Mode, encoded: &[u8], warm_probe: bool) -> Resu
         encoded.chunks(MAX_CHUNK).map(|c| c.len() + 6),
         warm_probe,
     )
+}
+
+fn encoded_length_cost(mode: Mode, len: usize, warm_probe: bool) -> Result<u64> {
+    selection::cost(
+        mode,
+        (0..len)
+            .step_by(MAX_CHUNK)
+            .map(|offset| (len - offset).min(MAX_CHUNK) + 6),
+        warm_probe,
+    )
+}
+
+fn first_block_probe_can_exclude(
+    target_len: usize,
+    warm_probe: bool,
+    incumbent: Mode,
+    incumbent_bytes: u64,
+) -> Result<bool> {
+    let Some(maximum) = zstd_whole::first_block_maximum_bound(target_len) else {
+        return Ok(false);
+    };
+    // If even the strongest possible certificate can win, no actual probe
+    // certificate can exclude Whole. In particular, skip cold Raw incumbents.
+    Ok(!warm_wins(
+        Mode::ZstdWholeV1,
+        encoded_length_cost(Mode::ZstdWholeV1, maximum, warm_probe)?,
+        incumbent,
+        incumbent_bytes,
+    ))
+}
+
+#[cfg(test)]
+mod probe_eligibility_tests {
+    use super::*;
+
+    #[test]
+    fn impossible_certificates_skip_probe_and_earlier_whole_ties_still_encode() {
+        assert!(!first_block_probe_can_exclude(128 << 10, false, Mode::SparseV1, 600).unwrap());
+        let length: usize = 1 << 20;
+        let raw = 368 + length as u64 + 133 * length.div_ceil(MAX_CHUNK) as u64;
+        assert!(!first_block_probe_can_exclude(length, false, Mode::Raw, raw).unwrap());
+        if !zstd_whole::first_block_probe_available() {
+            assert!(!first_block_probe_can_exclude(length, false, Mode::SparseV1, 600).unwrap());
+            return;
+        }
+        assert!(first_block_probe_can_exclude(length, false, Mode::SparseV1, 600).unwrap());
+        let maximum = zstd_whole::first_block_maximum_bound(length).unwrap();
+        let cost = encoded_length_cost(Mode::ZstdWholeV1, maximum, false).unwrap();
+        assert!(!first_block_probe_can_exclude(length, false, Mode::SparseV1, cost).unwrap());
+        assert!(!first_block_probe_can_exclude(length, false, Mode::SparseV1, cost + 1).unwrap());
+        assert!(first_block_probe_can_exclude(length, false, Mode::Raw, cost).unwrap());
+        assert!(warm_wins(Mode::ZstdWholeV1, 600, Mode::SparseV1, 600));
+        assert!(!warm_wins(Mode::ZstdWholeV1, 600, Mode::Raw, 600));
+    }
+
+    #[test]
+    fn computed_length_cost_matches_real_chunk_framing_without_materializing_bytes() {
+        for length in [0, 1, MAX_CHUNK - 1, MAX_CHUNK, MAX_CHUNK + 1, 131109] {
+            let bytes = vec![0; length];
+            for probe in [false, true] {
+                assert_eq!(
+                    encoded_length_cost(Mode::ZstdWholeV1, length, probe),
+                    encoded_cost(Mode::ZstdWholeV1, &bytes, probe)
+                );
+            }
+        }
+    }
 }

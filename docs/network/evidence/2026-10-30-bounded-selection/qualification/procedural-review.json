@@ -1,0 +1,278 @@
+{
+  "milestone": "SC-OPT-016",
+  "stage": "Step1 procedural audit only",
+  "verdict": "PASS",
+  "reviewer": "selector_tests",
+  "updated_utc": "2026-10-31T00:54:44.689595+00:00",
+  "roles": "Fresh roster verify d1927d9e7ce51354 passed; Agent harness-optimizer check active; profile and quality-gate read. Initial optional-flag check syntax was rejected, then corrected positional command passed.",
+  "base": "4234591e25b4ca87db6a4670bdf407f48a581575",
+  "design_commit": "e90d9eadd46496c48fce4a2490b2449e9d2fe0ab",
+  "scope": "Existing owned worktree; source-specific bounded first-block rejection, unchanged full-encode fallback, exact selection and wire/receiver behavior. Current gate is process evidence only; no code/security correctness approval.",
+  "documents_read_sha256": {
+    "docs/specs/2026-10-30-bounded-selection-design.md": "f44e2b2f46c78a29a2d258b56fe315efbcdb14e936710fd814c4f0d78ea8b5b7",
+    "docs/plans/2026-10-30-bounded-selection.md": "893b044d09692f98c2181cb23bc1a5642e1f497be18f201d8f899e2a495d0bca",
+    "docs/network/evidence/2026-10-30-bounded-selection/measurement-contract.md": "e9f3d29c26488cc1ab7a740b439c0555bfbfe982e18348e8b2ba27be9adccf9b",
+    "docs/network/evidence/2026-10-30-bounded-selection/qualification/freeze.sh": "25c3c7e90c1a77df81912d244e639581ae5e3ee5d11d381af282c734231b1360"
+  },
+  "observed_receipts": {
+    "all-targets-attempt1": {
+      "exit": 0,
+      "test_counts": [
+        360,
+        0,
+        2
+      ],
+      "targets": 46,
+      "log_sha256": "2bd6c25a30d95c7616e5d55c8c660ac99d05573a7ea2ba5a35673b221f7c0152",
+      "exit_sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    "probe-red": {
+      "exit": 101,
+      "test_counts": [
+        1,
+        1,
+        0
+      ],
+      "targets": 1,
+      "log_sha256": "9a91cc6adcc7d09bbac1b8d4b765d4e10385b05e1817ca3ee9455c8314bce2e5",
+      "exit_sha256": "39b8dc3fc8b44765c8e6f1adee04c5b465e555ab791cc42d0d9e810d5b64297c"
+    },
+    "probe-green-attempt1": {
+      "exit": 101,
+      "test_counts": null,
+      "targets": 0,
+      "log_sha256": "c015c132fcdb285128872727ac1ac6ee8f8b32d5b21f93633f434d092bba3819",
+      "exit_sha256": "39b8dc3fc8b44765c8e6f1adee04c5b465e555ab791cc42d0d9e810d5b64297c"
+    },
+    "probe-green-attempt2": {
+      "exit": 0,
+      "test_counts": [
+        50,
+        0,
+        0
+      ],
+      "targets": 6,
+      "log_sha256": "196b44bdc16e263f68a2b0bab462496aa3c17be9d87cb369f72679ef5e9ec52a",
+      "exit_sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    "guard-red": {
+      "exit": 101,
+      "test_counts": null,
+      "targets": 0,
+      "log_sha256": "101bd338cbe27043415ffd54f27557c10fe3667120ffdc10ef6dccaef3e7a76e",
+      "exit_sha256": "39b8dc3fc8b44765c8e6f1adee04c5b465e555ab791cc42d0d9e810d5b64297c"
+    },
+    "guard-green": {
+      "exit": 0,
+      "test_counts": [
+        4,
+        0,
+        0
+      ],
+      "targets": 1,
+      "log_sha256": "4e44361078332597f862d9e54ac316e632e09fbc668032f0d6a8cb7b93fa770b",
+      "exit_sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    "probe-disabled": {
+      "exit": 0,
+      "test_counts": [
+        6,
+        0,
+        0
+      ],
+      "targets": 2,
+      "log_sha256": "714c079607d979b1b60cacfecc0ac034c14500a2745174c726fcdb04aa6c39bf",
+      "exit_sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    "harness-red": {
+      "exit": 101,
+      "test_counts": null,
+      "targets": 0,
+      "log_sha256": "ca701a269905d4e620a08d54a9be18322dded4c1fd45e82b23af46f238d68b1b",
+      "exit_sha256": "39b8dc3fc8b44765c8e6f1adee04c5b465e555ab791cc42d0d9e810d5b64297c"
+    },
+    "harness-green-attempt1": {
+      "exit": 0,
+      "test_counts": [
+        35,
+        0,
+        0
+      ],
+      "targets": 1,
+      "log_sha256": "32110c13b64cfde0ec7ad670fcc1c70d1780627bcd963a619a8d94ce2cbc6c20",
+      "exit_sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    "workflow-red": {
+      "exit": 101,
+      "test_counts": [
+        0,
+        3,
+        0
+      ],
+      "targets": 1,
+      "log_sha256": "3d1dae40676a1047415324095649235003f02efa33b5fd95c58fe185989c6e94",
+      "exit_sha256": "39b8dc3fc8b44765c8e6f1adee04c5b465e555ab791cc42d0d9e810d5b64297c"
+    },
+    "workflow-green": {
+      "exit": 0,
+      "test_counts": [
+        3,
+        0,
+        0
+      ],
+      "targets": 1,
+      "log_sha256": "ac076fb5802cefed6fc77fcbbe81225fc15eb59b106a4a2da97f6e11316b3d41",
+      "exit_sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    "coverage-tests": {
+      "exit": 0,
+      "test_counts": [
+        50,
+        0,
+        0
+      ],
+      "targets": 6,
+      "log_sha256": "52d16ae3afdb38b40e2bac098ab58f27b0d2b716daa8599533d77ec0918236e7",
+      "exit_sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    "clippy-attempt1": {
+      "exit": 101,
+      "test_counts": null,
+      "targets": 0,
+      "log_sha256": "ebface71ba907068945e7df6cd30498bd46caefeebc847c644372c23b442344a",
+      "exit_sha256": "39b8dc3fc8b44765c8e6f1adee04c5b465e555ab791cc42d0d9e810d5b64297c"
+    },
+    "clippy-attempt2": {
+      "exit": 0,
+      "test_counts": null,
+      "targets": 0,
+      "log_sha256": "efb5a15fd7b59c4c3c0ea2e93e79ac7e107322c487343a09fcf986b45c017db2",
+      "exit_sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    }
+  },
+  "coverage": {
+    "tests": 50,
+    "exit": 0,
+    "files": [
+      {
+        "file": "/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer/src/schema_selection.rs",
+        "lines": {
+          "count": 259,
+          "covered": 253,
+          "percent": 97.68339768339769
+        },
+        "functions": {
+          "count": 25,
+          "covered": 25,
+          "percent": 100
+        },
+        "regions": {
+          "count": 492,
+          "covered": 451,
+          "notcovered": 41,
+          "percent": 91.66666666666666
+        }
+      },
+      {
+        "file": "/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer/src/zstd_whole.rs",
+        "lines": {
+          "count": 298,
+          "covered": 281,
+          "percent": 94.29530201342283
+        },
+        "functions": {
+          "count": 23,
+          "covered": 23,
+          "percent": 100
+        },
+        "regions": {
+          "count": 514,
+          "covered": 471,
+          "notcovered": 43,
+          "percent": 91.63424124513618
+        }
+      },
+      {
+        "file": "/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer/tests/../build_support/zstd_probe_guard.rs",
+        "lines": {
+          "count": 49,
+          "covered": 47,
+          "percent": 95.91836734693877
+        },
+        "functions": {
+          "count": 7,
+          "covered": 6,
+          "percent": 85.71428571428571
+        },
+        "regions": {
+          "count": 113,
+          "covered": 105,
+          "notcovered": 8,
+          "percent": 92.92035398230088
+        }
+      }
+    ],
+    "profiles": 6,
+    "current_objects": 6,
+    "receipt_sha256": "f0e802a47ed0f1cd0cb99591bf41fc03af6fe31de10fb8b60ecb36e6578960c6",
+    "limits": [
+      "Focused module coverage includes embedded unit tests; not whole-repository coverage.",
+      "Actual enabled/disabled builds qualify build-script execution separately.",
+      "No branch/MC/DC or native allocator/reset fault-injection coverage claimed."
+    ]
+  },
+  "retained_failures": [
+    "Missing guard module RED.",
+    "Behavioral first-block RED: random1MiB Whole still fully evaluated; compressible full-frame parity companion passed.",
+    "First implementation compile failure E0689 in unit-test integer binding; corrected usize then50 tests passed.",
+    "Harness missing bounded helpers RED.",
+    "Workflow three actual gate tests fail with absent workflow, then pass.",
+    "First Clippy exit101: two test constant-assert lints and two harness needless-borrow lints; original output retained. Attempt2 exit0 after minimal fixes."
+  ],
+  "pending": [],
+  "file_claims": "SC-OPT-016 parent/selector/measurement claims remain active for unfinished work; no completed-task stale claim observed. DAILY.md is absent; existing native output/exit and task receipts are used, without new history archives.",
+  "measurement_status": "NOT_RUN; registered local120 plus separate compressible control precede gated WAN360. Original dose/threshold/failure-retention unchanged in reviewed contract.",
+  "freeze_procedure": "Executed freeze completed with parent-observed native exit0; successful candidate and baseline build logs, true/false guard identities, exact two-file baseline overlay,91 restored source checks and all three frozen executable hashes independently inspected. No standalone freeze.exit file was present; the native completion is distinguished from retained build/identity/hash products.",
+  "execution_constraints": "No reviewer tests, builds, measurements, source edits or content review. Raw formal logs retained per user instruction.",
+  "next_stage": "Procedural PASS now permits independent code/Rust/security content review. It is not content approval or measurement release.",
+  "frozen_source": "eccb104d8d5dbdf56ad2fdb37a920b0424edbceb",
+  "final_qualification": {
+    "post_lint_tests": {
+      "passed": 39,
+      "failed": 0,
+      "ignored": 0,
+      "targets": 2,
+      "exit": 0
+    },
+    "clippy_final_exit": 0,
+    "candidate_build": "successful release12.80s",
+    "baseline_build": "successful release18.02s",
+    "receiver_build": "same candidate build",
+    "restored_source_hashes": 91,
+    "candidate_guard": true,
+    "baseline_guard": false,
+    "baseline_source_changes_only": [
+      "warm_selection",
+      "whole_zstd"
+    ],
+    "binaries": {
+      "candidate": "37c84d7fcd6b1c7b7557ef31bb239b7b64b746c9c1f6fbdfc78e669310186f61",
+      "baseline": "dd3cf5ec0a1490f7394377c4e2006c3c9525ab6dfe12d508b87a4d26005c151c",
+      "receiver": "131d75015bb6b5acc00056e9628d1bd014d7fd8f633a7a1ba22c23b987353446"
+    }
+  },
+  "final_receipt_sha256": {
+    "clippy-fix.json": "ef0f3fbea3e857051f797f1eb255bc5103128a5ab8a20d9a2f8ca0bea45be814",
+    "clippy-fix-tests.txt": "0211007b915f6546dca32fcea7b35e5d862b602e1db38e0ffbbacb3e5e237e7e",
+    "clippy-fix-tests.exit": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+    "candidate-build.txt": "f2a23c5e44ef81d6a45dae8ebec7092af8463a5d22b9a31a5788e8c9b5f39caf",
+    "baseline-build.txt": "3b1e64c0ba3b23db2c6153442c3bf758f08552b76e08dcee4da7441a904fe8e7",
+    "candidate-identity.json": "face68345a50965ee54015ad8b7826dedfd7a0960ac2c2c613a5330fd7589e9f",
+    "baseline-identity.json": "b322a824c3a89648758c8c361315d1eaa719ff59fb7ca2823837ed40cbc7a8d2",
+    "baseline-overlay.sha256": "a7aee7491f87d4cd300360b258ac413545145cb6fc96eeb880745fc40b7bbe59",
+    "source-revision.txt": "ef49a62579be97a6ad79c91b952141da061f17edcdc0cb864590d7bdce2ce5e6",
+    "source-files.sha256": "a9115ef2c3019d9f215b6d78a2062d31ab889c626f5b04f8f67979b7c3904766",
+    "source-after-build.txt": "ef07d3085415baabe22166dcb22d751610b4d8d0a2eeb75f8a3cca668605576e",
+    "binaries.sha256": "71cd0e0395f7c716b383af8c278847f4626223912d8cca289200441b7c52b568"
+  }
+}

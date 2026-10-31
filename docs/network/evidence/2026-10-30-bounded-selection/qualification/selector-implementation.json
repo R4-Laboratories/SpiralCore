@@ -1,0 +1,67 @@
+{
+  "milestone": "SC-OPT-016",
+  "status": "IMPLEMENTED_FOCUSED_GREEN",
+  "owner": "selector_architect",
+  "design_commit": "e90d9eadd46496c48fce4a2490b2449e9d2fe0ab",
+  "utc": "2026-10-31T00:39:03.422927+00:00",
+  "source_sha256": {
+    "crates/spiralcore-transfer/src/zstd_whole.rs": "d59962679493b8a7cd16dc7dd09b2a8e723a3e55dddbf068f33154fd1c2da66c",
+    "crates/spiralcore-transfer/src/schema_selection.rs": "f5fb4a17015ac795af32c08b1daac128a1f861acded57671217c6ef5477940cc",
+    "crates/spiralcore-transfer/tests/zstd_whole_probe.rs": "4ff1b365be7e7d11db040bcfa6c0132147328bbde9a38438f3e767026454cc5a",
+    "crates/spiralcore-transfer/tests/warm_selection.rs": "3207fd3c4a8d3d27897dfd4684ed406cd0a86248751d298cb96a88155c8afe69"
+  },
+  "qualification_sha256": {
+    "probe-red.txt": "9a91cc6adcc7d09bbac1b8d4b765d4e10385b05e1817ca3ee9455c8314bce2e5",
+    "probe-red.exit": "39b8dc3fc8b44765c8e6f1adee04c5b465e555ab791cc42d0d9e810d5b64297c",
+    "probe-green-attempt1.txt": "c015c132fcdb285128872727ac1ac6ee8f8b32d5b21f93633f434d092bba3819",
+    "probe-green-attempt1.exit": "39b8dc3fc8b44765c8e6f1adee04c5b465e555ab791cc42d0d9e810d5b64297c",
+    "probe-green-attempt2.txt": "196b44bdc16e263f68a2b0bab462496aa3c17be9d87cb369f72679ef5e9ec52a",
+    "probe-green-attempt2.exit": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+  },
+  "execution": "Parent coordinated and executed Cargo; author inspected actual retained outputs. Author ran rustfmt only and no independent Cargo or measurements.",
+  "red": {
+    "exit": 101,
+    "passed": 1,
+    "failed": 1,
+    "reason": "Behavioral assertion: random1MiB Whole remained an evaluated exact candidate instead of being pruned by its actual first-block certificate. Compressible full-frame parity companion passed."
+  },
+  "green_attempt1": {
+    "exit": 101,
+    "reason": "E0689 test-only untyped length.div_ceil binding in eligibility unit test. Minimal correction added usize; no production behavior change."
+  },
+  "green_attempt2": {
+    "exit": 0,
+    "passed": 50,
+    "failed": 0,
+    "targets": {
+      "lib": 26,
+      "schema_selection": 8,
+      "warm_selection": 7,
+      "warm_selection_client": 3,
+      "zstd_probe_guard": 4,
+      "zstd_whole_probe": 2
+    }
+  },
+  "implementation": [
+    "Public first_block_probe_available diagnostic requires build source qualification plus numeric10507; actual compression parameters and public prepare_warm signature remain unchanged.",
+    "Probe consumes exactly one128KiB block and12 header bytes, checks shape/full content length/legal nonfinal block, and returns a lower bound from actual first payload plus required remaining headers/checksum. No probe bytes can become transmitted candidate data.",
+    "Caller checks maximum possible certificate first, avoiding futile probes for registered cold Raw or large-residual incumbents. Existing tie order applies both to eligibility and actual bound; static16MiB prune and <=128KiB full paths remain.",
+    "Session resets before and after probing, including error paths. True codec/reset/resource errors fail closed; absent guard or inconclusive shape/bound falls back to unchanged full compress2. Workspace drift drops the context.",
+    "Exact and pruned costs remain separate; allocation-free length cost uses the same60KiB transport chunking. Existing original prepare and receiver/authorization/commit paths are unchanged."
+  ],
+  "qualified": [
+    "Actual first12 header bytes match uncapped compress2 for20 inputs: five block-boundary/1MiB lengths by random/zero/structured/mixed content. Each lower bound is <=full output, with40 repeated probe-to-full exact parity cycles.",
+    "Private parser rejection covers truncation/trailing bytes, altered magic/flags/content length, invalid/final/zero/oversized block headers and wrong consumed count; size/version/context rejection is explicit.",
+    "Maximum-certificate precheck covers impossible bounds, cold1MiB Raw, eligible600B Sparse, and Whole-before-Sparse equality. Computed length cost matches actual chunk-framing costs at boundaries.",
+    "Behavioral random1MiB case now prunes Whole with an actual lower bound; compressible zero-base32-byte-change Whole winner sends the exact original uncapped frame.",
+    "Existing exhaustive four-candidate reference tests preserve all winners, selected Data bytes, cost minimum and error paths. A static tie may be eliminated only by a stronger actual certificate.",
+    "Parent guard and client integration targets also passed in the same50-test run; source ownership and independent review remain with their assigned reviewers."
+  ],
+  "limits": [
+    "Author implementation receipt, not independent source/security approval.",
+    "No performance, WAN, energy or cross-platform qualification is inferred from this native focused GREEN.",
+    "The first-block relation is limited to the exact guarded bundled implementation/profile; it does not establish full streaming equivalence.",
+    "Unsimulated native allocator/reset failure branches are not claimed as fault-injected coverage. Parent owns final qualification, changed-code coverage, baseline/candidate measurement and publication."
+  ],
+  "build_lane": "Parent owns Cargo; author sources stable and no active processes."
+}

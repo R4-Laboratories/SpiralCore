@@ -1,0 +1,88 @@
+   Compiling spiralcore-transfer v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer)
+    Finished `release` profile [optimized] target(s) in 26.88s
+     Running unittests src/lib.rs (/Users/casey.allard/spiralcore/target/aarch64-apple-darwin/release/deps/spiralcore_transfer-e02d7579118dfe8b)
+
+running 26 tests
+test dag::fold_memo_tests::hot_memo_reuses_only_exact_nodes_and_preserves_unique_budget ... ok
+test dag::fold_memo_tests::parent_memo_is_exact_and_has_a_fixed_small_allocation_bound ... ok
+test dag::fold_memo_tests::rejected_records_never_enter_the_memo ... ok
+test fitted_transfer::tests::frame_validation_is_atomic_and_separately_bounds_count_and_bytes ... ok
+test delta::scan_tests::bulk_scans_handle_different_lengths_and_zero_byte_borrows ... ok
+test schema_selection::probe_eligibility_tests::computed_length_cost_matches_real_chunk_framing_without_materializing_bytes ... ok
+test schema::sender_checks::deterministic_mixed_sequences_preserve_matching_and_fallback_bytes ... ok
+test schema::sender_checks::failed_speculation_never_spends_work_or_emits_partial_bytes ... ok
+test schema::sender_checks::first_match_preserves_exact_charge_and_terminal_work_budget ... ok
+test schema::sender_checks::lexical_layouts_invalid_tokens_and_every_truncation_preserve_old_bytes ... ok
+test schema_selection::probe_eligibility_tests::impossible_certificates_skip_probe_and_earlier_whole_ties_still_encode ... ok
+test selection::runtime_selection_tests::encoded_lower_bounds_hold_for_empty_small_and_chunk_boundary_inputs ... ok
+test selection::runtime_selection_tests::lower_bound_ties_preserve_original_codec_priority ... ok
+test delta::scan_tests::bulk_scans_match_scalar_at_every_short_boundary ... ok
+test selection::runtime_selection_tests::runtime_repeat_shortcut_and_errors_keep_pre_begin_behavior ... ok
+test shared_transfer::identity_tests::prepared_identity_matches_full_hash_for_equal_edited_and_length_changed_bytes ... ok
+test zstd_prefix::tests::chunk_validation_is_atomic_and_count_and_encoded_bounds_are_independent ... ok
+test zstd_whole::probe_tests::certificate_parser_counts_only_actual_first_payload_and_required_remainder ... ok
+test zstd_whole::probe_tests::guard_version_size_and_unavailable_context_do_not_authorize_a_bound ... ok
+test schema::sender_checks::slots_record_sizes_and_line_limit_preserve_old_bytes ... ok
+test selection::runtime_selection_tests::runtime_first_preserves_exhaustive_winner_and_body_bytes ... ok
+test shared_runtime::packed_tests::packed_rules_match_scalar_tables_at_periodic_word_boundaries ... ok
+test zstd_whole::probe_tests::qualified_first_header_and_bound_match_uncapped_encoder_then_reset_exactly ... ok
+test selection::runtime_selection_tests::prefix_structure_bound_prunes_large_runtime_without_changing_bytes ... ok
+test delta::sender_delta_checks::optimized_delta_preserves_all_frames_across_changes_and_boundaries ... ok
+test zstd_prefix::tests::profile_minimum_size_holds_at_empty_and_decoded_block_boundaries ... ok
+
+test result: ok. 26 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.47s
+
+     Running tests/schema_selection.rs (/Users/casey.allard/spiralcore/target/aarch64-apple-darwin/release/deps/schema_selection-18ed010fa4fb771f)
+
+running 8 tests
+test whole_zstd_mode_is_explicit_and_requires_no_artifact ... ok
+test exact_candidate_costs_and_raw_tie_match_independent_frame_lengths ... ok
+test whole_contexts_preserve_parameters_bytes_and_recover_after_bad_frames ... ok
+test whole_codec_accepts_exact_sixteen_mib_and_rejects_larger_before_encode ... ok
+test unseeded_claimed_warm_schema_is_rejected_and_whole_cache_is_scoped ... ok
+test lazy_schema_seed_is_paid_once_then_ready_schema_commits_exactly ... ok
+test whole_receiver_rejects_corruption_then_reuses_bounded_contexts ... ok
+test prepared_selection_is_minimum_charges_seed_and_matches_serialized_transfer ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.82s
+
+     Running tests/warm_selection.rs (/Users/casey.allard/spiralcore/target/aarch64-apple-darwin/release/deps/warm_selection-252a556d5c4e643c)
+
+running 7 tests
+test raw_ties_and_old_api_results_survive_interleaved_warm_calls_and_limits ... ok
+test verified_base_makes_sparse_an_exact_scored_candidate ... ok
+test all_four_winners_match_exhaustive_selected_frame_bytes ... ok
+test static_tie_requires_whole_evaluation_or_a_stronger_actual_bound ... ok
+test boundaries_length_changes_and_context_reuse_preserve_exhaustive_minimum ... ok
+test cold_schema_can_win_after_paying_seed_instead_of_greedily_using_sparse ... ok
+test structural_bounds_skip_only_candidates_that_cannot_win ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.39s
+
+     Running tests/warm_selection_client.rs (/Users/casey.allard/spiralcore/target/aarch64-apple-darwin/release/deps/warm_selection_client-c737d976b899d141)
+
+running 3 tests
+test warm_hints_do_not_authorize_missing_schema_or_revoked_context ... ok
+test unavailable_selected_base_or_transport_failure_never_reoffers ... ok
+test selected_warm_plan_sends_exact_cost_without_reencoding_and_reopens ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.17s
+
+     Running tests/zstd_probe_guard.rs (/Users/casey.allard/spiralcore/target/aarch64-apple-darwin/release/deps/zstd_probe_guard-a11dfc35d854f5b7)
+
+running 4 tests
+test system_linkage_and_native_overrides_disable_the_certificate ... ok
+test qualification_can_require_the_enabled_or_disabled_build_path ... ok
+test source_guard_rejects_missing_or_foreign_trees ... ok
+test qualified_build_records_the_exact_source_tree ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+
+     Running tests/zstd_whole_probe.rs (/Users/casey.allard/spiralcore/target/aarch64-apple-darwin/release/deps/zstd_whole_probe-1b58b526d511da58)
+
+running 2 tests
+test compressible_whole_winner_keeps_uncapped_frame_after_inconclusive_probe ... ok
+test first_block_excludes_random_one_mib_without_full_whole_candidate ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+

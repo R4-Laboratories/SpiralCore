@@ -1,0 +1,45 @@
+{
+  "schema": "spiralcore.sc-opt-016.harness-workflow-review.v1",
+  "source_commit": "eccb104d8d5dbdf56ad2fdb37a920b0424edbceb",
+  "reviewer": "selector_architect",
+  "roles": [
+    "security-reviewer",
+    "infra-reviewer"
+  ],
+  "roster": "d1927d9e7ce51354",
+  "verdict": "PASS_SCOPED_PREMEASUREMENT",
+  "blocking_findings": [],
+  "method": "Read-only cross-author review of changed build guard, source freeze, workflow and bounded measurement paths, with retained qualification receipts. No builds, tests, profiling or measurements run by this review.",
+  "reviewed_sha256": {
+    "crates/spiralcore-transfer/build.rs": "23340ba05ac01d409910c434867682638c456a0d91901464ba822d2fefa10095",
+    "crates/spiralcore-transfer/build_support/zstd_probe_guard.rs": "5e0516b143456bbd61d71d5b3df32f3ae22928d7795d4c334b58e53dfc1d5ee1",
+    "crates/spiralcore-transfer/Cargo.toml": "fdc1715045fc3d914ca04a4c41a4750e778ce3eef82ce391bcf82c553648739b",
+    "crates/spiralcore-transfer/Cargo.lock": "6cf795bc12285eea4083d64da4a3b7264d675a95b45d545751eec38708d87896",
+    ".github/workflows/spiralcore-bounded-selection.yml": "388911e7f1ed5524239a6638f4f3fefb590fec5a2a6fbf864fd399223d2d4897",
+    "docs/network/evidence/2026-10-30-bounded-selection/qualification/freeze.sh": "25c3c7e90c1a77df81912d244e639581ae5e3ee5d11d381af282c734231b1360",
+    "crates/spiralcore-transfer/examples/support/warm_object.rs": "b6b22652388e747429cff7a85956f2ccd73bcbc530a0bb73f908c2e451424f0e",
+    "crates/spiralcore-transfer/examples/schema_fitting.rs": "fa6098ec1f6e804900b6b2079c33b808d8e0154add2aafd95e6f76de47319f32",
+    "docs/network/evidence/2026-10-30-bounded-selection/measurement-contract.md": "e9f3d29c26488cc1ab7a740b439c0555bfbfe982e18348e8b2ba27be9adccf9b",
+    "docs/network/evidence/2026-10-30-bounded-selection/qualification/procedural-review.json": "da72b488f2a131a709dda01b9fe324445e38411aa568a4ebb8445197b1883236"
+  },
+  "excluded_self_authored_scope": [
+    "src/zstd_whole.rs and src/schema_selection.rs production probe/selector changes, their helper proof and author tests",
+    "The four mechanical Clippy fixes: two constant-assert changes in tests/zstd_probe_guard.rs and two needless-borrow removals in examples/support/warm_object.rs. Separate reviewer owns independent approval."
+  ],
+  "checks": [
+    "Guard binds the bundled native source tree and dependency build script to the registered 90-file SHA-256 tree; missing/foreign metadata, native flag overrides or explicit disable retain the existing full-encoder path.",
+    "Freeze preserves candidate and source-derived baseline executables, overlays exactly the two registered production files from 4234591, restores candidate source with an exit trap and verifies source hashes. Baseline is explicitly not described as the complete historical revision.",
+    "Workflow uses exact source and attempt gates, pinned actions, read-only repository permissions and fixed six sequential shards. Dedicated token is confined to the transfer step, strict URL/token validation precedes use, and available failure evidence is always retained.",
+    "Harness validates source profile and executable identity for each role. Candidate and baseline are compared using identical fixture/object identities, scoped Raw seeds, actual setup timing, existing receiver policy and exact stopped-store reconstruction.",
+    "Dynamic pruning receipts remain lower bounds and must be above the incumbent and no larger than the completed baseline Whole cost. Winning mode, actual body counts and normalized request frames are compared, without inventing a completed candidate cost.",
+    "Target, setup and seed costs are recorded in disjoint scopes; nested exchange and receiver timings are not added twice. The compressible control compares prepare-only CPU and retains full winner-frame parity and exact recovery.",
+    "Local dose is 120 transfers; WAN dose is 360 transfers in six bounded stores. Exclusive outputs, fixed randomized/counterbalanced order and failure-without-retry preserve the registered experiment. The ten paired small-object CPU ratios determine the unchanged 0.80 local advancement gate."
+  ],
+  "limits": [
+    "Approval is for the reviewed measurement infrastructure and guard integration; independent review of the author-owned encoder/selector proof is required separately.",
+    "No local or WAN performance outcome is claimed by this receipt. Local and WAN measurements were not yet run at review time.",
+    "HTTP request/response body bytes exclude HTTP/TLS/TCP/IP overhead, retransmissions and relay traffic. Handler CPU excludes relay CPU; energy is not measured.",
+    "Receiver executable identity is supplied and bound by the operator, not remotely attested. Compiler/toolchain trust is outside this bounded source review.",
+    "WAN release remains conditional on exact local qualification and the registered local CPU advancement gate."
+  ]
+}

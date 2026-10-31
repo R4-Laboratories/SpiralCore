@@ -1,0 +1,105 @@
+   Compiling spiralcore-transfer v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer)
+error[E0425]: cannot find function `bounded_plan` in this scope
+    --> examples/support/warm_object.rs:1148:15
+     |
+1148 |         let p=bounded_plan("bounded-qualification",5,&"1".repeat(40),false).unwrap();
+     |               ^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `bounded_plan` in this scope
+    --> examples/support/warm_object.rs:1164:23
+     |
+1164 |             let local=bounded_plan("bounded-local",shard,&"1".repeat(40),true).unwrap();
+     |                       ^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `bounded_plan` in this scope
+    --> examples/support/warm_object.rs:1168:17
+     |
+1168 |         assert!(bounded_plan("bounded-local",2,&"1".repeat(40),true).is_err());
+     |                 ^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `validate_bounded_choice` in this scope
+    --> examples/support/warm_object.rs:1177:9
+     |
+ 292 | fn validate_warm_choice(receipt: &Value, len: u64) -> Result<()> {
+     | ---------------------------------------------------------------- similarly named function `validate_warm_choice` defined here
+...
+1177 |         validate_bounded_choice(&candidate,&baseline,1<<20).unwrap();
+     |         ^^^^^^^^^^^^^^^^^^^^^^^
+     |
+help: a function with a similar name exists
+     |
+1177 -         validate_bounded_choice(&candidate,&baseline,1<<20).unwrap();
+1177 +         validate_warm_choice(&candidate,&baseline,1<<20).unwrap();
+     |
+
+error[E0425]: cannot find function `validate_bounded_choice` in this scope
+    --> examples/support/warm_object.rs:1179:17
+     |
+ 292 | fn validate_warm_choice(receipt: &Value, len: u64) -> Result<()> {
+     | ---------------------------------------------------------------- similarly named function `validate_warm_choice` defined here
+...
+1179 |         assert!(validate_bounded_choice(&wrong,&baseline,1<<20).is_err());
+     |                 ^^^^^^^^^^^^^^^^^^^^^^^
+     |
+help: a function with a similar name exists
+     |
+1179 -         assert!(validate_bounded_choice(&wrong,&baseline,1<<20).is_err());
+1179 +         assert!(validate_warm_choice(&wrong,&baseline,1<<20).is_err());
+     |
+
+error[E0425]: cannot find function `validate_bounded_choice` in this scope
+    --> examples/support/warm_object.rs:1181:17
+     |
+ 292 | fn validate_warm_choice(receipt: &Value, len: u64) -> Result<()> {
+     | ---------------------------------------------------------------- similarly named function `validate_warm_choice` defined here
+...
+1181 |         assert!(validate_bounded_choice(&wrong,&baseline,1<<20).is_err());
+     |                 ^^^^^^^^^^^^^^^^^^^^^^^
+     |
+help: a function with a similar name exists
+     |
+1181 -         assert!(validate_bounded_choice(&wrong,&baseline,1<<20).is_err());
+1181 +         assert!(validate_warm_choice(&wrong,&baseline,1<<20).is_err());
+     |
+
+error[E0425]: cannot find function `validate_bounded_choice` in this scope
+    --> examples/support/warm_object.rs:1182:17
+     |
+ 292 | fn validate_warm_choice(receipt: &Value, len: u64) -> Result<()> {
+     | ---------------------------------------------------------------- similarly named function `validate_warm_choice` defined here
+...
+1182 |         assert!(validate_bounded_choice(&baseline,&baseline,1<<20).is_ok());
+     |                 ^^^^^^^^^^^^^^^^^^^^^^^
+     |
+help: a function with a similar name exists
+     |
+1182 -         assert!(validate_bounded_choice(&baseline,&baseline,1<<20).is_ok());
+1182 +         assert!(validate_warm_choice(&baseline,&baseline,1<<20).is_ok());
+     |
+
+error[E0425]: cannot find function `bounded_cpu_gate` in this scope
+    --> examples/support/warm_object.rs:1187:22
+     |
+1187 |         let accepted=bounded_cpu_gate(&[0.8;10]).unwrap();
+     |                      ^^^^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `bounded_cpu_gate` in this scope
+    --> examples/support/warm_object.rs:1189:22
+     |
+1189 |         let rejected=bounded_cpu_gate(&[1.05;10]).unwrap();
+     |                      ^^^^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `bounded_cpu_gate` in this scope
+    --> examples/support/warm_object.rs:1192:17
+     |
+1192 |         assert!(bounded_cpu_gate(&[0.7;9]).is_err());
+     |                 ^^^^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `bounded_cpu_gate` in this scope
+    --> examples/support/warm_object.rs:1193:17
+     |
+1193 |         assert!(bounded_cpu_gate(&[f64::NAN;10]).is_err());
+     |                 ^^^^^^^^^^^^^^^^ not found in this scope
+
+For more information about this error, try `rustc --explain E0425`.
+error: could not compile `spiralcore-transfer` (example "schema_fitting" test) due to 11 previous errors
