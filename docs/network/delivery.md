@@ -36,6 +36,18 @@ drift/fallback controls and zstd timing variation are recorded separately.
 
 ## Milestones
 
+The [unrelated-object CPU follow-up](unrelated-cpu-results-2026-10-31.md) removes
+avoidable sparse allocation and schema scanning/parsing work. It preserves all
+selected frame bytes, 600-byte warm transfers and exact readback across two
+700-operation local campaigns and one 420-operation real-WAN diagnostic. WAN
+replacement sender CPU falls 14.21%/15.46% at 1/16 MiB against the previous
+selector, but Whole still uses less CPU. Both local large-object CPU gates fail,
+small WAN warm CPU regresses, and elapsed gains are inconsistent. The candidate
+is implemented and measured, **not performance-accepted**. Mixed paid sessions
+retain about 48% fewer body bytes and lower elapsed time against Whole in all
+six pairs at each size, with more measured CPU. Raw evidence, source identities,
+paid setup, instrumentation and every negative are retained in the report.
+
 The [persistent-session follow-up](persistent-session-results-2026-10-31.md)
 retains acknowledged base ownership and prepared selector/runtime state, with
 bounded optional HTTP reuse. It verifies 660 local and 396 subsequent WAN objects

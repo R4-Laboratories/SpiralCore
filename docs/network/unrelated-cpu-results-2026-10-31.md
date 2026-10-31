@@ -117,4 +117,131 @@ therefore registers one six-pair, 420-operation diagnostic of the unqualified
 phase-2 build. This explicitly changes the earlier stop-before-WAN plan without
 lowering the local gate. Registration states `local_advancement:false` and
 `performance_acceptance:false`. Results cannot retroactively qualify either
-local campaign and will not be pooled with them. WAN results are pending.
+local campaign and will not be pooled with them.
+
+The [real WAN run](https://github.com/R4-Laboratories/SpiralCore/actions/runs/41177063558)
+completed once, without retries, at launch source
+`c83f7656e2a9f92b7d6bc8557af987391d147516`. Its runtime is unchanged from
+`f662f5a`; only diagnostic declarations changed after the local freeze. A Linux
+GitHub-hosted sender reached the local macOS receiver through temporary HTTPS
+Cloudflare relays. The timed campaign ran 06:36:24–06:39:58 UTC on October 31.
+Six paired trials at each size covered all six arm orders and 36 persistent
+sessions: 360 targets, 36 initial bases and 24 actual schema publications.
+All **420 operations reopened byte-for-byte exactly**, with the original
+lengths. All baseline/candidate selected modes, body costs and normalized frame
+hashes matched. The [complete raw evidence and summary](evidence/2026-10-31-unrelated-cpu/README.md)
+retain every observation and negative result.
+
+### Unrelated-object replacements
+
+Medians, milliseconds except bytes; six observations per row. CPU sum is the
+per-operation sender process plus receiver handler CPU, summarized separately
+from its components; independently computed medians need not add exactly.
+Exchange is the nested HTTP exchange, not pure serialization/wire time.
+
+| Size | Sender | Bidirectional body bytes | Sender CPU | Receiver CPU | CPU sum | HTTP exchange | Total through durable ACK |
+|---|---|---:|---:|---:|---:|---:|---:|
+| 1 MiB | Previous selector | 1,051,338 | 8.625 | 6.055 | 14.592 | 324.658 | 331.477 |
+| 1 MiB | Optimized selector | 1,051,338 | 7.430 | 6.310 | 13.680 | 359.274 | 365.196 |
+| 1 MiB | Prepared Whole zstd/Raw | 1,051,338 | 3.207 | 5.888 | 9.179 | 528.169 | 530.036 |
+| 16 MiB | Previous selector | 16,814,026 | 136.069 | 46.393 | 171.555 | 2,005.344 | 2,121.758 |
+| 16 MiB | Optimized selector | 16,814,026 | 114.758 | 57.316 | 164.809 | 1,758.593 | 1,842.863 |
+| 16 MiB | Prepared Whole zstd/Raw | 16,814,026 | 48.715 | 49.591 | 99.980 | 1,911.149 | 1,945.072 |
+
+Against the previous selector, paired sender CPU ratios are **0.857884 / 0.845370**
+at 1/16 MiB: 14.21% / 15.46% reductions, 6/6 wins at each size. Paired completion
+ratios are **1.013810 / 0.912606**, with 3/6 and 4/6 wins: small completion
+regresses 1.38% despite less sender CPU. Large candidate p95 completion is
+3,328.989 ms versus previous 2,743.422 and Whole 2,136.254 ms; with six trials,
+this nearest-rank p95 is the maximum and is not a stable tail estimate.
+
+Whole remains materially cheaper computationally: candidate/Whole paired sender
+CPU ratios are 2.347273 / 2.265449. All three send identical body sizes here.
+Candidate/Whole completion ratios happen to favor the candidate in this run
+(0.605940 / 0.941156, 6/6 and 4/6 wins), but that cannot be attributed to byte
+savings or superior encoding: there are none on these replacements. Relay and
+link variation dominate this small sample. The local large-object latency
+regression remains a counterexample to a general speed claim.
+
+### Warm updates and complete mixed sessions
+
+The two localized-random positions per trial retain **600 body bytes** at both
+sizes. These rows aggregate 12 updates per arm/size and do not count the earlier
+base seed, which is charged in the subsequent lifecycle table.
+
+| Size | Sender | Body bytes | CPU sum, ms | HTTP exchange, ms | Total, ms |
+|---|---|---:|---:|---:|---:|
+| 1 MiB | Previous selector | 600 | 7.846 | 130.000 | 131.566 |
+| 1 MiB | Optimized selector | 600 | 7.866 | 128.416 | 129.551 |
+| 1 MiB | Prepared Whole zstd/Raw | 1,051,338 | 8.973 | 372.560 | 374.969 |
+| 16 MiB | Previous selector | 600 | 49.575 | 166.687 | 180.141 |
+| 16 MiB | Optimized selector | 600 | 57.295 | 169.503 | 181.259 |
+| 16 MiB | Prepared Whole zstd/Raw | 16,814,026 | 96.278 | 1,735.817 | 1,772.465 |
+
+The warm byte reductions versus Whole are 99.9429% and 99.9964%. This round
+preserves that byte advantage rather than creating a new warm CPU win: paired
+CPU ratios for the sum of the two warm updates are 1.072623 / 1.006415 against
+the previous sender. The 1 MiB WAN warm sender CPU therefore regresses 7.26%,
+even though both separately registered local warm controls passed.
+
+Paid mixed lifecycle medians include fitting/context setup, the real initial
+base, schema publication and all ten distinct targets. Ordinary Whole is given
+the same equal-state base seed even though it does not need it; these are
+matched-state experimental sessions, not a claim about every deployment's cost.
+
+| Size | Sender | Body bytes | Sender CPU, ms | CPU sum, ms | Total, ms |
+|---|---|---:|---:|---:|---:|
+| 1 MiB | Previous selector | 2,326,493 | 73.439 | 143.326 | 2,334.425 |
+| 1 MiB | Optimized selector | 2,326,493 | 68.338 | 144.544 | 2,263.804 |
+| 1 MiB | Prepared Whole zstd/Raw | 4,477,566.5 | 39.665 | 100.823 | 2,729.594 |
+| 16 MiB | Previous selector | 37,193,928 | 1,052.879 | 1,536.517 | 7,475.079 |
+| 16 MiB | Optimized selector | 37,193,928 | 959.316 | 1,464.881 | 7,217.048 |
+| 16 MiB | Prepared Whole zstd/Raw | 71,658,713.5 | 559.814 | 963.260 | 10,636.151 |
+
+The candidate retains about **48.0% / 48.1% fewer body bytes** than Whole over
+these complete mixed sequences (ratios of the displayed medians). Paired paid
+completion ratios versus Whole are 0.846201 / 0.709372, with 6/6 wins each;
+paired CPU-sum ratios are 1.400336 / 1.562563, with zero CPU wins. Versus the
+previous selector, paid completion ratios are 0.994489 / 0.990112, only 3/6 wins
+each. Setup plus schema publication plus ten-target sender CPU improves
+7.94% / 8.38% by the paired median. Thus the mixed session still trades more
+computation for less traffic and lower elapsed time against Whole in this run.
+
+### Scope, qualification and disposition
+
+Both selector arms capture winning frame bytes inside their measured operation
+for the exact-frame parity check; Whole does not. Hashing and JSON reporting of
+those captured bytes happen after the outer timer. This matched selector
+instrumentation adds allocation/copy cost when comparing either selector with
+Whole; it is not a production-only CPU measurement. The CPU subtotal excludes
+receiver HTTP/logging overhead and relay CPU. Exchange includes network waiting,
+HTTP work and receiver computation; do not add it to total time or label it pure
+send time. Body counts exclude headers, TLS, packet retransmission and additional
+relay hops. Fixture generation is reported in separate outer-session clocks.
+
+The Linux sender uses the same release/default feature build for both selectors;
+the frozen macOS receiver uses hardware SHA-256. This differs from the local
+Apple-hardware-SHA sender and helps explain why cross-platform CPU gains differ.
+No 30-pair qualification, direct or shaped WAN, energy, FIPS or MVM result is
+claimed. The two earlier local failures and this six-pair diagnostic remain
+separate. The raw harness's inherited `six-pair-wan-pilot` dose label is retained;
+the prospective registration controls its **unqualified diagnostic** purpose.
+
+Hosted qualification passed **431 tests, zero failures**, with two preexisting
+ignored tests across 55 targets; both frozen release builds and Clippy passed.
+Phase-2 focused changed-file line coverage is 97.00% for schema and 97.33% for
+delta, with 100% of their functions covered; branch coverage was not collected.
+No source or binary rebuild overlapped the timed campaign. After successful
+stopped-store verification, all six owned caches were removed, reclaiming
+3,448,488 KiB (3.29 GiB allocated), and all six receivers/tunnels, nine temporary
+GitHub variables, the capability secret and its local file were removed/stopped.
+Compact raw measurements, failure receipts and checksums remain reviewable.
+
+**Disposition: implemented and measured, not performance-accepted.** The exact
+allocation/scan changes are retained as a bounded candidate; no codec policy or
+format changed. Both local large-replacement CPU gates remain failed, and the
+WAN small-warm CPU regression remains explicit. The next useful optimization
+is avoiding more futile candidate preparation through exact lower bounds or
+reusable state, while keeping minimum-byte selection and useful warm/schema
+candidates intact. No probabilistic entropy guess or disabled fallback is
+justified by these measurements.

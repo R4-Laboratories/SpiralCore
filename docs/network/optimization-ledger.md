@@ -21,6 +21,20 @@ remain tied to their measured source; later results do not overwrite earlier neg
 
 ## Measured object sizes
 
+SC-OPT-019 removes losing whole-literal sparse allocation and accelerates exact
+schema scanning/counting/prefix rejection. Both 700-operation local campaigns
+preserve all selected bytes and exact readback but miss the 5% large-replacement
+CPU gate. A separately registered, unqualified six-pair WAN diagnostic at
+`c83f7656e2a9f92b7d6bc8557af987391d147516` verifies 420 more operations exactly.
+Replacement sender CPU improves 14.21%/15.46% at 1/16 MiB against the previous
+selector; Whole remains 2.35x/2.27x cheaper by paired sender CPU. Warm bodies
+remain 600 bytes, but small warm sender CPU regresses 7.26%. Paid mixed sessions
+retain about 48% fewer body bytes and paired completion ratios 0.846201/0.709372
+versus Whole while using 1.40x/1.56x measured CPU. All failed gates and latency
+losses remain explicit: implemented candidate, **not performance-accepted**.
+[Full result](unrelated-cpu-results-2026-10-31.md),
+[raw records and checksums](evidence/2026-10-31-unrelated-cpu/README.md).
+
 SC-OPT-018 adds acknowledged owned sessions, prepared runtime retention and bounded
 HTTP connection reuse. The local run verifies 660 objects exactly; a subsequent
 six-pair WAN pilot verifies 396. All localized selector updates retain 600 body
