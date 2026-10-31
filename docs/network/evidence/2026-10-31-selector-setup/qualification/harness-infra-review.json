@@ -1,0 +1,46 @@
+{
+  "schema": "spiralcore.sc-opt-017.harness-infra-review.v1",
+  "verdict": "PASS_SCOPED_HARNESS_INFRA",
+  "reviewer": "selector_architect",
+  "roles": [
+    "code-reviewer",
+    "rust-reviewer",
+    "security-reviewer",
+    "infra-reviewer"
+  ],
+  "roster": "d1927d9e7ce51354",
+  "reviewed_at_utc": "2026-10-31T01:45:33.977982+00:00",
+  "source_commit": "980d5cc08b01833bb4a86f4bb3f7962b42de5055",
+  "comparison_base": "4bb79f976e0939f3ef8b48c3830b07086b98f280",
+  "reviewed_sha256": {
+    "crates/spiralcore-transfer/examples/support/warm_object.rs": "3a1755ef5c6f8a07a7255a7f357f0a603fb19cc8cd679cdcf2fc37f43d93257d",
+    "crates/spiralcore-transfer/examples/schema_fitting.rs": "8f4caa3dc61a647b69664c96256421920456bfaf3a27279aa537dbc4fdb5cfd9",
+    ".github/workflows/spiralcore-selector-setup.yml": "26fed2733f74528b41f7e8545ccb09ef3a1fe1c870d72bd3bcd3e8b126fdb661",
+    "crates/spiralcore-transfer/tests/selector_setup_workflow.rs": "7e140bbac8b09349d933e7444dedfdd9e7954b3157c7b483aa3c48e7a8507ed4",
+    "docs/network/evidence/2026-10-31-selector-setup/measurement-contract.md": "be4cea734ba42b510ffef5b8e14cc07738ef74eb3e94e087efa19346d117fde7",
+    "docs/network/evidence/2026-10-31-selector-setup/qualification/freeze.sh": "7ab6d59082075664d6fefaafa8b4aca84f0efa077c2bca3fffa8e6ef79db9b4d",
+    "docs/network/evidence/2026-10-31-selector-setup/qualification/supervise-receivers.sh": "687fa9ca36a0c17afbf31100d6f19fd7c9404be927150ab46edac7ea573a646f",
+    "docs/network/evidence/2026-10-31-selector-setup/qualification/procedural-review.json": "725fc053aebaf2ae9430b553fcdc6304c2b8471d006320f58f4d8255c997efc0"
+  },
+  "blocking_findings": [],
+  "method": "Cross-author read-only review of changed harness/profile, workflow/gate tests, contract and owned freeze/supervisor. Procedural PASS was verified before content review. Parent explicitly released frozen implementation files for review; remaining active claims include subsequent measurements/delivery.",
+  "excluded": "Author-owned production schema.rs/schema_selection.rs changes and their tests; their independent review belongs to selector_tests.",
+  "verified_source_properties": [
+    "New three-case profile is separate from historical command profiles. Canonical plans bind case, trial, fixture, role and namespace; both baseline and candidate require the same qualified native probe.",
+    "Common-harness baseline overlays exactly schema.rs and schema_selection.rs from the registered baseline. Native codec and guard stay identical. Freeze saves both binaries, restores candidate source under an exit trap and checks source hashes.",
+    "Per five-trial shard:45 sessions/90 seed-update transfers,30 actual fits,540MiB object payload and596.3515625MiB conservative storage bound. Local dose180 and WAN dose540 are consistent with plan generation, canonical validation and workflow registration.",
+    "Selector setup performs the unchanged corpus generation, references, real fit, exact frozen-artifact comparison, context construction and temporary cleanup inside the timed scope. Whole pays its context setup. No fit amortization or hidden base seed is assumed.",
+    "Operation timers include preparation, hashing, serialization and durable acknowledgement. Sender process CPU and receiver handler CPU are disjoint; exchange is nested. Lifecycle adds setup/seed/update once; staged profile timings are attribution only.",
+    "Main summary joins exact case/trial/role pairs, verifies complete counts and stopped-store byte comparisons, and requires identical baseline/candidate selection receipts and normalized winner frames. Actual mode-dependent decoder-cache statistics are checked.",
+    "Local gates use exactly ten random-1m setup ratios at0.80, ten zero-control prepare ratios at0.95 and ten random-1m update sender ratios at1.05. The control driver preserves all zero,period64 and deceptive-gap observations and permits only truthful proof-to-completed-Whole receipt changes.",
+    "Workflow gates exact source/ref/attempt1, validated six HTTPS origins and dedicated capability. Credentials are not persisted by checkout; token is limited to the transfer step and not printed. Actions are SHA-pinned, permissions read-only, execution sequential and bounded, and failures are retained without retry.",
+    "Owned supervisor binds loopback receivers to scoped plans, keeps its process alive, tracks child PIDs, and cleans up owned children on exit. Verification precedes owned cache removal; failed stores remain."
+  ],
+  "limitations": [
+    "No Cargo/check/Clippy/test/profile/benchmark was rerun; the sealed procedural qualification supplies those receipts. No production implementation was modified by this review.",
+    "This review checks measurement implementation and gate joins; it is not an independent recomputation of every local measurement row and does not claim a WAN result.",
+    "Network metric is request+response HTTP body bytes, excluding transport headers,retransmissions and relay hops. Exchange elapsed is not pure wire time. Receiver CPU covers handlers, not all socket/logging/relay work; energy is unmeasured.",
+    "Receiver executable hash remains operator-supplied rather than remote attestation. Parent owns the final composite local-gate release and actual WAN launch.",
+    "Native compression proof and author-owned fit/scheduler correctness are outside this cross-author approval."
+  ]
+}

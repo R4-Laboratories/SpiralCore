@@ -1,0 +1,39 @@
+{
+  "milestone": "SC-OPT-017",
+  "verdict": "PASS",
+  "reviewer": "selector_tests",
+  "roles": [
+    "code-reviewer",
+    "rust-reviewer",
+    "security-reviewer"
+  ],
+  "updated_utc": "2026-10-31T01:45:13.715916+00:00",
+  "base_revision": "4bb79f976e0939f3ef8b48c3830b07086b98f280",
+  "source_revision": "980d5cc08b01833bb4a86f4bb3f7962b42de5055",
+  "procedural_pass_sha256": "725fc053aebaf2ae9430b553fcdc6304c2b8471d006320f58f4d8255c997efc0",
+  "sequence": "Procedural PASS sealed and parent notified before content review. Fresh roster d1927d9e7ce51354 verify and all three role checks passed. Frozen implementation claim released/completed; delivery remains active.",
+  "scope": "Independent review of two changed production modules and changed production regression tests. Harness/workflow cross-author review is separate. Reviewer authored none of this production or tests.",
+  "source_sha256": {
+    "crates/spiralcore-transfer/src/schema.rs": "034e0424cbf7b95a83e8579b7b7d75b584758f0eb514a00b51840a202c993359",
+    "crates/spiralcore-transfer/src/schema_selection.rs": "575d93eed205987b40f09c10ec57ef5decf10257599bb56237d2d3183bcc2253",
+    "crates/spiralcore-transfer/tests/schema_sender.rs": "ec71e8e4a4208aedf74b05a60f054eae78d68f1c0221cb80924d77e2ee721d5e",
+    "crates/spiralcore-transfer/tests/warm_selection.rs": "3556380b386387bd523fed3a7cdc32693343cb5efdb50d1e0247ba1b5fcd46eb",
+    "crates/spiralcore-transfer/tests/fixtures/schema_sender_checks.rs": "4042d82a3554e68207b9da0bf31ef87a6ad8e3c9dccc0becf8d93c22e5887c72",
+    "crates/spiralcore-transfer/tests/fixtures/schema_sender_baseline.rs": "6c228201197e1ce26a6ac8137da490e0040ed26ab06d4576b330e8b240a2577a"
+  },
+  "findings": [],
+  "checks": [
+    "Exact first-layout matching uses validated/parsed template fragments, UTF-8 and the unchanged primitive parser with complete input consumption; at most32 borrowed value slices, no per-record heap allocation. Slot/literal arithmetic is bounded by64KiB record limits.",
+    "Fitting preserves ordered template admission and legacy2*literal_len work charge/terminal behavior. Speculative mismatch spends no legacy match budget and falls through to unchanged parse/hash/index path. Training remains capped at4MiB and4096 records.",
+    "Immutable oracle fit, bounds/Template/Templates and parser sections independently compare byte-for-byte with baseline4bb79f9. Existing and new tests compare exact artifacts, SCVAL frames, compressed frames and decoded bytes; lexical/truncation/slot/template/record/work-limit behavior covered.",
+    "Short-period screen is only reached for targets larger than128KiB; every fixed sample index is in bounds. It skips only an optional rejection probe, never supplies a bound or excludes Whole. Full encoder still evaluates exact costs with unchanged mode priorities/ties. Deceptive samples can increase CPU, which remains an explicit performance limitation.",
+    "No receiver/wire/API/authentication/dependency/unsafe production changes. Existing first-block proof and codec errors/resource checks remain unchanged; skipped streaming probe does not create reusable partial-frame state.",
+    "Actual full all-target373pass/0fail/2preexistingignored, focused69 and Clippyexit0 reused; no reviewer build/test/measurement performed."
+  ],
+  "limits": [
+    "Static source review plus existing qualification, not formal proof or blanket security certification.",
+    "Focused coverage includes unit-test code and lacks branch/MC-DC instrumentation.",
+    "No performance acceptance or WAN result is certified by this content receipt; the reported local control regression must remain in later results."
+  ],
+  "next_stage": "No production blocker to the parent-controlled registered WAN gate after separate harness/infra approval and local-gate review."
+}

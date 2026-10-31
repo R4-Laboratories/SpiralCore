@@ -1,9 +1,9 @@
 {
   "milestone": "SC-OPT-017",
   "stage": "Step1 procedural audit only",
-  "verdict": "PENDING_ALL_TARGETS_AND_CLIPPY",
+  "verdict": "PASS",
   "reviewer": "selector_tests",
-  "updated_utc": "2026-10-31T01:40:40.113414+00:00",
+  "updated_utc": "2026-10-31T01:43:28.818478+00:00",
   "roles": "Fresh roster d1927d9e7ce51354 verify and Agent harness-optimizer check passed. Existing harness-optimizer/quality-gate instructions govern sequential procedural-before-content review.",
   "base": "4bb79f976e0939f3ef8b48c3830b07086b98f280",
   "design_commit": "c5f446fa69634ce8cab89025eb7df2bf7cc7acf6",
@@ -122,6 +122,21 @@
       "targets": 8,
       "log_sha256": "25ca1db5ec9945a3abfea28c9dd47577a1b3667d99264a35bf0ea05e37ac7e67",
       "exit_sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    "all-targets": {
+      "exit": 0,
+      "log_sha256": "d8d6950183be3611142358b62cbc705bedbe1254e23ceada06a6bd92826f4afe",
+      "exit_sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+      "targets": 47,
+      "passed": 373,
+      "failed": 0,
+      "ignored": 2,
+      "raw_sha256": "d8d6950183be3611142358b62cbc705bedbe1254e23ceada06a6bd92826f4afe"
+    },
+    "clippy": {
+      "exit": 0,
+      "log_sha256": "2e1365670931e65cfae4e4d1ef249c0549d01d0ac119fef968f779600f398326",
+      "exit_sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
     }
   },
   "coverage": {
@@ -193,13 +208,29 @@
     "Harness missing setup helpers E0425 RED.",
     "Three actual workflow tests fail before workflow is available then pass."
   ],
-  "prospective_measurement": "Three cells with180 local/540 WAN transfers, real setup/fits and seeds; separate60 control samples/120 exact objects. Local advancement requires registered random1m setup<=0.80, zero-control preparation<=0.95 and random1m update senderCPU<=1.05 paired medians plus exactness. No candidate performance accepted yet.",
+  "prospective_measurement": "Fixed measurement contract inspected. Parent reports local campaign/control finished after freeze; this procedural receipt does not certify performance results or WAN execution.",
   "file_claims": "SC-OPT-017 production/harness/delivery owners remain active for unfinished work; no completed-task stale claim observed. Other labs excluded.",
-  "pending": [
-    "Complete all-target command and exit receipt.",
-    "Final all-target Clippy command and exit receipt."
-  ],
-  "freeze_script_status": "Read only, not treated as executed. Same explicit Rust1.97.1 target/shared cache/incremental0/4GiB floor; overlays exactly schema.rs+schema_selection.rs, both native-probe-enabled, restores source via trap and hashes. Source/executable freeze remains a prerequisite before candidate measurement.",
-  "constraints": "Formal historical/raw evidence retained per user instruction. No reviewer Cargo/tests/benchmarks/reruns/new analyzer or content review.",
-  "next_stage": "Wait for final receipts; notify procedural verdict, then stop for explicit parent release to content review."
+  "pending": [],
+  "freeze_script_status": {
+    "status": "PASS",
+    "command_exit": 0,
+    "exit_evidence": "Parent native command completion; no standalone freeze.exit file is claimed. Candidate/baseline build logs and complete restoration output independently read.",
+    "source_revision": "980d5cc08b01833bb4a86f4bb3f7962b42de5055",
+    "candidate_build_seconds": 10.24,
+    "baseline_build_seconds": 16.43,
+    "guard_enabled_in_both": true,
+    "source_restore_all_ok": true,
+    "receipts_sha256": {
+      "candidate-build.txt": "81e318cd72bc2cd5573ae8d74ca5999e819326ad3894ef3310c7d21626d019d2",
+      "baseline-build.txt": "e46c7b3632d51a7b12f08800174f6a2b90834f3fee6e27abf1a22d5c73ae65b5",
+      "source-after-build.txt": "fba3c5543519ed4e88d0321ce0c6fcb40267460f9c0ffa20988673d6bd3aecdb",
+      "source-files.sha256": "a0d2312c3d34120e9b3f340d9f932f2ff96e5d84d5f7bde139e865a0b3382bde",
+      "binaries.sha256": "38632189c34d74957e6068e2262aed7a330de94d032de1bab1710b1cafeb2a65",
+      "candidate-identity.json": "afd2bcd200f6d258f8b79a0da6784e1d17d93b9a260011f983e963f39baf3ab3",
+      "baseline-identity.json": "6a1a675d86eac85a3f6aee5ca7e496b386fcb96cc221ffb574542e3f2cbd8ab6"
+    }
+  },
+  "constraints": "Formal historical/raw evidence retained per user instruction. No reviewer Cargo/tests/benchmarks/reruns/new analyzer. Content review has not begun at procedural sealing.",
+  "next_stage": "Parent explicitly authorized scoped independent production code/Rust/security review after this PASS; separate author reviews harness/workflow. No WAN-result approval implied.",
+  "source_revision": "980d5cc08b01833bb4a86f4bb3f7962b42de5055"
 }
