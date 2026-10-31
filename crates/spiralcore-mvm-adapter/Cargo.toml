@@ -1,0 +1,31 @@
+[package]
+name = "spiralcore-mvm-adapter"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.97"
+publish = false
+description = "Experimental SpiralCore adapter to pinned canonical MVM mailbox envelopes"
+
+[features]
+default = []
+conformance = []
+hardware-sha256 = ["spiralcore-transfer/hardware-sha256"]
+
+[dependencies]
+spiralcore-transfer = { path = "../spiralcore-transfer" }
+mvm-core = { git = "https://github.com/tinylabscom/mvm", rev = "3104a12c5b071a6851323fa8115d2afaf3f0bb8b", default-features = false }
+mvm-contract = { git = "https://github.com/tinylabscom/mvm", rev = "3104a12c5b071a6851323fa8115d2afaf3f0bb8b", default-features = false, features = ["protocol"] }
+ed25519-dalek = "3"
+rand = "0.10"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+serde_jcs = "0.1"
+cpu-time = "1"
+
+[profile.dev]
+debug = 0
+incremental = false
+
+[profile.test]
+debug = 0
+incremental = false

@@ -148,8 +148,47 @@ open-before-commit interruption, lost publication reply and cache restart.
 No key or plaintext payload is retained in telemetry. No FIPS validation is
 claimed by using SHA-256/AES/Ed25519 or upstream crypto.
 
+The unchanged selector minimizes its original successful-miss HTTP-body cost
+model. That is not a proof of minimum canonical MVM-envelope bytes: this adapter
+uses one frame per message and adds canonical envelope overhead. Measure actual
+envelope bytes against Whole in the demo; adapting the cost model is a separate
+integration decision informed by those observations.
+
 Live MVM delivery remains gated on #4629's dedicated service and a supported
 authorized transport/receive seam (#4633 for Iroh). This implementation prepares
 that handoff without editing MVM upstream, allocating a port or repurposing
 FlowMux 5253. Subsequent acceptance is one guest/host, two guests under a small
 orchestrator, two actual hosts, then three-peer recovery with the same contract.
+
+## Concrete Rust seam
+
+`Policy::new(OpenContext)`, `snapshot()` and `replace(OpenContext)` provide a
+shared generation-counted current policy. A replacement invalidates previously
+opened messages, including a revocation or epoch change between open and publish.
+`DirectionConfig` owns policy, signed capability/binding, signing/encryption keys,
+authority verifying key, boot/key IDs, exact message kind and optional reply route.
+`Direction::new` validates the restricted profile; `send(frame, transport, cancel)`
+reauthorizes the signed route against current policy/time, prepares and authorizes
+the canonical envelope, then calls the upstream channel. `open(wire)` returns
+an unforgeable `VerifiedFrame` only after canonical authorization and bounded
+frame decode. `route_id()` supports canonical in-memory draining.
+
+`Direction::authority()` supplies an opaque `MailboxAuthority` for the existing
+generic Endpoint. Before any successful open it authorizes nothing. Successful
+open installs only the exact verified context and policy generation; every
+Endpoint authority call checks that live generation. `VerifiedFrame` exposes
+borrowed `frame()` and `context()` accessors and a consuming
+`dispatch(endpoint, monotonic_seconds)` that also checks its own generation.
+Policy changes never leave an old snapshot authorized. All signed-route expiry,
+epoch and revocation checks remain live, not construction-time assumptions.
+
+The `conformance` feature alone exposes `Harness::new(path)`, `context()`,
+ordered `exchange(&[Frame])`, `counters()`, `read_object(id)`, `reopen()` and
+forward/reverse policy handles for tests. Constructor setup performs and counts
+one canonical sealed/opened Status scope probe without Endpoint dispatch so
+even the initial WarmSession context is derived after opening. Counters separate
+sent frame/envelope bytes and counts from received envelope/opened frame bytes.
+The fixture retains its own controlled request metadata to construct correlated
+reverse headers; this does not turn the payload-only upstream open API into a
+general verified header/reply-handle API. Synthetic key generation and fixture
+policy do not ship in the default crate feature set.
