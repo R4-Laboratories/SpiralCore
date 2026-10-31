@@ -256,6 +256,61 @@ over the previous selector. The `setup-*` commands and
 retain equal zstd controls, setup and seed charges, and the misleading-sample
 CPU regression. Artifact and wire formats are unchanged.
 
+## Acknowledged rolling sessions
+
+`session::WarmSession` owns a reusable selector and the last acknowledged object:
+
+```rust,ignore
+let mut session = session::WarmSession::new(&context, &artifact)?;
+session.seed_base(&context, base_vec, seed_id, |frames| http.exchange(frames))?;
+let sent = session.send(&context, next_vec, update_id, false,
+    |frames| http.exchange(frames))?;
+```
+
+Fit the artifact once on separate training data. Each input is an owned `Vec<u8>`
+whose length **and capacity** must be at most 16 MiB. Only a validated durable ACK
+moves that same buffer into the rolling base; its cached identity avoids hashing
+the base again. `SessionStats` returns the unchanged selection receipt and client
+statistics. Measure the complete `send` call to include selection and hashing;
+the nested client elapsed interval starts after preparation.
+
+The session is bound to all fields and epochs of the supplied `Context`; callers
+must bind that context to their authenticated exchange. A changed context clears
+scoped state and returns `Unauthorized` before I/O; create a new session for the
+new context. `invalidate_receiver_state()` clears remote-readiness hints while
+retaining the last local ACKed bytes for inspection. A failed network attempt also
+clears hints and never promotes its target. Inputs can be consumed on failure.
+Use `recover(context, desired_vec, fresh_id, exchange)` explicitly: it probes the
+exact object identity and sends Raw only if absent. There is no hidden retry.
+An unseeded winning schema returns `Missing` before I/O; `seed_schema` is an
+explicit auxiliary transfer and does not replace the rolling application base.
+
+`session::RuntimeSession::new(&context, prepared_prediction)` similarly owns one
+fixed `PreparedPrediction`. Explicitly `seed_checkpoint` before `send`; its codec
+selection remains the existing runtime policy. Repeated sends reuse prediction
+state without advancing clocks or modifying the recipe. Recovery of a target
+does not establish checkpoint readiness, and neither session changes receiver
+authorization, replay, final hash verification or durable publication.
+
+Use `retained_bytes()` for owned buffer capacity and available codec allocation
+estimates, and `retained_charge()` for the conservative retention quota. Each
+session enforces a 512 MiB peak admission budget including input and codec scratch;
+that is not an RSS measurement. Multiple sessions need a shared application
+budget. Retain the authenticated client separately; actual connection reuse also
+depends on the configured server policy. See the
+[session design](../../docs/specs/2026-10-31-persistent-session-design.md).
+
+For the experiment origin, `wan::serve_configured` and
+`serve_observed_configured` accept `ServeConfig` with an explicit
+`ConnectionPolicy::KeepAlive`. The existing serving APIs retain their close-after-
+request behavior. A v4 campaign plan can opt in with codec caching enabled and
+`"http_keep_alive":{"max_requests_per_connection":32,"idle_timeout_ms":500}`.
+Limits are 1–64 requests per connection and 1–1000 ms for the next complete
+header. Each request rechecks authorization and scope before reading its body.
+Malformed requests, explicit client close, idle expiry and request limits close
+the connection. Connection ordinals in receiver telemetry describe only the
+observed origin hop when a relay is used.
+
 ## Compressed schema streams and prepared codec reuse
 
 The schema encoder directly matches the first validated template and stores its

@@ -268,14 +268,30 @@ fn remaining(deadline: Instant) -> std::io::Result<Duration> {
 fn read_header(
     reader: &mut BufReader<TcpStream>,
     deadline: Instant,
+    empty_timeout_is_eof: bool,
 ) -> std::io::Result<Option<Vec<u8>>> {
     let mut header = Vec::new();
     while header.len() < HEADER_LIMIT {
-        reader
-            .get_mut()
-            .set_read_timeout(Some(remaining(deadline)?))?;
+        let timeout = match remaining(deadline) {
+            Err(_) if empty_timeout_is_eof && header.is_empty() => return Ok(None),
+            value => value?,
+        };
+        reader.get_mut().set_read_timeout(Some(timeout))?;
         let mut byte = [0];
-        if reader.read(&mut byte)? == 0 {
+        let count = match reader.read(&mut byte) {
+            Err(e)
+                if empty_timeout_is_eof
+                    && header.is_empty()
+                    && matches!(
+                        e.kind(),
+                        std::io::ErrorKind::TimedOut | std::io::ErrorKind::WouldBlock
+                    ) =>
+            {
+                return Ok(None)
+            }
+            value => value?,
+        };
+        if count == 0 {
             return if header.is_empty() {
                 Ok(None)
             } else {
@@ -299,7 +315,7 @@ fn request(
     header: &[u8],
     token: &str,
     scopes: &BTreeSet<Id>,
-) -> std::result::Result<(Id, usize), u16> {
+) -> std::result::Result<(Id, usize, bool), u16> {
     let mut fields = [httparse::EMPTY_HEADER; 64];
     let mut r = httparse::Request::new(&mut fields);
     match r.parse(header) {
@@ -352,7 +368,26 @@ fn request(
     if !(12..=MAX_BATCH).contains(&len) {
         return Err(413);
     }
-    Ok((scope, len))
+    let close = match single("connection")? {
+        None => false,
+        Some(value) => {
+            let value = std::str::from_utf8(value).map_err(|_| 400u16)?;
+            let mut close = false;
+            for token in value.split(',') {
+                let token = token.trim();
+                if token.is_empty()
+                    || !token
+                        .bytes()
+                        .all(|b| b.is_ascii_alphanumeric() || b"!#$%&'*+-.^_`|~".contains(&b))
+                {
+                    return Err(400);
+                }
+                close |= token.eq_ignore_ascii_case("close");
+            }
+            close
+        }
+    };
+    Ok((scope, len, close))
 }
 fn response(
     stream: &mut TcpStream,
@@ -413,9 +448,81 @@ fn process(
 #[derive(Debug, Clone, Copy)]
 pub struct RequestObservation {
     pub request_ordinal: usize,
+    pub connection_ordinal: usize,
+    pub request_on_connection: usize,
     pub scope: Id,
     pub http_status: u16,
     pub codec_cache: CodecCacheStats,
+}
+
+/// Opt-in bounded reuse for the serial experiment origin. Defaults remain close.
+#[derive(Debug, Clone, Copy)]
+pub enum ConnectionPolicy {
+    Close,
+    KeepAlive {
+        max_requests_per_connection: usize,
+        idle_timeout: Duration,
+    },
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct ServeConfig {
+    pub duration: Duration,
+    pub max_requests: usize,
+    pub connection_policy: ConnectionPolicy,
+}
+
+impl ServeConfig {
+    fn validate(self) -> Result<()> {
+        if self.max_requests == 0
+            || self.max_requests > 16384
+            || self.duration.is_zero()
+            || self.duration > Duration::from_secs(3600)
+        {
+            return Err(Error::Limit);
+        }
+        if let ConnectionPolicy::KeepAlive {
+            max_requests_per_connection,
+            idle_timeout,
+        } = self.connection_policy
+        {
+            if !(1..=64).contains(&max_requests_per_connection)
+                || idle_timeout < Duration::from_millis(1)
+                || idle_timeout > Duration::from_secs(1)
+            {
+                return Err(Error::Limit);
+            }
+        }
+        Ok(())
+    }
+}
+
+pub fn serve_configured(
+    listener: TcpListener,
+    endpoint: Endpoint<BenchAuthority>,
+    token: &str,
+    scopes: &BTreeSet<Id>,
+    config: ServeConfig,
+) -> Result<()> {
+    serve_inner(listener, endpoint, token, scopes, config, None)
+}
+
+pub fn serve_observed_configured(
+    listener: TcpListener,
+    endpoint: Endpoint<BenchAuthority>,
+    token: &str,
+    scopes: &BTreeSet<Id>,
+    config: ServeConfig,
+    mut observer: impl FnMut(RequestObservation) -> Result<()>,
+) -> Result<()> {
+    serve_inner(
+        listener,
+        endpoint,
+        token,
+        scopes,
+        config,
+        Some(&mut observer),
+    )
 }
 
 pub fn serve(
@@ -431,8 +538,11 @@ pub fn serve(
         endpoint,
         token,
         scopes,
-        duration,
-        max_requests,
+        ServeConfig {
+            duration,
+            max_requests,
+            connection_policy: ConnectionPolicy::Close,
+        },
         None,
     )
 }
@@ -453,8 +563,11 @@ pub fn serve_observed(
         endpoint,
         token,
         scopes,
-        duration,
-        max_requests,
+        ServeConfig {
+            duration,
+            max_requests,
+            connection_policy: ConnectionPolicy::Close,
+        },
         Some(&mut observer),
     )
 }
@@ -464,25 +577,27 @@ fn serve_inner(
     mut endpoint: Endpoint<BenchAuthority>,
     token: &str,
     scopes: &BTreeSet<Id>,
-    duration: Duration,
-    max_requests: usize,
+    config: ServeConfig,
     mut observer: Option<&mut dyn FnMut(RequestObservation) -> Result<()>>,
 ) -> Result<()> {
     parse_id(token).map_err(|_| Error::Unauthorized)?;
-    if !listener.local_addr()?.ip().is_loopback()
-        || scopes.is_empty()
-        || scopes.len() > 4096
-        || max_requests == 0
-        || max_requests > 16384
-        || duration > Duration::from_secs(3600)
-    {
+    config.validate()?;
+    if !listener.local_addr()?.ip().is_loopback() || scopes.is_empty() || scopes.len() > 4096 {
         return Err(Error::Limit);
     }
     listener.set_nonblocking(true)?;
     let start = Instant::now();
-    let end = start + duration;
+    let end = start + config.duration;
     let mut requests = 0;
-    while Instant::now() < end && requests < max_requests {
+    let mut connections = 0;
+    let (connection_limit, idle_timeout) = match config.connection_policy {
+        ConnectionPolicy::Close => (1, Duration::ZERO),
+        ConnectionPolicy::KeepAlive {
+            max_requests_per_connection,
+            idle_timeout,
+        } => (max_requests_per_connection, idle_timeout),
+    };
+    while Instant::now() < end && requests < config.max_requests {
         let (stream, peer) = match listener.accept() {
             Ok(p) => p,
             Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => {
@@ -496,27 +611,37 @@ fn serve_inner(
         }
         stream.set_nonblocking(false)?;
         stream.set_nodelay(true)?;
+        connections += 1;
         let mut reader = BufReader::new(stream);
-        'connection: {
+        for request_index in 0..connection_limit {
+            if Instant::now() >= end || requests >= config.max_requests {
+                break;
+            }
             let deadline = (Instant::now() + IO_TIMEOUT).min(end);
+            let header_timeout = if request_index == 0 {
+                Duration::from_secs(5)
+            } else {
+                idle_timeout
+            };
             let header = match read_header(
                 &mut reader,
-                (Instant::now() + Duration::from_secs(5)).min(deadline),
+                (Instant::now() + header_timeout).min(deadline),
+                request_index != 0,
             ) {
                 Ok(Some(h)) => h,
-                Ok(None) => break 'connection,
+                Ok(None) => break,
                 Err(_) => {
                     requests += 1;
                     let _ = response(reader.get_mut(), 400, &[], true, deadline);
-                    break 'connection;
+                    break;
                 }
             };
             requests += 1;
-            let (scope, len) = match request(&header, token, scopes) {
+            let (scope, len, client_close) = match request(&header, token, scopes) {
                 Ok(r) => r,
                 Err(status) => {
                     let _ = response(reader.get_mut(), status, &[], true, deadline);
-                    break 'connection;
+                    break;
                 }
             };
             let mut body = vec![0; len];
@@ -535,7 +660,7 @@ fn serve_inner(
             }
             if filled != len {
                 let _ = response(reader.get_mut(), 400, &[], true, deadline);
-                break 'connection;
+                break;
             }
             let (status, body) = match process(&mut endpoint, scope, &body, start, deadline) {
                 Ok(b) => (200, b),
@@ -544,13 +669,21 @@ fn serve_inner(
             if let Some(observe) = observer.as_mut() {
                 observe(RequestObservation {
                     request_ordinal: requests,
+                    connection_ordinal: connections,
+                    request_on_connection: request_index + 1,
                     scope,
                     http_status: status,
                     codec_cache: endpoint.codec_cache_stats(),
                 })?;
             }
-            // Do not let an idle pooled origin connection monopolize this serial endpoint.
-            let _ = response(reader.get_mut(), status, &body, true, deadline);
+            let close = client_close
+                || status != 200
+                || request_index + 1 == connection_limit
+                || requests >= config.max_requests
+                || Instant::now() >= end;
+            if response(reader.get_mut(), status, &body, close, deadline).is_err() || close {
+                break;
+            }
         }
     }
     Ok(())

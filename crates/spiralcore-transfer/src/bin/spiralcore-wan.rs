@@ -63,6 +63,38 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         }
         _ => return Err("invalid codec cache configuration; v4 boolean required".into()),
     };
+    let connection_policy = match plan.get("http_keep_alive") {
+        None => wan::ConnectionPolicy::Close,
+        Some(value) => {
+            let config = value.as_object().ok_or("invalid keep-alive object")?;
+            if plan.get("schema").and_then(|v| v.as_str()) != Some("spiralcore.wan.plan.v4")
+                || !codec_cache_enabled
+                || config.len() != 2
+            {
+                return Err("keep-alive requires v4 codec cache and exactly two fields".into());
+            }
+            let count = config
+                .get("max_requests_per_connection")
+                .and_then(|v| v.as_u64())
+                .ok_or("invalid keep-alive request limit")?;
+            let idle = config
+                .get("idle_timeout_ms")
+                .and_then(|v| v.as_u64())
+                .ok_or("invalid keep-alive idle timeout")?;
+            if !(1..=64).contains(&count) || !(1..=1000).contains(&idle) {
+                return Err("keep-alive limits require 1..64 requests and 1..1000 ms idle".into());
+            }
+            wan::ConnectionPolicy::KeepAlive {
+                max_requests_per_connection: count as usize,
+                idle_timeout: Duration::from_millis(idle),
+            }
+        }
+    };
+    let serve_config = wan::ServeConfig {
+        duration: Duration::from_secs(seconds),
+        max_requests: 16384,
+        connection_policy,
+    };
     let scopes = plan
         .get("allowed_scopes")
         .and_then(|x| x.as_array())
@@ -84,20 +116,20 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     let mut endpoint = Endpoint::open_with_policy(cache, wan::limits(), BenchAuthority, policy)?;
     endpoint.set_codec_cache_enabled(codec_cache_enabled)?;
     let listener = TcpListener::bind(addr)?;
-    eprintln!("POLICY cold_graph_policy={policy:?} codec_cache_enabled={codec_cache_enabled}");
+    eprintln!("POLICY cold_graph_policy={policy:?} codec_cache_enabled={codec_cache_enabled} connection_policy={connection_policy:?}");
     println!("READY addr={}", listener.local_addr()?);
     std::io::stdout().flush()?;
     if codec_cache_enabled {
-        wan::serve_observed(
+        wan::serve_observed_configured(
             listener,
             endpoint,
             &token,
             &scopes,
-            Duration::from_secs(seconds),
-            16384,
+            serve_config,
             |observation| {
                 let stats = observation.codec_cache;
                 let row = serde_json::json!({"event":"wan_request", "request_ordinal":observation.request_ordinal,
+                "connection_ordinal":observation.connection_ordinal, "request_on_connection":observation.request_on_connection,
                 "scope":spiralcore_transfer::hex(&observation.scope), "http_status":observation.http_status,
                 "codec_cache":{"hits":stats.hits,"misses":stats.misses,"preparations":stats.preparations,
                     "evictions":stats.evictions,"entries":stats.entries,"resident_bytes":stats.resident_bytes}});
@@ -110,14 +142,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             },
         )?;
     } else {
-        wan::serve(
-            listener,
-            endpoint,
-            &token,
-            &scopes,
-            Duration::from_secs(seconds),
-            16384,
-        )?;
+        wan::serve_configured(listener, endpoint, &token, &scopes, serve_config)?;
     }
     Ok(())
 }

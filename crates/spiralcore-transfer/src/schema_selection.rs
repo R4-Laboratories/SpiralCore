@@ -104,6 +104,40 @@ impl PreparedSelector {
         schema_ready: bool,
         warm_probe: bool,
     ) -> Result<PreparedWarmTransfer> {
+        self.prepare_warm_with_identity(target, base, schema_ready, warm_probe, |bytes| {
+            Ok(object_id(bytes))
+        })
+    }
+
+    // Only session-owned ACKed bytes can supply a cached identity. This keeps
+    // the ordinary public API and its base hashing behavior unchanged.
+    pub(crate) fn prepare_acknowledged(
+        &mut self,
+        target: &[u8],
+        base: Option<&crate::session::AcknowledgedBase>,
+        schema_ready: bool,
+        warm_probe: bool,
+    ) -> Result<PreparedWarmTransfer> {
+        self.prepare_warm_with_identity(
+            target,
+            base.map(crate::session::AcknowledgedBase::bytes),
+            schema_ready,
+            warm_probe,
+            |_| {
+                base.map(crate::session::AcknowledgedBase::id)
+                    .ok_or(Error::Integrity)
+            },
+        )
+    }
+
+    fn prepare_warm_with_identity<F: FnOnce(&[u8]) -> Result<Id>>(
+        &mut self,
+        target: &[u8],
+        base: Option<&[u8]>,
+        schema_ready: bool,
+        warm_probe: bool,
+        base_identity: F,
+    ) -> Result<PreparedWarmTransfer> {
         if target.len() > client::MAX_BATCHED_OBJECT
             || base.is_some_and(|b| b.len() > client::MAX_BATCHED_OBJECT)
         {
@@ -203,7 +237,7 @@ impl PreparedSelector {
                 object: object_id(target),
                 manifest: None,
                 base: match selected {
-                    Mode::SparseV1 => Some(object_id(base.ok_or(Error::Integrity)?)),
+                    Mode::SparseV1 => Some(base_identity(base.ok_or(Error::Integrity)?)?),
                     Mode::SchemaZstdV1 => Some(self.artifact_id()),
                     _ => None,
                 },
