@@ -1,0 +1,50 @@
+   Compiling spiralcore-transfer v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer)
+    Finished `release` profile [optimized] target(s) in 1.31s
+     Running tests/unrelated_cpu_workflow.rs (/Users/casey.allard/spiralcore/target/aarch64-apple-darwin/release/deps/unrelated_cpu_workflow-3d16ae6ee7a77f6a)
+
+running 5 tests
+test unrelated_workflow_fixes_one_six_shard_pilot_and_storage_cap ... FAILED
+test unrelated_workflow_pins_overlay_restore_and_always_retains_failures ... FAILED
+test unrelated_workflow_requires_exact_source_branch_and_first_attempt ... FAILED
+test unrelated_workflow_requires_the_complete_capability ... FAILED
+test unrelated_workflow_restricts_all_six_receiver_origins ... FAILED
+
+failures:
+
+---- unrelated_workflow_fixes_one_six_shard_pilot_and_storage_cap stdout ----
+
+thread 'unrelated_workflow_fixes_one_six_shard_pilot_and_storage_cap' (67875926) panicked at tests/unrelated_cpu_workflow.rs:9:6:
+unrelated CPU workflow must exist: Os { code: 2, kind: NotFound, message: "No such file or directory" }
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- unrelated_workflow_pins_overlay_restore_and_always_retains_failures stdout ----
+
+thread 'unrelated_workflow_pins_overlay_restore_and_always_retains_failures' (67875927) panicked at tests/unrelated_cpu_workflow.rs:9:6:
+unrelated CPU workflow must exist: Os { code: 2, kind: NotFound, message: "No such file or directory" }
+
+---- unrelated_workflow_requires_exact_source_branch_and_first_attempt stdout ----
+
+thread 'unrelated_workflow_requires_exact_source_branch_and_first_attempt' (67875928) panicked at tests/unrelated_cpu_workflow.rs:9:6:
+unrelated CPU workflow must exist: Os { code: 2, kind: NotFound, message: "No such file or directory" }
+
+---- unrelated_workflow_requires_the_complete_capability stdout ----
+
+thread 'unrelated_workflow_requires_the_complete_capability' (67875929) panicked at tests/unrelated_cpu_workflow.rs:9:6:
+unrelated CPU workflow must exist: Os { code: 2, kind: NotFound, message: "No such file or directory" }
+
+---- unrelated_workflow_restricts_all_six_receiver_origins stdout ----
+
+thread 'unrelated_workflow_restricts_all_six_receiver_origins' (67875930) panicked at tests/unrelated_cpu_workflow.rs:9:6:
+unrelated CPU workflow must exist: Os { code: 2, kind: NotFound, message: "No such file or directory" }
+
+
+failures:
+    unrelated_workflow_fixes_one_six_shard_pilot_and_storage_cap
+    unrelated_workflow_pins_overlay_restore_and_always_retains_failures
+    unrelated_workflow_requires_exact_source_branch_and_first_attempt
+    unrelated_workflow_requires_the_complete_capability
+    unrelated_workflow_restricts_all_six_receiver_origins
+
+test result: FAILED. 0 passed; 5 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `--test unrelated_cpu_workflow`

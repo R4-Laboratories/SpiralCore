@@ -68,3 +68,33 @@ fn optimized_delta_preserves_all_frames_across_changes_and_boundaries() {
         check(&base, &[&base[1..], &[0]].concat());
     }
 }
+
+#[test]
+fn unrelated_rejection_preserves_short_equal_runs_and_shifted_edge_reuse() {
+    let base = vec![0x31; 65_537];
+    let unrelated = vec![0x93; base.len()];
+    check(&base, &unrelated);
+    // Aligned COPY eligibility starts at 32 bytes. Exact old frames, rather than
+    // an assumed winning mode, remain the authority on either side of it.
+    for length in [31, 32, 33, 256] {
+        for start in [7, 63, crate::MAX_CHUNK - 17] {
+            let mut target = unrelated.clone();
+            target[start..start + length].copy_from_slice(&base[start..start + length]);
+            check(&base, &target);
+        }
+    }
+    // Prefix/suffix recipes must remain eligible even when lengths differ and
+    // the reusable suffix is not at the same aligned offset.
+    let base: Vec<u8> = (0..2048).map(|i| (i % 251) as u8).collect();
+    for suffix in [false, true] {
+        for length in [base.len() - 37, base.len() + 37] {
+            let mut target = vec![0xff; length];
+            if suffix {
+                target[length - 256..].copy_from_slice(&base[base.len() - 256..]);
+            } else {
+                target[..256].copy_from_slice(&base[..256]);
+            }
+            check(&base, &target);
+        }
+    }
+}

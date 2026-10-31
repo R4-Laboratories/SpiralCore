@@ -1,0 +1,78 @@
+   Compiling spiralcore-transfer v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer)
+warning: unused import: `super::*`
+ --> examples/unrelated_profile.rs:6:9
+  |
+6 |     use super::*;
+  |         ^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+error[E0425]: cannot find function `stage_schedule` in this scope
+  --> examples/unrelated_profile.rs:11:24
+   |
+11 |         let schedule = stage_schedule();
+   |                        ^^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `profile_fixture` in this scope
+  --> examples/unrelated_profile.rs:27:28
+   |
+27 |         let (base, warm) = profile_fixture(0, false, "localized").unwrap();
+   |                            ^^^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `profile_fixture` in this scope
+  --> examples/unrelated_profile.rs:31:34
+   |
+31 |         let (prior, unrelated) = profile_fixture(0, false, "unrelated").unwrap();
+   |                                  ^^^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `profile_fixture` in this scope
+  --> examples/unrelated_profile.rs:34:20
+   |
+34 |         assert_eq!(profile_fixture(0, false, "unrelated").unwrap(), (prior, unrelated));
+   |                    ^^^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `profile_fixture` in this scope
+  --> examples/unrelated_profile.rs:35:17
+   |
+35 |         assert!(profile_fixture(3, false, "unrelated").is_err());
+   |                 ^^^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `profile_fixture` in this scope
+  --> examples/unrelated_profile.rs:36:17
+   |
+36 |         assert!(profile_fixture(0, false, "unknown").is_err());
+   |                 ^^^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `record_counts` in this scope
+  --> examples/unrelated_profile.rs:41:20
+   |
+41 |         assert_eq!(record_counts(b""), (0, 0, false));
+   |                    ^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `record_counts` in this scope
+  --> examples/unrelated_profile.rs:42:20
+   |
+42 |         assert_eq!(record_counts(b"a\n"), (1, 1, false));
+   |                    ^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `record_counts` in this scope
+  --> examples/unrelated_profile.rs:43:20
+   |
+43 |         assert_eq!(record_counts(b"a\nb"), (1, 2, false));
+   |                    ^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `record_counts` in this scope
+  --> examples/unrelated_profile.rs:44:20
+   |
+44 |         assert_eq!(record_counts(&vec![b'\n'; 65_536]), (65_536, 65_536, false));
+   |                    ^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `record_counts` in this scope
+  --> examples/unrelated_profile.rs:45:20
+   |
+45 |         assert_eq!(record_counts(&vec![b'\n'; 65_537]), (65_537, 65_537, true));
+   |                    ^^^^^^^^^^^^^ not found in this scope
+
+For more information about this error, try `rustc --explain E0425`.
+warning: `spiralcore-transfer` (example "unrelated_profile" test) generated 1 warning
+error: could not compile `spiralcore-transfer` (example "unrelated_profile" test) due to 11 previous errors; 1 warning emitted

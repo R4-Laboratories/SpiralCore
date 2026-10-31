@@ -1,0 +1,25 @@
+   Compiling spiralcore-transfer v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer)
+    Finished `release` profile [optimized] target(s) in 1.50s
+     Running tests/unrelated_delta.rs (/Users/casey.allard/spiralcore/target/aarch64-apple-darwin/release/deps/unrelated_delta-c87d48baeb4dd1b8)
+
+running 2 tests
+test allocation_counter_observes_large_requests_only_within_its_scope ... ok
+test all_literal_rejection_does_not_allocate_payload_sized_buffers ... FAILED
+
+failures:
+
+---- all_literal_rejection_does_not_allocate_payload_sized_buffers stdout ----
+
+thread 'all_literal_rejection_does_not_allocate_payload_sized_buffers' (67869934) panicked at tests/unrelated_delta.rs:70:5:
+assertion `left == right` failed: a provably rejected all-literal recipe must not allocate a frame payload
+  left: 4
+ right: 0
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    all_literal_rejection_does_not_allocate_payload_sized_buffers
+
+test result: FAILED. 1 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `--test unrelated_delta`
