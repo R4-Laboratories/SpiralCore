@@ -221,6 +221,7 @@ pub(super) struct Measured {
     exchange_wall: u128,
     before: WireMetrics,
     after: WireMetrics,
+    transport_failure: Option<wan::TransportFailure>,
 }
 pub(super) fn measure<F>(http: &mut HttpClient, call: F) -> Measured
 where
@@ -244,6 +245,11 @@ where
     let sender_cpu = cpu.elapsed().as_micros();
     let wall = wall.elapsed().as_micros();
     let after = http.metrics();
+    let transport_failure = if result.is_err() && after.http_requests > before.http_requests {
+        http.last_transport_failure()
+    } else {
+        None
+    };
     Measured {
         result,
         sender_cpu,
@@ -252,6 +258,7 @@ where
         exchange_wall,
         before,
         after,
+        transport_failure,
     }
 }
 impl Measured {
@@ -273,7 +280,7 @@ impl Measured {
         let receiver = self.after.receiver_cpu_micros - self.before.receiver_cpu_micros;
         json!({"event":"operation","phase":phase,"position":position,"bytes":expected["bytes"],"object":expected["object"],"sha256":expected["sha256"],"sender_cpu_us":self.sender_cpu,"receiver_cpu_us":receiver,"cpu_us":self.sender_cpu+receiver as u128,"wall_us":self.wall,
             "exchange_cpu_us":self.exchange_cpu,"exchange_wall_us":self.exchange_wall,"receiver_wall_us":self.after.receiver_wall_micros-self.before.receiver_wall_micros,"request_body_bytes":request,"response_body_bytes":response,"body_bytes":request+response,"batches":self.after.http_requests-self.before.http_requests,
-            "mode":self.result.as_ref().ok().map(|s|format!("{:?}",s.mode)),"error":self.result.as_ref().err().map(ToString::to_string),"verification":"commit-acknowledged-independent-reopen-pending"})
+            "mode":self.result.as_ref().ok().map(|s|format!("{:?}",s.mode)),"error":self.result.as_ref().err().map(ToString::to_string),"transport_failure":self.transport_failure,"verification":"commit-acknowledged-independent-reopen-pending"})
     }
 }
 enum Sender {
@@ -1279,6 +1286,87 @@ pub(super) fn command(args: &[String]) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn measured_transport_failure_is_sanitized_and_not_reused_without_exchange() {
+        use std::io::{BufRead, BufReader, Read};
+        use std::net::TcpListener;
+        use std::time::Duration;
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let address = listener.local_addr().unwrap();
+        let server = std::thread::spawn(move || {
+            let (stream, _) = listener.accept().unwrap();
+            stream
+                .set_read_timeout(Some(Duration::from_secs(5)))
+                .unwrap();
+            let mut stream = BufReader::new(stream);
+            let mut length = None;
+            loop {
+                let mut line = String::new();
+                stream.read_line(&mut line).unwrap();
+                if line == "\r\n" {
+                    break;
+                }
+                if let Some(n) = line.to_ascii_lowercase().strip_prefix("content-length:") {
+                    length = Some(n.trim().parse::<usize>().unwrap());
+                }
+            }
+            let mut body = vec![0; length.unwrap()];
+            stream.read_exact(&mut body).unwrap();
+            stream.get_mut().write_all(b"HTTP/1.1 429 Too Many Requests\r\nContent-Length: 21\r\nX-Private: sensitive-header\r\nConnection: close\r\n\r\nsensitive-error-body!").unwrap();
+        });
+        let token = "a".repeat(64);
+        let url = format!("http://{address}/");
+        let mut http = HttpClient::new(&url, &token, [8; 32]).unwrap();
+        let frames = [Frame {
+            kind: 1,
+            transfer: [4; 32],
+            seq: 0,
+            body: vec![],
+        }];
+        let measured = measure(&mut http, |exchange| {
+            exchange(&frames)?;
+            Err(spiralcore_transfer::Error::Unknown)
+        });
+        server.join().unwrap();
+        let row = measured.row("target", Some(1), b"fixture");
+        assert_eq!(
+            row["transport_failure"],
+            json!({"stage":"send","category":"http_status","http_status":429,"io_kind":null,"timeout_phase":null})
+        );
+        for sensitive in [
+            token.as_str(),
+            url.as_str(),
+            "sensitive-header",
+            "sensitive-error-body!",
+        ] {
+            assert!(!row.to_string().contains(sensitive));
+        }
+        let local_failure = measure(&mut http, |_| Err(spiralcore_transfer::Error::Limit));
+        assert_eq!(
+            local_failure
+                .row("target", Some(2), b"fixture")
+                .get("transport_failure"),
+            Some(&Value::Null)
+        );
+        let success = measure(&mut http, |_| {
+            Ok(client::Stats {
+                object: object_id(b"fixture"),
+                mode: Mode::Raw,
+                request_bytes: 0,
+                response_bytes: 0,
+                data_bytes: 0,
+                records_sent: 0,
+                requests: 0,
+                elapsed_micros: 0,
+            })
+        });
+        assert_eq!(
+            success
+                .row("target", Some(3), b"fixture")
+                .get("transport_failure"),
+            Some(&Value::Null)
+        );
+    }
     // Synthetic receipts qualify the analyzer only; never written as measurements.
     fn fake_operation(
         m: &Value,

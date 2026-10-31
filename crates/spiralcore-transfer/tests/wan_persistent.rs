@@ -361,3 +361,230 @@ fn invalid_keep_alive_plan_is_rejected_before_cache_creation() {
         assert!(!cache.exists());
     }
 }
+
+fn drain_diagnostic_request(request: &mut BufReader<TcpStream>) {
+    let mut line = String::new();
+    let mut length = None;
+    loop {
+        line.clear();
+        assert!(request.read_line(&mut line).unwrap() > 0);
+        if line == "\r\n" {
+            break;
+        }
+        if let Some((_, value)) = line
+            .split_once(':')
+            .filter(|(name, _)| name.eq_ignore_ascii_case("content-length"))
+        {
+            length = Some(value.trim().parse::<usize>().unwrap());
+        }
+    }
+    let length = length.unwrap();
+    assert!(length < 4096);
+    request.read_exact(&mut vec![0; length]).unwrap();
+}
+
+#[test]
+fn client_transport_failure_keeps_only_sanitized_status_and_resets_per_exchange() {
+    for status in [400, 502] {
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let url = format!("http://{}", listener.local_addr().unwrap());
+        let server = thread::spawn(move || {
+            let (stream, _) = listener.accept().unwrap();
+            let mut request = BufReader::new(stream);
+            drain_diagnostic_request(&mut request);
+            write!(request.get_mut(), "HTTP/1.1 {status} Rejected\r\nContent-Length: 0\r\nX-Untrusted: private-server-text\r\nConnection: close\r\n\r\n").unwrap();
+            drop(request);
+            let (stream, _) = listener.accept().unwrap();
+            let mut request = BufReader::new(stream);
+            drain_diagnostic_request(&mut request);
+            let frames = wan::decode_batch(&batch(1)).unwrap();
+            let reply = frames[0].reply(103, object_id(&[1, 0, 255, 0]).to_vec());
+            let encoded = wan::encode_batch(&[reply]).unwrap();
+            let mut body = b"SCWREP01".to_vec();
+            body.extend_from_slice(&[0; 16]);
+            body.extend_from_slice(&encoded[8..]);
+            write!(
+                request.get_mut(),
+                "HTTP/1.1 200 OK\r\nContent-Length: {}\r\nConnection: close\r\n\r\n",
+                body.len()
+            )
+            .unwrap();
+            request.get_mut().write_all(&body).unwrap();
+        });
+        let mut client = wan::HttpClient::new(&url, TOKEN, [1; 32]).unwrap();
+        let frames = wan::decode_batch(&batch(1)).unwrap();
+        assert!(matches!(
+            client.exchange(&frames),
+            Err(spiralcore_transfer::Error::Storage)
+        ));
+        let failure = client.last_transport_failure().unwrap();
+        assert_eq!(failure.stage, "send");
+        assert_eq!(failure.category, "http_status");
+        assert_eq!(failure.http_status, Some(status));
+        assert_eq!(failure.io_kind, None);
+        assert_eq!(failure.timeout_phase, None);
+        let safe = serde_json::to_string(&failure).unwrap();
+        for secret in [TOKEN, "private-server-text", url.as_str()] {
+            assert!(!safe.contains(secret));
+        }
+        assert!(client.exchange(&frames).is_ok());
+        assert!(client.last_transport_failure().is_none());
+        assert!(client.exchange(&[]).is_err());
+        assert!(client.last_transport_failure().is_none());
+        server.join().unwrap();
+    }
+}
+
+#[test]
+fn client_transport_failure_distinguishes_a_truncated_response_body() {
+    let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+    let url = format!("http://{}", listener.local_addr().unwrap());
+    let server = thread::spawn(move || {
+        let (stream, _) = listener.accept().unwrap();
+        let mut request = BufReader::new(stream);
+        drain_diagnostic_request(&mut request);
+        request
+            .get_mut()
+            .write_all(b"HTTP/1.1 200 OK\r\nContent-Length: 100\r\nConnection: close\r\n\r\nx")
+            .unwrap();
+        request.get_mut().shutdown(Shutdown::Write).unwrap();
+    });
+    let mut client = wan::HttpClient::new(&url, TOKEN, [1; 32]).unwrap();
+    assert!(matches!(
+        client.exchange(&wan::decode_batch(&batch(1)).unwrap()),
+        Err(spiralcore_transfer::Error::Malformed)
+    ));
+    let failure = client.last_transport_failure().unwrap();
+    assert_eq!(failure.stage, "response_body");
+    assert!(matches!(failure.category, "io" | "protocol"));
+    assert_eq!(failure.http_status, None);
+    assert!(!serde_json::to_string(&failure).unwrap().contains(TOKEN));
+    server.join().unwrap();
+}
+
+type DiagnosticTask = thread::JoinHandle<(Vec<usize>, Vec<wan::ConnectionObservation>)>;
+fn diagnostic_origin(store: &Store) -> (String, DiagnosticTask) {
+    let endpoint = Endpoint::open_with_policy(
+        &store.0.join("cache"),
+        wan::limits(),
+        BenchAuthority,
+        ColdGraphPolicy::Disabled,
+    )
+    .unwrap();
+    let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+    let address = listener.local_addr().unwrap().to_string();
+    let task = thread::spawn(move || {
+        let mut admitted = Vec::new();
+        let mut diagnostics = Vec::new();
+        wan::serve_diagnosed_configured(
+            listener,
+            endpoint,
+            TOKEN,
+            &BTreeSet::from([[1; 32]]),
+            ServeConfig {
+                duration: Duration::from_secs(5),
+                max_requests: 2,
+                connection_policy: ConnectionPolicy::KeepAlive {
+                    max_requests_per_connection: 32,
+                    idle_timeout: Duration::from_millis(50),
+                },
+            },
+            |r| {
+                admitted.push(r.request_ordinal);
+                Ok(())
+            },
+            |d| {
+                diagnostics.push(d);
+                Ok(())
+            },
+        )
+        .unwrap();
+        (admitted, diagnostics)
+    });
+    (address, task)
+}
+
+#[test]
+fn connection_diagnostics_distinguish_empty_idle_from_rejected_auth_without_leaks() {
+    let store = Store::new();
+    let (address, task) = diagnostic_origin(&store);
+    let mut first = socket(&address);
+    write_request(&mut first, 1, "");
+    assert!(reply(&mut first).0.starts_with("HTTP/1.1 200"));
+    assert_eq!(first.read(&mut [0]).unwrap(), 0);
+    let mut second = socket(&address);
+    write!(second.get_mut(), "POST /v1/batch HTTP/1.1\r\nAuthorization: Bearer secret-sentinel\r\nX-Spiral-Scope: {}\r\nContent-Length: 100\r\n\r\n", hex(&[1; 32])).unwrap();
+    assert!(reply(&mut second).0.starts_with("HTTP/1.1 403"));
+    let (admitted, diagnostics) = task.join().unwrap();
+    assert_eq!(admitted, vec![1]);
+    assert_eq!(diagnostics.len(), 2);
+    let idle = diagnostics[0];
+    assert_eq!(idle.reason, "idle_timeout");
+    assert_eq!(idle.header_bytes, 0);
+    assert!(!idle.request_counted);
+    assert_eq!(
+        (
+            idle.connection_ordinal,
+            idle.request_on_connection,
+            idle.request_ordinal
+        ),
+        (1, 2, 2)
+    );
+    let rejected = diagnostics[1];
+    assert_eq!(rejected.reason, "request_rejected");
+    assert_eq!(rejected.http_status, Some(403));
+    assert!(rejected.request_counted);
+    assert!(rejected.header_bytes > 0);
+    assert_eq!(
+        (
+            rejected.connection_ordinal,
+            rejected.request_on_connection,
+            rejected.request_ordinal
+        ),
+        (2, 1, 2)
+    );
+    let safe = serde_json::to_string(&diagnostics).unwrap();
+    for secret in [TOKEN, "secret-sentinel", hex(&[1; 32]).as_str()] {
+        assert!(!safe.contains(secret));
+    }
+}
+
+#[test]
+fn connection_diagnostics_preserve_partial_header_timeout_and_eof_rejections() {
+    for truncated in [false, true] {
+        let store = Store::new();
+        let (address, task) = diagnostic_origin(&store);
+        let mut stream = socket(&address);
+        write_request(&mut stream, 1, "");
+        assert!(reply(&mut stream).0.starts_with("HTTP/1.1 200"));
+        stream.get_mut().write_all(b"POST /v1").unwrap();
+        if truncated {
+            stream.get_mut().shutdown(Shutdown::Write).unwrap();
+        }
+        assert!(reply(&mut stream).0.starts_with("HTTP/1.1 400"));
+        let (admitted, diagnostics) = task.join().unwrap();
+        assert_eq!(admitted, vec![1]);
+        assert_eq!(diagnostics.len(), 1);
+        let d = diagnostics[0];
+        assert_eq!(
+            d.reason,
+            if truncated {
+                "header_truncated"
+            } else {
+                "header_timeout"
+            }
+        );
+        assert_eq!(d.header_bytes, 8);
+        assert_eq!(d.http_status, Some(400));
+        assert!(d.request_counted);
+        assert_eq!(
+            (
+                d.connection_ordinal,
+                d.request_on_connection,
+                d.request_ordinal
+            ),
+            (1, 2, 2)
+        );
+        assert!(d.elapsed_micros > 0);
+    }
+}

@@ -149,12 +149,92 @@ pub struct WireMetrics {
     pub receiver_wall_micros: u64,
     pub http_requests: u64,
 }
+
+/// Sanitized diagnostics only: every label comes from a fixed local allowlist.
+/// No error strings, URLs, credentials, headers, or payload bytes are retained.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+pub struct TransportFailure {
+    pub stage: &'static str,
+    pub category: &'static str,
+    pub http_status: Option<u16>,
+    pub io_kind: Option<&'static str>,
+    pub timeout_phase: Option<&'static str>,
+}
+fn io_label(kind: std::io::ErrorKind) -> &'static str {
+    use std::io::ErrorKind;
+    match kind {
+        ErrorKind::TimedOut => "timed_out",
+        ErrorKind::WouldBlock => "would_block",
+        ErrorKind::UnexpectedEof => "unexpected_eof",
+        ErrorKind::ConnectionReset => "connection_reset",
+        ErrorKind::ConnectionAborted => "connection_aborted",
+        ErrorKind::ConnectionRefused => "connection_refused",
+        ErrorKind::BrokenPipe => "broken_pipe",
+        ErrorKind::NotConnected => "not_connected",
+        ErrorKind::Interrupted => "interrupted",
+        ErrorKind::InvalidData => "invalid_data",
+        ErrorKind::InvalidInput => "invalid_input",
+        ErrorKind::WriteZero => "write_zero",
+        ErrorKind::PermissionDenied => "permission_denied",
+        _ => "other",
+    }
+}
+impl TransportFailure {
+    fn from_error(stage: &'static str, error: &ureq::Error) -> Self {
+        let mut failure = Self {
+            stage,
+            category: "other",
+            http_status: None,
+            io_kind: None,
+            timeout_phase: None,
+        };
+        failure.category = match error {
+            ureq::Error::StatusCode(status) => {
+                failure.http_status = Some(*status);
+                "http_status"
+            }
+            ureq::Error::Io(error) => {
+                failure.io_kind = Some(io_label(error.kind()));
+                "io"
+            }
+            ureq::Error::Timeout(phase) => {
+                failure.timeout_phase = Some(match phase {
+                    ureq::Timeout::PerRead => "per_read",
+                    ureq::Timeout::PerWrite => "per_write",
+                    ureq::Timeout::Global => "global",
+                    ureq::Timeout::PerCall => "per_call",
+                    ureq::Timeout::Resolve => "resolve",
+                    ureq::Timeout::Connect => "connect",
+                    ureq::Timeout::SendRequest => "send_request",
+                    ureq::Timeout::Await100 => "await_100",
+                    ureq::Timeout::SendBody => "send_body",
+                    ureq::Timeout::RecvResponse => "receive_response",
+                    ureq::Timeout::RecvBody => "receive_body",
+                    _ => "other",
+                });
+                "timeout"
+            }
+            ureq::Error::Protocol(_) => "protocol",
+            ureq::Error::Http(_) => "http",
+            ureq::Error::BadUri(_) => "bad_uri",
+            ureq::Error::HostNotFound => "host_not_found",
+            ureq::Error::ConnectionFailed => "connection_failed",
+            ureq::Error::RedirectFailed | ureq::Error::TooManyRedirects => "redirect",
+            ureq::Error::Tls(_) => "tls",
+            ureq::Error::BodyExceedsLimit(_) => "body_limit",
+            ureq::Error::LargeResponseHeader(_, _) => "response_header_limit",
+            _ => "other",
+        };
+        failure
+    }
+}
 pub struct HttpClient {
     agent: ureq::Agent,
     url: String,
     token: String,
     scope: Id,
     metrics: WireMetrics,
+    last_transport_failure: Option<TransportFailure>,
 }
 impl HttpClient {
     pub fn new(url: &str, token: &str, scope: Id) -> Result<Self> {
@@ -188,12 +268,19 @@ impl HttpClient {
             token: token.into(),
             scope,
             metrics: WireMetrics::default(),
+            last_transport_failure: None,
         })
     }
     pub fn metrics(&self) -> WireMetrics {
         self.metrics
     }
+    /// Latest exchange's transport failure, cleared before every new exchange.
+    /// Local codec/validation errors do not manufacture a transport failure.
+    pub fn last_transport_failure(&self) -> Option<TransportFailure> {
+        self.last_transport_failure
+    }
     pub fn exchange(&mut self, frames: &[Frame]) -> Result<Vec<Frame>> {
+        self.last_transport_failure = None;
         let body = encode_batch(frames)?;
         self.metrics.request_body_bytes += body.len() as u64;
         self.metrics.http_requests += 1;
@@ -206,9 +293,23 @@ impl HttpClient {
             .header("Accept-Encoding", "identity")
             .header("Cache-Control", "no-store")
             .send(body.as_slice())
-            .map_err(|_| Error::Storage)?;
+            .map_err(|error| {
+                self.last_transport_failure = Some(TransportFailure::from_error("send", &error));
+                Error::Storage
+            })?;
         if response.status().as_u16() != 200 || response.headers().get("content-encoding").is_some()
         {
+            self.last_transport_failure = Some(TransportFailure {
+                stage: "response_headers",
+                category: if response.status().as_u16() != 200 {
+                    "unexpected_status"
+                } else {
+                    "content_encoding"
+                },
+                http_status: Some(response.status().as_u16()),
+                io_kind: None,
+                timeout_phase: None,
+            });
             return Err(Error::Integrity);
         }
         let response = response
@@ -216,7 +317,11 @@ impl HttpClient {
             .with_config()
             .limit(MAX_BATCH as u64)
             .read_to_vec()
-            .map_err(|_| Error::Malformed)?;
+            .map_err(|error| {
+                self.last_transport_failure =
+                    Some(TransportFailure::from_error("response_body", &error));
+                Error::Malformed
+            })?;
         self.metrics.response_body_bytes += response.len() as u64;
         let mut b = response.as_slice();
         if take(&mut b, 8)? != b"SCWREP01" {
@@ -265,18 +370,41 @@ fn remaining(deadline: Instant) -> std::io::Result<Duration> {
         .filter(|d| !d.is_zero())
         .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::TimedOut, "request deadline"))
 }
+struct HeaderDiagnostic {
+    bytes: usize,
+    reason: &'static str,
+    io_kind: Option<&'static str>,
+}
+impl HeaderDiagnostic {
+    fn error(&mut self, error: &std::io::Error) {
+        self.reason = match error.kind() {
+            std::io::ErrorKind::TimedOut | std::io::ErrorKind::WouldBlock => "header_timeout",
+            std::io::ErrorKind::UnexpectedEof => "header_truncated",
+            _ => "header_io",
+        };
+        self.io_kind = Some(io_label(error.kind()));
+    }
+}
 fn read_header(
     reader: &mut BufReader<TcpStream>,
     deadline: Instant,
     empty_timeout_is_eof: bool,
+    diagnostic: &mut HeaderDiagnostic,
 ) -> std::io::Result<Option<Vec<u8>>> {
     let mut header = Vec::new();
     while header.len() < HEADER_LIMIT {
         let timeout = match remaining(deadline) {
-            Err(_) if empty_timeout_is_eof && header.is_empty() => return Ok(None),
-            value => value?,
+            Err(error) if empty_timeout_is_eof && header.is_empty() => {
+                diagnostic.reason = "idle_timeout";
+                diagnostic.io_kind = Some(io_label(error.kind()));
+                return Ok(None);
+            }
+            value => value.inspect_err(|e| diagnostic.error(e))?,
         };
-        reader.get_mut().set_read_timeout(Some(timeout))?;
+        reader
+            .get_mut()
+            .set_read_timeout(Some(timeout))
+            .inspect_err(|e| diagnostic.error(e))?;
         let mut byte = [0];
         let count = match reader.read(&mut byte) {
             Err(e)
@@ -287,14 +415,19 @@ fn read_header(
                         std::io::ErrorKind::TimedOut | std::io::ErrorKind::WouldBlock
                     ) =>
             {
-                return Ok(None)
+                diagnostic.reason = "idle_timeout";
+                diagnostic.io_kind = Some(io_label(e.kind()));
+                return Ok(None);
             }
-            value => value?,
+            value => value.inspect_err(|e| diagnostic.error(e))?,
         };
         if count == 0 {
             return if header.is_empty() {
+                diagnostic.reason = "peer_eof";
                 Ok(None)
             } else {
+                diagnostic.reason = "header_truncated";
+                diagnostic.io_kind = Some("unexpected_eof");
                 Err(std::io::Error::new(
                     std::io::ErrorKind::UnexpectedEof,
                     "header",
@@ -302,10 +435,13 @@ fn read_header(
             };
         }
         header.push(byte[0]);
+        diagnostic.bytes = header.len();
         if header.ends_with(b"\r\n\r\n") {
             return Ok(Some(header));
         }
     }
+    diagnostic.reason = "header_limit";
+    diagnostic.io_kind = Some("invalid_data");
     Err(std::io::Error::new(
         std::io::ErrorKind::InvalidData,
         "header limit",
@@ -455,6 +591,43 @@ pub struct RequestObservation {
     pub codec_cache: CodecCacheStats,
 }
 
+/// Optional connection diagnostics, separate from admitted request observations.
+/// `request_ordinal` is the next/assigned attempt ordinal. Idle and clean EOF
+/// do not increment the global counter (`request_counted == false`). Elapsed
+/// time starts immediately before this attempt's header/idle wait. Fixed labels
+/// and bounded byte counts never include request content or credentials.
+#[derive(Debug, Clone, Copy, Serialize)]
+pub struct ConnectionObservation {
+    pub connection_ordinal: usize,
+    pub request_ordinal: usize,
+    pub request_on_connection: usize,
+    pub request_counted: bool,
+    pub reason: &'static str,
+    pub http_status: Option<u16>,
+    pub io_kind: Option<&'static str>,
+    pub header_bytes: usize,
+    pub elapsed_micros: u64,
+}
+impl ConnectionObservation {
+    fn emit(
+        mut self,
+        observer: &mut Option<&mut dyn FnMut(ConnectionObservation) -> Result<()>>,
+        reason: &'static str,
+        status: Option<u16>,
+        io_kind: Option<&'static str>,
+        since: Instant,
+    ) -> Result<()> {
+        if let Some(observer) = observer.as_mut() {
+            self.reason = reason;
+            self.http_status = status;
+            self.io_kind = io_kind;
+            self.elapsed_micros = since.elapsed().as_micros() as u64;
+            observer(self)?;
+        }
+        Ok(())
+    }
+}
+
 /// Opt-in bounded reuse for the serial experiment origin. Defaults remain close.
 #[derive(Debug, Clone, Copy)]
 pub enum ConnectionPolicy {
@@ -503,7 +676,7 @@ pub fn serve_configured(
     scopes: &BTreeSet<Id>,
     config: ServeConfig,
 ) -> Result<()> {
-    serve_inner(listener, endpoint, token, scopes, config, None)
+    serve_inner(listener, endpoint, token, scopes, config, None, None)
 }
 
 pub fn serve_observed_configured(
@@ -521,6 +694,30 @@ pub fn serve_observed_configured(
         scopes,
         config,
         Some(&mut observer),
+        None,
+    )
+}
+
+/// Stream sanitized connection events to a caller-owned bounded sink. Errors
+/// terminate serving rather than silently lose evidence. Existing callbacks and
+/// HTTP policy remain unchanged; diagnostics do not retain an in-memory log.
+pub fn serve_diagnosed_configured(
+    listener: TcpListener,
+    endpoint: Endpoint<BenchAuthority>,
+    token: &str,
+    scopes: &BTreeSet<Id>,
+    config: ServeConfig,
+    mut observer: impl FnMut(RequestObservation) -> Result<()>,
+    mut diagnostic: impl FnMut(ConnectionObservation) -> Result<()>,
+) -> Result<()> {
+    serve_inner(
+        listener,
+        endpoint,
+        token,
+        scopes,
+        config,
+        Some(&mut observer),
+        Some(&mut diagnostic),
     )
 }
 
@@ -542,6 +739,7 @@ pub fn serve(
             max_requests,
             connection_policy: ConnectionPolicy::Close,
         },
+        None,
         None,
     )
 }
@@ -568,6 +766,7 @@ pub fn serve_observed(
             connection_policy: ConnectionPolicy::Close,
         },
         Some(&mut observer),
+        None,
     )
 }
 
@@ -578,6 +777,7 @@ fn serve_inner(
     scopes: &BTreeSet<Id>,
     config: ServeConfig,
     mut observer: Option<&mut dyn FnMut(RequestObservation) -> Result<()>>,
+    mut diagnostic: Option<&mut dyn FnMut(ConnectionObservation) -> Result<()>>,
 ) -> Result<()> {
     parse_id(token).map_err(|_| Error::Unauthorized)?;
     config.validate()?;
@@ -616,49 +816,119 @@ fn serve_inner(
             if Instant::now() >= end || requests >= config.max_requests {
                 break;
             }
+            let attempt_start = Instant::now();
+            let mut event = ConnectionObservation {
+                connection_ordinal: connections,
+                request_ordinal: requests + 1,
+                request_on_connection: request_index + 1,
+                request_counted: false,
+                reason: "other",
+                http_status: None,
+                io_kind: None,
+                header_bytes: 0,
+                elapsed_micros: 0,
+            };
             let deadline = (Instant::now() + IO_TIMEOUT).min(end);
             let header_timeout = if request_index == 0 {
                 Duration::from_secs(5)
             } else {
                 idle_timeout
             };
+            let mut header_diagnostic = HeaderDiagnostic {
+                bytes: 0,
+                reason: "header_io",
+                io_kind: None,
+            };
             let header = match read_header(
                 &mut reader,
                 (Instant::now() + header_timeout).min(deadline),
                 request_index != 0,
+                &mut header_diagnostic,
             ) {
                 Ok(Some(h)) => h,
-                Ok(None) => break,
+                Ok(None) => {
+                    event.emit(
+                        &mut diagnostic,
+                        header_diagnostic.reason,
+                        None,
+                        header_diagnostic.io_kind,
+                        attempt_start,
+                    )?;
+                    break;
+                }
                 Err(_) => {
                     requests += 1;
+                    event.request_counted = true;
+                    event.header_bytes = header_diagnostic.bytes;
                     let _ = response(reader.get_mut(), 400, &[], true, deadline);
+                    event.emit(
+                        &mut diagnostic,
+                        header_diagnostic.reason,
+                        Some(400),
+                        header_diagnostic.io_kind,
+                        attempt_start,
+                    )?;
                     break;
                 }
             };
             requests += 1;
+            event.request_counted = true;
+            event.header_bytes = header.len();
             let (scope, len, client_close) = match request(&header, token, scopes) {
                 Ok(r) => r,
                 Err(status) => {
                     let _ = response(reader.get_mut(), status, &[], true, deadline);
+                    event.emit(
+                        &mut diagnostic,
+                        "request_rejected",
+                        Some(status),
+                        None,
+                        attempt_start,
+                    )?;
                     break;
                 }
             };
             let mut body = vec![0; len];
             let mut filled = 0;
+            let mut body_reason = "body_truncated";
+            let mut body_io_kind = None;
             while filled < len {
                 let Ok(timeout) = remaining(deadline) else {
+                    body_reason = "body_timeout";
+                    body_io_kind = Some("timed_out");
                     break;
                 };
-                if reader.get_mut().set_read_timeout(Some(timeout)).is_err() {
+                if let Err(error) = reader.get_mut().set_read_timeout(Some(timeout)) {
+                    body_reason = "body_io";
+                    body_io_kind = Some(io_label(error.kind()));
                     break;
                 }
                 match reader.read(&mut body[filled..]) {
-                    Ok(0) | Err(_) => break,
+                    Ok(0) => break,
+                    Err(error) => {
+                        body_reason = if matches!(
+                            error.kind(),
+                            std::io::ErrorKind::TimedOut | std::io::ErrorKind::WouldBlock
+                        ) {
+                            "body_timeout"
+                        } else {
+                            "body_io"
+                        };
+                        body_io_kind = Some(io_label(error.kind()));
+                        break;
+                    }
                     Ok(n) => filled += n,
                 }
             }
             if filled != len {
                 let _ = response(reader.get_mut(), 400, &[], true, deadline);
+                event.emit(
+                    &mut diagnostic,
+                    body_reason,
+                    Some(400),
+                    body_io_kind,
+                    attempt_start,
+                )?;
                 break;
             }
             let (status, body) = match process(&mut endpoint, scope, &body, start, deadline) {
@@ -680,7 +950,31 @@ fn serve_inner(
                 || request_index + 1 == connection_limit
                 || requests >= config.max_requests
                 || Instant::now() >= end;
-            if response(reader.get_mut(), status, &body, close, deadline).is_err() || close {
+            if let Err(error) = response(reader.get_mut(), status, &body, close, deadline) {
+                event.emit(
+                    &mut diagnostic,
+                    "response_io",
+                    Some(status),
+                    Some(io_label(error.kind())),
+                    attempt_start,
+                )?;
+                break;
+            }
+            if close {
+                let reason = if status != 200 {
+                    "process_rejected"
+                } else if client_close {
+                    "client_close"
+                } else if requests >= config.max_requests {
+                    "global_limit"
+                } else if Instant::now() >= end {
+                    "server_deadline"
+                } else if matches!(config.connection_policy, ConnectionPolicy::Close) {
+                    "close_policy"
+                } else {
+                    "connection_limit"
+                };
+                event.emit(&mut diagnostic, reason, Some(status), None, attempt_start)?;
                 break;
             }
         }

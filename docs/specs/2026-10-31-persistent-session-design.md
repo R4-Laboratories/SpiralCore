@@ -142,3 +142,64 @@ lifecycle. Exchange elapsed is nested, not pure wire time. Connection telemetry
 establishes only the observed hop; relay TLS termination, transport overhead and
 energy retain their existing limitations. Runtime results remain a separate
 existing-codec profile rather than an asserted all-codec optimum.
+
+## Diagnostic addendum after incomplete WAN attempt 1
+
+The [retained failure diagnosis](../network/evidence/2026-10-31-persistent-session/qualification/wan-attempt1-diagnosis.json)
+pins source `58990cec4d190f815fccd51df9cadf94029ab78f` and hosted run
+`41167011759`. The first failed 16 MiB localized update selected Sparse at 600
+body bytes; the client recorded a 342-byte attempted request, no response body,
+and `Storage` after about 500 ms. No admitted receiver observation exists for
+that request. Pinned ureq 3.5.0 maps HTTP 4xx/5xx to `Error::StatusCode` by default,
+and the current sender maps every send error to `Storage`. Consequently the
+existing evidence cannot distinguish HTTP rejection, timeout and pooled-socket
+I/O failure. Preserve all attempt-1 outputs and caches as an incomplete failed
+campaign. The elapsed time alone does not justify changing the 500 ms policy.
+
+**Decision: add sanitized diagnostics, with unchanged transport policy.** Add
+`HttpClient::last_transport_failure() -> Option<TransportFailure>`, cleared at
+the start of each `exchange`, including before local frame encoding. The owned
+`Copy + Serialize` record has only `stage`, `category`, optional numeric
+`http_status`, optional `io_kind`, and optional `timeout_phase`. All string fields
+are static values selected by closed match allowlists; unknown variants become
+an explicit `other` category. Never format an error or traverse its source chain.
+Success and errors before transport starts must not expose a stale failure.
+Keep current public error mappings, reply checks, counters and retry behavior.
+The harness reads and serializes this diagnostic after its operation timers stop.
+
+Add `serve_diagnosed_configured(listener, endpoint, token, scopes, config,
+observer, diagnostic)` with a separate `ConnectionObservation` callback. Existing
+serve wrappers and `RequestObservation` remain compatible and produce no extra
+diagnostic output unless explicitly opted in. The connection record contains
+only `connection_ordinal`, `request_ordinal`, `request_on_connection`,
+`request_counted`, `reason`, optional numeric `http_status`, optional allowlisted
+`io_kind`, bounded `header_bytes`, and `elapsed_micros`. Elapsed time starts at
+the current request-attempt loop, before idle/header waiting; it is not connection
+age or pure network time. `request_ordinal` denotes the assigned or next attempted
+ordinal, while `request_counted` states whether the existing global counter was
+advanced. A diagnostic is never an admitted transfer or publication receipt.
+
+Fixed reasons distinguish `idle_timeout`, `peer_eof`, header timeout/truncation/
+I/O/limit, request rejection, body timeout/truncation/I/O, process rejection,
+response I/O, and normal close due to client request, connection cap, global cap,
+server deadline or default close policy. Preserve the distinction between the
+existing silent close for an empty reused-header timeout and HTTP 400 for a
+partial-header failure. Count header bytes without retaining or exposing them;
+the count cannot exceed the existing header limit. Do not log payload, header
+values, credentials, URLs, peer addresses or arbitrary error strings.
+
+Callbacks stream synchronously outside the receiver `process` timer; the library
+does not buffer diagnostic history. Their actual cost remains in any enclosing
+elapsed interval. An exclusive CLI diagnostic log may impose a row budget, but
+exhaustion or observer failure must make diagnostic completeness explicitly fail,
+never silently discard records. Keep all deadlines, quotas, authorization,
+connection reuse, codec bytes and durable commit rules unchanged. No new
+dependencies, implicit retries or timeout relaxation belong to this change.
+
+Qualify actual status/I/O/timeout classification and reset-after-success; server
+idle versus partial-header outcomes; rejection and response-write failure;
+unchanged legacy observation counts; and absence of sentinel request secrets in
+serialized diagnostics. A bounded diagnostic reproduction needs new source and
+run identities and retains its first outcome. Diagnostic evidence may motivate a
+later separately justified transport correction; it cannot retroactively turn
+attempt 1 into a completed paired WAN performance result.

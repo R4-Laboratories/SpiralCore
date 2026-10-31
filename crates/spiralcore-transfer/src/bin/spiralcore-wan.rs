@@ -17,6 +17,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     }
     let mut cache = None;
     let mut plan = None;
+    let mut connection_log = None;
     let mut bind = "127.0.0.1:0".to_string();
     let mut seconds = 3600u64;
     let mut seen = BTreeSet::new();
@@ -28,6 +29,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         match k.as_str() {
             "--cache" => cache = Some(v),
             "--plan" => plan = Some(v),
+            "--connection-log" => connection_log = Some(v),
             "--bind" => bind = v,
             "--seconds" => seconds = v.parse()?,
             _ => return Err("unknown option".into()),
@@ -113,33 +115,61 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                 .into(),
         );
     }
+    // Exclusive diagnostic output: never overwrite an earlier attempt's evidence.
+    let connection_log = connection_log
+        .map(|path| {
+            std::fs::OpenOptions::new()
+                .write(true)
+                .create_new(true)
+                .open(path)
+        })
+        .transpose()?;
     let mut endpoint = Endpoint::open_with_policy(cache, wan::limits(), BenchAuthority, policy)?;
     endpoint.set_codec_cache_enabled(codec_cache_enabled)?;
     let listener = TcpListener::bind(addr)?;
     eprintln!("POLICY cold_graph_policy={policy:?} codec_cache_enabled={codec_cache_enabled} connection_policy={connection_policy:?}");
     println!("READY addr={}", listener.local_addr()?);
     std::io::stdout().flush()?;
-    if codec_cache_enabled {
+    let observe_request = |observation: wan::RequestObservation| {
+        if codec_cache_enabled {
+            let stats = observation.codec_cache;
+            let row = serde_json::json!({"event":"wan_request", "request_ordinal":observation.request_ordinal,
+                "connection_ordinal":observation.connection_ordinal, "request_on_connection":observation.request_on_connection,
+                "scope":spiralcore_transfer::hex(&observation.scope), "http_status":observation.http_status,
+                "codec_cache":{"hits":stats.hits,"misses":stats.misses,"preparations":stats.preparations,
+                    "evictions":stats.evictions,"entries":stats.entries,"resident_bytes":stats.resident_bytes}});
+            let mut output = std::io::stderr().lock();
+            serde_json::to_writer(&mut output, &row)
+                .map_err(|_| spiralcore_transfer::Error::Storage)?;
+            writeln!(output)?;
+            output.flush()?;
+        }
+        Ok(())
+    };
+    if let Some(mut output) = connection_log {
+        wan::serve_diagnosed_configured(
+            listener,
+            endpoint,
+            &token,
+            &scopes,
+            serve_config,
+            observe_request,
+            |observation| {
+                serde_json::to_writer(&mut output, &observation)
+                    .map_err(|_| spiralcore_transfer::Error::Storage)?;
+                writeln!(output)?;
+                output.flush()?;
+                Ok(())
+            },
+        )?;
+    } else if codec_cache_enabled {
         wan::serve_observed_configured(
             listener,
             endpoint,
             &token,
             &scopes,
             serve_config,
-            |observation| {
-                let stats = observation.codec_cache;
-                let row = serde_json::json!({"event":"wan_request", "request_ordinal":observation.request_ordinal,
-                "connection_ordinal":observation.connection_ordinal, "request_on_connection":observation.request_on_connection,
-                "scope":spiralcore_transfer::hex(&observation.scope), "http_status":observation.http_status,
-                "codec_cache":{"hits":stats.hits,"misses":stats.misses,"preparations":stats.preparations,
-                    "evictions":stats.evictions,"entries":stats.entries,"resident_bytes":stats.resident_bytes}});
-                let mut output = std::io::stderr().lock();
-                serde_json::to_writer(&mut output, &row)
-                    .map_err(|_| spiralcore_transfer::Error::Storage)?;
-                writeln!(output)?;
-                output.flush()?;
-                Ok(())
-            },
+            observe_request,
         )?;
     } else {
         wan::serve_configured(listener, endpoint, &token, &scopes, serve_config)?;

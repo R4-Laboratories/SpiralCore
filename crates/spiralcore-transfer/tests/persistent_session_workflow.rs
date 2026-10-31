@@ -124,3 +124,64 @@ fn persistent_session_workflow_requires_a_full_secret_without_fallback() {
         assert!(!accepted("AUTH", &[("SPIRALCORE_WAN_TOKEN", value)]));
     }
 }
+
+#[test]
+fn persistent_session_workflow_rejects_unknown_purpose() {
+    assert!(accepted(
+        "CONFIG",
+        &[("SPIRALCORE_PERSISTENT_PURPOSE", "pilot")]
+    ));
+    assert!(accepted(
+        "CONFIG",
+        &[("SPIRALCORE_PERSISTENT_PURPOSE", "diagnostic")]
+    ));
+    for value in ["rerun", "DIAGNOSTIC", "diagnostic pilot", "$(echo unsafe)"] {
+        assert!(!accepted(
+            "CONFIG",
+            &[("SPIRALCORE_PERSISTENT_PURPOSE", value)]
+        ));
+    }
+}
+
+#[test]
+fn persistent_session_workflow_dose_is_six_or_only_shard_zero() {
+    for (purpose, expected) in [
+        ("", "pilot\n0 1 2 3 4 5\n"),
+        ("pilot", "pilot\n0 1 2 3 4 5\n"),
+        ("diagnostic", "diagnostic\n0\n"),
+    ] {
+        let command = format!(
+            "{}\nprintf '%s\\n' \"$PERSISTENT_PURPOSE\" \"$PERSISTENT_SHARDS\"",
+            gate("DOSE")
+        );
+        let output = Command::new("/bin/bash")
+            .args(["-eu", "-o", "pipefail", "-c", &command])
+            .env_clear()
+            .env("SPIRALCORE_PERSISTENT_PURPOSE", purpose)
+            .output()
+            .unwrap();
+        assert!(output.status.success());
+        assert_eq!(String::from_utf8(output.stdout).unwrap(), expected);
+    }
+    assert!(!accepted(
+        "CONFIG",
+        &[
+            ("SPIRALCORE_PERSISTENT_PURPOSE", "pilot"),
+            ("PERSISTENT_URL_5", "")
+        ]
+    ));
+    assert!(accepted(
+        "CONFIG",
+        &[
+            ("SPIRALCORE_PERSISTENT_PURPOSE", "diagnostic"),
+            ("PERSISTENT_URL_5", "")
+        ]
+    ));
+    assert!(!accepted(
+        "CONFIG",
+        &[
+            ("SPIRALCORE_PERSISTENT_PURPOSE", "diagnostic"),
+            ("PERSISTENT_URL_0", "")
+        ]
+    ));
+}

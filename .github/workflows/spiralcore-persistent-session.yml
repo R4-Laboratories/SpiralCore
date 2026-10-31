@@ -17,6 +17,7 @@ jobs:
       CARGO_INCREMENTAL: 0
       SPIRALCORE_PERSISTENT_SOURCE: ${{ vars.SPIRALCORE_PERSISTENT_SOURCE }}
       SPIRALCORE_PERSISTENT_RUN: ${{ vars.SPIRALCORE_PERSISTENT_RUN }}
+      SPIRALCORE_PERSISTENT_PURPOSE: ${{ vars.SPIRALCORE_PERSISTENT_PURPOSE }}
       PERSISTENT_RECEIVER_SHA: ${{ vars.SPIRALCORE_PERSISTENT_RECEIVER_SHA256 }}
       PERSISTENT_URL_0: ${{ vars.SPIRALCORE_PERSISTENT_URL_0 }}
       PERSISTENT_URL_1: ${{ vars.SPIRALCORE_PERSISTENT_URL_1 }}
@@ -40,11 +41,23 @@ jobs:
           [[ "$GITHUB_SHA" =~ ^[0-9a-f]{40}$ && "$GITHUB_SHA" == "$SPIRALCORE_PERSISTENT_SOURCE" ]] || exit 1
           [[ "$SPIRALCORE_PERSISTENT_RUN" =~ ^[0-9a-f]{64}$ ]] || exit 1
           [[ "$PERSISTENT_RECEIVER_SHA" =~ ^[0-9a-f]{64}$ ]] || exit 1
-          for key in PERSISTENT_URL_0 PERSISTENT_URL_1 PERSISTENT_URL_2 PERSISTENT_URL_3 PERSISTENT_URL_4 PERSISTENT_URL_5; do
+          # BEGIN DOSE GATE
+          PERSISTENT_PURPOSE="${SPIRALCORE_PERSISTENT_PURPOSE:-pilot}"
+          case "$PERSISTENT_PURPOSE" in
+            pilot) PERSISTENT_SHARDS='0 1 2 3 4 5' ;;
+            diagnostic) PERSISTENT_SHARDS='0' ;;
+            *) exit 1 ;;
+          esac
+          # END DOSE GATE
+          for shard in $PERSISTENT_SHARDS; do
+            key="PERSISTENT_URL_$shard"
             url="${!key}"
             [[ "$url" =~ ^https://[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.trycloudflare\.com/?$ ]] || exit 1
           done
           # END CONFIG GATE
+          printf 'PERSISTENT_PURPOSE=%s\nPERSISTENT_SHARDS=%s\n' "$PERSISTENT_PURPOSE" "$PERSISTENT_SHARDS" >> "$GITHUB_ENV"
+          shard_count=6
+          if [[ "$PERSISTENT_PURPOSE" == diagnostic ]]; then shard_count=1; fi
           [[ "$(git rev-parse HEAD)" == "$GITHUB_SHA" ]] || exit 1
           [[ ! -e "$CARGO_TARGET_DIR" ]] || exit 1
           [[ -z "${RUSTFLAGS:-}${CARGO_ENCODED_RUSTFLAGS:-}${RUSTC_WRAPPER:-}${RUSTC_WORKSPACE_WRAPPER:-}${CARGO_BUILD_TARGET:-}" ]] || exit 1
@@ -52,13 +65,14 @@ jobs:
           git rev-parse HEAD > persistent-session/source-revision.txt
           jq -n --arg source "$GITHUB_SHA" --arg run "$SPIRALCORE_PERSISTENT_RUN" \
             --arg receiver "$PERSISTENT_RECEIVER_SHA" --arg workflow_run "$GITHUB_RUN_ID" \
+            --arg purpose "$PERSISTENT_PURPOSE" --argjson shard_count "$shard_count" \
             --arg url0 "$PERSISTENT_URL_0" --arg url1 "$PERSISTENT_URL_1" --arg url2 "$PERSISTENT_URL_2" \
             --arg url3 "$PERSISTENT_URL_3" --arg url4 "$PERSISTENT_URL_4" --arg url5 "$PERSISTENT_URL_5" \
-            '{schema:"spiralcore.persistent-session.workflow.v1",source:$source,run:$run,
+            '{schema:"spiralcore.persistent-session.workflow.v1",source:$source,run:$run,purpose:$purpose,
               receiver_executable_sha256_operator_supplied:$receiver,
-              urls:[$url0,$url1,$url2,$url3,$url4,$url5],github_run_id:$workflow_run,github_run_attempt:1,
-              shards:6,trials_per_size:6,sizes:[1048576,16777216],sessions:36,targets:360,seeds:36,total_transfers:396,
-              designation:"six-pair WAN pilot; not thirty-pair acceptance",updates_per_session:10,
+              urls:([$url0,$url1,$url2,$url3,$url4,$url5][0:$shard_count]),github_run_id:$workflow_run,github_run_attempt:1,
+              shards:$shard_count,trials_per_size:$shard_count,sizes:[1048576,16777216],sessions:($shard_count*6),targets:($shard_count*60),seeds:($shard_count*6),total_transfers:($shard_count*66),
+              designation:(if $purpose == "diagnostic" then "single-shard transport diagnostic; not a performance campaign" else "six-pair WAN pilot; not thirty-pair acceptance" end),updates_per_session:10,
               byte_scope:"request and response HTTP bodies; not full-path packet bytes"}' \
             > persistent-session/registration.json
       - name: Install compiler and record the Linux sender
@@ -98,7 +112,7 @@ jobs:
             persistent-session/frozen/candidate persistent-plan "$SPIRALCORE_PERSISTENT_RUN" "$shard" "persistent-session/plan-$shard.json"
           done
           sha256sum persistent-session/plan-*.json > persistent-session/plans.sha256
-      - name: Run all paired sessions sequentially without retries
+      - name: Run the selected dose sequentially without retries
         timeout-minutes: 20
         env:
           SPIRALCORE_WAN_TOKEN: ${{ secrets.SPIRALCORE_PERSISTENT_TOKEN }}
@@ -109,7 +123,7 @@ jobs:
           [[ "${SPIRALCORE_WAN_TOKEN:-}" =~ ^[0-9a-f]{64}$ ]] || exit 1
           # END AUTH GATE
           sha256sum -c persistent-session/binaries.sha256 > persistent-session/binaries-before-transfer.log
-          for shard in 0 1 2 3 4 5; do
+          for shard in $PERSISTENT_SHARDS; do
             key="PERSISTENT_URL_$shard"
             date -u +%FT%TZ > "persistent-session/start-$shard.txt"
             persistent-session/frozen/candidate persistent-paired "persistent-session/plan-$shard.json" \
@@ -132,7 +146,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: spiralcore-persistent-session-${{ github.run_id }}-${{ github.sha }}
+          name: spiralcore-persistent-session-${{ env.PERSISTENT_PURPOSE || 'unvalidated' }}-${{ github.run_id }}-${{ github.sha }}
           path: persistent-session/
           if-no-files-found: error
           retention-days: 30
