@@ -74,3 +74,14 @@ regression. An improvement over the baseline does not by itself establish a
 win over Whole or an energy saving. If profiling instead identifies a different
 material path, record one bounded design amendment before its code or timing;
 do not expand silently into schema/receiver redesign.
+
+Phase-2 continuation after the retained local gate failure: commit the short
+[impossible-record preflight amendment](../specs/2026-10-31-unrelated-cpu-design.md#phase-2-amendment-exact-impossible-record-preflight),
+qualify the exact prefix/whitespace/UTF-8 boundary against the existing schema
+oracle, then add the early literal branch and exact chunked LF-count helper in
+`schema::encode_with`. Compare the helper against the old capped iterator at
+record-limit/chunk/tail boundaries; keep the encoding iterator unchanged.
+Freeze new candidate source/binaries with the same four-file original baseline.
+Run a separately named 700-operation local campaign under unchanged fixtures,
+clocks and gates; preserve phase 1 independently. No WAN run follows unless the
+new candidate passes. No receiver, transport or codec-selection redesign.

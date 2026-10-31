@@ -176,3 +176,43 @@ Report sender CPU, receiver handler CPU, durable completion, body bytes and
 actual paid setup/seed lifecycle, including p95 and losing pairs. Whole's seed
 is an equal-state comparison cost it does not inherently need. Exchange is a
 nested scope, not pure wire time; headers/relay traffic and energy are unmeasured.
+
+## Phase 2 amendment: exact impossible-record preflight
+
+The first 700-transfer local campaign passed exact output/frame/body parity and
+600-byte warm controls, but its 16 MiB replacement sender-CPU ratio
+`0.959994` failed the unchanged `<=0.95` gate. Retain that campaign separately;
+WAN remains unrun. Phase 2 adds a distinct bounded optimization inside the
+encoding record loop: if `bytes.len() > MAX_TEMPLATE_RECORD`, or
+`bytes.get(whitespace(bytes, 0)) != Some(&b'{')`, emit the existing literal and
+continue before either template matcher or general parser. Check length first.
+Reuse the existing JSON whitespace helper (space/tab/CR/LF), not Unicode or
+general ASCII trimming. Both old paths already reject oversized records.
+`parse_record` requires this opening brace; every learned or admitted template
+was validated through that parser, and its first literal fragment contains the
+same required prefix. Hence a rejected record cannot match or consume comparison
+budget. Other records, including `{` followed by invalid UTF-8 or malformed JSON,
+keep the full existing path. No candidate, length/record bound, training rule,
+decoder, wire byte or commit check changes.
+The prefix preflight alone cannot help inputs already taking the whole-literal
+record-count fallback (five of ten registered 16 MiB replacements). Also replace
+the count pass with a private exact capped counter: process 64 KiB slices with
+`memchr::memchr_iter(b'\n', slice).count()`, accumulating LF counts; as soon as
+the total exceeds `MAX_RECORDS`, return `MAX_RECORDS + 1`. If all slices finish,
+add one only for nonempty input not ending in LF. This equals the original
+`records(target).take(MAX_RECORDS + 1).count()`: each LF terminates one record,
+only an unterminated tail adds another, and an early return already saturates
+the cap. Before each slice the total is at most MAX_RECORDS; adding at most
+65,536 is bounded. The existing MAX_TARGET check remains first. This uses the
+pinned library's specialized counting path with no new allocation/dependency;
+the encoding iterator and every emitted record stay unchanged.
+
+Qualify exact SCVAL001/zstd/frame parity for all byte prefixes, JSON/non-JSON
+whitespace, whitespace-only/empty records, invalid UTF-8, oversized records and
+valid first/later templates. Compare the capped counter with the old iterator
+at LF-count thresholds and 64 KiB slice boundaries, with and without a final LF.
+Freeze the changed source and run one separately
+registered phase-2 local campaign with the same ten-pair mixed sequence, 700
+operations and original gates; do not pool phase-1 samples or rerun unchanged
+code to erase its failure. Only a passing phase-2 result may release the original
+six-pair/420-operation WAN pilot. The four-file baseline overlay stays unchanged.

@@ -60,5 +60,28 @@ coverage are not claimed. The first schema qualification command named a
 nonexistent `schema_zstd` test target and failed before compilation; the
 corrected command used `schema_reuse`. Both receipts are retained.
 
-Mixed local and WAN transfer results are pending. No end-to-end, WAN or energy
-improvement is established by the diagnostics alone.
+## Phase 1 mixed local comparison
+
+Frozen source `a128b3a535964dba569e9bb3c124b0234f6c3a80` completed the
+registered 700 transfers: 600 targets, 60 base seeds and 40 actual schema
+publications. Every object reopened exactly, every baseline/candidate selected
+mode and normalized frame hash agreed, and both localized-random controls kept
+600 bidirectional HTTP-body bytes. All ten successful stores were removed only
+after verification. Raw records and the complete summary are in
+[local](evidence/2026-10-31-unrelated-cpu/local/summary.json).
+
+| Paired sender CPU, candidate/baseline median ratio | 1 MiB | 16 MiB | Gate |
+|---|---:|---:|---|
+| Unrelated replacement | 0.887294 | **0.959994** | At most 0.95 |
+| Sum of the two localized-random updates | 0.938544 | 1.017215 | At most 1.05 |
+| Setup, schema publication and ten updates | 0.923138 | 0.893384 | At most 1.05 |
+
+**Phase 1 failed advancement:** the large replacement improved by approximately
+4.0% on the registered paired metric, below the required 5%. This is a retained
+negative gate, not a successful WAN qualification. Ratios are medians of paired
+trial ratios; they are not ratios of separately aggregated medians.
+
+The [phase-2 contract](evidence/2026-10-31-unrelated-cpu/phase2-contract.md)
+registers two additional exact schema changes and a separate campaign under the
+same thresholds. Phase 1 is not discarded, relabelled or pooled with phase 2.
+WAN remains unrun pending a passing local gate. No energy saving is claimed.

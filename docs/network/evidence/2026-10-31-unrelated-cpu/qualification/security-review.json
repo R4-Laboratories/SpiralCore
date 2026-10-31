@@ -1,0 +1,68 @@
+{
+  "schema": "spiralcore.sc-opt-019.security-review.v1",
+  "utc": "2026-10-31T06:06:50.854740+00:00",
+  "reviewer": "selector_architect",
+  "role": "security-reviewer",
+  "roster": "d1927d9e7ce51354",
+  "role_verified_active": true,
+  "verdict": "PASS_SCOPED_PREMEASUREMENT_SECURITY_REVIEW",
+  "source_commit": "a128b3a535964dba569e9bb3c124b0234f6c3a80",
+  "baseline_commit": "56e15db5c77fe2ecdc03476d8e09664cd4213fd1",
+  "procedural_gate": "PASS",
+  "blocking_findings": [],
+  "scope": "Independent security review of parent-authored delta/schema/Cargo changes and measurement-author mixed-session/profile changes plus changed input-boundary tests. Reviewer-authored workflow and its tests are excluded; selector_tests owns their independent review. Existing transport/auth architecture is not re-audited.",
+  "checks": [
+    "Exact positive whole-target Literal(0,N) recognition is the only sparse early rejection. Its payload/framing/base cost cannot beat existing Raw; copy-bearing candidates, scans, ties, operation limit and decoder remain unchanged.",
+    "memchr-backed records() yields monotonically increasing inclusive-LF slice ends and an optional nonempty terminal tail, matching prior split_inclusive including empty/binary/CRLF/trailing/adjacent cases. Input cap and take(MAX_RECORDS+1) precede allocation as before; no new unchecked remote length or received code execution.",
+    "memchr2.8.3 is exact-pinned as a direct dependency; Cargo.lock changes only the transfer crate dependency edge. No package/checksum/version, crypto, zstd parameter or receiver validation change is introduced.",
+    "Frozen-oracle tests compare actual sparse frame bytes/operation counts and SCVAL001/zstd bytes; new tests cover short equal-run eligibility, shifted reuse, exact borrowed slice offsets and record-cap boundaries. Allocation diagnostic is confined to its test binary and forwards allocator requests unchanged.",
+    "Canonical candidate plans bind source profiles; baseline role can differ only at pinned delta/schema/manifest/lock identities. Four overlay hashes independently match baseline git blobs; worker executable identity is checked before execution and per-session role binding is checked before transfers.",
+    "Both selector roles use acknowledged WarmSession state and identical held-out fixture construction. Schema readiness follows an actual paid artifact publication before target6; returned object identity is checked. No training from held-out targets, automatic seed bypass or retry is added.",
+    "Mixed plan fixes six sessions, sixty targets, four schema publications and seventy operations per store. Shared sender charge, captured frame capacity, store bound, disk floor, fresh output/store creation and cleanup-after-verification behavior remain enforced.",
+    "Every success requires scoped stopped-store byte and length comparison, matching expected metadata and admitted receiver observations. Summary requires complete ordered shards and baseline/candidate mode/frame/body/selection parity; failures stop the campaign and remain recorded.",
+    "Schema publication CPU/body/wall is included once in paid accounting, receiver CPU is added disjointly, and nested exchange is not added again. Stage profiler uses sequential contexts, preserves all72 observations and separates encode, setup, generation, validation and returned-wrapper drop; no additive pipeline claim.",
+    "Process invocation uses Command arguments rather than a shell. Capability remains environment-only and is not included in measurement JSON. Existing sanitized transport diagnostics are retained; no new authorization or network boundary is introduced."
+  ],
+  "qualification_basis": {
+    "retained_all_target_passes": 428,
+    "retained_all_target_failures": 0,
+    "preexisting_ignored_tests": 2,
+    "clippy_exit": 0,
+    "procedural_receipt_reused": true,
+    "reviewer_reran_tests_builds_or_measurements": false
+  },
+  "limitations": [
+    "This is premeasurement security/content readiness, not local/WAN speed, reliability, deployment-security or FIPS qualification.",
+    "Synthetic BenchAuthority, authenticated test transport and temporary relay scope remain unchanged; sender/source claims are evidence bindings, not a replacement for receiver authorization.",
+    "Conservative charge accounting is not measured RSS. Protocol-body byte counts exclude transport headers, retransmissions and relay-hop traffic; energy is unmeasured.",
+    "The original profile caller revision typo remains corrected by a separate provenance sidecar; raw observations are retained. Independent stage durations must not be summed.",
+    "No online dependency vulnerability audit or general repository audit was performed; the reviewed dependency change reuses the already-locked package version.",
+    "Workflow/infra approval is explicitly excluded because this reviewer authored that workflow."
+  ],
+  "baseline_overlay_sha256": {
+    "crates/spiralcore-transfer/src/delta.rs": "734caf02ac51a29d6181fc46e35baafd8de0002c26eddce15355b1ef78478ef7",
+    "crates/spiralcore-transfer/src/schema.rs": "034e0424cbf7b95a83e8579b7b7d75b584758f0eb514a00b51840a202c993359",
+    "crates/spiralcore-transfer/Cargo.toml": "fdc1715045fc3d914ca04a4c41a4750e778ce3eef82ce391bcf82c553648739b",
+    "crates/spiralcore-transfer/Cargo.lock": "6cf795bc12285eea4083d64da4a3b7264d675a95b45d545751eec38708d87896"
+  },
+  "reviewed_files_sha256": {
+    "crates/spiralcore-transfer/src/delta.rs": "e02ff80b58dec5f1de508a12f0cc6149c3f7697c9e97cdf6262631dcb86b094b",
+    "crates/spiralcore-transfer/src/schema.rs": "0a7194518967900e32ddb4c599e8fcbb55c76bc2a860e894fed5e700590c539c",
+    "crates/spiralcore-transfer/Cargo.toml": "04d8372953ad9e5e46d5bc1361820a2a9aeeba1086825551d64d80be1a50d6b1",
+    "crates/spiralcore-transfer/Cargo.lock": "85a57dd05e18f226c6278a9b7c3889a0cc4a5dca2d2b84ff45da1992ab6ac563",
+    "crates/spiralcore-transfer/examples/support/persistent_session.rs": "c66bc4d542a06b69830d9332a24361950489a3362d8f909a09443ac81dc181a3",
+    "crates/spiralcore-transfer/examples/schema_fitting.rs": "d0f437cc3411f71747e0b84dccaff456dba1662f1784cc081c6a4901d51b6630",
+    "crates/spiralcore-transfer/examples/unrelated_profile.rs": "42158850f39db07376bc904e7c481cc6cf37ed16ad1fafbc6eef2a128ae09778",
+    "crates/spiralcore-transfer/tests/unrelated_delta.rs": "355e9ac5338c725b2d4d654070fe3f1ce54d20ae4bb006e8ee3c375fece39a9e",
+    "crates/spiralcore-transfer/tests/fixtures/sender_delta_checks.rs": "6e4b1b5bfd61d83ef37415675337336374f37c58d5486bfb67d7547b7f5d626e",
+    "crates/spiralcore-transfer/tests/fixtures/sender_delta_baseline.rs": "af31026c806c9046d62735b3ebdd03472e667103011a06b6f49ff76edb19e18e",
+    "crates/spiralcore-transfer/tests/fixtures/schema_sender_checks.rs": "11cb166cdcd031076158857d057002aaf2920b79e4a12f020b42efe35b546e53",
+    "docs/network/evidence/2026-10-31-unrelated-cpu/measurement-contract.md": "379f31c59dd344f52cc6c90d5d5298eb241e20137188604dd2855974ea9d102a",
+    "docs/network/evidence/2026-10-31-unrelated-cpu/qualification/procedural-review.json": "d459dbb0da8863cf4ae13d7cc3b53a711ab601f9de26f39c8c4211095a2cf587",
+    "docs/network/evidence/2026-10-31-unrelated-cpu/qualification/frozen/identity-parity.txt": "a17fcf0a2f50e2d495e4f90ce263410edc183add6c62699a2facbccf60410f74",
+    "docs/network/evidence/2026-10-31-unrelated-cpu/qualification/frozen/source-files.sha256": "c9cee43364a45426f9897b8e4fa4c1ee4136c6e05aa5ca0ce090e15e7e4b06c2",
+    "docs/network/evidence/2026-10-31-unrelated-cpu/qualification/frozen/baseline-overlay.sha256": "e8bdfd28f5bcac707944304caa9d323b0050d17a94473ed14e4f458f8524967f",
+    "docs/network/evidence/2026-10-31-unrelated-cpu/qualification/frozen/binaries.sha256": "649fb67dcb97f381a4833503c20fbe5e2cf4bfdcdce8a60260bbf398e5b6419a",
+    "docs/network/evidence/2026-10-31-unrelated-cpu/profile-provenance-correction.json": "cdd5a583a985d420d5ec0c220e01362a22db77f3f01e45ac866d64c079f07ff1"
+  }
+}

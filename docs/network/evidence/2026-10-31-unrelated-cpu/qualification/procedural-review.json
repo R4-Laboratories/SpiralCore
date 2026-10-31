@@ -1,0 +1,142 @@
+{
+  "schema": "spiralcore.procedural-review.v1",
+  "milestone": "SC-OPT-019",
+  "stage": "procedural_audit_before_content_review",
+  "verdict": "PASS",
+  "blocking_findings": [],
+  "source_revision": "a128b3a535964dba569e9bb3c124b0234f6c3a80",
+  "scope": "Only the authorized unrelated-sender CPU milestone, retained qualification, pre-registered diagnostics, and candidate/baseline freeze. No content approval or performance acceptance is implied.",
+  "authority": {
+    "role": "harness-optimizer",
+    "roster": "d1927d9e7ce51354",
+    "role_checked_active_by_parent": true,
+    "profiles_read": [
+      ".claude/agents/harness-optimizer.md",
+      ".claude/commands/quality-gate.md"
+    ],
+    "raw_evidence_retained": "Explicit user instruction overrides generic log cleanup."
+  },
+  "sequence": [
+    "Design/plan e2e6a084 preceded the observed allocation RED and production edits.",
+    "Baseline 72-observation profile at actual source 5fc9ca6832a27c486ff93527171a216ba70aefa4 preceded delta implementation 49a5d50f; all baseline production files match 56e15db.",
+    "Delta-only 72-observation profile remains separate from baseline and combined diagnostics.",
+    "Schema amendment 2fdfd446 preceded the missing records() RED and schema implementation a72f2015.",
+    "Observed allocation RED (4 versus 0) became GREEN; exact frozen-oracle regression suites remain retained.",
+    "Candidate source a128b3a was committed before the four-file baseline overlay freeze; both builds passed and all candidate source hashes were restored."
+  ],
+  "qualification": {
+    "all_targets": {
+      "exit": 0,
+      "passed": 428,
+      "failed": 0,
+      "ignored": 2,
+      "targets": 55,
+      "ignored_scope": "Pre-existing historical large HTTP tests"
+    },
+    "clippy_all_targets_deny_warnings": {
+      "exit": 0
+    },
+    "release_example_and_receiver_build": {
+      "exit": 0
+    },
+    "delta_green": {
+      "exit": 0,
+      "passed": 47
+    },
+    "schema_scan_green_attempt2": {
+      "exit": 0,
+      "passed": 78
+    },
+    "focused_coverage_tests": {
+      "exit": 0,
+      "passed": 72,
+      "failed": 0,
+      "targets": 8
+    },
+    "coverage": {
+      "delta.rs": {
+        "lines": [
+          255,
+          262
+        ],
+        "functions": [
+          17,
+          17
+        ],
+        "regions": [
+          539,
+          560
+        ]
+      },
+      "schema.rs": {
+        "lines": [
+          533,
+          550
+        ],
+        "functions": [
+          49,
+          49
+        ],
+        "regions": [
+          924,
+          953
+        ]
+      },
+      "branches": "Not collected",
+      "mcdc": "Not collected",
+      "custody": "Retained object/source/profile manifests independently rechecked after the intentional baseline overlay restored; all hashes match. An earlier check during that overlay saw the two expected temporarily substituted source files."
+    },
+    "freeze": {
+      "exit": 0,
+      "identity_parity": true,
+      "baseline_and_candidate_probe_enabled": true,
+      "candidate_restored": true
+    }
+  },
+  "retained_failures_and_corrections": [
+    "Expected delta allocation, schema helper, profiler helper, mixed-fixture and absent-workflow RED outputs remain intact.",
+    "First schema GREEN invocation named a nonexistent schema_zstd test target; command-only correction to existing schema_reuse yielded the retained passing second attempt.",
+    "Profiler large_enum_variant lint was resolved by a narrow documented allow on the inline measurement enum. Boxing would add allocations inside its recorded encode interval; final all-target Clippy passes.",
+    "Baseline profile caller supplied a mistyped revision. Raw 72 exact observations were not edited; profile-provenance-correction.json binds the actual source, executable and all nine compiled source hashes.",
+    "The coverage-command.txt filename contains summary JSON, not the collection command; it is not cited as command evidence. Actual native commands and coverage output/manifests supply execution and custody evidence."
+  ],
+  "diagnostics": {
+    "baseline_exact": 72,
+    "delta_only_exact": 72,
+    "combined_exact": 72,
+    "discarded": 0,
+    "limitation": "Separate overlapping stage calls are not additive transfer components or WAN/performance acceptance. First observations and negatives remain retained."
+  },
+  "native_execution_evidence": {
+    "same_chat_history": "rollout-2026-10-28T21-19-30-01a1853d-9e6e-7523-abf5-b3853b47ad5b.jsonl",
+    "observed_command_ids": [
+      "exec-f79b66df-eb8b-4d45-8425-0c9582cda645",
+      "exec-fbce5a89-d9ed-484b-8d6f-4c53912afacf",
+      "exec-bbde1a41-d6c7-4a6d-aa19-31d7d005e13e",
+      "exec-63d55741-63f1-4e28-ae17-8104f1bf774b",
+      "exec-f18f1d6c-6250-435d-8c58-099610cb9a30",
+      "exec-f86deec4-9eee-42d7-a52a-9df87c70421b"
+    ],
+    "reviewer_reran_tests_builds_or_measurements": false
+  },
+  "remaining": "Independent content reviews and registered mixed local/WAN campaigns follow this procedural PASS. No new performance claim is approved here.",
+  "evidence_sha256": {
+    "measurement-contract.md": "379f31c59dd344f52cc6c90d5d5298eb241e20137188604dd2855974ea9d102a",
+    "profile-provenance-correction.json": "cdd5a583a985d420d5ec0c220e01362a22db77f3f01e45ac866d64c079f07ff1",
+    "baseline-profile.jsonl": "fa32213dabb52f2a45e8c59b0a05665dee3f3e545463018c2efe2dc4316d0902",
+    "delta-profile.jsonl": "6ab17187351c8ea11c5702d2780d88a815d1b42d17f7b2da13e2830bb8f07028",
+    "combined-profile.jsonl": "e7e5361636a26c973a33177dfb650fac6077095c9b3f59fdd8c0b0e0bf6aae8d",
+    "qualification/all-targets.txt": "ef699234b1a120cd8a93c62cb08ad9420391733207ff020a00c2f4bb2774e2c0",
+    "qualification/all-targets.exit": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+    "qualification/clippy.txt": "c9087a77c377cb3c17fb8e071a8491fb6108d23f63415801efc80b29d9bb14a8",
+    "qualification/clippy.exit": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+    "qualification/build.txt": "681b8877ade648250bc465605b71c3b7381020c8795e0faa8f982017b5bd5231",
+    "qualification/build.exit": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+    "qualification/coverage-changed-files.json": "88a930a3bb66685ef72ea6839e725c136246c3b7d36e6fb686c38966c719e9ac",
+    "qualification/coverage-objects.sha256": "231e54aa8308e7df4e3d2fd4b6c8e52ebe20204a96e2cdc91f2b69bd51a9f11a",
+    "qualification/coverage-sources-profiles.sha256": "94513adf53f45388a1ee968679b75ee159b8f863fb80b60f86836d845ba1f9a6",
+    "qualification/frozen/binaries.sha256": "649fb67dcb97f381a4833503c20fbe5e2cf4bfdcdce8a60260bbf398e5b6419a",
+    "qualification/frozen/source-files.sha256": "c9cee43364a45426f9897b8e4fa4c1ee4136c6e05aa5ca0ce090e15e7e4b06c2",
+    "qualification/frozen/source-after-build.txt": "dfcb6592de36ecacbdb7bc28dee9bc33c3219843068bf929969aadd90c5f6a73"
+  }
+}
