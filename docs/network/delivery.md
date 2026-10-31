@@ -36,6 +36,16 @@ drift/fallback controls and zstd timing variation are recorded separately.
 
 ## Milestones
 
+The [setup and compressible-fallback follow-up](selector-setup-results-2026-10-31.md)
+preserves the 600-byte warm path and verifies 540 more WAN objects exactly.
+Measured setup CPU falls about 21%; compressible-update sender CPU falls 3.44%
+against the previous selector. Current 1/16 MiB warm completion medians are
+153.0445/212.7585 ms versus matched Whole/Raw 353.2995/1,897.569 ms.
+This round does not establish a general WAN improvement over the old selector:
+small random-update paired completion regresses, and the highly compressible
+case has equal bytes and approximately tied completion versus Whole. Paid seeds,
+setup, deceptive-sample CPU costs and every negative remain in the report.
+
 The [bounded-selection follow-up](bounded-selection-results-2026-10-30.md)
 now avoids fully encoding a losing small Whole candidate using a source-qualified
 first-block bound. All 360 new WAN objects reopen exactly and all warm selector

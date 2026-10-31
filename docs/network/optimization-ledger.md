@@ -21,6 +21,19 @@ remain tied to their measured source; later results do not overwrite earlier neg
 
 ## Measured object sizes
 
+SC-OPT-017 reduces actual repeated-layout fitting and skips an optional probe on
+short-period repetitive input, preserving the full encoder and selected bytes.
+At WAN source `aa22837a2bbfc0ab9c4cee7d380a768cab768e16`, all 540 objects reopen
+exactly. Setup CPU improves about 21% in every case (30/30 paired wins each);
+compressible-update sender CPU improves 3.44% versus the old selector. Warm
+updates remain 600 body bytes; the compressible update remains 570 bytes, equal
+to Whole. Random 1 MiB update completion regresses 9.42% versus the old selector
+by the paired median, and compressible completion is essentially tied. The
+deliberately misleading-sample control costs 57.35% more preparation CPU. These
+negatives, paid setup/seed costs, and all distributions remain in the
+[result](selector-setup-results-2026-10-31.md) and
+[evidence packet](evidence/2026-10-31-selector-setup/README.md).
+
 SC-OPT-016 adds a source-qualified first-block Whole rejection certificate while
 retaining the full encoder when inconclusive. At WAN source
 `8e4b87329ea2a72ad5a408e39869bb36285befe8`, all 360 objects reopen exactly and

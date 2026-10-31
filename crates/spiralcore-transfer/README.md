@@ -245,6 +245,17 @@ the paired median; setup/seed-inclusive results and all losses remain recorded.
 The [bounded contract](../../docs/network/evidence/2026-10-30-bounded-selection/measurement-contract.md)
 documents the matched two-source overlay and reproducible `bounded-*` commands.
 
+The [setup and fallback follow-up](../../docs/network/selector-setup-results-2026-10-31.md)
+reuses exact first-template recognition while fitting and skips the optional
+probe on sampled short-period repetition. A sample match schedules unchanged
+full compression; it never supplies a pruning bound. All 540 WAN objects reopen
+exactly, preserving 600-byte warm updates and the 570-byte compressible winner.
+Actual setup CPU falls about 21%, but WAN completion does not improve uniformly
+over the previous selector. The `setup-*` commands and
+[measurement contract](../../docs/network/evidence/2026-10-31-selector-setup/measurement-contract.md)
+retain equal zstd controls, setup and seed charges, and the misleading-sample
+CPU regression. Artifact and wire formats are unchanged.
+
 ## Compressed schema streams and prepared codec reuse
 
 The schema encoder directly matches the first validated template and stores its
