@@ -1,0 +1,24 @@
+{
+  "schema": "spiralcore.mvm-vsock.final-validation.v1",
+  "scope": "Root execution receipt; independent reviews are separate files",
+  "source_manifest": "final-source.sha256",
+  "release_identities": "binaries-final.sha256",
+  "checks": [
+    {"check": "native live all-target tests", "passed": 29, "exit": 0, "receipt": "coverage-selective-tests.txt"},
+    {"check": "original pinned adapter conformance all-target tests", "passed": 15, "exit": 0, "receipt": "conformance-final.txt"},
+    {"check": "strict Clippy", "exit": 0, "receipt": "clippy-final.txt"},
+    {"check": "native release host", "exit": 0, "receipt": "build-host-final.txt"},
+    {"check": "Linux musl release guest", "exit": 0, "receipt": "build-guest-final.txt", "note": "Retains a nonfatal linker optimization deprecation warning"},
+    {"check": "final release guest to host, 4096-byte Warm fixtures", "exit": 0, "exact_publications": 11, "receipt": "one-final/result.json"},
+    {"check": "final release guest to guest, 4096-byte Warm fixtures", "exit": 0, "exact_publications": 11, "keyless_reboot_exact_readbacks": 11, "receipt": "two-final/result.json"}
+  ],
+  "coverage": {
+    "covered_lines": 2656,
+    "compiled_lines": 2869,
+    "percent": 92.57581038689439,
+    "scope": "Native-compiled live/adapter src paths, including source-local tests; excludes Linux-only syscalls and upstream MVM dependencies",
+    "receipts": ["coverage-summary.json", "coverage-raw-summary.json", "coverage-artifacts.sha256", "coverage-wrapper.sh", "coverage-selective-tests.txt", "coverage-one.txt", "coverage-two.txt"]
+  },
+  "performance_identity_boundary": "The pilot binaries precede the final incoming queue-budget guard. All measured grants used the enforced global 262144-byte cap, so behavior for those grants is unchanged. Final smoke results do not replace or pool pilot timing observations.",
+  "not_qualified": ["WAN", "Firecracker", "full upstream MVM workspace", "production mailbox activation", "concurrent control-plane updates", "new-epoch cache migration", "arbitrary power loss", "FIPS or CUI accreditation"]
+}

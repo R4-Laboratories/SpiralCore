@@ -1,0 +1,61 @@
+{
+  "schema": "spiralcore.mvm-vsock.pipeline-final-addendum.v1",
+  "date": "2026-10-31",
+  "role": "harness-optimizer",
+  "scope": "Final procedural addendum to pipeline-audit.json, using retained receipts and read-only identity/arithmetic checks; no tests, builds, VM launches or performance experiments by this auditor",
+  "verdict": "PASS_PROCEDURAL_VERIFICATION",
+  "merge_or_publication_performed": false,
+  "procedural_evasion_found": false,
+  "roster": {
+    "id": "d1927d9e7ce51354",
+    "status": "ACTIVE",
+    "harness_optimizer": "active",
+    "source": ".agent-sync/ROUTING.md",
+    "current_claims": "Parent/agent assignments remain the current ownership record. ROUTING.md contains no in-progress claim attached to a completed current task; no stale completion claim was found.",
+    "audit_status": "Existing AUDIT.md entries describe prior milestones and contain no BLOCK MERGE entry. This current addendum does not inherit their completion approval."
+  },
+  "verified_receipts": [
+    {"check":"native instrumented qualification","passed":29,"failed":0,"exit":0,"evidence":["coverage-selective-tests.txt","coverage-selective-tests.exit"],"breakdown":[13,10,3,3]},
+    {"check":"original adapter conformance","passed":15,"failed":0,"exit":0,"evidence":["conformance-final.txt","conformance-final.exit"],"breakdown":[1,9,3,2],"note":"The feature-disabled live target reports zero here; its ten tests passed in the separate native qualification."},
+    {"check":"final Clippy","exit":0,"evidence":["clippy-final.txt","clippy-final.exit"]},
+    {"check":"final release host build","exit":0,"evidence":["build-host-final.txt","build-host-final.exit"]},
+    {"check":"final release Linux guest build","exit":0,"evidence":["build-guest-final.txt","build-guest-final.exit"],"note":"The nonfatal deprecated linker optimization warning remains recorded."},
+    {"check":"final actual one-guest release smoke","exit":0,"exact_publications":11,"evidence":["one-final.exit","one-final/result.json"]},
+    {"check":"final actual two-guest release smoke","exit":0,"exact_publications":11,"keyless_reboot_exact_readbacks":11,"evidence":["two-final.exit","two-final/result.json"]}
+  ],
+  "coverage": {
+    "evidence": "coverage-summary.json",
+    "covered_lines": 2656,
+    "instrumented_lines": 2869,
+    "percent": 92.57581038689439,
+    "per_file_aggregate_arithmetic_verified": true,
+    "scope": "Native-compiled SpiralCore adapter/live source lines, including compiled module-test code. This is not Linux-only guest runtime line coverage, whole-MVM coverage, branch coverage or MC/DC.",
+    "earlier_attempt": "coverage-interruption.json retains the resource-pressure interruption of all-dependency instrumentation. It is not counted as a pass; selective instrumentation supplied the successful evidence."
+  },
+  "final_identity_checks": {
+    "source_manifest": "final-source.sha256",
+    "source_entries_checked": 33,
+    "source_entries_matching": 33,
+    "binary_manifest": "binaries-final.sha256",
+    "binary_and_kernel_entries_checked": 3,
+    "binary_and_kernel_entries_matching": 3,
+    "host_sha256": "8bb5f54f079327e9c94656314b4b418dcf689d3c41c35d594892fcf45b93b910",
+    "guest_sha256": "ee750ee10d00c8c00d41242fdc2fc492fefcfd5fbacc369b9ca9530c40dbf3fa",
+    "kernel_sha256": "0f97f109154a173352c07db223ecff48d44b38514b500f39cd9897701dbac0b6",
+    "note": "Final smoke/build identities are separate from the earlier accepted pilot identities; no later executable identity is substituted into historical measurements."
+  },
+  "review_status": {
+    "sequence": "pipeline-audit.json permitted independent reviews before those reviews ran.",
+    "live_source_review": "live-code-security-review.json: PASS_FOR_REVIEWED_SOURCE; no unresolved material findings",
+    "measurement_review": "measurement-review.json: PASS_FOR_RECORDED_FUNCTIONAL_PILOT_AND_ARITHMETIC; no unresolved material findings",
+    "measurement_counts_observed_in_independent_receipt": {"sessions":12,"operations":100,"receiver_exact_reopens":100,"two_guest_exact_reboot_readbacks":50,"common_operation_rows":84,"warm_only_operation_rows":16},
+    "measurement_selection": "Nine accepted pilot-01 groups plus the matched two-guest 16MiB Whole/Warm/Raw pilot-02 group, under the retained amendment. Failed and superseded pilot-01 groups remain retained and are not pooled.",
+    "adapter_fix_review": "PENDING_WRITTEN_CLOSURE: adapter-rust-security-review.json still records CHANGES_REQUESTED at this observation. Its owner is checking the incoming queue-bound fix, corrected unsupported-lock claim and fifth bundle license entry. The current queue-limit regression is observed passing in coverage-selective-tests.txt. Final publication must include that owner's closure rather than treating this procedural audit as independent code approval."
+  },
+  "retention_and_claim_limits": [
+    "Retain raw JSON, failed attempts, source identities and command logs under the user's explicit instruction. Disposal of owned build targets is not disposal of formal evidence.",
+    "The pilot demonstrates functional local actual-MVM/vsock integration and descriptive single-trial timings. It does not establish WAN performance, statistically accepted speed, complete endpoint CPU savings, physical energy savings, FIPS validation or production mailbox lifecycle.",
+    "Historical-namespace keyless reboot readback does not establish new-epoch authenticated network resume or durable mailbox delivery.",
+    "Fresh origin/main reconciliation, completed ownership release, final evidence index/custody, commit and authorized PR/publication remain parent-owned. No task was falsely marked complete by this addendum."
+  ]
+}

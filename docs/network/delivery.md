@@ -11,15 +11,22 @@ Current approved sequence: preserve local originals; establish origin/main; extr
 
 ## Current priority
 
-The user has now requested finishing this optimization phase and moving toward
-MVM integration. Codec policy is frozen at `b2dacc6`: the existing Rust warm
+The [actual MVM/vsock milestone](mvm-vsock-results-2026-10-31.md) now runs one
+Linux guest against a host endpoint and two guests under a small native HVF
+orchestrator. All 100 accepted objects reopen exactly; all 50 received by a second
+guest also verify after a separate keyless read-only reboot. Codec policy remains
+frozen at `b2dacc6`: the existing Rust warm
 session, schema and coupled ternary/Kuramoto/CA implementations remain active.
 The new [canonical MVM adapter](../../crates/spiralcore-mvm-adapter/README.md)
 wraps their bounded frames using the real MVM core at
-`3104a12c5b071a6851323fa8115d2afaf3f0bb8b`. This is a host conformance milestone;
-the dedicated guest mailbox service, live vsock/Iroh, durable mailbox admission,
-direct/shaped WAN qualification and compliance remain subsequent gates. Earlier
-HTTP WAN results and the new canonical-envelope measurements have distinct scope.
+`3104a12c5b071a6851323fa8115d2afaf3f0bb8b` plus a retained bounded source patch.
+Experimental port 5257 carries canonical encrypted envelopes through real vsock.
+The production supervisor still leaves that binding disabled. Production mailbox
+service/lifecycle, Iroh, durable mailbox admission, direct/shaped WAN qualification
+and compliance remain subsequent gates. Earlier HTTP WAN measurements and this
+local MVM pilot have distinct scope. The immediate performance work is to profile
+mailbox overhead and qualify explicit bandwidth/pipelining policy; the current
+4 MiB/s limit and serial envelope exchanges dominate bulk elapsed time.
 
 The [first canonical-envelope result](mvm-readiness-results-2026-10-31.md)
 records 78/78 exact stopped-store readbacks and fifteen passing adapter tests,

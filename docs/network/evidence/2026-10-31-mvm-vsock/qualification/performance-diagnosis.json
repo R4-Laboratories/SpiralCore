@@ -1,0 +1,98 @@
+{
+  "schema": "spiralcore.mvm-vsock.performance-diagnosis.v1",
+  "observed_at_utc": "2026-10-31T22:09:38Z",
+  "role": "performance-profiler",
+  "scope": "Read-only diagnosis from retained pilot-01 measurements and exact local source; no new runs, builds, code or rate-policy changes",
+  "verdict": "RATE_AND_FRAMING_COST_OBSERVED_FUNCTION_LEVEL_CPU_ATTRIBUTION_UNRESOLVED",
+  "baseline_limitations": [
+    "The registered pilot has one trial per cell, not the role's three-run stable optimization baseline. No distribution or repeatability claim is made.",
+    "Pilot-01 stopped during the keyless verifier console-reporting path after two-guest 16MiB Warm had transferred eleven exact objects. This diagnosis uses completed session results listed below; it does not relabel that interrupted session successful.",
+    "No flamegraph, CPU sampling profile or budget-wait counter was collected. Source operations on the measured path are known; their individual time shares are not."
+  ],
+  "evidence_root": "/Users/casey.allard/spiralcore/local/mvm-vsock-20261031/pilot-01",
+  "completed_receipts_used": ["one-16777216-whole/result.json", "one-16777216-warm/result.json", "two-16777216-whole/result.json"],
+  "workload": {
+    "common_object_count": 7,
+    "common_reconstructed_bytes": 117440467,
+    "explanation": "The 16MiB label is the base-object size. A session sends seed, repeat, localized edit, unrelated content, localized-after, truncate and append: almost112MiB reconstructed across seven operations. Warm additionally seeds the schema and checkpoint and sends two runtime outputs.",
+    "whole_selected_encoding": "These synthetic pseudorandom fixtures make the tuned whole-object zstd baseline select Raw fallback. Both baselines retain the same receiver exact-object cache, so an identical repeat does not upload the full object. This is not evidence about all compressible application traffic."
+  },
+  "observed_arithmetic": {
+    "one_guest_whole": {
+      "common_operation_wall_seconds": 44.608435,
+      "session_lifecycle_wall_seconds": 46.578541,
+      "all_session_logical_stream_bytes": 192949618,
+      "all_session_logical_stream_MiB": 184.01109504699707,
+      "common_guest_sender_cpu_seconds": 25.960914,
+      "common_guest_exchange_cpu_seconds": 25.360238,
+      "exchange_fraction_of_reported_sender_cpu": 0.9768622938314113,
+      "cold_seed": {"input_bytes":16777216,"stream_bytes_both_directions":32155028,"call_reply_pairs":276,"wall_seconds":5.736962,"reported_guest_cpu_seconds":4.224455},
+      "localized": {"input_bytes":16777216,"stream_bytes_both_directions":32154709,"call_reply_pairs":276,"wall_seconds":7.563298,"reported_guest_cpu_seconds":6.624521},
+      "repeat": {"stream_bytes_both_directions":8536,"call_reply_pairs":1,"wall_seconds":0.064567}
+    },
+    "one_guest_warm": {
+      "common_operation_wall_seconds": 14.708131,
+      "session_lifecycle_wall_seconds": 16.908706,
+      "all_session_logical_stream_bytes_including_four_extra_objects": 64524128,
+      "common_guest_sender_cpu_seconds": 6.534013,
+      "common_guest_exchange_cpu_seconds": 5.451038,
+      "exchange_fraction_of_reported_sender_cpu": 0.8342557628826266,
+      "localized": {"input_bytes":16777216,"stream_bytes_both_directions":25461,"call_reply_pairs":3,"wall_seconds":0.190621,"reported_guest_cpu_seconds":0.105236,"guest_exchange_cpu_seconds":0.008246},
+      "unrelated": {"stream_bytes_both_directions":32143374,"wall_seconds":7.164746,"reported_guest_cpu_seconds":4.028994},
+      "repeat": {"stream_bytes_both_directions":8569,"call_reply_pairs":1,"wall_seconds":0.159193}
+    },
+    "one_guest_descriptive_comparison": {
+      "common_operation_wall_speedup": 3.032909823824659,
+      "all_session_stream_byte_reduction_fraction_even_including_warm_extras": 0.6655907968680197,
+      "localized_stream_byte_reduction_fraction": 0.9992081719663518,
+      "localized_wall_speedup": 39.67714994675298,
+      "exact_repeat_warm_wall_slowdown": 2.4655474158625923,
+      "interpretation": "Byte reuse strongly helps changed objects in this sample. Exact repeats already hit the baseline cache; Warm's extra sender preparation loses on that row. These are descriptive n=1 observations, not statistically qualified improvements."
+    },
+    "two_guest_whole": {"common_operation_wall_seconds":41.728271,"lifecycle_wall_seconds":51.057055,"logical_stream_bytes":192935486,"physical_two_hop_stream_bytes":385870972,"host_relay_process_cpu_seconds":1.035621}
+  },
+  "rate_and_wire_diagnosis": {
+    "inherited_rate_bytes_per_second": 4194304,
+    "inherited_initial_burst_bytes": 8388608,
+    "bucket_scope": "One independent mailbox-service budget per guest; both directions consume that guest's shared byte bucket. The two guest streams can overlap, so their physical-byte total is not a single serial 4MiB/s link.",
+    "full_session_budget_lower_bound_formula": "max(0, (bytes - initial_burst) / sustained_rate)",
+    "one_guest_whole_ideal_budget_seconds": 44.00277376174927,
+    "one_guest_warm_ideal_budget_seconds": 13.383750915527344,
+    "comparison_scope": "This floor applies to the whole budget-active transfer interval, including gaps between measured operations; do not compare it as a strict floor on the sum of individually timed operations. The observed Whole44.61s common-operation sum is already near the44.00s bucket floor.",
+    "canonical_wire_expansion": "MVM encodes payload bytes as base64 inside signed canonical JSON, then encrypts that JSON and base64-encodes the ciphertext in the outer canonical envelope. Large byte bodies therefore incur approximately(4/3)^2=16/9 expansion before fixed headers, signatures, routing data and replies. Observed cold16MiB becomes32.155MB totalstreambytes, a1.9166x ratio.",
+    "budget_behavior": "Guest-to-host consume_waiting repeatedly sleeps1ms until tokens refill; host-to-guest drain reserves available tokens and sleeps1ms when none remain, leaving bytes queued. Ordinary exhaustion backpressures; it is neither intentional packet loss nor a pure busy-spin. Calls block the invoking VMM handler path. No retained counter quantifies total time in these sleeps.",
+    "per_message_behavior": "Client::exchange loops over frames and calls send_call, receive, open_live and accept_reply to completion for each frame. The grant allows one outstanding call. A cold16MiB object therefore pays276 serial authenticated exchanges; small warm changes need three. This is real persistent-stream transport but not pipelined delivery.",
+    "source_refs": [
+      "MVM@3104a12+localpatch crates/mvm-vmm/src/vsock_egress_bridge/substitution_bridge.rs:31,66,162,430,473",
+      "MVM@3104a12+localpatch crates/mvm-vmm/src/vmm/vsock_handlers/mod.rs:222,676,708",
+      "MVM@3104a12+localpatch crates/mvm-contract/src/protocol/mailbox.rs:429,510,687",
+      "MVM@3104a12+localpatch crates/mvm-core/src/mailbox.rs:271,293,298,323",
+      "crates/spiralcore-mvm-live/src/campaign.rs:133,151",
+      "crates/spiralcore-mvm-adapter/src/live.rs:658"
+    ]
+  },
+  "cpu_interpretation": {
+    "exchange_cpu_scope": "Guest ProcessTime around send_call through receive, canonical open and reply acceptance. It includes route/capability checks, signature/encryption/canonical serialization, framing/socket syscalls and reply verification. It does not isolate codec CPU or pure transmission CPU.",
+    "known_repeated_work": "send_call checks both routes, send_correlated_lifetime checks the outgoing route again, authorize_outbound verifies the capability, and opening verifies the message and capability. Canonical JSON/base64 allocation and transformation occur per message. These are source-confirmed candidates for profiling, not proven dominant individual functions.",
+    "receiver_cpu_scope": "Receiver operation CPU begins after StreamTransport::receive returns, so it excludes receive syscalls and ciphertext framing reads; it includes canonical open, endpoint work and authenticated reply. It must not be labeled complete receiver transport CPU.",
+    "accounting_discrepancy": {
+      "one_guest_whole_sender_reported_guest_cpu_seconds_including_setup":26.174387,
+      "one_guest_whole_native_worker_process_cpu_seconds":9.455456,
+      "one_guest_whole_hvf_vcpu_thread_cpu_seconds":8.185,
+      "one_guest_warm_sender_reported_guest_cpu_seconds_including_setup":7.020275,
+      "one_guest_warm_native_worker_process_cpu_seconds":4.368385,
+      "one_guest_warm_hvf_vcpu_thread_cpu_seconds":3.790,
+      "interpretation":"These clocks are different accounting domains. Guest ProcessTime reads Linux CLOCK_PROCESS_CPUTIME_ID; native worker ProcessTime reads macOS CLOCK_PROCESS_CPUTIME_ID. MVM UsageCapture sums Mach THREAD_BASIC_INFO user+system times from vCPU threads. The native thread/process values are mutually plausible, but the sources do not establish why guest time exceeds them or exactly how all HVF execution is charged. Guest virtual scheduling/time accounting and host exclusion of some hypervisor execution remain alternatives to investigate. Do not sum these measures or describe any as energy consumed."
+    },
+    "source_refs":["crates/spiralcore-mvm-live/src/campaign.rs:133,344","crates/spiralcore-mvm-adapter/src/direction.rs:205,268,288","MVM@3104a12+localpatch crates/mvm-runtime/src/backends/hvf/kernel_boot.rs:1261","MVM@3104a12+localpatch crates/mvm-vmm/src/quota/clock.rs:24,59","cpu-time1.0.0 src/clock_gettime.rs:38"]
+  },
+  "next_minimal_measurable_step": {
+    "recommendation":"After completing the current frozen correctness dose, register a small stage-profile run of identical persistent cold/repeat/localized transfers. Keep the same rate, grants, wire formats, exact-byte verification and durability. Record all repetitions, with warmup separately labeled rather than deleting its evidence.",
+    "instrumentation_needed":["Separate encode/selection/hash, route/capability verification, seal/serialize, socket write/wait/read, open/verify, endpoint reconstruct/hash/sync and reply stages.","Count per-service token waits and wait duration at the two existing budget seams without changing their policy.","Record host wall and native process/vCPU-thread CPU alongside guest clocks and qualify their discrepancy before physical CPU or energy claims."],
+    "first_policy_preserving_candidate":"If profiling confirms repeated static authorization work is material, reuse only immutable validated route/capability evidence within a policy-generation-bound operation/session, while rechecking current expiry, revocation, epoch, recipient and generation at every authority use. Preserve per-message authentication and replay/correlation. Measure this single change against the same baseline; no improvement is claimed yet.",
+    "later_candidates":"Bounded pipelining requires an explicitly authorized outstanding-call/window profile; it may reduce serial latency but cannot beat an unchanged rate floor for the same bytes. Packing small control frames into one authenticated payload can reduce fixed overhead only under an explicit application contract. Eliminating nested base64 or using session-authenticated data records would change the canonical MVM profile and needs versioning/review, not a silent codec shortcut.",
+    "changes_applied":false,
+    "rate_policy_changed":false,
+    "new_measurements_run":false
+  }
+}

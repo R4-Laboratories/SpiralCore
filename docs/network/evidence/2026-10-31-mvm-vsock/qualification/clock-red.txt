@@ -1,0 +1,32 @@
+   Compiling spiralcore-mvm-live v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-mvm-live)
+    Finished `test` profile [unoptimized] target(s) in 10.62s
+     Running ../spiralcore-mvm-adapter/tests/live.rs (/Users/casey.allard/spiralcore/target/debug/deps/adapter_live-96dc3b93937a7c64)
+
+running 5 tests
+test cancellation_before_handshake_closes_the_owned_socket ... ok
+test live_open_refuses_a_grant_inside_the_clock_uncertainty_margin ... FAILED
+test live_sender_supports_bounded_clock_lag_and_caps_signed_call_expiry ... FAILED
+test live_dispatch_keeps_authenticated_request_available_for_reply ... ok
+test canonical_call_and_verified_reply_cross_real_socket_io ... ok
+
+failures:
+
+---- live_open_refuses_a_grant_inside_the_clock_uncertainty_margin stdout ----
+
+thread 'live_open_refuses_a_grant_inside_the_clock_uncertainty_margin' (70685658) panicked at ../spiralcore-mvm-adapter/tests/live.rs:259:5:
+live authorization must retain more than the 5-second clock margin
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- live_sender_supports_bounded_clock_lag_and_caps_signed_call_expiry stdout ----
+
+thread 'live_sender_supports_bounded_clock_lag_and_caps_signed_call_expiry' (70685659) panicked at ../spiralcore-mvm-adapter/tests/live.rs:222:6:
+bounded peer clock lag must not reject a fresh live call: IssuedInFuture
+
+
+failures:
+    live_open_refuses_a_grant_inside_the_clock_uncertainty_margin
+    live_sender_supports_bounded_clock_lag_and_caps_signed_call_expiry
+
+test result: FAILED. 3 passed; 2 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.06s
+
+error: test failed, to rerun pass `--test adapter_live`

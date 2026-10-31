@@ -1,0 +1,63 @@
+   Compiling mvm-core v0.26.0 (/Users/casey.allard/spiralcore/local/mvm-vsock-20261031/mvm-worktree/crates/mvm-core)
+error[E0599]: no method named `encoded_bytes` found for struct `transport::AuthorizedMailboxFrame` in the current scope
+   --> crates/mvm-core/src/mailbox/transport/tests.rs:407:22
+    |
+407 |     assert_eq!(frame.encoded_bytes().len(), frame.encoded_len());
+    |                      ^^^^^^^^^^^^^
+    |
+   ::: crates/mvm-core/src/mailbox/transport.rs:541:1
+    |
+541 | pub struct AuthorizedMailboxFrame {
+    | --------------------------------- method `encoded_bytes` not found for this struct
+    |
+help: there is a method `encoded_len` with a similar name
+    |
+407 -     assert_eq!(frame.encoded_bytes().len(), frame.encoded_len());
+407 +     assert_eq!(frame.encoded_len().len(), frame.encoded_len());
+    |
+
+error[E0599]: no method named `encoded_bytes` found for struct `transport::AuthorizedMailboxFrame` in the current scope
+   --> crates/mvm-core/src/mailbox/transport/tests.rs:408:22
+    |
+408 |     assert_eq!(frame.encoded_bytes(), crate::mailbox::encode_envelope(fixture.prepared.envelope()).unwrap());
+    |                      ^^^^^^^^^^^^^
+    |
+   ::: crates/mvm-core/src/mailbox/transport.rs:541:1
+    |
+541 | pub struct AuthorizedMailboxFrame {
+    | --------------------------------- method `encoded_bytes` not found for this struct
+    |
+help: there is a method `encoded_len` with a similar name
+    |
+408 -     assert_eq!(frame.encoded_bytes(), crate::mailbox::encode_envelope(fixture.prepared.envelope()).unwrap());
+408 +     assert_eq!(frame.encoded_len(), crate::mailbox::encode_envelope(fixture.prepared.envelope()).unwrap());
+    |
+
+error[E0599]: no method named `max_frame_bytes` found for struct `transport::ChannelLimits` in the current scope
+   --> crates/mvm-core/src/mailbox/transport/tests.rs:410:23
+    |
+410 |     assert_eq!(limits.max_frame_bytes(), 262_144);
+    |                       ^^^^^^^^^^^^^^^-- help: remove the arguments
+    |                       |
+    |                       field, not a method
+    |
+   ::: crates/mvm-core/src/mailbox/transport.rs:466:1
+    |
+466 | pub struct ChannelLimits {
+    | ------------------------ method `max_frame_bytes` not found for this struct
+
+error[E0599]: no method named `max_pending_bytes` found for struct `transport::ChannelLimits` in the current scope
+   --> crates/mvm-core/src/mailbox/transport/tests.rs:411:23
+    |
+411 |     assert_eq!(limits.max_pending_bytes(), 524_288);
+    |                       ^^^^^^^^^^^^^^^^^-- help: remove the arguments
+    |                       |
+    |                       field, not a method
+    |
+   ::: crates/mvm-core/src/mailbox/transport.rs:466:1
+    |
+466 | pub struct ChannelLimits {
+    | ------------------------ method `max_pending_bytes` not found for this struct
+
+For more information about this error, try `rustc --explain E0599`.
+error: could not compile `mvm-core` (lib test) due to 4 previous errors

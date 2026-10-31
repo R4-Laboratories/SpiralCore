@@ -1,0 +1,31 @@
+   Compiling spiralcore-mvm-live v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-mvm-live)
+error[E0277]: cannot add `i32` to `usize`
+   --> tests/host_pack.rs:18:36
+    |
+ 18 |             let begin = offset + 6 + number * 8;
+    |                                    ^ no implementation for `usize + i32`
+    |
+    = help: the trait `Add<i32>` is not implemented for `usize`
+help: the following other types implement trait `Add<Rhs>`
+   --> /Users/casey.allard/.rustup/toolchains/1.97.1-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/ops/arith.rs:98:9
+    |
+ 98 |         impl const Add for $t {
+    |         ^^^^^^^^^^^^^^^^^^^^^ `usize` implements `Add`
+...
+113 | add_impl! { usize u8 u16 u32 u64 u128 isize i8 i16 i32 i64 i128 f16 f32 f64 f128 }
+    | ---------------------------------------------------------------------------------- in this macro invocation
+    |
+   ::: /Users/casey.allard/.rustup/toolchains/1.97.1-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/internal_macros.rs:22:9
+    |
+ 22 |         impl const $imp<$u> for &$t {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^ `&usize` implements `Add<usize>`
+...
+ 33 |         impl const $imp<&$u> for $t {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^ `usize` implements `Add<&usize>`
+...
+ 44 |         impl const $imp<&$u> for &$t {
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `&usize` implements `Add`
+    = note: this error originates in the macro `add_impl` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+For more information about this error, try `rustc --explain E0277`.
+error: could not compile `spiralcore-mvm-live` (test "host_pack") due to 1 previous error

@@ -1,0 +1,54 @@
+   Compiling spiralcore-mvm-live v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-mvm-live)
+    Finished `test` profile [unoptimized] target(s) in 9.66s
+     Running unittests src/lib.rs (/Users/casey.allard/spiralcore/target/debug/deps/spiralcore_mvm_live-636517dbf7e24007)
+
+running 2 tests
+test config::tests::provisioning_separates_signers_and_roundtrips_only_private_bootstrap ... FAILED
+test fixtures::tests::deterministic_mixed_sequence_preserves_exact_lengths_and_binary_edits ... ok
+
+failures:
+
+---- config::tests::provisioning_separates_signers_and_roundtrips_only_private_bootstrap stdout ----
+
+thread 'config::tests::provisioning_separates_signers_and_roundtrips_only_private_bootstrap' (70653572) panicked at src/config.rs:76:50:
+called `Result::unwrap()` on an `Err` value: "pair provisioning is not implemented"
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    config::tests::provisioning_separates_signers_and_roundtrips_only_private_bootstrap
+
+test result: FAILED. 1 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `--lib`
+     Running tests/host_pack.rs (/Users/casey.allard/spiralcore/target/debug/deps/host_pack-15201977568844f1)
+
+running 3 tests
+test refuses_oversized_or_malformed_bootstrap_and_guest_inputs ... ok
+test packs_exact_guest_bytes_and_private_bootstrap_with_only_fixed_paths ... FAILED
+test creates_private_sparse_ext4_and_never_overwrites_an_existing_path ... FAILED
+
+failures:
+
+---- packs_exact_guest_bytes_and_private_bootstrap_with_only_fixed_paths stdout ----
+
+thread 'packs_exact_guest_bytes_and_private_bootstrap_with_only_fixed_paths' (70653579) panicked at tests/host_pack.rs:70:48:
+bounded initramfs: Custom { kind: Other, error: "live initramfs packer is not implemented" }
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- creates_private_sparse_ext4_and_never_overwrites_an_existing_path stdout ----
+
+thread 'creates_private_sparse_ext4_and_never_overwrites_an_existing_path' (70653578) panicked at tests/host_pack.rs:106:24:
+fresh disk: Custom { kind: Other, error: "live data disk creation is not implemented" }
+
+
+failures:
+    creates_private_sparse_ext4_and_never_overwrites_an_existing_path
+    packs_exact_guest_bytes_and_private_bootstrap_with_only_fixed_paths
+
+test result: FAILED. 1 passed; 2 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `--test host_pack`
+error: 2 targets failed:
+    `--lib`
+    `--test host_pack`

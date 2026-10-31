@@ -1,0 +1,838 @@
+{
+  "schema": "spiralcore.mvm-vsock.independent-measurement-review.v1",
+  "observed_at_utc": "2026-10-31T22:31:44.640Z",
+  "reviewer": "/root/mvm_tests",
+  "verdict": "PASS_FOR_RECORDED_FUNCTIONAL_PILOT_AND_ARITHMETIC",
+  "scope": "Independent read-only reconciliation of completed raw actual-MVM receipts and derived measurement rows; no benchmark reruns, builds or performance-source changes.",
+  "unresolved_material_findings": [],
+  "checked_counts": {
+    "sessions": 12,
+    "operations": 100,
+    "common_operation_rows": 84,
+    "warm_only_operation_rows": 16,
+    "receiver_exact_reopens": 100,
+    "two_guest_exact_reboot_readbacks": 50,
+    "copied_raw_files_byte_equal_to_original": 24,
+    "summary_rows": 24
+  },
+  "arithmetic": {
+    "mismatches": [],
+    "checks": [
+      "Unique complete registered stage/size/arm/trial/workload coverage",
+      "All 100 operation rows bind matching sender and receiver object IDs, lengths, sequence positions and plans",
+      "Published record and stopped-store readback object IDs, lengths and namespaces match every operation; all 50 two-guest reboot records match too",
+      "All six directional frame/envelope/prefix counter pairs reconcile per operation and per session",
+      "Per-session counters and CPU/wall summaries exactly equal setup plus operations",
+      "Actual relay A and B counters reconcile both physical hops with endpoint counters",
+      "Operation values and source_result names match their raw receipts",
+      "Final operations regeneration changes only the approved planned-application count label/scope; all other fields remain identical",
+      "All 24 accepted result and host-event files byte-match their retained original source paths",
+      "Both derived summary files reconcile with raw values, including host OS lifecycle CPU with no guest/worker double-counting"
+    ],
+    "operations_sha256": "5efac453b39ae852755b00b572b8bac7d672b6659470937e106947136c60156d",
+    "operation_script_sha256": "9a83d67b14bb375acaac3b039c442aa282ac0c399e869d0bba23f9b5ce8c5251",
+    "common_summary_sha256": "d44b5d8d06af657ad39636c8ebed37f3381603f55f26a83cb7749a10f9a85d2a",
+    "session_summary_sha256": "f632192d2bd4f48f7262d3a8916d593895a8ac54dceeb79f05e4438bce5bf9ca"
+  },
+  "selection_and_identity": {
+    "amendment": "pilot/amendment-01.json",
+    "amendment_sha256": "24819b90ab288ae68126d098305008182958d5fb29a972561a5787800b81800a",
+    "accepted": "Nine pilot-01 groups plus the matched whole/warm/raw two-guest 16 MiB group from pilot-02.",
+    "failed": "The failed pilot-01 two-guest 16 MiB Warm session is retained and excluded from accepted rows.",
+    "superseded": "The earlier successful pilot-01 two-guest 16 MiB Whole result is retained as superseded and is not pooled.",
+    "host_sha256": "3d4ce96be41815c0f39e67911e9641f3fca78097cf641e84187fe89068f88237",
+    "kernel_sha256": "0f97f109154a173352c07db223ecff48d44b38514b500f39cd9897701dbac0b6",
+    "guest_01_sha256": "d258485641c78a7072c71a4605505f228a3b840445e8529d9861ec0c6b492698",
+    "guest_02_sha256": "157e8035b2433db9c5b1b0f6ea2d7996076c73474f8d629a3ffbc1bc05aa4d53",
+    "identity_receipts": [
+      "pilot/identities.sha256",
+      "pilot/identities-02.sha256"
+    ],
+    "limitation": "Executable identity is bound by the retained pre-execution launcher identity receipts and the recorded source paths, not newly inferred from an overwritten binary path."
+  },
+  "sessions": [
+    {
+      "group": "one-1048576-whole",
+      "dose": "pilot-01",
+      "result_sha256": "ddd2072d9e32cd9fe5fea9a7f64dae95a80be59ab180b70bad65604be5d55292",
+      "host_events_sha256": "b385e09f35233bc7d99e9bee95b04a9f34d8f76b9791d6741ef430a2e3c680ca",
+      "operations": 7,
+      "logical_bytes": 12212111,
+      "physical_bytes": 12212111,
+      "setup_logical_bytes": 8396,
+      "common_logical_bytes": 12203715,
+      "warm_extra_logical_bytes": 0
+    },
+    {
+      "group": "one-1048576-warm",
+      "dose": "pilot-01",
+      "result_sha256": "d116e57f7f847edddf87d20ca726ccf61bb7f8bbb1745080b2332531d2d06afa",
+      "host_events_sha256": "d7108c2b90c86abb59da70e5a538989ec155fc065314331064ac73064b9594f6",
+      "operations": 11,
+      "logical_bytes": 4306797,
+      "physical_bytes": 4306797,
+      "setup_logical_bytes": 8470,
+      "common_logical_bytes": 4178250,
+      "warm_extra_logical_bytes": 120077
+    },
+    {
+      "group": "one-1048576-raw",
+      "dose": "pilot-01",
+      "result_sha256": "4100eb716ca99b4fc5401dcaf65b5362b2bd48a10d0431721d9284f2556091ae",
+      "host_events_sha256": "73afdaf9dbfa05fd5612f4941f5aa58a560e713e3fb18246b905e3a4a2be5ab2",
+      "operations": 7,
+      "logical_bytes": 12210862,
+      "physical_bytes": 12210862,
+      "setup_logical_bytes": 8410,
+      "common_logical_bytes": 12202452,
+      "warm_extra_logical_bytes": 0
+    },
+    {
+      "group": "one-16777216-whole",
+      "dose": "pilot-01",
+      "result_sha256": "46bf549e0770332a856a97d79caac976a4ef0e98bcbbd8a44e8b6a33b4fb8910",
+      "host_events_sha256": "a6b35156b401ba8fd49fbee58b77dca8e1fbcbd41813644b83097d86862f7473",
+      "operations": 7,
+      "logical_bytes": 192949618,
+      "physical_bytes": 192949618,
+      "setup_logical_bytes": 8416,
+      "common_logical_bytes": 192941202,
+      "warm_extra_logical_bytes": 0
+    },
+    {
+      "group": "one-16777216-warm",
+      "dose": "pilot-01",
+      "result_sha256": "9e8a3b2a7837fc915ac0c4e0629d8bb32b7dac376eeb580b93d4e00708b50247",
+      "host_events_sha256": "917cab1a7500b76f1687f7f036afefbe90b33fe7c33a897da93370a5c7b7278a",
+      "operations": 11,
+      "logical_bytes": 64524128,
+      "physical_bytes": 64524128,
+      "setup_logical_bytes": 8389,
+      "common_logical_bytes": 64396580,
+      "warm_extra_logical_bytes": 119159
+    },
+    {
+      "group": "one-16777216-raw",
+      "dose": "pilot-01",
+      "result_sha256": "8754fc3c019dbdf5816d4d37483baed515713ae3b16729268350873eb9c4fc09",
+      "host_events_sha256": "3831c23461fee29f2488848d503281f2eab4a1b80dac9155623277b04981b0fb",
+      "operations": 7,
+      "logical_bytes": 192975449,
+      "physical_bytes": 192975449,
+      "setup_logical_bytes": 8463,
+      "common_logical_bytes": 192966986,
+      "warm_extra_logical_bytes": 0
+    },
+    {
+      "group": "two-1048576-whole",
+      "dose": "pilot-01",
+      "result_sha256": "6ff5748b4c50c4b5356cc874c0c1d58789491522224981313c17f946462c60ad",
+      "host_events_sha256": "4f0df0eddaa0ed94ee26fcbb7c17b4ec54bd7ccecee1876b3ded5e778d6e09d8",
+      "operations": 7,
+      "logical_bytes": 12212049,
+      "physical_bytes": 24424098,
+      "setup_logical_bytes": 8385,
+      "common_logical_bytes": 12203664,
+      "warm_extra_logical_bytes": 0
+    },
+    {
+      "group": "two-1048576-warm",
+      "dose": "pilot-01",
+      "result_sha256": "4766120c54a44c02590cc7c04763eb886494fc8a9e3108a8702e6fab1c668ba0",
+      "host_events_sha256": "68abfca7b076a4415f89368328a17d4da0368a64a99174999af39840343caf8a",
+      "operations": 11,
+      "logical_bytes": 4304327,
+      "physical_bytes": 8608654,
+      "setup_logical_bytes": 8409,
+      "common_logical_bytes": 4176315,
+      "warm_extra_logical_bytes": 119603
+    },
+    {
+      "group": "two-1048576-raw",
+      "dose": "pilot-01",
+      "result_sha256": "7a3d24f25e1a598c035028043b066e8f095163833a4d0b66903e6796a7515ded",
+      "host_events_sha256": "30842504aeaaab0a7ea6ee05c546c9d5e06231d7a21fd8db33bc92e4a0956bcb",
+      "operations": 7,
+      "logical_bytes": 12210144,
+      "physical_bytes": 24420288,
+      "setup_logical_bytes": 8404,
+      "common_logical_bytes": 12201740,
+      "warm_extra_logical_bytes": 0
+    },
+    {
+      "group": "two-16777216-whole",
+      "dose": "pilot-02",
+      "result_sha256": "fae6256c6e3173b3531e0c7e3571a248265483d56334c4692af617ff80a7baaa",
+      "host_events_sha256": "6fae010d40a9184e57830dea368535c0516fefe08e0d819dd5085c480dec95ea",
+      "operations": 7,
+      "logical_bytes": 192940947,
+      "physical_bytes": 385881894,
+      "setup_logical_bytes": 8410,
+      "common_logical_bytes": 192932537,
+      "warm_extra_logical_bytes": 0
+    },
+    {
+      "group": "two-16777216-warm",
+      "dose": "pilot-02",
+      "result_sha256": "f467fa40ba73cba630addedfdcaa58fb4cae957cb7c30fc95edc9b9ccf5bad2a",
+      "host_events_sha256": "e8208b351c2daa3a381c235e242779740cebcde0f0b5115cd3ed17166e3984ef",
+      "operations": 11,
+      "logical_bytes": 64535960,
+      "physical_bytes": 129071920,
+      "setup_logical_bytes": 8427,
+      "common_logical_bytes": 64408198,
+      "warm_extra_logical_bytes": 119335
+    },
+    {
+      "group": "two-16777216-raw",
+      "dose": "pilot-02",
+      "result_sha256": "f6fffe333921d16c6f5455506fd36f750f878a520420e1b78ba323c17bf45b9f",
+      "host_events_sha256": "3094b800db4525c4ba6568e08540c991cbd568207fe1950ecddce034b24d6433",
+      "operations": 7,
+      "logical_bytes": 192970066,
+      "physical_bytes": 385940132,
+      "setup_logical_bytes": 8445,
+      "common_logical_bytes": 192961621,
+      "warm_extra_logical_bytes": 0
+    }
+  ],
+  "comparison_method": {
+    "matched_workloads": [
+      "seed",
+      "repeat",
+      "localized",
+      "unrelated",
+      "localized-after",
+      "truncate",
+      "append"
+    ],
+    "matched_object_identity": "Each common workload has identical object ID and length across all three arms in its stage/size cell.",
+    "warm_only_workloads": [
+      "schema",
+      "runtime-checkpoint",
+      "runtime-generated",
+      "runtime-residual"
+    ],
+    "aggregation": "Common-workload aggregates exclude setup and the four Warm-only workloads. They are arithmetic sums of seven operations, not medians or latency distributions.",
+    "baseline": "Prepared whole-object zstd and raw use the same authenticated transfer protocol and cache-aware receiver. They already avoid sending remaining prepared frames when an identical object is present.",
+    "bytes": "Logical encrypted-stream bytes count both directions, canonical envelopes and frame prefixes. Two-guest physical stream bytes count both verified relay hops. They exclude virtio headers/control/credits, VM boot assets and stored verification fixtures.",
+    "time": "encode_through_publication_us is sender operation wall time through authenticated publication reply. sender_exchange_wall_us includes canonical authorization/crypto, send/wait/receive, remote processing and reply; it is not pure link send time.",
+    "cpu": "sender_reported_cpu_us and receiver_processing_cpu_us remain separate; the receiver timer excludes framed receive/allocation/copy. Their sum is a limited reported quantity across differing guest/host accounting domains. Host OS worker/orchestrator lifecycle CPU is separate and must not be added to nested guest CPU.",
+    "statistical_scope": "One trial per cell, fixed registered order, synthetic public fixtures and local HVF; no WAN, median/p95, physical-energy or stable performance-superiority claim."
+  },
+  "resolved_measurement_findings": [
+    {
+      "id": "CPU_SCOPE_01",
+      "status": "RESOLVED",
+      "resolution": "Explicit sender reported / receiver processing labels and scope; raw receipts unchanged. Guest CPU has not been qualified as physical endpoint cost or energy."
+    },
+    {
+      "id": "PLANNED_APPLICATION_BYTES_02",
+      "status": "RESOLVED",
+      "source": "crates/spiralcore-transfer/src/client.rs:276",
+      "description": "BatchSender counts all prepared request frames before seeing a reply, while the sequential live transport stops on early Published. Those planned bytes may never cross the socket.",
+      "example": {
+        "cell": "one-1048576-raw",
+        "kind": "repeat",
+        "planned_application_batch_bytes": 1049920,
+        "actual_logical_encrypted_stream_bytes": 8538
+      },
+      "resolution": "Derived field is now planned_application_batch_bytes with an explicit planning-scope string; actual socket counters remain the byte-comparison authority."
+    }
+  ],
+  "common_workload_aggregates": [
+    {
+      "stage": "one",
+      "size": 1048576,
+      "common_workloads": 7,
+      "arms": {
+        "warm": {
+          "bytes": 4178250,
+          "wall_us": 633683,
+          "sender_cpu_us": 236351,
+          "receiver_processing_cpu_us": 100123
+        },
+        "whole": {
+          "bytes": 12203715,
+          "wall_us": 1520531,
+          "sender_cpu_us": 520369,
+          "receiver_processing_cpu_us": 224008
+        },
+        "raw": {
+          "bytes": 12202452,
+          "wall_us": 1795079,
+          "sender_cpu_us": 505819,
+          "receiver_processing_cpu_us": 218172
+        }
+      },
+      "warm_byte_saving_vs_whole": 0.6576247478739057,
+      "warm_wall_speedup_vs_whole": 2.3995136369446555
+    },
+    {
+      "stage": "one",
+      "size": 16777216,
+      "common_workloads": 7,
+      "arms": {
+        "warm": {
+          "bytes": 64396580,
+          "wall_us": 14708131,
+          "sender_cpu_us": 6534013,
+          "receiver_processing_cpu_us": 1087917
+        },
+        "whole": {
+          "bytes": 192941202,
+          "wall_us": 44608435,
+          "sender_cpu_us": 25960914,
+          "receiver_processing_cpu_us": 3037884
+        },
+        "raw": {
+          "bytes": 192966986,
+          "wall_us": 43955846,
+          "sender_cpu_us": 28016028,
+          "receiver_processing_cpu_us": 2626403
+        }
+      },
+      "warm_byte_saving_vs_whole": 0.6662372819673841,
+      "warm_wall_speedup_vs_whole": 3.032909823824659
+    },
+    {
+      "stage": "two",
+      "size": 1048576,
+      "common_workloads": 7,
+      "arms": {
+        "warm": {
+          "bytes": 4176315,
+          "wall_us": 1608519,
+          "sender_cpu_us": 327042,
+          "receiver_processing_cpu_us": 443333
+        },
+        "whole": {
+          "bytes": 12203664,
+          "wall_us": 4284325,
+          "sender_cpu_us": 859468,
+          "receiver_processing_cpu_us": 655290
+        },
+        "raw": {
+          "bytes": 12201740,
+          "wall_us": 2959901,
+          "sender_cpu_us": 639760,
+          "receiver_processing_cpu_us": 498505
+        }
+      },
+      "warm_byte_saving_vs_whole": 0.6577818760005192,
+      "warm_wall_speedup_vs_whole": 2.6635215375137005
+    },
+    {
+      "stage": "two",
+      "size": 16777216,
+      "common_workloads": 7,
+      "arms": {
+        "warm": {
+          "bytes": 64408198,
+          "wall_us": 16032688,
+          "sender_cpu_us": 8793874,
+          "receiver_processing_cpu_us": 2278098
+        },
+        "whole": {
+          "bytes": 192932537,
+          "wall_us": 43854076,
+          "sender_cpu_us": 35101317,
+          "receiver_processing_cpu_us": 5061913
+        },
+        "raw": {
+          "bytes": 192961621,
+          "wall_us": 42279633,
+          "sender_cpu_us": 34103604,
+          "receiver_processing_cpu_us": 4923117
+        }
+      },
+      "warm_byte_saving_vs_whole": 0.6661620740518226,
+      "warm_wall_speedup_vs_whole": 2.735291549364648
+    }
+  ],
+  "repeat_losses": [
+    {
+      "stage": "one",
+      "size": 1048576,
+      "kind": "repeat",
+      "object_bytes": 1048576,
+      "warm": {
+        "bytes": 8621,
+        "wall_us": 22712,
+        "sender_cpu_us": 19310,
+        "receiver_processing_cpu_us": 2205
+      },
+      "whole": {
+        "bytes": 8498,
+        "wall_us": 13837,
+        "sender_cpu_us": 8278,
+        "receiver_processing_cpu_us": 2392
+      },
+      "raw": {
+        "bytes": 8538,
+        "wall_us": 10159,
+        "sender_cpu_us": 3456,
+        "receiver_processing_cpu_us": 3140
+      },
+      "warm_byte_saving_vs_whole": -0.014473993880913083,
+      "warm_wall_speedup_vs_whole": 0.6092374075378655,
+      "warm_reported_cpu_ratio_vs_whole": 2.016401124648547
+    },
+    {
+      "stage": "one",
+      "size": 16777216,
+      "kind": "repeat",
+      "object_bytes": 16777216,
+      "warm": {
+        "bytes": 8569,
+        "wall_us": 159193,
+        "sender_cpu_us": 130297,
+        "receiver_processing_cpu_us": 18830
+      },
+      "whole": {
+        "bytes": 8536,
+        "wall_us": 64567,
+        "sender_cpu_us": 49285,
+        "receiver_processing_cpu_us": 15001
+      },
+      "raw": {
+        "bytes": 8586,
+        "wall_us": 64787,
+        "sender_cpu_us": 46904,
+        "receiver_processing_cpu_us": 15151
+      },
+      "warm_byte_saving_vs_whole": -0.0038659793814432852,
+      "warm_wall_speedup_vs_whole": 0.4055894417468105,
+      "warm_reported_cpu_ratio_vs_whole": 2.3197430233643406
+    },
+    {
+      "stage": "two",
+      "size": 1048576,
+      "kind": "repeat",
+      "object_bytes": 1048576,
+      "warm": {
+        "bytes": 8592,
+        "wall_us": 25499,
+        "sender_cpu_us": 13475,
+        "receiver_processing_cpu_us": 3894
+      },
+      "whole": {
+        "bytes": 8534,
+        "wall_us": 22501,
+        "sender_cpu_us": 7932,
+        "receiver_processing_cpu_us": 5496
+      },
+      "raw": {
+        "bytes": 8502,
+        "wall_us": 15754,
+        "sender_cpu_us": 8849,
+        "receiver_processing_cpu_us": 4114
+      },
+      "warm_byte_saving_vs_whole": -0.006796344035622237,
+      "warm_wall_speedup_vs_whole": 0.8824267618337974,
+      "warm_reported_cpu_ratio_vs_whole": 1.2934912123920166
+    },
+    {
+      "stage": "two",
+      "size": 16777216,
+      "kind": "repeat",
+      "object_bytes": 16777216,
+      "warm": {
+        "bytes": 8570,
+        "wall_us": 128536,
+        "sender_cpu_us": 99080,
+        "receiver_processing_cpu_us": 27483
+      },
+      "whole": {
+        "bytes": 8506,
+        "wall_us": 58913,
+        "sender_cpu_us": 43265,
+        "receiver_processing_cpu_us": 15195
+      },
+      "raw": {
+        "bytes": 8554,
+        "wall_us": 33800,
+        "sender_cpu_us": 17492,
+        "receiver_processing_cpu_us": 15955
+      },
+      "warm_byte_saving_vs_whole": -0.007524100634846098,
+      "warm_wall_speedup_vs_whole": 0.4583385199477189,
+      "warm_reported_cpu_ratio_vs_whole": 2.1649503934314063
+    }
+  ],
+  "localized_results": [
+    {
+      "stage": "one",
+      "size": 1048576,
+      "kind": "localized",
+      "object_bytes": 1048576,
+      "warm": {
+        "bytes": 25657,
+        "wall_us": 48718,
+        "sender_cpu_us": 20871,
+        "receiver_processing_cpu_us": 9146
+      },
+      "whole": {
+        "bytes": 2032576,
+        "wall_us": 259711,
+        "sender_cpu_us": 79409,
+        "receiver_processing_cpu_us": 37187
+      },
+      "raw": {
+        "bytes": 2032447,
+        "wall_us": 309405,
+        "sender_cpu_us": 82506,
+        "receiver_processing_cpu_us": 35748
+      },
+      "warm_byte_saving_vs_whole": 0.9873771017664285,
+      "warm_wall_speedup_vs_whole": 5.330904388521696,
+      "warm_reported_cpu_ratio_vs_whole": 0.2574445092456002
+    },
+    {
+      "stage": "one",
+      "size": 16777216,
+      "kind": "localized",
+      "object_bytes": 16777216,
+      "warm": {
+        "bytes": 25461,
+        "wall_us": 190621,
+        "sender_cpu_us": 105236,
+        "receiver_processing_cpu_us": 35868
+      },
+      "whole": {
+        "bytes": 32154709,
+        "wall_us": 7563298,
+        "sender_cpu_us": 6624521,
+        "receiver_processing_cpu_us": 585753
+      },
+      "raw": {
+        "bytes": 32159890,
+        "wall_us": 8939260,
+        "sender_cpu_us": 1956656,
+        "receiver_processing_cpu_us": 450289
+      },
+      "warm_byte_saving_vs_whole": 0.9992081719663518,
+      "warm_wall_speedup_vs_whole": 39.677149946752984,
+      "warm_reported_cpu_ratio_vs_whole": 0.019569852685210023
+    },
+    {
+      "stage": "two",
+      "size": 1048576,
+      "kind": "localized",
+      "object_bytes": 1048576,
+      "warm": {
+        "bytes": 25567,
+        "wall_us": 58927,
+        "sender_cpu_us": 24904,
+        "receiver_processing_cpu_us": 17956
+      },
+      "whole": {
+        "bytes": 2032588,
+        "wall_us": 477054,
+        "sender_cpu_us": 95093,
+        "receiver_processing_cpu_us": 64596
+      },
+      "raw": {
+        "bytes": 2032250,
+        "wall_us": 461658,
+        "sender_cpu_us": 115380,
+        "receiver_processing_cpu_us": 74841
+      },
+      "warm_byte_saving_vs_whole": 0.9874214548152405,
+      "warm_wall_speedup_vs_whole": 8.095677702920563,
+      "warm_reported_cpu_ratio_vs_whole": 0.2683966960780016
+    },
+    {
+      "stage": "two",
+      "size": 16777216,
+      "kind": "localized",
+      "object_bytes": 16777216,
+      "warm": {
+        "bytes": 25497,
+        "wall_us": 233752,
+        "sender_cpu_us": 69607,
+        "receiver_processing_cpu_us": 118077
+      },
+      "whole": {
+        "bytes": 32153825,
+        "wall_us": 6921060,
+        "sender_cpu_us": 5753633,
+        "receiver_processing_cpu_us": 648585
+      },
+      "raw": {
+        "bytes": 32158517,
+        "wall_us": 8418385,
+        "sender_cpu_us": 6276962,
+        "receiver_processing_cpu_us": 1387778
+      },
+      "warm_byte_saving_vs_whole": 0.999207030578788,
+      "warm_wall_speedup_vs_whole": 29.608559498956158,
+      "warm_reported_cpu_ratio_vs_whole": 0.029315465359036508
+    }
+  ],
+  "unrelated_results": [
+    {
+      "stage": "one",
+      "size": 1048576,
+      "kind": "unrelated",
+      "object_bytes": 1048576,
+      "warm": {
+        "bytes": 2033562,
+        "wall_us": 365113,
+        "sender_cpu_us": 110684,
+        "receiver_processing_cpu_us": 36533
+      },
+      "whole": {
+        "bytes": 2032600,
+        "wall_us": 277787,
+        "sender_cpu_us": 85405,
+        "receiver_processing_cpu_us": 37866
+      },
+      "raw": {
+        "bytes": 2032329,
+        "wall_us": 353943,
+        "sender_cpu_us": 97254,
+        "receiver_processing_cpu_us": 40498
+      },
+      "warm_byte_saving_vs_whole": -0.0004732854472104808,
+      "warm_wall_speedup_vs_whole": 0.7608247309736985,
+      "warm_reported_cpu_ratio_vs_whole": 1.1942549342505537
+    },
+    {
+      "stage": "one",
+      "size": 16777216,
+      "kind": "unrelated",
+      "object_bytes": 16777216,
+      "warm": {
+        "bytes": 32143374,
+        "wall_us": 7164746,
+        "sender_cpu_us": 4028994,
+        "receiver_processing_cpu_us": 457670
+      },
+      "whole": {
+        "bytes": 32155381,
+        "wall_us": 7670118,
+        "sender_cpu_us": 6705914,
+        "receiver_processing_cpu_us": 558228
+      },
+      "raw": {
+        "bytes": 32159747,
+        "wall_us": 5797276,
+        "sender_cpu_us": 4774368,
+        "receiver_processing_cpu_us": 430072
+      },
+      "warm_byte_saving_vs_whole": 0.00037340562066423555,
+      "warm_wall_speedup_vs_whole": 1.070535926884219,
+      "warm_reported_cpu_ratio_vs_whole": 0.6176454149712381
+    },
+    {
+      "stage": "two",
+      "size": 1048576,
+      "kind": "unrelated",
+      "object_bytes": 1048576,
+      "warm": {
+        "bytes": 2032842,
+        "wall_us": 940320,
+        "sender_cpu_us": 138864,
+        "receiver_processing_cpu_us": 296818
+      },
+      "whole": {
+        "bytes": 2032641,
+        "wall_us": 477549,
+        "sender_cpu_us": 92178,
+        "receiver_processing_cpu_us": 91396
+      },
+      "raw": {
+        "bytes": 2032212,
+        "wall_us": 488516,
+        "sender_cpu_us": 82593,
+        "receiver_processing_cpu_us": 82279
+      },
+      "warm_byte_saving_vs_whole": -0.00009888612893282911,
+      "warm_wall_speedup_vs_whole": 0.5078579632465544,
+      "warm_reported_cpu_ratio_vs_whole": 2.3733317354309436
+    },
+    {
+      "stage": "two",
+      "size": 16777216,
+      "kind": "unrelated",
+      "object_bytes": 16777216,
+      "warm": {
+        "bytes": 32149223,
+        "wall_us": 7411091,
+        "sender_cpu_us": 3328000,
+        "receiver_processing_cpu_us": 899842
+      },
+      "whole": {
+        "bytes": 32153718,
+        "wall_us": 7600209,
+        "sender_cpu_us": 6449664,
+        "receiver_processing_cpu_us": 666973
+      },
+      "raw": {
+        "bytes": 32158572,
+        "wall_us": 6418844,
+        "sender_cpu_us": 5379170,
+        "receiver_processing_cpu_us": 577592
+      },
+      "warm_byte_saving_vs_whole": 0.00013979720789991656,
+      "warm_wall_speedup_vs_whole": 1.0255182401619412,
+      "warm_reported_cpu_ratio_vs_whole": 0.5940786357376384
+    }
+  ],
+  "warm_only_results": [
+    {
+      "stage": "one",
+      "size": 1048576,
+      "kind": "schema",
+      "object_bytes": 48,
+      "logical_bytes": 25584,
+      "physical_bytes": 25584,
+      "wall_us": 22213
+    },
+    {
+      "stage": "one",
+      "size": 1048576,
+      "kind": "runtime-checkpoint",
+      "object_bytes": 346,
+      "logical_bytes": 26118,
+      "physical_bytes": 26118,
+      "wall_us": 25899
+    },
+    {
+      "stage": "one",
+      "size": 1048576,
+      "kind": "runtime-generated",
+      "object_bytes": 47158,
+      "logical_bytes": 34134,
+      "physical_bytes": 34134,
+      "wall_us": 29707
+    },
+    {
+      "stage": "one",
+      "size": 1048576,
+      "kind": "runtime-residual",
+      "object_bytes": 47158,
+      "logical_bytes": 34241,
+      "physical_bytes": 34241,
+      "wall_us": 31083
+    },
+    {
+      "stage": "one",
+      "size": 16777216,
+      "kind": "schema",
+      "object_bytes": 48,
+      "logical_bytes": 25379,
+      "physical_bytes": 25379,
+      "wall_us": 22796
+    },
+    {
+      "stage": "one",
+      "size": 16777216,
+      "kind": "runtime-checkpoint",
+      "object_bytes": 346,
+      "logical_bytes": 25870,
+      "physical_bytes": 25870,
+      "wall_us": 28479
+    },
+    {
+      "stage": "one",
+      "size": 16777216,
+      "kind": "runtime-generated",
+      "object_bytes": 47158,
+      "logical_bytes": 33928,
+      "physical_bytes": 33928,
+      "wall_us": 37558
+    },
+    {
+      "stage": "one",
+      "size": 16777216,
+      "kind": "runtime-residual",
+      "object_bytes": 47158,
+      "logical_bytes": 33982,
+      "physical_bytes": 33982,
+      "wall_us": 35848
+    },
+    {
+      "stage": "two",
+      "size": 1048576,
+      "kind": "schema",
+      "object_bytes": 48,
+      "logical_bytes": 25480,
+      "physical_bytes": 50960,
+      "wall_us": 23467
+    },
+    {
+      "stage": "two",
+      "size": 1048576,
+      "kind": "runtime-checkpoint",
+      "object_bytes": 346,
+      "logical_bytes": 25994,
+      "physical_bytes": 51988,
+      "wall_us": 27575
+    },
+    {
+      "stage": "two",
+      "size": 1048576,
+      "kind": "runtime-generated",
+      "object_bytes": 47158,
+      "logical_bytes": 34018,
+      "physical_bytes": 68036,
+      "wall_us": 32019
+    },
+    {
+      "stage": "two",
+      "size": 1048576,
+      "kind": "runtime-residual",
+      "object_bytes": 47158,
+      "logical_bytes": 34111,
+      "physical_bytes": 68222,
+      "wall_us": 27948
+    },
+    {
+      "stage": "two",
+      "size": 16777216,
+      "kind": "schema",
+      "object_bytes": 48,
+      "logical_bytes": 25428,
+      "physical_bytes": 50856,
+      "wall_us": 23082
+    },
+    {
+      "stage": "two",
+      "size": 16777216,
+      "kind": "runtime-checkpoint",
+      "object_bytes": 346,
+      "logical_bytes": 25939,
+      "physical_bytes": 51878,
+      "wall_us": 31105
+    },
+    {
+      "stage": "two",
+      "size": 16777216,
+      "kind": "runtime-generated",
+      "object_bytes": 47158,
+      "logical_bytes": 33946,
+      "physical_bytes": 67892,
+      "wall_us": 39679
+    },
+    {
+      "stage": "two",
+      "size": 16777216,
+      "kind": "runtime-residual",
+      "object_bytes": 47158,
+      "logical_bytes": 34022,
+      "physical_bytes": 68044,
+      "wall_us": 24365
+    }
+  ],
+  "interpretation": [
+    "All recorded accepted transfers preserved exact bytes and original length through stopped-store readback; all two-guest objects also passed keyless read-only reboot verification.",
+    "The seven matched workload sums show about 65.76%-66.62% fewer logical encrypted bytes and 2.40x-3.03x lower summed operation wall time for Warm versus Whole in these four single-trial cells.",
+    "Identical repeats lose to Whole in all four cells: Warm uses slightly more encrypted bytes and more operation wall time and reported CPU. The baseline already deduplicates repeats; it is not a full raw resend.",
+    "Localized edits show substantial conditional savings, including the two-guest 16 MiB case at 25,497 logical bytes and 233,752 us versus Whole at 32,153,825 bytes and 6,921,060 us. Both physical paths multiply these byte counts by two.",
+    "Unrelated-object outcomes are mixed: 1 MiB Warm is slower than Whole, while 16 MiB wall time is close; this pilot does not establish a universal speedup.",
+    "The four Warm-only schema/runtime operations total 119,159-120,077 logical bytes for 94,710 reconstructed bytes. Individual generated/residual operations are smaller than their objects, but setup and a matched conventional baseline are required before any runtime-specific performance claim.",
+    "The actual local MVM integration works. This pilot does not establish WAN performance, complete endpoint CPU savings, energy savings, a production mailbox or host-compromise confidentiality."
+  ]
+}

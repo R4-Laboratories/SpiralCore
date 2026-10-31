@@ -1,0 +1,46 @@
+[package]
+name = "spiralcore-mvm-live"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.97"
+publish = false
+description = "Bounded native HVF guest/vsock integration witness for SpiralCore"
+
+[features]
+default = ["live"]
+live = []
+
+[dependencies]
+spiralcore-mvm-adapter = { path = "../spiralcore-mvm-adapter", features = ["live", "hardware-sha256"] }
+spiralcore-transfer = { path = "../spiralcore-transfer", features = ["hardware-sha256"] }
+mvm-core = { git = "https://github.com/tinylabscom/mvm", rev = "3104a12c5b071a6851323fa8115d2afaf3f0bb8b", default-features = false }
+mvm-contract = { git = "https://github.com/tinylabscom/mvm", rev = "3104a12c5b071a6851323fa8115d2afaf3f0bb8b", default-features = false, features = ["protocol"] }
+ed25519-dalek = "3"
+rand = "0.10"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+cpu-time = "1"
+libc = "0.2"
+
+[target.'cfg(all(target_os = "macos", target_arch = "aarch64"))'.dependencies]
+mvm-runtime = { git = "https://github.com/tinylabscom/mvm", rev = "3104a12c5b071a6851323fa8115d2afaf3f0bb8b", default-features = false }
+mvm-build = { git = "https://github.com/tinylabscom/mvm", rev = "3104a12c5b071a6851323fa8115d2afaf3f0bb8b", default-features = false }
+mvm-fs = { git = "https://github.com/tinylabscom/mvm", rev = "3104a12c5b071a6851323fa8115d2afaf3f0bb8b", default-features = false }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+mvm-agentd = { git = "https://github.com/tinylabscom/mvm", rev = "3104a12c5b071a6851323fa8115d2afaf3f0bb8b", default-features = false }
+
+[dev-dependencies]
+tempfile = "3"
+
+[[test]]
+name = "adapter_live"
+path = "../spiralcore-mvm-adapter/tests/live.rs"
+
+[profile.dev]
+debug = 0
+incremental = false
+
+[profile.test]
+debug = 0
+incremental = false

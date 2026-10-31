@@ -1,0 +1,146 @@
+spiralcore-mvm-live: guest did not complete a clean power-off; public console tail:
+[    0.000000] Booting Linux on physical CPU 0x0000000000 [0x610f0000]
+[    0.000000] Linux version 6.12.111 (nixbld@localhost) (gcc (GCC) 14.3.0, GNU ld (GNU Binutils) 2.44) #1-NixOS SMP PREEMPT Tue Jan  1 00:00:00 UTC 1980
+[    0.000000] KASLR disabled on command line
+[    0.000000] random: crng init done
+[    0.000000] Machine model: linux,dummy-virt
+[    0.000000] earlycon: pl11 at MMIO 0x0000000009000000 (options '')
+[    0.000000] printk: legacy bootconsole [pl11] enabled
+[    0.000000] [Firmware Bug]: Kernel image misaligned at boot, please fix your bootloader!
+[    0.000000] OF: reserved mem: Reserved memory: No reserved-memory node in the DT
+[    0.000000] Zone ranges:
+[    0.000000]   DMA      [mem 0x0000000080000000-0x00000000bfffffff]
+[    0.000000]   DMA32    empty
+[    0.000000]   Normal   empty
+[    0.000000]   Device   empty
+[    0.000000] Movable zone start for each node
+[    0.000000] Early memory node ranges
+[    0.000000]   node   0: [mem 0x0000000080000000-0x00000000bfffffff]
+[    0.000000] Initmem setup node 0 [mem 0x0000000080000000-0x00000000bfffffff]
+[    0.000000] psci: probing for conduit method from DT.
+[    0.000000] psci: PSCIv1.0 detected in firmware.
+[    0.000000] psci: Using standard PSCI v0.2 function IDs
+[    0.000000] psci: MIGRATE_INFO_TYPE not supported.
+[    0.000000] psci: SMC Calling Convention v1.0
+[    0.000000] percpu: Embedded 17 pages/cpu s39768 r0 d29864 u69632
+[    0.000000] pcpu-alloc: s39768 r0 d29864 u69632 alloc=17*4096
+[    0.000000] pcpu-alloc: [0] 0 
+[    0.000000] Detected PIPT I-cache on CPU0
+[    0.000000] CPU features: detected: Address authentication (IMP DEF algorithm)
+[    0.000000] CPU features: detected: GIC system register CPU interface
+[    0.000000] CPU features: detected: Spectre-v4
+[    0.000000] CPU features: detected: Spectre-BHB
+[    0.000000] alternatives: applying boot alternatives
+[    0.000000] Kernel command line: earlycon=pl011,0x9000000 console=ttyAMA0 panic=-1 nokaslr loglevel=8 rdinit=/init
+[    0.000000] Dentry cache hash table entries: 131072 (order: 8, 1048576 bytes, linear)
+[    0.000000] Inode-cache hash table entries: 65536 (order: 7, 524288 bytes, linear)
+[    0.000000] Built 1 zonelists, mobility grouping on.  Total pages: 262144
+[    0.000000] mem auto-init: stack:all(zero), heap alloc:off, heap free:off
+[    0.000000] software IO TLB: SWIOTLB bounce buffer size adjusted to 1MB
+[    0.000000] software IO TLB: area num 1.
+[    0.000000] software IO TLB: mapped [mem 0x00000000beb00000-0x00000000bec00000] (1MB)
+[    0.000000] SLUB: HWalign=64, Order=0-3, MinObjects=0, CPUs=1, Nodes=1
+[    0.000000] rcu: Preemptible hierarchical RCU implementation.
+[    0.000000] rcu: 	RCU restricting CPUs from NR_CPUS=512 to nr_cpu_ids=1.
+[    0.000000] rcu: RCU calculated value of scheduler-enlistment delay is 25 jiffies.
+[    0.000000] rcu: Adjusting geometry for rcu_fanout_leaf=16, nr_cpu_ids=1
+[    0.000000] NR_IRQS: 64, nr_irqs: 64, preallocated irqs: 0
+[    0.000000] GICv3: 988 SPIs implemented
+[    0.000000] GICv3: 0 Extended SPIs implemented
+[    0.000000] Root IRQ handler: 0xffff8000800900a0
+[    0.000000] GICv3: GICv3 features: 16 PPIs, RSS
+[    0.000000] GICv3: GICD_CTRL.DS=1, SCR_EL3.FIQ=0
+[    0.000000] GICv3: CPU0: found redistributor 0 region 0:0x0000000008080000
+[    0.000000] rcu: srcu_init: Setting srcu_struct sizes based on contention.
+[    0.000000] clocksource: jiffies: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 7645041785100000 ns
+[    0.000000] arch_timer: cp15 timer(s) running at 24.00MHz (virt).
+[    0.000000] clocksource: arch_sys_counter: mask: 0xffffffffffffff max_cycles: 0x588fe9dc0, max_idle_ns: 440795202592 ns
+[    0.000000] sched_clock: 56 bits at 24MHz, resolution 41ns, wraps every 4398046511097ns
+[    0.000529] Calibrating delay loop (skipped), value calculated using timer frequency.. 48.00 BogoMIPS (lpj=96000)
+[    0.000978] pid_max: default: 32768 minimum: 301
+[    0.001373] LSM: initializing lsm=capability
+[    0.002916] Mount-cache hash table entries: 2048 (order: 2, 16384 bytes, linear)
+[    0.003468] Mountpoint-cache hash table entries: 2048 (order: 2, 16384 bytes, linear)
+[    0.005583] rcu: Hierarchical SRCU implementation.
+[    0.005803] rcu: 	Max phase no-delay instances is 1000.
+[    0.006092] smp: Bringing up secondary CPUs ...
+[    0.006300] smp: Brought up 1 node, 1 CPU
+[    0.006489] SMP: Total of 1 processors activated.
+[    0.006702] CPU: All CPU(s) started at EL1
+[    0.006885] CPU features: detected: ARMv8.4 Translation Table Level
+[    0.007158] CPU features: detected: Data cache clean to the PoU not required for I/D coherence
+[    0.007557] CPU features: detected: Common not Private translations
+[    0.007830] CPU features: detected: CRC32 instructions
+[    0.008053] CPU features: detected: Data independent timing control (DIT)
+[    0.008348] CPU features: detected: E0PD
+[    0.008519] CPU features: detected: Generic authentication (IMP DEF algorithm)
+[    0.008838] CPU features: detected: RCpc load-acquire (LDAPR)
+[    0.009088] CPU features: detected: LSE atomic instructions
+[    0.009330] CPU features: detected: Privileged Access Never
+[    0.009582] CPU features: detected: RAS Extension Support
+[    0.009826] CPU features: detected: Speculation barrier (SB)
+[    0.010079] CPU features: detected: TLB range maintenance instructions
+[    0.010392] alternatives: applying system-wide alternatives
+[    0.019781] Memory: 1013036K/1048576K available (5696K kernel code, 814K rwdata, 840K rodata, 832K init, 589K bss, 32468K reserved, 0K cma-reserved)
+[    0.020765] devtmpfs: initialized
+[    0.021082] futex hash table entries: 256 (order: 2, 16384 bytes, linear)
+[    0.021433] NET: Registered PF_NETLINK/PF_ROUTE protocol family
+[    0.021890] DMA: preallocated 128 KiB GFP_KERNEL pool for atomic allocations
+[    0.022219] DMA: preallocated 128 KiB GFP_KERNEL|GFP_DMA pool for atomic allocations
+[    0.022587] DMA: preallocated 128 KiB GFP_KERNEL|GFP_DMA32 pool for atomic allocations
+[    0.023004] ASID allocator initialised with 256 entries
+[    0.023267] Serial: AMBA PL011 UART driver
+[    0.023556] 9000000.pl011: ttyAMA0 at MMIO 0x9000000 (irq = 13, base_baud = 0) is a PL011 rev1
+[    0.023973] printk: legacy console [ttyAMA0] enabled
+[    0.023973] printk: legacy console [ttyAMA0] enabled
+[    0.024351] printk: legacy bootconsole [pl11] disabled
+[    0.024351] printk: legacy bootconsole [pl11] disabled
+[    0.028902] clocksource: Switched to clocksource arch_sys_counter
+[    0.029282] NET: Registered PF_INET protocol family
+[    0.029477] IP idents hash table entries: 16384 (order: 5, 131072 bytes, linear)
+[    0.029874] tcp_listen_portaddr_hash hash table entries: 512 (order: 1, 8192 bytes, linear)
+[    0.030123] Table-perturb hash table entries: 65536 (order: 6, 262144 bytes, linear)
+[    0.030353] TCP established hash table entries: 8192 (order: 4, 65536 bytes, linear)
+[    0.030601] TCP bind hash table entries: 8192 (order: 6, 262144 bytes, linear)
+[    0.030854] TCP: Hash tables configured (established 8192 bind 8192)
+[    0.031063] UDP hash table entries: 512 (order: 2, 16384 bytes, linear)
+[    0.031269] UDP-Lite hash table entries: 512 (order: 2, 16384 bytes, linear)
+[    0.031493] NET: Registered PF_UNIX/PF_LOCAL protocol family
+[    0.031667] PCI: CLS 0 bytes, default 64
+[    0.031818] Unpacking initramfs...
+[    0.032077] workingset: timestamp_bits=62 max_order=18 bucket_order=0
+[    0.032310] fuse: init (API version 7.41)
+[    0.037336] Freeing initrd memory: 2336K
+[    0.040575] Free page reporting enabled
+[    0.040730] Serial: 8250/16550 driver, 4 ports, IRQ sharing enabled
+[    0.041266] device-mapper: ioctl: 4.48.0-ioctl (2023-03-01) initialised: dm-devel@lists.linux.dev
+[    0.041608] NET: Registered PF_INET6 protocol family
+[    0.041843] Segment Routing with IPv6
+[    0.041960] In-situ OAM (IOAM) with IPv6
+[    0.042105] NET: Registered PF_VSOCK protocol family
+[    0.043524] clk: Disabling unused clocks
+[    0.044105] Freeing unused kernel memory: 832K
+[    0.044299] Run /init as init process
+[    0.044414]   with arguments:
+[    0.044509]     /init
+[    0.044585]   with environment:
+[    0.044684]     HOME=/
+[    0.044759]     TERM=linux
+{"event":"guest_ready","os":"linux","pid":1,"role":"sender","utc_unix_ms":1793483613000}
+{"cid":2,"event":"guest_connected","port":5257}
+{"counters":{"envelope_bytes_received":3776,"envelope_bytes_sent":4594,"frames_received":1,"frames_sent":1,"framing_bytes_received":12,"framing_bytes_sent":12},"cpu_us":1969,"event":"sender_setup","includes":"fixture generation, codec preparation, handshake and authenticated Status probe","plan":{"arm":"warm","size":4096,"stage":"one","trial":0},"seed_baseline":"all arms seed raw; Whole uses prepared whole-object zstd for subsequent objects","wall_us":13321}
+{"application_request_bytes":4315,"application_response_bytes":218,"bytes":4096,"counters":{"envelope_bytes_received":11465,"envelope_bytes_sent":21165,"frames_received":3,"frames_sent":3,"framing_bytes_received":12,"framing_bytes_sent":12},"cpu_us":3580,"event":"sender_operation","exchange_cpu_us":3544,"exchange_wall_us":20067,"kind":"seed","mode":"Raw","object":"94ba209118c85a7e19627b69f07e3f0d36e3b9c1bdb637c56f83122baae982b3","plan":{"arm":"warm","size":4096,"stage":"one","trial":0},"position":0,"wall_us":20101}
+{"application_request_bytes":267,"application_response_bytes":218,"bytes":48,"counters":{"envelope_bytes_received":11472,"envelope_bytes_sent":13979,"frames_received":3,"frames_sent":3,"framing_bytes_received":12,"framing_bytes_sent":12},"cpu_us":3654,"event":"sender_operation","exchange_cpu_us":3637,"exchange_wall_us":14249,"kind":"schema","mode":"Raw","object":"ca02bc9131dfdfb15331aad2f45eb459ddb32d1a1c278edb9ca6dcc38de7db91","plan":{"arm":"warm","size":4096,"stage":"one","trial":0},"position":1,"wall_us":14264}
+{"application_request_bytes":268,"application_response_bytes":88,"bytes":4096,"counters":{"envelope_bytes_received":3867,"envelope_bytes_sent":4747,"frames_received":1,"frames_sent":1,"framing_bytes_received":4,"framing_bytes_sent":4},"cpu_us":1432,"event":"sender_operation","exchange_cpu_us":1216,"exchange_wall_us":1904,"kind":"repeat","mode":"SparseV1","object":"94ba209118c85a7e19627b69f07e3f0d36e3b9c1bdb637c56f83122baae982b3","plan":{"arm":"warm","size":4096,"stage":"one","trial":0},"position":2,"wall_us":2119}
+{"application_request_bytes":318,"application_response_bytes":218,"bytes":4096,"counters":{"envelope_bytes_received":11445,"envelope_bytes_sent":14049,"frames_received":3,"frames_sent":3,"framing_bytes_received":12,"framing_bytes_sent":12},"cpu_us":3541,"event":"sender_operation","exchange_cpu_us":3466,"exchange_wall_us":12986,"kind":"localized","mode":"SparseV1","object":"b21980abf74f43f7a6086e70b1bd1971c22a0d98a99c26208194890f7e5d6284","plan":{"arm":"warm","size":4096,"stage":"one","trial":0},"position":3,"wall_us":13060}
+{"application_request_bytes":4315,"application_response_bytes":218,"bytes":4096,"counters":{"envelope_bytes_received":11460,"envelope_bytes_sent":21173,"frames_received":3,"frames_sent":3,"framing_bytes_received":12,"framing_bytes_sent":12},"cpu_us":3407,"event":"sender_operation","exchange_cpu_us":3303,"exchange_wall_us":13821,"kind":"unrelated","mode":"Raw","object":"0a938690cccf3612e82816ebfedf1c40cf80b3e37143d0951d21733b0f197a50","plan":{"arm":"warm","size":4096,"stage":"one","trial":0},"position":4,"wall_us":13940}
+{"application_request_bytes":318,"application_response_bytes":218,"bytes":4096,"counters":{"envelope_bytes_received":11474,"envelope_bytes_sent":14055,"frames_received":3,"frames_sent":3,"framing_bytes_received":12,"framing_bytes_sent":12},"cpu_us":3152,"event":"sender_operation","exchange_cpu_us":3078,"exchange_wall_us":13429,"kind":"localized-after","mode":"SparseV1","object":"855ba85d6a4461a44f2902838573a64f6f0853ae877781e948e58c1fec47d8f5","plan":{"arm":"warm","size":4096,"stage":"one","trial":0},"position":5,"wall_us":13502}
+{"application_request_bytes":268,"application_response_bytes":218,"bytes":4065,"counters":{"envelope_bytes_received":11469,"envelope_bytes_sent":13962,"frames_received":3,"frames_sent":3,"framing_bytes_received":12,"framing_bytes_sent":12},"cpu_us":3098,"event":"sender_operation","exchange_cpu_us":3037,"exchange_wall_us":11095,"kind":"truncate","mode":"SparseV1","object":"8cfe65edfc9f8e5b23b8cd7e70ff1f3ed602255786a2edaa72e978cc175a762b","plan":{"arm":"warm","size":4096,"stage":"one","trial":0},"position":6,"wall_us":11154}
+{"application_request_bytes":290,"application_response_bytes":218,"bytes":4082,"counters":{"envelope_bytes_received":11470,"envelope_bytes_sent":14005,"frames_received":3,"frames_sent":3,"framing_bytes_received":12,"framing_bytes_sent":12},"cpu_us":3214,"event":"sender_operation","exchange_cpu_us":3149,"exchange_wall_us":12300,"kind":"append","mode":"SparseV1","object":"2f777440984e51a2b41ea2baac158a98e4802cbafbe621e86f32c99b00976c25","plan":{"arm":"warm","size":4096,"stage":"one","trial":0},"position":7,"wall_us":12364}
+{"application_request_bytes":565,"application_response_bytes":218,"bytes":346,"counters":{"envelope_bytes_received":11479,"envelope_bytes_sent":14491,"frames_received":3,"frames_sent":3,"framing_bytes_received":12,"framing_bytes_sent":12},"cpu_us":3229,"event":"sender_operation","exchange_cpu_us":3214,"exchange_wall_us":13359,"kind":"runtime-checkpoint","mode":"Raw","object":"786f6dde077ef9b146934a39382f3591f42f914996071a3fe992569831a43c91","plan":{"arm":"warm","size":4096,"stage":"one","trial":0},"position":8,"wall_us":13373}
+{"application_request_bytes":393,"application_response_bytes":282,"bytes":47158,"counters":{"envelope_bytes_received":15274,"envelope_bytes_sent":18708,"frames_received":4,"frames_sent":4,"framing_bytes_received":16,"framing_bytes_sent":16},"cpu_us":5050,"event":"sender_operation","exchange_cpu_us":4512,"exchange_wall_us":15771,"kind":"runtime-generated","mode":"RuntimeV1","object":"cb40d049f496c54b53247938f3874c0971e28b44d5b24abb63117a67b1fb7e2d","plan":{"arm":"warm","size":4096,"stage":"one","trial":0},"position":9,"wall_us":16310}
+{"application_request_bytes":443,"application_response_bytes":282,"bytes":47158,"counters":{"envelope_bytes_received":15289,"envelope_bytes_sent":18786,"frames_received":4,"frames_sent":4,"framing_bytes_received":16,"framing_bytes_sent":16},"cpu_us":4976,"event":"sender_operation","exchange_cpu_us":4424,"exchange_wall_us":14716,"kind":"runtime-residual","mode":"RuntimeV1","object":"96b7f883b184fe0f61321ac3707c7c47ebe1642e8b475622511067bf64b2480b","plan":{"arm":"warm","size":4096,"stage":"one","trial":0},"position":10,"wall_us":15267}
+{"counters":{"envelope_bytes_received":129940,"envelope_bytes_sent":173714,"frames_received":34,"frames_sent":34,"framing_bytes_received":144,"framing_bytes_sent":144},"cpu_us":40302,"event":"sender_done","operations":11,"plan":{"arm":"warm","size":4096,"stage":"one","trial":0},"timing":"setup plus operations; JSON output and fixture ownership copies excluded from operation timing","wall_us":158775}
+{"event":"guest_done","failed_phase":null,"ok":true}
+[    0.225982] reboot: Power down
+

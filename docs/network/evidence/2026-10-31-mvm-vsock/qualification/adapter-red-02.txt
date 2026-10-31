@@ -1,0 +1,40 @@
+   Compiling spiralcore-mvm-adapter v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-mvm-adapter)
+error[E0432]: unresolved import `spiralcore_mvm_adapter::live`
+ --> tests/live.rs:6:58
+  |
+6 | use spiralcore_mvm_adapter::{Direction, DirectionConfig, live::{HandshakeRole, StreamTransport}};
+  |                                                          ^^^^ could not find `live` in `spiralcore_mvm_adapter`
+
+error[E0599]: no method named `open_live` found for struct `spiralcore_mvm_adapter::Direction` in the current scope
+  --> tests/live.rs:42:33
+   |
+42 |         let verified = incoming.open_live(&wire).unwrap();
+   |                                 ^^^^^^^^^ method not found in `spiralcore_mvm_adapter::Direction`
+
+error[E0599]: no method named `reply_to_verified` found for struct `spiralcore_mvm_adapter::Direction` in the current scope
+  --> tests/live.rs:44:24
+   |
+44 |         outgoing_reply.reply_to_verified(&verified, &reply, &stream, &cancel).unwrap();
+   |                        ^^^^^^^^^^^^^^^^^ method not found in `spiralcore_mvm_adapter::Direction`
+
+error[E0599]: no method named `send_call` found for struct `spiralcore_mvm_adapter::Direction` in the current scope
+  --> tests/live.rs:50:25
+   |
+50 |     let call = outgoing.send_call(&request, &replies, &client, &cancel, Instant::now() + Duration::from_secs(2)).unwrap();
+   |                         ^^^^^^^^^ method not found in `spiralcore_mvm_adapter::Direction`
+
+error[E0599]: no method named `open_live` found for struct `spiralcore_mvm_adapter::Direction` in the current scope
+  --> tests/live.rs:52:28
+   |
+52 |     let verified = replies.open_live(&wire).unwrap();
+   |                            ^^^^^^^^^ method not found in `spiralcore_mvm_adapter::Direction`
+
+error[E0599]: no method named `accept_reply` found for struct `spiralcore_mvm_adapter::Direction` in the current scope
+  --> tests/live.rs:53:28
+   |
+53 |     let response = replies.accept_reply(call, verified).unwrap();
+   |                            ^^^^^^^^^^^^ method not found in `spiralcore_mvm_adapter::Direction`
+
+Some errors have detailed explanations: E0432, E0599.
+For more information about an error, try `rustc --explain E0432`.
+error: could not compile `spiralcore-mvm-adapter` (test "live") due to 6 previous errors

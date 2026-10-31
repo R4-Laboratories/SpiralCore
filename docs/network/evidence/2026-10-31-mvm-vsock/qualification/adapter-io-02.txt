@@ -1,0 +1,25 @@
+   Compiling spiralcore-mvm-adapter v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-mvm-adapter)
+   Compiling spiralcore-mvm-live v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-mvm-live)
+    Finished `test` profile [unoptimized] target(s) in 3.78s
+     Running ../spiralcore-mvm-adapter/tests/live.rs (/Users/casey.allard/spiralcore/target/debug/deps/adapter_live-96dc3b93937a7c64)
+
+running 3 tests
+test cancellation_before_handshake_closes_the_owned_socket ... ok
+test live_dispatch_keeps_authenticated_request_available_for_reply ... ok
+test canonical_call_and_verified_reply_cross_real_socket_io ... FAILED
+
+failures:
+
+---- canonical_call_and_verified_reply_cross_real_socket_io stdout ----
+
+thread 'canonical_call_and_verified_reply_cross_real_socket_io' (70659866) panicked at ../spiralcore-mvm-adapter/tests/live.rs:92:10:
+called `Result::unwrap()` on an `Err` value: Io(Custom { kind: InvalidInput, error: "set_read_timeout: Invalid argument (os error 22)" })
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    canonical_call_and_verified_reply_cross_real_socket_io
+
+test result: FAILED. 2 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+
+error: test failed, to rerun pass `--test adapter_live`

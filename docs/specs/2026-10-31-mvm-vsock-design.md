@@ -166,6 +166,8 @@ Direction::send_call(frame, reverse_direction, transport, cancel, deadline) -> R
 Direction::open_live(wire: &[u8]) -> Result<VerifiedFrame>
 Direction::reply_to_verified(request: &VerifiedFrame, reply, transport, cancel) -> Result<usize>
 Direction::accept_reply(call: SentCall, reply: VerifiedFrame) -> Result<Frame>
+SentCall::context() -> &Context
+SentCall::deadline() -> Instant
 ```
 
 `SocketIo` extends Read/Write/Send with checked read/write timeout and shutdown
@@ -178,6 +180,10 @@ proof retains the authenticated header. Existing `open` preserves SC-MVM-001's
 synthetic-clock compatibility while live authority uses real time and expiry.
 The blind relay uses bounded raw-envelope framing on separate owned streams; it
 does not forge an AuthorizedMailboxFrame or treat framing as authentication.
+`SentCall::context` derives the existing namespace from a successfully authorized
+canonical outbound call; it installs no receiver authority lease. The live sender
+uses a real Status probe and constructs WarmSession only after a matching canonical
+reply passes `accept_reply`, never merely because a token supplied a Context.
 
 ## Authority, clocks and admission
 
@@ -194,20 +200,41 @@ trust boundary, so this is not hostile-host confidentiality qualification.
 Fix SC-MVM-001's synthetic-time limitation: read real UTC time before sealing
 and opening, derive a bounded local monotonic deadline, and recheck absolute
 expiry and grant validity immediately before endpoint handling/publication.
+The live profile admits at most five seconds of pairwise clock uncertainty.
+Backdate the signed issue timestamp by exactly 5,000 ms using checked arithmetic;
+keep OpenContext at actual UTC and leave canonical MVM verification unchanged.
+Expiry remains actual sender time plus at most 30 seconds, further capped by the
+grant, route and call deadline. The resulting signed issue-to-expiry interval is
+at most 35 seconds; the local call lifetime is at most 30 seconds. Live receiver
+and authority leases conservatively require actual UTC plus 5,000 ms to remain
+strictly before the earliest envelope/grant/route expiry, with an equivalent
+monotonic bound. Refuse a remaining validity window of five seconds or less.
+This prevents a lagging receiver from publishing past the declared expiry.
+
+Provision grant and route `not_before` at fresh bootstrap UTC minus ten seconds.
+Set guest UTC using the existing `restore_clock::resync` and fresh trusted epoch
+seconds immediately before spawn. Record public guest-ready UTC timestamps and
+the host receive-time uncertainty interval; admit the campaign only if the
+resulting pairwise offset bound is at most five seconds. Two separate absolute
+offsets of ±5 seconds are not sufficient, because their difference can be ten
+seconds. Reject stale bootstrap/slow-boot clock bounds instead of substituting a
+fake verification clock. Keep positive test calls at the specified 30-second
+profile; short-deadline cancellation negatives remain valid.
 Keep wall-clock refresh distinct from policy generation changes; moving the
 clock must not accidentally revoke every in-flight proof, while an expired
 lease must fail even without `Policy::replace`. Explicit policy/epoch/revocation
 updates increment generation and invalidate pending calls and cached authority.
 
-For this milestone, a single service owner serializes policy updates and each
-`open → handle → reply` transaction. The owner's policy lock spans the endpoint
-operation; control-plane revocation is applied between transactions and returns
-only after earlier operations leave the critical section. This defines an
-auditable linearization point rather than claiming an atomic revocation property
-from the existing `Authority::authorize -> ()` callback. Public APIs outside this
-owner retain their documented concurrency limitation. A reply after expiry or
-revocation is refused even if object commit already happened; explicit recovery
-discovers the actual publication state.
+For this milestone, one exclusive service owner executes each
+`open → handle → reply` transaction. The demonstration does not expose a concurrent
+policy-update control plane or hold a policy mutex across endpoint handling.
+Such a spanning mutex would conflict with the authority callback's own policy
+access. A future control plane must serialize updates between transactions before
+acknowledging revocation; this milestone does not establish atomic concurrent
+revocation from the existing `Authority::authorize -> ()` callback. Public APIs
+outside this owner retain their documented concurrency limitation. A reply after
+expiry or an observed policy-generation change is refused even if object commit
+already happened; explicit recovery discovers the actual publication state.
 
 Initial limits are one live connection per admitted guest route, one outstanding
 call per connection, four active object transfers per receiver, 64 KiB application
@@ -256,7 +283,14 @@ the receiver verifier outside the object cache and compare the reopened object
 byte-for-byte; the verifier never supplies a base to the decoder. Record verifier
 time separately. Use an owned 256 MiB writable ext4 data disk for guest B's cache,
 passed through existing `DiskImage::open(path, false)`, and flush it before orderly
-guest stop. Initramfs/tmpfs-only cache tests can prove process restart but cannot
+guest stop. After a graceful stop, a second read-only verification boot mounts
+that disk without a mailbox socket or signing configuration. A trusted fixture
+verifier is confined to the recorded historical Context/namespace and compares
+public fixture bytes through a bounded read-only store API that reuses publication
+validation. Existing `Endpoint::open` opens `.owner` for writing and collects
+staging files, so it is not a read-only-mount API. The verifier does not accept
+network messages or authorize a new guest owner. This proves persisted
+disk contents, not a live fresh-epoch cache resume. Initramfs/tmpfs-only cache tests can prove process restart but cannot
 be labelled durable across guest power loss. Disk image creation, physical disk
 use, credential teardown and worker termination are recorded; delete only owned
 test artifacts after verification.
@@ -270,9 +304,13 @@ distinct events. Process-local replay plus object idempotence support explicit
 fresh-envelope application retries only. A crash after open and before handle
 exposes no committed object; a lost reply after commit leaves the object available
 for explicit recovery. Receiver process restart within the guest preserves the
-store; full guest boot changes BootId and advances execution epoch, requiring new
-grants/routes and conservative cold recovery rather than assuming cache authority
-survives. Durable inbox and stable-MessageId duplicate receipts remain gated.
+store. A new active mailbox owner requires a fresh BootId and greater execution
+epoch, plus new grants/routes. The existing cache namespace binds policy epoch,
+execution epoch and the capability-grant digest; old records cannot become an
+authorized warm base under a new epoch without an explicit migration mechanism.
+Live fresh-epoch resume/migration is deferred. The separate read-only verification
+boot above proves persistence only. Durable inbox and stable-MessageId duplicate
+receipts remain gated.
 
 The orchestrator owns each worker process, listener, accepted stream, cache and
 disk. Arm readiness/exit observation before launch; use process handles/events and
@@ -312,3 +350,26 @@ after commit. A wrong-route relay may drop traffic but cannot obtain plaintext o
 cause the wrong receiver to publish. Complete patched workspace/gated checks
 required by MVM before claiming upstream-ready qualification; explicitly list
 any unrun broad checks for this local experimental patch.
+
+## Native HVF kernel compatibility observation
+
+The first two real 4 KiB guest/host attempts reconstructed and independently
+verified all eleven objects, then failed the new runner's zero-exception shutdown
+condition. Diagnostic attempt 02 recorded normal `PSCI_SYSTEM_OFF`, no watchdog,
+no reset, and exactly two non-HVC exceptions with class `0x18` (ARM system-register
+trap). The pinned MVM [native Linux baseline](https://github.com/tinylabscom/mvm/blob/3104a12c5b071a6851323fa8115d2afaf3f0bb8b/specs/benchmarks/327-hvf-quota-spike-findings.md#L244-L257)
+already documents two exceptions in every one of twenty successful real Linux
+boots, matching its unhammered control. Its backend records and advances past
+non-HVC exceptions; this witness does not change that backend behavior.
+
+The runner therefore permits either zero such exceptions, or exactly two of
+class `0x18` for kernel SHA-256
+`0f97f109154a173352c07db223ecff48d44b38514b500f39cd9897701dbac0b6` only.
+Hashing and loading use the same held file descriptor. Other counts/classes and
+unpinned kernels retain refusal. Normal power-off, no reset/watchdog, one final
+successful guest marker, disk synchronization and exact readback remain required.
+Success receipts retain the actual counts/classes and compatibility-profile name.
+The two register identities have not been investigated; this is a bounded trusted
+test-image allowance, not a qualification of arbitrary guest instructions or the
+hypervisor. Both failed attempts remain in the evidence and are excluded from the
+registered performance campaign.

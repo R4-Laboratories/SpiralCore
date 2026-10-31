@@ -1,0 +1,46 @@
+   Compiling spiralcore-mvm-adapter v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-mvm-adapter)
+   Compiling spiralcore-mvm-live v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-mvm-live)
+    Finished `test` profile [unoptimized] target(s) in 16.55s
+     Running unittests src/lib.rs (/Users/casey.allard/spiralcore/target/debug/deps/spiralcore_mvm_live-636517dbf7e24007)
+
+running 5 tests
+test host::tests::bounds_pipe_reads_without_requiring_end_of_stream ... ok
+test fixtures::tests::deterministic_mixed_sequence_preserves_exact_lengths_and_binary_edits ... ok
+test host::tests::completion_requires_exactly_one_success_record_and_clean_poweroff ... ok
+test host::tests::console_overflow_is_bounded_and_observable ... ok
+test config::tests::provisioning_separates_signers_and_roundtrips_only_private_bootstrap ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running ../spiralcore-mvm-adapter/tests/live.rs (/Users/casey.allard/spiralcore/target/debug/deps/adapter_live-96dc3b93937a7c64)
+
+running 3 tests
+test cancellation_before_handshake_closes_the_owned_socket ... ok
+test live_dispatch_keeps_authenticated_request_available_for_reply ... ok
+test canonical_call_and_verified_reply_cross_real_socket_io ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+
+     Running tests/campaign.rs (/Users/casey.allard/spiralcore/target/debug/deps/campaign-69ed525c57d72194)
+
+running 1 test
+test mixed_persistent_campaign_crosses_real_stream_and_reopens_exact_bytes ... FAILED
+
+failures:
+
+---- mixed_persistent_campaign_crosses_real_stream_and_reopens_exact_bytes stdout ----
+
+thread 'mixed_persistent_campaign_crosses_real_stream_and_reopens_exact_bytes' (70680457) panicked at tests/campaign.rs:21:30:
+called `Result::unwrap()` on an `Err` value: "campaign implementation awaits observed contract RED"
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+thread '<unnamed>' (70680458) panicked at tests/campaign.rs:16:52:
+called `Result::unwrap()` on an `Err` value: "campaign implementation awaits observed contract RED"
+
+
+failures:
+    mixed_persistent_campaign_crosses_real_stream_and_reopens_exact_bytes
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+error: test failed, to rerun pass `--test campaign`
