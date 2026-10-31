@@ -1,0 +1,35 @@
+{
+  "schema": "spiralcore.selector-setup.profile-summary.v1",
+  "raw_sha256": "2069a55510f1196163e47b2a0ccc67aed07e33478711347150076ebbba669bd2",
+  "samples": 20,
+  "outer_cpu_us_median": 1365.5,
+  "outer_wall_us_median": 1425.5,
+  "stages": [
+    {
+      "stage": "training_generation",
+      "cpu_us_median": 1153.0,
+      "wall_us_median": 1201.0
+    },
+    {
+      "stage": "fit_and_serialization",
+      "cpu_us_median": 186.5,
+      "wall_us_median": 186.0
+    },
+    {
+      "stage": "artifact_check",
+      "cpu_us_median": 0.0,
+      "wall_us_median": 0.0
+    },
+    {
+      "stage": "context_construction",
+      "cpu_us_median": 6.0,
+      "wall_us_median": 6.0
+    },
+    {
+      "stage": "temporary_cleanup",
+      "cpu_us_median": 8.0,
+      "wall_us_median": 8.0
+    }
+  ],
+  "scope": "sequential stage attribution only; not the randomized paired CPU gate; no warmup removed"
+}

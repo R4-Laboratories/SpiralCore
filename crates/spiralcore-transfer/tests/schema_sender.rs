@@ -80,3 +80,25 @@ fn allocation_counter_is_local_and_disabled_outside_the_scope() {
     let (_, allocations) = counted(|| 17u32);
     assert_eq!(allocations, 0);
 }
+
+#[test]
+fn fitting_repeated_first_layout_has_constant_temporary_allocations() {
+    let training: Vec<Vec<u8>> = (0..schema::MAX_TRAINING_RECORDS)
+        .map(|i| {
+            format!(
+                "{{\"long_identifier\":{i},\"status_message\":\"value-{i}\",\"enabled_flag\":true}}\n"
+            )
+            .into_bytes()
+        })
+        .collect();
+    let samples: Vec<&[u8]> = training.iter().map(Vec::as_slice).collect();
+    let (expected, first_allocations) = counted(|| schema::fit(&samples[..1]).unwrap());
+    for records in [128, 512, schema::MAX_TRAINING_RECORDS] {
+        let (artifact, allocations) = counted(|| schema::fit(&samples[..records]).unwrap());
+        assert_eq!(artifact, expected);
+        assert_eq!(
+            allocations, first_allocations,
+            "{records} exact duplicate layouts must not allocate per training record"
+        );
+    }
+}

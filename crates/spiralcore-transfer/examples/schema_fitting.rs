@@ -529,7 +529,10 @@ fn summarize(rows: &[Value]) -> Result<Value> {
 fn command() -> Result<()> {
     let args: Vec<_> = std::env::args().collect();
     if args.get(1).is_some_and(|s| {
-        s.starts_with("warm-") || s.starts_with("warmselect-") || s.starts_with("bounded-")
+        s.starts_with("warm-")
+            || s.starts_with("warmselect-")
+            || s.starts_with("bounded-")
+            || s.starts_with("setup-")
     }) {
         return warm_object::command(&args);
     }

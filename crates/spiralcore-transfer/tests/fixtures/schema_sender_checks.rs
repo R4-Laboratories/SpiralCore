@@ -186,3 +186,84 @@ fn failed_speculation_never_spends_work_or_emits_partial_bytes() {
         assert_eq!(encoded, [17, 23]);
     }
 }
+
+// The immutable oracle's fit, constants/Template/Templates and complete parser
+// sections are byte-identical to production at SC-OPT-017 baseline 4bb79f9.
+// Its original full-file SHA256 is retained in the existing source packet:
+// 6c228201197e1ce26a6ac8137da490e0040ed26ab06d4576b330e8b240a2577a.
+fn fit_same_result(training: &[&[u8]]) {
+    match (baseline::fit(training), super::fit(training)) {
+        (Ok(expected), Ok(actual)) => assert_eq!(actual, expected),
+        (Err(expected), Err(actual)) => {
+            assert_eq!(format!("{actual:?}"), format!("{expected:?}"));
+        }
+        (expected, actual) => panic!("fit result changed: {expected:?} vs {actual:?}"),
+    }
+}
+
+#[test]
+fn fit_duplicate_mixed_lexical_and_invalid_records_keep_original_artifact() {
+    let first = b" {\"key\":0,\"key\":\"value\",\"flag\":true,\"none\":null}\r\n";
+    let variants: &[&[u8]] = &[
+        first,
+        b" {\"key\":-0.00e+12,\"key\":\"\\u0041\\n\",\"flag\":false,\"none\":null}\r\n",
+        b" {\"key\":01,\"key\":\"bad-number\",\"flag\":true,\"none\":null}\r\n",
+        b" {\"key\":0,\"key\":\"bad\\q\",\"flag\":true,\"none\":null}\r\n",
+        b" {\"key\":0,\"key\":\"\xff\",\"flag\":true,\"none\":null}\r\n",
+        b"{\"second\":null}\n",
+        b" {\"key\":[],\"key\":\"nested\",\"flag\":true,\"none\":null}\r\n",
+        b"{\"flag\":true,\"key\":0}\n",
+        b" \t{}\r\n",
+        b"\xff\0binary\n",
+        b"",
+        b"\n",
+    ];
+    let rows: Vec<&[u8]> = variants.iter().copied().cycle().take(512).collect();
+    fit_same_result(&rows);
+    let joined = rows.concat();
+    fit_same_result(&[&joined]);
+    for end in 0..first.len() {
+        fit_same_result(&[first, &first[..end], variants[1], variants[5]]);
+    }
+    for row in [b"{}\n".as_slice(), first] {
+        fit_same_result(&vec![row; super::MAX_TRAINING_RECORDS]);
+    }
+    for slots in [0, 1, 31, 32, 33] {
+        let fields: Vec<String> = (0..slots).map(|i| format!("\"field_{i}\":{i}")).collect();
+        let row = format!("{{{}}}\n", fields.join(",")).into_bytes();
+        fit_same_result(&[&row, &row, variants[5], &row]);
+    }
+}
+
+#[test]
+fn fit_order_and_training_schema_limits_match_original() {
+    let rows: Vec<Vec<u8>> = (0..super::MAX_TEMPLATES + 2)
+        .map(|i| format!("{{\"key_{i}\":0}}\n").into_bytes())
+        .collect();
+    let mut training = Vec::new();
+    for row in &rows {
+        training.extend_from_slice(&[rows[0].as_slice(), row.as_slice()]);
+    }
+    fit_same_result(&training);
+    training.reverse();
+    fit_same_result(&training);
+    fit_same_result(&vec![b"{}\n".as_slice(); super::MAX_TRAINING_RECORDS + 1]);
+    let too_many_lines = b"\n".repeat(super::MAX_TRAINING_RECORDS + 1);
+    fit_same_result(&[&too_many_lines]);
+    for len in [super::MAX_TRAINING_BYTES, super::MAX_TRAINING_BYTES + 1] {
+        let invalid = vec![b'x'; len];
+        fit_same_result(&[&invalid]);
+    }
+    for len in [super::MAX_TEMPLATE_RECORD, super::MAX_TEMPLATE_RECORD + 1] {
+        let mut row = b"{\"large\":\"".to_vec();
+        row.resize(len - 3, b'x');
+        row.extend_from_slice(b"\"}\n");
+        fit_same_result(&[&row, &row, b"{\"other\":1}\n"]);
+    }
+    let large_layouts: Vec<Vec<u8>> = (0..4)
+        .map(|i| format!("{{\"{i}{}\":0}}\n", "x".repeat(22000)).into_bytes())
+        .collect();
+    let mut training: Vec<&[u8]> = large_layouts.iter().map(Vec::as_slice).collect();
+    training.extend_from_slice(&[&large_layouts[0], b"{\"small\":1}\n", &large_layouts[1]]);
+    fit_same_result(&training);
+}

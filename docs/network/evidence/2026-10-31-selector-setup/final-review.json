@@ -1,0 +1,86 @@
+{
+  "milestone": "SC-OPT-017",
+  "verdict": "PASS",
+  "reviewer": "selector_tests",
+  "updated_utc": "2026-10-31T02:03:30.502878+00:00",
+  "scope": "Final independent recorded-results consistency review after procedural and production code/Rust/security PASS. No new tests, builds, experiments, timing reruns or analyzer project.",
+  "native_source": "980d5cc08b01833bb4a86f4bb3f7962b42de5055",
+  "wan_source": "aa22837a2bbfc0ab9c4cee7d380a768cab768e16",
+  "github_run": 41156972123,
+  "github_status": "success; retained successful job metadata and parent-observed first attempt",
+  "artifact_id": 13025228538,
+  "report_sha256": "e5b1f05d0293ef6660ebf668ef1187dee5d1ffb67fd833e146a51ba5fce66300",
+  "evidence_readme_sha256": "b53b6910813d41d1875cc31d89e2aa3c6f715c33c995056d1dcef834adece5b5",
+  "prior_gates": {
+    "qualification/procedural-review.json": "725fc053aebaf2ae9430b553fcdc6304c2b8471d006320f58f4d8255c997efc0",
+    "content-review.json": "8f34561e47e364047b33fd5fd5fe98450a20ea4aaf1a5afdb914f0c5a9d2c90a"
+  },
+  "verified": {
+    "wan_exact_objects": 540,
+    "wan_sessions": 270,
+    "wan_actual_fits": 180,
+    "local_exact_objects": 180,
+    "local_sessions": 90,
+    "local_actual_fits": 60,
+    "control_samples": 60,
+    "control_exact_objects": 120,
+    "profile_iterations_each": 20,
+    "discarded_campaign_observations": 0,
+    "metric_cells_recomputed": 54,
+    "paired_comparison_cells_recomputed": 54,
+    "context_setup_cells_recomputed": 18,
+    "complete_paid_lifecycles_recomputed": 360,
+    "selector_decisions_joined": 240,
+    "local_and_wan_old_new_frame_pairs": 120,
+    "control_old_new_frame_pairs": 30,
+    "nested_session_raw_hashes_reconstructed": 360,
+    "report_numeric_table_rows": 45,
+    "artifact_members_hashed": 59,
+    "frozen_source_git_blobs_hashed": 92,
+    "native_vs_wan_source_files_identical": 92,
+    "cross_platform_plans_byte_identical": 6
+  },
+  "method": [
+    "Inline read-only independent arithmetic from raw JSONL; recomputed per-trial sender+receiver CPU and request+response body sums, disjoint setup+seed+update lifecycles, medians, nearest-rank p95, minima/maxima, paired ratios/geometric means/wins/ties. Checked all reported cell distributions and report tables.",
+    "Joined plan order, fixtures, scoped sessions, binary/source registrations, actual fits, selected exact costs, before/after mode/frame digest/body parity, receiver observations and stopped-store byte/length/SHA/object verification. Reconstructed nested raw session serialization hashes and checked all receipt file hashes.",
+    "Verified each downloaded artifact member against custody, each frozen source file against measured Git blobs, all92 native/WAN source files byte-identical, and all six local/remote plan bytes. Linux/Mac binaries have distinct legitimate identities.",
+    "Preserved receiver ordinals2..91 and exactly90 successful scoped request rows per WAN store. The six rejected preflight GET400s are separate retained requests, never normalized into successful transfers.",
+    "Checked60 controls against their original per-sample logs/hashes and all profile samples including first iterations. Compared45 numeric report rows and parent README/delivery/ledger changes."
+  ],
+  "local_acceptance": {
+    "random_1m_setup_cpu_median_paired_ratio": 0.7726065072778233,
+    "random_1m_sender_cpu_median_paired_ratio": 0.9599059413352419,
+    "zero_control_prepare_cpu_median_paired_ratio": 0.9305726998580363,
+    "all_registered_gates_pass": true
+  },
+  "retained_limits_and_negatives": [
+    "No byte reduction over old selector: random updates remain600B, compressible updates570B. The compressible Whole control also sends570B.",
+    "WAN random1MiB candidate/old paired target CPU subtotal1.076171 and completion1.094249 regress; sender CPU effectively unchanged. All three new-selector target completion p95 values exceed old-selector p95.",
+    "Zero-cell paid sender lifecycle costs13.23% more CPU than Whole, with no sender-CPU wins; random1MiB paid CPU subtotal also slightly loses Whole. Paid Whole seeds are matched prior-state setup, not necessary optimal cold-start costs.",
+    "Deceptive sampled-window control preparation CPU median paired ratio1.5734966494368763; all10 pairs use more CPU. Sampling remains scheduling only.",
+    "Large-object sender code path is unchanged; observed receiver/route timing differences do not establish a new causal compute improvement. Local and WAN timing, sequential profiles and preparation-only controls remain separate.",
+    "HTTP bodies exclude transport headers, retransmissions and relay hops. Exchange time is nested, not pure wire time. CPU subtotal excludes relay/socket/logging costs; energy is unmeasured."
+  ],
+  "cleanup_review": {
+    "receipt_sha256": "1163060d99aa94e071b352e7ef44da9b06276588ca02ef77cdec1a4035d26507",
+    "summary_binding_verified": true,
+    "recorded_stores_removed_after_readback": 6,
+    "recorded_owned_processes_stopped": 12,
+    "recorded_variables_removed": 9,
+    "recorded_secret_and_local_capability_removed": true,
+    "formal_raw_evidence_and_frozen_binaries_retained": true
+  },
+  "publication_delta": "Postmeasurement crate README, delivery, ledger and evidence navigation are documentation-only. Source claims bind measured commits; current README intentionally differs from frozen manifest. Parent will create checksum index after this receipt.",
+  "evidence_sha256": {
+    "wan/summary.json": "a073bd3ed4afeb30b5a0441f51a0dbbc77427bfdc77379f6e2daa070ebeaccb0",
+    "wan/artifact-custody.json": "52b344866815815dbdd3b5f395d30e25f1745c2997af0822f4135298133f93f6",
+    "wan/workflow-jobs.json": "2acec4e6c811489b40a6177e6525d2ce74dfe1a92e6fc0d804a0221efad75a06",
+    "wan/workflow-artifacts.json": "21dcf3198c905821bf4fbfe96967325e6b126df9779bac26c7cf0e849d3eb697",
+    "local/summary.json": "1a779b631e5b02ae828b4144e2db01769544643902c5a770b4da17381fa98a47",
+    "controls/summary.json": "d1e0272f64055c2531bc578ddd8842456c5fc46623a156b6af7cf47107cc005e",
+    "baseline-profile.jsonl": "ac522a5f8c7301992b871e8fa5ef694978447861240de138520e6bbcc1c2c752",
+    "candidate-profile.jsonl": "2069a55510f1196163e47b2a0ccc67aed07e33478711347150076ebbba669bd2"
+  },
+  "findings": [],
+  "publication_verdict": "APPROVED within reviewed scope; no result-consistency blocker. This approves accurate reporting and the reviewed change, not a blanket WAN speedup claim."
+}

@@ -15,8 +15,16 @@ const ARMS_WARM: [&str; 2] = ["sparse", "whole"];
 const ARMS_SELECTION: [&str; 3] = ["sparse", "selector", "whole"];
 const ARMS_BOUNDED: [&str; 3] = ["baseline-selector", "candidate-selector", "whole"];
 const BASELINE_COMMIT: &str = "4234591e25b4ca87db6a4670bdf407f48a581575";
+const SETUP_BASELINE: &str = "4bb79f976e0939f3ef8b48c3830b07086b98f280";
+const SETUP_CASES: [&str; 3] = ["random-1m", "zero-1m", "random-16m"];
+fn setup_profile_plan(p: &Value) -> bool {
+    p["experiment"] == "selector-setup.v1"
+}
 fn bounded_profile(p: &Value) -> bool {
     p["experiment"] == "bounded-selection.v1"
+}
+fn compared_profile(p: &Value) -> bool {
+    bounded_profile(p) || setup_profile_plan(p)
 }
 fn selector_arm(arm: &str) -> bool {
     matches!(arm, "selector" | "baseline-selector" | "candidate-selector")
@@ -25,10 +33,12 @@ const ARTIFACT: &[u8] = include_bytes!(
     "../../../../docs/network/evidence/2026-10-30-schema-reuse/artifacts-corrected/schema.artifact"
 );
 fn selected_profile(p: &Value) -> bool {
-    p["experiment"] == "warm-selection.v1" || bounded_profile(p)
+    p["experiment"] == "warm-selection.v1" || compared_profile(p)
 }
 fn prefix(p: &Value) -> &'static str {
-    if bounded_profile(p) {
+    if setup_profile_plan(p) {
+        "setup"
+    } else if bounded_profile(p) {
         "bounded"
     } else if selected_profile(p) {
         "warmselect"
@@ -37,7 +47,7 @@ fn prefix(p: &Value) -> &'static str {
     }
 }
 fn arms(p: &Value) -> &'static [&'static str] {
-    if bounded_profile(p) {
+    if compared_profile(p) {
         &ARMS_BOUNDED
     } else if selected_profile(p) {
         &ARMS_SELECTION
@@ -117,6 +127,40 @@ fn fixture_pair(trial: usize, large: bool) -> Result<(Vec<u8>, Vec<u8>)> {
     }
     Ok((base, target))
 }
+fn setup_fixture_pair(trial: usize, case: &str) -> Result<(Vec<u8>, Vec<u8>)> {
+    match case {
+        "random-1m" => fixture_pair(trial, false),
+        "random-16m" => fixture_pair(trial, true),
+        "zero-1m" if trial < 30 => {
+            let base = vec![0; 1 << 20];
+            let mut target = base.clone();
+            target[1 << 19..(1 << 19) + 32].fill(0xa5);
+            Ok((base, target))
+        }
+        _ => Err("unregistered fixture case".into()),
+    }
+}
+fn case_name(row: &Value) -> &str {
+    row["case"].as_str().unwrap_or(if row["large"] == true {
+        "random-16m"
+    } else {
+        "random-1m"
+    })
+}
+fn cases(p: &Value) -> &'static [&'static str] {
+    if setup_profile_plan(p) {
+        &SETUP_CASES
+    } else {
+        &["random-1m", "random-16m"]
+    }
+}
+fn case_fixture(p: &Value, trial: usize, case: &str) -> Result<(Vec<u8>, Vec<u8>)> {
+    if setup_profile_plan(p) {
+        setup_fixture_pair(trial, case)
+    } else {
+        fixture_pair(trial, case == "random-16m")
+    }
+}
 fn metadata(bytes: &[u8]) -> Value {
     json!({"bytes":bytes.len(),"object":hex(&object_id(bytes)),"sha256":sha(bytes)})
 }
@@ -161,6 +205,70 @@ fn baseline_pins(candidate: &Value) -> Value {
     p["whole_zstd"] = json!("0e0293bdf3ecfa0916bb9c0e611e1e968b4cb2f209cd150e461990b4551943be");
     p["warm_selection"] = json!("884955623eed88c2665874fa0f921ecf713d34d053b55410b893c89d8013ebb7");
     p
+}
+fn setup_baseline_pins(candidate: &Value) -> Value {
+    let mut p = candidate.clone();
+    p["schema"] = json!("8c81c80b94faf4579a9875a825e47575b61652b9e4c03130ab6bc783e2905109");
+    p["warm_selection"] = json!("f5fb4a17015ac795af32c08b1daac128a1f861acded57671217c6ef5477940cc");
+    p
+}
+fn overlay_pins(p: &Value) -> Value {
+    if setup_profile_plan(p) {
+        setup_baseline_pins(&p["sources"])
+    } else {
+        baseline_pins(&p["sources"])
+    }
+}
+fn setup_scope(run: &str, trial: usize, case: &str, arm: &str) -> Id {
+    hash(
+        b"spiralcore.selector-setup.scope.v1\0",
+        &[
+            run.as_bytes(),
+            &(trial as u64).to_le_bytes(),
+            case.as_bytes(),
+            arm.as_bytes(),
+        ],
+    )
+}
+fn setup_plan(run: &str, shard: usize, source: &str, local: bool) -> Result<Value> {
+    let mut p = bounded_plan(run, shard, source, local)?;
+    p["experiment"] = json!("selector-setup.v1");
+    p["baseline_production_commit"] = json!(SETUP_BASELINE);
+    p["source_profiles"] =
+        json!({"baseline":setup_baseline_pins(&p["sources"]),"candidate":p["sources"]});
+    let mut fixtures = Vec::new();
+    let mut sessions = Vec::new();
+    let mut scopes = Vec::new();
+    for trial in shard * 5..shard * 5 + 5 {
+        for case in SETUP_CASES {
+            let large = case == "random-16m";
+            let (base, target) = setup_fixture_pair(trial, case)?;
+            fixtures.push(json!({"trial":trial,"case":case,"large":large,"base":metadata(&base),"target":metadata(&target)}));
+            // Rotate the existing seeded balanced order for the additional case.
+            for old in selection_order((trial + usize::from(case == "zero-1m") * 7) % 30, large)? {
+                let arm = match old {
+                    "sparse" => "baseline-selector",
+                    "selector" => "candidate-selector",
+                    _ => "whole",
+                };
+                let scope = hex(&setup_scope(run, trial, case, arm));
+                sessions
+                    .push(json!({"trial":trial,"case":case,"large":large,"arm":arm,"scope":scope}));
+                scopes.push(scope);
+            }
+        }
+    }
+    p["fixtures"] = json!(fixtures);
+    p["sessions"] = json!(sessions);
+    p["allowed_scopes"] = json!(scopes);
+    p["seeds"] = json!(45);
+    p["targets"] = json!(45);
+    p["operations"] = json!(90);
+    p["schema_fits"] = json!(30);
+    p["retained_payload_bytes"] = json!(540u64 << 20);
+    p["conservative_storage_bound"] = json!((596u64 << 20) + 90 * 4096);
+    p["generator"] = json!("xorshift64-v1/little-endian or zero1MiB as explicit case");
+    Ok(p)
 }
 fn bounded_scope(run: &str, trial: usize, large: bool, arm: &str) -> Id {
     hash(
@@ -285,8 +393,8 @@ fn read_plan(path: &Path, full: bool) -> Result<(Value, String)> {
     let p: Value = serde_json::from_slice(&raw)?;
     if !matches!(
         p["experiment"].as_str(),
-        Some("warm-object.v1" | "warm-selection.v1" | "bounded-selection.v1")
-    ) || if bounded_profile(&p) {
+        Some("warm-object.v1" | "warm-selection.v1" | "bounded-selection.v1" | "selector-setup.v1")
+    ) || if compared_profile(&p) {
         p["source_profiles"]["candidate"] != pins() && p["source_profiles"]["baseline"] != pins()
     } else {
         p["sources"] != pins()
@@ -296,14 +404,21 @@ fn read_plan(path: &Path, full: bool) -> Result<(Value, String)> {
     ) {
         return Err("plan identity changed".into());
     }
-    if bounded_profile(&p)
+    if compared_profile(&p)
         && (p["source_profiles"]["candidate"] != p["sources"]
-            || p["source_profiles"]["baseline"] != baseline_pins(&p["sources"]))
+            || p["source_profiles"]["baseline"] != overlay_pins(&p))
     {
         return Err("invalid production overlay".into());
     }
     if full {
-        let mut regenerated = if bounded_profile(&p) {
+        let mut regenerated = if setup_profile_plan(&p) {
+            setup_plan(
+                p["run"].as_str().ok_or("run required")?,
+                p["shard"].as_u64().ok_or("shard required")? as usize,
+                p["source_commit"].as_str().ok_or("source required")?,
+                p["dose"] == "local-comparison",
+            )?
+        } else if bounded_profile(&p) {
             bounded_plan(
                 p["run"].as_str().ok_or("run required")?,
                 p["shard"].as_u64().ok_or("shard required")? as usize,
@@ -319,7 +434,7 @@ fn read_plan(path: &Path, full: bool) -> Result<(Value, String)> {
                 selected_profile(&p),
             )?
         };
-        if bounded_profile(&p) {
+        if compared_profile(&p) {
             // The baseline uses the identical harness but different two production blobs.
             // Regenerate structure independently; validate declared candidate/overlay pins.
             regenerated["sources"] = p["sources"].clone();
@@ -331,12 +446,12 @@ fn read_plan(path: &Path, full: bool) -> Result<(Value, String)> {
     }
     Ok((p, sha(&raw)))
 }
-fn expected(p: &Value, trial: usize, large: bool) -> Result<&Value> {
+fn expected_case<'a>(p: &'a Value, trial: usize, case: &str) -> Result<&'a Value> {
     let matches = p["fixtures"]
         .as_array()
         .ok_or("fixtures missing")?
         .iter()
-        .filter(|r| r["trial"] == trial && r["large"] == large)
+        .filter(|r| r["trial"] == trial && case_name(r) == case)
         .collect::<Vec<_>>();
     if matches.len() != 1 {
         return Err("fixture missing/duplicate".into());
@@ -379,6 +494,24 @@ fn validate_operation(row: &Value, arm: &str, seed: bool, len: u64) -> Result<()
         return Err("update mode or sparse cost mismatch".into());
     }
     Ok(())
+}
+fn validate_setup_operation(
+    row: &Value,
+    arm: &str,
+    seed: bool,
+    case: &str,
+    len: u64,
+) -> Result<()> {
+    if !seed && case == "zero-1m" {
+        // The same accounting applies; this explicit fixture's winner is Whole.
+        validate_operation(row, "whole", false, len)?;
+        if row["mode"] != "ZstdWholeV1" || row["body_bytes"] != 570 {
+            return Err("compressible winner/body changed".into());
+        }
+        Ok(())
+    } else {
+        validate_operation(row, arm, seed, len)
+    }
 }
 fn choice_json(choice: &warm_selection::WarmSelection) -> Value {
     json!({"selected_mode":format!("{:?}",choice.selected_mode),"needs_schema_seed":choice.needs_schema_seed,
@@ -517,18 +650,54 @@ fn bounded_cpu_gate(values: &[f64]) -> Result<Value> {
         json!({"paired_trials":10,"threshold":0.80,"median_ratio":median,"advance_to_wan":median<=0.80,"ratios":values,"distribution":d}),
     )
 }
+fn setup_ratio_gate(values: &[f64], threshold: f64) -> Result<Value> {
+    if values.len() != 10
+        || values.iter().any(|v| !v.is_finite() || *v <= 0.0)
+        || !threshold.is_finite()
+        || threshold <= 0.0
+    {
+        return Err("ten positive paired ratios and positive gate required".into());
+    }
+    let d = dist(values.to_vec());
+    let median = d["median"].as_f64().ok_or("median missing")?;
+    Ok(
+        json!({"paired_trials":10,"threshold":threshold,"median_ratio":median,"passed":median<=threshold,"ratios":values,"distribution":d}),
+    )
+}
+fn validate_setup_choice(receipt: &Value, case: &str) -> Result<()> {
+    if case != "zero-1m" {
+        return validate_bounded_individual(
+            receipt,
+            if case == "random-16m" {
+                16 << 20
+            } else {
+                1 << 20
+            },
+            "candidate-selector",
+        );
+    }
+    let exact = [("Raw",raw_cost(1<<20)),("ZstdWholeV1",570),("SparseV1",600)]
+        .map(|(mode,cost)|json!({"mode":mode,"target_http_body_bytes":cost,"setup_http_body_bytes":0,"total_http_body_bytes":cost}));
+    let setup = raw_cost(ARTIFACT.len() as u64);
+    let expected = json!({"selected_mode":"ZstdWholeV1","needs_schema_seed":false,"candidates":exact,
+        "pruned":[{"mode":"SchemaZstdV1","target_http_body_lower_bound":547,"setup_http_body_bytes":setup,"total_http_body_lower_bound":547+setup}]});
+    if receipt != &expected {
+        return Err("compressible selection receipt changed".into());
+    }
+    Ok(())
+}
 fn validate_role(p: &Value, role: &str, id: &Value) -> Result<()> {
     wan::parse_id(
         id["executable_sha256"]
             .as_str()
             .ok_or("executable identity missing")?,
     )?;
-    if bounded_profile(p) {
+    if compared_profile(p) {
         let baseline = role == "baseline-selector";
         if !ARMS_BOUNDED.contains(&role)
             || id["sources"]
                 != p["source_profiles"][if baseline { "baseline" } else { "candidate" }]
-            || id["first_block_probe_available"] != !baseline
+            || id["first_block_probe_available"] != (setup_profile_plan(p) || !baseline)
         {
             return Err("binary role/source/guard mismatch".into());
         }
@@ -586,16 +755,26 @@ impl Sender {
 fn session(args: &[String]) -> Result<()> {
     let (p, digest) = read_plan(Path::new(&args[2]), false)?;
     let trial: usize = args[3].parse()?;
-    let large = match args[4].as_str() {
-        "0" => false,
-        "1" => true,
-        _ => return Err("invalid size".into()),
+    let case = if setup_profile_plan(&p) {
+        if !SETUP_CASES.contains(&args[4].as_str()) {
+            return Err("invalid case".into());
+        }
+        args[4].as_str()
+    } else {
+        match args[4].as_str() {
+            "0" => "random-1m",
+            "1" => "random-16m",
+            _ => return Err("invalid size".into()),
+        }
     };
+    let large = case == "random-16m";
     let arm = &args[5];
     let url = &args[6];
     let receiver = &args[7];
     wan::parse_id(receiver)?;
-    let s = if bounded_profile(&p) {
+    let s = if setup_profile_plan(&p) {
+        setup_scope(p["run"].as_str().ok_or("run missing")?, trial, case, arm)
+    } else if bounded_profile(&p) {
         bounded_scope(p["run"].as_str().ok_or("run missing")?, trial, large, arm)
     } else {
         scope_for(
@@ -613,13 +792,13 @@ fn session(args: &[String]) -> Result<()> {
         .ok_or("sessions missing")?
         .iter()
         .any(|r| {
-            r["trial"] == trial && r["large"] == large && r["arm"] == *arm && r["scope"] == hex(&s)
+            r["trial"] == trial && case_name(r) == case && r["arm"] == *arm && r["scope"] == hex(&s)
         })
     {
         return Err("unregistered session".into());
     }
-    let (base, target) = fixture_pair(trial, large)?;
-    let m = expected(&p, trial, large)?;
+    let (base, target) = case_fixture(&p, trial, case)?;
+    let m = expected_case(&p, trial, case)?;
     check_identity(&metadata(&base), &m["base"])?;
     check_identity(&metadata(&target), &m["target"])?;
     let token =
@@ -627,10 +806,11 @@ fn session(args: &[String]) -> Result<()> {
     let mut http = HttpClient::new(url, &token, s)?;
     let mut out = fresh(Path::new(&args[8]))?;
     let result = (|| -> Result<()> {
-        write_row(
-            &mut out,
-            &json!({"event":"session_registration","identity":own_identity,"plan_sha256":digest,"trial":trial,"large":large,"arm":arm,"scope":hex(&s),"receiver_executable_sha256":receiver}),
-        )?;
+        let mut registration = json!({"event":"session_registration","identity":own_identity,"plan_sha256":digest,"trial":trial,"large":large,"arm":arm,"scope":hex(&s),"receiver_executable_sha256":receiver});
+        if setup_profile_plan(&p) {
+            registration["case"] = json!(case);
+        }
+        write_row(&mut out, &registration)?;
         let wall = Instant::now();
         let cpu = ProcessTime::now();
         let prepared = Sender::new(arm);
@@ -663,7 +843,7 @@ fn session(args: &[String]) -> Result<()> {
             let mut winning_frames = Vec::new();
             let sent = measure(&mut http, |exchange| {
                 let mut observed = |frames: &[Frame]| {
-                    if bounded_profile(&p) && !seed && selector_arm(arm) {
+                    if compared_profile(&p) && !seed && selector_arm(arm) {
                         winning_frames.extend_from_slice(frames);
                     }
                     exchange(frames)
@@ -697,15 +877,21 @@ fn session(args: &[String]) -> Result<()> {
             if let Some(receipt) = choice {
                 row["selection"] = choice_json(&receipt);
             }
-            if bounded_profile(&p) && !seed && selector_arm(arm) {
+            if compared_profile(&p) && !seed && selector_arm(arm) {
                 row["winning_frames_sha256"] = json!(normalized_frames(&winning_frames)?);
                 row["winning_frame_count"] = json!(winning_frames.len());
             }
             write_row(&mut out, &row)?;
             sent.result?;
-            validate_operation(&row, arm, seed, bytes.len() as u64)?;
+            if setup_profile_plan(&p) {
+                validate_setup_operation(&row, arm, seed, case, bytes.len() as u64)?;
+            } else {
+                validate_operation(&row, arm, seed, bytes.len() as u64)?;
+            }
             if !seed && selector_arm(arm) {
-                if bounded_profile(&p) {
+                if setup_profile_plan(&p) {
+                    validate_setup_choice(&row["selection"], case)?;
+                } else if bounded_profile(&p) {
                     validate_bounded_individual(&row["selection"], bytes.len() as u64, arm)?;
                 } else {
                     validate_warm_choice(&row["selection"], bytes.len() as u64)?;
@@ -747,10 +933,10 @@ fn paired_with(
     let result = (|| -> Result<()> {
         let identity = binary_identity(exe, &format!("{}-identity", prefix(&p)))?;
         validate_role(&p, "whole", &identity)?;
-        let baseline_identity = if bounded_profile(&p) {
+        let baseline_identity = if compared_profile(&p) {
             let id = binary_identity(
                 baseline.ok_or("baseline binary required")?,
-                "bounded-identity",
+                &format!("{}-identity", prefix(&p)),
             )?;
             validate_role(&p, "baseline-selector", &id)?;
             Some(id)
@@ -781,7 +967,13 @@ fn paired_with(
                 .arg(format!("{}-session", prefix(&p)))
                 .arg(plan_path)
                 .arg(s["trial"].as_u64().ok_or("trial missing")?.to_string())
-                .arg(if s["large"] == true { "1" } else { "0" })
+                .arg(if setup_profile_plan(&p) {
+                    case_name(s)
+                } else if s["large"] == true {
+                    "1"
+                } else {
+                    "0"
+                })
                 .arg(s["arm"].as_str().ok_or("arm missing")?)
                 .arg(url)
                 .arg(receiver)
@@ -855,8 +1047,7 @@ fn verify(
         for s in p["sessions"].as_array().ok_or("sessions missing")? {
             let scope = wan::parse_id(s["scope"].as_str().ok_or("scope missing")?)?;
             let trial = s["trial"].as_u64().ok_or("trial missing")? as usize;
-            let large = s["large"].as_bool().ok_or("size missing")?;
-            let (base, target) = fixture_pair(trial, large)?;
+            let (base, target) = case_fixture(&p, trial, case_name(s))?;
             for (phase, bytes) in [("seed", base), ("target", target)] {
                 let wall = Instant::now();
                 let cpu = ProcessTime::now();
@@ -926,7 +1117,7 @@ fn validate_receipts(
     ] {
         wan::parse_id(value.as_str().ok_or("hash missing")?)?;
     }
-    if bounded_profile(p) {
+    if compared_profile(p) {
         validate_role(p, "candidate-selector", &raw[0]["identity"])?;
         validate_role(p, "baseline-selector", &raw[0]["baseline_identity"])?;
         validate_role(p, "candidate-selector", &verified[0]["identity"])?;
@@ -974,16 +1165,16 @@ fn validate_receipts(
         {
             return Err("session incomplete or misbound".into());
         }
-        for key in ["trial", "large", "arm", "scope"] {
+        for key in ["trial", "large", "case", "arm", "scope"] {
             if r[0][key] != s[key] {
                 return Err("session identity differs".into());
             }
         }
         let arm = s["arm"].as_str().ok_or("arm missing")?;
-        let m = expected(
+        let m = expected_case(
             p,
             s["trial"].as_u64().ok_or("trial missing")? as usize,
-            s["large"].as_bool().ok_or("size missing")?,
+            case_name(s),
         )?;
         if m["base"]["object"] == m["target"]["object"] {
             return Err("unchanged target".into());
@@ -1038,16 +1229,20 @@ fn validate_receipts(
                 return Err("seed/update order differs".into());
             }
             check_identity(row, expected)?;
-            validate_operation(
-                row,
-                arm,
-                seed,
-                expected["bytes"].as_u64().ok_or("length missing")?,
-            )?;
+            let len = expected["bytes"].as_u64().ok_or("length missing")?;
+            if setup_profile_plan(p) {
+                validate_setup_operation(row, arm, seed, case_name(s), len)?;
+            } else {
+                validate_operation(row, arm, seed, len)?;
+            }
             if !seed && selector_arm(arm) {
                 let len = expected["bytes"].as_u64().ok_or("length missing")?;
-                if bounded_profile(p) {
-                    validate_bounded_individual(&row["selection"], len, arm)?;
+                if compared_profile(p) {
+                    if setup_profile_plan(p) {
+                        validate_setup_choice(&row["selection"], case_name(s))?;
+                    } else {
+                        validate_bounded_individual(&row["selection"], len, arm)?;
+                    }
                     wan::parse_id(
                         row["winning_frames_sha256"]
                             .as_str()
@@ -1091,7 +1286,7 @@ fn validate_receipts(
             }
             let mut copy = row.clone();
             copy["raw_fallback"] = json!(!seed && arm == "whole" && row["mode"] == "Raw");
-            for key in ["trial", "large", "arm", "scope"] {
+            for key in ["trial", "large", "case", "arm", "scope"] {
                 copy[key] = s[key].clone();
             }
             operations.push(copy);
@@ -1106,7 +1301,8 @@ fn validate_receipts(
 fn summary(paths: &[String], local: bool) -> Result<Value> {
     let first = read_plan(Path::new(paths.first().ok_or("plan required")?), false)?.0;
     let selection = selected_profile(&first);
-    let bounded = bounded_profile(&first);
+    let bounded = compared_profile(&first);
+    let setup = setup_profile_plan(&first);
     let arm_count = arms(&first).len();
     if paths.len()
         != if local {
@@ -1135,7 +1331,8 @@ fn summary(paths: &[String], local: bool) -> Result<Value> {
                 Some("local-qualification" | "local-comparison")
             ) != local
             || selected_profile(&p) != selection
-            || bounded_profile(&p) != bounded
+            || compared_profile(&p) != bounded
+            || setup_profile_plan(&p) != setup
         {
             return Err("dose/shard differs".into());
         }
@@ -1164,7 +1361,8 @@ fn summary(paths: &[String], local: bool) -> Result<Value> {
     };
     let mut cells = Vec::new();
     let mut comparisons = Vec::new();
-    for large in [false, true] {
+    for &case in cases(&first) {
+        let large = case == "random-16m";
         for phase in ["seed", "target", "lifecycle"] {
             let input = if phase == "lifecycle" {
                 &totals
@@ -1175,7 +1373,7 @@ fn summary(paths: &[String], local: bool) -> Result<Value> {
                 let group = input
                     .iter()
                     .filter(|r| {
-                        r["large"] == large
+                        case_name(r) == case
                             && r["arm"] == arm
                             && (phase == "lifecycle" || r["phase"] == phase)
                     })
@@ -1183,7 +1381,7 @@ fn summary(paths: &[String], local: bool) -> Result<Value> {
                 if group.len() != n {
                     return Err("incomplete cell".into());
                 }
-                cells.push(json!({"large":large,"bytes":if large{16<<20}else{1<<20},"phase":phase,"arm":arm,"trials":n,"metrics":describe(&group)?,
+                cells.push(json!({"case":case,"large":large,"bytes":if large{16<<20}else{1<<20},"phase":phase,"arm":arm,"trials":n,"metrics":describe(&group)?,
                     "selected_modes":group.iter().fold(serde_json::Map::new(),|mut m,r|{let k=r["mode"].as_str().unwrap_or("lifecycle");let old=m.get(k).and_then(Value::as_u64).unwrap_or(0);m.insert(k.to_string(),json!(old+1));m})}));
             }
             let pairs = if bounded {
@@ -1202,7 +1400,7 @@ fn summary(paths: &[String], local: bool) -> Result<Value> {
                 vec![("sparse", "whole")]
             };
             for (numerator, denominator) in pairs {
-                let mut comparison = json!({"large":large,"phase":phase,"ratio":format!("{numerator}/{denominator}"),"paired_trials":n});
+                let mut comparison = json!({"case":case,"large":large,"phase":phase,"ratio":format!("{numerator}/{denominator}"),"paired_trials":n});
                 for metric in [
                     "body_bytes",
                     "sender_cpu_us",
@@ -1218,7 +1416,7 @@ fn summary(paths: &[String], local: bool) -> Result<Value> {
                                 .iter()
                                 .filter(|r| {
                                     r["trial"] == trial
-                                        && r["large"] == large
+                                        && case_name(r) == case
                                         && r["arm"] == arm
                                         && (phase == "lifecycle" || r["phase"] == phase)
                                 })
@@ -1261,17 +1459,25 @@ fn summary(paths: &[String], local: bool) -> Result<Value> {
                         r["arm"] == arm
                             && r["phase"] == "target"
                             && r["trial"] == row["trial"]
-                            && r["large"] == row["large"]
+                            && case_name(r) == case_name(row)
                     })
                     .ok_or("paired control missing")
             };
             let base = lookup("baseline-selector")?;
             let whole = lookup("whole")?;
-            validate_bounded_choice(
-                &row["selection"],
-                &base["selection"],
-                row["bytes"].as_u64().ok_or("length missing")?,
-            )?;
+            if setup {
+                validate_setup_choice(&row["selection"], case_name(row))?;
+                validate_setup_choice(&base["selection"], case_name(row))?;
+                if row["selection"] != base["selection"] {
+                    return Err("setup selection receipt changed".into());
+                }
+            } else {
+                validate_bounded_choice(
+                    &row["selection"],
+                    &base["selection"],
+                    row["bytes"].as_u64().ok_or("length missing")?,
+                )?;
+            }
             if row["body_bytes"] != base["body_bytes"]
                 || row["mode"] != base["mode"]
                 || row["winning_frames_sha256"] != base["winning_frames_sha256"]
@@ -1279,7 +1485,7 @@ fn summary(paths: &[String], local: bool) -> Result<Value> {
             {
                 return Err("selected frames/mode/body changed".into());
             }
-            if row["large"] == false {
+            if row["large"] == false && (!setup || case_name(row) == "zero-1m") {
                 let cost = base["selection"]["candidates"][1]["target_http_body_bytes"]
                     .as_u64()
                     .ok_or("baseline Whole exact cost missing")?;
@@ -1289,7 +1495,13 @@ fn summary(paths: &[String], local: bool) -> Result<Value> {
                 {
                     return Err("baseline Whole candidate/control differ".into());
                 }
-            } else if numeric(whole, "body_bytes")? < 896.0 {
+            } else if numeric(whole, "body_bytes")?
+                < if row["large"] == true {
+                    896.0
+                } else {
+                    131879.0
+                }
+            {
                 return Err("large control violates bound".into());
             }
         }
@@ -1336,12 +1548,33 @@ fn summary(paths: &[String], local: bool) -> Result<Value> {
             }
         }
     }
-    let mut result = json!({"schema":if bounded{"spiralcore.bounded-selection.summary.v1"}else if selection{"spiralcore.warm-selection.summary.v1"}else{"spiralcore.warm-object.summary.v1"},"verdict":"EXACT_PAIRED_TRANSFERS_PASS","dose":if local&&bounded{"local-comparison"}else if local{"local-qualification"}else{"wan"},"registration":registration,"receipts":receipts,
-        "sessions":n*2*arm_count,"seed_operations":n*2*arm_count,"target_operations":n*2*arm_count,"exact_reopened_objects":n*4*arm_count,"discarded_observations":0,"cells":cells,"paired_comparisons":comparisons,"actual_lifecycles":totals,
+    let case_count = cases(&first).len();
+    let mut result = json!({"schema":if setup{"spiralcore.selector-setup.summary.v1"}else if bounded{"spiralcore.bounded-selection.summary.v1"}else if selection{"spiralcore.warm-selection.summary.v1"}else{"spiralcore.warm-object.summary.v1"},"verdict":"EXACT_PAIRED_TRANSFERS_PASS","dose":if local&&bounded{"local-comparison"}else if local{"local-qualification"}else{"wan"},"registration":registration,"receipts":receipts,
+        "sessions":n*case_count*arm_count,"seed_operations":n*case_count*arm_count,"target_operations":n*case_count*arm_count,"exact_reopened_objects":n*case_count*2*arm_count,"discarded_observations":0,"cells":cells,"paired_comparisons":comparisons,"actual_lifecycles":totals,
         "metric_scope":"HTTP request+response body bytes; sender process CPU plus disjoint receiver handler CPU; target encoding-start through durable ACK wall; lifecycle is fitting/context+paid seed+update disjoint phase sum, excludes fixture generation, process launch and untimed verification; exchange wall is not pure wire time"});
     if selection {
-        result["schema_fits"] = json!(n * if bounded { 4 } else { 2 });
-        result["selection_decisions"]=json!(operations.iter().filter(|r|selector_arm(r["arm"].as_str().unwrap_or(""))&&r["phase"]=="target").map(|r|json!({"trial":r["trial"],"large":r["large"],"arm":r["arm"],"object":r["object"],"selection":r["selection"]})).collect::<Vec<_>>());
+        result["schema_fits"] = json!(n * case_count * if bounded { 2 } else { 1 });
+        result["selection_decisions"]=json!(operations.iter().filter(|r|selector_arm(r["arm"].as_str().unwrap_or(""))&&r["phase"]=="target").map(|r|json!({"trial":r["trial"],"case":case_name(r),"large":r["large"],"arm":r["arm"],"object":r["object"],"selection":r["selection"]})).collect::<Vec<_>>());
+    }
+    if setup {
+        let mut context_cells = Vec::new();
+        for case in SETUP_CASES {
+            for arm in ARMS_BOUNDED {
+                let group = result["actual_lifecycles"]
+                    .as_array()
+                    .unwrap()
+                    .iter()
+                    .filter(|r| case_name(r) == case && r["arm"] == arm)
+                    .collect::<Vec<_>>();
+                if group.len() != n {
+                    return Err("incomplete setup cohort".into());
+                }
+                context_cells.push(json!({"case":case,"arm":arm,"trials":n,
+                    "cpu_us":dist(group.iter().map(|r|numeric(r,"context_cpu_us")).collect::<Result<Vec<_>>>()?),
+                    "wall_us":dist(group.iter().map(|r|numeric(r,"context_wall_us")).collect::<Result<Vec<_>>>()?)}));
+            }
+        }
+        result["context_setup_cells"] = json!(context_cells);
     }
     if bounded && local {
         let values = result["paired_comparisons"]
@@ -1349,7 +1582,7 @@ fn summary(paths: &[String], local: bool) -> Result<Value> {
             .unwrap()
             .iter()
             .find(|r| {
-                r["large"] == false
+                r["case"] == "random-1m"
                     && r["phase"] == "target"
                     && r["ratio"] == "candidate-selector/baseline-selector"
             })
@@ -1359,7 +1592,29 @@ fn summary(paths: &[String], local: bool) -> Result<Value> {
             .iter()
             .map(|v| v.as_f64().ok_or("ratio missing"))
             .collect::<std::result::Result<Vec<_>, _>>()?;
-        result["cpu_acceptance"] = bounded_cpu_gate(&values)?;
+        if setup {
+            let lifecycle = result["actual_lifecycles"]
+                .as_array()
+                .ok_or("lifecycles missing")?;
+            let mut setup_ratios = Vec::new();
+            for trial in 0..10 {
+                let get = |arm: &str| {
+                    lifecycle
+                        .iter()
+                        .find(|r| {
+                            r["trial"] == trial && case_name(r) == "random-1m" && r["arm"] == arm
+                        })
+                        .ok_or("setup pair missing")
+                };
+                setup_ratios.push(
+                    numeric(get("candidate-selector")?, "context_cpu_us")?
+                        / numeric(get("baseline-selector")?, "context_cpu_us")?,
+                );
+            }
+            result["cpu_acceptance"] = json!({"setup_random_1m":setup_ratio_gate(&setup_ratios,0.80)?,"sender_random_1m":setup_ratio_gate(&values,1.05)?,"compressible_prepare":"requires separate ten-pair control result; all three gates required before WAN"});
+        } else {
+            result["cpu_acceptance"] = bounded_cpu_gate(&values)?;
+        }
     }
     Ok(result)
 }
@@ -1432,12 +1687,23 @@ fn local(exe: &Path, dir: &Path, run: &str, selection: bool) -> Result<()> {
     )
 }
 fn bounded_local(baseline: &Path, exe: &Path, dir: &Path, run: &str) -> Result<()> {
+    comparison_local(baseline, exe, dir, run, false)
+}
+fn comparison_local(baseline: &Path, exe: &Path, dir: &Path, run: &str, setup: bool) -> Result<()> {
     fs::create_dir(dir)?;
-    let source = std::env::var("SPIRALCORE_BOUNDED_SOURCE")
-        .map_err(|_| "SPIRALCORE_BOUNDED_SOURCE required")?;
+    let source = std::env::var(if setup {
+        "SPIRALCORE_SETUP_SOURCE"
+    } else {
+        "SPIRALCORE_BOUNDED_SOURCE"
+    })
+    .map_err(|_| "comparison source commit required")?;
     let mut paths = Vec::new();
     for shard in 0..2 {
-        let p = bounded_plan(run, shard, &source, true)?;
+        let p = if setup {
+            setup_plan(run, shard, &source, true)?
+        } else {
+            bounded_plan(run, shard, &source, true)?
+        };
         paths.extend(local_shard(
             exe,
             Some(baseline),
@@ -1524,24 +1790,54 @@ fn local_shard(exe: &Path, baseline: Option<&Path>, dir: &Path, p: &Value) -> Re
     Ok(paths)
 }
 fn control_worker(trial: usize, cache: &Path, out_path: &Path) -> Result<()> {
+    control_worker_for(trial, "zero-1m", cache, out_path, false)
+}
+fn control_fixture(trial: usize, case: &str) -> Result<(Vec<u8>, Vec<u8>)> {
+    if case == "zero-1m" {
+        return setup_fixture_pair(trial, case);
+    }
+    let (mut base, _) = fixture_pair(trial, false)?;
+    match case {
+        "periodic64" => {
+            let pattern: [u8; 64] = base[..64].try_into().unwrap();
+            for chunk in base.chunks_mut(64) {
+                chunk.copy_from_slice(&pattern[..chunk.len()]);
+            }
+        }
+        "random-gaps" => {
+            for i in 0..8 {
+                base[i * 16384..i * 16384 + 64].fill(0);
+            }
+        }
+        _ => return Err("unregistered control case".into()),
+    }
+    let mut target = base.clone();
+    let at = target.len() / 2;
+    for b in &mut target[at..at + 32] {
+        *b ^= 0xa5;
+    }
+    Ok((base, target))
+}
+fn control_worker_for(
+    trial: usize,
+    case: &str,
+    cache: &Path,
+    out_path: &Path,
+    setup: bool,
+) -> Result<()> {
     if trial >= 10 || cache.exists() {
         return Err("fresh bounded control required".into());
     }
     let mut out = fresh(out_path)?;
     let result = (|| -> Result<()> {
-        let base = vec![0; 1 << 20];
-        let mut target = base.clone();
-        let at = target.len() / 2;
-        for b in &mut target[at..at + 32] {
-            *b ^= 0xa5;
-        }
+        let (base, target) = control_fixture(trial, case)?;
         let scope = hash(
             b"spiralcore.bounded-control.scope.v1\0",
             &[&(trial as u64).to_le_bytes()],
         );
         write_row(
             &mut out,
-            &json!({"event":"control_registration","trial":trial,"identity":identity()?,"base":metadata(&base),"target":metadata(&target)}),
+            &json!({"event":"control_registration","trial":trial,"case":case,"identity":identity()?,"base":metadata(&base),"target":metadata(&target)}),
         )?;
         let w = Instant::now();
         let c = ProcessTime::now();
@@ -1578,7 +1874,8 @@ fn control_worker(trial: usize, cache: &Path, out_path: &Path) -> Result<()> {
             &json!({"event":"preparation","cpu_us":cpu,"wall_us":wall,"selection":plan.as_ref().ok().map(|p|choice_json(p.selection())),"error":plan.as_ref().err().map(ToString::to_string)}),
         )?;
         let plan = plan?;
-        if plan.selection().selected_mode != Mode::ZstdWholeV1 || plan.selection().needs_schema_seed
+        if ((!setup || case == "zero-1m") && plan.selection().selected_mode != Mode::ZstdWholeV1)
+            || plan.selection().needs_schema_seed
         {
             return Err("compressible control did not choose Whole".into());
         }
@@ -1586,7 +1883,7 @@ fn control_worker(trial: usize, cache: &Path, out_path: &Path) -> Result<()> {
             .selection()
             .candidates
             .iter()
-            .find(|c| c.mode == Mode::ZstdWholeV1)
+            .find(|c| c.mode == plan.selection().selected_mode)
             .ok_or("completed Whole candidate required")?
             .target_http_body_bytes;
         let w = Instant::now();
@@ -1634,6 +1931,69 @@ fn control_worker(trial: usize, cache: &Path, out_path: &Path) -> Result<()> {
     Ok(())
 }
 fn control_summary(samples: &[Value]) -> Result<Value> {
+    control_summary_for(samples, false, "zero-1m")
+}
+fn control_choice_parity(candidate: &Value, baseline: &Value) -> Result<()> {
+    if candidate == baseline {
+        return Ok(());
+    }
+    // The scheduler may replace a sound Whole pruning receipt with an evaluated
+    // losing Whole candidate. It cannot change any other cost or the winner.
+    let exact = candidate["candidates"]
+        .as_array()
+        .ok_or("control candidates missing")?
+        .iter()
+        .find(|r| r["mode"] == "ZstdWholeV1")
+        .ok_or("new Whole evaluation missing")?;
+    let proof = baseline["pruned"]
+        .as_array()
+        .ok_or("control pruning missing")?
+        .iter()
+        .find(|r| r["mode"] == "ZstdWholeV1")
+        .ok_or("baseline Whole proof missing")?;
+    if numeric(exact, "target_http_body_bytes")? < numeric(proof, "target_http_body_lower_bound")?
+        || exact["setup_http_body_bytes"] != 0
+        || exact["total_http_body_bytes"] != exact["target_http_body_bytes"]
+    {
+        return Err("evaluated control cost violates prior proof".into());
+    }
+    let mut a = candidate.clone();
+    let mut b = baseline.clone();
+    a["candidates"]
+        .as_array_mut()
+        .unwrap()
+        .retain(|r| r["mode"] != "ZstdWholeV1");
+    b["pruned"]
+        .as_array_mut()
+        .unwrap()
+        .retain(|r| r["mode"] != "ZstdWholeV1");
+    if a != b {
+        return Err("control changed a winner or unrelated cost".into());
+    }
+    Ok(())
+}
+fn validate_control_choice(receipt: &Value) -> Result<u64> {
+    if receipt["selected_mode"] == "SparseV1" {
+        validate_warm_choice(receipt, 1 << 20)?;
+        return Ok(600);
+    }
+    if receipt["selected_mode"] != "ZstdWholeV1" {
+        return Err("unexpected control winner".into());
+    }
+    let cost = receipt["candidates"][1]["target_http_body_bytes"]
+        .as_u64()
+        .ok_or("control Whole cost missing")?;
+    if cost == 0 || cost > 600 || receipt["candidates"][1]["total_http_body_bytes"] != cost {
+        return Err("control Whole is not the byte winner".into());
+    }
+    let mut normalized = receipt.clone();
+    normalized["selected_mode"] = json!("SparseV1");
+    normalized["candidates"][1]["target_http_body_bytes"] = json!(raw_cost(1 << 20) + 1);
+    normalized["candidates"][1]["total_http_body_bytes"] = json!(raw_cost(1 << 20) + 1);
+    validate_static_warm_choice(&normalized, 1 << 20)?;
+    Ok(cost)
+}
+fn control_summary_for(samples: &[Value], setup: bool, case: &str) -> Result<Value> {
     if samples.len() != 20 {
         return Err("twenty control observations required".into());
     }
@@ -1663,7 +2023,9 @@ fn control_summary(samples: &[Value]) -> Result<Value> {
                 || rr[2]["event"] != "seed"
                 || rr[2]["body_bytes"] != raw_cost(1 << 20)
                 || rr[3]["event"] != "preparation"
-                || rr[3]["selection"]["selected_mode"] != "ZstdWholeV1"
+                || ((!setup || case == "zero-1m")
+                    && rr[3]["selection"]["selected_mode"] != "ZstdWholeV1")
+                || (setup && rr[0]["case"] != case)
                 || rr[4]["event"] != "control_validation"
                 || rr[4]["exact"] != true
                 || rr[4]["body_bytes"] != rr[4]["expected_body_bytes"]
@@ -1673,14 +2035,32 @@ fn control_summary(samples: &[Value]) -> Result<Value> {
             {
                 return Err("control did not qualify".into());
             }
+            if setup {
+                let expected = validate_control_choice(&rr[3]["selection"])?;
+                if rr[4]["body_bytes"] != expected || (case == "zero-1m" && expected != 570) {
+                    return Err("control body differs from winning receipt".into());
+                }
+            }
         }
         for key in ["base", "target"] {
             if a["rows"][0][key] != b["rows"][0][key] {
                 return Err("control inputs differ".into());
             }
         }
-        if a["rows"][3]["selection"] != b["rows"][3]["selection"]
-            || a["rows"][4]["winning_frames_sha256"] != b["rows"][4]["winning_frames_sha256"]
+        if setup {
+            let (base, target) = control_fixture(trial, case)?;
+            if a["rows"][0]["base"] != metadata(&base)
+                || a["rows"][0]["target"] != metadata(&target)
+            {
+                return Err("control fixture identity differs".into());
+            }
+        }
+        if setup {
+            control_choice_parity(&a["rows"][3]["selection"], &b["rows"][3]["selection"])?;
+        } else if a["rows"][3]["selection"] != b["rows"][3]["selection"] {
+            return Err("control receipts differ".into());
+        }
+        if a["rows"][4]["winning_frames_sha256"] != b["rows"][4]["winning_frames_sha256"]
             || a["rows"][4]["body_bytes"] != b["rows"][4]["body_bytes"]
         {
             return Err("compressible winning result changed".into());
@@ -1711,23 +2091,48 @@ fn control_summary(samples: &[Value]) -> Result<Value> {
         }
         cells.push(row);
     }
-    Ok(
-        json!({"schema":"spiralcore.bounded-selection.compressible-control.v1","pairs":10,"exact_objects":40,"cells":cells,"paired_prepare_cpu_ratio":dist(paired.clone()),"paired_ratios":paired,"metric_scope":"prepare_warm only; actual fitting/context and Raw seed recorded separately; serialized send/frame hashing/reopen occurs outside preparation timer; no WAN or full-transfer timing claim"}),
-    )
+    let mut result = json!({"schema":if setup{"spiralcore.selector-setup.control.v1"}else{"spiralcore.bounded-selection.compressible-control.v1"},"case":case,"pairs":10,"exact_objects":40,"cells":cells,"paired_prepare_cpu_ratio":dist(paired.clone()),"paired_ratios":paired,"metric_scope":"prepare_warm only; actual fitting/context and Raw seed recorded separately; serialized send/frame hashing/reopen occurs outside preparation timer; no WAN or full-transfer timing claim"});
+    if setup && case == "zero-1m" {
+        result["cpu_acceptance"] = setup_ratio_gate(&paired, 0.95)?;
+    }
+    Ok(result)
 }
 fn bounded_control(baseline: &Path, candidate: &Path, dir: &Path) -> Result<()> {
+    control_campaign(baseline, candidate, dir, false, "zero-1m")
+}
+fn setup_control(baseline: &Path, candidate: &Path, dir: &Path) -> Result<()> {
+    fs::create_dir(dir)?;
+    let mut summaries = Vec::new();
+    for case in ["zero-1m", "periodic64", "random-gaps"] {
+        let child = dir.join(case);
+        control_campaign(baseline, candidate, &child, true, case)?;
+        let bytes = fs::read(child.join("summary.json"))?;
+        summaries.push(json!({"case":case,"summary_sha256":sha(&bytes),"summary":serde_json::from_slice::<Value>(&bytes)?}));
+    }
+    write_row(
+        &mut fresh(&dir.join("summary.json"))?,
+        &json!({"schema":"spiralcore.selector-setup.controls.v1","samples":60,"exact_objects":120,"cases":summaries}),
+    )
+}
+fn control_campaign(
+    baseline: &Path,
+    candidate: &Path,
+    dir: &Path,
+    setup: bool,
+    case: &str,
+) -> Result<()> {
     fs::create_dir(dir)?;
     let mut out = fresh(&dir.join("paired.jsonl"))?;
     let result = (|| -> Result<()> {
         let candidate_pins = pins();
-        let p = json!({"experiment":"bounded-selection.v1","sources":candidate_pins,"source_profiles":{"baseline":baseline_pins(&candidate_pins),"candidate":candidate_pins}});
-        let a = binary_identity(candidate, "bounded-identity")?;
-        let b = binary_identity(baseline, "bounded-identity")?;
+        let p = json!({"experiment":if setup{"selector-setup.v1"}else{"bounded-selection.v1"},"sources":candidate_pins,"source_profiles":{"baseline":if setup{setup_baseline_pins(&candidate_pins)}else{baseline_pins(&candidate_pins)},"candidate":candidate_pins}});
+        let a = binary_identity(candidate, &format!("{}-identity", prefix(&p)))?;
+        let b = binary_identity(baseline, &format!("{}-identity", prefix(&p)))?;
         validate_role(&p, "candidate-selector", &a)?;
         validate_role(&p, "baseline-selector", &b)?;
         write_row(
             &mut out,
-            &json!({"event":"registration","candidate":a,"baseline":b,"production_baseline":BASELINE_COMMIT,"common_harness_commit":std::env::var("SPIRALCORE_BOUNDED_SOURCE").map_err(|_|"SPIRALCORE_BOUNDED_SOURCE required")?,"fixed_fixture":"zero-filled1MiB-base/midpoint32-xor-a5","pairs":10}),
+            &json!({"event":"registration","candidate":a,"baseline":b,"production_baseline":if setup{SETUP_BASELINE}else{BASELINE_COMMIT},"common_harness_commit":std::env::var(if setup{"SPIRALCORE_SETUP_SOURCE"}else{"SPIRALCORE_BOUNDED_SOURCE"}).map_err(|_|"source commit required")?,"fixed_fixture":case,"edit":"midpoint32-xor-a5","pairs":10}),
         )?;
         let mut order: [bool; 10] = std::array::from_fn(|i| i < 5);
         let mut state = fixture_seed(32, false);
@@ -1752,12 +2157,14 @@ fn bounded_control(baseline: &Path, candidate: &Path, dir: &Path) -> Result<()> 
                 } else {
                     candidate
                 };
-                let output = Command::new(exe)
-                    .arg("bounded-control-worker")
-                    .arg(trial.to_string())
-                    .arg(&cache)
-                    .arg(&path)
-                    .output()?;
+                let mut command = Command::new(exe);
+                command
+                    .arg(format!("{}-control-worker", prefix(&p)))
+                    .arg(trial.to_string());
+                if setup {
+                    command.arg(case);
+                }
+                let output = command.arg(&cache).arg(&path).output()?;
                 let bytes = fs::read(&path).unwrap_or_default();
                 let rr = rows(&bytes);
                 if !output.status.success() || rr.is_err() {
@@ -1782,7 +2189,11 @@ fn bounded_control(baseline: &Path, candidate: &Path, dir: &Path) -> Result<()> 
                 samples.push(row);
             }
         }
-        let mut summary = control_summary(&samples)?;
+        let mut summary = if setup {
+            control_summary_for(&samples, true, case)?
+        } else {
+            control_summary(&samples)?
+        };
         summary["candidate"] = a;
         summary["baseline"] = b;
         write_row(&mut out, &json!({"event":"complete","samples":20}))?;
@@ -1794,33 +2205,336 @@ fn bounded_control(baseline: &Path, candidate: &Path, dir: &Path) -> Result<()> 
     }
     Ok(())
 }
+fn setup_timed<T>(call: impl FnOnce() -> T) -> (T, (u128, u128)) {
+    let wall = Instant::now();
+    let cpu = ProcessTime::now();
+    let result = call();
+    (
+        result,
+        (cpu.elapsed().as_micros(), wall.elapsed().as_micros()),
+    )
+}
+fn setup_profile_sample(iteration: usize) -> Result<Value> {
+    let outer_wall = Instant::now();
+    let outer_cpu = ProcessTime::now();
+    let wall = Instant::now();
+    let cpu = ProcessTime::now();
+    let training = training_records();
+    let training_bytes: usize = training.iter().map(Vec::len).sum();
+    let refs = training.iter().map(Vec::as_slice).collect::<Vec<_>>();
+    let generation = (cpu.elapsed().as_micros(), wall.elapsed().as_micros());
+    let (artifact, fit) = setup_timed(|| schema::fit(&refs));
+    let artifact = artifact?;
+    let (matches, artifact_check) = setup_timed(|| artifact == ARTIFACT);
+    if !matches {
+        return Err("fitted artifact differs from registered training result".into());
+    }
+    let (selector, construction) = setup_timed(|| warm_selection::PreparedSelector::new(&artifact));
+    let selector = selector?;
+    let wall = Instant::now();
+    let cpu = ProcessTime::now();
+    drop(refs);
+    drop(training);
+    drop(artifact);
+    let cleanup = (cpu.elapsed().as_micros(), wall.elapsed().as_micros());
+    let cpu_us = outer_cpu.elapsed().as_micros();
+    let wall_us = outer_wall.elapsed().as_micros();
+    // Receipt construction, hashes, and dropping the returned context are outside
+    // setup timing, just as retaining Sender::new's result is in real sessions.
+    let stages = [
+        ("training_generation", generation),
+        ("fit_and_serialization", fit),
+        ("artifact_check", artifact_check),
+        ("context_construction", construction),
+        ("temporary_cleanup", cleanup),
+    ]
+    .map(|(stage, (cpu, wall))| json!({"stage":stage,"cpu_us":cpu,"wall_us":wall}));
+    Ok(json!({"event":"setup_profile_sample","iteration":iteration,
+        "cpu_us":cpu_us,"wall_us":wall_us,"stages":stages,"schema_fits":1,
+        "training_samples":512,"training_bytes":training_bytes,"artifact":metadata(ARTIFACT),
+        "constructor_artifact_id":hex(&selector.artifact_id()),
+        "retained_bytes":selector.retained_bytes(),"retained_charge":selector.retained_charge(),"error":null}))
+}
+fn setup_profile(path: &Path) -> Result<()> {
+    let mut out = fresh(path)?;
+    write_row(
+        &mut out,
+        &json!({"event":"setup_profile_registration",
+        "schema":"spiralcore.selector-setup.profile.v1","iterations":20,"identity":identity()?,
+        "metric_scope":"outer actual generation, fit, artifact check, constructor and temporary cleanup; stages are nested disjoint subsets, never added again to the outer total; no network or context-drop timing; all iterations retained"}),
+    )?;
+    for iteration in 0..20 {
+        match setup_profile_sample(iteration) {
+            Ok(row) => write_row(&mut out, &row)?,
+            Err(error) => {
+                write_row(
+                    &mut out,
+                    &json!({"event":"failure","iteration":iteration,"error":error.to_string()}),
+                )?;
+                return Err(error);
+            }
+        }
+    }
+    write_row(
+        &mut out,
+        &json!({"event":"complete","samples":20,"schema_fits":20}),
+    )
+}
 pub(super) fn command(args: &[String]) -> Result<()> {
     match args.get(1).map(String::as_str) {
-        Some("warm-identity"|"warmselect-identity"|"bounded-identity") if args.len()==2=>{println!("{}",identity()?);Ok(())},
+        Some("setup-profile") if args.len()==3=>setup_profile(Path::new(&args[2])),
+        Some("warm-identity"|"warmselect-identity"|"bounded-identity"|"setup-identity") if args.len()==2=>{println!("{}",identity()?);Ok(())},
         Some("warm-plan") if args.len()==5=>{let source=std::env::var("SPIRALCORE_WARM_SOURCE").map_err(|_|"SPIRALCORE_WARM_SOURCE required")?;write_row(&mut fresh(Path::new(&args[4]))?,&plan(&args[2],args[3].parse()?,&source,false)?)},
         Some("warmselect-plan") if args.len()==5=>{let source=std::env::var("SPIRALCORE_WARMSELECT_SOURCE").map_err(|_|"SPIRALCORE_WARMSELECT_SOURCE required")?;write_row(&mut fresh(Path::new(&args[4]))?,&selection_plan(&args[2],args[3].parse()?,&source,false)?)},
         Some("bounded-plan") if args.len()==5=>{let source=std::env::var("SPIRALCORE_BOUNDED_SOURCE").map_err(|_|"SPIRALCORE_BOUNDED_SOURCE required")?;write_row(&mut fresh(Path::new(&args[4]))?,&bounded_plan(&args[2],args[3].parse()?,&source,false)?)},
-        Some("warm-session"|"warmselect-session"|"bounded-session") if args.len()==9=>session(args),
+        Some("setup-plan") if args.len()==5=>{let source=std::env::var("SPIRALCORE_SETUP_SOURCE").map_err(|_|"SPIRALCORE_SETUP_SOURCE required")?;write_row(&mut fresh(Path::new(&args[4]))?,&setup_plan(&args[2],args[3].parse()?,&source,false)?)},
+        Some("warm-session"|"warmselect-session"|"bounded-session"|"setup-session") if args.len()==9=>session(args),
         Some("warm-paired"|"warmselect-paired") if args.len()==7=>paired(Path::new(&args[2]),Path::new(&args[3]),&args[4],&args[5],Path::new(&args[6])),
-        Some("bounded-paired") if args.len()==8=>paired_with(Path::new(&args[2]),Path::new(&args[4]),Some(Path::new(&args[3])),&args[5],&args[6],Path::new(&args[7])),
+        Some("bounded-paired"|"setup-paired") if args.len()==8=>paired_with(Path::new(&args[2]),Path::new(&args[4]),Some(Path::new(&args[3])),&args[5],&args[6],Path::new(&args[7])),
         Some("warm-verify") if args.len()==5=>verify(Path::new(&args[2]),Path::new(&args[3]),Path::new(&args[4]),Path::new(&std::env::var("SPIRALCORE_WARM_OBSERVATIONS").map_err(|_|"SPIRALCORE_WARM_OBSERVATIONS required")?),&std::env::var("SPIRALCORE_WARM_RECEIVER_SHA256").map_err(|_|"SPIRALCORE_WARM_RECEIVER_SHA256 required")?),
         Some("warmselect-verify") if args.len()==5=>verify(Path::new(&args[2]),Path::new(&args[3]),Path::new(&args[4]),Path::new(&std::env::var("SPIRALCORE_WARMSELECT_OBSERVATIONS").map_err(|_|"SPIRALCORE_WARMSELECT_OBSERVATIONS required")?),&std::env::var("SPIRALCORE_WARMSELECT_RECEIVER_SHA256").map_err(|_|"SPIRALCORE_WARMSELECT_RECEIVER_SHA256 required")?),
         Some("bounded-verify") if args.len()==5=>verify(Path::new(&args[2]),Path::new(&args[3]),Path::new(&args[4]),Path::new(&std::env::var("SPIRALCORE_BOUNDED_OBSERVATIONS").map_err(|_|"SPIRALCORE_BOUNDED_OBSERVATIONS required")?),&std::env::var("SPIRALCORE_BOUNDED_RECEIVER_SHA256").map_err(|_|"SPIRALCORE_BOUNDED_RECEIVER_SHA256 required")?),
+        Some("setup-verify") if args.len()==5=>verify(Path::new(&args[2]),Path::new(&args[3]),Path::new(&args[4]),Path::new(&std::env::var("SPIRALCORE_SETUP_OBSERVATIONS").map_err(|_|"SPIRALCORE_SETUP_OBSERVATIONS required")?),&std::env::var("SPIRALCORE_SETUP_RECEIVER_SHA256").map_err(|_|"SPIRALCORE_SETUP_RECEIVER_SHA256 required")?),
         Some("warm-summary") if args.len()==12=>write_row(&mut fresh(Path::new(&args[11]))?,&summary(&args[2..11],false)?),
-        Some("warmselect-summary"|"bounded-summary") if args.len()==21=>write_row(&mut fresh(Path::new(&args[20]))?,&summary(&args[2..20],false)?),
-        Some("bounded-local-summary") if args.len()==9=>write_row(&mut fresh(Path::new(&args[8]))?,&summary(&args[2..8],true)?),
+        Some("warmselect-summary"|"bounded-summary"|"setup-summary") if args.len()==21=>write_row(&mut fresh(Path::new(&args[20]))?,&summary(&args[2..20],false)?),
+        Some("bounded-local-summary"|"setup-local-summary") if args.len()==9=>write_row(&mut fresh(Path::new(&args[8]))?,&summary(&args[2..8],true)?),
         Some("warm-local") if args.len()==5=>local(Path::new(&args[2]),Path::new(&args[3]),&args[4],false),
         Some("warmselect-local") if args.len()==5=>local(Path::new(&args[2]),Path::new(&args[3]),&args[4],true),
         Some("bounded-local") if args.len()==6=>bounded_local(Path::new(&args[2]),Path::new(&args[3]),Path::new(&args[4]),&args[5]),
+        Some("setup-local") if args.len()==6=>comparison_local(Path::new(&args[2]),Path::new(&args[3]),Path::new(&args[4]),&args[5],true),
         Some("bounded-control") if args.len()==5=>bounded_control(Path::new(&args[2]),Path::new(&args[3]),Path::new(&args[4])),
         Some("bounded-control-worker") if args.len()==5=>control_worker(args[2].parse()?,Path::new(&args[3]),Path::new(&args[4])),
-        Some("warm-local-receiver"|"warmselect-local-receiver"|"bounded-local-receiver") if args.len()==4=>local_receiver(Path::new(&args[2]),Path::new(&args[3])),
+        Some("setup-control") if args.len()==5=>setup_control(Path::new(&args[2]),Path::new(&args[3]),Path::new(&args[4])),
+        Some("setup-control-worker") if args.len()==6=>control_worker_for(args[2].parse()?,&args[3],Path::new(&args[4]),Path::new(&args[5]),true),
+        Some("warm-local-receiver"|"warmselect-local-receiver"|"bounded-local-receiver"|"setup-local-receiver") if args.len()==4=>local_receiver(Path::new(&args[2]),Path::new(&args[3])),
         _=>Err("usage: warm[-identity|-plan RUN SHARD NEW_PLAN|-session PLAN TRIAL SIZE ARM URL RECEIVER_SHA NEW_JSONL|-paired PLAN EXE URL RECEIVER_SHA NEW_JSONL|-verify PLAN STOPPED_CACHE NEW_JSONL|-summary THREE_PLAN_RAW_VERIFY_TRIPLES NEW_JSON|-local EXE NEW_DIRECTORY RUN]; warmselect-* has the same arguments except six summary triples".into())
     }
 }
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn setup_three_cases_bind_paid_dose_and_original_fixtures() {
+        let p = setup_plan("setup-qualification", 5, &"1".repeat(40), false).unwrap();
+        assert_eq!(p["experiment"], "selector-setup.v1");
+        assert_eq!(
+            p["baseline_production_commit"],
+            "4bb79f976e0939f3ef8b48c3830b07086b98f280"
+        );
+        assert_eq!(p["operations"], 90);
+        assert_eq!(p["schema_fits"], 30);
+        assert_eq!(p["sessions"].as_array().unwrap().len(), 45);
+        assert_eq!(p["retained_payload_bytes"], 540u64 << 20);
+        assert_eq!(p["conservative_storage_bound"], (596u64 << 20) + 90 * 4096);
+        let cases = p["sessions"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|r| r["case"].as_str().unwrap())
+            .collect::<BTreeSet<_>>();
+        assert_eq!(
+            cases,
+            BTreeSet::from(["random-1m", "zero-1m", "random-16m"])
+        );
+        assert_eq!(
+            setup_fixture_pair(0, "random-1m").unwrap(),
+            fixture_pair(0, false).unwrap()
+        );
+        assert_eq!(
+            setup_fixture_pair(0, "random-16m").unwrap(),
+            fixture_pair(0, true).unwrap()
+        );
+        let (base, target) = setup_fixture_pair(0, "zero-1m").unwrap();
+        assert!(base.iter().all(|b| *b == 0));
+        assert_eq!(base.len(), 1 << 20);
+        assert_eq!(base.iter().zip(&target).filter(|(a, b)| a != b).count(), 32);
+        assert!(target[target.len() / 2..target.len() / 2 + 32]
+            .iter()
+            .all(|b| *b == 0xa5));
+        assert!(setup_fixture_pair(0, "unknown").is_err());
+        for shard in 0..2 {
+            assert_eq!(
+                setup_plan("setup-local", shard, &"1".repeat(40), true).unwrap()["operations"],
+                90
+            );
+        }
+        assert!(setup_plan("setup-local", 2, &"1".repeat(40), true).is_err());
+        let candidate = p["source_profiles"]["candidate"].as_object().unwrap();
+        let baseline = p["source_profiles"]["baseline"].as_object().unwrap();
+        assert_eq!(candidate.len(), baseline.len());
+        for (key, value) in candidate {
+            if key != "schema" && key != "warm_selection" {
+                assert_eq!(value, &baseline[key], "unexpected overlay {key}");
+            }
+        }
+    }
+
+    #[test]
+    fn setup_gates_preserve_all_ten_pairs_and_negative_outcomes() {
+        assert_eq!(setup_ratio_gate(&[0.80; 10], 0.80).unwrap()["passed"], true);
+        assert_eq!(
+            setup_ratio_gate(&[0.81; 10], 0.80).unwrap()["passed"],
+            false
+        );
+        assert_eq!(setup_ratio_gate(&[0.95; 10], 0.95).unwrap()["passed"], true);
+        assert_eq!(
+            setup_ratio_gate(&[1.06; 10], 1.05).unwrap()["passed"],
+            false
+        );
+        assert!(setup_ratio_gate(&[0.1; 9], 0.80).is_err());
+        assert!(setup_ratio_gate(&[f64::NAN; 10], 0.80).is_err());
+    }
+
+    #[test]
+    fn setup_complete_summary_checks_three_cases_and_rejects_relabeling() {
+        let root = temporary("setup-summary");
+        fs::create_dir(&root).unwrap();
+        let mut paths = Vec::new();
+        for shard in 0..2 {
+            let p = setup_plan("setup-summary", shard, &"1".repeat(40), true).unwrap();
+            let pp = root.join(format!("plan-{shard}.json"));
+            write_row(&mut fresh(&pp).unwrap(), &p).unwrap();
+            let digest = sha(&fs::read(&pp).unwrap());
+            let (mut raw, mut verified) = fabricated_receipts(&p);
+            validate_receipts(&p, "plan", &raw, &verified).unwrap();
+            let mut wrong = raw.clone();
+            wrong[1]["rows"][0]["case"] = json!("zero-1m");
+            if wrong[1]["session"]["case"] == "zero-1m" {
+                wrong[1]["rows"][0]["case"] = json!("random-1m");
+            }
+            assert!(validate_receipts(&p, "plan", &wrong, &verified).is_err());
+            wrong = raw.clone();
+            wrong[0]["baseline_identity"]["first_block_probe_available"] = json!(false);
+            assert!(validate_receipts(&p, "plan", &wrong, &verified).is_err());
+            raw[0]["plan_sha256"] = json!(digest);
+            verified[0]["plan_sha256"] = json!(digest);
+            for row in &mut raw {
+                if row["event"] == "session" {
+                    row["rows"][0]["plan_sha256"] = json!(digest);
+                }
+            }
+            let rp = root.join(format!("raw-{shard}.jsonl"));
+            let vp = root.join(format!("verify-{shard}.jsonl"));
+            for (path, rows) in [(&rp, &raw), (&vp, &verified)] {
+                let mut out = fresh(path).unwrap();
+                for row in rows {
+                    write_row(&mut out, row).unwrap();
+                }
+            }
+            paths.extend([pp, rp, vp].map(|p| p.to_string_lossy().into_owned()));
+        }
+        let result = summary(&paths, true).unwrap();
+        assert_eq!(result["exact_reopened_objects"], 180);
+        assert_eq!(result["schema_fits"], 60);
+        assert_eq!(result["cells"].as_array().unwrap().len(), 27);
+        assert_eq!(result["cpu_acceptance"]["setup_random_1m"]["passed"], false);
+        assert_eq!(result["cpu_acceptance"]["sender_random_1m"]["passed"], true);
+        assert_eq!(
+            result["cpu_acceptance"]["setup_random_1m"]["paired_trials"],
+            10
+        );
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn setup_controls_reopen_actual_targets_and_label_deceptive_sampling() {
+        let root = temporary("setup-controls");
+        fs::create_dir(&root).unwrap();
+        for case in ["zero-1m", "periodic64", "random-gaps"] {
+            let out = root.join(format!("{case}.jsonl"));
+            let cache = root.join(case);
+            control_worker_for(0, case, &cache, &out, true).unwrap();
+            let rr = rows(&fs::read(out).unwrap()).unwrap();
+            assert_eq!(rr[0]["case"], case);
+            assert_eq!(rr[4]["exact"], true);
+            assert_eq!(rr[5]["owned_store_removed"], true);
+            assert!(!cache.exists());
+            let mut samples = Vec::new();
+            for trial in 0..10 {
+                for role in ["baseline-selector", "candidate-selector"] {
+                    let mut r = rr.clone();
+                    r[0]["trial"] = json!(trial);
+                    let (base, target) = control_fixture(trial, case).unwrap();
+                    r[0]["base"] = metadata(&base);
+                    r[0]["target"] = metadata(&target);
+                    r[3]["cpu_us"] = json!(if role == "baseline-selector" { 100 } else { 90 });
+                    samples.push(json!({"event":"sample","trial":trial,"role":role,"rows":r}));
+                }
+            }
+            let summarized = control_summary_for(&samples, true, case).unwrap();
+            assert_eq!(summarized["exact_objects"], 40);
+            if case == "zero-1m" {
+                assert_eq!(summarized["cpu_acceptance"]["passed"], true);
+            }
+            samples[0]["rows"][4]["body_bytes"] = json!(999);
+            assert!(control_summary_for(&samples, true, case).is_err());
+            if case == "zero-1m" {
+                assert_eq!(rr[4]["body_bytes"], 570);
+                validate_setup_choice(&rr[3]["selection"], case).unwrap();
+            } else {
+                let (base, _) = control_fixture(0, case).unwrap();
+                assert!((0..8).all(|i| base[i * 16384..i * 16384 + 64] == base[..64]));
+                if case == "periodic64" {
+                    assert!(![1, 2, 4, 8]
+                        .iter()
+                        .any(|period| (0..64).all(|i| base[i] == base[i % period])));
+                } else {
+                    assert!(base[64..16384].iter().any(|b| *b != 0));
+                }
+            }
+        }
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn setup_profile_keeps_all_fits_and_separates_constructor_from_training() {
+        let root = temporary("setup-profile");
+        fs::create_dir(&root).unwrap();
+        let output = root.join("profile.jsonl");
+        setup_profile(&output).unwrap();
+        let rr = rows(&fs::read(&output).unwrap()).unwrap();
+        assert_eq!(rr.len(), 22);
+        assert_eq!(rr[0]["event"], "setup_profile_registration");
+        assert_eq!(rr[0]["iterations"], 20);
+        assert_eq!(rr[0]["identity"]["sources"], pins());
+        let expected_bytes: usize = training_records().iter().map(Vec::len).sum();
+        for (iteration, row) in rr[1..21].iter().enumerate() {
+            assert_eq!(row["event"], "setup_profile_sample");
+            assert_eq!(row["iteration"], iteration);
+            assert_eq!(row["schema_fits"], 1);
+            assert_eq!(row["training_samples"], 512);
+            assert_eq!(row["training_bytes"], expected_bytes);
+            assert_eq!(row["artifact"], metadata(ARTIFACT));
+            assert_eq!(row["constructor_artifact_id"], hex(&object_id(ARTIFACT)));
+            assert!(row["error"].is_null());
+            let stages = row["stages"].as_array().unwrap();
+            assert_eq!(stages.len(), 5);
+            for (stage, expected) in stages.iter().zip([
+                "training_generation",
+                "fit_and_serialization",
+                "artifact_check",
+                "context_construction",
+                "temporary_cleanup",
+            ]) {
+                assert_eq!(stage["stage"], expected);
+                assert!(numeric(stage, "cpu_us").unwrap().is_finite());
+                assert!(numeric(stage, "wall_us").unwrap().is_finite());
+            }
+            for metric in ["cpu_us", "wall_us"] {
+                let inner: f64 = stages.iter().map(|s| numeric(s, metric).unwrap()).sum();
+                assert!(numeric(row, metric).unwrap() >= inner);
+            }
+        }
+        assert_eq!(rr[21]["event"], "complete");
+        assert_eq!(rr[21]["samples"], 20);
+        assert_eq!(rr[21]["schema_fits"], 20);
+        // Exclusive output creation must preserve the first complete observation.
+        let bytes = fs::read(&output).unwrap();
+        assert!(setup_profile(&output).is_err());
+        assert_eq!(fs::read(&output).unwrap(), bytes);
+        fs::remove_dir_all(root).unwrap();
+    }
 
     #[test]
     fn bounded_profile_binds_two_production_sources_and_retains_bounded_doses() {
@@ -2210,25 +2924,22 @@ mod tests {
 
     fn fabricated_receipts(p: &Value) -> (Vec<Value>, Vec<Value>) {
         let id = json!({"sources":p["sources"],"executable_sha256":"aa".repeat(32),"first_block_probe_available":true});
-        let baseline_id = json!({"sources":p["source_profiles"]["baseline"],"executable_sha256":"ab".repeat(32),"first_block_probe_available":false});
+        let baseline_id = json!({"sources":p["source_profiles"]["baseline"],"executable_sha256":"ab".repeat(32),"first_block_probe_available":setup_profile_plan(p)});
         let receiver = "bb".repeat(32);
         let mut raw = vec![
             json!({"event":"registration","identity":id,"source_commit":p["source_commit"],"plan_sha256":"plan","run":p["run"],"shard":p["shard"],"dose":p["dose"],"receiver_executable_sha256":receiver}),
         ];
-        if bounded_profile(p) {
+        if compared_profile(p) {
             raw[0]["baseline_identity"] = baseline_id.clone();
         }
         let mut verified = vec![
             json!({"event":"verification_registration","identity":id,"source_commit":p["source_commit"],"plan_sha256":"plan","receiver_executable_sha256":receiver,"observation_sha256":"cc".repeat(32)}),
         ];
         let mut observations = Vec::new();
+        let mut preparations = 0u64;
         for (index, s) in p["sessions"].as_array().unwrap().iter().enumerate() {
-            let fixture = expected(
-                p,
-                s["trial"].as_u64().unwrap() as usize,
-                s["large"].as_bool().unwrap(),
-            )
-            .unwrap();
+            let fixture =
+                expected_case(p, s["trial"].as_u64().unwrap() as usize, case_name(s)).unwrap();
             let mut registration = s.clone();
             registration.as_object_mut().unwrap().extend(json!({"event":"session_registration","identity":id,"plan_sha256":"plan","receiver_executable_sha256":receiver}).as_object().unwrap().clone());
             if s["arm"] == "baseline-selector" {
@@ -2255,22 +2966,32 @@ mod tests {
             }
             for seed in [true, false] {
                 let meta = &fixture[if seed { "base" } else { "target" }];
-                let sparse =
-                    !seed && (s["arm"] == "sparse" || selector_arm(s["arm"].as_str().unwrap()));
-                let cost = if sparse {
+                let whole = setup_profile_plan(p) && !seed && case_name(s) == "zero-1m";
+                let sparse = !seed
+                    && !whole
+                    && (s["arm"] == "sparse" || selector_arm(s["arm"].as_str().unwrap()));
+                let cost = if whole {
+                    570
+                } else if sparse {
                     600
                 } else {
                     raw_cost(meta["bytes"].as_u64().unwrap())
                 };
                 let phase = if seed { "seed" } else { "target" };
                 let mut op = meta.clone();
-                op.as_object_mut().unwrap().extend(json!({"event":"operation","phase":phase,"position":null,"error":null,"mode":if sparse{"SparseV1"}else{"Raw"},"body_bytes":cost,"request_body_bytes":cost-200,"response_body_bytes":200,"batches":1,"sender_cpu_us":10,"receiver_cpu_us":20,"cpu_us":30,"wall_us":50,"exchange_wall_us":40,"exchange_cpu_us":5}).as_object().unwrap().clone());
+                op.as_object_mut().unwrap().extend(json!({"event":"operation","phase":phase,"position":null,"error":null,"mode":if whole{"ZstdWholeV1"}else if sparse{"SparseV1"}else{"Raw"},"body_bytes":cost,"request_body_bytes":cost-200,"response_body_bytes":200,"batches":1,"sender_cpu_us":10,"receiver_cpu_us":20,"cpu_us":30,"wall_us":50,"exchange_wall_us":40,"exchange_cpu_us":5}).as_object().unwrap().clone());
                 if !seed && selector_arm(s["arm"].as_str().unwrap()) {
                     op["selection"] = fabricated_choice(meta["bytes"].as_u64().unwrap());
-                    if bounded_profile(p) {
+                    if compared_profile(p) {
                         op["winning_frames_sha256"] = json!("ff".repeat(32));
                         op["winning_frame_count"] = json!(3);
-                        if s["arm"] == "candidate-selector" && s["large"] == false {
+                        if whole {
+                            op["selection"]["selected_mode"] = json!("ZstdWholeV1");
+                            op["selection"]["candidates"][1]["target_http_body_bytes"] = json!(570);
+                            op["selection"]["candidates"][1]["total_http_body_bytes"] = json!(570);
+                        } else if (setup_profile_plan(p) || s["arm"] == "candidate-selector")
+                            && s["large"] == false
+                        {
                             op["selection"]["candidates"]
                                 .as_array_mut()
                                 .unwrap()
@@ -2283,7 +3004,8 @@ mod tests {
                 let mut v = meta.clone();
                 v.as_object_mut().unwrap().extend(json!({"event":"receiver_verification","phase":phase,"scope":s["scope"],"exact":true,"actual_bytes":meta["bytes"],"actual_sha256":meta["sha256"],"error":null}).as_object().unwrap().clone());
                 verified.push(v);
-                observations.push(json!({"event":"wan_request","request_ordinal":observations.len()+1,"scope":s["scope"],"http_status":200,"codec_cache":{"hits":0,"misses":0,"preparations":0,"evictions":0,"entries":0,"resident_bytes":0}}));
+                preparations += u64::from(whole);
+                observations.push(json!({"event":"wan_request","request_ordinal":observations.len()+1,"scope":s["scope"],"http_status":200,"codec_cache":{"hits":0,"misses":preparations,"preparations":preparations,"evictions":preparations.saturating_sub(8),"entries":preparations.min(8),"resident_bytes":preparations.min(8)*(5<<20)}}));
             }
             rr.push(json!({"event":"session_complete","seeds":1,"targets":1}));
             raw.push(json!({"event":"session","index":index,"session":s,"rows":rr,"raw_sha256":"dd".repeat(32)}));

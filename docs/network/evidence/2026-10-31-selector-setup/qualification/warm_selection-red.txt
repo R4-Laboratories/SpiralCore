@@ -1,0 +1,30 @@
+   Compiling spiralcore-transfer v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer)
+    Finished `release` profile [optimized] target(s) in 1.15s
+     Running tests/warm_selection.rs (/Users/casey.allard/spiralcore/target/aarch64-apple-darwin/release/deps/warm_selection-252a556d5c4e643c)
+
+running 9 tests
+test raw_ties_and_old_api_results_survive_interleaved_warm_calls_and_limits ... ok
+test period64_without_short_period_still_uses_actual_rejection_certificate ... ok
+test verified_base_makes_sparse_an_exact_scored_candidate ... ok
+test sampled_short_period_repetition_schedules_full_encoding_without_pruning ... FAILED
+test all_four_winners_match_exhaustive_selected_frame_bytes ... ok
+test boundaries_length_changes_and_context_reuse_preserve_exhaustive_minimum ... ok
+test static_tie_requires_whole_evaluation_or_a_stronger_actual_bound ... ok
+test cold_schema_can_win_after_paying_seed_instead_of_greedily_using_sparse ... ok
+test structural_bounds_skip_only_candidates_that_cannot_win ... ok
+
+failures:
+
+---- sampled_short_period_repetition_schedules_full_encoding_without_pruning stdout ----
+
+thread 'sampled_short_period_repetition_schedules_full_encoding_without_pruning' (66398388) panicked at tests/warm_selection.rs:243:9:
+short-period samples must schedule full encoding, never act as a bound: WarmSelection { candidates: [CandidateCost { mode: Raw, target_http_body_bytes: 1051338, setup_http_body_bytes: 0, total_http_body_bytes: 1051338 }, CandidateCost { mode: SparseV1, target_http_body_bytes: 600, setup_http_body_bytes: 0, total_http_body_bytes: 600 }], pruned: [PrunedCandidate { mode: ZstdWholeV1, target_http_body_lower_bound: 131879, setup_http_body_bytes: 0, total_http_body_lower_bound: 131879 }, PrunedCandidate { mode: SchemaZstdV1, target_http_body_lower_bound: 547, setup_http_body_bytes: 534, total_http_body_lower_bound: 1081 }], selected_mode: SparseV1, needs_schema_seed: false }
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    sampled_short_period_repetition_schedules_full_encoding_without_pruning
+
+test result: FAILED. 8 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.43s
+
+error: test failed, to rerun pass `--test warm_selection`

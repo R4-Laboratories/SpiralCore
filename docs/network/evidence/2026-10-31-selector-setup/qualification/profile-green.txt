@@ -1,0 +1,19 @@
+   Compiling spiralcore-transfer v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer)
+error[E0505]: cannot move out of `training` because it is borrowed
+    --> examples/support/warm_object.rs:1820:36
+     |
+1808 |     let training = training_records();
+     |         -------- binding `training` declared here
+1809 |     let training_bytes: usize = training.iter().map(Vec::len).sum();
+1810 |     let refs = training.iter().map(Vec::as_slice).collect::<Vec<_>>();
+     |                -------- borrow of `training` occurs here
+...
+1820 |     let (_, cleanup) = setup_timed(|| {
+     |                                    ^^ move out of `training` occurs here
+1821 |         drop(refs);
+     |              ---- borrow later captured here by closure
+1822 |         drop(training);
+     |              -------- move occurs due to use in closure
+
+For more information about this error, try `rustc --explain E0505`.
+error: could not compile `spiralcore-transfer` (example "schema_fitting" test) due to 1 previous error

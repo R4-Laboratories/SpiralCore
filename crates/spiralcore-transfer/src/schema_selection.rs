@@ -156,6 +156,7 @@ impl PreparedSelector {
             }
             if mode == Mode::ZstdWholeV1
                 && first_block_probe_can_exclude(target.len(), warm_probe, selected, best_cost)?
+                && !repeated_short_period_samples(target)
             {
                 if let Some(bound) = self.whole.first_block_encoded_lower_bound(target)? {
                     let lower = encoded_length_cost(mode, bound, warm_probe)?;
@@ -284,6 +285,18 @@ impl PreparedSelector {
             },
         })
     }
+}
+// CPU scheduling only: this screen never excludes a codec or supplies a bound.
+// If these samples predict an inconclusive probe, use the unchanged full encoder.
+fn repeated_short_period_samples(target: &[u8]) -> bool {
+    if target.len() <= 128 * 1024 {
+        return false;
+    }
+    let first = &target[..64];
+    let short_period = [1, 2, 4, 8]
+        .into_iter()
+        .any(|period| first[period..] == first[..64 - period]);
+    short_period && (1..8).all(|i| target[i * 16384..i * 16384 + 64] == *first)
 }
 fn warm_priority(mode: Mode) -> u8 {
     match mode {

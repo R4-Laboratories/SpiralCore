@@ -1,0 +1,21 @@
+   Compiling spiralcore-transfer v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer)
+error[E0425]: cannot find function `setup_profile` in this scope
+    --> examples/support/warm_object.rs:1799:49
+     |
+1799 |         Some("setup-profile") if args.len()==3=>setup_profile(Path::new(&args[2])),
+     |                                                 ^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `setup_profile` in this scope
+    --> examples/support/warm_object.rs:1830:9
+     |
+1830 |         setup_profile(&output).unwrap();
+     |         ^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `setup_profile` in this scope
+    --> examples/support/warm_object.rs:1866:17
+     |
+1866 |         assert!(setup_profile(&output).is_err());
+     |                 ^^^^^^^^^^^^^ not found in this scope
+
+For more information about this error, try `rustc --explain E0425`.
+error: could not compile `spiralcore-transfer` (example "schema_fitting" test) due to 3 previous errors
