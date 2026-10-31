@@ -36,6 +36,16 @@ drift/fallback controls and zstd timing variation are recorded separately.
 
 ## Milestones
 
+The [bounded-selection follow-up](bounded-selection-results-2026-10-30.md)
+now avoids fully encoding a losing small Whole candidate using a source-qualified
+first-block bound. All 360 new WAN objects reopen exactly and all warm selector
+updates retain 600 body bytes. Small-update sender CPU falls 28.0% in the median
+paired comparison with the old selector; completion falls 9.0%, with 20/30 wins.
+Current candidate completion medians versus matched Whole/Raw are 67.9955 versus
+153.5535 ms at 1 MiB and 141.5105 versus 1,638.849 ms at 16 MiB. The unchanged
+large path, compressible fallback penalty, seed/setup charges, small paid-lifecycle
+losses and measurement limits remain explicit in the report.
+
 The [integrated warm selector](warm-selection-results-2026-10-30.md) now carries
 that verified-base path into automatic Raw/Whole/Sparse/Schema selection. All
 360 WAN seed/update objects reopen exactly, with thirty pairs per size and all

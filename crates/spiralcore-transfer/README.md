@@ -233,6 +233,18 @@ Sparse path's 600 body bytes. At 16 MiB, median measured CPU/completion is
 selection still adds CPU over forced Sparse; actual seed and setup costs remain
 charged, and HTTP-body bytes are distinct from full network traffic.
 
+The subsequent [bounded-selection result](../../docs/network/bounded-selection-results-2026-10-30.md)
+adds a qualified first-block rejection bound for the remaining small Whole
+candidate. It preserves minimum-byte decisions and the original full encoder
+when inconclusive. `zstd_whole::first_block_probe_available()` reports availability;
+the exact bundled-source guard disables this optimization for unsupported builds.
+Thirty paired WAN trials show 28.0% less small-update sender CPU than the old
+selector, with all 360 objects exact and every selector update still 600 body
+bytes. The compressible fallback control costs 10.15% more preparation CPU by
+the paired median; setup/seed-inclusive results and all losses remain recorded.
+The [bounded contract](../../docs/network/evidence/2026-10-30-bounded-selection/measurement-contract.md)
+documents the matched two-source overlay and reproducible `bounded-*` commands.
+
 ## Compressed schema streams and prepared codec reuse
 
 The schema encoder directly matches the first validated template and stores its
