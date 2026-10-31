@@ -1,0 +1,36 @@
+{
+  "schema": "spiralcore.mvm-vsock.adapter-fix-closure.v1",
+  "observed_at_utc": "2026-10-31T22:46:47Z",
+  "reviewer": "/root/mvm_boundary",
+  "roles": ["code-reviewer", "security-reviewer", "rust-reviewer"],
+  "verdict": "PASS_FOR_TWO_REQUESTED_FIXES",
+  "reviewed_commit": "8418e61",
+  "original_review": "adapter-rust-security-review.json",
+  "scope": "Independent closure of SC-MVM-REVIEW-QUEUE and SC-MVM-REVIEW-OWNER only. This reviewer did not author the incoming queue guard, its regression or the single-owner documentation correction. The original CHANGES_REQUESTED receipt remains unchanged as history.",
+  "file_claim_guard": "The current worktree has no tracked diff and ROUTING.md has no in-progress claim blocking these paths. The parent explicitly assigned this narrow closure after releasing the previous reviewer.",
+  "findings": [
+    {
+      "id": "SC-MVM-REVIEW-QUEUE",
+      "status": "RESOLVED",
+      "source": "crates/spiralcore-mvm-adapter/src/direction.rs:333",
+      "reason": "open_inner converts the configured signed grant's max_queue_contribution_bytes with checked usize conversion, clamps it to MAX_ENVELOPE_BYTES, and rejects wire.len() above that limit before route lookup, envelope decode, replay processing or receiver-authority installation. Only receive-attempt accounting precedes the guard. The shared open path covers both live and compatibility opens.",
+      "regression": "live_open_enforces_the_signed_incoming_queue_budget constructs a correctly signed 4096-byte queue grant and an8192-byte application body, proves the resulting envelope passes canonical authentication and payload limits while exceeding the smaller queue contribution, then requires adapter Error::Limit and zero frame_bytes_opened. Direct canonical sealing prevents the outbound guard from hiding an absent inbound check.",
+      "observed_execution": ["queue-budget-red-02.txt: focused assertion fails; companion exit101", "queue-budget-green.txt: same focused test passes; companion exit0", "coverage-selective-tests.txt: regression passes in the final29-test native suite; companion exit0"]
+    },
+    {
+      "id": "SC-MVM-REVIEW-OWNER",
+      "status": "RESOLVED",
+      "source": "docs/specs/2026-10-31-mvm-vsock-design.md:228",
+      "reason": "The contract now states that one exclusive service owner serializes open/handle/reply, exposes no concurrent policy-update control plane, and does not hold a policy mutex across endpoint handling. It explicitly retains the public API concurrency limitation and requires a future control plane to serialize updates between transactions. The implementation plan states the same restriction. The unsupported spanning-lock/atomic-concurrent-revocation claim is removed; no concurrency mechanism is asserted to have been added."
+    }
+  ],
+  "reviewed_sha256": {
+    "crates/spiralcore-mvm-adapter/src/direction.rs": "09d32888c2f0a6574e38798854594c318a775e1fa3fe221866260fadba1bde5a",
+    "crates/spiralcore-mvm-adapter/tests/live.rs": "57bc9a3b9c8b8d202f1f7ba23ef1c8bfe8c7eb1bab49457c0dfed3abe36442fa",
+    "docs/specs/2026-10-31-mvm-vsock-design.md": "ff8cfb35c82836d8b1254416bd1caec95af69551a0d7dcb7b6241f39a68ad4ba",
+    "docs/plans/2026-10-31-mvm-vsock.md": "2bc89ce08183d599893da4ea70b0eb9eb6530678ed08cbf0adcba8c30b854143"
+  },
+  "unresolved_findings_within_scope": [],
+  "exclusions": ["No broader re-review of the MVM patch authored by this reviewer", "No new dependency/security scan, build, test, benchmark or VM execution", "No broader production mailbox, concurrent-owner, WAN, FIPS or performance acceptance claim"],
+  "validation_policy": "Used the already retained successful final Clippy/build/test receipts rather than rerunning the generic role commands, as explicitly directed for this bounded closure."
+}

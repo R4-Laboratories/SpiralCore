@@ -1,0 +1,81 @@
+{
+  "schema": "spiralcore.mvm.adapter-rust-security-review.v1",
+  "date": "2026-10-31",
+  "reviewer": "selector_finish",
+  "roles": [
+    "rust-reviewer",
+    "security-reviewer",
+    "code-reviewer"
+  ],
+  "verdict": "CHANGES_REQUESTED",
+  "scope": "Independent static review of the live adapter, retained thirteen-file MVM source patch and preparation script, with targeted provisioning/campaign review. No builds, tests or VM launches were run by this reviewer.",
+  "authored_surfaces_excluded": [
+    "crates/spiralcore-mvm-live/src/guest.rs",
+    "crates/spiralcore-mvm-live/src/host.rs",
+    "crates/spiralcore-mvm-live/tests/host_pack.rs"
+  ],
+  "base_revision": "a8bddd53c4b301a66eaddb54a295b11a5a9a7802",
+  "mvm_revision": "3104a12c5b071a6851323fa8115d2afaf3f0bb8b",
+  "reviewed_sha256": {
+    "crates/spiralcore-mvm-adapter/src/live.rs": "797ed2a3c37c9cc18456a4f39446aab233fcfdf22302b07618521076989ff6f1",
+    "crates/spiralcore-mvm-adapter/src/direction.rs": "22f6bac458dffa96b42ee4bd08778b1ca67a938bd29d30ad09cb8fee4f9a4fce",
+    "crates/spiralcore-mvm-adapter/src/policy.rs": "cf1ac57468a7fe1956940c3d9892e70b42d49d6a98cd26e1fd4c1c99a50b9281",
+    "crates/spiralcore-mvm-adapter/tests/live.rs": "ef54d93214b9e9298b977e03c26284b22d7ba5033d420e690230fd2efb318f42",
+    "crates/spiralcore-mvm-live/src/config.rs": "01ebb442f1bd53ce7c67432209415ded84ce58a205ec66bb3fdd0d0af0750049",
+    "crates/spiralcore-mvm-live/src/campaign.rs": "4695f64a665f68cdbeb134362e93850fb07105fa1f63de80c066e97680f32b38"
+  },
+  "findings": [
+    {
+      "id": "SC-MVM-REVIEW-QUEUE",
+      "severity": "medium",
+      "status": "open",
+      "file": "crates/spiralcore-mvm-adapter/src/direction.rs",
+      "line": 341,
+      "finding": "Inbound open enforces the global envelope bound but does not reject a canonical signed message whose encoded length exceeds a smaller configured capability max_queue_contribution_bytes. The outbound path enforces this grant limit; canonical MVM open checks payload scope, not queue contribution.",
+      "requested_change": "Reject inbound wire length above min(global envelope cap, signed configured queue contribution) before installing receiver authority; add one focused smaller-grant regression.",
+      "measured_campaign_impact": "The registered provisioning uses 262144 for all queue contributions, equal to the enforced global envelope cap; current pilot rows are unaffected."
+    },
+    {
+      "id": "SC-MVM-REVIEW-OWNER",
+      "severity": "medium",
+      "status": "open",
+      "file": "docs/specs/2026-10-31-mvm-vsock-design.md",
+      "line": 228,
+      "finding": "The design states that an owner's policy lock spans endpoint handling and control-plane revocation waits for that transaction. The campaign does serialize work through one exclusive service owner, but it does not implement a policy lock spanning open/handle/reply or a concurrent control-plane update path.",
+      "requested_change": "Describe the actual single-owner/no-concurrent-policy-update witness and retain the documented public API concurrency limitation; do not claim a lock or update barrier that is absent.",
+      "measured_campaign_impact": "No campaign policy updates occur concurrently; this is an unsupported mechanism claim rather than a transfer correctness failure."
+    }
+  ],
+  "positive_checks": [
+    "Canonical verified-open returns its private authenticated header only after identity, signature, capability, time and replay verification; the legacy payload API delegates without changing checks.",
+    "SentCall reply acceptance binds policy owner/generation, sender and authority keys, key id, binding id, boot, correlation, causation, transfer, sequence and compatible reply kind.",
+    "Live leases enforce both real UTC expiry with a five-second conservative margin and monotonic deadlines; generation changes invalidate previously minted proofs.",
+    "Framing caps bodies before allocation and records actual partial I/O bytes. Failed/partial operations close the owned socket. Only completely read/written frames increment frame counts.",
+    "Outbound queue caps and monotonic fixed-window message-rate counters are bounded; one call permit remains owned until the pending proof is consumed/dropped. The demonstrated receiver processes one request at a time.",
+    "The MVM mailbox service has a dedicated optional endpoint and existing bounded relay budget; missing/cleared bindings refuse, production supervisor leaves it absent, and canonical handoff does not inherit it.",
+    "Patch preparation archives only the exact committed base into a fresh output, uses quoted paths, enforces a storage reserve, validates/applies only the retained patch and does not modify the input checkout.",
+    "Campaign byte counters distinguish application data, canonical envelope bytes and stream framing. CPU/wall scopes exclude identified fixture copies and independent verification; README keeps VM lifecycle and WAN claims separate."
+  ],
+  "checked_existing_receipts": [
+    "qualification/clippy-02.exit = 0",
+    "qualification/mvm-core-green.exit = 0",
+    "qualification/mvm-mailbox-green.exit = 0, including two focused MVM vsock mailbox tests",
+    "qualification/mvm-net-green.exit = 0",
+    "qualification/compatibility-green.exit = 0",
+    "qualification/live-green-03.exit = 0",
+    "mvm-patch/preparation-check.json records exact-base positive preparation and existing-output/wrong-revision negative cases"
+  ],
+  "independent_identity_checks": {
+    "bundle_command": "shasum -a 256 -c bundle.sha256",
+    "bundle_entries_matched": 4,
+    "patch_sha256": "4f560b24c798f556e2ab995cd9f0821bac9674ab4cafca1e28dcc04ca3e0b705",
+    "patched_source_command": "shasum -a 256 -c patched-files.sha256 in the managed mvm-worktree",
+    "patched_source_entries_matched": 13
+  },
+  "limits": [
+    "No independent review claim covers the guest/host/orchestrator surfaces assigned to the other reviewer.",
+    "No new dependency vulnerability scan or full upstream workspace qualification was run.",
+    "This review covers a development-assurance, single-owner local integration witness, not FIPS validation, CUI accreditation, general concurrent service ownership or production mailbox lifecycle.",
+    "Current retained verification receipts predate the requested narrow fixes; final verdict requires checking their source delta and root-owned regression receipts."
+  ]
+}

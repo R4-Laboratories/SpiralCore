@@ -1,0 +1,25 @@
+   Compiling spiralcore-mvm-live v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-mvm-live)
+cargo(34586) MallocStackLogging: can't turn off malloc stack logging because it was not enabled.
+cargo(34655) MallocStackLogging: can't turn off malloc stack logging because it was not enabled.
+    Finished `test` profile [unoptimized] target(s) in 26.71s
+     Running ../spiralcore-mvm-adapter/tests/live.rs (/Users/casey.allard/spiralcore/target/debug/deps/adapter_live-ea04cc2082cc3d8d)
+
+running 1 test
+test live_open_enforces_the_signed_incoming_queue_budget ... FAILED
+
+failures:
+
+---- live_open_enforces_the_signed_incoming_queue_budget stdout ----
+
+thread 'live_open_enforces_the_signed_incoming_queue_budget' (70878612) panicked at ../spiralcore-mvm-adapter/tests/live.rs:86:5:
+assertion failed: matches!(incoming.open_live(&wire),
+    Err(spiralcore_mvm_adapter::live::LiveError::Adapter(spiralcore_mvm_adapter::Error::Limit)))
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    live_open_enforces_the_signed_incoming_queue_budget
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 9 filtered out; finished in 0.03s
+
+error: test failed, to rerun pass `--test adapter_live`

@@ -1,0 +1,35 @@
+   Compiling spiralcore-mvm-adapter v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-mvm-adapter)
+   Compiling spiralcore-mvm-live v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-mvm-live)
+    Finished `test` profile [unoptimized] target(s) in 5.16s
+     Running unittests src/lib.rs (/Users/casey.allard/spiralcore/target/debug/deps/spiralcore_mvm_live-636517dbf7e24007)
+
+running 6 tests
+test host::tests::bounds_pipe_reads_without_requiring_end_of_stream ... ok
+test fixtures::tests::deterministic_mixed_sequence_preserves_exact_lengths_and_binary_edits ... ok
+test host::tests::completion_requires_exactly_one_success_record_and_clean_poweroff ... ok
+test host::tests::console_overflow_is_bounded_and_observable ... ok
+test orchestrator::tests::relay_admits_only_the_provisioned_unexpired_outer_route ... ok
+test config::tests::provisioning_separates_signers_and_roundtrips_only_private_bootstrap ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running ../spiralcore-mvm-adapter/tests/live.rs (/Users/casey.allard/spiralcore/target/debug/deps/adapter_live-ea04cc2082cc3d8d)
+
+running 5 tests
+test cancellation_before_handshake_closes_the_owned_socket ... ok
+test live_open_refuses_a_grant_inside_the_clock_uncertainty_margin ... ok
+test live_sender_supports_bounded_clock_lag_and_caps_signed_call_expiry ... ok
+test canonical_call_and_verified_reply_cross_real_socket_io ... ok
+test live_dispatch_keeps_authenticated_request_available_for_reply ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+
+     Running tests/host_pack.rs (/Users/casey.allard/spiralcore/target/debug/deps/host_pack-263feaad66d3fdee)
+
+running 3 tests
+test refuses_oversized_or_malformed_bootstrap_and_guest_inputs ... ok
+test packs_exact_guest_bytes_and_private_bootstrap_with_only_fixed_paths ... ok
+test creates_private_sparse_ext4_and_never_overwrites_an_existing_path ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+

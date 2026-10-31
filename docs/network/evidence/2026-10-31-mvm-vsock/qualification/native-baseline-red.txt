@@ -1,0 +1,22 @@
+   Compiling spiralcore-mvm-live v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-mvm-live)
+    Finished `test` profile [unoptimized] target(s) in 3.05s
+     Running unittests src/lib.rs (/Users/casey.allard/spiralcore/target/debug/deps/spiralcore_mvm_live-636517dbf7e24007)
+
+running 1 test
+test host::tests::admits_only_the_pinned_native_linux_exception_baseline ... FAILED
+
+failures:
+
+---- host::tests::admits_only_the_pinned_native_linux_exception_baseline stdout ----
+
+thread 'host::tests::admits_only_the_pinned_native_linux_exception_baseline' (70765584) panicked at src/host.rs:421:9:
+assertion failed: completion_events(&baseline, DONE, PINNED_KERNEL_SHA256).is_ok()
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    host::tests::admits_only_the_pinned_native_linux_exception_baseline
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 12 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `--lib`

@@ -4,10 +4,14 @@ use crate::{
 };
 use ed25519_dalek::{SigningKey, VerifyingKey};
 use mvm_contract::protocol::mailbox::*;
+#[cfg(not(feature = "live"))]
+use mvm_core::mailbox::open_envelope;
+#[cfg(feature = "live")]
+use mvm_core::mailbox::open_verified_envelope;
 use mvm_core::{
     crypto::aead::Key,
     mailbox::{
-        OpenContext, ReplayIdentity, ReplayProtector, SealRequest, decode_envelope, open_envelope,
+        OpenContext, ReplayIdentity, ReplayProtector, SealRequest, decode_envelope,
         transport::{
             AuthorizedRoute, CancellationToken, ChannelLimits, OutboundAuthorization,
             PeerTransport, RouteId, SignedTransportBinding, TransportAssurance,
@@ -20,6 +24,9 @@ use spiralcore_transfer::{
     protocol::Frame,
 };
 use std::collections::BTreeSet;
+#[cfg(feature = "live")]
+#[path = "live.rs"]
+pub mod live;
 
 pub struct DirectionConfig {
     pub policy: Policy,
@@ -95,6 +102,8 @@ pub struct Direction {
     sequence: u64,
     counters: Counters,
     pub(crate) last_sent: Option<SentMetadata>,
+    #[cfg(feature = "live")]
+    live_state: live::DirectionState,
 }
 impl Direction {
     pub fn new(config: DirectionConfig) -> Result<Self> {
@@ -121,6 +130,8 @@ impl Direction {
             sequence: 0,
             counters: Counters::default(),
             last_sent: None,
+            #[cfg(feature = "live")]
+            live_state: live::DirectionState::default(),
         })
     }
     pub fn route_id(&self) -> RouteId {
@@ -182,6 +193,17 @@ impl Direction {
         cancel: &CancellationToken,
         request: Option<SentMetadata>,
     ) -> Result<usize> {
+        self.send_correlated_lifetime(frame, transport, cancel, request, None)
+    }
+
+    fn send_correlated_lifetime(
+        &mut self,
+        frame: &Frame,
+        transport: &impl PeerTransport,
+        cancel: &CancellationToken,
+        request: Option<SentMetadata>,
+        lifetime: Option<(i64, i64)>,
+    ) -> Result<usize> {
         self.check_frame_kind(frame)?;
         let signing_key = self.config.signing_key.as_ref().ok_or(Error::Policy)?;
         let bytes = frame.encode()?;
@@ -195,7 +217,8 @@ impl Direction {
             .checked_add(30_000)
             .ok_or(Error::Limit)?
             .min(self.config.capability.grant.expires_at_unix_ms)
-            .min(self.config.binding.claims.expires_at_unix_ms);
+            .min(self.config.binding.claims.expires_at_unix_ms)
+            .min(lifetime.map_or(i64::MAX, |(_, expiry)| expiry));
         if expiry <= context.now_unix_ms {
             return Err(Error::Policy);
         }
@@ -226,7 +249,10 @@ impl Direction {
             ordering_scope: OrderingScope::parse("spiralcore-object-v1")
                 .map_err(|_| Error::Policy)?,
             sequence: SequenceNumber::new(next).map_err(|_| Error::Limit)?,
-            issued_at_unix_ms: context.now_unix_ms,
+            issued_at_unix_ms: context
+                .now_unix_ms
+                .checked_sub(lifetime.map_or(0, |(backdate, _)| backdate))
+                .ok_or(Error::Limit)?,
             expires_at_unix_ms: expiry,
             nonce: ReplayNonce::from_bytes(rand::random()),
             content_type: content_type()?,
@@ -301,12 +327,22 @@ impl Direction {
     }
 
     pub fn open(&mut self, wire: &[u8]) -> Result<VerifiedFrame> {
+        self.open_inner(wire, false)
+    }
+
+    fn open_inner(&mut self, wire: &[u8], live_mode: bool) -> Result<VerifiedFrame> {
+        #[cfg(not(feature = "live"))]
+        let _ = live_mode;
         self.counters = self.counters.checked_add(Counters {
             envelope_bytes_received: wire.len() as u64,
             envelopes_received: 1,
             ..Counters::default()
         })?;
-        if wire.len() > MAX_ENVELOPE_BYTES {
+        let queue_limit =
+            usize::try_from(self.config.capability.grant.max_queue_contribution_bytes)
+                .map_err(|_| Error::Limit)?
+                .min(MAX_ENVELOPE_BYTES);
+        if wire.len() > queue_limit {
             return Err(Error::Limit);
         }
         let (context, generation) = self.config.policy.versioned()?;
@@ -322,7 +358,11 @@ impl Direction {
             return Err(Error::Policy);
         }
         self.replay.capacity_hit = false;
-        let opened = open_envelope(
+        #[cfg(not(feature = "live"))]
+        let open_canonical = open_envelope;
+        #[cfg(feature = "live")]
+        let open_canonical = open_verified_envelope;
+        let opened = open_canonical(
             &envelope,
             &self.config.capability,
             &context,
@@ -334,14 +374,76 @@ impl Direction {
         if self.replay.capacity_hit {
             return Err(Error::ReplayCapacity);
         }
-        let bytes = opened.map_err(Error::Mailbox)?;
+        let opened = opened.map_err(Error::Mailbox)?;
+        #[cfg(feature = "live")]
+        let header = opened.header().clone();
+        #[cfg(feature = "live")]
+        let bytes = opened.into_payload();
+        #[cfg(not(feature = "live"))]
+        let bytes = opened;
         let frame = Frame::decode(&bytes)?;
         self.check_frame_kind(&frame)?;
         // Only now are the grant and expected identities authenticated. No
         // caller-supplied application Context can install this lease.
+        let verified = self.verified_context(&context)?;
+        let counters = self.counters.checked_add(Counters {
+            frame_bytes_opened: bytes.len() as u64,
+            ..Counters::default()
+        })?;
+        #[cfg(feature = "live")]
+        let (live_deadline, live_expiry_unix_ms) = if live_mode {
+            if header.sender_boot != self.config.boot {
+                return Err(Error::Policy);
+            }
+            let expiry = header
+                .expires_at_unix_ms
+                .min(self.config.capability.grant.expires_at_unix_ms)
+                .min(self.config.binding.claims.expires_at_unix_ms);
+            let deadline = live::expiry_deadline(expiry).map_err(|_| Error::Policy)?;
+            let guarded_expiry = expiry
+                .checked_sub(live::MAX_CLOCK_OFFSET_MS)
+                .ok_or(Error::Policy)?;
+            self.live_state
+                .admit(false, self.config.capability.grant.max_messages_per_minute)
+                .map_err(|_| Error::Limit)?;
+            self.authority.install_until(
+                verified.clone(),
+                generation,
+                Some((guarded_expiry, deadline)),
+            )?;
+            (Some(deadline), Some(guarded_expiry))
+        } else {
+            self.authority.install(verified.clone(), generation)?;
+            (None, None)
+        };
+        #[cfg(not(feature = "live"))]
+        self.authority.install(verified.clone(), generation)?;
+        self.counters = counters;
+        Ok(VerifiedFrame {
+            frame,
+            context: verified,
+            policy: self.config.policy.clone(),
+            generation,
+            #[cfg(feature = "live")]
+            header,
+            #[cfg(feature = "live")]
+            live_deadline,
+            #[cfg(feature = "live")]
+            live_expiry_unix_ms,
+            #[cfg(feature = "live")]
+            sender_key: self.config.sender_verifying_key.to_bytes(),
+            #[cfg(feature = "live")]
+            authority_key: self.config.authority_key.to_bytes(),
+            #[cfg(feature = "live")]
+            binding_id: self.config.binding.claims.binding_id,
+        })
+    }
+
+    // Call only after canonical inbound or outbound grant authorization.
+    fn verified_context(&self, context: &OpenContext) -> Result<Context> {
         let grant = &self.config.capability.grant;
         let grant_bytes = serde_jcs::to_vec(grant).map_err(|_| Error::Serialization)?;
-        let verified = Context {
+        Ok(Context {
             tenant: spiralcore_transfer::hex(context.expected_tenant.as_bytes()),
             domain: spiralcore_transfer::hex(context.expected_authorization_domain.as_bytes()),
             sender: spiralcore_transfer::hex(context.expected_sender.as_bytes()),
@@ -354,18 +456,6 @@ impl Direction {
             )),
             policy_epoch: context.current_policy_epoch,
             execution_epoch: context.current_execution_epoch.into(),
-        };
-        let counters = self.counters.checked_add(Counters {
-            frame_bytes_opened: bytes.len() as u64,
-            ..Counters::default()
-        })?;
-        self.authority.install(verified.clone(), generation)?;
-        self.counters = counters;
-        Ok(VerifiedFrame {
-            frame,
-            context: verified,
-            policy: self.config.policy.clone(),
-            generation,
         })
     }
 }
@@ -376,6 +466,18 @@ pub struct VerifiedFrame {
     context: Context,
     policy: Policy,
     generation: u64,
+    #[cfg(feature = "live")]
+    header: MailboxEnvelopeHeader,
+    #[cfg(feature = "live")]
+    live_deadline: Option<std::time::Instant>,
+    #[cfg(feature = "live")]
+    live_expiry_unix_ms: Option<i64>,
+    #[cfg(feature = "live")]
+    sender_key: [u8; 32],
+    #[cfg(feature = "live")]
+    authority_key: [u8; 32],
+    #[cfg(feature = "live")]
+    binding_id: TransportBindingId,
 }
 impl VerifiedFrame {
     pub fn frame(&self) -> &Frame {
@@ -390,6 +492,10 @@ impl VerifiedFrame {
         monotonic_seconds: u64,
     ) -> Result<Frame> {
         self.policy.check_generation(self.generation)?;
+        #[cfg(feature = "live")]
+        if self.live_deadline.is_some() {
+            live::check_verified(&self).map_err(|_| Error::Policy)?;
+        }
         endpoint
             .handle(&self.context, &self.frame, monotonic_seconds)
             .map_err(Error::Frame)

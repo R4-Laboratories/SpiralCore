@@ -1,0 +1,39 @@
+   Compiling mvm-contract v0.26.0 (/Users/casey.allard/spiralcore/local/mvm-vsock-20261031/mvm-worktree/crates/mvm-contract)
+   Compiling mvm-core v0.26.0 (/Users/casey.allard/spiralcore/local/mvm-vsock-20261031/mvm-worktree/crates/mvm-core)
+   Compiling mvm-agentd v0.26.0 (/Users/casey.allard/spiralcore/local/mvm-vsock-20261031/mvm-worktree/crates/mvm-agentd)
+   Compiling mvm-net v0.26.0 (/Users/casey.allard/spiralcore/local/mvm-vsock-20261031/mvm-worktree/crates/mvm-net)
+   Compiling mvm-fs v0.26.0 (/Users/casey.allard/spiralcore/local/mvm-vsock-20261031/mvm-worktree/crates/mvm-fs)
+   Compiling mvm-vmm v0.26.0 (/Users/casey.allard/spiralcore/local/mvm-vsock-20261031/mvm-worktree/crates/mvm-vmm)
+    Finished `test` profile [unoptimized] target(s) in 53.63s
+     Running unittests src/lib.rs (/Users/casey.allard/spiralcore/target/debug/deps/mvm_core-10914389b5225a75)
+
+running 12 tests
+test mailbox::transport::tests::binding_verification_rejects_tamper_identity_epoch_policy_time_and_assurance ... ok
+test mailbox::transport::tests::fallback_and_reconnect_are_deterministic_and_bounded ... ok
+test mailbox::transport::tests::direct_only_policy_drops_customer_relay_routes ... ok
+test mailbox::transport::tests::overlay_partition_shutdown_and_refusal_are_distinct ... ok
+test mailbox::transport::tests::coordinator_hint_selects_a_route_without_mutating_or_re_signing_the_envelope ... ok
+test mailbox::transport::tests::relay_policy_defaults_to_no_public_relay_and_orders_path_classes ... ok
+test mailbox::transport::tests::coordinator_hint_cannot_substitute_a_route_token ... ok
+test mailbox::transport::tests::direct_delivery_is_pass_by_value_bounded_and_cancelable ... ok
+test mailbox::transport::tests::authenticated_connection_is_not_mailbox_authority ... ok
+test mailbox::transport::tests::overlay_orders_direct_then_customer_relay_and_requires_public_relay_opt_in ... ok
+test mailbox::transport::tests::refused_cancelled_and_shutting_down_connects_are_distinct ... ok
+test mailbox::transport::tests::external_channels_can_observe_exact_authorized_bytes_and_requested_limits ... ok
+
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 2712 filtered out; finished in 0.01s
+
+     Running unittests src/lib.rs (/Users/casey.allard/spiralcore/target/debug/deps/mvm_net-1902042499adbae8)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 9 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (/Users/casey.allard/spiralcore/target/debug/deps/mvm_vmm-e57cdf2644ccf13c)
+
+running 2 tests
+test vmm::vsock::tests::mailbox_port_refuses_missing_and_cleared_host_bindings ... ok
+test vmm::vsock::tests::mailbox_port_relays_bytes_both_ways_on_its_own_endpoint ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 1040 filtered out; finished in 0.01s
+

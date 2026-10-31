@@ -1,0 +1,11 @@
+   Compiling spiralcore-mvm-live v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-mvm-live)
+error[E0308]: mismatched types
+  --> ../spiralcore-mvm-adapter/tests/live.rs:88:13
+   |
+87 |         incoming.open_live(&wire),
+   |         ------------------------- this expression has type `Result<VerifiedFrame, LiveError>`
+88 |         Err(spiralcore_mvm_adapter::Error::Limit)
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected `LiveError`, found `Error`
+
+For more information about this error, try `rustc --explain E0308`.
+error: could not compile `spiralcore-mvm-live` (test "adapter_live") due to 1 previous error

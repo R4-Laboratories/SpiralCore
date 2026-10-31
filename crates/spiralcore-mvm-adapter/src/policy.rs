@@ -3,6 +3,7 @@ use mvm_contract::protocol::mailbox::MailboxOperation;
 use mvm_core::mailbox::OpenContext;
 use spiralcore_transfer::endpoint::{Authority, Context};
 use std::sync::{Arc, Mutex};
+use std::time::Instant;
 
 #[derive(Clone)]
 pub struct Policy {
@@ -53,13 +54,27 @@ impl Policy {
         }
         Ok(())
     }
+    #[cfg(feature = "live")]
+    pub(crate) fn refresh_time(&self, now_unix_ms: i64) -> Result<()> {
+        self.state
+            .lock()
+            .map_err(|_| Error::State)?
+            .context
+            .now_unix_ms = now_unix_ms;
+        Ok(())
+    }
 }
 
 /// An authority lease minted only by canonical open; construction authorizes nothing.
 #[derive(Clone)]
 pub struct MailboxAuthority {
     policy: Policy,
-    lease: Arc<Mutex<Option<(Context, u64)>>>,
+    lease: Arc<Mutex<Option<Lease>>>,
+}
+struct Lease {
+    context: Context,
+    generation: u64,
+    expiry: Option<(i64, Instant)>,
 }
 impl MailboxAuthority {
     pub(crate) fn new(policy: Policy) -> Self {
@@ -69,6 +84,14 @@ impl MailboxAuthority {
         }
     }
     pub(crate) fn install(&self, context: Context, generation: u64) -> Result<()> {
+        self.install_until(context, generation, None)
+    }
+    pub(crate) fn install_until(
+        &self,
+        context: Context,
+        generation: u64,
+        expiry: Option<(i64, Instant)>,
+    ) -> Result<()> {
         // Keep lock order policy -> lease, matching authorize. Replacement cannot
         // race between the generation check and installation.
         let policy = self.policy.state.lock().map_err(|_| Error::State)?;
@@ -76,7 +99,11 @@ impl MailboxAuthority {
             return Err(Error::Policy);
         }
         let mut lease = self.lease.lock().map_err(|_| Error::State)?;
-        *lease = Some((context, generation));
+        *lease = Some(Lease {
+            context,
+            generation,
+            expiry,
+        });
         Ok(())
     }
 }
@@ -86,9 +113,16 @@ impl Authority for MailboxAuthority {
         let policy = self.policy.state.lock().map_err(|_| Unauthorized)?;
         let lease = self.lease.lock().map_err(|_| Unauthorized)?;
         match lease.as_ref() {
-            Some((verified, generation))
-                if verified == context && *generation == policy.generation =>
-            {
+            Some(lease) if lease.context == *context && lease.generation == policy.generation => {
+                if let Some((expiry, deadline)) = lease.expiry {
+                    let now = std::time::SystemTime::now()
+                        .duration_since(std::time::UNIX_EPOCH)
+                        .map_err(|_| Unauthorized)?;
+                    let now = i64::try_from(now.as_millis()).map_err(|_| Unauthorized)?;
+                    if now >= expiry || Instant::now() >= deadline {
+                        return Err(Unauthorized);
+                    }
+                }
                 Ok(())
             }
             _ => Err(Unauthorized),

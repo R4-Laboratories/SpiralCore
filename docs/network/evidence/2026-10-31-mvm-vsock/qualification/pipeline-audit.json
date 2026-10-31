@@ -1,0 +1,78 @@
+{
+  "schema": "spiralcore.mvm-vsock.pipeline-audit.v1",
+  "observed_at_utc": "2026-10-31T22:03:45Z",
+  "scope": "Sequential procedural audit for the current local MVM/vsock integration, before independent source reviews; not historical repository compliance or final delivery acceptance",
+  "role": "harness-optimizer",
+  "verdict": "PASS_FOR_INDEPENDENT_REVIEWS",
+  "independent_reviews_may_proceed": true,
+  "merge_or_completion_approved": false,
+  "procedural_defects": [],
+  "evasion_found": false,
+  "source": {
+    "head": "a8bddd53c4b301a66eaddb54a295b11a5a9a7802",
+    "working_tree_implementation_uncommitted": true,
+    "pilot_source_manifest": "qualification/pilot-source.sha256",
+    "pilot_source_manifest_sha256": "1fbffa8aa6334357c89447a34eb5007ff63abcbff238f1ad754ce94418b63289",
+    "checked_entries": 16,
+    "all_listed_source_entries_match": true,
+    "manifest_scope_note": "The listed SpiralCore production sources and Cargo files were checked. This is not a claim that tests, scripts or the external local MVM patch are covered by that manifest."
+  },
+  "evidence_policy": {
+    "role_file": "/Users/casey.allard/spiralcore/local/codec-selection-20261029/a-team-bootstrap/.claude/agents/harness-optimizer.md",
+    "gate_file": "/Users/casey.allard/spiralcore/local/codec-selection-20261029/a-team-bootstrap/.claude/commands/quality-gate.md",
+    "bash_command_history": "The suggested ~/.claude/bash-commands.log and DAILY.md are absent. No bash history was fabricated.",
+    "available_execution_evidence": "Actual retained terminal stdout/stderr and companion exit files, actual native session JSON, current checksum verification, and this chat's coordinated RED/implementation/retest messages. Exact command flags not present in a receipt are not reconstructed as facts.",
+    "ordering": "The quality-gate command explicitly puts this audit before code/security/Rust review. Pending reviews are an expected next gate while the task remains incomplete, not evidence of review evasion.",
+    "raw_evidence": "Retain failures, successful logs and raw measurement receipts under the user's explicit instruction. Generic cleanup instructions do not authorize deleting them.",
+    "independence": "This agent contributed implementation and lint repair. This report is a procedural receipt audit, not an independent review of its own code."
+  },
+  "observed_checks": [
+    {
+      "check": "test-first contract evidence",
+      "status": "OBSERVED",
+      "evidence": ["qualification/mvm-core-red.txt", "qualification/mvm-accessor-red.txt", "qualification/mvm-channel-red.txt", "qualification/mvm-vmm-red.txt", "qualification/adapter-red-02.txt", "qualification/clock-red.txt", "qualification/live-dispatch-red.txt", "qualification/integration-03.txt", "qualification/guest-red.txt", "qualification/orchestrator-red.txt", "qualification/native-baseline-red.txt"],
+      "note": "Expected missing-API or deliberately unimplemented behavior failures were retained before implementation/release messages. This does not invent an individual RED observation for every later negative assertion."
+    },
+    {"check":"native all-target qualification", "status":"PASS", "passed":27, "failed":0, "evidence":["qualification/live-green-03.txt", "qualification/live-green-03.exit"]},
+    {"check":"subsequent pinned-kernel completion-gate change", "status":"PASS", "passed":6, "failed":0, "evidence":["qualification/native-baseline-green.txt", "qualification/native-baseline-green.exit"], "note":"Focused follow-up coverage; not six additional independent tests beyond all preceding suites."},
+    {"check":"default adapter compatibility", "status":"PASS", "passed":10, "failed":0, "evidence":["qualification/compatibility-green.txt", "qualification/compatibility-green.exit"], "note":"Feature-gated live/transfer targets report zero tests here; their qualification is supplied by the separate live suite, not inferred from this command."},
+    {"check":"pinned local MVM canonical crypto", "status":"PASS", "passed":12, "failed":0, "evidence":["qualification/mvm-core-green.txt", "qualification/mvm-core-green.exit"]},
+    {"check":"pinned local MVM transport and dedicated relay", "status":"PASS", "core_passed":12, "vmm_passed":2, "failed":0, "evidence":["qualification/mvm-mailbox-green.txt", "qualification/mvm-mailbox-green.exit"], "note":"The filtered mvm-net target ran zero tests in this receipt; its nine-test suite has a separate receipt."},
+    {"check":"pinned local MVM network registry", "status":"PASS", "passed":9, "failed":0, "evidence":["qualification/mvm-net-green.txt", "qualification/mvm-net-green.exit"]},
+    {"check":"Clippy", "status":"PASS", "evidence":["qualification/clippy-01.txt", "qualification/clippy-02.txt", "qualification/clippy-02.exit"], "note":"The retained first run failed on two mechanical orchestrator lints. The second run succeeded after their scoped repair."},
+    {"check":"native release host and Linux release guest", "status":"PASS", "evidence":["qualification/host-build-04.txt", "qualification/host-build-04.exit", "qualification/host-sign-04.txt", "qualification/guest-build-02.txt", "qualification/guest-build-02.exit"], "note":"Guest build retains its nonfatal deprecated linker optimization warning."},
+    {"check":"actual one-guest qualification", "status":"PASS", "exact_publications":11, "evidence":["qualification/one-live-03.exit", "qualification/one-success/result.json"], "note":"4096-byte Warm qualification; receiver exact reopen is true. Earlier failed native attempts remain retained."},
+    {"check":"actual two-guest qualification and keyless read-only reboot", "status":"PASS", "exact_publications":11, "reboot_exact_readbacks":11, "evidence":["qualification/two-live-01.exit", "qualification/two-success/result.json"], "note":"Both real guests completed, receiver exact reopen is true, and the separate recovery worker reports success. This proves historical persisted-byte readback, not new-epoch live authorization or WAN performance."}
+  ],
+  "pilot_identity": {
+    "receipt": "/Users/casey.allard/spiralcore/local/mvm-vsock-20261031/pilot-01/identities.sha256",
+    "runner": "crates/spiralcore-mvm-live/scripts/run-pilot.sh",
+    "identity_record_written_before_loop": true,
+    "host_sha256": "3d4ce96be41815c0f39e67911e9641f3fca78097cf641e84187fe89068f88237",
+    "guest_sha256": "d258485641c78a7072c71a4605505f228a3b840445e8529d9861ec0c6b492698",
+    "kernel_sha256": "0f97f109154a173352c07db223ecff48d44b38514b500f39cd9897701dbac0b6",
+    "registration_sha256": "2139d02f75b4fa6db1ee319cc3fd8712d55cb797c80a94706321b6b10e437884",
+    "all_four_current_identity_entries_match": true,
+    "resolved_identity_question": "qualification/binaries-03.sha256 describes the earlier qualification host. The pilot uses the later host04 build and signature, separately recorded before execution. Its different host hash is not an unexplained pilot mutation.",
+    "status": "IN_PROGRESS_AT_AUDIT",
+    "registered_sessions": 12,
+    "registered_publications": 100,
+    "trials_per_cell": 1,
+    "performance_acceptance_claim": false
+  },
+  "completion_and_claim_hygiene": {
+    "current_task_marked_complete": false,
+    "stale_completed_in_progress_claim_found": false,
+    "routing_note": "ROUTING.md has active eligible roles and historical completed file claims; no current MVM/vsock completion marker or stale completed in-progress row was found. Current ownership is communicated through the parent/agent assignments.",
+    "audit_md_note": "Existing AUDIT.md PASS records belong to earlier bounded milestones. They do not approve this current integration; no BLOCK MERGE entry was found."
+  },
+  "remaining_final_gates": [
+    "Independent code, security and Rust reviews of the frozen implementation, followed by resolution and focused retesting of actionable findings.",
+    "Finish the registered twelve-session pilot; retain every failure and verify all 100 publications, directional stream counts and required two-guest reboot readbacks.",
+    "Independent raw-result arithmetic and interpretation, including CPU scope, setup/boot cost, both physical hops and n=1 limitations.",
+    "Complete scoped coverage evidence or explicitly resolve the quality gate's coverage requirement; this audit makes no coverage-percentage claim.",
+    "Finalize the source-pinned local MVM patch bundle, exact base/patch identities and reproducibility instructions; identify unrun upstream full-workspace gates.",
+    "Retain the pilot identity receipt and raw results in the delivery evidence, complete documentation, and verify only owned cache/disk/process cleanup.",
+    "Refresh origin/main, check final diff/source identities, release completed file claims and perform the final procedural/publication gate before merge."
+  ]
+}

@@ -1,0 +1,148 @@
+spiralcore-mvm-live: malformed guest console JSON record; public console tail:
+[    0.000000] Booting Linux on physical CPU 0x0000000000 [0x610f0000]
+[    0.000000] Linux version 6.12.111 (nixbld@localhost) (gcc (GCC) 14.3.0, GNU ld (GNU Binutils) 2.44) #1-NixOS SMP PREEMPT Tue Jan  1 00:00:00 UTC 1980
+[    0.000000] KASLR disabled on command line
+[    0.000000] random: crng init done
+[    0.000000] Machine model: linux,dummy-virt
+[    0.000000] earlycon: pl11 at MMIO 0x0000000009000000 (options '')
+[    0.000000] printk: legacy bootconsole [pl11] enabled
+[    0.000000] [Firmware Bug]: Kernel image misaligned at boot, please fix your bootloader!
+[    0.000000] OF: reserved mem: Reserved memory: No reserved-memory node in the DT
+[    0.000000] Zone ranges:
+[    0.000000]   DMA      [mem 0x0000000080000000-0x00000000bfffffff]
+[    0.000000]   DMA32    empty
+[    0.000000]   Normal   empty
+[    0.000000]   Device   empty
+[    0.000000] Movable zone start for each node
+[    0.000000] Early memory node ranges
+[    0.000000]   node   0: [mem 0x0000000080000000-0x00000000bfffffff]
+[    0.000000] Initmem setup node 0 [mem 0x0000000080000000-0x00000000bfffffff]
+[    0.000000] psci: probing for conduit method from DT.
+[    0.000000] psci: PSCIv1.0 detected in firmware.
+[    0.000000] psci: Using standard PSCI v0.2 function IDs
+[    0.000000] psci: MIGRATE_INFO_TYPE not supported.
+[    0.000000] psci: SMC Calling Convention v1.0
+[    0.000000] percpu: Embedded 17 pages/cpu s39768 r0 d29864 u69632
+[    0.000000] pcpu-alloc: s39768 r0 d29864 u69632 alloc=17*4096
+[    0.000000] pcpu-alloc: [0] 0 
+[    0.000000] Detected PIPT I-cache on CPU0
+[    0.000000] CPU features: detected: Address authentication (IMP DEF algorithm)
+[    0.000000] CPU features: detected: GIC system register CPU interface
+[    0.000000] CPU features: detected: Spectre-v4
+[    0.000000] CPU features: detected: Spectre-BHB
+[    0.000000] alternatives: applying boot alternatives
+[    0.000000] Kernel command line: earlycon=pl011,0x9000000 console=ttyAMA0 panic=-1 nokaslr loglevel=8 rdinit=/init
+[    0.000000] Dentry cache hash table entries: 131072 (order: 8, 1048576 bytes, linear)
+[    0.000000] Inode-cache hash table entries: 65536 (order: 7, 524288 bytes, linear)
+[    0.000000] Built 1 zonelists, mobility grouping on.  Total pages: 262144
+[    0.000000] mem auto-init: stack:all(zero), heap alloc:off, heap free:off
+[    0.000000] software IO TLB: SWIOTLB bounce buffer size adjusted to 1MB
+[    0.000000] software IO TLB: area num 1.
+[    0.000000] software IO TLB: mapped [mem 0x00000000beb00000-0x00000000bec00000] (1MB)
+[    0.000000] SLUB: HWalign=64, Order=0-3, MinObjects=0, CPUs=1, Nodes=1
+[    0.000000] rcu: Preemptible hierarchical RCU implementation.
+[    0.000000] rcu: 	RCU restricting CPUs from NR_CPUS=512 to nr_cpu_ids=1.
+[    0.000000] rcu: RCU calculated value of scheduler-enlistment delay is 25 jiffies.
+[    0.000000] rcu: Adjusting geometry for rcu_fanout_leaf=16, nr_cpu_ids=1
+[    0.000000] NR_IRQS: 64, nr_irqs: 64, preallocated irqs: 0
+[    0.000000] GICv3: 988 SPIs implemented
+[    0.000000] GICv3: 0 Extended SPIs implemented
+[    0.000000] Root IRQ handler: 0xffff8000800900a0
+[    0.000000] GICv3: GICv3 features: 16 PPIs, RSS
+[    0.000000] GICv3: GICD_CTRL.DS=1, SCR_EL3.FIQ=0
+[    0.000000] GICv3: CPU0: found redistributor 0 region 0:0x0000000008080000
+[    0.000000] rcu: srcu_init: Setting srcu_struct sizes based on contention.
+[    0.000000] clocksource: jiffies: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 7645041785100000 ns
+[    0.000000] arch_timer: cp15 timer(s) running at 24.00MHz (virt).
+[    0.000000] clocksource: arch_sys_counter: mask: 0xffffffffffffff max_cycles: 0x588fe9dc0, max_idle_ns: 440795202592 ns
+[    0.000000] sched_clock: 56 bits at 24MHz, resolution 41ns, wraps every 4398046511097ns
+[    0.001118] Calibrating delay loop (skipped), value calculated using timer frequency.. 48.00 BogoMIPS (lpj=96000)
+[    0.002192] pid_max: default: 32768 minimum: 301
+[    0.002432] LSM: initializing lsm=capability
+[    0.002975] Mount-cache hash table entries: 2048 (order: 2, 16384 bytes, linear)
+[    0.003415] Mountpoint-cache hash table entries: 2048 (order: 2, 16384 bytes, linear)
+[    0.004896] rcu: Hierarchical SRCU implementation.
+[    0.005354] rcu: 	Max phase no-delay instances is 1000.
+[    0.006213] smp: Bringing up secondary CPUs ...
+[    0.006643] smp: Brought up 1 node, 1 CPU
+[    0.007015] SMP: Total of 1 processors activated.
+[    0.007445] CPU: All CPU(s) started at EL1
+[    0.007813] CPU features: detected: ARMv8.4 Translation Table Level
+[    0.008475] CPU features: detected: Data cache clean to the PoU not required for I/D coherence
+[    0.009386] CPU features: detected: Common not Private translations
+[    0.009816] CPU features: detected: CRC32 instructions
+[    0.010072] CPU features: detected: Data independent timing control (DIT)
+[    0.010648] CPU features: detected: E0PD
+[    0.011091] CPU features: detected: Generic authentication (IMP DEF algorithm)
+[    0.013275] CPU features: detected: RCpc load-acquire (LDAPR)
+[    0.013598] CPU features: detected: LSE atomic instructions
+[    0.014226] CPU features: detected: Privileged Access Never
+[    0.014959] CPU features: detected: RAS Extension Support
+[    0.015507] CPU features: detected: Speculation barrier (SB)
+[    0.015839] CPU features: detected: TLB range maintenance instructions
+[    0.016226] alternatives: applying system-wide alternatives
+[    0.018967] Memory: 1013040K/1048576K available (5696K kernel code, 814K rwdata, 840K rodata, 832K init, 589K bss, 32464K reserved, 0K cma-reserved)
+[    0.023283] devtmpfs: initialized
+[    0.024232] futex hash table entries: 256 (order: 2, 16384 bytes, linear)
+[    0.024739] NET: Registered PF_NETLINK/PF_ROUTE protocol family
+[    0.025564] DMA: preallocated 128 KiB GFP_KERNEL pool for atomic allocations
+[    0.026198] DMA: preallocated 128 KiB GFP_KERNEL|GFP_DMA pool for atomic allocations
+[    0.026653] DMA: preallocated 128 KiB GFP_KERNEL|GFP_DMA32 pool for atomic allocations
+[    0.027556] ASID allocator initialised with 256 entries
+[    0.028348] Serial: AMBA PL011 UART driver
+[    0.031920] 9000000.pl011: ttyAMA0 at MMIO 0x9000000 (irq = 13, base_baud = 0) is a PL011 rev1
+[    0.032473] printk: legacy console [ttyAMA0] enabled
+[    0.032473] printk: legacy console [ttyAMA0] enabled
+[    0.033212] printk: legacy bootconsole [pl11] disabled
+[    0.033212] printk: legacy bootconsole [pl11] disabled
+[    0.037041] clocksource: Switched to clocksource arch_sys_counter
+[    0.037939] NET: Registered PF_INET protocol family
+[    0.038180] IP idents hash table entries: 16384 (order: 5, 131072 bytes, linear)
+[    0.038847] tcp_listen_portaddr_hash hash table entries: 512 (order: 1, 8192 bytes, linear)
+[    0.039168] Table-perturb hash table entries: 65536 (order: 6, 262144 bytes, linear)
+[    0.039419] TCP established hash table entries: 8192 (order: 4, 65536 bytes, linear)
+[    0.039774] TCP bind hash table entries: 8192 (order: 6, 262144 bytes, linear)
+[    0.040054] TCP: Hash tables configured (established 8192 bind 8192)
+[    0.040295] UDP hash table entries: 512 (order: 2, 16384 bytes, linear)
+[    0.040579] UDP-Lite hash table entries: 512 (order: 2, 16384 bytes, linear)
+[    0.040868] NET: Registered PF_UNIX/PF_LOCAL protocol family
+[    0.041115] PCI: CLS 0 bytes, default 64
+[    0.041321] Unpacking initramfs...
+[    0.043803] Freeing initrd memory: 2332K
+[    0.044642] workingset: timestamp_bits=62 max_order=18 bucket_order=0
+[    0.047034] fuse: init (API version 7.41)
+[    0.058612] Free page reporting enabled
+[    0.059332] Serial: 8250/16550 driver, 4 ports, IRQ sharing enabled
+[    0.062694] virtio_blk virtio0: 1/0/0 default/read/poll queues
+[    0.063636] virtio_blk virtio0: [vda] 524288 512-byte logical blocks (268 MB/256 MiB)
+[    0.064616] device-mapper: ioctl: 4.48.0-ioctl (2023-03-01) initialised: dm-devel@lists.linux.dev
+[    0.065114] NET: Registered PF_INET6 protocol family
+[    0.066151] Segment Routing with IPv6
+[    0.066438] In-situ OAM (IOAM) with IPv6
+[    0.066823] NET: Registered PF_VSOCK protocol family
+[    0.069285] clk: Disabling unused clocks
+[    0.070354] Freeing unused kernel memory: 832K
+[    0.070925] Run /init as init process
+[    0.071047]   with arguments:
+[    0.071144]     /init
+[    0.071219]   with environment:
+[    0.071343]     HOME=/
+[    0.071422]     TERM=linux
+{"event":"guest_ready","os":"linux","pid":1,"role":"verify","utc_unix_ms":1793484304000}[    0.076069] EXT4-fs (vda): mounted filesystem 00000000-0000-0000-0000-000000000000 ro without journal. Quota mode: disabled.
+
+{"event":"guest_disk_mounted","label":"spiral-cache","read_only":true}
+{"bytes":16777216,"cpu_us":87284,"event":"verified","exact":true,"kind":"seed","namespace":"7afa0873c3de591e25b18613522cf4d337575acf9edd6039cd60efc60e7e8444","object":"d1f0408479d996942da8c3fb4ae7d101eb021604b6ce24734d089151e0309909","plan":{"arm":"warm","size":16777216,"stage":"two","trial":0},"position":0,"read_only":true,"wall_us":90347}
+{"bytes":48,"cpu_us":169,"event":"verified","exact":true,"kind":"schema","namespace":"7afa0873c3de591e25b18613522cf4d337575acf9edd6039cd60efc60e7e8444","object":"ca02bc9131dfdfb15331aad2f45eb459ddb32d1a1c278edb9ca6dcc38de7db91","plan":{"arm":"warm","size":16777216,"stage":"two","trial":0},"position":1,"read_only":true,"wall_us":178}
+{"bytes":16777216,"cpu_us":49977,"event":"verified","exact":true,"kind":"repeat","namespace":"7afa0873c3de591e25b18613522cf4d337575acf9edd6039cd60efc60e7e8444","object":"d1f0408479d996942da8c3fb4ae7d101eb021604b6ce24734d089151e0309909","plan":{"arm":"warm","size":16777216,"stage":"two","trial":0},"position":2,"read_only":true,"wall_us":51166}
+{"bytes":16777216,"cpu_us":86814,"event":"verified","exact":true,"kind":"localized","namespace":"7afa0873c3de591e25b18613522cf4d337575acf9edd6039cd60efc60e7e8444","object":"5697e107bd8a268e024a52c35e346eacbc6f6bd56dc388d7cd53ba5c6d0e02e6","plan":{"arm":"warm","size":16777216,"stage":"two","trial":0},"position":3,"read_only":true,"wall_us":89002}
+{"bytes":16777216,"cpu_us":92023,"event":"verified","exact":true,"kind":"unrelated","namespace":"7afa0873c3de591e25b18613522cf4d337575acf9edd6039cd60efc60e7e8444","object":"983e19116956dfad1cc61fe9733c4a59e2adbe4b9e79eb8b1905cc75e3746fc8","plan":{"arm":"warm","size":16777216,"stage":"two","trial":0},"position":4,"read_only":true,"wall_us":95572}
+{"bytes":16777216,"cpu_us":77908,"event":"verified","exact":true,"kind":"localized-after","namespace":"7afa0873c3de591e25b18613522cf4d337575acf9edd6039cd60efc60e7e8444","object":"faa454e15f4ad1c64afd5913146f30abcae310ccaa7f3656a1ececaf10fa93d2","plan":{"arm":"warm","size":16777216,"stage":"two","trial":0},"position":5,"read_only":true,"wall_us":79881}
+{"bytes":16777185,"cpu_us":124579,"event":"verified","exact":true,"kind":"truncate","namespace":"7afa0873c3de591e25b18613522cf4d337575acf9edd6039cd60efc60e7e8444","object":"6f474cbcd2e7d55a8fd521591a58294d6053b0b4a64d50adbccba24fd3b917dc","plan":{"arm":"warm","size":16777216,"stage":"two","trial":0},"position":6,"read_only":true,"wall_us":127169}
+{"bytes":16777202,"cpu_us":100589,"event":"verified","exact":true,"kind":"append","namespace":"7afa0873c3de591e25b18613522cf4d337575acf9edd6039cd60efc60e7e8444","object":"475ab2dd4827dc3e31b68d5fdd0e4c0fd78bbe40e6f6fff551b31e80936ff0aa","plan":{"arm":"warm","size":16777216,"stage":"two","trial":0},"position":7,"read_only":true,"wall_us":102689}
+{"bytes":346,"cpu_us":196,"event":"verified","exact":true,"kind":"runtime-checkpoint","namespace":"7afa0873c3de591e25b18613522cf4d337575acf9edd6039cd60efc60e7e8444","object":"786f6dde077ef9b146934a39382f3591f42f914996071a3fe992569831a43c91","plan":{"arm":"warm","size":16777216,"stage":"two","trial":0},"position":8,"read_only":true,"wall_us":205}
+{"bytes":47158,"cpu_us":265,"event":"verified","exact":true,"kind":"runtime-generated","namespace":"7afa0873c3de591e25b18613522cf4d337575acf9edd6039cd60efc60e7e8444","object":"cb40d049f496c54b53247938f3874c0971e28b44d5b24abb63117a67b1fb7e2d","plan":{"arm":"warm","size":16777216,"stage":"two","trial":0},"position":9,"read_only":true,"wall_us":280}
+{"bytes":47158,"cpu_us":747,"event":"verified","exact":true,"kind":"runtime-residual","namespace":"7afa0873c3de591e25b18613522cf4d337575acf9edd6039cd60efc60e7e8444","object":"96b7f883b184fe0f61321ac3707c7c47ebe1642e8b475622511067bf64b2480b","plan":{"arm":"warm","size":16777216,"stage":"two","trial":0},"position":10,"read_only":true,"wall_us":794}
+[    1.309801] EXT4-fs (vda): unmounting filesystem 00000000-0000-0000-0000-000000000000.
+{"event":"guest_done","failed_phase":null,"ok":true}
+[    1.311583] reboot: Power down
+

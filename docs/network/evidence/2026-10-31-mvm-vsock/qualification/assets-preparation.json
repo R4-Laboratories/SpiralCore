@@ -1,0 +1,25 @@
+{
+  "status": "PREPARED_AND_VERIFIED_NO_VM_LAUNCHED",
+  "mvm_source": "3104a12c5b071a6851323fa8115d2afaf3f0bb8b",
+  "root": "/Users/casey.allard/spiralcore/local/mvm-vsock-20261031",
+  "kernel": {
+    "url": "https://github.com/tinylabscom/mvm-images/releases/download/image-set/v0.2.4/default-microvm-vmlinux-aarch64",
+    "path": "assets/Image",
+    "size": 8501256,
+    "sha256": "0f97f109154a173352c07db223ecff48d44b38514b500f39cd9897701dbac0b6",
+    "format": "raw ARM64 Linux Image, magic 41524d64 at offset 56",
+    "manifest_path": "assets/image-set.json",
+    "manifest_sha256": "5033520a59514f5d206d76d13db8c9b7e5841f068c83dd8585ef141879a1bb24",
+    "trust": "Manifest SHA256 equals pinned MVM crates/mvm-core/images.lock; kernel size and digest equal that manifest member. Fresh Sigstore bundle verification was not separately run."
+  },
+  "tools": {
+    "zig": {"version": "0.13.0", "archive_bytes": 44892040, "sha256": "46fae219656545dfaf4dce12fb4e8685cec5b51d721beee9389ab4194d43394c", "source": "https://ziglang.org/download/0.13.0/zig-macos-aarch64-0.13.0.tar.xz"},
+    "cargo_zigbuild": {"version": "0.23.0", "archive_bytes": 1059640, "sha256": "3d8f1ad296d3f3e97122607f7c972393c6329801027acb71bb7d17a4e30ef092", "source": "https://github.com/rust-cross/cargo-zigbuild/releases/download/v0.23.0/cargo-zigbuild-aarch64-apple-darwin.tar.xz"},
+    "rust": {"version": "1.97.1", "existing_compiler_commit": "8bab26f4f68e0e26f0bb7960be334d5b520ea452", "guest_target": "aarch64-unknown-linux-musl", "std_sha256": "49ff0879d94e2e8e86d5e85eb15a9215943e8c78b51363d6553443598cab5d31", "source": "https://static.rust-lang.org/dist/2026-07-16/rust-std-1.97.1-aarch64-unknown-linux-musl.tar.xz", "owned_sysroot": "tools/rust-sysroot", "installed_target_identical_to_archive": true},
+    "environment": "tools/env.sh",
+    "global_installs_performed": false
+  },
+  "verification": {"assets_verify_exit": 0, "rust_std_install_exit": 0, "initial_archive_layout_error_retained": "qualification/assets-wrapper-note.txt", "guest_compile_performed": false, "vm_boot_performed": false},
+  "storage": {"floor_kib": 4194304, "available_kib_after": 30397964, "tools_du_mib_rounded": 727, "assets_du_mib_rounded": 8.1},
+  "execution_boundary": "Native HVF live tests are explicitly permitted by pinned MVM AGENTS.md. Host cargo-zigbuild is the existing guest-runtime cross-build path. No Nix, builder VM, Docker, Lima, paid resource or default MVM key/state directory was used."
+}

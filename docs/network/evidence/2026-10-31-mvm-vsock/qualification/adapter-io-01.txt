@@ -1,0 +1,31 @@
+   Compiling spiralcore-mvm-adapter v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-mvm-adapter)
+   Compiling spiralcore-mvm-live v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-mvm-live)
+    Finished `test` profile [unoptimized] target(s) in 8.99s
+     Running ../spiralcore-mvm-adapter/tests/live.rs (/Users/casey.allard/spiralcore/target/debug/deps/adapter_live-96dc3b93937a7c64)
+
+running 3 tests
+test live_dispatch_keeps_authenticated_request_available_for_reply ... ok
+test canonical_call_and_verified_reply_cross_real_socket_io ... FAILED
+test cancellation_before_handshake_closes_the_owned_socket ... FAILED
+
+failures:
+
+---- canonical_call_and_verified_reply_cross_real_socket_io stdout ----
+
+thread 'canonical_call_and_verified_reply_cross_real_socket_io' (70652022) panicked at ../spiralcore-mvm-adapter/tests/live.rs:92:10:
+called `Result::unwrap()` on an `Err` value: Io(Os { code: 22, kind: InvalidInput, message: "Invalid argument" })
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- cancellation_before_handshake_closes_the_owned_socket stdout ----
+
+thread 'cancellation_before_handshake_closes_the_owned_socket' (70652021) panicked at ../spiralcore-mvm-adapter/tests/live.rs:152:37:
+called `Result::unwrap()` on an `Err` value: Os { code: 35, kind: WouldBlock, message: "Resource temporarily unavailable" }
+
+
+failures:
+    cancellation_before_handshake_closes_the_owned_socket
+    canonical_call_and_verified_reply_cross_real_socket_io
+
+test result: FAILED. 1 passed; 2 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.11s
+
+error: test failed, to rerun pass `--test adapter_live`

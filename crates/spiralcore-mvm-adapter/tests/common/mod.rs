@@ -124,6 +124,15 @@ pub fn config(kind: MailboxMessageKind) -> DirectionConfig {
 }
 
 pub fn sealed_payload(config: &DirectionConfig, payload: &[u8]) -> Vec<u8> {
+    sealed_payload_at(config, payload, 1_000, 2_000)
+}
+
+pub fn sealed_payload_at(
+    config: &DirectionConfig,
+    payload: &[u8],
+    issued_at_unix_ms: i64,
+    expires_at_unix_ms: i64,
+) -> Vec<u8> {
     use mvm_core::mailbox::{SealRequest, encode_envelope, seal_envelope};
     let context = config.policy.snapshot().unwrap();
     let route = &config.binding.claims;
@@ -136,7 +145,7 @@ pub fn sealed_payload(config: &DirectionConfig, payload: &[u8]) -> Vec<u8> {
                 delivery_id: DeliveryId::from_bytes(rand::random()),
                 ciphertext_len: 0,
                 padding: CiphertextPadding::Exact,
-                expires_at_unix_ms: 2_000,
+                expires_at_unix_ms,
                 hop_limit: 8,
                 transport_binding_id: route.binding_id,
             },
@@ -157,8 +166,8 @@ pub fn sealed_payload(config: &DirectionConfig, payload: &[u8]) -> Vec<u8> {
                 reply_to: config.reply_to,
                 ordering_scope: OrderingScope::parse("conformance").unwrap(),
                 sequence: SequenceNumber::new(1).unwrap(),
-                issued_at_unix_ms: 1_000,
-                expires_at_unix_ms: 2_000,
+                issued_at_unix_ms,
+                expires_at_unix_ms,
                 nonce: ReplayNonce::from_bytes(rand::random()),
                 content_type: config.capability.grant.content_types[0].clone(),
                 capability_id: config.capability.grant.capability_id,

@@ -1,0 +1,127 @@
+{
+  "schema": "spiralcore.mvm-vsock.independent-code-security-review.v1",
+  "observed_at_utc": "2026-10-31T22:14:56.401Z",
+  "reviewer": "/root/mvm_tests",
+  "roles": [
+    "code-reviewer",
+    "security-reviewer",
+    "rust-reviewer"
+  ],
+  "procedural_gate": "qualification/pipeline-audit.json: PASS_FOR_INDEPENDENT_REVIEWS",
+  "verdict": "PASS_FOR_REVIEWED_SOURCE",
+  "merge_or_delivery_approval": false,
+  "scope": "Independent review of the live launcher, guest/host worker, public fixtures, transfer campaign, relay orchestration and recording scripts. No production edits or redundant builds were performed.",
+  "exclusions": [
+    "crates/spiralcore-mvm-adapter/src/live.rs and related adapter changes authored by this reviewer",
+    "crates/spiralcore-mvm-adapter/tests/live.rs authored by this reviewer",
+    "crates/spiralcore-mvm-live/mvm-patch packaging authored by this reviewer",
+    "upstream MVM implementation reviewed by another agent",
+    "full pilot arithmetic is recorded separately in qualification/measurement-review.json"
+  ],
+  "reviewed_sources": [
+    {
+      "path": "crates/spiralcore-mvm-live/src/config.rs",
+      "sha256": "01ebb442f1bd53ce7c67432209415ded84ce58a205ec66bb3fdd0d0af0750049"
+    },
+    {
+      "path": "crates/spiralcore-mvm-live/src/campaign.rs",
+      "sha256": "4695f64a665f68cdbeb134362e93850fb07105fa1f63de80c066e97680f32b38"
+    },
+    {
+      "path": "crates/spiralcore-mvm-live/src/fixtures.rs",
+      "sha256": "212030ae85c27d287210931a5482db8b83aa108d9ebbcdbe68a83cd4cdeacb1f"
+    },
+    {
+      "path": "crates/spiralcore-mvm-live/src/orchestrator.rs",
+      "sha256": "1bcf290223a91e72e7c8c017d05cd1bbdb7a99c0f38b26f0f3492af7b28a8013"
+    },
+    {
+      "path": "crates/spiralcore-mvm-live/src/main.rs",
+      "sha256": "233a3c6ab1ac4dcd22d6265f69c0f21255b77cde426a3fee68936c5a625c3207"
+    },
+    {
+      "path": "crates/spiralcore-mvm-live/src/guest.rs",
+      "sha256": "dd2ea46d6f8611959938b2b31e907a4fd498a14a0474b9691b26ecc70ebadd0b"
+    },
+    {
+      "path": "crates/spiralcore-mvm-live/src/host.rs",
+      "sha256": "c6eae27bb22b71b87f5c0f9298ec3a585110254e005a22d1b75bf62a0c7e9630"
+    },
+    {
+      "path": "crates/spiralcore-mvm-live/scripts/operation-rows.jq",
+      "sha256": "9a83d67b14bb375acaac3b039c442aa282ac0c399e869d0bba23f9b5ce8c5251"
+    },
+    {
+      "path": "crates/spiralcore-mvm-live/scripts/run-pilot.sh",
+      "sha256": "e24bfdf67a484065ec89d60ad89da76cf5c3c3fb09039c06e449944e7b6b93ab"
+    },
+    {
+      "path": "crates/spiralcore-mvm-live/scripts/hvf-entitlements.plist",
+      "sha256": "70d65ae13874e183526aa48e55bb330f2156da94effca24f89b5e2f940262723"
+    }
+  ],
+  "findings": [
+    {
+      "id": "CPU_SCOPE_01",
+      "severity": "medium",
+      "status": "RESOLVED_BY_EXPLICIT_LABELING",
+      "source": "crates/spiralcore-mvm-live/src/campaign.rs:343",
+      "description": "The receiver process CPU timer starts after framed receive, excluding socket reads, frame allocation and copy. Summing it with sender CPU must not be labeled complete endpoint CPU.",
+      "resolution": "Derived rows now use sender_reported_cpu_us, receiver_processing_cpu_us and sender_plus_receiver_processing_cpu_us, with an explicit CPU-scope statement that excludes framed receive and distinguishes guest and host accounting domains. Raw historical receipts are unchanged.",
+      "resolution_source": "crates/spiralcore-mvm-live/scripts/operation-rows.jq:14",
+      "delivery_requirement": "Report host OS lifecycle CPU separately, avoid double-counting nested guest/worker CPU, and do not infer physical CPU/energy improvement from guest clocks."
+    }
+  ],
+  "unresolved_material_findings": [],
+  "reviewed_boundary_observations": [
+    "Canonical authorization, signatures, encryption, replay and reply matching remain in the adapter/MVM boundary, independently reviewed elsewhere; this review checked the live caller configuration and lifecycle rather than re-approving that implementation.",
+    "Expected public fixtures are independently regenerated for verification and are not inserted into the receiver cache.",
+    "The relay forwards bounded opaque canonical envelopes and checks provisioned public outer route metadata; it does not decrypt.",
+    "Session success requires matching directional counters, byte-exact stopped-store readback and clean worker completion. The two-guest session adds a keyless read-only verifier reboot.",
+    "Final guest cleanup drains public console records before mount/unmount printk, attempts data synchronization/unmount after workload failure, and prevents clean completion if final console draining fails.",
+    "Fresh private directories/files, bounded boot inputs and console capture, owned worker reaping, checked disk synchronization, persistent result journaling and fail-closed completion were examined."
+  ],
+  "security_and_claim_limits": [
+    "The trusted launcher generates and provisions signing and encryption keys. Opaque relay forwarding does not prove confidentiality against a compromised host or launcher.",
+    "This is an experimental local actual-MVM/vsock integration, not a deployed production mailbox, FIPS validation, CUI authorization or WAN qualification.",
+    "The keyless verifier reboot proves historical persisted bytes. It does not prove new-epoch authenticated network resume or durable mailbox delivery.",
+    "The registered pilot has one trial per cell. It cannot establish stable latency distributions or statistical performance superiority.",
+    "Guest process CPU accounting is not qualified as physical energy or complete endpoint cost. Existing receipts require the explicit accounting-domain and receive-work limitations.",
+    "The pinned native kernel baseline allows its documented two known OtherException exits; this is not an unrestricted exception acceptance rule or a register-level qualification."
+  ],
+  "arithmetic_check": {
+    "status": "PASS_FOR_22_QUALIFICATION_OPERATION_ROWS",
+    "sources": [
+      "qualification/one-success/result.json",
+      "qualification/one-success/host-events.jsonl",
+      "qualification/two-success/result.json",
+      "qualification/two-success/host-events.jsonl"
+    ],
+    "rows": 22,
+    "checked": [
+      "unique operation-kind joins",
+      "sender/receiver exact object identities and lengths",
+      "all six inverse directional counters",
+      "logical sum of both directions including 4-byte framing",
+      "two-guest physical-hop multiplier",
+      "raw sender plus receiver processing CPU arithmetic and wall-time field mapping",
+      "matching object identity and length in two-guest exact reboot readbacks",
+      "session aggregate counter totals"
+    ],
+    "totals": [
+      {
+        "source": "qualification/one-success/result.json",
+        "rows": 11,
+        "logical_encrypted_stream_bytes": 304072,
+        "physical_vsock_stream_bytes": 304072
+      },
+      {
+        "source": "qualification/two-success/result.json",
+        "rows": 11,
+        "logical_encrypted_stream_bytes": 303863,
+        "physical_vsock_stream_bytes": 607726
+      }
+    ],
+    "final_pilot_status": "PASS_FOR_100_OPERATIONS_AND_12_SESSIONS; see qualification/measurement-review.json, including the additional resolved planned-application-byte label finding"
+  }
+}

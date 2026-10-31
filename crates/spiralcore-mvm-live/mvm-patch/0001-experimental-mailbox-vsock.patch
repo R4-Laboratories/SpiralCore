@@ -1,0 +1,575 @@
+diff --git a/crates/mvm-agentd/src/vsock/mod.rs b/crates/mvm-agentd/src/vsock/mod.rs
+index 7b631b32e3cd532fda153c9a83ed9106ef737d80..1bea9324e189408746a433fe7992aceaea8bbb4b 100644
+--- a/crates/mvm-agentd/src/vsock/mod.rs
++++ b/crates/mvm-agentd/src/vsock/mod.rs
+@@ -11,6 +11,9 @@
+ 
+ use std::time::Duration;
+ 
++/// Dedicated mailbox transport, independent of networking and machine control.
++pub use mvm_contract::protocol::mailbox::MAILBOX_PORT;
++
+ /// Cold boot allowance for the initial guest listener and authenticated session.
+ /// This is not the native stop/control budget and never permits reconnecting.
+ pub const COLD_GUEST_AGENT_READY_BUDGET: Duration = Duration::from_secs(30);
+diff --git a/crates/mvm-contract/src/protocol/mailbox.rs b/crates/mvm-contract/src/protocol/mailbox.rs
+index 8e8aa21f5d5c00c0166326a3774747f3860b1631..2835ce6292b7d797e731fd3d42987925b05ecde6 100644
+--- a/crates/mvm-contract/src/protocol/mailbox.rs
++++ b/crates/mvm-contract/src/protocol/mailbox.rs
+@@ -11,6 +11,8 @@ use serde::{Deserialize, Serialize};
+ 
+ /// Current mailbox protocol version.
+ pub const MAILBOX_PROTOCOL_VERSION: u16 = 1;
++/// Dedicated experimental mailbox service for the local native guest binding.
++pub const MAILBOX_PORT: u32 = 5257;
+ /// Current signature algorithm identifier (Ed25519).
+ pub const ED25519_ALGORITHM: u16 = 1;
+ /// Current payload-encryption algorithm identifier (AES-256-GCM).
+diff --git a/crates/mvm-core/src/mailbox.rs b/crates/mvm-core/src/mailbox.rs
+index 79e318b5c36d7ed0c1e2dcf03238811ef3041892..70905ae896534abb01fa27118f652ec9f3b785a9 100644
+--- a/crates/mvm-core/src/mailbox.rs
++++ b/crates/mvm-core/src/mailbox.rs
+@@ -35,6 +35,30 @@ pub struct SealRequest<'a> {
+     pub plaintext: &'a [u8],
+ }
+ 
++/// A message whose identity, signature, capability, time and replay checks passed.
++/// Its fields cannot be constructed from an unverified header beside a payload.
++pub struct OpenedMailboxEnvelope {
++    header: MailboxEnvelopeHeader,
++    payload: Vec<u8>,
++}
++
++impl OpenedMailboxEnvelope {
++    #[must_use]
++    pub fn header(&self) -> &MailboxEnvelopeHeader {
++        &self.header
++    }
++
++    #[must_use]
++    pub fn payload(&self) -> &[u8] {
++        &self.payload
++    }
++
++    #[must_use]
++    pub fn into_payload(self) -> Vec<u8> {
++        self.payload
++    }
++}
++
+ /// Current state and expected identities used to authorize one open.
+ #[derive(Debug, Clone, PartialEq, Eq)]
+ pub struct OpenContext {
+@@ -465,6 +489,30 @@ pub fn open_envelope(
+     authority_key: &VerifyingKey,
+     replay: &mut impl ReplayProtector,
+ ) -> Result<Vec<u8>, MailboxError> {
++    open_verified_envelope(
++        envelope,
++        capability,
++        context,
++        encryption_key,
++        sender_key,
++        authority_key,
++        replay,
++    )
++    .map(OpenedMailboxEnvelope::into_payload)
++}
++
++/// Verify the canonical message once and preserve its authenticated header for
++/// reply correlation and endpoint lifecycle checks. Replay is recorded before
++/// this result is returned; it does not itself claim durable mailbox admission.
++pub fn open_verified_envelope(
++    envelope: &MailboxEnvelope,
++    capability: &SignedMailboxCapability,
++    context: &OpenContext,
++    encryption_key: &Key,
++    sender_key: &VerifyingKey,
++    authority_key: &VerifyingKey,
++    replay: &mut impl ReplayProtector,
++) -> Result<OpenedMailboxEnvelope, MailboxError> {
+     envelope.validate_bounds()?;
+     validate_outer_versions(envelope)?;
+     let actual_commitment: [u8; 32] = Sha256::digest(&envelope.ciphertext).into();
+@@ -506,7 +554,10 @@ pub fn open_envelope(
+     if !replay.check_and_record(ReplayIdentity::from_header(&message.header)) {
+         return Err(MailboxError::Replay);
+     }
+-    Ok(message.payload)
++    Ok(OpenedMailboxEnvelope {
++        header: message.header,
++        payload: message.payload,
++    })
+ }
+ 
+ /// Sign a destination receipt in a domain distinct from envelopes and grants.
+diff --git a/crates/mvm-core/src/mailbox/transport.rs b/crates/mvm-core/src/mailbox/transport.rs
+index 8742a296a011f664aa02d403ab15484a5b687bdd..73d4c2a89173fd895123c12f0a196c3130cc6292 100644
+--- a/crates/mvm-core/src/mailbox/transport.rs
++++ b/crates/mvm-core/src/mailbox/transport.rs
+@@ -469,6 +469,16 @@ pub struct ChannelLimits {
+ }
+ 
+ impl ChannelLimits {
++    #[must_use]
++    pub const fn max_frame_bytes(self) -> usize {
++        self.max_frame_bytes
++    }
++
++    #[must_use]
++    pub const fn max_pending_bytes(self) -> usize {
++        self.max_pending_bytes
++    }
++
+     pub fn new(max_frame_bytes: usize, max_pending_bytes: usize) -> Result<Self, TransportError> {
+         if max_frame_bytes == 0
+             || max_frame_bytes > MAX_ENCODED_ENVELOPE_BYTES
+@@ -543,6 +553,12 @@ pub struct AuthorizedMailboxFrame {
+ }
+ 
+ impl AuthorizedMailboxFrame {
++    /// Borrow only the canonical ciphertext bytes that passed outbound admission.
++    #[must_use]
++    pub fn encoded_bytes(&self) -> &[u8] {
++        &self.bytes
++    }
++
+     #[must_use]
+     pub fn encoded_len(&self) -> usize {
+         self.bytes.len()
+diff --git a/crates/mvm-core/src/mailbox/transport/tests.rs b/crates/mvm-core/src/mailbox/transport/tests.rs
+index e88580a3f1772ecec3056442ab5769a0a6af3a52..0a25b9b53c8ca004ffde3b83f391f79cd7e3ae62 100644
+--- a/crates/mvm-core/src/mailbox/transport/tests.rs
++++ b/crates/mvm-core/src/mailbox/transport/tests.rs
+@@ -392,6 +392,29 @@ fn authenticated_connection_is_not_mailbox_authority() {
+     assert!(transport.drain(route.route_id()).expect("drain").is_empty());
+ }
+ 
++#[test]
++fn external_channels_can_observe_exact_authorized_bytes_and_requested_limits() {
++    let authority = SigningKey::from_bytes(&id(30));
++    let (_, route) = signed_route(TransportPath::Direct, 31, &authority);
++    let fixture = mailbox_fixture();
++    let frame = authorize_outbound(OutboundAuthorization {
++        prepared: &fixture.prepared,
++        capability: &fixture.capability,
++        context: &fixture.context,
++        capability_authority_key: &fixture.capability_authority.verifying_key(),
++        route: &route,
++    })
++    .unwrap();
++    assert_eq!(frame.encoded_bytes().len(), frame.encoded_len());
++    assert_eq!(
++        frame.encoded_bytes(),
++        crate::mailbox::encode_envelope(fixture.prepared.envelope()).unwrap()
++    );
++    let limits = ChannelLimits::new(262_144, 524_288).unwrap();
++    assert_eq!(limits.max_frame_bytes(), 262_144);
++    assert_eq!(limits.max_pending_bytes(), 524_288);
++}
++
+ #[test]
+ fn direct_delivery_is_pass_by_value_bounded_and_cancelable() {
+     let authority = SigningKey::from_bytes(&id(46));
+diff --git a/crates/mvm-core/tests/mailbox_crypto.rs b/crates/mvm-core/tests/mailbox_crypto.rs
+index 4050fe1650c6db7325b227c73ff9e6492864b674..70c3abca0556339af4dcd0c8ce55cb797bae9f97 100644
+--- a/crates/mvm-core/tests/mailbox_crypto.rs
++++ b/crates/mvm-core/tests/mailbox_crypto.rs
+@@ -757,3 +757,59 @@ fn deeply_nested_frames_within_the_size_bound_are_refused_without_recursion() {
+         );
+     }
+ }
++
++#[test]
++fn verified_open_exposes_authenticated_header_and_keeps_payload_api_compatible() {
++    let sender_key = SigningKey::from_bytes(&[21; 32]);
++    let authority = SigningKey::from_bytes(&[22; 32]);
++    let encryption = Key::from_bytes([23; 32]);
++    let expected = header();
++    let capability = sign_capability(grant(), &authority).unwrap();
++    let envelope = seal_envelope(
++        SealRequest {
++            routing: routing(),
++            header: expected.clone(),
++            plaintext: b"hello",
++        },
++        &encryption,
++        &sender_key,
++    )
++    .unwrap();
++    let mut replay = InMemoryReplayProtector::default();
++    let opened = mvm_core::mailbox::open_verified_envelope(
++        &envelope,
++        &capability,
++        &context(),
++        &encryption,
++        &sender_key.verifying_key(),
++        &authority.verifying_key(),
++        &mut replay,
++    )
++    .unwrap();
++    assert_eq!(opened.header(), &expected);
++    assert_eq!(opened.payload(), b"hello");
++    assert_eq!(opened.into_payload(), b"hello");
++    assert!(matches!(
++        mvm_core::mailbox::open_verified_envelope(
++            &envelope,
++            &capability,
++            &context(),
++            &encryption,
++            &sender_key.verifying_key(),
++            &authority.verifying_key(),
++            &mut replay,
++        ),
++        Err(MailboxError::Replay)
++    ));
++    let legacy = open_envelope(
++        &envelope,
++        &capability,
++        &context(),
++        &encryption,
++        &sender_key.verifying_key(),
++        &authority.verifying_key(),
++        &mut InMemoryReplayProtector::default(),
++    )
++    .unwrap();
++    assert_eq!(legacy, b"hello");
++}
+diff --git a/crates/mvm-hostd/src/bin/mvm-hvf-supervisor.rs b/crates/mvm-hostd/src/bin/mvm-hvf-supervisor.rs
+index ac1d91b40dc16d10394388f0677dbdd9358262b4..c3fcdbb0163e17c1f3a95b27d14fc108822d3801 100644
+--- a/crates/mvm-hostd/src/bin/mvm-hvf-supervisor.rs
++++ b/crates/mvm-hostd/src/bin/mvm-hvf-supervisor.rs
+@@ -935,6 +935,9 @@ fn run() -> anyhow::Result<()> {
+                 broker_socket: cfg.broker_socket.clone(),
+                 display_socket: cfg.display_socket.clone(),
+                 gpu_socket: cfg.gpu_socket.clone(),
++                // The experimental mailbox binding has an explicit native test
++                // runner; production launch plans do not silently enable it.
++                mailbox_socket: None,
+                 console_data_sockets: cfg
+                     .console_data_sockets
+                     .iter()
+diff --git a/crates/mvm-net/src/channel.rs b/crates/mvm-net/src/channel.rs
+index e02a19b8f178976bef2ab18ddd9f32eeccd768c0..6c787d552f3d3275ef3c03e073caf1e01ea32ff6 100644
+--- a/crates/mvm-net/src/channel.rs
++++ b/crates/mvm-net/src/channel.rs
+@@ -36,6 +36,8 @@ pub enum GuestService {
+     /// host GPU endpoint on this channel. The endpoint owns the real driver
+     /// (or the deterministic stub); the guest carries neither.
+     Gpu,
++    /// Canonical encrypted mailbox messages on an explicitly bound endpoint.
++    Mailbox,
+     /// One dev-only interactive console data stream.
+     ///
+     /// The guest allocates these ports from its console session range. The
+@@ -71,6 +73,7 @@ impl GuestService {
+             // which link only that crate — name the same number. Pinned by
+             // the tests below exactly like NetworkFlow above.
+             Self::Gpu => mvm_contract::protocol::gpu::GPU_RPC_PORT,
++            Self::Mailbox => mvm_contract::protocol::mailbox::MAILBOX_PORT,
+             Self::Broker => 5300,
+             Self::ConsoleData { port } => port,
+             // Pinned literals, mirroring `mvm_agentd::builder_agent`'s
+@@ -91,6 +94,7 @@ impl GuestService {
+             Self::Telemetry => "telemetry",
+             Self::DisplayFrame => "display-frame",
+             Self::Gpu => "gpu",
++            Self::Mailbox => "mailbox",
+             Self::ConsoleData { .. } => "console-data",
+             Self::BuilderDispatch => "builder-dispatch",
+             Self::BuilderdControl => "builderd-control",
+@@ -122,6 +126,13 @@ mod tests {
+ 
+     #[test]
+     fn services_map_to_the_ports_both_ends_agree_on() {
++        assert_eq!(GuestService::Mailbox.port(), 5257);
++        assert_eq!(
++            GuestService::Mailbox.port(),
++            mvm_contract::protocol::mailbox::MAILBOX_PORT
++        );
++        assert_eq!(GuestService::Mailbox.as_str(), "mailbox");
++        assert!(!GuestService::Mailbox.is_builder_tier());
+         assert_eq!(GuestService::MachineControl.port(), 5252);
+         assert_eq!(GuestService::WorkloadExit.port(), 5251);
+         // Pins the wire value. The constant it derives from lives in
+@@ -156,6 +167,8 @@ mod tests {
+             GuestService::NetworkFlow.port(),
+             GuestService::Telemetry.port(),
+             GuestService::DisplayFrame.port(),
++            GuestService::Gpu.port(),
++            GuestService::Mailbox.port(),
+             GuestService::BuilderDispatch.port(),
+             GuestService::BuilderdControl.port(),
+         ];
+diff --git a/crates/mvm-runtime/src/backends/hvf/host_channels.rs b/crates/mvm-runtime/src/backends/hvf/host_channels.rs
+index 6bbf2f6dde30e9a212f4791cb58ea6d873f47704..2b77284ab42f6de6725e2159ea9c86accd0e7ad4 100644
+--- a/crates/mvm-runtime/src/backends/hvf/host_channels.rs
++++ b/crates/mvm-runtime/src/backends/hvf/host_channels.rs
+@@ -28,6 +28,8 @@ pub struct HostChannels {
+     /// Per-VM host GPU endpoint UDS (`mvm-gpu-endpoint`), present only on
+     /// GPU launches.
+     pub gpu_socket: Option<PathBuf>,
++    /// Dedicated canonical mailbox endpoint. Absent bindings refuse guest dials.
++    pub mailbox_socket: Option<PathBuf>,
+     /// Additional host-dial listeners, including telemetry and admitted console
+     /// data channels. Telemetry is present independently of console grants.
+     pub console_data_sockets: Vec<(u32, PathBuf)>,
+diff --git a/crates/mvm-runtime/src/backends/hvf/kernel_boot.rs b/crates/mvm-runtime/src/backends/hvf/kernel_boot.rs
+index 32993078398561090e71bff97b657b4215592ba5..d973a54a1ed69f61962da11abd6b45c412199a9e 100644
+--- a/crates/mvm-runtime/src/backends/hvf/kernel_boot.rs
++++ b/crates/mvm-runtime/src/backends/hvf/kernel_boot.rs
+@@ -696,6 +696,7 @@ fn boot_kernel_impl(params: KernelBootUntilParams<'_>) -> Result<KernelBootResul
+                 broker_socket: channels.broker_socket,
+                 display_socket: channels.display_socket,
+                 gpu_socket: channels.gpu_socket,
++                mailbox_socket: channels.mailbox_socket,
+                 console_data_sockets: channels.console_data_sockets,
+                 builder_control_sockets: channels.builder_control_sockets,
+                 console_log: channels.console_log,
+@@ -766,6 +767,8 @@ struct RunInputs {
+     /// Per-VM host GPU endpoint UDS. When set, `GPU_PORT` relays here — the
+     /// `mvm-gpu-endpoint` process the workload runner spawned for this VM.
+     gpu_socket: Option<PathBuf>,
++    /// Explicit canonical mailbox relay; never inferred from another service.
++    mailbox_socket: Option<PathBuf>,
+     /// Additional host-dial listeners, including telemetry and console channels.
+     console_data_sockets: Vec<(u32, PathBuf)>,
+     builder_control_sockets: Vec<(u32, PathBuf)>,
+@@ -1459,6 +1462,7 @@ unsafe fn run(
+         broker_socket,
+         display_socket,
+         gpu_socket,
++        mailbox_socket,
+         console_data_sockets,
+         builder_control_sockets,
+         console_log,
+@@ -1745,6 +1749,9 @@ unsafe fn run(
+             if let Some(gpu) = gpu_socket.as_ref() {
+                 v.set_gpu_endpoint(gpu);
+             }
++            if let Some(mailbox) = mailbox_socket.as_ref() {
++                v.set_mailbox_endpoint(mailbox);
++            }
+             // Bind the explicitly supplied telemetry, console and builder
+             // listeners through the shared host-dial bridge. Telemetry does not
+             // enable a console or grant network access. The activity counter
+@@ -1874,6 +1881,7 @@ unsafe fn run(
+                     broker_endpoint: broker_socket.clone(),
+                     display_endpoint: display_socket.clone(),
+                     gpu_endpoint: gpu_socket.clone(),
++                    mailbox_endpoint: mailbox_socket.clone(),
+                     console_sockets: console_data_sockets.clone(),
+                 };
+                 v.rebind_host_channels(&bindings, Arc::new(GicSpi))
+diff --git a/crates/mvm-vmm/src/vmm/vsock.rs b/crates/mvm-vmm/src/vmm/vsock.rs
+index 99c6a28eba60f760aec186e56ddc41eabf308245..cd946b841bb1cfe980c8073ac9a6daab3a3e8560 100644
+--- a/crates/mvm-vmm/src/vmm/vsock.rs
++++ b/crates/mvm-vmm/src/vmm/vsock.rs
+@@ -107,6 +107,8 @@ fn canonical_child_bindings(
+         broker_endpoint,
+         display_endpoint,
+         gpu_endpoint,
++        // Mailbox routes cannot be inherited by the existing handoff mask.
++        mailbox_endpoint: None,
+         console_sockets,
+     })
+ }
+@@ -294,6 +296,10 @@ impl VsockShared {
+         self.handlers.set_gpu_endpoint(path);
+     }
+ 
++    pub fn set_mailbox_endpoint(&mut self, path: &std::path::Path) {
++        self.handlers.set_mailbox_endpoint(path);
++    }
++
+     pub fn set_display_activity(&mut self, counter: Arc<std::sync::atomic::AtomicUsize>) {
+         self.handlers.set_display_activity(counter);
+     }
+@@ -557,6 +563,12 @@ impl VirtioVsock {
+         self.notify_io();
+     }
+ 
++    pub fn set_mailbox_endpoint(&mut self, path: &std::path::Path) {
++        self.lock().set_mailbox_endpoint(path);
++        self.host_runtime.bindings.mailbox_endpoint = Some(path.to_path_buf());
++        self.notify_io();
++    }
++
+     pub fn set_display_activity(&mut self, counter: Arc<std::sync::atomic::AtomicUsize>) {
+         self.lock().set_display_activity(Arc::clone(&counter));
+         self.host_runtime.display_activity = Some(counter);
+@@ -656,6 +668,9 @@ impl VirtioVsock {
+             if let Some(path) = &bindings.gpu_endpoint {
+                 self.set_gpu_endpoint(path);
+             }
++            if let Some(path) = &bindings.mailbox_endpoint {
++                self.set_mailbox_endpoint(path);
++            }
+             if !bindings.console_sockets.is_empty() {
+                 self.set_host_dial_sockets(
+                     bindings
+@@ -2580,6 +2595,93 @@ mod tests {
+         assert!(d.transport.pending_rx.iter().any(|(h, _)| h.op == OP_RST));
+     }
+ 
++    #[test]
++    fn mailbox_port_relays_bytes_both_ways_on_its_own_endpoint() {
++        use std::io::{Read, Write};
++        let dir = tempfile::Builder::new()
++            .prefix("vsk")
++            .tempdir_in("/tmp")
++            .unwrap();
++        let path = dir.path().join("mailbox.sock");
++        let listener = UnixListener::bind(&path).unwrap();
++        let (ready_tx, ready_rx) = std::sync::mpsc::sync_channel(1);
++        let server = std::thread::spawn(move || {
++            let (mut stream, _) = listener.accept().unwrap();
++            stream
++                .set_read_timeout(Some(std::time::Duration::from_secs(2)))
++                .unwrap();
++            stream
++                .set_write_timeout(Some(std::time::Duration::from_secs(2)))
++                .unwrap();
++            let mut bytes = [0; 13];
++            stream.read_exact(&mut bytes).unwrap();
++            stream.write_all(b"reply\0bytes").unwrap();
++            ready_tx.send(()).unwrap();
++            bytes
++        });
++        let mut device = dev();
++        device.set_mailbox_endpoint(&path);
++        let payload = b"mailbox\0bytes";
++        let packet = VsockHdr {
++            src_cid: GUEST_CID,
++            dst_cid: HOST_CID,
++            src_port: 1700,
++            dst_port: mvm_agentd::vsock::MAILBOX_PORT,
++            len: u32::try_from(payload.len()).unwrap(),
++            op: OP_RW,
++            typ: TYPE_STREAM,
++            buf_alloc: HOST_BUF_ALLOC,
++            ..Default::default()
++        };
++        device.handle_packet(packet, payload);
++        ready_rx
++            .recv_timeout(std::time::Duration::from_secs(2))
++            .unwrap();
++        device.service_host_io();
++        assert_eq!(&server.join().unwrap(), payload);
++        assert!(device.lifecycle.received.is_empty());
++        assert!(
++            device
++                .transport
++                .pending_rx
++                .iter()
++                .any(|(header, bytes)| header.op == OP_RW
++                    && header.src_port == mvm_agentd::vsock::MAILBOX_PORT
++                    && header.dst_port == 1700
++                    && bytes == b"reply\0bytes")
++        );
++    }
++
++    #[test]
++    fn mailbox_port_refuses_missing_and_cleared_host_bindings() {
++        for cleared in [false, true] {
++            let mut device = dev();
++            if cleared {
++                device.set_mailbox_endpoint(Path::new("/tmp/mvm-mailbox-no-endpoint.sock"));
++                device.handlers.clear_host_bindings();
++            }
++            let packet = VsockHdr {
++                src_cid: GUEST_CID,
++                dst_cid: HOST_CID,
++                src_port: 1701,
++                dst_port: mvm_agentd::vsock::MAILBOX_PORT,
++                len: 8,
++                op: OP_RW,
++                typ: TYPE_STREAM,
++                ..Default::default()
++            };
++            device.handle_packet(packet, b"mailbox1");
++            assert!(device.lifecycle.received.is_empty());
++            assert!(
++                device
++                    .transport
++                    .pending_rx
++                    .iter()
++                    .any(|(header, _)| header.op == OP_RST)
++            );
++        }
++    }
++
+     #[test]
+     fn host_agent_request_advertises_zero_credit_so_guest_does_not_reset() {
+         let mut d = dev();
+diff --git a/crates/mvm-vmm/src/vmm/vsock/bindings.rs b/crates/mvm-vmm/src/vmm/vsock/bindings.rs
+index 595eddfb091cd2eb2bdbb537a5efba6a78b69229..39d4fa6664bf8ce0a347f64483761eca8a99d710 100644
+--- a/crates/mvm-vmm/src/vmm/vsock/bindings.rs
++++ b/crates/mvm-vmm/src/vmm/vsock/bindings.rs
+@@ -19,6 +19,8 @@ pub struct VsockHostBindings {
+     pub display_endpoint: Option<PathBuf>,
+     /// Host GPU endpoint path (the per-VM `mvm-gpu-endpoint` socket).
+     pub gpu_endpoint: Option<PathBuf>,
++    /// Dedicated canonical mailbox endpoint, absent unless explicitly admitted.
++    pub mailbox_endpoint: Option<PathBuf>,
+     /// Additional host-dial listeners (telemetry and admitted console ports).
+     pub console_sockets: Vec<(u32, PathBuf)>,
+ }
+@@ -44,6 +46,7 @@ impl VsockHostBindings {
+             .chain(self.broker_endpoint.iter().map(PathBuf::as_path))
+             .chain(self.display_endpoint.iter().map(PathBuf::as_path))
+             .chain(self.gpu_endpoint.iter().map(PathBuf::as_path))
++            .chain(self.mailbox_endpoint.iter().map(PathBuf::as_path))
+             .chain(self.console_sockets.iter().map(|(_, path)| path.as_path()))
+             .collect()
+     }
+@@ -61,6 +64,7 @@ mod tests {
+             broker_endpoint: Some("broker.sock".into()),
+             display_endpoint: Some("display.sock".into()),
+             gpu_endpoint: Some("gpu.sock".into()),
++            mailbox_endpoint: Some("mailbox.sock".into()),
+             console_sockets: vec![
+                 (6000, "console.sock".into()),
+                 (6001, "telemetry.sock".into()),
+@@ -74,6 +78,7 @@ mod tests {
+                 "broker.sock",
+                 "display.sock",
+                 "gpu.sock",
++                "mailbox.sock",
+                 "console.sock",
+                 "telemetry.sock",
+             ]
+diff --git a/crates/mvm-vmm/src/vmm/vsock_handlers/mod.rs b/crates/mvm-vmm/src/vmm/vsock_handlers/mod.rs
+index 9ff8d4c407db020c6f628a0ccff9e95cf0ac4e1c..718b71661ed58a80146c15a63d9f83896283dd7b 100644
+--- a/crates/mvm-vmm/src/vmm/vsock_handlers/mod.rs
++++ b/crates/mvm-vmm/src/vmm/vsock_handlers/mod.rs
+@@ -217,6 +217,15 @@ impl VsockHandlerRegistry {
+             )),
+         );
+ 
++        // Independent endpoint and budget; missing configuration refuses dials.
++        guest_ports.insert(
++            mvm_agentd::vsock::MAILBOX_PORT,
++            Box::new(StreamRelayHandler::with_budget(
++                mvm_agentd::vsock::MAILBOX_PORT,
++                EgressBudget::new(),
++            )),
++        );
++
+         let host_initiated: Vec<Box<dyn HostInitiatedHandler>> = vec![
+             Box::new(AgentVsockHandler::new()),
+             Box::new(HostDialVsockHandler::new()),
+@@ -300,6 +309,13 @@ impl VsockHandlerRegistry {
+             .set_endpoint(path);
+     }
+ 
++    pub(crate) fn set_mailbox_endpoint(&mut self, path: &Path) {
++        self.guest_handler_mut::<StreamRelayHandler>(mvm_agentd::vsock::MAILBOX_PORT)
++            .expect("mailbox handler present")
++            .bridge
++            .set_endpoint(path);
++    }
++
+     pub(crate) fn set_display_endpoint(&mut self, path: &Path) {
+         self.guest_handler_mut::<StreamRelayHandler>(mvm_agentd::vsock::DISPLAY_PORT)
+             .expect("display handler present")

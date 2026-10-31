@@ -1,0 +1,59 @@
+   Compiling spiralcore-mvm-live v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-mvm-live)
+    Finished `test` profile [unoptimized] target(s) in 5.05s
+     Running unittests src/lib.rs (/Users/casey.allard/spiralcore/target/debug/deps/spiralcore_mvm_live-636517dbf7e24007)
+
+running 12 tests
+test host::tests::bounds_pipe_reads_without_requiring_end_of_stream ... ok
+test host::tests::completion_requires_exactly_one_success_record_and_clean_poweroff ... ok
+test fixtures::tests::deterministic_mixed_sequence_preserves_exact_lengths_and_binary_edits ... ok
+test host::tests::refuses_missing_or_out_of_profile_ready_clock ... ok
+test host::tests::timestamps_ready_when_its_split_line_arrives_and_refuses_duplicates ... ok
+test guest::tests::refuses_unbounded_or_malformed_input_without_echoing_private_bytes ... ok
+test config::tests::provisioning_separates_signers_and_roundtrips_only_private_bootstrap ... ok
+test guest::tests::verifier_refuses_mailbox_keys_or_unbounded_readback_requests ... ok
+test orchestrator::tests::relay_admits_only_the_provisioned_unexpired_outer_route ... ok
+test guest::tests::accepts_private_sender_receiver_and_keyless_verifier_inputs ... ok
+test guest::tests::refuses_missing_outgoing_or_excess_incoming_signing_authority ... ok
+test host::tests::console_overflow_is_bounded_and_observable ... ok
+
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running unittests src/main.rs (/Users/casey.allard/spiralcore/target/debug/deps/spiralcore_mvm_live-4567a4cb54f7511d)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running ../spiralcore-mvm-adapter/tests/live.rs (/Users/casey.allard/spiralcore/target/debug/deps/adapter_live-ea04cc2082cc3d8d)
+
+running 9 tests
+test ciphertext_framing_handles_split_reads_and_rejects_bad_lengths_and_truncation ... ok
+test cancellation_before_handshake_closes_the_owned_socket ... ok
+test live_open_refuses_a_grant_inside_the_clock_uncertainty_margin ... ok
+test live_sender_supports_bounded_clock_lag_and_caps_signed_call_expiry ... ok
+test canonical_call_and_verified_reply_cross_real_socket_io ... ok
+test live_boot_reply_route_and_application_sequence_are_bound_to_the_proof ... ok
+test partial_write_timeout_and_bad_handshake_close_without_retrying_fragments ... ok
+test live_dispatch_keeps_authenticated_request_available_for_reply ... ok
+test authenticated_but_uncorrelated_and_late_replies_cannot_complete_calls ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.04s
+
+     Running tests/campaign.rs (/Users/casey.allard/spiralcore/target/debug/deps/campaign-1ae33f211c853150)
+
+running 3 tests
+test mixed_persistent_campaign_crosses_real_stream_and_reopens_exact_bytes ... ok
+test same_epoch_new_socket_and_endpoint_recover_published_objects_with_fresh_envelopes ... ok
+test raw_and_whole_baselines_use_the_same_persistent_verified_channel ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.62s
+
+     Running tests/host_pack.rs (/Users/casey.allard/spiralcore/target/debug/deps/host_pack-263feaad66d3fdee)
+
+running 3 tests
+test refuses_oversized_or_malformed_bootstrap_and_guest_inputs ... ok
+test packs_exact_guest_bytes_and_private_bootstrap_with_only_fixed_paths ... ok
+test creates_private_sparse_ext4_and_never_overwrites_an_existing_path ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+

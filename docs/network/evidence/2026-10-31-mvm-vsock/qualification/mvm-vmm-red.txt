@@ -1,0 +1,84 @@
+   Compiling displaydoc v0.2.6
+   Compiling time v0.3.47
+   Compiling tinystr v0.8.3
+   Compiling icu_locale_core v2.1.1
+   Compiling zerotrie v0.2.4
+   Compiling icu_collections v2.1.1
+   Compiling icu_provider v2.1.1
+   Compiling num-traits v0.2.19
+   Compiling icu_normalizer v2.1.1
+   Compiling chrono v0.4.45
+   Compiling plist v1.10.0
+   Compiling icu_properties v2.1.2
+   Compiling yasna v0.5.2
+   Compiling mvm-contract v0.26.0 (/Users/casey.allard/spiralcore/local/mvm-vsock-20261031/mvm-worktree/crates/mvm-contract)
+   Compiling rcgen v0.14.7
+   Compiling idna_adapter v1.2.1
+   Compiling mvm-macho-sign v0.26.0 (/Users/casey.allard/spiralcore/local/mvm-vsock-20261031/mvm-worktree/crates/deps/mvm-macho-sign)
+   Compiling idna v1.1.0
+   Compiling url v2.5.8
+   Compiling mvm-http v0.26.0 (/Users/casey.allard/spiralcore/local/mvm-vsock-20261031/mvm-worktree/crates/mvm-http)
+   Compiling mvm-core v0.26.0 (/Users/casey.allard/spiralcore/local/mvm-vsock-20261031/mvm-worktree/crates/mvm-core)
+   Compiling mvm-net v0.26.0 (/Users/casey.allard/spiralcore/local/mvm-vsock-20261031/mvm-worktree/crates/mvm-net)
+   Compiling mvm-agentd v0.26.0 (/Users/casey.allard/spiralcore/local/mvm-vsock-20261031/mvm-worktree/crates/mvm-agentd)
+   Compiling mvm-fs v0.26.0 (/Users/casey.allard/spiralcore/local/mvm-vsock-20261031/mvm-worktree/crates/mvm-fs)
+   Compiling mvm-vmm v0.26.0 (/Users/casey.allard/spiralcore/local/mvm-vsock-20261031/mvm-worktree/crates/mvm-vmm)
+error[E0425]: cannot find value `MAILBOX_PORT` in module `mvm_agentd::vsock`
+    --> crates/mvm-vmm/src/vmm/vsock.rs:2605:42
+     |
+2605 |             dst_port: mvm_agentd::vsock::MAILBOX_PORT,
+     |                                          ^^^^^^^^^^^^ not found in `mvm_agentd::vsock`
+
+error[E0425]: cannot find value `MAILBOX_PORT` in module `mvm_agentd::vsock`
+    --> crates/mvm-vmm/src/vmm/vsock.rs:2615:73
+     |
+2615 |             header.op == OP_RW && header.src_port == mvm_agentd::vsock::MAILBOX_PORT
+     |                                                                         ^^^^^^^^^^^^ not found in `mvm_agentd::vsock`
+
+error[E0425]: cannot find value `MAILBOX_PORT` in module `mvm_agentd::vsock`
+    --> crates/mvm-vmm/src/vmm/vsock.rs:2629:46
+     |
+2629 |                 dst_port: mvm_agentd::vsock::MAILBOX_PORT,
+     |                                              ^^^^^^^^^^^^ not found in `mvm_agentd::vsock`
+
+error[E0560]: struct `bindings::VsockHostBindings` has no field named `mailbox_endpoint`
+  --> crates/mvm-vmm/src/vmm/vsock/bindings.rs:64:13
+   |
+64 |             mailbox_endpoint: Some("mailbox.sock".into()),
+   |             ^^^^^^^^^^^^^^^^ `bindings::VsockHostBindings` does not have this field
+   |
+   = note: all struct fields are already assigned
+
+error[E0599]: no method named `set_mailbox_endpoint` found for struct `vmm::vsock::VsockShared` in the current scope
+    --> crates/mvm-vmm/src/vmm/vsock.rs:2601:16
+     |
+ 240 | pub(super) struct VsockShared {
+     | ----------------------------- method `set_mailbox_endpoint` not found for this struct
+...
+2601 |         device.set_mailbox_endpoint(&path);
+     |                ^^^^^^^^^^^^^^^^^^^^
+     |
+help: there is a method `set_gpu_endpoint` with a similar name
+     |
+2601 -         device.set_mailbox_endpoint(&path);
+2601 +         device.set_gpu_endpoint(&path);
+     |
+
+error[E0599]: no method named `set_mailbox_endpoint` found for struct `vmm::vsock::VsockShared` in the current scope
+    --> crates/mvm-vmm/src/vmm/vsock.rs:2624:24
+     |
+ 240 | pub(super) struct VsockShared {
+     | ----------------------------- method `set_mailbox_endpoint` not found for this struct
+...
+2624 |                 device.set_mailbox_endpoint(Path::new("/tmp/mvm-mailbox-no-endpoint.sock"));
+     |                        ^^^^^^^^^^^^^^^^^^^^
+     |
+help: there is a method `set_gpu_endpoint` with a similar name
+     |
+2624 -                 device.set_mailbox_endpoint(Path::new("/tmp/mvm-mailbox-no-endpoint.sock"));
+2624 +                 device.set_gpu_endpoint(Path::new("/tmp/mvm-mailbox-no-endpoint.sock"));
+     |
+
+Some errors have detailed explanations: E0425, E0560, E0599.
+For more information about an error, try `rustc --explain E0425`.
+error: could not compile `mvm-vmm` (lib test) due to 6 previous errors

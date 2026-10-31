@@ -1,0 +1,9 @@
+{
+  "schema":"spiralcore.mvm-vsock.registration-amendment.v1",
+  "reason":"Pilot01 stopped after two-16MiB-Warm completed all11 transfers and receiver readbacks: the keyless verification boot also emitted all11 exact readbacks, but a queued guest_ready newline interleaved with an ext4 mount printk and the strict host receipt parser rejected the session.",
+  "fix":"Checked Linux tty drain immediately before mount and before unmount; strict parsing and transfer/codec/envelope/durability code unchanged.",
+  "retention":"Preserve the failed session and its data, sender/receiver receipts and complete bounded recovery diagnostic; do not count it as accepted.",
+  "new_dose":"Repeat only the matched two-guest16MiB group, whole then warm then raw, trial0, with one fixed guest binary. The old successful two-16MiB-Whole result remains historical and is superseded, not pooled.",
+  "accepted_groups":"Nine original sessions: both one-guest sizes/allarms and two-guest1MiB/allarms. Three new sessions: two-guest16MiB/allarms. Exact source/executable identities retained pergroup.",
+  "statistical_scope":"Single-trial functional pilot, no median/p95 or broad performance qualification. No unrelated repeats or new workloads."
+}

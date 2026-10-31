@@ -9,6 +9,8 @@ pub mod conformance;
 mod direction;
 mod policy;
 
+#[cfg(feature = "live")]
+pub use direction::live;
 pub use direction::{Counters, Direction, DirectionConfig, VerifiedFrame};
 pub use policy::{MailboxAuthority, Policy};
 pub const MAX_FRAME_BYTES: usize = spiralcore_transfer::MAX_FRAME;
