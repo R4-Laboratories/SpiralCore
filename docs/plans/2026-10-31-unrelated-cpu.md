@@ -25,18 +25,31 @@ agents, fixtures, session harness and evidence conventions.
    `pack`, scans, limits, output order and strict comparisons unchanged.
    Dependency: preserved profile and parent release. This change is independently
    testable and reversible; do not revive the broader failed pruning candidate.
-3. **Qualify exact parity — parent/test owner; medium risk.** Run focused oracle
+3. **Retain delta-only profile, then accelerate exact schema scans — codec/test
+   owners; medium risk.** Preserve the released delta-only diagnostic before
+   touching schema production. Add private `records` iterator parity tests in
+   the existing schema test module; parent observes RED before implementation.
+   In `crates/spiralcore-transfer/src/schema.rs`, use the bounded memchr-backed
+   borrowed iterator only in the count and record passes of `encode_with`.
+   Promote existing locked memchr 2.8.3 to an exact direct dependency in
+   `Cargo.toml` and its crate dependency list in `Cargo.lock`; do not change the
+   package version/checksum. Keep training and decoder untouched. Reuse SCVAL001
+   and compressed-frame oracles at lexical/binary/record-limit boundaries.
+   Dependency: design amendment commit and completed delta-only diagnostic.
+   This is independently testable; no entropy or candidate-skipping heuristic.
+4. **Qualify exact parity — parent/test owner; medium risk.** Run focused oracle
    comparisons plus existing warm-selection/session tests, including all codec
    winners and 600-byte rolling edits. Reconstruct exact bytes and lengths;
    compare complete encoded frames and operation counts. Preserve actual
    RED/GREEN outputs and any unexpected failure. One final appropriate release
    suite, Check/Clippy and changed-surface coverage follow stable source; avoid
-   duplicate broad runs. Dependency: step 2. No decoder/auth/HTTP change.
-4. **Matched local campaign — measurement owner; medium risk.** Reuse
+   duplicate broad runs. Dependency: steps 2–3. No decoder/auth/HTTP change.
+5. **Matched local campaign — measurement owner; medium risk.** Reuse
    `examples/support/persistent_session.rs` and
    `examples/schema_fitting.rs` dispatch with explicit baseline/candidate/Whole
-   roles. Both selectors retain sessions and fit once; overlay only the released
-   production file(s), record executable/source identities, and freeze exact
+   roles. Both selectors retain sessions and fit once; overlay exactly baseline
+   `src/delta.rs`, `src/schema.rs`, `Cargo.toml` and `Cargo.lock`, restore all four,
+   record executable/source identities, and freeze exact
    gates before candidate timing. Run ten pairs per size, 660 operations, with
    actual stopped-store readback and cleanup after verification. Record all
    observations and controls; no builds during measurement. Dependency: source
@@ -44,7 +57,7 @@ agents, fixtures, session harness and evidence conventions.
    artifact seed policy before timing; up to 40 selector artifact publications
    raise the local cap to 700 operations. A failed gate is a retained result,
    not a reason to rerun until it passes.
-5. **Bounded WAN pilot and delivery — parent/measurement owner; medium risk.**
+6. **Bounded WAN pilot and delivery — parent/measurement owner; medium risk.**
    Only after local gates, adapt the existing
    `.github/workflows/spiralcore-persistent-session.yml` launch pattern to a new
    registered source/run. Six pairs per size give 396 base/target transfers in
@@ -53,7 +66,7 @@ agents, fixtures, session harness and evidence conventions.
    sender/receiver quotas. Same policy, compute scopes and durability for all
    arms; stop at the first error, retain diagnostics, then verify stopped stores.
    Publish concise before/after/Whole results and any regressions with raw records.
-   Dependency: step 4. Earlier failed WAN evidence remains separate.
+   Dependency: step 5. Earlier failed WAN evidence remains separate.
 
 Success requires unchanged winning bytes and exact output, measured reduction
 in unrelated sender CPU at both sizes, and no registered mixed/warm CPU

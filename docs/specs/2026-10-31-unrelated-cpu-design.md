@@ -1,4 +1,4 @@
-# SC-OPT-019: avoid materializing unrelated-object losers
+# SC-OPT-019: reduce losing-recipe copies and exact schema scanning
 
 Date: 2026-10-31. Baseline: `56e15db5c77fe2ecdc03476d8e09664cd4213fd1`.
 The user authorized reducing unrelated-transfer CPU while retaining minimum
@@ -15,11 +15,19 @@ prefix/suffix and aligned recipes, packs both, selects the cheaper and finally
 filters against Raw. An unrelated base/target commonly produces two candidates
 consisting solely of `Literal(0, target.len())`: both allocate and copy the entire
 target only to be discarded. `schema_zstd` separately builds the exact SCVAL001
-intermediate and compresses it. Their relative CPU costs are hypotheses until
-the stage profile completes.
+intermediate and compresses it. The completed 72-observation baseline profile
+recovered all outputs exactly. Unrelated-input median CPU milliseconds were:
 
-Recommend **rejecting only a generated whole-object literal candidate before
-packing** as the first candidate, if the profile makes that work material.
+| Size | Delta | Schema intermediate | Schema plus zstd | Full selector |
+|---|---:|---:|---:|---:|
+| 1 MiB | 0.258 | 1.005 | 3.333 | 5.687 |
+| 16 MiB | 5.268 | 15.994 | 65.850 | 124.473 |
+
+These are independent calls, not additive pipeline components. Delta alone is
+unlikely to meet the registered 5% full-sender reduction; schema scanning is a
+second measured opportunity. Preserve a delta-only diagnostic before adding it.
+
+First, **reject only a generated whole-object literal candidate before packing**.
 Keep both scans, operation construction, all copy-bearing candidates, existing
 packing, strict ties, Raw filter and public signatures unchanged. A private
 helper around the two existing `pack` calls is sufficient; no new receipt or
@@ -44,6 +52,39 @@ The core and batched-client limits remain unchanged. Warm ACK promotion,
 context/epoch binding, missing-base recovery, receiver validation and durable
 commit are outside the change.
 
+## Bounded schema iterator amendment
+
+After retaining the delta-only profile, promote the already locked `memchr`
+2.8.3 package to an exact direct dependency (`memchr = "=2.8.3"`). No package
+version or native codec settings change. Replace only the two newline scans in
+`schema::encode_with` with a private borrowed iterator:
+
+```rust
+fn records(bytes: &[u8]) -> impl Iterator<Item = &[u8]> + '_
+```
+
+Use `memchr::memchr_iter(b'\n', bytes)` to produce inclusive-record end offsets
+`i + 1`. Append `bytes.len()` only for a nonempty, unterminated final record;
+map consecutive endpoints to borrowed slices using one previous-offset state.
+An equivalent duplicate-tail suppression is acceptable. Do not allocate an
+offset vector or change record contents. Rename the current local `records`
+count to avoid shadowing the helper.
+
+The iterator must equal `split_inclusive(|b| *b == b'\n')` exactly: empty input
+produces no records; consecutive LF bytes produce separate nonempty records;
+CR and arbitrary invalid UTF-8 bytes are retained; a terminal LF does not create
+an empty tail. Keep the count pass's `take(MAX_RECORDS + 1)`, whole-literal
+decision, record count, output reservation and encoding pass unchanged. No
+training, template match budget, decoder, schema artifact or SCVAL001 format
+changes. Identical intermediate bytes enter the same prepared zstd context,
+with unchanged parameters; full compressed-frame parity remains mandatory.
+
+This accelerates exact delimiter finding, not codec selection. It neither
+predicts entropy nor skips a candidate. The iterator retains only borrowed
+input, a bounded scanner and one offset; all existing output/resource bounds
+apply. Both changes are independently testable. Stop production edits while
+the parent captures each released diagnostic stage.
+
 ## Alternatives and tradeoffs
 
 1. **Narrow literal rejection — recommended.** Constant-sized recognition of
@@ -58,8 +99,8 @@ commit are outside the change.
 3. **Skip compressed schema for binary/unmatched data — reject without a new
    proof.** Failure to match a JSON template does not prove that zstd over the
    literal-record stream cannot beat Whole or Raw. Entropy samples and unchanged
-   original bytes are not sound cost certificates. Profile any future schema
-   scan/copy change separately and require exact intermediate/frame parity.
+   original bytes are not sound cost certificates. The approved delimiter
+   iterator instead removes scalar scan work while preserving every record.
 
 ## Qualification and measurement contract
 
@@ -76,6 +117,15 @@ The registered localized random updates must retain 600 body bytes and a
 replacement must resume as the next acknowledged base. Exercise reuse after errors with existing
 session tests; no implicit retries are added.
 
+For the iterator, start with a focused private-helper RED and compare all
+yielded slices with the old standard iterator. Cover empty/no-LF/terminal-LF,
+consecutive LF, CRLF, binary bytes, vector-size boundaries and counts immediately
+below/at/above MAX_RECORDS. Reuse the existing schema oracle for full SCVAL001
+and zstd-frame equality on structured, drift and random inputs, including both
+sides of the whole-literal cutoff. Preserve malformed artifact/length errors
+and alternating reused contexts. The performance gate is measured separately;
+do not add a wall-clock assertion to correctness tests.
+
 The fresh diagnostic independently times delta, prepared schema intermediate,
 Whole, compressed schema, identity hashing and complete warm preparation at
 1/16 MiB for localized and unrelated inputs: three fixed seeds, two sizes, two
@@ -89,8 +139,15 @@ Use the existing persistent-session harness: baseline persistent selector,
 candidate persistent selector and equally configured prepared Whole. Both
 selector arms fit identical training once per session; all arms pay the same
 actual seed, use identical HTTP connection policy and preserve receiver checks.
-Freeze an exact `delta.rs` baseline overlay only if this recommendation is
-selected; this is a source-derived baseline, not a historical full revision.
+The final matched baseline overlays exactly `src/delta.rs`, `src/schema.rs`,
+`Cargo.toml` and `Cargo.lock` from the pinned revision into the current common
+harness. The manifest/lock overlay removes the added direct dependency edge
+while retaining the same already-locked memchr package version. Restore and
+verify all four candidate files after building. Identity comparison permits
+only their corresponding `delta`, `schema`, `cargo_manifest` and `lockfile`
+source fields to differ; all other measured source fields must match. This is
+a source-derived baseline, not a historical full revision. Preserve delta-only
+diagnostic receipts separately from final combined measurements.
 
 Use one new profile in the existing harness, not a copied framework. Freeze ten
 distinct target identities per session, covering localized random edits, unrelated
