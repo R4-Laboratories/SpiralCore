@@ -1794,8 +1794,71 @@ fn bounded_control(baseline: &Path, candidate: &Path, dir: &Path) -> Result<()> 
     }
     Ok(())
 }
+fn setup_timed<T>(call: impl FnOnce() -> T) -> (T, (u128, u128)) {
+    let wall = Instant::now();
+    let cpu = ProcessTime::now();
+    let result = call();
+    (result, (cpu.elapsed().as_micros(), wall.elapsed().as_micros()))
+}
+fn setup_profile_sample(iteration: usize) -> Result<Value> {
+    let outer_wall = Instant::now();
+    let outer_cpu = ProcessTime::now();
+    let wall = Instant::now();
+    let cpu = ProcessTime::now();
+    let training = training_records();
+    let training_bytes: usize = training.iter().map(Vec::len).sum();
+    let refs = training.iter().map(Vec::as_slice).collect::<Vec<_>>();
+    let generation = (cpu.elapsed().as_micros(), wall.elapsed().as_micros());
+    let (artifact, fit) = setup_timed(|| schema::fit(&refs));
+    let artifact = artifact?;
+    let (matches, artifact_check) = setup_timed(|| artifact == ARTIFACT);
+    if !matches {
+        return Err("fitted artifact differs from registered training result".into());
+    }
+    let (selector, construction) = setup_timed(|| warm_selection::PreparedSelector::new(&artifact));
+    let selector = selector?;
+    let wall = Instant::now();
+    let cpu = ProcessTime::now();
+    drop(refs);
+    drop(training);
+    drop(artifact);
+    let cleanup = (cpu.elapsed().as_micros(), wall.elapsed().as_micros());
+    let cpu_us = outer_cpu.elapsed().as_micros();
+    let wall_us = outer_wall.elapsed().as_micros();
+    // Receipt construction, hashes, and dropping the returned context are outside
+    // setup timing, just as retaining Sender::new's result is in real sessions.
+    let stages = [
+        ("training_generation", generation),
+        ("fit_and_serialization", fit),
+        ("artifact_check", artifact_check),
+        ("context_construction", construction),
+        ("temporary_cleanup", cleanup),
+    ].map(|(stage, (cpu, wall))| json!({"stage":stage,"cpu_us":cpu,"wall_us":wall}));
+    Ok(json!({"event":"setup_profile_sample","iteration":iteration,
+        "cpu_us":cpu_us,"wall_us":wall_us,"stages":stages,"schema_fits":1,
+        "training_samples":512,"training_bytes":training_bytes,"artifact":metadata(ARTIFACT),
+        "constructor_artifact_id":hex(&selector.artifact_id()),
+        "retained_bytes":selector.retained_bytes(),"retained_charge":selector.retained_charge(),"error":null}))
+}
+fn setup_profile(path: &Path) -> Result<()> {
+    let mut out = fresh(path)?;
+    write_row(&mut out, &json!({"event":"setup_profile_registration",
+        "schema":"spiralcore.selector-setup.profile.v1","iterations":20,"identity":identity()?,
+        "metric_scope":"outer actual generation, fit, artifact check, constructor and temporary cleanup; stages are nested disjoint subsets, never added again to the outer total; no network or context-drop timing; all iterations retained"}))?;
+    for iteration in 0..20 {
+        match setup_profile_sample(iteration) {
+            Ok(row) => write_row(&mut out, &row)?,
+            Err(error) => {
+                write_row(&mut out, &json!({"event":"failure","iteration":iteration,"error":error.to_string()}))?;
+                return Err(error);
+            }
+        }
+    }
+    write_row(&mut out, &json!({"event":"complete","samples":20,"schema_fits":20}))
+}
 pub(super) fn command(args: &[String]) -> Result<()> {
     match args.get(1).map(String::as_str) {
+        Some("setup-profile") if args.len()==3=>setup_profile(Path::new(&args[2])),
         Some("warm-identity"|"warmselect-identity"|"bounded-identity") if args.len()==2=>{println!("{}",identity()?);Ok(())},
         Some("warm-plan") if args.len()==5=>{let source=std::env::var("SPIRALCORE_WARM_SOURCE").map_err(|_|"SPIRALCORE_WARM_SOURCE required")?;write_row(&mut fresh(Path::new(&args[4]))?,&plan(&args[2],args[3].parse()?,&source,false)?)},
         Some("warmselect-plan") if args.len()==5=>{let source=std::env::var("SPIRALCORE_WARMSELECT_SOURCE").map_err(|_|"SPIRALCORE_WARMSELECT_SOURCE required")?;write_row(&mut fresh(Path::new(&args[4]))?,&selection_plan(&args[2],args[3].parse()?,&source,false)?)},
@@ -1821,6 +1884,97 @@ pub(super) fn command(args: &[String]) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn setup_three_cases_bind_paid_dose_and_original_fixtures() {
+        let p = setup_plan("setup-qualification", 5, &"1".repeat(40), false).unwrap();
+        assert_eq!(p["experiment"], "selector-setup.v1");
+        assert_eq!(p["baseline_production_commit"], "4bb79f976e0939f3ef8b48c3830b07086b98f280");
+        assert_eq!(p["operations"], 90);
+        assert_eq!(p["schema_fits"], 30);
+        assert_eq!(p["sessions"].as_array().unwrap().len(), 45);
+        assert_eq!(p["retained_payload_bytes"], 540u64 << 20);
+        assert_eq!(p["conservative_storage_bound"], (596u64 << 20) + 90 * 4096);
+        let cases = p["sessions"].as_array().unwrap().iter()
+            .map(|r| r["case"].as_str().unwrap()).collect::<BTreeSet<_>>();
+        assert_eq!(cases, BTreeSet::from(["random-1m", "zero-1m", "random-16m"]));
+        assert_eq!(setup_fixture_pair(0, "random-1m").unwrap(), fixture_pair(0, false).unwrap());
+        assert_eq!(setup_fixture_pair(0, "random-16m").unwrap(), fixture_pair(0, true).unwrap());
+        let (base, target) = setup_fixture_pair(0, "zero-1m").unwrap();
+        assert!(base.iter().all(|b| *b == 0));
+        assert_eq!(base.len(), 1 << 20);
+        assert_eq!(base.iter().zip(&target).filter(|(a,b)| a != b).count(), 32);
+        assert!(target[target.len()/2..target.len()/2+32].iter().all(|b| *b == 0xa5));
+        assert!(setup_fixture_pair(0, "unknown").is_err());
+        for shard in 0..2 {
+            assert_eq!(setup_plan("setup-local", shard, &"1".repeat(40), true).unwrap()["operations"], 90);
+        }
+        assert!(setup_plan("setup-local", 2, &"1".repeat(40), true).is_err());
+        let candidate = p["source_profiles"]["candidate"].as_object().unwrap();
+        let baseline = p["source_profiles"]["baseline"].as_object().unwrap();
+        assert_eq!(candidate.len(), baseline.len());
+        for (key, value) in candidate {
+            if key != "schema" && key != "warm_selection" {
+                assert_eq!(value, &baseline[key], "unexpected overlay {key}");
+            }
+        }
+    }
+
+    #[test]
+    fn setup_gates_preserve_all_ten_pairs_and_negative_outcomes() {
+        assert_eq!(setup_ratio_gate(&[0.80;10], 0.80).unwrap()["passed"], true);
+        assert_eq!(setup_ratio_gate(&[0.81;10], 0.80).unwrap()["passed"], false);
+        assert_eq!(setup_ratio_gate(&[0.95;10], 0.95).unwrap()["passed"], true);
+        assert_eq!(setup_ratio_gate(&[1.06;10], 1.05).unwrap()["passed"], false);
+        assert!(setup_ratio_gate(&[0.1;9], 0.80).is_err());
+        assert!(setup_ratio_gate(&[f64::NAN;10], 0.80).is_err());
+    }
+
+    #[test]
+    fn setup_profile_keeps_all_fits_and_separates_constructor_from_training() {
+        let root = temporary("setup-profile");
+        fs::create_dir(&root).unwrap();
+        let output = root.join("profile.jsonl");
+        setup_profile(&output).unwrap();
+        let rr = rows(&fs::read(&output).unwrap()).unwrap();
+        assert_eq!(rr.len(), 22);
+        assert_eq!(rr[0]["event"], "setup_profile_registration");
+        assert_eq!(rr[0]["iterations"], 20);
+        assert_eq!(rr[0]["identity"]["sources"], pins());
+        let expected_bytes: usize = training_records().iter().map(Vec::len).sum();
+        for (iteration, row) in rr[1..21].iter().enumerate() {
+            assert_eq!(row["event"], "setup_profile_sample");
+            assert_eq!(row["iteration"], iteration);
+            assert_eq!(row["schema_fits"], 1);
+            assert_eq!(row["training_samples"], 512);
+            assert_eq!(row["training_bytes"], expected_bytes);
+            assert_eq!(row["artifact"], metadata(ARTIFACT));
+            assert_eq!(row["constructor_artifact_id"], hex(&object_id(ARTIFACT)));
+            assert!(row["error"].is_null());
+            let stages = row["stages"].as_array().unwrap();
+            assert_eq!(stages.len(), 5);
+            for (stage, expected) in stages.iter().zip([
+                "training_generation", "fit_and_serialization", "artifact_check",
+                "context_construction", "temporary_cleanup",
+            ]) {
+                assert_eq!(stage["stage"], expected);
+                assert!(numeric(stage, "cpu_us").unwrap().is_finite());
+                assert!(numeric(stage, "wall_us").unwrap().is_finite());
+            }
+            for metric in ["cpu_us", "wall_us"] {
+                let inner: f64 = stages.iter().map(|s| numeric(s, metric).unwrap()).sum();
+                assert!(numeric(row, metric).unwrap() >= inner);
+            }
+        }
+        assert_eq!(rr[21]["event"], "complete");
+        assert_eq!(rr[21]["samples"], 20);
+        assert_eq!(rr[21]["schema_fits"], 20);
+        // Exclusive output creation must preserve the first complete observation.
+        let bytes = fs::read(&output).unwrap();
+        assert!(setup_profile(&output).is_err());
+        assert_eq!(fs::read(&output).unwrap(), bytes);
+        fs::remove_dir_all(root).unwrap();
+    }
 
     #[test]
     fn bounded_profile_binds_two_production_sources_and_retains_bounded_doses() {
