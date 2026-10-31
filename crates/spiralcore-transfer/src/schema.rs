@@ -315,11 +315,27 @@ fn records(bytes: &[u8]) -> impl Iterator<Item = &[u8]> {
         })
 }
 
+fn record_count(bytes: &[u8]) -> usize {
+    let mut count = 0;
+    for block in bytes.chunks(64 * 1024) {
+        // memchr's count specialization scans blocks without visiting each LF.
+        count += memchr::memchr_iter(b'\n', block).count();
+        if count > MAX_RECORDS {
+            return MAX_RECORDS + 1;
+        }
+    }
+    count + usize::from(!bytes.is_empty() && bytes.last() != Some(&b'\n'))
+}
+
+fn possible_record(bytes: &[u8]) -> bool {
+    bytes.len() <= MAX_TEMPLATE_RECORD && bytes.get(whitespace(bytes, 0)) == Some(&b'{')
+}
+
 fn encode_with(templates: &Templates<'_>, artifact_id: Id, target: &[u8]) -> Result<Vec<u8>> {
     if target.len() > MAX_TARGET {
         return Err(Error::Limit);
     }
-    let count = records(target).take(MAX_RECORDS + 1).count();
+    let count = record_count(target);
     let whole_literal = count > MAX_RECORDS;
     let record_count = if whole_literal { 1 } else { count };
     let capacity = 48 + 5 * record_count + target.len();
@@ -337,6 +353,12 @@ fn encode_with(templates: &Templates<'_>, artifact_id: Id, target: &[u8]) -> Res
     }
     let mut work = 0;
     for bytes in records(target) {
+        // Every validated template and parsed record begins with a JSON object.
+        // These literals cannot match or spend the comparison work budget.
+        if work < MAX_MATCH_WORK && !possible_record(bytes) {
+            write_literal(&mut encoded, bytes);
+            continue;
+        }
         if templates
             .items
             .first()

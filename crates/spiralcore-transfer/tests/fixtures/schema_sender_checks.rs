@@ -96,6 +96,83 @@ fn newline_iterator_capped_count_matches_original_record_limit() {
     }
 }
 
+#[test]
+fn possible_record_is_only_a_conservative_length_and_json_prefix_check() {
+    for prefix in 0..=255u8 {
+        let mut bytes = vec![prefix];
+        bytes.extend_from_slice(b"{\"key\":0}\n");
+        assert_eq!(
+            super::possible_record(&bytes),
+            matches!(prefix, b' ' | b'\t' | b'\r' | b'\n' | b'{'),
+            "prefix {prefix:#04x}"
+        );
+    }
+    for bytes in [b"".as_slice(), b" \t\r\n", b"\x0b{}", b"\x0c{}", b"\xc2\xa0{}"] {
+        assert!(!super::possible_record(bytes));
+    }
+    for bytes in [b"{".as_slice(), b" \t\r\n{", b"{\xff", b"{invalid JSON"] {
+        // Eligibility does not replace UTF-8 validation or the actual parser.
+        assert!(super::possible_record(bytes));
+    }
+    let mut bytes = vec![b'x'; super::MAX_TEMPLATE_RECORD];
+    bytes[0] = b'{';
+    assert!(super::possible_record(&bytes));
+    bytes.push(b'x');
+    assert!(!super::possible_record(&bytes));
+}
+
+#[test]
+fn record_count_matches_iterator_at_chunk_boundaries_and_saturation() {
+    let check_count = |bytes: &[u8]| {
+        let expected = bytes
+            .split_inclusive(|&b| b == b'\n')
+            .take(super::MAX_RECORDS + 1)
+            .count();
+        assert_eq!(super::record_count(bytes), expected, "length {}", bytes.len());
+    };
+    for bytes in [b"".as_slice(), b"\n", b"\n\n", b"tail", b"a\nb", b"a\n\0\xff\n"] {
+        check_count(bytes);
+    }
+    for len in [65_535, 65_536, 65_537, 131_071, 131_072, 131_073] {
+        let mut bytes = vec![0xff; len];
+        check_count(&bytes);
+        for at in [0, 65_535, 65_536, 65_537, len - 1] {
+            if at < len {
+                bytes[at] = b'\n';
+                check_count(&bytes);
+            }
+        }
+    }
+    for count in [
+        super::MAX_RECORDS - 1,
+        super::MAX_RECORDS,
+        super::MAX_RECORDS + 1,
+        super::MAX_RECORDS + 2,
+    ] {
+        for record in [b"\n".as_slice(), b"x\n"] {
+            let mut bytes = record.repeat(count);
+            check_count(&bytes);
+            bytes.extend_from_slice(b"\0\xffunterminated");
+            check_count(&bytes);
+        }
+    }
+}
+
+#[test]
+fn impossible_record_preflight_keeps_complete_frozen_encoder_bytes() {
+    let artifact = fit(&[b"{\"key\":0}\n", b" \t{\"other\":true}\r\n"]);
+    for prefix in 0..=255u8 {
+        let mut bytes = vec![prefix];
+        bytes.extend_from_slice(b"{\"key\":1}\n{\"other\":false}\n");
+        check(&artifact, &bytes);
+    }
+    check(&artifact, b" \t\r\n{\xff}\n{\"key\":2}\n");
+    let mut bytes = vec![b'x'; super::MAX_TEMPLATE_RECORD + 1];
+    bytes[0] = b'{';
+    bytes.extend_from_slice(b"\n{\"key\":3}\n");
+    check(&artifact, &bytes);
+}
+
 fn fit(rows: &[&[u8]]) -> Vec<u8> {
     let old = baseline::fit(rows).unwrap();
     assert_eq!(crate::schema::fit(rows).unwrap(), old);
