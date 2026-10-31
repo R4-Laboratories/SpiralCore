@@ -302,17 +302,27 @@ pub fn encode(artifact: &[u8], target: &[u8]) -> Result<Vec<u8>> {
     encode_with(&templates, object_id(artifact), target)
 }
 
+fn records(bytes: &[u8]) -> impl Iterator<Item = &[u8]> {
+    let tail = (!bytes.is_empty() && bytes.last() != Some(&b'\n')).then_some(bytes.len());
+    let mut start = 0;
+    memchr::memchr_iter(b'\n', bytes)
+        .map(|end| end + 1)
+        .chain(tail)
+        .map(move |end| {
+            let record = &bytes[start..end];
+            start = end;
+            record
+        })
+}
+
 fn encode_with(templates: &Templates<'_>, artifact_id: Id, target: &[u8]) -> Result<Vec<u8>> {
     if target.len() > MAX_TARGET {
         return Err(Error::Limit);
     }
-    let count = target
-        .split_inclusive(|&b| b == b'\n')
-        .take(MAX_RECORDS + 1)
-        .count();
+    let count = records(target).take(MAX_RECORDS + 1).count();
     let whole_literal = count > MAX_RECORDS;
-    let records = if whole_literal { 1 } else { count };
-    let capacity = 48 + 5 * records + target.len();
+    let record_count = if whole_literal { 1 } else { count };
+    let capacity = 48 + 5 * record_count + target.len();
     let mut encoded = Vec::new();
     encoded
         .try_reserve_exact(capacity)
@@ -320,13 +330,13 @@ fn encode_with(templates: &Templates<'_>, artifact_id: Id, target: &[u8]) -> Res
     encoded.extend_from_slice(STREAM_MAGIC);
     encoded.extend_from_slice(&artifact_id);
     encoded.extend_from_slice(&(target.len() as u32).to_le_bytes());
-    encoded.extend_from_slice(&(records as u32).to_le_bytes());
+    encoded.extend_from_slice(&(record_count as u32).to_le_bytes());
     if whole_literal {
         write_literal(&mut encoded, target);
         return Ok(encoded);
     }
     let mut work = 0;
-    for bytes in target.split_inclusive(|&b| b == b'\n') {
+    for bytes in records(target) {
         if templates
             .items
             .first()

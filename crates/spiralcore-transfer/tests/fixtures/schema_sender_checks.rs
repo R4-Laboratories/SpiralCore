@@ -24,6 +24,78 @@ fn check(artifact: &[u8], target: &[u8]) {
     );
 }
 
+fn check_record_slices(bytes: &[u8], limit: usize) {
+    let mut expected = bytes.split_inclusive(|&b| b == b'\n').take(limit);
+    let mut actual = super::records(bytes).take(limit);
+    loop {
+        match (expected.next(), actual.next()) {
+            (Some(expected), Some(actual)) => {
+                assert_eq!(actual, expected);
+                assert_eq!(actual.as_ptr(), expected.as_ptr(), "record offset changed");
+            }
+            (None, None) => break,
+            _ => panic!(
+                "record count differs for {} bytes, limit {limit}",
+                bytes.len()
+            ),
+        }
+    }
+}
+
+#[test]
+fn newline_iterator_preserves_exact_inclusive_slices_and_scan_boundaries() {
+    for bytes in [
+        b"".as_slice(),
+        b"\n",
+        b"\n\n",
+        b"unterminated",
+        b"one\n",
+        b"one\n\n",
+        b"one\ntwo",
+        b"\r\n\r\nlast\r",
+        b"\0\xff\n\xfe\0\n\0",
+    ] {
+        check_record_slices(bytes, usize::MAX);
+    }
+    let all_bytes: Vec<u8> = (0..=255).cycle().take(513).collect();
+    check_record_slices(&all_bytes, usize::MAX);
+    for len in [
+        0, 1, 7, 8, 9, 15, 16, 17, 31, 32, 33, 63, 64, 65, 127, 128, 129, 255, 256, 257, 65_535,
+        65_536, 65_537, 131_073,
+    ] {
+        for offset in [0, 1, 7, 15] {
+            let mut storage = vec![0xff; offset + len];
+            check_record_slices(&storage[offset..], usize::MAX);
+            if len > 0 {
+                for at in [0, len / 2, len - 1] {
+                    storage[offset + at] = b'\n';
+                    check_record_slices(&storage[offset..], usize::MAX);
+                }
+            }
+        }
+    }
+}
+
+#[test]
+fn newline_iterator_capped_count_matches_original_record_limit() {
+    for count in [
+        super::MAX_RECORDS - 1,
+        super::MAX_RECORDS,
+        super::MAX_RECORDS + 1,
+        super::MAX_RECORDS + 2,
+    ] {
+        let mut bytes = vec![b'\n'; count];
+        for tail in [false, true] {
+            if tail {
+                bytes.extend_from_slice(b"\0\xffunterminated");
+            }
+            for limit in [0, 1, super::MAX_RECORDS + 1] {
+                check_record_slices(&bytes, limit);
+            }
+        }
+    }
+}
+
 fn fit(rows: &[&[u8]]) -> Vec<u8> {
     let old = baseline::fit(rows).unwrap();
     assert_eq!(crate::schema::fit(rows).unwrap(), old);

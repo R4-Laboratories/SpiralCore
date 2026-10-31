@@ -1,0 +1,136 @@
+   Compiling memchr v2.8.3
+   Compiling serde_json v1.0.154
+   Compiling spiralcore-transfer v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer)
+    Finished `release` profile [optimized] target(s) in 26.73s
+     Running unittests src/lib.rs (/Users/casey.allard/spiralcore/target/aarch64-apple-darwin/release/deps/spiralcore_transfer-5212578443409bca)
+
+running 31 tests
+test dag::fold_memo_tests::rejected_records_never_enter_the_memo ... ok
+test dag::fold_memo_tests::hot_memo_reuses_only_exact_nodes_and_preserves_unique_budget ... ok
+test dag::fold_memo_tests::parent_memo_is_exact_and_has_a_fixed_small_allocation_bound ... ok
+test delta::scan_tests::bulk_scans_handle_different_lengths_and_zero_byte_borrows ... ok
+test fitted_transfer::tests::frame_validation_is_atomic_and_separately_bounds_count_and_bytes ... ok
+test delta::sender_delta_checks::unrelated_rejection_preserves_short_equal_runs_and_shifted_edge_reuse ... ok
+test schema::sender_checks::failed_speculation_never_spends_work_or_emits_partial_bytes ... ok
+test schema::sender_checks::first_match_preserves_exact_charge_and_terminal_work_budget ... ok
+test schema::sender_checks::deterministic_mixed_sequences_preserve_matching_and_fallback_bytes ... ok
+test schema::sender_checks::lexical_layouts_invalid_tokens_and_every_truncation_preserve_old_bytes ... ok
+test schema::sender_checks::newline_iterator_preserves_exact_inclusive_slices_and_scan_boundaries ... ok
+test delta::scan_tests::bulk_scans_match_scalar_at_every_short_boundary ... ok
+test schema_selection::probe_eligibility_tests::computed_length_cost_matches_real_chunk_framing_without_materializing_bytes ... ok
+test schema_selection::probe_eligibility_tests::impossible_certificates_skip_probe_and_earlier_whole_ties_still_encode ... ok
+test schema::sender_checks::newline_iterator_capped_count_matches_original_record_limit ... ok
+test selection::runtime_selection_tests::lower_bound_ties_preserve_original_codec_priority ... ok
+test schema::sender_checks::fit_duplicate_mixed_lexical_and_invalid_records_keep_original_artifact ... ok
+test selection::runtime_selection_tests::encoded_lower_bounds_hold_for_empty_small_and_chunk_boundary_inputs ... ok
+test selection::runtime_selection_tests::runtime_repeat_shortcut_and_errors_keep_pre_begin_behavior ... ok
+test shared_transfer::identity_tests::prepared_identity_matches_full_hash_for_equal_edited_and_length_changed_bytes ... ok
+test zstd_prefix::tests::chunk_validation_is_atomic_and_count_and_encoded_bounds_are_independent ... ok
+test schema::sender_checks::fit_order_and_training_schema_limits_match_original ... ok
+test zstd_whole::probe_tests::certificate_parser_counts_only_actual_first_payload_and_required_remainder ... ok
+test zstd_whole::probe_tests::guard_version_size_and_unavailable_context_do_not_authorize_a_bound ... ok
+test selection::runtime_selection_tests::runtime_first_preserves_exhaustive_winner_and_body_bytes ... ok
+test shared_runtime::packed_tests::packed_rules_match_scalar_tables_at_periodic_word_boundaries ... ok
+test schema::sender_checks::slots_record_sizes_and_line_limit_preserve_old_bytes ... ok
+test zstd_whole::probe_tests::qualified_first_header_and_bound_match_uncapped_encoder_then_reset_exactly ... ok
+test selection::runtime_selection_tests::prefix_structure_bound_prunes_large_runtime_without_changing_bytes ... ok
+test delta::sender_delta_checks::optimized_delta_preserves_all_frames_across_changes_and_boundaries ... ok
+test zstd_prefix::tests::profile_minimum_size_holds_at_empty_and_decoded_block_boundaries ... ok
+
+test result: ok. 31 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.34s
+
+     Running tests/persistent_session.rs (/Users/casey.allard/spiralcore/target/aarch64-apple-darwin/release/deps/persistent_session-58978401b1d50c34)
+
+running 7 tests
+test input_capacity_limits_precede_network_and_do_not_destroy_known_base ... ok
+test lost_ack_never_promotes_and_explicit_recovery_confirms_committed_target ... ok
+test schema_seed_is_explicit_auxiliary_and_context_change_discards_scoped_state ... ok
+test runtime_session_reuses_fixed_prediction_and_requires_checkpoint_ack ... ok
+test missing_or_corrupt_base_does_not_retry_and_recovery_cold_sends_explicitly ... ok
+test context_changes_and_invalid_ack_invalidate_hints_without_promotion ... ok
+test rolling_owned_base_advances_only_on_ack_and_matches_existing_sender_frames ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.31s
+
+     Running tests/schema_codec.rs (/Users/casey.allard/spiralcore/target/aarch64-apple-darwin/release/deps/schema_codec-01f9466a0dbd0828)
+
+running 10 tests
+test hostile_stream_counts_indices_tokens_and_lengths_fail_preflight ... ok
+test frozen_training_template_preserves_held_out_raw_tokens ... ok
+test malformed_artifact_is_rejected_even_for_a_literal_target ... ok
+test invalid_primitive_spellings_and_slot_overflow_are_literals ... ok
+test arbitrary_bytes_layout_drift_and_nested_values_remain_exact_literals ... ok
+test malformed_templates_duplicates_and_profile_caps_are_rejected ... ok
+test duplicate_keys_whitespace_crlf_escapes_and_numeric_spellings_are_preserved ... ok
+test empty_mixed_and_newline_heavy_objects_have_exact_fallback ... ok
+test wrong_schema_and_encoded_lengths_are_rejected ... ok
+test training_limits_and_template_count_are_bounded ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/schema_prepared.rs (/Users/casey.allard/spiralcore/target/aarch64-apple-darwin/release/deps/schema_prepared-e7abf42fa06627a4)
+
+running 6 tests
+test prepared_schema_owns_artifact_and_preserves_existing_stream_bytes ... ok
+test schema_zstd_rejects_hostile_frames_then_decodes_a_valid_frame ... ok
+test schema_zstd_reuses_contexts_and_preserves_exact_values_and_fallback ... ok
+test prepared_encoders_recover_after_rejected_oversize_input ... ok
+test prepared_dictionary_matches_fresh_bytes_after_alternating_inputs_and_errors ... ok
+test target_specific_intermediate_cap_covers_maximum_literal_record_overhead ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.06s
+
+     Running tests/schema_reuse.rs (/Users/casey.allard/spiralcore/target/aarch64-apple-darwin/release/deps/schema_reuse-32b050583073d210)
+
+running 5 tests
+test compressed_schema_offer_is_versioned_and_bounded ... ok
+test bad_compressed_transfer_cannot_publish_and_cached_decoder_recovers ... ok
+test warm_decoder_does_not_hide_corrupt_missing_or_unauthorized_artifact ... ok
+test persistent_prepared_senders_and_receiver_reuse_exact_objects_then_restart ... ok
+test codec_cache_is_bounded_pinned_and_released_without_exceeding_shared_budget ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.40s
+
+     Running tests/schema_sender.rs (/Users/casey.allard/spiralcore/target/aarch64-apple-darwin/release/deps/schema_sender-9542bbbe6b3265fa)
+
+running 3 tests
+test allocation_counter_is_local_and_disabled_outside_the_scope ... ok
+test fitting_repeated_first_layout_has_constant_temporary_allocations ... ok
+test matching_prepared_records_allocate_only_the_output_buffer ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/unrelated_cpu_workflow.rs (/Users/casey.allard/spiralcore/target/aarch64-apple-darwin/release/deps/unrelated_cpu_workflow-0bddd22a96d73f50)
+
+running 5 tests
+test unrelated_workflow_pins_overlay_restore_and_always_retains_failures ... ok
+test unrelated_workflow_fixes_one_six_shard_pilot_and_storage_cap ... ok
+test unrelated_workflow_requires_the_complete_capability ... ok
+test unrelated_workflow_requires_exact_source_branch_and_first_attempt ... ok
+test unrelated_workflow_restricts_all_six_receiver_origins ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.25s
+
+     Running tests/unrelated_delta.rs (/Users/casey.allard/spiralcore/target/aarch64-apple-darwin/release/deps/unrelated_delta-8105d4f19c188874)
+
+running 2 tests
+test allocation_counter_observes_large_requests_only_within_its_scope ... ok
+test all_literal_rejection_does_not_allocate_payload_sized_buffers ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/warm_selection.rs (/Users/casey.allard/spiralcore/target/aarch64-apple-darwin/release/deps/warm_selection-eb8336a613fc7321)
+
+running 9 tests
+test raw_ties_and_old_api_results_survive_interleaved_warm_calls_and_limits ... ok
+test verified_base_makes_sparse_an_exact_scored_candidate ... ok
+test period64_without_short_period_still_uses_actual_rejection_certificate ... ok
+test all_four_winners_match_exhaustive_selected_frame_bytes ... ok
+test static_tie_requires_whole_evaluation_or_a_stronger_actual_bound ... ok
+test boundaries_length_changes_and_context_reuse_preserve_exhaustive_minimum ... ok
+test cold_schema_can_win_after_paying_seed_instead_of_greedily_using_sparse ... ok
+test sampled_short_period_repetition_schedules_full_encoding_without_pruning ... ok
+test structural_bounds_skip_only_candidates_that_cannot_win ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.27s
+
