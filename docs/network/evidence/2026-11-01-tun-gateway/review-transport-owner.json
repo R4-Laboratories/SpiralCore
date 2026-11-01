@@ -25,6 +25,13 @@
     "core-green.txt": "4 passed, 0 failed",
     "mvm-shared-core-tests.txt": "3 passed, 0 failed"
   },
+  "separate_author_validation_not_independent_review": {
+    "transport_source_sha256": "5d13e0d84bdc06f7bc9a2f185612c157835ed1bd16c326f2ecc0a8b7b91e4931",
+    "tun_source_sha256": "1eaff911b1ec8166b6e5402e5694059674922233ec188884c36daf3dd7219139",
+    "transport-green.txt": "5 passed, 0 failed; real mutual TLS, both wrong pins, trust/hostname validation, omitted client certificate, datagram bounds, timeout recovery and code0 close",
+    "tun-cross-green-02.txt": "All test targets compile for aarch64-unknown-linux-musl; actual Linux execution PENDING_CI",
+    "tun_safety": "Owns the FD; validates existing interface MTU and plain TUN framing; bounds each read/write; uses nonblocking readiness and no partial-packet suffix retry. Independent review is in transport-service-review.json, authored by mvm_boundary."
+  },
   "limitations": [
     "Source review is bounded to the new extraction and specified lifecycle delta, not a fresh audit of all prior codecs or MVM cryptography.",
     "Linux cross-compilation is not execution; actual TUN behavior requires the isolated Linux witness.",

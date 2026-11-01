@@ -23,7 +23,7 @@ jobs:
       EXPECTED_SOURCE: ${{ github.event.pull_request.head.sha }}
       CARGO_INCREMENTAL: 0
       CARGO_BUILD_JOBS: 2
-      CARGO_TARGET_DIR: ${{ runner.temp }}/spiralcore-gateway-target
+      CARGO_TARGET_DIR: ${{ github.workspace }}/target
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
