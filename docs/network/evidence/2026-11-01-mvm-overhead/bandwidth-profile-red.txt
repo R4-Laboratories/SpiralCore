@@ -1,0 +1,35 @@
+   Compiling mvm-vmm v0.26.0 (/Users/casey.allard/spiralcore/local/mvm-vsock-20261031/mvm-worktree/crates/mvm-vmm)
+   Compiling spiralcore-transfer v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer)
+   Compiling spiralcore-mvm-adapter v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-mvm-adapter)
+   Compiling mvm-build v0.26.0 (/Users/casey.allard/spiralcore/local/mvm-vsock-20261031/mvm-worktree/crates/mvm-build)
+   Compiling mvm-backends v0.26.0 (/Users/casey.allard/spiralcore/local/mvm-vsock-20261031/mvm-worktree/crates/mvm-backends)
+   Compiling mvm-runtime v0.26.0 (/Users/casey.allard/spiralcore/local/mvm-vsock-20261031/mvm-worktree/crates/mvm-runtime)
+   Compiling spiralcore-mvm-live v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-mvm-live)
+error[E0432]: unresolved imports `spiralcore_mvm_live::config::MailboxBandwidthProfile`, `spiralcore_mvm_live::config::parse_bandwidth_profile`
+ --> tests/bandwidth_profile.rs:1:35
+  |
+1 | use spiralcore_mvm_live::config::{MailboxBandwidthProfile, Plan, parse_bandwidth_profile};
+  |                                   ^^^^^^^^^^^^^^^^^^^^^^^        ^^^^^^^^^^^^^^^^^^^^^^^ no `parse_bandwidth_profile` in `config`
+  |                                   |
+  |                                   no `MailboxBandwidthProfile` in `config`
+
+error[E0609]: no field `bandwidth_profile` on type `Plan`
+  --> tests/bandwidth_profile.rs:19:21
+   |
+19 |     assert_eq!(plan.bandwidth_profile, standard);
+   |                     ^^^^^^^^^^^^^^^^^ unknown field
+   |
+   = note: available fields are: `stage`, `arm`, `size`, `trial`
+
+error[E0609]: no field `bandwidth_profile` on type `Plan`
+  --> tests/bandwidth_profile.rs:23:21
+   |
+23 |     assert_eq!(plan.bandwidth_profile, experimental);
+   |                     ^^^^^^^^^^^^^^^^^ unknown field
+   |
+   = note: available fields are: `stage`, `arm`, `size`, `trial`
+
+Some errors have detailed explanations: E0432, E0609.
+For more information about an error, try `rustc --explain E0432`.
+error: could not compile `spiralcore-mvm-live` (test "bandwidth_profile") due to 3 previous errors
+warning: build failed, waiting for other jobs to finish...

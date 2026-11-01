@@ -42,7 +42,15 @@ devtmpfs. The retained campaign records exact kernel and tool hashes.
 ```sh
 spiralcore-mvm-live session NEW_PRIVATE_RESULT_DIR KERNEL_IMAGE GUEST_ELF one warm 1048576 0
 spiralcore-mvm-live session ANOTHER_NEW_DIR KERNEL_IMAGE GUEST_ELF two warm 1048576 0
+spiralcore-mvm-live session EXPERIMENT_DIR KERNEL_IMAGE GUEST_ELF two warm 1048576 0 experimental64
 ```
+
+The optional final profile is `standard` (the default, 4 MiB/s) or
+`experimental64` (64 MiB/s). Both retain the 8 MiB burst, stream and idle limits.
+The host applies this profile only to the experimental mailbox service and records
+the selected rate in the plan, session and worker receipts. Compare every arm at
+the same profile; raising a transport allowance is separate from a codec gain.
+Unknown profiles are rejected before boot. Other MVM service budgets are unchanged.
 
 The other arms are `whole` (prepared whole-object zstd) and `raw`. Every session
 uses public deterministic fixtures: seed, repeat, localized edit, unrelated
@@ -81,7 +89,9 @@ use actual stream counters for transferred bytes.
 Stream counters include canonical encrypted envelopes, four-byte frame prefixes
 and readiness, in both directions. Two-guest physical stream bytes count both
 vsock hops. They exclude virtio control/credit headers and boot assets. The
-inherited MVM relay allowance is 4 MiB/s with an 8 MiB burst; it is not bypassed.
+default inherited MVM relay allowance is 4 MiB/s with an 8 MiB burst. The explicit
+experimental profile raises only its sustained rate to 64 MiB/s; neither profile
+bypasses the token budget.
 Local HVF timings are not WAN timings. The single-trial registered campaign is a
 functional integration pilot, not a latency-distribution or statistical speed
 qualification.

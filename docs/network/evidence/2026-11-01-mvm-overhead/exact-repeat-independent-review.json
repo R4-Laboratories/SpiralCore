@@ -1,0 +1,41 @@
+{
+  "schema": "spiralcore.independent-source-review.v1",
+  "date": "2026-11-01",
+  "reviewer": "mvm_boundary",
+  "roles": [
+    "code-reviewer",
+    "security-reviewer",
+    "rust-reviewer"
+  ],
+  "verdict": "PASS",
+  "scope": "Only the cross-author exact-repeat session/client delta and focused regression tests; no review of my own bandwidth-profile implementation.",
+  "source_sha256": {
+    "crates/spiralcore-transfer/src/session.rs": "eadf9d8d8061cc82f0a9acfef80fc3bf49926826b8662dc570bd87744c8ff67a",
+    "crates/spiralcore-transfer/src/client.rs": "798f319176e3ef2783bf2630ffab37d0c17929d7e0b84f2939bfb8557aa30a5e",
+    "crates/spiralcore-transfer/tests/persistent_session.rs": "3b81aa65a615425a447327553bac9b2ece20e7603a647e8bab563b4ddb51f1fd"
+  },
+  "observed": [
+    "Full input-slice equality includes exact length and bytes; cached identity comes from the module-private immutable acknowledged base, not caller-supplied hashes.",
+    "Context and resource admission precede equality and exchange. Policy/execution namespace changes discard scoped readiness.",
+    "Every exact repeat sends a fresh Raw Begin alone and requires current reply transfer/sequence/object checks in the unchanged BatchSender. Receiver eviction continues the same Raw offer with the exact owned bytes and Finish.",
+    "Failed exchange invalidates receiver readiness; no new retry, wire mode, receiver authorization bypass or weakened publication verification is introduced.",
+    "Nonrepeat codec selection remains unchanged. Selection receipts explicitly report only Raw miss cost, not a minimum over skipped codecs.",
+    "Retained behavioral RED fails Begin-only assertion (3 frames vs1); focused GREEN reports9passed/1ignored. Eviction, stopped-store exact readback, invalid ACK and scope regressions are present."
+  ],
+  "findings": [
+
+  ],
+  "evidence": [
+    "exact-repeat-red-02.txt",
+    "exact-repeat-red-02.exit",
+    "exact-repeat-green.txt",
+    "exact-repeat-green.exit",
+    "transfer-final-tests.txt",
+    "qualification/procedural-review.json"
+  ],
+  "limitations": [
+    "No new builds or benchmarks were run by this reviewer. Test receipts were inspected; root owns final integrated validation.",
+    "Sender diagnostic acknowledgements are test-generated and do not establish actual MVM/WAN latency, authentication performance or physical energy. Actual guest campaign remains pending.",
+    "The helper still uses existing HTTP-body cost accounting; this is not a claim of globally minimal canonical-envelope bytes."
+  ]
+}

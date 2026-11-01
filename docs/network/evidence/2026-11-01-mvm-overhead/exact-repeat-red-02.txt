@@ -1,0 +1,100 @@
+   Compiling libc v0.2.191
+   Compiling proc-macro2 v1.0.107
+   Compiling unicode-ident v1.0.27
+   Compiling quote v1.0.47
+   Compiling jobserver v0.1.35
+   Compiling syn v3.0.9
+   Compiling find-msvc-tools v0.1.15
+   Compiling shlex v2.0.1
+   Compiling cc v1.10.0
+   Compiling synstructure v0.14.0
+   Compiling stable_deref_trait v1.2.1
+   Compiling version_check v0.9.5
+   Compiling zerofrom-derive v0.1.8
+   Compiling yoke-derive v0.8.4
+   Compiling zerofrom v0.1.8
+   Compiling zerovec-derive v0.11.7
+   Compiling yoke v0.8.4
+   Compiling displaydoc v0.2.7
+   Compiling zerovec v0.11.9
+   Compiling generic-array v0.14.7
+   Compiling tinystr v0.8.5
+   Compiling pkg-config v0.3.34
+   Compiling writeable v0.6.4
+   Compiling litemap v0.8.3
+   Compiling icu_locale_core v2.4.0
+   Compiling zstd-sys v2.1.2+zstd.1.5.7
+   Compiling potential_utf v0.1.6
+   Compiling zerotrie v0.2.5
+   Compiling ring v0.17.14
+   Compiling sha2-asm v0.6.4
+   Compiling icu_normalizer_data v2.4.0
+   Compiling utf8_iter v1.0.4
+   Compiling icu_properties_data v2.4.0
+   Compiling icu_collections v2.4.0
+   Compiling icu_provider v2.4.0
+   Compiling block-buffer v0.10.4
+   Compiling crypto-common v0.1.7
+   Compiling zeroize v1.9.1
+   Compiling rustls-pki-types v1.15.1
+   Compiling digest v0.10.7
+   Compiling getrandom v0.2.17
+   Compiling cpufeatures v0.2.17
+   Compiling smallvec v1.16.4
+   Compiling untrusted v0.9.0
+   Compiling httparse v1.10.1
+   Compiling serde_core v1.0.229
+   Compiling itoa v1.0.18
+   Compiling icu_normalizer v2.4.0
+   Compiling sha2 v0.10.9
+   Compiling icu_properties v2.4.0
+   Compiling bytes v1.12.1
+   Compiling percent-encoding v2.3.2
+   Compiling zmij v1.0.23
+   Compiling log v0.4.34
+   Compiling rustls v0.23.46
+   Compiling zstd-safe v7.3.0
+   Compiling http v1.5.0
+   Compiling idna_adapter v1.2.2
+   Compiling rustls-webpki v0.103.16
+   Compiling libm v0.2.16
+   Compiling serde_json v1.0.154
+   Compiling serde v1.0.229
+   Compiling once_cell v1.21.4
+   Compiling base64 v0.23.1
+   Compiling subtle v2.6.1
+   Compiling ureq-proto v0.6.5
+   Compiling idna v1.1.0
+   Compiling form_urlencoded v1.2.2
+   Compiling spiralcore-transfer v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer)
+   Compiling webpki-roots v1.0.11
+   Compiling serde_derive v1.0.229
+   Compiling memchr v2.8.3
+   Compiling utf8-zero v0.8.1
+   Compiling ureq v3.5.0
+   Compiling url v2.5.8
+   Compiling zstd v0.13.3
+   Compiling uor-r4-object-store v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/uor-r4-object-store)
+   Compiling cpu-time v1.0.0
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 28.04s
+     Running tests/persistent_session.rs (/Users/casey.allard/spiralcore/target/debug/deps/persistent_session-e3f2572976793750)
+
+running 3 tests
+test exact_repeat_sender_cpu_profile ... ignored, explicit CPU diagnostic; coordinate with live measurement windows
+
+thread 'exact_repeat_uses_current_raw_identity_probe_and_recovers_remote_eviction' (5361982) panicked at tests/persistent_session.rs:111:21:
+assertion `left == right` failed: probe before preparing/uploading data
+  left: 3
+ right: 1
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test exact_repeat_uses_current_raw_identity_probe_and_recovers_remote_eviction ... FAILED
+test exact_repeat_never_trusts_local_readiness_instead_of_ack_or_scope ... ok
+
+failures:
+
+failures:
+    exact_repeat_uses_current_raw_identity_probe_and_recovers_remote_eviction
+
+test result: FAILED. 1 passed; 1 failed; 1 ignored; 0 measured; 7 filtered out; finished in 0.17s
+
+error: test failed, to rerun pass `--test persistent_session`

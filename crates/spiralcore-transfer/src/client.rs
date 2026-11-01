@@ -532,6 +532,34 @@ pub fn transfer_batched<F: FnMut(&[Frame]) -> Result<Vec<Frame>>>(
     send_batched(offer, payload, transfer_id, warm_probe, exchange, start)
 }
 
+// Only session-owned acknowledged bytes can supply this cached identity. The
+// session compares the entire new input before selecting this path. A current
+// Published receipt is still mandatory; Ready continues the same Raw offer.
+pub(crate) fn transfer_acknowledged_repeat_batched<F: FnMut(&[Frame]) -> Result<Vec<Frame>>>(
+    base: &crate::session::AcknowledgedBase,
+    transfer_id: Id,
+    exchange: F,
+) -> Result<Stats> {
+    if base.bytes().len() > MAX_BATCHED_OBJECT {
+        return Err(Error::Limit);
+    }
+    let offer = Offer {
+        mode: Mode::Raw,
+        len: base.bytes().len() as u64,
+        object: base.id(),
+        manifest: None,
+        base: None,
+    };
+    send_batched(
+        offer,
+        BatchedPayload::Bytes(base.bytes()),
+        transfer_id,
+        true,
+        exchange,
+        Instant::now(),
+    )
+}
+
 /// Send a locally prepared, immutable same-length DAG update using the existing
 /// DAG wire format. Exact repeats use a raw identity offer; `warm_probe` retains
 /// its usual control over whether Begin is uploaded separately.

@@ -345,6 +345,7 @@ mod tests {
             arm: Arm::Warm,
             size: 4096,
             trial: 0,
+            bandwidth_profile: Default::default(),
         })
         .unwrap()
     }

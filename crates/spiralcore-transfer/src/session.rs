@@ -9,9 +9,10 @@ use crate::{
     client::{self, AdaptiveStats, Stats},
     endpoint::Context,
     protocol::{Frame, Mode},
-    schema_selection::{PreparedSelector, WarmSelection},
+    schema_selection::{CandidateCost, PreparedSelector, WarmSelection},
+    selection,
     shared_transfer::PreparedPrediction,
-    Error, Id, Result,
+    Error, Id, Result, MAX_CHUNK,
 };
 
 /// Conservative per-session admission ceiling, not a process RSS measurement.
@@ -205,6 +206,9 @@ impl WarmSession {
     }
     /// Select exact bytes using the acknowledged base and reusable contexts.
     /// An unseeded winning schema returns `Missing` before any network call.
+    /// Exact acknowledged repeats always probe Raw Begin alone, irrespective of
+    /// `warm_probe`, then upload Raw only on a receiver miss. Their selection
+    /// receipt reports only that Raw miss cost, not an unevaluated codec minimum.
     pub fn send<F: FnMut(&[Frame]) -> Result<Vec<Frame>>>(
         &mut self,
         context: &Context,
@@ -220,18 +224,47 @@ impl WarmSession {
             WARM_TRANSIENT_CHARGE,
         )?;
         let base = self.state.base.as_ref().filter(|_| self.state.ready);
-        let prepared =
-            self.selector
-                .prepare_acknowledged(&bytes, base, self.schema_ready, warm_probe)?;
-        if prepared.selection().needs_schema_seed {
-            return Err(Error::Missing);
-        }
-        let selection = prepared.selection().clone();
         let mut attempted = false;
-        let result = client::transfer_warm_selection_batched(prepared, transfer_id, |frames| {
-            attempted = true;
-            exchange(frames)
-        });
+        let (result, selection) = if let Some(base) = base.filter(|b| b.bytes() == bytes.as_slice()) {
+            let cost = selection::cost(
+                Mode::Raw,
+                bytes.chunks(MAX_CHUNK).map(|chunk| chunk.len() + 5),
+                true,
+            )?;
+            let selection = WarmSelection {
+                candidates: vec![CandidateCost {
+                    mode: Mode::Raw,
+                    target_http_body_bytes: cost,
+                    setup_http_body_bytes: 0,
+                    total_http_body_bytes: cost,
+                }],
+                pruned: Vec::new(),
+                selected_mode: Mode::Raw,
+                needs_schema_seed: false,
+            };
+            let result =
+                client::transfer_acknowledged_repeat_batched(base, transfer_id, |frames| {
+                    attempted = true;
+                    exchange(frames)
+                });
+            (result, selection)
+        } else {
+            let prepared = self.selector.prepare_acknowledged(
+                &bytes,
+                base,
+                self.schema_ready,
+                warm_probe,
+            )?;
+            if prepared.selection().needs_schema_seed {
+                return Err(Error::Missing);
+            }
+            let selection = prepared.selection().clone();
+            let result = client::transfer_warm_selection_batched(prepared, transfer_id, |frames| {
+                attempted = true;
+                exchange(frames)
+            });
+            (result, selection)
+        };
         match result {
             Ok(transfer) => {
                 self.state.promote(bytes, transfer.object);

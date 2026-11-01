@@ -2,7 +2,7 @@ use spiralcore_transfer::{
     client,
     endpoint::{ColdGraphPolicy, Context, Endpoint},
     hex, object_id,
-    protocol::{Frame, Mode},
+    protocol::{Frame, Mode, Offer},
     schema,
     schema_selection::PreparedSelector,
     session::{RuntimeSession, WarmSession},
@@ -84,6 +84,145 @@ fn exchange(
 }
 fn artifact() -> Vec<u8> {
     schema::fit(&[b"{\"value\":0}\n"]).unwrap()
+}
+
+#[test]
+fn exact_repeat_uses_current_raw_identity_probe_and_recovers_remote_eviction() {
+    for evicted in [false, true] {
+        let context = wan::context([81; 32]);
+        let store = Store::new();
+        let mut endpoint = store.open();
+        let bytes = random(65_537, 83);
+        let id = object_id(&bytes);
+        let mut session = WarmSession::new(&context, &artifact()).unwrap();
+        session
+            .seed_base(&context, bytes.clone(), [81; 32], |frames| {
+                exchange(&mut endpoint, &context, frames, &mut 0)
+            })
+            .unwrap();
+        if evicted {
+            std::fs::remove_file(store.publication(&context, id)).unwrap();
+        }
+        let mut requests = Vec::new();
+        let mut body_bytes = 0;
+        let stats = session
+            .send(&context, bytes.clone(), [82; 32], false, |frames| {
+                if requests.is_empty() {
+                    assert_eq!(frames.len(), 1, "probe before preparing/uploading data");
+                    let offer = Offer::decode(&frames[0].body)?;
+                    assert_eq!(offer.mode, Mode::Raw);
+                    assert_eq!(offer.base, None);
+                    assert_eq!(offer.object, id);
+                    assert_eq!(offer.len, bytes.len() as u64);
+                }
+                requests.extend_from_slice(frames);
+                exchange(&mut endpoint, &context, frames, &mut body_bytes)
+            })
+            .unwrap();
+        assert_eq!(stats.transfer.mode, Mode::Raw);
+        assert_eq!(stats.transfer.object, id);
+        assert_eq!(stats.selection.candidates.len(), 1);
+        assert_eq!(stats.selection.selected_mode, Mode::Raw);
+        assert!(stats.selection.pruned.is_empty());
+        assert_eq!(requests.iter().filter(|f| f.kind == 1).count(), 1);
+        assert!(requests.iter().all(|f| f.transfer == [82; 32]));
+        if evicted {
+            assert!(requests.iter().any(|f| f.kind == 2));
+            assert_eq!(requests.last().unwrap().kind, 3);
+        } else {
+            assert_eq!(requests.len(), 1);
+            assert_eq!(stats.transfer.data_bytes, 0);
+            assert_eq!(body_bytes, 238);
+        }
+        assert!(session.base_ready());
+        drop(endpoint);
+        assert_eq!(store.open().read_object(&context, id).unwrap(), bytes);
+    }
+}
+
+#[test]
+fn exact_repeat_never_trusts_local_readiness_instead_of_ack_or_scope() {
+    for failure in 0..5 {
+        let context = wan::context([84; 32]);
+        let store = Store::new();
+        let mut endpoint = store.open();
+        let bytes = random(4097, 85);
+        let id = object_id(&bytes);
+        let mut session = WarmSession::new(&context, &artifact()).unwrap();
+        session
+            .seed_base(&context, bytes.clone(), [84; 32], |frames| {
+                exchange(&mut endpoint, &context, frames, &mut 0)
+            })
+            .unwrap();
+        let mut changed = context.clone();
+        if failure == 3 {
+            changed.policy_epoch += 1;
+        } else if failure == 4 {
+            changed.execution_epoch += 1;
+        }
+        let mut calls = 0;
+        let result = session.send(&changed, bytes, [85; 32], false, |frames| {
+            calls += 1;
+            if failure == 0 {
+                return Err(Error::Storage); // Lost or missing current acknowledgement.
+            }
+            let mut ack = frames[0].reply(103, id.to_vec());
+            if failure == 1 {
+                ack.body[0] ^= 1;
+            } else {
+                ack.seq += 1;
+            }
+            Ok(vec![ack])
+        });
+        assert!(matches!(
+            (failure, result),
+            (0, Err(Error::Storage))
+                | (1 | 2, Err(Error::Integrity))
+                | (3 | 4, Err(Error::Unauthorized))
+        ));
+        assert_eq!(calls, usize::from(failure < 3));
+        assert!(!session.base_ready());
+    }
+}
+
+/// Sender preparation diagnostic only: the timed exchange supplies a current
+/// test acknowledgement, not cryptography, receiver I/O or a WAN measurement.
+#[test]
+#[ignore = "explicit CPU diagnostic; coordinate with live measurement windows"]
+fn exact_repeat_sender_cpu_profile() {
+    for size in [1 << 20, 16 << 20] {
+        let context = wan::context([86; 32]);
+        let store = Store::new();
+        let mut endpoint = store.open();
+        let bytes = random(size, 87);
+        let id = object_id(&bytes);
+        let mut session = WarmSession::new(&context, &artifact()).unwrap();
+        session
+            .seed_base(&context, bytes.clone(), [86; 32], |frames| {
+                exchange(&mut endpoint, &context, frames, &mut 0)
+            })
+            .unwrap();
+        for trial in 0..4 {
+            let target = bytes.clone(); // Ownership copy is outside both measurements.
+            let cpu = cpu_time::ProcessTime::now();
+            let wall = std::time::Instant::now();
+            let stats = session
+                .send(&context, target, [90 + trial; 32], false, |frames| {
+                    Ok(vec![frames[0].reply(103, id.to_vec())])
+                })
+                .unwrap();
+            let wall_us = wall.elapsed().as_micros();
+            let cpu_us = cpu.elapsed().as_micros();
+            assert_eq!(stats.transfer.object, id);
+            println!(
+                "{}",
+                serde_json::json!({"event":"repeat_sender_profile","object_bytes":size,
+                    "trial":trial,"warmup":trial==0,"cpu_us":cpu_us,"wall_us":wall_us,
+                    "mode":format!("{:?}",stats.transfer.mode),
+                    "scope":"sender preparation plus test acknowledgement; excludes input clone, authentication, receiver and network"})
+            );
+        }
+    }
 }
 
 #[test]

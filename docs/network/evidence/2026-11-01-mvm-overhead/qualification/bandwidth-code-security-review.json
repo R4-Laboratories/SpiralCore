@@ -1,0 +1,125 @@
+{
+  "schema": "spiralcore.mvm-overhead.bandwidth-code-security-review.v1",
+  "observed_at_utc": "2026-11-01T22:19:27.272Z",
+  "reviewer": "/root/mvm_tests",
+  "roles": [
+    "code-reviewer",
+    "security-reviewer",
+    "rust-reviewer"
+  ],
+  "procedural_gate": "qualification/procedural-review.json: PASS_FOR_INDEPENDENT_REVIEWS",
+  "verdict": "PASS_FOR_REVIEWED_SOURCE",
+  "merge_or_measurement_acceptance": false,
+  "scope": "Independent bounded review of the new bandwidth-profile delta in live config/host/main/orchestrator and the pinned local MVM contract/budget/binding propagation. No source edits, builds, new tests or repository-wide audit were performed for this review.",
+  "exclusions": [
+    "The exact-repeat session/client implementation authored by this reviewer",
+    "Existing canonical-envelope adapter implementation authored by this reviewer",
+    "The previous MVM patch preparation/packaging scripts authored by this reviewer",
+    "Final regenerated bundle provenance and final release/measurement acceptance"
+  ],
+  "findings": [],
+  "resolved_integration_note": "The retained final-tests E0063 was an omitted bandwidth_profile value in one existing config test Plan literal. The author supplied Default::default(); this final source was inspected. Successful root rerun remains a separate execution gate.",
+  "reviewed_properties": [
+    "Only Standard and Experimental64MiB are representable; serde and CLI spell them standard and experimental64. Missing legacy JSON/CLI input selects Standard; unknown strings fail.",
+    "Standard selects 4194304 bytes/s; Experimental64MiB selects 67108864 bytes/s. Both retain the existing 8388608-byte token burst, 128-stream ceiling, idle timeout and bounded backpressure.",
+    "The mailbox handler owns an independent budget. Existing shared egress/broker budgets and trusted-builder behavior are unchanged; profile selection does not affect display, GPU or other ports.",
+    "The profile is explicit host authority, threaded through Plan to worker argv, HostChannels, RunInputs, VirtioVsock and mailbox EgressBudget. Guest bootstrap values cannot widen the already-installed host policy.",
+    "The profile-aware setter checks live bridge connections, remembered headers and pending outbound bytes before replacing the budget or endpoint, so active reservations cannot be stranded by that setter.",
+    "Host-channel rebinding first stops I/O and clears handlers; fresh handlers use Standard. Existing handoff masks do not inherit a mailbox route/profile, and production hostd still leaves mailbox_socket absent.",
+    "Worker and session receipts include selected profile and effective rate/burst; the comparison must pair arms under the same profile. A changed rate cap is a transport configuration change, not an encoder speedup.",
+    "The zero-copy repeat identity work, cryptographic authorization, frame/queue limits, single-call window and durable publication logic are outside this profile delta and are not bypassed."
+  ],
+  "evidence": {
+    "observed_profile_contract_green": {
+      "log": "bandwidth-profile-green.txt",
+      "passed": 1,
+      "failed": 0
+    },
+    "controlled_clock_budget_test": "Written and source-reviewed; its direct upstream workspace build was interrupted before test execution. bandwidth-budget-interruption.json explicitly marks this NOT_A_RED_RESULT. No passing runtime result is inferred.",
+    "final_integrated_tests": "Root owns the final corrective native tests, Clippy and frozen host/guest builds.",
+    "actual_guest_measurements": "Pending registered campaign. This source review makes no throughput, WAN, energy or production-security qualification claim."
+  },
+  "source_roots": {
+    "spiralcore": ".",
+    "mvm": "/Users/casey.allard/spiralcore/local/mvm-vsock-20261031/mvm-worktree",
+    "mvm_base": "3104a12c5b071a6851323fa8115d2afaf3f0bb8b"
+  },
+  "reviewed_hashes": [
+    {
+      "root": "spiralcore",
+      "path": "crates/spiralcore-mvm-live/src/config.rs",
+      "sha256": "2897052d19a2d37b0eebe4ebb91e0fe47a141f02a7db43e733d06636a1fcd6fc"
+    },
+    {
+      "root": "spiralcore",
+      "path": "crates/spiralcore-mvm-live/src/main.rs",
+      "sha256": "cbcacb49d49754c194b6965087af33afb91a7d4b0300811bd6d8e57aa70964e9"
+    },
+    {
+      "root": "spiralcore",
+      "path": "crates/spiralcore-mvm-live/src/host.rs",
+      "sha256": "481f007e38e7c2b021a847786652b8786a63ce225e1de7d79a905026176fb1fd"
+    },
+    {
+      "root": "spiralcore",
+      "path": "crates/spiralcore-mvm-live/src/orchestrator.rs",
+      "sha256": "2a91a8a847d912222668d761c5ab1d66c9b06cea735f646b350c1bcf8203b75f"
+    },
+    {
+      "root": "spiralcore",
+      "path": "crates/spiralcore-mvm-live/tests/bandwidth_profile.rs",
+      "sha256": "4318f3f1ccbd082106e4ab0aa41ffbac01146233a89b3c115c1a1e281aa57e86"
+    },
+    {
+      "root": "spiralcore",
+      "path": "docs/specs/2026-11-01-mvm-bandwidth-profile.md",
+      "sha256": "dc755e8cb9ef651be51c29aa99e452a83fbc445d85be112f7f87c015c72f6d72"
+    },
+    {
+      "root": "spiralcore",
+      "path": "docs/contracts/mvm-bandwidth-profile-v1.schema.json",
+      "sha256": "a30251ec36a3a1633c8865f1d5b95042136134aaeb666286a8a78a3e4aa7b03e"
+    },
+    {
+      "root": "mvm",
+      "path": "crates/mvm-contract/src/protocol/mailbox.rs",
+      "sha256": "e9489b20cf50879f86dc97809004834897ef81da475f4aa5e34091f9027f3ff9"
+    },
+    {
+      "root": "mvm",
+      "path": "crates/mvm-vmm/src/vsock_egress_bridge/substitution_bridge.rs",
+      "sha256": "0d1d2cd62f083eab177f21796eee3662a644922c1d62acd006e57f2dfbbe418f"
+    },
+    {
+      "root": "mvm",
+      "path": "crates/mvm-vmm/src/vmm/vsock_handlers/mod.rs",
+      "sha256": "da84dea532be277a38357933e529acaca76903004ef728ce5bb2268a2aa14bfe"
+    },
+    {
+      "root": "mvm",
+      "path": "crates/mvm-vmm/src/vmm/vsock.rs",
+      "sha256": "84405beecbc8a8e2b72b2edd2b1f2c9d73fef6ec4ec35f135b84bbe857e4a6a8"
+    },
+    {
+      "root": "mvm",
+      "path": "crates/mvm-vmm/src/vmm/vsock/bindings.rs",
+      "sha256": "f8b20481d77257c85f63bd9b49cba082a9164825c16721b8687e5dcd4c937cb6"
+    },
+    {
+      "root": "mvm",
+      "path": "crates/mvm-runtime/src/backends/hvf/host_channels.rs",
+      "sha256": "7fb8f6711c09c74ed0de1fce9edd44b8492054bb2aa963f28fda0695eb394aea"
+    },
+    {
+      "root": "mvm",
+      "path": "crates/mvm-runtime/src/backends/hvf/kernel_boot.rs",
+      "sha256": "bee7b1699a342dd21a70b9bc2477057c8f6f7c25d7e0351d311c51eace0d0c02"
+    },
+    {
+      "root": "mvm",
+      "path": "crates/mvm-hostd/src/bin/mvm-hvf-supervisor.rs",
+      "sha256": "a42b048c71c64c6f20113571507b996b698cf16e47b4824396516f79602511ea"
+    }
+  ],
+  "trust_limit": "The experimental launcher remains trusted and provisions keys; opaque forwarding does not establish secrecy against a compromised host."
+}

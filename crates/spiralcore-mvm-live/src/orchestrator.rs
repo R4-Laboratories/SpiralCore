@@ -123,6 +123,7 @@ impl Worker {
             .arg(kernel)
             .arg(disk.unwrap_or(Path::new("-")))
             .arg(socket.unwrap_or(Path::new("-")))
+            .arg(bootstrap.plan.bandwidth_profile.as_str())
             .stdin(Stdio::piped())
             .stdout(stdout)
             .stderr(stderr)
@@ -482,6 +483,8 @@ fn session_inner(
         .checked_mul(if plan.stage == Stage::Two { 2 } else { 1 })
         .ok_or("physical byte overflow")?;
     let value = json!({"event":"session_done","ok":true,"plan":plan,"sender":sender,"receiver":receiver,
+        "mailbox_rate_bytes_per_second":plan.bandwidth_profile.bytes_per_second(),
+        "mailbox_burst_bytes":plan.bandwidth_profile.burst_bytes(),
         "logical_envelope_and_framing_bytes":logical,"physical_vsock_stream_bytes":physical,
         "relay":relay_receipt,"sender_worker":worker_a,"receiver_worker":worker_b,"recovery_worker":recovery,
         "pairwise_clock_offset_ms":a_offset-b_offset,
@@ -507,6 +510,7 @@ mod tests {
             arm: Arm::Warm,
             size: 4096,
             trial: 0,
+            bandwidth_profile: Default::default(),
         })
         .unwrap();
         let material = pair.sender.outgoing.as_ref().unwrap();

@@ -1,0 +1,253 @@
+{
+  "schema": "spiralcore.mvm.overhead-amendment.v1",
+  "registered_utc": "2026-11-01T22:15:15Z",
+  "before_any_vm_launch": true,
+  "reason": "Two unrelated UOR labs are compiling on the shared host. Do not stop or inspect their work. Finish owned builds, then interleave frozen binaries and record ambient load instead of waiting indefinitely.",
+  "supersedes": [
+    "phases executed as separate blocks",
+    "acceptance.no_build_overlap applies to this SpiralCore task only"
+  ],
+  "phase_orders": [
+    [
+      "before-standard",
+      "after-standard",
+      "after-experimental64"
+    ],
+    [
+      "after-standard",
+      "after-experimental64",
+      "before-standard"
+    ],
+    [
+      "after-experimental64",
+      "before-standard",
+      "after-standard"
+    ]
+  ],
+  "execution_order": [
+    {
+      "phase": "before-standard",
+      "trial": 0,
+      "size": 1048576,
+      "arm": "whole"
+    },
+    {
+      "phase": "after-standard",
+      "trial": 0,
+      "size": 1048576,
+      "arm": "whole"
+    },
+    {
+      "phase": "after-experimental64",
+      "trial": 0,
+      "size": 1048576,
+      "arm": "whole"
+    },
+    {
+      "phase": "before-standard",
+      "trial": 0,
+      "size": 1048576,
+      "arm": "warm"
+    },
+    {
+      "phase": "after-standard",
+      "trial": 0,
+      "size": 1048576,
+      "arm": "warm"
+    },
+    {
+      "phase": "after-experimental64",
+      "trial": 0,
+      "size": 1048576,
+      "arm": "warm"
+    },
+    {
+      "phase": "before-standard",
+      "trial": 0,
+      "size": 16777216,
+      "arm": "whole"
+    },
+    {
+      "phase": "after-standard",
+      "trial": 0,
+      "size": 16777216,
+      "arm": "whole"
+    },
+    {
+      "phase": "after-experimental64",
+      "trial": 0,
+      "size": 16777216,
+      "arm": "whole"
+    },
+    {
+      "phase": "before-standard",
+      "trial": 0,
+      "size": 16777216,
+      "arm": "warm"
+    },
+    {
+      "phase": "after-standard",
+      "trial": 0,
+      "size": 16777216,
+      "arm": "warm"
+    },
+    {
+      "phase": "after-experimental64",
+      "trial": 0,
+      "size": 16777216,
+      "arm": "warm"
+    },
+    {
+      "phase": "after-standard",
+      "trial": 1,
+      "size": 1048576,
+      "arm": "warm"
+    },
+    {
+      "phase": "after-experimental64",
+      "trial": 1,
+      "size": 1048576,
+      "arm": "warm"
+    },
+    {
+      "phase": "before-standard",
+      "trial": 1,
+      "size": 1048576,
+      "arm": "warm"
+    },
+    {
+      "phase": "after-standard",
+      "trial": 1,
+      "size": 1048576,
+      "arm": "whole"
+    },
+    {
+      "phase": "after-experimental64",
+      "trial": 1,
+      "size": 1048576,
+      "arm": "whole"
+    },
+    {
+      "phase": "before-standard",
+      "trial": 1,
+      "size": 1048576,
+      "arm": "whole"
+    },
+    {
+      "phase": "after-standard",
+      "trial": 1,
+      "size": 16777216,
+      "arm": "warm"
+    },
+    {
+      "phase": "after-experimental64",
+      "trial": 1,
+      "size": 16777216,
+      "arm": "warm"
+    },
+    {
+      "phase": "before-standard",
+      "trial": 1,
+      "size": 16777216,
+      "arm": "warm"
+    },
+    {
+      "phase": "after-standard",
+      "trial": 1,
+      "size": 16777216,
+      "arm": "whole"
+    },
+    {
+      "phase": "after-experimental64",
+      "trial": 1,
+      "size": 16777216,
+      "arm": "whole"
+    },
+    {
+      "phase": "before-standard",
+      "trial": 1,
+      "size": 16777216,
+      "arm": "whole"
+    },
+    {
+      "phase": "after-experimental64",
+      "trial": 2,
+      "size": 1048576,
+      "arm": "whole"
+    },
+    {
+      "phase": "before-standard",
+      "trial": 2,
+      "size": 1048576,
+      "arm": "whole"
+    },
+    {
+      "phase": "after-standard",
+      "trial": 2,
+      "size": 1048576,
+      "arm": "whole"
+    },
+    {
+      "phase": "after-experimental64",
+      "trial": 2,
+      "size": 1048576,
+      "arm": "warm"
+    },
+    {
+      "phase": "before-standard",
+      "trial": 2,
+      "size": 1048576,
+      "arm": "warm"
+    },
+    {
+      "phase": "after-standard",
+      "trial": 2,
+      "size": 1048576,
+      "arm": "warm"
+    },
+    {
+      "phase": "after-experimental64",
+      "trial": 2,
+      "size": 16777216,
+      "arm": "whole"
+    },
+    {
+      "phase": "before-standard",
+      "trial": 2,
+      "size": 16777216,
+      "arm": "whole"
+    },
+    {
+      "phase": "after-standard",
+      "trial": 2,
+      "size": 16777216,
+      "arm": "whole"
+    },
+    {
+      "phase": "after-experimental64",
+      "trial": 2,
+      "size": 16777216,
+      "arm": "warm"
+    },
+    {
+      "phase": "before-standard",
+      "trial": 2,
+      "size": 16777216,
+      "arm": "warm"
+    },
+    {
+      "phase": "after-standard",
+      "trial": 2,
+      "size": 16777216,
+      "arm": "warm"
+    }
+  ],
+  "retained_session_count": 36,
+  "trials_per_group": 3,
+  "recorded_environment": "process names and counts for active compilers, host load before/after each session; no process arguments or other-project file inspection",
+  "own_build_policy": "all SpiralCore task builds/tests complete before timing starts",
+  "interpretation": "CPU and elapsed results are descriptive under observed shared-host load, not clean-host qualification. No compiler observed at endpoints is an observation, not proof of no contention during the entire interval.",
+  "pairing": "same trial/size/kind object IDs and exact lengths across all phases and arms",
+  "preflight_failure": "qualification/preflight-build-overlap-01",
+  "unchanged": "binary/kernel pins, exact reconstruction/reopen and keyless reboot, byte counters, rate profiles, sample sizes, fixture identity, disk cleanup and scope"
+}
