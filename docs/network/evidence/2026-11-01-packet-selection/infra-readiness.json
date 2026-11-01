@@ -1,0 +1,59 @@
+{
+  "schema": "spiralcore.packet-selection.infrastructure-readiness.v1",
+  "verdict": "IMPLEMENTED_STATIC_CHECKS_PASS_RUNTIME_PENDING",
+  "scope": "Implementation-owner check, not an independent source review or network measurement.",
+  "files_sha256": {
+    "tools/gateway-network/packet-selection-netns.sh": "4782cd19bb498d5451ea97d3bb00b7e6be80ba4a0eefbd523e6f4779b610a6ad",
+    "tools/gateway-network/packet-selection-infra-check.sh": "46794304bf021b1b2b646fe3c68e10392c4b99924c70becbb8fc5e987a5a5bc9",
+    ".github/workflows/spiralcore-packet-selection.yml": "77d9ba6332c6053856f3db7dfc46aa11c84c8a9ff1b1acd09407153bdcc22561",
+    "docs/network/evidence/2026-11-01-packet-selection/network-registration.json": "e99d2a946674cc903c1a11632fa485ad36b3085480f0a45783426b39bfbbfc15",
+    "docs/network/evidence/2026-11-01-packet-selection/network-contract.md": "fe89b1937ba606528219dcdf191b1c6cff7036627cd96e6ea98a64173ca0711b"
+  },
+  "checks": [
+    {
+      "command": "bash tools/gateway-network/packet-selection-infra-check.sh docs/network/evidence/2026-11-01-packet-selection/infra-sequence",
+      "exit": 0,
+      "result": "Bash syntax, one executable registration fixture and nine rejected registration mutations; original launch_ready remains false."
+    },
+    {
+      "command": "shellcheck tools/gateway-network/packet-selection-netns.sh tools/gateway-network/packet-selection-infra-check.sh",
+      "exit": 0,
+      "result": "No findings after explicit namespace collision refusal and numeric owned-PID iteration. SC2024 is intentionally suppressed because public command output is redirected by its unprivileged runner owner."
+    },
+    {
+      "command": "ruby YAML.parse_file(.github/workflows/spiralcore-packet-selection.yml)",
+      "exit": 0,
+      "result": "YAML syntax valid; GitHub workflow execution is still pending."
+    },
+    {
+      "command": "git diff --check",
+      "exit": 0,
+      "result": "No whitespace errors in current changes."
+    }
+  ],
+  "design": {
+    "primary_sessions": 24,
+    "smoke_sessions": 8,
+    "logical_application_transfers": 128,
+    "transport_flows": 64,
+    "input_bytes": 1233256448,
+    "persistence": "Three TCP objects on the same connection, then one small UDP flow, per authenticated gateway session.",
+    "network": "Owned router namespace applies delay/rate independently in each direction; no host route/firewall/NAT changes.",
+    "calibration": "20 ICMP replies per side, final 16 mean, plus forward and reverse iperf3 receiver goodput on each shaped session; calibration outside capture; reset qdiscs before measurement.",
+    "measurement": "One-interface bidirectional capture; source/binary identity, selector accounting, exactness, capture completeness, qdisc drops and host routes checked.",
+    "permissions": "Same-repository PR heads only, contents:read, no account secrets, pinned existing action revisions, 45 minute job and 25 minute campaign.",
+    "cleanup": "Owned namespaces/processes only; private test keys/fixtures deleted from owned temporary path; formal logs retained."
+  },
+  "pending": [
+    "Root-owned TCP sequence probe and packet selector implementation/tests/freeze",
+    "Independent review of new harness/workflow",
+    "Set launch_ready only after the retained checks and approved freeze",
+    "Actual Linux PR execution, measured calibration, paired results and archival custody"
+  ],
+  "not_claimed": [
+    "Actual WAN or two-host UDP reachability",
+    "Runtime calibration success",
+    "Adaptive performance win or default adoption",
+    "Production/FIPS/CUI/energy qualification"
+  ]
+}

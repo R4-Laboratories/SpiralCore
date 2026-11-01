@@ -43,6 +43,25 @@ fn config_is_strict_and_scoped() {
         .is_err());
 }
 #[test]
+fn packet_profiles_are_explicit_and_unknown_profiles_are_rejected() {
+    for mode in ["raw", "zstd", "fast-zstd", "adaptive"] {
+        let mut value = config();
+        value["mode"] = mode.into();
+        serde_json::from_value::<Config>(value)
+            .unwrap()
+            .validate()
+            .unwrap();
+    }
+    for mode in ["fast", "auto", "Zstd", ""] {
+        let mut value = config();
+        value["mode"] = mode.into();
+        assert!(serde_json::from_value::<Config>(value)
+            .unwrap()
+            .validate()
+            .is_err());
+    }
+}
+#[test]
 fn address_authorization_is_directional_and_fails_closed() {
     let c: Config = serde_json::from_value(config()).unwrap();
     let mut p = vec![0u8; 20];

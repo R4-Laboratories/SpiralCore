@@ -1,0 +1,99 @@
+name: SpiralCore packet selection on local and shaped links
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - 'crates/spiralcore-gateway/**'
+      - 'crates/spiralcore-gateway-core/**'
+      - 'tools/gateway-network/packet-selection-netns.sh'
+      - 'tools/gateway-network/packet-selection-infra-check.sh'
+      - 'docs/network/evidence/2026-11-01-packet-selection/network-registration.json'
+      - '.github/workflows/spiralcore-packet-selection.yml'
+permissions:
+  contents: read
+concurrency:
+  group: spiralcore-packet-selection-pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+jobs:
+  packet-selection:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.run_attempt == 1
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      EXPECTED_SOURCE: ${{ github.event.pull_request.head.sha }}
+      CARGO_INCREMENTAL: 0
+      CARGO_BUILD_JOBS: 2
+      CARGO_TARGET_DIR: ${{ github.workspace }}/target
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - name: Bind source and registered dose before setup
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir packet-evidence
+          [[ "$EXPECTED_SOURCE" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$(git rev-parse HEAD)" == "$EXPECTED_SOURCE" ]]
+          [[ "$GITHUB_RUN_ATTEMPT" == 1 ]]
+          [[ -z "${RUSTFLAGS:-}${CARGO_ENCODED_RUSTFLAGS:-}${RUSTC_WRAPPER:-}${RUSTC_WORKSPACE_WRAPPER:-}${CARGO_BUILD_TARGET:-}" ]]
+          [[ "$(df -Pk . | awk 'NR==2 {print $4}')" -ge 4194304 ]]
+          bash tools/gateway-network/packet-selection-infra-check.sh packet-evidence/infra
+          jq -n --arg source "$EXPECTED_SOURCE" --arg workflow "$GITHUB_WORKFLOW_SHA" --arg workflow_ref "$GITHUB_WORKFLOW_REF" \
+            --arg run "$GITHUB_RUN_ID" --arg attempt "$GITHUB_RUN_ATTEMPT" \
+            '{source:$source,workflow_sha:$workflow,workflow_ref:$workflow_ref,run_id:$run,run_attempt:$attempt,
+              scope:"same-repository PR head; isolated three-namespace local/shaped link; no secrets; not actual WAN"}' > packet-evidence/source.json
+          git ls-files -z -- crates/spiralcore-gateway crates/spiralcore-gateway-core tools/gateway-network \
+            .github/workflows/spiralcore-packet-selection.yml docs/network/evidence/2026-11-01-packet-selection/network-registration.json \
+            | sort -z | xargs -0 sha256sum > packet-evidence/source-files.sha256
+      - name: Install bounded runner dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          rustup toolchain install 1.97.1 --profile minimal --component clippy
+          sudo apt-get update -qq
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq tcpdump ethtool iproute2 iperf3 iputils-ping
+          rustc +1.97.1 -vV > packet-evidence/rustc.txt
+          uname -a > packet-evidence/platform.txt
+          sudo -n true
+          test -c /dev/net/tun
+      - name: Test and freeze the exact gateway and probes
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo +1.97.1 test --locked --manifest-path crates/spiralcore-gateway-core/Cargo.toml --all-targets 2>&1 | tee packet-evidence/core-tests.log
+          cargo +1.97.1 test --locked --manifest-path crates/spiralcore-gateway/Cargo.toml --all-targets 2>&1 | tee packet-evidence/gateway-tests.log
+          cargo +1.97.1 clippy --locked --manifest-path crates/spiralcore-gateway/Cargo.toml --all-targets -- -D warnings 2>&1 | tee packet-evidence/clippy.log
+          cargo +1.97.1 build --release --locked --manifest-path crates/spiralcore-gateway/Cargo.toml --bins 2>&1 | tee packet-evidence/build.log
+          sha256sum -c packet-evidence/source-files.sha256 > packet-evidence/source-check.log
+          git diff --exit-code > packet-evidence/source-clean.log
+          mkdir packet-evidence/frozen
+          cp "$CARGO_TARGET_DIR/release/spiralcore-gateway" "$CARGO_TARGET_DIR/release/spiralcore-gateway-probe" packet-evidence/frozen/
+          sha256sum packet-evidence/frozen/* > packet-evidence/binaries.sha256
+      - name: Run the registered twenty-four primary and eight smoke sessions
+        timeout-minutes: 25
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash tools/gateway-network/packet-selection-netns.sh run "$PWD/packet-evidence/campaign" \
+            "$PWD/packet-evidence/frozen/spiralcore-gateway" "$PWD/packet-evidence/frozen/spiralcore-gateway-probe" \
+            "$PWD/docs/network/evidence/2026-11-01-packet-selection/network-registration.json" 2>&1 | tee packet-evidence/campaign.log
+          jq -e '.sessions==32 and .primary_sessions==24 and .smoke_sessions==8 and .application_transfers==128 and .transport_flows==64 and .exact and .capture_complete and .calibration_complete and .host_routes_unchanged' packet-evidence/campaign/complete.json
+          sha256sum -c packet-evidence/binaries.sha256 > packet-evidence/binaries-after.log
+      - name: Seal available public evidence including failures
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p packet-evidence
+          find packet-evidence -type f ! -name artifact.sha256 -print0 | sort -z | xargs -0 -r sha256sum > packet-evidence/artifact.sha256
+      - name: Retain compact evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: spiralcore-packet-selection-${{ github.run_id }}-${{ github.event.pull_request.head.sha }}
+          path: packet-evidence/
+          retention-days: 14
+          if-no-files-found: error
+          compression-level: 3

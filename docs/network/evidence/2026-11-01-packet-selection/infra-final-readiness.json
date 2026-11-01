@@ -1,0 +1,34 @@
+{
+  "schema": "spiralcore.packet-selection.infrastructure-final.v1",
+  "status": "LAUNCH_READY_NOT_RUN",
+  "release_gate": "Parent approved the independent core/service/infra reviews; independent probe review passed after observed deferred-report RED/GREEN. No benchmark has run.",
+  "source_checks": {
+    "infra_result": "infra-final/result.json",
+    "registration_actual_launch_ready": true,
+    "registration_positive": 1,
+    "registration_negatives": 9,
+    "congestion_positives": 2,
+    "statistics_negatives": 5,
+    "bash_syntax": "PASS",
+    "shellcheck": "PASS",
+    "yaml_syntax": "PASS",
+    "diff_whitespace": "PASS"
+  },
+  "files_sha256": {
+    "tools/gateway-network/packet-selection-netns.sh": "1606baad5ede9cb3d040671bd57d95d1fe8f38a1bb41b2c2f5d2d8913c6866d4",
+    "tools/gateway-network/packet-selection-infra-check.sh": "d3e1480bbf466c608d40226a7a87fafd9deb9d274c6e3545375498924caa6901",
+    ".github/workflows/spiralcore-packet-selection.yml": "dbe28d66f252918ed689daefb81cb9cd69f6b18a263dc9e35b3586ec0d7814c5",
+    "network-registration.json": "04e82dbde48856668a26ffe34b19c2d5aa7c72c5638b4ebea5bd1164b29a030c",
+    "network-contract.md": "4e157efaea69489ec302d820a79935a11f4cbd159c89a3df2d1ac1cbe3b5a110"
+  },
+  "reviewed_probe": {
+    "sha256": "18bdc36a479f798a11631df28d3049c797aa3dad8656301be5e798a690f472f0",
+    "tests_sha256": "95955d8eab689b2bb3eafbdcbf36342d7edb9f972d90f88b1fd81ff1b33f243b",
+    "independent_reviewer": "mvm_tests",
+    "received_verdict": "PASS; per-object CPU/wall snapshots precede all deferred report hashing/JSON/I/O; exact receipt first.",
+    "own_repeated_builds": 0
+  },
+  "remaining": "Root commits/pushes frozen source. CI builds and hashes release executables before traffic, then runs only registered dose and retains all outcomes. Actual measured calibration/results and archive custody remain pending.",
+  "scope": "Local unshaped/shaped namespaces, not actual WAN. No runtime, speed, energy or production claim.",
+  "final_whitespace_rebind": "Parent removed only one extra trailing LF from each new script/workflow before staging; behavior unchanged. Final hashes recomputed after that edit. Prior static checks remain recorded, and parent observed staged source-only diff --check clean. No benchmark or build was repeated."
+}

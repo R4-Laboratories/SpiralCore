@@ -1,0 +1,186 @@
+{
+  "schema": "spiralcore.packet-selection.registration.v1",
+  "status": "REGISTERED_NOT_RUN",
+  "launch_ready": true,
+  "source_binding": "Exact same-repository PR head plus executed workflow SHA; freeze source and release executable hashes before traffic. No source edits or concurrent project builds during a campaign.",
+  "modes": [
+    "raw",
+    "zstd",
+    "fast-zstd",
+    "adaptive"
+  ],
+  "mode_contract": "raw = literal; zstd = existing legacy prepared configuration; fast-zstd = prepared level 1/window_log 11/no long-distance matching; adaptive = selector over fast-zstd/literal. Config spellings confirmed; adaptive is an experimental candidate, not an approved default.",
+  "profiles": [
+    {
+      "name": "lan",
+      "delay_ms_per_direction": 0,
+      "rate_bits_per_second_per_direction": null
+    },
+    {
+      "name": "wan80-10",
+      "delay_ms_per_direction": 40,
+      "rate_bits_per_second_per_direction": 10000000
+    }
+  ],
+  "topology": {
+    "host": "one standard GitHub-hosted ubuntu-24.04 runner",
+    "namespaces": [
+      "owned-endpoint-a",
+      "owned-router",
+      "owned-endpoint-b"
+    ],
+    "links": "Two isolated veth pairs; IPv4 forwarding enabled only inside owned router namespace.",
+    "endpoints": [
+      "10.203.0.1/30",
+      "10.203.0.6/30"
+    ],
+    "router": [
+      "10.203.0.2/30",
+      "10.203.0.5/30"
+    ],
+    "overlay_ipv4": [
+      "10.204.0.1/32",
+      "10.204.0.2/32"
+    ],
+    "overlay_ipv6": [
+      "fd42:5343::1/128",
+      "fd42:5343::2/128"
+    ],
+    "tun_mtu": 1280,
+    "quic_port": 4433,
+    "queue_limit_packets": 256,
+    "shaping": "Router egress toward each endpoint: netem delay 40ms rate 10mbit limit 256. No configured loss, jitter, reordering or corruption. A 256-packet queue is several 40ms directional BDPs but below one second at full MTU. Retain qdisc statistics and reject unexpected measurement drops. LAN has no impairment qdisc.",
+    "isolation": "Only endpoint-specific namespace routes. No host route, firewall, default route, NAT or forwarding change. Offloads disabled and final state recorded on all four veth ends.",
+    "capture": "One endpoint-a underlay interface, both directions, classic Ethernet PCAP snaplen 96; capture starts after calibration but before QUIC handshake and ends after clean shutdown/drain."
+  },
+  "dose": {
+    "trials": [
+      0,
+      1,
+      2
+    ],
+    "primary_ip_version": 4,
+    "primary_sessions": 24,
+    "smoke_ip_version": 6,
+    "smoke_sessions": 8,
+    "total_sessions": 32,
+    "total_flows": 128,
+    "primary_flows": [
+      {
+        "name": "tcp-pattern-before",
+        "protocol": "tcp",
+        "fixture": "pattern",
+        "bytes": 16777216
+      },
+      {
+        "name": "tcp-opaque",
+        "protocol": "tcp",
+        "fixture": "opaque",
+        "bytes": 16777216
+      },
+      {
+        "name": "tcp-pattern-after",
+        "protocol": "tcp",
+        "fixture": "pattern",
+        "bytes": 16777216
+      },
+      {
+        "name": "udp-smoke",
+        "protocol": "udp",
+        "fixture": "opaque",
+        "bytes": 4096
+      }
+    ],
+    "smoke_flows": [
+      {
+        "name": "tcp-pattern-before",
+        "protocol": "tcp",
+        "fixture": "pattern",
+        "bytes": 1048576
+      },
+      {
+        "name": "tcp-opaque",
+        "protocol": "tcp",
+        "fixture": "opaque",
+        "bytes": 1048576
+      },
+      {
+        "name": "tcp-pattern-after",
+        "protocol": "tcp",
+        "fixture": "pattern",
+        "bytes": 1048576
+      },
+      {
+        "name": "udp-smoke",
+        "protocol": "udp",
+        "fixture": "opaque",
+        "bytes": 4096
+      }
+    ],
+    "total_application_input_bytes": 1233256448,
+    "mode_order_by_trial": [
+      [
+        "raw",
+        "zstd",
+        "fast-zstd",
+        "adaptive"
+      ],
+      [
+        "zstd",
+        "fast-zstd",
+        "adaptive",
+        "raw"
+      ],
+      [
+        "fast-zstd",
+        "adaptive",
+        "raw",
+        "zstd"
+      ]
+    ],
+    "profile_order_by_trial": [
+      [
+        "lan",
+        "wan80-10"
+      ],
+      [
+        "wan80-10",
+        "lan"
+      ],
+      [
+        "lan",
+        "wan80-10"
+      ]
+    ],
+    "smoke_trial": 0,
+    "fixture_seed": "1729 + trial; identical fixture hashes across modes/profiles; before/after patterned flow uses same bytes.",
+    "peer_state": "Fresh authenticated gateway pair per arm/profile/trial; prepared codec/selector state persists across four flows. Same test PKI for all modes. No warm cache implied.",
+    "warmup": "No discarded native trials; first patterned flow measures prepared-state cold entry and final patterned flow measures recovery after opaque traffic.",
+    "udp": "Existing bounded stop-and-wait exact echo; 5 chunks for 4096 bytes plus final receipt. All return traffic/retries counted. Not a UDP throughput benchmark."
+  },
+  "calibration": {
+    "interval": "Before capture/gateway launch for each fresh shaped topology; collect final calibration state and reset/recreate qdiscs before measured QUIC traffic.",
+    "rtt": "20 ICMP echoes from each side to the opposite underlay endpoint; retain all samples and average the final 16 after four startup samples. Require 20 received and shaped mean 75..90 ms; LAN mean below 20 ms without claiming an exact rate.",
+    "rate": "iperf3 TCP JSON, each direction separately, 3 measured seconds after 1 omitted startup second. Receiver application goodput 8.5..10.2 Mbit/s in each direction; retain sender/receiver intervals and source version. Calibration is excluded from transfer metrics.",
+    "tc": "tc -s -j qdisc show before and after calibration and gateway session on both router egresses; retain exact command/configuration. Configured rate alone is insufficient.",
+    "failure": "Retain failed profile-validation evidence and stop; do not relabel it as a valid 80 ms / 10 Mbit/s result or silently rerun."
+  },
+  "measurement": {
+    "exact": "Each client and server compares exact byte string and length; hashes bind matching fixtures across arms. Preserve all 256 exact endpoint receipts.",
+    "bytes": "Capture includes both-direction QUIC auth, framing, ACKs, retransmissions and observed close/drain. Retain captured IP, UDP payload and Ethernet original lengths separately; excludes Ethernet FCS/preamble/inter-frame gap.",
+    "cpu": "Both gateway process CPUs and all application process CPUs separately. Codec CPU is a subset. No nested addition or energy claim.",
+    "timing": "Per-flow client completion includes connection through exactness receipt; gateway startup-to-preclose snapshot separately. Measure harness total session wall, including setup/calibration/teardown, as a separate interval. Do not subtract CPU from wall to invent send time.",
+    "attribution": "Mixed-session capture/CPU totals are not per-flow wire/codec measurements. Per-flow application times remain separately reported.",
+    "statistics": "Three descriptive matched trials for primary IPv4 profiles; medians and median trial-paired ratios; no p95 or confidence claim. IPv6 smoke is exact functional coverage only.",
+    "acceptance": "All exact receipts, full capture/no kernel drops, no gateway malformed/denied/capacity/expiry drops, valid shaped calibration, unchanged host routes, unchanged frozen binaries. Report performance losses and adaptive byte tradeoffs without requiring a win."
+  },
+  "custody": {
+    "automatic_retries": false,
+    "free_disk_floor_bytes": 4294967296,
+    "job_timeout_minutes": 45,
+    "campaign_timeout_minutes": 25,
+    "private_material": "Generated test private keys/config/fixtures remain in owned temporary directory outside artifacts. Public certificate pins retained.",
+    "cleanup": "Remove only owned process/namespace/fixture state. Keep all formal failures and compact raw receipts. Archive captures+binaries to existing private HF dataset after checksum-verified original GitHub artifact upload/redownload; remove local large copies only after verified custody."
+  },
+  "scope": "Shaped local Linux TUN/QUIC execution, not an actual Internet WAN or two-physical-host claim. No paid provisioning, new accounts/secrets, macOS routes or large local VM."
+}

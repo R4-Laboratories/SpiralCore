@@ -1,26 +1,41 @@
 # Packet selection: bounded network comparison
 
 Status: registered, not run. `network-registration.json` fixes the dose before
-implementation or traffic. Launch remains false until the four mode spellings,
-frozen source and harness checks are ready. Adaptive is an experimental arm; a
+implementation or traffic. The reviewed PR workflow is now launch-ready; its
+source/binary freeze checks still run before traffic. The four mode spellings
+are confirmed. Adaptive is an experimental arm; a
 successful experiment does not automatically make it the service default.
 
 The primary comparison is 24 IPv4 persistent peer sessions: three matched trials
 of Raw, legacy zstd, fast zstd and Adaptive under an unshaped local link and a
 bidirectionally shaped 80 ms RTT / 10 Mbit/s link. Every session sends 16 MiB
 patterned TCP, 16 MiB opaque TCP, the same 16 MiB patterned TCP again, then a
-4 KiB UDP exact-echo smoke. Eight separate IPv6 smoke sessions use 1 MiB TCP
+4 KiB UDP exact-echo smoke. The three TCP objects share one persistent TCP
+connection so that the final pattern actually tests the same selector flow
+state after opaque traffic. Eight separate IPv6 smoke sessions use 1 MiB TCP
 fixtures and the same 4 KiB UDP dose. All 32 sessions retain exact sender and
-receiver receipts. This totals 128 flows and 1,176.125 MiB of application input.
+receiver receipts. This totals 128 application transfers on 64 transport flows
+and 1,176.125 MiB of application input. This persistent-socket correction was
+registered before any network execution; the traffic dose is unchanged.
 
 Two endpoint namespaces connect through a third owned router namespace. Its two
-egresses apply 40 ms delay and 10 Mbit/s independently. Shaping in this middle
+egresses apply 40 ms delay and 10 Mbit/s independently with a 256-packet queue
+limit. Shaping in this middle
 namespace avoids placing delay on the originating TCP endpoint. Netem is subject
 to kernel timer and queuing effects, so the campaign checks observed RTT and
 receiver goodput in both directions, preserves `tc -s -j` state, and stops if
 calibration falls outside the registered tolerance. The iproute2 documentation
 explains these limitations and the sender-side TSQ concern:
 [upstream netem manual](https://github.com/iproute2/iproute2/blob/main/man/man8/tc-netem.8).
+
+The finite queue may drop packets under congestion even though no random loss is
+configured. Before launch, acceptance was amended to retain queue drops and
+reassembly expiry as measured delivery costs rather than invalidate an otherwise
+exact TCP transfer. Capture-kernel drops still invalidate complete wire totals.
+Malformed frames, authentication/policy failures and byte mismatches still fail.
+Reassembly capacity exhaustion is recorded separately as a resource-limit
+failure; the current service also includes its decoder `Error::Limit` in
+`invalid_frames`. Queue occupancy must drain before final capture acceptance.
 
 Calibration uses bounded ICMP and iperf3 before the gateway capture. Fresh qdiscs
 separate calibration counters from measurement. A single endpoint underlay
@@ -29,7 +44,12 @@ close/drain. Report captured IP bytes and Ethernet record lengths separately;
 this does not measure FCS, preamble or inter-frame gap. Captures and gateway CPU
 cover the whole mixed session, so per-flow wire/codec claims are not available.
 
-Client completion time includes connection, transfer and the exactness receipt.
+The first TCP object's client completion includes connection, transfer and the
+exactness receipt. Later objects measure transfer and receipt on the same live
+connection; they do not include the prior object's interval.
+The probe freezes each interval immediately after its exact receipt and defers
+all three report hashes/JSON writes until the entire sequence finishes, keeping
+report I/O out of the next transfer's peer wait.
 Gateway process CPU, application process CPU, codec CPU subsets, gateway active
 wall and full harness wall remain separately labeled. Pattern-after-opaque is a
 selector-recovery check, not a warm packet cache. The opaque fixture is seeded
