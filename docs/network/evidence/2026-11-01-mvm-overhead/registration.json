@@ -1,0 +1,118 @@
+{
+  "schema": "spiralcore.mvm.overhead-registration.v1",
+  "registered_utc": "2026-11-01T22:09:31Z",
+  "baseline_source": "be5fac2991f5bea43ff3b38b0bfc4cbc7adddd21",
+  "baseline_binaries": "before-binaries.sha256",
+  "kernel_sha256": "0f97f109154a173352c07db223ecff48d44b38514b500f39cd9897701dbac0b6",
+  "stage": "two",
+  "sizes": [
+    1048576,
+    16777216
+  ],
+  "trials": [
+    0,
+    1,
+    2
+  ],
+  "phases": [
+    {
+      "name": "before-standard",
+      "binary": "before",
+      "rate_bytes_per_second": 4194304
+    },
+    {
+      "name": "after-standard",
+      "binary": "after",
+      "rate_bytes_per_second": 4194304
+    },
+    {
+      "name": "after-experimental64",
+      "binary": "after",
+      "rate_bytes_per_second": 67108864
+    }
+  ],
+  "burst_bytes": 8388608,
+  "order": [
+    {
+      "trial": 0,
+      "size": 1048576,
+      "arm": "whole"
+    },
+    {
+      "trial": 0,
+      "size": 1048576,
+      "arm": "warm"
+    },
+    {
+      "trial": 0,
+      "size": 16777216,
+      "arm": "whole"
+    },
+    {
+      "trial": 0,
+      "size": 16777216,
+      "arm": "warm"
+    },
+    {
+      "trial": 1,
+      "size": 1048576,
+      "arm": "warm"
+    },
+    {
+      "trial": 1,
+      "size": 1048576,
+      "arm": "whole"
+    },
+    {
+      "trial": 1,
+      "size": 16777216,
+      "arm": "warm"
+    },
+    {
+      "trial": 1,
+      "size": 16777216,
+      "arm": "whole"
+    },
+    {
+      "trial": 2,
+      "size": 1048576,
+      "arm": "whole"
+    },
+    {
+      "trial": 2,
+      "size": 1048576,
+      "arm": "warm"
+    },
+    {
+      "trial": 2,
+      "size": 16777216,
+      "arm": "whole"
+    },
+    {
+      "trial": 2,
+      "size": 16777216,
+      "arm": "warm"
+    }
+  ],
+  "analysis": {
+    "n": 3,
+    "statistics": "descriptive medians and matched trial ratios only; no p95 or qualification claim",
+    "warmup": "Fresh guest and receiver per session; all 3 registered trials retained. No JIT and no trial discarded.",
+    "pairing": "same nominal size, trial, kind, exact object IDs and lengths across arms and phases; shared 7 operations only for fair arm comparison",
+    "comparisons": [
+      "before-standard vs after-standard isolates implementation change",
+      "after-standard vs after-experimental64 isolates explicit rate profile",
+      "warm vs whole within each phase/profile"
+    ],
+    "timing": "operation encode through authenticated durable publication; exchange subset separately; lifecycle includes setup, boots, shutdown and keyless verification",
+    "cpu": "Guest sender process and receiver processing separately; native orchestrator plus each worker exactly once; no guest/host sum and no energy claim",
+    "bytes": "both directions canonical envelopes and framing; logical bytes and twice-logical two-hop physical stream bytes, excludes virtio credit/control headers"
+  },
+  "acceptance": {
+    "exact_publication_and_reopen": true,
+    "keyless_reboot_verify_all": true,
+    "no_build_overlap": true,
+    "minimum_free_disk_bytes": 4294967296
+  },
+  "custody": "Retain public result JSON, worker/journal receipts, stdout/stderr, exit and hashes. After verified exact result plus copied evidence hashes, remove only per-session owned receiver.ext4/cache."
+}

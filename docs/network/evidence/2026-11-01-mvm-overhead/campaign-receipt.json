@@ -1,0 +1,67 @@
+{
+  "schema": "spiralcore.mvm.overhead-campaign-receipt.v1",
+  "executor": "selector_finish",
+  "execution_status": "COMPLETE",
+  "registered_sessions": 36,
+  "actual": {
+    "sessions": 36,
+    "operations": 324,
+    "exact_reopened": true,
+    "exact_keyless_reboot": true,
+    "by_phase": [
+      {
+        "phase": "after-experimental64",
+        "sessions": 12,
+        "operations": 108
+      },
+      {
+        "phase": "after-standard",
+        "sessions": 12,
+        "operations": 108
+      },
+      {
+        "phase": "before-standard",
+        "sessions": 12,
+        "operations": 108
+      }
+    ]
+  },
+  "failures": 0,
+  "retries": 0,
+  "owned_disks_removed": 36,
+  "exact_cross_phase_fixture_ids_and_lengths": true,
+  "environment": {
+    "schema": "spiralcore.mvm.overhead-environment-summary.v1",
+    "compiler_observed_sessions": 13,
+    "sessions": 36,
+    "compiler_sessions_by_phase": [
+      {
+        "phase": "after-experimental64",
+        "n": 12,
+        "observed": 4
+      },
+      {
+        "phase": "after-standard",
+        "n": 12,
+        "observed": 5
+      },
+      {
+        "phase": "before-standard",
+        "n": 12,
+        "observed": 4
+      }
+    ],
+    "load_one_min_range": {
+      "min": 3.80,
+      "max": 21.86
+    },
+    "limitation": "Only endpoint snapshots; no inference of no mid-session contention."
+  },
+  "baseline_revision": "be5fac2991f5bea43ff3b38b0bfc4cbc7adddd21",
+  "after_revision": "a078847d2d1af1bc09dd484ef799693b69bc6355",
+  "binary_identities_rechecked_after_run": true,
+  "source_implementation_edits_by_executor": false,
+  "report": "../../mvm-overhead-results-2026-11-01.md",
+  "independent_review": "Parent independently checked324rows,252common rows, pairing and analyzer arithmetic; this receipt records executor completion, not independent source approval.",
+  "limits": "Three descriptive paired trials on one shared Mac with observed unrelated compiler load. Not WAN, physical energy, production, FIPS or CUI qualification."
+}

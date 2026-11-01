@@ -24,9 +24,12 @@ Experimental port 5257 carries canonical encrypted envelopes through real vsock.
 The production supervisor still leaves that binding disabled. Production mailbox
 service/lifecycle, Iroh, durable mailbox admission, direct/shaped WAN qualification
 and compliance remain subsequent gates. Earlier HTTP WAN measurements and this
-local MVM pilot have distinct scope. The immediate performance work is to profile
-mailbox overhead and qualify explicit bandwidth/pipelining policy; the current
-4 MiB/s limit and serial envelope exchanges dominate bulk elapsed time.
+local MVM pilot have distinct scope. The subsequent [overhead experiment](mvm-overhead-results-2026-11-01.md)
+adds a current-ACK exact-repeat shortcut and an explicit bounded 64 MiB/s profile,
+while preserving the 4 MiB/s default. All 324 operations and independent reboot
+readbacks pass. Repeats improve, but non-repeat losses and shared-host load prevent
+an overall same-profile speedup claim. Canonical envelope/serial-call overhead,
+broader performance qualification and production integration remain open.
 
 The [first canonical-envelope result](mvm-readiness-results-2026-10-31.md)
 records 78/78 exact stopped-store readbacks and fifteen passing adapter tests,

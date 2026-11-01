@@ -1,0 +1,60 @@
+{
+  "schema": "spiralcore.mvm-overhead.final-procedural.v1",
+  "observed_at_utc": "2026-11-01T22:34:02Z",
+  "reviewer": "/root/mvm_boundary",
+  "role": "harness-optimizer",
+  "verdict": "PASS_FOR_BOUNDED_PROCEDURAL_GATE",
+  "source_revision": "a078847d2d1af1bc09dd484ef799693b69bc6355",
+  "scope": "Retained command receipts, exact identities, existing cross-author review records and all registered session/recovery/custody records only. No test, build, VM, coverage or performance rerun.",
+  "observed": {
+    "final_command_exits": {
+      "final-tests": 0,
+      "final-clippy": 0,
+      "final-host": 0,
+      "final-guest": 0,
+      "transfer-final-tests": 0
+    },
+    "live_tests_passed": 30,
+    "transfer_library_tests_passed": 34,
+    "transfer_integration_tests_passed": 9,
+    "transfer_diagnostic_ignored": 1,
+    "source_hashes_matched": 56,
+    "binary_hashes_matched": 4,
+    "bundle_hashes_matched": 5,
+    "patched_mvm_source_hashes_matched": 14,
+    "registered_sessions": 36,
+    "session_exits_zero": 36,
+    "exact_publications_reopened": 324,
+    "exact_keyless_readonly_reboot_verifications": 324,
+    "custody_hashes_matched": 180,
+    "owned_disks_absent_after_recorded_verified_cleanup": 36,
+    "cross_author_review_hashes_match": true
+  },
+  "review_records": [
+    "exact-repeat-independent-review.json",
+    "qualification/bandwidth-code-security-review.json",
+    "qualification/procedural-review.json"
+  ],
+  "preserved_non_success": [
+    "exact-repeat-red.exit: initial unrelated cargo-ai invocation, not behavioral RED",
+    "exact-repeat-red-02.exit=101: intended repeat behavior RED",
+    "bandwidth-profile-red.exit=101: intended missing-API RED",
+    "bandwidth-budget-interrupted.exit=130: interrupted dependency build, not test execution",
+    "final-tests-red.exit=101: omitted test Plan field; subsequent final-tests.exit=0",
+    "qualification/preflight-build-overlap-01: launch refused before guest; amendment-01 records observed shared-host contention"
+  ],
+  "unrun_and_limits": [
+    "Controlled-clock upstream MVM budget unit test and dedicated active-setter runtime regression were not executed; source review and actual guest profile receipt coverage are distinct.",
+    "Full upstream MVM workspace and new broad coverage runs were not performed for this bounded milestone.",
+    "This is local two-MVM HVF evidence with three paired trials per cell, not WAN, production security, FIPS/CUI, energy or latency-tail qualification.",
+    "Guest CPU and native host CPU remain separate accounting domains; this gate does not approve arithmetic or speed claims."
+  ],
+  "file_claims": "Current roster identifies harness-optimizer and required review roles active. No in-progress claim for this completed bounded task is present. DAILY.md is absent; retained execution outputs and exits were inspected directly, not an invented shell history.",
+  "remaining": [
+    "Measurement owner finishes analysis/report and arithmetic review.",
+    "Parent performs final publication/base-state check and authorized GitHub merge."
+  ],
+  "findings": [
+
+  ]
+}

@@ -1,0 +1,250 @@
+{
+  "schema": "spiralcore.exact-repeat.sender-optimization.v1",
+  "observed_at_utc": "2026-11-01T22:15:58.584Z",
+  "source_base": "a7a806e24c58999aa47eac1383fc718d8b1602bf",
+  "scope": "Sender-owned acknowledged exact repeats only. Nonrepeat selector and existing object protocol remain unchanged.",
+  "diagnosis": "WarmSession previously always entered warm selection. A repeat traversed delta preparation/scoring and hashed the target despite owning immutable acknowledged bytes and their verified ID.",
+  "change": "Compare complete new bytes and length with the scoped ready acknowledged base; reuse its ID through a private acknowledged-base-typed client helper. Send Raw Begin alone, require current Published, and continue the same Raw offer on Ready after eviction.",
+  "owned_source_hashes": {
+    "before_client_sha256": "b3657a07343825f3ef57c5cce8e65bb87481ddcc8f0cd3c18b15c5e560a244f5",
+    "before_session_sha256": "3f92b61e600f312eed6c8ec19c08da6f26a438ab0f9a846e5d34d43887a90158",
+    "after_client_sha256": "798f319176e3ef2783bf2630ffab37d0c17929d7e0b84f2939bfb8557aa30a5e",
+    "after_session_sha256": "eadf9d8d8061cc82f0a9acfef80fc3bf49926826b8662dc570bd87744c8ff67a",
+    "test_sha256": "3b81aa65a615425a447327553bac9b2ece20e7603a647e8bab563b4ddb51f1fd"
+  },
+  "validation": {
+    "initial_environment_failure": {
+      "log": "exact-repeat-red.txt",
+      "exit": 1,
+      "cause": "PATH cargo resolved to unrelated cargo-ai. This is not counted as a behavioral RED. Subsequent commands explicitly use rustup Cargo."
+    },
+    "behavioral_red": {
+      "log": "exact-repeat-red-02.txt",
+      "exit": 101,
+      "failed": 1,
+      "passed": 1,
+      "ignored": 1,
+      "reason": "Exact repeat prepared three frames where the new contract requires one Raw Begin."
+    },
+    "green": {
+      "log": "exact-repeat-green.txt",
+      "exit": 0,
+      "passed": 9,
+      "failed": 0,
+      "ignored": 1
+    },
+    "assertions": [
+      "Raw Begin only and no Data on exact cache hit",
+      "238-byte existing HTTP-body framing for the exact-repeat probe",
+      "Current object-ID and sequence validation; missing/lost acknowledgement cannot complete",
+      "Evicted target continues the same Raw offer/transfer and exact bytes survive stopped-store reopen",
+      "Scope/epoch mismatch is rejected before any exchange",
+      "Existing capacity/poisoned-base/missing-base/recovery/schema/runtime regressions pass",
+      "Existing localized-change path still uses 600 HTTP-body bytes"
+    ],
+    "independent_review": "Pending separate reviewer; this receipt is implementation validation, not independent approval."
+  },
+  "diagnostic": {
+    "toolchain": {
+      "rustc": "1.97.1 (8bab26f4f 2026-07-14)",
+      "cargo": "1.97.1 (c980f4866 2026-06-30)"
+    },
+    "cargo_path": "/Users/casey.allard/.cargo/bin/cargo",
+    "target_dir": "/Users/casey.allard/spiralcore/target",
+    "build_jobs": 2,
+    "profile": "test, unoptimized + debuginfo",
+    "features": [
+      "hardware-sha256"
+    ],
+    "command_suffix": "test --locked --manifest-path crates/spiralcore-transfer/Cargo.toml --features hardware-sha256 --test persistent_session exact_repeat_sender_cpu_profile -- --ignored --nocapture --test-threads=1",
+    "measurement": "Native sender preparation plus test-generated current acknowledgement; exact input ownership clone is outside both timed intervals. Real endpoint seeding occurs before measurement.",
+    "samples": "One warmup retained but excluded from medians, then three measured repeats at each size and version.",
+    "context": "Actual MVM timing windows were excluded. The after diagnostic ran during unrelated UOR lab compilation activity. No other lab was stopped or modified. This is not a controlled release-build performance acceptance experiment.",
+    "results": [
+      {
+        "object_bytes": 1048576,
+        "trials_per_version": 3,
+        "cpu_us_before": 14456,
+        "cpu_us_after": 41,
+        "wall_us_before": 14464,
+        "wall_us_after": 39
+      },
+      {
+        "object_bytes": 16777216,
+        "trials_per_version": 3,
+        "cpu_us_before": 227015,
+        "cpu_us_after": 1006,
+        "wall_us_before": 228525,
+        "wall_us_after": 1012
+      }
+    ],
+    "raw_before": "exact-repeat-profile-before.txt",
+    "raw_after": "exact-repeat-profile-after.txt",
+    "interpretation": "The measured native diagnostic supports eliminating repeated preparation/hashing. It does not establish a MVM, WAN, cryptographic, whole-endpoint CPU or energy speedup; those require the separate frozen-binary campaign.",
+    "samples_before": [
+      {
+        "cpu_us": 15000,
+        "event": "repeat_sender_profile",
+        "mode": "SparseV1",
+        "object_bytes": 1048576,
+        "scope": "sender preparation plus test acknowledgement; excludes input clone, authentication, receiver and network",
+        "trial": 0,
+        "wall_us": 15050,
+        "warmup": true
+      },
+      {
+        "cpu_us": 14456,
+        "event": "repeat_sender_profile",
+        "mode": "SparseV1",
+        "object_bytes": 1048576,
+        "scope": "sender preparation plus test acknowledgement; excludes input clone, authentication, receiver and network",
+        "trial": 1,
+        "wall_us": 14464,
+        "warmup": false
+      },
+      {
+        "cpu_us": 14390,
+        "event": "repeat_sender_profile",
+        "mode": "SparseV1",
+        "object_bytes": 1048576,
+        "scope": "sender preparation plus test acknowledgement; excludes input clone, authentication, receiver and network",
+        "trial": 2,
+        "wall_us": 14392,
+        "warmup": false
+      },
+      {
+        "cpu_us": 14622,
+        "event": "repeat_sender_profile",
+        "mode": "SparseV1",
+        "object_bytes": 1048576,
+        "scope": "sender preparation plus test acknowledgement; excludes input clone, authentication, receiver and network",
+        "trial": 3,
+        "wall_us": 14738,
+        "warmup": false
+      },
+      {
+        "cpu_us": 226853,
+        "event": "repeat_sender_profile",
+        "mode": "SparseV1",
+        "object_bytes": 16777216,
+        "scope": "sender preparation plus test acknowledgement; excludes input clone, authentication, receiver and network",
+        "trial": 0,
+        "wall_us": 228599,
+        "warmup": true
+      },
+      {
+        "cpu_us": 233050,
+        "event": "repeat_sender_profile",
+        "mode": "SparseV1",
+        "object_bytes": 16777216,
+        "scope": "sender preparation plus test acknowledgement; excludes input clone, authentication, receiver and network",
+        "trial": 1,
+        "wall_us": 235548,
+        "warmup": false
+      },
+      {
+        "cpu_us": 227015,
+        "event": "repeat_sender_profile",
+        "mode": "SparseV1",
+        "object_bytes": 16777216,
+        "scope": "sender preparation plus test acknowledgement; excludes input clone, authentication, receiver and network",
+        "trial": 2,
+        "wall_us": 228525,
+        "warmup": false
+      },
+      {
+        "cpu_us": 226160,
+        "event": "repeat_sender_profile",
+        "mode": "SparseV1",
+        "object_bytes": 16777216,
+        "scope": "sender preparation plus test acknowledgement; excludes input clone, authentication, receiver and network",
+        "trial": 3,
+        "wall_us": 227888,
+        "warmup": false
+      }
+    ],
+    "samples_after": [
+      {
+        "cpu_us": 87,
+        "event": "repeat_sender_profile",
+        "mode": "Raw",
+        "object_bytes": 1048576,
+        "scope": "sender preparation plus test acknowledgement; excludes input clone, authentication, receiver and network",
+        "trial": 0,
+        "wall_us": 84,
+        "warmup": true
+      },
+      {
+        "cpu_us": 44,
+        "event": "repeat_sender_profile",
+        "mode": "Raw",
+        "object_bytes": 1048576,
+        "scope": "sender preparation plus test acknowledgement; excludes input clone, authentication, receiver and network",
+        "trial": 1,
+        "wall_us": 42,
+        "warmup": false
+      },
+      {
+        "cpu_us": 41,
+        "event": "repeat_sender_profile",
+        "mode": "Raw",
+        "object_bytes": 1048576,
+        "scope": "sender preparation plus test acknowledgement; excludes input clone, authentication, receiver and network",
+        "trial": 2,
+        "wall_us": 39,
+        "warmup": false
+      },
+      {
+        "cpu_us": 39,
+        "event": "repeat_sender_profile",
+        "mode": "Raw",
+        "object_bytes": 1048576,
+        "scope": "sender preparation plus test acknowledgement; excludes input clone, authentication, receiver and network",
+        "trial": 3,
+        "wall_us": 38,
+        "warmup": false
+      },
+      {
+        "cpu_us": 634,
+        "event": "repeat_sender_profile",
+        "mode": "Raw",
+        "object_bytes": 16777216,
+        "scope": "sender preparation plus test acknowledgement; excludes input clone, authentication, receiver and network",
+        "trial": 0,
+        "wall_us": 632,
+        "warmup": true
+      },
+      {
+        "cpu_us": 996,
+        "event": "repeat_sender_profile",
+        "mode": "Raw",
+        "object_bytes": 16777216,
+        "scope": "sender preparation plus test acknowledgement; excludes input clone, authentication, receiver and network",
+        "trial": 1,
+        "wall_us": 1008,
+        "warmup": false
+      },
+      {
+        "cpu_us": 1342,
+        "event": "repeat_sender_profile",
+        "mode": "Raw",
+        "object_bytes": 16777216,
+        "scope": "sender preparation plus test acknowledgement; excludes input clone, authentication, receiver and network",
+        "trial": 2,
+        "wall_us": 1339,
+        "warmup": false
+      },
+      {
+        "cpu_us": 1006,
+        "event": "repeat_sender_profile",
+        "mode": "Raw",
+        "object_bytes": 16777216,
+        "scope": "sender preparation plus test acknowledgement; excludes input clone, authentication, receiver and network",
+        "trial": 3,
+        "wall_us": 1012,
+        "warmup": false
+      }
+    ]
+  },
+  "protocol_and_fidelity": "No new wire encoding, caller-supplied trusted hash, implicit retry, authorization bypass or permanent assumption of receiver cache state. Raw fallback remains exact, and normal failure invalidation is retained."
+}
