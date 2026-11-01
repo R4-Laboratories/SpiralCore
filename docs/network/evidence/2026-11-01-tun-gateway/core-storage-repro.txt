@@ -1,0 +1,24 @@
+   Compiling spiralcore-transfer v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer)
+   Compiling uor-r4-object-store v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/uor-r4-object-store)
+   Compiling spiralcore-gateway-core v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-gateway-core)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 4.09s
+     Running tests/core.rs (/Users/casey.allard/spiralcore/target/debug/deps/core-849bb9fbfdba97ab)
+
+running 1 test
+test shared_object_modes_reopen_exact_and_reject_scope_before_exchange ... FAILED
+
+failures:
+
+---- shared_object_modes_reopen_exact_and_reject_scope_before_exchange stdout ----
+
+thread 'shared_object_modes_reopen_exact_and_reject_scope_before_exchange' (5752150) panicked at tests/core.rs:140:10:
+called `Result::unwrap()` on an `Err` value: Storage
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    shared_object_modes_reopen_exact_and_reject_scope_before_exchange
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 3 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `--test core`

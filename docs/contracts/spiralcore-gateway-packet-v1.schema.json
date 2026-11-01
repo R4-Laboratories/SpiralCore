@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "SpiralCore gateway packet v1 decoded header projection",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["magic", "sequence", "original_length", "encoded_length", "codec", "fragment_index", "fragment_count", "reserved", "digest"],
+  "properties": {
+    "magic": {"const": "SCGPKT01"},
+    "sequence": {"type": "integer", "minimum": 0, "maximum": 18446744073709551615},
+    "original_length": {"type": "integer", "minimum": 20, "maximum": 1280},
+    "encoded_length": {"type": "integer", "minimum": 1, "maximum": 1280},
+    "codec": {"enum": [0, 1]},
+    "fragment_index": {"type": "integer", "minimum": 0, "maximum": 1},
+    "fragment_count": {"enum": [1, 2]},
+    "reserved": {"const": 0},
+    "digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  },
+  "description": "Binary layout, IP validation, cross-field constraints and bounded reassembly are normative in docs/specs/2026-11-01-shared-gateway.md. This projection is documentation, not the on-wire JSON format."
+}

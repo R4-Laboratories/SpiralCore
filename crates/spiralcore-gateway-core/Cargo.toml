@@ -1,0 +1,17 @@
+[package]
+name = "spiralcore-gateway-core"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.89"
+publish = false
+description = "Shared bounded object and IP packet codecs for SpiralCore adapters"
+
+[features]
+hardware-sha256 = ["spiralcore-transfer/hardware-sha256"]
+
+[dependencies]
+spiralcore-transfer = { path = "../spiralcore-transfer" }
+zstd = "0.13"
+
+[dev-dependencies]
+tempfile = "3"

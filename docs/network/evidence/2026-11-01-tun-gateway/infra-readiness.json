@@ -1,0 +1,40 @@
+{
+  "schema": "spiralcore.tun.infra-readiness.v1",
+  "status": "AUTHOR_CHECKS_PASS_READY_FOR_ROOT_REVIEW",
+  "checks": {
+    "bash_syntax": true,
+    "yaml_syntax": true,
+    "positive_registration": 1,
+    "negative_registrations": 6
+  },
+  "negative_cases": [
+    "unregistered launch",
+    "expanded trials",
+    "unimplemented warm packet mode",
+    "wrong TUN MTU",
+    "expanded payload",
+    "automatic retry"
+  ],
+  "workflow": ".github/workflows/spiralcore-gateway.yml",
+  "driver": "tools/gateway-network/gateway-netns.sh",
+  "ownership": "The repo scripts path is a local A Team symlink. Only this tasks two newly created helper files were relocated into tracked tools/gateway-network; existing bootstrap files were unchanged.",
+  "isolation": "Two fresh owned namespaces, isolated veth, precreated MTU1280 TUN, explicit host routes inside namespaces, host route snapshots before/after, exact-owned cleanup only.",
+  "corrections": [
+    "IPv6 addrgenmode/autoconf/RA/router solicitation/DAD disabled before TUN up",
+    "four distinct application ports41000..41003",
+    "root gateway/probe umask022 only for public receipts; private PKI/fixtures remain077 outside artifact path",
+    "UDP GSO/GRO state recorded and on-state rejected",
+    "pcap file bounded by child ulimit; failed captures retained"
+  ],
+  "pending": [
+    "Root independent review",
+    "Actual GitHub Linux TUN/QUIC execution",
+    "Recorded source/binary-bound capture and exact48-flow results"
+  ],
+  "not_claimed": [
+    "Linux runtime success from Mac syntax tests",
+    "WAN performance",
+    "warm packet caching",
+    "FIPS/CUI qualification"
+  ]
+}

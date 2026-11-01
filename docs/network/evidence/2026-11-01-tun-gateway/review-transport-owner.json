@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "date": "2026-11-01",
+  "reviewer": "mvm_tests",
+  "roles": ["code-reviewer", "security-reviewer", "rust-reviewer"],
+  "verdict": "PASS_SCOPED_SOURCE_REVIEW",
+  "findings": [],
+  "scope": "Independent gateway-core object and packet source, MVM campaign facade extraction, and final service normal-close/deadline changes. Excludes reviewer-authored transport, TUN and tests.",
+  "source_sha256": {
+    "crates/spiralcore-gateway-core/src/object.rs": "65d2dc9238650168ff82e235f7dbc58b3cdbaf48af3602af6e4ff03e66f43504",
+    "crates/spiralcore-gateway-core/src/packet.rs": "d57633eea8faec37c228dce4a7418654adc834bf77d459902e532c06de0162cb",
+    "crates/spiralcore-gateway-core/src/lib.rs": "e95d173d20502ee8b17bc71fa316be02c6feb6023ed8d01b6e7e27cdba7a6007",
+    "crates/spiralcore-gateway-core/Cargo.toml": "74631a1386ce26a27d7b401caa2391564a475471d54ab9f32919664e3252189f",
+    "crates/spiralcore-mvm-live/src/campaign.rs": "7b8daefce8be393793956faf1dde920b449e85ea9b66832757cffaa5ba2fd623",
+    "crates/spiralcore-gateway/src/service.rs": "892e3fa5804158b42f55328381381bf41748caac8d43217b85743cc405cba4a5"
+  },
+  "checked": [
+    "Object facade delegates to existing raw, prepared whole-zstd and WarmSession paths; no new codec or authentication bypass. Namespace mismatch including policy/execution epochs permanently drops prepared state before exchange.",
+    "MVM caller still constructs the object facade after canonical Status probe acceptance; existing authorized frame exchange, receiver verification and RuntimeSession remain in place. Schema is provided only for Warm.",
+    "Packet decoder checks bounded header and lengths before allocations, two-fragment maximum, 64 pending entries, byte admission, TTL, duplicate/conflict handling and a connection-local 64-packet replay window. Output requires exact length, digest and IP length checks before delivery.",
+    "Packet zstd path reuses existing checked frame/content-size decoder with bounded output. Raw fallback preserves opaque or incompressible packet bytes; no cross-packet missing-base assumption.",
+    "Service normal_transport_end accepts authenticated application code0 and deadline only when configured duration has elapsed. Other transport errors remain failures. Blocking TUN write is bounded by the run deadline."
+  ],
+  "existing_execution_evidence_inspected": {
+    "core-green.txt": "4 passed, 0 failed",
+    "mvm-shared-core-tests.txt": "3 passed, 0 failed"
+  },
+  "separate_author_validation_not_independent_review": {
+    "transport_source_sha256": "5d13e0d84bdc06f7bc9a2f185612c157835ed1bd16c326f2ecc0a8b7b91e4931",
+    "tun_source_sha256": "1eaff911b1ec8166b6e5402e5694059674922233ec188884c36daf3dd7219139",
+    "transport-green.txt": "5 passed, 0 failed; real mutual TLS, both wrong pins, trust/hostname validation, omitted client certificate, datagram bounds, timeout recovery and code0 close",
+    "tun-cross-green-02.txt": "All test targets compile for aarch64-unknown-linux-musl; actual Linux execution PENDING_CI",
+    "tun_safety": "Owns the FD; validates existing interface MTU and plain TUN framing; bounds each read/write; uses nonblocking readiness and no partial-packet suffix retry. Independent review is in transport-service-review.json, authored by mvm_boundary."
+  },
+  "limitations": [
+    "Source review is bounded to the new extraction and specified lifecycle delta, not a fresh audit of all prior codecs or MVM cryptography.",
+    "Linux cross-compilation is not execution; actual TUN behavior requires the isolated Linux witness.",
+    "Packet sequence/reassembly state is connection-local; QUIC datagram admission is not a delivery acknowledgement.",
+    "No WAN, energy, production security, CUI or FIPS qualification is implied."
+  ]
+}

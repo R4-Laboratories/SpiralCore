@@ -1,0 +1,80 @@
+{
+  "schema": "spiralcore.gateway.scoped-review.v1",
+  "observed_at_utc": "2026-11-01T23:15:55Z",
+  "reviewer": "/root/mvm_boundary",
+  "roles": [
+    "architect",
+    "code-reviewer",
+    "security-reviewer",
+    "rust-reviewer"
+  ],
+  "verdict": "PASS_FOR_REVIEWED_SOURCE_WITH_EXECUTION_GATES_REMAINING",
+  "scope": "Narrow cross-author source review of the QUIC/TUN boundary and service/probe/measurement code. No review of my own gateway-core object or packet implementation.",
+  "source_sha256": {
+    "crates/spiralcore-gateway/src/transport.rs": "5d13e0d84bdc06f7bc9a2f185612c157835ed1bd16c326f2ecc0a8b7b91e4931",
+    "crates/spiralcore-gateway/src/tun.rs": "1eaff911b1ec8166b6e5402e5694059674922233ec188884c36daf3dd7219139",
+    "crates/spiralcore-gateway/src/service.rs": "892e3fa5804158b42f55328381381bf41748caac8d43217b85743cc405cba4a5",
+    "crates/spiralcore-gateway/src/measurement.rs": "0b4c0f0e516f5229378903d51e8c5a543cea3b4cb57caa521c716dd255111a6d",
+    "crates/spiralcore-gateway/src/bin/spiralcore-gateway-probe.rs": "8b9c9911952d40d3a85644894fcb8c8f36b6b9b12f5b8cde43f9c4150f3a145e"
+  },
+  "reviewed_properties": [
+    "QUIC requires standard TLS 1.3 mutual certificate verification, the exact leaf pin and ALPN before exposing application bytes. Early data, resumption and reliable streams are disabled. One admitted peer, bounded handshake and datagram queues, negotiated datagram capacity and operation deadlines are explicit.",
+    "Routing checks exact source and destination allowlists in both directions. Decoder output is validated before TUN injection; malformed or unauthorized data is refused.",
+    "TUN verifies the preconfigured 1280-byte MTU and plain TUN framing, owns its descriptor, enables nonblocking and close-on-exec flags, detects oversized reads and refuses partial packet writes. Unsafe operations use bounded Linux descriptor/ioctl/read/write arguments.",
+    "TCP and UDP probes compare complete fixture bytes and require matching digest receipts. UDP stop-and-wait echo and retries belong to the application workload, not the packet codec.",
+    "PCAP counters use original lengths despite snapshot truncation, refuse malformed headers and fragmented underlay, and enforce the declared 1500-byte underlay limit. Connection UDP counters and capture bytes have different accounting scopes.",
+    "CPU measurements use process CPU. TCP client timing includes connect; server timing excludes bind/accept. UDP server timing includes initial waiting. Report hashing and serialization follow the final timed snapshot."
+  ],
+  "resolved_findings": [
+    {
+      "issue": "Pattern fixture had 33 bytes for a 32-byte block",
+      "resolution": "Removed the exclamation mark; fixture and CLI tests pass."
+    },
+    {
+      "issue": "Normal peer closure or elapsed duration could appear as failure",
+      "resolution": "Only authenticated application close code 0, or Deadline after run expiry, is normal. Missing-helper RED and GREEN retained."
+    },
+    {
+      "issue": "Backpressured TUN write could outlive the run duration",
+      "resolution": "Write is bounded by timeout_at(end). Final Linux source build and actual TUN execution remain separate gates."
+    },
+    {
+      "issue": "TCP connect and redundant report hashing used inconsistent timing boundaries",
+      "resolution": "Client timing begins before connect; server timing begins after accept. Report wall/CPU snapshots precede postmeasurement report hashing."
+    },
+    {
+      "issue": "Capture parser admitted IP lengths beyond the declared underlay MTU",
+      "resolution": "A 2028-byte behavioral RED is retained. The parser now refuses IP lengths above 1500; the valid 1028-byte snapshot case passes."
+    }
+  ],
+  "reviewer_authored_repairs": "These listed repairs were authored during review. This is not independent approval of those repaired lines. The transport owner subsequently inspected normal_transport_end, duration handling and bounded TUN writes and reported no material issue; its separate receipt owns that review.",
+  "observed_execution": {
+    "gateway_native_alltargets": {
+      "exit": 0,
+      "tests_passed": 7,
+      "linux_tun_tests_on_macos": 0
+    },
+    "actual_probe": "CLI TCP and UDP loopback each transferred65536bytes and verified matching hashes.",
+    "retained": [
+      "service-review-red.txt",
+      "capture-review-red.txt",
+      "gateway-native-green.txt",
+      "transport-green.txt"
+    ],
+    "transport_focused": {
+      "exit": 0,
+      "passed": 5,
+      "coverage": "Mutual identity, missing client certificate, wrong pins, trust roots, server name, datagram bounds, deadlines and normal close."
+    }
+  },
+  "remaining": [
+    "Final Linux cross-build and actual isolated TUN execution/capture proof; macOS tests do not establish TUN behavior.",
+    "Parent owns frozen-source validation, measured comparison arithmetic, workflow execution and publication."
+  ],
+  "limitations": [
+    "Single-peer development gateway, not a production router or resilient listener.",
+    "Independent packet Raw/zstd is not transparent warm TCP stream deduplication or reliable UDP delivery.",
+    "Application TLS ciphertext remains opaque; mailbox authority and acknowledgments remain separate.",
+    "No new WAN, FIPS/CUI, physical-energy or latency-tail qualification."
+  ]
+}

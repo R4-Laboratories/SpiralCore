@@ -7,20 +7,20 @@ use crate::{
 use cpu_time::ProcessTime;
 use mvm_core::mailbox::transport::CancellationToken;
 use serde_json::{Value, json};
+use spiralcore_gateway_core::object::{ObjectMode, ObjectSender};
 use spiralcore_mvm_adapter::{
     Direction, Error as AdapterError, MailboxAuthority,
     live::{HandshakeRole, LiveError, SocketIo, StreamCounters, StreamTransport},
 };
 use spiralcore_transfer::{
     self as transfer, Id,
-    client::{self, Stats},
+    client::Stats,
     endpoint::{ColdGraphPolicy, Context, Endpoint, Limits},
-    protocol::{Frame, Mode},
+    protocol::Frame,
     schema,
-    session::{RuntimeSession, WarmSession},
+    session::RuntimeSession,
     shared_runtime::{OutputKind, Recipe, State},
     shared_transfer::PreparedPrediction,
-    zstd_whole,
 };
 use std::{
     fs,
@@ -164,12 +164,6 @@ impl<S: SocketIo + 'static> Client<S> {
         Ok(replies)
     }
 }
-enum Sender {
-    Raw,
-    Whole(zstd_whole::PreparedEncoder),
-    Warm(Box<WarmSession>),
-}
-
 pub fn sender<S: SocketIo + 'static>(
     bootstrap: &Bootstrap,
     socket: S,
@@ -211,18 +205,16 @@ pub fn sender<S: SocketIo + 'static>(
     if probe.kind != 127 || probe.body != (transfer::Error::Unknown as u16).to_le_bytes() {
         return Err("unexpected initial Status probe outcome".into());
     }
-    let mut sender = match bootstrap.plan.arm {
-        Arm::Raw => Sender::Raw,
-        Arm::Whole => Sender::Whole(zstd_whole::PreparedEncoder::new()?),
-        Arm::Warm => Sender::Warm(Box::new(WarmSession::new(
-            &context,
-            &cases
-                .iter()
-                .find(|case| case.kind == "schema")
-                .ok_or("missing schema")?
-                .bytes,
-        )?)),
+    let mode = match bootstrap.plan.arm {
+        Arm::Raw => ObjectMode::Raw,
+        Arm::Whole => ObjectMode::Whole,
+        Arm::Warm => ObjectMode::Warm,
     };
+    let schema = cases
+        .iter()
+        .find(|case| case.kind == "schema")
+        .map(|case| case.bytes.as_slice());
+    let mut sender = ObjectSender::new(mode, &context, schema)?;
     let mut runtime = if bootstrap.plan.arm == Arm::Warm {
         let checkpoint = &cases
             .iter()
@@ -262,31 +254,19 @@ pub fn sender<S: SocketIo + 'static>(
         };
         let cpu = ProcessTime::now();
         let wall = Instant::now();
-        let result = match (&mut sender, case.kind) {
-            (_, "runtime-checkpoint") => runtime
+        let result = match case.kind {
+            "runtime-checkpoint" => runtime
                 .as_mut()
                 .ok_or("missing runtime session")?
                 .seed_checkpoint(&context, id, &mut exchange),
-            (_, "runtime-generated" | "runtime-residual") => runtime
+            "runtime-generated" | "runtime-residual" => runtime
                 .as_mut()
                 .ok_or("missing runtime session")?
                 .send(&context, owned, id, false, &mut exchange)
                 .map(|stats| stats.transfer),
-            (Sender::Warm(sender), "seed") => sender.seed_base(&context, owned, id, &mut exchange),
-            (Sender::Warm(sender), "schema") => sender.seed_schema(&context, id, &mut exchange),
-            (Sender::Warm(sender), _) => sender
-                .send(&context, owned, id, false, &mut exchange)
-                .map(|stats| stats.transfer),
-            (Sender::Raw, _) | (Sender::Whole(_), "seed") => {
-                client::transfer_batched(&owned, Mode::Raw, None, id, false, &mut exchange)
-            }
-            (Sender::Whole(sender), _) => client::transfer_prepared_zstd_whole_batched(
-                sender,
-                &owned,
-                id,
-                false,
-                &mut exchange,
-            ),
+            "seed" => sender.seed(&context, owned, id, &mut exchange),
+            "schema" => sender.seed_schema(&context, id, &mut exchange),
+            _ => sender.send(&context, owned, id, false, &mut exchange),
         };
         let cpu_us = cpu.elapsed().as_micros();
         let wall_us = wall.elapsed().as_micros();
