@@ -1,34 +1,24 @@
 {
   "stage": "source_patch_preparation_only",
+  "date": "2026-11-01",
   "base_revision": "3104a12c5b071a6851323fa8115d2afaf3f0bb8b",
-  "patch_sha256": "4f560b24c798f556e2ab995cd9f0821bac9674ab4cafca1e28dcc04ca3e0b705",
+  "patch_sha256": "2ca7b61743d23ede426fb631d8b98759e97cf21fb5da72ab847e0620cb95b466",
   "positive": {
     "exit": 0,
     "fresh_output_path_contained_spaces": true,
-    "bundle_checksum_entries_matched": 4,
+    "bundle_checksum_entries_matched": 5,
     "git_apply_check_passed": true,
-    "patched_source_sha256_entries_matched": 13,
+    "patched_source_sha256_entries_matched": 14,
     "cargo_patch_config_entries": 6,
-    "input_checkout_patch_hash_unchanged": true,
-    "prepared_source_disk_usage_mib": 75
+    "prepared_source_disk_usage_kib": 76788
   },
-  "negative": [
-    {
-      "case": "existing output directory",
-      "exit": 1,
-      "diagnostic": "prepare: output directory must be new"
-    },
-    {
-      "case": "checkout at another revision",
-      "exit": 1,
-      "diagnostic": "prepare: input checkout is not at the exact pinned revision"
-    }
-  ],
+  "negative_checks": "Not rerun for this unchanged preparation script; prior receipt is preserved as baseline-patch-preparation-check.json.",
   "cleanup": {
     "owned_preparation_source_removed_after_hash_verification": true,
     "input_checkout_modified": false,
     "tracked_lockfiles_modified": false
   },
   "cargo_build_or_test_run": false,
-  "limitation": "This verifies source preparation and path quoting only; it does not establish Cargo resolution, live guest/vsock behavior or independent review."
+  "evidence": "docs/network/evidence/2026-11-01-mvm-overhead/bandwidth-patch-prepare.txt",
+  "limitation": "Source preparation and path quoting only; not an MVM unit test, build, guest/vsock run or independent source approval."
 }

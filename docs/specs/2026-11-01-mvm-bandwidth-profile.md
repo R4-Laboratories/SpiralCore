@@ -19,11 +19,13 @@ rate is accepted.
 `Experimental64MiB` variants, defaulting to `Standard`, with serialized names
 `standard` and `experimental64`. Its rate and burst accessors expose exact byte
 counts. `HostChannels.mailbox_bandwidth_profile` propagates through `RunInputs`
-and `VsockHostBindings`. The new explicit endpoint/profile setter configures only
-the mailbox handler before a session begins. The existing endpoint setter remains
-available and selects `Standard`. Rebinding replaces that mailbox handler and
-drops its old queued state; a profile is host authority, not snapshot or guest
-negotiation. A cleared host binding resets to its default profile.
+and `VsockHostBindings`. The new explicit endpoint/profile setter returns
+`io::Result<()>` and refuses changes while that mailbox handler has active streams
+or queued bytes. It configures only the mailbox handler before a session begins.
+The existing endpoint setter remains source-compatible and a new handler selects
+`Standard`. Rebinding first stops existing I/O through the existing host-channel
+lifecycle, then installs the new profile; a profile is host authority, not
+snapshot or guest negotiation. A cleared host binding resets to its default.
 
 SpiralCore's `Plan.bandwidth_profile` uses a serde default so prior bootstrap JSON
 continues selecting `standard`. The optional final session CLI argument is

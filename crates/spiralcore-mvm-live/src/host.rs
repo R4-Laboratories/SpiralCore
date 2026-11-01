@@ -265,6 +265,16 @@ fn micros(duration: Duration) -> Result<u64> {
 /// Run in a dedicated native worker process. Stdin is the sole initramfs input;
 /// the caller owns the disk/socket and remains responsible for their lifecycle.
 pub fn worker(kernel: &Path, disk: Option<&Path>, mailbox_socket: Option<&Path>) -> Result<Value> {
+    worker_with_profile(kernel, disk, mailbox_socket, Default::default())
+}
+
+/// Host-selected bounded profile. The guest bootstrap cannot widen this choice.
+pub fn worker_with_profile(
+    kernel: &Path,
+    disk: Option<&Path>,
+    mailbox_socket: Option<&Path>,
+    bandwidth_profile: crate::config::MailboxBandwidthProfile,
+) -> Result<Value> {
     let wall = Instant::now();
     let cpu = ProcessTime::try_now()?;
     for variable in [
@@ -281,8 +291,7 @@ pub fn worker(kernel: &Path, disk: Option<&Path>, mailbox_socket: Option<&Path>)
     // Hash and load one held file, rather than validating a pathname and then
     // reopening a potentially different image. The helper reads raw image bytes.
     let kernel_file = File::open(kernel)?;
-    let kernel_sha256 =
-        mvm_core::crypto::verified_digest::sha256_open_file_verified(&kernel_file)?;
+    let kernel_sha256 = mvm_core::crypto::verified_digest::sha256_open_file_verified(&kernel_file)?;
     let backing = disk
         .map(|path| OpenOptions::new().read(true).write(true).open(path))
         .transpose()?;
@@ -300,23 +309,21 @@ pub fn worker(kernel: &Path, disk: Option<&Path>, mailbox_socket: Option<&Path>)
     let capture = Arc::new(Mutex::new(ConsoleCapture::default()));
     let channels = HostChannels {
         mailbox_socket: mailbox_socket.map(Path::to_path_buf),
+        mailbox_bandwidth_profile: bandwidth_profile,
         mem_mib: 1024,
         vcpus: 1,
         console_sink: Some(Box::new(BoundedConsole(Arc::clone(&capture)))),
         ..Default::default()
     };
     let bootargs = format!("{} rdinit=/init", default_bootargs(false));
-    let params = KernelBootUntilParams::builder_descriptor(
-        &kernel_file,
-        kernel,
-        Duration::from_secs(120),
-    )
-        .literal_bootargs(&bootargs)?
-        .initramfs(Some(&initrd))
-        .disks(disks)
-        .vsock(mailbox_socket.is_some())
-        .channels(channels)
-        .build();
+    let params =
+        KernelBootUntilParams::builder_descriptor(&kernel_file, kernel, Duration::from_secs(120))
+            .literal_bootargs(&bootargs)?
+            .initramfs(Some(&initrd))
+            .disks(disks)
+            .vsock(mailbox_socket.is_some())
+            .channels(channels)
+            .build();
     let boot_started = Instant::now();
     let boot = boot_kernel_until(params);
     let boot_wall_us = micros(boot_started.elapsed())?;
@@ -353,6 +360,9 @@ pub fn worker(kernel: &Path, disk: Option<&Path>, mailbox_socket: Option<&Path>)
     let worker_wall_us = micros(wall.elapsed())?;
     Ok(json!({
         "event": "worker_done",
+        "mailbox_bandwidth_profile": bandwidth_profile,
+        "mailbox_rate_bytes_per_second": bandwidth_profile.bytes_per_second(),
+        "mailbox_burst_bytes": bandwidth_profile.burst_bytes(),
         "ok": true,
         "console": String::from_utf8(console)?,
         "guest_events": events,

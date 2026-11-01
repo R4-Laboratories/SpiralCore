@@ -1,6 +1,7 @@
 //! Private, ephemeral launch provisioning for the development witness.
 use crate::Result;
 use ed25519_dalek::{SigningKey, VerifyingKey};
+pub use mvm_contract::protocol::mailbox::MailboxBandwidthProfile;
 use mvm_contract::protocol::mailbox::*;
 use mvm_core::{
     crypto::aead::Key,
@@ -41,6 +42,17 @@ pub struct Plan {
     pub arm: Arm,
     pub size: usize,
     pub trial: u64,
+    #[serde(default)]
+    pub bandwidth_profile: MailboxBandwidthProfile,
+}
+
+/// Parse only the two fixed host-authorized profiles; omission preserves legacy policy.
+pub fn parse_bandwidth_profile(value: Option<&str>) -> Result<MailboxBandwidthProfile> {
+    match value {
+        None | Some("standard") => Ok(MailboxBandwidthProfile::Standard),
+        Some("experimental64") => Ok(MailboxBandwidthProfile::Experimental64MiB),
+        Some(_) => Err("bandwidth profile must be standard or experimental64".into()),
+    }
 }
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -277,6 +289,7 @@ mod tests {
             arm: Arm::Warm,
             size: 4096,
             trial: 0,
+            bandwidth_profile: Default::default(),
         };
         let pair = Pair::provision(plan.clone()).unwrap();
         assert!(pair.sender.outgoing.as_ref().unwrap().signing.is_some());
@@ -305,7 +318,8 @@ mod tests {
                 stage: Stage::One,
                 arm: Arm::Raw,
                 size: 0,
-                trial: 0
+                trial: 0,
+                bandwidth_profile: Default::default(),
             })
             .is_err()
         );

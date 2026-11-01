@@ -52,6 +52,7 @@ fn mixed_persistent_campaign_crosses_real_stream_and_reopens_exact_bytes() {
         arm: Arm::Warm,
         size: 4096,
         trial: 4,
+        bandwidth_profile: Default::default(),
     };
     let pair = Pair::provision(plan.clone()).unwrap();
     let (sent, published) = run(&pair, &cache);
@@ -71,6 +72,7 @@ fn raw_and_whole_baselines_use_the_same_persistent_verified_channel() {
             arm,
             size: 4096,
             trial: 5,
+            bandwidth_profile: Default::default(),
         })
         .unwrap();
         let (sent, published) = run(&pair, &store.path().join("cache"));
@@ -88,6 +90,7 @@ fn same_epoch_new_socket_and_endpoint_recover_published_objects_with_fresh_envel
         arm: Arm::Warm,
         size: 4096,
         trial: 6,
+        bandwidth_profile: Default::default(),
     })
     .unwrap();
     let (first, published) = run(&pair, &cache);

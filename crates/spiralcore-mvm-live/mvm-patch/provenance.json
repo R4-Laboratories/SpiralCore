@@ -3,11 +3,11 @@
   "repository": "https://github.com/tinylabscom/mvm",
   "base_revision": "3104a12c5b071a6851323fa8115d2afaf3f0bb8b",
   "patch": "0001-experimental-mailbox-vsock.patch",
-  "patch_sha256": "4f560b24c798f556e2ab995cd9f0821bac9674ab4cafca1e28dcc04ca3e0b705",
-  "patch_bytes": 24103,
-  "scope": "Experimental local canonical verified-open/transport accessors and dedicated native-HVF mailbox vsock service on port 5257, with focused upstream tests.",
+  "patch_sha256": "2ca7b61743d23ede426fb631d8b98759e97cf21fb5da72ab847e0620cb95b466",
+  "patch_bytes": 30847,
+  "scope": "Experimental local canonical verified-open/transport accessors and dedicated native-HVF mailbox vsock service on port 5257; explicit Standard 4 MiB/s or Experimental64MiB 64 MiB/s mailbox-only profile with unchanged 8 MiB burst, bounded lifecycle and focused tests.",
   "status": "Local source-pinned patch; not an upstream reservation or accepted upstream delivery.",
-  "construction": "git diff --binary --full-index against the exact base, limited to the thirteen listed source/test files.",
+  "construction": "git diff --binary --full-index against the exact base, limited to the fourteen listed source/test files.",
   "exclusions": [
     "AGENTS.md and other instruction files",
     "credentials and private or untracked files",
@@ -24,7 +24,7 @@
     {
       "path": "crates/mvm-contract/src/protocol/mailbox.rs",
       "base_git_blob": "8e8aa21f5d5c00c0166326a3774747f3860b1631",
-      "patched_sha256": "9ae02a78db31e19a9db38bc2a847fc628f0bfabdd984a5fae7a04e055fde70ec"
+      "patched_sha256": "e9489b20cf50879f86dc97809004834897ef81da475f4aa5e34091f9027f3ff9"
     },
     {
       "path": "crates/mvm-core/src/mailbox.rs",
@@ -49,7 +49,7 @@
     {
       "path": "crates/mvm-hostd/src/bin/mvm-hvf-supervisor.rs",
       "base_git_blob": "ac1d91b40dc16d10394388f0677dbdd9358262b4",
-      "patched_sha256": "61a064f133924baf9724f294422bf8dd2a8cc89d8df05be5fb5edd3daa0345b1"
+      "patched_sha256": "a42b048c71c64c6f20113571507b996b698cf16e47b4824396516f79602511ea"
     },
     {
       "path": "crates/mvm-net/src/channel.rs",
@@ -59,27 +59,32 @@
     {
       "path": "crates/mvm-runtime/src/backends/hvf/host_channels.rs",
       "base_git_blob": "6bbf2f6dde30e9a212f4791cb58ea6d873f47704",
-      "patched_sha256": "3c4ccca8e80c22cc4067bd09a8ae4e7f5555a875d87d0f00cad16fb3f86aa01c"
+      "patched_sha256": "7fb8f6711c09c74ed0de1fce9edd44b8492054bb2aa963f28fda0695eb394aea"
     },
     {
       "path": "crates/mvm-runtime/src/backends/hvf/kernel_boot.rs",
       "base_git_blob": "32993078398561090e71bff97b657b4215592ba5",
-      "patched_sha256": "00d283fb01325a0da3b296b4c9de10e28be01e055197b98f855067b87e79df82"
+      "patched_sha256": "bee7b1699a342dd21a70b9bc2477057c8f6f7c25d7e0351d311c51eace0d0c02"
     },
     {
       "path": "crates/mvm-vmm/src/vmm/vsock.rs",
       "base_git_blob": "99c6a28eba60f760aec186e56ddc41eabf308245",
-      "patched_sha256": "23daf387d643ae37d9a304827ea52a84ccd842232fecfb75a1edbf3ff48c9d68"
+      "patched_sha256": "84405beecbc8a8e2b72b2edd2b1f2c9d73fef6ec4ec35f135b84bbe857e4a6a8"
     },
     {
       "path": "crates/mvm-vmm/src/vmm/vsock/bindings.rs",
       "base_git_blob": "595eddfb091cd2eb2bdbb537a5efba6a78b69229",
-      "patched_sha256": "6762163a8203a09d3ab77cc05ab816431caa70a33aeb6974e9dcf45bf1d4626b"
+      "patched_sha256": "f8b20481d77257c85f63bd9b49cba082a9164825c16721b8687e5dcd4c937cb6"
     },
     {
       "path": "crates/mvm-vmm/src/vmm/vsock_handlers/mod.rs",
       "base_git_blob": "9ff8d4c407db020c6f628a0ccff9e95cf0ac4e1c",
-      "patched_sha256": "d9660fe19613cb3845005b3b41367afeca0d64a9a53003c18368464d05422c85"
+      "patched_sha256": "da84dea532be277a38357933e529acaca76903004ef728ce5bb2268a2aa14bfe"
+    },
+    {
+      "path": "crates/mvm-vmm/src/vsock_egress_bridge/substitution_bridge.rs",
+      "base_git_blob": "e61f325b6100ffbc412b5343cf6561272f68be96",
+      "patched_sha256": "0d1d2cd62f083eab177f21796eee3662a644922c1d62acd006e57f2dfbbe418f"
     }
   ]
 }

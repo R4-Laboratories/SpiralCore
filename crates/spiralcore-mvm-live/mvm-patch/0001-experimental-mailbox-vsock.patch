@@ -13,15 +13,52 @@ index 7b631b32e3cd532fda153c9a83ed9106ef737d80..1bea9324e189408746a433fe7992acea
  /// This is not the native stop/control budget and never permits reconnecting.
  pub const COLD_GUEST_AGENT_READY_BUDGET: Duration = Duration::from_secs(30);
 diff --git a/crates/mvm-contract/src/protocol/mailbox.rs b/crates/mvm-contract/src/protocol/mailbox.rs
-index 8e8aa21f5d5c00c0166326a3774747f3860b1631..2835ce6292b7d797e731fd3d42987925b05ecde6 100644
+index 8e8aa21f5d5c00c0166326a3774747f3860b1631..b237096d892e48a5348382a102e955af0f90c364 100644
 --- a/crates/mvm-contract/src/protocol/mailbox.rs
 +++ b/crates/mvm-contract/src/protocol/mailbox.rs
-@@ -11,6 +11,8 @@ use serde::{Deserialize, Serialize};
+@@ -11,6 +11,45 @@ use serde::{Deserialize, Serialize};
  
  /// Current mailbox protocol version.
  pub const MAILBOX_PROTOCOL_VERSION: u16 = 1;
 +/// Dedicated experimental mailbox service for the local native guest binding.
 +pub const MAILBOX_PORT: u32 = 5257;
++/// Trusted host launch choice for the experimental mailbox stream only.
++#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
++pub enum MailboxBandwidthProfile {
++    /// Existing workload throughput policy.
++    #[default]
++    #[serde(rename = "standard")]
++    Standard,
++    /// Explicit bounded local experiment; never a guest-negotiated privilege.
++    #[serde(rename = "experimental64")]
++    Experimental64MiB,
++}
++
++impl MailboxBandwidthProfile {
++    /// Sustained bytes per second shared by both mailbox stream directions.
++    #[must_use]
++    pub const fn bytes_per_second(self) -> u64 {
++        match self {
++            Self::Standard => 4 * 1024 * 1024,
++            Self::Experimental64MiB => 64 * 1024 * 1024,
++        }
++    }
++
++    /// The burst is unchanged across profiles.
++    #[must_use]
++    pub const fn burst_bytes(self) -> u64 {
++        8 * 1024 * 1024
++    }
++
++    /// Stable CLI and receipt representation.
++    #[must_use]
++    pub const fn as_str(self) -> &'static str {
++        match self {
++            Self::Standard => "standard",
++            Self::Experimental64MiB => "experimental64",
++        }
++    }
++}
  /// Current signature algorithm identifier (Ed25519).
  pub const ED25519_ALGORITHM: u16 = 1;
  /// Current payload-encryption algorithm identifier (AES-256-GCM).
@@ -236,16 +273,17 @@ index 4050fe1650c6db7325b227c73ff9e6492864b674..70c3abca0556339af4dcd0c8ce55cb79
 +    assert_eq!(legacy, b"hello");
 +}
 diff --git a/crates/mvm-hostd/src/bin/mvm-hvf-supervisor.rs b/crates/mvm-hostd/src/bin/mvm-hvf-supervisor.rs
-index ac1d91b40dc16d10394388f0677dbdd9358262b4..c3fcdbb0163e17c1f3a95b27d14fc108822d3801 100644
+index ac1d91b40dc16d10394388f0677dbdd9358262b4..9522548756f735f8a18eb9ef58c73237ad6e3dab 100644
 --- a/crates/mvm-hostd/src/bin/mvm-hvf-supervisor.rs
 +++ b/crates/mvm-hostd/src/bin/mvm-hvf-supervisor.rs
-@@ -935,6 +935,9 @@ fn run() -> anyhow::Result<()> {
+@@ -935,6 +935,10 @@ fn run() -> anyhow::Result<()> {
                  broker_socket: cfg.broker_socket.clone(),
                  display_socket: cfg.display_socket.clone(),
                  gpu_socket: cfg.gpu_socket.clone(),
 +                // The experimental mailbox binding has an explicit native test
 +                // runner; production launch plans do not silently enable it.
 +                mailbox_socket: None,
++                mailbox_bandwidth_profile: Default::default(),
                  console_data_sockets: cfg
                      .console_data_sockets
                      .iter()
@@ -302,79 +340,87 @@ index e02a19b8f178976bef2ab18ddd9f32eeccd768c0..6c787d552f3d3275ef3c03e073caf1e0
              GuestService::BuilderdControl.port(),
          ];
 diff --git a/crates/mvm-runtime/src/backends/hvf/host_channels.rs b/crates/mvm-runtime/src/backends/hvf/host_channels.rs
-index 6bbf2f6dde30e9a212f4791cb58ea6d873f47704..2b77284ab42f6de6725e2159ea9c86accd0e7ad4 100644
+index 6bbf2f6dde30e9a212f4791cb58ea6d873f47704..9adfe78e1f64d537bf6cb26b06cd5e66fd8a1938 100644
 --- a/crates/mvm-runtime/src/backends/hvf/host_channels.rs
 +++ b/crates/mvm-runtime/src/backends/hvf/host_channels.rs
-@@ -28,6 +28,8 @@ pub struct HostChannels {
+@@ -28,6 +28,10 @@ pub struct HostChannels {
      /// Per-VM host GPU endpoint UDS (`mvm-gpu-endpoint`), present only on
      /// GPU launches.
      pub gpu_socket: Option<PathBuf>,
 +    /// Dedicated canonical mailbox endpoint. Absent bindings refuse guest dials.
 +    pub mailbox_socket: Option<PathBuf>,
++    /// Explicit bounded mailbox-only rate; defaults to the legacy 4 MiB/s.
++    pub mailbox_bandwidth_profile: mvm_contract::protocol::mailbox::MailboxBandwidthProfile,
      /// Additional host-dial listeners, including telemetry and admitted console
      /// data channels. Telemetry is present independently of console grants.
      pub console_data_sockets: Vec<(u32, PathBuf)>,
 diff --git a/crates/mvm-runtime/src/backends/hvf/kernel_boot.rs b/crates/mvm-runtime/src/backends/hvf/kernel_boot.rs
-index 32993078398561090e71bff97b657b4215592ba5..d973a54a1ed69f61962da11abd6b45c412199a9e 100644
+index 32993078398561090e71bff97b657b4215592ba5..03a5e8ae2fa6822184c72d66e5af0b26c2e38673 100644
 --- a/crates/mvm-runtime/src/backends/hvf/kernel_boot.rs
 +++ b/crates/mvm-runtime/src/backends/hvf/kernel_boot.rs
-@@ -696,6 +696,7 @@ fn boot_kernel_impl(params: KernelBootUntilParams<'_>) -> Result<KernelBootResul
+@@ -696,6 +696,8 @@ fn boot_kernel_impl(params: KernelBootUntilParams<'_>) -> Result<KernelBootResul
                  broker_socket: channels.broker_socket,
                  display_socket: channels.display_socket,
                  gpu_socket: channels.gpu_socket,
 +                mailbox_socket: channels.mailbox_socket,
++                mailbox_bandwidth_profile: channels.mailbox_bandwidth_profile,
                  console_data_sockets: channels.console_data_sockets,
                  builder_control_sockets: channels.builder_control_sockets,
                  console_log: channels.console_log,
-@@ -766,6 +767,8 @@ struct RunInputs {
+@@ -766,6 +768,9 @@ struct RunInputs {
      /// Per-VM host GPU endpoint UDS. When set, `GPU_PORT` relays here — the
      /// `mvm-gpu-endpoint` process the workload runner spawned for this VM.
      gpu_socket: Option<PathBuf>,
 +    /// Explicit canonical mailbox relay; never inferred from another service.
 +    mailbox_socket: Option<PathBuf>,
++    mailbox_bandwidth_profile: mvm_contract::protocol::mailbox::MailboxBandwidthProfile,
      /// Additional host-dial listeners, including telemetry and console channels.
      console_data_sockets: Vec<(u32, PathBuf)>,
      builder_control_sockets: Vec<(u32, PathBuf)>,
-@@ -1459,6 +1462,7 @@ unsafe fn run(
+@@ -1459,6 +1464,8 @@ unsafe fn run(
          broker_socket,
          display_socket,
          gpu_socket,
 +        mailbox_socket,
++        mailbox_bandwidth_profile,
          console_data_sockets,
          builder_control_sockets,
          console_log,
-@@ -1745,6 +1749,9 @@ unsafe fn run(
+@@ -1745,6 +1752,10 @@ unsafe fn run(
              if let Some(gpu) = gpu_socket.as_ref() {
                  v.set_gpu_endpoint(gpu);
              }
 +            if let Some(mailbox) = mailbox_socket.as_ref() {
-+                v.set_mailbox_endpoint(mailbox);
++                v.set_mailbox_endpoint_with_profile(mailbox, mailbox_bandwidth_profile)
++                    .map_err(|_| HvfError::SnapshotState("mailbox profile binding failed"))?;
 +            }
              // Bind the explicitly supplied telemetry, console and builder
              // listeners through the shared host-dial bridge. Telemetry does not
              // enable a console or grant network access. The activity counter
-@@ -1874,6 +1881,7 @@ unsafe fn run(
+@@ -1874,6 +1885,8 @@ unsafe fn run(
                      broker_endpoint: broker_socket.clone(),
                      display_endpoint: display_socket.clone(),
                      gpu_endpoint: gpu_socket.clone(),
 +                    mailbox_endpoint: mailbox_socket.clone(),
++                    mailbox_bandwidth_profile,
                      console_sockets: console_data_sockets.clone(),
                  };
                  v.rebind_host_channels(&bindings, Arc::new(GicSpi))
 diff --git a/crates/mvm-vmm/src/vmm/vsock.rs b/crates/mvm-vmm/src/vmm/vsock.rs
-index 99c6a28eba60f760aec186e56ddc41eabf308245..cd946b841bb1cfe980c8073ac9a6daab3a3e8560 100644
+index 99c6a28eba60f760aec186e56ddc41eabf308245..0e63182eca118cd2139869521d085dd6fd35253b 100644
 --- a/crates/mvm-vmm/src/vmm/vsock.rs
 +++ b/crates/mvm-vmm/src/vmm/vsock.rs
-@@ -107,6 +107,8 @@ fn canonical_child_bindings(
+@@ -107,6 +107,9 @@ fn canonical_child_bindings(
          broker_endpoint,
          display_endpoint,
          gpu_endpoint,
 +        // Mailbox routes cannot be inherited by the existing handoff mask.
 +        mailbox_endpoint: None,
++        mailbox_bandwidth_profile: Default::default(),
          console_sockets,
      })
  }
-@@ -294,6 +296,10 @@ impl VsockShared {
+@@ -294,6 +297,19 @@ impl VsockShared {
          self.handlers.set_gpu_endpoint(path);
      }
  
@@ -382,10 +428,19 @@ index 99c6a28eba60f760aec186e56ddc41eabf308245..cd946b841bb1cfe980c8073ac9a6daab
 +        self.handlers.set_mailbox_endpoint(path);
 +    }
 +
++    pub fn set_mailbox_endpoint_with_profile(
++        &mut self,
++        path: &std::path::Path,
++        profile: mvm_contract::protocol::mailbox::MailboxBandwidthProfile,
++    ) -> std::io::Result<()> {
++        self.handlers
++            .set_mailbox_endpoint_with_profile(path, profile)
++    }
++
      pub fn set_display_activity(&mut self, counter: Arc<std::sync::atomic::AtomicUsize>) {
          self.handlers.set_display_activity(counter);
      }
-@@ -557,6 +563,12 @@ impl VirtioVsock {
+@@ -557,6 +573,26 @@ impl VirtioVsock {
          self.notify_io();
      }
  
@@ -395,20 +450,34 @@ index 99c6a28eba60f760aec186e56ddc41eabf308245..cd946b841bb1cfe980c8073ac9a6daab
 +        self.notify_io();
 +    }
 +
++    /// Configure a bounded mailbox profile before any stream is active.
++    pub fn set_mailbox_endpoint_with_profile(
++        &mut self,
++        path: &std::path::Path,
++        profile: mvm_contract::protocol::mailbox::MailboxBandwidthProfile,
++    ) -> std::io::Result<()> {
++        self.lock()
++            .set_mailbox_endpoint_with_profile(path, profile)?;
++        self.host_runtime.bindings.mailbox_endpoint = Some(path.to_path_buf());
++        self.host_runtime.bindings.mailbox_bandwidth_profile = profile;
++        self.notify_io();
++        Ok(())
++    }
++
      pub fn set_display_activity(&mut self, counter: Arc<std::sync::atomic::AtomicUsize>) {
          self.lock().set_display_activity(Arc::clone(&counter));
          self.host_runtime.display_activity = Some(counter);
-@@ -656,6 +668,9 @@ impl VirtioVsock {
+@@ -656,6 +692,9 @@ impl VirtioVsock {
              if let Some(path) = &bindings.gpu_endpoint {
                  self.set_gpu_endpoint(path);
              }
 +            if let Some(path) = &bindings.mailbox_endpoint {
-+                self.set_mailbox_endpoint(path);
++                self.set_mailbox_endpoint_with_profile(path, bindings.mailbox_bandwidth_profile)?;
 +            }
              if !bindings.console_sockets.is_empty() {
                  self.set_host_dial_sockets(
                      bindings
-@@ -2580,6 +2595,93 @@ mod tests {
+@@ -2580,6 +2619,93 @@ mod tests {
          assert!(d.transport.pending_rx.iter().any(|(h, _)| h.op == OP_RST));
      }
  
@@ -503,19 +572,21 @@ index 99c6a28eba60f760aec186e56ddc41eabf308245..cd946b841bb1cfe980c8073ac9a6daab
      fn host_agent_request_advertises_zero_credit_so_guest_does_not_reset() {
          let mut d = dev();
 diff --git a/crates/mvm-vmm/src/vmm/vsock/bindings.rs b/crates/mvm-vmm/src/vmm/vsock/bindings.rs
-index 595eddfb091cd2eb2bdbb537a5efba6a78b69229..39d4fa6664bf8ce0a347f64483761eca8a99d710 100644
+index 595eddfb091cd2eb2bdbb537a5efba6a78b69229..8bad00aa05775f54d04ff4212ee802f5b8a83bbb 100644
 --- a/crates/mvm-vmm/src/vmm/vsock/bindings.rs
 +++ b/crates/mvm-vmm/src/vmm/vsock/bindings.rs
-@@ -19,6 +19,8 @@ pub struct VsockHostBindings {
+@@ -19,6 +19,10 @@ pub struct VsockHostBindings {
      pub display_endpoint: Option<PathBuf>,
      /// Host GPU endpoint path (the per-VM `mvm-gpu-endpoint` socket).
      pub gpu_endpoint: Option<PathBuf>,
 +    /// Dedicated canonical mailbox endpoint, absent unless explicitly admitted.
 +    pub mailbox_endpoint: Option<PathBuf>,
++    /// Host-owned bounded mailbox rate; absent configuration remains standard.
++    pub mailbox_bandwidth_profile: mvm_contract::protocol::mailbox::MailboxBandwidthProfile,
      /// Additional host-dial listeners (telemetry and admitted console ports).
      pub console_sockets: Vec<(u32, PathBuf)>,
  }
-@@ -44,6 +46,7 @@ impl VsockHostBindings {
+@@ -44,6 +48,7 @@ impl VsockHostBindings {
              .chain(self.broker_endpoint.iter().map(PathBuf::as_path))
              .chain(self.display_endpoint.iter().map(PathBuf::as_path))
              .chain(self.gpu_endpoint.iter().map(PathBuf::as_path))
@@ -523,15 +594,16 @@ index 595eddfb091cd2eb2bdbb537a5efba6a78b69229..39d4fa6664bf8ce0a347f64483761eca
              .chain(self.console_sockets.iter().map(|(_, path)| path.as_path()))
              .collect()
      }
-@@ -61,6 +64,7 @@ mod tests {
+@@ -61,6 +66,8 @@ mod tests {
              broker_endpoint: Some("broker.sock".into()),
              display_endpoint: Some("display.sock".into()),
              gpu_endpoint: Some("gpu.sock".into()),
 +            mailbox_endpoint: Some("mailbox.sock".into()),
++            mailbox_bandwidth_profile: Default::default(),
              console_sockets: vec![
                  (6000, "console.sock".into()),
                  (6001, "telemetry.sock".into()),
-@@ -74,6 +78,7 @@ mod tests {
+@@ -74,6 +81,7 @@ mod tests {
                  "broker.sock",
                  "display.sock",
                  "gpu.sock",
@@ -540,7 +612,7 @@ index 595eddfb091cd2eb2bdbb537a5efba6a78b69229..39d4fa6664bf8ce0a347f64483761eca
                  "telemetry.sock",
              ]
 diff --git a/crates/mvm-vmm/src/vmm/vsock_handlers/mod.rs b/crates/mvm-vmm/src/vmm/vsock_handlers/mod.rs
-index 9ff8d4c407db020c6f628a0ccff9e95cf0ac4e1c..718b71661ed58a80146c15a63d9f83896283dd7b 100644
+index 9ff8d4c407db020c6f628a0ccff9e95cf0ac4e1c..e145b74971092e2ada033d929d59e4022d07f56d 100644
 --- a/crates/mvm-vmm/src/vmm/vsock_handlers/mod.rs
 +++ b/crates/mvm-vmm/src/vmm/vsock_handlers/mod.rs
 @@ -217,6 +217,15 @@ impl VsockHandlerRegistry {
@@ -559,7 +631,7 @@ index 9ff8d4c407db020c6f628a0ccff9e95cf0ac4e1c..718b71661ed58a80146c15a63d9f8389
          let host_initiated: Vec<Box<dyn HostInitiatedHandler>> = vec![
              Box::new(AgentVsockHandler::new()),
              Box::new(HostDialVsockHandler::new()),
-@@ -300,6 +309,13 @@ impl VsockHandlerRegistry {
+@@ -300,6 +309,35 @@ impl VsockHandlerRegistry {
              .set_endpoint(path);
      }
  
@@ -570,6 +642,91 @@ index 9ff8d4c407db020c6f628a0ccff9e95cf0ac4e1c..718b71661ed58a80146c15a63d9f8389
 +            .set_endpoint(path);
 +    }
 +
++    pub(crate) fn set_mailbox_endpoint_with_profile(
++        &mut self,
++        path: &Path,
++        profile: mvm_contract::protocol::mailbox::MailboxBandwidthProfile,
++    ) -> std::io::Result<()> {
++        let handler = self
++            .guest_handler_mut::<StreamRelayHandler>(mvm_agentd::vsock::MAILBOX_PORT)
++            .ok_or_else(|| std::io::Error::other("mailbox handler missing"))?;
++        if handler.bridge.is_active()
++            || !handler.headers.is_empty()
++            || !handler.tx_pending.is_empty()
++        {
++            return Err(std::io::Error::new(
++                std::io::ErrorKind::WouldBlock,
++                "mailbox profile requires an idle unbound session",
++            ));
++        }
++        handler.bridge.set_budget(EgressBudget::mailbox(profile));
++        handler.bridge.set_endpoint(path);
++        Ok(())
++    }
++
      pub(crate) fn set_display_endpoint(&mut self, path: &Path) {
          self.guest_handler_mut::<StreamRelayHandler>(mvm_agentd::vsock::DISPLAY_PORT)
              .expect("display handler present")
+diff --git a/crates/mvm-vmm/src/vsock_egress_bridge/substitution_bridge.rs b/crates/mvm-vmm/src/vsock_egress_bridge/substitution_bridge.rs
+index e61f325b6100ffbc412b5343cf6561272f68be96..7627435b80451e196c0e9bcbb50e32efe061af13 100644
+--- a/crates/mvm-vmm/src/vsock_egress_bridge/substitution_bridge.rs
++++ b/crates/mvm-vmm/src/vsock_egress_bridge/substitution_bridge.rs
+@@ -125,6 +125,25 @@ impl EgressBudget {
+         Self::at(now, EgressLimits::workload())
+     }
+ 
++    pub(crate) fn mailbox(
++        profile: mvm_contract::protocol::mailbox::MailboxBandwidthProfile,
++    ) -> Self {
++        Self::mailbox_at(Instant::now(), profile)
++    }
++
++    fn mailbox_at(
++        now: Instant,
++        profile: mvm_contract::protocol::mailbox::MailboxBandwidthProfile,
++    ) -> Self {
++        Self::at(
++            now,
++            EgressLimits {
++                bytes_per_second: Some(profile.bytes_per_second()),
++                ..EgressLimits::workload()
++            },
++        )
++    }
++
+     /// A budget carrying no workload ceiling — see [`EgressLimits::trusted_builder`].
+     pub(crate) fn trusted_builder() -> Self {
+         Self::trusted_builder_at(Instant::now())
+@@ -538,6 +557,32 @@ mod tests {
+     use std::io::Write;
+     use std::time::Duration;
+ 
++    #[test]
++    fn mailbox_profiles_are_bounded_and_preserve_legacy_workload_limits() {
++        use mvm_contract::protocol::mailbox::MailboxBandwidthProfile;
++        let start = Instant::now();
++        let standard = EgressBudget::mailbox_at(start, MailboxBandwidthProfile::default());
++        let experiment =
++            EgressBudget::mailbox_at(start, MailboxBandwidthProfile::Experimental64MiB);
++        let ordinary = EgressBudget::new_at(start);
++        assert_eq!(standard.limits, ordinary.limits);
++        assert_eq!(standard.limits.bytes_per_second, Some(4 << 20));
++        assert_eq!(experiment.limits.bytes_per_second, Some(64 << 20));
++        assert_eq!(experiment.limits.max_streams, standard.limits.max_streams);
++        assert_eq!(experiment.limits.idle_timeout, standard.limits.idle_timeout);
++        for budget in [&standard, &experiment] {
++            assert!(budget.try_consume_at(8 << 20, start));
++            assert!(!budget.try_consume_at(1, start));
++            assert!(!budget.consume_waiting((8 << 20) + 1));
++        }
++        let refilled = start + Duration::from_millis(125);
++        assert!(!standard.try_consume_at(8 << 20, refilled));
++        assert!(experiment.try_consume_at(8 << 20, refilled));
++        assert!(!experiment.try_consume_at(1, refilled));
++        assert!(ordinary.try_consume_at(8 << 20, start));
++        assert!(!ordinary.try_consume_at(8 << 20, refilled));
++    }
++
+     /// No endpoint configured → every stream is refused, nothing opened.
+     #[test]
+     fn no_endpoint_refuses_fail_closed() {
