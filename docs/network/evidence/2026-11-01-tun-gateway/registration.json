@@ -1,0 +1,119 @@
+{
+  "schema": "spiralcore.tun.registration.v1",
+  "status": "REGISTERED_NOT_RUN",
+  "launch_ready": true,
+  "source_revision": null,
+  "runner": "ubuntu-24.04 standard GitHub-hosted public-repository runner",
+  "topology": {
+    "namespaces": [
+      "owned-side-a",
+      "owned-side-b"
+    ],
+    "underlay": "single isolated veth pair",
+    "underlay_ipv4": [
+      "10.203.0.1/30",
+      "10.203.0.2/30"
+    ],
+    "quic_port": 4433,
+    "tun_name": "sc0",
+    "tun_mtu": 1280,
+    "overlay_ipv4": [
+      "10.204.0.1/32",
+      "10.204.0.2/32"
+    ],
+    "overlay_ipv6": [
+      "fd42:5343::1/128",
+      "fd42:5343::2/128"
+    ],
+    "routing": "Only the peer overlay host route through the namespace-local TUN; underlay peer stays on veth. No host route, default-route, NAT or forwarding change.",
+    "security": "Identical mutual-TLS CA/peer pins for matched Raw/Zstd runs. Test private keys stay outside uploaded evidence. Separate peer state between arms."
+  },
+  "correctness": {
+    "application": "Receiver checks exact bytes and length against the deterministic fixture, not only a producer-reported digest. Record sender and receiver hashes and byte counts.",
+    "udp": "Bounded sequence accounting, duplicate/loss/reorder reporting and any application retries; retries are counted and never hidden. Final exact fixture reconstruction required.",
+    "packet_codec": "Separate same-input IP-packet encode/decode roundtrip witness proves exact header, payload, length and checksum preservation. Live TCP segmentation/header differences are not asserted identical across arms.",
+    "opaque_scope": "Seeded opaque bytes are a noncompressible control, not proof of intercepting or decrypting Internet TLS.",
+    "warm_scope": "No warm-packet arm exists in the first gateway. Shared warm-object core and MVM facade are verified separately."
+  },
+  "measurement": {
+    "packet_capture": "One underlay veth interface, both directions, before QUIC handshake through clean shutdown. Header-only classic PCAP with original record lengths retained; bounded capture file.",
+    "byte_counts": [
+      "application bytes",
+      "gateway framed stream/datagram bytes",
+      "captured IP total bytes",
+      "captured Ethernet frame bytes without FCS/preamble/interframe gap"
+    ],
+    "wire_includes": "QUIC handshake/authentication, acknowledgments, framing and observed retransmissions in both directions; packet capture is not substituted by encoded payload length.",
+    "capture_acceptance": "Capture ready before traffic, kernel drops zero, complete bounded parse, final packet count matches capture count; preserve any incomplete capture as failure, not a savings claim.",
+    "cpu": "Sender/receiver gateway process CPU and application process CPU separately; no nested process double count and no physical-energy claim.",
+    "time": "Per-flow source start through receiver exactness acknowledgment, plus complete peer-session wall time including handshake/preparation/shutdown; ordinary send-only timing is not end-to-end time.",
+    "statistics": "Three descriptive paired trials; medians and trial-paired ratios; report negative outcomes and raw fallback costs. No p95 or statistical qualification."
+  },
+  "custody": {
+    "free_disk_floor_bytes": 4294967296,
+    "fresh_output_directory": true,
+    "source_and_binary_hashes": true,
+    "retain_failures": true,
+    "automatic_retries": false,
+    "cleanup": "Terminate/reap only owned processes and delete only owned namespaces, generated private test material and temporary fixtures after public evidence custody; retain formal logs."
+  },
+  "source_binding": "Explicit GitHub pull_request.head.sha checkout, recorded together with GITHUB_WORKFLOW_SHA and source/binary manifests before traffic",
+  "dose": {
+    "trials": [
+      0,
+      1,
+      2
+    ],
+    "application_ip_versions": [
+      4,
+      6
+    ],
+    "packet_modes": [
+      "raw",
+      "zstd"
+    ],
+    "persistent_peer_sessions": 12,
+    "flows_per_session": [
+      {
+        "protocol": "TCP",
+        "fixture": "pattern",
+        "bytes": 16777216
+      },
+      {
+        "protocol": "TCP",
+        "fixture": "opaque",
+        "bytes": 16777216
+      },
+      {
+        "protocol": "UDP",
+        "fixture": "pattern",
+        "bytes": 1048576
+      },
+      {
+        "protocol": "UDP",
+        "fixture": "opaque",
+        "bytes": 1048576
+      }
+    ],
+    "application_flows": 48,
+    "udp_max_application_datagram_bytes": 1008,
+    "mode_order_by_trial": [
+      [
+        "raw",
+        "zstd"
+      ],
+      [
+        "zstd",
+        "raw"
+      ],
+      [
+        "raw",
+        "zstd"
+      ]
+    ],
+    "warmup_policy": "Fresh authenticated peer session for each mode/IP/trial; retain all three cold-start session trials. Prepared codec state persists across the four flows. No JIT trial discarded.",
+    "network_impairment": "None in the initial functional/measurement witness; no WAN claim. A later shaped run requires a separate explicit profile.",
+    "application_reliability": "UDP stop-and-wait exact echo; at most ten attempts per chunk, retransmissions and receipt traffic counted; no claim of native UDP reliability"
+  },
+  "scope": "Isolated local Linux TUN/QUIC witness; not WAN, production fleet networking, FIPS or CUI qualification"
+}

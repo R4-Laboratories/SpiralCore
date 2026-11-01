@@ -1,0 +1,52 @@
+{
+  "schema": "spiralcore.tun.environment-feasibility.v1",
+  "date": "2026-11-01",
+  "status": "READ_ONLY_RECON_COMPLETE_NO_WORKFLOW_DISPATCH",
+  "repository": {
+    "name": "R4-Laboratories/SpiralCore",
+    "visibility": "public",
+    "default_branch": "main",
+    "archived": false,
+    "disabled": false,
+    "authenticated_permissions": {"admin": true, "maintain": true, "push": true, "pull": true},
+    "actions_enabled": true,
+    "allowed_actions": "all",
+    "default_workflow_token_permissions": "read",
+    "workflow_token_can_approve_pull_requests": false,
+    "local_base_observed": "37e569d4f6033737c0a3aad56c91b73e86f07902"
+  },
+  "read_only_queries": [
+    "gh api repos/R4-Laboratories/SpiralCore",
+    "gh api repos/R4-Laboratories/SpiralCore/actions/permissions",
+    "gh api repos/R4-Laboratories/SpiralCore/actions/permissions/workflow",
+    "gh api repos/R4-Laboratories/SpiralCore/actions/runs?per_page=3"
+  ],
+  "proposed_runner": {
+    "label": "ubuntu-24.04",
+    "class": "standard public-repository GitHub-hosted Linux VM",
+    "documented_cpu": 4,
+    "documented_ram_gib": 16,
+    "documented_storage_gb": 14,
+    "architecture": "x86_64",
+    "sudo": "passwordless",
+    "compute_price": "Standard hosted runner compute is free for public repositories. No larger or paid runner selected.",
+    "storage": "Bound retained capture/results and use short artifact retention; no claim of unlimited free artifact storage.",
+    "runtime_gate": "Must actually verify /dev/net/tun, namespace creation, privilege, offload configuration, capture start and route isolation in the frozen-source job. Documentation is not execution evidence."
+  },
+  "agreed_transport_scope": {
+    "transport": "QUIC UDP4433 with mutual rustls authentication and exact peer pins",
+    "tun_mtu": 1280,
+    "packet_arms": ["raw", "prepared-zstd-with-literal-fallback"],
+    "warm_object_scope": "Separate shared-core/MVM witness; not a claimed TUN packet-cache arm",
+    "underlay": "One veth pair between two owned isolated namespaces; no host routing/NAT changes",
+    "application_protocols": ["IPv4 TCP", "IPv4 UDP", "IPv6 TCP", "IPv6 UDP"],
+    "capture": "One underlay interface, both directions. Header-only classic PCAP, original link lengths and IP total lengths kept distinct; QUIC authentication, ACKs and retransmissions included.",
+    "existing_capture_limit": "Existing spiralcore-capture hardcodes a TCP443/SYN-owned qualification path, so it must not be reused unchanged for UDP4433 QUIC. Root owns the small bounded UDP capture summary helper."
+  },
+  "changes_performed": "No VM creation, global installation, route change, provisioned host or Actions dispatch.",
+  "sources": [
+    "https://docs.github.com/en/billing/concepts/product-billing/github-actions",
+    "https://docs.github.com/en/actions/reference/runners/github-hosted-runners",
+    "https://docs.kernel.org/networking/tuntap.html"
+  ]
+}

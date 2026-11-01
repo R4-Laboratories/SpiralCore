@@ -11,6 +11,7 @@ default = ["live"]
 live = []
 
 [dependencies]
+spiralcore-gateway-core = { path = "../spiralcore-gateway-core", features = ["hardware-sha256"] }
 spiralcore-mvm-adapter = { path = "../spiralcore-mvm-adapter", features = ["live", "hardware-sha256"] }
 spiralcore-transfer = { path = "../spiralcore-transfer", features = ["hardware-sha256"] }
 mvm-core = { git = "https://github.com/tinylabscom/mvm", rev = "3104a12c5b071a6851323fa8115d2afaf3f0bb8b", default-features = false }
