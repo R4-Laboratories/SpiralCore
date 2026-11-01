@@ -1,0 +1,9 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:spiralcore:mvm-bandwidth-profile:v1",
+  "title": "Host-selected experimental mailbox bandwidth profile",
+  "type": "string",
+  "enum": ["standard", "experimental64"],
+  "default": "standard",
+  "description": "standard retains 4194304 bytes/second; experimental64 explicitly selects67108864 bytes/second. Both retain the8388608-byte burst and existing stream, idle, authorization and frame bounds. This is trusted launch configuration, never guest-negotiated authority."
+}
