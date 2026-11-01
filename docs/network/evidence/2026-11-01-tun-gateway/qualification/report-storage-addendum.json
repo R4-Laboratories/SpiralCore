@@ -1,0 +1,36 @@
+{
+  "schema": "spiralcore.tun.report-storage-addendum.v1",
+  "verdict": "PASS",
+  "report_sha256": "62afab930d431988235e56e3247708b95c7191ebdbf00ac93a68e2799dfaa06c",
+  "report": "docs/network/gateway-results-2026-11-01.md",
+  "numeric_checks": {
+    "session_cells": 20,
+    "session_rows_match": true,
+    "flow_cells": 16,
+    "flow_rows_match": true,
+    "paired_percentage_values": 6,
+    "paired_percentages_match": true,
+    "counts_confirmed": "12sessions/48flows/96exact receipts/408MiB application input; retained Linux logs17tests",
+    "mvm_paragraph_checked": "Retained mvm-summary agrees:18exact/recovered, repeat Warm1.482/3.218ms and8523logical bytes; Whole4.894/7.362ms and8520bytes"
+  },
+  "storage_checks": {
+    "sha_matches_github": true,
+    "size_matches_github": true,
+    "remote_redownload_receipt_matches": true,
+    "report_identifies_revision_and_hash": true,
+    "full_archive": {
+      "dataset": "caseyallard/spiralcore-experiment-artifacts",
+      "revision": "8074002b3803378e5b655a284b0c2fff44338fc2",
+      "path": "2026-11-01/gateway-41361459962.zip",
+      "bytes": 21851334,
+      "sha256": "59238980889273cb9c069f396d8dd273229e81f12e218db5e9b0a1056e49e851",
+      "github_run": 41361459962,
+      "github_artifact": 13105696385,
+      "remote_redownload_verified": true,
+      "contains": "Original GitHub Actions archive: raw receipts, full header-only PCAPs and frozen gateway/probe executables; no private test keys",
+      "retention": "Compact observations and manifests in GitHub; full immutable archive in existing private HF dataset"
+    },
+    "temporary_gzip_status": "Removed after original ZIP archived and verified. Prior12capture equality check remains historical; no permanent Git gzip claim."
+  },
+  "scope": "Read-only numeric report check and retained archive receipts. No new download, test, build, benchmark or analyzer project."
+}

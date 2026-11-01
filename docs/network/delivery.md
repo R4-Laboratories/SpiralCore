@@ -63,6 +63,16 @@ drift/fallback controls and zstd timing variation are recorded separately.
 
 ## Milestones
 
+The [shared Rust gateway and TUN witness](gateway-results-2026-11-01.md) adds
+ordinary IPv4/IPv6 packet forwarding between authenticated Linux peers. The MVM
+sender uses the same object facade; an actual two-guest smoke verified 18 objects
+and 18 keyless recovery readbacks. The Linux namespace campaign completed 48
+exact TCP/UDP flows across 12 persistent sessions, with complete captures and
+unchanged host routes. Packet v1 compares independent Raw/zstd encoding; its byte
+savings cost additional local CPU/time. Transparent warm TCP-stream reuse,
+general Internet egress and MVM FlowMux interception remain future integration
+work. This campaign is not a gateway WAN measurement.
+
 The [unrelated-object CPU follow-up](unrelated-cpu-results-2026-10-31.md) removes
 avoidable sparse allocation and schema scanning/parsing work. It preserves all
 selected frame bytes, 600-byte warm transfers and exact readback across two

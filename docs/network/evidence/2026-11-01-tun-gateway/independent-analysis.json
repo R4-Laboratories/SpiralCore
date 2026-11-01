@@ -1,0 +1,477 @@
+{
+  "schema": "spiralcore.tun.independent-analysis.v1",
+  "reviewer": "selector_finish",
+  "run_id": 41361459962,
+  "source": "199475fa8a9b54cd8ea87488b5dc120be2fc5279",
+  "workflow_source": "a47b4fe26e6ff3da011b1483c6ee49ca39e73935",
+  "verdict": "EXACTNESS_AND_CUSTODY_PASS_PERFORMANCE_TRADEOFFS_RETAINED",
+  "counts": {
+    "sessions": 12,
+    "flows": 48,
+    "client_and_server_receipts": 96,
+    "all_exact": true,
+    "all_captures_complete": true,
+    "all_sessions_clean": true,
+    "rejection_count": 0,
+    "udp_application_retries": 0,
+    "artifact_entries_verified": 862,
+    "source_files_verified_against_commit": 25,
+    "binaries_verified": 2
+  },
+  "verification": {
+    "same_fixture_hash_and_length_across_modes": true,
+    "host_routes_unchanged": true,
+    "packet_count_matches_tcpdump_captured_and_received": true,
+    "kernel_capture_drops": 0,
+    "captured_ipv4_udp_header_bytes_per_packet": 28,
+    "captured_ethernet_header_bytes_per_packet": 14,
+    "gateway_binary_sha256": "8ccd7de3d60f4840e9f41908a49ea0538475f320b4dd4a8d7e9e4d13b6a53f57",
+    "probe_binary_sha256": "6029699622c83733eb0f972d0837634b721394034c041eb3a9240450ade7027c"
+  },
+  "scope": "Three descriptive paired trials per IP version/mode. Mixed session contains two16MiB TCP and two1MiB UDP flows. Gateway CPU and captured bytes cover all four flows; no per-flow wire or codec CPU attribution. Client/server application CPU is separate from gateway CPU. No WAN or energy claim.",
+  "timing": "gateway_max_wall_us is the larger endpoint startup-to-pre-close snapshot duration, not complete namespace/capture teardown. client_flow_sum_wall_us sums four client transfer/verification intervals including TCP connect; fixture loads and final report serialization/hash excluded. UDP server receipt linger is excluded from its application timer but remains within gateway/capture interval.",
+  "session_medians": [
+    {
+      "ip_version": 4,
+      "mode": "raw",
+      "n": 3,
+      "medians": {
+        "capture_ip_bytes": 44607439,
+        "capture_udp_payload_bytes": 43641579,
+        "capture_ethernet_bytes": 45090369,
+        "capture_packets": 34560,
+        "gateway_a_cpu_us": 540039,
+        "gateway_b_cpu_us": 618945,
+        "gateway_cpu_us": 1158984,
+        "gateway_max_wall_us": 2584902,
+        "application_cpu_us": 273663,
+        "client_flow_sum_wall_us": 900331
+      }
+    },
+    {
+      "ip_version": 4,
+      "mode": "zstd",
+      "n": 3,
+      "medians": {
+        "capture_ip_bytes": 25979028,
+        "capture_udp_payload_bytes": 25356392,
+        "capture_ethernet_bytes": 26290346,
+        "capture_packets": 22237,
+        "gateway_a_cpu_us": 773006,
+        "gateway_b_cpu_us": 608058,
+        "gateway_cpu_us": 1381064,
+        "gateway_max_wall_us": 2769587,
+        "application_cpu_us": 247619,
+        "client_flow_sum_wall_us": 1069313
+      }
+    },
+    {
+      "ip_version": 6,
+      "mode": "raw",
+      "n": 3,
+      "medians": {
+        "capture_ip_bytes": 45673701,
+        "capture_udp_payload_bytes": 44672953,
+        "capture_ethernet_bytes": 46174075,
+        "capture_packets": 35581,
+        "gateway_a_cpu_us": 611356,
+        "gateway_b_cpu_us": 616625,
+        "gateway_cpu_us": 1235620,
+        "gateway_max_wall_us": 2622717,
+        "application_cpu_us": 272448,
+        "client_flow_sum_wall_us": 915907
+      }
+    },
+    {
+      "ip_version": 6,
+      "mode": "zstd",
+      "n": 3,
+      "medians": {
+        "capture_ip_bytes": 26588242,
+        "capture_udp_payload_bytes": 25960239,
+        "capture_ethernet_bytes": 26901926,
+        "capture_packets": 22406,
+        "gateway_a_cpu_us": 724379,
+        "gateway_b_cpu_us": 674712,
+        "gateway_cpu_us": 1438390,
+        "gateway_max_wall_us": 2789720,
+        "application_cpu_us": 281163,
+        "client_flow_sum_wall_us": 1082076
+      }
+    }
+  ],
+  "paired_session_zstd_over_raw": [
+    {
+      "ip_version": 4,
+      "n": 3,
+      "median_ratios": {
+        "capture_ip_bytes": 0.5823922776647187,
+        "capture_udp_payload_bytes": 0.5810145412016371,
+        "capture_ethernet_bytes": 0.5830590120032063,
+        "capture_packets": 0.6439525462962963,
+        "gateway_a_cpu_us": 1.3606406042380585,
+        "gateway_b_cpu_us": 0.9683940609240939,
+        "gateway_cpu_us": 1.151276307487638,
+        "gateway_max_wall_us": 1.0572064516769337,
+        "application_cpu_us": 0.9048318552380117,
+        "client_flow_sum_wall_us": 1.16073601076978
+      }
+    },
+    {
+      "ip_version": 6,
+      "n": 3,
+      "median_ratios": {
+        "capture_ip_bytes": 0.5815584693340172,
+        "capture_udp_payload_bytes": 0.5803428445476826,
+        "capture_ethernet_bytes": 0.5821468432339504,
+        "capture_packets": 0.6326972260476097,
+        "gateway_a_cpu_us": 1.2339747905252147,
+        "gateway_b_cpu_us": 1.0795637543077234,
+        "gateway_cpu_us": 1.1641038506984347,
+        "gateway_max_wall_us": 1.0552701018568913,
+        "application_cpu_us": 1.0319877554615926,
+        "client_flow_sum_wall_us": 1.1703561949239583
+      }
+    }
+  ],
+  "flow_medians": [
+    {
+      "ip_version": 4,
+      "mode": "raw",
+      "protocol": "tcp",
+      "fixture": "opaque",
+      "n": 3,
+      "medians": {
+        "application_bytes": 16777216,
+        "client_cpu_us": 16402,
+        "server_cpu_us": 79959,
+        "client_wall_us": 267585,
+        "server_wall_us": 256202
+      }
+    },
+    {
+      "ip_version": 4,
+      "mode": "raw",
+      "protocol": "tcp",
+      "fixture": "pattern",
+      "n": 3,
+      "medians": {
+        "application_bytes": 16777216,
+        "client_cpu_us": 15646,
+        "server_cpu_us": 83221,
+        "client_wall_us": 267981,
+        "server_wall_us": 256664
+      }
+    },
+    {
+      "ip_version": 4,
+      "mode": "raw",
+      "protocol": "udp",
+      "fixture": "opaque",
+      "n": 3,
+      "medians": {
+        "application_bytes": 1048576,
+        "client_cpu_us": 19444,
+        "server_cpu_us": 17847,
+        "client_wall_us": 181100,
+        "server_wall_us": 262940
+      }
+    },
+    {
+      "ip_version": 4,
+      "mode": "raw",
+      "protocol": "udp",
+      "fixture": "pattern",
+      "n": 3,
+      "medians": {
+        "application_bytes": 1048576,
+        "client_cpu_us": 19703,
+        "server_cpu_us": 17933,
+        "client_wall_us": 180583,
+        "server_wall_us": 257666
+      }
+    },
+    {
+      "ip_version": 4,
+      "mode": "zstd",
+      "protocol": "tcp",
+      "fixture": "opaque",
+      "n": 3,
+      "medians": {
+        "application_bytes": 16777216,
+        "client_cpu_us": 15796,
+        "server_cpu_us": 69677,
+        "client_wall_us": 333855,
+        "server_wall_us": 322481
+      }
+    },
+    {
+      "ip_version": 4,
+      "mode": "zstd",
+      "protocol": "tcp",
+      "fixture": "pattern",
+      "n": 3,
+      "medians": {
+        "application_bytes": 16777216,
+        "client_cpu_us": 15921,
+        "server_cpu_us": 71730,
+        "client_wall_us": 291394,
+        "server_wall_us": 277842
+      }
+    },
+    {
+      "ip_version": 4,
+      "mode": "zstd",
+      "protocol": "udp",
+      "fixture": "opaque",
+      "n": 3,
+      "medians": {
+        "application_bytes": 1048576,
+        "client_cpu_us": 19148,
+        "server_cpu_us": 16935,
+        "client_wall_us": 208225,
+        "server_wall_us": 287817
+      }
+    },
+    {
+      "ip_version": 4,
+      "mode": "zstd",
+      "protocol": "udp",
+      "fixture": "pattern",
+      "n": 3,
+      "medians": {
+        "application_bytes": 1048576,
+        "client_cpu_us": 15516,
+        "server_cpu_us": 16290,
+        "client_wall_us": 209631,
+        "server_wall_us": 290753
+      }
+    },
+    {
+      "ip_version": 6,
+      "mode": "raw",
+      "protocol": "tcp",
+      "fixture": "opaque",
+      "n": 3,
+      "medians": {
+        "application_bytes": 16777216,
+        "client_cpu_us": 15520,
+        "server_cpu_us": 78180,
+        "client_wall_us": 270929,
+        "server_wall_us": 259537
+      }
+    },
+    {
+      "ip_version": 6,
+      "mode": "raw",
+      "protocol": "tcp",
+      "fixture": "pattern",
+      "n": 3,
+      "medians": {
+        "application_bytes": 16777216,
+        "client_cpu_us": 16261,
+        "server_cpu_us": 71060,
+        "client_wall_us": 235099,
+        "server_wall_us": 223657
+      }
+    },
+    {
+      "ip_version": 6,
+      "mode": "raw",
+      "protocol": "udp",
+      "fixture": "opaque",
+      "n": 3,
+      "medians": {
+        "application_bytes": 1048576,
+        "client_cpu_us": 22523,
+        "server_cpu_us": 21437,
+        "client_wall_us": 202089,
+        "server_wall_us": 282219
+      }
+    },
+    {
+      "ip_version": 6,
+      "mode": "raw",
+      "protocol": "udp",
+      "fixture": "pattern",
+      "n": 3,
+      "medians": {
+        "application_bytes": 1048576,
+        "client_cpu_us": 23668,
+        "server_cpu_us": 22134,
+        "client_wall_us": 208136,
+        "server_wall_us": 289728
+      }
+    },
+    {
+      "ip_version": 6,
+      "mode": "zstd",
+      "protocol": "tcp",
+      "fixture": "opaque",
+      "n": 3,
+      "medians": {
+        "application_bytes": 16777216,
+        "client_cpu_us": 15898,
+        "server_cpu_us": 91949,
+        "client_wall_us": 341889,
+        "server_wall_us": 330440
+      }
+    },
+    {
+      "ip_version": 6,
+      "mode": "zstd",
+      "protocol": "tcp",
+      "fixture": "pattern",
+      "n": 3,
+      "medians": {
+        "application_bytes": 16777216,
+        "client_cpu_us": 15347,
+        "server_cpu_us": 83126,
+        "client_wall_us": 302219,
+        "server_wall_us": 288639
+      }
+    },
+    {
+      "ip_version": 6,
+      "mode": "zstd",
+      "protocol": "udp",
+      "fixture": "opaque",
+      "n": 3,
+      "medians": {
+        "application_bytes": 1048576,
+        "client_cpu_us": 18800,
+        "server_cpu_us": 18833,
+        "client_wall_us": 217627,
+        "server_wall_us": 297455
+      }
+    },
+    {
+      "ip_version": 6,
+      "mode": "zstd",
+      "protocol": "udp",
+      "fixture": "pattern",
+      "n": 3,
+      "medians": {
+        "application_bytes": 1048576,
+        "client_cpu_us": 18569,
+        "server_cpu_us": 21705,
+        "client_wall_us": 217941,
+        "server_wall_us": 298091
+      }
+    }
+  ],
+  "paired_flow_zstd_over_raw": [
+    {
+      "ip_version": 4,
+      "protocol": "tcp",
+      "fixture": "opaque",
+      "n": 3,
+      "median_ratios": {
+        "application_bytes": 1,
+        "client_cpu_us": 0.9630532861846116,
+        "server_cpu_us": 0.8714090971622956,
+        "client_wall_us": 1.3104782226867275,
+        "server_wall_us": 1.3234707660641924
+      }
+    },
+    {
+      "ip_version": 4,
+      "protocol": "tcp",
+      "fixture": "pattern",
+      "n": 3,
+      "median_ratios": {
+        "application_bytes": 1,
+        "client_cpu_us": 1.0124025974025974,
+        "server_cpu_us": 0.8619218706816789,
+        "client_wall_us": 1.0675146911795381,
+        "server_wall_us": 1.0663998169315783
+      }
+    },
+    {
+      "ip_version": 4,
+      "protocol": "udp",
+      "fixture": "opaque",
+      "n": 3,
+      "median_ratios": {
+        "application_bytes": 1,
+        "client_cpu_us": 0.9924000209654594,
+        "server_cpu_us": 0.8851907883677929,
+        "client_wall_us": 1.1451684152401989,
+        "server_wall_us": 1.0946109378565452
+      }
+    },
+    {
+      "ip_version": 4,
+      "protocol": "udp",
+      "fixture": "pattern",
+      "n": 3,
+      "median_ratios": {
+        "application_bytes": 1,
+        "client_cpu_us": 0.7749581282038268,
+        "server_cpu_us": 0.9398799907685207,
+        "client_wall_us": 1.176343626696044,
+        "server_wall_us": 1.126648451871803
+      }
+    },
+    {
+      "ip_version": 6,
+      "protocol": "tcp",
+      "fixture": "opaque",
+      "n": 3,
+      "median_ratios": {
+        "application_bytes": 1,
+        "client_cpu_us": 1.0234011349869285,
+        "server_cpu_us": 1.1743527661130657,
+        "client_wall_us": 1.1884102806532122,
+        "server_wall_us": 1.198397011623479
+      }
+    },
+    {
+      "ip_version": 6,
+      "protocol": "tcp",
+      "fixture": "pattern",
+      "n": 3,
+      "median_ratios": {
+        "application_bytes": 1,
+        "client_cpu_us": 0.9437918947174221,
+        "server_cpu_us": 1.1698001688713764,
+        "client_wall_us": 1.3032126891224547,
+        "server_wall_us": 1.3142535221343397
+      }
+    },
+    {
+      "ip_version": 6,
+      "protocol": "udp",
+      "fixture": "opaque",
+      "n": 3,
+      "median_ratios": {
+        "application_bytes": 1,
+        "client_cpu_us": 0.9304172661870503,
+        "server_cpu_us": 0.8339786350702058,
+        "client_wall_us": 1.0768869161607015,
+        "server_wall_us": 1.0531610456644254
+      }
+    },
+    {
+      "ip_version": 6,
+      "protocol": "udp",
+      "fixture": "pattern",
+      "n": 3,
+      "median_ratios": {
+        "application_bytes": 1,
+        "client_cpu_us": 0.8430390900352451,
+        "server_cpu_us": 0.9382294458372957,
+        "client_wall_us": 1.0618271580060956,
+        "server_wall_us": 1.0490561915134051
+      }
+    }
+  ],
+  "method": "Recomputed directly from downloaded raw JSON using sort-center median for three values. Ratios pair identical trial/IP/protocol/fixture before taking medians. Independent of parent report arithmetic; no test, build, benchmark or source edit.",
+  "receipts": [
+    "qualification/independent-artifact-check.txt",
+    "qualification/independent-source-check.txt",
+    "qualification/independent-binary-check.txt",
+    "independent-session-rows.jsonl",
+    "independent-flow-rows.jsonl"
+  ]
+}
