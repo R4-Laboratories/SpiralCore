@@ -1,0 +1,40 @@
+diff --git a/tools/gateway-network/gateway-netns.sh b/tools/gateway-network/gateway-netns.sh
+index ec00cc4..564e88a 100644
+--- a/tools/gateway-network/gateway-netns.sh
++++ b/tools/gateway-network/gateway-netns.sh
+@@ -175,7 +175,7 @@ for trial in 0 1 2; do
+         config "$side" "$mode" "$dir"
+       done
+       touch "$dir/capture.pid" "$dir/a.pid" "$dir/b.pid" "$dir/underlay.pcap"
+-      sudo -n ip netns exec "$ns_a" sh -c 'echo "$$" > "$1"; exec tcpdump -Z root -i underlay -nn -s 96 -B 4096 -U -w "$2" "udp port 4433"' \
++      sudo -n ip netns exec "$ns_a" sh -c 'ulimit -c 0; ulimit -f 131072; echo "$$" > "$1"; exec tcpdump -Z root -i underlay -nn -s 96 -B 4096 -U -w "$2" "udp port 4433"' \
+         capture "$dir/capture.pid" "$dir/underlay.pcap" > "$dir/capture.stdout" 2> "$dir/capture.stderr" &
+       cap_job=$!
+       for unused in $(seq 1 100); do grep -q 'listening on underlay' "$dir/capture.stderr" && break; sleep 0.1; done
+@@ -183,7 +183,7 @@ for trial in 0 1 2; do
+       cap_pid=$(cat "$dir/capture.pid")
+       for side in b a; do
+         ns=$ns_a; [ "$side" != b ] || ns=$ns_b
+-        sudo -n ip netns exec "$ns" sh -c 'echo "$$" > "$1"; exec "$2" run "$3"' \
++        sudo -n ip netns exec "$ns" sh -c 'umask 022; ulimit -c 0; echo "$$" > "$1"; exec "$2" run "$3"' \
+           gateway "$dir/$side.pid" "$gateway" "$private/$side-config.json" > "$dir/gateway-$side.stdout" 2> "$dir/gateway-$side.stderr" &
+         if [ "$side" = a ]; then a_job=$!; else b_job=$!; fi
+       done
+@@ -198,7 +198,7 @@ for trial in 0 1 2; do
+           [ "$kind" != opaque ] || port=$((port+1))
+           addr="10.204.0.2:$port"; [ "$version" != 6 ] || addr="[fd42:5343::2]:$port"
+           fixture="$private/$protocol-$kind-$trial.bin"
+-          sudo -n ip netns exec "$ns_b" timeout --signal=TERM --kill-after=5 90 \
++          sudo -n ip netns exec "$ns_b" sh -c 'umask 022; ulimit -c 0; exec timeout --signal=TERM --kill-after=5 90 "$@"' probe \
+             "$probe" "$protocol-server" "$addr" "$fixture" "$dir/$name-server.json" \
+             > "$dir/$name-server.stdout" 2> "$dir/$name-server.stderr" &
+           server_job=$!
+@@ -209,7 +209,7 @@ for trial in 0 1 2; do
+             sleep 0.05
+           done
+           sudo -n ip netns exec "$ns_b" ss "$flag" | grep -q ":$port "
+-          sudo -n ip netns exec "$ns_a" timeout --signal=TERM --kill-after=5 90 \
++          sudo -n ip netns exec "$ns_a" sh -c 'umask 022; ulimit -c 0; exec timeout --signal=TERM --kill-after=5 90 "$@"' probe \
+             "$probe" "$protocol-client" "$addr" "$fixture" "$dir/$name-client.json" \
+             > "$dir/$name-client.stdout" 2> "$dir/$name-client.stderr"
+           wait "$server_job"; server_job=

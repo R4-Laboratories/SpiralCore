@@ -1,0 +1,86 @@
+{
+  "schema": "spiralcore.gateway.premerge-procedural.v1",
+  "observed_at_utc": "2026-11-01T23:21:03Z",
+  "source_revision": "199475fa8a9b54cd8ea87488b5dc120be2fc5279",
+  "reviewer": "/root/mvm_boundary",
+  "role": "harness-optimizer",
+  "verdict": "PASS_LOCAL_PROCEDURAL_GATES_RUNTIME_AND_PERFORMANCE_PENDING",
+  "scope": "Retained RED/GREEN and final command receipts, cross-author reviews and MVM smoke custody only. No new tests, builds, coverage or broad audit.",
+  "roster": {
+    "id": "d1927d9e7ce51354",
+    "verify": "python3 scripts/roster.py verify: exit0,13agents/14skills",
+    "eligibility": "python3 scripts/roster.py check Agent harness-optimizer: exit0, active"
+  },
+  "quality_gate": {
+    "literal_command_invoked": false,
+    "reason": "No quality-gate executable or direct invocation tool is available; the installed command is Markdown instructions. Equivalent explicit retained-receipt and independent-review procedure was performed, without claiming a nonexistent command invocation.",
+    "history": "Actual command output/exit files and role/command instructions inspected. DAILY.md absent; no invented shell history."
+  },
+  "red_green": {
+    "core": "Missing object/packet APIs RED101; final4pass.",
+    "transport": "Missing Identity/Listener/Peer RED101; final5pass including identity/pin/deadline/bounds negatives.",
+    "tun": "Initial missing compiler is not behavioral RED; second missing Tun API RED101; cross GREEN02 compiles only.",
+    "service": "Missing normal_transport_end RED101; final3pass.",
+    "capture": "Over-MTU behavioral RED101; final measurement2pass.",
+    "preserved_non_success": [
+      "core-storage-repro private-directory fixture failure",
+      "gateway-first-green pattern literal length failure",
+      "initial Actions validation failure before jobs"
+    ]
+  },
+  "final_checks": {
+    "core_tests": 4,
+    "gateway_native_tests": 11,
+    "linux_tun_tests_executed_on_macos": 0,
+    "mvm_shared_core_tests": 3,
+    "all_named_test_exits": 0,
+    "gateway_clippy_exit": 0,
+    "mvm_host_release_exit": 0,
+    "mvm_guest_release_exit": 0
+  },
+  "independent_reviews": {
+    "core_and_service_repairs": "review-transport-owner.json PASS; current reviewed hashes match.",
+    "transport_tun_and_application": "transport-service-review.json scoped PASS; current reviewed hashes match. Review-authored repairs are disclosed and covered by peer lifecycle review.",
+    "reviewer_note": "This procedural check is not a fresh source review of code I authored."
+  },
+  "mvm": {
+    "warm_exit": 0,
+    "whole_exit": 0,
+    "exact_reopened": 18,
+    "keyless_readonly_exact": 18,
+    "custody_hashes_matched": 8,
+    "source_hashes_matched": 4,
+    "binary_hashes_matched": 2,
+    "owned_backing_disks_removed_after_checks": true,
+    "qualification": "One1MiB trial per Warm/Whole arm,11+7objects. Actual guest integration smoke, descriptive timing only."
+  },
+  "pending": [
+    {
+      "gate": "Linux actual TUN/QUIC execution",
+      "status": "PENDING",
+      "run_id": 41361459962,
+      "url": "https://github.com/R4-Laboratories/SpiralCore/actions/runs/41361459962",
+      "note": "Parent reports in progress; reviewer did not poll or infer success from compilation."
+    },
+    {
+      "gate": "Runtime acceptance",
+      "required": "Exact paired flows and packet witness; capture complete with zero kernel drops; source/binary custody, route isolation and owned cleanup."
+    },
+    {
+      "gate": "Performance/report acceptance",
+      "required": "Review matched Raw/zstd bytes, CPU and full transfer-time arithmetic; include opaque fallback costs and setup; label namespace tests as local, not WAN."
+    },
+    {
+      "gate": "Publication",
+      "required": "Parent checks final source/base state and authorizes only claims supported by completed evidence."
+    }
+  ],
+  "limits": [
+    "No reliable QUIC object service or transparent warm TCP-stream deduplication in packet-only v1.",
+    "TLS application ciphertext remains opaque; warm/shared-runtime object benefits are separate.",
+    "No full upstream MVM workspace, broad coverage, WAN, FIPS/CUI, physical-energy or latency-tail qualification."
+  ],
+  "findings": [
+
+  ]
+}

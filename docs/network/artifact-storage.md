@@ -66,3 +66,15 @@ require their original paths. Do not overwrite current work. Extraction does not
 - Reuse bounded build targets, disable incremental compilation when disk is constrained, and
   discard regenerable build caches once needed executables and source pins are retained.
 - Original user runtimes, saved sessions and unrelated projects are outside this cleanup scope.
+
+## November 1 paired gateway evidence
+
+The exact GitHub Actions archive for run41361459962 is preserved at immutable
+Hugging Face revision `8074002b3803378e5b655a284b0c2fff44338fc2`, file
+`2026-11-01/gateway-41361459962.zip` (21,851,334 bytes). It contains the complete
+Linux paired-gateway receipts, header-only captures and frozen executables.
+A fresh remote download matched SHA-256
+`59238980889273cb9c069f396d8dd273229e81f12e218db5e9b0a1056e49e851`.
+See the [storage receipt](evidence/2026-11-01-tun-gateway/artifact-storage.json) and
+[restoration instructions](gateway-results-2026-11-01.md#recorded-evidence-and-restoration).
+Compact raw observations and all negative findings remain in GitHub.

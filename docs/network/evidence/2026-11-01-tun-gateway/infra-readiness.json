@@ -22,9 +22,9 @@
   "corrections": [
     "IPv6 addrgenmode/autoconf/RA/router solicitation/DAD disabled before TUN up",
     "four distinct application ports41000..41003",
-    "root gateway/probe umask022 only for public receipts; private PKI/fixtures remain077 outside artifact path",
+    "Exact owned public receipt chmod0644 in wait_file before jq/upload; private PKI/fixtures remain077 outside artifact path",
     "UDP GSO/GRO state recorded and on-state rejected",
-    "pcap file bounded by child ulimit; failed captures retained"
+    "Capture has registered traffic/time limits and a128MiB parser input cap; no child file-ulimit was present in the frozen measured driver"
   ],
   "pending": [
     "Root independent review",
@@ -36,5 +36,6 @@
     "WAN performance",
     "warm packet caching",
     "FIPS/CUI qualification"
-  ]
+  ],
+  "freeze_note": "Four optional umask/ulimit wrapper changes were authored after source freeze and were not launched; reverted to frozen199475fa driver without rerunning. See qualification/source-freeze-addendum.json."
 }

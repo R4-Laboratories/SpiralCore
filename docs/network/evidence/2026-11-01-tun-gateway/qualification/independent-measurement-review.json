@@ -1,0 +1,42 @@
+{
+  "schema": "spiralcore.tun.independent-measurement-review.v1",
+  "reviewer": "selector_finish",
+  "verdict": "PASS_WITH_RECORDED_PERFORMANCE_LOSSES",
+  "scope": "Independent arithmetic and custody review of the completed Linux experiment, not an independent review of this agents own harness source.",
+  "run_id": 41361459962,
+  "source": "199475fa8a9b54cd8ea87488b5dc120be2fc5279",
+  "observations": {
+    "sessions": 12,
+    "flows": 48,
+    "endpoint_exact_receipts": 96,
+    "zero_capture_drops": true,
+    "zero_udp_application_retries": true,
+    "zero_gateway_rejections": true,
+    "all_fixture_pairs_match": true,
+    "source_files_verified": 25,
+    "artifact_entries_verified": 862,
+    "binaries_verified": 2,
+    "gzip_captures_equal_originals": 12,
+    "host_ipv4_and_ipv6_route_snapshots_equal": true,
+    "executed_merge_workflow_blob_equals_head_source": true
+  },
+  "result": "About41.8% fewer mixed-session IP bytes; more gateway CPU and slower client flows on this local unshaped link. Negative elapsed/CPU results remain explicit.",
+  "scope_limits": [
+    "n3 descriptive pairs",
+    "one Linux runner and two namespaces, not WAN",
+    "raw vs prepared zstd packet tunnel; no warm-packet cache claim",
+    "no per-flow wire/codec CPU attribution from mixed-session totals",
+    "gateway process CPU and application CPU separate; no energy/FIPS/CUI claim"
+  ],
+  "recomputation": "Raw-session and raw-flow rows plus independent-analysis.json preserve all median and trial-paired ratios. No new test, build or benchmark executed.",
+  "custody": "Verified original artifact checksum, source blobs from pinned commit, frozen binaries, unchanged host routes, and streamed decompression equality for12 temporary gzip captures before their removal. Compact receipts and manifests remain in Git; the full original GitHub artifact, including captures and binaries, is archived in the existing private Hugging Face dataset.",
+  "storage_addendum": {
+    "dataset": "caseyallard/spiralcore-experiment-artifacts",
+    "revision": "8074002b3803378e5b655a284b0c2fff44338fc2",
+    "path": "2026-11-01/gateway-41361459962.zip",
+    "bytes": 21851334,
+    "sha256": "59238980889273cb9c069f396d8dd273229e81f12e218db5e9b0a1056e49e851",
+    "verification": "Reviewed retained immutable upload, remote-redownload checksum and GitHub artifact digest receipts; all identify the same original ZIP. No new download or experiment was performed for this addendum.",
+    "temporary_gzip_status": "Removed after the verified originals were archived; no claim that derived gzip captures remain permanently in Git. The prior12-file decompression equality check remains a historical verification fact."
+  }
+}
