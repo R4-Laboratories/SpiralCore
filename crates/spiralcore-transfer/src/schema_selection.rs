@@ -39,6 +39,20 @@ pub struct WarmSelection {
     pub needs_schema_seed: bool,
 }
 
+/// Eligible combined candidates under the existing successful-miss HTTP-body
+/// cost model. Readiness is the snapshot before selection, not authorization.
+/// An unseeded schema is ineligible; no setup or hidden seed is performed here.
+#[derive(Debug, Clone)]
+pub struct CombinedSelection {
+    pub candidates: Vec<CandidateCost>,
+    pub pruned: Vec<PrunedCandidate>,
+    pub selected_mode: Mode,
+    /// Acknowledged full-byte repeat: only the Raw miss cost was evaluated.
+    pub exact_repeat_probe: bool,
+    pub checkpoint_ready: bool,
+    pub schema_ready: bool,
+}
+
 pub struct PreparedWarmTransfer {
     pub(crate) offer: Offer,
     pub(crate) payload: Payload,
@@ -104,9 +118,14 @@ impl PreparedSelector {
         schema_ready: bool,
         warm_probe: bool,
     ) -> Result<PreparedWarmTransfer> {
-        self.prepare_warm_with_identity(target, base, schema_ready, warm_probe, |bytes| {
-            Ok(object_id(bytes))
-        })
+        self.prepare_warm_with_identity(
+            target,
+            base,
+            schema_ready,
+            warm_probe,
+            |bytes| Ok(object_id(bytes)),
+            None,
+        )
     }
 
     // Only session-owned ACKed bytes can supply a cached identity. This keeps
@@ -127,7 +146,38 @@ impl PreparedSelector {
                 base.map(crate::session::AcknowledgedBase::id)
                     .ok_or(Error::Integrity)
             },
+            None,
         )
+    }
+
+    pub(crate) fn prepare_combined_acknowledged(
+        &mut self,
+        target: &[u8],
+        base: Option<&crate::session::AcknowledgedBase>,
+        prediction: &crate::shared_transfer::PreparedPrediction,
+        schema_ready: bool,
+        warm_probe: bool,
+    ) -> Result<(PreparedWarmTransfer, CombinedSelection)> {
+        let prepared = self.prepare_warm_with_identity(
+            target,
+            base.map(crate::session::AcknowledgedBase::bytes),
+            schema_ready,
+            warm_probe,
+            |_| {
+                base.map(crate::session::AcknowledgedBase::id)
+                    .ok_or(Error::Integrity)
+            },
+            Some(prediction),
+        )?;
+        let selection = CombinedSelection {
+            candidates: prepared.selection.candidates.clone(),
+            pruned: prepared.selection.pruned.clone(),
+            selected_mode: prepared.selection.selected_mode,
+            exact_repeat_probe: false,
+            checkpoint_ready: true,
+            schema_ready,
+        };
+        Ok((prepared, selection))
     }
 
     fn prepare_warm_with_identity<F: FnOnce(&[u8]) -> Result<Id>>(
@@ -137,6 +187,7 @@ impl PreparedSelector {
         schema_ready: bool,
         warm_probe: bool,
         base_identity: F,
+        prediction: Option<&crate::shared_transfer::PreparedPrediction>,
     ) -> Result<PreparedWarmTransfer> {
         if target.len() > client::MAX_BATCHED_OBJECT
             || base.is_some_and(|b| b.len() > client::MAX_BATCHED_OBJECT)
@@ -149,6 +200,20 @@ impl PreparedSelector {
         let mut best = None;
         let mut candidates = vec![raw];
         let mut pruned = Vec::new();
+        // The fixed prediction owns its setup and identity already. Only its
+        // bounded residual is materialized; there is no replay or second session.
+        if let Some(prediction) = prediction {
+            if let Some(bodies) = prediction.prepare(target)? {
+                let cost =
+                    selection::cost(Mode::RuntimeV1, bodies.iter().map(Vec::len), warm_probe)?;
+                if warm_wins(Mode::RuntimeV1, cost, selected, best_cost) {
+                    selected = Mode::RuntimeV1;
+                    best_cost = cost;
+                    best = Some(bodies);
+                }
+                candidates.push(candidate(Mode::RuntimeV1, cost, 0)?);
+            }
+        }
         if let Some(base) = base {
             if let Some(recipe) = crate::delta::encode(base, target)? {
                 let cost = selection::cost(
@@ -165,6 +230,9 @@ impl PreparedSelector {
             }
         }
         for mode in [Mode::ZstdWholeV1, Mode::SchemaZstdV1] {
+            if prediction.is_some() && mode == Mode::SchemaZstdV1 && !schema_ready {
+                continue;
+            }
             let setup = if mode == Mode::SchemaZstdV1 && !schema_ready {
                 raw_cost(self.artifact(), false)?
             } else {
@@ -234,11 +302,12 @@ impl PreparedSelector {
             offer: Offer {
                 mode: selected,
                 len: target.len() as u64,
-                object: object_id(target),
+                object: prediction.map_or_else(|| object_id(target), |p| p.object_id_for(target)),
                 manifest: None,
                 base: match selected {
                     Mode::SparseV1 => Some(base_identity(base.ok_or(Error::Integrity)?)?),
                     Mode::SchemaZstdV1 => Some(self.artifact_id()),
+                    Mode::RuntimeV1 => Some(prediction.ok_or(Error::Integrity)?.checkpoint_id()),
                     _ => None,
                 },
             },
@@ -337,7 +406,8 @@ fn warm_priority(mode: Mode) -> u8 {
         Mode::Raw => 0,
         Mode::ZstdWholeV1 => 1,
         Mode::SparseV1 => 2,
-        Mode::SchemaZstdV1 => 3,
+        Mode::RuntimeV1 => 3,
+        Mode::SchemaZstdV1 => 4,
         _ => u8::MAX,
     }
 }

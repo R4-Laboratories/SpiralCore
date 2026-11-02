@@ -1,0 +1,45 @@
+   Compiling spiralcore-transfer v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer)
+warning: method `prepare_combined_acknowledged` is never used
+   --> /Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer/src/schema_selection.rs:149:19
+    |
+ 88 | impl PreparedSelector {
+    | --------------------- method in this implementation
+...
+149 |     pub(crate) fn prepare_combined_acknowledged(
+    |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+   Compiling spiralcore-gateway-core v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-gateway-core)
+warning: `spiralcore-transfer` (lib) generated 1 warning
+error[E0599]: no variant, associated function, or constant named `Combined` found for enum `ObjectMode` in the current scope
+  --> tests/object_combined.rs:80:39
+   |
+80 |         ObjectSender::new(ObjectMode::Combined, &context, Some(&schema)),
+   |                                       ^^^^^^^^ variant, associated function, or constant not found in `ObjectMode`
+
+error[E0599]: no associated function or constant named `with_combined` found for struct `ObjectSender` in the current scope
+  --> tests/object_combined.rs:83:36
+   |
+83 |     let mut sender = ObjectSender::with_combined(&context, prediction, &schema).unwrap();
+   |                                    ^^^^^^^^^^^^^ associated function or constant not found in `ObjectSender`
+   |
+note: if you're trying to build a new `ObjectSender` consider using one of the following associated functions:
+      ObjectSender::new
+      ObjectSender::with_runtime
+  --> src/object.rs:46:5
+   |
+46 |     pub fn new(mode: ObjectMode, context: &Context, schema: Option<&[u8]>) -> Result<Self> {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+63 |     pub fn with_runtime(context: &Context, prediction: PreparedPrediction) -> Result<Self> {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0599]: no variant, associated function, or constant named `Combined` found for enum `ObjectSelection` in the current scope
+   --> tests/object_combined.rs:128:30
+    |
+128 |         let ObjectSelection::Combined(selection) = receipt.selection else {
+    |                              ^^^^^^^^ variant, associated function, or constant not found in `ObjectSelection`
+
+For more information about this error, try `rustc --explain E0599`.
+error: could not compile `spiralcore-gateway-core` (test "object_combined") due to 3 previous errors

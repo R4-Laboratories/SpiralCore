@@ -15,6 +15,8 @@ use crate::{
     Error, Id, Result, MAX_CHUNK,
 };
 
+pub use crate::schema_selection::CombinedSelection;
+
 /// Conservative per-session admission ceiling, not a process RSS measurement.
 /// Applications retaining several sessions must enforce a shared outer budget.
 pub const MAX_SESSION_CHARGE: u64 = 512 * 1024 * 1024;
@@ -225,7 +227,8 @@ impl WarmSession {
         )?;
         let base = self.state.base.as_ref().filter(|_| self.state.ready);
         let mut attempted = false;
-        let (result, selection) = if let Some(base) = base.filter(|b| b.bytes() == bytes.as_slice()) {
+        let (result, selection) = if let Some(base) = base.filter(|b| b.bytes() == bytes.as_slice())
+        {
             let cost = selection::cost(
                 Mode::Raw,
                 bytes.chunks(MAX_CHUNK).map(|chunk| chunk.len() + 5),
@@ -249,12 +252,9 @@ impl WarmSession {
                 });
             (result, selection)
         } else {
-            let prepared = self.selector.prepare_acknowledged(
-                &bytes,
-                base,
-                self.schema_ready,
-                warm_probe,
-            )?;
+            let prepared =
+                self.selector
+                    .prepare_acknowledged(&bytes, base, self.schema_ready, warm_probe)?;
             if prepared.selection().needs_schema_seed {
                 return Err(Error::Missing);
             }
@@ -461,5 +461,239 @@ impl RuntimeSession {
     }
     pub fn retained_charge(&self) -> u64 {
         self.retained_bytes() as u64 + METADATA_CHARGE
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct CombinedStats {
+    pub transfer: Stats,
+    pub selection: CombinedSelection,
+}
+
+struct CombinedPrepared {
+    prediction: PreparedPrediction,
+    selector: PreparedSelector,
+}
+
+/// One fixed prediction plus one last-acknowledged rolling object. Auxiliary
+/// seeds are explicit; the first target uses normal byte-first selection.
+/// Namespace mismatch permanently discards the prepared state. No caller-supplied
+/// known-hash interface can bypass equality or the receiver's current ACK.
+pub struct CombinedSession {
+    prepared: Option<CombinedPrepared>,
+    state: ScopedState,
+    checkpoint_ready: bool,
+    schema_ready: bool,
+}
+impl CombinedSession {
+    pub fn new(context: &Context, prediction: PreparedPrediction, artifact: &[u8]) -> Result<Self> {
+        let session = Self {
+            prepared: Some(CombinedPrepared {
+                prediction,
+                selector: PreparedSelector::new(artifact)?,
+            }),
+            state: ScopedState::new(context)?,
+            checkpoint_ready: false,
+            schema_ready: false,
+        };
+        admit(session.retained_charge(), 0, 0)?;
+        Ok(session)
+    }
+
+    fn check_context(&mut self, context: &Context) -> Result<()> {
+        if self.prepared.is_none() {
+            return Err(Error::Unauthorized);
+        }
+        if let Err(error) = self.state.check_context(context) {
+            self.prepared = None;
+            self.checkpoint_ready = false;
+            self.schema_ready = false;
+            return Err(error);
+        }
+        Ok(())
+    }
+
+    /// Does not replace the rolling target, including on a duplicate seed.
+    pub fn seed_checkpoint<F: FnMut(&[Frame]) -> Result<Vec<Frame>>>(
+        &mut self,
+        context: &Context,
+        transfer_id: Id,
+        exchange: F,
+    ) -> Result<Stats> {
+        self.seed_auxiliary(context, transfer_id, true, exchange)
+    }
+
+    /// An unseeded schema is excluded from selection, never seeded implicitly.
+    pub fn seed_schema<F: FnMut(&[Frame]) -> Result<Vec<Frame>>>(
+        &mut self,
+        context: &Context,
+        transfer_id: Id,
+        exchange: F,
+    ) -> Result<Stats> {
+        self.seed_auxiliary(context, transfer_id, false, exchange)
+    }
+
+    fn seed_auxiliary<F: FnMut(&[Frame]) -> Result<Vec<Frame>>>(
+        &mut self,
+        context: &Context,
+        transfer_id: Id,
+        checkpoint: bool,
+        mut exchange: F,
+    ) -> Result<Stats> {
+        self.check_context(context)?;
+        admit(self.retained_charge(), 0, WARM_TRANSIENT_CHARGE)?;
+        let prepared = self.prepared.as_ref().ok_or(Error::Unauthorized)?;
+        let bytes = if checkpoint {
+            prepared.prediction.checkpoint()
+        } else {
+            prepared.selector.artifact()
+        };
+        let mut attempted = false;
+        let result =
+            client::transfer_batched(bytes, Mode::Raw, None, transfer_id, false, |frames| {
+                attempted = true;
+                exchange(frames)
+            });
+        match result {
+            Ok(stats) => {
+                if checkpoint {
+                    self.checkpoint_ready = true;
+                } else {
+                    self.schema_ready = true;
+                }
+                Ok(stats)
+            }
+            Err(error) => {
+                if attempted {
+                    self.invalidate_receiver_state();
+                }
+                Err(error)
+            }
+        }
+    }
+
+    /// Selection costs retain the existing successful-miss HTTP-body model.
+    /// Measure this whole call for candidate preparation/hash/transfer work.
+    /// Exact repeats skip codecs and hashing before a current Raw identity probe;
+    /// remote eviction uploads Raw under that same offer, without reseeding.
+    pub fn send<F: FnMut(&[Frame]) -> Result<Vec<Frame>>>(
+        &mut self,
+        context: &Context,
+        bytes: Vec<u8>,
+        transfer_id: Id,
+        warm_probe: bool,
+        mut exchange: F,
+    ) -> Result<CombinedStats> {
+        self.check_context(context)?;
+        // Whole+Schema contexts are already charged as retained (256 MiB plus
+        // schema tables), unlike RuntimeSession's fresh-context scratch budget.
+        // No replay allocation occurs here. Sequential delta preparation holds
+        // at most two <=16 MiB recipes plus the incumbent. The larger schema
+        // path holds its <=16.32 MiB intermediate, bounded compressed output,
+        // winning framed copy and old incumbent: <66 MiB plus small metadata.
+        // Existing 128 MiB scratch covers those temporaries and bounded batched
+        // client copies. Retained prediction/base and input capacity are charged
+        // separately, yielding <433 MiB at the 16 MiB ceiling. Transport and
+        // concurrent sessions still require the caller's shared outer admission.
+        admit(
+            self.retained_charge(),
+            bytes.capacity(),
+            WARM_TRANSIENT_CHARGE,
+        )?;
+        let base = self.state.base.as_ref().filter(|_| self.state.ready);
+        let mut attempted = false;
+        let (result, selection) = if let Some(base) = base.filter(|b| b.bytes() == bytes.as_slice())
+        {
+            let cost = selection::cost(
+                Mode::Raw,
+                bytes.chunks(MAX_CHUNK).map(|c| c.len() + 5),
+                true,
+            )?;
+            let selection = CombinedSelection {
+                candidates: vec![CandidateCost {
+                    mode: Mode::Raw,
+                    target_http_body_bytes: cost,
+                    setup_http_body_bytes: 0,
+                    total_http_body_bytes: cost,
+                }],
+                pruned: Vec::new(),
+                selected_mode: Mode::Raw,
+                exact_repeat_probe: true,
+                checkpoint_ready: self.checkpoint_ready,
+                schema_ready: self.schema_ready,
+            };
+            let result =
+                client::transfer_acknowledged_repeat_batched(base, transfer_id, |frames| {
+                    attempted = true;
+                    exchange(frames)
+                });
+            (result, selection)
+        } else {
+            if !self.checkpoint_ready {
+                return Err(Error::Missing);
+            }
+            let prepared = self.prepared.as_mut().ok_or(Error::Unauthorized)?;
+            let (transfer, selection) = prepared.selector.prepare_combined_acknowledged(
+                &bytes,
+                base,
+                &prepared.prediction,
+                self.schema_ready,
+                warm_probe,
+            )?;
+            let result = client::transfer_warm_selection_batched(transfer, transfer_id, |frames| {
+                attempted = true;
+                exchange(frames)
+            });
+            (result, selection)
+        };
+        match result {
+            Ok(transfer) => {
+                self.state.promote(bytes, transfer.object);
+                Ok(CombinedStats {
+                    transfer,
+                    selection,
+                })
+            }
+            Err(error) => {
+                if attempted {
+                    self.invalidate_receiver_state();
+                }
+                Err(error)
+            }
+        }
+    }
+
+    pub fn invalidate_receiver_state(&mut self) {
+        self.state.ready = false;
+        self.checkpoint_ready = false;
+        self.schema_ready = false;
+    }
+    pub fn base_id(&self) -> Option<Id> {
+        self.state.base_id()
+    }
+    pub fn base_bytes(&self) -> Option<&[u8]> {
+        self.state.base_bytes()
+    }
+    pub fn base_ready(&self) -> bool {
+        self.state.ready
+    }
+    pub fn checkpoint_ready(&self) -> bool {
+        self.checkpoint_ready
+    }
+    pub fn schema_ready(&self) -> bool {
+        self.schema_ready
+    }
+    pub fn retained_bytes(&self) -> usize {
+        self.state.capacity()
+            + self.prepared.as_ref().map_or(0, |p| {
+                p.prediction.retained_bytes() + p.selector.retained_bytes()
+            })
+    }
+    pub fn retained_charge(&self) -> u64 {
+        self.state.capacity() as u64
+            + METADATA_CHARGE
+            + self.prepared.as_ref().map_or(0, |p| {
+                p.prediction.retained_bytes() as u64 + p.selector.retained_charge()
+            })
     }
 }

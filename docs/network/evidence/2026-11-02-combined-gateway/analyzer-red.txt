@@ -1,0 +1,33 @@
+   Compiling spiralcore-runtime-analysis v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/tools/gateway-network/runtime-analysis)
+error[E0433]: cannot find type `CampaignPolicy` in this scope
+   --> ../analyze-runtime-objects.rs:798:13
+    |
+798 |             CampaignPolicy::from_registration(&legacy)
+    |             ^^^^^^^^^^^^^^ use of undeclared type `CampaignPolicy`
+
+error[E0433]: cannot find type `CampaignPolicy` in this scope
+   --> ../analyze-runtime-objects.rs:803:22
+    |
+803 |         let policy = CampaignPolicy::from_registration(&combined).unwrap();
+    |                      ^^^^^^^^^^^^^^ use of undeclared type `CampaignPolicy`
+
+error[E0433]: cannot find type `CampaignPolicy` in this scope
+   --> ../analyze-runtime-objects.rs:808:17
+    |
+808 |         assert!(CampaignPolicy::from_registration(&combined).is_err());
+    |                 ^^^^^^^^^^^^^^ use of undeclared type `CampaignPolicy`
+
+error[E0433]: cannot find type `CampaignPolicy` in this scope
+   --> ../analyze-runtime-objects.rs:811:17
+    |
+811 |         assert!(CampaignPolicy::from_registration(&combined).is_err());
+    |                 ^^^^^^^^^^^^^^ use of undeclared type `CampaignPolicy`
+
+error[E0433]: cannot find type `CampaignPolicy` in this scope
+   --> ../analyze-runtime-objects.rs:813:17
+    |
+813 |         assert!(CampaignPolicy::from_registration(&combined).is_err());
+    |                 ^^^^^^^^^^^^^^ use of undeclared type `CampaignPolicy`
+
+For more information about this error, try `rustc --explain E0433`.
+error: could not compile `spiralcore-runtime-analysis` (bin "analyze_runtime_objects" test) due to 5 previous errors

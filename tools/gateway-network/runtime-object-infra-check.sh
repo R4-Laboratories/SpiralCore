@@ -1,18 +1,18 @@
 #!/usr/bin/env bash
 # Pure bounded registration checks; no namespaces, processes or sudo.
 set -euo pipefail
-[ "$#" = 1 ] || exit 2
+[ "$#" = 1 ] || [ "$#" = 2 ] || exit 2
 out=$1
 [ ! -e "$out" ] || { echo "fresh output required" >&2; exit 2; }
 mkdir -p "$out"
-registration=docs/network/evidence/2026-11-02-runtime-gateway/network-registration.json
+registration=${2:-docs/network/evidence/2026-11-02-runtime-gateway/network-registration.json}
 driver=tools/gateway-network/runtime-object-netns.sh
 bash -n "$driver"
 bash -n tools/gateway-network/runtime-object-infra-check.sh
 jq '.launch_ready=true' "$registration" > "$out/ready-fixture.json"
 bash "$driver" validate "$out/ready-fixture.json" > "$out/positive.stdout" 2> "$out/positive.stderr"
 printf '0\n' > "$out/positive.exit"
-for name in unregistered trials arms size deliveries setup warmprobe retry rate queue; do
+for name in unregistered trials arms size deliveries setup warmprobe retry rate queue schema fixture; do
   case "$name" in
     unregistered) mutation='.launch_ready=false';;
     trials) mutation='.dose.trials=[0,1,2,3]';;
@@ -24,6 +24,8 @@ for name in unregistered trials arms size deliveries setup warmprobe retry rate 
     retry) mutation='.custody.automatic_retries=true';;
     rate) mutation='.profiles[1].rate_bits_per_second_per_direction=100000000';;
     queue) mutation='.topology.queue_limit_packets=1000';;
+    schema) mutation='.schema="unregistered"';;
+    fixture) mutation='.fixture_profile="unregistered"';;
   esac
   jq "$mutation" "$out/ready-fixture.json" > "$out/$name.json"
   set +e
@@ -49,4 +51,4 @@ for name in tail drop empty missing; do
   printf '%s\n' "$code" > "$out/capture-$name.exit"
   [ "$code" -ne 0 ] || { echo "undrained capture unexpectedly accepted: $name" >&2; exit 1; }
 done
-printf '{"positive":1,"negatives":10,"capture_positive":1,"capture_negatives":4,"passed":true,"scope":"pure registration, capture completion and shell syntax; no network claim"}\n' > "$out/result.json"
+printf '{"positive":1,"negatives":12,"capture_positive":1,"capture_negatives":4,"passed":true,"scope":"pure registration, capture completion and shell syntax; no network claim"}\n' > "$out/result.json"

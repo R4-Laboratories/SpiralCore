@@ -90,10 +90,12 @@ impl Config {
                 || !names.insert(&g.label)
                 || g.operations.is_empty()
                 || g.operations.len() > 32
-                || !["raw", "whole-zstd", "warm", "runtime"].contains(&g.mode.as_str())
-                || (g.mode == "warm") != g.schema_path.is_some()
-                || (g.mode == "runtime") != (g.checkpoint_path.is_some() && g.recipe_path.is_some())
-                || (g.mode != "runtime" && (g.checkpoint_path.is_some() || g.recipe_path.is_some()))
+                || !["raw", "whole-zstd", "warm", "runtime", "combined"].contains(&g.mode.as_str())
+                || matches!(g.mode.as_str(), "warm" | "combined") != g.schema_path.is_some()
+                || matches!(g.mode.as_str(), "runtime" | "combined")
+                    != (g.checkpoint_path.is_some() && g.recipe_path.is_some())
+                || (!matches!(g.mode.as_str(), "runtime" | "combined")
+                    && (g.checkpoint_path.is_some() || g.recipe_path.is_some()))
             {
                 return Err(invalid("invalid object group").into());
             }
@@ -104,8 +106,9 @@ impl Config {
                     || !["send", "seed", "schema", "checkpoint"].contains(&op.action.as_str())
                     || ["send", "seed"].contains(&op.action.as_str()) != op.path.is_some()
                     || (op.action == "seed" && g.mode != "warm")
-                    || (op.action == "schema" && g.mode != "warm")
-                    || (op.action == "checkpoint" && g.mode != "runtime")
+                    || (op.action == "schema" && !matches!(g.mode.as_str(), "warm" | "combined"))
+                    || (op.action == "checkpoint"
+                        && !matches!(g.mode.as_str(), "runtime" | "combined"))
                 {
                     return Err(invalid("invalid object operation").into());
                 }
@@ -384,6 +387,13 @@ fn selection_value(selection: &ObjectSelection) -> Value {
             "candidates":s.candidates.iter().map(|c|json!({"mode":format!("{:?}",c.mode),"http_body_bytes":c.http_body_bytes})).collect::<Vec<_>>(),
             "pruned":s.pruned.iter().map(|c|json!({"mode":format!("{:?}",c.mode),"http_body_lower_bound":c.http_body_lower_bound})).collect::<Vec<_>>()})
         }
+        ObjectSelection::Combined(s) => {
+            json!({"policy":"combined-runtime-rolling","accounting":"existing HTTP-body cost model, not QUIC wire bytes",
+            "selected":format!("{:?}",s.selected_mode),"exact_repeat_probe":s.exact_repeat_probe,
+            "checkpoint_ready":s.checkpoint_ready,"schema_ready":s.schema_ready,
+            "candidates":s.candidates.iter().map(|c|json!({"mode":format!("{:?}",c.mode),"target_http_body_bytes":c.target_http_body_bytes,"setup_http_body_bytes":c.setup_http_body_bytes,"total_http_body_bytes":c.total_http_body_bytes})).collect::<Vec<_>>(),
+            "pruned":s.pruned.iter().map(|c|json!({"mode":format!("{:?}",c.mode),"target_http_body_lower_bound":c.target_http_body_lower_bound,"total_http_body_lower_bound":c.total_http_body_lower_bound})).collect::<Vec<_>>()})
+        }
     }
 }
 
@@ -445,20 +455,26 @@ async fn run_inner(config: Config, stats: StatsOutput, mut ready: OwnedOutput) -
                 let mut group_rows=Vec::new(); let mut operation_rows=Vec::new(); let mut ordinal=0u64;
                 for group in &config.groups {
                     let prep=Instant::now(); let prep_cpu=cpu_us()?;
-                    let mut auxiliary_len=0;
+                    let mut schema_len=0;
+                    let mut checkpoint_len=0;
                     let mut sender=match group.mode.as_str() {
                         "raw"=>ObjectSender::new(ObjectMode::Raw,&context,None)?,
                         "whole-zstd"=>ObjectSender::new(ObjectMode::Whole,&context,None)?,
                         "warm"=>{
                             let schema=read_bounded(group.schema_path.as_ref().ok_or_else(||invalid("missing schema"))?,transfer::client::MAX_BATCHED_OBJECT)?;
-                            auxiliary_len=schema.len();
+                            schema_len=schema.len();
                             ObjectSender::new(ObjectMode::Warm,&context,Some(&schema))?
                         },
-                        "runtime"=>{
+                        "runtime"|"combined"=>{
                             let checkpoint=read_bounded(group.checkpoint_path.as_ref().ok_or_else(||invalid("missing checkpoint"))?,transfer::shared_runtime::MAX_CHECKPOINT)?;
-                            auxiliary_len=checkpoint.len();
+                            checkpoint_len=checkpoint.len();
                             let recipe=Recipe::decode(&read_bounded(group.recipe_path.as_ref().ok_or_else(||invalid("missing recipe"))?,1024)?)?;
-                            ObjectSender::with_runtime(&context,PreparedPrediction::new(&checkpoint,&recipe)?)?
+                            let prediction=PreparedPrediction::new(&checkpoint,&recipe)?;
+                            if group.mode=="combined" {
+                                let schema=read_bounded(group.schema_path.as_ref().ok_or_else(||invalid("missing schema"))?,transfer::client::MAX_BATCHED_OBJECT)?;
+                                schema_len=schema.len();
+                                ObjectSender::with_combined(&context,prediction,&schema)?
+                            } else {ObjectSender::with_runtime(&context,prediction)?}
                         },
                         _=>return Err(invalid("unknown profile").into()),
                     };
@@ -470,7 +486,7 @@ async fn run_inner(config: Config, stats: StatsOutput, mut ready: OwnedOutput) -
                         id[8..].copy_from_slice(&context.namespace()?[..24]);
                         let before=channel.counters(); let start=Instant::now(); let cpu=cpu_us()?;
                         let bytes=op.path.as_ref().map(|p|read_bounded(p,transfer::client::MAX_BATCHED_OBJECT)).transpose()?;
-                        let len=bytes.as_ref().map_or(auxiliary_len,Vec::len);
+                        let len=bytes.as_ref().map_or(if op.action=="schema" {schema_len} else {checkpoint_len},Vec::len);
                         let expected=bytes.as_ref().map(|b|transfer::object_id(b));
                         let mut failure=None;
                         let mut published_on_begin=false;

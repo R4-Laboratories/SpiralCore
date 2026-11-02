@@ -18,21 +18,30 @@ capture_drained() {
 }
 validate_registration() {
   jq -e '
-    .schema=="spiralcore.runtime-object.registration.v1" and .launch_ready==true and
-    .arms==["raw","whole-zstd","warm","runtime"] and
+    .launch_ready==true and
+    (if .schema=="spiralcore.runtime-object.registration.v1" then
+       (.fixture_profile//"runtime")=="runtime" and
+       .arms==["raw","whole-zstd","warm","runtime"] and
+       .dose.total_operations==312 and
+       .dose.operation_counts=={"send":276,"seed":12,"schema":12,"checkpoint":12} and
+       .dose.mode_order_by_trial==[["raw","whole-zstd","warm","runtime"],["whole-zstd","warm","runtime","raw"],["warm","runtime","raw","whole-zstd"]]
+     elif .schema=="spiralcore.combined-object.registration.v1" then
+       .fixture_profile=="combined" and .arms==["whole-zstd","warm","runtime","combined"] and
+       .dose.total_operations==336 and
+       .dose.operation_counts=={"send":276,"seed":12,"schema":24,"checkpoint":24} and
+       .dose.mode_order_by_trial==[["whole-zstd","warm","runtime","combined"],["warm","runtime","combined","whole-zstd"],["runtime","combined","whole-zstd","warm"]]
+     else false end) and
     .profiles==[
       {"name":"lan","delay_ms_per_direction":0,"rate_bits_per_second_per_direction":null},
       {"name":"wan80-10","delay_ms_per_direction":40,"rate_bits_per_second_per_direction":10000000}] and
     .dose.trials==[0,1,2] and .dose.sessions==24 and .dose.topologies==6 and
     .dose.groups_per_session==2 and .dose.deliveries_per_group==6 and
-    .dose.total_object_deliveries==288 and .dose.total_operations==312 and
-    .dose.operation_counts=={"send":276,"seed":12,"schema":12,"checkpoint":12} and
+    .dose.total_object_deliveries==288 and
     .dose.total_requested_object_bytes==2289396384 and .dose.warm_probe==true and
     .dose.tiers==[
       {"label":"near1m","width":4096,"steps":289,"bytes":1047202},
       {"label":"max-trace","width":4096,"steps":4096,"bytes":14851384}] and
     .dose.per_group_sequence==["generated","residual","repeat","unrelated","opaque-edited","opaque-edited-repeat"] and
-    .dose.mode_order_by_trial==[["raw","whole-zstd","warm","runtime"],["whole-zstd","warm","runtime","raw"],["warm","runtime","raw","whole-zstd"]] and
     .dose.profile_order_by_trial==[["lan","wan80-10"],["wan80-10","lan"],["lan","wan80-10"]] and
     .topology.queue_limit_packets==256 and .topology.quic_port==4433 and
     .custody.free_disk_floor_bytes==4294967296 and .custody.automatic_retries==false and
@@ -44,6 +53,8 @@ if [ "$#" = 2 ] && [ "$1" = capture-drained ]; then capture_drained "$2"; exit; 
 [ "$#" = 6 ] && [ "$1" = run ] || { echo "usage: $0 validate REGISTRATION | run NEW_OUT SERVICE PROBE FIXTURES REGISTRATION" >&2; exit 2; }
 out=$2; service=$3; probe=$4; fixtures=$5; registration=$6
 validate_registration "$registration"
+campaign_profile=$(jq -r '.fixture_profile//"runtime"' "$registration")
+expected_operations=$(jq -r '.dose.total_operations' "$registration")
 [ "$(uname -s)" = Linux ] || { echo "Linux namespaces required" >&2; exit 2; }
 case "$out:$service:$probe:$fixtures" in /*:/*:/*:/*) ;; *) echo "absolute paths required" >&2; exit 2;; esac
 [ ! -e "$out" ] && [ -x "$service" ] && [ -x "$probe" ] && [ -x "$fixtures" ]
@@ -127,7 +138,7 @@ tc -V > "$out/tc-version.txt"
 task_uid=$(id -u); task_gid=$(id -g)
 for trial in 0 1 2; do
   disk_gate
-  "$fixtures" "$private/fixtures-$trial" "$trial" > "$out/fixture-generation-$trial.json"
+  "$fixtures" "$private/fixtures-$trial" "$trial" "$campaign_profile" > "$out/fixture-generation-$trial.json"
   mkdir "$out/fixtures-$trial"
   cp "$private/fixtures-$trial/"*.json "$private/fixtures-$trial/"*checkpoint.bin \
     "$private/fixtures-$trial/"*recipe.bin "$private/fixtures-$trial/schema.bin" "$out/fixtures-$trial/"
@@ -287,16 +298,23 @@ check_session() {
     all($m.tiers[];
       .label as $label |
       [$c.operations[]|select(.group==$label)|.label]==
-        ((if $arm=="warm" then ["schema"] elif $arm=="runtime" then ["checkpoint"] else [] end)+
+        ((if $arm=="combined" then ["checkpoint","schema"] elif $arm=="warm" then ["schema"] elif $arm=="runtime" then ["checkpoint"] else [] end)+
          ["generated","residual","repeat","unrelated","opaque-edited","opaque-edited-repeat"])) and
     (if $arm=="runtime" then
        all($c.operations[]|select(.label=="generated" or .label=="residual");
          .selected_mode=="RuntimeV1" and .publication_path=="verified-transfer")
+     elif $arm=="combined" then
+       all($c.operations[]|select(.label=="generated");
+         .selected_mode=="RuntimeV1" and .publication_path=="verified-transfer") and
+       all($c.operations[]|select(.label=="opaque-edited");
+         .selected_mode=="SparseV1" and .publication_path=="verified-transfer") and
+       all($c.operations[]|select(.label=="repeat" or .label=="opaque-edited-repeat");
+         .selected_mode=="Raw" and .publication_path=="verified-cache-hit")
      elif $arm=="warm" then
        all($c.operations[]|select(.label=="opaque-edited");
          .selected_mode=="SparseV1" and .publication_path=="verified-transfer")
      else true end) and
-    ($c.operations|length)==(if $arm=="warm" or $arm=="runtime" then 14 else 12 end) and
+    ($c.operations|length)==(if $arm=="combined" then 16 elif $arm=="warm" or $arm=="runtime" then 14 else 12 end) and
     all($c.operations[];
       . as $op | .success==true and .input_bytes>=0 and .cpu_us>=0 and .wall_us>=0 and
       (if .action=="schema" then .object_id==$m.schema.object_id and .input_bytes==$m.schema.bytes
@@ -320,7 +338,7 @@ check_session() {
 run_session() {
   profile=$1; trial=$2; arm=$3; topology_dir=$4
   disk_gate
-  scope="runtime-$profile-t$trial-$arm"
+  scope="$campaign_profile-$profile-t$trial-$arm"
   dir="$out/$profile-t$trial-$arm"; mkdir "$dir"
   session_start_ns=$(date +%s%N)
   date -u +%FT%TZ > "$dir/start.utc"
@@ -422,4 +440,4 @@ sha256sum -c "$out/frozen-inputs.sha256" > "$out/frozen-inputs-after.txt"
 jq -s '{sessions:length,operations:(map(.operations)|add),object_deliveries:(map(.object_deliveries)|add),
   exact_reopened:all(.[];.ok),stores_removed:all(.[];.stores_removed),capture_complete:true,host_routes_unchanged:true}' \
   "$out"/lan-t*/complete.json "$out"/wan80-10-t*/complete.json > "$out/complete.json"
-jq -e '.sessions==24 and .operations==312 and .object_deliveries==288 and .exact_reopened and .stores_removed' "$out/complete.json" >/dev/null
+jq -e --argjson expected "$expected_operations" '.sessions==24 and .operations==$expected and .object_deliveries==288 and .exact_reopened and .stores_removed' "$out/complete.json" >/dev/null

@@ -5,6 +5,63 @@ use std::path::Path;
 
 type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
 const ARMS: [&str; 4] = ["raw", "whole-zstd", "warm", "runtime"];
+#[derive(Clone, Copy)]
+enum CampaignPolicy {
+    Runtime,
+    Combined,
+}
+impl CampaignPolicy {
+    fn from_registration(reg: &Value) -> Result<Self> {
+        let policy = match reg["schema"].as_str() {
+            Some("spiralcore.runtime-object.registration.v1") => Self::Runtime,
+            Some("spiralcore.combined-object.registration.v1") => Self::Combined,
+            _ => return Err("unknown campaign registration schema".into()),
+        };
+        require(
+            reg["arms"] == json!(policy.arms())
+                && reg["dose"]["total_operations"] == policy.operations()
+                && reg["dose"]["operation_counts"] == json!(policy.action_counts()),
+            "registration differs from selected campaign policy",
+        )?;
+        Ok(policy)
+    }
+    fn arms(self) -> [&'static str; 4] {
+        match self {
+            Self::Runtime => ARMS,
+            Self::Combined => ["whole-zstd", "warm", "runtime", "combined"],
+        }
+    }
+    fn operations(self) -> u64 {
+        match self {
+            Self::Runtime => 312,
+            Self::Combined => 336,
+        }
+    }
+    fn baselines(self) -> &'static [&'static str] {
+        match self {
+            Self::Runtime => &["raw", "whole-zstd"],
+            Self::Combined => &["whole-zstd", "warm", "runtime"],
+        }
+    }
+    fn action_counts(self) -> BTreeMap<String, u64> {
+        let auxiliary = match self {
+            Self::Runtime => 12,
+            Self::Combined => 24,
+        };
+        BTreeMap::from([
+            ("send".to_owned(), 276),
+            ("seed".to_owned(), 12),
+            ("schema".to_owned(), auxiliary),
+            ("checkpoint".to_owned(), auxiliary),
+        ])
+    }
+    fn analysis_schema(self) -> &'static str {
+        match self {
+            Self::Runtime => "spiralcore.runtime-object.analysis.v1",
+            Self::Combined => "spiralcore.combined-object.analysis.v1",
+        }
+    }
+}
 const PROFILES: [&str; 2] = ["lan", "wan80-10"];
 const TIERS: [(&str, u64); 2] = [("near1m", 1_047_202), ("max-trace", 14_851_384)];
 const LABELS: [&str; 6] = [
@@ -362,7 +419,9 @@ fn session(
         )?;
     }
     let ops = a(&c, "operations")?;
-    let count = if arm == "warm" || arm == "runtime" {
+    let count = if arm == "combined" {
+        16
+    } else if arm == "warm" || arm == "runtime" {
         14
     } else {
         12
@@ -410,6 +469,7 @@ fn session(
         };
         prefix = prefix.add(cumulative)?;
         let labels: Vec<&str> = match arm {
+            "combined" => vec!["checkpoint", "schema"],
             "warm" => vec!["schema"],
             "runtime" => vec!["checkpoint"],
             _ => vec![],
@@ -504,6 +564,20 @@ fn session(
                     "warm sparse activity gate failed",
                 )?;
             }
+            if arm == "combined" {
+                let required = match label {
+                    "generated" => Some(("RuntimeV1", "verified-transfer")),
+                    "opaque-edited" => Some(("SparseV1", "verified-transfer")),
+                    "repeat" | "opaque-edited-repeat" => Some(("Raw", "verified-cache-hit")),
+                    _ => None,
+                };
+                if let Some((required_mode, required_path)) = required {
+                    require(
+                        mode == required_mode && path == required_path,
+                        "combined decoder/cache activity gate failed",
+                    )?;
+                }
+            }
             let mut row = tagged(metric.json()?, profile, trial, arm, group, label);
             for key in [
                 "action",
@@ -531,6 +605,11 @@ fn session(
                 delivered += 1;
                 rows.deliveries = add(rows.deliveries, 1)?;
                 rows.requested = add(rows.requested, *len)?;
+            }
+            // Combined setup contains two publications. Emit one paid zero-
+            // delivery row after both, while retaining each operation above.
+            if arm == "combined" && label == "checkpoint" {
+                continue;
             }
             rows.cumulative.push(tagged(
                 cumulative.json()?,
@@ -605,7 +684,7 @@ fn session(
     rows.sessions.push(row);
     Ok(())
 }
-fn summarize(rows: &[Value], metrics: &[&str]) -> Result<Vec<Value>> {
+fn summarize(rows: &[Value], metrics: &[&str], baselines: &[&str]) -> Result<Vec<Value>> {
     let mut groups = BTreeMap::<Vec<String>, Vec<&Value>>::new();
     for row in rows {
         let key = ["profile", "arm", "group", "label"]
@@ -641,7 +720,7 @@ fn summarize(rows: &[Value], metrics: &[&str]) -> Result<Vec<Value>> {
                 json!({"trials":xs,"median":median(&floats)?}),
             );
         }
-        for baseline in ["raw", "whole-zstd"] {
+        for &baseline in baselines {
             let mut other = key.clone();
             other[1] = baseline.to_owned();
             if let Some(base) = groups.get(&other) {
@@ -677,6 +756,8 @@ fn analyze(root: &Path) -> Result<Value> {
         "campaign terminal exit is not zero",
     )?;
     let complete = read(&root.join("complete.json"))?;
+    let reg = read(&root.join("registration.json"))?;
+    let policy = CampaignPolicy::from_registration(&reg)?;
     for key in [
         "exact_reopened",
         "stores_removed",
@@ -687,14 +768,12 @@ fn analyze(root: &Path) -> Result<Value> {
     }
     require(
         n(&complete, "sessions")? == 24
-            && n(&complete, "operations")? == 312
+            && n(&complete, "operations")? == policy.operations()
             && n(&complete, "object_deliveries")? == 288,
         "incomplete registered dose",
     )?;
-    let reg = read(&root.join("registration.json"))?;
     require(
-        reg["arms"] == json!(ARMS)
-            && reg["dose"]["trials"] == json!([0, 1, 2])
+        reg["dose"]["trials"] == json!([0, 1, 2])
             && reg["dose"]["total_requested_object_bytes"] == 2_289_396_384u64,
         "registration differs from analysis contract",
     )?;
@@ -708,7 +787,7 @@ fn analyze(root: &Path) -> Result<Value> {
     let mut rows = Rows::default();
     let expected_names: BTreeSet<_> = PROFILES
         .into_iter()
-        .flat_map(|p| (0..3).flat_map(move |t| ARMS.map(|a| format!("{p}-t{t}-{a}"))))
+        .flat_map(|p| (0..3).flat_map(move |t| policy.arms().map(|a| format!("{p}-t{t}-{a}"))))
         .collect();
     let actual_names: BTreeSet<_> = std::fs::read_dir(root)?
         .map(|e| e.map(|x| x.file_name().to_string_lossy().into_owned()))
@@ -723,10 +802,14 @@ fn analyze(root: &Path) -> Result<Value> {
     for trial in 0..3 {
         let m = read(&root.join(format!("fixtures-{trial}/manifest.json")))?;
         manifest_check(&m, trial)?;
+        require(
+            m["arms"] == json!(policy.arms()),
+            "fixture campaign arms differ",
+        )?;
         rows.fixtures.push(json!({"trial":trial,"generation_cpu_us":n(&m,"generation_cpu_us")?,"generation_wall_us":n(&m,"generation_wall_us")?}));
         for profile in PROFILES {
             rows.topologies.push(calibration(root, profile, trial)?);
-            for arm in ARMS {
+            for arm in policy.arms() {
                 session(root, profile, trial, arm, &m, &mut rows)
                     .map_err(|e| format!("{profile}-t{trial}-{arm}: {e}"))?;
             }
@@ -734,24 +817,15 @@ fn analyze(root: &Path) -> Result<Value> {
     }
     require(
         rows.sessions.len() == 24
-            && rows.operations.len() == 312
+            && rows.operations.len() as u64 == policy.operations()
             && rows.deliveries == 288
             && rows.requested == 2_289_396_384,
         "recomputed dose mismatch",
     )?;
-    require(
-        rows.actions
-            == BTreeMap::from([
-                ("send".to_owned(), 276),
-                ("seed".to_owned(), 12),
-                ("schema".to_owned(), 12),
-                ("checkpoint".to_owned(), 12),
-            ]),
-        "wrong action dose",
-    )?;
-    let operation_summaries = summarize(&rows.operations, &METRICS)?;
-    let cumulative_summaries = summarize(&rows.cumulative, &METRICS)?;
-    let mut prefix_summaries = summarize(&rows.prefix, &METRICS)?;
+    require(rows.actions == policy.action_counts(), "wrong action dose")?;
+    let operation_summaries = summarize(&rows.operations, &METRICS, policy.baselines())?;
+    let cumulative_summaries = summarize(&rows.cumulative, &METRICS, policy.baselines())?;
+    let mut prefix_summaries = summarize(&rows.prefix, &METRICS, policy.baselines())?;
     for row in rows.prefix.iter_mut().chain(prefix_summaries.iter_mut()) {
         row["receiver_cpu_scope"] = json!(
             "receiver one-time connection/authentication/namespace setup plus all preceding object handlers; excludes finish/readback"
@@ -770,9 +844,10 @@ fn analyze(root: &Path) -> Result<Value> {
             "client_wall_us",
             "harness_wall_us",
         ],
+        policy.baselines(),
     )?;
     Ok(
-        json!({"schema":"spiralcore.runtime-object.analysis.v1","qualified_receipts":true,"sessions":24,"operations":312,"object_deliveries":288,"requested_bytes":rows.requested,"operation_counts":rows.actions,"method":"analysis-method.md; three descriptive paired trials; ratios are candidate/baseline, lower is better; no confidence or tail claims","limits":["local Linux shaped network is not actual Internet WAN","captured wire bytes are whole-session only","CPU domains are process or labeled nested stages; never add nested stages to process totals","client wall includes waiting and overlapping CPU, isolated send-only time is not identified","runtime/warm are explicit object profiles, not transparent TUN compression","artifact custody and source/binary identity are independently verified"],"fixture_generation":rows.fixtures,"topologies":rows.topologies,"operation_rows":rows.operations,"paid_group_cumulative_rows":rows.cumulative,"paid_connection_prefix_rows":rows.prefix,"session_rows":rows.sessions,"operation_summaries":operation_summaries,"paid_group_cumulative_summaries":cumulative_summaries,"paid_connection_prefix_summaries":prefix_summaries,"session_summaries":session_summaries}),
+        json!({"schema":policy.analysis_schema(),"qualified_receipts":true,"sessions":24,"operations":policy.operations(),"object_deliveries":288,"requested_bytes":rows.requested,"operation_counts":rows.actions,"method":"analysis-method.md; three descriptive paired trials; ratios are candidate/baseline, lower is better; no confidence or tail claims","limits":["local Linux shaped network is not actual Internet WAN","captured wire bytes are whole-session only","CPU domains are process or labeled nested stages; never add nested stages to process totals","client wall includes waiting and overlapping CPU, isolated send-only time is not identified","runtime/warm are explicit object profiles, not transparent TUN compression","artifact custody and source/binary identity are independently verified"],"fixture_generation":rows.fixtures,"topologies":rows.topologies,"operation_rows":rows.operations,"paid_group_cumulative_rows":rows.cumulative,"paid_connection_prefix_rows":rows.prefix,"session_rows":rows.sessions,"operation_summaries":operation_summaries,"paid_group_cumulative_summaries":cumulative_summaries,"paid_connection_prefix_summaries":prefix_summaries,"session_summaries":session_summaries}),
     )
 }
 fn main() -> Result<()> {
@@ -789,6 +864,63 @@ fn main() -> Result<()> {
 mod tests {
     use super::*;
     use serde_json::json;
+
+    #[test]
+    fn combined_policy_is_explicit_charges_two_setups_and_preserves_legacy() {
+        let legacy = json!({"schema":"spiralcore.runtime-object.registration.v1","arms":["raw","whole-zstd","warm","runtime"],"dose":{"total_operations":312,"operation_counts":{"send":276,"seed":12,"schema":12,"checkpoint":12}}});
+        let mut combined = json!({"schema":"spiralcore.combined-object.registration.v1","arms":["whole-zstd","warm","runtime","combined"],"dose":{"total_operations":336,"operation_counts":{"send":276,"seed":12,"schema":24,"checkpoint":24}}});
+        assert_eq!(
+            CampaignPolicy::from_registration(&legacy)
+                .unwrap()
+                .operations(),
+            312
+        );
+        let policy = CampaignPolicy::from_registration(&combined).unwrap();
+        assert_eq!(policy.operations(), 336);
+        assert_eq!(policy.arms(), ["whole-zstd", "warm", "runtime", "combined"]);
+        assert_eq!(policy.baselines(), &["whole-zstd", "warm", "runtime"]);
+        combined["dose"]["total_operations"] = json!(312);
+        assert!(CampaignPolicy::from_registration(&combined).is_err());
+        combined["dose"]["total_operations"] = json!(336);
+        combined["arms"][0] = json!("raw");
+        assert!(CampaignPolicy::from_registration(&combined).is_err());
+        combined["schema"] = json!("unknown");
+        assert!(CampaignPolicy::from_registration(&combined).is_err());
+    }
+
+    #[test]
+    fn combined_summaries_compare_each_current_baseline_with_matched_ratios() {
+        let mut rows = Vec::new();
+        for (arm, costs) in [
+            ("combined", [3, 4, 5]),
+            ("whole-zstd", [6, 8, 10]),
+            ("warm", [2, 4, 10]),
+            ("runtime", [1, 2, 5]),
+        ] {
+            for (trial, cost) in costs.into_iter().enumerate() {
+                rows.push(tagged(
+                    json!({"cost":cost}),
+                    "lan",
+                    trial as u64,
+                    arm,
+                    "near1m",
+                    "6",
+                ));
+            }
+        }
+        let summaries = summarize(&rows, &["cost"], CampaignPolicy::Combined.baselines()).unwrap();
+        let combined = summaries.iter().find(|r| r["arm"] == "combined").unwrap();
+        assert_eq!(
+            combined["comparisons"]["whole-zstd"]["cost"]["median_ratio"],
+            0.5
+        );
+        assert_eq!(combined["comparisons"]["warm"]["cost"]["median_ratio"], 1.0);
+        assert_eq!(
+            combined["comparisons"]["runtime"]["cost"]["median_ratio"],
+            2.0
+        );
+        assert!(combined["comparisons"].get("raw").is_none());
+    }
 
     #[test]
     fn channel_deltas_count_both_prefixes_and_reject_counter_rollback() {
@@ -876,7 +1008,14 @@ mod tests {
                 "generated",
             )
         };
-        assert!(summarize(&[row(0), row(0), row(2)], &["cost"]).is_err());
+        assert!(
+            summarize(
+                &[row(0), row(0), row(2)],
+                &["cost"],
+                CampaignPolicy::Runtime.baselines()
+            )
+            .is_err()
+        );
         let id = "00".repeat(32);
         let accepted = json!({"transfer_id":id,"accepted":true,"cpu_us":2,"wall_us":3,"request_frames":4,"response_frames":1});
         let summed =

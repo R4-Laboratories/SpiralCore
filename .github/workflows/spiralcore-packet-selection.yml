@@ -1,7 +1,7 @@
 name: SpiralCore packet selection on local and shaped links
 on:
   pull_request:
-    types: [opened, synchronize, reopened]
+    types: [opened, synchronize, reopened, labeled]
     paths:
       - 'crates/spiralcore-gateway/src/service.rs'
       - 'crates/spiralcore-gateway/src/bin/spiralcore-gateway-probe.rs'
@@ -19,7 +19,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   packet-selection:
-    if: github.event.pull_request.head.repo.full_name == github.repository && github.run_attempt == 1
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.run_attempt == 1 && contains(github.event.pull_request.labels.*.name, 'benchmark-packet-selection')
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     env:

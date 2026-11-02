@@ -1,0 +1,85 @@
+{
+  "schema": "spiralcore.combined-object.infra-readiness.v1",
+  "verdict": "FROZEN_READY_FOR_REGISTERED_CI_RUN",
+  "source_sha256": {
+    "crates/spiralcore-gateway/examples/object_fixtures.rs": "10862ea0030d71ba93a2db82f0ce75256aa240525d1d860e01f95601984171c9",
+    "tools/gateway-network/runtime-object-netns.sh": "2423d684f26609856d71a930203bf2f5ccf1ce32230ae3862921027c135d2c89",
+    "tools/gateway-network/runtime-object-infra-check.sh": "3e37999d5105d83f6577e5970d456fea2f7cf784cbd4e4f3e5ae71adc2521cd7",
+    "tools/gateway-network/analyze-runtime-objects.rs": "cd849a29f2494de819cc5098ac1f21cdaa2ac8419fea3e29710bb7591b8fbe16",
+    ".github/workflows/spiralcore-combined-objects.yml": "46acd4f2258b9d1969c41b569db1a7c92260041ff3121aa11a20883b8edd5c3b",
+    ".github/workflows/spiralcore-runtime-objects.yml": "32979f7a5946efb0cd8cf25289b85befb7bdf09b619216c5c19781aa7413dee2",
+    ".github/workflows/spiralcore-packet-selection.yml": "5bb1c7f675c86645525a4cffec0053a398bfa934708274a2f0e0271efb92e4a1",
+    "docs/network/evidence/2026-11-02-combined-gateway/network-registration.json": "116a46bfc71372e34853088a2aa8e7cd41d7573dfce07b8c66bd675b65bbc51a",
+    "docs/network/evidence/2026-11-02-combined-gateway/analysis-method.md": "3b26b11c86c651c9152e0971db18ae67435cb6aa409b270f09819d4407365a35"
+  },
+  "checks": {
+    "fixture_tests": {
+      "passed": 4,
+      "receipt": "fixture-green.txt",
+      "exit": 0
+    },
+    "analyzer_tests": {
+      "passed": 6,
+      "receipt": "analyzer-green.txt",
+      "exit": 0
+    },
+    "fixture_clippy": {
+      "receipt": "fixture-clippy.txt",
+      "exit": 0
+    },
+    "analyzer_clippy": {
+      "receipt": "analyzer-clippy.txt",
+      "exit": 0
+    },
+    "combined_registration": {
+      "positive": 1,
+      "negative": 12,
+      "capture_positive": 1,
+      "capture_negative": 4,
+      "receipt": "infra-combined-green/result.json"
+    },
+    "legacy_registration": {
+      "positive": 1,
+      "negative": 12,
+      "capture_positive": 1,
+      "capture_negative": 4,
+      "receipt": "infra-legacy-regression/result.json"
+    },
+    "shellcheck": "PASS",
+    "workflow_yaml_parse": "PASS",
+    "historical_analysis": {
+      "comparison": "byte-identical",
+      "sha256": "05482731ca2bb0b030f4957c6e387a9565542a82874ac33b1fee99687d066801",
+      "receipt": "historical-analysis-regression.txt"
+    },
+    "final_integration": {
+      "core_tests": 15,
+      "gateway_tests": 36,
+      "strict_core_clippy_exit": 0,
+      "strict_gateway_clippy_exit": 0,
+      "authority": "Parent observed final all-target receipts and approved launch_ready=true"
+    }
+  },
+  "findings": [
+    {
+      "issue": "Historical and Combined workloads need separate explicit policy and setup counts.",
+      "resolution": "Strict registration schemas select312 or336operations, fixedarms and actioncounts; unknown profiles reject."
+    },
+    {
+      "issue": "Two Combined setup operations would duplicate the zero-delivery cumulative label.",
+      "resolution": "Both auxiliary operations remain individually recorded; zero-delivery cumulative/prefix row emitted once after checkpoint+schema and includes both costs."
+    },
+    {
+      "issue": "Shared implementation edits would automatically rerun older long campaigns.",
+      "resolution": "Both older long jobs require their explicit opt-in PR label and include labeled events; new Combined workflow is active automatically, quick TUN compatibility unchanged."
+    }
+  ],
+  "reviews": {
+    "parent_static": "Parent reviewed fixture, harness, workflow and analyzer deltas with no blocker; final independent production reviews reported PASS by parent."
+  },
+  "scope": "No new network measurement has run. Old evidence remains untouched, generator profile hashes agree and old analysis reproduces byte-for-byte.",
+  "pending": [
+    "CI exact source and executable freeze",
+    "Actual24-session campaign, artifact custody and paired performance analysis"
+  ]
+}
