@@ -41,9 +41,12 @@ tracks**, not arbitrary encrypted packet traffic.
 
 **Platform scope:** the normal TUN gateway is Linux-native. The MVM witness has
 macOS/HVF and Linux/Firecracker host paths; the default Linux build is the guest,
-and the `linux-host` feature selects the host. Native Windows endpoint execution
-is being qualified; private/durable object storage and packet attachment still
-need a port. A portable mailbox client does not establish a Windows MVM host.
+and the `linux-host` feature selects the host. Native ephemeral mailbox-client
+tests have passed on Windows Server 2022/2025 x64 and Windows 11 ARM64 at the
+[recorded source checkpoint](docs/network/evidence/2026-11-02-mvm-service/platforms/README.md).
+Windows private/durable object storage and packet attachment still need a port.
+A portable mailbox client does not establish a Windows MVM host; the latest
+dependency revision is being requalified separately.
 [Linux build and lifecycle details →](docs/network/linux-firecracker.md)
 
 **MVM delivery roadmap:** [GitHub issue #42](https://github.com/R4-Laboratories/SpiralCore/issues/42)
@@ -56,6 +59,12 @@ real WAN pairs and unavailable backend gates are tracked separately in
 [#47](https://github.com/R4-Laboratories/SpiralCore/issues/47). The new canonical
 service qualification is in progress; historical native results below do not
 qualify that newer implementation or establish cross-platform WAN support.
+The [four-session Mac service pilot](docs/network/evidence/2026-11-02-mvm-service/mac-native-intermediate/README.md)
+records actual guest/host and two-guest transfers with exact reboot readback,
+bytes, CPU and elapsed time at its own pinned source. Fleet capacity and
+long-lived operation are an additional release gate in
+[#49](https://github.com/R4-Laboratories/SpiralCore/issues/49); two guests do not
+establish a scalable deployment envelope.
 
 ### Where SpiralCore sits in the network stack
 
