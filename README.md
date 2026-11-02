@@ -69,6 +69,10 @@ The canonical MVM adapter and cooperating QUIC object service pin the same
 `object-v1` profile. Profile metadata grants no authority; each carrier retains
 its own authentication and policy checks. Dynamic wire negotiation, transparent
 packet/stream profiles and guest management services remain separate work.
+The [v1 integration results](docs/network/v1-endpoint-results-2026-11-02.md)
+record 24 native Linux sessions, 240 exact publications and 120 keyless reboot
+checks. Transfer behavior is preserved; the small-session CPU regression is
+reported explicitly rather than counted as a speed improvement.
 
 ## Measured results
 
