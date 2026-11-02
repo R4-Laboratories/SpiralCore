@@ -12,6 +12,7 @@ use spiralcore_transfer::{
     self as transfer,
     endpoint::{Authority, ColdGraphPolicy, Context, Endpoint, Limits},
     protocol::Frame,
+    session::{PolicySkipReason, SelectionPolicy},
     shared_runtime::Recipe,
     shared_transfer::PreparedPrediction,
     Id,
@@ -90,11 +91,20 @@ impl Config {
                 || !names.insert(&g.label)
                 || g.operations.is_empty()
                 || g.operations.len() > 32
-                || !["raw", "whole-zstd", "warm", "runtime", "combined"].contains(&g.mode.as_str())
-                || matches!(g.mode.as_str(), "warm" | "combined") != g.schema_path.is_some()
-                || matches!(g.mode.as_str(), "runtime" | "combined")
+                || ![
+                    "raw",
+                    "whole-zstd",
+                    "warm",
+                    "runtime",
+                    "combined",
+                    "combined-cpu",
+                ]
+                .contains(&g.mode.as_str())
+                || matches!(g.mode.as_str(), "warm" | "combined" | "combined-cpu")
+                    != g.schema_path.is_some()
+                || matches!(g.mode.as_str(), "runtime" | "combined" | "combined-cpu")
                     != (g.checkpoint_path.is_some() && g.recipe_path.is_some())
-                || (!matches!(g.mode.as_str(), "runtime" | "combined")
+                || (!matches!(g.mode.as_str(), "runtime" | "combined" | "combined-cpu")
                     && (g.checkpoint_path.is_some() || g.recipe_path.is_some()))
             {
                 return Err(invalid("invalid object group").into());
@@ -106,9 +116,10 @@ impl Config {
                     || !["send", "seed", "schema", "checkpoint"].contains(&op.action.as_str())
                     || ["send", "seed"].contains(&op.action.as_str()) != op.path.is_some()
                     || (op.action == "seed" && g.mode != "warm")
-                    || (op.action == "schema" && !matches!(g.mode.as_str(), "warm" | "combined"))
+                    || (op.action == "schema"
+                        && !matches!(g.mode.as_str(), "warm" | "combined" | "combined-cpu"))
                     || (op.action == "checkpoint"
-                        && !matches!(g.mode.as_str(), "runtime" | "combined"))
+                        && !matches!(g.mode.as_str(), "runtime" | "combined" | "combined-cpu"))
                 {
                     return Err(invalid("invalid object operation").into());
                 }
@@ -389,6 +400,8 @@ fn selection_value(selection: &ObjectSelection) -> Value {
         }
         ObjectSelection::Combined(s) => {
             json!({"policy":"combined-runtime-rolling","accounting":"existing HTTP-body cost model, not QUIC wire bytes",
+            "selection_policy":match s.policy {SelectionPolicy::Exhaustive=>"exhaustive",SelectionPolicy::CpuConscious=>"cpu-conscious"},
+            "policy_skipped":s.policy_skipped.iter().map(|c|json!({"mode":format!("{:?}",c.mode),"reason":match c.reason {PolicySkipReason::NoUsefulTemplateRecords=>"no-useful-template-records"},"useful_template_records":c.useful_template_records})).collect::<Vec<_>>(),
             "selected":format!("{:?}",s.selected_mode),"exact_repeat_probe":s.exact_repeat_probe,
             "checkpoint_ready":s.checkpoint_ready,"schema_ready":s.schema_ready,
             "candidates":s.candidates.iter().map(|c|json!({"mode":format!("{:?}",c.mode),"target_http_body_bytes":c.target_http_body_bytes,"setup_http_body_bytes":c.setup_http_body_bytes,"total_http_body_bytes":c.total_http_body_bytes})).collect::<Vec<_>>(),
@@ -465,15 +478,16 @@ async fn run_inner(config: Config, stats: StatsOutput, mut ready: OwnedOutput) -
                             schema_len=schema.len();
                             ObjectSender::new(ObjectMode::Warm,&context,Some(&schema))?
                         },
-                        "runtime"|"combined"=>{
+                        "runtime"|"combined"|"combined-cpu"=>{
                             let checkpoint=read_bounded(group.checkpoint_path.as_ref().ok_or_else(||invalid("missing checkpoint"))?,transfer::shared_runtime::MAX_CHECKPOINT)?;
                             checkpoint_len=checkpoint.len();
                             let recipe=Recipe::decode(&read_bounded(group.recipe_path.as_ref().ok_or_else(||invalid("missing recipe"))?,1024)?)?;
                             let prediction=PreparedPrediction::new(&checkpoint,&recipe)?;
-                            if group.mode=="combined" {
+                            if matches!(group.mode.as_str(),"combined"|"combined-cpu") {
                                 let schema=read_bounded(group.schema_path.as_ref().ok_or_else(||invalid("missing schema"))?,transfer::client::MAX_BATCHED_OBJECT)?;
                                 schema_len=schema.len();
-                                ObjectSender::with_combined(&context,prediction,&schema)?
+                                let policy=if group.mode=="combined-cpu" {SelectionPolicy::CpuConscious} else {SelectionPolicy::Exhaustive};
+                                ObjectSender::with_combined_policy(&context,prediction,&schema,policy)?
                             } else {ObjectSender::with_runtime(&context,prediction)?}
                         },
                         _=>return Err(invalid("unknown profile").into()),

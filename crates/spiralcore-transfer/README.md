@@ -309,6 +309,17 @@ state without advancing clocks or modifying the recipe. Recovery of a target
 does not establish checkpoint readiness, and neither session changes receiver
 authorization, replay, final hash verification or durable publication.
 
+`session::CombinedSession::new_with_policy(context, prediction, artifact,
+SelectionPolicy::CpuConscious)` opts into skipping SchemaZstd compression when
+canonical preparation emitted zero useful template records. Existing `new` and
+`SelectionPolicy::default()` remain Exhaustive. Any useful emitted template
+record keeps schema eligible; runtime, rolling Sparse and exact-repeat behavior
+remain active. The receipt distinguishes `policy_skipped` from proven `pruned`
+candidates. Skipping can miss a smaller encoding, but reconstruction must still
+match every original byte. Policy is fixed for the session and changes neither
+authorization nor the decoder. See the
+[CPU-conscious contract](../../docs/specs/2026-11-02-cpu-conscious-design.md).
+
 Use `retained_bytes()` for owned buffer capacity and available codec allocation
 estimates, and `retained_charge()` for the conservative retention quota. Each
 session enforces a 512 MiB peak admission budget including input and codec scratch;

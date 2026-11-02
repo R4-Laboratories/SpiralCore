@@ -92,6 +92,62 @@ fn exchange(
     }
     Ok(replies)
 }
+
+#[test]
+fn cpu_conscious_default_remains_exhaustive_and_repeat_keeps_current_ack() {
+    use spiralcore_transfer::session::SelectionPolicy;
+    let c = wan::context([63; 32]);
+    let target = random(4096, 99);
+    let mut witnesses = Vec::new();
+    for policy in [
+        None,
+        Some(SelectionPolicy::Exhaustive),
+        Some(SelectionPolicy::CpuConscious),
+    ] {
+        let store = Store::new();
+        let mut endpoint = store.open();
+        let mut session = match policy {
+            None => CombinedSession::new(&c, prediction(), &artifact()).unwrap(),
+            Some(policy) => {
+                CombinedSession::new_with_policy(&c, prediction(), &artifact(), policy).unwrap()
+            }
+        };
+        session
+            .seed_checkpoint(&c, [1; 32], |f| exchange(&mut endpoint, &c, f))
+            .unwrap();
+        session
+            .seed_schema(&c, [2; 32], |f| exchange(&mut endpoint, &c, f))
+            .unwrap();
+        let mut frames = Vec::new();
+        let sent = session
+            .send(&c, target.clone(), [3; 32], true, |f| {
+                frames.extend(f.iter().map(|f| f.encode().unwrap()));
+                exchange(&mut endpoint, &c, f)
+            })
+            .unwrap();
+        assert_eq!(sent.selection.policy, policy.unwrap_or_default());
+        assert_eq!(
+            endpoint.read_object(&c, sent.transfer.object).unwrap(),
+            target
+        );
+        witnesses.push(frames);
+        let mut exchanges = 0;
+        let repeat = session
+            .send(&c, target.clone(), [4; 32], true, |f| {
+                exchanges += 1;
+                exchange(&mut endpoint, &c, f)
+            })
+            .unwrap();
+        assert!(repeat.selection.exact_repeat_probe);
+        assert_eq!(repeat.selection.policy, policy.unwrap_or_default());
+        assert!(repeat.selection.policy_skipped.is_empty());
+        assert_eq!(exchanges, 1);
+    }
+    assert_eq!(
+        witnesses[0], witnesses[1],
+        "default and explicit exhaustive Offer/Data bytes"
+    );
+}
 #[test]
 fn one_session_combines_runtime_and_rolling_sparse_without_raw_seed() {
     let c = wan::context([41; 32]);

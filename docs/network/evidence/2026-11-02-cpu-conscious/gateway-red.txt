@@ -1,0 +1,22 @@
+   Compiling spiralcore-gateway v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-gateway)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.47s
+     Running tests/object_combined.rs (/Users/casey.allard/spiralcore/target/debug/deps/object_combined-c4185e0f7d0d6ffc)
+
+running 1 test
+test cpu_conscious_configuration_is_explicit_and_requires_combined_artifacts ... FAILED
+
+failures:
+
+---- cpu_conscious_configuration_is_explicit_and_requires_combined_artifacts stdout ----
+
+thread 'cpu_conscious_configuration_is_explicit_and_requires_combined_artifacts' (9416562) panicked at tests/object_combined.rs:52:10:
+called `Result::unwrap()` on an `Err` value: Custom { kind: InvalidData, error: "invalid object group" }
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    cpu_conscious_configuration_is_explicit_and_requires_combined_artifacts
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 3 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `--test object_combined`

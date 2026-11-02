@@ -112,3 +112,20 @@ ternary/Kuramoto/CA checkpoint-recipe-residual and rolling warm-cache paths thro
 this gateway. See [configuration, measurement and limits](../../docs/network/runtime-object-gateway.md).
 It uses a separate authenticated object ALPN; the packet TUN command above does
 not silently acquire object/cache semantics.
+
+For cooperating object transfers, group mode `combined` retains exhaustive
+selection among its configured candidates. Explicitly choose `combined-cpu` to
+keep runtime, rolling-cache and exact-repeat paths while skipping full schema
+compression when the canonical schema stream emitted no useful template records.
+Both modes require the same schema, checkpoint and recipe paths and explicit
+auxiliary publication. The shared Rust facade exposes
+`ObjectSender::with_combined_policy(..., SelectionPolicy::CpuConscious)`;
+`with_combined(...)` continues to choose Exhaustive.
+
+CPU-conscious selection preserves exact reconstruction but may miss a smaller
+schema encoding. It is not a CPU-time limit or a proof that the omitted candidate
+would lose. Receipts identify `selection_policy` and record `policy_skipped`
+separately from proven `pruned` candidates. Fit or mixed data with any useful
+template record still evaluates the schema candidate normally. The receiver,
+authentication and wire encodings are unchanged; this mode does not enable
+runtime compression on the transparent packet TUN path.

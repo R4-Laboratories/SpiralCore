@@ -73,6 +73,41 @@ fn build_tier(label: &str, steps: u32, trial: u64) -> Result<Tier> {
         edit_offsets,
     })
 }
+fn schema_control(length: usize, steps: u32, trial: u64, drift: bool) -> Result<Vec<u8>> {
+    if trial > 2
+        || !TIERS
+            .iter()
+            .any(|(_, n, size)| *n == steps && *size == length)
+    {
+        return Err(m::invalid("unregistered schema control").into());
+    }
+    let seed = 0x4350_555f_5343_4831_u64
+        ^ trial
+        ^ (u64::from(steps) << 32)
+        ^ if drift { 0x4452_4946_545f_3031 } else { 0 };
+    let count = length / 256;
+    let entropy = m::fixture(count * 115 + length % 256, "opaque", seed)?;
+    let mut out = Vec::with_capacity(length);
+    for (index, row) in entropy[..count * 115].chunks_exact(115).enumerate() {
+        let value = 1_000_000_000_u64 + u64::from(u32::from_le_bytes(row[..4].try_into()?));
+        let key = if drift && index > 0 {
+            "drifted"
+        } else {
+            "message"
+        };
+        write!(out, "{{\"value\":{value},\"{key}\":\"")?;
+        const HEX: &[u8; 16] = b"0123456789abcdef";
+        for byte in &row[4..] {
+            out.extend_from_slice(&[HEX[(byte >> 4) as usize], HEX[(byte & 15) as usize]]);
+        }
+        out.extend_from_slice(b"\"}\n");
+    }
+    out.extend(entropy[count * 115..].iter().map(|byte| b'a' + byte % 26));
+    if out.len() != length {
+        return Err(m::invalid("schema control length").into());
+    }
+    Ok(out)
+}
 fn artifact(out: &Path, name: &str, bytes: &[u8]) -> Result<Value> {
     let path = out.join(name);
     let mut file = fs::OpenOptions::new()
@@ -93,6 +128,7 @@ pub(crate) fn generate_profile(out: &Path, trial: u64, profile: &str) -> Result<
         "runtime" => &ARMS,
         "combined" => &COMBINED_ARMS,
         "candidate-cpu" => &["combined-before", "combined-after", "whole-zstd"],
+        "cpu-conscious" => &["combined", "combined-cpu", "whole-zstd"],
         _ => return Err(m::invalid("unknown fixture campaign profile").into()),
     };
     if trial > 2 || !out.is_absolute() {
@@ -121,11 +157,20 @@ pub(crate) fn generate_profile(out: &Path, trial: u64, profile: &str) -> Result<
         for entry in [&generated, &residual, &opaque, &opaque_edited] {
             verify.push(entry["path"].clone());
         }
-        tiers.push(json!({"label":label,"width":WIDTH,"steps":steps,
+        let mut tier_manifest = json!({"label":label,"width":WIDTH,"steps":steps,
             "payload":1.0+trial as f64/8.0,"checkpoint":checkpoint,"recipe":recipe,
             "generated":generated,"residual":residual,"opaque":opaque,"opaque_edited":opaque_edited,
             "repeat_of":"residual","residual_edit_offsets":tier.edit_offsets,
-            "residual_edit_length":32,"residual_xor_byte":165,"residual_changed_bytes":512}));
+            "residual_edit_length":32,"residual_xor_byte":165,"residual_changed_bytes":512});
+        if profile == "cpu-conscious" {
+            for (kind, drift) in [("schema_fit", false), ("schema_drift", true)] {
+                let control = schema_control(tier.generated.len(), steps, trial, drift)?;
+                let entry = artifact(out, &format!("{label}-{kind}.bin"), &control)?;
+                verify.push(entry["path"].clone());
+                tier_manifest[kind] = entry;
+            }
+        }
+        tiers.push(tier_manifest);
     }
     for &arm in arms {
         let mode = match arm {
@@ -136,10 +181,10 @@ pub(crate) fn generate_profile(out: &Path, trial: u64, profile: &str) -> Result<
             .iter()
             .map(|tier| {
                 let mut operations = Vec::new();
-                if mode == "runtime" || mode == "combined" {
+                if mode == "runtime" || mode == "combined" || mode == "combined-cpu" {
                     operations.push(json!({"label":"checkpoint","action":"checkpoint","warm_probe":false}));
                 }
-                if mode == "warm" || mode == "combined" {
+                if mode == "warm" || mode == "combined" || mode == "combined-cpu" {
                     operations.push(json!({"label":"schema","action":"schema","warm_probe":false}));
                 }
                 for (label, kind) in [
@@ -153,11 +198,16 @@ pub(crate) fn generate_profile(out: &Path, trial: u64, profile: &str) -> Result<
                     let action = if mode == "warm" && label == "generated" { "seed" } else { "send" };
                     operations.push(json!({"label":label,"path":tier[kind]["path"],"action":action,"warm_probe":action=="send"}));
                 }
+                if profile == "cpu-conscious" {
+                    for (label, kind) in [("schema-fit", "schema_fit"), ("schema-drift", "schema_drift")] {
+                        operations.push(json!({"label":label,"path":tier[kind]["path"],"action":"send","warm_probe":true}));
+                    }
+                }
                 let mut group = json!({"label":tier["label"],"mode":mode,"operations":operations});
-                if mode == "warm" || mode == "combined" {
+                if mode == "warm" || mode == "combined" || mode == "combined-cpu" {
                     group["schema_path"] = schema["path"].clone();
                 }
-                if mode == "runtime" || mode == "combined" {
+                if mode == "runtime" || mode == "combined" || mode == "combined-cpu" {
                     group["checkpoint_path"] = tier["checkpoint"]["path"].clone();
                     group["recipe_path"] = tier["recipe"]["path"].clone();
                 }
@@ -179,7 +229,7 @@ fn main() -> Result<()> {
     let args: Vec<String> = std::env::args().collect();
     if args.len() != 3 && args.len() != 4 {
         return Err(m::invalid(
-            "usage: object_fixtures NEW_ABSOLUTE_OUT TRIAL_0_TO_2 [runtime|combined|candidate-cpu]",
+            "usage: object_fixtures NEW_ABSOLUTE_OUT TRIAL_0_TO_2 [runtime|combined|candidate-cpu|cpu-conscious]",
         )
         .into());
     }
@@ -196,6 +246,86 @@ fn main() -> Result<()> {
 mod tests {
     use super::*;
     use std::fs;
+
+    #[test]
+    fn cpu_conscious_controls_are_fixed_length_and_preserve_old_fixtures() {
+        let temp = tempfile::tempdir().unwrap();
+        let out = temp.path().join("cpu-conscious");
+        let m = generate_profile(&out, 0, "cpu-conscious").unwrap();
+        assert_eq!(m["arms"], json!(["combined", "combined-cpu", "whole-zstd"]));
+        assert_eq!(m["verify_files"].as_array().unwrap().len(), 12);
+        let historical: Value = serde_json::from_str(include_str!("../../../docs/network/evidence/2026-11-02-combined-gateway/linux-run/campaign/fixtures-0/manifest.json")).unwrap();
+        assert_eq!(m["schema"]["sha256"], historical["schema"]["sha256"]);
+        let artifact = fs::read(m["schema"]["path"].as_str().unwrap()).unwrap();
+        for (i, (_, _, length)) in TIERS.iter().enumerate() {
+            for kind in [
+                "checkpoint",
+                "recipe",
+                "generated",
+                "residual",
+                "opaque",
+                "opaque_edited",
+            ] {
+                for field in ["sha256", "object_id", "bytes"] {
+                    assert_eq!(
+                        m["tiers"][i][kind][field],
+                        historical["tiers"][i][kind][field]
+                    );
+                }
+            }
+            for kind in ["schema_fit", "schema_drift"] {
+                let bytes = fs::read(m["tiers"][i][kind]["path"].as_str().unwrap()).unwrap();
+                assert_eq!(bytes.len(), *length);
+                let mut matching = 0;
+                for row in bytes.chunks_exact(256) {
+                    assert_eq!(row[255], b'\n');
+                    let value: Value = serde_json::from_slice(row).unwrap();
+                    assert_eq!(value["value"].as_u64().unwrap().to_string().len(), 10);
+                    let key = if value.get("message").is_some() {
+                        matching += 1;
+                        "message"
+                    } else {
+                        "drifted"
+                    };
+                    assert_eq!(value[key].as_str().unwrap().len(), 222);
+                }
+                assert_eq!(
+                    matching,
+                    if kind == "schema_fit" {
+                        length / 256
+                    } else {
+                        1
+                    }
+                );
+                assert!(bytes
+                    .chunks_exact(256)
+                    .remainder()
+                    .iter()
+                    .all(u8::is_ascii_lowercase));
+                let encoded = schema::encode(&artifact, &bytes).unwrap();
+                assert_eq!(
+                    schema::decode(&artifact, &encoded, bytes.len()).unwrap(),
+                    bytes
+                );
+            }
+            assert_ne!(
+                m["tiers"][i]["schema_fit"]["sha256"],
+                m["tiers"][i]["schema_drift"]["sha256"]
+            );
+        }
+        for arm in ["combined", "combined-cpu", "whole-zstd"] {
+            let groups: Value =
+                serde_json::from_slice(&fs::read(out.join(format!("groups-{arm}.json"))).unwrap())
+                    .unwrap();
+            for group in groups.as_array().unwrap() {
+                let ops = group["operations"].as_array().unwrap();
+                assert_eq!(ops.len(), if arm == "whole-zstd" { 8 } else { 10 });
+                assert_eq!(group["mode"], arm);
+                assert_eq!(ops[ops.len() - 2]["label"], "schema-fit");
+                assert_eq!(ops[ops.len() - 1]["label"], "schema-drift");
+            }
+        }
+    }
 
     #[test]
     fn near_tier_is_deterministic_trial_bound_and_exactly_512_residual_bytes() {

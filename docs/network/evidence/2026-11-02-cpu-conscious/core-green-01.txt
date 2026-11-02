@@ -1,0 +1,26 @@
+   Compiling spiralcore-transfer v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 6.31s
+     Running unittests src/lib.rs (/Users/casey.allard/spiralcore/target/debug/deps/spiralcore_transfer-11e51de443a88ccf)
+
+running 3 tests
+test schema::sender_checks::cpu_conscious_fast_literal_work_fallback_never_counts_a_template ... ok
+test schema_selection::cpu_conscious_checks::cpu_conscious_skips_real_compression_only_for_zero_useful_records ... ok
+test schema::sender_checks::cpu_conscious_counts_emitted_templates_and_preserves_canonical_bytes ... FAILED
+
+failures:
+
+---- schema::sender_checks::cpu_conscious_counts_emitted_templates_and_preserves_canonical_bytes stdout ----
+
+thread 'schema::sender_checks::cpu_conscious_counts_emitted_templates_and_preserves_canonical_bytes' (9424419) panicked at src/../tests/fixtures/schema_sender_checks.rs:28:5:
+assertion `left == right` failed
+  left: 1
+ right: 0
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    schema::sender_checks::cpu_conscious_counts_emitted_templates_and_preserves_canonical_bytes
+
+test result: FAILED. 2 passed; 1 failed; 0 ignored; 0 measured; 39 filtered out; finished in 0.01s
+
+error: test failed, to rerun pass `--lib`

@@ -3,6 +3,61 @@
 #[path = "schema_sender_baseline.rs"]
 mod baseline;
 
+#[test]
+fn cpu_conscious_counts_emitted_templates_and_preserves_canonical_bytes() {
+    let first = b"{\"identifier\":0,\"status\":true}\n";
+    let later = b"{\"different_identifier\":false}\n";
+    let artifact = super::fit(&[first, later]).unwrap();
+    let prepared = super::PreparedSchema::new(&artifact).unwrap();
+    for (target, expected) in [
+        (Vec::new(), 0),
+        (b"literal\n\0\xff".to_vec(), 0),
+        (first.to_vec(), 1),
+        (later.to_vec(), 1),
+        ([first.as_slice(), b"literal\n", later].concat(), 2),
+        (first.repeat(super::MAX_RECORDS + 1), 0),
+    ] {
+        let (bytes, count) = prepared.encode_counted(&target).unwrap();
+        assert_eq!(count, expected);
+        assert_eq!(bytes, baseline::encode(&artifact, &target).unwrap());
+        assert_eq!(prepared.decode(&bytes, target.len()).unwrap(), target);
+    }
+    // Exercise the defensive size fallback directly. Public artifacts require
+    // a JSON skeleton; this intentionally tiny internal template has none.
+    let template = super::Template::new(vec![b"", b""]);
+    let mut bytes = Vec::new();
+    let mut useful = 0;
+    assert!(super::write_first_template(
+        &template,
+        b"0",
+        &mut 0,
+        &mut bytes,
+        &mut useful
+    ));
+    assert_eq!(useful, 0);
+    assert_eq!(bytes[0], 0);
+}
+
+#[test]
+fn cpu_conscious_fast_literal_work_fallback_never_counts_a_template() {
+    let row = b"{\"identifier\":0,\"status\":true}\n";
+    let artifact = super::fit(&[row]).unwrap();
+    let templates = super::read_artifact(&artifact).unwrap();
+    let mut work = super::MAX_MATCH_WORK - 1;
+    let mut bytes = Vec::new();
+    let mut useful = 0;
+    assert!(super::write_first_template(
+        &templates.items[0],
+        row,
+        &mut work,
+        &mut bytes,
+        &mut useful
+    ));
+    assert_eq!(useful, 0);
+    assert_eq!(bytes[0], 0);
+    assert_eq!(work, super::MAX_MATCH_WORK);
+}
+
 fn check(artifact: &[u8], target: &[u8]) {
     let old = baseline::encode(artifact, target).unwrap();
     let new = crate::schema::encode(artifact, target).unwrap();
@@ -107,7 +162,13 @@ fn possible_record_is_only_a_conservative_length_and_json_prefix_check() {
             "prefix {prefix:#04x}"
         );
     }
-    for bytes in [b"".as_slice(), b" \t\r\n", b"\x0b{}", b"\x0c{}", b"\xc2\xa0{}"] {
+    for bytes in [
+        b"".as_slice(),
+        b" \t\r\n",
+        b"\x0b{}",
+        b"\x0c{}",
+        b"\xc2\xa0{}",
+    ] {
         assert!(!super::possible_record(bytes));
     }
     for bytes in [b"{".as_slice(), b" \t\r\n{", b"{\xff", b"{invalid JSON"] {
@@ -128,9 +189,21 @@ fn record_count_matches_iterator_at_chunk_boundaries_and_saturation() {
             .split_inclusive(|&b| b == b'\n')
             .take(super::MAX_RECORDS + 1)
             .count();
-        assert_eq!(super::record_count(bytes), expected, "length {}", bytes.len());
+        assert_eq!(
+            super::record_count(bytes),
+            expected,
+            "length {}",
+            bytes.len()
+        );
     };
-    for bytes in [b"".as_slice(), b"\n", b"\n\n", b"tail", b"a\nb", b"a\n\0\xff\n"] {
+    for bytes in [
+        b"".as_slice(),
+        b"\n",
+        b"\n\n",
+        b"tail",
+        b"a\nb",
+        b"a\n\0\xff\n",
+    ] {
         check_count(bytes);
     }
     for len in [65_535, 65_536, 65_537, 131_071, 131_072, 131_073] {
@@ -304,7 +377,7 @@ fn first_match_preserves_exact_charge_and_terminal_work_budget() {
         };
         let mut work = start;
         let mut actual = Vec::new();
-        if !super::write_first_template(&templates.items[0], row, &mut work, &mut actual) {
+        if !super::write_first_template(&templates.items[0], row, &mut work, &mut actual, &mut 0) {
             super::write_literal(&mut actual, row);
         }
         assert_eq!(work, expected_work, "starting work {start}");
@@ -329,7 +402,8 @@ fn failed_speculation_never_spends_work_or_emits_partial_bytes() {
             &templates.items[0],
             bytes,
             &mut work,
-            &mut encoded
+            &mut encoded,
+            &mut 0
         ));
         assert_eq!(work, super::MAX_MATCH_WORK - 1);
         assert_eq!(encoded, [17, 23]);

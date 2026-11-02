@@ -14,7 +14,8 @@ approval is required. Keep the scope narrow and retain test/measurement evidence
    constructor/configuration mode and receipt serialization. Test configuration
    RED before implementation and both authenticated persistent paths after core.
 3. Measurement owner, medium risk: `examples/object_fixtures.rs`,
-   `tools/gateway-network/runtime-object-netns.sh`, runtime-analysis crate,
+   `tools/gateway-network/runtime-object-netns.sh`,
+   `tools/gateway-network/runtime-object-infra-check.sh`, runtime-analysis crate,
    `.github/workflows/spiralcore-candidate-cpu.yml`, new registration under
    `docs/network/evidence/2026-11-02-cpu-conscious/`. Add a separately identified
    same-source comparison profile; preserve historical outputs. Report actual

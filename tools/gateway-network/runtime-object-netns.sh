@@ -17,8 +17,8 @@ capture_drained() {
   capture_counters "$1" | jq -e 'if .captured>0 and .captured==.received and .dropped==0 then . else false end'
 }
 receipt_parity() {
-  jq -n -e --slurpfile before "$1" --slurpfile after "$2" '
-    def preserved: [.operations[]|{
+  jq -n -e --argjson invariants "${3:-false}" --slurpfile before "$1" --slurpfile after "$2" '
+    def preserved: [.operations[]|select(($invariants|not) or (.label=="generated" or .label=="opaque-edited" or .label=="repeat" or .label=="opaque-edited-repeat"))|{
       group,label,action,input_bytes,object_id,selected_mode,publication_path,
       request_frame_bytes,response_frame_bytes,data_bytes,requests,
       request_bytes:(.channel_after.encoded_batch_bytes_sent-.channel_before.encoded_batch_bytes_sent+
@@ -46,6 +46,13 @@ validate_registration() {
        .dose.total_operations==336 and
        .dose.operation_counts=={"send":276,"seed":12,"schema":24,"checkpoint":24} and
        .dose.mode_order_by_trial==[["whole-zstd","warm","runtime","combined"],["warm","runtime","combined","whole-zstd"],["runtime","combined","whole-zstd","warm"]]
+     elif .schema=="spiralcore.cpu-conscious.registration.v1" then
+       .fixture_profile=="cpu-conscious" and .arms==["combined","combined-cpu","whole-zstd"] and
+       .control_revision=="9f5912698f6ab46ddc771fe15fd0c0a7bcec8c5b" and
+       .service_profile_by_arm=={"combined":"combined","combined-cpu":"combined-cpu","whole-zstd":"whole-zstd"} and
+       .service_binary_by_arm=={"combined":"current","combined-cpu":"current","whole-zstd":"current"} and
+       .dose.total_operations==336 and .dose.operation_counts=={"send":288,"schema":24,"checkpoint":24} and
+       .dose.mode_order_by_trial==[["combined","combined-cpu","whole-zstd"],["combined-cpu","whole-zstd","combined"],["whole-zstd","combined","combined-cpu"]]
      elif .schema=="spiralcore.candidate-cpu.registration.v1" or .schema=="spiralcore.unrelated-gateway-cpu.registration.v1" then
        .fixture_profile=="candidate-cpu" and .arms==["combined-before","combined-after","whole-zstd"] and
        .baseline_revision==(if .schema=="spiralcore.candidate-cpu.registration.v1"
@@ -58,14 +65,14 @@ validate_registration() {
     .profiles==[
       {"name":"lan","delay_ms_per_direction":0,"rate_bits_per_second_per_direction":null},
       {"name":"wan80-10","delay_ms_per_direction":40,"rate_bits_per_second_per_direction":10000000}] and
-    .dose.trials==[0,1,2] and .dose.sessions==(if .fixture_profile=="candidate-cpu" then 18 else 24 end) and .dose.topologies==6 and
-    .dose.groups_per_session==2 and .dose.deliveries_per_group==6 and
+    .dose.trials==[0,1,2] and .dose.sessions==(if .fixture_profile=="candidate-cpu" or .fixture_profile=="cpu-conscious" then 18 else 24 end) and .dose.topologies==6 and
+    .dose.groups_per_session==2 and .dose.deliveries_per_group==(if .fixture_profile=="cpu-conscious" then 8 else 6 end) and
     .dose.total_object_deliveries==(if .fixture_profile=="candidate-cpu" then 216 else 288 end) and
     .dose.total_requested_object_bytes==(if .fixture_profile=="candidate-cpu" then 1717047288 else 2289396384 end) and .dose.warm_probe==true and
     .dose.tiers==[
       {"label":"near1m","width":4096,"steps":289,"bytes":1047202},
       {"label":"max-trace","width":4096,"steps":4096,"bytes":14851384}] and
-    .dose.per_group_sequence==["generated","residual","repeat","unrelated","opaque-edited","opaque-edited-repeat"] and
+    .dose.per_group_sequence==(["generated","residual","repeat","unrelated","opaque-edited","opaque-edited-repeat"]+(if .fixture_profile=="cpu-conscious" then ["schema-fit","schema-drift"] else [] end)) and
     .dose.profile_order_by_trial==[["lan","wan80-10"],["wan80-10","lan"],["lan","wan80-10"]] and
     .topology.queue_limit_packets==256 and .topology.quic_port==4433 and
     .custody.free_disk_floor_bytes==4294967296 and .custody.automatic_retries==false and
@@ -75,6 +82,7 @@ validate_registration() {
 if [ "$#" = 2 ] && [ "$1" = validate ]; then validate_registration "$2"; exit; fi
 if [ "$#" = 2 ] && [ "$1" = capture-drained ]; then capture_drained "$2"; exit; fi
 if [ "$#" = 3 ] && [ "$1" = receipt-parity ]; then receipt_parity "$2" "$3"; exit; fi
+if [ "$#" = 3 ] && [ "$1" = cpu-invariants ]; then receipt_parity "$2" "$3" true; exit; fi
 { [ "$#" = 6 ] || [ "$#" = 7 ]; } && [ "$1" = run ] || { echo "usage: $0 validate REGISTRATION | run NEW_OUT SERVICE PROBE FIXTURES REGISTRATION [BASELINE_SERVICE]" >&2; exit 2; }
 out=$2; service=$3; probe=$4; fixtures=$5; registration=$6
 before_service=${7:-}
@@ -83,6 +91,7 @@ campaign_profile=$(jq -r '.fixture_profile//"runtime"' "$registration")
 expected_operations=$(jq -r '.dose.total_operations' "$registration")
 expected_sessions=$(jq -r '.dose.sessions' "$registration")
 expected_deliveries=$(jq -r '.dose.total_object_deliveries' "$registration")
+deliveries_per_group=$(jq -r '.dose.deliveries_per_group' "$registration")
 if [ "$campaign_profile" = candidate-cpu ]; then
   [ "$#" = 7 ] && [ -x "$before_service" ]
   case "$before_service" in /*) ;; *) exit 2;; esac
@@ -155,6 +164,13 @@ if [ "$campaign_profile" = candidate-cpu ]; then
     --arg baseline "$(jq -r '.baseline_revision' "$registration")" \
     '{baseline_revision:$baseline,candidate_revision:$source,
       baseline_sha256:$before,candidate_sha256:$after}' > "$out/service-binaries.json"
+fi
+if [ "$campaign_profile" = cpu-conscious ]; then
+  [[ "${EXPECTED_SOURCE:-}" =~ ^[0-9a-f]{40}$ ]]
+  current_sha=$(sha256sum "$service" | awk '{print $1}')
+  jq -n --arg source "$EXPECTED_SOURCE" --arg sha "$current_sha" \
+    --arg control "$(jq -r '.control_revision' "$registration")" \
+    '{source_revision:$source,service_sha256:$sha,control_revision:$control,scope:"same executable for all three arms"}' > "$out/service-binaries.json"
 fi
 uname -a > "$out/platform.txt"
 lscpu -J > "$out/cpu.json"
@@ -336,7 +352,7 @@ check_session() {
   dir=$1; trial=$2; arm=$3
   service_mode=$arm
   if [ "$arm" = combined-before ] || [ "$arm" = combined-after ]; then service_mode=combined; fi
-  jq -n -e --arg arm "$service_mode" --slurpfile c "$dir/client.json" --slurpfile s "$dir/server.json" \
+  jq -n -e --arg arm "$service_mode" --arg campaign "$campaign_profile" --argjson deliveries "$deliveries_per_group" --slurpfile c "$dir/client.json" --slurpfile s "$dir/server.json" \
     --slurpfile m "$out/fixtures-$trial/manifest.json" '
     $c[0] as $c | $s[0] as $s | $m[0] as $m |
     $c.status=="ok" and $s.status=="ok" and $c.role=="connect" and $s.role=="listen" and
@@ -345,12 +361,12 @@ check_session() {
     all($m.tiers[];
       .label as $label |
       [$c.operations[]|select(.group==$label)|.label]==
-        ((if $arm=="combined" then ["checkpoint","schema"] elif $arm=="warm" then ["schema"] elif $arm=="runtime" then ["checkpoint"] else [] end)+
-         ["generated","residual","repeat","unrelated","opaque-edited","opaque-edited-repeat"])) and
+        ((if $arm=="combined" or $arm=="combined-cpu" then ["checkpoint","schema"] elif $arm=="warm" then ["schema"] elif $arm=="runtime" then ["checkpoint"] else [] end)+
+         ["generated","residual","repeat","unrelated","opaque-edited","opaque-edited-repeat"]+(if $campaign=="cpu-conscious" then ["schema-fit","schema-drift"] else [] end))) and
     (if $arm=="runtime" then
        all($c.operations[]|select(.label=="generated" or .label=="residual");
          .selected_mode=="RuntimeV1" and .publication_path=="verified-transfer")
-     elif $arm=="combined" then
+     elif $arm=="combined" or $arm=="combined-cpu" then
        all($c.operations[]|select(.label=="generated");
          .selected_mode=="RuntimeV1" and .publication_path=="verified-transfer") and
        all($c.operations[]|select(.label=="opaque-edited");
@@ -361,7 +377,7 @@ check_session() {
        all($c.operations[]|select(.label=="opaque-edited");
          .selected_mode=="SparseV1" and .publication_path=="verified-transfer")
      else true end) and
-    ($c.operations|length)==(if $arm=="combined" then 16 elif $arm=="warm" or $arm=="runtime" then 14 else 12 end) and
+    ($c.operations|length)==(2*$deliveries+(if $arm=="combined" or $arm=="combined-cpu" then 4 elif $arm=="warm" or $arm=="runtime" then 2 else 0 end)) and
     all($c.operations[];
       . as $op | .success==true and .input_bytes>=0 and .cpu_us>=0 and .wall_us>=0 and
       (if .action=="schema" then .object_id==$m.schema.object_id and .input_bytes==$m.schema.bytes
@@ -371,11 +387,24 @@ check_session() {
           elif .label=="residual" or .label=="repeat" then $tier.residual
           elif .label=="unrelated" then $tier.opaque
           elif .label=="opaque-edited" or .label=="opaque-edited-repeat" then $tier.opaque_edited
+          elif .label=="schema-fit" then $tier.schema_fit
+          elif .label=="schema-drift" then $tier.schema_drift
           else null end) as $expected |
          $expected!=null and .object_id==$expected.object_id and .input_bytes==$expected.bytes end)) and
-    $s.readback.reopened and $s.readback.expected_files_exact==8 and
+    $s.readback.reopened and $s.readback.expected_files_exact==(if $campaign=="cpu-conscious" then 12 else 8 end) and
     all($s.readback.objects[];.digest_verified) and all($s.server_batches[];.accepted) and
     ($s.readback.objects|map(.object_id)|sort)==($c.operations|map(.object_id)|unique|sort) and
+    (if $campaign=="cpu-conscious" and ($arm=="combined" or $arm=="combined-cpu") then
+       all($c.operations[]|select(.action=="send");
+         .selection as $selection |
+         $selection.selection_policy==(if $arm=="combined" then "exhaustive" else "cpu-conscious" end) and
+         ($selection.policy_skipped|type)=="array" and
+         (if $arm=="combined" or .label=="schema-fit" or .label=="schema-drift" then ($selection.policy_skipped|length)==0 else true end) and
+         all($selection.policy_skipped[];
+           keys==["mode","reason","useful_template_records"] and .mode=="SchemaZstdV1" and
+           .reason=="no-useful-template-records" and .useful_template_records==0 and
+           all($selection.candidates[];.mode!="SchemaZstdV1") and all($selection.pruned[];.mode!="SchemaZstdV1")))
+     else true end) and
     $c.channel.encoded_batch_bytes_sent==$s.channel.encoded_batch_bytes_received and
     $c.channel.encoded_batch_bytes_received==$s.channel.encoded_batch_bytes_sent and
     $c.channel.framing_bytes_sent==$s.channel.framing_bytes_received and
@@ -389,13 +418,18 @@ run_session() {
   dir="$out/$profile-t$trial-$arm"; mkdir "$dir"
   session_start_ns=$(date +%s%N)
   date -u +%FT%TZ > "$dir/start.utc"
-  jq -n --arg profile "$profile" --argjson trial "$trial" --arg arm "$arm" --arg calibration "$(basename "$topology_dir")" \
-    '{profile:$profile,trial:$trial,arm:$arm,calibration_directory:$calibration,groups:2,object_deliveries:12}' > "$dir/session.json"
+  jq -n --arg profile "$profile" --argjson trial "$trial" --arg arm "$arm" --arg calibration "$(basename "$topology_dir")" --argjson deliveries "$((2*deliveries_per_group))" \
+    '{profile:$profile,trial:$trial,arm:$arm,calibration_directory:$calibration,groups:2,object_deliveries:$deliveries}' > "$dir/session.json"
   session_service=$service
   if [ "$campaign_profile" = candidate-cpu ]; then
     binary_role=candidate; binary_sha=$after_sha
     if [ "$arm" = combined-before ]; then session_service=$before_service; binary_role=baseline; binary_sha=$before_sha; fi
     jq --arg role "$binary_role" --arg sha "$binary_sha" '.+{service_binary_role:$role,service_binary_sha256:$sha}' \
+      "$dir/session.json" > "$dir/session-new.json"
+    mv "$dir/session-new.json" "$dir/session.json"
+  fi
+  if [ "$campaign_profile" = cpu-conscious ]; then
+    jq --arg sha "$current_sha" '.+{service_binary_role:"current",service_binary_sha256:$sha}' \
       "$dir/session.json" > "$dir/session-new.json"
     mv "$dir/session-new.json" "$dir/session.json"
   fi
@@ -464,8 +498,8 @@ run_session() {
   cap_pid=
   date -u +%FT%TZ > "$dir/end.utc"
   session_end_ns=$(date +%s%N)
-  jq -n --slurpfile c "$dir/client.json" --argjson wall "$(((session_end_ns-session_start_ns)/1000))" \
-    '{ok:true,stores_removed:true,object_deliveries:12,operations:($c[0].operations|length),harness_wall_us:$wall,
+  jq -n --slurpfile c "$dir/client.json" --argjson deliveries "$((2*deliveries_per_group))" --argjson wall "$(((session_end_ns-session_start_ns)/1000))" \
+    '{ok:true,stores_removed:true,object_deliveries:$deliveries,operations:($c[0].operations|length),harness_wall_us:$wall,
       wall_scope:"fresh stores, qdisc reset, capture startup, service handshake/preparation/input/publication/reopened readback, close/drain/parse and store cleanup; shared topology/calibration and fixture generation reported separately"}' > "$dir/complete.json"
   printf '%s exact reopened objects and complete capture accepted\n' "$(basename "$dir")"
 }
@@ -483,13 +517,17 @@ for trial in 0 1 2; do
       receipt_parity "$out/$profile-t$trial-combined-before/client.json" "$out/$profile-t$trial-combined-after/client.json" \
         > "$topology_dir/before-after-parity.json"
     fi
+    if [ "$campaign_profile" = cpu-conscious ]; then
+      receipt_parity "$out/$profile-t$trial-combined/client.json" "$out/$profile-t$trial-combined-cpu/client.json" true \
+        > "$topology_dir/cpu-invariants.json"
+    fi
     for ns in "$ns_a" "$ns_b" "$ns_r"; do sudo -n ip netns del "$ns"; done
     owned_namespaces=0; owned_link=0
     topology_end_ns=$(date +%s%N)
     jq -n --arg campaign "$campaign_profile" --argjson setup "$(((calibrated_ns-topology_start_ns)/1000))" \
       --argjson total "$(((topology_end_ns-topology_start_ns)/1000))" \
       '{ok:true,namespace_cleanup:true,setup_calibration_wall_us:$setup}+
-       (if $campaign=="candidate-cpu" then {topology_all_three_sessions_wall_us:$total} else {topology_all_four_sessions_wall_us:$total} end)' > "$topology_dir/complete.json"
+       (if $campaign=="candidate-cpu" or $campaign=="cpu-conscious" then {topology_all_three_sessions_wall_us:$total} else {topology_all_four_sessions_wall_us:$total} end)' > "$topology_dir/complete.json"
   done
 done
 sudo -n ip -j route show table all > "$out/host-routes-after.json"
@@ -499,7 +537,7 @@ cmp "$out/host-routes-v6-before.json" "$out/host-routes-v6-after.json"
 sha256sum -c "$out/frozen-inputs.sha256" > "$out/frozen-inputs-after.txt"
 jq -s --arg campaign "$campaign_profile" '{sessions:length,operations:(map(.operations)|add),object_deliveries:(map(.object_deliveries)|add),
   exact_reopened:all(.[];.ok),stores_removed:all(.[];.stores_removed),capture_complete:true,host_routes_unchanged:true}+
-  (if $campaign=="candidate-cpu" then {before_after_parity:true} else {} end)' \
+  (if $campaign=="candidate-cpu" then {before_after_parity:true} elif $campaign=="cpu-conscious" then {cpu_invariants:true} else {} end)' \
   "$out"/lan-t*/complete.json "$out"/wan80-10-t*/complete.json > "$out/complete.json"
 jq -e --argjson sessions "$expected_sessions" --argjson expected "$expected_operations" --argjson deliveries "$expected_deliveries" \
   '.sessions==$sessions and .operations==$expected and .object_deliveries==$deliveries and .exact_reopened and .stores_removed' "$out/complete.json" >/dev/null
