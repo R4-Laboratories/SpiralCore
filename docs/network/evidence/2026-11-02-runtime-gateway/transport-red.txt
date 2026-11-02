@@ -1,0 +1,39 @@
+    Updating crates.io index
+     Locking 8 packages to latest compatible versions
+      Adding ahash v0.8.12
+      Adding allocator-api2 v0.2.21
+      Adding futures-macro v0.3.34
+      Adding futures-sink v0.3.34
+      Adding hashbrown v0.14.5
+      Adding tokio-util v0.7.11 (available: v0.7.20)
+      Adding zerocopy v0.8.63
+      Adding zerocopy-derive v0.8.63
+   Compiling futures-macro v0.3.34
+   Compiling futures-task v0.3.34
+   Compiling futures-core v0.3.34
+   Compiling futures-sink v0.3.34
+   Compiling spiralcore-gateway-core v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-gateway-core)
+   Compiling futures-util v0.3.34
+   Compiling tokio-util v0.7.11
+   Compiling spiralcore-gateway v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-gateway)
+error[E0599]: no associated function or constant named `bind_objects` found for struct `Listener` in the current scope
+   --> tests/object_channel.rs:66:30
+    |
+ 66 |     let listener = Listener::bind_objects(local, server_identity).unwrap();
+    |                              ^^^^^^^^^^^^ associated function or constant not found in `Listener`
+    |
+note: if you're trying to build a new `Listener`, consider using `Listener::bind` which returns `Result<Listener, spiralcore_gateway::transport::Error>`
+   --> src/transport.rs:155:5
+    |
+155 |     pub fn bind(local: SocketAddr, identity: Identity) -> Result<Self> {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0599]: no associated function or constant named `connect_objects` found for struct `Peer` in the current scope
+   --> tests/object_channel.rs:107:22
+    |
+107 |     let peer = Peer::connect_objects(local, remote, "gateway.test", client_identity, deadline)
+    |                      ^^^^^^^^^^^^^^^ associated function or constant not found in `Peer`
+
+For more information about this error, try `rustc --explain E0599`.
+error: could not compile `spiralcore-gateway` (test "object_channel") due to 2 previous errors
+warning: build failed, waiting for other jobs to finish...

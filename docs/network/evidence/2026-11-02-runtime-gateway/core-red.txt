@@ -1,0 +1,58 @@
+   Compiling spiralcore-gateway-core v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-gateway-core)
+error[E0432]: unresolved import `spiralcore_gateway_core::object::ObjectSelection`
+ --> tests/object_runtime.rs:1:51
+  |
+1 | use spiralcore_gateway_core::object::{ObjectMode, ObjectSelection, ObjectSender};
+  |                                                   ^^^^^^^^^^^^^^^ no `ObjectSelection` in `object`
+
+error[E0599]: no variant, associated function, or constant named `Runtime` found for enum `ObjectMode` in the current scope
+  --> tests/object_runtime.rs:53:52
+   |
+53 |     assert!(matches!(ObjectSender::new(ObjectMode::Runtime, &context, None), Err(Error::Malformed)));
+   |                                                    ^^^^^^^ variant, associated function, or constant not found in `ObjectMode`
+
+error[E0599]: no associated function or constant named `with_runtime` found for struct `ObjectSender` in the current scope
+  --> tests/object_runtime.rs:54:36
+   |
+54 |     let mut sender = ObjectSender::with_runtime(&context, prediction).unwrap();
+   |                                    ^^^^^^^^^^^^ associated function or constant not found in `ObjectSender`
+   |
+note: if you're trying to build a new `ObjectSender`, consider using `ObjectSender::new` which returns `Result<ObjectSender, spiralcore_transfer::Error>`
+  --> src/object.rs:27:5
+   |
+27 |     pub fn new(mode: ObjectMode, context: &Context, schema: Option<&[u8]>) -> Result<Self> {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0599]: no associated function or constant named `with_runtime` found for struct `ObjectSender` in the current scope
+  --> tests/object_runtime.rs:88:36
+   |
+88 |     let mut sender = ObjectSender::with_runtime(&context, prediction).unwrap();
+   |                                    ^^^^^^^^^^^^ associated function or constant not found in `ObjectSender`
+   |
+note: if you're trying to build a new `ObjectSender`, consider using `ObjectSender::new` which returns `Result<ObjectSender, spiralcore_transfer::Error>`
+  --> src/object.rs:27:5
+   |
+27 |     pub fn new(mode: ObjectMode, context: &Context, schema: Option<&[u8]>) -> Result<Self> {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0599]: no method named `seed_checkpoint` found for struct `ObjectSender` in the current scope
+   --> tests/object_runtime.rs:121:33
+    |
+121 |         assert!(matches!(sender.seed_checkpoint(&context, [1; 32], |_| panic!("non-runtime checkpoint")), Err(Error::Unsupported)));
+    |                                 ^^^^^^^^^^^^^^^ method not found in `ObjectSender`
+
+error[E0599]: no method named `send_with_receipt` found for struct `ObjectSender` in the current scope
+   --> tests/object_runtime.rs:125:30
+    |
+125 | ...   let receipt = sender.send_with_receipt(&context, edited.clone(), [3; 32], false, |frames| exchange(&mut endpoint, &context, f...
+    |                            ^^^^^^^^^^^^^^^^^ method not found in `ObjectSender`
+
+error[E0599]: no method named `send_with_receipt` found for struct `ObjectSender` in the current scope
+   --> tests/object_runtime.rs:131:39
+    |
+131 | ...   let repeated = sender.send_with_receipt(&context, edited, [4; 32], false, |frames| exchange(&mut endpoint, &context, frames))...
+    |                             ^^^^^^^^^^^^^^^^^ method not found in `ObjectSender`
+
+Some errors have detailed explanations: E0432, E0599.
+For more information about an error, try `rustc --explain E0432`.
+error: could not compile `spiralcore-gateway-core` (test "object_runtime") due to 7 previous errors

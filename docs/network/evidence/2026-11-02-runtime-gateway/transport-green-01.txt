@@ -1,0 +1,19 @@
+   Compiling spiralcore-gateway v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-gateway)
+error[E0308]: mismatched types
+   --> src/object_service.rs:159:164
+    |
+159 | ...text,Some(&read_bounded(group.schema_path.as_ref().ok_or_else(||invalid("missing schema"))?,transfer::MAX_OBJECT)?))?,
+    |               ------------ arguments to this function are incorrect                            ^^^^^^^^^^^^^^^^^^^^ expected `usize`, found `u64`
+    |
+note: function defined here
+   --> src/object_service.rs:82:8
+    |
+ 82 | pub fn read_bounded(path: &Path, cap: usize) -> Result<Vec<u8>> {
+    |        ^^^^^^^^^^^^              ----------
+help: you can convert a `u64` to a `usize` and panic if the converted value doesn't fit
+    |
+159 |                         "warm"=>ObjectSender::new(ObjectMode::Warm,&context,Some(&read_bounded(group.schema_path.as_ref().ok_or_else(||invalid("missing schema"))?,transfer::MAX_OBJECT.try_into().unwrap())?))?,
+    |                                                                                                                                                                                        ++++++++++++++++++++
+
+For more information about this error, try `rustc --explain E0308`.
+error: could not compile `spiralcore-gateway` (lib) due to 1 previous error

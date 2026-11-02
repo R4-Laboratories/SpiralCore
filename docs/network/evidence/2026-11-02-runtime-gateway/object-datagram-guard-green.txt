@@ -1,0 +1,28 @@
+   Compiling spiralcore-gateway v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-gateway)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 4.46s
+     Running tests/object_channel.rs (/Users/casey.allard/spiralcore/target/debug/deps/object_channel-6aff910fae58c45d)
+
+running 9 tests
+test object_profile_cannot_send_datagrams_even_if_the_authenticated_peer_advertises_support ... ok
+test a_finished_client_can_be_dropped_immediately ... ok
+test outbound_invalid_batch_is_rejected_without_writing_a_prefix ... ok
+test object_profile_rejects_packet_alpn_and_wrong_leaf_pins ... ok
+test zero_end_rejects_trailing_data_and_finish_requires_acknowledgement ... ok
+test malformed_length_truncation_and_noncanonical_batches_poison_the_channel ... ok
+test fragmented_stream_writes_preserve_exact_framing_and_cancellation_abandons_partial_prefix ... ok
+test deadlines_explicit_cancellation_and_dropped_futures_cannot_resume_reads ... ok
+test exact_batches_share_one_authenticated_stream_and_finish_explicitly ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.15s
+
+     Running tests/transport.rs (/Users/casey.allard/spiralcore/target/debug/deps/transport-c9101ff0418715a4)
+
+running 5 tests
+test server_requires_a_client_certificate_at_the_tls_boundary ... ok
+test mutually_authenticated_peers_exchange_exact_datagrams_over_udp ... ok
+test an_exact_pin_does_not_bypass_trust_roots_or_server_name_validation ... ok
+test both_endpoints_reject_a_valid_certificate_with_the_wrong_pin ... ok
+test datagram_bounds_deadlines_and_clean_shutdown_are_explicit ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+

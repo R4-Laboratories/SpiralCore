@@ -72,6 +72,12 @@ Credential formats match existing gateway. Each service admits one configured
 peer; context derives sender/recipient from actual configured certificate pins,
 plus local scope/epoch. Receiver authority accepts only that exact context;
 remote payload cannot grant scope. Policy changes take effect on restart.
+Report/readiness paths require fresh files in existing writable parents. Reserve
+exclusive ownership before readiness or error writes; reject existing targets,
+input/credential/store overlap and normalized aliases. Initial publication must
+not replace another file; later readiness updates require the held output inode.
+Client operations and receiver batches carry matching transfer IDs in local
+receipts for exact CPU attribution; this adds no wire fields.
 
 `groups` (connect only,max8) contain label, mode(raw/whole-zstd/warm/runtime),
 optional schema_path/checkpoint_path/recipe_path, and operations(max32/group).
@@ -102,13 +108,14 @@ Each has two tiers using width4096:289steps=1,047,202 bytes and4096steps=
 14,851,384 bytes (max trace). Initial checkpoint3,382B. Confirm generated lengths
 before admission; no padding or runtime-limit changes to invent16MiB output.
 Per tier: generated,512bytes of deterministic localized residual edits, exact
-repeat of edited object, unrelated same-length opaque input.192 requested object
-deliveries; schema/checkpoint/seed operations separately counted. Same fixture
+repeat of edited object, unrelated same-length opaque input, localized opaque
+edits and their exact repeat.288 requested object deliveries; schema/checkpoint
+setup separately counted (312 total operations). Same fixture
 hashes across arms; equal warm_probe opportunity; prepared contexts reused.
 Record generation outside transfer and all preparation/seeding inside cumulative
 session cost. Runtime expected to win generated/residual cases, but actual
 selected mode governs claims. Warm must demonstrate actual reuse; no forced
-codec or dropped losing case. Include initial cold/seed and amortized1/2/3/4
+codec or dropped losing case. Include initial cold/seed and cumulative1..6
 object totals. Require exact reopened bytes, bounds/scope/missing-state/truncated
 channel tests, captured both-direction bytes, sender+receiver CPU, full operation
 and session wall. Three trials descriptive only. Shaped local is not actual WAN.
@@ -118,3 +125,27 @@ read-only CI token, source/binary hashes, no auto retries,4GiB disk floor.
 Large artifacts archived to existing private HF dataset with fresh pinned hash
 verification before local cleanup. Formal RED/GREEN and negative results stay in
 GitHub per user request. Lean cross-author review; no broad audit/coverage work.
+
+### Pre-measurement fixture amendment
+
+Before any campaign traffic, extend each tier with an opaque object carrying the
+same512-byte localized edit pattern, then its exact repeat. This isolates warm
+rolling reuse on data that zstd cannot shrink; the generated-runtime fixture is
+already compressible and is insufficient as the only warm-change test. No new
+size/profile/trial is introduced. Six requested deliveries per tier means288
+object deliveries, plus12schema and12checkpoint operations=312operations total.
+Eight unique expected files per receiver. Runtime may truthfully fall back on
+opaque edits because its base is the fixed checkpoint; do not claim automatic
+combined runtime+rolling selection. Count every seed and both additional inputs.
+
+### Scope binding before object traffic
+
+After pinned authentication, the initiator sends one SCWBAT01 batch containing
+Frame(kind6,transfer=local namespace ID,seq0,body=SCGNSP01). The receiver compares
+it exactly with its locally derived namespace and echoes only on equality. The
+initiator requires that exact echo. This control is intercepted by the service
+and never passed to Endpoint. Scope/epoch misconfiguration therefore fails before
+any cache publication. It conveys no new authorization and is counted in channel
+setup traffic. Publication receipts distinguish an acknowledged target-cache hit
+from a full reconstruction using the actual reply to Begin/probe, not only the
+offered mode; a full batch may already be sent before a cache-hit reply arrives.

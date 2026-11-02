@@ -1,0 +1,108 @@
+   Compiling spiralcore-gateway v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-gateway)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.70s
+     Running unittests src/lib.rs (/Users/casey.allard/spiralcore/target/debug/deps/spiralcore_gateway-efb289367226660b)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/bin/spiralcore-gateway.rs (/Users/casey.allard/spiralcore/target/debug/deps/spiralcore_gateway-f1fc2336bd5916dd)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/bin/spiralcore-gateway-object.rs (/Users/casey.allard/spiralcore/target/debug/deps/spiralcore_gateway_object-4ab0fac0e983ef12)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/bin/spiralcore-gateway-probe.rs (/Users/casey.allard/spiralcore/target/debug/deps/spiralcore_gateway_probe-7c4873406b30c924)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/measurement.rs (/Users/casey.allard/spiralcore/target/debug/deps/measurement-78ce6d96a8cb88d9)
+
+running 2 tests
+test pcap_counts_wire_lengths_not_snaplen_and_rejects_truncation ... ok
+test fixtures_are_exact_bounded_and_seeded ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/object_channel.rs (/Users/casey.allard/spiralcore/target/debug/deps/object_channel-6aff910fae58c45d)
+
+running 9 tests
+test object_profile_cannot_send_datagrams_even_if_the_authenticated_peer_advertises_support ... ok
+test a_finished_client_can_be_dropped_immediately ... ok
+test outbound_invalid_batch_is_rejected_without_writing_a_prefix ... ok
+test object_profile_rejects_packet_alpn_and_wrong_leaf_pins ... ok
+test zero_end_rejects_trailing_data_and_finish_requires_acknowledgement ... ok
+test malformed_length_truncation_and_noncanonical_batches_poison_the_channel ... ok
+test deadlines_explicit_cancellation_and_dropped_futures_cannot_resume_reads ... ok
+test fragmented_stream_writes_preserve_exact_framing_and_cancellation_abandons_partial_prefix ... ok
+test exact_batches_share_one_authenticated_stream_and_finish_explicitly ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.16s
+
+     Running tests/object_service.rs (/Users/casey.allard/spiralcore/target/debug/deps/object_service-2685be9dcecdd9bc)
+
+running 7 tests
+test existing_outputs_and_input_aliases_are_preserved_even_when_startup_fails ... ok
+test object_configuration_is_explicit_bounded_and_role_scoped ... ok
+test output_symlink_and_hardlink_aliases_are_not_replaced ... ok
+test normalized_output_store_and_staging_collisions_fail_without_creating_reports ... ok
+test fresh_owned_error_report_is_valid_and_reservations_are_released ... ok
+test mismatched_scope_or_policy_epoch_fails_before_opening_the_store ... ok
+test runtime_and_warm_use_real_gateway_and_reopen_exact_objects ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.53s
+
+     Running tests/probe.rs (/Users/casey.allard/spiralcore/target/debug/deps/probe-10af77400c137ffa)
+
+running 3 tests
+{"bytes":65536,"sha256":"e714a527900c91cab21c0477d134a3c50072de79468004059f58f194dbb09163"}
+test three_exact_transfers_share_one_tcp_connection ... ok
+test sequence_defers_report_io_until_all_exchanges_finish ... ok
+test paired_application_probes_verify_real_tcp_and_udp_bytes ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.97s
+
+     Running tests/service.rs (/Users/casey.allard/spiralcore/target/debug/deps/service-8210c13481ec464d)
+
+running 4 tests
+test only_clean_authenticated_close_or_elapsed_duration_is_normal ... ok
+test address_authorization_is_directional_and_fails_closed ... ok
+test config_is_strict_and_scoped ... ok
+test packet_profiles_are_explicit_and_unknown_profiles_are_rejected ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/transport.rs (/Users/casey.allard/spiralcore/target/debug/deps/transport-c9101ff0418715a4)
+
+running 5 tests
+test server_requires_a_client_certificate_at_the_tls_boundary ... ok
+test mutually_authenticated_peers_exchange_exact_datagrams_over_udp ... ok
+test an_exact_pin_does_not_bypass_trust_roots_or_server_name_validation ... ok
+test both_endpoints_reject_a_valid_certificate_with_the_wrong_pin ... ok
+test datagram_bounds_deadlines_and_clean_shutdown_are_explicit ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+
+     Running tests/tun.rs (/Users/casey.allard/spiralcore/target/debug/deps/tun-94d57003938ec5bf)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests examples/object_fixtures.rs (/Users/casey.allard/spiralcore/target/debug/examples/object_fixtures-e25c53765f5366d4)
+
+running 3 tests
+test tests::invalid_trial_or_existing_output_is_rejected_without_overwrite ... ok
+test tests::near_tier_is_deterministic_trial_bound_and_exactly_512_residual_bytes ... ok
+test tests::full_fixture_set_has_correct_sizes_and_explicit_group_setup ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 11.46s
+
