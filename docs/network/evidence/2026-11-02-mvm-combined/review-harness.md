@@ -30,13 +30,16 @@ remain separate fields. Nested guest/worker CPU is not combined.
 The initial session validator lacked explicit worker-profile, synchronized-disk
 and read-only-readback checks. These were added during review before any native
 campaign launch; no production transfer code change was needed. A small known
-ratio assertion was also requested to make the synthetic arithmetic regression
-explicit rather than checking only comparison row counts.
+ratio assertion was also requested and added to make the synthetic arithmetic
+regression explicit rather than checking only comparison row counts. Counter
+validation now requires all six numeric fields on both sides, so two missing
+reverse-direction fields cannot accidentally compare equal as null.
 
-Independent execution of the synthetic harness passed 36 synthetic sessions and
-five rejecting mutations: failed reboot exactness, wrong object identity,
-directional-counter mismatch, unsynchronized recovery disk, and wrong worker
-rate. See `review-analyzer-test.txt`; these synthetic results are not transfer
+Independent execution of the synthetic harness passed 36 synthetic sessions,
+known operation/session ratio assertions, and six rejecting mutations: failed
+reboot exactness, wrong object identity, directional-counter mismatch,
+unsynchronized recovery disk, wrong worker rate, and missing reverse-direction
+counters. See `review-analyzer-test.txt`; these synthetic results are not transfer
 measurements. Bash syntax checking also passed. Final native results and their
 arithmetic require separate review after execution.
 
