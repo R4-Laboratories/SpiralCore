@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "scope": "native ephemeral canonical mailbox service and TCP-loopback remote-client contracts",
-  "qualification_status": "NOT_RUN",
+  "qualification_status": "PASS_PINNED_SOURCE_EPHEMERAL_NATIVE_TCP_LOOPBACK",
   "toolchain": "1.97.1",
   "features": [
     "live"
@@ -40,53 +40,80 @@
       "runner": "ubuntu-24.04",
       "os": "Linux",
       "arch": "X64",
-      "target": "x86_64-unknown-linux-gnu"
+      "target": "x86_64-unknown-linux-gnu",
+      "execution_status": "PASS_PINNED_SOURCE",
+      "evidence": "../network/evidence/2026-11-02-mvm-service/platforms/official/41535679868/mvm-mailbox-portable-ubuntu24-x64-1/identity.json",
+      "actual_os_description": "Ubuntu 24.04.5 LTS",
+      "actual_image_version": "20261026.354.1"
     },
     {
       "id": "ubuntu24-arm64",
       "runner": "ubuntu-24.04-arm",
       "os": "Linux",
       "arch": "ARM64",
-      "target": "aarch64-unknown-linux-gnu"
+      "target": "aarch64-unknown-linux-gnu",
+      "execution_status": "PASS_PINNED_SOURCE",
+      "evidence": "../network/evidence/2026-11-02-mvm-service/platforms/official/41535679868/mvm-mailbox-portable-ubuntu24-arm64-1/identity.json",
+      "actual_os_description": "Ubuntu 24.04.5 LTS",
+      "actual_image_version": "20261026.166.1"
     },
     {
       "id": "macos26-arm64",
       "runner": "macos-26",
       "os": "macOS",
       "arch": "ARM64",
-      "target": "aarch64-apple-darwin"
+      "target": "aarch64-apple-darwin",
+      "execution_status": "PASS_PINNED_SOURCE",
+      "evidence": "../network/evidence/2026-11-02-mvm-service/platforms/official/41535679868/mvm-mailbox-portable-macos26-arm64-1/identity.json",
+      "actual_os_description": "macOS 26.6.2",
+      "actual_image_version": "20261026.0455.2"
     },
     {
       "id": "macos26-intel",
       "runner": "macos-26-intel",
       "os": "macOS",
       "arch": "X64",
-      "target": "x86_64-apple-darwin"
+      "target": "x86_64-apple-darwin",
+      "execution_status": "PASS_PINNED_SOURCE",
+      "evidence": "../network/evidence/2026-11-02-mvm-service/platforms/official/41535679868/mvm-mailbox-portable-macos26-intel-1/identity.json",
+      "actual_os_description": "macOS 26.6.1",
+      "actual_image_version": "20260824.0517.1"
     },
     {
       "id": "windows2022-x64",
       "runner": "windows-2022",
       "os": "Windows",
       "arch": "X64",
-      "target": "x86_64-pc-windows-msvc"
+      "target": "x86_64-pc-windows-msvc",
+      "execution_status": "PASS_PINNED_SOURCE",
+      "evidence": "../network/evidence/2026-11-02-mvm-service/platforms/official/41535679868/mvm-mailbox-portable-windows2022-x64-1/identity.json",
+      "actual_os_description": "Microsoft Windows 10.0.20348",
+      "actual_image_version": "20261026.347.1"
     },
     {
       "id": "windows2025-x64",
       "runner": "windows-2025",
       "os": "Windows",
       "arch": "X64",
-      "target": "x86_64-pc-windows-msvc"
+      "target": "x86_64-pc-windows-msvc",
+      "execution_status": "PASS_PINNED_SOURCE",
+      "evidence": "../network/evidence/2026-11-02-mvm-service/platforms/official/41535679868/mvm-mailbox-portable-windows2025-x64-1/identity.json",
+      "actual_os_description": "Microsoft Windows 10.0.26100",
+      "actual_image_version": "20261030.294.1"
     },
     {
       "id": "windows11-arm64",
       "runner": "windows-11-arm",
       "os": "Windows",
       "arch": "ARM64",
-      "target": "aarch64-pc-windows-msvc"
+      "target": "aarch64-pc-windows-msvc",
+      "execution_status": "PASS_PINNED_SOURCE",
+      "evidence": "../network/evidence/2026-11-02-mvm-service/platforms/official/41535679868/mvm-mailbox-portable-windows11-arm64-1/identity.json",
+      "actual_os_description": "Microsoft Windows 10.0.26200",
+      "actual_image_version": "20261026.197.1"
     }
   ],
   "unqualified_gates": [
-    "actual execution of every matrix row, including runner availability",
     "real WAN in both directions for every advertised endpoint pair",
     "native KVM, HVF or libkrun MVM guest/host execution",
     "durable object reception and OS-specific private storage semantics",
@@ -104,7 +131,7 @@
     "storage_mode": "ephemeral memory; no durable object receiver",
     "carrier_profile": "canonical encrypted mailbox over authenticated StreamTransport TCP loopback",
     "native_mvm_backend": "NOT_RUN; no guest is booted by this workflow",
-    "evidence": "per-row GitHub Actions artifact; unexecuted rows remain NOT_RUN"
+    "evidence": "Pinned source PASS: native process + TCP-loopback only; permanent report linked by qualification"
   },
   "unix_storage_tests": [
     {
@@ -112,5 +139,15 @@
       "minimum_count": 2,
       "scope": "Unix durable storage dispatch/reopen; not native MVM backend or WAN"
     }
-  ]
+  ],
+  "qualification": {
+    "run_url": "https://github.com/R4-Laboratories/SpiralCore/actions/runs/41535679868",
+    "run_id": "41535679868",
+    "source_commit": "7506b3f3a40ee7dc190d665031750d336fd65aeb",
+    "source_tree": "ae5521d8ca0a02a774a25d9396b3d5d9fc4f855c",
+    "portable_passed": 322,
+    "unix_storage_passed": 8,
+    "permanent_report": "../network/evidence/2026-11-02-mvm-service/platforms/README.md",
+    "permanent_summary": "../network/evidence/2026-11-02-mvm-service/platforms/summary.json"
+  }
 }

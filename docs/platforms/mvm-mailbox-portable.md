@@ -61,9 +61,13 @@ stores, build outputs, credentials or full environment dumps are uploaded.
 Jobs have read-only repository permissions, pinned action SHAs, bounded timeouts
 and at most three concurrent test rows.
 
-Implementation status is **NOT_RUN on hosted runners** until actual execution
-artifacts exist. Local validation of workflow syntax is not native platform
-qualification. Remaining explicit gates include real WAN in both directions,
+Executed status is **PASS for all seven native rows at the pinned source** in
+[run 41535679868](https://github.com/R4-Laboratories/SpiralCore/actions/runs/41535679868):
+322 portable tests plus eight Unix storage tests. The
+[permanent report and original artifacts](../network/evidence/2026-11-02-mvm-service/platforms/README.md)
+record exact source, native OS/build, runner image, compiler and counts. This
+qualifies the tested ephemeral service/client scope only. Remaining explicit
+gates include real WAN in both directions,
 KVM/HVF/libkrun guest/host witnesses, Windows durable storage, NIC attachment,
 FlowMux and owner-access integration, additional OS/version/ABI combinations,
 and security or performance qualification. See the
