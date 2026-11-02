@@ -33,4 +33,20 @@ for name in unregistered trials arms size deliveries setup warmprobe retry rate 
   printf '%s\n' "$code" > "$out/$name.exit"
   [ "$code" -ne 0 ] || { echo "negative unexpectedly accepted: $name" >&2; exit 1; }
 done
-printf '{"positive":1,"negatives":10,"passed":true,"scope":"pure registration and shell syntax; original launch gate unchanged; no network claim"}\n' > "$out/result.json"
+printf 'tcpdump: 10 packets captured, 10 packets received by filter, 0 packets dropped by kernel\n' > "$out/capture-ok.stderr"
+bash "$driver" capture-drained "$out/capture-ok.stderr" > "$out/capture-positive.stdout" 2> "$out/capture-positive.stderr"
+for name in tail drop empty missing; do
+  case "$name" in
+    tail) printf 'tcpdump: 49123 packets captured, 49130 packets received by filter, 0 packets dropped by kernel\n' > "$out/capture-$name.stderr";;
+    drop) printf '10 packets captured\n10 packets received by filter\n1 packets dropped by kernel\n' > "$out/capture-$name.stderr";;
+    empty) printf '0 packets captured\n0 packets received by filter\n0 packets dropped by kernel\n' > "$out/capture-$name.stderr";;
+    missing) printf 'tcpdump: listening on underlay\n' > "$out/capture-$name.stderr";;
+  esac
+  set +e
+  bash "$driver" capture-drained "$out/capture-$name.stderr" > "$out/capture-$name.stdout" 2> "$out/capture-$name.error"
+  code=$?
+  set -e
+  printf '%s\n' "$code" > "$out/capture-$name.exit"
+  [ "$code" -ne 0 ] || { echo "undrained capture unexpectedly accepted: $name" >&2; exit 1; }
+done
+printf '{"positive":1,"negatives":10,"capture_positive":1,"capture_negatives":4,"passed":true,"scope":"pure registration, capture completion and shell syntax; no network claim"}\n' > "$out/result.json"

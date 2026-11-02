@@ -3,6 +3,19 @@
 # Public command output intentionally belongs to the unprivileged runner.
 # shellcheck disable=SC2024
 set -euo pipefail
+capture_counters() {
+  # SIGUSR1 is one line on Linux; final SIGINT output is three lines.
+  # Always retain the latest complete values, not an earlier clean snapshot.
+  awk '{gsub(/,/, ""); for(i=2;i<=NF;i++) {
+    if($i=="packets" && $(i+1)=="captured") c=$(i-1);
+    if($i=="packets" && $(i+1)=="received" && $(i+2)=="by" && $(i+3)=="filter") r=$(i-1);
+    if($i=="packets" && $(i+1)=="dropped" && $(i+2)=="by" && $(i+3)=="kernel") d=$(i-1);
+  }} END {if(c==""||r==""||d=="")exit 1;
+    printf "{\"captured\":%s,\"received\":%s,\"dropped\":%s}\n",c,r,d}' "$1"
+}
+capture_drained() {
+  capture_counters "$1" | jq -e 'if .captured>0 and .captured==.received and .dropped==0 then . else false end'
+}
 validate_registration() {
   jq -e '
     .schema=="spiralcore.runtime-object.registration.v1" and .launch_ready==true and
@@ -27,6 +40,7 @@ validate_registration() {
   ' "$1" >/dev/null
 }
 if [ "$#" = 2 ] && [ "$1" = validate ]; then validate_registration "$2"; exit; fi
+if [ "$#" = 2 ] && [ "$1" = capture-drained ]; then capture_drained "$2"; exit; fi
 [ "$#" = 6 ] && [ "$1" = run ] || { echo "usage: $0 validate REGISTRATION | run NEW_OUT SERVICE PROBE FIXTURES REGISTRATION" >&2; exit 2; }
 out=$2; service=$3; probe=$4; fixtures=$5; registration=$6
 validate_registration "$registration"
@@ -318,7 +332,7 @@ run_session() {
     config "$side" "$arm" "$trial" "$dir" "$scope"
   done
   touch "$dir/capture.pid" "$dir/underlay.pcap"
-  sudo -n ip netns exec "$ns_a" sh -c 'echo "$$" > "$1"; exec tcpdump -Z root -i underlay -nn -s 96 -B 4096 -U -w "$2" "udp port 4433"' \
+  sudo -n ip netns exec "$ns_a" sh -c 'echo "$$" > "$1"; exec tcpdump --immediate-mode -Z root -i underlay -nn -s 96 -B 4096 -U -w "$2" "udp port 4433"' \
     capture "$dir/capture.pid" "$dir/underlay.pcap" > "$dir/capture.stdout" 2> "$dir/capture.stderr" &
   cap_job=$!
   for _ in $(seq 1 100); do grep -q 'listening on underlay' "$dir/capture.stderr" && break; sleep 0.1; done
@@ -338,15 +352,28 @@ run_session() {
   wait "$b_job"; b_job=
   wait_file "$dir/client.json"; wait_file "$dir/server.json"
   check_session "$dir" "$trial" "$arm"
-  sleep 0.3
-  sudo -n kill -USR1 "$cap_pid"
-  sleep 0.3
+  # Both service processes have exited. Drain capture delivery rather than
+  # assuming a fixed delay flushed libpcap's kernel buffer. Retain every poll.
+  capture_stable=0
+  capture_previous=
+  for poll in $(seq 1 100); do
+    sudo -n kill -USR1 "$cap_pid"
+    sleep 0.1
+    if capture_drained "$dir/capture.stderr" > "$dir/capture-drain-$poll.json"; then
+      capture_snapshot=$(cat "$dir/capture-drain-$poll.json")
+      if [ "$capture_snapshot" = "$capture_previous" ]; then capture_stable=$((capture_stable+1)); else capture_stable=1; fi
+      capture_previous=$capture_snapshot
+      [ "$capture_stable" -lt 2 ] || break
+    else
+      capture_stable=0
+      capture_previous=
+    fi
+  done
+  [ "$capture_stable" -eq 2 ] || { echo "capture did not drain within bounded wait" >&2; return 1; }
   sudo -n kill -INT "$cap_pid"
   wait_job "$cap_job"; cap_job=
   "$probe" pcap-summary "$dir/underlay.pcap" "$dir/capture.json"
-  awk '/packets captured/{c=$1}/packets received by filter/{r=$1}/packets dropped by kernel/{d=$1}
-    END {if(c==""||r==""||d=="")exit 1; printf "{\"captured\":%s,\"received\":%s,\"dropped\":%s}\n",c,r,d}' \
-    "$dir/capture.stderr" > "$dir/capture-counters.json"
+  capture_counters "$dir/capture.stderr" > "$dir/capture-counters.json"
   jq -e --slurpfile c "$dir/capture-counters.json" \
     '.other_packets==0 and .packets>0 and .packets==$c[0].captured and $c[0].captured==$c[0].received and $c[0].dropped==0' \
     "$dir/capture.json" > "$dir/capture-accepted.txt"
