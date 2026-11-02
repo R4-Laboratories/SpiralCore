@@ -1,0 +1,55 @@
+{
+  "schema": "spiralcore.packet-selection.compatibility-regression-verification.v1",
+  "verdict": "PASS",
+  "run_id": 41364240628,
+  "source": "9dd283ca366d6075bd6b423c3a42aa928e222ce2",
+  "executed_workflow_revision": "b419ebfdf559171a5408b98a8474853cf7be3204",
+  "executed_workflow_matches_source": true,
+  "workflow_blob": "b7cbe295fb84ec8bc1b6d75a15884097c060dcd8",
+  "artifact": {
+    "id": 13106228640,
+    "bytes": 21917801,
+    "sha256": "8458c72814a4a17fbfc964e522b62ad778657bae8883331624bd0c051b9cf7ae",
+    "local_zip_matches_github_digest": true,
+    "manifest_files_verified": 862
+  },
+  "source_files_verified": 29,
+  "frozen_binaries": {
+    "gateway": "a0a244c39084f27a5f2dfe3a296d5edc6b59a7f17ffedf85cfae6b4d7879e353",
+    "probe": "d5a36f51d0ec5b353488cddd42bed558c084bf253672168f8371b7e6e8f86be4",
+    "both_hashes_verified": true
+  },
+  "test_counts": {
+    "core": 11,
+    "gateway": 16,
+    "total": 27,
+    "failures": 0
+  },
+  "execution": {
+    "sessions": 12,
+    "application_transfers": 48,
+    "exact_endpoint_receipts": 96,
+    "application_input_bytes": 427819008,
+    "every_receipt_matches_registered_fixture_sha256_and_length": true,
+    "complete_captures": 12,
+    "capture_packets": 344824,
+    "captured_ip_bytes": 429302880,
+    "captured_ethernet_bytes": 434130416,
+    "capture_kernel_drops": 0,
+    "udp_application_retries": 0,
+    "gateway_denied_or_invalid_frames": 0,
+    "reassembly_capacity_or_expiry_drops": 0,
+    "packet_length_identities_valid": true,
+    "selector_counter_identities_valid": true,
+    "host_ipv4_and_ipv6_routes_unchanged": true,
+    "owned_namespace_cleanup_reported": true
+  },
+  "evidence": [
+    "regression-artifact-check.txt",
+    "regression-source-check.txt",
+    "regression-session-check.jsonl"
+  ],
+  "method": "Rehashed all archive manifest entries, both frozen binaries and original ZIP; compared all source blob hashes with pinned Git revision; compared executed merge-workflow content through GitHub connector with pinned head; checked every session/endpoint fixture and capture counter/length identities. No new transfer, binary execution or large copy.",
+  "scope": "Compatibility Raw/legacy-Zstd local TUN regression only. This receipt does not claim adaptive performance, main shaped-campaign completion, actual WAN or physical energy.",
+  "storage": "Original ZIP is the archival authority; parent owns verified HF upload and compact-evidence retention. This verifier made no additional large artifact copy."
+}

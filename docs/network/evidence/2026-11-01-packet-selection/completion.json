@@ -1,0 +1,39 @@
+{
+  "schema": "spiralcore.packet-selection.delivery.v1",
+  "source": "9dd283ca366d6075bd6b423c3a42aa928e222ce2",
+  "implementation_merge": "0be5ea8a35b7560879975b3861927bed5899b993",
+  "implementation_pr": 25,
+  "campaign_run": 41364240626,
+  "regression_run": 41364240628,
+  "linux_tests_passed": 27,
+  "campaign_sessions": 32,
+  "campaign_transfers": 128,
+  "campaign_exact_endpoint_receipts": 256,
+  "regression_transfers": 48,
+  "status": "IMPLEMENTATION_MERGED_RUNTIME_AND_ARITHMETIC_VERIFIED",
+  "cross_author_reviews": [
+    "review-core.md",
+    "review-service.md",
+    "review-infra-parent.md",
+    "service-measurement-review.json"
+  ],
+  "procedural_receipt": "premerge-procedure.json",
+  "quality_gate": {
+    "literal_command_invoked": false,
+    "reason": "No executable or direct quality-gate interface is available; explicit code/security/Rust/infra cross-author reviews and retained procedural verification performed before merge."
+  },
+  "measurement": {
+    "artifact_sha256": "7c56b4a6abef97122513e74811de7d66a4954180fb8bbbf6bd1fb1619bcfb5db",
+    "independent_analysis": "network-analysis.json",
+    "parent_arithmetic_crosscheck": true
+  },
+  "disposition": {
+    "default_changed": false,
+    "adaptive": "Experimental: adverse byte gate failed; shaped mixed session also used more bytes than FastZstd.",
+    "fast_zstd": "Explicit lower-CPU packet profile; measured patterned constrained-link gain versus Raw, not universally faster than legacy Zstd or Raw.",
+    "actual_internet_wan": "NOT_RUN in this milestone",
+    "energy": "NOT_MEASURED",
+    "mvm_object_path": "UNCHANGED"
+  },
+  "retention": "Formal RED/GREEN, raw receipts and negative results retained per user instruction; full artifacts archived and redownload-verified before owned large-copy cleanup."
+}
