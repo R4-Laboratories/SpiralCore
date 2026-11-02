@@ -96,3 +96,11 @@ source-execution behavior. Python numerical comparisons and Rust exact-byte
 compatibility checks are distinct. The existing lossy root-value averaging is
 preserved as observed, and is never substituted for exact object reconstruction.
 No additional license is asserted for the owner-supplied source by this port.
+
+## Original contribution license grant (2026-11-02)
+
+The owner subsequently authorized MIT licensing for original SpiralCore code
+and new documentation. The root [LICENSE](LICENSE) and [scope](LICENSING.md)
+record this grant. Imported notices are preserved; supplied Python references,
+research artifacts and other third-party material are not relicensed. Historical
+statements above remain records of their original import/port dates.

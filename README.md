@@ -1,90 +1,297 @@
 # SpiralCore
 
-SpiralCore networking prototypes, exact geometric transport research, and preserved experimental evidence. This repository combines a curated snapshot of work from [UOR-R4](https://github.com/UOR-Foundation/uor-r4) with owner-supplied SpiralCore source materials; it is not the UOR-R4 language-model repository.
+**Move fewer bytes. Reconstruct every byte. Measure the compute cost.**
 
-## Start here
+SpiralCore is an experimental Rust networking project that reuses verified state
+at cooperating endpoints. Instead of repeatedly sending an entire object, it can
+send a reconstruction recipe, an exact residual, or a reference to an object the
+receiver has acknowledged. Ternary state, Kuramoto-coupled cellular automata,
+warm caches and schema fitting are active parts of the object implementation.
 
-- [Unrelated-object search CPU optimization](docs/network/unrelated-gateway-cpu-results-2026-11-02.md): exact run search reduces large opaque residual-stage CPU about 74%, with all 216 deliveries exact and selected bytes unchanged. In paired shaped-link transfers, large unrelated sender CPU improves 2.35% but completion time is 0.20% worse; the complete session uses 1.32% less CPU and is 0.35% slower. The existing mixed-session advantage over zstd remains, while unrelated data still loses. Raw receipts are bundled, hashed and archived for review.
-- [Combined gateway candidate CPU optimization](docs/network/candidate-cpu-results-2026-11-02.md): exact selected bytes preserved across 216 deliveries. Skipping losing schema work and sharing identical residuals cuts mixed-session CPU by 12.21% and elapsed by 0.81% versus the pinned previous selector on the calibrated 80 ms / 10 Mbps link. Against prepared zstd: 58.26% fewer captured IP bytes, 39.71% less CPU and 53.10% less elapsed. Unshaped elapsed also improves; unrelated-object CPU still loses. Full before/after receipts and captures are retained. This is shaped Linux QUIC, not a new Internet-WAN result.
-- [Combined ternary/Kuramoto/CA and rolling-cache gateway results](docs/network/combined-gateway-results-2026-11-02.md): one persistent session now chooses runtime recipes, rolling sparse updates and cheap verified repeats. All 288 deliveries passed in 24 sessions. With setup and readback charged, the calibrated 80 ms / 10 Mbps mixed session uses 58.26% fewer captured IP bytes, 38.08% less CPU and 52.65% less elapsed time than prepared zstd. Separate Runtime/Warm controls and remaining CPU/local-time losses are recorded. This is a cooperating object service, not transparent TUN runtime compression or a new Internet-WAN result.
-- [Earlier separate Runtime and Warm gateway results](docs/network/runtime-gateway-results-2026-11-02.md): historical four-arm comparison retained unchanged, including cold-seed and missing-rolling-reuse costs that motivated Combined.
-- [Shared Rust gateway and Linux TUN results](docs/network/gateway-results-2026-11-01.md): ordinary IPv4/IPv6 TCP and UDP traffic now crosses paired authenticated gateways. All 48 application flows passed exact verification, with complete bidirectional captures. Packet compression saves about 41.8% of mixed-session IP bytes but raises CPU and local completion time; warm-object reuse remains shared with MVM. Includes the runnable TUN configuration, raw receipts and an immutable capture/executable archive.
-- [MVM overhead and exact-repeat optimization](docs/network/mvm-overhead-results-2026-11-01.md): 36 actual two-guest sessions, 324 exact transfers and reboot readbacks. Exact-repeat CPU/time improve; an explicit 64 MiB/s mailbox profile removes much of the inherited rate wait. At that same profile, the seven-object 16 MiB workload uses 64.4 MB and 3.291 s with Warm versus 192.9 MB and 6.777 s with prepared zstd. Default 4 MiB/s, non-repeat regressions, shared-host contention and CPU-accounting limits remain explicit.
-- [Actual MVM/vsock integration and results](docs/network/mvm-vsock-results-2026-10-31.md): real Linux guest→host and two-guest transfers under a small native HVF orchestrator; 100 exact accepted objects and 50 exact reboot readbacks. The matched 16 MiB two-guest workload saves 66.62% of encrypted stream bytes and completes in 16.03 s versus 43.85 s for prepared whole-object zstd. Exact-repeat losses, the inherited 4 MiB/s limit, CPU accounting differences and local-only scope are explicit.
-- [Ongoing optimization ledger](docs/network/optimization-ledger.md): source-pinned experiments, recorded results, regressions and the next active measurement plan.
-- [Unrelated-object CPU and mixed WAN results](docs/network/unrelated-cpu-results-2026-10-31.md): exact allocation/scan changes preserve 600-byte warm transfers and all selected bytes across 1,400 local and 420 WAN operations. WAN unrelated sender CPU improves about 14–15% against the previous selector; mixed sessions send about 48% fewer body bytes than prepared zstd, with higher CPU. Local large-object gates and some WAN controls fail, so this remains a measured candidate, not a performance-accepted optimization.
-- [Artifact storage and restoration](docs/network/artifact-storage.md): compact results stay in GitHub; large historical WAN snapshots are retained in a private Hugging Face dataset with immutable revisions and checksums, so verified local copies can be removed.
-- [Run standalone SpiralCore](crates/spiralcore-transfer/README.md): `serve`, `send`, `get`, and a real TCP cold/repeat/delta demonstration with exact restart verification. Reducing transmitted bytes is the primary performance objective.
-- [Sender selection, residual and hashing CPU results](docs/network/sender-cpu-results-2026-10-30.md): prepared large generated-transfer CPU fell from 111.437 to 35.039 ms and local durable elapsed time from 127.094 to 49.678 ms, preserving the 747-byte body. All 840 operations reopen exactly and all runtime frame comparisons match. Edited content improves substantially; unrelated-content and small-case regressions, preparation and cold costs remain explicit. These are local measurements, not new WAN or energy results.
-- [Packed replay and prepared-state CPU results](docs/network/replay-cpu-results-2026-10-30.md): large-trace replay CPU fell from 228.305 to 12.184 ms. Complete local generated-transfer CPU fell from 559.601 to 139.071 ms, then to 117.050 ms with sender preparation reused. All 720 campaign operations reopen exactly, with unchanged 747/766-byte favorable bodies. Preparation, retained memory, small workloads and conventional controls are recorded; this is a local CPU comparison, not a new WAN result.
-- [Coupled ternary/Kuramoto/CA transfer results](docs/network/shared-runtime-results-2026-10-30.md): the retained runtime is in the Rust transfer path, with 480 exact local operations and 72 exact Linux-to-Mac WAN operations. A 14.16 MiB generated trace uses 747 protocol-body bytes; the WAN pilot beats raw elapsed time but loses to zstd and uses more CPU. The [runnable Rust example](crates/spiralcore-transfer/README.md#shared-ternary-kuramoto-and-cellular-automaton-replay) and full evidence retain these tradeoffs. Core compute optimization precedes MVM integration.
-- [Byte-first codec selection, October 29](docs/network/codec-selection-results-2026-10-29.md): opt-in Rust API chooses Raw, chunked zstd, sparse or zstd prefix before Begin. All 240 local paired inputs matched minimum configured body cost and all 1,800 operations reopened exactly. CPU penalties and paid seeds are recorded; these are local results, separate from WAN qualification.
-- [Two-machine WAN experiment](docs/network/wan.md): authenticated synthetic transfers through a temporary HTTPS relay, paired raw/zstd/cache/DAG workloads, endpoint CPU and durable-commit timing, and packet accounting.
-- [Broad 16 MiB WAN campaign, October 29](docs/network/broad-wan-results-2026-10-29.md): four methods with matched verified-byte publication policy, including a conventional zstd shared-base delta control. All twelve registered cases are independently reviewed: 2,640 exact operations, with CPU, elapsed time, cold controls and conventional delta comparisons. Read the report for exact byte, elapsed, CPU, paid-seed and capture results.
-- [Earlier 16 MiB WAN results, October 29](docs/network/large-wan-results-2026-10-29.md): thirty paired localized edits, 180 exact reopened operations, 16,814,026 to 600 HTTP-body bytes, 8.73× paired elapsed and 3.17× endpoint-CPU improvement over the then-current raw path, which included optional DAG warming. Seed-plus-update improves 1.81× in elapsed time. The third capture's three-packet counter gap remains an explicit limit on full-campaign IP accounting.
-- [Earlier 1 MiB efficiency and WAN results](docs/network/efficiency-results-2026-10-29.md): direct graph construction, retained verified state and sparse exact deltas; 1,140 successful operations, 99.80–99.98% warm protocol-body savings and 1.83–2.58× paired elapsed improvement, including computation. Cache seeding and packet-accounting limits are reported separately.
-- [Receiver-cost follow-up](docs/network/receiver-cost-results-2026-10-29.md): 256 exact controlled local updates; the small quota-scan refactor missed its preregistered CPU target and was reverted, with all negative and positive observations retained.
+**[Get started](#get-started) · [Results](#measured-results) · [Mechanisms](#how-the-object-core-works) · [Public evidence](docs/network/public-artifacts.md) · [Contribute](CONTRIBUTING.md) · [MIT scope](LICENSING.md)**
 
-- [Hardware SHA-256 result](docs/network/hardware-sha-results-2026-10-29.md): the opt-in backend passed all three registered CPU gates on native Apple M1, with 256 exact local updates and unchanged protocol bytes. Sparse CPU fell from 16.360 to 4.402 ms without unrelated cached objects. All raw observations and independent reviews are retained; this is separate from the WAN measurements.
-- [Direct quota-scan profile](docs/network/cache-profile-results-2026-10-29.md): 32 exact diagnostic operations attribute 84.39% of populated-cache sparse-operation CPU to the two quota scans. No production scan shortcut was selected; filesystem and corruption checks remain intact.
-- [Earlier WAN baseline](docs/network/wan-results-2026-10-29.md): 906 successful operations with exact persisted-byte verification; the measured compute costs and negative cases that motivated the efficiency work.
-- [Original compute audit and efficiency plan](docs/network/compute-efficiency-2026-10-29.md): baseline graph/verification costs, retained-state and incremental-update design, and a separate hardware-SHA feature-build diagnostic.
-- [Exact Rust object store](crates/uor-r4-object-store/README.md): independently buildable byte-object storage, ternary DAG replication, `objpeer`, and pinned compatibility vectors.
-- [Delivery plan and implementation status](docs/network/delivery.md): staged storage hardening, MVM integration, WAN acceptance, and qualification gaps.
-- [SpiralCore v69 page](index.html): a self-contained copy of the Netlify page, ready for a future GitHub Pages deployment from `main` / root.
-- [Owner-supplied reference files](references/): all 18 attachments, both original ZIPs, and the meaningful payload extracted from `spiralcore.zip`; see [`import-manifest.tsv`](import-manifest.tsv) for origins, sizes, and SHA-256 hashes.
-- [Wire transport](projects/spiralcore/wire/README.md): Python and Rust adapters, socket layer, routed hub, multiplexing, process interposer, benchmarks, and bounded loopback evidence.
-- [Warm-cache networking](projects/spiralcore/warm-cache/README.md): Kuramoto time, Merkle manifests, WarmWire/WGR1 frames, WMX1 multiplexing, WarmSession, and TCP/QUIC prototypes.
-- [SpiralCore/FBS mechanism guide](docs/mechanisms/spiralcore-fbs.md): exact signed-axis transport, ternary-tree binders, experiments, limitations, and source links.
-- [Latest full-rung FBS record](docs/labs/spiralcore-fbs-offline-float-sheet/README.md): the completed four-arm, two-seed offline-float experiment and its receipts.
-- [Provenance and export scope](PROVENANCE.md): source identity, the 344-file source manifest, the 23-file additions manifest, history limits, and exclusions.
+> Research software with working implementations and reproducible measurements.
+> Exact recovery is mandatory. Byte savings, CPU savings and completion-time
+> savings are reported separately, including workloads that lose.
 
-## Status and claim boundaries
+## What works today?
 
-The standalone wire layer uses UORADP01 framing with raw or zlib-compressed data. It does **not** yet integrate SpiralCore/FBS routing. Its historical timings are loopback measurements, not general WAN or production claims.
+**Normal networking is implemented, as well as MVM.** There are three distinct paths:
 
-The warm-cache work is a prototype. Existing records include TCP/QUIC loopback results, emulated-WAN tests, and a remote TCP/SSH campaign; direct QUIC WAN was blocked by the test pod's port policy. Those historical results are preserved, not freshly reproduced by this export.
+| Track | Implemented interface | Current validation | Remaining boundary |
+|---|---|---|---|
+| **Cooperating objects** | Authenticated QUIC object service; Combined runtime, warm cache, schema and zstd/raw selection | Persistent receivers, exact restart readback, local and calibrated shaped links | Current Combined gateway needs a two-host Internet WAN campaign |
+| **Normal TCP/UDP** | Linux Layer 3 TUN → paired authenticated QUIC gateways → peer TUN | Real IPv4/IPv6 TCP/UDP flows; local and calibrated 80 ms / 10 Mbps tests | No general Internet egress/NAT or transparent warm-cache/CA compression of TCP streams |
+| **MVM mailboxes** | Shared object core at authorized plaintext endpoints; canonical encrypted envelopes over vsock | Real guest → host and two-guest sessions under a small native orchestrator; keyless reboot readback | Experimental binding; production mailbox lifecycle and WAN deployment remain open |
 
-The latest full-rung offline-float FBS experiment is a **negative for one configuration**, not a verdict on SpiralCore as a whole. Learned routing lost to frozen routing on the registered top-1 comparisons, and trained-query results did not reproduce between byte-identical builds. No useful language capability is claimed by this repository.
+The normal-network gateway sends standard UDP/IP through the physical NIC, with
+no NIC driver changes. Both ends need a cooperating gateway. HTTPS/QUIC payloads
+reaching TUN are already encrypted and generally offer little compression.
+Shared-runtime and warm-object gains currently belong to the **object and MVM
+tracks**, not arbitrary encrypted packet traffic.
 
-## Build and test the standalone networking crates
+## Measured results
 
-```bash
-# Working standalone transfer demo (choose a fresh cache path)
-cargo run --release --locked --manifest-path crates/spiralcore-transfer/Cargo.toml --bin spiralcore -- demo --cache local/first-demo/cache
+These experiments have different workloads and accounting layers. Do not combine
+their percentages. Elapsed already includes computation; CPU is not an additional
+latency charge. Each report retains setup, durability, loss and trial details.
 
-# Exact object store (from the repository root)
-cargo test --locked --manifest-path crates/uor-r4-object-store/Cargo.toml --all-targets
-cargo run --locked --manifest-path crates/uor-r4-object-store/Cargo.toml --example exact_bytes
+### Normal networking: real TUN sockets on a constrained link
 
-# Wire transport
-cd projects/spiralcore/wire/crates/wire-rs
-cargo test --locked
-cargo build --release --locked
+The [packet campaign](docs/network/packet-selection-results-2026-11-01.md) completed
+**32 sessions, 128 application transfers and 256 exact endpoint receipts**.
+The campaign covers unshaped and shaped links plus IPv6 smoke sessions. The table
+shows primary IPv4 shaped-link trials: three 16 MiB TCP objects—patterned, opaque,
+patterned—on one persistent connection, plus UDP smoke. This is actual Linux
+TUN/QUIC traffic on a calibrated **80 ms RTT / 10 Mbps** bidirectional link on one host.
 
-# Warm-cache prototype
-cd ../../../warm-cache/rust/warm-cache-proto
-cargo test --locked
-cargo build --release --locked
+| Mode | Captured IP bytes, both directions | Both gateways' CPU | Three-object client completion |
+|---|---:|---:|---:|
+| Raw packets | 62,681,599 | 4.947 s | 46.953 s |
+| Conventional zstd | 28,472,420 | 3.294 s | 20.540 s |
+| Fast zstd | 28,034,434 | 3.137 s | 20.653 s |
+
+Three-trial medians. Fast zstd reduces IP bytes **55.28%** and gateway CPU
+**36.42%** versus Raw by paired medians. On the fast unshaped local link it is
+slower: **0.904 s versus Raw's 0.773 s**. Adaptive remains experimental because
+it can sacrifice bytes. These packet gains use conventional compression, not CA
+or ternary replay. [Full report and losses →](docs/network/packet-selection-results-2026-11-01.md)
+
+### Combined object gateway: shared state plus exact changes
+
+The [current selector campaign](docs/network/cpu-conscious-results-2026-11-02.md)
+completed **288 exact reopened deliveries across 18 local/shaped sessions**. Each persistent session includes
+1,047,202-byte and 14,851,384-byte targets, eight targets per size, and paid
+checkpoint/schema setup. The table shows authenticated QUIC transfers on the
+calibrated shaped-link profile, separate from the packet experiment.
+
+| Mode | Captured IP bytes, both directions | Both endpoints' process CPU | Client completion |
+|---|---:|---:|---:|
+| Exhaustive Combined, default | 33,946,691 | 1.955 s | 31.038 s |
+| CPU-conscious Combined, opt-in | 33,943,850 | 1.924 s | 31.061 s |
+| Prepared whole-object zstd | 58,149,609 | 2.471 s | 49.862 s |
+
+The opt-in mode retains **41.63% fewer IP bytes, 21.83% less process CPU and
+37.71% less elapsed** than zstd by paired medians. It is not uniformly better
+than exhaustive selection: full-session elapsed is 0.045% worse in this dose,
+and unrelated objects retain overhead. [Workload and remaining costs →](docs/network/cpu-conscious-results-2026-11-02.md)
+
+### MVM: current Combined core through actual guest/vsock boundaries
+
+The [MVM report](docs/network/mvm-combined-results-2026-11-02.md) records **36 real
+guest sessions, 336 exact publications including setup, and 168 separate keyless,
+read-only reboot verifications**. Below is the two-MVM eight-target session;
+each target contains **14,851,384 bytes**. All modes use the same explicit
+64 MiB/s mailbox allowance; Combined pays checkpoint/schema costs. The default
+4 MiB/s policy is unchanged.
+
+Sender session time includes fixture/codec setup and sends. VM boot and independent
+reboot/readback are measured separately. The CPU column is sender process CPU;
+receiver and enclosing VM-worker CPU remain separate in the full report.
+
+| Mode | Encrypted logical stream bytes, both directions | Sender CPU | Sender session elapsed |
+|---|---:|---:|---:|
+| Exhaustive Combined | 56,538,203 | 1.442 s | 2.621 s |
+| CPU-conscious Combined | 56,535,989 | 1.422 s | 2.568 s |
+| Prepared whole-object zstd | 97,329,036 | 1.925 s | 3.599 s |
+
+Exhaustive Combined saves **41.92% of stream bytes, 25.37% of sender CPU and
+29.21% of elapsed** by three-trial paired medians. Both vsock hops together
+carry twice the logical count. A generated target alone uses **33,866 encrypted
+bytes / 63.6 ms**, versus **6,118,673 bytes / 274.4 ms** with zstd. An opaque
+sparse edit uses **26,846 bytes / 61.8 ms**, versus **28,450,629 bytes / 866.6 ms**.
+
+Schema fit/drift save only about 0.7–1.1% of bytes here and cost more CPU/time.
+An interrupted transfer cannot publish its partial object; a fresh authenticated
+connection recovers exactly. This is local native MVM execution, not production
+mailbox activation or a new WAN result. [Sizes, recovery and full testing report →](docs/network/mvm-combined-results-2026-11-02.md)
+
+### Earlier real Internet WAN evidence
+
+An earlier GitHub Linux sender reached a native Apple M1 receiver through a
+temporary HTTPS relay. The [broad WAN campaign](docs/network/broad-wan-results-2026-10-29.md)
+completed **2,640 exact operations**, with 30 paired trials per case. For a
+32-byte edit to a warm 16 MiB object:
+
+| Method | Request + reply HTTP-body bytes | Completion, including compute | Sender + receiver-handler CPU |
+|---|---:|---:|---:|
+| Raw full send | 16,814,026 | 1,594.631 ms | 100.872 ms |
+| Configured zstd prefix delta | 26,245 | 240.178 ms | 101.087 ms |
+| Sparse COPY/LITERAL | 600 | 237.108 ms | 79.839 ms |
+
+The conventional delta baseline is close in time. Including a paid seed and one
+update, Sparse takes **1,873.202 ms versus Raw's 3,153.206 ms**. Historical
+HTTP-body results are not NIC-byte counts and do not qualify the newer QUIC/MVM
+deployment. [All baselines, seed costs and capture limitations →](docs/network/broad-wan-results-2026-10-29.md)
+
+## How the object core works
+
+```text
+Decode(verified receiver state, versioned recipe, exact residual) = original bytes
 ```
 
-The wire smoke tools live in `projects/spiralcore/wire/tools/`. The imported object-store crate supplies `objpeer`; microVM checks still require their actual runtime and guest services.
+The original length and whole-object SHA-256 identity are verified before a
+publication acknowledgment. A hash identifies content; it does not grant access.
+State is scoped by authenticated tenant, recipient and policy/epoch.
+Recipes select built-in bounded transitions/codecs; received source code is never executed.
 
-## Repository layout
+```mermaid
+flowchart LR
+    A[Checkpoint<br/>Ternary + phase state] --> B[Kuramoto + memory<br/>CA 184 / 110 / 30]
+    B --> C[Prepared prediction]
+    C --> D[Exact comparison]
+    T[Target bytes] --> D
+    W[Verified rolling cache] --> D
+    D --> E[Recipe + residual<br/>or literal fallback]
+    E --> F[Reconstruct<br/>Verify + commit]
+```
 
-- `references/`: the 18 owner-supplied attachments and the four meaningful files extracted from `spiralcore.zip`.
-- `index.html`: the self-contained SpiralCore v69 webpage for optional future GitHub Pages hosting.
-- `projects/spiralcore/`: complete tracked standalone project tree, including reference notes.
-- `docs/`: current research guides, pre-registrations, task records, lab records, and receipts.
-- `archive/`: preserved research reviews, evidence, historical patches, and archived GitHub discussions.
-- `crates/uor-r4-object-store/`: standalone exact object storage and peer protocol, with its own MIT license and source provenance.
-- `crates/spiralcore-transfer/`: versioned SHA-256 object transfer, durable scoped cache, bounded raw/zstd/DAG/sparse/zstd-prefix and shared-runtime decoding, coupled ternary/Kuramoto/CA replay, prepared Rust APIs, loopback CLI and bounded WAN experiment harness.
-- Other directories under `crates/`: SpiralCore-related model-source references and integration points, not a complete model build.
-- `source-manifest.tsv`: source-relative paths and source Git blob IDs for the 344 UOR-R4 files.
-- `import-manifest.tsv`: origins, byte counts, and SHA-256 hashes for the 18 attachments, four extracted files, and webpage.
+| Mechanism | Concrete job |
+|---|---|
+| **Ternary structure** | The imported immutable store builds ternary DAGs for sharing; the coupled runtime also retains ternary state. DAG and runtime prediction are distinct mechanisms. |
+| **Kuramoto + CA** | Replay bounded, versioned transitions from a canonical checkpoint. Logical steps and pinned software math make replay reproducible; physical clock synchronization is not required. |
+| **Warm cache + sparse deltas** | Reuse an acknowledged object and send exact COPY/LITERAL changes, including length changes. Repeats avoid unnecessary re-encoding. |
+| **Prepared state** | Reuse predictions and codec state across transfers; measure the preparation cost. |
+| **Schema fitting** | Share a fitted template and compress the value/literal stream. Unmatched content remains exact literal data. |
+| **Byte-first selection** | Compare eligible runtime, sparse, schema, whole-zstd and raw encodings. Exhaustive is default; CPU-conscious may omit schema work and miss a smaller encoding outside the measured workload. |
 
-The copied research retains its original paths and wording. Links to unselected UOR-R4 context are intentionally preserved; use the source repository for the complete surrounding project.
+Predictable data can have a short recipe. All required information must still
+exist in verified receiver state or cross the link as residual/literal data.
+Ternary structure does not remove independent information; prediction quality
+determines savings, and final verification enforces zero fidelity loss.
 
-## Visibility and licensing
+### Track 1 — cooperating applications and objects
 
-This repository is public at the owner's explicit request. The object-store crate retains its source MIT license; this does not grant a license to the other imported research or owner-supplied artifacts. See [provenance](PROVENANCE.md).
+```mermaid
+flowchart LR
+    A[Application object] --> B[ObjectSender<br/>Choose exact encoding]
+    S[Runtime / cache / schema] --> B
+    B --> C[Authenticated QUIC<br/>Reliable object stream]
+    C --> D[Authorized receiver<br/>Scoped verified state]
+    D --> E[Reconstruct + verify<br/>Durable object store]
+    E -. acknowledgment .-> B
+```
+
+`spiralcore-gateway-object` uses the separate `spiralcore-object/1` ALPN. Peers
+agree on scope and policy epoch; checkpoint/schema readiness is explicit.
+[Object service and configuration →](docs/network/runtime-object-gateway.md)
+
+### Track 2 — ordinary TCP/UDP sockets and the NIC
+
+```mermaid
+flowchart LR
+    A[TCP/UDP application<br/>Kernel route → TUN] --> B[Packet framing<br/>Raw or zstd]
+    B --> C[Authenticated QUIC<br/>NIC carries UDP/IP]
+    C --> D[Peer gateway<br/>Restore + verify packet]
+    D --> E[Peer TUN → kernel<br/>TCP/UDP application]
+```
+
+The service attaches an existing TUN interface, validates address allowlists and
+uses bounded fragmentation/reassembly. Packet encodings are independent: no
+cross-packet base is assumed. This is a Layer 3 paired tunnel, not a Layer 2
+bridge or transparent compression for arbitrary Internet destinations.
+[Linux setup, certificates, routes and demonstration →](crates/spiralcore-gateway/README.md)
+
+### Track 3 — MVM mailboxes and a small orchestrator
+
+```mermaid
+flowchart LR
+    subgraph A[Sender MVM]
+        A1[Plaintext application<br/>Shared object selector] --> A2[Canonical mailbox<br/>Authenticate + encrypt]
+    end
+    A2 -->|vsock 5257| H[Keyless host relay<br/>Small orchestrator]
+    subgraph B[Receiver MVM]
+        B1[Verify envelope<br/>Decrypt] --> B2[Scoped reconstruction<br/>Verify + durable commit]
+    end
+    H -->|vsock 5257| B1
+    B2 -. authenticated reply .-> A2
+```
+
+The witness also supports a single guest with a host endpoint. It uses actual
+ARM64 Linux guests on macOS Hypervisor.framework and a pinned MVM patch.
+**5257 is experimental; FlowMux 5253 is separate and unchanged.** Publication
+acknowledgment does not promise exactly-once application processing.
+[Native MVM build/run instructions →](crates/spiralcore-mvm-live/README.md)
+
+## Get started
+
+Use Rust **1.97.1** to reproduce recorded builds. Crates are standalone Cargo
+packages with their own lockfiles; no root workspace is required.
+
+```sh
+git clone https://github.com/R4-Laboratories/SpiralCore.git
+cd SpiralCore
+rustup toolchain install 1.97.1 --profile minimal
+
+# Local TCP object-transfer demo; choose a fresh cache path.
+cargo +1.97.1 run --release --locked \
+  --manifest-path crates/spiralcore-transfer/Cargo.toml \
+  --bin spiralcore -- demo --cache local/first-demo/cache
+
+# Build the normal packet gateway and cooperating object service.
+cargo +1.97.1 build --release --locked \
+  --manifest-path crates/spiralcore-gateway/Cargo.toml --bins
+```
+
+The demo is an unauthenticated, loopback-only synthetic harness, not a WAN service
+or benchmark. The gateway paths use their documented authenticated transports.
+Linux TUN needs its documented privileges and interface setup. Native MVM needs
+the pinned patch, guest kernel and HVF host.
+
+| Task | Guide |
+|---|---|
+| Send/retrieve objects and run the local demo | [Transfer crate](crates/spiralcore-transfer/README.md) |
+| Run paired Linux TUN gateways | [Packet gateway](crates/spiralcore-gateway/README.md) |
+| Use Combined, runtime or warm object profiles | [Object gateway](docs/network/runtime-object-gateway.md) |
+| Run actual MVM guests | [MVM witness](crates/spiralcore-mvm-live/README.md) |
+| Inspect the canonical mailbox boundary | [MVM adapter](crates/spiralcore-mvm-adapter/README.md) |
+| Review measurements and downloads | [Public artifacts](docs/network/public-artifacts.md) |
+
+## Public evidence and reproducibility
+
+Source, contracts, compact raw observations, failed cases, analysis and reviews
+live in Git. The [public evidence release](https://github.com/R4-Laboratories/SpiralCore/releases/tag/evidence-2026-11-02)
+provides reviewed MVM, object-gateway and packet-gateway receipts and captures
+without Hugging Face access. [Checksums and source revisions →](docs/network/public-artifacts.md)
+These evidence bundles exclude nine archived executables whose complete third-party
+redistribution notices were not bundled. Their recorded hashes and public source
+pins remain available; build from source using the recorded instructions.
+
+The existing [Hugging Face preservation dataset](https://huggingface.co/datasets/caseyallard/spiralcore-experiment-artifacts)
+remains a private backup, not a prerequisite for reviewing these current results.
+The older 7.7 GB WAN preservation snapshot contains raw network metadata and is
+not republished wholesale; its compact observations/results are public in Git.
+[Historical custody and restoration →](docs/network/artifact-storage.md)
+
+## Research and repository map
+
+| Location | Contents |
+|---|---|
+| `crates/spiralcore-transfer` | Exact protocol, bounded codecs, coupled runtime and verified scoped storage |
+| `crates/spiralcore-gateway-core` | Shared object and independent-packet interfaces |
+| `crates/spiralcore-gateway` | Authenticated QUIC object service and Linux TUN adapter |
+| `crates/spiralcore-mvm-adapter`, `crates/spiralcore-mvm-live` | Canonical mailbox, actual guest/vsock witness and small orchestrator |
+| `crates/uor-r4-object-store` | Imported MIT immutable ternary DAG store and peer protocol |
+| `docs/network` | Results, contracts, protocol decisions and evidence |
+| `projects/spiralcore`, `references`, `archive` | Preserved prototypes, supplied research and historical artifacts |
+| `index.html` | Preserved SpiralCore v69 research webpage |
+
+The [research webpage](https://spiralcore.netlify.app/), [FBS mechanism guide](docs/mechanisms/spiralcore-fbs.md)
+and [geometry diagram](docs/figures/mechanisms/spiralcore-fbs.svg) preserve the
+broader geometry/E8 and routing work. Those research routing mechanisms are not
+automatically enabled in the packet gateway. Counterfactual CA rows participate
+in runtime evolution; this does not establish deployed counterfactual routing.
+
+Follow the [optimization ledger](docs/network/optimization-ledger.md) for the full
+experiment history and [delivery status](docs/network/delivery.md) for next work:
+two-host qualification of the latest gateways, production MVM integration and
+bounded stream adaptation. No FIPS/CUI, physical-energy or general-purpose router
+qualification is claimed.
+
+## License and provenance
+
+SpiralCore's **original code and new documentation are MIT-licensed**. Imported
+components retain their notices and terms. Third-party research, owner-supplied
+reference artifacts and historical exports are excluded from this new grant
+unless independently licensed. See [LICENSE](LICENSE), [scope](LICENSING.md)
+and [provenance](PROVENANCE.md).
