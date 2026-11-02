@@ -12,6 +12,7 @@ const WIDTH: usize = 4096;
 const TIERS: [(&str, u32, usize); 2] =
     [("near1m", 289, 1_047_202), ("max-trace", 4096, 14_851_384)];
 const ARMS: [&str; 4] = ["raw", "whole-zstd", "warm", "runtime"];
+const COMBINED_ARMS: [&str; 4] = ["whole-zstd", "warm", "runtime", "combined"];
 
 struct Tier {
     checkpoint: Vec<u8>,
@@ -85,6 +86,14 @@ fn artifact(out: &Path, name: &str, bytes: &[u8]) -> Result<Value> {
     )
 }
 fn generate(out: &Path, trial: u64) -> Result<Value> {
+    generate_profile(out, trial, "runtime")
+}
+fn generate_profile(out: &Path, trial: u64, profile: &str) -> Result<Value> {
+    let arms = match profile {
+        "runtime" => ARMS,
+        "combined" => COMBINED_ARMS,
+        _ => return Err(m::invalid("unknown fixture campaign profile").into()),
+    };
     if trial > 2 || !out.is_absolute() {
         return Err(m::invalid("absolute fresh output and trial 0..2 required").into());
     }
@@ -117,15 +126,16 @@ fn generate(out: &Path, trial: u64) -> Result<Value> {
             "repeat_of":"residual","residual_edit_offsets":tier.edit_offsets,
             "residual_edit_length":32,"residual_xor_byte":165,"residual_changed_bytes":512}));
     }
-    for arm in ARMS {
+    for arm in arms {
         let groups: Vec<Value> = tiers
             .iter()
             .map(|tier| {
                 let mut operations = Vec::new();
-                if arm == "warm" {
-                    operations.push(json!({"label":"schema","action":"schema","warm_probe":false}));
-                } else if arm == "runtime" {
+                if arm == "runtime" || arm == "combined" {
                     operations.push(json!({"label":"checkpoint","action":"checkpoint","warm_probe":false}));
+                }
+                if arm == "warm" || arm == "combined" {
+                    operations.push(json!({"label":"schema","action":"schema","warm_probe":false}));
                 }
                 for (label, kind) in [
                     ("generated", "generated"),
@@ -139,9 +149,10 @@ fn generate(out: &Path, trial: u64) -> Result<Value> {
                     operations.push(json!({"label":label,"path":tier[kind]["path"],"action":action,"warm_probe":action=="send"}));
                 }
                 let mut group = json!({"label":tier["label"],"mode":arm,"operations":operations});
-                if arm == "warm" {
+                if arm == "warm" || arm == "combined" {
                     group["schema_path"] = schema["path"].clone();
-                } else if arm == "runtime" {
+                }
+                if arm == "runtime" || arm == "combined" {
                     group["checkpoint_path"] = tier["checkpoint"]["path"].clone();
                     group["recipe_path"] = tier["recipe"]["path"].clone();
                 }
@@ -152,7 +163,7 @@ fn generate(out: &Path, trial: u64) -> Result<Value> {
     }
     m::write_json(&out.join("verify-files.json"), &verify)?;
     let manifest = json!({"version":1,"trial":trial,"tiers":tiers,"schema":schema,
-        "verify_files":verify,"arms":ARMS,
+        "verify_files":verify,"arms":arms,
         "generation_cpu_us":m::cpu_us()? - cpu,"generation_wall_us":wall.elapsed().as_micros() as u64,
         "generation_scope":"fixture generation and fixture writes outside transfer timing; final manifest serialization excluded; service input loading, codec preparation, checkpoint replay, seeding and durable publication charged separately",
         "runtime_reuse":"existing shared_runtime::replay, State::seeded and canonical Recipe encoding; no copied CA kernel or received code execution"});
@@ -161,10 +172,17 @@ fn generate(out: &Path, trial: u64) -> Result<Value> {
 }
 fn main() -> Result<()> {
     let args: Vec<String> = std::env::args().collect();
-    if args.len() != 3 {
-        return Err(m::invalid("usage: object_fixtures NEW_ABSOLUTE_OUT TRIAL_0_TO_2").into());
+    if args.len() != 3 && args.len() != 4 {
+        return Err(m::invalid(
+            "usage: object_fixtures NEW_ABSOLUTE_OUT TRIAL_0_TO_2 [runtime|combined]",
+        )
+        .into());
     }
-    let manifest = generate(Path::new(&args[1]), args[2].parse()?)?;
+    let manifest = if args.len() == 3 {
+        generate(Path::new(&args[1]), args[2].parse()?)?
+    } else {
+        generate_profile(Path::new(&args[1]), args[2].parse()?, &args[3])?
+    };
     println!("{}", serde_json::to_string(&manifest)?);
     Ok(())
 }
@@ -292,5 +310,63 @@ mod tests {
         assert!(!invalid.exists());
         assert!(generate(Path::new("relative-output"), 0).is_err());
         assert!(build_tier("near1m", 4096, 0).is_err());
+    }
+
+    #[test]
+    fn combined_profile_preserves_fixture_bytes_and_charges_both_seeds() {
+        let temp = tempfile::tempdir().unwrap();
+        let baseline = generate_profile(&temp.path().join("baseline"), 0, "runtime").unwrap();
+        let out = temp.path().join("combined");
+        let combined = generate_profile(&out, 0, "combined").unwrap();
+        assert_eq!(
+            combined["arms"],
+            json!(["whole-zstd", "warm", "runtime", "combined"])
+        );
+        assert_eq!(combined["schema"]["sha256"], baseline["schema"]["sha256"]);
+        for i in 0..2 {
+            for kind in [
+                "checkpoint",
+                "recipe",
+                "generated",
+                "residual",
+                "opaque",
+                "opaque_edited",
+            ] {
+                assert_eq!(
+                    combined["tiers"][i][kind]["sha256"],
+                    baseline["tiers"][i][kind]["sha256"]
+                );
+                assert_eq!(
+                    combined["tiers"][i][kind]["object_id"],
+                    baseline["tiers"][i][kind]["object_id"]
+                );
+                assert_eq!(
+                    combined["tiers"][i][kind]["bytes"],
+                    baseline["tiers"][i][kind]["bytes"]
+                );
+            }
+        }
+        let groups: Value =
+            serde_json::from_slice(&fs::read(out.join("groups-combined.json")).unwrap()).unwrap();
+        for group in groups.as_array().unwrap() {
+            assert!(
+                group["checkpoint_path"].is_string()
+                    && group["recipe_path"].is_string()
+                    && group["schema_path"].is_string()
+            );
+            let ops = group["operations"].as_array().unwrap();
+            assert_eq!(ops.len(), 8);
+            assert_eq!(ops[0]["action"], "checkpoint");
+            assert_eq!(ops[1]["action"], "schema");
+            assert!(ops[2..]
+                .iter()
+                .all(|op| op["action"] == "send" && op["warm_probe"] == true));
+            assert_eq!(ops[3]["path"], ops[4]["path"]);
+            assert_eq!(ops[6]["path"], ops[7]["path"]);
+        }
+        assert!(!out.join("groups-raw.json").exists());
+        let invalid = temp.path().join("invalid-profile");
+        assert!(generate_profile(&invalid, 0, "guess").is_err());
+        assert!(!invalid.exists());
     }
 }

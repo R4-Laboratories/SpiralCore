@@ -5,7 +5,7 @@ use spiralcore_transfer::{
     protocol::{Frame, Mode},
     schema_selection::WarmSelection,
     selection::Selection,
-    session::{RuntimeSession, WarmSession},
+    session::{CombinedSelection, CombinedSession, RuntimeSession, WarmSession},
     shared_transfer::PreparedPrediction,
     zstd_whole::PreparedEncoder,
     Error, Id, Result,
@@ -17,14 +17,16 @@ pub enum ObjectMode {
     Whole,
     Warm,
     Runtime,
+    Combined,
 }
 /// The underlying profile's actual receipt, retaining its HTTP-body cost model.
-/// These are separate policies, not a unified minimum over all object codecs.
+/// Combined compares its configured candidates; it does not cover every codec.
 #[derive(Debug, Clone)]
 pub enum ObjectSelection {
     Fixed,
     Warm(WarmSelection),
     Runtime(Selection),
+    Combined(CombinedSelection),
 }
 #[derive(Debug, Clone)]
 pub struct ObjectReceipt {
@@ -36,13 +38,14 @@ enum Prepared {
     Whole(PreparedEncoder),
     Warm(Box<WarmSession>),
     Runtime(Box<RuntimeSession>),
+    Combined(Box<CombinedSession>),
 }
 pub struct ObjectSender {
     namespace: Id,
     prepared: Option<Prepared>,
 }
 impl ObjectSender {
-    /// Runtime requires `with_runtime` and an explicit prepared prediction.
+    /// Runtime/Combined require their constructors with an explicit prediction.
     pub fn new(mode: ObjectMode, context: &Context, schema: Option<&[u8]>) -> Result<Self> {
         let namespace = context.namespace()?;
         let prepared = match (mode, schema) {
@@ -68,6 +71,20 @@ impl ObjectSender {
             )?))),
         })
     }
+    /// One prediction and one rolling acknowledged base share prepared codecs.
+    /// Checkpoint/schema readiness is established by explicit publication.
+    pub fn with_combined(
+        context: &Context,
+        prediction: PreparedPrediction,
+        schema: &[u8],
+    ) -> Result<Self> {
+        Ok(Self {
+            namespace: context.namespace()?,
+            prepared: Some(Prepared::Combined(Box::new(CombinedSession::new(
+                context, prediction, schema,
+            )?))),
+        })
+    }
     fn state(&mut self, context: &Context) -> Result<&mut Prepared> {
         if context.namespace().ok() != Some(self.namespace) {
             self.prepared = None;
@@ -83,7 +100,7 @@ impl ObjectSender {
     ) -> Result<Stats> {
         match self.state(context)? {
             Prepared::Warm(sender) => sender.seed_base(context, bytes, transfer, exchange),
-            Prepared::Runtime(_) => Err(Error::Unsupported),
+            Prepared::Runtime(_) | Prepared::Combined(_) => Err(Error::Unsupported),
             _ => client::transfer_batched(&bytes, Mode::Raw, None, transfer, false, exchange),
         }
     }
@@ -96,6 +113,7 @@ impl ObjectSender {
     ) -> Result<Stats> {
         match self.state(context)? {
             Prepared::Runtime(sender) => sender.seed_checkpoint(context, transfer, exchange),
+            Prepared::Combined(sender) => sender.seed_checkpoint(context, transfer, exchange),
             _ => Err(Error::Unsupported),
         }
     }
@@ -107,6 +125,7 @@ impl ObjectSender {
     ) -> Result<Stats> {
         match self.state(context)? {
             Prepared::Warm(sender) => sender.seed_schema(context, transfer, exchange),
+            Prepared::Combined(sender) => sender.seed_schema(context, transfer, exchange),
             _ => Err(Error::Unsupported),
         }
     }
@@ -157,6 +176,13 @@ impl ObjectSender {
                     ObjectSelection::Runtime(receipt.selection),
                 )
             }
+            Prepared::Combined(sender) => {
+                let receipt = sender.send(context, bytes, transfer, warm_probe, exchange)?;
+                (
+                    receipt.transfer,
+                    ObjectSelection::Combined(receipt.selection),
+                )
+            }
         };
         Ok(ObjectReceipt {
             transfer,
@@ -169,6 +195,7 @@ impl ObjectSender {
         match self.prepared.as_mut() {
             Some(Prepared::Warm(sender)) => sender.invalidate_receiver_state(),
             Some(Prepared::Runtime(sender)) => sender.invalidate_receiver_state(),
+            Some(Prepared::Combined(sender)) => sender.invalidate_receiver_state(),
             _ => {}
         }
     }
@@ -179,6 +206,7 @@ impl ObjectSender {
             Some(Prepared::Whole(sender)) => sender.retained_charge(),
             Some(Prepared::Warm(sender)) => sender.retained_charge(),
             Some(Prepared::Runtime(sender)) => sender.retained_charge(),
+            Some(Prepared::Combined(sender)) => sender.retained_charge(),
             _ => 0,
         }
     }

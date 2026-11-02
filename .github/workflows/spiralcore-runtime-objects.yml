@@ -1,7 +1,7 @@
 name: SpiralCore runtime and warm objects over reliable QUIC
 on:
   pull_request:
-    types: [opened, synchronize, reopened]
+    types: [opened, synchronize, reopened, labeled]
     paths:
       - 'crates/spiralcore-gateway/src/object_service.rs'
       - 'crates/spiralcore-gateway/src/object_channel.rs'
@@ -31,7 +31,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   runtime-objects:
-    if: github.event.pull_request.head.repo.full_name == github.repository && github.run_attempt == 1
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.run_attempt == 1 && contains(github.event.pull_request.labels.*.name, 'benchmark-runtime-objects')
     runs-on: ubuntu-24.04
     timeout-minutes: 40
     env:

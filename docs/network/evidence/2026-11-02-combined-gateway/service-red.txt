@@ -1,0 +1,31 @@
+   Compiling spiralcore-transfer v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer)
+   Compiling spiralcore-gateway-core v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-gateway-core)
+   Compiling spiralcore-gateway v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-gateway)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 9.96s
+     Running tests/object_combined.rs (/Users/casey.allard/spiralcore/target/debug/deps/object_combined-c4185e0f7d0d6ffc)
+
+running 2 tests
+test combined_configuration_requires_both_auxiliary_artifacts_and_rejects_generic_seed ... FAILED
+test combined_gateway_changes_codec_within_one_authenticated_session_and_reopens_exact ... FAILED
+
+failures:
+
+---- combined_configuration_requires_both_auxiliary_artifacts_and_rejects_generic_seed stdout ----
+
+thread 'combined_configuration_requires_both_auxiliary_artifacts_and_rejects_generic_seed' (7239724) panicked at tests/object_combined.rs:28:10:
+called `Result::unwrap()` on an `Err` value: Custom { kind: InvalidData, error: "invalid object group" }
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- combined_gateway_changes_codec_within_one_authenticated_session_and_reopens_exact stdout ----
+
+thread 'combined_gateway_changes_codec_within_one_authenticated_session_and_reopens_exact' (7239725) panicked at tests/object_combined.rs:145:10:
+called `Result::unwrap()` on an `Err` value: Custom { kind: InvalidData, error: "invalid object group" }
+
+
+failures:
+    combined_configuration_requires_both_auxiliary_artifacts_and_rejects_generic_seed
+    combined_gateway_changes_codec_within_one_authenticated_session_and_reopens_exact
+
+test result: FAILED. 0 passed; 2 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.14s
+
+error: test failed, to rerun pass `--test object_combined`

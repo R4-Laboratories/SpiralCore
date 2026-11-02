@@ -5,6 +5,9 @@ Rust gateway transport implementation using a reliable object profile. It invoke
 SpiralCore's existing packed ternary/Kuramoto/CA replay or rolling warm-cache
 codec, verifies reconstruction, and commits bytes to a scoped receiver store.
 It also exposes Raw and prepared whole-object zstd for matched comparisons.
+The `combined` profile selects between the existing runtime prediction, rolling
+sparse updates, prepared whole-object/raw fallback and a ready schema codec in
+one session. It retains one prediction and one acknowledged rolling object.
 
 This is an active object interface, not a transparent transformation of every TUN
 packet. The existing `spiralcore-gateway run` command still serves independent IP
@@ -71,6 +74,49 @@ rolling base, schema and conventional candidates. `raw` and `whole-zstd` groups
 need only `send` operations. There is one prepared sender at a time; group changes
 retain the receiver store and authenticated connection. Runtime and Warm are
 explicit policies, not a claim of one universal minimum across both.
+
+## Combined runtime and rolling cache
+
+Use `mode:"combined"` with `checkpoint_path`, `recipe_path` and `schema_path`.
+Publish the checkpoint explicitly before sending changed targets; publish the
+schema when that candidate should be eligible. Then use normal `send` operations,
+including for the first target. No separate raw object seed is required:
+
+```json
+{
+  "label": "combined-output",
+  "mode": "combined",
+  "checkpoint_path": "/input/checkpoint.bin",
+  "recipe_path": "/input/recipe.bin",
+  "schema_path": "/input/schema.bin",
+  "operations": [
+    {"label":"checkpoint","action":"checkpoint","warm_probe":false},
+    {"label":"schema","action":"schema","warm_probe":false},
+    {"label":"first","action":"send","path":"/input/first.bin","warm_probe":true},
+    {"label":"changed","action":"send","path":"/input/changed.bin","warm_probe":true},
+    {"label":"repeat","action":"send","path":"/input/changed.bin","warm_probe":true}
+  ]
+}
+```
+
+Every successfully acknowledged target becomes the rolling base, regardless of
+its selected encoding. Runtime recipes still refer to the fixed checkpoint;
+sparse deltas refer to that rolling object. Auxiliary publication changes neither
+the target base nor authorization. Missing receiver state fails explicitly.
+
+Exact repeats are detected before the session constructs residuals or hashes a
+new target identity. The existing Raw probe confirms the receiver still has the
+object; eviction uses its same-offer Raw recovery. The service's independent
+input hash remains common to all benchmark arms and is still charged. This is
+not a claim of zero total sender hashing.
+
+`selection.policy` is `combined-runtime-rolling`. Candidate costs retain their
+HTTP-body labels, and the receipt includes actual selected mode, pruned lower
+bounds, readiness and `exact_repeat_probe`. Only acknowledged schema state makes
+that codec eligible. The session keeps the existing 512 MiB admission ceiling;
+multiple sessions require an outer shared resource budget. This profile changes
+selection and acknowledged sender state, not wire modes, decoder math or the
+TUN packet path.
 
 ## Exactness, limits and measurements
 
