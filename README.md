@@ -63,6 +63,13 @@ guest–host virtio-vsock path, not a standardized OSI Layer 5 mailbox.*
 · [Packet gateway](crates/spiralcore-gateway/README.md)
 · [MVM boundary](crates/spiralcore-mvm-adapter/README.md)
 
+**Protocol integration:** the [v1 object contract](docs/specs/spiralcore-v1.md)
+defines the shared Rust sender/receiver API, stable frame format and codec IDs.
+The canonical MVM adapter and cooperating QUIC object service pin the same
+`object-v1` profile. Profile metadata grants no authority; each carrier retains
+its own authentication and policy checks. Dynamic wire negotiation, transparent
+packet/stream profiles and guest management services remain separate work.
+
 ## Measured results
 
 These experiments have different workloads and accounting layers. Do not combine

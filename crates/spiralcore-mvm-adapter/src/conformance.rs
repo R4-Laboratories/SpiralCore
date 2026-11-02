@@ -18,7 +18,7 @@ use mvm_core::{
 };
 use spiralcore_transfer::{
     Id,
-    endpoint::{ColdGraphPolicy, Context, Endpoint, Limits},
+    endpoint::{ColdGraphPolicy, Context, Limits},
     protocol::Frame,
 };
 use std::path::{Path, PathBuf};
@@ -28,7 +28,7 @@ pub struct Harness {
     context: Context,
     forward: Direction,
     reverse: Direction,
-    endpoint: Option<Endpoint<crate::MailboxAuthority>>,
+    endpoint: Option<crate::ObjectEndpoint>,
     transport: InMemoryPeerTransport,
     cancel: CancellationToken,
     counters: Counters,
@@ -154,11 +154,8 @@ impl Harness {
         Ok(())
     }
 }
-fn endpoint(
-    root: &Path,
-    authority: crate::MailboxAuthority,
-) -> Result<Endpoint<crate::MailboxAuthority>> {
-    let mut endpoint = Endpoint::open_with_policy(
+fn endpoint(root: &Path, authority: crate::MailboxAuthority) -> Result<crate::ObjectEndpoint> {
+    let mut endpoint = crate::open_object_endpoint(
         root,
         Limits::default(),
         authority,

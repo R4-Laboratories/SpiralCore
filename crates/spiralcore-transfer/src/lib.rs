@@ -14,6 +14,7 @@ pub mod selection;
 pub mod session;
 pub mod shared_runtime;
 pub mod shared_transfer;
+pub mod v1;
 pub mod wan;
 pub mod zstd_dictionary;
 pub mod zstd_prefix;

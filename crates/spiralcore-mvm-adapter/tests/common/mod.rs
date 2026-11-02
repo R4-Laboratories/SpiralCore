@@ -199,9 +199,9 @@ impl Store {
     pub fn open(
         &self,
         authority: spiralcore_mvm_adapter::MailboxAuthority,
-    ) -> spiralcore_transfer::endpoint::Endpoint<spiralcore_mvm_adapter::MailboxAuthority> {
-        use spiralcore_transfer::endpoint::{ColdGraphPolicy, Endpoint, Limits};
-        Endpoint::open_with_policy(
+    ) -> spiralcore_mvm_adapter::ObjectEndpoint {
+        use spiralcore_transfer::endpoint::{ColdGraphPolicy, Limits};
+        spiralcore_mvm_adapter::open_object_endpoint(
             &self.0,
             Limits::default(),
             authority,

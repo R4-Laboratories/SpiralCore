@@ -17,6 +17,23 @@ pub const MAX_FRAME_BYTES: usize = spiralcore_transfer::MAX_FRAME;
 pub const MAX_ENVELOPE_BYTES: usize = 262_144;
 pub const MAX_REPLAY_IDENTITIES: usize = 4096;
 pub const CONTENT_TYPE: &str = "application/spiralcore-object";
+/// Canonical mailbox plaintext receiver, pinned to the full object-v1 profile.
+pub type ObjectEndpoint = spiralcore_transfer::v1::ObjectEndpoint<MailboxAuthority>;
+
+/// Opens the shared protocol receiver. Only canonical verified-open dispatch
+/// installs an authority lease; profile metadata cannot authorize a request.
+pub fn open_object_endpoint(
+    root: &std::path::Path,
+    limits: spiralcore_transfer::endpoint::Limits,
+    authority: MailboxAuthority,
+    policy: spiralcore_transfer::endpoint::ColdGraphPolicy,
+) -> Result<ObjectEndpoint> {
+    let capabilities = spiralcore_transfer::v1::Capabilities::full();
+    let profile = capabilities.negotiate(&capabilities)?;
+    Ok(ObjectEndpoint::open_with_policy(
+        root, limits, authority, profile, policy,
+    )?)
+}
 pub type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Debug)]

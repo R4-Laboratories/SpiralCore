@@ -10,11 +10,12 @@ use sha2::{Digest, Sha256};
 use spiralcore_gateway_core::object::{ObjectMode, ObjectSelection, ObjectSender};
 use spiralcore_transfer::{
     self as transfer,
-    endpoint::{Authority, ColdGraphPolicy, Context, Endpoint, Limits},
+    endpoint::{Authority, ColdGraphPolicy, Context, Limits},
     protocol::Frame,
     session::{PolicySkipReason, SelectionPolicy},
     shared_runtime::Recipe,
     shared_transfer::PreparedPrediction,
+    v1::{Capabilities, ObjectEndpoint as Endpoint},
     Id,
 };
 use std::{
@@ -533,7 +534,9 @@ async fn run_inner(config: Config, stats: StatsOutput, mut ready: OwnedOutput) -
                     "operations":operation_rows.into_iter().map(|(group,label,action,id,len,s,selection,cache_hit,wall,cpu,before,after)|json!({"group":group,"label":label,"action":action,"transfer_id":transfer::hex(&id),"input_bytes":len,"selected_mode":format!("{:?}",s.mode),"publication_path":if cache_hit {"verified-cache-hit"}else{"verified-transfer"},"object_id":transfer::hex(&s.object),"request_frame_bytes":s.request_bytes,"response_frame_bytes":s.response_bytes,"data_bytes":s.data_bytes,"requests":s.requests,"wall_us":wall,"cpu_us":cpu,"channel_before":before,"channel_after":after,"selection":selection_value(&selection),"success":true})).collect::<Vec<_>>(),
                     "finish_wall_us":finish_wall_us,"finish_cpu_us":finish_cpu_us})
             } else {
-                let mut endpoint=Endpoint::open_with_policy(&config.store_dir,Limits::default(),ScopedAuthority(context.clone()),ColdGraphPolicy::Disabled)?;
+                let capabilities=Capabilities::full();
+                let profile=capabilities.negotiate(&capabilities)?;
+                let mut endpoint=Endpoint::open_with_policy(&config.store_dir,Limits::default(),ScopedAuthority(context.clone()),profile,ColdGraphPolicy::Disabled)?;
                 let mut committed=BTreeSet::<Id>::new(); let mut batches=Vec::new();
                 while let Some(frames)=handle.block_on(channel.recv_batch(end,&cancel))? {
                     if batches.len()>=1024 {return Err(invalid("object session batch limit").into());}
@@ -555,7 +558,7 @@ async fn run_inner(config: Config, stats: StatsOutput, mut ready: OwnedOutput) -
                 }
                 drop(endpoint);
                 let readback=Instant::now(); let read_cpu=cpu_us()?;
-                let mut reopened=Endpoint::open_with_policy(&config.store_dir,Limits::default(),ScopedAuthority(context.clone()),ColdGraphPolicy::Disabled)?;
+                let mut reopened=Endpoint::open_with_policy(&config.store_dir,Limits::default(),ScopedAuthority(context.clone()),profile,ColdGraphPolicy::Disabled)?;
                 let mut objects=Vec::new();
                 for id in &committed {
                     let bytes=reopened.read_object(&context,*id)?;

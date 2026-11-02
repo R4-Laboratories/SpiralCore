@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/R4-Laboratories/SpiralCore/blob/main/docs/api/spiralcore-v1.schema.json",
+  "title": "SpiralCore v1 object capability descriptor",
+  "description": "Authenticated-carrier/control-plane metadata or explicit pinned configuration. This JSON is not the SCMOBJ01 frame wire format, not peer authentication and not a new MVM envelope. The initial MVM adapter pins the full profile rather than exchanging this JSON on the wire.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["major", "minor", "profile", "max_frame_bytes", "max_object_bytes", "codec_mask"],
+  "properties": {
+    "major": { "type": "integer", "const": 1 },
+    "minor": { "type": "integer", "const": 0 },
+    "profile": { "type": "integer", "const": 1 },
+    "max_frame_bytes": { "type": "integer", "const": 65536 },
+    "max_object_bytes": { "type": "integer", "minimum": 1, "maximum": 67108864 },
+    "codec_mask": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 1023,
+      "not": { "multipleOf": 2 },
+      "description": "Bits 0..9 are the stable mode IDs; Raw bit 0 is mandatory. No other bits are supported. Negotiate intersection only after carrier authentication/binding."
+    }
+  },
+  "examples": [
+    { "major": 1, "minor": 0, "profile": 1, "max_frame_bytes": 65536, "max_object_bytes": 67108864, "codec_mask": 1023 },
+    { "major": 1, "minor": 0, "profile": 1, "max_frame_bytes": 65536, "max_object_bytes": 16777216, "codec_mask": 513 }
+  ]
+}
