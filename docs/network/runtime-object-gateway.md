@@ -110,7 +110,20 @@ object; eviction uses its same-offer Raw recovery. The service's independent
 input hash remains common to all benchmark arms and is still charged. This is
 not a claim of zero total sender hashing.
 
-`selection.policy` is `combined-runtime-rolling`. Candidate costs retain their
+`mode:"combined"` keeps the exhaustive byte-selection policy. To opt into
+CPU-conscious selection, change only the group mode to `"combined-cpu"`; the
+same artifacts, setup operations and authorization are required. This mode skips
+full schema compression when canonical preparation emitted no useful template
+records. Any useful template record keeps the normal schema candidate eligible.
+It preserves exact reconstruction but can miss a smaller encoding; it is not a
+hard CPU-time limit. [Measured results and retained losses](cpu-conscious-results-2026-11-02.md)
+describe the qualified workload. This setting applies to cooperating object
+transfers, not the transparent TUN packet path.
+
+`selection.policy` is `combined-runtime-rolling`; `selection.selection_policy`
+identifies `exhaustive` or `cpu-conscious`. `selection.policy_skipped` records
+explicit omissions separately from proven `pruned` entries, without an invented
+encoded size or bound. Candidate costs retain their
 HTTP-body labels, and the receipt includes actual selected mode, pruned lower
 bounds, readiness and `exact_repeat_probe`. Only acknowledged schema state makes
 that codec eligible. The session keeps the existing 512 MiB admission ceiling;
