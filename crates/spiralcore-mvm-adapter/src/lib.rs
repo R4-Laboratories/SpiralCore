@@ -7,6 +7,8 @@
 #[cfg(feature = "conformance")]
 pub mod conformance;
 mod direction;
+#[cfg(feature = "live")]
+pub mod issuance;
 mod policy;
 #[cfg(feature = "live")]
 pub mod receipt;

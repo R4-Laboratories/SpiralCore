@@ -32,6 +32,10 @@
     {
       "name": "service_tcp",
       "minimum_count": 1
+    },
+    {
+      "name": "service_clock",
+      "minimum_count": 4
     }
   ],
   "rows": [
@@ -44,7 +48,8 @@
       "execution_status": "PASS_PINNED_SOURCE",
       "evidence": "../network/evidence/2026-11-02-mvm-service/platforms/official/41535679868/mvm-mailbox-portable-ubuntu24-x64-1/identity.json",
       "actual_os_description": "Ubuntu 24.04.5 LTS",
-      "actual_image_version": "20261026.354.1"
+      "actual_image_version": "20261026.354.1",
+      "current_required_coverage_status": "PENDING_EXPANDED_CLOCK_REGRESSION_GATE"
     },
     {
       "id": "ubuntu24-arm64",
@@ -55,7 +60,8 @@
       "execution_status": "PASS_PINNED_SOURCE",
       "evidence": "../network/evidence/2026-11-02-mvm-service/platforms/official/41535679868/mvm-mailbox-portable-ubuntu24-arm64-1/identity.json",
       "actual_os_description": "Ubuntu 24.04.5 LTS",
-      "actual_image_version": "20261026.166.1"
+      "actual_image_version": "20261026.166.1",
+      "current_required_coverage_status": "PENDING_EXPANDED_CLOCK_REGRESSION_GATE"
     },
     {
       "id": "macos26-arm64",
@@ -66,7 +72,8 @@
       "execution_status": "PASS_PINNED_SOURCE",
       "evidence": "../network/evidence/2026-11-02-mvm-service/platforms/official/41535679868/mvm-mailbox-portable-macos26-arm64-1/identity.json",
       "actual_os_description": "macOS 26.6.2",
-      "actual_image_version": "20261026.0455.2"
+      "actual_image_version": "20261026.0455.2",
+      "current_required_coverage_status": "PENDING_EXPANDED_CLOCK_REGRESSION_GATE"
     },
     {
       "id": "macos26-intel",
@@ -77,7 +84,8 @@
       "execution_status": "PASS_PINNED_SOURCE",
       "evidence": "../network/evidence/2026-11-02-mvm-service/platforms/official/41535679868/mvm-mailbox-portable-macos26-intel-1/identity.json",
       "actual_os_description": "macOS 26.6.1",
-      "actual_image_version": "20260824.0517.1"
+      "actual_image_version": "20260824.0517.1",
+      "current_required_coverage_status": "PENDING_EXPANDED_CLOCK_REGRESSION_GATE"
     },
     {
       "id": "windows2022-x64",
@@ -88,7 +96,8 @@
       "execution_status": "PASS_PINNED_SOURCE",
       "evidence": "../network/evidence/2026-11-02-mvm-service/platforms/official/41535679868/mvm-mailbox-portable-windows2022-x64-1/identity.json",
       "actual_os_description": "Microsoft Windows 10.0.20348",
-      "actual_image_version": "20261026.347.1"
+      "actual_image_version": "20261026.347.1",
+      "current_required_coverage_status": "PENDING_EXPANDED_CLOCK_REGRESSION_GATE"
     },
     {
       "id": "windows2025-x64",
@@ -99,7 +108,8 @@
       "execution_status": "PASS_PINNED_SOURCE",
       "evidence": "../network/evidence/2026-11-02-mvm-service/platforms/official/41535679868/mvm-mailbox-portable-windows2025-x64-1/identity.json",
       "actual_os_description": "Microsoft Windows 10.0.26100",
-      "actual_image_version": "20261030.294.1"
+      "actual_image_version": "20261030.294.1",
+      "current_required_coverage_status": "PENDING_EXPANDED_CLOCK_REGRESSION_GATE"
     },
     {
       "id": "windows11-arm64",
@@ -110,7 +120,8 @@
       "execution_status": "PASS_PINNED_SOURCE",
       "evidence": "../network/evidence/2026-11-02-mvm-service/platforms/official/41535679868/mvm-mailbox-portable-windows11-arm64-1/identity.json",
       "actual_os_description": "Microsoft Windows 10.0.26200",
-      "actual_image_version": "20261026.197.1"
+      "actual_image_version": "20261026.197.1",
+      "current_required_coverage_status": "PENDING_EXPANDED_CLOCK_REGRESSION_GATE"
     }
   ],
   "unqualified_gates": [
@@ -131,7 +142,7 @@
     "storage_mode": "ephemeral memory; no durable object receiver",
     "carrier_profile": "canonical encrypted mailbox over authenticated StreamTransport TCP loopback",
     "native_mvm_backend": "NOT_RUN; no guest is booted by this workflow",
-    "evidence": "Pinned source PASS: native process + TCP-loopback only; permanent report linked by qualification"
+    "evidence": "Historical pinned source PASS for46 portable tests/row; current50-test clock-expanded coverage PENDING, see current_required_coverage"
   },
   "unix_storage_tests": [
     {
@@ -148,6 +159,29 @@
     "portable_passed": 322,
     "unix_storage_passed": 8,
     "permanent_report": "../network/evidence/2026-11-02-mvm-service/platforms/README.md",
-    "permanent_summary": "../network/evidence/2026-11-02-mvm-service/platforms/summary.json"
+    "permanent_summary": "../network/evidence/2026-11-02-mvm-service/platforms/summary.json",
+    "portable_tests_per_row": 46,
+    "portable_targets": [
+      "canonical",
+      "service",
+      "receipt",
+      "service_epoch",
+      "service_sender",
+      "service_tcp"
+    ]
+  },
+  "qualification_status_applies_to": "Historical qualification.source_commit only; current expanded clock coverage is pending",
+  "current_required_coverage": {
+    "status": "PENDING_EXPANDED_CLOCK_REGRESSION_GATE",
+    "portable_tests_per_row": 50,
+    "native_rows_required": 7,
+    "expected_portable_test_executions": 350,
+    "expected_unix_storage_test_executions": 8,
+    "new_required_target": {
+      "name": "service_clock",
+      "minimum_count": 4
+    },
+    "executed_result": null,
+    "gate": "All seven native rows must pass the expanded target list at the new exact source before current coverage can be marked PASS. The historical 46-test rows do not satisfy this gate."
   }
 }

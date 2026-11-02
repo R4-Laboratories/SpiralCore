@@ -566,6 +566,7 @@ pub struct ReceiptReturnConfig {
     budget: HostBudget,
     receipt_key: VerifyingKey,
     last_monotonic: AtomicU64,
+    issuance: crate::issuance::IssuancePolicy,
 }
 /// A bounded control slot owned before application admission can occur.
 pub struct ReceiptPermit<'a> {
@@ -604,6 +605,26 @@ impl std::fmt::Display for ReceiptSendError {
 impl std::error::Error for ReceiptSendError {}
 
 impl ReceiptReturnConfig {
+    fn issuance_window(
+        &self,
+        config: &ServiceBindingConfig,
+        now: ServiceTime,
+    ) -> Result<crate::issuance::IssuedWindow> {
+        self.issuance.window(
+            now,
+            now.unix_ms.checked_add(30_000).ok_or(ServiceError::Clock)?,
+            config
+                .capability
+                .grant
+                .not_before_unix_ms
+                .max(config.binding.claims.not_before_unix_ms),
+            config
+                .capability
+                .grant
+                .expires_at_unix_ms
+                .min(config.binding.claims.expires_at_unix_ms),
+        )
+    }
     /// The v1 reverse grant must pin exactly 4096 payload bytes and 16384
     /// queue-contribution bytes; narrower or wider grants are unsupported.
     pub fn new(
@@ -611,6 +632,20 @@ impl ReceiptReturnConfig {
         budget: HostBudget,
         expected_local_receipt_key: VerifyingKey,
     ) -> Result<Self> {
+        Self::new_with_policy(
+            binding,
+            budget,
+            expected_local_receipt_key,
+            crate::issuance::IssuancePolicy::Exact,
+        )
+    }
+    pub fn new_with_policy(
+        binding: MailboxBinding,
+        budget: HostBudget,
+        expected_local_receipt_key: VerifyingKey,
+        issuance: crate::issuance::IssuancePolicy,
+    ) -> Result<Self> {
+        issuance.validate()?;
         let grant = binding.capability_grant();
         if !budget.control_enabled()
             || grant.message_kinds != [MailboxMessageKind::Cast]
@@ -625,6 +660,7 @@ impl ReceiptReturnConfig {
             budget,
             receipt_key: expected_local_receipt_key,
             last_monotonic: AtomicU64::new(0),
+            issuance,
         })
     }
     fn clock(&self, now: ServiceTime) -> Result<()> {
@@ -716,7 +752,7 @@ impl ReceiptReturnConfig {
             return Err(ServiceError::Unauthorized);
         }
         self.binding
-            .with_sender(now, |_, context, return_generation| {
+            .with_sender(now, |config, context, return_generation| {
                 if context.expected_tenant != header.tenant
                     || context.expected_authorization_domain != header.authorization_domain
                     || context.expected_sender != header.recipient
@@ -726,6 +762,7 @@ impl ReceiptReturnConfig {
                 {
                     return Err(ServiceError::Unauthorized);
                 }
+                self.issuance_window(config, now)?;
                 let charge = self.budget.reserve_control(
                     context,
                     MAX_RECEIPT_ENVELOPE_BYTES as u64,
@@ -777,12 +814,8 @@ impl<'a> ReceiptPermit<'a> {
                         if generation != self.return_generation {
                             return Err(ServiceError::Unauthorized);
                         }
-                        let expiry = now
-                            .unix_ms
-                            .checked_add(30_000)
-                            .ok_or(ServiceError::Clock)?
-                            .min(config.capability.grant.expires_at_unix_ms)
-                            .min(config.binding.claims.expires_at_unix_ms);
+                        let window = self.returns.issuance_window(config, now)?;
+                        let expiry = window.expires;
                         let remaining = u64::try_from(
                             expiry.checked_sub(now.unix_ms).ok_or(ServiceError::Clock)?,
                         )
@@ -821,7 +854,7 @@ impl<'a> ReceiptPermit<'a> {
                                 .map_err(|_| ServiceError::Malformed)?,
                             sequence: SequenceNumber::new(1)
                                 .map_err(|_| ServiceError::Malformed)?,
-                            issued_at_unix_ms: now.unix_ms,
+                            issued_at_unix_ms: window.issued,
                             expires_at_unix_ms: expiry,
                             nonce: ReplayNonce::from_bytes(rand::random()),
                             content_type: receipt_content_type(),

@@ -39,11 +39,16 @@ patch or hardware SHA assembly feature is enabled.
 | `service_epoch` | 3 |
 | `service_sender` | 2 |
 | `service_tcp` | 1 |
+| `service_clock` | 4 |
 
 Every target is first enumerated and then executed without a filter. Passing
 counts must equal the enumerated count and meet the minimum. Failed, ignored,
 measured or filtered cases fail the row; a Unix-only target silently running
-zero tests cannot pass. The portable targets require at least 46 passes on every row. The two existing
+zero tests cannot pass. The current portable targets require at least **50 passes on every row**,
+including four new clock-policy regressions. Their all-platform execution status
+is **PENDING_EXPANDED_CLOCK_REGRESSION_GATE** until a new seven-row run passes.
+The historical run described below executed the original 46 tests per row and
+does not qualify this expanded requirement. The two existing
 durable storage dispatch tests were moved unchanged from `canonical.rs` into
 `canonical_storage.rs`, retaining the shared fixture module. A separate explicit
 Linux/macOS-only step enumerates and executes both, records separate counts and
@@ -61,12 +66,17 @@ stores, build outputs, credentials or full environment dumps are uploaded.
 Jobs have read-only repository permissions, pinned action SHAs, bounded timeouts
 and at most three concurrent test rows.
 
-Executed status is **PASS for all seven native rows at the pinned source** in
+Historical executed status is **PASS for the original 46 tests on all seven
+native rows at source `7506b3f3a40ee7dc190d665031750d336fd65aeb`** in
 [run 41535679868](https://github.com/R4-Laboratories/SpiralCore/actions/runs/41535679868):
 322 portable tests plus eight Unix storage tests. The
 [permanent report and original artifacts](../network/evidence/2026-11-02-mvm-service/platforms/README.md)
 record exact source, native OS/build, runner image, compiler and counts. This
-qualifies the tested ephemeral service/client scope only. Remaining explicit
+qualifies that historical ephemeral service/client scope only. It includes no
+`service_clock` execution. The expanded 50-test requirement needs **350 portable
+passes plus eight separate Unix storage passes** in a new seven-row run; local
+clock-test success is not that platform evidence. The manifest keeps historical
+qualification and current required coverage as separate fields. Remaining explicit
 gates include real WAN in both directions,
 KVM/HVF/libkrun guest/host witnesses, Windows durable storage, NIC attachment,
 FlowMux and owner-access integration, additional OS/version/ABI combinations,

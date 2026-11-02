@@ -48,6 +48,55 @@ pub struct MessageOptions {
     pub content_type: ContentType,
 }
 impl MessageOptions {
+    /// Construct immutable timestamps once, using the trusted binding's signed
+    /// validity interval. Retries reuse these options without reissuing them.
+    pub fn fresh_for_binding(
+        binding: &MailboxBinding,
+        content_type: ContentType,
+        now: ServiceTime,
+        expiry: i64,
+        policy: crate::issuance::IssuancePolicy,
+    ) -> Result<Self> {
+        binding.with_sender(now, |config, _, _| {
+            let window = policy.window(
+                now,
+                expiry,
+                config
+                    .capability
+                    .grant
+                    .not_before_unix_ms
+                    .max(config.binding.claims.not_before_unix_ms),
+                config
+                    .capability
+                    .grant
+                    .expires_at_unix_ms
+                    .min(config.binding.claims.expires_at_unix_ms),
+            )?;
+            let mut options = Self::fresh(content_type, now, window.expires)?;
+            options.issued_at_unix_ms = window.issued;
+            Ok(options)
+        })
+    }
+    pub fn for_reply_with_policy(
+        binding: &MailboxBinding,
+        request: &AdmittedMessage,
+        now: ServiceTime,
+        policy: crate::issuance::IssuancePolicy,
+    ) -> Result<Self> {
+        if request.header().kind != MailboxMessageKind::Call {
+            return Err(ServiceError::Unauthorized);
+        }
+        let mut options = Self::fresh_for_binding(
+            binding,
+            request.header().content_type.clone(),
+            now,
+            request.header().expires_at_unix_ms,
+            policy,
+        )?;
+        options.correlation_id = request.header().correlation_id;
+        options.causation_id = CausationId::from_bytes(*request.header().message_id.as_bytes());
+        Ok(options)
+    }
     pub fn fresh(content_type: ContentType, now: ServiceTime, expiry: i64) -> Result<Self> {
         if expiry <= now.unix_ms {
             return Err(ServiceError::Expired);

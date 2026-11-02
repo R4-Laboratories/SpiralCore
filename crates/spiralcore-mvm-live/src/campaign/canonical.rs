@@ -5,6 +5,7 @@ use ed25519_dalek::{SigningKey, VerifyingKey};
 use mvm_contract::protocol::mailbox::{DeliveryOutcome, ReplyRoute};
 use mvm_core::mailbox::{decode_envelope, encode_envelope};
 use spiralcore_mvm_adapter::{
+    issuance::IssuancePolicy,
     receipt::{ReceiptObservation, ReceiptReturnConfig, ReceiptTracker},
     service::{
         CallStatus, ControlReserve, HostBudget, LocalMailboxService, MailboxBinding, ServiceLimits,
@@ -30,6 +31,9 @@ pub(super) struct Session {
     context: Option<Context>,
 }
 const MAX_CAMPAIGN_CALLS: u64 = 2048;
+const ISSUANCE_POLICY: IssuancePolicy = IssuancePolicy::Bounded {
+    max_clock_ahead_ms: 5000,
+};
 fn campaign_limits() -> (ServiceLimits, ControlReserve) {
     // Native witness tier, separate from the reusable service's defaults.
     // 2048 Calls retain <=4096 control identities in any sender scope and
@@ -76,10 +80,11 @@ impl Session {
             incoming: incoming.service_binding(Some(profile.local_receipt_signing))?,
             outgoing: outgoing.service_binding(None)?,
             control: profile.incoming_control.service_binding(None)?,
-            returns: ReceiptReturnConfig::new(
+            returns: ReceiptReturnConfig::new_with_policy(
                 profile.outgoing_control.service_binding(None)?,
                 budget.clone(),
                 local.verifying_key(),
+                ISSUANCE_POLICY,
             )?,
             service: LocalMailboxService::new(budget.clone())?,
             tracker: ReceiptTracker::new(budget, 4096)?,
@@ -99,7 +104,7 @@ impl Session {
         })
     }
     pub(super) fn report(&self) -> Value {
-        json!({"application_calls":self.calls,"normal_envelopes_per_call":2,"encrypted_destination_receipts_per_call":2,"frames_per_call":4,"profile":"canonical-ephemeral-v1","durability":"AcceptedEphemeral; object commit separately verified durable","identity_tier":"native-16m-v1","identity_limits":{"host":65536,"tenant":32768,"mailbox":32768,"sender":16384},"control_identity_limits":{"host":16384,"tenant":8192,"mailbox":8192,"sender":4096},"max_application_calls":MAX_CAMPAIGN_CALLS,"pipeline":1})
+        json!({"application_calls":self.calls,"normal_envelopes_per_call":2,"encrypted_destination_receipts_per_call":2,"frames_per_call":4,"profile":"canonical-ephemeral-v1","durability":"AcceptedEphemeral; object commit separately verified durable","identity_tier":"native-16m-v1","identity_limits":{"host":65536,"tenant":32768,"mailbox":32768,"sender":16384},"control_identity_limits":{"host":16384,"tenant":8192,"mailbox":8192,"sender":4096},"max_application_calls":MAX_CAMPAIGN_CALLS,"pipeline":1,"issuance_policy":{"mode":"bounded","max_clock_ahead_ms":5000,"max_issued_ttl_ms":30000,"max_remaining_ttl_ms":25000}})
     }
     pub(super) fn call<S: SocketIo + 'static>(
         &mut self,
@@ -113,13 +118,15 @@ impl Session {
         let deadline = Instant::now() + CALL_TIMEOUT;
         let now = self.now()?;
         let expiry = now.unix_ms.checked_add(30_000).ok_or("clock overflow")?;
-        let mut options = MessageOptions::fresh(
+        let mut options = MessageOptions::fresh_for_binding(
+            &self.outgoing,
             mvm_contract::protocol::mailbox::ContentType::parse(
                 spiralcore_mvm_adapter::CONTENT_TYPE,
                 1,
             )?,
             now,
             expiry,
+            ISSUANCE_POLICY,
         )?;
         options.reply_to = self.reply_to;
         let prepared = service_sender::prepare(&self.outgoing, &request.encode()?, &options, now)?;
@@ -133,6 +140,14 @@ impl Session {
             }
         };
         let now = self.now()?;
+        let remaining = u64::try_from(
+            options
+                .expires_at_unix_ms
+                .checked_sub(now.unix_ms)
+                .ok_or("Call deadline overflow")?,
+        )
+        .map_err(|_| "Call already expired")?;
+        let deadline = deadline.min(Instant::now() + Duration::from_millis(remaining));
         let call = self.service.register_call(&self.outgoing, &encoded, now)?;
         let send = self.tracker.register_send(
             &self.outgoing,
@@ -225,7 +240,8 @@ impl Session {
         let reply = object.handle(&self.incoming, &proof, now)?;
         let payload = reply.encode()?;
         let now = self.now()?;
-        let options = MessageOptions::for_reply(&proof, now)?;
+        let options =
+            MessageOptions::for_reply_with_policy(&self.outgoing, &proof, now, ISSUANCE_POLICY)?;
         let prepared = self.service.reply_prepared(
             &self.outgoing,
             proof.handle(),
