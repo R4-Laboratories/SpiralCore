@@ -20,3 +20,24 @@ permission ceremony. The exact byte-selection objective remains authoritative.
    merge reviewed implementation/results PRs and sync both local checkouts.
 
 Initial scope is the diagnostic; no production optimization has yet been selected.
+
+## Diagnostic decision
+
+The 144-pair context experiment preserved all compressed frames and decoded bytes,
+but the large opaque prepared pair improved only 0.37% by paired CPU ratio.
+Do not ship context sharing as a solution to the unrelated-object CPU gap.
+One further bounded diagnostic will retain full-capacity output allocations with
+the identical compressor parameters and canonical input. Compare original frames,
+retain balanced repeated timings, and freeze the helper before execution. No
+production changes are authorized by this diagnostic result alone. If allocation
+reuse is also ineffective, publish the negative results and leave the production
+selector unchanged; repeating network tests of unchanged production would add no
+new evidence about an optimization.
+
+The second 144-pair dose (shared context plus retained output vectors) preserves
+every compressed frame and decoded byte but improves large opaque paired CPU
+only 0.53%; large generated/residual/fitting controls regress slightly. Reject
+both production variants. Deliver the bounded Rust diagnostic, immutable
+observations, independent code/security/arithmetic review, custody and report.
+No production test expansion or new network campaign is warranted for unchanged
+production. The remaining CPU gap is explicitly open, not declared solved.
