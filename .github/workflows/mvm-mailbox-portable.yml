@@ -1,0 +1,180 @@
+name: MVM mailbox portable contracts
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'crates/spiralcore-mvm-adapter/**'
+      - 'crates/spiralcore-transfer/**'
+      - 'crates/uor-r4-object-store/**'
+      - 'docs/platforms/mvm-mailbox-portable.json'
+      - '.github/workflows/mvm-mailbox-portable.yml'
+permissions:
+  contents: read
+concurrency:
+  group: mvm-mailbox-portable-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  matrix:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      include: ${{ steps.matrix.outputs.include }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - id: matrix
+        shell: pwsh
+        run: |
+          $manifest = Get-Content docs/platforms/mvm-mailbox-portable.json -Raw | ConvertFrom-Json
+          "include=$(@{ include = @($manifest.rows) } | ConvertTo-Json -Depth 8 -Compress)" >> $env:GITHUB_OUTPUT
+  native-contracts:
+    needs: matrix
+    name: Ephemeral mailbox / ${{ matrix.id }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix: ${{ fromJSON(needs.matrix.outputs.include) }}
+    defaults:
+      run:
+        shell: pwsh
+    env:
+      CARGO_BUILD_JOBS: 2
+      CARGO_INCREMENTAL: 0
+      CARGO_TERM_COLOR: never
+      RUST_BACKTRACE: 1
+      ROW_ID: ${{ matrix.id }}
+      EXPECTED_OS: ${{ matrix.os }}
+      EXPECTED_ARCH: ${{ matrix.arch }}
+      NATIVE_TARGET: ${{ matrix.target }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Record actual runner and source identity
+        run: |
+          $ErrorActionPreference = 'Stop'
+          New-Item -ItemType Directory -Force portable-evidence | Out-Null
+          $source = (git rev-parse HEAD).Trim()
+          if ($LASTEXITCODE -ne 0) { throw 'Cannot identify source' }
+          $identity = [ordered]@{
+            row = $env:ROW_ID; source_commit = $source; github_sha = $env:GITHUB_SHA
+            run_id = $env:GITHUB_RUN_ID; attempt = $env:GITHUB_RUN_ATTEMPT
+            runner_os = $env:RUNNER_OS; runner_arch = $env:RUNNER_ARCH
+            image_os = $env:ImageOS; image_version = $env:ImageVersion
+            os_description = [System.Runtime.InteropServices.RuntimeInformation]::OSDescription
+            process_architecture = [System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString()
+            os_architecture = [System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString()
+            expected_target = $env:NATIVE_TARGET; classification = 'native-process / TCP-loopback / ephemeral'
+            manifest_sha256 = (Get-FileHash docs/platforms/mvm-mailbox-portable.json -Algorithm SHA256).Hash
+            lock_sha256 = (Get-FileHash crates/spiralcore-mvm-adapter/Cargo.lock -Algorithm SHA256).Hash
+          }
+          if ($IsLinux) { $identity.os_release = Get-Content /etc/os-release -Raw; $identity.kernel = (uname -a) -join "`n" }
+          if ($IsMacOS) { $identity.os_release = (sw_vers) -join "`n"; $identity.kernel = (uname -a) -join "`n" }
+          if ($IsWindows) { $identity.windows_version = [Environment]::OSVersion.Version.ToString() }
+          $identity | ConvertTo-Json -Depth 8 | Set-Content portable-evidence/identity.json
+          if ($env:RUNNER_OS -ne $env:EXPECTED_OS -or $env:RUNNER_ARCH -ne $env:EXPECTED_ARCH) {
+            throw 'Actual runner does not match declared native row'
+          }
+      - name: Install pinned native Rust
+        run: |
+          rustup toolchain install "1.97.1-$env:NATIVE_TARGET" --profile minimal
+          if ($LASTEXITCODE -ne 0) { throw 'Pinned native Rust unavailable' }
+          rustc "+1.97.1-$env:NATIVE_TARGET" -vV | Tee-Object portable-evidence/rustc.txt
+          if ($LASTEXITCODE -ne 0) { throw 'rustc identity failed' }
+          if (!(Select-String -Path portable-evidence/rustc.txt -SimpleMatch "host: $env:NATIVE_TARGET")) {
+            throw 'Toolchain host mismatch: cross-compilation is not native evidence'
+          }
+          cargo "+1.97.1-$env:NATIVE_TARGET" -V | Set-Content portable-evidence/cargo.txt
+          if ($LASTEXITCODE -ne 0) { throw 'cargo identity failed' }
+      - name: Execute nonzero canonical service, receipt, epoch, sender and TCP tests
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $false
+          $manifest = Get-Content docs/platforms/mvm-mailbox-portable.json -Raw | ConvertFrom-Json
+          $crate = 'crates/spiralcore-mvm-adapter/Cargo.toml'
+          $metadata = (& cargo "+1.97.1-$env:NATIVE_TARGET" metadata --locked --no-default-features --features live --filter-platform $env:NATIVE_TARGET --format-version 1 --manifest-path $crate) -join "`n"
+          if ($LASTEXITCODE -ne 0) { throw 'Locked dependency resolution failed' }
+          $resolved = $metadata | ConvertFrom-Json
+          $mvm = @($resolved.packages | Where-Object { $_.name -in @('mvm-core','mvm-contract') })
+          if ($mvm.Count -ne 2 -or @($mvm | Where-Object { $_.source -ne $manifest.mvm_source }).Count -ne 0) {
+            throw 'Canonical MVM dependencies do not match pinned published source'
+          }
+          @($mvm | Select-Object name,version,source) | ConvertTo-Json | Set-Content portable-evidence/mvm-source.json
+          $counts = @()
+          foreach ($test in $manifest.tests) {
+            $cargoArgs = @("+1.97.1-$env:NATIVE_TARGET", 'test', '--locked', '--manifest-path', $crate,
+              '--no-default-features', '--features', 'live', '--test', $test.name)
+            $listing = (& cargo @cargoArgs -- --list --format terse 2>&1 | Out-String)
+            $code = $LASTEXITCODE
+            $listing | Set-Content "portable-evidence/$($test.name)-list.txt"
+            if ($code -ne 0) { throw "Cannot enumerate $($test.name)" }
+            $listed = [regex]::Matches($listing, '(?m)^.+: test\r?$').Count
+            if ($listed -lt $test.minimum_count) { throw "Missing native coverage: $($test.name) lists $listed" }
+            $log = (& cargo @cargoArgs -- --format pretty --color never 2>&1 | Out-String)
+            $code = $LASTEXITCODE
+            $log | Set-Content "portable-evidence/$($test.name).txt"
+            $log | Write-Output
+            $summary = [regex]::Matches($log, 'test result: ok\. (\d+) passed; (\d+) failed; (\d+) ignored; (\d+) measured; (\d+) filtered out;')
+            if ($code -ne 0 -or $summary.Count -ne 1) { throw "Native test failure: $($test.name)" }
+            $s = $summary[0].Groups
+            if ([int]$s[1].Value -ne $listed -or [int]$s[2].Value -ne 0 -or [int]$s[3].Value -ne 0 -or [int]$s[4].Value -ne 0 -or [int]$s[5].Value -ne 0) {
+              throw "Zero, ignored or filtered coverage is not accepted: $($test.name)"
+            }
+            $counts += @{ target = $test.name; listed = $listed; passed = [int]$s[1].Value; failed = 0; ignored = 0; filtered = 0 }
+            $counts | ConvertTo-Json -Depth 4 | Set-Content portable-evidence/test-counts.json
+          }
+          $enabled = @($resolved.resolve.nodes | Where-Object {
+            ($_.id -like '*spiralcore*' -and 'hardware-sha256' -in $_.features) -or
+            ($_.id -match '[/#]sha2[@/]' -and 'asm' -in $_.features)
+          })
+          if ($enabled.Count -ne 0) { throw 'Portable profile must not enable hardware-sha256' }
+          $dirty = git status --porcelain -- crates/spiralcore-mvm-adapter/Cargo.lock
+          if ($dirty) { throw 'Locked test mutated the committed lockfile' }
+          'PASS: native ephemeral mailbox contracts; no MVM backend, durability or WAN claim' | Set-Content portable-evidence/result.txt
+      - name: Execute separate Unix durable storage dispatch witnesses
+        if: runner.os != 'Windows'
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $false
+          $manifest = Get-Content docs/platforms/mvm-mailbox-portable.json -Raw | ConvertFrom-Json
+          $counts = @()
+          foreach ($test in $manifest.unix_storage_tests) {
+            $cargoArgs = @("+1.97.1-$env:NATIVE_TARGET", 'test', '--locked', '--manifest-path',
+              'crates/spiralcore-mvm-adapter/Cargo.toml', '--no-default-features', '--features', 'live', '--test', $test.name)
+            $listing = (& cargo @cargoArgs -- --list --format terse 2>&1 | Out-String)
+            $code = $LASTEXITCODE
+            $listing | Set-Content "portable-evidence/$($test.name)-list.txt"
+            if ($code -ne 0) { throw "Cannot enumerate Unix storage target $($test.name)" }
+            $listed = [regex]::Matches($listing, '(?m)^.+: test\r?$').Count
+            if ($listed -lt $test.minimum_count) { throw 'Missing Unix storage coverage' }
+            $log = (& cargo @cargoArgs -- --format pretty --color never 2>&1 | Out-String)
+            $code = $LASTEXITCODE
+            $log | Set-Content "portable-evidence/$($test.name).txt"
+            $log | Write-Output
+            $summary = [regex]::Matches($log, 'test result: ok\. (\d+) passed; (\d+) failed; (\d+) ignored; (\d+) measured; (\d+) filtered out;')
+            if ($code -ne 0 -or $summary.Count -ne 1) { throw 'Unix storage test failure' }
+            $s = $summary[0].Groups
+            if ([int]$s[1].Value -ne $listed -or [int]$s[2].Value -ne 0 -or [int]$s[3].Value -ne 0 -or [int]$s[4].Value -ne 0 -or [int]$s[5].Value -ne 0) {
+              throw 'Zero, ignored or filtered Unix storage coverage is not accepted'
+            }
+            $counts += @{ target = $test.name; scope = $test.scope; listed = $listed; passed = [int]$s[1].Value; failed = 0; ignored = 0; filtered = 0 }
+          }
+          $counts | ConvertTo-Json -Depth 4 | Set-Content portable-evidence/unix-storage-counts.json
+      - name: Checksum compact evidence
+        if: always()
+        run: |
+          if (Test-Path portable-evidence) {
+            Get-ChildItem portable-evidence -File | Sort-Object Name | ForEach-Object {
+              "$((Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant())  $($_.Name)"
+            } | Set-Content portable-evidence/SHA256SUMS
+          }
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: mvm-mailbox-portable-${{ matrix.id }}-${{ github.run_attempt }}
+          path: portable-evidence/
+          if-no-files-found: error
+          retention-days: 14

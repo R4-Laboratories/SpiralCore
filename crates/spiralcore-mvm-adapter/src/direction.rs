@@ -109,6 +109,12 @@ impl Direction {
             config.kind,
             MailboxMessageKind::Call | MailboxMessageKind::Reply
         ) || config.capability.grant.message_kinds != [config.kind]
+            || config.policy.snapshot()?.required_operation
+                != if config.kind == MailboxMessageKind::Reply {
+                    MailboxOperation::Reply
+                } else {
+                    MailboxOperation::Send
+                }
             || config.capability.grant.content_types != [content]
             || (config.kind == MailboxMessageKind::Call) != config.reply_to.is_some()
             || config
@@ -438,23 +444,30 @@ impl Direction {
 
     // Call only after canonical inbound or outbound grant authorization.
     fn verified_context(&self, context: &OpenContext) -> Result<Context> {
-        let grant = &self.config.capability.grant;
-        let grant_bytes = serde_jcs::to_vec(grant).map_err(|_| Error::Serialization)?;
-        Ok(Context {
-            tenant: spiralcore_transfer::hex(context.expected_tenant.as_bytes()),
-            domain: spiralcore_transfer::hex(context.expected_authorization_domain.as_bytes()),
-            sender: spiralcore_transfer::hex(context.expected_sender.as_bytes()),
-            recipient: spiralcore_transfer::hex(context.expected_recipient.as_bytes()),
-            mailbox: spiralcore_transfer::hex(context.expected_mailbox.as_bytes()),
-            capability: spiralcore_transfer::hex(grant.capability_id.as_bytes()),
-            authorization_scope: spiralcore_transfer::hex(&spiralcore_transfer::hash(
-                b"spiralcore.mvm.verified-capability.v1\0",
-                &[&grant_bytes],
-            )),
-            policy_epoch: context.current_policy_epoch,
-            execution_epoch: context.current_execution_epoch.into(),
-        })
+        verified_object_context(context, &self.config.capability.grant)
     }
+}
+
+// Only callers holding a canonical verification proof may install this scope.
+pub(crate) fn verified_object_context(
+    context: &OpenContext,
+    grant: &MailboxCapabilityGrant,
+) -> Result<Context> {
+    let grant_bytes = serde_jcs::to_vec(grant).map_err(|_| Error::Serialization)?;
+    Ok(Context {
+        tenant: spiralcore_transfer::hex(context.expected_tenant.as_bytes()),
+        domain: spiralcore_transfer::hex(context.expected_authorization_domain.as_bytes()),
+        sender: spiralcore_transfer::hex(context.expected_sender.as_bytes()),
+        recipient: spiralcore_transfer::hex(context.expected_recipient.as_bytes()),
+        mailbox: spiralcore_transfer::hex(context.expected_mailbox.as_bytes()),
+        capability: spiralcore_transfer::hex(grant.capability_id.as_bytes()),
+        authorization_scope: spiralcore_transfer::hex(&spiralcore_transfer::hash(
+            b"spiralcore.mvm.verified-capability.v1\0",
+            &[&grant_bytes],
+        )),
+        policy_epoch: context.current_policy_epoch,
+        execution_epoch: context.current_execution_epoch.into(),
+    })
 }
 
 /// Proof of canonical authentication and bounded frame decoding. Fields are private.

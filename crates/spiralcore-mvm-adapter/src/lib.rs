@@ -8,6 +8,14 @@
 pub mod conformance;
 mod direction;
 mod policy;
+#[cfg(feature = "live")]
+pub mod receipt;
+#[cfg(feature = "live")]
+pub mod service;
+#[cfg(feature = "live")]
+pub mod service_object;
+#[cfg(feature = "live")]
+pub mod service_sender;
 
 #[cfg(feature = "live")]
 pub use direction::live;

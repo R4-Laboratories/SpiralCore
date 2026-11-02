@@ -1,0 +1,38 @@
+{
+  "format": "spiralcore-mvm-dual-url-preparation-v1",
+  "date": "2026-11-02",
+  "source_urls": [
+    "https://github.com/tinylabscom/mvm",
+    "https://github.com/Casey-allard/mvm"
+  ],
+  "mapping": "Both source blocks map the same nine crates to the same one physical prepared tree",
+  "entries_total": 18,
+  "unique_crate_path_entries": 9,
+  "separate_protocol_modes_created": false,
+  "mvm_semantic_source_changes": false,
+  "tests_first": true,
+  "red": {
+    "observed": "Integration test failed when requiring the absent fork URL block before implementation",
+    "exit_code": 1
+  },
+  "green": {
+    "macos_real_preparation_harness": "pass",
+    "linux_real_preparation_harness": "pass",
+    "assertions": [
+      "Both exact source URL headers present",
+      "18 total crate mappings",
+      "Exactly9unique crate/path lines, proving identical repeated source paths",
+      "All18nativepath mappings converted under simulatedcygpath",
+      "All14final source hashes verify after3patches"
+    ],
+    "bash_syntax": "pass",
+    "shellcheck": "pass"
+  },
+  "prepare_script_sha256": "017ab3c8d2847e3511fd9fa34512eae8ddd13223faeafc3cde29838f149a1309",
+  "test_harness_sha256": "d145940a3b491b9aa6e47f00c0b52648160b3c8092556fbf92e7fb21299d626f",
+  "bundle_sha256_manifest_sha256": "028504eabe0333908b624db7ccf707eeb45cf013f0ee51e46df725506dcadc0f",
+  "active_local_and_wick_patch_configs_updated_atomically": true,
+  "native_windows": "Not run here; actual Git Bash/cygpath/Cargo gate remains required",
+  "old_bundle_modified": false,
+  "new_guest_launches": 0
+}

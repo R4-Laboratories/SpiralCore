@@ -37,7 +37,11 @@ pub fn config(kind: MailboxMessageKind) -> DirectionConfig {
             issuer,
             subject: sender,
             address,
-            operations: CapabilityOperations::from_operations(&[MailboxOperation::Send]),
+            operations: CapabilityOperations::from_operations(&[if reply {
+                MailboxOperation::Reply
+            } else {
+                MailboxOperation::Send
+            }]),
             message_kinds: vec![kind],
             content_types: vec![content.clone()],
             max_payload_bytes: 65_536,
@@ -65,7 +69,11 @@ pub fn config(kind: MailboxMessageKind) -> DirectionConfig {
         expected_capability_issuer: issuer,
         current_execution_epoch: epoch,
         current_policy_epoch: 4,
-        required_operation: MailboxOperation::Send,
+        required_operation: if reply {
+            MailboxOperation::Reply
+        } else {
+            MailboxOperation::Send
+        },
         now_unix_ms: 1_500,
         accepted_content_types: vec![content],
         revoked_capabilities: vec![],

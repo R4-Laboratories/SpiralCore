@@ -11,14 +11,18 @@ network path), ADR-057 (canonical capability-bound mailbox semantics), and
 ADR-056 (owner-mediated application access). The live upstream review identifies
 `6ae461a54d85a1b70477c1efb97ea4a33ef3b331`; the existing native SpiralCore witness
 uses retained MVM source `3104a12c5b071a6851323fa8115d2afaf3f0bb8b` plus its
-recorded patch. Portability and dependency identity are checked before changing
-that pin; current source is not silently substituted into a measured binary.
+recorded patch. The new service contribution pins current upstream plus tested
+primitive, Reply-authority and metadata-accessor patches at fork commit
+`5766754fbaae59dbee548f968716a514d3a796c1` on
+`Casey-allard/mvm:codex/spiralcore-mailbox-service`. This is a work-in-progress
+dependency branch, not an upstream PR or acceptance claim. Historical binaries
+and measurements retain their original identities.
 The narrow source comparison found canonical mailbox verification and ADRs
 042/056/057 unchanged between those revisions; canonical mailbox DTO changes
 only expose existing private base64 helpers. The newer transport resource ledger
 bounds peer/stream/retry/relay work and does not implement local
-tenant/mailbox/sender queue admission. This slice therefore retains the existing
-source pin and verifies its required behavior instead of repinning six crates.
+tenant/mailbox/sender queue admission. The implementation therefore preserves
+those canonical APIs and qualifies the explicitly updated dependency source.
 
 MVM #4629 remains the dedicated local mailbox-service implementation contract;
 #4632 provides the canonical transport interfaces; #4633 specifies Iroh as a
@@ -132,7 +136,10 @@ kind `Cast`, `reply_to=None`, and the reserved receipt content type. Its sender
 is the original destination authority; its recipient is the original sender's
 explicitly configured receipt mailbox. The envelope has its own stable message
 ID, ordering sequence, nonce and bounded expiry, preserving these inner fields
-when retried. Set causation to the original request's MessageId and correlation
+when retried. Each receipt uses its unique message-ID hex as its own bounded
+ordering scope with sequence one; there is no global receipt/application order
+or missing-sequence dependency between unrelated receipt observations.
+Set causation to the original request's MessageId and correlation
 to its CorrelationId. The application Call still receives its one independent
 canonical application Reply. A receipt Cast neither replaces that Reply nor
 adds bytes to an `SCMOBJ01` frame.
@@ -171,6 +178,14 @@ host total leaves at most 15 MiB/768 application items). Smaller custom bounds
 must reserve consistent positive control capacity or refuse this profile.
 Check control capacity before application acceptance; if no
 response can be owned, apply bounded backpressure without accepting the message.
+Default reserved control identity ceilings are 1,024 host, 512 tenant, 256
+mailbox and 128 sender, inside the configured total identity ceilings. Source
+tracking metadata and at most eight attempts are identity-bounded. Each matched
+verified control send/receive, including duplicates, additionally reserves a
+bounded rolling-rate identity for 60 seconds. Signed per-grant queue/rate limits
+remain distinct from application grants; consumed payload byte/message leases
+are released while required terminal identities remain. Larger qualification
+profiles must declare their raised ceilings explicitly.
 After acceptance, a transport failure leaves ownership uncertain at the sender;
 bounded resend of the same receipt or request identity reconciles it. Never
 claim a failed send rolled back destination acceptance.
@@ -194,26 +209,72 @@ Extend the local API with a bounded send tracker and receipt carrier helpers:
 ```rust
 pub struct SendHandle { /* private source/epoch/message/attempt identity */ }
 pub struct ReceiptReturnConfig { /* reverse canonical binding/grant and keys */ }
-pub enum ReceiptObservation { Pending, Verified(SignedDestinationReceipt), Expired }
-impl LocalMailboxService {
-    pub fn register_send(&mut self, binding: &MailboxBinding, encoded: &[u8],
+pub enum ReceiptObservation { Pending, Verified(Box<SignedDestinationReceipt>), Expired }
+pub enum ReceiptControlDisposition { Observed, Duplicate }
+pub struct ReceiptFacts { pub accepted: bool, pub application_replied: bool }
+impl ReceiptTracker {
+    pub fn new(budget: HostBudget, max_pending: usize) -> Result<Self, ServiceError>;
+    pub fn register_send(&mut self, request: &MailboxBinding, control: &MailboxBinding,
+                         destination_receipt_key: &VerifyingKey, encoded: &[u8],
                          now: ServiceTime) -> Result<SendHandle, ServiceError>;
     pub fn observe_receipt(&mut self, binding: &MailboxBinding,
                            encoded_receipt_envelope: &[u8], now: ServiceTime)
-                           -> Result<(), ServiceError>;
+                           -> Result<ReceiptControlDisposition, ServiceError>;
     pub fn take_receipt(&mut self, binding: &MailboxBinding, send: &SendHandle,
                         now: ServiceTime) -> Result<ReceiptObservation, ServiceError>;
+    pub fn observe_application_reply(&mut self, binding: &MailboxBinding,
+                         encoded_reply: &[u8], now: ServiceTime)
+                         -> Result<SendHandle, ServiceError>;
+    pub fn facts(&mut self, binding: &MailboxBinding, send: &SendHandle,
+                 now: ServiceTime) -> Result<ReceiptFacts, ServiceError>;
+}
+impl ReceiptReturnConfig {
+    pub fn new(binding: MailboxBinding, budget: HostBudget,
+               expected_local_receipt_key: VerifyingKey) -> Result<Self, ServiceError>;
+    pub fn admit<'a>(&'a self, service: &mut LocalMailboxService,
+                     source: &'a MailboxBinding, encoded_request: &[u8], now: ServiceTime)
+                     -> Result<(SignedDestinationReceipt, PreparedReceipt<'a>), ServiceError>;
+}
+impl PreparedReceipt<'_> {
+    pub fn encoded_bytes(&self) -> &[u8];
+    pub fn send<T: PeerTransport>(&self, transport: &T, cancel: &CancellationToken,
+                                 now: ServiceTime) -> Result<usize, ReceiptSendError>;
 }
 ```
 
 `register_call` additionally tracks the application reply; `register_send` also
-supports ordinary Cast without allocating an application-call slot. Existing
-send handles and call handles refer to the same request/attempt record rather
-than duplicating quota. Receipt payload consumption frees its byte charge, while
+supports ordinary Cast and Reply without allocating an application-call slot.
+The source receipt tracker observes acceptance separately from the service's
+application-call tracking; it stores no original payload or second application
+reply. Both use the same shared budget owner and bind exact canonical identities.
+Receipt payload consumption frees its byte charge, while
 the bounded terminal identity remains. Infrastructure replay handling records
 only authenticated matches and refuses unknown control messages without
 unbounded allocation. A valid old receipt is harmlessly idempotent for its own
 terminal record and cannot resurrect an expired owner or replace another call.
+The v1 return configuration requires a signed reverse grant with exactly 4,096
+payload bytes and 16,384 queue-contribution bytes; narrower and wider grants
+are unsupported and rejected at construction before application admission.
+Integrated admission also requires the exact same `HostBudget` owner as the
+local application service, before reservations or queue mutation. Manual
+`reserve` callers must uphold this ownership requirement themselves. A source
+tracker's inbound binding does not negotiate the destination return capability;
+its own signed receive limits still apply to every received control envelope.
+
+Execution epochs are scoped to the destination mailbox owner. A Call to B at
+epoch 8 and its Reply to A at epoch 7 can both be valid: each envelope must
+pass its own current destination binding. Correlation must not equate these
+distinct epochs. A signed destination receipt still matches the epoch of its
+original message exactly (Call B/8 or Reply A/7 respectively).
+
+The integrated `ReceiptReturnConfig::admit` consumes the service's opaque verified
+proof internally: canonical inbound authentication/decryption runs once, control
+credit is reserved before acceptance, and the resulting canonical receipt is
+sealed afterward. A post-acceptance transport/policy failure is uncertainty, not
+rollback. Prepared sends reuse the exact envelope and reauthorize captured policy
+generations through the common canonical outbound gate on each attempt. The
+lower-level `reserve`/`ReceiptPermit::seal` API remains available for explicit
+owners, but native service integration uses `admit` to avoid duplicate open work.
 
 The native client demultiplexes authenticated content types while awaiting its
 application Reply. The server owns and sends the signed receipt Cast separately,
@@ -293,10 +354,11 @@ increments that generation before old proofs or handles can act. Generation
 overflow fails closed.
 
 Call/Cast use the exact canonical Send operation; Reply uses the exact canonical
-Reply operation and independent reply capability. The existing pilot
-`DirectionConfig`/`Policy` is Send-only and therefore is not the primary service
-configuration. Leave that API unchanged; an optional `from_direction` helper is
-only a compatible constructor for its already-admitted Call shape. It must not
+Reply operation and independent reply capability. The object-only
+`DirectionConfig`/`Policy` is not the primary generic-service configuration.
+Its Reply path now requires Reply authority, matching the narrow upstream
+transport correction; Call retains Send. An optional `from_direction` helper
+copies trusted object-binding configuration. It must not
 turn a Call grant into a Cast or Reply grant. A receive-only peer configuration
 does not need the remote sender's signing secret. The destination receipt key
 is separately provisioned and bound to the addressed recipient; it is never
@@ -377,6 +439,21 @@ message can be retried after capacity returns. Do not implement this by an
 always-allow replay protector or by skipping canonical verification.
 
 ## Subsequent network carrier and access mappings
+
+The local sender helper `service_sender::MessageOptions` holds canonical
+per-message metadata only. `MessageOptions::fresh(content_type, now, expiry)`
+chooses a fresh stable message/correlation identity, replay nonce and independent
+ordering scope at sequence one. The owner explicitly supplies a Call reply route.
+`request(binding, payload, options, now)` builds a canonical `SealRequest` from
+current trusted binding identity, grant, boot and encryption context;
+`prepare(...)` uses MVM's `prepare_mailbox_envelope` to return its unforgeable
+prepared value. Neither helper sends data, accepts a peer, or grants admission.
+`MessageOptions::for_reply` derives correlation and causation from an admitted
+request; the service's `reply_prepared` still validates its exact reply authority.
+Retries reuse all inner options, including original issue time, sequence and
+nonce; resealing may change ciphertext or the outer delivery ID. Unknown content
+types, excess payload and expiry beyond configured authority fail before send.
+The reserved receipt type is constructed only through the receipt-control helper.
 
 The existing FlowMux guest contract remains unchanged. In the inspected source,
 `FlowMuxSession::handle_open_tcp` performs destination admission and tool/typed

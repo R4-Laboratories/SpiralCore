@@ -14,14 +14,15 @@ hardware-sha256 = ["spiralcore-transfer/hardware-sha256"]
 
 [dependencies]
 spiralcore-transfer = { path = "../spiralcore-transfer" }
-mvm-core = { git = "https://github.com/tinylabscom/mvm", rev = "3104a12c5b071a6851323fa8115d2afaf3f0bb8b", default-features = false }
-mvm-contract = { git = "https://github.com/tinylabscom/mvm", rev = "3104a12c5b071a6851323fa8115d2afaf3f0bb8b", default-features = false, features = ["protocol"] }
+mvm-core = { git = "https://github.com/Casey-allard/mvm", rev = "5766754fbaae59dbee548f968716a514d3a796c1", default-features = false }
+mvm-contract = { git = "https://github.com/Casey-allard/mvm", rev = "5766754fbaae59dbee548f968716a514d3a796c1", default-features = false, features = ["protocol"] }
 ed25519-dalek = "3"
 rand = "0.10"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 serde_jcs = "0.1"
 cpu-time = "1"
+sha2 = "0.10.9"
 
 [[example]]
 name = "mailbox_transfer"

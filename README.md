@@ -41,9 +41,21 @@ tracks**, not arbitrary encrypted packet traffic.
 
 **Platform scope:** the normal TUN gateway is Linux-native. The MVM witness has
 macOS/HVF and Linux/Firecracker host paths; the default Linux build is the guest,
-and the `linux-host` feature selects the host. Windows remains unimplemented:
-native packet integration and private/durable storage semantics need a port.
+and the `linux-host` feature selects the host. Native Windows endpoint execution
+is being qualified; private/durable object storage and packet attachment still
+need a port. A portable mailbox client does not establish a Windows MVM host.
 [Linux build and lifecycle details →](docs/network/linux-firecracker.md)
+
+**MVM delivery roadmap:** [GitHub issue #42](https://github.com/R4-Laboratories/SpiralCore/issues/42)
+is the status authority for the canonical mailbox service, admitted FlowMux
+integration, owner access and final upstream contribution. The
+[platform contract](docs/specs/2026-11-02-mvm-platforms.md) distinguishes supported
+endpoint roles from candidate OS/version/architecture cells. Native execution,
+real WAN pairs and unavailable backend gates are tracked separately in
+[#46](https://github.com/R4-Laboratories/SpiralCore/issues/46) and
+[#47](https://github.com/R4-Laboratories/SpiralCore/issues/47). The new canonical
+service qualification is in progress; historical native results below do not
+qualify that newer implementation or establish cross-platform WAN support.
 
 ### Where SpiralCore sits in the network stack
 

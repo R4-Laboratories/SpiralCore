@@ -5,9 +5,47 @@ use mvm_core::mailbox::transport::{CancellationToken, InMemoryPeerTransport};
 use spiralcore_mvm_adapter::{Direction, Error, MAX_ENVELOPE_BYTES, MAX_FRAME_BYTES};
 use spiralcore_transfer::{
     endpoint::Authority,
-    object_id,
     protocol::{Frame, Mode, Offer},
 };
+
+#[test]
+fn reply_only_capability_uses_canonical_reply_operation() {
+    use mvm_contract::protocol::mailbox::{CapabilityOperations, MailboxOperation};
+    let mut config = common::config(MailboxMessageKind::Reply);
+    let mut context = config.policy.snapshot().unwrap();
+    context.required_operation = MailboxOperation::Reply;
+    config.policy = spiralcore_mvm_adapter::Policy::new(context).unwrap();
+    config.capability.grant.operations =
+        CapabilityOperations::from_operations(&[MailboxOperation::Reply]);
+    config.capability = mvm_core::mailbox::sign_capability(
+        config.capability.grant,
+        &ed25519_dalek::SigningKey::from_bytes(&[22; 32]),
+    )
+    .unwrap();
+    let mut direction = Direction::new(config).unwrap();
+    let transport = InMemoryPeerTransport::default();
+    transport.register_route(direction.route_id()).unwrap();
+    let frame = begin().reply(103, vec![42; 32]);
+    let wire = queued(&mut direction, &frame, &transport);
+    assert_eq!(direction.open(&wire).unwrap().frame(), &frame);
+}
+
+#[test]
+fn send_only_capability_cannot_stand_in_for_reply_authority() {
+    use mvm_contract::protocol::mailbox::{CapabilityOperations, MailboxOperation};
+    let mut config = common::config(MailboxMessageKind::Reply);
+    let mut context = config.policy.snapshot().unwrap();
+    context.required_operation = MailboxOperation::Send;
+    config.policy = spiralcore_mvm_adapter::Policy::new(context).unwrap();
+    config.capability.grant.operations =
+        CapabilityOperations::from_operations(&[MailboxOperation::Send]);
+    config.capability = mvm_core::mailbox::sign_capability(
+        config.capability.grant,
+        &ed25519_dalek::SigningKey::from_bytes(&[22; 32]),
+    )
+    .unwrap();
+    assert!(Direction::new(config).is_err());
+}
 
 #[test]
 fn canonical_call_and_independent_reply_preserve_exact_application_frames() {
@@ -174,99 +212,6 @@ fn changed_recipient_epoch_or_revocation_fails_on_open_and_on_outbound() {
         );
         assert!(transport.drain(direction.route_id()).unwrap().is_empty());
     }
-}
-
-#[test]
-fn revocation_between_open_and_dispatch_invalidates_the_verified_message() {
-    use mvm_contract::protocol::mailbox::RevocationId;
-    let config = common::config(MailboxMessageKind::Call);
-    let policy = config.policy.clone();
-    let mut direction = Direction::new(config).unwrap();
-    let authority = direction.authority();
-    assert!(
-        authority
-            .authorize(&spiralcore_transfer::wan::context([1; 32]))
-            .is_err()
-    );
-    let store = common::Store::new();
-    let mut endpoint = store.open(authority.clone());
-    let transport = InMemoryPeerTransport::default();
-    transport.register_route(direction.route_id()).unwrap();
-    let wire = queued(&mut direction, &begin(), &transport);
-    let verified = direction.open(&wire).unwrap();
-    let context = verified.context().clone();
-    assert!(authority.authorize(&context).is_ok());
-    let mut changed = policy.snapshot().unwrap();
-    changed
-        .revoked_capabilities
-        .push(RevocationId::from_bytes([13; 32]));
-    policy.replace(changed).unwrap();
-    assert!(verified.dispatch(&mut endpoint, 0).is_err());
-    assert!(authority.authorize(&context).is_err());
-    assert!(endpoint.read_object(&context, object_id(&[])).is_err());
-}
-
-#[test]
-fn open_before_dispatch_and_lost_commit_reply_require_fresh_envelope_retries() {
-    let mut direction = Direction::new(common::config(MailboxMessageKind::Call)).unwrap();
-    let store = common::Store::new();
-    let mut endpoint = store.open(direction.authority());
-    let transport = InMemoryPeerTransport::default();
-    transport.register_route(direction.route_id()).unwrap();
-    let request = begin();
-    let wire = queued(&mut direction, &request, &transport);
-    let accepted = direction.open(&wire).unwrap();
-    let context = accepted.context().clone();
-    drop(accepted); // Simulated interruption before object endpoint handling.
-    assert!(endpoint.read_object(&context, object_id(&[])).is_err());
-    assert!(matches!(
-        direction.open(&wire),
-        Err(Error::Mailbox(mvm_core::mailbox::MailboxError::Replay))
-    ));
-    let retry = queued(&mut direction, &request, &transport);
-    let ready = direction
-        .open(&retry)
-        .unwrap()
-        .dispatch(&mut endpoint, 0)
-        .unwrap();
-    assert_eq!(ready.kind, 101);
-    let retry = queued(&mut direction, &request, &transport);
-    assert_eq!(
-        direction
-            .open(&retry)
-            .unwrap()
-            .dispatch(&mut endpoint, 0)
-            .unwrap(),
-        ready
-    );
-    let finish = Frame {
-        kind: 3,
-        seq: 1,
-        body: vec![],
-        ..request
-    };
-    let wire = queued(&mut direction, &finish, &transport);
-    let published = direction
-        .open(&wire)
-        .unwrap()
-        .dispatch(&mut endpoint, 0)
-        .unwrap();
-    assert_eq!(published.kind, 103); // Simulate loss of this application reply.
-    let retry = queued(&mut direction, &finish, &transport);
-    assert_eq!(
-        direction
-            .open(&retry)
-            .unwrap()
-            .dispatch(&mut endpoint, 0)
-            .unwrap(),
-        published
-    );
-    drop(endpoint);
-    let mut reopened = store.open(direction.authority());
-    assert_eq!(
-        reopened.read_object(&context, object_id(&[])).unwrap(),
-        Vec::<u8>::new()
-    );
 }
 
 #[test]

@@ -1,0 +1,130 @@
+{
+  "schema": "spiralcore.mvm.service-primitives-port.v1",
+  "repository": "https://github.com/tinylabscom/mvm",
+  "base_revision": "6ae461a54d85a1b70477c1efb97ea4a33ef3b331",
+  "parent_patch": "../mvm-patch/0001-experimental-mailbox-vsock.patch",
+  "parent_base_revision": "3104a12c5b071a6851323fa8115d2afaf3f0bb8b",
+  "parent_patch_sha256": "2ca7b61743d23ede426fb631d8b98759e97cf21fb5da72ab847e0620cb95b466",
+  "patch": "0001-mailbox-service-primitives.patch",
+  "patch_sha256": "ff1877e63b279ed92e83d6682e9eade4de287475c882cbaaed401a2ba518c541",
+  "patch_bytes": 30847,
+  "status": "Preparation only: current-main primitives port; not production mailbox service completion, upstream acceptance or native qualification.",
+  "scope": "Existing verified-open/transport accessors and dedicated experimental mailbox service mapping on port 5257, mechanically rebased onto current MVM source.",
+  "port_result": "All fourteen files apply with fuzz0; no rejected/conflicting hunks; hostd supervisor hunk shifts46lines to981. No semantic modifications to original patch.",
+  "upstream_changes_preserved": [
+    "New transport ResourceLedger module/export",
+    "Private Base64 imports and current mailbox wire contracts",
+    "Current supervisor lifecycle logic around shifted hunk"
+  ],
+  "exclusions": [
+    "Full MVM vendoring",
+    "Build outputs",
+    "Cargo manifests and lockfile changes",
+    "Instruction files",
+    "Credentials and private files"
+  ],
+  "files": [
+    {
+      "path": "crates/mvm-agentd/src/vsock/mod.rs",
+      "base_git_blob": "ec6479d55b05f8bd51881a80ebb89f2de7be0cf7",
+      "patched_sha256": "8154ce35bd97f905a1be5bf3d698be182ea92d58aa90a9710b666c63bdd5f4e1"
+    },
+    {
+      "path": "crates/mvm-contract/src/protocol/mailbox.rs",
+      "base_git_blob": "2931d694ea2df75fbf4095c6a51fdb3e0e9de929",
+      "patched_sha256": "e03a04b8cddf623e9c76e6c7085b8d18a1e38a4b42e9ed074559744d2a3efc0a"
+    },
+    {
+      "path": "crates/mvm-core/src/mailbox.rs",
+      "base_git_blob": "79e318b5c36d7ed0c1e2dcf03238811ef3041892",
+      "patched_sha256": "dd21a283ddb117ed42f6d0a07a9fa6d322345f4f23b1c5f6abe519f07b94cbff"
+    },
+    {
+      "path": "crates/mvm-core/src/mailbox/transport.rs",
+      "base_git_blob": "7caff6242aeab9b322f2261be29f7291e5a56d41",
+      "patched_sha256": "c7eb7db91f9ade40a1ddaf9f8f33d9d76be0a07dec8897b177bacd821877014e"
+    },
+    {
+      "path": "crates/mvm-core/src/mailbox/transport/tests.rs",
+      "base_git_blob": "e88580a3f1772ecec3056442ab5769a0a6af3a52",
+      "patched_sha256": "52df9c796eb34a08befa385767f975ad5e2a22b3003745e2d0edd9480d564d8c"
+    },
+    {
+      "path": "crates/mvm-core/tests/mailbox_crypto.rs",
+      "base_git_blob": "4050fe1650c6db7325b227c73ff9e6492864b674",
+      "patched_sha256": "049cc5b986c89ca0e3689bf49f5f25bbfac5ea4d8de5464443e4dc981d1b4cba"
+    },
+    {
+      "path": "crates/mvm-hostd/src/bin/mvm-hvf-supervisor.rs",
+      "base_git_blob": "d23786e137a7ea82dd07f7c2a3b4af82431df09f",
+      "patched_sha256": "b39eb81fe0a545220b19cc9816d7939bb9973697767810537753e34b7ae075e0"
+    },
+    {
+      "path": "crates/mvm-net/src/channel.rs",
+      "base_git_blob": "e02a19b8f178976bef2ab18ddd9f32eeccd768c0",
+      "patched_sha256": "f3a405a5e46e5573f9dfabf9d7582c6203ddfcfc0c9dd01702b4e6f87c406af3"
+    },
+    {
+      "path": "crates/mvm-runtime/src/backends/hvf/host_channels.rs",
+      "base_git_blob": "6bbf2f6dde30e9a212f4791cb58ea6d873f47704",
+      "patched_sha256": "7fb8f6711c09c74ed0de1fce9edd44b8492054bb2aa963f28fda0695eb394aea"
+    },
+    {
+      "path": "crates/mvm-runtime/src/backends/hvf/kernel_boot.rs",
+      "base_git_blob": "c3be85d2f26fd09037ceb3e06bde97d4fe40429a",
+      "patched_sha256": "a57f699cd790a0f9d4db2a2baf75452ffe4fd8aad79986d5e56f6883a82ab750"
+    },
+    {
+      "path": "crates/mvm-vmm/src/vmm/vsock.rs",
+      "base_git_blob": "99c6a28eba60f760aec186e56ddc41eabf308245",
+      "patched_sha256": "84405beecbc8a8e2b72b2edd2b1f2c9d73fef6ec4ec35f135b84bbe857e4a6a8"
+    },
+    {
+      "path": "crates/mvm-vmm/src/vmm/vsock/bindings.rs",
+      "base_git_blob": "595eddfb091cd2eb2bdbb537a5efba6a78b69229",
+      "patched_sha256": "f8b20481d77257c85f63bd9b49cba082a9164825c16721b8687e5dcd4c937cb6"
+    },
+    {
+      "path": "crates/mvm-vmm/src/vmm/vsock_handlers/mod.rs",
+      "base_git_blob": "9ff8d4c407db020c6f628a0ccff9e95cf0ac4e1c",
+      "patched_sha256": "da84dea532be277a38357933e529acaca76903004ef728ce5bb2268a2aa14bfe"
+    },
+    {
+      "path": "crates/mvm-vmm/src/vsock_egress_bridge/substitution_bridge.rs",
+      "base_git_blob": "e61f325b6100ffbc412b5343cf6561272f68be96",
+      "patched_sha256": "0d1d2cd62f083eab177f21796eee3662a644922c1d62acd006e57f2dfbbe418f"
+    }
+  ],
+  "patches": [
+    {
+      "path": "0001-mailbox-service-primitives.patch",
+      "sha256": "ff1877e63b279ed92e83d6682e9eade4de287475c882cbaaed401a2ba518c541",
+      "bytes": 30847
+    },
+    {
+      "path": "0002-reply-operation-authorization.patch",
+      "sha256": "5805f8671cc3db5d7c229626fb2aa6dc4629aad936ec96cdab30bbc1c9700364",
+      "bytes": 7326
+    },
+    {
+      "path": "0003-prepared-header-accessor.patch",
+      "sha256": "11641dc5d01faf90948f0890a4528ed0e610fdc36b9d913bf557df19769865b7",
+      "bytes": 1841
+    }
+  ],
+  "reply_operation_fix": {
+    "patch": "0002-reply-operation-authorization.patch",
+    "scope": "Authorize Reply with Reply operation; Call/Cast retain Send. Reject Send-only Reply under either context. Preserve SendOperationRequired enum variant and describe its kind-specific operation requirement.",
+    "red": "Three focused tests: one pass, two expected failures with old authorization",
+    "green": "All15 transport tests pass after minimal correction; final formatted source independently rerun."
+  },
+  "prepared_header_accessor": {
+    "scope": "Readonly metadata borrow of the exact prepared outbound header; no mutator, constructor or wire change.",
+    "security_limit": "Does not prove configured sender signing/encryption keys; canonical verification remains required. No performance or authority shortcut claim."
+  },
+  "patch_source_urls": [
+    "https://github.com/tinylabscom/mvm",
+    "https://github.com/Casey-allard/mvm"
+  ],
+  "source_mapping": "Both URL blocks map the same nine crates to one physical prepared tree; no mode split or duplicate protocol/core."
+}

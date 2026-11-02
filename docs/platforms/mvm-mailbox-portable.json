@@ -1,0 +1,116 @@
+{
+  "schema_version": 1,
+  "scope": "native ephemeral canonical mailbox service and TCP-loopback remote-client contracts",
+  "qualification_status": "NOT_RUN",
+  "toolchain": "1.97.1",
+  "features": [
+    "live"
+  ],
+  "hardware_sha256": false,
+  "mvm_source": "git+https://github.com/Casey-allard/mvm?rev=5766754fbaae59dbee548f968716a514d3a796c1#5766754fbaae59dbee548f968716a514d3a796c1",
+  "tests": [
+    {
+      "name": "canonical",
+      "minimum_count": 9
+    },
+    {
+      "name": "service",
+      "minimum_count": 16
+    },
+    {
+      "name": "receipt",
+      "minimum_count": 15
+    },
+    {
+      "name": "service_epoch",
+      "minimum_count": 3
+    },
+    {
+      "name": "service_sender",
+      "minimum_count": 2
+    },
+    {
+      "name": "service_tcp",
+      "minimum_count": 1
+    }
+  ],
+  "rows": [
+    {
+      "id": "ubuntu24-x64",
+      "runner": "ubuntu-24.04",
+      "os": "Linux",
+      "arch": "X64",
+      "target": "x86_64-unknown-linux-gnu"
+    },
+    {
+      "id": "ubuntu24-arm64",
+      "runner": "ubuntu-24.04-arm",
+      "os": "Linux",
+      "arch": "ARM64",
+      "target": "aarch64-unknown-linux-gnu"
+    },
+    {
+      "id": "macos26-arm64",
+      "runner": "macos-26",
+      "os": "macOS",
+      "arch": "ARM64",
+      "target": "aarch64-apple-darwin"
+    },
+    {
+      "id": "macos26-intel",
+      "runner": "macos-26-intel",
+      "os": "macOS",
+      "arch": "X64",
+      "target": "x86_64-apple-darwin"
+    },
+    {
+      "id": "windows2022-x64",
+      "runner": "windows-2022",
+      "os": "Windows",
+      "arch": "X64",
+      "target": "x86_64-pc-windows-msvc"
+    },
+    {
+      "id": "windows2025-x64",
+      "runner": "windows-2025",
+      "os": "Windows",
+      "arch": "X64",
+      "target": "x86_64-pc-windows-msvc"
+    },
+    {
+      "id": "windows11-arm64",
+      "runner": "windows-11-arm",
+      "os": "Windows",
+      "arch": "ARM64",
+      "target": "aarch64-pc-windows-msvc"
+    }
+  ],
+  "unqualified_gates": [
+    "actual execution of every matrix row, including runner availability",
+    "real WAN in both directions for every advertised endpoint pair",
+    "native KVM, HVF or libkrun MVM guest/host execution",
+    "durable object reception and OS-specific private storage semantics",
+    "Windows desktop x64 and unlisted OS/version/ABI combinations",
+    "native packet/NIC attachment and FlowMux or owner-access qualification",
+    "performance, energy, FIPS/CUI or production security qualification"
+  ],
+  "runner_reference_checked": "2026-11-02",
+  "runner_references": [
+    "https://docs.github.com/en/actions/reference/runners/github-hosted-runners",
+    "https://github.com/actions/runner-images"
+  ],
+  "role_defaults": {
+    "role": "remote-mailbox-client and ephemeral canonical local-service process",
+    "storage_mode": "ephemeral memory; no durable object receiver",
+    "carrier_profile": "canonical encrypted mailbox over authenticated StreamTransport TCP loopback",
+    "native_mvm_backend": "NOT_RUN; no guest is booted by this workflow",
+    "evidence": "per-row GitHub Actions artifact; unexecuted rows remain NOT_RUN"
+  },
+  "unix_storage_tests": [
+    {
+      "name": "canonical_storage",
+      "minimum_count": 2,
+      "scope": "Unix durable storage dispatch/reopen; not native MVM backend or WAN"
+    }
+  ]
+}
