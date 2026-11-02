@@ -118,6 +118,14 @@ multiple sessions require an outer shared resource budget. This profile changes
 selection and acknowledged sender state, not wire modes, decoder math or the
 TUN packet path.
 
+Combined now prepares a canonical schema stream once and can omit its full
+compression when a structural or source-qualified first-block bound proves it
+cannot win. Unsupported or inconclusive probes retain full encoding. When the
+rolling base equals the immutable runtime prediction byte-for-byte, both
+candidates share one residual calculation. These optimizations preserve selected
+offers/payloads and tie order; additional `pruned` entries identify skipped work,
+not measured encoded sizes.
+
 ## Exactness, limits and measurements
 
 One bidirectional QUIC stream carries bounded existing object batches. A failed

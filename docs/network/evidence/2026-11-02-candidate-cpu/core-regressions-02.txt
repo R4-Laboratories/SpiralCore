@@ -1,0 +1,129 @@
+   Compiling spiralcore-transfer v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 7.19s
+     Running unittests src/lib.rs (/Users/casey.allard/spiralcore/target/debug/deps/spiralcore_transfer-11e51de443a88ccf)
+
+running 37 tests
+test dag::fold_memo_tests::rejected_records_never_enter_the_memo ... ok
+test dag::fold_memo_tests::parent_memo_is_exact_and_has_a_fixed_small_allocation_bound ... ok
+test dag::fold_memo_tests::hot_memo_reuses_only_exact_nodes_and_preserves_unique_budget ... ok
+test schema::sender_checks::failed_speculation_never_spends_work_or_emits_partial_bytes ... ok
+test schema::sender_checks::first_match_preserves_exact_charge_and_terminal_work_budget ... ok
+test fitted_transfer::tests::frame_validation_is_atomic_and_separately_bounds_count_and_bytes ... ok
+test delta::scan_tests::bulk_scans_handle_different_lengths_and_zero_byte_borrows ... ok
+test delta::sender_delta_checks::unrelated_rejection_preserves_short_equal_runs_and_shifted_edge_reuse ... ok
+test schema::sender_checks::deterministic_mixed_sequences_preserve_matching_and_fallback_bytes ... ok
+test schema::sender_checks::lexical_layouts_invalid_tokens_and_every_truncation_preserve_old_bytes ... ok
+test schema::sender_checks::possible_record_is_only_a_conservative_length_and_json_prefix_check ... ok
+test schema::sender_checks::newline_iterator_preserves_exact_inclusive_slices_and_scan_boundaries ... ok
+test delta::scan_tests::bulk_scans_match_scalar_at_every_short_boundary ... ok
+test schema::sender_checks::impossible_record_preflight_keeps_complete_frozen_encoder_bytes ... ok
+test schema::sender_checks::fit_duplicate_mixed_lexical_and_invalid_records_keep_original_artifact ... ok
+test schema::sender_checks::newline_iterator_capped_count_matches_original_record_limit ... ok
+test schema::sender_checks::record_count_matches_iterator_at_chunk_boundaries_and_saturation ... ok
+test schema_selection::probe_eligibility_tests::computed_length_cost_matches_real_chunk_framing_without_materializing_bytes ... ok
+test schema_selection::probe_eligibility_tests::impossible_certificates_skip_probe_and_earlier_whole_ties_still_encode ... ok
+test selection::runtime_selection_tests::lower_bound_ties_preserve_original_codec_priority ... ok
+test selection::runtime_selection_tests::encoded_lower_bounds_hold_for_empty_small_and_chunk_boundary_inputs ... ok
+test schema::sender_checks::fit_order_and_training_schema_limits_match_original ... ok
+test selection::runtime_selection_tests::runtime_repeat_shortcut_and_errors_keep_pre_begin_behavior ... ok
+test selection::runtime_selection_tests::runtime_first_preserves_exhaustive_winner_and_body_bytes ... ok
+test shared_transfer::identity_tests::prepared_identity_matches_full_hash_for_equal_edited_and_length_changed_bytes ... ok
+test zstd_prefix::tests::chunk_validation_is_atomic_and_count_and_encoded_bounds_are_independent ... ok
+test shared_runtime::packed_tests::packed_rules_match_scalar_tables_at_periodic_word_boundaries ... ok
+test zstd_whole::probe_tests::certificate_parser_counts_only_actual_first_payload_and_required_remainder ... ok
+test zstd_whole::probe_tests::guard_version_size_and_unavailable_context_do_not_authorize_a_bound ... ok
+test zstd_whole::probe_tests::qualified_first_header_and_bound_match_uncapped_encoder_then_reset_exactly ... ok
+test schema_selection::candidate_cpu_checks::candidate_cpu_bounds_preserve_domain_ties_and_context_after_prune_or_inconclusive ... ok
+test schema::sender_checks::slots_record_sizes_and_line_limit_preserve_old_bytes ... ok
+test schema_selection::candidate_cpu_checks::candidate_cpu_schema_loser_is_certified_and_canonical_frames_match_frozen_baseline ... ok
+test zstd_prefix::tests::profile_minimum_size_holds_at_empty_and_decoded_block_boundaries ... ok
+test selection::runtime_selection_tests::prefix_structure_bound_prunes_large_runtime_without_changing_bytes ... ok
+test schema_selection::candidate_cpu_checks::candidate_cpu_frozen_oracle_covers_fallbacks_lengths_and_equal_basis_receipts ... ok
+test delta::sender_delta_checks::optimized_delta_preserves_all_frames_across_changes_and_boundaries ... ok
+
+test result: ok. 37 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 4.15s
+
+     Running tests/combined_session.rs (/Users/casey.allard/spiralcore/target/debug/deps/combined_session-bd346250ecd73184)
+
+running 5 tests
+test evicted_checkpoint_or_rolling_base_fails_without_reoffer ... ok
+test readiness_failure_scope_and_capacity_never_promote_unverified_bytes ... ok
+test exact_repeat_probes_before_codecs_and_recovers_eviction_under_same_offer ... ok
+test one_session_combines_runtime_and_rolling_sparse_without_raw_seed ... ok
+test full_size_target_is_admitted_and_transport_failure_does_not_publish ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.10s
+
+     Running tests/persistent_session.rs (/Users/casey.allard/spiralcore/target/debug/deps/persistent_session-77a266fa1b56e7a0)
+
+running 10 tests
+test exact_repeat_sender_cpu_profile ... ignored, explicit CPU diagnostic; coordinate with live measurement windows
+test input_capacity_limits_precede_network_and_do_not_destroy_known_base ... ok
+test lost_ack_never_promotes_and_explicit_recovery_confirms_committed_target ... ok
+test exact_repeat_uses_current_raw_identity_probe_and_recovers_remote_eviction ... ok
+test runtime_session_reuses_fixed_prediction_and_requires_checkpoint_ack ... ok
+test context_changes_and_invalid_ack_invalidate_hints_without_promotion ... ok
+test missing_or_corrupt_base_does_not_retry_and_recovery_cold_sends_explicitly ... ok
+test exact_repeat_never_trusts_local_readiness_instead_of_ack_or_scope ... ok
+test schema_seed_is_explicit_auxiliary_and_context_change_discards_scoped_state ... ok
+test rolling_owned_base_advances_only_on_ack_and_matches_existing_sender_frames ... ok
+
+test result: ok. 9 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 2.70s
+
+     Running tests/schema_prepared.rs (/Users/casey.allard/spiralcore/target/debug/deps/schema_prepared-ebf4a45e5c94f2a1)
+
+running 6 tests
+test schema_zstd_rejects_hostile_frames_then_decodes_a_valid_frame ... ok
+test prepared_schema_owns_artifact_and_preserves_existing_stream_bytes ... ok
+test schema_zstd_reuses_contexts_and_preserves_exact_values_and_fallback ... ok
+test prepared_encoders_recover_after_rejected_oversize_input ... ok
+test prepared_dictionary_matches_fresh_bytes_after_alternating_inputs_and_errors ... ok
+test target_specific_intermediate_cap_covers_maximum_literal_record_overhead ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.48s
+
+     Running tests/schema_selection.rs (/Users/casey.allard/spiralcore/target/debug/deps/schema_selection-eac5ddb46f146718)
+
+running 8 tests
+test whole_zstd_mode_is_explicit_and_requires_no_artifact ... ok
+test whole_contexts_preserve_parameters_bytes_and_recover_after_bad_frames ... ok
+test exact_candidate_costs_and_raw_tie_match_independent_frame_lengths ... ok
+test unseeded_claimed_warm_schema_is_rejected_and_whole_cache_is_scoped ... ok
+test whole_codec_accepts_exact_sixteen_mib_and_rejects_larger_before_encode ... ok
+test whole_receiver_rejects_corruption_then_reuses_bounded_contexts ... ok
+test prepared_selection_is_minimum_charges_seed_and_matches_serialized_transfer ... ok
+test lazy_schema_seed_is_paid_once_then_ready_schema_commits_exactly ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.31s
+
+     Running tests/shared_transfer.rs (/Users/casey.allard/spiralcore/target/debug/deps/shared_transfer-b4cda5e675b3f960)
+
+running 10 tests
+test prepared_prediction_rejects_invalid_state_and_oversize_targets ... ok
+test prepared_prediction_owns_its_state_and_preserves_residual_bytes ... ok
+test different_lengths_and_final_checkpoint_use_exact_residuals ... ok
+test setup_truncations_versions_digest_and_resource_lies_are_rejected ... ok
+test revoked_authority_and_changed_epoch_cannot_finish_an_admitted_replay ... ok
+test replay_is_idempotent_and_cancel_discards_output ... ok
+test checkpoint_must_be_authorized_present_and_within_replay_budget ... ok
+test runtime_recipe_crosses_transfer_boundary_and_reopens_exact_bytes ... ok
+test prepared_prediction_transfers_repeated_edits_without_granting_authority ... ok
+test malformed_setup_missing_setup_and_failed_final_digest_never_publish ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.23s
+
+     Running tests/warm_selection.rs (/Users/casey.allard/spiralcore/target/debug/deps/warm_selection-258bb1edd5605a50)
+
+running 9 tests
+test raw_ties_and_old_api_results_survive_interleaved_warm_calls_and_limits ... ok
+test verified_base_makes_sparse_an_exact_scored_candidate ... ok
+test static_tie_requires_whole_evaluation_or_a_stronger_actual_bound ... ok
+test period64_without_short_period_still_uses_actual_rejection_certificate ... ok
+test all_four_winners_match_exhaustive_selected_frame_bytes ... ok
+test boundaries_length_changes_and_context_reuse_preserve_exhaustive_minimum ... ok
+test cold_schema_can_win_after_paying_seed_instead_of_greedily_using_sparse ... ok
+test sampled_short_period_repetition_schedules_full_encoding_without_pruning ... ok
+test structural_bounds_skip_only_candidates_that_cannot_win ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 5.85s
+

@@ -35,6 +35,22 @@ for name in unregistered trials arms size deliveries setup warmprobe retry rate 
   printf '%s\n' "$code" > "$out/$name.exit"
   [ "$code" -ne 0 ] || { echo "negative unexpectedly accepted: $name" >&2; exit 1; }
 done
+if jq -e '.fixture_profile=="candidate-cpu"' "$registration" >/dev/null; then
+  for name in baseline binary_mapping arm_order; do
+    case "$name" in
+      baseline) mutation='.baseline_revision="main"';;
+      binary_mapping) mutation='.service_binary_by_arm["combined-before"]="candidate"';;
+      arm_order) mutation='.dose.mode_order_by_trial[1]=.dose.mode_order_by_trial[0]';;
+    esac
+    jq "$mutation" "$out/ready-fixture.json" > "$out/$name.json"
+    set +e
+    bash "$driver" validate "$out/$name.json" > "$out/$name.stdout" 2> "$out/$name.stderr"
+    code=$?
+    set -e
+    printf '%s\n' "$code" > "$out/$name.exit"
+    [ "$code" -ne 0 ] || { echo "candidate binding unexpectedly accepted: $name" >&2; exit 1; }
+  done
+fi
 printf 'tcpdump: 10 packets captured, 10 packets received by filter, 0 packets dropped by kernel\n' > "$out/capture-ok.stderr"
 bash "$driver" capture-drained "$out/capture-ok.stderr" > "$out/capture-positive.stdout" 2> "$out/capture-positive.stderr"
 for name in tail drop empty missing; do
@@ -51,4 +67,32 @@ for name in tail drop empty missing; do
   printf '%s\n' "$code" > "$out/capture-$name.exit"
   [ "$code" -ne 0 ] || { echo "undrained capture unexpectedly accepted: $name" >&2; exit 1; }
 done
-printf '{"positive":1,"negatives":12,"capture_positive":1,"capture_negatives":4,"passed":true,"scope":"pure registration, capture completion and shell syntax; no network claim"}\n' > "$out/result.json"
+jq -n '{operations:[{group:"near1m",label:"generated",action:"send",input_bytes:1047202,
+  object_id:("00"*32),selected_mode:"RuntimeV1",publication_path:"verified-transfer",
+  request_frame_bytes:100,response_frame_bytes:50,data_bytes:40,requests:2,cpu_us:100,
+  channel_before:{encoded_batch_bytes_sent:10,encoded_batch_bytes_received:5,framing_bytes_sent:4,framing_bytes_received:4,batches_sent:1,batches_received:1},
+  channel_after:{encoded_batch_bytes_sent:110,encoded_batch_bytes_received:55,framing_bytes_sent:12,framing_bytes_received:12,batches_sent:3,batches_received:3}}]}' > "$out/parity-before.json"
+jq '.operations[0].cpu_us=50' "$out/parity-before.json" > "$out/parity-after.json"
+bash "$driver" receipt-parity "$out/parity-before.json" "$out/parity-after.json" > "$out/parity-positive.json"
+for name in mode path bytes framing missing; do
+  case "$name" in
+    mode) mutation='.operations[0].selected_mode="Raw"';;
+    path) mutation='.operations[0].publication_path="verified-cache-hit"';;
+    bytes) mutation='.operations[0].data_bytes+=1';;
+    framing) mutation='.operations[0].channel_after.framing_bytes_sent+=4';;
+    missing) mutation='del(.operations[0].request_frame_bytes)';;
+  esac
+  jq "$mutation" "$out/parity-after.json" > "$out/parity-$name.json"
+  baseline="$out/parity-before.json"
+  [ "$name" != missing ] || baseline="$out/parity-$name.json"
+  set +e
+  bash "$driver" receipt-parity "$baseline" "$out/parity-$name.json" > "$out/parity-$name.stdout" 2> "$out/parity-$name.stderr"
+  code=$?
+  set -e
+  printf '%s\n' "$code" > "$out/parity-$name.exit"
+  [ "$code" -ne 0 ] || { echo "changed/missing operation unexpectedly accepted: $name" >&2; exit 1; }
+done
+bindings=0
+if jq -e '.fixture_profile=="candidate-cpu"' "$registration" >/dev/null; then bindings=3; fi
+jq -n --argjson bindings "$bindings" '{positive:1,negatives:12,binding_negatives:$bindings,capture_positive:1,capture_negatives:4,
+  parity_positive:1,parity_negatives:5,passed:true,scope:"pure registration, capture completion, receipt parity and shell syntax; no network claim"}' > "$out/result.json"

@@ -16,6 +16,18 @@ pub struct PreparedEncoder {
     encoder: Option<CCtx<'static>>,
 }
 
+// Sealed canonical SCVAL001 input: callers cannot substitute unvalidated bytes
+// or a target length. It is transient and reused if a proof cannot prune zstd.
+pub(crate) struct PreparedIntermediate {
+    bytes: Vec<u8>,
+    target_len: usize,
+}
+impl PreparedIntermediate {
+    pub(crate) fn bytes(&self) -> &[u8] {
+        &self.bytes
+    }
+}
+
 impl PreparedEncoder {
     pub fn new(artifact: &[u8]) -> Result<Self> {
         let schema = schema::PreparedSchema::new(artifact)?;
@@ -43,22 +55,37 @@ impl PreparedEncoder {
         schema::PREPARED_CHARGE + ENCODER_ALLOWANCE
     }
     pub fn encode(&mut self, target: &[u8]) -> Result<Vec<u8>> {
+        let intermediate = self.prepare_intermediate(target)?;
+        self.encode_prepared(intermediate)
+    }
+    pub(crate) fn prepare_intermediate(&self, target: &[u8]) -> Result<PreparedIntermediate> {
         let intermediate = self.schema.encode(target)?;
         if intermediate.len() > schema::encoded_cap(target.len())? {
             return Err(Error::Limit);
         }
+        // A previous resource failure must not be bypassed by a later prune.
+        self.encoder.as_ref().ok_or(Error::Limit)?;
+        Ok(PreparedIntermediate {
+            bytes: intermediate,
+            target_len: target.len(),
+        })
+    }
+    pub(crate) fn encode_prepared(
+        &mut self,
+        intermediate: PreparedIntermediate,
+    ) -> Result<Vec<u8>> {
         let encoder = self.encoder.as_mut().ok_or(Error::Limit)?;
         let mut encoded = Vec::new();
         encoded
-            .try_reserve_exact(zstd_safe::compress_bound(intermediate.len()))
+            .try_reserve_exact(zstd_safe::compress_bound(intermediate.bytes.len()))
             .map_err(|_| Error::Limit)?;
-        let result = encoder.compress2(&mut encoded, &intermediate);
+        let result = encoder.compress2(&mut encoded, &intermediate.bytes);
         if encoder.sizeof() as u64 > ENCODER_ALLOWANCE {
             self.encoder = None;
             return Err(Error::Limit);
         }
         result.map_err(|_| Error::Malformed)?;
-        if frame_size(&encoded, target.len())? != intermediate.len() {
+        if frame_size(&encoded, intermediate.target_len)? != intermediate.bytes.len() {
             return Err(Error::Integrity);
         }
         Ok(encoded)

@@ -1,0 +1,24 @@
+   Compiling spiralcore-transfer v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer)
+   Compiling spiralcore-gateway-core v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-gateway-core)
+   Compiling spiralcore-gateway v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-gateway)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 4.00s
+     Running unittests examples/object_fixtures.rs (/Users/casey.allard/spiralcore/target/debug/examples/object_fixtures-e25c53765f5366d4)
+
+running 1 test
+test tests::candidate_profile_pairs_combined_groups_and_preserves_historical_identities ... FAILED
+
+failures:
+
+---- tests::candidate_profile_pairs_combined_groups_and_preserves_historical_identities stdout ----
+
+thread 'tests::candidate_profile_pairs_combined_groups_and_preserves_historical_identities' (7548137) panicked at examples/object_fixtures.rs:377:67:
+called `Result::unwrap()` on an `Err` value: Custom { kind: InvalidData, error: "unknown fixture campaign profile" }
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    tests::candidate_profile_pairs_combined_groups_and_preserves_historical_identities
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 4 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `--example object_fixtures`

@@ -45,8 +45,8 @@ without establishing why the current candidate work is expensive.
 
 ## Measurement
 
-First record native independent candidate-stage CPU/wall on generated and
-unrelated fixtures at both existing tiers, three trials. Preparation and output
+First record native independent candidate-stage CPU/wall on generated, residual
+and unrelated fixtures at both existing tiers, three trials. Preparation and output
 verification are separate. Do not add independent stage durations as if they
 were one transfer or infer CPU by subtracting network waits.
 

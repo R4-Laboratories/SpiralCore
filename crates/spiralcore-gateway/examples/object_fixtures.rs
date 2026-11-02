@@ -88,10 +88,11 @@ fn artifact(out: &Path, name: &str, bytes: &[u8]) -> Result<Value> {
 fn generate(out: &Path, trial: u64) -> Result<Value> {
     generate_profile(out, trial, "runtime")
 }
-fn generate_profile(out: &Path, trial: u64, profile: &str) -> Result<Value> {
-    let arms = match profile {
-        "runtime" => ARMS,
-        "combined" => COMBINED_ARMS,
+pub(crate) fn generate_profile(out: &Path, trial: u64, profile: &str) -> Result<Value> {
+    let arms: &[&str] = match profile {
+        "runtime" => &ARMS,
+        "combined" => &COMBINED_ARMS,
+        "candidate-cpu" => &["combined-before", "combined-after", "whole-zstd"],
         _ => return Err(m::invalid("unknown fixture campaign profile").into()),
     };
     if trial > 2 || !out.is_absolute() {
@@ -126,15 +127,19 @@ fn generate_profile(out: &Path, trial: u64, profile: &str) -> Result<Value> {
             "repeat_of":"residual","residual_edit_offsets":tier.edit_offsets,
             "residual_edit_length":32,"residual_xor_byte":165,"residual_changed_bytes":512}));
     }
-    for arm in arms {
+    for &arm in arms {
+        let mode = match arm {
+            "combined-before" | "combined-after" => "combined",
+            _ => arm,
+        };
         let groups: Vec<Value> = tiers
             .iter()
             .map(|tier| {
                 let mut operations = Vec::new();
-                if arm == "runtime" || arm == "combined" {
+                if mode == "runtime" || mode == "combined" {
                     operations.push(json!({"label":"checkpoint","action":"checkpoint","warm_probe":false}));
                 }
-                if arm == "warm" || arm == "combined" {
+                if mode == "warm" || mode == "combined" {
                     operations.push(json!({"label":"schema","action":"schema","warm_probe":false}));
                 }
                 for (label, kind) in [
@@ -145,14 +150,14 @@ fn generate_profile(out: &Path, trial: u64, profile: &str) -> Result<Value> {
                     ("opaque-edited", "opaque_edited"),
                     ("opaque-edited-repeat", "opaque_edited"),
                 ] {
-                    let action = if arm == "warm" && label == "generated" { "seed" } else { "send" };
+                    let action = if mode == "warm" && label == "generated" { "seed" } else { "send" };
                     operations.push(json!({"label":label,"path":tier[kind]["path"],"action":action,"warm_probe":action=="send"}));
                 }
-                let mut group = json!({"label":tier["label"],"mode":arm,"operations":operations});
-                if arm == "warm" || arm == "combined" {
+                let mut group = json!({"label":tier["label"],"mode":mode,"operations":operations});
+                if mode == "warm" || mode == "combined" {
                     group["schema_path"] = schema["path"].clone();
                 }
-                if arm == "runtime" || arm == "combined" {
+                if mode == "runtime" || mode == "combined" {
                     group["checkpoint_path"] = tier["checkpoint"]["path"].clone();
                     group["recipe_path"] = tier["recipe"]["path"].clone();
                 }
@@ -174,7 +179,7 @@ fn main() -> Result<()> {
     let args: Vec<String> = std::env::args().collect();
     if args.len() != 3 && args.len() != 4 {
         return Err(m::invalid(
-            "usage: object_fixtures NEW_ABSOLUTE_OUT TRIAL_0_TO_2 [runtime|combined]",
+            "usage: object_fixtures NEW_ABSOLUTE_OUT TRIAL_0_TO_2 [runtime|combined|candidate-cpu]",
         )
         .into());
     }
@@ -368,5 +373,48 @@ mod tests {
         let invalid = temp.path().join("invalid-profile");
         assert!(generate_profile(&invalid, 0, "guess").is_err());
         assert!(!invalid.exists());
+    }
+
+    #[test]
+    fn candidate_profile_pairs_combined_groups_and_preserves_historical_identities() {
+        let temp = tempfile::tempdir().unwrap();
+        let out = temp.path().join("candidate");
+        let manifest = generate_profile(&out, 0, "candidate-cpu").unwrap();
+        assert_eq!(
+            manifest["arms"],
+            json!(["combined-before", "combined-after", "whole-zstd"])
+        );
+        let historical:Value=serde_json::from_str(include_str!("../../../docs/network/evidence/2026-11-02-combined-gateway/linux-run/campaign/fixtures-0/manifest.json")).unwrap();
+        assert_eq!(manifest["schema"]["sha256"], historical["schema"]["sha256"]);
+        for i in 0..2 {
+            for kind in [
+                "checkpoint",
+                "recipe",
+                "generated",
+                "residual",
+                "opaque",
+                "opaque_edited",
+            ] {
+                for field in ["sha256", "object_id", "bytes"] {
+                    assert_eq!(
+                        manifest["tiers"][i][kind][field],
+                        historical["tiers"][i][kind][field]
+                    );
+                }
+            }
+        }
+        let before: Value =
+            serde_json::from_slice(&fs::read(out.join("groups-combined-before.json")).unwrap())
+                .unwrap();
+        let after: Value =
+            serde_json::from_slice(&fs::read(out.join("groups-combined-after.json")).unwrap())
+                .unwrap();
+        assert_eq!(before, after);
+        assert!(before
+            .as_array()
+            .unwrap()
+            .iter()
+            .all(|g| g["mode"] == "combined" && g["operations"].as_array().unwrap().len() == 8));
+        assert!(!out.join("groups-warm.json").exists());
     }
 }

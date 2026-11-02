@@ -1,0 +1,43 @@
+   Compiling spiralcore-runtime-analysis v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/tools/gateway-network/runtime-analysis)
+error[E0277]: can't compare `[&str; 4]` with `[&str; 3]`
+   --> ../analyze-runtime-objects.rs:875:9
+    |
+875 | /         assert_eq!(
+876 | |             p.arms(),
+877 | |             ["combined-before", "combined-after", "whole-zstd"]
+878 | |         );
+    | |_________^ no implementation for `[&str; 4] == [&str; 3]`
+    |
+    = help: the trait `PartialEq<[&str; 3]>` is not implemented for `[&str; 4]`
+    = help: the following other types implement trait `PartialEq<Rhs>`:
+              `&[T]` implements `PartialEq<Vec<U, A>>`
+              `&[T]` implements `PartialEq<[U; N]>`
+              `&[u8; N]` implements `PartialEq<ByteStr>`
+              `&[u8; N]` implements `PartialEq<ByteString>`
+              `&[u8]` implements `PartialEq<ByteStr>`
+              `&[u8]` implements `PartialEq<ByteString>`
+              `&mut [T]` implements `PartialEq<Vec<U, A>>`
+              `&mut [T]` implements `PartialEq<[U; N]>`
+            and 11 others
+
+error[E0425]: cannot find function `receipt_parity` in this scope
+   --> ../analyze-runtime-objects.rs:895:17
+    |
+895 |         assert!(receipt_parity(&before, &after).is_ok());
+    |                 ^^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `receipt_parity` in this scope
+   --> ../analyze-runtime-objects.rs:903:21
+    |
+903 |             assert!(receipt_parity(&before, &bad).is_err());
+    |                     ^^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `receipt_parity` in this scope
+   --> ../analyze-runtime-objects.rs:906:17
+    |
+906 |         assert!(receipt_parity(&before, &after).is_err());
+    |                 ^^^^^^^^^^^^^^ not found in this scope
+
+Some errors have detailed explanations: E0277, E0425.
+For more information about an error, try `rustc --explain E0277`.
+error: could not compile `spiralcore-runtime-analysis` (bin "analyze_runtime_objects" test) due to 4 previous errors
