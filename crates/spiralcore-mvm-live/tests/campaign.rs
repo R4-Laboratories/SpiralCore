@@ -241,3 +241,105 @@ fn mixed_public_fixtures_match_retained_gateway_identities() {
     assert!(spiralcore_mvm_live::fixtures::mixed_recipe(4096, 0).is_err());
     assert!(spiralcore_mvm_live::fixtures::mixed_recipe(1 << 20, 3).is_err());
 }
+
+#[test]
+fn canonical_service_bootstrap_reserves_private_receipt_keys_and_shared_routes() {
+    let pair = Pair::provision(Plan {
+        stage: Stage::Two,
+        arm: Arm::Warm,
+        size: 4096,
+        trial: 0,
+        bandwidth_profile: Default::default(),
+    })
+    .unwrap();
+    let sender = pair
+        .sender
+        .service
+        .as_ref()
+        .expect("canonical service profile");
+    let receiver = pair.receiver.service.as_ref().unwrap();
+    assert_eq!(sender.profile, "canonical-ephemeral-v1");
+    assert!(sender.incoming_control.signing.is_none());
+    assert!(sender.outgoing_control.signing.is_some());
+    assert_eq!(
+        sender.outgoing_control.binding.claims.route_id,
+        pair.sender
+            .outgoing
+            .as_ref()
+            .unwrap()
+            .binding
+            .claims
+            .route_id
+    );
+    assert_eq!(
+        receiver.outgoing_control.binding.claims.route_id,
+        pair.receiver
+            .outgoing
+            .as_ref()
+            .unwrap()
+            .binding
+            .claims
+            .route_id
+    );
+    assert_ne!(
+        sender.outgoing_control.key_id,
+        pair.sender.outgoing.as_ref().unwrap().key_id
+    );
+    assert_eq!(
+        sender.peer_receipt_verification,
+        ed25519_dalek::SigningKey::from_bytes(&receiver.local_receipt_signing)
+            .verifying_key()
+            .to_bytes()
+    );
+}
+
+#[test]
+fn service_campaign_counts_destination_receipts_in_both_directions() {
+    let store = tempfile::tempdir().unwrap();
+    let pair = Pair::provision(Plan {
+        stage: Stage::Two,
+        arm: Arm::Raw,
+        size: 128,
+        trial: 2,
+        bandwidth_profile: Default::default(),
+    })
+    .unwrap();
+    let (sent, _, _) = run_receipts(&pair, &store.path().join("cache"));
+    assert_eq!(sent["service_profile"], "canonical-ephemeral-v1");
+    let calls = sent["service"]["application_calls"].as_u64().unwrap();
+    assert!(calls > 0);
+    assert_eq!(sent["counters"]["frames_sent"].as_u64().unwrap(), calls * 2);
+    assert_eq!(
+        sent["counters"]["frames_received"].as_u64().unwrap(),
+        calls * 2
+    );
+}
+
+#[test]
+fn qualified_16m_whole_mixed_service_session_reopens_exactly() {
+    let pair = Pair::provision(Plan {
+        stage: Stage::Two,
+        arm: Arm::WholeMixed,
+        size: 16 << 20,
+        trial: 0,
+        bandwidth_profile: Default::default(),
+    })
+    .unwrap();
+    let store = tempfile::tempdir().unwrap();
+    let (sent, published, _) = run_receipts(&pair, &store.path().join("cache"));
+    assert_eq!(published.len(), 8);
+    assert!(published.iter().all(|p| p.length == 14_851_384));
+    let calls = sent["service"]["application_calls"].as_u64().unwrap();
+    assert!(calls > 512 && calls <= 2048);
+    assert_eq!(sent["service"]["identity_tier"], "native-16m-v1");
+    assert_eq!(sent["counters"]["frames_sent"].as_u64().unwrap(), calls * 2);
+    assert_eq!(
+        sent["counters"]["frames_received"].as_u64().unwrap(),
+        calls * 2
+    );
+    eprintln!(
+        "NATIVE_16M_WHOLE_MIXED_UNIT {}",
+        serde_json::to_string(&sent).unwrap()
+    );
+    eprintln!("QUALIFICATION_SCOPE paired socket unit in one process; not guest/WAN performance; process CPU includes both endpoint threads");
+}

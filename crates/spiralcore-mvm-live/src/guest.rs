@@ -46,6 +46,7 @@ fn parse_bootstrap(bytes: &[u8]) -> Result<Bootstrap> {
         if bootstrap.plan.stage != Stage::Two
             || bootstrap.incoming.is_some()
             || bootstrap.outgoing.is_some()
+            || bootstrap.service.is_some()
             || bootstrap.published.is_empty()
             || bootstrap.published.len() > 32
             || bootstrap.published.iter().any(|object| {
@@ -63,6 +64,9 @@ fn parse_bootstrap(bytes: &[u8]) -> Result<Bootstrap> {
             return Err("invalid keyless verifier bootstrap".into());
         }
         return Ok(bootstrap);
+    }
+    if bootstrap.service.is_none() {
+        return Err("normal roles require canonical mailbox service provisioning".into());
     }
     if !bootstrap.published.is_empty()
         || (bootstrap.role == Role::Receiver && bootstrap.plan.stage != Stage::Two)
@@ -131,6 +135,7 @@ fn parse_bootstrap(bytes: &[u8]) -> Result<Bootstrap> {
     }
     // These are launch shape checks. The live adapter still authenticates the
     // signatures, routes, and current authority before handling every message.
+    crate::campaign::validate_service_bootstrap(&bootstrap)?;
     Ok(bootstrap)
 }
 
@@ -423,6 +428,7 @@ mod tests {
             utc_seconds: sender.utc_seconds,
             incoming: None,
             outgoing: None,
+            service: None,
             published: vec![Published {
                 namespace: [1; 32],
                 object: [2; 32],
@@ -481,6 +487,54 @@ mod tests {
             .address
             .recipient = mvm_contract::protocol::mailbox::PrincipalId::from_bytes([99; 32]);
         assert!(parse(&wrong_pair).is_err());
+    }
+
+    #[test]
+    fn canonical_service_refuses_foreign_control_routes_and_excess_private_keys() {
+        let mut input = provision().sender;
+        input.service.as_mut().unwrap().incoming_control.signing = Some([9; 32]);
+        assert!(parse(&input).is_err());
+        let mut input = provision().sender;
+        input.service.as_mut().unwrap().outgoing_control.binding =
+            input.incoming.as_ref().unwrap().binding.clone();
+        assert!(parse(&input).is_err());
+        let mut input = provision().sender;
+        input.service.as_mut().unwrap().profile = "unsupported".into();
+        assert!(parse(&input).is_err());
+        let mut input = verifier();
+        input.service = provision().sender.service;
+        assert!(parse(&input).is_err());
+    }
+
+    #[test]
+    fn current_normal_roles_require_the_explicit_canonical_service_profile() {
+        for mut input in [provision().sender, provision().receiver] {
+            input.service = None;
+            assert!(parse(&input).is_err());
+        }
+        assert!(parse(&verifier()).is_ok());
+    }
+
+    #[test]
+    fn launch_shape_validation_does_not_authenticate_against_pre_resync_guest_clock() {
+        let mut input = provision().sender;
+        input.utc_seconds += 120;
+        let profile = input.service.as_mut().unwrap();
+        for material in [
+            input.incoming.as_mut().unwrap(),
+            input.outgoing.as_mut().unwrap(),
+            &mut profile.incoming_control,
+            &mut profile.outgoing_control,
+        ] {
+            material.capability.grant.not_before_unix_ms += 120_000;
+            material.capability.grant.expires_at_unix_ms += 120_000;
+            material.binding.claims.not_before_unix_ms += 120_000;
+            material.binding.claims.expires_at_unix_ms += 120_000;
+        }
+        // Parsing checks launch shape using its supplied UTC. Signatures and
+        // current-clock authorization remain canonical admission's job after
+        // restore_clock::resync; modified signatures here are intentionally stale.
+        assert!(parse(&input).is_ok());
     }
 
     #[test]

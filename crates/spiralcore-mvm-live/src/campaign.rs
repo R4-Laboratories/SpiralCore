@@ -1,4 +1,5 @@
 //! Persistent public-fixture transfers through real canonical mailbox streams.
+mod canonical;
 use crate::{
     Result,
     config::{Arm, Bootstrap, Plan, Published, Role},
@@ -8,9 +9,8 @@ use cpu_time::ProcessTime;
 use mvm_core::mailbox::transport::CancellationToken;
 use serde_json::{Value, json};
 use spiralcore_gateway_core::object::{ObjectMode, ObjectSelection, ObjectSender};
-use spiralcore_mvm_adapter::{
-    Direction, Error as AdapterError, ObjectEndpoint, open_object_endpoint,
-    live::{HandshakeRole, LiveError, SocketIo, StreamCounters, StreamTransport},
+use spiralcore_mvm_adapter::live::{
+    HandshakeRole, LiveError, SocketIo, StreamCounters, StreamTransport,
 };
 use spiralcore_transfer::{
     self as transfer, Id,
@@ -32,6 +32,12 @@ use std::{
 
 const CALL_TIMEOUT: Duration = Duration::from_secs(30);
 const PROBE: Id = [0; 32];
+
+#[cfg(any(target_os = "linux", test))]
+pub(crate) fn validate_service_bootstrap(bootstrap: &Bootstrap) -> Result<()> {
+    canonical::validate_bootstrap(bootstrap)?;
+    Ok(())
+}
 
 #[derive(Default)]
 struct Meter {
@@ -127,30 +133,19 @@ fn difference(after: StreamCounters, before: StreamCounters) -> Result<StreamCou
 }
 
 struct Client<S: SocketIo> {
-    outgoing: Direction,
-    incoming: Direction,
     stream: StreamTransport<S>,
     cancel: CancellationToken,
     exchange: Meter,
+    service: canonical::Session,
 }
 impl<S: SocketIo + 'static> Client<S> {
     fn call(&mut self, request: &Frame) -> Result<(Context, Frame)> {
         let cpu = ProcessTime::now();
         let wall = Instant::now();
-        let call = self.outgoing.send_call(
-            request,
-            &self.incoming,
-            &self.stream,
-            &self.cancel,
-            Instant::now() + CALL_TIMEOUT,
-        )?;
-        let context = call.context().clone();
-        let wire = self.stream.receive(&self.cancel, call.deadline())?;
-        let reply = self.incoming.open_live(&wire)?;
-        let reply = self.incoming.accept_reply(call, reply)?;
+        let result = self.service.call(request, &self.stream, &self.cancel)?;
         self.exchange
             .add(cpu.elapsed().as_micros(), wall.elapsed().as_micros())?;
-        Ok((context, reply))
+        Ok(result)
     }
     fn exchange(&mut self, frames: &[Frame]) -> Result<Vec<Frame>> {
         if frames.is_empty() || frames.len() > 4096 {
@@ -180,25 +175,22 @@ pub fn sender<S: SocketIo + 'static>(
     let cpu = ProcessTime::now();
     let wall = Instant::now();
     let cases = cases(&bootstrap.plan)?;
-    let outgoing = bootstrap
+    let service = canonical::Session::new(bootstrap)?;
+    let route = bootstrap
         .outgoing
         .as_ref()
-        .ok_or("missing send material")?
-        .direction()?;
-    let incoming = bootstrap
-        .incoming
-        .as_ref()
-        .ok_or("missing reply material")?
-        .direction()?;
-    let stream = StreamTransport::new(socket, outgoing.route_id(), CALL_TIMEOUT)?;
+        .ok_or("missing outgoing material")?
+        .binding
+        .claims
+        .route_id;
+    let stream = StreamTransport::new(socket, route, CALL_TIMEOUT)?;
     let cancel = CancellationToken::default();
     stream.handshake(role, &cancel)?;
     let mut client = Client {
-        outgoing,
-        incoming,
         stream,
         cancel,
         exchange: Meter::default(),
+        service,
     };
     let (context, probe) = client.call(&Frame {
         kind: 5,
@@ -259,7 +251,7 @@ pub fn sender<S: SocketIo + 'static>(
     emit(
         out,
         &json!({"event":"sender_setup","plan":bootstrap.plan,"cpu_us":total.cpu_us,
-        "wall_us":total.wall_us,"counters":client.stream.counters()?,
+        "wall_us":total.wall_us,"counters":client.stream.counters()?,"service_profile":"canonical-ephemeral-v1",
         "includes":"fixture generation, codec preparation, handshake and authenticated Status probe",
         "seed_baseline":if bootstrap.plan.arm.is_mixed() {"Combined pays checkpoint/schema publication; all arms send the same eight targets with warm_probe=true; WholeMixed uses prepared whole-object zstd"} else {"all arms seed raw; Whole uses prepared whole-object zstd for subsequent objects"}}),
     )?;
@@ -330,6 +322,7 @@ pub fn sender<S: SocketIo + 'static>(
             "kind":case.kind,"object":transfer::hex(&expected),"bytes":case.bytes.len(),"mode":format!("{:?}",stats.mode),
             "cpu_us":cpu_us,"wall_us":wall_us,"exchange_cpu_us":io_cpu,"exchange_wall_us":io_wall,
             "selection":selection.as_ref().map(selection_value),
+            "service_profile":"canonical-ephemeral-v1",
             "counters":difference(client.stream.counters()?, before)?,
             "application_request_bytes":stats.request_bytes,"application_response_bytes":stats.response_bytes}),
         )?;
@@ -337,6 +330,7 @@ pub fn sender<S: SocketIo + 'static>(
     let counters = client.stream.counters()?;
     client.stream.close()?;
     let result = json!({"event":"sender_done","plan":bootstrap.plan,"operations":cases.len(),
+        "service_profile":"canonical-ephemeral-v1","service":client.service.report(),
         "cpu_us":total.cpu_us,"wall_us":total.wall_us,"counters":counters,
         "timing":"setup plus operations; JSON output and fixture ownership copies excluded from operation timing"});
     emit(out, &result)?;
@@ -362,12 +356,10 @@ fn selection_value(selection: &ObjectSelection) -> Value {
 }
 
 struct Server<S: SocketIo> {
-    incoming: Direction,
-    outgoing: Direction,
     stream: StreamTransport<S>,
     cancel: CancellationToken,
-    endpoint: ObjectEndpoint,
-    start: Instant,
+    service: canonical::Session,
+    object: spiralcore_mvm_adapter::service_object::ObjectMailbox,
 }
 struct Handled {
     reply: Frame,
@@ -376,35 +368,12 @@ struct Handled {
 }
 impl<S: SocketIo + 'static> Server<S> {
     fn handle(&mut self, expected_transfer: Id) -> Result<Handled> {
-        let wire = self
-            .stream
-            .receive(&self.cancel, Instant::now() + CALL_TIMEOUT)?;
-        // Socket idle waiting is outside receiver processing timings.
-        let cpu = ProcessTime::now();
-        let wall = Instant::now();
-        let verified = self.incoming.open_live(&wire)?;
-        if verified.frame().transfer != expected_transfer {
-            return Err("unexpected campaign transfer".into());
-        }
-        let namespace = verified.context().namespace()?;
-        let reply = match verified.dispatch_live(&mut self.endpoint, self.start.elapsed().as_secs())
-        {
-            Ok(reply) => reply,
-            Err(LiveError::Adapter(AdapterError::Frame(error))) => verified
-                .frame()
-                .reply(127, (error as u16).to_le_bytes().to_vec()),
-            Err(error) => return Err(error.into()),
-        };
-        self.outgoing
-            .reply_to_verified(&verified, &reply, &self.stream, &self.cancel)?;
-        Ok(Handled {
-            reply,
-            namespace,
-            meter: Meter {
-                cpu_us: cpu.elapsed().as_micros(),
-                wall_us: wall.elapsed().as_micros(),
-            },
-        })
+        self.service.handle(
+            expected_transfer,
+            &mut self.object,
+            &self.stream,
+            &self.cancel,
+        )
     }
 }
 
@@ -421,17 +390,15 @@ pub fn receiver<S: SocketIo + 'static>(
     let cpu = ProcessTime::now();
     let wall = Instant::now();
     let cases = cases(&bootstrap.plan)?;
-    let incoming = bootstrap
-        .incoming
-        .as_ref()
-        .ok_or("missing receive material")?
-        .direction()?;
-    let outgoing = bootstrap
+    let service = canonical::Session::new(bootstrap)?;
+    let route = bootstrap
         .outgoing
         .as_ref()
-        .ok_or("missing reply material")?
-        .direction()?;
-    let stream = StreamTransport::new(socket, outgoing.route_id(), CALL_TIMEOUT)?;
+        .ok_or("missing outgoing material")?
+        .binding
+        .claims
+        .route_id;
+    let stream = StreamTransport::new(socket, route, CALL_TIMEOUT)?;
     let cancel = CancellationToken::default();
     let limits = Limits {
         max_active: 4,
@@ -440,21 +407,26 @@ pub fn receiver<S: SocketIo + 'static>(
         namespace_bytes: 128 << 20,
         ..Limits::default()
     };
-    let mut endpoint = open_object_endpoint(
+    let policy = spiralcore_mvm_adapter::Policy::new(
+        bootstrap
+            .incoming
+            .as_ref()
+            .ok_or("missing incoming")?
+            .context()?,
+    )?;
+    let mut object = spiralcore_mvm_adapter::service_object::ObjectMailbox::open(
         cache_root,
         limits,
-        incoming.authority(),
+        policy,
         ColdGraphPolicy::Disabled,
     )?;
-    endpoint.set_codec_cache_enabled(true)?;
+    object.set_codec_cache_enabled(true)?;
     stream.handshake(role, &cancel)?;
     let mut server = Server {
-        incoming,
-        outgoing,
         stream,
         cancel,
-        endpoint,
-        start: Instant::now(),
+        service,
+        object,
     };
     let probe = server.handle(PROBE)?;
     if probe.reply.kind != 127
@@ -468,7 +440,7 @@ pub fn receiver<S: SocketIo + 'static>(
     emit(
         out,
         &json!({"event":"receiver_setup","plan":bootstrap.plan,"cpu_us":total.cpu_us,
-        "wall_us":total.wall_us,"counters":server.stream.counters()?}),
+        "wall_us":total.wall_us,"counters":server.stream.counters()?,"service_profile":"canonical-ephemeral-v1"}),
     )?;
     let mut published = Vec::with_capacity(cases.len());
     for (position, case) in cases.iter().enumerate() {
@@ -508,6 +480,7 @@ pub fn receiver<S: SocketIo + 'static>(
             &json!({"event":"receiver_operation","plan":bootstrap.plan,"position":position,
             "kind":case.kind,"object":transfer::hex(&expected),"bytes":case.bytes.len(),
             "cpu_us":processing.cpu_us,"wall_us":processing.wall_us,
+            "service_profile":"canonical-ephemeral-v1",
             "counters":difference(server.stream.counters()?, before)?,
             "timing":"open, endpoint processing and authenticated reply; idle receive wait excluded"}),
         )?;
@@ -527,10 +500,12 @@ pub fn receiver<S: SocketIo + 'static>(
     if tail.envelope_bytes_received != 0 || tail.framing_bytes_received != 0 {
         return Err("trailing partial frame after campaign".into());
     }
+    let service_report = server.service.report();
     drop(server);
     drop(cases);
     verify(&bootstrap.plan, cache_root, &published, out)?;
     let result = json!({"event":"receiver_done","plan":bootstrap.plan,"operations":published.len(),
+        "service_profile":"canonical-ephemeral-v1","service":service_report,
         "cpu_us":total.cpu_us,"wall_us":total.wall_us,"counters":counters,"published":published,
         "exact_reopened":true,"timing":"setup plus receiver processing; independent readback recorded separately"});
     emit(out, &result)?;

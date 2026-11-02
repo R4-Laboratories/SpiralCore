@@ -18,24 +18,28 @@ a new guest mounts that disk read-only and verifies exact bytes with no mailbox
 credentials. That historical readback is distinct from authorization to resume a
 new execution epoch.
 
-The retained MVM patch is pinned to
-`3104a12c5b071a6851323fa8115d2afaf3f0bb8b`; see `mvm-patch/` for preparation and
-provenance. Port **5257 is experimental**. The production supervisor continues to
+The current dependency is the explicit contribution-preparation fork commit
+`5766754fbaae59dbee548f968716a514d3a796c1`, based on upstream `6ae461a`.
+See `mvm-service-patch/` for the reproducible patch bundle and provenance.
+The historical `mvm-patch/` bundle and prior results remain pinned to
+`3104a12c5b071a6851323fa8115d2afaf3f0bb8b`; they do not qualify the new service.
+Port **5257 is experimental**. The production supervisor continues to
 leave this binding disabled. The existing policy-controlled FlowMux port 5253 is
 unchanged. No guest networking interface or general TCP/IP bridge is installed.
 
 ## Build and run
 
-Use Rust 1.97.1 and an ARM64 macOS host with `kern.hv_support=1`. Prepare the pinned
-MVM patch in an isolated source tree, supplying its generated Cargo config on
-every command. The crate lockfile belongs to this extracted witness; do not
-replace the standalone adapter's compatibility lockfile.
+Use Rust 1.97.1 and an ARM64 macOS host with `kern.hv_support=1`. The default
+manifest and committed lockfile resolve the pinned public contribution fork;
+no local patch configuration is required. The optional `mvm-service-patch/`
+preparation reproduces that source in an isolated tree. The crate lockfile
+belongs to this extracted witness; keep the standalone adapter's lockfile too.
 
 Build the host in release mode, then sign this owned executable with
 `scripts/hvf-entitlements.plist` using an ad-hoc signature:
 
 ```sh
-cargo +1.97.1 build --release --locked --manifest-path crates/spiralcore-mvm-live/Cargo.toml --config /absolute/path/to/mvm-patch.toml
+cargo +1.97.1 build --release --locked --manifest-path crates/spiralcore-mvm-live/Cargo.toml
 codesign --force --sign - --entitlements crates/spiralcore-mvm-live/scripts/hvf-entitlements.plist /absolute/path/to/target/release/spiralcore-mvm-live
 ```
 
@@ -97,6 +101,13 @@ VM lifecycle have separate timing scopes. See the
 [SC-MVM-004 design](../../docs/specs/2026-11-02-mvm-combined-design.md).
 
 ## Security and measurement boundaries
+
+Current provisioning selects `canonical-ephemeral-v1`: each application Call
+has its encrypted signed destination-admission receipt, an application Reply,
+and the Reply's encrypted signed admission receipt. These four envelopes are
+counted separately. Mailbox acceptance is ephemeral; the object commit and
+keyless restart readback establish the separate object durability result.
+Old two-envelope measurements must not be pooled with this service profile.
 
 Bootstrap signing/encryption material is generated ephemerally and passed only
 through a private pipe and in-memory initramfs. The relay receives only outer

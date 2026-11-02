@@ -11,7 +11,7 @@ pub struct RouteAdmission {
     binding_id: TransportBindingId,
     domain_label: AuthorizationDomainRouteLabel,
     destination: DestinationRouteToken,
-    key_id: [u8; 32],
+    key_ids: Vec<[u8; 32]>,
     not_before: i64,
     expires: i64,
 }
@@ -22,17 +22,25 @@ impl RouteAdmission {
             binding_id: claims.binding_id,
             domain_label: claims.authorization_domain_route_label,
             destination: claims.destination_route_token,
-            key_id: material.key_id,
+            key_ids: vec![material.key_id],
             not_before: claims.not_before_unix_ms,
             expires: claims.expires_at_unix_ms,
         }
+    }
+    pub fn with_control(material: &Material, control: &Material) -> Result<Self> {
+        if material.binding != control.binding || material.key_id == control.key_id {
+            return Err("receipt route differs from admitted physical route".into());
+        }
+        let mut admission = Self::new(material);
+        admission.key_ids.push(control.key_id);
+        Ok(admission)
     }
     pub fn validate(&self, routing: &MailboxRoutingFrame, key_id: &[u8; 32]) -> Result<()> {
         let now = now_ms()?;
         if routing.transport_binding_id != self.binding_id
             || routing.authorization_domain_route_label != self.domain_label
             || routing.destination_route_token != self.destination
-            || key_id != &self.key_id
+            || !self.key_ids.contains(key_id)
             || routing.hop_limit == 0
             || now < self.not_before
             || now >= self.expires
@@ -346,6 +354,40 @@ fn relay(
             Instant::now() + Duration::from_secs(30),
             &mut ac,
         )?;
+        {
+            // Strict one-Call witness: Call destination receipt, application
+            // Reply, then Reply destination receipt. The relay sees ciphertext.
+            let reply = live::read_ciphertext_frame(
+                &mut b,
+                &cancel,
+                Instant::now() + Duration::from_secs(30),
+                &mut bc,
+            )?;
+            let envelope = decode_envelope(&reply)?;
+            reverse.validate(&envelope.routing, &envelope.encryption.key_id)?;
+            live::write_ciphertext_frame(
+                &mut a,
+                &reply,
+                &cancel,
+                Instant::now() + Duration::from_secs(30),
+                &mut ac,
+            )?;
+            let ack = live::read_ciphertext_frame(
+                &mut a,
+                &cancel,
+                Instant::now() + Duration::from_secs(30),
+                &mut ac,
+            )?;
+            let envelope = decode_envelope(&ack)?;
+            forward.validate(&envelope.routing, &envelope.encryption.key_id)?;
+            live::write_ciphertext_frame(
+                &mut b,
+                &ack,
+                &cancel,
+                Instant::now() + Duration::from_secs(30),
+                &mut bc,
+            )?;
+        }
     }
     let _ = a.shutdown(Shutdown::Both);
     let _ = b.shutdown(Shutdown::Both);
@@ -436,14 +478,30 @@ fn session_inner(
         host::create_disk(&disk)?;
         let b_path = sockets.join("b.sock");
         let b_listener = UnixListener::bind(&b_path)?;
-        let forward =
-            RouteAdmission::new(pair.sender.outgoing.as_ref().ok_or("missing call route")?);
-        let reverse = RouteAdmission::new(
-            pair.receiver
-                .outgoing
+        let forward_material = pair.sender.outgoing.as_ref().ok_or("missing call route")?;
+        let reverse_material = pair
+            .receiver
+            .outgoing
+            .as_ref()
+            .ok_or("missing reply route")?;
+        let forward = RouteAdmission::with_control(
+            forward_material,
+            &pair
+                .sender
+                .service
                 .as_ref()
-                .ok_or("missing reply route")?,
-        );
+                .ok_or("missing sender service profile")?
+                .outgoing_control,
+        )?;
+        let reverse = RouteAdmission::with_control(
+            reverse_material,
+            &pair
+                .receiver
+                .service
+                .as_ref()
+                .ok_or("missing receiver service profile")?
+                .outgoing_control,
+        )?;
         let b = Worker::start(
             root,
             "receiver",
@@ -481,6 +539,7 @@ fn session_inner(
             utc_seconds: u64::try_from(now_ms()? / 1000)?,
             incoming: None,
             outgoing: None,
+            service: None,
             published,
         };
         let verifier = Worker::start(root, "recovery", kernel, &guest, &verify, Some(&disk), None)?;
@@ -571,5 +630,68 @@ mod tests {
         expired.expires_at_unix_ms = now_ms().unwrap();
         assert!(admission.validate(&expired, &material.key_id).is_err());
         assert!(admission.validate(&routing, &[0; 32]).is_err());
+        let control = &pair.sender.service.as_ref().unwrap().outgoing_control;
+        let admission = RouteAdmission::with_control(material, control).unwrap();
+        admission.validate(&routing, &control.key_id).unwrap();
+        assert!(
+            admission
+                .validate(
+                    &routing,
+                    &pair
+                        .receiver
+                        .service
+                        .as_ref()
+                        .unwrap()
+                        .outgoing_control
+                        .key_id
+                )
+                .is_err()
+        );
+    }
+
+    #[test]
+    fn canonical_relay_forwards_all_four_envelopes_and_matches_endpoint_counters() {
+        let pair = Pair::provision(Plan {
+            stage: Stage::Two,
+            arm: crate::config::Arm::Raw,
+            size: 128,
+            trial: 1,
+            bandwidth_profile: Default::default(),
+        })
+        .unwrap();
+        let (a, relay_a) = UnixStream::pair().unwrap();
+        let (b, relay_b) = UnixStream::pair().unwrap();
+        let temp = tempfile::tempdir().unwrap();
+        let forward = RouteAdmission::with_control(
+            pair.sender.outgoing.as_ref().unwrap(),
+            &pair.sender.service.as_ref().unwrap().outgoing_control,
+        )
+        .unwrap();
+        let reverse = RouteAdmission::with_control(
+            pair.receiver.outgoing.as_ref().unwrap(),
+            &pair.receiver.service.as_ref().unwrap().outgoing_control,
+        )
+        .unwrap();
+        std::thread::scope(|scope| {
+            let sender = scope.spawn(|| {
+                campaign::sender(&pair.sender, a, HandshakeRole::Initiator, &mut Vec::new())
+                    .unwrap()
+            });
+            let receiver = scope.spawn(|| {
+                campaign::receiver(
+                    &pair.receiver,
+                    &temp.path().join("cache"),
+                    b,
+                    HandshakeRole::Initiator,
+                    &mut Vec::new(),
+                )
+                .unwrap()
+            });
+            let receipt = relay(relay_a, relay_b, forward, reverse).unwrap();
+            let sender = sender.join().unwrap();
+            let receiver = receiver.join().unwrap();
+            counters_agree(&sender["counters"], &receipt["a"]).unwrap();
+            counters_agree(&receiver["counters"], &receipt["b"]).unwrap();
+        });
     }
 }
