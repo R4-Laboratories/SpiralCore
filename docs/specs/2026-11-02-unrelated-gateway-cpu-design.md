@@ -17,10 +17,11 @@ a broader zstd proof/encoding redesign exceeds this narrow task; exact residual
 search reduces real avoidable work with a bounded proof and is selected. The
 expected complete-transfer gain is modest, not elimination of the entire gap.
 
-The aligned delta recipe only emits equal runs of at least32bytes. Scan aligned
-16-byte windows for equality: every eligible32-byte run contains one complete
-such window. When found, expand backward at most15bytes and forward to recover
-the same maximal run; reject shorter runs and preserve ordering. Keep prefix/
+The aligned delta recipe only emits equal runs of at least32bytes. Probe one
+anchor every32positions: every eligible32-byte equal run contains an anchor.
+On an equal anchor, expand backward at most31bytes and forward to recover the
+same maximal run. After a short run, resume past its known mismatch with a new
+anchor31bytes ahead; reject shorter runs and preserve ordering. Keep prefix/
 suffix candidate, literal boundaries, operation caps, costs/ties and packed frame
 bytes identical. No unsafe code, dependencies, new codec, wire format, decoder,
 identity/authorization changes or Whole-zstd control changes.
