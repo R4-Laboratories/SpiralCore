@@ -8,7 +8,7 @@ finding remains. The user has authorized implementation and publishing to main.
 
 The new first-maximal-run contract observed RED before implementation, then2/2
 GREEN. Frozen4a8 encoder frames and scalar run boundaries verify independently.
-Existing scoped transfer regressions pass72tests, with one preexisting ignored
+The complete scoped transfer run passes72tests (including the focused tests), with one preexisting ignored
 diagnostic. Native before/after profiles verify18exact rows each; all fixture
 identities and output lengths match. Every stage and its losses remain recorded.
 Full schema compression remains dominant, so no whole-transfer claim is inferred.
