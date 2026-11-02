@@ -4,6 +4,8 @@ The [GitHub evidence release](https://github.com/R4-Laboratories/SpiralCore/rele
 provides the current results without a Hugging Face account. Source code, compact
 raw observations, analysis and reviews are already in this public repository.
 The release adds the larger receipts/captures needed for independent inspection.
+All six release assets were downloaded anonymously and verified against their
+recorded sizes and hashes. [Publication verification](evidence/2026-11-02-public-readme/publication.md).
 
 These are **experimental evidence packages, not installers**. Each package
 preserves the original bytes of included entries and records its original archive

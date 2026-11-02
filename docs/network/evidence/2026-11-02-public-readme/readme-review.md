@@ -26,16 +26,32 @@ research are explicitly preserved/excluded. No blanket rights in those imported
 materials are asserted. This review checks consistency with the requested scope;
 it is not an independent adjudication of third-party ownership.
 
-Review corrections requested before final publication:
+Review corrections resolved in the final source-level pass:
 
-1. Identify the packet table as the primary IPv4 shaped-link subset; the full
-   32-session campaign includes unshaped runs and IPv6 smokes.
-2. Identify the object table as the shaped-link subset; the 288-delivery campaign
-   spans both local and shaped links.
-3. Label the quickstart demo as fixed-policy loopback with no peer authentication.
-4. Render the long LR Mermaid diagrams before merge; compact grouping may be
-   needed for legible default-width presentation. Include the phase-memory update
-   alongside Kuramoto in the conceptual runtime node.
+1. The packet table explicitly identifies the primary IPv4 shaped-link subset;
+   the full 32-session campaign includes unshaped runs and IPv6 smokes.
+2. The object table explicitly identifies the shaped-link subset; the
+   288-delivery campaign spans both local and shaped links.
+3. The quickstart explicitly identifies its synthetic loopback harness as
+   unauthenticated and distinguishes the documented gateway transports.
+4. All four Mermaid diagrams have compacted paths. The conceptual runtime node
+   includes memory updates alongside Kuramoto and cellular automata. Their
+   source-level architecture remains consistent; final GitHub rendering and
+   default-width legibility are reserved for the publication check.
+
+The public artifact catalog agrees with the publication manifest and
+redistribution note on all four package names and measured source revisions.
+It distinguishes new public archive hashes from original preservation hashes,
+states that nine executables are omitted, and explains historical manifests
+that still refer to those files. The packages are described as evidence subsets,
+not complete executable distributions. Private Hugging Face archival references
+are labeled private; the older 7.7 GB WAN preservation archive is explicitly
+outside this publication. Public test certificates and possible short encrypted
+QUIC prefixes are described without claiming payload-free packet captures.
+
+No remaining source-level documentation or license-scope corrections were found.
+This review does not independently repeat archive credential/extraction checks
+or assert that release assets have already been downloaded successfully.
 
 Public-download contents and credentials are independently reviewed in
 `artifact-review.md` and the release packaging records. Publication URLs and
