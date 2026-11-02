@@ -25,7 +25,9 @@ per-operation and session elapsed time, boot/lifecycle and disk-sync time.
 Include setup, exact byte/length verification and recovery. Never add nested
 guest CPU to VMM CPU. The Linux worker observes Firecracker process CPU through
 `/proc`; this can omit shutdown and is explicitly partial, not total host CPU.
-CPU/elapsed ratios are descriptive three-trial pilot results, not tail-latency,
+The byte counters cover the mailbox service only, excluding the separate
+workload-exit service and virtio control/credit headers. CPU/elapsed ratios are
+descriptive three-trial pilot results, not tail-latency,
 energy, WAN or 1,000-workload acceptance evidence.
 
 The native Firecracker guest-dial bridge does not expose HVF's internal mailbox

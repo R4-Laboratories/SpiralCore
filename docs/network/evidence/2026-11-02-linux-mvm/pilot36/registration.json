@@ -1,0 +1,21 @@
+{
+  "format": "spiralcore-mvm-combined-registration-v1",
+  "source_commit": "a9f038c49bcaf69ce7d6780970dadd412a31a573",
+  "backend": "firecracker",
+  "host_sha256": "7911958f4c03bee1687f4014b29a6a22db8952e86db517467c9019c9952f34a0",
+  "guest_sha256": "be7e2ac09ae3e67210396393048d9982cc0b640e1e3a5bdbd9ac2e18f3b4059c",
+  "kernel_sha256": "1701ccb2c46b2497066225d6ba05f3f33a3a845ca636fbeedb202835c83b49b6",
+  "trials": 3,
+  "stages": ["one", "two"],
+  "sizes": [1048576, 16777216],
+  "arms": ["whole-mixed", "combined", "combined-cpu"],
+  "bandwidth_profile": "experimental64",
+  "rate_enforced": false,
+  "rate_scope": "Linux Firecracker records the requested compatibility profile only; mailbox rate shaping is not enforced",
+  "mvm_base": "3104a12c5b071a6851323fa8115d2afaf3f0bb8b",
+  "mvm_patch_sha256": "2ca7b61743d23ede426fb631d8b98759e97cf21fb5da72ab847e0620cb95b466",
+  "rust": "1.97.1",
+  "guest_target": "x86_64-unknown-linux-gnu",
+  "source_build_scope": "release; host linux-host; hardware-sha256; guest default features and -Ctarget-feature=+crt-static; retained nine-crate MVM patch config; all five local crate trees compared byte-for-byte against qualified source commit; fresh locked builds returned identical binaries",
+  "statistics": "three paired trials, rotated arm order; descriptive pilot only"
+}

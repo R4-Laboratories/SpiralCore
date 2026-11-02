@@ -1,5 +1,10 @@
 # Native MVM/vsock integration witness
 
+The opt-in [Linux/Firecracker host path](../../docs/network/linux-firecracker.md)
+uses the same canonical mailbox and transfer core. Build it with `linux-host`;
+the default Linux executable is the guest. The following original instructions
+describe the ARM64 macOS/HVF witness and its historical rate profiles.
+
 This Rust program runs SpiralCore's existing lossless object protocol inside real
 ARM64 Linux guests using MVM's native macOS Hypervisor.framework backend. It is an
 explicit development binding for the canonical MVM mailbox envelope, with one

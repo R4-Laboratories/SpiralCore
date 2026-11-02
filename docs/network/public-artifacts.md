@@ -4,6 +4,10 @@ The [GitHub evidence release](https://github.com/R4-Laboratories/SpiralCore/rele
 provides the current results without a Hugging Face account. Source code, compact
 raw observations, analysis and reviews are already in this public repository.
 The release adds the larger receipts/captures needed for independent inspection.
+The newer [Linux/Firecracker pilot](linux-mvm-results-2026-11-02.md) retains its
+complete compact [36-session evidence directly in Git](evidence/2026-11-02-linux-mvm/pilot36/),
+including registration, hashes, raw counters, exact readbacks and analysis. It
+requires no additional download or private dataset access.
 All six release assets were downloaded anonymously and verified against their
 recorded sizes and hashes. [Publication verification](evidence/2026-11-02-public-readme/publication.md).
 

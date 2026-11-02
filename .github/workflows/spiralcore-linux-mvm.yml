@@ -48,3 +48,11 @@ jobs:
             --manifest-path crates/spiralcore-mvm-live/Cargo.toml \
             --config "$RUNNER_TEMP/mvm-prepared/patch.toml" \
             --features linux-host --all-targets -- -D warnings
+      - name: Default Linux guest entry and measurement analyzer
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo +1.97.1 check --locked \
+            --manifest-path crates/spiralcore-mvm-live/Cargo.toml \
+            --config "$RUNNER_TEMP/mvm-prepared/patch.toml" --all-targets
+          bash crates/spiralcore-mvm-live/scripts/test-combined-analysis.sh

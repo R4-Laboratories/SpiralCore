@@ -81,3 +81,39 @@ an arbitrary VMM exit as transfer success. No new blocker was identified in that
 follow-up. Actual Wick execution and forced-cancellation cleanup remain parent
 validation obligations. The reported macOS test counts are execution evidence
 from the parent, not tests independently repeated by this reviewer.
+
+## Final publication pass
+
+Reviewed the Linux result report and main README against `pilot36/analysis.json`,
+the original preserved analysis, execution/validation receipts and the offline
+cross-backend payload comparison. All twelve session-median rows in the report
+and the three large two-guest rows in the README match the analysis. The
+CPU-conscious larger two-guest paired reductions round to 41.92% mailbox bytes,
+11.84% sender CPU and 15.00% sender elapsed. The reported small-tier CPU and
+one-guest elapsed losses also match their paired ratios.
+
+The analysis contains 36 sessions, 336 exact operations, 168 additional keyless
+reboot verifications and 96 payload-identity groups. Removing only backend and
+limits metadata leaves regenerated and original analysis numerically identical.
+The cross-backend receipt reports 96 groups on each backend, with no missing or
+mismatched identities/lengths; its scope correctly remains an offline comparison.
+
+The execution receipt supports the narrow forced-worker claim: an observer armed
+before the session killed the selected receiver worker after its Firecracker
+existed, the session failed, and no Firecracker processes remained. The report
+correctly excludes mid-transfer and simultaneous-sibling cancellation coverage.
+It also retains prerequisite/harness failures and records removal of the exact
+temporary executable-path link. The CPU, byte-accounting, unshaped-versus-HVF,
+three-trial, local-versus-WAN and production-service boundaries remain explicit.
+
+One reporting improvement was requested: include the large-tier per-operation
+losses as well as small-tier losses. In the two-guest CPU-conscious arm, schema
+fit/drift cost about 50% more sender CPU and 34–35% more elapsed for roughly
+0.7–1.1% fewer bytes; unrelated data costs about 7.02% more sender CPU and 1.45%
+more elapsed with essentially equal bytes. These do not contradict the complete
+mixed-batch savings, but should remain visible to readers considering workloads.
+
+The new CI default-guest check and analyzer step cover the intended entry-point
+and backend-label regression without claiming a hosted KVM run. This final pass
+found no numerical correction or new code/security blocker. It did not repeat
+the native campaign or independently execute the recorded fault test.
