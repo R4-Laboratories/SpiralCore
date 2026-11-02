@@ -1,0 +1,98 @@
+{
+  "schema": "spiralcore.packet-selection.network-verification.v1",
+  "verdict": "PASS",
+  "run_id": 41364240626,
+  "source": "9dd283ca366d6075bd6b423c3a42aa928e222ce2",
+  "executed_workflow_revision": "b419ebfdf559171a5408b98a8474853cf7be3204",
+  "executed_workflow_content_matches_source": true,
+  "artifact": {
+    "id": 13107385444,
+    "bytes": 53915951,
+    "sha256": "7c56b4a6abef97122513e74811de7d66a4954180fb8bbbf6bd1fb1619bcfb5db",
+    "local_zip_matches_github_digest": true,
+    "manifest_files_verified": 3052
+  },
+  "source_files_verified": 29,
+  "frozen_binaries": {
+    "gateway": "a0a244c39084f27a5f2dfe3a296d5edc6b59a7f17ffedf85cfae6b4d7879e353",
+    "probe": "d5a36f51d0ec5b353488cddd42bed558c084bf253672168f8371b7e6e8f86be4",
+    "both_hashes_verified": true,
+    "identical_to_compatibility_regression_binaries": true
+  },
+  "test_counts": {
+    "core": 11,
+    "gateway": 16,
+    "total": 27,
+    "failures": 0
+  },
+  "execution": {
+    "sessions": 32,
+    "primary_sessions": 24,
+    "smoke_sessions": 8,
+    "transport_flows": 64,
+    "application_transfers": 128,
+    "exact_endpoint_receipts": 256,
+    "application_input_bytes": 1233256448,
+    "all_receipt_bytes_lengths_hashes_match_fixtures": true,
+    "three_tcp_objects_share_the_same_endpoint_tuple": true,
+    "complete_captures": 32,
+    "capture_packets": 928377,
+    "captured_ip_bytes": 875785014,
+    "captured_ethernet_bytes": 888782292,
+    "capture_kernel_drops": 0,
+    "udp_application_retries": 0,
+    "reassembly_expiry": 0,
+    "replay_drops": 0,
+    "capacity_drops": 0,
+    "malformed_denied_or_auth_failures": 0,
+    "netem_queue_drops": 3027,
+    "queue_drop_interpretation": "Measured finite-queue congestion cost, retained under prelaunch amendment; not capture loss. Measurement-before qdisc packet/drop counters were zero.",
+    "selector_counter_identities_valid": true,
+    "host_ipv4_and_ipv6_routes_unchanged": true,
+    "namespace_cleanup_reported": true
+  },
+  "calibration": {
+    "shaped_sessions": 16,
+    "shaped_directional_rate_observations": 32,
+    "receiver_goodput_min_bits_per_second": 9607294.601125365,
+    "receiver_goodput_max_bits_per_second": 9796609.59738065,
+    "shaped_side_rtt_means": 32,
+    "min_ms": 80.25625,
+    "max_ms": 80.30625,
+    "all_ping_receipts_have_20_samples_and_mean_of_last_16": true,
+    "qdisc_delay_seconds_each_direction": 0.04,
+    "qdisc_rate_bytes_per_second_each_direction": 1250000,
+    "queue_limit_packets": 256,
+    "all_registered_calibration_bounds_passed": true
+  },
+  "compact_copy": {
+    "path": "linux-run",
+    "files": 2920,
+    "bytes": 2093040,
+    "source_file_hashes_matched": 2919,
+    "manifest_itself_byte_compared": true,
+    "pcaps_copied": 0,
+    "binaries_copied": 0,
+    "symlinks_copied": 0,
+    "private_key_headers_found": 0,
+    "diagnostic": "Initial compact comparison treated the self-excluded artifact.sha256 as an ordinary manifest member. Retained initial mismatch log; corrected comparison checks that file separately byte-for-byte. All copied content verified."
+  },
+  "archive": {
+    "dataset": "caseyallard/spiralcore-experiment-artifacts",
+    "private": true,
+    "revision": "4ee46e37e094cc0cdc34e4f3d256c5121bee8986",
+    "path": "2026-11-01/packet-selection-41364240626.zip",
+    "storage_receipt": "network-archive.json",
+    "parent_fresh_redownload_sha256_matches": true,
+    "original_zip_contains_captures_and_frozen_binaries": true
+  },
+  "evidence": [
+    "network-artifact-check.txt",
+    "network-source-check.txt",
+    "network-session-check.jsonl",
+    "linux-run.sha256",
+    "linux-run-custody-check.txt"
+  ],
+  "scope": "Custody and registered exactness/calibration verification only. All traffic ran between namespaces on one Linux runner; constrained profile is shaped, not an actual Internet WAN. Performance arithmetic is reviewed separately.",
+  "runtime_actions_by_verifier": "No new build, transfer or executable run; only read-only checks and compact file custody."
+}
