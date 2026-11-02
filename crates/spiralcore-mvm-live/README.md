@@ -19,7 +19,7 @@ credentials. That historical readback is distinct from authorization to resume a
 new execution epoch.
 
 The current dependency is the explicit contribution-preparation fork commit
-`5766754fbaae59dbee548f968716a514d3a796c1`, based on upstream `6ae461a`.
+`ae12e9deb41cc9a3264196ce22ebc72d4042883d`, based on upstream `6ae461a`.
 See `mvm-service-patch/` for the reproducible patch bundle and provenance.
 The historical `mvm-patch/` bundle and prior results remain pinned to
 `3104a12c5b071a6851323fa8115d2afaf3f0bb8b`; they do not qualify the new service.

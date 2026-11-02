@@ -1,0 +1,90 @@
+{
+  "schema": "spiralcore.mvm.firecracker-state-directory-fix.v1",
+  "status": "INDEPENDENTLY_REVIEWED_AND_PUBLISHED_IN_CONTRIBUTOR_FORK; upstream acceptance and native requalification remain separate",
+  "parent_fork_revision": "5766754fbaae59dbee548f968716a514d3a796c1",
+  "upstream_base_revision": "6ae461a54d85a1b70477c1efb97ea4a33ef3b331",
+  "patch": "0004-firecracker-explicit-state-directory.patch",
+  "patch_sha256": "32ec1f38596beb1a7140dfad2898bf7274384c782bc4fb67e3b680e52b0658b6",
+  "patch_bytes": 20492,
+  "scope": "Require explicit VM state directory separately from relocated API socket for Firecracker writer verification, restore lifecycle and teardown; migrate all constructor callers. Preserve existing admission, GET configuration, PID identity and descriptor custody checks.",
+  "files": [
+    {
+      "path": "crates/mvm-backends/src/driver/fc.rs",
+      "parent_git_blob": "4e508f5a337be78881cf197be2724af9e6c04e68",
+      "parent_sha256": "c116671443092d78d248f85aa8809923c54bbb22be4bec002a11c56925f4b2b2",
+      "patched_sha256": "50d4d8273c314e2fdacdaad46f038f489aa9526a6a5c406f685496cf31e3a3d4"
+    },
+    {
+      "path": "crates/mvm-backends/src/fc/host.rs",
+      "parent_git_blob": "5e96a2379e23a3426abc6a0c28000a1f24d27e05",
+      "parent_sha256": "0eedfd9fdaa8cc254c7e20fcf4dd67165bde6b634892c0c451d25803e0ee70a8",
+      "patched_sha256": "0addcd40f440dd0d64cffe5d9bc6560c90beed3fe2c235cfd249609eb560ec33"
+    },
+    {
+      "path": "crates/mvm-backends/src/fc/io.rs",
+      "parent_git_blob": "4c4c7f04b6481c94d0ffb66e00e91e9ad4f306f0",
+      "parent_sha256": "e51d7eb5a8b8257cc38b9508c8b8d5571c6cb8e3c96a68033d5c49f04146dbb3",
+      "patched_sha256": "8b60417fdac7bccf58878fd41c9898931e3142805c9051d1b82d5570f1f8de1f"
+    },
+    {
+      "path": "crates/mvm-backends/src/fc/snapshot.rs",
+      "parent_git_blob": "d29aad4782615b8c2c3068ce3f510c361f132bdb",
+      "parent_sha256": "bb67b3293d635ae8f6ecafacf6c3c1d1384587342c67cc7da03032040e8ae6fd",
+      "patched_sha256": "25522ed7897ef31843af0ef5f52457456275458b2a52a17bcd40a681e2e41a17"
+    },
+    {
+      "path": "crates/mvm-client/src/local.rs",
+      "parent_git_blob": "83b98f6ed40b2a7532834db80770315a802952c4",
+      "parent_sha256": "5cd524d2bf39b8ba5cbe726db758136eb54377b9c9080e1dc76f696a9a739a0a",
+      "patched_sha256": "ce263aa4974aecb3ab65b69491519138b50e0ecd398a666ceeee00b730f3844d"
+    },
+    {
+      "path": "crates/mvm-runtime/src/vm/instance_snapshot.rs",
+      "parent_git_blob": "bc96e04636224641aa622e18332f3cc10cc8e554",
+      "parent_sha256": "d415bb6354c49d90de4d46acd74f554982bca1a9918dc3d39789f89c2a5440ff",
+      "patched_sha256": "176cd0ae28d4a1dd12eeaf99ad7fbffe1310e9f52181d656156aa593f7a52073"
+    },
+    {
+      "path": "crates/mvm-runtime/src/vm/reconcile.rs",
+      "parent_git_blob": "553a1b7924b46c9aaf90d425fa9c3f387198314c",
+      "parent_sha256": "faa7ec97d1c35af515474f8e2fefc230257c5ce64174970d716f6436c7c3a172",
+      "patched_sha256": "5ec252ae1a30a3e9fd0aee84cb25a17c653e6d12f4bbecb258b55bf994a24bd5"
+    }
+  ],
+  "workspace_lock_sha256": "c9b6414ac28a1aaf93fb2aa74b77b3fcbe39889eaaddd2b681e7252358d1699e",
+  "tests": {
+    "execution_host": "wick native Linux x86-64; no KVM/VM launch",
+    "toolchain": "Rust1.97.1",
+    "semantic_red": "Before correction: relocated_socket_ filter1passed/3failed, including missing/wrong actual-state PID incorrectly accepting decoy socket-directory markers. Original native pilot4c failure retained separately.",
+    "fixture_refinement": "Actual current-test-process FD inventory raced concurrent test FD closes; canonical fail-closed inventory preserved. Dedicated owned idle child now retains the exact inherited handoff+drive descriptors; readiness and kill/wait guard bound its lifetime.",
+    "green_relocated_filter": "4passed/0failed (three new tests and one existing relocated-launcher test)",
+    "green_io_suite": "16passed/0failed;393other tests intentionally filtered",
+    "api_check": "cargo check --release --locked -p mvm-backends -p mvm-client -p mvm-runtime --all-targets: PASS",
+    "strict_clippy": "cargo clippy --release --locked -p mvm-backends -p mvm-client -p mvm-runtime --all-targets -- -D warnings: PASS",
+    "unit_command": "cargo test --release --locked -p mvm-backends --lib fc::io::tests",
+    "relocated_command": "cargo test --release --locked -p mvm-backends --lib relocated_socket_",
+    "root_fresh_confirmation": "Root independently reran fc::io::tests on Wick after publication:16passed/0failed,0.02s test wall; not performance qualification",
+    "four_patch_preparation": "PASS on Wick: three successful tool/path variants apply all4 patches and verify21 final files; missing hash-tool variant refuses before output. GlobalCRLF/spacepaths/native-path mapping retained. Complete prepared Git tree equals publishedae12 tree f3e3e8c8558a8410cc23890467ea21d309da7079.",
+    "preparation_log_paths": [
+      "/var/tmp/spiralcore-mvm-service-20261102/bundle-tests-ae12/test-prepare.stdout",
+      "/var/tmp/spiralcore-mvm-service-20261102/bundle-tests-ae12/test-prepare.stderr",
+      "/var/tmp/spiralcore-mvm-service-20261102/bundle-tests-ae12/prepared-tree.txt"
+    ]
+  },
+  "nonclaims": [
+    "No guest launched by patch tests or preparation",
+    "No upstream PR or acceptance claimed",
+    "No native end-to-end, WAN or production qualification",
+    "No Cargo manifest or lockfile changes"
+  ],
+  "patch_dry_run_against_exact_576_files": "PASS",
+  "source_freeze_verified": true,
+  "published_fork_revision": "ae12e9deb41cc9a3264196ce22ebc72d4042883d",
+  "published_fork_tree": "f3e3e8c8558a8410cc23890467ea21d309da7079",
+  "published_repository": "https://github.com/Casey-allard/mvm",
+  "published_branch": "codex/spiralcore-mailbox-service",
+  "review": {
+    "reviewer": "independent v1_review source review",
+    "result": "APPROVED exact patch32ec1f...58b6 and seven source hashes; all constructor migrations and config/PID/FD/strict stop/scope guards checked; reverse apply check passed"
+  }
+}

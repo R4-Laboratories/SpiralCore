@@ -54,7 +54,7 @@ the immediate implementation, not a new research audit.
 
 Dependencies: canonical MVM DTO/crypto APIs and compatible pinned prepared source.
 The current integration depends on the explicit outside-contributor fork commit
-`5766754fbaae59dbee548f968716a514d3a796c1` over upstream `6ae461a`, including the
+`ae12e9deb41cc9a3264196ce22ebc72d4042883d` over upstream `6ae461a`, including the
 tested canonical Reply-operation correction. New source must pass its own
 qualification; it does not inherit the old native result.
 If current upstream requires a source-pin bump, review only the API/source delta,

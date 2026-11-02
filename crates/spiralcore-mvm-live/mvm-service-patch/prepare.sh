@@ -40,12 +40,13 @@ git -c core.autocrlf=false -c core.eol=lf -C "$input_dir" archive --format=tar "
 git -c init.templateDir= init --quiet --initial-branch=codex/spiralcore-mvm-service-patch "$source_dir"
 git -C "$source_dir" config core.autocrlf false
 git -C "$source_dir" config core.eol lf
-git -C "$source_dir" apply --check --whitespace=error-all "$bundle_dir/0001-mailbox-service-primitives.patch"
-git -C "$source_dir" apply --whitespace=error-all "$bundle_dir/0001-mailbox-service-primitives.patch"
-git -C "$source_dir" apply --check --whitespace=error-all "$bundle_dir/0002-reply-operation-authorization.patch"
-git -C "$source_dir" apply --whitespace=error-all "$bundle_dir/0002-reply-operation-authorization.patch"
-git -C "$source_dir" apply --check --whitespace=error-all "$bundle_dir/0003-prepared-header-accessor.patch"
-git -C "$source_dir" apply --whitespace=error-all "$bundle_dir/0003-prepared-header-accessor.patch"
+for patch in 0001-mailbox-service-primitives.patch \
+             0002-reply-operation-authorization.patch \
+             0003-prepared-header-accessor.patch \
+             0004-firecracker-explicit-state-directory.patch; do
+    git -C "$source_dir" apply --check --whitespace=error-all "$bundle_dir/$patch"
+    git -C "$source_dir" apply --whitespace=error-all "$bundle_dir/$patch"
+done
 (cd -- "$source_dir" && "${hash_command[@]}" -c "$bundle_dir/patched-files.sha256" >&2)
 
 toml_string() {

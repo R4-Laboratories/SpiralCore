@@ -66,8 +66,11 @@ CYGPATH
     else
         grep -Fq "path = \"$output/source/crates/mvm-core\"" "$output/patch.toml"
     fi
-    [[ $(grep -c 'crates/.*: OK' "$scratch/$variant.stderr") == 14 ]]
+    [[ $(grep -c 'crates/.*: OK' "$scratch/$variant.stderr") == 21 ]]
+    # Reconstruct the complete Git tree, not only the selected patched files.
+    git -C "$output/source" add --force --all
+    [[ $(git -C "$output/source" write-tree) == f3e3e8c8558a8410cc23890467ea21d309da7079 ]]
     # Release each verified disposable source before the next extraction.
     rm -r -- "$output"
 done
-printf 'PASS: real three-patch preparation, both hash choices, missing-tool refusal, LF and native-path mapping\n'
+printf 'PASS: real four-patch preparation matches published ae12 tree, both hash choices, missing-tool refusal, LF and native-path mapping\n'
