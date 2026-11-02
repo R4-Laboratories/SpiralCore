@@ -52,6 +52,23 @@ if jq -e '.fixture_profile=="candidate-cpu"' "$registration" >/dev/null; then
     [ "$code" -ne 0 ] || { echo "candidate binding unexpectedly accepted: $name" >&2; exit 1; }
   done
 fi
+if jq -e '.fixture_profile=="cpu-conscious"' "$registration" >/dev/null; then
+  for name in control_pin binary_mapping control_sequence group_dose; do
+    case "$name" in
+      control_pin) mutation='.control_revision="main"';;
+      binary_mapping) mutation='.service_binary_by_arm["combined-cpu"]="other"';;
+      control_sequence) mutation='.dose.per_group_sequence|=.[0:6]';;
+      group_dose) mutation='.dose.deliveries_per_group=6';;
+    esac
+    jq "$mutation" "$out/ready-fixture.json" > "$out/$name.json"
+    set +e
+    bash "$driver" validate "$out/$name.json" > "$out/$name.stdout" 2> "$out/$name.stderr"
+    code=$?
+    set -e
+    printf '%s\n' "$code" > "$out/$name.exit"
+    [ "$code" -ne 0 ] || { echo "invalid CPU policy registration accepted: $name" >&2; exit 1; }
+  done
+fi
 printf 'tcpdump: 10 packets captured, 10 packets received by filter, 0 packets dropped by kernel\n' > "$out/capture-ok.stderr"
 bash "$driver" capture-drained "$out/capture-ok.stderr" > "$out/capture-positive.stdout" 2> "$out/capture-positive.stderr"
 for name in tail drop empty missing; do
@@ -95,5 +112,16 @@ for name in mode path bytes framing missing; do
 done
 bindings=0
 if jq -e '.fixture_profile=="candidate-cpu"' "$registration" >/dev/null; then bindings=4; fi
-jq -n --argjson bindings "$bindings" '{positive:1,negatives:12,binding_negatives:$bindings,capture_positive:1,capture_negatives:4,
+if jq -e '.fixture_profile=="cpu-conscious"' "$registration" >/dev/null; then bindings=4; fi
+jq '.operations += [(.operations[0]+{label:"unrelated"})]' "$out/parity-before.json" > "$out/invariants-before.json"
+jq '.operations[1].data_bytes+=10' "$out/invariants-before.json" > "$out/invariants-after.json"
+bash "$driver" cpu-invariants "$out/invariants-before.json" "$out/invariants-after.json" > "$out/invariants-positive.json"
+jq '.operations[0].data_bytes+=1' "$out/invariants-after.json" > "$out/invariants-broken.json"
+set +e
+bash "$driver" cpu-invariants "$out/invariants-before.json" "$out/invariants-broken.json" > "$out/invariants-negative.stdout" 2> "$out/invariants-negative.stderr"
+code=$?
+set -e
+printf '%s\n' "$code" > "$out/invariants-negative.exit"
+[ "$code" -ne 0 ] || { echo "lost mandatory byte savings accepted" >&2; exit 1; }
+jq -n --argjson bindings "$bindings" '{positive:1,negatives:12,binding_negatives:$bindings,capture_positive:1,capture_negatives:4,invariants_positive:1,invariants_negative:1,
   parity_positive:1,parity_negatives:5,passed:true,scope:"pure registration, capture completion, receipt parity and shell syntax; no network claim"}' > "$out/result.json"

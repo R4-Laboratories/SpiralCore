@@ -1,0 +1,100 @@
+{
+  "schema": "spiralcore.cpu-conscious.infra-readiness.v1",
+  "verdict": "FROZEN_READY_FOR_REGISTERED_CI_RUN",
+  "source_sha256": {
+    "crates/spiralcore-gateway/examples/object_fixtures.rs": "e18000b7d3e96c7eb5548d9873023dd04cee4a0c1ecc9d9e5ebdc387adbdf7f3",
+    "tools/gateway-network/runtime-object-netns.sh": "9260eea950de8b258d97f45aa59e87a31956725e164ec1ff65189893a6a29657",
+    "tools/gateway-network/runtime-object-infra-check.sh": "a385119fd8dd8f37a95e943fd95bd3254e867f744be2a28496d5bce578d98975",
+    "tools/gateway-network/analyze-runtime-objects.rs": "ab94c4661307846c23e06d5e2d93e599260578a74a4e3f8a2c8a4c4b3124eae0",
+    ".github/workflows/spiralcore-candidate-cpu.yml": "8e37a6a3711adf10e43150aa7bbe616eaa82ada07c36ec156623250f2a8caaec",
+    "docs/network/evidence/2026-11-02-cpu-conscious/network-registration.json": "5764e013a6fcb5ee519f3ed03bc21ac75b0ea21cb1d6dfd29e31958f90a372eb",
+    "docs/network/evidence/2026-11-02-cpu-conscious/analysis-method.md": "8ed8f160b543798d8b09005ce98bd932d5651d6f39c2edb465419771b2f68b47"
+  },
+  "checks": {
+    "fixture_tests": {
+      "passed": 6,
+      "exit": 0,
+      "receipt": "fixture-green-01.txt"
+    },
+    "analyzer_tests": {
+      "passed": 12,
+      "exit": 0,
+      "receipt": "analyzer-green-01.txt"
+    },
+    "fixture_clippy": {
+      "exit": 0,
+      "receipt": "fixture-clippy.txt"
+    },
+    "analyzer_clippy": {
+      "exit": 0,
+      "receipt": "analyzer-clippy.txt"
+    },
+    "infrastructure": {
+      "positive": 1,
+      "negatives": 12,
+      "binding_negatives": 4,
+      "capture_positive": 1,
+      "capture_negatives": 4,
+      "invariants_positive": 1,
+      "invariants_negative": 1,
+      "parity_positive": 1,
+      "parity_negatives": 5,
+      "passed": true,
+      "scope": "pure registration, capture completion, receipt parity and shell syntax; no network claim"
+    },
+    "shellcheck_exit": 0,
+    "workflow_yaml_and_embedded_bash_exit": 0,
+    "compact_infra_receipts": {
+      "archive": "infra-check-receipts.tar.gz",
+      "manifest": "infra-check-files.sha256",
+      "reopened_hashes_match": true
+    },
+    "historical_runtime-gateway": {
+      "byte_identical": true,
+      "receipt": "historical-runtime-gateway.txt",
+      "sha256": "05482731ca2bb0b030f4957c6e387a9565542a82874ac33b1fee99687d066801"
+    },
+    "historical_combined-gateway": {
+      "byte_identical": true,
+      "receipt": "historical-combined-gateway.txt",
+      "sha256": "edaf981cce1391abbd2e570d0bdb64ae34c36fa225f2c67e5e2ad1f67bf36e17"
+    },
+    "historical_candidate-cpu": {
+      "byte_identical": true,
+      "receipt": "historical-candidate-cpu.txt",
+      "sha256": "69b6efd388c8acfd418e528c05a52f079ca1aab26ef8b5631c22a00a933efef2"
+    },
+    "historical_unrelated-gateway-cpu": {
+      "byte_identical": true,
+      "receipt": "historical-unrelated-gateway-cpu.txt",
+      "sha256": "a97182d496dac0173815ee2d5d67f00ebe282489a468e2f0830012c86fde9f02"
+    },
+    "final_integration": {
+      "authority": "Parent observed final retained checks",
+      "transfer_tests": 73,
+      "gateway_core_tests": 15,
+      "gateway_lib_bins_integration_tests": 34,
+      "fixture_tests": 6,
+      "analyzer_tests": 12,
+      "gateway_all_targets_clippy_exit": 0
+    },
+    "independent_infrastructure_review": {
+      "verdict": "PASS",
+      "receipt": "review-infra-independent.md"
+    },
+    "actual_launch_registration": {
+      "launch_ready": true,
+      "validation": "PASS",
+      "exit": 0,
+      "receipt": "infra-launch.exit",
+      "shell_syntax": "PASS"
+    }
+  },
+  "source_binding": "Same current executable for combined, combined-cpu and whole-zstd; source-only control checkout9f591269 with exact unchanged Whole source/settings and lockfiles. Current source and binaries frozen before timing.",
+  "parity_scope": "Only eight required generated/opaque-edit/exact-repeat rows per topology are byte-equality invariants; all other per-operation, cumulative and session signed logical-byte differences are measured. Policy skips are separate from proven prunes and never claim uncomputed sizes/bounds.",
+  "pending": [
+    "Exact CI source and executable freeze",
+    "Actual18-session comparison, immutable artifact custody and matched analysis"
+  ],
+  "scope": "No new network traffic or performance result is claimed. All four historical analyses remain byte-identical."
+}

@@ -1,4 +1,4 @@
-name: SpiralCore unrelated CPU paired baseline and zstd
+name: SpiralCore CPU-conscious exhaustive and zstd
 on:
   pull_request:
     types: [opened, synchronize, reopened]
@@ -22,7 +22,7 @@ on:
       - 'crates/uor-r4-object-store/Cargo.*'
       - 'tools/gateway-network/runtime-object-netns.sh'
       - 'tools/gateway-network/runtime-object-infra-check.sh'
-      - 'docs/network/evidence/2026-11-02-unrelated-gateway-cpu/network-registration.json'
+      - 'docs/network/evidence/2026-11-02-cpu-conscious/network-registration.json'
       - '.github/workflows/spiralcore-candidate-cpu.yml'
 permissions:
   contents: read
@@ -36,7 +36,7 @@ jobs:
     timeout-minutes: 40
     env:
       EXPECTED_SOURCE: ${{ github.event.pull_request.head.sha }}
-      BASELINE_SOURCE: 4a8ec79c9b185c85407e9767653dbcc4af97bf7e
+      CONTROL_SOURCE: 9f5912698f6ab46ddc771fe15fd0c0a7bcec8c5b
       CARGO_INCREMENTAL: 0
       CARGO_BUILD_JOBS: 2
       CARGO_TARGET_DIR: ${{ github.workspace }}/target
@@ -47,8 +47,8 @@ jobs:
           persist-credentials: false
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
-          ref: 4a8ec79c9b185c85407e9767653dbcc4af97bf7e
-          path: .baseline-source
+          ref: 9f5912698f6ab46ddc771fe15fd0c0a7bcec8c5b
+          path: .control-source
           persist-credentials: false
       - name: Bind source and registered dose before setup
         shell: bash
@@ -58,25 +58,25 @@ jobs:
           [[ "$EXPECTED_SOURCE" =~ ^[0-9a-f]{40}$ ]]
           [[ "$(git rev-parse HEAD)" == "$EXPECTED_SOURCE" ]]
           [[ "$GITHUB_RUN_ATTEMPT" == 1 ]]
-          [[ "$(git -C .baseline-source rev-parse HEAD)" == "$BASELINE_SOURCE" ]]
-          [[ -z "$(git -C .baseline-source status --porcelain)" ]]
+          [[ "$(git -C .control-source rev-parse HEAD)" == "$CONTROL_SOURCE" ]]
+          [[ -z "$(git -C .control-source status --porcelain)" ]]
           for path in crates/spiralcore-transfer/src/zstd_whole.rs crates/spiralcore-transfer/src/zstd_prefix.rs crates/spiralcore-transfer/src/zstd_dictionary.rs crates/spiralcore-transfer/Cargo.lock crates/spiralcore-gateway/Cargo.lock; do
-            cmp ".baseline-source/$path" "$path"
+            cmp ".control-source/$path" "$path"
             sha256sum "$path"
           done > candidate-evidence/whole-control-identical.txt
           [[ -z "${RUSTFLAGS:-}${CARGO_ENCODED_RUSTFLAGS:-}${RUSTC_WRAPPER:-}${RUSTC_WORKSPACE_WRAPPER:-}${CARGO_BUILD_TARGET:-}" ]]
           [[ "$(df -Pk . | awk 'NR==2 {print $4}')" -ge 4194304 ]]
-          bash tools/gateway-network/runtime-object-infra-check.sh candidate-evidence/infra docs/network/evidence/2026-11-02-unrelated-gateway-cpu/network-registration.json
+          bash tools/gateway-network/runtime-object-infra-check.sh candidate-evidence/infra docs/network/evidence/2026-11-02-cpu-conscious/network-registration.json
           jq -n --arg source "$EXPECTED_SOURCE" --arg workflow "$GITHUB_WORKFLOW_SHA" --arg workflow_ref "$GITHUB_WORKFLOW_REF" \
             --arg run "$GITHUB_RUN_ID" --arg attempt "$GITHUB_RUN_ATTEMPT" \
             '{source:$source,workflow_sha:$workflow,workflow_ref:$workflow_ref,run_id:$run,run_attempt:$attempt,
               scope:"same-repository PR head; isolated three-namespace local/shaped link; no secrets; not actual WAN"}' > candidate-evidence/source.json
-          jq --arg baseline "$BASELINE_SOURCE" '.+{baseline_source:$baseline}' candidate-evidence/source.json > candidate-evidence/source-new.json
+          jq --arg control "$CONTROL_SOURCE" '.+{control_source:$control}' candidate-evidence/source.json > candidate-evidence/source-new.json
           mv candidate-evidence/source-new.json candidate-evidence/source.json
-          jq -n '{toolchain:"1.97.1",profile:"release",locked:true,incremental:false,build_jobs:2,ambient_overrides:"refused before build",baseline_targets:"only spiralcore-gateway-object binary",target_directory:"shared dependency cache; baseline executable copied before candidate build",timing:"all baseline/current builds finish before campaign"}' > candidate-evidence/build-settings.json
-          (cd .baseline-source; git ls-files -z -- crates/spiralcore-gateway crates/spiralcore-gateway-core crates/spiralcore-transfer crates/uor-r4-object-store | sort -z | xargs -0 sha256sum) > candidate-evidence/baseline-source-files.sha256
+          jq -n '{toolchain:"1.97.1",profile:"release",locked:true,incremental:false,build_jobs:2,ambient_overrides:"refused before build",service_targets:"one current service executable shared by all arms",control_checkout:"source equality only; not built or timed",timing:"all builds finish before campaign"}' > candidate-evidence/build-settings.json
+          (cd .control-source; git ls-files -z -- crates/spiralcore-gateway crates/spiralcore-gateway-core crates/spiralcore-transfer crates/uor-r4-object-store | sort -z | xargs -0 sha256sum) > candidate-evidence/control-source-files.sha256
           git ls-files -z -- crates/spiralcore-gateway crates/spiralcore-gateway-core crates/spiralcore-transfer crates/uor-r4-object-store tools/gateway-network \
-            .github/workflows/spiralcore-candidate-cpu.yml docs/network/evidence/2026-11-02-unrelated-gateway-cpu/network-registration.json \
+            .github/workflows/spiralcore-candidate-cpu.yml docs/network/evidence/2026-11-02-cpu-conscious/network-registration.json \
             | sort -z | xargs -0 sha256sum > candidate-evidence/source-files.sha256
       - name: Install bounded runner dependencies
         shell: bash
@@ -88,34 +88,32 @@ jobs:
           rustc +1.97.1 -vV > candidate-evidence/rustc.txt
           uname -a > candidate-evidence/platform.txt
           sudo -n true
-      - name: Build pinned baseline then test and freeze candidate
+      - name: Test and freeze same-source service and controls
         shell: bash
         run: |
           set -euo pipefail
-          cargo +1.97.1 build --release --locked --manifest-path .baseline-source/crates/spiralcore-gateway/Cargo.toml --bin spiralcore-gateway-object 2>&1 | tee candidate-evidence/baseline-build.log
           mkdir candidate-evidence/frozen
-          cp "$CARGO_TARGET_DIR/release/spiralcore-gateway-object" candidate-evidence/frozen/before-service
-          (cd .baseline-source; sha256sum -c ../candidate-evidence/baseline-source-files.sha256) > candidate-evidence/baseline-source-check.log
-          git -C .baseline-source diff --exit-code > candidate-evidence/baseline-clean.log
+          (cd .control-source; sha256sum -c ../candidate-evidence/control-source-files.sha256) > candidate-evidence/control-source-check.log
+          git -C .control-source diff --exit-code > candidate-evidence/control-clean.log
           cargo +1.97.1 test --locked --manifest-path crates/spiralcore-gateway-core/Cargo.toml --all-targets 2>&1 | tee candidate-evidence/core-tests.log
           cargo +1.97.1 test --locked --manifest-path crates/spiralcore-gateway/Cargo.toml --all-targets 2>&1 | tee candidate-evidence/gateway-tests.log
           cargo +1.97.1 clippy --locked --manifest-path crates/spiralcore-gateway/Cargo.toml --all-targets -- -D warnings 2>&1 | tee candidate-evidence/clippy.log
           cargo +1.97.1 build --release --locked --manifest-path crates/spiralcore-gateway/Cargo.toml --bins --example object_fixtures 2>&1 | tee candidate-evidence/build.log
           sha256sum -c candidate-evidence/source-files.sha256 > candidate-evidence/source-check.log
           git diff --exit-code > candidate-evidence/source-clean.log
-          cp "$CARGO_TARGET_DIR/release/spiralcore-gateway-object" candidate-evidence/frozen/after-service
+          cp "$CARGO_TARGET_DIR/release/spiralcore-gateway-object" candidate-evidence/frozen/service
           cp "$CARGO_TARGET_DIR/release/spiralcore-gateway-probe" "$CARGO_TARGET_DIR/release/examples/object_fixtures" candidate-evidence/frozen/
           sha256sum candidate-evidence/frozen/* > candidate-evidence/binaries.sha256
-      - name: Run eighteen paired before-current-zstd sessions
+      - name: Run eighteen same-source policy-control sessions
         timeout-minutes: 20
         shell: bash
         run: |
           set -euo pipefail
           bash tools/gateway-network/runtime-object-netns.sh run "$PWD/candidate-evidence/campaign" \
-            "$PWD/candidate-evidence/frozen/after-service" "$PWD/candidate-evidence/frozen/spiralcore-gateway-probe" \
+            "$PWD/candidate-evidence/frozen/service" "$PWD/candidate-evidence/frozen/spiralcore-gateway-probe" \
             "$PWD/candidate-evidence/frozen/object_fixtures" \
-            "$PWD/docs/network/evidence/2026-11-02-unrelated-gateway-cpu/network-registration.json" "$PWD/candidate-evidence/frozen/before-service" 2>&1 | tee candidate-evidence/campaign.log
-          jq -e '.sessions==18 and .operations==264 and .object_deliveries==216 and .before_after_parity and .exact_reopened and .stores_removed and .capture_complete and .host_routes_unchanged' candidate-evidence/campaign/complete.json
+            "$PWD/docs/network/evidence/2026-11-02-cpu-conscious/network-registration.json" 2>&1 | tee candidate-evidence/campaign.log
+          jq -e '.sessions==18 and .operations==336 and .object_deliveries==288 and .cpu_invariants and .exact_reopened and .stores_removed and .capture_complete and .host_routes_unchanged' candidate-evidence/campaign/complete.json
           sha256sum -c candidate-evidence/binaries.sha256 > candidate-evidence/binaries-after.log
       - name: Seal available public evidence including failures
         if: always()
@@ -128,7 +126,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: spiralcore-unrelated-gateway-cpu-${{ github.run_id }}-${{ github.event.pull_request.head.sha }}
+          name: spiralcore-cpu-conscious-${{ github.run_id }}-${{ github.event.pull_request.head.sha }}
           path: candidate-evidence/
           retention-days: 14
           if-no-files-found: error

@@ -155,6 +155,9 @@ impl PreparedSchema {
         PREPARED_CHARGE
     }
     pub fn encode(&self, target: &[u8]) -> Result<Vec<u8>> {
+        self.encode_counted(target).map(|(bytes, _)| bytes)
+    }
+    pub(crate) fn encode_counted(&self, target: &[u8]) -> Result<(Vec<u8>, usize)> {
         encode_with(&self.templates, self.artifact_id, target)
     }
     pub fn decode(&self, encoded: &[u8], target_len: usize) -> Result<Vec<u8>> {
@@ -299,7 +302,7 @@ fn read_artifact(artifact: &[u8]) -> Result<Templates<'_>> {
 /// may exceed raw bytes; sender selection must include actual protocol costs.
 pub fn encode(artifact: &[u8], target: &[u8]) -> Result<Vec<u8>> {
     let templates = read_artifact(artifact)?;
-    encode_with(&templates, object_id(artifact), target)
+    encode_with(&templates, object_id(artifact), target).map(|(bytes, _)| bytes)
 }
 
 fn records(bytes: &[u8]) -> impl Iterator<Item = &[u8]> {
@@ -331,7 +334,11 @@ fn possible_record(bytes: &[u8]) -> bool {
     bytes.len() <= MAX_TEMPLATE_RECORD && bytes.get(whitespace(bytes, 0)) == Some(&b'{')
 }
 
-fn encode_with(templates: &Templates<'_>, artifact_id: Id, target: &[u8]) -> Result<Vec<u8>> {
+fn encode_with(
+    templates: &Templates<'_>,
+    artifact_id: Id,
+    target: &[u8],
+) -> Result<(Vec<u8>, usize)> {
     if target.len() > MAX_TARGET {
         return Err(Error::Limit);
     }
@@ -349,9 +356,11 @@ fn encode_with(templates: &Templates<'_>, artifact_id: Id, target: &[u8]) -> Res
     encoded.extend_from_slice(&(record_count as u32).to_le_bytes());
     if whole_literal {
         write_literal(&mut encoded, target);
-        return Ok(encoded);
+        return Ok((encoded, 0));
     }
     let mut work = 0;
+    // At most MAX_RECORDS increments; count emissions, never attempted matches.
+    let mut useful_template_records = 0;
     for bytes in records(target) {
         // Every validated template and parsed record begins with a JSON object.
         // These literals cannot match or spend the comparison work budget.
@@ -359,11 +368,15 @@ fn encode_with(templates: &Templates<'_>, artifact_id: Id, target: &[u8]) -> Res
             write_literal(&mut encoded, bytes);
             continue;
         }
-        if templates
-            .items
-            .first()
-            .is_some_and(|template| write_first_template(template, bytes, &mut work, &mut encoded))
-        {
+        if templates.items.first().is_some_and(|template| {
+            write_first_template(
+                template,
+                bytes,
+                &mut work,
+                &mut encoded,
+                &mut useful_template_records,
+            )
+        }) {
             continue;
         }
         let record = if work < MAX_MATCH_WORK {
@@ -378,6 +391,7 @@ fn encode_with(templates: &Templates<'_>, artifact_id: Id, target: &[u8]) -> Res
             let size = 3 + record.values.iter().map(|v| 4 + v.len()).sum::<usize>();
             if size < 5 + bytes.len() {
                 encoded.push(1);
+                useful_template_records += 1;
                 encoded.extend_from_slice(&(index as u16).to_le_bytes());
                 for value in record.values {
                     encoded.extend_from_slice(&(value.len() as u32).to_le_bytes());
@@ -388,7 +402,7 @@ fn encode_with(templates: &Templates<'_>, artifact_id: Id, target: &[u8]) -> Res
         }
         write_literal(&mut encoded, bytes);
     }
-    Ok(encoded)
+    Ok((encoded, useful_template_records))
 }
 
 // Both learned and validated templates have a valid JSON skeleton. Exact
@@ -431,6 +445,7 @@ fn write_first_template(
     bytes: &[u8],
     work: &mut usize,
     encoded: &mut Vec<u8>,
+    useful_template_records: &mut usize,
 ) -> bool {
     if *work >= MAX_MATCH_WORK {
         return false;
@@ -446,6 +461,7 @@ fn write_first_template(
     let size = 3 + values.iter().map(|value| 4 + value.len()).sum::<usize>();
     if size < 5 + bytes.len() {
         encoded.push(1);
+        *useful_template_records += 1;
         encoded.extend_from_slice(&0u16.to_le_bytes());
         for value in values {
             encoded.extend_from_slice(&(value.len() as u32).to_le_bytes());

@@ -5,7 +5,7 @@ use spiralcore_transfer::{
     protocol::{Frame, Mode},
     schema_selection::WarmSelection,
     selection::Selection,
-    session::{CombinedSelection, CombinedSession, RuntimeSession, WarmSession},
+    session::{CombinedSelection, CombinedSession, RuntimeSession, SelectionPolicy, WarmSession},
     shared_transfer::PreparedPrediction,
     zstd_whole::PreparedEncoder,
     Error, Id, Result,
@@ -78,11 +78,21 @@ impl ObjectSender {
         prediction: PreparedPrediction,
         schema: &[u8],
     ) -> Result<Self> {
+        Self::with_combined_policy(context, prediction, schema, SelectionPolicy::Exhaustive)
+    }
+    /// Explicit sender eligibility policy. CpuConscious may miss a smaller
+    /// schema encoding; exact reconstruction and receiver authorization remain required.
+    pub fn with_combined_policy(
+        context: &Context,
+        prediction: PreparedPrediction,
+        schema: &[u8],
+        policy: SelectionPolicy,
+    ) -> Result<Self> {
         Ok(Self {
             namespace: context.namespace()?,
-            prepared: Some(Prepared::Combined(Box::new(CombinedSession::new(
-                context, prediction, schema,
-            )?))),
+            prepared: Some(Prepared::Combined(Box::new(
+                CombinedSession::new_with_policy(context, prediction, schema, policy)?,
+            ))),
         })
     }
     fn state(&mut self, context: &Context) -> Result<&mut Prepared> {

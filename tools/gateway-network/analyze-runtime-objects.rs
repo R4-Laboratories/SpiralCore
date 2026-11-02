@@ -11,6 +11,7 @@ enum CampaignPolicy {
     Combined,
     CandidateCpu,
     UnrelatedCpu,
+    CpuConscious,
 }
 impl CampaignPolicy {
     fn from_registration(reg: &Value) -> Result<Self> {
@@ -19,8 +20,15 @@ impl CampaignPolicy {
             Some("spiralcore.combined-object.registration.v1") => Self::Combined,
             Some("spiralcore.candidate-cpu.registration.v1") => Self::CandidateCpu,
             Some("spiralcore.unrelated-gateway-cpu.registration.v1") => Self::UnrelatedCpu,
+            Some("spiralcore.cpu-conscious.registration.v1") => Self::CpuConscious,
             _ => return Err("unknown campaign registration schema".into()),
         };
+        if policy.conscious() {
+            require(
+                reg["control_revision"] == "9f5912698f6ab46ddc771fe15fd0c0a7bcec8c5b",
+                "wrong same-source control revision",
+            )?;
+        }
         if let Some(baseline) = policy.baseline_revision() {
             require(
                 reg["baseline_revision"] == baseline,
@@ -39,16 +47,33 @@ impl CampaignPolicy {
         match self {
             Self::CandidateCpu => Some("4b8cb79fe5fca9e9527a2923924c887d9e7ddbf8"),
             Self::UnrelatedCpu => Some("4a8ec79c9b185c85407e9767653dbcc4af97bf7e"),
-            Self::Runtime | Self::Combined => None,
+            Self::Runtime | Self::Combined | Self::CpuConscious => None,
         }
     }
     fn paired(self) -> bool {
         self.baseline_revision().is_some()
     }
+    fn conscious(self) -> bool {
+        matches!(self, Self::CpuConscious)
+    }
+    fn three_arms(self) -> bool {
+        self.paired() || self.conscious()
+    }
+    fn labels(self) -> &'static [&'static str] {
+        if self.conscious() {
+            &CPU_LABELS
+        } else {
+            &LABELS
+        }
+    }
+    fn unique_files(self) -> u64 {
+        if self.conscious() { 12 } else { 8 }
+    }
     fn arms(self) -> &'static [&'static str] {
         match self {
             Self::Runtime => &ARMS,
             Self::Combined => &["whole-zstd", "warm", "runtime", "combined"],
+            Self::CpuConscious => &["combined", "combined-cpu", "whole-zstd"],
             Self::CandidateCpu | Self::UnrelatedCpu => {
                 &["combined-before", "combined-after", "whole-zstd"]
             }
@@ -57,7 +82,7 @@ impl CampaignPolicy {
     fn operations(self) -> u64 {
         match self {
             Self::Runtime => 312,
-            Self::Combined => 336,
+            Self::Combined | Self::CpuConscious => 336,
             Self::CandidateCpu | Self::UnrelatedCpu => 264,
         }
     }
@@ -65,10 +90,18 @@ impl CampaignPolicy {
         match self {
             Self::Runtime => &["raw", "whole-zstd"],
             Self::Combined => &["whole-zstd", "warm", "runtime"],
+            Self::CpuConscious => &["combined", "whole-zstd"],
             Self::CandidateCpu | Self::UnrelatedCpu => &["combined-before", "whole-zstd"],
         }
     }
     fn action_counts(self) -> BTreeMap<String, u64> {
+        if self.conscious() {
+            return BTreeMap::from([
+                ("send".to_owned(), 288),
+                ("schema".to_owned(), 24),
+                ("checkpoint".to_owned(), 24),
+            ]);
+        }
         if self.paired() {
             return BTreeMap::from([
                 ("send".to_owned(), 216),
@@ -78,7 +111,7 @@ impl CampaignPolicy {
         }
         let auxiliary = match self {
             Self::Runtime => 12,
-            Self::Combined | Self::CandidateCpu | Self::UnrelatedCpu => 24,
+            Self::Combined | Self::CandidateCpu | Self::UnrelatedCpu | Self::CpuConscious => 24,
         };
         BTreeMap::from([
             ("send".to_owned(), 276),
@@ -93,13 +126,14 @@ impl CampaignPolicy {
             Self::Combined => "spiralcore.combined-object.analysis.v1",
             Self::CandidateCpu => "spiralcore.candidate-cpu.analysis.v1",
             Self::UnrelatedCpu => "spiralcore.unrelated-gateway-cpu.analysis.v1",
+            Self::CpuConscious => "spiralcore.cpu-conscious.analysis.v1",
         }
     }
     fn sessions(self) -> u64 {
-        if self.paired() { 18 } else { 24 }
+        if self.three_arms() { 18 } else { 24 }
     }
     fn deliveries(self) -> u64 {
-        self.sessions() * 12
+        self.sessions() * 2 * self.labels().len() as u64
     }
     fn requested(self) -> u64 {
         if self.paired() {
@@ -125,6 +159,19 @@ const LABELS: [&str; 6] = [
     "opaque-edited",
     "opaque-edited-repeat",
 ];
+const CPU_LABELS: [&str; 8] = [
+    "generated",
+    "residual",
+    "repeat",
+    "unrelated",
+    "opaque-edited",
+    "opaque-edited-repeat",
+    "schema-fit",
+    "schema-drift",
+];
+fn combined_mode(mode: &str) -> bool {
+    matches!(mode, "combined" | "combined-cpu")
+}
 const CHANNEL: [&str; 6] = [
     "encoded_batch_bytes_sent",
     "encoded_batch_bytes_received",
@@ -249,6 +296,138 @@ fn receipt_parity(before: &Value, after: &Value) -> Result<Value> {
         json!({"preserved":true,"operations":b.len(),"scope":"existing operation receipts and actual logical deltas; canonical body equality is covered separately by core tests"}),
     )
 }
+fn validate_policy_selection(selection: &Value, mode: &str, label: &str) -> Result<()> {
+    require(
+        s(selection, "selection_policy")?
+            == if mode == "combined-cpu" {
+                "cpu-conscious"
+            } else {
+                "exhaustive"
+            },
+        "wrong explicit selection policy",
+    )?;
+    let skipped = a(selection, "policy_skipped")?;
+    require(skipped.len() <= 1, "duplicate policy skip")?;
+    if mode == "combined"
+        || [
+            "schema-fit",
+            "schema-drift",
+            "repeat",
+            "opaque-edited-repeat",
+        ]
+        .contains(&label)
+    {
+        require(
+            skipped.is_empty(),
+            "policy skip on exhaustive, useful-fit or exact-repeat case",
+        )?;
+    }
+    for entry in skipped {
+        require(
+            entry
+                == &json!({"mode":"SchemaZstdV1","reason":"no-useful-template-records","useful_template_records":0}),
+            "invalid policy skip or invented cost/bound",
+        )?;
+        for kind in ["candidates", "pruned"] {
+            require(
+                a(selection, kind)?
+                    .iter()
+                    .all(|v| v["mode"] != "SchemaZstdV1"),
+                "policy skip also represented as evaluated or proved",
+            )?;
+        }
+    }
+    Ok(())
+}
+
+fn cpu_invariants(before: &Value, after: &Value) -> Result<Value> {
+    let selected = |value: &Value| -> Result<Value> {
+        let ops = a(value, "operations")?
+            .iter()
+            .filter(|v| {
+                [
+                    "generated",
+                    "opaque-edited",
+                    "repeat",
+                    "opaque-edited-repeat",
+                ]
+                .contains(&v["label"].as_str().unwrap_or(""))
+            })
+            .cloned()
+            .collect::<Vec<_>>();
+        require(ops.len() == 8, "missing required mechanism invariant rows")?;
+        Ok(json!({"operations":ops}))
+    };
+    receipt_parity(&selected(before)?, &selected(after)?)
+}
+
+fn byte_opportunities(rows: &[Value]) -> Result<Value> {
+    let mut pairs = Vec::new();
+    let mut grouped = BTreeMap::<Vec<String>, Vec<(u64, i64)>>::new();
+    for candidate in rows.iter().filter(|v| v["arm"] == "combined-cpu") {
+        let matches: Vec<_> = rows
+            .iter()
+            .filter(|base| {
+                base["arm"] == "combined"
+                    && ["profile", "trial", "group", "label"]
+                        .iter()
+                        .all(|key| base[*key] == candidate[*key])
+            })
+            .collect();
+        require(
+            matches.len() == 1,
+            "missing or duplicate exhaustive byte comparator",
+        )?;
+        let base = matches[0];
+        if candidate.get("object_id").is_some() {
+            require(
+                s(base, "object_id")? == s(candidate, "object_id")?
+                    && n(base, "input_bytes")? == n(candidate, "input_bytes")?,
+                "cross-policy object mismatch",
+            )?;
+        }
+        let delta = i64::try_from(
+            i128::from(n(candidate, "logical_bytes")?) - i128::from(n(base, "logical_bytes")?),
+        )?;
+        let mut pair = tagged(
+            json!({"exhaustive_logical_bytes":n(base,"logical_bytes")?,"cpu_conscious_logical_bytes":n(candidate,"logical_bytes")?,"extra_logical_bytes":delta}),
+            s(candidate, "profile")?,
+            n(candidate, "trial")?,
+            "combined-cpu",
+            s(candidate, "group")?,
+            s(candidate, "label")?,
+        );
+        if candidate.get("selected_mode").is_some() {
+            pair["exhaustive_mode"] = base["selected_mode"].clone();
+            pair["cpu_conscious_mode"] = candidate["selected_mode"].clone();
+            pair["policy_skipped"] = candidate["selection"]["policy_skipped"].clone();
+            pair["proven_pruned"] = candidate["selection"]["pruned"].clone();
+        }
+        let key = ["profile", "group", "label"]
+            .iter()
+            .map(|key| s(candidate, key).map(str::to_owned))
+            .collect::<Result<Vec<_>>>()?;
+        grouped
+            .entry(key)
+            .or_default()
+            .push((n(candidate, "trial")?, delta));
+        pairs.push(pair);
+    }
+    let mut summaries = Vec::new();
+    for (key, mut values) in grouped {
+        values.sort_by_key(|v| v.0);
+        require(
+            values.len() == 3 && values.iter().enumerate().all(|(i, v)| v.0 == i as u64),
+            "opportunity summary needs three distinct paired trials",
+        )?;
+        let deltas = values.iter().map(|v| v.1).collect::<Vec<_>>();
+        summaries.push(json!({"profile":key[0],"group":key[1],"label":key[2],"extra_logical_bytes_trials":deltas,"median_extra_logical_bytes":median(&deltas.iter().map(|v| *v as f64).collect::<Vec<_>>())?}));
+    }
+    Ok(
+        json!({"rows":pairs,"summaries":summaries,"scope":"signed CPU-conscious minus same-trial exhaustive logical bytes, including actual framing in both directions; not per-object IP attribution"}),
+    )
+}
+
 #[derive(Clone, Copy, Default)]
 struct Metrics {
     request: u64,
@@ -341,6 +520,8 @@ fn expected<'a>(manifest: &'a Value, tier: &'a Value, label: &str) -> Result<&'a
         "residual" | "repeat" => &tier["residual"],
         "unrelated" => &tier["opaque"],
         "opaque-edited" | "opaque-edited-repeat" => &tier["opaque_edited"],
+        "schema-fit" => &tier["schema_fit"],
+        "schema-drift" => &tier["schema_drift"],
         _ => return Err("unexpected operation label".into()),
     })
 }
@@ -350,20 +531,24 @@ fn artifact(v: &Value) -> Result<()> {
     n(v, "bytes")?;
     Ok(())
 }
-fn manifest_check(m: &Value, trial: u64) -> Result<()> {
+fn manifest_check(m: &Value, trial: u64, policy: CampaignPolicy) -> Result<()> {
     require(
         n(m, "trial")? == trial && n(m, "version")? == 1,
         "wrong fixture manifest identity",
     )?;
     require(
-        a(m, "tiers")?.len() == 2 && a(m, "verify_files")?.len() == 8,
+        a(m, "tiers")?.len() == 2 && a(m, "verify_files")?.len() as u64 == policy.unique_files(),
         "wrong fixture tier/file count",
     )?;
     artifact(&m["schema"])?;
     for (i, (label, len)) in TIERS.iter().enumerate() {
         let tier = &m["tiers"][i];
         require(s(tier, "label")? == *label, "wrong fixture tier order")?;
-        for kind in ["generated", "residual", "opaque", "opaque_edited"] {
+        let mut kinds = vec!["generated", "residual", "opaque", "opaque_edited"];
+        if policy.conscious() {
+            kinds.extend(["schema_fit", "schema_drift"]);
+        }
+        for kind in kinds {
             artifact(&tier[kind])?;
             require(
                 n(&tier[kind], "bytes")? == *len,
@@ -430,7 +615,7 @@ fn calibration(root: &Path, profile: &str, trial: u64, policy: CampaignPolicy) -
     let complete = read(&dir.join("complete.json"))?;
     flag(&complete, "ok")?;
     flag(&complete, "namespace_cleanup")?;
-    let key = if policy.paired() {
+    let key = if policy.three_arms() {
         "topology_all_three_sessions_wall_us"
     } else {
         "topology_all_four_sessions_wall_us"
@@ -493,6 +678,27 @@ fn session(
     let dir = root.join(&name);
     let meta = read(&dir.join("session.json"))?;
     let complete = read(&dir.join("complete.json"))?;
+    if policy.conscious() {
+        let bindings = read(&root.join("service-binaries.json"))?;
+        require(
+            bindings["control_revision"] == "9f5912698f6ab46ddc771fe15fd0c0a7bcec8c5b",
+            "wrong control source binding",
+        )?;
+        hex_id(s(&bindings, "service_sha256")?)?;
+        let revision = s(&bindings, "source_revision")?;
+        require(
+            revision.len() == 40
+                && revision
+                    .bytes()
+                    .all(|b| b.is_ascii_hexdigit() && !b.is_ascii_uppercase()),
+            "invalid source revision",
+        )?;
+        require(
+            meta["service_binary_role"] == "current"
+                && meta["service_binary_sha256"] == bindings["service_sha256"],
+            "same-source service binding mismatch",
+        )?;
+    }
     if let Some(baseline) = policy.baseline_revision() {
         let bindings = read(&root.join("service-binaries.json"))?;
         require(
@@ -536,7 +742,7 @@ fn session(
     flag(&complete, "ok")?;
     flag(&complete, "stores_removed")?;
     require(
-        n(&complete, "object_deliveries")? == 12,
+        n(&complete, "object_deliveries")? == 2 * policy.labels().len() as u64,
         "wrong session dose",
     )?;
     let c = read(&dir.join("client.json"))?;
@@ -561,13 +767,14 @@ fn session(
         )?;
     }
     let ops = a(&c, "operations")?;
-    let count = if mode == "combined" {
-        16
-    } else if mode == "warm" || mode == "runtime" {
-        14
-    } else {
-        12
-    };
+    let count = 2 * policy.labels().len()
+        + if combined_mode(mode) {
+            4
+        } else if mode == "warm" || mode == "runtime" {
+            2
+        } else {
+            0
+        };
     require(
         ops.len() == count
             && n(&complete, "operations")? == count as u64
@@ -611,15 +818,15 @@ fn session(
         };
         prefix = prefix.add(cumulative)?;
         let labels: Vec<&str> = match mode {
-            "combined" => vec!["checkpoint", "schema"],
+            "combined" | "combined-cpu" => vec!["checkpoint", "schema"],
             "warm" => vec!["schema"],
             "runtime" => vec!["checkpoint"],
             _ => vec![],
         }
         .into_iter()
-        .chain(LABELS)
+        .chain(policy.labels().iter().copied())
         .collect();
-        if labels.len() == 6 {
+        if labels.len() == policy.labels().len() {
             rows.cumulative
                 .push(tagged(cumulative.json()?, profile, trial, arm, group, "0"));
             rows.prefix
@@ -706,7 +913,7 @@ fn session(
                     "warm sparse activity gate failed",
                 )?;
             }
-            if mode == "combined" {
+            if combined_mode(mode) {
                 let required = match label {
                     "generated" => Some(("RuntimeV1", "verified-transfer")),
                     "opaque-edited" => Some(("SparseV1", "verified-transfer")),
@@ -719,6 +926,9 @@ fn session(
                         "combined decoder/cache activity gate failed",
                     )?;
                 }
+            }
+            if policy.conscious() && combined_mode(mode) && action == "send" {
+                validate_policy_selection(&op["selection"], mode, label)?;
             }
             let mut row = tagged(metric.json()?, profile, trial, arm, group, label);
             for key in [
@@ -750,7 +960,7 @@ fn session(
             }
             // Combined setup contains two publications. Emit one paid zero-
             // delivery row after both, while retaining each operation above.
-            if mode == "combined" && label == "checkpoint" {
+            if combined_mode(mode) && label == "checkpoint" {
                 continue;
             }
             rows.cumulative.push(tagged(
@@ -770,7 +980,10 @@ fn session(
                 &delivered.to_string(),
             ));
         }
-        require(delivered == 6, "wrong group delivery count")?;
+        require(
+            delivered == policy.labels().len() as u64,
+            "wrong group delivery count",
+        )?;
     }
     require(
         index == ops.len() && batch_map.is_empty(),
@@ -784,7 +997,7 @@ fn session(
     }
     flag(&r["readback"], "reopened")?;
     require(
-        n(&r["readback"], "expected_files_exact")? == 8,
+        n(&r["readback"], "expected_files_exact")? == policy.unique_files(),
         "exact local readback absent",
     )?;
     let mut reopened = BTreeMap::new();
@@ -945,7 +1158,7 @@ fn analyze(root: &Path) -> Result<Value> {
     )?;
     for trial in 0..3 {
         let m = read(&root.join(format!("fixtures-{trial}/manifest.json")))?;
-        manifest_check(&m, trial)?;
+        manifest_check(&m, trial, policy)?;
         require(
             m["arms"] == json!(policy.arms()),
             "fixture campaign arms differ",
@@ -992,6 +1205,42 @@ fn analyze(root: &Path) -> Result<Value> {
         policy.baselines(),
     )?;
     let mut analysis = json!({"schema":policy.analysis_schema(),"qualified_receipts":true,"sessions":policy.sessions(),"operations":policy.operations(),"object_deliveries":policy.deliveries(),"requested_bytes":rows.requested,"operation_counts":rows.actions,"method":"analysis-method.md; three descriptive paired trials; ratios are candidate/baseline, lower is better; no confidence or tail claims","limits":["local Linux shaped network is not actual Internet WAN","captured wire bytes are whole-session only","CPU domains are process or labeled nested stages; never add nested stages to process totals","client wall includes waiting and overlapping CPU, isolated send-only time is not identified","runtime/warm are explicit object profiles, not transparent TUN compression","artifact custody and source/binary identity are independently verified"],"fixture_generation":rows.fixtures,"topologies":rows.topologies,"operation_rows":rows.operations,"paid_group_cumulative_rows":rows.cumulative,"paid_connection_prefix_rows":rows.prefix,"session_rows":rows.sessions,"operation_summaries":operation_summaries,"paid_group_cumulative_summaries":cumulative_summaries,"paid_connection_prefix_summaries":prefix_summaries,"session_summaries":session_summaries});
+    if policy.conscious() {
+        flag(&complete, "cpu_invariants")?;
+        let mut invariants = Vec::new();
+        for profile in PROFILES {
+            for trial in 0..3 {
+                let before = read(&root.join(format!("{profile}-t{trial}-combined/client.json")))?;
+                let after =
+                    read(&root.join(format!("{profile}-t{trial}-combined-cpu/client.json")))?;
+                let mut receipt = cpu_invariants(&before, &after)?;
+                require(
+                    receipt
+                        == read(
+                            &root.join(format!("topology-{profile}-t{trial}/cpu-invariants.json")),
+                        )?,
+                    "retained CPU mechanism invariant differs",
+                )?;
+                receipt["profile"] = json!(profile);
+                receipt["trial"] = json!(trial);
+                invariants.push(receipt);
+            }
+        }
+        require(
+            rows.operations.iter().any(|v| {
+                v["arm"] == "combined-cpu"
+                    && v["selection"]["policy_skipped"]
+                        .as_array()
+                        .is_some_and(|v| !v.is_empty())
+            }),
+            "CPU policy never exercised a skip",
+        )?;
+        analysis["cpu_invariants"] = json!(invariants);
+        analysis["service_binaries"] = read(&root.join("service-binaries.json"))?;
+        analysis["operation_byte_opportunities"] = byte_opportunities(&rows.operations)?;
+        analysis["paid_group_byte_opportunities"] = byte_opportunities(&rows.cumulative)?;
+        analysis["session_byte_opportunities"] = byte_opportunities(&rows.sessions)?;
+    }
     if policy.paired() {
         flag(&complete, "before_after_parity")?;
         let mut pairs = Vec::new();
@@ -1035,6 +1284,67 @@ fn main() -> Result<()> {
 mod tests {
     use super::*;
     use serde_json::json;
+
+    #[test]
+    fn cpu_conscious_policy_uses_same_source_three_arms_and_eight_deliveries() {
+        let reg = json!({"schema":"spiralcore.cpu-conscious.registration.v1",
+            "control_revision":"9f5912698f6ab46ddc771fe15fd0c0a7bcec8c5b",
+            "arms":["combined","combined-cpu","whole-zstd"],
+            "dose":{"total_operations":336,"operation_counts":{"send":288,"schema":24,"checkpoint":24}}});
+        let policy = CampaignPolicy::from_registration(&reg).unwrap();
+        assert_eq!(policy.arms(), &["combined", "combined-cpu", "whole-zstd"]);
+        assert_eq!(policy.sessions(), 18);
+        assert_eq!(policy.deliveries(), 288);
+        assert_eq!(policy.requested(), 2_289_396_384);
+        assert!(
+            !policy.paired(),
+            "new policy must not impose complete before/after byte equality"
+        );
+    }
+
+    #[test]
+    fn policy_skips_are_not_proof_bounds_and_mixed_fits_stay_eligible() {
+        let skip = json!({"mode":"SchemaZstdV1","reason":"no-useful-template-records","useful_template_records":0});
+        let mut receipt = json!({"selection_policy":"cpu-conscious","policy_skipped":[skip],"pruned":[],"candidates":[]});
+        assert!(validate_policy_selection(&receipt, "combined-cpu", "unrelated").is_ok());
+        assert!(validate_policy_selection(&receipt, "combined-cpu", "schema-drift").is_err());
+        receipt["policy_skipped"][0]["lower_bound"] = json!(0);
+        assert!(validate_policy_selection(&receipt, "combined-cpu", "unrelated").is_err());
+        receipt["policy_skipped"] = json!([]);
+        assert!(validate_policy_selection(&receipt, "combined-cpu", "schema-drift").is_ok());
+        assert!(validate_policy_selection(&receipt, "combined", "unrelated").is_err());
+    }
+
+    #[test]
+    fn byte_opportunity_reports_positive_negative_and_zero_without_false_parity() {
+        let mut rows = Vec::new();
+        for (trial, cost) in [110, 90, 100].into_iter().enumerate() {
+            rows.push(tagged(
+                json!({"logical_bytes":100}),
+                "lan",
+                trial as u64,
+                "combined",
+                "near1m",
+                "unrelated",
+            ));
+            rows.push(tagged(
+                json!({"logical_bytes":cost}),
+                "lan",
+                trial as u64,
+                "combined-cpu",
+                "near1m",
+                "unrelated",
+            ));
+        }
+        let result = byte_opportunities(&rows).unwrap();
+        assert_eq!(
+            result["summaries"][0]["extra_logical_bytes_trials"],
+            json!([10, -10, 0])
+        );
+        assert_eq!(result["summaries"][0]["median_extra_logical_bytes"], 0.0);
+        rows.pop();
+        assert!(byte_opportunities(&rows).is_err());
+    }
 
     #[test]
     fn unrelated_policy_binds_current_baseline_without_reinterpreting_history() {

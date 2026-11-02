@@ -10,6 +10,10 @@ use crate::{
 #[path = "../tests/fixtures/candidate_cpu_checks.rs"]
 mod candidate_cpu_checks;
 
+#[cfg(test)]
+#[path = "../tests/fixtures/cpu_conscious_checks.rs"]
+mod cpu_conscious_checks;
+
 #[derive(Debug, Clone)]
 pub struct CandidateCost {
     pub mode: Mode,
@@ -43,11 +47,35 @@ pub struct WarmSelection {
     pub needs_schema_seed: bool,
 }
 
+/// Exhaustive is the compatibility/default byte objective. CpuConscious may
+/// omit a smaller literal-only schema result to avoid its compression work.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub enum SelectionPolicy {
+    #[default]
+    Exhaustive,
+    CpuConscious,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PolicySkipReason {
+    NoUsefulTemplateRecords,
+}
+
+/// A policy omission is not a proven size bound or an evaluated candidate cost.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PolicySkippedCandidate {
+    pub mode: Mode,
+    pub reason: PolicySkipReason,
+    pub useful_template_records: usize,
+}
+
 /// Eligible combined candidates under the existing successful-miss HTTP-body
 /// cost model. Readiness is the snapshot before selection, not authorization.
 /// An unseeded schema is ineligible; no setup or hidden seed is performed here.
 #[derive(Debug, Clone)]
 pub struct CombinedSelection {
+    pub policy: SelectionPolicy,
+    pub policy_skipped: Vec<PolicySkippedCandidate>,
     pub candidates: Vec<CandidateCost>,
     pub pruned: Vec<PrunedCandidate>,
     pub selected_mode: Mode,
@@ -62,6 +90,7 @@ pub struct PreparedWarmTransfer {
     pub(crate) payload: Payload,
     pub(crate) warm_probe: bool,
     selection: WarmSelection,
+    policy_skipped: Vec<PolicySkippedCandidate>,
 }
 impl PreparedWarmTransfer {
     pub fn selection(&self) -> &WarmSelection {
@@ -161,8 +190,9 @@ impl PreparedSelector {
         prediction: &crate::shared_transfer::PreparedPrediction,
         schema_ready: bool,
         warm_probe: bool,
+        policy: SelectionPolicy,
     ) -> Result<(PreparedWarmTransfer, CombinedSelection)> {
-        let prepared = self.prepare_warm_with_identity(
+        let mut prepared = self.prepare_warm_with_identity(
             target,
             base.map(crate::session::AcknowledgedBase::bytes),
             schema_ready,
@@ -171,9 +201,11 @@ impl PreparedSelector {
                 base.map(crate::session::AcknowledgedBase::id)
                     .ok_or(Error::Integrity)
             },
-            Some(prediction),
+            Some((prediction, policy)),
         )?;
         let selection = CombinedSelection {
+            policy,
+            policy_skipped: std::mem::take(&mut prepared.policy_skipped),
             candidates: prepared.selection.candidates.clone(),
             pruned: prepared.selection.pruned.clone(),
             selected_mode: prepared.selection.selected_mode,
@@ -191,8 +223,10 @@ impl PreparedSelector {
         schema_ready: bool,
         warm_probe: bool,
         base_identity: F,
-        prediction: Option<&crate::shared_transfer::PreparedPrediction>,
+        combined: Option<(&crate::shared_transfer::PreparedPrediction, SelectionPolicy)>,
     ) -> Result<PreparedWarmTransfer> {
+        let prediction = combined.map(|(prediction, _)| prediction);
+        let policy = combined.map_or(SelectionPolicy::Exhaustive, |(_, policy)| policy);
         if target.len() > client::MAX_BATCHED_OBJECT
             || base.is_some_and(|b| b.len() > client::MAX_BATCHED_OBJECT)
         {
@@ -204,6 +238,7 @@ impl PreparedSelector {
         let mut best = None;
         let mut candidates = vec![raw];
         let mut pruned = Vec::new();
+        let mut policy_skipped = Vec::new();
         // Full equality, not a digest or hint, proves both residual calls have
         // identical inputs. Keep one recipe and derive Runtime's exact checked
         // cost, including its extra setup frame. Sparse strictly dominates it;
@@ -303,6 +338,18 @@ impl PreparedSelector {
                 self.whole.encode(target)?
             } else if prediction.is_some() {
                 let intermediate = self.schema.prepare_intermediate(target)?;
+                // Canonical preparation has already enforced context/resource
+                // checks. This deliberate policy tradeoff is not a size proof.
+                if policy == SelectionPolicy::CpuConscious
+                    && intermediate.useful_template_records() == 0
+                {
+                    policy_skipped.push(PolicySkippedCandidate {
+                        mode,
+                        reason: PolicySkipReason::NoUsefulTemplateRecords,
+                        useful_template_records: 0,
+                    });
+                    continue;
+                }
                 if let Some(bound) = self.prune_schema_intermediate(
                     intermediate.bytes(),
                     warm_probe,
@@ -352,6 +399,7 @@ impl PreparedSelector {
             },
             payload,
             warm_probe,
+            policy_skipped,
             selection: WarmSelection {
                 candidates,
                 pruned,

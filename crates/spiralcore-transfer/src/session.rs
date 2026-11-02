@@ -15,7 +15,9 @@ use crate::{
     Error, Id, Result, MAX_CHUNK,
 };
 
-pub use crate::schema_selection::CombinedSelection;
+pub use crate::schema_selection::{
+    CombinedSelection, PolicySkipReason, PolicySkippedCandidate, SelectionPolicy,
+};
 
 /// Conservative per-session admission ceiling, not a process RSS measurement.
 /// Applications retaining several sessions must enforce a shared outer budget.
@@ -484,9 +486,19 @@ pub struct CombinedSession {
     state: ScopedState,
     checkpoint_ready: bool,
     schema_ready: bool,
+    policy: SelectionPolicy,
 }
 impl CombinedSession {
     pub fn new(context: &Context, prediction: PreparedPrediction, artifact: &[u8]) -> Result<Self> {
+        Self::new_with_policy(context, prediction, artifact, SelectionPolicy::Exhaustive)
+    }
+
+    pub fn new_with_policy(
+        context: &Context,
+        prediction: PreparedPrediction,
+        artifact: &[u8],
+        policy: SelectionPolicy,
+    ) -> Result<Self> {
         let session = Self {
             prepared: Some(CombinedPrepared {
                 prediction,
@@ -495,6 +507,7 @@ impl CombinedSession {
             state: ScopedState::new(context)?,
             checkpoint_ready: false,
             schema_ready: false,
+            policy,
         };
         admit(session.retained_charge(), 0, 0)?;
         Ok(session)
@@ -610,6 +623,8 @@ impl CombinedSession {
                 true,
             )?;
             let selection = CombinedSelection {
+                policy: self.policy,
+                policy_skipped: Vec::new(),
                 candidates: vec![CandidateCost {
                     mode: Mode::Raw,
                     target_http_body_bytes: cost,
@@ -639,6 +654,7 @@ impl CombinedSession {
                 &prepared.prediction,
                 self.schema_ready,
                 warm_probe,
+                self.policy,
             )?;
             let result = client::transfer_warm_selection_batched(transfer, transfer_id, |frames| {
                 attempted = true;

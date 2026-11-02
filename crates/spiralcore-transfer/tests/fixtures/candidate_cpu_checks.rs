@@ -28,7 +28,14 @@ fn current(
     probe: bool,
 ) -> (Vec<u8>, Vec<Vec<u8>>, WarmSelection) {
     let prepared = s
-        .prepare_warm_with_identity(target, base, ready, probe, |b| Ok(object_id(b)), Some(p))
+        .prepare_warm_with_identity(
+            target,
+            base,
+            ready,
+            probe,
+            |b| Ok(object_id(b)),
+            Some((p, SelectionPolicy::Exhaustive)),
+        )
         .unwrap();
     let bodies = match prepared.payload {
         Payload::Raw(bytes) => bytes

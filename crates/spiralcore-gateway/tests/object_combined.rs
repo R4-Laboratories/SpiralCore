@@ -42,8 +42,46 @@ fn combined_configuration_requires_both_auxiliary_artifacts_and_rejects_generic_
         .is_err());
 }
 
+#[test]
+fn cpu_conscious_configuration_is_explicit_and_requires_combined_artifacts() {
+    let mut valid = config();
+    valid["groups"][0]["mode"] = serde_json::json!("combined-cpu");
+    serde_json::from_value::<Config>(valid.clone())
+        .unwrap()
+        .validate()
+        .unwrap();
+    for field in ["schema_path", "checkpoint_path", "recipe_path"] {
+        let mut missing = valid.clone();
+        missing["groups"][0][field] = serde_json::Value::Null;
+        assert!(serde_json::from_value::<Config>(missing)
+            .unwrap()
+            .validate()
+            .is_err());
+    }
+    let mut bad = valid.clone();
+    bad["groups"][0]["operations"][2]["action"] = serde_json::json!("seed");
+    assert!(serde_json::from_value::<Config>(bad)
+        .unwrap()
+        .validate()
+        .is_err());
+    valid["groups"][0]["mode"] = serde_json::json!("combined-cpu-unknown");
+    assert!(serde_json::from_value::<Config>(valid)
+        .unwrap()
+        .validate()
+        .is_err());
+}
+
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn combined_gateway_changes_codec_within_one_authenticated_session_and_reopens_exact() {
+    combined_gateway_session("combined").await;
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn cpu_conscious_gateway_skips_unfitted_schema_and_keeps_runtime_warm_and_exact_repeats() {
+    combined_gateway_session("combined-cpu").await;
+}
+
+async fn combined_gateway_session(mode: &str) {
     use rcgen::{
         BasicConstraints, CertificateParams, ExtendedKeyUsagePurpose, IsCa, Issuer, KeyPair,
         KeyUsagePurpose,
@@ -102,6 +140,7 @@ async fn combined_gateway_changes_codec_within_one_authenticated_session_and_reo
     let edited = write("edited", &edited);
     let ready = directory.path().join("server-ready.json");
     let mut client = config();
+    client["groups"][0]["mode"] = serde_json::json!(mode);
     client["certificate"] = serde_json::json!(client_cert);
     client["private_key"] = serde_json::json!(client_key);
     client["trust_anchor"] = serde_json::json!(ca);
@@ -172,4 +211,40 @@ async fn combined_gateway_changes_codec_within_one_authenticated_session_and_reo
         );
     }
     assert_eq!(client["namespace"], server["namespace"]);
+    let expected_policy = if mode == "combined-cpu" {
+        "cpu-conscious"
+    } else {
+        "exhaustive"
+    };
+    for operation in client["operations"].as_array().unwrap().iter().skip(2) {
+        assert_eq!(operation["selection"]["selection_policy"], expected_policy);
+    }
+    let unrelated = &client["operations"][5]["selection"];
+    if mode == "combined-cpu" {
+        assert_eq!(
+            unrelated["policy_skipped"],
+            serde_json::json!([{
+                "mode":"SchemaZstdV1", "reason":"no-useful-template-records",
+                "useful_template_records":0
+            }])
+        );
+        assert!(!unrelated["candidates"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|candidate| candidate["mode"] == "SchemaZstdV1"));
+        assert!(!unrelated["pruned"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|candidate| candidate["mode"] == "SchemaZstdV1"));
+    } else {
+        assert_eq!(unrelated["policy_skipped"], serde_json::json!([]));
+    }
+    for index in [4, 7] {
+        assert_eq!(
+            client["operations"][index]["selection"]["policy_skipped"],
+            serde_json::json!([])
+        );
+    }
 }

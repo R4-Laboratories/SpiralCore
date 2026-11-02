@@ -1,0 +1,253 @@
+   Compiling spiralcore-transfer v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer)
+error[E0432]: unresolved import `spiralcore_transfer::session::SelectionPolicy`
+  --> tests/combined_session.rs:98:9
+   |
+98 |     use spiralcore_transfer::session::SelectionPolicy;
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ no `SelectionPolicy` in `session`
+
+error[E0599]: no associated function or constant named `new_with_policy` found for struct `CombinedSession` in the current scope
+   --> tests/combined_session.rs:107:46
+    |
+107 |             Some(policy) => CombinedSession::new_with_policy(&c, prediction(), &artifact(), policy).unwrap(),
+    |                                              ^^^^^^^^^^^^^^^ associated function or constant not found in `CombinedSession`
+    |
+note: if you're trying to build a new `CombinedSession`, consider using `CombinedSession::new` which returns `Result<CombinedSession, spiralcore_transfer::Error>`
+   --> src/session.rs:489:5
+    |
+489 |     pub fn new(context: &Context, prediction: PreparedPrediction, artifact: &[u8]) -> Result<Self> {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Some errors have detailed explanations: E0432, E0599.
+For more information about an error, try `rustc --explain E0432`.
+error: could not compile `spiralcore-transfer` (test "combined_session") due to 2 previous errors
+warning: build failed, waiting for other jobs to finish...
+error[E0422]: cannot find struct, variant or union type `PolicySkippedCandidate` in this scope
+  --> src/../tests/fixtures/cpu_conscious_checks.rs:26:49
+   |
+26 |         assert_eq!(receipt.policy_skipped, vec![PolicySkippedCandidate {
+   |                                                 ^^^^^^^^^^^^^^^^^^^^^^ not found in this scope
+
+error[E0599]: no method named `encode_counted` found for struct `schema::PreparedSchema` in the current scope
+   --> src/../tests/fixtures/schema_sender_checks.rs:18:39
+    |
+ 18 |         let (bytes, count) = prepared.encode_counted(&target).unwrap();
+    |                                       ^^^^^^^^^^^^^^ method not found in `schema::PreparedSchema`
+    |
+   ::: src/schema.rs:123:1
+    |
+123 | pub struct PreparedSchema {
+    | ------------------------- method `encode_counted` not found for this struct
+
+error[E0599]: no method named `encode_counted` found for struct `schema::PreparedSchema` in the current scope
+   --> src/../tests/fixtures/schema_sender_checks.rs:27:35
+    |
+ 27 |     let (bytes, count) = prepared.encode_counted(unhelpful).unwrap();
+    |                                   ^^^^^^^^^^^^^^ method not found in `schema::PreparedSchema`
+    |
+   ::: src/schema.rs:123:1
+    |
+123 | pub struct PreparedSchema {
+    | ------------------------- method `encode_counted` not found for this struct
+
+error[E0061]: this function takes 4 arguments but 5 arguments were supplied
+   --> src/../tests/fixtures/schema_sender_checks.rs:40:13
+    |
+ 40 |     assert!(super::write_first_template(&templates.items[0], row, &mut work, &mut bytes, &mut useful));
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^                                                  ----------- unexpected argument #5 of type `&mut {integer}`
+    |
+note: function defined here
+   --> src/schema.rs:429:4
+    |
+429 | fn write_first_template(
+    |    ^^^^^^^^^^^^^^^^^^^^
+help: remove the extra argument
+    |
+ 40 -     assert!(super::write_first_template(&templates.items[0], row, &mut work, &mut bytes, &mut useful));
+ 40 +     assert!(super::write_first_template(&templates.items[0], row, &mut work, &mut bytes));
+    |
+
+error[E0609]: no field `compression_calls` on type `schema_zstd::PreparedEncoder`
+  --> src/../tests/fixtures/cpu_conscious_checks.rs:21:38
+   |
+21 |         let before = selector.schema.compression_calls;
+   |                                      ^^^^^^^^^^^^^^^^^ unknown field
+
+error[E0433]: cannot find type `SelectionPolicy` in this scope
+  --> src/../tests/fixtures/cpu_conscious_checks.rs:23:45
+   |
+23 |             &target, None, &p, true, probe, SelectionPolicy::CpuConscious).unwrap();
+   |                                             ^^^^^^^^^^^^^^^ use of undeclared type `SelectionPolicy`
+
+error[E0061]: this method takes 5 arguments but 6 arguments were supplied
+   --> src/../tests/fixtures/cpu_conscious_checks.rs:22:37
+    |
+ 22 |         let (_, receipt) = selector.prepare_combined_acknowledged(
+    |                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ 23 |             &target, None, &p, true, probe, SelectionPolicy::CpuConscious).unwrap();
+    |                                             ----------------------------- unexpected argument #6
+    |
+note: method defined here
+   --> src/schema_selection.rs:161:19
+    |
+161 |     pub(crate) fn prepare_combined_acknowledged(
+    |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+help: remove the extra argument
+    |
+ 23 -             &target, None, &p, true, probe, SelectionPolicy::CpuConscious).unwrap();
+ 23 +             &target, None, &p, true, probe).unwrap();
+    |
+
+error[E0609]: no field `compression_calls` on type `schema_zstd::PreparedEncoder`
+  --> src/../tests/fixtures/cpu_conscious_checks.rs:24:36
+   |
+24 |         assert_eq!(selector.schema.compression_calls, before);
+   |                                    ^^^^^^^^^^^^^^^^^ unknown field
+
+error[E0609]: no field `policy` on type `schema_selection::CombinedSelection`
+  --> src/../tests/fixtures/cpu_conscious_checks.rs:25:28
+   |
+25 |         assert_eq!(receipt.policy, SelectionPolicy::CpuConscious);
+   |                            ^^^^^^ unknown field
+   |
+   = note: available fields are: `candidates`, `pruned`, `selected_mode`, `exact_repeat_probe`, `checkpoint_ready`, `schema_ready`
+
+error[E0433]: cannot find type `SelectionPolicy` in this scope
+  --> src/../tests/fixtures/cpu_conscious_checks.rs:25:36
+   |
+25 |         assert_eq!(receipt.policy, SelectionPolicy::CpuConscious);
+   |                                    ^^^^^^^^^^^^^^^ use of undeclared type `SelectionPolicy`
+
+error[E0609]: no field `policy_skipped` on type `schema_selection::CombinedSelection`
+  --> src/../tests/fixtures/cpu_conscious_checks.rs:26:28
+   |
+26 |         assert_eq!(receipt.policy_skipped, vec![PolicySkippedCandidate {
+   |                            ^^^^^^^^^^^^^^ unknown field
+   |
+   = note: available fields are: `candidates`, `pruned`, `selected_mode`, `exact_repeat_probe`, `checkpoint_ready`, `schema_ready`
+
+error[E0433]: cannot find type `PolicySkipReason` in this scope
+  --> src/../tests/fixtures/cpu_conscious_checks.rs:28:21
+   |
+28 |             reason: PolicySkipReason::NoUsefulTemplateRecords,
+   |                     ^^^^^^^^^^^^^^^^ use of undeclared type `PolicySkipReason`
+
+error[E0433]: cannot find type `SelectionPolicy` in this scope
+  --> src/../tests/fixtures/cpu_conscious_checks.rs:36:44
+   |
+36 |             &mixed, None, &p, true, probe, SelectionPolicy::CpuConscious).unwrap();
+   |                                            ^^^^^^^^^^^^^^^ use of undeclared type `SelectionPolicy`
+
+error[E0061]: this method takes 5 arguments but 6 arguments were supplied
+   --> src/../tests/fixtures/cpu_conscious_checks.rs:35:37
+    |
+ 35 |         let (_, receipt) = selector.prepare_combined_acknowledged(
+    |                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ 36 |             &mixed, None, &p, true, probe, SelectionPolicy::CpuConscious).unwrap();
+    |                                            ----------------------------- unexpected argument #6
+    |
+note: method defined here
+   --> src/schema_selection.rs:161:19
+    |
+161 |     pub(crate) fn prepare_combined_acknowledged(
+    |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+help: remove the extra argument
+    |
+ 36 -             &mixed, None, &p, true, probe, SelectionPolicy::CpuConscious).unwrap();
+ 36 +             &mixed, None, &p, true, probe).unwrap();
+    |
+
+error[E0609]: no field `compression_calls` on type `schema_zstd::PreparedEncoder`
+  --> src/../tests/fixtures/cpu_conscious_checks.rs:37:36
+   |
+37 |         assert_eq!(selector.schema.compression_calls, before + 1);
+   |                                    ^^^^^^^^^^^^^^^^^ unknown field
+
+error[E0609]: no field `policy_skipped` on type `schema_selection::CombinedSelection`
+  --> src/../tests/fixtures/cpu_conscious_checks.rs:38:25
+   |
+38 |         assert!(receipt.policy_skipped.is_empty());
+   |                         ^^^^^^^^^^^^^^ unknown field
+   |
+   = note: available fields are: `candidates`, `pruned`, `selected_mode`, `exact_repeat_probe`, `checkpoint_ready`, `schema_ready`
+
+error[E0433]: cannot find type `SelectionPolicy` in this scope
+  --> src/../tests/fixtures/cpu_conscious_checks.rs:41:45
+   |
+41 |             &target, None, &p, true, probe, SelectionPolicy::Exhaustive).unwrap();
+   |                                             ^^^^^^^^^^^^^^^ use of undeclared type `SelectionPolicy`
+
+error[E0061]: this method takes 5 arguments but 6 arguments were supplied
+   --> src/../tests/fixtures/cpu_conscious_checks.rs:40:37
+    |
+ 40 |         let (_, receipt) = selector.prepare_combined_acknowledged(
+    |                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ 41 |             &target, None, &p, true, probe, SelectionPolicy::Exhaustive).unwrap();
+    |                                             --------------------------- unexpected argument #6
+    |
+note: method defined here
+   --> src/schema_selection.rs:161:19
+    |
+161 |     pub(crate) fn prepare_combined_acknowledged(
+    |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+help: remove the extra argument
+    |
+ 41 -             &target, None, &p, true, probe, SelectionPolicy::Exhaustive).unwrap();
+ 41 +             &target, None, &p, true, probe).unwrap();
+    |
+
+error[E0609]: no field `compression_calls` on type `schema_zstd::PreparedEncoder`
+  --> src/../tests/fixtures/cpu_conscious_checks.rs:42:36
+   |
+42 |         assert_eq!(selector.schema.compression_calls, before + 2);
+   |                                    ^^^^^^^^^^^^^^^^^ unknown field
+
+error[E0609]: no field `policy_skipped` on type `schema_selection::CombinedSelection`
+  --> src/../tests/fixtures/cpu_conscious_checks.rs:43:25
+   |
+43 |         assert!(receipt.policy_skipped.is_empty());
+   |                         ^^^^^^^^^^^^^^ unknown field
+   |
+   = note: available fields are: `candidates`, `pruned`, `selected_mode`, `exact_repeat_probe`, `checkpoint_ready`, `schema_ready`
+
+error[E0433]: cannot find type `SelectionPolicy` in this scope
+  --> src/../tests/fixtures/cpu_conscious_checks.rs:45:46
+   |
+45 |             &target, None, &p, false, probe, SelectionPolicy::CpuConscious).unwrap();
+   |                                              ^^^^^^^^^^^^^^^ use of undeclared type `SelectionPolicy`
+
+error[E0061]: this method takes 5 arguments but 6 arguments were supplied
+   --> src/../tests/fixtures/cpu_conscious_checks.rs:44:37
+    |
+ 44 |         let (_, receipt) = selector.prepare_combined_acknowledged(
+    |                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ 45 |             &target, None, &p, false, probe, SelectionPolicy::CpuConscious).unwrap();
+    |                                              ----------------------------- unexpected argument #6
+    |
+note: method defined here
+   --> src/schema_selection.rs:161:19
+    |
+161 |     pub(crate) fn prepare_combined_acknowledged(
+    |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+help: remove the extra argument
+    |
+ 45 -             &target, None, &p, false, probe, SelectionPolicy::CpuConscious).unwrap();
+ 45 +             &target, None, &p, false, probe).unwrap();
+    |
+
+error[E0609]: no field `compression_calls` on type `schema_zstd::PreparedEncoder`
+  --> src/../tests/fixtures/cpu_conscious_checks.rs:46:36
+   |
+46 |         assert_eq!(selector.schema.compression_calls, before + 2);
+   |                                    ^^^^^^^^^^^^^^^^^ unknown field
+
+error[E0609]: no field `policy_skipped` on type `schema_selection::CombinedSelection`
+  --> src/../tests/fixtures/cpu_conscious_checks.rs:47:25
+   |
+47 |         assert!(receipt.policy_skipped.is_empty());
+   |                         ^^^^^^^^^^^^^^ unknown field
+   |
+   = note: available fields are: `candidates`, `pruned`, `selected_mode`, `exact_repeat_probe`, `checkpoint_ready`, `schema_ready`
+
+Some errors have detailed explanations: E0061, E0422, E0433, E0599, E0609.
+For more information about an error, try `rustc --explain E0061`.
+error: could not compile `spiralcore-transfer` (lib test) due to 24 previous errors

@@ -1,0 +1,12 @@
+Diff in /Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer/src/schema_zstd.rs:228:
+             encoder.prepare_intermediate(b"literal only"),
+             Err(Error::Limit)
+         ));
+-        assert!(matches!(encoder.encode_prepared(literal), Err(Error::Limit)));
++        assert!(matches!(
++            encoder.encode_prepared(literal),
++            Err(Error::Limit)
++        ));
+         assert_eq!(encoder.compression_calls, 0);
+     }
+ }

@@ -14,6 +14,8 @@ pub fn encoded_cap(target_len: usize) -> Result<usize> {
 pub struct PreparedEncoder {
     schema: schema::PreparedSchema,
     encoder: Option<CCtx<'static>>,
+    #[cfg(test)]
+    pub(crate) compression_calls: usize,
 }
 
 // Sealed canonical SCVAL001 input: callers cannot substitute unvalidated bytes
@@ -21,10 +23,14 @@ pub struct PreparedEncoder {
 pub(crate) struct PreparedIntermediate {
     bytes: Vec<u8>,
     target_len: usize,
+    useful_template_records: usize,
 }
 impl PreparedIntermediate {
     pub(crate) fn bytes(&self) -> &[u8] {
         &self.bytes
+    }
+    pub(crate) fn useful_template_records(&self) -> usize {
+        self.useful_template_records
     }
 }
 
@@ -38,6 +44,8 @@ impl PreparedEncoder {
         Ok(Self {
             schema,
             encoder: Some(encoder),
+            #[cfg(test)]
+            compression_calls: 0,
         })
     }
     pub fn artifact(&self) -> &[u8] {
@@ -59,7 +67,7 @@ impl PreparedEncoder {
         self.encode_prepared(intermediate)
     }
     pub(crate) fn prepare_intermediate(&self, target: &[u8]) -> Result<PreparedIntermediate> {
-        let intermediate = self.schema.encode(target)?;
+        let (intermediate, useful_template_records) = self.schema.encode_counted(target)?;
         if intermediate.len() > schema::encoded_cap(target.len())? {
             return Err(Error::Limit);
         }
@@ -68,6 +76,7 @@ impl PreparedEncoder {
         Ok(PreparedIntermediate {
             bytes: intermediate,
             target_len: target.len(),
+            useful_template_records,
         })
     }
     pub(crate) fn encode_prepared(
@@ -79,6 +88,10 @@ impl PreparedEncoder {
         encoded
             .try_reserve_exact(zstd_safe::compress_bound(intermediate.bytes.len()))
             .map_err(|_| Error::Limit)?;
+        #[cfg(test)]
+        {
+            self.compression_calls += 1;
+        }
         let result = encoder.compress2(&mut encoded, &intermediate.bytes);
         if encoder.sizeof() as u64 > ENCODER_ALLOWANCE {
             self.encoder = None;
@@ -193,4 +206,32 @@ fn frame_size(encoded: &[u8], target_len: usize) -> Result<usize> {
         return Err(Error::Malformed);
     }
     Ok(len)
+}
+
+#[cfg(test)]
+mod cpu_conscious_checks {
+    use super::*;
+
+    #[test]
+    fn cpu_conscious_preparation_preserves_resource_and_poison_errors() {
+        let artifact = schema::fit(&[b"{\"identifier\":0}\n"]).unwrap();
+        let mut encoder = PreparedEncoder::new(&artifact).unwrap();
+        assert!(matches!(
+            encoder.prepare_intermediate(&vec![0; schema::MAX_TARGET + 1]),
+            Err(Error::Limit)
+        ));
+        assert_eq!(encoder.compression_calls, 0);
+        let literal = encoder.prepare_intermediate(b"literal only").unwrap();
+        assert_eq!(literal.useful_template_records(), 0);
+        encoder.encoder = None;
+        assert!(matches!(
+            encoder.prepare_intermediate(b"literal only"),
+            Err(Error::Limit)
+        ));
+        assert!(matches!(
+            encoder.encode_prepared(literal),
+            Err(Error::Limit)
+        ));
+        assert_eq!(encoder.compression_calls, 0);
+    }
 }
