@@ -145,6 +145,8 @@ pub struct Bootstrap {
     pub role: Role,
     pub plan: Plan,
     pub utc_seconds: u64,
+    #[serde(default)]
+    pub report_exit: bool,
     pub incoming: Option<Material>,
     pub outgoing: Option<Material>,
     pub published: Vec<Published>,
@@ -208,6 +210,7 @@ impl Pair {
         let utc_seconds = u64::try_from(now / 1000)?;
         Ok(Self {
             sender: Bootstrap {
+                report_exit: false,
                 role: Role::Sender,
                 plan: plan.clone(),
                 utc_seconds,
@@ -216,6 +219,7 @@ impl Pair {
                 published: Vec::new(),
             },
             receiver: Bootstrap {
+                report_exit: false,
                 role: Role::Receiver,
                 plan,
                 utc_seconds,

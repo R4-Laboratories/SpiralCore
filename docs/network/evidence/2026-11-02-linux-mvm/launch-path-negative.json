@@ -1,0 +1,20 @@
+{
+  "date": "2026-11-02",
+  "case": "Private Firecracker binary lost across the upstream nested sudo boundary",
+  "scope": "One bounded optimized one-guest/host warm smoke attempt at 1 MiB; no guest boot",
+  "remote_result_directory": "/var/tmp/spiralcore-linux-mvm-20261102/smoke-one-warm-release",
+  "launcher": "sudo -n /usr/bin/setpriv --reuid callard --regid kvm --init-groups /usr/bin/env with the existing user's XDG runtime directory and session bus, plus a process-local private asset PATH",
+  "host_binary_sha256": "7911958f4c03bee1687f4014b29a6a22db8952e86db517467c9019c9952f34a0",
+  "guest_binary_sha256": "be7e2ac09ae3e67210396393048d9982cc0b640e1e3a5bdbd9ac2e18f3b4059c",
+  "session_exit": 1,
+  "session_error": "guest connect deadline",
+  "worker_error": "MVM Firecracker boot failed; Firecracker launch shell reported exec: firecracker: not found",
+  "console_bytes": 0,
+  "firecracker_processes_before": [],
+  "firecracker_processes_after": [],
+  "guest_booted": false,
+  "transfer_measurement_available": false,
+  "diagnosis": "The pinned mvm-backends Firecracker launch script prepends sudo for non-root callers and invokes firecracker by bare name. The nested sudo secure_path does not retain the private asset directory supplied to the host process.",
+  "global_changes": "No global binary installation, sudoers change, group membership, device ACL, systemd environment or service change was made",
+  "next_step": "Resolve the Firecracker executable across the launch privilege boundary explicitly or use a separately validated process-only launch; retain this failed result rather than rerunning unchanged"
+}

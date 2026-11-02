@@ -1,0 +1,58 @@
+name: SpiralCore Linux MVM contracts
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'crates/spiralcore-mvm-live/**'
+      - 'crates/spiralcore-mvm-adapter/**'
+      - 'crates/spiralcore-transfer/**'
+      - 'crates/spiralcore-gateway-core/**'
+      - 'crates/uor-r4-object-store/**'
+      - '.github/workflows/spiralcore-linux-mvm.yml'
+permissions:
+  contents: read
+jobs:
+  linux-host-build-and-contracts:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      CARGO_BUILD_JOBS: 2
+      CARGO_INCREMENTAL: 0
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Install pinned Rust toolchain
+        run: rustup toolchain install 1.97.1 --profile minimal --component clippy
+      - name: Prepare the exact MVM source and retained mailbox patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --filter=blob:none --no-checkout https://github.com/tinylabscom/mvm "$RUNNER_TEMP/mvm-base"
+          git -C "$RUNNER_TEMP/mvm-base" checkout --detach 3104a12c5b071a6851323fa8115d2afaf3f0bb8b
+          bash crates/spiralcore-mvm-live/mvm-patch/prepare.sh \
+            "$RUNNER_TEMP/mvm-base" "$RUNNER_TEMP/mvm-prepared"
+      - name: Linux host, canonical envelope, recovery and packing tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo +1.97.1 test --locked \
+            --manifest-path crates/spiralcore-mvm-live/Cargo.toml \
+            --config "$RUNNER_TEMP/mvm-prepared/patch.toml" \
+            --features linux-host --all-targets
+      - name: Linux warnings check
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo +1.97.1 clippy --locked \
+            --manifest-path crates/spiralcore-mvm-live/Cargo.toml \
+            --config "$RUNNER_TEMP/mvm-prepared/patch.toml" \
+            --features linux-host --all-targets -- -D warnings
+      - name: Default Linux guest entry and measurement analyzer
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo +1.97.1 check --locked \
+            --manifest-path crates/spiralcore-mvm-live/Cargo.toml \
+            --config "$RUNNER_TEMP/mvm-prepared/patch.toml" --all-targets
+          bash crates/spiralcore-mvm-live/scripts/test-combined-analysis.sh

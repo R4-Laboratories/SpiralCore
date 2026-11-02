@@ -75,4 +75,25 @@ jq 'del(.sender.counters.envelope_bytes_received,.receiver.counters.envelope_byt
 if "$here/analyze-combined.sh" "$scratch" > /dev/null 2> "$scratch/negative.txt"; then
     printf 'analyzer accepted missing directional byte fields\n' >&2; exit 1
 fi
-printf 'PASS: 36 synthetic sessions, known paired ratios, exact readback and six rejecting mutations\n'
+cp -- "$scratch/original.json" "$target"
+while IFS= read -r item; do
+    name=$(jq -r .name <<< "$item")
+    file="$scratch/$name/result.json"
+    jq '.backend="firecracker" | .mailbox_rate_enforced=false |
+      .mailbox_rate_bytes_per_second=null | .mailbox_burst_bytes=null |
+      (.sender_worker,.receiver_worker,.recovery_worker) |=
+      if .==null then . else .+{backend:"firecracker",mailbox_rate_enforced:false,
+        mailbox_rate_bytes_per_second:null,mailbox_burst_bytes:null,
+        workload_exit_code:0,process_exit_observed:true,natural_poweroff_observed:false,
+        terminal_contract:"canonical-workload-exit-zero-and-successful-guest-done-then-owned-host-termination"} end' \
+      "$file" > "$scratch/linux.json"
+    mv -- "$scratch/linux.json" "$file"
+done < <(jq -c '.[]' "$scratch/schedule.json")
+"$here/analyze-combined.sh" "$scratch" > "$scratch/linux-analysis.json"
+jq -e '.exact_operations==336' "$scratch/linux-analysis.json" >/dev/null
+jq '.sender_worker.workload_exit_code=1' "$target" > "$scratch/failed-exit.json"
+mv -- "$scratch/failed-exit.json" "$target"
+if "$here/analyze-combined.sh" "$scratch" >/dev/null 2> "$scratch/negative.txt"; then
+    printf 'analyzer accepted a failed canonical guest exit\n' >&2; exit 1
+fi
+printf 'PASS: HVF and Linux synthetic sessions, known paired ratios, exact readback and rejecting mutations\n'

@@ -31,11 +31,12 @@ def ratios($rows; $keys):
     median_paired_elapsed_ratio:([$trials[].elapsed_ratio]|med)}];
 require(length==36; "expected exactly 36 registered sessions") |
 [.[].session] as $sessions | [.[].operation_rows[]] as $ops |
+require(([$sessions[].backend]|unique|length)==1; "mixed host backends in paired campaign") |
 require(([$sessions[]|[.stage,.size,.trial,.arm]]|unique|length)==36; "duplicate session") |
 [$ops[]|select(.setup|not)] as $payloads |
 ($payloads|group_by([.stage,.size,.trial,.kind])) as $identities |
 require(($identities|length)==96 and all($identities[]; length==3 and ([.[].arm]|unique|sort)==["combined","combined-cpu","whole-mixed"] and ([.[]|[.object_id,.object_bytes]]|unique|length)==1); "paired payload identity mismatch") |
-{format:"spiralcore-mvm-combined-analysis-v1",sessions:$sessions,operation_rows:$ops,
+{format:"spiralcore-mvm-combined-analysis-v1",backend:$sessions[0].backend,sessions:$sessions,operation_rows:$ops,
  exact_operations:($ops|length),guest_reboot_verified_operations:([$ops[]|select(.exact_guest_reboot)]|length),
  payload_identity_groups:($identities|length),
  session_medians:[$sessions|group_by([.stage,.size,.arm])[]|.[0] as $first|summary+($first|{stage,size,arm})],
@@ -47,4 +48,4 @@ require(($identities|length)==96 and all($identities[]; length==3 and ([.[].arm]
  "Sender elapsed includes fixture/codec setup and operations, excludes JSON serialization, ownership copies and independent readback; full lifecycle is separate.",
  "Endpoint CPU partial sum excludes receiver framed receive and idle wait; keep guest CPU separate from enclosing host worker/VMM CPU.",
  "Exchange wall time includes crypto, receiver work and waiting; it is not send-only time.",
- "Local HVF/vsock, not a two-host WAN, production mailbox or energy qualification."]}
+ "Local guest/vsock; see backend metadata. Not a two-host WAN, production mailbox or energy qualification."]}

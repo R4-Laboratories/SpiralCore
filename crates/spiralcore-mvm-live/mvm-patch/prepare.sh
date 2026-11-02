@@ -44,7 +44,7 @@ toml_string() {
 config="$output_dir/patch.toml"
 {
     printf '[patch."https://github.com/tinylabscom/mvm"]\n'
-    for crate in mvm-core mvm-contract mvm-runtime mvm-build mvm-fs mvm-agentd; do
+    for crate in mvm-core mvm-contract mvm-runtime mvm-build mvm-fs mvm-agentd mvm-backends mvm-vmm mvm-net; do
         printf '%s = { path = ' "$crate"
         toml_string "$source_dir/crates/$crate"
         printf ' }\n'

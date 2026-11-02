@@ -9,6 +9,7 @@ description = "Bounded native HVF guest/vsock integration witness for SpiralCore
 [features]
 default = ["live"]
 live = []
+linux-host = ["dep:mvm-backends", "dep:mvm-vmm", "dep:mvm-net", "dep:mvm-build", "dep:mvm-fs"]
 
 [dependencies]
 spiralcore-gateway-core = { path = "../spiralcore-gateway-core", features = ["hardware-sha256"] }
@@ -30,6 +31,11 @@ mvm-fs = { git = "https://github.com/tinylabscom/mvm", rev = "3104a12c5b071a6851
 
 [target.'cfg(target_os = "linux")'.dependencies]
 mvm-agentd = { git = "https://github.com/tinylabscom/mvm", rev = "3104a12c5b071a6851323fa8115d2afaf3f0bb8b", default-features = false }
+mvm-backends = { git = "https://github.com/tinylabscom/mvm", rev = "3104a12c5b071a6851323fa8115d2afaf3f0bb8b", default-features = false, optional = true }
+mvm-vmm = { git = "https://github.com/tinylabscom/mvm", rev = "3104a12c5b071a6851323fa8115d2afaf3f0bb8b", default-features = false, optional = true }
+mvm-net = { git = "https://github.com/tinylabscom/mvm", rev = "3104a12c5b071a6851323fa8115d2afaf3f0bb8b", default-features = false, optional = true }
+mvm-build = { git = "https://github.com/tinylabscom/mvm", rev = "3104a12c5b071a6851323fa8115d2afaf3f0bb8b", default-features = false, optional = true }
+mvm-fs = { git = "https://github.com/tinylabscom/mvm", rev = "3104a12c5b071a6851323fa8115d2afaf3f0bb8b", default-features = false, optional = true }
 
 [dev-dependencies]
 tempfile = "3"

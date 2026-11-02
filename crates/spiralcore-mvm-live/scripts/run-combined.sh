@@ -10,6 +10,11 @@ out=$4
 registration=$5
 here=$(cd -- "$(dirname -- "$0")" && pwd)
 repo=$(git -C "$here" rev-parse --show-toplevel)
+case $(uname -s) in
+    Linux) backend=firecracker ;;
+    Darwin) backend=hvf ;;
+    *) printf 'unsupported host platform\n' >&2; exit 2 ;;
+esac
 [[ ! -e "$out" && ! -L "$out" ]] || { printf 'output must be new\n' >&2; exit 2; }
 [[ -x "$runner" && -f "$kernel" && -f "$guest" && -f "$registration" ]] || exit 2
 for input in "$runner" "$kernel" "$guest" "$registration"; do
@@ -23,6 +28,7 @@ jq -e '
   (.source_commit|test("^[0-9a-f]{40}$")) and
   all([.host_sha256,.guest_sha256,.kernel_sha256][]; test("^[0-9a-f]{64}$"))
 ' "$registration" >/dev/null
+[[ $(jq -r '.backend // "hvf"' "$registration") == "$backend" ]] || { printf 'registered backend mismatch\n' >&2; exit 2; }
 [[ $(git -C "$repo" rev-parse HEAD) == "$(jq -r .source_commit "$registration")" ]] || { printf 'source revision mismatch\n' >&2; exit 2; }
 # Freeze tracked source and runner, while permitting unrelated local research files.
 git -C "$repo" diff --quiet HEAD -- crates scripts .github || { printf 'commit source changes before registered run\n' >&2; exit 2; }
@@ -31,7 +37,7 @@ sha() { shasum -a 256 "$1" | awk '{print $1}'; }
 host_snapshot() {
     date -u '+%Y-%m-%dT%H:%M:%SZ'
     uptime
-    sysctl vm.loadavg
+    if [[ "$backend" == firecracker ]]; then cat /proc/loadavg; else sysctl vm.loadavg; fi
     # Counts only, no arguments, paths, identities or environment from other work.
     ps -Ao comm= | awk '
       /(^|\/)(cargo|rustc|clang|clang\+\+|cc|c\+\+|zig)$/ {compilers++}
@@ -56,7 +62,12 @@ shasum -a 256 "$runner" "$kernel" "$guest" "$registration" "$here/run-combined.s
     uname -a
     uptime
     df -Pk "$out"
-    sysctl hw.memsize hw.ncpu machdep.cpu.brand_string
+    if [[ "$backend" == firecracker ]]; then
+        getconf _NPROCESSORS_ONLN
+        awk '/^MemTotal:/ {print}' /proc/meminfo
+    else
+        sysctl hw.memsize hw.ncpu machdep.cpu.brand_string
+    fi
 } > "$out/host-before.txt"
 while IFS= read -r item; do
     name=$(jq -r .name <<< "$item")

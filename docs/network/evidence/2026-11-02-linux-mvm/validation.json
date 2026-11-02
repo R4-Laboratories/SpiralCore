@@ -1,0 +1,29 @@
+{
+  "source_commit": "a9f038c49bcaf69ce7d6780970dadd412a31a573",
+  "rust_toolchain": "1.97.1",
+  "mvm_base": "3104a12c5b071a6851323fa8115d2afaf3f0bb8b",
+  "macos_compatibility": {
+    "command": "/Users/casey.allard/.cargo/bin/cargo +1.97.1 test --locked --manifest-path crates/spiralcore-mvm-live/Cargo.toml --config /tmp/spiralcore-linux-mvm-patch.toml --all-targets",
+    "passed": 37,
+    "failed": 0,
+    "clippy_all_targets_deny_warnings": "passed",
+    "scope": "Host contracts, existing HVF helpers, canonical mailbox socket I/O, exact transfer, interrupted recovery and private disk packing; not a new HVF live campaign"
+  },
+  "linux_contracts": {
+    "feature": "linux-host",
+    "all_targets_passed": 31,
+    "failed": 0,
+    "clippy_all_targets_deny_warnings": "passed",
+    "independent_github_run": "https://github.com/R4-Laboratories/SpiralCore/actions/runs/41506820303",
+    "github_run_conclusion": "success",
+    "scope": "Native Linux compilation and contracts; KVM execution recorded separately"
+  },
+  "test_first": [
+    "Linux architecture/completion tests failed with missing validate_guest and parse_console helpers before implementation, then passed",
+    "Canonical guest-exit test failed with missing require_exit_code before implementation, then passed",
+    "Guest report interoperability test failed with missing report_exit_to before implementation, then passed using MVM capture_stream and strict acknowledgment",
+    "Linux analyzer fixture failed the old HVF-only profile gate before extension, then passed; failed canonical exit remains rejected"
+  ],
+  "patch_bundle": "All five bundle SHA-256 entries verified; original fourteen-file MVM patch unchanged; preparation now routes nine direct crates to one tree",
+  "interpretation": "Tests/builds/CI are not WAN, production mailbox, rate-limit parity, energy or full contention qualification"
+}

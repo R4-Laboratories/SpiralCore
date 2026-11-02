@@ -1,0 +1,39 @@
+{
+  "date": "2026-11-02",
+  "scope": "Unoptimized Linux host/guest compilation smoke of a working source snapshot; no VM boot or transfer measurement",
+  "remote_root": "/var/tmp/spiralcore-linux-mvm-20261102",
+  "mvm_source_revision": "3104a12c5b071a6851323fa8115d2afaf3f0bb8b",
+  "mvm_source_preparation": "Stream exact committed git archive into isolated mvm-source, apply retained 14-file patch, verify all 14 patched-file SHA-256 identities",
+  "source_transfer_scope": ["spiralcore-transfer", "spiralcore-gateway-core", "spiralcore-mvm-adapter", "spiralcore-mvm-live", "uor-r4-object-store"],
+  "source_transfer_exclusions": ["target", "local", ".git"],
+  "patch_crates": ["mvm-core", "mvm-contract", "mvm-runtime", "mvm-build", "mvm-fs", "mvm-agentd", "mvm-backends", "mvm-vmm", "mvm-net"],
+  "cargo_binary": "/home/callard/.rustup/toolchains/1.97.1-x86_64-unknown-linux-gnu/bin/cargo",
+  "cargo_version": "1.97.1 (c980f4866 2026-06-30)",
+  "environment": {
+    "CARGO_TARGET_DIR": "/var/tmp/spiralcore-linux-mvm-20261102/target",
+    "CARGO_BUILD_JOBS": "2",
+    "CARGO_INCREMENTAL": "0"
+  },
+  "host": {
+    "command": "cargo build --locked --manifest-path crates/spiralcore-mvm-live/Cargo.toml --features linux-host --config ../patch.toml",
+    "initial_unlocked_build_exit": 0,
+    "locked_build_exit": 0,
+    "binary": "target/debug/spiralcore-mvm-live",
+    "sha256": "30bc1b835bf9c5f9b852fce6423ac3f7aa93c263cc4b23696e50ca8160d45224",
+    "bytes": 16351512,
+    "format": "ELF64 x86-64 dynamically linked PIE"
+  },
+  "guest": {
+    "command": "RUSTFLAGS=-Ctarget-feature=+crt-static cargo build --locked --manifest-path crates/spiralcore-mvm-live/Cargo.toml --target x86_64-unknown-linux-gnu --config ../patch.toml",
+    "exit": 0,
+    "binary": "target/x86_64-unknown-linux-gnu/debug/spiralcore-mvm-live",
+    "sha256": "77404d988af8f49c3aca31199ec0f0c5bf7fa1ba463a8b78e52b84ae33ceecd2",
+    "bytes": 12987688,
+    "format": "ELF64 x86-64 static PIE",
+    "pt_interp_present": false
+  },
+  "cargo_lock_sha256": "655b7d7e8942a7e8a5f513e4cc034fe6642a477044c6b2986d55204cc9e5ec28",
+  "cargo_lock_changed_by_remote_build": false,
+  "linux_host_source_sha256": "344c3a15b489cfd319fd24c086022e7263cf4a4f58da4a81938c62cacc8e2a58",
+  "qualification_note": "Final measurements require a frozen source identity and optimized binaries; these hashes identify bootstrap smoke artifacts only. No generic Linux guest success, Firecracker execution, fidelity result or speed benefit follows from compilation alone."
+}

@@ -8,14 +8,22 @@ def counters_match($a; $b):
        ["framing_bytes_sent","framing_bytes_received"],["frames_sent","frames_received"]][];
        . as $k | all([$a[$k[0]],$a[$k[1]],$b[$k[0]],$b[$k[1]]][]; numeric)
        and $a[$k[0]]==$b[$k[1]] and $a[$k[1]]==$b[$k[0]]);
-def worker_ok: .ok==true and .mailbox_bandwidth_profile=="experimental64" and
-  .mailbox_rate_bytes_per_second==67108864 and .mailbox_burst_bytes==8388608;
+def shaped_profile: .mailbox_rate_bytes_per_second==67108864 and .mailbox_burst_bytes==8388608;
+def unshaped_profile: .mailbox_rate_enforced==false and .mailbox_rate_bytes_per_second==null and .mailbox_burst_bytes==null;
+def worker_ok($backend): .ok==true and .mailbox_bandwidth_profile=="experimental64" and
+  (.backend // "hvf")==$backend and
+  (if $backend=="firecracker" then unshaped_profile and .workload_exit_code==0 and
+    .process_exit_observed==true and .natural_poweroff_observed==false and
+    .terminal_contract=="canonical-workload-exit-zero-and-successful-guest-done-then-owned-host-termination"
+   else shaped_profile end);
 $r[0] as $r |
+($r.backend // "hvf") as $backend |
+require(($backend=="hvf" or $backend=="firecracker"); "unsupported host backend") |
 require(($r.event=="session_done" and $r.ok==true and $r.plan==($expected|del(.name))); "session/plan mismatch: "+$source) |
-require(($r.mailbox_rate_bytes_per_second==67108864 and $r.mailbox_burst_bytes==8388608); "mailbox profile mismatch") |
+require((if $backend=="firecracker" then ($r|unshaped_profile) else ($r|shaped_profile) end); "mailbox profile mismatch") |
 require(($r.receiver.exact_reopened==true and counters_match($r.sender.counters;$r.receiver.counters)); "readback or directional counters mismatch") |
-require((($r.sender_worker|worker_ok) and ($r.plan.stage!="two" or
-  (($r.receiver_worker|worker_ok) and ($r.recovery_worker|worker_ok) and $r.receiver_worker.backing_disk_synced==true and $r.recovery_worker.backing_disk_synced==true))); "worker completion/profile/disk synchronization missing") |
+require((($r.sender_worker|worker_ok($backend)) and ($r.plan.stage!="two" or
+  (($r.receiver_worker|worker_ok($backend)) and ($r.recovery_worker|worker_ok($backend)) and $r.receiver_worker.backing_disk_synced==true and $r.recovery_worker.backing_disk_synced==true))); "worker completion/profile/disk synchronization missing") |
 (if $r.plan.stage=="one" then $host else $r.receiver_worker.guest_events end) as $receiver |
 [$r.sender_worker.guest_events[]|select(.event=="sender_operation")] as $sent |
 [$receiver[]|select(.event=="receiver_operation")] as $received |
@@ -50,7 +58,7 @@ require(($r.physical_vsock_stream_bytes==$r.logical_envelope_and_framing_bytes*(
    exact_guest_reboot:($r.plan.stage=="two"),source:$source}
 ] as $rows |
 require(all([$r.sender.cpu_us,$r.receiver.cpu_us,$r.sender.wall_us,$r.lifecycle_wall_us,$r.orchestrator_process_cpu_us,$r.sender_worker.worker_process_cpu_us][]; numeric); "missing session timing") |
-{session:{stage:$r.plan.stage,arm:$r.plan.arm,size:$r.plan.size,trial:$r.plan.trial,
+{session:{backend:$backend,stage:$r.plan.stage,arm:$r.plan.arm,size:$r.plan.size,trial:$r.plan.trial,
   operations:$n,payload_bytes:([$rows[]|select(.setup|not)|.object_bytes]|add),
   logical_encrypted_stream_bytes:$r.logical_envelope_and_framing_bytes,
   physical_vsock_stream_bytes:$r.physical_vsock_stream_bytes,

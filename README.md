@@ -31,13 +31,19 @@ required state.*
 |---|---|---|---|
 | **Cooperating objects** | Authenticated QUIC object service; Combined runtime, warm cache, schema and zstd/raw selection | Persistent receivers, exact restart readback, local and calibrated shaped links | Current Combined gateway needs a two-host Internet WAN campaign |
 | **Normal TCP/UDP** | Linux Layer 3 TUN → paired authenticated QUIC gateways → peer TUN | Real IPv4/IPv6 TCP/UDP flows; local and calibrated 80 ms / 10 Mbps tests | No general Internet egress/NAT or transparent warm-cache/CA compression of TCP streams |
-| **MVM mailboxes** | Shared object core at authorized plaintext endpoints; canonical encrypted envelopes over vsock | Real guest → host and two-guest sessions under a small native orchestrator; keyless reboot readback | Experimental binding; production mailbox lifecycle and WAN deployment remain open |
+| **MVM mailboxes** | Shared object core at authorized plaintext endpoints; canonical encrypted envelopes over vsock | Native ARM64 macOS/HVF and x86-64 Linux/Firecracker guest → host and two-guest sessions; keyless reboot readback | Experimental binding; production mailbox lifecycle, Linux rate-limit parity and WAN deployment remain open |
 
 The normal-network gateway sends standard UDP/IP through the physical NIC, with
 no NIC driver changes. Both ends need a cooperating gateway. HTTPS/QUIC payloads
 reaching TUN are already encrypted and generally offer little compression.
 Shared-runtime and warm-object gains currently belong to the **object and MVM
 tracks**, not arbitrary encrypted packet traffic.
+
+**Platform scope:** the normal TUN gateway is Linux-native. The MVM witness has
+macOS/HVF and Linux/Firecracker host paths; the default Linux build is the guest,
+and the `linux-host` feature selects the host. Windows remains unimplemented:
+native packet integration and private/durable storage semantics need a port.
+[Linux build and lifecycle details →](docs/network/linux-firecracker.md)
 
 ### Where SpiralCore sits in the network stack
 
@@ -103,7 +109,7 @@ The opt-in mode retains **41.63% fewer IP bytes, 21.83% less process CPU and
 than exhaustive selection: full-session elapsed is 0.045% worse in this dose,
 and unrelated objects retain overhead. [Workload and remaining costs →](docs/network/cpu-conscious-results-2026-11-02.md)
 
-### MVM: current Combined core through actual guest/vsock boundaries
+### MVM on macOS/HVF: Combined through actual guest/vsock boundaries
 
 The [MVM report](docs/network/mvm-combined-results-2026-11-02.md) records **36 real
 guest sessions, 336 exact publications including setup, and 168 separate keyless,
@@ -132,6 +138,28 @@ Schema fit/drift save only about 0.7–1.1% of bytes here and cost more CPU/time
 An interrupted transfer cannot publish its partial object; a fresh authenticated
 connection recovers exactly. This is local native MVM execution, not production
 mailbox activation or a new WAN result. [Sizes, recovery and full testing report →](docs/network/mvm-combined-results-2026-11-02.md)
+
+### MVM on Linux/Firecracker: native host implementation
+
+The [Linux campaign](docs/network/linux-mvm-results-2026-11-02.md) completed
+**36 native sessions, 336 exact publications and 168 keyless reboot checks**.
+The two-guest eight-target batch below uses 14,851,384 bytes per target and pays
+Combined checkpoint/schema setup. Medians of three trials:
+
+| Mode | Encrypted logical mailbox bytes, both directions | Sender CPU | Sender session elapsed |
+|---|---:|---:|---:|
+| Exhaustive Combined | 56,558,976 | 1.201 s | 2.084 s |
+| CPU-conscious Combined | 56,544,015 | 1.181 s | 2.048 s |
+| Prepared whole-object zstd | 97,347,823 | 1.340 s | 2.425 s |
+
+CPU-conscious Combined saves **41.92% of mailbox bytes, 11.84% of sender CPU and
+15.00% of elapsed** by paired medians. Two mailbox hops carry twice the logical
+count; these counters exclude the separate exit service and virtio headers.
+The Linux path is currently unshaped, so its timings are separate from HVF's
+rate-limited campaign. The 1 MiB tier saves about 35% of bytes but has sender-CPU
+regressions and a one-guest elapsed regression; schema and unrelated objects
+also retain per-operation costs. A forced early worker death
+failed the session and cleaned up its owned VMM. [Full results, losses and remaining qualification →](docs/network/linux-mvm-results-2026-11-02.md)
 
 ### Earlier real Internet WAN evidence
 
@@ -278,7 +306,9 @@ flowchart LR
 </details>
 
 The witness also supports a single guest with a host endpoint. It uses actual
-ARM64 Linux guests on macOS Hypervisor.framework and a pinned MVM patch.
+ARM64 Linux guests on macOS Hypervisor.framework and x86-64 Linux guests on
+Linux/Firecracker, with a pinned MVM patch. The Linux pilot uses an unshaped
+mailbox path; its requested rate profile is not reported as an enforced limit.
 **5257 is experimental; FlowMux 5253 is separate and unchanged.** Publication
 acknowledgment does not promise exactly-once application processing.
 [Native MVM build/run instructions →](crates/spiralcore-mvm-live/README.md)

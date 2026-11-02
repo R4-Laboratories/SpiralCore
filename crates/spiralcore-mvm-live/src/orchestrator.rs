@@ -101,6 +101,10 @@ fn read_bounded(path: &Path, max: usize) -> Result<Vec<u8>> {
 struct Worker {
     child: Option<Child>,
     output: PathBuf,
+    #[cfg(target_os = "linux")]
+    home: PathBuf,
+    #[cfg(target_os = "linux")]
+    pid: u32,
 }
 impl Worker {
     fn start(
@@ -117,8 +121,12 @@ impl Worker {
         let stderr = private_file(&root.join(format!("{name}.stderr")))?;
         let mut private_bootstrap = serde_json::to_value(bootstrap)?;
         private_bootstrap["utc_seconds"] = json!(u64::try_from(now_ms()? / 1000)?);
+        private_bootstrap["report_exit"] = json!(cfg!(target_os = "linux"));
         let initrd = host::initramfs(guest, &serde_json::to_vec(&private_bootstrap)?)?;
+        let home = root.join(format!("mvm-{name}"));
+        fs::DirBuilder::new().mode(0o700).create(&home)?;
         let child = Command::new(std::env::current_exe()?)
+            .env("MVM_HOME", &home)
             .arg("worker")
             .arg(kernel)
             .arg(disk.unwrap_or(Path::new("-")))
@@ -129,6 +137,10 @@ impl Worker {
             .stderr(stderr)
             .spawn()?;
         let mut worker = Self {
+            #[cfg(target_os = "linux")]
+            pid: child.id(),
+            #[cfg(target_os = "linux")]
+            home,
             child: Some(child),
             output,
         };
@@ -155,6 +167,8 @@ impl Worker {
             std::thread::park_timeout(Duration::from_millis(10));
         };
         self.child.take();
+        #[cfg(target_os = "linux")]
+        self.cleanup_vm()?;
         if !status.success() {
             return Err(format!(
                 "worker failed: {status}; public receipt {}",
@@ -168,12 +182,31 @@ impl Worker {
         }
         Ok(value)
     }
+
+    #[cfg(target_os = "linux")]
+    fn cleanup_vm(&self) -> Result<()> {
+        let status = Command::new(std::env::current_exe()?)
+            .arg("cleanup-worker")
+            .arg(self.pid.to_string())
+            .env("MVM_HOME", &self.home)
+            .stdin(Stdio::null())
+            .stdout(Stdio::null())
+            .status()?;
+        if !status.success() {
+            return Err("owned Firecracker cleanup failed".into());
+        }
+        Ok(())
+    }
 }
 impl Drop for Worker {
     fn drop(&mut self) {
         if let Some(mut child) = self.child.take() {
             let _ = child.kill();
             let _ = child.wait();
+            #[cfg(target_os = "linux")]
+            if self.cleanup_vm().is_err() {
+                eprintln!("owned Firecracker cleanup failed; inspect the private worker directory");
+            }
         }
     }
 }
@@ -442,6 +475,7 @@ fn session_inner(
         receiver = event(&completed_b, "receiver_done")?;
         let published: Vec<Published> = serde_json::from_value(receiver["published"].clone())?;
         let verify = Bootstrap {
+            report_exit: false,
             role: Role::Verify,
             plan: plan.clone(),
             utc_seconds: u64::try_from(now_ms()? / 1000)?,
@@ -483,8 +517,10 @@ fn session_inner(
         .checked_mul(if plan.stage == Stage::Two { 2 } else { 1 })
         .ok_or("physical byte overflow")?;
     let value = json!({"event":"session_done","ok":true,"plan":plan,"sender":sender,"receiver":receiver,
-        "mailbox_rate_bytes_per_second":plan.bandwidth_profile.bytes_per_second(),
-        "mailbox_burst_bytes":plan.bandwidth_profile.burst_bytes(),
+        "backend":if cfg!(target_os="linux") {"firecracker"} else {"hvf"},
+        "mailbox_rate_enforced": !cfg!(target_os="linux"),
+        "mailbox_rate_bytes_per_second":if cfg!(target_os="linux") {None} else {Some(plan.bandwidth_profile.bytes_per_second())},
+        "mailbox_burst_bytes":if cfg!(target_os="linux") {None} else {Some(plan.bandwidth_profile.burst_bytes())},
         "logical_envelope_and_framing_bytes":logical,"physical_vsock_stream_bytes":physical,
         "relay":relay_receipt,"sender_worker":worker_a,"receiver_worker":worker_b,"recovery_worker":recovery,
         "pairwise_clock_offset_ms":a_offset-b_offset,

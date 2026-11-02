@@ -1,0 +1,80 @@
+{
+  "date": "2026-11-02",
+  "source_commit": "a9f038c49bcaf69ce7d6780970dadd412a31a573",
+  "source_verification": "Fresh public branch clone exact HEAD; all five local crate trees byte-equal to built source after removing verified AppleDouble metadata and updating four noncompiled runner scripts; fresh locked release builds returned binaries identical to the measured copies",
+  "host_sha256": "7911958f4c03bee1687f4014b29a6a22db8952e86db517467c9019c9952f34a0",
+  "guest_sha256": "be7e2ac09ae3e67210396393048d9982cc0b640e1e3a5bdbd9ac2e18f3b4059c",
+  "host_bytes": 5997240,
+  "guest_bytes": 4955872,
+  "guest_pt_interp_present": false,
+  "source_files_sha256": {
+    "src/linux_host.rs": "bd305825279274b2dfbe877db4e3fd13cc62a713f202f71028601bd801bb1a49",
+    "src/guest.rs": "3ac4548e7b27450676c399d0d573e8fd6550efd7f0a84cddb7e23b021d11b85f",
+    "src/config.rs": "9e097814f800faf60e2297d24818bdcfbc9529d0ce2ac1c2562149605c309d95",
+    "src/orchestrator.rs": "3d1c917023c9be050cf2aef2e86605ee38a9aadd07ae50978ca04e3c813fcc9f",
+    "src/main.rs": "552efe6a6d2da7920b808b651cf316fe01cd26a11991094df931e92749f08e8c",
+    "src/lib.rs": "45f079e414fa3b1632d7a9c8f0ec0eb260d1db379d8df61f6a1bb63035ecdba3",
+    "Cargo.toml": "de68df7b7b9736f4550b015b3b28171c6fcb1d3f3f150c62d3bb46c4ec205233",
+    "Cargo.lock": "655b7d7e8942a7e8a5f513e4cc034fe6642a477044c6b2986d55204cc9e5ec28"
+  },
+  "linux_all_targets": {
+    "passed": 31,
+    "failed": 0
+  },
+  "linux_final_focused_lib": {
+    "passed": 11,
+    "failed": 0
+  },
+  "linux_final_clippy": "all-targets --features linux-host -- -D warnings: exit 0",
+  "positive_smokes": [
+    "smoke-one-result.json",
+    "smoke-two-result.json"
+  ],
+  "pilot": {
+    "registered_sessions": 36,
+    "completed_sessions": 36,
+    "exact_operations": 336,
+    "guest_reboot_verified_operations": 168,
+    "local_receipt_sets_verified": 36,
+    "copied_scope": "Only files at depth at most two; no receiver disks, cache stores or private MVM homes copied"
+  },
+  "forced_worker": {
+    "observer_source": "forced-worker-observer.rs",
+    "observer_sha256": "eb577fa9324b50b1a62fc521a7c1af465e2da2f394792065d243fbdb34543af4",
+    "observer_root": true,
+    "observer_armed_before_session": true,
+    "worker_pid": 3227561,
+    "worker_start_ticks": "11811277",
+    "firecracker_pid": 3227579,
+    "worker_identity": "Exact private MVM_HOME plus owned proof directory and pidfd; signal only selected worker",
+    "signal": "SIGKILL",
+    "parent_exit": 1,
+    "observer_exit": 0,
+    "selected_firecracker_gone": true,
+    "firecracker_processes_before": [
+
+    ],
+    "firecracker_processes_after": [
+
+    ],
+    "scope": "Early receiver-worker death after Firecracker exists, before peer boot; not a mid-transfer or simultaneous-sibling cancellation test"
+  },
+  "supplemental_harness_failure": {
+    "reason": "First unprivileged observer could not read setpriv worker environ; no fault injected",
+    "result": "Unfaulted two-guest 16MiB whole-mixed session finished successfully; no Firecracker processes remained before retry",
+    "excluded_from_registered_36": true
+  },
+  "temporary_standard_path_entry": {
+    "path": "/usr/local/bin/firecracker",
+    "target": "/var/tmp/spiralcore-linux-mvm-20261102/bin/firecracker",
+    "inode": 4206310,
+    "owner_uid": 0,
+    "created_only_after_absence_and_asset_hash_check": true,
+    "removed_after_tests": true,
+    "cleanup_guard": "Exact symlink target, inode and owner checked before unlink; absence checked afterward"
+  },
+  "final_firecracker_processes": [
+
+  ],
+  "global_configuration_changes": false
+}

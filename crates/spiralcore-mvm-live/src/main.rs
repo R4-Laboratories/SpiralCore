@@ -1,11 +1,17 @@
-#[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+#[cfg(any(
+    all(target_os = "macos", target_arch = "aarch64"),
+    all(target_os = "linux", feature = "linux-host")
+))]
 fn main() {
     if let Err(error) = host_main() {
         eprintln!("spiralcore-mvm-live: {error}");
         std::process::exit(1);
     }
 }
-#[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+#[cfg(any(
+    all(target_os = "macos", target_arch = "aarch64"),
+    all(target_os = "linux", feature = "linux-host")
+))]
 fn host_main() -> spiralcore_mvm_live::Result<()> {
     use spiralcore_mvm_live::{
         config::{Plan, Stage, parse_arm, parse_bandwidth_profile},
@@ -14,6 +20,8 @@ fn host_main() -> spiralcore_mvm_live::Result<()> {
     use std::path::Path;
     let args: Vec<String> = std::env::args().collect();
     match args.get(1).map(String::as_str) {
+        #[cfg(all(target_os = "linux", feature = "linux-host"))]
+        Some("cleanup-worker") if args.len() == 3 => host::cleanup_worker(args[2].parse()?)?,
         Some("worker") if matches!(args.len(), 5 | 6)=>{
             let optional=|s:&str| if s=="-" {None} else {Some(Path::new(s).to_path_buf())};
             let disk=optional(&args[3]); let socket=optional(&args[4]);
@@ -32,7 +40,7 @@ fn host_main() -> spiralcore_mvm_live::Result<()> {
     }
     Ok(())
 }
-#[cfg(target_os = "linux")]
+#[cfg(all(target_os = "linux", not(feature = "linux-host")))]
 fn main() {
     if spiralcore_mvm_live::guest::run().is_err() {
         eprintln!("guest shutdown or invocation failed");

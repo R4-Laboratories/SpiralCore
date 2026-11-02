@@ -1,0 +1,530 @@
+{
+  "session": {
+    "backend": "firecracker",
+    "stage": "two",
+    "arm": "combined-cpu",
+    "size": 1048576,
+    "trial": 2,
+    "operations": 10,
+    "payload_bytes": 8377616,
+    "logical_encrypted_stream_bytes": 4207268,
+    "physical_vsock_stream_bytes": 8414536,
+    "sender_cpu_us": 93389,
+    "receiver_processing_cpu_us": 68316,
+    "endpoint_partial_cpu_us": 161705,
+    "elapsed_us": 175452,
+    "lifecycle_wall_us": 827990,
+    "operation_elapsed_us": 161673,
+    "payload_elapsed_us": 154127,
+    "sender_worker_process_cpu_us": 105385,
+    "receiver_worker_process_cpu_us": 110951,
+    "recovery_worker_process_cpu_us": 46996,
+    "orchestrator_process_cpu_us": 13974,
+    "relay_process_cpu_us": 3942,
+    "exact_reopened": true,
+    "exact_guest_reboot": true,
+    "source": "two-1048576-t2-combined-cpu/result.json"
+  },
+  "operation_rows": [
+    {
+      "stage": "two",
+      "arm": "combined-cpu",
+      "size": 1048576,
+      "trial": 2,
+      "kind": "runtime-checkpoint",
+      "object_bytes": 3382,
+      "object_id": "2ced35de02b6adc2ba856a16a95bf0757fea42b5fc7f2c3f90ddf6960858a8b6",
+      "mode": "Raw",
+      "setup": true,
+      "logical_encrypted_stream_bytes": 31386,
+      "physical_vsock_stream_bytes": 62772,
+      "sender_cpu_us": 1654,
+      "receiver_processing_cpu_us": 1700,
+      "endpoint_partial_cpu_us": 3354,
+      "elapsed_us": 4171,
+      "exchange_cpu_us": 1642,
+      "exchange_wall_us": 4160,
+      "sender_nonexchange_cpu_us": 12,
+      "receiver_processing_wall_us": 1887,
+      "planned_application_bytes": 3819,
+      "selection": null,
+      "exact_reopened": true,
+      "exact_guest_reboot": true,
+      "source": "two-1048576-t2-combined-cpu/result.json"
+    },
+    {
+      "stage": "two",
+      "arm": "combined-cpu",
+      "size": 1048576,
+      "trial": 2,
+      "kind": "schema",
+      "object_bytes": 48,
+      "object_id": "ca02bc9131dfdfb15331aad2f45eb459ddb32d1a1c278edb9ca6dcc38de7db91",
+      "mode": "Raw",
+      "setup": true,
+      "logical_encrypted_stream_bytes": 25389,
+      "physical_vsock_stream_bytes": 50778,
+      "sender_cpu_us": 1540,
+      "receiver_processing_cpu_us": 1309,
+      "endpoint_partial_cpu_us": 2849,
+      "elapsed_us": 3375,
+      "exchange_cpu_us": 1532,
+      "exchange_wall_us": 3369,
+      "sender_nonexchange_cpu_us": 8,
+      "receiver_processing_wall_us": 1420,
+      "planned_application_bytes": 485,
+      "selection": null,
+      "exact_reopened": true,
+      "exact_guest_reboot": true,
+      "source": "two-1048576-t2-combined-cpu/result.json"
+    },
+    {
+      "stage": "two",
+      "arm": "combined-cpu",
+      "size": 1048576,
+      "trial": 2,
+      "kind": "generated",
+      "object_bytes": 1047202,
+      "object_id": "98b2e372b1e5a18f1801f0ba8ebf296b1639e7414b0a70bfcc6fd3e8c501c5c1",
+      "mode": "RuntimeV1",
+      "setup": false,
+      "logical_encrypted_stream_bytes": 33911,
+      "physical_vsock_stream_bytes": 67822,
+      "sender_cpu_us": 7573,
+      "receiver_processing_cpu_us": 7849,
+      "endpoint_partial_cpu_us": 15422,
+      "elapsed_us": 16624,
+      "exchange_cpu_us": 3233,
+      "exchange_wall_us": 12287,
+      "sender_nonexchange_cpu_us": 4340,
+      "receiver_processing_wall_us": 8129,
+      "planned_application_bytes": 675,
+      "selection": {
+        "accounting": "existing HTTP-body candidate cost model, not mailbox envelope/framing bytes",
+        "candidates": [
+          {
+            "mode": "Raw",
+            "setup_http_body_bytes": 0,
+            "target_http_body_bytes": 1050004,
+            "total_http_body_bytes": 1050004
+          },
+          {
+            "mode": "RuntimeV1",
+            "setup_http_body_bytes": 0,
+            "target_http_body_bytes": 787,
+            "total_http_body_bytes": 787
+          }
+        ],
+        "checkpoint_ready": true,
+        "exact_repeat_probe": false,
+        "policy": "combined-runtime-rolling",
+        "policy_skipped": [
+          {
+            "mode": "SchemaZstdV1",
+            "reason": "no-useful-template-records",
+            "useful_template_records": 0
+          }
+        ],
+        "pruned": [
+          {
+            "mode": "ZstdWholeV1",
+            "target_http_body_lower_bound": 10126,
+            "total_http_body_lower_bound": 10126
+          }
+        ],
+        "schema_ready": true,
+        "selected": "RuntimeV1",
+        "selection_policy": "cpu-conscious"
+      },
+      "exact_reopened": true,
+      "exact_guest_reboot": true,
+      "source": "two-1048576-t2-combined-cpu/result.json"
+    },
+    {
+      "stage": "two",
+      "arm": "combined-cpu",
+      "size": 1048576,
+      "trial": 2,
+      "kind": "residual",
+      "object_bytes": 1047202,
+      "object_id": "faa2bcbeeadf0036aa6df026a7aa77050fe967ff172fa0fdde20c4c2723666d8",
+      "mode": "SparseV1",
+      "setup": false,
+      "logical_encrypted_stream_bytes": 26781,
+      "physical_vsock_stream_bytes": 53562,
+      "sender_cpu_us": 5937,
+      "receiver_processing_cpu_us": 3944,
+      "endpoint_partial_cpu_us": 9881,
+      "elapsed_us": 10861,
+      "exchange_cpu_us": 1796,
+      "exchange_wall_us": 6722,
+      "sender_nonexchange_cpu_us": 4141,
+      "receiver_processing_wall_us": 4385,
+      "planned_application_bytes": 1286,
+      "selection": {
+        "accounting": "existing HTTP-body candidate cost model, not mailbox envelope/framing bytes",
+        "candidates": [
+          {
+            "mode": "Raw",
+            "setup_http_body_bytes": 0,
+            "target_http_body_bytes": 1050004,
+            "total_http_body_bytes": 1050004
+          },
+          {
+            "mode": "SparseV1",
+            "setup_http_body_bytes": 0,
+            "target_http_body_bytes": 1390,
+            "total_http_body_bytes": 1390
+          },
+          {
+            "mode": "RuntimeV1",
+            "setup_http_body_bytes": 0,
+            "target_http_body_bytes": 1587,
+            "total_http_body_bytes": 1587
+          }
+        ],
+        "checkpoint_ready": true,
+        "exact_repeat_probe": false,
+        "policy": "combined-runtime-rolling",
+        "policy_skipped": [
+          {
+            "mode": "SchemaZstdV1",
+            "reason": "no-useful-template-records",
+            "useful_template_records": 0
+          }
+        ],
+        "pruned": [
+          {
+            "mode": "ZstdWholeV1",
+            "target_http_body_lower_bound": 10171,
+            "total_http_body_lower_bound": 10171
+          }
+        ],
+        "schema_ready": true,
+        "selected": "SparseV1",
+        "selection_policy": "cpu-conscious"
+      },
+      "exact_reopened": true,
+      "exact_guest_reboot": true,
+      "source": "two-1048576-t2-combined-cpu/result.json"
+    },
+    {
+      "stage": "two",
+      "arm": "combined-cpu",
+      "size": 1048576,
+      "trial": 2,
+      "kind": "repeat",
+      "object_bytes": 1047202,
+      "object_id": "faa2bcbeeadf0036aa6df026a7aa77050fe967ff172fa0fdde20c4c2723666d8",
+      "mode": "Raw",
+      "setup": false,
+      "logical_encrypted_stream_bytes": 8512,
+      "physical_vsock_stream_bytes": 17024,
+      "sender_cpu_us": 839,
+      "receiver_processing_cpu_us": 833,
+      "endpoint_partial_cpu_us": 1672,
+      "elapsed_us": 1911,
+      "exchange_cpu_us": 792,
+      "exchange_wall_us": 1865,
+      "sender_nonexchange_cpu_us": 47,
+      "receiver_processing_wall_us": 837,
+      "planned_application_bytes": 190,
+      "selection": {
+        "accounting": "existing HTTP-body candidate cost model, not mailbox envelope/framing bytes",
+        "candidates": [
+          {
+            "mode": "Raw",
+            "setup_http_body_bytes": 0,
+            "target_http_body_bytes": 1050004,
+            "total_http_body_bytes": 1050004
+          }
+        ],
+        "checkpoint_ready": true,
+        "exact_repeat_probe": true,
+        "policy": "combined-runtime-rolling",
+        "policy_skipped": [],
+        "pruned": [],
+        "schema_ready": true,
+        "selected": "Raw",
+        "selection_policy": "cpu-conscious"
+      },
+      "exact_reopened": true,
+      "exact_guest_reboot": true,
+      "source": "two-1048576-t2-combined-cpu/result.json"
+    },
+    {
+      "stage": "two",
+      "arm": "combined-cpu",
+      "size": 1048576,
+      "trial": 2,
+      "kind": "unrelated",
+      "object_bytes": 1047202,
+      "object_id": "86146a0e4921d4f65aebc84e30c3d8c5d5e1445e89bb3b628b167c8b69593c7b",
+      "mode": "Raw",
+      "setup": false,
+      "logical_encrypted_stream_bytes": 2030112,
+      "physical_vsock_stream_bytes": 4060224,
+      "sender_cpu_us": 20601,
+      "receiver_processing_cpu_us": 14395,
+      "endpoint_partial_cpu_us": 34996,
+      "elapsed_us": 42029,
+      "exchange_cpu_us": 18290,
+      "exchange_wall_us": 39721,
+      "sender_nonexchange_cpu_us": 2311,
+      "receiver_processing_wall_us": 14782,
+      "planned_application_bytes": 1049764,
+      "selection": {
+        "accounting": "existing HTTP-body candidate cost model, not mailbox envelope/framing bytes",
+        "candidates": [
+          {
+            "mode": "Raw",
+            "setup_http_body_bytes": 0,
+            "target_http_body_bytes": 1050004,
+            "total_http_body_bytes": 1050004
+          },
+          {
+            "mode": "ZstdWholeV1",
+            "setup_http_body_bytes": 0,
+            "target_http_body_bytes": 1050059,
+            "total_http_body_bytes": 1050059
+          }
+        ],
+        "checkpoint_ready": true,
+        "exact_repeat_probe": false,
+        "policy": "combined-runtime-rolling",
+        "policy_skipped": [
+          {
+            "mode": "SchemaZstdV1",
+            "reason": "no-useful-template-records",
+            "useful_template_records": 0
+          }
+        ],
+        "pruned": [],
+        "schema_ready": true,
+        "selected": "Raw",
+        "selection_policy": "cpu-conscious"
+      },
+      "exact_reopened": true,
+      "exact_guest_reboot": true,
+      "source": "two-1048576-t2-combined-cpu/result.json"
+    },
+    {
+      "stage": "two",
+      "arm": "combined-cpu",
+      "size": 1048576,
+      "trial": 2,
+      "kind": "opaque-edited",
+      "object_bytes": 1047202,
+      "object_id": "b486952d647570ca5c93d37fb61443f5dff52993b0041a2e1b9acfe0be902a24",
+      "mode": "SparseV1",
+      "setup": false,
+      "logical_encrypted_stream_bytes": 26832,
+      "physical_vsock_stream_bytes": 53664,
+      "sender_cpu_us": 3173,
+      "receiver_processing_cpu_us": 6589,
+      "endpoint_partial_cpu_us": 9762,
+      "elapsed_us": 10589,
+      "exchange_cpu_us": 2267,
+      "exchange_wall_us": 9685,
+      "sender_nonexchange_cpu_us": 906,
+      "receiver_processing_wall_us": 6961,
+      "planned_application_bytes": 1286,
+      "selection": {
+        "accounting": "existing HTTP-body candidate cost model, not mailbox envelope/framing bytes",
+        "candidates": [
+          {
+            "mode": "Raw",
+            "setup_http_body_bytes": 0,
+            "target_http_body_bytes": 1050004,
+            "total_http_body_bytes": 1050004
+          },
+          {
+            "mode": "SparseV1",
+            "setup_http_body_bytes": 0,
+            "target_http_body_bytes": 1390,
+            "total_http_body_bytes": 1390
+          }
+        ],
+        "checkpoint_ready": true,
+        "exact_repeat_probe": false,
+        "policy": "combined-runtime-rolling",
+        "policy_skipped": [
+          {
+            "mode": "SchemaZstdV1",
+            "reason": "no-useful-template-records",
+            "useful_template_records": 0
+          }
+        ],
+        "pruned": [
+          {
+            "mode": "ZstdWholeV1",
+            "target_http_body_lower_bound": 131919,
+            "total_http_body_lower_bound": 131919
+          }
+        ],
+        "schema_ready": true,
+        "selected": "SparseV1",
+        "selection_policy": "cpu-conscious"
+      },
+      "exact_reopened": true,
+      "exact_guest_reboot": true,
+      "source": "two-1048576-t2-combined-cpu/result.json"
+    },
+    {
+      "stage": "two",
+      "arm": "combined-cpu",
+      "size": 1048576,
+      "trial": 2,
+      "kind": "opaque-edited-repeat",
+      "object_bytes": 1047202,
+      "object_id": "b486952d647570ca5c93d37fb61443f5dff52993b0041a2e1b9acfe0be902a24",
+      "mode": "Raw",
+      "setup": false,
+      "logical_encrypted_stream_bytes": 8543,
+      "physical_vsock_stream_bytes": 17086,
+      "sender_cpu_us": 775,
+      "receiver_processing_cpu_us": 793,
+      "endpoint_partial_cpu_us": 1568,
+      "elapsed_us": 1802,
+      "exchange_cpu_us": 754,
+      "exchange_wall_us": 1782,
+      "sender_nonexchange_cpu_us": 21,
+      "receiver_processing_wall_us": 797,
+      "planned_application_bytes": 190,
+      "selection": {
+        "accounting": "existing HTTP-body candidate cost model, not mailbox envelope/framing bytes",
+        "candidates": [
+          {
+            "mode": "Raw",
+            "setup_http_body_bytes": 0,
+            "target_http_body_bytes": 1050004,
+            "total_http_body_bytes": 1050004
+          }
+        ],
+        "checkpoint_ready": true,
+        "exact_repeat_probe": true,
+        "policy": "combined-runtime-rolling",
+        "policy_skipped": [],
+        "pruned": [],
+        "schema_ready": true,
+        "selected": "Raw",
+        "selection_policy": "cpu-conscious"
+      },
+      "exact_reopened": true,
+      "exact_guest_reboot": true,
+      "source": "two-1048576-t2-combined-cpu/result.json"
+    },
+    {
+      "stage": "two",
+      "arm": "combined-cpu",
+      "size": 1048576,
+      "trial": 2,
+      "kind": "schema-fit",
+      "object_bytes": 1047202,
+      "object_id": "edeb88b0b477b84f3da2363e3a6d4e2155bae39e98e30c8c3825240c2c8484c9",
+      "mode": "SchemaZstdV1",
+      "setup": false,
+      "logical_encrypted_stream_bytes": 1001639,
+      "physical_vsock_stream_bytes": 2003278,
+      "sender_cpu_us": 19702,
+      "receiver_processing_cpu_us": 12285,
+      "endpoint_partial_cpu_us": 31987,
+      "elapsed_us": 35561,
+      "exchange_cpu_us": 8896,
+      "exchange_wall_us": 24760,
+      "sender_nonexchange_cpu_us": 10806,
+      "receiver_processing_wall_us": 12585,
+      "planned_application_bytes": 512759,
+      "selection": {
+        "accounting": "existing HTTP-body candidate cost model, not mailbox envelope/framing bytes",
+        "candidates": [
+          {
+            "mode": "Raw",
+            "setup_http_body_bytes": 0,
+            "target_http_body_bytes": 1050004,
+            "total_http_body_bytes": 1050004
+          },
+          {
+            "mode": "ZstdWholeV1",
+            "setup_http_body_bytes": 0,
+            "target_http_body_bytes": 517933,
+            "total_http_body_bytes": 517933
+          },
+          {
+            "mode": "SchemaZstdV1",
+            "setup_http_body_bytes": 0,
+            "target_http_body_bytes": 512927,
+            "total_http_body_bytes": 512927
+          }
+        ],
+        "checkpoint_ready": true,
+        "exact_repeat_probe": false,
+        "policy": "combined-runtime-rolling",
+        "policy_skipped": [],
+        "pruned": [],
+        "schema_ready": true,
+        "selected": "SchemaZstdV1",
+        "selection_policy": "cpu-conscious"
+      },
+      "exact_reopened": true,
+      "exact_guest_reboot": true,
+      "source": "two-1048576-t2-combined-cpu/result.json"
+    },
+    {
+      "stage": "two",
+      "arm": "combined-cpu",
+      "size": 1048576,
+      "trial": 2,
+      "kind": "schema-drift",
+      "object_bytes": 1047202,
+      "object_id": "9a66eede1a4c9ba9194c499e5c36c8796039e7aa841437d08988d08d4b6b1efc",
+      "mode": "SchemaZstdV1",
+      "setup": false,
+      "logical_encrypted_stream_bytes": 1005758,
+      "physical_vsock_stream_bytes": 2011516,
+      "sender_cpu_us": 20316,
+      "receiver_processing_cpu_us": 10727,
+      "endpoint_partial_cpu_us": 31043,
+      "elapsed_us": 34750,
+      "exchange_cpu_us": 9552,
+      "exchange_wall_us": 23976,
+      "sender_nonexchange_cpu_us": 10764,
+      "receiver_processing_wall_us": 11068,
+      "planned_application_bytes": 515048,
+      "selection": {
+        "accounting": "existing HTTP-body candidate cost model, not mailbox envelope/framing bytes",
+        "candidates": [
+          {
+            "mode": "Raw",
+            "setup_http_body_bytes": 0,
+            "target_http_body_bytes": 1050004,
+            "total_http_body_bytes": 1050004
+          },
+          {
+            "mode": "ZstdWholeV1",
+            "setup_http_body_bytes": 0,
+            "target_http_body_bytes": 517934,
+            "total_http_body_bytes": 517934
+          },
+          {
+            "mode": "SchemaZstdV1",
+            "setup_http_body_bytes": 0,
+            "target_http_body_bytes": 515216,
+            "total_http_body_bytes": 515216
+          }
+        ],
+        "checkpoint_ready": true,
+        "exact_repeat_probe": false,
+        "policy": "combined-runtime-rolling",
+        "policy_skipped": [],
+        "pruned": [],
+        "schema_ready": true,
+        "selected": "SchemaZstdV1",
+        "selection_policy": "cpu-conscious"
+      },
+      "exact_reopened": true,
+      "exact_guest_reboot": true,
+      "source": "two-1048576-t2-combined-cpu/result.json"
+    }
+  ]
+}
