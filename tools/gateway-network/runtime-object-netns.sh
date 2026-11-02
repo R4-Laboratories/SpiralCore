@@ -16,6 +16,22 @@ capture_counters() {
 capture_drained() {
   capture_counters "$1" | jq -e 'if .captured>0 and .captured==.received and .dropped==0 then . else false end'
 }
+receipt_parity() {
+  jq -n -e --slurpfile before "$1" --slurpfile after "$2" '
+    def preserved: [.operations[]|{
+      group,label,action,input_bytes,object_id,selected_mode,publication_path,
+      request_frame_bytes,response_frame_bytes,data_bytes,requests,
+      request_bytes:(.channel_after.encoded_batch_bytes_sent-.channel_before.encoded_batch_bytes_sent+
+        .channel_after.framing_bytes_sent-.channel_before.framing_bytes_sent),
+      response_bytes:(.channel_after.encoded_batch_bytes_received-.channel_before.encoded_batch_bytes_received+
+        .channel_after.framing_bytes_received-.channel_before.framing_bytes_received),
+      batches_sent:(.channel_after.batches_sent-.channel_before.batches_sent),
+      batches_received:(.channel_after.batches_received-.channel_before.batches_received)}];
+    ($before[0]|preserved) as $b | ($after[0]|preserved) as $a |
+    if ($b|length)>0 and all($b[];all(.[];.!=null)) and all($a[];all(.[];.!=null)) and $b==$a
+    then {preserved:true,operations:($b|length),scope:"existing operation receipts and actual logical deltas; canonical body equality is covered separately by core tests"}
+    else error("before/after operation parity failed") end'
+}
 validate_registration() {
   jq -e '
     .launch_ready==true and
@@ -30,14 +46,21 @@ validate_registration() {
        .dose.total_operations==336 and
        .dose.operation_counts=={"send":276,"seed":12,"schema":24,"checkpoint":24} and
        .dose.mode_order_by_trial==[["whole-zstd","warm","runtime","combined"],["warm","runtime","combined","whole-zstd"],["runtime","combined","whole-zstd","warm"]]
+     elif .schema=="spiralcore.candidate-cpu.registration.v1" then
+       .fixture_profile=="candidate-cpu" and .arms==["combined-before","combined-after","whole-zstd"] and
+       .baseline_revision=="4b8cb79fe5fca9e9527a2923924c887d9e7ddbf8" and
+       .service_profile_by_arm=={"combined-before":"combined","combined-after":"combined","whole-zstd":"whole-zstd"} and
+       .service_binary_by_arm=={"combined-before":"baseline","combined-after":"candidate","whole-zstd":"candidate"} and
+       .dose.total_operations==264 and .dose.operation_counts=={"send":216,"schema":24,"checkpoint":24} and
+       .dose.mode_order_by_trial==[["combined-before","combined-after","whole-zstd"],["combined-after","whole-zstd","combined-before"],["whole-zstd","combined-before","combined-after"]]
      else false end) and
     .profiles==[
       {"name":"lan","delay_ms_per_direction":0,"rate_bits_per_second_per_direction":null},
       {"name":"wan80-10","delay_ms_per_direction":40,"rate_bits_per_second_per_direction":10000000}] and
-    .dose.trials==[0,1,2] and .dose.sessions==24 and .dose.topologies==6 and
+    .dose.trials==[0,1,2] and .dose.sessions==(if .fixture_profile=="candidate-cpu" then 18 else 24 end) and .dose.topologies==6 and
     .dose.groups_per_session==2 and .dose.deliveries_per_group==6 and
-    .dose.total_object_deliveries==288 and
-    .dose.total_requested_object_bytes==2289396384 and .dose.warm_probe==true and
+    .dose.total_object_deliveries==(if .fixture_profile=="candidate-cpu" then 216 else 288 end) and
+    .dose.total_requested_object_bytes==(if .fixture_profile=="candidate-cpu" then 1717047288 else 2289396384 end) and .dose.warm_probe==true and
     .dose.tiers==[
       {"label":"near1m","width":4096,"steps":289,"bytes":1047202},
       {"label":"max-trace","width":4096,"steps":4096,"bytes":14851384}] and
@@ -50,11 +73,22 @@ validate_registration() {
 }
 if [ "$#" = 2 ] && [ "$1" = validate ]; then validate_registration "$2"; exit; fi
 if [ "$#" = 2 ] && [ "$1" = capture-drained ]; then capture_drained "$2"; exit; fi
-[ "$#" = 6 ] && [ "$1" = run ] || { echo "usage: $0 validate REGISTRATION | run NEW_OUT SERVICE PROBE FIXTURES REGISTRATION" >&2; exit 2; }
+if [ "$#" = 3 ] && [ "$1" = receipt-parity ]; then receipt_parity "$2" "$3"; exit; fi
+{ [ "$#" = 6 ] || [ "$#" = 7 ]; } && [ "$1" = run ] || { echo "usage: $0 validate REGISTRATION | run NEW_OUT SERVICE PROBE FIXTURES REGISTRATION [BASELINE_SERVICE]" >&2; exit 2; }
 out=$2; service=$3; probe=$4; fixtures=$5; registration=$6
+before_service=${7:-}
 validate_registration "$registration"
 campaign_profile=$(jq -r '.fixture_profile//"runtime"' "$registration")
 expected_operations=$(jq -r '.dose.total_operations' "$registration")
+expected_sessions=$(jq -r '.dose.sessions' "$registration")
+expected_deliveries=$(jq -r '.dose.total_object_deliveries' "$registration")
+if [ "$campaign_profile" = candidate-cpu ]; then
+  [ "$#" = 7 ] && [ -x "$before_service" ]
+  case "$before_service" in /*) ;; *) exit 2;; esac
+  [[ "${EXPECTED_SOURCE:-}" =~ ^[0-9a-f]{40}$ ]]
+else
+  [ "$#" = 6 ]
+fi
 [ "$(uname -s)" = Linux ] || { echo "Linux namespaces required" >&2; exit 2; }
 case "$out:$service:$probe:$fixtures" in /*:/*:/*:/*) ;; *) echo "absolute paths required" >&2; exit 2;; esac
 [ ! -e "$out" ] && [ -x "$service" ] && [ -x "$probe" ] && [ -x "$fixtures" ]
@@ -111,6 +145,15 @@ disk_gate() { [ "$(df -Pk "$out" | awk 'NR==2{print $4}')" -ge 4194304 ]; }
 disk_gate
 cp "$registration" "$out/registration.json"
 sha256sum "$service" "$probe" "$fixtures" "$registration" > "$out/frozen-inputs.sha256"
+if [ "$campaign_profile" = candidate-cpu ]; then
+  sha256sum "$before_service" >> "$out/frozen-inputs.sha256"
+  before_sha=$(sha256sum "$before_service" | awk '{print $1}')
+  after_sha=$(sha256sum "$service" | awk '{print $1}')
+  [ "$before_sha" != "$after_sha" ] || { echo "baseline and candidate executable identities are identical" >&2; exit 1; }
+  jq -n --arg before "$before_sha" --arg after "$after_sha" --arg source "$EXPECTED_SOURCE" \
+    '{baseline_revision:"4b8cb79fe5fca9e9527a2923924c887d9e7ddbf8",candidate_revision:$source,
+      baseline_sha256:$before,candidate_sha256:$after}' > "$out/service-binaries.json"
+fi
 uname -a > "$out/platform.txt"
 lscpu -J > "$out/cpu.json"
 sudo -n ip -j route show table all > "$out/host-routes-before.json"
@@ -289,7 +332,9 @@ config() {
 }
 check_session() {
   dir=$1; trial=$2; arm=$3
-  jq -n -e --arg arm "$arm" --slurpfile c "$dir/client.json" --slurpfile s "$dir/server.json" \
+  service_mode=$arm
+  if [ "$arm" = combined-before ] || [ "$arm" = combined-after ]; then service_mode=combined; fi
+  jq -n -e --arg arm "$service_mode" --slurpfile c "$dir/client.json" --slurpfile s "$dir/server.json" \
     --slurpfile m "$out/fixtures-$trial/manifest.json" '
     $c[0] as $c | $s[0] as $s | $m[0] as $m |
     $c.status=="ok" and $s.status=="ok" and $c.role=="connect" and $s.role=="listen" and
@@ -344,6 +389,14 @@ run_session() {
   date -u +%FT%TZ > "$dir/start.utc"
   jq -n --arg profile "$profile" --argjson trial "$trial" --arg arm "$arm" --arg calibration "$(basename "$topology_dir")" \
     '{profile:$profile,trial:$trial,arm:$arm,calibration_directory:$calibration,groups:2,object_deliveries:12}' > "$dir/session.json"
+  session_service=$service
+  if [ "$campaign_profile" = candidate-cpu ]; then
+    binary_role=candidate; binary_sha=$after_sha
+    if [ "$arm" = combined-before ]; then session_service=$before_service; binary_role=baseline; binary_sha=$before_sha; fi
+    jq --arg role "$binary_role" --arg sha "$binary_sha" '.+{service_binary_role:$role,service_binary_sha256:$sha}' \
+      "$dir/session.json" > "$dir/session-new.json"
+    mv "$dir/session-new.json" "$dir/session.json"
+  fi
   qdisc_set "$profile" "$dir" measurement-before
   for side in client server; do
     mkdir "$private/store-$scope-$side"
@@ -357,13 +410,13 @@ run_session() {
   grep -q 'listening on underlay' "$dir/capture.stderr"
   cap_pid=$(cat "$dir/capture.pid")
   sudo -n ip netns exec "$ns_b" setpriv --reuid "$task_uid" --regid "$task_gid" --clear-groups -- \
-    timeout --signal=TERM --kill-after=5 320 "$service" run "$private/server-config.json" \
+    timeout --signal=TERM --kill-after=5 320 "$session_service" run "$private/server-config.json" \
     > "$dir/server.stdout" 2> "$dir/server.stderr" &
   b_job=$!
   wait_file "$dir/ready-server.json"
   jq -e '.listening' "$dir/ready-server.json" >/dev/null
   sudo -n ip netns exec "$ns_a" setpriv --reuid "$task_uid" --regid "$task_gid" --clear-groups -- \
-    timeout --signal=TERM --kill-after=5 320 "$service" run "$private/client-config.json" \
+    timeout --signal=TERM --kill-after=5 320 "$session_service" run "$private/client-config.json" \
     > "$dir/client.stdout" 2> "$dir/client.stderr" &
   a_job=$!
   wait "$a_job"; a_job=
@@ -424,12 +477,17 @@ for trial in 0 1 2; do
     calibrate "$topology_dir" "$profile"
     calibrated_ns=$(date +%s%N)
     for arm in $arms; do run_session "$profile" "$trial" "$arm" "$topology_dir"; done
+    if [ "$campaign_profile" = candidate-cpu ]; then
+      receipt_parity "$out/$profile-t$trial-combined-before/client.json" "$out/$profile-t$trial-combined-after/client.json" \
+        > "$topology_dir/before-after-parity.json"
+    fi
     for ns in "$ns_a" "$ns_b" "$ns_r"; do sudo -n ip netns del "$ns"; done
     owned_namespaces=0; owned_link=0
     topology_end_ns=$(date +%s%N)
-    jq -n --argjson setup "$(((calibrated_ns-topology_start_ns)/1000))" \
+    jq -n --arg campaign "$campaign_profile" --argjson setup "$(((calibrated_ns-topology_start_ns)/1000))" \
       --argjson total "$(((topology_end_ns-topology_start_ns)/1000))" \
-      '{ok:true,namespace_cleanup:true,setup_calibration_wall_us:$setup,topology_all_four_sessions_wall_us:$total}' > "$topology_dir/complete.json"
+      '{ok:true,namespace_cleanup:true,setup_calibration_wall_us:$setup}+
+       (if $campaign=="candidate-cpu" then {topology_all_three_sessions_wall_us:$total} else {topology_all_four_sessions_wall_us:$total} end)' > "$topology_dir/complete.json"
   done
 done
 sudo -n ip -j route show table all > "$out/host-routes-after.json"
@@ -437,7 +495,9 @@ sudo -n ip -j -6 route show table all > "$out/host-routes-v6-after.json"
 cmp "$out/host-routes-before.json" "$out/host-routes-after.json"
 cmp "$out/host-routes-v6-before.json" "$out/host-routes-v6-after.json"
 sha256sum -c "$out/frozen-inputs.sha256" > "$out/frozen-inputs-after.txt"
-jq -s '{sessions:length,operations:(map(.operations)|add),object_deliveries:(map(.object_deliveries)|add),
-  exact_reopened:all(.[];.ok),stores_removed:all(.[];.stores_removed),capture_complete:true,host_routes_unchanged:true}' \
+jq -s --arg campaign "$campaign_profile" '{sessions:length,operations:(map(.operations)|add),object_deliveries:(map(.object_deliveries)|add),
+  exact_reopened:all(.[];.ok),stores_removed:all(.[];.stores_removed),capture_complete:true,host_routes_unchanged:true}+
+  (if $campaign=="candidate-cpu" then {before_after_parity:true} else {} end)' \
   "$out"/lan-t*/complete.json "$out"/wan80-10-t*/complete.json > "$out/complete.json"
-jq -e --argjson expected "$expected_operations" '.sessions==24 and .operations==$expected and .object_deliveries==288 and .exact_reopened and .stores_removed' "$out/complete.json" >/dev/null
+jq -e --argjson sessions "$expected_sessions" --argjson expected "$expected_operations" --argjson deliveries "$expected_deliveries" \
+  '.sessions==$sessions and .operations==$expected and .object_deliveries==$deliveries and .exact_reopened and .stores_removed' "$out/complete.json" >/dev/null

@@ -51,6 +51,10 @@ impl PreparedPrediction {
         self.checkpoint_id
     }
 
+    pub(crate) fn setup_len(&self) -> usize {
+        self.setup.len()
+    }
+
     // Identity reuse is justified by complete byte equality with immutable
     // constructor-verified bytes, never by a caller-supplied digest or hint.
     pub(crate) fn object_id_for(&self, target: &[u8]) -> Id {

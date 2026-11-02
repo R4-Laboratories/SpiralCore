@@ -6,6 +6,10 @@ use crate::{
     schema_zstd, selection, zstd_whole, Error, Id, Result, MAX_CHUNK,
 };
 
+#[cfg(test)]
+#[path = "../tests/fixtures/candidate_cpu_checks.rs"]
+mod candidate_cpu_checks;
+
 #[derive(Debug, Clone)]
 pub struct CandidateCost {
     pub mode: Mode,
@@ -200,10 +204,28 @@ impl PreparedSelector {
         let mut best = None;
         let mut candidates = vec![raw];
         let mut pruned = Vec::new();
+        // Full equality, not a digest or hint, proves both residual calls have
+        // identical inputs. Keep one recipe and derive Runtime's exact checked
+        // cost, including its extra setup frame. Sparse strictly dominates it;
+        // no Runtime payload copy is required in this branch.
+        let shared_residual = match (prediction, base) {
+            (Some(p), Some(b)) if b == p.prediction() => Some(crate::delta::encode(b, target)?),
+            _ => None,
+        };
         // The fixed prediction owns its setup and identity already. Only its
         // bounded residual is materialized; there is no replay or second session.
         if let Some(prediction) = prediction {
-            if let Some(bodies) = prediction.prepare(target)? {
+            if let Some(residual) = &shared_residual {
+                if let Some(recipe) = residual {
+                    let cost = selection::cost(
+                        Mode::RuntimeV1,
+                        std::iter::once(prediction.setup_len())
+                            .chain(recipe.frames.iter().map(Vec::len)),
+                        warm_probe,
+                    )?;
+                    candidates.push(candidate(Mode::RuntimeV1, cost, 0)?);
+                }
+            } else if let Some(bodies) = prediction.prepare(target)? {
                 let cost =
                     selection::cost(Mode::RuntimeV1, bodies.iter().map(Vec::len), warm_probe)?;
                 if warm_wins(Mode::RuntimeV1, cost, selected, best_cost) {
@@ -215,7 +237,11 @@ impl PreparedSelector {
             }
         }
         if let Some(base) = base {
-            if let Some(recipe) = crate::delta::encode(base, target)? {
+            let residual = match shared_residual {
+                Some(residual) => residual,
+                None => crate::delta::encode(base, target)?,
+            };
+            if let Some(recipe) = residual {
                 let cost = selection::cost(
                     Mode::SparseV1,
                     recipe.frames.iter().map(Vec::len),
@@ -275,6 +301,19 @@ impl PreparedSelector {
             }
             let encoded = if mode == Mode::ZstdWholeV1 {
                 self.whole.encode(target)?
+            } else if prediction.is_some() {
+                let intermediate = self.schema.prepare_intermediate(target)?;
+                if let Some(bound) = self.prune_schema_intermediate(
+                    intermediate.bytes(),
+                    warm_probe,
+                    selected,
+                    best_cost,
+                    setup,
+                )? {
+                    pruned.push(bound);
+                    continue;
+                }
+                self.schema.encode_prepared(intermediate)?
             } else {
                 self.schema.encode(target)?
             };
@@ -320,6 +359,71 @@ impl PreparedSelector {
                 needs_schema_seed: selected == Mode::SchemaZstdV1 && !schema_ready,
             },
         })
+    }
+
+    fn prune_schema_intermediate(
+        &mut self,
+        intermediate: &[u8],
+        warm_probe: bool,
+        incumbent: Mode,
+        incumbent_bytes: u64,
+        setup: u64,
+    ) -> Result<Option<PrunedCandidate>> {
+        // A valid schema stream may exceed the whole-object 16 MiB ceiling.
+        // Fall back before calling its bound/probe: do not expand the qualified
+        // source domain and do not turn a valid schema target into Error::Limit.
+        if intermediate.len() > crate::zstd_prefix::MAX_PREFIX_OBJECT {
+            return Ok(None);
+        }
+        let mode = Mode::SchemaZstdV1;
+        let receipt = |encoded_len| -> Result<PrunedCandidate> {
+            let lower = encoded_length_cost(mode, encoded_len, warm_probe)?;
+            Ok(PrunedCandidate {
+                mode,
+                target_http_body_lower_bound: lower,
+                setup_http_body_bytes: setup,
+                total_http_body_lower_bound: lower.checked_add(setup).ok_or(Error::Limit)?,
+            })
+        };
+        let lower = receipt(crate::zstd_prefix::minimum_encoded_size(
+            intermediate.len(),
+        )?)?;
+        if !warm_wins(
+            mode,
+            lower.total_http_body_lower_bound,
+            incumbent,
+            incumbent_bytes,
+        ) {
+            return Ok(Some(lower));
+        }
+        let Some(maximum) = zstd_whole::first_block_maximum_bound(intermediate.len()) else {
+            return Ok(None);
+        };
+        if warm_wins(
+            mode,
+            receipt(maximum)?.total_http_body_lower_bound,
+            incumbent,
+            incumbent_bytes,
+        ) || repeated_short_period_samples(intermediate)
+        {
+            return Ok(None);
+        }
+        // Both prepared contexts use exactly new_encoder(): no dictionary or
+        // prefix, same parameters, compress2 resets each frame. Reuse Whole's
+        // session-resetting, source-qualified probe on the canonical bytes.
+        // This adds no third context and never sends probe output as payload.
+        if let Some(bound) = self.whole.first_block_encoded_lower_bound(intermediate)? {
+            let lower = receipt(bound)?;
+            if !warm_wins(
+                mode,
+                lower.total_http_body_lower_bound,
+                incumbent,
+                incumbent_bytes,
+            ) {
+                return Ok(Some(lower));
+            }
+        }
+        Ok(None)
     }
 
     pub fn prepare(

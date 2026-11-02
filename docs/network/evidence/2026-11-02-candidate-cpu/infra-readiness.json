@@ -1,0 +1,77 @@
+{
+  "schema": "spiralcore.candidate-cpu.infra-readiness.v1",
+  "verdict": "FROZEN_READY_FOR_REGISTERED_CI_RUN",
+  "source_sha256": {
+    "crates/spiralcore-gateway/examples/object_fixtures.rs": "5c6ccef60801aa1372cf675d3cebfb610803dedf859c52ba835cd3b066c95440",
+    "tools/gateway-network/runtime-object-netns.sh": "32e04125f2d3a63374094b0cf2129b339433c1eb818e7728b011eb2a2a4d5b2f",
+    "tools/gateway-network/runtime-object-infra-check.sh": "93109586ddde0f3d49f34715cc9ca2d0ec1d687e16909ec448db8e2167315134",
+    "tools/gateway-network/analyze-runtime-objects.rs": "f876e647d253ae05864f42659d228a8707b1f857f25e4a6a292f4485c1642789",
+    ".github/workflows/spiralcore-candidate-cpu.yml": "bd7c58916c2f1331525e19e109fed56c5dbc4a80d80085ef13ea3becb373e9b0",
+    ".github/workflows/spiralcore-combined-objects.yml": "bfd18ee6dc51adf797077c531eb55c98b1184732febb6873ba38abdc01211fd2",
+    "docs/network/evidence/2026-11-02-candidate-cpu/network-registration.json": "2a0d6ac2438bbc39bed6f7e8818d1d1724b276a7d097585b590d657af781ad3a",
+    "docs/network/evidence/2026-11-02-candidate-cpu/analysis-method.md": "8b877ccad1b465091ac05f1cd79775e4ec224cbfc2cb7469cf72496dba0d408e"
+  },
+  "checks": {
+    "fixture_tests": {
+      "passed": 5,
+      "exit": 0,
+      "receipt": "fixture-green.txt"
+    },
+    "analyzer_tests": {
+      "passed": 8,
+      "exit": 0,
+      "receipt": "analyzer-green.txt"
+    },
+    "fixture_clippy": {
+      "exit": 0,
+      "receipt": "fixture-clippy.txt"
+    },
+    "analyzer_clippy": {
+      "exit": 0,
+      "receipt": "analyzer-clippy.txt"
+    },
+    "infrastructure": {
+      "receipt": "infra-final/result.json",
+      "registration_positive": 1,
+      "registration_negative": 12,
+      "binding_negative": 3,
+      "capture_positive": 1,
+      "capture_negative": 4,
+      "parity_positive": 1,
+      "parity_negative": 5
+    },
+    "shellcheck": "PASS",
+    "workflow_yaml_and_embedded_bash_syntax": "PASS",
+    "historical_runtime": {
+      "byte_identical": true,
+      "receipt": "historical-runtime.txt",
+      "sha256": "05482731ca2bb0b030f4957c6e387a9565542a82874ac33b1fee99687d066801"
+    },
+    "historical_combined": {
+      "byte_identical": true,
+      "receipt": "historical-combined.txt",
+      "sha256": "edaf981cce1391abbd2e570d0bdb64ae34c36fa225f2c67e5e2ad1f67bf36e17"
+    },
+    "final_integration": {
+      "authority": "Parent observed retained final receipts",
+      "gateway_core_tests": 15,
+      "gateway_tests": 42,
+      "gateway_core_clippy_exit": 0,
+      "gateway_clippy_exit": 0,
+      "transfer_scoped_clippy_exit": 0
+    },
+    "actual_launch_registration": {
+      "validation": "PASS",
+      "receipt": "infra-launch/result.json",
+      "launch_ready": true
+    },
+    "independent_infrastructure_review": "PASS after descriptions corrected to three arms and actual Combined decoder/cache gates"
+  },
+  "source_binding": "CI checks actual pinned baseline git HEAD and clean checkout, complete source manifests, identical Whole encoder/probe/dictionary and both lockfiles; compiles baseline service binary only, copies it before candidate build into frozen artifacts, and records exact service binary role/hash for every session. Both builds use same pinned Rust/release settings and shared dependency target cache; all builds end before measurement.",
+  "parity_scope": "Network parity uses actual operation identities, modes, publication paths, frame/data/count receipts and bidirectional logical deltas. Missing/null fields reject. No canonical body hash is invented from encrypted traffic; stronger offer/base/body/frame equality is separately covered by core frozen-baseline tests.",
+  "pending": [
+    "Exact CI source and executable freeze",
+    "Actual18-session campaign, archive custody and matched analysis"
+  ],
+  "scope": "No new network campaign has run. Local independent stage diagnosis is separately retained by its owner and is not summed into transfer performance."
+}

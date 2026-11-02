@@ -9,12 +9,20 @@ const ARMS: [&str; 4] = ["raw", "whole-zstd", "warm", "runtime"];
 enum CampaignPolicy {
     Runtime,
     Combined,
+    CandidateCpu,
 }
 impl CampaignPolicy {
     fn from_registration(reg: &Value) -> Result<Self> {
         let policy = match reg["schema"].as_str() {
             Some("spiralcore.runtime-object.registration.v1") => Self::Runtime,
             Some("spiralcore.combined-object.registration.v1") => Self::Combined,
+            Some("spiralcore.candidate-cpu.registration.v1") => {
+                require(
+                    reg["baseline_revision"] == "4b8cb79fe5fca9e9527a2923924c887d9e7ddbf8",
+                    "wrong pinned baseline revision",
+                )?;
+                Self::CandidateCpu
+            }
             _ => return Err("unknown campaign registration schema".into()),
         };
         require(
@@ -25,28 +33,38 @@ impl CampaignPolicy {
         )?;
         Ok(policy)
     }
-    fn arms(self) -> [&'static str; 4] {
+    fn arms(self) -> &'static [&'static str] {
         match self {
-            Self::Runtime => ARMS,
-            Self::Combined => ["whole-zstd", "warm", "runtime", "combined"],
+            Self::Runtime => &ARMS,
+            Self::Combined => &["whole-zstd", "warm", "runtime", "combined"],
+            Self::CandidateCpu => &["combined-before", "combined-after", "whole-zstd"],
         }
     }
     fn operations(self) -> u64 {
         match self {
             Self::Runtime => 312,
             Self::Combined => 336,
+            Self::CandidateCpu => 264,
         }
     }
     fn baselines(self) -> &'static [&'static str] {
         match self {
             Self::Runtime => &["raw", "whole-zstd"],
             Self::Combined => &["whole-zstd", "warm", "runtime"],
+            Self::CandidateCpu => &["combined-before", "whole-zstd"],
         }
     }
     fn action_counts(self) -> BTreeMap<String, u64> {
+        if matches!(self, Self::CandidateCpu) {
+            return BTreeMap::from([
+                ("send".to_owned(), 216),
+                ("schema".to_owned(), 24),
+                ("checkpoint".to_owned(), 24),
+            ]);
+        }
         let auxiliary = match self {
             Self::Runtime => 12,
-            Self::Combined => 24,
+            Self::Combined | Self::CandidateCpu => 24,
         };
         BTreeMap::from([
             ("send".to_owned(), 276),
@@ -59,7 +77,31 @@ impl CampaignPolicy {
         match self {
             Self::Runtime => "spiralcore.runtime-object.analysis.v1",
             Self::Combined => "spiralcore.combined-object.analysis.v1",
+            Self::CandidateCpu => "spiralcore.candidate-cpu.analysis.v1",
         }
+    }
+    fn sessions(self) -> u64 {
+        if matches!(self, Self::CandidateCpu) {
+            18
+        } else {
+            24
+        }
+    }
+    fn deliveries(self) -> u64 {
+        self.sessions() * 12
+    }
+    fn requested(self) -> u64 {
+        if matches!(self, Self::CandidateCpu) {
+            1_717_047_288
+        } else {
+            2_289_396_384
+        }
+    }
+}
+fn service_mode(arm: &str) -> &str {
+    match arm {
+        "combined-before" | "combined-after" => "combined",
+        _ => arm,
     }
 }
 const PROFILES: [&str; 2] = ["lan", "wan80-10"];
@@ -145,6 +187,56 @@ fn channel_delta(before: &Value, after: &Value) -> Result<(u64, u64)> {
             sub(n(after, CHANNEL[3])?, n(before, CHANNEL[3])?)?,
         )?,
     ))
+}
+fn receipt_parity(before: &Value, after: &Value) -> Result<Value> {
+    fn preserved(op: &Value) -> Result<Value> {
+        let mut row = json!({});
+        for key in [
+            "group",
+            "label",
+            "action",
+            "object_id",
+            "selected_mode",
+            "publication_path",
+        ] {
+            row[key] = json!(s(op, key)?);
+        }
+        hex_id(s(op, "object_id")?)?;
+        for key in [
+            "input_bytes",
+            "request_frame_bytes",
+            "response_frame_bytes",
+            "data_bytes",
+            "requests",
+        ] {
+            row[key] = json!(n(op, key)?);
+        }
+        let (request, response) = channel_delta(&op["channel_before"], &op["channel_after"])?;
+        row["request_bytes"] = json!(request);
+        row["response_bytes"] = json!(response);
+        for key in ["batches_sent", "batches_received"] {
+            row[key] = json!(sub(
+                n(&op["channel_after"], key)?,
+                n(&op["channel_before"], key)?
+            )?);
+        }
+        Ok(row)
+    }
+    let b = a(before, "operations")?
+        .iter()
+        .map(preserved)
+        .collect::<Result<Vec<_>>>()?;
+    let c = a(after, "operations")?
+        .iter()
+        .map(preserved)
+        .collect::<Result<Vec<_>>>()?;
+    require(
+        !b.is_empty() && b == c,
+        "before/after operation parity failed",
+    )?;
+    Ok(
+        json!({"preserved":true,"operations":b.len(),"scope":"existing operation receipts and actual logical deltas; canonical body equality is covered separately by core tests"}),
+    )
 }
 #[derive(Clone, Copy, Default)]
 struct Metrics {
@@ -277,7 +369,7 @@ fn manifest_check(m: &Value, trial: u64) -> Result<()> {
     }
     Ok(())
 }
-fn calibration(root: &Path, profile: &str, trial: u64) -> Result<Value> {
+fn calibration(root: &Path, profile: &str, trial: u64, policy: CampaignPolicy) -> Result<Value> {
     let dir = root.join(format!("topology-{profile}-t{trial}"));
     let c = read(&dir.join("calibration.json"))?;
     flag(&c, "accepted")?;
@@ -327,9 +419,14 @@ fn calibration(root: &Path, profile: &str, trial: u64) -> Result<Value> {
     let complete = read(&dir.join("complete.json"))?;
     flag(&complete, "ok")?;
     flag(&complete, "namespace_cleanup")?;
-    Ok(
-        json!({"profile":profile,"trial":trial,"rtt":pings,"rates":rates,"setup_calibration_wall_us":n(&complete,"setup_calibration_wall_us")?,"topology_all_four_sessions_wall_us":n(&complete,"topology_all_four_sessions_wall_us")?}),
-    )
+    let key = if matches!(policy, CampaignPolicy::CandidateCpu) {
+        "topology_all_three_sessions_wall_us"
+    } else {
+        "topology_all_four_sessions_wall_us"
+    };
+    let mut row = json!({"profile":profile,"trial":trial,"rtt":pings,"rates":rates,"setup_calibration_wall_us":n(&complete,"setup_calibration_wall_us")?});
+    row[key] = json!(n(&complete, key)?);
+    Ok(row)
 }
 fn queue_drops(dir: &Path, profile: &str) -> Result<Value> {
     let mut rows = Vec::new();
@@ -378,11 +475,45 @@ fn session(
     arm: &str,
     m: &Value,
     rows: &mut Rows,
+    policy: CampaignPolicy,
 ) -> Result<()> {
+    let mode = service_mode(arm);
     let name = format!("{profile}-t{trial}-{arm}");
     let dir = root.join(&name);
     let meta = read(&dir.join("session.json"))?;
     let complete = read(&dir.join("complete.json"))?;
+    if matches!(policy, CampaignPolicy::CandidateCpu) {
+        let bindings = read(&root.join("service-binaries.json"))?;
+        require(
+            bindings["baseline_revision"] == "4b8cb79fe5fca9e9527a2923924c887d9e7ddbf8",
+            "wrong baseline binding",
+        )?;
+        for key in ["baseline_sha256", "candidate_sha256"] {
+            hex_id(s(&bindings, key)?)?;
+        }
+        require(
+            bindings["baseline_sha256"] != bindings["candidate_sha256"],
+            "identical before/current binary identities",
+        )?;
+        let source = s(&bindings, "candidate_revision")?;
+        require(
+            source.len() == 40
+                && source
+                    .bytes()
+                    .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b)),
+            "invalid candidate source identity",
+        )?;
+        let (role, key) = if arm == "combined-before" {
+            ("baseline", "baseline_sha256")
+        } else {
+            ("candidate", "candidate_sha256")
+        };
+        require(
+            s(&meta, "service_binary_role")? == role
+                && meta["service_binary_sha256"] == bindings[key],
+            "session service binary binding mismatch",
+        )?;
+    }
     require(
         s(&meta, "profile")? == profile && n(&meta, "trial")? == trial && s(&meta, "arm")? == arm,
         "session metadata mismatch",
@@ -419,9 +550,9 @@ fn session(
         )?;
     }
     let ops = a(&c, "operations")?;
-    let count = if arm == "combined" {
+    let count = if mode == "combined" {
         16
-    } else if arm == "warm" || arm == "runtime" {
+    } else if mode == "warm" || mode == "runtime" {
         14
     } else {
         12
@@ -459,7 +590,7 @@ fn session(
     for (group_index, (group, len)) in TIERS.iter().enumerate() {
         let prep = &c["groups"][group_index];
         require(
-            s(prep, "label")? == *group && s(prep, "mode")? == arm,
+            s(prep, "label")? == *group && s(prep, "mode")? == mode,
             "group/profile ordering mismatch",
         )?;
         let mut cumulative = Metrics {
@@ -468,7 +599,7 @@ fn session(
             ..Metrics::default()
         };
         prefix = prefix.add(cumulative)?;
-        let labels: Vec<&str> = match arm {
+        let labels: Vec<&str> = match mode {
             "combined" => vec!["checkpoint", "schema"],
             "warm" => vec!["schema"],
             "runtime" => vec!["checkpoint"],
@@ -490,7 +621,7 @@ fn session(
             let action = match label {
                 "schema" => "schema",
                 "checkpoint" => "checkpoint",
-                "generated" if arm == "warm" => "seed",
+                "generated" if mode == "warm" => "seed",
                 _ => "send",
             };
             require(
@@ -551,20 +682,20 @@ fn session(
                 ["verified-transfer", "verified-cache-hit"].contains(&path),
                 "unknown publication path",
             )?;
-            let mode = s(op, "selected_mode")?;
-            if arm == "runtime" && ["generated", "residual"].contains(&label) {
+            let selected_mode = s(op, "selected_mode")?;
+            if mode == "runtime" && ["generated", "residual"].contains(&label) {
                 require(
-                    mode == "RuntimeV1" && path == "verified-transfer",
+                    selected_mode == "RuntimeV1" && path == "verified-transfer",
                     "runtime decoder activity gate failed",
                 )?;
             }
-            if arm == "warm" && label == "opaque-edited" {
+            if mode == "warm" && label == "opaque-edited" {
                 require(
-                    mode == "SparseV1" && path == "verified-transfer",
+                    selected_mode == "SparseV1" && path == "verified-transfer",
                     "warm sparse activity gate failed",
                 )?;
             }
-            if arm == "combined" {
+            if mode == "combined" {
                 let required = match label {
                     "generated" => Some(("RuntimeV1", "verified-transfer")),
                     "opaque-edited" => Some(("SparseV1", "verified-transfer")),
@@ -573,7 +704,7 @@ fn session(
                 };
                 if let Some((required_mode, required_path)) = required {
                     require(
-                        mode == required_mode && path == required_path,
+                        selected_mode == required_mode && path == required_path,
                         "combined decoder/cache activity gate failed",
                     )?;
                 }
@@ -608,7 +739,7 @@ fn session(
             }
             // Combined setup contains two publications. Emit one paid zero-
             // delivery row after both, while retaining each operation above.
-            if arm == "combined" && label == "checkpoint" {
+            if mode == "combined" && label == "checkpoint" {
                 continue;
             }
             rows.cumulative.push(tagged(
@@ -767,14 +898,14 @@ fn analyze(root: &Path) -> Result<Value> {
         flag(&complete, key)?;
     }
     require(
-        n(&complete, "sessions")? == 24
+        n(&complete, "sessions")? == policy.sessions()
             && n(&complete, "operations")? == policy.operations()
-            && n(&complete, "object_deliveries")? == 288,
+            && n(&complete, "object_deliveries")? == policy.deliveries(),
         "incomplete registered dose",
     )?;
     require(
         reg["dose"]["trials"] == json!([0, 1, 2])
-            && reg["dose"]["total_requested_object_bytes"] == 2_289_396_384u64,
+            && reg["dose"]["total_requested_object_bytes"] == policy.requested(),
         "registration differs from analysis contract",
     )?;
     for prefix in ["host-routes", "host-routes-v6"] {
@@ -787,7 +918,9 @@ fn analyze(root: &Path) -> Result<Value> {
     let mut rows = Rows::default();
     let expected_names: BTreeSet<_> = PROFILES
         .into_iter()
-        .flat_map(|p| (0..3).flat_map(move |t| policy.arms().map(|a| format!("{p}-t{t}-{a}"))))
+        .flat_map(|p| {
+            (0..3).flat_map(move |t| policy.arms().iter().map(move |a| format!("{p}-t{t}-{a}")))
+        })
         .collect();
     let actual_names: BTreeSet<_> = std::fs::read_dir(root)?
         .map(|e| e.map(|x| x.file_name().to_string_lossy().into_owned()))
@@ -808,18 +941,19 @@ fn analyze(root: &Path) -> Result<Value> {
         )?;
         rows.fixtures.push(json!({"trial":trial,"generation_cpu_us":n(&m,"generation_cpu_us")?,"generation_wall_us":n(&m,"generation_wall_us")?}));
         for profile in PROFILES {
-            rows.topologies.push(calibration(root, profile, trial)?);
+            rows.topologies
+                .push(calibration(root, profile, trial, policy)?);
             for arm in policy.arms() {
-                session(root, profile, trial, arm, &m, &mut rows)
+                session(root, profile, trial, arm, &m, &mut rows, policy)
                     .map_err(|e| format!("{profile}-t{trial}-{arm}: {e}"))?;
             }
         }
     }
     require(
-        rows.sessions.len() == 24
+        rows.sessions.len() as u64 == policy.sessions()
             && rows.operations.len() as u64 == policy.operations()
-            && rows.deliveries == 288
-            && rows.requested == 2_289_396_384,
+            && rows.deliveries == policy.deliveries()
+            && rows.requested == policy.requested(),
         "recomputed dose mismatch",
     )?;
     require(rows.actions == policy.action_counts(), "wrong action dose")?;
@@ -846,10 +980,36 @@ fn analyze(root: &Path) -> Result<Value> {
         ],
         policy.baselines(),
     )?;
-    Ok(
-        json!({"schema":policy.analysis_schema(),"qualified_receipts":true,"sessions":24,"operations":policy.operations(),"object_deliveries":288,"requested_bytes":rows.requested,"operation_counts":rows.actions,"method":"analysis-method.md; three descriptive paired trials; ratios are candidate/baseline, lower is better; no confidence or tail claims","limits":["local Linux shaped network is not actual Internet WAN","captured wire bytes are whole-session only","CPU domains are process or labeled nested stages; never add nested stages to process totals","client wall includes waiting and overlapping CPU, isolated send-only time is not identified","runtime/warm are explicit object profiles, not transparent TUN compression","artifact custody and source/binary identity are independently verified"],"fixture_generation":rows.fixtures,"topologies":rows.topologies,"operation_rows":rows.operations,"paid_group_cumulative_rows":rows.cumulative,"paid_connection_prefix_rows":rows.prefix,"session_rows":rows.sessions,"operation_summaries":operation_summaries,"paid_group_cumulative_summaries":cumulative_summaries,"paid_connection_prefix_summaries":prefix_summaries,"session_summaries":session_summaries}),
-    )
+    let mut analysis = json!({"schema":policy.analysis_schema(),"qualified_receipts":true,"sessions":policy.sessions(),"operations":policy.operations(),"object_deliveries":policy.deliveries(),"requested_bytes":rows.requested,"operation_counts":rows.actions,"method":"analysis-method.md; three descriptive paired trials; ratios are candidate/baseline, lower is better; no confidence or tail claims","limits":["local Linux shaped network is not actual Internet WAN","captured wire bytes are whole-session only","CPU domains are process or labeled nested stages; never add nested stages to process totals","client wall includes waiting and overlapping CPU, isolated send-only time is not identified","runtime/warm are explicit object profiles, not transparent TUN compression","artifact custody and source/binary identity are independently verified"],"fixture_generation":rows.fixtures,"topologies":rows.topologies,"operation_rows":rows.operations,"paid_group_cumulative_rows":rows.cumulative,"paid_connection_prefix_rows":rows.prefix,"session_rows":rows.sessions,"operation_summaries":operation_summaries,"paid_group_cumulative_summaries":cumulative_summaries,"paid_connection_prefix_summaries":prefix_summaries,"session_summaries":session_summaries});
+    if matches!(policy, CampaignPolicy::CandidateCpu) {
+        flag(&complete, "before_after_parity")?;
+        let mut pairs = Vec::new();
+        for profile in PROFILES {
+            for trial in 0..3 {
+                let before =
+                    read(&root.join(format!("{profile}-t{trial}-combined-before/client.json")))?;
+                let after =
+                    read(&root.join(format!("{profile}-t{trial}-combined-after/client.json")))?;
+                let mut parity = receipt_parity(&before, &after)?;
+                require(
+                    n(&parity, "operations")? == 16,
+                    "wrong paired operation count",
+                )?;
+                let retained = read(&root.join(format!(
+                    "topology-{profile}-t{trial}/before-after-parity.json"
+                )))?;
+                require(retained == parity, "retained parity receipt differs")?;
+                parity["profile"] = json!(profile);
+                parity["trial"] = json!(trial);
+                pairs.push(parity);
+            }
+        }
+        analysis["before_after_parity"] = json!(pairs);
+        analysis["service_binaries"] = read(&root.join("service-binaries.json"))?;
+    }
+    Ok(analysis)
 }
+
 fn main() -> Result<()> {
     let mut args = std::env::args_os();
     args.next();
@@ -864,6 +1024,47 @@ fn main() -> Result<()> {
 mod tests {
     use super::*;
     use serde_json::json;
+
+    #[test]
+    fn candidate_policy_binds_three_arms_and_exact_baseline() {
+        let mut reg = json!({"schema":"spiralcore.candidate-cpu.registration.v1",
+            "baseline_revision":"4b8cb79fe5fca9e9527a2923924c887d9e7ddbf8",
+            "arms":["combined-before","combined-after","whole-zstd"],
+            "dose":{"total_operations":264,"operation_counts":{"send":216,"schema":24,"checkpoint":24}}});
+        let p = CampaignPolicy::from_registration(&reg).unwrap();
+        assert_eq!(
+            p.arms(),
+            ["combined-before", "combined-after", "whole-zstd"]
+        );
+        assert_eq!(p.operations(), 264);
+        assert_eq!(p.baselines(), &["combined-before", "whole-zstd"]);
+        reg["baseline_revision"] = json!("main");
+        assert!(CampaignPolicy::from_registration(&reg).is_err());
+    }
+
+    #[test]
+    fn paired_receipts_reject_mode_bytes_and_path_changes_but_allow_cpu_changes() {
+        let op = json!({"group":"near1m","label":"generated","action":"send","input_bytes":1047202,
+            "selected_mode":"RuntimeV1","publication_path":"verified-transfer","object_id":"00".repeat(32),
+            "request_frame_bytes":100,"response_frame_bytes":50,"data_bytes":40,"requests":2,
+            "channel_before":{"encoded_batch_bytes_sent":10,"encoded_batch_bytes_received":5,"framing_bytes_sent":4,"framing_bytes_received":4,"batches_sent":1,"batches_received":1},
+            "channel_after":{"encoded_batch_bytes_sent":110,"encoded_batch_bytes_received":55,"framing_bytes_sent":12,"framing_bytes_received":12,"batches_sent":3,"batches_received":3},"cpu_us":100});
+        let before = json!({"operations":[op]});
+        let mut after = before.clone();
+        after["operations"][0]["cpu_us"] = json!(50);
+        assert!(receipt_parity(&before, &after).is_ok());
+        for (field, value) in [
+            ("selected_mode", json!("Raw")),
+            ("publication_path", json!("verified-cache-hit")),
+            ("data_bytes", json!(41)),
+        ] {
+            let mut bad = after.clone();
+            bad["operations"][0][field] = value;
+            assert!(receipt_parity(&before, &bad).is_err());
+        }
+        after["operations"][0]["channel_after"]["framing_bytes_sent"] = json!(16);
+        assert!(receipt_parity(&before, &after).is_err());
+    }
 
     #[test]
     fn combined_policy_is_explicit_charges_two_setups_and_preserves_legacy() {
