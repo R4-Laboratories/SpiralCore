@@ -345,7 +345,10 @@ closed. Transport authentication and MVM receipt semantics are tested separately
 
 Record setup plus sender/receiver CPU and elapsed transfer/verified-commit time;
 count actual request/reply frame bytes separately from envelope, stream/device
-and physical-IP bytes. State the layer and exclusions. Charge negotiation when
+and physical-IP bytes. State the layer and exclusions. Legacy batched sender
+`Stats::request_bytes` can include planned frames skipped by a carrier after an
+early Published reply; these totals MUST be labelled planned, not transmitted.
+Actual carrier counters govern transmitted-byte claims. Charge negotiation when
 it is actually performed; pinned configuration does not have invented handshake
 bytes. Keep warm/cold, seed cost, retries, receiver durability, Linux/HVF/QUIC,
 local/WAN and direct/relay observations distinguishable. A conformance run or
