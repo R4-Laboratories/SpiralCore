@@ -10,6 +10,22 @@ use mvm_contract::protocol::mailbox::MailboxMessageKind;
 
 const MAX_BOOTSTRAP: usize = 65536;
 
+fn report_exit_to(
+    stream: &mut (impl std::io::Read + std::io::Write),
+    code: i32,
+) -> std::io::Result<()> {
+    stream.write_all(&code.to_le_bytes())?;
+    stream.flush()?;
+    let mut ack = [0];
+    stream.read_exact(&mut ack)?;
+    if ack != [1] {
+        return Err(std::io::Error::other(
+            "invalid MVM exit-report acknowledgment",
+        ));
+    }
+    Ok(())
+}
+
 fn parse_bootstrap(bytes: &[u8]) -> Result<Bootstrap> {
     if bytes.is_empty() || bytes.len() > MAX_BOOTSTRAP {
         return Err("private bootstrap exceeds its input bound".into());
@@ -175,9 +191,14 @@ mod linux {
         Ok(bootstrap)
     }
 
-    fn perform(data_mount_attempted: &mut bool, out: &mut impl Write) -> PhaseResult<()> {
+    fn perform(
+        data_mount_attempted: &mut bool,
+        report_exit: &mut bool,
+        out: &mut impl Write,
+    ) -> PhaseResult<()> {
         guest_mount::mount_early_filesystems().map_err(|_| "mount_early")?;
         let bootstrap = bootstrap().map_err(|_| "bootstrap")?;
+        *report_exit = bootstrap.report_exit;
         restore_clock::resync(bootstrap.utc_seconds).map_err(|_| "clock_resync")?;
         record(
             out,
@@ -305,7 +326,8 @@ mod linux {
         }
         let mut out = io::stdout().lock();
         let mut data_mount_attempted = false;
-        let work = perform(&mut data_mount_attempted, &mut out);
+        let mut report_exit = false;
+        let work = perform(&mut data_mount_attempted, &mut report_exit, &mut out);
         // Drain campaign JSON before sync/unmount can print on the shared UART.
         // A drain failure still permits cleanup, but prevents a success marker.
         let before_cleanup = drain_console(&mut out);
@@ -319,6 +341,7 @@ mod linux {
             .and(before_cleanup)
             .and(cleanup)
             .and(drain_console(&mut out));
+        let exit_code = if status.is_ok() { 0 } else { 1 };
         let done = record(
             &mut out,
             json!({
@@ -330,6 +353,15 @@ mod linux {
             // RESET is explicitly rejected by the host completion gate.
             return stop(true);
         }
+        if report_exit {
+            let fd = vsock::sys::dial(vsock::HOST_CID, vsock::WORKLOAD_EXIT_PORT)?;
+            let mut stream = UnixStream::from(fd);
+            stream.set_read_timeout(Some(std::time::Duration::from_secs(3)))?;
+            stream.set_write_timeout(Some(std::time::Duration::from_secs(3)))?;
+            if report_exit_to(&mut stream, exit_code).is_err() {
+                return stop(true);
+            }
+        }
         stop(false)
     }
 }
@@ -338,6 +370,34 @@ mod linux {
 mod tests {
     use super::*;
     use crate::config::{Arm, Pair, Plan, Published, Role, Stage};
+
+    #[test]
+    fn exit_report_interoperates_with_mvm_capture_and_requires_its_ack() {
+        use std::{
+            io::{Read, Write},
+            os::unix::net::UnixStream,
+        };
+        let directory = tempfile::tempdir().unwrap();
+        let (mut guest, host) = UnixStream::pair().unwrap();
+        let path = directory.path().to_path_buf();
+        let capture =
+            std::thread::spawn(move || mvm_core::exit_capture::capture_stream(host, &path));
+        report_exit_to(&mut guest, 0).unwrap();
+        assert_eq!(capture.join().unwrap().unwrap(), 0);
+        assert_eq!(
+            mvm_core::exit_capture::read_captured(directory.path()),
+            Some(0)
+        );
+        let (mut guest, mut host) = UnixStream::pair().unwrap();
+        let wrong_ack = std::thread::spawn(move || {
+            let mut code = [0; 4];
+            host.read_exact(&mut code).unwrap();
+            assert_eq!(i32::from_le_bytes(code), 1);
+            host.write_all(&[0]).unwrap();
+        });
+        assert!(report_exit_to(&mut guest, 1).is_err());
+        wrong_ack.join().unwrap();
+    }
 
     fn provision() -> Pair {
         Pair::provision(Plan {
@@ -357,6 +417,7 @@ mod tests {
     fn verifier() -> Bootstrap {
         let sender = provision().sender;
         Bootstrap {
+            report_exit: false,
             role: Role::Verify,
             plan: sender.plan,
             utc_seconds: sender.utc_seconds,

@@ -1,0 +1,46 @@
+{
+  "date": "2026-11-02",
+  "scope": "Pinned public test-asset preparation only; no guest boot or KVM operation performed by this preparation",
+  "target": "Linux x86_64",
+  "directory": "/var/tmp/spiralcore-linux-mvm-20261102",
+  "directory_mode": "0700",
+  "global_installation": false,
+  "kvm_permission_changes": false,
+  "credentials": "No credentials or customer data are included",
+  "manifest": {
+    "url": "https://github.com/tinylabscom/mvm-images/releases/download/image-set/v0.2.4/image-set.json",
+    "sha256": "5033520a59514f5d206d76d13db8c9b7e5841f068c83dd8585ef141879a1bb24",
+    "bytes": 17784,
+    "producer_source_commit": "b455ca71fe6d780b244da20ce09187ed47d0fb02",
+    "mvm_source_commit": "4e65b221744885e536ec91a3f2948cdc508dcb49",
+    "verification": "Expected SHA-256 matched previously retained exact manifest; this receipt does not independently repeat image-set signature or current revocation validation"
+  },
+  "kernel": {
+    "url": "https://github.com/tinylabscom/mvm-images/releases/download/image-set/v0.2.4/default-microvm-vmlinux-x86_64",
+    "path": "vmlinux",
+    "sha256": "1701ccb2c46b2497066225d6ba05f3f33a3a845ca636fbeedb202835c83b49b6",
+    "bytes": 19995452,
+    "mode": "0600",
+    "format": "ELF64 little-endian x86-64 executable",
+    "manifest_role": "workload_kernel/default_tenant",
+    "manifest_required_capabilities": ["virtio_vsock"],
+    "qualification": "Hash, exact size and ELF architecture verified; initramfs/ext4/vsock behavior must be established by the subsequent live test"
+  },
+  "firecracker": {
+    "version": "1.17.0",
+    "source_pin": "MVM 3104a12c5b071a6851323fa8115d2afaf3f0bb8b scripts/run-gcp-kvm-test-remote.sh",
+    "archive_url": "https://github.com/firecracker-microvm/firecracker/releases/download/v1.17.0/firecracker-v1.17.0-x86_64.tgz",
+    "archive_sha256": "06094a1108ae9e82aa4c23a775aa92758f53f1175d422270d9d6162cb9ade558",
+    "archive_bytes": 7464385,
+    "binary_path": "bin/firecracker",
+    "binary_sha256": "99ad0f5cd0514a88aad0e9ae8cfdb3cc3b4ab9d190e1194602406c786b5de7a5",
+    "binary_bytes": 3676680,
+    "jailer_path": "bin/jailer",
+    "jailer_sha256": "65ef226e96f0ceda55ba643f445801ef2cc0ea667ef67cad8ac4f406c9c8434f",
+    "jailer_bytes": 2243000,
+    "binary_modes": "0700",
+    "verification": "Whole archive SHA-256 matched upstream MVM pin before extracting exactly two named members; firecracker --version returned Firecracker v1.17.0"
+  },
+  "reproduction": "bash tools/linux-mvm/prepare-assets.sh NEW_ABSOLUTE_DIRECTORY",
+  "checks": ["bash -n passed", "Missing argument rejected with exit 1", "Existing destination rejected with exit 1 before overwriting; all five asset checksums rechecked unchanged", "Manifest, kernel and Firecracker archive expected SHA-256 checks passed", "Kernel exact byte count and ELF64 x86-64 architecture passed", "No global installation, no guest launch, no system service or device configuration changes"]
+}

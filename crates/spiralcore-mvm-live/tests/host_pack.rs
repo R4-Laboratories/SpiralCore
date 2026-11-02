@@ -1,4 +1,7 @@
-#![cfg(all(target_os = "macos", target_arch = "aarch64"))]
+#![cfg(any(
+    all(target_os = "macos", target_arch = "aarch64"),
+    all(target_os = "linux", feature = "linux-host")
+))]
 
 use std::collections::BTreeMap;
 
@@ -16,11 +19,8 @@ fn entries(archive: &[u8]) -> BTreeMap<String, Entry> {
         assert_eq!(&archive[offset..offset + 6], b"070701");
         let field = |number: usize| {
             let begin = offset + 6 + number * 8;
-            u32::from_str_radix(
-                std::str::from_utf8(&archive[begin..begin + 8]).unwrap(),
-                16,
-            )
-            .unwrap()
+            u32::from_str_radix(std::str::from_utf8(&archive[begin..begin + 8]).unwrap(), 16)
+                .unwrap()
         };
         let mode = field(1);
         assert_eq!((field(2), field(3)), (0, 0), "root-owned entries");
@@ -57,7 +57,12 @@ fn guest_header() -> Vec<u8> {
     let mut elf = vec![0; 64];
     elf[..7].copy_from_slice(b"\x7fELF\x02\x01\x01");
     elf[16..18].copy_from_slice(&2_u16.to_le_bytes());
-    elf[18..20].copy_from_slice(&183_u16.to_le_bytes());
+    let machine: u16 = if cfg!(target_arch = "x86_64") {
+        62
+    } else {
+        183
+    };
+    elf[18..20].copy_from_slice(&machine.to_le_bytes());
     elf[20..24].copy_from_slice(&1_u32.to_le_bytes());
     elf[52..54].copy_from_slice(&64_u16.to_le_bytes());
     elf
@@ -92,7 +97,7 @@ fn refuses_oversized_or_malformed_bootstrap_and_guest_inputs() {
     assert!(initramfs(&[], b"{}").is_err());
     assert!(initramfs(b"not an ELF executable", b"{}").is_err());
     let mut wrong_arch = guest;
-    wrong_arch[18..20].copy_from_slice(&62_u16.to_le_bytes());
+    wrong_arch[18..20].copy_from_slice(&0_u16.to_le_bytes());
     assert!(initramfs(&wrong_arch, b"{}").is_err());
 }
 

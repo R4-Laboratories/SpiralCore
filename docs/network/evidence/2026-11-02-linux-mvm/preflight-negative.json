@@ -1,0 +1,15 @@
+{
+  "date": "2026-11-02",
+  "case": "Root-launched worker without a delegated systemd user session",
+  "scope": "One bounded debug smoke attempt, one guest/host stage, 1 MiB warm fixture, experimental64 profile; no guest boot occurred",
+  "remote_result_directory": "/var/tmp/spiralcore-linux-mvm-20261102/smoke-one-warm-1048576",
+  "session_exit": 1,
+  "session_error": "guest connect deadline",
+  "worker_error": "MVM Firecracker boot failed: required Firecracker scope unavailable: no user session bus (XDG_RUNTIME_DIR / DBUS_SESSION_BUS_ADDRESS); cgroup delegation hangs off a systemd user session, so no CPU quota, memory ceiling or task ceiling can be attached — run under a login session, or enable lingering for this user",
+  "firecracker_processes_before": [],
+  "firecracker_processes_after": [],
+  "guest_booted": false,
+  "transfer_measurement_available": false,
+  "interpretation": "MVM refused to boot without its required resource scope; the failure is not a fidelity or compression result",
+  "follow_up": "Use the already existing user's session bus and process-only privilege/group selection. Do not change system-wide group membership, device ACLs, services or lingering to make the test pass. Rebuild the final source before another test."
+}

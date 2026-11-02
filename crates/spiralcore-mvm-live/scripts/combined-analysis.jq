@@ -31,6 +31,7 @@ def ratios($rows; $keys):
     median_paired_elapsed_ratio:([$trials[].elapsed_ratio]|med)}];
 require(length==36; "expected exactly 36 registered sessions") |
 [.[].session] as $sessions | [.[].operation_rows[]] as $ops |
+require(([$sessions[].backend]|unique|length)==1; "mixed host backends in paired campaign") |
 require(([$sessions[]|[.stage,.size,.trial,.arm]]|unique|length)==36; "duplicate session") |
 [$ops[]|select(.setup|not)] as $payloads |
 ($payloads|group_by([.stage,.size,.trial,.kind])) as $identities |

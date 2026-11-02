@@ -42,7 +42,7 @@ cargo +1.97.1 test --locked \
   --config /absolute/path/to/new-prepared-mvm/patch.toml
 ```
 
-The six patched direct dependencies lead transitively to the same isolated MVM
+The nine patched direct dependencies lead transitively to the same isolated MVM
 workspace, avoiding mixed patched/unpatched contract types. Do not apply this
 config to change the compatibility adapter's retained upstream lockfile. The
 unpatched adapter remains independently buildable with its default features.
@@ -51,3 +51,7 @@ Preparation verifies portability and source identity. Actual build, guest/vsock
 execution and security qualification are separate recorded checks. If upstream
 source changes are revised, regenerate the patch and provenance together and
 repeat preparation checks before claiming reproducibility.
+
+The additional `mvm-backends`, `mvm-vmm` and `mvm-net` mappings support the Linux
+host driver. They resolve the existing committed source plus the same retained
+patch; the fourteen-file source patch and its identities are unchanged.
