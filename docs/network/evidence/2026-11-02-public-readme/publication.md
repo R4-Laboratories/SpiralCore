@@ -36,3 +36,21 @@ public subsets retain every included original file byte and omit only the nine
 listed executables, with added publication/license metadata. Original SpiralCore
 code and documentation use the owner's MIT grant; imported notices and the
 explicit third-party research exclusions remain unchanged.
+
+## Illustration follow-up
+
+The owner requested professional illustrations in addition to the flowcharts,
+then an engineering-oriented OSI view. Four 1536 × 1024 PNGs were generated with
+the built-in imagegen tool, visually inspected and copied into
+`docs/figures/overview`. Their prompts and intended scope are retained there;
+file hashes and the refreshed local-link check are in `illustrations.json`.
+The object illustration was corrected to show a three-child ternary split.
+The README captions distinguish conceptual software artwork from literal
+hardware, runtime dumps and measured evidence. The OSI view explicitly treats
+layers 5–7 as a functional mapping of application-protocol responsibilities,
+and separates the MVM virtio-vsock path from the IP stack. The four Mermaid
+diagrams remain available inside expandable technical-detail sections.
+
+GitHub's Linux TUN check for documentation commit `773bc2c` passed in run
+`41488003754`, including its twelve registered peer sessions. This is a CI
+validation receipt, not a replacement for the published performance campaigns.

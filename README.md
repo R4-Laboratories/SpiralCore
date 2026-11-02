@@ -8,6 +8,15 @@ send a reconstruction recipe, an exact residual, or a reference to an object the
 receiver has acknowledged. Ternary state, Kuramoto-coupled cellular automata,
 warm caches and schema fitting are active parts of the object implementation.
 
+![Two cooperating endpoints reuse local state and send a compact recipe and exact changes to reconstruct the same object.](docs/figures/overview/object-transfer.png)
+
+*The object-transfer track: turquoise represents reusable state, amber represents
+changes, and the three instruments represent ternary structure, phase state and
+cellular automata. These are conceptual software illustrations, not hardware
+requirements or literal runtime screenshots. Reconstruction is verified against
+the original bytes; a short recipe is useful only when the receiver has the
+required state.*
+
 **[Get started](#get-started) · [Results](#measured-results) · [Mechanisms](#how-the-object-core-works) · [Public evidence](docs/network/public-artifacts.md) · [Contribute](CONTRIBUTING.md) · [MIT scope](LICENSING.md)**
 
 > Research software with working implementations and reproducible measurements.
@@ -29,6 +38,24 @@ no NIC driver changes. Both ends need a cooperating gateway. HTTPS/QUIC payloads
 reaching TUN are already encrypted and generally offer little compression.
 Shared-runtime and warm-object gains currently belong to the **object and MVM
 tracks**, not arbitrary encrypted packet traffic.
+
+### Where SpiralCore sits in the network stack
+
+![Seven-layer OSI reference highlighting application-level SpiralCore functions and the Layer 3 TUN boundary, beside the actual object, packet-tunnel and MVM protocol paths.](docs/figures/overview/osi-model.png)
+
+*For network engineers: the left side is a functional OSI mapping; the right side
+shows the implemented stacks. Object identity, codecs, reconstruction and transfer
+state live in SpiralCore's application protocol. They are not separate OSI Layer
+5/6 wire protocols. The packet gateway attaches at Layer 3 through Linux TUN and
+encapsulates inner IP packets in QUIC datagrams over outer UDP/IP. The object
+service instead uses reliable QUIC streams. Existing NIC/link layers remain
+ordinary networking. MVM's mailbox is an application protocol over a separate
+guest–host virtio-vsock path, not a standardized OSI Layer 5 mailbox.*
+
+[View the full-resolution OSI illustration](docs/figures/overview/osi-model.png)
+· [Object protocol](docs/network/runtime-object-gateway.md)
+· [Packet gateway](crates/spiralcore-gateway/README.md)
+· [MVM boundary](crates/spiralcore-mvm-adapter/README.md)
 
 ## Measured results
 
@@ -135,6 +162,9 @@ publication acknowledgment. A hash identifies content; it does not grant access.
 State is scoped by authenticated tenant, recipient and policy/epoch.
 Recipes select built-in bounded transitions/codecs; received source code is never executed.
 
+<details>
+<summary>Technical detail: prediction, residual and verification</summary>
+
 ```mermaid
 flowchart LR
     A[Checkpoint<br/>Ternary + phase state] --> B[Kuramoto + memory<br/>CA 184 / 110 / 30]
@@ -145,6 +175,8 @@ flowchart LR
     D --> E[Recipe + residual<br/>or literal fallback]
     E --> F[Reconstruct<br/>Verify + commit]
 ```
+
+</details>
 
 | Mechanism | Concrete job |
 |---|---|
@@ -162,6 +194,14 @@ determines savings, and final verification enforces zero fidelity loss.
 
 ### Track 1 — cooperating applications and objects
 
+The opening illustration shows this path: each endpoint retains authorized
+state, a compact recipe or delta crosses the link, and the receiver reconstructs
+and verifies the complete object. If reuse does not help, selection falls back
+to whole-object zstd or raw bytes.
+
+<details>
+<summary>Technical detail: the reliable object service</summary>
+
 ```mermaid
 flowchart LR
     A[Application object] --> B[ObjectSender<br/>Choose exact encoding]
@@ -172,11 +212,25 @@ flowchart LR
     E -. acknowledgment .-> B
 ```
 
+</details>
+
 `spiralcore-gateway-object` uses the separate `spiralcore-object/1` ALPN. Peers
 agree on scope and policy epoch; checkpoint/schema readiness is explicit.
 [Object service and configuration →](docs/network/runtime-object-gateway.md)
 
 ### Track 2 — ordinary TCP/UDP sockets and the NIC
+
+![Cutaway of two ordinary computers: applications pass packets through TUN and the packet gateway, then authenticated QUIC crosses their normal NICs.](docs/figures/overview/normal-network.png)
+
+*Ordinary applications keep their sockets. A virtual TUN interface brings routed
+packets into the software gateway; the physical NIC carries ordinary UDP/IP.
+The peer restores the packets and delivers them through its TUN interface.
+The illustrated assembly is software running on normal CPUs, not an add-in card.
+Packet payloads use raw/zstd selection; this path does not yet apply cross-packet
+warm-cache or CA reconstruction.*
+
+<details>
+<summary>Technical detail: independent packet encoding and delivery</summary>
 
 ```mermaid
 flowchart LR
@@ -186,6 +240,8 @@ flowchart LR
     D --> E[Peer TUN → kernel<br/>TCP/UDP application]
 ```
 
+</details>
+
 The service attaches an existing TUN interface, validates address allowlists and
 uses bounded fragmentation/reassembly. Packet encodings are independent: no
 cross-packet base is assumed. This is a Layer 3 paired tunnel, not a Layer 2
@@ -193,6 +249,18 @@ bridge or transparent compression for arbitrary Internet destinations.
 [Linux setup, certificates, routes and demonstration →](crates/spiralcore-gateway/README.md)
 
 ### Track 3 — MVM mailboxes and a small orchestrator
+
+![A host contains two isolated MVM guests; encrypted mailbox envelopes pass over vsock through a keyless host relay, with encoding and reconstruction inside the guests.](docs/figures/overview/mvm-mailbox.png)
+
+*The native two-guest witness: encoding happens inside the sender's authorized
+plaintext boundary, before mailbox encryption. The host relays sealed envelopes
+over vsock. The receiver authenticates and decrypts inside its guest, then
+reconstructs, verifies and commits. The host's small orchestrator manages the
+guests without becoming a plaintext compression endpoint. This picture depicts
+the local host test; it is not evidence of a two-host MVM WAN deployment.*
+
+<details>
+<summary>Technical detail: mailbox encryption and acknowledgment boundaries</summary>
 
 ```mermaid
 flowchart LR
@@ -206,6 +274,8 @@ flowchart LR
     H -->|vsock 5257| B1
     B2 -. authenticated reply .-> A2
 ```
+
+</details>
 
 The witness also supports a single guest with a host endpoint. It uses actual
 ARM64 Linux guests on macOS Hypervisor.framework and a pinned MVM patch.

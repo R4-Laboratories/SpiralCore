@@ -56,3 +56,40 @@ or assert that release assets have already been downloaded successfully.
 Public-download contents and credentials are independently reviewed in
 `artifact-review.md` and the release packaging records. Publication URLs and
 rendered diagram checks require the parent execution's final verification.
+
+## Illustration follow-up
+
+Visually inspected all three generated PNGs in `docs/figures/overview/` and
+reviewed their README captions and generation provenance. No blocking claim
+corrections found. The object illustration shows three children per ternary
+symbol and reusable state plus residual transmission; the caption explicitly
+identifies the instruments as conceptual software, not hardware or runtime
+screenshots. Illustrated tile, phase and CA patterns are visual metaphors, not
+byte-level test fixtures or measurement evidence.
+
+The normal-network cutaway depicts application/TUN/gateway/NIC ordering and
+authenticated QUIC between cooperating gateways. Its caption expressly excludes
+an add-in hardware requirement and current cross-packet warm-cache/CA behavior.
+The MVM cutaway keeps encryption/decryption within separate guest boundaries and
+sealed envelopes at the host relay. Its caption scopes the picture to the local
+two-guest witness, with no two-host WAN qualification claim. None of the images
+asserts a performance ratio, physical clock synchronization, a cryptographic
+certification or production readiness. Existing measured results and their
+qualifications remain unchanged; collapsed Mermaid sections retain precise
+technical paths beside the conceptual artwork.
+
+## OSI illustration follow-up
+
+Visually inspected `docs/figures/overview/osi-model.png` and its README caption.
+The diagram correctly distinguishes functional OSI terminology from implemented
+protocol stacks: codecs/reconstruction and transfer state/acknowledgments remain
+application-level functions, not independent Layer 5/6 protocols. The object
+service uses reliable QUIC streams; the packet tunnel encapsulates inner IP
+packets, obtained through Layer 3 TUN, in raw/zstd framing and QUIC datagrams over
+outer UDP/IP. Ordinary NIC/link layers remain underneath those network paths.
+The MVM panel separately places mailbox/object codecs inside guests and
+virtio-vsock between guests and the keyless host relay; it does not imply that
+vsock runs over the illustrated IP stack or that a mailbox is a standardized
+OSI Layer 5 interface. The caption makes those boundaries explicit. No blocking
+claim corrections found; this was a focused illustration review, not a new
+implementation audit or runtime qualification.
