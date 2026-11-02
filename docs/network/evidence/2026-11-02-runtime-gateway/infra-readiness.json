@@ -1,11 +1,11 @@
 {
   "schema": "spiralcore.runtime-object.infra-readiness.v1",
-  "verdict": "READY_FOR_FROZEN_CI_EXECUTION",
+  "verdict": "READY_FOR_EXPLICIT_CORRECTED_SOURCE_CI_EXECUTION",
   "source_sha256": {
     ".github/workflows/spiralcore-runtime-objects.yml": "a9eb60edb5b47cefde0ac4b4d82e72dd4364bdbfbbefea1d44b77d089096b5d5",
-    "tools/gateway-network/runtime-object-netns.sh": "2d1faa22e03fb721093623d8620a7072f01baadbbea7e484450968eb9c1597df",
-    "tools/gateway-network/runtime-object-infra-check.sh": "df742772673ca78f9e0b062d47b9505a97b673033d3d56e538910a56c4526a78",
-    "docs/network/evidence/2026-11-02-runtime-gateway/network-registration.json": "7ec5d654670effce63d58340aaa76f228be9a600f6bcffa90e305b148f29fb68",
+    "tools/gateway-network/runtime-object-netns.sh": "625bb5c7e2e461ed59fb8135c9df22181825091fce0e9bb54e9fc508329a6da1",
+    "tools/gateway-network/runtime-object-infra-check.sh": "a57d6af646f4ddc10a145424738c9006b5137d2ead5fcce2980e858065b69030",
+    "docs/network/evidence/2026-11-02-runtime-gateway/network-registration.json": "4c50f339d984d9f9b233c254678eb3db801ec62dbfb62d67d0d80e47aa47d060",
     "crates/spiralcore-gateway/examples/object_fixtures.rs": "f724d7d06eeee508638b308eff552ef37c39fe4646c31965f51ffb7bb068b491"
   },
   "checks": {
@@ -27,6 +27,13 @@
       "strict_clippy": "PASS",
       "independent_closure": "PASS",
       "authority": "Parent observed final receipts and approved launch_ready=true"
+    },
+    "capture_correction": {
+      "positive": 1,
+      "negatives": 4,
+      "receipt": "infra-capture-final/result.json",
+      "shellcheck": "PASS",
+      "parent_review": "review-capture-correction.md"
     }
   },
   "scope": "Bounded new object-channel harness only; no benchmark or Linux namespace execution has occurred.",
@@ -40,7 +47,7 @@
   ],
   "workflow_filter_review": "New workflow follows object service/channel/facade and shared dependencies. Old long packet-selection workflow now follows packet/service/probe paths; existing quick gateway compatibility workflow still covers broad gateway edits.",
   "pending": [
-    "Exact source and executable freeze in CI",
-    "Actual Linux calibration, exact object sessions, capture custody and measured result analysis"
+    "Exact corrected source and executable freeze in a new CI run",
+    "Actual full Linux calibration/object campaign, complete capture custody and measured result analysis"
   ]
 }

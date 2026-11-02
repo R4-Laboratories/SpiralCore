@@ -1,0 +1,102 @@
+   Compiling spiralcore-gateway v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-gateway)
+error[E0422]: cannot find struct, variant or union type `Metrics` in this scope
+  --> ../../tools/gateway-network/analyze-runtime-objects.rs:23:21
+   |
+23 |         let setup = Metrics { request: 30, response: 10, sender_cpu: 100, receiver_cpu: 20, wall: 200 };
+   |                     ^^^^^^^ not found in this scope
+
+error[E0422]: cannot find struct, variant or union type `Metrics` in this scope
+  --> ../../tools/gateway-network/analyze-runtime-objects.rs:24:20
+   |
+24 |         let seed = Metrics { request: 1000, response: 60, sender_cpu: 300, receiver_cpu: 80, wall: 1500 };
+   |                    ^^^^^^^ not found in this scope
+
+error[E0422]: cannot find struct, variant or union type `Metrics` in this scope
+  --> ../../tools/gateway-network/analyze-runtime-objects.rs:25:22
+   |
+25 |         let target = Metrics { request: 100, response: 40, sender_cpu: 50, receiver_cpu: 30, wall: 700 };
+   |                      ^^^^^^^ not found in this scope
+
+error[E0422]: cannot find struct, variant or union type `Metrics` in this scope
+  --> ../../tools/gateway-network/analyze-runtime-objects.rs:30:17
+   |
+30 |         assert!(Metrics { request: u64::MAX, ..Metrics::default() }.add(target).is_err());
+   |                 ^^^^^^^ not found in this scope
+
+warning: unused import: `super::*`
+ --> ../../tools/gateway-network/analyze-runtime-objects.rs:8:9
+  |
+8 |     use super::*;
+  |         ^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+error[E0425]: cannot find function `channel_delta` in this scope
+  --> ../../tools/gateway-network/analyze-runtime-objects.rs:17:20
+   |
+17 |         assert_eq!(channel_delta(&before, &after).unwrap(), (308, 88));
+   |                    ^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `channel_delta` in this scope
+  --> ../../tools/gateway-network/analyze-runtime-objects.rs:18:17
+   |
+18 |         assert!(channel_delta(&after, &before).is_err());
+   |                 ^^^^^^^^^^^^^ not found in this scope
+
+error[E0433]: cannot find type `Metrics` in this scope
+  --> ../../tools/gateway-network/analyze-runtime-objects.rs:30:48
+   |
+30 |         assert!(Metrics { request: u64::MAX, ..Metrics::default() }.add(target).is_err());
+   |                                                ^^^^^^^ use of undeclared type `Metrics`
+
+error[E0425]: cannot find function `median` in this scope
+  --> ../../tools/gateway-network/analyze-runtime-objects.rs:35:20
+   |
+35 |         assert_eq!(median(&[3.0, 1.0, 2.0]).unwrap(), 2.0);
+   |                    ^^^^^^ not found in this scope
+   |
+help: use the `.` operator to call the method `Stats::median` on `&[{float}]`
+   |
+35 -         assert_eq!(median(&[3.0, 1.0, 2.0]).unwrap(), 2.0);
+35 +         assert_eq!((&[3.0, 1.0, 2.0]).median().unwrap(), 2.0);
+   |
+
+error[E0425]: cannot find function `ratio` in this scope
+  --> ../../tools/gateway-network/analyze-runtime-objects.rs:37:60
+   |
+37 |         let ratios: Vec<_> = pairs.into_iter().map(|(a,b)| ratio(a,b).unwrap()).collect();
+   |                                                            ^^^^^ not found in this scope
+
+error[E0425]: cannot find function `median` in this scope
+  --> ../../tools/gateway-network/analyze-runtime-objects.rs:38:20
+   |
+38 |         assert_eq!(median(&ratios).unwrap(), 2.0);
+   |                    ^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `ratio` in this scope
+  --> ../../tools/gateway-network/analyze-runtime-objects.rs:39:20
+   |
+39 |         assert_eq!(ratio(4, 0), None);
+   |                    ^^^^^
+   |
+help: a local variable with a similar name exists
+   |
+39 |         assert_eq!(ratios(4, 0), None);
+   |                         +
+
+error[E0425]: cannot find function `median` in this scope
+  --> ../../tools/gateway-network/analyze-runtime-objects.rs:40:17
+   |
+40 |         assert!(median(&[]).is_err());
+   |                 ^^^^^^ not found in this scope
+   |
+help: use the `.` operator to call the method `Stats::median` on `&[_]`
+   |
+40 -         assert!(median(&[]).is_err());
+40 +         assert!((&[]).median().is_err());
+   |
+
+Some errors have detailed explanations: E0422, E0425, E0433.
+For more information about an error, try `rustc --explain E0422`.
+warning: `spiralcore-gateway` (example "analyze_runtime_objects" test) generated 1 warning
+error: could not compile `spiralcore-gateway` (example "analyze_runtime_objects" test) due to 12 previous errors; 1 warning emitted

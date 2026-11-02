@@ -1,0 +1,833 @@
+{
+  "channel": {
+    "batches_received": 23,
+    "batches_sent": 23,
+    "encoded_batch_bytes_received": 38234,
+    "encoded_batch_bytes_sent": 31842930,
+    "framing_bytes_received": 96,
+    "framing_bytes_sent": 96
+  },
+  "finish_cpu_us": 423,
+  "finish_wall_us": 219760,
+  "groups": [
+    {
+      "cpu_us": 1649,
+      "label": "near1m",
+      "mode": "runtime",
+      "retained_charge": 1054749,
+      "wall_us": 1648
+    },
+    {
+      "cpu_us": 22168,
+      "label": "max-trace",
+      "mode": "runtime",
+      "retained_charge": 14858931,
+      "wall_us": 22164
+    }
+  ],
+  "namespace": "0641bc8b3aa5e7eb0fd796581a109f6b4e83d53c180353067dabfbc41d74975e",
+  "operations": [
+    {
+      "action": "checkpoint",
+      "channel_after": {
+        "batches_received": 2,
+        "batches_sent": 2,
+        "encoded_batch_bytes_received": 322,
+        "encoded_batch_bytes_sent": 3705,
+        "framing_bytes_received": 8,
+        "framing_bytes_sent": 8
+      },
+      "channel_before": {
+        "batches_received": 1,
+        "batches_sent": 1,
+        "encoded_batch_bytes_received": 80,
+        "encoded_batch_bytes_sent": 80,
+        "framing_bytes_received": 4,
+        "framing_bytes_sent": 4
+      },
+      "cpu_us": 428,
+      "data_bytes": 3382,
+      "group": "near1m",
+      "input_bytes": 3382,
+      "label": "checkpoint",
+      "object_id": "2ced35de02b6adc2ba856a16a95bf0757fea42b5fc7f2c3f90ddf6960858a8b6",
+      "publication_path": "verified-transfer",
+      "request_frame_bytes": 3601,
+      "requests": 3,
+      "response_frame_bytes": 218,
+      "selected_mode": "Raw",
+      "selection": {
+        "candidate_costs": null,
+        "policy": "fixed-profile"
+      },
+      "success": true,
+      "transfer_id": "01000000000000000641bc8b3aa5e7eb0fd796581a109f6b4e83d53c18035306",
+      "wall_us": 84540
+    },
+    {
+      "action": "send",
+      "channel_after": {
+        "batches_received": 4,
+        "batches_sent": 4,
+        "encoded_batch_bytes_received": 644,
+        "encoded_batch_bytes_sent": 4138,
+        "framing_bytes_received": 16,
+        "framing_bytes_sent": 16
+      },
+      "channel_before": {
+        "batches_received": 2,
+        "batches_sent": 2,
+        "encoded_batch_bytes_received": 322,
+        "encoded_batch_bytes_sent": 3705,
+        "framing_bytes_received": 8,
+        "framing_bytes_sent": 8
+      },
+      "cpu_us": 5525,
+      "data_bytes": 81,
+      "group": "near1m",
+      "input_bytes": 1047202,
+      "label": "generated",
+      "object_id": "0ccc92643d5a8e54196dc945cba834dfe99f8156f8e1ce9ec6a3a09c4acd5762",
+      "publication_path": "verified-transfer",
+      "request_frame_bytes": 393,
+      "requests": 4,
+      "response_frame_bytes": 282,
+      "selected_mode": "RuntimeV1",
+      "selection": {
+        "accounting": "existing HTTP-body cost model, not QUIC wire bytes",
+        "candidates": [
+          {
+            "http_body_bytes": 1050004,
+            "mode": "Raw"
+          },
+          {
+            "http_body_bytes": 88737,
+            "mode": "ZstdPrefixV1"
+          },
+          {
+            "http_body_bytes": 787,
+            "mode": "RuntimeV1"
+          }
+        ],
+        "exact_repeat_probe": false,
+        "expected_http_body_bytes": 787,
+        "policy": "fixed-runtime-checkpoint",
+        "pruned": [
+          {
+            "http_body_lower_bound": 2820,
+            "mode": "Zstd"
+          },
+          {
+            "http_body_lower_bound": 4603,
+            "mode": "SparseV1"
+          }
+        ],
+        "selected": "RuntimeV1"
+      },
+      "success": true,
+      "transfer_id": "02000000000000000641bc8b3aa5e7eb0fd796581a109f6b4e83d53c18035306",
+      "wall_us": 178167
+    },
+    {
+      "action": "send",
+      "channel_after": {
+        "batches_received": 6,
+        "batches_sent": 6,
+        "encoded_batch_bytes_received": 966,
+        "encoded_batch_bytes_sent": 5371,
+        "framing_bytes_received": 24,
+        "framing_bytes_sent": 24
+      },
+      "channel_before": {
+        "batches_received": 4,
+        "batches_sent": 4,
+        "encoded_batch_bytes_received": 644,
+        "encoded_batch_bytes_sent": 4138,
+        "framing_bytes_received": 16,
+        "framing_bytes_sent": 16
+      },
+      "cpu_us": 5539,
+      "data_bytes": 881,
+      "group": "near1m",
+      "input_bytes": 1047202,
+      "label": "residual",
+      "object_id": "adf81bac62cb24f56ee7b0d51a0b6a796771a77cbec209cee682ecc9077f0050",
+      "publication_path": "verified-transfer",
+      "request_frame_bytes": 1193,
+      "requests": 4,
+      "response_frame_bytes": 282,
+      "selected_mode": "RuntimeV1",
+      "selection": {
+        "accounting": "existing HTTP-body cost model, not QUIC wire bytes",
+        "candidates": [
+          {
+            "http_body_bytes": 1050004,
+            "mode": "Raw"
+          },
+          {
+            "http_body_bytes": 89118,
+            "mode": "ZstdPrefixV1"
+          },
+          {
+            "http_body_bytes": 1587,
+            "mode": "RuntimeV1"
+          }
+        ],
+        "exact_repeat_probe": false,
+        "expected_http_body_bytes": 1587,
+        "policy": "fixed-runtime-checkpoint",
+        "pruned": [
+          {
+            "http_body_lower_bound": 2820,
+            "mode": "Zstd"
+          },
+          {
+            "http_body_lower_bound": 4603,
+            "mode": "SparseV1"
+          }
+        ],
+        "selected": "RuntimeV1"
+      },
+      "success": true,
+      "transfer_id": "03000000000000000641bc8b3aa5e7eb0fd796581a109f6b4e83d53c18035306",
+      "wall_us": 171728
+    },
+    {
+      "action": "send",
+      "channel_after": {
+        "batches_received": 7,
+        "batches_sent": 7,
+        "encoded_batch_bytes_received": 1070,
+        "encoded_batch_bytes_sent": 5521,
+        "framing_bytes_received": 28,
+        "framing_bytes_sent": 28
+      },
+      "channel_before": {
+        "batches_received": 6,
+        "batches_sent": 6,
+        "encoded_batch_bytes_received": 966,
+        "encoded_batch_bytes_sent": 5371,
+        "framing_bytes_received": 24,
+        "framing_bytes_sent": 24
+      },
+      "cpu_us": 4590,
+      "data_bytes": 0,
+      "group": "near1m",
+      "input_bytes": 1047202,
+      "label": "repeat",
+      "object_id": "adf81bac62cb24f56ee7b0d51a0b6a796771a77cbec209cee682ecc9077f0050",
+      "publication_path": "verified-cache-hit",
+      "request_frame_bytes": 134,
+      "requests": 1,
+      "response_frame_bytes": 88,
+      "selected_mode": "RuntimeV1",
+      "selection": {
+        "accounting": "existing HTTP-body cost model, not QUIC wire bytes",
+        "candidates": [
+          {
+            "http_body_bytes": 1050004,
+            "mode": "Raw"
+          },
+          {
+            "http_body_bytes": 89118,
+            "mode": "ZstdPrefixV1"
+          },
+          {
+            "http_body_bytes": 1587,
+            "mode": "RuntimeV1"
+          }
+        ],
+        "exact_repeat_probe": false,
+        "expected_http_body_bytes": 1587,
+        "policy": "fixed-runtime-checkpoint",
+        "pruned": [
+          {
+            "http_body_lower_bound": 2820,
+            "mode": "Zstd"
+          },
+          {
+            "http_body_lower_bound": 4603,
+            "mode": "SparseV1"
+          }
+        ],
+        "selected": "RuntimeV1"
+      },
+      "success": true,
+      "transfer_id": "04000000000000000641bc8b3aa5e7eb0fd796581a109f6b4e83d53c18035306",
+      "wall_us": 85926
+    },
+    {
+      "action": "send",
+      "channel_after": {
+        "batches_received": 9,
+        "batches_sent": 9,
+        "encoded_batch_bytes_received": 2480,
+        "encoded_batch_bytes_sent": 1054083,
+        "framing_bytes_received": 36,
+        "framing_bytes_sent": 36
+      },
+      "channel_before": {
+        "batches_received": 7,
+        "batches_sent": 7,
+        "encoded_batch_bytes_received": 1070,
+        "encoded_batch_bytes_sent": 5521,
+        "framing_bytes_received": 28,
+        "framing_bytes_sent": 28
+      },
+      "cpu_us": 13686,
+      "data_bytes": 1047202,
+      "group": "near1m",
+      "input_bytes": 1047202,
+      "label": "unrelated",
+      "object_id": "9a43e5fb12e719863c0d9493f20dc7a532125d4c7d4a5b9f7dbc832fe42ca253",
+      "publication_path": "verified-transfer",
+      "request_frame_bytes": 1048458,
+      "requests": 20,
+      "response_frame_bytes": 1306,
+      "selected_mode": "Raw",
+      "selection": {
+        "accounting": "existing HTTP-body cost model, not QUIC wire bytes",
+        "candidates": [
+          {
+            "http_body_bytes": 1050004,
+            "mode": "Raw"
+          },
+          {
+            "http_body_bytes": 1050004,
+            "mode": "Zstd"
+          },
+          {
+            "http_body_bytes": 1050091,
+            "mode": "ZstdPrefixV1"
+          }
+        ],
+        "exact_repeat_probe": false,
+        "expected_http_body_bytes": 1050004,
+        "policy": "fixed-runtime-checkpoint",
+        "pruned": [],
+        "selected": "Raw"
+      },
+      "success": true,
+      "transfer_id": "05000000000000000641bc8b3aa5e7eb0fd796581a109f6b4e83d53c18035306",
+      "wall_us": 1242956
+    },
+    {
+      "action": "send",
+      "channel_after": {
+        "batches_received": 11,
+        "batches_sent": 11,
+        "encoded_batch_bytes_received": 3890,
+        "encoded_batch_bytes_sent": 2102645,
+        "framing_bytes_received": 44,
+        "framing_bytes_sent": 44
+      },
+      "channel_before": {
+        "batches_received": 9,
+        "batches_sent": 9,
+        "encoded_batch_bytes_received": 2480,
+        "encoded_batch_bytes_sent": 1054083,
+        "framing_bytes_received": 36,
+        "framing_bytes_sent": 36
+      },
+      "cpu_us": 14419,
+      "data_bytes": 1047202,
+      "group": "near1m",
+      "input_bytes": 1047202,
+      "label": "opaque-edited",
+      "object_id": "d1f16de525d3c33b522ac762a849dd0d0451085d9a955e2a4b9d15c48c85caad",
+      "publication_path": "verified-transfer",
+      "request_frame_bytes": 1048458,
+      "requests": 20,
+      "response_frame_bytes": 1306,
+      "selected_mode": "Raw",
+      "selection": {
+        "accounting": "existing HTTP-body cost model, not QUIC wire bytes",
+        "candidates": [
+          {
+            "http_body_bytes": 1050004,
+            "mode": "Raw"
+          },
+          {
+            "http_body_bytes": 1050004,
+            "mode": "Zstd"
+          },
+          {
+            "http_body_bytes": 1050091,
+            "mode": "ZstdPrefixV1"
+          }
+        ],
+        "exact_repeat_probe": false,
+        "expected_http_body_bytes": 1050004,
+        "policy": "fixed-runtime-checkpoint",
+        "pruned": [],
+        "selected": "Raw"
+      },
+      "success": true,
+      "transfer_id": "06000000000000000641bc8b3aa5e7eb0fd796581a109f6b4e83d53c18035306",
+      "wall_us": 1127183
+    },
+    {
+      "action": "send",
+      "channel_after": {
+        "batches_received": 12,
+        "batches_sent": 12,
+        "encoded_batch_bytes_received": 3994,
+        "encoded_batch_bytes_sent": 2102763,
+        "framing_bytes_received": 48,
+        "framing_bytes_sent": 48
+      },
+      "channel_before": {
+        "batches_received": 11,
+        "batches_sent": 11,
+        "encoded_batch_bytes_received": 3890,
+        "encoded_batch_bytes_sent": 2102645,
+        "framing_bytes_received": 44,
+        "framing_bytes_sent": 44
+      },
+      "cpu_us": 3533,
+      "data_bytes": 0,
+      "group": "near1m",
+      "input_bytes": 1047202,
+      "label": "opaque-edited-repeat",
+      "object_id": "d1f16de525d3c33b522ac762a849dd0d0451085d9a955e2a4b9d15c48c85caad",
+      "publication_path": "verified-cache-hit",
+      "request_frame_bytes": 102,
+      "requests": 1,
+      "response_frame_bytes": 88,
+      "selected_mode": "Raw",
+      "selection": {
+        "accounting": "existing HTTP-body cost model, not QUIC wire bytes",
+        "candidates": [
+          {
+            "http_body_bytes": 1050004,
+            "mode": "Raw"
+          },
+          {
+            "http_body_bytes": 1050004,
+            "mode": "Zstd"
+          },
+          {
+            "http_body_bytes": 1050091,
+            "mode": "ZstdPrefixV1"
+          }
+        ],
+        "exact_repeat_probe": false,
+        "expected_http_body_bytes": 1050004,
+        "policy": "fixed-runtime-checkpoint",
+        "pruned": [],
+        "selected": "Raw"
+      },
+      "success": true,
+      "transfer_id": "07000000000000000641bc8b3aa5e7eb0fd796581a109f6b4e83d53c18035306",
+      "wall_us": 84947
+    },
+    {
+      "action": "checkpoint",
+      "channel_after": {
+        "batches_received": 13,
+        "batches_sent": 13,
+        "encoded_batch_bytes_received": 4098,
+        "encoded_batch_bytes_sent": 2106388,
+        "framing_bytes_received": 52,
+        "framing_bytes_sent": 52
+      },
+      "channel_before": {
+        "batches_received": 12,
+        "batches_sent": 12,
+        "encoded_batch_bytes_received": 3994,
+        "encoded_batch_bytes_sent": 2102763,
+        "framing_bytes_received": 48,
+        "framing_bytes_sent": 48
+      },
+      "cpu_us": 423,
+      "data_bytes": 3382,
+      "group": "max-trace",
+      "input_bytes": 3382,
+      "label": "checkpoint",
+      "object_id": "2ced35de02b6adc2ba856a16a95bf0757fea42b5fc7f2c3f90ddf6960858a8b6",
+      "publication_path": "verified-cache-hit",
+      "request_frame_bytes": 3601,
+      "requests": 3,
+      "response_frame_bytes": 88,
+      "selected_mode": "Raw",
+      "selection": {
+        "candidate_costs": null,
+        "policy": "fixed-profile"
+      },
+      "success": true,
+      "transfer_id": "08000000000000000641bc8b3aa5e7eb0fd796581a109f6b4e83d53c18035306",
+      "wall_us": 83691
+    },
+    {
+      "action": "send",
+      "channel_after": {
+        "batches_received": 15,
+        "batches_sent": 15,
+        "encoded_batch_bytes_received": 4420,
+        "encoded_batch_bytes_sent": 2106821,
+        "framing_bytes_received": 60,
+        "framing_bytes_sent": 60
+      },
+      "channel_before": {
+        "batches_received": 13,
+        "batches_sent": 13,
+        "encoded_batch_bytes_received": 4098,
+        "encoded_batch_bytes_sent": 2106388,
+        "framing_bytes_received": 52,
+        "framing_bytes_sent": 52
+      },
+      "cpu_us": 16056,
+      "data_bytes": 81,
+      "group": "max-trace",
+      "input_bytes": 14851384,
+      "label": "generated",
+      "object_id": "885bf4d9cddfb3c00a64391f7d5959d34efb1d69746d3f006735bfd2d7695019",
+      "publication_path": "verified-transfer",
+      "request_frame_bytes": 393,
+      "requests": 4,
+      "response_frame_bytes": 282,
+      "selected_mode": "RuntimeV1",
+      "selection": {
+        "accounting": "existing HTTP-body cost model, not QUIC wire bytes",
+        "candidates": [
+          {
+            "http_body_bytes": 14883978,
+            "mode": "Raw"
+          },
+          {
+            "http_body_bytes": 787,
+            "mode": "RuntimeV1"
+          }
+        ],
+        "exact_repeat_probe": false,
+        "expected_http_body_bytes": 787,
+        "policy": "fixed-runtime-checkpoint",
+        "pruned": [
+          {
+            "http_body_lower_bound": 32836,
+            "mode": "Zstd"
+          },
+          {
+            "http_body_lower_bound": 57664,
+            "mode": "SparseV1"
+          },
+          {
+            "http_body_lower_bound": 926,
+            "mode": "ZstdPrefixV1"
+          }
+        ],
+        "selected": "RuntimeV1"
+      },
+      "success": true,
+      "transfer_id": "09000000000000000641bc8b3aa5e7eb0fd796581a109f6b4e83d53c18035306",
+      "wall_us": 266529
+    },
+    {
+      "action": "send",
+      "channel_after": {
+        "batches_received": 17,
+        "batches_sent": 17,
+        "encoded_batch_bytes_received": 4742,
+        "encoded_batch_bytes_sent": 2108054,
+        "framing_bytes_received": 68,
+        "framing_bytes_sent": 68
+      },
+      "channel_before": {
+        "batches_received": 15,
+        "batches_sent": 15,
+        "encoded_batch_bytes_received": 4420,
+        "encoded_batch_bytes_sent": 2106821,
+        "framing_bytes_received": 60,
+        "framing_bytes_sent": 60
+      },
+      "cpu_us": 81743,
+      "data_bytes": 881,
+      "group": "max-trace",
+      "input_bytes": 14851384,
+      "label": "residual",
+      "object_id": "5f60272605f2438893da9c44734d55ff29e90de9ccfd606a4c71421d7a1a2bbf",
+      "publication_path": "verified-transfer",
+      "request_frame_bytes": 1193,
+      "requests": 4,
+      "response_frame_bytes": 282,
+      "selected_mode": "RuntimeV1",
+      "selection": {
+        "accounting": "existing HTTP-body cost model, not QUIC wire bytes",
+        "candidates": [
+          {
+            "http_body_bytes": 14883978,
+            "mode": "Raw"
+          },
+          {
+            "http_body_bytes": 3201706,
+            "mode": "ZstdPrefixV1"
+          },
+          {
+            "http_body_bytes": 1587,
+            "mode": "RuntimeV1"
+          }
+        ],
+        "exact_repeat_probe": false,
+        "expected_http_body_bytes": 1587,
+        "policy": "fixed-runtime-checkpoint",
+        "pruned": [
+          {
+            "http_body_lower_bound": 32836,
+            "mode": "Zstd"
+          },
+          {
+            "http_body_lower_bound": 57664,
+            "mode": "SparseV1"
+          }
+        ],
+        "selected": "RuntimeV1"
+      },
+      "success": true,
+      "transfer_id": "0a000000000000000641bc8b3aa5e7eb0fd796581a109f6b4e83d53c18035306",
+      "wall_us": 331858
+    },
+    {
+      "action": "send",
+      "channel_after": {
+        "batches_received": 18,
+        "batches_sent": 18,
+        "encoded_batch_bytes_received": 4846,
+        "encoded_batch_bytes_sent": 2108204,
+        "framing_bytes_received": 72,
+        "framing_bytes_sent": 72
+      },
+      "channel_before": {
+        "batches_received": 17,
+        "batches_sent": 17,
+        "encoded_batch_bytes_received": 4742,
+        "encoded_batch_bytes_sent": 2108054,
+        "framing_bytes_received": 68,
+        "framing_bytes_sent": 68
+      },
+      "cpu_us": 77887,
+      "data_bytes": 0,
+      "group": "max-trace",
+      "input_bytes": 14851384,
+      "label": "repeat",
+      "object_id": "5f60272605f2438893da9c44734d55ff29e90de9ccfd606a4c71421d7a1a2bbf",
+      "publication_path": "verified-cache-hit",
+      "request_frame_bytes": 134,
+      "requests": 1,
+      "response_frame_bytes": 88,
+      "selected_mode": "RuntimeV1",
+      "selection": {
+        "accounting": "existing HTTP-body cost model, not QUIC wire bytes",
+        "candidates": [
+          {
+            "http_body_bytes": 14883978,
+            "mode": "Raw"
+          },
+          {
+            "http_body_bytes": 3201706,
+            "mode": "ZstdPrefixV1"
+          },
+          {
+            "http_body_bytes": 1587,
+            "mode": "RuntimeV1"
+          }
+        ],
+        "exact_repeat_probe": false,
+        "expected_http_body_bytes": 1587,
+        "policy": "fixed-runtime-checkpoint",
+        "pruned": [
+          {
+            "http_body_lower_bound": 32836,
+            "mode": "Zstd"
+          },
+          {
+            "http_body_lower_bound": 57664,
+            "mode": "SparseV1"
+          }
+        ],
+        "selected": "RuntimeV1"
+      },
+      "success": true,
+      "transfer_id": "0b000000000000000641bc8b3aa5e7eb0fd796581a109f6b4e83d53c18035306",
+      "wall_us": 188873
+    },
+    {
+      "action": "send",
+      "channel_after": {
+        "batches_received": 20,
+        "batches_sent": 20,
+        "encoded_batch_bytes_received": 21488,
+        "encoded_batch_bytes_sent": 16975508,
+        "framing_bytes_received": 80,
+        "framing_bytes_sent": 80
+      },
+      "channel_before": {
+        "batches_received": 18,
+        "batches_sent": 18,
+        "encoded_batch_bytes_received": 4846,
+        "encoded_batch_bytes_sent": 2108204,
+        "framing_bytes_received": 72,
+        "framing_bytes_sent": 72
+      },
+      "cpu_us": 210385,
+      "data_bytes": 14851384,
+      "group": "max-trace",
+      "input_bytes": 14851384,
+      "label": "unrelated",
+      "object_id": "63bbff840ffda2bb8f0a11b5afafabf9b3d424b496be20b72c4fb407050656b0",
+      "publication_path": "verified-transfer",
+      "request_frame_bytes": 14866304,
+      "requests": 244,
+      "response_frame_bytes": 15642,
+      "selected_mode": "Raw",
+      "selection": {
+        "accounting": "existing HTTP-body cost model, not QUIC wire bytes",
+        "candidates": [
+          {
+            "http_body_bytes": 14883978,
+            "mode": "Raw"
+          },
+          {
+            "http_body_bytes": 14883978,
+            "mode": "Zstd"
+          },
+          {
+            "http_body_bytes": 14884607,
+            "mode": "ZstdPrefixV1"
+          }
+        ],
+        "exact_repeat_probe": false,
+        "expected_http_body_bytes": 14883978,
+        "policy": "fixed-runtime-checkpoint",
+        "pruned": [],
+        "selected": "Raw"
+      },
+      "success": true,
+      "transfer_id": "0c000000000000000641bc8b3aa5e7eb0fd796581a109f6b4e83d53c18035306",
+      "wall_us": 12903479
+    },
+    {
+      "action": "send",
+      "channel_after": {
+        "batches_received": 22,
+        "batches_sent": 22,
+        "encoded_batch_bytes_received": 38130,
+        "encoded_batch_bytes_sent": 31842812,
+        "framing_bytes_received": 88,
+        "framing_bytes_sent": 88
+      },
+      "channel_before": {
+        "batches_received": 20,
+        "batches_sent": 20,
+        "encoded_batch_bytes_received": 21488,
+        "encoded_batch_bytes_sent": 16975508,
+        "framing_bytes_received": 80,
+        "framing_bytes_sent": 80
+      },
+      "cpu_us": 184809,
+      "data_bytes": 14851384,
+      "group": "max-trace",
+      "input_bytes": 14851384,
+      "label": "opaque-edited",
+      "object_id": "174752af889f1fb1059089811412960b6975a7ebf30a41b8841c3708155fc408",
+      "publication_path": "verified-transfer",
+      "request_frame_bytes": 14866304,
+      "requests": 244,
+      "response_frame_bytes": 15642,
+      "selected_mode": "Raw",
+      "selection": {
+        "accounting": "existing HTTP-body cost model, not QUIC wire bytes",
+        "candidates": [
+          {
+            "http_body_bytes": 14883978,
+            "mode": "Raw"
+          },
+          {
+            "http_body_bytes": 14883978,
+            "mode": "Zstd"
+          },
+          {
+            "http_body_bytes": 14884607,
+            "mode": "ZstdPrefixV1"
+          }
+        ],
+        "exact_repeat_probe": false,
+        "expected_http_body_bytes": 14883978,
+        "policy": "fixed-runtime-checkpoint",
+        "pruned": [],
+        "selected": "Raw"
+      },
+      "success": true,
+      "transfer_id": "0d000000000000000641bc8b3aa5e7eb0fd796581a109f6b4e83d53c18035306",
+      "wall_us": 12881309
+    },
+    {
+      "action": "send",
+      "channel_after": {
+        "batches_received": 23,
+        "batches_sent": 23,
+        "encoded_batch_bytes_received": 38234,
+        "encoded_batch_bytes_sent": 31842930,
+        "framing_bytes_received": 92,
+        "framing_bytes_sent": 92
+      },
+      "channel_before": {
+        "batches_received": 22,
+        "batches_sent": 22,
+        "encoded_batch_bytes_received": 38130,
+        "encoded_batch_bytes_sent": 31842812,
+        "framing_bytes_received": 88,
+        "framing_bytes_sent": 88
+      },
+      "cpu_us": 45975,
+      "data_bytes": 0,
+      "group": "max-trace",
+      "input_bytes": 14851384,
+      "label": "opaque-edited-repeat",
+      "object_id": "174752af889f1fb1059089811412960b6975a7ebf30a41b8841c3708155fc408",
+      "publication_path": "verified-cache-hit",
+      "request_frame_bytes": 102,
+      "requests": 1,
+      "response_frame_bytes": 88,
+      "selected_mode": "Raw",
+      "selection": {
+        "accounting": "existing HTTP-body cost model, not QUIC wire bytes",
+        "candidates": [
+          {
+            "http_body_bytes": 14883978,
+            "mode": "Raw"
+          },
+          {
+            "http_body_bytes": 14883978,
+            "mode": "Zstd"
+          },
+          {
+            "http_body_bytes": 14884607,
+            "mode": "ZstdPrefixV1"
+          }
+        ],
+        "exact_repeat_probe": false,
+        "expected_http_body_bytes": 14883978,
+        "policy": "fixed-runtime-checkpoint",
+        "pruned": [],
+        "selected": "Raw"
+      },
+      "success": true,
+      "transfer_id": "0e000000000000000641bc8b3aa5e7eb0fd796581a109f6b4e83d53c18035306",
+      "wall_us": 134891
+    }
+  ],
+  "process_cpu_us": 698066,
+  "role": "connect",
+  "scope": "runtime-wan80-10-t0-runtime",
+  "setup_cpu_us": 1502,
+  "setup_wall_us": 166519,
+  "status": "ok",
+  "timing": "operation includes input read/hash, codec selection and commit reply; setup/group preparation/seeds and finish/readback separately retained; process CPU includes nested work; final JSON write excluded; UDP counters snapshot before endpoint close, packet capture includes close",
+  "udp": {
+    "received_bytes": 502679,
+    "received_datagrams": 11435,
+    "sent_bytes": 32773174,
+    "sent_datagrams": 22653
+  },
+  "wall_us": 30184058
+}
