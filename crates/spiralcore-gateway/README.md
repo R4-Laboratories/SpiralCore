@@ -9,9 +9,11 @@ traffic; no NIC driver changes are needed.
 The shared `spiralcore-gateway-core` crate also supplies the object sender used by
 the MVM canonical mailbox/vsock integration. Object transfer retains warm-cache
 and prepared-codec selection. Packet v1 uses independent Raw or prepared zstd
-packets with literal fallback, not cross-packet object references. It does not
-implement a reliable QUIC object service or transparently deduplicate encrypted
-TCP streams. TLS/QUIC application payloads already encrypted before reaching TUN
+packets with literal fallback, not cross-packet object references. The separate
+[`spiralcore-gateway-object` service](../../docs/network/runtime-object-gateway.md)
+implements reliable QUIC object transfer with Combined runtime/warm selection;
+the packet service does not transparently deduplicate encrypted TCP streams.
+TLS/QUIC application payloads already encrypted before reaching TUN
 usually offer little compression. Neither arbitrary Internet peers nor existing
 MVM FlowMux policy are bypassed.
 

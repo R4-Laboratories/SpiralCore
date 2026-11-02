@@ -1,5 +1,17 @@
 # Artifact storage and local disk use
 
+## Public access update — November 2
+
+The [public artifact catalog](public-artifacts.md) now links GitHub release
+downloads for the current MVM, Combined object, packet-selection and original TUN
+campaigns. Receipts/captures are publicly accessible without Hugging Face access;
+nine archived executables are explicitly excluded pending complete third-party
+redistribution notices. Original binary identities and public source pins remain.
+The existing private dataset preserves the complete originals. The older 7.7 GB
+WAN preservation snapshot below remains private; its compact measurements are in Git.
+
+The sections below retain the original storage decisions and immutable custody.
+
 Keep source, measurement contracts, compact raw observations, summaries and reviews in GitHub.
 The SC-OPT-010 paired JSONL is 863,721 bytes and fits ordinary Git comfortably. Large captures,
 receiver-store snapshots and portable review archives belong in external artifact storage.
