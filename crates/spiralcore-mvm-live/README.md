@@ -61,6 +61,36 @@ Run directories must not exist. Failures preserve their public receipts and owne
 cache/disk for diagnosis. Remove those data files only after successful exact
 verification; retain the compact JSON results.
 
+## Combined runtime and warm-cache campaign
+
+The opt-in `combined`, `combined-cpu` and `whole-mixed` arms run the current shared
+Rust object gateway core through the same canonical mailbox boundary. `combined`
+uses exhaustive selection; `combined-cpu` uses the explicit CPU-conscious schema
+eligibility policy. `whole-mixed` supplies the matched prepared whole-object zstd
+baseline. The legacy `warm`, `whole` and `raw` campaign remains available.
+
+For these mixed arms, request size `1048576` or `16777216` and trial `0`, `1` or
+`2`. Their generated trace sizes are respectively **1,047,202** and **14,851,384**
+bytes. Each arm sends the same generated trace, residual edit, exact repeat,
+unrelated object, opaque edit, its repeat, schema-fitting object and schema-drift
+object. Both Combined arms first publish their checkpoint and schema. These
+publications and codec preparation count toward paid session costs. One receiver
+and its verified store persist throughout each session.
+
+```sh
+spiralcore-mvm-live session NEW_PRIVATE_RESULT_DIR KERNEL_IMAGE GUEST_ELF one combined 1048576 0 experimental64
+spiralcore-mvm-live session ANOTHER_NEW_DIR KERNEL_IMAGE GUEST_ELF two combined-cpu 16777216 0 experimental64
+spiralcore-mvm-live session BASELINE_NEW_DIR KERNEL_IMAGE GUEST_ELF two whole-mixed 16777216 0 experimental64
+```
+
+Always compare arms at the same bandwidth profile. The explicit `experimental64`
+profile changes the mailbox allowance, not the compression mechanism. Selection
+receipts distinguish policy-skipped candidates from proven pruning; candidate
+costs use the selector's existing model, while mailbox results use actual encrypted
+stream counters. Preparation, sender operation, receiver processing, and complete
+VM lifecycle have separate timing scopes. See the
+[SC-MVM-004 design](../../docs/specs/2026-11-02-mvm-combined-design.md).
+
 ## Security and measurement boundaries
 
 Bootstrap signing/encryption material is generated ephemerally and passed only

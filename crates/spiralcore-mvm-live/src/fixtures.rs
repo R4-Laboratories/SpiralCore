@@ -5,6 +5,154 @@ pub struct Fixture {
     pub bytes: Vec<u8>,
 }
 
+/// Registered mixed shapes match gateway `object_fixtures`: requested sizes
+/// name tiers; the canonical trace has its own exact length.
+pub fn mixed_recipe(
+    size: usize,
+    trial: u64,
+) -> crate::Result<spiralcore_transfer::shared_runtime::Recipe> {
+    use spiralcore_transfer::shared_runtime::{OutputKind, Recipe};
+    let steps = match size {
+        1_048_576 => 289,
+        16_777_216 => 4096,
+        _ => return Err("mixed campaign requires requested size 1 MiB or 16 MiB".into()),
+    };
+    if trial > 2 {
+        return Err("mixed trial outside registered dose 0..2".into());
+    }
+    Ok(Recipe {
+        steps,
+        payload: 1.0 + trial as f64 / 8.0,
+        output: OutputKind::Trace,
+    })
+}
+
+// Same public SHA-256 fixture definition as gateway::measurement::fixture;
+// reuse the existing hash primitive without adding a second dependency tree.
+fn opaque(size: usize, seed: u64) -> Vec<u8> {
+    let mut out = Vec::with_capacity(size);
+    for index in 0..size.div_ceil(32) {
+        let block = spiralcore_transfer::hash(
+            b"spiralcore.gateway.fixture.v1",
+            &[&seed.to_be_bytes(), &(index as u64).to_be_bytes()],
+        );
+        out.extend_from_slice(&block[..32.min(size - out.len())]);
+    }
+    out
+}
+
+fn schema_control(length: usize, steps: u32, trial: u64, drift: bool) -> crate::Result<Vec<u8>> {
+    use std::io::Write;
+    let seed = 0x4350_555f_5343_4831_u64
+        ^ trial
+        ^ (u64::from(steps) << 32)
+        ^ if drift { 0x4452_4946_545f_3031 } else { 0 };
+    let count = length / 256;
+    let entropy = opaque(count * 115 + length % 256, seed);
+    let mut out = Vec::with_capacity(length);
+    for (index, row) in entropy[..count * 115].chunks_exact(115).enumerate() {
+        let value = 1_000_000_000_u64 + u64::from(u32::from_le_bytes(row[..4].try_into()?));
+        let key = if drift && index > 0 {
+            "drifted"
+        } else {
+            "message"
+        };
+        write!(out, "{{\"value\":{value},\"{key}\":\"")?;
+        const HEX: &[u8; 16] = b"0123456789abcdef";
+        for byte in &row[4..] {
+            out.extend_from_slice(&[HEX[(byte >> 4) as usize], HEX[(byte & 15) as usize]]);
+        }
+        out.extend_from_slice(b"\"}\n");
+    }
+    out.extend(entropy[count * 115..].iter().map(|byte| b'a' + byte % 26));
+    if out.len() != length {
+        return Err("schema control length".into());
+    }
+    Ok(out)
+}
+
+/// All arms receive identical logical payloads. Setup publication is explicit
+/// and paid only by the two arms that need those artifacts.
+pub fn mixed_objects(size: usize, trial: u64, include_setup: bool) -> crate::Result<Vec<Fixture>> {
+    use spiralcore_transfer::{
+        schema,
+        shared_runtime::{self, State},
+    };
+    let recipe = mixed_recipe(size, trial)?;
+    let checkpoint = State::seeded(4096)?.encode()?;
+    let generated = shared_runtime::replay(&checkpoint, &recipe, shared_runtime::MAX_OUTPUT)?;
+    let expected = if size == 1 << 20 {
+        1_047_202
+    } else {
+        14_851_384
+    };
+    if generated.len() != expected || checkpoint.len() != 3382 {
+        return Err("registered runtime shape changed".into());
+    }
+    let mut residual = generated.clone();
+    let unrelated = opaque(
+        generated.len(),
+        0x5350_4952_414c_u64 ^ trial ^ (u64::from(recipe.steps) << 32),
+    );
+    let mut edited = unrelated.clone();
+    for i in 1..=16 {
+        let offset = i * generated.len() / 17;
+        for bytes in [&mut residual, &mut edited] {
+            for byte in &mut bytes[offset..offset + 32] {
+                *byte ^= 0xa5;
+            }
+        }
+    }
+    let mut result = Vec::with_capacity(if include_setup { 10 } else { 8 });
+    if include_setup {
+        result.push(Fixture {
+            kind: "runtime-checkpoint",
+            bytes: checkpoint,
+        });
+        result.push(Fixture {
+            kind: "schema",
+            bytes: schema::fit(&[b"{\"value\":0,\"message\":\"public training\"}\n"])?,
+        });
+    }
+    let fit = schema_control(generated.len(), recipe.steps, trial, false)?;
+    let drift = schema_control(generated.len(), recipe.steps, trial, true)?;
+    result.extend([
+        Fixture {
+            kind: "generated",
+            bytes: generated,
+        },
+        Fixture {
+            kind: "residual",
+            bytes: residual.clone(),
+        },
+        Fixture {
+            kind: "repeat",
+            bytes: residual,
+        },
+        Fixture {
+            kind: "unrelated",
+            bytes: unrelated,
+        },
+        Fixture {
+            kind: "opaque-edited",
+            bytes: edited.clone(),
+        },
+        Fixture {
+            kind: "opaque-edited-repeat",
+            bytes: edited,
+        },
+        Fixture {
+            kind: "schema-fit",
+            bytes: fit,
+        },
+        Fixture {
+            kind: "schema-drift",
+            bytes: drift,
+        },
+    ]);
+    Ok(result)
+}
+
 pub fn objects(size: usize, trial: u64) -> std::io::Result<Vec<Fixture>> {
     if !(64..=(16 << 20)).contains(&size) {
         return Err(std::io::Error::new(

@@ -29,6 +29,30 @@ pub enum Arm {
     Warm,
     Whole,
     Raw,
+    Combined,
+    #[serde(rename = "combined-cpu")]
+    CombinedCpu,
+    #[serde(rename = "whole-mixed")]
+    WholeMixed,
+}
+impl Arm {
+    pub fn is_combined(self) -> bool {
+        matches!(self, Self::Combined | Self::CombinedCpu)
+    }
+    pub fn is_mixed(self) -> bool {
+        self.is_combined() || self == Self::WholeMixed
+    }
+}
+pub fn parse_arm(value: &str) -> Result<Arm> {
+    match value {
+        "warm" => Ok(Arm::Warm),
+        "whole" => Ok(Arm::Whole),
+        "raw" => Ok(Arm::Raw),
+        "combined" => Ok(Arm::Combined),
+        "combined-cpu" => Ok(Arm::CombinedCpu),
+        "whole-mixed" => Ok(Arm::WholeMixed),
+        _ => Err("arm must be warm, whole, raw, combined, combined-cpu or whole-mixed".into()),
+    }
 }
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -133,6 +157,9 @@ impl Pair {
     pub fn provision(plan: Plan) -> Result<Self> {
         if !(64..=(16 << 20)).contains(&plan.size) {
             return Err("object size outside live profile".into());
+        }
+        if plan.arm.is_mixed() {
+            crate::fixtures::mixed_recipe(plan.size, plan.trial)?;
         }
         let now = now_ms()?;
         let authority = SigningKey::from_bytes(&rand::random());

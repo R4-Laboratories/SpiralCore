@@ -11,6 +11,18 @@ Current approved sequence: preserve local originals; establish origin/main; extr
 
 ## Current priority
 
+The [current Combined MVM integration](mvm-combined-results-2026-11-02.md) now
+carries the latest ternary/Kuramoto/CA, rolling warm cache and optional
+CPU-conscious selection through real one/two guest mailbox/vsock sessions.
+All 336 publications reopen exactly and 168 pass a separate keyless guest reboot.
+The large two-guest paid mixed session uses 41.92% fewer encrypted stream bytes,
+26.25% less measured endpoint partial CPU and 29.21% less elapsed than matched
+prepared whole-object zstd by three-trial paired medians. Schema CPU/time losses
+and small unrelated-object overhead remain explicit. This supersedes the frozen
+codec integration boundary of the older pilots below. The next deployment step
+is this current core across two reachable WAN hosts; production mailbox and
+transparent stream integration remain separate gates.
+
 The [actual MVM/vsock milestone](mvm-vsock-results-2026-10-31.md) now runs one
 Linux guest against a host endpoint and two guests under a small native HVF
 orchestrator. All 100 accepted objects reopen exactly; all 50 received by a second
