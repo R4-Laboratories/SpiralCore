@@ -1,0 +1,44 @@
+{
+  "source_revision": "4a8ec79c9b185c85407e9767653dbcc4af97bf7e",
+  "command": "/Users/casey.allard/spiralcore/local/unrelated-gateway-cpu-20261102/candidate-profile-before /Users/casey.allard/spiralcore/local/unrelated-gateway-cpu-20261102/stages-before",
+  "build_command": "cargo +1.97.1 build --locked --release --manifest-path crates/spiralcore-gateway/Cargo.toml --example candidate_profile",
+  "build_environment": {
+    "CARGO_TARGET_DIR": "/Users/casey.allard/spiralcore/target",
+    "CARGO_BUILD_JOBS": "2",
+    "CARGO_INCREMENTAL": "0"
+  },
+  "identities_and_toolchain_recorded_before_execution": true,
+  "identities": "profile-before-identities.sha256",
+  "toolchain": "profile-toolchain.txt",
+  "rows": 18,
+  "all_exact": true,
+  "fixture_parity": {
+    "reference": "docs/network/evidence/2026-11-02-candidate-cpu/linux-run/campaign",
+    "rows": 18,
+    "fields": [
+      "bytes",
+      "sha256",
+      "object_id"
+    ],
+    "passed": true
+  },
+  "opaque_cpu_medians_us": {
+    "near1m": {
+      "object_id": 3164,
+      "runtime": 183,
+      "schema_intermediate": 179,
+      "schema_zstd": 2378,
+      "sparse": 175,
+      "whole": 1283
+    },
+    "max-trace": {
+      "object_id": 43271,
+      "runtime": 2289,
+      "schema_intermediate": 2460,
+      "schema_zstd": 39110,
+      "sparse": 2273,
+      "whole": 18098
+    }
+  },
+  "scope": "Independent local fixed-order candidate stages, not additive and not a network/end-to-end speedup measurement. Fixture generation/loading/checks outside timers; setup separate; all outputs verified. No production change before this baseline."
+}

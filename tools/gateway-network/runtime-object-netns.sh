@@ -46,9 +46,10 @@ validate_registration() {
        .dose.total_operations==336 and
        .dose.operation_counts=={"send":276,"seed":12,"schema":24,"checkpoint":24} and
        .dose.mode_order_by_trial==[["whole-zstd","warm","runtime","combined"],["warm","runtime","combined","whole-zstd"],["runtime","combined","whole-zstd","warm"]]
-     elif .schema=="spiralcore.candidate-cpu.registration.v1" then
+     elif .schema=="spiralcore.candidate-cpu.registration.v1" or .schema=="spiralcore.unrelated-gateway-cpu.registration.v1" then
        .fixture_profile=="candidate-cpu" and .arms==["combined-before","combined-after","whole-zstd"] and
-       .baseline_revision=="4b8cb79fe5fca9e9527a2923924c887d9e7ddbf8" and
+       .baseline_revision==(if .schema=="spiralcore.candidate-cpu.registration.v1"
+         then "4b8cb79fe5fca9e9527a2923924c887d9e7ddbf8" else "4a8ec79c9b185c85407e9767653dbcc4af97bf7e" end) and
        .service_profile_by_arm=={"combined-before":"combined","combined-after":"combined","whole-zstd":"whole-zstd"} and
        .service_binary_by_arm=={"combined-before":"baseline","combined-after":"candidate","whole-zstd":"candidate"} and
        .dose.total_operations==264 and .dose.operation_counts=={"send":216,"schema":24,"checkpoint":24} and
@@ -151,7 +152,8 @@ if [ "$campaign_profile" = candidate-cpu ]; then
   after_sha=$(sha256sum "$service" | awk '{print $1}')
   [ "$before_sha" != "$after_sha" ] || { echo "baseline and candidate executable identities are identical" >&2; exit 1; }
   jq -n --arg before "$before_sha" --arg after "$after_sha" --arg source "$EXPECTED_SOURCE" \
-    '{baseline_revision:"4b8cb79fe5fca9e9527a2923924c887d9e7ddbf8",candidate_revision:$source,
+    --arg baseline "$(jq -r '.baseline_revision' "$registration")" \
+    '{baseline_revision:$baseline,candidate_revision:$source,
       baseline_sha256:$before,candidate_sha256:$after}' > "$out/service-binaries.json"
 fi
 uname -a > "$out/platform.txt"

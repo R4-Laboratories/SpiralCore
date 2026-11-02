@@ -1,0 +1,22 @@
+   Compiling spiralcore-runtime-analysis v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/tools/gateway-network/runtime-analysis)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.24s
+     Running unittests ../analyze-runtime-objects.rs (/Users/casey.allard/spiralcore/target/debug/deps/analyze_runtime_objects-79d4ff8fb32b2df3)
+
+running 1 test
+test tests::unrelated_policy_binds_current_baseline_without_reinterpreting_history ... FAILED
+
+failures:
+
+---- tests::unrelated_policy_binds_current_baseline_without_reinterpreting_history stdout ----
+
+thread 'tests::unrelated_policy_binds_current_baseline_without_reinterpreting_history' (8809541) panicked at ../analyze-runtime-objects.rs:1034:57:
+called `Result::unwrap()` on an `Err` value: "unknown campaign registration schema"
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    tests::unrelated_policy_binds_current_baseline_without_reinterpreting_history
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 8 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `--bin analyze_runtime_objects`

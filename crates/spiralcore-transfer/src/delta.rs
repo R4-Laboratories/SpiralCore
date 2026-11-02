@@ -6,6 +6,10 @@ use crate::{protocol::Reader, Error, Result, MAX_CHUNK, MAX_FRAME, MAX_OBJECT};
 mod sender_delta_checks;
 
 #[cfg(test)]
+#[path = "../tests/fixtures/unrelated_cpu_checks.rs"]
+mod unrelated_cpu_checks;
+
+#[cfg(test)]
 mod scan_tests {
     use super::*;
 
@@ -20,11 +24,6 @@ mod scan_tests {
                 }
                 assert_eq!(common_prefix(&a, &b), at);
                 assert_eq!(common_suffix(&a, &b), if at < n { n - at - 1 } else { n });
-                let mut unequal: Vec<u8> = a.iter().map(|x| x ^ 1).collect();
-                if at < n {
-                    unequal[at] = a[at];
-                }
-                assert_eq!(unequal_prefix(&a, &unequal), at);
             }
         }
     }
@@ -35,7 +34,7 @@ mod scan_tests {
             for byte in 0..=255u8 {
                 let a = vec![byte; n];
                 let b = vec![byte.wrapping_add(1); n + 3];
-                assert_eq!(unequal_prefix(&a, &b), n);
+                assert_eq!(next_copy_run(&a, &b, 0), None);
                 assert_eq!(common_prefix(&a, &b), 0);
                 assert_eq!(common_suffix(&a, &b), 0);
                 assert_eq!(common_prefix(&a, &a[..n / 2]), n / 2);
@@ -85,25 +84,22 @@ pub fn encode(base: &[u8], target: &[u8]) -> Result<Option<Recipe>> {
     let mut literal = 0;
     let common = base.len().min(target.len());
     while i < common && aligned.len() <= MAX_OPS {
-        i += unequal_prefix(&base[i..common], &target[i..common]);
-        if i == common {
-            break;
-        }
-        let start = i;
-        // Reuse the prefix already established above rather than scanning a
-        // full exact-repeat object twice. Later runs use the same bulk scan.
-        i += if i == 0 {
-            prefix
+        // Keep exact-prefix reuse; all other COPY candidates need at least 32
+        // equal bytes, so isolated equal bytes do not need separate visits.
+        let run = if i == 0 && prefix >= 32 {
+            Some((0, prefix))
         } else {
-            common_prefix(&base[i..common], &target[i..common])
+            next_copy_run(base, target, i)
         };
-        if i - start >= 32 {
-            if literal < start {
-                aligned.push(Op::Literal(literal, start - literal));
-            }
-            aligned.push(Op::Copy(start, i - start));
-            literal = i;
+        let Some((start, end)) = run else {
+            break;
+        };
+        if literal < start {
+            aligned.push(Op::Literal(literal, start - literal));
         }
+        aligned.push(Op::Copy(start, end - start));
+        literal = end;
+        i = end;
     }
     if literal < target.len() {
         aligned.push(Op::Literal(literal, target.len() - literal));
@@ -146,23 +142,36 @@ fn common_suffix(a: &[u8], b: &[u8]) -> usize {
     i
 }
 
-fn unequal_prefix(a: &[u8], b: &[u8]) -> usize {
+// Every 32-byte equal run contains an anchor at from+31+k*32. A mismatching
+// anchor rules out every such run crossing it. At an equal anchor, recover the
+// maximal run; the preceding mismatch (or from) bounds backward work to 31.
+// Short runs resume after their known mismatch. Thus no eligible run is skipped
+// or split, including unaligned runs and the final short tail.
+fn next_copy_run(a: &[u8], b: &[u8], from: usize) -> Option<(usize, usize)> {
     let n = a.len().min(b.len());
-    let mut i = 0;
-    while n - i >= 8 {
-        let x = u64::from_le_bytes(a[i..i + 8].try_into().unwrap())
-            ^ u64::from_le_bytes(b[i..i + 8].try_into().unwrap());
-        // Zero-byte detection answers only "any equal byte?"; borrow can mark
-        // extra positions, so locate the first actual equality scalarly below.
-        if x.wrapping_sub(0x0101_0101_0101_0101) & !x & 0x8080_8080_8080_8080 != 0 {
-            break;
+    let mut lower = from;
+    let mut anchor = lower.checked_add(31)?;
+    while anchor < n {
+        if a[anchor] != b[anchor] {
+            anchor = anchor.checked_add(32)?;
+            continue;
         }
-        i += 8;
+        let mut start = anchor;
+        let floor = lower.max(anchor - 31);
+        while start > floor && a[start - 1] == b[start - 1] {
+            start -= 1;
+        }
+        let end = anchor + 1 + common_prefix(&a[anchor + 1..n], &b[anchor + 1..n]);
+        if end - start >= 32 {
+            return Some((start, end));
+        }
+        if end == n {
+            return None;
+        }
+        lower = end + 1;
+        anchor = lower.checked_add(31)?;
     }
-    while i < n && a[i] != b[i] {
-        i += 1;
-    }
-    i
+    None
 }
 fn cost(r: &Recipe) -> usize {
     r.frames.iter().map(|b| b.len() + 128).sum()

@@ -1,4 +1,4 @@
-name: SpiralCore candidate CPU paired baseline and zstd
+name: SpiralCore unrelated CPU paired baseline and zstd
 on:
   pull_request:
     types: [opened, synchronize, reopened]
@@ -22,7 +22,7 @@ on:
       - 'crates/uor-r4-object-store/Cargo.*'
       - 'tools/gateway-network/runtime-object-netns.sh'
       - 'tools/gateway-network/runtime-object-infra-check.sh'
-      - 'docs/network/evidence/2026-11-02-candidate-cpu/network-registration.json'
+      - 'docs/network/evidence/2026-11-02-unrelated-gateway-cpu/network-registration.json'
       - '.github/workflows/spiralcore-candidate-cpu.yml'
 permissions:
   contents: read
@@ -36,7 +36,7 @@ jobs:
     timeout-minutes: 40
     env:
       EXPECTED_SOURCE: ${{ github.event.pull_request.head.sha }}
-      BASELINE_SOURCE: 4b8cb79fe5fca9e9527a2923924c887d9e7ddbf8
+      BASELINE_SOURCE: 4a8ec79c9b185c85407e9767653dbcc4af97bf7e
       CARGO_INCREMENTAL: 0
       CARGO_BUILD_JOBS: 2
       CARGO_TARGET_DIR: ${{ github.workspace }}/target
@@ -47,7 +47,7 @@ jobs:
           persist-credentials: false
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
-          ref: 4b8cb79fe5fca9e9527a2923924c887d9e7ddbf8
+          ref: 4a8ec79c9b185c85407e9767653dbcc4af97bf7e
           path: .baseline-source
           persist-credentials: false
       - name: Bind source and registered dose before setup
@@ -66,7 +66,7 @@ jobs:
           done > candidate-evidence/whole-control-identical.txt
           [[ -z "${RUSTFLAGS:-}${CARGO_ENCODED_RUSTFLAGS:-}${RUSTC_WRAPPER:-}${RUSTC_WORKSPACE_WRAPPER:-}${CARGO_BUILD_TARGET:-}" ]]
           [[ "$(df -Pk . | awk 'NR==2 {print $4}')" -ge 4194304 ]]
-          bash tools/gateway-network/runtime-object-infra-check.sh candidate-evidence/infra docs/network/evidence/2026-11-02-candidate-cpu/network-registration.json
+          bash tools/gateway-network/runtime-object-infra-check.sh candidate-evidence/infra docs/network/evidence/2026-11-02-unrelated-gateway-cpu/network-registration.json
           jq -n --arg source "$EXPECTED_SOURCE" --arg workflow "$GITHUB_WORKFLOW_SHA" --arg workflow_ref "$GITHUB_WORKFLOW_REF" \
             --arg run "$GITHUB_RUN_ID" --arg attempt "$GITHUB_RUN_ATTEMPT" \
             '{source:$source,workflow_sha:$workflow,workflow_ref:$workflow_ref,run_id:$run,run_attempt:$attempt,
@@ -76,7 +76,7 @@ jobs:
           jq -n '{toolchain:"1.97.1",profile:"release",locked:true,incremental:false,build_jobs:2,ambient_overrides:"refused before build",baseline_targets:"only spiralcore-gateway-object binary",target_directory:"shared dependency cache; baseline executable copied before candidate build",timing:"all baseline/current builds finish before campaign"}' > candidate-evidence/build-settings.json
           (cd .baseline-source; git ls-files -z -- crates/spiralcore-gateway crates/spiralcore-gateway-core crates/spiralcore-transfer crates/uor-r4-object-store | sort -z | xargs -0 sha256sum) > candidate-evidence/baseline-source-files.sha256
           git ls-files -z -- crates/spiralcore-gateway crates/spiralcore-gateway-core crates/spiralcore-transfer crates/uor-r4-object-store tools/gateway-network \
-            .github/workflows/spiralcore-candidate-cpu.yml docs/network/evidence/2026-11-02-candidate-cpu/network-registration.json \
+            .github/workflows/spiralcore-candidate-cpu.yml docs/network/evidence/2026-11-02-unrelated-gateway-cpu/network-registration.json \
             | sort -z | xargs -0 sha256sum > candidate-evidence/source-files.sha256
       - name: Install bounded runner dependencies
         shell: bash
@@ -114,7 +114,7 @@ jobs:
           bash tools/gateway-network/runtime-object-netns.sh run "$PWD/candidate-evidence/campaign" \
             "$PWD/candidate-evidence/frozen/after-service" "$PWD/candidate-evidence/frozen/spiralcore-gateway-probe" \
             "$PWD/candidate-evidence/frozen/object_fixtures" \
-            "$PWD/docs/network/evidence/2026-11-02-candidate-cpu/network-registration.json" "$PWD/candidate-evidence/frozen/before-service" 2>&1 | tee candidate-evidence/campaign.log
+            "$PWD/docs/network/evidence/2026-11-02-unrelated-gateway-cpu/network-registration.json" "$PWD/candidate-evidence/frozen/before-service" 2>&1 | tee candidate-evidence/campaign.log
           jq -e '.sessions==18 and .operations==264 and .object_deliveries==216 and .before_after_parity and .exact_reopened and .stores_removed and .capture_complete and .host_routes_unchanged' candidate-evidence/campaign/complete.json
           sha256sum -c candidate-evidence/binaries.sha256 > candidate-evidence/binaries-after.log
       - name: Seal available public evidence including failures
@@ -128,7 +128,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: spiralcore-candidate-cpu-${{ github.run_id }}-${{ github.event.pull_request.head.sha }}
+          name: spiralcore-unrelated-gateway-cpu-${{ github.run_id }}-${{ github.event.pull_request.head.sha }}
           path: candidate-evidence/
           retention-days: 14
           if-no-files-found: error
