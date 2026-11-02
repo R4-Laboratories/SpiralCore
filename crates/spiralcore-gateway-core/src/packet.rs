@@ -1,10 +1,12 @@
 //! Independent packet encoding; no cross-packet bases or delivery acknowledgments.
 use spiralcore_transfer::{hash, zstd_whole, Error, Id, Result};
 use std::{
+    borrow::Cow,
     collections::BTreeMap,
     net::{IpAddr, Ipv4Addr, Ipv6Addr},
     time::Duration,
 };
+use zstd::zstd_safe::{self, CCtx, CParameter};
 
 pub const MAX_IP_PACKET: usize = 1280;
 pub const HEADER_LEN: usize = 56;
@@ -22,6 +24,19 @@ const METADATA_CHARGE: usize = 256;
 pub enum PacketMode {
     Raw,
     Zstd,
+    FastZstd,
+    Adaptive,
+}
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+pub struct PacketEncoderCounters {
+    pub packets: u64,
+    pub compression_attempts: u64,
+    pub compressed_packets: u64,
+    pub raw_packets: u64,
+    pub adaptive_skips: u64,
+    pub reprobes: u64,
+    pub guard_probes: u64,
+    pub flow_evictions: u64,
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct PacketAddresses {
@@ -68,17 +83,202 @@ fn digest(packet: &[u8]) -> Id {
         &[&(packet.len() as u16).to_be_bytes(), packet],
     )
 }
+const FAST_WORKSPACE: usize = 2 * 1024 * 1024;
+const MAX_FLOWS: usize = 64;
+struct FastEncoder {
+    context: Option<CCtx<'static>>,
+    output: Vec<u8>,
+}
+impl FastEncoder {
+    fn new() -> Result<Self> {
+        let mut context = CCtx::try_create().ok_or(Error::Limit)?;
+        for parameter in [
+            CParameter::CompressionLevel(1),
+            CParameter::WindowLog(11),
+            CParameter::EnableLongDistanceMatching(false),
+            CParameter::NbWorkers(0),
+            CParameter::ContentSizeFlag(true),
+            CParameter::ChecksumFlag(true),
+            CParameter::DictIdFlag(false),
+        ] {
+            context
+                .set_parameter(parameter)
+                .map_err(|_| Error::Unsupported)?;
+        }
+        if context.sizeof() > FAST_WORKSPACE {
+            return Err(Error::Limit);
+        }
+        let mut output = Vec::new();
+        output
+            .try_reserve_exact(zstd_safe::compress_bound(MAX_IP_PACKET))
+            .map_err(|_| Error::Limit)?;
+        Ok(Self {
+            context: Some(context),
+            output,
+        })
+    }
+    fn encode(&mut self, packet: &[u8]) -> Result<&[u8]> {
+        let context = self.context.as_mut().ok_or(Error::Limit)?;
+        self.output.clear();
+        // compress2 starts an independent frame, retaining only parameters and
+        // workspace. No preceding packet is a reconstruction dependency.
+        let result = context.compress2(&mut self.output, packet);
+        if context.sizeof() > FAST_WORKSPACE {
+            self.context = None;
+            return Err(Error::Limit);
+        }
+        result.map_err(|_| Error::Malformed)?;
+        if zstd_safe::get_frame_content_size(&self.output).map_err(|_| Error::Malformed)?
+            != Some(packet.len() as u64)
+            || zstd_safe::find_frame_compressed_size(&self.output).map_err(|_| Error::Malformed)?
+                != self.output.len()
+        {
+            return Err(Error::Malformed);
+        }
+        Ok(&self.output)
+    }
+}
+enum Encoder {
+    Raw,
+    Legacy(zstd_whole::PreparedEncoder),
+    Fast(FastEncoder),
+}
+#[derive(PartialEq, Eq)]
+struct FlowKey {
+    source: IpAddr,
+    destination: IpAddr,
+    protocol: u8,
+    source_port: u16,
+    destination_port: u16,
+}
+struct FlowState {
+    key: FlowKey,
+    no_saving: u8,
+    skips: u8,
+}
+// Classification is advisory, after inspect_ip has validated the IP length.
+// Unrecognized L4 shapes always receive an actual compression attempt.
+fn flow_payload(packet: &[u8], addresses: PacketAddresses) -> Option<(FlowKey, &[u8])> {
+    let (protocol, offset) = match packet[0] >> 4 {
+        4 if u16::from_be_bytes([packet[6], packet[7]]) & 0x3fff == 0 => {
+            (packet[9], usize::from(packet[0] & 15) * 4)
+        }
+        6 => (packet[6], 40),
+        _ => return None,
+    };
+    let transport = packet.get(offset..)?;
+    let payload = match protocol {
+        6 if transport.len() >= 20 && transport[13] & 7 == 0 => {
+            let header = usize::from(transport[12] >> 4) * 4;
+            if !(20..=60).contains(&header) {
+                return None;
+            }
+            transport.get(header..)?
+        }
+        17 if transport.len() >= 8
+            && usize::from(u16::from_be_bytes([transport[4], transport[5]])) == transport.len() =>
+        {
+            &transport[8..]
+        }
+        _ => return None,
+    };
+    if payload.len() < 256 {
+        return None;
+    }
+    Some((
+        FlowKey {
+            source: addresses.source,
+            destination: addresses.destination,
+            protocol,
+            source_port: u16::from_be_bytes([transport[0], transport[1]]),
+            destination_port: u16::from_be_bytes([transport[2], transport[3]]),
+        },
+        payload,
+    ))
+}
+fn repeated_word(payload: &[u8]) -> bool {
+    let mut words = [0u64; 128];
+    let mut occupied = [false; 128];
+    for window in payload.windows(8).step_by(4) {
+        let mut bytes = [0; 8];
+        bytes.copy_from_slice(window);
+        let word = u64::from_le_bytes(bytes);
+        let slot = (word.wrapping_mul(0x9e37_79b9_7f4a_7c15) >> 57) as usize;
+        if occupied[slot] && words[slot] == word {
+            return true;
+        }
+        words[slot] = word;
+        occupied[slot] = true;
+    }
+    false
+}
 pub struct PacketEncoder {
-    encoder: Option<zstd_whole::PreparedEncoder>,
+    encoder: Encoder,
+    adaptive: bool,
+    flows: Vec<FlowState>,
+    counters: PacketEncoderCounters,
 }
 impl PacketEncoder {
     pub fn new(mode: PacketMode) -> Result<Self> {
+        let mut flows = Vec::new();
+        if mode == PacketMode::Adaptive {
+            flows
+                .try_reserve_exact(MAX_FLOWS)
+                .map_err(|_| Error::Limit)?;
+        }
         Ok(Self {
             encoder: match mode {
-                PacketMode::Raw => None,
-                PacketMode::Zstd => Some(zstd_whole::PreparedEncoder::new()?),
+                PacketMode::Raw => Encoder::Raw,
+                PacketMode::Zstd => Encoder::Legacy(zstd_whole::PreparedEncoder::new()?),
+                PacketMode::FastZstd | PacketMode::Adaptive => Encoder::Fast(FastEncoder::new()?),
             },
+            adaptive: mode == PacketMode::Adaptive,
+            flows,
+            counters: PacketEncoderCounters::default(),
         })
+    }
+    pub fn counters(&self) -> PacketEncoderCounters {
+        self.counters
+    }
+    fn decision(&mut self, packet: &[u8], addresses: PacketAddresses) -> (bool, Option<usize>) {
+        if !self.adaptive {
+            return (!matches!(self.encoder, Encoder::Raw), None);
+        }
+        let Some((key, payload)) = flow_payload(packet, addresses) else {
+            return (true, None);
+        };
+        let index = match self.flows.iter().position(|flow| flow.key == key) {
+            Some(index) => index,
+            None => {
+                if self.flows.len() == MAX_FLOWS {
+                    self.flows.remove(0);
+                    self.counters.flow_evictions = self.counters.flow_evictions.saturating_add(1);
+                }
+                self.flows.push(FlowState {
+                    key,
+                    no_saving: 0,
+                    skips: 0,
+                });
+                self.flows.len() - 1
+            }
+        };
+        let flow = &mut self.flows[index];
+        if flow.no_saving < 2 {
+            return (true, Some(index));
+        }
+        if repeated_word(payload) {
+            self.counters.guard_probes = self.counters.guard_probes.saturating_add(1);
+            flow.skips = 0;
+            return (true, Some(index));
+        }
+        if flow.skips == 7 {
+            self.counters.reprobes = self.counters.reprobes.saturating_add(1);
+            flow.skips = 0;
+            return (true, Some(index));
+        }
+        flow.skips += 1;
+        self.counters.adaptive_skips = self.counters.adaptive_skips.saturating_add(1);
+        (false, Some(index))
     }
     pub fn encode(
         &mut self,
@@ -86,16 +286,23 @@ impl PacketEncoder {
         sequence: u64,
         max_datagram: usize,
     ) -> Result<Vec<Vec<u8>>> {
-        inspect_ip(packet)?;
+        let addresses = inspect_ip(packet)?;
         if max_datagram < MIN_DATAGRAM {
             return Err(Error::Limit);
         }
         let capacity = max_datagram.min(MAX_DATAGRAM) - HEADER_LEN;
-        let compressed = self
-            .encoder
-            .as_mut()
-            .map(|e| e.encode(packet))
-            .transpose()?;
+        let (attempt, flow_index) = self.decision(packet, addresses);
+        let compressed = if attempt {
+            self.counters.compression_attempts =
+                self.counters.compression_attempts.saturating_add(1);
+            match &mut self.encoder {
+                Encoder::Raw => None,
+                Encoder::Legacy(encoder) => Some(Cow::Owned(encoder.encode(packet)?)),
+                Encoder::Fast(encoder) => Some(Cow::Borrowed(encoder.encode(packet)?)),
+            }
+        } else {
+            None
+        };
         let (codec, body) = match compressed.as_deref() {
             Some(bytes) if bytes.len() < packet.len() => (1u8, bytes),
             _ => (0u8, packet),
@@ -116,6 +323,23 @@ impl PacketEncoder {
             frame.extend_from_slice(&digest);
             frame.extend_from_slice(chunk);
             frames.push(frame);
+        }
+        if attempt {
+            if let Some(index) = flow_index {
+                let flow = &mut self.flows[index];
+                flow.no_saving = if codec == 1 {
+                    0
+                } else {
+                    (flow.no_saving + 1).min(2)
+                };
+                flow.skips = 0;
+            }
+        }
+        self.counters.packets = self.counters.packets.saturating_add(1);
+        if codec == 1 {
+            self.counters.compressed_packets = self.counters.compressed_packets.saturating_add(1);
+        } else {
+            self.counters.raw_packets = self.counters.raw_packets.saturating_add(1);
         }
         Ok(frames)
     }

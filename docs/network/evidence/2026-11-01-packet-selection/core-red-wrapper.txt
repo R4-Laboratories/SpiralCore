@@ -1,0 +1,5 @@
+The first focused RED compiler output is retained in core-red.txt. Its shell
+wrapper then failed with `zsh:1: read-only variable: status` and returned exit 1;
+it did not write a compiler exit receipt. The command was immediately rerun with
+a task-specific variable. core-red-02.txt and core-red-02.exit are the authoritative
+observed missing-API RED result (exit 101), before packet.rs implementation.

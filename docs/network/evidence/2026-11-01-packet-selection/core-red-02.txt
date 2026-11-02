@@ -1,0 +1,111 @@
+   Compiling spiralcore-gateway-core v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-gateway-core)
+error[E0599]: no variant, associated function, or constant named `FastZstd` found for enum `PacketMode` in the current scope
+  --> tests/packet_selection.rs:43:21
+   |
+43 |         PacketMode::FastZstd,
+   |                     ^^^^^^^^ variant, associated function, or constant not found in `PacketMode`
+
+error[E0599]: no variant, associated function, or constant named `Adaptive` found for enum `PacketMode` in the current scope
+  --> tests/packet_selection.rs:44:21
+   |
+44 |         PacketMode::Adaptive,
+   |                     ^^^^^^^^ variant, associated function, or constant not found in `PacketMode`
+
+error[E0599]: no method named `counters` found for struct `PacketEncoder` in the current scope
+  --> tests/packet_selection.rs:50:32
+   |
+50 |         let counters = encoder.counters();
+   |                                ^^^^^^^^ method not found in `PacketEncoder`
+
+error[E0599]: no variant, associated function, or constant named `Adaptive` found for enum `PacketMode` in the current scope
+  --> tests/packet_selection.rs:55:39
+   |
+55 |         } else if mode != PacketMode::Adaptive {
+   |                                       ^^^^^^^^ variant, associated function, or constant not found in `PacketMode`
+
+error[E0599]: no variant, associated function, or constant named `Adaptive` found for enum `PacketMode` in the current scope
+  --> tests/packet_selection.rs:62:55
+   |
+62 |     let mut adaptive = PacketEncoder::new(PacketMode::Adaptive).unwrap();
+   |                                                       ^^^^^^^^ variant, associated function, or constant not found in `PacketMode`
+
+error[E0599]: no variant, associated function, or constant named `FastZstd` found for enum `PacketMode` in the current scope
+  --> tests/packet_selection.rs:63:51
+   |
+63 |     let mut fast = PacketEncoder::new(PacketMode::FastZstd).unwrap();
+   |                                                   ^^^^^^^^ variant, associated function, or constant not found in `PacketMode`
+
+error[E0599]: no method named `counters` found for struct `PacketEncoder` in the current scope
+  --> tests/packet_selection.rs:68:22
+   |
+68 |     let c = adaptive.counters();
+   |                      ^^^^^^^^ method not found in `PacketEncoder`
+
+error[E0599]: no method named `counters` found for struct `PacketEncoder` in the current scope
+  --> tests/packet_selection.rs:77:25
+   |
+77 |     assert_eq!(adaptive.counters().guard_probes, 1);
+   |                         ^^^^^^^^ method not found in `PacketEncoder`
+
+error[E0599]: no method named `counters` found for struct `PacketEncoder` in the current scope
+  --> tests/packet_selection.rs:78:25
+   |
+78 |     assert_eq!(adaptive.counters().compressed_packets, 1);
+   |                         ^^^^^^^^ method not found in `PacketEncoder`
+
+error[E0599]: no variant, associated function, or constant named `Adaptive` found for enum `PacketMode` in the current scope
+  --> tests/packet_selection.rs:82:55
+   |
+82 |     let mut adaptive = PacketEncoder::new(PacketMode::Adaptive).unwrap();
+   |                                                       ^^^^^^^^ variant, associated function, or constant not found in `PacketMode`
+
+error[E0599]: no variant, associated function, or constant named `FastZstd` found for enum `PacketMode` in the current scope
+  --> tests/packet_selection.rs:83:51
+   |
+83 |     let mut fast = PacketEncoder::new(PacketMode::FastZstd).unwrap();
+   |                                                   ^^^^^^^^ variant, associated function, or constant not found in `PacketMode`
+
+error[E0599]: no method named `counters` found for struct `PacketEncoder` in the current scope
+  --> tests/packet_selection.rs:97:25
+   |
+97 |     assert_eq!(adaptive.counters().reprobes, 1);
+   |                         ^^^^^^^^ method not found in `PacketEncoder`
+
+error[E0599]: no method named `counters` found for struct `PacketEncoder` in the current scope
+  --> tests/packet_selection.rs:98:25
+   |
+98 |     assert_eq!(adaptive.counters().compressed_packets, 1);
+   |                         ^^^^^^^^ method not found in `PacketEncoder`
+
+error[E0599]: no method named `counters` found for struct `PacketEncoder` in the current scope
+  --> tests/packet_selection.rs:99:25
+   |
+99 |     assert_eq!(adaptive.counters().adaptive_skips, 7);
+   |                         ^^^^^^^^ method not found in `PacketEncoder`
+
+error[E0599]: no variant, associated function, or constant named `Adaptive` found for enum `PacketMode` in the current scope
+   --> tests/packet_selection.rs:103:55
+    |
+103 |     let mut adaptive = PacketEncoder::new(PacketMode::Adaptive).unwrap();
+    |                                                       ^^^^^^^^ variant, associated function, or constant not found in `PacketMode`
+
+error[E0599]: no method named `counters` found for struct `PacketEncoder` in the current scope
+   --> tests/packet_selection.rs:107:25
+    |
+107 |     assert_eq!(adaptive.counters().flow_evictions, 1);
+    |                         ^^^^^^^^ method not found in `PacketEncoder`
+
+error[E0599]: no method named `counters` found for struct `PacketEncoder` in the current scope
+   --> tests/packet_selection.rs:113:25
+    |
+113 |     assert_eq!(adaptive.counters().compression_attempts, 77);
+    |                         ^^^^^^^^ method not found in `PacketEncoder`
+
+error[E0599]: no method named `counters` found for struct `PacketEncoder` in the current scope
+   --> tests/packet_selection.rs:114:25
+    |
+114 |     assert_eq!(adaptive.counters().adaptive_skips, 0);
+    |                         ^^^^^^^^ method not found in `PacketEncoder`
+
+For more information about this error, try `rustc --explain E0599`.
+error: could not compile `spiralcore-gateway-core` (test "packet_selection") due to 18 previous errors

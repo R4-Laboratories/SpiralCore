@@ -27,7 +27,7 @@ pub struct Config {
 impl Config {
     pub fn validate(&self) -> Result<()> {
         if !["listen", "connect"].contains(&self.role.as_str())
-            || !["raw", "zstd"].contains(&self.mode.as_str())
+            || !["raw", "zstd", "fast-zstd", "adaptive"].contains(&self.mode.as_str())
             || !(1..=3600).contains(&self.duration_secs)
             || self.tun.is_empty()
             || self.tun.len() > 15
@@ -110,10 +110,12 @@ pub async fn run(config: Config) -> Result<()> {
         peer_leaf_sha256: Sha256::digest(read(&config.peer_certificate)?).into(),
     };
     let tun = Tun::open(&config.tun)?;
-    let mut encoder = PacketEncoder::new(if config.mode == "raw" {
-        PacketMode::Raw
-    } else {
-        PacketMode::Zstd
+    let mut encoder = PacketEncoder::new(match config.mode.as_str() {
+        "raw" => PacketMode::Raw,
+        "zstd" => PacketMode::Zstd,
+        "fast-zstd" => PacketMode::FastZstd,
+        "adaptive" => PacketMode::Adaptive,
+        _ => return Err(invalid("invalid packet profile").into()),
     })?;
     let mut decoder = PacketDecoder::new()?;
     let deadline = Instant::now() + Duration::from_secs(20);
@@ -178,9 +180,10 @@ pub async fn run(config: Config) -> Result<()> {
  }} Ok(()) }.await;
     let u = peer.udp_counters();
     let p = decoder.counters();
+    let e = encoder.counters();
     write_json(
         &config.stats_path,
-        &serde_json::json!({"version":1,"mode":config.mode,"status":if result.is_ok(){"ok"}else{"error"},"error":result.as_ref().err().map(ToString::to_string),"setup_wall_us":setup_wall_us,"setup_cpu_us":setup_cpu_us,"wall_us":start.elapsed().as_micros() as u64,"process_cpu_us":cpu_us()? - cpu,"encode_cpu_us":encode_cpu,"decode_cpu_us":decode_cpu,"input_ip_bytes":input_bytes,"output_ip_bytes":output_bytes,"framed_sent_bytes":framed_sent,"framed_received_bytes":framed_received,"denied_packets":denied,"invalid_frames":invalid_frames,"accepted_packets":p.accepted_packets,"expired_packets":p.expired_packets,"capacity_drops":p.capacity_drops,"replay_drops":p.replay_drops,"udp_sent_bytes":u.sent_bytes,"udp_received_bytes":u.received_bytes,"udp_sent_datagrams":u.sent_datagrams,"udp_received_datagrams":u.received_datagrams,"counter_interval":"startup through snapshot before close; capture includes close separately"}),
+        &serde_json::json!({"version":1,"mode":config.mode,"status":if result.is_ok(){"ok"}else{"error"},"error":result.as_ref().err().map(ToString::to_string),"setup_wall_us":setup_wall_us,"setup_cpu_us":setup_cpu_us,"wall_us":start.elapsed().as_micros() as u64,"process_cpu_us":cpu_us()? - cpu,"encode_cpu_us":encode_cpu,"decode_cpu_us":decode_cpu,"input_ip_bytes":input_bytes,"output_ip_bytes":output_bytes,"framed_sent_bytes":framed_sent,"framed_received_bytes":framed_received,"denied_packets":denied,"invalid_frames":invalid_frames,"accepted_packets":p.accepted_packets,"expired_packets":p.expired_packets,"capacity_drops":p.capacity_drops,"replay_drops":p.replay_drops,"udp_sent_bytes":u.sent_bytes,"udp_received_bytes":u.received_bytes,"udp_sent_datagrams":u.sent_datagrams,"udp_received_datagrams":u.received_datagrams,"encoder":{ "packets":e.packets,"compression_attempts":e.compression_attempts,"compressed_packets":e.compressed_packets,"raw_packets":e.raw_packets,"adaptive_skips":e.adaptive_skips,"reprobes":e.reprobes,"guard_probes":e.guard_probes,"flow_evictions":e.flow_evictions },"counter_interval":"startup through snapshot before close; capture includes close separately"}),
     )?;
     peer.close();
     result

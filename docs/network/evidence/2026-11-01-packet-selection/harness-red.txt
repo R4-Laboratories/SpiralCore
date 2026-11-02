@@ -1,0 +1,36 @@
+   Compiling spiralcore-gateway-core v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-gateway-core)
+warning: unused import: `super::*`
+ --> examples/packet_profile.rs:6:9
+  |
+6 |     use super::*;
+  |         ^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+error[E0425]: cannot find function `vectors` in this scope
+  --> examples/packet_profile.rs:14:35
+   |
+14 |                     let packets = vectors(ipv6, size, workload, 16);
+   |                                   ^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `vectors` in this scope
+  --> examples/packet_profile.rs:15:41
+   |
+15 |                     assert_eq!(packets, vectors(ipv6, size, workload, 16));
+   |                                         ^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `vectors` in this scope
+  --> examples/packet_profile.rs:27:23
+   |
+27 |         let packets = vectors(true, 1280, "opaque", 16);
+   |                       ^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `packet_row` in this scope
+  --> examples/packet_profile.rs:28:19
+   |
+28 |         let row = packet_row(PacketMode::Raw, &packets, 700).unwrap();
+   |                   ^^^^^^^^^^ not found in this scope
+
+For more information about this error, try `rustc --explain E0425`.
+warning: `spiralcore-gateway-core` (example "packet_profile" test) generated 1 warning
+error: could not compile `spiralcore-gateway-core` (example "packet_profile" test) due to 4 previous errors; 1 warning emitted

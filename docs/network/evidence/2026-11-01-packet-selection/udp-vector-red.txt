@@ -1,0 +1,22 @@
+   Compiling spiralcore-gateway-core v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-gateway-core)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.75s
+     Running unittests examples/packet_profile.rs (/Users/casey.allard/spiralcore/target/debug/examples/packet_profile-108578444363bd5a)
+
+running 1 test
+test tests::vectors_are_repeatable_valid_ip_and_change_only_as_requested ... FAILED
+
+failures:
+
+---- tests::vectors_are_repeatable_valid_ip_and_change_only_as_requested stdout ----
+
+thread 'tests::vectors_are_repeatable_valid_ip_and_change_only_as_requested' (5956852) panicked at examples/packet_profile.rs:285:21:
+assertion failed: packets.iter().all(|packet| packet[if ipv6 { 6 } else { 9 }] == 17)
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    tests::vectors_are_repeatable_valid_ip_and_change_only_as_requested
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 1 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `--example packet_profile`

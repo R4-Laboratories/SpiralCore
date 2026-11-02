@@ -1,0 +1,34 @@
+{
+  "schema": "spiralcore.packet-selection.congestion-amendment.v1",
+  "status": "AMENDED_BEFORE_ANY_NETWORK_RUN",
+  "rationale": "No configured random loss does not imply zero finite-queue congestion loss. Reassembly expiry may follow missing QUIC datagrams while TCP retransmits to exact application completion. Rejecting all such sessions would hide legitimate byte/time/CPU costs.",
+  "accepted_and_reported": [
+    "Nonnegative qdisc congestion-drop counts",
+    "Nonnegative reassembly-expiry counts",
+    "Replay/order counters retained in raw and delivery diagnostics"
+  ],
+  "still_required": [
+    "Exact application bytes, lengths and digest receipts",
+    "Zero capture-kernel drops and complete parsed packet count",
+    "No malformed/denied/auth failures",
+    "No reassembly capacity exhaustion: separately labeled resource limitation",
+    "Measured profile calibration within preregistered tolerance",
+    "Drained qdisc queue, unchanged host routes and frozen identities"
+  ],
+  "implementation_owner_checks": {
+    "path": "infra-congestion/result.json",
+    "registration_positive": 1,
+    "registration_negatives": 9,
+    "congestion_positives": 2,
+    "statistics_negatives": 5,
+    "shellcheck_exit": 0
+  },
+  "current_sha256": {
+    "tools/gateway-network/packet-selection-netns.sh": "a8acd94ba3edd17a278c2f4d147b192b14886863baf13497c7500d34bc57ab39",
+    "tools/gateway-network/packet-selection-infra-check.sh": "40118e82c5f806734785972efa2eba76b68bcc62f387a1488d0c2a2ac2cb0967",
+    "network-registration.json": "57769ad859a866cdc8fc001b4f87dee7b426b1cd8ab5064bd8d12942599753ee",
+    "network-contract.md": "6bee5485462d9849ede0623d0a3ccfff001879be998d1f1c29235732ee08aa0a"
+  },
+  "launch_ready": false,
+  "runtime_claim": "NOT_RUN"
+}

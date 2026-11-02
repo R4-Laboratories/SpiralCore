@@ -1,0 +1,47 @@
+{
+  "schema": "spiralcore.packet-selection.service-measurement-review.v1",
+  "verdict": "PASS_FOR_SERVICE_INTEGRATION",
+  "independence": "Reviewer authored the network harness but did not author the reviewed Rust service, its tests or the TCP sequence probe. This receipt reviews only cross-author service wiring and measurement boundaries, not the reviewer's own harness.",
+  "source_sha256": {
+    "crates/spiralcore-gateway/src/service.rs": "fe49db73721e0e311c9c7556d946ca416873154fec8e97247eabb3e5bb6bbb83",
+    "crates/spiralcore-gateway/tests/service.rs": "f60c28c32d1fe219cd0a5a455f92ff9116da2e276c48202f324d3af02047e503"
+  },
+  "findings": [],
+  "verified": [
+    {
+      "reference": "crates/spiralcore-gateway/src/service.rs:28",
+      "finding": "Four explicit accepted config spellings; unknown aliases fail. New test covers all four accepted profiles and four rejected spellings."
+    },
+    {
+      "reference": "crates/spiralcore-gateway/src/service.rs:113",
+      "finding": "Raw, Zstd, FastZstd and Adaptive map to the corresponding core mode. One encoder is prepared before authentication and retained through the session; legacy Zstd mapping is preserved."
+    },
+    {
+      "reference": "crates/spiralcore-gateway/src/service.rs:159",
+      "finding": "Outbound policy remains before encoding and inbound policy before TUN injection. The change does not alter mutual TLS setup, peer pin or clean-close classification."
+    },
+    {
+      "reference": "crates/spiralcore-gateway/src/service.rs:160",
+      "finding": "Codec CPU spans encoding/decoding and is a subset of whole-process CPU. Packet/frame counters have distinct scopes; framed_sent increments after accepted send call. Capture remains the authority for full wire totals including post-snapshot close."
+    },
+    {
+      "reference": "crates/spiralcore-gateway/src/service.rs:181",
+      "finding": "All eight encoder counters are serialized from one final snapshot; field names match the harness. Modes require packets=compressed+raw, with attempts/skips separately checked."
+    },
+    {
+      "reference": "crates/spiralcore-gateway-core/src/packet.rs:455",
+      "finding": "Expired partial assemblies increment expired_packets without a malformed-frame error. Capacity exhaustion increments capacity_drops and returns Error::Limit, also counted in service invalid_frames; report this overlap rather than calling it cryptographic corruption."
+    }
+  ],
+  "evidence": {
+    "existing_gateway_test_exit": 0,
+    "existing_gateway_tests": 13,
+    "path": "gateway-green.txt",
+    "new_cargo_runs": 0
+  },
+  "limitations": [
+    "Static service review is not Linux execution, WAN qualification or evidence of an adaptive win.",
+    "Per-object TCP report emission timing was independently flagged and corrected by the parent. Independent reviewer mvm_tests subsequently passed frozen probe 18bdc36a479f798a11631df28d3049c797aa3dad8656301be5e798a690f472f0 after observed RED and 3/3 GREEN; see infra-final-readiness.json. No repeated Cargo run by this reviewer.",
+    "This receipt does not independently approve the reviewer's own harness; the parent reviewed infrastructure separately."
+  ]
+}

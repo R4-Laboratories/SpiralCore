@@ -1,0 +1,23 @@
+   Compiling spiralcore-gateway-core v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-gateway-core)
+   Compiling spiralcore-gateway v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-gateway)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.37s
+     Running tests/probe.rs (/Users/casey.allard/spiralcore/target/debug/deps/probe-a87ef7897e8b1930)
+
+running 1 test
+test sequence_defers_report_io_until_all_exchanges_finish ... FAILED
+
+failures:
+
+---- sequence_defers_report_io_until_all_exchanges_finish stdout ----
+
+thread 'sequence_defers_report_io_until_all_exchanges_finish' (6008065) panicked at tests/probe.rs:128:5:
+report I/O ran between timed exchanges
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    sequence_defers_report_io_until_all_exchanges_finish
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 2 filtered out; finished in 0.29s
+
+error: test failed, to rerun pass `--test probe`

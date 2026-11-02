@@ -59,6 +59,15 @@ UDP path, but the namespace demonstration alone is not a WAN measurement.
 ```
 
 Use `connect` at the other end and swap local/peer addressing and credentials.
+The explicit `mode` values are `raw`, `zstd` (the unchanged level-3 whole-object
+profile), `fast-zstd` (prepared level-1 packet profile), and experimental `adaptive`
+(the fast profile with bounded per-flow compression skipping). Both new modes use
+the existing packet wire format and exact decoder. Adaptive may miss compression
+opportunities after content changes; it is opt-in and is not universally best for
+bytes. The [packet design](../../docs/specs/2026-11-01-packet-selection.md) and
+[microbenchmark record](../../docs/network/evidence/2026-11-01-packet-selection/microbenchmark-results.md)
+document the measured tradeoffs, including the adverse byte regression.
+
 Certificates must chain to the configured private CA, permit the appropriate TLS
 usage and match the configured server name. Each side additionally pins the
 other's exact leaf certificate. Private keys are DER PKCS#8 or another rustls

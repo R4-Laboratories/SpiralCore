@@ -25,9 +25,20 @@ fn report(
 ) -> Result<()> {
     let wall_us = wall.elapsed().as_micros() as u64;
     let process_cpu_us = m::cpu_us()? - cpu;
+    write_report(path, protocol, role, data, (wall_us, process_cpu_us), extra)
+}
+fn write_report(
+    path: &str,
+    protocol: &str,
+    role: &str,
+    data: &[u8],
+    timing: (u64, u64),
+    extra: serde_json::Value,
+) -> Result<()> {
+    let (wall_us, process_cpu_us) = timing;
     m::write_json(
         Path::new(path),
-        &serde_json::json!({"version":1,"protocol":protocol,"role":role,"exact":true,"application_bytes":data.len(),"sha256":m::digest(data),"wall_us":wall_us,"process_cpu_us":process_cpu_us,"timing":"fixture loaded before timer; transfer and exact verification included; TCP client connect included, server bind/accept excluded; UDP server includes wait for first packet; final report hashing and serialization excluded","detail":extra}),
+        &serde_json::json!({"version":1,"protocol":protocol,"role":role,"exact":true,"application_bytes":data.len(),"sha256":m::digest(data),"wall_us":wall_us,"process_cpu_us":process_cpu_us,"timing":"fixture loaded before timer; transfer and exact verification included; TCP connect inclusion follows detail.connect_included, server bind/accept excluded; UDP server includes wait for first packet; final report hashing and serialization excluded","detail":extra}),
     )
 }
 fn tcp(role: &str, addr: &str, path: &str, out: &str) -> Result<()> {
@@ -45,6 +56,18 @@ fn tcp(role: &str, addr: &str, path: &str, out: &str) -> Result<()> {
     stream.set_read_timeout(Some(Duration::from_secs(30)))?;
     stream.set_write_timeout(Some(Duration::from_secs(30)))?;
     stream.set_nodelay(true)?;
+    tcp_exchange(&mut stream, &data, server)?;
+    report(
+        out,
+        "tcp",
+        role,
+        &data,
+        wall,
+        cpu,
+        serde_json::json!({"receipt_bytes":32,"connect_included":!server}),
+    )
+}
+fn tcp_exchange(stream: &mut TcpStream, data: &[u8], server: bool) -> Result<()> {
     if server {
         let mut length = [0; 8];
         stream.read_exact(&mut length)?;
@@ -66,22 +89,73 @@ fn tcp(role: &str, addr: &str, path: &str, out: &str) -> Result<()> {
         stream.write_all(&hash.finalize())?;
     } else {
         stream.write_all(&(data.len() as u64).to_be_bytes())?;
-        stream.write_all(&data)?;
+        stream.write_all(data)?;
         let mut receipt = [0; 32];
         stream.read_exact(&mut receipt)?;
-        if receipt[..] != Sha256::digest(&data)[..] {
+        if receipt[..] != Sha256::digest(data)[..] {
             return Err(invalid("TCP receipt mismatch").into());
         }
     }
-    report(
-        out,
-        "tcp",
-        role,
-        &data,
-        wall,
-        cpu,
-        serde_json::json!({"receipt_bytes":32,"connect_included":!server}),
-    )
+    Ok(())
+}
+fn tcp_sequence(
+    role: &str,
+    addr: &str,
+    pattern_path: &str,
+    opaque_path: &str,
+    prefix: &str,
+) -> Result<()> {
+    let pattern = fixture_file(pattern_path)?;
+    let opaque = fixture_file(opaque_path)?;
+    let mut reports = Vec::with_capacity(3);
+    let server = role == "tcp-sequence-server";
+    let (mut stream, first_wall, first_cpu) = if server {
+        let stream = TcpListener::bind(addr)?.accept()?.0;
+        (stream, Instant::now(), m::cpu_us()?)
+    } else {
+        let wall = Instant::now();
+        let cpu = m::cpu_us()?;
+        (
+            TcpStream::connect_timeout(&addr.parse()?, Duration::from_secs(15))?,
+            wall,
+            cpu,
+        )
+    };
+    stream.set_read_timeout(Some(Duration::from_secs(30)))?;
+    stream.set_write_timeout(Some(Duration::from_secs(30)))?;
+    stream.set_nodelay(true)?;
+    let local = stream.local_addr()?.to_string();
+    let peer = stream.peer_addr()?.to_string();
+    for (index, (name, data)) in [
+        ("pattern-before", &pattern),
+        ("opaque", &opaque),
+        ("pattern-after", &pattern),
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let (wall, cpu) = if index == 0 {
+            (first_wall, first_cpu)
+        } else {
+            (Instant::now(), m::cpu_us()?)
+        };
+        tcp_exchange(&mut stream, data, server)?;
+        // Freeze the completed interval now. Hashing, JSON construction and
+        // output I/O must not spill into the other peer's next transfer.
+        let timing = (wall.elapsed().as_micros() as u64, m::cpu_us()? - cpu);
+        reports.push((index, name, data, timing));
+    }
+    for (index, name, data, timing) in reports {
+        write_report(
+            &format!("{prefix}-{name}.json"),
+            "tcp",
+            role,
+            data,
+            timing,
+            serde_json::json!({"receipt_bytes":32,"connect_included":!server && index==0,"sequence_index":index,"same_connection":true,"local_address":local,"peer_address":peer,"reports_emitted_after_sequence":true}),
+        )?;
+    }
+    Ok(())
 }
 fn udp(role: &str, addr: &str, path: &str, out: &str) -> Result<()> {
     let data = fixture_file(path)?;
@@ -222,6 +296,7 @@ fn main() -> Result<()> {
  Some("fixture") if a.len()==6=>{let bytes=m::fixture(a[3].parse()?,&a[4],a[5].parse()?)?;std::fs::write(&a[2],&bytes)?;println!("{}",serde_json::json!({"bytes":bytes.len(),"sha256":m::digest(&bytes)}));Ok(())},
  Some("pcap-summary") if a.len()==4=>{let len=std::fs::metadata(&a[2])?.len();if len>128*1024*1024{return Err(invalid("pcap size cap").into());}m::write_json(Path::new(&a[3]),&m::summarize_pcap(&std::fs::read(&a[2])?)?)},
  Some("tcp-server"|"tcp-client") if a.len()==5=>tcp(&a[1],&a[2],&a[3],&a[4]),
+ Some("tcp-sequence-server"|"tcp-sequence-client") if a.len()==6=>tcp_sequence(&a[1],&a[2],&a[3],&a[4],&a[5]),
  Some("udp-server"|"udp-client") if a.len()==5=>udp(&a[1],&a[2],&a[3],&a[4]),
- _=>Err(invalid("usage: fixture PATH SIZE pattern|opaque SEED | tcp-server/tcp-client/udp-server/udp-client ADDR FIXTURE OUT.json | pcap-summary IN.pcap OUT.json").into())}
+ _=>Err(invalid("usage: fixture PATH SIZE pattern|opaque SEED | tcp-server/tcp-client/udp-server/udp-client ADDR FIXTURE OUT.json | tcp-sequence-server/tcp-sequence-client ADDR PATTERN OPAQUE OUT_PREFIX | pcap-summary IN.pcap OUT.json").into())}
 }
