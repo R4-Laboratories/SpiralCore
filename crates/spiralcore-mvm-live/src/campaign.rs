@@ -7,7 +7,7 @@ use crate::{
 use cpu_time::ProcessTime;
 use mvm_core::mailbox::transport::CancellationToken;
 use serde_json::{Value, json};
-use spiralcore_gateway_core::object::{ObjectMode, ObjectSender};
+use spiralcore_gateway_core::object::{ObjectMode, ObjectSelection, ObjectSender};
 use spiralcore_mvm_adapter::{
     Direction, Error as AdapterError, MailboxAuthority,
     live::{HandshakeRole, LiveError, SocketIo, StreamCounters, StreamTransport},
@@ -18,7 +18,8 @@ use spiralcore_transfer::{
     endpoint::{ColdGraphPolicy, Context, Endpoint, Limits},
     protocol::Frame,
     schema,
-    session::RuntimeSession,
+    schema_selection::PolicySkipReason,
+    session::{RuntimeSession, SelectionPolicy},
     shared_runtime::{OutputKind, Recipe, State},
     shared_transfer::PreparedPrediction,
 };
@@ -60,6 +61,9 @@ fn recipe() -> Recipe {
     }
 }
 fn cases(plan: &Plan) -> Result<Vec<Fixture>> {
+    if plan.arm.is_mixed() {
+        return fixtures::mixed_objects(plan.size, plan.trial, plan.arm.is_combined());
+    }
     let mut cases = fixtures::objects(plan.size, plan.trial)?;
     if plan.arm == Arm::Warm {
         let artifact = schema::fit(&[b"{\"value\":0,\"message\":\"training\"}\n"])?;
@@ -207,14 +211,36 @@ pub fn sender<S: SocketIo + 'static>(
     }
     let mode = match bootstrap.plan.arm {
         Arm::Raw => ObjectMode::Raw,
-        Arm::Whole => ObjectMode::Whole,
+        Arm::Whole | Arm::WholeMixed => ObjectMode::Whole,
         Arm::Warm => ObjectMode::Warm,
+        Arm::Combined | Arm::CombinedCpu => ObjectMode::Combined,
     };
     let schema = cases
         .iter()
         .find(|case| case.kind == "schema")
         .map(|case| case.bytes.as_slice());
-    let mut sender = ObjectSender::new(mode, &context, schema)?;
+    let mut sender = if bootstrap.plan.arm.is_combined() {
+        let checkpoint = &cases
+            .iter()
+            .find(|case| case.kind == "runtime-checkpoint")
+            .ok_or("missing checkpoint")?
+            .bytes;
+        ObjectSender::with_combined_policy(
+            &context,
+            PreparedPrediction::new(
+                checkpoint,
+                &fixtures::mixed_recipe(bootstrap.plan.size, bootstrap.plan.trial)?,
+            )?,
+            schema.ok_or("missing schema")?,
+            if bootstrap.plan.arm == Arm::CombinedCpu {
+                SelectionPolicy::CpuConscious
+            } else {
+                SelectionPolicy::Exhaustive
+            },
+        )?
+    } else {
+        ObjectSender::new(mode, &context, schema)?
+    };
     let mut runtime = if bootstrap.plan.arm == Arm::Warm {
         let checkpoint = &cases
             .iter()
@@ -235,7 +261,7 @@ pub fn sender<S: SocketIo + 'static>(
         &json!({"event":"sender_setup","plan":bootstrap.plan,"cpu_us":total.cpu_us,
         "wall_us":total.wall_us,"counters":client.stream.counters()?,
         "includes":"fixture generation, codec preparation, handshake and authenticated Status probe",
-        "seed_baseline":"all arms seed raw; Whole uses prepared whole-object zstd for subsequent objects"}),
+        "seed_baseline":if bootstrap.plan.arm.is_mixed() {"Combined pays checkpoint/schema publication; all arms send the same eight targets with warm_probe=true; WholeMixed uses prepared whole-object zstd"} else {"all arms seed raw; Whole uses prepared whole-object zstd for subsequent objects"}}),
     )?;
     for (position, case) in cases.iter().enumerate() {
         let expected = transfer::object_id(&case.bytes);
@@ -254,7 +280,11 @@ pub fn sender<S: SocketIo + 'static>(
         };
         let cpu = ProcessTime::now();
         let wall = Instant::now();
+        let mut selection = None;
         let result = match case.kind {
+            "runtime-checkpoint" if bootstrap.plan.arm.is_combined() => {
+                sender.seed_checkpoint(&context, id, &mut exchange)
+            }
             "runtime-checkpoint" => runtime
                 .as_mut()
                 .ok_or("missing runtime session")?
@@ -266,6 +296,12 @@ pub fn sender<S: SocketIo + 'static>(
                 .map(|stats| stats.transfer),
             "seed" => sender.seed(&context, owned, id, &mut exchange),
             "schema" => sender.seed_schema(&context, id, &mut exchange),
+            _ if bootstrap.plan.arm.is_mixed() => sender
+                .send_with_receipt(&context, owned, id, true, &mut exchange)
+                .map(|receipt| {
+                    selection = Some(receipt.selection);
+                    receipt.transfer
+                }),
             _ => sender.send(&context, owned, id, false, &mut exchange),
         };
         let cpu_us = cpu.elapsed().as_micros();
@@ -293,6 +329,7 @@ pub fn sender<S: SocketIo + 'static>(
             &json!({"event":"sender_operation","plan":bootstrap.plan,"position":position,
             "kind":case.kind,"object":transfer::hex(&expected),"bytes":case.bytes.len(),"mode":format!("{:?}",stats.mode),
             "cpu_us":cpu_us,"wall_us":wall_us,"exchange_cpu_us":io_cpu,"exchange_wall_us":io_wall,
+            "selection":selection.as_ref().map(selection_value),
             "counters":difference(client.stream.counters()?, before)?,
             "application_request_bytes":stats.request_bytes,"application_response_bytes":stats.response_bytes}),
         )?;
@@ -304,6 +341,24 @@ pub fn sender<S: SocketIo + 'static>(
         "timing":"setup plus operations; JSON output and fixture ownership copies excluded from operation timing"});
     emit(out, &result)?;
     Ok(result)
+}
+
+fn selection_value(selection: &ObjectSelection) -> Value {
+    match selection {
+        ObjectSelection::Combined(s) => json!({
+            "policy":"combined-runtime-rolling",
+            "accounting":"existing HTTP-body candidate cost model, not mailbox envelope/framing bytes",
+            "selection_policy":match s.policy { SelectionPolicy::Exhaustive => "exhaustive", SelectionPolicy::CpuConscious => "cpu-conscious" },
+            "selected":format!("{:?}",s.selected_mode),
+            "exact_repeat_probe":s.exact_repeat_probe,
+            "checkpoint_ready":s.checkpoint_ready,"schema_ready":s.schema_ready,
+            "candidates":s.candidates.iter().map(|c| json!({"mode":format!("{:?}",c.mode),"target_http_body_bytes":c.target_http_body_bytes,"setup_http_body_bytes":c.setup_http_body_bytes,"total_http_body_bytes":c.total_http_body_bytes})).collect::<Vec<_>>(),
+            "pruned":s.pruned.iter().map(|c| json!({"mode":format!("{:?}",c.mode),"target_http_body_lower_bound":c.target_http_body_lower_bound,"total_http_body_lower_bound":c.total_http_body_lower_bound})).collect::<Vec<_>>(),
+            "policy_skipped":s.policy_skipped.iter().map(|c| json!({"mode":format!("{:?}",c.mode),"reason":match c.reason { PolicySkipReason::NoUsefulTemplateRecords => "no-useful-template-records" },"useful_template_records":c.useful_template_records})).collect::<Vec<_>>()
+        }),
+        ObjectSelection::Fixed => json!({"policy":"fixed-profile","candidate_costs":null}),
+        _ => json!({"policy":"legacy-profile"}),
+    }
 }
 
 struct Server<S: SocketIo> {

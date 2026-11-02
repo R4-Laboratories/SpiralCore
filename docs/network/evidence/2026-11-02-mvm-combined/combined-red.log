@@ -1,0 +1,22 @@
+   Compiling spiralcore-mvm-live v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-mvm-live)
+    Finished `test` profile [unoptimized] target(s) in 6.21s
+     Running tests/campaign.rs (/Users/casey.allard/spiralcore/target/debug/deps/campaign-42d2f8ae8f392b6d)
+
+running 1 test
+test combined_arms_share_payloads_and_reopen_exact_bytes ... FAILED
+
+failures:
+
+---- combined_arms_share_payloads_and_reopen_exact_bytes stdout ----
+
+thread 'combined_arms_share_payloads_and_reopen_exact_bytes' (9853694) panicked at tests/campaign.rs:126:72:
+called `Result::unwrap()` on an `Err` value: Error("unknown variant `whole-mixed`, expected one of `warm`, `whole`, `raw`", line: 0, column: 0)
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    combined_arms_share_payloads_and_reopen_exact_bytes
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 3 filtered out; finished in 0.01s
+
+error: test failed, to rerun pass `--test campaign`

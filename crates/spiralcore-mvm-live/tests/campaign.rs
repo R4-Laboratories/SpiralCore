@@ -6,8 +6,16 @@ use spiralcore_mvm_live::{
 use std::{os::unix::net::UnixStream, path::Path};
 
 fn run(pair: &Pair, cache: &Path) -> (serde_json::Value, Vec<Published>) {
+    let (sent, published, _) = run_receipts(pair, cache);
+    (sent, published)
+}
+
+fn run_receipts(
+    pair: &Pair,
+    cache: &Path,
+) -> (serde_json::Value, Vec<Published>, Vec<serde_json::Value>) {
     let (a, b) = UnixStream::pair().unwrap();
-    let (sent, received) = std::thread::scope(|scope| {
+    let (sent, received, records) = std::thread::scope(|scope| {
         let receiver = scope.spawn(|| {
             let mut records = Vec::new();
             let result = campaign::receiver(
@@ -25,7 +33,7 @@ fn run(pair: &Pair, cache: &Path) -> (serde_json::Value, Vec<Published>) {
         let sent =
             campaign::sender(&pair.sender, a, HandshakeRole::Initiator, &mut records).unwrap();
         assert!(!records.is_empty());
-        (sent, receiver.join().unwrap())
+        (sent, receiver.join().unwrap(), records)
     });
     assert_eq!(sent["event"], "sender_done");
     assert_eq!(received["event"], "receiver_done");
@@ -40,7 +48,11 @@ fn run(pair: &Pair, cache: &Path) -> (serde_json::Value, Vec<Published>) {
         assert_eq!(sent["counters"][send], received["counters"][receive]);
     }
     let published = serde_json::from_value(received["published"].clone()).unwrap();
-    (sent, published)
+    let records = serde_json::Deserializer::from_slice(&records)
+        .into_iter()
+        .map(Result::unwrap)
+        .collect();
+    (sent, published, records)
 }
 
 #[test]
@@ -117,4 +129,115 @@ fn same_epoch_new_socket_and_endpoint_recover_published_objects_with_fresh_envel
     *bytes.last_mut().unwrap() ^= 1;
     std::fs::write(&path, bytes).unwrap();
     assert!(campaign::verify(&pair.sender.plan, &cache, &recovered, &mut Vec::new()).is_err());
+}
+
+#[test]
+fn combined_arms_share_payloads_and_reopen_exact_bytes() {
+    let mut baseline = None;
+    for name in ["whole-mixed", "combined", "combined-cpu"] {
+        let arm: Arm = serde_json::from_value(serde_json::json!(name)).unwrap();
+        let pair = Pair::provision(Plan {
+            stage: Stage::Two,
+            arm,
+            size: 1 << 20,
+            trial: 0,
+            bandwidth_profile: Default::default(),
+        })
+        .unwrap();
+        let store = tempfile::tempdir().unwrap();
+        let cache = store.path().join("cache");
+        let (sent, published, rows) = run_receipts(&pair, &cache);
+        let payloads: Vec<_> = published
+            .iter()
+            .filter(|p| p.kind != "schema" && p.kind != "runtime-checkpoint")
+            .map(|p| (p.kind.clone(), p.object, p.length))
+            .collect();
+        assert_eq!(payloads.len(), 8);
+        assert!(payloads.iter().all(|(_, _, length)| *length == 1_047_202));
+        if let Some(expected) = &baseline {
+            assert_eq!(&payloads, expected);
+        } else {
+            baseline = Some(payloads);
+        }
+        assert_eq!(
+            sent["operations"],
+            if name == "whole-mixed" { 8 } else { 10 }
+        );
+        campaign::verify(&pair.sender.plan, &cache, &published, &mut Vec::new()).unwrap();
+        if name != "whole-mixed" {
+            let operations: Vec<_> = rows
+                .iter()
+                .filter(|r| r["event"] == "sender_operation")
+                .collect();
+            let get = |kind: &str| *operations.iter().find(|r| r["kind"] == kind).unwrap();
+            assert_eq!(get("generated")["mode"], "RuntimeV1");
+            assert_eq!(get("residual")["mode"], "SparseV1");
+            for repeat in ["repeat", "opaque-edited-repeat"] {
+                assert_eq!(get(repeat)["selection"]["exact_repeat_probe"], true);
+            }
+            let policy = if name == "combined-cpu" {
+                "cpu-conscious"
+            } else {
+                "exhaustive"
+            };
+            assert_eq!(get("unrelated")["selection"]["selection_policy"], policy);
+            assert_eq!(
+                get("unrelated")["selection"]["policy_skipped"]
+                    .as_array()
+                    .unwrap()
+                    .is_empty(),
+                name == "combined"
+            );
+            for kind in ["schema-fit", "schema-drift"] {
+                assert_eq!(get(kind)["mode"], "SchemaZstdV1");
+                assert!(
+                    get(kind)["selection"]["policy_skipped"]
+                        .as_array()
+                        .unwrap()
+                        .is_empty()
+                );
+            }
+        }
+        if name == "combined-cpu" {
+            let (again, recovered) = run(&pair, &cache);
+            assert_eq!(
+                serde_json::to_value(&published).unwrap(),
+                serde_json::to_value(recovered).unwrap()
+            );
+            assert!(
+                again["counters"]["envelope_bytes_sent"].as_u64().unwrap()
+                    < sent["counters"]["envelope_bytes_sent"].as_u64().unwrap()
+            );
+        }
+    }
+}
+
+#[test]
+fn mixed_public_fixtures_match_retained_gateway_identities() {
+    // 2026-11-02-cpu-conscious/compact-receipts.tar.gz:
+    // candidate-evidence/campaign/fixtures-0/manifest.json, near1m tier.
+    let expected = [
+        "2ced35de02b6adc2ba856a16a95bf0757fea42b5fc7f2c3f90ddf6960858a8b6",
+        "ca02bc9131dfdfb15331aad2f45eb459ddb32d1a1c278edb9ca6dcc38de7db91",
+        "0ccc92643d5a8e54196dc945cba834dfe99f8156f8e1ce9ec6a3a09c4acd5762",
+        "adf81bac62cb24f56ee7b0d51a0b6a796771a77cbec209cee682ecc9077f0050",
+        "adf81bac62cb24f56ee7b0d51a0b6a796771a77cbec209cee682ecc9077f0050",
+        "9a43e5fb12e719863c0d9493f20dc7a532125d4c7d4a5b9f7dbc832fe42ca253",
+        "d1f16de525d3c33b522ac762a849dd0d0451085d9a955e2a4b9d15c48c85caad",
+        "d1f16de525d3c33b522ac762a849dd0d0451085d9a955e2a4b9d15c48c85caad",
+        "b4fa64a2ae71b8f447a89a9664d52fb89ee545f791c59d80ff02d862505f76bb",
+        "0177b0f91cb2fb073434af9525bb24137eb84e5ebf0529cb01dd20acdb51b200",
+    ];
+    let cases = spiralcore_mvm_live::fixtures::mixed_objects(1 << 20, 0, true).unwrap();
+    assert_eq!(cases.len(), expected.len());
+    for (case, expected) in cases.iter().zip(expected) {
+        assert_eq!(
+            spiralcore_transfer::hex(&spiralcore_transfer::object_id(&case.bytes)),
+            expected,
+            "{}",
+            case.kind
+        );
+    }
+    assert!(spiralcore_mvm_live::fixtures::mixed_recipe(4096, 0).is_err());
+    assert!(spiralcore_mvm_live::fixtures::mixed_recipe(1 << 20, 3).is_err());
 }
