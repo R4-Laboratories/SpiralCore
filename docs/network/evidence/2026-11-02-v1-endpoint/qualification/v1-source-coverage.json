@@ -1,0 +1,173 @@
+{
+  "schema": "spiralcore.source-coverage.v1",
+  "created_utc": "2026-11-02T20:15:36.307236+00:00",
+  "source_commit": "f45c6c2",
+  "observed_checkout": "fc1018b68b1cca7b4cf6eca79036bdc9821fde1d",
+  "source_matches_f45c6c2": true,
+  "tools": {
+    "rustc": "1.97.1 (8bab26f4f 2026-07-14)",
+    "llvm": "22.1.6-rust-1.97.1-stable"
+  },
+  "scope": "Only src/v1/mod.rs and src/v1/sender.rs; instrumented owned package libraries and integration test crates, excluding upstream dependencies.",
+  "tests": {
+    "v1_contract": 8,
+    "gateway_core": 4,
+    "gateway_object_combined": 1,
+    "gateway_object_runtime": 3,
+    "failed": 0,
+    "ignored": 0
+  },
+  "aggregate": {
+    "lines": {
+      "count": 350,
+      "covered": 302,
+      "percent": 86.28571428571429
+    },
+    "functions": {
+      "count": 42,
+      "covered": 35,
+      "percent": 83.33333333333333
+    },
+    "regions": {
+      "count": 504,
+      "covered": 397,
+      "percent": 78.76984126984127
+    },
+    "branches": {
+      "count": 0,
+      "covered": 0,
+      "percent": null
+    },
+    "instantiations": {
+      "count": 210,
+      "covered": 137,
+      "percent": 65.23809523809524
+    }
+  },
+  "line_coverage_gate": {
+    "minimum_percent": 80,
+    "actual_percent": 86.28571428571429,
+    "pass": true
+  },
+  "files": [
+    {
+      "path": "crates/spiralcore-transfer/src/v1/mod.rs",
+      "sha256": "9452b444674185feefdb863045ec3a8248916c7a2bd36356b6b9f673a0852e53",
+      "git_blob": "30ea598a3caac4f2566510cf86947b8852cbdd98",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "functions": {
+          "count": 22,
+          "covered": 16,
+          "percent": 72.72727272727273
+        },
+        "instantiations": {
+          "count": 85,
+          "covered": 49,
+          "percent": 57.647058823529406
+        },
+        "lines": {
+          "count": 150,
+          "covered": 129,
+          "percent": 86
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "regions": {
+          "count": 199,
+          "covered": 158,
+          "notcovered": 41,
+          "percent": 79.39698492462311
+        }
+      }
+    },
+    {
+      "path": "crates/spiralcore-transfer/src/v1/sender.rs",
+      "sha256": "f2f04901f9c5643af5c68199f2b5ab6967997c670c4c3919ba7b3d1e8b179591",
+      "git_blob": "0da40eee1cee41dc44ec191fdae0ff1edcf5e041",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "functions": {
+          "count": 20,
+          "covered": 19,
+          "percent": 95
+        },
+        "instantiations": {
+          "count": 125,
+          "covered": 88,
+          "percent": 70.39999999999999
+        },
+        "lines": {
+          "count": 200,
+          "covered": 173,
+          "percent": 86.5
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "regions": {
+          "count": 305,
+          "covered": 239,
+          "notcovered": 66,
+          "percent": 78.36065573770492
+        }
+      }
+    }
+  ],
+  "binary_sha256": {
+    "v1_contract-8d203c588226a835": "901def31d990a55c1af9e6338a55df45ea5f56ea9257f462f406e41938cdfee6",
+    "core-6245a3eaa4ba4ddc": "902653659221da24f8adb31115097a463abe671611ee5f1d073d7a1f66a3f64c",
+    "object_combined-cbf9f84c92667458": "4294d2ce83823f7e18344d1da48152de91151283113dc1d806b287bcad1fc47c",
+    "object_runtime-acff04db363f6ab9": "ff12f44c39666ad21031544cd8e50d7e64109127ef9327d380168a262d05f097"
+  },
+  "raw_artifact_hashes": {
+    "transfer-build.log": "c7ff30a4e9c52e05802058838ac7d005407afb55d4dba868a5ce00be97de131e",
+    "uncovered.txt": "b0006bec5cc39c5df2b780588528cc3bb7c22f3af189e9dae4626b79fe168ccf",
+    "gateway-final-cargo.json": "53ab57ce60d4f24c1a470839c8af5d5a069823644c5b0c059a6383a2a76936c8",
+    "rustc-wrapper.sh": "7285f885cb5cec89a38bd2638160ff56db44e77359d87f600933a012d95dc0f0",
+    "initial-summary.json": "efbc699b190e6967dc0269a436ee7638095f0aa0daa6c94fbfc675efe8c08915",
+    "transfer-v2-cargo.json": "d8eabd596c793746d03b35c660101cd45e0e5b3f27964ccfe3e99e112556d0c0",
+    "final-summary.json": "341f8ace039b428357c33f4e74db8aba5c858a01615990c95656129ec6e56c49",
+    "gateway-final-build.log": "e8211ffebefa10a940ed777d0cf1e999ae3da70aea8f9e2891de1048e59c4b52",
+    "gateway-build.log": "a93e8cb46b011f099c1b45ba3613528da2285162078991e5062ec8f5af5e6ae2",
+    "transfer-final-build.log": "be723bc18b0492af31f69112d49f811e76c1f72342800ebd56e6d387cf99c2c5",
+    "binaries.json": "0a5b9360cbb9554a5920c3be3954a9023783cb2abbbc8033d276b383f41479a8",
+    "transfer-final-cargo.json": "75a610d45f1da00a62c43731ce27aa862d12b6a9a2172c564c3307eee847b52f",
+    "merged.profdata": "171bc4e8c773885e54b6b82f517c1952de579e973fbd2af6e1d59e37b0fa9518",
+    "retain-summary.py": "38a42002fd68d5b8f658ec5808165367bf2cf9a2a9048d7654932af960ed44c2",
+    "transfer-v2-build.log": "27ee08a72f4a04038ea12e0c667386501625b12a9b1be7b20cf9b61d96277d40",
+    "rustc-wrapper-v2.sh": "bc89bf133c0ed2c30d87f2a3f4952c223bc6ce3ff7191d42edb62f250c457459",
+    "gateway-v2-build.log": "d62a1f55c8516ed1544ce776ed7ff2214b974b1fe7199c0043ae6c186875557c",
+    "gateway-v2-cargo.json": "56f83646ec49ea4050a1087aeb865aade9d9f490e9d179bc50381411b73882d5",
+    "gateway-cargo.json": "7ef0935421f264c092c5044b5d81ee69b9d453110cd5bad662fc37b77626172d",
+    "transfer-cargo.json": "2e1b25b1050ea21f3ea92d8a3c0974c8f852f9c82bbc471b6bcdf0c255eb4344",
+    "merged-final.profdata": "720ef8d63b3e10d547f84a8694dff4f4eb40fe84d168b1e91bf508e446b2d00f"
+  },
+  "profile_manifest_sha256": "596e512051991e2385e90b64d7d2588e0cd4edf7804ea503017c035e44b9a7a8",
+  "raw_profile_count": 14,
+  "limitations": [
+    "Stable Rust instrumentation supplied no branch counters; branch coverage is unavailable, not zero percent tested.",
+    "Aggregate regions below80%; the finishing gate is line coverage, not a region or monomorphization-instance threshold.",
+    "Instrumented timings are not performance measurements.",
+    "Coverage demonstrates execution only and does not prove correctness or security.",
+    "Initial library-only instrumentation omitted downstream generic monomorphizations; final pass instrumented both owned packages and their test crates. Only owned package products were cleaned to force rebuild, upstream dependencies retained.",
+    "Raw profiles/debug exports are intentionally removed from the owned temporary directory after preserving compact hashes; shared cargo target retained."
+  ]
+}

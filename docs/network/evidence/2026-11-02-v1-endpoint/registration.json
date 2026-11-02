@@ -1,0 +1,31 @@
+{
+  "format": "spiralcore-v1-endpoint-registration-v1",
+  "backend": "firecracker",
+  "trials": 3,
+  "stages": ["one", "two"],
+  "sizes": [1048576, 16777216],
+  "implementations": ["legacy", "v1"],
+  "arm": "combined-cpu",
+  "bandwidth_profile": "experimental64",
+  "mailbox_rate_enforced": false,
+  "mailbox_rate_bytes_per_second": null,
+  "mailbox_burst_bytes": null,
+  "legacy": {
+    "source_commit": "a9f038c49bcaf69ce7d6780970dadd412a31a573",
+    "host_sha256": "7911958f4c03bee1687f4014b29a6a22db8952e86db517467c9019c9952f34a0",
+    "guest_sha256": "be7e2ac09ae3e67210396393048d9982cc0b640e1e3a5bdbd9ac2e18f3b4059c"
+  },
+  "v1": {
+    "source_commit": "f45c6c27a5062fc7123af6dd3f620d872f170bac",
+    "host_sha256": "17b37766646b6b22ca8ea87ee38fa6847a1623e14dfae16f7ff15b2ed3971515",
+    "guest_sha256": "36fb7eddfa55bbd9fff0365146e279271dd1e4894d323ebbb5b0c7a06ba7ea8c"
+  },
+  "kernel_sha256": "1701ccb2c46b2497066225d6ba05f3f33a3a845ca636fbeedb202835c83b49b6",
+  "firecracker_sha256": "99ad0f5cd0514a88aad0e9ae8cfdb3cc3b4ab9d190e1194602406c786b5de7a5",
+  "limits": [
+    "Synthetic public fixtures, at most two 1-vCPU/1-GiB guests, no guest NIC",
+    "Local Linux/vsock native comparison; no WAN or production mailbox claim",
+    "Planned SCMOBJ01 bytes differ from actual carrier counters after early Published",
+    "Do not sum guest endpoint CPU with enclosing worker/VMM CPU"
+  ]
+}

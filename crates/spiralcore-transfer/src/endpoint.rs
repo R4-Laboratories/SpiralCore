@@ -183,6 +183,9 @@ struct Publication {
 static TEMP: AtomicU64 = AtomicU64::new(0);
 
 impl<A: Authority> Endpoint<A> {
+    pub(crate) fn authorize(&self, context: &Context) -> Result<()> {
+        self.authority.authorize(context)
+    }
     pub fn open(root: &Path, limits: Limits, authority: A) -> Result<Self> {
         Self::open_with_policy(root, limits, authority, ColdGraphPolicy::EagerBounded)
     }

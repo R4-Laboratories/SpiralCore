@@ -636,9 +636,9 @@ pub(super) fn check_verified(frame: &VerifiedFrame) -> LiveResult<()> {
 impl VerifiedFrame {
     /// The live service owner serializes this operation with policy updates.
     /// Borrowing retains the authenticated header needed for the safe reply.
-    pub fn dispatch_live(
+    pub fn dispatch_live<E: FrameEndpoint>(
         &self,
-        endpoint: &mut Endpoint<MailboxAuthority>,
+        endpoint: &mut E,
         monotonic_seconds: u64,
     ) -> LiveResult<Frame> {
         check_verified(self)?;

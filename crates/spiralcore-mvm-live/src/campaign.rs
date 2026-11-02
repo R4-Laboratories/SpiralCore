@@ -9,13 +9,13 @@ use mvm_core::mailbox::transport::CancellationToken;
 use serde_json::{Value, json};
 use spiralcore_gateway_core::object::{ObjectMode, ObjectSelection, ObjectSender};
 use spiralcore_mvm_adapter::{
-    Direction, Error as AdapterError, MailboxAuthority,
+    Direction, Error as AdapterError, ObjectEndpoint, open_object_endpoint,
     live::{HandshakeRole, LiveError, SocketIo, StreamCounters, StreamTransport},
 };
 use spiralcore_transfer::{
     self as transfer, Id,
     client::Stats,
-    endpoint::{ColdGraphPolicy, Context, Endpoint, Limits},
+    endpoint::{ColdGraphPolicy, Context, Limits},
     protocol::Frame,
     schema,
     schema_selection::PolicySkipReason,
@@ -366,7 +366,7 @@ struct Server<S: SocketIo> {
     outgoing: Direction,
     stream: StreamTransport<S>,
     cancel: CancellationToken,
-    endpoint: Endpoint<MailboxAuthority>,
+    endpoint: ObjectEndpoint,
     start: Instant,
 }
 struct Handled {
@@ -440,7 +440,7 @@ pub fn receiver<S: SocketIo + 'static>(
         namespace_bytes: 128 << 20,
         ..Limits::default()
     };
-    let mut endpoint = Endpoint::open_with_policy(
+    let mut endpoint = open_object_endpoint(
         cache_root,
         limits,
         incoming.authority(),

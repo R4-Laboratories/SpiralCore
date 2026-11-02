@@ -3,8 +3,18 @@
 This standalone Rust crate carries existing SpiralCore object-transfer frames
 through the real mailbox cryptography and transport authorization in MVM revision
 `3104a12c5b071a6851323fa8115d2afaf3f0bb8b`. The transfer engine, codecs, warm
-selection and on-disk object format are unchanged. It is a host conformance
-integration; it does not yet connect running MVM guests over vsock.
+selection and on-disk object format are unchanged. The standalone conformance
+harness runs on the host; the [native witness](../spiralcore-mvm-live/README.md)
+also exercises actual guests over vsock on macOS/HVF and Linux/Firecracker.
+
+The [v1 contract](../../docs/specs/spiralcore-v1.md) defines one shared sender,
+receiver and codec family. `open_object_endpoint(root, limits, authority, policy)`
+opens `transfer::v1::ObjectEndpoint<MailboxAuthority>` with the full object-v1
+profile pinned by trusted configuration. `VerifiedFrame::dispatch` and
+`dispatch_live` invoke the shared `FrameEndpoint` API after checking the proof's
+policy generation. Canonical authentication/decryption still precedes dispatch;
+capability metadata cannot create a mailbox authority lease. This introduces no
+new handshake, frame, encryption scheme or content-type version.
 
 `Direction::send` seals and signs a bounded frame, checks current capability and
 signed route authorization, and queues it through MVM's `PeerTransport`.
@@ -52,16 +62,19 @@ and combined host CPU/elapsed time, and charges setup/seeding separately. There
 is no network-send or WAN-time estimate. See the
 [registered measurement contract](../../docs/network/evidence/2026-10-31-mvm-readiness/measurement-contract.md).
 
-## Remaining guest integration
+## Remaining production integration
 
 MVM's [dedicated mailbox vsock service (#4629)](https://github.com/tinylabscom/mvm/issues/4629)
 and [approved Iroh transport (#4633)](https://github.com/tinylabscom/mvm/issues/4633)
 were open at the pinned integration check. The existing FlowMux port 5253 is not
 a mailbox port. Wire this adapter into the canonical plaintext endpoint once the
-guest service contract exists, then demonstrate one guest/host, two guests under
-a small orchestrator, two hosts, and three-peer recovery.
+guest service contract exists. The experimental native witness demonstrates one
+guest/host and two guests under a small orchestrator; production mailbox
+lifecycle, two-host deployment and three-peer recovery remain separate gates.
 
-The pinned `open_envelope` returns authenticated payload only. A general call
+The unpatched pinned `open_envelope` returns authenticated payload only. The
+native witness uses the retained verified-open patch for authenticated reply
+handles and transport accessors. A general call
 broker needs an upstream verified header/reply handle, durable inbox/replay and
 admission semantics. The conformance harness controls both directions and checks
 application transfer/sequence IDs; this is not a verified reply-routing API.

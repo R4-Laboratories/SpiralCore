@@ -40,6 +40,16 @@ jobs:
             --manifest-path crates/spiralcore-mvm-live/Cargo.toml \
             --config "$RUNNER_TEMP/mvm-prepared/patch.toml" \
             --features linux-host --all-targets
+      - name: Shared object-v1 and canonical mailbox conformance
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo +1.97.1 test --locked \
+            --manifest-path crates/spiralcore-transfer/Cargo.toml --test v1_contract
+          cargo +1.97.1 test --locked \
+            --manifest-path crates/spiralcore-mvm-adapter/Cargo.toml \
+            --features conformance,hardware-sha256 --all-targets
+          bash crates/spiralcore-mvm-live/scripts/test-v1-comparison.sh
       - name: Linux warnings check
         shell: bash
         run: |

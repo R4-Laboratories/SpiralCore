@@ -11,6 +11,17 @@ Current approved sequence: preserve local originals; establish origin/main; extr
 
 ## Current priority
 
+The [v1 protocol contract](../specs/spiralcore-v1.md) and shared Rust endpoint API
+are implemented for the canonical MVM adapter and cooperating QUIC object
+service. There is one sender/receiver/codec family, with carrier-owned authority
+and envelope semantics. The initial profile is explicitly pinned, not discovered
+by a new wire handshake. The [native compatibility report](v1-endpoint-results-2026-11-02.md)
+records 240 exact publications and 120 keyless guest reboot checks across 24
+legacy/v1 sessions. Large-session CPU is approximately stable; small-session CPU
+regressions remain open. Production mailbox lifecycle, FlowMux policy integration,
+separately admitted shell/management modes and standardized packet/stream profiles
+remain subsequent endpoint work on the same core.
+
 The [current Combined MVM integration](mvm-combined-results-2026-11-02.md) now
 carries the latest ternary/Kuramoto/CA, rolling warm cache and optional
 CPU-conscious selection through real one/two guest mailbox/vsock sessions.

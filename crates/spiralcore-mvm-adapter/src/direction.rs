@@ -19,10 +19,7 @@ use mvm_core::{
         },
     },
 };
-use spiralcore_transfer::{
-    endpoint::{Context, Endpoint},
-    protocol::Frame,
-};
+use spiralcore_transfer::{endpoint::Context, protocol::Frame, v1::FrameEndpoint};
 use std::collections::BTreeSet;
 #[cfg(feature = "live")]
 #[path = "live.rs"]
@@ -486,9 +483,9 @@ impl VerifiedFrame {
     pub fn context(&self) -> &Context {
         &self.context
     }
-    pub fn dispatch(
+    pub fn dispatch<E: FrameEndpoint>(
         self,
-        endpoint: &mut Endpoint<MailboxAuthority>,
+        endpoint: &mut E,
         monotonic_seconds: u64,
     ) -> Result<Frame> {
         self.policy.check_generation(self.generation)?;
