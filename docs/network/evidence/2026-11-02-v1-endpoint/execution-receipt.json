@@ -1,0 +1,87 @@
+{
+  "format": "spiralcore-v1-endpoint-execution-v1",
+  "date": "2026-11-02",
+  "candidate_source": "f45c6c27a5062fc7123af6dd3f620d872f170bac",
+  "baseline_source": "a9f038c49bcaf69ce7d6780970dadd412a31a573",
+  "source_snapshot": {
+    "method": "git archive of six crate trees directly over SSH; no local build/artifact copy",
+    "files_hashed": 210,
+    "post_execution_hash_check": "210 of 210 passed",
+    "manifest": "source-files.sha256",
+    "rust_source_edits_after_freeze": false
+  },
+  "build": {
+    "rust": "1.97.1",
+    "jobs": 2,
+    "incremental": false,
+    "nice": 10,
+    "release_host": "cargo build --release --locked --manifest-path crates/spiralcore-mvm-live/Cargo.toml --config MVM_PATCH_CONFIG --features linux-host",
+    "release_guest": "RUSTFLAGS=-Ctarget-feature=+crt-static cargo build --release --locked --manifest-path crates/spiralcore-mvm-live/Cargo.toml --config MVM_PATCH_CONFIG --target x86_64-unknown-linux-gnu",
+    "host_sha256": "17b37766646b6b22ca8ea87ee38fa6847a1623e14dfae16f7ff15b2ed3971515",
+    "guest_sha256": "36fb7eddfa55bbd9fff0365146e279271dd1e4894d323ebbb5b0c7a06ba7ea8c",
+    "guest_pt_interp_present": false,
+    "live_lock_sha256_before_and_after": "655b7d7e8942a7e8a5f513e4cc034fe6642a477044c6b2986d55204cc9e5ec28"
+  },
+  "linux_tests": {
+    "live_all_targets_linux_host": {"passed": 31, "failed": 0},
+    "gateway_tests": {"passed": 36, "failed": 0},
+    "transfer_v1_contract": {"passed": 8, "failed": 0},
+    "adapter_live_conformance_hardware_sha256_tests": {"passed": 24, "failed": 0},
+    "command_prefix": "cargo test --manifest-path CRATE/Cargo.toml; live/gateway/transfer use --locked; adapter resolved offline as recorded below",
+    "live_args": "--config MVM_PATCH_CONFIG --features linux-host --all-targets",
+    "gateway_args": "--tests",
+    "transfer_args": "--test v1_contract",
+    "adapter_args": "--offline --config MVM_PATCH_CONFIG --features live,conformance,hardware-sha256 --tests"
+  },
+  "adapter_test_lock_resolution": {
+    "initial_attempt": "--locked with nine local MVM crate overrides",
+    "initial_exit": 101,
+    "initial_error": "cannot update the lock file because --locked was passed; unused optional local patch entries",
+    "cause": "isolated adapter path-patch package-source lock drift; not a Rust/code failure",
+    "correction": "approved build-resolver correction: same isolated adapter tests --offline without --locked, record generated lock, restore frozen lock on exit",
+    "original_and_restored_lock_sha256": "27a267a37d919b578989ff79a31b21fe529d9be2058df7728aca805a8728f334",
+    "generated_test_lock_sha256": "e5812bcaaa90355c987218b037458c65ff44f3f127d39d15e4c348973c7cf48d",
+    "frozen_lock_restored": true,
+    "measured_live_release_lock_changed": false
+  },
+  "native": {
+    "registered_sessions": 24,
+    "completed_sessions": 24,
+    "exact_publications": 240,
+    "keyless_guest_reboot_readbacks": 120,
+    "identical_planned_byte_mode_object_actual_frame_count_groups": 120,
+    "actual_plaintext_frame_byte_equivalence_claimed": false,
+    "actual_byte_metric": "canonical encrypted envelope plus stream framing, both directions, with separate physical two-hop count",
+    "session_failures": 0,
+    "copied_receipt_sets": 24,
+    "local_receipt_hash_verification": "24 of 24 passed",
+    "local_reanalysis_byte_equal_to_remote": true,
+    "copy_scope": "regular files at depth at most two; no payload stores, receiver disks or private MVM homes"
+  },
+  "temporary_firecracker_path": {
+    "path": "/usr/local/bin/firecracker",
+    "target": "/var/tmp/spiralcore-linux-mvm-20261102/bin/firecracker",
+    "inode": 4206310,
+    "owner_uid": 0,
+    "created_only_after_absence_and_asset_hash_check": true,
+    "cleanup_trap_requires_exact_inode_target_owner": true,
+    "removed_after_campaign": true,
+    "absence_verified_after_campaign": true
+  },
+  "firecracker_processes_before": 0,
+  "firecracker_processes_after": 0,
+  "other_lab_or_deepseek_changes": false,
+  "global_configuration_changes": false,
+  "local_runner_checks": {
+    "bash_syntax": "pass",
+    "shellcheck": "pass",
+    "analyzer_fixture": "pass; synthetic duplicate labels on prior baseline, not measurement evidence",
+    "negative_analyzer_checks": ["altered planned bytes rejected", "altered object identity rejected", "altered actual frame count rejected", "duplicate/missing registration cell rejected"]
+  },
+  "limits": [
+    "Three paired trials; regressions retained; no significance or p95 claim",
+    "Local unshaped Linux Firecracker/vsock, not WAN, production mailbox or energy qualification",
+    "Guest endpoint CPU separate from enclosing host worker/VMM CPU",
+    "Separate workload-exit service and virtio control/credit bytes excluded"
+  ]
+}
