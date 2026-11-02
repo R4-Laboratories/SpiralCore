@@ -1,0 +1,44 @@
+   Compiling spiralcore-gateway v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-gateway)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.62s
+     Running tests/object_service.rs (/Users/casey.allard/spiralcore/target/debug/deps/object_service-2685be9dcecdd9bc)
+
+running 7 tests
+test object_configuration_is_explicit_bounded_and_role_scoped ... ok
+test fresh_owned_error_report_is_valid_and_reservations_are_released ... ok
+test normalized_output_store_and_staging_collisions_fail_without_creating_reports ... FAILED
+test existing_outputs_and_input_aliases_are_preserved_even_when_startup_fails ... FAILED
+test output_symlink_and_hardlink_aliases_are_not_replaced ... FAILED
+test mismatched_scope_or_policy_epoch_fails_before_opening_the_store ... ok
+test runtime_and_warm_use_real_gateway_and_reopen_exact_objects ... ok
+
+failures:
+
+---- normalized_output_store_and_staging_collisions_fail_without_creating_reports stdout ----
+
+thread 'normalized_output_store_and_staging_collisions_fail_without_creating_reports' (6490960) panicked at tests/object_service.rs:110:9:
+collision same was admitted
+
+---- existing_outputs_and_input_aliases_are_preserved_even_when_startup_fails stdout ----
+
+thread 'existing_outputs_and_input_aliases_are_preserved_even_when_startup_fails' (6490957) panicked at tests/object_service.rs:85:9:
+assertion `left == right` failed
+  left: [123, 10, 32, 32, 34, 101, 114, 114, 111, 114, 34, 58, 32, 34, 78, 111, 32, 115, 117, 99, 104, 32, 102, 105, 108, 101, 32, 111, 114, 32, 100, 105, 114, 101, 99, 116, 111, 114, 121, 32, 40, 111, 115, 32, 101, 114, 114, 111, 114, 32, 50, 41, 34, 44, 10, 32, 32, 34, 113, 117, 97, 108, 105, 102, 105, 101, 100, 95, 99, 111, 109, 112, 108, 101, 116, 101, 34, 58, 32, 102, 97, 108, 115, 101, 44, 10, 32, 32, 34, 115, 116, 97, 116, 117, 115, 34, 58, 32, 34, 101, 114, 114, 111, 114, 34, 10, 125]
+ right: [117, 110, 105, 113, 117, 101, 32, 111, 114, 105, 103, 105, 110, 97, 108, 32, 99, 114, 101, 100, 101, 110, 116, 105, 97, 108, 32, 111, 114, 32, 105, 110, 112, 117, 116]
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- output_symlink_and_hardlink_aliases_are_not_replaced stdout ----
+
+thread 'output_symlink_and_hardlink_aliases_are_not_replaced' (6490962) panicked at tests/object_service.rs:137:9:
+assertion `left == right` failed
+  left: [123, 10, 32, 32, 34, 101, 114, 114, 111, 114, 34, 58, 32, 34, 78, 111, 32, 115, 117, 99, 104, 32, 102, 105, 108, 101, 32, 111, 114, 32, 100, 105, 114, 101, 99, 116, 111, 114, 121, 32, 40, 111, 115, 32, 101, 114, 114, 111, 114, 32, 50, 41, 34, 44, 10, 32, 32, 34, 113, 117, 97, 108, 105, 102, 105, 101, 100, 95, 99, 111, 109, 112, 108, 101, 116, 101, 34, 58, 32, 102, 97, 108, 115, 101, 44, 10, 32, 32, 34, 115, 116, 97, 116, 117, 115, 34, 58, 32, 34, 101, 114, 114, 111, 114, 34, 10, 125]
+ right: [111, 114, 105, 103, 105, 110, 97, 108, 32, 99, 111, 110, 102, 105, 103, 117, 114, 97, 116, 105, 111, 110]
+
+
+failures:
+    existing_outputs_and_input_aliases_are_preserved_even_when_startup_fails
+    normalized_output_store_and_staging_collisions_fail_without_creating_reports
+    output_symlink_and_hardlink_aliases_are_not_replaced
+
+test result: FAILED. 4 passed; 3 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.52s
+
+error: test failed, to rerun pass `--test object_service`

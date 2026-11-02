@@ -1,0 +1,38 @@
+   Compiling spiralcore-gateway-core v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-gateway-core)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.67s
+     Running unittests src/lib.rs (/Users/casey.allard/spiralcore/target/debug/deps/spiralcore_gateway_core-4afc23312c1cbffd)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/core.rs (/Users/casey.allard/spiralcore/target/debug/deps/core-6245a3eaa4ba4ddc)
+
+running 4 tests
+test ipv6_replay_window_conflicting_fragments_and_trailing_zstd_are_refused ... ok
+test packet_exact_reordered_fragmented_duplicate_and_corrupt ... ok
+test packet_compression_length_expiry_and_bounded_admission ... ok
+test shared_object_modes_reopen_exact_and_reject_scope_before_exchange ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.18s
+
+     Running tests/object_runtime.rs (/Users/casey.allard/spiralcore/target/debug/deps/object_runtime-acff04db363f6ab9)
+
+running 3 tests
+test runtime_missing_receiver_state_has_no_hidden_reseed_and_scope_change_is_permanent ... ok
+test runtime_profile_requires_checkpoint_and_returns_real_selection_with_exact_reopen ... ok
+test warm_and_fixed_profiles_report_only_their_existing_policy ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.23s
+
+     Running tests/packet_selection.rs (/Users/casey.allard/spiralcore/target/debug/deps/packet_selection-023730d6449900b4)
+
+running 5 tests
+test entropy_only_transition_exposes_byte_regression_until_reprobe ... ok
+test negative_history_skips_with_reprobes_and_detects_current_new_pattern ... ok
+test advisory_flow_parser_handles_ipv6_tcp_and_falls_back_on_unsupported_shapes ... ok
+test fast_profile_preserves_exact_packets_and_existing_modes ... ok
+test flow_state_is_bounded_and_unsupported_packets_always_probe ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+

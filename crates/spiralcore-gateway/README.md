@@ -104,3 +104,11 @@ ACKs and closure. IP bytes, UDP payload bytes and captured Ethernet lengths are
 separate; Ethernet FCS, preamble and inter-frame gap are not claimed. Session CPU
 and wire bytes cover the persistent sequence, while application times are per
 flow. Raw receipts and failed runs belong with the result report.
+
+## Runtime and warm objects
+
+The reliable `spiralcore-gateway-object` service exposes the existing
+ternary/Kuramoto/CA checkpoint-recipe-residual and rolling warm-cache paths through
+this gateway. See [configuration, measurement and limits](../../docs/network/runtime-object-gateway.md).
+It uses a separate authenticated object ALPN; the packet TUN command above does
+not silently acquire object/cache semantics.

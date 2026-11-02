@@ -1,0 +1,152 @@
+{
+  "schema": "spiralcore.runtime-object.registration.v1",
+  "status": "REGISTERED_NOT_RUN",
+  "launch_ready": true,
+  "source_binding": "Exact same-repository PR head and executed workflow SHA; freeze service/probe/generator binaries and source manifest before any measured traffic.",
+  "arms": [
+    "raw",
+    "whole-zstd",
+    "warm",
+    "runtime"
+  ],
+  "topology": {
+    "namespaces": 3,
+    "underlay": "two veth links through one owned IPv4 router namespace",
+    "quic_port": 4433,
+    "endpoint_a": "10.203.0.1/30",
+    "router_left": "10.203.0.2/30",
+    "router_right": "10.203.0.5/30",
+    "endpoint_b": "10.203.0.6/30",
+    "queue_limit_packets": 256,
+    "stream_profile": "spiralcore-object/1 reliable QUIC; no datagrams; separate from unchanged TUN packet path",
+    "routing": "Only namespace-local underlay routes and router forwarding; no host route/firewall/NAT changes.",
+    "privilege": "Service runs as the unprivileged runner UID after namespace entry. Test keys/configs/large fixtures/stores stay in one fresh owned private temporary directory."
+  },
+  "profiles": [
+    {
+      "name": "lan",
+      "delay_ms_per_direction": 0,
+      "rate_bits_per_second_per_direction": null
+    },
+    {
+      "name": "wan80-10",
+      "delay_ms_per_direction": 40,
+      "rate_bits_per_second_per_direction": 10000000
+    }
+  ],
+  "dose": {
+    "trials": [
+      0,
+      1,
+      2
+    ],
+    "sessions": 24,
+    "topologies": 6,
+    "groups_per_session": 2,
+    "deliveries_per_group": 6,
+    "total_object_deliveries": 288,
+    "total_operations": 312,
+    "operation_counts": {
+      "send": 276,
+      "seed": 12,
+      "schema": 12,
+      "checkpoint": 12
+    },
+    "tiers": [
+      {
+        "label": "near1m",
+        "width": 4096,
+        "steps": 289,
+        "bytes": 1047202
+      },
+      {
+        "label": "max-trace",
+        "width": 4096,
+        "steps": 4096,
+        "bytes": 16777216
+      }
+    ],
+    "per_group_sequence": [
+      "generated",
+      "residual",
+      "repeat",
+      "unrelated",
+      "opaque-edited",
+      "opaque-edited-repeat"
+    ],
+    "residual_edit_ranges": 16,
+    "residual_bytes_per_range": 32,
+    "residual_xor": 165,
+    "fixture_trial_payload": "1.0 + trial/8.0",
+    "checkpoint_bytes": 3382,
+    "total_requested_object_bytes": 2289396384,
+    "mode_order_by_trial": [
+      [
+        "raw",
+        "whole-zstd",
+        "warm",
+        "runtime"
+      ],
+      [
+        "whole-zstd",
+        "warm",
+        "runtime",
+        "raw"
+      ],
+      [
+        "warm",
+        "runtime",
+        "raw",
+        "whole-zstd"
+      ]
+    ],
+    "profile_order_by_trial": [
+      [
+        "lan",
+        "wan80-10"
+      ],
+      [
+        "wan80-10",
+        "lan"
+      ],
+      [
+        "lan",
+        "wan80-10"
+      ]
+    ],
+    "persistence": "One authenticated connection/receiver/cache per arm/profile/trial; both size groups sequentially. Retain only one size-specific sender codec/prediction at a time. Fresh stores and channel between arms.",
+    "warm_probe": true,
+    "warmup": "All three native trials retained; no JIT/warmup trial discarded. Fixture generation is outside transfer; codec preparation, file input loading, hashing, schema/checkpoint/seed transfer and durable publication are charged.",
+    "auxiliary_operations": "Warm seeds schema then first generated object; Runtime sends checkpoint before all six objects; Raw/Whole send all six. Warm's generated seed is one of288 deliveries, not an extra object. Two schema/checkpoint setup operations per respective session are extra."
+  },
+  "calibration": {
+    "reuse": "One topology and measured underlay calibration per profile/trial, reused for four arms. Recreate qdiscs before each arm so measurement counters start at zero; save before/after exact state.",
+    "ping": "20 echoes from both sides; final16 mean retained. Shaped mean75..90ms, LAN below20ms;20received required.",
+    "rate": "Shaped only: iperf3TCP each direction,3measured seconds after1startup second. Receiver goodput8.5..10.2Mbit/s; fullJSON retained. Calibration traffic outside QUIC captures.",
+    "congestion": "40ms+10mbit netem on each router egress,limit256,no random loss/jitter. Retain/report queue loss; do not reject solely for finite-queue congestion. Require drained queues and valid qdisc configuration."
+  },
+  "correctness": {
+    "fixtures": "Generator reuses canonical State::seeded/Recipe/shared_runtime::replay and hashes exact bytes. No runtime kernels duplicated; generated lengths must match fixed tiers. Trial-bound opaque bytes are a control, not decrypted traffic.",
+    "durable": "Published must follow verified durable commit. Receiver closes/reopens its endpoint, reads committed IDs, and compares eight expected local data files byte-for-byte. Both repeats reuse existing object IDs and source paths.",
+    "setup": "Checkpoint/schema IDs may already exist within one receiver; count actual observed setup transfer, never assumed full payload bytes. Missing bases/checkpoints are errors, no silent hidden reseed.",
+    "winner": "Record actual Stats.mode, publication_path, selection kind/candidate costs and observed channel bytes. Require RuntimeV1 verified-transfer for generated and residual in both Runtime tiers, and SparseV1 verified-transfer for opaque-edited in both Warm tiers. Repeated object cache hits are allowed and reported separately. Candidate original HTTP body costs are not relabeled actual QUIC wire costs."
+  },
+  "measurement": {
+    "capture": "One endpoint-a underlay interface, bidirectional classicEthernet header-onlyPCAP, before handshake through ordered finish/close/drain. Count IP/UDP/Ethernet original lengths; no FCS/preamble/gap claim. Kernel capture drops must be zero.",
+    "cpu": "Client operationCPU includes inputload+encoding/hash+publication wait's activeCPU; group prep separately includes replay. Receiver handleCPU includes decode+durablecommit; reopened readback separate. Whole-processCPU separately reported, never added to nested stages.",
+    "wall": "Peroperation through Published; group setup, QUIC setup, fullclient/server process and harnesssession wall separately. No logging between operations; no subtraction ofCPU to invent send-only time.",
+    "amortization": "Report setup alone; setup+generated and cumulative through2,3,4,5,6delivered objects pergroup, alongside complete two-tier session including authentication/closure.",
+    "statistics": "3descriptive matched trials; samefixtureID pertrial/tier/case acrossallarms/profiles. Include negativecases and seedcosts. 3of4mode-order rotations,notcompleteLatin square.",
+    "acceptance": "All312operation receipts successful,288deliveries exact, receiver reopened readbacks exact, fullcaptures, validated calibration, unchangedhostroutes/frozenidentities. Performance victory is not required."
+  },
+  "custody": {
+    "free_disk_floor_bytes": 4294967296,
+    "automatic_retries": false,
+    "job_timeout_minutes": 40,
+    "campaign_timeout_minutes": 20,
+    "cleanup": "Stop/reap only owned processes. Verify public receipt custody and exact reopened objects before deleting owned per-arm stores. Keep failure logs; delete generated private keys/configs/largefixtures only from owned mktemp directory.",
+    "retention": "Compact runtimeJSON/logs/manifests/smallcheckpoint+recipe+schema data inGit. Originalcaptures+executables archivedtoexistingprivateHFdataset withfreshpinnedhashverification before removinglargelocalcopies."
+  },
+  "scope": "Cooperating application objectchannel overactualreliableQUIC ononeLinuxrunner. Localandshapedprofiles,notactualInternetWAN; no transparent TUNruntimecompression, MVMrewrite, production/FIPS/CUIorenergyclaim.",
+  "amendment": "Before any network execution, appended opaque-edited and exact opaque-edited repeat after unrelated opaque in each tier. These use the same deterministic16x32byte edit rule. This isolates rolling Warm cache reuse on incompressible data while Runtime must truthfully select its fixed-checkpoint fallback. No new sizes/profiles/trials."
+}

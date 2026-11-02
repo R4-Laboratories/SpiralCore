@@ -1,0 +1,114 @@
+name: SpiralCore runtime and warm objects over reliable QUIC
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - 'crates/spiralcore-gateway/src/object_service.rs'
+      - 'crates/spiralcore-gateway/src/object_channel.rs'
+      - 'crates/spiralcore-gateway/src/transport.rs'
+      - 'crates/spiralcore-gateway/src/lib.rs'
+      - 'crates/spiralcore-gateway/src/measurement.rs'
+      - 'crates/spiralcore-gateway/src/bin/spiralcore-gateway-object.rs'
+      - 'crates/spiralcore-gateway/src/bin/spiralcore-gateway-probe.rs'
+      - 'crates/spiralcore-gateway/tests/object_*.rs'
+      - 'crates/spiralcore-gateway/examples/object_fixtures.rs'
+      - 'crates/spiralcore-gateway/Cargo.*'
+      - 'crates/spiralcore-gateway-core/src/object.rs'
+      - 'crates/spiralcore-gateway-core/tests/object*.rs'
+      - 'crates/spiralcore-gateway-core/Cargo.*'
+      - 'crates/spiralcore-transfer/src/**'
+      - 'crates/spiralcore-transfer/Cargo.*'
+      - 'crates/uor-r4-object-store/src/**'
+      - 'crates/uor-r4-object-store/Cargo.*'
+      - 'tools/gateway-network/runtime-object-netns.sh'
+      - 'tools/gateway-network/runtime-object-infra-check.sh'
+      - 'docs/network/evidence/2026-11-02-runtime-gateway/network-registration.json'
+      - '.github/workflows/spiralcore-runtime-objects.yml'
+permissions:
+  contents: read
+concurrency:
+  group: spiralcore-runtime-objects-pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+jobs:
+  runtime-objects:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.run_attempt == 1
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    env:
+      EXPECTED_SOURCE: ${{ github.event.pull_request.head.sha }}
+      CARGO_INCREMENTAL: 0
+      CARGO_BUILD_JOBS: 2
+      CARGO_TARGET_DIR: ${{ github.workspace }}/target
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - name: Bind source and registered dose before setup
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir runtime-evidence
+          [[ "$EXPECTED_SOURCE" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$(git rev-parse HEAD)" == "$EXPECTED_SOURCE" ]]
+          [[ "$GITHUB_RUN_ATTEMPT" == 1 ]]
+          [[ -z "${RUSTFLAGS:-}${CARGO_ENCODED_RUSTFLAGS:-}${RUSTC_WRAPPER:-}${RUSTC_WORKSPACE_WRAPPER:-}${CARGO_BUILD_TARGET:-}" ]]
+          [[ "$(df -Pk . | awk 'NR==2 {print $4}')" -ge 4194304 ]]
+          bash tools/gateway-network/runtime-object-infra-check.sh runtime-evidence/infra
+          jq -n --arg source "$EXPECTED_SOURCE" --arg workflow "$GITHUB_WORKFLOW_SHA" --arg workflow_ref "$GITHUB_WORKFLOW_REF" \
+            --arg run "$GITHUB_RUN_ID" --arg attempt "$GITHUB_RUN_ATTEMPT" \
+            '{source:$source,workflow_sha:$workflow,workflow_ref:$workflow_ref,run_id:$run,run_attempt:$attempt,
+              scope:"same-repository PR head; isolated three-namespace local/shaped link; no secrets; not actual WAN"}' > runtime-evidence/source.json
+          git ls-files -z -- crates/spiralcore-gateway crates/spiralcore-gateway-core crates/spiralcore-transfer crates/uor-r4-object-store tools/gateway-network \
+            .github/workflows/spiralcore-runtime-objects.yml docs/network/evidence/2026-11-02-runtime-gateway/network-registration.json \
+            | sort -z | xargs -0 sha256sum > runtime-evidence/source-files.sha256
+      - name: Install bounded runner dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          rustup toolchain install 1.97.1 --profile minimal --component clippy
+          sudo apt-get update -qq
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq tcpdump ethtool iproute2 iperf3 iputils-ping util-linux
+          rustc +1.97.1 -vV > runtime-evidence/rustc.txt
+          uname -a > runtime-evidence/platform.txt
+          sudo -n true
+      - name: Test and freeze the exact gateway and probes
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo +1.97.1 test --locked --manifest-path crates/spiralcore-gateway-core/Cargo.toml --all-targets 2>&1 | tee runtime-evidence/core-tests.log
+          cargo +1.97.1 test --locked --manifest-path crates/spiralcore-gateway/Cargo.toml --all-targets 2>&1 | tee runtime-evidence/gateway-tests.log
+          cargo +1.97.1 clippy --locked --manifest-path crates/spiralcore-gateway/Cargo.toml --all-targets -- -D warnings 2>&1 | tee runtime-evidence/clippy.log
+          cargo +1.97.1 build --release --locked --manifest-path crates/spiralcore-gateway/Cargo.toml --bins --example object_fixtures 2>&1 | tee runtime-evidence/build.log
+          sha256sum -c runtime-evidence/source-files.sha256 > runtime-evidence/source-check.log
+          git diff --exit-code > runtime-evidence/source-clean.log
+          mkdir runtime-evidence/frozen
+          cp "$CARGO_TARGET_DIR/release/spiralcore-gateway-object" "$CARGO_TARGET_DIR/release/spiralcore-gateway-probe" "$CARGO_TARGET_DIR/release/examples/object_fixtures" runtime-evidence/frozen/
+          sha256sum runtime-evidence/frozen/* > runtime-evidence/binaries.sha256
+      - name: Run twenty-four persistent object sessions with setup costs
+        timeout-minutes: 20
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash tools/gateway-network/runtime-object-netns.sh run "$PWD/runtime-evidence/campaign" \
+            "$PWD/runtime-evidence/frozen/spiralcore-gateway-object" "$PWD/runtime-evidence/frozen/spiralcore-gateway-probe" \
+            "$PWD/runtime-evidence/frozen/object_fixtures" \
+            "$PWD/docs/network/evidence/2026-11-02-runtime-gateway/network-registration.json" 2>&1 | tee runtime-evidence/campaign.log
+          jq -e '.sessions==24 and .operations==312 and .object_deliveries==288 and .exact_reopened and .stores_removed and .capture_complete and .host_routes_unchanged' runtime-evidence/campaign/complete.json
+          sha256sum -c runtime-evidence/binaries.sha256 > runtime-evidence/binaries-after.log
+      - name: Seal available public evidence including failures
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p runtime-evidence
+          find runtime-evidence -type f ! -name artifact.sha256 -print0 | sort -z | xargs -0 -r sha256sum > runtime-evidence/artifact.sha256
+      - name: Retain compact evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: spiralcore-runtime-objects-${{ github.run_id }}-${{ github.event.pull_request.head.sha }}
+          path: runtime-evidence/
+          retention-days: 14
+          if-no-files-found: error
+          compression-level: 3

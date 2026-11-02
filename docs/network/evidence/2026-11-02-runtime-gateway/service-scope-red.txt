@@ -1,0 +1,32 @@
+   Compiling spiralcore-gateway v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-gateway)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.11s
+     Running tests/object_service.rs (/Users/casey.allard/spiralcore/target/debug/deps/object_service-2685be9dcecdd9bc)
+
+running 3 tests
+test object_configuration_is_explicit_bounded_and_role_scoped ... ok
+test runtime_and_warm_use_real_gateway_and_reopen_exact_objects ... FAILED
+test mismatched_scope_or_policy_epoch_fails_before_opening_the_store ... FAILED
+
+failures:
+
+---- runtime_and_warm_use_real_gateway_and_reopen_exact_objects stdout ----
+
+thread 'runtime_and_warm_use_real_gateway_and_reopen_exact_objects' (6353661) panicked at tests/object_service.rs:202:5:
+assertion `left == right` failed
+  left: Null
+ right: "verified-transfer"
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- mismatched_scope_or_policy_epoch_fails_before_opening_the_store stdout ----
+
+thread 'mismatched_scope_or_policy_epoch_fails_before_opening_the_store' (6353659) panicked at tests/object_service.rs:184:9:
+mismatched namespace was accepted
+
+
+failures:
+    mismatched_scope_or_policy_epoch_fails_before_opening_the_store
+    runtime_and_warm_use_real_gateway_and_reopen_exact_objects
+
+test result: FAILED. 1 passed; 2 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.49s
+
+error: test failed, to rerun pass `--test object_service`

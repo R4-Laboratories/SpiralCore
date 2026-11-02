@@ -3,8 +3,11 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
     paths:
-      - 'crates/spiralcore-gateway/**'
-      - 'crates/spiralcore-gateway-core/**'
+      - 'crates/spiralcore-gateway/src/service.rs'
+      - 'crates/spiralcore-gateway/src/bin/spiralcore-gateway-probe.rs'
+      - 'crates/spiralcore-gateway/tests/probe.rs'
+      - 'crates/spiralcore-gateway-core/src/packet.rs'
+      - 'crates/spiralcore-gateway-core/tests/packet_selection.rs'
       - 'tools/gateway-network/packet-selection-netns.sh'
       - 'tools/gateway-network/packet-selection-infra-check.sh'
       - 'docs/network/evidence/2026-11-01-packet-selection/network-registration.json'

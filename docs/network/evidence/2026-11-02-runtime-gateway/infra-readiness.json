@@ -1,0 +1,46 @@
+{
+  "schema": "spiralcore.runtime-object.infra-readiness.v1",
+  "verdict": "READY_FOR_FROZEN_CI_EXECUTION",
+  "source_sha256": {
+    ".github/workflows/spiralcore-runtime-objects.yml": "a9eb60edb5b47cefde0ac4b4d82e72dd4364bdbfbbefea1d44b77d089096b5d5",
+    "tools/gateway-network/runtime-object-netns.sh": "2d1faa22e03fb721093623d8620a7072f01baadbbea7e484450968eb9c1597df",
+    "tools/gateway-network/runtime-object-infra-check.sh": "df742772673ca78f9e0b062d47b9505a97b673033d3d56e538910a56c4526a78",
+    "docs/network/evidence/2026-11-02-runtime-gateway/network-registration.json": "7ec5d654670effce63d58340aaa76f228be9a600f6bcffa90e305b148f29fb68",
+    "crates/spiralcore-gateway/examples/object_fixtures.rs": "f724d7d06eeee508638b308eff552ef37c39fe4646c31965f51ffb7bb068b491"
+  },
+  "checks": {
+    "shellcheck": "PASS",
+    "shell_syntax": "PASS",
+    "workflow_yaml_parse": "PASS",
+    "registration_positive": 1,
+    "registration_negative": 10,
+    "static_receipt": "infra-final/result.json",
+    "amended_fixture_tests": {
+      "passed": 3,
+      "failed": 0,
+      "receipt": "fixture-warm-edit-green.txt",
+      "exit": 0
+    },
+    "integrated_gate": {
+      "gateway_tests": 33,
+      "core_tests": 14,
+      "strict_clippy": "PASS",
+      "independent_closure": "PASS",
+      "authority": "Parent observed final receipts and approved launch_ready=true"
+    }
+  },
+  "scope": "Bounded new object-channel harness only; no benchmark or Linux namespace execution has occurred.",
+  "controls": [
+    "24 sessions, two tiers, 312 operations and 288 object deliveries; no automatic retry",
+    "Fresh namespace-only routes and router shaping; services drop to runner UID; owned cleanup only",
+    "Two-sided RTT/rate calibration; congestion retained; capture drops rejected",
+    "Whole-session capture includes authentication and closure; per-operation logical bytes separately identified",
+    "Exact reopened file comparison and fixture identity gates; actual non-cache RuntimeV1 and SparseV1 required for intended mechanisms",
+    "Source/binary manifests and public artifacts retained; private test keys excluded"
+  ],
+  "workflow_filter_review": "New workflow follows object service/channel/facade and shared dependencies. Old long packet-selection workflow now follows packet/service/probe paths; existing quick gateway compatibility workflow still covers broad gateway edits.",
+  "pending": [
+    "Exact source and executable freeze in CI",
+    "Actual Linux calibration, exact object sessions, capture custody and measured result analysis"
+  ]
+}
