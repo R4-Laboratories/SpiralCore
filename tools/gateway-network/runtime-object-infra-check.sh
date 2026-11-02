@@ -36,9 +36,10 @@ for name in unregistered trials arms size deliveries setup warmprobe retry rate 
   [ "$code" -ne 0 ] || { echo "negative unexpectedly accepted: $name" >&2; exit 1; }
 done
 if jq -e '.fixture_profile=="candidate-cpu"' "$registration" >/dev/null; then
-  for name in baseline binary_mapping arm_order; do
+  for name in baseline other_baseline binary_mapping arm_order; do
     case "$name" in
       baseline) mutation='.baseline_revision="main"';;
+      other_baseline) mutation='.baseline_revision=(if .schema=="spiralcore.candidate-cpu.registration.v1" then "4a8ec79c9b185c85407e9767653dbcc4af97bf7e" else "4b8cb79fe5fca9e9527a2923924c887d9e7ddbf8" end)';;
       binary_mapping) mutation='.service_binary_by_arm["combined-before"]="candidate"';;
       arm_order) mutation='.dose.mode_order_by_trial[1]=.dose.mode_order_by_trial[0]';;
     esac
@@ -93,6 +94,6 @@ for name in mode path bytes framing missing; do
   [ "$code" -ne 0 ] || { echo "changed/missing operation unexpectedly accepted: $name" >&2; exit 1; }
 done
 bindings=0
-if jq -e '.fixture_profile=="candidate-cpu"' "$registration" >/dev/null; then bindings=3; fi
+if jq -e '.fixture_profile=="candidate-cpu"' "$registration" >/dev/null; then bindings=4; fi
 jq -n --argjson bindings "$bindings" '{positive:1,negatives:12,binding_negatives:$bindings,capture_positive:1,capture_negatives:4,
   parity_positive:1,parity_negatives:5,passed:true,scope:"pure registration, capture completion, receipt parity and shell syntax; no network claim"}' > "$out/result.json"

@@ -1,0 +1,101 @@
+{
+  "schema": "spiralcore.unrelated-gateway-cpu.infra-readiness.v1",
+  "verdict": "FROZEN_READY_FOR_REGISTERED_CI_RUN",
+  "source_sha256": {
+    "tools/gateway-network/runtime-object-netns.sh": "e699d92c61246ea077b1a050f80410e52044bcd1451f46b824d420206e4adb8f",
+    "tools/gateway-network/runtime-object-infra-check.sh": "a5c04a7d08a7d9f0df3d412cb1393606ff2d7814cf2a511eb82fc275e29697ec",
+    "tools/gateway-network/analyze-runtime-objects.rs": "61abbf98ddd256a54613c74a1af2c3d83e5116fd63e141b87a7dabadf4ec57df",
+    ".github/workflows/spiralcore-candidate-cpu.yml": "649ad4eb51d6241a02714caac8dc8df3e6a0e80cc809adc40e5b394c4792b13c",
+    "docs/network/evidence/2026-11-02-unrelated-gateway-cpu/network-registration.json": "635b1ffd8fc9d665427074ab2b63e1b5a78cdffa7b148414647d90e80834a9eb",
+    "docs/network/evidence/2026-11-02-unrelated-gateway-cpu/analysis-method.md": "4a5268cd118c0f2a7b143a4bff70ded648f28b8c01c74f940db528749fd98307"
+  },
+  "checks": {
+    "registration_red": {
+      "exit": 1,
+      "receipt": "infra-red.txt",
+      "observed_failure": "new schema unsupported before implementation"
+    },
+    "analyzer_red": {
+      "exit": 101,
+      "receipt": "analyzer-red.txt",
+      "observed_failure": "unknown campaign registration schema"
+    },
+    "infrastructure": {
+      "positive": 1,
+      "negatives": 12,
+      "binding_negatives": 4,
+      "capture_positive": 1,
+      "capture_negatives": 4,
+      "parity_positive": 1,
+      "parity_negatives": 5,
+      "passed": true,
+      "scope": "pure registration, capture completion, receipt parity and shell syntax; no network claim"
+    },
+    "historical_candidate_registration": "same positive and negative suite passed with original4b8cb79 pin",
+    "compact_infra_receipts": {
+      "archive": "infra-check-receipts.tar.gz",
+      "manifest": "infra-check-files.sha256",
+      "reopened_hashes_match": true
+    },
+    "shellcheck_exit": 0,
+    "workflow_yaml_and_embedded_bash_exit": 0,
+    "fixtures": {
+      "status": "unchanged",
+      "profile": "candidate-cpu",
+      "sha256": "5c6ccef60801aa1372cf675d3cebfb610803dedf859c52ba835cd3b066c95440"
+    },
+    "analyzer_tests": {
+      "passed": 9,
+      "exit": 0,
+      "receipt": "analyzer-green.txt"
+    },
+    "analyzer_clippy": {
+      "exit": 0,
+      "receipt": "analyzer-clippy.txt"
+    },
+    "historical_runtime-gateway": {
+      "byte_identical": true,
+      "receipt": "historical-runtime-gateway.txt",
+      "sha256": "05482731ca2bb0b030f4957c6e387a9565542a82874ac33b1fee99687d066801"
+    },
+    "historical_combined-gateway": {
+      "byte_identical": true,
+      "receipt": "historical-combined-gateway.txt",
+      "sha256": "edaf981cce1391abbd2e570d0bdb64ae34c36fa225f2c67e5e2ad1f67bf36e17"
+    },
+    "historical_candidate-cpu": {
+      "byte_identical": true,
+      "receipt": "historical-candidate-cpu.txt",
+      "sha256": "69b6efd388c8acfd418e528c05a52f079ca1aab26ef8b5631c22a00a933efef2"
+    },
+    "final_integration": {
+      "authority": "Parent observed final checks; all retained exit receipts independently read as0",
+      "gateway_core_tests": 15,
+      "gateway_tests": 42,
+      "receipts": [
+        "transfer-clippy.txt",
+        "gateway-core-tests.txt",
+        "gateway-core-clippy.txt",
+        "gateway-tests.txt",
+        "gateway-clippy.txt"
+      ]
+    },
+    "independent_infrastructure_review": {
+      "verdict": "PASS",
+      "receipt": "review-infra-independent.md"
+    },
+    "actual_launch_registration": {
+      "launch_ready": true,
+      "validation": "PASS",
+      "exit": 0,
+      "receipt": "infra-launch.exit"
+    }
+  },
+  "source_binding": "Static workflow checks actual pinned baseline git HEAD and clean checkout, source manifests, unchanged Whole control sources and lockfiles; only baseline service binary is built. Both executables use Rust1.97.1 and equal release settings. All builds end before timing.",
+  "parity_scope": "Actual operation identity, winner, publication path, frame/data/count and logical delta parity remain mandatory. Canonical Offer/Data equality is separately covered by frozen-baseline core witnesses; no new service instrumentation.",
+  "pending": [
+    "Exact CI source and executable freeze",
+    "Actual18-session comparison, archive custody and matched analysis"
+  ],
+  "scope": "No new network traffic or performance result is claimed."
+}

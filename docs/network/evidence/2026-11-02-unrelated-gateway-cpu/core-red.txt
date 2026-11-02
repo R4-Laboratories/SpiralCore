@@ -1,0 +1,15 @@
+   Compiling spiralcore-transfer v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-transfer)
+error[E0425]: cannot find function `next_copy_run` in this scope
+  --> src/../tests/fixtures/unrelated_cpu_checks.rs:28:32
+   |
+28 |                     assert_eq!(next_copy_run(&a,&b,from),scalar(&a,&b,from),"n={n},at={at},len={len},from={from}");
+   |                                ^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `next_copy_run` in this scope
+  --> src/../tests/fixtures/unrelated_cpu_checks.rs:39:41
+   |
+39 |         for from in 0..128 { assert_eq!(next_copy_run(&a,&b,from),scalar(&a,&b,from)); }
+   |                                         ^^^^^^^^^^^^^ not found in this scope
+
+For more information about this error, try `rustc --explain E0425`.
+error: could not compile `spiralcore-transfer` (lib test) due to 2 previous errors

@@ -10,21 +10,23 @@ enum CampaignPolicy {
     Runtime,
     Combined,
     CandidateCpu,
+    UnrelatedCpu,
 }
 impl CampaignPolicy {
     fn from_registration(reg: &Value) -> Result<Self> {
         let policy = match reg["schema"].as_str() {
             Some("spiralcore.runtime-object.registration.v1") => Self::Runtime,
             Some("spiralcore.combined-object.registration.v1") => Self::Combined,
-            Some("spiralcore.candidate-cpu.registration.v1") => {
-                require(
-                    reg["baseline_revision"] == "4b8cb79fe5fca9e9527a2923924c887d9e7ddbf8",
-                    "wrong pinned baseline revision",
-                )?;
-                Self::CandidateCpu
-            }
+            Some("spiralcore.candidate-cpu.registration.v1") => Self::CandidateCpu,
+            Some("spiralcore.unrelated-gateway-cpu.registration.v1") => Self::UnrelatedCpu,
             _ => return Err("unknown campaign registration schema".into()),
         };
+        if let Some(baseline) = policy.baseline_revision() {
+            require(
+                reg["baseline_revision"] == baseline,
+                "wrong pinned baseline revision",
+            )?;
+        }
         require(
             reg["arms"] == json!(policy.arms())
                 && reg["dose"]["total_operations"] == policy.operations()
@@ -33,29 +35,41 @@ impl CampaignPolicy {
         )?;
         Ok(policy)
     }
+    fn baseline_revision(self) -> Option<&'static str> {
+        match self {
+            Self::CandidateCpu => Some("4b8cb79fe5fca9e9527a2923924c887d9e7ddbf8"),
+            Self::UnrelatedCpu => Some("4a8ec79c9b185c85407e9767653dbcc4af97bf7e"),
+            Self::Runtime | Self::Combined => None,
+        }
+    }
+    fn paired(self) -> bool {
+        self.baseline_revision().is_some()
+    }
     fn arms(self) -> &'static [&'static str] {
         match self {
             Self::Runtime => &ARMS,
             Self::Combined => &["whole-zstd", "warm", "runtime", "combined"],
-            Self::CandidateCpu => &["combined-before", "combined-after", "whole-zstd"],
+            Self::CandidateCpu | Self::UnrelatedCpu => {
+                &["combined-before", "combined-after", "whole-zstd"]
+            }
         }
     }
     fn operations(self) -> u64 {
         match self {
             Self::Runtime => 312,
             Self::Combined => 336,
-            Self::CandidateCpu => 264,
+            Self::CandidateCpu | Self::UnrelatedCpu => 264,
         }
     }
     fn baselines(self) -> &'static [&'static str] {
         match self {
             Self::Runtime => &["raw", "whole-zstd"],
             Self::Combined => &["whole-zstd", "warm", "runtime"],
-            Self::CandidateCpu => &["combined-before", "whole-zstd"],
+            Self::CandidateCpu | Self::UnrelatedCpu => &["combined-before", "whole-zstd"],
         }
     }
     fn action_counts(self) -> BTreeMap<String, u64> {
-        if matches!(self, Self::CandidateCpu) {
+        if self.paired() {
             return BTreeMap::from([
                 ("send".to_owned(), 216),
                 ("schema".to_owned(), 24),
@@ -64,7 +78,7 @@ impl CampaignPolicy {
         }
         let auxiliary = match self {
             Self::Runtime => 12,
-            Self::Combined | Self::CandidateCpu => 24,
+            Self::Combined | Self::CandidateCpu | Self::UnrelatedCpu => 24,
         };
         BTreeMap::from([
             ("send".to_owned(), 276),
@@ -78,20 +92,17 @@ impl CampaignPolicy {
             Self::Runtime => "spiralcore.runtime-object.analysis.v1",
             Self::Combined => "spiralcore.combined-object.analysis.v1",
             Self::CandidateCpu => "spiralcore.candidate-cpu.analysis.v1",
+            Self::UnrelatedCpu => "spiralcore.unrelated-gateway-cpu.analysis.v1",
         }
     }
     fn sessions(self) -> u64 {
-        if matches!(self, Self::CandidateCpu) {
-            18
-        } else {
-            24
-        }
+        if self.paired() { 18 } else { 24 }
     }
     fn deliveries(self) -> u64 {
         self.sessions() * 12
     }
     fn requested(self) -> u64 {
-        if matches!(self, Self::CandidateCpu) {
+        if self.paired() {
             1_717_047_288
         } else {
             2_289_396_384
@@ -419,7 +430,7 @@ fn calibration(root: &Path, profile: &str, trial: u64, policy: CampaignPolicy) -
     let complete = read(&dir.join("complete.json"))?;
     flag(&complete, "ok")?;
     flag(&complete, "namespace_cleanup")?;
-    let key = if matches!(policy, CampaignPolicy::CandidateCpu) {
+    let key = if policy.paired() {
         "topology_all_three_sessions_wall_us"
     } else {
         "topology_all_four_sessions_wall_us"
@@ -482,10 +493,10 @@ fn session(
     let dir = root.join(&name);
     let meta = read(&dir.join("session.json"))?;
     let complete = read(&dir.join("complete.json"))?;
-    if matches!(policy, CampaignPolicy::CandidateCpu) {
+    if let Some(baseline) = policy.baseline_revision() {
         let bindings = read(&root.join("service-binaries.json"))?;
         require(
-            bindings["baseline_revision"] == "4b8cb79fe5fca9e9527a2923924c887d9e7ddbf8",
+            bindings["baseline_revision"] == baseline,
             "wrong baseline binding",
         )?;
         for key in ["baseline_sha256", "candidate_sha256"] {
@@ -981,7 +992,7 @@ fn analyze(root: &Path) -> Result<Value> {
         policy.baselines(),
     )?;
     let mut analysis = json!({"schema":policy.analysis_schema(),"qualified_receipts":true,"sessions":policy.sessions(),"operations":policy.operations(),"object_deliveries":policy.deliveries(),"requested_bytes":rows.requested,"operation_counts":rows.actions,"method":"analysis-method.md; three descriptive paired trials; ratios are candidate/baseline, lower is better; no confidence or tail claims","limits":["local Linux shaped network is not actual Internet WAN","captured wire bytes are whole-session only","CPU domains are process or labeled nested stages; never add nested stages to process totals","client wall includes waiting and overlapping CPU, isolated send-only time is not identified","runtime/warm are explicit object profiles, not transparent TUN compression","artifact custody and source/binary identity are independently verified"],"fixture_generation":rows.fixtures,"topologies":rows.topologies,"operation_rows":rows.operations,"paid_group_cumulative_rows":rows.cumulative,"paid_connection_prefix_rows":rows.prefix,"session_rows":rows.sessions,"operation_summaries":operation_summaries,"paid_group_cumulative_summaries":cumulative_summaries,"paid_connection_prefix_summaries":prefix_summaries,"session_summaries":session_summaries});
-    if matches!(policy, CampaignPolicy::CandidateCpu) {
+    if policy.paired() {
         flag(&complete, "before_after_parity")?;
         let mut pairs = Vec::new();
         for profile in PROFILES {
@@ -1024,6 +1035,32 @@ fn main() -> Result<()> {
 mod tests {
     use super::*;
     use serde_json::json;
+
+    #[test]
+    fn unrelated_policy_binds_current_baseline_without_reinterpreting_history() {
+        let mut reg = json!({"schema":"spiralcore.unrelated-gateway-cpu.registration.v1",
+            "baseline_revision":"4a8ec79c9b185c85407e9767653dbcc4af97bf7e",
+            "arms":["combined-before","combined-after","whole-zstd"],
+            "dose":{"total_operations":264,"operation_counts":{"send":216,"schema":24,"checkpoint":24}}});
+        let p = CampaignPolicy::from_registration(&reg).unwrap();
+        assert_eq!(
+            p.arms(),
+            &["combined-before", "combined-after", "whole-zstd"]
+        );
+        assert_eq!(p.sessions(), 18);
+        assert_eq!(p.deliveries(), 216);
+        assert_eq!(p.requested(), 1_717_047_288);
+        assert_eq!(
+            p.analysis_schema(),
+            "spiralcore.unrelated-gateway-cpu.analysis.v1"
+        );
+        reg["baseline_revision"] = json!("4b8cb79fe5fca9e9527a2923924c887d9e7ddbf8");
+        assert!(CampaignPolicy::from_registration(&reg).is_err());
+        reg["schema"] = json!("spiralcore.candidate-cpu.registration.v1");
+        assert!(CampaignPolicy::from_registration(&reg).is_ok());
+        reg["baseline_revision"] = json!("4a8ec79c9b185c85407e9767653dbcc4af97bf7e");
+        assert!(CampaignPolicy::from_registration(&reg).is_err());
+    }
 
     #[test]
     fn candidate_policy_binds_three_arms_and_exact_baseline() {
