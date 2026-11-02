@@ -48,9 +48,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          cargo +1.97.1 test --locked \
+          cargo +1.97.1 test --release --locked \
             --manifest-path crates/spiralcore-mvm-live/Cargo.toml \
-            --features linux-host --all-targets
+            --features linux-host --all-targets -- --test-threads=1
       # Portable service target counts are additionally enforced per native OS
       # by mvm-mailbox-portable.yml; enable live here so they do not compile away.
       - name: Shared object-v1 and canonical mailbox conformance

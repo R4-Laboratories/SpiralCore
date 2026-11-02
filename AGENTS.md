@@ -51,6 +51,14 @@ Windows roles. Distinguish native MVM backends from remote clients/gateways;
 cross-compilation or WSL execution is not native Windows evidence. Record every
 unavailable platform/backend gate rather than calling the delivery complete.
 
+Scale is a release gate tracked in
+[#49](https://github.com/R4-Laboratories/SpiralCore/issues/49). Two guests establish
+a functional boundary, not fleet capacity. Qualify aggregate resource budgets,
+long-lived bounded state, concurrency, tenant fairness, backpressure, recovery
+and tail latency; record the supported capacity envelope and saturation. Preserve
+one protocol when adding negotiated pipelining or batching. Simulated endpoints
+do not establish the same number of booted MVMs or authorize larger host budgets.
+
 Implement and qualify the MVM work in SpiralCore, then prepare the authorized
 outside-contributor PR to `tinylabscom/mvm`. Formal certification, FIPS/CUI and
 host-blind security claims require their own concrete authority and evidence.

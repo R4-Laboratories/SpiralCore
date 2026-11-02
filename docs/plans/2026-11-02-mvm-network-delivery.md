@@ -96,6 +96,30 @@ stay opt-in. Production source adoption, broader isolation/load tests, qualified
 host-blind tiers and concrete validated-crypto requirements remain explicit
 delivery gates, not conclusions drawn from local codec demonstrations.
 
+## Scale and long-lived operation acceptance
+
+[Scale qualification #49](https://github.com/R4-Laboratories/SpiralCore/issues/49)
+is required before the final MVM contribution. The two-guest pilot and native
+client matrix establish functional boundaries. They do not qualify fleet size.
+
+1. Freeze a capacity registration per role: peers/MVMs, active streams/transfers,
+   workload sizes, cache/staging/metadata budgets, CPU, RSS and descriptor limits.
+   Exercise logical endpoint ladders separately from actual booted guests, with
+   each native run inside its approved host resource budget.
+2. Qualify long-lived sessions beyond the 2048-Call witness cap. Prove bounded
+   FIFO, dedup/receipt and scope metadata under sustained work and churn; retain
+   replay, stable retry identity and epoch safety while reclaiming terminal state.
+3. Evaluate bounded pipelining/batching against the current serial consumer.
+   Specify any negotiated window/profile in the shared contract, keeping one
+   protocol and distinct admission/publication/application acknowledgments.
+4. Prove fairness and overload behavior with hot/slow peers and tenants, cold
+   caches, cancellation, relay loss and hostile input. Charge crypto/replay work
+   within aggregate budgets; large reconstruction must not starve controls.
+5. Record actual bytes, verified goodput, p50/p95/p99 queue/commit latency, CPU,
+   RSS, cache/staging/metadata growth and FDs through saturation and recovery.
+   Compare raw and tuned zstd under matching load/auth/durability on steady-state
+   and bounded-soak local/WAN runs. Preserve losses and unqualified configurations.
+
 ## Per-phase completion
 
 Run relevant RED/GREEN tests and focused independent Rust/security review,

@@ -46,9 +46,9 @@ counts must equal the enumerated count and meet the minimum. Failed, ignored,
 measured or filtered cases fail the row; a Unix-only target silently running
 zero tests cannot pass. The current portable targets require at least **50 passes on every row**,
 including four new clock-policy regressions. Their all-platform execution status
-is **PENDING_EXPANDED_CLOCK_REGRESSION_GATE** until a new seven-row run passes.
-The historical run described below executed the original 46 tests per row and
-does not qualify this expanded requirement. The two existing
+is **PASS at the pinned protocol source** in run 41539620012: all seven native
+rows executed the expanded coverage. The older checkpoint executed the original
+46 tests per row; it remains separate historical evidence. The two existing
 durable storage dispatch tests were moved unchanged from `canonical.rs` into
 `canonical_storage.rs`, retaining the shared fixture module. A separate explicit
 Linux/macOS-only step enumerates and executes both, records separate counts and
@@ -66,17 +66,20 @@ stores, build outputs, credentials or full environment dumps are uploaded.
 Jobs have read-only repository permissions, pinned action SHAs, bounded timeouts
 and at most three concurrent test rows.
 
-Historical executed status is **PASS for the original 46 tests on all seven
-native rows at source `7506b3f3a40ee7dc190d665031750d336fd65aeb`** in
-[run 41535679868](https://github.com/R4-Laboratories/SpiralCore/actions/runs/41535679868):
-322 portable tests plus eight Unix storage tests. The
+Latest executed status is **PASS for 50 tests on all seven native rows** in
+[run 41539620012](https://github.com/R4-Laboratories/SpiralCore/actions/runs/41539620012):
+350 portable tests plus eight Unix storage tests, including four clock regressions
+per row. Actual merge source `104187b956190c01351b10e0530ce928a66620df` has the same
+tree as PR head `2a4a199f0bae224fbe82aa148feb20273bd64d84`. The
 [permanent report and original artifacts](../network/evidence/2026-11-02-mvm-service/platforms/README.md)
-record exact source, native OS/build, runner image, compiler and counts. This
-qualifies that historical ephemeral service/client scope only. It includes no
-`service_clock` execution. The expanded 50-test requirement needs **350 portable
-passes plus eight separate Unix storage passes** in a new seven-row run; local
-clock-test success is not that platform evidence. The manifest keeps historical
-qualification and current required coverage as separate fields. Remaining explicit
+preserve exact native identities and both checkpoints. Historical run 41535679868
+remains pinned separately at 46 tests per row and 322 portable plus eight storage
+passes. Later source changes require their own evidence.
+
+The separate Linux MVM workflow 41539620010 failed its debug 16 MiB campaign
+with `Expired` / `object endpoint refused operation`; its retained failure and
+replacement gate remain explicit in the report. Neither the current portability
+pass nor the historical one waives that gate. Other remaining explicit
 gates include real WAN in both directions,
 KVM/HVF/libkrun guest/host witnesses, Windows durable storage, NIC attachment,
 FlowMux and owner-access integration, additional OS/version/ABI combinations,
