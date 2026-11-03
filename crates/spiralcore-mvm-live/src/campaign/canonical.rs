@@ -259,7 +259,10 @@ impl Session {
                     let (accepted, ack) =
                         self.returns
                             .admit(&mut self.service, &self.incoming, &bytes, now)?;
-                    if accepted.receipt.outcome != DeliveryOutcome::AcceptedEphemeral {
+                    if !matches!(
+                        accepted.receipt.outcome,
+                        DeliveryOutcome::AcceptedEphemeral | DeliveryOutcome::Duplicate
+                    ) {
                         return Err("Reply admission refused".into());
                     }
                     let observed =
