@@ -1,0 +1,70 @@
+name: SpiralCore installed owner contracts
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'crates/spiralcore-mvm-live/src/installed_owner.rs'
+      - 'crates/spiralcore-mvm-live/src/installed_owner/**'
+      - 'crates/spiralcore-mvm-live/tests/installed-owner-harness/**'
+      - '.github/workflows/spiralcore-installed-owner.yml'
+permissions:
+  contents: read
+jobs:
+  native-owner:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {runner: ubuntu-24.04, target: x86_64-unknown-linux-gnu, lifecycle: 9}
+          - {runner: ubuntu-24.04-arm, target: aarch64-unknown-linux-gnu, lifecycle: 9}
+          - {runner: macos-26, target: aarch64-apple-darwin, lifecycle: 10}
+          - {runner: macos-26-intel, target: x86_64-apple-darwin, lifecycle: 10}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 10
+    defaults:
+      run:
+        shell: bash
+    env:
+      CARGO_BUILD_JOBS: 2
+      CARGO_INCREMENTAL: 0
+      CARGO_TARGET_DIR: ${{ runner.temp }}/installed-owner-target
+      EXPECTED_TARGET: ${{ matrix.target }}
+      EXPECTED_LIFECYCLE: ${{ matrix.lifecycle }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Install pinned toolchain
+        run: rustup toolchain install 1.97.1 --profile minimal --component clippy
+      - name: Record exact native source
+        run: |
+          set -euo pipefail
+          mkdir owner-evidence
+          git rev-parse HEAD > owner-evidence/source-commit.txt
+          uname -a > owner-evidence/platform.txt
+          rustc +1.97.1 -vV > owner-evidence/rustc.txt
+          grep -Fx "host: $EXPECTED_TARGET" owner-evidence/rustc.txt
+          shasum -a 256 crates/spiralcore-mvm-live/src/installed_owner.rs \
+            crates/spiralcore-mvm-live/src/installed_owner/tests.rs \
+            crates/spiralcore-mvm-live/tests/installed-owner-harness/Cargo.toml \
+            crates/spiralcore-mvm-live/tests/installed-owner-harness/Cargo.lock \
+            crates/spiralcore-mvm-live/tests/installed-owner-harness/tests/lifecycle.rs \
+            > owner-evidence/source.sha256
+      - name: Exact production-file process and storage tests
+        run: |
+          set -euo pipefail
+          manifest=crates/spiralcore-mvm-live/tests/installed-owner-harness/Cargo.toml
+          # Linux fork/vfork briefly inherits unrelated test FDs until exec.
+          # Keep process-lifetime fixtures serial; do not weaken Busy refusal.
+          cargo +1.97.1 test --locked --manifest-path "$manifest" --lib -- --test-threads=1 2>&1 | tee owner-evidence/unit.txt
+          grep -E '^test result: ok\. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in [0-9.]+s$' owner-evidence/unit.txt
+          cargo +1.97.1 test --locked --manifest-path "$manifest" --test lifecycle -- --test-threads=1 2>&1 | tee owner-evidence/lifecycle.txt
+          grep -E "^test result: ok\. $EXPECTED_LIFECYCLE passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in [0-9.]+s$" owner-evidence/lifecycle.txt
+          cargo +1.97.1 clippy --locked --manifest-path "$manifest" --all-targets -- -D warnings 2>&1 | tee owner-evidence/clippy.txt
+          shasum -a 256 -c owner-evidence/source.sha256
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: installed-owner-${{ matrix.target }}-${{ github.run_attempt }}
+          path: owner-evidence/
+          retention-days: 14
