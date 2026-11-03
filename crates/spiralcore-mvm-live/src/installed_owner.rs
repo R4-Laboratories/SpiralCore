@@ -27,6 +27,10 @@ const RECORD_BYTES: usize = 176;
 const BODY_BYTES: usize = 144;
 const DOMAIN: &[u8] = b"spiralcore/installed-owner/v1\0";
 
+#[cfg(test)]
+#[path = "installed_owner/binding_tests.rs"]
+mod binding_tests;
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct InstallationKey {
     pub installation: [u8; 32],

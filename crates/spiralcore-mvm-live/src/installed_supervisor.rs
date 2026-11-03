@@ -429,3 +429,7 @@ mod tests;
 #[cfg(test)]
 #[path = "installed_supervisor/spawn_tests.rs"]
 mod spawn_tests;
+
+#[cfg(test)]
+#[path = "installed_supervisor/drain_tests.rs"]
+mod drain_tests;
