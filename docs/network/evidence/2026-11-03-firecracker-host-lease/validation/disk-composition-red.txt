@@ -1,0 +1,22 @@
+   Compiling mvm-backends v0.26.0 (/var/tmp/spiralcore-firecracker-host-lease-20261103/mvm-source/crates/mvm-backends)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.70s
+     Running unittests src/lib.rs (/var/tmp/spiralcore-firecracker-host-lease-20261103/mvm-target/debug/deps/mvm_backends-5d55f98d22ae3f74)
+
+running 1 test
+test fc::daemon::host_lease_launch_tests::leased_launch_accepts_the_existing_writable_disk_reopen_composition ... FAILED
+
+failures:
+
+---- fc::daemon::host_lease_launch_tests::leased_launch_accepts_the_existing_writable_disk_reopen_composition stdout ----
+
+thread 'fc::daemon::host_lease_launch_tests::leased_launch_accepts_the_existing_writable_disk_reopen_composition' (1113784) panicked at crates/mvm-backends/src/fc/host_lease_launch_tests.rs:85:10:
+the leased bash launcher must still accept writable disk custody: handoff launch shape changed
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    fc::daemon::host_lease_launch_tests::leased_launch_accepts_the_existing_writable_disk_reopen_composition
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 415 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `-p mvm-backends --lib`

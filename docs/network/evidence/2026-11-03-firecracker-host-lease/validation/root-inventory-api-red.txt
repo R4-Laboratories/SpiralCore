@@ -1,0 +1,33 @@
+   Compiling mvm-vmm v0.26.0 (/var/tmp/spiralcore-firecracker-host-lease-20261103/mvm-source/crates/mvm-vmm)
+error[E0425]: cannot find function `privileged_fd_inventory_command_as` in this scope
+   --> crates/mvm-vmm/src/driver/prepared_disks.rs:732:23
+    |
+ 43 | fn privileged_fd_inventory_command(pid: u32) -> std::process::Command {
+    | --------------------------------------------------------------------- similarly named function `privileged_fd_inventory_command` defined here
+...
+732 |         let command = privileged_fd_inventory_command_as(4242, 1000);
+    |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+help: a function with a similar name exists
+    |
+732 -         let command = privileged_fd_inventory_command_as(4242, 1000);
+732 +         let command = privileged_fd_inventory_command(4242, 1000);
+    |
+
+error[E0425]: cannot find function `privileged_fd_inventory_command_as` in this scope
+   --> crates/mvm-vmm/src/driver/prepared_disks.rs:766:23
+    |
+ 43 | fn privileged_fd_inventory_command(pid: u32) -> std::process::Command {
+    | --------------------------------------------------------------------- similarly named function `privileged_fd_inventory_command` defined here
+...
+766 |         let command = privileged_fd_inventory_command_as(4242, 0);
+    |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+help: a function with a similar name exists
+    |
+766 -         let command = privileged_fd_inventory_command_as(4242, 0);
+766 +         let command = privileged_fd_inventory_command(4242, 0);
+    |
+
+For more information about this error, try `rustc --explain E0425`.
+error: could not compile `mvm-vmm` (lib test) due to 2 previous errors
