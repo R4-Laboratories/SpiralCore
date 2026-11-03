@@ -1,0 +1,50 @@
+{
+  "registration": "SC-MVM-SCALE-002-OBJECTS",
+  "registered_before_execution": true,
+  "purpose": "Matched shared-core object campaigns through a single shared canonical mailbox broker, TCP loopback. Host-process qualification only, not guest or WAN evidence.",
+  "dose": {
+    "requested_sizes": [1048576, 16777216],
+    "actual_target_lengths": [1047202, 14851384],
+    "trial": 0,
+    "arm_order": ["raw-mixed", "whole-mixed", "combined-cpu"],
+    "size_order": [1048576, 16777216],
+    "fresh_process_per_cell": true,
+    "maximum_cells": 6,
+    "maximum_concurrent_cells": 1,
+    "target_objects_per_cell": 8,
+    "combined_setup_publications": 2,
+    "registered_fixtures": "Existing fixtures::mixed_objects; all eight target byte strings match across arms. Combined pays checkpoint and schema publication setup."
+  },
+  "authority_and_protocol": {
+    "protocol": "Existing canonical encrypted MVM Call/Reply and encrypted destination-admission receipts; same object-v1 codec and durable publication contract.",
+    "shared_budget": "One injected BrokerContext shared by sender and receiver roles on TCP loopback; native witness identity limits unchanged.",
+    "synthetic_grant": "Explicitly re-signed two-outstanding-Call local grant accounts for both endpoint roles in one host domain, as existing shared-broker test. Production remote provisioning remains one.",
+    "call_limit": 2048,
+    "limit_policy": "Do not raise the witness Call cap or quotas. Larger raw mixed campaigns may exceed that unchanged cap; preserve the refusal and mark the comparison incomplete."
+  },
+  "baseline": "RawMixed, WholeMixed and CombinedCpu all use the existing exact-object warm probe. RawMixed means raw byte codec plus shared exact-object cache, not cacheless raw resend. WholeMixed uses existing prepared whole-object zstd. No codec tuning or implementation changes in this campaign.",
+  "measurement": {
+    "bytes": "Actual canonical encrypted envelope and framing counters, both directions, including readiness/status and all setup publications; compare sender and receiver counters. Excludes TCP/IP headers and retransmission.",
+    "cpu": "One aggregate ProcessTime interval, plus sender and receiver ThreadTime intervals. Original campaign cpu_us values use overlapping process clocks; retain but never sum them as endpoint CPU.",
+    "time": "From before provisioning through sender completion, receiver durable publication and exact independent reopen verification. Additional offline re-verification and payload cleanup timed separately. Include all fixture/codec generation setup performed by both roles.",
+    "memory": "Kernel lifetime process peak RSS; new process per cell. No energy or send-only-time inference.",
+    "interpretation": "One fixed-order pilot per cell, not randomized repeated trials or a statistical speedup claim. Preserve losses and failed gates."
+  },
+  "resource_policy": {
+    "build_jobs": 2,
+    "reuse_existing_owned_cargo_target": true,
+    "post_execution_rss_gate_bytes": 1073741824,
+    "post_execution_owned_store_apparent_bytes_gate": 536870912,
+    "bounds_note": "Fixed fixture/size/trial validation precedes allocation. RSS and store gates are post-execution checks, not allocator or filesystem quotas. Do not run benchmark cells concurrently with owned builds/tests.",
+    "payload_cleanup": "Create a new owned scratch directory per cell; flush compact exact-verified evidence before deleting its payload store. Errors preserve the owned partial store until failure record and inventory are retained, then only explicit owned cleanup is allowed.",
+    "local_hdd": "No payload datasets copied to Mac; compact JSON/test results only. No new VM disk or toolchain."
+  },
+  "gates": [
+    "All completed objects pass exact length and byte reopen comparisons.",
+    "Actual sender and receiver envelope/framing/frame counters agree.",
+    "All eight target fixtures represented, plus two setup publications only for CombinedCpu.",
+    "No hidden raw fallback under a new transfer identity or witness limit increase.",
+    "Failed or partial cells remain explicit and cannot establish a matched successful comparison.",
+    "Successful cell evidence flushed before deleting owned payloads; post-execution RSS and store gates pass."
+  ]
+}

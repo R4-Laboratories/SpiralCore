@@ -220,7 +220,7 @@ pub fn sender_with_broker<S: SocketIo + 'static>(
         return Err("unexpected initial Status probe outcome".into());
     }
     let mode = match bootstrap.plan.arm {
-        Arm::Raw => ObjectMode::Raw,
+        Arm::Raw | Arm::RawMixed => ObjectMode::Raw,
         Arm::Whole | Arm::WholeMixed => ObjectMode::Whole,
         Arm::Warm => ObjectMode::Warm,
         Arm::Combined | Arm::CombinedCpu => ObjectMode::Combined,
