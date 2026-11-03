@@ -34,6 +34,54 @@ impl From<ServiceError> for SessionError {
 }
 type Result<T> = std::result::Result<T, SessionError>;
 
+/// One receiver lifetime, fixed at authenticated admission. Neither a wall
+/// clock rollback nor replay can extend the original owner-monotonic bound.
+pub(super) struct ExchangeDeadline {
+    instant: std::time::Instant,
+    expiry: i64,
+    admitted_mono: u64,
+    deadline_mono: u64,
+}
+impl ExchangeDeadline {
+    pub(super) fn new(instant: std::time::Instant, expiry: i64, now: ServiceTime) -> Result<Self> {
+        let remaining = expiry.checked_sub(now.unix_ms).ok_or(ServiceError::Clock)?;
+        let remaining = u64::try_from(remaining)
+            .ok()
+            .filter(|value| *value > 0)
+            .ok_or(ServiceError::Expired)?;
+        let deadline_mono = now
+            .monotonic_ms
+            .checked_add(remaining)
+            .ok_or(ServiceError::Clock)?;
+        let signed_cap = std::time::Instant::now()
+            .checked_add(std::time::Duration::from_millis(remaining))
+            .ok_or(ServiceError::Clock)?;
+        let result = Self {
+            instant: instant.min(signed_cap),
+            expiry,
+            admitted_mono: now.monotonic_ms,
+            deadline_mono,
+        };
+        result.check(now)?;
+        Ok(result)
+    }
+    pub(super) fn instant(&self) -> std::time::Instant {
+        self.instant
+    }
+    pub(super) fn check(&self, now: ServiceTime) -> Result<()> {
+        if now.monotonic_ms < self.admitted_mono {
+            return Err(ServiceError::Clock.into());
+        }
+        if std::time::Instant::now() >= self.instant
+            || now.unix_ms >= self.expiry
+            || now.monotonic_ms >= self.deadline_mono
+        {
+            return Err(ServiceError::Expired.into());
+        }
+        Ok(())
+    }
+}
+
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub(super) enum ReplyAckState {
     #[default]

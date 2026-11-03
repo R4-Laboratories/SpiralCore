@@ -63,27 +63,51 @@ fn exchange_deadline_keeps_original_monotonic_expiry_despite_wall_rollback() {
         monotonic_ms: 100,
     };
     let original = std::time::Instant::now() + std::time::Duration::from_secs(60);
-    let deadline = ExchangeDeadline::new(original, 1020, now).unwrap();
+    let deadline = ExchangeDeadline::new(original, 61_000, now).unwrap();
     assert!(deadline.instant() <= original);
     assert_eq!(
         deadline.check(ServiceTime {
-            unix_ms: 1019,
-            monotonic_ms: 119
+            unix_ms: 60_999,
+            monotonic_ms: 60_099
         }),
         Ok(())
     );
     assert_eq!(
         deadline.check(ServiceTime {
             unix_ms: 900,
-            monotonic_ms: 120
+            monotonic_ms: 60_100
         }),
         Err(SessionError::Service(ServiceError::Expired))
     );
     assert_eq!(
         deadline.check(ServiceTime {
-            unix_ms: 1020,
-            monotonic_ms: 119
+            unix_ms: 61_000,
+            monotonic_ms: 60_099
         }),
+        Err(SessionError::Service(ServiceError::Expired))
+    );
+    assert_eq!(
+        deadline.check(ServiceTime {
+            monotonic_ms: 99,
+            ..now
+        }),
+        Err(SessionError::Service(ServiceError::Clock))
+    );
+}
+
+#[test]
+fn exchange_deadline_check_rejects_elapsed_instant_while_owner_clocks_are_valid() {
+    let now = ServiceTime {
+        unix_ms: 1000,
+        monotonic_ms: 100,
+    };
+    let cap = std::time::Instant::now() + std::time::Duration::from_millis(10);
+    let deadline = ExchangeDeadline::new(cap, 61_000, now).unwrap();
+    while std::time::Instant::now() < cap {
+        std::thread::yield_now();
+    }
+    assert_eq!(
+        deadline.check(now),
         Err(SessionError::Service(ServiceError::Expired))
     );
 }

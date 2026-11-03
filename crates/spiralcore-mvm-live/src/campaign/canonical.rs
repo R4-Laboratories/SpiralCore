@@ -1,5 +1,5 @@
 //! Canonical mailbox service consumer shared by host and real guest campaigns.
-use super::session::{PendingCall, SessionError};
+use super::session::{ExchangeDeadline, PendingCall, SessionError};
 use super::*;
 use crate::config::Material;
 use ed25519_dalek::{SigningKey, VerifyingKey};
@@ -378,7 +378,6 @@ impl Session {
         let wall = Instant::now();
         let broker = self.broker.clone();
         let (receipt, proof, deadline) = broker.with_time(|_, now| -> Result<_> {
-            let anchor = Instant::now();
             if decode_envelope(&bytes)?.encryption.key_id != self.normal_key {
                 return Err("expected provisioned Call key".into());
             }
@@ -392,23 +391,16 @@ impl Session {
                 .service
                 .receive(&self.incoming, now)?
                 .ok_or("missing admitted Call")?;
-            let remaining = proof
-                .header()
-                .expires_at_unix_ms
-                .checked_sub(now.unix_ms)
-                .and_then(|value| u64::try_from(value).ok())
-                .filter(|value| *value > 0)
-                .ok_or(ServiceError::Expired)?;
-            Ok((
-                receipt,
-                proof,
-                deadline.min(anchor + Duration::from_millis(remaining)),
-            ))
+            let deadline = ExchangeDeadline::new(deadline, proof.header().expires_at_unix_ms, now)?;
+            Ok((receipt, proof, deadline))
         })?;
-        let (permit, now) = broker
-            .with_time(|_, now| -> Result<_> { Ok((receipt.reserve_send(cancel, now)?, now)) })?;
+        let (permit, now) = broker.with_time(|_, now| -> Result<_> {
+            deadline.check(now)?;
+            Ok((receipt.reserve_send(cancel, now)?, now))
+        })?;
         permit.send(stream, cancel, now)?;
         let (reply, namespace) = application_phase(&broker, |now| {
+            deadline.check(now)?;
             let frame = Frame::decode(proof.payload())?;
             if frame.transfer != expected {
                 return Err("unexpected campaign transfer".into());
@@ -417,7 +409,8 @@ impl Session {
             let reply = object.handle(&self.incoming, &proof, now)?;
             Ok((reply, namespace))
         })?;
-        let (prepared, encoded, send, sent_at) = broker.with_time(|_, now| -> Result<_> {
+        let (prepared, encoded, send) = broker.with_time(|_, now| -> Result<_> {
+            deadline.check(now)?;
             let payload = reply.encode()?;
             let options = self
                 .ordering
@@ -436,7 +429,11 @@ impl Session {
                 &encoded,
                 now,
             )?;
-            Ok((prepared, encoded, send, now))
+            Ok((prepared, encoded, send))
+        })?;
+        let sent_at = broker.with_time(|_, now| -> Result<_> {
+            deadline.check(now)?;
+            Ok(now)
         })?;
         let mut sends = 1_u8;
         self.outgoing
@@ -449,14 +446,12 @@ impl Session {
         let mut acknowledged = false;
         // The initial admitted Call is the first event of this exchange.
         for _ in 1..16 {
-            let event = stream.receive(cancel, deadline)?;
+            let event = stream.receive(cancel, deadline.instant())?;
             let cpu = ProcessTime::now();
             let wall = Instant::now();
             let key = decode_envelope(&event)?.encryption.key_id;
             let repeat = broker.with_time(|_, now| -> Result<_> {
-                if Instant::now() >= deadline || now.unix_ms >= proof.header().expires_at_unix_ms {
-                    return Err(ServiceError::Expired.into());
-                }
+                deadline.check(now)?;
                 if key == self.control_key {
                     self.tracker.observe_receipt(&self.control, &event, now)?;
                     match self.tracker.take_receipt(&self.outgoing, &send, now)? {
@@ -511,17 +506,14 @@ impl Session {
             })?;
             if let Some(receipt) = repeat {
                 let (permit, now) = broker.with_time(|_, now| -> Result<_> {
+                    deadline.check(now)?;
                     Ok((receipt.reserve_send(cancel, now)?, now))
                 })?;
                 permit.send(stream, cancel, now)?;
                 // Receipt I/O may wait: recheck both canonical bindings and
                 // original lifetime before invoking the cached Reply send.
                 let (cached, now) = broker.with_time(|_, now| -> Result<_> {
-                    if Instant::now() >= deadline
-                        || now.unix_ms >= proof.header().expires_at_unix_ms
-                    {
-                        return Err(ServiceError::Expired.into());
-                    }
+                    deadline.check(now)?;
                     let cached = self
                         .service
                         .retry_reply_prepared(&self.incoming, &event, now)?
