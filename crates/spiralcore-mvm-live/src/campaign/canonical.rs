@@ -723,13 +723,9 @@ impl Session {
                 Ok(Some(receipt))
             })?;
             if let Some(receipt) = repeat {
-                let (permit, now) = broker.with_time(|_, now| -> Result<_> {
-                    deadline.check(now)?;
-                    Ok((receipt.reserve_send(cancel, now)?, now))
-                })?;
-                permit.send(&stream.before(deadline.instant()), cancel, now)?;
-                // Receipt I/O may wait: recheck both canonical bindings and
-                // original lifetime before invoking the cached Reply send.
+                // Replay the Reply before the closing Call receipt. A caller
+                // with an earlier Reply/ACK must ACK this replay before that
+                // receipt can complete its still-missing admission observation.
                 let (cached, now) = broker.with_time(|_, now| -> Result<_> {
                     deadline.check(now)?;
                     let cached = self
@@ -759,6 +755,29 @@ impl Session {
                     cancel,
                     now,
                 )?;
+                // The write may wait: revalidate original ownership, both
+                // bindings, exact cache and tracker before the closing receipt.
+                let (permit, now) = broker.with_time(|_, now| -> Result<_> {
+                    deadline.check(now)?;
+                    let cached = self
+                        .service
+                        .retry_reply_prepared(&self.incoming, &event, now)?
+                        .ok_or(ServiceError::State)?;
+                    let wire = encode_envelope(cached.envelope())?;
+                    if wire != encoded
+                        || self.tracker.register_send(
+                            &self.outgoing,
+                            &self.control,
+                            &self.peer_key,
+                            &wire,
+                            now,
+                        )? != send
+                    {
+                        return Err(ServiceError::Conflict.into());
+                    }
+                    Ok((receipt.reserve_send(cancel, now)?, now))
+                })?;
+                permit.send(&stream.before(deadline.instant()), cancel, now)?;
             }
             let processed = self.receiver_processing.finish(&mut self.receiver_phase)?;
             meter.add(processed.cpu_us, processed.wall_us)?;

@@ -38,6 +38,91 @@ struct Workers {
     release_caller: mpsc::SyncSender<()>,
     caller: Option<JoinHandle<CallerReport>>,
     receiver: Option<JoinHandle<ReceiverReport>>,
+    relay: Option<Relay>,
+}
+
+struct Relay {
+    shutdown: Box<dyn Fn()>,
+    worker: Option<JoinHandle<Result<Value>>>,
+    budget: crate::host_budget::HostTransportBudget,
+}
+impl Relay {
+    fn stop(&self) {
+        (self.shutdown)();
+    }
+    fn finish(mut self) -> Value {
+        let report = self
+            .worker
+            .take()
+            .unwrap()
+            .join()
+            .expect("actual relay panicked");
+        let budget = self.budget.snapshot().unwrap();
+        assert_eq!(budget.usage.links, 0);
+        assert_eq!(budget.usage.frame_slots, 0);
+        assert_eq!(budget.usage.serialized_buffer_bytes, 0);
+        assert_eq!(budget.high_water.links, 2);
+        assert_eq!(budget.high_water.frame_slots, 2);
+        assert_eq!(budget.high_water.serialized_buffer_bytes, 524_288);
+        json!({"report":report.unwrap(), "budget":budget})
+    }
+}
+impl Drop for Relay {
+    fn drop(&mut self) {
+        self.stop();
+        if let Some(worker) = self.worker.take() {
+            let _ = worker.join();
+        }
+    }
+}
+
+#[cfg(any(
+    all(target_os = "linux", feature = "linux-host"),
+    all(target_os = "macos", target_arch = "aarch64")
+))]
+fn relayed_transport(
+    pair: &Pair,
+    forward_withheld: Option<u64>,
+    reverse_withheld: Option<u64>,
+) -> (TcpStream, std::os::unix::net::UnixStream, gate::Gate, Relay) {
+    use crate::orchestrator::{RouteAdmission, relay_for_test, transport_budget};
+    use std::os::unix::net::UnixStream;
+    let [caller, gate_a] = gate::tcp_pair().unwrap();
+    let (gate_b, relay_a) = UnixStream::pair().unwrap();
+    let (relay_b, receiver) = UnixStream::pair().unwrap();
+    let close_a = relay_a.try_clone().unwrap();
+    let close_b = relay_b.try_clone().unwrap();
+    let forward = RouteAdmission::with_control(
+        pair.sender.outgoing.as_ref().unwrap(),
+        &pair.sender.service.as_ref().unwrap().outgoing_control,
+    )
+    .unwrap();
+    let reverse = RouteAdmission::with_control(
+        pair.receiver.outgoing.as_ref().unwrap(),
+        &pair.receiver.service.as_ref().unwrap().outgoing_control,
+    )
+    .unwrap();
+    let budget = transport_budget().unwrap();
+    let owner = budget.clone();
+    let worker = std::thread::spawn(move || {
+        let scope = owner.scope(0)?;
+        let links = [owner.reserve_link(&scope)?, owner.reserve_link(&scope)?];
+        relay_for_test(relay_a, relay_b, forward, reverse, [&links[0], &links[1]])
+    });
+    let relay = Relay {
+        shutdown: Box::new(move || {
+            for socket in [&close_a, &close_b] {
+                if socket.shutdown(std::net::Shutdown::Both).is_err() {
+                    let _ = socket.shutdown(std::net::Shutdown::Write);
+                    let _ = socket.shutdown(std::net::Shutdown::Read);
+                }
+            }
+        }),
+        worker: Some(worker),
+        budget,
+    };
+    let gate = gate::Gate::between(gate_a, gate_b, forward_withheld, reverse_withheld).unwrap();
+    (caller, receiver, gate, relay)
 }
 impl Workers {
     fn stop(&self) {
@@ -56,7 +141,10 @@ impl Workers {
             .unwrap()
             .join()
             .expect("receiver panicked");
-        let gate = self.gate.take().unwrap().finish().unwrap();
+        let mut gate = self.gate.take().unwrap().finish().unwrap();
+        if let Some(relay) = self.relay.take() {
+            gate.relay = Some(relay.finish());
+        }
         (caller, receiver, gate)
     }
 }
@@ -77,7 +165,7 @@ fn status<T>(result: &Result<T>) -> String {
         .map(|_| "ok".to_owned())
         .unwrap_or_else(|error| error.to_string())
 }
-fn stream(socket: TcpStream, bootstrap: &Bootstrap) -> StreamTransport<TcpStream> {
+fn stream<S: SocketIo + 'static>(socket: S, bootstrap: &Bootstrap) -> StreamTransport<S> {
     StreamTransport::new(
         socket,
         bootstrap.outgoing.as_ref().unwrap().binding.claims.route_id,
@@ -103,7 +191,49 @@ fn cache_empty(session: &mut Session, state: &gate::Shared) -> Result<bool> {
     })
 }
 
-fn write_evidence(value: &Value) {
+fn assert_relay_traffic(traffic: &gate::Snapshot, receiver: &StreamCounters) {
+    let Some(relay) = &traffic.relay else {
+        return;
+    };
+    let a = &relay["report"]["a"];
+    let b = &relay["report"]["b"];
+    for (field, expected) in [
+        ("frames_received", traffic.forward.written.frames_sent),
+        ("frames_sent", traffic.reverse.read.frames_received),
+        (
+            "envelope_bytes_received",
+            traffic.forward.written.envelope_bytes_sent,
+        ),
+        (
+            "envelope_bytes_sent",
+            traffic.reverse.read.envelope_bytes_received,
+        ),
+        (
+            "framing_bytes_received",
+            traffic.forward.written.framing_bytes_sent
+                + traffic.receiver_handshake.framing_bytes_sent,
+        ),
+        (
+            "framing_bytes_sent",
+            traffic.reverse.read.framing_bytes_received
+                + traffic.receiver_handshake.framing_bytes_received,
+        ),
+    ] {
+        assert_eq!(a[field].as_u64().unwrap(), expected, "relay-a {field}");
+    }
+    for (field, expected) in [
+        ("frames_received", receiver.frames_sent),
+        ("frames_sent", receiver.frames_received),
+        ("envelope_bytes_received", receiver.envelope_bytes_sent),
+        ("envelope_bytes_sent", receiver.envelope_bytes_received),
+        ("framing_bytes_received", receiver.framing_bytes_sent),
+        ("framing_bytes_sent", receiver.framing_bytes_received),
+    ] {
+        assert_eq!(b[field].as_u64().unwrap(), expected, "relay-b {field}");
+    }
+}
+
+fn write_evidence(case: &str, value: &Value) {
     let Some(directory) = std::env::var_os("SPIRALCORE_RECONCILIATION_EVIDENCE_DIR") else {
         return;
     };
@@ -115,7 +245,7 @@ fn write_evidence(value: &Value) {
     let file = std::fs::OpenOptions::new()
         .write(true)
         .create_new(true)
-        .open(directory.join("missing-call-receipt-direct.json"))
+        .open(directory.join(format!("{case}.json")))
         .unwrap();
     serde_json::to_writer_pretty(file, value).unwrap();
 }
@@ -130,17 +260,90 @@ fn explicit_retry_recovers_missing_call_receipt_and_reply_ack_direct() {
     exercise_active_receiver_fault(true);
 }
 
-fn exercise_active_receiver_fault(withhold_receipt_and_ack: bool) {
-    let pair = Pair::provision(Plan {
+#[test]
+#[cfg(any(
+    all(target_os = "linux", feature = "linux-host"),
+    all(target_os = "macos", target_arch = "aarch64")
+))]
+fn explicit_retry_recovers_missing_reply_through_actual_duplex_relay() {
+    let pair = fault_pair();
+    let (a, b, gate, relay) = relayed_transport(&pair, None, Some(2));
+    exercise_active_receiver_transport(
+        pair,
+        (a, b, gate, Some(relay), HandshakeRole::Initiator),
+        false,
+    );
+}
+
+#[test]
+#[cfg(any(
+    all(target_os = "linux", feature = "linux-host"),
+    all(target_os = "macos", target_arch = "aarch64")
+))]
+fn explicit_retry_recovers_missing_receipt_and_ack_through_actual_duplex_relay() {
+    let pair = fault_pair();
+    let (a, b, gate, relay) = relayed_transport(&pair, Some(2), Some(1));
+    exercise_active_receiver_transport(
+        pair,
+        (a, b, gate, Some(relay), HandshakeRole::Initiator),
+        true,
+    );
+}
+
+#[test]
+#[cfg(any(
+    all(target_os = "linux", feature = "linux-host"),
+    all(target_os = "macos", target_arch = "aarch64")
+))]
+fn explicit_retry_recovers_missing_call_receipt_through_actual_duplex_relay() {
+    let pair = fault_pair();
+    let (a, b, gate, relay) = relayed_transport(&pair, None, Some(1));
+    missing_call_receipt_transport(pair, (a, b, gate, Some(relay), HandshakeRole::Initiator));
+}
+
+fn fault_pair() -> Pair {
+    Pair::provision(Plan {
         stage: Stage::Two,
         arm: Arm::Raw,
         size: 128,
         trial: 0,
         bandwidth_profile: Default::default(),
     })
+    .unwrap()
+}
+
+type Transport<S> = (TcpStream, S, gate::Gate, Option<Relay>, HandshakeRole);
+
+fn exercise_active_receiver_fault(withhold_receipt_and_ack: bool) {
+    let pair = fault_pair();
+    let (a, b, gate) = gate::Gate::start_withheld(
+        withhold_receipt_and_ack.then_some(2),
+        Some(if withhold_receipt_and_ack { 1 } else { 2 }),
+    )
     .unwrap();
+    exercise_active_receiver_transport(
+        pair,
+        (a, b, gate, None, HandshakeRole::Acceptor),
+        withhold_receipt_and_ack,
+    );
+}
+
+fn exercise_active_receiver_transport<S: SocketIo + 'static>(
+    pair: Pair,
+    transport: Transport<S>,
+    withhold_receipt_and_ack: bool,
+) {
+    let (a, b, fault_gate, relay, receiver_role) = transport;
     let caller_broker = broker_context().unwrap();
     let mut caller = Session::new(&pair.sender, &caller_broker).unwrap();
+    let control_material = pair
+        .sender
+        .service
+        .as_ref()
+        .unwrap()
+        .incoming_control
+        .clone();
+    let destination_key = caller.peer_key;
     let mut receiver = Session::new(&pair.receiver, &broker_context().unwrap()).unwrap();
     let store = tempfile::tempdir().unwrap();
     let policy = spiralcore_mvm_adapter::Policy::new(
@@ -161,11 +364,6 @@ fn exercise_active_receiver_fault(withhold_receipt_and_ack: bool) {
         body: Offer::cold(b"x", Mode::Raw).encode().unwrap(),
     };
     let transfer = request.transfer;
-    let (a, b, fault_gate) = gate::Gate::start_withheld(
-        withhold_receipt_and_ack.then_some(2),
-        Some(if withhold_receipt_and_ack { 1 } else { 2 }),
-    )
-    .unwrap();
     let state = fault_gate.shared();
     let receiver_state = state.clone();
     let a = stream(a, &pair.sender);
@@ -203,7 +401,7 @@ fn exercise_active_receiver_fault(withhold_receipt_and_ack: bool) {
         let cpu = ProcessTime::now();
         let wall = Instant::now();
         let first = (|| -> Result<Handled> {
-            b.handshake(HandshakeRole::Acceptor, &cancel)?;
+            b.handshake(receiver_role, &cancel)?;
             receiver.handle(transfer, &mut object, &b, &cancel)
         })();
         let empty = cache_empty(&mut receiver, &receiver_state).unwrap_or(false);
@@ -225,6 +423,7 @@ fn exercise_active_receiver_fault(withhold_receipt_and_ack: bool) {
         release_caller,
         caller: Some(caller_worker),
         receiver: Some(receiver_worker),
+        relay,
     };
     // Request recovery only after the registered complete-frame fault occurred.
     // Silence alone never authorizes a resend.
@@ -245,7 +444,54 @@ fn exercise_active_receiver_fault(withhold_receipt_and_ack: bool) {
     assert_eq!(signal.request_retry(), Ok(()));
     let caller_ok = caller_done.recv_timeout(WATCHDOG).unwrap_or(false);
     let receiver_ok = receiver_done.recv_timeout(WATCHDOG).unwrap_or(false);
+    if caller_ok && receiver_ok {
+        let deadline = Instant::now() + WATCHDOG;
+        loop {
+            let snapshot = state.lock().unwrap().clone();
+            if snapshot.reverse.read.frames_received == 4
+                && snapshot.reverse.written.frames_sent == 3
+            {
+                break;
+            }
+            assert!(
+                Instant::now() < deadline,
+                "gate did not publish the closing control write"
+            );
+            std::thread::yield_now();
+        }
+    }
     let (caller, receiver, traffic) = workers.finish();
+    let relayed = traffic.relay.is_some();
+    let case = match (withhold_receipt_and_ack, relayed) {
+        (false, false) => "missing-reply-direct",
+        (false, true) => "missing-reply-relayed",
+        (true, false) => "missing-receipt-and-ack-direct",
+        (true, true) => "missing-receipt-and-ack-relayed",
+    };
+    write_evidence(
+        case,
+        &json!({
+            "evidence":"canonical-reconciliation-test/v1", "case":case,
+            "scope":"Unix TCP/UDS canonical component fixture; not WAN or native MVM",
+            "caller_result":status(&caller.result), "receiver_result":status(&receiver.first),
+            "cache_empty":receiver.cache_empty,
+            "caller_session":caller.session.report(), "receiver_session":receiver.session.report(),
+            "actual_traffic":{"caller":caller.counters,"receiver":receiver.counters,
+                "gate_forward_incoming":traffic.forward.read,"gate_forward_outgoing":traffic.forward.written,
+                "gate_reverse_incoming":traffic.reverse.read,"gate_reverse_outgoing":traffic.reverse.written,
+                "gate_caller_handshake":traffic.caller_handshake,"gate_far_handshake":traffic.receiver_handshake,
+                "relay":traffic.relay,
+                "buffered_closing_control_frames":u64::from(!withhold_receipt_and_ack && caller_ok)},
+            "withheld":{
+                "forward":traffic.forward.withheld.as_ref().map(|w| json!({"ordinal":w.ordinal,"bytes":w.length,"hash":spiralcore_transfer::hex(&w.hash)})),
+                "reverse":traffic.reverse.withheld.as_ref().map(|w| json!({"ordinal":w.ordinal,"bytes":w.length,"hash":spiralcore_transfer::hex(&w.hash)})),
+                "hash_domain":"spiralcore.test.withheld.v1"},
+            "lifecycle":{"cpu_domain":"ProcessTime process CPU during overlapping worker intervals, not exclusive thread CPU",
+                "caller":{"cpu_us":caller.lifecycle_cpu_us,"wall_us":caller.lifecycle_wall_us},
+                "receiver":{"cpu_us":receiver.lifecycle_cpu_us,"wall_us":receiver.lifecycle_wall_us}},
+            "accounting":"Lifecycle, cumulative receiver processing and per-Handled intervals overlap; do not sum or infer energy/performance"
+        }),
+    );
     assert!(
         caller_ok && receiver_ok,
         "both peers must complete/cache release: caller={}, receiver={}, cache_empty={}",
@@ -264,7 +510,7 @@ fn exercise_active_receiver_fault(withhold_receipt_and_ack: bool) {
         traffic.forward.captured[if withhold_receipt_and_ack { 2 } else { 1 }]
     );
     assert_eq!(
-        traffic.reverse.captured[1], traffic.reverse.captured[3],
+        traffic.reverse.captured[1], traffic.reverse.captured[2],
         "cached Reply must retain every original byte"
     );
     assert_eq!(
@@ -279,9 +525,27 @@ fn exercise_active_receiver_fault(withhold_receipt_and_ack: bool) {
         receiver.counters.frames_sent,
         traffic.reverse.read.frames_received
     );
+    let buffered = u64::from(!withhold_receipt_and_ack);
     assert_eq!(
-        caller.counters.frames_received,
-        traffic.reverse.written.frames_sent
+        caller.counters.frames_received + buffered,
+        traffic.reverse.written.frames_sent,
+        "cached-Reply ACK can complete a caller already holding its Call receipt; trailing Duplicate is buffered"
+    );
+    assert_eq!(traffic.reverse.read.frames_received, 4);
+    assert_eq!(traffic.reverse.written.frames_sent, 3);
+    assert_eq!(
+        traffic.forward.read.frames_received,
+        if withhold_receipt_and_ack { 4 } else { 3 }
+    );
+    assert_eq!(traffic.forward.written.frames_sent, 3);
+    assert_eq!(
+        caller.counters.envelope_bytes_received
+            + if buffered == 1 {
+                traffic.reverse.captured[3].len() as u64
+            } else {
+                0
+            },
+        traffic.reverse.written.envelope_bytes_sent
     );
     assert_eq!(
         caller.session.report()["recovery"]["call_retry_invocations"],
@@ -291,18 +555,33 @@ fn exercise_active_receiver_fault(withhold_receipt_and_ack: bool) {
     assert_eq!(report["recovery"]["cached_reply_retry_invocations"], 1);
     assert_eq!(report["recovery"]["reply_send_invocations"], 2);
     assert_eq!(report["recovery"]["receiver_failed_invocations"], 0);
+    let mut context = control_material.context().unwrap();
+    context.now_unix_ms = crate::config::now_ms().unwrap();
+    let opened = open_verified_envelope(
+        &decode_envelope(&traffic.reverse.captured[3]).unwrap(),
+        &control_material.capability,
+        &context,
+        &Key::from_bytes(control_material.encryption),
+        &VerifyingKey::from_bytes(&control_material.verification).unwrap(),
+        &VerifyingKey::from_bytes(&control_material.authority).unwrap(),
+        &mut InMemoryReplayProtector::default(),
+    )
+    .unwrap();
+    let duplicate = decode_destination_receipt(opened.payload()).unwrap();
+    verify_receipt(&duplicate, &destination_key).unwrap();
+    assert_eq!(duplicate.receipt.outcome, DeliveryOutcome::Duplicate);
+    assert_relay_traffic(&traffic, &receiver.counters);
 }
 
 #[test]
 fn explicit_retry_after_receiver_acked_reply_recovers_only_missing_call_receipt() {
-    let pair = Pair::provision(Plan {
-        stage: Stage::Two,
-        arm: Arm::Raw,
-        size: 128,
-        trial: 0,
-        bandwidth_profile: Default::default(),
-    })
-    .unwrap();
+    let pair = fault_pair();
+    let (a, b, gate) = gate::Gate::start_missing_first_receipt().unwrap();
+    missing_call_receipt_transport(pair, (a, b, gate, None, HandshakeRole::Acceptor));
+}
+
+fn missing_call_receipt_transport<S: SocketIo + 'static>(pair: Pair, transport: Transport<S>) {
+    let (caller_socket, receiver_socket, gate, relay, receiver_role) = transport;
     assert_eq!(
         pair.sender
             .outgoing
@@ -344,7 +623,6 @@ fn explicit_retry_after_receiver_acked_reply_recovers_only_missing_call_receipt(
         body: Offer::cold(b"x", Mode::Raw).encode().unwrap(),
     };
     let expected_transfer = request.transfer;
-    let (caller_socket, receiver_socket, gate) = gate::Gate::start_missing_first_receipt().unwrap();
     let state = gate.shared();
     let receiver_state = state.clone();
     let caller_stream = stream(caller_socket, &pair.sender);
@@ -385,7 +663,7 @@ fn explicit_retry_after_receiver_acked_reply_recovers_only_missing_call_receipt(
         let cpu = ProcessTime::now();
         let wall = Instant::now();
         let first = (|| -> Result<Handled> {
-            receiver_stream.handshake(HandshakeRole::Acceptor, &cancel)?;
+            receiver_stream.handshake(receiver_role, &cancel)?;
             receiver.handle(expected_transfer, &mut object, &receiver_stream, &cancel)
         })();
         let empty = first.is_ok() && cache_empty(&mut receiver, &receiver_state).unwrap_or(false);
@@ -416,6 +694,7 @@ fn explicit_retry_after_receiver_acked_reply_recovers_only_missing_call_receipt(
         release_caller,
         caller: Some(caller_worker),
         receiver: Some(receiver_worker),
+        relay,
     };
     let first = first_done.recv_timeout(WATCHDOG).unwrap();
     assert_eq!(
@@ -594,34 +873,44 @@ fn explicit_retry_after_receiver_acked_reply_recovers_only_missing_call_receipt(
 
     let caller_report = caller.session.report();
     let receiver_report = receiver.session.report();
-    write_evidence(&json!({
-        "evidence": "canonical-reconciliation-test/v1",
-        "case": "missing-call-receipt-direct",
-        "scope": "Unix development-witness TCP fixture; not WAN or native guest execution",
-        "fault": {"direction":"receiver-to-caller", "post_handshake_ordinal":withheld.ordinal,
-            "withheld_envelope_bytes":withheld.length, "withheld_framing_bytes":4,
-            "wire_hash_domain":"spiralcore.test.withheld.v1", "wire_hash":spiralcore_transfer::hex(&withheld.hash)},
-        "actual_traffic": {
-            "caller_endpoint":caller.counters,"receiver_endpoint":receiver.counters,
-            "gate_forward":{"incoming_leg":forward.read,"outgoing_leg":forward.written},
-            "gate_reverse":{"incoming_leg":reverse.read,"outgoing_leg":reverse.written},
-            "gate_caller_handshake":traffic.caller_handshake,
-            "gate_receiver_handshake":traffic.receiver_handshake,
-            "request_envelope_bytes":forward.captured[0].len(),
-            "reply_envelope_bytes":reverse.captured[1].len(),
-            "duplicate_receipt_envelope_bytes":reverse.captured[2].len()},
-        "caller_session":caller_report,"receiver_session":receiver_report,
-        "receiver_first_handled_processing":{
-            "cpu_us":u64::try_from(receiver.first.as_ref().unwrap().meter.cpu_us).unwrap(),
-            "wall_us":u64::try_from(receiver.first.as_ref().unwrap().meter.wall_us).unwrap()},
-        "receiver_cleanup":{"second_handled":false,"result":"Cancelled","cache_empty":receiver.cache_empty},
-        "lifecycle": {
-            "cpu_domain":"ProcessTime process CPU during each worker interval, not exclusive thread CPU; intervals overlap",
-            "wall_domain":"Instant wall over worker handshake/call intervals; receiver includes second-handle cleanup/cache inspection; caller excludes post-result hold",
-            "caller":{"cpu_us":caller.lifecycle_cpu_us,"wall_us":caller.lifecycle_wall_us},
-            "receiver":{"cpu_us":receiver.lifecycle_cpu_us,"wall_us":receiver.lifecycle_wall_us}},
-        "accounting":"Receiver cumulative processing and per-Handled meters overlap lifecycle; do not add these domains or infer energy/performance improvements"
-    }));
+    let case = if traffic.relay.is_some() {
+        "missing-call-receipt-relayed"
+    } else {
+        "missing-call-receipt-direct"
+    };
+    write_evidence(
+        case,
+        &json!({
+            "evidence": "canonical-reconciliation-test/v1",
+            "case": case,
+            "scope": "Unix development-witness TCP/UDS component fixture; not WAN or native guest execution",
+            "fault": {"direction":"receiver-to-caller", "post_handshake_ordinal":withheld.ordinal,
+                "withheld_envelope_bytes":withheld.length, "withheld_framing_bytes":4,
+                "wire_hash_domain":"spiralcore.test.withheld.v1", "wire_hash":spiralcore_transfer::hex(&withheld.hash)},
+            "actual_traffic": {
+                "caller_endpoint":caller.counters,"receiver_endpoint":receiver.counters,
+                "gate_forward":{"incoming_leg":forward.read,"outgoing_leg":forward.written},
+                "gate_reverse":{"incoming_leg":reverse.read,"outgoing_leg":reverse.written},
+                "gate_caller_handshake":traffic.caller_handshake,
+                "gate_receiver_handshake":traffic.receiver_handshake,
+                "relay":traffic.relay,
+                "request_envelope_bytes":forward.captured[0].len(),
+                "reply_envelope_bytes":reverse.captured[1].len(),
+                "duplicate_receipt_envelope_bytes":reverse.captured[2].len()},
+            "caller_session":caller_report,"receiver_session":receiver_report,
+            "receiver_first_handled_processing":{
+                "cpu_us":u64::try_from(receiver.first.as_ref().unwrap().meter.cpu_us).unwrap(),
+                "wall_us":u64::try_from(receiver.first.as_ref().unwrap().meter.wall_us).unwrap()},
+            "receiver_cleanup":{"second_handled":false,"result":"Cancelled","cache_empty":receiver.cache_empty},
+            "lifecycle": {
+                "cpu_domain":"ProcessTime process CPU during each worker interval, not exclusive thread CPU; intervals overlap",
+                "wall_domain":"Instant wall over worker handshake/call intervals; receiver includes second-handle cleanup/cache inspection; caller excludes post-result hold",
+                "caller":{"cpu_us":caller.lifecycle_cpu_us,"wall_us":caller.lifecycle_wall_us},
+                "receiver":{"cpu_us":receiver.lifecycle_cpu_us,"wall_us":receiver.lifecycle_wall_us}},
+            "accounting":"Receiver cumulative processing and per-Handled meters overlap lifecycle; do not add these domains or infer energy/performance improvements"
+        }),
+    );
+    assert_relay_traffic(&traffic, &receiver.counters);
     for report in [&caller_report, &receiver_report] {
         assert_eq!(
             report.get("session_report").and_then(Value::as_str),

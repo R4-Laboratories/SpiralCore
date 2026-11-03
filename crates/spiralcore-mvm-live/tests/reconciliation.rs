@@ -383,7 +383,7 @@ fn public_fault_campaign(missing_reply: bool) {
         traffic.forward.captured[if missing_reply { 1 } else { 2 }]
     );
     if missing_reply {
-        assert_eq!(traffic.reverse.captured[1], traffic.reverse.captured[3]);
+        assert_eq!(traffic.reverse.captured[1], traffic.reverse.captured[2]);
     }
     for (endpoint, incoming, outgoing, handshake) in [
         (
@@ -447,7 +447,8 @@ fn public_fault_campaign(missing_reply: bool) {
                 "hash_domain":"spiralcore.test.withheld.v1", "hash":spiralcore_transfer::hex(&withheld.hash)},
             "gate":{"forward_incoming":traffic.forward.read,"forward_outgoing":traffic.forward.written,
                 "reverse_incoming":traffic.reverse.read,"reverse_outgoing":traffic.reverse.written,
-                "caller_handshake":traffic.caller_handshake,"receiver_handshake":traffic.receiver_handshake},
+                "caller_handshake":traffic.caller_handshake,"receiver_handshake":traffic.receiver_handshake,
+                "relay":traffic.relay},
             "accounting":"Endpoint/processing/whole lifecycle observations overlap; no energy or performance claim"
         })).unwrap();
     }

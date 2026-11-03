@@ -1,7 +1,7 @@
 //! Test-only complete-ciphertext gate. Receiving is real traffic on the incoming
 //! leg; deliberately withheld ciphertext contributes zero outgoing-leg bytes.
 use mvm_core::mailbox::transport::CancellationToken;
-use spiralcore_mvm_adapter::live::{self, HandshakeRole, StreamCounters};
+use spiralcore_mvm_adapter::live::{self, HandshakeRole, SocketIo, StreamCounters};
 use std::{
     net::{Shutdown, TcpListener, TcpStream},
     sync::{Arc, Mutex},
@@ -34,8 +34,31 @@ pub struct Snapshot {
     pub reverse: Direction,
     pub caller_handshake: StreamCounters,
     pub receiver_handshake: StreamCounters,
+    pub relay: Option<serde_json::Value>,
 }
 pub type Shared = Arc<Mutex<Snapshot>>;
+
+pub trait GateSocket: SocketIo + Sized {
+    fn copy_handle(&self) -> std::io::Result<Self>;
+}
+impl GateSocket for TcpStream {
+    fn copy_handle(&self) -> std::io::Result<Self> {
+        self.try_clone()
+    }
+}
+#[cfg(unix)]
+impl GateSocket for std::os::unix::net::UnixStream {
+    fn copy_handle(&self) -> std::io::Result<Self> {
+        self.try_clone()
+    }
+}
+
+fn shutdown(socket: &impl SocketIo) {
+    if socket.shutdown(Shutdown::Both).is_err() {
+        let _ = socket.shutdown(Shutdown::Write);
+        let _ = socket.shutdown(Shutdown::Read);
+    }
+}
 
 pub fn tcp_pair() -> Result<[TcpStream; 2]> {
     let listener = TcpListener::bind(("127.0.0.1", 0))?;
@@ -52,7 +75,7 @@ pub fn tcp_pair() -> Result<[TcpStream; 2]> {
 pub struct Gate {
     shared: Shared,
     cancel: CancellationToken,
-    shutdown: [TcpStream; 2],
+    shutdown: Box<dyn Fn() + Send>,
     worker: Option<JoinHandle<Result<()>>>,
 }
 impl Gate {
@@ -63,9 +86,23 @@ impl Gate {
         forward_withheld: Option<u64>,
         reverse_withheld: Option<u64>,
     ) -> Result<(TcpStream, TcpStream, Self)> {
-        let [caller, mut a] = tcp_pair()?;
-        let [mut b, receiver] = tcp_pair()?;
-        let shutdown = [a.try_clone()?, b.try_clone()?];
+        let [caller, a] = tcp_pair()?;
+        let [b, receiver] = tcp_pair()?;
+        let gate = Self::between(a, b, forward_withheld, reverse_withheld)?;
+        Ok((caller, receiver, gate))
+    }
+    pub fn between<A: GateSocket + 'static, B: GateSocket + 'static>(
+        mut a: A,
+        mut b: B,
+        forward_withheld: Option<u64>,
+        reverse_withheld: Option<u64>,
+    ) -> Result<Self> {
+        // All fallible cloning precedes worker startup. Two retained handles
+        // provide teardown authority without taking either reader mutex.
+        let close_a = a.copy_handle()?;
+        let close_b = b.copy_handle()?;
+        let aw = a.copy_handle()?;
+        let bw = b.copy_handle()?;
         let shared = Shared::default();
         let state = shared.clone();
         let cancel = CancellationToken::default();
@@ -81,8 +118,6 @@ impl Gate {
                 snapshot.caller_handshake = ac;
                 snapshot.receiver_handshake = bc;
             }
-            let aw = a.try_clone()?;
-            let bw = b.try_clone()?;
             std::thread::scope(|scope| {
                 let forward =
                     scope.spawn(|| pump(a, bw, false, forward_withheld, &state, &token, deadline));
@@ -93,16 +128,15 @@ impl Gate {
             });
             Ok(())
         });
-        Ok((
-            caller,
-            receiver,
-            Self {
-                shared,
-                cancel,
-                shutdown,
-                worker: Some(worker),
-            },
-        ))
+        Ok(Self {
+            shared,
+            cancel,
+            shutdown: Box::new(move || {
+                shutdown(&close_a);
+                shutdown(&close_b);
+            }),
+            worker: Some(worker),
+        })
     }
     pub fn shared(&self) -> Shared {
         self.shared.clone()
@@ -112,12 +146,7 @@ impl Gate {
     }
     pub fn stop(&self) {
         self.cancel.cancel();
-        for socket in &self.shutdown {
-            if socket.shutdown(Shutdown::Both).is_err() {
-                let _ = socket.shutdown(Shutdown::Write);
-                let _ = socket.shutdown(Shutdown::Read);
-            }
-        }
+        (self.shutdown)();
     }
     pub fn finish(mut self) -> Result<Snapshot> {
         self.stop();
@@ -138,9 +167,9 @@ impl Drop for Gate {
     }
 }
 
-fn pump(
-    mut input: TcpStream,
-    mut output: TcpStream,
+fn pump<A: SocketIo, B: SocketIo>(
+    mut input: A,
+    mut output: B,
     reverse: bool,
     withhold: Option<u64>,
     shared: &Shared,
