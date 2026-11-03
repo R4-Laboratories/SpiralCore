@@ -79,6 +79,18 @@ the reusable API #64 service implementation remain unchanged. This contract does
 not preempt arbitrary application/controller work or guarantee scheduler timing;
 I/O must fail on observed expiry under existing bounded SocketIo semantics.
 
+Historical expiry needs no new service getter: pinned canonical MVM `ae12e9d`,
+`crates/mvm-core/src/mailbox.rs:545`, rejects inner signed expiry unequal to outer
+routing expiry after decryption/signature verification. Adapter binding.verify
+uses that canonical opener. Only after successful retry_reply_prepared lookup
+of the same bytes may decoded outer expiry cap ExchangeDeadline::new using the
+fixed preamble Instant and fresh owner time. This derived cap is not the old
+retained owner-monotonic deadline: re-run the original canonical lookup with
+fresh time immediately before actual historical receipt send, especially after
+wall rollback or reservation work. None still means known identity/no cache,
+not application completion; neither a parsed outer field nor a new local cap
+replaces that lookup's authorization and original owner-lifetime checks.
+
 Required tests in `crates/spiralcore-mvm-adapter/tests/service_tcp.rs`: external
 missing-API RED, expired view before connect, channel acquired before deadline then
 used after, and canonical authorized blocked-write/partial-progress failure using
