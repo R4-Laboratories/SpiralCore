@@ -381,3 +381,6 @@ fn canonical_calls_and_encrypted_receipts_cross_tcp_without_recursive_traffic() 
     assert_eq!(counters.envelope_bytes_sent, other.envelope_bytes_received);
     assert_eq!(counters.envelope_bytes_received, other.envelope_bytes_sent);
 }
+
+#[path = "service_tcp/idle.rs"]
+mod idle;
