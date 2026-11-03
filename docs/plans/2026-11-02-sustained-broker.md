@@ -66,7 +66,8 @@ Each phase is independently reviewable. GitHub #49 owns the capacity milestone;
 
 ## Phase D — Mixed object transfer through the same core
 
-1. Files `crates/spiralcore-mvm-live/tests/host.rs` and existing campaign tests:
+1. Files `crates/spiralcore-mvm-live/tests/campaign.rs` and
+   `crates/spiralcore-mvm-live/tests/combined_recovery.rs`:
    add exact mixed-session/object recovery checks first, using raw/whole-zstd/
    combined arms and the injected shared broker. Preserve the native Call cap.
    Dependency: C. Risk: medium.
@@ -82,16 +83,18 @@ Each phase is independently reviewable. GitHub #49 owns the capacity milestone;
 
 ## Phase E — Native and WAN qualification
 
-1. Files `docs/network/mvm-delivery.md` (if existing) or existing role matrix and
-   `docs/network/delivery.md`: enumerate available supported native host/client
+1. File `docs/network/delivery.md`: enumerate available supported native host/client
    combinations and admitted resource budgets before execution. Use existing
    prepared/pinned MVM source and host harness. Dependency: D. Risk: medium.
-2. Existing native harness scripts and evidence folder: run Linux/Firecracker
+2. Files `.github/workflows/spiralcore-linux-mvm.yml` and the existing native
+   campaign entry points under `crates/spiralcore-mvm-live/src/`: run Linux/Firecracker
    guest/host then two guests and macOS native equivalent within authorized host
    resources. No guest NIC, alternative egress or changes to other labs.
    Record source/binary identities, negatives, teardown and exact readbacks.
    Dependency: E1. Risk: high. Missing backend remains an explicit unavailable gate.
-3. Existing WAN workflow/harness files: execute supported direct/explicit-relay
+3. Files `.github/workflows/spiralcore-wan.yml`,
+   `.github/workflows/mvm-mailbox-portable.yml` and existing WAN harness entry
+   points: execute supported direct/explicit-relay
    combinations with the same canonical protocol, including Windows client roles
    where a native runner exists. Compare matched baseline arms and record actual
    traffic, endpoint CPU, completion and recovery. Dependency: E2. Risk: high.

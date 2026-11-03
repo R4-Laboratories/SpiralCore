@@ -81,6 +81,13 @@ successful new admission after expiry. Report persistent owner/scope counts
 separately from expiring transient records. A bounded steady population is not
 proof that arbitrary tenant/scope churn is reclaimed.
 
+`OrderingStream::next_for_binding` allocates a position before registration and
+send. If a refusal happens before receiver admission, allocating a replacement
+position would create an unknown FIFO gap. Preserve the original options and
+retry identity, or choose a recovery witness whose original sequence was already
+admitted and drain the remaining known exchange. A new scope, tracker, service
+or budget is a new session and cannot be reported as same-owner recovery.
+
 Use independent endpoint-pair workers sharing one `BrokerContext` for 2/8/32
 total logical endpoints. Each pair retains pipeline one; pairs may progress
 concurrently. Bound worker count, operation counts, duration, payload memory,
@@ -112,6 +119,15 @@ supported Windows client/gateway roles, remain distinct executed gates. Record
 missing host/backend/credentials or failed runs as unavailable/failed; CI client
 loopback cannot stand in for native MVM or WAN evidence. No new paid resource or
 larger VM allocation is implied by a logical-endpoint test.
+
+The existing `spiralcore-wan.yml` measures the older HTTP transfer harness and
+cannot establish canonical mailbox WAN behavior. The native campaign accepts
+generic `SocketIo`, but its current CLI has no ready canonical two-host WAN
+listener/client mode. `mvm-mailbox-portable.yml` executes native OS/architecture
+client tests; `spiralcore-linux-mvm.yml` builds/tests host contracts without
+booting guests. Durable object storage currently requires Unix private-directory
+semantics and explicitly refuses that path on non-Unix systems. Windows
+ephemeral-client evidence therefore does not qualify a durable Windows gateway.
 
 ## Acceptance and delivery
 
