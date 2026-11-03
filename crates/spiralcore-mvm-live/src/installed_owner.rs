@@ -503,9 +503,18 @@ impl Storage {
     }
 }
 
+/// Owned resources for the fixed local backend handoff, not boot authority.
+pub struct HolderHandoff {
+    pub directory: File,
+    pub holder: File,
+    pub state_bytes: u16,
+    pub state_sha256: [u8; 32],
+}
+
 pub struct HolderLease {
     _storage: Arc<Storage>,
     _holder: File,
+    generation: u64,
 }
 impl HolderLease {
     pub fn acquire(root: &Path, key: InstallationKey, expected_generation: u64) -> Result<Self> {
@@ -521,6 +530,29 @@ impl HolderLease {
         Ok(Self {
             _storage: storage,
             _holder: holder,
+            generation: expected_generation,
+        })
+    }
+
+    /// Revalidate the acquired epoch before exporting duplicate descriptions.
+    /// Their shared lock lasts until the final holder description is closed.
+    pub fn prepare_handoff(&self) -> Result<HolderHandoff> {
+        let record = self._storage.read()?;
+        if record.phase != Phase::Active || record.generation != self.generation {
+            return Err(OwnerError::StaleEpoch);
+        }
+        let directory = self._storage.directory.try_clone()?;
+        let holder = self._holder.try_clone()?;
+        if object_id(&directory)? != self._storage.ids[0]
+            || object_id(&holder)? != self._storage.ids[2]
+        {
+            return Err(OwnerError::InvalidStorage);
+        }
+        Ok(HolderHandoff {
+            directory,
+            holder,
+            state_bytes: RECORD_BYTES as u16,
+            state_sha256: Sha256::digest(record.encode()).into(),
         })
     }
 }

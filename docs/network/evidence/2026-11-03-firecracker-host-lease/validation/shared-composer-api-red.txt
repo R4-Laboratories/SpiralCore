@@ -1,0 +1,55 @@
+   Compiling mvm-vmm v0.26.0 (/var/tmp/spiralcore-firecracker-host-lease-20261103/mvm-source/crates/mvm-vmm)
+   Compiling mvm-backends v0.26.0 (/var/tmp/spiralcore-firecracker-host-lease-20261103/mvm-source/crates/mvm-backends)
+error[E0425]: cannot find function `resource_handoff_script` in this scope
+   --> crates/mvm-backends/src/fc/host_lease_launch_tests.rs:94:5
+    |
+ 94 |     resource_handoff_script(base, Some((1000, 1001)), Some(&lease))
+    |     ^^^^^^^^^^^^^^^^^^^^^^^
+    |
+   ::: crates/mvm-backends/src/fc/daemon.rs:338:1
+    |
+338 | fn reopen_handoff_script(script: &str, pid: u32, first: u32, last: u32) -> Result<String> {
+    | ----------------------------------------------------------------------------------------- similarly named function `reopen_handoff_script` defined here
+    |
+help: a function with a similar name exists
+    |
+ 94 -     resource_handoff_script(base, Some((1000, 1001)), Some(&lease))
+ 94 +     reopen_handoff_script(base, Some((1000, 1001)), Some(&lease))
+    |
+
+error[E0425]: cannot find function `resource_handoff_script` in this scope
+   --> crates/mvm-backends/src/fc/host_lease_launch_tests.rs:217:20
+    |
+217 |     let composed = resource_handoff_script(base, Some((1000, 1001)), Some(&lease)).unwrap();
+    |                    ^^^^^^^^^^^^^^^^^^^^^^^
+    |
+   ::: crates/mvm-backends/src/fc/daemon.rs:338:1
+    |
+338 | fn reopen_handoff_script(script: &str, pid: u32, first: u32, last: u32) -> Result<String> {
+    | ----------------------------------------------------------------------------------------- similarly named function `reopen_handoff_script` defined here
+    |
+help: a function with a similar name exists
+    |
+217 -     let composed = resource_handoff_script(base, Some((1000, 1001)), Some(&lease)).unwrap();
+217 +     let composed = reopen_handoff_script(base, Some((1000, 1001)), Some(&lease)).unwrap();
+    |
+
+error[E0425]: cannot find function `resource_handoff_script` in this scope
+   --> crates/mvm-backends/src/fc/host_lease_launch_tests.rs:287:18
+    |
+287 |     let leased = resource_handoff_script(base, None, Some(&lease)).unwrap();
+    |                  ^^^^^^^^^^^^^^^^^^^^^^^
+    |
+   ::: crates/mvm-backends/src/fc/daemon.rs:338:1
+    |
+338 | fn reopen_handoff_script(script: &str, pid: u32, first: u32, last: u32) -> Result<String> {
+    | ----------------------------------------------------------------------------------------- similarly named function `reopen_handoff_script` defined here
+    |
+help: a function with a similar name exists
+    |
+287 -     let leased = resource_handoff_script(base, None, Some(&lease)).unwrap();
+287 +     let leased = reopen_handoff_script(base, None, Some(&lease)).unwrap();
+    |
+
+For more information about this error, try `rustc --explain E0425`.
+error: could not compile `mvm-backends` (lib test) due to 3 previous errors

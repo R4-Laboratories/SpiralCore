@@ -1,0 +1,18 @@
+[package]
+name = "mvm-host-lease-harness"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.97.1"
+publish = false
+[workspace]
+[lib]
+path = "/Users/casey.allard/spiralcore/local/mvm-host-lifetime-lease/source/crates/mvm-backends/src/driver/fc/host_lease.rs"
+[dependencies]
+anyhow = "1"
+libc = "0.2"
+[profile.test]
+debug = 0
+incremental = false
+[profile.release]
+debug = 0
+incremental = false

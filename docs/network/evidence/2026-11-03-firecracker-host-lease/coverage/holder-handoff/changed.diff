@@ -1,0 +1,39 @@
+diff --git a/crates/spiralcore-mvm-live/src/installed_owner.rs b/crates/spiralcore-mvm-live/src/installed_owner.rs
+index a5289ccf..58adbd26 100644
+--- a/crates/spiralcore-mvm-live/src/installed_owner.rs
++++ b/crates/spiralcore-mvm-live/src/installed_owner.rs
+@@ -505,0 +506,8 @@ impl Storage {
++/// Owned resources for the fixed local backend handoff, not boot authority.
++pub struct HolderHandoff {
++    pub directory: File,
++    pub holder: File,
++    pub state_bytes: u16,
++    pub state_sha256: [u8; 32],
++}
++
+@@ -508,0 +517 @@ pub struct HolderLease {
++    generation: u64,
+@@ -523,0 +533,23 @@ impl HolderLease {
++            generation: expected_generation,
++        })
++    }
++
++    /// Revalidate the acquired epoch before exporting duplicate descriptions.
++    /// Their shared lock lasts until the final holder description is closed.
++    pub fn prepare_handoff(&self) -> Result<HolderHandoff> {
++        let record = self._storage.read()?;
++        if record.phase != Phase::Active || record.generation != self.generation {
++            return Err(OwnerError::StaleEpoch);
++        }
++        let directory = self._storage.directory.try_clone()?;
++        let holder = self._holder.try_clone()?;
++        if object_id(&directory)? != self._storage.ids[0]
++            || object_id(&holder)? != self._storage.ids[2]
++        {
++            return Err(OwnerError::InvalidStorage);
++        }
++        Ok(HolderHandoff {
++            directory,
++            holder,
++            state_bytes: RECORD_BYTES as u16,
++            state_sha256: Sha256::digest(record.encode()).into(),
