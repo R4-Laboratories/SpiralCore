@@ -138,8 +138,12 @@ fn bounded_deadline(deadline: Instant) -> Instant {
     deadline.min(Instant::now() + MAX_OPERATION)
 }
 fn close_on_error<S: SocketIo, T>(socket: &S, result: LiveResult<T>) -> LiveResult<T> {
-    if result.is_err() {
-        let _ = socket.shutdown(Shutdown::Both);
+    if result.is_err() && socket.shutdown(Shutdown::Both).is_err() {
+        // Darwin can reject SHUT_RDWR after peer FIN while the write half is
+        // still usable. Close each remaining half without replacing the
+        // original framing/I/O failure or weakening the owner's logical fence.
+        let _ = socket.shutdown(Shutdown::Write);
+        let _ = socket.shutdown(Shutdown::Read);
     }
     result
 }

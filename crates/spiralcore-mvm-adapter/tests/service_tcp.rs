@@ -133,6 +133,68 @@ fn ciphertext_tcp_optional_reader_rejects_truncation_lengths_cancel_and_deadline
 }
 
 #[test]
+fn fatal_tcp_receive_fences_owning_transport_and_subsequent_send_without_new_bytes() {
+    use spiralcore_mvm_adapter::{
+        live::{self, LiveError, StreamCounters},
+        service::ServiceError,
+    };
+    use std::{io::Read, net::Shutdown};
+    let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+    let mut peer = TcpStream::connect(listener.local_addr().unwrap()).unwrap();
+    let (socket, _) = listener.accept().unwrap();
+    peer.set_read_timeout(Some(Duration::from_secs(1))).unwrap();
+    let worker = thread::spawn(move || {
+        live::handshake_stream(
+            &mut peer,
+            HandshakeRole::Acceptor,
+            &CancellationToken::default(),
+            Instant::now() + Duration::from_secs(2),
+            &mut StreamCounters::default(),
+        )
+        .unwrap();
+        peer.shutdown(Shutdown::Write).unwrap();
+        peer
+    });
+    let stream = StreamTransport::new(
+        socket,
+        common::config(MailboxMessageKind::Call)
+            .binding
+            .claims
+            .route_id,
+        Duration::from_secs(2),
+    )
+    .unwrap();
+    let cancel = CancellationToken::default();
+    stream.handshake(HandshakeRole::Initiator, &cancel).unwrap();
+    let mut peer = worker.join().unwrap();
+    assert!(
+        matches!(stream.receive(&cancel, Instant::now() + Duration::from_secs(2)),
+        Err(LiveError::Io(error)) if error.kind() == std::io::ErrorKind::UnexpectedEof)
+    );
+    let before = serde_json::to_value(stream.counters().unwrap()).unwrap();
+    assert!(matches!(
+        stream.receive(&cancel, Instant::now() + Duration::from_secs(2)),
+        Err(LiveError::Closed)
+    ));
+    let binding = fixture::binding(MailboxMessageKind::Call, true, false, true);
+    let mut options =
+        MessageOptions::fresh(fixture::content_type(), fixture::time(), 2000).unwrap();
+    options.reply_to = common::config(MailboxMessageKind::Call).reply_to;
+    let prepared =
+        service_sender::prepare(&binding, b"must be fenced", &options, fixture::time()).unwrap();
+    assert_eq!(
+        binding.send_prepared(&prepared, &stream, &cancel, fixture::time()),
+        Err(ServiceError::ShuttingDown)
+    );
+    assert_eq!(
+        serde_json::to_value(stream.counters().unwrap()).unwrap(),
+        before
+    );
+    drop(stream);
+    assert_eq!(peer.read(&mut [0]).unwrap(), 0);
+}
+
+#[test]
 fn canonical_calls_and_encrypted_receipts_cross_tcp_without_recursive_traffic() {
     let listener = TcpListener::bind("127.0.0.1:0").unwrap();
     let address = listener.local_addr().unwrap();
