@@ -83,10 +83,15 @@ impl SocketIo for FailReplyAck {
     }
 }
 
+struct PeerWires {
+    call: Vec<u8>,
+    reply: Vec<u8>,
+}
+
 struct PeerGuard {
     caller_socket: UnixStream,
     peer_socket: UnixStream,
-    worker: Option<std::thread::JoinHandle<Result<Vec<u8>>>>,
+    worker: Option<std::thread::JoinHandle<Result<PeerWires>>>,
 }
 
 impl PeerGuard {
@@ -95,7 +100,7 @@ impl PeerGuard {
         let _ = self.peer_socket.shutdown(Shutdown::Both);
     }
 
-    fn finish(mut self) -> Result<Vec<u8>> {
+    fn finish(mut self) -> Result<PeerWires> {
         self.stop();
         self.worker.take().unwrap().join().expect("peer panicked")
     }
@@ -171,7 +176,7 @@ fn failed_reply_ack_retains_exact_service_payload_and_original_pending_identity(
         WATCHDOG,
     )
     .unwrap();
-    let worker = std::thread::spawn(move || -> Result<Vec<u8>> {
+    let worker = std::thread::spawn(move || -> Result<PeerWires> {
         let cancel = CancellationToken::default();
         peer_stream.handshake(HandshakeRole::Acceptor, &cancel)?;
         let original = peer_stream.receive(&cancel, Instant::now() + WATCHDOG)?;
@@ -191,7 +196,7 @@ fn failed_reply_ack_retains_exact_service_payload_and_original_pending_identity(
         if proof.payload() != expected_request {
             return Err("fixture received a changed Call".into());
         }
-        let (prepared, _send, now) = peer_broker.with_time(|_, now| -> Result<_> {
+        let (prepared, _send, now, reply_wire) = peer_broker.with_time(|_, now| -> Result<_> {
             let options = peer
                 .ordering
                 .next_reply(&peer.outgoing, &proof, now, ISSUANCE_POLICY)?;
@@ -201,14 +206,15 @@ fn failed_reply_ack_retains_exact_service_payload_and_original_pending_identity(
                 service_sender::request(&peer.outgoing, &peer_payload, &options, now)?,
                 now,
             )?;
+            let reply_wire = encode_envelope(prepared.envelope())?;
             let send = peer.tracker.register_send(
                 &peer.outgoing,
                 &peer.control,
                 &peer.peer_key,
-                &encode_envelope(prepared.envelope())?,
+                &reply_wire,
                 now,
             )?;
-            Ok((prepared, send, now))
+            Ok((prepared, send, now, reply_wire))
         })?;
         peer.outgoing
             .send_prepared(&prepared, &peer_stream, &cancel, now)?;
@@ -228,7 +234,10 @@ fn failed_reply_ack_retains_exact_service_payload_and_original_pending_identity(
         if counters.frames_received != 1 || counters.frames_sent != 2 {
             return Err("fixture did not exchange exactly one Call and two peer frames".into());
         }
-        Ok(original)
+        Ok(PeerWires {
+            call: original,
+            reply: reply_wire,
+        })
     });
     let guard = PeerGuard {
         caller_socket: caller_shutdown,
@@ -238,7 +247,10 @@ fn failed_reply_ack_retains_exact_service_payload_and_original_pending_identity(
     let cancel = CancellationToken::default();
     stream.handshake(HandshakeRole::Initiator, &cancel).unwrap();
     let error = caller.call(&request, &stream, &cancel).unwrap_err();
-    let original = guard.finish().unwrap();
+    let PeerWires {
+        call: original,
+        reply: authenticated_reply,
+    } = guard.finish().unwrap();
     assert_eq!(failed_writes.load(Ordering::Relaxed), 1, "{error}");
     assert_eq!(caller.calls, 0);
     let pending = caller
@@ -248,6 +260,16 @@ fn failed_reply_ack_retains_exact_service_payload_and_original_pending_identity(
     assert!(pending.send_started());
     assert_eq!(pending.encoded().unwrap(), original);
     assert_eq!(pending.prepared().unwrap().header().sequence.get(), 1);
+    assert_eq!(pending.reply_wire(), Some(authenticated_reply.as_slice()));
+    assert_eq!(pending.events_received(), 1);
+    assert!(pending.reply_observed());
+    assert_eq!(
+        pending.reply_ack_state(),
+        crate::campaign::session::ReplyAckState::InvokedUncertain,
+    );
+    // Reply was first. Its following Call receipt is queued but unread because
+    // the injected ACK failure returns before the next receive operation.
+    assert_eq!(pending.receipt_outcome(), None);
     let original_call = pending.call_handle().unwrap();
     let status = broker
         .with_time(|_, now| -> Result<_> {

@@ -1,0 +1,40 @@
+   Compiling spiralcore-mvm-live v0.1.0 (/var/tmp/spiralcore-session-events-20261103/source/crates/spiralcore-mvm-live)
+error[E0433]: cannot find `ReplyAckState` in `session`
+   --> src/campaign/canonical/ack_tests.rs:268:35
+    |
+268 |         crate::campaign::session::ReplyAckState::InvokedUncertain,
+    |                                   ^^^^^^^^^^^^^ could not find `ReplyAckState` in `session`
+
+error[E0599]: no method named `reply_wire` found for reference `&campaign::session::PendingCall` in the current scope
+   --> src/campaign/canonical/ack_tests.rs:263:24
+    |
+263 |     assert_eq!(pending.reply_wire(), Some(authenticated_reply.as_slice()));
+    |                        ^^^^^^^^^^ method not found in `&campaign::session::PendingCall`
+
+error[E0599]: no method named `events_received` found for reference `&campaign::session::PendingCall` in the current scope
+   --> src/campaign/canonical/ack_tests.rs:264:24
+    |
+264 |     assert_eq!(pending.events_received(), 1);
+    |                        ^^^^^^^^^^^^^^^ method not found in `&campaign::session::PendingCall`
+
+error[E0599]: no method named `reply_observed` found for reference `&campaign::session::PendingCall` in the current scope
+   --> src/campaign/canonical/ack_tests.rs:265:21
+    |
+265 |     assert!(pending.reply_observed());
+    |                     ^^^^^^^^^^^^^^ method not found in `&campaign::session::PendingCall`
+
+error[E0599]: no method named `reply_ack_state` found for reference `&campaign::session::PendingCall` in the current scope
+   --> src/campaign/canonical/ack_tests.rs:267:17
+    |
+267 |         pending.reply_ack_state(),
+    |                 ^^^^^^^^^^^^^^^ method not found in `&campaign::session::PendingCall`
+
+error[E0599]: no method named `receipt_outcome` found for reference `&campaign::session::PendingCall` in the current scope
+   --> src/campaign/canonical/ack_tests.rs:272:24
+    |
+272 |     assert_eq!(pending.receipt_outcome(), None);
+    |                        ^^^^^^^^^^^^^^^ method not found in `&campaign::session::PendingCall`
+
+Some errors have detailed explanations: E0433, E0599.
+For more information about an error, try `rustc --explain E0433`.
+error: could not compile `spiralcore-mvm-live` (lib test) due to 6 previous errors
