@@ -188,3 +188,36 @@ Tests reject policy replacement after registration and a substituted prepared
 request before any transport bytes, and retain the original handles/identity.
 Successful send remains a transport fact, not peer acceptance or a guarantee
 that authorization remains valid after blocking I/O. C8/C9 stay unfinished.
+
+## Approved C8 caller Reply ownership seam
+
+Defer payload consumption: this supersedes the earlier instruction to retain
+the first `Replied(Some(payload))` in caller state before acknowledgment.
+Canonical `admit`/`admit_for_control` already drain FIFO-ready Replies into the
+original Call's `Replied(Some(payload))`, retaining the queue reservation as
+`reply_budget`. Leave that payload and charge in `LocalMailboxService` until
+completion; do not add an uncharged caller payload copy or a new authority API.
+
+`PendingCall` retains current verified receipt disposition, cumulative 16-frame
+count, current Reply-observed fact, one authenticated encoded Reply bounded by
+`MAX_ENVELOPE_BYTES`, and acknowledgment Needed/InvokedUncertain/Sent state.
+Advance current Reply state only when `observe_application_reply` returns the
+current `SendHandle`. Preserve Duplicate's distinct acceptance meaning. The
+extra retained ciphertext is bounded endpoint overhead, not a transport-budget
+or service-payload charge. Prepared receipt/permit borrows remain stack-local.
+Mark acknowledgment invoked before transport; failure retains original request
+identity/wire, Reply wire and service-owned payload without implicit retry.
+
+Only after current destination observation, current Reply observation and a
+successful required Reply-receipt send, sample fresh broker time and require
+the original `PendingCall::remaining(now) > 0`, then poll the original handle.
+This explicit deadline gate is required: `poll_call` can consume an already
+Replied payload after message expiry. Its binding/generation checks still apply.
+Pending preserves waiting/FIFO gaps; Replied(None) cannot establish completion.
+Do not poll or call `cancel` merely for cleanup: cancel itself delegates to the
+consuming poll. Later explicit resume reconstructs receipt admission at fresh
+time from retained wire; it neither borrows a stored permit nor resumes a closed
+socket implicitly. RED: inject receipt-send failure after a valid Reply and
+verify the original Call still yields its exact payload, with identity/wire and
+uncertain acknowledgment retained. Receiver replay and automatic retry remain
+separate gates; unchanged retention bounds eventual service-owned reclamation.
