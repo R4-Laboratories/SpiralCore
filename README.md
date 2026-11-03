@@ -113,6 +113,12 @@ Its matched local strict-transfer measurements retain byte, CPU and lifecycle
 results against whole-object zstd, including individual workload losses;
 they do not establish recovery overhead or WAN performance.
 
+The [installed-owner component](docs/network/installed-owner-results-2026-11-03.md)
+adds durable epochs and resource-holder exclusion for the next host-wide MVM
+admission step. Four native Unix architecture rows pass54 component entries;
+the actual worker/Firecracker handoff and crash/readmission qualification remain
+open. Existing session budgets retain their explicit orchestrator scope.
+
 The [duplex relay checkpoint](docs/network/duplex-relay-results-2026-11-03.md)
 adds independently progressing keyless directions and safe half-close handling,
 including a reproduced Darwin shutdown fix. The newer

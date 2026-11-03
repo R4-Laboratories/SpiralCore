@@ -1,0 +1,29 @@
+   Compiling spiralcore-installed-owner-harness v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-mvm-live/tests/installed-owner-harness)
+    Finished `release` profile [optimized] target(s) in 1.46s
+     Running unittests ../../src/installed_owner.rs (/tmp/spiralcore-installed-owner-20261103/target/release/deps/installed_owner-50356c1d0a6106a5)
+
+running 2 tests
+test tests::holders_aba_must_reject_the_actual_wrong_fd_and_never_retire_live_original_holders ... FAILED
+test tests::postrename_directory_sync_failure_must_survive_owner_drop_as_a_durable_fence ... FAILED
+
+failures:
+
+---- tests::holders_aba_must_reject_the_actual_wrong_fd_and_never_retire_live_original_holders stdout ----
+
+thread 'tests::holders_aba_must_reject_the_actual_wrong_fd_and_never_retire_live_original_holders' (15858329) panicked at ../../src/installed_owner/tests.rs:235:9:
+acquire-sh accepted the ABA FD or published over an actual live holder: [AbaObservation { operation: "acquire-sh", accepted: true, state_unchanged: true }, AbaObservation { operation: "finish-ex", accepted: true, state_unchanged: false }, AbaObservation { operation: "reconcile-ex", accepted: true, state_unchanged: false }]
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- tests::postrename_directory_sync_failure_must_survive_owner_drop_as_a_durable_fence stdout ----
+
+thread 'tests::postrename_directory_sync_failure_must_survive_owner_drop_as_a_durable_fence' (15858370) panicked at ../../src/installed_owner/tests.rs:291:9:
+finish allowed a visible but unconfirmed Clean to regain admission after owner Drop: [SyncObservation { operation: "finish", reopened_fenced: false }, SyncObservation { operation: "reconcile", reopened_fenced: false }]
+
+
+failures:
+    tests::holders_aba_must_reject_the_actual_wrong_fd_and_never_retire_live_original_holders
+    tests::postrename_directory_sync_failure_must_survive_owner_drop_as_a_durable_fence
+
+test result: FAILED. 0 passed; 2 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.15s
+
+error: test failed, to rerun pass `--lib`

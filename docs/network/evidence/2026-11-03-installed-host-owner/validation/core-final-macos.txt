@@ -1,0 +1,33 @@
+    Finished `test` profile [unoptimized] target(s) in 0.07s
+     Running unittests ../../src/installed_owner.rs (/tmp/spiralcore-installed-owner-20261103/target/debug/deps/installed_owner-24023de45654c4d8)
+
+running 4 tests
+test tests::postrename_directory_sync_failure_must_survive_owner_drop_as_a_durable_fence ... ok
+test tests::holders_aba_must_reject_the_actual_wrong_fd_and_never_retire_live_original_holders ... ok
+test tests::failed_postcommit_cleanup_sync_fences_owner_but_absent_marker_allows_durable_successor ... ok
+test tests::failed_initial_intent_barriers_preserve_original_state_and_fence_reopen ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.52s
+
+     Running tests/lifecycle.rs (/tmp/spiralcore-installed-owner-20261103/target/debug/deps/lifecycle-d2ce1fcb6e87aaed)
+
+running 10 tests
+test child_process_entry ... ok
+test exclusive_owner_issues_one_epoch_and_finishes_after_last_holder_exits ... ok
+test finish_busy_retains_active_until_actual_holder_exit_and_can_retry_same_epoch ... ok
+test occupied_clean_holder_blocks_activation_and_uncertain_temp_and_zero_keys_refuse ... ok
+test live_directory_or_lock_replacement_fences_before_any_new_epoch_publication ... ok
+test drop_never_cleans_and_retirement_preserves_history_and_rejects_late_old_token ... ok
+test extended_acl_access_refuses_even_when_posix_modes_remain_private ... ok
+test owner_death_does_not_retire_an_epoch_while_an_independent_process_holds_sh ... ok
+test fixed_record_detects_torn_oversized_reserved_and_checksummed_semantic_corruption ... ok
+test key_profile_modes_symlinks_hardlinks_and_nonregular_objects_refuse_without_reset ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.06s
+
+   Doc-tests installed_owner
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

@@ -1,0 +1,21 @@
+    Finished `release` profile [optimized] target(s) in 0.02s
+     Running tests/lifecycle.rs (/tmp/spiralcore-installed-owner-20261103/target/release/deps/lifecycle-527e0d90c3b914e7)
+
+running 1 test
+test extended_acl_access_refuses_even_when_posix_modes_remain_private ... FAILED
+
+failures:
+
+---- extended_acl_access_refuses_even_when_posix_modes_remain_private stdout ----
+
+thread 'extended_acl_access_refuses_even_when_posix_modes_remain_private' (15909453) panicked at tests/lifecycle.rs:576:9:
+parent accepted an ACL privacy violation: [("parent", false, "Ok(())"), ("root", false, "Ok(())"), ("owner.lock", false, "Ok(())"), ("holders.lock", false, "Ok(())"), ("state.bin", false, "Ok(())")]
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    extended_acl_access_refuses_even_when_posix_modes_remain_private
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 9 filtered out; finished in 0.19s
+
+error: test failed, to rerun pass `--test lifecycle`
