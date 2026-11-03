@@ -41,8 +41,23 @@ current payload. All **17 focused campaign tests pass** in
 native pipelining or raise production limits. Independent source reviews record
 the FIFO correction and retained-state boundaries.
 
-This is not complete C8: earlier/duplicate Reply handling and both-peer cached
-Reply recovery remain. Automatic retry stays disabled, receiver choreography is unchanged, and
+Exact cached Reply replay initially failed with `Reply admission refused`.
+Its canonical Duplicate disposition now sends the actual duplicate receipt,
+retains current acceptance facts, and releases peer cache only once. The
+additional optional registered-Reply observer contract has four focused RED
+cases and 21 passing receipt tests; genuinely unknown authenticated identities
+return None while known mismatch, expiry, conflict and verification errors stay
+errors. Existing strict callers retain their original behavior.
+
+The next real-stream RED sends an unsolicited authenticated Late Reply and
+replays its exact ciphertext before delivering the current Reply. The caller
+now sends the actual Late then Duplicate receipts without advancing current
+facts. All **19 focused campaign tests pass** in `late-duplicate-green.txt`
+after product commit `5ae3653`. Byte/frame counts and exact current payload are
+asserted. These are functional tests, not performance measurements.
+
+This is not complete C8: receiver cached Reply recovery remains.
+Automatic retry stays disabled, receiver choreography is unchanged, and
 the 2,048-Call guard/pipeline one remain. Independent final source review, full
 qualification and performance measurements remain before delivery. No native
 MVM/WAN or performance claim follows from these focused tests.
