@@ -764,3 +764,6 @@ mod fifo_tests;
 
 #[cfg(test)]
 mod late_tests;
+
+#[cfg(test)]
+mod receiver_tests;
