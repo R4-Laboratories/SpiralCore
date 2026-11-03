@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "scope": "native ephemeral canonical mailbox service and TCP-loopback remote-client contracts",
-  "qualification_status": "PASS_PINNED_AE12_CLIENT_SOURCE",
+  "scope": "native ephemeral canonical mailbox service, shared broker and TCP-loopback remote-client contracts",
+  "qualification_status": "REQUIRES_EXACT_RUN_EVIDENCE",
   "toolchain": "1.97.1",
   "features": [
     "live"
@@ -27,7 +27,7 @@
     },
     {
       "name": "service_sender",
-      "minimum_count": 2
+      "minimum_count": 4
     },
     {
       "name": "service_tcp",
@@ -35,6 +35,22 @@
     },
     {
       "name": "service_clock",
+      "minimum_count": 4
+    },
+    {
+      "name": "broker",
+      "minimum_count": 3
+    },
+    {
+      "name": "service_metrics",
+      "minimum_count": 1
+    },
+    {
+      "name": "receipt_send",
+      "minimum_count": 3
+    },
+    {
+      "name": "capacity_probe",
       "minimum_count": 4
     }
   ],

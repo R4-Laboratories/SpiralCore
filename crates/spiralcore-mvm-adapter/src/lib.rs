@@ -4,6 +4,8 @@
 //! Policy is trusted control-plane input. Payloads cannot mint endpoint authority.
 #![forbid(unsafe_code)]
 
+#[cfg(feature = "live")]
+pub mod broker;
 #[cfg(feature = "conformance")]
 pub mod conformance;
 mod direction;

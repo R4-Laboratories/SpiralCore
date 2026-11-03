@@ -1,0 +1,17 @@
+{
+  "scope": "Local canonical mailbox broker and persistent TCP-loopback logical endpoints; not WAN or booted MVM capacity",
+  "endpoint_counts": [2, 8, 32],
+  "endpoint_definition": "Total caller plus receiver service endpoints, arranged as 1, 4 or 16 persistent TCP pairs",
+  "ordering_controls": ["fresh scope per message", "stable owned scope with increasing sequence"],
+  "dispatch": "One shared broker budget, clock and synchronous local dispatcher; serial round-robin operations, pipeline one",
+  "payload_bytes": 4096,
+  "message_mix": "Alternating Call (four encrypted envelopes) and generic Cast (two encrypted envelopes)",
+  "paced_duration_ms_per_cell": 65000,
+  "paced_offered_total_operations_per_second": 20,
+  "saturation_duration_ms_per_cell": 120000,
+  "maximum_operations_per_cell": 100000,
+  "stop_conditions": ["First protocol/resource error, retaining its exact stage and accepted/completed disposition", "Registered duration or operation limit", "512 MiB process peak RSS or 128 observed file descriptors"],
+  "profile": "Explicit probe profile: 1-second retained-message extension, 1-second message TTL, native witness identity ceilings and quarter control reservation. Production defaults unchanged.",
+  "measurements": ["Actual framed canonical stream bytes in both directions and counter agreement", "Aggregate process CPU for both endpoint roles and broker; setup separated", "Admission, Reply and complete-operation p50/p95/p99 latency", "Fresh-process kernel peak RSS per cell", "Sampled file descriptors and post-operation state/identity maxima", "Bounded time series across expiry and 60-second rate-history windows", "Exact request and Call-reply payload comparisons, including zero bytes", "Accepted-but-incomplete work and post-TTL cleanup without service reset"],
+  "interpretation_gates": ["Every completed operation must recover exact bytes and length", "Paced success requires no protocol errors or unverified accepted request", "Saturation is classified by the actual refusal, not assumed to be Full", "Stable FIFO scope counts must remain proportional to persistent streams while replay checkpoints remain retained", "A fixed offered rate does not establish maximum goodput or fairness", "One trial per cell establishes observations, not statistical superiority", "No codec gain, durable object commit, physical energy, real WAN, native MVM fleet or final delivery claim"]
+}

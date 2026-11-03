@@ -911,46 +911,99 @@ impl<'a> ReceiptPermit<'a> {
         })
     }
 }
-impl PreparedReceipt<'_> {
+/// One charged send attempt. Reservation belongs to synchronous broker dispatch;
+/// transport I/O consumes this non-cloneable permit after releasing dispatch.
+/// Dropping it releases temporary queue credits, while the signed rate-history
+/// identity remains charged for its original sixty-second window.
+pub struct ReceiptSendPermit<'p, 'a> {
+    receipt: &'p PreparedReceipt<'a>,
+    reserved_at: u64,
+    _rate_charge: Reservation,
+}
+impl<'a> PreparedReceipt<'a> {
     pub fn encoded_bytes(&self) -> &[u8] {
         self.authorized.encoded_bytes()
     }
-    /// Reauthorizes current policy while sending through canonical PeerTransport.
-    /// The underlying transport supplies typed cancellation/backpressure errors.
+    /// Reserve this attempt's signed control rate and queue capacity inside
+    /// synchronous broker dispatch. A retry needs a fresh permit and charge.
+    pub fn reserve_send(
+        &self,
+        cancel: &CancellationToken,
+        now: ServiceTime,
+    ) -> std::result::Result<ReceiptSendPermit<'_, 'a>, ReceiptSendError> {
+        self.returns.clock(now).map_err(ReceiptSendError::Service)?;
+        let rate_charge = self
+            .source
+            .with_checked(now, |_, generation| {
+                self.check_send(generation, cancel, now)?;
+                self.returns
+                    .binding
+                    .with_checked(now, |context, generation| {
+                        if generation != self.return_generation {
+                            return Err(ServiceError::Unauthorized);
+                        }
+                        self.returns.budget.reserve_control_send(
+                            context,
+                            self.authorized.encoded_len() as u64,
+                            self.returns.binding.capability_grant(),
+                            now,
+                        )
+                    })
+            })
+            .map_err(ReceiptSendError::Service)?;
+        Ok(ReceiptSendPermit {
+            receipt: self,
+            reserved_at: now.monotonic_ms,
+            _rate_charge: rate_charge,
+        })
+    }
+    fn check_send(
+        &self,
+        source_generation: u64,
+        cancel: &CancellationToken,
+        now: ServiceTime,
+    ) -> Result<()> {
+        if source_generation != self.source_generation {
+            return Err(ServiceError::Unauthorized);
+        }
+        if now.monotonic_ms >= self.deadline || now.unix_ms >= self.expiry {
+            return Err(ServiceError::Expired);
+        }
+        if cancel.is_cancelled() {
+            return Err(ServiceError::Cancelled);
+        }
+        Ok(())
+    }
+    /// Convenience path for standalone callers. Broker callers reserve within
+    /// dispatch, release dispatch, then consume the permit during transport I/O.
     pub fn send<T: PeerTransport>(
         &self,
         transport: &T,
         cancel: &CancellationToken,
         now: ServiceTime,
     ) -> std::result::Result<usize, ReceiptSendError> {
-        self.returns.clock(now).map_err(ReceiptSendError::Service)?;
-        let result = self.source.with_checked(now, |_, generation| {
-            if generation != self.source_generation {
-                return Err(ServiceError::Unauthorized);
-            }
-            if now.monotonic_ms >= self.deadline || now.unix_ms >= self.expiry {
-                return Err(ServiceError::Expired);
-            }
-            if cancel.is_cancelled() {
-                return Err(ServiceError::Cancelled);
-            }
-            let _rate_charge = self
-                .returns
-                .binding
-                .with_checked(now, |context, generation| {
-                    if generation != self.return_generation {
-                        return Err(ServiceError::Unauthorized);
-                    }
-                    self.returns.budget.reserve_control_send(
-                        context,
-                        self.authorized.encoded_len() as u64,
-                        self.returns.binding.capability_grant(),
-                        now,
-                    )
-                })?;
-            self.returns.binding.send_prepared_at_generation(
-                &self.prepared,
-                self.return_generation,
+        self.reserve_send(cancel, now)?.send(transport, cancel, now)
+    }
+}
+impl ReceiptSendPermit<'_, '_> {
+    /// Revalidate current source/return policy and canonical route at send time,
+    /// without updating broker-global clocks or reserving rate capacity again.
+    /// This consumes exactly one attempt; it does not bypass transport controls.
+    pub fn send<T: PeerTransport>(
+        self,
+        transport: &T,
+        cancel: &CancellationToken,
+        now: ServiceTime,
+    ) -> std::result::Result<usize, ReceiptSendError> {
+        if now.monotonic_ms < self.reserved_at {
+            return Err(ReceiptSendError::Service(ServiceError::Clock));
+        }
+        let receipt = self.receipt;
+        let result = receipt.source.with_checked(now, |_, generation| {
+            receipt.check_send(generation, cancel, now)?;
+            receipt.returns.binding.send_prepared_at_generation(
+                &receipt.prepared,
+                receipt.return_generation,
                 transport,
                 cancel,
                 now,
@@ -959,6 +1012,7 @@ impl PreparedReceipt<'_> {
         result.map_err(ReceiptSendError::Service)
     }
 }
+
 fn authorize(
     prepared: &PreparedMailboxEnvelope,
     config: &ServiceBindingConfig,

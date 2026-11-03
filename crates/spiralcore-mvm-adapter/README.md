@@ -34,12 +34,41 @@ local configuration, never a message payload or object digest.
 |---|---|
 | `service::MailboxBinding` and `ServiceBindingConfig` | Bind canonical kind, operation, address, sender boot, keys, capability, route and current policy. Receive-only bindings need the remote sender's public verification key, not its signing secret. Destination receipt signing is a separately configured local authority. |
 | `service::HostBudget` and `ControlReserve` | Share aggregate tenant/mailbox/sender limits across the host's service, trackers and return paths. Reserved control capacity is inside the same totals; data cannot consume it. Use clones of one owner for cooperating components, not an independent budget per adapter. |
+| `broker::BrokerContext` | Own one host budget, monotonic clock origin and synchronous local dispatch gate. Clone the context across endpoint sessions and sample time inside `with_time`; release dispatch before socket I/O. Independent per-session clocks cannot safely drive the same globally monotonic budget. |
 | `service::LocalMailboxService` | Authenticate canonical Call/Cast/Reply messages, transactionally admit/deduplicate them, enforce ordering scopes and mailbox-epoch ownership, and manage bounded deadlines, cancellation, replies and terminal state. Admission is ephemeral. |
 | `service_sender::MessageOptions` | Construct immutable message metadata. Retrying a stable message preserves the complete inner header and payload; a fresh outer delivery/encryption attempt does not authorize changed semantics under the same message identity. |
+| `service_sender::OrderingStream` | Own one stable scope and checked sequence allocator for a canonical address/sender/epoch/kind. Keep it for persistent traffic; reuse allocated options for retries. Invalid metadata or a wrong Reply binding must not advance it. Fresh-per-message metadata remains available for compatibility. |
 | `receipt::ReceiptReturnConfig` | Reserve the independent receipt-control path before application admission, then produce an encrypted canonical receipt Cast. The integrated `admit` path uses the same budget owner and authenticates/decrypts the application message once. |
 | `receipt::ReceiptTracker` | Verify destination receipts against the locally configured destination key and exact send attempt. Track admission separately from application Reply, retain bounded retry/terminal state, and prevent receipt-of-receipt loops. |
 | `service_object::ObjectMailbox` | Consume the private `AdmittedMessage` proof for an object-v1 Call, recheck current policy/owner/expiry, and grant scoped access to the existing object endpoint. No public constructor can forge that proof, and no second decrypt or duplicated codec state machine is needed. |
 | `MailboxBinding::send_prepared` | Reauthorize the canonical prepared envelope and send through MVM's authorized `PeerTransport` with cancellation/backpressure. It does not bypass transport admission with a raw socket write. |
+
+Use a newly provisioned `HostBudget` to create one `BrokerContext`, and construct
+the local services/trackers from that context's budget inside `with_time`. Each
+local protocol phase obtains fresh time under that same dispatch gate. Do not
+perform socket I/O, recursively dispatch, or reuse sampled time for later service
+operations inside another phase. The synchronous gate deliberately serializes
+local work; it does not promise fairness or a parallel reconstruction capacity.
+
+For receipt transmission, call `PreparedReceipt::reserve_send` during local
+dispatch, then consume its non-cloneable permit with `send` outside dispatch.
+The permit retains queue credit through transmission and rechecks current
+source/return policy, cancellation and expiry. Every retry reserves a new rate
+attempt. The existing combined `PreparedReceipt::send` remains available to
+single-owner callers. Timestamp validation uses the trusted local caller's time;
+it does not establish a hard physical-time deadline under arbitrary scheduling.
+
+Native callers can use `campaign::broker_context`, `sender_with_broker` and
+`receiver_with_broker` in the live crate to inject one owner across sessions.
+The existing `sender`/`receiver` wrappers explicitly create single-endpoint
+contexts. Neither API aggregates separate processes automatically. When both
+local sides of a Call share a budget, their pending/admitted slots both count
+against the signed grant; provisioning must admit those roles explicitly.
+
+`HostBudget::snapshot` and `LocalMailboxService::snapshot` expose read-only local
+diagnostics. They do not clear replay state or offer remote cache membership.
+FIFO cursors remain retained: stable streams avoid creating a checkpoint per
+message, and no silent eviction or authenticated retirement protocol is added.
 
 Application messages remain at most 64 KiB; canonical envelopes are bounded at
 256 KiB. The reserved receipt profile has a separate 4 KiB payload / 16 KiB

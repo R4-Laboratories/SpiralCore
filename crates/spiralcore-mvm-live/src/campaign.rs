@@ -163,8 +163,26 @@ impl<S: SocketIo + 'static> Client<S> {
         Ok(replies)
     }
 }
+/// Construct one broker context per native host/guest process owner. Clone it
+/// into all endpoints hosted by that owner, rather than multiplying budgets.
+pub fn broker_context() -> Result<spiralcore_mvm_adapter::broker::BrokerContext> {
+    canonical::broker_context()
+}
+
+/// Convenience entry point for a process hosting one endpoint. Multi-endpoint
+/// owners must reuse one context through `sender_with_broker`/`receiver_with_broker`.
 pub fn sender<S: SocketIo + 'static>(
     bootstrap: &Bootstrap,
+    socket: S,
+    role: HandshakeRole,
+    out: &mut impl Write,
+) -> Result<Value> {
+    sender_with_broker(bootstrap, &broker_context()?, socket, role, out)
+}
+
+pub fn sender_with_broker<S: SocketIo + 'static>(
+    bootstrap: &Bootstrap,
+    broker: &spiralcore_mvm_adapter::broker::BrokerContext,
     socket: S,
     role: HandshakeRole,
     out: &mut impl Write,
@@ -175,7 +193,7 @@ pub fn sender<S: SocketIo + 'static>(
     let cpu = ProcessTime::now();
     let wall = Instant::now();
     let cases = cases(&bootstrap.plan)?;
-    let service = canonical::Session::new(bootstrap)?;
+    let service = canonical::Session::new(bootstrap, broker)?;
     let route = bootstrap
         .outgoing
         .as_ref()
@@ -377,8 +395,21 @@ impl<S: SocketIo + 'static> Server<S> {
     }
 }
 
+/// Single-endpoint convenience entry point; see `receiver_with_broker` when a
+/// broker process owns more than one endpoint.
 pub fn receiver<S: SocketIo + 'static>(
     bootstrap: &Bootstrap,
+    cache_root: &Path,
+    socket: S,
+    role: HandshakeRole,
+    out: &mut impl Write,
+) -> Result<Value> {
+    receiver_with_broker(bootstrap, &broker_context()?, cache_root, socket, role, out)
+}
+
+pub fn receiver_with_broker<S: SocketIo + 'static>(
+    bootstrap: &Bootstrap,
+    broker: &spiralcore_mvm_adapter::broker::BrokerContext,
     cache_root: &Path,
     socket: S,
     role: HandshakeRole,
@@ -390,7 +421,7 @@ pub fn receiver<S: SocketIo + 'static>(
     let cpu = ProcessTime::now();
     let wall = Instant::now();
     let cases = cases(&bootstrap.plan)?;
-    let service = canonical::Session::new(bootstrap)?;
+    let service = canonical::Session::new(bootstrap, broker)?;
     let route = bootstrap
         .outgoing
         .as_ref()
