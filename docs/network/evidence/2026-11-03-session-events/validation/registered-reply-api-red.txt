@@ -1,0 +1,65 @@
+   Compiling spiralcore-transfer v0.1.0 (/var/tmp/spiralcore-session-events-20261103/source/crates/spiralcore-transfer)
+   Compiling uor-r4-object-store v0.1.0 (/var/tmp/spiralcore-session-events-20261103/source/crates/uor-r4-object-store)
+   Compiling spiralcore-mvm-adapter v0.1.0 (/var/tmp/spiralcore-session-events-20261103/source/crates/spiralcore-mvm-adapter)
+error[E0599]: no method named `observe_registered_application_reply` found for struct `ReceiptTracker` in the current scope
+    --> tests/receipt.rs:1211:17
+     |
+1211 |         tracker.observe_registered_application_reply(&replies, &reply.bytes, now()),
+     |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     |
+help: there is a method `observe_application_reply` with a similar name
+     |
+1211 -         tracker.observe_registered_application_reply(&replies, &reply.bytes, now()),
+1211 +         tracker.observe_application_reply(&replies, &reply.bytes, now()),
+     |
+
+error[E0599]: no method named `observe_registered_application_reply` found for struct `ReceiptTracker` in the current scope
+    --> tests/receipt.rs:1258:17
+     |
+1258 |         tracker.observe_registered_application_reply(&replies, &unknown.bytes, now()),
+     |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     |
+help: there is a method `observe_application_reply` with a similar name
+     |
+1258 -         tracker.observe_registered_application_reply(&replies, &unknown.bytes, now()),
+1258 +         tracker.observe_application_reply(&replies, &unknown.bytes, now()),
+     |
+
+error[E0599]: no method named `observe_registered_application_reply` found for struct `ReceiptTracker` in the current scope
+    --> tests/receipt.rs:1309:21
+     |
+1309 |             tracker.observe_registered_application_reply(&replies, &mismatch.bytes, now()),
+     |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     |
+help: there is a method `observe_application_reply` with a similar name
+     |
+1309 -             tracker.observe_registered_application_reply(&replies, &mismatch.bytes, now()),
+1309 +             tracker.observe_application_reply(&replies, &mismatch.bytes, now()),
+     |
+
+error[E0599]: no method named `observe_registered_application_reply` found for struct `ReceiptTracker` in the current scope
+    --> tests/receipt.rs:1358:29
+     |
+1358 |                     tracker.observe_registered_application_reply(&replies, &first.bytes, now()),
+     |                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     |
+help: there is a method `observe_application_reply` with a similar name
+     |
+1358 -                     tracker.observe_registered_application_reply(&replies, &first.bytes, now()),
+1358 +                     tracker.observe_application_reply(&replies, &first.bytes, now()),
+     |
+
+error[E0599]: no method named `observe_registered_application_reply` found for struct `ReceiptTracker` in the current scope
+    --> tests/receipt.rs:1383:21
+     |
+1383 |             tracker.observe_registered_application_reply(&replies, &wire, time),
+     |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     |
+help: there is a method `observe_application_reply` with a similar name
+     |
+1383 -             tracker.observe_registered_application_reply(&replies, &wire, time),
+1383 +             tracker.observe_application_reply(&replies, &wire, time),
+     |
+
+For more information about this error, try `rustc --explain E0599`.
+error: could not compile `spiralcore-mvm-adapter` (test "receipt") due to 5 previous errors

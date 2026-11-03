@@ -1,0 +1,24 @@
+   Compiling spiralcore-transfer v0.1.0 (/var/tmp/spiralcore-session-events-20261103/source/crates/spiralcore-transfer)
+   Compiling spiralcore-mvm-adapter v0.1.0 (/var/tmp/spiralcore-session-events-20261103/source/crates/spiralcore-mvm-adapter)
+   Compiling spiralcore-gateway-core v0.1.0 (/var/tmp/spiralcore-session-events-20261103/source/crates/spiralcore-gateway-core)
+   Compiling spiralcore-mvm-live v0.1.0 (/var/tmp/spiralcore-session-events-20261103/source/crates/spiralcore-mvm-live)
+    Finished `release` profile [optimized] target(s) in 9.14s
+     Running unittests src/lib.rs (/var/tmp/spiralcore-mvm-service-20261102/target/release/deps/spiralcore_mvm_live-d1c68b78ce634305)
+
+running 1 test
+
+thread 'campaign::canonical::ack_tests::failed_reply_ack_retains_exact_service_payload_and_original_pending_identity' (479193) panicked at src/campaign/canonical/ack_tests.rs:259:5:
+assertion `left == right` failed: ACK failure consumed the only exact Reply payload
+  left: Replied(None)
+ right: Replied(Some([83, 67, 77, 79, 66, 74, 48, 49, 101, 0, 0, 0, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 0, 0, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0, 8, 0, 7, 0, 6]))
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test campaign::canonical::ack_tests::failed_reply_ack_retains_exact_service_payload_and_original_pending_identity ... FAILED
+
+failures:
+
+failures:
+    campaign::canonical::ack_tests::failed_reply_ack_retains_exact_service_payload_and_original_pending_identity
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 23 filtered out; finished in 0.01s
+
+error: test failed, to rerun pass `--lib`

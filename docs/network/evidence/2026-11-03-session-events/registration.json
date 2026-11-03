@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "scope": "C8 bounded authenticated endpoint event handling and receiver cached Reply replay; automatic timer retry and reconnect/resume remain disabled",
+  "before_product_source": "91baf28efa56da94336d413ca8e912266079f654 (C7 campaign); later main relay source d997bb06 uses the same campaign implementation",
+  "after_source": "Pin reviewed C8 source and executable hashes before measurement",
+  "host": {
+    "machine": "wick, shared Linux x86_64 host; existing bounded Cargo target; fresh process per cell",
+    "harness": "unchanged Rust broker_objects; two local TCP roles sharing one broker, not native MVM or WAN",
+    "before_binary_sha256": "879111c94d8ed8753526758997e497ee4391b8893040b6ef1067068fe96309e5",
+    "cells": "raw-mixed, whole-mixed, combined-cpu at requested 1 MiB, trials 0/1/2; whole-mixed and combined-cpu at requested 16 MiB, trial 0; before/after each cell, reverse order for trial 1",
+    "ceilings": "One active cell, existing Rust 512 MiB owned-store and 1 GiB sampled process-RSS ceilings, 30-minute entire batch deadline; no retained payload on success",
+    "required": "All eight target bytes and original lengths exact, durable publication and independent readback, two-way envelope/framing counters match; record setup, thread/process CPU, verified transfer and cleanup/lifecycle, peak process RSS, and every regression",
+    "interpretation": "Exploratory paired comparison on a shared host; fixed large trial and three small trials do not establish a causal or statistically qualified speedup"
+  },
+  "native": {
+    "machine": "wick Linux/Firecracker",
+    "cells": "Reviewed before and after source, whole-mixed and combined-cpu, stage two, requested 16 MiB, trial 0; one cell at a time",
+    "ceilings": "At most two guests, each 1 vCPU and 1 GiB RAM, no guest NIC; existing 256 MiB writable disk per cell; 30-minute entire batch deadline; temporary owned runner only",
+    "required": "Exact publications and stopped-store keyless readbacks, bidirectional and two-hop counters, sender/receiver CPU and setup/lifecycle, relay CPU/resource snapshots, joined teardown; current canonical AcceptedEphemeral remains distinct from durable object commit",
+    "network_scope": "Local native boundary only; experimental64 Linux rate enforcement remains absent, no WAN claim"
+  },
+  "custody": "Retain compact source/binary identities, public receipts and failed gates in GitHub. The unchanged Rust host engine emits its verified record after exact independent readback, then removes only that successful cell's owned store and emits cleanup/lifecycle timing; host archives therefore follow cleanup. Native disks remain until receipt archives and member checksums verify. No VM disk, payload dataset or new Cargo target on Mac.",
+  "deferred": ["Automatic retry/resume", "Idle transport maintenance", "Production retention and >2048 Calls", "Installed host exclusion and aggregate plaintext/cache partitions", "Pipeline above one", "Canonical cross-host/platform/WAN acceptance and final upstream contribution"]
+}

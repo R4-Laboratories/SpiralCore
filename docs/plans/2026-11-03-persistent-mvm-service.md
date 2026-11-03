@@ -156,6 +156,7 @@ are proposed owned files, not assertions that those APIs already exist.
    A2; use B6a/B6b before claiming the host-wide canonical aggregate milestone.
    Risk: high.
 8. **Authenticated event demultiplexing** — same session/test paths plus
+   `crates/spiralcore-mvm-adapter/src/receipt.rs`,
    `crates/spiralcore-mvm-adapter/tests/receipt.rs` and
    `crates/spiralcore-mvm-adapter/tests/service_sender.rs`.
    Replace the assumption that exactly two incoming frames finish every Call
@@ -164,6 +165,23 @@ are proposed owned files, not assertions that those APIs already exist.
    and unknown control frames, revoked grant, deadline and cancellation. Keep
    receipt acceptance and application Reply distinct. No receipt-of-receipt,
    new ACK, unbounded receive loop or fresh sequence for an uncertain send.
+   Before caller Late/Duplicate integration, follow the approved additive Rust
+   [registered Reply observation contract](../api/registered-reply-observation-v1.md)
+   and its linked C8 architecture addendum. First add focused RED contract tests
+   for matched/unknown Replies, unchanged strict behavior, authentication errors,
+   known semantic mismatch, expiry/commitment conflict and unchanged unknown-state
+   accounting. Then implement `observe_registered_application_reply` and the
+   strict wrapper with one canonical verification and no new retained state.
+   `None` means only a genuinely unknown authenticated request; when no complete
+   match exists, known correlation OR causation with failed complete-match
+   constraints remains `Unauthorized`. Preserve ambiguous-match `Conflict` and
+   all other existing errors; the strict wrapper maps `None` to `Unauthorized`.
+   Finally add the caller Late-then-replayed-Duplicate regression and integrate
+   those dispositions: Late skips correlation and sends its actual negative
+   receipt; an unmatched Duplicate sends only its actual duplicate receipt.
+   Neither advances current progress. AcceptedEphemeral requires `Some`, and
+   only the authenticated current handle may advance Reply state. Retain the
+   16-event bound and ordinary readiness/FIFO poll gate; enable no retry here.
    Upgrade both peers and the keyless relay: its current four-frame choreography
    cannot forward a retried Call while waiting for a lost reverse event, even
    with pipeline one. Use bounded independent directional pumps under the same

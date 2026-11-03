@@ -1,0 +1,19 @@
+   Compiling spiralcore-mvm-live v0.1.0 (/var/tmp/spiralcore-session-events-20261103/source/crates/spiralcore-mvm-live)
+    Finished `release` profile [optimized] target(s) in 4.00s
+     Running unittests src/lib.rs (/var/tmp/spiralcore-mvm-service-20261102/target/release/deps/spiralcore_mvm_live-d1c68b78ce634305)
+
+running 1 test
+
+thread 'campaign::canonical::fifo_tests::signed_capacity_two_current_reply_waits_for_the_earlier_fifo_reply' (481703) panicked at src/campaign/canonical/fifo_tests.rs:336:17:
+current Call must wait for its preceding FIFO Reply: "Reply did not complete admitted Call"
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test campaign::canonical::fifo_tests::signed_capacity_two_current_reply_waits_for_the_earlier_fifo_reply ... FAILED
+
+failures:
+
+failures:
+    campaign::canonical::fifo_tests::signed_capacity_two_current_reply_waits_for_the_earlier_fifo_reply
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 28 filtered out; finished in 0.01s
+
+error: test failed, to rerun pass `--lib`

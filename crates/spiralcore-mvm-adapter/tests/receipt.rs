@@ -1159,3 +1159,230 @@ fn integrated_receipt_admission_rejects_a_different_budget_owner_before_queue_mu
     let receipt = service.admit(&source, &request.bytes, now()).unwrap();
     assert_eq!(receipt.receipt.outcome, DeliveryOutcome::AcceptedEphemeral);
 }
+
+// Keep the existing signed fixture and canonical envelope format; change only
+// the correlation value before re-signing a Reply with its real fixture key.
+fn reply_with_correlation(payload: &[u8], correlation: u8, causation: u8) -> Wire {
+    use mvm_core::mailbox::{SealRequest, decode_envelope, encode_envelope, seal_envelope};
+    let c = config(MailboxMessageKind::Reply, false);
+    let mut reply = seal(&c, payload, 30, 30, causation);
+    reply.header.correlation_id = CorrelationId::from_bytes([correlation; 32]);
+    let original = decode_envelope(&reply.bytes).unwrap();
+    let envelope = seal_envelope(
+        SealRequest {
+            routing: original.routing,
+            header: reply.header.clone(),
+            plaintext: payload,
+        },
+        &c.encryption_key,
+        c.signing_key.as_ref().unwrap(),
+    )
+    .unwrap();
+    reply.bytes = encode_envelope(&envelope).unwrap();
+    reply
+}
+
+#[test]
+fn registered_reply_observer_matches_before_partial_candidates_without_inventing_acceptance() {
+    let request_binding =
+        MailboxBinding::new(config(MailboxMessageKind::Call, false), None).unwrap();
+    let control = MailboxBinding::new(config(MailboxMessageKind::Cast, true), None).unwrap();
+    let replies = MailboxBinding::new(config(MailboxMessageKind::Reply, false), None).unwrap();
+    let mut tracker = ReceiptTracker::new(budget(), 4).unwrap();
+    let key = SigningKey::from_bytes(&[24; 32]).verifying_key();
+    let first = seal(&config(MailboxMessageKind::Call, false), b"first", 1, 1, 0);
+    let other = seal(&config(MailboxMessageKind::Call, false), b"other", 2, 2, 0);
+    let first_handle = tracker
+        .register_send(&request_binding, &control, &key, &first.bytes, now())
+        .unwrap();
+    let other_handle = tracker
+        .register_send(&request_binding, &control, &key, &other.bytes, now())
+        .unwrap();
+    // Both requests share correlation 90. The second partial candidate must not
+    // veto the complete match for the first request's causation/message ID.
+    let reply = seal(
+        &config(MailboxMessageKind::Reply, false),
+        b"result",
+        30,
+        30,
+        1,
+    );
+    assert_eq!(
+        tracker.observe_registered_application_reply(&replies, &reply.bytes, now()),
+        Ok(Some(first_handle))
+    );
+    assert_eq!(
+        tracker.observe_application_reply(&replies, &reply.bytes, now()),
+        Ok(first_handle)
+    );
+    let facts = tracker
+        .facts(&request_binding, &first_handle, now())
+        .unwrap();
+    assert!(facts.application_replied);
+    assert!(!facts.accepted);
+    let other_facts = tracker
+        .facts(&request_binding, &other_handle, now())
+        .unwrap();
+    assert!(!other_facts.application_replied && !other_facts.accepted);
+    assert_eq!(
+        tracker
+            .take_receipt(&request_binding, &first_handle, now())
+            .unwrap(),
+        ReceiptObservation::Pending
+    );
+}
+
+#[test]
+fn registered_reply_observer_unknown_is_none_without_retained_state_and_strict_stays_unauthorized()
+{
+    let request_binding =
+        MailboxBinding::new(config(MailboxMessageKind::Call, false), None).unwrap();
+    let control = MailboxBinding::new(config(MailboxMessageKind::Cast, true), None).unwrap();
+    let replies = MailboxBinding::new(config(MailboxMessageKind::Reply, false), None).unwrap();
+    let shared = budget();
+    let mut tracker = ReceiptTracker::new(shared.clone(), 2).unwrap();
+    let request = seal(&config(MailboxMessageKind::Call, false), b"known", 1, 1, 0);
+    let handle = tracker
+        .register_send(
+            &request_binding,
+            &control,
+            &SigningKey::from_bytes(&[24; 32]).verifying_key(),
+            &request.bytes,
+            now(),
+        )
+        .unwrap();
+    let unknown = reply_with_correlation(b"unknown", 91, 99);
+    let before = tracker.snapshot();
+    let budget_before = shared.snapshot().unwrap();
+    assert_eq!(
+        tracker.observe_registered_application_reply(&replies, &unknown.bytes, now()),
+        Ok(None)
+    );
+    assert_eq!(
+        tracker.observe_application_reply(&replies, &unknown.bytes, now()),
+        Err(ServiceError::Unauthorized)
+    );
+    assert_eq!(tracker.snapshot(), before);
+    let after = shared.snapshot().unwrap();
+    assert_eq!(
+        (
+            after.identities,
+            after.queued_bytes,
+            after.queued_messages,
+            after.active_calls,
+            after.owner_count,
+            after.refusals
+        ),
+        (
+            budget_before.identities,
+            budget_before.queued_bytes,
+            budget_before.queued_messages,
+            budget_before.active_calls,
+            budget_before.owner_count,
+            budget_before.refusals
+        ),
+    );
+    let facts = tracker.facts(&request_binding, &handle, now()).unwrap();
+    assert!(!facts.application_replied && !facts.accepted);
+}
+
+#[test]
+fn registered_reply_observer_known_correlation_or_causation_mismatch_is_not_unknown() {
+    let request_binding =
+        MailboxBinding::new(config(MailboxMessageKind::Call, false), None).unwrap();
+    let control = MailboxBinding::new(config(MailboxMessageKind::Cast, true), None).unwrap();
+    let replies = MailboxBinding::new(config(MailboxMessageKind::Reply, false), None).unwrap();
+    let mut tracker = ReceiptTracker::new(budget(), 2).unwrap();
+    let request = seal(&config(MailboxMessageKind::Call, false), b"known", 1, 1, 0);
+    let handle = tracker
+        .register_send(
+            &request_binding,
+            &control,
+            &SigningKey::from_bytes(&[24; 32]).verifying_key(),
+            &request.bytes,
+            now(),
+        )
+        .unwrap();
+    for (correlation, causation) in [(90, 99), (91, 1)] {
+        let mismatch = reply_with_correlation(b"mismatched", correlation, causation);
+        assert_eq!(
+            tracker.observe_registered_application_reply(&replies, &mismatch.bytes, now()),
+            Err(ServiceError::Unauthorized),
+            "known correlation OR causation must not become None: {correlation}/{causation}",
+        );
+    }
+    assert!(
+        !tracker
+            .facts(&request_binding, &handle, now())
+            .unwrap()
+            .application_replied
+    );
+}
+
+#[test]
+fn registered_reply_observer_preserves_expiry_commitment_and_authentication_errors() {
+    for mode in ["expired", "commitment", "tampered-unknown"] {
+        let request_binding =
+            MailboxBinding::new(config(MailboxMessageKind::Call, false), None).unwrap();
+        let control = MailboxBinding::new(config(MailboxMessageKind::Cast, true), None).unwrap();
+        let replies = MailboxBinding::new(config(MailboxMessageKind::Reply, false), None).unwrap();
+        let mut tracker = ReceiptTracker::new(budget(), 2).unwrap();
+        let request = seal(&config(MailboxMessageKind::Call, false), b"known", 1, 1, 0);
+        let handle = tracker
+            .register_send(
+                &request_binding,
+                &control,
+                &SigningKey::from_bytes(&[24; 32]).verifying_key(),
+                &request.bytes,
+                now(),
+            )
+            .unwrap();
+        let first = seal(
+            &config(MailboxMessageKind::Reply, false),
+            b"first",
+            30,
+            30,
+            1,
+        );
+        let (wire, time, expected) = match mode {
+            "expired" => (
+                first.bytes,
+                ServiceTime {
+                    unix_ms: 1_900,
+                    monotonic_ms: 601,
+                },
+                ServiceError::Expired,
+            ),
+            "commitment" => {
+                assert_eq!(
+                    tracker.observe_registered_application_reply(&replies, &first.bytes, now()),
+                    Ok(Some(handle))
+                );
+                let changed = seal(
+                    &config(MailboxMessageKind::Reply, false),
+                    b"other",
+                    30,
+                    30,
+                    1,
+                );
+                (changed.bytes, now(), ServiceError::Conflict)
+            }
+            "tampered-unknown" => {
+                let unknown = reply_with_correlation(b"unknown", 91, 99);
+                let mut envelope = mvm_core::mailbox::decode_envelope(&unknown.bytes).unwrap();
+                envelope.ciphertext[0] ^= 1;
+                (
+                    mvm_core::mailbox::encode_envelope(&envelope).unwrap(),
+                    now(),
+                    ServiceError::Unauthorized,
+                )
+            }
+            _ => unreachable!(),
+        };
+        assert_eq!(
+            tracker.observe_registered_application_reply(&replies, &wire, time),
+            Err(expected),
+            "{mode}"
+        );
+    }
+}

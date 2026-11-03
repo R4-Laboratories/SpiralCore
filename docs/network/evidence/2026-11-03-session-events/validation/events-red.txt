@@ -1,0 +1,33 @@
+   Compiling spiralcore-transfer v0.1.0 (/var/tmp/spiralcore-session-events-20261103/source/crates/spiralcore-transfer)
+   Compiling uor-r4-object-store v0.1.0 (/var/tmp/spiralcore-session-events-20261103/source/crates/uor-r4-object-store)
+   Compiling spiralcore-gateway-core v0.1.0 (/var/tmp/spiralcore-session-events-20261103/source/crates/spiralcore-gateway-core)
+   Compiling spiralcore-mvm-adapter v0.1.0 (/var/tmp/spiralcore-session-events-20261103/source/crates/spiralcore-mvm-adapter)
+   Compiling spiralcore-mvm-live v0.1.0 (/var/tmp/spiralcore-session-events-20261103/source/crates/spiralcore-mvm-live)
+    Finished `release` profile [optimized] target(s) in 11.77s
+     Running unittests src/lib.rs (/var/tmp/spiralcore-mvm-service-20261102/target/release/deps/spiralcore_mvm_live-31c160107cb009e4)
+
+running 2 tests
+test campaign::canonical::event_tests::duplicate_authenticated_call_receipts_before_reply_do_not_complete_or_execute_twice ... FAILED
+test campaign::canonical::event_tests::reply_before_duplicated_call_receipts_does_not_poison_the_next_pending_call ... FAILED
+
+failures:
+
+---- campaign::canonical::event_tests::duplicate_authenticated_call_receipts_before_reply_do_not_complete_or_execute_twice stdout ----
+
+thread 'campaign::canonical::event_tests::duplicate_authenticated_call_receipts_before_reply_do_not_complete_or_execute_twice' (477217) panicked at src/campaign/canonical/event_tests.rs:269:5:
+caller failed event demultiplexing: Err("missing authenticated Call admission")
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- campaign::canonical::event_tests::reply_before_duplicated_call_receipts_does_not_poison_the_next_pending_call stdout ----
+
+thread 'campaign::canonical::event_tests::reply_before_duplicated_call_receipts_does_not_poison_the_next_pending_call' (477219) panicked at src/campaign/canonical/event_tests.rs:269:5:
+caller failed event demultiplexing: Err("missing authenticated Call admission")
+
+
+failures:
+    campaign::canonical::event_tests::duplicate_authenticated_call_receipts_before_reply_do_not_complete_or_execute_twice
+    campaign::canonical::event_tests::reply_before_duplicated_call_receipts_does_not_poison_the_next_pending_call
+
+test result: FAILED. 0 passed; 2 failed; 0 ignored; 0 measured; 38 filtered out; finished in 0.02s
+
+error: test failed, to rerun pass `--lib`

@@ -1,0 +1,26 @@
+   Compiling spiralcore-mvm-live v0.1.0 (/var/tmp/spiralcore-session-events-20261103/source/crates/spiralcore-mvm-live)
+    Finished `release` profile [optimized] target(s) in 7.06s
+     Running unittests src/lib.rs (/var/tmp/spiralcore-mvm-service-20261102/target/release/deps/spiralcore_mvm_live-31c160107cb009e4)
+
+running 18 tests
+test campaign::canonical::ack_tests::failed_reply_ack_retains_exact_service_payload_and_original_pending_identity ... ok
+test campaign::canonical::event_tests::duplicate_authenticated_call_receipts_before_reply_do_not_complete_or_execute_twice ... ok
+test campaign::canonical::event_tests::exact_duplicate_reply_before_call_receipt_is_acknowledged_without_reexecution ... ok
+test campaign::canonical::event_tests::reply_before_duplicated_call_receipts_does_not_poison_the_next_pending_call ... ok
+test campaign::canonical::fifo_tests::signed_capacity_two_current_reply_waits_for_the_earlier_fifo_reply ... ok
+test campaign::canonical::limit_tests::authenticated_receipt_flood_stops_at_sixteen_events_and_retains_original_call ... ok
+test campaign::canonical::pending_tests::two_authenticated_call_receipts_without_reply_retain_pending_identity ... ok
+test campaign::canonical::tests::explicit_campaign_tier_reserves_worst_case_raw_control_and_data_identities ... ok
+test campaign::canonical::tests::independent_service_dispatch_progresses_while_application_phase_is_blocked ... ok
+test campaign::canonical::tests::invoked_send_failure_retains_identity_and_blocks_an_implicit_retransmission ... ok
+test campaign::canonical::tests::real_caller_retains_the_partial_identity_and_refuses_a_substitute_frame ... ok
+test campaign::session::tests::call_refusal_does_not_register_tracker_or_replace_the_prepared_identity ... ok
+test campaign::session::tests::incoming_event_allowance_remains_cumulative_at_its_boundary ... ok
+test campaign::session::tests::pre_send_refusal_cannot_extend_original_lifetime_when_wall_clock_rolls_back ... ok
+test campaign::session::tests::receipt_dispositions_keep_acceptance_level_and_remote_refusal_distinct ... ok
+test campaign::session::tests::reply_ack_progress_requires_current_handle_bounded_wire_and_invoked_send ... ok
+test campaign::session::tests::starting_send_keeps_identity_but_blocks_implicit_registration_or_replacement ... ok
+test campaign::session::tests::tracker_refusal_retains_partial_call_and_exact_sealed_request_until_capacity_returns ... ok
+
+test result: ok. 18 passed; 0 failed; 0 ignored; 0 measured; 29 filtered out; finished in 0.10s
+

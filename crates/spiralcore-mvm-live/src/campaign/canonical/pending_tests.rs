@@ -93,7 +93,13 @@ fn two_authenticated_call_receipts_without_reply_retain_pending_identity() {
     };
     let error = caller.call(&request, &stream, &cancel).unwrap_err();
     peer_worker.join().unwrap().unwrap();
-    assert_eq!(error.to_string(), "missing application Reply");
+    // The bounded event reader waits for the missing Reply; the peer has now
+    // closed. Transport failure must still preserve the original identity.
+    assert!(
+        error
+            .downcast_ref::<spiralcore_mvm_adapter::live::LiveError>()
+            .is_some()
+    );
     let counters = stream.counters().unwrap();
     assert_eq!((counters.frames_sent, counters.frames_received), (1, 2));
     assert_eq!(

@@ -1,5 +1,5 @@
 //! Canonical mailbox service consumer shared by host and real guest campaigns.
-use super::session::{PendingCall, SessionError};
+use super::session::{ExchangeDeadline, PendingCall, SessionError};
 use super::*;
 use crate::config::Material;
 use ed25519_dalek::{SigningKey, VerifyingKey};
@@ -10,8 +10,8 @@ use spiralcore_mvm_adapter::{
     issuance::IssuancePolicy,
     receipt::{ReceiptObservation, ReceiptReturnConfig, ReceiptTracker},
     service::{
-        CallStatus, ControlReserve, HostBudget, LocalMailboxService, MailboxBinding, ServiceLimits,
-        ServiceTime,
+        CallStatus, ControlReserve, HostBudget, LocalMailboxService, MailboxBinding, ServiceError,
+        ServiceLimits, ServiceTime,
     },
     service_object::ObjectMailbox,
     service_sender::{self, OrderingStream},
@@ -34,6 +34,7 @@ pub(super) struct Session {
     pub(super) calls: u64,
     context: Option<Context>,
     pending: Option<PendingCall>,
+    receiver_incomplete: bool,
 }
 const MAX_CAMPAIGN_CALLS: u64 = 2048;
 const ISSUANCE_POLICY: IssuancePolicy = IssuancePolicy::Bounded {
@@ -134,6 +135,7 @@ impl Session {
                 calls: 0,
                 context: None,
                 pending: None,
+                receiver_incomplete: false,
             })
         })
     }
@@ -224,58 +226,132 @@ impl Session {
             cancel,
             send_time,
         )?;
-        let mut admitted = false;
         let mut reply = None;
-        for _ in 0..2 {
+        while self
+            .pending
+            .as_ref()
+            .ok_or(SessionError::StreamFenced)?
+            .events_received()
+            < 16
+        {
             let bytes = stream.receive(cancel, deadline)?;
+            self.pending
+                .as_mut()
+                .ok_or(SessionError::StreamFenced)?
+                .receive_event()?;
             let envelope = decode_envelope(&bytes)?;
             let acknowledgment = broker.with_time(|_, now| -> Result<_> {
                 if envelope.encryption.key_id == self.control_key {
                     self.tracker.observe_receipt(&self.control, &bytes, now)?;
-                    let ReceiptObservation::Verified(receipt) =
-                        self.tracker.take_receipt(&self.outgoing, &send, now)?
-                    else {
-                        return Err("missing authenticated Call admission".into());
+                    let receipt = match self.tracker.take_receipt(&self.outgoing, &send, now)? {
+                        ReceiptObservation::Verified(receipt) => receipt,
+                        // An authenticated duplicate or earlier retained
+                        // observation need not provide a new current receipt.
+                        ReceiptObservation::Pending => return Ok(None),
+                        ReceiptObservation::Expired => {
+                            return Err(SessionError::Service(ServiceError::Expired).into());
+                        }
                     };
-                    if !matches!(
-                        receipt.receipt.outcome,
-                        DeliveryOutcome::AcceptedEphemeral | DeliveryOutcome::Duplicate
-                    ) {
-                        return Err("Call admission refused".into());
-                    }
-                    admitted = true;
+                    self.pending
+                        .as_mut()
+                        .ok_or(SessionError::StreamFenced)?
+                        .observe_receipt(receipt.receipt.outcome)?;
                     Ok(None)
                 } else if envelope.encryption.key_id == self.normal_key {
                     let (accepted, ack) =
                         self.returns
                             .admit(&mut self.service, &self.incoming, &bytes, now)?;
-                    if accepted.receipt.outcome != DeliveryOutcome::AcceptedEphemeral {
-                        return Err("Reply admission refused".into());
-                    }
-                    self.tracker
-                        .observe_application_reply(&self.incoming, &bytes, now)?;
-                    let CallStatus::Replied(Some(payload)) =
-                        self.service.poll_call(&self.outgoing, &call, now)?
-                    else {
-                        return Err("Reply did not complete admitted Call".into());
+                    let current = match accepted.receipt.outcome {
+                        // This authenticated negative disposition contributes
+                        // no current facts, but still gets its actual receipt.
+                        DeliveryOutcome::Late => false,
+                        DeliveryOutcome::AcceptedEphemeral | DeliveryOutcome::Duplicate => {
+                            match self.tracker.observe_registered_application_reply(
+                                &self.incoming,
+                                &bytes,
+                                now,
+                            )? {
+                                Some(observed) => self
+                                    .pending
+                                    .as_mut()
+                                    .ok_or(SessionError::StreamFenced)?
+                                    .observe_reply(observed, &bytes)?,
+                                // A previously Late identity can replay as
+                                // Duplicate without a registered request.
+                                None if accepted.receipt.outcome == DeliveryOutcome::Duplicate => {
+                                    false
+                                }
+                                None => {
+                                    return Err(
+                                        SessionError::Service(ServiceError::Unauthorized).into()
+                                    );
+                                }
+                            }
+                        }
+                        _ => return Err("Reply admission refused".into()),
                     };
-                    reply = Some(Frame::decode(&payload)?);
-                    Ok(Some((ack, now)))
+                    Ok(Some((ack, current)))
                 } else {
                     Err("unprovisioned incoming encryption key".into())
                 }
             })?;
-            if let Some((ack, _)) = acknowledgment {
+            if let Some((ack, current)) = acknowledgment {
                 let (permit, now) = broker.with_time(|_, now| -> Result<_> {
                     Ok((ack.reserve_send(cancel, now)?, now))
                 })?;
+                if current {
+                    self.pending
+                        .as_mut()
+                        .ok_or(SessionError::StreamFenced)?
+                        .invoke_reply_ack()?;
+                }
                 permit.send(stream, cancel, now)?;
+                if current {
+                    self.pending
+                        .as_mut()
+                        .ok_or(SessionError::StreamFenced)?
+                        .sent_reply_ack()?;
+                }
+            }
+            if self
+                .pending
+                .as_ref()
+                .ok_or(SessionError::StreamFenced)?
+                .ready_to_complete()
+            {
+                // Observation readiness can precede FIFO delivery. Polling
+                // Pending consumes nothing; keep receiving the missing event.
+                reply = broker.with_time(|_, now| -> Result<_> {
+                    self.pending
+                        .as_ref()
+                        .ok_or(SessionError::StreamFenced)?
+                        .remaining(now)?;
+                    match self.service.poll_call(&self.outgoing, &call, now)? {
+                        CallStatus::Pending => Ok(None),
+                        CallStatus::Replied(Some(payload)) => Ok(Some(Frame::decode(&payload)?)),
+                        CallStatus::Replied(None) => {
+                            Err(SessionError::Service(ServiceError::State).into())
+                        }
+                        CallStatus::TimedOut => {
+                            Err(SessionError::Service(ServiceError::Expired).into())
+                        }
+                        CallStatus::Cancelled => {
+                            Err(SessionError::Service(ServiceError::Cancelled).into())
+                        }
+                        CallStatus::Unavailable => {
+                            Err(SessionError::Service(ServiceError::Unavailable).into())
+                        }
+                        CallStatus::ShuttingDown => {
+                            Err(SessionError::Service(ServiceError::ShuttingDown).into())
+                        }
+                    }
+                })?;
+                if reply.is_some() {
+                    break;
+                }
             }
         }
-        if !admitted {
-            return Err("missing Call destination receipt".into());
-        }
-        let reply = reply.ok_or("missing application Reply")?;
+        let reply = reply.ok_or(SessionError::EventLimit)?;
         self.calls = self.calls.checked_add(1).ok_or("Call counter overflow")?;
         self.pending = None;
         Ok((context, reply))
@@ -290,11 +366,18 @@ impl Session {
         if self.calls >= MAX_CAMPAIGN_CALLS {
             return Err("native campaign Call limit".into());
         }
-        let bytes = stream.receive(cancel, Instant::now() + CALL_TIMEOUT)?;
+        if self.receiver_incomplete {
+            return Err(SessionError::StreamFenced.into());
+        }
+        // This slice has no receiver resume: every incomplete invocation keeps
+        // its canonical state and fences before a subsequent frame is read.
+        self.receiver_incomplete = true;
+        let deadline = Instant::now() + CALL_TIMEOUT;
+        let bytes = stream.receive(cancel, deadline)?;
         let cpu = ProcessTime::now();
         let wall = Instant::now();
         let broker = self.broker.clone();
-        let (receipt, proof) = broker.with_time(|_, now| -> Result<_> {
+        let (receipt, proof, deadline) = broker.with_time(|_, now| -> Result<_> {
             if decode_envelope(&bytes)?.encryption.key_id != self.normal_key {
                 return Err("expected provisioned Call key".into());
             }
@@ -308,12 +391,16 @@ impl Session {
                 .service
                 .receive(&self.incoming, now)?
                 .ok_or("missing admitted Call")?;
-            Ok((receipt, proof))
+            let deadline = ExchangeDeadline::new(deadline, proof.header().expires_at_unix_ms, now)?;
+            Ok((receipt, proof, deadline))
         })?;
-        let (permit, now) = broker
-            .with_time(|_, now| -> Result<_> { Ok((receipt.reserve_send(cancel, now)?, now)) })?;
+        let (permit, now) = broker.with_time(|_, now| -> Result<_> {
+            deadline.check(now)?;
+            Ok((receipt.reserve_send(cancel, now)?, now))
+        })?;
         permit.send(stream, cancel, now)?;
         let (reply, namespace) = application_phase(&broker, |now| {
+            deadline.check(now)?;
             let frame = Frame::decode(proof.payload())?;
             if frame.transfer != expected {
                 return Err("unexpected campaign transfer".into());
@@ -322,7 +409,8 @@ impl Session {
             let reply = object.handle(&self.incoming, &proof, now)?;
             Ok((reply, namespace))
         })?;
-        let (prepared, send, sent_at) = broker.with_time(|_, now| -> Result<_> {
+        let (prepared, encoded, send) = broker.with_time(|_, now| -> Result<_> {
+            deadline.check(now)?;
             let payload = reply.encode()?;
             let options = self
                 .ordering
@@ -341,52 +429,122 @@ impl Session {
                 &encoded,
                 now,
             )?;
-            Ok((prepared, send, now))
+            Ok((prepared, encoded, send))
         })?;
+        let sent_at = broker.with_time(|_, now| -> Result<_> {
+            deadline.check(now)?;
+            Ok(now)
+        })?;
+        let mut sends = 1_u8;
         self.outgoing
             .send_prepared(&prepared, stream, cancel, sent_at)?;
-        // Strict single-Call sender sends the Reply receipt before its next Call.
-        // Receiver idle wait is kept out of receiver processing CPU/wall metrics.
+        // Receiver idle waits stay outside processing CPU/wall intervals.
         let mut meter = Meter {
             cpu_us: cpu.elapsed().as_micros(),
             wall_us: wall.elapsed().as_micros(),
         };
-        let remaining = broker.with_time(|_, now| -> Result<_> {
-            u64::try_from(
-                prepared
-                    .header()
-                    .expires_at_unix_ms
-                    .checked_sub(now.unix_ms)
-                    .ok_or("Reply deadline overflow")?,
-            )
-            .map_err(|_| "Reply already expired".into())
-        })?;
-        let ack = stream.receive(
-            cancel,
-            Instant::now() + Duration::from_millis(remaining).min(CALL_TIMEOUT),
-        )?;
-        let cpu = ProcessTime::now();
-        let wall = Instant::now();
-        broker.with_time(|_, now| -> Result<_> {
-            if decode_envelope(&ack)?.encryption.key_id != self.control_key {
-                return Err("expected provisioned Reply receipt key".into());
+        let mut acknowledged = false;
+        // The initial admitted Call is the first event of this exchange.
+        for _ in 1..16 {
+            let event = stream.receive(cancel, deadline.instant())?;
+            let cpu = ProcessTime::now();
+            let wall = Instant::now();
+            let key = decode_envelope(&event)?.encryption.key_id;
+            let repeat = broker.with_time(|_, now| -> Result<_> {
+                deadline.check(now)?;
+                if key == self.control_key {
+                    self.tracker.observe_receipt(&self.control, &event, now)?;
+                    match self.tracker.take_receipt(&self.outgoing, &send, now)? {
+                        ReceiptObservation::Pending => return Ok(None),
+                        ReceiptObservation::Expired => return Err(ServiceError::Expired.into()),
+                        ReceiptObservation::Verified(receipt) => {
+                            if !matches!(
+                                receipt.receipt.outcome,
+                                DeliveryOutcome::AcceptedEphemeral
+                                    | DeliveryOutcome::AcceptedDurable
+                                    | DeliveryOutcome::Duplicate
+                            ) {
+                                return Err(
+                                    SessionError::RemoteRefusal(receipt.receipt.outcome).into()
+                                );
+                            }
+                            if !self.service.acknowledge_reply(
+                                &self.outgoing,
+                                &receipt,
+                                &self.peer_key,
+                                now,
+                            )? {
+                                return Err(ServiceError::State.into());
+                            }
+                            acknowledged = true;
+                            return Ok(None);
+                        }
+                    }
+                }
+                if key != self.normal_key {
+                    return Err("unprovisioned incoming encryption key".into());
+                }
+                if sends >= 8 {
+                    return Err(SessionError::SendLimit.into());
+                }
+                // Authenticate and identify the cached current Reply BEFORE
+                // admitting a candidate: a new Call must not gain fresh state.
+                let cached = self
+                    .service
+                    .retry_reply_prepared(&self.incoming, &event, now)?
+                    .ok_or(ServiceError::State)?;
+                if encode_envelope(cached.envelope())? != encoded {
+                    return Err(ServiceError::Conflict.into());
+                }
+                let (accepted, receipt) =
+                    self.returns
+                        .admit(&mut self.service, &self.incoming, &event, now)?;
+                if accepted.receipt.outcome != DeliveryOutcome::Duplicate {
+                    return Err(ServiceError::State.into());
+                }
+                Ok(Some(receipt))
+            })?;
+            if let Some(receipt) = repeat {
+                let (permit, now) = broker.with_time(|_, now| -> Result<_> {
+                    deadline.check(now)?;
+                    Ok((receipt.reserve_send(cancel, now)?, now))
+                })?;
+                permit.send(stream, cancel, now)?;
+                // Receipt I/O may wait: recheck both canonical bindings and
+                // original lifetime before invoking the cached Reply send.
+                let (cached, now) = broker.with_time(|_, now| -> Result<_> {
+                    deadline.check(now)?;
+                    let cached = self
+                        .service
+                        .retry_reply_prepared(&self.incoming, &event, now)?
+                        .ok_or(ServiceError::State)?;
+                    let wire = encode_envelope(cached.envelope())?;
+                    if wire != encoded
+                        || self.tracker.register_send(
+                            &self.outgoing,
+                            &self.control,
+                            &self.peer_key,
+                            &wire,
+                            now,
+                        )? != send
+                    {
+                        return Err(ServiceError::Conflict.into());
+                    }
+                    Ok((cached, now))
+                })?;
+                sends += 1;
+                self.outgoing.send_prepared(&cached, stream, cancel, now)?;
             }
-            self.tracker.observe_receipt(&self.control, &ack, now)?;
-            let ReceiptObservation::Verified(receipt) =
-                self.tracker.take_receipt(&self.outgoing, &send, now)?
-            else {
-                return Err("missing authenticated Reply admission".into());
-            };
-            if !self
-                .service
-                .acknowledge_reply(&self.outgoing, &receipt, &self.peer_key, now)?
-            {
-                return Err("Reply acknowledgment did not release cache".into());
+            meter.add(cpu.elapsed().as_micros(), wall.elapsed().as_micros())?;
+            if acknowledged {
+                break;
             }
-            Ok(())
-        })?;
-        meter.add(cpu.elapsed().as_micros(), wall.elapsed().as_micros())?;
+        }
+        if !acknowledged {
+            return Err(SessionError::EventLimit.into());
+        }
         self.calls = self.calls.checked_add(1).ok_or("Call counter overflow")?;
+        self.receiver_incomplete = false;
         Ok(Handled {
             reply,
             namespace,
@@ -675,3 +833,21 @@ mod tests {
 
 #[cfg(test)]
 mod pending_tests;
+
+#[cfg(test)]
+mod event_tests;
+
+#[cfg(test)]
+mod ack_tests;
+
+#[cfg(test)]
+mod limit_tests;
+
+#[cfg(test)]
+mod fifo_tests;
+
+#[cfg(test)]
+mod late_tests;
+
+#[cfg(test)]
+mod receiver_tests;

@@ -188,3 +188,114 @@ Tests reject policy replacement after registration and a substituted prepared
 request before any transport bytes, and retain the original handles/identity.
 Successful send remains a transport fact, not peer acceptance or a guarantee
 that authorization remains valid after blocking I/O. C8/C9 stay unfinished.
+
+## Approved C8 caller Reply ownership seam
+
+Defer payload consumption: this supersedes the earlier instruction to retain
+the first `Replied(Some(payload))` in caller state before acknowledgment.
+Canonical `admit`/`admit_for_control` already drain FIFO-ready Replies into the
+original Call's `Replied(Some(payload))`, retaining the queue reservation as
+`reply_budget`. Leave that payload and charge in `LocalMailboxService` until
+completion; do not add an uncharged caller payload copy or a new authority API.
+
+`PendingCall` retains current verified receipt disposition, cumulative 16-frame
+count, current Reply-observed fact, one authenticated encoded Reply bounded by
+`MAX_ENVELOPE_BYTES`, and acknowledgment Needed/InvokedUncertain/Sent state.
+Advance current Reply state only when `observe_application_reply` returns the
+current `SendHandle`. Preserve Duplicate's distinct acceptance meaning. The
+extra retained ciphertext is bounded endpoint overhead, not a transport-budget
+or service-payload charge. Prepared receipt/permit borrows remain stack-local.
+Mark acknowledgment invoked before transport; failure retains original request
+identity/wire, Reply wire and service-owned payload without implicit retry.
+
+Only after current destination observation, current Reply observation and a
+successful required Reply-receipt send, sample fresh broker time and require
+the original `PendingCall::remaining(now) > 0`, then poll the original handle.
+This explicit deadline gate is required: `poll_call` can consume an already
+Replied payload after message expiry. Its binding/generation checks still apply.
+Pending preserves waiting/FIFO gaps; Replied(None) cannot establish completion.
+Do not poll or call `cancel` merely for cleanup: cancel itself delegates to the
+consuming poll. Later explicit resume reconstructs receipt admission at fresh
+time from retained wire; it neither borrows a stored permit nor resumes a closed
+socket implicitly. RED: inject receipt-send failure after a valid Reply and
+verify the original Call still yields its exact payload, with identity/wire and
+uncertain acknowledgment retained. Receiver replay and automatic retry remain
+separate gates; unchanged retention bounds eventual service-owned reclamation.
+
+## Approved C8 optional registered-Reply observation
+
+Add this shared `ReceiptTracker` seam before caller integration:
+
+```rust
+pub fn observe_registered_application_reply(
+    &mut self, binding: &MailboxBinding, encoded: &[u8], now: ServiceTime,
+) -> Result<Option<SendHandle>>;
+```
+
+Retain the existing expiry, full canonical verification, Reply-kind and context
+checks. A unique complete registered match follows existing deadline/commitment
+checks and returns Some; ambiguous complete matches remain Conflict. None means
+no registered request identity is known under the authenticated tenant/domain/
+peer. If correlation OR causation identifies a retained request there, failed
+content/capability/reply-address or other matching checks remain Unauthorized,
+not None. Never suppress known expiry/conflict or generic verification errors.
+Unknown observation allocates no retained identity, payload or observation state.
+The existing strict `observe_application_reply` wraps this method and maps None
+to its existing Unauthorized result; canonical verification runs once per call.
+
+Caller Late sends its already prepared canonical Late receipt, skips correlation
+and changes no current progress. Duplicate may use the optional observer: None
+sends only its actual Duplicate receipt; Some contributes current progress only
+when its handle equals the pending SendHandle. AcceptedEphemeral requires Some.
+Duplicate never upgrades acceptance level: even an originally Late identity can
+produce Duplicate on replay. Canonical admission of a known Late FIFO position
+may unblock queued Replies; run the ordinary readiness/poll gate afterward using
+only existing verified current facts. No new ACK, wire, borrowed permit or retry.
+Test unknown valid Reply, Late then replay, known mismatch/expiry/conflict and
+unchanged strict behavior before claiming this broader stale-event handling.
+
+## Approved first receiver event-loop slice: fence without resume
+
+A private `Session::receiver_incomplete` latch suffices for this bounded slice;
+an owned resumable PendingReply structure is not required. Set the latch before
+the initial receive. Any error or unwind leaves it set, and a subsequent handle
+must return StreamFenced before reading another frame. Existing canonical service,
+tracker and reply-cache state remain owned. Do not infer cancellation/rollback
+from stack-local envelope/result disposal. Clear only after authenticated current
+Reply acknowledgment releases the cache and all completion bookkeeping succeeds.
+
+Keep prepared Reply, registered SendHandle, exact encoded Reply, namespace,
+application result and metrics local during the active invocation. Bound one
+exchange by 16 complete incoming frames including the initial Call, and at most
+eight total Reply-send invocations including the first; increment before transport.
+Start one Instant deadline before initial read; cap it once at authenticated
+admission by the original request's remaining Unix lifetime. Never refresh it on
+duplicates or after application work. Before release/completion require that fixed
+deadline and fresh original Unix expiry; acknowledgment APIs alone do not enforce
+the original Call's monotonic lifetime. Existing canonical checks still apply.
+
+The implemented private `ExchangeDeadline` also retains the checked owner-
+monotonic expiry derived once from the initial trusted time and signed remaining
+lifetime. Reject owner-monotonic regression and expiry equality. Its guards apply
+before initial receipt reservation, application work, post-work Reply preparation,
+fresh initial send, event/ACK release, duplicate receipt reservation and replay.
+This closes the initial post-work path as well as the later replay paths. It does
+not preempt computation or promise that a blocking write completes before expiry.
+
+While awaiting the Reply receipt, authenticate controls with observe_receipt and
+take only the current SendHandle. Pending/earlier duplicates continue within the
+same event bound; only its verified eligible receipt may acknowledge_reply.
+For a normal candidate Call, first use retry_reply_prepared with the incoming
+binding and require its exact cached Reply bytes equal the current Reply BEFORE
+admission. A different/new Call cannot gain state while active credit from the
+original application may already be released. Then canonical admission must yield
+Duplicate; send that actual receipt, register the unchanged cached Reply and
+require the same SendHandle, then resend within the invocation bound. No receive
+of application work, object.handle, next_reply, new identity or resealing occurs.
+All I/O stays outside dispatch; permits are local and failures fence the Session.
+
+RED gates: duplicate exact Call during receipt wait yields the same cached Reply
+and one object execution; earlier controls cannot release current cache; different
+Call is refused without admission; send failure/event saturation/deadline keep
+the latch and prevent a later handle from consuming bytes. Explicit resume,
+timer-driven request retransmission and full C8 remain separate reviewed slices.
