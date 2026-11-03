@@ -491,6 +491,19 @@ impl ReceiptTracker {
         encoded: &[u8],
         now: ServiceTime,
     ) -> Result<SendHandle> {
+        self.observe_registered_application_reply(binding, encoded, now)?
+            .ok_or(ServiceError::Unauthorized)
+    }
+
+    /// Authenticate a Reply and observe its unique registered request, if any.
+    /// Unknown requests allocate no state. Known semantic mismatches, expiry,
+    /// conflicts and verification failures remain errors, never `None`.
+    pub fn observe_registered_application_reply(
+        &mut self,
+        binding: &MailboxBinding,
+        encoded: &[u8],
+        now: ServiceTime,
+    ) -> Result<Option<SendHandle>> {
         self.expire(now)?;
         binding.with_verified(encoded, now, |opened, _, context, _| {
             let header = opened.header();
@@ -513,7 +526,25 @@ impl ReceiptTracker {
                     && address(context) == route.address)
                     .then_some(*id)
             });
-            let id = matching.next().ok_or(ServiceError::Unauthorized)?;
+            let Some(id) = matching.next() else {
+                // Do not misclassify a known but invalid Reply as an unknown
+                // request. Shared correlation alone is permitted when another
+                // complete match exists; this guard applies only on no match.
+                let known = self.entries.values().any(|entry| {
+                    entry.header.kind == MailboxMessageKind::Call
+                        && header.tenant == entry.header.tenant
+                        && header.authorization_domain == entry.header.authorization_domain
+                        && header.sender == entry.header.recipient
+                        && header.recipient == entry.header.sender
+                        && (header.correlation_id == entry.header.correlation_id
+                            || header.causation_id.as_bytes() == entry.header.message_id.as_bytes())
+                });
+                return if known {
+                    Err(ServiceError::Unauthorized)
+                } else {
+                    Ok(None)
+                };
+            };
             if matching.next().is_some() {
                 return Err(ServiceError::Conflict);
             }
@@ -527,7 +558,7 @@ impl ReceiptTracker {
             }
             entry.reply_commitment = Some(commitment);
             entry.facts.application_replied = true;
-            Ok(entry.handle)
+            Ok(Some(entry.handle))
         })
     }
     pub fn facts(
