@@ -299,3 +299,33 @@ and one object execution; earlier controls cannot release current cache; differe
 Call is refused without admission; send failure/event saturation/deadline keep
 the latch and prevent a later handle from consuming bytes. Explicit resume,
 timer-driven request retransmission and full C8 remain separate reviewed slices.
+
+## Approved next transport seam: zero-prefix Idle
+
+The additive [stream receive-idle v1 contract](../api/stream-receive-idle-v1.md)
+defines `ReceiveOutcome::{Frame(Vec<u8>), Idle}` and
+`StreamTransport::receive_or_idle(cancel, frame_deadline, idle_window)`.
+Use a 1 ms–1 s local window (a future 250 ms consumer is not enabled here).
+Invalid windows return existing Io/InvalidInput before lock/I/O without fencing;
+the public LiveError enum and all strict receive behavior remain unchanged.
+
+Lock acquisition uses the original entry-capped absolute frame deadline. It
+cannot return Idle for lock wait, cancellation, unready/closed state or expiry;
+retain the existing distinction between owned-guard fencing and a contended-lock
+error without guard ownership. Begin the idle window only after ready validation.
+Idle requires a full positive interval with zero next-prefix bytes consumed,
+rechecks cancellation/absolute expiry and releases the mutex before returning.
+Once any prefix byte arrives, use only the original frame deadline for the rest
+of prefix/payload; no per-byte refresh, partial-prefix discard or Idle outcome.
+EOF and partial timeout/truncation remain fatal to the owning stream, with its
+logical fence, existing shutdown fallback and partial counters. Allocate payload
+only after the existing length check; Idle has no heap frame or counter change.
+
+This surgical seam preserves one reader/ordered writer, wire and authority. It
+allows serialized consumers to yield between polls rather than starting a timer
+writer behind a receive-held mutex. Idle is not proof of loss, peer acceptance or
+permission to reseal/reissue. Original request identity, absolute/monotonic
+lifetime, attempt/event ceilings and cached Reply ownership remain the consumer's
+responsibility. The earlier no-resume receiver latch remains until explicitly
+reviewed otherwise. Exact-identity timed retry, uncertainty reconciliation and
+full C8 require their own next tests and review after this API passes its gates.
