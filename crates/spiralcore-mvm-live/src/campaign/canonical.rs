@@ -10,8 +10,8 @@ use spiralcore_mvm_adapter::{
     issuance::IssuancePolicy,
     receipt::{ReceiptObservation, ReceiptReturnConfig, ReceiptTracker},
     service::{
-        CallStatus, ControlReserve, HostBudget, LocalMailboxService, MailboxBinding, ServiceLimits,
-        ServiceTime,
+        CallStatus, ControlReserve, HostBudget, LocalMailboxService, MailboxBinding, ServiceError,
+        ServiceLimits, ServiceTime,
     },
     service_object::ObjectMailbox,
     service_sender::{self, OrderingStream},
@@ -226,16 +226,20 @@ impl Session {
         )?;
         let mut admitted = false;
         let mut reply = None;
-        for _ in 0..2 {
+        for _ in 0..16 {
             let bytes = stream.receive(cancel, deadline)?;
             let envelope = decode_envelope(&bytes)?;
             let acknowledgment = broker.with_time(|_, now| -> Result<_> {
                 if envelope.encryption.key_id == self.control_key {
                     self.tracker.observe_receipt(&self.control, &bytes, now)?;
-                    let ReceiptObservation::Verified(receipt) =
-                        self.tracker.take_receipt(&self.outgoing, &send, now)?
-                    else {
-                        return Err("missing authenticated Call admission".into());
+                    let receipt = match self.tracker.take_receipt(&self.outgoing, &send, now)? {
+                        ReceiptObservation::Verified(receipt) => receipt,
+                        // An authenticated duplicate or earlier retained
+                        // observation need not provide a new current receipt.
+                        ReceiptObservation::Pending => return Ok(None),
+                        ReceiptObservation::Expired => {
+                            return Err(SessionError::Service(ServiceError::Expired).into());
+                        }
                     };
                     if !matches!(
                         receipt.receipt.outcome,
@@ -270,6 +274,9 @@ impl Session {
                     Ok((ack.reserve_send(cancel, now)?, now))
                 })?;
                 permit.send(stream, cancel, now)?;
+            }
+            if admitted && reply.is_some() {
+                break;
             }
         }
         if !admitted {
