@@ -376,3 +376,7 @@ impl Drop for InstalledSupervisor {
 #[cfg(test)]
 #[path = "installed_supervisor/tests.rs"]
 mod tests;
+
+#[cfg(test)]
+#[path = "installed_supervisor/spawn_tests.rs"]
+mod spawn_tests;
