@@ -1,3 +1,30 @@
+use std::sync::mpsc::{Receiver, SyncSender, TrySendError, sync_channel};
+
+/// An explicit request to reconcile one current Call, never another identity.
+/// Full coalesces requests; Disconnected means that invocation has ended.
+pub struct ReconciliationSignal {
+    sender: SyncSender<()>,
+}
+impl ReconciliationSignal {
+    pub fn request_retry(&self) -> Result<(), TrySendError<()>> {
+        self.sender.try_send(())
+    }
+}
+
+pub(super) struct RetryRequests {
+    receiver: Receiver<()>,
+}
+impl RetryRequests {
+    pub(super) fn take_request(&self) -> bool {
+        self.receiver.try_recv().is_ok()
+    }
+}
+
+pub(super) fn bounded_requests() -> (ReconciliationSignal, RetryRequests) {
+    let (sender, receiver) = sync_channel(1);
+    (ReconciliationSignal { sender }, RetryRequests { receiver })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
