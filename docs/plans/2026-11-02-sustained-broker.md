@@ -116,14 +116,37 @@ Each phase is independently reviewable. GitHub #49 owns the capacity milestone;
 
 ## Acceptance checklist
 
-- [ ] Exact causal saturation reason without changing wire errors or authority.
-- [ ] Deterministic expiry boundaries and real complete tracker-cycle recovery.
-- [ ] Concurrent 2/8/32 logical endpoint results with interference and no mismatch.
-- [ ] Supported sustainable offered-load envelope and all saturation/losses recorded.
-- [ ] Mixed-object raw/zstd/SpiralCore measurements under matched requirements.
-- [ ] Available native host and WAN role gates executed; unavailable gates explicit.
-- [ ] Reviewed tested slices merged and GitHub roadmap/evidence updated.
+- [x] Exact causal saturation reason without changing wire errors or authority;
+  instrumented branches are explicit, other refusal paths remain unattributed.
+- [x] Deterministic expiry boundaries and real complete tracker-cycle recovery.
+- [x] Concurrent Linux 2/8/32 logical endpoint and interference results with zero
+  mismatch; the failed Mac one-second cell and deferred cells remain recorded.
+- [x] A bounded Linux offered-load profile and all saturation/losses recorded;
+  this is not a production maximum-throughput or fleet capacity envelope.
+- [x] Mixed-object raw/zstd/SpiralCore measurements under matched requirements,
+  including seven actual Linux native sessions and the shared-budget refusal.
+- [x] Available Linux native gates executed; Mac resource-pressure deferral,
+  canonical WAN and Windows durable-gateway unavailable gates explicitly retained.
+- [x] Reviewed/tested code merged through PR #52 at `111ceca309f25b7538f8a49e9af4ca355fdcabc0`;
+  this documentation slice publishes the complete linked evidence and roadmap update.
 
-The selected broker milestone is complete only when its executed acceptance
-checks pass. Explicitly recording an unavailable native/WAN gate preserves the
-roadmap but does not convert that broader delivery gate into a success.
+The selected milestone qualifies the stated Linux profile and recovery mechanism.
+The Mac one-second eight-endpoint profile is not accepted. Explicitly recording
+an unavailable native/WAN gate preserves the roadmap but does not convert that
+broader delivery gate into success. #49 and #42 remain open for production
+retention, native Call lifetime, large-object scheduling, cross-process budget
+ownership, churn, platform and direct/relay WAN release requirements.
+
+## Execution record
+
+- Plan `0ed221f`; diagnostics/probe `d53cb335`; raw mixed harness `03f05ab7`;
+  failure recorder `d940203`; native preregistration/runner `6257930`.
+- [Results and retained losses](../network/sustained-broker-results-2026-11-02.md),
+  [source/binary identities, raw evidence and reviews](../network/evidence/2026-11-02-sustained-broker/README.md).
+- Linux load: 13,684 complete operations, 20,537 exact readbacks, zero mismatch,
+  two explicit hot incomplete admissions. Native: 62 publication operations and
+  44 keyless readbacks over seven successful sessions.
+- Final code CI: native clients 504 plus eight Unix storage passes; Linux 47
+  release and 112 shared conformance passes, with overlapping scopes disclosed.
+- No new Mac payload store or VM disk. Seven verified owned native payload
+  stores were removed on Wick after archiving. Failed stores remain identified.

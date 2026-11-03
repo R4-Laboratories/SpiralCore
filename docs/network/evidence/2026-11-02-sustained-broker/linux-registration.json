@@ -1,0 +1,50 @@
+{
+  "registration": "SC-MVM-SCALE-002-LINUX",
+  "registered_before_linux_campaign": true,
+  "parent": "registration.json",
+  "reason_for_separate_host": "The original macOS eight-endpoint one-second-deadline cell failed under observed shared-host load/swap pressure. Its failed rows remain unchanged; macOS32/interference were not run to protect resources. Linux is a separate native-process qualification, not a fix or replacement for the macOS result.",
+  "source_commit": "d94020382a1c838a0794af14989d687985c26b69",
+  "source_continuity": "All nine adapter/probe source and fixture hashes equal the original d53cb335 measurement-source.sha256. Later source commit adds distinct live harness/documentation, not this probe.",
+  "authorization": "Existing user-approved Wick test host, separate task directory/processes; no change to other labs or DeepSeek services, no new guest or VM disk allocation.",
+  "host": {
+    "os": "Ubuntu24.04.3 LTS",
+    "kernel": "7.0.0-42-generic x86_64",
+    "cpu": "AMD Ryzen9 9950X,16cores32logicalCPUs",
+    "memory_bytes": 64920174592,
+    "shared_host": true,
+    "isolation": "One owned benchmark cell at a time; wait for owned native/coverage workloads to finish before execution. Other user services remain active and untouched."
+  },
+  "build": {
+    "toolchain": "Rust1.97.1 native x86_64-unknown-linux-gnu release",
+    "features": ["live"],
+    "hardware_sha256_feature": false,
+    "build_jobs": 2,
+    "flags": "Unset RUSTC_WRAPPER,RUSTC_WORKSPACE_WRAPPER,RUSTFLAGS,CARGO_ENCODED_RUSTFLAGS; locked Cargo dependencies.",
+    "target": "Reuse existing shared host target; copy one small private executable so later coverage instrumentation cannot replace the measured binary. Record its SHA-256 before each run."
+  },
+  "campaign_order": ["steady-2", "steady-8", "steady-32", "interference-8", "interference-32"],
+  "unchanged_profiles": {
+    "message_ttl_ms": 1000,
+    "authorization_lifetime_ms": 900000,
+    "service_retention_ms": 1000,
+    "tracker_retention_extension_ms": 300000,
+    "offered_total_operations_per_second": 10,
+    "steady_duration_ms": 310000,
+    "interference_duration_ms": 65000,
+    "max_operations_per_pair": 100000,
+    "payload_bytes": 4096,
+    "max_pair_workers": 16,
+    "pipeline_per_pair": 1,
+    "process_rss_sampled_ceiling_bytes": 536870912,
+    "sampled_fd_ceiling": 128,
+    "quota_profile": "Original native-tier totals and control reservation; unchanged. No new deadline/limit/pipeline negotiation."
+  },
+  "evidence_contract": {
+    "source_binary_host": "Record exact source, binary SHA256, toolchain, CPU/memory/load, observed UTC timestamps and every actual process exit code.",
+    "byte_cpu_latency": "Actual canonical encrypted envelopes plus framing in both directions; aggregate process CPU once plus per-worker ThreadTime, setup separate. CPU includes recorder snapshots/checkpoints/teardown. Never add CPU to elapsed or infer send-only/energy. TCP/IP headers and retransmission excluded.",
+    "memory": "Fresh process per cell and getrusage kernel lifetime RSS high-water. Sampling and tracker snapshots do not prove arbitrary tenant-churn reclamation.",
+    "gates": "The original CLI pass/fail checks apply unchanged: exact readbacks and counters, scheduled healthy completions, zero unexpected errors, explicit hot quota refusal if observed, no resource ceiling breach. Retain all failures and incomplete admissions.",
+    "scope": "Native Linux process and TCP loopback logical endpoint concurrency. Not booted MVM population, real or shaped WAN, Windows gateway, complete MVM acceptance or statistical speedup evidence.",
+    "storage": "Compact JSONL/identity records only; no persistent payload dataset, new VM disks, or local duplicate build tree. Copy compact records to Git after execution; remove only owned disposable artifacts after verification."
+  }
+}
