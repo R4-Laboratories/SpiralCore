@@ -619,7 +619,10 @@ fn generation_or_original_deadline_change_after_preparation_refuses_before_conne
                 now,
             )
             .unwrap();
-        assert_eq!(transport.inner.drain(route).unwrap(), [original.clone()]);
+        assert_eq!(
+            transport.inner.drain(route).unwrap().as_slice(),
+            std::slice::from_ref(&original)
+        );
         let (signal, requests) = bounded_requests();
         signal.request_retry().unwrap();
         assert!(requests.take_request());
