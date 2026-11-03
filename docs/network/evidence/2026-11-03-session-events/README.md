@@ -56,8 +56,25 @@ facts. All **19 focused campaign tests pass** in `late-duplicate-green.txt`
 after product commit `5ae3653`. Byte/frame counts and exact current payload are
 asserted. These are functional tests, not performance measurements.
 
-This is not complete C8: receiver cached Reply recovery remains.
-Automatic retry stays disabled, receiver choreography is unchanged, and
+Receiver replay RED `0292ecc` reproduces the fixed-step rejection of an identical
+Call while awaiting a Reply receipt. Product `976ebaf` replaces it with a bounded
+event loop: current cache identity is checked before candidate admission, actual
+Duplicate receipts precede byte-identical cached Reply sends, and no object work
+or new Reply sequence runs on replay. A receiver latch fences any incomplete
+invocation before a later read. Four real-stream qualification tests check exact
+cached bytes, earlier-control isolation, unchanged capacity-one grants, eight
+Reply sends with ninth refusal, retained cache and zero-read fenced reentry.
+Their passing records are functional evidence, not timing measurements.
+
+Independent review found an initial Reply path deadline gap in that first patch.
+`f2b1cc8` adds one immutable Instant/Unix/owner-monotonic exchange deadline,
+guarding initial/post-work sends as well as later replay and cache release.
+The missing-API RED and three boundary tests remain recorded; **24 campaign tests
+pass** in `exchange-deadline-green.txt` (the receiver guard extensions were run
+separately afterward). Original review finding and resolution are both retained.
+
+This is not complete C8: automatic retry and explicit resume remain.
+Automatic retry stays disabled, and
 the 2,048-Call guard/pipeline one remain. Independent final source review, full
 qualification and performance measurements remain before delivery. No native
 MVM/WAN or performance claim follows from these focused tests.

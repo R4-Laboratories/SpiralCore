@@ -274,6 +274,14 @@ duplicates or after application work. Before release/completion require that fix
 deadline and fresh original Unix expiry; acknowledgment APIs alone do not enforce
 the original Call's monotonic lifetime. Existing canonical checks still apply.
 
+The implemented private `ExchangeDeadline` also retains the checked owner-
+monotonic expiry derived once from the initial trusted time and signed remaining
+lifetime. Reject owner-monotonic regression and expiry equality. Its guards apply
+before initial receipt reservation, application work, post-work Reply preparation,
+fresh initial send, event/ACK release, duplicate receipt reservation and replay.
+This closes the initial post-work path as well as the later replay paths. It does
+not preempt computation or promise that a blocking write completes before expiry.
+
 While awaiting the Reply receipt, authenticate controls with observe_receipt and
 take only the current SendHandle. Pending/earlier duplicates continue within the
 same event bound; only its verified eligible receipt may acknowledge_reply.
