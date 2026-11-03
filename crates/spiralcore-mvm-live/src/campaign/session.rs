@@ -18,6 +18,7 @@ pub(super) enum SessionError {
     SendUncertain,
     StreamFenced,
     EventLimit,
+    SendLimit,
     RemoteRefusal(DeliveryOutcome),
 }
 impl std::fmt::Display for SessionError {
