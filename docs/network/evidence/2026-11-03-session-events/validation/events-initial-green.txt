@@ -1,0 +1,11 @@
+   Compiling spiralcore-mvm-live v0.1.0 (/var/tmp/spiralcore-session-events-20261103/source/crates/spiralcore-mvm-live)
+error[E0433]: cannot find module or crate `live` in this scope
+  --> src/campaign/canonical/pending_tests.rs:98:34
+   |
+98 |     assert!(error.downcast_ref::<live::LiveError>().is_some());
+   |                                  ^^^^ use of unresolved module or unlinked crate `live`
+   |
+   = help: if you wanted to use a crate named `live`, use `cargo add live` to add it to your `Cargo.toml`
+
+For more information about this error, try `rustc --explain E0433`.
+error: could not compile `spiralcore-mvm-live` (lib test) due to 1 previous error
