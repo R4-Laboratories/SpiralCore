@@ -1,8 +1,8 @@
 //! Proposed canonical encrypted destination-receipt service mapping.
 //! Receipt payloads stay inside canonical MVM Cast envelopes, never host frames.
 use crate::service::{
-    HostBudget, LocalMailboxService, MailboxBinding, Reservation, ServiceBindingConfig,
-    ServiceError, ServiceTime, Verified,
+    BudgetResource, BudgetScope, HostBudget, LocalMailboxService, MailboxBinding, Reservation,
+    ServiceBindingConfig, ServiceError, ServiceTime, Verified,
 };
 use ed25519_dalek::VerifyingKey;
 use mvm_contract::protocol::mailbox::{
@@ -157,8 +157,35 @@ pub struct ReceiptTracker {
     requests: BTreeMap<RequestKey, u64>,
     last_monotonic: Option<u64>,
 }
+/// Read-only bounded aggregate diagnostics for the trusted local owner.
+/// Snapshotting does not expire entries or release their replay/receipt charges.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize)]
+pub struct TrackerSnapshot {
+    pub retained_entries: usize,
+    pub request_indices: usize,
+    pub attempts: usize,
+    pub accepted_entries: usize,
+    pub pending_receipts: usize,
+    pub next_expiry_monotonic_ms: Option<u64>,
+    pub max_pending: usize,
+}
 static NEXT_TRACKER: AtomicU64 = AtomicU64::new(1);
 impl ReceiptTracker {
+    pub fn snapshot(&self) -> TrackerSnapshot {
+        TrackerSnapshot {
+            retained_entries: self.entries.len(),
+            request_indices: self.requests.len(),
+            attempts: self.entries.values().map(|e| e.attempts.len()).sum(),
+            accepted_entries: self.entries.values().filter(|e| e.facts.accepted).count(),
+            pending_receipts: self
+                .entries
+                .values()
+                .filter(|e| e.available.is_some())
+                .count(),
+            next_expiry_monotonic_ms: self.entries.values().map(|e| e.retention).min(),
+            max_pending: self.max_pending,
+        }
+    }
     pub fn new(budget: HostBudget, max_pending: usize) -> Result<Self> {
         if max_pending == 0 || max_pending > 4_096 || !budget.control_enabled() {
             return Err(ServiceError::Limit);
@@ -274,6 +301,12 @@ impl ReceiptTracker {
                 return Ok(entry.handle);
             }
             if self.entries.len() >= self.max_pending {
+                self.budget.record_local_refusal(
+                    BudgetScope::Tracker,
+                    BudgetResource::TrackerEntries,
+                    self.entries.len(),
+                    self.max_pending,
+                )?;
                 return Err(ServiceError::Full);
             }
             let remaining = u64::try_from(

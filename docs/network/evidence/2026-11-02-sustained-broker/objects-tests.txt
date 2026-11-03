@@ -1,0 +1,42 @@
+Source: 03f05ab7bf830dc82531c7c20e0f847b35a23211
+Host: wick Linux; exported tracked crates to new owned source directory.
+Toolchain: cargo +1.97.1 release locked; shared existing owned target, jobs=2.
+No Mac build or payload dataset created.
+
+RED before implementation (local dedicated test compile):
+error[E0599]: no variant, associated function, or constant named RawMixed found for enum Arm
+exit 101; original Arm did not contain the requested baseline.
+
+GREEN command:
+CARGO_TARGET_DIR=/var/tmp/spiralcore-mvm-service-20261102/target CARGO_BUILD_JOBS=2 CARGO_INCREMENTAL=0 /home/callard/.cargo/bin/cargo +1.97.1 test --release --locked --manifest-path crates/spiralcore-mvm-live/Cargo.toml --test broker_objects
+
+Finished release profile in 1m 05s.
+running 3 tests
+test mixed_object_probe_refuses_unregistered_work_before_creating_payload_stores ... ok
+test raw_mixed_is_a_raw_baseline_on_the_same_registered_targets ... ok
+test raw_mixed_campaign_uses_canonical_tcp_shared_broker_and_reopens_all_targets ... ok
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.89s
+
+The functional campaign is a 1 MiB requested-tier RawMixed host TCP-loopback test.
+It is not a native guest, WAN or matched performance result.
+
+Strict Clippy command (same remote source, target, toolchain and build bounds):
+cargo +1.97.1 clippy --release --locked --manifest-path crates/spiralcore-mvm-live/Cargo.toml --example broker_objects --test broker_objects -- -D warnings
+Finished release profile in 14.86s; exit 0; no warning or error.
+
+Failure recorder follow-up source d94020382a1c838a0794af14989d687985c26b69:
+Observed pre-fix RED: original16M RawMixed pilot exited1 with Error: Full and zero-byte result JSONL; no partial outcome row survived.
+The recorder now retains both actors' partial rows, reports failure and unavailable complete traffic explicitly, and preserves the owned store.
+Same release locked broker_objects test command on new owned exported source-d940203:
+Finished release profile in 10.74s.
+running 4 tests
+test mixed_object_probe_refuses_unregistered_work_before_creating_payload_stores ... ok
+test raw_mixed_is_a_raw_baseline_on_the_same_registered_targets ... ok
+test raw_mixed_campaign_uses_canonical_tcp_shared_broker_and_reopens_all_targets ... ok
+test refused_large_raw_campaign_records_failure_without_claiming_complete_traffic ... ok
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 9.86s
+
+Follow-up strictClippy (same command/example/test, d940203): exit0, no warnings/errors,1.73s.
+Follow-up release example build: exit0,2.30s.
+Follow-up binarySHA256:257f011ed02e3670da2ee8f3c95ba4cb154112241ce2ea08fcc737586b0b340b
+One preregistered unchanged-profile16M RawMixed follow-up cell exited1 and emitted an explicit failed row. The global owner snapshot after both threads joined reports two refusals, last Tenant/Control/Identities current8192 requested1 limit8192. It is not a per-dispatch attribution of the original03f failure, which had no such evidence. Complete failed-cell stream bytes remain unavailable/null.

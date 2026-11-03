@@ -1,6 +1,6 @@
 //! Bounded, paced native-service endpoint load. This is TCP loopback, not WAN/MVM capacity.
 #[path = "service_capacity/fixtures.rs"]
-mod fixture;
+pub(crate) mod fixture;
 use cpu_time::ProcessTime;
 use mvm_contract::protocol::mailbox::*;
 use mvm_core::mailbox::{
@@ -41,35 +41,36 @@ const PORTABLE_SMOKE_PROFILE: Profile = Profile {
     message_ttl_ms: 30_000,
 };
 
-struct Endpoint {
-    service: LocalMailboxService,
-    tracker: ReceiptTracker,
-    incoming: MailboxBinding,
-    outgoing: MailboxBinding,
-    cast_incoming: MailboxBinding,
-    cast_outgoing: MailboxBinding,
-    control: MailboxBinding,
-    returns: ReceiptReturnConfig,
-    ordering: OrderingStream,
-    cast_ordering: OrderingStream,
-    stream: StreamTransport<TcpStream>,
+pub(crate) struct Endpoint {
+    pub(crate) service: LocalMailboxService,
+    pub(crate) tracker: ReceiptTracker,
+    pub(crate) incoming: MailboxBinding,
+    pub(crate) outgoing: MailboxBinding,
+    pub(crate) cast_incoming: MailboxBinding,
+    pub(crate) cast_outgoing: MailboxBinding,
+    pub(crate) control: MailboxBinding,
+    pub(crate) returns: ReceiptReturnConfig,
+    pub(crate) ordering: OrderingStream,
+    pub(crate) cast_ordering: OrderingStream,
+    pub(crate) stream: StreamTransport<TcpStream>,
 }
-struct Pair {
-    caller: Endpoint,
-    receiver: Endpoint,
-    reply_to: ReplyRoute,
+pub(crate) struct Pair {
+    pub(crate) caller: Endpoint,
+    pub(crate) receiver: Endpoint,
+    pub(crate) reply_to: ReplyRoute,
 }
 #[derive(Default)]
-struct Progress {
-    admitted: bool,
-    exact: usize,
-    receiver_exact: bool,
-    admission_us: Option<u64>,
-    reply_us: Option<u64>,
-    stage: &'static str,
+pub(crate) struct Progress {
+    pub(crate) admitted: bool,
+    pub(crate) exact: usize,
+    pub(crate) receiver_exact: bool,
+    pub(crate) admission_us: Option<u64>,
+    pub(crate) reply_us: Option<u64>,
+    pub(crate) stage: &'static str,
+    pub(crate) quota_refusal: Option<spiralcore_mvm_adapter::service::BudgetRefusals>,
 }
 
-fn limits() -> (ServiceLimits, ControlReserve) {
+pub(crate) fn limits() -> (ServiceLimits, ControlReserve) {
     let mut l = ServiceLimits {
         retention_ms: 1000,
         ..ServiceLimits::default()
@@ -91,6 +92,15 @@ fn endpoint(
     budget: &HostBudget,
     stream: StreamTransport<TcpStream>,
 ) -> Result<Endpoint> {
+    endpoint_with_lifetime(peer, caller, budget, stream, 240_000)
+}
+fn endpoint_with_lifetime(
+    peer: u8,
+    caller: bool,
+    budget: &HostBudget,
+    stream: StreamTransport<TcpStream>,
+    lifetime_ms: i64,
+) -> Result<Endpoint> {
     let incoming_kind = if caller {
         MailboxMessageKind::Reply
     } else {
@@ -101,16 +111,23 @@ fn endpoint(
     } else {
         MailboxMessageKind::Reply
     };
+    let binding = |kind, forward, control, producer| {
+        if lifetime_ms == 240_000 {
+            fixture::binding(peer, kind, forward, control, producer)
+        } else {
+            fixture::binding_with_lifetime(peer, kind, forward, control, producer, lifetime_ms)
+        }
+    };
     Ok(Endpoint {
         service: LocalMailboxService::new(budget.clone())?,
         tracker: ReceiptTracker::new(budget.clone(), 4096)?,
-        incoming: fixture::binding(peer, incoming_kind, !caller, false, false),
-        outgoing: fixture::binding(peer, outgoing_kind, caller, false, true),
-        cast_incoming: fixture::binding(peer, MailboxMessageKind::Cast, !caller, false, false),
-        cast_outgoing: fixture::binding(peer, MailboxMessageKind::Cast, caller, false, true),
-        control: fixture::binding(peer, MailboxMessageKind::Cast, !caller, true, false),
+        incoming: binding(incoming_kind, !caller, false, false),
+        outgoing: binding(outgoing_kind, caller, false, true),
+        cast_incoming: binding(MailboxMessageKind::Cast, !caller, false, false),
+        cast_outgoing: binding(MailboxMessageKind::Cast, caller, false, true),
+        control: binding(MailboxMessageKind::Cast, !caller, true, false),
         returns: ReceiptReturnConfig::new(
-            fixture::binding(peer, MailboxMessageKind::Cast, caller, true, true),
+            binding(MailboxMessageKind::Cast, caller, true, true),
             budget.clone(),
             fixture::receipt_key(!caller).verifying_key(),
         )?,
@@ -120,6 +137,9 @@ fn endpoint(
     })
 }
 fn pair(peer: u8, budget: &HostBudget) -> Result<Pair> {
+    pair_with_lifetime(peer, budget, 240_000)
+}
+pub(crate) fn pair_with_lifetime(peer: u8, budget: &HostBudget, lifetime_ms: i64) -> Result<Pair> {
     let listener = TcpListener::bind("127.0.0.1:0")?;
     let socket = TcpStream::connect(listener.local_addr()?)?;
     socket.set_nodelay(true)?;
@@ -143,8 +163,16 @@ fn pair(peer: u8, budget: &HostBudget) -> Result<Pair> {
     let (receiver, accepted) = join.join().map_err(|_| "handshake thread panicked")?;
     accepted?;
     Ok(Pair {
-        caller: endpoint(peer, true, budget, sender)?,
-        receiver: endpoint(peer, false, budget, receiver)?,
+        caller: if lifetime_ms == 240_000 {
+            endpoint(peer, true, budget, sender)?
+        } else {
+            endpoint_with_lifetime(peer, true, budget, sender, lifetime_ms)?
+        },
+        receiver: if lifetime_ms == 240_000 {
+            endpoint(peer, false, budget, receiver)?
+        } else {
+            endpoint_with_lifetime(peer, false, budget, receiver, lifetime_ms)?
+        },
         reply_to: fixture::reply_to(peer),
     })
 }
@@ -158,14 +186,31 @@ fn send_ack(
     receipt: &PreparedReceipt<'_>,
     endpoint: &Endpoint,
     broker: &BrokerContext,
+    progress: &mut Progress,
 ) -> Result<()> {
     let cancel = CancellationToken::default();
-    let (permit, now) = broker
-        .with_time(|_, now| -> Result<_> { Ok((receipt.reserve_send(&cancel, now)?, now)) })?;
+    let (permit, now) = observed_dispatch(broker, progress, |_, now| -> Result<_> {
+        Ok((receipt.reserve_send(&cancel, now)?, now))
+    })?;
     permit.send(&endpoint.stream, &cancel, now)?;
     Ok(())
 }
-fn operation(
+fn observed_dispatch<T>(
+    broker: &BrokerContext,
+    progress: &mut Progress,
+    action: impl FnOnce(&HostBudget, spiralcore_mvm_adapter::service::ServiceTime) -> Result<T>,
+) -> Result<T> {
+    broker.with_time(|budget, now| {
+        let before = budget.snapshot()?.refusals.total;
+        let result = action(budget, now);
+        let after = budget.snapshot()?.refusals;
+        if after.total > before {
+            progress.quota_refusal = Some(after);
+        }
+        result
+    })
+}
+pub(crate) fn operation(
     pair: &mut Pair,
     broker: &BrokerContext,
     stable: bool,
@@ -174,6 +219,36 @@ fn operation(
     progress: &mut Progress,
     message_ttl_ms: i64,
 ) -> Result<()> {
+    operation_with_behavior(
+        pair,
+        broker,
+        stable,
+        call,
+        payload,
+        progress,
+        OperationBehavior {
+            message_ttl_ms,
+            receiver_delay_ms: 0,
+        },
+    )
+}
+pub(crate) struct OperationBehavior {
+    pub(crate) message_ttl_ms: i64,
+    pub(crate) receiver_delay_ms: u64,
+}
+pub(crate) fn operation_with_behavior(
+    pair: &mut Pair,
+    broker: &BrokerContext,
+    stable: bool,
+    call: bool,
+    payload: &[u8],
+    progress: &mut Progress,
+    behavior: OperationBehavior,
+) -> Result<()> {
+    if behavior.receiver_delay_ms > 2000 {
+        return Err("receiver delay exceeds probe bound".into());
+    }
+    let message_ttl_ms = behavior.message_ttl_ms;
     let started = Instant::now();
     let caller = &mut pair.caller;
     let receiver = &mut pair.receiver;
@@ -188,53 +263,54 @@ fn operation(
         &receiver.cast_incoming
     };
     progress.stage = "prepare_and_register";
-    let (prepared, send, call_handle, now) = broker.with_time(|_, now| -> Result<_> {
-        caller.service.expire(now)?;
-        receiver.service.expire(now)?;
-        caller.tracker.expire(now)?;
-        receiver.tracker.expire(now)?;
-        let options = if stable {
-            let ordering = if call {
-                &mut caller.ordering
+    let (prepared, send, call_handle, now) =
+        observed_dispatch(broker, progress, |_, now| -> Result<_> {
+            caller.service.expire(now)?;
+            receiver.service.expire(now)?;
+            caller.tracker.expire(now)?;
+            receiver.tracker.expire(now)?;
+            let options = if stable {
+                let ordering = if call {
+                    &mut caller.ordering
+                } else {
+                    &mut caller.cast_ordering
+                };
+                ordering.next_for_binding(
+                    outgoing,
+                    fixture::content_type(),
+                    now,
+                    now.unix_ms + message_ttl_ms,
+                    POLICY,
+                )?
             } else {
-                &mut caller.cast_ordering
+                MessageOptions::fresh_for_binding(
+                    outgoing,
+                    fixture::content_type(),
+                    now,
+                    now.unix_ms + message_ttl_ms,
+                    POLICY,
+                )?
             };
-            ordering.next_for_binding(
+            let mut options = options;
+            if call {
+                options.reply_to = Some(pair.reply_to);
+            }
+            let prepared = service_sender::prepare(outgoing, payload, &options, now)?;
+            let encoded = encode_envelope(prepared.envelope())?;
+            let handle = if call {
+                Some(caller.service.register_call(outgoing, &encoded, now)?)
+            } else {
+                None
+            };
+            let send = caller.tracker.register_send(
                 outgoing,
-                fixture::content_type(),
+                &caller.control,
+                &fixture::receipt_key(true).verifying_key(),
+                &encoded,
                 now,
-                now.unix_ms + message_ttl_ms,
-                POLICY,
-            )?
-        } else {
-            MessageOptions::fresh_for_binding(
-                outgoing,
-                fixture::content_type(),
-                now,
-                now.unix_ms + message_ttl_ms,
-                POLICY,
-            )?
-        };
-        let mut options = options;
-        if call {
-            options.reply_to = Some(pair.reply_to);
-        }
-        let prepared = service_sender::prepare(outgoing, payload, &options, now)?;
-        let encoded = encode_envelope(prepared.envelope())?;
-        let handle = if call {
-            Some(caller.service.register_call(outgoing, &encoded, now)?)
-        } else {
-            None
-        };
-        let send = caller.tracker.register_send(
-            outgoing,
-            &caller.control,
-            &fixture::receipt_key(true).verifying_key(),
-            &encoded,
-            now,
-        )?;
-        Ok((prepared, send, handle, now))
-    })?;
+            )?;
+            Ok((prepared, send, handle, now))
+        })?;
     progress.stage = "send_request";
     outgoing.send_prepared(
         &prepared,
@@ -242,9 +318,15 @@ fn operation(
         &CancellationToken::default(),
         now,
     )?;
+    // A test-only application stall after actual request transmission. No
+    // broker dispatch is held. This is not network impairment or a claim of
+    // kernel send-buffer backpressure; default historical behavior is zero.
+    if behavior.receiver_delay_ms > 0 {
+        std::thread::sleep(Duration::from_millis(behavior.receiver_delay_ms));
+    }
     let original = receive(receiver)?;
     progress.stage = "receiver_admission";
-    let (admitted, ack, _now) = broker.with_time(|_, now| -> Result<_> {
+    let (admitted, ack, _now) = observed_dispatch(broker, progress, |_, now| -> Result<_> {
         let (admitted, ack) =
             receiver
                 .returns
@@ -255,10 +337,10 @@ fn operation(
         return Err("unexpected admission outcome".into());
     }
     progress.admitted = true;
-    send_ack(&ack, receiver, broker)?;
+    send_ack(&ack, receiver, broker, progress)?;
     progress.stage = "caller_observe_admission";
     let receipt = receive(caller)?;
-    broker.with_time(|_, now| -> Result<_> {
+    observed_dispatch(broker, progress, |_, now| -> Result<_> {
         caller
             .tracker
             .observe_receipt(&caller.control, &receipt, now)?;
@@ -274,7 +356,7 @@ fn operation(
     })?;
     progress.admission_us = Some(started.elapsed().as_micros() as u64);
     progress.stage = "receiver_payload";
-    let proof = broker.with_time(|_, now| -> Result<_> {
+    let proof = observed_dispatch(broker, progress, |_, now| -> Result<_> {
         Ok(receiver
             .service
             .receive(incoming, now)?
@@ -289,7 +371,7 @@ fn operation(
         return Ok(());
     }
     progress.stage = "prepare_reply";
-    let (reply, reply_send, now) = broker.with_time(|_, now| -> Result<_> {
+    let (reply, reply_send, now) = observed_dispatch(broker, progress, |_, now| -> Result<_> {
         let options = if stable {
             receiver
                 .ordering
@@ -321,7 +403,7 @@ fn operation(
     )?;
     progress.stage = "caller_reply_admission";
     let reply = receive(caller)?;
-    let (ack, _now) = broker.with_time(|_, now| -> Result<_> {
+    let (ack, _now) = observed_dispatch(broker, progress, |_, now| -> Result<_> {
         let (admitted, ack) =
             caller
                 .returns
@@ -342,14 +424,14 @@ fn operation(
         if echo != payload {
             return Err("caller exact payload mismatch".into());
         }
-        progress.exact += 1;
-        progress.reply_us = Some(started.elapsed().as_micros() as u64);
         Ok((ack, now))
     })?;
-    send_ack(&ack, caller, broker)?;
+    progress.exact += 1;
+    progress.reply_us = Some(started.elapsed().as_micros() as u64);
+    send_ack(&ack, caller, broker, progress)?;
     progress.stage = "receiver_observe_reply_receipt";
     let receipt = receive(receiver)?;
-    broker.with_time(|_, now| -> Result<_> {
+    observed_dispatch(broker, progress, |_, now| -> Result<_> {
         receiver
             .tracker
             .observe_receipt(&receiver.control, &receipt, now)?;
@@ -372,7 +454,7 @@ fn operation(
     })?;
     Ok(())
 }
-fn quantiles(values: &mut [u64]) -> Value {
+pub(crate) fn quantiles(values: &mut [u64]) -> Value {
     values.sort_unstable();
     let get = |percent: usize| {
         values
@@ -381,7 +463,7 @@ fn quantiles(values: &mut [u64]) -> Value {
     };
     json!({"p50_us":get(50),"p95_us":get(95),"p99_us":get(99),"samples":values.len()})
 }
-fn rss_bytes() -> Option<u64> {
+pub(crate) fn rss_bytes() -> Option<u64> {
     #[cfg(any(target_os = "linux", target_os = "macos"))]
     {
         let mut usage = std::mem::MaybeUninit::<libc::rusage>::zeroed();
@@ -405,7 +487,7 @@ fn rss_bytes() -> Option<u64> {
         None
     }
 }
-fn fd_count() -> Option<usize> {
+pub(crate) fn fd_count() -> Option<usize> {
     #[cfg(target_os = "linux")]
     let path = "/proc/self/fd";
     #[cfg(target_os = "macos")]
@@ -502,6 +584,7 @@ fn run_profile(
     let mut completed_casts = 0;
     let mut exact = 0usize;
     let mut refusal = None;
+    let mut quota_refusal = None;
     let mut fidelity_failures = 0;
     let mut attempted = 0;
     let mut error_stage = None;
@@ -560,6 +643,7 @@ fn run_profile(
                     fidelity_failures += 1;
                 }
                 refusal = Some(error);
+                quota_refusal = progress.quota_refusal;
                 error_stage = Some(progress.stage);
                 stop_reason = "first_error";
                 break;
@@ -663,7 +747,7 @@ fn run_profile(
         "setup_wall_us":setup_wall_us,"setup_process_cpu_us":setup_cpu_us,
         "elapsed_us":elapsed_us,"process_cpu_us":cpu_us,
         "accepted_calls":calls,"accepted_casts":casts,"exact_readbacks":exact,
-        "fidelity_failures":fidelity_failures,"first_error":refusal,
+        "fidelity_failures":fidelity_failures,"first_error":refusal,"quota_refusal":quota_refusal,
         "first_error_stage":error_stage,"stop_reason":stop_reason
     });
     let counters = json!({

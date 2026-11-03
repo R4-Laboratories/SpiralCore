@@ -97,6 +97,20 @@ fn cloned_broker_sessions_share_aggregate_quota_and_released_credits() {
         Err(ServiceError::Full)
     ));
     broker
+        .with_time::<_, ServiceError>(|budget, _| {
+            use spiralcore_mvm_adapter::service::{BudgetPool, BudgetResource, BudgetScope};
+            let snapshot = budget.snapshot()?;
+            let reason = snapshot.refusals.last.unwrap();
+            assert_eq!(snapshot.refusals.total, 1);
+            assert_eq!(reason.scope, BudgetScope::Host);
+            assert_eq!(reason.pool, BudgetPool::Total);
+            assert_eq!(reason.resource, BudgetResource::ActiveCalls);
+            assert_eq!((reason.current, reason.requested, reason.limit), (1, 1, 1));
+            assert_eq!(snapshot.active_calls, 1);
+            Ok(())
+        })
+        .unwrap();
+    broker
         .with_time(|_, now| first.cancel(&a, &call, now))
         .unwrap();
     other

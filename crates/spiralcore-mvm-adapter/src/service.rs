@@ -246,6 +246,7 @@ impl Scope {
 }
 #[derive(Default)]
 struct BudgetState {
+    refusals: BudgetRefusals,
     host: Usage,
     tenants: HashMap<TenantId, Usage>,
     mailboxes: HashMap<MailboxAddress, Usage>,
@@ -304,6 +305,7 @@ pub struct HostBudget {
 /// expose tenant identities, payloads or cache membership to remote senders.
 #[derive(Debug, Clone)]
 pub struct BudgetSnapshot {
+    pub refusals: BudgetRefusals,
     pub queued_bytes: u64,
     pub queued_messages: usize,
     pub active_calls: usize,
@@ -311,6 +313,109 @@ pub struct BudgetSnapshot {
     pub owner_count: usize,
     pub limits: ServiceLimits,
     pub control: Option<ControlReserve>,
+}
+/// Trusted-owner diagnostics only. These values never enter remote receipts.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize)]
+pub enum BudgetScope {
+    Host,
+    Tenant,
+    Mailbox,
+    Sender,
+    Capability,
+    Tracker,
+    Ordering,
+}
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize)]
+pub enum BudgetPool {
+    Total,
+    Data,
+    Control,
+    Signed,
+    Local,
+}
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize)]
+pub enum BudgetResource {
+    QueuedBytes,
+    QueuedMessages,
+    ActiveCalls,
+    Identities,
+    MessagesPerMinute,
+    TrackerEntries,
+    OrderingScopes,
+    OrderingEntries,
+}
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize)]
+pub struct BudgetRefusal {
+    pub scope: BudgetScope,
+    pub pool: BudgetPool,
+    pub resource: BudgetResource,
+    pub current: u64,
+    pub requested: u64,
+    pub limit: u64,
+}
+/// Fixed-size and non-destructive. A last refusal can be from another session;
+/// correlate a changed total inside the same broker dispatch as the failure.
+/// The counter saturates instead of affecting admission on diagnostic overflow.
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, serde::Serialize)]
+pub struct BudgetRefusals {
+    pub total: u64,
+    pub last: Option<BudgetRefusal>,
+}
+impl BudgetState {
+    fn record_refusal(&mut self, refusal: BudgetRefusal) {
+        self.refusals.total = self.refusals.total.saturating_add(1);
+        self.refusals.last = Some(refusal);
+    }
+}
+impl Usage {
+    fn refusal(
+        self,
+        delta: Self,
+        limit: ScopeLimits,
+        scope: BudgetScope,
+        pool: BudgetPool,
+    ) -> Option<BudgetRefusal> {
+        [
+            (
+                BudgetResource::QueuedBytes,
+                self.bytes,
+                delta.bytes,
+                limit.queued_bytes,
+            ),
+            (
+                BudgetResource::QueuedMessages,
+                self.messages as u64,
+                delta.messages as u64,
+                limit.queued_messages as u64,
+            ),
+            (
+                BudgetResource::ActiveCalls,
+                self.calls as u64,
+                delta.calls as u64,
+                limit.active_calls as u64,
+            ),
+            (
+                BudgetResource::Identities,
+                self.identities as u64,
+                delta.identities as u64,
+                limit.identities as u64,
+            ),
+        ]
+        .into_iter()
+        .find_map(|(resource, current, requested, limit)| {
+            (current
+                .checked_add(requested)
+                .is_none_or(|next| next > limit))
+            .then_some(BudgetRefusal {
+                scope,
+                pool,
+                resource,
+                current,
+                requested,
+                limit,
+            })
+        })
+    }
 }
 #[derive(Debug, Clone, Copy)]
 pub struct ServiceSnapshot {
@@ -323,6 +428,7 @@ impl HostBudget {
     pub fn snapshot(&self) -> Result<BudgetSnapshot> {
         let state = self.inner.lock().map_err(|_| ServiceError::State)?;
         Ok(BudgetSnapshot {
+            refusals: state.refusals,
             queued_bytes: state.host.bytes,
             queued_messages: state.host.messages,
             active_calls: state.host.calls,
@@ -334,6 +440,26 @@ impl HostBudget {
     }
     pub(crate) fn same_owner(&self, other: &HostBudget) -> bool {
         Arc::ptr_eq(&self.inner, &other.inner)
+    }
+    pub(crate) fn record_local_refusal(
+        &self,
+        scope: BudgetScope,
+        resource: BudgetResource,
+        current: usize,
+        limit: usize,
+    ) -> Result<()> {
+        self.inner
+            .lock()
+            .map_err(|_| ServiceError::State)?
+            .record_refusal(BudgetRefusal {
+                scope,
+                pool: BudgetPool::Local,
+                resource,
+                current: current as u64,
+                requested: 1,
+                limit: limit as u64,
+            });
+        Ok(())
     }
     fn current_epoch(&self, address: MailboxAddress) -> Result<Option<ExecutionEpoch>> {
         let owner = self
@@ -449,11 +575,20 @@ impl HostBudget {
         }
         b.last_monotonic_ms = Some(now.monotonic_ms);
         expire_control_rates(&mut b, now.monotonic_ms);
-        let (key, usage) = self.signed_limits(&b, scope, delta, grant)?;
+        let (key, usage) = self.signed_limits(&mut b, scope, delta, grant)?;
         if b.arrivals
             .get(&key)
             .is_some_and(|arrivals| arrivals.len() >= grant.max_messages_per_minute as usize)
         {
+            let current = b.arrivals.get(&key).map_or(0, |a| a.len()) as u64;
+            b.record_refusal(BudgetRefusal {
+                scope: BudgetScope::Capability,
+                pool: BudgetPool::Signed,
+                resource: BudgetResource::MessagesPerMinute,
+                current,
+                requested: 1,
+                limit: u64::from(grant.max_messages_per_minute),
+            });
             return Err(ServiceError::Backpressured);
         }
         self.reserve_locked(&mut b, scope, delta, BudgetClass::Control)?;
@@ -576,7 +711,7 @@ impl HostBudget {
         grant: &MailboxCapabilityGrant,
     ) -> Result<Reservation> {
         let mut b = self.inner.lock().map_err(|_| ServiceError::State)?;
-        let (grant_key, grant_usage) = self.signed_limits(&b, scope, delta, grant)?;
+        let (grant_key, grant_usage) = self.signed_limits(&mut b, scope, delta, grant)?;
         self.reserve_locked(&mut b, scope, delta, BudgetClass::Data)?;
         if !grant_usage.empty() {
             b.grants.insert(grant_key, grant_usage);
@@ -615,12 +750,20 @@ impl HostBudget {
             .copied()
             .unwrap_or_default()
             .plus(delta)?;
-        if !h.fits(self.limits.host)
-            || !t.fits(self.limits.tenant)
-            || !m.fits(self.limits.mailbox)
-            || !s.fits(self.limits.sender)
-        {
-            return Err(ServiceError::Full);
+        for (scope_kind, next, ceiling) in [
+            (BudgetScope::Host, h, self.limits.host),
+            (BudgetScope::Tenant, t, self.limits.tenant),
+            (BudgetScope::Mailbox, m, self.limits.mailbox),
+            (BudgetScope::Sender, s, self.limits.sender),
+        ] {
+            if !next.fits(ceiling) {
+                let refusal = next
+                    .difference(delta)?
+                    .refusal(delta, ceiling, scope_kind, BudgetPool::Total)
+                    .ok_or(ServiceError::State)?;
+                b.record_refusal(refusal);
+                return Err(ServiceError::Full);
+            }
         }
         if let Some(reserve) = self.control.as_deref() {
             let control = [
@@ -663,6 +806,26 @@ impl HostBudget {
                         .fits(ceilings[i].data_limit(totals[i]))
                 };
                 if !fits {
+                    let (usage, ceiling, pool) = if class == BudgetClass::Control {
+                        (control[i], ceilings[i].limit(), BudgetPool::Control)
+                    } else {
+                        (
+                            all[i].difference(delta)?.difference(control[i])?,
+                            ceilings[i].data_limit(totals[i]),
+                            BudgetPool::Data,
+                        )
+                    };
+                    let scope_kind = [
+                        BudgetScope::Host,
+                        BudgetScope::Tenant,
+                        BudgetScope::Mailbox,
+                        BudgetScope::Sender,
+                    ][i];
+                    b.record_refusal(
+                        usage
+                            .refusal(delta, ceiling, scope_kind, pool)
+                            .ok_or(ServiceError::State)?,
+                    );
                     return Err(ServiceError::Full);
                 }
             }
@@ -689,7 +852,7 @@ impl HostBudget {
     }
     fn signed_limits(
         &self,
-        b: &BudgetState,
+        b: &mut BudgetState,
         scope: Scope,
         delta: Usage,
         grant: &MailboxCapabilityGrant,
@@ -703,10 +866,31 @@ impl HostBudget {
             .copied()
             .unwrap_or_default()
             .plus(grant_delta)?;
-        if next.bytes > grant.max_queue_contribution_bytes
-            || next.calls > grant.max_outstanding_calls as usize
-        {
-            return Err(ServiceError::Full);
+        for (resource, current, requested, limit) in [
+            (
+                BudgetResource::QueuedBytes,
+                next.bytes - grant_delta.bytes,
+                grant_delta.bytes,
+                grant.max_queue_contribution_bytes,
+            ),
+            (
+                BudgetResource::ActiveCalls,
+                (next.calls - grant_delta.calls) as u64,
+                grant_delta.calls as u64,
+                u64::from(grant.max_outstanding_calls),
+            ),
+        ] {
+            if current + requested > limit {
+                b.record_refusal(BudgetRefusal {
+                    scope: BudgetScope::Capability,
+                    pool: BudgetPool::Signed,
+                    resource,
+                    current,
+                    requested,
+                    limit,
+                });
+                return Err(ServiceError::Full);
+            }
         }
         Ok((key, next))
     }
@@ -730,7 +914,7 @@ impl HostBudget {
                 AdmissionReservation::Conflict
             });
         }
-        let (grant_key, grant_usage) = self.signed_limits(&b, scope, delta, grant)?;
+        let (grant_key, grant_usage) = self.signed_limits(&mut b, scope, delta, grant)?;
         if let Some(arrivals) = b.arrivals.get_mut(&grant_key) {
             while arrivals
                 .front()
@@ -743,6 +927,15 @@ impl HostBudget {
             .get(&grant_key)
             .is_some_and(|arrivals| arrivals.len() >= grant.max_messages_per_minute as usize)
         {
+            let current = b.arrivals.get(&grant_key).map_or(0, |a| a.len()) as u64;
+            b.record_refusal(BudgetRefusal {
+                scope: BudgetScope::Capability,
+                pool: BudgetPool::Signed,
+                resource: BudgetResource::MessagesPerMinute,
+                current,
+                requested: 1,
+                limit: u64::from(grant.max_messages_per_minute),
+            });
             return Err(ServiceError::Backpressured);
         }
         self.reserve_locked(&mut b, scope, delta, BudgetClass::Data)?;

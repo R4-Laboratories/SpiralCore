@@ -34,13 +34,15 @@ pub enum Arm {
     CombinedCpu,
     #[serde(rename = "whole-mixed")]
     WholeMixed,
+    #[serde(rename = "raw-mixed")]
+    RawMixed,
 }
 impl Arm {
     pub fn is_combined(self) -> bool {
         matches!(self, Self::Combined | Self::CombinedCpu)
     }
     pub fn is_mixed(self) -> bool {
-        self.is_combined() || self == Self::WholeMixed
+        self.is_combined() || matches!(self, Self::WholeMixed | Self::RawMixed)
     }
 }
 pub fn parse_arm(value: &str) -> Result<Arm> {
@@ -51,7 +53,8 @@ pub fn parse_arm(value: &str) -> Result<Arm> {
         "combined" => Ok(Arm::Combined),
         "combined-cpu" => Ok(Arm::CombinedCpu),
         "whole-mixed" => Ok(Arm::WholeMixed),
-        _ => Err("arm must be warm, whole, raw, combined, combined-cpu or whole-mixed".into()),
+        "raw-mixed" => Ok(Arm::RawMixed),
+        _ => Err("arm must be warm, whole, raw, combined, combined-cpu, whole-mixed or raw-mixed".into()),
     }
 }
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]

@@ -1,0 +1,51 @@
+source_commit=d94020382a1c838a0794af14989d687985c26b69
+host_build=cargo+1.97.1 release locked features=linux-host
+guest_build=cargo+1.97.1 release locked no-default-features target=x86_64-unknown-linux-gnu RUSTFLAGS=-Ctarget-feature=+crt-static
+257f011ed02e3670da2ee8f3c95ba4cb154112241ce2ea08fcc737586b0b340b  /var/tmp/spiralcore-sustained-20261102/bin-d940203/broker_objects
+71fc46316e526a6856bdd5bf58e32e089dbc1abe3be70feb94b5dbcccfe8a680  /var/tmp/spiralcore-sustained-20261102/bin-d940203/guest
+d93f66539df9ac5b2fab3d0392a8d5963ee3f2b73aff1bf0b29f96211b3226bb  /var/tmp/spiralcore-sustained-20261102/bin-d940203/host
+/var/tmp/spiralcore-sustained-20261102/bin-d940203/guest: ELF 64-bit LSB pie executable, x86-64, version 1 (SYSV), static-pie linked, for GNU/Linux 3.2.0, BuildID[sha1]=b22fe30a96a5360831318516b031e9e3fa4e3eb7, not stripped
+
+Elf file type is DYN (Position-Independent Executable file)
+Entry point 0x103780
+There are 11 program headers, starting at offset 64
+
+Program Headers:
+  Type           Offset             VirtAddr           PhysAddr
+                 FileSiz            MemSiz              Flags  Align
+  PHDR           0x0000000000000040 0x0000000000000040 0x0000000000000040
+                 0x0000000000000268 0x0000000000000268  R      0x8
+  LOAD           0x0000000000000000 0x0000000000000000 0x0000000000000000
+                 0x0000000000102758 0x0000000000102758  R      0x1000
+  LOAD           0x0000000000102780 0x0000000000103780 0x0000000000103780
+                 0x0000000000312050 0x0000000000312050  R E    0x1000
+  LOAD           0x00000000004147d0 0x00000000004167d0 0x00000000004167d0
+                 0x000000000000da60 0x000000000000e830  RW     0x1000
+  LOAD           0x0000000000422230 0x0000000000425230 0x0000000000425230
+                 0x000000000000240c 0x0000000000007cd8  RW     0x1000
+  TLS            0x00000000004147d0 0x00000000004167d0 0x00000000004167d0
+                 0x0000000000000038 0x00000000000000d0  R      0x8
+  DYNAMIC        0x0000000000420360 0x0000000000422360 0x0000000000422360
+                 0x0000000000000130 0x0000000000000130  RW     0x8
+  GNU_RELRO      0x00000000004147d0 0x00000000004167d0 0x00000000004167d0
+                 0x000000000000da60 0x000000000000e830  R      0x1
+  GNU_EH_FRAME   0x00000000000c08e0 0x00000000000c08e0 0x00000000000c08e0
+                 0x0000000000008e8c 0x0000000000008e8c  R      0x4
+  GNU_STACK      0x0000000000000000 0x0000000000000000 0x0000000000000000
+                 0x0000000000000000 0x0000000000000000  RW     0x0
+  NOTE           0x00000000000002a8 0x00000000000002a8 0x00000000000002a8
+                 0x0000000000000044 0x0000000000000044  R      0x4
+
+ Section to Segment mapping:
+  Segment Sections...
+   00     
+   01     .note.ABI-tag .note.gnu.build-id .dynsym .gnu.hash .dynstr .rela.dyn .gcc_except_table .rodata rodata.cst32 .eh_frame_hdr .eh_frame 
+   02     .text .init .fini .iplt 
+   03     .tdata .fini_array .init_array .data.rel.ro .dynamic .got .got.plt .relro_padding 
+   04     .tm_clone_table .data .bss 
+   05     .tdata .tbss 
+   06     .dynamic 
+   07     .tdata .fini_array .init_array .data.rel.ro .dynamic .got .got.plt .relro_padding 
+   08     .eh_frame_hdr 
+   09     
+   10     .note.ABI-tag .note.gnu.build-id 

@@ -1,0 +1,93 @@
+{
+  "registration": "SC-MVM-SCALE-002",
+  "registered_before_campaign": true,
+  "date": "2026-11-02",
+  "base_commit": "95fc3c45dc849ccdb6d766b6b641fb4c782b4d54",
+  "source_identity_rule": "Record exact committed source and executable SHA-256 before execution; no measurements are relabeled after later source edits.",
+  "scope": "Authenticated TCP-loopback canonical mailbox logical endpoints. Does not qualify native MVM populations, shaped WAN, real WAN, cryptographic certification or energy.",
+  "profiles": {
+    "historical_capacity": {
+      "message_ttl_ms": 1000,
+      "authorization_lifetime_ms": 240000,
+      "service_retention_ms": 1000,
+      "tracker_retention_extension_ms": 300000,
+      "ordering": "stable",
+      "operations": 100000,
+      "duration_ms": 0
+    },
+    "sustained": {
+      "authorization_lifetime_ms": 900000,
+      "message_ttl_ms": 1000,
+      "service_retention_ms": 1000,
+      "tracker_retention_extension_ms": 300000,
+      "configured_total_endpoints": [2, 8, 32],
+      "workers_per_endpoint_pair": 1,
+      "pipeline_per_pair": 1,
+      "duration_ms": 310000,
+      "offered_total_operations_per_second": 10,
+      "max_operations_per_pair": 100000,
+      "payload_bytes": 4096,
+      "workload": "Persistent stable streams; alternating canonical Call with exact echo and generic Cast with exact receiver readback. Embedded/trailing zero bytes and changing counter."
+    },
+    "interference": {
+      "authorization_lifetime_ms": 900000,
+      "message_ttl_ms": 1000,
+      "configured_total_endpoints": [8, 32],
+      "duration_ms": 65000,
+      "hot_worker": "Pair zero unpaced until first refusal; does not reset service/tracker or raise quotas.",
+      "slow_worker": "Pair one waits 50 ms after actual request send and before receiver read, outside broker dispatch and inside operation latency; local application stall, not shaped network or kernel send-buffer backpressure.",
+      "malformed_worker": "Pair two presents one invalid encoded envelope to canonical service admission before each valid operation; malformed bytes remain local and are not included as network traffic.",
+      "cancellation": "Pair zero registers then cancels one separately identified unsent Call; persistent stream sequence is not consumed. Last pair cancels a blocked terminal transport receive after a 20 ms signal, before a 2 s deadline. These do not claim remote cancellation of admitted application processing.",
+      "healthy_workers": "Remaining pairs use the same aggregate-ten-operations-per-second allocation divided by pair population.",
+      "offered_load_note": "Hot work is additional to paced allocation. This profile observes interference and refusal; it does not promise a mutex scheduling fairness guarantee."
+    },
+    "recovery": {
+      "configured_total_endpoints": 2,
+      "max_attempts_before_saturation": 5000,
+      "message_ttl_ms": 1000,
+      "authorization_lifetime_ms": 900000,
+      "minimum_wall_clock_wait_after_saturation_ms": 301100,
+      "pre_saturation_max_wall_seconds": 60,
+      "required_failure_phase": "caller_observe_admission after receiver accepted request and received receipt frame; no Reply sequence allocated",
+      "resume": "Same broker, services, trackers, transports and ordering owners; expire retained state on real clocks, then complete one Call and one Cast exactly.",
+      "safety": "Stop and retain failure if saturation occurs in another phase. Never skip an unknown FIFO gap or recreate a stream owner to claim recovery."
+    },
+    "portable_functional_smoke": {
+      "message_ttl_ms": 30000,
+      "operations_per_pair": 4,
+      "duration_ms": 0,
+      "note": "Functional portability witness only. Does not alter one-second measurement profile or production defaults."
+    }
+  },
+  "bounds": {
+    "max_workers": 16,
+    "max_additional_cancellation_signal_helpers": 1,
+    "max_active_tcp_pairs": 16,
+    "process_rss_sampled_ceiling_bytes": 536870912,
+    "sampled_fd_ceiling": 128,
+    "max_concurrent_cell_duration_ms": 360000,
+    "new_payload_datasets_or_vm_disks": 0,
+    "control_quotas": "Unchanged native-tier capacity limits: host identities65536/control16384, tenant32768/control8192, mailbox32768/control8192, sender16384/control4096.",
+    "checkpoint_interval_seconds": 10,
+    "checkpoint_channel_capacity": 32,
+    "measurement_overlap_rule": "Fresh process per cell; one active benchmark cell at a time. If other host builds/tests run concurrently, record the shared-host interference and do not claim isolated CPU or latency.",
+    "checkpoint_drops": "Count and report; bounded progress-channel loss cannot become omitted successful transfer evidence."
+  },
+  "measurement": {
+    "bytes": "Actual canonical encrypted envelopes and stream framing in both directions including readiness/setup; TCP/IP headers and retransmissions excluded.",
+    "cpu": "Aggregate process CPU, setup CPU separately, plus worker-thread CPU (both roles and broker actions on that worker, not separated remote endpoint CPU).",
+    "elapsed": "Wall-clock completed operation including computation and socket exchange; never add CPU to elapsed.",
+    "memory": "Kernel lifetime process high-water RSS; fresh process per cell. Snapshots are post-operation samples, not inflight allocation peaks.",
+    "diagnostics": "Capture refusal counter before/after within the same broker dispatch; record only a newly produced local diagnostic. Concurrent global last-refusal snapshots alone are not causal attribution.",
+    "trials": "One bounded campaign cell per profile/count; observations, no statistical speedup claim.",
+    "retention": "Preserve failed/incomplete attempts and distinguish them from exact completed application exchanges."
+  },
+  "gates": [
+    "Zero mismatched compared payloads; all completed payloads equal exact original bytes and lengths.",
+    "Matching sender/receiver actual stream counters.",
+    "Recovery full-cycle wait observed, old tracker transient entries expire, persistent scope/owner state not reset, new Call+Cast complete exactly.",
+    "Steady profile all intended operations complete without admission error; report saturation rather than silently lower load or increase quotas.",
+    "Interference reports every worker, hot refusal and healthy completions/tail latency; malformed input refused and cancellation terminal.",
+    "RSS and FD sample ceilings not exceeded; compact records preserved and no persistent payload stores created."
+  ]
+}

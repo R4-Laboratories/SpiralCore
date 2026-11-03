@@ -552,7 +552,7 @@ fn attempts_and_shared_identity_quotas_fail_closed_and_release_owned_capacity() 
     reserve.sender.identities = 1;
     let shared = HostBudget::with_control(ServiceLimits::default(), reserve).unwrap();
     let mut first = ReceiptTracker::new(shared.clone(), 4).unwrap();
-    let mut second = ReceiptTracker::new(shared, 4).unwrap();
+    let mut second = ReceiptTracker::new(shared.clone(), 4).unwrap();
     for delivery in 1..=8 {
         first
             .register_send(
@@ -579,10 +579,91 @@ fn attempts_and_shared_identity_quotas_fail_closed_and_release_owned_capacity() 
         second.register_send(&original, &control, &key, &another.bytes, now()),
         Err(ServiceError::Full)
     );
+    {
+        use spiralcore_mvm_adapter::service::{BudgetPool, BudgetResource, BudgetScope};
+        let refusal = shared.snapshot().unwrap().refusals.last.unwrap();
+        assert_eq!(refusal.scope, BudgetScope::Sender);
+        assert_eq!(refusal.pool, BudgetPool::Control);
+        assert_eq!(refusal.resource, BudgetResource::Identities);
+        assert_eq!(
+            (refusal.current, refusal.requested, refusal.limit),
+            (1, 1, 1)
+        );
+        assert_eq!(first.snapshot().retained_entries, 1);
+        assert_eq!(first.snapshot().attempts, 8);
+        assert_eq!(first.snapshot().next_expiry_monotonic_ms, Some(300_600));
+        assert_eq!(second.snapshot().retained_entries, 0);
+    }
     drop(first);
     second
         .register_send(&original, &control, &key, &another.bytes, now())
         .unwrap();
+}
+
+#[test]
+fn tracker_local_capacity_diagnostic_preserves_state_and_expires_at_exact_retention() {
+    use spiralcore_mvm_adapter::service::{BudgetPool, BudgetResource, BudgetScope};
+    let source = config(MailboxMessageKind::Cast, false);
+    let original = MailboxBinding::new(config(MailboxMessageKind::Cast, false), None).unwrap();
+    let control = MailboxBinding::new(config(MailboxMessageKind::Cast, true), None).unwrap();
+    let shared = budget();
+    let mut tracker = ReceiptTracker::new(shared.clone(), 1).unwrap();
+    let key = SigningKey::from_bytes(&[24; 32]).verifying_key();
+    let first = seal(&source, b"first\0\0", 1, 1, 0);
+    let second = seal(&source, b"second\0\0", 2, 2, 0);
+    let handle = tracker
+        .register_send(&original, &control, &key, &first.bytes, now())
+        .unwrap();
+    let before = shared.snapshot().unwrap();
+    assert_eq!(
+        tracker.register_send(&original, &control, &key, &second.bytes, now()),
+        Err(ServiceError::Full)
+    );
+    let snapshot = tracker.snapshot();
+    assert_eq!(
+        (
+            snapshot.retained_entries,
+            snapshot.request_indices,
+            snapshot.attempts,
+            snapshot.max_pending
+        ),
+        (1, 1, 1, 1)
+    );
+    let reason = shared.snapshot().unwrap().refusals.last.unwrap();
+    assert_eq!(
+        (reason.scope, reason.pool, reason.resource),
+        (
+            BudgetScope::Tracker,
+            BudgetPool::Local,
+            BudgetResource::TrackerEntries
+        )
+    );
+    assert_eq!((reason.current, reason.requested, reason.limit), (1, 1, 1));
+    assert_eq!(shared.snapshot().unwrap().identities, before.identities);
+    // Retry of the exact send remains idempotent even at the local ceiling.
+    assert_eq!(
+        tracker
+            .register_send(&original, &control, &key, &first.bytes, now())
+            .unwrap(),
+        handle
+    );
+    let expiry = snapshot.next_expiry_monotonic_ms.unwrap();
+    let mut later = now();
+    later.monotonic_ms = expiry - 1;
+    assert_eq!(tracker.expire(later).unwrap(), 0);
+    assert_eq!(tracker.snapshot().retained_entries, 1);
+    later.monotonic_ms = expiry;
+    assert_eq!(tracker.expire(later).unwrap(), 1);
+    assert_eq!(tracker.snapshot().retained_entries, 0);
+    assert_eq!(shared.snapshot().unwrap().identities, 0);
+    assert!(tracker.facts(&original, &handle, later).is_err());
+    // A new authenticated request can use released capacity without rebuilding tracker.
+    // Keep synthetic wall time in its signed validity interval; monotonic time
+    // independently drives retention here. Real-time qualification is separate.
+    tracker
+        .register_send(&original, &control, &key, &second.bytes, later)
+        .unwrap();
+    assert_eq!(tracker.snapshot().retained_entries, 1);
 }
 
 #[test]
@@ -747,6 +828,51 @@ fn prepared_receipt_refuses_backward_clock_and_policy_change_before_transport() 
 }
 
 #[test]
+fn signed_call_limit_is_reported_separately_from_host_quota() {
+    use spiralcore_mvm_adapter::service::{
+        BudgetPool, BudgetResource, BudgetScope, LocalMailboxService,
+    };
+    use spiralcore_mvm_adapter::service_sender::{self, MessageOptions};
+    let mut source = config(MailboxMessageKind::Call, false);
+    source.capability.grant.max_outstanding_calls = 1;
+    source.capability = mvm_core::mailbox::sign_capability(
+        source.capability.grant,
+        &SigningKey::from_bytes(&[22; 32]),
+    )
+    .unwrap();
+    let content_type = source.capability.grant.content_types[0].clone();
+    let reply_to = seal(&source, b"route fixture", 1, 1, 1).header.reply_to;
+    let producer = MailboxBinding::new(source, None).unwrap();
+    let shared = budget();
+    let mut service = LocalMailboxService::new(shared.clone()).unwrap();
+    let request = |payload: &[u8]| {
+        let mut options = MessageOptions::fresh(content_type.clone(), now(), 2000).unwrap();
+        options.reply_to = reply_to;
+        let prepared = service_sender::prepare(&producer, payload, &options, now()).unwrap();
+        mvm_core::mailbox::encode_envelope(prepared.envelope()).unwrap()
+    };
+    let first = request(b"first");
+    let second = request(b"second");
+    service.register_call(&producer, &first, now()).unwrap();
+    // Synthetic fixture signs one active Call per grant; the host allows more.
+    assert_eq!(
+        service.register_call(&producer, &second, now()),
+        Err(ServiceError::Full)
+    );
+    let reason = shared.snapshot().unwrap().refusals.last.unwrap();
+    assert_eq!(
+        (reason.scope, reason.pool, reason.resource),
+        (
+            BudgetScope::Capability,
+            BudgetPool::Signed,
+            BudgetResource::ActiveCalls
+        )
+    );
+    assert_eq!((reason.current, reason.requested, reason.limit), (1, 1, 1));
+    assert_eq!(shared.snapshot().unwrap().active_calls, 1);
+}
+
+#[test]
 fn generic_application_admission_cannot_acknowledge_reserved_receipt_control() {
     use spiralcore_mvm_adapter::service::{DestinationReceiptSigner, LocalMailboxService};
     let control_config = config(MailboxMessageKind::Cast, true);
@@ -894,7 +1020,8 @@ fn receipt_replay_and_prepared_resend_obey_signed_control_rate_without_ack_loops
     let mut return_cfg = config(MailboxMessageKind::Cast, true);
     return_cfg.capability = control_cfg.capability.clone();
     let control = MailboxBinding::new(control_cfg, None).unwrap();
-    let mut tracker = ReceiptTracker::new(budget(), 1).unwrap();
+    let shared = budget();
+    let mut tracker = ReceiptTracker::new(shared.clone(), 1).unwrap();
     let handle = tracker
         .register_send(
             &source,
@@ -912,6 +1039,19 @@ fn receipt_replay_and_prepared_resend_obey_signed_control_rate_without_ack_loops
         tracker.observe_receipt(&control, &wire.bytes, now()),
         Err(ServiceError::Backpressured)
     );
+    {
+        use spiralcore_mvm_adapter::service::{BudgetPool, BudgetResource, BudgetScope};
+        let reason = shared.snapshot().unwrap().refusals.last.unwrap();
+        assert_eq!(
+            (reason.scope, reason.pool, reason.resource),
+            (
+                BudgetScope::Capability,
+                BudgetPool::Signed,
+                BudgetResource::MessagesPerMinute
+            )
+        );
+        assert_eq!((reason.current, reason.requested, reason.limit), (1, 1, 1));
+    }
     let returns = ReceiptReturnConfig::new(
         MailboxBinding::new(return_cfg, None).unwrap(),
         budget(),
@@ -939,6 +1079,17 @@ fn receipt_replay_and_prepared_resend_obey_signed_control_rate_without_ack_loops
         ))
     ));
     assert!(transport.drain(route).unwrap().is_empty());
+    // Consumed positive receipts retain their terminal identity until expiry.
+    let retained = tracker.snapshot();
+    assert_eq!(retained.accepted_entries, 1);
+    assert_eq!(retained.pending_receipts, 0);
+    let boundary = retained.next_expiry_monotonic_ms.unwrap();
+    let mut later = now();
+    later.monotonic_ms = boundary - 1;
+    assert_eq!(tracker.expire(later).unwrap(), 0);
+    later.monotonic_ms = boundary;
+    assert_eq!(tracker.expire(later).unwrap(), 1);
+    assert_eq!(tracker.snapshot().retained_entries, 0);
 }
 
 #[test]

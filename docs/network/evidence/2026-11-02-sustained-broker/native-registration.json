@@ -1,0 +1,48 @@
+{
+  "registration": "SC-MVM-SCALE-002-NATIVE",
+  "registered_before_execution": true,
+  "source": "d94020382a1c838a0794af14989d687985c26b69",
+  "purpose": "Requalify canonical object transfer across native guest/host and two-guest boundaries after diagnostics and the additive raw-mixed benchmark selector. This is not aggregate fleet capacity or WAN qualification.",
+  "available_native_host": "Existing authorized Wick Linux x86-64/KVM host; isolated /var/tmp/spiralcore-sustained-20261102 directories, no other lab changes.",
+  "native_mac_status": "NOT_RUN_CURRENT_RESOURCE_PRESSURE: original Mac 8-endpoint one-second test failed; observed load about40 and swap5.5GiB. Do not add VM memory/disk pressure. Existing earlier native HVF evidence retains its own revision.",
+  "host_binary_sha256": "d93f66539df9ac5b2fab3d0392a8d5963ee3f2b73aff1bf0b29f96211b3226bb",
+  "guest_binary_sha256": "71fc46316e526a6856bdd5bf58e32e089dbc1abe3be70feb94b5dbcccfe8a680",
+  "guest": "GNU static PIE x86_64-unknown-linux-gnu, no INTERP segment",
+  "kernel_sha256": "1701ccb2c46b2497066225d6ba05f3f33a3a845ca636fbeedb202835c83b49b6",
+  "firecracker_sha256": "99ad0f5cd0514a88aad0e9ae8cfdb3cc3b4ab9d190e1194602406c786b5de7a5",
+  "dose": {
+    "trial": 0,
+    "cells": [
+      {"stage":"one","arm":"whole-mixed","size":1048576},
+      {"stage":"one","arm":"combined-cpu","size":1048576},
+      {"stage":"two","arm":"whole-mixed","size":1048576},
+      {"stage":"two","arm":"combined-cpu","size":1048576},
+      {"stage":"two","arm":"raw-mixed","size":16777216},
+      {"stage":"two","arm":"whole-mixed","size":16777216},
+      {"stage":"two","arm":"combined-cpu","size":16777216}
+    ],
+    "actual_target_bytes_by_size": {"1048576":1047202,"16777216":14851384},
+    "comparison": "Eight identical application targets across arms; Combined also pays two setup publications. All arms share exact-object cache probing. One fixed-order pilot per cell; no confidence interval or universal speed claim."
+  },
+  "resources": {
+    "max_simultaneous_guests": 2,
+    "vcpus_per_guest": 1,
+    "memory_mib_per_guest": 1024,
+    "guest_nic": false,
+    "max_concurrent_cells": 1,
+    "receiver_disk_mib": 256,
+    "native_call_witness_cap": 2048,
+    "limits": "Unchanged canonical native witness budgets; one broker per endpoint process. This does not prove aggregate accounting across guest processes.",
+    "bandwidth_profile": "experimental64; Linux backend records rate_enforced=false, not a newly implemented rate limiter.",
+    "build_or_benchmark_overlap": "No coverage, builds or other owned benchmarks on Wick during native cells; uncontrolled existing DeepSeek/host work remains observed."
+  },
+  "acceptance": [
+    "Record source, binary, kernel and backend identities before execution.",
+    "Every successful cell must finish both roles, match both-direction stream counters and exact publication readbacks; two-guest stage additionally boots the keyless verification guest.",
+    "Retain raw public receipts, CPU and transfer/boot/recovery/lifecycle times; endpoint CPU is distinct from worker/VMM CPU, whose Linux sample is partial.",
+    "Preserve failures without raising quotas or resetting/replacing authority to claim recovery.",
+    "Record process cleanup and remove only the temporary owned Firecracker link if its target/inode/uid still match.",
+    "After verified records are archived, remove only this campaign's successful cache directories/receiver.ext4 payload files. Retain failed payload stores until independently checked."
+  ],
+  "wan_status": "NOT_RUN_CANONICAL_WAN: existing older HTTP WAN is a distinct endpoint mapping; no ready canonical mailbox direct/relay two-host runner or qualified Windows durable gateway exists. These remain open #46/#47 gates, not implied by this native pilot."
+}

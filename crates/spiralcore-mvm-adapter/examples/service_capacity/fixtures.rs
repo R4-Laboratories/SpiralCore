@@ -29,6 +29,16 @@ fn config(
     forward: bool,
     control: bool,
 ) -> spiralcore_mvm_adapter::DirectionConfig {
+    config_with_lifetime(peer, kind, forward, control, 240_000)
+}
+fn config_with_lifetime(
+    peer: u8,
+    kind: MailboxMessageKind,
+    forward: bool,
+    control: bool,
+    lifetime_ms: i64,
+) -> spiralcore_mvm_adapter::DirectionConfig {
+    assert!((240_000..=900_000).contains(&lifetime_ms));
     let mut c = common::config(if forward {
         MailboxMessageKind::Call
     } else {
@@ -66,10 +76,10 @@ fn config(
     c.capability.grant.content_types = vec![content];
     c.capability.grant.max_messages_per_minute = 100_000;
     c.capability.grant.not_before_unix_ms = now - 10_000;
-    c.capability.grant.expires_at_unix_ms = now + 240_000;
+    c.capability.grant.expires_at_unix_ms = now + lifetime_ms;
     c.binding.claims.address = c.capability.grant.address;
     c.binding.claims.not_before_unix_ms = now - 10_000;
-    c.binding.claims.expires_at_unix_ms = now + 240_000;
+    c.binding.claims.expires_at_unix_ms = now + lifetime_ms;
     if control {
         c.capability.grant.capability_id =
             CapabilityId::from_bytes([if forward { 71 } else { 72 }; 32]);
@@ -102,7 +112,18 @@ pub fn binding(
     control: bool,
     producer: bool,
 ) -> MailboxBinding {
-    let c = config(peer, kind, forward, control);
+    binding_with_lifetime(peer, kind, forward, control, producer, 240_000)
+}
+/// Synthetic probe profile only. The old profile remains four minutes.
+pub fn binding_with_lifetime(
+    peer: u8,
+    kind: MailboxMessageKind,
+    forward: bool,
+    control: bool,
+    producer: bool,
+    lifetime_ms: i64,
+) -> MailboxBinding {
+    let c = config_with_lifetime(peer, kind, forward, control, lifetime_ms);
     let mut c = ServiceBindingConfig::from_direction(c).unwrap();
     c.context.accepted_content_types = c.capability.grant.content_types.clone();
     if !producer {
