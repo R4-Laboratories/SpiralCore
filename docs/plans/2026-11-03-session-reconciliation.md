@@ -128,3 +128,16 @@ capacity/tail latency, native Windows and real-WAN qualification remain open.
 The campaign module export is unconditional in lib.rs, while host/orchestrator
 backends have their own cfgs. Qualify actual supported embedding build/socket
 targets; do not infer a Windows live consumer or add a new bootstrap/wire mapping.
+
+Initial full public-consumer TCP qualification is Unix-only. Windows new-consumer
+coverage is **NOT_RUN / blocked** by unconditional hardware-SHA assembly features
+and non-Unix private-directory Unsupported; adapter's existing 92 checks do not
+exercise the new entry. Track compile-profile/storage portability separately in
+[#46](https://github.com/R4-Laboratories/SpiralCore/issues/46). No Cargo/workflow
+portability edits belong to this first reconciliation slice. Preserve all existing
+build-call feature closures in any later change: static guests already use
+`--no-default-features` while dependency features still enable hardware SHA, so
+moving acceleration into defaults alone is not preservation. Qualify any explicit
+feature/cfg solution and its identities before changing platform claims. A future
+seven-row partial Status-probe fixture must be labelled partial, without claiming
+full publication or native Windows MVM. Do not add dead-code allowances.

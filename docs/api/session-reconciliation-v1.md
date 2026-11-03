@@ -81,6 +81,21 @@ Windows support for the live crate/SocketIo stack. Qualify the embedding entry o
 its supported build/socket targets separately; no native guest opt-in execution,
 Windows live consumer or new platform/backend acceptance is claimed by this design.
 
+Initial executed consumer qualification targets the full Unix TCP embedding
+fixture. Windows new-consumer qualification is **NOT_RUN / blocked**: the current
+live manifest unconditionally enables hardware SHA/sha2-asm, and the production
+receiver's private object directory rejects non-Unix platforms as Unsupported.
+The existing 92 adapter checks per native-client row do not cover this consumer.
+Compile-profile and storage portability remain separate [#46](https://github.com/R4-Laboratories/SpiralCore/issues/46)
+gates; this slice changes neither Cargo features nor workflows to bypass them.
+Any future profile change must preserve actual existing build-call feature
+closures, including static guests built with `--no-default-features`, which
+currently still receive dependency-enabled hardware SHA. Moving that feature
+only into defaults would silently disable acceleration for those guest builds.
+Verify intended closures and source/binary identities before crediting a change.
+A later seven-row ephemeral Status-probe test may qualify only its explicitly
+labelled partial consumer exchange, not full object publication or Windows MVM.
+
 | Option | Tradeoff | Decision |
 | --- | --- | --- |
 | Per-invocation explicit signal | Small addition to synchronous ownership; no unsolicited retry bytes | Chosen |
