@@ -330,11 +330,24 @@ fn short_call(session: &mut Session, request: &Frame, ttl: Duration, as_pending:
                 ISSUANCE_POLICY,
             )?;
             options.reply_to = session.reply_to;
-            let prepared = service_sender::prepare(&session.outgoing, &payload, &options, now)?;
-            let wire = encode_envelope(prepared.envelope())?;
             if as_pending {
-                session.pending = Some(PendingCall::new(payload, options, now));
+                // Seal once through the real retained registration path. A
+                // separately prepared oracle has a different fresh AEAD nonce.
+                let mut pending = PendingCall::new(payload, options, now);
+                pending.register(
+                    &mut session.service,
+                    &mut session.tracker,
+                    &session.outgoing,
+                    &session.control,
+                    &session.peer_key,
+                    now,
+                )?;
+                let wire = pending.encoded()?.to_vec();
+                session.pending = Some(pending);
+                Ok(wire)
             } else {
+                let prepared = service_sender::prepare(&session.outgoing, &payload, &options, now)?;
+                let wire = encode_envelope(prepared.envelope())?;
                 let call = session
                     .service
                     .register_call(&session.outgoing, &wire, now)?;
@@ -348,8 +361,8 @@ fn short_call(session: &mut Session, request: &Frame, ttl: Duration, as_pending:
                     now,
                 )?;
                 assert_eq!(captured.0.lock().unwrap().as_deref(), Some(wire.as_slice()));
+                Ok(wire)
             }
-            Ok(wire)
         })
         .unwrap()
 }
