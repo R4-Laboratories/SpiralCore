@@ -402,6 +402,22 @@ fn receiver_case(mode: WhileAwaitingAck) -> CaseReport {
                     sender
                         .outgoing
                         .send_prepared(&prepared, &stream, &cancel, now)?;
+                    // Active replay sends the exact cached Reply before its
+                    // actual Duplicate Call receipt under the C8 contract.
+                    let replayed = stream.receive(&cancel, Instant::now() + WATCHDOG)?;
+                    if replayed != reply_wire {
+                        return Err("receiver resealed or changed the cached Reply".into());
+                    }
+                    reply_sends_observed += 1;
+                    let now = sender_broker.with_time(|_, now| -> Result<_> { Ok(now) })?;
+                    if open_wire(&normal_material, &replayed, now)?
+                        .header()
+                        .sequence
+                        .get()
+                        != 1
+                    {
+                        return Err("cached replay allocated another Reply sequence".into());
+                    }
                     let duplicate = stream.receive(&cancel, Instant::now() + WATCHDOG)?;
                     duplicate_receipt_bytes += duplicate.len();
                     sender_broker.with_time(|_, now| -> Result<()> {
@@ -429,20 +445,6 @@ fn receiver_case(mode: WhileAwaitingAck) -> CaseReport {
                         }
                         Ok(())
                     })?;
-                    let replayed = stream.receive(&cancel, Instant::now() + WATCHDOG)?;
-                    if replayed != reply_wire {
-                        return Err("receiver resealed or changed the cached Reply".into());
-                    }
-                    reply_sends_observed += 1;
-                    let now = sender_broker.with_time(|_, now| -> Result<_> { Ok(now) })?;
-                    if open_wire(&normal_material, &replayed, now)?
-                        .header()
-                        .sequence
-                        .get()
-                        != 1
-                    {
-                        return Err("cached replay allocated another Reply sequence".into());
-                    }
                 }
                 if matches!(mode, WhileAwaitingAck::ExhaustSends) {
                     drop(ack);
@@ -628,6 +630,12 @@ fn receiver_case(mode: WhileAwaitingAck) -> CaseReport {
                     sender
                         .outgoing
                         .send_prepared(&next, &stream, &cancel, now)?;
+                    if stream.receive(&cancel, Instant::now() + WATCHDOG)? != next_reply_wire {
+                        return Err(
+                            "old control receipt cleared or changed current cached Reply".into(),
+                        );
+                    }
+                    reply_sends_observed += 1;
                     let duplicate = stream.receive(&cancel, Instant::now() + WATCHDOG)?;
                     sender_broker.with_time(|_, now| -> Result<()> {
                         let opened = open_wire(&control_material, &duplicate, now)?;
@@ -650,12 +658,6 @@ fn receiver_case(mode: WhileAwaitingAck) -> CaseReport {
                         }
                         Ok(())
                     })?;
-                    if stream.receive(&cancel, Instant::now() + WATCHDOG)? != next_reply_wire {
-                        return Err(
-                            "old control receipt cleared or changed current cached Reply".into(),
-                        );
-                    }
-                    reply_sends_observed += 1;
                     sent_ack_bytes += next_ack.encoded_bytes().len();
                     let (permit, now) = sender_broker.with_time(|_, now| -> Result<_> {
                         Ok((next_ack.reserve_send(&cancel, now)?, now))
@@ -703,7 +705,7 @@ fn receiver_replays_the_exact_cached_reply_for_same_call_before_its_positive_rec
         .expect("receiver must recognize the same Call while awaiting its Reply receipt");
     let sender = case
         .sender
-        .expect("sender must receive Duplicate and exact cached Reply");
+        .expect("sender must receive exact cached Reply then Duplicate");
     assert!(case.completed);
     assert_eq!(handled.reply, sender.reply);
     assert_eq!(case.receiver.session.calls, 1);
