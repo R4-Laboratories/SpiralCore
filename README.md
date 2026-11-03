@@ -43,7 +43,7 @@ tracks**, not arbitrary encrypted packet traffic.
 macOS/HVF and Linux/Firecracker host paths; the default Linux build is the guest,
 and the `linux-host` feature selects the host. Native ephemeral mailbox-client
 tests have passed on Windows Server 2022/2025 x64 and Windows 11 ARM64 at the
-[latest recorded mailbox-client checkpoint](docs/network/mailbox-session-events-results-2026-11-03.md).
+[latest recorded mailbox-client checkpoint](docs/network/stream-idle-results-2026-11-03.md).
 Windows private/durable object storage and packet attachment still need a port.
 A portable mailbox client does not establish a Windows MVM host. The current
 published MVM dependency has passed the recorded seven-platform contract run.
@@ -110,7 +110,7 @@ and replays the exact cached Reply without repeating object work. Failed receive
 exchanges fence before another read. Four additional Linux/Firecracker cells
 verified **36 publication operations and 36 keyless reboot readbacks**, with
 zero mismatches. The same eight target positions are **14,851,384 bytes** each;
-Combined includes runtime checkpoint/schema setup. Latest single-trial results:
+Combined includes runtime checkpoint/schema setup. At that checkpoint:
 
 | Arm | Logical mailbox traffic, both directions | Timed sender CPU | Full lifecycle |
 |---|---:|---:|---:|
@@ -128,6 +128,14 @@ regressions. Orchestrator transport credits remain separate from guest plaintext
 cache budgets. Automatic retry/resume, production-retention sessions beyond the
 2,048-Call guard, installed host ownership and negotiated pipelining remain in the
 [active plan](docs/plans/2026-11-03-persistent-mvm-service.md).
+
+The subsequent [idle-read checkpoint](docs/network/stream-idle-results-2026-11-03.md)
+adds a bounded local poll that preserves a ready stream only before any next-frame
+bytes are consumed. Partial frames keep their original deadline and fatal-error
+fence. All seven native client rows passed 88 checks each; two further native
+Linux cells passed 18 publications and 18 keyless readbacks. The recorded normal
+transfers still use strict receive. This API enables future recovery work; it
+does not activate timers, reconnect/resume or longer-lived sessions.
 
 ### Where SpiralCore sits in the network stack
 
