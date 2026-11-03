@@ -1,4 +1,5 @@
 //! Canonical mailbox service consumer shared by host and real guest campaigns.
+use super::reconciliation::RetryRequests;
 use super::session::{ExchangeDeadline, PendingCall, SessionError};
 use super::*;
 use crate::config::Material;
@@ -148,6 +149,26 @@ impl Session {
         stream: &StreamTransport<S>,
         cancel: &CancellationToken,
     ) -> Result<(Context, Frame)> {
+        self.call_inner(request, stream, cancel, None)
+    }
+
+    pub(super) fn call_with_reconciliation<S: SocketIo + 'static>(
+        &mut self,
+        request: &Frame,
+        stream: &StreamTransport<S>,
+        cancel: &CancellationToken,
+        retry_requests: RetryRequests,
+    ) -> Result<(Context, Frame)> {
+        self.call_inner(request, stream, cancel, Some(retry_requests))
+    }
+
+    fn call_inner<S: SocketIo + 'static>(
+        &mut self,
+        request: &Frame,
+        stream: &StreamTransport<S>,
+        cancel: &CancellationToken,
+        retry_requests: Option<RetryRequests>,
+    ) -> Result<(Context, Frame)> {
         if self.calls >= MAX_CAMPAIGN_CALLS {
             return Err(SessionError::WitnessLimit.into());
         }
@@ -234,7 +255,78 @@ impl Session {
             .events_received()
             < 16
         {
-            let bytes = stream.receive(cancel, deadline)?;
+            let bytes = if let Some(requests) = &retry_requests {
+                match stream.receive_or_idle(cancel, deadline, Duration::from_millis(250))? {
+                    spiralcore_mvm_adapter::live::ReceiveOutcome::Frame(bytes) => bytes,
+                    spiralcore_mvm_adapter::live::ReceiveOutcome::Idle => {
+                        let retry_time = broker.with_time(|_, now| -> Result<_> {
+                            let pending =
+                                self.pending.as_ref().ok_or(SessionError::StreamFenced)?;
+                            if let Err(error) = pending.remaining(now) {
+                                self.service.expire(now)?;
+                                self.tracker.expire(now)?;
+                                return Err(error.into());
+                            }
+                            if Instant::now() >= deadline {
+                                return Err(SessionError::Service(ServiceError::Expired).into());
+                            }
+                            if pending.ready_to_complete() {
+                                reply = self.poll_ready_reply(call, now)?;
+                                return Ok(None);
+                            }
+                            if !requests.take_request() {
+                                return Ok(None);
+                            }
+                            let pending =
+                                self.pending.as_mut().ok_or(SessionError::StreamFenced)?;
+                            pending.prepare_retry(
+                                &mut self.service,
+                                &mut self.tracker,
+                                &self.outgoing,
+                                &self.control,
+                                &self.peer_key,
+                                now,
+                            )?;
+                            Ok(Some(now))
+                        })?;
+                        if reply.is_some() {
+                            break;
+                        }
+                        if retry_time.is_some() {
+                            // Expiry maintenance/registration can consume time;
+                            // sample again before burning the transport attempt.
+                            let now = broker.with_time(|_, now| -> Result<_> {
+                                self.pending
+                                    .as_ref()
+                                    .ok_or(SessionError::StreamFenced)?
+                                    .remaining(now)?;
+                                if Instant::now() >= deadline {
+                                    return Err(SessionError::Service(ServiceError::Expired).into());
+                                }
+                                Ok(now)
+                            })?;
+                            self.pending
+                                .as_mut()
+                                .ok_or(SessionError::StreamFenced)?
+                                .start_retry()?;
+                            self.service.retry_call_prepared(
+                                &self.outgoing,
+                                &call,
+                                self.pending
+                                    .as_ref()
+                                    .ok_or(SessionError::StreamFenced)?
+                                    .prepared()?,
+                                stream,
+                                cancel,
+                                now,
+                            )?;
+                        }
+                        continue;
+                    }
+                }
+            } else {
+                stream.receive(cancel, deadline)?
+            };
             self.pending
                 .as_mut()
                 .ok_or(SessionError::StreamFenced)?
@@ -321,31 +413,7 @@ impl Session {
             {
                 // Observation readiness can precede FIFO delivery. Polling
                 // Pending consumes nothing; keep receiving the missing event.
-                reply = broker.with_time(|_, now| -> Result<_> {
-                    self.pending
-                        .as_ref()
-                        .ok_or(SessionError::StreamFenced)?
-                        .remaining(now)?;
-                    match self.service.poll_call(&self.outgoing, &call, now)? {
-                        CallStatus::Pending => Ok(None),
-                        CallStatus::Replied(Some(payload)) => Ok(Some(Frame::decode(&payload)?)),
-                        CallStatus::Replied(None) => {
-                            Err(SessionError::Service(ServiceError::State).into())
-                        }
-                        CallStatus::TimedOut => {
-                            Err(SessionError::Service(ServiceError::Expired).into())
-                        }
-                        CallStatus::Cancelled => {
-                            Err(SessionError::Service(ServiceError::Cancelled).into())
-                        }
-                        CallStatus::Unavailable => {
-                            Err(SessionError::Service(ServiceError::Unavailable).into())
-                        }
-                        CallStatus::ShuttingDown => {
-                            Err(SessionError::Service(ServiceError::ShuttingDown).into())
-                        }
-                    }
-                })?;
+                reply = broker.with_time(|_, now| self.poll_ready_reply(call, now))?;
                 if reply.is_some() {
                     break;
                 }
@@ -355,6 +423,27 @@ impl Session {
         self.calls = self.calls.checked_add(1).ok_or("Call counter overflow")?;
         self.pending = None;
         Ok((context, reply))
+    }
+    fn poll_ready_reply(
+        &mut self,
+        call: spiralcore_mvm_adapter::service::CallHandle,
+        now: ServiceTime,
+    ) -> Result<Option<Frame>> {
+        self.pending
+            .as_ref()
+            .ok_or(SessionError::StreamFenced)?
+            .remaining(now)?;
+        match self.service.poll_call(&self.outgoing, &call, now)? {
+            CallStatus::Pending => Ok(None),
+            CallStatus::Replied(Some(payload)) => Ok(Some(Frame::decode(&payload)?)),
+            CallStatus::Replied(None) => Err(SessionError::Service(ServiceError::State).into()),
+            CallStatus::TimedOut => Err(SessionError::Service(ServiceError::Expired).into()),
+            CallStatus::Cancelled => Err(SessionError::Service(ServiceError::Cancelled).into()),
+            CallStatus::Unavailable => Err(SessionError::Service(ServiceError::Unavailable).into()),
+            CallStatus::ShuttingDown => {
+                Err(SessionError::Service(ServiceError::ShuttingDown).into())
+            }
+        }
     }
     pub(super) fn handle<S: SocketIo + 'static>(
         &mut self,

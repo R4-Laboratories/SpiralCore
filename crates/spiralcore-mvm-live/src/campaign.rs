@@ -9,6 +9,7 @@ use crate::{
 };
 use cpu_time::ProcessTime;
 use mvm_core::mailbox::transport::CancellationToken;
+pub use reconciliation::ReconciliationSignal;
 use serde_json::{Value, json};
 use spiralcore_gateway_core::object::{ObjectMode, ObjectSelection, ObjectSender};
 use spiralcore_mvm_adapter::live::{
@@ -134,17 +135,27 @@ fn difference(after: StreamCounters, before: StreamCounters) -> Result<StreamCou
     })
 }
 
-struct Client<S: SocketIo> {
+type ReconciliationController<'a> = &'a mut dyn FnMut(ReconciliationSignal) -> Result<()>;
+
+struct Client<'a, S: SocketIo> {
     stream: StreamTransport<S>,
     cancel: CancellationToken,
     exchange: Meter,
     service: canonical::Session,
+    on_call: Option<ReconciliationController<'a>>,
 }
-impl<S: SocketIo + 'static> Client<S> {
+impl<S: SocketIo + 'static> Client<'_, S> {
     fn call(&mut self, request: &Frame) -> Result<(Context, Frame)> {
         let cpu = ProcessTime::now();
         let wall = Instant::now();
-        let result = self.service.call(request, &self.stream, &self.cancel)?;
+        let result = if let Some(on_call) = self.on_call.as_mut() {
+            let (signal, requests) = reconciliation::bounded_requests();
+            on_call(signal)?;
+            self.service
+                .call_with_reconciliation(request, &self.stream, &self.cancel, requests)?
+        } else {
+            self.service.call(request, &self.stream, &self.cancel)?
+        };
         self.exchange
             .add(cpu.elapsed().as_micros(), wall.elapsed().as_micros())?;
         Ok(result)
@@ -189,6 +200,31 @@ pub fn sender_with_broker<S: SocketIo + 'static>(
     role: HandshakeRole,
     out: &mut impl Write,
 ) -> Result<Value> {
+    sender_with_broker_inner(bootstrap, broker, socket, role, out, None)
+}
+
+/// Opt-in local controller for explicit exact-Call reconciliation. The callback
+/// receives only a signal for this invocation and runs outside broker dispatch.
+/// The embedding owns any controller thread; silence alone never requests retry.
+pub fn sender_with_broker_and_reconciliation<S: SocketIo + 'static>(
+    bootstrap: &Bootstrap,
+    broker: &spiralcore_mvm_adapter::broker::BrokerContext,
+    socket: S,
+    role: HandshakeRole,
+    out: &mut impl Write,
+    on_call: &mut impl FnMut(ReconciliationSignal) -> Result<()>,
+) -> Result<Value> {
+    sender_with_broker_inner(bootstrap, broker, socket, role, out, Some(on_call))
+}
+
+fn sender_with_broker_inner<S: SocketIo + 'static>(
+    bootstrap: &Bootstrap,
+    broker: &spiralcore_mvm_adapter::broker::BrokerContext,
+    socket: S,
+    role: HandshakeRole,
+    out: &mut impl Write,
+    on_call: Option<ReconciliationController<'_>>,
+) -> Result<Value> {
     if bootstrap.role != Role::Sender {
         return Err("sender bootstrap role mismatch".into());
     }
@@ -211,6 +247,7 @@ pub fn sender_with_broker<S: SocketIo + 'static>(
         cancel,
         exchange: Meter::default(),
         service,
+        on_call,
     };
     let (context, probe) = client.call(&Frame {
         kind: 5,
