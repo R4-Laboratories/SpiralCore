@@ -1,4 +1,5 @@
 //! Canonical mailbox service consumer shared by host and real guest campaigns.
+use super::session::{PendingCall, SessionError};
 use super::*;
 use crate::config::Material;
 use ed25519_dalek::{SigningKey, VerifyingKey};
@@ -32,6 +33,7 @@ pub(super) struct Session {
     owner_capacity: Value,
     pub(super) calls: u64,
     context: Option<Context>,
+    pending: Option<PendingCall>,
 }
 const MAX_CAMPAIGN_CALLS: u64 = 2048;
 const ISSUANCE_POLICY: IssuancePolicy = IssuancePolicy::Bounded {
@@ -131,6 +133,7 @@ impl Session {
                 owner_capacity,
                 calls: 0,
                 context: None,
+                pending: None,
             })
         })
     }
@@ -144,57 +147,83 @@ impl Session {
         cancel: &CancellationToken,
     ) -> Result<(Context, Frame)> {
         if self.calls >= MAX_CAMPAIGN_CALLS {
-            return Err("native campaign Call limit".into());
+            return Err(SessionError::WitnessLimit.into());
+        }
+        // Validate bytes before consuming a FIFO position. Once allocated, the
+        // pending identity survives every fallible registration/send/receive.
+        let payload = request.encode()?;
+        if self
+            .pending
+            .as_ref()
+            .is_some_and(|pending| !pending.matches(&payload))
+        {
+            self.broker
+                .with_time::<_, spiralcore_mvm_adapter::service::ServiceError>(|_, now| {
+                    self.service.expire(now)?;
+                    self.tracker.expire(now)?;
+                    Ok(())
+                })?;
+            return Err(SessionError::Busy.into());
         }
         let deadline = Instant::now() + CALL_TIMEOUT;
         let broker = self.broker.clone();
-        let (prepared, context, call, send, deadline, send_time) =
+        let (context, call, send, deadline, send_time) =
             broker.with_time(|_, now| -> Result<_> {
-                let expiry = now.unix_ms.checked_add(30_000).ok_or("clock overflow")?;
-                let mut options = self.ordering.next_for_binding(
+                if self.pending.is_none() {
+                    let expiry = now.unix_ms.checked_add(30_000).ok_or("clock overflow")?;
+                    let mut options = self.ordering.next_for_binding(
+                        &self.outgoing,
+                        mvm_contract::protocol::mailbox::ContentType::parse(
+                            spiralcore_mvm_adapter::CONTENT_TYPE,
+                            1,
+                        )?,
+                        now,
+                        expiry,
+                        ISSUANCE_POLICY,
+                    )?;
+                    options.reply_to = self.reply_to;
+                    self.pending = Some(PendingCall::new(payload, options, now));
+                }
+                let pending = self.pending.as_mut().ok_or(SessionError::StreamFenced)?;
+                pending.register(
+                    &mut self.service,
+                    &mut self.tracker,
                     &self.outgoing,
-                    mvm_contract::protocol::mailbox::ContentType::parse(
-                        spiralcore_mvm_adapter::CONTENT_TYPE,
-                        1,
-                    )?,
+                    &self.control,
+                    &self.peer_key,
                     now,
-                    expiry,
-                    ISSUANCE_POLICY,
                 )?;
-                options.reply_to = self.reply_to;
-                let prepared =
-                    service_sender::prepare(&self.outgoing, &request.encode()?, &options, now)?;
-                let encoded = encode_envelope(prepared.envelope())?;
                 let context = match &self.context {
                     Some(context) => context.clone(),
                     None => {
-                        let context =
-                            service_sender::object_context(&self.outgoing, &prepared, now)?;
+                        let context = service_sender::object_context(
+                            &self.outgoing,
+                            pending.prepared()?,
+                            now,
+                        )?;
                         self.context = Some(context.clone());
                         context
                     }
                 };
-                let remaining = u64::try_from(
-                    options
-                        .expires_at_unix_ms
-                        .checked_sub(now.unix_ms)
-                        .ok_or("Call deadline overflow")?,
-                )
-                .map_err(|_| "Call already expired")?;
+                let remaining = pending.remaining(now)?;
                 let deadline = deadline.min(Instant::now() + Duration::from_millis(remaining));
-                let call = self.service.register_call(&self.outgoing, &encoded, now)?;
-                let send = self.tracker.register_send(
-                    &self.outgoing,
-                    &self.control,
-                    &self.peer_key,
-                    &encoded,
-                    now,
-                )?;
-                Ok((prepared, context, call, send, deadline, now))
+                let call = pending.call_handle().ok_or(SessionError::StreamFenced)?;
+                let send = pending.send_handle().ok_or(SessionError::StreamFenced)?;
+                pending.start_send()?;
+                Ok((context, call, send, deadline, now))
             })?;
         // No broker lease spans potentially blocking transport I/O.
-        self.outgoing
-            .send_prepared(&prepared, stream, cancel, send_time)?;
+        self.service.send_call_prepared(
+            &self.outgoing,
+            &call,
+            self.pending
+                .as_ref()
+                .ok_or(SessionError::StreamFenced)?
+                .prepared()?,
+            stream,
+            cancel,
+            send_time,
+        )?;
         let mut admitted = false;
         let mut reply = None;
         for _ in 0..2 {
@@ -246,8 +275,10 @@ impl Session {
         if !admitted {
             return Err("missing Call destination receipt".into());
         }
+        let reply = reply.ok_or("missing application Reply")?;
         self.calls = self.calls.checked_add(1).ok_or("Call counter overflow")?;
-        Ok((context, reply.ok_or("missing application Reply")?))
+        self.pending = None;
+        Ok((context, reply))
     }
     pub(super) fn handle<S: SocketIo + 'static>(
         &mut self,
@@ -432,6 +463,154 @@ fn validate_materials(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::config::{Arm, Pair, Plan, Stage};
+
+    fn pending_test_pair() -> Pair {
+        Pair::provision(Plan {
+            stage: Stage::Two,
+            arm: Arm::Raw,
+            size: 128,
+            trial: 0,
+            bandwidth_profile: Default::default(),
+        })
+        .unwrap()
+    }
+
+    #[test]
+    fn real_caller_retains_the_partial_identity_and_refuses_a_substitute_frame() {
+        use std::os::unix::net::UnixStream;
+        let pair = pending_test_pair();
+        let broker = broker_context().unwrap();
+        let mut session = Session::new(&pair.sender, &broker).unwrap();
+        broker
+            .with_time::<_, spiralcore_mvm_adapter::service::ServiceError>(|budget, now| {
+                session.tracker = ReceiptTracker::new(budget.clone(), 1)?;
+                let mut options = service_sender::MessageOptions::fresh_for_binding(
+                    &session.outgoing,
+                    mvm_contract::protocol::mailbox::ContentType::parse(
+                        spiralcore_mvm_adapter::CONTENT_TYPE,
+                        1,
+                    )
+                    .map_err(|_| spiralcore_mvm_adapter::service::ServiceError::Malformed)?,
+                    now,
+                    now.unix_ms + 1000,
+                    ISSUANCE_POLICY,
+                )?;
+                options.reply_to = session.reply_to;
+                let old = service_sender::prepare(
+                    &session.outgoing,
+                    b"retained prior request",
+                    &options,
+                    now,
+                )?;
+                let wire = encode_envelope(old.envelope()).unwrap();
+                session.tracker.register_send(
+                    &session.outgoing,
+                    &session.control,
+                    &session.peer_key,
+                    &wire,
+                    now,
+                )?;
+                Ok(())
+            })
+            .unwrap();
+        let (socket, _peer) = UnixStream::pair().unwrap();
+        let stream = StreamTransport::new(
+            socket,
+            pair.sender
+                .outgoing
+                .as_ref()
+                .unwrap()
+                .binding
+                .claims
+                .route_id,
+            CALL_TIMEOUT,
+        )
+        .unwrap();
+        let cancel = CancellationToken::default();
+        let frame = Frame {
+            kind: 6,
+            transfer: [17; 32],
+            seq: 0,
+            body: Vec::new(),
+        };
+        let error = session.call(&frame, &stream, &cancel).unwrap_err();
+        assert!(matches!(
+            error.downcast_ref::<SessionError>(),
+            Some(SessionError::Service(
+                spiralcore_mvm_adapter::service::ServiceError::Full
+            ))
+        ));
+        let pending = session.pending.as_ref().unwrap();
+        let original_wire = pending.encoded().unwrap().to_vec();
+        let original_call = pending.call_handle().unwrap();
+        assert_eq!(pending.prepared().unwrap().header().sequence.get(), 1);
+        let mut substitute = frame.clone();
+        substitute.seq = 1;
+        let error = session.call(&substitute, &stream, &cancel).unwrap_err();
+        assert_eq!(
+            error.downcast_ref::<SessionError>(),
+            Some(&SessionError::Busy)
+        );
+        assert!(session.call(&frame, &stream, &cancel).is_err());
+        let pending = session.pending.as_ref().unwrap();
+        assert_eq!(pending.call_handle(), Some(original_call));
+        assert_eq!(pending.encoded().unwrap(), original_wire);
+        let counters = stream.counters().unwrap();
+        assert_eq!(counters.envelope_bytes_sent, 0);
+        assert_eq!(counters.framing_bytes_sent, 0);
+        assert_eq!(session.calls, 0);
+        broker
+            .with_time::<_, spiralcore_mvm_adapter::service::ServiceError>(|budget, _| {
+                assert_eq!(budget.snapshot()?.active_calls, 1);
+                Ok(())
+            })
+            .unwrap();
+    }
+
+    #[test]
+    fn invoked_send_failure_retains_identity_and_blocks_an_implicit_retransmission() {
+        use std::os::unix::net::UnixStream;
+        let pair = pending_test_pair();
+        let broker = broker_context().unwrap();
+        let mut session = Session::new(&pair.sender, &broker).unwrap();
+        let (socket, _peer) = UnixStream::pair().unwrap();
+        // Intentionally unready transport: its failure is not interpreted as
+        // permission to reseal, allocate another sequence or reset the session.
+        let stream = StreamTransport::new(
+            socket,
+            pair.sender
+                .outgoing
+                .as_ref()
+                .unwrap()
+                .binding
+                .claims
+                .route_id,
+            CALL_TIMEOUT,
+        )
+        .unwrap();
+        let frame = Frame {
+            kind: 6,
+            transfer: [18; 32],
+            seq: 0,
+            body: Vec::new(),
+        };
+        let cancel = CancellationToken::default();
+        assert!(session.call(&frame, &stream, &cancel).is_err());
+        let pending = session.pending.as_ref().unwrap();
+        assert!(pending.send_started());
+        let original = pending.encoded().unwrap().to_vec();
+        let error = session.call(&frame, &stream, &cancel).unwrap_err();
+        assert_eq!(
+            error.downcast_ref::<SessionError>(),
+            Some(&SessionError::SendUncertain)
+        );
+        assert_eq!(
+            session.pending.as_ref().unwrap().encoded().unwrap(),
+            original
+        );
+        assert_eq!(session.calls, 0);
+    }
     #[test]
     fn independent_service_dispatch_progresses_while_application_phase_is_blocked() {
         use std::sync::mpsc;
@@ -493,3 +672,6 @@ mod tests {
         campaign_budget().unwrap();
     }
 }
+
+#[cfg(test)]
+mod pending_tests;

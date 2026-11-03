@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "scope": "C7 retained pending identity and registered-send authority; C8/C9 not yet qualified",
+  "before_source": "cc94f3110e305cf78fd64f56f1f0ede5b1a9d07e; product bytes identical to 7531985",
+  "before_object_binary_sha256": "fd741385ce73485dbe204376e3d5dfe1c90bac66ac0c562982e2609aeb3b525e",
+  "after_source": "Commit and all crate source hashes must be bound before performance execution",
+  "functional_gates": "Focused RED/GREEN were observed before this registration. Original request/Call/Send identity, partial admission, post-send uncertainty, registered generation/request match, zero transmitted bytes on refusal, two authenticated receipts without Reply, original monotonic deadline, expiry and fencing.",
+  "host_cells_registered_before_execution": {
+    "transport": "canonical encrypted TCP loopback, one process with shared BrokerContext",
+    "small_requested_bytes": 1048576,
+    "small_actual_target_bytes": 1047202,
+    "small_arms": ["raw-mixed", "whole-mixed", "combined-cpu"],
+    "small_trials": [0, 1, 2],
+    "large_requested_bytes": 16777216,
+    "large_actual_target_bytes": 14851384,
+    "large_arms": ["whole-mixed", "combined-cpu"],
+    "large_trials": [0],
+    "pairing": "Each arm/trial runs both old and new binaries in fresh processes; trial 0/2 old then new, trial 1 new then old. Fixed exploratory order, not randomized statistical acceptance.",
+    "owned_disk_ceiling_per_cell": 536870912,
+    "rss_ceiling_per_cell": 1073741824,
+    "required": "all exact stopped-store readbacks, all directional counters agree, no codec/wire-format change, include setup publications and lifecycle cleanup",
+    "cpu_guard": "Flag any >10 percent increase in arm median CPU or verified time for profiling; three trials and shared-host load do not establish statistical noninferiority. Retain every loss."
+  },
+  "native_cells_registered_before_execution": {
+    "host": "wick Linux x86_64 / Firecracker",
+    "cells": [
+      {"stage": "one", "arm": "whole-mixed", "requested_bytes": 1048576},
+      {"stage": "two", "arm": "whole-mixed", "requested_bytes": 16777216},
+      {"stage": "two", "arm": "combined-cpu", "requested_bytes": 16777216}
+    ],
+    "trial": 0,
+    "profile": "experimental64; Linux rate enforcement remains absent",
+    "max_simultaneous_guests": 2,
+    "max_total_guest_vcpus": 2,
+    "max_total_guest_ram_bytes": 2147483648,
+    "guest_nic": false,
+    "required": "actual native exchanges plus stopped/keyless exact readback, current C7 source in both endpoints, matching actual counters, joined teardown and no leftover VMM; no loss/reconnect or >2048-Call claim"
+  },
+  "environment": "Wick remains shared with DeepSeek; no CPU isolation claim. Mac retains only source and compact receipts, no VM disks or payload stores.",
+  "deferred": ["both-peer C8 event demultiplexing and cached Reply retry", "autonomous idle maintenance", "full production-retention same-owner session beyond2048 Calls", "installation-wide ownership", "aggregate guest plaintext/cache partitions", "negotiated pipeline", "canonical WAN", "remaining platform/upstream acceptance"]
+}

@@ -1,5 +1,6 @@
 //! Persistent public-fixture transfers through real canonical mailbox streams.
 mod canonical;
+mod session;
 use crate::{
     Result,
     config::{Arm, Bootstrap, Plan, Published, Role},

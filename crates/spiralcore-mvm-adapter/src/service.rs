@@ -1206,6 +1206,10 @@ pub struct MailboxBinding {
     id: u64,
 }
 static NEXT: AtomicU64 = AtomicU64::new(1);
+struct SendExpectation {
+    generation: u64,
+    request_commitment: Option<[u8; 32]>,
+}
 fn fresh_id() -> Result<u64> {
     NEXT.fetch_update(Ordering::Relaxed, Ordering::Relaxed, |value| {
         value.checked_add(1)
@@ -1230,12 +1234,21 @@ impl MailboxBinding {
         cancel: &CancellationToken,
         now: ServiceTime,
     ) -> Result<usize> {
-        self.send_prepared_inner(prepared, Some(generation), transport, cancel, now)
+        self.send_prepared_inner(
+            prepared,
+            Some(SendExpectation {
+                generation,
+                request_commitment: None,
+            }),
+            transport,
+            cancel,
+            now,
+        )
     }
     fn send_prepared_inner(
         &self,
         prepared: &PreparedMailboxEnvelope,
-        expected: Option<u64>,
+        expected: Option<SendExpectation>,
         transport: &impl PeerTransport,
         cancel: &CancellationToken,
         now: ServiceTime,
@@ -1248,9 +1261,18 @@ impl MailboxBinding {
         let verified = self.verify(&encoded, now)?;
         let policy = self.policy.lock().map_err(|_| ServiceError::State)?;
         if policy.generation != verified.generation
-            || expected.is_some_and(|g| g != policy.generation)
+            || expected
+                .as_ref()
+                .is_some_and(|check| check.generation != policy.generation)
         {
             return Err(ServiceError::Unauthorized);
+        }
+        if expected.is_some_and(|check| {
+            check
+                .request_commitment
+                .is_some_and(|commitment| commitment != verified.commitment)
+        }) {
+            return Err(ServiceError::Conflict);
         }
         let context = &verified.context;
         let route = authorize_route(
@@ -2271,6 +2293,60 @@ impl LocalMailboxService {
         );
         Ok(handle)
     }
+    /// Send only the exact registered, pending Call under its original policy
+    /// generation. This immutable phase performs no aggregate accounting/clock
+    /// mutation and runs outside broker dispatch. Its borrow prevents local
+    /// cancellation/shutdown mutation while I/O is in progress. A successful
+    /// write is distinct from authenticated destination admission.
+    pub fn send_call_prepared(
+        &self,
+        binding: &MailboxBinding,
+        call: &CallHandle,
+        prepared: &PreparedMailboxEnvelope,
+        transport: &impl PeerTransport,
+        cancel: &CancellationToken,
+        now: ServiceTime,
+    ) -> Result<usize> {
+        if self.shutting_down {
+            return Err(ServiceError::ShuttingDown);
+        }
+        if now.unix_ms < 0 || self.last.is_some_and(|last| now.monotonic_ms < last.monotonic_ms) {
+            return Err(ServiceError::Clock);
+        }
+        if call.service != self.id || call.binding != binding.id {
+            return Err(ServiceError::Unauthorized);
+        }
+        let pending = self
+            .calls
+            .get(&call.id)
+            .ok_or(ServiceError::UnknownHandle)?;
+        if pending.handle != *call {
+            return Err(ServiceError::Unauthorized);
+        }
+        if now.monotonic_ms >= pending.deadline || now.unix_ms >= pending.header.expires_at_unix_ms
+        {
+            return Err(ServiceError::Expired);
+        }
+        match pending.status {
+            CallStatus::Pending => {}
+            CallStatus::Cancelled => return Err(ServiceError::Cancelled),
+            CallStatus::TimedOut => return Err(ServiceError::Expired),
+            CallStatus::Unavailable => return Err(ServiceError::Unavailable),
+            CallStatus::ShuttingDown => return Err(ServiceError::ShuttingDown),
+            CallStatus::Replied(_) => return Err(ServiceError::Conflict),
+        }
+        binding.send_prepared_inner(
+            prepared,
+            Some(SendExpectation {
+                generation: call.generation,
+                request_commitment: Some(pending.commitment),
+            }),
+            transport,
+            cancel,
+            now,
+        )
+    }
+
     pub fn poll_call(
         &mut self,
         binding: &MailboxBinding,
