@@ -57,8 +57,10 @@ struct Progress {
 }
 
 fn limits() -> (ServiceLimits, ControlReserve) {
-    let mut l = ServiceLimits::default();
-    l.retention_ms = 1000;
+    let mut l = ServiceLimits {
+        retention_ms: 1000,
+        ..ServiceLimits::default()
+    };
     l.host.identities = 65536;
     l.tenant.identities = 32768;
     l.mailbox.identities = 32768;
@@ -403,6 +405,30 @@ fn fd_count() -> Option<usize> {
         None
     }
 }
+/// Keep teardown diagnostics separate from already completed payload checks.
+/// A peer may already have shut down its half by the time local shutdown runs.
+/// Unexpected errors are retained too; neither class erases a measurement row.
+pub fn record_close_result(
+    errors: &mut Vec<Value>,
+    pair: usize,
+    endpoint: &str,
+    result: spiralcore_mvm_adapter::live::LiveResult<()>,
+) {
+    if let Err(error) = result {
+        let (classification, os_error) = match &error {
+            spiralcore_mvm_adapter::live::LiveError::Io(io)
+                if io.kind() == std::io::ErrorKind::NotConnected =>
+            {
+                ("peer_already_disconnected", io.raw_os_error())
+            }
+            spiralcore_mvm_adapter::live::LiveError::Io(io) => {
+                ("unexpected_teardown_error", io.raw_os_error())
+            }
+            _ => ("unexpected_teardown_error", None),
+        };
+        errors.push(json!({"pair":pair,"endpoint":endpoint,"classification":classification,"os_error":os_error,"error":format!("{error:?}")}));
+    }
+}
 /// Run one bounded cell. `duration_ms==0` disables pacing for unit/saturation runs.
 pub fn run_cell(
     endpoints: usize,
@@ -553,7 +579,8 @@ pub fn run_cell(
     let mut reverse = 0;
     let mut frames = 0;
     let mut agreement = true;
-    for pair in &pairs {
+    let mut close_errors = Vec::new();
+    for (index, pair) in pairs.iter().enumerate() {
         let a = pair.caller.stream.counters()?;
         let b = pair.receiver.stream.counters()?;
         forward += a.envelope_bytes_sent + a.framing_bytes_sent;
@@ -563,8 +590,18 @@ pub fn run_cell(
             && b.envelope_bytes_sent == a.envelope_bytes_received
             && a.framing_bytes_sent == b.framing_bytes_received
             && b.framing_bytes_sent == a.framing_bytes_received;
-        pair.caller.stream.close()?;
-        pair.receiver.stream.close()?;
+        record_close_result(
+            &mut close_errors,
+            index,
+            "caller",
+            pair.caller.stream.close(),
+        );
+        record_close_result(
+            &mut close_errors,
+            index,
+            "receiver",
+            pair.receiver.stream.close(),
+        );
     }
     let before_cleanup = budget.snapshot()?;
     let cleanup_start = Instant::now();
@@ -614,6 +651,16 @@ pub fn run_cell(
     row.as_object_mut()
         .unwrap()
         .extend(counters.as_object().unwrap().clone());
+    row["unexpected_teardown_errors"] = json!(
+        close_errors
+            .iter()
+            .filter(|e| e["classification"] == "unexpected_teardown_error")
+            .count()
+    );
+    row["close_errors"] = json!(close_errors);
+    row["teardown_scope"] = json!(
+        "socket shutdown after transfer accounting; close diagnostics do not establish payload loss or erase unexpected cleanup failures"
+    );
     row["kernel_reported_peak_process_rss_bytes"] = json!(rss_bytes());
     row["fd_sampled_at_start"] = json!(fd_start);
     row["fd_sampled_max"] = json!(fd_sampled_peak);

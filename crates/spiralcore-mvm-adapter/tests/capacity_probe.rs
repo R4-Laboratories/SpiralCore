@@ -26,3 +26,35 @@ fn capacity_registration_rejects_unbounded_endpoint_or_work_requests() {
     assert!(probe::run_cell(2, true, 100_001, 0).is_err());
     assert!(probe::run_cell(2, true, 4, 120_001).is_err());
 }
+
+#[test]
+fn teardown_errors_are_retained_without_discarding_transfer_measurements() {
+    use spiralcore_mvm_adapter::live::LiveError;
+    let mut errors = Vec::new();
+    probe::record_close_result(
+        &mut errors,
+        0,
+        "receiver",
+        Err(LiveError::Io(std::io::Error::from(
+            std::io::ErrorKind::NotConnected,
+        ))),
+    );
+    probe::record_close_result(
+        &mut errors,
+        1,
+        "caller",
+        Err(LiveError::Io(std::io::Error::from(
+            std::io::ErrorKind::PermissionDenied,
+        ))),
+    );
+    assert_eq!(errors.len(), 2);
+    assert_eq!(errors[0]["classification"], "peer_already_disconnected");
+    assert_eq!(errors[1]["classification"], "unexpected_teardown_error");
+    assert_eq!(errors[0]["endpoint"], "receiver");
+    assert!(
+        errors[1]["error"]
+            .as_str()
+            .unwrap()
+            .contains("PermissionDenied")
+    );
+}
