@@ -299,6 +299,11 @@ record 22 host cells (11 before/after pairs) and three additional native cells.
   the existing policy lock; invoked send remains uncertain on failure.
 - [x] Receipt-only completion cannot clear pending identity before a Reply;
   actual caller RED/GREEN regression retained.
+- [x] C8 relay prerequisite: [PR #58](https://github.com/R4-Laboratories/SpiralCore/pull/58)
+  replaces fixed four-frame forwarding with two bounded directional pumps,
+  safe half-close and Darwin shutdown recovery. [Six native cells](../network/duplex-relay-results-2026-11-03.md)
+  retain 54 exact publications/readbacks, CPU costs and final seven-client CI.
+  This does not implement endpoint retry or complete C8.
 - [ ] C8 both-peer event handling, cached Reply replay and acknowledgment-state
   retention remain next. Automatic post-send retry is still blocked.
 - [ ] C9/C10 autonomous idle expiry, production-retention cycles and same-owner
