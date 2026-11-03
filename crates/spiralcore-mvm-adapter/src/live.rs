@@ -541,7 +541,10 @@ impl<S: SocketIo + 'static> StreamTransport<S> {
         state.socket.shutdown(Shutdown::Both)?;
         Ok(())
     }
-    fn before(&self, deadline: Instant) -> DeadlineTransport<S> {
+    /// An authorized transport view with one fixed absolute send deadline.
+    /// Connections and their later writes share this cap and the original
+    /// socket/fence/counters; this adds no route or frame authorization.
+    pub fn before(&self, deadline: Instant) -> impl PeerTransport + use<S> {
         DeadlineTransport {
             state: Arc::clone(&self.state),
             route: self.route,
