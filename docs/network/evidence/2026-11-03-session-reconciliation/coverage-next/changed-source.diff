@@ -1,0 +1,661 @@
+diff --git a/crates/spiralcore-mvm-adapter/src/live.rs b/crates/spiralcore-mvm-adapter/src/live.rs
+index 4d6bd1e5..599435fd 100644
+--- a/crates/spiralcore-mvm-adapter/src/live.rs
++++ b/crates/spiralcore-mvm-adapter/src/live.rs
+@@ -544 +544,4 @@ impl<S: SocketIo + 'static> StreamTransport<S> {
+-    fn before(&self, deadline: Instant) -> DeadlineTransport<S> {
++    /// An authorized transport view with one fixed absolute send deadline.
++    /// Connections and their later writes share this cap and the original
++    /// socket/fence/counters; this adds no route or frame authorization.
++    pub fn before(&self, deadline: Instant) -> impl PeerTransport + use<S> {
+diff --git a/crates/spiralcore-mvm-live/src/campaign.rs b/crates/spiralcore-mvm-live/src/campaign.rs
+index dfbc3a4f..5e0e39f4 100644
+--- a/crates/spiralcore-mvm-live/src/campaign.rs
++++ b/crates/spiralcore-mvm-live/src/campaign.rs
+@@ -2,0 +3 @@ mod canonical;
++mod reconciliation;
+@@ -10,0 +12 @@ use mvm_core::mailbox::transport::CancellationToken;
++pub use reconciliation::ReconciliationSignal;
+@@ -136 +138,3 @@ fn difference(after: StreamCounters, before: StreamCounters) -> Result<StreamCou
+-struct Client<S: SocketIo> {
++type ReconciliationController<'a> = &'a mut dyn FnMut(ReconciliationSignal) -> Result<()>;
++
++struct Client<'a, S: SocketIo> {
+@@ -140,0 +145 @@ struct Client<S: SocketIo> {
++    on_call: Option<ReconciliationController<'a>>,
+@@ -142 +147 @@ struct Client<S: SocketIo> {
+-impl<S: SocketIo + 'static> Client<S> {
++impl<S: SocketIo + 'static> Client<'_, S> {
+@@ -146 +151,8 @@ impl<S: SocketIo + 'static> Client<S> {
+-        let result = self.service.call(request, &self.stream, &self.cancel)?;
++        let result = if let Some(on_call) = self.on_call.as_mut() {
++            let (signal, requests) = reconciliation::bounded_requests();
++            on_call(signal)?;
++            self.service
++                .call_with_reconciliation(request, &self.stream, &self.cancel, requests)?
++        } else {
++            self.service.call(request, &self.stream, &self.cancel)?
++        };
+@@ -189,0 +202,25 @@ pub fn sender_with_broker<S: SocketIo + 'static>(
++) -> Result<Value> {
++    sender_with_broker_inner(bootstrap, broker, socket, role, out, None)
++}
++
++/// Opt-in local controller for explicit exact-Call reconciliation. The callback
++/// receives only a signal for this invocation and runs outside broker dispatch.
++/// The embedding owns any controller thread; silence alone never requests retry.
++pub fn sender_with_broker_and_reconciliation<S: SocketIo + 'static>(
++    bootstrap: &Bootstrap,
++    broker: &spiralcore_mvm_adapter::broker::BrokerContext,
++    socket: S,
++    role: HandshakeRole,
++    out: &mut impl Write,
++    on_call: &mut impl FnMut(ReconciliationSignal) -> Result<()>,
++) -> Result<Value> {
++    sender_with_broker_inner(bootstrap, broker, socket, role, out, Some(on_call))
++}
++
++fn sender_with_broker_inner<S: SocketIo + 'static>(
++    bootstrap: &Bootstrap,
++    broker: &spiralcore_mvm_adapter::broker::BrokerContext,
++    socket: S,
++    role: HandshakeRole,
++    out: &mut impl Write,
++    on_call: Option<ReconciliationController<'_>>,
+@@ -212,0 +250 @@ pub fn sender_with_broker<S: SocketIo + 'static>(
++        on_call,
+diff --git a/crates/spiralcore-mvm-live/src/campaign/canonical.rs b/crates/spiralcore-mvm-live/src/campaign/canonical.rs
+index e5f6675d..d7397f0e 100644
+--- a/crates/spiralcore-mvm-live/src/campaign/canonical.rs
++++ b/crates/spiralcore-mvm-live/src/campaign/canonical.rs
+@@ -1,0 +2,3 @@
++use super::reconciliation::{
++    ProcessingPhase, ProcessingTotals, RecoveryCounters, RetryRequests, increment,
++};
+@@ -37,0 +41,3 @@ pub(super) struct Session {
++    recovery: RecoveryCounters,
++    receiver_processing: ProcessingTotals,
++    receiver_phase: Option<ProcessingPhase>,
+@@ -138,0 +145,3 @@ impl Session {
++                recovery: RecoveryCounters::default(),
++                receiver_processing: ProcessingTotals::default(),
++                receiver_phase: None,
+@@ -143 +152,10 @@ impl Session {
+-        json!({"application_calls":self.calls,"normal_envelopes_per_call":2,"encrypted_destination_receipts_per_call":2,"frames_per_call":4,"profile":"canonical-ephemeral-v1","durability":"AcceptedEphemeral; object commit separately verified durable","identity_tier":"broker-owned","witness_tier":"native-16m-v1","identity_limits":self.owner_capacity["identity_limits"],"control_identity_limits":self.owner_capacity["control_identity_limits"],"max_application_calls":MAX_CAMPAIGN_CALLS,"pipeline":1,"ordering":"stable-scope-increasing-sequence","broker_clock":"shared-serialized-dispatch","issuance_policy":{"mode":"bounded","max_clock_ahead_ms":5000,"max_issued_ttl_ms":30000,"max_remaining_ttl_ms":25000}})
++        json!({"session_report":"canonical-session-report/v2","application_calls":self.calls,
++            "normal_envelopes_per_call":2,"normal_encrypted_destination_receipts_per_call":2,
++            "normal_frames_per_call":4,"recovery":&self.recovery,
++            "receiver_processing":&self.receiver_processing,
++            "receiver_processing_domain":"post-frame process CPU and wall; includes unfinished work; excludes receive waits; co-located CPU intervals overlap",
++            "profile":"canonical-ephemeral-v1","durability":"AcceptedEphemeral; object commit separately verified durable",
++            "identity_tier":"broker-owned","witness_tier":"native-16m-v1",
++            "identity_limits":self.owner_capacity["identity_limits"],"control_identity_limits":self.owner_capacity["control_identity_limits"],
++            "max_application_calls":MAX_CAMPAIGN_CALLS,"pipeline":1,"ordering":"stable-scope-increasing-sequence",
++            "broker_clock":"shared-serialized-dispatch","issuance_policy":{"mode":"bounded","max_clock_ahead_ms":5000,"max_issued_ttl_ms":30000,"max_remaining_ttl_ms":25000}})
+@@ -149,0 +168,20 @@ impl Session {
++    ) -> Result<(Context, Frame)> {
++        self.call_inner(request, stream, cancel, None)
++    }
++
++    pub(super) fn call_with_reconciliation<S: SocketIo + 'static>(
++        &mut self,
++        request: &Frame,
++        stream: &StreamTransport<S>,
++        cancel: &CancellationToken,
++        retry_requests: RetryRequests,
++    ) -> Result<(Context, Frame)> {
++        self.call_inner(request, stream, cancel, Some(retry_requests))
++    }
++
++    fn call_inner<S: SocketIo + 'static>(
++        &mut self,
++        request: &Frame,
++        stream: &StreamTransport<S>,
++        cancel: &CancellationToken,
++        retry_requests: Option<RetryRequests>,
+@@ -225 +263 @@ impl Session {
+-            stream,
++            &stream.before(deadline),
+@@ -237 +275,75 @@ impl Session {
+-            let bytes = stream.receive(cancel, deadline)?;
++            let bytes = if let Some(requests) = &retry_requests {
++                match stream.receive_or_idle(cancel, deadline, Duration::from_millis(250))? {
++                    spiralcore_mvm_adapter::live::ReceiveOutcome::Frame(bytes) => bytes,
++                    spiralcore_mvm_adapter::live::ReceiveOutcome::Idle => {
++                        increment(&mut self.recovery.idle_outcomes)?;
++                        let retry_time = broker.with_time(|_, now| -> Result<_> {
++                            let pending =
++                                self.pending.as_ref().ok_or(SessionError::StreamFenced)?;
++                            if let Err(error) = pending.remaining(now) {
++                                self.service.expire(now)?;
++                                self.tracker.expire(now)?;
++                                return Err(error.into());
++                            }
++                            if Instant::now() >= deadline {
++                                return Err(SessionError::Service(ServiceError::Expired).into());
++                            }
++                            if pending.ready_to_complete() {
++                                reply = self.poll_ready_reply(call, now)?;
++                                return Ok(None);
++                            }
++                            if !requests.take_request() {
++                                return Ok(None);
++                            }
++                            increment(&mut self.recovery.commands_consumed)?;
++                            let pending =
++                                self.pending.as_mut().ok_or(SessionError::StreamFenced)?;
++                            pending.prepare_retry(
++                                &mut self.service,
++                                &mut self.tracker,
++                                &self.outgoing,
++                                &self.control,
++                                &self.peer_key,
++                                now,
++                            )?;
++                            Ok(Some(now))
++                        })?;
++                        if reply.is_some() {
++                            break;
++                        }
++                        if retry_time.is_some() {
++                            // Expiry maintenance/registration can consume time;
++                            // sample again before burning the transport attempt.
++                            let now = broker.with_time(|_, now| -> Result<_> {
++                                self.pending
++                                    .as_ref()
++                                    .ok_or(SessionError::StreamFenced)?
++                                    .remaining(now)?;
++                                if Instant::now() >= deadline {
++                                    return Err(SessionError::Service(ServiceError::Expired).into());
++                                }
++                                Ok(now)
++                            })?;
++                            self.pending
++                                .as_mut()
++                                .ok_or(SessionError::StreamFenced)?
++                                .start_retry()?;
++                            increment(&mut self.recovery.call_retry_invocations)?;
++                            self.service.retry_call_prepared(
++                                &self.outgoing,
++                                &call,
++                                self.pending
++                                    .as_ref()
++                                    .ok_or(SessionError::StreamFenced)?
++                                    .prepared()?,
++                                &stream.before(deadline),
++                                cancel,
++                                now,
++                            )?;
++                        }
++                        continue;
++                    }
++                }
++            } else {
++                stream.receive(cancel, deadline)?
++            };
+@@ -308 +420 @@ impl Session {
+-                permit.send(stream, cancel, now)?;
++                permit.send(&stream.before(deadline), cancel, now)?;
+@@ -324,25 +436 @@ impl Session {
+-                reply = broker.with_time(|_, now| -> Result<_> {
+-                    self.pending
+-                        .as_ref()
+-                        .ok_or(SessionError::StreamFenced)?
+-                        .remaining(now)?;
+-                    match self.service.poll_call(&self.outgoing, &call, now)? {
+-                        CallStatus::Pending => Ok(None),
+-                        CallStatus::Replied(Some(payload)) => Ok(Some(Frame::decode(&payload)?)),
+-                        CallStatus::Replied(None) => {
+-                            Err(SessionError::Service(ServiceError::State).into())
+-                        }
+-                        CallStatus::TimedOut => {
+-                            Err(SessionError::Service(ServiceError::Expired).into())
+-                        }
+-                        CallStatus::Cancelled => {
+-                            Err(SessionError::Service(ServiceError::Cancelled).into())
+-                        }
+-                        CallStatus::Unavailable => {
+-                            Err(SessionError::Service(ServiceError::Unavailable).into())
+-                        }
+-                        CallStatus::ShuttingDown => {
+-                            Err(SessionError::Service(ServiceError::ShuttingDown).into())
+-                        }
+-                    }
+-                })?;
++                reply = broker.with_time(|_, now| self.poll_ready_reply(call, now))?;
+@@ -358,0 +447,21 @@ impl Session {
++    fn poll_ready_reply(
++        &mut self,
++        call: spiralcore_mvm_adapter::service::CallHandle,
++        now: ServiceTime,
++    ) -> Result<Option<Frame>> {
++        self.pending
++            .as_ref()
++            .ok_or(SessionError::StreamFenced)?
++            .remaining(now)?;
++        match self.service.poll_call(&self.outgoing, &call, now)? {
++            CallStatus::Pending => Ok(None),
++            CallStatus::Replied(Some(payload)) => Ok(Some(Frame::decode(&payload)?)),
++            CallStatus::Replied(None) => Err(SessionError::Service(ServiceError::State).into()),
++            CallStatus::TimedOut => Err(SessionError::Service(ServiceError::Expired).into()),
++            CallStatus::Cancelled => Err(SessionError::Service(ServiceError::Cancelled).into()),
++            CallStatus::Unavailable => Err(SessionError::Service(ServiceError::Unavailable).into()),
++            CallStatus::ShuttingDown => {
++                Err(SessionError::Service(ServiceError::ShuttingDown).into())
++            }
++        }
++    }
+@@ -364,0 +474,18 @@ impl Session {
++    ) -> Result<Handled> {
++        let result = self.handle_inner(expected, object, stream, cancel);
++        if let Err(error) = self.receiver_processing.finish(&mut self.receiver_phase) {
++            self.receiver_incomplete = true;
++            return Err(error);
++        }
++        if result.is_err() {
++            increment(&mut self.recovery.receiver_failed_invocations)?;
++        }
++        result
++    }
++
++    fn handle_inner<S: SocketIo + 'static>(
++        &mut self,
++        expected: Id,
++        object: &mut ObjectMailbox,
++        stream: &StreamTransport<S>,
++        cancel: &CancellationToken,
+@@ -376,3 +502,0 @@ impl Session {
+-        let bytes = stream.receive(cancel, deadline)?;
+-        let cpu = ProcessTime::now();
+-        let wall = Instant::now();
+@@ -380,3 +504,77 @@ impl Session {
+-        let (receipt, proof, deadline) = broker.with_time(|_, now| -> Result<_> {
+-            if decode_envelope(&bytes)?.encryption.key_id != self.normal_key {
+-                return Err("expected provisioned Call key".into());
++        let mut events = 0_u8;
++        let mut meter = Meter::default();
++        let (receipt, proof, deadline) = loop {
++            if events >= 16 {
++                return Err(SessionError::EventLimit.into());
++            }
++            let bytes = stream.receive(cancel, deadline)?;
++            events += 1;
++            self.receiver_phase = Some((ProcessTime::now(), Instant::now()));
++            let (receipt, proof, admitted_deadline) = broker.with_time(|_, now| -> Result<_> {
++                if Instant::now() >= deadline {
++                    return Err(ServiceError::Expired.into());
++                }
++                let envelope = decode_envelope(&bytes)?;
++                if envelope.encryption.key_id == self.control_key {
++                    self.tracker.observe_receipt(&self.control, &bytes, now)?;
++                    increment(&mut self.recovery.historical_control_events)?;
++                    return Ok((None, None, None));
++                }
++                if envelope.encryption.key_id != self.normal_key {
++                    return Err("expected provisioned Call key".into());
++                }
++                // At the event ceiling, only an authenticated historical Call
++                // may proceed: a fresh admission would have no room for its ACK.
++                if events == 16 {
++                    match self
++                        .service
++                        .retry_reply_prepared(&self.incoming, &bytes, now)
++                    {
++                        Ok(None) => {}
++                        Ok(Some(_)) => return Err(ServiceError::State.into()),
++                        Err(ServiceError::UnknownHandle) => {
++                            return Err(SessionError::EventLimit.into());
++                        }
++                        Err(error) => return Err(error.into()),
++                    }
++                }
++                // Inactive preamble: ordinary fresh admission verifies once.
++                // The active ACK-wait loop below still prechecks cached identity.
++                let (accepted, receipt) =
++                    self.returns
++                        .admit(&mut self.service, &self.incoming, &bytes, now)?;
++                match accepted.receipt.outcome {
++                    DeliveryOutcome::AcceptedEphemeral => {
++                        if events == 16 {
++                            return Err(SessionError::EventLimit.into());
++                        }
++                        let proof = self
++                            .service
++                            .receive(&self.incoming, now)?
++                            .ok_or("missing admitted Call")?;
++                        let cap = ExchangeDeadline::new(
++                            deadline,
++                            proof.header().expires_at_unix_ms,
++                            now,
++                        )?;
++                        Ok((Some(receipt), Some(proof), Some(cap)))
++                    }
++                    DeliveryOutcome::Duplicate => {
++                        // Canonical admission authenticated inner/outer expiry
++                        // equality. The original-owner lookup below is separate.
++                        let cap = ExchangeDeadline::new(
++                            deadline,
++                            envelope.routing.expires_at_unix_ms,
++                            now,
++                        )?;
++                        Ok((Some(receipt), None, Some(cap)))
++                    }
++                    _ => Err("Call admission refused".into()),
++                }
++            })?;
++            if let Some(proof) = proof {
++                break (
++                    receipt.ok_or(ServiceError::State)?,
++                    proof,
++                    admitted_deadline.ok_or(ServiceError::State)?,
++                );
+@@ -384,5 +582,27 @@ impl Session {
+-            let (accepted, receipt) =
+-                self.returns
+-                    .admit(&mut self.service, &self.incoming, &bytes, now)?;
+-            if accepted.receipt.outcome != DeliveryOutcome::AcceptedEphemeral {
+-                return Err("Call admission refused".into());
++            if let Some(receipt) = receipt {
++                let cap = admitted_deadline.ok_or(ServiceError::State)?;
++                let (permit, _) = broker.with_time(|_, now| -> Result<_> {
++                    cap.check(now)?;
++                    if self
++                        .service
++                        .retry_reply_prepared(&self.incoming, &bytes, now)?
++                        .is_some()
++                    {
++                        return Err(ServiceError::State.into());
++                    }
++                    Ok((receipt.reserve_send(cancel, now)?, now))
++                })?;
++                let now = broker.with_time(|_, now| -> Result<_> {
++                    cap.check(now)?;
++                    if self
++                        .service
++                        .retry_reply_prepared(&self.incoming, &bytes, now)?
++                        .is_some()
++                    {
++                        return Err(ServiceError::State.into());
++                    }
++                    Ok(now)
++                })?;
++                increment(&mut self.recovery.historical_receipt_invocations)?;
++                permit.send(&stream.before(cap.instant()), cancel, now)?;
++                increment(&mut self.recovery.historical_receipts_sent)?;
+@@ -390,7 +610,3 @@ impl Session {
+-            let proof = self
+-                .service
+-                .receive(&self.incoming, now)?
+-                .ok_or("missing admitted Call")?;
+-            let deadline = ExchangeDeadline::new(deadline, proof.header().expires_at_unix_ms, now)?;
+-            Ok((receipt, proof, deadline))
+-        })?;
++            let processed = self.receiver_processing.finish(&mut self.receiver_phase)?;
++            meter.add(processed.cpu_us, processed.wall_us)?;
++        };
+@@ -401 +617 @@ impl Session {
+-        permit.send(stream, cancel, now)?;
++        permit.send(&stream.before(deadline.instant()), cancel, now)?;
+@@ -439,2 +655,7 @@ impl Session {
+-        self.outgoing
+-            .send_prepared(&prepared, stream, cancel, sent_at)?;
++        increment(&mut self.recovery.reply_send_invocations)?;
++        self.outgoing.send_prepared(
++            &prepared,
++            &stream.before(deadline.instant()),
++            cancel,
++            sent_at,
++        )?;
+@@ -442,4 +663,2 @@ impl Session {
+-        let mut meter = Meter {
+-            cpu_us: cpu.elapsed().as_micros(),
+-            wall_us: wall.elapsed().as_micros(),
+-        };
++        let processed = self.receiver_processing.finish(&mut self.receiver_phase)?;
++        meter.add(processed.cpu_us, processed.wall_us)?;
+@@ -447,2 +666,2 @@ impl Session {
+-        // The initial admitted Call is the first event of this exchange.
+-        for _ in 1..16 {
++        // Preamble and initial Call share this invocation's cumulative bound.
++        for _ in events..16 {
+@@ -450,2 +669 @@ impl Session {
+-            let cpu = ProcessTime::now();
+-            let wall = Instant::now();
++            self.receiver_phase = Some((ProcessTime::now(), Instant::now()));
+@@ -508,7 +726,3 @@ impl Session {
+-                let (permit, now) = broker.with_time(|_, now| -> Result<_> {
+-                    deadline.check(now)?;
+-                    Ok((receipt.reserve_send(cancel, now)?, now))
+-                })?;
+-                permit.send(stream, cancel, now)?;
+-                // Receipt I/O may wait: recheck both canonical bindings and
+-                // original lifetime before invoking the cached Reply send.
++                // Replay the Reply before the closing Call receipt. A caller
++                // with an earlier Reply/ACK must ACK this replay before that
++                // receipt can complete its still-missing admission observation.
+@@ -536 +750,31 @@ impl Session {
+-                self.outgoing.send_prepared(&cached, stream, cancel, now)?;
++                increment(&mut self.recovery.cached_reply_retry_invocations)?;
++                increment(&mut self.recovery.reply_send_invocations)?;
++                self.outgoing.send_prepared(
++                    &cached,
++                    &stream.before(deadline.instant()),
++                    cancel,
++                    now,
++                )?;
++                // The write may wait: revalidate original ownership, both
++                // bindings, exact cache and tracker before the closing receipt.
++                let (permit, now) = broker.with_time(|_, now| -> Result<_> {
++                    deadline.check(now)?;
++                    let cached = self
++                        .service
++                        .retry_reply_prepared(&self.incoming, &event, now)?
++                        .ok_or(ServiceError::State)?;
++                    let wire = encode_envelope(cached.envelope())?;
++                    if wire != encoded
++                        || self.tracker.register_send(
++                            &self.outgoing,
++                            &self.control,
++                            &self.peer_key,
++                            &wire,
++                            now,
++                        )? != send
++                    {
++                        return Err(ServiceError::Conflict.into());
++                    }
++                    Ok((receipt.reserve_send(cancel, now)?, now))
++                })?;
++                permit.send(&stream.before(deadline.instant()), cancel, now)?;
+@@ -538 +782,2 @@ impl Session {
+-            meter.add(cpu.elapsed().as_micros(), wall.elapsed().as_micros())?;
++            let processed = self.receiver_processing.finish(&mut self.receiver_phase)?;
++            meter.add(processed.cpu_us, processed.wall_us)?;
+@@ -853,0 +1099,9 @@ mod receiver_tests;
++
++#[cfg(test)]
++mod reconciliation_tests;
++
++#[cfg(test)]
++mod write_deadline_tests;
++
++#[cfg(test)]
++mod reconciliation_limits_tests;
+diff --git a/crates/spiralcore-mvm-live/src/campaign/reconciliation.rs b/crates/spiralcore-mvm-live/src/campaign/reconciliation.rs
+new file mode 100644
+index 00000000..4c5c18c4
+--- /dev/null
++++ b/crates/spiralcore-mvm-live/src/campaign/reconciliation.rs
+@@ -0,0 +1,114 @@
++use std::sync::mpsc::{Receiver, SyncSender, TrySendError, sync_channel};
++
++/// An explicit request to reconcile one current Call, never another identity.
++/// Full coalesces requests; Disconnected means that invocation has ended.
++pub struct ReconciliationSignal {
++    sender: SyncSender<()>,
++}
++impl ReconciliationSignal {
++    pub fn request_retry(&self) -> Result<(), TrySendError<()>> {
++        self.sender.try_send(())
++    }
++}
++
++pub(super) struct RetryRequests {
++    receiver: Receiver<()>,
++}
++impl RetryRequests {
++    pub(super) fn take_request(&self) -> bool {
++        self.receiver.try_recv().is_ok()
++    }
++}
++
++pub(super) fn bounded_requests() -> (ReconciliationSignal, RetryRequests) {
++    let (sender, receiver) = sync_channel(1);
++    (ReconciliationSignal { sender }, RetryRequests { receiver })
++}
++
++#[derive(Default, serde::Serialize)]
++pub(super) struct RecoveryCounters {
++    pub(super) idle_outcomes: u64,
++    pub(super) commands_consumed: u64,
++    pub(super) call_retry_invocations: u64,
++    pub(super) historical_control_events: u64,
++    pub(super) historical_receipt_invocations: u64,
++    pub(super) historical_receipts_sent: u64,
++    pub(super) cached_reply_retry_invocations: u64,
++    pub(super) reply_send_invocations: u64,
++    pub(super) receiver_failed_invocations: u64,
++}
++
++pub(super) fn increment(counter: &mut u64) -> crate::Result<()> {
++    *counter = counter.checked_add(1).ok_or("recovery counter overflow")?;
++    Ok(())
++}
++
++pub(super) type ProcessingPhase = (cpu_time::ProcessTime, std::time::Instant);
++
++#[derive(Default, serde::Serialize)]
++pub(super) struct ProcessingTotals {
++    cpu_us: u64,
++    wall_us: u64,
++    segments: u64,
++}
++impl ProcessingTotals {
++    pub(super) fn finish(
++        &mut self,
++        phase: &mut Option<ProcessingPhase>,
++    ) -> crate::Result<super::Meter> {
++        let Some((cpu, wall)) = phase.take() else {
++            return Ok(super::Meter::default());
++        };
++        let cpu = u64::try_from(cpu.elapsed().as_micros())?;
++        let wall = u64::try_from(wall.elapsed().as_micros())?;
++        let total_cpu = self.cpu_us.checked_add(cpu).ok_or("CPU counter overflow")?;
++        let total_wall = self
++            .wall_us
++            .checked_add(wall)
++            .ok_or("wall counter overflow")?;
++        let segments = self
++            .segments
++            .checked_add(1)
++            .ok_or("segment counter overflow")?;
++        self.cpu_us = total_cpu;
++        self.wall_us = total_wall;
++        self.segments = segments;
++        Ok(super::Meter {
++            cpu_us: cpu.into(),
++            wall_us: wall.into(),
++        })
++    }
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++    use std::sync::mpsc::TrySendError;
++
++    #[test]
++    fn retry_commands_have_one_slot_and_drop_disconnects_the_current_signal() {
++        let (signal, requests) = bounded_requests();
++        assert!(!requests.take_request());
++        assert_eq!(signal.request_retry(), Ok(()));
++        assert_eq!(signal.request_retry(), Err(TrySendError::Full(())));
++        assert!(requests.take_request());
++        assert!(!requests.take_request());
++        assert_eq!(signal.request_retry(), Ok(()));
++        drop(requests);
++        assert_eq!(signal.request_retry(), Err(TrySendError::Disconnected(())));
++    }
++
++    #[test]
++    fn stale_signal_cannot_enqueue_on_the_next_calls_channel() {
++        let (old, old_requests) = bounded_requests();
++        assert_eq!(old.request_retry(), Ok(()));
++        drop(old_requests);
++        let (current, requests) = bounded_requests();
++        assert_eq!(old.request_retry(), Err(TrySendError::Disconnected(())));
++        assert!(!requests.take_request());
++        assert_eq!(current.request_retry(), Ok(()));
++        assert!(requests.take_request());
++        drop(current);
++        assert!(!requests.take_request());
++    }
++}
+diff --git a/crates/spiralcore-mvm-live/src/campaign/session.rs b/crates/spiralcore-mvm-live/src/campaign/session.rs
+index 9e45c68c..a68e4ee9 100644
+--- a/crates/spiralcore-mvm-live/src/campaign/session.rs
++++ b/crates/spiralcore-mvm-live/src/campaign/session.rs
+@@ -104,0 +105 @@ pub(super) struct PendingCall {
++    send_invocations: u8,
+@@ -128,0 +130 @@ impl PendingCall {
++            send_invocations: 0,
+@@ -244,0 +247,3 @@ impl PendingCall {
++    pub(super) fn send_invocations(&self) -> u8 {
++        self.send_invocations
++    }
+@@ -358,0 +364,46 @@ impl PendingCall {
++        self.send_invocations = 1;
++        Ok(())
++    }
++
++    fn check_retry(&self) -> Result<()> {
++        if self.fenced {
++            return Err(SessionError::StreamFenced);
++        }
++        if !self.send_started || self.call.is_none() || self.send.is_none() {
++            return Err(ServiceError::State.into());
++        }
++        if self.send_invocations() >= 8 {
++            return Err(SessionError::SendLimit);
++        }
++        Ok(())
++    }
++
++    /// Revalidate the retained attempt without polling away its charged Reply.
++    /// The caller separately decides whether current facts require a resend.
++    pub(super) fn prepare_retry(
++        &mut self,
++        service: &mut LocalMailboxService,
++        tracker: &mut ReceiptTracker,
++        outgoing: &MailboxBinding,
++        control: &MailboxBinding,
++        peer: &VerifyingKey,
++        now: ServiceTime,
++    ) -> Result<()> {
++        service.expire(now)?;
++        tracker.expire(now)?;
++        self.check_retry()?;
++        self.remaining(now)?;
++        let observed = tracker.register_send(outgoing, control, peer, self.encoded()?, now)?;
++        if Some(observed) != self.send {
++            return Err(ServiceError::Conflict.into());
++        }
++        Ok(())
++    }
++
++    /// Burn an invocation before entering transport, including failed writes.
++    pub(super) fn start_retry(&mut self) -> Result<()> {
++        self.check_retry()?;
++        self.send_invocations = self
++            .send_invocations
++            .checked_add(1)
++            .ok_or(SessionError::SendLimit)?;

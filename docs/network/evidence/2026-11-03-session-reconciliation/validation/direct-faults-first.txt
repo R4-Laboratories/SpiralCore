@@ -1,0 +1,24 @@
+   Compiling spiralcore-mvm-live v0.1.0 (/var/tmp/spiralcore-reconciliation-20261103/source/crates/spiralcore-mvm-live)
+    Finished `release` profile [optimized] target(s) in 8.55s
+     Running unittests src/lib.rs (/var/tmp/spiralcore-mvm-service-20261102/target/release/deps/spiralcore_mvm_live-22ef123d4e03fddd)
+
+running 3 tests
+test campaign::canonical::reconciliation_tests::explicit_retry_recovers_missing_reply_direct ... ok
+test campaign::canonical::reconciliation_tests::explicit_retry_after_receiver_acked_reply_recovers_only_missing_call_receipt ... ok
+test campaign::canonical::reconciliation_tests::explicit_retry_recovers_missing_call_receipt_and_reply_ack_direct ... FAILED
+
+failures:
+
+---- campaign::canonical::reconciliation_tests::explicit_retry_recovers_missing_call_receipt_and_reply_ack_direct stdout ----
+
+thread 'campaign::canonical::reconciliation_tests::explicit_retry_recovers_missing_call_receipt_and_reply_ack_direct' (845965) panicked at src/campaign/canonical/reconciliation_tests.rs:249:5:
+both peers must complete/cache release: caller=ok, receiver=Io(Kind(UnexpectedEof)), cache_empty=false
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    campaign::canonical::reconciliation_tests::explicit_retry_recovers_missing_call_receipt_and_reply_ack_direct
+
+test result: FAILED. 2 passed; 1 failed; 0 ignored; 0 measured; 61 filtered out; finished in 5.02s
+
+error: test failed, to rerun pass `--lib`

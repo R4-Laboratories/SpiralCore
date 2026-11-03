@@ -1,0 +1,63 @@
+   Compiling spiralcore-mvm-live v0.1.0 (/var/tmp/spiralcore-reconciliation-20261103/source/crates/spiralcore-mvm-live)
+warning: struct `RecoveryCounters` is never constructed
+  --> src/campaign/reconciliation.rs:29:19
+   |
+29 | pub(super) struct RecoveryCounters {
+   |                   ^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: function `increment` is never used
+  --> src/campaign/reconciliation.rs:41:15
+   |
+41 | pub(super) fn increment(counter: &mut u64) -> crate::Result<()> {
+   |               ^^^^^^^^^
+
+warning: type alias `ProcessingPhase` is never used
+  --> src/campaign/reconciliation.rs:46:17
+   |
+46 | pub(super) type ProcessingPhase = (cpu_time::ProcessTime, std::time::Instant);
+   |                 ^^^^^^^^^^^^^^^
+
+warning: struct `ProcessingTotals` is never constructed
+  --> src/campaign/reconciliation.rs:49:19
+   |
+49 | pub(super) struct ProcessingTotals {
+   |                   ^^^^^^^^^^^^^^^^
+
+warning: method `finish` is never used
+  --> src/campaign/reconciliation.rs:55:19
+   |
+54 | impl ProcessingTotals {
+   | --------------------- method in this implementation
+55 |     pub(super) fn finish(
+   |                   ^^^^^^
+
+warning: function `relay_for_test` is never used
+   --> src/orchestrator.rs:299:15
+    |
+299 | pub(crate) fn relay_for_test(
+    |               ^^^^^^^^^^^^^^
+
+warning: `spiralcore-mvm-live` (lib test) generated 6 warnings
+    Finished `release` profile [optimized] target(s) in 11.52s
+     Running unittests src/lib.rs (/var/tmp/spiralcore-mvm-service-20261102/target/release/deps/spiralcore_mvm_live-22ef123d4e03fddd)
+
+running 1 test
+test campaign::canonical::write_deadline_tests::late_explicit_call_retry_partial_write_keeps_original_signed_deadline_and_identity ... FAILED
+
+failures:
+
+---- campaign::canonical::write_deadline_tests::late_explicit_call_retry_partial_write_keeps_original_signed_deadline_and_identity stdout ----
+
+thread 'campaign::canonical::write_deadline_tests::late_explicit_call_retry_partial_write_keeps_original_signed_deadline_and_identity' (851583) panicked at src/campaign/canonical/write_deadline_tests.rs:317:5:
+retry write exceeded original 900ms lifetime: Some("Cancelled"); partial bytes=4666, stalls=15
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    campaign::canonical::write_deadline_tests::late_explicit_call_retry_partial_write_keeps_original_signed_deadline_and_identity
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 61 filtered out; finished in 1.51s
+
+error: test failed, to rerun pass `--lib`

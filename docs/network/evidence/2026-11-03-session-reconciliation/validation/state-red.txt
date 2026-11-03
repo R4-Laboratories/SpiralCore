@@ -1,0 +1,186 @@
+   Compiling spiralcore-mvm-live v0.1.0 (/var/tmp/spiralcore-reconciliation-20261103/source/crates/spiralcore-mvm-live)
+error[E0599]: no method named `send_invocations` found for struct `campaign::session::PendingCall` in the current scope
+  --> src/campaign/session/tests.rs:70:21
+   |
+70 |     assert_eq!(call.send_invocations(), 0);
+   |                     ^^^^^^^^^^^^^^^^ method not found in `campaign::session::PendingCall`
+   |
+  ::: src/campaign/session.rs:97:1
+   |
+97 | pub(super) struct PendingCall {
+   | ----------------------------- method `send_invocations` not found for this struct
+
+error[E0599]: no method named `send_invocations` found for struct `campaign::session::PendingCall` in the current scope
+  --> src/campaign/session/tests.rs:74:21
+   |
+74 |     assert_eq!(call.send_invocations(), 1);
+   |                     ^^^^^^^^^^^^^^^^ method not found in `campaign::session::PendingCall`
+   |
+  ::: src/campaign/session.rs:97:1
+   |
+97 | pub(super) struct PendingCall {
+   | ----------------------------- method `send_invocations` not found for this struct
+
+error[E0599]: no method named `prepare_retry` found for struct `campaign::session::PendingCall` in the current scope
+   --> src/campaign/session/tests.rs:146:14
+    |
+146 |         call.prepare_retry(&mut service, &mut tracker, &outgoing, &control, &peer, now)
+    |              ^^^^^^^^^^^^^
+    |
+   ::: src/campaign/session.rs:97:1
+    |
+ 97 | pub(super) struct PendingCall {
+    | ----------------------------- method `prepare_retry` not found for this struct
+    |
+help: there is a method `prepared` with a similar name, but with different arguments
+   --> src/campaign/session.rs:249:5
+    |
+249 |     pub(super) fn prepared(&self) -> Result<&PreparedMailboxEnvelope> {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0599]: no method named `send_invocations` found for struct `campaign::session::PendingCall` in the current scope
+   --> src/campaign/session/tests.rs:148:25
+    |
+148 |         assert_eq!(call.send_invocations(), invocation - 1);
+    |                         ^^^^^^^^^^^^^^^^ method not found in `campaign::session::PendingCall`
+    |
+   ::: src/campaign/session.rs:97:1
+    |
+ 97 | pub(super) struct PendingCall {
+    | ----------------------------- method `send_invocations` not found for this struct
+
+error[E0599]: no method named `start_retry` found for struct `campaign::session::PendingCall` in the current scope
+   --> src/campaign/session/tests.rs:168:14
+    |
+168 |         call.start_retry().unwrap();
+    |              ^^^^^^^^^^^ method not found in `campaign::session::PendingCall`
+    |
+   ::: src/campaign/session.rs:97:1
+    |
+ 97 | pub(super) struct PendingCall {
+    | ----------------------------- method `start_retry` not found for this struct
+
+error[E0599]: no method named `send_invocations` found for struct `campaign::session::PendingCall` in the current scope
+   --> src/campaign/session/tests.rs:169:25
+    |
+169 |         assert_eq!(call.send_invocations(), invocation);
+    |                         ^^^^^^^^^^^^^^^^ method not found in `campaign::session::PendingCall`
+    |
+   ::: src/campaign/session.rs:97:1
+    |
+ 97 | pub(super) struct PendingCall {
+    | ----------------------------- method `send_invocations` not found for this struct
+
+error[E0599]: no method named `start_retry` found for struct `campaign::session::PendingCall` in the current scope
+   --> src/campaign/session/tests.rs:175:21
+    |
+175 |     assert_eq!(call.start_retry(), Err(SessionError::SendLimit));
+    |                     ^^^^^^^^^^^ method not found in `campaign::session::PendingCall`
+    |
+   ::: src/campaign/session.rs:97:1
+    |
+ 97 | pub(super) struct PendingCall {
+    | ----------------------------- method `start_retry` not found for this struct
+
+error[E0599]: no method named `prepare_retry` found for struct `campaign::session::PendingCall` in the current scope
+   --> src/campaign/session/tests.rs:177:14
+    |
+177 |         call.prepare_retry(&mut service, &mut tracker, &outgoing, &control, &peer, now),
+    |              ^^^^^^^^^^^^^
+    |
+   ::: src/campaign/session.rs:97:1
+    |
+ 97 | pub(super) struct PendingCall {
+    | ----------------------------- method `prepare_retry` not found for this struct
+    |
+help: there is a method `prepared` with a similar name, but with different arguments
+   --> src/campaign/session.rs:249:5
+    |
+249 |     pub(super) fn prepared(&self) -> Result<&PreparedMailboxEnvelope> {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0599]: no method named `send_invocations` found for struct `campaign::session::PendingCall` in the current scope
+   --> src/campaign/session/tests.rs:180:21
+    |
+180 |     assert_eq!(call.send_invocations(), 8);
+    |                     ^^^^^^^^^^^^^^^^ method not found in `campaign::session::PendingCall`
+    |
+   ::: src/campaign/session.rs:97:1
+    |
+ 97 | pub(super) struct PendingCall {
+    | ----------------------------- method `send_invocations` not found for this struct
+
+error[E0599]: no method named `start_retry` found for struct `campaign::session::PendingCall` in the current scope
+   --> src/campaign/session/tests.rs:216:22
+    |
+216 |                 call.start_retry(),
+    |                      ^^^^^^^^^^^ method not found in `campaign::session::PendingCall`
+    |
+   ::: src/campaign/session.rs:97:1
+    |
+ 97 | pub(super) struct PendingCall {
+    | ----------------------------- method `start_retry` not found for this struct
+
+error[E0599]: no method named `start_retry` found for struct `campaign::session::PendingCall` in the current scope
+   --> src/campaign/session/tests.rs:226:30
+    |
+226 |                         call.start_retry(),
+    |                              ^^^^^^^^^^^ method not found in `campaign::session::PendingCall`
+    |
+   ::: src/campaign/session.rs:97:1
+    |
+ 97 | pub(super) struct PendingCall {
+    | ----------------------------- method `start_retry` not found for this struct
+
+error[E0599]: no method named `start_retry` found for struct `campaign::session::PendingCall` in the current scope
+   --> src/campaign/session/tests.rs:239:37
+    |
+239 |                     assert_eq!(call.start_retry(), Err(SessionError::StreamFenced));
+    |                                     ^^^^^^^^^^^ method not found in `campaign::session::PendingCall`
+    |
+   ::: src/campaign/session.rs:97:1
+    |
+ 97 | pub(super) struct PendingCall {
+    | ----------------------------- method `start_retry` not found for this struct
+
+error[E0599]: no method named `send_invocations` found for struct `campaign::session::PendingCall` in the current scope
+   --> src/campaign/session/tests.rs:259:26
+    |
+259 |         let sends = call.send_invocations();
+    |                          ^^^^^^^^^^^^^^^^ method not found in `campaign::session::PendingCall`
+    |
+   ::: src/campaign/session.rs:97:1
+    |
+ 97 | pub(super) struct PendingCall {
+    | ----------------------------- method `send_invocations` not found for this struct
+
+error[E0599]: no method named `prepare_retry` found for struct `campaign::session::PendingCall` in the current scope
+   --> src/campaign/session/tests.rs:261:18
+    |
+261 |             call.prepare_retry(&mut service, &mut tracker, &outgoing, &control, &peer, when),
+    |                  ^^^^^^^^^^^^^
+    |
+   ::: src/campaign/session.rs:97:1
+    |
+ 97 | pub(super) struct PendingCall {
+    | ----------------------------- method `prepare_retry` not found for this struct
+    |
+help: there is a method `prepared` with a similar name, but with different arguments
+   --> src/campaign/session.rs:249:5
+    |
+249 |     pub(super) fn prepared(&self) -> Result<&PreparedMailboxEnvelope> {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0599]: no method named `send_invocations` found for struct `campaign::session::PendingCall` in the current scope
+   --> src/campaign/session/tests.rs:268:25
+    |
+268 |         assert_eq!(call.send_invocations(), sends, "{mode}");
+    |                         ^^^^^^^^^^^^^^^^ method not found in `campaign::session::PendingCall`
+    |
+   ::: src/campaign/session.rs:97:1
+    |
+ 97 | pub(super) struct PendingCall {
+    | ----------------------------- method `send_invocations` not found for this struct
+
+For more information about this error, try `rustc --explain E0599`.
+error: could not compile `spiralcore-mvm-live` (lib test) due to 15 previous errors

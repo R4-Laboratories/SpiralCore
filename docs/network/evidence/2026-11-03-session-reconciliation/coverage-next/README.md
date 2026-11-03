@@ -1,0 +1,5 @@
+# Final-source coverage
+
+PASS at b27fbba9bdc636575266d6da04ec8f1ad5c7c2ea after the Windows fixture phase correction. 239 tests across 29 fresh objects, zero failed/ignored/filtered. Changed 350/377 (92.84%); five entire production files 2,155/2,308 (93.37%); branch NA. All uncovered lines retained.249 sourcechecks before/after pass; normal binary hash unchanged; zero compiler warnings and test/export stderr. Collection/derivation/finalization exit 0. Normal release and measurements finished before instrumentation; times are not performance.
+
+Original compact archive SHA-256: 659f101b04bad7d0e1206255775dc8123e4a5b91eca7640a496ca6b2801debfb verified before extraction. Every member is a regular safe relative file. All raw objects/profiles/profdata/LCOV/buildJSON stay on Wick under coverage-next. The earlier coverage/ folder retains its distinct 26dc source and archive; it is not relabelled as b27. Five-file scope/cutoffs and every command are retained here. The 249-entry manifest a698c514f302d2a245a691a5080bfab55279815c1f15922ce7be1c276f508e78 is included.

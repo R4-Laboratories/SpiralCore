@@ -1,0 +1,1036 @@
+﻿2026-11-03T16:40:34.0883398Z Current runner version: '2.338.2'
+2026-11-03T16:40:34.0914777Z ##[group]Runner Image Provisioner
+2026-11-03T16:40:34.0915901Z Hosted Compute Agent
+2026-11-03T16:40:34.0916572Z Version: 20261021.618
+2026-11-03T16:40:34.0917317Z Commit: 21505ad2541d5be6135ed84fc33697146cf75b8e
+2026-11-03T16:40:34.0918224Z Build Date: 2026-10-21T00:45:21Z
+2026-11-03T16:40:34.0919100Z Worker ID: {dbd9c1ca-f594-40b2-99e4-0e2863a46445}
+2026-11-03T16:40:34.0919961Z Region: northcentralus
+2026-11-03T16:40:34.0920608Z Cloud: Azure
+2026-11-03T16:40:34.0921233Z ##[endgroup]
+2026-11-03T16:40:34.0923154Z ##[group]Operating System
+2026-11-03T16:40:34.0923983Z Microsoft Windows Server 2022
+2026-11-03T16:40:34.0924733Z 10.0.20348
+2026-11-03T16:40:34.0925417Z Datacenter
+2026-11-03T16:40:34.0926045Z ##[endgroup]
+2026-11-03T16:40:34.0926717Z ##[group]Runner Image
+2026-11-03T16:40:34.0927470Z Image: windows-2022
+2026-11-03T16:40:34.0928173Z Version: 20261025.346.1
+2026-11-03T16:40:34.0930215Z Included Software: https://github.com/actions/runner-images/blob/win22/20261025.346/images/windows/Windows2022-Readme.md
+2026-11-03T16:40:34.0932302Z Image Release: https://github.com/actions/runner-images/releases/tag/win22%2F20261025.346
+2026-11-03T16:40:34.0933518Z ##[endgroup]
+2026-11-03T16:40:34.0935026Z ##[group]GITHUB_TOKEN Permissions
+2026-11-03T16:40:34.0937475Z Contents: read
+2026-11-03T16:40:34.0938207Z Metadata: read
+2026-11-03T16:40:34.0938975Z ##[endgroup]
+2026-11-03T16:40:34.0941468Z Secret source: Actions
+2026-11-03T16:40:34.0942996Z Cache mode: write
+2026-11-03T16:40:34.0943898Z Prepare workflow directory
+2026-11-03T16:40:34.1429701Z Prepare all required actions
+2026-11-03T16:40:34.1481829Z Getting action download info
+2026-11-03T16:40:34.3731985Z Download action repository 'actions/checkout@11d5960a326750d5838078e36cf38b85af677262' (SHA:11d5960a326750d5838078e36cf38b85af677262)
+2026-11-03T16:40:34.4721186Z Download action repository 'actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02' (SHA:ea165f8d65b6e75b540449e92b4886f43607fa02)
+2026-11-03T16:40:34.7392531Z Complete job name: Ephemeral mailbox / windows2022-x64
+2026-11-03T16:40:34.8875655Z ##[group]Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+2026-11-03T16:40:34.8877521Z with:
+2026-11-03T16:40:34.8877991Z   persist-credentials: false
+2026-11-03T16:40:34.8878516Z   repository: R4-Laboratories/SpiralCore
+2026-11-03T16:40:34.8882639Z   token: ***
+2026-11-03T16:40:34.8883044Z   ssh-strict: true
+2026-11-03T16:40:34.8883465Z   ssh-user: git
+2026-11-03T16:40:34.8883874Z   clean: true
+2026-11-03T16:40:34.8884288Z   sparse-checkout-cone-mode: true
+2026-11-03T16:40:34.8884823Z   fetch-depth: 1
+2026-11-03T16:40:34.8885253Z   fetch-tags: false
+2026-11-03T16:40:34.8885692Z   show-progress: true
+2026-11-03T16:40:34.8886151Z   lfs: false
+2026-11-03T16:40:34.8886578Z   submodules: false
+2026-11-03T16:40:34.8887036Z   set-safe-directory: true
+2026-11-03T16:40:34.8887522Z   allow-unsafe-pr-checkout: false
+2026-11-03T16:40:34.8888218Z env:
+2026-11-03T16:40:34.8888657Z   CARGO_BUILD_JOBS: 2
+2026-11-03T16:40:34.8889091Z   CARGO_INCREMENTAL: 0
+2026-11-03T16:40:34.8889634Z   CARGO_TERM_COLOR: never
+2026-11-03T16:40:34.8890091Z   RUST_BACKTRACE: 1
+2026-11-03T16:40:34.8890532Z   ROW_ID: windows2022-x64
+2026-11-03T16:40:34.8890984Z   EXPECTED_OS: Windows
+2026-11-03T16:40:34.8891397Z   EXPECTED_ARCH: X64
+2026-11-03T16:40:34.8891859Z   NATIVE_TARGET: x86_64-pc-windows-msvc
+2026-11-03T16:40:34.8892392Z ##[endgroup]
+2026-11-03T16:40:35.0377887Z Syncing repository: R4-Laboratories/SpiralCore
+2026-11-03T16:40:35.0379717Z ##[group]Getting Git version info
+2026-11-03T16:40:35.0380360Z Working directory is 'D:\a\SpiralCore\SpiralCore'
+2026-11-03T16:40:35.1377794Z [command]"C:\Program Files\Git\bin\git.exe" version
+2026-11-03T16:40:35.4834565Z git version 2.56.0.windows.3
+2026-11-03T16:40:35.4872704Z ##[endgroup]
+2026-11-03T16:40:35.4891442Z Temporarily overriding HOME='D:\a\_temp\996188c9-3e9a-4ccf-b457-1ac80c2cfff5' before making global git config changes
+2026-11-03T16:40:35.4902537Z Adding repository directory to the temporary git global config as a safe directory
+2026-11-03T16:40:35.4903869Z [command]"C:\Program Files\Git\bin\git.exe" config --global --add safe.directory D:\a\SpiralCore\SpiralCore
+2026-11-03T16:40:35.5532288Z Deleting the contents of 'D:\a\SpiralCore\SpiralCore'
+2026-11-03T16:40:35.5538297Z ##[group]Initializing the repository
+2026-11-03T16:40:35.5549488Z [command]"C:\Program Files\Git\bin\git.exe" init D:\a\SpiralCore\SpiralCore
+2026-11-03T16:40:35.6326754Z Initialized empty Git repository in D:/a/SpiralCore/SpiralCore/.git/
+2026-11-03T16:40:35.6369539Z [command]"C:\Program Files\Git\bin\git.exe" remote add origin https://github.com/R4-Laboratories/SpiralCore
+2026-11-03T16:40:35.7001459Z ##[endgroup]
+2026-11-03T16:40:35.7003194Z ##[group]Disabling automatic garbage collection
+2026-11-03T16:40:35.7009490Z [command]"C:\Program Files\Git\bin\git.exe" config --local gc.auto 0
+2026-11-03T16:40:35.7305262Z ##[endgroup]
+2026-11-03T16:40:35.7306961Z ##[group]Setting up auth
+2026-11-03T16:40:35.7317799Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp core\.sshCommand
+2026-11-03T16:40:35.7615882Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :\""
+2026-11-03T16:40:37.0852385Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-11-03T16:40:37.1162511Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :\""
+2026-11-03T16:40:37.5924938Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-11-03T16:40:37.6223884Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "git config --local --show-origin --name-only --get-regexp remote.origin.url"
+2026-11-03T16:40:38.1055498Z [command]"C:\Program Files\Git\bin\git.exe" config --local http.https://github.com/.extraheader "AUTHORIZATION: basic ***"
+2026-11-03T16:40:38.1361452Z ##[endgroup]
+2026-11-03T16:40:38.1362658Z ##[group]Fetching the repository
+2026-11-03T16:40:38.1373941Z [command]"C:\Program Files\Git\bin\git.exe" -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +725acb0c005318f37fc363792305b57f3ed989a8:refs/remotes/pull/66/merge
+2026-11-03T16:41:05.7791458Z From https://github.com/R4-Laboratories/SpiralCore
+2026-11-03T16:41:05.7792374Z  * [new ref]         725acb0c005318f37fc363792305b57f3ed989a8 -> pull/66/merge
+2026-11-03T16:41:05.7828805Z ##[endgroup]
+2026-11-03T16:41:05.7829350Z ##[group]Determining the checkout info
+2026-11-03T16:41:05.7831821Z ##[endgroup]
+2026-11-03T16:41:05.7847502Z [command]"C:\Program Files\Git\bin\git.exe" sparse-checkout disable
+2026-11-03T16:41:05.8286640Z [command]"C:\Program Files\Git\bin\git.exe" config --local --unset-all extensions.worktreeConfig
+2026-11-03T16:41:05.8584162Z ##[group]Checking out the ref
+2026-11-03T16:41:05.8594201Z [command]"C:\Program Files\Git\bin\git.exe" checkout --progress --force refs/remotes/pull/66/merge
+2026-11-03T16:41:07.0097772Z Updating files:  26% (6123/22681)
+2026-11-03T16:41:07.0445991Z Updating files:  27% (6124/22681)
+2026-11-03T16:41:07.0897689Z Updating files:  28% (6351/22681)
+2026-11-03T16:41:07.1343470Z Updating files:  29% (6578/22681)
+2026-11-03T16:41:07.1719853Z Updating files:  30% (6805/22681)
+2026-11-03T16:41:07.2042816Z Updating files:  31% (7032/22681)
+2026-11-03T16:41:07.2337748Z Updating files:  32% (7258/22681)
+2026-11-03T16:41:07.2646611Z Updating files:  33% (7485/22681)
+2026-11-03T16:41:07.2969776Z Updating files:  34% (7712/22681)
+2026-11-03T16:41:07.3237221Z Updating files:  35% (7939/22681)
+2026-11-03T16:41:07.3514823Z Updating files:  36% (8166/22681)
+2026-11-03T16:41:07.3885708Z Updating files:  37% (8392/22681)
+2026-11-03T16:41:07.4179316Z Updating files:  38% (8619/22681)
+2026-11-03T16:41:07.4461679Z Updating files:  39% (8846/22681)
+2026-11-03T16:41:07.4727458Z Updating files:  40% (9073/22681)
+2026-11-03T16:41:07.5000448Z Updating files:  41% (9300/22681)
+2026-11-03T16:41:07.5261296Z Updating files:  42% (9527/22681)
+2026-11-03T16:41:07.5569170Z Updating files:  43% (9753/22681)
+2026-11-03T16:41:07.5769549Z Updating files:  44% (9980/22681)
+2026-11-03T16:41:07.5963394Z Updating files:  45% (10207/22681)
+2026-11-03T16:41:07.6173776Z Updating files:  46% (10434/22681)
+2026-11-03T16:41:07.6381461Z Updating files:  47% (10661/22681)
+2026-11-03T16:41:07.6597406Z Updating files:  48% (10887/22681)
+2026-11-03T16:41:07.6802297Z Updating files:  49% (11114/22681)
+2026-11-03T16:41:07.7006303Z Updating files:  50% (11341/22681)
+2026-11-03T16:41:07.7208441Z Updating files:  51% (11568/22681)
+2026-11-03T16:41:07.7421292Z Updating files:  52% (11795/22681)
+2026-11-03T16:41:07.7642748Z Updating files:  53% (12021/22681)
+2026-11-03T16:41:07.7854302Z Updating files:  54% (12248/22681)
+2026-11-03T16:41:07.8049585Z Updating files:  55% (12475/22681)
+2026-11-03T16:41:07.8257387Z Updating files:  56% (12702/22681)
+2026-11-03T16:41:07.8489036Z Updating files:  57% (12929/22681)
+2026-11-03T16:41:07.8696554Z Updating files:  58% (13155/22681)
+2026-11-03T16:41:07.8876554Z Updating files:  59% (13382/22681)
+2026-11-03T16:41:07.9055741Z Updating files:  60% (13609/22681)
+2026-11-03T16:41:07.9162128Z Updating files:  61% (13836/22681)
+2026-11-03T16:41:07.9238611Z Updating files:  61% (13973/22681)
+2026-11-03T16:41:07.9609934Z Updating files:  62% (14063/22681)
+2026-11-03T16:41:07.9796971Z Updating files:  63% (14290/22681)
+2026-11-03T16:41:08.0006758Z Updating files:  64% (14516/22681)
+2026-11-03T16:41:08.0199569Z Updating files:  65% (14743/22681)
+2026-11-03T16:41:08.0393910Z Updating files:  66% (14970/22681)
+2026-11-03T16:41:08.0583215Z Updating files:  67% (15197/22681)
+2026-11-03T16:41:08.0818397Z Updating files:  68% (15424/22681)
+2026-11-03T16:41:08.1032116Z Updating files:  69% (15650/22681)
+2026-11-03T16:41:08.1231589Z Updating files:  70% (15877/22681)
+2026-11-03T16:41:08.1435232Z Updating files:  71% (16104/22681)
+2026-11-03T16:41:08.1623122Z Updating files:  72% (16331/22681)
+2026-11-03T16:41:08.1908703Z Updating files:  73% (16558/22681)
+2026-11-03T16:41:08.2267442Z Updating files:  74% (16784/22681)
+2026-11-03T16:41:08.2577629Z Updating files:  75% (17011/22681)
+2026-11-03T16:41:08.3068258Z Updating files:  76% (17238/22681)
+2026-11-03T16:41:08.4208400Z Updating files:  77% (17465/22681)
+2026-11-03T16:41:08.4440435Z Updating files:  78% (17692/22681)
+2026-11-03T16:41:08.4749143Z Updating files:  79% (17918/22681)
+2026-11-03T16:41:08.4920405Z Updating files:  80% (18145/22681)
+2026-11-03T16:41:08.5131805Z Updating files:  81% (18372/22681)
+2026-11-03T16:41:08.5327063Z Updating files:  82% (18599/22681)
+2026-11-03T16:41:08.5526238Z Updating files:  83% (18826/22681)
+2026-11-03T16:41:08.5710753Z Updating files:  84% (19053/22681)
+2026-11-03T16:41:08.5926598Z Updating files:  85% (19279/22681)
+2026-11-03T16:41:08.6296598Z Updating files:  86% (19506/22681)
+2026-11-03T16:41:08.6630853Z Updating files:  87% (19733/22681)
+2026-11-03T16:41:08.6904545Z Updating files:  88% (19960/22681)
+2026-11-03T16:41:08.7245929Z Updating files:  89% (20187/22681)
+2026-11-03T16:41:08.7509109Z Updating files:  90% (20413/22681)
+2026-11-03T16:41:08.7932367Z Updating files:  91% (20640/22681)
+2026-11-03T16:41:08.8187489Z Updating files:  92% (20867/22681)
+2026-11-03T16:41:08.8462415Z Updating files:  93% (21094/22681)
+2026-11-03T16:41:08.8743661Z Updating files:  94% (21321/22681)
+2026-11-03T16:41:08.9057934Z Updating files:  95% (21547/22681)
+2026-11-03T16:41:08.9169840Z Updating files:  96% (21774/22681)
+2026-11-03T16:41:08.9309899Z Updating files:  96% (21879/22681)
+2026-11-03T16:41:08.9614770Z Updating files:  97% (22001/22681)
+2026-11-03T16:41:08.9951035Z Updating files:  98% (22228/22681)
+2026-11-03T16:41:09.2797466Z Updating files:  99% (22455/22681)
+2026-11-03T16:41:09.2798369Z Updating files: 100% (22681/22681)
+2026-11-03T16:41:09.2799047Z Updating files: 100% (22681/22681), done.
+2026-11-03T16:41:09.3143244Z Note: switching to 'refs/remotes/pull/66/merge'.
+2026-11-03T16:41:09.3143822Z 
+2026-11-03T16:41:09.3144195Z You are in 'detached HEAD' state. You can look around, make experimental
+2026-11-03T16:41:09.3145250Z changes and commit them, and you can discard any commits you make in this
+2026-11-03T16:41:09.3146156Z state without impacting any branches by switching back to a branch.
+2026-11-03T16:41:09.3146648Z 
+2026-11-03T16:41:09.3147004Z If you want to create a new branch to retain commits you create, you may
+2026-11-03T16:41:09.3147813Z do so (now or later) by using -c with the switch command. Example:
+2026-11-03T16:41:09.3148271Z 
+2026-11-03T16:41:09.3148822Z   git switch -c <new-branch-name>
+2026-11-03T16:41:09.3149200Z 
+2026-11-03T16:41:09.3149397Z Or undo this operation with:
+2026-11-03T16:41:09.3149719Z 
+2026-11-03T16:41:09.3149914Z   git switch -
+2026-11-03T16:41:09.3150110Z 
+2026-11-03T16:41:09.3150550Z Turn off this advice by setting config variable advice.detachedHead to false
+2026-11-03T16:41:09.3151050Z 
+2026-11-03T16:41:09.3151644Z HEAD is now at 725acb0 Merge 26dc93a17146693af43529c09db78c7906d47b37 into e984d2d64cdf0483d50d6d59319276c85e7df644
+2026-11-03T16:41:09.3321982Z ##[endgroup]
+2026-11-03T16:41:09.3653463Z [command]"C:\Program Files\Git\bin\git.exe" log -1 --format=%H
+2026-11-03T16:41:09.3925958Z 725acb0c005318f37fc363792305b57f3ed989a8
+2026-11-03T16:41:09.3964771Z ##[group]Removing auth
+2026-11-03T16:41:09.3974148Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp core\.sshCommand
+2026-11-03T16:41:09.4278954Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :\""
+2026-11-03T16:41:09.9450363Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-11-03T16:41:09.9752392Z http.https://github.com/.extraheader
+2026-11-03T16:41:09.9791746Z [command]"C:\Program Files\Git\bin\git.exe" config --local --unset-all http.https://github.com/.extraheader
+2026-11-03T16:41:10.0100146Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :\""
+2026-11-03T16:41:10.4962109Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-11-03T16:41:10.5265643Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "git config --local --show-origin --name-only --get-regexp remote.origin.url"
+2026-11-03T16:41:11.0111545Z ##[endgroup]
+2026-11-03T16:41:11.0443922Z ##[group]Run $ErrorActionPreference = 'Stop'
+2026-11-03T16:41:11.0444648Z [36;1m$ErrorActionPreference = 'Stop'[0m
+2026-11-03T16:41:11.0445163Z [36;1mNew-Item -ItemType Directory -Force portable-evidence | Out-Null[0m
+2026-11-03T16:41:11.0445602Z [36;1m$source = (git rev-parse HEAD).Trim()[0m
+2026-11-03T16:41:11.0446023Z [36;1mif ($LASTEXITCODE -ne 0) { throw 'Cannot identify source' }[0m
+2026-11-03T16:41:11.0446436Z [36;1m$identity = [ordered]@{[0m
+2026-11-03T16:41:11.0446867Z [36;1m  row = $env:ROW_ID; source_commit = $source; github_sha = $env:GITHUB_SHA[0m
+2026-11-03T16:41:11.0447348Z [36;1m  run_id = $env:GITHUB_RUN_ID; attempt = $env:GITHUB_RUN_ATTEMPT[0m
+2026-11-03T16:41:11.0447783Z [36;1m  runner_os = $env:RUNNER_OS; runner_arch = $env:RUNNER_ARCH[0m
+2026-11-03T16:41:11.0448246Z [36;1m  image_os = $env:ImageOS; image_version = $env:ImageVersion[0m
+2026-11-03T16:41:11.0449081Z [36;1m  os_description = [System.Runtime.InteropServices.RuntimeInformation]::OSDescription[0m
+2026-11-03T16:41:11.0449800Z [36;1m  process_architecture = [System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString()[0m
+2026-11-03T16:41:11.0450558Z [36;1m  os_architecture = [System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString()[0m
+2026-11-03T16:41:11.0451300Z [36;1m  expected_target = $env:NATIVE_TARGET; classification = 'native-process / TCP-loopback / ephemeral'[0m
+2026-11-03T16:41:11.0451986Z [36;1m  manifest_sha256 = (Get-FileHash docs/platforms/mvm-mailbox-portable.json -Algorithm SHA256).Hash[0m
+2026-11-03T16:41:11.0452651Z [36;1m  lock_sha256 = (Get-FileHash crates/spiralcore-mvm-adapter/Cargo.lock -Algorithm SHA256).Hash[0m
+2026-11-03T16:41:11.0453121Z [36;1m}[0m
+2026-11-03T16:41:11.0453590Z [36;1mif ($IsLinux) { $identity.os_release = Get-Content /etc/os-release -Raw; $identity.kernel = (uname -a) -join "`n" }[0m
+2026-11-03T16:41:11.0454409Z [36;1mif ($IsMacOS) { $identity.os_release = (sw_vers) -join "`n"; $identity.kernel = (uname -a) -join "`n" }[0m
+2026-11-03T16:41:11.0455046Z [36;1mif ($IsWindows) { $identity.windows_version = [Environment]::OSVersion.Version.ToString() }[0m
+2026-11-03T16:41:11.0455681Z [36;1m$identity | ConvertTo-Json -Depth 8 | Set-Content portable-evidence/identity.json[0m
+2026-11-03T16:41:11.0456295Z [36;1mif ($env:RUNNER_OS -ne $env:EXPECTED_OS -or $env:RUNNER_ARCH -ne $env:EXPECTED_ARCH) {[0m
+2026-11-03T16:41:11.0456805Z [36;1m  throw 'Actual runner does not match declared native row'[0m
+2026-11-03T16:41:11.0457176Z [36;1m}[0m
+2026-11-03T16:41:11.0561816Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+2026-11-03T16:41:11.0562252Z env:
+2026-11-03T16:41:11.0562542Z   CARGO_BUILD_JOBS: 2
+2026-11-03T16:41:11.0562811Z   CARGO_INCREMENTAL: 0
+2026-11-03T16:41:11.0563361Z   CARGO_TERM_COLOR: never
+2026-11-03T16:41:11.0563665Z   RUST_BACKTRACE: 1
+2026-11-03T16:41:11.0563952Z   ROW_ID: windows2022-x64
+2026-11-03T16:41:11.0564282Z   EXPECTED_OS: Windows
+2026-11-03T16:41:11.0564604Z   EXPECTED_ARCH: X64
+2026-11-03T16:41:11.0564896Z   NATIVE_TARGET: x86_64-pc-windows-msvc
+2026-11-03T16:41:11.0565258Z ##[endgroup]
+2026-11-03T16:41:11.5695484Z ##[group]Run rustup toolchain install "1.97.1-$env:NATIVE_TARGET" --profile minimal
+2026-11-03T16:41:11.5696247Z [36;1mrustup toolchain install "1.97.1-$env:NATIVE_TARGET" --profile minimal[0m
+2026-11-03T16:41:11.5696809Z [36;1mif ($LASTEXITCODE -ne 0) { throw 'Pinned native Rust unavailable' }[0m
+2026-11-03T16:41:11.5697441Z [36;1mrustc "+1.97.1-$env:NATIVE_TARGET" -vV | Tee-Object portable-evidence/rustc.txt[0m
+2026-11-03T16:41:11.5697966Z [36;1mif ($LASTEXITCODE -ne 0) { throw 'rustc identity failed' }[0m
+2026-11-03T16:41:11.5698561Z [36;1mif (!(Select-String -Path portable-evidence/rustc.txt -SimpleMatch "host: $env:NATIVE_TARGET")) {[0m
+2026-11-03T16:41:11.5699233Z [36;1m  throw 'Toolchain host mismatch: cross-compilation is not native evidence'[0m
+2026-11-03T16:41:11.5699685Z [36;1m}[0m
+2026-11-03T16:41:11.5700060Z [36;1mcargo "+1.97.1-$env:NATIVE_TARGET" -V | Set-Content portable-evidence/cargo.txt[0m
+2026-11-03T16:41:11.5700730Z [36;1mif ($LASTEXITCODE -ne 0) { throw 'cargo identity failed' }[0m
+2026-11-03T16:41:11.5738994Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+2026-11-03T16:41:11.5739456Z env:
+2026-11-03T16:41:11.5739731Z   CARGO_BUILD_JOBS: 2
+2026-11-03T16:41:11.5740027Z   CARGO_INCREMENTAL: 0
+2026-11-03T16:41:11.5740361Z   CARGO_TERM_COLOR: never
+2026-11-03T16:41:11.5740660Z   RUST_BACKTRACE: 1
+2026-11-03T16:41:11.5740952Z   ROW_ID: windows2022-x64
+2026-11-03T16:41:11.5741250Z   EXPECTED_OS: Windows
+2026-11-03T16:41:11.5741510Z   EXPECTED_ARCH: X64
+2026-11-03T16:41:11.5741881Z   NATIVE_TARGET: x86_64-pc-windows-msvc
+2026-11-03T16:41:11.5742217Z ##[endgroup]
+2026-11-03T16:41:12.6294721Z info: syncing channel updates for 1.97.1-x86_64-pc-windows-msvc
+2026-11-03T16:41:13.0783119Z info: latest update on 2026-07-16 for version 1.97.1 (8bab26f4f 2026-07-14)
+2026-11-03T16:41:13.0881992Z info: downloading 3 components
+2026-11-03T16:41:21.3636391Z 
+2026-11-03T16:41:22.7421392Z   1.97.1-x86_64-pc-windows-msvc installed - rustc 1.97.1 (8bab26f4f 2026-07-14)
+2026-11-03T16:41:22.7421876Z 
+2026-11-03T16:41:23.3657092Z rustc 1.97.1 (8bab26f4f 2026-07-14)
+2026-11-03T16:41:23.3660673Z binary: rustc
+2026-11-03T16:41:23.3662988Z commit-hash: 8bab26f4f68e0e26f0bb7960be334d5b520ea452
+2026-11-03T16:41:23.3665575Z commit-date: 2026-07-14
+2026-11-03T16:41:23.3668115Z host: x86_64-pc-windows-msvc
+2026-11-03T16:41:23.3674832Z release: 1.97.1
+2026-11-03T16:41:23.3677250Z LLVM version: 22.1.6
+2026-11-03T16:41:24.1835923Z ##[group]Run $ErrorActionPreference = 'Stop'
+2026-11-03T16:41:24.1836531Z [36;1m$ErrorActionPreference = 'Stop'[0m
+2026-11-03T16:41:24.1836929Z [36;1m$PSNativeCommandUseErrorActionPreference = $false[0m
+2026-11-03T16:41:24.1837744Z [36;1m$manifest = Get-Content docs/platforms/mvm-mailbox-portable.json -Raw | ConvertFrom-Json[0m
+2026-11-03T16:41:24.1838334Z [36;1m$crate = 'crates/spiralcore-mvm-adapter/Cargo.toml'[0m
+2026-11-03T16:41:24.1839203Z [36;1m$metadata = (& cargo "+1.97.1-$env:NATIVE_TARGET" metadata --locked --no-default-features --features live --filter-platform $env:NATIVE_TARGET --format-version 1 --manifest-path $crate) -join "`n"[0m
+2026-11-03T16:41:24.1840158Z [36;1mif ($LASTEXITCODE -ne 0) { throw 'Locked dependency resolution failed' }[0m
+2026-11-03T16:41:24.1840614Z [36;1m$resolved = $metadata | ConvertFrom-Json[0m
+2026-11-03T16:41:24.1841221Z [36;1m$mvm = @($resolved.packages | Where-Object { $_.name -in @('mvm-core','mvm-contract') })[0m
+2026-11-03T16:41:24.1841874Z [36;1mif ($mvm.Count -ne 2 -or @($mvm | Where-Object { $_.source -ne $manifest.mvm_source }).Count -ne 0) {[0m
+2026-11-03T16:41:24.1842470Z [36;1m  throw 'Canonical MVM dependencies do not match pinned published source'[0m
+2026-11-03T16:41:24.1842916Z [36;1m}[0m
+2026-11-03T16:41:24.1843427Z [36;1m@($mvm | Select-Object name,version,source) | ConvertTo-Json | Set-Content portable-evidence/mvm-source.json[0m
+2026-11-03T16:41:24.1843984Z [36;1m$counts = @()[0m
+2026-11-03T16:41:24.1844283Z [36;1mforeach ($test in $manifest.tests) {[0m
+2026-11-03T16:41:24.1844772Z [36;1m  $cargoArgs = @("+1.97.1-$env:NATIVE_TARGET", 'test', '--locked', '--manifest-path', $crate,[0m
+2026-11-03T16:41:24.1845386Z [36;1m    '--no-default-features', '--features', 'live', '--test', $test.name)[0m
+2026-11-03T16:41:24.1845920Z [36;1m  $listing = (& cargo @cargoArgs -- --list --format terse 2>&1 | Out-String)[0m
+2026-11-03T16:41:24.1846360Z [36;1m  $code = $LASTEXITCODE[0m
+2026-11-03T16:41:24.1846808Z [36;1m  $listing | Set-Content "portable-evidence/$($test.name)-list.txt"[0m
+2026-11-03T16:41:24.1847277Z [36;1m  if ($code -ne 0) { throw "Cannot enumerate $($test.name)" }[0m
+2026-11-03T16:41:24.1847748Z [36;1m  $listed = [regex]::Matches($listing, '(?m)^.+: test\r?$').Count[0m
+2026-11-03T16:41:24.1848331Z [36;1m  if ($listed -lt $test.minimum_count) { throw "Missing native coverage: $($test.name) lists $listed" }[0m
+2026-11-03T16:41:24.1848968Z [36;1m  $log = (& cargo @cargoArgs -- --format pretty --color never 2>&1 | Out-String)[0m
+2026-11-03T16:41:24.1849423Z [36;1m  $code = $LASTEXITCODE[0m
+2026-11-03T16:41:24.1849845Z [36;1m  $log | Set-Content "portable-evidence/$($test.name).txt"[0m
+2026-11-03T16:41:24.1850282Z [36;1m  $log | Write-Output[0m
+2026-11-03T16:41:24.1850819Z [36;1m  $summary = [regex]::Matches($log, 'test result: ok\. (\d+) passed; (\d+) failed; (\d+) ignored; (\d+) measured; (\d+) filtered out;')[0m
+2026-11-03T16:41:24.1851501Z [36;1m  if ($code -ne 0 -or $summary.Count -ne 1) { throw "Native test failure: $($test.name)" }[0m
+2026-11-03T16:41:24.1851946Z [36;1m  $s = $summary[0].Groups[0m
+2026-11-03T16:41:24.1852462Z [36;1m  if ([int]$s[1].Value -ne $listed -or [int]$s[2].Value -ne 0 -or [int]$s[3].Value -ne 0 -or [int]$s[4].Value -ne 0 -or [int]$s[5].Value -ne 0) {[0m
+2026-11-03T16:41:24.1853440Z [36;1m    throw "Zero, ignored or filtered coverage is not accepted: $($test.name)"[0m
+2026-11-03T16:41:24.1853874Z [36;1m  }[0m
+2026-11-03T16:41:24.1854335Z [36;1m  $counts += @{ target = $test.name; listed = $listed; passed = [int]$s[1].Value; failed = 0; ignored = 0; filtered = 0 }[0m
+2026-11-03T16:41:24.1855005Z [36;1m  $counts | ConvertTo-Json -Depth 4 | Set-Content portable-evidence/test-counts.json[0m
+2026-11-03T16:41:24.1855432Z [36;1m}[0m
+2026-11-03T16:41:24.1855771Z [36;1m$enabled = @($resolved.resolve.nodes | Where-Object {[0m
+2026-11-03T16:41:24.1857645Z [36;1m  ($_.id -like '*spiralcore*' -and 'hardware-sha256' -in $_.features) -or[0m
+2026-11-03T16:41:24.1858182Z [36;1m  ($_.id -match '[/#]sha2[@/]' -and 'asm' -in $_.features)[0m
+2026-11-03T16:41:24.1858526Z [36;1m})[0m
+2026-11-03T16:41:24.1858898Z [36;1mif ($enabled.Count -ne 0) { throw 'Portable profile must not enable hardware-sha256' }[0m
+2026-11-03T16:41:24.1859493Z [36;1m$dirty = git status --porcelain -- crates/spiralcore-mvm-adapter/Cargo.lock[0m
+2026-11-03T16:41:24.1860054Z [36;1mif ($dirty) { throw 'Locked test mutated the committed lockfile' }[0m
+2026-11-03T16:41:24.1860727Z [36;1m'PASS: native ephemeral mailbox contracts; no MVM backend, durability or WAN claim' | Set-Content portable-evidence/result.txt[0m
+2026-11-03T16:41:24.1895525Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+2026-11-03T16:41:24.1896015Z env:
+2026-11-03T16:41:24.1896269Z   CARGO_BUILD_JOBS: 2
+2026-11-03T16:41:24.1896543Z   CARGO_INCREMENTAL: 0
+2026-11-03T16:41:24.1896850Z   CARGO_TERM_COLOR: never
+2026-11-03T16:41:24.1897131Z   RUST_BACKTRACE: 1
+2026-11-03T16:41:24.1897401Z   ROW_ID: windows2022-x64
+2026-11-03T16:41:24.1897677Z   EXPECTED_OS: Windows
+2026-11-03T16:41:24.1897990Z   EXPECTED_ARCH: X64
+2026-11-03T16:41:24.1898323Z   NATIVE_TARGET: x86_64-pc-windows-msvc
+2026-11-03T16:41:24.1898666Z ##[endgroup]
+2026-11-03T16:41:24.5902145Z     Updating crates.io index
+2026-11-03T16:41:24.5916273Z     Updating git repository `https://github.com/Casey-allard/mvm`
+2026-11-03T16:42:19.6172058Z  Downloading crates ...
+2026-11-03T16:42:19.7226321Z   Downloaded tracing-attributes v0.1.31
+2026-11-03T16:42:19.7560780Z   Downloaded chacha20 v0.10.2
+2026-11-03T16:42:19.7806342Z   Downloaded yoke v0.8.4
+2026-11-03T16:42:19.8016645Z   Downloaded tracing-core v0.1.36
+2026-11-03T16:42:19.8283536Z   Downloaded untrusted v0.9.0
+2026-11-03T16:42:19.8410895Z   Downloaded windows-link v0.2.1
+2026-11-03T16:42:19.8481725Z   Downloaded writeable v0.6.4
+2026-11-03T16:42:19.8685454Z   Downloaded x25519-dalek v3.0.0
+2026-11-03T16:42:19.8803997Z   Downloaded yoke-derive v0.8.4
+2026-11-03T16:42:19.8889553Z   Downloaded unicode-ident v1.0.27
+2026-11-03T16:42:19.9157319Z   Downloaded zerofrom v0.1.8
+2026-11-03T16:42:19.9229460Z   Downloaded zerotrie v0.2.5
+2026-11-03T16:42:19.9562914Z   Downloaded zerovec-derive v0.11.7
+2026-11-03T16:42:19.9734107Z   Downloaded utf8-zero v0.8.1
+2026-11-03T16:42:19.9836936Z   Downloaded utf8_iter v1.1.0
+2026-11-03T16:42:19.9997682Z   Downloaded version_check v0.9.5
+2026-11-03T16:42:20.3071669Z   Downloaded zerofrom-derive v0.1.8
+2026-11-03T16:42:20.3177387Z   Downloaded universal-hash v0.6.1
+2026-11-03T16:42:20.3256931Z   Downloaded zstd-safe v7.3.0
+2026-11-03T16:42:20.3453470Z   Downloaded zeroize v1.9.1
+2026-11-03T16:42:20.3572979Z   Downloaded zeroize_derive v1.5.0
+2026-11-03T16:42:20.3655680Z   Downloaded zstd v0.13.3
+2026-11-03T16:42:20.3949047Z   Downloaded url v2.5.8
+2026-11-03T16:42:20.4139048Z   Downloaded utf_types v1.0.0
+2026-11-03T16:42:20.4259537Z   Downloaded zmij v1.0.23
+2026-11-03T16:42:20.4382246Z   Downloaded ureq v3.5.0
+2026-11-03T16:42:20.4837215Z   Downloaded ureq-proto v0.6.5
+2026-11-03T16:42:20.5278453Z   Downloaded uuid v1.29.0
+2026-11-03T16:42:20.5550695Z   Downloaded typenum v1.20.1
+2026-11-03T16:42:20.5760542Z   Downloaded zerovec v0.11.9
+2026-11-03T16:42:20.6319554Z   Downloaded aead v0.6.1
+2026-11-03T16:42:20.6454211Z   Downloaded webpki-roots v1.0.11
+2026-11-03T16:42:20.6601416Z   Downloaded tracing v0.1.44
+2026-11-03T16:42:20.7371971Z   Downloaded aes v0.9.3
+2026-11-03T16:42:20.7691373Z   Downloaded aes-gcm v0.11.1
+2026-11-03T16:42:20.7899642Z   Downloaded zstd-sys v2.1.2+zstd.1.5.7
+2026-11-03T16:42:21.6941497Z   Downloaded crypto-common v0.1.7
+2026-11-03T16:42:21.7075611Z   Downloaded curve25519-dalek-derive v0.1.1
+2026-11-03T16:42:21.7158944Z   Downloaded find-msvc-tools v0.1.15
+2026-11-03T16:42:21.7323477Z   Downloaded generic-array v0.14.7
+2026-11-03T16:42:21.7457754Z   Downloaded ctr v0.10.1
+2026-11-03T16:42:21.7655122Z   Downloaded hmac v0.13.0
+2026-11-03T16:42:21.7896309Z   Downloaded ghash v0.6.0
+2026-11-03T16:42:21.8019987Z   Downloaded winapi v0.3.9
+2026-11-03T16:42:22.1251570Z   Downloaded hex v0.4.3
+2026-11-03T16:42:22.1448316Z   Downloaded crypto-common v0.2.2
+2026-11-03T16:42:22.1534439Z   Downloaded fastrand v2.5.0
+2026-11-03T16:42:22.1681986Z   Downloaded cfg-if v1.0.5
+2026-11-03T16:42:22.1818677Z   Downloaded ctutils v0.4.7
+2026-11-03T16:42:22.2004100Z   Downloaded digest v0.11.3
+2026-11-03T16:42:22.2228849Z   Downloaded displaydoc v0.2.7
+2026-11-03T16:42:22.2408929Z   Downloaded getrandom v0.2.17
+2026-11-03T16:42:22.2684431Z   Downloaded httparse v1.10.1
+2026-11-03T16:42:22.2840836Z   Downloaded block-buffer v0.10.4
+2026-11-03T16:42:22.2956158Z   Downloaded block-buffer v0.12.1
+2026-11-03T16:42:22.3043830Z   Downloaded autocfg v1.5.1
+2026-11-03T16:42:22.3211891Z   Downloaded hybrid-array v0.4.15
+2026-11-03T16:42:22.3416819Z   Downloaded cpubits v0.1.1
+2026-11-03T16:42:22.3493402Z   Downloaded digest v0.10.7
+2026-11-03T16:42:22.3686951Z   Downloaded sha2 v0.10.9
+2026-11-03T16:42:22.3984549Z   Downloaded ed25519-dalek v3.0.0
+2026-11-03T16:42:22.4239834Z   Downloaded windows-sys v0.61.2
+2026-11-03T16:42:22.7144126Z   Downloaded anyhow v1.0.104
+2026-11-03T16:42:23.1615253Z   Downloaded cpufeatures v0.2.17
+2026-11-03T16:42:23.1723879Z   Downloaded cpu-time v1.0.0
+2026-11-03T16:42:23.1829044Z   Downloaded cpufeatures v0.3.1
+2026-11-03T16:42:23.1974878Z   Downloaded form_urlencoded v1.2.2
+2026-11-03T16:42:23.2044342Z   Downloaded getrandom v0.4.3
+2026-11-03T16:42:23.2412415Z   Downloaded stable_deref_trait v1.2.1
+2026-11-03T16:42:23.2494451Z   Downloaded jobserver v0.1.35
+2026-11-03T16:42:23.2669169Z   Downloaded pkg-config v0.3.34
+2026-11-03T16:42:23.2812482Z   Downloaded itoa v1.0.18
+2026-11-03T16:42:23.2913025Z   Downloaded percent-encoding v2.3.2
+2026-11-03T16:42:23.3010455Z   Downloaded sha1_smol v1.0.1
+2026-11-03T16:42:23.3113327Z   Downloaded rustc_version v0.4.1
+2026-11-03T16:42:23.3248521Z   Downloaded ed25519 v3.0.0
+2026-11-03T16:42:23.3373035Z   Downloaded idna_adapter v1.2.2
+2026-11-03T16:42:23.3447098Z   Downloaded icu_provider v2.4.0
+2026-11-03T16:42:23.3667214Z   Downloaded inout v0.2.5
+2026-11-03T16:42:23.3801864Z   Downloaded signature v3.0.0
+2026-11-03T16:42:23.3926741Z   Downloaded subtle v2.6.1
+2026-11-03T16:42:23.4053847Z   Downloaded potential_utf v0.1.6
+2026-11-03T16:42:23.4133000Z   Downloaded icu_collections v2.4.0
+2026-11-03T16:42:23.4766574Z   Downloaded secrecy v0.10.3
+2026-11-03T16:42:23.4876183Z   Downloaded serde_jcs v0.1.0
+2026-11-03T16:42:23.4960173Z   Downloaded synstructure v0.14.0
+2026-11-03T16:42:23.5032360Z   Downloaded thiserror-impl v2.0.21
+2026-11-03T16:42:23.5161496Z   Downloaded ipnet v2.12.2
+2026-11-03T16:42:23.5331362Z   Downloaded polyval v0.7.3
+2026-11-03T16:42:23.5523223Z   Downloaded shlex v2.0.1
+2026-11-03T16:42:23.5617566Z   Downloaded sha2 v0.11.1
+2026-11-03T16:42:23.5992113Z   Downloaded rand_core v0.10.1
+2026-11-03T16:42:23.6169801Z   Downloaded tinystr v0.8.5
+2026-11-03T16:42:23.6325857Z   Downloaded cipher v0.5.2
+2026-11-03T16:42:23.6575181Z   Downloaded base64 v0.23.1
+2026-11-03T16:42:23.6869562Z   Downloaded icu_locale_core v2.4.0
+2026-11-03T16:42:23.7520417Z   Downloaded thiserror v2.0.21
+2026-11-03T16:42:23.8338171Z   Downloaded litemap v0.8.3
+2026-11-03T16:42:23.8577610Z   Downloaded rustls-pki-types v1.15.1
+2026-11-03T16:42:23.8898355Z   Downloaded pin-project-lite v0.2.17
+2026-11-03T16:42:23.9628800Z   Downloaded quote v1.0.47
+2026-11-03T16:42:23.9873626Z   Downloaded proc-macro2 v1.0.107
+2026-11-03T16:42:24.0169570Z   Downloaded ryu-js v0.2.2
+2026-11-03T16:42:24.0475872Z   Downloaded semver v1.0.28
+2026-11-03T16:42:24.0711259Z   Downloaded smallvec v1.16.4
+2026-11-03T16:42:24.0839184Z   Downloaded once_cell v1.21.4
+2026-11-03T16:42:24.1067737Z   Downloaded bytes v1.12.1
+2026-11-03T16:42:24.4062562Z   Downloaded cmov v0.5.4
+2026-11-03T16:42:24.4181080Z   Downloaded tempfile v3.27.0
+2026-11-03T16:42:24.4400936Z   Downloaded log v0.4.35
+2026-11-03T16:42:24.4593562Z   Downloaded cc v1.10.0
+2026-11-03T16:42:24.4900235Z   Downloaded num-traits v0.2.19
+2026-11-03T16:42:24.5152406Z   Downloaded serde_core v1.0.229
+2026-11-03T16:42:24.5353629Z   Downloaded serde_derive v1.0.229
+2026-11-03T16:42:24.5656924Z   Downloaded const-oid v0.10.2
+2026-11-03T16:42:24.5847536Z   Downloaded icu_normalizer_data v2.4.0
+2026-11-03T16:42:24.6027407Z   Downloaded http v1.5.0
+2026-11-03T16:42:24.6300543Z   Downloaded rustls-webpki v0.103.16
+2026-11-03T16:42:24.6610813Z   Downloaded serde v1.0.229
+2026-11-03T16:42:24.6884212Z   Downloaded memchr v2.8.3
+2026-11-03T16:42:24.7280251Z   Downloaded libc v0.2.191
+2026-11-03T16:42:25.0758945Z   Downloaded rand v0.10.3
+2026-11-03T16:42:25.1076792Z   Downloaded libm v0.2.16
+2026-11-03T16:42:25.2070623Z   Downloaded icu_properties v2.4.0
+2026-11-03T16:42:25.2257599Z   Downloaded idna v1.1.0
+2026-11-03T16:42:25.2462488Z   Downloaded serde_json v1.0.154
+2026-11-03T16:42:25.3113837Z   Downloaded icu_properties_data v2.4.0
+2026-11-03T16:42:25.4178920Z   Downloaded chrono v0.4.45
+2026-11-03T16:42:25.4623424Z   Downloaded curve25519-dalek v5.0.0
+2026-11-03T16:42:25.6653890Z   Downloaded syn v3.0.9
+2026-11-03T16:42:25.7457371Z   Downloaded syn v2.0.119
+2026-11-03T16:42:25.8249434Z   Downloaded icu_normalizer v2.4.0
+2026-11-03T16:42:25.8658485Z   Downloaded rustls v0.23.46
+2026-11-03T16:42:25.9605014Z   Downloaded ring v0.17.14
+2026-11-03T16:43:50.3132331Z warning: unreachable expression
+2026-11-03T16:43:50.3133310Z     --> D:\a\SpiralCore\SpiralCore\crates\spiralcore-transfer\src\endpoint.rs:1348:5
+2026-11-03T16:43:50.3134855Z      |
+2026-11-03T16:43:50.3143445Z 1347 |     return Err(Error::Unsupported);
+2026-11-03T16:43:50.3144239Z      |     ------------------------------ any code following this expression is unreachable
+2026-11-03T16:43:50.3144885Z 1348 |     Ok(())
+2026-11-03T16:43:50.3145262Z      |     ^^^^^^ unreachable expression
+2026-11-03T16:43:50.3145699Z      |
+2026-11-03T16:43:50.3146270Z      = note: `#[warn(unreachable_code)]` (part of `#[warn(unused)]`) on by default
+2026-11-03T16:43:50.3146666Z 
+2026-11-03T16:43:50.3146819Z warning: unreachable statement
+2026-11-03T16:43:50.3147466Z     --> D:\a\SpiralCore\SpiralCore\crates\spiralcore-transfer\src\endpoint.rs:1382:13
+2026-11-03T16:43:50.3148019Z      |
+2026-11-03T16:43:50.3148359Z 1381 |             return Err(Error::Unsupported);
+2026-11-03T16:43:50.3148964Z      |             ------------------------------ any code following this expression is unreachable
+2026-11-03T16:43:50.3149571Z 1382 |             b.create(path)?;
+2026-11-03T16:43:50.3150037Z      |             ^^^^^^^^^^^^^^^^ unreachable statement
+2026-11-03T16:43:50.3150403Z 
+2026-11-03T16:43:50.3150552Z warning: unreachable expression
+2026-11-03T16:43:50.3151171Z     --> D:\a\SpiralCore\SpiralCore\crates\spiralcore-transfer\src\endpoint.rs:1388:5
+2026-11-03T16:43:50.3151862Z      |
+2026-11-03T16:43:50.3152269Z 1351 | /     match fs::symlink_metadata(path) {
+2026-11-03T16:43:50.3152768Z 1352 | |         Ok(m) => {
+2026-11-03T16:43:50.3153258Z 1353 | |             if !m.is_dir() || m.file_type().is_symlink() {
+2026-11-03T16:43:50.3153864Z 1354 | |                 return Err(Error::Storage);
+2026-11-03T16:43:50.3154393Z ...    |
+2026-11-03T16:43:50.3156467Z 1386 | |         Err(_) => return Err(Error::Storage),
+2026-11-03T16:43:50.3156846Z 1387 | |     }
+2026-11-03T16:43:50.3157473Z      | |_____- any code following this `match` expression is unreachable, as all arms diverge
+2026-11-03T16:43:50.3158186Z 1388 |       Ok(())
+2026-11-03T16:43:50.3158605Z      |       ^^^^^^ unreachable expression
+2026-11-03T16:43:50.3158903Z 
+2026-11-03T16:43:50.3159133Z warning: variable does not need to be mutable
+2026-11-03T16:43:50.3159727Z     --> D:\a\SpiralCore\SpiralCore\crates\spiralcore-transfer\src\endpoint.rs:1326:9
+2026-11-03T16:43:50.3160316Z      |
+2026-11-03T16:43:50.3160661Z 1326 |     let mut o = OpenOptions::new();
+2026-11-03T16:43:50.3161079Z      |         ----^
+2026-11-03T16:43:50.3161726Z      |         |
+2026-11-03T16:43:50.3162109Z      |         help: remove this `mut`
+2026-11-03T16:43:50.3162592Z      |
+2026-11-03T16:43:50.3163064Z      = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+2026-11-03T16:43:50.3163495Z 
+2026-11-03T16:43:50.3163711Z warning: variable does not need to be mutable
+2026-11-03T16:43:50.3164447Z     --> D:\a\SpiralCore\SpiralCore\crates\spiralcore-transfer\src\endpoint.rs:1374:17
+2026-11-03T16:43:50.3165096Z      |
+2026-11-03T16:43:50.3165504Z 1374 |             let mut b = fs::DirBuilder::new();
+2026-11-03T16:43:50.3165992Z      |                 ----^
+2026-11-03T16:43:50.3166374Z      |                 |
+2026-11-03T16:43:50.3166812Z      |                 help: remove this `mut`
+2026-11-03T16:43:50.3167137Z 
+2026-11-03T16:43:50.3167315Z warning: unused variable: `b`
+2026-11-03T16:43:50.3167850Z     --> D:\a\SpiralCore\SpiralCore\crates\spiralcore-transfer\src\endpoint.rs:1374:17
+2026-11-03T16:43:50.3168403Z      |
+2026-11-03T16:43:50.3168757Z 1374 |             let mut b = fs::DirBuilder::new();
+2026-11-03T16:43:50.3169420Z      |                 ^^^^^ help: if this is intentional, prefix it with an underscore: `_b`
+2026-11-03T16:43:50.3170018Z      |
+2026-11-03T16:43:50.3170516Z      = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+2026-11-03T16:43:50.3171039Z 
+2026-11-03T16:43:50.3171672Z warning: `spiralcore-transfer` (lib) generated 6 warnings (run `cargo fix --lib -p spiralcore-transfer` to apply 3 suggestions)
+2026-11-03T16:43:50.3172598Z     Finished `test` profile [unoptimized] target(s) in 0.23s
+2026-11-03T16:43:50.3173508Z      Running tests\canonical.rs (crates\spiralcore-mvm-adapter\target\debug\deps\canonical-b59bb79b63855627.exe)
+2026-11-03T16:43:50.3174075Z 
+2026-11-03T16:43:50.3174259Z running 9 tests
+2026-11-03T16:43:50.3174817Z test configuration_refuses_ambiguous_kind_content_and_mismatching_signer ... ok
+2026-11-03T16:43:50.3175721Z test altered_ciphertext_and_wrong_verification_key_are_rejected_before_authority ... ok
+2026-11-03T16:43:50.3176481Z test canonical_call_and_independent_reply_preserve_exact_application_frames ... ok
+2026-11-03T16:43:50.3177248Z test receiver_only_configuration_opens_without_the_remote_signing_secret ... ok
+2026-11-03T16:43:50.3178024Z test malformed_or_oversized_authenticated_payload_cannot_mint_authority ... ok
+2026-11-03T16:43:50.3178766Z test send_only_capability_cannot_stand_in_for_reply_authority ... ok
+2026-11-03T16:43:50.3179475Z test reply_only_capability_uses_canonical_reply_operation ... ok
+2026-11-03T16:43:50.3180216Z test changed_recipient_epoch_or_revocation_fails_on_open_and_on_outbound ... ok
+2026-11-03T16:43:50.3181061Z test maximum_frame_fits_and_oversize_cancellation_and_queue_pressure_refuse ... ok
+2026-11-03T16:43:50.3181618Z 
+2026-11-03T16:43:50.3182020Z test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.56s
+2026-11-03T16:43:50.3182539Z 
+2026-11-03T16:43:50.3182560Z 
+2026-11-03T16:43:53.2237034Z warning: unreachable expression
+2026-11-03T16:43:53.2237960Z     --> D:\a\SpiralCore\SpiralCore\crates\spiralcore-transfer\src\endpoint.rs:1348:5
+2026-11-03T16:43:53.2238734Z      |
+2026-11-03T16:43:53.2239238Z 1347 |     return Err(Error::Unsupported);
+2026-11-03T16:43:53.2240246Z      |     ------------------------------ any code following this expression is unreachable
+2026-11-03T16:43:53.2241150Z 1348 |     Ok(())
+2026-11-03T16:43:53.2241570Z      |     ^^^^^^ unreachable expression
+2026-11-03T16:43:53.2242032Z      |
+2026-11-03T16:43:53.2242520Z      = note: `#[warn(unreachable_code)]` (part of `#[warn(unused)]`) on by default
+2026-11-03T16:43:53.2242879Z 
+2026-11-03T16:43:53.2242982Z warning: unreachable statement
+2026-11-03T16:43:53.2243456Z     --> D:\a\SpiralCore\SpiralCore\crates\spiralcore-transfer\src\endpoint.rs:1382:13
+2026-11-03T16:43:53.2243910Z      |
+2026-11-03T16:43:53.2244248Z 1381 |             return Err(Error::Unsupported);
+2026-11-03T16:43:53.2245566Z      |             ------------------------------ any code following this expression is unreachable
+2026-11-03T16:43:53.2246033Z 1382 |             b.create(path)?;
+2026-11-03T16:43:53.2246395Z      |             ^^^^^^^^^^^^^^^^ unreachable statement
+2026-11-03T16:43:53.2246614Z 
+2026-11-03T16:43:53.2246761Z warning: unreachable expression
+2026-11-03T16:43:53.2247186Z     --> D:\a\SpiralCore\SpiralCore\crates\spiralcore-transfer\src\endpoint.rs:1388:5
+2026-11-03T16:43:53.2247639Z      |
+2026-11-03T16:43:53.2247916Z 1351 | /     match fs::symlink_metadata(path) {
+2026-11-03T16:43:53.2248259Z 1352 | |         Ok(m) => {
+2026-11-03T16:43:53.2248651Z 1353 | |             if !m.is_dir() || m.file_type().is_symlink() {
+2026-11-03T16:43:53.2249064Z 1354 | |                 return Err(Error::Storage);
+2026-11-03T16:43:53.2249424Z ...    |
+2026-11-03T16:43:53.2249708Z 1386 | |         Err(_) => return Err(Error::Storage),
+2026-11-03T16:43:53.2250063Z 1387 | |     }
+2026-11-03T16:43:53.2250469Z      | |_____- any code following this `match` expression is unreachable, as all arms diverge
+2026-11-03T16:43:53.2250928Z 1388 |       Ok(())
+2026-11-03T16:43:53.2251224Z      |       ^^^^^^ unreachable expression
+2026-11-03T16:43:53.2251455Z 
+2026-11-03T16:43:53.2251621Z warning: variable does not need to be mutable
+2026-11-03T16:43:53.2252721Z     --> D:\a\SpiralCore\SpiralCore\crates\spiralcore-transfer\src\endpoint.rs:1326:9
+2026-11-03T16:43:53.2253193Z      |
+2026-11-03T16:43:53.2253460Z 1326 |     let mut o = OpenOptions::new();
+2026-11-03T16:43:53.2253799Z      |         ----^
+2026-11-03T16:43:53.2254053Z      |         |
+2026-11-03T16:43:53.2254309Z      |         help: remove this `mut`
+2026-11-03T16:43:53.2254617Z      |
+2026-11-03T16:43:53.2254944Z      = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+2026-11-03T16:43:53.2255255Z 
+2026-11-03T16:43:53.2255425Z warning: variable does not need to be mutable
+2026-11-03T16:43:53.2255901Z     --> D:\a\SpiralCore\SpiralCore\crates\spiralcore-transfer\src\endpoint.rs:1374:17
+2026-11-03T16:43:53.2256701Z      |
+2026-11-03T16:43:53.2257010Z 1374 |             let mut b = fs::DirBuilder::new();
+2026-11-03T16:43:53.2257355Z      |                 ----^
+2026-11-03T16:43:53.2257656Z      |                 |
+2026-11-03T16:43:53.2257944Z      |                 help: remove this `mut`
+2026-11-03T16:43:53.2258170Z 
+2026-11-03T16:43:53.2258265Z warning: unused variable: `b`
+2026-11-03T16:43:53.2258751Z     --> D:\a\SpiralCore\SpiralCore\crates\spiralcore-transfer\src\endpoint.rs:1374:17
+2026-11-03T16:43:53.2259192Z      |
+2026-11-03T16:43:53.2259468Z 1374 |             let mut b = fs::DirBuilder::new();
+2026-11-03T16:43:53.2259914Z      |                 ^^^^^ help: if this is intentional, prefix it with an underscore: `_b`
+2026-11-03T16:43:53.2260305Z      |
+2026-11-03T16:43:53.2260664Z      = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+2026-11-03T16:43:53.2260986Z 
+2026-11-03T16:43:53.2261386Z warning: `spiralcore-transfer` (lib) generated 6 warnings (run `cargo fix --lib -p spiralcore-transfer` to apply 3 suggestions)
+2026-11-03T16:43:53.2262049Z     Finished `test` profile [unoptimized] target(s) in 0.22s
+2026-11-03T16:43:53.2262899Z      Running tests\service.rs (crates\spiralcore-mvm-adapter\target\debug\deps\service-9882cc86e6b99d07.exe)
+2026-11-03T16:43:53.2263318Z 
+2026-11-03T16:43:53.2263432Z running 16 tests
+2026-11-03T16:43:53.2263847Z test call_timeout_cancel_and_shutdown_are_distinct_terminal_observations ... ok
+2026-11-03T16:43:53.2264458Z test canonical_authentication_boot_key_and_live_revocation_gate_admission_and_reads ... ok
+2026-11-03T16:43:53.2265086Z test authenticated_reply_matches_exact_call_and_is_consumed_once_late_reply_stays_late ... ok
+2026-11-03T16:43:53.2265776Z test authenticated_resealed_retry_deduplicates_across_shared_service_owners_and_conflicts_refuse ... ok
+2026-11-03T16:43:53.2266546Z test canonical_cast_admission_signs_destination_receipt_and_owns_exact_bytes ... ok
+2026-11-03T16:43:53.2267102Z test data_cannot_spend_the_immutable_control_reserve ... ok
+2026-11-03T16:43:53.2267627Z test full_is_not_acceptance_retry_after_capacity_returns_and_terminal_identity_stays ... ok
+2026-11-03T16:43:53.2268208Z test fifo_gaps_block_only_their_scope_and_reused_sequence_is_refused ... ok
+2026-11-03T16:43:53.2268745Z test epoch_takeover_fences_retained_reply_handle_and_cached_reply ... ok
+2026-11-03T16:43:53.2269266Z test narrowed_payload_limit_also_applies_to_authenticated_replies ... ok
+2026-11-03T16:43:53.2269887Z test lost_reply_retry_replays_same_prepared_envelope_without_second_handler_and_ack_releases_cache ... ok
+2026-11-03T16:43:53.2270510Z test mailbox_epoch_has_one_owner_and_new_epoch_fences_previous_queue ... ok
+2026-11-03T16:43:53.2271133Z test prepared_send_uses_canonical_authorization_and_cancelled_or_wrong_scope_sends_nothing ... ok
+2026-11-03T16:43:53.2271777Z test sender_quota_is_shared_across_mailboxes_and_signed_rate_is_not_ignored ... ok
+2026-11-03T16:43:53.2272318Z test reply_sealing_requires_admitted_call_and_exact_reply_authority ... ok
+2026-11-03T16:43:53.2272876Z test reply_fifo_holds_future_response_until_the_known_scope_head_arrives ... ok
+2026-11-03T16:43:53.2273213Z 
+2026-11-03T16:43:53.2273464Z test result: ok. 16 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.14s
+2026-11-03T16:43:53.2273838Z 
+2026-11-03T16:43:53.2273842Z 
+2026-11-03T16:43:57.0033896Z warning: unreachable expression
+2026-11-03T16:43:57.0034809Z     --> D:\a\SpiralCore\SpiralCore\crates\spiralcore-transfer\src\endpoint.rs:1348:5
+2026-11-03T16:43:57.0035485Z      |
+2026-11-03T16:43:57.0035933Z 1347 |     return Err(Error::Unsupported);
+2026-11-03T16:43:57.0036575Z      |     ------------------------------ any code following this expression is unreachable
+2026-11-03T16:43:57.0037152Z 1348 |     Ok(())
+2026-11-03T16:43:57.0037545Z      |     ^^^^^^ unreachable expression
+2026-11-03T16:43:57.0038038Z      |
+2026-11-03T16:43:57.0038558Z      = note: `#[warn(unreachable_code)]` (part of `#[warn(unused)]`) on by default
+2026-11-03T16:43:57.0038998Z 
+2026-11-03T16:43:57.0039197Z warning: unreachable statement
+2026-11-03T16:43:57.0039751Z     --> D:\a\SpiralCore\SpiralCore\crates\spiralcore-transfer\src\endpoint.rs:1382:13
+2026-11-03T16:43:57.0040376Z      |
+2026-11-03T16:43:57.0040751Z 1381 |             return Err(Error::Unsupported);
+2026-11-03T16:43:57.0041321Z      |             ------------------------------ any code following this expression is unreachable
+2026-11-03T16:43:57.0041904Z 1382 |             b.create(path)?;
+2026-11-03T16:43:57.0042377Z      |             ^^^^^^^^^^^^^^^^ unreachable statement
+2026-11-03T16:43:57.0042689Z 
+2026-11-03T16:43:57.0042892Z warning: unreachable expression
+2026-11-03T16:43:57.0043511Z     --> D:\a\SpiralCore\SpiralCore\crates\spiralcore-transfer\src\endpoint.rs:1388:5
+2026-11-03T16:43:57.0044116Z      |
+2026-11-03T16:43:57.0044527Z 1351 | /     match fs::symlink_metadata(path) {
+2026-11-03T16:43:57.0044990Z 1352 | |         Ok(m) => {
+2026-11-03T16:43:57.0045479Z 1353 | |             if !m.is_dir() || m.file_type().is_symlink() {
+2026-11-03T16:43:57.0046029Z 1354 | |                 return Err(Error::Storage);
+2026-11-03T16:43:57.0046856Z ...    |
+2026-11-03T16:43:57.0047263Z 1386 | |         Err(_) => return Err(Error::Storage),
+2026-11-03T16:43:57.0047744Z 1387 | |     }
+2026-11-03T16:43:57.0048308Z      | |_____- any code following this `match` expression is unreachable, as all arms diverge
+2026-11-03T16:43:57.0048945Z 1388 |       Ok(())
+2026-11-03T16:43:57.0049288Z      |       ^^^^^^ unreachable expression
+2026-11-03T16:43:57.0049605Z 
+2026-11-03T16:43:57.0049763Z warning: variable does not need to be mutable
+2026-11-03T16:43:57.0050435Z     --> D:\a\SpiralCore\SpiralCore\crates\spiralcore-transfer\src\endpoint.rs:1326:9
+2026-11-03T16:43:57.0051008Z      |
+2026-11-03T16:43:57.0051449Z 1326 |     let mut o = OpenOptions::new();
+2026-11-03T16:43:57.0052116Z      |         ----^
+2026-11-03T16:43:57.0052540Z      |         |
+2026-11-03T16:43:57.0052941Z      |         help: remove this `mut`
+2026-11-03T16:43:57.0053425Z      |
+2026-11-03T16:43:57.0053967Z      = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+2026-11-03T16:43:57.0054493Z 
+2026-11-03T16:43:57.0054701Z warning: variable does not need to be mutable
+2026-11-03T16:43:57.0055465Z     --> D:\a\SpiralCore\SpiralCore\crates\spiralcore-transfer\src\endpoint.rs:1374:17
+2026-11-03T16:43:57.0056195Z      |
+2026-11-03T16:43:57.0056709Z 1374 |             let mut b = fs::DirBuilder::new();
+2026-11-03T16:43:57.0057262Z      |                 ----^
+2026-11-03T16:43:57.0057702Z      |                 |
+2026-11-03T16:43:57.0058139Z      |                 help: remove this `mut`
+2026-11-03T16:43:57.0058477Z 
+2026-11-03T16:43:57.0058689Z warning: unused variable: `b`
+2026-11-03T16:43:57.0059357Z     --> D:\a\SpiralCore\SpiralCore\crates\spiralcore-transfer\src\endpoint.rs:1374:17
+2026-11-03T16:43:57.0060101Z      |
+2026-11-03T16:43:57.0060532Z 1374 |             let mut b = fs::DirBuilder::new();
+2026-11-03T16:43:57.0061310Z      |                 ^^^^^ help: if this is intentional, prefix it with an underscore: `_b`
+2026-11-03T16:43:57.0061973Z      |
+2026-11-03T16:43:57.0062512Z      = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+2026-11-03T16:43:57.0063011Z 
+2026-11-03T16:43:57.0063707Z warning: `spiralcore-transfer` (lib) generated 6 warnings (run `cargo fix --lib -p spiralcore-transfer` to apply 3 suggestions)
+2026-11-03T16:43:57.0064789Z     Finished `test` profile [unoptimized] target(s) in 0.23s
+2026-11-03T16:43:57.0065790Z      Running tests\receipt.rs (crates\spiralcore-mvm-adapter\target\debug\deps\receipt-daf681fd41fdd594.exe)
+2026-11-03T16:43:57.0066563Z 
+2026-11-03T16:43:57.0066711Z running 21 tests
+2026-11-03T16:43:57.0067438Z test canonical_receipt_codec_preserves_existing_signature_and_rejects_malleable_input ... ok
+2026-11-03T16:43:57.0068521Z test delayed_negative_same_attempt_cannot_republish_consumed_positive_receipt ... ok
+2026-11-03T16:43:57.0069563Z test application_reply_and_admission_are_independent_and_late_replies_cannot_complete ... ok
+2026-11-03T16:43:57.0070618Z test generic_application_admission_cannot_acknowledge_reserved_receipt_control ... ok
+2026-11-03T16:43:57.0071675Z test encrypted_receipts_match_attempts_and_do_not_recurse_or_lose_positive_facts ... ok
+2026-11-03T16:43:57.0072779Z test integrated_receipt_admission_rejects_a_different_budget_owner_before_queue_mutation ... ok
+2026-11-03T16:43:57.0073809Z test attempts_and_shared_identity_quotas_fail_closed_and_release_owned_capacity ... ok
+2026-11-03T16:43:57.0074882Z test full_receipt_consumer_queue_can_retry_after_consumption_without_false_duplicate ... ok
+2026-11-03T16:43:57.0075858Z test ordinary_reply_has_destination_receipt_without_reply_of_reply ... ok
+2026-11-03T16:43:57.0076859Z test integrated_admission_owns_receipt_credit_before_accepting_and_retries_same_message ... ok
+2026-11-03T16:43:57.0077893Z test receipt_return_rejects_undersized_reverse_grants_before_application_admission ... ok
+2026-11-03T16:43:57.0078943Z test prepared_receipt_refuses_backward_clock_and_policy_change_before_transport ... ok
+2026-11-03T16:43:57.0080228Z test registered_reply_observer_known_correlation_or_causation_mismatch_is_not_unknown ... ok
+2026-11-03T16:43:57.0081413Z test receipt_tracker_rejects_wrong_signature_commitment_causation_and_policy_generation ... ok
+2026-11-03T16:43:57.0082524Z test receipt_replay_and_prepared_resend_obey_signed_control_rate_without_ack_loops ... ok
+2026-11-03T16:43:57.0083666Z test registered_reply_observer_unknown_is_none_without_retained_state_and_strict_stays_unauthorized ... ok
+2026-11-03T16:43:57.0084831Z test receipt_return_reserves_before_admission_and_sends_only_canonical_encrypted_cast ... ok
+2026-11-03T16:43:57.0086125Z test registered_reply_observer_matches_before_partial_candidates_without_inventing_acceptance ... ok
+2026-11-03T16:43:57.0087126Z test signed_call_limit_is_reported_separately_from_host_quota ... ok
+2026-11-03T16:43:57.0088094Z test registered_reply_observer_preserves_expiry_commitment_and_authentication_errors ... ok
+2026-11-03T16:43:57.0089168Z test tracker_local_capacity_diagnostic_preserves_state_and_expires_at_exact_retention ... ok
+2026-11-03T16:43:57.0089736Z 
+2026-11-03T16:43:57.0090155Z test result: ok. 21 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.11s
+2026-11-03T16:43:57.0090591Z 
+2026-11-03T16:43:57.0090597Z 
+2026-11-03T16:43:58.9122115Z warning: unreachable expression
+2026-11-03T16:43:58.9123146Z     --> D:\a\SpiralCore\SpiralCore\crates\spiralcore-transfer\src\endpoint.rs:1348:5
+2026-11-03T16:43:58.9123792Z      |
+2026-11-03T16:43:58.9124214Z 1347 |     return Err(Error::Unsupported);
+2026-11-03T16:43:58.9124909Z      |     ------------------------------ any code following this expression is unreachable
+2026-11-03T16:43:58.9125563Z 1348 |     Ok(())
+2026-11-03T16:43:58.9125958Z      |     ^^^^^^ unreachable expression
+2026-11-03T16:43:58.9126442Z      |
+2026-11-03T16:43:58.9126939Z      = note: `#[warn(unreachable_code)]` (part of `#[warn(unused)]`) on by default
+2026-11-03T16:43:58.9127379Z 
+2026-11-03T16:43:58.9127607Z warning: unreachable statement
+2026-11-03T16:43:58.9128214Z     --> D:\a\SpiralCore\SpiralCore\crates\spiralcore-transfer\src\endpoint.rs:1382:13
+2026-11-03T16:43:58.9128827Z      |
+2026-11-03T16:43:58.9129219Z 1381 |             return Err(Error::Unsupported);
+2026-11-03T16:43:58.9129894Z      |             ------------------------------ any code following this expression is unreachable
+2026-11-03T16:43:58.9130550Z 1382 |             b.create(path)?;
+2026-11-03T16:43:58.9131020Z      |             ^^^^^^^^^^^^^^^^ unreachable statement
+2026-11-03T16:43:58.9131353Z 
+2026-11-03T16:43:58.9131537Z warning: unreachable expression
+2026-11-03T16:43:58.9132171Z     --> D:\a\SpiralCore\SpiralCore\crates\spiralcore-transfer\src\endpoint.rs:1388:5
+2026-11-03T16:43:58.9132801Z      |
+2026-11-03T16:43:58.9133189Z 1351 | /     match fs::symlink_metadata(path) {
+2026-11-03T16:43:58.9133634Z 1352 | |         Ok(m) => {
+2026-11-03T16:43:58.9134083Z 1353 | |             if !m.is_dir() || m.file_type().is_symlink() {
+2026-11-03T16:43:58.9134661Z 1354 | |                 return Err(Error::Storage);
+2026-11-03T16:43:58.9135111Z ...    |
+2026-11-03T16:43:58.9135533Z 1386 | |         Err(_) => return Err(Error::Storage),
+2026-11-03T16:43:58.9135980Z 1387 | |     }
+2026-11-03T16:43:58.9136521Z      | |_____- any code following this `match` expression is unreachable, as all arms diverge
+2026-11-03T16:43:58.9137175Z 1388 |       Ok(())
+2026-11-03T16:43:58.9137542Z      |       ^^^^^^ unreachable expression
+2026-11-03T16:43:58.9137847Z 
+2026-11-03T16:43:58.9138040Z warning: variable does not need to be mutable
+2026-11-03T16:43:58.9138749Z     --> D:\a\SpiralCore\SpiralCore\crates\spiralcore-transfer\src\endpoint.rs:1326:9
+2026-11-03T16:43:58.9139464Z      |
+2026-11-03T16:43:58.9139879Z 1326 |     let mut o = OpenOptions::new();
+2026-11-03T16:43:58.9140374Z      |         ----^
+2026-11-03T16:43:58.9140838Z      |         |
+2026-11-03T16:43:58.9141230Z      |         help: remove this `mut`
+2026-11-03T16:43:58.9142033Z      |
+2026-11-03T16:43:58.9142501Z      = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+2026-11-03T16:43:58.9142952Z 
+2026-11-03T16:43:58.9143141Z warning: variable does not need to be mutable
+2026-11-03T16:43:58.9143767Z     --> D:\a\SpiralCore\SpiralCore\crates\spiralcore-transfer\src\endpoint.rs:1374:17
+2026-11-03T16:43:58.9144382Z      |
+2026-11-03T16:43:58.9144769Z 1374 |             let mut b = fs::DirBuilder::new();
+2026-11-03T16:43:58.9145300Z      |                 ----^
+2026-11-03T16:43:58.9145681Z      |                 |
+2026-11-03T16:43:58.9146042Z      |                 help: remove this `mut`
+2026-11-03T16:43:58.9146845Z 
+2026-11-03T16:43:58.9148226Z warning: unused variable: `b`
+2026-11-03T16:43:58.9148941Z     --> D:\a\SpiralCore\SpiralCore\crates\spiralcore-transfer\src\endpoint.rs:1374:17
+2026-11-03T16:43:58.9149618Z      |
+2026-11-03T16:43:58.9150060Z 1374 |             let mut b = fs::DirBuilder::new();
+2026-11-03T16:43:58.9150705Z      |                 ^^^^^ help: if this is intentional, prefix it with an underscore: `_b`
+2026-11-03T16:43:58.9151325Z      |
+2026-11-03T16:43:58.9151796Z      = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+2026-11-03T16:43:58.9152225Z 
+2026-11-03T16:43:58.9152795Z warning: `spiralcore-transfer` (lib) generated 6 warnings (run `cargo fix --lib -p spiralcore-transfer` to apply 3 suggestions)
+2026-11-03T16:43:58.9153763Z     Finished `test` profile [unoptimized] target(s) in 0.23s
+2026-11-03T16:43:58.9154701Z      Running tests\service_epoch.rs (crates\spiralcore-mvm-adapter\target\debug\deps\service_epoch-ac47c9c6b189360c.exe)
+2026-11-03T16:43:58.9155416Z 
+2026-11-03T16:43:58.9155581Z running 3 tests
+2026-11-03T16:43:58.9156065Z test call_and_reply_use_their_own_destination_mailbox_epochs ... ok
+2026-11-03T16:43:58.9156841Z test receipt_tracker_correlates_reply_without_equating_distinct_mailbox_epochs ... ok
+2026-11-03T16:43:58.9157607Z test reply_stale_for_its_own_destination_is_still_refused ... ok
+2026-11-03T16:43:58.9158008Z 
+2026-11-03T16:43:58.9158413Z test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.48s
+2026-11-03T16:43:58.9158952Z 
+2026-11-03T16:43:58.9158959Z 
+2026-11-03T16:44:01.3814467Z warning: unreachable expression
+2026-11-03T16:44:01.3815424Z     --> D:\a\SpiralCore\SpiralCore\crates\spiralcore-transfer\src\endpoint.rs:1348:5
+2026-11-03T16:44:01.3816109Z      |
+2026-11-03T16:44:01.3816570Z 1347 |     return Err(Error::Unsupported);
+2026-11-03T16:44:01.3817256Z      |     ------------------------------ any code following this expression is unreachable
+2026-11-03T16:44:01.3817888Z 1348 |     Ok(())
+2026-11-03T16:44:01.3818368Z      |     ^^^^^^ unreachable expression
+2026-11-03T16:44:01.3818819Z      |
+2026-11-03T16:44:01.3819404Z      = note: `#[warn(unreachable_code)]` (part of `#[warn(unused)]`) on by default
+2026-11-03T16:44:01.3819895Z 
+2026-11-03T16:44:01.3820094Z warning: unreachable statement
+2026-11-03T16:44:01.3820778Z     --> D:\a\SpiralCore\SpiralCore\crates\spiralcore-transfer\src\endpoint.rs:1382:13
+2026-11-03T16:44:01.3821487Z      |
+2026-11-03T16:44:01.3821897Z 1381 |             return Err(Error::Unsupported);
+2026-11-03T16:44:01.3822607Z      |             ------------------------------ any code following this expression is unreachable
+2026-11-03T16:44:01.3823302Z 1382 |             b.create(path)?;
+2026-11-03T16:44:01.3823806Z      |             ^^^^^^^^^^^^^^^^ unreachable statement
+2026-11-03T16:44:01.3824181Z 
+2026-11-03T16:44:01.3824416Z warning: unreachable expression
+2026-11-03T16:44:01.3825072Z     --> D:\a\SpiralCore\SpiralCore\crates\spiralcore-transfer\src\endpoint.rs:1388:5
+2026-11-03T16:44:01.3825763Z      |
+2026-11-03T16:44:01.3826175Z 1351 | /     match fs::symlink_metadata(path) {
+2026-11-03T16:44:01.3826670Z 1352 | |         Ok(m) => {
+2026-11-03T16:44:01.3827175Z 1353 | |             if !m.is_dir() || m.file_type().is_symlink() {
+2026-11-03T16:44:01.3828156Z 1354 | |                 return Err(Error::Storage);
+2026-11-03T16:44:01.3828625Z ...    |
+2026-11-03T16:44:01.3829160Z 1386 | |         Err(_) => return Err(Error::Storage),
+2026-11-03T16:44:01.3829696Z 1387 | |     }
+2026-11-03T16:44:01.3830302Z      | |_____- any code following this `match` expression is unreachable, as all arms diverge
+2026-11-03T16:44:01.3830981Z 1388 |       Ok(())
+2026-11-03T16:44:01.3831335Z      |       ^^^^^^ unreachable expression
+2026-11-03T16:44:01.3831680Z 
+2026-11-03T16:44:01.3831860Z warning: variable does not need to be mutable
+2026-11-03T16:44:01.3832564Z     --> D:\a\SpiralCore\SpiralCore\crates\spiralcore-transfer\src\endpoint.rs:1326:9
+2026-11-03T16:44:01.3833220Z      |
+2026-11-03T16:44:01.3834253Z 1326 |     let mut o = OpenOptions::new();
+2026-11-03T16:44:01.3834767Z      |         ----^
+2026-11-03T16:44:01.3835163Z      |         |
+2026-11-03T16:44:01.3835539Z      |         help: remove this `mut`
+2026-11-03T16:44:01.3835947Z      |
+2026-11-03T16:44:01.3836464Z      = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+2026-11-03T16:44:01.3836922Z 
+2026-11-03T16:44:01.3837117Z warning: variable does not need to be mutable
+2026-11-03T16:44:01.3837852Z     --> D:\a\SpiralCore\SpiralCore\crates\spiralcore-transfer\src\endpoint.rs:1374:17
+2026-11-03T16:44:01.3838527Z      |
+2026-11-03T16:44:01.3838926Z 1374 |             let mut b = fs::DirBuilder::new();
+2026-11-03T16:44:01.3839501Z      |                 ----^
+2026-11-03T16:44:01.3839905Z      |                 |
+2026-11-03T16:44:01.3840337Z      |                 help: remove this `mut`
+2026-11-03T16:44:01.3840642Z 
+2026-11-03T16:44:01.3840841Z warning: unused variable: `b`
+2026-11-03T16:44:01.3841487Z     --> D:\a\SpiralCore\SpiralCore\crates\spiralcore-transfer\src\endpoint.rs:1374:17
+2026-11-03T16:44:01.3842208Z      |
+2026-11-03T16:44:01.3842648Z 1374 |             let mut b = fs::DirBuilder::new();
+2026-11-03T16:44:01.3843315Z      |                 ^^^^^ help: if this is intentional, prefix it with an underscore: `_b`
+2026-11-03T16:44:01.3844007Z      |
+2026-11-03T16:44:01.3844510Z      = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+2026-11-03T16:44:01.3845022Z 
+2026-11-03T16:44:01.3845686Z warning: `spiralcore-transfer` (lib) generated 6 warnings (run `cargo fix --lib -p spiralcore-transfer` to apply 3 suggestions)
+2026-11-03T16:44:01.3846671Z     Finished `test` profile [unoptimized] target(s) in 0.24s
+2026-11-03T16:44:01.3847668Z      Running tests\service_sender.rs (crates\spiralcore-mvm-adapter\target\debug\deps\service_sender-69a47890c219220c.exe)
+2026-11-03T16:44:01.3848451Z 
+2026-11-03T16:44:01.3848596Z running 4 tests
+2026-11-03T16:44:01.3849141Z test sender_refuses_wrong_content_kind_shape_and_payload_bound ... ok
+2026-11-03T16:44:01.3849978Z test invalid_options_do_not_skip_sequence_or_switch_stream_owner ... ok
+2026-11-03T16:44:01.3850704Z test immutable_options_reseal_as_one_canonical_request ... ok
+2026-11-03T16:44:01.3851464Z test persistent_ordering_reuses_one_scope_and_keeps_retry_identity ... ok
+2026-11-03T16:44:01.3851948Z 
+2026-11-03T16:44:01.3852382Z test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.05s
+2026-11-03T16:44:01.3852951Z 
+2026-11-03T16:44:01.3852958Z 
+2026-11-03T16:44:06.2870200Z warning: unreachable expression
+2026-11-03T16:44:06.2871814Z     --> D:\a\SpiralCore\SpiralCore\crates\spiralcore-transfer\src\endpoint.rs:1348:5
+2026-11-03T16:44:06.2872413Z      |
+2026-11-03T16:44:06.2872717Z 1347 |     return Err(Error::Unsupported);
+2026-11-03T16:44:06.2873165Z      |     ------------------------------ any code following this expression is unreachable
+2026-11-03T16:44:06.2873610Z 1348 |     Ok(())
+2026-11-03T16:44:06.2873879Z      |     ^^^^^^ unreachable expression
+2026-11-03T16:44:06.2874175Z      |
+2026-11-03T16:44:06.2874505Z      = note: `#[warn(unreachable_code)]` (part of `#[warn(unused)]`) on by default
+2026-11-03T16:44:06.2875114Z 
+2026-11-03T16:44:06.2875244Z warning: unreachable statement
+2026-11-03T16:44:06.2875724Z     --> D:\a\SpiralCore\SpiralCore\crates\spiralcore-transfer\src\endpoint.rs:1382:13
+2026-11-03T16:44:06.2876329Z      |
+2026-11-03T16:44:06.2876647Z 1381 |             return Err(Error::Unsupported);
+2026-11-03T16:44:06.2877104Z      |             ------------------------------ any code following this expression is unreachable
+2026-11-03T16:44:06.2877571Z 1382 |             b.create(path)?;
+2026-11-03T16:44:06.2877906Z      |             ^^^^^^^^^^^^^^^^ unreachable statement
+2026-11-03T16:44:06.2878139Z 
+2026-11-03T16:44:06.2878259Z warning: unreachable expression
+2026-11-03T16:44:06.2878835Z     --> D:\a\SpiralCore\SpiralCore\crates\spiralcore-transfer\src\endpoint.rs:1388:5
+2026-11-03T16:44:06.2879276Z      |
+2026-11-03T16:44:06.2879587Z 1351 | /     match fs::symlink_metadata(path) {
+2026-11-03T16:44:06.2879934Z 1352 | |         Ok(m) => {
+2026-11-03T16:44:06.2880263Z 1353 | |             if !m.is_dir() || m.file_type().is_symlink() {
+2026-11-03T16:44:06.2880677Z 1354 | |                 return Err(Error::Storage);
+2026-11-03T16:44:06.2880995Z ...    |
+2026-11-03T16:44:06.2881273Z 1386 | |         Err(_) => return Err(Error::Storage),
+2026-11-03T16:44:06.2881591Z 1387 | |     }
+2026-11-03T16:44:06.2881976Z      | |_____- any code following this `match` expression is unreachable, as all arms diverge
+2026-11-03T16:44:06.2882442Z 1388 |       Ok(())
+2026-11-03T16:44:06.2882736Z      |       ^^^^^^ unreachable expression
+2026-11-03T16:44:06.2882902Z 
+2026-11-03T16:44:06.2883064Z warning: variable does not need to be mutable
+2026-11-03T16:44:06.2883485Z     --> D:\a\SpiralCore\SpiralCore\crates\spiralcore-transfer\src\endpoint.rs:1326:9
+2026-11-03T16:44:06.2883866Z      |
+2026-11-03T16:44:06.2884126Z 1326 |     let mut o = OpenOptions::new();
+2026-11-03T16:44:06.2884428Z      |         ----^
+2026-11-03T16:44:06.2884659Z      |         |
+2026-11-03T16:44:06.2884910Z      |         help: remove this `mut`
+2026-11-03T16:44:06.2885193Z      |
+2026-11-03T16:44:06.2885533Z      = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+2026-11-03T16:44:06.2885784Z 
+2026-11-03T16:44:06.2885936Z warning: variable does not need to be mutable
+2026-11-03T16:44:06.2886362Z     --> D:\a\SpiralCore\SpiralCore\crates\spiralcore-transfer\src\endpoint.rs:1374:17
+2026-11-03T16:44:06.2886773Z      |
+2026-11-03T16:44:06.2887024Z 1374 |             let mut b = fs::DirBuilder::new();
+2026-11-03T16:44:06.2887347Z      |                 ----^
+2026-11-03T16:44:06.2887613Z      |                 |
+2026-11-03T16:44:06.2887883Z      |                 help: remove this `mut`
+2026-11-03T16:44:06.2889448Z 
+2026-11-03T16:44:06.2889904Z warning: unused variable: `b`
+2026-11-03T16:44:06.2890647Z     --> D:\a\SpiralCore\SpiralCore\crates\spiralcore-transfer\src\endpoint.rs:1374:17
+2026-11-03T16:44:06.2891360Z      |
+2026-11-03T16:44:06.2891785Z 1374 |             let mut b = fs::DirBuilder::new();
+2026-11-03T16:44:06.2892433Z      |                 ^^^^^ help: if this is intentional, prefix it with an underscore: `_b`
+2026-11-03T16:44:06.2893073Z      |
+2026-11-03T16:44:06.2893592Z      = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+2026-11-03T16:44:06.2894049Z 
+2026-11-03T16:44:06.2894553Z warning: `spiralcore-transfer` (lib) generated 6 warnings (run `cargo fix --lib -p spiralcore-transfer` to apply 3 suggestions)
+2026-11-03T16:44:06.2895491Z     Finished `test` profile [unoptimized] target(s) in 0.22s
+2026-11-03T16:44:06.2896801Z      Running tests\service_tcp.rs (crates\spiralcore-mvm-adapter\target\debug\deps\service_tcp-f10c80eb1cdd0b53.exe)
+2026-11-03T16:44:06.2897235Z 
+2026-11-03T16:44:06.2897390Z running 14 tests
+2026-11-03T16:44:06.2897774Z test ciphertext_tcp_half_close_preserves_reverse_and_legacy_eof_stays_fatal ... ok
+2026-11-03T16:44:06.2898348Z test ciphertext_tcp_optional_reader_rejects_truncation_lengths_cancel_and_deadline ... ok
+2026-11-03T16:44:06.2899944Z test deadline::deadline_view_keeps_route_size_cancel_fence_and_owned_view_healthy_send_contracts ... ok
+2026-11-03T16:44:06.2900624Z test fatal_tcp_receive_fences_owning_transport_and_subsequent_send_without_new_bytes ... ok
+2026-11-03T16:44:06.2901272Z test idle::early_retryable_errors_are_not_a_completed_positive_idle_window ... ok
+2026-11-03T16:44:06.2901881Z test idle::local_window_validation_precedes_state_without_fencing_and_boundaries_are_valid ... ok
+2026-11-03T16:44:06.2902568Z test deadline::fixed_view_caps_authorized_blocked_prefix_and_partial_payload_under_original_deadline ... FAILED
+2026-11-03T16:44:06.2903229Z test idle::lock_wait_never_becomes_idle_and_idle_clock_starts_after_acquisition ... ok
+2026-11-03T16:44:06.2903987Z test deadline::precreated_channels_repeated_views_and_parent_timeout_never_refresh_creation_deadline ... ok
+2026-11-03T16:44:06.2904667Z test idle::partial_prefix_and_payload_ignore_idle_but_never_refresh_absolute_deadline ... ok
+2026-11-03T16:44:06.2905351Z test idle::zero_prefix_idle_preserves_counters_then_authorized_writer_and_exact_frame_work ... ok
+2026-11-03T16:44:06.2905961Z test idle::real_tcp_idle_then_later_exact_frame_and_authorized_reverse_write ... ok
+2026-11-03T16:44:06.2906563Z test canonical_calls_and_encrypted_receipts_cross_tcp_without_recursive_traffic ... ok
+2026-11-03T16:44:06.2907157Z test idle::owned_fatal_paths_fence_with_exact_partial_counters_and_no_extra_frame ... ok
+2026-11-03T16:44:06.2907516Z 
+2026-11-03T16:44:06.2907628Z failures:
+2026-11-03T16:44:06.2907784Z 
+2026-11-03T16:44:06.2908106Z ---- deadline::fixed_view_caps_authorized_blocked_prefix_and_partial_payload_under_original_deadline stdout ----
+2026-11-03T16:44:06.2908554Z 
+2026-11-03T16:44:06.2909742Z thread 'deadline::fixed_view_caps_authorized_blocked_prefix_and_partial_payload_under_original_deadline' (6112) panicked at tests\service_tcp\deadline.rs:207:9:
+2026-11-03T16:44:06.2910468Z assertion `left == right` failed
+2026-11-03T16:44:06.2910769Z   left: 8
+2026-11-03T16:44:06.2911017Z  right: 12
+2026-11-03T16:44:06.2911262Z stack backtrace:
+2026-11-03T16:44:06.2911530Z    0: std::panicking::panic_handler
+2026-11-03T16:44:06.2912029Z              at /rustc/8bab26f4f68e0e26f0bb7960be334d5b520ea452/library\std\src\panicking.rs:689
+2026-11-03T16:44:06.2912526Z    1: core::panicking::panic_fmt
+2026-11-03T16:44:06.2913170Z              at /rustc/8bab26f4f68e0e26f0bb7960be334d5b520ea452/library\core\src\panicking.rs:80
+2026-11-03T16:44:06.2913657Z    2: core::panicking::assert_failed_inner
+2026-11-03T16:44:06.2914123Z              at /rustc/8bab26f4f68e0e26f0bb7960be334d5b520ea452/library\core\src\panicking.rs:439
+2026-11-03T16:44:06.2914657Z    3: core::panicking::assert_failed<u64,u64>
+2026-11-03T16:44:06.2915294Z              at /rustc/8bab26f4f68e0e26f0bb7960be334d5b520ea452/library\core\src\panicking.rs:394
+2026-11-03T16:44:06.2915931Z    4: <alloc::sync::Arc<std::sync::poison::mutex::Mutex<service_tcp::idle::FakeState>>>::new
+2026-11-03T16:44:06.2916677Z    5: service_tcp::deadline::fixed_view_caps_authorized_blocked_prefix_and_partial_payload_under_original_deadline::{closure#0}
+2026-11-03T16:44:06.2917729Z    6: <service_tcp::deadline::fixed_view_caps_authorized_blocked_prefix_and_partial_payload_under_original_deadline::{closure#0} as core::ops::function::FnOnce<()>>::call_once
+2026-11-03T16:44:06.2918473Z    7: core::ops::function::FnOnce::call_once
+2026-11-03T16:44:06.2918961Z              at /rustc/8bab26f4f68e0e26f0bb7960be334d5b520ea452/library\core\src\ops\function.rs:250
+2026-11-03T16:44:06.2919553Z note: Some details are omitted, run with `RUST_BACKTRACE=full` for a verbose backtrace.
+2026-11-03T16:44:06.2919917Z 
+2026-11-03T16:44:06.2919922Z 
+2026-11-03T16:44:06.2920013Z failures:
+2026-11-03T16:44:06.2920444Z     deadline::fixed_view_caps_authorized_blocked_prefix_and_partial_payload_under_original_deadline
+2026-11-03T16:44:06.2920826Z 
+2026-11-03T16:44:06.2921125Z test result: FAILED. 13 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.93s
+2026-11-03T16:44:06.2921586Z 
+2026-11-03T16:44:06.2921776Z error: test failed, to rerun pass `--test service_tcp`
+2026-11-03T16:44:06.2921994Z 
+2026-11-03T16:44:06.3857052Z [31;1mException: [0mD:\a\_temp\5344af87-04ba-45c2-bc1b-155b67c3be3a.ps1:29[0m
+2026-11-03T16:44:06.3857669Z [31;1m[0m[36;1mLine |[0m
+2026-11-03T16:44:06.3858471Z [31;1m[0m[36;1m[36;1m  29 | [0m …  $summary.Count -ne 1) { [36;1mthrow "Native test failure: $($test.name)"[0m }[0m
+2026-11-03T16:44:06.3859563Z [31;1m[0m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+2026-11-03T16:44:06.3860560Z [31;1m[0m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mNative test failure: service_tcp[0m
+2026-11-03T16:44:06.4160317Z ##[error]Process completed with exit code 1.
+2026-11-03T16:44:06.4340543Z ##[group]Run if (Test-Path portable-evidence) {
+2026-11-03T16:44:06.4341170Z [36;1mif (Test-Path portable-evidence) {[0m
+2026-11-03T16:44:06.4341709Z [36;1m  Get-ChildItem portable-evidence -File | Sort-Object Name | ForEach-Object {[0m
+2026-11-03T16:44:06.4342360Z [36;1m    "$((Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant())  $($_.Name)"[0m
+2026-11-03T16:44:06.4342889Z [36;1m  } | Set-Content portable-evidence/SHA256SUMS[0m
+2026-11-03T16:44:06.4343252Z [36;1m}[0m
+2026-11-03T16:44:06.4376724Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+2026-11-03T16:44:06.4377148Z env:
+2026-11-03T16:44:06.4377397Z   CARGO_BUILD_JOBS: 2
+2026-11-03T16:44:06.4377655Z   CARGO_INCREMENTAL: 0
+2026-11-03T16:44:06.4377943Z   CARGO_TERM_COLOR: never
+2026-11-03T16:44:06.4378222Z   RUST_BACKTRACE: 1
+2026-11-03T16:44:06.4378504Z   ROW_ID: windows2022-x64
+2026-11-03T16:44:06.4378794Z   EXPECTED_OS: Windows
+2026-11-03T16:44:06.4379242Z   EXPECTED_ARCH: X64
+2026-11-03T16:44:06.4379528Z   NATIVE_TARGET: x86_64-pc-windows-msvc
+2026-11-03T16:44:06.4379838Z ##[endgroup]
+2026-11-03T16:44:06.8207970Z ##[group]Run actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+2026-11-03T16:44:06.8208578Z with:
+2026-11-03T16:44:06.8208896Z   name: mvm-mailbox-portable-windows2022-x64-1
+2026-11-03T16:44:06.8209305Z   path: portable-evidence/
+2026-11-03T16:44:06.8209624Z   if-no-files-found: error
+2026-11-03T16:44:06.8209916Z   retention-days: 14
+2026-11-03T16:44:06.8210201Z   compression-level: 6
+2026-11-03T16:44:06.8210607Z   overwrite: false
+2026-11-03T16:44:06.8210928Z   include-hidden-files: false
+2026-11-03T16:44:06.8211311Z env:
+2026-11-03T16:44:06.8211593Z   CARGO_BUILD_JOBS: 2
+2026-11-03T16:44:06.8211880Z   CARGO_INCREMENTAL: 0
+2026-11-03T16:44:06.8212268Z   CARGO_TERM_COLOR: never
+2026-11-03T16:44:06.8212906Z   RUST_BACKTRACE: 1
+2026-11-03T16:44:06.8213375Z   ROW_ID: windows2022-x64
+2026-11-03T16:44:06.8214583Z   EXPECTED_OS: Windows
+2026-11-03T16:44:06.8218034Z   EXPECTED_ARCH: X64
+2026-11-03T16:44:06.8218373Z   NATIVE_TARGET: x86_64-pc-windows-msvc
+2026-11-03T16:44:06.8218877Z ##[endgroup]
+2026-11-03T16:44:07.0075992Z (node:4288) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-11-03T16:44:07.0076865Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-11-03T16:44:07.0185820Z With the provided path, there will be 18 files uploaded
+2026-11-03T16:44:07.0191161Z Artifact name is valid!
+2026-11-03T16:44:07.0192775Z Root directory input is valid!
+2026-11-03T16:44:07.3077272Z Beginning upload of artifact content to blob storage
+2026-11-03T16:44:07.3527338Z (node:4288) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+2026-11-03T16:44:07.4704991Z Uploaded bytes 20587
+2026-11-03T16:44:07.5032768Z Finished uploading artifact content to blob storage!
+2026-11-03T16:44:07.5033877Z SHA256 digest of uploaded artifact zip is d64a8b7c32e1468e0cadc6e0ff99904456806c23e2280c0d1a0751b6095037f3
+2026-11-03T16:44:07.5036540Z Finalizing artifact upload
+2026-11-03T16:44:08.0002104Z Artifact mvm-mailbox-portable-windows2022-x64-1.zip successfully finalized. Artifact ID 13250926520
+2026-11-03T16:44:08.0003551Z Artifact mvm-mailbox-portable-windows2022-x64-1 has been successfully uploaded! Final size is 20587 bytes. Artifact ID is 13250926520
+2026-11-03T16:44:08.0011989Z Artifact download URL: https://github.com/R4-Laboratories/SpiralCore/actions/runs/41675819705/artifacts/13250926520
+2026-11-03T16:44:08.0388513Z Post job cleanup.
+2026-11-03T16:44:08.2117485Z [command]"C:\Program Files\Git\bin\git.exe" version
+2026-11-03T16:44:08.2446204Z git version 2.56.0.windows.3
+2026-11-03T16:44:08.2522097Z Temporarily overriding HOME='D:\a\_temp\b783de9a-da56-483b-874a-a466e3a56300' before making global git config changes
+2026-11-03T16:44:08.2523445Z Adding repository directory to the temporary git global config as a safe directory
+2026-11-03T16:44:08.2536834Z [command]"C:\Program Files\Git\bin\git.exe" config --global --add safe.directory D:\a\SpiralCore\SpiralCore
+2026-11-03T16:44:08.2895294Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp core\.sshCommand
+2026-11-03T16:44:08.3224164Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :\""
+2026-11-03T16:44:08.7933291Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-11-03T16:44:08.8237343Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :\""
+2026-11-03T16:44:09.2937925Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-11-03T16:44:09.3238659Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "git config --local --show-origin --name-only --get-regexp remote.origin.url"
+2026-11-03T16:44:09.8292335Z Cleaning up orphan processes
+2026-11-03T16:44:09.8824541Z Terminate orphan process: pid (7188) (vctip)
+2026-11-03T16:44:09.9428794Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@11d5960a326750d5838078e36cf38b85af677262, actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/

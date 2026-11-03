@@ -1,0 +1,17 @@
+    Blocking waiting for file lock on package cache
+   Compiling spiralcore-transfer v0.1.0 (/var/tmp/spiralcore-reconciliation-20261103/source/crates/spiralcore-transfer)
+   Compiling uor-r4-object-store v0.1.0 (/var/tmp/spiralcore-reconciliation-20261103/source/crates/uor-r4-object-store)
+   Compiling spiralcore-gateway-core v0.1.0 (/var/tmp/spiralcore-reconciliation-20261103/source/crates/spiralcore-gateway-core)
+   Compiling spiralcore-mvm-adapter v0.1.0 (/var/tmp/spiralcore-reconciliation-20261103/source/crates/spiralcore-mvm-adapter)
+   Compiling spiralcore-mvm-live v0.1.0 (/var/tmp/spiralcore-reconciliation-20261103/source/crates/spiralcore-mvm-live)
+error[E0432]: unresolved imports `spiralcore_mvm_live::campaign::ReconciliationSignal`, `spiralcore_mvm_live::campaign::sender_with_broker_and_reconciliation`
+ --> tests/reconciliation.rs:5:16
+  |
+5 |     campaign::{ReconciliationSignal, sender_with_broker_and_reconciliation},
+  |                ^^^^^^^^^^^^^^^^^^^^  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ no `sender_with_broker_and_reconciliation` in `campaign`
+  |                |
+  |                no `ReconciliationSignal` in `campaign`
+
+For more information about this error, try `rustc --explain E0432`.
+error: could not compile `spiralcore-mvm-live` (test "reconciliation") due to 1 previous error
+warning: build failed, waiting for other jobs to finish...

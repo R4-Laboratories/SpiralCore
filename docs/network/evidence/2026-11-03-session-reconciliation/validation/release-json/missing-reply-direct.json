@@ -1,0 +1,197 @@
+{
+  "accounting": "Lifecycle, cumulative receiver processing and per-Handled intervals overlap; do not sum or infer energy/performance",
+  "actual_traffic": {
+    "buffered_closing_control_frames": 1,
+    "caller": {
+      "envelope_bytes_received": 9689,
+      "envelope_bytes_sent": 15418,
+      "frames_received": 2,
+      "frames_sent": 3,
+      "framing_bytes_received": 16,
+      "framing_bytes_sent": 20
+    },
+    "gate_caller_handshake": {
+      "envelope_bytes_received": 0,
+      "envelope_bytes_sent": 0,
+      "frames_received": 0,
+      "frames_sent": 0,
+      "framing_bytes_received": 8,
+      "framing_bytes_sent": 8
+    },
+    "gate_far_handshake": {
+      "envelope_bytes_received": 0,
+      "envelope_bytes_sent": 0,
+      "frames_received": 0,
+      "frames_sent": 0,
+      "framing_bytes_received": 8,
+      "framing_bytes_sent": 8
+    },
+    "gate_forward_incoming": {
+      "envelope_bytes_received": 15418,
+      "envelope_bytes_sent": 0,
+      "frames_received": 3,
+      "frames_sent": 0,
+      "framing_bytes_received": 12,
+      "framing_bytes_sent": 0
+    },
+    "gate_forward_outgoing": {
+      "envelope_bytes_received": 0,
+      "envelope_bytes_sent": 15418,
+      "frames_received": 0,
+      "frames_sent": 3,
+      "framing_bytes_received": 0,
+      "framing_bytes_sent": 12
+    },
+    "gate_reverse_incoming": {
+      "envelope_bytes_received": 19375,
+      "envelope_bytes_sent": 0,
+      "frames_received": 4,
+      "frames_sent": 0,
+      "framing_bytes_received": 16,
+      "framing_bytes_sent": 0
+    },
+    "gate_reverse_outgoing": {
+      "envelope_bytes_received": 0,
+      "envelope_bytes_sent": 15534,
+      "frames_received": 0,
+      "frames_sent": 3,
+      "framing_bytes_received": 0,
+      "framing_bytes_sent": 12
+    },
+    "receiver": {
+      "envelope_bytes_received": 15418,
+      "envelope_bytes_sent": 19375,
+      "frames_received": 3,
+      "frames_sent": 4,
+      "framing_bytes_received": 20,
+      "framing_bytes_sent": 24
+    },
+    "relay": null
+  },
+  "cache_empty": true,
+  "caller_result": "ok",
+  "caller_session": {
+    "application_calls": 1,
+    "broker_clock": "shared-serialized-dispatch",
+    "control_identity_limits": {
+      "host": 16384,
+      "mailbox": 8192,
+      "sender": 4096,
+      "tenant": 8192
+    },
+    "durability": "AcceptedEphemeral; object commit separately verified durable",
+    "identity_limits": {
+      "host": 65536,
+      "mailbox": 32768,
+      "sender": 16384,
+      "tenant": 32768
+    },
+    "identity_tier": "broker-owned",
+    "issuance_policy": {
+      "max_clock_ahead_ms": 5000,
+      "max_issued_ttl_ms": 30000,
+      "max_remaining_ttl_ms": 25000,
+      "mode": "bounded"
+    },
+    "max_application_calls": 2048,
+    "normal_encrypted_destination_receipts_per_call": 2,
+    "normal_envelopes_per_call": 2,
+    "normal_frames_per_call": 4,
+    "ordering": "stable-scope-increasing-sequence",
+    "pipeline": 1,
+    "profile": "canonical-ephemeral-v1",
+    "receiver_processing": {
+      "cpu_us": 0,
+      "segments": 0,
+      "wall_us": 0
+    },
+    "receiver_processing_domain": "post-frame process CPU and wall; includes unfinished work; excludes receive waits; co-located CPU intervals overlap",
+    "recovery": {
+      "cached_reply_retry_invocations": 0,
+      "call_retry_invocations": 1,
+      "commands_consumed": 1,
+      "historical_control_events": 0,
+      "historical_receipt_invocations": 0,
+      "historical_receipts_sent": 0,
+      "idle_outcomes": 1,
+      "receiver_failed_invocations": 0,
+      "reply_send_invocations": 0
+    },
+    "session_report": "canonical-session-report/v2",
+    "witness_tier": "native-16m-v1"
+  },
+  "case": "missing-reply-direct",
+  "evidence": "canonical-reconciliation-test/v1",
+  "lifecycle": {
+    "caller": {
+      "cpu_us": 234005,
+      "wall_us": 261336
+    },
+    "cpu_domain": "ProcessTime process CPU during overlapping worker intervals, not exclusive thread CPU",
+    "receiver": {
+      "cpu_us": 233547,
+      "wall_us": 261880
+    }
+  },
+  "receiver_result": "ok",
+  "receiver_session": {
+    "application_calls": 1,
+    "broker_clock": "shared-serialized-dispatch",
+    "control_identity_limits": {
+      "host": 16384,
+      "mailbox": 8192,
+      "sender": 4096,
+      "tenant": 8192
+    },
+    "durability": "AcceptedEphemeral; object commit separately verified durable",
+    "identity_limits": {
+      "host": 65536,
+      "mailbox": 32768,
+      "sender": 16384,
+      "tenant": 32768
+    },
+    "identity_tier": "broker-owned",
+    "issuance_policy": {
+      "max_clock_ahead_ms": 5000,
+      "max_issued_ttl_ms": 30000,
+      "max_remaining_ttl_ms": 25000,
+      "mode": "bounded"
+    },
+    "max_application_calls": 2048,
+    "normal_encrypted_destination_receipts_per_call": 2,
+    "normal_envelopes_per_call": 2,
+    "normal_frames_per_call": 4,
+    "ordering": "stable-scope-increasing-sequence",
+    "pipeline": 1,
+    "profile": "canonical-ephemeral-v1",
+    "receiver_processing": {
+      "cpu_us": 60159,
+      "segments": 3,
+      "wall_us": 7161
+    },
+    "receiver_processing_domain": "post-frame process CPU and wall; includes unfinished work; excludes receive waits; co-located CPU intervals overlap",
+    "recovery": {
+      "cached_reply_retry_invocations": 1,
+      "call_retry_invocations": 0,
+      "commands_consumed": 0,
+      "historical_control_events": 0,
+      "historical_receipt_invocations": 0,
+      "historical_receipts_sent": 0,
+      "idle_outcomes": 0,
+      "receiver_failed_invocations": 0,
+      "reply_send_invocations": 2
+    },
+    "session_report": "canonical-session-report/v2",
+    "witness_tier": "native-16m-v1"
+  },
+  "scope": "Unix TCP/UDS canonical component fixture; not WAN or native MVM",
+  "withheld": {
+    "forward": null,
+    "hash_domain": "spiralcore.test.withheld.v1",
+    "reverse": {
+      "bytes": 3841,
+      "hash": "1ec37d02e35777747c0d3a2d55f2131b7323f569a2a88c99aa91245186304787",
+      "ordinal": 2
+    }
+  }
+}
