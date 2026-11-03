@@ -9,7 +9,7 @@ use crate::{
 use sha2::{Digest, Sha256};
 use std::{
     fmt, io,
-    process::{Child, ExitStatus},
+    process::{Child, Command, ExitStatus},
     sync::{
         Arc, Mutex,
         atomic::{AtomicBool, Ordering},
@@ -116,6 +116,7 @@ struct WorkerSlot {
     role: WorkerRole,
     child: Option<Child>,
     reaped: Option<ExitStatus>,
+    launching: bool,
 }
 #[derive(Default)]
 struct WorkerLedger {
@@ -177,6 +178,7 @@ impl InstalledSupervisor {
             role,
             child: None,
             reaped: None,
+            launching: false,
         });
         Ok(WorkerGrant {
             authority: self.authority.clone(),
@@ -184,6 +186,50 @@ impl InstalledSupervisor {
             serial,
             role,
         })
+    }
+    /// The actual launcher must use this transaction, not reserve/spawn/bind
+    /// itself. Only a definite spawn error can prove this reservation empty.
+    pub(crate) fn spawn_worker(
+        &mut self,
+        role: WorkerRole,
+        command: &mut Command,
+    ) -> Result<WorkerGrant> {
+        let grant = self.reserve_worker(role)?;
+        {
+            let mut workers = self.authority.workers()?;
+            self.worker_slot(&mut workers, &grant)?.launching = true;
+        }
+        // No process creation or pre-exec work under the worker ledger.
+        match command.spawn() {
+            Ok(child) => {
+                // An accounting fault may have closed admission during spawn.
+                // Take custody even then: never drop a newly created Child
+                // without retaining it for exact cleanup by this controller.
+                let mut workers = match self.authority.workers.lock() {
+                    Ok(workers) => workers,
+                    Err(poisoned) => {
+                        self.authority.close_admission();
+                        poisoned.into_inner()
+                    }
+                };
+                let slot = workers.slots[grant.slot].as_mut().unwrap();
+                slot.child = Some(child);
+                slot.launching = false;
+                if !self.authority.admission_open() {
+                    return Err(SupervisorError::State);
+                }
+                Ok(grant)
+            }
+            Err(error) => {
+                self.authority.close_admission();
+                let mut workers = self.authority.workers()?;
+                let slot = self.worker_slot(&mut workers, &grant)?;
+                if slot.launching && slot.child.is_none() && slot.reaped.is_none() {
+                    workers.slots[grant.slot] = None;
+                }
+                Err(SupervisorError::Io(error))
+            }
+        }
     }
     fn worker_slot<'a>(
         &self,
@@ -219,6 +265,7 @@ impl InstalledSupervisor {
             return Err(SupervisorError::State);
         }
         slot.child = child.take();
+        slot.launching = false;
         Ok(())
     }
     pub(crate) fn try_reap_worker(&mut self, grant: &WorkerGrant) -> Result<Option<ExitStatus>> {
@@ -283,7 +330,7 @@ impl InstalledSupervisor {
                 .slots
                 .iter()
                 .flatten()
-                .any(|slot| slot.child.is_some() || slot.reaped.is_none())
+                .any(|slot| slot.launching || slot.child.is_some() || slot.reaped.is_none())
             {
                 return Err(SupervisorError::Busy);
             }
@@ -368,7 +415,9 @@ impl Drop for InstalledSupervisor {
             // host process exits. Never publish Clean or refund uncertain
             // workers. This installation cannot be reopened in this process.
             std::mem::forget(self.authority.clone());
-            eprintln!("installed worker termination unknown; installation exclusion retained until process exit");
+            eprintln!(
+                "installed worker termination unknown; installation exclusion retained until process exit"
+            );
         }
     }
 }
