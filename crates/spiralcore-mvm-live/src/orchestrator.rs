@@ -295,6 +295,17 @@ fn byte_total(counters: &Value) -> Result<u64> {
 mod duplex;
 use duplex::relay;
 
+#[cfg(test)]
+pub(crate) fn relay_for_test(
+    a: UnixStream,
+    b: UnixStream,
+    forward: RouteAdmission,
+    reverse: RouteAdmission,
+    links: [&LinkReservation; 2],
+) -> Result<Value> {
+    relay(a, b, forward, reverse, links)
+}
+
 // Focused existing refusal tests use the same reserved forwarding path.
 #[cfg(test)]
 fn forward_frame(
