@@ -1,0 +1,36 @@
+   Compiling spiralcore-mvm-live v0.1.0 (/var/tmp/spiralcore-reconciliation-20261103/source/crates/spiralcore-mvm-live)
+warning: unused import: `super::*`
+ --> src/campaign/reconciliation.rs:3:9
+  |
+3 |     use super::*;
+  |         ^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+error[E0425]: cannot find function `bounded_requests` in this scope
+ --> src/campaign/reconciliation.rs:8:34
+  |
+8 |         let (signal, requests) = bounded_requests();
+  |                                  ^^^^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `bounded_requests` in this scope
+  --> src/campaign/reconciliation.rs:21:35
+   |
+21 |         let (old, old_requests) = bounded_requests();
+   |                                   ^^^^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `bounded_requests` in this scope
+  --> src/campaign/reconciliation.rs:24:35
+   |
+24 |         let (current, requests) = bounded_requests();
+   |                                   ^^^^^^^^^^^^^^^^
+   |
+help: a local variable with a similar name exists
+   |
+24 -         let (current, requests) = bounded_requests();
+24 +         let (current, requests) = old_requests();
+   |
+
+For more information about this error, try `rustc --explain E0425`.
+warning: `spiralcore-mvm-live` (lib test) generated 1 warning
+error: could not compile `spiralcore-mvm-live` (lib test) due to 3 previous errors; 1 warning emitted

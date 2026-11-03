@@ -1,0 +1,71 @@
+   Compiling spiralcore-transfer v0.1.0 (/var/tmp/spiralcore-reconciliation-20261103/source/crates/spiralcore-transfer)
+   Compiling uor-r4-object-store v0.1.0 (/var/tmp/spiralcore-reconciliation-20261103/source/crates/uor-r4-object-store)
+   Compiling spiralcore-mvm-adapter v0.1.0 (/var/tmp/spiralcore-reconciliation-20261103/source/crates/spiralcore-mvm-adapter)
+error[E0624]: method `before` is private
+   --> tests/service_tcp/deadline.rs:197:29
+    |
+197 |         let before = stream.before(deadline);
+    |                             ^^^^^^ private method
+    |
+   ::: src/live.rs:544:5
+    |
+544 |     fn before(&self, deadline: Instant) -> DeadlineTransport<S> {
+    |     ----------------------------------------------------------- private method defined here
+
+error[E0624]: method `before` is private
+   --> tests/service_tcp/deadline.rs:236:27
+    |
+236 |         let view = stream.before(if phase == "parent-cap" {
+    |                           ^^^^^^ private method
+    |
+   ::: src/live.rs:544:5
+    |
+544 |     fn before(&self, deadline: Instant) -> DeadlineTransport<S> {
+    |     ----------------------------------------------------------- private method defined here
+
+error[E0624]: method `before` is private
+   --> tests/service_tcp/deadline.rs:247:29
+    |
+247 |         let second = stream.before(original);
+    |                             ^^^^^^ private method
+    |
+   ::: src/live.rs:544:5
+    |
+544 |     fn before(&self, deadline: Instant) -> DeadlineTransport<S> {
+    |     ----------------------------------------------------------- private method defined here
+
+error[E0624]: method `before` is private
+   --> tests/service_tcp/deadline.rs:274:18
+    |
+274 |                 .before(original)
+    |                  ^^^^^^ private method
+    |
+   ::: src/live.rs:544:5
+    |
+544 |     fn before(&self, deadline: Instant) -> DeadlineTransport<S> {
+    |     ----------------------------------------------------------- private method defined here
+
+error[E0624]: method `before` is private
+   --> tests/service_tcp/deadline.rs:293:23
+    |
+293 |     let view = stream.before(Instant::now() + Duration::from_secs(1));
+    |                       ^^^^^^ private method
+    |
+   ::: src/live.rs:544:5
+    |
+544 |     fn before(&self, deadline: Instant) -> DeadlineTransport<S> {
+    |     ----------------------------------------------------------- private method defined here
+
+error[E0624]: method `before` is private
+   --> tests/service_tcp/deadline.rs:338:27
+    |
+338 |     let surviving = owned.before(Instant::now() + Duration::from_secs(1));
+    |                           ^^^^^^ private method
+    |
+   ::: src/live.rs:544:5
+    |
+544 |     fn before(&self, deadline: Instant) -> DeadlineTransport<S> {
+    |     ----------------------------------------------------------- private method defined here
+
+For more information about this error, try `rustc --explain E0624`.
+error: could not compile `spiralcore-mvm-adapter` (test "service_tcp") due to 6 previous errors

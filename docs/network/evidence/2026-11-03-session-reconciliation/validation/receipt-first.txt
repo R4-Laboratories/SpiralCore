@@ -1,0 +1,22 @@
+   Compiling spiralcore-mvm-live v0.1.0 (/var/tmp/spiralcore-reconciliation-20261103/source/crates/spiralcore-mvm-live)
+    Finished `release` profile [optimized] target(s) in 8.68s
+     Running unittests src/lib.rs (/var/tmp/spiralcore-mvm-service-20261102/target/release/deps/spiralcore_mvm_live-22ef123d4e03fddd)
+
+running 1 test
+test campaign::canonical::reconciliation_tests::explicit_retry_after_receiver_acked_reply_recovers_only_missing_call_receipt ... FAILED
+
+failures:
+
+---- campaign::canonical::reconciliation_tests::explicit_retry_after_receiver_acked_reply_recovers_only_missing_call_receipt stdout ----
+
+thread 'campaign::canonical::reconciliation_tests::explicit_retry_after_receiver_acked_reply_recovers_only_missing_call_receipt' (801423) panicked at src/campaign/canonical/reconciliation_tests.rs:258:5:
+caller: Io(Kind(UnexpectedEof)); receiver second invocation: Call admission refused
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    campaign::canonical::reconciliation_tests::explicit_retry_after_receiver_acked_reply_recovers_only_missing_call_receipt
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 61 filtered out; finished in 0.27s
+
+error: test failed, to rerun pass `--lib`

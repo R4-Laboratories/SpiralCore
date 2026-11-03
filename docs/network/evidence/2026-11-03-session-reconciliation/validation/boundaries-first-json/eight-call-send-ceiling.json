@@ -1,0 +1,84 @@
+{
+  "accepted_complete_frames": 8,
+  "after_refused_reentry": {
+    "envelope_bytes_received": 0,
+    "envelope_bytes_sent": 37048,
+    "frames_received": 0,
+    "frames_sent": 8,
+    "framing_bytes_received": 8,
+    "framing_bytes_sent": 40
+  },
+  "completed_before_watchdog": true,
+  "evidence": "canonical-reconciliation-test/v1",
+  "explicit_controller_enabled": true,
+  "io_after": [
+    41,
+    17
+  ],
+  "io_before": [
+    41,
+    17
+  ],
+  "original_envelope_bytes": 4634,
+  "outcome": "canonical session: SendLimit",
+  "scope": "Canonical scripted SocketIo qualification, not OS TCP/WAN or performance",
+  "session": {
+    "application_calls": 0,
+    "broker_clock": "shared-serialized-dispatch",
+    "control_identity_limits": {
+      "host": 16384,
+      "mailbox": 8192,
+      "sender": 4096,
+      "tenant": 8192
+    },
+    "durability": "AcceptedEphemeral; object commit separately verified durable",
+    "identity_limits": {
+      "host": 65536,
+      "mailbox": 32768,
+      "sender": 16384,
+      "tenant": 32768
+    },
+    "identity_tier": "broker-owned",
+    "issuance_policy": {
+      "max_clock_ahead_ms": 5000,
+      "max_issued_ttl_ms": 30000,
+      "max_remaining_ttl_ms": 25000,
+      "mode": "bounded"
+    },
+    "max_application_calls": 2048,
+    "normal_encrypted_destination_receipts_per_call": 2,
+    "normal_envelopes_per_call": 2,
+    "normal_frames_per_call": 4,
+    "ordering": "stable-scope-increasing-sequence",
+    "pipeline": 1,
+    "profile": "canonical-ephemeral-v1",
+    "receiver_processing": {
+      "cpu_us": 0,
+      "segments": 0,
+      "wall_us": 0
+    },
+    "receiver_processing_domain": "post-frame process CPU and wall; includes unfinished work; excludes receive waits; co-located CPU intervals overlap",
+    "recovery": {
+      "cached_reply_retry_invocations": 0,
+      "call_retry_invocations": 7,
+      "commands_consumed": 8,
+      "historical_control_events": 0,
+      "historical_receipt_invocations": 0,
+      "historical_receipts_sent": 0,
+      "idle_outcomes": 8,
+      "receiver_failed_invocations": 0,
+      "reply_send_invocations": 0
+    },
+    "session_report": "canonical-session-report/v2",
+    "witness_tier": "native-16m-v1"
+  },
+  "stream_counters": {
+    "envelope_bytes_received": 0,
+    "envelope_bytes_sent": 37048,
+    "frames_received": 0,
+    "frames_sent": 8,
+    "framing_bytes_received": 8,
+    "framing_bytes_sent": 40
+  },
+  "worker_wall_us": 2009573
+}

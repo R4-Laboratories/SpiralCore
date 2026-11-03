@@ -340,10 +340,17 @@ record 22 host cells (11 before/after pairs) and three additional native cells.
   remains Pending-only. [Recorded qualification](../network/registered-call-retry-results-2026-11-03.md)
   retains focused lifecycle/uncertain-write gates and exact-source platform tests.
   The normal campaign does not use the API; no consumer recovery is implied.
-- [ ] C8 recovery portion: endpoint original-identity retransmission,
-  uncertain-send/ACK reconciliation, lost-event and direct/relayed duplicate
-  recovery remain before automatic post-send retry. No reconnect/resume or new
-  request sequence is implicitly permitted by the delivered event loop.
+- [x] C8 explicit incomplete-session consumer: [PR #66](https://github.com/R4-Laboratories/SpiralCore/pull/66)
+  adds one opaque bounded signal per invocation, original-identity retry under
+  the retained deadline, historical receipt-only handling and Reply-first
+  cached replay. [Recorded qualification](../network/session-reconciliation-results-2026-11-03.md)
+  separates six direct/actual-relay fault cases, three public TCP campaigns,
+  partial-write/attempt/event/FIFO limits and normal strict-transfer costs.
+  Idle alone sends no retry. Default native guest entry points remain strict.
+- [ ] C8 completed-tail ownership and native integration: final ACK loss after
+  caller completion, closed-stream resume and explicit guest opt-in remain.
+  No automatic retry, reconnect, new sequence, retention or cap increase is
+  implicitly permitted by the delivered consumer. Keep full C8 open.
 - [ ] C9/C10 autonomous idle expiry, production-retention cycles and same-owner
   native sessions beyond 2,048 Calls remain unexecuted.
 

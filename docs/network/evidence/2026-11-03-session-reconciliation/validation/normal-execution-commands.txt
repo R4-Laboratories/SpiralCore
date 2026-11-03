@@ -1,0 +1,42 @@
+Task-specific executed command receipt, reconstructed from root tool invocations; not global shell history.
+
+Host: wick; source directory /var/tmp/spiralcore-reconciliation-20261103/source
+Rust 1.97.1; CARGO_TARGET_DIR=/var/tmp/spiralcore-mvm-service-20261102/target
+CARGO_BUILD_JOBS=2; CARGO_INCREMENTAL=0
+RUSTFLAGS, CARGO_ENCODED_RUSTFLAGS, RUSTC_WRAPPER, RUSTC_WORKSPACE_WRAPPER unset.
+
+Session33118, qualified source26dc93a17146693af43529c09db78c7906d47b37:
+SPIRALCORE_RECONCILIATION_EVIDENCE_DIR unset.
+sha256sum -c ../qualified-source-sha256.txt > ../validation/qualified-final-before.txt
+/home/callard/.cargo/bin/cargo +1.97.1 test --release --locked --manifest-path crates/spiralcore-mvm-live/Cargo.toml --features linux-host --all-targets -- --test-threads=1
+  stdout/stderr: validation/release-qualified.txt; exit: release-qualified.exit (0)
+/home/callard/.cargo/bin/cargo +1.97.1 clippy --release --locked --manifest-path crates/spiralcore-mvm-live/Cargo.toml --features linux-host --all-targets -- -D warnings
+  stdout/stderr: validation/clippy-qualified.txt; exit0
+/home/callard/.cargo/bin/cargo +1.97.1 check --release --locked --manifest-path crates/spiralcore-mvm-live/Cargo.toml --all-targets
+  stdout/stderr: validation/default-qualified.txt; exit0
+/home/callard/.cargo/bin/cargo +1.97.1 test --release --locked --manifest-path crates/spiralcore-mvm-adapter/Cargo.toml --features live,conformance,hardware-sha256 --all-targets -- --test-threads=1
+  stdout/stderr: validation/shared-qualified.txt; exit0
+/home/callard/.cargo/bin/cargo +1.97.1 test --release --locked --manifest-path crates/spiralcore-transfer/Cargo.toml --test v1_contract
+  stdout/stderr: validation/object-v1.txt; exit0
+sha256sum -c ../qualified-source-sha256.txt > ../validation/qualified-final-after.txt
+Root polled completion, read all test summaries and exit values. 249 source checks before/after.
+
+Session21342, sourceafe3d0a2bdea6aaa379c0cf98b5a235dc71b51a3:
+SPIRALCORE_RECONCILIATION_EVIDENCE_DIR=/var/tmp/spiralcore-reconciliation-20261103/validation/release-json (fresh)
+/home/callard/.cargo/bin/cargo +1.97.1 test --release --locked --manifest-path crates/spiralcore-mvm-live/Cargo.toml --features linux-host --all-targets
+  stdout/stderr release.txt; exit0; 111pass; optional observed JSON under release-json.
+  Later Clippy found cloned_ref_to_slice_refs in limits test. 26dc changes only that assertion's redundant clone; rerun above final qualifies it. Keep clippy-final.txt exit101.
+
+Session42094, source07e1bf837458af0b5d3bb7d050d7749a2071263d:
+Normal flags above; optional evidence writer unset.
+/home/callard/.cargo/bin/cargo +1.97.1 build --release --locked --manifest-path crates/spiralcore-mvm-live/Cargo.toml --features linux-host --example broker_objects
+  normal-example-build.txt exit0; copy outside Cargo, chmod500; SHAfe7937f2fb348ff0a3c517cf856f2ad132883346a8aa05020e6dbd0e1d62b6d7.
+Session42540: timeout900 bash /var/tmp/spiralcore-reconciliation-20261103/host-pairs.sh
+  host-pairs.txt exit0, 12cells; script pins old/current binary and exact arguments/order.
+Session55205: bash /var/tmp/spiralcore-reconciliation-20261103/coverage-scripts/run.sh
+  isolated selective instrumentation AFTER normal measurements/qualification, exit0. Commands/scripts and compact custody under coverage/. Timings not used as performance.
+
+Final fixture-phase correction b27fbba9, root session26194:
+Same normal environment and adapter TCP selection --test service_tcp -- --test-threads=1: 14PASS, b27-tcp.txt/exit0.
+Root session29281 repeated every session33118 expanded Cargo command at sourceb27, with outputs validation/b27-{release,clippy,default,shared,object-v1}.txt and matching exit0 receipts.
+249-entry new source manifest a698c514f302d2a245a691a5080bfab55279815c1f15922ce7be1c276f508e78 verifies in b27-source-before/after.txt. All111/130/8 tests pass, zero failures; strictClippy/defaultPASS. Newcoverage isolated under coverage-next, oldcoverage remains exact26dc records.

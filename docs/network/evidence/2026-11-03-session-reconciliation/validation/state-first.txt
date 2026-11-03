@@ -1,0 +1,25 @@
+   Compiling spiralcore-mvm-live v0.1.0 (/var/tmp/spiralcore-reconciliation-20261103/source/crates/spiralcore-mvm-live)
+    Finished `release` profile [optimized] target(s) in 7.37s
+     Running unittests src/lib.rs (/var/tmp/spiralcore-mvm-service-20261102/target/release/deps/spiralcore_mvm_live-22ef123d4e03fddd)
+
+running 2 tests
+test campaign::session::tests::explicit_retry_preparation_retains_charged_reply_identity_facts_and_cumulative_bounds ... ok
+test campaign::session::tests::explicit_retry_refuses_missing_initial_send_fence_and_original_expiry_without_replacement ... FAILED
+
+failures:
+
+---- campaign::session::tests::explicit_retry_refuses_missing_initial_send_fence_and_original_expiry_without_replacement stdout ----
+
+thread 'campaign::session::tests::explicit_retry_refuses_missing_initial_send_fence_and_original_expiry_without_replacement' (748460) panicked at src/campaign/session/tests.rs:271:13:
+assertion `left == right` failed: unix-expiry
+  left: 1
+ right: 0
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    campaign::session::tests::explicit_retry_refuses_missing_initial_send_fence_and_original_expiry_without_replacement
+
+test result: FAILED. 1 passed; 1 failed; 0 ignored; 0 measured; 57 filtered out; finished in 0.01s
+
+error: test failed, to rerun pass `--lib`

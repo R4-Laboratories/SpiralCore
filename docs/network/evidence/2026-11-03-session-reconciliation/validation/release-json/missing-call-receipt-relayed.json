@@ -1,0 +1,254 @@
+{
+  "accounting": "Receiver cumulative processing and per-Handled meters overlap lifecycle; do not add these domains or infer energy/performance improvements",
+  "actual_traffic": {
+    "caller_endpoint": {
+      "envelope_bytes_received": 9738,
+      "envelope_bytes_sent": 15392,
+      "frames_received": 2,
+      "frames_sent": 3,
+      "framing_bytes_received": 16,
+      "framing_bytes_sent": 20
+    },
+    "duplicate_receipt_envelope_bytes": 5875,
+    "gate_caller_handshake": {
+      "envelope_bytes_received": 0,
+      "envelope_bytes_sent": 0,
+      "frames_received": 0,
+      "frames_sent": 0,
+      "framing_bytes_received": 8,
+      "framing_bytes_sent": 8
+    },
+    "gate_forward": {
+      "incoming_leg": {
+        "envelope_bytes_received": 15392,
+        "envelope_bytes_sent": 0,
+        "frames_received": 3,
+        "frames_sent": 0,
+        "framing_bytes_received": 12,
+        "framing_bytes_sent": 0
+      },
+      "outgoing_leg": {
+        "envelope_bytes_received": 0,
+        "envelope_bytes_sent": 15392,
+        "frames_received": 0,
+        "frames_sent": 3,
+        "framing_bytes_received": 0,
+        "framing_bytes_sent": 12
+      }
+    },
+    "gate_receiver_handshake": {
+      "envelope_bytes_received": 0,
+      "envelope_bytes_sent": 0,
+      "frames_received": 0,
+      "frames_sent": 0,
+      "framing_bytes_received": 8,
+      "framing_bytes_sent": 8
+    },
+    "gate_reverse": {
+      "incoming_leg": {
+        "envelope_bytes_received": 15637,
+        "envelope_bytes_sent": 0,
+        "frames_received": 3,
+        "frames_sent": 0,
+        "framing_bytes_received": 12,
+        "framing_bytes_sent": 0
+      },
+      "outgoing_leg": {
+        "envelope_bytes_received": 0,
+        "envelope_bytes_sent": 9738,
+        "frames_received": 0,
+        "frames_sent": 2,
+        "framing_bytes_received": 0,
+        "framing_bytes_sent": 8
+      }
+    },
+    "receiver_endpoint": {
+      "envelope_bytes_received": 15392,
+      "envelope_bytes_sent": 15637,
+      "frames_received": 3,
+      "frames_sent": 3,
+      "framing_bytes_received": 20,
+      "framing_bytes_sent": 20
+    },
+    "relay": {
+      "budget": {
+        "fenced": false,
+        "high_water": {
+          "frame_slots": 2,
+          "links": 2,
+          "serialized_buffer_bytes": 524288
+        },
+        "limits": {
+          "frame_slots": 2,
+          "links": 2,
+          "serialized_buffer_bytes": 524288
+        },
+        "refusals": 0,
+        "registered_tenants": 1,
+        "resource_domain": "serialized-ciphertext-transport",
+        "scope": "orchestrator",
+        "usage": {
+          "frame_slots": 0,
+          "links": 0,
+          "serialized_buffer_bytes": 0
+        },
+        "version": 1
+      },
+      "report": {
+        "a": {
+          "envelope_bytes_received": 15392,
+          "envelope_bytes_sent": 15637,
+          "frames_received": 3,
+          "frames_sent": 3,
+          "framing_bytes_received": 20,
+          "framing_bytes_sent": 20
+        },
+        "b": {
+          "envelope_bytes_received": 15637,
+          "envelope_bytes_sent": 15392,
+          "frames_received": 3,
+          "frames_sent": 3,
+          "framing_bytes_received": 20,
+          "framing_bytes_sent": 20
+        },
+        "cpu_us": 384959,
+        "event": "relay_done",
+        "wall_us": 404518
+      }
+    },
+    "reply_envelope_bytes": 3863,
+    "request_envelope_bytes": 4758
+  },
+  "caller_session": {
+    "application_calls": 1,
+    "broker_clock": "shared-serialized-dispatch",
+    "control_identity_limits": {
+      "host": 16384,
+      "mailbox": 8192,
+      "sender": 4096,
+      "tenant": 8192
+    },
+    "durability": "AcceptedEphemeral; object commit separately verified durable",
+    "identity_limits": {
+      "host": 65536,
+      "mailbox": 32768,
+      "sender": 16384,
+      "tenant": 32768
+    },
+    "identity_tier": "broker-owned",
+    "issuance_policy": {
+      "max_clock_ahead_ms": 5000,
+      "max_issued_ttl_ms": 30000,
+      "max_remaining_ttl_ms": 25000,
+      "mode": "bounded"
+    },
+    "max_application_calls": 2048,
+    "normal_encrypted_destination_receipts_per_call": 2,
+    "normal_envelopes_per_call": 2,
+    "normal_frames_per_call": 4,
+    "ordering": "stable-scope-increasing-sequence",
+    "pipeline": 1,
+    "profile": "canonical-ephemeral-v1",
+    "receiver_processing": {
+      "cpu_us": 0,
+      "segments": 0,
+      "wall_us": 0
+    },
+    "receiver_processing_domain": "post-frame process CPU and wall; includes unfinished work; excludes receive waits; co-located CPU intervals overlap",
+    "recovery": {
+      "cached_reply_retry_invocations": 0,
+      "call_retry_invocations": 1,
+      "commands_consumed": 1,
+      "historical_control_events": 0,
+      "historical_receipt_invocations": 0,
+      "historical_receipts_sent": 0,
+      "idle_outcomes": 1,
+      "receiver_failed_invocations": 0,
+      "reply_send_invocations": 0
+    },
+    "session_report": "canonical-session-report/v2",
+    "witness_tier": "native-16m-v1"
+  },
+  "case": "missing-call-receipt-relayed",
+  "evidence": "canonical-reconciliation-test/v1",
+  "fault": {
+    "direction": "receiver-to-caller",
+    "post_handshake_ordinal": 1,
+    "wire_hash": "26c851400a7af2529c439ce498a0012376ca8b756b91b938ff11a0ce08a23ba8",
+    "wire_hash_domain": "spiralcore.test.withheld.v1",
+    "withheld_envelope_bytes": 5899,
+    "withheld_framing_bytes": 4
+  },
+  "lifecycle": {
+    "caller": {
+      "cpu_us": 233613,
+      "wall_us": 261750
+    },
+    "cpu_domain": "ProcessTime process CPU during each worker interval, not exclusive thread CPU; intervals overlap",
+    "receiver": {
+      "cpu_us": 274112,
+      "wall_us": 312357
+    },
+    "wall_domain": "Instant wall over worker handshake/call intervals; receiver includes second-handle cleanup/cache inspection; caller excludes post-result hold"
+  },
+  "receiver_cleanup": {
+    "cache_empty": true,
+    "result": "Cancelled",
+    "second_handled": false
+  },
+  "receiver_first_handled_processing": {
+    "cpu_us": 48164,
+    "wall_us": 3258
+  },
+  "receiver_session": {
+    "application_calls": 1,
+    "broker_clock": "shared-serialized-dispatch",
+    "control_identity_limits": {
+      "host": 16384,
+      "mailbox": 8192,
+      "sender": 4096,
+      "tenant": 8192
+    },
+    "durability": "AcceptedEphemeral; object commit separately verified durable",
+    "identity_limits": {
+      "host": 65536,
+      "mailbox": 32768,
+      "sender": 16384,
+      "tenant": 32768
+    },
+    "identity_tier": "broker-owned",
+    "issuance_policy": {
+      "max_clock_ahead_ms": 5000,
+      "max_issued_ttl_ms": 30000,
+      "max_remaining_ttl_ms": 25000,
+      "mode": "bounded"
+    },
+    "max_application_calls": 2048,
+    "normal_encrypted_destination_receipts_per_call": 2,
+    "normal_envelopes_per_call": 2,
+    "normal_frames_per_call": 4,
+    "ordering": "stable-scope-increasing-sequence",
+    "pipeline": 1,
+    "profile": "canonical-ephemeral-v1",
+    "receiver_processing": {
+      "cpu_us": 54858,
+      "segments": 3,
+      "wall_us": 4847
+    },
+    "receiver_processing_domain": "post-frame process CPU and wall; includes unfinished work; excludes receive waits; co-located CPU intervals overlap",
+    "recovery": {
+      "cached_reply_retry_invocations": 0,
+      "call_retry_invocations": 0,
+      "commands_consumed": 0,
+      "historical_control_events": 0,
+      "historical_receipt_invocations": 1,
+      "historical_receipts_sent": 1,
+      "idle_outcomes": 0,
+      "receiver_failed_invocations": 1,
+      "reply_send_invocations": 1
+    },
+    "session_report": "canonical-session-report/v2",
+    "witness_tier": "native-16m-v1"
+  },
+  "scope": "Unix development-witness TCP/UDS component fixture; not WAN or native guest execution"
+}

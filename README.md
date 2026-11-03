@@ -43,7 +43,7 @@ tracks**, not arbitrary encrypted packet traffic.
 macOS/HVF and Linux/Firecracker host paths; the default Linux build is the guest,
 and the `linux-host` feature selects the host. Native ephemeral mailbox-client
 tests have passed on Windows Server 2022/2025 x64 and Windows 11 ARM64 at the
-[latest recorded mailbox-client checkpoint](docs/network/registered-call-retry-results-2026-11-03.md).
+[latest recorded mailbox-client checkpoint](docs/network/session-reconciliation-results-2026-11-03.md).
 Windows private/durable object storage and packet attachment still need a port.
 A portable mailbox client does not establish a Windows MVM host. The current
 published MVM dependency has passed the recorded seven-platform contract run.
@@ -100,6 +100,18 @@ preserves original Calls through refusal, pins sends to their registered
 generation/request and prevents receipt-only completion or lifetime extension.
 Their smaller-workload losses remain recorded: **1.95% lifecycle** and **8.49%
 host-process CPU** increases, respectively.
+
+The [explicit reconciliation checkpoint](docs/network/session-reconciliation-results-2026-11-03.md)
+adds an opt-in embedding API for recovering a missing destination receipt or
+application Reply with the original Call, identity and deadline. Six direct and
+actual-relay fault cases and three full public TCP campaigns preserve exact
+bytes and one-time object work. Silence alone sends no retry; finite attempts,
+FIFO ordering, authorization and partial-write deadlines remain enforced.
+The normal guest path remains strict. Native guest opt-in, final ACK loss after
+caller completion and closed-stream resume still need lifecycle work.
+Its matched local strict-transfer measurements retain byte, CPU and lifecycle
+results against whole-object zstd, including individual workload losses;
+they do not establish recovery overhead or WAN performance.
 
 The [duplex relay checkpoint](docs/network/duplex-relay-results-2026-11-03.md)
 adds independently progressing keyless directions and safe half-close handling,

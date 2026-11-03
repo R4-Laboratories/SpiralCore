@@ -1,0 +1,13 @@
+    Checking spiralcore-mvm-live v0.1.0 (/var/tmp/spiralcore-reconciliation-20261103/source/crates/spiralcore-mvm-live)
+error: unnecessary use of `clone` to create a slice from a reference
+   --> src/campaign/canonical/reconciliation_limits_tests.rs:622:9
+    |
+622 |         assert_eq!(transport.inner.drain(route).unwrap(), [original.clone()]);
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.97.0/index.html#cloned_ref_to_slice_refs
+    = note: `-D clippy::cloned-ref-to-slice-refs` implied by `-D warnings`
+    = help: to override `-D warnings` add `#[allow(clippy::cloned_ref_to_slice_refs)]`
+
+error: could not compile `spiralcore-mvm-live` (lib test) due to 1 previous error
+warning: build failed, waiting for other jobs to finish...
