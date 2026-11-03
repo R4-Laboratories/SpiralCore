@@ -292,8 +292,11 @@ fn byte_total(counters: &Value) -> Result<u64> {
     })
     .map_err(Into::into)
 }
-// Reserve before the existing allocating read. Declaration order ensures the
-// decoded envelope and serialized buffer drop before their capacity guard.
+mod duplex;
+use duplex::relay;
+
+// Focused existing refusal tests use the same reserved forwarding path.
+#[cfg(test)]
 fn forward_frame(
     input: &mut UnixStream,
     output: &mut UnixStream,
@@ -303,109 +306,15 @@ fn forward_frame(
     counters: (&mut StreamCounters, &mut StreamCounters),
     allow_clean_eof: bool,
 ) -> Result<bool> {
-    let _capacity = link.reserve_frame(spiralcore_mvm_adapter::MAX_ENVELOPE_BYTES as u64)?;
-    let (received, sent) = counters;
-    let before = received.envelope_bytes_received + received.framing_bytes_received;
-    let wire = match live::read_ciphertext_frame(
+    let capacity = link.reserve_frame(spiralcore_mvm_adapter::MAX_ENVELOPE_BYTES as u64)?;
+    duplex::forward_frame(
         input,
-        cancel,
-        Instant::now() + Duration::from_secs(30),
-        received,
-    ) {
-        Ok(wire) => wire,
-        Err(live::LiveError::Io(error))
-            if allow_clean_eof
-                && error.kind() == io::ErrorKind::UnexpectedEof
-                && before == received.envelope_bytes_received + received.framing_bytes_received =>
-        {
-            return Ok(false);
-        }
-        Err(error) => return Err(error.into()),
-    };
-    let envelope = decode_envelope(&wire)?;
-    route.validate(&envelope.routing, &envelope.encryption.key_id)?;
-    live::write_ciphertext_frame(
         output,
-        &wire,
+        route,
+        &capacity,
         cancel,
-        Instant::now() + Duration::from_secs(30),
-        sent,
-    )?;
-    Ok(true)
-}
-
-fn relay(
-    mut a: UnixStream,
-    mut b: UnixStream,
-    forward: RouteAdmission,
-    reverse: RouteAdmission,
-    links: [&LinkReservation; 2],
-) -> Result<Value> {
-    let wall = Instant::now();
-    let cpu = ProcessTime::try_now()?;
-    let cancel = CancellationToken::default();
-    let mut ac = StreamCounters::default();
-    let mut bc = StreamCounters::default();
-    live::handshake_stream(
-        &mut a,
-        HandshakeRole::Acceptor,
-        &cancel,
-        Instant::now() + Duration::from_secs(30),
-        &mut ac,
-    )?;
-    live::handshake_stream(
-        &mut b,
-        HandshakeRole::Acceptor,
-        &cancel,
-        Instant::now() + Duration::from_secs(30),
-        &mut bc,
-    )?;
-    loop {
-        if !forward_frame(
-            &mut a,
-            &mut b,
-            &forward,
-            links[0],
-            &cancel,
-            (&mut ac, &mut bc),
-            true,
-        )? {
-            break;
-        }
-        // Strict one-Call witness: destination receipt, application Reply,
-        // then Reply destination receipt. Every buffer ends before the next read.
-        forward_frame(
-            &mut b,
-            &mut a,
-            &reverse,
-            links[1],
-            &cancel,
-            (&mut bc, &mut ac),
-            false,
-        )?;
-        forward_frame(
-            &mut b,
-            &mut a,
-            &reverse,
-            links[1],
-            &cancel,
-            (&mut bc, &mut ac),
-            false,
-        )?;
-        forward_frame(
-            &mut a,
-            &mut b,
-            &forward,
-            links[0],
-            &cancel,
-            (&mut ac, &mut bc),
-            false,
-        )?;
-    }
-    let _ = a.shutdown(Shutdown::Both);
-    let _ = b.shutdown(Shutdown::Both);
-    Ok(
-        json!({"event":"relay_done","a":ac,"b":bc,"cpu_us":micros(cpu.try_elapsed()?)?,"wall_us":micros(wall.elapsed())?}),
+        counters,
+        allow_clean_eof,
     )
 }
 
@@ -996,8 +905,11 @@ mod tests {
             assert_eq!(snapshot.usage.frame_slots, 0);
             assert_eq!(snapshot.usage.serialized_buffer_bytes, 0);
             assert_eq!(snapshot.high_water.links, 2);
-            assert_eq!(snapshot.high_water.frame_slots, 1);
-            assert_eq!(snapshot.high_water.serialized_buffer_bytes, 262144);
+            assert_eq!(snapshot.high_water.frame_slots, 2);
+            assert_eq!(snapshot.high_water.serialized_buffer_bytes, 524288);
         });
     }
 }
+
+#[cfg(test)]
+mod duplex_tests;
