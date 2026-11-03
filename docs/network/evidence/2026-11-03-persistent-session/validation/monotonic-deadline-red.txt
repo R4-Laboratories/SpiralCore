@@ -1,0 +1,23 @@
+   Compiling spiralcore-mvm-adapter v0.1.0 (/var/tmp/spiralcore-session-20261103/source/crates/spiralcore-mvm-adapter)
+   Compiling spiralcore-mvm-live v0.1.0 (/var/tmp/spiralcore-session-20261103/source/crates/spiralcore-mvm-live)
+    Finished `release` profile [optimized] target(s) in 6.41s
+     Running unittests src/lib.rs (/var/tmp/spiralcore-mvm-service-20261102/target/release/deps/spiralcore_mvm_live-1817246410ca6d72)
+
+running 1 test
+test campaign::session::tests::pre_send_refusal_cannot_extend_original_lifetime_when_wall_clock_rolls_back ... FAILED
+
+failures:
+
+---- campaign::session::tests::pre_send_refusal_cannot_extend_original_lifetime_when_wall_clock_rolls_back stdout ----
+
+thread 'campaign::session::tests::pre_send_refusal_cannot_extend_original_lifetime_when_wall_clock_rolls_back' (326422) panicked at src/campaign/session/tests.rs:195:5:
+allocated request lifetime must not restart on retry
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    campaign::session::tests::pre_send_refusal_cannot_extend_original_lifetime_when_wall_clock_rolls_back
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 20 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `--lib`

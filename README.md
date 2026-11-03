@@ -104,6 +104,17 @@ orchestrator transport credits from guest plaintext/cache budgets; the latter,
 safe sessions beyond 2,048 Calls, negotiated pipelining and canonical WAN remain
 active work in the [recorded plan](docs/plans/2026-11-03-persistent-mvm-service.md).
 
+The [retained-identity checkpoint](docs/network/persistent-session-identity-results-2026-11-03.md)
+now preserves original Calls through admission refusal and checks their original
+generation/request before sending. It fixes receipt-only completion counting and
+pre-send lifetime extension after clock rollback. Three current Firecracker
+sessions passed **26 publication operations and 18 keyless readbacks**. The large
+Combined session used **62.54 MB logical mailbox traffic / 3.082 s timed sender CPU / 6.549 s lifecycle**,
+versus zstd's **107.32 MB / 4.448 s / 8.844 s**. The small host-process comparison
+retains a **Combined CPU increase of 8.49%**. Recovery of duplicates, late events
+and lost acknowledgments on both peers is next; the 2,048-Call guard and pipeline
+one remain until further qualification. These are local native results.
+
 ### Where SpiralCore sits in the network stack
 
 ![Seven-layer OSI reference highlighting application-level SpiralCore functions and the Layer 3 TUN boundary, beside the actual object, packet-tunnel and MVM protocol paths.](docs/figures/overview/osi-model.png)

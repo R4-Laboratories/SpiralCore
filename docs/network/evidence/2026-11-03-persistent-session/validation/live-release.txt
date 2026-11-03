@@ -1,0 +1,131 @@
+   Compiling spiralcore-transfer v0.1.0 (/var/tmp/spiralcore-session-20261103/source/crates/spiralcore-transfer)
+   Compiling spiralcore-mvm-adapter v0.1.0 (/var/tmp/spiralcore-session-20261103/source/crates/spiralcore-mvm-adapter)
+   Compiling spiralcore-gateway-core v0.1.0 (/var/tmp/spiralcore-session-20261103/source/crates/spiralcore-gateway-core)
+   Compiling spiralcore-mvm-live v0.1.0 (/var/tmp/spiralcore-session-20261103/source/crates/spiralcore-mvm-live)
+    Finished `release` profile [optimized] target(s) in 25.07s
+     Running unittests src/lib.rs (/var/tmp/spiralcore-mvm-service-20261102/target/release/deps/spiralcore_mvm_live-33bbac8a8c6d3236)
+
+running 32 tests
+test campaign::canonical::pending_tests::two_authenticated_call_receipts_without_reply_retain_pending_identity ... ok
+test campaign::canonical::tests::explicit_campaign_tier_reserves_worst_case_raw_control_and_data_identities ... ok
+test campaign::canonical::tests::independent_service_dispatch_progresses_while_application_phase_is_blocked ... ok
+test campaign::canonical::tests::invoked_send_failure_retains_identity_and_blocks_an_implicit_retransmission ... ok
+test campaign::canonical::tests::real_caller_retains_the_partial_identity_and_refuses_a_substitute_frame ... ok
+test campaign::session::tests::call_refusal_does_not_register_tracker_or_replace_the_prepared_identity ... ok
+test campaign::session::tests::pre_send_refusal_cannot_extend_original_lifetime_when_wall_clock_rolls_back ... ok
+test campaign::session::tests::starting_send_keeps_identity_but_blocks_implicit_registration_or_replacement ... ok
+test campaign::session::tests::tracker_refusal_retains_partial_call_and_exact_sealed_request_until_capacity_returns ... ok
+test config::tests::provisioning_separates_signers_and_roundtrips_only_private_bootstrap ... ok
+test fixtures::tests::deterministic_mixed_sequence_preserves_exact_lengths_and_binary_edits ... ok
+test guest::tests::accepts_private_sender_receiver_and_keyless_verifier_inputs ... ok
+test guest::tests::canonical_service_refuses_foreign_control_routes_and_excess_private_keys ... ok
+test guest::tests::current_normal_roles_require_the_explicit_canonical_service_profile ... ok
+test guest::tests::exit_report_interoperates_with_mvm_capture_and_requires_its_ack ... ok
+test guest::tests::launch_shape_validation_does_not_authenticate_against_pre_resync_guest_clock ... ok
+test guest::tests::refuses_missing_outgoing_or_excess_incoming_signing_authority ... ok
+test guest::tests::refuses_unbounded_or_malformed_input_without_echoing_private_bytes ... ok
+test guest::tests::verifier_refuses_mailbox_keys_or_unbounded_readback_requests ... ok
+test host_budget::tests::poisoned_ledger_refuses_snapshot_and_admission ... ok
+test host_budget::tests::underflow_fences_without_clamping_and_refusals_saturate ... ok
+test linux_host::linux::custody_tests::custody_excludes_a_competing_writer_without_truncating_the_sidecar ... ok
+test linux_host::linux::custody_tests::replaced_disk_path_and_sidecar_symlink_are_rejected ... ok
+test linux_host::linux::custody_tests::writable_receiver_has_custody_and_sender_and_readonly_have_none ... ok
+test linux_host::tests::canonical_exit_must_be_present_and_successful ... ok
+test linux_host::tests::guest_header_matches_host_architecture_and_private_pack_bounds ... ok
+test linux_host::tests::public_completion_requires_one_done_and_valid_clock ... ok
+test orchestrator::tests::canonical_relay_forwards_all_four_envelopes_and_matches_endpoint_counters ... ok
+test orchestrator::tests::partial_read_wrong_route_cancel_and_failed_write_release_buffer_credit ... ok
+test orchestrator::tests::relay_admits_only_the_provisioned_unexpired_outer_route ... ok
+test orchestrator::tests::relay_credit_precedes_payload_read_and_malformed_reads_release_it ... ok
+test orchestrator::tests::shared_owner_refuses_before_spawn_and_partial_link_admission_rolls_back ... ok
+
+test result: ok. 32 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.20s
+
+     Running unittests src/main.rs (/var/tmp/spiralcore-mvm-service-20261102/target/release/deps/spiralcore_mvm_live-70a5f4be173c3e9d)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running ../spiralcore-mvm-adapter/tests/live.rs (/var/tmp/spiralcore-mvm-service-20261102/target/release/deps/adapter_live-ffbe0bb0866e1c18)
+
+running 10 tests
+test authenticated_but_uncorrelated_and_late_replies_cannot_complete_calls ... ok
+test cancellation_before_handshake_closes_the_owned_socket ... ok
+test canonical_call_and_verified_reply_cross_real_socket_io ... ok
+test ciphertext_framing_handles_split_reads_and_rejects_bad_lengths_and_truncation ... ok
+test live_boot_reply_route_and_application_sequence_are_bound_to_the_proof ... ok
+test live_dispatch_keeps_authenticated_request_available_for_reply ... ok
+test live_open_enforces_the_signed_incoming_queue_budget ... ok
+test live_open_refuses_a_grant_inside_the_clock_uncertainty_margin ... ok
+test live_sender_supports_bounded_clock_lag_and_caps_signed_call_expiry ... ok
+test partial_write_timeout_and_bad_handshake_close_without_retrying_fragments ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.07s
+
+     Running tests/bandwidth_profile.rs (/var/tmp/spiralcore-mvm-service-20261102/target/release/deps/bandwidth_profile-aceb81f156ecde46)
+
+running 1 test
+test legacy_and_explicit_profile_inputs_are_bounded_and_unambiguous ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/broker_objects.rs (/var/tmp/spiralcore-mvm-service-20261102/target/release/deps/broker_objects-071dcf7cfe290c84)
+
+running 4 tests
+test mixed_object_probe_refuses_unregistered_work_before_creating_payload_stores ... ok
+test raw_mixed_campaign_uses_canonical_tcp_shared_broker_and_reopens_all_targets ... ok
+test raw_mixed_is_a_raw_baseline_on_the_same_registered_targets ... ok
+test refused_large_raw_campaign_records_failure_without_claiming_complete_traffic ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 12.19s
+
+     Running tests/campaign.rs (/var/tmp/spiralcore-mvm-service-20261102/target/release/deps/campaign-0866bf07bcb6b2e7)
+
+running 9 tests
+test canonical_service_bootstrap_reserves_private_receipt_keys_and_shared_routes ... ok
+test combined_arms_share_payloads_and_reopen_exact_bytes ... ok
+test mixed_persistent_campaign_crosses_real_stream_and_reopens_exact_bytes ... ok
+test mixed_public_fixtures_match_retained_gateway_identities ... ok
+test qualified_16m_whole_mixed_service_session_reopens_exactly ... ok
+test raw_and_whole_baselines_use_the_same_persistent_verified_channel ... ok
+test same_epoch_new_socket_and_endpoint_recover_published_objects_with_fresh_envelopes ... ok
+test service_campaign_counts_destination_receipts_in_both_directions ... ok
+test shared_broker_dispatches_both_endpoints_without_clock_or_fidelity_loss ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 9.52s
+
+     Running tests/combined_recovery.rs (/var/tmp/spiralcore-mvm-service-20261102/target/release/deps/combined_recovery-98c7856d3b73b935)
+
+running 1 test
+test interrupted_combined_object_is_unpublished_and_fresh_stream_recovers_exactly ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.54s
+
+     Running tests/host_budget.rs (/var/tmp/spiralcore-mvm-service-20261102/target/release/deps/host_budget-e973625a262268bd)
+
+running 6 tests
+test arithmetic_overflow_refuses_atomically_and_released_capacity_is_reusable ... ok
+test held_frames_do_not_hold_ledger_mutex_or_block_other_tenants ... ok
+test host_and_tenant_frame_slots_limit_independently_of_bytes ... ok
+test independent_links_share_host_limits_and_frames_pin_link_lifetime ... ok
+test invalid_configuration_and_fractional_report_counters_are_rejected ... ok
+test tenant_scope_and_link_limits_refuse_without_partial_charges ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/host_pack.rs (/var/tmp/spiralcore-mvm-service-20261102/target/release/deps/host_pack-a5521d4726e96639)
+
+running 3 tests
+test creates_private_sparse_ext4_and_never_overwrites_an_existing_path ... ok
+test packs_exact_guest_bytes_and_private_bootstrap_with_only_fixed_paths ... ok
+test refuses_oversized_or_malformed_bootstrap_and_guest_inputs ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests examples/broker_objects.rs (/var/tmp/spiralcore-mvm-service-20261102/target/release/examples/broker_objects-45dfefd6514bfebe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

@@ -1,0 +1,24 @@
+   Compiling spiralcore-mvm-live v0.1.0 (/var/tmp/spiralcore-session-20261103/source/crates/spiralcore-mvm-live)
+    Finished `release` profile [optimized] target(s) in 2.97s
+     Running unittests src/lib.rs (/var/tmp/spiralcore-mvm-service-20261102/target/release/deps/spiralcore_mvm_live-1817246410ca6d72)
+
+running 1 test
+test campaign::canonical::pending_tests::two_authenticated_call_receipts_without_reply_retain_pending_identity ... FAILED
+
+failures:
+
+---- campaign::canonical::pending_tests::two_authenticated_call_receipts_without_reply_retain_pending_identity stdout ----
+
+thread 'campaign::canonical::pending_tests::two_authenticated_call_receipts_without_reply_retain_pending_identity' (318952) panicked at src/campaign/canonical/pending_tests.rs:99:5:
+assertion `left == right` failed: authenticated Call admission alone cannot complete the application Call
+  left: (1, false)
+ right: (0, true)
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    campaign::canonical::pending_tests::two_authenticated_call_receipts_without_reply_retain_pending_identity
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 19 filtered out; finished in 0.01s
+
+error: test failed, to rerun pass `--lib`

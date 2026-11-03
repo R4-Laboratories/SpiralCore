@@ -1,0 +1,19 @@
+   Compiling spiralcore-mvm-adapter v0.1.0 (/var/tmp/spiralcore-session-20261103/source/crates/spiralcore-mvm-adapter)
+    Finished `release` profile [optimized] target(s) in 1.09s
+     Running tests/call_send.rs (/var/tmp/spiralcore-mvm-service-20261102/target/release/deps/call_send-b781cb0b196aa744)
+
+running 2 tests
+test registered_call_send_is_exact_and_does_not_advance_other_services_accounting_clock ... ok
+test registered_call_send_rejects_changed_generation_request_lifecycle_or_time_before_transmission ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/receipt_send.rs (/var/tmp/spiralcore-mvm-service-20261102/target/release/deps/receipt_send-e267b388ee01fb1a)
+
+running 3 tests
+test dropping_send_permit_releases_queue_credits_but_retains_attempt_rate_history ... ok
+test reserved_receipt_send_survives_other_broker_work_without_reserving_again ... ok
+test reserved_send_rechecks_revocation_cancellation_expiry_and_own_clock ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+

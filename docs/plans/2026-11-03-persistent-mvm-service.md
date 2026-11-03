@@ -164,6 +164,13 @@ are proposed owned files, not assertions that those APIs already exist.
    and unknown control frames, revoked grant, deadline and cancellation. Keep
    receipt acceptance and application Reply distinct. No receipt-of-receipt,
    new ACK, unbounded receive loop or fresh sequence for an uncertain send.
+   Upgrade both peers and the keyless relay: its current four-frame choreography
+   cannot forward a retried Call while waiting for a lost reverse event, even
+   with pipeline one. Use bounded independent directional pumps under the same
+   transport owner, at most one reserved frame per direction, with no accounting
+   lock held across I/O. Distinguish clean half-close from truncated framing and
+   test cancellation, reverse progress and duplicate/reordered events through
+   both direct and relayed sessions before enabling automatic retransmission.
    Dependency: C7. Risk: high.
 9. **Retention and FIFO lifecycle** — files
    `crates/spiralcore-mvm-adapter/tests/service.rs`,
@@ -280,6 +287,22 @@ retain 18 exploratory before/after host cells and five actual Firecracker cells.
   remains unmeasured; the serial transfer comparison cannot establish it.
 - [ ] B6: installation-wide exclusion/orphan recovery and aggregate plaintext,
   cache and workspace enforcement remain unfinished.
+
+Next source checkpoint: product `91baf28`, merged through [PR #56](https://github.com/R4-Laboratories/SpiralCore/pull/56).
+The [retained-identity results](../network/persistent-session-identity-results-2026-11-03.md)
+record 22 host cells (11 before/after pairs) and three additional native cells.
+
+- [x] C7 registration portion: original options/envelope/partial handles remain
+  owned through Full; substituted frames are Busy; pre-send monotonic lifetime
+  does not restart after wall-clock rollback.
+- [x] Current registered-send boundary checks original generation/request under
+  the existing policy lock; invoked send remains uncertain on failure.
+- [x] Receipt-only completion cannot clear pending identity before a Reply;
+  actual caller RED/GREEN regression retained.
+- [ ] C8 both-peer event handling, cached Reply replay and acknowledgment-state
+  retention remain next. Automatic post-send retry is still blocked.
+- [ ] C9/C10 autonomous idle expiry, production-retention cycles and same-owner
+  native sessions beyond 2,048 Calls remain unexecuted.
 
 - [ ] A: expensive object work leaves global dispatch; concurrent control and
   expiry/revocation regressions pass on the actual path.
