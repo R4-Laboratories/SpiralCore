@@ -1,0 +1,20 @@
+   Compiling spiralcore-mvm-adapter v0.1.0 (/var/tmp/spiralcore-session-events-20261103/source/crates/spiralcore-mvm-adapter)
+   Compiling spiralcore-mvm-live v0.1.0 (/var/tmp/spiralcore-session-events-20261103/source/crates/spiralcore-mvm-live)
+    Finished `release` profile [optimized] target(s) in 7.48s
+     Running unittests src/lib.rs (/var/tmp/spiralcore-mvm-service-20261102/target/release/deps/spiralcore_mvm_live-d1c68b78ce634305)
+
+running 1 test
+
+thread 'campaign::canonical::late_tests::unsolicited_late_then_exact_duplicate_is_acknowledged_without_current_progress' (486601) panicked at src/campaign/canonical/late_tests.rs:343:17:
+authenticated Late and its replay must not refuse the current Call: "Reply admission refused"
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test campaign::canonical::late_tests::unsolicited_late_then_exact_duplicate_is_acknowledged_without_current_progress ... FAILED
+
+failures:
+
+failures:
+    campaign::canonical::late_tests::unsolicited_late_then_exact_duplicate_is_acknowledged_without_current_progress
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 30 filtered out; finished in 0.01s
+
+error: test failed, to rerun pass `--lib`
