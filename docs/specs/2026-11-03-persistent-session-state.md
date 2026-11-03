@@ -221,3 +221,35 @@ socket implicitly. RED: inject receipt-send failure after a valid Reply and
 verify the original Call still yields its exact payload, with identity/wire and
 uncertain acknowledgment retained. Receiver replay and automatic retry remain
 separate gates; unchanged retention bounds eventual service-owned reclamation.
+
+## Approved C8 optional registered-Reply observation
+
+Add this shared `ReceiptTracker` seam before caller integration:
+
+```rust
+pub fn observe_registered_application_reply(
+    &mut self, binding: &MailboxBinding, encoded: &[u8], now: ServiceTime,
+) -> Result<Option<SendHandle>>;
+```
+
+Retain the existing expiry, full canonical verification, Reply-kind and context
+checks. A unique complete registered match follows existing deadline/commitment
+checks and returns Some; ambiguous complete matches remain Conflict. None means
+no registered request identity is known under the authenticated tenant/domain/
+peer. If correlation OR causation identifies a retained request there, failed
+content/capability/reply-address or other matching checks remain Unauthorized,
+not None. Never suppress known expiry/conflict or generic verification errors.
+Unknown observation allocates no retained identity, payload or observation state.
+The existing strict `observe_application_reply` wraps this method and maps None
+to its existing Unauthorized result; canonical verification runs once per call.
+
+Caller Late sends its already prepared canonical Late receipt, skips correlation
+and changes no current progress. Duplicate may use the optional observer: None
+sends only its actual Duplicate receipt; Some contributes current progress only
+when its handle equals the pending SendHandle. AcceptedEphemeral requires Some.
+Duplicate never upgrades acceptance level: even an originally Late identity can
+produce Duplicate on replay. Canonical admission of a known Late FIFO position
+may unblock queued Replies; run the ordinary readiness/poll gate afterward using
+only existing verified current facts. No new ACK, wire, borrowed permit or retry.
+Test unknown valid Reply, Late then replay, known mismatch/expiry/conflict and
+unchanged strict behavior before claiming this broader stale-event handling.
