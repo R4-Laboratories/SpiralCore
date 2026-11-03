@@ -348,12 +348,18 @@ impl Storage {
         {
             return Err(io::Error::last_os_error().into());
         }
+        #[cfg(test)]
+        tests::before_state_directory_sync(self)?;
         self.directory.sync_all()?;
         Ok(())
     }
     fn exclusive_holders(&self) -> Result<File> {
         self.check()?;
+        #[cfg(test)]
+        tests::before_holders_open(self)?;
         let file = open_at(&self.directory, HOLDERS, libc::O_RDWR)?;
+        #[cfg(test)]
+        tests::after_holders_open(self)?;
         lock(&file, false)?;
         Ok(file)
     }
@@ -370,7 +376,11 @@ impl HolderLease {
     }
     fn from_storage(storage: Arc<Storage>, expected_generation: u64) -> Result<Self> {
         storage.check()?;
+        #[cfg(test)]
+        tests::before_holders_open(&storage)?;
         let holder = open_at(&storage.directory, HOLDERS, libc::O_RDWR)?;
+        #[cfg(test)]
+        tests::after_holders_open(&storage)?;
         lock(&holder, true)?;
         let record = storage.read()?;
         if record.phase != Phase::Active || record.generation != expected_generation {
@@ -382,6 +392,10 @@ impl HolderLease {
         })
     }
 }
+
+#[cfg(test)]
+#[path = "installed_owner/tests.rs"]
+mod tests;
 
 pub struct InstallationOwner {
     storage: Arc<Storage>,
