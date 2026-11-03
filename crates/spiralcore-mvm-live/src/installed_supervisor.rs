@@ -8,7 +8,8 @@ use crate::{
 };
 use sha2::{Digest, Sha256};
 use std::{
-    fmt,
+    fmt, io,
+    process::{Child, ExitStatus},
     sync::{
         Arc, Mutex,
         atomic::{AtomicBool, Ordering},
@@ -52,6 +53,7 @@ pub enum SupervisorError {
     Profile,
     Owner(OwnerError),
     Budget(TransportBudgetError),
+    Io(io::Error),
 }
 impl fmt::Display for SupervisorError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -75,6 +77,7 @@ pub(crate) struct InstalledAuthority {
     owner: Mutex<InstallationOwner>,
     epoch: Epoch,
     open: AtomicBool,
+    workers: Mutex<WorkerLedger>,
 }
 impl InstalledAuthority {
     pub(crate) fn admission_open(&self) -> bool {
@@ -83,6 +86,40 @@ impl InstalledAuthority {
     pub(crate) fn close_admission(&self) {
         self.open.store(false, Ordering::Release);
     }
+    fn workers(&self) -> Result<std::sync::MutexGuard<'_, WorkerLedger>> {
+        self.workers.lock().map_err(|_| {
+            self.close_admission();
+            SupervisorError::State
+        })
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum WorkerRole {
+    Sender,
+    Receiver,
+    Verify,
+}
+
+/// Local accounting token, never a wire credential or proof of backend exit.
+/// Drop cannot refund its slot. A stale token still retains owner exclusion.
+pub(crate) struct WorkerGrant {
+    authority: Arc<InstalledAuthority>,
+    slot: usize,
+    serial: u64,
+    role: WorkerRole,
+}
+
+struct WorkerSlot {
+    serial: u64,
+    role: WorkerRole,
+    child: Option<Child>,
+    reaped: Option<ExitStatus>,
+}
+#[derive(Default)]
+struct WorkerLedger {
+    serial: u64,
+    slots: [Option<WorkerSlot>; 2],
 }
 #[derive(PartialEq, Eq)]
 enum Phase {
@@ -107,6 +144,7 @@ impl InstalledSupervisor {
             owner: Mutex::new(owner),
             epoch,
             open: AtomicBool::new(true),
+            workers: Mutex::new(WorkerLedger::default()),
         });
         let budget = HostTransportBudget::new_installed(config.transport(), authority.clone())?;
         Ok(Self {
@@ -117,6 +155,102 @@ impl InstalledSupervisor {
     }
     pub fn budget(&self) -> &HostTransportBudget {
         &self.budget
+    }
+    pub(crate) fn reserve_worker(&mut self, role: WorkerRole) -> Result<WorkerGrant> {
+        let mut workers = self.authority.workers()?;
+        if self.phase != Phase::Open || !self.authority.admission_open() {
+            return Err(SupervisorError::State);
+        }
+        let slot = workers
+            .slots
+            .iter()
+            .position(Option::is_none)
+            .ok_or(SupervisorError::Busy)?;
+        let Some(serial) = workers.serial.checked_add(1) else {
+            self.authority.close_admission();
+            return Err(SupervisorError::State);
+        };
+        workers.serial = serial;
+        workers.slots[slot] = Some(WorkerSlot {
+            serial,
+            role,
+            child: None,
+            reaped: None,
+        });
+        Ok(WorkerGrant {
+            authority: self.authority.clone(),
+            slot,
+            serial,
+            role,
+        })
+    }
+    fn worker_slot<'a>(
+        &self,
+        workers: &'a mut WorkerLedger,
+        grant: &WorkerGrant,
+    ) -> Result<&'a mut WorkerSlot> {
+        if !Arc::ptr_eq(&self.authority, &grant.authority) {
+            return Err(SupervisorError::State);
+        }
+        workers
+            .slots
+            .get_mut(grant.slot)
+            .and_then(Option::as_mut)
+            .filter(|slot| slot.serial == grant.serial && slot.role == grant.role)
+            .ok_or(SupervisorError::State)
+    }
+    /// Preserve the caller's exact Child on every refusal. Before real launch
+    /// integration, spawning must be encapsulated so no cancellation can cover
+    /// the interval between spawn and this custody transfer.
+    pub(crate) fn bind_worker(
+        &mut self,
+        grant: &WorkerGrant,
+        child: &mut Option<Child>,
+    ) -> Result<()> {
+        let mut workers = self.authority.workers()?;
+        let slot = self.worker_slot(&mut workers, grant)?;
+        if self.phase != Phase::Open
+            || !self.authority.admission_open()
+            || slot.child.is_some()
+            || slot.reaped.is_some()
+            || child.is_none()
+        {
+            return Err(SupervisorError::State);
+        }
+        slot.child = child.take();
+        Ok(())
+    }
+    pub(crate) fn try_reap_worker(&mut self, grant: &WorkerGrant) -> Result<Option<ExitStatus>> {
+        let mut workers = self.authority.workers()?;
+        let slot = self.worker_slot(&mut workers, grant)?;
+        if let Some(status) = slot.reaped {
+            return Ok(Some(status));
+        }
+        let child = slot.child.as_mut().ok_or(SupervisorError::State)?;
+        let status = child.try_wait().map_err(|error| {
+            // Keep the owned Child and its slot charged on an unknown outcome.
+            self.authority.close_admission();
+            SupervisorError::Io(error)
+        })?;
+        if let Some(status) = status {
+            slot.reaped = Some(status);
+            slot.child.take();
+            if !status.success() {
+                self.authority.close_admission();
+            }
+        }
+        Ok(status)
+    }
+    /// Trusted launcher calls this only after validating its backend shutdown
+    /// contract. A successful process exit alone cannot establish that fact.
+    pub(crate) fn confirm_worker_exit(&mut self, grant: &WorkerGrant) -> Result<()> {
+        let mut workers = self.authority.workers()?;
+        let slot = self.worker_slot(&mut workers, grant)?;
+        if slot.child.is_some() || !slot.reaped.is_some_and(|status| status.success()) {
+            return Err(SupervisorError::State);
+        }
+        workers.slots[grant.slot] = None;
+        Ok(())
     }
     pub fn close_admission(&mut self) {
         self.authority.close_admission();
@@ -142,8 +276,20 @@ impl InstalledSupervisor {
         if snapshot.usage != TransportLimits::default() {
             return Err(SupervisorError::Busy);
         }
-        // No worker activation exists in this component slice. Once workers
-        // are admitted, their owned/reaped ledger must gate this transition.
+        {
+            let workers = self.authority.workers()?;
+            if workers
+                .slots
+                .iter()
+                .flatten()
+                .any(|slot| slot.child.is_some() || slot.reaped.is_none())
+            {
+                return Err(SupervisorError::Busy);
+            }
+        }
+        // All owned Children are positively reaped. Failed/unconfirmed backend
+        // slots never enabled reuse, but final retirement may now attempt the
+        // original kernel holder-exclusion proof, outside both ledger locks.
         let result = match self.authority.owner.lock() {
             Ok(mut owner) => owner.finish(self.authority.epoch),
             Err(_) => {
