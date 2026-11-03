@@ -14,6 +14,7 @@ use std::{
         Arc, Mutex,
         atomic::{AtomicBool, Ordering},
     },
+    time::{Duration, Instant},
 };
 
 pub struct InstalledConfig {
@@ -313,6 +314,62 @@ impl InstalledSupervisor {
 impl Drop for InstalledSupervisor {
     fn drop(&mut self) {
         self.close_admission();
+        // No kernel process operations under the worker or transport ledger.
+        // The controller's authority stays owned throughout this drain.
+        let mut pending: [Option<Child>; 2] = {
+            let mut workers = self
+                .authority
+                .workers
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            std::array::from_fn(|index| {
+                workers.slots[index]
+                    .as_mut()
+                    .and_then(|slot| slot.child.take())
+            })
+        };
+        let deadline = Instant::now() + Duration::from_secs(5);
+        for child in pending.iter_mut().flatten() {
+            // Signal only the original owned Child. Even a failed kill must
+            // still be followed by positive reaping or retained quarantine.
+            let _ = child.kill();
+        }
+        for child in &mut pending {
+            while let Some(owned) = child.as_mut() {
+                match owned.try_wait() {
+                    Ok(Some(_)) => {
+                        child.take();
+                        break;
+                    }
+                    Ok(None) if Instant::now() < deadline => {
+                        std::thread::park_timeout(Duration::from_millis(5));
+                    }
+                    _ => break,
+                }
+            }
+        }
+        if pending.iter().any(Option::is_some) {
+            let mut workers = self
+                .authority
+                .workers
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            for (index, child) in pending.into_iter().enumerate() {
+                if let Some(child) = child {
+                    // These slots cannot be removed/reused after close, and
+                    // the controller's exclusive borrow prevents concurrent
+                    // lifecycle calls during this transfer back to custody.
+                    workers.slots[index].as_mut().unwrap().child = Some(child);
+                }
+            }
+            drop(workers);
+            // Bounded failure quarantine: retain exactly one authority Arc,
+            // hence owner EX and at most two exact Child handles, until this
+            // host process exits. Never publish Clean or refund uncertain
+            // workers. This installation cannot be reopened in this process.
+            std::mem::forget(self.authority.clone());
+            eprintln!("installed worker termination unknown; installation exclusion retained until process exit");
+        }
     }
 }
 
