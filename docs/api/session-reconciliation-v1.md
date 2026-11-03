@@ -255,6 +255,7 @@ includes its authentication, reservation, object and outbound-send work as appli
 including preamble and failed work; socket receive waits/partial reads are excluded
 from this processing domain but remain lifecycle/transport observations. Checked
 duration conversion/addition refuses overflow rather than truncating/resetting.
+ProcessTime measures process CPU during those intervals, not exclusive receiver-thread CPU.
 Per-Handled meters include preceding preamble work when an application follows;
 they overlap the cumulative domain and must not be added to it. Snapshot only after
 phase closure. The lost-Call-receipt fixture's second-handle Cancelled cleanup must
