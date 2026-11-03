@@ -20,6 +20,7 @@ use std::{
 
 const STATE: &str = "state.bin";
 const NEXT: &str = ".state.next";
+const INTENT: &str = ".state.intent";
 const OWNER: &str = "owner.lock";
 const HOLDERS: &str = "holders.lock";
 const RECORD_BYTES: usize = 176;
@@ -290,23 +291,25 @@ impl Storage {
         Ok(())
     }
     fn no_temp(&self) -> Result<()> {
-        let name = CString::new(NEXT).expect("fixed name");
-        let mut stat = std::mem::MaybeUninit::<libc::stat>::uninit();
-        // SAFETY: live directory/name, writable output; output is never read.
-        let result = unsafe {
-            libc::fstatat(
-                self.directory.as_raw_fd(),
-                name.as_ptr(),
-                stat.as_mut_ptr(),
-                libc::AT_SYMLINK_NOFOLLOW,
-            )
-        };
-        if result == 0 {
-            return Err(OwnerError::Fenced);
-        }
-        let error = io::Error::last_os_error();
-        if error.kind() != io::ErrorKind::NotFound {
-            return Err(error.into());
+        for name in [NEXT, INTENT] {
+            let name = CString::new(name).expect("fixed name");
+            let mut stat = std::mem::MaybeUninit::<libc::stat>::uninit();
+            // SAFETY: live directory/name, writable output; output is not read.
+            let result = unsafe {
+                libc::fstatat(
+                    self.directory.as_raw_fd(),
+                    name.as_ptr(),
+                    stat.as_mut_ptr(),
+                    libc::AT_SYMLINK_NOFOLLOW,
+                )
+            };
+            if result == 0 {
+                return Err(OwnerError::Fenced);
+            }
+            let error = io::Error::last_os_error();
+            if error.kind() != io::ErrorKind::NotFound {
+                return Err(error.into());
+            }
         }
         Ok(())
     }
@@ -326,6 +329,7 @@ impl Storage {
     fn publish(&self, record: Record) -> Result<()> {
         self.check()?;
         self.no_temp()?;
+        let intent = self.start_intent(record)?;
         let mut next = open_at(
             &self.directory,
             NEXT,
@@ -351,16 +355,53 @@ impl Storage {
         #[cfg(test)]
         tests::before_state_directory_sync(self)?;
         self.directory.sync_all()?;
+        self.clear_intent(intent)?;
+        Ok(())
+    }
+    fn start_intent(&self, record: Record) -> Result<File> {
+        let mut file = open_at(
+            &self.directory,
+            INTENT,
+            libc::O_WRONLY | libc::O_CREAT | libc::O_EXCL,
+        )?;
+        file.write_all(b"SCINT001")?;
+        file.write_all(&record.generation.to_be_bytes())?;
+        file.write_all(&record.encode()[BODY_BYTES..])?;
+        file.sync_all()?;
+        self.directory.sync_all()?;
+        // No state mutation precedes this confirmed intent-directory barrier.
+        Ok(file)
+    }
+    fn clear_intent(&self, intent: File) -> Result<()> {
+        self.check()?;
+        let path_file = open_at(&self.directory, INTENT, libc::O_RDONLY)?;
+        if object_id(&path_file)? != object_id(&intent)? {
+            return Err(OwnerError::Fenced);
+        }
+        let name = CString::new(INTENT).expect("fixed name");
+        // SAFETY: fixed private name in the retained validated directory.
+        if unsafe { libc::unlinkat(self.directory.as_raw_fd(), name.as_ptr(), 0) } != 0 {
+            return Err(io::Error::last_os_error().into());
+        }
+        // Marker removal is post-commit: state-directory sync already succeeded.
+        self.directory.sync_all()?;
         Ok(())
     }
     fn exclusive_holders(&self) -> Result<File> {
+        self.locked_holders(false)
+    }
+    fn locked_holders(&self, shared: bool) -> Result<File> {
         self.check()?;
         #[cfg(test)]
         tests::before_holders_open(self)?;
         let file = open_at(&self.directory, HOLDERS, libc::O_RDWR)?;
         #[cfg(test)]
         tests::after_holders_open(self)?;
-        lock(&file, false)?;
+        if object_id(&file)? != self.ids[2] {
+            return Err(OwnerError::InvalidStorage);
+        }
+        lock(&file, shared)?;
+        self.check()?;
         Ok(file)
     }
 }
@@ -375,13 +416,7 @@ impl HolderLease {
         Self::from_storage(storage, expected_generation)
     }
     fn from_storage(storage: Arc<Storage>, expected_generation: u64) -> Result<Self> {
-        storage.check()?;
-        #[cfg(test)]
-        tests::before_holders_open(&storage)?;
-        let holder = open_at(&storage.directory, HOLDERS, libc::O_RDWR)?;
-        #[cfg(test)]
-        tests::after_holders_open(&storage)?;
-        lock(&holder, true)?;
+        let holder = storage.locked_holders(true)?;
         let record = storage.read()?;
         if record.phase != Phase::Active || record.generation != expected_generation {
             return Err(OwnerError::StaleEpoch);
