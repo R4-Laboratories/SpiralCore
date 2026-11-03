@@ -329,7 +329,12 @@ record 22 host cells (11 before/after pairs) and three additional native cells.
   retain 22 matched host cells, four native cells, all losses and scoped tests.
   An incomplete receiver fences before another socket read; pipeline one and
   the 2,048-Call guard remain. This is not full C8 completion.
-- [ ] C8 recovery portion: bounded idle receive, original-identity retransmission,
+- [x] C8 transport seam: [PR #62](https://github.com/R4-Laboratories/SpiralCore/pull/62)
+  adds zero-prefix Idle polling under the unchanged strict framing/authority,
+  preserving original deadlines once bytes arrive. Its [recorded qualification](../network/stream-idle-results-2026-11-03.md)
+  includes portable input/lock/partial-frame gates, seven native client rows and
+  normal strict-transfer cost confirmations. No timer/consumer is enabled.
+- [ ] C8 recovery portion: original-identity retransmission,
   uncertain-send/ACK reconciliation, lost-event and direct/relayed duplicate
   recovery remain before automatic post-send retry. No reconnect/resume or new
   request sequence is implicitly permitted by the delivered event loop.
