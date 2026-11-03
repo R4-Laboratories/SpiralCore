@@ -12,6 +12,15 @@ on transport failure without a Reply. Exact byte/frame counters are asserted.
 The initial test-only E0433 missing type qualification and subsequent corrected
 build are retained separately in `validation/`.
 
+The next semantic RED (`2b43f426`) injects a deterministic Reply receipt write
+failure. Original request identity remains, but the old caller has already
+consumed the only service-owned Reply payload (`Replied(None)`). Deferring that
+consumption until all required observations/receipt transmission, with a fresh
+original-deadline check, makes the regression pass. Eight focused canonical
+tests pass in `ack-retention-green.txt`; the charged exact payload remains in the
+canonical service after failure. Reply-wire/ack progress retention is still the
+next implementation, and no automatic retry is enabled.
+
 This is not complete C8: receipt/Reply/ack progress still needs retained bounded
 state, earlier/duplicate Reply handling and both-peer cached Reply recovery.
 Automatic retry stays disabled, the receiver choreography is unchanged, and
