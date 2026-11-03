@@ -172,7 +172,10 @@ fn check_acl(file: &File) -> Result<()> {
     let acl = unsafe { acl_get_fd_np(file.as_raw_fd(), 0x100) };
     if acl.is_null() {
         let error = io::Error::last_os_error();
-        return if error.raw_os_error() == Some(libc::ENOATTR) {
+        // Apple Libc obtains FILESEC_ACL from fstatx_np. An absent ACL
+        // property returns ENOENT even when the descriptor's object exists;
+        // check_private already validated this live descriptor's metadata.
+        return if matches!(error.raw_os_error(), Some(libc::ENOENT | libc::ENOATTR)) {
             Ok(())
         } else {
             Err(error.into())
