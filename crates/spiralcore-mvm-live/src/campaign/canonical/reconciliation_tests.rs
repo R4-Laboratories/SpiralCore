@@ -121,6 +121,179 @@ fn write_evidence(value: &Value) {
 }
 
 #[test]
+fn explicit_retry_recovers_missing_reply_direct() {
+    exercise_active_receiver_fault(false);
+}
+
+#[test]
+fn explicit_retry_recovers_missing_call_receipt_and_reply_ack_direct() {
+    exercise_active_receiver_fault(true);
+}
+
+fn exercise_active_receiver_fault(withhold_receipt_and_ack: bool) {
+    let pair = Pair::provision(Plan {
+        stage: Stage::Two,
+        arm: Arm::Raw,
+        size: 128,
+        trial: 0,
+        bandwidth_profile: Default::default(),
+    })
+    .unwrap();
+    let caller_broker = broker_context().unwrap();
+    let mut caller = Session::new(&pair.sender, &caller_broker).unwrap();
+    let mut receiver = Session::new(&pair.receiver, &broker_context().unwrap()).unwrap();
+    let store = tempfile::tempdir().unwrap();
+    let policy = spiralcore_mvm_adapter::Policy::new(
+        pair.receiver.incoming.as_ref().unwrap().context().unwrap(),
+    )
+    .unwrap();
+    let mut object = ObjectMailbox::open(
+        &store.path().join("cache"),
+        Limits::default(),
+        policy,
+        ColdGraphPolicy::Disabled,
+    )
+    .unwrap();
+    let request = Frame {
+        kind: 1,
+        transfer: [81; 32],
+        seq: 0,
+        body: Offer::cold(b"x", Mode::Raw).encode().unwrap(),
+    };
+    let transfer = request.transfer;
+    let (a, b, fault_gate) = gate::Gate::start_withheld(
+        withhold_receipt_and_ack.then_some(2),
+        Some(if withhold_receipt_and_ack { 1 } else { 2 }),
+    )
+    .unwrap();
+    let state = fault_gate.shared();
+    let receiver_state = state.clone();
+    let a = stream(a, &pair.sender);
+    let b = stream(b, &pair.receiver);
+    let (signal, requests) = bounded_requests();
+    let (release_caller, release) = mpsc::sync_channel(1);
+    let (caller_tx, caller_done) = mpsc::channel();
+    let caller_worker = std::thread::spawn(move || {
+        let cpu = ProcessTime::now();
+        let wall = Instant::now();
+        let cancel = CancellationToken::default();
+        let result = (|| -> Result<Frame> {
+            a.handshake(HandshakeRole::Initiator, &cancel)?;
+            caller
+                .call_with_reconciliation(&request, &a, &cancel, requests)
+                .map(|(_, reply)| reply)
+        })();
+        let counters = a.counters().unwrap();
+        let lifecycle_cpu_us = u64::try_from(cpu.elapsed().as_micros()).unwrap();
+        let lifecycle_wall_us = u64::try_from(wall.elapsed().as_micros()).unwrap();
+        let _ = caller_tx.send(result.is_ok());
+        let _ = release.recv_timeout(WATCHDOG);
+        CallerReport {
+            session: caller,
+            result,
+            counters,
+            lifecycle_cpu_us,
+            lifecycle_wall_us,
+        }
+    });
+    let (receiver_tx, receiver_done) = mpsc::channel();
+    let receiver_cancel = CancellationToken::default();
+    let cancel = receiver_cancel.clone();
+    let receiver_worker = std::thread::spawn(move || {
+        let cpu = ProcessTime::now();
+        let wall = Instant::now();
+        let first = (|| -> Result<Handled> {
+            b.handshake(HandshakeRole::Acceptor, &cancel)?;
+            receiver.handle(transfer, &mut object, &b, &cancel)
+        })();
+        let empty = cache_empty(&mut receiver, &receiver_state).unwrap_or(false);
+        let counters = b.counters().unwrap();
+        let _ = receiver_tx.send(first.is_ok() && empty);
+        ReceiverReport {
+            session: receiver,
+            first,
+            second: None,
+            cache_empty: empty,
+            counters,
+            lifecycle_cpu_us: u64::try_from(cpu.elapsed().as_micros()).unwrap(),
+            lifecycle_wall_us: u64::try_from(wall.elapsed().as_micros()).unwrap(),
+        }
+    });
+    let workers = Workers {
+        gate: Some(fault_gate),
+        receiver_cancel,
+        release_caller,
+        caller: Some(caller_worker),
+        receiver: Some(receiver_worker),
+    };
+    // Request recovery only after the registered complete-frame fault occurred.
+    // Silence alone never authorizes a resend.
+    let end = Instant::now() + WATCHDOG;
+    loop {
+        let snapshot = state.lock().unwrap().clone();
+        let fault_seen = snapshot.reverse.withheld.is_some()
+            && (!withhold_receipt_and_ack || snapshot.forward.withheld.is_some());
+        if fault_seen {
+            break;
+        }
+        assert!(
+            Instant::now() < end,
+            "registered frame fault never occurred"
+        );
+        std::thread::yield_now();
+    }
+    assert_eq!(signal.request_retry(), Ok(()));
+    let caller_ok = caller_done.recv_timeout(WATCHDOG).unwrap_or(false);
+    let receiver_ok = receiver_done.recv_timeout(WATCHDOG).unwrap_or(false);
+    let (caller, receiver, traffic) = workers.finish();
+    assert!(
+        caller_ok && receiver_ok,
+        "both peers must complete/cache release: caller={}, receiver={}, cache_empty={}",
+        status(&caller.result),
+        status(&receiver.first),
+        receiver.cache_empty
+    );
+    assert_eq!(
+        caller.result.as_ref().unwrap(),
+        &receiver.first.as_ref().unwrap().reply
+    );
+    assert_eq!(caller.session.calls, 1);
+    assert_eq!(receiver.session.calls, 1, "object executes once");
+    assert_eq!(
+        traffic.forward.captured[0],
+        traffic.forward.captured[if withhold_receipt_and_ack { 2 } else { 1 }]
+    );
+    assert_eq!(
+        traffic.reverse.captured[1], traffic.reverse.captured[3],
+        "cached Reply must retain every original byte"
+    );
+    assert_eq!(
+        caller.counters.frames_sent,
+        traffic.forward.read.frames_received
+    );
+    assert_eq!(
+        receiver.counters.frames_received,
+        traffic.forward.written.frames_sent
+    );
+    assert_eq!(
+        receiver.counters.frames_sent,
+        traffic.reverse.read.frames_received
+    );
+    assert_eq!(
+        caller.counters.frames_received,
+        traffic.reverse.written.frames_sent
+    );
+    assert_eq!(
+        caller.session.report()["recovery"]["call_retry_invocations"],
+        1
+    );
+    let report = receiver.session.report();
+    assert_eq!(report["recovery"]["cached_reply_retry_invocations"], 1);
+    assert_eq!(report["recovery"]["reply_send_invocations"], 2);
+    assert_eq!(report["recovery"]["receiver_failed_invocations"], 0);
+}
+
+#[test]
 fn explicit_retry_after_receiver_acked_reply_recovers_only_missing_call_receipt() {
     let pair = Pair::provision(Plan {
         stage: Stage::Two,

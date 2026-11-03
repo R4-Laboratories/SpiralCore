@@ -57,6 +57,12 @@ pub struct Gate {
 }
 impl Gate {
     pub fn start_missing_first_receipt() -> Result<(TcpStream, TcpStream, Self)> {
+        Self::start_withheld(None, Some(1))
+    }
+    pub fn start_withheld(
+        forward_withheld: Option<u64>,
+        reverse_withheld: Option<u64>,
+    ) -> Result<(TcpStream, TcpStream, Self)> {
         let [caller, mut a] = tcp_pair()?;
         let [mut b, receiver] = tcp_pair()?;
         let shutdown = [a.try_clone()?, b.try_clone()?];
@@ -78,8 +84,10 @@ impl Gate {
             let aw = a.try_clone()?;
             let bw = b.try_clone()?;
             std::thread::scope(|scope| {
-                let forward = scope.spawn(|| pump(a, bw, false, None, &state, &token, deadline));
-                let reverse = scope.spawn(|| pump(b, aw, true, Some(1), &state, &token, deadline));
+                let forward =
+                    scope.spawn(|| pump(a, bw, false, forward_withheld, &state, &token, deadline));
+                let reverse =
+                    scope.spawn(|| pump(b, aw, true, reverse_withheld, &state, &token, deadline));
                 forward.join().expect("forward fault gate panicked");
                 reverse.join().expect("reverse fault gate panicked");
             });
