@@ -196,8 +196,8 @@ fn public_reconciliation_entry_uses_a_fresh_signal_for_each_real_tcp_call_and_pr
         ("frames_received", "frames_sent"),
     ] {
         assert_eq!(
-            sent.result["counters"][send],
-            received.result["counters"][receive]
+            sent.result["counters"][send].as_u64().unwrap(),
+            received.result["counters"][receive].as_u64().unwrap()
         );
     }
     let published: Vec<Published> =
