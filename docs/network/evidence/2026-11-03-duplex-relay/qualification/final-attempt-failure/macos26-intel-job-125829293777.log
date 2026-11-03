@@ -1,0 +1,707 @@
+﻿2026-11-03T09:21:13.4886850Z Current runner version: '2.338.2'
+2026-11-03T09:21:13.4973200Z ##[group]Runner Image Provisioner
+2026-11-03T09:21:13.4976120Z Hosted Compute Agent
+2026-11-03T09:21:13.4977090Z Version: 20260819.586
+2026-11-03T09:21:13.4997760Z Commit: 3cc4a88dfa507ef76119ad1bb3eccc6378bb2b76
+2026-11-03T09:21:13.4998910Z Build Date: 2026-08-18T23:20:18Z
+2026-11-03T09:21:13.5001620Z Worker ID: {b1803c1b-304f-46af-afc3-c2f1bc6c3938}
+2026-11-03T09:21:13.5003550Z Azure Region: westus
+2026-11-03T09:21:13.5004790Z ##[endgroup]
+2026-11-03T09:21:13.5014440Z ##[group]Operating System
+2026-11-03T09:21:13.5017350Z macOS
+2026-11-03T09:21:13.5018800Z 26.6.1
+2026-11-03T09:21:13.5019670Z 25G76
+2026-11-03T09:21:13.5053090Z ##[endgroup]
+2026-11-03T09:21:13.5061760Z ##[group]Runner Image
+2026-11-03T09:21:13.5114050Z Image: macos-26
+2026-11-03T09:21:13.5115910Z Version: 20260824.0517.1
+2026-11-03T09:21:13.5119960Z Included Software: https://github.com/actions/runner-images/blob/macos-26/20260824.0517/images/macos/macos-26-Readme.md
+2026-11-03T09:21:13.5124820Z Image Release: https://github.com/actions/runner-images/releases/tag/macos-26%2F20260824.0517
+2026-11-03T09:21:13.5126760Z ##[endgroup]
+2026-11-03T09:21:13.5150560Z ##[group]GITHUB_TOKEN Permissions
+2026-11-03T09:21:13.5156100Z Contents: read
+2026-11-03T09:21:13.5163550Z Metadata: read
+2026-11-03T09:21:13.5201500Z ##[endgroup]
+2026-11-03T09:21:13.5206790Z Secret source: Actions
+2026-11-03T09:21:13.5239200Z Cache mode: write
+2026-11-03T09:21:13.5244390Z Prepare workflow directory
+2026-11-03T09:21:13.7246020Z Prepare all required actions
+2026-11-03T09:21:13.7331940Z Getting action download info
+2026-11-03T09:21:13.9712010Z Download action repository 'actions/checkout@11d5960a326750d5838078e36cf38b85af677262' (SHA:11d5960a326750d5838078e36cf38b85af677262)
+2026-11-03T09:21:15.6901930Z Download action repository 'actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02' (SHA:ea165f8d65b6e75b540449e92b4886f43607fa02)
+2026-11-03T09:21:17.2433120Z Complete job name: Ephemeral mailbox / macos26-intel
+2026-11-03T09:21:17.4212160Z ##[group]Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+2026-11-03T09:21:17.4215700Z with:
+2026-11-03T09:21:17.4217290Z   persist-credentials: false
+2026-11-03T09:21:17.4219340Z   repository: R4-Laboratories/SpiralCore
+2026-11-03T09:21:17.4242970Z   token: ***
+2026-11-03T09:21:17.4244890Z   ssh-strict: true
+2026-11-03T09:21:17.4246760Z   ssh-user: git
+2026-11-03T09:21:17.4248550Z   clean: true
+2026-11-03T09:21:17.4250460Z   sparse-checkout-cone-mode: true
+2026-11-03T09:21:17.4252760Z   fetch-depth: 1
+2026-11-03T09:21:17.4254600Z   fetch-tags: false
+2026-11-03T09:21:17.4256520Z   show-progress: true
+2026-11-03T09:21:17.4258450Z   lfs: false
+2026-11-03T09:21:17.4260240Z   submodules: false
+2026-11-03T09:21:17.4262180Z   set-safe-directory: true
+2026-11-03T09:21:17.4264560Z   allow-unsafe-pr-checkout: false
+2026-11-03T09:21:17.4267380Z env:
+2026-11-03T09:21:17.4269130Z   CARGO_BUILD_JOBS: 2
+2026-11-03T09:21:17.4271150Z   CARGO_INCREMENTAL: 0
+2026-11-03T09:21:17.4273320Z   CARGO_TERM_COLOR: never
+2026-11-03T09:21:17.4275440Z   RUST_BACKTRACE: 1
+2026-11-03T09:21:17.4277410Z   ROW_ID: macos26-intel
+2026-11-03T09:21:17.4279470Z   EXPECTED_OS: macOS
+2026-11-03T09:21:17.4281460Z   EXPECTED_ARCH: X64
+2026-11-03T09:21:17.4283680Z   NATIVE_TARGET: x86_64-apple-darwin
+2026-11-03T09:21:17.4286140Z ##[endgroup]
+2026-11-03T09:21:20.7618890Z Syncing repository: R4-Laboratories/SpiralCore
+2026-11-03T09:21:20.7622860Z ##[group]Getting Git version info
+2026-11-03T09:21:20.7644600Z Working directory is '/Users/runner/work/SpiralCore/SpiralCore'
+2026-11-03T09:21:20.7648450Z [command]/usr/local/bin/git version
+2026-11-03T09:21:20.9735510Z git version 2.55.0
+2026-11-03T09:21:20.9790850Z ##[endgroup]
+2026-11-03T09:21:20.9811890Z Copying '/Users/runner/.gitconfig' to '/Users/runner/work/_temp/9643b4cd-5439-4b44-af85-bf4d60bc8183/.gitconfig'
+2026-11-03T09:21:20.9832500Z Temporarily overriding HOME='/Users/runner/work/_temp/9643b4cd-5439-4b44-af85-bf4d60bc8183' before making global git config changes
+2026-11-03T09:21:20.9838450Z Adding repository directory to the temporary git global config as a safe directory
+2026-11-03T09:21:20.9841880Z [command]/usr/local/bin/git config --global --add safe.directory /Users/runner/work/SpiralCore/SpiralCore
+2026-11-03T09:21:21.0216750Z Deleting the contents of '/Users/runner/work/SpiralCore/SpiralCore'
+2026-11-03T09:21:21.0222770Z ##[group]Initializing the repository
+2026-11-03T09:21:21.0228790Z [command]/usr/local/bin/git init /Users/runner/work/SpiralCore/SpiralCore
+2026-11-03T09:21:21.1143150Z hint: Using 'master' as the name for the initial branch. This default branch name
+2026-11-03T09:21:21.1144480Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+2026-11-03T09:21:21.1145560Z hint: to use in all of your new repositories, which will suppress this warning,
+2026-11-03T09:21:21.1146390Z hint: call:
+2026-11-03T09:21:21.1146830Z hint:
+2026-11-03T09:21:21.1147410Z hint: 	git config --global init.defaultBranch <name>
+2026-11-03T09:21:21.1148140Z hint:
+2026-11-03T09:21:21.1148790Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+2026-11-03T09:21:21.1149880Z hint: 'development'. The just-created branch can be renamed via this command:
+2026-11-03T09:21:21.1150700Z hint:
+2026-11-03T09:21:21.1151170Z hint: 	git branch -m <name>
+2026-11-03T09:21:21.1154440Z hint:
+2026-11-03T09:21:21.1155410Z hint: Disable this message with "git config set advice.defaultBranchName false"
+2026-11-03T09:21:21.1156920Z Initialized empty Git repository in /Users/runner/work/SpiralCore/SpiralCore/.git/
+2026-11-03T09:21:21.1169470Z [command]/usr/local/bin/git remote add origin https://github.com/R4-Laboratories/SpiralCore
+2026-11-03T09:21:21.1369880Z ##[endgroup]
+2026-11-03T09:21:21.1372040Z ##[group]Disabling automatic garbage collection
+2026-11-03T09:21:21.1376030Z [command]/usr/local/bin/git config --local gc.auto 0
+2026-11-03T09:21:21.1568680Z ##[endgroup]
+2026-11-03T09:21:21.1570630Z ##[group]Setting up auth
+2026-11-03T09:21:21.1575290Z [command]/usr/local/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-11-03T09:21:21.1796030Z [command]/usr/local/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-11-03T09:21:21.9863390Z [command]/usr/local/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-11-03T09:21:22.0610160Z [command]/usr/local/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-11-03T09:21:23.1209880Z [command]/usr/local/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-11-03T09:21:23.1333540Z [command]/usr/local/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-11-03T09:21:24.2839480Z [command]/usr/local/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+2026-11-03T09:21:24.3286130Z ##[endgroup]
+2026-11-03T09:21:24.3373340Z ##[group]Fetching the repository
+2026-11-03T09:21:24.3477320Z [command]/usr/local/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +48d0aadba4bf042d6ceabfb44ba6e747c5d8d873:refs/remotes/pull/58/merge
+2026-11-03T09:21:31.1392330Z From https://github.com/R4-Laboratories/SpiralCore
+2026-11-03T09:21:31.1394440Z  * [new ref]         48d0aadba4bf042d6ceabfb44ba6e747c5d8d873 -> pull/58/merge
+2026-11-03T09:21:31.1402440Z ##[endgroup]
+2026-11-03T09:21:31.1403180Z ##[group]Determining the checkout info
+2026-11-03T09:21:31.1404420Z ##[endgroup]
+2026-11-03T09:21:31.1414110Z [command]/usr/local/bin/git sparse-checkout disable
+2026-11-03T09:21:31.1629790Z [command]/usr/local/bin/git config --local --unset-all extensions.worktreeConfig
+2026-11-03T09:21:31.1852570Z ##[group]Checking out the ref
+2026-11-03T09:21:31.1854930Z [command]/usr/local/bin/git checkout --progress --force refs/remotes/pull/58/merge
+2026-11-03T09:21:32.5027420Z Updating files:   4% (1025/21098)
+2026-11-03T09:21:32.8141540Z Updating files:   5% (1055/21098)
+2026-11-03T09:21:33.2330970Z Updating files:   6% (1266/21098)
+2026-11-03T09:21:33.3300140Z Updating files:   7% (1477/21098)
+2026-11-03T09:21:33.3728050Z Updating files:   7% (1574/21098)
+2026-11-03T09:21:33.7513090Z Updating files:   8% (1688/21098)
+2026-11-03T09:21:34.0472610Z Updating files:   9% (1899/21098)
+2026-11-03T09:21:34.2207220Z Updating files:  10% (2110/21098)
+2026-11-03T09:21:34.2771100Z Updating files:  11% (2321/21098)
+2026-11-03T09:21:34.4298430Z Updating files:  11% (2413/21098)
+2026-11-03T09:21:34.5871160Z Updating files:  12% (2532/21098)
+2026-11-03T09:21:35.0977850Z Updating files:  13% (2743/21098)
+2026-11-03T09:21:35.3738080Z Updating files:  14% (2954/21098)
+2026-11-03T09:21:35.5693850Z Updating files:  14% (3004/21098)
+2026-11-03T09:21:35.8175580Z Updating files:  15% (3165/21098)
+2026-11-03T09:21:36.0671690Z Updating files:  16% (3376/21098)
+2026-11-03T09:21:36.1611600Z Updating files:  17% (3587/21098)
+2026-11-03T09:21:36.3045180Z Updating files:  18% (3798/21098)
+2026-11-03T09:21:36.5845440Z Updating files:  18% (3935/21098)
+2026-11-03T09:21:37.1143940Z Updating files:  19% (4009/21098)
+2026-11-03T09:21:37.2763650Z Updating files:  20% (4220/21098)
+2026-11-03T09:21:37.3705870Z Updating files:  20% (4384/21098)
+2026-11-03T09:21:37.6043430Z Updating files:  21% (4431/21098)
+2026-11-03T09:21:38.3083250Z Updating files:  22% (4642/21098)
+2026-11-03T09:21:38.3234760Z Updating files:  22% (4851/21098)
+2026-11-03T09:21:38.4213140Z Updating files:  23% (4853/21098)
+2026-11-03T09:21:38.6119510Z Updating files:  24% (5064/21098)
+2026-11-03T09:21:38.6848610Z Updating files:  25% (5275/21098)
+2026-11-03T09:21:38.7761550Z Updating files:  26% (5486/21098)
+2026-11-03T09:21:38.9295770Z Updating files:  27% (5697/21098)
+2026-11-03T09:21:39.0181500Z Updating files:  28% (5908/21098)
+2026-11-03T09:21:39.1892400Z Updating files:  29% (6119/21098)
+2026-11-03T09:21:39.2740490Z Updating files:  30% (6330/21098)
+2026-11-03T09:21:39.5265190Z Updating files:  30% (6462/21098)
+2026-11-03T09:21:39.7269550Z Updating files:  31% (6541/21098)
+2026-11-03T09:21:39.9475590Z Updating files:  32% (6752/21098)
+2026-11-03T09:21:40.0098280Z Updating files:  33% (6963/21098)
+2026-11-03T09:21:40.1017950Z Updating files:  34% (7174/21098)
+2026-11-03T09:21:40.2351080Z Updating files:  35% (7385/21098)
+2026-11-03T09:21:40.2967670Z Updating files:  36% (7596/21098)
+2026-11-03T09:21:40.3072580Z Updating files:  36% (7725/21098)
+2026-11-03T09:21:40.4828280Z Updating files:  37% (7807/21098)
+2026-11-03T09:21:40.6492250Z Updating files:  38% (8018/21098)
+2026-11-03T09:21:40.7309320Z Updating files:  39% (8229/21098)
+2026-11-03T09:21:40.7460690Z Updating files:  40% (8440/21098)
+2026-11-03T09:21:40.8582870Z Updating files:  41% (8651/21098)
+2026-11-03T09:21:40.9434260Z Updating files:  42% (8862/21098)
+2026-11-03T09:21:40.9901690Z Updating files:  43% (9073/21098)
+2026-11-03T09:21:41.1734120Z Updating files:  44% (9284/21098)
+2026-11-03T09:21:41.2517360Z Updating files:  45% (9495/21098)
+2026-11-03T09:21:41.3377270Z Updating files:  46% (9706/21098)
+2026-11-03T09:21:41.4380530Z Updating files:  46% (9761/21098)
+2026-11-03T09:21:41.5383640Z Updating files:  47% (9917/21098)
+2026-11-03T09:21:41.5873810Z Updating files:  48% (10128/21098)
+2026-11-03T09:21:41.7145580Z Updating files:  49% (10339/21098)
+2026-11-03T09:21:41.7897810Z Updating files:  50% (10549/21098)
+2026-11-03T09:21:41.8599600Z Updating files:  51% (10760/21098)
+2026-11-03T09:21:42.1198800Z Updating files:  52% (10971/21098)
+2026-11-03T09:21:42.1528290Z Updating files:  53% (11182/21098)
+2026-11-03T09:21:42.2340390Z Updating files:  54% (11393/21098)
+2026-11-03T09:21:42.3627080Z Updating files:  55% (11604/21098)
+2026-11-03T09:21:42.3839470Z Updating files:  56% (11815/21098)
+2026-11-03T09:21:42.3898090Z Updating files:  56% (11816/21098)
+2026-11-03T09:21:42.3915860Z Updating files:  57% (12026/21098)
+2026-11-03T09:21:42.4993610Z Updating files:  58% (12237/21098)
+2026-11-03T09:21:42.5496970Z Updating files:  59% (12448/21098)
+2026-11-03T09:21:42.6000190Z Updating files:  60% (12659/21098)
+2026-11-03T09:21:42.6534330Z Updating files:  61% (12870/21098)
+2026-11-03T09:21:42.7139060Z Updating files:  62% (13081/21098)
+2026-11-03T09:21:42.7640150Z Updating files:  63% (13292/21098)
+2026-11-03T09:21:42.8375260Z Updating files:  64% (13503/21098)
+2026-11-03T09:21:42.8843070Z Updating files:  65% (13714/21098)
+2026-11-03T09:21:42.9305200Z Updating files:  66% (13925/21098)
+2026-11-03T09:21:43.0015010Z Updating files:  67% (14136/21098)
+2026-11-03T09:21:43.0457030Z Updating files:  68% (14347/21098)
+2026-11-03T09:21:43.1014250Z Updating files:  69% (14558/21098)
+2026-11-03T09:21:43.2084230Z Updating files:  70% (14769/21098)
+2026-11-03T09:21:43.3013470Z Updating files:  71% (14980/21098)
+2026-11-03T09:21:43.3021840Z Updating files:  72% (15191/21098)
+2026-11-03T09:21:43.3278990Z Updating files:  72% (15205/21098)
+2026-11-03T09:21:43.3911610Z Updating files:  73% (15402/21098)
+2026-11-03T09:21:43.4745590Z Updating files:  74% (15613/21098)
+2026-11-03T09:21:43.5263930Z Updating files:  75% (15824/21098)
+2026-11-03T09:21:43.5831640Z Updating files:  76% (16035/21098)
+2026-11-03T09:21:43.6349480Z Updating files:  77% (16246/21098)
+2026-11-03T09:21:43.6901030Z Updating files:  78% (16457/21098)
+2026-11-03T09:21:43.7578730Z Updating files:  79% (16668/21098)
+2026-11-03T09:21:43.8141510Z Updating files:  80% (16879/21098)
+2026-11-03T09:21:43.8710710Z Updating files:  81% (17090/21098)
+2026-11-03T09:21:43.9489100Z Updating files:  82% (17301/21098)
+2026-11-03T09:21:44.1012920Z Updating files:  83% (17512/21098)
+2026-11-03T09:21:44.1711430Z Updating files:  84% (17723/21098)
+2026-11-03T09:21:44.2396460Z Updating files:  85% (17934/21098)
+2026-11-03T09:21:44.2830690Z Updating files:  86% (18145/21098)
+2026-11-03T09:21:44.3050670Z Updating files:  86% (18248/21098)
+2026-11-03T09:21:44.3603790Z Updating files:  87% (18356/21098)
+2026-11-03T09:21:44.4106840Z Updating files:  88% (18567/21098)
+2026-11-03T09:21:44.4695700Z Updating files:  89% (18778/21098)
+2026-11-03T09:21:44.5262200Z Updating files:  90% (18989/21098)
+2026-11-03T09:21:44.5747650Z Updating files:  91% (19200/21098)
+2026-11-03T09:21:44.6857990Z Updating files:  92% (19411/21098)
+2026-11-03T09:21:44.7613780Z Updating files:  93% (19622/21098)
+2026-11-03T09:21:44.8220340Z Updating files:  94% (19833/21098)
+2026-11-03T09:21:44.8859670Z Updating files:  95% (20044/21098)
+2026-11-03T09:21:44.9679470Z Updating files:  96% (20255/21098)
+2026-11-03T09:21:45.0325790Z Updating files:  97% (20466/21098)
+2026-11-03T09:21:45.1301200Z Updating files:  98% (20677/21098)
+2026-11-03T09:21:45.2845860Z Updating files:  99% (20888/21098)
+2026-11-03T09:21:45.3432280Z Updating files:  99% (21064/21098)
+2026-11-03T09:21:45.3432900Z Updating files: 100% (21098/21098)
+2026-11-03T09:21:45.3433710Z Updating files: 100% (21098/21098), done.
+2026-11-03T09:21:45.3837090Z HEAD is now at 48d0aad Merge 62cb60424201d450350395224ecb7a2a98513549 into 7c480a92c9f2267a05fa027df131d3f5ba472caf
+2026-11-03T09:21:45.3975480Z ##[endgroup]
+2026-11-03T09:21:45.4174310Z [command]/usr/local/bin/git log -1 --format=%H
+2026-11-03T09:21:45.4302740Z 48d0aadba4bf042d6ceabfb44ba6e747c5d8d873
+2026-11-03T09:21:45.4360760Z ##[group]Removing auth
+2026-11-03T09:21:45.4368020Z [command]/usr/local/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-11-03T09:21:45.4490140Z [command]/usr/local/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-11-03T09:21:45.6454000Z [command]/usr/local/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-11-03T09:21:45.6481000Z http.https://github.com/.extraheader
+2026-11-03T09:21:45.6596720Z [command]/usr/local/bin/git config --local --unset-all http.https://github.com/.extraheader
+2026-11-03T09:21:45.6606860Z [command]/usr/local/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-11-03T09:21:45.8201340Z [command]/usr/local/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-11-03T09:21:46.0257750Z [command]/usr/local/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-11-03T09:21:46.0904530Z ##[endgroup]
+2026-11-03T09:21:46.1294970Z ##[group]Run $ErrorActionPreference = 'Stop'
+2026-11-03T09:21:46.1295830Z [36;1m$ErrorActionPreference = 'Stop'[0m
+2026-11-03T09:21:46.1297160Z [36;1mNew-Item -ItemType Directory -Force portable-evidence | Out-Null[0m
+2026-11-03T09:21:46.1298230Z [36;1m$source = (git rev-parse HEAD).Trim()[0m
+2026-11-03T09:21:46.1299000Z [36;1mif ($LASTEXITCODE -ne 0) { throw 'Cannot identify source' }[0m
+2026-11-03T09:21:46.1299960Z [36;1m$identity = [ordered]@{[0m
+2026-11-03T09:21:46.1300960Z [36;1m  row = $env:ROW_ID; source_commit = $source; github_sha = $env:GITHUB_SHA[0m
+2026-11-03T09:21:46.1301980Z [36;1m  run_id = $env:GITHUB_RUN_ID; attempt = $env:GITHUB_RUN_ATTEMPT[0m
+2026-11-03T09:21:46.1302880Z [36;1m  runner_os = $env:RUNNER_OS; runner_arch = $env:RUNNER_ARCH[0m
+2026-11-03T09:21:46.1303760Z [36;1m  image_os = $env:ImageOS; image_version = $env:ImageVersion[0m
+2026-11-03T09:21:46.1305120Z [36;1m  os_description = [System.Runtime.InteropServices.RuntimeInformation]::OSDescription[0m
+2026-11-03T09:21:46.1306780Z [36;1m  process_architecture = [System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString()[0m
+2026-11-03T09:21:46.1308560Z [36;1m  os_architecture = [System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString()[0m
+2026-11-03T09:21:46.1310190Z [36;1m  expected_target = $env:NATIVE_TARGET; classification = 'native-process / TCP-loopback / ephemeral'[0m
+2026-11-03T09:21:46.1311780Z [36;1m  manifest_sha256 = (Get-FileHash docs/platforms/mvm-mailbox-portable.json -Algorithm SHA256).Hash[0m
+2026-11-03T09:21:46.1313300Z [36;1m  lock_sha256 = (Get-FileHash crates/spiralcore-mvm-adapter/Cargo.lock -Algorithm SHA256).Hash[0m
+2026-11-03T09:21:46.1314320Z [36;1m}[0m
+2026-11-03T09:21:46.1315270Z [36;1mif ($IsLinux) { $identity.os_release = Get-Content /etc/os-release -Raw; $identity.kernel = (uname -a) -join "`n" }[0m
+2026-11-03T09:21:46.1317030Z [36;1mif ($IsMacOS) { $identity.os_release = (sw_vers) -join "`n"; $identity.kernel = (uname -a) -join "`n" }[0m
+2026-11-03T09:21:46.1318510Z [36;1mif ($IsWindows) { $identity.windows_version = [Environment]::OSVersion.Version.ToString() }[0m
+2026-11-03T09:21:46.1319900Z [36;1m$identity | ConvertTo-Json -Depth 8 | Set-Content portable-evidence/identity.json[0m
+2026-11-03T09:21:46.1321200Z [36;1mif ($env:RUNNER_OS -ne $env:EXPECTED_OS -or $env:RUNNER_ARCH -ne $env:EXPECTED_ARCH) {[0m
+2026-11-03T09:21:46.1322290Z [36;1m  throw 'Actual runner does not match declared native row'[0m
+2026-11-03T09:21:46.1323160Z [36;1m}[0m
+2026-11-03T09:21:46.1341080Z shell: /usr/local/bin/pwsh -command ". '{0}'"
+2026-11-03T09:21:46.1341660Z env:
+2026-11-03T09:21:46.1342010Z   CARGO_BUILD_JOBS: 2
+2026-11-03T09:21:46.1342430Z   CARGO_INCREMENTAL: 0
+2026-11-03T09:21:46.1343190Z   CARGO_TERM_COLOR: never
+2026-11-03T09:21:46.1343730Z   RUST_BACKTRACE: 1
+2026-11-03T09:21:46.1344140Z   ROW_ID: macos26-intel
+2026-11-03T09:21:46.1344660Z   EXPECTED_OS: macOS
+2026-11-03T09:21:46.1345120Z   EXPECTED_ARCH: X64
+2026-11-03T09:21:46.1345550Z   NATIVE_TARGET: x86_64-apple-darwin
+2026-11-03T09:21:46.1346040Z ##[endgroup]
+2026-11-03T09:21:48.3955230Z ##[group]Run rustup toolchain install "1.97.1-$env:NATIVE_TARGET" --profile minimal
+2026-11-03T09:21:48.3956490Z [36;1mrustup toolchain install "1.97.1-$env:NATIVE_TARGET" --profile minimal[0m
+2026-11-03T09:21:48.3957530Z [36;1mif ($LASTEXITCODE -ne 0) { throw 'Pinned native Rust unavailable' }[0m
+2026-11-03T09:21:48.3959240Z [36;1mrustc "+1.97.1-$env:NATIVE_TARGET" -vV | Tee-Object portable-evidence/rustc.txt[0m
+2026-11-03T09:21:48.3960260Z [36;1mif ($LASTEXITCODE -ne 0) { throw 'rustc identity failed' }[0m
+2026-11-03T09:21:48.3961440Z [36;1mif (!(Select-String -Path portable-evidence/rustc.txt -SimpleMatch "host: $env:NATIVE_TARGET")) {[0m
+2026-11-03T09:21:48.3962730Z [36;1m  throw 'Toolchain host mismatch: cross-compilation is not native evidence'[0m
+2026-11-03T09:21:48.3963680Z [36;1m}[0m
+2026-11-03T09:21:48.3964320Z [36;1mcargo "+1.97.1-$env:NATIVE_TARGET" -V | Set-Content portable-evidence/cargo.txt[0m
+2026-11-03T09:21:48.3965340Z [36;1mif ($LASTEXITCODE -ne 0) { throw 'cargo identity failed' }[0m
+2026-11-03T09:21:48.3972870Z shell: /usr/local/bin/pwsh -command ". '{0}'"
+2026-11-03T09:21:48.3973430Z env:
+2026-11-03T09:21:48.3973790Z   CARGO_BUILD_JOBS: 2
+2026-11-03T09:21:48.3974200Z   CARGO_INCREMENTAL: 0
+2026-11-03T09:21:48.3974620Z   CARGO_TERM_COLOR: never
+2026-11-03T09:21:48.3975060Z   RUST_BACKTRACE: 1
+2026-11-03T09:21:48.3975560Z   ROW_ID: macos26-intel
+2026-11-03T09:21:48.3976210Z   EXPECTED_OS: macOS
+2026-11-03T09:21:48.3976740Z   EXPECTED_ARCH: X64
+2026-11-03T09:21:48.3977150Z   NATIVE_TARGET: x86_64-apple-darwin
+2026-11-03T09:21:48.3977640Z ##[endgroup]
+2026-11-03T09:21:48.7198150Z info: syncing channel updates for 1.97.1-x86_64-apple-darwin
+2026-11-03T09:21:48.9736950Z info: latest update on 2026-07-16 for version 1.97.1 (8bab26f4f 2026-07-14)
+2026-11-03T09:21:48.9739630Z info: downloading 3 components
+2026-11-03T09:22:01.4575120Z 
+2026-11-03T09:22:01.4878270Z   1.97.1-x86_64-apple-darwin installed - rustc 1.97.1 (8bab26f4f 2026-07-14)
+2026-11-03T09:22:01.4880430Z info: self-update is disabled for this build of rustup
+2026-11-03T09:22:01.4884950Z info: any updates to rustup will need to be fetched with your system package manager
+2026-11-03T09:22:01.4885740Z 
+2026-11-03T09:22:01.7581810Z rustc 1.97.1 (8bab26f4f 2026-07-14)
+2026-11-03T09:22:01.8377980Z binary: rustc
+2026-11-03T09:22:01.8525520Z commit-hash: 8bab26f4f68e0e26f0bb7960be334d5b520ea452
+2026-11-03T09:22:01.8727760Z commit-date: 2026-07-14
+2026-11-03T09:22:01.8942740Z host: x86_64-apple-darwin
+2026-11-03T09:22:01.9000980Z release: 1.97.1
+2026-11-03T09:22:01.9019300Z LLVM version: 22.1.6
+2026-11-03T09:22:02.1012620Z ##[group]Run $ErrorActionPreference = 'Stop'
+2026-11-03T09:22:02.1015770Z [36;1m$ErrorActionPreference = 'Stop'[0m
+2026-11-03T09:22:02.1017090Z [36;1m$PSNativeCommandUseErrorActionPreference = $false[0m
+2026-11-03T09:22:02.1019300Z [36;1m$manifest = Get-Content docs/platforms/mvm-mailbox-portable.json -Raw | ConvertFrom-Json[0m
+2026-11-03T09:22:02.1020690Z [36;1m$crate = 'crates/spiralcore-mvm-adapter/Cargo.toml'[0m
+2026-11-03T09:22:02.1022960Z [36;1m$metadata = (& cargo "+1.97.1-$env:NATIVE_TARGET" metadata --locked --no-default-features --features live --filter-platform $env:NATIVE_TARGET --format-version 1 --manifest-path $crate) -join "`n"[0m
+2026-11-03T09:22:02.1025470Z [36;1mif ($LASTEXITCODE -ne 0) { throw 'Locked dependency resolution failed' }[0m
+2026-11-03T09:22:02.1027180Z [36;1m$resolved = $metadata | ConvertFrom-Json[0m
+2026-11-03T09:22:02.1029240Z [36;1m$mvm = @($resolved.packages | Where-Object { $_.name -in @('mvm-core','mvm-contract') })[0m
+2026-11-03T09:22:02.1030960Z [36;1mif ($mvm.Count -ne 2 -or @($mvm | Where-Object { $_.source -ne $manifest.mvm_source }).Count -ne 0) {[0m
+2026-11-03T09:22:02.1032480Z [36;1m  throw 'Canonical MVM dependencies do not match pinned published source'[0m
+2026-11-03T09:22:02.1033470Z [36;1m}[0m
+2026-11-03T09:22:02.1034590Z [36;1m@($mvm | Select-Object name,version,source) | ConvertTo-Json | Set-Content portable-evidence/mvm-source.json[0m
+2026-11-03T09:22:02.1035900Z [36;1m$counts = @()[0m
+2026-11-03T09:22:02.1036510Z [36;1mforeach ($test in $manifest.tests) {[0m
+2026-11-03T09:22:02.1037700Z [36;1m  $cargoArgs = @("+1.97.1-$env:NATIVE_TARGET", 'test', '--locked', '--manifest-path', $crate,[0m
+2026-11-03T09:22:02.1039380Z [36;1m    '--no-default-features', '--features', 'live', '--test', $test.name)[0m
+2026-11-03T09:22:02.1041650Z [36;1m  $listing = (& cargo @cargoArgs -- --list --format terse 2>&1 | Out-String)[0m
+2026-11-03T09:22:02.1042650Z [36;1m  $code = $LASTEXITCODE[0m
+2026-11-03T09:22:02.1043850Z [36;1m  $listing | Set-Content "portable-evidence/$($test.name)-list.txt"[0m
+2026-11-03T09:22:02.1045010Z [36;1m  if ($code -ne 0) { throw "Cannot enumerate $($test.name)" }[0m
+2026-11-03T09:22:02.1046060Z [36;1m  $listed = [regex]::Matches($listing, '(?m)^.+: test\r?$').Count[0m
+2026-11-03T09:22:02.1047670Z [36;1m  if ($listed -lt $test.minimum_count) { throw "Missing native coverage: $($test.name) lists $listed" }[0m
+2026-11-03T09:22:02.1049240Z [36;1m  $log = (& cargo @cargoArgs -- --format pretty --color never 2>&1 | Out-String)[0m
+2026-11-03T09:22:02.1050750Z [36;1m  $code = $LASTEXITCODE[0m
+2026-11-03T09:22:02.1051590Z [36;1m  $log | Set-Content "portable-evidence/$($test.name).txt"[0m
+2026-11-03T09:22:02.1052460Z [36;1m  $log | Write-Output[0m
+2026-11-03T09:22:02.1053740Z [36;1m  $summary = [regex]::Matches($log, 'test result: ok\. (\d+) passed; (\d+) failed; (\d+) ignored; (\d+) measured; (\d+) filtered out;')[0m
+2026-11-03T09:22:02.1055500Z [36;1m  if ($code -ne 0 -or $summary.Count -ne 1) { throw "Native test failure: $($test.name)" }[0m
+2026-11-03T09:22:02.1056600Z [36;1m  $s = $summary[0].Groups[0m
+2026-11-03T09:22:02.1057960Z [36;1m  if ([int]$s[1].Value -ne $listed -or [int]$s[2].Value -ne 0 -or [int]$s[3].Value -ne 0 -or [int]$s[4].Value -ne 0 -or [int]$s[5].Value -ne 0) {[0m
+2026-11-03T09:22:02.1059660Z [36;1m    throw "Zero, ignored or filtered coverage is not accepted: $($test.name)"[0m
+2026-11-03T09:22:02.1060660Z [36;1m  }[0m
+2026-11-03T09:22:02.1061760Z [36;1m  $counts += @{ target = $test.name; listed = $listed; passed = [int]$s[1].Value; failed = 0; ignored = 0; filtered = 0 }[0m
+2026-11-03T09:22:02.1063480Z [36;1m  $counts | ConvertTo-Json -Depth 4 | Set-Content portable-evidence/test-counts.json[0m
+2026-11-03T09:22:02.1064600Z [36;1m}[0m
+2026-11-03T09:22:02.1065260Z [36;1m$enabled = @($resolved.resolve.nodes | Where-Object {[0m
+2026-11-03T09:22:02.1066360Z [36;1m  ($_.id -like '*spiralcore*' -and 'hardware-sha256' -in $_.features) -or[0m
+2026-11-03T09:22:02.1068090Z [36;1m  ($_.id -match '[/#]sha2[@/]' -and 'asm' -in $_.features)[0m
+2026-11-03T09:22:02.1068930Z [36;1m})[0m
+2026-11-03T09:22:02.1069830Z [36;1mif ($enabled.Count -ne 0) { throw 'Portable profile must not enable hardware-sha256' }[0m
+2026-11-03T09:22:02.1071320Z [36;1m$dirty = git status --porcelain -- crates/spiralcore-mvm-adapter/Cargo.lock[0m
+2026-11-03T09:22:02.1072590Z [36;1mif ($dirty) { throw 'Locked test mutated the committed lockfile' }[0m
+2026-11-03T09:22:02.1074350Z [36;1m'PASS: native ephemeral mailbox contracts; no MVM backend, durability or WAN claim' | Set-Content portable-evidence/result.txt[0m
+2026-11-03T09:22:02.1086630Z shell: /usr/local/bin/pwsh -command ". '{0}'"
+2026-11-03T09:22:02.1087560Z env:
+2026-11-03T09:22:02.1088140Z   CARGO_BUILD_JOBS: 2
+2026-11-03T09:22:02.1088730Z   CARGO_INCREMENTAL: 0
+2026-11-03T09:22:02.1089270Z   CARGO_TERM_COLOR: never
+2026-11-03T09:22:02.1107060Z   RUST_BACKTRACE: 1
+2026-11-03T09:22:02.1107760Z   ROW_ID: macos26-intel
+2026-11-03T09:22:02.1108360Z   EXPECTED_OS: macOS
+2026-11-03T09:22:02.1108960Z   EXPECTED_ARCH: X64
+2026-11-03T09:22:02.1109650Z   NATIVE_TARGET: x86_64-apple-darwin
+2026-11-03T09:22:02.1110310Z ##[endgroup]
+2026-11-03T09:22:03.3739180Z     Updating crates.io index
+2026-11-03T09:22:03.3772110Z     Updating git repository `https://github.com/Casey-allard/mvm`
+2026-11-03T09:22:30.8272330Z  Downloading crates ...
+2026-11-03T09:22:30.8725430Z   Downloaded curve25519-dalek-derive v0.1.1
+2026-11-03T09:22:30.8842780Z   Downloaded crypto-common v0.2.2
+2026-11-03T09:22:30.8982880Z   Downloaded cfg-if v1.0.5
+2026-11-03T09:22:30.9145360Z   Downloaded cpu-time v1.0.0
+2026-11-03T09:22:30.9271520Z   Downloaded cpubits v0.1.1
+2026-11-03T09:22:30.9918650Z   Downloaded cpufeatures v0.2.17
+2026-11-03T09:22:30.9960650Z   Downloaded crypto-common v0.1.7
+2026-11-03T09:22:30.9969650Z   Downloaded equivalent v1.0.3
+2026-11-03T09:22:30.9971010Z   Downloaded errno v0.3.14
+2026-11-03T09:22:30.9972120Z   Downloaded serde_json v1.0.154
+2026-11-03T09:22:31.0352000Z   Downloaded sha1 v0.10.6
+2026-11-03T09:22:31.0437950Z   Downloaded sha2 v0.10.9
+2026-11-03T09:22:31.0590220Z   Downloaded smallvec v1.16.4
+2026-11-03T09:22:31.0668980Z   Downloaded subtle v2.6.1
+2026-11-03T09:22:31.0761570Z   Downloaded synstructure v0.14.0
+2026-11-03T09:22:31.0812300Z   Downloaded tempfile v3.27.0
+2026-11-03T09:22:31.0987910Z   Downloaded thiserror-impl v2.0.21
+2026-11-03T09:22:31.1061880Z   Downloaded time-core v0.1.9
+2026-11-03T09:22:31.1112490Z   Downloaded utf8-zero v0.8.1
+2026-11-03T09:22:31.1182110Z   Downloaded writeable v0.6.4
+2026-11-03T09:22:31.1282670Z   Downloaded yoke-derive v0.8.4
+2026-11-03T09:22:31.1333240Z   Downloaded block-buffer v0.10.4
+2026-11-03T09:22:31.1382890Z   Downloaded block-buffer v0.12.1
+2026-11-03T09:22:31.1441580Z   Downloaded cipher v0.5.2
+2026-11-03T09:22:31.1544380Z   Downloaded cmov v0.5.4
+2026-11-03T09:22:31.1628880Z   Downloaded core-foundation v0.10.1
+2026-11-03T09:22:31.1721370Z   Downloaded cpufeatures v0.3.1
+2026-11-03T09:22:31.1780260Z   Downloaded ctr v0.10.1
+2026-11-03T09:22:31.1877370Z   Downloaded deranged v0.5.9
+2026-11-03T09:22:31.1920670Z   Downloaded digest v0.10.7
+2026-11-03T09:22:31.1988640Z   Downloaded digest v0.11.3
+2026-11-03T09:22:31.2095010Z   Downloaded displaydoc v0.2.7
+2026-11-03T09:22:31.2195170Z   Downloaded ed25519 v3.0.0
+2026-11-03T09:22:31.2268190Z   Downloaded fastrand v2.5.0
+2026-11-03T09:22:31.2312810Z   Downloaded find-msvc-tools v0.1.15
+2026-11-03T09:22:31.2386420Z   Downloaded form_urlencoded v1.2.2
+2026-11-03T09:22:31.2415820Z   Downloaded generic-array v0.14.7
+2026-11-03T09:22:31.2481820Z   Downloaded ghash v0.6.0
+2026-11-03T09:22:31.2527730Z   Downloaded litemap v0.8.3
+2026-11-03T09:22:31.2633870Z   Downloaded sha1_smol v1.0.1
+2026-11-03T09:22:31.2696760Z   Downloaded sha2 v0.11.1
+2026-11-03T09:22:31.2866510Z   Downloaded shlex v2.0.1
+2026-11-03T09:22:31.2925340Z   Downloaded signature v3.0.0
+2026-11-03T09:22:31.2991510Z   Downloaded stable_deref_trait v1.2.1
+2026-11-03T09:22:31.3033600Z   Downloaded syn v2.0.119
+2026-11-03T09:22:31.3447490Z   Downloaded time-macros v0.2.32
+2026-11-03T09:22:31.3538410Z   Downloaded tinystr v0.8.5
+2026-11-03T09:22:31.3626620Z   Downloaded unicode-ident v1.0.27
+2026-11-03T09:22:31.3748520Z   Downloaded universal-hash v0.6.1
+2026-11-03T09:22:31.3784190Z   Downloaded ureq-proto v0.6.5
+2026-11-03T09:22:31.4021930Z   Downloaded utf8_iter v1.1.0
+2026-11-03T09:22:31.4095040Z   Downloaded version_check v0.9.5
+2026-11-03T09:22:31.4159480Z   Downloaded zerofrom v0.1.8
+2026-11-03T09:22:31.4203330Z   Downloaded zerofrom-derive v0.1.8
+2026-11-03T09:22:31.4247630Z   Downloaded aead v0.6.1
+2026-11-03T09:22:31.4315860Z   Downloaded anyhow v1.0.104
+2026-11-03T09:22:31.4543880Z   Downloaded autocfg v1.5.1
+2026-11-03T09:22:31.4645110Z   Downloaded base64 v0.23.1
+2026-11-03T09:22:31.4826800Z   Downloaded bitflags v2.13.2
+2026-11-03T09:22:31.5849020Z   Downloaded bytes v1.12.1
+2026-11-03T09:22:31.6228210Z   Downloaded chacha20 v0.10.2
+2026-11-03T09:22:31.6229930Z   Downloaded const-oid v0.10.2
+2026-11-03T09:22:31.6231310Z   Downloaded core-foundation-sys v0.8.7
+2026-11-03T09:22:31.6232050Z   Downloaded ctutils v0.4.7
+2026-11-03T09:22:31.6233570Z   Downloaded getrandom v0.2.17
+2026-11-03T09:22:31.6234210Z   Downloaded getrandom v0.4.3
+2026-11-03T09:22:31.6409500Z   Downloaded hex v0.4.3
+2026-11-03T09:22:31.6503550Z   Downloaded idna_adapter v1.2.2
+2026-11-03T09:22:31.6559940Z   Downloaded itoa v1.0.18
+2026-11-03T09:22:31.6636100Z   Downloaded num-conv v0.2.2
+2026-11-03T09:22:31.6681020Z   Downloaded percent-encoding v2.3.2
+2026-11-03T09:22:31.6726050Z   Downloaded potential_utf v0.1.6
+2026-11-03T09:22:31.6781760Z   Downloaded powerfmt v0.2.1
+2026-11-03T09:22:31.6850780Z   Downloaded rustc_version v0.4.1
+2026-11-03T09:22:31.6919530Z   Downloaded secrecy v0.10.3
+2026-11-03T09:22:31.6970220Z   Downloaded serde_jcs v0.1.0
+2026-11-03T09:22:31.7017070Z   Downloaded thiserror v2.0.21
+2026-11-03T09:22:31.7930200Z   Downloaded tracing-attributes v0.1.31
+2026-11-03T09:22:31.8221410Z   Downloaded untrusted v0.9.0
+2026-11-03T09:22:31.8226490Z   Downloaded utf_types v1.0.0
+2026-11-03T09:22:31.8243280Z   Downloaded yoke v0.8.4
+2026-11-03T09:22:31.8323680Z   Downloaded zeroize_derive v1.5.0
+2026-11-03T09:22:31.8371570Z   Downloaded zerovec-derive v0.11.7
+2026-11-03T09:22:31.8456410Z   Downloaded zmij v1.0.23
+2026-11-03T09:22:31.8589140Z   Downloaded zstd v0.13.3
+2026-11-03T09:22:31.8689610Z   Downloaded zstd-safe v7.3.0
+2026-11-03T09:22:31.8761830Z   Downloaded aes v0.9.3
+2026-11-03T09:22:31.8960580Z   Downloaded cc v1.10.0
+2026-11-03T09:22:31.9148780Z   Downloaded ed25519-dalek v3.0.0
+2026-11-03T09:22:31.9292250Z   Downloaded inout v0.2.5
+2026-11-03T09:22:31.9408440Z   Downloaded ipnet v2.12.2
+2026-11-03T09:22:31.9455290Z   Downloaded pin-project-lite v0.2.17
+2026-11-03T09:22:31.9806990Z   Downloaded pkg-config v0.3.34
+2026-11-03T09:22:31.9877440Z   Downloaded polyval v0.7.3
+2026-11-03T09:22:31.9968560Z   Downloaded quote v1.0.47
+2026-11-03T09:22:32.0113260Z   Downloaded rand_core v0.10.1
+2026-11-03T09:22:32.0215490Z   Downloaded rustls-pki-types v1.15.1
+2026-11-03T09:22:32.0327280Z   Downloaded ryu-js v0.2.2
+2026-11-03T09:22:32.0484840Z   Downloaded security-framework-sys v2.17.0
+2026-11-03T09:22:32.0624470Z   Downloaded semver v1.0.28
+2026-11-03T09:22:32.0740580Z   Downloaded zeroize v1.9.1
+2026-11-03T09:22:32.0820770Z   Downloaded httparse v1.10.1
+2026-11-03T09:22:32.0954150Z   Downloaded hybrid-array v0.4.15
+2026-11-03T09:22:32.1077720Z   Downloaded iana-time-zone v0.1.65
+2026-11-03T09:22:32.1226370Z   Downloaded jobserver v0.1.35
+2026-11-03T09:22:32.1305720Z   Downloaded num-traits v0.2.19
+2026-11-03T09:22:32.1417810Z   Downloaded once_cell v1.21.4
+2026-11-03T09:22:32.1540830Z   Downloaded plist v1.10.3
+2026-11-03T09:22:32.1723080Z   Downloaded serde_derive v1.0.229
+2026-11-03T09:22:32.1851710Z   Downloaded tracing-core v0.1.36
+2026-11-03T09:22:32.1960320Z   Downloaded url v2.5.8
+2026-11-03T09:22:32.2050500Z   Downloaded uuid v1.29.0
+2026-11-03T09:22:32.2161450Z   Downloaded aes-gcm v0.11.1
+2026-11-03T09:22:32.2261040Z   Downloaded hmac v0.13.0
+2026-11-03T09:22:32.2365180Z   Downloaded icu_provider v2.4.0
+2026-11-03T09:22:32.2522100Z   Downloaded log v0.4.35
+2026-11-03T09:22:32.2628190Z   Downloaded proc-macro2 v1.0.107
+2026-11-03T09:22:32.2749710Z   Downloaded serde_core v1.0.229
+2026-11-03T09:22:32.2868640Z   Downloaded x25519-dalek v3.0.0
+2026-11-03T09:22:32.3138000Z   Downloaded icu_locale_core v2.4.0
+2026-11-03T09:22:32.3474410Z   Downloaded icu_normalizer_data v2.4.0
+2026-11-03T09:22:32.3601070Z   Downloaded rustls-webpki v0.103.16
+2026-11-03T09:22:32.3795320Z   Downloaded security-framework v3.7.0
+2026-11-03T09:22:32.3984490Z   Downloaded zerotrie v0.2.5
+2026-11-03T09:22:32.4167340Z   Downloaded icu_collections v2.4.0
+2026-11-03T09:22:32.4531710Z   Downloaded indexmap v2.14.2
+2026-11-03T09:22:32.4748630Z   Downloaded memchr v2.8.3
+2026-11-03T09:22:32.5542100Z   Downloaded rand v0.10.3
+2026-11-03T09:22:32.5715080Z   Downloaded serde v1.0.229
+2026-11-03T09:22:32.5872850Z   Downloaded typenum v1.20.1
+2026-11-03T09:22:32.6014260Z   Downloaded http v1.5.0
+2026-11-03T09:22:32.6185760Z   Downloaded chrono v0.4.45
+2026-11-03T09:22:32.6525050Z   Downloaded zerovec v0.11.9
+2026-11-03T09:22:32.6961030Z   Downloaded hashbrown v0.17.1
+2026-11-03T09:22:32.7190600Z   Downloaded icu_properties v2.4.0
+2026-11-03T09:22:32.7320770Z   Downloaded time v0.3.55
+2026-11-03T09:22:32.8462660Z   Downloaded idna v1.1.0
+2026-11-03T09:22:32.8948020Z   Downloaded libm v0.2.16
+2026-11-03T09:22:32.9764110Z   Downloaded webpki-roots v1.0.11
+2026-11-03T09:22:32.9895800Z   Downloaded icu_properties_data v2.4.0
+2026-11-03T09:22:33.0849060Z   Downloaded ureq v3.5.0
+2026-11-03T09:22:33.1155730Z   Downloaded curve25519-dalek v5.0.0
+2026-11-03T09:22:33.1529230Z   Downloaded quick-xml v0.42.0
+2026-11-03T09:22:33.1758770Z   Downloaded syn v3.0.9
+2026-11-03T09:22:33.2293330Z   Downloaded rustls v0.23.46
+2026-11-03T09:22:33.3080870Z   Downloaded tracing v0.1.44
+2026-11-03T09:22:33.3702200Z   Downloaded rustix v1.1.6
+2026-11-03T09:22:33.6002470Z   Downloaded icu_normalizer v2.4.0
+2026-11-03T09:22:33.6350010Z   Downloaded zstd-sys v2.1.2+zstd.1.5.7
+2026-11-03T09:22:33.7186670Z   Downloaded libc v0.2.191
+2026-11-03T09:22:34.0025970Z   Downloaded ring v0.17.14
+2026-11-03T09:25:29.9582650Z     Finished `test` profile [unoptimized] target(s) in 0.43s
+2026-11-03T09:25:29.9584330Z      Running tests/canonical.rs (crates/spiralcore-mvm-adapter/target/debug/deps/canonical-84799f3c9d5408f6)
+2026-11-03T09:25:29.9585370Z 
+2026-11-03T09:25:29.9585530Z running 9 tests
+2026-11-03T09:25:29.9586370Z test configuration_refuses_ambiguous_kind_content_and_mismatching_signer ... ok
+2026-11-03T09:25:29.9587750Z test altered_ciphertext_and_wrong_verification_key_are_rejected_before_authority ... ok
+2026-11-03T09:25:29.9589130Z test canonical_call_and_independent_reply_preserve_exact_application_frames ... ok
+2026-11-03T09:25:29.9590400Z test receiver_only_configuration_opens_without_the_remote_signing_secret ... ok
+2026-11-03T09:25:29.9591960Z test malformed_or_oversized_authenticated_payload_cannot_mint_authority ... ok
+2026-11-03T09:25:29.9593210Z test send_only_capability_cannot_stand_in_for_reply_authority ... ok
+2026-11-03T09:25:29.9594190Z test reply_only_capability_uses_canonical_reply_operation ... ok
+2026-11-03T09:25:29.9595350Z test changed_recipient_epoch_or_revocation_fails_on_open_and_on_outbound ... ok
+2026-11-03T09:25:29.9596550Z test maximum_frame_fits_and_oversize_cancellation_and_queue_pressure_refuse ... ok
+2026-11-03T09:25:29.9597300Z 
+2026-11-03T09:25:29.9597820Z test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.58s
+2026-11-03T09:25:29.9598590Z 
+2026-11-03T09:25:29.9598600Z 
+2026-11-03T09:25:32.9192110Z     Finished `test` profile [unoptimized] target(s) in 0.31s
+2026-11-03T09:25:32.9195360Z      Running tests/service.rs (crates/spiralcore-mvm-adapter/target/debug/deps/service-870d20e23dd9a67a)
+2026-11-03T09:25:32.9198100Z 
+2026-11-03T09:25:32.9200000Z running 16 tests
+2026-11-03T09:25:32.9203340Z test call_timeout_cancel_and_shutdown_are_distinct_terminal_observations ... ok
+2026-11-03T09:25:32.9205160Z test canonical_authentication_boot_key_and_live_revocation_gate_admission_and_reads ... ok
+2026-11-03T09:25:32.9207430Z test authenticated_resealed_retry_deduplicates_across_shared_service_owners_and_conflicts_refuse ... ok
+2026-11-03T09:25:32.9208970Z test authenticated_reply_matches_exact_call_and_is_consumed_once_late_reply_stays_late ... ok
+2026-11-03T09:25:32.9210550Z test canonical_cast_admission_signs_destination_receipt_and_owns_exact_bytes ... ok
+2026-11-03T09:25:32.9212130Z test data_cannot_spend_the_immutable_control_reserve ... ok
+2026-11-03T09:25:32.9213620Z test full_is_not_acceptance_retry_after_capacity_returns_and_terminal_identity_stays ... ok
+2026-11-03T09:25:32.9215200Z test fifo_gaps_block_only_their_scope_and_reused_sequence_is_refused ... ok
+2026-11-03T09:25:32.9216520Z test narrowed_payload_limit_also_applies_to_authenticated_replies ... ok
+2026-11-03T09:25:32.9217800Z test prepared_send_uses_canonical_authorization_and_cancelled_or_wrong_scope_sends_nothing ... ok
+2026-11-03T09:25:32.9219080Z test mailbox_epoch_has_one_owner_and_new_epoch_fences_previous_queue ... ok
+2026-11-03T09:25:32.9220140Z test epoch_takeover_fences_retained_reply_handle_and_cached_reply ... ok
+2026-11-03T09:25:32.9221780Z test lost_reply_retry_replays_same_prepared_envelope_without_second_handler_and_ack_releases_cache ... ok
+2026-11-03T09:25:32.9223480Z test sender_quota_is_shared_across_mailboxes_and_signed_rate_is_not_ignored ... ok
+2026-11-03T09:25:32.9224820Z test reply_sealing_requires_admitted_call_and_exact_reply_authority ... ok
+2026-11-03T09:25:32.9225960Z test reply_fifo_holds_future_response_until_the_known_scope_head_arrives ... ok
+2026-11-03T09:25:32.9227720Z 
+2026-11-03T09:25:32.9228260Z test result: ok. 16 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.01s
+2026-11-03T09:25:32.9229770Z 
+2026-11-03T09:25:32.9229780Z 
+2026-11-03T09:25:36.6282660Z     Finished `test` profile [unoptimized] target(s) in 0.33s
+2026-11-03T09:25:36.6283960Z      Running tests/receipt.rs (crates/spiralcore-mvm-adapter/target/debug/deps/receipt-20c13664680daafc)
+2026-11-03T09:25:36.6284890Z 
+2026-11-03T09:25:36.6285050Z running 17 tests
+2026-11-03T09:25:36.6286030Z test canonical_receipt_codec_preserves_existing_signature_and_rejects_malleable_input ... ok
+2026-11-03T09:25:36.6287940Z test delayed_negative_same_attempt_cannot_republish_consumed_positive_receipt ... ok
+2026-11-03T09:25:36.6289560Z test application_reply_and_admission_are_independent_and_late_replies_cannot_complete ... ok
+2026-11-03T09:25:36.6290930Z test generic_application_admission_cannot_acknowledge_reserved_receipt_control ... ok
+2026-11-03T09:25:36.6292250Z test encrypted_receipts_match_attempts_and_do_not_recurse_or_lose_positive_facts ... ok
+2026-11-03T09:25:36.6293790Z test integrated_receipt_admission_rejects_a_different_budget_owner_before_queue_mutation ... ok
+2026-11-03T09:25:36.6295100Z test ordinary_reply_has_destination_receipt_without_reply_of_reply ... ok
+2026-11-03T09:25:36.6296360Z test integrated_admission_owns_receipt_credit_before_accepting_and_retries_same_message ... ok
+2026-11-03T09:25:36.6297780Z test full_receipt_consumer_queue_can_retry_after_consumption_without_false_duplicate ... ok
+2026-11-03T09:25:36.6299140Z test attempts_and_shared_identity_quotas_fail_closed_and_release_owned_capacity ... ok
+2026-11-03T09:25:36.6300930Z test receipt_return_rejects_undersized_reverse_grants_before_application_admission ... ok
+2026-11-03T09:25:36.6302300Z test prepared_receipt_refuses_backward_clock_and_policy_change_before_transport ... ok
+2026-11-03T09:25:36.6303980Z test receipt_tracker_rejects_wrong_signature_commitment_causation_and_policy_generation ... ok
+2026-11-03T09:25:36.6305470Z test signed_call_limit_is_reported_separately_from_host_quota ... ok
+2026-11-03T09:25:36.6306770Z test receipt_replay_and_prepared_resend_obey_signed_control_rate_without_ack_loops ... ok
+2026-11-03T09:25:36.6308790Z test tracker_local_capacity_diagnostic_preserves_state_and_expires_at_exact_retention ... ok
+2026-11-03T09:25:36.6310230Z test receipt_return_reserves_before_admission_and_sends_only_canonical_encrypted_cast ... ok
+2026-11-03T09:25:36.6311070Z 
+2026-11-03T09:25:36.6311600Z test result: ok. 17 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.81s
+2026-11-03T09:25:36.6312370Z 
+2026-11-03T09:25:36.6312370Z 
+2026-11-03T09:25:38.5702330Z     Finished `test` profile [unoptimized] target(s) in 0.32s
+2026-11-03T09:25:38.5704670Z      Running tests/service_epoch.rs (crates/spiralcore-mvm-adapter/target/debug/deps/service_epoch-adc9a285b3820f05)
+2026-11-03T09:25:38.5705740Z 
+2026-11-03T09:25:38.5706950Z running 3 tests
+2026-11-03T09:25:38.5708620Z test call_and_reply_use_their_own_destination_mailbox_epochs ... ok
+2026-11-03T09:25:38.5710070Z test receipt_tracker_correlates_reply_without_equating_distinct_mailbox_epochs ... ok
+2026-11-03T09:25:38.5711860Z test reply_stale_for_its_own_destination_is_still_refused ... ok
+2026-11-03T09:25:38.5712950Z 
+2026-11-03T09:25:38.5714940Z test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.38s
+2026-11-03T09:25:38.5715740Z 
+2026-11-03T09:25:38.5715750Z 
+2026-11-03T09:25:41.0080160Z     Finished `test` profile [unoptimized] target(s) in 0.31s
+2026-11-03T09:25:41.0095250Z      Running tests/service_sender.rs (crates/spiralcore-mvm-adapter/target/debug/deps/service_sender-f2b7d34b0440de8a)
+2026-11-03T09:25:41.0096320Z 
+2026-11-03T09:25:41.0098950Z running 4 tests
+2026-11-03T09:25:41.0102160Z test sender_refuses_wrong_content_kind_shape_and_payload_bound ... ok
+2026-11-03T09:25:41.0105070Z test invalid_options_do_not_skip_sequence_or_switch_stream_owner ... ok
+2026-11-03T09:25:41.0106760Z test immutable_options_reseal_as_one_canonical_request ... ok
+2026-11-03T09:25:41.0110080Z test persistent_ordering_reuses_one_scope_and_keeps_retry_identity ... ok
+2026-11-03T09:25:41.0120650Z 
+2026-11-03T09:25:41.0122560Z test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.91s
+2026-11-03T09:25:41.0124700Z 
+2026-11-03T09:25:41.0126250Z 
+2026-11-03T09:25:44.2982580Z     Finished `test` profile [unoptimized] target(s) in 0.29s
+2026-11-03T09:25:44.2984280Z      Running tests/service_tcp.rs (crates/spiralcore-mvm-adapter/target/debug/deps/service_tcp-70d19b1d8a920dc2)
+2026-11-03T09:25:44.2985220Z 
+2026-11-03T09:25:44.2985370Z running 4 tests
+2026-11-03T09:25:44.2986050Z test ciphertext_tcp_half_close_preserves_reverse_and_legacy_eof_stays_fatal ... ok
+2026-11-03T09:25:44.2987270Z test ciphertext_tcp_optional_reader_rejects_truncation_lengths_cancel_and_deadline ... FAILED
+2026-11-03T09:25:44.2988560Z test fatal_tcp_receive_fences_owning_transport_and_subsequent_send_without_new_bytes ... ok
+2026-11-03T09:25:44.2989840Z test canonical_calls_and_encrypted_receipts_cross_tcp_without_recursive_traffic ... ok
+2026-11-03T09:25:44.2990560Z 
+2026-11-03T09:25:44.2990700Z failures:
+2026-11-03T09:25:44.2991200Z 
+2026-11-03T09:25:44.2991770Z ---- ciphertext_tcp_optional_reader_rejects_truncation_lengths_cancel_and_deadline stdout ----
+2026-11-03T09:25:44.2993010Z 
+2026-11-03T09:25:44.2994010Z thread 'ciphertext_tcp_optional_reader_rejects_truncation_lengths_cancel_and_deadline' (106651) panicked at tests/service_tcp.rs:107:61:
+2026-11-03T09:25:44.3002330Z called `Result::unwrap()` on an `Err` value: Os { code: 22, kind: InvalidInput, message: "Invalid argument" }
+2026-11-03T09:25:44.3003300Z stack backtrace:
+2026-11-03T09:25:44.3004060Z    0: __rustc::rust_begin_unwind
+2026-11-03T09:25:44.3005010Z    1: core::panicking::panic_fmt
+2026-11-03T09:25:44.3005900Z    2: core::result::unwrap_failed
+2026-11-03T09:25:44.3006900Z    3: service_tcp::ciphertext_tcp_optional_reader_rejects_truncation_lengths_cancel_and_deadline
+2026-11-03T09:25:44.3008360Z    4: service_tcp::ciphertext_tcp_optional_reader_rejects_truncation_lengths_cancel_and_deadline::{closure#0}
+2026-11-03T09:25:44.3011100Z    5: <service_tcp::ciphertext_tcp_optional_reader_rejects_truncation_lengths_cancel_and_deadline::{closure#0} as core::ops::function::FnOnce<()>>::call_once
+2026-11-03T09:25:44.3013090Z note: Some details are omitted, run with `RUST_BACKTRACE=full` for a verbose backtrace.
+2026-11-03T09:25:44.3013800Z 
+2026-11-03T09:25:44.3013800Z 
+2026-11-03T09:25:44.3013950Z failures:
+2026-11-03T09:25:44.3014580Z     ciphertext_tcp_optional_reader_rejects_truncation_lengths_cancel_and_deadline
+2026-11-03T09:25:44.3015360Z 
+2026-11-03T09:25:44.3015970Z test result: FAILED. 3 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.61s
+2026-11-03T09:25:44.3016740Z 
+2026-11-03T09:25:44.3017010Z error: test failed, to rerun pass `--test service_tcp`
+2026-11-03T09:25:44.3017670Z 
+2026-11-03T09:25:44.3768710Z [31;1mException: [0m/Users/runner/work/_temp/0a42e543-c34b-4a32-85f2-be9f92c3cb22.ps1:29[0m
+2026-11-03T09:25:44.3770210Z [31;1m[0m[36;1mLine |[0m
+2026-11-03T09:25:44.3771700Z [31;1m[0m[36;1m[36;1m  29 | [0m …  $summary.Count -ne 1) { [36;1mthrow "Native test failure: $($test.name)"[0m }[0m
+2026-11-03T09:25:44.3773580Z [31;1m[0m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+2026-11-03T09:25:44.3775190Z [31;1m[0m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mNative test failure: service_tcp[0m
+2026-11-03T09:25:44.5019950Z ##[error]Process completed with exit code 1.
+2026-11-03T09:25:44.5194920Z ##[group]Run if (Test-Path portable-evidence) {
+2026-11-03T09:25:44.5195640Z [36;1mif (Test-Path portable-evidence) {[0m
+2026-11-03T09:25:44.5196970Z [36;1m  Get-ChildItem portable-evidence -File | Sort-Object Name | ForEach-Object {[0m
+2026-11-03T09:25:44.5198250Z [36;1m    "$((Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant())  $($_.Name)"[0m
+2026-11-03T09:25:44.5199690Z [36;1m  } | Set-Content portable-evidence/SHA256SUMS[0m
+2026-11-03T09:25:44.5200260Z [36;1m}[0m
+2026-11-03T09:25:44.5211440Z shell: /usr/local/bin/pwsh -command ". '{0}'"
+2026-11-03T09:25:44.5212110Z env:
+2026-11-03T09:25:44.5212450Z   CARGO_BUILD_JOBS: 2
+2026-11-03T09:25:44.5212960Z   CARGO_INCREMENTAL: 0
+2026-11-03T09:25:44.5213510Z   CARGO_TERM_COLOR: never
+2026-11-03T09:25:44.5214380Z   RUST_BACKTRACE: 1
+2026-11-03T09:25:44.5215480Z   ROW_ID: macos26-intel
+2026-11-03T09:25:44.5216350Z   EXPECTED_OS: macOS
+2026-11-03T09:25:44.5216760Z   EXPECTED_ARCH: X64
+2026-11-03T09:25:44.5217400Z   NATIVE_TARGET: x86_64-apple-darwin
+2026-11-03T09:25:44.5217930Z ##[endgroup]
+2026-11-03T09:25:45.0492590Z ##[group]Run actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+2026-11-03T09:25:45.0493540Z with:
+2026-11-03T09:25:45.0494020Z   name: mvm-mailbox-portable-macos26-intel-1
+2026-11-03T09:25:45.0494660Z   path: portable-evidence/
+2026-11-03T09:25:45.0495220Z   if-no-files-found: error
+2026-11-03T09:25:45.0495760Z   retention-days: 14
+2026-11-03T09:25:45.0496210Z   compression-level: 6
+2026-11-03T09:25:45.0496690Z   overwrite: false
+2026-11-03T09:25:45.0497150Z   include-hidden-files: false
+2026-11-03T09:25:45.0497640Z env:
+2026-11-03T09:25:45.0498050Z   CARGO_BUILD_JOBS: 2
+2026-11-03T09:25:45.0498510Z   CARGO_INCREMENTAL: 0
+2026-11-03T09:25:45.0498980Z   CARGO_TERM_COLOR: never
+2026-11-03T09:25:45.0499450Z   RUST_BACKTRACE: 1
+2026-11-03T09:25:45.0499890Z   ROW_ID: macos26-intel
+2026-11-03T09:25:45.0500370Z   EXPECTED_OS: macOS
+2026-11-03T09:25:45.0500860Z   EXPECTED_ARCH: X64
+2026-11-03T09:25:45.0501330Z   NATIVE_TARGET: x86_64-apple-darwin
+2026-11-03T09:25:45.0501900Z ##[endgroup]
+2026-11-03T09:25:45.3817910Z (node:38225) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-11-03T09:25:45.3819460Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-11-03T09:25:45.3945830Z With the provided path, there will be 18 files uploaded
+2026-11-03T09:25:45.3952640Z Artifact name is valid!
+2026-11-03T09:25:45.3953390Z Root directory input is valid!
+2026-11-03T09:25:45.6489890Z Beginning upload of artifact content to blob storage
+2026-11-03T09:25:45.7023380Z (node:38225) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+2026-11-03T09:25:45.7447850Z Uploaded bytes 11864
+2026-11-03T09:25:45.7633490Z Finished uploading artifact content to blob storage!
+2026-11-03T09:25:45.7634860Z SHA256 digest of uploaded artifact zip is 6e4755fe79a4cdfacb31ff823862dfb6228bca0cacbd2fa36642f134021b522b
+2026-11-03T09:25:45.7636040Z Finalizing artifact upload
+2026-11-03T09:25:46.1955120Z Artifact mvm-mailbox-portable-macos26-intel-1.zip successfully finalized. Artifact ID 13218503683
+2026-11-03T09:25:46.1957020Z Artifact mvm-mailbox-portable-macos26-intel-1 has been successfully uploaded! Final size is 11864 bytes. Artifact ID is 13218503683
+2026-11-03T09:25:46.1970230Z Artifact download URL: https://github.com/R4-Laboratories/SpiralCore/actions/runs/41609986842/artifacts/13218503683
+2026-11-03T09:25:46.2325610Z Post job cleanup.
+2026-11-03T09:25:46.3895250Z [command]/usr/local/bin/git version
+2026-11-03T09:25:46.4007400Z git version 2.55.0
+2026-11-03T09:25:46.4045230Z Copying '/Users/runner/.gitconfig' to '/Users/runner/work/_temp/37b71d51-16f8-4096-81d4-0ba5bdb06ad3/.gitconfig'
+2026-11-03T09:25:46.4061050Z Temporarily overriding HOME='/Users/runner/work/_temp/37b71d51-16f8-4096-81d4-0ba5bdb06ad3' before making global git config changes
+2026-11-03T09:25:46.4062730Z Adding repository directory to the temporary git global config as a safe directory
+2026-11-03T09:25:46.4068500Z [command]/usr/local/bin/git config --global --add safe.directory /Users/runner/work/SpiralCore/SpiralCore
+2026-11-03T09:25:46.4193360Z [command]/usr/local/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-11-03T09:25:46.4304690Z [command]/usr/local/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-11-03T09:25:46.5802190Z [command]/usr/local/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-11-03T09:25:46.5915170Z [command]/usr/local/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-11-03T09:25:46.7637950Z [command]/usr/local/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-11-03T09:25:46.7810930Z [command]/usr/local/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-11-03T09:25:47.0371820Z Cleaning up orphan processes
+2026-11-03T09:25:47.2733190Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@11d5960a326750d5838078e36cf38b85af677262, actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/

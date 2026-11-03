@@ -94,26 +94,34 @@ cross-process fleet budgets and durable Windows gateway qualification remain
 open release gates.
 
 The [persistent-service checkpoint](docs/network/persistent-mvm-service-results-2026-11-03.md)
-now moves object work outside shared mailbox dispatch and bounds the two-guest
-keyless relay's link/frame/buffer ownership. Five further Linux/Firecracker
-sessions passed **44 publication operations and 36 keyless reboot readbacks**.
-The larger Combined session used **62.54 MB / 3.012 s timed sender CPU / 6.471 s
-full lifecycle**, versus zstd's **107.25 MB / 4.437 s / 8.807 s**. The smaller
-Combined session retained a **1.95% lifecycle loss**. Reports explicitly separate
-orchestrator transport credits from guest plaintext/cache budgets; the latter,
-safe sessions beyond 2,048 Calls, negotiated pipelining and canonical WAN remain
-active work in the [recorded plan](docs/plans/2026-11-03-persistent-mvm-service.md).
+moves object work outside shared mailbox dispatch and bounds orchestrator relay
+credits. The [retained-identity checkpoint](docs/network/persistent-session-identity-results-2026-11-03.md)
+preserves original Calls through refusal, pins sends to their registered
+generation/request and prevents receipt-only completion or lifetime extension.
+Their smaller-workload losses remain recorded: **1.95% lifecycle** and **8.49%
+host-process CPU** increases, respectively.
 
-The [retained-identity checkpoint](docs/network/persistent-session-identity-results-2026-11-03.md)
-now preserves original Calls through admission refusal and checks their original
-generation/request before sending. It fixes receipt-only completion counting and
-pre-send lifetime extension after clock rollback. Three current Firecracker
-sessions passed **26 publication operations and 18 keyless readbacks**. The large
-Combined session used **62.54 MB logical mailbox traffic / 3.082 s timed sender CPU / 6.549 s lifecycle**,
-versus zstd's **107.32 MB / 4.448 s / 8.844 s**. The small host-process comparison
-retains a **Combined CPU increase of 8.49%**. Recovery of duplicates, late events
-and lost acknowledgments on both peers is next; the 2,048-Call guard and pipeline
-one remain until further qualification. These are local native results.
+The [duplex relay checkpoint](docs/network/duplex-relay-results-2026-11-03.md)
+adds independently progressing keyless directions and safe half-close handling,
+including a reproduced Darwin shutdown fix. Six Linux/Firecracker cells verified
+**54 publication operations and 54 additional keyless reboot readbacks**, with
+zero mismatches. The final two-MVM confirmation transfers the same eight target
+positions of **14,851,384 bytes** each; Combined additionally includes its runtime
+checkpoint and schema setup. Latest single-trial measurements:
+
+| Arm | Logical mailbox traffic, both directions | Timed sender CPU | Full lifecycle |
+|---|---:|---:|---:|
+| Equally tuned whole zstd | 107.33 MB | 4.548 s | 8.850 s |
+| Combined | 62.54 MB | 2.968 s | 6.350 s |
+
+The report defines timer exclusions and two-hop physical traffic. The earlier
+paired relay comparison also retains **9.92%/17.89% higher relay process CPU**
+for Combined/zstd. Independent progress is established; a relay CPU optimization
+is not. These local mixed cold/warm native observations do not qualify WAN or
+fleet capacity. Orchestrator transport credits remain separate from guest
+plaintext/cache budgets. Both-peer duplicate/late-event and acknowledgment
+recovery, sessions beyond the 2,048-Call guard, installed host ownership and
+negotiated pipelining remain in the [active plan](docs/plans/2026-11-03-persistent-mvm-service.md).
 
 ### Where SpiralCore sits in the network stack
 

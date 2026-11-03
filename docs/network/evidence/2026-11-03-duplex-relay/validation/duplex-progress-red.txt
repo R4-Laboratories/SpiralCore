@@ -1,0 +1,24 @@
+   Compiling spiralcore-mvm-live v0.1.0 (/var/tmp/spiralcore-duplex-20261103/source/crates/spiralcore-mvm-live)
+    Finished `release` profile [optimized] target(s) in 5.68s
+     Running unittests src/lib.rs (/var/tmp/spiralcore-mvm-service-20261102/target/release/deps/spiralcore_mvm_live-47083d131c9200ae)
+
+running 2 tests
+
+thread 'orchestrator::duplex_tests::two_forward_ciphertexts_progress_while_reverse_is_withheld' (466045) panicked at src/orchestrator/duplex_tests.rs:138:5:
+independent direction did not progress: Err(Deadline); relay: Err(Io(Kind(UnexpectedEof))); A: StreamCounters { envelope_bytes_sent: 9120, envelope_bytes_received: 0, framing_bytes_sent: 16, framing_bytes_received: 8, frames_sent: 2, frames_received: 0 }; B: StreamCounters { envelope_bytes_sent: 0, envelope_bytes_received: 4552, framing_bytes_sent: 8, framing_bytes_received: 12, frames_sent: 0, frames_received: 1 }
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+thread 'orchestrator::duplex_tests::reverse_ciphertext_progresses_before_any_forward_call' (466044) panicked at src/orchestrator/duplex_tests.rs:138:5:
+independent direction did not progress: Err(Deadline); relay: Ok(Object {"a": Object {"envelope_bytes_received": Number(0), "envelope_bytes_sent": Number(0), "frames_received": Number(0), "frames_sent": Number(0), "framing_bytes_received": Number(8), "framing_bytes_sent": Number(8)}, "b": Object {"envelope_bytes_received": Number(0), "envelope_bytes_sent": Number(0), "frames_received": Number(0), "frames_sent": Number(0), "framing_bytes_received": Number(8), "framing_bytes_sent": Number(8)}, "cpu_us": Number(2686), "event": String("relay_done"), "wall_us": Number(3001256)}); A: StreamCounters { envelope_bytes_sent: 0, envelope_bytes_received: 0, framing_bytes_sent: 8, framing_bytes_received: 8, frames_sent: 0, frames_received: 0 }; B: StreamCounters { envelope_bytes_sent: 3719, envelope_bytes_received: 0, framing_bytes_sent: 12, framing_bytes_received: 8, frames_sent: 1, frames_received: 0 }
+test orchestrator::duplex_tests::two_forward_ciphertexts_progress_while_reverse_is_withheld ... FAILED
+test orchestrator::duplex_tests::reverse_ciphertext_progresses_before_any_forward_call ... FAILED
+
+failures:
+
+failures:
+    orchestrator::duplex_tests::reverse_ciphertext_progresses_before_any_forward_call
+    orchestrator::duplex_tests::two_forward_ciphertexts_progress_while_reverse_is_withheld
+
+test result: FAILED. 0 passed; 2 failed; 0 ignored; 0 measured; 32 filtered out; finished in 3.00s
+
+error: test failed, to rerun pass `--lib`
