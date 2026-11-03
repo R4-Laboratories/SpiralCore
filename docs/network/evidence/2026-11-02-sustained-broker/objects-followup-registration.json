@@ -1,0 +1,14 @@
+{
+  "registration": "SC-MVM-SCALE-002-OBJECTS-FAILURE-RECORDER",
+  "registered_before_execution": true,
+  "prior_source": "03f05ab7bf830dc82531c7c20e0f847b35a23211",
+  "prior_failed_cell": "16777216-raw-mixed-trial0",
+  "prior_evidence": "Exit1, stderr exactly Error: Full, zero-byte result file. No causal phase, partial CPU/traffic or exact readback outcome was recorded; file inventory is not a fidelity or timing result.",
+  "followup_source": "d94020382a1c838a0794af14989d687985c26b69",
+  "change": "Retain partial sender/receiver records on campaign failure and emit a failed-cell row after both threads join. Owner quota snapshot is explicitly global, not causal per dispatch; complete failed-operation stream traffic remains unavailable/null.",
+  "dose": {"cells": 1, "arm": "raw-mixed", "requested_size": 16777216, "trial": 0, "fresh_process": true, "watchdog_seconds": 300},
+  "profile": "All protocol, fixture, grant, cache, durability and resource ceilings unchanged from original object registration; no raised quota or Call cap. New output and scratch paths; preserve original failed record and store.",
+  "tests": "New regression uses the observed refused16M workload and requires an explicit failed row, both partial record arrays, retained payload store, unavailable full stream bytes and no completion claim. Existing1M exact test and strictClippy rerun.",
+  "failure_cleanup": "Writer/serialization errors preserve the owned payload directory. A broken output cannot itself receive a failure row; external command status/stderr must be retained. Campaign cancellation/shutdown errors use the same failed-cell report path when output remains writable.",
+  "interpretation": "This follow-up diagnoses the original incomplete workload with a changed recorder source. It does not relabel the original source's result or establish a successful16M RawMixed comparison."
+}
