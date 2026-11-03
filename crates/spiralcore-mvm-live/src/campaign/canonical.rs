@@ -259,20 +259,35 @@ impl Session {
                     let (accepted, ack) =
                         self.returns
                             .admit(&mut self.service, &self.incoming, &bytes, now)?;
-                    if !matches!(
-                        accepted.receipt.outcome,
-                        DeliveryOutcome::AcceptedEphemeral | DeliveryOutcome::Duplicate
-                    ) {
-                        return Err("Reply admission refused".into());
-                    }
-                    let observed =
-                        self.tracker
-                            .observe_application_reply(&self.incoming, &bytes, now)?;
-                    let current = self
-                        .pending
-                        .as_mut()
-                        .ok_or(SessionError::StreamFenced)?
-                        .observe_reply(observed, &bytes)?;
+                    let current = match accepted.receipt.outcome {
+                        // This authenticated negative disposition contributes
+                        // no current facts, but still gets its actual receipt.
+                        DeliveryOutcome::Late => false,
+                        DeliveryOutcome::AcceptedEphemeral | DeliveryOutcome::Duplicate => {
+                            match self.tracker.observe_registered_application_reply(
+                                &self.incoming,
+                                &bytes,
+                                now,
+                            )? {
+                                Some(observed) => self
+                                    .pending
+                                    .as_mut()
+                                    .ok_or(SessionError::StreamFenced)?
+                                    .observe_reply(observed, &bytes)?,
+                                // A previously Late identity can replay as
+                                // Duplicate without a registered request.
+                                None if accepted.receipt.outcome == DeliveryOutcome::Duplicate => {
+                                    false
+                                }
+                                None => {
+                                    return Err(
+                                        SessionError::Service(ServiceError::Unauthorized).into()
+                                    );
+                                }
+                            }
+                        }
+                        _ => return Err("Reply admission refused".into()),
+                    };
                     Ok(Some((ack, current)))
                 } else {
                     Err("unprovisioned incoming encryption key".into())
