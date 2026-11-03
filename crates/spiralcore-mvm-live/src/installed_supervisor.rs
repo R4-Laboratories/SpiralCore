@@ -357,9 +357,7 @@ impl InstalledSupervisor {
             }
         }
     }
-}
-impl Drop for InstalledSupervisor {
-    fn drop(&mut self) {
+    pub(crate) fn close_and_drain_workers(&mut self) -> Result<()> {
         self.close_admission();
         // No kernel process operations under the worker or transport ledger.
         // The controller's authority stays owned throughout this drain.
@@ -376,15 +374,17 @@ impl Drop for InstalledSupervisor {
             })
         };
         let deadline = Instant::now() + Duration::from_secs(5);
+        let mut reaped = [None; 2];
         for child in pending.iter_mut().flatten() {
             // Signal only the original owned Child. Even a failed kill must
             // still be followed by positive reaping or retained quarantine.
             let _ = child.kill();
         }
-        for child in &mut pending {
+        for (index, child) in pending.iter_mut().enumerate() {
             while let Some(owned) = child.as_mut() {
                 match owned.try_wait() {
-                    Ok(Some(_)) => {
+                    Ok(Some(status)) => {
+                        reaped[index] = Some(status);
                         child.take();
                         break;
                     }
@@ -395,13 +395,17 @@ impl Drop for InstalledSupervisor {
                 }
             }
         }
-        if pending.iter().any(Option::is_some) {
+        let unknown = pending.iter().any(Option::is_some);
+        {
             let mut workers = self
                 .authority
                 .workers
                 .lock()
                 .unwrap_or_else(std::sync::PoisonError::into_inner);
             for (index, child) in pending.into_iter().enumerate() {
+                if let Some(status) = reaped[index] {
+                    workers.slots[index].as_mut().unwrap().reaped = Some(status);
+                }
                 if let Some(child) = child {
                     // These slots cannot be removed/reused after close, and
                     // the controller's exclusive borrow prevents concurrent
@@ -409,7 +413,17 @@ impl Drop for InstalledSupervisor {
                     workers.slots[index].as_mut().unwrap().child = Some(child);
                 }
             }
-            drop(workers);
+        }
+        if unknown {
+            Err(SupervisorError::Busy)
+        } else {
+            Ok(())
+        }
+    }
+}
+impl Drop for InstalledSupervisor {
+    fn drop(&mut self) {
+        if self.close_and_drain_workers().is_err() {
             // Bounded failure quarantine: retain exactly one authority Arc,
             // hence owner EX and at most two exact Child handles, until this
             // host process exits. Never publish Clean or refund uncertain

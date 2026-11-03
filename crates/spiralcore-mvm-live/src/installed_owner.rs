@@ -41,6 +41,11 @@ pub struct Epoch {
     key: InstallationKey,
     generation: u64,
 }
+pub(crate) struct InstallationBinding {
+    pub(crate) root: PathBuf,
+    pub(crate) key: InstallationKey,
+    pub(crate) generation: u64,
+}
 impl Epoch {
     pub fn generation(&self) -> u64 {
         self.generation
@@ -575,6 +580,23 @@ pub struct InstallationOwner {
     _owner: File,
 }
 impl InstallationOwner {
+    /// Fresh local provisioning facts for the original active epoch. This is
+    /// neither a resource descriptor nor permission to activate a worker.
+    pub(crate) fn active_binding(&self, expected: Epoch) -> Result<InstallationBinding> {
+        let record = self.current()?;
+        if record.phase != Phase::Active
+            || record.key != expected.key
+            || record.generation != expected.generation
+        {
+            return Err(OwnerError::StaleEpoch);
+        }
+        Ok(InstallationBinding {
+            root: self.storage.root.clone(),
+            key: record.key,
+            generation: record.generation,
+        })
+    }
+
     /// Fresh local provisioning identity; it conveys no guest boot permission.
     pub fn profile_hash(&self) -> Result<[u8; 32]> {
         Ok(self.current()?.key.profile)
