@@ -27,7 +27,9 @@ enum WhileAwaitingAck {
     ExactReplay,
     DifferentCall,
     ExhaustSends,
+    AckAtSendLimit,
     OlderControl,
+    OlderControlLimit,
 }
 
 struct CountReads {
@@ -281,7 +283,10 @@ fn receiver_case(mode: WhileAwaitingAck) -> CaseReport {
             receiver.handle(transfer, &mut object, &receiver_stream, &cancel)
         })();
         let mut first_handled = None;
-        if matches!(mode, WhileAwaitingAck::OlderControl) {
+        if matches!(
+            mode,
+            WhileAwaitingAck::OlderControl | WhileAwaitingAck::OlderControlLimit
+        ) {
             handled = match handled {
                 Ok(first) => {
                     first_handled = Some(first);
@@ -382,13 +387,15 @@ fn receiver_case(mode: WhileAwaitingAck) -> CaseReport {
         let mut reply_sends_observed = 1;
         let mut second = None;
         match mode {
-            WhileAwaitingAck::ExactReplay | WhileAwaitingAck::ExhaustSends => {
+            WhileAwaitingAck::ExactReplay
+            | WhileAwaitingAck::ExhaustSends
+            | WhileAwaitingAck::AckAtSendLimit => {
                 // Explicit test-driven retransmission of this same prepared
                 // Call; no automatic retry, new options, or new registration.
-                let repeats = if matches!(mode, WhileAwaitingAck::ExhaustSends) {
-                    7
-                } else {
+                let repeats = if matches!(mode, WhileAwaitingAck::ExactReplay) {
                     1
+                } else {
+                    7
                 };
                 for _ in 0..repeats {
                     let now = sender_broker.with_time(|_, now| -> Result<_> { Ok(now) })?;
@@ -480,7 +487,7 @@ fn receiver_case(mode: WhileAwaitingAck) -> CaseReport {
                     now,
                 )?;
             }
-            WhileAwaitingAck::OlderControl => {
+            WhileAwaitingAck::OlderControl | WhileAwaitingAck::OlderControlLimit => {
                 let old_ack_bytes = ack.encoded_bytes().len();
                 let (permit, now) = sender_broker.with_time(|_, now| -> Result<_> {
                     Ok((ack.reserve_send(&cancel, now)?, now))
@@ -590,58 +597,78 @@ fn receiver_case(mode: WhileAwaitingAck) -> CaseReport {
                         Ok((positive, next_ack, frame))
                     })?;
                 reply_sends_observed += 1;
-                // Socket order makes the retained ACK1 precede the Call2 probe.
-                // An exact cached Reply2 afterward proves ACK1 did not release
-                // or substitute the current cache, without timing assumptions.
-                let (permit, now) = sender_broker.with_time(|_, now| -> Result<_> {
-                    Ok((ack.reserve_send(&cancel, now)?, now))
-                })?;
-                permit.send(&stream, &cancel, now)?;
-                sent_ack_bytes += old_ack_bytes;
-                let now = sender_broker.with_time(|_, now| -> Result<_> { Ok(now) })?;
-                sender
-                    .outgoing
-                    .send_prepared(&next, &stream, &cancel, now)?;
-                let duplicate = stream.receive(&cancel, Instant::now() + WATCHDOG)?;
-                sender_broker.with_time(|_, now| -> Result<()> {
-                    let opened = open_wire(&control_material, &duplicate, now)?;
-                    let signed = spiralcore_mvm_adapter::receipt::decode_destination_receipt(
-                        opened.payload(),
-                    )?;
-                    verify_receipt(&signed, &sender.peer_key)?;
-                    if signed.receipt.outcome != DeliveryOutcome::Duplicate {
-                        return Err("current cache probe lacked Duplicate receipt".into());
+                if matches!(mode, WhileAwaitingAck::OlderControlLimit) {
+                    // Call2 is event one. Fifteen exact older controls exhaust
+                    // its remaining allowance, without a third application Call.
+                    for _ in 0..15 {
+                        let (permit, now) = sender_broker.with_time(|_, now| -> Result<_> {
+                            Ok((ack.reserve_send(&cancel, now)?, now))
+                        })?;
+                        permit.send(&stream, &cancel, now)?;
+                        sent_ack_bytes += old_ack_bytes;
                     }
+                    drop(next_ack);
+                    second = Some(SecondExchange {
+                        call_wire: next_wire,
+                        reply_wire: next_reply_wire,
+                        reply: next_reply,
+                        positive_receipt: next_positive,
+                        receipt_bytes: next_receipt.len(),
+                    });
+                } else {
+                    // Socket order makes the retained ACK1 precede the Call2 probe.
+                    // An exact cached Reply2 afterward proves ACK1 did not release
+                    // or substitute the current cache, without timing assumptions.
+                    let (permit, now) = sender_broker.with_time(|_, now| -> Result<_> {
+                        Ok((ack.reserve_send(&cancel, now)?, now))
+                    })?;
+                    permit.send(&stream, &cancel, now)?;
+                    sent_ack_bytes += old_ack_bytes;
+                    let now = sender_broker.with_time(|_, now| -> Result<_> { Ok(now) })?;
                     sender
-                        .tracker
-                        .observe_receipt(&sender.control, &duplicate, now)?;
-                    if sender
-                        .tracker
-                        .take_receipt(&sender.outgoing, &next_send, now)?
-                        != ReceiptObservation::Pending
-                    {
-                        return Err("lower-ranked current duplicate replaced acceptance".into());
+                        .outgoing
+                        .send_prepared(&next, &stream, &cancel, now)?;
+                    let duplicate = stream.receive(&cancel, Instant::now() + WATCHDOG)?;
+                    sender_broker.with_time(|_, now| -> Result<()> {
+                        let opened = open_wire(&control_material, &duplicate, now)?;
+                        let signed = spiralcore_mvm_adapter::receipt::decode_destination_receipt(
+                            opened.payload(),
+                        )?;
+                        verify_receipt(&signed, &sender.peer_key)?;
+                        if signed.receipt.outcome != DeliveryOutcome::Duplicate {
+                            return Err("current cache probe lacked Duplicate receipt".into());
+                        }
+                        sender
+                            .tracker
+                            .observe_receipt(&sender.control, &duplicate, now)?;
+                        if sender
+                            .tracker
+                            .take_receipt(&sender.outgoing, &next_send, now)?
+                            != ReceiptObservation::Pending
+                        {
+                            return Err("lower-ranked current duplicate replaced acceptance".into());
+                        }
+                        Ok(())
+                    })?;
+                    if stream.receive(&cancel, Instant::now() + WATCHDOG)? != next_reply_wire {
+                        return Err(
+                            "old control receipt cleared or changed current cached Reply".into(),
+                        );
                     }
-                    Ok(())
-                })?;
-                if stream.receive(&cancel, Instant::now() + WATCHDOG)? != next_reply_wire {
-                    return Err(
-                        "old control receipt cleared or changed current cached Reply".into(),
-                    );
+                    reply_sends_observed += 1;
+                    sent_ack_bytes += next_ack.encoded_bytes().len();
+                    let (permit, now) = sender_broker.with_time(|_, now| -> Result<_> {
+                        Ok((next_ack.reserve_send(&cancel, now)?, now))
+                    })?;
+                    permit.send(&stream, &cancel, now)?;
+                    second = Some(SecondExchange {
+                        call_wire: next_wire,
+                        reply_wire: next_reply_wire,
+                        reply: next_reply,
+                        positive_receipt: next_positive,
+                        receipt_bytes: next_receipt.len() + duplicate.len(),
+                    });
                 }
-                reply_sends_observed += 1;
-                sent_ack_bytes += next_ack.encoded_bytes().len();
-                let (permit, now) = sender_broker.with_time(|_, now| -> Result<_> {
-                    Ok((next_ack.reserve_send(&cancel, now)?, now))
-                })?;
-                permit.send(&stream, &cancel, now)?;
-                second = Some(SecondExchange {
-                    call_wire: next_wire,
-                    reply_wire: next_reply_wire,
-                    reply: next_reply,
-                    positive_receipt: next_positive,
-                    receipt_bytes: next_receipt.len() + duplicate.len(),
-                });
             }
         }
         Ok(SenderReport {
@@ -954,4 +981,159 @@ fn older_duplicate_reply_receipt_cannot_release_the_current_reply_cache() {
     assert_eq!(sender.counters.framing_bytes_received, 8 + 6 * 4);
     assert_eq!(counts.framing_bytes_sent, 8 + 6 * 4);
     assert_eq!(counts.framing_bytes_received, 8 + 6 * 4);
+}
+
+#[test]
+fn receiver_boundary_positive_ack_at_eight_reply_sends_still_completes() {
+    let mut case = receiver_case(WhileAwaitingAck::AckAtSendLimit);
+    let sender = case
+        .sender
+        .expect("eight sends and a final canonical ACK must exchange");
+    let handled = case
+        .receiver
+        .handled
+        .expect("send ceiling must not reject the actual positive ACK");
+    assert!(case.completed);
+    assert_eq!(handled.reply, sender.reply);
+    assert_eq!(sender.reply_sends_observed, 8);
+    let receiver = &mut case.receiver.session;
+    assert_eq!(receiver.calls, 1);
+    assert!(!receiver.receiver_incomplete);
+    assert!(case.receiver.reentry.is_none());
+    let broker = receiver.broker.clone();
+    broker
+        .with_time(|_, now| -> Result<()> {
+            assert!(
+                receiver
+                    .service
+                    .retry_reply_prepared(&receiver.incoming, &sender.original_call, now)?
+                    .is_none()
+            );
+            assert!(!receiver.service.acknowledge_reply(
+                &receiver.outgoing,
+                &sender.positive_reply_receipt,
+                &receiver.peer_key,
+                now
+            )?);
+            assert!(receiver.service.receive(&receiver.incoming, now)?.is_none());
+            Ok(())
+        })
+        .unwrap();
+    let counts = case.receiver.counters.unwrap();
+    assert_eq!(
+        (sender.counters.frames_sent, sender.counters.frames_received),
+        (9, 16)
+    );
+    assert_eq!((counts.frames_sent, counts.frames_received), (16, 9));
+    assert_eq!(
+        sender.counters.envelope_bytes_sent,
+        (8 * sender.original_call.len() + sender.sent_ack_bytes) as u64
+    );
+    assert_eq!(
+        sender.counters.envelope_bytes_received,
+        (sender.first_receipt_bytes + sender.duplicate_receipt_bytes + 8 * sender.reply_wire.len())
+            as u64
+    );
+    assert_eq!(
+        sender.counters.envelope_bytes_sent,
+        counts.envelope_bytes_received
+    );
+    assert_eq!(
+        sender.counters.envelope_bytes_received,
+        counts.envelope_bytes_sent
+    );
+    assert_eq!(sender.counters.framing_bytes_sent, 8 + 9 * 4);
+    assert_eq!(sender.counters.framing_bytes_received, 8 + 16 * 4);
+    assert_eq!(counts.framing_bytes_sent, 8 + 16 * 4);
+    assert_eq!(counts.framing_bytes_received, 8 + 9 * 4);
+}
+
+#[test]
+fn receiver_boundary_event_sixteen_from_older_controls_fences_and_keeps_current_cache() {
+    let mut case = receiver_case(WhileAwaitingAck::OlderControlLimit);
+    let sender = case
+        .sender
+        .expect("two Calls and fifteen bounded older controls must transmit");
+    assert!(case.completed);
+    let error = case
+        .receiver
+        .handled
+        .as_ref()
+        .err()
+        .expect("sixteen-event allowance was not enforced");
+    assert_eq!(
+        error.downcast_ref::<SessionError>(),
+        Some(&SessionError::EventLimit)
+    );
+    assert_fenced_reentry(&case.receiver);
+    let first = case
+        .receiver
+        .first_handled
+        .as_ref()
+        .expect("first Call must complete before control replay");
+    assert_eq!(first.reply, sender.reply);
+    let second = sender
+        .second
+        .as_ref()
+        .expect("missing unacknowledged current Reply");
+    assert_eq!(sender.reply_sends_observed, 2);
+    let receiver = &mut case.receiver.session;
+    assert_eq!(receiver.calls, 1);
+    assert_eq!(receiver.service.snapshot().accepted, 2);
+    let broker = receiver.broker.clone();
+    broker
+        .with_time(|_, now| -> Result<()> {
+            assert!(
+                receiver
+                    .service
+                    .retry_reply_prepared(&receiver.incoming, &sender.original_call, now)?
+                    .is_none()
+            );
+            assert!(!receiver.service.acknowledge_reply(
+                &receiver.outgoing,
+                &sender.positive_reply_receipt,
+                &receiver.peer_key,
+                now
+            )?);
+            let cached = receiver
+                .service
+                .retry_reply_prepared(&receiver.incoming, &second.call_wire, now)?
+                .expect("older control saturation discarded current Reply");
+            assert_eq!(encode_envelope(cached.envelope())?, second.reply_wire);
+            assert_eq!(cached.header().sequence.get(), 2);
+            assert!(receiver.service.receive(&receiver.incoming, now)?.is_none());
+            Ok(())
+        })
+        .unwrap();
+    let counts = case.receiver.counters.unwrap();
+    // First Call + ACK1 + Call2 + fifteen repeated ACK1 frames. No third Call,
+    // current ACK, extra receipt-control response, or cached replay is sent.
+    assert_eq!(
+        (sender.counters.frames_sent, sender.counters.frames_received),
+        (18, 4)
+    );
+    assert_eq!((counts.frames_sent, counts.frames_received), (4, 18));
+    assert_eq!(
+        sender.counters.envelope_bytes_sent,
+        (sender.original_call.len() + second.call_wire.len() + sender.sent_ack_bytes) as u64
+    );
+    assert_eq!(
+        sender.counters.envelope_bytes_received,
+        (sender.first_receipt_bytes
+            + sender.reply_wire.len()
+            + second.receipt_bytes
+            + second.reply_wire.len()) as u64
+    );
+    assert_eq!(
+        sender.counters.envelope_bytes_sent,
+        counts.envelope_bytes_received
+    );
+    assert_eq!(
+        sender.counters.envelope_bytes_received,
+        counts.envelope_bytes_sent
+    );
+    assert_eq!(sender.counters.framing_bytes_sent, 8 + 18 * 4);
+    assert_eq!(sender.counters.framing_bytes_received, 8 + 4 * 4);
+    assert_eq!(counts.framing_bytes_sent, 8 + 4 * 4);
+    assert_eq!(counts.framing_bytes_received, 8 + 18 * 4);
 }
