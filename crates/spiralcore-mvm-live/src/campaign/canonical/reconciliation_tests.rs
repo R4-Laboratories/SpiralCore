@@ -20,6 +20,8 @@ struct CallerReport {
     session: Session,
     result: Result<Frame>,
     counters: StreamCounters,
+    lifecycle_cpu_us: u64,
+    lifecycle_wall_us: u64,
 }
 struct ReceiverReport {
     session: Session,
@@ -27,6 +29,8 @@ struct ReceiverReport {
     second: Option<Result<Handled>>,
     cache_empty: bool,
     counters: StreamCounters,
+    lifecycle_cpu_us: u64,
+    lifecycle_wall_us: u64,
 }
 struct Workers {
     gate: Option<gate::Gate>,
@@ -99,6 +103,23 @@ fn cache_empty(session: &mut Session, state: &gate::Shared) -> Result<bool> {
     })
 }
 
+fn write_evidence(value: &Value) {
+    let Some(directory) = std::env::var_os("SPIRALCORE_RECONCILIATION_EVIDENCE_DIR") else {
+        return;
+    };
+    let directory = std::path::PathBuf::from(directory);
+    let metadata = std::fs::symlink_metadata(&directory).unwrap();
+    assert!(metadata.is_dir() && !metadata.file_type().is_symlink());
+    // Root supplies this owned directory. Never overwrite an earlier result or
+    // persist payloads, envelope wires, keys, or capability/bootstrap material.
+    let file = std::fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(directory.join("missing-call-receipt-direct.json"))
+        .unwrap();
+    serde_json::to_writer_pretty(file, value).unwrap();
+}
+
 #[test]
 fn explicit_retry_after_receiver_acked_reply_recovers_only_missing_call_receipt() {
     let pair = Pair::provision(Plan {
@@ -159,6 +180,8 @@ fn explicit_retry_after_receiver_acked_reply_recovers_only_missing_call_receipt(
     let (release_caller, release) = mpsc::sync_channel(1);
     let (caller_done_tx, caller_done) = mpsc::channel();
     let caller_worker = std::thread::spawn(move || {
+        let cpu = ProcessTime::now();
+        let wall = Instant::now();
         let cancel = CancellationToken::default();
         let result = (|| -> Result<Frame> {
             caller_stream.handshake(HandshakeRole::Initiator, &cancel)?;
@@ -167,6 +190,8 @@ fn explicit_retry_after_receiver_acked_reply_recovers_only_missing_call_receipt(
                 .map(|(_, reply)| reply)
         })();
         let counters = caller_stream.counters().unwrap();
+        let lifecycle_cpu_us = u64::try_from(cpu.elapsed().as_micros()).unwrap();
+        let lifecycle_wall_us = u64::try_from(wall.elapsed().as_micros()).unwrap();
         let _ = caller_done_tx.send(result.is_ok());
         // Keep the healthy endpoint open until the owner cancels the receiver's
         // unfinished next preamble; caller completion is not a receiver EOF.
@@ -175,6 +200,8 @@ fn explicit_retry_after_receiver_acked_reply_recovers_only_missing_call_receipt(
             session: caller,
             result,
             counters,
+            lifecycle_cpu_us,
+            lifecycle_wall_us,
         }
     });
     let (first_tx, first_done) = mpsc::channel();
@@ -182,6 +209,8 @@ fn explicit_retry_after_receiver_acked_reply_recovers_only_missing_call_receipt(
     let receiver_cancel = CancellationToken::default();
     let cancel = receiver_cancel.clone();
     let receiver_worker = std::thread::spawn(move || {
+        let cpu = ProcessTime::now();
+        let wall = Instant::now();
         let first = (|| -> Result<Handled> {
             receiver_stream.handshake(HandshakeRole::Acceptor, &cancel)?;
             receiver.handle(expected_transfer, &mut object, &receiver_stream, &cancel)
@@ -195,6 +224,8 @@ fn explicit_retry_after_receiver_acked_reply_recovers_only_missing_call_receipt(
         };
         let empty = cache_empty(&mut receiver, &receiver_state).unwrap_or(false);
         let counters = receiver_stream.counters().unwrap();
+        let lifecycle_cpu_us = u64::try_from(cpu.elapsed().as_micros()).unwrap();
+        let lifecycle_wall_us = u64::try_from(wall.elapsed().as_micros()).unwrap();
         let _ = receiver_done_tx.send(());
         ReceiverReport {
             session: receiver,
@@ -202,6 +233,8 @@ fn explicit_retry_after_receiver_acked_reply_recovers_only_missing_call_receipt(
             second,
             cache_empty: empty,
             counters,
+            lifecycle_cpu_us,
+            lifecycle_wall_us,
         }
     });
     let workers = Workers {
@@ -385,4 +418,98 @@ fn explicit_retry_after_receiver_acked_reply_recovers_only_missing_call_receipt(
     let duplicate = decode_destination_receipt(opened.payload()).unwrap();
     verify_receipt(&duplicate, &destination_key).unwrap();
     assert_eq!(duplicate.receipt.outcome, DeliveryOutcome::Duplicate);
+
+    let caller_report = caller.session.report();
+    let receiver_report = receiver.session.report();
+    write_evidence(&json!({
+        "evidence": "canonical-reconciliation-test/v1",
+        "case": "missing-call-receipt-direct",
+        "scope": "Unix development-witness TCP fixture; not WAN or native guest execution",
+        "fault": {"direction":"receiver-to-caller", "post_handshake_ordinal":withheld.ordinal,
+            "withheld_envelope_bytes":withheld.length, "withheld_framing_bytes":4,
+            "wire_hash_domain":"spiralcore.test.withheld.v1", "wire_hash":spiralcore_transfer::hex(&withheld.hash)},
+        "actual_traffic": {
+            "caller_endpoint":caller.counters,"receiver_endpoint":receiver.counters,
+            "gate_forward":{"incoming_leg":forward.read,"outgoing_leg":forward.written},
+            "gate_reverse":{"incoming_leg":reverse.read,"outgoing_leg":reverse.written},
+            "gate_caller_handshake":traffic.caller_handshake,
+            "gate_receiver_handshake":traffic.receiver_handshake,
+            "request_envelope_bytes":forward.captured[0].len(),
+            "reply_envelope_bytes":reverse.captured[1].len(),
+            "duplicate_receipt_envelope_bytes":reverse.captured[2].len()},
+        "caller_session":caller_report,"receiver_session":receiver_report,
+        "receiver_first_handled_processing":{
+            "cpu_us":u64::try_from(receiver.first.as_ref().unwrap().meter.cpu_us).unwrap(),
+            "wall_us":u64::try_from(receiver.first.as_ref().unwrap().meter.wall_us).unwrap()},
+        "receiver_cleanup":{"second_handled":false,"result":"Cancelled","cache_empty":receiver.cache_empty},
+        "lifecycle": {
+            "cpu_domain":"ProcessTime process CPU during each worker interval, not exclusive thread CPU; intervals overlap",
+            "wall_domain":"Instant wall over worker handshake/call intervals; receiver includes second-handle cleanup/cache inspection; caller excludes post-result hold",
+            "caller":{"cpu_us":caller.lifecycle_cpu_us,"wall_us":caller.lifecycle_wall_us},
+            "receiver":{"cpu_us":receiver.lifecycle_cpu_us,"wall_us":receiver.lifecycle_wall_us}},
+        "accounting":"Receiver cumulative processing and per-Handled meters overlap lifecycle; do not add these domains or infer energy/performance improvements"
+    }));
+    for report in [&caller_report, &receiver_report] {
+        assert_eq!(
+            report.get("session_report").and_then(Value::as_str),
+            Some("canonical-session-report/v2")
+        );
+        assert_eq!(report["normal_frames_per_call"].as_u64().unwrap(), 4);
+        assert_eq!(
+            report["normal_encrypted_destination_receipts_per_call"]
+                .as_u64()
+                .unwrap(),
+            2
+        );
+        assert!(report.get("frames_per_call").is_none());
+        assert!(
+            report
+                .get("encrypted_destination_receipts_per_call")
+                .is_none()
+        );
+    }
+    assert!(caller_report["recovery"]["idle_outcomes"].as_u64().unwrap() >= 1);
+    assert_eq!(
+        caller_report["recovery"]["commands_consumed"]
+            .as_u64()
+            .unwrap(),
+        1
+    );
+    assert_eq!(
+        caller_report["recovery"]["call_retry_invocations"]
+            .as_u64()
+            .unwrap(),
+        1
+    );
+    for (field, expected) in [
+        ("historical_receipt_invocations", 1),
+        ("historical_receipts_sent", 1),
+        ("reply_send_invocations", 1),
+        ("cached_reply_retry_invocations", 0),
+        ("receiver_failed_invocations", 1),
+        ("historical_control_events", 0),
+    ] {
+        assert_eq!(
+            receiver_report["recovery"][field].as_u64().unwrap(),
+            expected,
+            "{field}"
+        );
+    }
+    assert_eq!(
+        receiver_report["receiver_processing"]["segments"]
+            .as_u64()
+            .unwrap(),
+        3
+    );
+    assert!(
+        receiver_report["receiver_processing"]["cpu_us"]
+            .as_u64()
+            .is_some()
+    );
+    assert!(
+        receiver_report["receiver_processing"]["wall_us"]
+            .as_u64()
+            .unwrap()
+            > 0
+    );
 }
