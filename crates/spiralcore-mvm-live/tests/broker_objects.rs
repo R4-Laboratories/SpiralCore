@@ -41,3 +41,25 @@ fn raw_mixed_campaign_uses_canonical_tcp_shared_broker_and_reopens_all_targets()
     assert!(!root.path().join("cell").exists());
     assert!(!records.is_empty());
 }
+
+#[test]
+fn refused_large_raw_campaign_records_failure_without_claiming_complete_traffic() {
+    let root = tempfile::tempdir().unwrap();
+    let scratch = root.path().join("refused-cell");
+    let mut records = Vec::new();
+    assert!(probe::run_cell(&scratch, Arm::RawMixed, 16 << 20, 0, &mut records).is_err());
+    let rows = serde_json::Deserializer::from_slice(&records)
+        .into_iter::<serde_json::Value>()
+        .collect::<Result<Vec<_>, _>>()
+        .unwrap();
+    assert_eq!(rows.len(), 1);
+    let failure = &rows[0];
+    assert_eq!(failure["event"], "broker_objects_failed");
+    assert_eq!(failure["payload_store_preserved"], true);
+    assert_eq!(failure["partial_stream_counters_available"], false);
+    assert!(failure["actual_both_direction_bytes"].is_null());
+    assert!(!failure["sender_error"].is_null());
+    assert!(failure["sender_records"].as_array().unwrap().len() > 1);
+    assert!(failure["receiver_records"].as_array().unwrap().len() > 1);
+    assert!(scratch.exists());
+}

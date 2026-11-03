@@ -161,7 +161,7 @@ pub fn run_cell(
         sender_thread_cpu_us,
         receiver_thread_cpu_us,
     ) = std::thread::scope(|scope| -> Result<_> {
-        let receiver = scope.spawn(|| -> Result<_> {
+        let receiver = scope.spawn(|| {
             let thread_cpu = ThreadTime::now();
             let mut records = Vec::new();
             let result = campaign::receiver_with_broker(
@@ -172,7 +172,7 @@ pub fn run_cell(
                 HandshakeRole::Acceptor,
                 &mut records,
             );
-            Ok((result?, records, thread_cpu.elapsed().as_micros() as u64))
+            (result, records, thread_cpu.elapsed().as_micros() as u64)
         });
         let thread_cpu = ThreadTime::now();
         let mut records = Vec::new();
@@ -186,8 +186,7 @@ pub fn run_cell(
         let sender_cpu = thread_cpu.elapsed().as_micros() as u64;
         // Always join the receiver, even if the sender reports an error.
         let received = receiver.join().map_err(|_| "receiver thread panicked")?;
-        let sent = sent?;
-        let (received, receiver_records, receiver_cpu) = received?;
+        let (received, receiver_records, receiver_cpu) = received;
         Ok((
             sent,
             received,
@@ -201,6 +200,32 @@ pub fn run_cell(
     let transfer_process_cpu_us = cpu.elapsed().as_micros() as u64;
     let sender_records = public_records(&sender_records)?;
     let receiver_records = public_records(&receiver_records)?;
+    let (sent, received) = match (sent, received) {
+        (Ok(sent), Ok(received)) => (sent, received),
+        (sent, received) => {
+            let snapshot = broker.with_time(|budget, _| budget.snapshot())?;
+            emit(
+                out,
+                &json!({"event":"broker_objects_failed","plan":plan,
+                "sender_error":sent.as_ref().err().map(ToString::to_string),
+                "receiver_error":received.as_ref().err().map(ToString::to_string),
+                "sender_terminal_record":sent.ok(),"receiver_terminal_record":received.ok(),
+                "sender_records":sender_records,"receiver_records":receiver_records,
+                "elapsed_us":transfer_verified_wall_us,"aggregate_process_cpu_us":transfer_process_cpu_us,
+                "sender_thread_cpu_us":sender_thread_cpu_us,"receiver_thread_cpu_us":receiver_thread_cpu_us,
+                "owner_budget_refusals":snapshot.refusals,
+                "diagnostic_scope":"Global owner snapshot after both threads joined; not a per-dispatch causal attribution.",
+                "actual_both_direction_bytes":null,"partial_stream_counters_available":false,
+                "counter_note":"Completed-operation records retain their own counters; no complete failed-operation stream counters are available.",
+                "owned_store_bytes_retained":store_bytes(scratch).ok(),
+                "peak_process_rss_bytes":rss_bytes(),"payload_store_preserved":true,
+                "scope":"Failed TCP-loopback mixed campaign; no complete comparison, guest or WAN success claim"}),
+            )?;
+            return Err(
+                "mixed object campaign failed; partial records and payload store preserved".into(),
+            );
+        }
+    };
     let publications: Vec<Published> = serde_json::from_value(received["published"].clone())?;
     let readback_wall = Instant::now();
     let readback_cpu = ThreadTime::now();
