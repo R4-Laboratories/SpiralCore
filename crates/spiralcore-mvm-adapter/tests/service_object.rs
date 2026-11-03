@@ -8,7 +8,7 @@ use mvm_contract::protocol::mailbox::{
 use spiralcore_mvm_adapter::{
     service::{
         CallStatus, DestinationReceiptSigner, HostBudget, LocalMailboxService, MailboxBinding,
-        ServiceBindingConfig, ServiceLimits, ServiceTime,
+        ServiceBindingConfig, ServiceError, ServiceLimits, ServiceTime,
     },
     service_object::ObjectMailbox,
     service_sender::{self, MessageOptions},
@@ -273,6 +273,85 @@ fn expired_or_replaced_policy_cannot_reuse_an_object_proof() {
                 .is_err()
         );
     }
+}
+
+fn assert_post_work_reply_is_fenced(replace_policy: bool) {
+    let store = common::Store::new();
+    let binding = binding();
+    let reverse = reply_binding();
+    let budget = HostBudget::new(ServiceLimits::default()).unwrap();
+    let mut service = LocalMailboxService::new(budget.clone()).unwrap();
+    let mut endpoint = ObjectMailbox::open(
+        &store.0,
+        Limits::default(),
+        common::config(MailboxMessageKind::Call).policy,
+        ColdGraphPolicy::Disabled,
+    )
+    .unwrap();
+    let frame = spiralcore_transfer::protocol::Frame {
+        kind: 1,
+        transfer: [76; 32],
+        seq: 0,
+        body: spiralcore_transfer::protocol::Offer::cold(&[], Mode::Raw)
+            .encode()
+            .unwrap(),
+    };
+    let wire = request_wire(&binding, &frame.encode().unwrap());
+    assert_eq!(
+        service
+            .admit(&binding, &wire, now())
+            .unwrap()
+            .receipt
+            .outcome,
+        DeliveryOutcome::AcceptedEphemeral
+    );
+    let message = service.receive(&binding, now()).unwrap().unwrap();
+    let reply = endpoint.handle(&binding, &message, now()).unwrap();
+    assert_ne!(
+        reply.kind, 127,
+        "object handling must succeed before fencing"
+    );
+    let payload = reply.encode().unwrap();
+    // Build a valid Reply while both directions are authorized. Only the
+    // post-work authority/deadline change should make its later commit fail.
+    let request = reply_request(&reverse, &message, &payload);
+    let before = budget.snapshot().unwrap();
+    let (reply_time, expected_error) = if replace_policy {
+        binding
+            .replace_policy(
+                common::config(MailboxMessageKind::Call)
+                    .policy
+                    .snapshot()
+                    .unwrap(),
+            )
+            .unwrap();
+        (now(), ServiceError::Unauthorized)
+    } else {
+        (
+            ServiceTime {
+                unix_ms: 2000,
+                monotonic_ms: 501,
+            },
+            ServiceError::Expired,
+        )
+    };
+    assert!(matches!(
+        service.reply_prepared(&reverse, message.handle(), request, reply_time),
+        Err(error) if error == expected_error
+    ));
+    let after = budget.snapshot().unwrap();
+    assert_eq!(after.queued_bytes, before.queued_bytes);
+    assert_eq!(after.queued_messages, before.queued_messages);
+}
+
+#[test]
+fn incoming_policy_replaced_after_object_work_cannot_prepare_reply() {
+    assert_post_work_reply_is_fenced(true);
+}
+
+#[test]
+fn call_expiring_after_object_work_cannot_prepare_reply() {
+    assert_post_work_reply_is_fenced(false);
 }
 
 #[test]

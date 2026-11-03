@@ -10,6 +10,7 @@ use spiralcore_mvm_adapter::{
     receipt::{ReceiptObservation, ReceiptReturnConfig, ReceiptTracker},
     service::{
         CallStatus, ControlReserve, HostBudget, LocalMailboxService, MailboxBinding, ServiceLimits,
+        ServiceTime,
     },
     service_object::ObjectMailbox,
     service_sender::{self, OrderingStream},
@@ -59,6 +60,17 @@ fn campaign_budget() -> Result<HostBudget> {
 
 pub(super) fn broker_context() -> Result<BrokerContext> {
     Ok(BrokerContext::new(campaign_budget()?))
+}
+
+// Application work uses the private admitted proof and endpoint-local limits.
+// It must not mutate the aggregate service/tracker clock using this timestamp.
+fn application_phase<T>(
+    broker: &BrokerContext,
+    work: impl FnOnce(ServiceTime) -> Result<T>,
+) -> Result<T> {
+    let now =
+        broker.with_time::<_, spiralcore_mvm_adapter::service::ServiceError>(|_, now| Ok(now))?;
+    work(now)
 }
 
 impl Session {
@@ -270,34 +282,36 @@ impl Session {
         let (permit, now) = broker
             .with_time(|_, now| -> Result<_> { Ok((receipt.reserve_send(cancel, now)?, now)) })?;
         permit.send(stream, cancel, now)?;
-        let (reply, namespace, prepared, send, sent_at) =
-            broker.with_time(|_, now| -> Result<_> {
-                let frame = Frame::decode(proof.payload())?;
-                if frame.transfer != expected {
-                    return Err("unexpected campaign transfer".into());
-                }
-                let namespace = object.context(&self.incoming, &proof, now)?.namespace()?;
-                let reply = object.handle(&self.incoming, &proof, now)?;
-                let payload = reply.encode()?;
-                let options =
-                    self.ordering
-                        .next_reply(&self.outgoing, &proof, now, ISSUANCE_POLICY)?;
-                let prepared = self.service.reply_prepared(
-                    &self.outgoing,
-                    proof.handle(),
-                    service_sender::request(&self.outgoing, &payload, &options, now)?,
-                    now,
-                )?;
-                let encoded = encode_envelope(prepared.envelope())?;
-                let send = self.tracker.register_send(
-                    &self.outgoing,
-                    &self.control,
-                    &self.peer_key,
-                    &encoded,
-                    now,
-                )?;
-                Ok((reply, namespace, prepared, send, now))
-            })?;
+        let (reply, namespace) = application_phase(&broker, |now| {
+            let frame = Frame::decode(proof.payload())?;
+            if frame.transfer != expected {
+                return Err("unexpected campaign transfer".into());
+            }
+            let namespace = object.context(&self.incoming, &proof, now)?.namespace()?;
+            let reply = object.handle(&self.incoming, &proof, now)?;
+            Ok((reply, namespace))
+        })?;
+        let (prepared, send, sent_at) = broker.with_time(|_, now| -> Result<_> {
+            let payload = reply.encode()?;
+            let options = self
+                .ordering
+                .next_reply(&self.outgoing, &proof, now, ISSUANCE_POLICY)?;
+            let prepared = self.service.reply_prepared(
+                &self.outgoing,
+                proof.handle(),
+                service_sender::request(&self.outgoing, &payload, &options, now)?,
+                now,
+            )?;
+            let encoded = encode_envelope(prepared.envelope())?;
+            let send = self.tracker.register_send(
+                &self.outgoing,
+                &self.control,
+                &self.peer_key,
+                &encoded,
+                now,
+            )?;
+            Ok((prepared, send, now))
+        })?;
         self.outgoing
             .send_prepared(&prepared, stream, cancel, sent_at)?;
         // Strict single-Call sender sends the Reply receipt before its next Call.
@@ -418,6 +432,42 @@ fn validate_materials(
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn independent_service_dispatch_progresses_while_application_phase_is_blocked() {
+        use std::sync::mpsc;
+        let broker = broker_context().unwrap();
+        let (entered_tx, entered_rx) = mpsc::channel();
+        let (release_tx, release_rx) = mpsc::channel();
+        let (done_tx, done_rx) = mpsc::channel();
+        std::thread::scope(|scope| {
+            let application_broker = &broker;
+            let application = scope.spawn(move || {
+                application_phase(application_broker, |_| {
+                    entered_tx.send(()).unwrap();
+                    release_rx.recv().unwrap();
+                    Ok(())
+                })
+            });
+            entered_rx.recv_timeout(Duration::from_secs(5)).unwrap();
+            let control = scope.spawn(|| {
+                let result = broker.with_time(|budget, now| {
+                    let mut independent = LocalMailboxService::new(budget.clone())?;
+                    independent.expire(now)
+                });
+                done_tx.send(result).unwrap();
+            });
+            // The deadline is a deadlock watchdog, not a latency assertion.
+            // Always release and join both workers before asserting failure.
+            let progress = done_rx.recv_timeout(Duration::from_secs(2));
+            release_tx.send(()).unwrap();
+            application.join().unwrap().unwrap();
+            control.join().unwrap();
+            assert!(
+                progress.is_ok_and(|result| result.is_ok()),
+                "application work retained global dispatch"
+            );
+        });
+    }
     #[test]
     fn explicit_campaign_tier_reserves_worst_case_raw_control_and_data_identities() {
         let worst_raw_calls = 1 + 7 * ((16usize << 20).div_ceil(transfer::MAX_CHUNK) + 4);
