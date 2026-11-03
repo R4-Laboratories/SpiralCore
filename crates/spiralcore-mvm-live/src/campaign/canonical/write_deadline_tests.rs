@@ -1008,13 +1008,9 @@ fn late_explicit_call_retry_partial_write_keeps_original_signed_deadline_and_ide
         cancel,
         worker: Some(worker),
     };
-    let initial = initial_sent
+    let command_at = initial_sent
         .recv_timeout(Duration::from_millis(500))
         .unwrap();
-    let command_at = initial + Duration::from_millis(600);
-    while let Some(wait) = command_at.checked_duration_since(Instant::now()) {
-        std::thread::park_timeout(wait);
-    }
     assert_eq!(signal.request_retry(), Ok(()));
     let completed = done
         .recv_timeout((seeded_at + WATCHDOG).saturating_duration_since(Instant::now()))
