@@ -1,0 +1,1423 @@
+{
+  "status": "PASS_EXACT_PINNED_SOURCE",
+  "head_commit": "ef814b995c3b51bdf7ad17ab216c5c279115bdaa",
+  "executed_merge": "007c9c00c027b8478acb2d308716cd934b8f79cd",
+  "executed_tree": "97717505d278bf8ad79cef2433ec088352d6f90a",
+  "head_tree": "97717505d278bf8ad79cef2433ec088352d6f90a",
+  "head_tree_matches_executed_merge_tree": true,
+  "portable_run": 41572232084,
+  "linux_run": 41572232073,
+  "portable_passed": 441,
+  "unix_storage_passed": 8,
+  "original_zip_count": 7,
+  "original_file_count": 215,
+  "original_member_manifest_entries_verified": 208,
+  "zip_bytes": 161260,
+  "rows": [
+    {
+      "identity": {
+        "row": "macos26-arm64",
+        "source_commit": "007c9c00c027b8478acb2d308716cd934b8f79cd",
+        "github_sha": "007c9c00c027b8478acb2d308716cd934b8f79cd",
+        "run_id": "41572232084",
+        "attempt": "1",
+        "runner_os": "macOS",
+        "runner_arch": "ARM64",
+        "image_os": "macos26",
+        "image_version": "20261026.0455.2",
+        "os_description": "macOS 26.6.2",
+        "process_architecture": "Arm64",
+        "os_architecture": "Arm64",
+        "expected_target": "aarch64-apple-darwin",
+        "classification": "native-process / TCP-loopback / ephemeral",
+        "manifest_sha256": "5ECCF964EDD289AC8A239449C696830C685CA9FE62D88FBB31130DF0A2557C20",
+        "lock_sha256": "B611A2DCABAD117DDD0A410D71EAE8299B0F4C4E1C8F490FBC6BEAF076EE1622",
+        "os_release": "ProductName:\t\tmacOS\nProductVersion:\t\t26.6.2\nBuildVersion:\t\t25G83",
+        "kernel": "Darwin sjc20-cw712-1689b352-165a-4950-8e30-6bb3ccdbe732-8625F00A4EED.local 25.6.0 Darwin Kernel Version 25.6.0: Fri Jul 31 19:16:43 PDT 2026; root:xnu-12377.161.14~5/RELEASE_ARM64_VMAPPLE arm64"
+      },
+      "rustc": "rustc 1.97.1 (8bab26f4f 2026-07-14)\nbinary: rustc\ncommit-hash: 8bab26f4f68e0e26f0bb7960be334d5b520ea452\ncommit-date: 2026-07-14\nhost: aarch64-apple-darwin\nrelease: 1.97.1\nLLVM version: 22.1.6\n",
+      "dependencies": [
+        {
+          "name": "mvm-contract",
+          "version": "0.26.0",
+          "source": "git+https://github.com/Casey-allard/mvm?rev=ae12e9deb41cc9a3264196ce22ebc72d4042883d#ae12e9deb41cc9a3264196ce22ebc72d4042883d"
+        },
+        {
+          "name": "mvm-core",
+          "version": "0.26.0",
+          "source": "git+https://github.com/Casey-allard/mvm?rev=ae12e9deb41cc9a3264196ce22ebc72d4042883d#ae12e9deb41cc9a3264196ce22ebc72d4042883d"
+        }
+      ],
+      "tests": [
+        {
+          "target": "canonical",
+          "passed": 9,
+          "ignored": 0,
+          "failed": 0,
+          "listed": 9,
+          "filtered": 0
+        },
+        {
+          "target": "service",
+          "passed": 16,
+          "ignored": 0,
+          "failed": 0,
+          "listed": 16,
+          "filtered": 0
+        },
+        {
+          "target": "receipt",
+          "passed": 15,
+          "ignored": 0,
+          "failed": 0,
+          "listed": 15,
+          "filtered": 0
+        },
+        {
+          "target": "service_epoch",
+          "passed": 3,
+          "ignored": 0,
+          "failed": 0,
+          "listed": 3,
+          "filtered": 0
+        },
+        {
+          "target": "service_sender",
+          "passed": 4,
+          "ignored": 0,
+          "failed": 0,
+          "listed": 4,
+          "filtered": 0
+        },
+        {
+          "target": "service_tcp",
+          "passed": 1,
+          "ignored": 0,
+          "failed": 0,
+          "listed": 1,
+          "filtered": 0
+        },
+        {
+          "target": "service_clock",
+          "passed": 4,
+          "ignored": 0,
+          "failed": 0,
+          "listed": 4,
+          "filtered": 0
+        },
+        {
+          "target": "broker",
+          "passed": 3,
+          "ignored": 0,
+          "failed": 0,
+          "listed": 3,
+          "filtered": 0
+        },
+        {
+          "target": "service_metrics",
+          "passed": 1,
+          "ignored": 0,
+          "failed": 0,
+          "listed": 1,
+          "filtered": 0
+        },
+        {
+          "target": "receipt_send",
+          "passed": 3,
+          "ignored": 0,
+          "failed": 0,
+          "listed": 3,
+          "filtered": 0
+        },
+        {
+          "target": "capacity_probe",
+          "passed": 4,
+          "ignored": 0,
+          "failed": 0,
+          "listed": 4,
+          "filtered": 0
+        }
+      ],
+      "unix_storage": [
+        {
+          "scope": "Unix durable storage dispatch/reopen; not native MVM backend or WAN",
+          "ignored": 0,
+          "passed": 2,
+          "target": "canonical_storage",
+          "failed": 0,
+          "listed": 2,
+          "filtered": 0
+        }
+      ],
+      "artifact_id": 13201832601,
+      "original_zip": "original-zips/mvm-mailbox-portable-macos26-arm64-1.zip",
+      "zip_sha256": "a8897facbb148a7a49bfab53107dc18197eecc7bef35f4fe8f1030acf0799732",
+      "zip_bytes": 17513,
+      "original_files": 32
+    },
+    {
+      "identity": {
+        "row": "macos26-intel",
+        "source_commit": "007c9c00c027b8478acb2d308716cd934b8f79cd",
+        "github_sha": "007c9c00c027b8478acb2d308716cd934b8f79cd",
+        "run_id": "41572232084",
+        "attempt": "1",
+        "runner_os": "macOS",
+        "runner_arch": "X64",
+        "image_os": "macos26",
+        "image_version": "20260824.0517.1",
+        "os_description": "macOS 26.6.1",
+        "process_architecture": "X64",
+        "os_architecture": "X64",
+        "expected_target": "x86_64-apple-darwin",
+        "classification": "native-process / TCP-loopback / ephemeral",
+        "manifest_sha256": "5ECCF964EDD289AC8A239449C696830C685CA9FE62D88FBB31130DF0A2557C20",
+        "lock_sha256": "B611A2DCABAD117DDD0A410D71EAE8299B0F4C4E1C8F490FBC6BEAF076EE1622",
+        "os_release": "ProductName:\t\tmacOS\nProductVersion:\t\t26.6.1\nBuildVersion:\t\t25G76",
+        "kernel": "Darwin sjc20-cw761-a19f1dcb-70e1-4199-8616-bebca28c2945-D62FF5AA3C17.local 25.6.0 Darwin Kernel Version 25.6.0: Sat Jul 11 15:22:40 PDT 2026; root:xnu-12377.161.13~4/RELEASE_X86_64 x86_64"
+      },
+      "rustc": "rustc 1.97.1 (8bab26f4f 2026-07-14)\nbinary: rustc\ncommit-hash: 8bab26f4f68e0e26f0bb7960be334d5b520ea452\ncommit-date: 2026-07-14\nhost: x86_64-apple-darwin\nrelease: 1.97.1\nLLVM version: 22.1.6\n",
+      "dependencies": [
+        {
+          "name": "mvm-contract",
+          "version": "0.26.0",
+          "source": "git+https://github.com/Casey-allard/mvm?rev=ae12e9deb41cc9a3264196ce22ebc72d4042883d#ae12e9deb41cc9a3264196ce22ebc72d4042883d"
+        },
+        {
+          "name": "mvm-core",
+          "version": "0.26.0",
+          "source": "git+https://github.com/Casey-allard/mvm?rev=ae12e9deb41cc9a3264196ce22ebc72d4042883d#ae12e9deb41cc9a3264196ce22ebc72d4042883d"
+        }
+      ],
+      "tests": [
+        {
+          "passed": 9,
+          "ignored": 0,
+          "target": "canonical",
+          "listed": 9,
+          "failed": 0,
+          "filtered": 0
+        },
+        {
+          "passed": 16,
+          "ignored": 0,
+          "target": "service",
+          "listed": 16,
+          "failed": 0,
+          "filtered": 0
+        },
+        {
+          "passed": 15,
+          "ignored": 0,
+          "target": "receipt",
+          "listed": 15,
+          "failed": 0,
+          "filtered": 0
+        },
+        {
+          "passed": 3,
+          "ignored": 0,
+          "target": "service_epoch",
+          "listed": 3,
+          "failed": 0,
+          "filtered": 0
+        },
+        {
+          "passed": 4,
+          "ignored": 0,
+          "target": "service_sender",
+          "listed": 4,
+          "failed": 0,
+          "filtered": 0
+        },
+        {
+          "passed": 1,
+          "ignored": 0,
+          "target": "service_tcp",
+          "listed": 1,
+          "failed": 0,
+          "filtered": 0
+        },
+        {
+          "passed": 4,
+          "ignored": 0,
+          "target": "service_clock",
+          "listed": 4,
+          "failed": 0,
+          "filtered": 0
+        },
+        {
+          "passed": 3,
+          "ignored": 0,
+          "target": "broker",
+          "listed": 3,
+          "failed": 0,
+          "filtered": 0
+        },
+        {
+          "passed": 1,
+          "ignored": 0,
+          "target": "service_metrics",
+          "listed": 1,
+          "failed": 0,
+          "filtered": 0
+        },
+        {
+          "passed": 3,
+          "ignored": 0,
+          "target": "receipt_send",
+          "listed": 3,
+          "failed": 0,
+          "filtered": 0
+        },
+        {
+          "passed": 4,
+          "ignored": 0,
+          "target": "capacity_probe",
+          "listed": 4,
+          "failed": 0,
+          "filtered": 0
+        }
+      ],
+      "unix_storage": [
+        {
+          "scope": "Unix durable storage dispatch/reopen; not native MVM backend or WAN",
+          "listed": 2,
+          "passed": 2,
+          "failed": 0,
+          "filtered": 0,
+          "target": "canonical_storage",
+          "ignored": 0
+        }
+      ],
+      "artifact_id": 13201728220,
+      "original_zip": "original-zips/mvm-mailbox-portable-macos26-intel-1.zip",
+      "zip_sha256": "1c3c5555dd85551db6408c50df3c6dbc893802194ec3dfb615fd56ed4ada4c9b",
+      "zip_bytes": 17516,
+      "original_files": 32
+    },
+    {
+      "identity": {
+        "row": "ubuntu24-arm64",
+        "source_commit": "007c9c00c027b8478acb2d308716cd934b8f79cd",
+        "github_sha": "007c9c00c027b8478acb2d308716cd934b8f79cd",
+        "run_id": "41572232084",
+        "attempt": "1",
+        "runner_os": "Linux",
+        "runner_arch": "ARM64",
+        "image_os": "ubuntu24-arm64",
+        "image_version": "20261026.166.1",
+        "os_description": "Ubuntu 24.04.5 LTS",
+        "process_architecture": "Arm64",
+        "os_architecture": "Arm64",
+        "expected_target": "aarch64-unknown-linux-gnu",
+        "classification": "native-process / TCP-loopback / ephemeral",
+        "manifest_sha256": "5ECCF964EDD289AC8A239449C696830C685CA9FE62D88FBB31130DF0A2557C20",
+        "lock_sha256": "B611A2DCABAD117DDD0A410D71EAE8299B0F4C4E1C8F490FBC6BEAF076EE1622",
+        "os_release": "PRETTY_NAME=\"Ubuntu 24.04.5 LTS\"\nNAME=\"Ubuntu\"\nVERSION_ID=\"24.04\"\nVERSION=\"24.04.5 LTS (Noble Numbat)\"\nVERSION_CODENAME=noble\nID=ubuntu\nID_LIKE=debian\nHOME_URL=\"https://www.ubuntu.com/\"\nSUPPORT_URL=\"https://help.ubuntu.com/\"\nBUG_REPORT_URL=\"https://bugs.launchpad.net/ubuntu/\"\nPRIVACY_POLICY_URL=\"https://www.ubuntu.com/legal/terms-and-policies/privacy-policy\"\nUBUNTU_CODENAME=noble\nLOGO=ubuntu-logo\n",
+        "kernel": "Linux runnervm9u1px 7.0.0-1017-azure #17~24.04.1-Ubuntu SMP PREEMPT Thu Sep 24 19:06:39 UTC 2026 aarch64 aarch64 aarch64 GNU/Linux"
+      },
+      "rustc": "rustc 1.97.1 (8bab26f4f 2026-07-14)\nbinary: rustc\ncommit-hash: 8bab26f4f68e0e26f0bb7960be334d5b520ea452\ncommit-date: 2026-07-14\nhost: aarch64-unknown-linux-gnu\nrelease: 1.97.1\nLLVM version: 22.1.6\n",
+      "dependencies": [
+        {
+          "name": "mvm-contract",
+          "version": "0.26.0",
+          "source": "git+https://github.com/Casey-allard/mvm?rev=ae12e9deb41cc9a3264196ce22ebc72d4042883d#ae12e9deb41cc9a3264196ce22ebc72d4042883d"
+        },
+        {
+          "name": "mvm-core",
+          "version": "0.26.0",
+          "source": "git+https://github.com/Casey-allard/mvm?rev=ae12e9deb41cc9a3264196ce22ebc72d4042883d#ae12e9deb41cc9a3264196ce22ebc72d4042883d"
+        }
+      ],
+      "tests": [
+        {
+          "target": "canonical",
+          "listed": 9,
+          "passed": 9,
+          "failed": 0,
+          "ignored": 0,
+          "filtered": 0
+        },
+        {
+          "target": "service",
+          "listed": 16,
+          "passed": 16,
+          "failed": 0,
+          "ignored": 0,
+          "filtered": 0
+        },
+        {
+          "target": "receipt",
+          "listed": 15,
+          "passed": 15,
+          "failed": 0,
+          "ignored": 0,
+          "filtered": 0
+        },
+        {
+          "target": "service_epoch",
+          "listed": 3,
+          "passed": 3,
+          "failed": 0,
+          "ignored": 0,
+          "filtered": 0
+        },
+        {
+          "target": "service_sender",
+          "listed": 4,
+          "passed": 4,
+          "failed": 0,
+          "ignored": 0,
+          "filtered": 0
+        },
+        {
+          "target": "service_tcp",
+          "listed": 1,
+          "passed": 1,
+          "failed": 0,
+          "ignored": 0,
+          "filtered": 0
+        },
+        {
+          "target": "service_clock",
+          "listed": 4,
+          "passed": 4,
+          "failed": 0,
+          "ignored": 0,
+          "filtered": 0
+        },
+        {
+          "target": "broker",
+          "listed": 3,
+          "passed": 3,
+          "failed": 0,
+          "ignored": 0,
+          "filtered": 0
+        },
+        {
+          "target": "service_metrics",
+          "listed": 1,
+          "passed": 1,
+          "failed": 0,
+          "ignored": 0,
+          "filtered": 0
+        },
+        {
+          "target": "receipt_send",
+          "listed": 3,
+          "passed": 3,
+          "failed": 0,
+          "ignored": 0,
+          "filtered": 0
+        },
+        {
+          "target": "capacity_probe",
+          "listed": 4,
+          "passed": 4,
+          "failed": 0,
+          "ignored": 0,
+          "filtered": 0
+        }
+      ],
+      "unix_storage": [
+        {
+          "filtered": 0,
+          "scope": "Unix durable storage dispatch/reopen; not native MVM backend or WAN",
+          "failed": 0,
+          "ignored": 0,
+          "listed": 2,
+          "target": "canonical_storage",
+          "passed": 2
+        }
+      ],
+      "artifact_id": 13202121764,
+      "original_zip": "original-zips/mvm-mailbox-portable-ubuntu24-arm64-1.zip",
+      "zip_sha256": "859a2ae0565f1428976e9ed73f3c945e03b162d6297654f6d25495da2190b177",
+      "zip_bytes": 17502,
+      "original_files": 32
+    },
+    {
+      "identity": {
+        "row": "ubuntu24-x64",
+        "source_commit": "007c9c00c027b8478acb2d308716cd934b8f79cd",
+        "github_sha": "007c9c00c027b8478acb2d308716cd934b8f79cd",
+        "run_id": "41572232084",
+        "attempt": "1",
+        "runner_os": "Linux",
+        "runner_arch": "X64",
+        "image_os": "ubuntu24",
+        "image_version": "20261026.354.1",
+        "os_description": "Ubuntu 24.04.5 LTS",
+        "process_architecture": "X64",
+        "os_architecture": "X64",
+        "expected_target": "x86_64-unknown-linux-gnu",
+        "classification": "native-process / TCP-loopback / ephemeral",
+        "manifest_sha256": "5ECCF964EDD289AC8A239449C696830C685CA9FE62D88FBB31130DF0A2557C20",
+        "lock_sha256": "B611A2DCABAD117DDD0A410D71EAE8299B0F4C4E1C8F490FBC6BEAF076EE1622",
+        "os_release": "PRETTY_NAME=\"Ubuntu 24.04.5 LTS\"\nNAME=\"Ubuntu\"\nVERSION_ID=\"24.04\"\nVERSION=\"24.04.5 LTS (Noble Numbat)\"\nVERSION_CODENAME=noble\nID=ubuntu\nID_LIKE=debian\nHOME_URL=\"https://www.ubuntu.com/\"\nSUPPORT_URL=\"https://help.ubuntu.com/\"\nBUG_REPORT_URL=\"https://bugs.launchpad.net/ubuntu/\"\nPRIVACY_POLICY_URL=\"https://www.ubuntu.com/legal/terms-and-policies/privacy-policy\"\nUBUNTU_CODENAME=noble\nLOGO=ubuntu-logo\n",
+        "kernel": "Linux runnervm48cm3 7.0.0-1017-azure #17~24.04.1-Ubuntu SMP PREEMPT Thu Sep 24 18:46:57 UTC 2026 x86_64 x86_64 x86_64 GNU/Linux"
+      },
+      "rustc": "rustc 1.97.1 (8bab26f4f 2026-07-14)\nbinary: rustc\ncommit-hash: 8bab26f4f68e0e26f0bb7960be334d5b520ea452\ncommit-date: 2026-07-14\nhost: x86_64-unknown-linux-gnu\nrelease: 1.97.1\nLLVM version: 22.1.6\n",
+      "dependencies": [
+        {
+          "name": "mvm-contract",
+          "version": "0.26.0",
+          "source": "git+https://github.com/Casey-allard/mvm?rev=ae12e9deb41cc9a3264196ce22ebc72d4042883d#ae12e9deb41cc9a3264196ce22ebc72d4042883d"
+        },
+        {
+          "name": "mvm-core",
+          "version": "0.26.0",
+          "source": "git+https://github.com/Casey-allard/mvm?rev=ae12e9deb41cc9a3264196ce22ebc72d4042883d#ae12e9deb41cc9a3264196ce22ebc72d4042883d"
+        }
+      ],
+      "tests": [
+        {
+          "target": "canonical",
+          "passed": 9,
+          "listed": 9,
+          "ignored": 0,
+          "filtered": 0,
+          "failed": 0
+        },
+        {
+          "target": "service",
+          "passed": 16,
+          "listed": 16,
+          "ignored": 0,
+          "filtered": 0,
+          "failed": 0
+        },
+        {
+          "target": "receipt",
+          "passed": 15,
+          "listed": 15,
+          "ignored": 0,
+          "filtered": 0,
+          "failed": 0
+        },
+        {
+          "target": "service_epoch",
+          "passed": 3,
+          "listed": 3,
+          "ignored": 0,
+          "filtered": 0,
+          "failed": 0
+        },
+        {
+          "target": "service_sender",
+          "passed": 4,
+          "listed": 4,
+          "ignored": 0,
+          "filtered": 0,
+          "failed": 0
+        },
+        {
+          "target": "service_tcp",
+          "passed": 1,
+          "listed": 1,
+          "ignored": 0,
+          "filtered": 0,
+          "failed": 0
+        },
+        {
+          "target": "service_clock",
+          "passed": 4,
+          "listed": 4,
+          "ignored": 0,
+          "filtered": 0,
+          "failed": 0
+        },
+        {
+          "target": "broker",
+          "passed": 3,
+          "listed": 3,
+          "ignored": 0,
+          "filtered": 0,
+          "failed": 0
+        },
+        {
+          "target": "service_metrics",
+          "passed": 1,
+          "listed": 1,
+          "ignored": 0,
+          "filtered": 0,
+          "failed": 0
+        },
+        {
+          "target": "receipt_send",
+          "passed": 3,
+          "listed": 3,
+          "ignored": 0,
+          "filtered": 0,
+          "failed": 0
+        },
+        {
+          "target": "capacity_probe",
+          "passed": 4,
+          "listed": 4,
+          "ignored": 0,
+          "filtered": 0,
+          "failed": 0
+        }
+      ],
+      "unix_storage": [
+        {
+          "failed": 0,
+          "passed": 2,
+          "ignored": 0,
+          "filtered": 0,
+          "listed": 2,
+          "target": "canonical_storage",
+          "scope": "Unix durable storage dispatch/reopen; not native MVM backend or WAN"
+        }
+      ],
+      "artifact_id": 13201534100,
+      "original_zip": "original-zips/mvm-mailbox-portable-ubuntu24-x64-1.zip",
+      "zip_sha256": "7c7a0637498837cb5131488937db49bd9774deba3f5cc4c4d3aa24b1f6ab47cd",
+      "zip_bytes": 17497,
+      "original_files": 32
+    },
+    {
+      "identity": {
+        "row": "windows11-arm64",
+        "source_commit": "007c9c00c027b8478acb2d308716cd934b8f79cd",
+        "github_sha": "007c9c00c027b8478acb2d308716cd934b8f79cd",
+        "run_id": "41572232084",
+        "attempt": "1",
+        "runner_os": "Windows",
+        "runner_arch": "ARM64",
+        "image_os": "win11-vs2026-arm64",
+        "image_version": "20261026.197.1",
+        "os_description": "Microsoft Windows 10.0.26200",
+        "process_architecture": "Arm64",
+        "os_architecture": "Arm64",
+        "expected_target": "aarch64-pc-windows-msvc",
+        "classification": "native-process / TCP-loopback / ephemeral",
+        "manifest_sha256": "F9509D705116CC4260E61724C970F833608D9645C72EDB69BF8498321FD297E7",
+        "lock_sha256": "617C3E54C5217EE896ECCA8D26FD4FC93ABC06EDE61FEDD1554E8FD264223A7D",
+        "windows_version": "10.0.26200.0"
+      },
+      "rustc": "rustc 1.97.1 (8bab26f4f 2026-07-14)\r\nbinary: rustc\r\ncommit-hash: 8bab26f4f68e0e26f0bb7960be334d5b520ea452\r\ncommit-date: 2026-07-14\r\nhost: aarch64-pc-windows-msvc\r\nrelease: 1.97.1\r\nLLVM version: 22.1.6\r\n",
+      "dependencies": [
+        {
+          "name": "mvm-contract",
+          "version": "0.26.0",
+          "source": "git+https://github.com/Casey-allard/mvm?rev=ae12e9deb41cc9a3264196ce22ebc72d4042883d#ae12e9deb41cc9a3264196ce22ebc72d4042883d"
+        },
+        {
+          "name": "mvm-core",
+          "version": "0.26.0",
+          "source": "git+https://github.com/Casey-allard/mvm?rev=ae12e9deb41cc9a3264196ce22ebc72d4042883d#ae12e9deb41cc9a3264196ce22ebc72d4042883d"
+        }
+      ],
+      "tests": [
+        {
+          "target": "canonical",
+          "filtered": 0,
+          "passed": 9,
+          "listed": 9,
+          "ignored": 0,
+          "failed": 0
+        },
+        {
+          "target": "service",
+          "filtered": 0,
+          "passed": 16,
+          "listed": 16,
+          "ignored": 0,
+          "failed": 0
+        },
+        {
+          "target": "receipt",
+          "filtered": 0,
+          "passed": 15,
+          "listed": 15,
+          "ignored": 0,
+          "failed": 0
+        },
+        {
+          "target": "service_epoch",
+          "filtered": 0,
+          "passed": 3,
+          "listed": 3,
+          "ignored": 0,
+          "failed": 0
+        },
+        {
+          "target": "service_sender",
+          "filtered": 0,
+          "passed": 4,
+          "listed": 4,
+          "ignored": 0,
+          "failed": 0
+        },
+        {
+          "target": "service_tcp",
+          "filtered": 0,
+          "passed": 1,
+          "listed": 1,
+          "ignored": 0,
+          "failed": 0
+        },
+        {
+          "target": "service_clock",
+          "filtered": 0,
+          "passed": 4,
+          "listed": 4,
+          "ignored": 0,
+          "failed": 0
+        },
+        {
+          "target": "broker",
+          "filtered": 0,
+          "passed": 3,
+          "listed": 3,
+          "ignored": 0,
+          "failed": 0
+        },
+        {
+          "target": "service_metrics",
+          "filtered": 0,
+          "passed": 1,
+          "listed": 1,
+          "ignored": 0,
+          "failed": 0
+        },
+        {
+          "target": "receipt_send",
+          "filtered": 0,
+          "passed": 3,
+          "listed": 3,
+          "ignored": 0,
+          "failed": 0
+        },
+        {
+          "target": "capacity_probe",
+          "filtered": 0,
+          "passed": 4,
+          "listed": 4,
+          "ignored": 0,
+          "failed": 0
+        }
+      ],
+      "unix_storage": [],
+      "artifact_id": 13202750161,
+      "original_zip": "original-zips/mvm-mailbox-portable-windows11-arm64-1.zip",
+      "zip_sha256": "e95583bfe77cdb75f8162022e57cb352b38ef957419cf1b7d6164ec34a532941",
+      "zip_bytes": 30427,
+      "original_files": 29
+    },
+    {
+      "identity": {
+        "row": "windows2022-x64",
+        "source_commit": "007c9c00c027b8478acb2d308716cd934b8f79cd",
+        "github_sha": "007c9c00c027b8478acb2d308716cd934b8f79cd",
+        "run_id": "41572232084",
+        "attempt": "1",
+        "runner_os": "Windows",
+        "runner_arch": "X64",
+        "image_os": "win22",
+        "image_version": "20261026.347.1",
+        "os_description": "Microsoft Windows 10.0.20348",
+        "process_architecture": "X64",
+        "os_architecture": "X64",
+        "expected_target": "x86_64-pc-windows-msvc",
+        "classification": "native-process / TCP-loopback / ephemeral",
+        "manifest_sha256": "F9509D705116CC4260E61724C970F833608D9645C72EDB69BF8498321FD297E7",
+        "lock_sha256": "617C3E54C5217EE896ECCA8D26FD4FC93ABC06EDE61FEDD1554E8FD264223A7D",
+        "windows_version": "10.0.20348.0"
+      },
+      "rustc": "rustc 1.97.1 (8bab26f4f 2026-07-14)\r\nbinary: rustc\r\ncommit-hash: 8bab26f4f68e0e26f0bb7960be334d5b520ea452\r\ncommit-date: 2026-07-14\r\nhost: x86_64-pc-windows-msvc\r\nrelease: 1.97.1\r\nLLVM version: 22.1.6\r\n",
+      "dependencies": [
+        {
+          "name": "mvm-contract",
+          "version": "0.26.0",
+          "source": "git+https://github.com/Casey-allard/mvm?rev=ae12e9deb41cc9a3264196ce22ebc72d4042883d#ae12e9deb41cc9a3264196ce22ebc72d4042883d"
+        },
+        {
+          "name": "mvm-core",
+          "version": "0.26.0",
+          "source": "git+https://github.com/Casey-allard/mvm?rev=ae12e9deb41cc9a3264196ce22ebc72d4042883d#ae12e9deb41cc9a3264196ce22ebc72d4042883d"
+        }
+      ],
+      "tests": [
+        {
+          "target": "canonical",
+          "passed": 9,
+          "failed": 0,
+          "ignored": 0,
+          "listed": 9,
+          "filtered": 0
+        },
+        {
+          "target": "service",
+          "passed": 16,
+          "failed": 0,
+          "ignored": 0,
+          "listed": 16,
+          "filtered": 0
+        },
+        {
+          "target": "receipt",
+          "passed": 15,
+          "failed": 0,
+          "ignored": 0,
+          "listed": 15,
+          "filtered": 0
+        },
+        {
+          "target": "service_epoch",
+          "passed": 3,
+          "failed": 0,
+          "ignored": 0,
+          "listed": 3,
+          "filtered": 0
+        },
+        {
+          "target": "service_sender",
+          "passed": 4,
+          "failed": 0,
+          "ignored": 0,
+          "listed": 4,
+          "filtered": 0
+        },
+        {
+          "target": "service_tcp",
+          "passed": 1,
+          "failed": 0,
+          "ignored": 0,
+          "listed": 1,
+          "filtered": 0
+        },
+        {
+          "target": "service_clock",
+          "passed": 4,
+          "failed": 0,
+          "ignored": 0,
+          "listed": 4,
+          "filtered": 0
+        },
+        {
+          "target": "broker",
+          "passed": 3,
+          "failed": 0,
+          "ignored": 0,
+          "listed": 3,
+          "filtered": 0
+        },
+        {
+          "target": "service_metrics",
+          "passed": 1,
+          "failed": 0,
+          "ignored": 0,
+          "listed": 1,
+          "filtered": 0
+        },
+        {
+          "target": "receipt_send",
+          "passed": 3,
+          "failed": 0,
+          "ignored": 0,
+          "listed": 3,
+          "filtered": 0
+        },
+        {
+          "target": "capacity_probe",
+          "passed": 4,
+          "failed": 0,
+          "ignored": 0,
+          "listed": 4,
+          "filtered": 0
+        }
+      ],
+      "unix_storage": [],
+      "artifact_id": 13202082186,
+      "original_zip": "original-zips/mvm-mailbox-portable-windows2022-x64-1.zip",
+      "zip_sha256": "698edf29029f6151a3cb4f80d01b0cd227ad64e9fccf89a31c3dede9f5edac37",
+      "zip_bytes": 30396,
+      "original_files": 29
+    },
+    {
+      "identity": {
+        "row": "windows2025-x64",
+        "source_commit": "007c9c00c027b8478acb2d308716cd934b8f79cd",
+        "github_sha": "007c9c00c027b8478acb2d308716cd934b8f79cd",
+        "run_id": "41572232084",
+        "attempt": "1",
+        "runner_os": "Windows",
+        "runner_arch": "X64",
+        "image_os": "win25-vs2026",
+        "image_version": "20261030.294.1",
+        "os_description": "Microsoft Windows 10.0.26100",
+        "process_architecture": "X64",
+        "os_architecture": "X64",
+        "expected_target": "x86_64-pc-windows-msvc",
+        "classification": "native-process / TCP-loopback / ephemeral",
+        "manifest_sha256": "F9509D705116CC4260E61724C970F833608D9645C72EDB69BF8498321FD297E7",
+        "lock_sha256": "617C3E54C5217EE896ECCA8D26FD4FC93ABC06EDE61FEDD1554E8FD264223A7D",
+        "windows_version": "10.0.26100.0"
+      },
+      "rustc": "rustc 1.97.1 (8bab26f4f 2026-07-14)\r\nbinary: rustc\r\ncommit-hash: 8bab26f4f68e0e26f0bb7960be334d5b520ea452\r\ncommit-date: 2026-07-14\r\nhost: x86_64-pc-windows-msvc\r\nrelease: 1.97.1\r\nLLVM version: 22.1.6\r\n",
+      "dependencies": [
+        {
+          "name": "mvm-contract",
+          "version": "0.26.0",
+          "source": "git+https://github.com/Casey-allard/mvm?rev=ae12e9deb41cc9a3264196ce22ebc72d4042883d#ae12e9deb41cc9a3264196ce22ebc72d4042883d"
+        },
+        {
+          "name": "mvm-core",
+          "version": "0.26.0",
+          "source": "git+https://github.com/Casey-allard/mvm?rev=ae12e9deb41cc9a3264196ce22ebc72d4042883d#ae12e9deb41cc9a3264196ce22ebc72d4042883d"
+        }
+      ],
+      "tests": [
+        {
+          "ignored": 0,
+          "target": "canonical",
+          "filtered": 0,
+          "failed": 0,
+          "passed": 9,
+          "listed": 9
+        },
+        {
+          "ignored": 0,
+          "target": "service",
+          "filtered": 0,
+          "failed": 0,
+          "passed": 16,
+          "listed": 16
+        },
+        {
+          "ignored": 0,
+          "target": "receipt",
+          "filtered": 0,
+          "failed": 0,
+          "passed": 15,
+          "listed": 15
+        },
+        {
+          "ignored": 0,
+          "target": "service_epoch",
+          "filtered": 0,
+          "failed": 0,
+          "passed": 3,
+          "listed": 3
+        },
+        {
+          "ignored": 0,
+          "target": "service_sender",
+          "filtered": 0,
+          "failed": 0,
+          "passed": 4,
+          "listed": 4
+        },
+        {
+          "ignored": 0,
+          "target": "service_tcp",
+          "filtered": 0,
+          "failed": 0,
+          "passed": 1,
+          "listed": 1
+        },
+        {
+          "ignored": 0,
+          "target": "service_clock",
+          "filtered": 0,
+          "failed": 0,
+          "passed": 4,
+          "listed": 4
+        },
+        {
+          "ignored": 0,
+          "target": "broker",
+          "filtered": 0,
+          "failed": 0,
+          "passed": 3,
+          "listed": 3
+        },
+        {
+          "ignored": 0,
+          "target": "service_metrics",
+          "filtered": 0,
+          "failed": 0,
+          "passed": 1,
+          "listed": 1
+        },
+        {
+          "ignored": 0,
+          "target": "receipt_send",
+          "filtered": 0,
+          "failed": 0,
+          "passed": 3,
+          "listed": 3
+        },
+        {
+          "ignored": 0,
+          "target": "capacity_probe",
+          "filtered": 0,
+          "failed": 0,
+          "passed": 4,
+          "listed": 4
+        }
+      ],
+      "unix_storage": [],
+      "artifact_id": 13202082711,
+      "original_zip": "original-zips/mvm-mailbox-portable-windows2025-x64-1.zip",
+      "zip_sha256": "9ecedeb17af89c575bd8a53eb5681daf5391f919e8132470055fd9a27ee68ae3",
+      "zip_bytes": 30409,
+      "original_files": 29
+    }
+  ],
+  "linux_test_summaries": [
+    {
+      "passed": 19,
+      "failed": 0,
+      "ignored": 0,
+      "measured": 0,
+      "filtered": 0
+    },
+    {
+      "passed": 0,
+      "failed": 0,
+      "ignored": 0,
+      "measured": 0,
+      "filtered": 0
+    },
+    {
+      "passed": 10,
+      "failed": 0,
+      "ignored": 0,
+      "measured": 0,
+      "filtered": 0
+    },
+    {
+      "passed": 1,
+      "failed": 0,
+      "ignored": 0,
+      "measured": 0,
+      "filtered": 0
+    },
+    {
+      "passed": 9,
+      "failed": 0,
+      "ignored": 0,
+      "measured": 0,
+      "filtered": 0
+    },
+    {
+      "passed": 1,
+      "failed": 0,
+      "ignored": 0,
+      "measured": 0,
+      "filtered": 0
+    },
+    {
+      "passed": 3,
+      "failed": 0,
+      "ignored": 0,
+      "measured": 0,
+      "filtered": 0
+    },
+    {
+      "passed": 8,
+      "failed": 0,
+      "ignored": 0,
+      "measured": 0,
+      "filtered": 0
+    },
+    {
+      "passed": 10,
+      "failed": 0,
+      "ignored": 0,
+      "measured": 0,
+      "filtered": 0
+    },
+    {
+      "passed": 3,
+      "failed": 0,
+      "ignored": 0,
+      "measured": 0,
+      "filtered": 0
+    },
+    {
+      "passed": 9,
+      "failed": 0,
+      "ignored": 0,
+      "measured": 0,
+      "filtered": 0
+    },
+    {
+      "passed": 2,
+      "failed": 0,
+      "ignored": 0,
+      "measured": 0,
+      "filtered": 0
+    },
+    {
+      "passed": 4,
+      "failed": 0,
+      "ignored": 0,
+      "measured": 0,
+      "filtered": 0
+    },
+    {
+      "passed": 10,
+      "failed": 0,
+      "ignored": 0,
+      "measured": 0,
+      "filtered": 0
+    },
+    {
+      "passed": 15,
+      "failed": 0,
+      "ignored": 0,
+      "measured": 0,
+      "filtered": 0
+    },
+    {
+      "passed": 3,
+      "failed": 0,
+      "ignored": 0,
+      "measured": 0,
+      "filtered": 0
+    },
+    {
+      "passed": 16,
+      "failed": 0,
+      "ignored": 0,
+      "measured": 0,
+      "filtered": 0
+    },
+    {
+      "passed": 4,
+      "failed": 0,
+      "ignored": 0,
+      "measured": 0,
+      "filtered": 0
+    },
+    {
+      "passed": 3,
+      "failed": 0,
+      "ignored": 0,
+      "measured": 0,
+      "filtered": 0
+    },
+    {
+      "passed": 1,
+      "failed": 0,
+      "ignored": 0,
+      "measured": 0,
+      "filtered": 0
+    },
+    {
+      "passed": 4,
+      "failed": 0,
+      "ignored": 0,
+      "measured": 0,
+      "filtered": 0
+    },
+    {
+      "passed": 4,
+      "failed": 0,
+      "ignored": 0,
+      "measured": 0,
+      "filtered": 0
+    },
+    {
+      "passed": 1,
+      "failed": 0,
+      "ignored": 0,
+      "measured": 0,
+      "filtered": 0
+    },
+    {
+      "passed": 3,
+      "failed": 0,
+      "ignored": 0,
+      "measured": 0,
+      "filtered": 0
+    },
+    {
+      "passed": 1,
+      "failed": 0,
+      "ignored": 0,
+      "measured": 0,
+      "filtered": 0
+    },
+    {
+      "passed": 2,
+      "failed": 0,
+      "ignored": 0,
+      "measured": 0,
+      "filtered": 0
+    },
+    {
+      "passed": 0,
+      "failed": 0,
+      "ignored": 0,
+      "measured": 0,
+      "filtered": 0
+    }
+  ],
+  "scope": "Native ephemeral process/loopback client and Linux release component contracts. Not WAN, native MVM fleet, Windows durable storage, scale capacity or performance qualification.",
+  "linux_stages": {
+    "Linux host, canonical envelope, recovery and packing tests": {
+      "passed": 43,
+      "test_harness_summaries": [
+        [
+          19,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          10,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          1,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          9,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          1,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          3,
+          0,
+          0,
+          0,
+          0
+        ]
+      ]
+    },
+    "Shared object-v1 and canonical mailbox conformance": {
+      "passed": 103,
+      "test_harness_summaries": [
+        [
+          8,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          10,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          3,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          9,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          2,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          4,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          10,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          15,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          3,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          16,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          4,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          3,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          1,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          4,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          4,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          1,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          3,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          1,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          2,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ]
+    }
+  },
+  "linux_mvm_dependency_count": 11,
+  "linux_mvm_dependencies": [
+    {
+      "name": "mvm-agentd",
+      "version": "0.26.0",
+      "source": "git+https://github.com/Casey-allard/mvm?rev=ae12e9deb41cc9a3264196ce22ebc72d4042883d#ae12e9deb41cc9a3264196ce22ebc72d4042883d"
+    },
+    {
+      "name": "mvm-backends",
+      "version": "0.26.0",
+      "source": "git+https://github.com/Casey-allard/mvm?rev=ae12e9deb41cc9a3264196ce22ebc72d4042883d#ae12e9deb41cc9a3264196ce22ebc72d4042883d"
+    },
+    {
+      "name": "mvm-build",
+      "version": "0.26.0",
+      "source": "git+https://github.com/Casey-allard/mvm?rev=ae12e9deb41cc9a3264196ce22ebc72d4042883d#ae12e9deb41cc9a3264196ce22ebc72d4042883d"
+    },
+    {
+      "name": "mvm-builder-guest",
+      "version": "0.26.0",
+      "source": "git+https://github.com/Casey-allard/mvm?rev=ae12e9deb41cc9a3264196ce22ebc72d4042883d#ae12e9deb41cc9a3264196ce22ebc72d4042883d"
+    },
+    {
+      "name": "mvm-contract",
+      "version": "0.26.0",
+      "source": "git+https://github.com/Casey-allard/mvm?rev=ae12e9deb41cc9a3264196ce22ebc72d4042883d#ae12e9deb41cc9a3264196ce22ebc72d4042883d"
+    },
+    {
+      "name": "mvm-core",
+      "version": "0.26.0",
+      "source": "git+https://github.com/Casey-allard/mvm?rev=ae12e9deb41cc9a3264196ce22ebc72d4042883d#ae12e9deb41cc9a3264196ce22ebc72d4042883d"
+    },
+    {
+      "name": "mvm-fs",
+      "version": "0.26.0",
+      "source": "git+https://github.com/Casey-allard/mvm?rev=ae12e9deb41cc9a3264196ce22ebc72d4042883d#ae12e9deb41cc9a3264196ce22ebc72d4042883d"
+    },
+    {
+      "name": "mvm-http",
+      "version": "0.26.0",
+      "source": "git+https://github.com/Casey-allard/mvm?rev=ae12e9deb41cc9a3264196ce22ebc72d4042883d#ae12e9deb41cc9a3264196ce22ebc72d4042883d"
+    },
+    {
+      "name": "mvm-net",
+      "version": "0.26.0",
+      "source": "git+https://github.com/Casey-allard/mvm?rev=ae12e9deb41cc9a3264196ce22ebc72d4042883d#ae12e9deb41cc9a3264196ce22ebc72d4042883d"
+    },
+    {
+      "name": "mvm-setpriv",
+      "version": "0.26.0",
+      "source": "git+https://github.com/Casey-allard/mvm?rev=ae12e9deb41cc9a3264196ce22ebc72d4042883d#ae12e9deb41cc9a3264196ce22ebc72d4042883d"
+    },
+    {
+      "name": "mvm-vmm",
+      "version": "0.26.0",
+      "source": "git+https://github.com/Casey-allard/mvm?rev=ae12e9deb41cc9a3264196ce22ebc72d4042883d#ae12e9deb41cc9a3264196ce22ebc72d4042883d"
+    }
+  ]
+}
