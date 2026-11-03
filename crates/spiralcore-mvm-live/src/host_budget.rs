@@ -463,4 +463,89 @@ mod tests {
         ));
         assert!(owner.shared.fenced.load(Ordering::Acquire));
     }
+
+    #[cfg(any(
+        all(target_os = "linux", feature = "linux-host"),
+        all(target_os = "macos", target_arch = "aarch64")
+    ))]
+    mod installed_authority {
+        use super::*;
+        use crate::{
+            installed_owner::{InstallationKey, InstallationOwner},
+            installed_supervisor::{InstalledConfig, InstalledSupervisor},
+        };
+        use std::{
+            fs,
+            os::unix::fs::DirBuilderExt,
+            path::PathBuf,
+            time::{SystemTime, UNIX_EPOCH},
+        };
+
+        struct Cleanup(PathBuf);
+        impl Drop for Cleanup {
+            fn drop(&mut self) {
+                let _ = fs::remove_dir_all(&self.0);
+            }
+        }
+
+        fn assert_fault_closes_authority(poison: bool) {
+            let base = std::env::temp_dir().join(format!(
+                "spiral-budget-authority-{}-{}",
+                std::process::id(),
+                SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .unwrap()
+                    .as_nanos()
+            ));
+            fs::DirBuilder::new().mode(0o700).create(&base).unwrap();
+            let cleanup = Cleanup(base);
+            let config = InstalledConfig::native_profile();
+            let key = InstallationKey {
+                installation: [0x61; 32],
+                profile: config.profile_hash(),
+            };
+            let owner =
+                InstallationOwner::initialize(&cleanup.0.join("installation"), key).unwrap();
+            let controller = InstalledSupervisor::start(owner, config).unwrap();
+            let budget = controller.budget().clone();
+            let authority = budget.shared.installed.as_ref().unwrap().clone();
+            let scope = budget.scope(0).unwrap();
+            let link = budget.reserve_link(&scope).unwrap();
+            assert!(authority.admission_open());
+            if poison {
+                let copy = budget.clone();
+                assert!(
+                    std::thread::spawn(move || {
+                        let _ledger = copy.shared.ledger.lock().unwrap();
+                        panic!("poison the owned installed ledger");
+                    })
+                    .join()
+                    .is_err()
+                );
+                assert!(budget.snapshot().is_err());
+                drop(link);
+            } else {
+                budget.shared.ledger.lock().unwrap().usage.links = 0;
+                drop(link);
+                assert!(budget.snapshot().unwrap().fenced);
+            }
+            // Do not call controller.close_admission/try_finish first: worker
+            // admission must observe the accounting failure immediately.
+            assert!(
+                !authority.admission_open(),
+                "accounting fault left installed worker admission open"
+            );
+            assert!(budget.scope(0).is_err());
+        }
+
+        #[test]
+        fn underflow_closes_installed_worker_authority_immediately() {
+            assert_fault_closes_authority(false);
+        }
+
+        #[test]
+        fn poison_closes_installed_worker_authority_immediately() {
+            assert_fault_closes_authority(true);
+        }
+    }
 }
