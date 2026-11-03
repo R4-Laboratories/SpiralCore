@@ -1,0 +1,39 @@
+   Compiling spiralcore-transfer v0.1.0 (/var/tmp/spiralcore-call-retry-20261103/source/crates/spiralcore-transfer)
+   Compiling uor-r4-object-store v0.1.0 (/var/tmp/spiralcore-call-retry-20261103/source/crates/uor-r4-object-store)
+   Compiling spiralcore-mvm-adapter v0.1.0 (/var/tmp/spiralcore-call-retry-20261103/source/crates/spiralcore-mvm-adapter)
+error[E0599]: no method named `retry_call_prepared` found for struct `LocalMailboxService` in the current scope
+    --> tests/call_send.rs:73:16
+     |
+  73 |         caller.retry_call_prepared(&calls, &call, &prepared, &transport, &cancel, at(1)),
+     |                ^^^^^^^^^^^^^^^^^^^
+     |
+help: there is a method `retry_reply_prepared` with a similar name, but with different arguments
+    --> src/service.rs:2515:5
+     |
+2515 | /     pub fn retry_reply_prepared(
+2516 | |         &mut self,
+2517 | |         binding: &MailboxBinding,
+2518 | |         encoded_request: &[u8],
+2519 | |         now: ServiceTime,
+2520 | |     ) -> Result<Option<PreparedMailboxEnvelope>> {
+     | |________________________________________________^
+
+error[E0599]: no method named `retry_call_prepared` found for struct `LocalMailboxService` in the current scope
+    --> tests/call_send.rs:98:16
+     |
+  98 |         caller.retry_call_prepared(&calls, &call, &prepared, &transport, &cancel, at(1)),
+     |                ^^^^^^^^^^^^^^^^^^^
+     |
+help: there is a method `retry_reply_prepared` with a similar name, but with different arguments
+    --> src/service.rs:2515:5
+     |
+2515 | /     pub fn retry_reply_prepared(
+2516 | |         &mut self,
+2517 | |         binding: &MailboxBinding,
+2518 | |         encoded_request: &[u8],
+2519 | |         now: ServiceTime,
+2520 | |     ) -> Result<Option<PreparedMailboxEnvelope>> {
+     | |________________________________________________^
+
+For more information about this error, try `rustc --explain E0599`.
+error: could not compile `spiralcore-mvm-adapter` (test "call_send") due to 2 previous errors

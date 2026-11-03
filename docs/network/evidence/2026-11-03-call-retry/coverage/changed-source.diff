@@ -1,0 +1,58 @@
+diff --git a/crates/spiralcore-mvm-adapter/src/service.rs b/crates/spiralcore-mvm-adapter/src/service.rs
+index ee392402..d0bc6362 100644
+--- a/crates/spiralcore-mvm-adapter/src/service.rs
++++ b/crates/spiralcore-mvm-adapter/src/service.rs
+@@ -2309,0 +2310,29 @@ impl LocalMailboxService {
++        let expected = self.registered_call_send_expectation(binding, call, now, false)?;
++        binding.send_prepared_inner(prepared, Some(expected), transport, cancel, now)
++    }
++
++    /// Explicitly resend the original registered Call while it is pending or
++    /// its Reply remains unconsumed. Keep the Reply and its budget reservation
++    /// in the service; original generation, request and deadlines still apply.
++    /// This performs no retry scheduling or registration. Success is a write,
++    /// not destination acceptance; transport failure can leave an uncertain send.
++    pub fn retry_call_prepared(
++        &self,
++        binding: &MailboxBinding,
++        call: &CallHandle,
++        prepared: &PreparedMailboxEnvelope,
++        transport: &impl PeerTransport,
++        cancel: &CancellationToken,
++        now: ServiceTime,
++    ) -> Result<usize> {
++        let expected = self.registered_call_send_expectation(binding, call, now, true)?;
++        binding.send_prepared_inner(prepared, Some(expected), transport, cancel, now)
++    }
++
++    fn registered_call_send_expectation(
++        &self,
++        binding: &MailboxBinding,
++        call: &CallHandle,
++        now: ServiceTime,
++        allow_unconsumed_reply: bool,
++    ) -> Result<SendExpectation> {
+@@ -2313 +2342,5 @@ impl LocalMailboxService {
+-        if now.unix_ms < 0 || self.last.is_some_and(|last| now.monotonic_ms < last.monotonic_ms) {
++        if now.unix_ms < 0
++            || self
++                .last
++                .is_some_and(|last| now.monotonic_ms < last.monotonic_ms)
++        {
+@@ -2331,0 +2365 @@ impl LocalMailboxService {
++            CallStatus::Replied(Some(_)) if allow_unconsumed_reply => {}
+@@ -2338,10 +2372,4 @@ impl LocalMailboxService {
+-        binding.send_prepared_inner(
+-            prepared,
+-            Some(SendExpectation {
+-                generation: call.generation,
+-                request_commitment: Some(pending.commitment),
+-            }),
+-            transport,
+-            cancel,
+-            now,
+-        )
++        Ok(SendExpectation {
++            generation: call.generation,
++            request_commitment: Some(pending.commitment),
++        })
