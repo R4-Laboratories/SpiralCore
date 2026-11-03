@@ -19,11 +19,30 @@ consumption until all required observations/receipt transmission, with a fresh
 original-deadline check, makes the regression pass. Eight focused canonical
 tests pass in `ack-retention-green.txt`; the charged exact payload remains in the
 canonical service after failure. Reply-wire/ack progress retention is still the
-next implementation, and no automatic retry is enabled.
+next implementation at that checkpoint, and no automatic retry is enabled.
 
-This is not complete C8: receipt/Reply/ack progress still needs retained bounded
-state, earlier/duplicate Reply handling and both-peer cached Reply recovery.
-Automatic retry stays disabled, the receiver choreography is unchanged, and
+Subsequent missing-API RED and GREEN records now establish retained receipt
+disposition, cumulative event count, exact authenticated Reply wire and
+Needed/InvokedUncertain/Sent acknowledgment state. Twelve focused campaign tests
+passed that initial integration. A real-stream receipt-flood gate sends 17
+unchanged authenticated receipts and confirms that only 16 are read, the
+original Call remains, and no extra request or ACK is emitted.
+
+An expanded state test initially refused its second Call with `Full`, correctly:
+the normal signed grant allows one outstanding Call. The foreign-handle unit
+fixture now uses another local service/tracker owner rather than increasing the
+grant. Its original failure remains. The generic FIFO regression deliberately
+uses a separately named capacity-two grant signed by a new owned test authority,
+with all other limits unchanged. It reproduced observation-ready but FIFO-Pending
+premature failure. Polling under fresh original-deadline checks inside the
+bounded event loop now waits for the preceding Reply and returns only the exact
+current payload. All **17 focused campaign tests pass** in
+`fifo-and-progress-green.txt`. This synthetic two-Call fixture does not qualify
+native pipelining or raise production limits. Independent source reviews record
+the FIFO correction and retained-state boundaries.
+
+This is not complete C8: earlier/duplicate Reply handling and both-peer cached
+Reply recovery remain. Automatic retry stays disabled, receiver choreography is unchanged, and
 the 2,048-Call guard/pipeline one remain. Independent final source review, full
 qualification and performance measurements remain before delivery. No native
 MVM/WAN or performance claim follows from these focused tests.
