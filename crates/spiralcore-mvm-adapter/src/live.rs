@@ -118,6 +118,19 @@ pub struct StreamCounters {
     pub frames_received: u64,
 }
 
+/// Local framing progress; Frame bytes still require canonical authentication.
+#[derive(Debug, PartialEq, Eq)]
+pub enum ReceiveOutcome {
+    Frame(Vec<u8>),
+    Idle,
+}
+
+enum ReadProgress {
+    Complete,
+    Eof,
+    Idle,
+}
+
 fn increment(counter: &mut u64, bytes: usize) -> LiveResult<()> {
     *counter = counter.checked_add(bytes as u64).ok_or(LiveError::State)?;
     Ok(())
@@ -167,15 +180,43 @@ fn read_exact_or_eof<S: SocketIo>(
     deadline: Instant,
     counter: &mut u64,
 ) -> LiveResult<bool> {
+    match read_exact_progress(socket, bytes, cancel, deadline, None, counter)? {
+        ReadProgress::Complete => Ok(true),
+        ReadProgress::Eof => Ok(false),
+        ReadProgress::Idle => Err(LiveError::State),
+    }
+}
+fn read_exact_progress<S: SocketIo>(
+    socket: &mut S,
+    bytes: &mut [u8],
+    cancel: &CancellationToken,
+    deadline: Instant,
+    idle_deadline: Option<Instant>,
+    counter: &mut u64,
+) -> LiveResult<ReadProgress> {
     let mut offset = 0;
     while offset < bytes.len() {
+        let mut timeout = remaining(cancel, deadline)?;
+        if offset == 0
+            && let Some(idle) = idle_deadline
+        {
+            let Some(idle_remaining) = idle
+                .checked_duration_since(Instant::now())
+                .filter(|value| !value.is_zero())
+            else {
+                // Cancellation/absolute expiry always precede an Idle result.
+                remaining(cancel, deadline)?;
+                return Ok(ReadProgress::Idle);
+            };
+            timeout = timeout.min(idle_remaining);
+        }
         socket
-            .set_read_timeout(Some(remaining(cancel, deadline)?))
+            .set_read_timeout(Some(timeout))
             .map_err(|error| io::Error::new(error.kind(), format!("set_read_timeout: {error}")))?;
         match socket.read(&mut bytes[offset..]) {
             Ok(0) if offset == 0 => {
                 remaining(cancel, deadline)?;
-                return Ok(false);
+                return Ok(ReadProgress::Eof);
             }
             Ok(0) => return Err(io::Error::from(io::ErrorKind::UnexpectedEof).into()),
             Ok(count) => {
@@ -195,7 +236,7 @@ fn read_exact_or_eof<S: SocketIo>(
         }
     }
     remaining(cancel, deadline)?;
-    Ok(true)
+    Ok(ReadProgress::Complete)
 }
 fn write_all<S: SocketIo>(
     socket: &mut S,
@@ -304,20 +345,58 @@ pub fn read_ciphertext_frame_or_eof<S: SocketIo>(
         )? {
             return Ok(None);
         }
-        let len = u32::from_be_bytes(prefix) as usize;
-        if len == 0 || len > MAX_ENVELOPE_BYTES {
-            return Err(LiveError::Framing);
-        }
-        let mut bytes = vec![0; len];
-        read_exact(
+        read_frame_payload(socket, prefix, cancel, deadline, counters).map(Some)
+    })();
+    close_on_error(socket, result)
+}
+
+fn read_frame_payload<S: SocketIo>(
+    socket: &mut S,
+    prefix: [u8; 4],
+    cancel: &CancellationToken,
+    deadline: Instant,
+    counters: &mut StreamCounters,
+) -> LiveResult<Vec<u8>> {
+    let len = u32::from_be_bytes(prefix) as usize;
+    if len == 0 || len > MAX_ENVELOPE_BYTES {
+        return Err(LiveError::Framing);
+    }
+    let mut bytes = vec![0; len];
+    read_exact(
+        socket,
+        &mut bytes,
+        cancel,
+        deadline,
+        &mut counters.envelope_bytes_received,
+    )?;
+    increment(&mut counters.frames_received, 1)?;
+    Ok(bytes)
+}
+
+fn read_frame_or_idle<S: SocketIo>(
+    socket: &mut S,
+    cancel: &CancellationToken,
+    deadline: Instant,
+    idle_deadline: Instant,
+    counters: &mut StreamCounters,
+) -> LiveResult<ReceiveOutcome> {
+    let result = (|| {
+        let mut prefix = [0; 4];
+        match read_exact_progress(
             socket,
-            &mut bytes,
+            &mut prefix,
             cancel,
             deadline,
-            &mut counters.envelope_bytes_received,
-        )?;
-        increment(&mut counters.frames_received, 1)?;
-        Ok(Some(bytes))
+            Some(idle_deadline),
+            &mut counters.framing_bytes_received,
+        )? {
+            ReadProgress::Idle => Ok(ReceiveOutcome::Idle),
+            ReadProgress::Eof => Err(io::Error::from(io::ErrorKind::UnexpectedEof).into()),
+            ReadProgress::Complete => {
+                read_frame_payload(socket, prefix, cancel, deadline, counters)
+                    .map(ReceiveOutcome::Frame)
+            }
+        }
     })();
     close_on_error(socket, result)
 }
@@ -410,6 +489,37 @@ impl<S: SocketIo + 'static> StreamTransport<S> {
             socket, counters, ..
         } = &mut *state;
         let result = read_ciphertext_frame(socket, cancel, deadline, counters);
+        state.closed = result.is_err();
+        result
+    }
+    /// Yield only before consuming any next-frame bytes. Lock waiting is not
+    /// Idle, and prefix/payload progress keeps the original absolute deadline.
+    pub fn receive_or_idle(
+        &self,
+        cancel: &CancellationToken,
+        frame_deadline: Instant,
+        idle_window: Duration,
+    ) -> LiveResult<ReceiveOutcome> {
+        if idle_window < Duration::from_millis(1) || idle_window > Duration::from_secs(1) {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "idle window must be between 1 ms and 1 s",
+            )
+            .into());
+        }
+        let entry = Instant::now();
+        let deadline = frame_deadline
+            .min(entry + self.timeout)
+            .min(entry + MAX_OPERATION);
+        let mut state = lock(&self.state, cancel, deadline)?;
+        if state.closed || !state.ready {
+            return Err(LiveError::Closed);
+        }
+        let idle_deadline = Instant::now() + idle_window;
+        let StreamState {
+            socket, counters, ..
+        } = &mut *state;
+        let result = read_frame_or_idle(socket, cancel, deadline, idle_deadline, counters);
         state.closed = result.is_err();
         result
     }
