@@ -93,6 +93,17 @@ small-session lifecycle loss remain recorded. Canonical WAN, aggregate
 cross-process fleet budgets and durable Windows gateway qualification remain
 open release gates.
 
+The [persistent-service checkpoint](docs/network/persistent-mvm-service-results-2026-11-03.md)
+now moves object work outside shared mailbox dispatch and bounds the two-guest
+keyless relay's link/frame/buffer ownership. Five further Linux/Firecracker
+sessions passed **44 publication operations and 36 keyless reboot readbacks**.
+The larger Combined session used **62.54 MB / 3.012 s timed sender CPU / 6.471 s
+full lifecycle**, versus zstd's **107.25 MB / 4.437 s / 8.807 s**. The smaller
+Combined session retained a **1.95% lifecycle loss**. Reports explicitly separate
+orchestrator transport credits from guest plaintext/cache budgets; the latter,
+safe sessions beyond 2,048 Calls, negotiated pipelining and canonical WAN remain
+active work in the [recorded plan](docs/plans/2026-11-03-persistent-mvm-service.md).
+
 ### Where SpiralCore sits in the network stack
 
 ![Seven-layer OSI reference highlighting application-level SpiralCore functions and the Layer 3 TUN boundary, beside the actual object, packet-tunnel and MVM protocol paths.](docs/figures/overview/osi-model.png)

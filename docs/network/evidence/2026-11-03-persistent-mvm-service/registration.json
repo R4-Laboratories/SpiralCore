@@ -29,6 +29,13 @@
     "maximum_owned_disk_bytes_per_cell": 536870912,
     "acceptance": "exact durable publication plus keyless reboot readbacks, matched endpoint/relay counters, aggregate transport owner high-water and zero reservations after joined teardown"
   },
+  "native_scope_regression_registered_before_execution": {
+    "stage": "one",
+    "arm": "whole-mixed",
+    "requested_size": 1048576,
+    "trial": 0,
+    "acceptance": "existing guest/host exact transfer and readback pass; budgeted API refuses this topology in unit test; ordinary native result must explicitly show null budget and unaccounted endpoint coverage"
+  },
   "regressions": [
     "Blocked application phase must permit independent service dispatch; old behavior observed RED, new split GREEN",
     "Post-work deadline and incoming policy replacement refuse Reply preparation",

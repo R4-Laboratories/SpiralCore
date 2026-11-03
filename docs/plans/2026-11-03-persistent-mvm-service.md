@@ -267,6 +267,20 @@ objects. Use 1 MiB/16 MiB only where the registered memory/storage envelope fits
 
 ## Acceptance tracking
 
+Implementation checkpoint: product source `7531985`, [PR #54](https://github.com/R4-Laboratories/SpiralCore/pull/54).
+The [recorded results](../network/persistent-mvm-service-results-2026-11-03.md)
+retain 18 exploratory before/after host cells and five actual Firecracker cells.
+
+- [x] A1/A2: detach application work, observe independent service dispatch, and
+  reject post-work policy replacement/expiry before Reply preparation.
+- [x] B4 and relay portion of B5: checked owner/tenant link/frame/buffer credits,
+  preactivation partial rollback, malicious-input cleanup and actual two-guest
+  link ownership. The budgeted profile explicitly excludes Stage One.
+- [ ] A3: authenticated control-contention latency during actual object replay
+  remains unmeasured; the serial transfer comparison cannot establish it.
+- [ ] B6: installation-wide exclusion/orphan recovery and aggregate plaintext,
+  cache and workspace enforcement remain unfinished.
+
 - [ ] A: expensive object work leaves global dispatch; concurrent control and
   expiry/revocation regressions pass on the actual path.
 - [ ] B4–B6: one orchestrator enforces combined transport bounds across links to
