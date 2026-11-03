@@ -60,12 +60,6 @@ checksum = "f2032f911046de80f0a198e0901378627c33f59ea0ac00e363d481118bd70a53"
 
 [[package]]
 name = "base64"
-version = "0.22.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "72b3254f16251a8381aa12e40e3c4d2f0199f8c6508fbecb9d91f575e0fbb8c6"
-
-[[package]]
-name = "base64"
 version = "0.23.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ac07cdecf99051d9a5238b80f35af32cdeba5b336e55d957b318b50137e18da5"
@@ -142,10 +136,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1aa79e62e7697b8e29b513a68abacf485adcd1fe8284a4316c5ae868e6633327"
 dependencies = [
  "iana-time-zone",
- "js-sys",
  "num-traits",
  "serde",
- "wasm-bindgen",
  "windows-link",
 ]
 
@@ -723,10 +715,10 @@ checksum = "cf8baf1c55e62ffcace7a9f06f4bd9cd3f0c4beb022d3b367256b91b87513d98"
 [[package]]
 name = "mvm-contract"
 version = "0.26.0"
-source = "git+https://github.com/tinylabscom/mvm?rev=3104a12c5b071a6851323fa8115d2afaf3f0bb8b#3104a12c5b071a6851323fa8115d2afaf3f0bb8b"
+source = "git+https://github.com/Casey-allard/mvm?rev=ae12e9deb41cc9a3264196ce22ebc72d4042883d#ae12e9deb41cc9a3264196ce22ebc72d4042883d"
 dependencies = [
  "anyhow",
- "base64 0.22.1",
+ "base64",
  "bytes",
  "chrono",
  "ed25519-dalek",
@@ -740,11 +732,11 @@ dependencies = [
 [[package]]
 name = "mvm-core"
 version = "0.26.0"
-source = "git+https://github.com/tinylabscom/mvm?rev=3104a12c5b071a6851323fa8115d2afaf3f0bb8b#3104a12c5b071a6851323fa8115d2afaf3f0bb8b"
+source = "git+https://github.com/Casey-allard/mvm?rev=ae12e9deb41cc9a3264196ce22ebc72d4042883d#ae12e9deb41cc9a3264196ce22ebc72d4042883d"
 dependencies = [
  "aes-gcm",
  "anyhow",
- "base64 0.22.1",
+ "base64",
  "chrono",
  "core-foundation",
  "ed25519-dalek",
@@ -773,7 +765,7 @@ dependencies = [
 [[package]]
 name = "mvm-macho-sign"
 version = "0.26.0"
-source = "git+https://github.com/tinylabscom/mvm?rev=3104a12c5b071a6851323fa8115d2afaf3f0bb8b#3104a12c5b071a6851323fa8115d2afaf3f0bb8b"
+source = "git+https://github.com/Casey-allard/mvm?rev=ae12e9deb41cc9a3264196ce22ebc72d4042883d#ae12e9deb41cc9a3264196ce22ebc72d4042883d"
 dependencies = [
  "plist",
  "sha1",
@@ -825,7 +817,7 @@ version = "1.10.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "327a4cb2ad49dc48adfdc9da89e22c64d488b508c67a044d71ba729e4521a285"
 dependencies = [
- "base64 0.23.1",
+ "base64",
  "indexmap",
  "quick-xml",
  "serde",
@@ -1169,6 +1161,7 @@ dependencies = [
  "serde",
  "serde_jcs",
  "serde_json",
+ "sha2 0.10.9",
  "spiralcore-transfer",
 ]
 
@@ -1381,7 +1374,7 @@ version = "3.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cde93ff05758a36a851a398a772b0b79a82fbe3c186a46f2696baaeaf84c966b"
 dependencies = [
- "base64 0.23.1",
+ "base64",
  "log",
  "percent-encoding",
  "rustls",
@@ -1397,7 +1390,7 @@ version = "0.6.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "841583fc36089d7d59419568ae157f43a5a03a2e5a81ba87c77d1596ef46e922"
 dependencies = [
- "base64 0.23.1",
+ "base64",
  "http",
  "httparse",
  "log",

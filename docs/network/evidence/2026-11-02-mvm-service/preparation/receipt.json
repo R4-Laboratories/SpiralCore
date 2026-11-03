@@ -1,0 +1,65 @@
+{
+  "format": "spiralcore-mvm-service-preparation-v1",
+  "date": "2026-11-02",
+  "base_repository": "https://github.com/tinylabscom/mvm",
+  "base_revision": "6ae461a54d85a1b70477c1efb97ea4a33ef3b331",
+  "baseline_bundle_untouched": true,
+  "baseline_binary_evidence_untouched": true,
+  "source_transfer": "git archive exact current commit directly over SSH; remote base and source trees are isolated, local only fourteen ported source files used for patch generation",
+  "remote_root": "/var/tmp/spiralcore-mvm-service-20261102",
+  "patch": {
+    "path": "crates/spiralcore-mvm-live/mvm-service-patch/0001-mailbox-service-primitives.patch",
+    "sha256": "ff1877e63b279ed92e83d6682e9eade4de287475c882cbaaed401a2ba518c541",
+    "bytes": 30847,
+    "files": 14,
+    "fuzz": 0,
+    "conflicting_hunks": 0,
+    "rejected_hunks": 0,
+    "semantic_edits_to_legacy_patch": false
+  },
+  "hunk_context_adjustments": [
+    {
+      "path": "crates/mvm-hostd/src/bin/mvm-hvf-supervisor.rs",
+      "hunk": 1,
+      "legacy_start_line": 935,
+      "current_start_line": 981,
+      "offset_lines": 46,
+      "resolution": "Exact-context application with fuzz0; surrounding upstream lifecycle retained; regenerated current-base patch has updated positions."
+    }
+  ],
+  "preserved_upstream": {
+    "resource_ledger_path": "crates/mvm-core/src/mailbox/transport/limits.rs",
+    "resource_ledger_base_and_patched_sha256": "24bc897bc0b87cc819bd44e43d4e318b33326a60e676cce3ca5ff5f59a3a9d5a",
+    "current_private_base64_imports": "unchanged outside retained patch hunks",
+    "workspace_lock_base_and_patched_sha256": "c9b6414ac28a1aaf93fb2aa74b77b3fcbe39889eaaddd2b681e7252358d1699e"
+  },
+  "preparation_checks": {
+    "local_bundle_hashes": "pass",
+    "local_archived_current_revision_patch_and_14_result_hashes": "pass",
+    "remote_patched_14_result_hashes": "pass",
+    "bash_syntax": "pass",
+    "shellcheck": "pass",
+    "input_repository_mutated": false
+  },
+  "minimal_typecheck": {
+    "status": "pass",
+    "exit_code": 0,
+    "rust": "1.97.1",
+    "command": "cargo check --locked --manifest-path /var/tmp/spiralcore-mvm-service-20261102/source/Cargo.toml -p mvm-core -p mvm-net --no-default-features",
+    "cargo_build_jobs": 2,
+    "cargo_incremental": false,
+    "nice": 10,
+    "elapsed_reported_seconds": 23.98,
+    "native_service_or_guest_built": false
+  },
+  "native_execution": {
+    "guests_launched": 0,
+    "kernel_or_firecracker_path_modified": false,
+    "status": "Not run; waiting for frozen service/channel implementation."
+  },
+  "limitations": [
+    "Preparation and minimal typecheck only, not complete issue4629 service or upstream contribution acceptance",
+    "No performance, transfer-byte, CPU/time or native guest qualification follows from source preparation",
+    "No semantic API incompatibility observed in minimal primitive check; full consumer/native build follows source freeze"
+  ]
+}

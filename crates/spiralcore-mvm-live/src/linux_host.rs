@@ -196,6 +196,7 @@ mod linux {
     use mvm_net::channel::GuestService;
     use mvm_vmm::driver::{
         RunningVm, VmmDriver,
+        prepared_disks::PreparedWritableDisks,
         spec::{BlockDev, ConsoleCapture, KernelImage, VmmSpec, VsockDirection, VsockPort},
     };
     use serde_json::json;
@@ -217,6 +218,42 @@ mod linux {
         fn drop(&mut self) {
             let _ = self.0.kill();
         }
+    }
+
+    /// Transfer the already validated backing descriptor and its canonical
+    /// cooperating-writer sidecar to the driver. Binding verifies exact inode
+    /// identity and complete coverage of the final persistent writable set.
+    fn prepare_disk_custody(
+        spec: &VmmSpec,
+        backing: Option<&File>,
+    ) -> Result<PreparedWritableDisks> {
+        use mvm_core::util::writable_image::{LockedWritableImage, sidecar_lock_path};
+        let writable = spec
+            .blocks
+            .iter()
+            .filter(|block| !block.read_only && !block.ephemeral)
+            .collect::<Vec<_>>();
+        if writable.is_empty() {
+            return Ok(PreparedWritableDisks::bind(spec, Vec::new())?);
+        }
+        let [block] = writable.as_slice() else {
+            return Err(invalid("witness requires at most one persistent writable disk").into());
+        };
+        if block.slot != 0 || spec.blocks.len() != 1 {
+            return Err(invalid("witness writable disk must occupy physical slot zero").into());
+        }
+        let backing =
+            backing.ok_or_else(|| invalid("validated writable backing descriptor missing"))?;
+        let sidecar = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .create(true)
+            .truncate(false)
+            .mode(0o600)
+            .custom_flags(libc::O_NOFOLLOW | libc::O_CLOEXEC)
+            .open(sidecar_lock_path(&block.source))?;
+        let locked = LockedWritableImage::acquire(backing.try_clone()?, sidecar)?;
+        Ok(PreparedWritableDisks::bind(spec, vec![(0, locked)])?)
     }
 
     fn micros(value: Duration) -> Result<u64> {
@@ -415,10 +452,11 @@ mod linux {
             builder_egress_endpoint: None,
             plan_binding: None,
         };
+        let custody = prepare_disk_custody(&spec, backing.as_ref())?;
         let boot_at = Instant::now();
         let vm = OwnedVm(
             FcDriver::new()
-                .boot(&spec)
+                .boot_custodied(&spec, None, custody)
                 .map_err(|e| io::Error::other(format!("MVM Firecracker boot failed: {e}")))?,
         );
         let boot_wall_us = micros(boot_at.elapsed())?;
@@ -531,6 +569,108 @@ mod linux {
         Ok(
             json!({"event":"worker_done","ok":true,"backend":"firecracker","guest_events":completion.events,"console":String::from_utf8(bytes)?,"kernel_sha256":kernel_sha256,"worker_process_cpu_us":micros(cpu.try_elapsed()?)?,"worker_wall_us":micros(wall.elapsed())?,"boot_wall_us":boot_wall_us,"backing_disk_sync_us":sync_us,"backing_disk_synced":backing.is_some(),"guest_ready_host_unix_ms":ready_host,"guest_ready_guest_unix_ms":completion.guest_ready_unix_ms,"guest_clock_offset_ms":completion.clock_offset_ms,"firecracker_observed_cpu_us":vmm_cpu,"firecracker_cpu_scope":"last observed /proc stat sample before owned VMM termination; excludes stop work; not added to guest CPU","mailbox_bandwidth_profile":profile,"mailbox_rate_enforced":false,"mailbox_rate_bytes_per_second":null,"mailbox_burst_bytes":null,"requested_mailbox_rate_bytes_per_second":profile.bytes_per_second(),"requested_mailbox_burst_bytes":profile.burst_bytes(),"stopped_by_watchdog":false,"workload_exit_code":0,"process_exit_observed":true,"terminal_contract":"canonical-workload-exit-zero-and-successful-guest-done-then-owned-host-termination","natural_poweroff_observed":false}),
         )
+    }
+    #[cfg(test)]
+    mod custody_tests {
+        use super::*;
+        fn spec(path: Option<&Path>, read_only: bool) -> VmmSpec {
+            VmmSpec {
+                name: "custody-unit".into(),
+                kernel: KernelImage::Path("/unused".into()),
+                initramfs: None,
+                cmdline: String::new(),
+                vcpus: 1,
+                cpu_grant: None,
+                memory_mib: 1024,
+                mem_initial_mib: None,
+                blocks: path
+                    .map(|p| BlockDev {
+                        source: p.to_path_buf(),
+                        read_only,
+                        ephemeral: false,
+                        slot: 0,
+                    })
+                    .into_iter()
+                    .collect(),
+                vsock: vec![],
+                console: ConsoleCapture {
+                    log_path: "/unused-console".into(),
+                },
+                shares: vec![],
+                trusted_builder: false,
+                builder_egress_endpoint: None,
+                plan_binding: None,
+            }
+        }
+        fn image(path: &Path) -> File {
+            OpenOptions::new()
+                .read(true)
+                .write(true)
+                .create_new(true)
+                .mode(0o600)
+                .open(path)
+                .unwrap()
+        }
+        #[test]
+        fn writable_receiver_has_custody_and_sender_and_readonly_have_none() {
+            let temp = tempfile::tempdir().unwrap();
+            let path = temp.path().join("disk");
+            let backing = image(&path);
+            let custody = prepare_disk_custody(&spec(Some(&path), false), Some(&backing)).unwrap();
+            assert_eq!(custody.iter().len(), 1);
+            let (slot, held) = custody.iter().next().unwrap();
+            assert_eq!(slot, 0);
+            assert_eq!(
+                held.backing().metadata().unwrap().ino(),
+                backing.metadata().unwrap().ino()
+            );
+            assert!(
+                prepare_disk_custody(&spec(None, false), None)
+                    .unwrap()
+                    .is_empty()
+            );
+            assert!(
+                prepare_disk_custody(&spec(Some(&path), true), Some(&backing))
+                    .unwrap()
+                    .is_empty()
+            );
+            assert!(prepare_disk_custody(&spec(Some(&path), false), None).is_err());
+        }
+        #[test]
+        fn custody_excludes_a_competing_writer_without_truncating_the_sidecar() {
+            use mvm_core::util::writable_image::{LockedWritableImage, sidecar_lock_path};
+            let temp = tempfile::tempdir().unwrap();
+            let path = temp.path().join("disk");
+            let backing = image(&path);
+            std::fs::write(sidecar_lock_path(&path), b"retained lock metadata").unwrap();
+            let custody = prepare_disk_custody(&spec(Some(&path), false), Some(&backing)).unwrap();
+            let error = LockedWritableImage::open(&path, &sidecar_lock_path(&path)).unwrap_err();
+            assert_eq!(error.kind(), io::ErrorKind::WouldBlock);
+            assert_eq!(
+                std::fs::read(sidecar_lock_path(&path)).unwrap(),
+                b"retained lock metadata"
+            );
+            drop(custody);
+            drop(backing);
+            let _reopened = LockedWritableImage::open(&path, &sidecar_lock_path(&path)).unwrap();
+        }
+        #[test]
+        fn replaced_disk_path_and_sidecar_symlink_are_rejected() {
+            use mvm_core::util::writable_image::sidecar_lock_path;
+            let temp = tempfile::tempdir().unwrap();
+            let path = temp.path().join("disk");
+            let backing = image(&path);
+            std::fs::rename(&path, temp.path().join("original")).unwrap();
+            let _replacement = image(&path);
+            assert!(prepare_disk_custody(&spec(Some(&path), false), Some(&backing)).is_err());
+            let second = temp.path().join("second");
+            let backing = image(&second);
+            let target = temp.path().join("unrelated");
+            std::fs::write(&target, b"preserve").unwrap();
+            std::os::unix::fs::symlink(&target, sidecar_lock_path(&second)).unwrap();
+            assert!(prepare_disk_custody(&spec(Some(&second), false), Some(&backing)).is_err());
+            assert_eq!(std::fs::read(target).unwrap(), b"preserve");
+        }
     }
 }
 

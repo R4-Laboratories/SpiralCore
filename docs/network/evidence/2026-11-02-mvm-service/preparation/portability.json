@@ -1,0 +1,69 @@
+{
+  "format": "spiralcore-mvm-preparation-portability-v1",
+  "date": "2026-11-02",
+  "roadmap_issue": "https://github.com/R4-Laboratories/SpiralCore/issues/46",
+  "scope": "Preparation tooling portability only; no native Windows execution or backend qualification inferred",
+  "base_revision": "6ae461a54d85a1b70477c1efb97ea4a33ef3b331",
+  "prepare_script_sha256": "496eec90b83a2f456ee266b44b29760895dd453c7563ec217fb0baab737df60c",
+  "integration_harness_sha256": "dd55d138e3d4a973cc09827cbe65e3edc17efc59167aed1c0c92df98ad6f392c",
+  "hash_selection": [
+    "sha256sum preferred",
+    "shasum -a256 fallback",
+    "neither implementation refuses before creating output"
+  ],
+  "cargo_path_mapping": "cygpath -m when available; otherwise canonical POSIX path; TOML escaping retained",
+  "lf_contract": [
+    "Scoped bundle.gitattributes forces checkoutLF",
+    "git archive explicitly core.autocrlf=false/core.eol=lf",
+    "Fresh output repository sets local core.autocrlf=false/core.eol=lf",
+    "No input/global Git configuration change"
+  ],
+  "tests_first": true,
+  "red_gates": [
+    {
+      "case": "sha256sum-only PATH",
+      "observed": "Old preparation refused missing shasum despite a valid SHA256 implementation"
+    },
+    {
+      "case": "Global core.autocrlf=true",
+      "observed": "Archive emitted CRLF and canonical patch contexts failed before explicit archive LF override",
+      "phase1_reproduction": {
+        "file": "crates/mvm-agentd/src/vsock/mod.rs",
+        "configured_archive_crlf_lines": 358,
+        "explicit_lf_archive_crlf_lines": 0
+      }
+    }
+  ],
+  "harness_correction": "Canonicalize the scratch parent with pwd-P before checking generated paths, matching preparation output on macOS /private path aliases.",
+  "green_cases": [
+    "Real exact-commit archive plus0001+0002 patch and14final hash verification under sha256sum-only PATH",
+    "Same actual preparation under shasum-only fallback PATH",
+    "Missing both hash implementations fails before output exists",
+    "Global CRLF preference does not change canonical archive/source hashes",
+    "Paths containing spaces preserve correct TOML quoting",
+    "Simulated cygpath output emits native C:/ paths for all9crate dependencies"
+  ],
+  "execution": [
+    {
+      "platform": "macOS27.0 arm64",
+      "command": "bash crates/spiralcore-mvm-live/mvm-service-patch/test-prepare.sh PINNED_MVM_REPOSITORY",
+      "exit_code": 0,
+      "native_windows": false
+    },
+    {
+      "platform": "Ubuntu24.04.3 LTS x86_64",
+      "command": "bash portable-bundle/test-prepare.sh snapshot-input.git",
+      "exit_code": 0,
+      "input": "Snapshot-only Git object repository with exact commit and tree objects, streamed directly from existing original MVM Git objects without a local pack file",
+      "native_windows": false
+    }
+  ],
+  "static_checks": {
+    "bash_syntax": "pass",
+    "shellcheck": "pass"
+  },
+  "old_bundle_integrity": "independently verified unchanged after final tests",
+  "cleanup": "Each successful disposable prepared source is removed after14hash verification; test scratch is removed by owned trap. Product prepared source/config retained for consumer builds.",
+  "native_windows_gate": "Not run here. Upcoming Windows CI must execute actual Git Bash preparation, native cygpath and Cargo consumer tests; simulation is not Windows qualification.",
+  "new_guest_launches": 0
+}

@@ -1,0 +1,63 @@
+{
+  "format": "spiralcore-ci-failure-review-v1",
+  "date": "2026-11-02",
+  "run_url": "https://github.com/R4-Laboratories/SpiralCore/actions/runs/41539620010",
+  "job_id": 125600143577,
+  "job_name": "linux-host-build-and-contracts",
+  "head_commit": "2a4a199f0bae224fbe82aa148feb20273bd64d84",
+  "executed_merge_commit": "104187b956190c01351b10e0530ce928a66620df",
+  "runner": {
+    "os": "Ubuntu 24.04.5 LTS",
+    "image": "ubuntu-24.04",
+    "image_version": "20261025.353.1",
+    "rust": "1.97.1",
+    "cargo_build_jobs": 2,
+    "profile": "test / unoptimized"
+  },
+  "observed": {
+    "published_dependency_source_check": "passed",
+    "library_tests": {"passed": 16, "failed": 0},
+    "adapter_live_tests": {"passed": 10, "failed": 0},
+    "bandwidth_profile_tests": {"passed": 1, "failed": 0},
+    "campaign_tests": {"passed": 7, "failed": 1, "ignored": 0, "filtered": 0, "elapsed_seconds": 466.14},
+    "failed_test": "qualified_16m_whole_mixed_service_session_reopens_exactly",
+    "sender_error": "Expired",
+    "receiver_error": "object endpoint refused operation",
+    "exit_code": 101,
+    "later_steps": "canonical conformance, warnings check and guest-entry checks skipped after failed step"
+  },
+  "source_trace": {
+    "receiver_error_condition": "campaign::receiver emits this message after receiving an object protocol Error frame (kind 127)",
+    "sender_mapping": "object client decodes the returned error code into spiralcore_transfer::Error::Expired",
+    "endpoint_expiry_rule": "receiving attempts expire after more than 30 seconds idle, or if supplied monotonic time regresses",
+    "call_expiry_rule": "separate canonical Call lifetime and clipped receive deadlines remain enforced",
+    "limits": "CI output does not retain per-operation records or gap timings; it does not identify which computation or scheduling interval triggered the endpoint expiry"
+  },
+  "release_followup": {
+    "source_checkpoint": "333f8e836b60442fe1621d4455c9bc8ac63af2b0",
+    "host": "approved Wick Linux host",
+    "command": "nice -n 10 cargo test --release --locked --manifest-path crates/spiralcore-mvm-live/Cargo.toml --features linux-host --all-targets -- --test-threads=1",
+    "exit_code": 0,
+    "passed_by_target": {"library": 19, "adapter_live": 10, "bandwidth_profile": 1, "campaign": 8, "combined_recovery": 1, "host_pack": 3},
+    "total_passed": 42,
+    "failed": 0,
+    "ignored": 0,
+    "filtered": 0,
+    "campaign_target_seconds": 8.50,
+    "test_set_note": "all eight original campaign tests retained; three additional Linux custody library tests were added after the failed CI source",
+    "linux_host_sha256": "a4f73545405c2c04bb4ed71dd0ab5853d1fc19efe4676b92eb676e674ce2f917",
+    "native_consumer_sha256": "303a036916a665ac1bb810d187cb9d70076de24383a4de4503c3769cc0bf1277",
+    "live_lock_sha256": "2c8d52cd04947d2616c283305f6c9f36df930b7190b977238dd5fe6af035ce6e",
+    "completion_output": "linux-release-all-targets-333.txt",
+    "completion_output_sha256": "453cd4589958bd4eb5813aad971771910253837cbdf3f4593cae3c2251dbe04d",
+    "scope": "contract/socket tests; not an MVM guest boot, WAN benchmark or hosted-CI pass"
+  },
+  "assessment": {
+    "confirmed": "large concurrent unoptimized campaign failed closed with an inner object-transfer expiry; it did not pass correctness qualification on this runner/profile",
+    "hypothesis": "unoptimized heavy-fixture computation and concurrent test work exceeded the receiving attempt's idle budget",
+    "not_claimed": "the log alone does not prove a canonical Call TTL overrun, a particular hashing bottleneck, or a production/release-profile defect",
+    "proposed_change": "execute the same Linux MVM all-target test set in the release profile used by deployed host/guest binaries; retain portable contract tests in debug",
+    "unchanged_requirements": "no protocol idle/deadline increase, expiry bypass, test filtering, ignored test or reduced target count",
+    "acceptance": "the exact new CI source must run the complete release-profile target set successfully before this workflow correction is accepted"
+  }
+}

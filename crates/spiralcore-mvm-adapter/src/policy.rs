@@ -14,8 +14,10 @@ pub(crate) struct PolicyState {
     pub generation: u64,
 }
 fn validate(context: &OpenContext) -> Result<()> {
-    if context.required_operation != MailboxOperation::Send
-        || context.acting_principal != context.expected_sender
+    if !matches!(
+        context.required_operation,
+        MailboxOperation::Send | MailboxOperation::Reply
+    ) || context.acting_principal != context.expected_sender
         || context.accepted_content_types != [content_type()?]
     {
         return Err(Error::Policy);
@@ -77,6 +79,11 @@ struct Lease {
     expiry: Option<(i64, Instant)>,
 }
 impl MailboxAuthority {
+    #[cfg(feature = "live")]
+    pub(crate) fn clear(&self) -> Result<()> {
+        *self.lease.lock().map_err(|_| Error::State)? = None;
+        Ok(())
+    }
     pub(crate) fn new(policy: Policy) -> Self {
         Self {
             policy,

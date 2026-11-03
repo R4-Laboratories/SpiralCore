@@ -29,6 +29,45 @@ fn invalid(message: &'static str) -> io::Error {
     io::Error::new(io::ErrorKind::InvalidInput, message)
 }
 
+/// In-process development witness ownership, not production launch admission.
+/// Retain the canonical backing and sidecar until the device and final sync finish.
+struct HeldDisk {
+    file: File,
+    _custody: Option<mvm_core::util::writable_image::LockedWritableImage>,
+}
+
+fn prepare_disk(path: &Path, read_only: bool) -> io::Result<(HeldDisk, DiskImage)> {
+    use mvm_core::util::writable_image::{LockedWritableImage, sidecar_lock_path};
+    let custody = if read_only {
+        None
+    } else {
+        Some(LockedWritableImage::open(path, &sidecar_lock_path(path))?)
+    };
+    let file = match &custody {
+        Some(held) => held.backing().try_clone()?,
+        None => OpenOptions::new()
+            .read(true)
+            .custom_flags(libc::O_NOFOLLOW)
+            .open(path)?,
+    };
+    let metadata = file.metadata()?;
+    if !metadata.is_file() || metadata.len() != DISK_BYTES {
+        return Err(invalid("live data disk must be a 256 MiB regular file"));
+    }
+    let image = if read_only {
+        DiskImage::readonly_file(file.try_clone()?)?
+    } else {
+        DiskImage::writable_file(file.try_clone()?)?
+    };
+    Ok((
+        HeldDisk {
+            file,
+            _custody: custody,
+        },
+        image,
+    ))
+}
+
 /// Pack only fixed paths. The credential-bearing result must stay in memory or
 /// an owned pipe; it is deliberately not written by this API.
 pub fn initramfs(guest_elf: &[u8], bootstrap_json: &[u8]) -> Result<Vec<u8>> {
@@ -292,20 +331,13 @@ pub fn worker_with_profile(
     // reopening a potentially different image. The helper reads raw image bytes.
     let kernel_file = File::open(kernel)?;
     let kernel_sha256 = mvm_core::crypto::verified_digest::sha256_open_file_verified(&kernel_file)?;
-    let backing = disk
-        .map(|path| OpenOptions::new().read(true).write(true).open(path))
-        .transpose()?;
-    if let Some(file) = &backing {
-        let metadata = file.metadata()?;
-        if !metadata.is_file() || metadata.len() != DISK_BYTES {
-            return Err(invalid("live data disk must be a 256 MiB regular file").into());
+    let (backing, disks) = match disk {
+        Some(path) => {
+            let (held, image) = prepare_disk(path, mailbox_socket.is_none())?;
+            (Some(held), vec![image])
         }
-    }
-    let disks = disk
-        .map(|path| DiskImage::open(path, mailbox_socket.is_none()))
-        .transpose()?
-        .into_iter()
-        .collect();
+        None => (None, Vec::new()),
+    };
     let capture = Arc::new(Mutex::new(ConsoleCapture::default()));
     let channels = HostChannels {
         mailbox_socket: mailbox_socket.map(Path::to_path_buf),
@@ -330,7 +362,10 @@ pub fn worker_with_profile(
     // DiskImage's drop-time flush logs failures but cannot return them. Check
     // our retained backing descriptor explicitly, also after a failed boot.
     let sync_started = Instant::now();
-    let synced = backing.as_ref().map(File::sync_all).transpose();
+    let synced = backing
+        .as_ref()
+        .map(|held| held.file.sync_all())
+        .transpose();
     let backing_disk_sync_us = backing
         .as_ref()
         .map(|_| micros(sync_started.elapsed()))
@@ -393,6 +428,92 @@ pub fn worker_with_profile(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn sparse_test_disk(path: &Path) {
+        let file = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .create_new(true)
+            .mode(0o600)
+            .open(path)
+            .unwrap();
+        file.set_len(DISK_BYTES).unwrap();
+    }
+
+    #[test]
+    fn held_disk_retains_canonical_writer_exclusion_through_device_release() {
+        use mvm_core::util::writable_image::{LockedWritableImage, sidecar_lock_path};
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("disk");
+        sparse_test_disk(&path);
+        let (held, image) = prepare_disk(&path, false).unwrap();
+        assert!(LockedWritableImage::open(&path, &sidecar_lock_path(&path)).is_err());
+        drop(image);
+        assert!(LockedWritableImage::open(&path, &sidecar_lock_path(&path)).is_err());
+        held.file.sync_all().unwrap();
+        drop(held);
+        assert!(LockedWritableImage::open(&path, &sidecar_lock_path(&path)).is_ok());
+    }
+
+    #[test]
+    fn readonly_disk_uses_the_validated_object_after_path_replacement() {
+        use std::os::unix::fs::{FileExt, MetadataExt};
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("disk");
+        sparse_test_disk(&path);
+        OpenOptions::new()
+            .write(true)
+            .open(&path)
+            .unwrap()
+            .write_at(b"A", 0)
+            .unwrap();
+        let (held, image) = prepare_disk(&path, true).unwrap();
+        let original = held.file.metadata().unwrap();
+        held.file.sync_all().unwrap(); // The worker also checks sync on readback boots.
+        std::fs::rename(&path, dir.path().join("original")).unwrap();
+        sparse_test_disk(&path);
+        OpenOptions::new()
+            .write(true)
+            .open(&path)
+            .unwrap()
+            .write_at(b"B", 0)
+            .unwrap();
+        let DiskImage::File {
+            file, read_only, ..
+        } = &image
+        else {
+            panic!("expected file backing")
+        };
+        assert!(*read_only);
+        assert_eq!(file.metadata().unwrap().ino(), original.ino());
+        assert_eq!(file.metadata().unwrap().dev(), original.dev());
+        let mut byte = [0];
+        file.read_at(&mut byte, 0).unwrap();
+        assert_eq!(&byte, b"A");
+    }
+
+    #[test]
+    fn held_disk_refuses_wrong_size_directory_and_final_symlinks() {
+        use std::os::unix::fs::symlink;
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("disk");
+        File::create(&path).unwrap().set_len(1).unwrap();
+        for read_only in [false, true] {
+            assert!(prepare_disk(&path, read_only).is_err());
+            assert!(prepare_disk(dir.path(), read_only).is_err());
+        }
+        std::fs::remove_file(&path).unwrap();
+        sparse_test_disk(&path);
+        let alias = dir.path().join("alias");
+        symlink(&path, &alias).unwrap();
+        for read_only in [false, true] {
+            assert!(prepare_disk(&alias, read_only).is_err());
+        }
+        let sidecar = mvm_core::util::writable_image::sidecar_lock_path(&path);
+        std::fs::remove_file(&sidecar).unwrap();
+        symlink(dir.path().join("uncreated"), &sidecar).unwrap();
+        assert!(prepare_disk(&path, false).is_err());
+    }
 
     const DONE: &[u8] = b"Linux public boot log\n{\"event\":\"guest_done\",\"ok\":true}\n";
 

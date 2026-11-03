@@ -7,7 +7,17 @@
 #[cfg(feature = "conformance")]
 pub mod conformance;
 mod direction;
+#[cfg(feature = "live")]
+pub mod issuance;
 mod policy;
+#[cfg(feature = "live")]
+pub mod receipt;
+#[cfg(feature = "live")]
+pub mod service;
+#[cfg(feature = "live")]
+pub mod service_object;
+#[cfg(feature = "live")]
+pub mod service_sender;
 
 #[cfg(feature = "live")]
 pub use direction::live;

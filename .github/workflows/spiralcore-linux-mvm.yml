@@ -24,22 +24,35 @@ jobs:
           persist-credentials: false
       - name: Install pinned Rust toolchain
         run: rustup toolchain install 1.97.1 --profile minimal --component clippy
-      - name: Prepare the exact MVM source and retained mailbox patch
+      - name: Verify the published canonical MVM dependency source
         shell: bash
         run: |
           set -euo pipefail
-          git clone --filter=blob:none --no-checkout https://github.com/tinylabscom/mvm "$RUNNER_TEMP/mvm-base"
-          git -C "$RUNNER_TEMP/mvm-base" checkout --detach 3104a12c5b071a6851323fa8115d2afaf3f0bb8b
-          bash crates/spiralcore-mvm-live/mvm-patch/prepare.sh \
-            "$RUNNER_TEMP/mvm-base" "$RUNNER_TEMP/mvm-prepared"
+          expected='git+https://github.com/Casey-allard/mvm?rev=ae12e9deb41cc9a3264196ce22ebc72d4042883d#ae12e9deb41cc9a3264196ce22ebc72d4042883d'
+          # Resolve the actual default Cargo dependency closure, without a local
+          # patch override or the retired 3104 preparation. No guest is booted.
+          cargo +1.97.1 metadata --locked --format-version 1 \
+            --manifest-path crates/spiralcore-mvm-live/Cargo.toml \
+            --features linux-host --filter-platform x86_64-unknown-linux-gnu \
+            > "$RUNNER_TEMP/mvm-live-metadata.json"
+          jq -e --arg expected "$expected" '
+            [.packages[] | select(.name | startswith("mvm-"))] as $m |
+            ($m | length) > 0 and
+            any($m[]; .name == "mvm-core") and
+            any($m[]; .name == "mvm-contract") and
+            all($m[]; .source == $expected)
+          ' "$RUNNER_TEMP/mvm-live-metadata.json"
+          jq '[.packages[] | select(.name | startswith("mvm-")) | {name, version, source}]' \
+            "$RUNNER_TEMP/mvm-live-metadata.json"
       - name: Linux host, canonical envelope, recovery and packing tests
         shell: bash
         run: |
           set -euo pipefail
-          cargo +1.97.1 test --locked \
+          cargo +1.97.1 test --release --locked \
             --manifest-path crates/spiralcore-mvm-live/Cargo.toml \
-            --config "$RUNNER_TEMP/mvm-prepared/patch.toml" \
-            --features linux-host --all-targets
+            --features linux-host --all-targets -- --test-threads=1
+      # Portable service target counts are additionally enforced per native OS
+      # by mvm-mailbox-portable.yml; enable live here so they do not compile away.
       - name: Shared object-v1 and canonical mailbox conformance
         shell: bash
         run: |
@@ -48,7 +61,7 @@ jobs:
             --manifest-path crates/spiralcore-transfer/Cargo.toml --test v1_contract
           cargo +1.97.1 test --locked \
             --manifest-path crates/spiralcore-mvm-adapter/Cargo.toml \
-            --features conformance,hardware-sha256 --all-targets
+            --features live,conformance,hardware-sha256 --all-targets
           bash crates/spiralcore-mvm-live/scripts/test-v1-comparison.sh
       - name: Linux warnings check
         shell: bash
@@ -56,7 +69,6 @@ jobs:
           set -euo pipefail
           cargo +1.97.1 clippy --locked \
             --manifest-path crates/spiralcore-mvm-live/Cargo.toml \
-            --config "$RUNNER_TEMP/mvm-prepared/patch.toml" \
             --features linux-host --all-targets -- -D warnings
       - name: Default Linux guest entry and measurement analyzer
         shell: bash
@@ -64,5 +76,5 @@ jobs:
           set -euo pipefail
           cargo +1.97.1 check --locked \
             --manifest-path crates/spiralcore-mvm-live/Cargo.toml \
-            --config "$RUNNER_TEMP/mvm-prepared/patch.toml" --all-targets
+            --all-targets
           bash crates/spiralcore-mvm-live/scripts/test-combined-analysis.sh

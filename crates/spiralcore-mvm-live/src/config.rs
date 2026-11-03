@@ -100,6 +100,55 @@ pub struct Material {
     pub reply_to: Option<ReplyRoute>,
 }
 impl Material {
+    pub fn context(&self) -> Result<OpenContext> {
+        let grant = &self.capability.grant;
+        Ok(OpenContext {
+            expected_tenant: grant.address.tenant,
+            expected_authorization_domain: grant.address.authorization_domain,
+            expected_mailbox: grant.address.mailbox,
+            expected_sender: grant.subject,
+            expected_recipient: grant.address.recipient,
+            acting_principal: grant.subject,
+            expected_capability_issuer: grant.issuer,
+            current_execution_epoch: grant.minimum_execution_epoch,
+            current_policy_epoch: grant.policy_epoch,
+            required_operation: if self.kind == MailboxMessageKind::Reply {
+                MailboxOperation::Reply
+            } else {
+                MailboxOperation::Send
+            },
+            now_unix_ms: now_ms()?,
+            accepted_content_types: grant.content_types.clone(),
+            revoked_capabilities: Vec::new(),
+        })
+    }
+    pub fn service_binding(
+        &self,
+        receipt_signing: Option<[u8; 32]>,
+    ) -> Result<spiralcore_mvm_adapter::service::MailboxBinding> {
+        use spiralcore_mvm_adapter::service::{
+            DestinationReceiptSigner, MailboxBinding, ServiceBindingConfig,
+        };
+        Ok(MailboxBinding::new(
+            ServiceBindingConfig {
+                context: self.context()?,
+                capability: self.capability.clone(),
+                binding: self.binding.clone(),
+                signing_key: self.signing.as_ref().map(SigningKey::from_bytes),
+                sender_verifying_key: VerifyingKey::from_bytes(&self.verification)?,
+                encryption_key: Key::from_bytes(self.encryption),
+                authority_key: VerifyingKey::from_bytes(&self.authority)?,
+                expected_sender_boot: BootId::from_bytes(self.boot),
+                encryption_key_id: self.key_id,
+                kind: self.kind,
+                minimum_assurance: TransportAssurance::Development,
+            },
+            receipt_signing.map(|key| DestinationReceiptSigner {
+                recipient: self.capability.grant.address.recipient,
+                signing_key: SigningKey::from_bytes(&key),
+            }),
+        )?)
+    }
     pub fn direction(&self) -> Result<Direction> {
         let grant = &self.capability.grant;
         let policy = Policy::new(OpenContext {
@@ -112,7 +161,11 @@ impl Material {
             expected_capability_issuer: grant.issuer,
             current_execution_epoch: grant.minimum_execution_epoch,
             current_policy_epoch: grant.policy_epoch,
-            required_operation: MailboxOperation::Send,
+            required_operation: if self.kind == MailboxMessageKind::Reply {
+                MailboxOperation::Reply
+            } else {
+                MailboxOperation::Send
+            },
             now_unix_ms: now_ms()?,
             accepted_content_types: vec![ContentType::parse(CONTENT_TYPE, 1)?],
             revoked_capabilities: Vec::new(),
@@ -150,6 +203,16 @@ pub struct Bootstrap {
     pub incoming: Option<Material>,
     pub outgoing: Option<Material>,
     pub published: Vec<Published>,
+    #[serde(default)]
+    pub service: Option<ServiceProvision>,
+}
+#[derive(Clone, Serialize, Deserialize)]
+pub struct ServiceProvision {
+    pub profile: String,
+    pub incoming_control: Material,
+    pub outgoing_control: Material,
+    pub local_receipt_signing: [u8; 32],
+    pub peer_receipt_verification: [u8; 32],
 }
 pub struct Pair {
     pub sender: Bootstrap,
@@ -207,6 +270,14 @@ impl Pair {
         receive_call.signing = None;
         let mut receive_reply = reverse.clone();
         receive_reply.signing = None;
+        let control_forward = recipe.control(&forward)?;
+        let control_reverse = recipe.control(&reverse)?;
+        let mut receive_control_forward = control_forward.clone();
+        receive_control_forward.signing = None;
+        let mut receive_control_reverse = control_reverse.clone();
+        receive_control_reverse.signing = None;
+        let a_receipt = SigningKey::from_bytes(&rand::random());
+        let b_receipt = SigningKey::from_bytes(&rand::random());
         let utc_seconds = u64::try_from(now / 1000)?;
         Ok(Self {
             sender: Bootstrap {
@@ -217,6 +288,13 @@ impl Pair {
                 incoming: Some(receive_reply),
                 outgoing: Some(forward),
                 published: Vec::new(),
+                service: Some(ServiceProvision {
+                    profile: "canonical-ephemeral-v1".into(),
+                    incoming_control: receive_control_reverse,
+                    outgoing_control: control_forward,
+                    local_receipt_signing: a_receipt.to_bytes(),
+                    peer_receipt_verification: b_receipt.verifying_key().to_bytes(),
+                }),
             },
             receiver: Bootstrap {
                 report_exit: false,
@@ -226,6 +304,13 @@ impl Pair {
                 incoming: Some(receive_call),
                 outgoing: Some(reverse),
                 published: Vec::new(),
+                service: Some(ServiceProvision {
+                    profile: "canonical-ephemeral-v1".into(),
+                    incoming_control: receive_control_forward,
+                    outgoing_control: control_reverse,
+                    local_receipt_signing: b_receipt.to_bytes(),
+                    peer_receipt_verification: a_receipt.verifying_key().to_bytes(),
+                }),
             },
         })
     }
@@ -244,6 +329,22 @@ struct DirectionSpec {
     reply: Option<ReplyRoute>,
 }
 impl Provision<'_> {
+    fn control(&self, normal: &Material) -> Result<Material> {
+        let mut material = self.material(DirectionSpec {
+            sender: normal.capability.grant.subject,
+            address: normal.capability.grant.address,
+            capability: CapabilityId::from_bytes(rand::random()),
+            kind: MailboxMessageKind::Cast,
+            reply: None,
+        })?;
+        material.binding = normal.binding.clone();
+        material.capability.grant.content_types =
+            vec![spiralcore_mvm_adapter::receipt::receipt_content_type()];
+        material.capability.grant.max_payload_bytes = 4096;
+        material.capability.grant.max_queue_contribution_bytes = 16384;
+        material.capability = sign_capability(material.capability.grant, self.authority)?;
+        Ok(material)
+    }
     fn material(&self, spec: DirectionSpec) -> Result<Material> {
         let signing = SigningKey::from_bytes(&rand::random());
         let epoch = ExecutionEpoch::new(1)?;
@@ -255,7 +356,13 @@ impl Provision<'_> {
                 issuer: self.issuer,
                 subject: spec.sender,
                 address: spec.address,
-                operations: CapabilityOperations::from_operations(&[MailboxOperation::Send]),
+                operations: CapabilityOperations::from_operations(&[
+                    if spec.kind == MailboxMessageKind::Reply {
+                        MailboxOperation::Reply
+                    } else {
+                        MailboxOperation::Send
+                    },
+                ]),
                 message_kinds: vec![spec.kind],
                 content_types: vec![ContentType::parse(CONTENT_TYPE, 1)?],
                 max_payload_bytes: 65536,

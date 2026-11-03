@@ -1,0 +1,65 @@
+{
+  "format": "spiralcore-mvm-reply-operation-regression-v1",
+  "date": "2026-11-02",
+  "roadmap_issue": "https://github.com/R4-Laboratories/SpiralCore/issues/43",
+  "base_revision": "6ae461a54d85a1b70477c1efb97ea4a33ef3b331",
+  "prerequisite_patch": "0001-mailbox-service-primitives.patch",
+  "correction_patch": "0002-reply-operation-authorization.patch",
+  "correction_patch_sha256": "5805f8671cc3db5d7c229626fb2aa6dc4629aad936ec96cdab30bbc1c9700364",
+  "defect": "authorize_outbound hardcoded required_operation Send regardless of message kind. Proper Reply-only Reply was rejected; Send-only Reply under a Send context could pass.",
+  "minimal_correction": "Required operation is Reply for Reply, Send for Call/Cast; keep all signature/scope/route checks and preserve SendOperationRequired enum variant with corrected diagnostic.",
+  "tests_first": true,
+  "red": {
+    "command": "cargo test --locked --manifest-path CURRENT_MVM/Cargo.toml -p mvm-core --lib mailbox::transport::tests::outbound_ -- --nocapture",
+    "exit_code": 101,
+    "tests": 3,
+    "passed": 1,
+    "failed": 2,
+    "failures": [
+      {
+        "name": "outbound_reply_accepts_reply_only_capability",
+        "observed": "SendOperationRequired for properly scoped Reply-only grant"
+      },
+      {
+        "name": "outbound_reply_rejects_send_only_capability_under_either_context",
+        "observed": "Send-only grant wrongly admitted Reply with Send context"
+      }
+    ],
+    "unchanged_positive": "outbound_call_and_cast_keep_send_operation passed"
+  },
+  "green": {
+    "command": "cargo test --locked --manifest-path CURRENT_MVM/Cargo.toml -p mvm-core --lib mailbox::transport::tests::",
+    "exit_code": 0,
+    "passed": 15,
+    "failed": 0,
+    "final_formatted_source_rerun": true,
+    "coverage": [
+      "Reply kind with Reply-only grant/context succeeds",
+      "Reply with Send-only grant fails under both Send and Reply context",
+      "Call and Cast retain Send; Reply context rejected",
+      "Existing transport authority/lifecycle/cancellation/limits tests remain green"
+    ]
+  },
+  "resource_bounds": {
+    "rust": "1.97.1",
+    "jobs": 2,
+    "incremental": false,
+    "nice": 10,
+    "guest_launches": 0
+  },
+  "test_setup_note": "First remote helper attempt found Ruby unavailable and installed no tests. The preliminary filter run is not counted. Tests were generated locally as Rust, copied to isolated source, then the three-test RED was observed before the production correction.",
+  "final_source_sha256": {
+    "crates/mvm-core/src/mailbox/transport.rs": "112df1c58dd91602e943fd4496ee39c04b41c9b655a0f54af007e0494b0e7820",
+    "crates/mvm-core/src/mailbox/transport/tests.rs": "08cb0da39c79cd7490afa326e3c90411a951a872b664a3997bf6b5c77355d497"
+  },
+  "reproducible_package": "prepare.sh applies0001 then0002, verifies14 final hashes; source prepared locally and on Wick",
+  "local_dependency_config": "/Users/casey.allard/spiralcore/local/mvm-service-20261102/patch.toml",
+  "old_prepared_source_or_binary_evidence_modified": false,
+  "acceptance_status": "Scoped canonical authorization regression fixed; full service/native/WAN/platform delivery remains open",
+  "strict_clippy": {
+    "command": "cargo clippy --locked --manifest-path CURRENT_MVM/Cargo.toml -p mvm-core --lib --no-default-features -- -D warnings",
+    "exit_code": 0,
+    "source_matches_final_green_hashes": true,
+    "workspace_lock_sha256_unchanged": "c9b6414ac28a1aaf93fb2aa74b77b3fcbe39889eaaddd2b681e7252358d1699e"
+  }
+}

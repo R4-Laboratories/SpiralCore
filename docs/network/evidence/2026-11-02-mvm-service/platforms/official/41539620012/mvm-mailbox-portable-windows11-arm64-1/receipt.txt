@@ -1,0 +1,82 @@
+warning: unreachable expression
+    --> C:\a\SpiralCore\SpiralCore\crates\spiralcore-transfer\src\endpoint.rs:1348:5
+     |
+1347 |     return Err(Error::Unsupported);
+     |     ------------------------------ any code following this expression is unreachable
+1348 |     Ok(())
+     |     ^^^^^^ unreachable expression
+     |
+     = note: `#[warn(unreachable_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: unreachable statement
+    --> C:\a\SpiralCore\SpiralCore\crates\spiralcore-transfer\src\endpoint.rs:1382:13
+     |
+1381 |             return Err(Error::Unsupported);
+     |             ------------------------------ any code following this expression is unreachable
+1382 |             b.create(path)?;
+     |             ^^^^^^^^^^^^^^^^ unreachable statement
+
+warning: unreachable expression
+    --> C:\a\SpiralCore\SpiralCore\crates\spiralcore-transfer\src\endpoint.rs:1388:5
+     |
+1351 | /     match fs::symlink_metadata(path) {
+1352 | |         Ok(m) => {
+1353 | |             if !m.is_dir() || m.file_type().is_symlink() {
+1354 | |                 return Err(Error::Storage);
+...    |
+1386 | |         Err(_) => return Err(Error::Storage),
+1387 | |     }
+     | |_____- any code following this `match` expression is unreachable, as all arms diverge
+1388 |       Ok(())
+     |       ^^^^^^ unreachable expression
+
+warning: variable does not need to be mutable
+    --> C:\a\SpiralCore\SpiralCore\crates\spiralcore-transfer\src\endpoint.rs:1326:9
+     |
+1326 |     let mut o = OpenOptions::new();
+     |         ----^
+     |         |
+     |         help: remove this `mut`
+     |
+     = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+warning: variable does not need to be mutable
+    --> C:\a\SpiralCore\SpiralCore\crates\spiralcore-transfer\src\endpoint.rs:1374:17
+     |
+1374 |             let mut b = fs::DirBuilder::new();
+     |                 ----^
+     |                 |
+     |                 help: remove this `mut`
+
+warning: unused variable: `b`
+    --> C:\a\SpiralCore\SpiralCore\crates\spiralcore-transfer\src\endpoint.rs:1374:17
+     |
+1374 |             let mut b = fs::DirBuilder::new();
+     |                 ^^^^^ help: if this is intentional, prefix it with an underscore: `_b`
+     |
+     = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: `spiralcore-transfer` (lib) generated 6 warnings (run `cargo fix --lib -p spiralcore-transfer` to apply 3 suggestions)
+    Finished `test` profile [unoptimized] target(s) in 0.32s
+     Running tests\receipt.rs (crates\spiralcore-mvm-adapter\target\debug\deps\receipt-d29e4a4bd9ebe8f1.exe)
+
+running 15 tests
+test canonical_receipt_codec_preserves_existing_signature_and_rejects_malleable_input ... ok
+test delayed_negative_same_attempt_cannot_republish_consumed_positive_receipt ... ok
+test application_reply_and_admission_are_independent_and_late_replies_cannot_complete ... ok
+test generic_application_admission_cannot_acknowledge_reserved_receipt_control ... ok
+test attempts_and_shared_identity_quotas_fail_closed_and_release_owned_capacity ... ok
+test encrypted_receipts_match_attempts_and_do_not_recurse_or_lose_positive_facts ... ok
+test integrated_receipt_admission_rejects_a_different_budget_owner_before_queue_mutation ... ok
+test full_receipt_consumer_queue_can_retry_after_consumption_without_false_duplicate ... ok
+test integrated_admission_owns_receipt_credit_before_accepting_and_retries_same_message ... ok
+test ordinary_reply_has_destination_receipt_without_reply_of_reply ... ok
+test receipt_return_rejects_undersized_reverse_grants_before_application_admission ... ok
+test prepared_receipt_refuses_backward_clock_and_policy_change_before_transport ... ok
+test receipt_replay_and_prepared_resend_obey_signed_control_rate_without_ack_loops ... ok
+test receipt_tracker_rejects_wrong_signature_commitment_causation_and_policy_generation ... ok
+test receipt_return_reserves_before_admission_and_sends_only_canonical_encrypted_cast ... ok
+
+test result: ok. 15 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.21s
+
+

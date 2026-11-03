@@ -15,24 +15,23 @@ packing and architecture-aware boot arguments do not constitute an ARM64 KVM run
 
 ## Build on an approved Linux environment
 
-Prepare the source using the [retained patch instructions](../../crates/spiralcore-mvm-live/mvm-patch/README.md).
-The generated Cargo config maps all nine direct MVM crates to one prepared tree.
-Use its absolute path as `MVM_PATCH_CONFIG` and a dedicated build directory as
-`CARGO_TARGET_DIR`. These variables must name your prepared tree and output
-directory; missing paths are errors, not an automatic dependency substitution.
+Current builds use the public pinned contribution fork and committed lockfile.
+The [current patch bundle](../../crates/spiralcore-mvm-live/mvm-service-patch/README.md)
+reproduces its source when a prepared tree is needed. Historical measurements
+used the older bundle; retain that source identity when reproducing them.
+Select a dedicated build directory as `CARGO_TARGET_DIR`.
 
 ```sh
-test -f "$MVM_PATCH_CONFIG"
 test -n "$CARGO_TARGET_DIR"
 export CARGO_BUILD_JOBS=2 CARGO_INCREMENTAL=0
 cargo +1.97.1 build --release --locked \
   --manifest-path crates/spiralcore-mvm-live/Cargo.toml \
-  --config "$MVM_PATCH_CONFIG" --features linux-host
+  --features linux-host
 cp "$CARGO_TARGET_DIR/release/spiralcore-mvm-live" "$CARGO_TARGET_DIR/spiralcore-linux-host"
 
 RUSTFLAGS=-Ctarget-feature=+crt-static cargo +1.97.1 build --release --locked \
   --manifest-path crates/spiralcore-mvm-live/Cargo.toml \
-  --config "$MVM_PATCH_CONFIG" --target x86_64-unknown-linux-gnu
+  --target x86_64-unknown-linux-gnu
 cp "$CARGO_TARGET_DIR/x86_64-unknown-linux-gnu/release/spiralcore-mvm-live" "$CARGO_TARGET_DIR/spiralcore-linux-guest"
 readelf -l "$CARGO_TARGET_DIR/spiralcore-linux-guest"
 ```

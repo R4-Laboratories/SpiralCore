@@ -1,0 +1,825 @@
+{
+  "schema": "spiralcore.mvm.service.coverage.v1",
+  "source_commit": "0cf256f2e691849e5c9c019ac2fda7eb97287938",
+  "changed_line_base": "2e941e30552ee9bcc8714f339d52f0964eee8e3a",
+  "mvm_revision": "ae12e9deb41cc9a3264196ce22ebc72d4042883d",
+  "platform": "macOS arm64",
+  "rust": "1.97.1",
+  "llvm": "22.1.6-rust-1.97.1-stable",
+  "test_counts": {
+    "adapter": 82,
+    "live": 48,
+    "failed": 0,
+    "ignored": 0,
+    "filtered": 0
+  },
+  "instrumentation": "Existing selective RUSTC_WRAPPER instruments only owned adapter/live crate names and existing named test targets; upstream dependencies are compiled without coverage. LLVM export object set is exactly executable compiler artifacts from the two fresh test commands.",
+  "scope": "All compiled src files in spiralcore-mvm-adapter and spiralcore-mvm-live. Inline unit tests retained in LLVM file metrics. Linux-only backend functions are not compiled on macOS; no claim for their coverage.",
+  "metrics": {
+    "llvm_full_modules": {
+      "covered": 5745,
+      "count": 7577,
+      "percent": 75.82156526329682,
+      "status": "BELOW_80_PERCENT"
+    },
+    "llvm_adapter_modules": {
+      "covered": 3854,
+      "count": 4813,
+      "percent": 80.0747974236443
+    },
+    "distinct_lcov_full_source": {
+      "covered": 5641,
+      "count": 7434,
+      "percent": 75.88108689803606
+    },
+    "distinct_lcov_production": {
+      "covered": 4880,
+      "count": 6672,
+      "percent": 73.14148681055156,
+      "status": "BELOW_80_PERCENT"
+    },
+    "distinct_lcov_changed": {
+      "covered": 3628,
+      "count": 4100,
+      "percent": 88.48780487804878
+    },
+    "distinct_lcov_changed_production": {
+      "covered": 3240,
+      "count": 3711,
+      "percent": 87.30800323362975,
+      "status": "PASS_80_PERCENT_CHANGED_PRODUCTION_SCOPE"
+    }
+  },
+  "files": [
+    {
+      "file": "crates/spiralcore-mvm-adapter/src/conformance.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "functions": {
+          "count": 13,
+          "covered": 8,
+          "percent": 61.53846153846154
+        },
+        "instantiations": {
+          "count": 26,
+          "covered": 8,
+          "percent": 30.76923076923077
+        },
+        "lines": {
+          "count": 211,
+          "covered": 181,
+          "percent": 85.781990521327018
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "regions": {
+          "count": 399,
+          "covered": 331,
+          "notcovered": 68,
+          "percent": 82.957393483709268
+        }
+      }
+    },
+    {
+      "file": "crates/spiralcore-mvm-adapter/src/direction.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "functions": {
+          "count": 24,
+          "covered": 23,
+          "percent": 95.833333333333343
+        },
+        "instantiations": {
+          "count": 47,
+          "covered": 24,
+          "percent": 51.063829787234042
+        },
+        "lines": {
+          "count": 412,
+          "covered": 398,
+          "percent": 96.601941747572823
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "regions": {
+          "count": 578,
+          "covered": 520,
+          "notcovered": 58,
+          "percent": 89.965397923875429
+        }
+      }
+    },
+    {
+      "file": "crates/spiralcore-mvm-adapter/src/issuance.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "functions": {
+          "count": 6,
+          "covered": 6,
+          "percent": 100
+        },
+        "instantiations": {
+          "count": 9,
+          "covered": 9,
+          "percent": 100
+        },
+        "lines": {
+          "count": 72,
+          "covered": 72,
+          "percent": 100
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "regions": {
+          "count": 110,
+          "covered": 105,
+          "notcovered": 5,
+          "percent": 95.454545454545453
+        }
+      }
+    },
+    {
+      "file": "crates/spiralcore-mvm-adapter/src/lib.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "functions": {
+          "count": 5,
+          "covered": 3,
+          "percent": 60
+        },
+        "instantiations": {
+          "count": 10,
+          "covered": 4,
+          "percent": 40
+        },
+        "lines": {
+          "count": 24,
+          "covered": 17,
+          "percent": 70.833333333333343
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "regions": {
+          "count": 30,
+          "covered": 21,
+          "notcovered": 9,
+          "percent": 70
+        }
+      }
+    },
+    {
+      "file": "crates/spiralcore-mvm-adapter/src/live.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "functions": {
+          "count": 51,
+          "covered": 19,
+          "percent": 37.254901960784316
+        },
+        "instantiations": {
+          "count": 118,
+          "covered": 25,
+          "percent": 21.1864406779661
+        },
+        "lines": {
+          "count": 629,
+          "covered": 137,
+          "percent": 21.78060413354531
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "regions": {
+          "count": 869,
+          "covered": 191,
+          "notcovered": 678,
+          "percent": 21.979286536248562
+        }
+      }
+    },
+    {
+      "file": "crates/spiralcore-mvm-adapter/src/policy.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "functions": {
+          "count": 12,
+          "covered": 12,
+          "percent": 100
+        },
+        "instantiations": {
+          "count": 24,
+          "covered": 12,
+          "percent": 50
+        },
+        "lines": {
+          "count": 95,
+          "covered": 92,
+          "percent": 96.84210526315789
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "regions": {
+          "count": 141,
+          "covered": 122,
+          "notcovered": 19,
+          "percent": 86.524822695035468
+        }
+      }
+    },
+    {
+      "file": "crates/spiralcore-mvm-adapter/src/receipt.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "functions": {
+          "count": 56,
+          "covered": 51,
+          "percent": 91.071428571428569
+        },
+        "instantiations": {
+          "count": 112,
+          "covered": 51,
+          "percent": 45.535714285714285
+        },
+        "lines": {
+          "count": 788,
+          "covered": 705,
+          "percent": 89.467005076142129
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "regions": {
+          "count": 1010,
+          "covered": 863,
+          "notcovered": 147,
+          "percent": 85.445544554455438
+        }
+      }
+    },
+    {
+      "file": "crates/spiralcore-mvm-adapter/src/service.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "functions": {
+          "count": 127,
+          "covered": 116,
+          "percent": 91.338582677165363
+        },
+        "instantiations": {
+          "count": 267,
+          "covered": 129,
+          "percent": 48.314606741573037
+        },
+        "lines": {
+          "count": 1972,
+          "covered": 1664,
+          "percent": 84.38133874239351
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "regions": {
+          "count": 2823,
+          "covered": 2326,
+          "notcovered": 497,
+          "percent": 82.394615657102378
+        }
+      }
+    },
+    {
+      "file": "crates/spiralcore-mvm-adapter/src/service/ordering.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "functions": {
+          "count": 27,
+          "covered": 27,
+          "percent": 100
+        },
+        "instantiations": {
+          "count": 44,
+          "covered": 44,
+          "percent": 100
+        },
+        "lines": {
+          "count": 311,
+          "covered": 309,
+          "percent": 99.356913183279744
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "regions": {
+          "count": 644,
+          "covered": 637,
+          "notcovered": 7,
+          "percent": 98.91304347826086
+        }
+      }
+    },
+    {
+      "file": "crates/spiralcore-mvm-adapter/src/service_object.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "functions": {
+          "count": 11,
+          "covered": 10,
+          "percent": 90.909090909090907
+        },
+        "instantiations": {
+          "count": 24,
+          "covered": 12,
+          "percent": 50
+        },
+        "lines": {
+          "count": 106,
+          "covered": 94,
+          "percent": 88.679245283018872
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "regions": {
+          "count": 149,
+          "covered": 124,
+          "notcovered": 25,
+          "percent": 83.22147651006712
+        }
+      }
+    },
+    {
+      "file": "crates/spiralcore-mvm-adapter/src/service_sender.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "functions": {
+          "count": 11,
+          "covered": 11,
+          "percent": 100
+        },
+        "instantiations": {
+          "count": 22,
+          "covered": 11,
+          "percent": 50
+        },
+        "lines": {
+          "count": 193,
+          "covered": 185,
+          "percent": 95.854922279792746
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "regions": {
+          "count": 216,
+          "covered": 199,
+          "notcovered": 17,
+          "percent": 92.129629629629633
+        }
+      }
+    },
+    {
+      "file": "crates/spiralcore-mvm-live/src/campaign.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "functions": {
+          "count": 26,
+          "covered": 16,
+          "percent": 61.53846153846154
+        },
+        "instantiations": {
+          "count": 26,
+          "covered": 16,
+          "percent": 61.53846153846154
+        },
+        "lines": {
+          "count": 496,
+          "covered": 358,
+          "percent": 72.177419354838719
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "regions": {
+          "count": 999,
+          "covered": 700,
+          "notcovered": 299,
+          "percent": 70.070070070070074
+        }
+      }
+    },
+    {
+      "file": "crates/spiralcore-mvm-live/src/campaign/canonical.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "functions": {
+          "count": 10,
+          "covered": 10,
+          "percent": 100
+        },
+        "instantiations": {
+          "count": 10,
+          "covered": 10,
+          "percent": 100
+        },
+        "lines": {
+          "count": 314,
+          "covered": 289,
+          "percent": 92.038216560509554
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "regions": {
+          "count": 601,
+          "covered": 505,
+          "notcovered": 96,
+          "percent": 84.026622296173045
+        }
+      }
+    },
+    {
+      "file": "crates/spiralcore-mvm-live/src/config.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "functions": {
+          "count": 13,
+          "covered": 11,
+          "percent": 84.615384615384613
+        },
+        "instantiations": {
+          "count": 13,
+          "covered": 11,
+          "percent": 84.615384615384613
+        },
+        "lines": {
+          "count": 299,
+          "covered": 275,
+          "percent": 91.973244147157203
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "regions": {
+          "count": 434,
+          "covered": 377,
+          "notcovered": 57,
+          "percent": 86.866359447004598
+        }
+      }
+    },
+    {
+      "file": "crates/spiralcore-mvm-live/src/fixtures.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "functions": {
+          "count": 10,
+          "covered": 5,
+          "percent": 50
+        },
+        "instantiations": {
+          "count": 10,
+          "covered": 5,
+          "percent": 50
+        },
+        "lines": {
+          "count": 191,
+          "covered": 69,
+          "percent": 36.125654450261777
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "regions": {
+          "count": 273,
+          "covered": 97,
+          "notcovered": 176,
+          "percent": 35.531135531135533
+        }
+      }
+    },
+    {
+      "file": "crates/spiralcore-mvm-live/src/guest.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "functions": {
+          "count": 20,
+          "covered": 20,
+          "percent": 100
+        },
+        "instantiations": {
+          "count": 20,
+          "covered": 20,
+          "percent": 100
+        },
+        "lines": {
+          "count": 266,
+          "covered": 263,
+          "percent": 98.872180451127818
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "regions": {
+          "count": 411,
+          "covered": 401,
+          "notcovered": 10,
+          "percent": 97.566909975669105
+        }
+      }
+    },
+    {
+      "file": "crates/spiralcore-mvm-live/src/host.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "functions": {
+          "count": 39,
+          "covered": 20,
+          "percent": 51.282051282051277
+        },
+        "instantiations": {
+          "count": 40,
+          "covered": 21,
+          "percent": 52.5
+        },
+        "lines": {
+          "count": 494,
+          "covered": 309,
+          "percent": 62.550607287449388
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "regions": {
+          "count": 880,
+          "covered": 548,
+          "notcovered": 332,
+          "percent": 62.272727272727266
+        }
+      }
+    },
+    {
+      "file": "crates/spiralcore-mvm-live/src/linux_host.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "functions": {
+          "count": 9,
+          "covered": 9,
+          "percent": 100
+        },
+        "instantiations": {
+          "count": 9,
+          "covered": 9,
+          "percent": 100
+        },
+        "lines": {
+          "count": 108,
+          "covered": 103,
+          "percent": 95.370370370370367
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "regions": {
+          "count": 175,
+          "covered": 166,
+          "notcovered": 9,
+          "percent": 94.857142857142861
+        }
+      }
+    },
+    {
+      "file": "crates/spiralcore-mvm-live/src/main.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "functions": {
+          "count": 3,
+          "covered": 0,
+          "percent": 0
+        },
+        "instantiations": {
+          "count": 3,
+          "covered": 0,
+          "percent": 0
+        },
+        "lines": {
+          "count": 25,
+          "covered": 0,
+          "percent": 0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "regions": {
+          "count": 93,
+          "covered": 0,
+          "notcovered": 93,
+          "percent": 0
+        }
+      }
+    },
+    {
+      "file": "crates/spiralcore-mvm-live/src/orchestrator.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "functions": {
+          "count": 27,
+          "covered": 11,
+          "percent": 40.74074074074074
+        },
+        "instantiations": {
+          "count": 27,
+          "covered": 11,
+          "percent": 40.74074074074074
+        },
+        "lines": {
+          "count": 571,
+          "covered": 225,
+          "percent": 39.404553415061294
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "regions": {
+          "count": 978,
+          "covered": 335,
+          "notcovered": 643,
+          "percent": 34.253578732106341
+        }
+      }
+    }
+  ],
+  "limitations": [
+    "Line coverage only: no branch or MC/DC collection.",
+    "LCOV changed-line method uses each distinct source line with max observed DA hit count across repeated records; LLVM file summaries can count expansion contexts differently.",
+    "Production classification removes only trailing inline cfg(test) mod tests blocks listed in test-cutoffs.tsv. All integration tests run unchanged.",
+    "No new metric-only tests, exclusions or source edits.",
+    "This run is not performance, native guest, cross-platform or WAN evidence.",
+    "No whole-repository or full-production 80 percent pass is claimed."
+  ],
+  "status": "INVALID_FOR_FINAL_GATE_INCOMPLETE_CALLER_INSTRUMENTATION",
+  "invalid_reason": "Historical wrapper omitted new integration compilation units and undercounted generic methods; replaced by all-owned-unit wrapper plus isolated per-binary exports. Retained as failed measurement attempt."
+}

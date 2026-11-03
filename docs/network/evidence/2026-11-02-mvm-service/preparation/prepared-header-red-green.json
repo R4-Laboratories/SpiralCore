@@ -1,0 +1,79 @@
+{
+  "format": "spiralcore-mvm-prepared-header-accessor-v1",
+  "date": "2026-11-02",
+  "base_revision": "6ae461a54d85a1b70477c1efb97ea4a33ef3b331",
+  "patch": "0003-prepared-header-accessor.patch",
+  "patch_sha256": "11641dc5d01faf90948f0890a4528ed0e610fdc36b9d913bf557df19769865b7",
+  "api": "PreparedMailboxEnvelope::header(&self) -> &MailboxEnvelopeHeader",
+  "scope": "Immutable metadata borrow; no public mutator, constructor, wire or authority change",
+  "security_boundary": "The getter does not prove the configured sender signing/encryption keys produced the envelope. Full canonical verification remains required; no compute/performance shortcut is claimed.",
+  "red": {
+    "command": "cargo test --locked --manifest-path CURRENT_MVM/Cargo.toml -p mvm-core --lib mailbox::transport::tests::prepared_header_exposes_exact_borrow_without_changing_envelope",
+    "exit_code": 101,
+    "observed": "E0599 no header method on PreparedMailboxEnvelope before implementation",
+    "tests_before_getter": true
+  },
+  "green": {
+    "command": "cargo test --locked --manifest-path CURRENT_MVM/Cargo.toml -p mvm-core --lib mailbox::transport::tests::",
+    "exit_code": 0,
+    "passed": 16,
+    "failed": 0,
+    "getter_checks": [
+      "Exact expected sender boot, key identifier, message identity and kind",
+      "Borrow pointer stable between getter calls",
+      "Encoded canonical envelope unchanged by reads"
+    ]
+  },
+  "strict_lint": {
+    "command": "cargo clippy --locked --manifest-path CURRENT_MVM/Cargo.toml -p mvm-core --lib --no-default-features -- -D warnings",
+    "exit_code": 0
+  },
+  "bounds": {
+    "rust": "1.97.1",
+    "jobs": 2,
+    "incremental": false,
+    "nice": 10,
+    "new_guest_launches": 0
+  },
+  "final_source_sha256": {
+    "crates/mvm-core/src/mailbox/transport.rs": "c7eb7db91f9ade40a1ddaf9f8f33d9d76be0a07dec8897b177bacd821877014e",
+    "crates/mvm-core/src/mailbox/transport/tests.rs": "52df9c796eb34a08befa385767f975ad5e2a22b3003745e2d0edd9480d564d8c"
+  },
+  "final_package": {
+    "patches_applied_in_order": [
+      "0001-mailbox-service-primitives.patch",
+      "0002-reply-operation-authorization.patch",
+      "0003-prepared-header-accessor.patch"
+    ],
+    "final_patched_files": 14,
+    "prepare_script_sha256": "07bb7f954c5db4c9998b64e54c61c02a5c7b47d461415818d8460a6f1d8f1905",
+    "test_harness_sha256": "3ec14a432cd0226969759b3ecd58e444a63515badb90d596ffb573d72fa9693c",
+    "macos_real_three_patch_portability_harness": "pass",
+    "linux_real_three_patch_portability_harness": "pass",
+    "bash_syntax": "pass",
+    "shellcheck": "pass",
+    "native_windows": "not run here",
+    "captured_stage": "Getter stage, before subsequent source-URL mapping extension",
+    "subsequent_package_mapping_record": "dual-url-preparation.json"
+  },
+  "local_prepared_git": {
+    "parent_revision": "6ae461a54d85a1b70477c1efb97ea4a33ef3b331",
+    "branch": "codex/spiralcore-mvm-service-patch",
+    "base_index_populated_without_worktree_rewrite": true,
+    "objects": "Read-only alternate to existing original MVM object store; fork publisher must retain/fetch/repack borrowed objects",
+    "pushes": 0,
+    "commits_created_by_preparation_agent": 0,
+    "publisher_local_commit": "5766754fbaae59dbee548f968716a514d3a796c1",
+    "shallow_metadata_correction": {
+      "cause": "Borrowed original Git objects did not carry source repository shallow boundary metadata, causing push ancestry walk to request missing parent db3976f3",
+      "fix": "Copied exact original shallow file into new prepared Git metadata only; original repository unchanged",
+      "boundaries": [
+        "3104a12c5b071a6851323fa8115d2afaf3f0bb8b",
+        "6ae461a54d85a1b70477c1efb97ea4a33ef3b331"
+      ],
+      "validation": "HEAD unchanged, rev-list count2 and connectivity-only fsck pass, source hashes unchanged",
+      "push_by_preparation_agent": false
+    }
+  },
+  "old_source_or_historical_binary_changes": false
+}

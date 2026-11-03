@@ -41,9 +41,37 @@ tracks**, not arbitrary encrypted packet traffic.
 
 **Platform scope:** the normal TUN gateway is Linux-native. The MVM witness has
 macOS/HVF and Linux/Firecracker host paths; the default Linux build is the guest,
-and the `linux-host` feature selects the host. Windows remains unimplemented:
-native packet integration and private/durable storage semantics need a port.
+and the `linux-host` feature selects the host. Native ephemeral mailbox-client
+tests have passed on Windows Server 2022/2025 x64 and Windows 11 ARM64 at the
+[recorded source checkpoint](docs/network/evidence/2026-11-02-mvm-service/platforms/README.md).
+Windows private/durable object storage and packet attachment still need a port.
+A portable mailbox client does not establish a Windows MVM host. The current
+published MVM dependency has passed the recorded seven-platform contract run.
 [Linux build and lifecycle details →](docs/network/linux-firecracker.md)
+
+**MVM delivery roadmap:** [GitHub issue #42](https://github.com/R4-Laboratories/SpiralCore/issues/42)
+is the status authority for the canonical mailbox service, admitted FlowMux
+integration, owner access and final upstream contribution. The
+[platform contract](docs/specs/2026-11-02-mvm-platforms.md) distinguishes supported
+endpoint roles from candidate OS/version/architecture cells. Native execution,
+real WAN pairs and unavailable backend gates are tracked separately in
+[#46](https://github.com/R4-Laboratories/SpiralCore/issues/46) and
+[#47](https://github.com/R4-Laboratories/SpiralCore/issues/47). The [current canonical-service native report](docs/network/evidence/2026-11-02-mvm-service/native-ae12/README.md)
+records **16 successful Linux/Firecracker and macOS/HVF sessions**, including
+one-guest/host and two-guest transfers, 32 successful guest boots and 72 exact
+keyless reboot readbacks. At the larger tier (14,851,384-byte objects), complete
+mixed sessions used **41.7–41.8% fewer canonical stream bytes** than prepared
+whole-object zstd/raw with the same warm probe. Endpoint CPU and sender elapsed
+were lower in all eight paired session comparisons; small-session lifecycle and
+individual-operation losses remain visible in the report. These are single-trial
+local native observations, with different backend rate profiles; cross-platform
+WAN support remains unqualified. Historical results below retain their own sources. Fleet capacity and
+long-lived operation are an additional release gate in
+[#49](https://github.com/R4-Laboratories/SpiralCore/issues/49); two guests do not
+establish a scalable deployment envelope. The
+[scale boundary review](docs/network/evidence/2026-11-02-mvm-service/qualification/scale-boundary.md)
+records the current per-session budget/clock ownership, retained FIFO scopes and
+serial dispatcher constraints, with the bounded load experiment required next.
 
 ### Where SpiralCore sits in the network stack
 

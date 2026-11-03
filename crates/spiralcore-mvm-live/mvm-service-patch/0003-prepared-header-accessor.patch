@@ -1,0 +1,42 @@
+diff --git a/crates/mvm-core/src/mailbox/transport/tests.rs b/crates/mvm-core/src/mailbox/transport/tests.rs
+index 452b8fb030b959d5033390a20ced78c3ffd29903..1eff3d7ffc03823136db0aa5f8ea8a476b0db8ea 100644
+--- a/crates/mvm-core/src/mailbox/transport/tests.rs
++++ b/crates/mvm-core/src/mailbox/transport/tests.rs
+@@ -567,3 +567,19 @@ fn outbound_call_and_cast_keep_send_operation() {
+         );
+     }
+ }
++
++#[test]
++fn prepared_header_exposes_exact_borrow_without_changing_envelope() {
++    let fixture = mailbox_fixture();
++    let before = crate::mailbox::encode_envelope(fixture.prepared.envelope()).unwrap();
++    let header: &MailboxEnvelopeHeader = fixture.prepared.header();
++    assert_eq!(header.sender_boot, BootId::from_bytes(id(13)));
++    assert_eq!(header.encryption.key_id, id(19));
++    assert_eq!(header.message_id, MessageId::from_bytes(id(14)));
++    assert_eq!(header.kind, MailboxMessageKind::Cast);
++    assert!(std::ptr::eq(header, fixture.prepared.header()));
++    assert_eq!(
++        crate::mailbox::encode_envelope(fixture.prepared.envelope()).unwrap(),
++        before
++    );
++}
+diff --git a/crates/mvm-core/src/mailbox/transport.rs b/crates/mvm-core/src/mailbox/transport.rs
+index 86523b5a7bbfb47ac625427c5d1e63fbd81a5385..b4132f25c8745feb996ac2de37c43a974c8abc17 100644
+--- a/crates/mvm-core/src/mailbox/transport.rs
++++ b/crates/mvm-core/src/mailbox/transport.rs
+@@ -527,6 +527,13 @@ pub struct PreparedMailboxEnvelope {
+ }
+ 
+ impl PreparedMailboxEnvelope {
++    /// Borrow the exact header paired with this prepared outbound envelope.
++    /// Capability and transport authorization are still required before send.
++    #[must_use]
++    pub fn header(&self) -> &MailboxEnvelopeHeader {
++        &self.header
++    }
++
+     #[must_use]
+     pub fn envelope(&self) -> &MailboxEnvelope {
+         &self.envelope

@@ -1,0 +1,154 @@
+diff --git a/crates/mvm-core/src/mailbox/transport/tests.rs b/crates/mvm-core/src/mailbox/transport/tests.rs
+index 0a25b9b53c8ca004ffde3b83f391f79cd7e3ae62..452b8fb030b959d5033390a20ced78c3ffd29903 100644
+--- a/crates/mvm-core/src/mailbox/transport/tests.rs
++++ b/crates/mvm-core/src/mailbox/transport/tests.rs
+@@ -88,6 +88,13 @@ struct MailboxFixture {
+ }
+ 
+ fn mailbox_fixture() -> MailboxFixture {
++    mailbox_fixture_for(MailboxMessageKind::Cast, &[MailboxOperation::Send])
++}
++
++fn mailbox_fixture_for(
++    kind: MailboxMessageKind,
++    operations: &[MailboxOperation],
++) -> MailboxFixture {
+     let content_type = ContentType::parse("application/vnd.mvm.test", 1).expect("content type");
+     let header = MailboxEnvelopeHeader {
+         protocol_version: ProtocolVersion::V1,
+@@ -102,8 +109,13 @@ fn mailbox_fixture() -> MailboxFixture {
+         message_id: MessageId::from_bytes(id(14)),
+         correlation_id: CorrelationId::from_bytes(id(15)),
+         causation_id: CausationId::from_bytes(id(16)),
+-        kind: MailboxMessageKind::Cast,
+-        reply_to: None,
++        kind,
++        reply_to: (kind == MailboxMessageKind::Call).then_some(
++            mvm_contract::protocol::mailbox::ReplyRoute {
++                address: address(),
++                capability_id: CapabilityId::from_bytes(id(25)),
++            },
++        ),
+         ordering_scope: OrderingScope::parse("default").expect("ordering scope"),
+         sequence: SequenceNumber::new(1).expect("sequence"),
+         issued_at_unix_ms: NOW - 1,
+@@ -149,8 +161,8 @@ fn mailbox_fixture() -> MailboxFixture {
+         issuer: issuer(),
+         subject: sender(),
+         address: address(),
+-        operations: CapabilityOperations::from_operations(&[MailboxOperation::Send]),
+-        message_kinds: vec![MailboxMessageKind::Cast],
++        operations: CapabilityOperations::from_operations(operations),
++        message_kinds: vec![kind],
+         content_types: vec![content_type.clone()],
+         max_payload_bytes: 64,
+         max_messages_per_minute: 60,
+@@ -489,3 +501,69 @@ fn refused_cancelled_and_shutting_down_connects_are_distinct() {
+         Err(TransportError::ShuttingDown)
+     ));
+ }
++
++#[test]
++fn outbound_reply_accepts_reply_only_capability() {
++    let authority = SigningKey::from_bytes(&id(30));
++    let (_, route) = signed_route(TransportPath::Direct, 31, &authority);
++    let mut fixture = mailbox_fixture_for(MailboxMessageKind::Reply, &[MailboxOperation::Reply]);
++    fixture.context.required_operation = MailboxOperation::Reply;
++    let frame = authorize_outbound(OutboundAuthorization {
++        prepared: &fixture.prepared,
++        capability: &fixture.capability,
++        context: &fixture.context,
++        capability_authority_key: &fixture.capability_authority.verifying_key(),
++        route: &route,
++    })
++    .expect("a Reply-only grant authorizes a Reply");
++    assert_eq!(frame.encoded_bytes().len(), frame.encoded_len());
++}
++
++#[test]
++fn outbound_reply_rejects_send_only_capability_under_either_context() {
++    let authority = SigningKey::from_bytes(&id(30));
++    let (_, route) = signed_route(TransportPath::Direct, 31, &authority);
++    let mut fixture = mailbox_fixture_for(MailboxMessageKind::Reply, &[MailboxOperation::Send]);
++    for operation in [MailboxOperation::Send, MailboxOperation::Reply] {
++        fixture.context.required_operation = operation;
++        assert!(
++            authorize_outbound(OutboundAuthorization {
++                prepared: &fixture.prepared,
++                capability: &fixture.capability,
++                context: &fixture.context,
++                capability_authority_key: &fixture.capability_authority.verifying_key(),
++                route: &route,
++            })
++            .is_err(),
++            "Send-only must never authorize Reply"
++        );
++    }
++}
++
++#[test]
++fn outbound_call_and_cast_keep_send_operation() {
++    let authority = SigningKey::from_bytes(&id(30));
++    let (_, route) = signed_route(TransportPath::Direct, 31, &authority);
++    for kind in [MailboxMessageKind::Call, MailboxMessageKind::Cast] {
++        let mut fixture = mailbox_fixture_for(kind, &[MailboxOperation::Send]);
++        authorize_outbound(OutboundAuthorization {
++            prepared: &fixture.prepared,
++            capability: &fixture.capability,
++            context: &fixture.context,
++            capability_authority_key: &fixture.capability_authority.verifying_key(),
++            route: &route,
++        })
++        .expect("Call and Cast still require Send");
++        fixture.context.required_operation = MailboxOperation::Reply;
++        assert!(
++            authorize_outbound(OutboundAuthorization {
++                prepared: &fixture.prepared,
++                capability: &fixture.capability,
++                context: &fixture.context,
++                capability_authority_key: &fixture.capability_authority.verifying_key(),
++                route: &route,
++            })
++            .is_err()
++        );
++    }
++}
+diff --git a/crates/mvm-core/src/mailbox/transport.rs b/crates/mvm-core/src/mailbox/transport.rs
+index 0dd793bfa270d91425d73fc097294fef2bfc195d..86523b5a7bbfb47ac625427c5d1e63fbd81a5385 100644
+--- a/crates/mvm-core/src/mailbox/transport.rs
++++ b/crates/mvm-core/src/mailbox/transport.rs
+@@ -14,8 +14,8 @@ use ed25519_dalek::{Signature, Signer, SigningKey, Verifier, VerifyingKey};
+ use mvm_contract::protocol::mailbox::{
+     AuthorizationDomainRouteLabel, DestinationRouteToken, ED25519_SIGNATURE_BYTES, ExecutionEpoch,
+     MAILBOX_PROTOCOL_VERSION, MAX_ENCODED_ENVELOPE_BYTES, MailboxAddress, MailboxEnvelope,
+-    MailboxEnvelopeHeader, MailboxOperation, PrincipalId, ProtocolVersion, SignatureAlgorithm,
+-    SignedMailboxCapability, TransportBindingId,
++    MailboxEnvelopeHeader, MailboxMessageKind, MailboxOperation, PrincipalId, ProtocolVersion,
++    SignatureAlgorithm, SignedMailboxCapability, TransportBindingId,
+ };
+ use serde::{Deserialize, Serialize};
+ use sha2::{Digest, Sha256};
+@@ -570,7 +570,11 @@ impl AuthorizedMailboxFrame {
+ pub fn authorize_outbound(
+     request: OutboundAuthorization<'_>,
+ ) -> Result<AuthorizedMailboxFrame, OutboundAuthorizationError> {
+-    if request.context.required_operation != MailboxOperation::Send {
++    let required_operation = match request.prepared.header.kind {
++        MailboxMessageKind::Reply => MailboxOperation::Reply,
++        MailboxMessageKind::Call | MailboxMessageKind::Cast => MailboxOperation::Send,
++    };
++    if request.context.required_operation != required_operation {
+         return Err(OutboundAuthorizationError::SendOperationRequired);
+     }
+     let envelope = &request.prepared.envelope;
+@@ -612,7 +616,9 @@ pub fn authorize_outbound(
+ pub enum OutboundAuthorizationError {
+     #[error(transparent)]
+     Mailbox(#[from] MailboxError),
+-    #[error("outbound transport authorization requires the send operation")]
++    /// The operation must be Send for Call/Cast and Reply for Reply messages.
++    /// The variant name is retained for compatibility with existing consumers.
++    #[error("outbound transport authorization requires the operation matching the message kind")]
+     SendOperationRequired,
+     #[error("mailbox envelope and supplied signed header do not match")]
+     EnvelopeHeaderMismatch,

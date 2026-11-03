@@ -1,0 +1,444 @@
+{
+  "schema": "spiralcore.mvm.service.coverage.v2",
+  "status": "PASS_DECLARED_COMPILED_PRODUCTION_LINE_SCOPE",
+  "source_commit": "0cf256f2e691849e5c9c019ac2fda7eb97287938",
+  "changed_line_base": "2e941e30552ee9bcc8714f339d52f0964eee8e3a",
+  "mvm_revision": "ae12e9deb41cc9a3264196ce22ebc72d4042883d",
+  "platform": "macOS arm64",
+  "rust": "1.97.1",
+  "llvm": "22.1.6-rust-1.97.1-stable",
+  "test_counts": {
+    "adapter": 82,
+    "live": 48,
+    "per_binary_total": 130,
+    "per_binary_executables": 21,
+    "failed": 0,
+    "ignored": 0,
+    "filtered": 0
+  },
+  "instrumentation": {
+    "selection": "Every compilation unit with CARGO_MANIFEST_DIR ending in the two owned adapter/live crate paths, including all integration tests and examples; no upstream instrumentation.",
+    "wrapper_sha256": "449138a815dbff9b08023b92725f9ed26e6a8b9755ec4b7a4dd3387c16fa1567",
+    "rebuild": "Scoped cargo clean --release -p for only adapter/live, followed by identical all-target test commands; all test compilation artifacts report fresh=false on rebuild.",
+    "collection": "Each of21 exact test executables rerun separately with an isolated fresh profile directory; each profile exported only against its matching executable. Zero nonempty export warning/error logs.",
+    "aggregation": "Maximum DA count per distinct owned source file/line across per-binary LCOV exports; no crossbinary LLVM-summary percentages are used for the gate."
+  },
+  "scope": "All20 compiled src files in spiralcore-mvm-adapter and spiralcore-mvm-live; includes legacy modules, fixtures, orchestrator, main and compiled native helpers. Production removes only trailing inline cfg(test) mod tests blocks listed in test-cutoffs.tsv. Linux-only backend bodies not compiled on this macOS run are not covered by this gate.",
+  "metrics": {
+    "full_compiled_source": {
+      "covered": 6519,
+      "count": 7434,
+      "percent": 87.69168684422922
+    },
+    "full_compiled_production": {
+      "covered": 5758,
+      "count": 6672,
+      "percent": 86.3009592326139,
+      "status": "PASS_80_PERCENT"
+    },
+    "changed_source": {
+      "covered": 3802,
+      "count": 4100,
+      "percent": 92.73170731707317
+    },
+    "changed_production": {
+      "covered": 3414,
+      "count": 3711,
+      "percent": 91.99676637025061,
+      "status": "PASS_80_PERCENT"
+    }
+  },
+  "files": [
+    {
+      "file": "crates/spiralcore-mvm-adapter/src/conformance.rs",
+      "full_lines": {
+        "count": 211,
+        "covered": 187
+      },
+      "production_lines": {
+        "count": 211,
+        "covered": 187
+      },
+      "changed_lines": {
+        "count": 6,
+        "covered": 6
+      },
+      "changed_production_lines": {
+        "count": 6,
+        "covered": 6
+      }
+    },
+    {
+      "file": "crates/spiralcore-mvm-adapter/src/direction.rs",
+      "full_lines": {
+        "count": 410,
+        "covered": 396
+      },
+      "production_lines": {
+        "count": 364,
+        "covered": 350
+      },
+      "changed_lines": {
+        "count": 25,
+        "covered": 25
+      },
+      "changed_production_lines": {
+        "count": 25,
+        "covered": 25
+      }
+    },
+    {
+      "file": "crates/spiralcore-mvm-adapter/src/issuance.rs",
+      "full_lines": {
+        "count": 72,
+        "covered": 72
+      },
+      "production_lines": {
+        "count": 34,
+        "covered": 34
+      },
+      "changed_lines": {
+        "count": 72,
+        "covered": 72
+      },
+      "changed_production_lines": {
+        "count": 34,
+        "covered": 34
+      }
+    },
+    {
+      "file": "crates/spiralcore-mvm-adapter/src/lib.rs",
+      "full_lines": {
+        "count": 24,
+        "covered": 17
+      },
+      "production_lines": {
+        "count": 24,
+        "covered": 17
+      },
+      "changed_lines": {
+        "count": 0,
+        "covered": 0
+      },
+      "changed_production_lines": {
+        "count": 0,
+        "covered": 0
+      }
+    },
+    {
+      "file": "crates/spiralcore-mvm-adapter/src/live.rs",
+      "full_lines": {
+        "count": 620,
+        "covered": 565
+      },
+      "production_lines": {
+        "count": 620,
+        "covered": 565
+      },
+      "changed_lines": {
+        "count": 0,
+        "covered": 0
+      },
+      "changed_production_lines": {
+        "count": 0,
+        "covered": 0
+      }
+    },
+    {
+      "file": "crates/spiralcore-mvm-adapter/src/policy.rs",
+      "full_lines": {
+        "count": 95,
+        "covered": 92
+      },
+      "production_lines": {
+        "count": 95,
+        "covered": 92
+      },
+      "changed_lines": {
+        "count": 7,
+        "covered": 6
+      },
+      "changed_production_lines": {
+        "count": 7,
+        "covered": 6
+      }
+    },
+    {
+      "file": "crates/spiralcore-mvm-adapter/src/receipt.rs",
+      "full_lines": {
+        "count": 759,
+        "covered": 719
+      },
+      "production_lines": {
+        "count": 759,
+        "covered": 719
+      },
+      "changed_lines": {
+        "count": 759,
+        "covered": 719
+      },
+      "changed_production_lines": {
+        "count": 759,
+        "covered": 719
+      }
+    },
+    {
+      "file": "crates/spiralcore-mvm-adapter/src/service.rs",
+      "full_lines": {
+        "count": 1930,
+        "covered": 1758
+      },
+      "production_lines": {
+        "count": 1930,
+        "covered": 1758
+      },
+      "changed_lines": {
+        "count": 1930,
+        "covered": 1758
+      },
+      "changed_production_lines": {
+        "count": 1930,
+        "covered": 1758
+      }
+    },
+    {
+      "file": "crates/spiralcore-mvm-adapter/src/service/ordering.rs",
+      "full_lines": {
+        "count": 306,
+        "covered": 304
+      },
+      "production_lines": {
+        "count": 143,
+        "covered": 141
+      },
+      "changed_lines": {
+        "count": 306,
+        "covered": 304
+      },
+      "changed_production_lines": {
+        "count": 143,
+        "covered": 141
+      }
+    },
+    {
+      "file": "crates/spiralcore-mvm-adapter/src/service_object.rs",
+      "full_lines": {
+        "count": 100,
+        "covered": 90
+      },
+      "production_lines": {
+        "count": 100,
+        "covered": 90
+      },
+      "changed_lines": {
+        "count": 100,
+        "covered": 90
+      },
+      "changed_production_lines": {
+        "count": 100,
+        "covered": 90
+      }
+    },
+    {
+      "file": "crates/spiralcore-mvm-adapter/src/service_sender.rs",
+      "full_lines": {
+        "count": 189,
+        "covered": 181
+      },
+      "production_lines": {
+        "count": 189,
+        "covered": 181
+      },
+      "changed_lines": {
+        "count": 189,
+        "covered": 181
+      },
+      "changed_production_lines": {
+        "count": 189,
+        "covered": 181
+      }
+    },
+    {
+      "file": "crates/spiralcore-mvm-live/src/campaign.rs",
+      "full_lines": {
+        "count": 485,
+        "covered": 450
+      },
+      "production_lines": {
+        "count": 485,
+        "covered": 450
+      },
+      "changed_lines": {
+        "count": 39,
+        "covered": 38
+      },
+      "changed_production_lines": {
+        "count": 39,
+        "covered": 38
+      }
+    },
+    {
+      "file": "crates/spiralcore-mvm-live/src/campaign/canonical.rs",
+      "full_lines": {
+        "count": 314,
+        "covered": 289
+      },
+      "production_lines": {
+        "count": 293,
+        "covered": 268
+      },
+      "changed_lines": {
+        "count": 314,
+        "covered": 289
+      },
+      "changed_production_lines": {
+        "count": 293,
+        "covered": 268
+      }
+    },
+    {
+      "file": "crates/spiralcore-mvm-live/src/config.rs",
+      "full_lines": {
+        "count": 299,
+        "covered": 282
+      },
+      "production_lines": {
+        "count": 262,
+        "covered": 245
+      },
+      "changed_lines": {
+        "count": 85,
+        "covered": 83
+      },
+      "changed_production_lines": {
+        "count": 85,
+        "covered": 83
+      }
+    },
+    {
+      "file": "crates/spiralcore-mvm-live/src/fixtures.rs",
+      "full_lines": {
+        "count": 187,
+        "covered": 184
+      },
+      "production_lines": {
+        "count": 167,
+        "covered": 164
+      },
+      "changed_lines": {
+        "count": 0,
+        "covered": 0
+      },
+      "changed_production_lines": {
+        "count": 0,
+        "covered": 0
+      }
+    },
+    {
+      "file": "crates/spiralcore-mvm-live/src/guest.rs",
+      "full_lines": {
+        "count": 259,
+        "covered": 256
+      },
+      "production_lines": {
+        "count": 115,
+        "covered": 112
+      },
+      "changed_lines": {
+        "count": 44,
+        "covered": 44
+      },
+      "changed_production_lines": {
+        "count": 5,
+        "covered": 5
+      }
+    },
+    {
+      "file": "crates/spiralcore-mvm-live/src/host.rs",
+      "full_lines": {
+        "count": 479,
+        "covered": 353
+      },
+      "production_lines": {
+        "count": 315,
+        "covered": 190
+      },
+      "changed_lines": {
+        "count": 105,
+        "covered": 95
+      },
+      "changed_production_lines": {
+        "count": 34,
+        "covered": 25
+      }
+    },
+    {
+      "file": "crates/spiralcore-mvm-live/src/linux_host.rs",
+      "full_lines": {
+        "count": 107,
+        "covered": 102
+      },
+      "production_lines": {
+        "count": 67,
+        "covered": 62
+      },
+      "changed_lines": {
+        "count": 0,
+        "covered": 0
+      },
+      "changed_production_lines": {
+        "count": 0,
+        "covered": 0
+      }
+    },
+    {
+      "file": "crates/spiralcore-mvm-live/src/main.rs",
+      "full_lines": {
+        "count": 24,
+        "covered": 0
+      },
+      "production_lines": {
+        "count": 24,
+        "covered": 0
+      },
+      "changed_lines": {
+        "count": 0,
+        "covered": 0
+      },
+      "changed_production_lines": {
+        "count": 0,
+        "covered": 0
+      }
+    },
+    {
+      "file": "crates/spiralcore-mvm-live/src/orchestrator.rs",
+      "full_lines": {
+        "count": 564,
+        "covered": 222
+      },
+      "production_lines": {
+        "count": 475,
+        "covered": 133
+      },
+      "changed_lines": {
+        "count": 119,
+        "covered": 92
+      },
+      "changed_production_lines": {
+        "count": 62,
+        "covered": 35
+      }
+    }
+  ],
+  "measurement_corrections": [
+    "Initial historical wrapper omitted new integration caller instrumentation. Attempt1 retained but invalid for the final gate.",
+    "Changing RUSTC_WRAPPER alone reused old artifacts. Owned-package cache invalidation was necessary and observed.",
+    "Combining all raw profiles with all binaries produced41 mismatched-function warnings. Replaced by isolated per-binary collection/export; no warningful aggregate metric is used."
+  ],
+  "limitations": [
+    "Line coverage only: branch and MC/DC not collected.",
+    "Aggregate80percent does not imply each module passes80percent: orchestrator and host gaps remain disclosed.",
+    "No product/test changes, metric-only tests, skipped tests or file exclusions.",
+    "This is not performance, native guest, Linux backend, cross-platform or WAN qualification."
+  ]
+}

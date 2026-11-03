@@ -1,0 +1,422 @@
+diff --git a/crates/mvm-backends/src/driver/fc.rs b/crates/mvm-backends/src/driver/fc.rs
+index 4e508f5a337be78881cf197be2724af9e6c04e68..1311f8f4ec8b4175da01de28363d13d9af81059f 100644
+--- a/crates/mvm-backends/src/driver/fc.rs
++++ b/crates/mvm-backends/src/driver/fc.rs
+@@ -860,7 +860,7 @@ impl FcDriver {
+                 .with_context(|| format!("Firecracker API PUT {}", put.path))?;
+         }
+         if let Some(handoff) = handoff.as_ref() {
+-            crate::fc::io::FirecrackerIO::new(PathBuf::from(&socket))
++            crate::fc::io::FirecrackerIO::new(PathBuf::from(&socket), state_dir.clone())
+                 .verify_writable_writer(handoff)?;
+         }
+         crate::fc::secure_vsock_socket_for_caller(&vsock_uds)
+@@ -1208,8 +1208,11 @@ impl VmmDriver for FcDriver {
+         mvm_vmm::agent_debug::phase("fc-resume", started, "phase=channels_armed");
+         let devices = crate::fc::host::fork_devices_for(req.child_vm_name, req.child_dir)
+             .map_err(|error| StandbyError::ClaimFailed(format!("{error:#}")))?;
+-        let io = crate::fc::io::FirecrackerIO::new(req.child_dir.join("fc.socket"))
+-            .forking_onto(devices);
++        let io = crate::fc::io::FirecrackerIO::new(
++            req.child_dir.join("fc.socket"),
++            req.child_dir.to_path_buf(),
++        )
++        .forking_onto(devices);
+         mvm_vmm::agent_debug::phase("fc-resume", started, "phase=devices_built");
+         crate::fc::host::resume_preloaded_fork_child(
+             &io,
+diff --git a/crates/mvm-backends/src/fc/host.rs b/crates/mvm-backends/src/fc/host.rs
+index 5e96a2379e23a3426abc6a0c28000a1f24d27e05..969c4edc3d03cb557f11a91e106215b894d3b4ba 100644
+--- a/crates/mvm-backends/src/fc/host.rs
++++ b/crates/mvm-backends/src/fc/host.rs
+@@ -889,10 +889,12 @@ fn child_io(
+     child_dir: &std::path::Path,
+     cpu_grant: Option<mvm_contract::grants::CpuGrant>,
+ ) -> super::io::FirecrackerIO {
+-    super::io::FirecrackerIO::new(child_dir.join("fc.socket")).bounded_by(super::io::RestoreBound {
+-        machine_id: child_vm_name.to_string(),
+-        cpu_grant,
+-    })
++    super::io::FirecrackerIO::new(child_dir.join("fc.socket"), child_dir.to_path_buf()).bounded_by(
++        super::io::RestoreBound {
++            machine_id: child_vm_name.to_string(),
++            cpu_grant,
++        },
++    )
+ }
+ 
+ /// Point every late-volume slot a claim uses at its image on a paused child,
+@@ -1031,7 +1033,7 @@ mod tests {
+             let socket = dir.path().join("fc.socket");
+             // No VMM was started: only a marker to observe teardown's cleanup.
+             std::fs::write(&socket, b"not a live API socket").unwrap();
+-            let io = crate::fc::io::FirecrackerIO::new(socket.clone());
++            let io = crate::fc::io::FirecrackerIO::new(socket.clone(), dir.path().to_path_buf());
+             let error = super::resume_preloaded_fork_child(&io, dir.path(), runtime, anchors, &[])
+                 .unwrap_err();
+             assert!(
+diff --git a/crates/mvm-backends/src/fc/io.rs b/crates/mvm-backends/src/fc/io.rs
+index 4c4c7f04b6481c94d0ffb66e00e91e9ad4f306f0..76c9eca80033b8c4c0d0af9f593cfecb2069a5ea 100644
+--- a/crates/mvm-backends/src/fc/io.rs
++++ b/crates/mvm-backends/src/fc/io.rs
+@@ -20,6 +20,8 @@ use mvm_vmm::snapshot::SnapshotIO;
+ pub struct FirecrackerIO {
+     /// Absolute path to the live Firecracker control socket.
+     pub socket_path: PathBuf,
++    /// Owned VM state directory. Socket relocation never changes PID/scope authority.
++    vm_state_dir: PathBuf,
+     /// A captured/started writer requires verified termination on every exit.
+     verified_stop_required: std::cell::Cell<bool>,
+     /// Who the *fresh* VMM a snapshot load starts is scoped as, and the CPU
+@@ -61,9 +63,11 @@ fn paused_capture_needs_relock(handoff_present: bool, config: &RestoreConfig) ->
+ }
+ 
+ impl FirecrackerIO {
+-    pub fn new(socket_path: PathBuf) -> Self {
++    /// Carry state ownership explicitly; API sockets may live in a short namespace.
++    pub fn new(socket_path: PathBuf, vm_state_dir: PathBuf) -> Self {
+         Self {
+             socket_path,
++            vm_state_dir,
+             verified_stop_required: std::cell::Cell::new(false),
+             restore_bound: None,
+             fork_devices: None,
+@@ -94,10 +98,7 @@ impl FirecrackerIO {
+         &self,
+         handoff: &mvm_vmm::driver::prepared_disks::SudoWritableHandoff,
+     ) -> Result<()> {
+-        let vm_dir = self
+-            .socket_path
+-            .parent()
+-            .context("Firecracker socket path has no VM directory")?;
++        let vm_dir = self.vm_state_dir.as_path();
+         super::daemon::verify_writable_writer(
+             &vm_dir.to_string_lossy(),
+             &self.socket_path.to_string_lossy(),
+@@ -291,10 +292,7 @@ impl FirecrackerIO {
+     /// child's vsock socket instead of the recorded one, and every drive the
+     /// parent owned is reopened from the child's copy before this returns.
+     fn load_snapshot_inner(&self, dir: &Path, fork: Option<&super::ForkDevices>) -> Result<()> {
+-        let vm_dir = self
+-            .socket_path
+-            .parent()
+-            .ok_or_else(|| anyhow::anyhow!("Firecracker socket path has no parent directory"))?;
++        let vm_dir = self.vm_state_dir.as_path();
+         let memory_mib = snapshot_guest_memory_mib(dir)?;
+         let (machine_id, bounds) = self.restore_scope_inputs(vm_dir, memory_mib);
+         super::daemon::validate_required_scope(&machine_id, &bounds)?;
+@@ -356,10 +354,7 @@ impl FirecrackerIO {
+         scope: &str,
+         handoff: Option<&mvm_vmm::driver::prepared_disks::SudoWritableHandoff>,
+     ) -> Result<()> {
+-        let vm_dir = self
+-            .socket_path
+-            .parent()
+-            .context("Firecracker socket path has no parent directory")?;
++        let vm_dir = self.vm_state_dir.as_path();
+         let socket_str = self.socket_path.to_string_lossy();
+         self.verified_stop_required.set(true);
+         super::start_vm_firecracker_scoped_with_handoff(
+@@ -518,10 +513,7 @@ impl SnapshotIO for FirecrackerIO {
+         // resumed guest that did not reseed must not keep running on its
+         // snapshot's random state. The result is the stop's own, so a caller
+         // that reports "stopped" has a stopped process behind it.
+-        let vm_dir = self
+-            .socket_path
+-            .parent()
+-            .ok_or_else(|| anyhow::anyhow!("Firecracker socket path has no parent directory"))?;
++        let vm_dir = self.vm_state_dir.as_path();
+         if self.verified_stop_required.get() {
+             self.stop_own_vmm_after_live_config(vm_dir)?;
+         } else {
+@@ -604,6 +596,137 @@ fn stop_restored_vmm_inner(
+ mod tests {
+     use super::*;
+ 
++    #[cfg(target_os = "linux")]
++    fn relocated_writer_probe(state_pid: Option<u32>, socket_pid: Option<u32>) -> Result<()> {
++        use mvm_core::util::writable_image::{LockedWritableImage, sidecar_lock_path};
++        use mvm_vmm::driver::{prepared_disks::PreparedWritableDisks, spec::*};
++        use std::io::{Read, Write};
++        let scratch = crate::driver::socket_tempdir();
++        let state = scratch.path().join("actual-vm-state");
++        let sockets = scratch.path().join("relocated-sockets");
++        std::fs::create_dir(&state)?;
++        std::fs::create_dir(&sockets)?;
++        let backing = state.join("image");
++        std::fs::write(&backing, b"original writable object")?;
++        let image = LockedWritableImage::open(&backing, &sidecar_lock_path(&backing))?;
++        let spec = VmmSpec {
++            name: "relocated-custody-test".into(),
++            kernel: KernelImage::Bundled,
++            initramfs: None,
++            cmdline: String::new(),
++            vcpus: 1,
++            cpu_grant: None,
++            memory_mib: 64,
++            mem_initial_mib: None,
++            blocks: vec![BlockDev {
++                source: backing.clone(),
++                read_only: false,
++                ephemeral: false,
++                slot: 0,
++            }],
++            vsock: Vec::new(),
++            console: ConsoleCapture {
++                log_path: state.join("console"),
++            },
++            shares: Vec::new(),
++            trusted_builder: false,
++            builder_egress_endpoint: None,
++            plan_binding: None,
++        };
++        let handoff =
++            PreparedWritableDisks::bind(&spec, vec![(0, image)])?.into_sudo_handoff(&spec)?;
++        // Simulate the VMM's drive open in addition to its inherited custody.
++        let _actual_drive = std::fs::OpenOptions::new()
++            .read(true)
++            .write(true)
++            .open(&backing)?;
++        // Keep inventory stable while other unit-test threads open/close files.
++        // This owned idle process models only descriptor custody, not a VMM.
++        use std::os::{fd::AsRawFd, unix::process::CommandExt};
++        struct Writer(std::process::Child);
++        impl Drop for Writer {
++            fn drop(&mut self) {
++                let _ = self.0.kill();
++                let _ = self.0.wait();
++            }
++        }
++        let first = handoff.first() as i32;
++        let last = handoff.last() as i32;
++        let drive = _actual_drive.as_raw_fd();
++        let mut command = std::process::Command::new("/bin/sh");
++        command
++            .args(["-c", "printf READY; IFS= read -r ignored"])
++            .env_clear()
++            .stdin(std::process::Stdio::piped())
++            .stdout(std::process::Stdio::piped())
++            .stderr(std::process::Stdio::null());
++        // SAFETY: only async-signal-safe fcntl calls on known live descriptors;
++        // no allocation, locks, or inherited producer state is touched.
++        unsafe {
++            command.pre_exec(move || {
++                for fd in (first..=last).chain(std::iter::once(drive)) {
++                    if libc::fcntl(fd, libc::F_SETFD, 0) < 0 {
++                        return Err(std::io::Error::last_os_error());
++                    }
++                }
++                Ok(())
++            });
++        }
++        let mut writer = Writer(command.spawn()?);
++        let mut ready = [0; 5];
++        writer.0.stdout.as_mut().unwrap().read_exact(&mut ready)?;
++        anyhow::ensure!(&ready == b"READY", "writer fixture readiness mismatch");
++        let marker_pid = |pid| {
++            if pid == std::process::id() {
++                writer.0.id()
++            } else {
++                pid
++            }
++        };
++        if let Some(pid) = state_pid {
++            std::fs::write(state.join("fc.pid"), marker_pid(pid).to_string())?;
++        }
++        if let Some(pid) = socket_pid {
++            std::fs::write(sockets.join("fc.pid"), marker_pid(pid).to_string())?;
++        }
++        let socket = sockets.join("fc.socket");
++        let listener = std::os::unix::net::UnixListener::bind(&socket)?;
++        let body = serde_json::json!({"drives":[{"drive_id":"blk0","path_on_host":backing,"is_read_only":false}]}).to_string();
++        let api = std::thread::spawn(move || {
++            let (mut connection, _) = listener.accept().unwrap();
++            let mut request = [0; 1024];
++            let n = connection.read(&mut request).unwrap();
++            assert!(request[..n].starts_with(b"GET /vm/config "));
++            write!(
++                connection,
++                "HTTP/1.1 200 OK\r\nContent-Length: {}\r\n\r\n{body}",
++                body.len()
++            )
++            .unwrap();
++        });
++        let result = FirecrackerIO::new(socket, state).verify_writable_writer(&handoff);
++        api.join().unwrap();
++        result
++    }
++
++    #[cfg(target_os = "linux")]
++    #[test]
++    fn relocated_socket_writer_uses_actual_vm_state_pid() {
++        relocated_writer_probe(Some(std::process::id()), None).unwrap();
++    }
++
++    #[cfg(target_os = "linux")]
++    #[test]
++    fn relocated_socket_missing_state_pid_never_uses_socket_directory_marker() {
++        assert!(relocated_writer_probe(None, Some(std::process::id())).is_err());
++    }
++
++    #[cfg(target_os = "linux")]
++    #[test]
++    fn relocated_socket_wrong_state_pid_never_uses_socket_directory_marker() {
++        assert!(relocated_writer_probe(Some(u32::MAX), Some(std::process::id())).is_err());
++    }
++
+     #[test]
+     fn required_snapshot_memory_rejects_zero_and_overflow() {
+         assert!(snapshot_memory_mib_from_bytes(0).is_err());
+@@ -626,7 +749,7 @@ mod tests {
+         std::fs::write(&marker, "do-not-read-or-stop").unwrap();
+         let scope_record = vm.join("spawn-scope");
+         std::fs::write(&scope_record, b"old-generation.scope").unwrap();
+-        let io = FirecrackerIO::new(vm.join("fc.socket"));
++        let io = FirecrackerIO::new(vm.join("fc.socket"), vm.clone());
+         let snapshot = scratch.path().join("snapshot");
+         std::fs::create_dir(&snapshot).unwrap();
+         let _guard = mvm_vmm::host::shell::mock::install_handler(|_| {
+@@ -695,7 +818,7 @@ mod tests {
+             )
+             .unwrap();
+         });
+-        let io = FirecrackerIO::new(socket);
++        let io = FirecrackerIO::new(socket, vm.clone());
+         let _guard = mvm_vmm::host::shell::mock::install_handler(|_| {
+             panic!("failed old stop must not launch a replacement")
+         });
+@@ -746,7 +869,7 @@ mod tests {
+         let scratch = tempfile::tempdir().unwrap();
+         let socket = scratch.path().join("fc.socket");
+         std::fs::write(&socket, b"live API placeholder").unwrap();
+-        let io = FirecrackerIO::new(socket.clone());
++        let io = FirecrackerIO::new(socket.clone(), scratch.path().to_path_buf());
+         io.verified_stop_required.set(true);
+         assert!(io.teardown_paused().is_err());
+         assert!(socket.exists());
+@@ -755,7 +878,10 @@ mod tests {
+     #[test]
+     fn read_only_live_restore_config_needs_no_writable_handoff() {
+         let scratch = tempfile::tempdir().unwrap();
+-        let io = FirecrackerIO::new(scratch.path().join("fc.socket"));
++        let io = FirecrackerIO::new(
++            scratch.path().join("fc.socket"),
++            scratch.path().to_path_buf(),
++        );
+         let config = r#"{"drives":[{"drive_id":"blk0","path_on_host":"/missing/read-only","is_read_only":true}]}"#;
+         assert!(io.prepare_restore_handoff(config, None).unwrap().is_none());
+         let restored: RestoreConfig = serde_json::from_str(config).unwrap();
+@@ -779,7 +905,11 @@ mod tests {
+         mvm_core::spawn_scope::pretend_mechanism_present(&mut env, scratch.path()).unwrap();
+         let scope = scratch.path().join("spawn-scope");
+         std::fs::write(&scope, b"old.scope").unwrap();
+-        let io = FirecrackerIO::new(scratch.path().join("fc.socket")).bounded_by(RestoreBound {
++        let io = FirecrackerIO::new(
++            scratch.path().join("fc.socket"),
++            scratch.path().to_path_buf(),
++        )
++        .bounded_by(RestoreBound {
+             machine_id: "restored-vm".into(),
+             cpu_grant: None,
+         });
+diff --git a/crates/mvm-backends/src/fc/snapshot.rs b/crates/mvm-backends/src/fc/snapshot.rs
+index d29aad4782615b8c2c3068ce3f510c361f132bdb..b09bc162d7c27c42e9faae528d1dd67fdbe5a4eb 100644
+--- a/crates/mvm-backends/src/fc/snapshot.rs
++++ b/crates/mvm-backends/src/fc/snapshot.rs
+@@ -59,11 +59,11 @@ pub fn warm_restore_instance_from_path(
+ 
+     let abs_vms = abs_vms_dir();
+     let vm_dir = format!("{}/{name}", abs_vms.trim());
+-    // The restore finds the state dir as the socket's parent, so it needs the
+-    // socket there rather than in the short fallback namespace.
++    // Preserve the warm-restore endpoint's in-state socket restriction. State
++    // ownership is carried separately rather than inferred from the socket.
+     super::ensure_fc_sockets_in_state_dir(&vm_dir, "a Firecracker warm restore")?;
+     let socket = std::path::PathBuf::from(format!("{vm_dir}/fc.socket"));
+-    let io = FirecrackerIO::new(socket);
++    let io = FirecrackerIO::new(socket, std::path::PathBuf::from(&vm_dir));
+ 
+     guarded_load_resume(&io, std::path::Path::new(snapshot_dir))
+         .with_context(|| format!("warm-restore of '{name}' from {snapshot_dir}"))?;
+diff --git a/crates/mvm-client/src/local.rs b/crates/mvm-client/src/local.rs
+index 83b98f6ed40b2a7532834db80770315a802952c4..9c7c90a7d81252276ac05eaf72aeabe5f4e8e1f6 100644
+--- a/crates/mvm-client/src/local.rs
++++ b/crates/mvm-client/src/local.rs
+@@ -217,7 +217,10 @@ impl LocalBackend {
+             .map_err(|e| backend_err(format!("VM {vm_name:?} is not running: {e:#}")))?;
+         mvm_runtime::microvm::ensure_fc_sockets_in_state_dir(&vm_dir, "a sealed snapshot")
+             .map_err(|e| backend_err(format!("{e:#}")))?;
+-        Ok(Box::new(FirecrackerIO::new(firecracker_socket(&vm_dir))))
++        Ok(Box::new(FirecrackerIO::new(
++            firecracker_socket(&vm_dir),
++            std::path::PathBuf::from(&vm_dir),
++        )))
+     }
+ 
+     /// Warm-resume through the backend's live-memory `warm_start` path: mint a
+@@ -583,7 +586,11 @@ fn signal_within<S: PostRestoreSignal + Send + 'static>(
+ fn stop_interrupted_admission(name: &str) {
+     let stop = || -> anyhow::Result<()> {
+         let vm_dir = mvm_runtime::microvm::resolve_running_vm_dir(name)?;
+-        FirecrackerIO::new(firecracker_socket(&vm_dir)).teardown_paused()
++        FirecrackerIO::new(
++            firecracker_socket(&vm_dir),
++            std::path::PathBuf::from(&vm_dir),
++        )
++        .teardown_paused()
+     };
+     let _ = refuse_resume(
+         name,
+diff --git a/crates/mvm-runtime/src/vm/instance_snapshot.rs b/crates/mvm-runtime/src/vm/instance_snapshot.rs
+index bc96e04636224641aa622e18332f3cc10cc8e554..19630bd3d2cf3ae289a15ccd992e5b393e24b09c 100644
+--- a/crates/mvm-runtime/src/vm/instance_snapshot.rs
++++ b/crates/mvm-runtime/src/vm/instance_snapshot.rs
+@@ -1854,7 +1854,7 @@ mod tests {
+         boot_live_source_vm(&images, &src_dir, &rootfs_copy).expect("boot source FC VM");
+ 
+         let src_sock = src_dir.join("fc.socket");
+-        FirecrackerIO::new(src_sock)
++        FirecrackerIO::new(src_sock, src_dir.clone())
+             .create_snapshot(&snap_dir)
+             .expect("create_snapshot on source VM");
+         assert!(
+@@ -1869,7 +1869,7 @@ mod tests {
+         kill_live_vm(&src_dir);
+ 
+         // Time the warm restore — this is the number this test exists to produce.
+-        let dest_io = FirecrackerIO::new(dest_dir.join("fc.socket"));
++        let dest_io = FirecrackerIO::new(dest_dir.join("fc.socket"), dest_dir.clone());
+         let t = std::time::Instant::now();
+         guarded_load_resume(&dest_io, &snap_dir).expect("warm restore must resume");
+         let ms = t.elapsed().as_millis();
+@@ -1942,7 +1942,7 @@ mod tests {
+         std::thread::sleep(std::time::Duration::from_secs(1));
+ 
+         // Capture a full snapshot into the parent dir (the pool's asset).
+-        let src_io = FirecrackerIO::new(parent_sock);
++        let src_io = FirecrackerIO::new(parent_sock, parent_dir.clone());
+         src_io
+             .create_snapshot(&parent_dir)
+             .expect("create snapshot on source VM");
+@@ -1965,7 +1965,7 @@ mod tests {
+         crate::microvm::stop_vm(&parent_id).ok();
+ 
+         // Time the warm-pool claim: fresh Firecracker + snapshot load + resume.
+-        let io = FirecrackerIO::new(child_dir.join("fc.socket"));
++        let io = FirecrackerIO::new(child_dir.join("fc.socket"), child_dir.clone());
+         let t = std::time::Instant::now();
+         guarded_load_resume(&io, &child_dir).expect("warm claim restore must resume");
+         let claim_ms = t.elapsed().as_millis();
+diff --git a/crates/mvm-runtime/src/vm/reconcile.rs b/crates/mvm-runtime/src/vm/reconcile.rs
+index 553a1b7924b46c9aaf90d425fa9c3f387198314c..4351ba9784649651d842036a8bce776cee2c79e4 100644
+--- a/crates/mvm-runtime/src/vm/reconcile.rs
++++ b/crates/mvm-runtime/src/vm/reconcile.rs
+@@ -415,7 +415,7 @@ pub type StopVmm = fn(&Path) -> anyhow::Result<()>;
+ /// only if it is the Firecracker serving this state directory's API socket.
+ fn stop_firecracker_in(state_dir: &Path) -> anyhow::Result<()> {
+     use crate::vm::instance_snapshot::{FirecrackerIO, SnapshotIO};
+-    FirecrackerIO::new(state_dir.join("fc.socket")).teardown_paused()
++    FirecrackerIO::new(state_dir.join("fc.socket"), state_dir.to_path_buf()).teardown_paused()
+ }
+ 
+ /// Real-filesystem [`ReconcileActions`] rooted at the same `vms` dir.
