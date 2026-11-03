@@ -1,0 +1,22 @@
+    Finished `release` profile [optimized] target(s) in 0.19s
+     Running tests/receipt_send.rs (/var/tmp/spiralcore-mvm-service-20261102/target/release/deps/receipt_send-f60d082e3183d0f9)
+
+running 3 tests
+test dropping_send_permit_releases_queue_credits_but_retains_attempt_rate_history ... ok
+test reserved_receipt_send_survives_other_broker_work_without_reserving_again ... ok
+test reserved_send_rechecks_revocation_cancellation_expiry_and_own_clock ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/service_object.rs (/var/tmp/spiralcore-mvm-service-20261102/target/release/deps/service_object-d6d27e3495467491)
+
+running 6 tests
+test shutdown_fences_a_dequeued_object_proof ... ok
+test call_expiring_after_object_work_cannot_prepare_reply ... ok
+test admitted_cast_is_not_an_object_protocol_call ... ok
+test incoming_policy_replaced_after_object_work_cannot_prepare_reply ... ok
+test expired_or_replaced_policy_cannot_reuse_an_object_proof ... ok
+test admitted_object_calls_use_shared_core_and_exact_readback ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+
