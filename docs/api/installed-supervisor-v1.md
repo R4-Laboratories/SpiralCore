@@ -10,6 +10,10 @@ canonical wire and signed admission. B6b plaintext/tail accounting remains open.
 
 ```rust
 pub struct InstalledConfig { /* validated private fixed profile */ }
+impl InstalledConfig {
+    pub fn native_profile() -> Self;
+    pub fn profile_hash(&self) -> [u8; 32];
+}
 pub struct InstalledSupervisor { /* non-Clone; private budget+authority */ }
 impl InstalledSupervisor {
     pub fn start(owner: InstallationOwner, config: InstalledConfig)
@@ -38,6 +42,13 @@ one epoch, create exactly one installed Shared, and never restart/rebind it.
 Allocation/unwind after begin retains Active; Drop does not repair it. Config
 retains current2links/2frame slots/524288 serialized bytes and two fixed worker
 grants of1vCPU/1024MiB each. It does not create a second plaintext quota.
+
+The initial config exposes only `native_profile`, not caller-selected ceilings.
+Its profile hash is SHA-256 of ASCII `spiralcore/installed-profile/v1\0` followed
+by eight big-endian u64 values:2links,2frame slots,524288 serialized bytes,
+1tenant,262144 maximum frame bytes,2workers,1guest vCPU per worker and1024guest
+MiB per worker. Tenant transport limits equal the host limits. This is a local
+provisioning identity, not a credential or cryptographic validation claim.
 
 Public `HostTransportBudget::new` remains independent/orchestrator-scoped.
 Only this private factory can attach installed authority. A cloned installed
