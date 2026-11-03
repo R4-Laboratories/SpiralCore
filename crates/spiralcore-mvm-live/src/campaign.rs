@@ -1,5 +1,6 @@
 //! Persistent public-fixture transfers through real canonical mailbox streams.
 mod canonical;
+mod reconciliation;
 mod session;
 use crate::{
     Result,
