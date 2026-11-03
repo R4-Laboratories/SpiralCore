@@ -322,8 +322,17 @@ record 22 host cells (11 before/after pairs) and three additional native cells.
   safe half-close and Darwin shutdown recovery. [Six native cells](../network/duplex-relay-results-2026-11-03.md)
   retain 54 exact publications/readbacks, CPU costs and final seven-client CI.
   This does not implement endpoint retry or complete C8.
-- [ ] C8 both-peer event handling, cached Reply replay and acknowledgment-state
-  retention remain next. Automatic post-send retry is still blocked.
+- [x] C8 bounded endpoint portion: retained current receipt/Reply/ACK progress,
+  FIFO waiting, authenticated Late/Duplicate handling and exact receiver cached
+  Reply replay. [PR #60](https://github.com/R4-Laboratories/SpiralCore/pull/60)
+  and its [recorded results](../network/mailbox-session-events-results-2026-11-03.md)
+  retain 22 matched host cells, four native cells, all losses and scoped tests.
+  An incomplete receiver fences before another socket read; pipeline one and
+  the 2,048-Call guard remain. This is not full C8 completion.
+- [ ] C8 recovery portion: bounded idle receive, original-identity retransmission,
+  uncertain-send/ACK reconciliation, lost-event and direct/relayed duplicate
+  recovery remain before automatic post-send retry. No reconnect/resume or new
+  request sequence is implicitly permitted by the delivered event loop.
 - [ ] C9/C10 autonomous idle expiry, production-retention cycles and same-owner
   native sessions beyond 2,048 Calls remain unexecuted.
 

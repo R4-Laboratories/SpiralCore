@@ -1,0 +1,557 @@
+diff --git a/crates/spiralcore-mvm-adapter/src/receipt.rs b/crates/spiralcore-mvm-adapter/src/receipt.rs
+index deb9757..f413acc 100644
+--- a/crates/spiralcore-mvm-adapter/src/receipt.rs
++++ b/crates/spiralcore-mvm-adapter/src/receipt.rs
+@@ -493,0 +494,13 @@ impl ReceiptTracker {
++        self.observe_registered_application_reply(binding, encoded, now)?
++            .ok_or(ServiceError::Unauthorized)
++    }
++
++    /// Authenticate a Reply and observe its unique registered request, if any.
++    /// Unknown requests allocate no state. Known semantic mismatches, expiry,
++    /// conflicts and verification failures remain errors, never `None`.
++    pub fn observe_registered_application_reply(
++        &mut self,
++        binding: &MailboxBinding,
++        encoded: &[u8],
++        now: ServiceTime,
++    ) -> Result<Option<SendHandle>> {
+@@ -516 +529,19 @@ impl ReceiptTracker {
+-            let id = matching.next().ok_or(ServiceError::Unauthorized)?;
++            let Some(id) = matching.next() else {
++                // Do not misclassify a known but invalid Reply as an unknown
++                // request. Shared correlation alone is permitted when another
++                // complete match exists; this guard applies only on no match.
++                let known = self.entries.values().any(|entry| {
++                    entry.header.kind == MailboxMessageKind::Call
++                        && header.tenant == entry.header.tenant
++                        && header.authorization_domain == entry.header.authorization_domain
++                        && header.sender == entry.header.recipient
++                        && header.recipient == entry.header.sender
++                        && (header.correlation_id == entry.header.correlation_id
++                            || header.causation_id.as_bytes() == entry.header.message_id.as_bytes())
++                });
++                return if known {
++                    Err(ServiceError::Unauthorized)
++                } else {
++                    Ok(None)
++                };
++            };
+@@ -530 +561 @@ impl ReceiptTracker {
+-            Ok(entry.handle)
++            Ok(Some(entry.handle))
+diff --git a/crates/spiralcore-mvm-live/src/campaign/canonical.rs b/crates/spiralcore-mvm-live/src/campaign/canonical.rs
+index a2c9e8b..e5f6675 100644
+--- a/crates/spiralcore-mvm-live/src/campaign/canonical.rs
++++ b/crates/spiralcore-mvm-live/src/campaign/canonical.rs
+@@ -2 +2 @@
+-use super::session::{PendingCall, SessionError};
++use super::session::{ExchangeDeadline, PendingCall, SessionError};
+@@ -13,2 +13,2 @@ use spiralcore_mvm_adapter::{
+-        CallStatus, ControlReserve, HostBudget, LocalMailboxService, MailboxBinding, ServiceLimits,
+-        ServiceTime,
++        CallStatus, ControlReserve, HostBudget, LocalMailboxService, MailboxBinding, ServiceError,
++        ServiceLimits, ServiceTime,
+@@ -36,0 +37 @@ pub(super) struct Session {
++    receiver_incomplete: bool,
+@@ -136,0 +138 @@ impl Session {
++                receiver_incomplete: false,
+@@ -227 +228,0 @@ impl Session {
+-        let mut admitted = false;
+@@ -229 +230,7 @@ impl Session {
+-        for _ in 0..2 {
++        while self
++            .pending
++            .as_ref()
++            .ok_or(SessionError::StreamFenced)?
++            .events_received()
++            < 16
++        {
+@@ -230,0 +238,4 @@ impl Session {
++            self.pending
++                .as_mut()
++                .ok_or(SessionError::StreamFenced)?
++                .receive_event()?;
+@@ -235,4 +246,8 @@ impl Session {
+-                    let ReceiptObservation::Verified(receipt) =
+-                        self.tracker.take_receipt(&self.outgoing, &send, now)?
+-                    else {
+-                        return Err("missing authenticated Call admission".into());
++                    let receipt = match self.tracker.take_receipt(&self.outgoing, &send, now)? {
++                        ReceiptObservation::Verified(receipt) => receipt,
++                        // An authenticated duplicate or earlier retained
++                        // observation need not provide a new current receipt.
++                        ReceiptObservation::Pending => return Ok(None),
++                        ReceiptObservation::Expired => {
++                            return Err(SessionError::Service(ServiceError::Expired).into());
++                        }
+@@ -240,7 +255,4 @@ impl Session {
+-                    if !matches!(
+-                        receipt.receipt.outcome,
+-                        DeliveryOutcome::AcceptedEphemeral | DeliveryOutcome::Duplicate
+-                    ) {
+-                        return Err("Call admission refused".into());
+-                    }
+-                    admitted = true;
++                    self.pending
++                        .as_mut()
++                        .ok_or(SessionError::StreamFenced)?
++                        .observe_receipt(receipt.receipt.outcome)?;
+@@ -252,9 +264,28 @@ impl Session {
+-                    if accepted.receipt.outcome != DeliveryOutcome::AcceptedEphemeral {
+-                        return Err("Reply admission refused".into());
+-                    }
+-                    self.tracker
+-                        .observe_application_reply(&self.incoming, &bytes, now)?;
+-                    let CallStatus::Replied(Some(payload)) =
+-                        self.service.poll_call(&self.outgoing, &call, now)?
+-                    else {
+-                        return Err("Reply did not complete admitted Call".into());
++                    let current = match accepted.receipt.outcome {
++                        // This authenticated negative disposition contributes
++                        // no current facts, but still gets its actual receipt.
++                        DeliveryOutcome::Late => false,
++                        DeliveryOutcome::AcceptedEphemeral | DeliveryOutcome::Duplicate => {
++                            match self.tracker.observe_registered_application_reply(
++                                &self.incoming,
++                                &bytes,
++                                now,
++                            )? {
++                                Some(observed) => self
++                                    .pending
++                                    .as_mut()
++                                    .ok_or(SessionError::StreamFenced)?
++                                    .observe_reply(observed, &bytes)?,
++                                // A previously Late identity can replay as
++                                // Duplicate without a registered request.
++                                None if accepted.receipt.outcome == DeliveryOutcome::Duplicate => {
++                                    false
++                                }
++                                None => {
++                                    return Err(
++                                        SessionError::Service(ServiceError::Unauthorized).into()
++                                    );
++                                }
++                            }
++                        }
++                        _ => return Err("Reply admission refused".into()),
+@@ -262,2 +293 @@ impl Session {
+-                    reply = Some(Frame::decode(&payload)?);
+-                    Ok(Some((ack, now)))
++                    Ok(Some((ack, current)))
+@@ -268 +298 @@ impl Session {
+-            if let Some((ack, _)) = acknowledgment {
++            if let Some((ack, current)) = acknowledgment {
+@@ -271,0 +302,6 @@ impl Session {
++                if current {
++                    self.pending
++                        .as_mut()
++                        .ok_or(SessionError::StreamFenced)?
++                        .invoke_reply_ack()?;
++                }
+@@ -272,0 +309,43 @@ impl Session {
++                if current {
++                    self.pending
++                        .as_mut()
++                        .ok_or(SessionError::StreamFenced)?
++                        .sent_reply_ack()?;
++                }
++            }
++            if self
++                .pending
++                .as_ref()
++                .ok_or(SessionError::StreamFenced)?
++                .ready_to_complete()
++            {
++                // Observation readiness can precede FIFO delivery. Polling
++                // Pending consumes nothing; keep receiving the missing event.
++                reply = broker.with_time(|_, now| -> Result<_> {
++                    self.pending
++                        .as_ref()
++                        .ok_or(SessionError::StreamFenced)?
++                        .remaining(now)?;
++                    match self.service.poll_call(&self.outgoing, &call, now)? {
++                        CallStatus::Pending => Ok(None),
++                        CallStatus::Replied(Some(payload)) => Ok(Some(Frame::decode(&payload)?)),
++                        CallStatus::Replied(None) => {
++                            Err(SessionError::Service(ServiceError::State).into())
++                        }
++                        CallStatus::TimedOut => {
++                            Err(SessionError::Service(ServiceError::Expired).into())
++                        }
++                        CallStatus::Cancelled => {
++                            Err(SessionError::Service(ServiceError::Cancelled).into())
++                        }
++                        CallStatus::Unavailable => {
++                            Err(SessionError::Service(ServiceError::Unavailable).into())
++                        }
++                        CallStatus::ShuttingDown => {
++                            Err(SessionError::Service(ServiceError::ShuttingDown).into())
++                        }
++                    }
++                })?;
++                if reply.is_some() {
++                    break;
++                }
+@@ -275,4 +354 @@ impl Session {
+-        if !admitted {
+-            return Err("missing Call destination receipt".into());
+-        }
+-        let reply = reply.ok_or("missing application Reply")?;
++        let reply = reply.ok_or(SessionError::EventLimit)?;
+@@ -293 +369,8 @@ impl Session {
+-        let bytes = stream.receive(cancel, Instant::now() + CALL_TIMEOUT)?;
++        if self.receiver_incomplete {
++            return Err(SessionError::StreamFenced.into());
++        }
++        // This slice has no receiver resume: every incomplete invocation keeps
++        // its canonical state and fences before a subsequent frame is read.
++        self.receiver_incomplete = true;
++        let deadline = Instant::now() + CALL_TIMEOUT;
++        let bytes = stream.receive(cancel, deadline)?;
+@@ -297 +380 @@ impl Session {
+-        let (receipt, proof) = broker.with_time(|_, now| -> Result<_> {
++        let (receipt, proof, deadline) = broker.with_time(|_, now| -> Result<_> {
+@@ -311 +394,6 @@ impl Session {
+-            Ok((receipt, proof))
++            let deadline = ExchangeDeadline::new(deadline, proof.header().expires_at_unix_ms, now)?;
++            Ok((receipt, proof, deadline))
++        })?;
++        let (permit, now) = broker.with_time(|_, now| -> Result<_> {
++            deadline.check(now)?;
++            Ok((receipt.reserve_send(cancel, now)?, now))
+@@ -313,2 +400,0 @@ impl Session {
+-        let (permit, now) = broker
+-            .with_time(|_, now| -> Result<_> { Ok((receipt.reserve_send(cancel, now)?, now)) })?;
+@@ -316,0 +403 @@ impl Session {
++            deadline.check(now)?;
+@@ -325 +412,2 @@ impl Session {
+-        let (prepared, send, sent_at) = broker.with_time(|_, now| -> Result<_> {
++        let (prepared, encoded, send) = broker.with_time(|_, now| -> Result<_> {
++            deadline.check(now)?;
+@@ -344 +432,5 @@ impl Session {
+-            Ok((prepared, send, now))
++            Ok((prepared, encoded, send))
++        })?;
++        let sent_at = broker.with_time(|_, now| -> Result<_> {
++            deadline.check(now)?;
++            Ok(now)
+@@ -345,0 +438 @@ impl Session {
++        let mut sends = 1_u8;
+@@ -348,2 +441 @@ impl Session {
+-        // Strict single-Call sender sends the Reply receipt before its next Call.
+-        // Receiver idle wait is kept out of receiver processing CPU/wall metrics.
++        // Receiver idle waits stay outside processing CPU/wall intervals.
+@@ -354,19 +446,91 @@ impl Session {
+-        let remaining = broker.with_time(|_, now| -> Result<_> {
+-            u64::try_from(
+-                prepared
+-                    .header()
+-                    .expires_at_unix_ms
+-                    .checked_sub(now.unix_ms)
+-                    .ok_or("Reply deadline overflow")?,
+-            )
+-            .map_err(|_| "Reply already expired".into())
+-        })?;
+-        let ack = stream.receive(
+-            cancel,
+-            Instant::now() + Duration::from_millis(remaining).min(CALL_TIMEOUT),
+-        )?;
+-        let cpu = ProcessTime::now();
+-        let wall = Instant::now();
+-        broker.with_time(|_, now| -> Result<_> {
+-            if decode_envelope(&ack)?.encryption.key_id != self.control_key {
+-                return Err("expected provisioned Reply receipt key".into());
++        let mut acknowledged = false;
++        // The initial admitted Call is the first event of this exchange.
++        for _ in 1..16 {
++            let event = stream.receive(cancel, deadline.instant())?;
++            let cpu = ProcessTime::now();
++            let wall = Instant::now();
++            let key = decode_envelope(&event)?.encryption.key_id;
++            let repeat = broker.with_time(|_, now| -> Result<_> {
++                deadline.check(now)?;
++                if key == self.control_key {
++                    self.tracker.observe_receipt(&self.control, &event, now)?;
++                    match self.tracker.take_receipt(&self.outgoing, &send, now)? {
++                        ReceiptObservation::Pending => return Ok(None),
++                        ReceiptObservation::Expired => return Err(ServiceError::Expired.into()),
++                        ReceiptObservation::Verified(receipt) => {
++                            if !matches!(
++                                receipt.receipt.outcome,
++                                DeliveryOutcome::AcceptedEphemeral
++                                    | DeliveryOutcome::AcceptedDurable
++                                    | DeliveryOutcome::Duplicate
++                            ) {
++                                return Err(
++                                    SessionError::RemoteRefusal(receipt.receipt.outcome).into()
++                                );
++                            }
++                            if !self.service.acknowledge_reply(
++                                &self.outgoing,
++                                &receipt,
++                                &self.peer_key,
++                                now,
++                            )? {
++                                return Err(ServiceError::State.into());
++                            }
++                            acknowledged = true;
++                            return Ok(None);
++                        }
++                    }
++                }
++                if key != self.normal_key {
++                    return Err("unprovisioned incoming encryption key".into());
++                }
++                if sends >= 8 {
++                    return Err(SessionError::SendLimit.into());
++                }
++                // Authenticate and identify the cached current Reply BEFORE
++                // admitting a candidate: a new Call must not gain fresh state.
++                let cached = self
++                    .service
++                    .retry_reply_prepared(&self.incoming, &event, now)?
++                    .ok_or(ServiceError::State)?;
++                if encode_envelope(cached.envelope())? != encoded {
++                    return Err(ServiceError::Conflict.into());
++                }
++                let (accepted, receipt) =
++                    self.returns
++                        .admit(&mut self.service, &self.incoming, &event, now)?;
++                if accepted.receipt.outcome != DeliveryOutcome::Duplicate {
++                    return Err(ServiceError::State.into());
++                }
++                Ok(Some(receipt))
++            })?;
++            if let Some(receipt) = repeat {
++                let (permit, now) = broker.with_time(|_, now| -> Result<_> {
++                    deadline.check(now)?;
++                    Ok((receipt.reserve_send(cancel, now)?, now))
++                })?;
++                permit.send(stream, cancel, now)?;
++                // Receipt I/O may wait: recheck both canonical bindings and
++                // original lifetime before invoking the cached Reply send.
++                let (cached, now) = broker.with_time(|_, now| -> Result<_> {
++                    deadline.check(now)?;
++                    let cached = self
++                        .service
++                        .retry_reply_prepared(&self.incoming, &event, now)?
++                        .ok_or(ServiceError::State)?;
++                    let wire = encode_envelope(cached.envelope())?;
++                    if wire != encoded
++                        || self.tracker.register_send(
++                            &self.outgoing,
++                            &self.control,
++                            &self.peer_key,
++                            &wire,
++                            now,
++                        )? != send
++                    {
++                        return Err(ServiceError::Conflict.into());
++                    }
++                    Ok((cached, now))
++                })?;
++                sends += 1;
++                self.outgoing.send_prepared(&cached, stream, cancel, now)?;
+@@ -374,11 +538,3 @@ impl Session {
+-            self.tracker.observe_receipt(&self.control, &ack, now)?;
+-            let ReceiptObservation::Verified(receipt) =
+-                self.tracker.take_receipt(&self.outgoing, &send, now)?
+-            else {
+-                return Err("missing authenticated Reply admission".into());
+-            };
+-            if !self
+-                .service
+-                .acknowledge_reply(&self.outgoing, &receipt, &self.peer_key, now)?
+-            {
+-                return Err("Reply acknowledgment did not release cache".into());
++            meter.add(cpu.elapsed().as_micros(), wall.elapsed().as_micros())?;
++            if acknowledged {
++                break;
+@@ -386,3 +542,4 @@ impl Session {
+-            Ok(())
+-        })?;
+-        meter.add(cpu.elapsed().as_micros(), wall.elapsed().as_micros())?;
++        }
++        if !acknowledged {
++            return Err(SessionError::EventLimit.into());
++        }
+@@ -389,0 +547 @@ impl Session {
++        self.receiver_incomplete = false;
+@@ -677,0 +836,18 @@ mod pending_tests;
++
++#[cfg(test)]
++mod event_tests;
++
++#[cfg(test)]
++mod ack_tests;
++
++#[cfg(test)]
++mod limit_tests;
++
++#[cfg(test)]
++mod fifo_tests;
++
++#[cfg(test)]
++mod late_tests;
++
++#[cfg(test)]
++mod receiver_tests;
+diff --git a/crates/spiralcore-mvm-live/src/campaign/session.rs b/crates/spiralcore-mvm-live/src/campaign/session.rs
+index 287a134..9e45c68 100644
+--- a/crates/spiralcore-mvm-live/src/campaign/session.rs
++++ b/crates/spiralcore-mvm-live/src/campaign/session.rs
+@@ -2,0 +3 @@ use ed25519_dalek::VerifyingKey;
++use mvm_contract::protocol::mailbox::DeliveryOutcome;
+@@ -18,0 +20,3 @@ pub(super) enum SessionError {
++    EventLimit,
++    SendLimit,
++    RemoteRefusal(DeliveryOutcome),
+@@ -32,0 +37,57 @@ type Result<T> = std::result::Result<T, SessionError>;
++/// One receiver lifetime, fixed at authenticated admission. Neither a wall
++/// clock rollback nor replay can extend the original owner-monotonic bound.
++pub(super) struct ExchangeDeadline {
++    instant: std::time::Instant,
++    expiry: i64,
++    admitted_mono: u64,
++    deadline_mono: u64,
++}
++impl ExchangeDeadline {
++    pub(super) fn new(instant: std::time::Instant, expiry: i64, now: ServiceTime) -> Result<Self> {
++        let remaining = expiry.checked_sub(now.unix_ms).ok_or(ServiceError::Clock)?;
++        let remaining = u64::try_from(remaining)
++            .ok()
++            .filter(|value| *value > 0)
++            .ok_or(ServiceError::Expired)?;
++        let deadline_mono = now
++            .monotonic_ms
++            .checked_add(remaining)
++            .ok_or(ServiceError::Clock)?;
++        let signed_cap = std::time::Instant::now()
++            .checked_add(std::time::Duration::from_millis(remaining))
++            .ok_or(ServiceError::Clock)?;
++        let result = Self {
++            instant: instant.min(signed_cap),
++            expiry,
++            admitted_mono: now.monotonic_ms,
++            deadline_mono,
++        };
++        result.check(now)?;
++        Ok(result)
++    }
++    pub(super) fn instant(&self) -> std::time::Instant {
++        self.instant
++    }
++    pub(super) fn check(&self, now: ServiceTime) -> Result<()> {
++        if now.monotonic_ms < self.admitted_mono {
++            return Err(ServiceError::Clock.into());
++        }
++        if std::time::Instant::now() >= self.instant
++            || now.unix_ms >= self.expiry
++            || now.monotonic_ms >= self.deadline_mono
++        {
++            return Err(ServiceError::Expired.into());
++        }
++        Ok(())
++    }
++}
++
++#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
++pub(super) enum ReplyAckState {
++    #[default]
++    None,
++    Needed,
++    InvokedUncertain,
++    Sent,
++}
++
+@@ -45,0 +107,4 @@ pub(super) struct PendingCall {
++    events_received: u8,
++    receipt_outcome: Option<DeliveryOutcome>,
++    reply_wire: Option<Vec<u8>>,
++    reply_ack_state: ReplyAckState,
+@@ -65,0 +131,12 @@ impl PendingCall {
++            events_received: 0,
++            receipt_outcome: None,
++            reply_wire: None,
++            reply_ack_state: ReplyAckState::None,
++        }
++    }
++    pub(super) fn events_received(&self) -> u8 {
++        self.events_received
++    }
++    pub(super) fn receive_event(&mut self) -> Result<()> {
++        if self.events_received >= 16 {
++            return Err(SessionError::EventLimit);
+@@ -66,0 +144,71 @@ impl PendingCall {
++        self.events_received += 1;
++        Ok(())
++    }
++    pub(super) fn receipt_outcome(&self) -> Option<DeliveryOutcome> {
++        self.receipt_outcome
++    }
++    pub(super) fn observe_receipt(&mut self, outcome: DeliveryOutcome) -> Result<()> {
++        if !matches!(
++            outcome,
++            DeliveryOutcome::AcceptedEphemeral
++                | DeliveryOutcome::AcceptedDurable
++                | DeliveryOutcome::Duplicate
++        ) {
++            self.receipt_outcome = Some(outcome);
++            return Err(SessionError::RemoteRefusal(outcome));
++        }
++        self.receipt_outcome = Some(match (self.receipt_outcome, outcome) {
++            (Some(DeliveryOutcome::AcceptedDurable), _) => DeliveryOutcome::AcceptedDurable,
++            (Some(DeliveryOutcome::AcceptedEphemeral), DeliveryOutcome::Duplicate) => {
++                DeliveryOutcome::AcceptedEphemeral
++            }
++            _ => outcome,
++        });
++        Ok(())
++    }
++    pub(super) fn reply_wire(&self) -> Option<&[u8]> {
++        self.reply_wire.as_deref()
++    }
++    pub(super) fn reply_observed(&self) -> bool {
++        self.reply_wire().is_some()
++    }
++    /// Only the authenticated handle returned by the canonical tracker selects
++    /// current state. The service retains the charged plaintext Reply payload.
++    pub(super) fn observe_reply(&mut self, observed: SendHandle, wire: &[u8]) -> Result<bool> {
++        if Some(observed) != self.send {
++            return Ok(false);
++        }
++        if wire.is_empty() || wire.len() > spiralcore_mvm_adapter::MAX_ENVELOPE_BYTES {
++            return Err(ServiceError::Limit.into());
++        }
++        self.reply_wire = Some(wire.to_vec());
++        self.reply_ack_state = ReplyAckState::Needed;
++        Ok(true)
++    }
++    pub(super) fn reply_ack_state(&self) -> ReplyAckState {
++        self.reply_ack_state
++    }
++    pub(super) fn invoke_reply_ack(&mut self) -> Result<()> {
++        if self.reply_ack_state != ReplyAckState::Needed {
++            return Err(ServiceError::State.into());
++        }
++        self.reply_ack_state = ReplyAckState::InvokedUncertain;
++        Ok(())
++    }
++    pub(super) fn sent_reply_ack(&mut self) -> Result<()> {
++        if self.reply_ack_state != ReplyAckState::InvokedUncertain {
++            return Err(ServiceError::State.into());
++        }
++        self.reply_ack_state = ReplyAckState::Sent;
++        Ok(())
++    }
++    pub(super) fn ready_to_complete(&self) -> bool {
++        matches!(
++            self.receipt_outcome(),
++            Some(
++                DeliveryOutcome::AcceptedEphemeral
++                    | DeliveryOutcome::AcceptedDurable
++                    | DeliveryOutcome::Duplicate
++            )
++        ) && self.reply_observed()
++            && self.reply_ack_state() == ReplyAckState::Sent

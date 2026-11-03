@@ -1,0 +1,25 @@
+{
+  "qualified_after_commit": "5c41d6ac2d9b40e6eead62e201d5e9b020f96019",
+  "product_sha256": {
+    "receipt.rs": "f72d2f84a675cd7221dd94fa4a10c7d84331fb7c04a95d7200d782795d07c305",
+    "campaign/canonical.rs": "8540ea581d6b7e323b6502e945031cb187cdf47ead20a26eaa242fa8e0d8969c",
+    "campaign/session.rs": "8d8f27e50fe0a6dca43c317b26f8a3eeffce5ab2b60f6f060d442b2153010e13"
+  },
+  "after_executable_sha256": {
+    "host": "584395a60a7cf7c496e2119a89cd76a28850d0046a2813a4d6aee1ff81cc3d62",
+    "guest": "fa5b4566a11b7f8ce7ca30c9a6f83b824f6e0114916a54f4cc66455074024e18",
+    "broker_objects": "4109a318f859e9b7ddc71f32c3e3519d59d966f987c428ec1b2c0dd91f6dc1f3"
+  },
+  "before_host_campaign": {
+    "source": "91baf28efa56da94336d413ca8e912266079f654",
+    "broker_objects_sha256": "879111c94d8ed8753526758997e497ee4391b8893040b6ef1067068fe96309e5"
+  },
+  "before_native": {
+    "source": "62cb60424201d450350395224ecb7a2a98513549; production source matches fdfbd2f72276589e1c1c8ad8d4908b97f94e9647, which changes a test fixture only",
+    "host_sha256": "0b851e9df95cdfb1f7f999035b4e551707fd29ca3744d532041cb2bcadc991e6",
+    "guest_sha256": "c9fba260cbbbb16fb18d9b9bf7e0f87df26ceacdb8d5cab037699094c70b5431"
+  },
+  "build": "Rust 1.97.1, release locked; normal host features linux-host; guest --no-default-features --target x86_64-unknown-linux-gnu RUSTFLAGS=-C target-feature=+crt-static, no ELF INTERP; existing hardware-sha256 dependency features",
+  "source_custody": "qualified-source-sha256.txt verified before and after builds; protected mode-500 executable copies outside Cargo target, bin/SHA256SUMS checked again before runs",
+  "batch_bounds": "On Wick: timeout 1800 bash host-pairs.sh, then separately timeout 1800 bash native-linux.sh. Cooperative timeout is failure, not proof of joined teardown; stop and inspect only owned processes/records before any further native allocation."
+}

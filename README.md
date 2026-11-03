@@ -43,7 +43,7 @@ tracks**, not arbitrary encrypted packet traffic.
 macOS/HVF and Linux/Firecracker host paths; the default Linux build is the guest,
 and the `linux-host` feature selects the host. Native ephemeral mailbox-client
 tests have passed on Windows Server 2022/2025 x64 and Windows 11 ARM64 at the
-[current shared-broker source checkpoint](docs/network/evidence/2026-11-02-sustained-broker/qualification/platforms-final/README.md).
+[latest recorded mailbox-client checkpoint](docs/network/mailbox-session-events-results-2026-11-03.md).
 Windows private/durable object storage and packet attachment still need a port.
 A portable mailbox client does not establish a Windows MVM host. The current
 published MVM dependency has passed the recorded seven-platform contract run.
@@ -56,7 +56,7 @@ integration, owner access and final upstream contribution. The
 endpoint roles from candidate OS/version/architecture cells. Native execution,
 real WAN pairs and unavailable backend gates are tracked separately in
 [#46](https://github.com/R4-Laboratories/SpiralCore/issues/46) and
-[#47](https://github.com/R4-Laboratories/SpiralCore/issues/47). The [current canonical-service native report](docs/network/evidence/2026-11-02-mvm-service/native-ae12/README.md)
+[#47](https://github.com/R4-Laboratories/SpiralCore/issues/47). The [initial canonical-service native report](docs/network/evidence/2026-11-02-mvm-service/native-ae12/README.md)
 records **16 successful Linux/Firecracker and macOS/HVF sessions**, including
 one-guest/host and two-guest transfers, 32 successful guest boots and 72 exact
 keyless reboot readbacks. At the larger tier (14,851,384-byte objects), complete
@@ -103,25 +103,31 @@ host-process CPU** increases, respectively.
 
 The [duplex relay checkpoint](docs/network/duplex-relay-results-2026-11-03.md)
 adds independently progressing keyless directions and safe half-close handling,
-including a reproduced Darwin shutdown fix. Six Linux/Firecracker cells verified
-**54 publication operations and 54 additional keyless reboot readbacks**, with
-zero mismatches. The final two-MVM confirmation transfers the same eight target
-positions of **14,851,384 bytes** each; Combined additionally includes its runtime
-checkpoint and schema setup. Latest single-trial measurements:
+including a reproduced Darwin shutdown fix. The newer
+[mailbox event checkpoint](docs/network/mailbox-session-events-results-2026-11-03.md)
+retains current Call/Reply/receipt progress, handles duplicate and Late events,
+and replays the exact cached Reply without repeating object work. Failed receiver
+exchanges fence before another read. Four additional Linux/Firecracker cells
+verified **36 publication operations and 36 keyless reboot readbacks**, with
+zero mismatches. The same eight target positions are **14,851,384 bytes** each;
+Combined includes runtime checkpoint/schema setup. Latest single-trial results:
 
 | Arm | Logical mailbox traffic, both directions | Timed sender CPU | Full lifecycle |
 |---|---:|---:|---:|
-| Equally tuned whole zstd | 107.33 MB | 4.548 s | 8.850 s |
-| Combined | 62.54 MB | 2.968 s | 6.350 s |
+| Equally tuned whole zstd/raw | 107.30 MB | 4.384 s | 8.653 s |
+| Combined | 62.55 MB | 3.006 s | 6.386 s |
 
-The report defines timer exclusions and two-hop physical traffic. The earlier
-paired relay comparison also retains **9.92%/17.89% higher relay process CPU**
-for Combined/zstd. Independent progress is established; a relay CPU optimization
-is not. These local mixed cold/warm native observations do not qualify WAN or
-fleet capacity. Orchestrator transport credits remain separate from guest
-plaintext/cache budgets. Both-peer duplicate/late-event and acknowledgment
-recovery, sessions beyond the 2,048-Call guard, installed host ownership and
-negotiated pipelining remain in the [active plan](docs/plans/2026-11-03-persistent-mvm-service.md).
+The report defines timer exclusions and two-hop physical traffic. These local
+mixed cold/warm observations are **41.71% fewer bytes, 31.45% less timed sender
+CPU and 26.20% less lifecycle time** than the matched canonical zstd path. They
+do not qualify WAN or fleet capacity. Losses remain explicit: schema drift used
+0.64% fewer bytes but **18.85% more sender CPU and 12.22% more operation time**.
+The unrelated cold target still used about 31.3 MB of canonical traffic for
+14.85 MB of content. Twenty-two matched host cells also retain smaller Raw/zstd
+regressions. Orchestrator transport credits remain separate from guest plaintext/
+cache budgets. Automatic retry/resume, production-retention sessions beyond the
+2,048-Call guard, installed host ownership and negotiated pipelining remain in the
+[active plan](docs/plans/2026-11-03-persistent-mvm-service.md).
 
 ### Where SpiralCore sits in the network stack
 

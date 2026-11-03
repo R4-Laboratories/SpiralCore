@@ -1,4 +1,26 @@
-# C8 endpoint work in progress
+# Bounded canonical mailbox event checkpoint
+
+[Public report](../../mailbox-session-events-results-2026-11-03.md) ·
+[Full observations and losses](measurement-review.md) ·
+[Source/binary pins](execution-pins.json) · [Summary](summary.json).
+
+The reviewed `5c41d6a` source completed 22 matched host cells (192 publications
+and independent readbacks) and four native Linux/Firecracker cells (36
+publications and 36 extra keyless readbacks). Every length and byte comparison
+passed. Current native Combined/zstd: 62,547,228/107,299,202 logical bytes,
+3.005620/4.384472 seconds timed sender CPU and 6.385582/8.652877 seconds full
+lifecycle. These are local exploratory mixed sequences, not WAN or universal
+speedup claims. All individual losses and timer domains remain in the report.
+
+Exact-source release/Clippy, seven native client rows, isolated scoped coverage
+and independent reviews are recorded under `validation/`, `qualification/`,
+`coverage/` and `reviews/`. Coverage is 92.88% changed production and 94.50%
+across the three files; branches are unmapped. Both original measurement archive
+digests and all 73 members verified before deletion of only four successful
+owned disks totaling 1 GiB apparent length. Instrumented executables/profiles
+remain remote, separated from protected normal benchmark binaries.
+
+The following history preserves each functional RED and qualification boundary.
 
 RED source `8648e5dd` adds two real direct-stream regressions to product
 `fdfbd2f`. Both fail with `missing authenticated Call admission`: duplicate

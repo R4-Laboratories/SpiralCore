@@ -82,3 +82,52 @@ The guards refuse phase entry/completion after expiry; they do not preempt
 ongoing object work or guarantee time cannot pass during blocking I/O. Explicit
 resume, timer-driven request retransmission, full C8, >2,048 Calls, long retention,
 WAN and remaining release acceptance are not established by this source review.
+
+## Frozen receiver test-source review for PR 60
+
+Reviewed on 2026-11-03 at checkout HEAD
+`5c41d6ac2d9b40e6eead62e201d5e9b020f96019`. Verdict: **APPROVED; no blocking
+test-source or Rust findings in the frozen six-test receiver fixture.** The
+three product hashes above remain unchanged, and final source approval for
+PR 60 stands with this completed test identity:
+
+```text
+733ca0744148a7a84dcc822189a9c5a249f03cbe61e9f65fad16bdef8896a63d  crates/spiralcore-mvm-live/src/campaign/canonical/receiver_tests.rs
+```
+
+The six cases cover exact cached replay, different-Call refusal, ninth-send
+refusal with eight Replies retained, earlier-control isolation across two Calls,
+positive acknowledgment after the eighth Reply, and 16-event saturation using
+older authenticated controls. The last two are additional GREEN qualification
+cases; they are not represented as pre-implementation RED evidence.
+
+The negative proofs keep their triggering inputs valid and canonically signed.
+Repeated Calls reuse the exact prepared request; replayed Replies are compared
+byte-for-byte and retain the original sequence. Older controls are genuine
+retained ACKs from the first completed exchange, not malformed or unknown frames.
+The send-ceiling test checks typed SendLimit, eight observed Replies and no extra
+response to the refused next request. The positive boundary independently proves
+that an eligible current ACK is still accepted at that ceiling and releases the
+cache exactly once.
+
+For event saturation, the second Call is event one and fifteen exact older
+controls consume its remaining allowance. The test checks typed EventLimit,
+one prior completed Call, the current Reply cache retained with exact bytes and
+sequence, no new application admission, and directional frame/byte totals with
+no receipt-of-receipt response. Error cases attempt another `handle` while the
+transport is still owned; typed StreamFenced, unchanged actual SocketIo read-call
+count and unchanged stream counters establish the before-read fence.
+
+Worker cleanup is not the cause of the expected negative outcome. The harness
+first waits for autonomous receiver completion with a bounded watchdog; only
+then does it shut down the raw owned handles and join. Typed error, cache and
+counter assertions occur after that join. Its Drop guard also wakes and joins
+the receiver on sender error or assertion unwind. Capacity remains the signed
+one-outstanding-Call fixture, and object-ledger behavior is not mislabeled as a
+dedicated object-execution counter.
+
+This was source review only, with no new tests, builds or product edits. The
+implementation owner reports 57 library tests, 92 all-target release tests and
+strict Clippy passing; those execution records remain separate from this review.
+The fixture does not by itself establish every receiver send-failure/deadline
+injection, explicit resume, timer-driven retry or full C8/release acceptance.
