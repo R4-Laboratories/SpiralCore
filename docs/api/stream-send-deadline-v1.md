@@ -106,3 +106,12 @@ until little original lifetime remains, force write backpressure and show refusa
 under that original cap. Include a blocked canonical ACK/receiver replay write
 under its own original exchange deadline. A pre-invocation expiry-only test is insufficient.
 Independent exact-source review and affected release gates follow RED/GREEN.
+
+Portable fixture phase clarification: obtain the ordinary canonical authorized
+frame and route before starting a short transport-only deadline. Then connect
+and exercise the actual channel writer with exact partial-byte and fencing
+assertions. Software/debug cryptography may consume a short deadline before I/O;
+that correct refusal does not qualify partial-write progress. Full service-path
+deadline qualification remains in the live Call/ACK/Reply writer matrix, where
+the original signed lifetime still includes authorization work. This changes no
+product deadline or authorization check and admits no arbitrary raw frame.

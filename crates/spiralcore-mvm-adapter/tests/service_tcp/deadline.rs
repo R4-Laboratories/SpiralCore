@@ -193,10 +193,19 @@ fn fixed_view_caps_authorized_blocked_prefix_and_partial_payload_under_original_
         let call = Call::new();
         let (stream, state) = ready(Duration::from_secs(2));
         state.lock().unwrap().stall_after = Some(8 + prefix + payload);
+        let limits = call.limits();
+        let cancel = CancellationToken::default();
+        // Call::new already obtained this canonical authorized frame/route.
+        // Start the short I/O cap after that CPU work, so portable debug crypto
+        // cannot consume the intended partial-write exercise before connect.
         let deadline = Instant::now() + Duration::from_millis(100);
         let before = stream.before(deadline);
         let started = Instant::now();
-        assert_eq!(call.send(&before), Err(ServiceError::Unavailable));
+        let mut channel = before.connect(&call.route, limits, &cancel).unwrap();
+        assert_eq!(
+            channel.try_send(&call.frame, &cancel),
+            Err(TransportError::Partitioned)
+        );
         assert!(Instant::now() >= deadline);
         assert!(
             started.elapsed() < Duration::from_secs(1),
