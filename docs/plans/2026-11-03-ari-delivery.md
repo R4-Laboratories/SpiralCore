@@ -53,6 +53,15 @@ large-object/control scheduling, followed by the FlowMux/access mappings. Run
 WAN/platform acceptance and capacity qualification on that integrated source;
 earlier component and transfer measurements retain their original scope.
 
+Independent endpoint work proceeds alongside that critical path: the
+[FlowMux mapping contract](../api/mvm-flowmux-v1.md) defines the admitted
+cooperating-peer boundary, and the
+[Windows private storage contract](../api/windows-storage-v1.md) defines the
+initial native NTFS client/gateway profile. Their implementations require
+independent review and executed endpoint/native tests before those delivery
+gates close. The installed launcher and the final integrated source own the
+shared lifecycle and acceptance requirements.
+
 Use Rust product and measurement code, one explicitly versioned protocol/core,
 exact lengths and byte readbacks. Record actual traffic in both directions,
 setup, sender/receiver CPU, verified end-to-end time, lifecycle, memory, cache
