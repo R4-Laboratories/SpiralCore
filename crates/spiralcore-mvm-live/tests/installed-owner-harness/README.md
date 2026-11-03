@@ -19,7 +19,7 @@ even with CLOEXEC. The extra inherited holder correctly causes a nonblocking
 Busy refusal. Serial execution removes that unrelated test interference; it
 does not relax the product's refusal semantics or test assertions.
 
-Four private fault-boundary unit tests and nine lifecycle entries execute on
+Four private fault-boundary unit tests and eleven lifecycle entries execute on
 Linux; macOS adds the extended-ACL regression. One lifecycle entry is the
 subprocess helper, not a separate acceptance scenario. The tests use real
 processes and locks but boot no guests. Actual worker/VMM lease custody and

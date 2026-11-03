@@ -93,6 +93,69 @@ fn handoff_exports_exact_current_state_and_pins_original_holder_until_final_clos
 }
 
 #[test]
+fn handoff_freshly_refuses_changed_generation_phase_corruption_and_replaced_root() {
+    for fault in ["generation", "phase", "checksum", "root"] {
+        let fixture = Fixture::new();
+        let mut owner = InstallationOwner::initialize(&fixture.root, key()).unwrap();
+        let epoch = owner.begin().unwrap();
+        let lease = HolderLease::acquire(&fixture.root, key(), epoch.generation()).unwrap();
+        let probe = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .open(fixture.root.join("holders.lock"))
+            .unwrap();
+        // Only the acquired guard retains SH during the refusal checks.
+        drop(owner);
+        let mut state = fixture.root.join("state.bin");
+        let mut record = fs::read(&state).unwrap();
+        match fault {
+            "generation" => {
+                record[16..24]
+                    .copy_from_slice(&epoch.generation().checked_add(1).unwrap().to_be_bytes());
+                checksum(&mut record);
+                fs::write(&state, &record).unwrap();
+            }
+            "phase" => {
+                record[8] = 0;
+                checksum(&mut record);
+                fs::write(&state, &record).unwrap();
+            }
+            "checksum" => {
+                record[175] ^= 1;
+                fs::write(&state, &record).unwrap();
+            }
+            "root" => {
+                let saved = fixture.base.join("saved-installation");
+                fs::rename(&fixture.root, &saved).unwrap();
+                fs::DirBuilder::new()
+                    .mode(0o700)
+                    .create(&fixture.root)
+                    .unwrap();
+                state = saved.join("state.bin");
+            }
+            _ => unreachable!(),
+        }
+        assert!(lease.prepare_handoff().is_err(), "{fault}");
+        assert_eq!(fs::read(state).unwrap(), record, "{fault}");
+        // SAFETY: independent original holder FD; refusal must not drop SH.
+        let blocked = unsafe { libc::flock(probe.as_raw_fd(), libc::LOCK_EX | libc::LOCK_NB) };
+        assert_eq!(blocked, -1, "{fault}");
+        assert_eq!(
+            std::io::Error::last_os_error().raw_os_error(),
+            Some(libc::EWOULDBLOCK),
+            "{fault}"
+        );
+        drop(lease);
+        // SAFETY: the same nonblocking probe after the last guard closes.
+        assert_eq!(
+            unsafe { libc::flock(probe.as_raw_fd(), libc::LOCK_EX | libc::LOCK_NB) },
+            0,
+            "{fault}"
+        );
+    }
+}
+
+#[test]
 fn exclusive_owner_issues_one_epoch_and_finishes_after_last_holder_exits() {
     let fixture = Fixture::new();
     let mut owner = InstallationOwner::initialize(&fixture.root, key()).unwrap();
