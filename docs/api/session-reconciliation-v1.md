@@ -229,6 +229,39 @@ whole-invocation/lifecycle time separately; idle wait is excluded only from the
 already defined receiver processing interval, not end-to-end time. Report failures
 and partial counters; do not infer energy or a performance improvement.
 
+The JSON session report is explicitly `session_report: "canonical-session-report/v2"`.
+Rename static expectations to `normal_frames_per_call` and
+`normal_encrypted_destination_receipts_per_call`; retain their normal values, never
+label them actual traffic. Actual bytes/frames remain the transport observations.
+Add checked-u64 `recovery` counters with these event meanings:
+
+| Field | Increment |
+| --- | --- |
+| idle_outcomes | Each actual opt-in ReceiveOutcome::Idle, including one followed by refusal |
+| commands_consumed | A queued explicit command is actually dequeued, even if preparation later fails |
+| call_retry_invocations | Invocation burned immediately before the authoritative retry call, including pre-connect/write failure |
+| historical_control_events | Authenticated earlier receipt controls handled in the inactive preamble; normal historical Calls use the receipt counters below |
+| historical_receipt_invocations | Immediately before invoking an actual historical-Call Duplicate receipt send |
+| historical_receipts_sent | That send returns success; this is not proof of remote observation |
+| cached_reply_retry_invocations | Immediately before invoking an exact cached Reply resend |
+| reply_send_invocations | All receiver Reply invocations, initial plus cached; cached retries are a subset |
+| receiver_failed_invocations | Each receiver handle invocation returning Err, including cancellation after preamble-only work |
+
+Add cumulative `receiver_processing { cpu_us, wall_us, segments }`: begin an owned
+Session phase only after a complete incoming frame, finish before the next receive
+wait or success, and finish any outstanding phase on Err in the handle wrapper.
+Use one Option<(ProcessTime, Instant)>, not an Arc/global clock/thread. Every phase
+includes its authentication, reservation, object and outbound-send work as applicable,
+including preamble and failed work; socket receive waits/partial reads are excluded
+from this processing domain but remain lifecycle/transport observations. Checked
+duration conversion/addition refuses overflow rather than truncating/resetting.
+Per-Handled meters include preceding preamble work when an application follows;
+they overlap the cumulative domain and must not be added to it. Snapshot only after
+phase closure. The lost-Call-receipt fixture's second-handle Cancelled cleanup must
+retain one historical receipt invocation/success, one failed invocation and three
+cumulative segments across both handles, despite no second Handled. These are
+processing observations, not lifecycle, energy or comparative CPU performance claims.
+
 This slice covers an incomplete caller missing its Call receipt or Reply, and
 lost Reply-ACK while the Call receipt is also missing. It does not cover ACK loss
 after caller completion, general receiver resume, closed-stream recovery, automatic

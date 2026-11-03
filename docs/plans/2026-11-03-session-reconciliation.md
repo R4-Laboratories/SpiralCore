@@ -143,6 +143,17 @@ Receiver preamble processing must appear in accumulated receiver work and failed
 observations; exclude only defined idle wait from processing CPU/wall. Whole
 lifecycle and actual recovery control traffic remain visible.
 
+Before runtime acceptance, version session JSON as canonical-session-report/v2;
+rename fixed four-frame/two-receipt expectations with normal_ prefixes. Add the
+contract's checked recovery counters and cumulative receiver_processing domain.
+Wrap handle/handle_inner so one owned post-frame phase closes before receive/
+success and on error; include preamble/failed processing even without Handled.
+Extend the existing semantic loss fixture: one historical receipt invocation and
+success, one Cancelled failed receiver invocation, three cumulative segments.
+Test checked overflow/no interval double-counting and distinguish cumulative from
+overlapping per-Handled rows; record actual wire counters separately. No new
+performance inference follows from these metrics; lifecycle stays independently measured.
+
 ## Deferred boundaries
 
 No recovery after caller completion when its final ACK is lost; that needs
