@@ -2,7 +2,9 @@
 
 use installed_supervisor_harness::{
     host_budget::HostTransportBudget,
-    installed_owner::{InstallationKey, InstallationOwner, OwnerError, Phase, Recovery},
+    installed_owner::{
+        HolderLease, InstallationKey, InstallationOwner, OwnerError, Phase, Recovery,
+    },
     installed_supervisor::{InstalledConfig, InstalledSupervisor},
 };
 use sha2::{Digest, Sha256};
@@ -132,4 +134,58 @@ fn close_refuses_cloned_admission_and_finish_preserves_ex_until_last_idle_clone_
     let successor = InstallationOwner::open(&fixture.root, key).unwrap();
     assert_eq!(successor.snapshot().unwrap().phase, Phase::Clean);
     assert_eq!(successor.snapshot().unwrap().epoch, 1);
+}
+
+#[test]
+fn profile_refusal_precedes_begin_and_live_holder_keeps_same_closed_epoch_retryable() {
+    {
+        let fixture = Fixture::new();
+        let (config, mut key) = profile();
+        key.profile[0] ^= 1;
+        let owner = InstallationOwner::initialize(&fixture.root, key).unwrap();
+        let clean = fs::read(fixture.root.join("state.bin")).unwrap();
+        assert_eq!(clean.len(), 176);
+        assert!(InstalledSupervisor::start(owner, config).is_err());
+        assert_eq!(fs::read(fixture.root.join("state.bin")).unwrap(), clean);
+        let owner = InstallationOwner::open(&fixture.root, key).unwrap();
+        assert_eq!(owner.snapshot().unwrap().phase, Phase::Clean);
+        assert_eq!(owner.snapshot().unwrap().epoch, 0);
+    }
+
+    let fixture = Fixture::new();
+    let (config, key) = profile();
+    let owner = InstallationOwner::initialize(&fixture.root, key).unwrap();
+    let mut controller = InstalledSupervisor::start(owner, config).unwrap();
+    let budget = controller.budget().clone();
+    let scope = budget.scope(0).unwrap();
+    let holder = HolderLease::acquire(&fixture.root, key, 1).unwrap();
+    let active = fs::read(fixture.root.join("state.bin")).unwrap();
+    assert_eq!(active.len(), 176);
+    let usage = budget.snapshot().unwrap().usage;
+    assert_eq!(
+        (
+            usage.links,
+            usage.frame_slots,
+            usage.serialized_buffer_bytes
+        ),
+        (0, 0, 0)
+    );
+    assert!(controller.try_finish().is_err());
+    assert_eq!(fs::read(fixture.root.join("state.bin")).unwrap(), active);
+    assert!(budget.scope(0).is_err());
+    assert!(budget.reserve_link(&scope).is_err());
+    assert_eq!(budget.snapshot().unwrap().usage, usage);
+    assert!(matches!(
+        InstallationOwner::open(&fixture.root, key),
+        Err(OwnerError::Busy)
+    ));
+    drop(holder);
+    controller.try_finish().unwrap();
+    assert!(budget.scope(0).is_err());
+    drop(scope);
+    drop(budget);
+    drop(controller);
+    let owner = InstallationOwner::open(&fixture.root, key).unwrap();
+    assert_eq!(owner.snapshot().unwrap().phase, Phase::Clean);
+    assert_eq!(owner.snapshot().unwrap().epoch, 1);
 }

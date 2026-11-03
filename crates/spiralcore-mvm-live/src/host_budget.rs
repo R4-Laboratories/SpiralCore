@@ -1,4 +1,9 @@
 //! Owner-scoped reservations for serialized ciphertext transport capacity.
+#[cfg(any(
+    all(target_os = "linux", feature = "linux-host"),
+    all(target_os = "macos", target_arch = "aarch64")
+))]
+use crate::installed_supervisor::InstalledAuthority;
 use serde::{Deserialize, Serialize};
 use std::{
     collections::BTreeMap,
@@ -136,8 +141,30 @@ struct Shared {
     config: TransportBudgetConfig,
     ledger: Mutex<Ledger>,
     fenced: AtomicBool,
+    #[cfg(any(
+        all(target_os = "linux", feature = "linux-host"),
+        all(target_os = "macos", target_arch = "aarch64")
+    ))]
+    installed: Option<Arc<InstalledAuthority>>,
 }
 impl Shared {
+    fn admission_open(&self) -> bool {
+        if self.fenced.load(Ordering::Acquire) {
+            return false;
+        }
+        #[cfg(any(
+            all(target_os = "linux", feature = "linux-host"),
+            all(target_os = "macos", target_arch = "aarch64")
+        ))]
+        if self
+            .installed
+            .as_ref()
+            .is_some_and(|owner| !owner.admission_open())
+        {
+            return false;
+        }
+        true
+    }
     fn lock(&self) -> Result<MutexGuard<'_, Ledger>> {
         self.ledger.lock().map_err(|_| {
             self.fenced.store(true, Ordering::Release);
@@ -150,7 +177,7 @@ impl Shared {
     }
     fn reject<T>(&self, error: TransportBudgetError) -> Result<T> {
         let mut ledger = self.lock()?;
-        let error = if self.fenced.load(Ordering::Acquire) {
+        let error = if !self.admission_open() {
             TransportBudgetError::Fenced
         } else {
             error
@@ -159,7 +186,7 @@ impl Shared {
     }
     fn charge(&self, slot: u32, delta: TransportLimits) -> Result<()> {
         let mut ledger = self.lock()?;
-        if self.fenced.load(Ordering::Acquire) {
+        if !self.admission_open() {
             return Self::refuse(&mut ledger, TransportBudgetError::Fenced);
         }
         let Some(tenant) = ledger.tenants.get(&slot).copied() else {
@@ -211,6 +238,33 @@ pub struct FrameReservation {
 }
 impl HostTransportBudget {
     pub fn new(config: TransportBudgetConfig) -> Result<Self> {
+        Self::construct(
+            config,
+            #[cfg(any(
+                all(target_os = "linux", feature = "linux-host"),
+                all(target_os = "macos", target_arch = "aarch64")
+            ))]
+            None,
+        )
+    }
+    #[cfg(any(
+        all(target_os = "linux", feature = "linux-host"),
+        all(target_os = "macos", target_arch = "aarch64")
+    ))]
+    pub(crate) fn new_installed(
+        config: TransportBudgetConfig,
+        owner: Arc<InstalledAuthority>,
+    ) -> Result<Self> {
+        Self::construct(config, Some(owner))
+    }
+    fn construct(
+        config: TransportBudgetConfig,
+        #[cfg(any(
+            all(target_os = "linux", feature = "linux-host"),
+            all(target_os = "macos", target_arch = "aarch64")
+        ))]
+        installed: Option<Arc<InstalledAuthority>>,
+    ) -> Result<Self> {
         if config.max_tenants == 0
             || config.max_frame_bytes == 0
             || [config.host, config.tenant].iter().any(|l| {
@@ -226,12 +280,17 @@ impl HostTransportBudget {
                 config,
                 ledger: Mutex::new(Ledger::default()),
                 fenced: AtomicBool::new(false),
+                #[cfg(any(
+                    all(target_os = "linux", feature = "linux-host"),
+                    all(target_os = "macos", target_arch = "aarch64")
+                ))]
+                installed,
             }),
         })
     }
     pub fn scope(&self, slot: u32) -> Result<TransportScope> {
         let mut ledger = self.shared.lock()?;
-        if self.shared.fenced.load(Ordering::Acquire) {
+        if !self.shared.admission_open() {
             return Shared::refuse(&mut ledger, TransportBudgetError::Fenced);
         }
         if slot >= self.shared.config.max_tenants {
@@ -242,6 +301,32 @@ impl HostTransportBudget {
             owner: self.shared.clone(),
             slot,
         })
+    }
+    /// Whether this ledger retains an installation authority, not a release
+    /// qualification or permission to launch workers through a legacy entry.
+    pub fn is_installation_bound(&self) -> bool {
+        #[cfg(any(
+            all(target_os = "linux", feature = "linux-host"),
+            all(target_os = "macos", target_arch = "aarch64")
+        ))]
+        {
+            self.shared.installed.is_some()
+        }
+        #[cfg(not(any(
+            all(target_os = "linux", feature = "linux-host"),
+            all(target_os = "macos", target_arch = "aarch64")
+        )))]
+        {
+            false
+        }
+    }
+    #[cfg(any(
+        all(target_os = "linux", feature = "linux-host"),
+        all(target_os = "macos", target_arch = "aarch64")
+    ))]
+    pub(crate) fn admission_barrier(&self) -> Result<()> {
+        drop(self.shared.lock()?);
+        Ok(())
     }
     pub fn reserve_link(&self, scope: &TransportScope) -> Result<LinkReservation> {
         if !Arc::ptr_eq(&self.shared, &scope.owner) {

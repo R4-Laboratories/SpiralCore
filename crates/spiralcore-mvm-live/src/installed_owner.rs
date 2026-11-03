@@ -571,6 +571,11 @@ pub struct InstallationOwner {
     _owner: File,
 }
 impl InstallationOwner {
+    /// Fresh local provisioning identity; it conveys no guest boot permission.
+    pub fn profile_hash(&self) -> Result<[u8; 32]> {
+        Ok(self.current()?.key.profile)
+    }
+
     pub fn initialize(root: &Path, key: InstallationKey) -> Result<Self> {
         use std::os::unix::fs::DirBuilderExt;
         check_key(key)?;

@@ -36,8 +36,8 @@ Authority has no budget back-reference, so no cycle. No public owner/Arc/Mutex,
 raw lock-file getter, take-owner or installed-budget constructor exists.
 
 `start` consumes the owner once. Validate all config and fixed-profile digest
-against the owner's fresh key/profile before `begin`; add a narrow crate-private
-profile check in installed_owner.rs, not an alternate state parser. Begin exactly
+against the owner's fresh profile before `begin`; use the owner's fresh read-only
+`profile_hash` query, not an alternate state parser or owner/lock getter. Begin exactly
 one epoch, create exactly one installed Shared, and never restart/rebind it.
 Allocation/unwind after begin retains Active; Drop does not repair it. Config
 retains current2links/2frame slots/524288 serialized bytes and two fixed worker

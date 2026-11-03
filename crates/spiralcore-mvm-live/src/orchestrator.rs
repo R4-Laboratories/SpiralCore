@@ -367,6 +367,9 @@ pub fn session_with_budget(
     budget: &HostTransportBudget,
     scope: &TransportScope,
 ) -> Result<Value> {
+    if budget.is_installation_bound() {
+        return Err("installed budget requires its installed launch context".into());
+    }
     if plan.stage != Stage::Two {
         return Err("transport-budget v1 covers the two-guest keyless relay only".into());
     }

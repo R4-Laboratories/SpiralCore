@@ -25,6 +25,7 @@ impl InstallationOwner {
     pub fn open(root: &std::path::Path, key: InstallationKey)
         -> Result<Self, OwnerError>;
     pub fn snapshot(&self) -> Result<OwnerSnapshot, OwnerError>;
+    pub fn profile_hash(&self) -> Result<[u8; 32], OwnerError>;
     pub fn begin(&mut self) -> Result<Epoch, OwnerError>;
     pub fn finish(&mut self, epoch: Epoch) -> Result<(), OwnerError>;
     pub fn reconcile(&mut self) -> Result<Recovery, OwnerError>;
