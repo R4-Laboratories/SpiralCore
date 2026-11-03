@@ -225,7 +225,7 @@ impl Session {
             send_time,
         )?;
         let mut admitted = false;
-        let mut reply = None;
+        let mut reply_observed = false;
         for _ in 0..16 {
             let bytes = stream.receive(cancel, deadline)?;
             let envelope = decode_envelope(&bytes)?;
@@ -256,14 +256,12 @@ impl Session {
                     if accepted.receipt.outcome != DeliveryOutcome::AcceptedEphemeral {
                         return Err("Reply admission refused".into());
                     }
-                    self.tracker
-                        .observe_application_reply(&self.incoming, &bytes, now)?;
-                    let CallStatus::Replied(Some(payload)) =
-                        self.service.poll_call(&self.outgoing, &call, now)?
-                    else {
-                        return Err("Reply did not complete admitted Call".into());
-                    };
-                    reply = Some(Frame::decode(&payload)?);
+                    let observed =
+                        self.tracker
+                            .observe_application_reply(&self.incoming, &bytes, now)?;
+                    if observed == send {
+                        reply_observed = true;
+                    }
                     Ok(Some((ack, now)))
                 } else {
                     Err("unprovisioned incoming encryption key".into())
@@ -275,14 +273,30 @@ impl Session {
                 })?;
                 permit.send(stream, cancel, now)?;
             }
-            if admitted && reply.is_some() {
+            if admitted && reply_observed {
                 break;
             }
         }
         if !admitted {
             return Err("missing Call destination receipt".into());
         }
-        let reply = reply.ok_or("missing application Reply")?;
+        if !reply_observed {
+            return Err("missing application Reply".into());
+        }
+        // Keep the charged canonical Reply payload in its service until all
+        // required observations and the Reply receipt send have succeeded.
+        let reply = broker.with_time(|_, now| -> Result<_> {
+            self.pending
+                .as_ref()
+                .ok_or(SessionError::StreamFenced)?
+                .remaining(now)?;
+            let CallStatus::Replied(Some(payload)) =
+                self.service.poll_call(&self.outgoing, &call, now)?
+            else {
+                return Err("Reply did not complete admitted Call".into());
+            };
+            Ok(Frame::decode(&payload)?)
+        })?;
         self.calls = self.calls.checked_add(1).ok_or("Call counter overflow")?;
         self.pending = None;
         Ok((context, reply))
