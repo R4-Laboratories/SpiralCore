@@ -5,6 +5,7 @@ pub mod campaign;
 pub mod config;
 pub mod fixtures;
 pub mod guest;
+pub mod host_budget;
 
 #[cfg(any(all(target_os = "linux", feature = "linux-host"), all(test, target_os = "macos")))]
 pub mod linux_host;
