@@ -334,7 +334,13 @@ record 22 host cells (11 before/after pairs) and three additional native cells.
   preserving original deadlines once bytes arrive. Its [recorded qualification](../network/stream-idle-results-2026-11-03.md)
   includes portable input/lock/partial-frame gates, seven native client rows and
   normal strict-transfer cost confirmations. No timer/consumer is enabled.
-- [ ] C8 recovery portion: original-identity retransmission,
+- [x] C8 registered retry API: [PR #64](https://github.com/R4-Laboratories/SpiralCore/pull/64)
+  adds explicit original-Call resend while Pending or owning an unconsumed Reply,
+  preserving its charge, original lifetime and canonical authority. Strict send
+  remains Pending-only. [Recorded qualification](../network/registered-call-retry-results-2026-11-03.md)
+  retains focused lifecycle/uncertain-write gates and exact-source platform tests.
+  The normal campaign does not use the API; no consumer recovery is implied.
+- [ ] C8 recovery portion: endpoint original-identity retransmission,
   uncertain-send/ACK reconciliation, lost-event and direct/relayed duplicate
   recovery remain before automatic post-send retry. No reconnect/resume or new
   request sequence is implicitly permitted by the delivered event loop.

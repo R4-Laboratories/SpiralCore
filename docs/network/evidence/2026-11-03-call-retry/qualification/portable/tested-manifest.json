@@ -1,0 +1,311 @@
+{
+  "schema_version": 1,
+  "scope": "native ephemeral canonical mailbox service, shared broker and TCP-loopback remote-client contracts",
+  "qualification_status": "REQUIRES_EXACT_RUN_EVIDENCE",
+  "toolchain": "1.97.1",
+  "features": [
+    "live"
+  ],
+  "hardware_sha256": false,
+  "mvm_source": "git+https://github.com/Casey-allard/mvm?rev=ae12e9deb41cc9a3264196ce22ebc72d4042883d#ae12e9deb41cc9a3264196ce22ebc72d4042883d",
+  "tests": [
+    {
+      "name": "canonical",
+      "minimum_count": 9
+    },
+    {
+      "name": "service",
+      "minimum_count": 16
+    },
+    {
+      "name": "receipt",
+      "minimum_count": 21
+    },
+    {
+      "name": "service_epoch",
+      "minimum_count": 3
+    },
+    {
+      "name": "service_sender",
+      "minimum_count": 4
+    },
+    {
+      "name": "service_tcp",
+      "minimum_count": 11
+    },
+    {
+      "name": "service_clock",
+      "minimum_count": 4
+    },
+    {
+      "name": "broker",
+      "minimum_count": 3
+    },
+    {
+      "name": "service_metrics",
+      "minimum_count": 3
+    },
+    {
+      "name": "receipt_send",
+      "minimum_count": 3
+    },
+    {
+      "name": "call_send",
+      "minimum_count": 6
+    },
+    {
+      "name": "capacity_probe",
+      "minimum_count": 4
+    },
+    {
+      "name": "sustained_probe",
+      "minimum_count": 5
+    }
+  ],
+  "rows": [
+    {
+      "id": "ubuntu24-x64",
+      "runner": "ubuntu-24.04",
+      "os": "Linux",
+      "arch": "X64",
+      "target": "x86_64-unknown-linux-gnu",
+      "execution_status": "PASS_PINNED_AE12_CLIENT_SOURCE",
+      "evidence": "../network/evidence/2026-11-02-mvm-service/platforms/official/41546165676/mvm-mailbox-portable-ubuntu24-x64-1/identity.json",
+      "actual_os_description": "Ubuntu 24.04.5 LTS",
+      "actual_image_version": "20261026.354.1",
+      "current_required_coverage_status": "PASS_PINNED_AE12_CLIENT_SOURCE"
+    },
+    {
+      "id": "ubuntu24-arm64",
+      "runner": "ubuntu-24.04-arm",
+      "os": "Linux",
+      "arch": "ARM64",
+      "target": "aarch64-unknown-linux-gnu",
+      "execution_status": "PASS_PINNED_AE12_CLIENT_SOURCE",
+      "evidence": "../network/evidence/2026-11-02-mvm-service/platforms/official/41546165676/mvm-mailbox-portable-ubuntu24-arm64-1/identity.json",
+      "actual_os_description": "Ubuntu 24.04.5 LTS",
+      "actual_image_version": "20261026.166.1",
+      "current_required_coverage_status": "PASS_PINNED_AE12_CLIENT_SOURCE"
+    },
+    {
+      "id": "macos26-arm64",
+      "runner": "macos-26",
+      "os": "macOS",
+      "arch": "ARM64",
+      "target": "aarch64-apple-darwin",
+      "execution_status": "PASS_PINNED_AE12_CLIENT_SOURCE",
+      "evidence": "../network/evidence/2026-11-02-mvm-service/platforms/official/41546165676/mvm-mailbox-portable-macos26-arm64-1/identity.json",
+      "actual_os_description": "macOS 26.6.2",
+      "actual_image_version": "20261021.0445.8",
+      "current_required_coverage_status": "PASS_PINNED_AE12_CLIENT_SOURCE"
+    },
+    {
+      "id": "macos26-intel",
+      "runner": "macos-26-intel",
+      "os": "macOS",
+      "arch": "X64",
+      "target": "x86_64-apple-darwin",
+      "execution_status": "PASS_PINNED_AE12_CLIENT_SOURCE",
+      "evidence": "../network/evidence/2026-11-02-mvm-service/platforms/official/41546165676/mvm-mailbox-portable-macos26-intel-1/identity.json",
+      "actual_os_description": "macOS 26.6.1",
+      "actual_image_version": "20260824.0517.1",
+      "current_required_coverage_status": "PASS_PINNED_AE12_CLIENT_SOURCE"
+    },
+    {
+      "id": "windows2022-x64",
+      "runner": "windows-2022",
+      "os": "Windows",
+      "arch": "X64",
+      "target": "x86_64-pc-windows-msvc",
+      "execution_status": "PASS_PINNED_AE12_CLIENT_SOURCE",
+      "evidence": "../network/evidence/2026-11-02-mvm-service/platforms/official/41546165676/mvm-mailbox-portable-windows2022-x64-1/identity.json",
+      "actual_os_description": "Microsoft Windows 10.0.20348",
+      "actual_image_version": "20261026.347.1",
+      "current_required_coverage_status": "PASS_PINNED_AE12_CLIENT_SOURCE"
+    },
+    {
+      "id": "windows2025-x64",
+      "runner": "windows-2025",
+      "os": "Windows",
+      "arch": "X64",
+      "target": "x86_64-pc-windows-msvc",
+      "execution_status": "PASS_PINNED_AE12_CLIENT_SOURCE",
+      "evidence": "../network/evidence/2026-11-02-mvm-service/platforms/official/41546165676/mvm-mailbox-portable-windows2025-x64-1/identity.json",
+      "actual_os_description": "Microsoft Windows 10.0.26100",
+      "actual_image_version": "20261030.294.1",
+      "current_required_coverage_status": "PASS_PINNED_AE12_CLIENT_SOURCE"
+    },
+    {
+      "id": "windows11-arm64",
+      "runner": "windows-11-arm",
+      "os": "Windows",
+      "arch": "ARM64",
+      "target": "aarch64-pc-windows-msvc",
+      "execution_status": "PASS_PINNED_AE12_CLIENT_SOURCE",
+      "evidence": "../network/evidence/2026-11-02-mvm-service/platforms/official/41546165676/mvm-mailbox-portable-windows11-arm64-1/identity.json",
+      "actual_os_description": "Microsoft Windows 10.0.26200",
+      "actual_image_version": "20261026.197.1",
+      "current_required_coverage_status": "PASS_PINNED_AE12_CLIENT_SOURCE"
+    }
+  ],
+  "unqualified_gates": [
+    "real WAN in both directions for every advertised endpoint pair",
+    "native KVM, HVF or libkrun MVM guest/host execution",
+    "durable object reception and OS-specific private storage semantics",
+    "Windows desktop x64 and unlisted OS/version/ABI combinations",
+    "native packet/NIC attachment and FlowMux or owner-access qualification",
+    "performance, energy, FIPS/CUI or production security qualification",
+    "fleet capacity, aggregate concurrency/fairness, long-lived bounds, saturation and tail latency under issue49"
+  ],
+  "runner_reference_checked": "2026-11-02",
+  "runner_references": [
+    "https://docs.github.com/en/actions/reference/runners/github-hosted-runners",
+    "https://github.com/actions/runner-images"
+  ],
+  "role_defaults": {
+    "role": "remote-mailbox-client and ephemeral canonical local-service process",
+    "storage_mode": "ephemeral memory; no durable object receiver",
+    "carrier_profile": "canonical encrypted mailbox over authenticated StreamTransport TCP loopback",
+    "native_mvm_backend": "NOT_RUN; no guest is booted by this workflow",
+    "evidence": "Current published ae12 dependency PASS50portabletests/row; exactsource and both historical checkpoints retained"
+  },
+  "unix_storage_tests": [
+    {
+      "name": "canonical_storage",
+      "minimum_count": 2,
+      "scope": "Unix durable storage dispatch/reopen; not native MVM backend or WAN"
+    }
+  ],
+  "qualification": {
+    "run_url": "https://github.com/R4-Laboratories/SpiralCore/actions/runs/41546165676",
+    "run_id": "41546165676",
+    "source_commit": "f06af8e5aa7e73c71af84edb0fd2f1ee5543d1b9",
+    "source_tree": "046d3d4c646ac29d65057daddf64d4332691308d",
+    "pull_request_head": "25234ddb44589f752d28870190af985852ddc1a7",
+    "head_tree_matches_executed_merge_tree": true,
+    "mvm_revision": "ae12e9deb41cc9a3264196ce22ebc72d4042883d",
+    "portable_passed": 350,
+    "unix_storage_passed": 8,
+    "portable_tests_per_row": 50,
+    "portable_targets": [
+      "canonical",
+      "service",
+      "receipt",
+      "service_epoch",
+      "service_sender",
+      "service_tcp",
+      "service_clock"
+    ],
+    "permanent_report": "../network/evidence/2026-11-02-mvm-service/platforms/README.md",
+    "permanent_summary": "../network/evidence/2026-11-02-mvm-service/platforms/summary-41546165676.json"
+  },
+  "qualification_status_applies_to": "Pinned qualification source/ae12 dependency only; native backend,16MiB WAN and scale gates remain separate",
+  "current_required_coverage": {
+    "status": "PASS_PINNED_AE12_CLIENT_SOURCE",
+    "portable_tests_per_row": 50,
+    "native_rows_required": 7,
+    "expected_portable_test_executions": 350,
+    "expected_unix_storage_test_executions": 8,
+    "new_required_target": {
+      "name": "service_clock",
+      "minimum_count": 4
+    },
+    "executed_result": {
+      "run_url": "https://github.com/R4-Laboratories/SpiralCore/actions/runs/41546165676",
+      "run_id": "41546165676",
+      "source_commit": "f06af8e5aa7e73c71af84edb0fd2f1ee5543d1b9",
+      "source_tree": "046d3d4c646ac29d65057daddf64d4332691308d",
+      "pull_request_head": "25234ddb44589f752d28870190af985852ddc1a7",
+      "head_tree_matches_executed_merge_tree": true,
+      "mvm_revision": "ae12e9deb41cc9a3264196ce22ebc72d4042883d",
+      "portable_passed": 350,
+      "unix_storage_passed": 8,
+      "portable_tests_per_row": 50,
+      "portable_targets": [
+        "canonical",
+        "service",
+        "receipt",
+        "service_epoch",
+        "service_sender",
+        "service_tcp",
+        "service_clock"
+      ],
+      "permanent_report": "../network/evidence/2026-11-02-mvm-service/platforms/README.md",
+      "permanent_summary": "../network/evidence/2026-11-02-mvm-service/platforms/summary-41546165676.json"
+    },
+    "gate": "All seven native rows passed50 required portable tests with published ae12 dependency at the pinned source. This establishes client/service TCP-loopback correctness, not native backend, WAN or scale capacity."
+  },
+  "historical_qualifications": [
+    {
+      "run_url": "https://github.com/R4-Laboratories/SpiralCore/actions/runs/41535679868",
+      "run_id": "41535679868",
+      "source_commit": "7506b3f3a40ee7dc190d665031750d336fd65aeb",
+      "source_tree": "ae5521d8ca0a02a774a25d9396b3d5d9fc4f855c",
+      "portable_passed": 322,
+      "unix_storage_passed": 8,
+      "permanent_report": "../network/evidence/2026-11-02-mvm-service/platforms/checkpoint-41535679868.md",
+      "permanent_summary": "../network/evidence/2026-11-02-mvm-service/platforms/summary.json",
+      "portable_tests_per_row": 46,
+      "portable_targets": [
+        "canonical",
+        "service",
+        "receipt",
+        "service_epoch",
+        "service_sender",
+        "service_tcp"
+      ]
+    },
+    {
+      "run_url": "https://github.com/R4-Laboratories/SpiralCore/actions/runs/41539620012",
+      "run_id": "41539620012",
+      "source_commit": "104187b956190c01351b10e0530ce928a66620df",
+      "source_tree": "14d3a61b4a4134435102562817e047c78ff5803f",
+      "pull_request_head": "2a4a199f0bae224fbe82aa148feb20273bd64d84",
+      "head_tree_matches_executed_merge_tree": true,
+      "portable_passed": 350,
+      "unix_storage_passed": 8,
+      "portable_tests_per_row": 50,
+      "portable_targets": [
+        "canonical",
+        "service",
+        "receipt",
+        "service_epoch",
+        "service_sender",
+        "service_tcp",
+        "service_clock"
+      ],
+      "permanent_report": "../network/evidence/2026-11-02-mvm-service/platforms/checkpoint-41539620012.md",
+      "permanent_summary": "../network/evidence/2026-11-02-mvm-service/platforms/summary-41539620012.json"
+    }
+  ],
+  "separate_linux_mvm_contract_status": {
+    "run_id": "41546165642",
+    "url": "https://github.com/R4-Laboratories/SpiralCore/actions/runs/41546165642",
+    "head_sha": "25234ddb44589f752d28870190af985852ddc1a7",
+    "executed_merge": "f06af8e5aa7e73c71af84edb0fd2f1ee5543d1b9",
+    "source_tree": "046d3d4c646ac29d65057daddf64d4332691308d",
+    "status": "PASS",
+    "release_host_stage_passed": 42,
+    "shared_conformance_stage_passed": 90,
+    "warnings_check": "PASS",
+    "default_guest_compile_and_synthetic_analyzer": "PASS",
+    "interpretation": "Linux build/component/loopback release qualification only; not a booted MVM, WAN, scale or transfer-performance result. Prior failed debug campaign is retained separately.",
+    "permanent_summary": "../network/evidence/2026-11-02-mvm-service/platforms/summary-41546165676.json"
+  },
+  "linux_mvm_contract_history": [
+    {
+      "run_id": "41539620010",
+      "url": "https://github.com/R4-Laboratories/SpiralCore/actions/runs/41539620010",
+      "head_sha": "2a4a199f0bae224fbe82aa148feb20273bd64d84",
+      "status": "FAILURE",
+      "test_target": "campaign",
+      "failed_test": "qualified_16m_whole_mixed_service_session_reopens_exactly",
+      "client_error": "Expired",
+      "server_error": "object endpoint refused operation",
+      "campaign_passed": 7,
+      "campaign_failed": 1,
+      "campaign_test_wall_seconds": 466.14,
+      "interpretation": "Retained failed debug test; not performance evidence; diagnosis and passing replacement gate remain open"
+    }
+  ]
+}

@@ -43,7 +43,7 @@ tracks**, not arbitrary encrypted packet traffic.
 macOS/HVF and Linux/Firecracker host paths; the default Linux build is the guest,
 and the `linux-host` feature selects the host. Native ephemeral mailbox-client
 tests have passed on Windows Server 2022/2025 x64 and Windows 11 ARM64 at the
-[latest recorded mailbox-client checkpoint](docs/network/stream-idle-results-2026-11-03.md).
+[latest recorded mailbox-client checkpoint](docs/network/registered-call-retry-results-2026-11-03.md).
 Windows private/durable object storage and packet attachment still need a port.
 A portable mailbox client does not establish a Windows MVM host. The current
 published MVM dependency has passed the recorded seven-platform contract run.
@@ -136,6 +136,13 @@ fence. All seven native client rows passed 88 checks each; two further native
 Linux cells passed 18 publications and 18 keyless readbacks. The recorded normal
 transfers still use strict receive. This API enables future recovery work; it
 does not activate timers, reconnect/resume or longer-lived sessions.
+
+The [registered-Call retry checkpoint](docs/network/registered-call-retry-results-2026-11-03.md)
+adds an explicit API for resending the original Call while preserving its
+unconsumed, budgeted Reply. Six focused tests cover exact bytes, one-time Reply
+consumption, 27 pre-connect refusals and five transport faults. All seven native
+client rows pass 92 checks each. The normal transfer campaign remains on strict
+send; this prerequisite adds no automatic retries or new performance claim.
 
 ### Where SpiralCore sits in the network stack
 
