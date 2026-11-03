@@ -25,6 +25,114 @@ fn budget() -> HostBudget {
 }
 
 #[test]
+fn ciphertext_tcp_half_close_preserves_reverse_and_legacy_eof_stays_fatal() {
+    use spiralcore_mvm_adapter::live::{
+        LiveError, StreamCounters, read_ciphertext_frame, read_ciphertext_frame_or_eof,
+        write_ciphertext_frame,
+    };
+    use std::{io::Write, net::Shutdown};
+    let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+    let mut peer = TcpStream::connect(listener.local_addr().unwrap()).unwrap();
+    let (mut socket, _) = listener.accept().unwrap();
+    let cancel = CancellationToken::default();
+    let mut read = StreamCounters::default();
+    let mut sent = StreamCounters::default();
+    let deadline = Instant::now() + Duration::from_secs(2);
+    peer.write_all(&[0, 0, 0, 3, 0, 97, 0]).unwrap();
+    peer.shutdown(Shutdown::Write).unwrap();
+    assert_eq!(
+        read_ciphertext_frame_or_eof(&mut socket, &cancel, deadline, &mut read).unwrap(),
+        Some(vec![0, 97, 0])
+    );
+    assert!(
+        read_ciphertext_frame_or_eof(&mut socket, &cancel, deadline, &mut read)
+            .unwrap()
+            .is_none()
+    );
+    write_ciphertext_frame(&mut socket, b"reverse\0", &cancel, deadline, &mut sent).unwrap();
+    assert_eq!(
+        read_ciphertext_frame(&mut peer, &cancel, deadline, &mut StreamCounters::default())
+            .unwrap(),
+        b"reverse\0"
+    );
+    assert_eq!(
+        (
+            read.framing_bytes_received,
+            read.envelope_bytes_received,
+            read.frames_received
+        ),
+        (4, 3, 1)
+    );
+    // The legacy endpoint reader still treats EOF as fatal, even after a frame.
+    assert!(
+        matches!(read_ciphertext_frame(&mut socket, &cancel, deadline, &mut read), Err(LiveError::Io(error)) if error.kind() == std::io::ErrorKind::UnexpectedEof)
+    );
+    assert!(socket.write_all(b"must stay closed").is_err());
+}
+
+#[test]
+fn ciphertext_tcp_optional_reader_rejects_truncation_lengths_cancel_and_deadline() {
+    use spiralcore_mvm_adapter::live::{LiveError, StreamCounters, read_ciphertext_frame_or_eof};
+    use std::{
+        io::{Read, Write},
+        net::Shutdown,
+    };
+    for bytes in [
+        vec![0],
+        vec![0, 0],
+        vec![0, 0, 0],
+        vec![0, 0, 0, 3, 42],
+        vec![0; 4],
+        262145u32.to_be_bytes().to_vec(),
+    ] {
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let mut peer = TcpStream::connect(listener.local_addr().unwrap()).unwrap();
+        let (mut socket, _) = listener.accept().unwrap();
+        peer.write_all(&bytes).unwrap();
+        peer.shutdown(Shutdown::Write).unwrap();
+        let mut counters = StreamCounters::default();
+        let result = read_ciphertext_frame_or_eof(
+            &mut socket,
+            &CancellationToken::default(),
+            Instant::now() + Duration::from_secs(2),
+            &mut counters,
+        );
+        assert!(result.is_err(), "{bytes:?}");
+        assert_eq!(counters.framing_bytes_received, bytes.len().min(4) as u64);
+        assert_eq!(
+            counters.envelope_bytes_received,
+            bytes.len().saturating_sub(4) as u64
+        );
+        assert_eq!(counters.frames_received, 0);
+        peer.set_read_timeout(Some(Duration::from_secs(1))).unwrap();
+        assert_eq!(peer.read(&mut [0]).unwrap(), 0);
+    }
+    for cancelled in [true, false] {
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let mut peer = TcpStream::connect(listener.local_addr().unwrap()).unwrap();
+        let (mut socket, _) = listener.accept().unwrap();
+        let cancel = CancellationToken::default();
+        if cancelled {
+            cancel.cancel();
+        }
+        let mut counters = StreamCounters::default();
+        let result = read_ciphertext_frame_or_eof(
+            &mut socket,
+            &cancel,
+            Instant::now() + Duration::from_millis(25),
+            &mut counters,
+        );
+        assert!(matches!(
+            (cancelled, result),
+            (true, Err(LiveError::Cancelled)) | (false, Err(LiveError::Deadline))
+        ));
+        assert_eq!(counters.framing_bytes_received, 0);
+        peer.set_read_timeout(Some(Duration::from_secs(1))).unwrap();
+        assert_eq!(peer.read(&mut [0]).unwrap(), 0);
+    }
+}
+
+#[test]
 fn canonical_calls_and_encrypted_receipts_cross_tcp_without_recursive_traffic() {
     let listener = TcpListener::bind("127.0.0.1:0").unwrap();
     let address = listener.local_addr().unwrap();
