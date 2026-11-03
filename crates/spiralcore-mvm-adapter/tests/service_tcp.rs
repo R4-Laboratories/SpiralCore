@@ -88,6 +88,7 @@ fn ciphertext_tcp_optional_reader_rejects_truncation_lengths_cancel_and_deadline
         let listener = TcpListener::bind("127.0.0.1:0").unwrap();
         let mut peer = TcpStream::connect(listener.local_addr().unwrap()).unwrap();
         let (mut socket, _) = listener.accept().unwrap();
+        peer.set_read_timeout(Some(Duration::from_secs(1))).unwrap();
         peer.write_all(&bytes).unwrap();
         peer.shutdown(Shutdown::Write).unwrap();
         let mut counters = StreamCounters::default();
@@ -104,13 +105,13 @@ fn ciphertext_tcp_optional_reader_rejects_truncation_lengths_cancel_and_deadline
             bytes.len().saturating_sub(4) as u64
         );
         assert_eq!(counters.frames_received, 0);
-        peer.set_read_timeout(Some(Duration::from_secs(1))).unwrap();
         assert_eq!(peer.read(&mut [0]).unwrap(), 0);
     }
     for cancelled in [true, false] {
         let listener = TcpListener::bind("127.0.0.1:0").unwrap();
         let mut peer = TcpStream::connect(listener.local_addr().unwrap()).unwrap();
         let (mut socket, _) = listener.accept().unwrap();
+        peer.set_read_timeout(Some(Duration::from_secs(1))).unwrap();
         let cancel = CancellationToken::default();
         if cancelled {
             cancel.cancel();
@@ -127,7 +128,6 @@ fn ciphertext_tcp_optional_reader_rejects_truncation_lengths_cancel_and_deadline
             (true, Err(LiveError::Cancelled)) | (false, Err(LiveError::Deadline))
         ));
         assert_eq!(counters.framing_bytes_received, 0);
-        peer.set_read_timeout(Some(Duration::from_secs(1))).unwrap();
         assert_eq!(peer.read(&mut [0]).unwrap(), 0);
     }
 }
