@@ -1,0 +1,26 @@
+   Compiling spiralcore-transfer v0.1.0 (/var/tmp/spiralcore-duplex-20261103/source/crates/spiralcore-transfer)
+   Compiling uor-r4-object-store v0.1.0 (/var/tmp/spiralcore-duplex-20261103/source/crates/uor-r4-object-store)
+   Compiling spiralcore-mvm-adapter v0.1.0 (/var/tmp/spiralcore-duplex-20261103/source/crates/spiralcore-mvm-adapter)
+   Compiling spiralcore-gateway-core v0.1.0 (/var/tmp/spiralcore-duplex-20261103/source/crates/spiralcore-gateway-core)
+   Compiling spiralcore-mvm-live v0.1.0 (/var/tmp/spiralcore-duplex-20261103/source/crates/spiralcore-mvm-live)
+    Finished `release` profile [optimized] target(s) in 11.90s
+     Running ../spiralcore-mvm-adapter/tests/live.rs (/var/tmp/spiralcore-mvm-service-20261102/target/release/deps/adapter_live-756c9baab9630689)
+
+running 1 test
+test ciphertext_clean_half_close_keeps_reverse_direction_writable ... FAILED
+
+failures:
+
+---- ciphertext_clean_half_close_keeps_reverse_direction_writable stdout ----
+
+thread 'ciphertext_clean_half_close_keeps_reverse_direction_writable' (463343) panicked at ../spiralcore-mvm-adapter/tests/live.rs:333:44:
+clean half-close must preserve reverse writes: Os { code: 32, kind: BrokenPipe, message: "Broken pipe" }
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    ciphertext_clean_half_close_keeps_reverse_direction_writable
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 10 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `--test adapter_live`

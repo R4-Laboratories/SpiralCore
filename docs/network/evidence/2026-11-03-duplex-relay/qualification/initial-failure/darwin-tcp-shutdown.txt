@@ -1,0 +1,18 @@
+case=open; after_fin=false; explicit_halves=false
+socket.shutdown(Both)=Ok(())
+socket.write=Err(Os { code: 32, kind: BrokenPipe, message: "Broken pipe" })
+peer.read=Ok(0); bytes=[0]
+case=peer-fin; after_fin=true; explicit_halves=false
+peer.shutdown(Write)=Ok(())
+socket.read=Ok(0)
+socket.shutdown(Both)=Err(Os { code: 57, kind: NotConnected, message: "Socket is not connected" })
+socket.write=Ok(())
+peer.read=Ok(1); bytes=[120]
+case=peer-fin-explicit-halves; after_fin=true; explicit_halves=true
+peer.shutdown(Write)=Ok(())
+socket.read=Ok(0)
+socket.shutdown(Both)=Err(Os { code: 57, kind: NotConnected, message: "Socket is not connected" })
+socket.shutdown(Write)=Ok(())
+socket.shutdown(Read)=Err(Os { code: 57, kind: NotConnected, message: "Socket is not connected" })
+socket.write=Err(Os { code: 32, kind: BrokenPipe, message: "Broken pipe" })
+peer.read=Ok(0); bytes=[0]
