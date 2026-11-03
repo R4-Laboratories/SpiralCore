@@ -43,7 +43,7 @@ tracks**, not arbitrary encrypted packet traffic.
 macOS/HVF and Linux/Firecracker host paths; the default Linux build is the guest,
 and the `linux-host` feature selects the host. Native ephemeral mailbox-client
 tests have passed on Windows Server 2022/2025 x64 and Windows 11 ARM64 at the
-[current shared-broker source checkpoint](docs/network/evidence/2026-11-02-broker-scale/qualification/platforms/README.md).
+[current shared-broker source checkpoint](docs/network/evidence/2026-11-02-sustained-broker/qualification/platforms-final/README.md).
 Windows private/durable object storage and packet attachment still need a port.
 A portable mailbox client does not establish a Windows MVM host. The current
 published MVM dependency has passed the recorded seven-platform contract run.
@@ -77,6 +77,21 @@ endpoint runs. Stable scopes reduced peak RSS in every matched cell and retained
 3/12/48 FIFO checkpoints instead of roughly 1,950 in the paced runs. CPU and
 latency varied; saturation still reached another admission limit. These local
 serial-dispatch results do not qualify concurrent fleet or WAN capacity.
+
+The newer [sustained broker report](docs/network/sustained-broker-results-2026-11-02.md)
+records exact quota attribution, recovery after a real five-minute retention
+wait, and **13,684 completed Linux logical-endpoint operations with 20,537 exact
+readbacks** across concurrent 2/8/32-endpoint and interference profiles. Seven
+additional Firecracker sessions verified **62 publications and 44 keyless reboot
+readbacks**. In the large two-MVM pilot, Combined used **62.51 MB of logical
+mailbox traffic / 2.946 s timed sender CPU / 6.309 s full lifecycle**, versus
+zstd's **107.27 MB / 4.342 s / 8.580 s**. Across both vsock hops, accounted stream
+bytes total twice the logical traffic; the report defines the CPU intervals.
+These are bounded local profiles and single native pilots. The Mac one-second
+deadline failure, shared-budget raw refusal, higher Combined memory use and
+small-session lifecycle loss remain recorded. Canonical WAN, aggregate
+cross-process fleet budgets and durable Windows gateway qualification remain
+open release gates.
 
 ### Where SpiralCore sits in the network stack
 

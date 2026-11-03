@@ -1,0 +1,40 @@
+{
+  "scope": "macOS ARM64 shared-host TCP-loopback logical endpoint profile",
+  "source_commit": "d53cb335ee3884644bfe1a26296923c1288fa540",
+  "cells": [
+    {
+      "cell": "recovery",
+      "status": "PASS",
+      "record": "recovery.jsonl"
+    },
+    {
+      "cell": "steady-2",
+      "status": "PASS",
+      "record": "steady-2.jsonl"
+    },
+    {
+      "cell": "steady-8",
+      "status": "FAIL",
+      "record": "steady-8.jsonl",
+      "reason": "Registered one-second deadline expired under concurrent operation. Exact failure rows and aggregate host load/swap observations retained; unique per-operation cause not established."
+    },
+    {
+      "cell": "steady-32",
+      "status": "NOT_RUN",
+      "reason": "Resource protection after host load40.60 and5.5GiBswap observation; no protocol/TTL/limits silently changed."
+    },
+    {
+      "cell": "interference-8",
+      "status": "NOT_RUN",
+      "reason": "Resource protection after concurrent eight-endpoint deadline gate failed."
+    },
+    {
+      "cell": "interference-32",
+      "status": "NOT_RUN",
+      "reason": "Resource protection after concurrent eight-endpoint deadline gate failed."
+    }
+  ],
+  "gate_scope": "Mac2 success does not qualify Mac8/32, native MVM fleet populations, Windows gateways or WAN. Separate same-profile Linux qualification will retain its own source, binary and host identities.",
+  "new_persistent_payload_stores": 0,
+  "new_vm_disks": 0
+}

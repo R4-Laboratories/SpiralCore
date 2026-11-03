@@ -202,6 +202,30 @@ Older UOR records include a 52,535,088-byte WAN object. They are historical resu
 on the imported predecessor, not current SpiralCore transfer qualification; see the
 [audit's historical evidence](audit.md#historical-performance-evidence).
 
+## SC-MVM-SCALE-002 — sustained broker recovery and qualified local workload
+
+The [registered sustained-broker plan](../plans/2026-11-02-sustained-broker.md)
+and [results](sustained-broker-results-2026-11-02.md) link exact source/binary
+identities, raw records and source-scoped validation. Product diagnostics and
+probes are merged through [PR #52](https://github.com/R4-Laboratories/SpiralCore/pull/52).
+
+- Exact sender control-identity saturation was observed, followed by real
+  deadline-plus-five-minute tracker expiry and same-owner/connection recovery.
+- Linux 2/8/32 logical endpoint and interference profiles completed 13,684
+  operations with 20,537 exact readbacks, zero mismatches and two explicit hot
+  incomplete admissions. This qualifies the named 4 KiB/10-operations-per-second
+  profile, not a maximum capacity or production retention envelope.
+- Seven Linux native sessions verified 62 publication operations and 44 keyless
+  reboot readbacks. The large mixed two-guest Combined pilot used 62,506,959
+  logical mailbox bytes versus zstd's 107,268,387; full lifecycle was 6.309 s
+  versus 8.580 s. These are single fixed-order pilots, with timed-interval CPU
+  distinguished from total lifecycle wall time and two-hop traffic.
+- Retained losses: Mac strict-deadline eight-endpoint failure; shared-budget
+  large raw refusal (original cause unknown); higher Combined RSS; smaller
+  two-guest Combined lifecycle 1.193 s versus zstd 1.163 s. No silent quota or
+  TTL changes, pooled-platform confidence claim, energy or canonical WAN claim.
+- Broader MVM/fleet/Windows/WAN delivery remains open in #42/#43/#46/#47/#49.
+
 ## Recording rules
 
 - Before implementation: pin the baseline, hypothesis, expected affected work, correctness gates,
