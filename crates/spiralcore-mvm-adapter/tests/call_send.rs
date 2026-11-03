@@ -9,7 +9,9 @@ use mvm_core::mailbox::{
     transport::{CancellationToken, InMemoryPeerTransport},
 };
 use spiralcore_mvm_adapter::{
-    service::{CallStatus, HostBudget, LocalMailboxService, ServiceError, ServiceLimits, ServiceTime},
+    service::{
+        CallStatus, HostBudget, LocalMailboxService, ServiceError, ServiceLimits, ServiceTime,
+    },
     service_sender::{self, MessageOptions},
 };
 

@@ -2307,10 +2307,43 @@ impl LocalMailboxService {
         cancel: &CancellationToken,
         now: ServiceTime,
     ) -> Result<usize> {
+        let expected = self.registered_call_send_expectation(binding, call, now, false)?;
+        binding.send_prepared_inner(prepared, Some(expected), transport, cancel, now)
+    }
+
+    /// Explicitly resend the original registered Call while it is pending or
+    /// its Reply remains unconsumed. Keep the Reply and its budget reservation
+    /// in the service; original generation, request and deadlines still apply.
+    /// This performs no retry scheduling or registration. Success is a write,
+    /// not destination acceptance; transport failure can leave an uncertain send.
+    pub fn retry_call_prepared(
+        &self,
+        binding: &MailboxBinding,
+        call: &CallHandle,
+        prepared: &PreparedMailboxEnvelope,
+        transport: &impl PeerTransport,
+        cancel: &CancellationToken,
+        now: ServiceTime,
+    ) -> Result<usize> {
+        let expected = self.registered_call_send_expectation(binding, call, now, true)?;
+        binding.send_prepared_inner(prepared, Some(expected), transport, cancel, now)
+    }
+
+    fn registered_call_send_expectation(
+        &self,
+        binding: &MailboxBinding,
+        call: &CallHandle,
+        now: ServiceTime,
+        allow_unconsumed_reply: bool,
+    ) -> Result<SendExpectation> {
         if self.shutting_down {
             return Err(ServiceError::ShuttingDown);
         }
-        if now.unix_ms < 0 || self.last.is_some_and(|last| now.monotonic_ms < last.monotonic_ms) {
+        if now.unix_ms < 0
+            || self
+                .last
+                .is_some_and(|last| now.monotonic_ms < last.monotonic_ms)
+        {
             return Err(ServiceError::Clock);
         }
         if call.service != self.id || call.binding != binding.id {
@@ -2329,22 +2362,17 @@ impl LocalMailboxService {
         }
         match pending.status {
             CallStatus::Pending => {}
+            CallStatus::Replied(Some(_)) if allow_unconsumed_reply => {}
             CallStatus::Cancelled => return Err(ServiceError::Cancelled),
             CallStatus::TimedOut => return Err(ServiceError::Expired),
             CallStatus::Unavailable => return Err(ServiceError::Unavailable),
             CallStatus::ShuttingDown => return Err(ServiceError::ShuttingDown),
             CallStatus::Replied(_) => return Err(ServiceError::Conflict),
         }
-        binding.send_prepared_inner(
-            prepared,
-            Some(SendExpectation {
-                generation: call.generation,
-                request_commitment: Some(pending.commitment),
-            }),
-            transport,
-            cancel,
-            now,
-        )
+        Ok(SendExpectation {
+            generation: call.generation,
+            request_commitment: Some(pending.commitment),
+        })
     }
 
     pub fn poll_call(
