@@ -11,6 +11,125 @@ use mvm_core::mailbox::{
 use std::fmt::Write;
 type Result<T> = std::result::Result<T, ServiceError>;
 
+#[derive(PartialEq, Eq)]
+struct StreamOwner {
+    address: MailboxAddress,
+    sender: PrincipalId,
+    epoch: ExecutionEpoch,
+    kind: MailboxMessageKind,
+}
+
+/// One locally owned FIFO stream. Keep this value for the producer's lifetime;
+/// it is deliberately not Clone. Allocate options once per logical message and
+/// retain those exact options for retry: allocating another sequence does not
+/// cancel or fill a missing sequence. A restart needs a new scope or an explicit
+/// persisted stream owner, never a reset of the receiver's replay cursor.
+pub struct OrderingStream {
+    scope: OrderingScope,
+    next: Option<u64>,
+    owner: Option<StreamOwner>,
+}
+impl Default for OrderingStream {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+impl OrderingStream {
+    pub fn new() -> Self {
+        Self {
+            scope: random_scope(),
+            next: Some(1),
+            owner: None,
+        }
+    }
+
+    pub fn next_for_binding(
+        &mut self,
+        binding: &MailboxBinding,
+        content_type: ContentType,
+        now: ServiceTime,
+        expiry: i64,
+        policy: crate::issuance::IssuancePolicy,
+    ) -> Result<MessageOptions> {
+        let owner = binding.with_sender(now, |config, context, _| {
+            if content_type == receipt_content_type()
+                || !config
+                    .capability
+                    .grant
+                    .content_types
+                    .contains(&content_type)
+            {
+                return Err(ServiceError::Unauthorized);
+            }
+            Ok(StreamOwner {
+                address: MailboxAddress {
+                    tenant: context.expected_tenant,
+                    authorization_domain: context.expected_authorization_domain,
+                    recipient: context.expected_recipient,
+                    mailbox: context.expected_mailbox,
+                },
+                sender: context.expected_sender,
+                epoch: context.current_execution_epoch,
+                kind: config.kind,
+            })
+        })?;
+        if self.owner.as_ref().is_some_and(|old| *old != owner) {
+            return Err(ServiceError::Unauthorized);
+        }
+        let sequence = self.next.ok_or(ServiceError::Limit)?;
+        let options = MessageOptions::fresh_for_binding_ordered(
+            binding,
+            content_type,
+            now,
+            expiry,
+            policy,
+            Some((
+                self.scope.clone(),
+                SequenceNumber::new(sequence).map_err(|_| ServiceError::Limit)?,
+            )),
+        )?;
+        self.owner = Some(owner);
+        self.next = sequence.checked_add(1);
+        Ok(options)
+    }
+
+    pub fn next_reply(
+        &mut self,
+        binding: &MailboxBinding,
+        request: &AdmittedMessage,
+        now: ServiceTime,
+        policy: crate::issuance::IssuancePolicy,
+    ) -> Result<MessageOptions> {
+        if request.header().kind != MailboxMessageKind::Call {
+            return Err(ServiceError::Unauthorized);
+        }
+        binding.with_sender(now, |config, _, _| {
+            if config.kind != MailboxMessageKind::Reply {
+                return Err(ServiceError::Unauthorized);
+            }
+            Ok(())
+        })?;
+        let mut options = self.next_for_binding(
+            binding,
+            request.header().content_type.clone(),
+            now,
+            request.header().expires_at_unix_ms,
+            policy,
+        )?;
+        options.correlation_id = request.header().correlation_id;
+        options.causation_id = CausationId::from_bytes(*request.header().message_id.as_bytes());
+        Ok(options)
+    }
+}
+
+fn random_scope() -> OrderingScope {
+    let mut scope = String::with_capacity(64);
+    for byte in rand::random::<[u8; 32]>() {
+        write!(&mut scope, "{byte:02x}").expect("writing to a String");
+    }
+    OrderingScope::parse(scope).expect("64 hexadecimal characters form an ordering scope")
+}
+
 /// Authenticated producer namespace only, never a receiver authority lease.
 pub fn object_context(
     binding: &MailboxBinding,
@@ -57,6 +176,16 @@ impl MessageOptions {
         expiry: i64,
         policy: crate::issuance::IssuancePolicy,
     ) -> Result<Self> {
+        Self::fresh_for_binding_ordered(binding, content_type, now, expiry, policy, None)
+    }
+    fn fresh_for_binding_ordered(
+        binding: &MailboxBinding,
+        content_type: ContentType,
+        now: ServiceTime,
+        expiry: i64,
+        policy: crate::issuance::IssuancePolicy,
+        ordering: Option<(OrderingScope, SequenceNumber)>,
+    ) -> Result<Self> {
         binding.with_sender(now, |config, _, _| {
             let window = policy.window(
                 now,
@@ -72,7 +201,12 @@ impl MessageOptions {
                     .expires_at_unix_ms
                     .min(config.binding.claims.expires_at_unix_ms),
             )?;
-            let mut options = Self::fresh(content_type, now, window.expires)?;
+            let mut options = match ordering {
+                Some((scope, sequence)) => {
+                    Self::fresh_ordered(content_type, now, window.expires, scope, sequence)?
+                }
+                None => Self::fresh(content_type, now, window.expires)?,
+            };
             options.issued_at_unix_ms = window.issued;
             Ok(options)
         })
@@ -98,20 +232,31 @@ impl MessageOptions {
         Ok(options)
     }
     pub fn fresh(content_type: ContentType, now: ServiceTime, expiry: i64) -> Result<Self> {
+        Self::fresh_ordered(
+            content_type,
+            now,
+            expiry,
+            random_scope(),
+            SequenceNumber::new(1).map_err(|_| ServiceError::State)?,
+        )
+    }
+    fn fresh_ordered(
+        content_type: ContentType,
+        now: ServiceTime,
+        expiry: i64,
+        ordering_scope: OrderingScope,
+        sequence: SequenceNumber,
+    ) -> Result<Self> {
         if expiry <= now.unix_ms {
             return Err(ServiceError::Expired);
         }
         let message_id = MessageId::from_bytes(rand::random());
-        let mut scope = String::with_capacity(64);
-        for byte in message_id.as_bytes() {
-            write!(&mut scope, "{byte:02x}").map_err(|_| ServiceError::State)?;
-        }
         Ok(Self {
             message_id,
             correlation_id: CorrelationId::from_bytes(rand::random()),
             causation_id: CausationId::from_bytes([0; 32]),
-            ordering_scope: OrderingScope::parse(scope).map_err(|_| ServiceError::Malformed)?,
-            sequence: SequenceNumber::new(1).map_err(|_| ServiceError::Malformed)?,
+            ordering_scope,
+            sequence,
             issued_at_unix_ms: now.unix_ms,
             expires_at_unix_ms: expiry,
             reply_to: None,

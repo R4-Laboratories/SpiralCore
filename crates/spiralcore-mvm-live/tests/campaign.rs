@@ -331,7 +331,8 @@ fn qualified_16m_whole_mixed_service_session_reopens_exactly() {
     assert!(published.iter().all(|p| p.length == 14_851_384));
     let calls = sent["service"]["application_calls"].as_u64().unwrap();
     assert!(calls > 512 && calls <= 2048);
-    assert_eq!(sent["service"]["identity_tier"], "native-16m-v1");
+    assert_eq!(sent["service"]["identity_tier"], "broker-owned");
+    assert_eq!(sent["service"]["witness_tier"], "native-16m-v1");
     assert_eq!(sent["counters"]["frames_sent"].as_u64().unwrap(), calls * 2);
     assert_eq!(
         sent["counters"]["frames_received"].as_u64().unwrap(),
@@ -341,5 +342,83 @@ fn qualified_16m_whole_mixed_service_session_reopens_exactly() {
         "NATIVE_16M_WHOLE_MIXED_UNIT {}",
         serde_json::to_string(&sent).unwrap()
     );
-    eprintln!("QUALIFICATION_SCOPE paired socket unit in one process; not guest/WAN performance; process CPU includes both endpoint threads");
+    eprintln!(
+        "QUALIFICATION_SCOPE paired socket unit in one process; not guest/WAN performance; process CPU includes both endpoint threads"
+    );
+}
+
+#[test]
+fn shared_broker_dispatches_both_endpoints_without_clock_or_fidelity_loss() {
+    let store = tempfile::tempdir().unwrap();
+    let cache = store.path().join("cache");
+    let mut pair = Pair::provision(Plan {
+        stage: Stage::Two,
+        arm: Arm::Warm,
+        size: 4096,
+        trial: 19,
+        bandwidth_profile: Default::default(),
+    })
+    .unwrap();
+    // This test hosts both sides of a Call in one accounting domain. The
+    // synthetic grant explicitly admits both local role charges; production
+    // provisioning continues to grant one outstanding Call per remote broker.
+    let authority = ed25519_dalek::SigningKey::from_bytes(&[91; 32]);
+    for bootstrap in [&mut pair.sender, &mut pair.receiver] {
+        let service = bootstrap.service.as_mut().unwrap();
+        for material in [
+            bootstrap.incoming.as_mut().unwrap(),
+            bootstrap.outgoing.as_mut().unwrap(),
+            &mut service.incoming_control,
+            &mut service.outgoing_control,
+        ] {
+            material.capability.grant.max_outstanding_calls = 2;
+            material.capability =
+                mvm_core::mailbox::sign_capability(material.capability.grant.clone(), &authority)
+                    .unwrap();
+            material.binding = mvm_core::mailbox::transport::sign_transport_binding(
+                material.binding.claims.clone(),
+                &authority,
+            )
+            .unwrap();
+            material.authority = authority.verifying_key().to_bytes();
+        }
+    }
+    let broker = campaign::broker_context().unwrap();
+    let (a, b) = UnixStream::pair().unwrap();
+    let (sent, received) = std::thread::scope(|scope| {
+        let receiver = scope.spawn(|| {
+            campaign::receiver_with_broker(
+                &pair.receiver,
+                &broker,
+                &cache,
+                b,
+                HandshakeRole::Acceptor,
+                &mut Vec::new(),
+            )
+            .unwrap()
+        });
+        let sent = campaign::sender_with_broker(
+            &pair.sender,
+            &broker,
+            a,
+            HandshakeRole::Initiator,
+            &mut Vec::new(),
+        )
+        .unwrap();
+        (sent, receiver.join().unwrap())
+    });
+    assert_eq!(
+        sent["service"]["ordering"],
+        "stable-scope-increasing-sequence"
+    );
+    assert_eq!(
+        received["service"]["broker_clock"],
+        "shared-serialized-dispatch"
+    );
+    assert_eq!(
+        sent["counters"]["envelope_bytes_sent"],
+        received["counters"]["envelope_bytes_received"]
+    );
+    let published: Vec<Published> = serde_json::from_value(received["published"].clone()).unwrap();
+    campaign::verify(&pair.sender.plan, &cache, &published, &mut Vec::new()).unwrap();
 }

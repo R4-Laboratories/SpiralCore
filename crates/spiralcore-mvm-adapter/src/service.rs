@@ -300,7 +300,38 @@ pub struct HostBudget {
     limits: Arc<ServiceLimits>,
     control: Option<Arc<ControlReserve>>,
 }
+/// Aggregate diagnostic counters for the trusted broker owner. This does not
+/// expose tenant identities, payloads or cache membership to remote senders.
+#[derive(Debug, Clone)]
+pub struct BudgetSnapshot {
+    pub queued_bytes: u64,
+    pub queued_messages: usize,
+    pub active_calls: usize,
+    pub identities: usize,
+    pub owner_count: usize,
+    pub limits: ServiceLimits,
+    pub control: Option<ControlReserve>,
+}
+#[derive(Debug, Clone, Copy)]
+pub struct ServiceSnapshot {
+    pub accepted: usize,
+    pub calls: usize,
+    pub fifo_scopes: usize,
+    pub fifo_entries: usize,
+}
 impl HostBudget {
+    pub fn snapshot(&self) -> Result<BudgetSnapshot> {
+        let state = self.inner.lock().map_err(|_| ServiceError::State)?;
+        Ok(BudgetSnapshot {
+            queued_bytes: state.host.bytes,
+            queued_messages: state.host.messages,
+            active_calls: state.host.calls,
+            identities: state.host.identities,
+            owner_count: state.owners.len(),
+            limits: (*self.limits).clone(),
+            control: self.control.as_deref().cloned(),
+        })
+    }
     pub(crate) fn same_owner(&self, other: &HostBudget) -> bool {
         Arc::ptr_eq(&self.inner, &other.inner)
     }
@@ -1500,6 +1531,15 @@ pub struct LocalMailboxService {
     scope_charges: HashMap<ScopeKey, Reservation>,
 }
 impl LocalMailboxService {
+    pub fn snapshot(&self) -> ServiceSnapshot {
+        let (fifo_scopes, fifo_entries) = self.ordering.counts();
+        ServiceSnapshot {
+            accepted: self.accepted.len(),
+            calls: self.calls.len(),
+            fifo_scopes,
+            fifo_entries,
+        }
+    }
     pub(crate) fn uses_budget(&self, budget: &HostBudget) -> bool {
         self.budget.same_owner(budget)
     }

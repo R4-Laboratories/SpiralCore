@@ -59,6 +59,9 @@ pub(super) struct OrderingIndex {
     max_entries: usize,
 }
 impl OrderingIndex {
+    pub(super) fn counts(&self) -> (usize, usize) {
+        (self.scopes.len(), self.entries)
+    }
     pub(super) fn new(max_scopes: usize, max_entries: usize) -> Result<Self> {
         if max_scopes == 0 || max_entries == 0 {
             return Err(ServiceError::Limit);
