@@ -1,0 +1,93 @@
+warning: unreachable expression
+    --> D:\a\SpiralCore\SpiralCore\crates\spiralcore-transfer\src\endpoint.rs:1348:5
+     |
+1347 |     return Err(Error::Unsupported);
+     |     ------------------------------ any code following this expression is unreachable
+1348 |     Ok(())
+     |     ^^^^^^ unreachable expression
+     |
+     = note: `#[warn(unreachable_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: unreachable statement
+    --> D:\a\SpiralCore\SpiralCore\crates\spiralcore-transfer\src\endpoint.rs:1382:13
+     |
+1381 |             return Err(Error::Unsupported);
+     |             ------------------------------ any code following this expression is unreachable
+1382 |             b.create(path)?;
+     |             ^^^^^^^^^^^^^^^^ unreachable statement
+
+warning: unreachable expression
+    --> D:\a\SpiralCore\SpiralCore\crates\spiralcore-transfer\src\endpoint.rs:1388:5
+     |
+1351 | /     match fs::symlink_metadata(path) {
+1352 | |         Ok(m) => {
+1353 | |             if !m.is_dir() || m.file_type().is_symlink() {
+1354 | |                 return Err(Error::Storage);
+...    |
+1386 | |         Err(_) => return Err(Error::Storage),
+1387 | |     }
+     | |_____- any code following this `match` expression is unreachable, as all arms diverge
+1388 |       Ok(())
+     |       ^^^^^^ unreachable expression
+
+warning: variable does not need to be mutable
+    --> D:\a\SpiralCore\SpiralCore\crates\spiralcore-transfer\src\endpoint.rs:1326:9
+     |
+1326 |     let mut o = OpenOptions::new();
+     |         ----^
+     |         |
+     |         help: remove this `mut`
+     |
+     = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+warning: variable does not need to be mutable
+    --> D:\a\SpiralCore\SpiralCore\crates\spiralcore-transfer\src\endpoint.rs:1374:17
+     |
+1374 |             let mut b = fs::DirBuilder::new();
+     |                 ----^
+     |                 |
+     |                 help: remove this `mut`
+
+warning: unused variable: `b`
+    --> D:\a\SpiralCore\SpiralCore\crates\spiralcore-transfer\src\endpoint.rs:1374:17
+     |
+1374 |             let mut b = fs::DirBuilder::new();
+     |                 ^^^^^ help: if this is intentional, prefix it with an underscore: `_b`
+     |
+     = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: `spiralcore-transfer` (lib) generated 6 warnings (run `cargo fix --lib -p spiralcore-transfer` to apply 3 suggestions)
+    Finished `test` profile [unoptimized] target(s) in 0.30s
+     Running tests\capacity_probe.rs (crates\spiralcore-mvm-adapter\target\debug\deps\capacity_probe-24b9b3806bae8401.exe)
+
+running 3 tests
+test teardown_errors_are_retained_without_discarding_transfer_measurements ... ok
+test capacity_registration_rejects_unbounded_endpoint_or_work_requests ... ok
+test real_loopback_capacity_probe_preserves_binary_payload_and_counts_both_directions ... FAILED
+
+failures:
+
+---- real_loopback_capacity_probe_preserves_binary_payload_and_counts_both_directions stdout ----
+
+thread 'real_loopback_capacity_probe_preserves_binary_payload_and_counts_both_directions' (7128) panicked at tests\capacity_probe.rs:8:5:
+capacity smoke refused before completion: {"accepted_calls":1,"accepted_casts":0,"actual_both_direction_bytes":26741,"actual_caller_to_receiver_bytes":11083,"actual_receiver_to_caller_bytes":15658,"admission_latency":{"p50_us":916314,"p95_us":916314,"p99_us":916314,"samples":1},"application_reply_latency":{"p50_us":null,"p95_us":null,"p99_us":null,"samples":0},"attempted_operations":1,"byte_counter_scope":"canonical encrypted envelopes plus framing; excludes TCP/IP headers and kernel retransmission","close_errors":[],"completed_calls":0,"completed_casts":0,"configured_endpoints":2,"durability":"AcceptedEphemeral exact application echo; no durable object publication claim","elapsed_us":1297524,"exact_readbacks":1,"fd_count_scope":"local process descriptors; enumeration may include its own temporary directory descriptor","fd_sampled_at_start":null,"fd_sampled_max":null,"fidelity_failures":0,"fidelity_scope":"compared readbacks only; unverified admitted requests are not successful delivery","final_identities":7,"first_error":"Unauthorized","first_error_stage":"caller_reply_admission","frames_sent":3,"global_dispatch":"serial round robin","incomplete_admitted_requests":1,"kernel_reported_peak_process_rss_bytes":null,"latency":{"p50_us":null,"p95_us":null,"p99_us":null,"samples":0},"measurement_process_id":2732,"ordering":"stable","pacing_total_operations_per_second":null,"pipeline_per_pair":1,"post_operation_sampled_fifo_entry_max":0,"post_operation_sampled_fifo_scope_max":0,"post_operation_sampled_identity_max":0,"post_operation_samples":[],"post_ttl_cleanup":{"after_active_calls":0,"after_queued_messages":0,"before_active_calls":1,"before_queued_messages":1,"service_reset":false,"wait_only_after_refusal_ms":2100,"wall_us":2100226},"process_cpu_us":1062500,"process_peak_rss_at_start_bytes":null,"profile":{"actual_control_reserve":{"host":{"identities":16384,"queued_bytes":1048576,"queued_messages":256},"mailbox":{"identities":8192,"queued_bytes":262144,"queued_messages":64},"sender":{"identities":4096,"queued_bytes":131072,"queued_messages":32},"tenant":{"identities":8192,"queued_bytes":524288,"queued_messages":128}},"actual_limits":{"host":{"active_calls":64,"identities":65536,"queued_bytes":16777216,"queued_messages":1024},"mailbox":{"active_calls":16,"identities":32768,"queued_bytes":4194304,"queued_messages":256},"sender":{"active_calls":8,"identities":16384,"queued_bytes":2097152,"queued_messages":128},"tenant":{"active_calls":32,"identities":32768,"queued_bytes":8388608,"queued_messages":512}},"fd_ceiling":128,"host_identities":65536,"mailbox_identities":32768,"max_duration_ms":120000,"max_operations":100000,"message_ttl_ms":1000,"name":"capacity-native-identities-retention1s-v1","payload_bytes":4096,"retention_ms":1000,"rss_ceiling_bytes":536870912,"sender_identities":16384,"tenant_identities":32768},"receiver_verified_requests":1,"requested_duration_ms":0,"requested_operations":4,"rss_sample_interval_operations":20,"rss_scope":"getrusage process lifetime high-water; CLI runs each cell in a fresh process","sampled_process_peak_rss_bytes":null,"scope":"authenticated TCP loopback logical endpoints; not WAN/native MVM/fleet capacity","sender_receiver_counters_match":true,"setup_process_cpu_us":312500,"setup_wall_us":314607,"stop_reason":"first_error","tcp_pairs":1,"teardown_scope":"socket shutdown after transfer accounting; close diagnostics do not establish payload loss or erase unexpected cleanup failures","unexpected_teardown_errors":0,"unverified_admitted_requests":0}
+stack backtrace:
+   0: std::panicking::panic_handler
+             at /rustc/8bab26f4f68e0e26f0bb7960be334d5b520ea452/library\std\src\panicking.rs:689
+   1: core::panicking::panic_fmt
+             at /rustc/8bab26f4f68e0e26f0bb7960be334d5b520ea452/library\core\src\panicking.rs:80
+   2: capacity_probe::main
+   3: capacity_probe::real_loopback_capacity_probe_preserves_binary_payload_and_counts_both_directions::{closure#0}
+   4: <capacity_probe::real_loopback_capacity_probe_preserves_binary_payload_and_counts_both_directions::{closure#0} as core::ops::function::FnOnce<()>>::call_once
+   5: core::ops::function::FnOnce::call_once
+             at /rustc/8bab26f4f68e0e26f0bb7960be334d5b520ea452/library\core\src\ops\function.rs:250
+note: Some details are omitted, run with `RUST_BACKTRACE=full` for a verbose backtrace.
+
+
+failures:
+    real_loopback_capacity_probe_preserves_binary_payload_and_counts_both_directions
+
+test result: FAILED. 2 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.87s
+
+error: test failed, to rerun pass `--test capacity_probe`
+

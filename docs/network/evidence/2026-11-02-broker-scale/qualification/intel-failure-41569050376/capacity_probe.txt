@@ -1,0 +1,34 @@
+    Finished `test` profile [unoptimized] target(s) in 0.51s
+     Running tests/capacity_probe.rs (crates/spiralcore-mvm-adapter/target/debug/deps/capacity_probe-c45bb5dfaf572912)
+
+running 3 tests
+test capacity_registration_rejects_unbounded_endpoint_or_work_requests ... ok
+test teardown_errors_are_retained_without_discarding_transfer_measurements ... ok
+test real_loopback_capacity_probe_preserves_binary_payload_and_counts_both_directions ... FAILED
+
+failures:
+
+---- real_loopback_capacity_probe_preserves_binary_payload_and_counts_both_directions stdout ----
+
+thread 'real_loopback_capacity_probe_preserves_binary_payload_and_counts_both_directions' (38796) panicked at tests/capacity_probe.rs:9:5:
+assertion `left == right` failed
+  left: Number(1)
+ right: 2
+stack backtrace:
+   0: __rustc::rust_begin_unwind
+   1: core::panicking::panic_fmt
+   2: core::panicking::assert_failed_inner
+   3: core::panicking::assert_failed::<serde_json::value::Value, i32>
+   4: capacity_probe::real_loopback_capacity_probe_preserves_binary_payload_and_counts_both_directions
+   5: capacity_probe::real_loopback_capacity_probe_preserves_binary_payload_and_counts_both_directions::{closure#0}
+   6: <capacity_probe::real_loopback_capacity_probe_preserves_binary_payload_and_counts_both_directions::{closure#0} as core::ops::function::FnOnce<()>>::call_once
+note: Some details are omitted, run with `RUST_BACKTRACE=full` for a verbose backtrace.
+
+
+failures:
+    real_loopback_capacity_probe_preserves_binary_payload_and_counts_both_directions
+
+test result: FAILED. 2 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.87s
+
+error: test failed, to rerun pass `--test capacity_probe`
+

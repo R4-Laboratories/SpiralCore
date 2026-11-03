@@ -4,8 +4,13 @@ mod probe;
 
 #[test]
 fn real_loopback_capacity_probe_preserves_binary_payload_and_counts_both_directions() {
-    let row = probe::run_cell(2, true, 4, 0).unwrap();
-    assert!(row["first_error"].is_null(), "capacity smoke refused before completion: {row}");
+    let row = probe::run_smoke_cell().unwrap();
+    assert!(
+        row["first_error"].is_null(),
+        "capacity smoke refused before completion: {row}"
+    );
+    assert_eq!(row["profile"]["name"], "capacity-portable-smoke-v1");
+    assert_eq!(row["profile"]["message_ttl_ms"], 30_000);
     assert_eq!(row["configured_endpoints"], 2);
     assert_eq!(row["accepted_calls"], 2);
     assert_eq!(row["accepted_casts"], 2);
@@ -57,5 +62,27 @@ fn teardown_errors_are_retained_without_discarding_transfer_measurements() {
             .as_str()
             .unwrap()
             .contains("PermissionDenied")
+    );
+}
+
+#[test]
+fn portable_smoke_profile_does_not_change_benchmark_deadlines() {
+    // This checks the registered profile, not a short-deadline throughput gate.
+    // A benchmark row retains any actual refusal in its diagnostic fields.
+    let benchmark = probe::run_cell(2, true, 1, 0).unwrap();
+    assert_eq!(benchmark["profile"]["message_ttl_ms"], 1000);
+    assert_eq!(
+        benchmark["profile"]["name"],
+        "capacity-native-identities-retention1s-v1"
+    );
+    let smoke = probe::run_smoke_cell().unwrap();
+    assert!(
+        smoke["first_error"].is_null(),
+        "portable smoke failed: {smoke}"
+    );
+    assert_eq!(smoke["profile"]["message_ttl_ms"], 30_000);
+    assert_eq!(
+        smoke["profile"]["retention_ms"],
+        benchmark["profile"]["retention_ms"]
     );
 }

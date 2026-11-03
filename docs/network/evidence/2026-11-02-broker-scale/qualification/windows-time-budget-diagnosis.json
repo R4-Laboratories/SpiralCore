@@ -1,0 +1,149 @@
+{
+  "source": "0ee32ab94299ce672e5c153143b71ed40908b181",
+  "run_id": 41570559207,
+  "job_id": 125702316326,
+  "original_file": "windows-failure-41570559207/capacity_probe.txt",
+  "observed": {
+    "accepted_calls": 1,
+    "accepted_casts": 0,
+    "actual_both_direction_bytes": 26741,
+    "actual_caller_to_receiver_bytes": 11083,
+    "actual_receiver_to_caller_bytes": 15658,
+    "admission_latency": {
+      "p50_us": 916314,
+      "p95_us": 916314,
+      "p99_us": 916314,
+      "samples": 1
+    },
+    "application_reply_latency": {
+      "p50_us": null,
+      "p95_us": null,
+      "p99_us": null,
+      "samples": 0
+    },
+    "attempted_operations": 1,
+    "byte_counter_scope": "canonical encrypted envelopes plus framing; excludes TCP/IP headers and kernel retransmission",
+    "close_errors": [],
+    "completed_calls": 0,
+    "completed_casts": 0,
+    "configured_endpoints": 2,
+    "durability": "AcceptedEphemeral exact application echo; no durable object publication claim",
+    "elapsed_us": 1297524,
+    "exact_readbacks": 1,
+    "fd_count_scope": "local process descriptors; enumeration may include its own temporary directory descriptor",
+    "fd_sampled_at_start": null,
+    "fd_sampled_max": null,
+    "fidelity_failures": 0,
+    "fidelity_scope": "compared readbacks only; unverified admitted requests are not successful delivery",
+    "final_identities": 7,
+    "first_error": "Unauthorized",
+    "first_error_stage": "caller_reply_admission",
+    "frames_sent": 3,
+    "global_dispatch": "serial round robin",
+    "incomplete_admitted_requests": 1,
+    "kernel_reported_peak_process_rss_bytes": null,
+    "latency": {
+      "p50_us": null,
+      "p95_us": null,
+      "p99_us": null,
+      "samples": 0
+    },
+    "measurement_process_id": 2732,
+    "ordering": "stable",
+    "pacing_total_operations_per_second": null,
+    "pipeline_per_pair": 1,
+    "post_operation_sampled_fifo_entry_max": 0,
+    "post_operation_sampled_fifo_scope_max": 0,
+    "post_operation_sampled_identity_max": 0,
+    "post_operation_samples": [],
+    "post_ttl_cleanup": {
+      "after_active_calls": 0,
+      "after_queued_messages": 0,
+      "before_active_calls": 1,
+      "before_queued_messages": 1,
+      "service_reset": false,
+      "wait_only_after_refusal_ms": 2100,
+      "wall_us": 2100226
+    },
+    "process_cpu_us": 1062500,
+    "process_peak_rss_at_start_bytes": null,
+    "profile": {
+      "actual_control_reserve": {
+        "host": {
+          "identities": 16384,
+          "queued_bytes": 1048576,
+          "queued_messages": 256
+        },
+        "mailbox": {
+          "identities": 8192,
+          "queued_bytes": 262144,
+          "queued_messages": 64
+        },
+        "sender": {
+          "identities": 4096,
+          "queued_bytes": 131072,
+          "queued_messages": 32
+        },
+        "tenant": {
+          "identities": 8192,
+          "queued_bytes": 524288,
+          "queued_messages": 128
+        }
+      },
+      "actual_limits": {
+        "host": {
+          "active_calls": 64,
+          "identities": 65536,
+          "queued_bytes": 16777216,
+          "queued_messages": 1024
+        },
+        "mailbox": {
+          "active_calls": 16,
+          "identities": 32768,
+          "queued_bytes": 4194304,
+          "queued_messages": 256
+        },
+        "sender": {
+          "active_calls": 8,
+          "identities": 16384,
+          "queued_bytes": 2097152,
+          "queued_messages": 128
+        },
+        "tenant": {
+          "active_calls": 32,
+          "identities": 32768,
+          "queued_bytes": 8388608,
+          "queued_messages": 512
+        }
+      },
+      "fd_ceiling": 128,
+      "host_identities": 65536,
+      "mailbox_identities": 32768,
+      "max_duration_ms": 120000,
+      "max_operations": 100000,
+      "message_ttl_ms": 1000,
+      "name": "capacity-native-identities-retention1s-v1",
+      "payload_bytes": 4096,
+      "retention_ms": 1000,
+      "rss_ceiling_bytes": 536870912,
+      "sender_identities": 16384,
+      "tenant_identities": 32768
+    },
+    "receiver_verified_requests": 1,
+    "requested_duration_ms": 0,
+    "requested_operations": 4,
+    "rss_sample_interval_operations": 20,
+    "rss_scope": "getrusage process lifetime high-water; CLI runs each cell in a fresh process",
+    "sampled_process_peak_rss_bytes": null,
+    "scope": "authenticated TCP loopback logical endpoints; not WAN/native MVM/fleet capacity",
+    "sender_receiver_counters_match": true,
+    "setup_process_cpu_us": 312500,
+    "setup_wall_us": 314607,
+    "stop_reason": "first_error",
+    "tcp_pairs": 1,
+    "teardown_scope": "socket shutdown after transfer accounting; close diagnostics do not establish payload loss or erase unexpected cleanup failures",
+    "unexpected_teardown_errors": 0,
+    "unverified_admitted_requests": 0
+  },
+  "interpretation": "Source-supported expiry diagnosis: canonical Reply inherits original Call expiry, and the hosted unoptimized operation recorded caller_reply_admission Unauthorized after1297524us under its1000ms profile, with exact request bytes. Exact issued/expiry/admission timestamps are not retained, so this is not a uniquely proven trace-level cause. Keep the benchmark deadline and use a separately named30000ms portable functional smoke profile with actualTTL recorded. Original Intel run did not capture first_error and remains separately inconclusive."
+}

@@ -27,6 +27,19 @@ use std::{
 type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
 const POLICY: IssuancePolicy = IssuancePolicy::Exact;
 const MAX_OPERATIONS: usize = 100_000;
+#[derive(Clone, Copy)]
+struct Profile {
+    name: &'static str,
+    message_ttl_ms: i64,
+}
+const BENCHMARK_PROFILE: Profile = Profile {
+    name: "capacity-native-identities-retention1s-v1",
+    message_ttl_ms: 1000,
+};
+const PORTABLE_SMOKE_PROFILE: Profile = Profile {
+    name: "capacity-portable-smoke-v1",
+    message_ttl_ms: 30_000,
+};
 
 struct Endpoint {
     service: LocalMailboxService,
@@ -159,6 +172,7 @@ fn operation(
     call: bool,
     payload: &[u8],
     progress: &mut Progress,
+    message_ttl_ms: i64,
 ) -> Result<()> {
     let started = Instant::now();
     let caller = &mut pair.caller;
@@ -189,7 +203,7 @@ fn operation(
                 outgoing,
                 fixture::content_type(),
                 now,
-                now.unix_ms + 1000,
+                now.unix_ms + message_ttl_ms,
                 POLICY,
             )?
         } else {
@@ -197,7 +211,7 @@ fn operation(
                 outgoing,
                 fixture::content_type(),
                 now,
-                now.unix_ms + 1000,
+                now.unix_ms + message_ttl_ms,
                 POLICY,
             )?
         };
@@ -436,6 +450,20 @@ pub fn run_cell(
     messages: usize,
     duration_ms: u64,
 ) -> Result<Value> {
+    run_profile(endpoints, stable, messages, duration_ms, BENCHMARK_PROFILE)
+}
+/// Functional portability witness, not the one-second-deadline load benchmark.
+/// Keep this workload fixed and small; only its explicit message TTL differs.
+pub fn run_smoke_cell() -> Result<Value> {
+    run_profile(2, true, 4, 0, PORTABLE_SMOKE_PROFILE)
+}
+fn run_profile(
+    endpoints: usize,
+    stable: bool,
+    messages: usize,
+    duration_ms: u64,
+    profile: Profile,
+) -> Result<Value> {
     if ![2, 8, 32].contains(&endpoints)
         || messages == 0
         || messages > MAX_OPERATIONS
@@ -505,6 +533,7 @@ pub fn run_cell(
             is_call,
             &payload,
             &mut progress,
+            profile.message_ttl_ms,
         );
         exact += progress.exact;
         receiver_exact += usize::from(progress.receiver_exact);
@@ -605,7 +634,11 @@ pub fn run_cell(
     }
     let before_cleanup = budget.snapshot()?;
     let cleanup_start = Instant::now();
-    let cleanup_wait_ms = if refusal.is_some() { 2100 } else { 0 };
+    let cleanup_wait_ms = if refusal.is_some() {
+        u64::try_from(profile.message_ttl_ms)? + 1000 + 100
+    } else {
+        0
+    };
     if cleanup_wait_ms > 0 {
         std::thread::sleep(Duration::from_millis(cleanup_wait_ms));
     }
@@ -674,10 +707,10 @@ pub fn run_cell(
         json!("compared readbacks only; unverified admitted requests are not successful delivery");
     row["post_operation_samples"] = json!(timeline);
     row["post_ttl_cleanup"] = json!({"wait_only_after_refusal_ms":cleanup_wait_ms,"wall_us":cleanup_wall_us,"before_active_calls":before_cleanup.active_calls,"after_active_calls":snapshot.active_calls,"before_queued_messages":before_cleanup.queued_messages,"after_queued_messages":snapshot.queued_messages,"service_reset":false});
-    row["profile"] = json!({"name":"capacity-native-identities-retention1s-v1",
+    row["profile"] = json!({"name":profile.name,
         "retention_ms":1000,"host_identities":65536,"tenant_identities":32768,
         "mailbox_identities":32768,"sender_identities":16384,"payload_bytes":4096,
-        "message_ttl_ms":1000,"max_operations":MAX_OPERATIONS,"max_duration_ms":120000,"rss_ceiling_bytes":536870912,"fd_ceiling":128});
+        "message_ttl_ms":profile.message_ttl_ms,"max_operations":MAX_OPERATIONS,"max_duration_ms":120000,"rss_ceiling_bytes":536870912,"fd_ceiling":128});
     for (name, cap) in [
         ("host", snapshot.limits.host),
         ("tenant", snapshot.limits.tenant),

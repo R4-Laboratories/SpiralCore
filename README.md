@@ -70,8 +70,13 @@ long-lived operation are an additional release gate in
 [#49](https://github.com/R4-Laboratories/SpiralCore/issues/49); two guests do not
 establish a scalable deployment envelope. The
 [scale boundary review](docs/network/evidence/2026-11-02-mvm-service/qualification/scale-boundary.md)
-records the current per-session budget/clock ownership, retained FIFO scopes and
-serial dispatcher constraints, with the bounded load experiment required next.
+records the starting ownership, retained-state and serial-dispatch constraints.
+The [shared-broker load report](docs/network/evidence/2026-11-02-broker-scale/README.md)
+now records the implemented shared budget/clock, stable ordering and 2/8/32 logical
+endpoint runs. Stable scopes reduced peak RSS in every matched cell and retained
+3/12/48 FIFO checkpoints instead of roughly 1,950 in the paced runs. CPU and
+latency varied; saturation still reached another admission limit. These local
+serial-dispatch results do not qualify concurrent fleet or WAN capacity.
 
 ### Where SpiralCore sits in the network stack
 

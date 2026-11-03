@@ -103,7 +103,11 @@ is required before the final MVM contribution. The two-guest pilot and native
 client matrix establish functional boundaries. They do not qualify fleet size.
 
 The [source-backed scale boundary review](../network/evidence/2026-11-02-mvm-service/qualification/scale-boundary.md)
-sets the immediate sequence; these steps are not yet implemented or measured:
+set the implementation sequence. Shared broker ownership and persistent ordering
+are now implemented; the [recorded load campaign](../network/evidence/2026-11-02-broker-scale/README.md)
+contains twelve 2/8/32-endpoint cells, exact readbacks, bytes, CPU, memory,
+latency and partial-admission/refusal cleanup. The dispatcher remains serial,
+and control/tracker retention and fairness remain open scale requirements.
 
 - **Broker context** — files `crates/spiralcore-mvm-live/src/campaign/canonical.rs`
   and `crates/spiralcore-mvm-adapter/tests/service.rs`: introduce explicit shared
@@ -126,6 +130,14 @@ sets the immediate sequence; these steps are not yet implemented or measured:
   negotiated pipeline window. Test gap repair, epoch/revocation, malformed floods
   and control progress under saturation. Dependency: capacity probe; risk high
   for authority/ordering changes. Keep the current serial native path as control.
+
+The current results establish stable FIFO scope counts and lower peak RSS, not
+universal CPU gains or higher admission capacity. Saturation reached the same
+completed-operation boundary for fresh/stable controls. Precise quota attribution,
+the existing five-minute terminal-tracker retention cycle, hot/slow/malformed
+peer fairness and large-object scheduling precede a pipeline or lock-sharding
+decision. Those are follow-ups within #49, rather than reasons to raise limits
+or discard replay checkpoints silently.
 
 1. Freeze a capacity registration per role: peers/MVMs, active streams/transfers,
    workload sizes, cache/staging/metadata budgets, CPU, RSS and descriptor limits.

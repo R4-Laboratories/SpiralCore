@@ -37,9 +37,22 @@ patch or hardware SHA assembly feature is enabled.
 | `service` | 16 |
 | `receipt` | 15 |
 | `service_epoch` | 3 |
-| `service_sender` | 2 |
+| `service_sender` | 4 |
 | `service_tcp` | 1 |
 | `service_clock` | 4 |
+| `broker` | 3 |
+| `service_metrics` | 1 |
+| `receipt_send` | 3 |
+| `capacity_probe` | 4 |
+
+The portable capacity smoke uses the explicitly named
+`capacity-portable-smoke-v1` profile: two endpoints, four operations and a
+30-second application-message TTL. It proves functional encrypted transfer and
+exact readbacks on hosted debug builds, not a latency target. The separately
+recorded load campaign and both CLI measurement paths retain their one-second
+benchmark TTL. Existing expiry/cancellation/replay negative tests remain enabled.
+The [broker load report](../network/evidence/2026-11-02-broker-scale/README.md)
+preserves the earlier deadline refusals and the distinct profile identities.
 
 Every target is first enumerated and then executed without a filter. Passing
 counts must equal the enumerated count and meet the minimum. Failed, ignored,
