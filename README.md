@@ -45,8 +45,8 @@ and the `linux-host` feature selects the host. Native ephemeral mailbox-client
 tests have passed on Windows Server 2022/2025 x64 and Windows 11 ARM64 at the
 [recorded source checkpoint](docs/network/evidence/2026-11-02-mvm-service/platforms/README.md).
 Windows private/durable object storage and packet attachment still need a port.
-A portable mailbox client does not establish a Windows MVM host; the latest
-dependency revision is being requalified separately.
+A portable mailbox client does not establish a Windows MVM host. The current
+published MVM dependency has passed the recorded seven-platform contract run.
 [Linux build and lifecycle details →](docs/network/linux-firecracker.md)
 
 **MVM delivery roadmap:** [GitHub issue #42](https://github.com/R4-Laboratories/SpiralCore/issues/42)
@@ -56,12 +56,16 @@ integration, owner access and final upstream contribution. The
 endpoint roles from candidate OS/version/architecture cells. Native execution,
 real WAN pairs and unavailable backend gates are tracked separately in
 [#46](https://github.com/R4-Laboratories/SpiralCore/issues/46) and
-[#47](https://github.com/R4-Laboratories/SpiralCore/issues/47). The new canonical
-service qualification is in progress; historical native results below do not
-qualify that newer implementation or establish cross-platform WAN support.
-The [four-session Mac service pilot](docs/network/evidence/2026-11-02-mvm-service/mac-native-intermediate/README.md)
-records actual guest/host and two-guest transfers with exact reboot readback,
-bytes, CPU and elapsed time at its own pinned source. Fleet capacity and
+[#47](https://github.com/R4-Laboratories/SpiralCore/issues/47). The [current canonical-service native report](docs/network/evidence/2026-11-02-mvm-service/native-ae12/README.md)
+records **16 successful Linux/Firecracker and macOS/HVF sessions**, including
+one-guest/host and two-guest transfers, 32 successful guest boots and 72 exact
+keyless reboot readbacks. At the larger tier (14,851,384-byte objects), complete
+mixed sessions used **41.7–41.8% fewer canonical stream bytes** than prepared
+whole-object zstd/raw with the same warm probe. Endpoint CPU and sender elapsed
+were lower in all eight paired session comparisons; small-session lifecycle and
+individual-operation losses remain visible in the report. These are single-trial
+local native observations, with different backend rate profiles; cross-platform
+WAN support remains unqualified. Historical results below retain their own sources. Fleet capacity and
 long-lived operation are an additional release gate in
 [#49](https://github.com/R4-Laboratories/SpiralCore/issues/49); two guests do not
 establish a scalable deployment envelope.

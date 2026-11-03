@@ -163,22 +163,27 @@ and old results remain unchanged; they do not qualify the current service.
 
 ## Qualification and remaining delivery
 
-The retained [seven-platform report](../../docs/network/evidence/2026-11-02-mvm-service/platforms/README.md)
-records **358 passing executions**: 50 portable tests on each of seven native
-Linux/macOS/Windows rows, plus eight Unix storage executions. That run belongs
-to source `2a4a199f0bae224fbe82aa148feb20273bd64d84` and MVM fork `5766754`, not
-the current `ae12e9d` dependency. The
-[macOS/HVF intermediate report](../../docs/network/evidence/2026-11-02-mvm-service/mac-native-intermediate/README.md)
-records four successful local native sessions at source `333f8e8` with that older
-fork, including two-guest read-only recovery. The retained
-[Linux intermediate report](../../docs/network/evidence/2026-11-02-mvm-service/linux-native-intermediate/README.md)
-separately preserves its successes and failures. They are not pooled or relabeled
-as current-pin qualification.
+The current [seven-platform report](../../docs/network/evidence/2026-11-02-mvm-service/platforms/README.md)
+records **358 passing executions** against public MVM fork `ae12e9d`: 50 portable
+tests on each of seven native Linux/macOS/Windows rows, plus eight Unix storage
+executions. The Linux release workflow also passed its 42 host/adapter/campaign
+tests and shared conformance. Original source, runner and artifact identities
+remain in the report.
 
-Fresh platform/native qualification on `ae12e9d` is pending; the Linux rerun is
-currently blocked by SSH reachability to the test host. The
+The [current native report](../../docs/network/evidence/2026-11-02-mvm-service/native-ae12/README.md)
+records **16 successful local sessions**, on Linux/Firecracker and macOS/HVF,
+through the canonical four-envelope admission lifecycle. Both size tiers have
+one-guest/host and two-guest runs; actual larger primary objects are 14,851,384
+bytes. All exact readbacks passed, including 72 keyless recovery readbacks across
+eight recovery boots. Bytes, endpoint CPU, elapsed/lifecycle time and observed
+losses are recorded for both arms, without pooling different backend profiles.
+These single-trial local runs do not establish WAN or fleet capacity.
+
+The earlier [macOS](../../docs/network/evidence/2026-11-02-mvm-service/mac-native-intermediate/README.md)
+and [Linux](../../docs/network/evidence/2026-11-02-mvm-service/linux-native-intermediate/README.md)
+intermediate results and failed gates retain their original identities. The
 [native witness guide](../spiralcore-mvm-live/README.md) describes its separate
-build/run boundary. Its mailbox port 5257 is experimental and production remains
+build/run boundary. Mailbox port 5257 remains experimental and production is
 disabled. FlowMux port 5253 remains a separate policy-controlled network path.
 
 Open delivery work is tracked in

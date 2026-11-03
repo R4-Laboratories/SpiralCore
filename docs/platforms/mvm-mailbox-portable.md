@@ -46,9 +46,9 @@ counts must equal the enumerated count and meet the minimum. Failed, ignored,
 measured or filtered cases fail the row; a Unix-only target silently running
 zero tests cannot pass. The current portable targets require at least **50 passes on every row**,
 including four new clock-policy regressions. Their all-platform execution status
-is **PASS at the pinned protocol source** in run 41539620012: all seven native
-rows executed the expanded coverage. The older checkpoint executed the original
-46 tests per row; it remains separate historical evidence. The two existing
+is **PASS at the pinned current `ae12` dependency source** in run 41546165676:
+all seven native rows executed the expanded coverage. Earlier 46/50-test
+checkpoints remain separate historical evidence at their original dependencies. The two existing
 durable storage dispatch tests were moved unchanged from `canonical.rs` into
 `canonical_storage.rs`, retaining the shared fixture module. A separate explicit
 Linux/macOS-only step enumerates and executes both, records separate counts and
@@ -67,21 +67,28 @@ Jobs have read-only repository permissions, pinned action SHAs, bounded timeouts
 and at most three concurrent test rows.
 
 Latest executed status is **PASS for 50 tests on all seven native rows** in
-[run 41539620012](https://github.com/R4-Laboratories/SpiralCore/actions/runs/41539620012):
-350 portable tests plus eight Unix storage tests, including four clock regressions
-per row. Actual merge source `104187b956190c01351b10e0530ce928a66620df` has the same
-tree as PR head `2a4a199f0bae224fbe82aa148feb20273bd64d84`. The
+[run 41546165676](https://github.com/R4-Laboratories/SpiralCore/actions/runs/41546165676):
+350 portable tests plus eight Unix storage tests, using published MVM revision
+`ae12e9deb41cc9a3264196ce22ebc72d4042883d`. Actual merge source
+`f06af8e5aa7e73c71af84edb0fd2f1ee5543d1b9` has the same tree as PR head
+`25234ddb44589f752d28870190af985852ddc1a7`. The
 [permanent report and original artifacts](../network/evidence/2026-11-02-mvm-service/platforms/README.md)
-preserve exact native identities and both checkpoints. Historical run 41535679868
-remains pinned separately at 46 tests per row and 322 portable plus eight storage
-passes. Later source changes require their own evidence.
+preserve exact identities and the earlier 330/358-execution checkpoints. The
+later documentation-only checkpoint does not create a new protocol implementation
+or change these pinned execution identities.
 
-The separate Linux MVM workflow 41539620010 failed its debug 16 MiB campaign
-with `Expired` / `object endpoint refused operation`; its retained failure and
-replacement gate remain explicit in the report. Neither the current portability
-pass nor the historical one waives that gate. Other remaining explicit
-gates include real WAN in both directions,
-KVM/HVF/libkrun guest/host witnesses, Windows durable storage, NIC attachment,
-FlowMux and owner-access integration, additional OS/version/ABI combinations,
-and security or performance qualification. See the
-[platform contract](../specs/2026-11-02-mvm-platforms.md) for the complete boundary.
+The separate [Linux MVM workflow 41546165642](https://github.com/R4-Laboratories/SpiralCore/actions/runs/41546165642)
+passed at the same merge source: 42 release-mode host/adapter/campaign tests,
+90 shared conformance tests, strict warnings, default guest compilation and
+synthetic analyzers. Its exact-readback 16 MiB loopback campaign passed. The older
+debug 16 MiB `Expired` failure remains retained; release-mode success does not erase
+it or establish a booted MVM, real WAN or transfer-performance result.
+
+Remaining explicit gates include native backend/16 MiB qualification, real WAN
+in both directions, Windows durable storage, NIC attachment, FlowMux and owner
+access, additional OS/version/ABI combinations, security and performance.
+[Scale #49](https://github.com/R4-Laboratories/SpiralCore/issues/49) separately
+requires measured aggregate limits, long-lived bounds, fairness, saturation and
+tail latency; two guests or simulated endpoints do not prove fleet capacity.
+See the [platform contract](../specs/2026-11-02-mvm-platforms.md) for the complete
+boundary.
