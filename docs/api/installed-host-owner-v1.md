@@ -12,6 +12,11 @@ pub struct Epoch(/* private installation/profile/generation binding */);
 impl Epoch { pub fn generation(&self) -> u64; }
 pub enum Phase { Clean, Active }
 pub struct OwnerSnapshot { pub phase: Phase, pub epoch: u64 }
+pub struct InstallationBinding {
+    pub root: std::path::PathBuf,
+    pub key: InstallationKey,
+    pub generation: u64,
+}
 pub enum Recovery { AlreadyClean, Retired { epoch: u64 } }
 pub enum OwnerError {
     Busy, RecoveryRequired, InvalidStorage, StaleEpoch, EpochExhausted,
@@ -26,6 +31,7 @@ impl InstallationOwner {
         -> Result<Self, OwnerError>;
     pub fn snapshot(&self) -> Result<OwnerSnapshot, OwnerError>;
     pub fn profile_hash(&self) -> Result<[u8; 32], OwnerError>;
+    pub fn active_binding(&self, expected: Epoch) -> Result<InstallationBinding, OwnerError>;
     pub fn begin(&mut self) -> Result<Epoch, OwnerError>;
     pub fn finish(&mut self, epoch: Epoch) -> Result<(), OwnerError>;
     pub fn reconcile(&mut self) -> Result<Recovery, OwnerError>;
@@ -52,6 +58,15 @@ Key values come from trusted installation provisioning, never network input; zer
 `finish` requires the current Active epoch, drops only its own supervisor SH and obtains holders EX. Live independently opened holders cause Busy and retain durable Active; another finish attempt is allowed. While EX-held, durably publish Clean with unchanged generation. `reconcile` on Active follows the same EX requirement; only then retire it to Clean. It emits Retired, not remote mailbox rollback. A delayed helper acquires SH either before retirement (blocking it) or after it (observes Clean/new epoch and refuses). AlreadyClean does not erase history. No TTL, PID, timeout or Child outcome substitutes for actual lease exclusion.
 
 State is one fixed bounded record, plus at most one private publication temporary and one bounded private intent marker. Integers use checked canonical encoding; unknown phases/reserved fields, trailing bytes and generation exhaustion refuse. Publish only after exclusively creating `.state.intent`, writing its bounded intent and syncing both intent file and directory. Abort before any state mutation if that first barrier fails. Keep the marker through private exclusive temp write, file sync, atomic descriptor-relative rename and state-directory sync. A leftover intent/temp or uncertain STATE publication fences admission; neither is silently removed. Only after the state-directory barrier succeeds may the intent be unlinked, followed by cleanup-directory sync. A post-commit unlink/cleanup-sync error still errors/fences the current owner; a successor may accept an absent marker, because its removal can happen only after the state barrier succeeded. A marker that reappears after power loss conservatively fences. No claim that an unconfirmed initial intent creation survives power loss. Drop releases owned descriptors only and NEVER marks Clean. No explicit unlock on HolderLease drop. Failure paths retain original identity; inability to confirm durability is not success.
+
+`active_binding` is a fresh metadata snapshot for library consumers that already
+hold an owner and its original Epoch. It reuses canonical current-state validation
+and requires the exact original key/generation and Active phase. It returns
+provisioning facts, without an owner, lock file, Arc, mutex or boot permission.
+It allows consumers to construct local worker messages without duplicating the
+state parser; live-controller authorization and actual holder acquisition are
+still separate requirements. Caller changes to returned values cannot change
+the installation or authorize a resource.
 
 ## Holder handoff extension
 

@@ -119,6 +119,20 @@ admission step. Four native Unix architecture rows pass54 component entries;
 the actual worker/Firecracker handoff and crash/readmission qualification remain
 open. Existing session budgets retain their explicit orchestrator scope.
 
+The subsequent [installed-supervisor candidate and recorded native results](docs/network/evidence/2026-11-03-installed-supervisor/README.md)
+connect the explicit installed entry to exact owned workers, live-controller boot
+grants and actual Firecracker lifetime leases. A Linux death witness refuses a
+successor while the guest survives supervisor/worker death, then proves durable
+retirement and an exact next-epoch transfer after backend and launcher exit.
+A single local two-guest comparison preserves **33.06% fewer bytes and 12.12%
+less guest endpoint CPU**, alongside **0.69% longer lifecycle** than matched
+whole-object zstd. Native HVF installed recovery, aggregate plaintext/cache/workspace
+ownership and WAN acceptance remain open. The [Windows private-storage port](docs/api/windows-storage-v1.md)
+uses the same object protocol; its native platform tests must pass before Windows
+durable gateway qualification can be claimed. The complete remaining contribution
+is tracked in the [five-outcome Ari delivery plan](docs/plans/2026-11-03-ari-delivery.md)
+and [GitHub roadmap](https://github.com/R4-Laboratories/SpiralCore/issues/42).
+
 The [duplex relay checkpoint](docs/network/duplex-relay-results-2026-11-03.md)
 adds independently progressing keyless directions and safe half-close handling,
 including a reproduced Darwin shutdown fix. The newer

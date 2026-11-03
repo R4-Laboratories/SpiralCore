@@ -1,0 +1,28 @@
+
+running 2 tests
+test host_budget::tests::installed_authority::poison_closes_installed_worker_authority_immediately ... FAILED
+test host_budget::tests::installed_authority::underflow_closes_installed_worker_authority_immediately ... FAILED
+
+failures:
+
+---- host_budget::tests::installed_authority::poison_closes_installed_worker_authority_immediately stdout ----
+
+thread '<unnamed>' (16397471) panicked at src/../../../src/host_budget.rs:520:25:
+poison the owned installed ledger
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+thread 'host_budget::tests::installed_authority::poison_closes_installed_worker_authority_immediately' (16397470) panicked at src/../../../src/host_budget.rs:534:13:
+accounting fault left installed worker admission open
+
+---- host_budget::tests::installed_authority::underflow_closes_installed_worker_authority_immediately stdout ----
+
+thread 'host_budget::tests::installed_authority::underflow_closes_installed_worker_authority_immediately' (16397472) panicked at src/../../../src/host_budget.rs:534:13:
+accounting fault left installed worker admission open
+
+
+failures:
+    host_budget::tests::installed_authority::poison_closes_installed_worker_authority_immediately
+    host_budget::tests::installed_authority::underflow_closes_installed_worker_authority_immediately
+
+test result: FAILED. 0 passed; 2 failed; 0 ignored; 0 measured; 6 filtered out; finished in 0.09s
+

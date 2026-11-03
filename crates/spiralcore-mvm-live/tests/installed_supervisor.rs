@@ -98,22 +98,26 @@ fn installed_session_refuses_missing_assets_without_legacy_fallback_or_activatio
             trial: 0,
             bandwidth_profile: MailboxBandwidthProfile::Standard,
         };
-        let error = orchestrator::session_installed(
-            &mut controller, &run, &kernel, &guest, plan.clone(),
-        )
-        .unwrap_err();
+        let error =
+            orchestrator::session_installed(&mut controller, &run, &kernel, &guest, plan.clone())
+                .unwrap_err();
         assert_eq!(
-            error.downcast_ref::<std::io::Error>().map(std::io::Error::kind),
+            error
+                .downcast_ref::<std::io::Error>()
+                .map(std::io::Error::kind),
             Some(std::io::ErrorKind::NotFound),
             "installed entry must perform its own asset preflight: {error}"
         );
         assert!(!run.exists());
         assert_eq!(fs::read(installation.join("state.bin")).unwrap(), active);
         assert_eq!(controller.budget().snapshot().unwrap().usage.links, 0);
-        assert!(controller.budget().scope(0).is_err(), "error closes admission");
-        assert!(orchestrator::session_installed(
-            &mut controller, &run, &kernel, &guest, plan,
-        ).is_err());
+        assert!(
+            controller.budget().scope(0).is_err(),
+            "error closes admission"
+        );
+        assert!(
+            orchestrator::session_installed(&mut controller, &run, &kernel, &guest, plan,).is_err()
+        );
         assert!(!run.exists());
         controller.try_finish().unwrap();
         drop(controller);
@@ -121,4 +125,48 @@ fn installed_session_refuses_missing_assets_without_legacy_fallback_or_activatio
         assert_eq!(owner.snapshot().unwrap().phase, Phase::Clean);
         assert_eq!(owner.snapshot().unwrap().epoch, 1);
     }
+}
+
+#[test]
+fn installed_cli_initializes_explicit_identity_and_retires_failed_asset_preflight() {
+    let fixture = tempfile::tempdir().unwrap();
+    fs::set_permissions(fixture.path(), fs::Permissions::from_mode(0o700)).unwrap();
+    let installation = fixture.path().join("installation");
+    let exe = env!("CARGO_BIN_EXE_spiralcore-mvm-live");
+    let identity = "59".repeat(32);
+    let initialized = std::process::Command::new(exe)
+        .arg("installation-init")
+        .arg(&installation)
+        .arg(&identity)
+        .output()
+        .unwrap();
+    assert!(
+        initialized.status.success(),
+        "{}",
+        String::from_utf8_lossy(&initialized.stderr)
+    );
+    let key = InstallationKey {
+        installation: [0x59; 32],
+        profile: InstalledConfig::native_profile().profile_hash(),
+    };
+    let owner = InstallationOwner::open(&installation, key).unwrap();
+    assert_eq!(owner.snapshot().unwrap().phase, Phase::Clean);
+    assert_eq!(owner.snapshot().unwrap().epoch, 0);
+    drop(owner);
+    let run = fixture.path().join("missing-assets-run");
+    let failed = std::process::Command::new(exe)
+        .arg("session-installed")
+        .arg(&installation)
+        .arg(&identity)
+        .arg(&run)
+        .arg(fixture.path().join("missing-kernel"))
+        .arg(fixture.path().join("missing-guest"))
+        .args(["one", "whole", "4096", "0"])
+        .output()
+        .unwrap();
+    assert!(!failed.status.success());
+    assert!(!run.exists());
+    let owner = InstallationOwner::open(&installation, key).unwrap();
+    assert_eq!(owner.snapshot().unwrap().phase, Phase::Clean);
+    assert_eq!(owner.snapshot().unwrap().epoch, 1);
 }

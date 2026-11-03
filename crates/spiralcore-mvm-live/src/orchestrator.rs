@@ -61,6 +61,8 @@ use crate::{
         HostTransportBudget, LinkReservation, TransportBudgetConfig, TransportLimits,
         TransportScope,
     },
+    installed_supervisor::{InstalledSupervisor, WorkerBinding, WorkerGrant, WorkerRole},
+    installed_worker::ParentControl,
 };
 use cpu_time::ProcessTime;
 use mvm_core::mailbox::{decode_envelope, transport::CancellationToken};
@@ -71,10 +73,11 @@ use std::{
     io::{self, Read, Write},
     net::Shutdown,
     os::{
-        fd::AsRawFd,
+        fd::{AsRawFd, OwnedFd},
         unix::{
             fs::{DirBuilderExt, OpenOptionsExt},
             net::{UnixListener, UnixStream},
+            process::CommandExt,
         },
     },
     path::{Path, PathBuf},
@@ -110,24 +113,47 @@ fn read_bounded(path: &Path, max: usize) -> Result<Vec<u8>> {
 }
 
 /// Owned child: early return terminates and reaps only this worker.
+enum LaunchContext<'a> {
+    Legacy,
+    Installed(&'a mut InstalledSupervisor),
+}
+impl LaunchContext<'_> {
+    fn installed(&mut self) -> Result<&mut InstalledSupervisor> {
+        match self {
+            Self::Installed(controller) => Ok(controller),
+            Self::Legacy => Err("installed worker cannot use a legacy launch context".into()),
+        }
+    }
+}
+struct InstalledWorker {
+    grant: WorkerGrant,
+    binding: WorkerBinding,
+    _control: ParentControl,
+}
 struct Worker {
     child: Option<Child>,
+    installed: Option<InstalledWorker>,
     output: PathBuf,
     #[cfg(target_os = "linux")]
     home: PathBuf,
     #[cfg(target_os = "linux")]
-    pid: u32,
+    pid: Option<u32>,
 }
 impl Worker {
     fn start(
         root: &Path,
-        name: &str,
         kernel: &Path,
         guest: &[u8],
         bootstrap: &Bootstrap,
         disk: Option<&Path>,
         socket: Option<&Path>,
+        launch: &mut LaunchContext<'_>,
     ) -> Result<Self> {
+        let name = match bootstrap.role {
+            Role::Sender => "sender",
+            Role::Receiver => "receiver",
+            Role::Verify => "recovery",
+        };
         let output = root.join(format!("{name}.json"));
         let stdout = private_file(&output)?;
         let stderr = private_file(&root.join(format!("{name}.stderr")))?;
@@ -137,6 +163,71 @@ impl Worker {
         let initrd = host::initramfs(guest, &serde_json::to_vec(&private_bootstrap)?)?;
         let home = root.join(format!("mvm-{name}"));
         fs::DirBuilder::new().mode(0o700).create(&home)?;
+        if let LaunchContext::Installed(controller) = launch {
+            let (mut control, child_control) = ParentControl::pair()?;
+            let (input_reader, mut input_writer) = UnixStream::pair()?;
+            let role = match bootstrap.role {
+                Role::Sender => WorkerRole::Sender,
+                Role::Receiver => WorkerRole::Receiver,
+                Role::Verify => WorkerRole::Verify,
+            };
+            let role_number = match role {
+                WorkerRole::Sender => 1,
+                WorkerRole::Receiver => 2,
+                WorkerRole::Verify => 3,
+            };
+            let fd = child_control.as_raw_fd();
+            let mut command = Command::new(std::env::current_exe()?);
+            command
+                .env("MVM_HOME", &home)
+                .arg("worker-installed")
+                .arg(kernel)
+                .arg(disk.unwrap_or(Path::new("-")))
+                .arg(socket.unwrap_or(Path::new("-")))
+                .arg(bootstrap.plan.bandwidth_profile.as_str())
+                .arg(role_number.to_string())
+                .stdin(Stdio::from(OwnedFd::from(input_reader)))
+                .stdout(stdout)
+                .stderr(stderr);
+            // SAFETY: the child callback uses only scalar dup2/fcntl and an
+            // owned pair endpoint kept alive until spawn returns. No allocation,
+            // locks, received callback or owner-EX descriptor is passed.
+            unsafe {
+                command.pre_exec(move || {
+                    if fd != 198 && libc::dup2(fd, 198) < 0 {
+                        return Err(io::Error::last_os_error());
+                    }
+                    let flags = libc::fcntl(198, libc::F_GETFD);
+                    if flags < 0 || libc::fcntl(198, libc::F_SETFD, flags & !libc::FD_CLOEXEC) < 0 {
+                        return Err(io::Error::last_os_error());
+                    }
+                    Ok(())
+                });
+            }
+            let grant = controller.spawn_worker(role, &mut command)?;
+            drop(child_control);
+            control.receive_challenge()?;
+            let binding = controller.worker_binding(&grant)?;
+            control.send_binding(&binding)?;
+            control.wait_ready()?;
+            control.write_initrd(&mut input_writer, &initrd)?;
+            control.receive_boot_challenge()?;
+            let fresh = controller.worker_binding(&grant)?;
+            control.send_go(&fresh)?;
+            return Ok(Self {
+                child: None,
+                installed: Some(InstalledWorker {
+                    grant,
+                    binding,
+                    _control: control,
+                }),
+                output,
+                #[cfg(target_os = "linux")]
+                home,
+                #[cfg(target_os = "linux")]
+                pid: None,
+            });
+        }
         let child = Command::new(std::env::current_exe()?)
             .env("MVM_HOME", &home)
             .arg("worker")
@@ -150,10 +241,11 @@ impl Worker {
             .spawn()?;
         let mut worker = Self {
             #[cfg(target_os = "linux")]
-            pid: child.id(),
+            pid: Some(child.id()),
             #[cfg(target_os = "linux")]
             home,
             child: Some(child),
+            installed: None,
             output,
         };
         let mut input = worker
@@ -167,10 +259,14 @@ impl Worker {
         drop(input); // Credential-bearing initramfs stays in the pipe/memory.
         Ok(worker)
     }
-    fn finish(mut self) -> Result<Value> {
+    fn finish(mut self, launch: &mut LaunchContext<'_>) -> Result<Value> {
         let deadline = Instant::now() + Duration::from_secs(150);
         let status = loop {
-            if let Some(status) = self.child.as_mut().ok_or("missing child")?.try_wait()? {
+            let status = match &self.installed {
+                Some(worker) => launch.installed()?.try_reap_worker(&worker.grant)?,
+                None => self.child.as_mut().ok_or("missing child")?.try_wait()?,
+            };
+            if let Some(status) = status {
                 break status;
             }
             if Instant::now() >= deadline {
@@ -180,7 +276,9 @@ impl Worker {
         };
         self.child.take();
         #[cfg(target_os = "linux")]
-        self.cleanup_vm()?;
+        if self.installed.is_none() {
+            self.cleanup_vm()?;
+        }
         if !status.success() {
             return Err(format!(
                 "worker failed: {status}; public receipt {}",
@@ -192,6 +290,17 @@ impl Worker {
         if value["ok"] != true || value["event"] != "worker_done" {
             return Err("worker success receipt missing".into());
         }
+        if let Some(worker) = &self.installed {
+            if value["installed_host_lease"] != true
+                || value["backend_exit_confirmed"] != true
+                || value["installed_generation"] != worker.binding.generation
+                || value["installed_role"] != worker.binding.role
+            {
+                return Err("installed worker backend-exit receipt missing".into());
+            }
+            launch.installed()?.confirm_worker_exit(&worker.grant)?;
+            self.installed.take();
+        }
         Ok(value)
     }
 
@@ -199,7 +308,11 @@ impl Worker {
     fn cleanup_vm(&self) -> Result<()> {
         let status = Command::new(std::env::current_exe()?)
             .arg("cleanup-worker")
-            .arg(self.pid.to_string())
+            .arg(
+                self.pid
+                    .ok_or("installed workers prohibit PID-based cleanup")?
+                    .to_string(),
+            )
             .env("MVM_HOME", &self.home)
             .stdin(Stdio::null())
             .stdout(Stdio::null())
@@ -212,6 +325,10 @@ impl Worker {
 }
 impl Drop for Worker {
     fn drop(&mut self) {
+        if let Some(worker) = &self.installed {
+            worker.grant.close_admission();
+            return;
+        }
         if let Some(mut child) = self.child.take() {
             let _ = child.kill();
             let _ = child.wait();
@@ -335,7 +452,14 @@ pub fn session(root: &Path, kernel: &Path, guest_path: &Path, plan: Plan) -> Res
     if plan.stage == Stage::One {
         // The host is a plaintext endpoint here, not a keyless relay. Its
         // StreamTransport buffers are not covered by this relay-only profile.
-        return session_owned(root, kernel, guest_path, plan, None);
+        return session_owned(
+            root,
+            kernel,
+            guest_path,
+            plan,
+            None,
+            &mut LaunchContext::Legacy,
+        );
     }
     let budget = transport_budget()?;
     let scope = budget.scope(0)?;
@@ -373,7 +497,50 @@ pub fn session_with_budget(
     if plan.stage != Stage::Two {
         return Err("transport-budget v1 covers the two-guest keyless relay only".into());
     }
-    session_owned(root, kernel, guest_path, plan, Some((budget, scope)))
+    session_owned(
+        root,
+        kernel,
+        guest_path,
+        plan,
+        Some((budget, scope)),
+        &mut LaunchContext::Legacy,
+    )
+}
+
+/// One installed session, with no route into the legacy unleased launcher.
+/// The caller explicitly retires the epoch after this entry drains its workers.
+pub fn session_installed(
+    controller: &mut InstalledSupervisor,
+    root: &Path,
+    kernel: &Path,
+    guest_path: &Path,
+    plan: Plan,
+) -> Result<Value> {
+    controller.claim_session()?;
+    let budget = controller.budget().clone();
+    let result = (|| {
+        // Fail before run files or child activation on missing trusted assets.
+        File::open(kernel)?;
+        File::open(guest_path)?;
+        let scope = budget.scope(0)?;
+        let accounted = (plan.stage == Stage::Two).then_some((&budget, &scope));
+        session_owned(
+            root,
+            kernel,
+            guest_path,
+            plan,
+            accounted,
+            &mut LaunchContext::Installed(controller),
+        )
+    })();
+    // Also handles a child adopted during spawn whose startup never returned a
+    // token to Worker. Cleanup uses exact owned handles, without PID attach.
+    let drained = controller.close_and_drain_workers();
+    match (result, drained) {
+        (Ok(value), Ok(())) => Ok(value),
+        (Err(error), _) => Err(error),
+        (Ok(_), Err(error)) => Err(error.into()),
+    }
 }
 
 fn session_owned(
@@ -382,6 +549,7 @@ fn session_owned(
     guest_path: &Path,
     plan: Plan,
     budget: Option<(&HostTransportBudget, &TransportScope)>,
+    launch: &mut LaunchContext<'_>,
 ) -> Result<Value> {
     fs::DirBuilder::new().mode(0o700).create(root)?;
     let mut journal = private_file(&root.join("host-events.jsonl"))?;
@@ -397,7 +565,7 @@ fn session_owned(
                 .collect::<std::result::Result<Vec<_>, _>>()?,
             None => Vec::new(),
         };
-        session_inner(root, kernel, guest_path, plan, &mut journal, &links)
+        session_inner(root, kernel, guest_path, plan, &mut journal, &links, launch)
     })();
     let snapshot = budget.map(|(budget, _)| budget.snapshot()).transpose()?;
     emit(
@@ -437,6 +605,7 @@ fn session_inner(
     plan: Plan,
     journal: &mut File,
     links: &[LinkReservation],
+    launch: &mut LaunchContext<'_>,
 ) -> Result<Value> {
     let wall = Instant::now();
     let cpu = ProcessTime::try_now()?;
@@ -467,12 +636,12 @@ fn session_inner(
     if plan.stage == Stage::One {
         let worker = Worker::start(
             root,
-            "sender",
             kernel,
             &guest,
             &pair.sender,
             None,
             Some(&a_path),
+            launch,
         )?;
         let stream = accept(&a_listener)?;
         let receive_result = campaign::receiver(
@@ -482,7 +651,7 @@ fn session_inner(
             HandshakeRole::Acceptor,
             journal,
         );
-        let worker_result = worker.finish();
+        let worker_result = worker.finish(launch);
         receiver = receive_result?;
         worker_a = worker_result?;
         sender = event(&worker_a, "sender_done")?;
@@ -518,27 +687,27 @@ fn session_inner(
         )?;
         let b = Worker::start(
             root,
-            "receiver",
             kernel,
             &guest,
             &pair.receiver,
             Some(&disk),
             Some(&b_path),
+            launch,
         )?;
         let a = Worker::start(
             root,
-            "sender",
             kernel,
             &guest,
             &pair.sender,
             None,
             Some(&a_path),
+            launch,
         )?;
         let a_socket = accept(&a_listener)?;
         let b_socket = accept(&b_listener)?;
         let relay_result = relay(a_socket, b_socket, forward, reverse, [&links[0], &links[1]]);
-        let a_result = a.finish();
-        let b_result = b.finish();
+        let a_result = a.finish(launch);
+        let b_result = b.finish(launch);
         relay_receipt = relay_result?;
         emit(journal, &relay_receipt)?;
         worker_a = a_result?;
@@ -556,8 +725,8 @@ fn session_inner(
             service: None,
             published,
         };
-        let verifier = Worker::start(root, "recovery", kernel, &guest, &verify, Some(&disk), None)?;
-        recovery = Some(verifier.finish()?);
+        let verifier = Worker::start(root, kernel, &guest, &verify, Some(&disk), None, launch)?;
+        recovery = Some(verifier.finish(launch)?);
         worker_b = Some(completed_b);
     }
     counters_agree(&sender["counters"], &receiver["counters"])?;

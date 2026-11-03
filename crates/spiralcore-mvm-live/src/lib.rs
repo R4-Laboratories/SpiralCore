@@ -19,6 +19,12 @@ pub mod installed_owner;
 ))]
 pub mod installed_supervisor;
 
+#[cfg(any(
+    all(target_os = "linux", feature = "linux-host"),
+    all(target_os = "macos", target_arch = "aarch64")
+))]
+pub(crate) mod installed_worker;
+
 #[cfg(any(all(target_os = "linux", feature = "linux-host"), all(test, target_os = "macos")))]
 pub mod linux_host;
 

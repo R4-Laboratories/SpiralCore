@@ -41,10 +41,13 @@ pub struct Epoch {
     key: InstallationKey,
     generation: u64,
 }
-pub(crate) struct InstallationBinding {
-    pub(crate) root: PathBuf,
-    pub(crate) key: InstallationKey,
-    pub(crate) generation: u64,
+/// Fresh provisioning facts for library consumers holding an owner and its
+/// original Epoch. These values are not credentials or a worker activation
+/// grant, and cannot reconstruct an owner or resource descriptor.
+pub struct InstallationBinding {
+    pub root: PathBuf,
+    pub key: InstallationKey,
+    pub generation: u64,
 }
 impl Epoch {
     pub fn generation(&self) -> u64 {
@@ -582,7 +585,7 @@ pub struct InstallationOwner {
 impl InstallationOwner {
     /// Fresh local provisioning facts for the original active epoch. This is
     /// neither a resource descriptor nor permission to activate a worker.
-    pub(crate) fn active_binding(&self, expected: Epoch) -> Result<InstallationBinding> {
+    pub fn active_binding(&self, expected: Epoch) -> Result<InstallationBinding> {
         let record = self.current()?;
         if record.phase != Phase::Active
             || record.key != expected.key

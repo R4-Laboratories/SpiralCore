@@ -1,0 +1,64 @@
+    Checking installed-supervisor-harness v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-mvm-live/tests/installed-supervisor-harness)
+error: variants `Sender`, `Receiver`, and `Verify` are never constructed
+   --> src/../../../src/installed_supervisor.rs:99:5
+    |
+ 98 | pub(crate) enum WorkerRole {
+    |                 ---------- variants in this enum
+ 99 |     Sender,
+    |     ^^^^^^
+100 |     Receiver,
+    |     ^^^^^^^^
+101 |     Verify,
+    |     ^^^^^^
+    |
+    = note: `WorkerRole` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis
+    = note: `-D dead-code` implied by `-D warnings`
+    = help: to override `-D warnings` add `#[expect(dead_code)]` or `#[allow(dead_code)]`
+
+error: struct `WorkerGrant` is never constructed
+   --> src/../../../src/installed_supervisor.rs:106:19
+    |
+106 | pub(crate) struct WorkerGrant {
+    |                   ^^^^^^^^^^^
+
+error: fields `serial` and `role` are never read
+   --> src/../../../src/installed_supervisor.rs:114:5
+    |
+113 | struct WorkerSlot {
+    |        ---------- fields in this struct
+114 |     serial: u64,
+    |     ^^^^^^
+115 |     role: WorkerRole,
+    |     ^^^^
+
+error: field `serial` is never read
+   --> src/../../../src/installed_supervisor.rs:121:5
+    |
+120 | struct WorkerLedger {
+    |        ------------ field in this struct
+121 |     serial: u64,
+    |     ^^^^^^
+
+error: methods `reserve_worker`, `worker_slot`, `bind_worker`, `try_reap_worker`, and `confirm_worker_exit` are never used
+   --> src/../../../src/installed_supervisor.rs:159:19
+    |
+137 | impl InstalledSupervisor {
+    | ------------------------ methods in this implementation
+...
+159 |     pub(crate) fn reserve_worker(&mut self, role: WorkerRole) -> Result<WorkerGrant> {
+    |                   ^^^^^^^^^^^^^^
+...
+187 |     fn worker_slot<'a>(
+    |        ^^^^^^^^^^^
+...
+205 |     pub(crate) fn bind_worker(
+    |                   ^^^^^^^^^^^
+...
+223 |     pub(crate) fn try_reap_worker(&mut self, grant: &WorkerGrant) -> Result<Option<ExitStatus>> {
+    |                   ^^^^^^^^^^^^^^^
+...
+246 |     pub(crate) fn confirm_worker_exit(&mut self, grant: &WorkerGrant) -> Result<()> {
+    |                   ^^^^^^^^^^^^^^^^^^^
+
+error: could not compile `installed-supervisor-harness` (lib) due to 5 previous errors
+warning: build failed, waiting for other jobs to finish...

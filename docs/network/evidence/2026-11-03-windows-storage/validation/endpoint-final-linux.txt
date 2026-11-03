@@ -1,0 +1,29 @@
+   Compiling spiralcore-transfer v0.1.0 (/var/tmp/spiralcore-windows-storage-20261103/source/crates/spiralcore-transfer)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.16s
+     Running tests/endpoint.rs (/var/tmp/spiralcore-mvm-service-20261102/target/debug/deps/endpoint-055656711a5db28e)
+
+running 21 tests
+test unowned_staging_is_never_removed ... ok
+test disk_quota_is_reserved_at_admission ... ok
+test auth_conflict_and_corruption_do_not_publish ... ok
+test tiny_dag_cannot_admit_unreserved_unrelated_nodes ... ok
+test repair_exhaustion_is_terminal ... ok
+test object_identity_cannot_shrink_an_existing_disk_reservation ... ok
+test writer_quota_cancel_and_expiry_are_bounded ... ok
+test authorization_is_checked_at_publication ... ok
+test plaintext_cache_is_private ... ok
+test authorization_is_rechecked_after_read ... ok
+test durable_cold_transfer_retry_and_restart ... ok
+test sparse_replay_cancel_bad_digest_and_revocation_never_commit ... ok
+test cached_graph_never_bypasses_disk_integrity_or_namespace ... ok
+test two_attempts_publish_one_immutable_object ... ok
+test published_resume_respects_other_active_reservations ... ok
+test sparse_needs_no_dag_and_rejects_unreserved_target ... ok
+test sparse_copy_insert_is_durable_and_base_scoped ... ok
+test retained_graph_is_used_and_eviction_is_recoverable ... ok
+test pinned_graph_survives_eviction_pressure_then_releases_after_cancel ... ok
+test optional_graphs_are_evicted_for_verified_reads_and_published_resume ... ok
+test terminal_reply_ledgers_cannot_outgrow_quota ... ok
+
+test result: ok. 21 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.87s
+

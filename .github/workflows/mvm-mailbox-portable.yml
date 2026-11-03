@@ -163,6 +163,42 @@ jobs:
             $counts += @{ target = $test.name; scope = $test.scope; listed = $listed; passed = [int]$s[1].Value; failed = 0; ignored = 0; filtered = 0 }
           }
           $counts | ConvertTo-Json -Depth 4 | Set-Content portable-evidence/unix-storage-counts.json
+      - name: Execute native private object storage and exact publication tests
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $false
+          $crate = 'crates/spiralcore-transfer/Cargo.toml'
+          $storageExpected = if ($IsWindows) { 6 } else { 3 }
+          $endpointExpected = if ($IsWindows) { 20 } else { 21 }
+          $targets = @(
+            @{ id = 'private-object-storage'; flags = @('--lib', 'endpoint::storage_tests'); expected = $storageExpected; filtered = $true },
+            @{ id = 'object-endpoint'; flags = @('--test', 'endpoint'); expected = $endpointExpected; filtered = $false }
+          )
+          $counts = @()
+          foreach ($target in $targets) {
+            $cargoArgs = @("+1.97.1-$env:NATIVE_TARGET", 'test', '--locked', '--manifest-path', $crate) + $target.flags
+            $listing = (& cargo @cargoArgs -- --list --format terse 2>&1 | Out-String)
+            $code = $LASTEXITCODE
+            $listing | Set-Content "portable-evidence/$($target.id)-list.txt"
+            if ($code -ne 0) { throw "Cannot enumerate $($target.id)" }
+            $listed = [regex]::Matches($listing, '(?m)^.+: test\r?$').Count
+            if ($listed -ne $target.expected) { throw "Expected $($target.expected) $($target.id) tests, listed $listed" }
+            $log = (& cargo @cargoArgs -- --format pretty --color never 2>&1 | Out-String)
+            $code = $LASTEXITCODE
+            $log | Set-Content "portable-evidence/$($target.id).txt"
+            $log | Write-Output
+            $summary = [regex]::Matches($log, 'test result: ok\. (\d+) passed; (\d+) failed; (\d+) ignored; (\d+) measured; (\d+) filtered out;')
+            if ($code -ne 0 -or $summary.Count -ne 1) { throw "Native storage failure: $($target.id)" }
+            $s = $summary[0].Groups
+            if ([int]$s[1].Value -ne $listed -or [int]$s[2].Value -ne 0 -or [int]$s[3].Value -ne 0 -or [int]$s[4].Value -ne 0 -or (!$target.filtered -and [int]$s[5].Value -ne 0)) {
+              throw "Incomplete native storage coverage: $($target.id)"
+            }
+            $counts += @{ target = $target.id; listed = $listed; passed = [int]$s[1].Value; failed = 0; ignored = 0; filtered = [int]$s[5].Value }
+          }
+          $counts | ConvertTo-Json -Depth 4 | Set-Content portable-evidence/object-storage-counts.json
+          (Get-FileHash crates/spiralcore-transfer/Cargo.lock -Algorithm SHA256).Hash | Set-Content portable-evidence/object-storage-lock.sha256
+          if (git status --porcelain -- crates/spiralcore-transfer/Cargo.lock) { throw 'Storage tests mutated committed lockfile' }
+          'Native private filesystem and exact publication/reopen tests; no physical power-loss, MVM backend or WAN qualification' | Set-Content portable-evidence/object-storage-scope.txt
       - name: Checksum compact evidence
         if: always()
         run: |

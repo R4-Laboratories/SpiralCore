@@ -111,6 +111,11 @@ pub(crate) struct WorkerGrant {
     serial: u64,
     role: WorkerRole,
 }
+impl WorkerGrant {
+    pub(crate) fn close_admission(&self) {
+        self.authority.close_admission();
+    }
+}
 
 #[derive(Clone, PartialEq, Eq)]
 pub(crate) struct WorkerBinding {
@@ -147,6 +152,7 @@ pub struct InstalledSupervisor {
     authority: Arc<InstalledAuthority>,
     budget: HostTransportBudget,
     phase: Phase,
+    session_started: bool,
 }
 impl InstalledSupervisor {
     pub fn start(mut owner: InstallationOwner, config: InstalledConfig) -> Result<Self> {
@@ -165,10 +171,63 @@ impl InstalledSupervisor {
             authority,
             budget,
             phase: Phase::Open,
+            session_started: false,
         })
     }
     pub fn budget(&self) -> &HostTransportBudget {
         &self.budget
+    }
+    pub(crate) fn claim_session(&mut self) -> Result<()> {
+        if self.phase != Phase::Open || !self.authority.admission_open() || self.session_started {
+            return Err(SupervisorError::State);
+        }
+        if self.authority.workers()?.slots.iter().any(Option::is_some) {
+            return Err(SupervisorError::Busy);
+        }
+        self.session_started = true;
+        Ok(())
+    }
+
+    pub(crate) fn worker_binding(&mut self, grant: &WorkerGrant) -> Result<WorkerBinding> {
+        // Token identity is checked before any filesystem query. A positively
+        // reaped worker cannot receive a new activation answer.
+        if self.try_reap_worker(grant)?.is_some() {
+            self.authority.close_admission();
+            return Err(SupervisorError::State);
+        }
+        if self.phase != Phase::Open || !self.authority.admission_open() {
+            return Err(SupervisorError::State);
+        }
+        let installation = match self.authority.owner.lock() {
+            Ok(owner) => owner.active_binding(self.authority.epoch),
+            Err(_) => {
+                self.authority.close_admission();
+                return Err(SupervisorError::State);
+            }
+        };
+        let installation = installation.map_err(|error| {
+            self.authority.close_admission();
+            SupervisorError::Owner(error)
+        })?;
+        // The storage read held no worker/transport ledger. Check again after
+        // it, immediately before returning facts for the private channel write.
+        if !self.authority.admission_open() || self.try_reap_worker(grant)?.is_some() {
+            self.authority.close_admission();
+            return Err(SupervisorError::State);
+        }
+        Ok(WorkerBinding {
+            root: installation.root,
+            installation: installation.key.installation,
+            profile: installation.key.profile,
+            generation: installation.generation,
+            role: match grant.role {
+                WorkerRole::Sender => 1,
+                WorkerRole::Receiver => 2,
+                WorkerRole::Verify => 3,
+            },
+            slot: u8::try_from(grant.slot).map_err(|_| SupervisorError::State)?,
+            serial: grant.serial,
+        })
     }
     pub(crate) fn reserve_worker(&mut self, role: WorkerRole) -> Result<WorkerGrant> {
         let mut workers = self.authority.workers()?;
@@ -214,9 +273,15 @@ impl InstalledSupervisor {
         // No process creation or pre-exec work under the worker ledger.
         match command.spawn() {
             Ok(child) => {
+                let mut pending = Some(child);
+                let error = match self.bind_worker(&grant, &mut pending) {
+                    Ok(()) => return Ok(grant),
+                    Err(error) => error,
+                };
                 // An accounting fault may have closed admission during spawn.
                 // Take custody even then: never drop a newly created Child
                 // without retaining it for exact cleanup by this controller.
+                self.authority.close_admission();
                 let mut workers = match self.authority.workers.lock() {
                     Ok(workers) => workers,
                     Err(poisoned) => {
@@ -225,12 +290,9 @@ impl InstalledSupervisor {
                     }
                 };
                 let slot = workers.slots[grant.slot].as_mut().unwrap();
-                slot.child = Some(child);
+                slot.child = pending.take();
                 slot.launching = false;
-                if !self.authority.admission_open() {
-                    return Err(SupervisorError::State);
-                }
-                Ok(grant)
+                Err(error)
             }
             Err(error) => {
                 self.authority.close_admission();

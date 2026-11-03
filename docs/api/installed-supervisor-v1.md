@@ -1,9 +1,9 @@
 # Installed supervisor v1: one epoch, one budget, explicit worker grants
 
-Status: proposed next implementation contract. Depends on
+Status: implemented candidate, with final release qualification pending. Depends on
 [installed owner](installed-host-owner-v1.md) and
 [Firecracker lease](firecracker-host-lease-v1.md). No product/native qualification
-is established here. One installed session, at most2guests/2vCPU/2GiB, unchanged
+is established by this contract alone. One installed session, at most2guests/2vCPU/2GiB, unchanged
 canonical wire and signed admission. B6b plaintext/tail accounting remains open.
 
 ## Controller and ownership
@@ -85,9 +85,14 @@ fencing is not bypassed. No implicit retry/start/reopen occurs in Drop.
 
 Successful finish does not extract/drop the owner from the authority. Even an
 idle budget/scope clone therefore retains owner EX until its final drop. Live
-link/frame/worker guards also retain it. Controller Drop only closes admission;
-last authority Drop releases descriptors and leaves Active unless explicit
-finish already succeeded. No Clean-on-Drop and no Arc-count-based cleanup proof.
+link/frame/worker guards also retain it. Controller Drop closes admission and
+drains only its exact owned Children under one shared five-second deadline,
+with no worker/accounting lock held during OS termination or exit observation.
+Explicit close-and-drain retains unknown Child handles for retry. If Drop cannot
+confirm all owned child exits, it quarantines one bounded authority reference
+(at most two slots) for the process lifetime, retaining owner exclusion. Drop
+never writes Clean. Last authority Drop releases descriptors and leaves Active
+unless explicit finish already succeeded. No Arc-count-based cleanup proof.
 
 ## One launcher interface and fixed grants
 
@@ -95,8 +100,10 @@ Every `Worker::start`, including sender, receiver, verifier and Stage One, takes
 one private `LaunchContext`: explicit Legacy or a borrowed Installed controller.
 Only legacy public entry constructs Legacy. Installed paths cannot select it
 on error/missing configuration. A non-Clone WorkerGrant reserves a bounded slot,
-role and fixed resource/profile grant before spawn; Worker owns it and the exact
-Child. Ledger accounting is private and never reconstructed from guest counters.
+role and fixed resource/profile grant before spawn; Worker owns the grant while
+the controller ledger owns the exact Child. The spawn API adopts a successful
+Child even if admission closes during spawn. Ledger accounting is private and
+never reconstructed from guest counters.
 Permit retirement follows reaped owned child plus the known host worker's
 successful backend-exit contract. Unknown/error outcome closes/fences admission;
 no slot reuse or verifier launch on that failure. Verifier requires both primary

@@ -28,5 +28,8 @@ url = "2.5"
 
 [dev-dependencies]
 
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "=0.61.2", features = ["Win32_Foundation", "Win32_Security", "Win32_Security_Authorization", "Win32_Storage_FileSystem", "Win32_System_SystemServices", "Win32_System_Threading"] }
+
 [build-dependencies]
 sha2 = "0.10.9"

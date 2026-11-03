@@ -26,6 +26,7 @@ cpu-time = "1"
 libc = "0.2"
 
 [target.'cfg(all(target_os = "macos", target_arch = "aarch64"))'.dependencies]
+mvm-vmm = { git = "https://github.com/Casey-allard/mvm", rev = "7d031c7f3fbeef62826712d2976a764c62cd5852", default-features = false }
 mvm-runtime = { git = "https://github.com/Casey-allard/mvm", rev = "7d031c7f3fbeef62826712d2976a764c62cd5852", default-features = false }
 mvm-build = { git = "https://github.com/Casey-allard/mvm", rev = "7d031c7f3fbeef62826712d2976a764c62cd5852", default-features = false }
 mvm-fs = { git = "https://github.com/Casey-allard/mvm", rev = "7d031c7f3fbeef62826712d2976a764c62cd5852", default-features = false }

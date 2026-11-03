@@ -1,0 +1,22 @@
+   Compiling installed-supervisor-harness v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-mvm-live/tests/installed-supervisor-harness)
+    Finished `test` profile [unoptimized] target(s) in 1.12s
+     Running unittests src/lib.rs (/tmp/spiralcore-installed-supervisor-20261103/target/debug/deps/installed_supervisor_harness-c9d7a41ca1f09555)
+
+running 6 tests
+test host_budget::tests::poisoned_ledger_refuses_snapshot_and_admission ... ok
+test host_budget::tests::underflow_fences_without_clamping_and_refusals_saturate ... ok
+test installed_owner::tests::failed_initial_intent_barriers_preserve_original_state_and_fence_reopen ... ok
+test installed_owner::tests::failed_postcommit_cleanup_sync_fences_owner_but_absent_marker_allows_durable_successor ... ok
+test installed_owner::tests::holders_aba_must_reject_the_actual_wrong_fd_and_never_retire_live_original_holders ... ok
+test installed_owner::tests::postrename_directory_sync_failure_must_survive_owner_drop_as_a_durable_fence ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.75s
+
+     Running tests/lifecycle.rs (/tmp/spiralcore-installed-supervisor-20261103/target/debug/deps/lifecycle-e48b8d95090cb41d)
+
+running 2 tests
+test close_refuses_cloned_admission_and_finish_preserves_ex_until_last_idle_clone_drops ... ok
+test sole_outliving_frame_retains_owner_ex_and_drop_never_publishes_clean ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.14s
+

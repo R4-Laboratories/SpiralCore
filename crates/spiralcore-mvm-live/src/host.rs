@@ -314,6 +314,44 @@ pub fn worker_with_profile(
     mailbox_socket: Option<&Path>,
     bandwidth_profile: crate::config::MailboxBandwidthProfile,
 ) -> Result<Value> {
+    worker_prepared(kernel, disk, mailbox_socket, bandwidth_profile, None)
+}
+
+pub fn worker_installed(
+    kernel: &Path,
+    disk: Option<&Path>,
+    mailbox_socket: Option<&Path>,
+    bandwidth_profile: crate::config::MailboxBandwidthProfile,
+    expected_role: u8,
+) -> Result<Value> {
+    let wall = Instant::now();
+    let cpu = ProcessTime::try_now()?;
+    let mut context =
+        crate::installed_worker::InstalledWorkerContext::from_inherited_fd(expected_role)?;
+    let input = context.read_initrd()?;
+    let setup_cpu = micros(cpu.try_elapsed()?)?;
+    let setup_wall = micros(wall.elapsed())?;
+    let mut value = worker_prepared(
+        kernel,
+        disk,
+        mailbox_socket,
+        bandwidth_profile,
+        Some((context, input)),
+    )?;
+    value["installed_control_input_cpu_us"] = json!(setup_cpu);
+    value["installed_control_input_wall_us"] = json!(setup_wall);
+    value["worker_process_cpu_us"] = json!(micros(cpu.try_elapsed()?)?);
+    value["worker_wall_us"] = json!(micros(wall.elapsed())?);
+    Ok(value)
+}
+
+fn worker_prepared(
+    kernel: &Path,
+    disk: Option<&Path>,
+    mailbox_socket: Option<&Path>,
+    bandwidth_profile: crate::config::MailboxBandwidthProfile,
+    installed: Option<(crate::installed_worker::InstalledWorkerContext, Vec<u8>)>,
+) -> Result<Value> {
     let wall = Instant::now();
     let cpu = ProcessTime::try_now()?;
     for variable in [
@@ -326,7 +364,10 @@ pub fn worker_with_profile(
             return Err(invalid("live worker refuses ambient boot/channel overrides").into());
         }
     }
-    let initrd = read_bounded(io::stdin().lock(), MAX_INITRAMFS)?;
+    let (mut installed, initrd) = match installed {
+        Some((context, input)) => (Some(context), input),
+        None => (None, read_bounded(io::stdin().lock(), MAX_INITRAMFS)?),
+    };
     // Hash and load one held file, rather than validating a pathname and then
     // reopening a potentially different image. The helper reads raw image bytes.
     let kernel_file = File::open(kernel)?;
@@ -356,6 +397,12 @@ pub fn worker_with_profile(
             .vsock(mailbox_socket.is_some())
             .channels(channels)
             .build();
+    let _host_lifetime = if let Some(context) = &mut installed {
+        context.authorize_boot()?;
+        Some(context.holder_handoff()?)
+    } else {
+        None
+    };
     let boot_started = Instant::now();
     let boot = boot_kernel_until(params);
     let boot_wall_us = micros(boot_started.elapsed())?;
@@ -395,6 +442,10 @@ pub fn worker_with_profile(
     let worker_wall_us = micros(wall.elapsed())?;
     Ok(json!({
         "event": "worker_done",
+        "installed_host_lease": installed.is_some(),
+        "installed_generation": installed.as_ref().map(|c| c.binding().generation),
+        "installed_role": installed.as_ref().map(|c| c.binding().role),
+        "backend_exit_confirmed": true,
         "mailbox_bandwidth_profile": bandwidth_profile,
         "mailbox_rate_bytes_per_second": bandwidth_profile.bytes_per_second(),
         "mailbox_burst_bytes": bandwidth_profile.burst_bytes(),

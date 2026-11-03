@@ -1,0 +1,312 @@
+   Compiling installed-supervisor-harness v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-mvm-live/tests/installed-supervisor-harness)
+error[E0425]: cannot find type `WorkerGrant` in this scope
+  --> src/../../../src/installed_supervisor/tests.rs:13:17
+   |
+13 |     grants: Vec<WorkerGrant>,
+   |                 ^^^^^^^^^^^ not found in this scope
+   |
+help: you might be missing a type parameter
+   |
+11 | struct Case<WorkerGrant> {
+   |            +++++++++++++
+
+error[E0425]: cannot find type `WorkerRole` in this scope
+  --> src/../../../src/installed_supervisor/tests.rs:46:33
+   |
+46 |     fn reserve(&mut self, role: WorkerRole) -> usize {
+   |                                 ^^^^^^^^^^ not found in this scope
+
+error[E0599]: no method named `reserve_worker` found for struct `installed_supervisor::InstalledSupervisor` in the current scope
+  --> src/../../../src/installed_supervisor/tests.rs:49:35
+   |
+49 |             .push(self.controller.reserve_worker(role).unwrap());
+   |                                   ^^^^^^^^^^^^^^ method not found in `installed_supervisor::InstalledSupervisor`
+   |
+  ::: src/../../../src/installed_supervisor.rs:95:1
+   |
+95 | pub struct InstalledSupervisor {
+   | ------------------------------ method `reserve_worker` not found for this struct
+
+error[E0599]: no method named `bind_worker` found for struct `installed_supervisor::InstalledSupervisor` in the current scope
+  --> src/../../../src/installed_supervisor/tests.rs:68:14
+   |
+66 |           if let Err(error) = self
+   |  _____________________________-
+67 | |             .controller
+68 | |             .bind_worker(&self.grants[index], &mut pending)
+   | |             -^^^^^^^^^^^ method not found in `installed_supervisor::InstalledSupervisor`
+   | |_____________|
+   |
+   |
+  ::: src/../../../src/installed_supervisor.rs:95:1
+   |
+95 |   pub struct InstalledSupervisor {
+   |   ------------------------------ method `bind_worker` not found for this struct
+
+error[E0599]: no method named `try_reap_worker` found for struct `installed_supervisor::InstalledSupervisor` in the current scope
+  --> src/../../../src/installed_supervisor/tests.rs:89:18
+   |
+87 |               if let Some(status) = self
+   |  ___________________________________-
+88 | |                 .controller
+89 | |                 .try_reap_worker(&self.grants[index])
+   | |                 -^^^^^^^^^^^^^^^ method not found in `installed_supervisor::InstalledSupervisor`
+   | |_________________|
+   |
+   |
+  ::: src/../../../src/installed_supervisor.rs:95:1
+   |
+95 |   pub struct InstalledSupervisor {
+   |   ------------------------------ method `try_reap_worker` not found for this struct
+
+error[E0599]: no method named `try_reap_worker` found for struct `installed_supervisor::InstalledSupervisor` in the current scope
+   --> src/../../../src/installed_supervisor/tests.rs:105:39
+    |
+105 |                 match self.controller.try_reap_worker(grant) {
+    |                                       ^^^^^^^^^^^^^^^ method not found in `installed_supervisor::InstalledSupervisor`
+    |
+   ::: src/../../../src/installed_supervisor.rs:95:1
+    |
+ 95 | pub struct InstalledSupervisor {
+    | ------------------------------ method `try_reap_worker` not found for this struct
+
+error[E0599]: no method named `reserve_worker` found for struct `installed_supervisor::InstalledSupervisor` in the current scope
+   --> src/../../../src/installed_supervisor/tests.rs:121:14
+    |
+119 |           let first = abandoned
+    |  _____________________-
+120 | |             .controller
+121 | |             .reserve_worker(WorkerRole::Sender)
+    | |             -^^^^^^^^^^^^^^ method not found in `installed_supervisor::InstalledSupervisor`
+    | |_____________|
+    |
+    |
+   ::: src/../../../src/installed_supervisor.rs:95:1
+    |
+ 95 |   pub struct InstalledSupervisor {
+    |   ------------------------------ method `reserve_worker` not found for this struct
+
+error[E0433]: cannot find type `WorkerRole` in this scope
+   --> src/../../../src/installed_supervisor/tests.rs:121:29
+    |
+121 |             .reserve_worker(WorkerRole::Sender)
+    |                             ^^^^^^^^^^ use of undeclared type `WorkerRole`
+
+error[E0599]: no method named `reserve_worker` found for struct `installed_supervisor::InstalledSupervisor` in the current scope
+   --> src/../../../src/installed_supervisor/tests.rs:125:14
+    |
+123 |           let second = abandoned
+    |  ______________________-
+124 | |             .controller
+125 | |             .reserve_worker(WorkerRole::Receiver)
+    | |             -^^^^^^^^^^^^^^ method not found in `installed_supervisor::InstalledSupervisor`
+    | |_____________|
+    |
+    |
+   ::: src/../../../src/installed_supervisor.rs:95:1
+    |
+ 95 |   pub struct InstalledSupervisor {
+    |   ------------------------------ method `reserve_worker` not found for this struct
+
+error[E0433]: cannot find type `WorkerRole` in this scope
+   --> src/../../../src/installed_supervisor/tests.rs:125:29
+    |
+125 |             .reserve_worker(WorkerRole::Receiver)
+    |                             ^^^^^^^^^^ use of undeclared type `WorkerRole`
+
+error[E0599]: no method named `reserve_worker` found for struct `installed_supervisor::InstalledSupervisor` in the current scope
+   --> src/../../../src/installed_supervisor/tests.rs:132:18
+    |
+130 | /             abandoned
+131 | |                 .controller
+132 | |                 .reserve_worker(WorkerRole::Verify)
+    | |                 -^^^^^^^^^^^^^^ method not found in `installed_supervisor::InstalledSupervisor`
+    | |_________________|
+    |
+    |
+   ::: src/../../../src/installed_supervisor.rs:95:1
+    |
+ 95 |   pub struct InstalledSupervisor {
+    |   ------------------------------ method `reserve_worker` not found for this struct
+
+error[E0433]: cannot find type `WorkerRole` in this scope
+   --> src/../../../src/installed_supervisor/tests.rs:132:33
+    |
+132 |                 .reserve_worker(WorkerRole::Verify)
+    |                                 ^^^^^^^^^^ use of undeclared type `WorkerRole`
+
+error[E0433]: cannot find type `WorkerRole` in this scope
+   --> src/../../../src/installed_supervisor/tests.rs:141:30
+    |
+141 |     let first = case.reserve(WorkerRole::Sender);
+    |                              ^^^^^^^^^^ use of undeclared type `WorkerRole`
+
+error[E0433]: cannot find type `WorkerRole` in this scope
+   --> src/../../../src/installed_supervisor/tests.rs:142:31
+    |
+142 |     let second = case.reserve(WorkerRole::Receiver);
+    |                               ^^^^^^^^^^ use of undeclared type `WorkerRole`
+
+error[E0599]: no method named `reserve_worker` found for struct `installed_supervisor::InstalledSupervisor` in the current scope
+   --> src/../../../src/installed_supervisor/tests.rs:143:29
+    |
+143 |     assert!(case.controller.reserve_worker(WorkerRole::Verify).is_err());
+    |                             ^^^^^^^^^^^^^^ method not found in `installed_supervisor::InstalledSupervisor`
+    |
+   ::: src/../../../src/installed_supervisor.rs:95:1
+    |
+ 95 | pub struct InstalledSupervisor {
+    | ------------------------------ method `reserve_worker` not found for this struct
+
+error[E0433]: cannot find type `WorkerRole` in this scope
+   --> src/../../../src/installed_supervisor/tests.rs:143:44
+    |
+143 |     assert!(case.controller.reserve_worker(WorkerRole::Verify).is_err());
+    |                                            ^^^^^^^^^^ use of undeclared type `WorkerRole`
+
+error[E0599]: no method named `reserve_worker` found for struct `installed_supervisor::InstalledSupervisor` in the current scope
+   --> src/../../../src/installed_supervisor/tests.rs:148:25
+    |
+148 |         case.controller.reserve_worker(WorkerRole::Verify).is_err(),
+    |                         ^^^^^^^^^^^^^^ method not found in `installed_supervisor::InstalledSupervisor`
+    |
+   ::: src/../../../src/installed_supervisor.rs:95:1
+    |
+ 95 | pub struct InstalledSupervisor {
+    | ------------------------------ method `reserve_worker` not found for this struct
+
+error[E0433]: cannot find type `WorkerRole` in this scope
+   --> src/../../../src/installed_supervisor/tests.rs:148:40
+    |
+148 |         case.controller.reserve_worker(WorkerRole::Verify).is_err(),
+    |                                        ^^^^^^^^^^ use of undeclared type `WorkerRole`
+
+error[E0599]: no method named `confirm_worker_exit` found for struct `installed_supervisor::InstalledSupervisor` in the current scope
+   --> src/../../../src/installed_supervisor/tests.rs:152:10
+    |
+151 | /     case.controller
+152 | |         .confirm_worker_exit(&case.grants[first])
+    | |         -^^^^^^^^^^^^^^^^^^^ method not found in `installed_supervisor::InstalledSupervisor`
+    | |_________|
+    |
+    |
+   ::: src/../../../src/installed_supervisor.rs:95:1
+    |
+ 95 |   pub struct InstalledSupervisor {
+    |   ------------------------------ method `confirm_worker_exit` not found for this struct
+
+error[E0433]: cannot find type `WorkerRole` in this scope
+   --> src/../../../src/installed_supervisor/tests.rs:154:36
+    |
+154 |     let replacement = case.reserve(WorkerRole::Sender);
+    |                                    ^^^^^^^^^^ use of undeclared type `WorkerRole`
+
+error[E0599]: no method named `confirm_worker_exit` found for struct `installed_supervisor::InstalledSupervisor` in the current scope
+   --> src/../../../src/installed_supervisor/tests.rs:158:10
+    |
+157 | /     case.controller
+158 | |         .confirm_worker_exit(&case.grants[second])
+    | |         -^^^^^^^^^^^^^^^^^^^ method not found in `installed_supervisor::InstalledSupervisor`
+    | |_________|
+    |
+    |
+   ::: src/../../../src/installed_supervisor.rs:95:1
+    |
+ 95 |   pub struct InstalledSupervisor {
+    |   ------------------------------ method `confirm_worker_exit` not found for this struct
+
+error[E0599]: no method named `try_reap_worker` found for struct `installed_supervisor::InstalledSupervisor` in the current scope
+   --> src/../../../src/installed_supervisor/tests.rs:162:14
+    |
+161 | /         case.controller
+162 | |             .try_reap_worker(&case.grants[first])
+    | |             -^^^^^^^^^^^^^^^ method not found in `installed_supervisor::InstalledSupervisor`
+    | |_____________|
+    |
+    |
+   ::: src/../../../src/installed_supervisor.rs:95:1
+    |
+ 95 |   pub struct InstalledSupervisor {
+    |   ------------------------------ method `try_reap_worker` not found for this struct
+
+error[E0599]: no method named `bind_worker` found for struct `installed_supervisor::InstalledSupervisor` in the current scope
+   --> src/../../../src/installed_supervisor/tests.rs:175:10
+    |
+173 |       let refused = case
+    |  ___________________-
+174 | |         .controller
+175 | |         .bind_worker(&case.grants[first], &mut rejected)
+    | |         -^^^^^^^^^^^ method not found in `installed_supervisor::InstalledSupervisor`
+    | |_________|
+    |
+    |
+   ::: src/../../../src/installed_supervisor.rs:95:1
+    |
+ 95 |   pub struct InstalledSupervisor {
+    |   ------------------------------ method `bind_worker` not found for this struct
+
+error[E0433]: cannot find type `WorkerRole` in this scope
+   --> src/../../../src/installed_supervisor/tests.rs:196:35
+    |
+196 |         let worker = live.reserve(WorkerRole::Sender);
+    |                                   ^^^^^^^^^^ use of undeclared type `WorkerRole`
+
+error[E0599]: no method named `confirm_worker_exit` found for struct `installed_supervisor::InstalledSupervisor` in the current scope
+   --> src/../../../src/installed_supervisor/tests.rs:200:18
+    |
+199 | /             live.controller
+200 | |                 .confirm_worker_exit(&live.grants[worker])
+    | |                 -^^^^^^^^^^^^^^^^^^^ method not found in `installed_supervisor::InstalledSupervisor`
+    | |_________________|
+    |
+    |
+   ::: src/../../../src/installed_supervisor.rs:95:1
+    |
+ 95 |   pub struct InstalledSupervisor {
+    |   ------------------------------ method `confirm_worker_exit` not found for this struct
+
+error[E0433]: cannot find type `WorkerRole` in this scope
+   --> src/../../../src/installed_supervisor/tests.rs:213:33
+    |
+213 |     let worker = failed.reserve(WorkerRole::Receiver);
+    |                                 ^^^^^^^^^^ use of undeclared type `WorkerRole`
+
+error[E0599]: no method named `reserve_worker` found for struct `installed_supervisor::InstalledSupervisor` in the current scope
+   --> src/../../../src/installed_supervisor/tests.rs:221:14
+    |
+219 | /         failed
+220 | |             .controller
+221 | |             .reserve_worker(WorkerRole::Verify)
+    | |             -^^^^^^^^^^^^^^ method not found in `installed_supervisor::InstalledSupervisor`
+    | |_____________|
+    |
+    |
+   ::: src/../../../src/installed_supervisor.rs:95:1
+    |
+ 95 |   pub struct InstalledSupervisor {
+    |   ------------------------------ method `reserve_worker` not found for this struct
+
+error[E0433]: cannot find type `WorkerRole` in this scope
+   --> src/../../../src/installed_supervisor/tests.rs:221:29
+    |
+221 |             .reserve_worker(WorkerRole::Verify)
+    |                             ^^^^^^^^^^ use of undeclared type `WorkerRole`
+
+error[E0599]: no method named `confirm_worker_exit` found for struct `installed_supervisor::InstalledSupervisor` in the current scope
+   --> src/../../../src/installed_supervisor/tests.rs:227:14
+    |
+225 | /         failed
+226 | |             .controller
+227 | |             .confirm_worker_exit(&failed.grants[worker])
+    | |             -^^^^^^^^^^^^^^^^^^^ method not found in `installed_supervisor::InstalledSupervisor`
+    | |_____________|
+    |
+    |
+   ::: src/../../../src/installed_supervisor.rs:95:1
+    |
+ 95 |   pub struct InstalledSupervisor {
+    |   ------------------------------ method `confirm_worker_exit` not found for this struct
+
+Some errors have detailed explanations: E0425, E0433, E0599.
+For more information about an error, try `rustc --explain E0425`.
+error: could not compile `installed-supervisor-harness` (lib test) due to 29 previous errors
