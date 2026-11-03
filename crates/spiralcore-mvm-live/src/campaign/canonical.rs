@@ -243,7 +243,7 @@ impl Session {
                 .as_ref()
                 .ok_or(SessionError::StreamFenced)?
                 .prepared()?,
-            stream,
+            &stream.before(deadline),
             cancel,
             send_time,
         )?;
@@ -316,7 +316,7 @@ impl Session {
                                     .as_ref()
                                     .ok_or(SessionError::StreamFenced)?
                                     .prepared()?,
-                                stream,
+                                &stream.before(deadline),
                                 cancel,
                                 now,
                             )?;
@@ -397,7 +397,7 @@ impl Session {
                         .ok_or(SessionError::StreamFenced)?
                         .invoke_reply_ack()?;
                 }
-                permit.send(stream, cancel, now)?;
+                permit.send(&stream.before(deadline), cancel, now)?;
                 if current {
                     self.pending
                         .as_mut()
@@ -462,32 +462,120 @@ impl Session {
         // its canonical state and fences before a subsequent frame is read.
         self.receiver_incomplete = true;
         let deadline = Instant::now() + CALL_TIMEOUT;
-        let bytes = stream.receive(cancel, deadline)?;
-        let cpu = ProcessTime::now();
-        let wall = Instant::now();
         let broker = self.broker.clone();
-        let (receipt, proof, deadline) = broker.with_time(|_, now| -> Result<_> {
-            if decode_envelope(&bytes)?.encryption.key_id != self.normal_key {
-                return Err("expected provisioned Call key".into());
+        let mut events = 0_u8;
+        let mut meter = Meter::default();
+        let (receipt, proof, deadline, cpu, wall) = loop {
+            if events >= 16 {
+                return Err(SessionError::EventLimit.into());
             }
-            let (accepted, receipt) =
-                self.returns
-                    .admit(&mut self.service, &self.incoming, &bytes, now)?;
-            if accepted.receipt.outcome != DeliveryOutcome::AcceptedEphemeral {
-                return Err("Call admission refused".into());
+            let bytes = stream.receive(cancel, deadline)?;
+            events += 1;
+            let cpu = ProcessTime::now();
+            let wall = Instant::now();
+            let (receipt, proof, admitted_deadline) = broker.with_time(|_, now| -> Result<_> {
+                if Instant::now() >= deadline {
+                    return Err(ServiceError::Expired.into());
+                }
+                let envelope = decode_envelope(&bytes)?;
+                if envelope.encryption.key_id == self.control_key {
+                    self.tracker.observe_receipt(&self.control, &bytes, now)?;
+                    return Ok((None, None, None));
+                }
+                if envelope.encryption.key_id != self.normal_key {
+                    return Err("expected provisioned Call key".into());
+                }
+                // At the event ceiling, only an authenticated historical Call
+                // may proceed: a fresh admission would have no room for its ACK.
+                if events == 16 {
+                    match self
+                        .service
+                        .retry_reply_prepared(&self.incoming, &bytes, now)
+                    {
+                        Ok(None) => {}
+                        Ok(Some(_)) => return Err(ServiceError::State.into()),
+                        Err(ServiceError::UnknownHandle) => {
+                            return Err(SessionError::EventLimit.into());
+                        }
+                        Err(error) => return Err(error.into()),
+                    }
+                }
+                // Inactive preamble: ordinary fresh admission verifies once.
+                // The active ACK-wait loop below still prechecks cached identity.
+                let (accepted, receipt) =
+                    self.returns
+                        .admit(&mut self.service, &self.incoming, &bytes, now)?;
+                match accepted.receipt.outcome {
+                    DeliveryOutcome::AcceptedEphemeral => {
+                        if events == 16 {
+                            return Err(SessionError::EventLimit.into());
+                        }
+                        let proof = self
+                            .service
+                            .receive(&self.incoming, now)?
+                            .ok_or("missing admitted Call")?;
+                        let cap = ExchangeDeadline::new(
+                            deadline,
+                            proof.header().expires_at_unix_ms,
+                            now,
+                        )?;
+                        Ok((Some(receipt), Some(proof), Some(cap)))
+                    }
+                    DeliveryOutcome::Duplicate => {
+                        // Canonical admission authenticated inner/outer expiry
+                        // equality. The original-owner lookup below is separate.
+                        let cap = ExchangeDeadline::new(
+                            deadline,
+                            envelope.routing.expires_at_unix_ms,
+                            now,
+                        )?;
+                        Ok((Some(receipt), None, Some(cap)))
+                    }
+                    _ => Err("Call admission refused".into()),
+                }
+            })?;
+            if let Some(proof) = proof {
+                break (
+                    receipt.ok_or(ServiceError::State)?,
+                    proof,
+                    admitted_deadline.ok_or(ServiceError::State)?,
+                    cpu,
+                    wall,
+                );
             }
-            let proof = self
-                .service
-                .receive(&self.incoming, now)?
-                .ok_or("missing admitted Call")?;
-            let deadline = ExchangeDeadline::new(deadline, proof.header().expires_at_unix_ms, now)?;
-            Ok((receipt, proof, deadline))
-        })?;
+            if let Some(receipt) = receipt {
+                let cap = admitted_deadline.ok_or(ServiceError::State)?;
+                let (permit, _) = broker.with_time(|_, now| -> Result<_> {
+                    cap.check(now)?;
+                    if self
+                        .service
+                        .retry_reply_prepared(&self.incoming, &bytes, now)?
+                        .is_some()
+                    {
+                        return Err(ServiceError::State.into());
+                    }
+                    Ok((receipt.reserve_send(cancel, now)?, now))
+                })?;
+                let now = broker.with_time(|_, now| -> Result<_> {
+                    cap.check(now)?;
+                    if self
+                        .service
+                        .retry_reply_prepared(&self.incoming, &bytes, now)?
+                        .is_some()
+                    {
+                        return Err(ServiceError::State.into());
+                    }
+                    Ok(now)
+                })?;
+                permit.send(&stream.before(cap.instant()), cancel, now)?;
+            }
+            meter.add(cpu.elapsed().as_micros(), wall.elapsed().as_micros())?;
+        };
         let (permit, now) = broker.with_time(|_, now| -> Result<_> {
             deadline.check(now)?;
             Ok((receipt.reserve_send(cancel, now)?, now))
         })?;
-        permit.send(stream, cancel, now)?;
+        permit.send(&stream.before(deadline.instant()), cancel, now)?;
         let (reply, namespace) = application_phase(&broker, |now| {
             deadline.check(now)?;
             let frame = Frame::decode(proof.payload())?;
@@ -525,16 +613,17 @@ impl Session {
             Ok(now)
         })?;
         let mut sends = 1_u8;
-        self.outgoing
-            .send_prepared(&prepared, stream, cancel, sent_at)?;
+        self.outgoing.send_prepared(
+            &prepared,
+            &stream.before(deadline.instant()),
+            cancel,
+            sent_at,
+        )?;
         // Receiver idle waits stay outside processing CPU/wall intervals.
-        let mut meter = Meter {
-            cpu_us: cpu.elapsed().as_micros(),
-            wall_us: wall.elapsed().as_micros(),
-        };
+        meter.add(cpu.elapsed().as_micros(), wall.elapsed().as_micros())?;
         let mut acknowledged = false;
-        // The initial admitted Call is the first event of this exchange.
-        for _ in 1..16 {
+        // Preamble and initial Call share this invocation's cumulative bound.
+        for _ in events..16 {
             let event = stream.receive(cancel, deadline.instant())?;
             let cpu = ProcessTime::now();
             let wall = Instant::now();
@@ -598,7 +687,7 @@ impl Session {
                     deadline.check(now)?;
                     Ok((receipt.reserve_send(cancel, now)?, now))
                 })?;
-                permit.send(stream, cancel, now)?;
+                permit.send(&stream.before(deadline.instant()), cancel, now)?;
                 // Receipt I/O may wait: recheck both canonical bindings and
                 // original lifetime before invoking the cached Reply send.
                 let (cached, now) = broker.with_time(|_, now| -> Result<_> {
@@ -622,7 +711,12 @@ impl Session {
                     Ok((cached, now))
                 })?;
                 sends += 1;
-                self.outgoing.send_prepared(&cached, stream, cancel, now)?;
+                self.outgoing.send_prepared(
+                    &cached,
+                    &stream.before(deadline.instant()),
+                    cancel,
+                    now,
+                )?;
             }
             meter.add(cpu.elapsed().as_micros(), wall.elapsed().as_micros())?;
             if acknowledged {
