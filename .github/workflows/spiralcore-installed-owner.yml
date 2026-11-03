@@ -27,7 +27,6 @@ jobs:
     env:
       CARGO_BUILD_JOBS: 2
       CARGO_INCREMENTAL: 0
-      CARGO_TARGET_DIR: ${{ runner.temp }}/installed-owner-target
       EXPECTED_TARGET: ${{ matrix.target }}
       EXPECTED_LIFECYCLE: ${{ matrix.lifecycle }}
     steps:
@@ -51,6 +50,8 @@ jobs:
             crates/spiralcore-mvm-live/tests/installed-owner-harness/tests/lifecycle.rs \
             > owner-evidence/source.sha256
       - name: Exact production-file process and storage tests
+        env:
+          CARGO_TARGET_DIR: ${{ runner.temp }}/installed-owner-target
         run: |
           set -euo pipefail
           manifest=crates/spiralcore-mvm-live/tests/installed-owner-harness/Cargo.toml
