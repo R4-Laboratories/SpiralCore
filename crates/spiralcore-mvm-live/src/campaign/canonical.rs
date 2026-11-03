@@ -224,6 +224,7 @@ impl Session {
             cancel,
             send_time,
         )?;
+        let mut reply = None;
         while self
             .pending
             .as_ref()
@@ -298,31 +299,39 @@ impl Session {
                 .ok_or(SessionError::StreamFenced)?
                 .ready_to_complete()
             {
-                break;
+                // Observation readiness can precede FIFO delivery. Polling
+                // Pending consumes nothing; keep receiving the missing event.
+                reply = broker.with_time(|_, now| -> Result<_> {
+                    self.pending
+                        .as_ref()
+                        .ok_or(SessionError::StreamFenced)?
+                        .remaining(now)?;
+                    match self.service.poll_call(&self.outgoing, &call, now)? {
+                        CallStatus::Pending => Ok(None),
+                        CallStatus::Replied(Some(payload)) => Ok(Some(Frame::decode(&payload)?)),
+                        CallStatus::Replied(None) => {
+                            Err(SessionError::Service(ServiceError::State).into())
+                        }
+                        CallStatus::TimedOut => {
+                            Err(SessionError::Service(ServiceError::Expired).into())
+                        }
+                        CallStatus::Cancelled => {
+                            Err(SessionError::Service(ServiceError::Cancelled).into())
+                        }
+                        CallStatus::Unavailable => {
+                            Err(SessionError::Service(ServiceError::Unavailable).into())
+                        }
+                        CallStatus::ShuttingDown => {
+                            Err(SessionError::Service(ServiceError::ShuttingDown).into())
+                        }
+                    }
+                })?;
+                if reply.is_some() {
+                    break;
+                }
             }
         }
-        if !self
-            .pending
-            .as_ref()
-            .ok_or(SessionError::StreamFenced)?
-            .ready_to_complete()
-        {
-            return Err(SessionError::EventLimit.into());
-        }
-        // Keep the charged canonical Reply payload in its service until all
-        // required observations and the Reply receipt send have succeeded.
-        let reply = broker.with_time(|_, now| -> Result<_> {
-            self.pending
-                .as_ref()
-                .ok_or(SessionError::StreamFenced)?
-                .remaining(now)?;
-            let CallStatus::Replied(Some(payload)) =
-                self.service.poll_call(&self.outgoing, &call, now)?
-            else {
-                return Err("Reply did not complete admitted Call".into());
-            };
-            Ok(Frame::decode(&payload)?)
-        })?;
+        let reply = reply.ok_or(SessionError::EventLimit)?;
         self.calls = self.calls.checked_add(1).ok_or("Call counter overflow")?;
         self.pending = None;
         Ok((context, reply))
