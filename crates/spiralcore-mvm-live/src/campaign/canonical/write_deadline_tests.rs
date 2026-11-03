@@ -3,6 +3,7 @@ use crate::{
     campaign::reconciliation::bounded_requests,
     config::{Arm, Pair, Plan, Stage},
 };
+use spiralcore_mvm_adapter::receipt::ReceiptSendError;
 use spiralcore_transfer::protocol::{Mode, Offer};
 use std::{
     collections::VecDeque,
@@ -661,13 +662,24 @@ fn canonical_ack_initial_reply_and_cached_reply_partial_writes_keep_original_exp
             "{mode}: original expiry was refreshed: {:?}",
             case.result.as_ref().err().map(|error| error.to_string())
         );
-        assert!(
-            matches!(
-                case.result.err().unwrap().downcast_ref::<ServiceError>(),
-                Some(ServiceError::Unavailable)
-            ),
-            "{mode}"
-        );
+        let error = case.result.err().unwrap();
+        if mode == "ack" {
+            assert!(
+                matches!(
+                    error.downcast_ref::<ReceiptSendError>(),
+                    Some(ReceiptSendError::Service(ServiceError::Unavailable))
+                ),
+                "{mode}"
+            );
+        } else {
+            assert!(
+                matches!(
+                    error.downcast_ref::<ServiceError>(),
+                    Some(ServiceError::Unavailable)
+                ),
+                "{mode}"
+            );
+        }
         assert!(state.stalls > 0);
         assert!(state.stalled_at.unwrap() < seeded + SIGNED_TTL);
         assert_eq!(case.session.calls, 0);
