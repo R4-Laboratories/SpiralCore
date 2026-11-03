@@ -1,0 +1,23 @@
+   Compiling spiralcore-mvm-adapter v0.1.0 (/var/tmp/spiralcore-session-20261103/source/crates/spiralcore-mvm-adapter)
+    Finished `release` profile [optimized] target(s) in 4.32s
+     Running tests/call_send.rs (/var/tmp/spiralcore-mvm-service-20261102/target/release/deps/call_send-b781cb0b196aa744)
+
+running 2 tests
+test registered_call_send_is_exact_and_does_not_advance_other_services_accounting_clock ... FAILED
+test registered_call_send_rejects_changed_generation_request_lifecycle_or_time_before_transmission ... ok
+
+failures:
+
+---- registered_call_send_is_exact_and_does_not_advance_other_services_accounting_clock stdout ----
+
+thread 'registered_call_send_is_exact_and_does_not_advance_other_services_accounting_clock' (325617) panicked at tests/call_send.rs:49:14:
+called `Result::unwrap()` on an `Err` value: Unavailable
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    registered_call_send_is_exact_and_does_not_advance_other_services_accounting_clock
+
+test result: FAILED. 1 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+error: test failed, to rerun pass `--test call_send`

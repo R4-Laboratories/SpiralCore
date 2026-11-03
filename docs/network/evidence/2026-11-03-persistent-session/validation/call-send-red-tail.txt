@@ -1,0 +1,39 @@
+   Compiling spiralcore-mvm-adapter v0.1.0 (/var/tmp/spiralcore-session-20261103/source/crates/spiralcore-mvm-adapter)
+error[E0599]: no method named `send_call_prepared` found for struct `LocalMailboxService` in the current scope
+    --> tests/call_send.rs:30:24
+     |
+  30 |     assert_eq!(service.send_call_prepared(&binding, &call, &prepared, &transport,
+     |                --------^^^^^^^^^^^^^^^^^^
+     |
+help: there is a method `reply_prepared` with a similar name, but with different arguments
+    --> src/service.rs:2346:5
+     |
+2346 | /     pub fn reply_prepared(
+2347 | |         &mut self,
+2348 | |         binding: &MailboxBinding,
+2349 | |         call: &DeliveryHandle,
+2350 | |         request: SealRequest<'_>,
+2351 | |         now: ServiceTime,
+2352 | |     ) -> Result<PreparedMailboxEnvelope> {
+     | |________________________________________^
+
+error[E0599]: no method named `send_call_prepared` found for struct `LocalMailboxService` in the current scope
+    --> tests/call_send.rs:69:28
+     |
+  69 |         assert_eq!(service.send_call_prepared(&binding, &call, &prepared, &transport,
+     |                    --------^^^^^^^^^^^^^^^^^^
+     |
+help: there is a method `reply_prepared` with a similar name, but with different arguments
+    --> src/service.rs:2346:5
+     |
+2346 | /     pub fn reply_prepared(
+2347 | |         &mut self,
+2348 | |         binding: &MailboxBinding,
+2349 | |         call: &DeliveryHandle,
+2350 | |         request: SealRequest<'_>,
+2351 | |         now: ServiceTime,
+2352 | |     ) -> Result<PreparedMailboxEnvelope> {
+     | |________________________________________^
+
+For more information about this error, try `rustc --explain E0599`.
+error: could not compile `spiralcore-mvm-adapter` (test "call_send") due to 2 previous errors

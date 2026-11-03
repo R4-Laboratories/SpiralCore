@@ -1,0 +1,32 @@
+    Checking uor-r4-object-store v0.1.0 (/var/tmp/spiralcore-session-20261103/source/crates/uor-r4-object-store)
+    Checking spiralcore-transfer v0.1.0 (/var/tmp/spiralcore-session-20261103/source/crates/spiralcore-transfer)
+    Checking spiralcore-gateway-core v0.1.0 (/var/tmp/spiralcore-session-20261103/source/crates/spiralcore-gateway-core)
+    Checking spiralcore-mvm-adapter v0.1.0 (/var/tmp/spiralcore-session-20261103/source/crates/spiralcore-mvm-adapter)
+    Checking spiralcore-mvm-live v0.1.0 (/var/tmp/spiralcore-session-20261103/source/crates/spiralcore-mvm-live)
+error: this `if` statement can be collapsed
+   --> src/campaign/session.rs:128:9
+    |
+128 | /         if let Err(error) = &result {
+129 | |             if !matches!(
+130 | |                 error,
+131 | |                 SessionError::Service(ServiceError::Full | ServiceError::Backpressured)
+...   |
+135 | |         }
+    | |_________^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.97.0/index.html#collapsible_if
+    = note: `-D clippy::collapsible-if` implied by `-D warnings`
+    = help: to override `-D warnings` add `#[allow(clippy::collapsible_if)]`
+help: collapse nested if block
+    |
+128 ~         if let Err(error) = &result
+129 ~             && !matches!(
+130 |                 error,
+...
+133 |                 self.fenced = true;
+134 ~             }
+    |
+
+error: could not compile `spiralcore-mvm-live` (lib) due to 1 previous error
+warning: build failed, waiting for other jobs to finish...
+error: could not compile `spiralcore-mvm-live` (lib test) due to 1 previous error
