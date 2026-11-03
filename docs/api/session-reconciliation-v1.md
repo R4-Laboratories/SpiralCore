@@ -202,9 +202,22 @@ event allowance is exhausted. Signed admission caps the fixed deadline further.
 - For a fresh accepted Call, retain its admitted proof and fixed original
   Instant/Unix/owner-monotonic deadline. Execute the object once and use the
   existing active receiver loop: exact current cached Reply comparison before
-  admitting a repeated Call, actual Duplicate receipt, fresh both-binding checks,
+  admitting a repeated Call and obtaining its actual Duplicate receipt; fresh both-binding checks,
   same tracker handle, exact cached Reply, at most eight total Reply invocations.
   Only the matching authenticated eligible Reply receipt releases the cache.
+
+Active cached replay sends the exact cached Reply **before** its actual Duplicate
+Call receipt. After that blocking write, sample fresh broker time and recheck both
+bindings, original lifetime, exact cached identity and retained tracker handle
+before reserving/sending the receipt outside dispatch under the same fixed deadline.
+Burn the Reply invocation before its write; the eight-invocation bound is unchanged.
+The caller writes its ordinary ACK for the replay before reading a receipt that
+can close a missing-receipt Call; its ACK precedes any next Call on the same stream.
+With an original Call receipt already retained, completion may leave the trailing
+Duplicate control for existing authenticated demultiplexing. Qualify both C8 peers
+together; no wire/version, proactive extra frame, ACK kind, timer or counter is added.
+Inactive cache-None handling remains actual Duplicate-receipt-only; ACK write alone
+still does not prove remote observation or general recovery after caller completion.
 
 Old-Call lookup enforces that old identity's original canonical lifetime even
 before fresh application admission. Control reservations and all failed sends

@@ -83,6 +83,13 @@ edit caller and receiver paths concurrently in that file.
    retained Reply/ACK facts. Preserve active cached replay, no-resume latch,
    original deadlines, event/send ceilings and top-level cap. Count preamble work
    and traffic. One control-only exchange cannot return a second Handled.
+   Active cache-Some replay writes the exact cached Reply first, then rechecks
+   original authority/deadline/cache/tracker facts with fresh time before reserving
+   and sending the actual Duplicate Call receipt. Keep the same fixed I/O cap and
+   eight Reply invocations; inactive cache-None receipt-only handling stays intact.
+   Retain the `0adbf848` combined-loss race failure (caller success, receiver EOF,
+   cache unreleased). Qualify reordered direct/real-relay C8 peers with unchanged
+   peer/cache/exact-byte assertions; add no proactive frame or new ACK mechanism.
 4. **Fault combinations and relay GREEN.** Apply the focused gates below through
    the real duplex relay as well as direct sockets. Use bounded deterministic
    forwarding/withholding of complete canonical frames, never a competing codec,
