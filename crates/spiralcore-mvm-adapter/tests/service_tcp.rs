@@ -384,3 +384,6 @@ fn canonical_calls_and_encrypted_receipts_cross_tcp_without_recursive_traffic() 
 
 #[path = "service_tcp/idle.rs"]
 mod idle;
+
+#[path = "service_tcp/deadline.rs"]
+mod deadline;

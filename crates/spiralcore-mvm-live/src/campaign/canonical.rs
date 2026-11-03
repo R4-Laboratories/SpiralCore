@@ -1,4 +1,7 @@
 //! Canonical mailbox service consumer shared by host and real guest campaigns.
+use super::reconciliation::{
+    ProcessingPhase, ProcessingTotals, RecoveryCounters, RetryRequests, increment,
+};
 use super::session::{ExchangeDeadline, PendingCall, SessionError};
 use super::*;
 use crate::config::Material;
@@ -35,6 +38,9 @@ pub(super) struct Session {
     context: Option<Context>,
     pending: Option<PendingCall>,
     receiver_incomplete: bool,
+    recovery: RecoveryCounters,
+    receiver_processing: ProcessingTotals,
+    receiver_phase: Option<ProcessingPhase>,
 }
 const MAX_CAMPAIGN_CALLS: u64 = 2048;
 const ISSUANCE_POLICY: IssuancePolicy = IssuancePolicy::Bounded {
@@ -136,17 +142,49 @@ impl Session {
                 context: None,
                 pending: None,
                 receiver_incomplete: false,
+                recovery: RecoveryCounters::default(),
+                receiver_processing: ProcessingTotals::default(),
+                receiver_phase: None,
             })
         })
     }
     pub(super) fn report(&self) -> Value {
-        json!({"application_calls":self.calls,"normal_envelopes_per_call":2,"encrypted_destination_receipts_per_call":2,"frames_per_call":4,"profile":"canonical-ephemeral-v1","durability":"AcceptedEphemeral; object commit separately verified durable","identity_tier":"broker-owned","witness_tier":"native-16m-v1","identity_limits":self.owner_capacity["identity_limits"],"control_identity_limits":self.owner_capacity["control_identity_limits"],"max_application_calls":MAX_CAMPAIGN_CALLS,"pipeline":1,"ordering":"stable-scope-increasing-sequence","broker_clock":"shared-serialized-dispatch","issuance_policy":{"mode":"bounded","max_clock_ahead_ms":5000,"max_issued_ttl_ms":30000,"max_remaining_ttl_ms":25000}})
+        json!({"session_report":"canonical-session-report/v2","application_calls":self.calls,
+            "normal_envelopes_per_call":2,"normal_encrypted_destination_receipts_per_call":2,
+            "normal_frames_per_call":4,"recovery":&self.recovery,
+            "receiver_processing":&self.receiver_processing,
+            "receiver_processing_domain":"post-frame process CPU and wall; includes unfinished work; excludes receive waits; co-located CPU intervals overlap",
+            "profile":"canonical-ephemeral-v1","durability":"AcceptedEphemeral; object commit separately verified durable",
+            "identity_tier":"broker-owned","witness_tier":"native-16m-v1",
+            "identity_limits":self.owner_capacity["identity_limits"],"control_identity_limits":self.owner_capacity["control_identity_limits"],
+            "max_application_calls":MAX_CAMPAIGN_CALLS,"pipeline":1,"ordering":"stable-scope-increasing-sequence",
+            "broker_clock":"shared-serialized-dispatch","issuance_policy":{"mode":"bounded","max_clock_ahead_ms":5000,"max_issued_ttl_ms":30000,"max_remaining_ttl_ms":25000}})
     }
     pub(super) fn call<S: SocketIo + 'static>(
         &mut self,
         request: &Frame,
         stream: &StreamTransport<S>,
         cancel: &CancellationToken,
+    ) -> Result<(Context, Frame)> {
+        self.call_inner(request, stream, cancel, None)
+    }
+
+    pub(super) fn call_with_reconciliation<S: SocketIo + 'static>(
+        &mut self,
+        request: &Frame,
+        stream: &StreamTransport<S>,
+        cancel: &CancellationToken,
+        retry_requests: RetryRequests,
+    ) -> Result<(Context, Frame)> {
+        self.call_inner(request, stream, cancel, Some(retry_requests))
+    }
+
+    fn call_inner<S: SocketIo + 'static>(
+        &mut self,
+        request: &Frame,
+        stream: &StreamTransport<S>,
+        cancel: &CancellationToken,
+        retry_requests: Option<RetryRequests>,
     ) -> Result<(Context, Frame)> {
         if self.calls >= MAX_CAMPAIGN_CALLS {
             return Err(SessionError::WitnessLimit.into());
@@ -222,7 +260,7 @@ impl Session {
                 .as_ref()
                 .ok_or(SessionError::StreamFenced)?
                 .prepared()?,
-            stream,
+            &stream.before(deadline),
             cancel,
             send_time,
         )?;
@@ -234,7 +272,81 @@ impl Session {
             .events_received()
             < 16
         {
-            let bytes = stream.receive(cancel, deadline)?;
+            let bytes = if let Some(requests) = &retry_requests {
+                match stream.receive_or_idle(cancel, deadline, Duration::from_millis(250))? {
+                    spiralcore_mvm_adapter::live::ReceiveOutcome::Frame(bytes) => bytes,
+                    spiralcore_mvm_adapter::live::ReceiveOutcome::Idle => {
+                        increment(&mut self.recovery.idle_outcomes)?;
+                        let retry_time = broker.with_time(|_, now| -> Result<_> {
+                            let pending =
+                                self.pending.as_ref().ok_or(SessionError::StreamFenced)?;
+                            if let Err(error) = pending.remaining(now) {
+                                self.service.expire(now)?;
+                                self.tracker.expire(now)?;
+                                return Err(error.into());
+                            }
+                            if Instant::now() >= deadline {
+                                return Err(SessionError::Service(ServiceError::Expired).into());
+                            }
+                            if pending.ready_to_complete() {
+                                reply = self.poll_ready_reply(call, now)?;
+                                return Ok(None);
+                            }
+                            if !requests.take_request() {
+                                return Ok(None);
+                            }
+                            increment(&mut self.recovery.commands_consumed)?;
+                            let pending =
+                                self.pending.as_mut().ok_or(SessionError::StreamFenced)?;
+                            pending.prepare_retry(
+                                &mut self.service,
+                                &mut self.tracker,
+                                &self.outgoing,
+                                &self.control,
+                                &self.peer_key,
+                                now,
+                            )?;
+                            Ok(Some(now))
+                        })?;
+                        if reply.is_some() {
+                            break;
+                        }
+                        if retry_time.is_some() {
+                            // Expiry maintenance/registration can consume time;
+                            // sample again before burning the transport attempt.
+                            let now = broker.with_time(|_, now| -> Result<_> {
+                                self.pending
+                                    .as_ref()
+                                    .ok_or(SessionError::StreamFenced)?
+                                    .remaining(now)?;
+                                if Instant::now() >= deadline {
+                                    return Err(SessionError::Service(ServiceError::Expired).into());
+                                }
+                                Ok(now)
+                            })?;
+                            self.pending
+                                .as_mut()
+                                .ok_or(SessionError::StreamFenced)?
+                                .start_retry()?;
+                            increment(&mut self.recovery.call_retry_invocations)?;
+                            self.service.retry_call_prepared(
+                                &self.outgoing,
+                                &call,
+                                self.pending
+                                    .as_ref()
+                                    .ok_or(SessionError::StreamFenced)?
+                                    .prepared()?,
+                                &stream.before(deadline),
+                                cancel,
+                                now,
+                            )?;
+                        }
+                        continue;
+                    }
+                }
+            } else {
+                stream.receive(cancel, deadline)?
+            };
             self.pending
                 .as_mut()
                 .ok_or(SessionError::StreamFenced)?
@@ -305,7 +417,7 @@ impl Session {
                         .ok_or(SessionError::StreamFenced)?
                         .invoke_reply_ack()?;
                 }
-                permit.send(stream, cancel, now)?;
+                permit.send(&stream.before(deadline), cancel, now)?;
                 if current {
                     self.pending
                         .as_mut()
@@ -321,31 +433,7 @@ impl Session {
             {
                 // Observation readiness can precede FIFO delivery. Polling
                 // Pending consumes nothing; keep receiving the missing event.
-                reply = broker.with_time(|_, now| -> Result<_> {
-                    self.pending
-                        .as_ref()
-                        .ok_or(SessionError::StreamFenced)?
-                        .remaining(now)?;
-                    match self.service.poll_call(&self.outgoing, &call, now)? {
-                        CallStatus::Pending => Ok(None),
-                        CallStatus::Replied(Some(payload)) => Ok(Some(Frame::decode(&payload)?)),
-                        CallStatus::Replied(None) => {
-                            Err(SessionError::Service(ServiceError::State).into())
-                        }
-                        CallStatus::TimedOut => {
-                            Err(SessionError::Service(ServiceError::Expired).into())
-                        }
-                        CallStatus::Cancelled => {
-                            Err(SessionError::Service(ServiceError::Cancelled).into())
-                        }
-                        CallStatus::Unavailable => {
-                            Err(SessionError::Service(ServiceError::Unavailable).into())
-                        }
-                        CallStatus::ShuttingDown => {
-                            Err(SessionError::Service(ServiceError::ShuttingDown).into())
-                        }
-                    }
-                })?;
+                reply = broker.with_time(|_, now| self.poll_ready_reply(call, now))?;
                 if reply.is_some() {
                     break;
                 }
@@ -356,7 +444,46 @@ impl Session {
         self.pending = None;
         Ok((context, reply))
     }
+    fn poll_ready_reply(
+        &mut self,
+        call: spiralcore_mvm_adapter::service::CallHandle,
+        now: ServiceTime,
+    ) -> Result<Option<Frame>> {
+        self.pending
+            .as_ref()
+            .ok_or(SessionError::StreamFenced)?
+            .remaining(now)?;
+        match self.service.poll_call(&self.outgoing, &call, now)? {
+            CallStatus::Pending => Ok(None),
+            CallStatus::Replied(Some(payload)) => Ok(Some(Frame::decode(&payload)?)),
+            CallStatus::Replied(None) => Err(SessionError::Service(ServiceError::State).into()),
+            CallStatus::TimedOut => Err(SessionError::Service(ServiceError::Expired).into()),
+            CallStatus::Cancelled => Err(SessionError::Service(ServiceError::Cancelled).into()),
+            CallStatus::Unavailable => Err(SessionError::Service(ServiceError::Unavailable).into()),
+            CallStatus::ShuttingDown => {
+                Err(SessionError::Service(ServiceError::ShuttingDown).into())
+            }
+        }
+    }
     pub(super) fn handle<S: SocketIo + 'static>(
+        &mut self,
+        expected: Id,
+        object: &mut ObjectMailbox,
+        stream: &StreamTransport<S>,
+        cancel: &CancellationToken,
+    ) -> Result<Handled> {
+        let result = self.handle_inner(expected, object, stream, cancel);
+        if let Err(error) = self.receiver_processing.finish(&mut self.receiver_phase) {
+            self.receiver_incomplete = true;
+            return Err(error);
+        }
+        if result.is_err() {
+            increment(&mut self.recovery.receiver_failed_invocations)?;
+        }
+        result
+    }
+
+    fn handle_inner<S: SocketIo + 'static>(
         &mut self,
         expected: Id,
         object: &mut ObjectMailbox,
@@ -373,32 +500,121 @@ impl Session {
         // its canonical state and fences before a subsequent frame is read.
         self.receiver_incomplete = true;
         let deadline = Instant::now() + CALL_TIMEOUT;
-        let bytes = stream.receive(cancel, deadline)?;
-        let cpu = ProcessTime::now();
-        let wall = Instant::now();
         let broker = self.broker.clone();
-        let (receipt, proof, deadline) = broker.with_time(|_, now| -> Result<_> {
-            if decode_envelope(&bytes)?.encryption.key_id != self.normal_key {
-                return Err("expected provisioned Call key".into());
+        let mut events = 0_u8;
+        let mut meter = Meter::default();
+        let (receipt, proof, deadline) = loop {
+            if events >= 16 {
+                return Err(SessionError::EventLimit.into());
             }
-            let (accepted, receipt) =
-                self.returns
-                    .admit(&mut self.service, &self.incoming, &bytes, now)?;
-            if accepted.receipt.outcome != DeliveryOutcome::AcceptedEphemeral {
-                return Err("Call admission refused".into());
+            let bytes = stream.receive(cancel, deadline)?;
+            events += 1;
+            self.receiver_phase = Some((ProcessTime::now(), Instant::now()));
+            let (receipt, proof, admitted_deadline) = broker.with_time(|_, now| -> Result<_> {
+                if Instant::now() >= deadline {
+                    return Err(ServiceError::Expired.into());
+                }
+                let envelope = decode_envelope(&bytes)?;
+                if envelope.encryption.key_id == self.control_key {
+                    self.tracker.observe_receipt(&self.control, &bytes, now)?;
+                    increment(&mut self.recovery.historical_control_events)?;
+                    return Ok((None, None, None));
+                }
+                if envelope.encryption.key_id != self.normal_key {
+                    return Err("expected provisioned Call key".into());
+                }
+                // At the event ceiling, only an authenticated historical Call
+                // may proceed: a fresh admission would have no room for its ACK.
+                if events == 16 {
+                    match self
+                        .service
+                        .retry_reply_prepared(&self.incoming, &bytes, now)
+                    {
+                        Ok(None) => {}
+                        Ok(Some(_)) => return Err(ServiceError::State.into()),
+                        Err(ServiceError::UnknownHandle) => {
+                            return Err(SessionError::EventLimit.into());
+                        }
+                        Err(error) => return Err(error.into()),
+                    }
+                }
+                // Inactive preamble: ordinary fresh admission verifies once.
+                // The active ACK-wait loop below still prechecks cached identity.
+                let (accepted, receipt) =
+                    self.returns
+                        .admit(&mut self.service, &self.incoming, &bytes, now)?;
+                match accepted.receipt.outcome {
+                    DeliveryOutcome::AcceptedEphemeral => {
+                        if events == 16 {
+                            return Err(SessionError::EventLimit.into());
+                        }
+                        let proof = self
+                            .service
+                            .receive(&self.incoming, now)?
+                            .ok_or("missing admitted Call")?;
+                        let cap = ExchangeDeadline::new(
+                            deadline,
+                            proof.header().expires_at_unix_ms,
+                            now,
+                        )?;
+                        Ok((Some(receipt), Some(proof), Some(cap)))
+                    }
+                    DeliveryOutcome::Duplicate => {
+                        // Canonical admission authenticated inner/outer expiry
+                        // equality. The original-owner lookup below is separate.
+                        let cap = ExchangeDeadline::new(
+                            deadline,
+                            envelope.routing.expires_at_unix_ms,
+                            now,
+                        )?;
+                        Ok((Some(receipt), None, Some(cap)))
+                    }
+                    _ => Err("Call admission refused".into()),
+                }
+            })?;
+            if let Some(proof) = proof {
+                break (
+                    receipt.ok_or(ServiceError::State)?,
+                    proof,
+                    admitted_deadline.ok_or(ServiceError::State)?,
+                );
             }
-            let proof = self
-                .service
-                .receive(&self.incoming, now)?
-                .ok_or("missing admitted Call")?;
-            let deadline = ExchangeDeadline::new(deadline, proof.header().expires_at_unix_ms, now)?;
-            Ok((receipt, proof, deadline))
-        })?;
+            if let Some(receipt) = receipt {
+                let cap = admitted_deadline.ok_or(ServiceError::State)?;
+                let (permit, _) = broker.with_time(|_, now| -> Result<_> {
+                    cap.check(now)?;
+                    if self
+                        .service
+                        .retry_reply_prepared(&self.incoming, &bytes, now)?
+                        .is_some()
+                    {
+                        return Err(ServiceError::State.into());
+                    }
+                    Ok((receipt.reserve_send(cancel, now)?, now))
+                })?;
+                let now = broker.with_time(|_, now| -> Result<_> {
+                    cap.check(now)?;
+                    if self
+                        .service
+                        .retry_reply_prepared(&self.incoming, &bytes, now)?
+                        .is_some()
+                    {
+                        return Err(ServiceError::State.into());
+                    }
+                    Ok(now)
+                })?;
+                increment(&mut self.recovery.historical_receipt_invocations)?;
+                permit.send(&stream.before(cap.instant()), cancel, now)?;
+                increment(&mut self.recovery.historical_receipts_sent)?;
+            }
+            let processed = self.receiver_processing.finish(&mut self.receiver_phase)?;
+            meter.add(processed.cpu_us, processed.wall_us)?;
+        };
         let (permit, now) = broker.with_time(|_, now| -> Result<_> {
             deadline.check(now)?;
             Ok((receipt.reserve_send(cancel, now)?, now))
         })?;
-        permit.send(stream, cancel, now)?;
+        permit.send(&stream.before(deadline.instant()), cancel, now)?;
         let (reply, namespace) = application_phase(&broker, |now| {
             deadline.check(now)?;
             let frame = Frame::decode(proof.payload())?;
@@ -436,19 +652,21 @@ impl Session {
             Ok(now)
         })?;
         let mut sends = 1_u8;
-        self.outgoing
-            .send_prepared(&prepared, stream, cancel, sent_at)?;
+        increment(&mut self.recovery.reply_send_invocations)?;
+        self.outgoing.send_prepared(
+            &prepared,
+            &stream.before(deadline.instant()),
+            cancel,
+            sent_at,
+        )?;
         // Receiver idle waits stay outside processing CPU/wall intervals.
-        let mut meter = Meter {
-            cpu_us: cpu.elapsed().as_micros(),
-            wall_us: wall.elapsed().as_micros(),
-        };
+        let processed = self.receiver_processing.finish(&mut self.receiver_phase)?;
+        meter.add(processed.cpu_us, processed.wall_us)?;
         let mut acknowledged = false;
-        // The initial admitted Call is the first event of this exchange.
-        for _ in 1..16 {
+        // Preamble and initial Call share this invocation's cumulative bound.
+        for _ in events..16 {
             let event = stream.receive(cancel, deadline.instant())?;
-            let cpu = ProcessTime::now();
-            let wall = Instant::now();
+            self.receiver_phase = Some((ProcessTime::now(), Instant::now()));
             let key = decode_envelope(&event)?.encryption.key_id;
             let repeat = broker.with_time(|_, now| -> Result<_> {
                 deadline.check(now)?;
@@ -505,13 +723,9 @@ impl Session {
                 Ok(Some(receipt))
             })?;
             if let Some(receipt) = repeat {
-                let (permit, now) = broker.with_time(|_, now| -> Result<_> {
-                    deadline.check(now)?;
-                    Ok((receipt.reserve_send(cancel, now)?, now))
-                })?;
-                permit.send(stream, cancel, now)?;
-                // Receipt I/O may wait: recheck both canonical bindings and
-                // original lifetime before invoking the cached Reply send.
+                // Replay the Reply before the closing Call receipt. A caller
+                // with an earlier Reply/ACK must ACK this replay before that
+                // receipt can complete its still-missing admission observation.
                 let (cached, now) = broker.with_time(|_, now| -> Result<_> {
                     deadline.check(now)?;
                     let cached = self
@@ -533,9 +747,40 @@ impl Session {
                     Ok((cached, now))
                 })?;
                 sends += 1;
-                self.outgoing.send_prepared(&cached, stream, cancel, now)?;
+                increment(&mut self.recovery.cached_reply_retry_invocations)?;
+                increment(&mut self.recovery.reply_send_invocations)?;
+                self.outgoing.send_prepared(
+                    &cached,
+                    &stream.before(deadline.instant()),
+                    cancel,
+                    now,
+                )?;
+                // The write may wait: revalidate original ownership, both
+                // bindings, exact cache and tracker before the closing receipt.
+                let (permit, now) = broker.with_time(|_, now| -> Result<_> {
+                    deadline.check(now)?;
+                    let cached = self
+                        .service
+                        .retry_reply_prepared(&self.incoming, &event, now)?
+                        .ok_or(ServiceError::State)?;
+                    let wire = encode_envelope(cached.envelope())?;
+                    if wire != encoded
+                        || self.tracker.register_send(
+                            &self.outgoing,
+                            &self.control,
+                            &self.peer_key,
+                            &wire,
+                            now,
+                        )? != send
+                    {
+                        return Err(ServiceError::Conflict.into());
+                    }
+                    Ok((receipt.reserve_send(cancel, now)?, now))
+                })?;
+                permit.send(&stream.before(deadline.instant()), cancel, now)?;
             }
-            meter.add(cpu.elapsed().as_micros(), wall.elapsed().as_micros())?;
+            let processed = self.receiver_processing.finish(&mut self.receiver_phase)?;
+            meter.add(processed.cpu_us, processed.wall_us)?;
             if acknowledged {
                 break;
             }
@@ -851,3 +1096,12 @@ mod late_tests;
 
 #[cfg(test)]
 mod receiver_tests;
+
+#[cfg(test)]
+mod reconciliation_tests;
+
+#[cfg(test)]
+mod write_deadline_tests;
+
+#[cfg(test)]
+mod reconciliation_limits_tests;

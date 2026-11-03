@@ -57,6 +57,223 @@ fn budget() -> HostBudget {
 }
 
 #[test]
+fn explicit_retry_preparation_retains_charged_reply_identity_facts_and_cumulative_bounds() {
+    let (pair, outgoing, control, peer) = fixture();
+    let now = ServiceTime {
+        unix_ms: now_ms().unwrap(),
+        monotonic_ms: 0,
+    };
+    let owner = budget();
+    let mut service = LocalMailboxService::new(owner.clone()).unwrap();
+    let mut tracker = ReceiptTracker::new(owner.clone(), 4).unwrap();
+    let mut call = pending(&outgoing, &pair, now);
+    assert_eq!(call.send_invocations(), 0);
+    call.register(&mut service, &mut tracker, &outgoing, &control, &peer, now)
+        .unwrap();
+    call.start_send().unwrap();
+    assert_eq!(call.send_invocations(), 1);
+    let original = call.encoded().unwrap().to_vec();
+    let header = call.prepared().unwrap().header().clone();
+    let call_handle = call.call_handle().unwrap();
+    let send_handle = call.send_handle().unwrap();
+    let lifetime = call.remaining(now).unwrap();
+
+    // A real independently owned receiver prepares the authenticated Reply.
+    // No local poll is used to discover eligibility or populate progress.
+    let mut receiver = LocalMailboxService::new(budget()).unwrap();
+    let incoming = pair
+        .receiver
+        .incoming
+        .as_ref()
+        .unwrap()
+        .service_binding(Some(
+            pair.receiver
+                .service
+                .as_ref()
+                .unwrap()
+                .local_receipt_signing,
+        ))
+        .unwrap();
+    let accepted = receiver.admit(&incoming, &original, now).unwrap();
+    let proof = receiver.receive(&incoming, now).unwrap().unwrap();
+    let replier = pair
+        .receiver
+        .outgoing
+        .as_ref()
+        .unwrap()
+        .service_binding(None)
+        .unwrap();
+    let response = b"retained\0canonical\xffreply";
+    let options = MessageOptions::for_reply(&proof, now).unwrap();
+    let reply = receiver
+        .reply_prepared(
+            &replier,
+            proof.handle(),
+            service_sender::request(&replier, response, &options, now).unwrap(),
+            now,
+        )
+        .unwrap();
+    let reply_wire = encode_envelope(reply.envelope()).unwrap();
+    let reply_binding = pair
+        .sender
+        .incoming
+        .as_ref()
+        .unwrap()
+        .service_binding(Some(
+            pair.sender.service.as_ref().unwrap().local_receipt_signing,
+        ))
+        .unwrap();
+    service.admit(&reply_binding, &reply_wire, now).unwrap();
+    let observed = tracker
+        .observe_application_reply(&reply_binding, &reply_wire, now)
+        .unwrap();
+    assert_eq!(observed, send_handle);
+    call.observe_reply(observed, &reply_wire).unwrap();
+    call.invoke_reply_ack().unwrap();
+    call.sent_reply_ack().unwrap();
+    call.observe_receipt(accepted.receipt.outcome).unwrap();
+    call.receive_event().unwrap();
+    call.receive_event().unwrap();
+    let tracker_before = tracker.snapshot();
+    let charged = owner.snapshot().unwrap();
+    assert_eq!(charged.queued_bytes, reply_wire.len() as u64);
+    assert_eq!(charged.queued_messages, 1);
+    assert_eq!(charged.active_calls, 0);
+
+    // This unit gate checks validation/accounting, not physical transmissions.
+    // The caller's separate completion gate decides when a retry is needed.
+    for invocation in 2..=8 {
+        call.prepare_retry(&mut service, &mut tracker, &outgoing, &control, &peer, now)
+            .unwrap();
+        assert_eq!(call.send_invocations(), invocation - 1);
+        assert_eq!(call.call_handle(), Some(call_handle));
+        assert_eq!(call.send_handle(), Some(send_handle));
+        assert_eq!(call.encoded().unwrap(), original);
+        assert_eq!(call.prepared().unwrap().header(), &header);
+        assert_eq!(call.remaining(now).unwrap(), lifetime);
+        assert_eq!(tracker.snapshot(), tracker_before);
+        assert_eq!(
+            call.receipt_outcome(),
+            Some(DeliveryOutcome::AcceptedEphemeral)
+        );
+        assert_eq!(call.reply_wire(), Some(reply_wire.as_slice()));
+        assert_eq!(call.reply_ack_state(), ReplyAckState::Sent);
+        assert!(call.ready_to_complete());
+        let retained = owner.snapshot().unwrap();
+        assert_eq!(retained.queued_bytes, charged.queued_bytes);
+        assert_eq!(retained.queued_messages, charged.queued_messages);
+        assert_eq!(retained.active_calls, charged.active_calls);
+        assert_eq!(retained.identities, charged.identities);
+        assert_eq!(call.events_received(), 2 * (invocation - 1));
+        call.start_retry().unwrap();
+        assert_eq!(call.send_invocations(), invocation);
+        call.receive_event().unwrap();
+        call.receive_event().unwrap();
+    }
+    assert_eq!(call.events_received(), 16);
+    assert_eq!(call.receive_event(), Err(SessionError::EventLimit));
+    assert_eq!(call.start_retry(), Err(SessionError::SendLimit));
+    assert_eq!(
+        call.prepare_retry(&mut service, &mut tracker, &outgoing, &control, &peer, now),
+        Err(SessionError::SendLimit)
+    );
+    assert_eq!(call.send_invocations(), 8);
+    assert_eq!(call.events_received(), 16);
+    assert_eq!(call.encoded().unwrap(), original);
+    assert_eq!(owner.snapshot().unwrap().queued_bytes, charged.queued_bytes);
+    assert_eq!(
+        service.poll_call(&outgoing, &call_handle, now).unwrap(),
+        CallStatus::Replied(Some(response.to_vec()))
+    );
+    assert_eq!(owner.snapshot().unwrap().queued_bytes, 0);
+    assert_eq!(
+        service.poll_call(&outgoing, &call_handle, now).unwrap(),
+        CallStatus::Replied(None)
+    );
+}
+
+#[test]
+fn explicit_retry_refuses_missing_initial_send_fence_and_original_expiry_without_replacement() {
+    for mode in [
+        "unregistered",
+        "not-started",
+        "fenced",
+        "unix-expiry",
+        "mono-expiry-with-wall-rollback",
+    ] {
+        let (pair, outgoing, control, peer) = fixture();
+        let now = ServiceTime {
+            unix_ms: now_ms().unwrap(),
+            monotonic_ms: 0,
+        };
+        let owner = budget();
+        let mut service = LocalMailboxService::new(owner.clone()).unwrap();
+        let mut tracker = ReceiptTracker::new(owner.clone(), 4).unwrap();
+        let mut call = pending(&outgoing, &pair, now);
+        let mut when = now;
+        let expected = if mode == "unregistered" {
+            assert_eq!(
+                call.start_retry(),
+                Err(SessionError::Service(ServiceError::State))
+            );
+            SessionError::Service(ServiceError::State)
+        } else {
+            call.register(&mut service, &mut tracker, &outgoing, &control, &peer, now)
+                .unwrap();
+            match mode {
+                "not-started" => {
+                    assert_eq!(
+                        call.start_retry(),
+                        Err(SessionError::Service(ServiceError::State))
+                    );
+                    SessionError::Service(ServiceError::State)
+                }
+                "fenced" => {
+                    outgoing
+                        .replace_policy(pair.sender.outgoing.as_ref().unwrap().context().unwrap())
+                        .unwrap();
+                    assert_eq!(
+                        call.register(&mut service, &mut tracker, &outgoing, &control, &peer, now),
+                        Err(SessionError::Service(ServiceError::Unauthorized))
+                    );
+                    assert_eq!(call.start_retry(), Err(SessionError::StreamFenced));
+                    SessionError::StreamFenced
+                }
+                "unix-expiry" => {
+                    call.start_send().unwrap();
+                    when.unix_ms = call.expires_at();
+                    SessionError::Service(ServiceError::Expired)
+                }
+                "mono-expiry-with-wall-rollback" => {
+                    call.start_send().unwrap();
+                    when.monotonic_ms = call.remaining(now).unwrap();
+                    when.unix_ms -= 1;
+                    SessionError::Service(ServiceError::Expired)
+                }
+                _ => unreachable!(),
+            }
+        };
+        let wire = call.encoded.as_ref().cloned();
+        let call_handle = call.call_handle();
+        let send_handle = call.send_handle();
+        let sends = call.send_invocations();
+        assert_eq!(
+            call.prepare_retry(&mut service, &mut tracker, &outgoing, &control, &peer, when),
+            Err(expected),
+            "{mode}"
+        );
+        assert_eq!(call.encoded, wire, "{mode}");
+        assert_eq!(call.call_handle(), call_handle, "{mode}");
+        assert_eq!(call.send_handle(), send_handle, "{mode}");
+        assert_eq!(call.send_invocations(), sends, "{mode}");
+        assert_eq!(call.events_received(), 0, "{mode}");
+        if mode.ends_with("expiry") || mode == "mono-expiry-with-wall-rollback" {
+            assert_eq!(owner.snapshot().unwrap().active_calls, 0, "{mode}");
+        }
+    }
+}
+
+#[test]
 fn exchange_deadline_keeps_original_monotonic_expiry_despite_wall_rollback() {
     let now = ServiceTime {
         unix_ms: 1000,
