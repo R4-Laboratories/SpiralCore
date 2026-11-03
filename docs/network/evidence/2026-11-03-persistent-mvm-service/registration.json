@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "baseline": "b154fb75f6e38e5260853d67d08e7dcdac78b402",
+  "scope": "first persistent-service slice, pipeline one",
+  "baseline_registration": "Existing broker_objects fixed 1 MiB workloads, three trials per arm, collected before functional implementation. This registration was written after baseline collection; it is an exploratory comparison, not a preregistered statistical trial.",
+  "matched_object_cells": {
+    "transport": "canonical encrypted TCP loopback, both actors in one process and one injected BrokerContext",
+    "arms": ["raw-mixed", "whole-mixed", "combined-cpu"],
+    "requested_size": 1048576,
+    "actual_target_bytes": 1047202,
+    "trials": [0, 1, 2],
+    "order": "arm order above, trials ascending, independent process per cell",
+    "owned_payload_ceiling_bytes": 536870912,
+    "process_rss_ceiling_bytes": 1073741824,
+    "acceptance": "exact stopped-store readback, matching actual directional counters; retain any CPU/time loss. No concurrency speedup or WAN claim from these cells."
+  },
+  "native_cells_registered_before_execution": {
+    "host": "wick, Linux x86_64 / Firecracker",
+    "stage": "two",
+    "arms": ["whole-mixed", "combined-cpu"],
+    "requested_sizes": [1048576, 16777216],
+    "trial": 0,
+    "profile": "experimental64, existing Linux rate enforcement absent and disclosed",
+    "max_simultaneous_guests": 2,
+    "max_total_guest_vcpus": 2,
+    "max_total_guest_ram_bytes": 2147483648,
+    "guest_nic": false,
+    "maximum_wall_seconds_per_cell": 180,
+    "maximum_owned_disk_bytes_per_cell": 536870912,
+    "acceptance": "exact durable publication plus keyless reboot readbacks, matched endpoint/relay counters, aggregate transport owner high-water and zero reservations after joined teardown"
+  },
+  "regressions": [
+    "Blocked application phase must permit independent service dispatch; old behavior observed RED, new split GREEN",
+    "Post-work deadline and incoming policy replacement refuse Reply preparation",
+    "Host and tenant link/frame/buffer capacity; frame retains link; checked overflow; cross-owner scope refusal",
+    "Reserve relay serialized-buffer credit before allocating/read payload; malformed/partial read and forwarding failure release after buffer destruction"
+  ],
+  "resource_claim": "Serialized relay buffer reservations and links are orchestrator-scoped. Endpoint plaintext, guest heap, allocator copies, kernel buffers, cache/workspace, machine-wide owner exclusion and fair scheduling remain distinct.",
+  "deferred": ["same-owner lock preemption", "authenticated control-latency contention measurement", "greater-than-2048 Call native session", "full-retention persistent retry", "installation-wide exclusive owner", "aggregate plaintext partition", "negotiated pipeline", "canonical direct/relay WAN", "Windows durable gateway"],
+  "evidence_custody": "Compact JSON/source hashes in Git; synthetic payloads and VM disks stay on Wick. Delete only successfully verified owned disposable stores after evidence hashes and readbacks are retained."
+}
