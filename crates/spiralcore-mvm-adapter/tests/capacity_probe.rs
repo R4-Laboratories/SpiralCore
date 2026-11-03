@@ -5,6 +5,7 @@ mod probe;
 #[test]
 fn real_loopback_capacity_probe_preserves_binary_payload_and_counts_both_directions() {
     let row = probe::run_cell(2, true, 4, 0).unwrap();
+    assert!(row["first_error"].is_null(), "capacity smoke refused before completion: {row}");
     assert_eq!(row["configured_endpoints"], 2);
     assert_eq!(row["accepted_calls"], 2);
     assert_eq!(row["accepted_casts"], 2);
