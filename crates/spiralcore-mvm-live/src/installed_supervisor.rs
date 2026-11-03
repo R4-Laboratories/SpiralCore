@@ -9,6 +9,7 @@ use crate::{
 use sha2::{Digest, Sha256};
 use std::{
     fmt, io,
+    path::PathBuf,
     process::{Child, Command, ExitStatus},
     sync::{
         Arc, Mutex,
@@ -109,6 +110,17 @@ pub(crate) struct WorkerGrant {
     slot: usize,
     serial: u64,
     role: WorkerRole,
+}
+
+#[derive(Clone, PartialEq, Eq)]
+pub(crate) struct WorkerBinding {
+    pub(crate) root: PathBuf,
+    pub(crate) installation: [u8; 32],
+    pub(crate) profile: [u8; 32],
+    pub(crate) generation: u64,
+    pub(crate) role: u8,
+    pub(crate) slot: u8,
+    pub(crate) serial: u64,
 }
 
 struct WorkerSlot {

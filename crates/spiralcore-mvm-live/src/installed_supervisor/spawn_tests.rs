@@ -157,3 +157,33 @@ fn owned_spawn_retains_live_child_until_eof_and_rejects_another_controllers_gran
     case.controller.try_finish().unwrap();
     case.assert_phase(OwnerPhase::Clean);
 }
+
+#[test]
+fn binding_requires_the_original_live_child_and_fresh_canonical_owner_state() {
+    let mut case = Case::new();
+    let (reader, writer) = UnixStream::pair().unwrap();
+    case.writer = Some(writer);
+    let mut command = Command::new("/bin/sh");
+    command.args(["-c", "read -r command; exit 0"])
+        .stdin(Stdio::from(OwnedFd::from(reader)))
+        .stdout(Stdio::null()).stderr(Stdio::null());
+    case.grant = Some(case.controller.spawn_worker(WorkerRole::Sender, &mut command).unwrap());
+    let grant = case.grant.as_ref().unwrap();
+    let binding = case.controller.worker_binding(grant).unwrap();
+    assert_eq!(binding.root, case.root);
+    assert_eq!(binding.installation, [0x81; 32]);
+    assert_eq!(binding.profile, InstalledConfig::native_profile().profile_hash());
+    assert_eq!(binding.generation, 1);
+    assert_eq!(binding.role, 1);
+    assert_eq!(binding.slot, u8::try_from(grant.slot).unwrap());
+    assert_eq!(binding.serial, grant.serial);
+    let mut foreign = Case::new();
+    assert!(foreign.controller.worker_binding(grant).is_err());
+    let path = case.root.join("state.bin");
+    let mut damaged = fs::read(&path).unwrap();
+    *damaged.last_mut().unwrap() ^= 1;
+    fs::write(&path, &damaged).unwrap();
+    assert!(case.controller.worker_binding(grant).is_err());
+    assert!(!case.controller.authority.admission_open());
+    assert_eq!(fs::read(path).unwrap(), damaged);
+}
