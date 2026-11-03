@@ -3,6 +3,12 @@
 Tracking: [platform qualification #46](https://github.com/R4-Laboratories/SpiralCore/issues/46),
 under [MVM delivery #42](https://github.com/R4-Laboratories/SpiralCore/issues/42).
 
+The [latest shared-broker source report](../network/evidence/2026-11-02-broker-scale/qualification/platforms/README.md)
+records **449 passing executions**: 63 portable tests on each of seven native
+rows plus eight Unix storage tests. It pins the executed merge, original ZIP
+digests, runner identities and exact test counts. Earlier foundation checkpoints
+below retain their own source identities and do not replace this newer gate.
+
 The [workflow](../../.github/workflows/mvm-mailbox-portable.yml) reads its matrix
 and minimum test counts from the [support manifest](mvm-mailbox-portable.json).
 It runs on pull requests affecting the implementation or workflow, and supports

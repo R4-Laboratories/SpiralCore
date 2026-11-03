@@ -53,7 +53,19 @@ Normal suite outputs, compiler-warning checks and original failed platform
 artifacts are intentionally retained as compact official test evidence here.
 Raw payload datasets, executable copies and VM disks are not part of this packet.
 
-## What these checks do not establish
+## Final platform evidence
+
+Final [portable CI](platforms/README.md) passed 449 executions at head
+`ef814b995c3b51bdf7ad17ab216c5c279115bdaa`, executed as merge
+`007c9c00c027b8478acb2d308716cd934b8f79cd` with the same tree. The separate Linux
+workflow passed 43 release and 103 shared-conformance tests and its build,
+warnings and analyzer stages. Original archive digests and inner manifests are
+verified. The subsequent publication adds only documentation and CI evidence;
+the implementation and execution configuration remain identical to that tested
+head. The implementation merged through PR #50 at
+`495df763384dad540a6e9f5fd36b3dc70d97f67d`.
+
+## Qualification limits
 
 The twelve load cells use real local TCP with serial round-robin dispatch.
 All completed exchanges had exact byte recovery, but six saturation admissions

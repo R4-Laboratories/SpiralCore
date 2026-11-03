@@ -175,7 +175,16 @@ fixed to two endpoints and four operations. The benchmark CLI and recorded
 one-second results retain their original profile; no retry silently increases
 their TTL. Production limits and expiry tests are unchanged.
 
-## Remaining scale gates
+## Validation and remaining scale gates
+
+The [final platform packet](qualification/platforms/README.md) records **449
+passing native-platform executions**, with seven original ZIPs and verified
+runner/source identities. Linux release contracts separately passed 43 tests and
+shared conformance passed 103, plus warnings, default guest build and analyzers.
+The final local adapter/live suites passed **95 + 49 tests**. These scopes
+overlap; their counts are not combined to imply independent experiments. The
+[review and coverage record](qualification/review-and-tests.md) documents the
+86.80% compiled-production line coverage and its limits.
 
 [#49](https://github.com/R4-Laboratories/SpiralCore/issues/49) stays open. The
 next work is precise quota attribution, sustained tracker-retention/recovery

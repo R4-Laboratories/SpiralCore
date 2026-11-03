@@ -43,7 +43,7 @@ tracks**, not arbitrary encrypted packet traffic.
 macOS/HVF and Linux/Firecracker host paths; the default Linux build is the guest,
 and the `linux-host` feature selects the host. Native ephemeral mailbox-client
 tests have passed on Windows Server 2022/2025 x64 and Windows 11 ARM64 at the
-[recorded source checkpoint](docs/network/evidence/2026-11-02-mvm-service/platforms/README.md).
+[current shared-broker source checkpoint](docs/network/evidence/2026-11-02-broker-scale/qualification/platforms/README.md).
 Windows private/durable object storage and packet attachment still need a port.
 A portable mailbox client does not establish a Windows MVM host. The current
 published MVM dependency has passed the recorded seven-platform contract run.
