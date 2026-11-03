@@ -7,10 +7,13 @@ use std::{
     time::{SystemTime, UNIX_EPOCH},
 };
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum Mode {
     HoldersAba,
     StateDirectorySyncFailure,
+    IntentFileSyncFailure,
+    IntentDirectorySyncFailure,
+    IntentCleanupDirectorySyncFailure,
 }
 struct Fault {
     root: PathBuf,
@@ -144,6 +147,32 @@ pub(super) fn before_state_directory_sync(storage: &Storage) -> Result<()> {
         fault.sync_failures += 1;
         Err(OwnerError::Io(io::Error::from_raw_os_error(libc::EIO)))
     })
+}
+
+fn fail_at_intent_barrier(storage: &Storage, mode: Mode) -> Result<()> {
+    FAULT.with(|slot| {
+        let mut slot = slot.borrow_mut();
+        let Some(fault) = slot.as_mut() else {
+            return Ok(());
+        };
+        if fault.root != storage.root || fault.mode != mode {
+            return Ok(());
+        }
+        fault.sync_failures += 1;
+        Err(OwnerError::Io(io::Error::from_raw_os_error(libc::EIO)))
+    })
+}
+
+pub(super) fn before_intent_file_sync(storage: &Storage) -> Result<()> {
+    fail_at_intent_barrier(storage, Mode::IntentFileSyncFailure)
+}
+
+pub(super) fn before_intent_directory_sync(storage: &Storage) -> Result<()> {
+    fail_at_intent_barrier(storage, Mode::IntentDirectorySyncFailure)
+}
+
+pub(super) fn before_intent_cleanup_directory_sync(storage: &Storage) -> Result<()> {
+    fail_at_intent_barrier(storage, Mode::IntentCleanupDirectorySyncFailure)
 }
 
 struct Fixture {
@@ -292,6 +321,96 @@ fn postrename_directory_sync_failure_must_survive_owner_drop_as_a_durable_fence(
             observation.reopened_fenced,
             "{} allowed a visible but unconfirmed Clean to regain admission after owner Drop: {observations:?}",
             observation.operation
+        );
+    }
+}
+
+#[test]
+fn failed_initial_intent_barriers_preserve_original_state_and_fence_reopen() {
+    for mode in [
+        Mode::IntentFileSyncFailure,
+        Mode::IntentDirectorySyncFailure,
+    ] {
+        for operation in ["begin", "finish", "reconcile"] {
+            let fixture = Fixture::new();
+            let mut owner = InstallationOwner::initialize(&fixture.root, key()).unwrap();
+            let epoch = if operation == "begin" {
+                None
+            } else {
+                Some(owner.begin().unwrap())
+            };
+            if operation == "reconcile" {
+                drop(owner);
+                owner = InstallationOwner::open(&fixture.root, key()).unwrap();
+            }
+            let original = fs::read(fixture.root.join(STATE)).unwrap();
+            let scope = Scope::arm(&fixture.root, mode);
+            let result = match operation {
+                "begin" => owner.begin().map(|_| ()),
+                "finish" => owner.finish(epoch.unwrap()),
+                "reconcile" => owner.reconcile().map(|_| ()),
+                _ => unreachable!(),
+            };
+            assert!(
+                matches!(result, Err(OwnerError::Io(ref error)) if error.raw_os_error() == Some(libc::EIO)),
+                "{operation}/{mode:?}"
+            );
+            assert_eq!(scope.counts(), (0, 0, 1), "{operation}/{mode:?}");
+            // These faults precede every STATE write, not merely its rename.
+            assert_eq!(fs::read(fixture.root.join(STATE)).unwrap(), original);
+            assert!(fixture.root.join(INTENT).is_file());
+            assert!(!fixture.root.join(NEXT).exists());
+            assert!(matches!(owner.snapshot(), Err(OwnerError::Fenced)));
+            drop(scope);
+            drop(owner);
+            assert!(
+                matches!(
+                    InstallationOwner::open(&fixture.root, key()),
+                    Err(OwnerError::Fenced)
+                ),
+                "{operation}/{mode:?}"
+            );
+        }
+    }
+}
+
+#[test]
+fn failed_postcommit_cleanup_sync_fences_owner_but_absent_marker_allows_durable_successor() {
+    for operation in ["finish", "reconcile"] {
+        let fixture = Fixture::new();
+        let mut owner = InstallationOwner::initialize(&fixture.root, key()).unwrap();
+        let epoch = owner.begin().unwrap();
+        if operation == "reconcile" {
+            drop(owner);
+            owner = InstallationOwner::open(&fixture.root, key()).unwrap();
+        }
+        let scope = Scope::arm(&fixture.root, Mode::IntentCleanupDirectorySyncFailure);
+        let result = if operation == "finish" {
+            owner.finish(epoch)
+        } else {
+            owner.reconcile().map(|_| ())
+        };
+        assert!(
+            matches!(result, Err(OwnerError::Io(ref error)) if error.raw_os_error() == Some(libc::EIO)),
+            "{operation}"
+        );
+        assert_eq!(scope.counts(), (0, 0, 1));
+        // The hook is after the confirmed STATE barrier and actual unlink.
+        assert!(!fixture.root.join(INTENT).exists());
+        assert!(!fixture.root.join(NEXT).exists());
+        let visible = Record::decode(&fs::read(fixture.root.join(STATE)).unwrap()).unwrap();
+        assert_eq!(visible.phase, Phase::Clean);
+        assert_eq!(visible.generation, epoch.generation());
+        assert!(matches!(owner.snapshot(), Err(OwnerError::Fenced)));
+        drop(scope);
+        drop(owner);
+        let mut successor = InstallationOwner::open(&fixture.root, key()).unwrap();
+        let snapshot = successor.snapshot().unwrap();
+        assert_eq!(snapshot.phase, Phase::Clean);
+        assert_eq!(snapshot.epoch, epoch.generation());
+        assert_eq!(
+            successor.begin().unwrap().generation(),
+            epoch.generation() + 1
         );
     }
 }

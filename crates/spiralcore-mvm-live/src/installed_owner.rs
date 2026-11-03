@@ -367,7 +367,11 @@ impl Storage {
         file.write_all(b"SCINT001")?;
         file.write_all(&record.generation.to_be_bytes())?;
         file.write_all(&record.encode()[BODY_BYTES..])?;
+        #[cfg(test)]
+        tests::before_intent_file_sync(self)?;
         file.sync_all()?;
+        #[cfg(test)]
+        tests::before_intent_directory_sync(self)?;
         self.directory.sync_all()?;
         // No state mutation precedes this confirmed intent-directory barrier.
         Ok(file)
@@ -384,6 +388,8 @@ impl Storage {
             return Err(io::Error::last_os_error().into());
         }
         // Marker removal is post-commit: state-directory sync already succeeded.
+        #[cfg(test)]
+        tests::before_intent_cleanup_directory_sync(self)?;
         self.directory.sync_all()?;
         Ok(())
     }
@@ -445,6 +451,7 @@ impl InstallationOwner {
     pub fn initialize(root: &Path, key: InstallationKey) -> Result<Self> {
         use std::os::unix::fs::DirBuilderExt;
         check_key(key)?;
+        let parent = open_root(root.parent().ok_or(OwnerError::InvalidStorage)?)?;
         fs::DirBuilder::new().mode(0o700).create(root)?;
         let directory = open_root(root)?;
         for name in [OWNER, HOLDERS] {
@@ -466,6 +473,7 @@ impl InstallationOwner {
             holders: storage.ids[2],
         };
         storage.publish(record)?;
+        parent.sync_all()?;
         Ok(Self {
             storage,
             record,
@@ -514,6 +522,20 @@ impl InstallationOwner {
         self.record = record;
         Ok(())
     }
+    fn holders_for_transition(&self) -> Result<File> {
+        match self.storage.exclusive_holders() {
+            Ok(file) => Ok(file),
+            Err(OwnerError::Busy) => Err(OwnerError::Busy),
+            Err(OwnerError::InvalidStorage | OwnerError::Fenced) => {
+                self.fenced.store(true, Ordering::Release);
+                Err(OwnerError::Fenced)
+            }
+            Err(error) => {
+                self.fenced.store(true, Ordering::Release);
+                Err(error)
+            }
+        }
+    }
     pub fn snapshot(&self) -> Result<OwnerSnapshot> {
         let record = self.current()?;
         Ok(OwnerSnapshot {
@@ -526,7 +548,7 @@ impl InstallationOwner {
         if record.phase != Phase::Clean {
             return Err(OwnerError::RecoveryRequired);
         }
-        let exclusive = self.storage.exclusive_holders()?;
+        let exclusive = self.holders_for_transition()?;
         record.generation = record
             .generation
             .checked_add(1)
@@ -555,7 +577,7 @@ impl InstallationOwner {
             return Err(OwnerError::StaleEpoch);
         }
         self.supervisor.take();
-        let _exclusive = self.storage.exclusive_holders()?;
+        let _exclusive = self.holders_for_transition()?;
         record.phase = Phase::Clean;
         self.commit(record)
     }
@@ -565,7 +587,7 @@ impl InstallationOwner {
             return Ok(Recovery::AlreadyClean);
         }
         self.supervisor.take();
-        let _exclusive = self.storage.exclusive_holders()?;
+        let _exclusive = self.holders_for_transition()?;
         record.phase = Phase::Clean;
         self.commit(record)?;
         Ok(Recovery::Retired {

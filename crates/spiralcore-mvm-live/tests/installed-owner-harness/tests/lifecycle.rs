@@ -126,10 +126,10 @@ impl Process {
                 };
                 // libtest can prefix the first captured line with its test
                 // name. Only our explicit protocol suffix enters the channel.
-                if let Some(start) = line.find("EVENT ") {
-                    if send.try_send(line[start..].to_owned()).is_err() {
-                        return;
-                    }
+                if let Some(start) = line.find("EVENT ")
+                    && send.try_send(line[start..].to_owned()).is_err()
+                {
+                    return;
                 }
             }
             let _ = send.try_send("EVENT EOF".into());
@@ -480,6 +480,103 @@ fn key_profile_modes_symlinks_hardlinks_and_nonregular_objects_refuse_without_re
                 "{mode}"
             );
         }
+    }
+}
+
+#[cfg(target_os = "macos")]
+#[test]
+fn extended_acl_access_refuses_even_when_posix_modes_remain_private() {
+    // A component privacy gate, not a foreign-UID access or VM-launch witness.
+    // chmod mutates only this test's private fixtures; no ACL is repaired/reset.
+    let mut observations = Vec::new();
+    for object in ["parent", "root", "owner.lock", "holders.lock", "state.bin"] {
+        let fixture = Fixture::new();
+        let original = if object == "parent" {
+            None
+        } else {
+            drop(InstallationOwner::initialize(&fixture.root, key()).unwrap());
+            Some(fs::read(fixture.root.join("state.bin")).unwrap())
+        };
+        let target = match object {
+            "parent" => fixture.base.clone(),
+            "root" => fixture.root.clone(),
+            name => fixture.root.join(name),
+        };
+        let original_mode = fs::symlink_metadata(&target).unwrap().mode() & 0o7777;
+        assert_eq!(
+            original_mode,
+            if object == "parent" || object == "root" {
+                0o700
+            } else {
+                0o600
+            }
+        );
+        let ace = if object == "parent" {
+            "everyone allow read,write,execute,file_inherit,directory_inherit"
+        } else if object == "root" {
+            "everyone allow read,write,execute"
+        } else {
+            "everyone allow read,write"
+        };
+        let chmod = Command::new("/bin/chmod")
+            .args(["+a", ace])
+            .arg(&target)
+            .output()
+            .unwrap();
+        assert!(
+            chmod.status.success(),
+            "{object}: {}",
+            String::from_utf8_lossy(&chmod.stderr)
+        );
+        assert_eq!(
+            fs::symlink_metadata(&target).unwrap().mode() & 0o7777,
+            original_mode,
+            "ACL setup must leave the private POSIX bits unchanged"
+        );
+        let listing = Command::new("/bin/ls")
+            .arg("-lde")
+            .arg(&target)
+            .output()
+            .unwrap();
+        assert!(listing.status.success());
+        let listing = String::from_utf8(listing.stdout).unwrap();
+        assert!(listing.contains("group:everyone allow"), "{listing}");
+        if object == "parent" {
+            assert!(listing.contains("file_inherit,directory_inherit"));
+        }
+        let result = if object == "parent" {
+            InstallationOwner::initialize(&fixture.root, key())
+        } else {
+            InstallationOwner::open(&fixture.root, key())
+        }
+        .map(|_| ());
+        observations.push((
+            object,
+            matches!(&result, Err(OwnerError::InvalidStorage)),
+            format!("{result:?}"),
+        ));
+        if let Some(original) = original {
+            assert_eq!(fs::read(fixture.root.join("state.bin")).unwrap(), original);
+        }
+        // The ACL itself is retained until owned-fixture removal, including
+        // when initialization/open erroneously succeeds on the baseline.
+        let after = Command::new("/bin/ls")
+            .arg("-lde")
+            .arg(&target)
+            .output()
+            .unwrap();
+        assert!(after.status.success());
+        let after = String::from_utf8(after.stdout).unwrap();
+        assert_eq!(
+            after.lines().skip(1).collect::<Vec<_>>(),
+            listing.lines().skip(1).collect::<Vec<_>>()
+        );
+    }
+    for (object, refused, _) in &observations {
+        assert!(
+            refused,
+            "{object} accepted an ACL privacy violation: {observations:?}"
+        );
     }
 }
 
