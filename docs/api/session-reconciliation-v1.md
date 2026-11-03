@@ -4,6 +4,7 @@ Date: 2026-11-03. Lead-approved contract before RED/code, based on main
 `e984d2d64cdf0483d50d6d59319276c85e7df644`; not an implemented recovery claim.
 Depends on [registered Call retry](registered-call-retry-v1.md),
 [receive idle](stream-receive-idle-v1.md) and the
+[fixed-deadline send view](stream-send-deadline-v1.md), plus the
 [session state authority](../specs/2026-11-03-persistent-session-state.md).
 Delivery remains partial C8 under [#43](https://github.com/R4-Laboratories/SpiralCore/issues/43)
 and [#49](https://github.com/R4-Laboratories/SpiralCore/issues/49).
@@ -128,11 +129,22 @@ When still incomplete and one request is dequeued:
    retry eligibility. No new ordering position, nonce, envelope or Call registration.
 2. End dispatch. Burn one Call-send invocation immediately before entering
    `service.retry_call_prepared` with the retained prepared request and original
-   CallHandle. The original send burns the first of eight. Invoked pre-connect
+   CallHandle, passing `&stream.before(original_deadline)` as its PeerTransport.
+   This fixed view must bound connect, mutex waits and the channel's entire write;
+   passing the unbounded-parent StreamTransport would start another timeout and
+   violates this retry contract even with fresh pre-invocation checks.
+   The original send burns the first of eight. Invoked pre-connect
    refusals also consume that invocation; do not refund on errors or short writes.
    The adapter rechecks generation, semantic commitment, authorization, original
    mono/Unix expiry and cancellation through its existing policy-locked send path.
    No broker lease spans I/O and no new outer policy lock is added.
+   All canonical exchange-owned writes use the same bounded-view mechanism:
+   caller initial Call and Reply-ACK use its original Instant; receiver initial
+   receipt/Reply and duplicate receipt/cached Reply use ExchangeDeadline.instant().
+   Preamble historical receipts use its fixed invocation deadline capped by that
+   old request's signed remaining lifetime. Do not renew any bound after a send.
+   The view adds no authority to their shared PeerTransport interface; default
+   adapter connect and reusable service APIs retain existing behavior.
 3. Continue receiving against the same fixed absolute Instant and original owner
    mono/Unix expiry. Preserve the cumulative sixteen-frame bound and eight-send
    bound across all local requests. Completion still requires eligible current

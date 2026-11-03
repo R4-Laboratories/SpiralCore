@@ -5,6 +5,8 @@ Date: 2026-11-03. Lead-approved implementation plan before RED/code. Base main
 Contract: [session reconciliation v1](../api/session-reconciliation-v1.md).
 Dependencies: qualified [registered Call retry](2026-11-03-registered-call-retry.md),
 receive-idle API, existing caller demultiplexing and receiver cached replay.
+The explicit retry also requires the reviewed
+[fixed-deadline stream-send contract](../api/stream-send-deadline-v1.md).
 This continues partial C8 under issues #43/#49; it does not complete either issue.
 
 ## Owned files, order and risk
@@ -14,6 +16,7 @@ This continues partial C8 under issues #43/#49; it does not complete either issu
 | Public-entry RED and direct fault fixture | `crates/spiralcore-mvm-live/tests/reconciliation.rs`; `crates/spiralcore-mvm-live/src/campaign/canonical/reconciliation_tests.rs` | Approved contract; high |
 | Bounded signal and public embedding wiring | `crates/spiralcore-mvm-live/src/campaign/reconciliation.rs`; `crates/spiralcore-mvm-live/src/campaign.rs` | Recorded missing-API RED; medium |
 | Retained attempt state and caller loop | `crates/spiralcore-mvm-live/src/campaign/session.rs`; `crates/spiralcore-mvm-live/src/campaign/session/tests.rs`; `crates/spiralcore-mvm-live/src/campaign/canonical.rs` | Signal and state REDs; high |
+| Fixed canonical I/O deadline | `crates/spiralcore-mvm-adapter/src/live.rs`; `crates/spiralcore-mvm-adapter/tests/service_tcp.rs`; `crates/spiralcore-mvm-live/src/campaign/canonical.rs`; `crates/spiralcore-mvm-live/tests/reconciliation.rs` or its `tests/common/` fixture | Reviewed send-view contract, missing-API and blocked-write RED; high |
 | Historical-Call receiver preamble | `crates/spiralcore-mvm-live/src/campaign/canonical.rs`; `crates/spiralcore-mvm-live/src/campaign/canonical/reconciliation_tests.rs` | Caller GREEN and receiver semantic RED; high |
 | Actual relay fixture access | `crates/spiralcore-mvm-live/src/orchestrator.rs`; the same reconciliation test module | Direct semantic GREEN; medium; test-only re-export of existing relay |
 | Qualification and publication | `docs/network/evidence/2026-11-03-session-reconciliation/`; `docs/network/session-reconciliation-results-2026-11-03.md`; parent plan and README checkpoint | Frozen reviewed source; medium |
@@ -52,6 +55,19 @@ edit caller and receiver paths concurrently in that file.
    Call. Otherwise dequeue at most one explicit request. Reuse the
    canonical tracker and retry API; no new registration, payload consumption or
    borrowed permit. Add deterministic state tests before production changes.
+   Before accepting retry I/O, expose the adapter's existing before view as opaque
+   PeerTransport with precise `use<S>` capture under the separate send-view
+   contract. Retain external missing-API RED and a channel/write blocked past a
+   short original deadline despite a longer parent timeout; merely checking time
+   before invoking retry does not prove this bound. Wire all canonical exchange
+   sends to before(original_deadline): caller original/retry/Reply-ACK and receiver
+   original receipt/Reply/duplicate receipt/cached Reply, using its fixed
+   ExchangeDeadline. Historical preamble receipts use the fixed preamble Instant
+   capped by the authenticated old request's signed remaining lifetime. Reproduce
+   late retry and ACK/replay backpressure through the actual consumer; test
+   repeated views/connections with the same original cap, partial-write expiry,
+   channel acquired before expiry and existing route/cancel/fence precedence.
+   Default adapter connect, wire/codec and API #64 implementation remain unchanged.
 3. **Historical receiver preamble.** Add bounded authenticated older-control and
    retained old-Call handling before fresh application admission. Only canonical
    retry lookup `Ok(None)` plus actual Duplicate admission permits receipt-only
@@ -90,6 +106,7 @@ Do not use 30-second sleeps to prove deadline boundaries.
 | Historical identity without cache | Canonical known identity plus None does not imply application completed; actual Duplicate receipt cannot complete a caller with missing Reply/ACK facts |
 | Original lifetime and authority | Deadline equality, Unix rollback/original mono expiry, policy generation change and different request refuse with no replacement identity/sequence; service Reply remains charged on refusal |
 | Partial/uncertain transport | Mid-prefix timeout/truncation and invoked send failure fence retained current identity; a second call reads/sends no new frame; no reconnect/resume |
+| Retry I/O cap | Late explicit retry uses the fixed original deadline through connect and blocked/partial write; a preexisting channel cannot gain a fresh parent timeout; actual counters and fence survive refusal |
 
 Run the three loss scenarios over both direct and real duplex-relayed streams.
 At least the missing-Call-receipt case must traverse the public sender entry and
