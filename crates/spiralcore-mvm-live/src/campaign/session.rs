@@ -125,13 +125,13 @@ impl PendingCall {
             return Err(SessionError::SendUncertain);
         }
         let result = self.register_inner(service, tracker, outgoing, control, peer, now);
-        if let Err(error) = &result {
-            if !matches!(
+        if let Err(error) = &result
+            && !matches!(
                 error,
                 SessionError::Service(ServiceError::Full | ServiceError::Backpressured)
-            ) {
-                self.fenced = true;
-            }
+            )
+        {
+            self.fenced = true;
         }
         result
     }
