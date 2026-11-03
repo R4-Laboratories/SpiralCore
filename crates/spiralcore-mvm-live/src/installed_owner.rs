@@ -131,6 +131,7 @@ fn open_root(path: &Path) -> Result<File> {
     // SAFETY: successful open returned a fresh owned descriptor.
     let file = unsafe { File::from_raw_fd(fd) };
     check_private(&file, true)?;
+    check_filesystem(&file)?;
     Ok(file)
 }
 fn check_private(file: &File, directory: bool) -> Result<()> {
@@ -147,7 +148,94 @@ fn check_private(file: &File, directory: bool) -> Result<()> {
     {
         return Err(OwnerError::InvalidStorage);
     }
+    check_acl(file)
+}
+
+#[cfg(not(target_os = "macos"))]
+fn check_acl(_file: &File) -> Result<()> {
     Ok(())
+}
+
+#[cfg(target_os = "macos")]
+fn check_acl(file: &File) -> Result<()> {
+    // Apple sys/acl.h: ACL_TYPE_EXTENDED=0x100, ACL_FIRST_ENTRY=0.
+    unsafe extern "C" {
+        fn acl_get_fd_np(fd: libc::c_int, kind: libc::c_int) -> *mut libc::c_void;
+        fn acl_get_entry(
+            acl: *mut libc::c_void,
+            entry: libc::c_int,
+            out: *mut *mut libc::c_void,
+        ) -> libc::c_int;
+        fn acl_free(value: *mut libc::c_void) -> libc::c_int;
+    }
+    // SAFETY: borrowed live descriptor, supported extended ACL type.
+    let acl = unsafe { acl_get_fd_np(file.as_raw_fd(), 0x100) };
+    if acl.is_null() {
+        let error = io::Error::last_os_error();
+        return if error.raw_os_error() == Some(libc::ENOATTR) {
+            Ok(())
+        } else {
+            Err(error.into())
+        };
+    }
+    let mut entry = std::ptr::null_mut();
+    // SAFETY: kernel-produced ACL, valid first index and writable output.
+    let found = unsafe { acl_get_entry(acl, 0, &mut entry) };
+    let error = io::Error::last_os_error();
+    // SAFETY: release the sole copy returned by acl_get_fd_np exactly once.
+    let freed = unsafe { acl_free(acl) };
+    if freed != 0 {
+        return Err(io::Error::last_os_error().into());
+    }
+    // Darwin returns zero for an entry, -1/EINVAL for an empty valid ACL.
+    if found == 0 {
+        return Err(OwnerError::InvalidStorage);
+    }
+    if found == -1 && error.raw_os_error() == Some(libc::EINVAL) {
+        Ok(())
+    } else {
+        Err(error.into())
+    }
+}
+
+#[cfg(any(target_os = "linux", target_os = "macos"))]
+fn check_filesystem(file: &File) -> Result<()> {
+    let mut info = std::mem::MaybeUninit::<libc::statfs>::uninit();
+    // SAFETY: live directory descriptor and appropriately sized writable output.
+    if unsafe { libc::fstatfs(file.as_raw_fd(), info.as_mut_ptr()) } != 0 {
+        return Err(io::Error::last_os_error().into());
+    }
+    // SAFETY: successful fstatfs initialized the whole structure.
+    let info = unsafe { info.assume_init() };
+    #[cfg(target_os = "linux")]
+    let supported = matches!(
+        info.f_type,
+        libc::EXT4_SUPER_MAGIC
+            | libc::XFS_SUPER_MAGIC
+            | libc::BTRFS_SUPER_MAGIC
+            | libc::TMPFS_MAGIC
+            | libc::OVERLAYFS_SUPER_MAGIC
+    );
+    #[cfg(target_os = "macos")]
+    let supported = {
+        let name: Vec<_> = info
+            .f_fstypename
+            .iter()
+            .take_while(|c| **c != 0)
+            .map(|c| *c as u8)
+            .collect();
+        info.f_flags & libc::MNT_LOCAL as u32 != 0 && matches!(name.as_slice(), b"apfs" | b"hfs")
+    };
+    if supported {
+        Ok(())
+    } else {
+        Err(OwnerError::InvalidStorage)
+    }
+}
+
+#[cfg(not(any(target_os = "linux", target_os = "macos")))]
+fn check_filesystem(_file: &File) -> Result<()> {
+    Err(OwnerError::InvalidStorage)
 }
 fn open_at(dir: &File, name: &str, flags: i32) -> Result<File> {
     let name = CString::new(name).map_err(|_| OwnerError::InvalidStorage)?;
