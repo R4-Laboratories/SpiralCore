@@ -253,3 +253,41 @@ may unblock queued Replies; run the ordinary readiness/poll gate afterward using
 only existing verified current facts. No new ACK, wire, borrowed permit or retry.
 Test unknown valid Reply, Late then replay, known mismatch/expiry/conflict and
 unchanged strict behavior before claiming this broader stale-event handling.
+
+## Approved first receiver event-loop slice: fence without resume
+
+A private `Session::receiver_incomplete` latch suffices for this bounded slice;
+an owned resumable PendingReply structure is not required. Set the latch before
+the initial receive. Any error or unwind leaves it set, and a subsequent handle
+must return StreamFenced before reading another frame. Existing canonical service,
+tracker and reply-cache state remain owned. Do not infer cancellation/rollback
+from stack-local envelope/result disposal. Clear only after authenticated current
+Reply acknowledgment releases the cache and all completion bookkeeping succeeds.
+
+Keep prepared Reply, registered SendHandle, exact encoded Reply, namespace,
+application result and metrics local during the active invocation. Bound one
+exchange by 16 complete incoming frames including the initial Call, and at most
+eight total Reply-send invocations including the first; increment before transport.
+Start one Instant deadline before initial read; cap it once at authenticated
+admission by the original request's remaining Unix lifetime. Never refresh it on
+duplicates or after application work. Before release/completion require that fixed
+deadline and fresh original Unix expiry; acknowledgment APIs alone do not enforce
+the original Call's monotonic lifetime. Existing canonical checks still apply.
+
+While awaiting the Reply receipt, authenticate controls with observe_receipt and
+take only the current SendHandle. Pending/earlier duplicates continue within the
+same event bound; only its verified eligible receipt may acknowledge_reply.
+For a normal candidate Call, first use retry_reply_prepared with the incoming
+binding and require its exact cached Reply bytes equal the current Reply BEFORE
+admission. A different/new Call cannot gain state while active credit from the
+original application may already be released. Then canonical admission must yield
+Duplicate; send that actual receipt, register the unchanged cached Reply and
+require the same SendHandle, then resend within the invocation bound. No receive
+of application work, object.handle, next_reply, new identity or resealing occurs.
+All I/O stays outside dispatch; permits are local and failures fence the Session.
+
+RED gates: duplicate exact Call during receipt wait yields the same cached Reply
+and one object execution; earlier controls cannot release current cache; different
+Call is refused without admission; send failure/event saturation/deadline keep
+the latch and prevent a later handle from consuming bytes. Explicit resume,
+timer-driven request retransmission and full C8 remain separate reviewed slices.
