@@ -102,6 +102,31 @@ delivery gates, not conclusions drawn from local codec demonstrations.
 is required before the final MVM contribution. The two-guest pilot and native
 client matrix establish functional boundaries. They do not qualify fleet size.
 
+The [source-backed scale boundary review](../network/evidence/2026-11-02-mvm-service/qualification/scale-boundary.md)
+sets the immediate sequence; these steps are not yet implemented or measured:
+
+- **Broker context** — files `crates/spiralcore-mvm-live/src/campaign/canonical.rs`
+  and `crates/spiralcore-mvm-adapter/tests/service.rs`: introduce explicit shared
+  budget plus monotonic-clock ownership for multiple endpoints. Add a regression
+  for aggregate refusal across independently created sessions first. Why: the
+  witness currently constructs both per Session. Dependency: none; risk medium.
+- **Persistent ordering** — files `crates/spiralcore-mvm-adapter/src/service_sender.rs`
+  and `crates/spiralcore-mvm-adapter/tests/service_sender.rs`: test and expose a
+  stable owned scope with checked increasing sequences. Preserve fresh-message
+  compatibility and replay refusal; do not silently retire cursors. Dependency:
+  broker context; risk high because ordering identity is protocol state.
+- **Bounded capacity probe** — new Rust example
+  `crates/spiralcore-mvm-adapter/examples/service_capacity.rs`: use that shared
+  context for 2/8/32 logical endpoints, fresh/stable scope controls, hot/slow peers
+  and repeated expiry windows. Record the counters specified by the review,
+  including refusals and tail latency. Stop at declared limits; no additional
+  native guest allocation. Dependency: the preceding controls; risk medium.
+- **Choose the next optimization from measurements** — document results under
+  `docs/network/evidence/` and update #49 before changing locks or adding a
+  negotiated pipeline window. Test gap repair, epoch/revocation, malformed floods
+  and control progress under saturation. Dependency: capacity probe; risk high
+  for authority/ordering changes. Keep the current serial native path as control.
+
 1. Freeze a capacity registration per role: peers/MVMs, active streams/transfers,
    workload sizes, cache/staging/metadata budgets, CPU, RSS and descriptor limits.
    Exercise logical endpoint ladders separately from actual booted guests, with

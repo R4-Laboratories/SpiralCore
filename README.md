@@ -68,7 +68,10 @@ local native observations, with different backend rate profiles; cross-platform
 WAN support remains unqualified. Historical results below retain their own sources. Fleet capacity and
 long-lived operation are an additional release gate in
 [#49](https://github.com/R4-Laboratories/SpiralCore/issues/49); two guests do not
-establish a scalable deployment envelope.
+establish a scalable deployment envelope. The
+[scale boundary review](docs/network/evidence/2026-11-02-mvm-service/qualification/scale-boundary.md)
+records the current per-session budget/clock ownership, retained FIFO scopes and
+serial dispatcher constraints, with the bounded load experiment required next.
 
 ### Where SpiralCore sits in the network stack
 
