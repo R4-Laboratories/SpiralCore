@@ -224,10 +224,18 @@ impl Session {
             cancel,
             send_time,
         )?;
-        let mut admitted = false;
-        let mut reply_observed = false;
-        for _ in 0..16 {
+        while self
+            .pending
+            .as_ref()
+            .ok_or(SessionError::StreamFenced)?
+            .events_received()
+            < 16
+        {
             let bytes = stream.receive(cancel, deadline)?;
+            self.pending
+                .as_mut()
+                .ok_or(SessionError::StreamFenced)?
+                .receive_event()?;
             let envelope = decode_envelope(&bytes)?;
             let acknowledgment = broker.with_time(|_, now| -> Result<_> {
                 if envelope.encryption.key_id == self.control_key {
@@ -241,13 +249,10 @@ impl Session {
                             return Err(SessionError::Service(ServiceError::Expired).into());
                         }
                     };
-                    if !matches!(
-                        receipt.receipt.outcome,
-                        DeliveryOutcome::AcceptedEphemeral | DeliveryOutcome::Duplicate
-                    ) {
-                        return Err("Call admission refused".into());
-                    }
-                    admitted = true;
+                    self.pending
+                        .as_mut()
+                        .ok_or(SessionError::StreamFenced)?
+                        .observe_receipt(receipt.receipt.outcome)?;
                     Ok(None)
                 } else if envelope.encryption.key_id == self.normal_key {
                     let (accepted, ack) =
@@ -259,29 +264,50 @@ impl Session {
                     let observed =
                         self.tracker
                             .observe_application_reply(&self.incoming, &bytes, now)?;
-                    if observed == send {
-                        reply_observed = true;
-                    }
-                    Ok(Some((ack, now)))
+                    let current = self
+                        .pending
+                        .as_mut()
+                        .ok_or(SessionError::StreamFenced)?
+                        .observe_reply(observed, &bytes)?;
+                    Ok(Some((ack, current)))
                 } else {
                     Err("unprovisioned incoming encryption key".into())
                 }
             })?;
-            if let Some((ack, _)) = acknowledgment {
+            if let Some((ack, current)) = acknowledgment {
                 let (permit, now) = broker.with_time(|_, now| -> Result<_> {
                     Ok((ack.reserve_send(cancel, now)?, now))
                 })?;
+                if current {
+                    self.pending
+                        .as_mut()
+                        .ok_or(SessionError::StreamFenced)?
+                        .invoke_reply_ack()?;
+                }
                 permit.send(stream, cancel, now)?;
+                if current {
+                    self.pending
+                        .as_mut()
+                        .ok_or(SessionError::StreamFenced)?
+                        .sent_reply_ack()?;
+                }
             }
-            if admitted && reply_observed {
+            if self
+                .pending
+                .as_ref()
+                .ok_or(SessionError::StreamFenced)?
+                .ready_to_complete()
+            {
                 break;
             }
         }
-        if !admitted {
-            return Err("missing Call destination receipt".into());
-        }
-        if !reply_observed {
-            return Err("missing application Reply".into());
+        if !self
+            .pending
+            .as_ref()
+            .ok_or(SessionError::StreamFenced)?
+            .ready_to_complete()
+        {
+            return Err(SessionError::EventLimit.into());
         }
         // Keep the charged canonical Reply payload in its service until all
         // required observations and the Reply receipt send have succeeded.
@@ -702,3 +728,9 @@ mod event_tests;
 
 #[cfg(test)]
 mod ack_tests;
+
+#[cfg(test)]
+mod limit_tests;
+
+#[cfg(test)]
+mod fifo_tests;

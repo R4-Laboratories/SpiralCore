@@ -1,5 +1,6 @@
 //! One retained canonical Call identity, including partial local admission.
 use ed25519_dalek::VerifyingKey;
+use mvm_contract::protocol::mailbox::DeliveryOutcome;
 use mvm_core::mailbox::{encode_envelope, transport::PreparedMailboxEnvelope};
 use spiralcore_mvm_adapter::{
     receipt::{ReceiptTracker, SendHandle},
@@ -16,6 +17,8 @@ pub(super) enum SessionError {
     WitnessLimit,
     SendUncertain,
     StreamFenced,
+    EventLimit,
+    RemoteRefusal(DeliveryOutcome),
 }
 impl std::fmt::Display for SessionError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -30,6 +33,15 @@ impl From<ServiceError> for SessionError {
 }
 type Result<T> = std::result::Result<T, SessionError>;
 
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub(super) enum ReplyAckState {
+    #[default]
+    None,
+    Needed,
+    InvokedUncertain,
+    Sent,
+}
+
 /// Not Clone: only this producer owns the allocated FIFO position. Failed
 /// admission does not release it or permit the caller to substitute another
 /// payload. The existing service/tracker own retention and canonical authority.
@@ -43,6 +55,10 @@ pub(super) struct PendingCall {
     send_started: bool,
     fenced: bool,
     deadline: Option<u64>,
+    events_received: u8,
+    receipt_outcome: Option<DeliveryOutcome>,
+    reply_wire: Option<Vec<u8>>,
+    reply_ack_state: ReplyAckState,
 }
 impl PendingCall {
     // The caller validates bounded Frame encoding before allocating options,
@@ -63,7 +79,90 @@ impl PendingCall {
             send_started: false,
             fenced: deadline.is_none(),
             deadline,
+            events_received: 0,
+            receipt_outcome: None,
+            reply_wire: None,
+            reply_ack_state: ReplyAckState::None,
         }
+    }
+    pub(super) fn events_received(&self) -> u8 {
+        self.events_received
+    }
+    pub(super) fn receive_event(&mut self) -> Result<()> {
+        if self.events_received >= 16 {
+            return Err(SessionError::EventLimit);
+        }
+        self.events_received += 1;
+        Ok(())
+    }
+    pub(super) fn receipt_outcome(&self) -> Option<DeliveryOutcome> {
+        self.receipt_outcome
+    }
+    pub(super) fn observe_receipt(&mut self, outcome: DeliveryOutcome) -> Result<()> {
+        if !matches!(
+            outcome,
+            DeliveryOutcome::AcceptedEphemeral
+                | DeliveryOutcome::AcceptedDurable
+                | DeliveryOutcome::Duplicate
+        ) {
+            self.receipt_outcome = Some(outcome);
+            return Err(SessionError::RemoteRefusal(outcome));
+        }
+        self.receipt_outcome = Some(match (self.receipt_outcome, outcome) {
+            (Some(DeliveryOutcome::AcceptedDurable), _) => DeliveryOutcome::AcceptedDurable,
+            (Some(DeliveryOutcome::AcceptedEphemeral), DeliveryOutcome::Duplicate) => {
+                DeliveryOutcome::AcceptedEphemeral
+            }
+            _ => outcome,
+        });
+        Ok(())
+    }
+    pub(super) fn reply_wire(&self) -> Option<&[u8]> {
+        self.reply_wire.as_deref()
+    }
+    pub(super) fn reply_observed(&self) -> bool {
+        self.reply_wire().is_some()
+    }
+    /// Only the authenticated handle returned by the canonical tracker selects
+    /// current state. The service retains the charged plaintext Reply payload.
+    pub(super) fn observe_reply(&mut self, observed: SendHandle, wire: &[u8]) -> Result<bool> {
+        if Some(observed) != self.send {
+            return Ok(false);
+        }
+        if wire.is_empty() || wire.len() > spiralcore_mvm_adapter::MAX_ENVELOPE_BYTES {
+            return Err(ServiceError::Limit.into());
+        }
+        self.reply_wire = Some(wire.to_vec());
+        self.reply_ack_state = ReplyAckState::Needed;
+        Ok(true)
+    }
+    pub(super) fn reply_ack_state(&self) -> ReplyAckState {
+        self.reply_ack_state
+    }
+    pub(super) fn invoke_reply_ack(&mut self) -> Result<()> {
+        if self.reply_ack_state != ReplyAckState::Needed {
+            return Err(ServiceError::State.into());
+        }
+        self.reply_ack_state = ReplyAckState::InvokedUncertain;
+        Ok(())
+    }
+    pub(super) fn sent_reply_ack(&mut self) -> Result<()> {
+        if self.reply_ack_state != ReplyAckState::InvokedUncertain {
+            return Err(ServiceError::State.into());
+        }
+        self.reply_ack_state = ReplyAckState::Sent;
+        Ok(())
+    }
+    pub(super) fn ready_to_complete(&self) -> bool {
+        matches!(
+            self.receipt_outcome(),
+            Some(
+                DeliveryOutcome::AcceptedEphemeral
+                    | DeliveryOutcome::AcceptedDurable
+                    | DeliveryOutcome::Duplicate
+            )
+        ) && self.reply_observed()
+            && self.reply_ack_state() == ReplyAckState::Sent
     }
     pub(super) fn matches(&self, payload: &[u8]) -> bool {
         self.payload == payload

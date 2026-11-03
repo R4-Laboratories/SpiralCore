@@ -57,6 +57,142 @@ fn budget() -> HostBudget {
 }
 
 #[test]
+fn incoming_event_allowance_remains_cumulative_at_its_boundary() {
+    let (pair, outgoing, _, _) = fixture();
+    let now = ServiceTime {
+        unix_ms: now_ms().unwrap(),
+        monotonic_ms: 0,
+    };
+    let mut call = pending(&outgoing, &pair, now);
+    for expected in 1..=16 {
+        call.receive_event().unwrap();
+        assert_eq!(call.events_received(), expected);
+    }
+    assert_eq!(call.receive_event(), Err(SessionError::EventLimit));
+    assert_eq!(call.events_received(), 16);
+    assert!(!call.ready_to_complete());
+}
+
+#[test]
+fn receipt_dispositions_keep_acceptance_level_and_remote_refusal_distinct() {
+    let (pair, outgoing, _, _) = fixture();
+    let now = ServiceTime {
+        unix_ms: now_ms().unwrap(),
+        monotonic_ms: 0,
+    };
+    let mut call = pending(&outgoing, &pair, now);
+    call.observe_receipt(DeliveryOutcome::Duplicate).unwrap();
+    assert_eq!(call.receipt_outcome(), Some(DeliveryOutcome::Duplicate));
+    call.observe_receipt(DeliveryOutcome::AcceptedEphemeral)
+        .unwrap();
+    call.observe_receipt(DeliveryOutcome::Duplicate).unwrap();
+    assert_eq!(
+        call.receipt_outcome(),
+        Some(DeliveryOutcome::AcceptedEphemeral)
+    );
+    call.observe_receipt(DeliveryOutcome::AcceptedDurable)
+        .unwrap();
+    call.observe_receipt(DeliveryOutcome::AcceptedEphemeral)
+        .unwrap();
+    assert_eq!(
+        call.receipt_outcome(),
+        Some(DeliveryOutcome::AcceptedDurable)
+    );
+    let refusal = call.observe_receipt(DeliveryOutcome::Full).unwrap_err();
+    assert_eq!(refusal, SessionError::RemoteRefusal(DeliveryOutcome::Full));
+    assert_ne!(refusal, SessionError::Service(ServiceError::Full));
+    assert!(!call.ready_to_complete());
+}
+
+#[test]
+fn reply_ack_progress_requires_current_handle_bounded_wire_and_invoked_send() {
+    let (pair, outgoing, control, peer) = fixture();
+    let now = ServiceTime {
+        unix_ms: now_ms().unwrap(),
+        monotonic_ms: 0,
+    };
+    let owner = budget();
+    let mut service = LocalMailboxService::new(owner.clone()).unwrap();
+    let mut tracker = ReceiptTracker::new(owner, 4).unwrap();
+    let mut call = pending(&outgoing, &pair, now);
+    let mut other = pending(&outgoing, &pair, now);
+    call.register(&mut service, &mut tracker, &outgoing, &control, &peer, now)
+        .unwrap();
+    // This grant admits one outstanding Call. Obtain a genuinely foreign
+    // handle from another local owner instead of increasing the signed limit.
+    let other_owner = budget();
+    let mut other_service = LocalMailboxService::new(other_owner.clone()).unwrap();
+    let mut other_tracker = ReceiptTracker::new(other_owner, 4).unwrap();
+    other
+        .register(
+            &mut other_service,
+            &mut other_tracker,
+            &outgoing,
+            &control,
+            &peer,
+            now,
+        )
+        .unwrap();
+    assert_eq!(
+        call.invoke_reply_ack(),
+        Err(SessionError::Service(ServiceError::State))
+    );
+    assert_eq!(
+        call.sent_reply_ack(),
+        Err(SessionError::Service(ServiceError::State))
+    );
+    // State-only wire witness: the real-stream ACK test separately supplies
+    // canonical authentication. This seam does not itself verify envelopes.
+    let wire = b"bounded post-verification witness";
+    assert!(
+        !call
+            .observe_reply(other.send_handle().unwrap(), wire)
+            .unwrap()
+    );
+    assert!(!call.reply_observed());
+    assert_eq!(
+        call.observe_reply(call.send_handle().unwrap(), &[]),
+        Err(SessionError::Service(ServiceError::Limit))
+    );
+    assert_eq!(
+        call.observe_reply(
+            call.send_handle().unwrap(),
+            &vec![0; spiralcore_mvm_adapter::MAX_ENVELOPE_BYTES + 1]
+        ),
+        Err(SessionError::Service(ServiceError::Limit))
+    );
+    assert!(
+        call.observe_reply(call.send_handle().unwrap(), wire)
+            .unwrap()
+    );
+    assert_eq!(call.reply_wire(), Some(wire.as_slice()));
+    assert_eq!(call.reply_ack_state(), ReplyAckState::Needed);
+    assert_eq!(
+        call.sent_reply_ack(),
+        Err(SessionError::Service(ServiceError::State))
+    );
+    call.invoke_reply_ack().unwrap();
+    assert_eq!(call.reply_ack_state(), ReplyAckState::InvokedUncertain);
+    assert_eq!(
+        call.invoke_reply_ack(),
+        Err(SessionError::Service(ServiceError::State))
+    );
+    assert!(!call.ready_to_complete());
+    call.sent_reply_ack().unwrap();
+    assert!(!call.ready_to_complete());
+    call.observe_receipt(DeliveryOutcome::Duplicate).unwrap();
+    assert!(call.ready_to_complete());
+    // Readiness does not consume payload or authorize completion: the caller
+    // must still poll the original canonical Call under fresh policy/time.
+    assert_eq!(
+        service
+            .poll_call(&outgoing, &call.call_handle().unwrap(), now)
+            .unwrap(),
+        CallStatus::Pending
+    );
+}
+
+#[test]
 fn tracker_refusal_retains_partial_call_and_exact_sealed_request_until_capacity_returns() {
     let (pair, outgoing, control, peer) = fixture();
     let start = ServiceTime {
