@@ -69,10 +69,18 @@ edit caller and receiver paths concurrently in that file.
    channel acquired before expiry and existing route/cancel/fence precedence.
    Default adapter connect, wire/codec and API #64 implementation remain unchanged.
 3. **Historical receiver preamble.** Add bounded authenticated older-control and
-   retained old-Call handling before fresh application admission. Only canonical
-   retry lookup `Ok(None)` plus actual Duplicate admission permits receipt-only
-   control, without inferring application completion from absent cache. Duplicate
-   alone never completes a caller lacking retained Reply/ACK facts. Preserve existing active cached replay, no-resume latch,
+   retained old-Call handling. Inactive path checks fixed deadline then calls
+   returns.admit first while room remains for a later ACK: AcceptedEphemeral
+   obtains proof/object work once; Duplicate must pass original-owner retry lookup
+   None before reservation and again immediately before bounded send. Other
+   outcomes, cached Some or lookup errors refuse/fence. This avoids a second
+   crypto verification on normal fresh Calls without authorizing historical send
+   from a shared duplicate disposition alone. At the sixteenth normal frame,
+   prelookup first: UnknownHandle→EventLimit before allocating fresh state with
+   no ACK slot; only authenticated known None may get its actual Duplicate receipt.
+   Preserve mandatory prelookup/exact-cache comparison in the active ACK-wait loop.
+   None never infers completion; Duplicate alone cannot complete a caller without
+   retained Reply/ACK facts. Preserve active cached replay, no-resume latch,
    original deadlines, event/send ceilings and top-level cap. Count preamble work
    and traffic. One control-only exchange cannot return a second Handled.
 4. **Fault combinations and relay GREEN.** Apply the focused gates below through
@@ -104,6 +112,7 @@ Do not use 30-second sleeps to prove deadline boundaries.
 | Command and resource bounds | Capacity one cannot queue a burst; seven retries plus original exhaust eight invocations, ninth refuses before I/O; sixteen frames cannot reset through Idle/preamble/retry |
 | FIFO wait with queued retry | All current receipt/Reply/ACK facts exist but predecessor blocks canonical delivery; Idle polls completion first, retains queued command and sends zero retries; predecessor progress completes without a new current frame |
 | Historical identity without cache | Canonical known identity plus None does not imply application completed; actual Duplicate receipt cannot complete a caller with missing Reply/ACK facts |
+| Inactive admission and final event | Fresh ordinary Call uses admit-first; Duplicate requires local original-owner lookup; sixteenth fresh Call refuses before new state/credits, while known None may receive only actual Duplicate receipt; active different Call still gains no state |
 | Original lifetime and authority | Deadline equality, Unix rollback/original mono expiry, policy generation change and different request refuse with no replacement identity/sequence; service Reply remains charged on refusal |
 | Partial/uncertain transport | Mid-prefix timeout/truncation and invoked send failure fence retained current identity; a second call reads/sends no new frame; no reconnect/resume |
 | Retry I/O cap | Late explicit retry uses the fixed original deadline through connect and blocked/partial write; a preexisting channel cannot gain a fresh parent timeout; actual counters and fence survive refusal |

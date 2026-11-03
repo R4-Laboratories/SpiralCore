@@ -179,16 +179,26 @@ event allowance is exhausted. Signed admission caps the fixed deadline further.
   earlier receipt. Retained valid older controls contribute no current facts and
   produce no receipt-of-receipt. Unknown/invalid/expired/conflicting controls keep
   canonical errors; key ID alone grants no authority.
-- For a provisioned normal key, use `retry_reply_prepared` before fresh admission.
-  Only its authenticated retained original identity and `Ok(None)` authorize the
-  historical-Call receipt-only path. None proves known identity and no cached
-  Reply; it does not prove application completion. `returns.admit` must yield Duplicate; reserve
-  and send that actual receipt with fresh time checks. Do not call receive/object
-  work, create a Reply/cache, increment application calls or return another Handled.
-  Continue the same bounded preamble. An existing cached Reply here is an
-  inconsistent/incomplete receiver state and fences; do not discard or replace it.
-  Only `UnknownHandle` from the original lookup is eligible for ordinary fresh
-  canonical admission; other errors are not evidence of a new Call.
+- In the inactive preamble, check its fixed deadline before any admission. With
+  fewer than sixteen events consumed after this normal frame (room for a later
+  ACK), call `returns.admit` first. Only AcceptedEphemeral enters the fresh proof/
+  application path. This uses one canonical verification for an ordinary fresh
+  Call. The private no-resume latch excludes an unresolved active exchange; do
+  not use this ordering while awaiting a current Reply's receipt.
+- For actual Duplicate admission, require `retry_reply_prepared` authenticate
+  retained original ownership/lifetime and return `Ok(None)` before receipt
+  reservation. The duplicate admission creates no fresh application entry. None
+  proves known identity/no cache, not application completion. Send only its actual
+  canonical Duplicate receipt; never receive/object work, create Reply/cache,
+  increment application calls or return another Handled. Re-run the lookup with
+  fresh time after reservation immediately before bounded I/O, retaining fixed
+  preamble/signed-expiry caps and old owner-monotonic checks. Cached Some or any
+  lookup error fences without sending; other admission outcomes refuse.
+- At the sixteenth normal frame, lookup must precede admission: fresh UnknownHandle
+  returns typed EventLimit before new application state/control reservation can
+  be allocated with no room for its ACK. Only authenticated known `Ok(None)` may
+  proceed to actual Duplicate admission/receipt-only handling, with the same fresh
+  original-owner checks. Do not reset event/deadline bounds; exhaustion fences.
 - For a fresh accepted Call, retain its admitted proof and fixed original
   Instant/Unix/owner-monotonic deadline. Execute the object once and use the
   existing active receiver loop: exact current cached Reply comparison before
@@ -201,6 +211,8 @@ before fresh application admission. Control reservations and all failed sends
 remain subject to existing signed rates/budgets. Clear the receiver latch only
 after its current application completion; errors preserve canonical state/fence.
 Preamble-only traffic never fabricates application completion.
+The active prelookup prevents a different Call gaining state after active credit
+has been released; it is mandatory even though the inactive fresh path avoids it.
 Its Duplicate receipt cannot complete the caller without that caller's own
 retained authenticated Reply and successful ACK-write facts plus FIFO extraction.
 
