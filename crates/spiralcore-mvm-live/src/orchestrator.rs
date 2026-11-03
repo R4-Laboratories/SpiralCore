@@ -57,6 +57,10 @@ use crate::{
     campaign,
     config::{Bootstrap, Pair, Plan, Published, Role, Stage},
     host,
+    host_budget::{
+        HostTransportBudget, LinkReservation, TransportBudgetConfig, TransportLimits,
+        TransportScope,
+    },
 };
 use cpu_time::ProcessTime;
 use mvm_core::mailbox::{decode_envelope, transport::CancellationToken};
@@ -288,11 +292,54 @@ fn byte_total(counters: &Value) -> Result<u64> {
     })
     .map_err(Into::into)
 }
+// Reserve before the existing allocating read. Declaration order ensures the
+// decoded envelope and serialized buffer drop before their capacity guard.
+fn forward_frame(
+    input: &mut UnixStream,
+    output: &mut UnixStream,
+    route: &RouteAdmission,
+    link: &LinkReservation,
+    cancel: &CancellationToken,
+    counters: (&mut StreamCounters, &mut StreamCounters),
+    allow_clean_eof: bool,
+) -> Result<bool> {
+    let _capacity = link.reserve_frame(spiralcore_mvm_adapter::MAX_ENVELOPE_BYTES as u64)?;
+    let (received, sent) = counters;
+    let before = received.envelope_bytes_received + received.framing_bytes_received;
+    let wire = match live::read_ciphertext_frame(
+        input,
+        cancel,
+        Instant::now() + Duration::from_secs(30),
+        received,
+    ) {
+        Ok(wire) => wire,
+        Err(live::LiveError::Io(error))
+            if allow_clean_eof
+                && error.kind() == io::ErrorKind::UnexpectedEof
+                && before == received.envelope_bytes_received + received.framing_bytes_received =>
+        {
+            return Ok(false);
+        }
+        Err(error) => return Err(error.into()),
+    };
+    let envelope = decode_envelope(&wire)?;
+    route.validate(&envelope.routing, &envelope.encryption.key_id)?;
+    live::write_ciphertext_frame(
+        output,
+        &wire,
+        cancel,
+        Instant::now() + Duration::from_secs(30),
+        sent,
+    )?;
+    Ok(true)
+}
+
 fn relay(
     mut a: UnixStream,
     mut b: UnixStream,
     forward: RouteAdmission,
     reverse: RouteAdmission,
+    links: [&LinkReservation; 2],
 ) -> Result<Value> {
     let wall = Instant::now();
     let cpu = ProcessTime::try_now()?;
@@ -314,80 +361,46 @@ fn relay(
         &mut bc,
     )?;
     loop {
-        let before = ac.envelope_bytes_received + ac.framing_bytes_received;
-        let wire = match live::read_ciphertext_frame(
+        if !forward_frame(
             &mut a,
-            &cancel,
-            Instant::now() + Duration::from_secs(30),
-            &mut ac,
-        ) {
-            Ok(wire) => wire,
-            Err(live::LiveError::Io(error))
-                if error.kind() == io::ErrorKind::UnexpectedEof
-                    && before == ac.envelope_bytes_received + ac.framing_bytes_received =>
-            {
-                break;
-            }
-            Err(error) => return Err(error.into()),
-        };
-        let envelope = decode_envelope(&wire)?;
-        forward.validate(&envelope.routing, &envelope.encryption.key_id)?;
-        live::write_ciphertext_frame(
             &mut b,
-            &wire,
+            &forward,
+            links[0],
             &cancel,
-            Instant::now() + Duration::from_secs(30),
-            &mut bc,
-        )?;
-        let reply = live::read_ciphertext_frame(
-            &mut b,
-            &cancel,
-            Instant::now() + Duration::from_secs(30),
-            &mut bc,
-        )?;
-        let envelope = decode_envelope(&reply)?;
-        reverse.validate(&envelope.routing, &envelope.encryption.key_id)?;
-        live::write_ciphertext_frame(
-            &mut a,
-            &reply,
-            &cancel,
-            Instant::now() + Duration::from_secs(30),
-            &mut ac,
-        )?;
-        {
-            // Strict one-Call witness: Call destination receipt, application
-            // Reply, then Reply destination receipt. The relay sees ciphertext.
-            let reply = live::read_ciphertext_frame(
-                &mut b,
-                &cancel,
-                Instant::now() + Duration::from_secs(30),
-                &mut bc,
-            )?;
-            let envelope = decode_envelope(&reply)?;
-            reverse.validate(&envelope.routing, &envelope.encryption.key_id)?;
-            live::write_ciphertext_frame(
-                &mut a,
-                &reply,
-                &cancel,
-                Instant::now() + Duration::from_secs(30),
-                &mut ac,
-            )?;
-            let ack = live::read_ciphertext_frame(
-                &mut a,
-                &cancel,
-                Instant::now() + Duration::from_secs(30),
-                &mut ac,
-            )?;
-            let envelope = decode_envelope(&ack)?;
-            forward.validate(&envelope.routing, &envelope.encryption.key_id)?;
-            live::write_ciphertext_frame(
-                &mut b,
-                &ack,
-                &cancel,
-                Instant::now() + Duration::from_secs(30),
-                &mut bc,
-            )?;
+            (&mut ac, &mut bc),
+            true,
+        )? {
+            break;
         }
+        // Strict one-Call witness: destination receipt, application Reply,
+        // then Reply destination receipt. Every buffer ends before the next read.
+        forward_frame(
+            &mut b,
+            &mut a,
+            &reverse,
+            links[1],
+            &cancel,
+            (&mut bc, &mut ac),
+            false,
+        )?;
+        forward_frame(
+            &mut b,
+            &mut a,
+            &reverse,
+            links[1],
+            &cancel,
+            (&mut bc, &mut ac),
+            false,
+        )?;
+        forward_frame(
+            &mut a,
+            &mut b,
+            &forward,
+            links[0],
+            &cancel,
+            (&mut ac, &mut bc),
+            false,
+        )?;
     }
     let _ = a.shutdown(Shutdown::Both);
     let _ = b.shutdown(Shutdown::Both);
@@ -399,15 +412,92 @@ fn relay(
 /// Execute one explicitly selected persistent session. The caller chooses a new
 /// private run directory; failures preserve public receipts and owned disk data.
 pub fn session(root: &Path, kernel: &Path, guest_path: &Path, plan: Plan) -> Result<Value> {
+    if plan.stage == Stage::One {
+        // The host is a plaintext endpoint here, not a keyless relay. Its
+        // StreamTransport buffers are not covered by this relay-only profile.
+        return session_owned(root, kernel, guest_path, plan, None);
+    }
+    let budget = transport_budget()?;
+    let scope = budget.scope(0)?;
+    session_with_budget(root, kernel, guest_path, plan, &budget, &scope)
+}
+
+/// Default dedicated-supervisor profile. This is not machine-wide exclusion.
+pub fn transport_budget() -> Result<HostTransportBudget> {
+    let limits = TransportLimits {
+        links: 2,
+        frame_slots: 2,
+        serialized_buffer_bytes: 2 * spiralcore_mvm_adapter::MAX_ENVELOPE_BYTES as u64,
+    };
+    Ok(HostTransportBudget::new(TransportBudgetConfig {
+        host: limits,
+        tenant: limits,
+        max_tenants: 1,
+        max_frame_bytes: spiralcore_mvm_adapter::MAX_ENVELOPE_BYTES as u64,
+    })?)
+}
+
+/// Reuse one owner across all sessions of a supervisor; scope comes from its
+/// trusted local provisioning, never from a received ciphertext route label.
+pub fn session_with_budget(
+    root: &Path,
+    kernel: &Path,
+    guest_path: &Path,
+    plan: Plan,
+    budget: &HostTransportBudget,
+    scope: &TransportScope,
+) -> Result<Value> {
+    if plan.stage != Stage::Two {
+        return Err("transport-budget v1 covers the two-guest keyless relay only".into());
+    }
+    session_owned(root, kernel, guest_path, plan, Some((budget, scope)))
+}
+
+fn session_owned(
+    root: &Path,
+    kernel: &Path,
+    guest_path: &Path,
+    plan: Plan,
+    budget: Option<(&HostTransportBudget, &TransportScope)>,
+) -> Result<Value> {
     fs::DirBuilder::new().mode(0o700).create(root)?;
     let mut journal = private_file(&root.join("host-events.jsonl"))?;
     emit(
         &mut journal,
         &json!({"event":"session_begin","plan":plan,"utc_unix_ms":now_ms()?}),
     )?;
-    let result = session_inner(root, kernel, guest_path, plan, &mut journal);
+    let result = (|| {
+        // Reserve all physical links before activating either child process.
+        let links = match budget {
+            Some((budget, scope)) => (0..2)
+                .map(|_| budget.reserve_link(scope))
+                .collect::<std::result::Result<Vec<_>, _>>()?,
+            None => Vec::new(),
+        };
+        session_inner(root, kernel, guest_path, plan, &mut journal, &links)
+    })();
+    let snapshot = budget.map(|(budget, _)| budget.snapshot()).transpose()?;
+    emit(
+        &mut journal,
+        &json!({"event":"host_transport_released","budget":snapshot}),
+    )?;
+    let result = result.and_then(|mut value| -> Result<Value> {
+        value["host_transport_budget"] = serde_json::to_value(&snapshot)?;
+        value["host_transport_budget_coverage"] = json!(if snapshot.is_some() {
+            "two-guest keyless relay serialized buffers and links only"
+        } else {
+            "not accounted: one-guest host plaintext endpoint"
+        });
+        Ok(value)
+    });
     match &result {
-        Ok(value) => emit(&mut journal, value)?,
+        Ok(value) => {
+            emit(&mut journal, value)?;
+            let mut file = private_file(&root.join("result.json"))?;
+            serde_json::to_writer_pretty(&mut file, value)?;
+            file.write_all(b"\n")?;
+            file.sync_all()?;
+        }
         Err(error) => emit(
             &mut journal,
             &json!({"event":"session_failed","error":error.to_string()}),
@@ -423,6 +513,7 @@ fn session_inner(
     guest_path: &Path,
     plan: Plan,
     journal: &mut File,
+    links: &[LinkReservation],
 ) -> Result<Value> {
     let wall = Instant::now();
     let cpu = ProcessTime::try_now()?;
@@ -522,7 +613,7 @@ fn session_inner(
         )?;
         let a_socket = accept(&a_listener)?;
         let b_socket = accept(&b_listener)?;
-        let relay_result = relay(a_socket, b_socket, forward, reverse);
+        let relay_result = relay(a_socket, b_socket, forward, reverse, [&links[0], &links[1]]);
         let a_result = a.finish();
         let b_result = b.finish();
         relay_receipt = relay_result?;
@@ -586,10 +677,6 @@ fn session_inner(
         "orchestrator_process_cpu_us":micros(cpu.try_elapsed()?)?,"lifecycle_wall_us":micros(wall.elapsed())?,
         "byte_scope":"both directions, encrypted MVM envelopes, 4-byte frame prefixes and readiness; excludes virtio control/credit headers",
         "cpu_scope":"endpoint process CPU is separate from worker/VMM process CPU; do not sum nested guest and worker CPU"});
-    let mut file = private_file(&root.join("result.json"))?;
-    serde_json::to_writer_pretty(&mut file, &value)?;
-    file.write_all(b"\n")?;
-    file.sync_all()?;
     Ok(value)
 }
 
@@ -598,6 +685,210 @@ mod tests {
     use super::*;
     use crate::config::{Arm, Pair, Plan, Stage};
     use mvm_contract::protocol::mailbox::*;
+
+    #[test]
+    fn shared_owner_refuses_before_spawn_and_partial_link_admission_rolls_back() {
+        let root = tempfile::tempdir().unwrap();
+        let owner = transport_budget().unwrap();
+        let tenant = owner.scope(0).unwrap();
+        let held = owner.reserve_link(&tenant).unwrap();
+        let plan = Plan {
+            stage: Stage::Two,
+            arm: Arm::Raw,
+            size: 128,
+            trial: 0,
+            bandwidth_profile: Default::default(),
+        };
+        let run = root.path().join("refused");
+        let error = session_with_budget(
+            &run,
+            Path::new("missing-kernel"),
+            Path::new("missing-guest"),
+            plan.clone(),
+            &owner,
+            &tenant,
+        )
+        .unwrap_err();
+        assert!(error.to_string().contains("Full"));
+        let snapshot = owner.snapshot().unwrap();
+        assert_eq!(snapshot.usage.links, 1);
+        assert_eq!(snapshot.high_water.links, 2);
+        assert_eq!(snapshot.usage.frame_slots, 0);
+        assert!(!run.join("result.json").exists());
+        let names: Vec<_> = fs::read_dir(&run)
+            .unwrap()
+            .map(|entry| entry.unwrap().file_name())
+            .collect();
+        assert_eq!(names, ["host-events.jsonl"]);
+        let mut one = plan;
+        one.stage = Stage::One;
+        let run = root.path().join("unsupported");
+        let error = session_with_budget(
+            &run,
+            Path::new("missing-kernel"),
+            Path::new("missing-guest"),
+            one,
+            &owner,
+            &tenant,
+        )
+        .unwrap_err();
+        assert!(error.to_string().contains("keyless relay only"));
+        assert!(!run.exists());
+        drop(held);
+        assert_eq!(owner.snapshot().unwrap().usage.links, 0);
+    }
+
+    #[test]
+    fn partial_read_wrong_route_cancel_and_failed_write_release_buffer_credit() {
+        let pair = Pair::provision(Plan {
+            stage: Stage::Two,
+            arm: Arm::Raw,
+            size: 128,
+            trial: 0,
+            bandwidth_profile: Default::default(),
+        })
+        .unwrap();
+        let material = pair.sender.outgoing.as_ref().unwrap();
+        let route = RouteAdmission::new(material);
+        let binding = material.service_binding(None).unwrap();
+        let now = spiralcore_mvm_adapter::service::ServiceTime {
+            unix_ms: now_ms().unwrap(),
+            monotonic_ms: 0,
+        };
+        let mut options = spiralcore_mvm_adapter::service_sender::MessageOptions::fresh(
+            ContentType::parse(spiralcore_mvm_adapter::CONTENT_TYPE, 1).unwrap(),
+            now,
+            now.unix_ms + 10000,
+        )
+        .unwrap();
+        options.reply_to = material.reply_to;
+        let prepared = spiralcore_mvm_adapter::service_sender::prepare(
+            &binding,
+            b"opaque bytes",
+            &options,
+            now,
+        )
+        .unwrap();
+        for mode in ["truncated", "wrong-route", "cancelled", "failed-write"] {
+            let owner = transport_budget().unwrap();
+            let link = owner.reserve_link(&owner.scope(0).unwrap()).unwrap();
+            let (mut peer, mut input) = UnixStream::pair().unwrap();
+            let (mut output, sink) = UnixStream::pair().unwrap();
+            let cancel = CancellationToken::default();
+            let mut envelope = prepared.envelope().clone();
+            if mode == "wrong-route" {
+                envelope.routing.destination_route_token =
+                    DestinationRouteToken::from_bytes([8; 32]);
+            }
+            let wire = mvm_core::mailbox::encode_envelope(&envelope).unwrap();
+            peer.write_all(&(wire.len() as u32).to_be_bytes()).unwrap();
+            if mode == "truncated" {
+                peer.write_all(&wire[..3]).unwrap();
+                peer.shutdown(Shutdown::Write).unwrap();
+            } else {
+                peer.write_all(&wire).unwrap();
+            }
+            if mode == "cancelled" {
+                cancel.cancel();
+            }
+            if mode == "failed-write" {
+                drop(sink);
+            }
+            let mut read = StreamCounters::default();
+            let mut sent = StreamCounters::default();
+            assert!(
+                forward_frame(
+                    &mut input,
+                    &mut output,
+                    &route,
+                    &link,
+                    &cancel,
+                    (&mut read, &mut sent),
+                    false
+                )
+                .is_err(),
+                "{mode}"
+            );
+            let snapshot = owner.snapshot().unwrap();
+            assert_eq!(snapshot.usage.frame_slots, 0, "{mode}");
+            assert_eq!(snapshot.usage.serialized_buffer_bytes, 0, "{mode}");
+            if mode != "failed-write" {
+                assert_eq!(sent.envelope_bytes_sent, 0);
+            }
+            drop(link);
+            assert_eq!(owner.snapshot().unwrap().usage.links, 0);
+        }
+    }
+    #[test]
+    fn relay_credit_precedes_payload_read_and_malformed_reads_release_it() {
+        use crate::host_budget::*;
+        let owner = HostTransportBudget::new(TransportBudgetConfig {
+            host: TransportLimits {
+                links: 1,
+                frame_slots: 1,
+                serialized_buffer_bytes: 262144,
+            },
+            tenant: TransportLimits {
+                links: 1,
+                frame_slots: 1,
+                serialized_buffer_bytes: 262144,
+            },
+            max_tenants: 1,
+            max_frame_bytes: 262144,
+        })
+        .unwrap();
+        let link = owner.reserve_link(&owner.scope(0).unwrap()).unwrap();
+        let held = link.reserve_frame(262144).unwrap();
+        let pair = Pair::provision(Plan {
+            stage: Stage::Two,
+            arm: Arm::Raw,
+            size: 128,
+            trial: 0,
+            bandwidth_profile: Default::default(),
+        })
+        .unwrap();
+        let route = RouteAdmission::new(pair.sender.outgoing.as_ref().unwrap());
+        let (mut peer, mut input) = UnixStream::pair().unwrap();
+        let (mut output, _sink) = UnixStream::pair().unwrap();
+        let cancel = CancellationToken::default();
+        let mut read = StreamCounters::default();
+        let mut written = StreamCounters::default();
+        assert!(
+            forward_frame(
+                &mut input,
+                &mut output,
+                &route,
+                &link,
+                &cancel,
+                (&mut read, &mut written),
+                false
+            )
+            .is_err()
+        );
+        assert_eq!(read.framing_bytes_received, 0);
+        assert_eq!(owner.snapshot().unwrap().usage.frame_slots, 1);
+        drop(held);
+        // A zero-length frame fails after its prefix, before a payload read.
+        peer.write_all(&[0; 4]).unwrap();
+        assert!(
+            forward_frame(
+                &mut input,
+                &mut output,
+                &route,
+                &link,
+                &cancel,
+                (&mut read, &mut written),
+                false
+            )
+            .is_err()
+        );
+        assert_eq!(read.framing_bytes_received, 4);
+        assert_eq!(read.envelope_bytes_received, 0);
+        assert_eq!(written.envelope_bytes_sent, 0);
+        let snapshot = owner.snapshot().unwrap();
+        assert_eq!(snapshot.usage.frame_slots, 0);
+        assert_eq!(snapshot.usage.serialized_buffer_bytes, 0);
+    }
     #[test]
     fn relay_admits_only_the_provisioned_unexpired_outer_route() {
         let pair = Pair::provision(Plan {
@@ -687,11 +978,26 @@ mod tests {
                 )
                 .unwrap()
             });
-            let receipt = relay(relay_a, relay_b, forward, reverse).unwrap();
+            let budget = transport_budget().unwrap();
+            let scope = budget.scope(0).unwrap();
+            let links = [
+                budget.reserve_link(&scope).unwrap(),
+                budget.reserve_link(&scope).unwrap(),
+            ];
+            let receipt =
+                relay(relay_a, relay_b, forward, reverse, [&links[0], &links[1]]).unwrap();
             let sender = sender.join().unwrap();
             let receiver = receiver.join().unwrap();
             counters_agree(&sender["counters"], &receipt["a"]).unwrap();
             counters_agree(&receiver["counters"], &receipt["b"]).unwrap();
+            drop(links);
+            let snapshot = budget.snapshot().unwrap();
+            assert_eq!(snapshot.usage.links, 0);
+            assert_eq!(snapshot.usage.frame_slots, 0);
+            assert_eq!(snapshot.usage.serialized_buffer_bytes, 0);
+            assert_eq!(snapshot.high_water.links, 2);
+            assert_eq!(snapshot.high_water.frame_slots, 1);
+            assert_eq!(snapshot.high_water.serialized_buffer_bytes, 262144);
         });
     }
 }
