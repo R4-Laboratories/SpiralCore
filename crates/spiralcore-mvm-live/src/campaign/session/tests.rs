@@ -57,6 +57,73 @@ fn budget() -> HostBudget {
 }
 
 #[test]
+fn exchange_deadline_keeps_original_monotonic_expiry_despite_wall_rollback() {
+    let now = ServiceTime {
+        unix_ms: 1000,
+        monotonic_ms: 100,
+    };
+    let original = std::time::Instant::now() + std::time::Duration::from_secs(60);
+    let deadline = ExchangeDeadline::new(original, 1020, now).unwrap();
+    assert!(deadline.instant() <= original);
+    assert_eq!(
+        deadline.check(ServiceTime {
+            unix_ms: 1019,
+            monotonic_ms: 119
+        }),
+        Ok(())
+    );
+    assert_eq!(
+        deadline.check(ServiceTime {
+            unix_ms: 900,
+            monotonic_ms: 120
+        }),
+        Err(SessionError::Service(ServiceError::Expired))
+    );
+    assert_eq!(
+        deadline.check(ServiceTime {
+            unix_ms: 1020,
+            monotonic_ms: 119
+        }),
+        Err(SessionError::Service(ServiceError::Expired))
+    );
+}
+
+#[test]
+fn exchange_deadline_rejects_elapsed_receiver_cap_and_checked_overflow() {
+    let now = ServiceTime {
+        unix_ms: 1000,
+        monotonic_ms: 100,
+    };
+    assert!(matches!(
+        ExchangeDeadline::new(
+            std::time::Instant::now() - std::time::Duration::from_secs(1),
+            2000,
+            now
+        ),
+        Err(SessionError::Service(ServiceError::Expired))
+    ));
+    assert!(matches!(
+        ExchangeDeadline::new(
+            std::time::Instant::now() + std::time::Duration::from_secs(1),
+            2000,
+            ServiceTime {
+                monotonic_ms: u64::MAX,
+                ..now
+            }
+        ),
+        Err(SessionError::Service(ServiceError::Clock))
+    ));
+    assert!(matches!(
+        ExchangeDeadline::new(
+            std::time::Instant::now() + std::time::Duration::from_secs(1),
+            now.unix_ms,
+            now
+        ),
+        Err(SessionError::Service(ServiceError::Expired))
+    ));
+}
+
+#[test]
 fn incoming_event_allowance_remains_cumulative_at_its_boundary() {
     let (pair, outgoing, _, _) = fixture();
     let now = ServiceTime {
