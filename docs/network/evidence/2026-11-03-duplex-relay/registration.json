@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "scope": "C8 opaque relay prerequisite only; no endpoint retry, long-session or WAN qualification",
+  "before_source": "91baf28efa56da94336d413ca8e912266079f654, product merged through PR56",
+  "after_source": "Bind reviewed commit and crate source hashes before performance execution",
+  "functional_red_observed_before_registration": [
+    "Clean input half-close caused BrokenPipe on reverse write using the old strict frame helper",
+    "Reverse frame stalled with zero forward application frames",
+    "Second forward frame stalled while reverse application traffic was withheld"
+  ],
+  "native_cells": {
+    "host": "wick Linux x86_64 / Firecracker, independent SSH connection; shared with other labs",
+    "order": "before whole-mixed, before combined-cpu, after whole-mixed, after combined-cpu",
+    "trial": 0,
+    "stage": "two",
+    "requested_bytes": 16777216,
+    "actual_bytes_per_target_expected": 14851384,
+    "max_simultaneous_guests": 2,
+    "max_total_guest_vcpus": 2,
+    "max_total_guest_ram_bytes": 2147483648,
+    "guest_nic": false,
+    "profile": "experimental64, Linux rate enforcement remains absent",
+    "limits": "Existing 30s I/O and bounded native worker lifecycle; 256MiB writable disk per cell, at most one cell active; no new local VM image or payload store",
+    "required": "Exact original lengths and all publication/reboot readbacks, both-direction and two-hop counters agree; all workers joined; unchanged 2link/2frame/524288B configured transport limits, with new relay intentionally reserving both directional frame slots",
+    "measurement": "Existing Rust campaign CPU/setup/transfer/lifecycle/relay CPU and transport snapshot, retaining timer exclusions. Four exploratory cells, fixed order, no statistical speedup or CPU attribution claim. Report every gain or loss."
+  },
+  "custody": "Copy only compact public receipts and exact source/binary identities; checksum archive and all members before deleting only owned successful payload disks. Leave failed records and other labs untouched.",
+  "deferred": ["Both-peer authenticated event demultiplexing", "Cached Reply replay and acknowledgment recovery", "Automatic retry", "Idle maintenance and >2048 Calls", "Host installation and aggregate plaintext/cache ownership", "Pipeline above one", "Canonical cross-host/platform/WAN qualification and final upstream acceptance"]
+}

@@ -314,6 +314,35 @@ fn live_open_refuses_a_grant_inside_the_clock_uncertainty_margin() {
 }
 
 #[test]
+fn ciphertext_clean_half_close_keeps_reverse_direction_writable() {
+    use spiralcore_mvm_adapter::live::{StreamCounters, read_ciphertext_frame_or_eof};
+    use std::{
+        io::{Read, Write},
+        net::Shutdown,
+    };
+    let (mut reader, mut peer) = UnixStream::pair().unwrap();
+    peer.set_read_timeout(Some(Duration::from_secs(1))).unwrap();
+    peer.shutdown(Shutdown::Write).unwrap();
+    let mut counters = StreamCounters::default();
+    let result = read_ciphertext_frame_or_eof(
+        &mut reader,
+        &CancellationToken::default(),
+        Instant::now() + Duration::from_secs(1),
+        &mut counters,
+    );
+    assert!(result.unwrap().is_none());
+    reader
+        .write_all(b"reverse after EOF")
+        .expect("clean half-close must preserve reverse writes");
+    let mut response = [0; 17];
+    peer.read_exact(&mut response).unwrap();
+    assert_eq!(&response, b"reverse after EOF");
+    assert_eq!(counters.framing_bytes_received, 0);
+    assert_eq!(counters.envelope_bytes_received, 0);
+    assert_eq!(counters.frames_received, 0);
+}
+
+#[test]
 fn ciphertext_framing_handles_split_reads_and_rejects_bad_lengths_and_truncation() {
     use spiralcore_mvm_adapter::live::{LiveError, StreamCounters, read_ciphertext_frame};
     use std::io::Write;

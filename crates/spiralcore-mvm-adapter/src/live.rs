@@ -138,8 +138,12 @@ fn bounded_deadline(deadline: Instant) -> Instant {
     deadline.min(Instant::now() + MAX_OPERATION)
 }
 fn close_on_error<S: SocketIo, T>(socket: &S, result: LiveResult<T>) -> LiveResult<T> {
-    if result.is_err() {
-        let _ = socket.shutdown(Shutdown::Both);
+    if result.is_err() && socket.shutdown(Shutdown::Both).is_err() {
+        // Darwin can reject SHUT_RDWR after peer FIN while the write half is
+        // still usable. Close each remaining half without replacing the
+        // original framing/I/O failure or weakening the owner's logical fence.
+        let _ = socket.shutdown(Shutdown::Write);
+        let _ = socket.shutdown(Shutdown::Read);
     }
     result
 }
@@ -150,12 +154,29 @@ fn read_exact<S: SocketIo>(
     deadline: Instant,
     counter: &mut u64,
 ) -> LiveResult<()> {
+    if read_exact_or_eof(socket, bytes, cancel, deadline, counter)? {
+        Ok(())
+    } else {
+        Err(io::Error::from(io::ErrorKind::UnexpectedEof).into())
+    }
+}
+fn read_exact_or_eof<S: SocketIo>(
+    socket: &mut S,
+    bytes: &mut [u8],
+    cancel: &CancellationToken,
+    deadline: Instant,
+    counter: &mut u64,
+) -> LiveResult<bool> {
     let mut offset = 0;
     while offset < bytes.len() {
         socket
             .set_read_timeout(Some(remaining(cancel, deadline)?))
             .map_err(|error| io::Error::new(error.kind(), format!("set_read_timeout: {error}")))?;
         match socket.read(&mut bytes[offset..]) {
+            Ok(0) if offset == 0 => {
+                remaining(cancel, deadline)?;
+                return Ok(false);
+            }
             Ok(0) => return Err(io::Error::from(io::ErrorKind::UnexpectedEof).into()),
             Ok(count) => {
                 increment(counter, count)?;
@@ -174,7 +195,7 @@ fn read_exact<S: SocketIo>(
         }
     }
     remaining(cancel, deadline)?;
-    Ok(())
+    Ok(true)
 }
 fn write_all<S: SocketIo>(
     socket: &mut S,
@@ -257,16 +278,32 @@ pub fn read_ciphertext_frame<S: SocketIo>(
     deadline: Instant,
     counters: &mut StreamCounters,
 ) -> LiveResult<Vec<u8>> {
+    let result = read_ciphertext_frame_or_eof(socket, cancel, deadline, counters)?
+        .ok_or_else(|| LiveError::Io(io::ErrorKind::UnexpectedEof.into()));
+    close_on_error(socket, result)
+}
+
+/// Read one ciphertext frame, preserving the reverse half on clean input EOF.
+/// `None` means zero bytes of the next prefix; truncated framing remains fatal.
+/// The recipient must still authenticate every returned frame.
+pub fn read_ciphertext_frame_or_eof<S: SocketIo>(
+    socket: &mut S,
+    cancel: &CancellationToken,
+    deadline: Instant,
+    counters: &mut StreamCounters,
+) -> LiveResult<Option<Vec<u8>>> {
     let deadline = bounded_deadline(deadline);
     let result = (|| {
         let mut prefix = [0; 4];
-        read_exact(
+        if !read_exact_or_eof(
             socket,
             &mut prefix,
             cancel,
             deadline,
             &mut counters.framing_bytes_received,
-        )?;
+        )? {
+            return Ok(None);
+        }
         let len = u32::from_be_bytes(prefix) as usize;
         if len == 0 || len > MAX_ENVELOPE_BYTES {
             return Err(LiveError::Framing);
@@ -280,7 +317,7 @@ pub fn read_ciphertext_frame<S: SocketIo>(
             &mut counters.envelope_bytes_received,
         )?;
         increment(&mut counters.frames_received, 1)?;
-        Ok(bytes)
+        Ok(Some(bytes))
     })();
     close_on_error(socket, result)
 }
