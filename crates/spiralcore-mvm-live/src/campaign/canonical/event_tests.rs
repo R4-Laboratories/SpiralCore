@@ -1,7 +1,11 @@
 //! Next C8 peer-event preparation; intentionally not wired into the relay PR.
 use super::*;
 use crate::config::{Arm, Pair, Plan, Stage};
-use spiralcore_mvm_adapter::receipt::PreparedReceipt;
+use mvm_core::{
+    crypto::aead::Key,
+    mailbox::{InMemoryReplayProtector, open_verified_envelope, verify_receipt},
+};
+use spiralcore_mvm_adapter::receipt::{PreparedReceipt, decode_destination_receipt};
 use std::{net::Shutdown, os::unix::net::UnixStream};
 
 const WATCHDOG: Duration = Duration::from_secs(5);
@@ -10,6 +14,7 @@ const WATCHDOG: Duration = Duration::from_secs(5);
 enum EventOrder {
     DuplicateReceiptsThenReply,
     ReplyThenDuplicateReceipts,
+    DuplicateReplyThenReceipt,
 }
 
 enum Event {
@@ -21,6 +26,7 @@ struct PeerReport {
     calls: Vec<Value>,
     executions: usize,
     acknowledged_replies: usize,
+    reply_receipts_received: usize,
     counters: StreamCounters,
 }
 
@@ -99,6 +105,13 @@ fn duplicate_receipt_event_order(order: EventOrder) {
     let mut caller = Session::new(&pair.sender, &broker).unwrap();
     let peer_broker = broker_context().unwrap();
     let mut peer = Session::new(&pair.receiver, &peer_broker).unwrap();
+    let receipt_material = pair
+        .receiver
+        .service
+        .as_ref()
+        .unwrap()
+        .incoming_control
+        .clone();
     let (socket, peer_socket) = UnixStream::pair().unwrap();
     let caller_shutdown = socket.try_clone().unwrap();
     let peer_shutdown = peer_socket.try_clone().unwrap();
@@ -135,6 +148,7 @@ fn duplicate_receipt_event_order(order: EventOrder) {
                 calls: Vec::new(),
                 executions: 0,
                 acknowledged_replies: 0,
+                reply_receipts_received: 0,
                 counters: StreamCounters::default(),
             };
             for index in 0..2 {
@@ -189,6 +203,9 @@ fn duplicate_receipt_event_order(order: EventOrder) {
                     (0, EventOrder::ReplyThenDuplicateReceipts) => {
                         &[Event::Reply, Event::Receipt, Event::Receipt]
                     }
+                    (0, EventOrder::DuplicateReplyThenReceipt) => {
+                        &[Event::Reply, Event::Reply, Event::Receipt]
+                    }
                     _ => &[Event::Receipt, Event::Reply],
                 };
                 for event in events {
@@ -205,27 +222,95 @@ fn duplicate_receipt_event_order(order: EventOrder) {
                         }
                     }
                 }
-                let ack = peer_stream.receive(&cancel, Instant::now() + WATCHDOG)?;
-                peer_broker.with_time(|_, now| -> Result<()> {
-                    if decode_envelope(&ack)?.encryption.key_id != peer.control_key {
-                        return Err("expected canonical Reply destination receipt".into());
-                    }
-                    peer.tracker.observe_receipt(&peer.control, &ack, now)?;
-                    let ReceiptObservation::Verified(ack) =
-                        peer.tracker.take_receipt(&peer.outgoing, &send, now)?
-                    else {
-                        return Err("Reply acknowledgment did not match its original send".into());
+                let receipt_count =
+                    if index == 0 && matches!(order, EventOrder::DuplicateReplyThenReceipt) {
+                        2
+                    } else {
+                        1
                     };
-                    if ack.receipt.outcome != DeliveryOutcome::AcceptedEphemeral
-                        || !peer.service.acknowledge_reply(
-                            &peer.outgoing,
-                            &ack,
-                            &peer.peer_key,
-                            now,
-                        )?
-                    {
-                        return Err("Reply acknowledgment did not release the cached Reply".into());
-                    }
+                for receipt_index in 0..receipt_count {
+                    let ack = peer_stream.receive(&cancel, Instant::now() + WATCHDOG)?;
+                    let released = peer_broker.with_time(|_, now| -> Result<bool> {
+                        if decode_envelope(&ack)?.encryption.key_id != peer.control_key {
+                            return Err("expected canonical Reply destination receipt".into());
+                        }
+                        // Independently open the actual control with the canonical
+                        // API to check Duplicate even when the monotone tracker
+                        // retains Accepted and exposes no second available value.
+                        let mut context = receipt_material.context()?;
+                        context.now_unix_ms = now.unix_ms;
+                        let opened = open_verified_envelope(
+                            &decode_envelope(&ack)?,
+                            &receipt_material.capability,
+                            &context,
+                            &Key::from_bytes(receipt_material.encryption),
+                            &VerifyingKey::from_bytes(&receipt_material.verification)?,
+                            &VerifyingKey::from_bytes(&receipt_material.authority)?,
+                            &mut InMemoryReplayProtector::default(),
+                        )?;
+                        let signed = decode_destination_receipt(opened.payload())?;
+                        verify_receipt(&signed, &peer.peer_key)?;
+                        let expected = if receipt_index == 0 {
+                            DeliveryOutcome::AcceptedEphemeral
+                        } else {
+                            DeliveryOutcome::Duplicate
+                        };
+                        if signed.receipt.outcome != expected {
+                            return Err(
+                                "Reply receipt did not report canonical acceptance/duplicate"
+                                    .into(),
+                            );
+                        }
+                        peer.tracker.observe_receipt(&peer.control, &ack, now)?;
+                        match (
+                            receipt_index,
+                            peer.tracker.take_receipt(&peer.outgoing, &send, now)?,
+                        ) {
+                            (0, ReceiptObservation::Verified(ack)) => {
+                                if ack.receipt.outcome != DeliveryOutcome::AcceptedEphemeral
+                                    || !peer.service.acknowledge_reply(
+                                        &peer.outgoing,
+                                        &ack,
+                                        &peer.peer_key,
+                                        now,
+                                    )?
+                                {
+                                    return Err(
+                                        "Reply acknowledgment did not release the cached Reply"
+                                            .into(),
+                                    );
+                                }
+                                Ok(true)
+                            }
+                            (1, ReceiptObservation::Pending) => {
+                                if !peer.tracker.facts(&peer.outgoing, &send, now)?.accepted {
+                                    return Err(
+                                        "lower-ranked duplicate erased authenticated acceptance"
+                                            .into(),
+                                    );
+                                }
+                                if peer.service.acknowledge_reply(
+                                    &peer.outgoing,
+                                    &signed,
+                                    &peer.peer_key,
+                                    now,
+                                )? {
+                                    return Err(
+                                        "duplicate Reply receipt released the cache twice".into()
+                                    );
+                                }
+                                Ok(false)
+                            }
+                            _ => Err(
+                                "Reply receipt did not match expected monotone tracker state"
+                                    .into(),
+                            ),
+                        }
+                    })?;
+                    report.reply_receipts_received += 1;
+                    report.acknowledged_replies += usize::from(released);
+                }
+                peer_broker.with_time(|_, now| -> Result<()> {
                     if peer.service.receive(&peer.incoming, now)?.is_some()
                         || peer
                             .service
@@ -236,7 +321,6 @@ fn duplicate_receipt_event_order(order: EventOrder) {
                     }
                     Ok(())
                 })?;
-                report.acknowledged_replies += 1;
             }
             report.counters = peer_stream.counters()?;
             Ok(report)
@@ -278,6 +362,12 @@ fn duplicate_receipt_event_order(order: EventOrder) {
     let counters = counters.unwrap();
     assert_eq!(report.executions, 2);
     assert_eq!(report.acknowledged_replies, 2);
+    let reply_receipt_count = if matches!(order, EventOrder::DuplicateReplyThenReceipt) {
+        3
+    } else {
+        2
+    };
+    assert_eq!(report.reply_receipts_received, reply_receipt_count);
     assert_eq!(report.calls.len(), 2);
     assert_eq!(report.calls[0]["sequence"], 1);
     assert_eq!(report.calls[1]["sequence"], 2);
@@ -286,11 +376,16 @@ fn duplicate_receipt_event_order(order: EventOrder) {
         report.calls[0]["correlation_id"],
         report.calls[1]["correlation_id"]
     );
-    // Two Calls, two canonical Reply receipts; no duplicate-triggered resend.
-    assert_eq!((counters.frames_sent, counters.frames_received), (4, 5));
+    // Two Calls plus actual canonical Reply receipts; retransmitted Replies
+    // reuse one prepared envelope and never rerun application execution.
+    let caller_frames = 2 + reply_receipt_count as u64;
+    assert_eq!(
+        (counters.frames_sent, counters.frames_received),
+        (caller_frames, 5)
+    );
     assert_eq!(
         (report.counters.frames_sent, report.counters.frames_received),
-        (5, 4)
+        (5, caller_frames)
     );
     assert_eq!(
         counters.envelope_bytes_sent,
@@ -318,4 +413,9 @@ fn duplicate_authenticated_call_receipts_before_reply_do_not_complete_or_execute
 #[test]
 fn reply_before_duplicated_call_receipts_does_not_poison_the_next_pending_call() {
     duplicate_receipt_event_order(EventOrder::ReplyThenDuplicateReceipts);
+}
+
+#[test]
+fn exact_duplicate_reply_before_call_receipt_is_acknowledged_without_reexecution() {
+    duplicate_receipt_event_order(EventOrder::DuplicateReplyThenReceipt);
 }
