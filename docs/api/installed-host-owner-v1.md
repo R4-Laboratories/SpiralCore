@@ -61,4 +61,8 @@ Path validation alone does not bind a later open: a temporary A→B→A replacem
 
 ## Filesystem admission and macOS ACLs
 
+The next Linux integration seam is specified separately in
+[Firecracker host lifetime lease v1](firecracker-host-lease-v1.md); it is proposed
+for lead review and does not turn this component into qualified VMM recovery.
+
 V1 rejects unknown/network filesystem types. Linux local admission candidates are ext4, XFS, Btrfs, tmpfs and overlayfs; macOS requires a local APFS or HFS filesystem. This allowlist is not executed qualification of every filesystem; record the actual native filesystem in each result. Unsupported platforms/filesystems refuse rather than fall back to a different lock scope. macOS mode0700/0600 does not rule out extended ACL grants: this initial profile therefore rejects any extended ACL entry on installation directories/files, including its required private parent. It uses descriptor ACL inspection; it does not silently remove ACLs or attempt fine-grained permission inference. Linux POSIX ACL effective group/named-user permissions are masked by the already-required zero group mode bits; NFSv4/network ACL profiles are not admitted. Trusted provisioning must keep path ancestors fixed; final-component NOFOLLOW and held-directory/object identities do not claim hostile same-UID/root namespace protection.

@@ -1,0 +1,22 @@
+   Compiling spiralcore-installed-owner-harness v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-mvm-live/tests/installed-owner-harness)
+    Finished `release` profile [optimized] target(s) in 1.73s
+     Running tests/lifecycle.rs (/tmp/spiralcore-installed-owner-20261103/target/release/deps/lifecycle-527e0d90c3b914e7)
+
+running 1 test
+test extended_acl_access_refuses_even_when_posix_modes_remain_private ... FAILED
+
+failures:
+
+---- extended_acl_access_refuses_even_when_posix_modes_remain_private stdout ----
+
+thread 'extended_acl_access_refuses_even_when_posix_modes_remain_private' (15911602) panicked at tests/lifecycle.rs:497:70:
+called `Result::unwrap()` on an `Err` value: Io(Os { code: 2, kind: NotFound, message: "No such file or directory" })
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    extended_acl_access_refuses_even_when_posix_modes_remain_private
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 9 filtered out; finished in 0.02s
+
+error: test failed, to rerun pass `--test lifecycle`

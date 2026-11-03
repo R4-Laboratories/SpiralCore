@@ -1,0 +1,103 @@
++ set -euo pipefail
++ root=docs/network/evidence/2026-11-03-installed-host-owner/hosted/41697837824
++ expected=64d93fed72fdac6784d99e6e1a258052bba605f6
++ jq -e --arg expected 64d93fed72fdac6784d99e6e1a258052bba605f6 '.head_sha==$expected and .status=="completed" and .conclusion=="success"' docs/network/evidence/2026-11-03-installed-host-owner/hosted/41697837824/run.json
+true
++ jq -e '.jobs|length==4 and all(.[];.status=="completed" and .conclusion=="success")' docs/network/evidence/2026-11-03-installed-host-owner/hosted/41697837824/jobs.json
+true
++ jq -e '.total_count==4 and (.artifacts|length)==4 and all(.artifacts[];.expired==false)' docs/network/evidence/2026-11-03-installed-host-owner/hosted/41697837824/artifacts.json
+true
++ shasum -a 256 crates/spiralcore-mvm-live/src/installed_owner.rs crates/spiralcore-mvm-live/src/installed_owner/tests.rs crates/spiralcore-mvm-live/tests/installed-owner-harness/Cargo.toml crates/spiralcore-mvm-live/tests/installed-owner-harness/Cargo.lock crates/spiralcore-mvm-live/tests/installed-owner-harness/tests/lifecycle.rs
++ IFS='	'
++ read -r id name digest
+++ jq -r '.artifacts[]|[.id,.name,.digest]|@tsv' docs/network/evidence/2026-11-03-installed-host-owner/hosted/41697837824/artifacts.json
++ [[ 13262437339 =~ ^[0-9]+$ ]]
++ case "$name" in
++ count=9
++ archive=docs/network/evidence/2026-11-03-installed-host-owner/hosted/41697837824/installed-owner-x86_64-unknown-linux-gnu-1.zip
++ [[ ! -e docs/network/evidence/2026-11-03-installed-host-owner/hosted/41697837824/installed-owner-x86_64-unknown-linux-gnu-1.zip ]]
+++ shasum -a 256 docs/network/evidence/2026-11-03-installed-host-owner/hosted/41697837824/installed-owner-x86_64-unknown-linux-gnu-1.zip
+++ cut '-d ' -f1
++ [[ sha256:8723dadd0280eed7165cb9b7ed97f0fa1348e22abef251dd576245152f83ba42 == \s\h\a\2\5\6\:\8\7\2\3\d\a\d\d\0\2\8\0\e\e\d\7\1\6\5\c\b\9\b\7\e\d\9\7\f\0\f\a\1\3\4\8\e\2\2\a\b\e\f\2\5\1\d\d\5\7\6\2\4\5\1\5\2\f\8\3\b\a\4\2 ]]
++ unzip -Z1 docs/network/evidence/2026-11-03-installed-host-owner/hosted/41697837824/installed-owner-x86_64-unknown-linux-gnu-1.zip
++ grep -E '(^/|(^|/)\.\.(/|$))'
++ mkdir -p docs/network/evidence/2026-11-03-installed-host-owner/hosted/41697837824/installed-owner-x86_64-unknown-linux-gnu-1
++ unzip -oq docs/network/evidence/2026-11-03-installed-host-owner/hosted/41697837824/installed-owner-x86_64-unknown-linux-gnu-1.zip -d docs/network/evidence/2026-11-03-installed-host-owner/hosted/41697837824/installed-owner-x86_64-unknown-linux-gnu-1
+++ cat docs/network/evidence/2026-11-03-installed-host-owner/hosted/41697837824/installed-owner-x86_64-unknown-linux-gnu-1/source-commit.txt
++ [[ dd8362d0f7265849653f58c53c6d5bfd185f7a46 == \6\4\d\9\3\f\e\d\7\2\f\d\a\c\6\7\8\4\d\9\9\e\6\e\1\a\2\5\8\0\5\2\b\b\a\6\0\5\f\6 ]]
++ cmp docs/network/evidence/2026-11-03-installed-host-owner/hosted/41697837824/expected-source.sha256 docs/network/evidence/2026-11-03-installed-host-owner/hosted/41697837824/installed-owner-x86_64-unknown-linux-gnu-1/source.sha256
++ grep -E '^test result: ok\. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in [0-9.]+s$' docs/network/evidence/2026-11-03-installed-host-owner/hosted/41697837824/installed-owner-x86_64-unknown-linux-gnu-1/unit.txt
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.05s
++ grep -E '^test result: ok\. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in [0-9.]+s$' docs/network/evidence/2026-11-03-installed-host-owner/hosted/41697837824/installed-owner-x86_64-unknown-linux-gnu-1/lifecycle.txt
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.09s
++ grep -q 'Finished `dev` profile' docs/network/evidence/2026-11-03-installed-host-owner/hosted/41697837824/installed-owner-x86_64-unknown-linux-gnu-1/clippy.txt
++ IFS='	'
++ read -r id name digest
++ [[ 13262162190 =~ ^[0-9]+$ ]]
++ case "$name" in
++ count=9
++ archive=docs/network/evidence/2026-11-03-installed-host-owner/hosted/41697837824/installed-owner-aarch64-unknown-linux-gnu-1.zip
++ [[ ! -e docs/network/evidence/2026-11-03-installed-host-owner/hosted/41697837824/installed-owner-aarch64-unknown-linux-gnu-1.zip ]]
+++ shasum -a 256 docs/network/evidence/2026-11-03-installed-host-owner/hosted/41697837824/installed-owner-aarch64-unknown-linux-gnu-1.zip
+++ cut '-d ' -f1
++ [[ sha256:2cf9c1a84939a6e97d55cdf39ccc80ea275548ba9c68a5751b06002d7120ff8c == \s\h\a\2\5\6\:\2\c\f\9\c\1\a\8\4\9\3\9\a\6\e\9\7\d\5\5\c\d\f\3\9\c\c\c\8\0\e\a\2\7\5\5\4\8\b\a\9\c\6\8\a\5\7\5\1\b\0\6\0\0\2\d\7\1\2\0\f\f\8\c ]]
++ unzip -Z1 docs/network/evidence/2026-11-03-installed-host-owner/hosted/41697837824/installed-owner-aarch64-unknown-linux-gnu-1.zip
++ grep -E '(^/|(^|/)\.\.(/|$))'
++ mkdir -p docs/network/evidence/2026-11-03-installed-host-owner/hosted/41697837824/installed-owner-aarch64-unknown-linux-gnu-1
++ unzip -oq docs/network/evidence/2026-11-03-installed-host-owner/hosted/41697837824/installed-owner-aarch64-unknown-linux-gnu-1.zip -d docs/network/evidence/2026-11-03-installed-host-owner/hosted/41697837824/installed-owner-aarch64-unknown-linux-gnu-1
+++ cat docs/network/evidence/2026-11-03-installed-host-owner/hosted/41697837824/installed-owner-aarch64-unknown-linux-gnu-1/source-commit.txt
++ [[ dd8362d0f7265849653f58c53c6d5bfd185f7a46 == \6\4\d\9\3\f\e\d\7\2\f\d\a\c\6\7\8\4\d\9\9\e\6\e\1\a\2\5\8\0\5\2\b\b\a\6\0\5\f\6 ]]
++ cmp docs/network/evidence/2026-11-03-installed-host-owner/hosted/41697837824/expected-source.sha256 docs/network/evidence/2026-11-03-installed-host-owner/hosted/41697837824/installed-owner-aarch64-unknown-linux-gnu-1/source.sha256
++ grep -E '^test result: ok\. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in [0-9.]+s$' docs/network/evidence/2026-11-03-installed-host-owner/hosted/41697837824/installed-owner-aarch64-unknown-linux-gnu-1/unit.txt
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.05s
++ grep -E '^test result: ok\. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in [0-9.]+s$' docs/network/evidence/2026-11-03-installed-host-owner/hosted/41697837824/installed-owner-aarch64-unknown-linux-gnu-1/lifecycle.txt
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.10s
++ grep -q 'Finished `dev` profile' docs/network/evidence/2026-11-03-installed-host-owner/hosted/41697837824/installed-owner-aarch64-unknown-linux-gnu-1/clippy.txt
++ IFS='	'
++ read -r id name digest
++ [[ 13261517463 =~ ^[0-9]+$ ]]
++ case "$name" in
++ count=10
++ archive=docs/network/evidence/2026-11-03-installed-host-owner/hosted/41697837824/installed-owner-x86_64-apple-darwin-1.zip
++ [[ ! -e docs/network/evidence/2026-11-03-installed-host-owner/hosted/41697837824/installed-owner-x86_64-apple-darwin-1.zip ]]
+++ shasum -a 256 docs/network/evidence/2026-11-03-installed-host-owner/hosted/41697837824/installed-owner-x86_64-apple-darwin-1.zip
+++ cut '-d ' -f1
++ [[ sha256:885819d1697d7c5c0dd0d0ab4283893915615a473a25d1c7e9b6ff7f113db274 == \s\h\a\2\5\6\:\8\8\5\8\1\9\d\1\6\9\7\d\7\c\5\c\0\d\d\0\d\0\a\b\4\2\8\3\8\9\3\9\1\5\6\1\5\a\4\7\3\a\2\5\d\1\c\7\e\9\b\6\f\f\7\f\1\1\3\d\b\2\7\4 ]]
++ unzip -Z1 docs/network/evidence/2026-11-03-installed-host-owner/hosted/41697837824/installed-owner-x86_64-apple-darwin-1.zip
++ grep -E '(^/|(^|/)\.\.(/|$))'
++ mkdir -p docs/network/evidence/2026-11-03-installed-host-owner/hosted/41697837824/installed-owner-x86_64-apple-darwin-1
++ unzip -oq docs/network/evidence/2026-11-03-installed-host-owner/hosted/41697837824/installed-owner-x86_64-apple-darwin-1.zip -d docs/network/evidence/2026-11-03-installed-host-owner/hosted/41697837824/installed-owner-x86_64-apple-darwin-1
+++ cat docs/network/evidence/2026-11-03-installed-host-owner/hosted/41697837824/installed-owner-x86_64-apple-darwin-1/source-commit.txt
++ [[ dd8362d0f7265849653f58c53c6d5bfd185f7a46 == \6\4\d\9\3\f\e\d\7\2\f\d\a\c\6\7\8\4\d\9\9\e\6\e\1\a\2\5\8\0\5\2\b\b\a\6\0\5\f\6 ]]
++ cmp docs/network/evidence/2026-11-03-installed-host-owner/hosted/41697837824/expected-source.sha256 docs/network/evidence/2026-11-03-installed-host-owner/hosted/41697837824/installed-owner-x86_64-apple-darwin-1/source.sha256
++ grep -E '^test result: ok\. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in [0-9.]+s$' docs/network/evidence/2026-11-03-installed-host-owner/hosted/41697837824/installed-owner-x86_64-apple-darwin-1/unit.txt
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.60s
++ grep -E '^test result: ok\. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in [0-9.]+s$' docs/network/evidence/2026-11-03-installed-host-owner/hosted/41697837824/installed-owner-x86_64-apple-darwin-1/lifecycle.txt
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.03s
++ grep -q 'Finished `dev` profile' docs/network/evidence/2026-11-03-installed-host-owner/hosted/41697837824/installed-owner-x86_64-apple-darwin-1/clippy.txt
++ IFS='	'
++ read -r id name digest
++ [[ 13261323068 =~ ^[0-9]+$ ]]
++ case "$name" in
++ count=10
++ archive=docs/network/evidence/2026-11-03-installed-host-owner/hosted/41697837824/installed-owner-aarch64-apple-darwin-1.zip
++ [[ ! -e docs/network/evidence/2026-11-03-installed-host-owner/hosted/41697837824/installed-owner-aarch64-apple-darwin-1.zip ]]
+++ shasum -a 256 docs/network/evidence/2026-11-03-installed-host-owner/hosted/41697837824/installed-owner-aarch64-apple-darwin-1.zip
+++ cut '-d ' -f1
++ [[ sha256:842b8bd4699d445f8d4fad5ddcca69a559b6e951d54ae062059f647b5aa50d59 == \s\h\a\2\5\6\:\8\4\2\b\8\b\d\4\6\9\9\d\4\4\5\f\8\d\4\f\a\d\5\d\d\c\c\a\6\9\a\5\5\9\b\6\e\9\5\1\d\5\4\a\e\0\6\2\0\5\9\f\6\4\7\b\5\a\a\5\0\d\5\9 ]]
++ unzip -Z1 docs/network/evidence/2026-11-03-installed-host-owner/hosted/41697837824/installed-owner-aarch64-apple-darwin-1.zip
++ grep -E '(^/|(^|/)\.\.(/|$))'
++ mkdir -p docs/network/evidence/2026-11-03-installed-host-owner/hosted/41697837824/installed-owner-aarch64-apple-darwin-1
++ unzip -oq docs/network/evidence/2026-11-03-installed-host-owner/hosted/41697837824/installed-owner-aarch64-apple-darwin-1.zip -d docs/network/evidence/2026-11-03-installed-host-owner/hosted/41697837824/installed-owner-aarch64-apple-darwin-1
+++ cat docs/network/evidence/2026-11-03-installed-host-owner/hosted/41697837824/installed-owner-aarch64-apple-darwin-1/source-commit.txt
++ [[ dd8362d0f7265849653f58c53c6d5bfd185f7a46 == \6\4\d\9\3\f\e\d\7\2\f\d\a\c\6\7\8\4\d\9\9\e\6\e\1\a\2\5\8\0\5\2\b\b\a\6\0\5\f\6 ]]
++ cmp docs/network/evidence/2026-11-03-installed-host-owner/hosted/41697837824/expected-source.sha256 docs/network/evidence/2026-11-03-installed-host-owner/hosted/41697837824/installed-owner-aarch64-apple-darwin-1/source.sha256
++ grep -E '^test result: ok\. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in [0-9.]+s$' docs/network/evidence/2026-11-03-installed-host-owner/hosted/41697837824/installed-owner-aarch64-apple-darwin-1/unit.txt
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.21s
++ grep -E '^test result: ok\. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in [0-9.]+s$' docs/network/evidence/2026-11-03-installed-host-owner/hosted/41697837824/installed-owner-aarch64-apple-darwin-1/lifecycle.txt
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.59s
++ grep -q 'Finished `dev` profile' docs/network/evidence/2026-11-03-installed-host-owner/hosted/41697837824/installed-owner-aarch64-apple-darwin-1/clippy.txt
++ IFS='	'
++ read -r id name digest
++ printf 'PASS: four original ZIP/API digests, four exact commits, twenty compiled source pins, 54 native test entries including four helpers, and strict Clippy.\n'
+PASS: four original ZIP/API digests, four exact commits, twenty compiled source pins, 54 native test entries including four helpers, and strict Clippy.

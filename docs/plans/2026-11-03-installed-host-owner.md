@@ -17,7 +17,7 @@ Focused helpers stay small; review/test each behavior before the next. No Mac fu
 
 ## Acceptance
 
-- [ ] Component source/API RED then real-process GREEN, exact durable records and typed refusal.
+- [x] Component source/API RED then real-process GREEN, exact durable records and typed refusal. Mac14/Linux serial13 entries (each includes one helper), full Linux115 checks, mapped Linux component line coverage402/428; [results](../network/installed-owner-results-2026-11-03.md). Hosted merge gates remain separate.
 - [ ] Main installed entry closes every activation path; aggregate budget cannot multiply across owners.
 - [ ] Actual worker AND actual Linux VMM/macOS HVF lifetime coverage, including sudo and diskless roles.
 - [ ] Owner crash blocked while resources live, positive reconciliation/readmission after exit, late epoch refusal.
