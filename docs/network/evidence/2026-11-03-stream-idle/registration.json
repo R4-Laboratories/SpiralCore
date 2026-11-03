@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "scope": "Additive zero-prefix receive Idle API; no consumer/timer/retry/resume change. Confirm legacy strict-transfer costs because it shares framing helpers.",
+  "baseline": {
+    "source": "5c41d6ac2d9b40e6eead62e201d5e9b020f96019, C8 endpoint product merged through main commit 6269242",
+    "broker_objects_sha256": "4109a318f859e9b7ddc71f32c3e3519d59d966f987c428ec1b2c0dd91f6dc1f3",
+    "host_sha256": "584395a60a7cf7c496e2119a89cd76a28850d0046a2813a4d6aee1ff81cc3d62",
+    "guest_sha256": "fa5b4566a11b7f8ce7ca30c9a6f83b824f6e0114916a54f4cc66455074024e18"
+  },
+  "after": "Bind reviewed source manifest and protected normal executable hashes before execution",
+  "host": {
+    "cells": "12 cells: whole-mixed and combined-cpu, requested 1 MiB, trials 0/1/2, matched before/after per trial; reverse phase order for trial 1",
+    "engine": "Unchanged Rust broker_objects; persistent receiver per cell, same eight targets and paid Combined checkpoint/schema setup",
+    "bounds": "Existing Wick target, two build jobs; no concurrent SpiralCore build/coverage/performance; one cell active, Rust 512 MiB owned-store and 1 GiB sampled RSS ceilings, timeout 120 per cell and on-Wick timeout 1800 for the entire batch",
+    "required": "Exact lengths/readbacks/paired target IDs; actual stream counters in both directions; setup, process/thread CPU, verified wall, offline readback, cleanup/lifecycle and RSS; every gain/loss retained"
+  },
+  "native": {
+    "cells": "Two current-source Linux/Firecracker stage two cells, whole-mixed then combined-cpu, requested 16 MiB trial 0, experimental64",
+    "comparison": "Current Whole versus Combined only; previous source observations remain historical, not a fresh native before/after pair",
+    "bounds": "At most two simultaneous guests, each 1 vCPU and 1 GiB RAM, no guest NIC, one cell active, existing 256 MiB disk per cell; cooperative timeout 300 per cell and timeout 1800 batch; any failure stops for owned-process reconciliation",
+    "required": "Exact publications and additional keyless reboot readbacks, actual bidirectional/two-hop counters, sender/receiver/relay CPU and lifecycle, unchanged two links/two slots/524,288 reserved bytes and zero final usage",
+    "exclusions": "Local native only; requested Linux experimental64 rate remains unenforced. No native RSS/aggregate plaintext-budget or WAN/fleet qualification."
+  },
+  "custody": "Original failures retained. Host Rust engine emits exact verification before owned store cleanup; native owned disks removed only after archive/member custody. Copy compact records only; normal and instrumented executables remain protected remotely, no new Mac target or payload/VM disk.",
+  "interpretation": "These normal transfers still use strict receive, not the Idle consumer. Do not claim Idle wake/retry CPU, causal speedup, statistical noninferiority, energy or send-only time. Dedicated portable tests qualify Idle framing; current-profile performance is exploratory shared-host observation."
+}

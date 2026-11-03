@@ -1,0 +1,31 @@
+   Compiling spiralcore-transfer v0.1.0 (/var/tmp/spiralcore-session-idle-20261103/source/crates/spiralcore-transfer)
+   Compiling uor-r4-object-store v0.1.0 (/var/tmp/spiralcore-session-idle-20261103/source/crates/uor-r4-object-store)
+   Compiling spiralcore-mvm-adapter v0.1.0 (/var/tmp/spiralcore-session-idle-20261103/source/crates/spiralcore-mvm-adapter)
+error[E0432]: unresolved import `spiralcore_mvm_adapter::live::ReceiveOutcome`
+ --> tests/service_tcp/idle.rs:2:36
+  |
+2 | use spiralcore_mvm_adapter::live::{ReceiveOutcome, SocketIo};
+  |                                    ^^^^^^^^^^^^^^ no `ReceiveOutcome` in `direction::live`
+
+error[E0599]: no method named `receive_or_idle` found for struct `spiralcore_mvm_adapter::live::StreamTransport<S>` in the current scope
+  --> tests/service_tcp/idle.rs:93:14
+   |
+92 | /         stream
+93 | |             .receive_or_idle(
+   | |             -^^^^^^^^^^^^^^^ method not found in `spiralcore_mvm_adapter::live::StreamTransport<FakeSocket>`
+   | |_____________|
+   |
+
+error[E0599]: no method named `receive_or_idle` found for struct `spiralcore_mvm_adapter::live::StreamTransport<S>` in the current scope
+   --> tests/service_tcp/idle.rs:130:10
+    |
+129 |       let ReceiveOutcome::Frame(actual) = stream
+    |  _________________________________________-
+130 | |         .receive_or_idle(
+    | |         -^^^^^^^^^^^^^^^ method not found in `spiralcore_mvm_adapter::live::StreamTransport<FakeSocket>`
+    | |_________|
+    |
+
+Some errors have detailed explanations: E0432, E0599.
+For more information about an error, try `rustc --explain E0432`.
+error: could not compile `spiralcore-mvm-adapter` (test "service_tcp") due to 3 previous errors
