@@ -36,7 +36,7 @@ jobs:
     timeout-minutes: 40
     env:
       EXPECTED_SOURCE: ${{ github.event.pull_request.head.sha }}
-      CONTROL_SOURCE: 9f5912698f6ab46ddc771fe15fd0c0a7bcec8c5b
+      CONTROL_SOURCE: f1f30b8fb9890ea22af0b06c64be080a4c952128
       CARGO_INCREMENTAL: 0
       CARGO_BUILD_JOBS: 2
       CARGO_TARGET_DIR: ${{ github.workspace }}/target
@@ -47,7 +47,7 @@ jobs:
           persist-credentials: false
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
-          ref: 9f5912698f6ab46ddc771fe15fd0c0a7bcec8c5b
+          ref: f1f30b8fb9890ea22af0b06c64be080a4c952128
           path: .control-source
           persist-credentials: false
       - name: Bind source and registered dose before setup
