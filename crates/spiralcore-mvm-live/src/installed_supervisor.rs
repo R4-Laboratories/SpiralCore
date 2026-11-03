@@ -169,3 +169,7 @@ impl Drop for InstalledSupervisor {
         self.close_admission();
     }
 }
+
+#[cfg(test)]
+#[path = "installed_supervisor/tests.rs"]
+mod tests;
