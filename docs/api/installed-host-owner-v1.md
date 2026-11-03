@@ -32,6 +32,13 @@ impl InstallationOwner {
 impl HolderLease {
     pub fn acquire(root: &std::path::Path, key: InstallationKey, expected_generation: u64)
         -> Result<Self, OwnerError>;
+    pub fn prepare_handoff(&self) -> Result<HolderHandoff, OwnerError>;
+}
+pub struct HolderHandoff {
+    pub directory: std::fs::File,
+    pub holder: std::fs::File,
+    pub state_bytes: u16,
+    pub state_sha256: [u8; 32],
 }
 ```
 
@@ -44,6 +51,26 @@ Key values come from trusted installation provisioning, never network input; zer
 `finish` requires the current Active epoch, drops only its own supervisor SH and obtains holders EX. Live independently opened holders cause Busy and retain durable Active; another finish attempt is allowed. While EX-held, durably publish Clean with unchanged generation. `reconcile` on Active follows the same EX requirement; only then retire it to Clean. It emits Retired, not remote mailbox rollback. A delayed helper acquires SH either before retirement (blocking it) or after it (observes Clean/new epoch and refuses). AlreadyClean does not erase history. No TTL, PID, timeout or Child outcome substitutes for actual lease exclusion.
 
 State is one fixed bounded record, plus at most one private publication temporary and one bounded private intent marker. Integers use checked canonical encoding; unknown phases/reserved fields, trailing bytes and generation exhaustion refuse. Publish only after exclusively creating `.state.intent`, writing its bounded intent and syncing both intent file and directory. Abort before any state mutation if that first barrier fails. Keep the marker through private exclusive temp write, file sync, atomic descriptor-relative rename and state-directory sync. A leftover intent/temp or uncertain STATE publication fences admission; neither is silently removed. Only after the state-directory barrier succeeds may the intent be unlinked, followed by cleanup-directory sync. A post-commit unlink/cleanup-sync error still errors/fences the current owner; a successor may accept an absent marker, because its removal can happen only after the state barrier succeeded. A marker that reappears after power loss conservatively fences. No claim that an unconfirmed initial intent creation survives power loss. Drop releases owned descriptors only and NEVER marks Clean. No explicit unlock on HolderLease drop. Failure paths retain original identity; inability to confirm durability is not success.
+
+## Holder handoff extension
+
+`prepare_handoff` is an additive local resource export, planned after component
+qualification. It freshly checks the same canonical Active generation originally
+acquired by this guard while SH remains held, validates current namespace/object
+identity, then duplicates the exact held directory and holder descriptions with
+CLOEXEC. It returns exactly176 as state_bytes and full SHA-256 of the complete
+verified canonical176-byte record as state_sha256. This supplies the expected
+current state for the MVM launcher; the record's domain checksum is unchanged.
+Wrong generation/phase, corruption, storage replacement or duplicate failure
+returns an error without a handoff.
+
+The non-Clone result owns its Files. Closing the original guard must not release
+SH while its duplicated holder remains. No explicit unlock is provided. Owned
+files support the typed MVM binding, not boot admission; trusted same-UID/root
+callers must still honor installed worker/resource grants. The guard remembers
+its original generation rather than exporting whichever epoch is present. No
+keys, payloads or network envelopes are serialized. This extension needs its own
+RED/GREEN and consumer evidence; the earlier54 component entries do not prove it.
 
 ## Qualification boundaries
 
