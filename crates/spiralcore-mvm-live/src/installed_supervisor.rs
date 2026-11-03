@@ -80,6 +80,9 @@ impl InstalledAuthority {
     pub(crate) fn admission_open(&self) -> bool {
         self.open.load(Ordering::Acquire)
     }
+    pub(crate) fn close_admission(&self) {
+        self.open.store(false, Ordering::Release);
+    }
 }
 #[derive(PartialEq, Eq)]
 enum Phase {
@@ -116,7 +119,7 @@ impl InstalledSupervisor {
         &self.budget
     }
     pub fn close_admission(&mut self) {
-        self.authority.open.store(false, Ordering::Release);
+        self.authority.close_admission();
         if self.budget.admission_barrier().is_err() {
             self.phase = Phase::Fenced;
         } else if self.phase == Phase::Open {

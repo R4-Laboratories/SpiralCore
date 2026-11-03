@@ -148,6 +148,16 @@ struct Shared {
     installed: Option<Arc<InstalledAuthority>>,
 }
 impl Shared {
+    fn fence(&self) {
+        self.fenced.store(true, Ordering::Release);
+        #[cfg(any(
+            all(target_os = "linux", feature = "linux-host"),
+            all(target_os = "macos", target_arch = "aarch64")
+        ))]
+        if let Some(authority) = &self.installed {
+            authority.close_admission();
+        }
+    }
     fn admission_open(&self) -> bool {
         if self.fenced.load(Ordering::Acquire) {
             return false;
@@ -167,7 +177,7 @@ impl Shared {
     }
     fn lock(&self) -> Result<MutexGuard<'_, Ledger>> {
         self.ledger.lock().map_err(|_| {
-            self.fenced.store(true, Ordering::Release);
+            self.fence();
             TransportBudgetError::State
         })
     }
@@ -213,7 +223,7 @@ impl Shared {
             ledger.usage = host;
             ledger.tenants.insert(slot, tenant);
         } else {
-            self.fenced.store(true, Ordering::Release);
+            self.fence();
         }
     }
 }
@@ -469,7 +479,6 @@ mod tests {
         all(target_os = "macos", target_arch = "aarch64")
     ))]
     mod installed_authority {
-        use super::*;
         use crate::{
             installed_owner::{InstallationKey, InstallationOwner},
             installed_supervisor::{InstalledConfig, InstalledSupervisor},
