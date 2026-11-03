@@ -3,6 +3,7 @@
 [Results and limits](../../duplex-relay-results-2026-11-03.md) ·
 [PR #58](https://github.com/R4-Laboratories/SpiralCore/pull/58).
 This is the C8 relay prerequisite; both-peer recovery remains unfinished.
+Source merged at `d997bb06`; final qualification head is `fdfbd2f`.
 
 - `registration.json`, committed before performance, pins four exploratory
   Linux/Firecracker cells. `after-source.txt` binds reviewed product `f964c034`.
@@ -38,9 +39,14 @@ This is the C8 relay prerequisite; both-peer recovery remains unfinished.
   protected executable copies remain on Wick. The initial shared-target binary
   paths were overwritten by normal reuse; that limitation is explicit, with
   original observed exports/profile/hash records preserved.
-- Hosted qualification receipts and final reviews are added before delivery.
+- `qualification/` retains successful final Linux and seven-native-client CI
+  metadata, original seven archives, API digest checks and 236 inner-file checks.
+  Reviewed head `fdfbd2f` and executed merge `f997c348` have identical trees.
+  CI scopes overlap and do not establish native MVM/WAN on every client role.
+  `reviews.md` records the independent review boundaries and source identities.
 
-Verify root `SHA256SUMS` from this directory once the publication packet is
-sealed. Preserve original measurements and losses. No automatic retry, >2,048
+Verify root `SHA256SUMS` from this directory. Publication-document hashes refer
+to this documentation revision; check it out before verifying after future
+README updates. Preserve original measurements and losses. No automatic retry, >2,048
 Calls, larger pipeline, host-wide plaintext budget, WAN or final upstream claim
 follows from this packet.

@@ -4,6 +4,7 @@ Product [`f964c034`](https://github.com/R4-Laboratories/SpiralCore/commit/f964c0
 is the original native comparison source. The final shutdown repair is
 [`62cb6042`](https://github.com/R4-Laboratories/SpiralCore/commit/62cb60424201d450350395224ecb7a2a98513549),
 reviewed in [PR #58](https://github.com/R4-Laboratories/SpiralCore/pull/58).
+The source merged to `origin/main` at `d997bb06` after final qualification.
 [Architecture](../specs/2026-11-03-duplex-mailbox-relay.md) ·
 [original evidence](evidence/2026-11-03-duplex-relay/) ·
 [continuing plan](../plans/2026-11-03-persistent-mvm-service.md).
@@ -64,9 +65,16 @@ branches; branch coverage is unavailable. All uncovered changed lines remain
 recorded. Coverage ran after normal native measurements and preserved their
 protected binary hashes; no instrumented timing is performance evidence.
 
-Hosted Linux and seven-platform client qualification are still pending at this
-report's initial draft. They must be bound to the reviewed product before merge;
-cross-platform client CI does not establish native MVM backends or WAN.
+Final hosted [Linux run 41611048227](https://github.com/R4-Laboratories/SpiralCore/actions/runs/41611048227)
+and [portable run 41611048527](https://github.com/R4-Laboratories/SpiralCore/actions/runs/41611048527)
+both passed. Seven native client rows each executed **77 checks (539)**, plus
+**eight Unix storage checks**. Linux executed **73 release and 120 shared
+conformance checks**, strict Clippy and default guest/analyzers. Scopes overlap;
+these are not pooled unique experiments. CI executed merge `f997c348`, whose
+tree `d8295443e985e6759d184f89d83a640c58327957` matches reviewed head `fdfbd2f`.
+All seven original archive API digests and **236 inner-file hashes** verified.
+Client/component CI establishes neither native MVM backends on those platforms
+nor canonical WAN qualification.
 
 The initial hosted run failed both macOS client rows at the new raw TCP closure
 checks; five other native client rows passed. Both failed job logs are retained.
@@ -80,9 +88,9 @@ wire, timers and successful path. The original raw closure assertions remain;
 a fourth TCP test checks protocol refusal and unchanged counters after fatal
 receive. The exact repair passed fresh independent Rust/security review, focused
 TCP/live tests, all 73 release tests, strict Clippy and normal static-guest/host
-builds on Linux. Fresh hosted qualification and separate final native confirmation
-are required; the original four-cell comparison below is not relabeled as final
-repair execution.
+builds on Linux. The source subsequently passed hosted qualification and separate
+final native confirmation; the original four-cell comparison below is not
+relabeled as final repair execution.
 
 The next hosted attempt passed the repaired raw half-close, transport fence and
 canonical TCP tests on both macOS architectures, then failed the malformed-input
