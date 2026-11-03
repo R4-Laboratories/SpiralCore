@@ -102,6 +102,7 @@ pub(super) struct PendingCall {
     call: Option<CallHandle>,
     send: Option<SendHandle>,
     send_started: bool,
+    send_invocations: u8,
     fenced: bool,
     deadline: Option<u64>,
     events_received: u8,
@@ -126,6 +127,7 @@ impl PendingCall {
             call: None,
             send: None,
             send_started: false,
+            send_invocations: 0,
             fenced: deadline.is_none(),
             deadline,
             events_received: 0,
@@ -242,6 +244,9 @@ impl PendingCall {
     pub(super) fn send_handle(&self) -> Option<SendHandle> {
         self.send
     }
+    pub(super) fn send_invocations(&self) -> u8 {
+        self.send_invocations
+    }
     #[cfg(test)]
     pub(super) fn send_started(&self) -> bool {
         self.send_started
@@ -356,6 +361,52 @@ impl PendingCall {
             return Err(ServiceError::State.into());
         }
         self.send_started = true;
+        self.send_invocations = 1;
+        Ok(())
+    }
+
+    fn check_retry(&self) -> Result<()> {
+        if self.fenced {
+            return Err(SessionError::StreamFenced);
+        }
+        if !self.send_started || self.call.is_none() || self.send.is_none() {
+            return Err(ServiceError::State.into());
+        }
+        if self.send_invocations() >= 8 {
+            return Err(SessionError::SendLimit);
+        }
+        Ok(())
+    }
+
+    /// Revalidate the retained attempt without polling away its charged Reply.
+    /// The caller separately decides whether current facts require a resend.
+    pub(super) fn prepare_retry(
+        &mut self,
+        service: &mut LocalMailboxService,
+        tracker: &mut ReceiptTracker,
+        outgoing: &MailboxBinding,
+        control: &MailboxBinding,
+        peer: &VerifyingKey,
+        now: ServiceTime,
+    ) -> Result<()> {
+        service.expire(now)?;
+        tracker.expire(now)?;
+        self.check_retry()?;
+        self.remaining(now)?;
+        let observed = tracker.register_send(outgoing, control, peer, self.encoded()?, now)?;
+        if Some(observed) != self.send {
+            return Err(ServiceError::Conflict.into());
+        }
+        Ok(())
+    }
+
+    /// Burn an invocation before entering transport, including failed writes.
+    pub(super) fn start_retry(&mut self) -> Result<()> {
+        self.check_retry()?;
+        self.send_invocations = self
+            .send_invocations
+            .checked_add(1)
+            .ok_or(SessionError::SendLimit)?;
         Ok(())
     }
 }
