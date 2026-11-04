@@ -1,0 +1,63 @@
+ Downloading crates ...
+  Downloaded cc v1.11.0
+   Compiling cc v1.11.0
+   Compiling zerofrom v0.1.8
+   Compiling yoke v0.8.4
+   Compiling zerovec v0.11.9
+   Compiling tinystr v0.8.5
+   Compiling icu_locale_core v2.4.0
+   Compiling zstd-sys v2.1.2+zstd.1.5.7
+   Compiling ring v0.17.14
+   Compiling zerotrie v0.2.5
+   Compiling potential_utf v0.1.6
+   Compiling typenum v1.20.1
+   Compiling generic-array v0.14.7
+   Compiling icu_collections v2.4.0
+   Compiling icu_provider v2.4.0
+   Compiling zeroize v1.9.1
+   Compiling rustls-pki-types v1.15.1
+   Compiling smallvec v1.16.4
+   Compiling serde_core v1.0.229
+   Compiling icu_normalizer v2.4.0
+   Compiling icu_properties v2.4.0
+   Compiling block-buffer v0.10.4
+   Compiling crypto-common v0.1.7
+   Compiling zstd-safe v7.4.0
+   Compiling http v1.5.0
+   Compiling sha2 v0.10.9
+   Compiling rustls v0.23.46
+   Compiling digest v0.10.7
+   Compiling idna_adapter v1.2.2
+   Compiling rustls-webpki v0.103.16
+   Compiling once_cell v1.21.4
+   Compiling subtle v2.6.1
+   Compiling serde v1.0.229
+   Compiling serde_json v1.0.154
+   Compiling base64 v0.23.1
+   Compiling ureq-proto v0.6.5
+   Compiling idna v1.1.0
+   Compiling spiralcore-transfer v0.1.0 (/tmp/spiralcore-flowmux-20261103/mac31/source/crates/spiralcore-transfer)
+   Compiling webpki-roots v1.0.11
+   Compiling ureq v3.5.0
+   Compiling url v2.5.8
+   Compiling zstd v0.13.4
+   Compiling uor-r4-object-store v0.1.0 (/tmp/spiralcore-flowmux-20261103/mac31/source/crates/uor-r4-object-store)
+   Compiling spiralcore-mvm-flowmux v0.1.0 (/tmp/spiralcore-flowmux-20261103/mac31/source/crates/spiralcore-mvm-flowmux)
+    Finished `release` profile [optimized] target(s) in 38.28s
+     Running tests/paired_tcp.rs (/tmp/spiralcore-installed-mac-20261103/target/release/deps/paired_tcp-98d534e19589d127)
+
+running 1 test
+
+thread 'exact_bidirectional_stream_and_reverse_after_half_close_use_real_tcp' (17717046) panicked at tests/paired_tcp.rs:253:33:
+called `Result::unwrap()` on an `Err` value: Io(Os { code: 22, kind: InvalidInput, message: "Invalid argument" })
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test exact_bidirectional_stream_and_reverse_after_half_close_use_real_tcp ... FAILED
+
+failures:
+
+failures:
+    exact_bidirectional_stream_and_reverse_after_half_close_use_real_tcp
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 7 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `--test paired_tcp`

@@ -1,0 +1,18 @@
+    Finished `release` profile [optimized] target(s) in 0.13s
+     Running tests/paired_tcp.rs (/tmp/spiralcore-installed-mac-20261103/target/release/deps/paired_tcp-98d534e19589d127)
+
+running 1 test
+
+thread 'closed_peer_buffered_reverse_data_and_fin_remain_exact_under_original_deadline' (17718107) panicked at tests/paired_tcp.rs:216:36:
+called `Result::unwrap()` on an `Err` value: Io(Os { code: 22, kind: InvalidInput, message: "Invalid argument" })
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test closed_peer_buffered_reverse_data_and_fin_remain_exact_under_original_deadline ... FAILED
+
+failures:
+
+failures:
+    closed_peer_buffered_reverse_data_and_fin_remain_exact_under_original_deadline
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 7 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `--test paired_tcp`

@@ -189,6 +189,39 @@ fn explicit_reset_and_cancel_are_terminal_in_both_directions() {
 }
 
 #[test]
+fn closed_peer_buffered_reverse_data_and_fin_remain_exact_under_original_deadline() {
+    let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+    let address = listener.local_addr().unwrap();
+    let client = TcpStream::connect(address).unwrap();
+    let (server, peer) = listener.accept().unwrap();
+    // Construct both mappings while the connected socket is fully live. Then
+    // join the peer before reading: its queued reverse data and FIN must still
+    // be consumed exactly after the last peer descriptor has actually closed.
+    let (mut client_tx, mut client_rx) =
+        TcpMapping::from_connected(client, binding(), address, Duration::from_secs(2))
+            .unwrap()
+            .split();
+    let (mut server_tx, mut server_rx) =
+        TcpMapping::from_connected(server, binding(), peer, Duration::from_secs(2))
+            .unwrap()
+            .split();
+    let worker = std::thread::spawn(move || {
+        assert_eq!(server_rx.receive().unwrap(), Event::HalfClose);
+        server_tx.send(&vec![0x6b; 3072]).unwrap();
+        server_tx.half_close().unwrap();
+        (server_tx.counters(), server_rx.counters())
+    });
+    client_tx.half_close().unwrap();
+    let (server_sent, server_received) = worker.join().unwrap();
+    assert_eq!(client_rx.receive().unwrap(), Event::Data(vec![0x6b; 3072]));
+    assert_eq!(client_rx.receive().unwrap(), Event::HalfClose);
+    assert!(matches!(client_rx.receive(), Err(Error::Closed)));
+    assert_eq!(client_rx.counters().payload_bytes, 3072);
+    assert_eq!(client_rx.counters().wire_bytes, server_sent.wire_bytes);
+    assert_eq!(client_tx.counters().wire_bytes, server_received.wire_bytes);
+}
+
+#[test]
 fn exact_bidirectional_stream_and_reverse_after_half_close_use_real_tcp() {
     let listener = TcpListener::bind("127.0.0.1:0").unwrap();
     let address = listener.local_addr().unwrap();

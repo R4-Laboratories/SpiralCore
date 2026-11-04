@@ -1,0 +1,464 @@
+﻿2026-11-04T01:06:53.9551930Z Current runner version: '2.338.2'
+2026-11-04T01:06:53.9592510Z ##[group]Runner Image Provisioner
+2026-11-04T01:06:53.9594090Z Hosted Compute Agent
+2026-11-04T01:06:53.9595130Z Version: 20260819.586
+2026-11-04T01:06:53.9597040Z Commit: 3cc4a88dfa507ef76119ad1bb3eccc6378bb2b76
+2026-11-04T01:06:53.9598650Z Build Date: 2026-08-18T23:20:18Z
+2026-11-04T01:06:53.9599810Z Worker ID: {91e3671d-741c-482f-8128-34593b2f8101}
+2026-11-04T01:06:53.9600990Z Azure Region: westus
+2026-11-04T01:06:53.9602250Z ##[endgroup]
+2026-11-04T01:06:53.9606320Z ##[group]Operating System
+2026-11-04T01:06:53.9607670Z macOS
+2026-11-04T01:06:53.9608510Z 26.6.1
+2026-11-04T01:06:53.9609360Z 25G76
+2026-11-04T01:06:53.9610110Z ##[endgroup]
+2026-11-04T01:06:53.9610980Z ##[group]Runner Image
+2026-11-04T01:06:53.9612530Z Image: macos-26
+2026-11-04T01:06:53.9613600Z Version: 20260824.0517.1
+2026-11-04T01:06:53.9617060Z Included Software: https://github.com/actions/runner-images/blob/macos-26/20260824.0517/images/macos/macos-26-Readme.md
+2026-11-04T01:06:53.9620090Z Image Release: https://github.com/actions/runner-images/releases/tag/macos-26%2F20260824.0517
+2026-11-04T01:06:53.9621820Z ##[endgroup]
+2026-11-04T01:06:53.9623880Z ##[group]GITHUB_TOKEN Permissions
+2026-11-04T01:06:53.9627870Z Contents: read
+2026-11-04T01:06:53.9629660Z Metadata: read
+2026-11-04T01:06:53.9631100Z ##[endgroup]
+2026-11-04T01:06:53.9634570Z Secret source: Actions
+2026-11-04T01:06:53.9636050Z Cache mode: write
+2026-11-04T01:06:53.9637540Z Prepare workflow directory
+2026-11-04T01:06:54.0445520Z Prepare all required actions
+2026-11-04T01:06:54.0513340Z Getting action download info
+2026-11-04T01:06:54.4065750Z Download action repository 'actions/checkout@11d5960a326750d5838078e36cf38b85af677262' (SHA:11d5960a326750d5838078e36cf38b85af677262)
+2026-11-04T01:06:54.8117770Z Download action repository 'actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02' (SHA:ea165f8d65b6e75b540449e92b4886f43607fa02)
+2026-11-04T01:06:55.2599730Z Complete job name: TLS/object stream / macos26-intel
+2026-11-04T01:06:55.3656980Z ##[group]Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+2026-11-04T01:06:55.3658810Z with:
+2026-11-04T01:06:55.3659520Z   persist-credentials: false
+2026-11-04T01:06:55.3660360Z   repository: R4-Laboratories/SpiralCore
+2026-11-04T01:06:55.3667360Z   token: ***
+2026-11-04T01:06:55.3668020Z   ssh-strict: true
+2026-11-04T01:06:55.3668700Z   ssh-user: git
+2026-11-04T01:06:55.3669350Z   clean: true
+2026-11-04T01:06:55.3670050Z   sparse-checkout-cone-mode: true
+2026-11-04T01:06:55.3670870Z   fetch-depth: 1
+2026-11-04T01:06:55.3671540Z   fetch-tags: false
+2026-11-04T01:06:55.3672240Z   show-progress: true
+2026-11-04T01:06:55.3672940Z   lfs: false
+2026-11-04T01:06:55.3673610Z   submodules: false
+2026-11-04T01:06:55.3674510Z   set-safe-directory: true
+2026-11-04T01:06:55.3675330Z   allow-unsafe-pr-checkout: false
+2026-11-04T01:06:55.3676690Z env:
+2026-11-04T01:06:55.3677370Z   CARGO_BUILD_JOBS: 2
+2026-11-04T01:06:55.3678100Z   CARGO_INCREMENTAL: 0
+2026-11-04T01:06:55.3678930Z   CARGO_TERM_COLOR: never
+2026-11-04T01:06:55.3679740Z   NATIVE_TARGET: x86_64-apple-darwin
+2026-11-04T01:06:55.3680600Z   EXPECTED_OS: macOS
+2026-11-04T01:06:55.3681310Z   EXPECTED_ARCH: X64
+2026-11-04T01:06:55.3682020Z ##[endgroup]
+2026-11-04T01:06:56.4463070Z Syncing repository: R4-Laboratories/SpiralCore
+2026-11-04T01:06:56.4469120Z ##[group]Getting Git version info
+2026-11-04T01:06:56.4472170Z Working directory is '/Users/runner/work/SpiralCore/SpiralCore'
+2026-11-04T01:06:56.4475940Z [command]/usr/local/bin/git version
+2026-11-04T01:06:56.4552050Z git version 2.55.0
+2026-11-04T01:06:56.4594780Z ##[endgroup]
+2026-11-04T01:06:56.4623050Z Copying '/Users/runner/.gitconfig' to '/Users/runner/work/_temp/5346c0ad-75a9-45c5-a547-bd0b65da6f26/.gitconfig'
+2026-11-04T01:06:56.4634430Z Temporarily overriding HOME='/Users/runner/work/_temp/5346c0ad-75a9-45c5-a547-bd0b65da6f26' before making global git config changes
+2026-11-04T01:06:56.4638400Z Adding repository directory to the temporary git global config as a safe directory
+2026-11-04T01:06:56.4644810Z [command]/usr/local/bin/git config --global --add safe.directory /Users/runner/work/SpiralCore/SpiralCore
+2026-11-04T01:06:56.8843650Z Deleting the contents of '/Users/runner/work/SpiralCore/SpiralCore'
+2026-11-04T01:06:56.8890650Z ##[group]Initializing the repository
+2026-11-04T01:06:56.8935970Z [command]/usr/local/bin/git init /Users/runner/work/SpiralCore/SpiralCore
+2026-11-04T01:06:56.9475710Z hint: Using 'master' as the name for the initial branch. This default branch name
+2026-11-04T01:06:56.9486690Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+2026-11-04T01:06:56.9546750Z hint: to use in all of your new repositories, which will suppress this warning,
+2026-11-04T01:06:56.9647410Z hint: call:
+2026-11-04T01:06:56.9653490Z hint:
+2026-11-04T01:06:56.9661390Z hint: 	git config --global init.defaultBranch <name>
+2026-11-04T01:06:56.9671600Z hint:
+2026-11-04T01:06:56.9677150Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+2026-11-04T01:06:56.9682290Z hint: 'development'. The just-created branch can be renamed via this command:
+2026-11-04T01:06:56.9686430Z hint:
+2026-11-04T01:06:56.9689350Z hint: 	git branch -m <name>
+2026-11-04T01:06:56.9703020Z hint:
+2026-11-04T01:06:56.9710930Z hint: Disable this message with "git config set advice.defaultBranchName false"
+2026-11-04T01:06:56.9744840Z Initialized empty Git repository in /Users/runner/work/SpiralCore/SpiralCore/.git/
+2026-11-04T01:06:56.9762170Z [command]/usr/local/bin/git remote add origin https://github.com/R4-Laboratories/SpiralCore
+2026-11-04T01:06:56.9854260Z ##[endgroup]
+2026-11-04T01:06:56.9856610Z ##[group]Disabling automatic garbage collection
+2026-11-04T01:06:56.9860390Z [command]/usr/local/bin/git config --local gc.auto 0
+2026-11-04T01:06:56.9995870Z ##[endgroup]
+2026-11-04T01:06:56.9997510Z ##[group]Setting up auth
+2026-11-04T01:06:57.0007480Z [command]/usr/local/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-11-04T01:06:57.0170920Z [command]/usr/local/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-11-04T01:06:57.4123750Z [command]/usr/local/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-11-04T01:06:57.4488150Z [command]/usr/local/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-11-04T01:06:58.7009150Z [command]/usr/local/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-11-04T01:06:58.7170290Z [command]/usr/local/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-11-04T01:06:59.4663650Z [command]/usr/local/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+2026-11-04T01:06:59.4674620Z ##[endgroup]
+2026-11-04T01:06:59.4676800Z ##[group]Fetching the repository
+2026-11-04T01:06:59.4684980Z [command]/usr/local/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +a881583f0c6178bd05ac3491b0c896e2419c60e4:refs/remotes/pull/72/merge
+2026-11-04T01:07:05.3775370Z From https://github.com/R4-Laboratories/SpiralCore
+2026-11-04T01:07:05.3780780Z  * [new ref]         a881583f0c6178bd05ac3491b0c896e2419c60e4 -> pull/72/merge
+2026-11-04T01:07:05.3784290Z ##[endgroup]
+2026-11-04T01:07:05.3785240Z ##[group]Determining the checkout info
+2026-11-04T01:07:05.3788030Z ##[endgroup]
+2026-11-04T01:07:05.3791800Z [command]/usr/local/bin/git sparse-checkout disable
+2026-11-04T01:07:05.3922210Z [command]/usr/local/bin/git config --local --unset-all extensions.worktreeConfig
+2026-11-04T01:07:05.4066590Z ##[group]Checking out the ref
+2026-11-04T01:07:05.4071040Z [command]/usr/local/bin/git checkout --progress --force refs/remotes/pull/72/merge
+2026-11-04T01:07:06.7334130Z Updating files:   9% (2204/24143)
+2026-11-04T01:07:07.2815560Z Updating files:  10% (2415/24143)
+2026-11-04T01:07:07.4680030Z Updating files:  11% (2656/24143)
+2026-11-04T01:07:08.0230720Z Updating files:  11% (2721/24143)
+2026-11-04T01:07:08.4685510Z Updating files:  12% (2898/24143)
+2026-11-04T01:07:08.5392810Z Updating files:  12% (3064/24143)
+2026-11-04T01:07:09.0528070Z Updating files:  13% (3139/24143)
+2026-11-04T01:07:09.3229300Z Updating files:  14% (3381/24143)
+2026-11-04T01:07:09.4630400Z Updating files:  15% (3622/24143)
+2026-11-04T01:07:09.5741190Z Updating files:  15% (3755/24143)
+2026-11-04T01:07:09.6554870Z Updating files:  16% (3863/24143)
+2026-11-04T01:07:09.7440600Z Updating files:  17% (4105/24143)
+2026-11-04T01:07:09.8602750Z Updating files:  18% (4346/24143)
+2026-11-04T01:07:09.9610470Z Updating files:  19% (4588/24143)
+2026-11-04T01:07:10.1402010Z Updating files:  20% (4829/24143)
+2026-11-04T01:07:10.4454260Z Updating files:  21% (5071/24143)
+2026-11-04T01:07:10.5876620Z Updating files:  22% (5312/24143)
+2026-11-04T01:07:10.9946990Z Updating files:  22% (5349/24143)
+2026-11-04T01:07:11.7404960Z Updating files:  23% (5553/24143)
+2026-11-04T01:07:11.8426610Z Updating files:  23% (5704/24143)
+2026-11-04T01:07:12.0431790Z Updating files:  24% (5795/24143)
+2026-11-04T01:07:12.3437700Z Updating files:  25% (6036/24143)
+2026-11-04T01:07:12.5310830Z Updating files:  26% (6278/24143)
+2026-11-04T01:07:12.6314200Z Updating files:  26% (6488/24143)
+2026-11-04T01:07:12.8322510Z Updating files:  27% (6519/24143)
+2026-11-04T01:07:13.0150750Z Updating files:  28% (6761/24143)
+2026-11-04T01:07:13.1870610Z Updating files:  29% (7002/24143)
+2026-11-04T01:07:13.2755780Z Updating files:  30% (7243/24143)
+2026-11-04T01:07:13.4162950Z Updating files:  31% (7485/24143)
+2026-11-04T01:07:13.4611800Z Updating files:  32% (7726/24143)
+2026-11-04T01:07:13.4816090Z Updating files:  32% (7932/24143)
+2026-11-04T01:07:13.6726650Z Updating files:  33% (7968/24143)
+2026-11-04T01:07:13.7583890Z Updating files:  34% (8209/24143)
+2026-11-04T01:07:14.1031330Z Updating files:  35% (8451/24143)
+2026-11-04T01:07:14.2044090Z Updating files:  36% (8692/24143)
+2026-11-04T01:07:14.5178060Z Updating files:  37% (8933/24143)
+2026-11-04T01:07:14.6179920Z Updating files:  37% (9086/24143)
+2026-11-04T01:07:14.7119230Z Updating files:  38% (9175/24143)
+2026-11-04T01:07:14.8986430Z Updating files:  39% (9416/24143)
+2026-11-04T01:07:15.2640990Z Updating files:  40% (9658/24143)
+2026-11-04T01:07:15.3642990Z Updating files:  41% (9899/24143)
+2026-11-04T01:07:15.4146820Z Updating files:  42% (10141/24143)
+2026-11-04T01:07:15.5339540Z Updating files:  43% (10382/24143)
+2026-11-04T01:07:15.5976010Z Updating files:  43% (10472/24143)
+2026-11-04T01:07:15.6067850Z Updating files:  44% (10623/24143)
+2026-11-04T01:07:15.6359000Z Updating files:  45% (10865/24143)
+2026-11-04T01:07:15.6976610Z Updating files:  46% (11106/24143)
+2026-11-04T01:07:15.7741340Z Updating files:  47% (11348/24143)
+2026-11-04T01:07:15.8773770Z Updating files:  48% (11589/24143)
+2026-11-04T01:07:16.0186610Z Updating files:  49% (11831/24143)
+2026-11-04T01:07:16.0682250Z Updating files:  50% (12072/24143)
+2026-11-04T01:07:16.1249760Z Updating files:  51% (12313/24143)
+2026-11-04T01:07:16.1926350Z Updating files:  52% (12555/24143)
+2026-11-04T01:07:16.2930310Z Updating files:  53% (12796/24143)
+2026-11-04T01:07:16.3930980Z Updating files:  54% (13038/24143)
+2026-11-04T01:07:16.4933700Z Updating files:  55% (13279/24143)
+2026-11-04T01:07:16.5937350Z Updating files:  56% (13521/24143)
+2026-11-04T01:07:16.6172870Z Updating files:  56% (13554/24143)
+2026-11-04T01:07:16.6788760Z Updating files:  57% (13762/24143)
+2026-11-04T01:07:16.7792050Z Updating files:  58% (14003/24143)
+2026-11-04T01:07:16.8798690Z Updating files:  59% (14245/24143)
+2026-11-04T01:07:17.0724460Z Updating files:  60% (14486/24143)
+2026-11-04T01:07:17.0874940Z Updating files:  61% (14728/24143)
+2026-11-04T01:07:17.1525930Z Updating files:  62% (14969/24143)
+2026-11-04T01:07:17.2663220Z Updating files:  63% (15211/24143)
+2026-11-04T01:07:17.3521480Z Updating files:  64% (15452/24143)
+2026-11-04T01:07:17.5412070Z Updating files:  65% (15693/24143)
+2026-11-04T01:07:17.5443350Z Updating files:  66% (15935/24143)
+2026-11-04T01:07:17.5471940Z Updating files:  66% (16011/24143)
+2026-11-04T01:07:17.6692260Z Updating files:  67% (16176/24143)
+2026-11-04T01:07:17.7161500Z Updating files:  68% (16418/24143)
+2026-11-04T01:07:17.8844410Z Updating files:  69% (16659/24143)
+2026-11-04T01:07:18.0368180Z Updating files:  70% (16901/24143)
+2026-11-04T01:07:18.1338560Z Updating files:  71% (17142/24143)
+2026-11-04T01:07:18.2939280Z Updating files:  72% (17383/24143)
+2026-11-04T01:07:18.3633420Z Updating files:  73% (17625/24143)
+2026-11-04T01:07:18.4641470Z Updating files:  74% (17866/24143)
+2026-11-04T01:07:18.4764470Z Updating files:  74% (18072/24143)
+2026-11-04T01:07:18.5874980Z Updating files:  75% (18108/24143)
+2026-11-04T01:07:18.6430630Z Updating files:  76% (18349/24143)
+2026-11-04T01:07:18.7043410Z Updating files:  77% (18591/24143)
+2026-11-04T01:07:18.7629920Z Updating files:  78% (18832/24143)
+2026-11-04T01:07:18.8234120Z Updating files:  79% (19073/24143)
+2026-11-04T01:07:18.8824740Z Updating files:  80% (19315/24143)
+2026-11-04T01:07:18.9576790Z Updating files:  81% (19556/24143)
+2026-11-04T01:07:19.0349470Z Updating files:  82% (19798/24143)
+2026-11-04T01:07:19.2030010Z Updating files:  83% (20039/24143)
+2026-11-04T01:07:19.2877300Z Updating files:  84% (20281/24143)
+2026-11-04T01:07:19.3380130Z Updating files:  85% (20522/24143)
+2026-11-04T01:07:19.4048810Z Updating files:  86% (20763/24143)
+2026-11-04T01:07:19.4639060Z Updating files:  87% (21005/24143)
+2026-11-04T01:07:19.4688440Z Updating files:  87% (21227/24143)
+2026-11-04T01:07:19.5249240Z Updating files:  88% (21246/24143)
+2026-11-04T01:07:19.5836290Z Updating files:  89% (21488/24143)
+2026-11-04T01:07:19.6517180Z Updating files:  90% (21729/24143)
+2026-11-04T01:07:19.7471620Z Updating files:  91% (21971/24143)
+2026-11-04T01:07:19.8130930Z Updating files:  92% (22212/24143)
+2026-11-04T01:07:19.8748850Z Updating files:  93% (22453/24143)
+2026-11-04T01:07:19.9285270Z Updating files:  94% (22695/24143)
+2026-11-04T01:07:19.9883650Z Updating files:  95% (22936/24143)
+2026-11-04T01:07:20.0639790Z Updating files:  96% (23178/24143)
+2026-11-04T01:07:20.1417890Z Updating files:  97% (23419/24143)
+2026-11-04T01:07:20.2052910Z Updating files:  98% (23661/24143)
+2026-11-04T01:07:20.4400100Z Updating files:  99% (23902/24143)
+2026-11-04T01:07:20.4403710Z Updating files: 100% (24143/24143)
+2026-11-04T01:07:20.4404360Z Updating files: 100% (24143/24143), done.
+2026-11-04T01:07:20.4781470Z HEAD is now at a881583 Merge b24a5d0cc5eb771dea51c38e407f13bb3f3d4edb into b0a70391cc18580bd7b7595031044e9cfefcdf15
+2026-11-04T01:07:20.4904320Z ##[endgroup]
+2026-11-04T01:07:20.5065680Z [command]/usr/local/bin/git log -1 --format=%H
+2026-11-04T01:07:20.5200870Z a881583f0c6178bd05ac3491b0c896e2419c60e4
+2026-11-04T01:07:20.5216920Z ##[group]Removing auth
+2026-11-04T01:07:20.5223240Z [command]/usr/local/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-11-04T01:07:20.5350220Z [command]/usr/local/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-11-04T01:07:20.6830660Z [command]/usr/local/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-11-04T01:07:20.6927440Z http.https://github.com/.extraheader
+2026-11-04T01:07:20.6942920Z [command]/usr/local/bin/git config --local --unset-all http.https://github.com/.extraheader
+2026-11-04T01:07:20.7136470Z [command]/usr/local/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-11-04T01:07:20.8510810Z [command]/usr/local/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-11-04T01:07:20.8616580Z [command]/usr/local/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-11-04T01:07:21.0962620Z ##[endgroup]
+2026-11-04T01:07:21.1268590Z ##[group]Run $ErrorActionPreference = 'Stop'
+2026-11-04T01:07:21.1269280Z [36;1m$ErrorActionPreference = 'Stop'[0m
+2026-11-04T01:07:21.1269960Z [36;1mNew-Item -ItemType Directory flowmux-evidence | Out-Null[0m
+2026-11-04T01:07:21.1271170Z [36;1mif ($env:RUNNER_OS -ne $env:EXPECTED_OS -or $env:RUNNER_ARCH -ne $env:EXPECTED_ARCH) { throw 'Native runner mismatch' }[0m
+2026-11-04T01:07:21.1272250Z [36;1m$source = (git rev-parse HEAD).Trim()[0m
+2026-11-04T01:07:21.1272940Z [36;1mif ($LASTEXITCODE -ne 0) { throw 'Source identity failed' }[0m
+2026-11-04T01:07:21.1273860Z [36;1m@{ source = $source; run = $env:GITHUB_RUN_ID; attempt = $env:GITHUB_RUN_ATTEMPT;[0m
+2026-11-04T01:07:21.1274840Z [36;1m  os = $env:RUNNER_OS; arch = $env:RUNNER_ARCH; image = $env:ImageVersion;[0m
+2026-11-04T01:07:21.1275920Z [36;1m  description = [System.Runtime.InteropServices.RuntimeInformation]::OSDescription;[0m
+2026-11-04T01:07:21.1278960Z [36;1m  scope = 'native process; paired TCP/TLS/shared-object component; no MVM backend or WAN';[0m
+2026-11-04T01:07:21.1280380Z [36;1m  lock_sha256 = (Get-FileHash crates/spiralcore-mvm-flowmux/Cargo.lock -Algorithm SHA256).Hash[0m
+2026-11-04T01:07:21.1281500Z [36;1m} | ConvertTo-Json | Set-Content flowmux-evidence/identity.json[0m
+2026-11-04T01:07:21.1298260Z shell: /usr/local/bin/pwsh -command ". '{0}'"
+2026-11-04T01:07:21.1298860Z env:
+2026-11-04T01:07:21.1299210Z   CARGO_BUILD_JOBS: 2
+2026-11-04T01:07:21.1299600Z   CARGO_INCREMENTAL: 0
+2026-11-04T01:07:21.1300000Z   CARGO_TERM_COLOR: never
+2026-11-04T01:07:21.1300420Z   NATIVE_TARGET: x86_64-apple-darwin
+2026-11-04T01:07:21.1300880Z   EXPECTED_OS: macOS
+2026-11-04T01:07:21.1301250Z   EXPECTED_ARCH: X64
+2026-11-04T01:07:21.1301600Z ##[endgroup]
+2026-11-04T01:07:22.4811140Z ##[group]Run rustup toolchain install "1.97.1-$env:NATIVE_TARGET" --profile minimal --component clippy
+2026-11-04T01:07:22.4812710Z [36;1mrustup toolchain install "1.97.1-$env:NATIVE_TARGET" --profile minimal --component clippy[0m
+2026-11-04T01:07:22.4813840Z [36;1mif ($LASTEXITCODE -ne 0) { throw 'Toolchain install failed' }[0m
+2026-11-04T01:07:22.4814850Z [36;1mrustc "+1.97.1-$env:NATIVE_TARGET" -vV | Tee-Object flowmux-evidence/rustc.txt[0m
+2026-11-04T01:07:22.4816580Z [36;1mif ($LASTEXITCODE -ne 0 -or !(Select-String -Path flowmux-evidence/rustc.txt -SimpleMatch -Pattern "host: $env:NATIVE_TARGET")) { throw 'Toolchain is not native' }[0m
+2026-11-04T01:07:22.4826300Z shell: /usr/local/bin/pwsh -command ". '{0}'"
+2026-11-04T01:07:22.4826890Z env:
+2026-11-04T01:07:22.4827280Z   CARGO_BUILD_JOBS: 2
+2026-11-04T01:07:22.4827730Z   CARGO_INCREMENTAL: 0
+2026-11-04T01:07:22.4828190Z   CARGO_TERM_COLOR: never
+2026-11-04T01:07:22.4828710Z   NATIVE_TARGET: x86_64-apple-darwin
+2026-11-04T01:07:22.4829310Z   EXPECTED_OS: macOS
+2026-11-04T01:07:22.4829740Z   EXPECTED_ARCH: X64
+2026-11-04T01:07:22.4830200Z ##[endgroup]
+2026-11-04T01:07:22.8271600Z info: syncing channel updates for 1.97.1-x86_64-apple-darwin
+2026-11-04T01:07:23.0878220Z info: latest update on 2026-07-16 for version 1.97.1 (8bab26f4f 2026-07-14)
+2026-11-04T01:07:23.0879690Z info: downloading 4 components
+2026-11-04T01:07:36.4952060Z 
+2026-11-04T01:07:36.5229240Z info: self-update is disabled for this build of rustup
+2026-11-04T01:07:36.5236700Z   1.97.1-x86_64-apple-darwin installed - rustc 1.97.1 (8bab26f4f 2026-07-14)
+2026-11-04T01:07:36.5238270Z 
+2026-11-04T01:07:36.5241470Z info: any updates to rustup will need to be fetched with your system package manager
+2026-11-04T01:07:36.7656120Z rustc 1.97.1 (8bab26f4f 2026-07-14)
+2026-11-04T01:07:36.7675800Z binary: rustc
+2026-11-04T01:07:36.7722560Z commit-hash: 8bab26f4f68e0e26f0bb7960be334d5b520ea452
+2026-11-04T01:07:36.7760610Z commit-date: 2026-07-14
+2026-11-04T01:07:36.7788850Z host: x86_64-apple-darwin
+2026-11-04T01:07:36.7810630Z release: 1.97.1
+2026-11-04T01:07:36.7818490Z LLVM version: 22.1.6
+2026-11-04T01:07:36.9074210Z ##[group]Run $ErrorActionPreference = 'Stop'
+2026-11-04T01:07:36.9075040Z [36;1m$ErrorActionPreference = 'Stop'[0m
+2026-11-04T01:07:36.9075880Z [36;1m$PSNativeCommandUseErrorActionPreference = $false[0m
+2026-11-04T01:07:36.9077320Z [36;1m$cargoArgs = @("+1.97.1-$env:NATIVE_TARGET", 'test', '--release', '--locked', '--manifest-path',[0m
+2026-11-04T01:07:36.9078860Z [36;1m  'crates/spiralcore-mvm-flowmux/Cargo.toml', '--all-targets')[0m
+2026-11-04T01:07:36.9080000Z [36;1m$listing = (& cargo @cargoArgs -- --list --format terse 2>&1 | Out-String)[0m
+2026-11-04T01:07:36.9081010Z [36;1m$code = $LASTEXITCODE[0m
+2026-11-04T01:07:36.9081810Z [36;1m$listing | Set-Content flowmux-evidence/test-list.txt[0m
+2026-11-04T01:07:36.9082620Z [36;1mif ($code -ne 0) { throw 'Test listing failed' }[0m
+2026-11-04T01:07:36.9083470Z [36;1m$listed = [regex]::Matches($listing, '(?m)^.+: test\r?$').Count[0m
+2026-11-04T01:07:36.9084540Z [36;1mif ($listed -lt 31) { throw "Missing component coverage: $listed" }[0m
+2026-11-04T01:07:36.9085660Z [36;1m$log = (& cargo @cargoArgs -- --format pretty --color never 2>&1 | Out-String)[0m
+2026-11-04T01:07:36.9086770Z [36;1m$code = $LASTEXITCODE[0m
+2026-11-04T01:07:36.9087670Z [36;1m$log | Set-Content flowmux-evidence/tests.txt[0m
+2026-11-04T01:07:36.9088510Z [36;1m$log | Write-Output[0m
+2026-11-04T01:07:36.9089830Z [36;1m$summaries = [regex]::Matches($log, 'test result: ok\. (\d+) passed; (\d+) failed; (\d+) ignored; (\d+) measured; (\d+) filtered out;')[0m
+2026-11-04T01:07:36.9091610Z [36;1mif ($code -ne 0 -or $summaries.Count -eq 0) { throw 'Native component tests failed' }[0m
+2026-11-04T01:07:36.9092600Z [36;1m$passed = 0[0m
+2026-11-04T01:07:36.9093170Z [36;1mforeach ($summary in $summaries) {[0m
+2026-11-04T01:07:36.9093780Z [36;1m  $g = $summary.Groups[0m
+2026-11-04T01:07:36.9095150Z [36;1m  if ([int]$g[2].Value -ne 0 -or [int]$g[3].Value -ne 0 -or [int]$g[4].Value -ne 0 -or [int]$g[5].Value -ne 0) { throw 'Failed, ignored or filtered native scope' }[0m
+2026-11-04T01:07:36.9096570Z [36;1m  $passed += [int]$g[1].Value[0m
+2026-11-04T01:07:36.9097220Z [36;1m}[0m
+2026-11-04T01:07:36.9097940Z [36;1mif ($passed -ne $listed) { throw 'Listed tests do not equal passed tests' }[0m
+2026-11-04T01:07:36.9100190Z [36;1m@{ listed = $listed; passed = $passed; failed = 0; ignored = 0; scope = 'component only' } | ConvertTo-Json | Set-Content flowmux-evidence/counts.json[0m
+2026-11-04T01:07:36.9102690Z [36;1mif (git status --porcelain -- crates/spiralcore-mvm-flowmux/Cargo.lock) { throw 'Locked execution changed source' }[0m
+2026-11-04T01:07:36.9116940Z shell: /usr/local/bin/pwsh -command ". '{0}'"
+2026-11-04T01:07:36.9117750Z env:
+2026-11-04T01:07:36.9118220Z   CARGO_BUILD_JOBS: 2
+2026-11-04T01:07:36.9118750Z   CARGO_INCREMENTAL: 0
+2026-11-04T01:07:36.9119240Z   CARGO_TERM_COLOR: never
+2026-11-04T01:07:36.9119830Z   NATIVE_TARGET: x86_64-apple-darwin
+2026-11-04T01:07:36.9120800Z   EXPECTED_OS: macOS
+2026-11-04T01:07:36.9122570Z   EXPECTED_ARCH: X64
+2026-11-04T01:07:36.9125250Z ##[endgroup]
+2026-11-04T01:10:18.4986660Z     Finished `release` profile [optimized] target(s) in 0.17s
+2026-11-04T01:10:18.5373560Z [31;1mException: [0m/Users/runner/work/_temp/a48f5372-c537-402f-9919-3e691c5f1fd7.ps1:17[0m
+2026-11-04T01:10:18.5376130Z      Running unittests src/lib.rs (crates/spiralcore-mvm-flowmux/target/release/deps/spiralcore_mvm_flowmux-04ecbd752290f3f9)
+2026-11-04T01:10:18.5382700Z [31;1m[0m[36;1mLine |[0m
+2026-11-04T01:10:18.5383850Z 
+2026-11-04T01:10:18.5389550Z [31;1m[0m[36;1m[36;1m  17 | [0m … -or $summaries.Count -eq 0) { [36;1mthrow 'Native component tests failed'[0m }[0m
+2026-11-04T01:10:18.5391560Z running 1 test
+2026-11-04T01:10:18.5396910Z [31;1m[0m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+2026-11-04T01:10:18.5406270Z test tls::tests::required_alpn_refuses_a_different_authenticated_tls_profile ... ok
+2026-11-04T01:10:18.5909720Z [31;1m[0m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mNative component tests failed[0m
+2026-11-04T01:10:18.5910510Z 
+2026-11-04T01:10:18.5913670Z test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+2026-11-04T01:10:18.5916120Z 
+2026-11-04T01:10:18.5918700Z      Running tests/authenticated_stream.rs (crates/spiralcore-mvm-flowmux/target/release/deps/authenticated_stream-ba4d445c8d8eb64f)
+2026-11-04T01:10:18.6921700Z 
+2026-11-04T01:10:18.7174070Z running 5 tests
+2026-11-04T01:10:18.7223590Z test authenticated_scope_rejects_changed_exporter_foreign_session_and_reentry_after_revoke ... ok
+2026-11-04T01:10:18.7229970Z test authenticated_direction_cannot_be_replaced_when_spawning_duplex ... ok
+2026-11-04T01:10:18.7237590Z test revocation_fences_already_buffered_application_bytes ... ok
+2026-11-04T01:10:18.7257230Z test authenticated_object_stream_retains_bidirectional_fidelity_half_close_and_actual_tls_counts ... ok
+2026-11-04T01:10:18.7568850Z test explicit_artifact_deadline_is_not_refreshed_after_tls_or_partial_progress ... ok
+2026-11-04T01:10:18.7588620Z 
+2026-11-04T01:10:18.7624960Z test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.39s
+2026-11-04T01:10:18.7652090Z 
+2026-11-04T01:10:18.7657940Z      Running tests/duplex_tcp.rs (crates/spiralcore-mvm-flowmux/target/release/deps/duplex_tcp-ee797c1ce6f301d7)
+2026-11-04T01:10:18.7670340Z 
+2026-11-04T01:10:18.7672860Z running 8 tests
+2026-11-04T01:10:18.7679540Z test correct_object_published_from_wrong_direction_is_rejected ... ok
+2026-11-04T01:10:18.7708360Z test guard_drop_cancels_and_joins_an_idle_owned_reader ... ok
+2026-11-04T01:10:18.7715230Z test combined_runtime_artifacts_and_repeated_object_deliver_only_two_logical_blocks ... ok
+2026-11-04T01:10:18.7736990Z test artifacts_are_not_application_and_ack_path_survives_application_half_close ... ok
+2026-11-04T01:10:18.7758020Z test same_role_on_both_peers_refuses_cross_direction_application_identity ... ok
+2026-11-04T01:10:18.7773530Z test simultaneous_identical_objects_keep_distinct_direction_ids_and_reverse_after_fin ... ok
+2026-11-04T01:10:18.7781910Z test thirty_two_interleaved_requests_bound_a_waiting_local_operation ... ok
+2026-11-04T01:10:18.7788930Z test full_delivery_queue_backpressures_then_times_out_without_extra_published_ack ... ok
+2026-11-04T01:10:18.7793270Z 
+2026-11-04T01:10:18.7809770Z test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.40s
+2026-11-04T01:10:18.7824020Z 
+2026-11-04T01:10:18.7830340Z 
+2026-11-04T01:10:18.7842510Z running 1 test
+2026-11-04T01:10:18.7852380Z test full_actual_facts_bind_context_without_numeric_epoch_authority ... ok
+2026-11-04T01:10:18.7868800Z 
+2026-11-04T01:10:18.7872410Z test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+2026-11-04T01:10:18.7882190Z 
+2026-11-04T01:10:18.7886790Z 
+2026-11-04T01:10:18.7940210Z running 1 test
+2026-11-04T01:10:18.8048560Z      Running tests/full_scope.rs (crates/spiralcore-mvm-flowmux/target/release/deps/full_scope-8ed9085a67dd5332)
+2026-11-04T01:10:18.8134810Z      Running tests/mapped_stream.rs (crates/spiralcore-mvm-flowmux/target/release/deps/mapped_stream-de3b96a270360697)
+2026-11-04T01:10:18.8151130Z test standard_relay_io_preserves_short_reads_clones_and_reverse_after_half_close ... ok
+2026-11-04T01:10:18.8186940Z 
+2026-11-04T01:10:18.8216960Z test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.06s
+2026-11-04T01:10:18.8253680Z 
+2026-11-04T01:10:18.8283900Z 
+2026-11-04T01:10:18.8300190Z running 4 tests
+2026-11-04T01:10:18.8312220Z test wrong_published_identity_is_not_a_warm_commit_and_fences_reentry ... ok
+2026-11-04T01:10:18.8324600Z      Running tests/object_tcp.rs (crates/spiralcore-mvm-flowmux/target/release/deps/object_tcp-57eb2d9d87cc9b4c)
+2026-11-04T01:10:18.8325920Z test object_namespace_is_immutable_and_checked_before_read ... ok
+2026-11-04T01:10:18.8374330Z test warm_core_published_receipts_over_real_tcp_preserve_exact_object ... ok
+2026-11-04T01:10:18.8404330Z test runtime_and_combined_use_shared_artifacts_and_verified_publication_over_tcp ... ok
+2026-11-04T01:10:18.8413150Z 
+2026-11-04T01:10:18.8439530Z test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.11s
+2026-11-04T01:10:18.8465850Z 
+2026-11-04T01:10:18.8494170Z      Running tests/paired_tcp.rs (crates/spiralcore-mvm-flowmux/target/release/deps/paired_tcp-51121c2a0fe68094)
+2026-11-04T01:10:18.8506000Z 
+2026-11-04T01:10:18.8541450Z running 7 tests
+2026-11-04T01:10:18.8559380Z test invalid_send_sizes_write_nothing_and_valid_maximum_survives ... ok
+2026-11-04T01:10:18.8586520Z test explicit_reset_and_cancel_are_terminal_in_both_directions ... ok
+2026-11-04T01:10:18.8614000Z test exact_bidirectional_stream_and_reverse_after_half_close_use_real_tcp ... FAILED
+2026-11-04T01:10:18.8656140Z test malformed_unavailable_peer_and_cross_binding_fence_without_payload ... ok
+2026-11-04T01:10:18.8670130Z test raw_entropy_roundtrip_and_corrupted_raw_identity_refusal ... ok
+2026-11-04T01:10:18.8709030Z test sequence_oversize_and_truncation_are_terminal_and_count_actual_bytes ... ok
+2026-11-04T01:10:18.8764430Z test original_deadline_and_explicit_cancel_bound_idle_receive ... ok
+2026-11-04T01:10:18.8793700Z 
+2026-11-04T01:10:18.8825950Z failures:
+2026-11-04T01:10:18.8861310Z 
+2026-11-04T01:10:18.8894670Z ---- exact_bidirectional_stream_and_reverse_after_half_close_use_real_tcp stdout ----
+2026-11-04T01:10:18.8929920Z 
+2026-11-04T01:10:18.8958910Z thread 'exact_bidirectional_stream_and_reverse_after_half_close_use_real_tcp' (32700) panicked at tests/paired_tcp.rs:220:33:
+2026-11-04T01:10:18.8971610Z called `Result::unwrap()` on an `Err` value: Io(Os { code: 22, kind: InvalidInput, message: "Invalid argument" })
+2026-11-04T01:10:18.9000890Z note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+2026-11-04T01:10:18.9028520Z 
+2026-11-04T01:10:18.9056270Z 
+2026-11-04T01:10:18.9072810Z failures:
+2026-11-04T01:10:18.9100070Z     exact_bidirectional_stream_and_reverse_after_half_close_use_real_tcp
+2026-11-04T01:10:18.9112020Z 
+2026-11-04T01:10:18.9139030Z test result: FAILED. 6 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.07s
+2026-11-04T01:10:18.9155250Z 
+2026-11-04T01:10:18.9176840Z error: test failed, to rerun pass `--test paired_tcp`
+2026-11-04T01:10:18.9205590Z 
+2026-11-04T01:10:18.9257190Z ##[error]Process completed with exit code 1.
+2026-11-04T01:10:18.9392820Z ##[group]Run if (Test-Path flowmux-evidence) {
+2026-11-04T01:10:18.9393620Z [36;1mif (Test-Path flowmux-evidence) {[0m
+2026-11-04T01:10:18.9394540Z [36;1m  Get-ChildItem flowmux-evidence -File | Sort-Object Name | ForEach-Object {[0m
+2026-11-04T01:10:18.9395830Z [36;1m    "$((Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant())  $($_.Name)"[0m
+2026-11-04T01:10:18.9396860Z [36;1m  } | Set-Content flowmux-evidence/SHA256SUMS[0m
+2026-11-04T01:10:18.9397470Z [36;1m}[0m
+2026-11-04T01:10:18.9407600Z shell: /usr/local/bin/pwsh -command ". '{0}'"
+2026-11-04T01:10:18.9408210Z env:
+2026-11-04T01:10:18.9408640Z   CARGO_BUILD_JOBS: 2
+2026-11-04T01:10:18.9409090Z   CARGO_INCREMENTAL: 0
+2026-11-04T01:10:18.9411080Z   CARGO_TERM_COLOR: never
+2026-11-04T01:10:18.9411710Z   NATIVE_TARGET: x86_64-apple-darwin
+2026-11-04T01:10:18.9412260Z   EXPECTED_OS: macOS
+2026-11-04T01:10:18.9412710Z   EXPECTED_ARCH: X64
+2026-11-04T01:10:18.9413230Z ##[endgroup]
+2026-11-04T01:10:19.4789960Z ##[group]Run actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+2026-11-04T01:10:19.4790840Z with:
+2026-11-04T01:10:19.4791330Z   name: flowmux-component-macos26-intel-1
+2026-11-04T01:10:19.4791920Z   path: flowmux-evidence/
+2026-11-04T01:10:19.4792780Z   if-no-files-found: error
+2026-11-04T01:10:19.4793280Z   retention-days: 14
+2026-11-04T01:10:19.4793730Z   compression-level: 6
+2026-11-04T01:10:19.4794190Z   overwrite: false
+2026-11-04T01:10:19.4794640Z   include-hidden-files: false
+2026-11-04T01:10:19.4795120Z env:
+2026-11-04T01:10:19.4796030Z   CARGO_BUILD_JOBS: 2
+2026-11-04T01:10:19.4796480Z   CARGO_INCREMENTAL: 0
+2026-11-04T01:10:19.4796930Z   CARGO_TERM_COLOR: never
+2026-11-04T01:10:19.4797400Z   NATIVE_TARGET: x86_64-apple-darwin
+2026-11-04T01:10:19.4797930Z   EXPECTED_OS: macOS
+2026-11-04T01:10:19.4798380Z   EXPECTED_ARCH: X64
+2026-11-04T01:10:19.4798800Z ##[endgroup]
+2026-11-04T01:10:19.7326100Z (node:8257) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-11-04T01:10:19.7327560Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-11-04T01:10:19.7396370Z With the provided path, there will be 5 files uploaded
+2026-11-04T01:10:19.7402420Z Artifact name is valid!
+2026-11-04T01:10:19.7403190Z Root directory input is valid!
+2026-11-04T01:10:20.0476350Z Beginning upload of artifact content to blob storage
+2026-11-04T01:10:20.0842700Z (node:8257) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+2026-11-04T01:10:20.2370510Z Uploaded bytes 5305
+2026-11-04T01:10:20.2844980Z Finished uploading artifact content to blob storage!
+2026-11-04T01:10:20.2846910Z SHA256 digest of uploaded artifact zip is 9063b2526c85eebca2c8c40f6fa153399e7aa2a2bece265f8cf713719d0b27dc
+2026-11-04T01:10:20.2848760Z Finalizing artifact upload
+2026-11-04T01:10:21.0306800Z Artifact flowmux-component-macos26-intel-1.zip successfully finalized. Artifact ID 13286666031
+2026-11-04T01:10:21.0553660Z Artifact flowmux-component-macos26-intel-1 has been successfully uploaded! Final size is 5305 bytes. Artifact ID is 13286666031
+2026-11-04T01:10:21.0675670Z Artifact download URL: https://github.com/R4-Laboratories/SpiralCore/actions/runs/41751467413/artifacts/13286666031
+2026-11-04T01:10:21.1092460Z Post job cleanup.
+2026-11-04T01:10:21.3343340Z [command]/usr/local/bin/git version
+2026-11-04T01:10:21.3420130Z git version 2.55.0
+2026-11-04T01:10:21.7054090Z Copying '/Users/runner/.gitconfig' to '/Users/runner/work/_temp/c82f8836-f803-4beb-9103-d88948385a50/.gitconfig'
+2026-11-04T01:10:21.8065190Z Temporarily overriding HOME='/Users/runner/work/_temp/c82f8836-f803-4beb-9103-d88948385a50' before making global git config changes
+2026-11-04T01:10:21.8104950Z Adding repository directory to the temporary git global config as a safe directory
+2026-11-04T01:10:21.8420380Z [command]/usr/local/bin/git config --global --add safe.directory /Users/runner/work/SpiralCore/SpiralCore
+2026-11-04T01:10:21.8557970Z [command]/usr/local/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-11-04T01:10:21.8566500Z [command]/usr/local/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-11-04T01:10:21.8574490Z [command]/usr/local/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-11-04T01:10:21.8582710Z [command]/usr/local/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-11-04T01:10:21.8590780Z [command]/usr/local/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-11-04T01:10:21.8598180Z [command]/usr/local/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-11-04T01:10:22.0322330Z Cleaning up orphan processes
+2026-11-04T01:10:22.2800000Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@11d5960a326750d5838078e36cf38b85af677262, actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/

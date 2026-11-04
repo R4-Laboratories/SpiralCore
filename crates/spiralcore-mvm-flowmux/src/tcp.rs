@@ -60,16 +60,42 @@ impl Carrier {
     }
     fn set_read_timeout(&mut self, timeout: Option<Duration>) -> std::io::Result<()> {
         match self {
-            Self::Tcp(socket) => socket.set_read_timeout(timeout),
+            Self::Tcp(socket) => checked_timeout(socket.set_read_timeout(timeout), timeout, || {
+                socket.read_timeout()
+            }),
             Self::Tls(socket) => socket.set_read_timeout(timeout),
         }
     }
     fn set_write_timeout(&mut self, timeout: Option<Duration>) -> std::io::Result<()> {
         match self {
-            Self::Tcp(socket) => socket.set_write_timeout(timeout),
+            Self::Tcp(socket) => {
+                checked_timeout(socket.set_write_timeout(timeout), timeout, || {
+                    socket.write_timeout()
+                })
+            }
             Self::Tls(socket) => socket.set_write_timeout(timeout),
         }
     }
+}
+fn checked_timeout(
+    result: std::io::Result<()>,
+    requested: Option<Duration>,
+    existing: impl FnOnce() -> std::io::Result<Option<Duration>>,
+) -> std::io::Result<()> {
+    // Darwin can reject setsockopt after peer close while exact response bytes
+    // remain readable. Only an observed timeout at least as strict as the fresh
+    // original-deadline slice can preserve that operation's bound.
+    if cfg!(target_os = "macos")
+        && result
+            .as_ref()
+            .is_err_and(|error| error.raw_os_error() == Some(22))
+        && let (Some(requested), Ok(Some(actual))) = (requested, existing())
+        && !actual.is_zero()
+        && actual <= requested
+    {
+        return Ok(());
+    }
+    result
 }
 impl Read for Carrier {
     fn read(&mut self, bytes: &mut [u8]) -> std::io::Result<usize> {
@@ -191,7 +217,7 @@ impl TcpMapping {
         )
     }
     fn with_carrier(
-        socket: Carrier,
+        mut socket: Carrier,
         binding: Binding,
         timeout: Duration,
         object: bool,
@@ -203,6 +229,11 @@ impl TcpMapping {
         if timeout.is_zero() || timeout > Duration::from_secs(30) {
             return Err(Error::Limit);
         }
+        // Establish a real bounded timeout while connected; a first receive
+        // after the peer's last descriptor closes must never accept None.
+        let initial = Some(timeout.min(Duration::from_millis(20)));
+        socket.set_read_timeout(initial)?;
+        socket.set_write_timeout(initial)?;
         let read = socket.try_clone()?;
         let control = Arc::new(Control {
             scope,
@@ -569,5 +600,43 @@ impl Drop for Rx {
         if !self.ended {
             self.control.stop();
         }
+    }
+}
+
+#[cfg(test)]
+mod timeout_tests {
+    use super::*;
+    fn rejected() -> std::io::Result<()> {
+        Err(std::io::Error::from_raw_os_error(22))
+    }
+    #[test]
+    fn closed_peer_timeout_exception_requires_observed_nonzero_tighter_deadline() {
+        let requested = Some(Duration::from_millis(20));
+        assert_eq!(
+            checked_timeout(rejected(), requested, || Ok(Some(Duration::from_millis(
+                20
+            ))))
+            .is_ok(),
+            cfg!(target_os = "macos")
+        );
+        assert_eq!(
+            checked_timeout(rejected(), requested, || Ok(Some(Duration::from_millis(1)))).is_ok(),
+            cfg!(target_os = "macos")
+        );
+        for existing in [None, Some(Duration::ZERO), Some(Duration::from_millis(21))] {
+            assert!(checked_timeout(rejected(), requested, || Ok(existing)).is_err());
+        }
+        assert!(checked_timeout(rejected(), None, || Ok(Some(Duration::from_millis(1)))).is_err());
+        assert!(
+            checked_timeout(rejected(), requested, || Err(std::io::Error::other(
+                "readback failed"
+            )))
+            .is_err()
+        );
+        let other = Err(std::io::Error::new(
+            std::io::ErrorKind::PermissionDenied,
+            "not EINVAL",
+        ));
+        assert!(checked_timeout(other, requested, || Ok(Some(Duration::from_millis(1)))).is_err());
     }
 }
