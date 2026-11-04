@@ -21,6 +21,10 @@ use std::{
     thread::{self, JoinHandle},
     time::{Duration, Instant, SystemTime, UNIX_EPOCH},
 };
+
+#[cfg(test)]
+#[path = "duplex/completion_tests.rs"]
+mod completion_tests;
 /// One owned reader's explicit stack, charged separately from core workspace.
 pub const READER_STACK_BYTES: usize = 2 * 1024 * 1024;
 
@@ -225,6 +229,9 @@ impl Duplex {
             guard: JoinGuard {
                 child: Some(child),
                 done: done_rx,
+                done_seen: false,
+                joined: None,
+                panicked: false,
                 cancellation,
                 timeout,
             },
@@ -467,11 +474,61 @@ impl Drop for DuplexReader {
 pub struct JoinGuard {
     child: Option<JoinHandle<Result<(Counters, Counters)>>>,
     done: Receiver<()>,
+    done_seen: bool,
+    joined: Option<Result<(Counters, Counters)>>,
+    panicked: bool,
     cancellation: Cancellation,
     timeout: Duration,
 }
 impl JoinGuard {
+    /// Complete the original reader without relinquishing custody on timeout.
+    /// Physical completion does not replace its retained semantic result.
+    pub fn try_join_until(&mut self, until: Instant) -> Result<()> {
+        let result = (|| {
+            if self.joined.is_some() {
+                return if self.panicked {
+                    Err(Error::Worker)
+                } else {
+                    Ok(())
+                };
+            }
+            if !self.done_seen {
+                match self.done.recv_timeout(remaining(until)?) {
+                    Ok(()) | Err(RecvTimeoutError::Disconnected) => self.done_seen = true,
+                    Err(RecvTimeoutError::Timeout) => return Err(Error::Timeout),
+                }
+            }
+            // The original completion event is observed. std may still be
+            // finishing its native thread epilogue; never take an unfinished
+            // handle or turn this compatibility wait into another deadline.
+            while !self.child.as_ref().ok_or(Error::Worker)?.is_finished() {
+                thread::park_timeout(remaining(until)?.min(Duration::from_millis(1)));
+            }
+            remaining(until)?;
+            let child = self.child.take().ok_or(Error::Worker)?;
+            self.joined = Some(match child.join() {
+                Ok(result) => result,
+                Err(_) => {
+                    self.panicked = true;
+                    Err(Error::Worker)
+                }
+            });
+            remaining(until)?;
+            if self.panicked {
+                Err(Error::Worker)
+            } else {
+                Ok(())
+            }
+        })();
+        if result.is_err() {
+            self.cancellation.cancel();
+        }
+        result
+    }
     pub fn join(mut self) -> Result<(Counters, Counters)> {
+        if let Some(result) = self.joined.take() {
+            return result;
+        }
         let expired = matches!(
             self.done.recv_timeout(self.timeout),
             Err(RecvTimeoutError::Timeout)
@@ -561,6 +618,7 @@ struct Worker<A: Authority> {
 }
 impl<A: Authority> Worker<A> {
     fn complete(&mut self) -> Result<(Counters, Counters)> {
+        self.cancellation.check_delivery()?;
         let counters = (lock(&self.tx)?.counters(), self.rx.counters());
         self.completed = true;
         self.cancellation.complete();
@@ -652,7 +710,12 @@ impl<A: Authority> Worker<A> {
             match self.rx.poll_input() {
                 Ok(false) => continue,
                 Ok(true) => {}
-                Err(Error::Truncated) if self.remote_closed => {
+                Err(error)
+                    if self.remote_closed
+                        && (matches!(&error, Error::Truncated)
+                            || matches!(&error,
+                        Error::Io(io) if io.kind() == std::io::ErrorKind::UnexpectedEof)) =>
+                {
                     // A peer can observe our FIN before the writing thread
                     // publishes local_closed. Preserve the original TX barrier
                     // before deciding whether this EOF is a clean completion.
@@ -661,7 +724,7 @@ impl<A: Authority> Worker<A> {
                         drop(tx);
                         return self.complete();
                     }
-                    return Err(Error::Truncated);
+                    return Err(error);
                 }
                 Err(error) => return Err(error),
             }

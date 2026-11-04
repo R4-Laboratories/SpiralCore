@@ -515,3 +515,113 @@ fn fatal_cancel_refuses_verified_buffered_bytes_while_clean_half_close_still_dra
         spiralcore_mvm_flowmux::Event::HalfClose
     );
 }
+
+fn assert_fatal_transport(error: spiralcore_mvm_flowmux::Error) {
+    use spiralcore_mvm_flowmux::Error;
+    match error {
+        Error::Truncated | Error::Closed | Error::Cancelled => {}
+        Error::Io(error)
+            if matches!(
+                error.kind(),
+                std::io::ErrorKind::UnexpectedEof
+                    | std::io::ErrorKind::BrokenPipe
+                    | std::io::ErrorKind::ConnectionReset
+                    | std::io::ErrorKind::NotConnected
+            ) => {}
+        other => panic!("expected fatal physical truncation, observed {other:?}"),
+    }
+}
+
+#[test]
+fn tls_close_without_authenticated_remote_application_fin_remains_fatal() {
+    let (left, right, facts) = pair();
+    let abrupt = right.try_clone().unwrap();
+    let policy = PinnedScopePolicy::new(2).unwrap();
+    let left_authority = authority(&policy, &facts, Role::Initiator);
+    let right_authority = authority(&policy, &facts, Role::Acceptor);
+    let stores = [
+        Store(std::env::temp_dir().join(format!("flow-missing-fin-left-{}", std::process::id()))),
+        Store(std::env::temp_dir().join(format!("flow-missing-fin-right-{}", std::process::id()))),
+    ];
+    let (mut left_tx, mut left_rx, left_guard) =
+        duplex(left, &left_authority, Role::Initiator, &stores[0]).split();
+    let (_right_tx, mut right_rx, right_guard) =
+        duplex(right, &right_authority, Role::Acceptor, &stores[1]).split();
+    left_tx.half_close().unwrap();
+    assert_eq!(
+        right_rx.receive().unwrap(),
+        spiralcore_mvm_flowmux::Event::HalfClose
+    );
+    // The local FIN is real; the remote application FIN was never sent.
+    abrupt.shutdown(Shutdown::Both).unwrap();
+    assert_fatal_transport(left_guard.join().unwrap_err());
+    assert!(matches!(
+        left_rx.receive(),
+        Err(spiralcore_mvm_flowmux::Error::Cancelled)
+    ));
+    assert_fatal_transport(right_guard.join().unwrap_err());
+    left_authority.check().unwrap();
+}
+
+#[test]
+fn tls_close_with_canonical_publication_reply_pending_remains_fatal() {
+    let (left, right, facts) = pair();
+    let mut abrupt = right.try_clone().unwrap();
+    abrupt
+        .set_read_timeout(Some(Duration::from_secs(1)))
+        .unwrap();
+    let policy = PinnedScopePolicy::new(2).unwrap();
+    let left_authority = authority(&policy, &facts, Role::Initiator);
+    let right_authority = authority(&policy, &facts, Role::Acceptor);
+    let stores = [
+        Store(std::env::temp_dir().join(format!("flow-pending-left-{}", std::process::id()))),
+        Store(std::env::temp_dir().join(format!("flow-pending-right-{}", std::process::id()))),
+    ];
+    let (mut left_tx, mut left_rx, left_guard) =
+        duplex(left, &left_authority, Role::Initiator, &stores[0]).split();
+    let mut channel = ObjectChannel::from_authenticated(
+        right,
+        &right_authority,
+        Duration::from_secs(2),
+        Role::Acceptor,
+        caps(),
+        caps(),
+    )
+    .unwrap();
+    let mut endpoint = ObjectEndpoint::open(
+        &stores[1].0,
+        Limits::default(),
+        right_authority.clone(),
+        channel.profile(),
+    )
+    .unwrap();
+    std::thread::scope(|scope| {
+        let sending = scope.spawn(move || left_tx.send_block(vec![37; 1024]));
+        let now = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_secs();
+        let spiralcore_mvm_flowmux::ServeEvent::Handled { request, reply, .. } = channel
+            .serve_once(&mut endpoint, right_authority.context(), now)
+            .unwrap()
+        else {
+            panic!("canonical offer expected")
+        };
+        assert_eq!((request.kind, reply.kind), (1, 101));
+        // Observe the actual next canonical request without consuming it or
+        // sending Published. Local application FIN is deliberately absent.
+        let mut byte = [0u8; 1];
+        assert_eq!(abrupt.peek(&mut byte).unwrap(), 1);
+        abrupt.shutdown(Shutdown::Both).unwrap();
+        assert!(
+            sending.join().unwrap().is_err(),
+            "withheld Published became successful transfer"
+        );
+    });
+    assert_fatal_transport(left_guard.join().unwrap_err());
+    assert!(matches!(
+        left_rx.receive(),
+        Err(spiralcore_mvm_flowmux::Error::Cancelled)
+    ));
+    left_authority.check().unwrap();
+}

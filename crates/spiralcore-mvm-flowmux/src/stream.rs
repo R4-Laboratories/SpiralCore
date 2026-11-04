@@ -103,6 +103,17 @@ impl MappedStream {
             }
         }
     }
+    /// Cancel and explicitly complete the same shared reader by the original
+    /// deadline. Timeout keeps its guard and original handle for later cleanup.
+    pub fn close_and_join_until(&self, until: Instant) -> Result<()> {
+        self.inner.cancellation.cancel();
+        let mut guard = match self.inner.guard.try_lock() {
+            Ok(guard) => guard,
+            Err(std::sync::TryLockError::WouldBlock) => lock_until(&self.inner.guard, until)?,
+            Err(std::sync::TryLockError::Poisoned(_)) => return Err(Error::Worker),
+        };
+        guard.as_mut().ok_or(Error::Worker)?.try_join_until(until)
+    }
     pub fn seed_base(&self, bytes: Vec<u8>) -> Result<Stats> {
         self.write_operation(|writer, until| writer.seed_base_until(bytes, until))
     }
