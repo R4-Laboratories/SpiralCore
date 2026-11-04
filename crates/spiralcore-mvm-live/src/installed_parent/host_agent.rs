@@ -441,6 +441,35 @@ fn commitment(params: &HostAgentServicesParams<'_>) -> Result<[u8; 32]> {
 }
 
 impl RegistrationBinding {
+    pub(super) fn check_retained_state(
+        &self,
+        path: &std::path::Path,
+        directory: &File,
+    ) -> Result<()> {
+        use std::os::unix::fs::MetadataExt;
+        ensure!(path == self.state, "original retained state path differs");
+        let original = self
+            .directory
+            .lock()
+            .map_err(|_| anyhow!("registered directory state poisoned"))?
+            .clone()
+            .ok_or_else(|| anyhow!("original registered directory not pinned"))?;
+        // This callback must never first-pin a replacement directory.
+        check_directory(&self.state, &self.directory)?;
+        let expected = original.metadata()?;
+        let actual = directory.metadata()?;
+        mvm_core::private_fs::require_current_owner(&actual)?;
+        ensure!(
+            actual.is_dir()
+                && actual.mode() & 0o7777 == 0o700
+                && (expected.dev(), expected.ino()) == (actual.dev(), actual.ino()),
+            "original retained state directory differs"
+        );
+        self.anchor
+            .upgrade()
+            .ok_or_else(|| anyhow!("original launch anchor unavailable"))?
+            .verify_current()
+    }
     fn check_paths(&self, params: &HostAgentServicesParams<'_>) -> Result<()> {
         ensure!(
             params.state_dir == self.state && params.broker_listen_socket == self.broker,

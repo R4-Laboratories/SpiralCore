@@ -195,7 +195,9 @@ fn issued_original_guard_is_one_shot_acyclic_and_quarantines_unproven_resources(
     assert_eq!(before.usage.workers, 1);
     assert_eq!(
         before.usage.cache_disk_bytes,
-        mvm_vmm::host::telemetry_provisioning::DEFAULT_RECORDS_BYTE_CAP + 65536
+        mvm_vmm::host::telemetry_provisioning::DEFAULT_RECORDS_BYTE_CAP
+            + 65536
+            + crate::installed_retained::FIXED_DISK_BYTES
     );
     assert_eq!(before.usage.guests, 1);
     provider.close_admission();
@@ -227,7 +229,9 @@ fn issued_original_guard_is_one_shot_acyclic_and_quarantines_unproven_resources(
     assert_eq!(after.usage.workers, 1);
     assert_eq!(
         after.usage.cache_disk_bytes,
-        mvm_vmm::host::telemetry_provisioning::DEFAULT_RECORDS_BYTE_CAP + 65536
+        mvm_vmm::host::telemetry_provisioning::DEFAULT_RECORDS_BYTE_CAP
+            + 65536
+            + crate::installed_retained::FIXED_DISK_BYTES
     );
     assert!(supervisor.try_finish().is_err());
     // No guest ran. Original uncertain credits intentionally survive until

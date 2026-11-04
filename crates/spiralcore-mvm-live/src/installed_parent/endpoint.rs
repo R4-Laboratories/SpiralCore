@@ -2,6 +2,9 @@
 //! bootstrap/runtime/codec/carrier model; a projection never grants resources.
 use super::*;
 use crate::installed_disk::{EndpointDiskInventory, EndpointDiskRequest, PreparedEndpointStore};
+use crate::installed_retained::{
+    RECORD_BYTES, RetainedTelemetryInventory, RetainedTelemetryScope, SIDECAR_BYTES,
+};
 use mvm_core::host_lifetime::{
     EndpointPartitionGuard, EndpointPartitionLimits, EndpointPartitionProjection,
     EndpointStoreLocator, PreparedEndpointPartition,
@@ -34,8 +37,9 @@ impl QualifiedEndpointProfile {
         // The projection's disk allowance includes the mandatory collector;
         // spare host quota cannot enlarge this original endpoint allowance.
         ensure!(
-            self.limits.cache_disk_bytes
-                >= mvm_vmm::host::telemetry_provisioning::DEFAULT_RECORDS_BYTE_CAP,
+            self.limits.cache_disk_bytes >= RECORD_BYTES + SIDECAR_BYTES
+                && SIDECAR_BYTES == 32 << 10
+                && RECORD_BYTES == mvm_vmm::host::telemetry_provisioning::DEFAULT_RECORDS_BYTE_CAP,
             "endpoint total cache cannot contain mandatory telemetry"
         );
         self.limits.host_resident_bytes()?;
@@ -52,6 +56,7 @@ impl QualifiedEndpointProfile {
 }
 pub(super) struct EndpointOwnerInputs {
     inventory: EndpointDiskInventory,
+    retained: Arc<RetainedTelemetryInventory>,
     profile: QualifiedEndpointProfile,
 }
 impl InstalledParentProvider {
@@ -89,6 +94,7 @@ impl InstalledParentProvider {
         );
         shared.endpoint_inputs = Some(EndpointOwnerInputs {
             inventory: supervisor.endpoint_disk_inventory()?,
+            retained: supervisor.retained_telemetry_inventory()?,
             profile,
         });
         Ok(())
@@ -99,6 +105,7 @@ struct Resources {
     vm: ManagedReservation,
     endpoint: Option<ManagedReservation>,
     store: Option<PreparedEndpointStore>,
+    retained: Option<(Arc<RetainedTelemetryInventory>, RetainedTelemetryScope)>,
     cleaned: bool,
 }
 /// The guard never strongly owns its grant. Receipts live in ParentLaunchOwner,
@@ -183,6 +190,7 @@ impl VmGrant {
                 vm: self.reservation.clone(),
                 endpoint: None,
                 store: None,
+                retained: None,
                 cleaned: false,
             }),
             published: false,
@@ -190,11 +198,22 @@ impl VmGrant {
         let reservation = parent.pool.reserve(tenant_tag(&self.tenant), claim)?;
         let serial = reservation.serial();
         attempt.resources.as_mut().unwrap().endpoint = Some(reservation);
+        let retained = inputs.retained.reserve_for_endpoint(
+            tenant_tag(&self.tenant),
+            session,
+            binding.grant_serial,
+        )?;
+        attempt.resources.as_mut().unwrap().retained = Some((inputs.retained.clone(), retained));
         let store = inputs.inventory.prepare(EndpointDiskRequest {
             tenant: tenant_tag(&self.tenant),
             session,
             parent_serial: binding.grant_serial,
-            cache_bytes: inputs.profile.limits.cache_disk_bytes,
+            cache_bytes: inputs
+                .profile
+                .limits
+                .cache_disk_bytes
+                .checked_sub(RECORD_BYTES + SIDECAR_BYTES)
+                .ok_or_else(|| anyhow!("original retained disk subdivision missing"))?,
             staging_bytes: inputs.profile.limits.staging_disk_bytes,
         })?;
         attempt.resources.as_mut().unwrap().store = Some(store);
@@ -255,6 +274,48 @@ impl VmGrant {
     }
 }
 impl EndpointPartitionGuard for RootEndpointOwner {
+    fn prepare_retained_telemetry(
+        &self,
+        projection: &EndpointPartitionProjection,
+        state: &std::path::Path,
+        directory: &std::fs::File,
+    ) -> Result<()> {
+        self.check_original_retained_state(projection, state, directory)?;
+        {
+            let resources = self
+                .resources
+                .lock()
+                .map_err(|_| anyhow!("endpoint resources poisoned"))?;
+            let (inventory, scope) = resources
+                .retained
+                .as_ref()
+                .ok_or_else(|| anyhow!("original retained scope missing"))?;
+            inventory.prepare_state(scope, state, directory)?;
+        }
+        self.check_current(projection)
+    }
+    fn bind_retained_telemetry_files(
+        &self,
+        projection: &EndpointPartitionProjection,
+        state: &std::path::Path,
+        directory: &std::fs::File,
+        records: &std::fs::File,
+        wrapped_key: &std::fs::File,
+    ) -> Result<()> {
+        self.check_original_retained_state(projection, state, directory)?;
+        {
+            let resources = self
+                .resources
+                .lock()
+                .map_err(|_| anyhow!("endpoint resources poisoned"))?;
+            let (inventory, scope) = resources
+                .retained
+                .as_ref()
+                .ok_or_else(|| anyhow!("original retained scope missing"))?;
+            inventory.bind_files(scope, state, directory, records, wrapped_key)?;
+        }
+        self.check_current(projection)
+    }
     fn check_current(&self, projection: &EndpointPartitionProjection) -> Result<()> {
         ensure!(
             projection == &self.projection,
@@ -294,6 +355,27 @@ impl EndpointPartitionGuard for RootEndpointOwner {
     }
 }
 impl RootEndpointOwner {
+    fn check_original_retained_state(
+        &self,
+        projection: &EndpointPartitionProjection,
+        state: &std::path::Path,
+        directory: &std::fs::File,
+    ) -> Result<()> {
+        self.check_current(projection)?;
+        let grant = self
+            .original
+            .upgrade()
+            .ok_or_else(|| anyhow!("original grant unavailable"))?;
+        let registration = grant
+            .lifecycle
+            .lock()
+            .map_err(|_| anyhow!("parent lifecycle poisoned"))?
+            .registration
+            .as_ref()
+            .cloned()
+            .ok_or_else(|| anyhow!("original registration missing"))?;
+        registration.check_retained_state(state, directory)
+    }
     fn matches_receipt(self: &Arc<Self>, receipt: &mvm_client::EndpointRetirement) -> bool {
         let guard: Arc<dyn EndpointPartitionGuard> = self.clone();
         receipt.projection() == &self.projection && receipt.retains_partition_guard(&guard)
@@ -320,6 +402,11 @@ impl RootEndpointOwner {
                 .ok_or_else(|| anyhow!("endpoint credit missing"))?
                 .check_retained_identity()?;
             if !resources.cleaned {
+                let (inventory, scope) = resources
+                    .retained
+                    .as_ref()
+                    .ok_or_else(|| anyhow!("original retained scope missing"))?;
+                inventory.seal_after_endpoint(scope, receipt, &guard, &self.projection)?;
                 resources
                     .store
                     .as_mut()

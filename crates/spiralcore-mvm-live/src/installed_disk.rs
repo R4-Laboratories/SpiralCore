@@ -149,7 +149,9 @@ fn projection_matches_store(
         && store.reservation_serial == actual.reservation_serial
         && store.tenant == actual.tenant
         && store.session == actual.session
-        && projection.limits.cache_disk_bytes == actual.cache_bytes
+        && projection.limits.cache_disk_bytes.checked_sub(
+            crate::installed_retained::RECORD_BYTES + crate::installed_retained::SIDECAR_BYTES,
+        ) == Some(actual.cache_bytes)
         && projection.limits.staging_disk_bytes == actual.staging_bytes
 }
 impl Drop for PreparedEndpointStore {
@@ -241,7 +243,9 @@ mod retirement_tests {
                 host_carrier_bytes: 0,
                 host_metadata_bytes: 1,
                 host_stack_bytes: 0,
-                cache_disk_bytes: 65536,
+                cache_disk_bytes: crate::installed_retained::RECORD_BYTES
+                    + crate::installed_retained::SIDECAR_BYTES
+                    + 65536,
                 staging_disk_bytes: 65536,
                 workers: 1,
                 max_streams: 1,
