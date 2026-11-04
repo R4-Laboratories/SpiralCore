@@ -1,7 +1,7 @@
 # Networking delivery status
 
 Snapshot: **2026-11-04**, checked against published `origin/main`
-`fe8e7102287b060b3634d7a53853307cf4b1e2f3` and the live GitHub issue graph.
+`b1fae72688d81e54710d935114ee1445e78c8a9c` and the live GitHub issue graph.
 This page separates accepted components, measured experiments and unmerged work.
 The [README](../../README.md) is the architecture/results entry point;
 [issue #42](https://github.com/R4-Laboratories/SpiralCore/issues/42) remains the
@@ -52,7 +52,7 @@ Development checkpoints are published for source inspection:
 | Repository / development branch | Immutable checkpoint | Acceptance |
 |---|---|---|
 | [SpiralCore core checkpoint](https://github.com/R4-Laboratories/SpiralCore/tree/codex/spiralcore-tls-startup-20261104) | [`1025d87d048b15cefd483b4c11c70a6e029cb29c`](https://github.com/R4-Laboratories/SpiralCore/commit/1025d87d048b15cefd483b4c11c70a6e029cb29c) | Original reader/deadline, terminal completion and startup EOF component; 43 Linux checks, installed/native/platform acceptance open |
-| [SpiralCore integration checkpoint](https://github.com/R4-Laboratories/SpiralCore/tree/codex/spiralcore-endpoint-owner-20261104) | [`24e6c96df30a84ecb486e788a3f2b70fbfbe5412`](https://github.com/R4-Laboratories/SpiralCore/commit/24e6c96df30a84ecb486e788a3f2b70fbfbe5412) | Original resident/endpoint/store ownership and scoped lifecycle tests on the locked public graph; full installed acceptance open |
+| [SpiralCore integration checkpoint](https://github.com/R4-Laboratories/SpiralCore/tree/codex/spiralcore-parent-host-agent-20261104) | [`0bd0f4d0fc8200467a7164c7d6564adeadf27595`](https://github.com/R4-Laboratories/SpiralCore/commit/0bd0f4d0fc8200467a7164c7d6564adeadf27595) | Original resident/endpoint/store and helper custody; actual daemon/signer shutdown retains credits through registrar aliases; full installed acceptance open |
 | [MVM fork installed-service checkpoint](https://github.com/Casey-allard/mvm/tree/codex/spiralcore-unused-preflight-20261104) | [`f708539f0c2317acf2e74f8f7833d6072a5abafe`](https://github.com/Casey-allard/mvm/commit/f708539f0c2317acf2e74f8f7833d6072a5abafe) | Non-main contribution-preparation fork |
 
 The [immutable graph packet](https://github.com/R4-Laboratories/SpiralCore/tree/4cece3276120606b85de91c554c3d96dc6e5f6d1/docs/network/evidence/2026-11-04-immutable-graph)
@@ -119,6 +119,29 @@ The profile has no production activation constructor yet. Actual positive
 sealed endpoint retirement, failed-disk-barrier retry, complete managed helper
 model and native installed execution remain open. These tests boot no guest,
 transfer no object and supply no new CPU, RSS, latency or WAN result.
+
+The [parent/helper successor](https://github.com/R4-Laboratories/SpiralCore/blob/0bd0f4d0fc8200467a7164c7d6564adeadf27595/docs/network/evidence/2026-11-04-parent-host-agent/README.md)
+retains one actual helper and original installation holder under the SAME parent
+reservation. It separately pins MVM's canonical shortened broker directory;
+the prior state-only check accepted a replaced broker parent, reproduced in a
+real filesystem countercase before the fix. Fifteen parent checks pass, with
+one real-helper case normally ignored and then explicitly executed separately.
+That case proves daemon/signer startup, shutdown after admission closes,
+idempotence, retained credits through owner Drop while a registrar alias exists,
+and global finish only after the final alias drops. No VM or registration is
+issued. Six source/manifest/lock blobs match the published tree, all 97 receipt
+members verify, and scoped Clippy passes with 18 acknowledged unwired-code
+warnings. Independent source review preserves the original HOLD and successor
+PASS. Shipping profile, actual opaque-plan/config/anchor hook, per-VM registration
+and resident/native integration remain open.
+
+The current provisional two-endpoint collector allowance plus helper already
+exceeds the existing 256 MiB tenant ceiling before carrier/core and other terms.
+This is an admission/model gate, not a measured capacity result. The
+[capacity issue](https://github.com/R4-Laboratories/SpiralCore/issues/49)
+records the arithmetic; constructor measurements alone do not qualify arbitrary
+PII search storage. No private per-process allocation or hidden accounting bucket
+may bypass the shared host/tenant budgets.
 
 None of these checkpoints qualifies the full combined service, WAN performance
 or formal upstream acceptance. Branches may advance; immutable commits identify
