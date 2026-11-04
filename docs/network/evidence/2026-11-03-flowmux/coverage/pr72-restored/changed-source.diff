@@ -1,0 +1,2998 @@
+--- /dev/null
++++ b/crates/spiralcore-mvm-flowmux/src/duplex.rs
+@@ -0,0 +1,622 @@
++use crate::{
++    Binding, Cancellation, Counters, Error, Event, MAX_BLOCK, ObjectChannel, ObjectRecord, Purpose,
++    Result, Rx, Tx,
++};
++use spiralcore_transfer::{
++    Id,
++    client::Stats,
++    endpoint::{Authority, Context},
++    hash,
++    protocol::{Frame, Offer},
++    v1::{ObjectEndpoint, ObjectReceipt, ObjectSender},
++};
++use std::{
++    sync::{
++        Arc, Mutex, MutexGuard,
++        atomic::{AtomicBool, AtomicUsize, Ordering},
++        mpsc::{self, Receiver, RecvTimeoutError, SyncSender, TrySendError},
++    },
++    thread::{self, JoinHandle},
++    time::{Duration, Instant, SystemTime, UNIX_EPOCH},
++};
++
++#[derive(Clone, Copy, Debug, PartialEq, Eq)]
++pub enum Role {
++    Initiator,
++    Acceptor,
++}
++impl Role {
++    pub(crate) fn tag(self) -> u8 {
++        match self {
++            Self::Initiator => 0,
++            Self::Acceptor => 1,
++        }
++    }
++    pub(crate) fn remote(self) -> Self {
++        match self {
++            Self::Initiator => Self::Acceptor,
++            Self::Acceptor => Self::Initiator,
++        }
++    }
++}
++fn transfer(binding: Binding, role: Role, index: u64, artifact: bool) -> Id {
++    hash(
++        if artifact {
++            b"spiralcore.flow.artifact.v1\0"
++        } else {
++            b"spiralcore.flow.application.v1\0"
++        },
++        &[&binding.flow, &[role.tag()], &index.to_be_bytes()],
++    )
++}
++fn lock<T>(value: &Mutex<T>) -> Result<MutexGuard<'_, T>> {
++    value.lock().map_err(|_| Error::Worker)
++}
++pub(crate) fn lock_until<T>(value: &Mutex<T>, until: Instant) -> Result<MutexGuard<'_, T>> {
++    loop {
++        let left = remaining(until)?;
++        match value.try_lock() {
++            Ok(guard) => return Ok(guard),
++            Err(std::sync::TryLockError::Poisoned(_)) => return Err(Error::Worker),
++            Err(std::sync::TryLockError::WouldBlock) => {
++                thread::park_timeout(left.min(Duration::from_millis(1)))
++            }
++        }
++    }
++}
++pub(crate) fn deadline(timeout: Duration) -> Result<Instant> {
++    Instant::now().checked_add(timeout).ok_or(Error::Limit)
++}
++fn remaining(until: Instant) -> Result<Duration> {
++    let left = until.saturating_duration_since(Instant::now());
++    if left.is_zero() {
++        Err(Error::Timeout)
++    } else {
++        Ok(left)
++    }
++}
++fn now() -> Result<u64> {
++    Ok(SystemTime::now()
++        .duration_since(UNIX_EPOCH)
++        .map_err(|_| Error::Protocol)?
++        .as_secs())
++}
++struct Expected {
++    purpose: Purpose,
++    transfer: Id,
++    seq: u64,
++    until: Instant,
++    seen: Arc<AtomicUsize>,
++}
++type Pending = Arc<Mutex<Option<Expected>>>;
++type SharedTx = Arc<Mutex<Tx>>;
++
++#[derive(Debug)]
++pub struct BlockReceipt {
++    pub index: u64,
++    pub transfer: Id,
++    pub object: ObjectReceipt,
++}
++pub struct Duplex {
++    writer: DuplexWriter,
++    reader: DuplexReader,
++    guard: JoinGuard,
++}
++impl Duplex {
++    pub(crate) fn stream_config(&self) -> (Cancellation, Duration) {
++        (self.writer.cancellation.clone(), self.writer.timeout)
++    }
++    pub fn spawn<A: Authority + Send + 'static>(
++        mut channel: ObjectChannel,
++        sender: ObjectSender,
++        endpoint: ObjectEndpoint<A>,
++        context: Context,
++        role: Role,
++    ) -> Result<Self> {
++        channel.check_context(&context)?;
++        if channel
++            .authenticated_role
++            .is_some_and(|authenticated| authenticated != role)
++        {
++            return Err(Error::InvalidBinding);
++        }
++        channel.tx.role = role.tag();
++        channel.rx.role = role.remote().tag();
++        if sender.profile() != channel.profile() || endpoint.profile() != channel.profile() {
++            return Err(Error::Protocol);
++        }
++        let cancellation = channel.cancellation();
++        let timeout = channel.timeout;
++        let binding = channel.binding;
++        let shared_tx = Arc::new(Mutex::new(channel.tx));
++        let pending = Arc::new(Mutex::new(None));
++        let closed = Arc::new(AtomicBool::new(false));
++        let (responses, response_rx) = mpsc::sync_channel(1);
++        let (delivery, delivery_rx) = mpsc::sync_channel(4);
++        let (done, done_rx) = mpsc::sync_channel(1);
++        let worker = Worker {
++            completed: false,
++            rx: channel.rx,
++            tx: shared_tx.clone(),
++            pending: pending.clone(),
++            responses,
++            delivery,
++            endpoint,
++            context: context.clone(),
++            binding,
++            role: role.remote(),
++            index: 0,
++            active: None,
++            remote_closed: false,
++            local_closed: closed.clone(),
++            cancellation: cancellation.clone(),
++            timeout,
++        };
++        let child = thread::Builder::new()
++            .name("spiral-flow-reader".into())
++            .spawn(move || {
++                let result = worker.run();
++                let _ = done.send(());
++                result
++            })?;
++        Ok(Self {
++            writer: DuplexWriter {
++                tx: shared_tx,
++                pending,
++                responses: response_rx,
++                sender,
++                context,
++                binding,
++                role,
++                index: 0,
++                artifact_index: 0,
++                closed,
++                cancellation: cancellation.clone(),
++                timeout,
++            },
++            reader: DuplexReader {
++                delivery: delivery_rx,
++                ended: false,
++                cancellation: cancellation.clone(),
++                timeout,
++            },
++            guard: JoinGuard {
++                child: Some(child),
++                done: done_rx,
++                cancellation,
++                timeout,
++            },
++        })
++    }
++    pub fn split(self) -> (DuplexWriter, DuplexReader, JoinGuard) {
++        (self.writer, self.reader, self.guard)
++    }
++}
++
++pub struct DuplexWriter {
++    tx: SharedTx,
++    pending: Pending,
++    responses: Receiver<Frame>,
++    sender: ObjectSender,
++    context: Context,
++    binding: Binding,
++    role: Role,
++    index: u64,
++    artifact_index: u64,
++    closed: Arc<AtomicBool>,
++    cancellation: Cancellation,
++    timeout: Duration,
++}
++impl DuplexWriter {
++    fn exchange(
++        tx: &SharedTx,
++        pending: &Pending,
++        responses: &Receiver<Frame>,
++        frames: &[Frame],
++        purpose: Purpose,
++        until: Instant,
++        budget: &Arc<AtomicUsize>,
++    ) -> Result<Vec<Frame>> {
++        if frames.is_empty() || frames.len() > 8 {
++            return Err(Error::Limit);
++        }
++        for frame in frames {
++            frame.encode()?;
++            if !matches!(frame.kind, 1..=6) {
++                return Err(Error::Protocol);
++            }
++        }
++        let mut replies = Vec::with_capacity(frames.len());
++        for frame in frames {
++            remaining(until)?;
++            {
++                let mut pending = lock(pending)?;
++                if pending.is_some() {
++                    return Err(Error::Protocol);
++                }
++                *pending = Some(Expected {
++                    purpose,
++                    transfer: frame.transfer,
++                    seq: frame.seq,
++                    until,
++                    seen: budget.clone(),
++                });
++            }
++            lock_until(tx, until)?.send_object(frame, purpose, until)?;
++            let reply = responses
++                .recv_timeout(remaining(until)?)
++                .map_err(|error| match error {
++                    RecvTimeoutError::Timeout => Error::Timeout,
++                    RecvTimeoutError::Disconnected => Error::Closed,
++                })?;
++            remaining(until)?;
++            let terminal = matches!(reply.kind, 103 | 127);
++            replies.push(reply);
++            if terminal {
++                break;
++            }
++        }
++        Ok(replies)
++    }
++    fn run<T>(
++        &mut self,
++        purpose: Purpose,
++        until: Instant,
++        operation: impl FnOnce(
++            &mut ObjectSender,
++            &Context,
++            &mut dyn FnMut(&[Frame]) -> spiralcore_transfer::Result<Vec<Frame>>,
++        ) -> spiralcore_transfer::Result<T>,
++    ) -> Result<T> {
++        if self.closed.load(Ordering::Acquire) {
++            return Err(Error::Closed);
++        }
++        self.cancellation.check()?;
++        let mut transport_error = None;
++        let budget = Arc::new(AtomicUsize::new(0));
++        let tx = &self.tx;
++        let pending = &self.pending;
++        let responses = &self.responses;
++        let result = operation(&mut self.sender, &self.context, &mut |frames| {
++            Self::exchange(tx, pending, responses, frames, purpose, until, &budget).map_err(
++                |error| {
++                    transport_error = Some(error);
++                    spiralcore_transfer::Error::Unknown
++                },
++            )
++        });
++        match result {
++            Ok(value) if Instant::now() < until => Ok(value),
++            result => {
++                self.cancellation.cancel();
++                self.sender.invalidate_receiver_state();
++                Err(transport_error.unwrap_or(match result {
++                    Ok(_) => Error::Timeout,
++                    Err(error) => Error::Core(error),
++                }))
++            }
++        }
++    }
++    pub fn send_block(&mut self, bytes: Vec<u8>) -> Result<BlockReceipt> {
++        self.send_until(bytes, deadline(self.timeout)?)
++    }
++    pub(crate) fn send_until(&mut self, bytes: Vec<u8>, until: Instant) -> Result<BlockReceipt> {
++        if bytes.is_empty() || bytes.len() > MAX_BLOCK {
++            return Err(Error::Limit);
++        }
++        let next = self.index.checked_add(1).ok_or(Error::Sequence)?;
++        let index = self.index;
++        let transfer = transfer(self.binding, self.role, index, false);
++        let object = self.run(Purpose::Application, until, |sender, c, exchange| {
++            sender.send_with_receipt(c, bytes, transfer, false, exchange)
++        })?;
++        self.index = next;
++        Ok(BlockReceipt {
++            index,
++            transfer,
++            object,
++        })
++    }
++    fn artifact_id(&mut self) -> Result<Id> {
++        let next = self.artifact_index.checked_add(1).ok_or(Error::Sequence)?;
++        let id = transfer(self.binding, self.role, self.artifact_index, true);
++        self.artifact_index = next;
++        Ok(id)
++    }
++    pub fn seed_base(&mut self, bytes: Vec<u8>) -> Result<Stats> {
++        self.seed_base_until(bytes, deadline(self.timeout)?)
++    }
++    pub(crate) fn seed_base_until(&mut self, bytes: Vec<u8>, until: Instant) -> Result<Stats> {
++        if bytes.is_empty() || bytes.len() > 65536 {
++            return Err(Error::Limit);
++        }
++        let id = self.artifact_id()?;
++        self.run(Purpose::Artifact, until, |sender, c, exchange| {
++            sender.seed(c, bytes, id, exchange)
++        })
++    }
++    pub fn seed_schema(&mut self) -> Result<Stats> {
++        self.seed_schema_until(deadline(self.timeout)?)
++    }
++    pub(crate) fn seed_schema_until(&mut self, until: Instant) -> Result<Stats> {
++        let id = self.artifact_id()?;
++        self.run(Purpose::Artifact, until, |sender, c, exchange| {
++            sender.seed_schema(c, id, exchange)
++        })
++    }
++    pub fn seed_checkpoint(&mut self) -> Result<Stats> {
++        self.seed_checkpoint_until(deadline(self.timeout)?)
++    }
++    pub(crate) fn seed_checkpoint_until(&mut self, until: Instant) -> Result<Stats> {
++        let id = self.artifact_id()?;
++        self.run(Purpose::Artifact, until, |sender, c, exchange| {
++            sender.seed_checkpoint(c, id, exchange)
++        })
++    }
++    pub fn half_close(&mut self) -> Result<()> {
++        self.half_close_until(deadline(self.timeout)?)
++    }
++    pub(crate) fn half_close_until(&mut self, until: Instant) -> Result<()> {
++        if self.closed.load(Ordering::Acquire) {
++            return Err(Error::Closed);
++        }
++        let result = (|| {
++            let mut tx = lock_until(&self.tx, until)?;
++            tx.application_half_close(until)?;
++            self.closed.store(true, Ordering::Release);
++            Ok(())
++        })();
++        if result.is_err() {
++            self.cancellation.cancel();
++        }
++        result
++    }
++}
++impl Drop for DuplexWriter {
++    fn drop(&mut self) {
++        if !self.closed.load(Ordering::Acquire) {
++            self.cancellation.cancel();
++        }
++    }
++}
++
++pub struct DuplexReader {
++    delivery: Receiver<Event>,
++    ended: bool,
++    cancellation: Cancellation,
++    timeout: Duration,
++}
++impl DuplexReader {
++    pub fn receive(&mut self) -> Result<Event> {
++        self.receive_until(deadline(self.timeout)?)
++    }
++    pub(crate) fn receive_until(&mut self, until: Instant) -> Result<Event> {
++        self.cancellation.check_delivery()?;
++        if self.ended {
++            return Err(Error::Closed);
++        }
++        match self.delivery.recv_timeout(remaining(until)?) {
++            Ok(event) => {
++                self.cancellation.check_delivery()?;
++                if event == Event::HalfClose {
++                    self.ended = true;
++                }
++                Ok(event)
++            }
++            Err(error) => {
++                self.cancellation.cancel();
++                Err(match error {
++                    RecvTimeoutError::Timeout => Error::Timeout,
++                    RecvTimeoutError::Disconnected => Error::Closed,
++                })
++            }
++        }
++    }
++}
++impl Drop for DuplexReader {
++    fn drop(&mut self) {
++        if !self.ended {
++            self.cancellation.cancel();
++        }
++    }
++}
++
++pub struct JoinGuard {
++    child: Option<JoinHandle<Result<(Counters, Counters)>>>,
++    done: Receiver<()>,
++    cancellation: Cancellation,
++    timeout: Duration,
++}
++impl JoinGuard {
++    pub fn join(mut self) -> Result<(Counters, Counters)> {
++        let expired = matches!(
++            self.done.recv_timeout(self.timeout),
++            Err(RecvTimeoutError::Timeout)
++        );
++        if expired {
++            self.cancellation.cancel();
++        }
++        let result = match self.child.take() {
++            Some(child) => child.join().unwrap_or(Err(Error::Worker)),
++            None => Err(Error::Worker),
++        };
++        if expired || result.is_err() {
++            self.cancellation.cancel();
++        }
++        if expired { Err(Error::Timeout) } else { result }
++    }
++}
++impl Drop for JoinGuard {
++    fn drop(&mut self) {
++        if let Some(child) = self.child.take() {
++            self.cancellation.cancel();
++            let _ = child.join();
++        }
++    }
++}
++
++struct Worker<A: Authority> {
++    completed: bool,
++    rx: Rx,
++    tx: SharedTx,
++    pending: Pending,
++    responses: SyncSender<Frame>,
++    delivery: SyncSender<Event>,
++    endpoint: ObjectEndpoint<A>,
++    context: Context,
++    binding: Binding,
++    role: Role,
++    index: u64,
++    active: Option<(Id, Id, u64)>,
++    remote_closed: bool,
++    local_closed: Arc<AtomicBool>,
++    cancellation: Cancellation,
++    timeout: Duration,
++}
++impl<A: Authority> Worker<A> {
++    fn complete(&mut self) -> Result<(Counters, Counters)> {
++        let counters = (lock(&self.tx)?.counters(), self.rx.counters());
++        self.completed = true;
++        self.cancellation.complete();
++        Ok(counters)
++    }
++    fn deliver(&self, mut event: Event, until: Instant) -> Result<()> {
++        loop {
++            self.cancellation.check()?;
++            let left = remaining(until)?;
++            match self.delivery.try_send(event) {
++                Ok(()) => return Ok(()),
++                Err(TrySendError::Disconnected(_)) => return Err(Error::Closed),
++                Err(TrySendError::Full(returned)) => {
++                    event = returned;
++                    thread::park_timeout(left.min(Duration::from_millis(5)));
++                }
++            }
++        }
++    }
++    fn request(&mut self, purpose: Purpose, request: Frame, until: Instant) -> Result<()> {
++        if self.remote_closed {
++            return Err(Error::Protocol);
++        }
++        if purpose == Purpose::Application {
++            if request.transfer != transfer(self.binding, self.role, self.index, false) {
++                return Err(Error::Sequence);
++            }
++            if let Some((id, _, _)) = self.active {
++                if request.transfer != id {
++                    return Err(Error::Sequence);
++                }
++            } else if !matches!(request.kind, 1 | 4) {
++                return Err(Error::Protocol);
++            }
++        }
++        let reply = self.endpoint.handle(&self.context, &request, now()?)?;
++        if purpose == Purpose::Application {
++            if matches!(request.kind, 1 | 4) {
++                let body = if request.kind == 4 {
++                    request.body.get(32..).ok_or(Error::Protocol)?
++                } else {
++                    &request.body
++                };
++                let offer = Offer::decode(body)?;
++                if offer.len == 0 || offer.len > MAX_BLOCK as u64 {
++                    return Err(Error::Limit);
++                }
++                let candidate = (request.transfer, offer.object, offer.len);
++                if self.active.is_some_and(|active| active != candidate) {
++                    return Err(Error::Protocol);
++                }
++                self.active = Some(candidate);
++            }
++            if reply.kind == 103 {
++                let (_, id, len) = self.active.ok_or(Error::Protocol)?;
++                if reply.body != id {
++                    return Err(Error::Integrity);
++                }
++                let bytes = self.endpoint.read_object(&self.context, id)?;
++                if bytes.len() as u64 != len {
++                    return Err(Error::Integrity);
++                }
++                let next = self.index.checked_add(1).ok_or(Error::Sequence)?;
++                self.deliver(Event::Data(bytes), until)?;
++                self.index = next;
++                self.active = None;
++            }
++        }
++        lock_until(&self.tx, until)?.send_object(&reply, purpose, until)
++    }
++    fn run(mut self) -> Result<(Counters, Counters)> {
++        loop {
++            if self.remote_closed
++                && self.local_closed.load(Ordering::Acquire)
++                && lock(&self.pending)?.is_none()
++            {
++                return self.complete();
++            }
++            match self.rx.poll_input() {
++                Ok(false) => continue,
++                Ok(true) => {}
++                Err(Error::Truncated) if self.remote_closed => {
++                    // A peer can observe our FIN before the writing thread
++                    // publishes local_closed. Preserve the original TX barrier
++                    // before deciding whether this EOF is a clean completion.
++                    let tx = lock(&self.tx)?;
++                    if self.local_closed.load(Ordering::Acquire) && lock(&self.pending)?.is_none() {
++                        drop(tx);
++                        return self.complete();
++                    }
++                    return Err(Error::Truncated);
++                }
++                Err(error) => return Err(error),
++            }
++            let mut until = deadline(self.timeout)?;
++            {
++                let mut pending = lock(&self.pending)?;
++                if let Some(expected) = pending.as_mut() {
++                    remaining(expected.until)?;
++                    let seen = expected
++                        .seen
++                        .fetch_update(Ordering::AcqRel, Ordering::Acquire, |n| n.checked_add(1))
++                        .map_err(|_| Error::Limit)?;
++                    if seen >= 32 {
++                        return Err(Error::Limit);
++                    }
++                    until = until.min(expected.until);
++                }
++            }
++            match self.rx.receive_object(until)? {
++                ObjectRecord::Frame(purpose, frame) if matches!(frame.kind, 1..=6) => {
++                    self.request(purpose, frame, until)?
++                }
++                ObjectRecord::Frame(purpose, frame) => {
++                    let expected = lock(&self.pending)?.take().ok_or(Error::Protocol)?;
++                    if purpose != expected.purpose
++                        || frame.transfer != expected.transfer
++                        || frame.seq != expected.seq
++                    {
++                        return Err(Error::Protocol);
++                    }
++                    remaining(expected.until)?;
++                    self.responses
++                        .try_send(frame)
++                        .map_err(|_| Error::Protocol)?;
++                }
++                ObjectRecord::ApplicationHalfClose => {
++                    if self.remote_closed || self.active.is_some() {
++                        return Err(Error::Protocol);
++                    }
++                    self.deliver(Event::HalfClose, until)?;
++                    self.remote_closed = true;
++                }
++                ObjectRecord::TransportFin => return Err(Error::Protocol),
++            }
++        }
++    }
++}
++impl<A: Authority> Drop for Worker<A> {
++    fn drop(&mut self) {
++        if !self.completed {
++            self.cancellation.cancel();
++        }
++    }
++}
+--- /dev/null
++++ b/crates/spiralcore-mvm-flowmux/src/lib.rs
+@@ -0,0 +1,82 @@
++#![forbid(unsafe_code)]
++//! Initial bounded TCP transport baseline for explicitly cooperating FlowMux peers.
++//! This grants no route/peer authority. Full object-v1 warm/Combined integration
++//! and the canonical post-admission endpoint hook remain separate required work.
++mod duplex;
++mod stream;
++pub use stream::MappedStream;
++mod object;
++pub use duplex::{BlockReceipt, Duplex, DuplexReader, DuplexWriter, JoinGuard, Role};
++mod record;
++pub mod scope;
++mod tcp;
++pub mod tls;
++pub use object::{ObjectChannel, ServeEvent};
++#[derive(Clone, Copy, Debug, PartialEq, Eq)]
++pub enum Purpose {
++    Application,
++    Artifact,
++}
++pub(crate) enum ObjectRecord {
++    Frame(Purpose, spiralcore_transfer::protocol::Frame),
++    ApplicationHalfClose,
++    TransportFin,
++}
++pub use tcp::{Cancellation, Counters, Event, Rx, TcpMapping, Tx};
++pub const MAX_BLOCK: usize = 16 * 1024;
++pub const HEADER_LEN: usize = 120;
++
++#[derive(Clone, Copy, Debug, PartialEq, Eq)]
++pub struct Binding {
++    pub flow: [u8; 32],
++    pub policy_sha256: [u8; 32],
++    pub scope_commitment: [u8; 32],
++}
++impl Binding {
++    pub fn directional_flow(self, role: Role) -> [u8; 32] {
++        spiralcore_transfer::hash(
++            b"spiralcore.flow.direction.v1\0",
++            &[&self.flow, &[role.tag()]],
++        )
++    }
++    fn validate(self) -> Result<()> {
++        if self.flow == [0; 32] || self.policy_sha256 == [0; 32] || self.scope_commitment == [0; 32]
++        {
++            return Err(Error::InvalidBinding);
++        }
++        Ok(())
++    }
++}
++#[derive(Debug)]
++pub enum Error {
++    Io(std::io::Error),
++    Core(spiralcore_transfer::Error),
++    InvalidBinding,
++    PeerMismatch,
++    Limit,
++    Protocol,
++    Sequence,
++    Integrity,
++    Truncated,
++    Timeout,
++    Cancelled,
++    Closed,
++    Worker,
++}
++impl std::fmt::Display for Error {
++    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
++        write!(f, "flowmux mapping: {self:?}")
++    }
++}
++impl std::error::Error for Error {}
++impl From<std::io::Error> for Error {
++    fn from(error: std::io::Error) -> Self {
++        Self::Io(error)
++    }
++}
++impl From<spiralcore_transfer::Error> for Error {
++    fn from(error: spiralcore_transfer::Error) -> Self {
++        Self::Core(error)
++    }
++}
++pub type Result<T> = std::result::Result<T, Error>;
+--- /dev/null
++++ b/crates/spiralcore-mvm-flowmux/src/object.rs
+@@ -0,0 +1,293 @@
++//! Canonical object-v1 transport; codecs, authority and publication stay in the core.
++use crate::{Binding, Cancellation, Counters, Error, MAX_BLOCK, Result, Rx, TcpMapping, Tx};
++use spiralcore_transfer::{
++    Id,
++    client::Stats,
++    endpoint::{Authority, Context},
++    protocol::Frame,
++    v1::{Capabilities, NegotiatedProfile, ObjectEndpoint, ObjectReceipt, ObjectSender},
++};
++use std::{
++    net::{SocketAddr, TcpStream},
++    time::{Duration, Instant},
++};
++
++#[derive(Debug, PartialEq, Eq)]
++pub enum ServeEvent {
++    Handled {
++        request: Frame,
++        reply: Frame,
++        purpose: crate::Purpose,
++    },
++    HalfClose,
++}
++pub struct ObjectChannel {
++    pub(crate) authenticated_role: Option<crate::Role>,
++    pub(crate) tx: Tx,
++    pub(crate) rx: Rx,
++    pub(crate) binding: Binding,
++    pub(crate) timeout: Duration,
++    profile: NegotiatedProfile,
++    cancellation: Cancellation,
++}
++impl ObjectChannel {
++    /// The explicit enrollment must match this actual mutual TLS session.
++    pub fn from_authenticated(
++        socket: crate::tls::TlsCarrier,
++        scope: &crate::scope::ScopeAuthority,
++        timeout: Duration,
++        role: crate::Role,
++        local: Capabilities,
++        trusted_peer: Capabilities,
++    ) -> Result<Self> {
++        scope.check_carrier(&socket, role)?;
++        let profile = local.negotiate(&trusted_peer)?;
++        if profile.max_object_bytes() > 65536 {
++            return Err(Error::Limit);
++        }
++        let mapping = TcpMapping::with_authenticated(socket, scope, timeout, role)?;
++        let cancellation = mapping.cancellation();
++        let (tx, rx) = mapping.split();
++        Ok(Self {
++            tx,
++            rx,
++            binding: scope.binding()?,
++            timeout,
++            profile,
++            cancellation,
++            authenticated_role: Some(role),
++        })
++    }
++    /// Capabilities must be authenticated or explicitly trusted-pinned by the caller.
++    pub fn from_connected(
++        socket: TcpStream,
++        binding: Binding,
++        peer: SocketAddr,
++        timeout: Duration,
++        local: Capabilities,
++        trusted_peer: Capabilities,
++    ) -> Result<Self> {
++        let profile = local.negotiate(&trusted_peer)?;
++        if profile.max_object_bytes() > 65536 {
++            return Err(Error::Limit);
++        }
++        let mapping = TcpMapping::with_profile(socket, binding, peer, timeout, true)?;
++        let cancellation = mapping.cancellation();
++        let (tx, rx) = mapping.split();
++        Ok(Self {
++            authenticated_role: None,
++            tx,
++            rx,
++            binding,
++            timeout,
++            profile,
++            cancellation,
++        })
++    }
++    pub fn profile(&self) -> NegotiatedProfile {
++        self.profile
++    }
++    pub fn counters(&self) -> (Counters, Counters) {
++        (self.tx.counters(), self.rx.counters())
++    }
++    pub fn cancellation(&self) -> Cancellation {
++        self.cancellation.clone()
++    }
++    pub(crate) fn check_context(&self, context: &Context) -> Result<()> {
++        if context.namespace()? != self.binding.flow
++            || context.policy_epoch != 0
++            || context.execution_epoch != 0
++        {
++            return Err(Error::InvalidBinding);
++        }
++        Ok(())
++    }
++    fn deadline(&self) -> Result<Instant> {
++        Instant::now().checked_add(self.timeout).ok_or(Error::Limit)
++    }
++    fn exchange(
++        &mut self,
++        frames: &[Frame],
++        until: Instant,
++        purpose: crate::Purpose,
++    ) -> Result<Vec<Frame>> {
++        if frames.is_empty() || frames.len() > 8 {
++            return Err(Error::Limit);
++        }
++        for frame in frames {
++            if !matches!(frame.kind, 1..=6) {
++                return Err(Error::Protocol);
++            }
++            frame.encode()?;
++        }
++        let mut replies = Vec::with_capacity(frames.len());
++        for frame in frames {
++            self.tx.send_object(frame, purpose, until)?;
++            let crate::ObjectRecord::Frame(reply_purpose, reply) = self.rx.receive_object(until)?
++            else {
++                return Err(Error::Closed);
++            };
++            if reply_purpose != purpose {
++                return Err(Error::Protocol);
++            }
++            if reply.transfer != frame.transfer
++                || reply.seq != frame.seq
++                || !matches!(reply.kind, 101..=105 | 127)
++            {
++                return Err(Error::Protocol);
++            }
++            let terminal = matches!(reply.kind, 103 | 127);
++            replies.push(reply);
++            if terminal {
++                break;
++            }
++        }
++        Ok(replies)
++    }
++    fn run<T>(
++        &mut self,
++        sender: &mut ObjectSender,
++        context: &Context,
++        purpose: crate::Purpose,
++        operation: impl FnOnce(
++            &mut ObjectSender,
++            &mut dyn FnMut(&[Frame]) -> spiralcore_transfer::Result<Vec<Frame>>,
++        ) -> spiralcore_transfer::Result<T>,
++    ) -> Result<T> {
++        self.check_context(context)?;
++        if sender.profile() != self.profile {
++            return Err(Error::Protocol);
++        }
++        let until = self.deadline()?;
++        let mut transport_error = None;
++        let result = operation(sender, &mut |frames| {
++            self.exchange(frames, until, purpose).map_err(|error| {
++                transport_error = Some(error);
++                spiralcore_transfer::Error::Unknown
++            })
++        });
++        match result {
++            Ok(value) if Instant::now() < until => Ok(value),
++            Ok(_) => {
++                self.cancellation.cancel();
++                sender.invalidate_receiver_state();
++                Err(Error::Timeout)
++            }
++            Err(error) => {
++                self.cancellation.cancel();
++                sender.invalidate_receiver_state();
++                Err(transport_error.unwrap_or(Error::Core(error)))
++            }
++        }
++    }
++    pub fn send_block(
++        &mut self,
++        sender: &mut ObjectSender,
++        context: &Context,
++        bytes: Vec<u8>,
++        transfer: Id,
++        warm_probe: bool,
++    ) -> Result<ObjectReceipt> {
++        if bytes.is_empty() || bytes.len() > MAX_BLOCK {
++            return Err(Error::Limit);
++        }
++        self.run(
++            sender,
++            context,
++            crate::Purpose::Application,
++            |sender, exchange| {
++                sender.send_with_receipt(context, bytes, transfer, warm_probe, exchange)
++            },
++        )
++    }
++    pub fn seed_base(
++        &mut self,
++        sender: &mut ObjectSender,
++        context: &Context,
++        bytes: Vec<u8>,
++        transfer: Id,
++    ) -> Result<Stats> {
++        if bytes.is_empty() || bytes.len() > 65536 {
++            return Err(Error::Limit);
++        }
++        self.run(
++            sender,
++            context,
++            crate::Purpose::Artifact,
++            |sender, exchange| sender.seed(context, bytes, transfer, exchange),
++        )
++    }
++    pub fn seed_schema(
++        &mut self,
++        sender: &mut ObjectSender,
++        context: &Context,
++        transfer: Id,
++    ) -> Result<Stats> {
++        self.run(
++            sender,
++            context,
++            crate::Purpose::Artifact,
++            |sender, exchange| sender.seed_schema(context, transfer, exchange),
++        )
++    }
++    pub fn seed_checkpoint(
++        &mut self,
++        sender: &mut ObjectSender,
++        context: &Context,
++        transfer: Id,
++    ) -> Result<Stats> {
++        self.run(
++            sender,
++            context,
++            crate::Purpose::Artifact,
++            |sender, exchange| sender.seed_checkpoint(context, transfer, exchange),
++        )
++    }
++    pub fn serve_once<A: Authority>(
++        &mut self,
++        endpoint: &mut ObjectEndpoint<A>,
++        context: &Context,
++        now: u64,
++    ) -> Result<ServeEvent> {
++        self.check_context(context)?;
++        if endpoint.profile() != self.profile {
++            return Err(Error::Protocol);
++        }
++        let until = self.deadline()?;
++        let result = (|| {
++            let (purpose, request) = match self.rx.receive_object(until)? {
++                crate::ObjectRecord::Frame(purpose, request) => (purpose, request),
++                crate::ObjectRecord::TransportFin => return Ok(ServeEvent::HalfClose),
++                crate::ObjectRecord::ApplicationHalfClose => return Err(Error::Protocol),
++            };
++            if !matches!(request.kind, 1..=6) {
++                return Err(Error::Protocol);
++            }
++            let reply = endpoint.handle(context, &request, now)?;
++            self.tx.send_object(&reply, purpose, until)?;
++            Ok(ServeEvent::Handled {
++                request,
++                reply,
++                purpose,
++            })
++        })();
++        if result.is_err() {
++            self.cancellation.cancel();
++        }
++        result
++    }
++    pub fn half_close(&mut self) -> Result<()> {
++        self.tx.half_close()
++    }
++    pub fn receive_terminal(&mut self) -> Result<ServeEvent> {
++        let until = self.deadline()?;
++        let result = match self.rx.receive_frame(until)? {
++            None => Ok(ServeEvent::HalfClose),
++            Some(_) => Err(Error::Protocol),
++        };
++        if result.is_err() {
++            self.cancellation.cancel();
++        }
++        result
++    }
++}
+--- /dev/null
++++ b/crates/spiralcore-mvm-flowmux/src/record.rs
+@@ -0,0 +1,126 @@
++use crate::{Binding, Error, HEADER_LEN, MAX_BLOCK, Result};
++use spiralcore_transfer::{
++    object_id,
++    protocol::{Mode, Offer},
++    zstd_whole,
++};
++
++pub(crate) const DATA: u8 = 1;
++pub(crate) const FIN: u8 = 2;
++pub(crate) const RESET: u8 = 3;
++pub(crate) const CANCEL: u8 = 4;
++pub(crate) const OBJECT: u8 = 6;
++pub(crate) const ARTIFACT: u8 = 7;
++pub(crate) const APP_FIN: u8 = 8;
++const MAGIC: &[u8; 8] = b"SCFLW001";
++
++pub(crate) fn body_limit() -> Result<usize> {
++    let actual_offer = Offer::cold(&[], Mode::Raw).encode()?.len();
++    actual_offer.checked_add(2 + MAX_BLOCK).ok_or(Error::Limit)
++}
++pub(crate) fn header(
++    binding: Binding,
++    sequence: u64,
++    kind: u8,
++    len: usize,
++    role: u8,
++) -> Result<Vec<u8>> {
++    let len = u32::try_from(len).map_err(|_| Error::Limit)?;
++    let mut bytes = Vec::with_capacity(HEADER_LEN);
++    bytes.extend_from_slice(MAGIC);
++    bytes.extend_from_slice(&[kind, role, 0, 0]);
++    bytes.extend_from_slice(&spiralcore_transfer::hash(
++        b"spiralcore.flow.direction.v1\0",
++        &[&binding.flow, &[role]],
++    ));
++    bytes.extend_from_slice(&binding.policy_sha256);
++    bytes.extend_from_slice(&binding.scope_commitment);
++    bytes.extend_from_slice(&sequence.to_be_bytes());
++    bytes.extend_from_slice(&len.to_be_bytes());
++    Ok(bytes)
++}
++pub(crate) fn parse_header(
++    bytes: &[u8; HEADER_LEN],
++    binding: Binding,
++    sequence: u64,
++    cap: usize,
++    data_kind: u8,
++    role: u8,
++) -> Result<(u8, usize)> {
++    if &bytes[..8] != MAGIC
++        || bytes[9] != role
++        || bytes[10..12] != [0; 2]
++        || !(bytes[8] == data_kind
++            || matches!(bytes[8], FIN | RESET | CANCEL)
++            || data_kind == OBJECT && matches!(bytes[8], ARTIFACT | APP_FIN))
++    {
++        return Err(Error::Protocol);
++    }
++    if bytes[12..44]
++        != spiralcore_transfer::hash(b"spiralcore.flow.direction.v1\0", &[&binding.flow, &[role]])
++        || bytes[44..76] != binding.policy_sha256
++        || bytes[76..108] != binding.scope_commitment
++    {
++        return Err(Error::InvalidBinding);
++    }
++    if bytes[108..116] != sequence.to_be_bytes() {
++        return Err(Error::Sequence);
++    }
++    let len = u32::from_be_bytes(bytes[116..120].try_into().expect("fixed header")) as usize;
++    if len > cap {
++        return Err(Error::Limit);
++    }
++    if (bytes[8] == data_kind || data_kind == OBJECT && bytes[8] == ARTIFACT) == (len == 0) {
++        return Err(Error::Protocol);
++    }
++    Ok((bytes[8], len))
++}
++pub(crate) fn encode(
++    encoder: &mut zstd_whole::PreparedEncoder,
++    bytes: &[u8],
++) -> Result<(Vec<u8>, bool)> {
++    if bytes.is_empty() || bytes.len() > MAX_BLOCK {
++        return Err(Error::Limit);
++    }
++    let compressed = encoder.encode(bytes)?;
++    let use_zstd = compressed.len() < bytes.len();
++    let (mode, payload) = if use_zstd {
++        (Mode::ZstdWholeV1, compressed.as_slice())
++    } else {
++        (Mode::Raw, bytes)
++    };
++    let offer = Offer::cold(bytes, mode).encode()?;
++    let mut body = Vec::with_capacity(2 + offer.len() + payload.len());
++    body.extend_from_slice(
++        &u16::try_from(offer.len())
++            .map_err(|_| Error::Limit)?
++            .to_be_bytes(),
++    );
++    body.extend_from_slice(&offer);
++    body.extend_from_slice(payload);
++    Ok((body, use_zstd))
++}
++pub(crate) fn decode(
++    decoder: &mut zstd_whole::PreparedDecoder,
++    body: &[u8],
++) -> Result<(Vec<u8>, bool)> {
++    let len = body.get(..2).ok_or(Error::Protocol)?;
++    let n = usize::from(u16::from_be_bytes([len[0], len[1]]));
++    let end = 2usize.checked_add(n).ok_or(Error::Limit)?;
++    let offer = Offer::decode(body.get(2..end).ok_or(Error::Protocol)?)?;
++    let decoded_len = usize::try_from(offer.len).map_err(|_| Error::Limit)?;
++    if !(1..=MAX_BLOCK).contains(&decoded_len) || offer.manifest.is_some() || offer.base.is_some() {
++        return Err(Error::Limit);
++    }
++    let payload = body.get(end..).ok_or(Error::Protocol)?;
++    let compressed = offer.mode == Mode::ZstdWholeV1;
++    let decoded = match offer.mode {
++        Mode::Raw if payload.len() == decoded_len => payload.to_vec(),
++        Mode::ZstdWholeV1 if payload.len() < decoded_len => decoder.decode(payload, decoded_len)?,
++        _ => return Err(Error::Protocol),
++    };
++    if object_id(&decoded) != offer.object {
++        return Err(Error::Integrity);
++    }
++    Ok((decoded, compressed))
++}
+--- /dev/null
++++ b/crates/spiralcore-mvm-flowmux/src/scope.rs
+@@ -0,0 +1,305 @@
++//! Complete admitted facts. Construction is not permission: the host's current
++//! signed-plan/capability authority must approve these before codec allocation.
++use crate::{Binding, Error, Result};
++use spiralcore_transfer::{endpoint::Context, hash};
++use std::net::SocketAddr;
++#[derive(Clone, PartialEq, Eq)]
++pub struct ScopeFacts {
++    pub policy_sha256: [u8; 32],
++    pub plan_id: String,
++    pub plan_version: u32,
++    pub plan_nonce: [u8; 16],
++    pub bundle_sha256: [u8; 32],
++    pub tenant: String,
++    pub instance: String,
++    pub session: String,
++    pub guest_key: [u8; 32],
++    pub stream_id: u32,
++    pub requested_host: String,
++    pub requested_port: u16,
++    pub actual_peer: SocketAddr,
++    pub route: String,
++    pub initiator_spki: [u8; 32],
++    pub acceptor_spki: [u8; 32],
++    pub tls_exporter: [u8; 32],
++}
++impl std::fmt::Debug for ScopeFacts {
++    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
++        formatter.debug_struct("ScopeFacts").finish_non_exhaustive()
++    }
++}
++impl ScopeFacts {
++    pub fn canonical_bytes(&self) -> Result<Vec<u8>> {
++        if self.plan_version == 0
++            || self.stream_id == 0
++            || self.requested_port == 0
++            || self.actual_peer.port() == 0
++            || [
++                self.policy_sha256,
++                self.bundle_sha256,
++                self.guest_key,
++                self.initiator_spki,
++                self.acceptor_spki,
++                self.tls_exporter,
++            ]
++            .contains(&[0; 32])
++        {
++            return Err(Error::InvalidBinding);
++        }
++        let mut bytes = b"spiralcore.flow.scope.v1\0".to_vec();
++        for value in [
++            &self.plan_id,
++            &self.tenant,
++            &self.instance,
++            &self.session,
++            &self.requested_host,
++            &self.route,
++        ] {
++            if value.is_empty() || value.len() > 256 || value.chars().any(char::is_control) {
++                return Err(Error::InvalidBinding);
++            }
++            bytes.extend_from_slice(&(value.len() as u16).to_be_bytes());
++            bytes.extend_from_slice(value.as_bytes());
++        }
++        for value in [
++            self.policy_sha256,
++            self.bundle_sha256,
++            self.guest_key,
++            self.initiator_spki,
++            self.acceptor_spki,
++            self.tls_exporter,
++        ] {
++            bytes.extend_from_slice(&value);
++        }
++        bytes.extend_from_slice(&self.plan_version.to_be_bytes());
++        bytes.extend_from_slice(&self.plan_nonce);
++        bytes.extend_from_slice(&self.stream_id.to_be_bytes());
++        bytes.extend_from_slice(&self.requested_port.to_be_bytes());
++        match self.actual_peer.ip() {
++            std::net::IpAddr::V4(ip) => {
++                bytes.push(4);
++                bytes.extend_from_slice(&ip.octets());
++            }
++            std::net::IpAddr::V6(ip) => {
++                bytes.push(6);
++                bytes.extend_from_slice(&ip.octets());
++            }
++        }
++        bytes.extend_from_slice(&self.actual_peer.port().to_be_bytes());
++        Ok(bytes)
++    }
++    pub fn commitment(&self) -> Result<[u8; 32]> {
++        Ok(hash(
++            b"spiralcore.flow.scope.commit.v1\0",
++            &[&self.canonical_bytes()?],
++        ))
++    }
++    pub fn context(&self) -> Result<Context> {
++        let commitment = self.commitment()?;
++        let hex = |bytes: &[u8]| {
++            bytes
++                .iter()
++                .map(|byte| format!("{byte:02x}"))
++                .collect::<String>()
++        };
++        Ok(Context {
++            tenant: self.tenant.clone(),
++            domain: "canonical-mvm-flowmux-v1".into(),
++            sender: hex(&self.initiator_spki),
++            recipient: hex(&self.acceptor_spki),
++            mailbox: format!("stream:{}", self.stream_id),
++            capability: hex(&self.policy_sha256),
++            authorization_scope: hex(&commitment),
++            policy_epoch: 0,
++            execution_epoch: 0,
++        })
++    }
++    pub fn binding(&self) -> Result<Binding> {
++        Ok(Binding {
++            flow: self.context()?.namespace()?,
++            policy_sha256: self.policy_sha256,
++            scope_commitment: self.commitment()?,
++        })
++    }
++}
++
++use crate::Role;
++use spiralcore_transfer::endpoint::Authority;
++use std::{
++    sync::{Arc, Mutex},
++    time::{Duration, Instant},
++};
++#[derive(Clone)]
++pub struct PinnedScopePolicy {
++    inner: Arc<Mutex<PolicyState>>,
++}
++struct PolicyState {
++    max: usize,
++    generation: u64,
++    next: u64,
++    entries: Vec<Enrollment>,
++}
++struct Enrollment {
++    commitment: [u8; 32],
++    peer: [u8; 32],
++    role: Role,
++    until: Instant,
++    id: u64,
++}
++#[derive(Clone)]
++pub struct ScopeAuthority {
++    policy: PinnedScopePolicy,
++    facts: ScopeFacts,
++    context: Context,
++    generation: u64,
++    id: u64,
++    role: Role,
++    peer: [u8; 32],
++}
++fn denied() -> Error {
++    Error::Core(spiralcore_transfer::Error::Unauthorized)
++}
++impl PinnedScopePolicy {
++    /// An empty enrollment set refuses every peer and scope.
++    pub fn new(max: usize) -> Result<Self> {
++        if !(1..=32).contains(&max) {
++            return Err(Error::Limit);
++        }
++        Ok(Self {
++            inner: Arc::new(Mutex::new(PolicyState {
++                max,
++                generation: 1,
++                next: 1,
++                entries: Vec::new(),
++            })),
++        })
++    }
++    /// Trusted controller enrollment, never a peer's received assertion.
++    pub fn enroll(
++        &self,
++        facts: &ScopeFacts,
++        peer: [u8; 32],
++        role: Role,
++        until: Instant,
++    ) -> Result<()> {
++        let commitment = facts.commitment()?;
++        if peer
++            != match role {
++                Role::Initiator => facts.acceptor_spki,
++                Role::Acceptor => facts.initiator_spki,
++            }
++        {
++            return Err(denied());
++        }
++        let now = Instant::now();
++        if until <= now || until.saturating_duration_since(now) > Duration::from_secs(300) {
++            return Err(denied());
++        }
++        let mut state = self.inner.lock().map_err(|_| Error::Worker)?;
++        state.entries.retain(|entry| entry.until > now);
++        let replace = state.entries.iter().position(|entry| {
++            entry.commitment == commitment && entry.peer == peer && entry.role == role
++        });
++        if replace.is_none() && state.entries.len() >= state.max {
++            return Err(Error::Limit);
++        }
++        let id = state.next;
++        state.next = id.checked_add(1).ok_or(Error::Limit)?;
++        let entry = Enrollment {
++            commitment,
++            peer,
++            role,
++            until,
++            id,
++        };
++        if let Some(index) = replace {
++            state.entries[index] = entry;
++        } else {
++            state.entries.push(entry);
++        }
++        Ok(())
++    }
++    pub fn revoke_all(&self) -> Result<()> {
++        let mut state = self.inner.lock().map_err(|_| Error::Worker)?;
++        state.generation = state.generation.checked_add(1).ok_or(Error::Limit)?;
++        state.entries.clear();
++        Ok(())
++    }
++    pub fn authorize_scope(
++        &self,
++        facts: &ScopeFacts,
++        peer: [u8; 32],
++        role: Role,
++    ) -> Result<ScopeAuthority> {
++        let commitment = facts.commitment()?;
++        let context = facts.context()?;
++        let state = self.inner.lock().map_err(|_| Error::Worker)?;
++        let entry = state
++            .entries
++            .iter()
++            .find(|entry| {
++                entry.commitment == commitment
++                    && entry.peer == peer
++                    && entry.role == role
++                    && entry.until > Instant::now()
++            })
++            .ok_or_else(denied)?;
++        Ok(ScopeAuthority {
++            policy: self.clone(),
++            facts: facts.clone(),
++            context,
++            generation: state.generation,
++            id: entry.id,
++            role,
++            peer,
++        })
++    }
++}
++impl ScopeAuthority {
++    pub fn context(&self) -> &Context {
++        &self.context
++    }
++    pub fn binding(&self) -> Result<Binding> {
++        self.facts.binding()
++    }
++    pub fn check(&self) -> Result<()> {
++        self.authorize(&self.context).map_err(Error::from)
++    }
++    pub(crate) fn check_carrier(&self, carrier: &crate::tls::TlsCarrier, role: Role) -> Result<()> {
++        self.check()?;
++        let local = match role {
++            Role::Initiator => self.facts.initiator_spki,
++            Role::Acceptor => self.facts.acceptor_spki,
++        };
++        if role != self.role
++            || carrier.role() != role
++            || carrier.exporter() != self.facts.tls_exporter
++            || carrier.peer_spki_sha256() != self.peer
++            || carrier.local_spki_sha256() != local
++            || role == Role::Initiator && carrier.peer_addr()? != self.facts.actual_peer
++        {
++            return Err(denied());
++        }
++        Ok(())
++    }
++}
++impl Authority for ScopeAuthority {
++    fn authorize(&self, context: &Context) -> spiralcore_transfer::Result<()> {
++        let deny = || spiralcore_transfer::Error::Unauthorized;
++        if context != &self.context {
++            return Err(deny());
++        }
++        let state = self.policy.inner.lock().map_err(|_| deny())?;
++        if state.generation != self.generation
++            || !state.entries.iter().any(|entry| {
++                entry.id == self.id
++                    && entry.role == self.role
++                    && entry.peer == self.peer
++                    && entry.until > Instant::now()
++            })
++        {
++            return Err(deny());
++        }
++        Ok(())
++    }
++}
+--- /dev/null
++++ b/crates/spiralcore-mvm-flowmux/src/stream.rs
+@@ -0,0 +1,188 @@
++use crate::{
++    Cancellation, Duplex, DuplexReader, DuplexWriter, Error, Event, JoinGuard, MAX_BLOCK, Result,
++    duplex::{deadline, lock_until},
++};
++use spiralcore_transfer::client::Stats;
++use std::{
++    io::{self, Read, Write},
++    net::Shutdown,
++    sync::{Arc, Mutex},
++    time::{Duration, Instant},
++};
++
++struct BufferedReader {
++    reader: DuplexReader,
++    bytes: Vec<u8>,
++    offset: usize,
++    ended: bool,
++}
++struct Shared {
++    writer: Mutex<DuplexWriter>,
++    reader: Mutex<BufferedReader>,
++    guard: Mutex<Option<JoinGuard>>,
++    cancellation: Cancellation,
++    timeout: Duration,
++}
++impl Drop for Shared {
++    fn drop(&mut self) {
++        self.cancellation.cancel();
++        let guard = self
++            .guard
++            .get_mut()
++            .unwrap_or_else(|poison| poison.into_inner())
++            .take();
++        drop(guard);
++    }
++}
++/// Relay-compatible payload I/O over one already selected cooperating connection.
++#[derive(Clone)]
++pub struct MappedStream {
++    inner: Arc<Shared>,
++}
++impl std::fmt::Debug for MappedStream {
++    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
++        f.debug_struct("MappedStream").finish_non_exhaustive()
++    }
++}
++impl MappedStream {
++    pub fn from_duplex(duplex: Duplex) -> Self {
++        let (cancellation, timeout) = duplex.stream_config();
++        let (writer, reader, guard) = duplex.split();
++        Self {
++            inner: Arc::new(Shared {
++                writer: Mutex::new(writer),
++                reader: Mutex::new(BufferedReader {
++                    reader,
++                    bytes: Vec::new(),
++                    offset: 0,
++                    ended: false,
++                }),
++                guard: Mutex::new(Some(guard)),
++                cancellation,
++                timeout,
++            }),
++        }
++    }
++    fn write_operation<T>(
++        &self,
++        operation: impl FnOnce(&mut DuplexWriter, Instant) -> Result<T>,
++    ) -> Result<T> {
++        let until = deadline(self.inner.timeout)?;
++        self.write_operation_until(until, operation)
++    }
++    fn write_operation_until<T>(
++        &self,
++        until: Instant,
++        operation: impl FnOnce(&mut DuplexWriter, Instant) -> Result<T>,
++    ) -> Result<T> {
++        let result = (|| {
++            let now = Instant::now();
++            if until <= now {
++                return Err(Error::Timeout);
++            }
++            if until.saturating_duration_since(now) > self.inner.timeout {
++                return Err(Error::Limit);
++            }
++            self.inner.cancellation.check()?;
++            let mut writer = lock_until(&self.inner.writer, until)?;
++            operation(&mut writer, until)
++        })();
++        if result.is_err() && !matches!(&result, Err(Error::Closed)) {
++            self.inner.cancellation.cancel();
++        }
++        result
++    }
++    pub fn shutdown(&self, how: Shutdown) -> io::Result<()> {
++        match how {
++            Shutdown::Write => self
++                .write_operation(|writer, until| writer.half_close_until(until))
++                .map_err(io_error),
++            Shutdown::Read | Shutdown::Both => {
++                self.inner.cancellation.cancel();
++                Ok(())
++            }
++        }
++    }
++    pub fn seed_base(&self, bytes: Vec<u8>) -> Result<Stats> {
++        self.write_operation(|writer, until| writer.seed_base_until(bytes, until))
++    }
++    pub fn seed_base_until(&self, bytes: Vec<u8>, until: Instant) -> Result<Stats> {
++        self.write_operation_until(until, |writer, until| writer.seed_base_until(bytes, until))
++    }
++    pub fn seed_schema_until(&self, until: Instant) -> Result<Stats> {
++        self.write_operation_until(until, |writer, until| writer.seed_schema_until(until))
++    }
++    pub fn seed_checkpoint_until(&self, until: Instant) -> Result<Stats> {
++        self.write_operation_until(until, |writer, until| writer.seed_checkpoint_until(until))
++    }
++    pub fn seed_schema(&self) -> Result<Stats> {
++        self.write_operation(|writer, until| writer.seed_schema_until(until))
++    }
++    pub fn seed_checkpoint(&self) -> Result<Stats> {
++        self.write_operation(|writer, until| writer.seed_checkpoint_until(until))
++    }
++}
++fn io_error(error: Error) -> io::Error {
++    let kind = match &error {
++        Error::Io(error) => error.kind(),
++        Error::Timeout => io::ErrorKind::TimedOut,
++        Error::Closed | Error::Cancelled => io::ErrorKind::BrokenPipe,
++        Error::InvalidBinding | Error::PeerMismatch | Error::Limit => io::ErrorKind::InvalidInput,
++        Error::Protocol | Error::Sequence | Error::Integrity | Error::Truncated => {
++            io::ErrorKind::InvalidData
++        }
++        Error::Core(_) | Error::Worker => io::ErrorKind::Other,
++    };
++    io::Error::new(kind, error)
++}
++impl Read for MappedStream {
++    fn read(&mut self, output: &mut [u8]) -> io::Result<usize> {
++        if output.is_empty() {
++            return Ok(0);
++        }
++        let result = (|| {
++            self.inner.cancellation.check_delivery()?;
++            let until = deadline(self.inner.timeout)?;
++            let mut buffered = lock_until(&self.inner.reader, until)?;
++            if buffered.ended {
++                return Ok(0);
++            }
++            if buffered.offset == buffered.bytes.len() {
++                match buffered.reader.receive_until(until)? {
++                    Event::Data(bytes) => {
++                        buffered.bytes = bytes;
++                        buffered.offset = 0;
++                    }
++                    Event::HalfClose => {
++                        buffered.ended = true;
++                        return Ok(0);
++                    }
++                    Event::Reset | Event::Cancel => return Err(Error::Cancelled),
++                }
++            }
++            let n = output.len().min(buffered.bytes.len() - buffered.offset);
++            self.inner.cancellation.check_delivery()?;
++            output[..n].copy_from_slice(&buffered.bytes[buffered.offset..buffered.offset + n]);
++            buffered.offset += n;
++            Ok(n)
++        })();
++        if result.is_err() {
++            self.inner.cancellation.cancel();
++        }
++        result.map_err(io_error)
++    }
++}
++impl Write for MappedStream {
++    fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
++        if bytes.is_empty() {
++            return Ok(0);
++        }
++        let n = bytes.len().min(MAX_BLOCK);
++        self.write_operation(|writer, until| writer.send_until(bytes[..n].to_vec(), until))
++            .map(|_| n)
++            .map_err(io_error)
++    }
++    fn flush(&mut self) -> io::Result<()> {
++        self.inner.cancellation.check().map_err(io_error)
++    }
++}
+--- /dev/null
++++ b/crates/spiralcore-mvm-flowmux/src/tcp.rs
+@@ -0,0 +1,664 @@
++use crate::{Binding, Error, HEADER_LEN, Result, record};
++use spiralcore_transfer::zstd_whole::{PreparedDecoder, PreparedEncoder};
++use std::{
++    io::{Read, Write},
++    net::{Shutdown, SocketAddr, TcpStream},
++    sync::{
++        Arc,
++        atomic::{AtomicBool, Ordering},
++    },
++    time::{Duration, Instant},
++};
++
++#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
++pub struct Counters {
++    pub wire_bytes: u64,
++    pub payload_bytes: u64,
++    pub records: u64,
++    pub compressed_records: u64,
++}
++impl Counters {
++    fn wire(&mut self, n: usize) -> Result<()> {
++        self.wire_bytes = self.wire_bytes.checked_add(n as u64).ok_or(Error::Limit)?;
++        Ok(())
++    }
++    fn complete(&mut self, payload: usize, compressed: bool) -> Result<()> {
++        self.payload_bytes = self
++            .payload_bytes
++            .checked_add(payload as u64)
++            .ok_or(Error::Limit)?;
++        self.records = self.records.checked_add(1).ok_or(Error::Limit)?;
++        self.compressed_records = self
++            .compressed_records
++            .checked_add(u64::from(compressed))
++            .ok_or(Error::Limit)?;
++        Ok(())
++    }
++}
++enum Carrier {
++    Tcp(TcpStream),
++    Tls(crate::tls::TlsCarrier),
++}
++impl Carrier {
++    fn peek(&mut self, bytes: &mut [u8]) -> std::io::Result<usize> {
++        match self {
++            Self::Tcp(socket) => socket.peek(bytes),
++            Self::Tls(socket) => socket.peek(bytes),
++        }
++    }
++    fn try_clone(&self) -> std::io::Result<Self> {
++        match self {
++            Self::Tcp(socket) => Ok(Self::Tcp(socket.try_clone()?)),
++            Self::Tls(socket) => Ok(Self::Tls(socket.try_clone()?)),
++        }
++    }
++    fn shutdown(&self, how: Shutdown) -> std::io::Result<()> {
++        match self {
++            Self::Tcp(socket) => socket.shutdown(how),
++            Self::Tls(socket) => socket.shutdown(how),
++        }
++    }
++    fn set_read_timeout(&mut self, timeout: Option<Duration>) -> std::io::Result<()> {
++        match self {
++            Self::Tcp(socket) => checked_timeout(socket.set_read_timeout(timeout), timeout, || {
++                socket.read_timeout()
++            }),
++            Self::Tls(socket) => socket.set_read_timeout(timeout),
++        }
++    }
++    fn set_write_timeout(&mut self, timeout: Option<Duration>) -> std::io::Result<()> {
++        match self {
++            Self::Tcp(socket) => {
++                checked_timeout(socket.set_write_timeout(timeout), timeout, || {
++                    socket.write_timeout()
++                })
++            }
++            Self::Tls(socket) => socket.set_write_timeout(timeout),
++        }
++    }
++}
++fn checked_timeout(
++    result: std::io::Result<()>,
++    requested: Option<Duration>,
++    existing: impl FnOnce() -> std::io::Result<Option<Duration>>,
++) -> std::io::Result<()> {
++    // Darwin can reject setsockopt after peer close while exact response bytes
++    // remain readable. Only an observed timeout at least as strict as the fresh
++    // original-deadline slice can preserve that operation's bound.
++    if cfg!(target_os = "macos")
++        && result
++            .as_ref()
++            .is_err_and(|error| error.raw_os_error() == Some(22))
++        && let (Some(requested), Ok(Some(actual))) = (requested, existing())
++        && !actual.is_zero()
++        && actual <= requested
++    {
++        return Ok(());
++    }
++    result
++}
++impl Read for Carrier {
++    fn read(&mut self, bytes: &mut [u8]) -> std::io::Result<usize> {
++        match self {
++            Self::Tcp(socket) => socket.read(bytes),
++            Self::Tls(socket) => socket.read(bytes),
++        }
++    }
++}
++impl Write for Carrier {
++    fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
++        match self {
++            Self::Tcp(socket) => socket.write(bytes),
++            Self::Tls(socket) => socket.write(bytes),
++        }
++    }
++    fn flush(&mut self) -> std::io::Result<()> {
++        match self {
++            Self::Tcp(socket) => socket.flush(),
++            Self::Tls(socket) => socket.flush(),
++        }
++    }
++}
++struct Control {
++    delivery_fenced: AtomicBool,
++    scope: Option<crate::scope::ScopeAuthority>,
++    socket: Carrier,
++    stopped: AtomicBool,
++}
++impl Control {
++    fn stop(&self) {
++        self.delivery_fenced.store(true, Ordering::Release);
++        self.close();
++    }
++    fn close(&self) {
++        self.stopped.store(true, Ordering::Release);
++        let _ = self.socket.shutdown(Shutdown::Both);
++    }
++    fn stop_on_drop(&self) {
++        if !self.stopped.load(Ordering::Acquire) {
++            self.stop();
++        }
++    }
++    fn check_delivery(&self) -> Result<()> {
++        self.check_scope()?;
++        if self.delivery_fenced.load(Ordering::Acquire) {
++            Err(Error::Cancelled)
++        } else {
++            Ok(())
++        }
++    }
++    fn check(&self) -> Result<()> {
++        self.check_delivery()?;
++        if self.stopped.load(Ordering::Acquire) {
++            Err(Error::Closed)
++        } else {
++            Ok(())
++        }
++    }
++    fn check_scope(&self) -> Result<()> {
++        if let Some(scope) = &self.scope {
++            scope.check()?;
++        }
++        Ok(())
++    }
++}
++#[derive(Clone)]
++pub struct Cancellation {
++    control: Arc<Control>,
++}
++impl Cancellation {
++    pub(crate) fn check_delivery(&self) -> Result<()> {
++        self.control.check_delivery()
++    }
++    pub(crate) fn complete(&self) {
++        self.control.close();
++    }
++    pub fn cancel(&self) {
++        self.control.stop();
++    }
++    pub(crate) fn check(&self) -> Result<()> {
++        self.control.check()
++    }
++}
++#[derive(Debug, PartialEq, Eq)]
++pub enum Event {
++    Data(Vec<u8>),
++    HalfClose,
++    Reset,
++    Cancel,
++}
++
++pub struct TcpMapping {
++    tx: Tx,
++    rx: Rx,
++}
++impl TcpMapping {
++    /// A connected, explicitly selected peer is required. This is not admission
++    /// or peer authentication and never opens a destination socket.
++    pub fn from_connected(
++        socket: TcpStream,
++        binding: Binding,
++        expected_peer: SocketAddr,
++        timeout: Duration,
++    ) -> Result<Self> {
++        Self::with_profile(socket, binding, expected_peer, timeout, false)
++    }
++    pub(crate) fn with_profile(
++        socket: TcpStream,
++        binding: Binding,
++        expected_peer: SocketAddr,
++        timeout: Duration,
++        object: bool,
++    ) -> Result<Self> {
++        binding.validate()?;
++        if timeout.is_zero() || timeout > Duration::from_secs(30) {
++            return Err(Error::Limit);
++        }
++        if socket.peer_addr()? != expected_peer {
++            return Err(Error::PeerMismatch);
++        }
++        socket.set_nodelay(true)?;
++        Self::with_carrier(Carrier::Tcp(socket), binding, timeout, object, 0, 0, None)
++    }
++    pub(crate) fn with_authenticated(
++        socket: crate::tls::TlsCarrier,
++        scope: &crate::scope::ScopeAuthority,
++        timeout: Duration,
++        role: crate::Role,
++    ) -> Result<Self> {
++        scope.check_carrier(&socket, role)?;
++        Self::with_carrier(
++            Carrier::Tls(socket),
++            scope.binding()?,
++            timeout,
++            true,
++            role.tag(),
++            role.remote().tag(),
++            Some(scope.clone()),
++        )
++    }
++    fn with_carrier(
++        mut socket: Carrier,
++        binding: Binding,
++        timeout: Duration,
++        object: bool,
++        local_role: u8,
++        remote_role: u8,
++        scope: Option<crate::scope::ScopeAuthority>,
++    ) -> Result<Self> {
++        binding.validate()?;
++        if timeout.is_zero() || timeout > Duration::from_secs(30) {
++            return Err(Error::Limit);
++        }
++        // Establish a real bounded timeout while connected; a first receive
++        // after the peer's last descriptor closes must never accept None.
++        let initial = Some(timeout.min(Duration::from_millis(20)));
++        socket.set_read_timeout(initial)?;
++        socket.set_write_timeout(initial)?;
++        let read = socket.try_clone()?;
++        let control = Arc::new(Control {
++            delivery_fenced: AtomicBool::new(false),
++            scope,
++            socket: socket.try_clone()?,
++            stopped: AtomicBool::new(false),
++        });
++        let cap = if object {
++            spiralcore_transfer::MAX_FRAME
++        } else {
++            record::body_limit()?
++        };
++        Ok(Self {
++            tx: Tx {
++                role: local_role,
++                socket,
++                binding,
++                sequence: 0,
++                ended: false,
++                timeout,
++                encoder: if object {
++                    None
++                } else {
++                    Some(PreparedEncoder::new()?)
++                },
++                counters: Counters::default(),
++                control: control.clone(),
++            },
++            rx: Rx {
++                role: remote_role,
++                socket: read,
++                binding,
++                sequence: 0,
++                ended: false,
++                timeout,
++                cap,
++                data_kind: if object { record::OBJECT } else { record::DATA },
++                decoder: if object {
++                    None
++                } else {
++                    Some(PreparedDecoder::new()?)
++                },
++                counters: Counters::default(),
++                control,
++            },
++        })
++    }
++    pub fn cancellation(&self) -> Cancellation {
++        Cancellation {
++            control: self.tx.control.clone(),
++        }
++    }
++    pub fn split(self) -> (Tx, Rx) {
++        (self.tx, self.rx)
++    }
++}
++fn deadline(timeout: Duration) -> Result<Instant> {
++    Instant::now().checked_add(timeout).ok_or(Error::Limit)
++}
++fn poll_budget(until: Instant) -> Result<Duration> {
++    let left = until.saturating_duration_since(Instant::now());
++    if left.is_zero() {
++        Err(Error::Timeout)
++    } else {
++        Ok(left.min(Duration::from_millis(20)))
++    }
++}
++fn transient(error: &std::io::Error) -> bool {
++    matches!(
++        error.kind(),
++        std::io::ErrorKind::Interrupted
++            | std::io::ErrorKind::WouldBlock
++            | std::io::ErrorKind::TimedOut
++    )
++}
++
++pub struct Tx {
++    socket: Carrier,
++    pub(crate) role: u8,
++    binding: Binding,
++    sequence: u64,
++    ended: bool,
++    timeout: Duration,
++    encoder: Option<PreparedEncoder>,
++    counters: Counters,
++    control: Arc<Control>,
++}
++impl Tx {
++    pub fn counters(&self) -> Counters {
++        self.counters
++    }
++    fn write_record(
++        &mut self,
++        kind: u8,
++        body: &[u8],
++        payload: usize,
++        compressed: bool,
++        until: Instant,
++    ) -> Result<()> {
++        let next = self.sequence.checked_add(1).ok_or(Error::Sequence)?;
++        let mut wire = record::header(self.binding, self.sequence, kind, body.len(), self.role)?;
++        wire.extend_from_slice(body);
++        let mut offset = 0;
++        while offset < wire.len() {
++            self.control.check()?;
++            self.socket.set_write_timeout(Some(poll_budget(until)?))?;
++            match self.socket.write(&wire[offset..]) {
++                Ok(0) => return Err(Error::Truncated),
++                Ok(n) => {
++                    self.counters.wire(n)?;
++                    offset += n;
++                }
++                Err(error) if transient(&error) => continue,
++                Err(error) => return Err(error.into()),
++            }
++        }
++        loop {
++            self.control.check()?;
++            self.socket.set_write_timeout(Some(poll_budget(until)?))?;
++            match self.socket.flush() {
++                Ok(()) => break,
++                Err(error) if transient(&error) => continue,
++                Err(error) => return Err(error.into()),
++            }
++        }
++        poll_budget(until)?;
++        self.counters.complete(payload, compressed)?;
++        self.sequence = next;
++        Ok(())
++    }
++    pub fn send(&mut self, bytes: &[u8]) -> Result<()> {
++        if self.ended {
++            return Err(Error::Closed);
++        }
++        self.control.check()?;
++        let until = deadline(self.timeout)?;
++        let (body, compressed) =
++            record::encode(self.encoder.as_mut().ok_or(Error::Protocol)?, bytes)?;
++        let result = self.write_record(record::DATA, &body, bytes.len(), compressed, until);
++        if result.is_err() {
++            self.control.stop();
++        }
++        result
++    }
++    fn terminal(&mut self, kind: u8) -> Result<()> {
++        if self.ended {
++            return Err(Error::Closed);
++        }
++        self.control.check()?;
++        let result = self.write_record(kind, &[], 0, false, deadline(self.timeout)?);
++        if result.is_err() {
++            self.control.stop();
++            return result;
++        }
++        self.ended = true;
++        if kind == record::FIN {
++            if let Err(error) = self.socket.shutdown(Shutdown::Write) {
++                self.control.stop();
++                return Err(error.into());
++            }
++        } else {
++            self.control.stop();
++        }
++        Ok(())
++    }
++    pub fn half_close(&mut self) -> Result<()> {
++        self.terminal(record::FIN)
++    }
++    pub fn reset(&mut self) -> Result<()> {
++        self.terminal(record::RESET)
++    }
++    pub fn cancel(&mut self) -> Result<()> {
++        self.terminal(record::CANCEL)
++    }
++    pub(crate) fn send_object(
++        &mut self,
++        frame: &spiralcore_transfer::protocol::Frame,
++        purpose: crate::Purpose,
++        until: Instant,
++    ) -> Result<()> {
++        if self.ended {
++            return Err(Error::Closed);
++        }
++        let bytes = frame.encode()?;
++        let kind = match purpose {
++            crate::Purpose::Application => record::OBJECT,
++            crate::Purpose::Artifact => record::ARTIFACT,
++        };
++        let result = self.write_record(kind, &bytes, bytes.len(), false, until);
++        if result.is_err() {
++            self.control.stop();
++        }
++        result
++    }
++    pub(crate) fn application_half_close(&mut self, until: Instant) -> Result<()> {
++        let result = self.write_record(record::APP_FIN, &[], 0, false, until);
++        if result.is_err() {
++            self.control.stop();
++        }
++        result
++    }
++}
++impl Drop for Tx {
++    fn drop(&mut self) {
++        if !self.ended {
++            self.control.stop_on_drop();
++        }
++    }
++}
++
++pub struct Rx {
++    socket: Carrier,
++    pub(crate) role: u8,
++    binding: Binding,
++    sequence: u64,
++    ended: bool,
++    timeout: Duration,
++    cap: usize,
++    data_kind: u8,
++    decoder: Option<PreparedDecoder>,
++    counters: Counters,
++    control: Arc<Control>,
++}
++impl Rx {
++    pub fn counters(&self) -> Counters {
++        self.counters
++    }
++    fn fill(&mut self, buffer: &mut [u8], until: Instant) -> Result<()> {
++        let mut offset = 0;
++        while offset < buffer.len() {
++            self.control.check()?;
++            self.socket.set_read_timeout(Some(poll_budget(until)?))?;
++            match self.socket.read(&mut buffer[offset..]) {
++                Ok(0) => return Err(Error::Truncated),
++                Ok(n) => {
++                    self.counters.wire(n)?;
++                    offset += n;
++                }
++                Err(error) if transient(&error) => continue,
++                Err(error) => return Err(error.into()),
++            }
++        }
++        poll_budget(until)?;
++        Ok(())
++    }
++    fn receive_inner(&mut self) -> Result<Event> {
++        let next = self.sequence.checked_add(1).ok_or(Error::Sequence)?;
++        let until = deadline(self.timeout)?;
++        let mut header = [0; HEADER_LEN];
++        self.fill(&mut header, until)?;
++        let (kind, len) = record::parse_header(
++            &header,
++            self.binding,
++            self.sequence,
++            self.cap,
++            self.data_kind,
++            self.role,
++        )?;
++        let event = if kind == record::DATA {
++            let mut body = vec![0; len];
++            self.fill(&mut body, until)?;
++            let (bytes, compressed) =
++                record::decode(self.decoder.as_mut().ok_or(Error::Protocol)?, &body)?;
++            poll_budget(until)?;
++            self.counters.complete(bytes.len(), compressed)?;
++            Event::Data(bytes)
++        } else {
++            self.counters.complete(0, false)?;
++            self.ended = true;
++            match kind {
++                record::FIN => Event::HalfClose,
++                record::RESET => Event::Reset,
++                record::CANCEL => Event::Cancel,
++                _ => return Err(Error::Protocol),
++            }
++        };
++        self.sequence = next;
++        Ok(event)
++    }
++    pub fn receive(&mut self) -> Result<Event> {
++        if self.ended {
++            return Err(Error::Closed);
++        }
++        let result = self.receive_inner();
++        if result.is_err() || matches!(result, Ok(Event::Reset | Event::Cancel)) {
++            self.control.stop();
++        }
++        result
++    }
++    pub(crate) fn receive_frame(
++        &mut self,
++        until: Instant,
++    ) -> Result<Option<spiralcore_transfer::protocol::Frame>> {
++        match self.receive_object(until)? {
++            crate::ObjectRecord::Frame(_, frame) => Ok(Some(frame)),
++            crate::ObjectRecord::TransportFin => Ok(None),
++            crate::ObjectRecord::ApplicationHalfClose => {
++                self.control.stop();
++                Err(Error::Protocol)
++            }
++        }
++    }
++    pub(crate) fn poll_input(&mut self) -> Result<bool> {
++        self.control.check()?;
++        self.socket
++            .set_read_timeout(Some(Duration::from_millis(20)))?;
++        match self.socket.peek(&mut [0; 1]) {
++            Ok(0) => Err(Error::Truncated),
++            Ok(_) => Ok(true),
++            Err(error) if transient(&error) => Ok(false),
++            Err(error) => Err(error.into()),
++        }
++    }
++    pub(crate) fn receive_object(&mut self, until: Instant) -> Result<crate::ObjectRecord> {
++        if self.ended {
++            return Err(Error::Closed);
++        }
++        let result = (|| {
++            let next = self.sequence.checked_add(1).ok_or(Error::Sequence)?;
++            let mut header = [0; HEADER_LEN];
++            self.fill(&mut header, until)?;
++            let (kind, len) = record::parse_header(
++                &header,
++                self.binding,
++                self.sequence,
++                self.cap,
++                record::OBJECT,
++                self.role,
++            )?;
++            let frame = if matches!(kind, record::OBJECT | record::ARTIFACT) {
++                let mut body = vec![0; len];
++                self.fill(&mut body, until)?;
++                let frame = spiralcore_transfer::protocol::Frame::decode(&body)?;
++                poll_budget(until)?;
++                self.counters.complete(body.len(), false)?;
++                crate::ObjectRecord::Frame(
++                    if kind == record::OBJECT {
++                        crate::Purpose::Application
++                    } else {
++                        crate::Purpose::Artifact
++                    },
++                    frame,
++                )
++            } else if kind == record::APP_FIN {
++                self.counters.complete(0, false)?;
++                crate::ObjectRecord::ApplicationHalfClose
++            } else if kind == record::FIN {
++                self.counters.complete(0, false)?;
++                self.ended = true;
++                crate::ObjectRecord::TransportFin
++            } else {
++                return Err(Error::Cancelled);
++            };
++            self.sequence = next;
++            Ok(frame)
++        })();
++        if result.is_err() {
++            self.control.stop();
++        }
++        result
++    }
++}
++impl Drop for Rx {
++    fn drop(&mut self) {
++        if !self.ended {
++            self.control.stop_on_drop();
++        }
++    }
++}
++
++#[cfg(test)]
++mod timeout_tests {
++    use super::*;
++    fn rejected() -> std::io::Result<()> {
++        Err(std::io::Error::from_raw_os_error(22))
++    }
++    #[test]
++    fn closed_peer_timeout_exception_requires_observed_nonzero_tighter_deadline() {
++        let requested = Some(Duration::from_millis(20));
++        assert_eq!(
++            checked_timeout(rejected(), requested, || Ok(Some(Duration::from_millis(
++                20
++            ))))
++            .is_ok(),
++            cfg!(target_os = "macos")
++        );
++        assert_eq!(
++            checked_timeout(rejected(), requested, || Ok(Some(Duration::from_millis(1)))).is_ok(),
++            cfg!(target_os = "macos")
++        );
++        for existing in [None, Some(Duration::ZERO), Some(Duration::from_millis(21))] {
++            assert!(checked_timeout(rejected(), requested, || Ok(existing)).is_err());
++        }
++        assert!(checked_timeout(rejected(), None, || Ok(Some(Duration::from_millis(1)))).is_err());
++        assert!(
++            checked_timeout(rejected(), requested, || Err(std::io::Error::other(
++                "readback failed"
++            )))
++            .is_err()
++        );
++        let other = Err(std::io::Error::new(
++            std::io::ErrorKind::PermissionDenied,
++            "not EINVAL",
++        ));
++        assert!(checked_timeout(other, requested, || Ok(Some(Duration::from_millis(1)))).is_err());
++    }
++}
+--- /dev/null
++++ b/crates/spiralcore-mvm-flowmux/src/tls.rs
+@@ -0,0 +1,694 @@
++//! A single TLS1.3 session on an already admitted TCP connection.
++use rustls::{
++    DigitallySignedStruct, DistinguishedName, SignatureScheme,
++    client::danger::{HandshakeSignatureValid, ServerCertVerified, ServerCertVerifier},
++    crypto::{CryptoProvider, verify_tls13_signature_with_raw_key},
++    pki_types::{
++        CertificateDer, PrivateKeyDer, PrivatePkcs8KeyDer, ServerName, SubjectPublicKeyInfoDer,
++        UnixTime,
++    },
++    server::danger::{ClientCertVerified, ClientCertVerifier},
++    sign::CertifiedKey,
++};
++use sha2::{Digest, Sha256};
++use std::{
++    fmt,
++    io::{self, Read, Write},
++    net::{Shutdown, SocketAddr, TcpStream},
++    sync::{
++        Arc, Mutex,
++        atomic::{AtomicBool, AtomicU64, Ordering},
++    },
++    time::{Duration, Instant},
++};
++const ALPN: &[u8] = b"spiralcore-flowmux/object-stream/1";
++const READY: &[u8; 8] = b"SCREADY1";
++fn error(message: impl ToString) -> io::Error {
++    io::Error::new(io::ErrorKind::InvalidData, message.to_string())
++}
++fn timeout() -> io::Error {
++    io::Error::new(io::ErrorKind::TimedOut, "TLS carrier deadline")
++}
++fn transient(e: &io::Error) -> bool {
++    matches!(
++        e.kind(),
++        io::ErrorKind::WouldBlock | io::ErrorKind::Interrupted | io::ErrorKind::TimedOut
++    )
++}
++fn pause(until: Instant) -> io::Result<()> {
++    let remaining = until.saturating_duration_since(Instant::now());
++    if remaining.is_zero() {
++        return Err(timeout());
++    }
++    std::thread::park_timeout(remaining.min(Duration::from_millis(1)));
++    Ok(())
++}
++#[derive(Clone)]
++pub struct PinnedIdentity {
++    key: Arc<CertifiedKey>,
++    pin: [u8; 32],
++    provider: Arc<CryptoProvider>,
++}
++impl fmt::Debug for PinnedIdentity {
++    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
++        f.debug_struct("PinnedIdentity")
++            .field("spki_sha256", &self.pin)
++            .finish_non_exhaustive()
++    }
++}
++impl PinnedIdentity {
++    pub fn from_pkcs8(bytes: Vec<u8>) -> io::Result<Self> {
++        Self::from_private_key(PrivatePkcs8KeyDer::from(bytes).into())
++    }
++    pub fn from_private_key(key: PrivateKeyDer<'static>) -> io::Result<Self> {
++        let provider = Arc::new(rustls::crypto::ring::default_provider());
++        let signing = provider.key_provider.load_private_key(key).map_err(error)?;
++        let spki = signing
++            .public_key()
++            .ok_or_else(|| error("provider has no public SPKI"))?
++            .to_vec();
++        let pin = Sha256::digest(&spki).into();
++        Ok(Self {
++            key: Arc::new(CertifiedKey::new(vec![CertificateDer::from(spki)], signing)),
++            pin,
++            provider,
++        })
++    }
++    pub fn spki_sha256(&self) -> [u8; 32] {
++        self.pin
++    }
++}
++#[derive(Debug)]
++struct Pin {
++    digest: [u8; 32],
++    provider: Arc<CryptoProvider>,
++}
++impl Pin {
++    fn check(
++        &self,
++        cert: &CertificateDer<'_>,
++        chain: &[CertificateDer<'_>],
++    ) -> Result<(), rustls::Error> {
++        let actual: [u8; 32] = Sha256::digest(cert.as_ref()).into();
++        if !chain.is_empty() || actual != self.digest {
++            return Err(rustls::Error::InvalidCertificate(
++                rustls::CertificateError::ApplicationVerificationFailure,
++            ));
++        }
++        Ok(())
++    }
++    fn signature(
++        &self,
++        message: &[u8],
++        cert: &CertificateDer<'_>,
++        signature: &DigitallySignedStruct,
++    ) -> Result<HandshakeSignatureValid, rustls::Error> {
++        verify_tls13_signature_with_raw_key(
++            message,
++            &SubjectPublicKeyInfoDer::from(cert.as_ref()),
++            signature,
++            &self.provider.signature_verification_algorithms,
++        )
++    }
++    fn schemes(&self) -> Vec<SignatureScheme> {
++        self.provider
++            .signature_verification_algorithms
++            .supported_schemes()
++    }
++}
++impl ServerCertVerifier for Pin {
++    fn verify_server_cert(
++        &self,
++        cert: &CertificateDer<'_>,
++        chain: &[CertificateDer<'_>],
++        _: &ServerName<'_>,
++        _: &[u8],
++        _: UnixTime,
++    ) -> Result<ServerCertVerified, rustls::Error> {
++        self.check(cert, chain)?;
++        Ok(ServerCertVerified::assertion())
++    }
++    fn verify_tls12_signature(
++        &self,
++        _: &[u8],
++        _: &CertificateDer<'_>,
++        _: &DigitallySignedStruct,
++    ) -> Result<HandshakeSignatureValid, rustls::Error> {
++        Err(rustls::Error::General("TLS1.2 disabled".into()))
++    }
++    fn verify_tls13_signature(
++        &self,
++        message: &[u8],
++        cert: &CertificateDer<'_>,
++        signature: &DigitallySignedStruct,
++    ) -> Result<HandshakeSignatureValid, rustls::Error> {
++        self.signature(message, cert, signature)
++    }
++    fn supported_verify_schemes(&self) -> Vec<SignatureScheme> {
++        self.schemes()
++    }
++    fn requires_raw_public_keys(&self) -> bool {
++        true
++    }
++}
++impl ClientCertVerifier for Pin {
++    fn root_hint_subjects(&self) -> &[DistinguishedName] {
++        &[]
++    }
++    fn verify_client_cert(
++        &self,
++        cert: &CertificateDer<'_>,
++        chain: &[CertificateDer<'_>],
++        _: UnixTime,
++    ) -> Result<ClientCertVerified, rustls::Error> {
++        self.check(cert, chain)?;
++        Ok(ClientCertVerified::assertion())
++    }
++    fn verify_tls12_signature(
++        &self,
++        _: &[u8],
++        _: &CertificateDer<'_>,
++        _: &DigitallySignedStruct,
++    ) -> Result<HandshakeSignatureValid, rustls::Error> {
++        Err(rustls::Error::General("TLS1.2 disabled".into()))
++    }
++    fn verify_tls13_signature(
++        &self,
++        message: &[u8],
++        cert: &CertificateDer<'_>,
++        signature: &DigitallySignedStruct,
++    ) -> Result<HandshakeSignatureValid, rustls::Error> {
++        self.signature(message, cert, signature)
++    }
++    fn supported_verify_schemes(&self) -> Vec<SignatureScheme> {
++        self.schemes()
++    }
++    fn requires_raw_public_keys(&self) -> bool {
++        true
++    }
++}
++#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
++pub struct TlsCounters {
++    pub received: u64,
++    pub sent: u64,
++}
++struct Session {
++    tls: rustls::Connection,
++    socket: TcpStream,
++}
++struct Shared {
++    session: Mutex<Session>,
++    control: TcpStream,
++    stopped: AtomicBool,
++    received: AtomicU64,
++    sent: AtomicU64,
++    exporter: [u8; 32],
++    local_pin: [u8; 32],
++    peer_pin: [u8; 32],
++    role: crate::Role,
++}
++impl Shared {
++    fn stop(&self) {
++        self.stopped.store(true, Ordering::Release);
++        let _ = self.control.shutdown(Shutdown::Both);
++    }
++    fn check(&self) -> io::Result<()> {
++        if self.stopped.load(Ordering::Acquire) {
++            Err(io::Error::new(
++                io::ErrorKind::BrokenPipe,
++                "TLS carrier closed",
++            ))
++        } else {
++            Ok(())
++        }
++    }
++}
++impl Drop for Shared {
++    fn drop(&mut self) {
++        let _ = self.control.shutdown(Shutdown::Both);
++    }
++}
++pub struct TlsCarrier {
++    shared: Arc<Shared>,
++    read_timeout: Duration,
++    write_timeout: Duration,
++}
++impl fmt::Debug for TlsCarrier {
++    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
++        f.debug_struct("TlsCarrier")
++            .field("counters", &self.counters())
++            .finish_non_exhaustive()
++    }
++}
++fn add(counter: &AtomicU64, n: usize) -> io::Result<()> {
++    counter
++        .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |value| {
++            value.checked_add(n as u64)
++        })
++        .map(|_| ())
++        .map_err(|_| error("TLS counter overflow"))
++}
++fn pump(session: &mut Session, received: &AtomicU64, sent: &AtomicU64) -> io::Result<()> {
++    let Session { tls, socket } = session;
++    while tls.wants_write() {
++        match tls.write_tls(socket) {
++            Ok(0) => return Err(io::Error::new(io::ErrorKind::WriteZero, "TLS write zero")),
++            Ok(n) => add(sent, n)?,
++            Err(e) if transient(&e) => break,
++            Err(e) => return Err(e),
++        }
++    }
++    if tls.wants_read() {
++        match tls.read_tls(socket) {
++            Ok(n) => {
++                add(received, n)?;
++                tls.process_new_packets().map_err(error)?;
++            }
++            Err(e) if transient(&e) => {}
++            Err(e) => return Err(e),
++        }
++    }
++    Ok(())
++}
++impl TlsCarrier {
++    pub fn connect(
++        socket: TcpStream,
++        identity: &PinnedIdentity,
++        peer_pin: [u8; 32],
++        server_name: &str,
++        until: Instant,
++    ) -> io::Result<Self> {
++        let verifier = Arc::new(Pin {
++            digest: peer_pin,
++            provider: identity.provider.clone(),
++        });
++        let mut config = rustls::ClientConfig::builder_with_provider(identity.provider.clone())
++            .with_protocol_versions(&[&rustls::version::TLS13])
++            .map_err(error)?
++            .dangerous()
++            .with_custom_certificate_verifier(verifier)
++            .with_client_cert_resolver(Arc::new(
++                rustls::client::AlwaysResolvesClientRawPublicKeys::new(identity.key.clone()),
++            ));
++        config.alpn_protocols = vec![ALPN.to_vec()];
++        config.resumption = rustls::client::Resumption::disabled();
++        config.enable_early_data = false;
++        let name = ServerName::try_from(server_name.to_owned()).map_err(error)?;
++        let tls = rustls::ClientConnection::new(Arc::new(config), name).map_err(error)?;
++        let mut stream = Self::handshake(
++            socket,
++            tls.into(),
++            until,
++            identity.pin,
++            peer_pin,
++            crate::Role::Initiator,
++        )?;
++        let mut marker = [0; 8];
++        if let Err(e) = stream.read_exact_until(&mut marker, until) {
++            stream.shared.stop();
++            return Err(e);
++        }
++        if &marker != READY {
++            stream.shared.stop();
++            return Err(error("TLS profile readiness mismatch"));
++        }
++        Ok(stream)
++    }
++    pub fn accept(
++        socket: TcpStream,
++        identity: &PinnedIdentity,
++        peer_pin: [u8; 32],
++        until: Instant,
++    ) -> io::Result<Self> {
++        let verifier = Arc::new(Pin {
++            digest: peer_pin,
++            provider: identity.provider.clone(),
++        });
++        let mut config = rustls::ServerConfig::builder_with_provider(identity.provider.clone())
++            .with_protocol_versions(&[&rustls::version::TLS13])
++            .map_err(error)?
++            .with_client_cert_verifier(verifier)
++            .with_cert_resolver(Arc::new(
++                rustls::server::AlwaysResolvesServerRawPublicKeys::new(identity.key.clone()),
++            ));
++        config.alpn_protocols = vec![ALPN.to_vec()];
++        config.send_tls13_tickets = 0;
++        config.max_early_data_size = 0;
++        config.session_storage = Arc::new(rustls::server::NoServerSessionStorage {});
++        let tls = rustls::ServerConnection::new(Arc::new(config)).map_err(error)?;
++        let mut stream = Self::handshake(
++            socket,
++            tls.into(),
++            until,
++            identity.pin,
++            peer_pin,
++            crate::Role::Acceptor,
++        )?;
++        if let Err(e) = stream
++            .write_all_until(READY, until)
++            .and_then(|()| stream.flush_until(until))
++        {
++            stream.shared.stop();
++            return Err(e);
++        }
++        Ok(stream)
++    }
++    fn handshake(
++        socket: TcpStream,
++        mut tls: rustls::Connection,
++        until: Instant,
++        local_pin: [u8; 32],
++        peer_pin: [u8; 32],
++        role: crate::Role,
++    ) -> io::Result<Self> {
++        if Instant::now() >= until
++            || until.saturating_duration_since(Instant::now()) > Duration::from_secs(30)
++        {
++            return Err(timeout());
++        }
++        socket.set_nonblocking(true)?;
++        socket.set_nodelay(true)?;
++        tls.set_buffer_limit(Some(65536));
++        let mut session = Session { tls, socket };
++        let received = AtomicU64::new(0);
++        let sent = AtomicU64::new(0);
++        let outcome = (|| {
++            loop {
++                if Instant::now() >= until {
++                    return Err(timeout());
++                }
++                pump(&mut session, &received, &sent)?;
++                if !session.tls.is_handshaking() && !session.tls.wants_write() {
++                    break;
++                }
++                pause(until)?;
++            }
++            if session.tls.alpn_protocol() != Some(ALPN)
++                || session.tls.protocol_version() != Some(rustls::ProtocolVersion::TLSv1_3)
++            {
++                return Err(error("TLS required profile not negotiated"));
++            }
++            session
++                .tls
++                .export_keying_material([0; 32], b"EXPORTER-SpiralCore-FlowMux-v1", Some(ALPN))
++                .map_err(error)
++        })();
++        let exporter = match outcome {
++            Ok(value) => value,
++            Err(e) => {
++                let _ = session.socket.shutdown(Shutdown::Both);
++                return Err(e);
++            }
++        };
++        let control = session.socket.try_clone()?;
++        Ok(Self {
++            shared: Arc::new(Shared {
++                session: Mutex::new(session),
++                control,
++                stopped: AtomicBool::new(false),
++                received,
++                sent,
++                exporter,
++                local_pin,
++                peer_pin,
++                role,
++            }),
++            read_timeout: Duration::from_secs(30),
++            write_timeout: Duration::from_secs(30),
++        })
++    }
++    pub fn local_spki_sha256(&self) -> [u8; 32] {
++        self.shared.local_pin
++    }
++    pub fn peer_spki_sha256(&self) -> [u8; 32] {
++        self.shared.peer_pin
++    }
++    pub fn role(&self) -> crate::Role {
++        self.shared.role
++    }
++    pub fn exporter(&self) -> [u8; 32] {
++        self.shared.exporter
++    }
++    pub fn counters(&self) -> TlsCounters {
++        TlsCounters {
++            received: self.shared.received.load(Ordering::Relaxed),
++            sent: self.shared.sent.load(Ordering::Relaxed),
++        }
++    }
++    pub fn try_clone(&self) -> io::Result<Self> {
++        self.shared.check()?;
++        Ok(Self {
++            shared: self.shared.clone(),
++            read_timeout: self.read_timeout,
++            write_timeout: self.write_timeout,
++        })
++    }
++    pub fn peer_addr(&self) -> io::Result<SocketAddr> {
++        self.shared.control.peer_addr()
++    }
++    pub fn peek(&mut self, buffer: &mut [u8]) -> io::Result<usize> {
++        use std::io::BufRead;
++        if buffer.is_empty() {
++            return Ok(0);
++        }
++        let until = Instant::now() + self.read_timeout;
++        loop {
++            if Instant::now() >= until {
++                return Err(timeout());
++            }
++            let result = self.with_session(|session| {
++                pump(session, &self.shared.received, &self.shared.sent)?;
++                let mut reader = session.tls.reader();
++                let available = reader.fill_buf()?;
++                let n = available.len().min(buffer.len());
++                buffer[..n].copy_from_slice(&available[..n]);
++                Ok(n)
++            });
++            match result {
++                Err(e) if transient(&e) => pause(until)?,
++                other => return other,
++            }
++        }
++    }
++    pub fn set_read_timeout(&mut self, timeout: Option<Duration>) -> io::Result<()> {
++        self.read_timeout = budget(timeout)?;
++        Ok(())
++    }
++    pub fn set_write_timeout(&mut self, timeout: Option<Duration>) -> io::Result<()> {
++        self.write_timeout = budget(timeout)?;
++        Ok(())
++    }
++    pub fn shutdown(&self, how: Shutdown) -> io::Result<()> {
++        match how {
++            Shutdown::Both => {
++                self.shared.stop();
++                Ok(())
++            }
++            Shutdown::Read => self.shared.control.shutdown(how),
++            Shutdown::Write => {
++                let until = Instant::now() + self.write_timeout;
++                loop {
++                    if Instant::now() >= until {
++                        return Err(timeout());
++                    }
++                    match self.with_session(|session| {
++                        session.tls.send_close_notify();
++                        Ok(())
++                    }) {
++                        Err(e) if transient(&e) => pause(until)?,
++                        outcome => {
++                            outcome?;
++                            break;
++                        }
++                    }
++                }
++                self.flush_until(until)?;
++                self.shared.control.shutdown(how)
++            }
++        }
++    }
++    fn with_session<T>(
++        &self,
++        operation: impl FnOnce(&mut Session) -> io::Result<T>,
++    ) -> io::Result<T> {
++        self.shared.check()?;
++        let mut guard = match self.shared.session.try_lock() {
++            Ok(value) => value,
++            Err(std::sync::TryLockError::WouldBlock) => {
++                return Err(io::ErrorKind::WouldBlock.into());
++            }
++            Err(std::sync::TryLockError::Poisoned(_)) => return Err(error("TLS poisoned")),
++        };
++        let result = operation(&mut guard);
++        drop(guard);
++        if let Err(e) = &result
++            && !transient(e)
++        {
++            self.shared.stop();
++        }
++        result
++    }
++    fn read_until(&mut self, buffer: &mut [u8], until: Instant) -> io::Result<usize> {
++        if buffer.is_empty() {
++            return Ok(0);
++        }
++        loop {
++            if Instant::now() >= until {
++                return Err(timeout());
++            }
++            let result = self.with_session(|session| {
++                match session.tls.reader().read(buffer) {
++                    Ok(n) => return Ok(n),
++                    Err(e) if transient(&e) => {}
++                    Err(e) => return Err(e),
++                };
++                pump(session, &self.shared.received, &self.shared.sent)?;
++                session.tls.reader().read(buffer)
++            });
++            match result {
++                Err(e) if transient(&e) => pause(until)?,
++                other => return other,
++            }
++        }
++    }
++    fn read_exact_until(&mut self, mut buffer: &mut [u8], until: Instant) -> io::Result<()> {
++        while !buffer.is_empty() {
++            let n = self.read_until(buffer, until)?;
++            if n == 0 {
++                return Err(io::ErrorKind::UnexpectedEof.into());
++            }
++            buffer = &mut buffer[n..];
++        }
++        Ok(())
++    }
++    fn write_until(&mut self, buffer: &[u8], until: Instant) -> io::Result<usize> {
++        if buffer.is_empty() {
++            return Ok(0);
++        }
++        loop {
++            if Instant::now() >= until {
++                return Err(timeout());
++            }
++            let result = self.with_session(|session| {
++                pump(session, &self.shared.received, &self.shared.sent)?;
++                let n = session.tls.writer().write(buffer)?;
++                pump(session, &self.shared.received, &self.shared.sent)?;
++                if n == 0 {
++                    return Err(io::ErrorKind::WouldBlock.into());
++                }
++                Ok(n)
++            });
++            match result {
++                Err(e) if transient(&e) => pause(until)?,
++                other => return other,
++            }
++        }
++    }
++    fn write_all_until(&mut self, mut buffer: &[u8], until: Instant) -> io::Result<()> {
++        while !buffer.is_empty() {
++            let n = self.write_until(buffer, until)?;
++            buffer = &buffer[n..];
++        }
++        Ok(())
++    }
++    fn flush_until(&self, until: Instant) -> io::Result<()> {
++        loop {
++            if Instant::now() >= until {
++                return Err(timeout());
++            }
++            let result = self.with_session(|session| {
++                pump(session, &self.shared.received, &self.shared.sent)?;
++                if session.tls.wants_write() {
++                    Err(io::ErrorKind::WouldBlock.into())
++                } else {
++                    Ok(())
++                }
++            });
++            match result {
++                Err(e) if transient(&e) => pause(until)?,
++                other => return other,
++            }
++        }
++    }
++}
++fn budget(value: Option<Duration>) -> io::Result<Duration> {
++    let value = value.unwrap_or(Duration::from_secs(30));
++    if value.is_zero() || value > Duration::from_secs(30) {
++        Err(io::Error::new(
++            io::ErrorKind::InvalidInput,
++            "TLS timeout range",
++        ))
++    } else {
++        Ok(value)
++    }
++}
++impl Read for TlsCarrier {
++    fn read(&mut self, buffer: &mut [u8]) -> io::Result<usize> {
++        self.read_until(buffer, Instant::now() + self.read_timeout)
++    }
++}
++impl Write for TlsCarrier {
++    fn write(&mut self, buffer: &[u8]) -> io::Result<usize> {
++        self.write_until(buffer, Instant::now() + self.write_timeout)
++    }
++    fn flush(&mut self) -> io::Result<()> {
++        self.flush_until(Instant::now() + self.write_timeout)
++    }
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++    #[test]
++    fn required_alpn_refuses_a_different_authenticated_tls_profile() {
++        let make = || {
++            let bytes =
++                ring::signature::Ed25519KeyPair::generate_pkcs8(&ring::rand::SystemRandom::new())
++                    .expect("key");
++            PinnedIdentity::from_pkcs8(bytes.as_ref().to_vec()).expect("identity")
++        };
++        let client = make();
++        let server = make();
++        let client_pin = client.pin;
++        let server_pin = server.pin;
++        let listener = std::net::TcpListener::bind("127.0.0.1:0").expect("listener");
++        let mut socket =
++            TcpStream::connect(listener.local_addr().expect("address")).expect("connect");
++        let (peer, _) = listener.accept().expect("accept");
++        socket
++            .set_read_timeout(Some(Duration::from_secs(1)))
++            .expect("read timeout");
++        socket
++            .set_write_timeout(Some(Duration::from_secs(1)))
++            .expect("write timeout");
++        std::thread::scope(|scope| {
++            let peer = scope.spawn(move || {
++                TlsCarrier::accept(
++                    peer,
++                    &server,
++                    client_pin,
++                    Instant::now() + Duration::from_secs(1),
++                )
++            });
++            let mut config = rustls::ClientConfig::builder_with_provider(client.provider.clone())
++                .with_protocol_versions(&[&rustls::version::TLS13])
++                .expect("versions")
++                .dangerous()
++                .with_custom_certificate_verifier(Arc::new(Pin {
++                    digest: server_pin,
++                    provider: client.provider.clone(),
++                }))
++                .with_client_cert_resolver(Arc::new(
++                    rustls::client::AlwaysResolvesClientRawPublicKeys::new(client.key),
++                ));
++            config.alpn_protocols = vec![b"different-required-profile/1".to_vec()];
++            let mut tls = rustls::ClientConnection::new(
++                Arc::new(config),
++                ServerName::try_from("peer.example").expect("name"),
++            )
++            .expect("client");
++            assert!(tls.complete_io(&mut socket).is_err());
++            assert!(peer.join().expect("join").is_err());
++        });
++    }
++}
