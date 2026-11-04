@@ -31,6 +31,8 @@ pub struct EndpointDiskBinding<'a> {
     pub session: [u8; 32],
     pub parent_serial: u64,
     pub reservation_serial: u64,
+    pub cache_bytes: u64,
+    pub staging_bytes: u64,
     pub path: &'a Path,
     pub device: u64,
     pub inode: u64,
@@ -173,6 +175,14 @@ pub(crate) struct DiskStore {
     directory: File,
     entry: Entry,
     epoch: Epoch,
+    retirement: RetirementProgress,
+}
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum RetirementProgress {
+    Live,
+    NamespaceUnlinked,
+    NamespaceSynced,
+    Complete,
 }
 pub(crate) struct DiskPrepareFailure {
     pub(crate) error: OwnerError,
@@ -187,6 +197,8 @@ impl DiskStore {
             session: self.entry.session,
             parent_serial: self.entry.parent,
             reservation_serial: self.entry.serial,
+            cache_bytes: self.entry.cache,
+            staging_bytes: self.entry.stage,
             path: &self.path,
             device: self.entry.device,
             inode: self.entry.inode,
@@ -599,6 +611,7 @@ impl InstallationOwner {
                 directory,
                 entry: active,
                 epoch,
+                retirement: RetirementProgress::Live,
             })
         })();
         result.map_err(|error| DiskPrepareFailure {
@@ -634,6 +647,75 @@ impl InstallationOwner {
         tests::checkpoint("namespace-removal-committed")?;
         snapshot.entries.remove(position);
         self.storage.publish_disks(&snapshot)
+    }
+
+    /// Filesystem primitive for the resident's sealed original-child retirement
+    /// path. The caller must retain that receipt and the actual disk credit.
+    /// This method is private to the trusted embedding; it creates no exit proof.
+    pub(crate) fn retire_endpoint_disk(&mut self, store: &mut DiskStore) -> Result<()> {
+        self.disk_epoch(store.epoch)?;
+        if store.retirement == RetirementProgress::Complete {
+            return Ok(());
+        }
+        self.storage.absent_names(&[INTENT, NEXT])?;
+        let original = ObjectId {
+            device: store.entry.device,
+            inode: store.entry.inode,
+        };
+        if object_id(&store.directory)? != original {
+            return Err(OwnerError::InvalidStorage);
+        }
+        let name = store.entry.name(store.epoch.generation);
+        let mut snapshot = self.storage.disk_snapshot(store.epoch)?;
+        let position = snapshot.entries.iter().position(|entry| {
+            matches!(entry.phase, 2 | 3) && Entry { phase: 2, ..*entry } == store.entry
+        });
+        let Some(position) = position else {
+            // A final publication may have renamed the empty snapshot before
+            // failing its synchronization. Only this same store's positive
+            // prior remove+sync can resolve a missing entry; absence alone can't.
+            if store.retirement != RetirementProgress::NamespaceSynced
+                || self.storage.name_present(&name)?
+            {
+                return Err(OwnerError::Fenced);
+            }
+            self.storage.publish_disks(&snapshot)?;
+            store.retirement = RetirementProgress::Complete;
+            return Ok(());
+        };
+        if self.storage.name_present(&name)? {
+            if store.retirement != RetirementProgress::Live {
+                return Err(OwnerError::Fenced);
+            }
+            let directory = open_directory(&self.storage.directory, &name)?;
+            if object_id(&directory)? != original {
+                return Err(OwnerError::InvalidStorage);
+            }
+            snapshot.entries[position].phase = 3;
+            self.storage.publish_disks(&snapshot)?;
+            let mut work = 0;
+            remove_contents(&directory, original.device, 0, &mut work)?;
+            if object_id(&open_directory(&self.storage.directory, &name)?)? != original {
+                return Err(OwnerError::InvalidStorage);
+            }
+            unlink(&self.storage.directory, &name, true)?;
+            store.retirement = RetirementProgress::NamespaceUnlinked;
+            #[cfg(test)]
+            tests::checkpoint("remove-before-parent-sync")?;
+        } else if snapshot.entries[position].phase != 3
+            || !matches!(
+                store.retirement,
+                RetirementProgress::NamespaceUnlinked | RetirementProgress::NamespaceSynced
+            )
+        {
+            return Err(OwnerError::Fenced);
+        }
+        self.storage.directory.sync_all()?;
+        store.retirement = RetirementProgress::NamespaceSynced;
+        snapshot.entries.remove(position);
+        self.storage.publish_disks(&snapshot)?;
+        store.retirement = RetirementProgress::Complete;
+        Ok(())
     }
 }
 

@@ -1,0 +1,9 @@
+# Original endpoint disk retirement — development checkpoint
+
+The resident can retire only the disposable store owned by the original completed endpoint. The private cleanup state remembers successful namespace removal and its synchronization independently; serialized inventory phase or absent paths cannot manufacture that progress. The original sealed MVM endpoint-retirement receipt must retain the identical partition guard and full projection before the higher wrapper performs any I/O or refunds its actual disk reservation.
+
+An actual macOS APFS failure showed that a removed held directory can still report nlink=2. Cleanup no longer infers successful removal from link count. The original failure and diagnostic are preserved. Five new filesystem tests pass on macOS, including injected synchronization failures, ambiguous missing state and recreated-namespace refusal. The actual locked canonical-feature API probe first failed with the missing helper, then the binding test passed.
+
+The emitted Linux release lib test binary was copied, chmod500-protected and hashed before executing ten disk-module entries (including one process helper entry) plus one binding test. All passed; exact source and protected binary hashes matched afterward. Source uses the immutable Git dependency closure from the previous checkpoint, without path overrides. Original commands/results are retained alongside these records.
+
+This is a development checkpoint. The typed retirement wrapper still has no resident-parent consumer, emits a dead-code warning, and has no positive actual sealed-receipt/native integration witness. No new transfer performance, VM recovery, WAN, capacity or complete-service claim follows. Independent review of this latest source is in progress. The resident must retain the original receipt and credits across failed cleanup; final activation remains gated.

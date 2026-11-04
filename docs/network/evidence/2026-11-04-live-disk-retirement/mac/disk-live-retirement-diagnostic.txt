@@ -1,0 +1,49 @@
+   Compiling installed-supervisor-harness v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-mvm-live/tests/installed-supervisor-harness)
+warning: method `close_admission` is never used
+   --> src/../../../src/installed_supervisor.rs:206:19
+    |
+205 | impl WorkerGrant {
+    | ---------------- method in this implementation
+206 |     pub(crate) fn close_admission(&self) {
+    |                   ^^^^^^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: field `session_started` is never read
+   --> src/../../../src/installed_supervisor.rs:247:5
+    |
+242 | pub struct InstalledSupervisor {
+    |            ------------------- field in this struct
+...
+247 |     session_started: bool,
+    |     ^^^^^^^^^^^^^^^
+
+warning: method `claim_session` is never used
+   --> src/../../../src/installed_supervisor.rs:296:19
+    |
+249 | impl InstalledSupervisor {
+    | ------------------------ method in this implementation
+...
+296 |     pub(crate) fn claim_session(&mut self) -> Result<()> {
+    |                   ^^^^^^^^^^^^^
+
+warning: `installed-supervisor-harness` (lib test) generated 3 warnings
+    Finished `test` profile [unoptimized] target(s) in 1.82s
+     Running unittests src/lib.rs (/tmp/spiralcore-installed-supervisor-20261103/target/debug/deps/installed_supervisor_harness-c9d7a41ca1f09555)
+
+running 1 test
+retire diagnostic: nlink=2 namespace_synced=false inventory_phases=[3]
+
+thread 'installed_owner::endpoint_disks::tests::live_cleanup_resumes_after_removal_or_final_publication_failure' (19998876) panicked at src/../../../src/installed_owner/endpoint_disks_tests.rs:349:48:
+called `Result::unwrap()` on an `Err` value: Fenced
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test installed_owner::endpoint_disks::tests::live_cleanup_resumes_after_removal_or_final_publication_failure ... FAILED
+
+failures:
+
+failures:
+    installed_owner::endpoint_disks::tests::live_cleanup_resumes_after_removal_or_final_publication_failure
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 26 filtered out; finished in 0.09s
+
+error: test failed, to rerun pass `--lib`

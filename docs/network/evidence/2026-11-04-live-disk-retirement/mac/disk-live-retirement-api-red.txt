@@ -1,0 +1,113 @@
+   Compiling installed-supervisor-harness v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-mvm-live/tests/installed-supervisor-harness)
+error[E0599]: no method named `retire_endpoint_disk` found for struct `installed_owner::InstallationOwner` in the current scope
+   --> src/../../../src/installed_owner/endpoint_disks_tests.rs:278:11
+    |
+278 |     owner.retire_endpoint_disk(&mut store).unwrap();
+    |           ^^^^^^^^^^^^^^^^^^^^
+    |
+   ::: src/../../../src/installed_owner.rs:600:1
+    |
+600 | pub struct InstallationOwner {
+    | ---------------------------- method `retire_endpoint_disk` not found for this struct
+    |
+help: there is a method `prepare_endpoint_disk` with a similar name, but with different arguments
+   --> src/../../../src/installed_owner/endpoint_disks.rs:540:5
+    |
+540 | /     pub(crate) fn prepare_endpoint_disk(
+541 | |         &mut self,
+542 | |         epoch: Epoch,
+543 | |         serial: u64,
+544 | |         request: EndpointDiskRequest,
+545 | |     ) -> std::result::Result<DiskStore, DiskPrepareFailure> {
+    | |___________________________________________________________^
+
+error[E0599]: no method named `retire_endpoint_disk` found for struct `installed_owner::InstallationOwner` in the current scope
+   --> src/../../../src/installed_owner/endpoint_disks_tests.rs:283:11
+    |
+283 |     owner.retire_endpoint_disk(&mut store).unwrap();
+    |           ^^^^^^^^^^^^^^^^^^^^
+    |
+   ::: src/../../../src/installed_owner.rs:600:1
+    |
+600 | pub struct InstallationOwner {
+    | ---------------------------- method `retire_endpoint_disk` not found for this struct
+    |
+help: there is a method `prepare_endpoint_disk` with a similar name, but with different arguments
+   --> src/../../../src/installed_owner/endpoint_disks.rs:540:5
+    |
+540 | /     pub(crate) fn prepare_endpoint_disk(
+541 | |         &mut self,
+542 | |         epoch: Epoch,
+543 | |         serial: u64,
+544 | |         request: EndpointDiskRequest,
+545 | |     ) -> std::result::Result<DiskStore, DiskPrepareFailure> {
+    | |___________________________________________________________^
+
+error[E0599]: no method named `retire_endpoint_disk` found for struct `installed_owner::InstallationOwner` in the current scope
+   --> src/../../../src/installed_owner/endpoint_disks_tests.rs:310:23
+    |
+310 |         assert!(owner.retire_endpoint_disk(&mut store).is_err());
+    |                       ^^^^^^^^^^^^^^^^^^^^
+    |
+   ::: src/../../../src/installed_owner.rs:600:1
+    |
+600 | pub struct InstallationOwner {
+    | ---------------------------- method `retire_endpoint_disk` not found for this struct
+    |
+help: there is a method `prepare_endpoint_disk` with a similar name, but with different arguments
+   --> src/../../../src/installed_owner/endpoint_disks.rs:540:5
+    |
+540 | /     pub(crate) fn prepare_endpoint_disk(
+541 | |         &mut self,
+542 | |         epoch: Epoch,
+543 | |         serial: u64,
+544 | |         request: EndpointDiskRequest,
+545 | |     ) -> std::result::Result<DiskStore, DiskPrepareFailure> {
+    | |___________________________________________________________^
+
+error[E0599]: no method named `retire_endpoint_disk` found for struct `installed_owner::InstallationOwner` in the current scope
+   --> src/../../../src/installed_owner/endpoint_disks_tests.rs:313:15
+    |
+313 |         owner.retire_endpoint_disk(&mut store).unwrap();
+    |               ^^^^^^^^^^^^^^^^^^^^
+    |
+   ::: src/../../../src/installed_owner.rs:600:1
+    |
+600 | pub struct InstallationOwner {
+    | ---------------------------- method `retire_endpoint_disk` not found for this struct
+    |
+help: there is a method `prepare_endpoint_disk` with a similar name, but with different arguments
+   --> src/../../../src/installed_owner/endpoint_disks.rs:540:5
+    |
+540 | /     pub(crate) fn prepare_endpoint_disk(
+541 | |         &mut self,
+542 | |         epoch: Epoch,
+543 | |         serial: u64,
+544 | |         request: EndpointDiskRequest,
+545 | |     ) -> std::result::Result<DiskStore, DiskPrepareFailure> {
+    | |___________________________________________________________^
+
+error[E0599]: no method named `retire_endpoint_disk` found for struct `installed_owner::InstallationOwner` in the current scope
+   --> src/../../../src/installed_owner/endpoint_disks_tests.rs:314:15
+    |
+314 |         owner.retire_endpoint_disk(&mut store).unwrap();
+    |               ^^^^^^^^^^^^^^^^^^^^
+    |
+   ::: src/../../../src/installed_owner.rs:600:1
+    |
+600 | pub struct InstallationOwner {
+    | ---------------------------- method `retire_endpoint_disk` not found for this struct
+    |
+help: there is a method `prepare_endpoint_disk` with a similar name, but with different arguments
+   --> src/../../../src/installed_owner/endpoint_disks.rs:540:5
+    |
+540 | /     pub(crate) fn prepare_endpoint_disk(
+541 | |         &mut self,
+542 | |         epoch: Epoch,
+543 | |         serial: u64,
+544 | |         request: EndpointDiskRequest,
+545 | |     ) -> std::result::Result<DiskStore, DiskPrepareFailure> {
+    | |___________________________________________________________^
+
+For more information about this error, try `rustc --explain E0599`.
+error: could not compile `installed-supervisor-harness` (lib test) due to 5 previous errors

@@ -1,0 +1,42 @@
+   Compiling installed-supervisor-harness v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-mvm-live/tests/installed-supervisor-harness)
+warning: method `close_admission` is never used
+   --> src/../../../src/installed_supervisor.rs:206:19
+    |
+205 | impl WorkerGrant {
+    | ---------------- method in this implementation
+206 |     pub(crate) fn close_admission(&self) {
+    |                   ^^^^^^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: field `session_started` is never read
+   --> src/../../../src/installed_supervisor.rs:247:5
+    |
+242 | pub struct InstalledSupervisor {
+    |            ------------------- field in this struct
+...
+247 |     session_started: bool,
+    |     ^^^^^^^^^^^^^^^
+
+warning: method `claim_session` is never used
+   --> src/../../../src/installed_supervisor.rs:296:19
+    |
+249 | impl InstalledSupervisor {
+    | ------------------------ method in this implementation
+...
+296 |     pub(crate) fn claim_session(&mut self) -> Result<()> {
+    |                   ^^^^^^^^^^^^^
+
+warning: `installed-supervisor-harness` (lib test) generated 3 warnings
+    Finished `test` profile [unoptimized] target(s) in 1.74s
+     Running unittests src/lib.rs (/tmp/spiralcore-installed-supervisor-20261103/target/debug/deps/installed_supervisor_harness-c9d7a41ca1f09555)
+
+running 5 tests
+test installed_owner::endpoint_disks::tests::live_retirement_cannot_infer_progress_from_missing_active_or_cleanup_names ... ok
+test installed_owner::endpoint_disks::tests::live_retirement_does_not_adopt_a_recreated_namespace ... ok
+test installed_owner::endpoint_disks::tests::live_retirement_missing_entry_refuses_until_original_remove_is_synced ... ok
+test installed_owner::endpoint_disks::tests::live_retirement_removes_only_its_store_while_another_holder_remains ... ok
+test installed_owner::endpoint_disks::tests::live_cleanup_resumes_after_removal_or_final_publication_failure ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 25 filtered out; finished in 0.61s
+
