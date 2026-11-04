@@ -12,6 +12,24 @@ bash -n tools/gateway-network/runtime-object-infra-check.sh
 jq '.launch_ready=true' "$registration" > "$out/ready-fixture.json"
 bash "$driver" validate "$out/ready-fixture.json" > "$out/positive.stdout" 2> "$out/positive.stderr"
 printf '0\n' > "$out/positive.exit"
+jq -n '[{kind:"netem",qlen:0,drops:142,options:{limit:256,delay:{delay:0.04},rate:{rate:1250000}}}]' > "$out/qdisc-empty.json"
+bash "$driver" qdisc-drained "$out/qdisc-empty.json" > "$out/qdisc-positive.stdout" 2> "$out/qdisc-positive.stderr"
+for name in queued missing duplicate rate limit; do
+  case "$name" in
+    queued) mutation='.[0].qlen=1';;
+    missing) mutation='[]';;
+    duplicate) mutation='. += .';;
+    rate) mutation='.[0].options.rate.rate=12500000';;
+    limit) mutation='.[0].options.limit=1000';;
+  esac
+  jq "$mutation" "$out/qdisc-empty.json" > "$out/qdisc-$name.json"
+  set +e
+  bash "$driver" qdisc-drained "$out/qdisc-$name.json" > "$out/qdisc-$name.stdout" 2> "$out/qdisc-$name.stderr"
+  code=$?
+  set -e
+  printf '%s\n' "$code" > "$out/qdisc-$name.exit"
+  [ "$code" -ne 0 ] || { echo "invalid/nonempty qdisc accepted: $name" >&2; exit 1; }
+done
 for name in unregistered trials arms size deliveries setup warmprobe retry rate queue schema fixture; do
   case "$name" in
     unregistered) mutation='.launch_ready=false';;
@@ -123,5 +141,5 @@ code=$?
 set -e
 printf '%s\n' "$code" > "$out/invariants-negative.exit"
 [ "$code" -ne 0 ] || { echo "lost mandatory byte savings accepted" >&2; exit 1; }
-jq -n --argjson bindings "$bindings" '{positive:1,negatives:12,binding_negatives:$bindings,capture_positive:1,capture_negatives:4,invariants_positive:1,invariants_negative:1,
+jq -n --argjson bindings "$bindings" '{positive:1,negatives:12,binding_negatives:$bindings,capture_positive:1,capture_negatives:4,qdisc_positive:1,qdisc_negatives:5,invariants_positive:1,invariants_negative:1,
   parity_positive:1,parity_negatives:5,passed:true,scope:"pure registration, capture completion, receipt parity and shell syntax; no network claim"}' > "$out/result.json"
