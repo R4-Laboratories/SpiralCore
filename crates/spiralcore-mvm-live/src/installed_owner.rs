@@ -27,6 +27,10 @@ const RECORD_BYTES: usize = 176;
 const BODY_BYTES: usize = 144;
 const DOMAIN: &[u8] = b"spiralcore/installed-owner/v1\0";
 
+#[cfg(test)]
+#[path = "installed_owner/binding_tests.rs"]
+mod binding_tests;
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct InstallationKey {
     pub installation: [u8; 32],
@@ -36,6 +40,14 @@ pub struct InstallationKey {
 pub struct Epoch {
     key: InstallationKey,
     generation: u64,
+}
+/// Fresh provisioning facts for library consumers holding an owner and its
+/// original Epoch. These values are not credentials or a worker activation
+/// grant, and cannot reconstruct an owner or resource descriptor.
+pub struct InstallationBinding {
+    pub root: PathBuf,
+    pub key: InstallationKey,
+    pub generation: u64,
 }
 impl Epoch {
     pub fn generation(&self) -> u64 {
@@ -571,6 +583,28 @@ pub struct InstallationOwner {
     _owner: File,
 }
 impl InstallationOwner {
+    /// Fresh local provisioning facts for the original active epoch. This is
+    /// neither a resource descriptor nor permission to activate a worker.
+    pub fn active_binding(&self, expected: Epoch) -> Result<InstallationBinding> {
+        let record = self.current()?;
+        if record.phase != Phase::Active
+            || record.key != expected.key
+            || record.generation != expected.generation
+        {
+            return Err(OwnerError::StaleEpoch);
+        }
+        Ok(InstallationBinding {
+            root: self.storage.root.clone(),
+            key: record.key,
+            generation: record.generation,
+        })
+    }
+
+    /// Fresh local provisioning identity; it conveys no guest boot permission.
+    pub fn profile_hash(&self) -> Result<[u8; 32]> {
+        Ok(self.current()?.key.profile)
+    }
+
     pub fn initialize(root: &Path, key: InstallationKey) -> Result<Self> {
         use std::os::unix::fs::DirBuilderExt;
         check_key(key)?;

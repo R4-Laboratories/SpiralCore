@@ -1,0 +1,148 @@
+[
+  {
+    "plan": {
+      "arm": "whole",
+      "bandwidth_profile": "standard",
+      "size": 4096,
+      "stage": "one",
+      "trial": 0
+    },
+    "ok": true,
+    "logical_bytes": 448815,
+    "physical_bytes": 448815,
+    "lifecycle_us": 438250,
+    "orchestrator_cpu_us": 70281,
+    "sender_cpu_us": 76224,
+    "receiver_cpu_us": 62971,
+    "sender_wall_us": 178161,
+    "receiver_wall_us": 123231,
+    "operations": 7,
+    "exact_reopened": true,
+    "worker_metrics": [
+      {
+        "role": 1,
+        "generation": 2,
+        "control_input_cpu_us": 1548,
+        "control_input_wall_us": 1600,
+        "process_cpu_us": 63728,
+        "wall_us": 431874,
+        "boot_us": 57809,
+        "backing_sync_us": null,
+        "vmm_observed_cpu_us": 230000
+      }
+    ],
+    "readbacks": 0
+  },
+  {
+    "plan": {
+      "arm": "whole-mixed",
+      "bandwidth_profile": "standard",
+      "size": 1048576,
+      "stage": "two",
+      "trial": 0
+    },
+    "ok": true,
+    "logical_bytes": 7353966,
+    "physical_bytes": 14707932,
+    "lifecycle_us": 1236986,
+    "orchestrator_cpu_us": 23511,
+    "sender_cpu_us": 343390,
+    "receiver_cpu_us": 302224,
+    "sender_wall_us": 604862,
+    "receiver_wall_us": 307687,
+    "operations": 8,
+    "exact_reopened": true,
+    "worker_metrics": [
+      {
+        "role": 1,
+        "generation": 4,
+        "control_input_cpu_us": 1506,
+        "control_input_wall_us": 1563,
+        "process_cpu_us": 86668,
+        "wall_us": 868858,
+        "boot_us": 40842,
+        "backing_sync_us": null,
+        "vmm_observed_cpu_us": 540000
+      },
+      {
+        "role": 2,
+        "generation": 4,
+        "control_input_cpu_us": 1346,
+        "control_input_wall_us": 1406,
+        "process_cpu_us": 128799,
+        "wall_us": 960672,
+        "boot_us": 58021,
+        "backing_sync_us": 5835,
+        "vmm_observed_cpu_us": 570000
+      },
+      {
+        "role": 3,
+        "generation": 4,
+        "control_input_cpu_us": 1375,
+        "control_input_wall_us": 1409,
+        "process_cpu_us": 38416,
+        "wall_us": 257076,
+        "boot_us": 64383,
+        "backing_sync_us": 1249,
+        "vmm_observed_cpu_us": 140000
+      }
+    ],
+    "readbacks": 8
+  },
+  {
+    "plan": {
+      "arm": "combined-cpu",
+      "bandwidth_profile": "standard",
+      "size": 1048576,
+      "stage": "two",
+      "trial": 0
+    },
+    "ok": true,
+    "logical_bytes": 4922739,
+    "physical_bytes": 9845478,
+    "lifecycle_us": 1245464,
+    "orchestrator_cpu_us": 19857,
+    "sender_cpu_us": 309702,
+    "receiver_cpu_us": 257658,
+    "sender_wall_us": 531197,
+    "receiver_wall_us": 262749,
+    "operations": 10,
+    "exact_reopened": true,
+    "worker_metrics": [
+      {
+        "role": 1,
+        "generation": 5,
+        "control_input_cpu_us": 1405,
+        "control_input_wall_us": 1429,
+        "process_cpu_us": 119615,
+        "wall_us": 855435,
+        "boot_us": 46506,
+        "backing_sync_us": null,
+        "vmm_observed_cpu_us": 550000
+      },
+      {
+        "role": 2,
+        "generation": 5,
+        "control_input_cpu_us": 1365,
+        "control_input_wall_us": 1402,
+        "process_cpu_us": 133047,
+        "wall_us": 945750,
+        "boot_us": 64526,
+        "backing_sync_us": 5615,
+        "vmm_observed_cpu_us": 540000
+      },
+      {
+        "role": 3,
+        "generation": 5,
+        "control_input_cpu_us": 1264,
+        "control_input_wall_us": 1368,
+        "process_cpu_us": 41478,
+        "wall_us": 272992,
+        "boot_us": 76627,
+        "backing_sync_us": 2898,
+        "vmm_observed_cpu_us": 150000
+      }
+    ],
+    "readbacks": 10
+  }
+]

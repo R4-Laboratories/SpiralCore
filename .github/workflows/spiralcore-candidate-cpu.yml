@@ -17,6 +17,7 @@ on:
       - 'crates/spiralcore-gateway-core/tests/object*.rs'
       - 'crates/spiralcore-gateway-core/Cargo.*'
       - 'crates/spiralcore-transfer/src/**'
+      - 'crates/spiralcore-storage-windows/**'
       - 'crates/spiralcore-transfer/Cargo.*'
       - 'crates/uor-r4-object-store/src/**'
       - 'crates/uor-r4-object-store/Cargo.*'
@@ -36,7 +37,7 @@ jobs:
     timeout-minutes: 40
     env:
       EXPECTED_SOURCE: ${{ github.event.pull_request.head.sha }}
-      CONTROL_SOURCE: 9f5912698f6ab46ddc771fe15fd0c0a7bcec8c5b
+      CONTROL_SOURCE: 109fd7711baf609bc102bcbbf07ae59e064dc5e1
       CARGO_INCREMENTAL: 0
       CARGO_BUILD_JOBS: 2
       CARGO_TARGET_DIR: ${{ github.workspace }}/target
@@ -47,7 +48,7 @@ jobs:
           persist-credentials: false
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
-          ref: 9f5912698f6ab46ddc771fe15fd0c0a7bcec8c5b
+          ref: 109fd7711baf609bc102bcbbf07ae59e064dc5e1
           path: .control-source
           persist-credentials: false
       - name: Bind source and registered dose before setup

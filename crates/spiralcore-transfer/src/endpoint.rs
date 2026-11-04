@@ -9,12 +9,14 @@ use crate::{
 };
 use std::{
     collections::{BTreeMap, BTreeSet},
-    fs::{self, File, OpenOptions},
+    fs::{self, File},
     io::{Read, Write},
     path::{Path, PathBuf},
     sync::atomic::{AtomicU64, Ordering},
     sync::{Arc, Mutex},
 };
+mod storage;
+use storage::{private_dir, private_file};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Context {
@@ -210,7 +212,9 @@ impl<A: Authority> Endpoint<A> {
         if initialized {
             private_file(&marker)?;
             let mut bytes = Vec::new();
-            File::open(&marker)?.take(64).read_to_end(&mut bytes)?;
+            storage::open_read(&marker)?
+                .take(64)
+                .read_to_end(&mut bytes)?;
             if bytes != b"SpiralCore private object cache v1\n" {
                 return Err(Error::Storage);
             }
@@ -221,21 +225,10 @@ impl<A: Authority> Endpoint<A> {
         if fs::symlink_metadata(&owner_path).is_ok() {
             private_file(&owner_path)?;
         }
-        let owner = private_options()
-            .read(true)
-            .write(true)
-            .create(true)
-            .truncate(false)
-            .open(&owner_path)?;
+        let owner = storage::open_owner(&owner_path)?;
         owner.try_lock().map_err(|_| Error::Storage)?;
         if !initialized {
-            let mut f = private_options()
-                .write(true)
-                .create_new(true)
-                .open(&marker)?;
-            f.write_all(b"SpiralCore private object cache v1\n")?;
-            f.sync_all()?;
-            File::open(root)?.sync_all()?;
+            storage::initialize_profile(root, b"SpiralCore private object cache v1\n")?;
         }
         // Only our reserved staging name is collected, with exclusive root ownership.
         for dir in fs::read_dir(root)? {
@@ -249,7 +242,8 @@ impl<A: Authority> Endpoint<A> {
             for f in fs::read_dir(dir.path())? {
                 let f = f?;
                 if f.file_type()?.is_file() && owned_stage(&f.file_name().to_string_lossy()) {
-                    fs::remove_file(f.path())?;
+                    private_file(&f.path())?;
+                    storage::remove_stage(&f.path())?;
                 }
             }
         }
@@ -1097,12 +1091,13 @@ impl<A: Authority> Endpoint<A> {
             if !d.file_type()?.is_dir() || !canonical_namespace(&d.file_name().to_string_lossy()) {
                 continue;
             }
+            private_dir(&d.path())?;
             for f in fs::read_dir(d.path())? {
                 let f = f?;
                 if !f.file_type()?.is_file() || f.path().extension().is_none_or(|s| s != "object") {
                     continue;
                 }
-                let n = f.metadata()?.len();
+                let n = storage::open_read(&f.path())?.metadata()?.len();
                 all = all.checked_add(n).ok_or(Error::Limit)?;
                 if d.file_name() == hex(&ns).as_str() {
                     scoped = scoped.checked_add(n).ok_or(Error::Limit)?;
@@ -1125,10 +1120,8 @@ impl<A: Authority> Endpoint<A> {
     ) -> Result<()> {
         match self.publication(ns, offer.object) {
             Ok(p) => {
-                if read_publication(&p)? != bytes {
-                    return Err(Error::Integrity);
-                }
-                File::open(p.path.parent().ok_or(Error::Storage)?)?.sync_all()?;
+                verify_publication(&p, bytes)?;
+                storage::sync_existing(&p.path)?;
                 self.authority.authorize(context)?;
                 return Ok(());
             }
@@ -1151,8 +1144,10 @@ impl<A: Authority> Endpoint<A> {
             std::process::id(),
             TEMP.fetch_add(1, Ordering::Relaxed)
         ));
+        let mut created = false;
         let result = (|| {
-            let mut f = private_options().write(true).create_new(true).open(&tmp)?;
+            let mut f = storage::create_new_file(&tmp)?;
+            created = true;
             f.write_all(b"SCPUB001")?;
             f.write_all(&offer.len.to_le_bytes())?;
             f.write_all(&offer.object)?;
@@ -1164,13 +1159,14 @@ impl<A: Authority> Endpoint<A> {
             f.sync_all()?;
             drop(f);
             self.authority.authorize(context)?;
-            fs::rename(&tmp, &path)?;
-            File::open(parent)?.sync_all()?;
-            File::open(&self.root)?.sync_all()?;
+            storage::publish(&tmp, &path, &self.root)?;
+            let published = self.publication(ns, offer.object)?;
+            verify_publication(&published, bytes)?;
+            self.authority.authorize(context)?;
             Ok(())
         })();
-        if result.is_err() {
-            let _ = fs::remove_file(&tmp);
+        if result.is_err() && created {
+            let _ = storage::remove_stage(&tmp);
         }
         result
     }
@@ -1271,13 +1267,10 @@ fn read_meta(path: &Path) -> Result<Publication> {
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Err(Error::Unknown),
         Err(_) => return Err(Error::Storage),
     }
-    let mut f = File::open(path).map_err(|e| {
-        if e.kind() == std::io::ErrorKind::NotFound {
-            Error::Unknown
-        } else {
-            Error::Storage
-        }
-    })?;
+    let mut f = storage::open_read(path)?;
+    read_meta_file(path, &mut f)
+}
+fn read_meta_file(path: &Path, f: &mut File) -> Result<Publication> {
     let mut h = [0u8; 49];
     f.read_exact(&mut h).map_err(|_| Error::Integrity)?;
     if &h[..8] != b"SCPUB001" {
@@ -1322,79 +1315,12 @@ fn owned_stage(s: &str) -> bool {
         |x: Option<&str>| x.is_some_and(|x| !x.is_empty() && x.bytes().all(|b| b.is_ascii_digit()));
     digits(p.next()) && digits(p.next()) && p.next().is_none()
 }
-fn private_options() -> OpenOptions {
-    let mut o = OpenOptions::new();
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::OpenOptionsExt;
-        o.mode(0o600);
-    }
-    o
-}
-fn private_file(path: &Path) -> Result<()> {
-    let m = fs::symlink_metadata(path)?;
-    if !m.is_file() || m.file_type().is_symlink() {
-        return Err(Error::Storage);
-    }
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::PermissionsExt;
-        if m.permissions().mode() & 0o077 != 0 {
-            return Err(Error::Storage);
-        }
-    }
-    #[cfg(not(unix))]
-    return Err(Error::Unsupported);
-    Ok(())
-}
-fn private_dir(path: &Path) -> Result<()> {
-    match fs::symlink_metadata(path) {
-        Ok(m) => {
-            if !m.is_dir() || m.file_type().is_symlink() {
-                return Err(Error::Storage);
-            }
-            #[cfg(unix)]
-            {
-                use std::os::unix::fs::PermissionsExt;
-                if m.permissions().mode() & 0o077 != 0 {
-                    return Err(Error::Storage);
-                }
-            }
-            #[cfg(not(unix))]
-            return Err(Error::Unsupported);
-        }
-        Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
-            let parent = path
-                .parent()
-                .filter(|p| !p.as_os_str().is_empty())
-                .unwrap_or(Path::new("."));
-            if !parent.exists() {
-                private_dir(parent)?;
-            }
-            let mut b = fs::DirBuilder::new();
-            #[cfg(unix)]
-            {
-                use std::os::unix::fs::DirBuilderExt;
-                b.mode(0o700);
-            }
-            #[cfg(not(unix))]
-            return Err(Error::Unsupported);
-            b.create(path)?;
-            File::open(path)?.sync_all()?;
-            File::open(parent)?.sync_all()?;
-        }
-        Err(_) => return Err(Error::Storage),
-    }
-    Ok(())
-}
 fn read_publication(p: &Publication) -> Result<Vec<u8>> {
-    let fresh = read_meta(&p.path)?;
+    let mut f = storage::open_read(&p.path)?;
+    let fresh = read_meta_file(&p.path, &mut f)?;
     if fresh.object != p.object || fresh.len != p.len || fresh.manifest != p.manifest {
         return Err(Error::Integrity);
     }
-    let mut f = File::open(&p.path)?;
-    let mut header = vec![0; if p.manifest.is_some() { 81 } else { 49 }];
-    f.read_exact(&mut header)?;
     let mut data = Vec::new();
     data.try_reserve_exact(p.len as usize)
         .map_err(|_| Error::Limit)?;
@@ -1403,6 +1329,32 @@ fn read_publication(p: &Publication) -> Result<Vec<u8>> {
         return Err(Error::Integrity);
     }
     Ok(data)
+}
+fn verify_publication(p: &Publication, expected: &[u8]) -> Result<()> {
+    let mut f = storage::open_read(&p.path)?;
+    let fresh = read_meta_file(&p.path, &mut f)?;
+    if fresh.object != p.object
+        || fresh.len != p.len
+        || fresh.manifest != p.manifest
+        || expected.len() as u64 != p.len
+        || object_id(expected) != p.object
+    {
+        return Err(Error::Integrity);
+    }
+    // Full byte equality against the canonical-digest-checked bytes proves the
+    // readback's identity without allocating a second object-sized plaintext.
+    let mut buffer = [0u8; 8192];
+    for chunk in expected.chunks(buffer.len()) {
+        f.read_exact(&mut buffer[..chunk.len()])
+            .map_err(|_| Error::Integrity)?;
+        if &buffer[..chunk.len()] != chunk {
+            return Err(Error::Integrity);
+        }
+    }
+    if f.read(&mut buffer[..1])? != 0 {
+        return Err(Error::Integrity);
+    }
+    Ok(())
 }
 pub fn decode_zstd(b: &[u8], decoded: usize) -> Result<Vec<u8>> {
     if decoded > MAX_CHUNK {
@@ -1430,3 +1382,7 @@ pub fn decode_zstd(b: &[u8], decoded: usize) -> Result<Vec<u8>> {
     }
     Ok(out)
 }
+
+#[cfg(test)]
+#[path = "endpoint/storage/tests.rs"]
+mod storage_tests;

@@ -271,6 +271,58 @@ fn assert_released(owner: &HostTransportBudget) {
 }
 
 #[test]
+fn clean_peer_drop_after_exact_reverse_drain_finishes_without_losing_credits() {
+    let owner = transport_budget().unwrap();
+    let mut running = RunningRelay::start(&owner);
+    running.ready().unwrap();
+    let cancel = CancellationToken::default();
+    live::write_ciphertext_frame(
+        &mut running.b,
+        &running.reverse_wire,
+        &cancel,
+        Instant::now() + WATCHDOG,
+        &mut running.bc,
+    )
+    .unwrap();
+    running.a.shutdown(Shutdown::Write).unwrap();
+    assert!(
+        live::read_ciphertext_frame_or_eof(
+            &mut running.b,
+            &cancel,
+            Instant::now() + WATCHDOG,
+            &mut running.bc,
+        )
+        .unwrap()
+        .is_none()
+    );
+    let reverse = live::read_ciphertext_frame(
+        &mut running.a,
+        &cancel,
+        Instant::now() + WATCHDOG,
+        &mut running.ac,
+    )
+    .unwrap();
+    assert_eq!(reverse, running.reverse_wire);
+    let ac = serde_json::to_value(running.ac).unwrap();
+    // Close the actual last application-side descriptor after reading every
+    // reverse byte. The replacement exists only for the harness's own Drop.
+    let (replacement, unrelated) = UnixStream::pair().unwrap();
+    drop(std::mem::replace(&mut running.a, replacement));
+    drop(unrelated);
+    running.b.shutdown(Shutdown::Write).unwrap();
+    let bc = serde_json::to_value(running.bc).unwrap();
+    let (result, completed) = running.finish();
+    assert!(
+        completed,
+        "clean peer drop did not autonomously finish both pumps"
+    );
+    let report = result.unwrap();
+    counters_agree(&ac, &report["a"]).unwrap();
+    counters_agree(&bc, &report["b"]).unwrap();
+    assert_released(&owner);
+}
+
+#[test]
 fn clean_half_close_drains_buffered_reverse_frame_and_matches_exact_counters() {
     let owner = transport_budget().unwrap();
     let mut running = RunningRelay::start(&owner);
@@ -399,8 +451,7 @@ fn second_direction_credit_refusal_rolls_back_before_handshake_or_read() {
     assert_eq!(snapshot.refusals, 1);
 }
 
-#[test]
-fn blocked_forward_write_failure_wakes_idle_sibling_and_retains_partial_sent_bytes() {
+fn blocked_peer_close_after_observed_body() -> u64 {
     let owner = transport_budget().unwrap();
     let mut running = RunningRelay::start_with_output_buffer(&owner, Some(4096));
     running.ready().unwrap();
@@ -431,7 +482,14 @@ fn blocked_forward_write_failure_wakes_idle_sibling_and_retains_partial_sent_byt
     let ready = unsafe { libc::poll(&mut readable, 1, WATCHDOG.as_millis() as i32) };
     assert_eq!(ready, 1, "payload never reached the blocked output");
     assert_ne!(readable.revents & libc::POLLIN, 0);
-    running.b.shutdown(Shutdown::Both).unwrap();
+    let mut observed = [0; 64];
+    running.b.read_exact(&mut observed).unwrap();
+    assert_eq!(observed, running.forward_wire[..observed.len()]);
+    // Drop the last peer descriptor. On Darwin, shutdown(Both) with unread
+    // queued bytes can leave the writer blocked while this descriptor lives.
+    let (replacement, unrelated) = UnixStream::pair().unwrap();
+    drop(std::mem::replace(&mut running.b, replacement));
+    drop(unrelated);
     // A stays open. The fatal forward write must wake its idle sibling before
     // the harness supplies any cleanup shutdown. This is no 30s timeout claim.
     let (result, completed) = running.finish();
@@ -445,9 +503,26 @@ fn blocked_forward_write_failure_wakes_idle_sibling_and_retains_partial_sent_byt
     .unwrap();
     assert!(!diagnostic["forward"].is_null(), "{error}");
     let sent = diagnostic["b"]["envelope_bytes_sent"].as_u64().unwrap();
-    assert!(sent > 0 && sent < wire_len as u64, "{error}");
+    assert!(sent < wire_len as u64, "{error}");
     assert_eq!(diagnostic["b"]["framing_bytes_sent"], 12);
     assert_eq!(diagnostic["b"]["frames_sent"], 0);
     assert_eq!(diagnostic["a"]["frames_received"], 1);
     assert_released(&owner);
+    sent
+}
+
+#[cfg(target_os = "linux")]
+#[test]
+fn blocked_forward_write_failure_wakes_idle_sibling_and_retains_partial_sent_bytes() {
+    assert!(blocked_peer_close_after_observed_body() > 0);
+}
+
+#[cfg(target_os = "macos")]
+#[test]
+fn blocked_peer_close_after_exact_body_observation_wakes_idle_sibling_on_macos() {
+    // Darwin can return EPIPE without a successful partial-write return even
+    // though the peer read body bytes. The helper independently verifies those
+    // bytes, rejects frame completion and requires prompt fatal teardown. Its
+    // counter contains successful write returns, not guessed kernel traffic.
+    let _successful_write_bytes = blocked_peer_close_after_observed_body();
 }

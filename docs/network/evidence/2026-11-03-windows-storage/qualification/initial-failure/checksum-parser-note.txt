@@ -1,0 +1,1 @@
+The first local shasum -c attempt on the original Windows2022 SHA256SUMS failed to open all five names because its CRLF terminators were treated as literal filename CR bytes. No file digest comparison occurred. The corrected verifier normalizes only the derivative checksum manifest line endings with tr -d '\r'; original ZIPs, SHA256SUMS bytes and every data file remain unchanged.

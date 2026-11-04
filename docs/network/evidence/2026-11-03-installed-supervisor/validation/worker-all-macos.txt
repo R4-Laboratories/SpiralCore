@@ -1,0 +1,94 @@
+   Compiling installed-supervisor-harness v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-mvm-live/tests/installed-supervisor-harness)
+warning: variants `Sender`, `Receiver`, and `Verify` are never constructed
+   --> src/../../../src/installed_supervisor.rs:100:5
+    |
+ 99 | pub(crate) enum WorkerRole {
+    |                 ---------- variants in this enum
+100 |     Sender,
+    |     ^^^^^^
+101 |     Receiver,
+    |     ^^^^^^^^
+102 |     Verify,
+    |     ^^^^^^
+    |
+    = note: `WorkerRole` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: struct `WorkerGrant` is never constructed
+   --> src/../../../src/installed_supervisor.rs:107:19
+    |
+107 | pub(crate) struct WorkerGrant {
+    |                   ^^^^^^^^^^^
+
+warning: fields `serial` and `role` are never read
+   --> src/../../../src/installed_supervisor.rs:115:5
+    |
+114 | struct WorkerSlot {
+    |        ---------- fields in this struct
+115 |     serial: u64,
+    |     ^^^^^^
+116 |     role: WorkerRole,
+    |     ^^^^
+
+warning: field `serial` is never read
+   --> src/../../../src/installed_supervisor.rs:123:5
+    |
+122 | struct WorkerLedger {
+    |        ------------ field in this struct
+123 |     serial: u64,
+    |     ^^^^^^
+
+warning: methods `reserve_worker`, `spawn_worker`, `worker_slot`, `bind_worker`, `try_reap_worker`, and `confirm_worker_exit` are never used
+   --> src/../../../src/installed_supervisor.rs:161:19
+    |
+139 | impl InstalledSupervisor {
+    | ------------------------ methods in this implementation
+...
+161 |     pub(crate) fn reserve_worker(&mut self, role: WorkerRole) -> Result<WorkerGrant> {
+    |                   ^^^^^^^^^^^^^^
+...
+192 |     pub(crate) fn spawn_worker(
+    |                   ^^^^^^^^^^^^
+...
+234 |     fn worker_slot<'a>(
+    |        ^^^^^^^^^^^
+...
+252 |     pub(crate) fn bind_worker(
+    |                   ^^^^^^^^^^^
+...
+271 |     pub(crate) fn try_reap_worker(&mut self, grant: &WorkerGrant) -> Result<Option<ExitStatus>> {
+    |                   ^^^^^^^^^^^^^^^
+...
+294 |     pub(crate) fn confirm_worker_exit(&mut self, grant: &WorkerGrant) -> Result<()> {
+    |                   ^^^^^^^^^^^^^^^^^^^
+
+warning: `installed-supervisor-harness` (lib) generated 5 warnings
+    Finished `test` profile [unoptimized] target(s) in 1.23s
+     Running unittests src/lib.rs (/tmp/spiralcore-installed-supervisor-20261103/target/debug/deps/installed_supervisor_harness-c9d7a41ca1f09555)
+
+running 13 tests
+test host_budget::tests::installed_authority::poison_closes_installed_worker_authority_immediately ... ok
+test host_budget::tests::installed_authority::underflow_closes_installed_worker_authority_immediately ... ok
+test host_budget::tests::poisoned_ledger_refuses_snapshot_and_admission ... ok
+test host_budget::tests::underflow_fences_without_clamping_and_refusals_saturate ... ok
+test installed_owner::tests::failed_initial_intent_barriers_preserve_original_state_and_fence_reopen ... ok
+test installed_owner::tests::failed_postcommit_cleanup_sync_fences_owner_but_absent_marker_allows_durable_successor ... ok
+test installed_owner::tests::holders_aba_must_reject_the_actual_wrong_fd_and_never_retire_live_original_holders ... ok
+test installed_owner::tests::postrename_directory_sync_failure_must_survive_owner_drop_as_a_durable_fence ... ok
+test installed_supervisor::spawn_tests::definite_spawn_failure_closes_launch_and_clears_only_its_proven_empty_slot ... ok
+test installed_supervisor::spawn_tests::owned_spawn_retains_live_child_until_eof_and_rejects_another_controllers_grant ... ok
+test installed_supervisor::tests::controller_drop_reaps_its_exact_live_child_before_releasing_owner_exclusion ... ok
+test installed_supervisor::tests::live_children_block_finish_and_reaped_failure_closes_launch_but_allows_global_retirement ... ok
+test installed_supervisor::tests::two_worker_slots_require_reaping_and_confirmation_and_reject_stale_tokens ... ok
+
+test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.49s
+
+     Running tests/lifecycle.rs (/tmp/spiralcore-installed-supervisor-20261103/target/debug/deps/lifecycle-e48b8d95090cb41d)
+
+running 3 tests
+test close_refuses_cloned_admission_and_finish_preserves_ex_until_last_idle_clone_drops ... ok
+test profile_refusal_precedes_begin_and_live_holder_keeps_same_closed_epoch_retryable ... ok
+test sole_outliving_frame_retains_owner_ex_and_drop_never_publishes_clean ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.23s
+

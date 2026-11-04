@@ -15,8 +15,8 @@ linux-host = ["dep:mvm-backends", "dep:mvm-vmm", "dep:mvm-net", "dep:mvm-build",
 spiralcore-gateway-core = { path = "../spiralcore-gateway-core", features = ["hardware-sha256"] }
 spiralcore-mvm-adapter = { path = "../spiralcore-mvm-adapter", features = ["live", "hardware-sha256"] }
 spiralcore-transfer = { path = "../spiralcore-transfer", features = ["hardware-sha256"] }
-mvm-core = { git = "https://github.com/Casey-allard/mvm", rev = "ae12e9deb41cc9a3264196ce22ebc72d4042883d", default-features = false }
-mvm-contract = { git = "https://github.com/Casey-allard/mvm", rev = "ae12e9deb41cc9a3264196ce22ebc72d4042883d", default-features = false, features = ["protocol"] }
+mvm-core = { git = "https://github.com/Casey-allard/mvm", rev = "7d031c7f3fbeef62826712d2976a764c62cd5852", default-features = false }
+mvm-contract = { git = "https://github.com/Casey-allard/mvm", rev = "7d031c7f3fbeef62826712d2976a764c62cd5852", default-features = false, features = ["protocol"] }
 ed25519-dalek = "3"
 rand = "0.10"
 serde = { version = "1", features = ["derive"] }
@@ -26,17 +26,18 @@ cpu-time = "1"
 libc = "0.2"
 
 [target.'cfg(all(target_os = "macos", target_arch = "aarch64"))'.dependencies]
-mvm-runtime = { git = "https://github.com/Casey-allard/mvm", rev = "ae12e9deb41cc9a3264196ce22ebc72d4042883d", default-features = false }
-mvm-build = { git = "https://github.com/Casey-allard/mvm", rev = "ae12e9deb41cc9a3264196ce22ebc72d4042883d", default-features = false }
-mvm-fs = { git = "https://github.com/Casey-allard/mvm", rev = "ae12e9deb41cc9a3264196ce22ebc72d4042883d", default-features = false }
+mvm-vmm = { git = "https://github.com/Casey-allard/mvm", rev = "7d031c7f3fbeef62826712d2976a764c62cd5852", default-features = false }
+mvm-runtime = { git = "https://github.com/Casey-allard/mvm", rev = "7d031c7f3fbeef62826712d2976a764c62cd5852", default-features = false }
+mvm-build = { git = "https://github.com/Casey-allard/mvm", rev = "7d031c7f3fbeef62826712d2976a764c62cd5852", default-features = false }
+mvm-fs = { git = "https://github.com/Casey-allard/mvm", rev = "7d031c7f3fbeef62826712d2976a764c62cd5852", default-features = false }
 
 [target.'cfg(target_os = "linux")'.dependencies]
-mvm-agentd = { git = "https://github.com/Casey-allard/mvm", rev = "ae12e9deb41cc9a3264196ce22ebc72d4042883d", default-features = false }
-mvm-backends = { git = "https://github.com/Casey-allard/mvm", rev = "ae12e9deb41cc9a3264196ce22ebc72d4042883d", default-features = false, optional = true }
-mvm-vmm = { git = "https://github.com/Casey-allard/mvm", rev = "ae12e9deb41cc9a3264196ce22ebc72d4042883d", default-features = false, optional = true }
-mvm-net = { git = "https://github.com/Casey-allard/mvm", rev = "ae12e9deb41cc9a3264196ce22ebc72d4042883d", default-features = false, optional = true }
-mvm-build = { git = "https://github.com/Casey-allard/mvm", rev = "ae12e9deb41cc9a3264196ce22ebc72d4042883d", default-features = false, optional = true }
-mvm-fs = { git = "https://github.com/Casey-allard/mvm", rev = "ae12e9deb41cc9a3264196ce22ebc72d4042883d", default-features = false, optional = true }
+mvm-agentd = { git = "https://github.com/Casey-allard/mvm", rev = "7d031c7f3fbeef62826712d2976a764c62cd5852", default-features = false }
+mvm-backends = { git = "https://github.com/Casey-allard/mvm", rev = "7d031c7f3fbeef62826712d2976a764c62cd5852", default-features = false, optional = true }
+mvm-vmm = { git = "https://github.com/Casey-allard/mvm", rev = "7d031c7f3fbeef62826712d2976a764c62cd5852", default-features = false, optional = true }
+mvm-net = { git = "https://github.com/Casey-allard/mvm", rev = "7d031c7f3fbeef62826712d2976a764c62cd5852", default-features = false, optional = true }
+mvm-build = { git = "https://github.com/Casey-allard/mvm", rev = "7d031c7f3fbeef62826712d2976a764c62cd5852", default-features = false, optional = true }
+mvm-fs = { git = "https://github.com/Casey-allard/mvm", rev = "7d031c7f3fbeef62826712d2976a764c62cd5852", default-features = false, optional = true }
 
 [dev-dependencies]
 tempfile = "3"

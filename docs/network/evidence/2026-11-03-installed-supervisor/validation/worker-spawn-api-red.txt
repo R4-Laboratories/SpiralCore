@@ -1,0 +1,48 @@
+   Compiling installed-supervisor-harness v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-mvm-live/tests/installed-supervisor-harness)
+error[E0599]: no method named `spawn_worker` found for struct `installed_supervisor::InstalledSupervisor` in the current scope
+   --> src/../../../src/installed_supervisor/spawn_tests.rs:80:18
+    |
+ 79 | /             case.controller
+ 80 | |                 .spawn_worker(WorkerRole::Sender, &mut command)
+    | |                 -^^^^^^^^^^^^ method not found in `installed_supervisor::InstalledSupervisor`
+    | |_________________|
+    |
+    |
+   ::: src/../../../src/installed_supervisor.rs:133:1
+    |
+133 |   pub struct InstalledSupervisor {
+    |   ------------------------------ method `spawn_worker` not found for this struct
+
+error[E0599]: no method named `spawn_worker` found for struct `installed_supervisor::InstalledSupervisor` in the current scope
+   --> src/../../../src/installed_supervisor/spawn_tests.rs:102:14
+    |
+100 | /         ambiguous
+101 | |             .controller
+102 | |             .spawn_worker(WorkerRole::Receiver, &mut command)
+    | |             -^^^^^^^^^^^^ method not found in `installed_supervisor::InstalledSupervisor`
+    | |_____________|
+    |
+    |
+   ::: src/../../../src/installed_supervisor.rs:133:1
+    |
+133 |   pub struct InstalledSupervisor {
+    |   ------------------------------ method `spawn_worker` not found for this struct
+
+error[E0599]: no method named `spawn_worker` found for struct `installed_supervisor::InstalledSupervisor` in the current scope
+   --> src/../../../src/installed_supervisor/spawn_tests.rs:131:10
+    |
+129 |       let grant = case
+    |  _________________-
+130 | |         .controller
+131 | |         .spawn_worker(WorkerRole::Sender, &mut command)
+    | |         -^^^^^^^^^^^^ method not found in `installed_supervisor::InstalledSupervisor`
+    | |_________|
+    |
+    |
+   ::: src/../../../src/installed_supervisor.rs:133:1
+    |
+133 |   pub struct InstalledSupervisor {
+    |   ------------------------------ method `spawn_worker` not found for this struct
+
+For more information about this error, try `rustc --explain E0599`.
+error: could not compile `installed-supervisor-harness` (lib test) due to 3 previous errors

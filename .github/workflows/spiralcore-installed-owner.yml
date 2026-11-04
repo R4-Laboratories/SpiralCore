@@ -58,7 +58,7 @@ jobs:
           # Linux fork/vfork briefly inherits unrelated test FDs until exec.
           # Keep process-lifetime fixtures serial; do not weaken Busy refusal.
           cargo +1.97.1 test --locked --manifest-path "$manifest" --lib -- --test-threads=1 2>&1 | tee owner-evidence/unit.txt
-          grep -E '^test result: ok\. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in [0-9.]+s$' owner-evidence/unit.txt
+          grep -E '^test result: ok\. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in [0-9.]+s$' owner-evidence/unit.txt
           cargo +1.97.1 test --locked --manifest-path "$manifest" --test lifecycle -- --test-threads=1 2>&1 | tee owner-evidence/lifecycle.txt
           grep -E "^test result: ok\. $EXPECTED_LIFECYCLE passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in [0-9.]+s$" owner-evidence/lifecycle.txt
           cargo +1.97.1 clippy --locked --manifest-path "$manifest" --all-targets -- -D warnings 2>&1 | tee owner-evidence/clippy.txt

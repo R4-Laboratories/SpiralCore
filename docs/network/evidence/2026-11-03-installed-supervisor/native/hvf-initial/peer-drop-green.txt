@@ -1,0 +1,36 @@
+   Compiling spiralcore-mvm-live v0.1.0 (/tmp/spiralcore-installed-mac-20261103/source/crates/spiralcore-mvm-live)
+    Finished `release` profile [optimized] target(s) in 35.82s
+     Running unittests src/lib.rs (/tmp/spiralcore-installed-mac-20261103/target/release/deps/spiralcore_mvm_live-1bd25c5fd177ff57)
+
+running 7 tests
+test orchestrator::duplex_tests::blocked_forward_write_failure_wakes_idle_sibling_and_retains_partial_sent_bytes ... FAILED
+test orchestrator::duplex_tests::clean_half_close_drains_buffered_reverse_frame_and_matches_exact_counters ... ok
+test orchestrator::duplex_tests::clean_peer_drop_after_exact_reverse_drain_finishes_without_losing_credits ... FAILED
+test orchestrator::duplex_tests::partial_prefix_and_payload_eof_fail_and_wake_both_pumps_with_partial_counters ... ok
+test orchestrator::duplex_tests::reverse_ciphertext_progresses_before_any_forward_call ... ok
+test orchestrator::duplex_tests::second_direction_credit_refusal_rolls_back_before_handshake_or_read ... ok
+test orchestrator::duplex_tests::two_forward_ciphertexts_progress_while_reverse_is_withheld ... ok
+
+failures:
+
+---- orchestrator::duplex_tests::blocked_forward_write_failure_wakes_idle_sibling_and_retains_partial_sent_bytes stdout ----
+
+thread 'orchestrator::duplex_tests::blocked_forward_write_failure_wakes_idle_sibling_and_retains_partial_sent_bytes' (17619102) panicked at src/orchestrator/duplex_tests.rs:490:5:
+blocked write failure did not wake idle sibling
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- orchestrator::duplex_tests::clean_peer_drop_after_exact_reverse_drain_finishes_without_losing_credits stdout ----
+
+thread 'orchestrator::duplex_tests::clean_peer_drop_after_exact_reverse_drain_finishes_without_losing_credits' (17620786) panicked at src/orchestrator/duplex_tests.rs:320:5:
+assertion `left == right` failed
+  left: Object {"envelope_bytes_received": Number(0), "envelope_bytes_sent": Number(3693), "frames_received": Number(0), "frames_sent": Number(1), "framing_bytes_received": Number(8), "framing_bytes_sent": Number(12)}
+ right: Object {"envelope_bytes_received": Number(3693), "envelope_bytes_sent": Number(0), "frames_received": Number(1), "frames_sent": Number(0), "framing_bytes_received": Number(12), "framing_bytes_sent": Number(8)}
+
+
+failures:
+    orchestrator::duplex_tests::blocked_forward_write_failure_wakes_idle_sibling_and_retains_partial_sent_bytes
+    orchestrator::duplex_tests::clean_peer_drop_after_exact_reverse_drain_finishes_without_losing_credits
+
+test result: FAILED. 5 passed; 2 failed; 0 ignored; 0 measured; 100 filtered out; finished in 30.04s
+
+error: test failed, to rerun pass `--lib`

@@ -1,0 +1,28 @@
+   Compiling spiralcore-mvm-live v0.1.0 (/tmp/spiralcore-installed-mac-20261103/source/crates/spiralcore-mvm-live)
+    Finished `release` profile [optimized] target(s) in 41.09s
+     Running unittests src/lib.rs (/tmp/spiralcore-installed-mac-20261103/target/release/deps/spiralcore_mvm_live-1bd25c5fd177ff57)
+
+running 7 tests
+test orchestrator::duplex_tests::blocked_forward_write_failure_wakes_idle_sibling_and_retains_partial_sent_bytes ... FAILED
+test orchestrator::duplex_tests::clean_half_close_drains_buffered_reverse_frame_and_matches_exact_counters ... ok
+test orchestrator::duplex_tests::clean_peer_drop_after_exact_reverse_drain_finishes_without_losing_credits ... ok
+test orchestrator::duplex_tests::partial_prefix_and_payload_eof_fail_and_wake_both_pumps_with_partial_counters ... ok
+test orchestrator::duplex_tests::reverse_ciphertext_progresses_before_any_forward_call ... ok
+test orchestrator::duplex_tests::second_direction_credit_refusal_rolls_back_before_handshake_or_read ... ok
+test orchestrator::duplex_tests::two_forward_ciphertexts_progress_while_reverse_is_withheld ... ok
+
+failures:
+
+---- orchestrator::duplex_tests::blocked_forward_write_failure_wakes_idle_sibling_and_retains_partial_sent_bytes stdout ----
+
+thread 'orchestrator::duplex_tests::blocked_forward_write_failure_wakes_idle_sibling_and_retains_partial_sent_bytes' (17639958) panicked at src/orchestrator/duplex_tests.rs:504:5:
+relay failed: {"a":{"envelope_bytes_received":62785,"envelope_bytes_sent":0,"frames_received":1,"frames_sent":0,"framing_bytes_received":12,"framing_bytes_sent":8},"b":{"envelope_bytes_received":0,"envelope_bytes_sent":0,"frames_received":0,"frames_sent":0,"framing_bytes_received":8,"framing_bytes_sent":12},"forward":"Io(Os { code: 32, kind: BrokenPipe, message: \"Broken pipe\" })","reverse":null}
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    orchestrator::duplex_tests::blocked_forward_write_failure_wakes_idle_sibling_and_retains_partial_sent_bytes
+
+test result: FAILED. 6 passed; 1 failed; 0 ignored; 0 measured; 100 filtered out; finished in 0.02s
+
+error: test failed, to rerun pass `--lib`

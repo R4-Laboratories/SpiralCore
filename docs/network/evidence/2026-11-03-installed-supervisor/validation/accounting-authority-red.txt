@@ -1,0 +1,41 @@
+   Compiling installed-supervisor-harness v0.1.0 (/Users/casey.allard/.codex/worktrees/spiralcore-object-transfer/spiralcore/crates/spiralcore-mvm-live/tests/installed-supervisor-harness)
+warning: unused import: `super::*`
+   --> src/../../../src/host_budget.rs:472:13
+    |
+472 |         use super::*;
+    |             ^^^^^^^^
+    |
+    = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: `installed-supervisor-harness` (lib test) generated 1 warning (run `cargo fix --lib -p installed-supervisor-harness --tests` to apply 1 suggestion)
+    Finished `test` profile [unoptimized] target(s) in 1.06s
+     Running unittests src/lib.rs (/tmp/spiralcore-installed-supervisor-20261103/target/debug/deps/installed_supervisor_harness-c9d7a41ca1f09555)
+
+running 2 tests
+test host_budget::tests::installed_authority::poison_closes_installed_worker_authority_immediately ... FAILED
+test host_budget::tests::installed_authority::underflow_closes_installed_worker_authority_immediately ... FAILED
+
+failures:
+
+---- host_budget::tests::installed_authority::poison_closes_installed_worker_authority_immediately stdout ----
+
+thread '<unnamed>' (16393662) panicked at src/../../../src/host_budget.rs:520:25:
+poison the owned installed ledger
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+thread 'host_budget::tests::installed_authority::poison_closes_installed_worker_authority_immediately' (16393635) panicked at src/../../../src/host_budget.rs:534:13:
+accounting fault left installed worker admission open
+
+---- host_budget::tests::installed_authority::underflow_closes_installed_worker_authority_immediately stdout ----
+
+thread 'host_budget::tests::installed_authority::underflow_closes_installed_worker_authority_immediately' (16393663) panicked at src/../../../src/host_budget.rs:534:13:
+accounting fault left installed worker admission open
+
+
+failures:
+    host_budget::tests::installed_authority::poison_closes_installed_worker_authority_immediately
+    host_budget::tests::installed_authority::underflow_closes_installed_worker_authority_immediately
+
+test result: FAILED. 0 passed; 2 failed; 0 ignored; 0 measured; 6 filtered out; finished in 0.14s
+
+error: test failed, to rerun pass `--lib`

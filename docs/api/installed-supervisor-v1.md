@@ -1,15 +1,19 @@
 # Installed supervisor v1: one epoch, one budget, explicit worker grants
 
-Status: proposed next implementation contract. Depends on
+Status: implemented candidate, with final release qualification pending. Depends on
 [installed owner](installed-host-owner-v1.md) and
 [Firecracker lease](firecracker-host-lease-v1.md). No product/native qualification
-is established here. One installed session, at most2guests/2vCPU/2GiB, unchanged
+is established by this contract alone. One installed session, at most2guests/2vCPU/2GiB, unchanged
 canonical wire and signed admission. B6b plaintext/tail accounting remains open.
 
 ## Controller and ownership
 
 ```rust
 pub struct InstalledConfig { /* validated private fixed profile */ }
+impl InstalledConfig {
+    pub fn native_profile() -> Self;
+    pub fn profile_hash(&self) -> [u8; 32];
+}
 pub struct InstalledSupervisor { /* non-Clone; private budget+authority */ }
 impl InstalledSupervisor {
     pub fn start(owner: InstallationOwner, config: InstalledConfig)
@@ -32,12 +36,19 @@ Authority has no budget back-reference, so no cycle. No public owner/Arc/Mutex,
 raw lock-file getter, take-owner or installed-budget constructor exists.
 
 `start` consumes the owner once. Validate all config and fixed-profile digest
-against the owner's fresh key/profile before `begin`; add a narrow crate-private
-profile check in installed_owner.rs, not an alternate state parser. Begin exactly
+against the owner's fresh profile before `begin`; use the owner's fresh read-only
+`profile_hash` query, not an alternate state parser or owner/lock getter. Begin exactly
 one epoch, create exactly one installed Shared, and never restart/rebind it.
 Allocation/unwind after begin retains Active; Drop does not repair it. Config
 retains current2links/2frame slots/524288 serialized bytes and two fixed worker
 grants of1vCPU/1024MiB each. It does not create a second plaintext quota.
+
+The initial config exposes only `native_profile`, not caller-selected ceilings.
+Its profile hash is SHA-256 of ASCII `spiralcore/installed-profile/v1\0` followed
+by eight big-endian u64 values:2links,2frame slots,524288 serialized bytes,
+1tenant,262144 maximum frame bytes,2workers,1guest vCPU per worker and1024guest
+MiB per worker. Tenant transport limits equal the host limits. This is a local
+provisioning identity, not a credential or cryptographic validation claim.
 
 Public `HostTransportBudget::new` remains independent/orchestrator-scoped.
 Only this private factory can attach installed authority. A cloned installed
@@ -74,9 +85,14 @@ fencing is not bypassed. No implicit retry/start/reopen occurs in Drop.
 
 Successful finish does not extract/drop the owner from the authority. Even an
 idle budget/scope clone therefore retains owner EX until its final drop. Live
-link/frame/worker guards also retain it. Controller Drop only closes admission;
-last authority Drop releases descriptors and leaves Active unless explicit
-finish already succeeded. No Clean-on-Drop and no Arc-count-based cleanup proof.
+link/frame/worker guards also retain it. Controller Drop closes admission and
+drains only its exact owned Children under one shared five-second deadline,
+with no worker/accounting lock held during OS termination or exit observation.
+Explicit close-and-drain retains unknown Child handles for retry. If Drop cannot
+confirm all owned child exits, it quarantines one bounded authority reference
+(at most two slots) for the process lifetime, retaining owner exclusion. Drop
+never writes Clean. Last authority Drop releases descriptors and leaves Active
+unless explicit finish already succeeded. No Arc-count-based cleanup proof.
 
 ## One launcher interface and fixed grants
 
@@ -84,8 +100,10 @@ Every `Worker::start`, including sender, receiver, verifier and Stage One, takes
 one private `LaunchContext`: explicit Legacy or a borrowed Installed controller.
 Only legacy public entry constructs Legacy. Installed paths cannot select it
 on error/missing configuration. A non-Clone WorkerGrant reserves a bounded slot,
-role and fixed resource/profile grant before spawn; Worker owns it and the exact
-Child. Ledger accounting is private and never reconstructed from guest counters.
+role and fixed resource/profile grant before spawn; Worker owns the grant while
+the controller ledger owns the exact Child. The spawn API adopts a successful
+Child even if admission closes during spawn. Ledger accounting is private and
+never reconstructed from guest counters.
 Permit retirement follows reaped owned child plus the known host worker's
 successful backend-exit contract. Unknown/error outcome closes/fences admission;
 no slot reuse or verifier launch on that failure. Verifier requires both primary
