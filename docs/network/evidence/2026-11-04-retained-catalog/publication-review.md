@@ -1,0 +1,29 @@
+# Retained catalog publication review
+
+2026-11-04 — **PASS for the scoped development-checkpoint publication content.** This is a publication/evidence review, not a product release, main merge, profile activation or native/WAN acceptance. No builds, executions of archived commands, product edits, cache writes or cleanup were performed by this reviewer.
+
+Reviewed candidate `bd83ba66f1bdb1ae538aa4b34a04f4be3afa66c8`, tree `90e2bfe7ebdc4d17a67e4dd92e53755689525f0e`, parent `f7d06da6b4aa148cd348dd91df3342f1bc53e399`, against the packet at `docs/network/evidence/2026-11-04-retained-catalog/` and its actual compact archived outputs. README SHA-256 at review: `d9f878c65f4b89222b5c818987e2eb23ab49077b794a07bee7a7349296b3f04e` (7,871 bytes).
+
+## Evidence and scope
+
+- Independently hashed the archive: 451,917 bytes, SHA-256 `da395d86542121f509f5059240231cff989528777d449d84a867b29716fedb3a`. All 109 unique members are regular files with safe relative paths. Every member matches its indexed size and digest; index and archive member sets agree.
+- Read the actual focused and broad execution summaries and commands: five focused entries pass, including the environment-gated helper and parent that executes the nested restart child; the same protected executable reports 152 library entries passing and two ignored. These scopes overlap. README does not sum them or label them five native instances. The broad command refers to the exact focused protected object, SHA-256 `2a3d883ff77c77dea84ed07b1219abffad905db60289c18f27d6ad55e4151075`.
+- Read actual scoped release Clippy command/output: exit zero under `--lib --tests -- -D clippy::all`, with exactly three ordinary dead-code warnings for the unconnected retained-inventory constructor path. README accurately preserves these warnings and does not claim `-D warnings`, all-target or zero-warning qualification.
+- Both final phase source maps contain the same 134 entries before/after execution and match `compiled-inputs.json`. Independently compared all 134 entries to actual candidate Git blobs: all match. Source identity establishes no additional execution.
+- Archived metadata identifies the immutable SDK `9a3a964bd540d5e74c71f9b7df93cc5593295546`, adapter `9153dfe20be9518a2277519c312dd0709664610d`, and shared core `ca5d9ca1266541f71cc5ab7d0b17f4acf14d06b1`. The candidate and parent lockfiles each contain 419 packages with identical name/version multisets. The resolved metadata subset has 382 packages; the README's 419 preservation statement refers to the lockfile and is supported.
+- Original API/compile and fixture failures remain archived, as do actual missing-catalog append, nested process-exit restart and write-only-FD REDs. The intermediate four-pass/one-directory-failure is preserved separately from the final success. The initial HOLD reviews remain alongside the corrected source/privacy successor reviews. The source successor SHA is `e1949ceacadd9cd379d36cfb15aaf3788c0e88923c5e3a726fdb0f8765002a3d`; its verdict remains restricted to implemented source corrections.
+- README correctly distinguishes logical managed limits from physical blocks/RSS, identifies plaintext sensitive catalog metadata, denies checksum authentication/authority, and leaves producer/child K coupling, retry/adoption/disposition, positive native retirement, platform/capacity/WAN and FIPS/CUI gates open. It supplies no new CPU, byte-reduction, latency, energy or speedup claim. All local relative Markdown links in the four reviewed documents resolve. Commit links use the exact reviewed identities; no network delivery inference was made.
+
+## Narrow model-document synchronization
+
+Reviewed the current three accompanying documents only for the requested model correction. API SHA `5a180f27610efad61046e36b0508aba3c00bc76f62209a172dd3f6f9271d9ed4`; specification SHA `d53142373bd6cd55571bdb328e58e476aa7da896951e14e2e9ac85114f2be2b5`; plan SHA `4a5941c8bb8e1b476ec996e10b2644a94aae927e9a6292387a28a0c4ee11280c`. They consistently declare K=32 KiB, checked disposable C−R−K and retained R+K from the same pool. They explicitly retain actual child-producer coupling and restart adoption as release gates. This review does not certify the individual sidecar writer limits or activate the numerical profile.
+
+## Cleanup wording and packet seal
+
+The cleanup receipt lists six exact owned disposable paths whose allocated-byte values sum to **2,829,705,216**. Independently verified all eight recorded historical evidence hashes against their recorded Git revision `807055ab731defe98bbac52ac962425f02bbf518`. The README accurately describes historical exact-readback evidence rather than a fresh payload reread or remote archival. This review did not rerun deletion or independently reconstruct the deleted payloads. Sibling-preservation and filesystem observations remain the cleanup operator's recorded observations.
+
+The only inventory mismatch is the acknowledged README size/hash following its added review paragraph. **Regenerate and verify `inventory.json` after this review and before sealing the evidence commit.** This known mechanical reseal does not change the content PASS; it is not permission to publish a stale inventory. All other currently indexed packet files match. No additional code or publication blocker was found in this scope.
+
+## Final seal readback
+
+Root regenerated the inventory after the content review. Independently rechecked all 13 inventory rows: no size/hash mismatch remains. Evidence candidate `652c3999c04f781d08448934d90f2823752c30ed`, tree `c39b408d5ad3ea72a8c8be2460039b7c2c98f33c`, has parent `bd83ba66f1bdb1ae538aa4b34a04f4be3afa66c8`. Its 17 changed paths (14 packet files and the three scoped model documents) match the current reviewed file bytes exactly. The mechanical reseal condition above is satisfied for this exact candidate. **Final publication PASS**, retaining all component/development exclusions above.
