@@ -1,0 +1,21 @@
+   Compiling mvm-hostd v0.26.0 (/var/tmp/spiralcore-flowmux-20261103/mvm-source/crates/mvm-hostd)
+warning: method `mapped_clone` is never used
+  --> crates/mvm-hostd/src/supervisor/flowmux/socket.rs:53:19
+   |
+32 | impl FlowSocket {
+   | --------------- method in this implementation
+...
+53 |     pub(super) fn mapped_clone(&self) -> Result<Option<Self>> {
+   |                   ^^^^^^^^^^^^
+   |
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `mvm-hostd` (lib test) generated 1 warning
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 20.27s
+     Running unittests src/lib.rs (/var/tmp/spiralcore-flowmux-20261103/mvm-target/debug/deps/mvm_hostd-842a1d69eea2bddf)
+
+running 1 test
+test supervisor::flowmux::open_flow::tests::payload_mapping_required_unavailable_peer_never_falls_back_to_raw ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2441 filtered out; finished in 0.00s
+

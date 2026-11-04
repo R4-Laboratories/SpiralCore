@@ -1,0 +1,22 @@
+   Compiling mvm-hostd v0.26.0 (/var/tmp/spiralcore-flowmux-20261103/mvm-source/crates/mvm-hostd)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 9.75s
+     Running unittests src/bin/mvm-network-endpoint.rs (/var/tmp/spiralcore-flowmux-20261103/mvm-target/debug/deps/mvm_network_endpoint-ee2282b64f5ec93e)
+
+running 1 test
+test tests::selected_payload_mapping_requires_full_actual_admitted_plan_binding ... FAILED
+
+failures:
+
+---- tests::selected_payload_mapping_requires_full_actual_admitted_plan_binding stdout ----
+
+thread 'tests::selected_payload_mapping_requires_full_actual_admitted_plan_binding' (1760607) panicked at crates/mvm-hostd/src/bin/mvm-network-endpoint.rs:1618:9:
+selected mapping cannot be projected without actual admitted plan facts
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    tests::selected_payload_mapping_requires_full_actual_admitted_plan_binding
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 27 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `-p mvm-hostd --bin mvm-network-endpoint`

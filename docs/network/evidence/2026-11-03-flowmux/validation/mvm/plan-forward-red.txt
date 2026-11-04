@@ -1,0 +1,19 @@
+   Compiling mvm-vmm v0.26.0 (/var/tmp/spiralcore-flowmux-20261103/mvm-source/crates/mvm-vmm)
+error[E0599]: no method named `admitted_network_plan` found for struct `network_endpoint_spawn::SubstitutionSpawnParamsBuilder<'a>` in the current scope
+   --> crates/mvm-vmm/src/host/network_endpoint_spawn.rs:85:14
+    |
+ 81 |           let params=SubstitutionSpawnParams::builder().vm_name("vm-full-instance").state_dir(Path::new("/nonexistent"))
+    |  ____________________-
+ 82 | |             .lifetime(EndpointLifetime::Launcher).tenant("tenant-full").secrets(&[]).redaction(&redaction)
+ 83 | |             .network_policy(&policy).network_limits(mvm_core::plan::NetworkLimits::default()).ingress(&[])
+ 84 | |             .transport(EndpointTransport::Uds { path:"/nonexistent/endpoint.sock".into() })
+ 85 | |             .admitted_network_plan(binding.clone()).build().expect("build pure config");
+    | |             -^^^^^^^^^^^^^^^^^^^^^ method not found in `network_endpoint_spawn::SubstitutionSpawnParamsBuilder<'_>`
+    | |_____________|
+    |
+...
+671 |   pub struct SubstitutionSpawnParamsBuilder<'a> {
+    |   --------------------------------------------- method `admitted_network_plan` not found for this struct
+
+For more information about this error, try `rustc --explain E0599`.
+error: could not compile `mvm-vmm` (lib test) due to 1 previous error
