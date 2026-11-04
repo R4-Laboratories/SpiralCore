@@ -1,0 +1,22 @@
+   Compiling spiralcore-mvm-live v0.1.0 (/tmp/spiralcore-installed-mac-20261103/source/crates/spiralcore-mvm-live)
+    Finished `release` profile [optimized] target(s) in 58.99s
+     Running unittests src/lib.rs (/tmp/spiralcore-installed-mac-20261103/target/release/deps/spiralcore_mvm_live-1bd25c5fd177ff57)
+
+running 1 test
+test orchestrator::duplex_tests::blocked_forward_write_failure_wakes_idle_sibling_and_retains_partial_sent_bytes ... FAILED
+
+failures:
+
+---- orchestrator::duplex_tests::blocked_forward_write_failure_wakes_idle_sibling_and_retains_partial_sent_bytes stdout ----
+
+thread 'orchestrator::duplex_tests::blocked_forward_write_failure_wakes_idle_sibling_and_retains_partial_sent_bytes' (17631013) panicked at src/orchestrator/duplex_tests.rs:490:5:
+blocked write failure did not wake idle sibling
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    orchestrator::duplex_tests::blocked_forward_write_failure_wakes_idle_sibling_and_retains_partial_sent_bytes
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 106 filtered out; finished in 30.00s
+
+error: test failed, to rerun pass `--lib`
