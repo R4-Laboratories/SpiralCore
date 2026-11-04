@@ -1,5 +1,9 @@
 use super::*;
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::{
+    sync::atomic::{AtomicU64, Ordering},
+    time::{SystemTime, UNIX_EPOCH},
+};
+static NEXT_FIXTURE: AtomicU64 = AtomicU64::new(0);
 
 struct Allow;
 impl Authority for Allow {
@@ -10,14 +14,20 @@ impl Authority for Allow {
 struct Fixture(PathBuf);
 impl Fixture {
     fn new() -> Self {
+        Self::at(
+            SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_nanos(),
+        )
+    }
+    fn at(timestamp: u128) -> Self {
         Self(std::env::temp_dir().join(format!(
-                "spiral-storage-{}-{}",
-                std::process::id(),
-                SystemTime::now()
-                    .duration_since(UNIX_EPOCH)
-                    .unwrap()
-                    .as_nanos()
-            )))
+            "spiral-storage-{}-{}-{}",
+            std::process::id(),
+            timestamp,
+            NEXT_FIXTURE.fetch_add(1, Ordering::Relaxed),
+        )))
     }
 }
 impl Drop for Fixture {
@@ -28,7 +38,12 @@ impl Drop for Fixture {
 
 #[test]
 fn private_store_refuses_hardlinked_profile_without_resetting_it() {
-    let fixture = Fixture::new();
+    let coarse_clock = Fixture::at(1);
+    let fixture = Fixture::at(1);
+    assert_ne!(
+        coarse_clock.0, fixture.0,
+        "same-clock parallel fixtures must not share ownership"
+    );
     drop(Endpoint::open(&fixture.0, Limits::default(), Allow).unwrap());
     let profile = fixture.0.join(".spiralcore-profile-v1");
     let original = fs::read(&profile).unwrap();
@@ -103,11 +118,6 @@ fn staging_collection_refuses_hardlinks_without_removing_either_name() {
 #[cfg(windows)]
 mod windows {
     use super::*;
-    use std::{ffi::c_void, os::windows::ffi::OsStrExt, ptr::null_mut};
-    use windows_sys::Win32::{
-        Foundation::LocalFree,
-        Security::{Authorization::*, *},
-    };
 
     #[test]
     fn original_drive_absolute_syntax_refuses_aliases_without_store_mutation() {
@@ -153,182 +163,5 @@ mod windows {
         assert!(!fixture.0.join("missing").exists());
         assert_eq!(fs::read(marker).unwrap(), original);
         assert_eq!(fs::read_dir(&fixture.0).unwrap().count(), 2);
-    }
-
-    struct Acl {
-        descriptor: *mut c_void,
-        owner: PSID,
-        dacl: *mut ACL,
-    }
-    impl Drop for Acl {
-        fn drop(&mut self) {
-            // SAFETY: sole owner of the security descriptor returned by Win32.
-            unsafe {
-                LocalFree(self.descriptor);
-            }
-        }
-    }
-    impl Acl {
-        fn read(path: &Path) -> Self {
-            let name: Vec<u16> = path.as_os_str().encode_wide().chain(Some(0)).collect();
-            let (mut owner, mut dacl, mut descriptor) = (null_mut(), null_mut(), null_mut());
-            // SAFETY: owned fixture path and writable security descriptor outputs.
-            let code = unsafe {
-                GetNamedSecurityInfoW(
-                    name.as_ptr(),
-                    SE_FILE_OBJECT,
-                    OWNER_SECURITY_INFORMATION | DACL_SECURITY_INFORMATION,
-                    &mut owner,
-                    null_mut(),
-                    &mut dacl,
-                    null_mut(),
-                    &mut descriptor,
-                )
-            };
-            assert_eq!(code, 0);
-            assert!(!owner.is_null() && !dacl.is_null() && !descriptor.is_null());
-            Self {
-                descriptor,
-                owner,
-                dacl,
-            }
-        }
-        fn owner_sid(&self) -> String {
-            let mut text = null_mut();
-            // SAFETY: owner SID belongs to this live security descriptor.
-            assert_ne!(unsafe { ConvertSidToStringSidW(self.owner, &mut text) }, 0);
-            let mut length = 0;
-            // SAFETY: documented NUL-terminated SID output, bounded before use.
-            while length < 256 && unsafe { *text.add(length) } != 0 {
-                length += 1;
-            }
-            assert!(length < 256);
-            // SAFETY: the observed prefix precedes the returned string's NUL.
-            let result =
-                String::from_utf16(unsafe { std::slice::from_raw_parts(text, length) }).unwrap();
-            // SAFETY: release exactly the API-allocated string.
-            unsafe {
-                LocalFree(text.cast());
-            }
-            result
-        }
-        fn bytes(&self) -> Vec<u8> {
-            let mut control = 0;
-            let mut revision = 0;
-            // SAFETY: live valid descriptor and integer output buffers.
-            assert_ne!(
-                unsafe {
-                    GetSecurityDescriptorControl(self.descriptor, &mut control, &mut revision)
-                },
-                0
-            );
-            // SAFETY: ACL header is kernel-populated within the retained descriptor.
-            let size = usize::from(unsafe { (*self.dacl).AclSize });
-            // SAFETY: AclSize bounds its complete valid buffer.
-            let mut bytes =
-                unsafe { std::slice::from_raw_parts(self.dacl.cast::<u8>(), size) }.to_vec();
-            bytes.extend_from_slice(&control.to_le_bytes());
-            bytes
-        }
-    }
-    fn replace_acl(path: &Path, text: &str, protected: bool) {
-        let sddl: Vec<u16> = text.encode_utf16().chain(Some(0)).collect();
-        let mut descriptor = null_mut();
-        // SAFETY: fixed test SDDL and writable LocalAlloc output.
-        assert_ne!(
-            unsafe {
-                ConvertStringSecurityDescriptorToSecurityDescriptorW(
-                    sddl.as_ptr(),
-                    SDDL_REVISION_1,
-                    &mut descriptor,
-                    null_mut(),
-                )
-            },
-            0
-        );
-        let (mut present, mut defaulted, mut dacl) = (0, 0, null_mut());
-        // SAFETY: successful conversion returned a live valid descriptor.
-        assert_ne!(
-            unsafe {
-                GetSecurityDescriptorDacl(descriptor, &mut present, &mut dacl, &mut defaulted)
-            },
-            0
-        );
-        assert_ne!(present, 0);
-        let name: Vec<u16> = path.as_os_str().encode_wide().chain(Some(0)).collect();
-        let protection = if protected {
-            PROTECTED_DACL_SECURITY_INFORMATION
-        } else {
-            UNPROTECTED_DACL_SECURITY_INFORMATION
-        };
-        // SAFETY: mutate only the owned fixture's DACL; never its owner or parent.
-        let code = unsafe {
-            SetNamedSecurityInfoW(
-                name.as_ptr(),
-                SE_FILE_OBJECT,
-                DACL_SECURITY_INFORMATION | protection,
-                null_mut(),
-                null_mut(),
-                dacl,
-                null_mut(),
-            )
-        };
-        // SAFETY: descriptor has no remaining borrows after the synchronous call.
-        unsafe {
-            LocalFree(descriptor);
-        }
-        assert_eq!(code, 0);
-    }
-
-    #[test]
-    fn broad_or_inherited_windows_acl_refuses_without_permission_repair() {
-        for inherited in [false, true] {
-            let fixture = Fixture::new();
-            drop(Endpoint::open(&fixture.0, Limits::default(), Allow).unwrap());
-            let owner = Acl::read(&fixture.0).owner_sid();
-            let text = if inherited {
-                format!("D:(A;;FA;;;{owner})")
-            } else {
-                "D:P(A;;FA;;;WD)".into()
-            };
-            replace_acl(&fixture.0, &text, !inherited);
-            let before = Acl::read(&fixture.0).bytes();
-            assert!(matches!(
-                Endpoint::open(&fixture.0, Limits::default(), Allow),
-                Err(Error::Storage)
-            ));
-            assert!(
-                Acl::read(&fixture.0).bytes() == before,
-                "refusal must not repair the ACL"
-            );
-        }
-    }
-
-    #[test]
-    fn windows_junction_at_root_or_ancestor_refuses_without_target_mutation() {
-        let fixture = Fixture::new();
-        drop(Endpoint::open(&fixture.0, Limits::default(), Allow).unwrap());
-        let target = fixture.0.join("target");
-        storage::private_dir(&target).unwrap();
-        let junction = fixture.0.join("junction");
-        let cmd = PathBuf::from(std::env::var_os("SystemRoot").unwrap()).join("System32/cmd.exe");
-        let output = std::process::Command::new(cmd)
-            .args(["/D", "/C", "mklink", "/J"])
-            .arg(&junction)
-            .arg(&target)
-            .output()
-            .unwrap();
-        assert!(output.status.success(), "owned junction setup failed");
-        assert!(matches!(
-            Endpoint::open(&junction, Limits::default(), Allow),
-            Err(Error::Storage)
-        ));
-        assert!(matches!(
-            Endpoint::open(&junction.join("nested"), Limits::default(), Allow),
-            Err(Error::Storage)
-        ));
-        assert!(!target.join("nested").exists());
-        assert!(fs::read_dir(&target).unwrap().next().is_none());
-        fs::remove_dir(&junction).unwrap();
     }
 }

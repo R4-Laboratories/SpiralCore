@@ -1,5 +1,14 @@
 # Native Windows storage implementation candidate
 
+The first hosted attempt exposed a complete-crate Windows unsafe-lint failure
+and an Intel Mac fixture failure. Original archives, digests and diagnosis are
+retained in [initial-failure](qualification/initial-failure/). The current
+[boundary correction](backend-boundary.md) extracts FFI to a small safe-API
+crate while preserving the transfer crate's unsafe prohibition. Current
+selected counts are Unix endpoint storage three, Windows endpoint storage
+four and Windows backend two. Earlier compiler-only and source receipts below
+are historical; they do not qualify this extracted candidate or native runtime.
+
 This packet records the implementation candidate for the lead-approved
 [private NTFS storage contract](../../../api/windows-storage-v1.md), part of
 SpiralCore #46 and the Ari delivery plan. Native Windows runtime qualification

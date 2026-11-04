@@ -14,6 +14,15 @@ provides private directory creation/validation, private file opens/creation,
 owner locking and verified durable publication. Unix and Windows backends
 implement that interface; no second codec, store format or authority is added.
 
+The Win32 implementation lives in the independent Windows-only
+`spiralcore-storage-windows` crate. Its safe eight-operation interface returns
+typed `Storage`, `Unsupported` or `Limit` failures, mapped by the existing
+endpoint filesystem module. This isolates reviewed FFI while the entire
+transfer/protocol crate retains `#![forbid(unsafe_code)]`. The backend uses
+`std` and pinned `windows-sys` only and denies unsafe operations outside explicit
+unsafe blocks. Native qualification reports the four Windows endpoint tests
+and two backend ACL/junction tests as distinct nonzero scopes.
+
 Storage remains local to the authenticated namespace and authorizes before
 publication and before/after object readback. Existing resident, active,
 namespace, cache, history, publication and staging limits remain enforced by
