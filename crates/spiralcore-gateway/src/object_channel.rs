@@ -300,7 +300,12 @@ impl ObjectChannel {
                 return Err(Error::UnexpectedEnd);
             }
             self.receive_fin(deadline, cancel).await?;
-            self.acknowledged(deadline, cancel).await
+            self.acknowledged(deadline, cancel).await?;
+            bounded(deadline, cancel, async {
+                self.peer.object_remote_finished().await?;
+                Ok(())
+            })
+            .await
         }
         .await;
         self.conclude(result, State::Finished)
@@ -316,7 +321,12 @@ impl ObjectChannel {
             self.receive_fin(deadline, cancel).await?;
             self.write_prefix(0, deadline, cancel).await?;
             self.send.finish()?;
-            self.acknowledged(deadline, cancel).await
+            self.acknowledged(deadline, cancel).await?;
+            bounded(deadline, cancel, async {
+                self.peer.object_close_and_drain().await?;
+                Ok(())
+            })
+            .await
         }
         .await;
         self.conclude(result, State::Finished)
