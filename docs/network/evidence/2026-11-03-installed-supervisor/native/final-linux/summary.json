@@ -1,0 +1,37 @@
+{
+  "source_commit": "f1f30b8fb9890ea22af0b06c64be080a4c952128",
+  "scope": "One fixed-order local native Firecracker pair on shared host; not WAN or causal optimization. CPU host/guest domains overlap. Peak RSS not measured.",
+  "rows": [
+    {
+      "arm": "whole-mixed",
+      "requested_tier_bytes": 16777216,
+      "canonical_bytes": 107301660,
+      "physical_two_hop_vsock_bytes": 214603320,
+      "sender_cpu_us": 4488958,
+      "receiver_cpu_us": 3707541,
+      "lifecycle_us": 8814947,
+      "orchestrator_cpu_us": 123541,
+      "sender_worker_cpu_us": 184255,
+      "receiver_worker_cpu_us": 318572,
+      "exact_reopened": true
+    },
+    {
+      "arm": "combined-cpu",
+      "requested_tier_bytes": 16777216,
+      "canonical_bytes": 62491548,
+      "physical_two_hop_vsock_bytes": 124983096,
+      "sender_cpu_us": 2963787,
+      "receiver_cpu_us": 2519790,
+      "lifecycle_us": 6392388,
+      "orchestrator_cpu_us": 81369,
+      "sender_worker_cpu_us": 186281,
+      "receiver_worker_cpu_us": 237107,
+      "exact_reopened": true
+    }
+  ],
+  "ratios": {
+    "bytes_saved": 0.41760874901655765,
+    "guest_cpu_saved": 0.3309854609876729,
+    "lifecycle_saved": 0.2748240006434526
+  }
+}
