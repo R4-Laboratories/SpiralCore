@@ -63,6 +63,15 @@ new transfer-performance claim.
 These checkpoints are available for review; native installed integration,
 capacity and WAN performance still require acceptance on the final combined source.
 
+The [latest reader/TLS development checkpoint](https://github.com/R4-Laboratories/SpiralCore/blob/1025d87d048b15cefd483b4c11c70a6e029cb29c/docs/network/evidence/2026-11-03-flowmux/validation/handshake-startup/README.md)
+preserves original reader ownership and promptly rejects EOF during TLS
+authentication. Its 43 focused Linux checks and ten terminal-close repetitions
+pass; all 385 executed source inputs match the published checkpoint. Installed
+service activation remains separate. The
+[scanner allocation report](docs/network/evidence/2026-11-04-owned-pii-requested/README.md)
+records all 325 canonical rule selections with exact legacy output comparisons;
+it informs the shared service budget without claiming an application RSS bound.
+
 <a id="where-spiralcore-sits-in-the-network-stack"></a>
 
 ## Architecture and protocol boundaries
