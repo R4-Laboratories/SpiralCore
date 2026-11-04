@@ -81,7 +81,7 @@ jobs:
           }
       - name: Install pinned native Rust
         run: |
-          rustup toolchain install "1.97.1-$env:NATIVE_TARGET" --profile minimal
+          rustup toolchain install "1.97.1-$env:NATIVE_TARGET" --profile minimal --component clippy
           if ($LASTEXITCODE -ne 0) { throw 'Pinned native Rust unavailable' }
           rustc "+1.97.1-$env:NATIVE_TARGET" -vV | Tee-Object portable-evidence/rustc.txt
           if ($LASTEXITCODE -ne 0) { throw 'rustc identity failed' }
