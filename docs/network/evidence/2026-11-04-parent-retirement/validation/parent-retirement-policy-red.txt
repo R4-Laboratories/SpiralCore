@@ -1,0 +1,85 @@
+   Compiling spiralcore-mvm-live v0.1.0 (/var/tmp/spiralcore-resident-parent-20261103/publication-closure/crates/spiralcore-mvm-live)
+error[E0425]: cannot find type `EndpointIssuance` in this scope
+   --> src/installed_parent.rs:307:34
+    |
+307 |     fn admitted_policy(endpoint: EndpointIssuance) -> GrantLifecycle {
+    |                                  ^^^^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find type `GrantLifecycle` in this scope
+   --> src/installed_parent.rs:307:55
+    |
+307 |     fn admitted_policy(endpoint: EndpointIssuance) -> GrantLifecycle {
+    |                                                       ^^^^^^^^^^^^^^ not found in this scope
+
+error[E0422]: cannot find struct, variant or union type `GrantLifecycle` in this scope
+   --> src/installed_parent.rs:308:9
+    |
+308 |         GrantLifecycle {
+    |         ^^^^^^^^^^^^^^ not found in this scope
+
+warning: unused import: `super::*`
+   --> src/installed_parent.rs:304:9
+    |
+304 |     use super::*;
+    |         ^^^^^^^^
+    |
+    = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+error[E0433]: cannot find type `EndpointIssuance` in this scope
+   --> src/installed_parent.rs:318:13
+    |
+318 |             EndpointIssuance::Preparing,
+    |             ^^^^^^^^^^^^^^^^ use of undeclared type `EndpointIssuance`
+
+error[E0433]: cannot find type `EndpointIssuance` in this scope
+   --> src/installed_parent.rs:319:13
+    |
+319 |             EndpointIssuance::Issued,
+    |             ^^^^^^^^^^^^^^^^ use of undeclared type `EndpointIssuance`
+
+error[E0433]: cannot find type `EndpointIssuance` in this scope
+   --> src/installed_parent.rs:320:13
+    |
+320 |             EndpointIssuance::Uncertain,
+    |             ^^^^^^^^^^^^^^^^ use of undeclared type `EndpointIssuance`
+
+error[E0433]: cannot find type `EndpointIssuance` in this scope
+   --> src/installed_parent.rs:332:13
+    |
+332 |             EndpointIssuance::NeverIssued,
+    |             ^^^^^^^^^^^^^^^^ use of undeclared type `EndpointIssuance`
+
+error[E0433]: cannot find type `EndpointIssuance` in this scope
+   --> src/installed_parent.rs:333:13
+    |
+333 |             EndpointIssuance::CleanupComplete,
+    |             ^^^^^^^^^^^^^^^^ use of undeclared type `EndpointIssuance`
+
+error[E0433]: cannot find type `GrantLifecycle` in this scope
+   --> src/installed_parent.rs:345:30
+    |
+345 |         let mut unadmitted = GrantLifecycle::default();
+    |                              ^^^^^^^^^^^^^^ use of undeclared type `GrantLifecycle`
+
+error[E0433]: cannot find type `EndpointIssuance` in this scope
+   --> src/installed_parent.rs:348:26
+    |
+348 |         for endpoint in [EndpointIssuance::Uncertain, EndpointIssuance::CleanupComplete] {
+    |                          ^^^^^^^^^^^^^^^^ use of undeclared type `EndpointIssuance`
+
+error[E0433]: cannot find type `EndpointIssuance` in this scope
+   --> src/installed_parent.rs:348:55
+    |
+348 |         for endpoint in [EndpointIssuance::Uncertain, EndpointIssuance::CleanupComplete] {
+    |                                                       ^^^^^^^^^^^^^^^^ use of undeclared type `EndpointIssuance`
+
+error[E0433]: cannot find type `EndpointIssuance` in this scope
+   --> src/installed_parent.rs:351:33
+    |
+351 |         assert!(admitted_policy(EndpointIssuance::NeverIssued)
+    |                                 ^^^^^^^^^^^^^^^^ use of undeclared type `EndpointIssuance`
+
+Some errors have detailed explanations: E0422, E0425, E0433.
+For more information about an error, try `rustc --explain E0422`.
+warning: `spiralcore-mvm-live` (lib test) generated 1 warning
+error: could not compile `spiralcore-mvm-live` (lib test) due to 12 previous errors; 1 warning emitted

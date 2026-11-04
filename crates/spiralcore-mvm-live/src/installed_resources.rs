@@ -337,6 +337,36 @@ impl ManagedReservation {
     pub(crate) fn serial(&self) -> u64 {
         self.owner.serial
     }
+    /// Existing ownership only. Normal admission close does not revoke cleanup;
+    /// a poisoned/fenced or inconsistent original ledger still refuses it.
+    pub(crate) fn check_retained_identity(&self) -> Result<()> {
+        let shared = &self.owner.shared;
+        let ledger = shared.ledger()?;
+        if shared.fenced.load(Ordering::Acquire) {
+            return Err(ManagedResourceError::Fenced);
+        }
+        let original = ledger
+            .slots
+            .get(self.owner.slot)
+            .copied()
+            .flatten()
+            .filter(|slot| slot.serial == self.owner.serial);
+        let valid = original.is_some_and(|slot| {
+            ledger
+                .tenants
+                .get(slot.tenant)
+                .copied()
+                .flatten()
+                .is_some_and(|tenant| {
+                    ledger.usage.sub(slot.claim).is_some() && tenant.usage.sub(slot.claim).is_some()
+                })
+        });
+        if !valid {
+            shared.fence();
+            return Err(ManagedResourceError::State);
+        }
+        Ok(())
+    }
     pub fn check_current(&self) -> Result<()> {
         if !self.owner.shared.open() {
             return Err(ManagedResourceError::Fenced);
@@ -411,6 +441,88 @@ mod tests {
             fs::remove_dir_all(&self.0).unwrap();
         }
     }
+    #[test]
+    fn retained_identity_allows_normal_close_without_reopening_admission() {
+        let f = Fixture::new();
+        let (mut owner, _) = f.owner();
+        let pool = owner.managed_resources().clone();
+        let lease = pool
+            .reserve(
+                [7; 32],
+                ManagedClaim {
+                    host_metadata_bytes: 4096,
+                    ..Default::default()
+                },
+            )
+            .unwrap();
+        owner.close_admission();
+        assert!(lease.check_current().is_err());
+        lease.check_retained_identity().unwrap();
+        assert!(
+            pool.reserve(
+                [7; 32],
+                ManagedClaim {
+                    host_metadata_bytes: 1,
+                    ..Default::default()
+                }
+            )
+            .is_err()
+        );
+        assert_eq!(pool.snapshot().unwrap().active_reservations, 1);
+        drop(lease);
+        owner.try_finish().unwrap();
+    }
+
+    #[test]
+    fn retained_identity_refuses_accounting_faults_before_cleanup_completion() {
+        for fault in 0..6 {
+            let f = Fixture::new();
+            let (mut owner, _) = f.owner();
+            let pool = owner.managed_resources().clone();
+            let lease = pool
+                .reserve(
+                    [8; 32],
+                    ManagedClaim {
+                        host_metadata_bytes: 4096,
+                        ..Default::default()
+                    },
+                )
+                .unwrap();
+            let index = lease.owner.slot;
+            if fault == 5 {
+                let shared = pool.shared.clone();
+                assert!(
+                    std::thread::spawn(move || {
+                        let _guard = shared.ledger.lock().unwrap();
+                        panic!("owned retained identity poison fixture");
+                    })
+                    .join()
+                    .is_err()
+                );
+            } else {
+                let mut ledger = pool.shared.ledger.lock().unwrap();
+                match fault {
+                    0 => ledger.slots[index].as_mut().unwrap().serial += 1,
+                    1 => ledger.slots[index].as_mut().unwrap().tenant = TENANTS,
+                    2 => ledger.tenants[0] = None,
+                    3 => ledger.usage.host_metadata_bytes = 0,
+                    4 => {
+                        ledger.tenants[0]
+                            .as_mut()
+                            .unwrap()
+                            .usage
+                            .host_metadata_bytes = 0
+                    }
+                    _ => unreachable!(),
+                }
+            }
+            assert!(lease.check_retained_identity().is_err());
+            assert!(pool.snapshot().is_err());
+            owner.close_admission();
+            assert!(owner.try_finish().is_err());
+        }
+    }
+
     #[test]
     fn accounting_corruption_never_panics_refunds_or_releases_exclusion() {
         for fault in 0..5 {

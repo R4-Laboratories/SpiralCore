@@ -1,0 +1,60 @@
+   Compiling spiralcore-mvm-live v0.1.0 (/var/tmp/spiralcore-resident-parent-20261103/publication-closure/crates/spiralcore-mvm-live)
+warning: field `retirement` is never read
+   --> src/installed_owner/endpoint_disks.rs:178:5
+    |
+173 | pub(crate) struct DiskStore {
+    |                   --------- field in this struct
+...
+178 |     retirement: RetirementProgress,
+    |     ^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: variants `NamespaceUnlinked`, `NamespaceSynced`, and `Complete` are never constructed
+   --> src/installed_owner/endpoint_disks.rs:183:5
+    |
+181 | enum RetirementProgress {
+    |      ------------------ variants in this enum
+182 |     Live,
+183 |     NamespaceUnlinked,
+    |     ^^^^^^^^^^^^^^^^^
+184 |     NamespaceSynced,
+    |     ^^^^^^^^^^^^^^^
+185 |     Complete,
+    |     ^^^^^^^^
+    |
+    = note: `RetirementProgress` has a derived impl for the trait `Clone`, but this is intentionally ignored during dead code analysis
+
+warning: method `retire_endpoint_disk` is never used
+   --> src/installed_owner/endpoint_disks.rs:655:19
+    |
+454 | impl InstallationOwner {
+    | ---------------------- method in this implementation
+...
+655 |     pub(crate) fn retire_endpoint_disk(&mut self, store: &mut DiskStore) -> Result<()> {
+    |                   ^^^^^^^^^^^^^^^^^^^^
+
+warning: method `retire_with_endpoint_receipt` is never used
+   --> src/installed_disk.rs:108:19
+    |
+ 89 | impl PreparedEndpointStore {
+    | -------------------------- method in this implementation
+...
+108 |     pub(crate) fn retire_with_endpoint_receipt(
+    |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `projection_matches_store` is never used
+   --> src/installed_disk.rs:131:4
+    |
+131 | fn projection_matches_store(
+    |    ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: `spiralcore-mvm-live` (lib) generated 5 warnings
+error[E0599]: no associated function or constant named `finish_retired` found for struct `ParentLaunchOwner` in the current scope
+   --> tests/installed_parent.rs:435:28
+    |
+435 |         ParentLaunchOwner::finish_retired;
+    |                            ^^^^^^^^^^^^^^ associated function or constant not found in `ParentLaunchOwner`
+
+For more information about this error, try `rustc --explain E0599`.
+error: could not compile `spiralcore-mvm-live` (test "installed_parent") due to 1 previous error

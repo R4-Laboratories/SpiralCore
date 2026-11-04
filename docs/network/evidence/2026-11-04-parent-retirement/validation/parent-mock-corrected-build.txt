@@ -1,0 +1,72 @@
+   Compiling spiralcore-mvm-live v0.1.0 (/var/tmp/spiralcore-resident-parent-20261103/publication-closure/crates/spiralcore-mvm-live)
+warning: field `retirement` is never read
+   --> /var/tmp/spiralcore-resident-parent-20261103/publication-closure/crates/spiralcore-mvm-live/src/installed_owner/endpoint_disks.rs:178:5
+    |
+173 | pub(crate) struct DiskStore {
+    |                   --------- field in this struct
+...
+178 |     retirement: RetirementProgress,
+    |     ^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: variants `NamespaceUnlinked`, `NamespaceSynced`, and `Complete` are never constructed
+   --> /var/tmp/spiralcore-resident-parent-20261103/publication-closure/crates/spiralcore-mvm-live/src/installed_owner/endpoint_disks.rs:183:5
+    |
+181 | enum RetirementProgress {
+    |      ------------------ variants in this enum
+182 |     Live,
+183 |     NamespaceUnlinked,
+    |     ^^^^^^^^^^^^^^^^^
+184 |     NamespaceSynced,
+    |     ^^^^^^^^^^^^^^^
+185 |     Complete,
+    |     ^^^^^^^^
+    |
+    = note: `RetirementProgress` has a derived impl for the trait `Clone`, but this is intentionally ignored during dead code analysis
+
+warning: method `retire_endpoint_disk` is never used
+   --> /var/tmp/spiralcore-resident-parent-20261103/publication-closure/crates/spiralcore-mvm-live/src/installed_owner/endpoint_disks.rs:655:19
+    |
+454 | impl InstallationOwner {
+    | ---------------------- method in this implementation
+...
+655 |     pub(crate) fn retire_endpoint_disk(&mut self, store: &mut DiskStore) -> Result<()> {
+    |                   ^^^^^^^^^^^^^^^^^^^^
+
+warning: method `retire_with_endpoint_receipt` is never used
+   --> /var/tmp/spiralcore-resident-parent-20261103/publication-closure/crates/spiralcore-mvm-live/src/installed_disk.rs:108:19
+    |
+ 89 | impl PreparedEndpointStore {
+    | -------------------------- method in this implementation
+...
+108 |     pub(crate) fn retire_with_endpoint_receipt(
+    |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `projection_matches_store` is never used
+   --> /var/tmp/spiralcore-resident-parent-20261103/publication-closure/crates/spiralcore-mvm-live/src/installed_disk.rs:131:4
+    |
+131 | fn projection_matches_store(
+    |    ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: variants `Preparing`, `Issued`, `Uncertain`, and `CleanupComplete` are never constructed
+  --> /var/tmp/spiralcore-resident-parent-20261103/publication-closure/crates/spiralcore-mvm-live/src/installed_parent.rs:49:5
+   |
+46 | enum EndpointIssuance {
+   |      ---------------- variants in this enum
+...
+49 |     Preparing,
+   |     ^^^^^^^^^
+50 |     Issued,
+   |     ^^^^^^
+51 |     Uncertain,
+   |     ^^^^^^^^^
+52 |     CleanupComplete,
+   |     ^^^^^^^^^^^^^^^
+   |
+   = note: `EndpointIssuance` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis
+
+warning: `spiralcore-mvm-live` (lib) generated 6 warnings
+   Compiling parent-retirement-qualification v0.1.0 (/var/tmp/spiralcore-resident-parent-20261103/publication-closure/crates/spiralcore-mvm-live/tests/parent-retirement-harness)
+    Finished `release` profile [optimized] target(s) in 20.04s
+  Executable retirement.rs (/var/tmp/spiralcore-resident-parent-20261103/publication-target/release/deps/retirement-6832a85ed290a786)

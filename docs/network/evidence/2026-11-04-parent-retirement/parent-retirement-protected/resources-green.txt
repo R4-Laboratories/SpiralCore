@@ -1,0 +1,15 @@
+
+running 3 tests
+test installed_resources::tests::accounting_corruption_never_panics_refunds_or_releases_exclusion ... 
+thread '<unnamed>' (974042) panicked at src/installed_resources.rs:547:25:
+owned accounting poison fixture
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+ok
+test installed_resources::tests::retained_identity_allows_normal_close_without_reopening_admission ... ok
+test installed_resources::tests::retained_identity_refuses_accounting_faults_before_cleanup_completion ... 
+thread '<unnamed>' (974045) panicked at src/installed_resources.rs:497:25:
+owned retained identity poison fixture
+ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 124 filtered out; finished in 0.00s
+

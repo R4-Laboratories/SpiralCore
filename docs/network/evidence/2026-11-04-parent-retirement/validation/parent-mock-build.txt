@@ -1,0 +1,93 @@
+   Compiling tokio v1.53.3
+   Compiling mvm-contract v0.26.0 (https://github.com/Casey-allard/mvm?rev=8b833aee8be5c1be9ce0d1197b6b98d4d03625f6#8b833aee)
+   Compiling mvm-core v0.26.0 (https://github.com/Casey-allard/mvm?rev=8b833aee8be5c1be9ce0d1197b6b98d4d03625f6#8b833aee)
+   Compiling mvm-agentd v0.26.0 (https://github.com/Casey-allard/mvm?rev=8b833aee8be5c1be9ce0d1197b6b98d4d03625f6#8b833aee)
+   Compiling tokio-rustls v0.26.6
+   Compiling mvm-http v0.26.0 (https://github.com/Casey-allard/mvm?rev=8b833aee8be5c1be9ce0d1197b6b98d4d03625f6#8b833aee)
+   Compiling mvm-fs v0.26.0 (https://github.com/Casey-allard/mvm?rev=8b833aee8be5c1be9ce0d1197b6b98d4d03625f6#8b833aee)
+   Compiling mvm-net v0.26.0 (https://github.com/Casey-allard/mvm?rev=8b833aee8be5c1be9ce0d1197b6b98d4d03625f6#8b833aee)
+   Compiling mvm-vmm v0.26.0 (https://github.com/Casey-allard/mvm?rev=8b833aee8be5c1be9ce0d1197b6b98d4d03625f6#8b833aee)
+   Compiling libkrun-sys v0.26.0 (https://github.com/Casey-allard/mvm?rev=8b833aee8be5c1be9ce0d1197b6b98d4d03625f6#8b833aee)
+   Compiling mvm-builder-guest v0.26.0 (https://github.com/Casey-allard/mvm?rev=8b833aee8be5c1be9ce0d1197b6b98d4d03625f6#8b833aee)
+   Compiling mvm-build v0.26.0 (https://github.com/Casey-allard/mvm?rev=8b833aee8be5c1be9ce0d1197b6b98d4d03625f6#8b833aee)
+   Compiling mvm-backends v0.26.0 (https://github.com/Casey-allard/mvm?rev=8b833aee8be5c1be9ce0d1197b6b98d4d03625f6#8b833aee)
+   Compiling mvm-compiler v0.26.0 (https://github.com/Casey-allard/mvm?rev=8b833aee8be5c1be9ce0d1197b6b98d4d03625f6#8b833aee)
+   Compiling mvm-runtime v0.26.0 (https://github.com/Casey-allard/mvm?rev=8b833aee8be5c1be9ce0d1197b6b98d4d03625f6#8b833aee)
+   Compiling mvm-host-services v0.26.0 (https://github.com/Casey-allard/mvm?rev=8b833aee8be5c1be9ce0d1197b6b98d4d03625f6#8b833aee)
+   Compiling mvm-hostd v0.26.0 (https://github.com/Casey-allard/mvm?rev=8b833aee8be5c1be9ce0d1197b6b98d4d03625f6#8b833aee)
+   Compiling mvm-sdk v0.26.0 (https://github.com/Casey-allard/mvm?rev=8b833aee8be5c1be9ce0d1197b6b98d4d03625f6#8b833aee)
+   Compiling mvm-bundler v0.26.0 (https://github.com/Casey-allard/mvm?rev=8b833aee8be5c1be9ce0d1197b6b98d4d03625f6#8b833aee)
+   Compiling mvm-client v0.26.0 (https://github.com/Casey-allard/mvm?rev=8b833aee8be5c1be9ce0d1197b6b98d4d03625f6#8b833aee)
+   Compiling spiralcore-mvm-adapter v0.1.0 (https://github.com/R4-Laboratories/SpiralCore?rev=656fead215d5d1ad1513e83fbf4dc7a654c1d52e#656fead2)
+   Compiling spiralcore-mvm-live v0.1.0 (/var/tmp/spiralcore-resident-parent-20261103/publication-closure/crates/spiralcore-mvm-live)
+warning: field `retirement` is never read
+   --> /var/tmp/spiralcore-resident-parent-20261103/publication-closure/crates/spiralcore-mvm-live/src/installed_owner/endpoint_disks.rs:178:5
+    |
+173 | pub(crate) struct DiskStore {
+    |                   --------- field in this struct
+...
+178 |     retirement: RetirementProgress,
+    |     ^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: variants `NamespaceUnlinked`, `NamespaceSynced`, and `Complete` are never constructed
+   --> /var/tmp/spiralcore-resident-parent-20261103/publication-closure/crates/spiralcore-mvm-live/src/installed_owner/endpoint_disks.rs:183:5
+    |
+181 | enum RetirementProgress {
+    |      ------------------ variants in this enum
+182 |     Live,
+183 |     NamespaceUnlinked,
+    |     ^^^^^^^^^^^^^^^^^
+184 |     NamespaceSynced,
+    |     ^^^^^^^^^^^^^^^
+185 |     Complete,
+    |     ^^^^^^^^
+    |
+    = note: `RetirementProgress` has a derived impl for the trait `Clone`, but this is intentionally ignored during dead code analysis
+
+warning: method `retire_endpoint_disk` is never used
+   --> /var/tmp/spiralcore-resident-parent-20261103/publication-closure/crates/spiralcore-mvm-live/src/installed_owner/endpoint_disks.rs:655:19
+    |
+454 | impl InstallationOwner {
+    | ---------------------- method in this implementation
+...
+655 |     pub(crate) fn retire_endpoint_disk(&mut self, store: &mut DiskStore) -> Result<()> {
+    |                   ^^^^^^^^^^^^^^^^^^^^
+
+warning: method `retire_with_endpoint_receipt` is never used
+   --> /var/tmp/spiralcore-resident-parent-20261103/publication-closure/crates/spiralcore-mvm-live/src/installed_disk.rs:108:19
+    |
+ 89 | impl PreparedEndpointStore {
+    | -------------------------- method in this implementation
+...
+108 |     pub(crate) fn retire_with_endpoint_receipt(
+    |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `projection_matches_store` is never used
+   --> /var/tmp/spiralcore-resident-parent-20261103/publication-closure/crates/spiralcore-mvm-live/src/installed_disk.rs:131:4
+    |
+131 | fn projection_matches_store(
+    |    ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: variants `Preparing`, `Issued`, `Uncertain`, and `CleanupComplete` are never constructed
+  --> /var/tmp/spiralcore-resident-parent-20261103/publication-closure/crates/spiralcore-mvm-live/src/installed_parent.rs:49:5
+   |
+46 | enum EndpointIssuance {
+   |      ---------------- variants in this enum
+...
+49 |     Preparing,
+   |     ^^^^^^^^^
+50 |     Issued,
+   |     ^^^^^^
+51 |     Uncertain,
+   |     ^^^^^^^^^
+52 |     CleanupComplete,
+   |     ^^^^^^^^^^^^^^^
+   |
+   = note: `EndpointIssuance` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis
+
+warning: `spiralcore-mvm-live` (lib) generated 6 warnings
+   Compiling parent-retirement-qualification v0.1.0 (/var/tmp/spiralcore-resident-parent-20261103/publication-closure/crates/spiralcore-mvm-live/tests/parent-retirement-harness)
+    Finished `release` profile [optimized] target(s) in 7m 20s
+  Executable retirement.rs (/var/tmp/spiralcore-resident-parent-20261103/publication-target/release/deps/retirement-6832a85ed290a786)

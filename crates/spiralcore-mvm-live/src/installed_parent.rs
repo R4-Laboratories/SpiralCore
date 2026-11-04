@@ -39,7 +39,53 @@ struct VmGrant {
     tenant: String,
     reservation: ManagedReservation,
     parent: Weak<Shared>,
-    admitted_plan: Mutex<Option<String>>,
+    lifecycle: Mutex<GrantLifecycle>,
+}
+
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+enum EndpointIssuance {
+    #[default]
+    NeverIssued,
+    Preparing,
+    Issued,
+    Uncertain,
+    CleanupComplete,
+}
+#[derive(Default)]
+struct GrantLifecycle {
+    admitted_plan: Option<String>,
+    endpoint: EndpointIssuance,
+    retired: bool,
+}
+impl GrantLifecycle {
+    fn check_launch_open(&self) -> Result<()> {
+        ensure!(
+            !self.retired
+                && matches!(
+                    self.endpoint,
+                    EndpointIssuance::NeverIssued
+                        | EndpointIssuance::Preparing
+                        | EndpointIssuance::Issued
+                ),
+            "original grant retired or endpoint unavailable"
+        );
+        Ok(())
+    }
+    fn seal_retired(&mut self) -> Result<()> {
+        ensure!(
+            self.admitted_plan.is_some(),
+            "original canonical admission unavailable"
+        );
+        ensure!(
+            matches!(
+                self.endpoint,
+                EndpointIssuance::NeverIssued | EndpointIssuance::CleanupComplete
+            ),
+            "original endpoint cleanup incomplete"
+        );
+        self.retired = true;
+        Ok(())
+    }
 }
 
 /// Unused preparation refunds on Drop; launched custody keeps this same owner.
@@ -52,10 +98,51 @@ pub struct PreparedParentVm {
 /// Final completion requires the separate original retirement/drain integration.
 pub struct ParentLaunchOwner {
     grant: Arc<VmGrant>,
+    completed: bool,
 }
 impl ParentLaunchOwner {
     pub fn binding(&self) -> &HostLaunchBinding {
         &self.grant.binding
+    }
+
+    /// Complete only this original native owner after its sealed retirement
+    /// and already-drained endpoint state. This performs no endpoint/disk I/O.
+    pub fn finish_retired(&mut self, outcome: &mvm_client::LaunchOutcome) -> Result<()> {
+        outcome.with_owned_retirement(|receipt| self.require_original_retirement(receipt))??;
+        self.complete_already_drained()
+    }
+
+    /// Failed startup retains the linear receipt returned by the SAME original
+    /// backend's stop_owned_pending. Missing history never completes this owner.
+    pub fn finish_pending_retired(&mut self, receipt: &mvm_client::OwnedRetirement) -> Result<()> {
+        self.require_original_retirement(receipt)?;
+        self.complete_already_drained()
+    }
+
+    fn require_original_retirement(&self, receipt: &mvm_client::OwnedRetirement) -> Result<()> {
+        let original: Arc<dyn CoreCurrentParentPermit> = self.grant.clone();
+        ensure!(
+            receipt.binding() == &self.grant.binding,
+            "original retirement binding differs"
+        );
+        ensure!(
+            receipt.retains_parent_permit(&original),
+            "original retirement permit differs"
+        );
+        Ok(())
+    }
+
+    fn complete_already_drained(&mut self) -> Result<()> {
+        // The short outcome lock is gone before touching any other owner.
+        // This cleanup-safe check never reopens launch admission or does I/O.
+        self.grant.reservation.check_retained_identity()?;
+        self.grant
+            .lifecycle
+            .lock()
+            .map_err(|_| anyhow!("parent lifecycle poisoned"))?
+            .seal_retired()?;
+        self.completed = true;
+        Ok(())
     }
 }
 impl Drop for ParentLaunchOwner {
@@ -64,7 +151,9 @@ impl Drop for ParentLaunchOwner {
         // No record eviction, PID query or caller bool can release uncertainty.
         // Keep this original owner until the process exits; a future positive
         // retirement path must explicitly disarm this conservative disposition.
-        std::mem::forget(self.grant.clone());
+        if !self.completed {
+            std::mem::forget(self.grant.clone());
+        }
     }
 }
 impl PreparedParentVm {
@@ -74,7 +163,13 @@ impl PreparedParentVm {
     pub fn begin_launch(self) -> Result<(PreparedHostLifetime, ParentLaunchOwner)> {
         let grant = self.grant.clone();
         let lifetime = self.into_lifetime()?;
-        Ok((lifetime, ParentLaunchOwner { grant }))
+        Ok((
+            lifetime,
+            ParentLaunchOwner {
+                grant,
+                completed: false,
+            },
+        ))
     }
     pub fn into_lifetime(self) -> Result<PreparedHostLifetime> {
         self.grant.check_open()?;
@@ -214,7 +309,7 @@ impl InstalledParentProvider {
             tenant: tenant.into(),
             reservation,
             parent: Arc::downgrade(&self.shared),
-            admitted_plan: Mutex::new(None),
+            lifecycle: Mutex::new(GrantLifecycle::default()),
         });
         registry.slots[slot] = Arc::downgrade(&grant);
         Ok(PreparedParentVm { grant, handoff })
@@ -233,6 +328,10 @@ impl VmGrant {
             .lock()
             .map_err(|_| anyhow!("parent registry poisoned"))?;
         ensure!(!registry.closed, "parent admission closed");
+        self.lifecycle
+            .lock()
+            .map_err(|_| anyhow!("parent lifecycle poisoned"))?
+            .check_launch_open()?;
         Ok(())
     }
 }
@@ -241,11 +340,13 @@ impl CoreCurrentParentPermit for VmGrant {
     fn check_current(&self, binding: &HostLaunchBinding) -> Result<()> {
         ensure!(*binding == self.binding, "parent binding substituted");
         self.check_open()?;
+        let lifecycle = self
+            .lifecycle
+            .lock()
+            .map_err(|_| anyhow!("parent lifecycle poisoned"))?;
+        lifecycle.check_launch_open()?;
         ensure!(
-            self.admitted_plan
-                .lock()
-                .map_err(|_| anyhow!("parent admission poisoned"))?
-                .is_some(),
+            lifecycle.admitted_plan.is_some(),
             "parent grant has no canonical admission"
         );
         Ok(())
@@ -287,14 +388,78 @@ impl ParentAdmissionProvider for InstalledParentProvider {
                 && plan.resources.mem_mib == u64::from(binding.memory_mib),
             "canonical admission differs from original parent grant"
         );
-        let mut bound = grant
-            .admitted_plan
+        let mut lifecycle = grant
+            .lifecycle
             .lock()
-            .map_err(|_| anyhow!("parent admission poisoned"))?;
-        ensure!(bound.is_none(), "original parent grant already bound");
-        *bound = Some(admitted.plan_id().0.clone());
-        drop(bound);
+            .map_err(|_| anyhow!("parent lifecycle poisoned"))?;
+        lifecycle.check_launch_open()?;
+        ensure!(
+            lifecycle.admitted_plan.is_none(),
+            "original parent grant already bound"
+        );
+        lifecycle.admitted_plan = Some(admitted.plan_id().0.clone());
+        drop(lifecycle);
         grant.check_current(binding)?;
         Ok(grant)
+    }
+}
+
+#[cfg(test)]
+mod retirement_policy_tests {
+    use super::*;
+
+    // These exercise private bookkeeping policy, never native-exit evidence.
+    fn admitted_policy(endpoint: EndpointIssuance) -> GrantLifecycle {
+        GrantLifecycle {
+            admitted_plan: Some("state-policy-only".into()),
+            endpoint,
+            retired: false,
+        }
+    }
+
+    #[test]
+    fn incomplete_endpoint_policy_cannot_complete_the_vm_owner() {
+        for endpoint in [
+            EndpointIssuance::Preparing,
+            EndpointIssuance::Issued,
+            EndpointIssuance::Uncertain,
+        ] {
+            let mut state = admitted_policy(endpoint);
+            assert!(state.seal_retired().is_err());
+            assert!(!state.retired);
+            assert_eq!(state.endpoint, endpoint);
+        }
+    }
+
+    #[test]
+    fn eligible_policy_seals_against_later_launch_work_idempotently() {
+        for endpoint in [
+            EndpointIssuance::NeverIssued,
+            EndpointIssuance::CleanupComplete,
+        ] {
+            let mut state = admitted_policy(endpoint);
+            state.seal_retired().unwrap();
+            assert!(state.retired);
+            assert!(state.check_launch_open().is_err());
+            state.seal_retired().unwrap();
+        }
+    }
+
+    #[test]
+    fn missing_admission_and_uncertain_endpoint_policy_refuse_without_reset() {
+        let mut unadmitted = GrantLifecycle::default();
+        assert!(unadmitted.seal_retired().is_err());
+        assert!(!unadmitted.retired);
+        for endpoint in [
+            EndpointIssuance::Uncertain,
+            EndpointIssuance::CleanupComplete,
+        ] {
+            assert!(admitted_policy(endpoint).check_launch_open().is_err());
+        }
+        assert!(
+            admitted_policy(EndpointIssuance::NeverIssued)
+                .check_launch_open()
+                .is_ok()
+        );
     }
 }

@@ -427,3 +427,12 @@ fn uncertain_launch_drop_retains_the_original_charge_and_exclusion() {
     // No VM was invoked. This deliberate uncertain-Drop witness retains one
     // original grant until this test process exits, not a native-exit proof.
 }
+
+#[test]
+fn original_launch_owner_requires_the_canonical_outcomes_sealed_retirement() {
+    use spiralcore_mvm_live::installed_parent::ParentLaunchOwner;
+    let _: fn(&mut ParentLaunchOwner, &mvm_client::LaunchOutcome) -> anyhow::Result<()> =
+        ParentLaunchOwner::finish_retired;
+    let _: fn(&mut ParentLaunchOwner, &mvm_client::OwnedRetirement) -> anyhow::Result<()> =
+        ParentLaunchOwner::finish_pending_retired;
+}

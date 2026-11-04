@@ -1,0 +1,12 @@
+error[E0599]: no associated function or constant named `finish_pending_retired` found for struct `ParentLaunchOwner` in the current scope
+ --> /var/tmp/spiralcore-resident-parent-20261103/pending-retirement-api-probe.rs:2:92
+  |
+2 | pub fn api_probe() { let _ = ParentLaunchOwner::finish_retired; let _ = ParentLaunchOwner::finish_pending_retired; }
+  |                                                                                            ^^^^^^^^^^^^^^^^^^^^^^ associated function or constant not found in `ParentLaunchOwner`
+  |
+help: there is a method `finish_retired` with a similar name
+ --> src/installed_parent.rs:110:4
+
+error: aborting due to 1 previous error
+
+For more information about this error, try `rustc --explain E0599`.
