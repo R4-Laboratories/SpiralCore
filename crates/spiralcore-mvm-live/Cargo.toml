@@ -10,7 +10,7 @@ description = "Bounded native HVF guest/vsock integration witness for SpiralCore
 default = ["live"]
 live = []
 linux-host = ["dep:mvm-backends", "dep:mvm-vmm", "dep:mvm-net", "dep:mvm-build", "dep:mvm-fs"]
-canonical-host = ["dep:anyhow", "dep:mvm-hostd", "dep:mvm-client"]
+canonical-host = ["dep:anyhow", "dep:mvm-hostd", "dep:mvm-client", "dep:mvm-net"]
 
 [dependencies]
 anyhow = { version = "1", optional = true }
@@ -30,6 +30,7 @@ cpu-time = "1"
 libc = "0.2"
 
 [target.'cfg(all(target_os = "macos", target_arch = "aarch64"))'.dependencies]
+mvm-net = { git = "https://github.com/Casey-allard/mvm", rev = "f708539f0c2317acf2e74f8f7833d6072a5abafe", default-features = false, optional = true }
 mvm-vmm = { git = "https://github.com/Casey-allard/mvm", rev = "f708539f0c2317acf2e74f8f7833d6072a5abafe", default-features = false }
 mvm-runtime = { git = "https://github.com/Casey-allard/mvm", rev = "f708539f0c2317acf2e74f8f7833d6072a5abafe", default-features = false }
 mvm-build = { git = "https://github.com/Casey-allard/mvm", rev = "f708539f0c2317acf2e74f8f7833d6072a5abafe", default-features = false }

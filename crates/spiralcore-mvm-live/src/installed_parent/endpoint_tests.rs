@@ -3,7 +3,7 @@ use super::*;
 use mvm_core::host_lifetime::EndpointPartitionLimits;
 use std::{fs, os::unix::fs::PermissionsExt};
 
-fn fixture() -> (
+pub(super) fn fixture() -> (
     tempfile::TempDir,
     InstalledSupervisor,
     InstalledParentProvider,

@@ -17,10 +17,13 @@ use sha2::{Digest, Sha256};
 use std::sync::{Arc, Mutex, Weak};
 
 mod endpoint;
+mod host_agent;
 mod resident;
 pub use resident::{InstalledResident, ResidentId, ResidentProgress, ResidentStatus};
 #[cfg(test)]
 mod endpoint_tests;
+#[cfg(test)]
+mod host_agent_tests;
 
 const BOOKKEEPING_BYTES: u64 = 4096;
 const MIB: u64 = 1024 * 1024;
@@ -35,6 +38,7 @@ struct Shared {
     issuer: InstalledNativeIssuer,
     _bookkeeping: ManagedReservation,
     endpoint_inputs: Option<endpoint::EndpointOwnerInputs>,
+    host_agent: Mutex<host_agent::HostAgentSlot>,
 }
 
 /// Local parent admission, never a replacement for signed MVM authorization.
@@ -63,6 +67,7 @@ enum EndpointIssuance {
 struct GrantLifecycle {
     admitted_plan: Option<String>,
     admitted_session: Option<[u8; 32]>,
+    registration: Option<Arc<host_agent::RegistrationBinding>>,
     endpoint: EndpointIssuance,
     endpoint_owner: Option<Arc<endpoint::RootEndpointOwner>>,
     retired: bool,
@@ -265,6 +270,7 @@ impl InstalledParentProvider {
                 issuer: supervisor.native_issuer(),
                 _bookkeeping: bookkeeping,
                 endpoint_inputs: None,
+                host_agent: Mutex::new(host_agent::HostAgentSlot::default()),
             }),
         })
     }
