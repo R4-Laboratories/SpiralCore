@@ -1,7 +1,7 @@
 # Networking delivery status
 
 Snapshot: **2026-11-04**, checked against published `origin/main`
-`e88e23fc8cf39ff6cef4eb98e56c7d14b7c4e051` and the live GitHub issue graph.
+`d8e90e98e5049721267d7204004132d34c05cb26` and the live GitHub issue graph.
 This page separates accepted components, measured experiments and unmerged work.
 The [README](../../README.md) is the architecture/results entry point;
 [issue #42](https://github.com/R4-Laboratories/SpiralCore/issues/42) remains the
@@ -46,17 +46,34 @@ are required. The linked issues were open at this snapshot.
 
 ## Active work that is not an accepted main release
 
-Two development checkpoints are published for source inspection:
+Development checkpoints are published for source inspection:
 
 | Repository / development branch | Immutable checkpoint | Acceptance |
 |---|---|---|
 | [SpiralCore core checkpoint](https://github.com/R4-Laboratories/SpiralCore/tree/codex/spiralcore-core-checkpoint-20261104) | [`ca5d9ca1266541f71cc5ab7d0b17f4acf14d06b1`](https://github.com/R4-Laboratories/SpiralCore/commit/ca5d9ca1266541f71cc5ab7d0b17f4acf14d06b1) | Non-main source checkpoint |
+| [SpiralCore integration checkpoint](https://github.com/R4-Laboratories/SpiralCore/tree/codex/spiralcore-integration-checkpoint-20261104) | [`665e23349e8cf3c644af989b2069815f7885b779`](https://github.com/R4-Laboratories/SpiralCore/commit/665e23349e8cf3c644af989b2069815f7885b779) | Locked graph and scoped parent/disk tests; full installed acceptance open |
 | [MVM fork installed-service checkpoint](https://github.com/Casey-allard/mvm/tree/codex/spiralcore-installed-service-checkpoint-20261104) | [`8b833aee8be5c1be9ce0d1197b6b98d4d03625f6`](https://github.com/Casey-allard/mvm/commit/8b833aee8be5c1be9ce0d1197b6b98d4d03625f6) | Non-main contribution-preparation fork |
 
-These are separately published snapshots, not an accepted combined dependency
-closure, installed MVM release or WAN/performance qualification. Branches may
-advance; the immutable commits identify this checkpoint. They are not a claim
-of formal upstream acceptance.
+The [immutable graph packet](https://github.com/R4-Laboratories/SpiralCore/tree/4cece3276120606b85de91c554c3d96dc6e5f6d1/docs/network/evidence/2026-11-04-immutable-graph)
+records an actual locked release build and seven installed-parent component
+tests. It resolves one MVM Core/Contract revision and one shared transfer core,
+with no local path overrides. These tests boot no guest. The newer
+[disk-retirement packet](https://github.com/R4-Laboratories/SpiralCore/tree/665e23349e8cf3c644af989b2069815f7885b779/docs/network/evidence/2026-11-04-live-disk-retirement)
+records ten Linux disk-module entries (including one process helper), one
+scope-binding test, and five new macOS filesystem tests that overlap that module.
+It preserves the APFS retry failure and independent source review. Its typed
+retirement wrapper still needs the resident consumer and a positive sealed-receipt
+integration witness; it is not an installed native recovery result.
+
+New helper deadline/admission fixes passed 18 unique selected library tests,
+nine resource tests and seven real helper-process tests, with protected binary
+and source hashes unchanged. Component strict Clippy also passed. Three GitHub
+fork pushes failed with server errors; the exact successor commit and its
+original failure/success records are backed up in a
+[verified incremental source bundle](https://github.com/R4-Laboratories/SpiralCore/blob/665e23349e8cf3c644af989b2069815f7885b779/docs/development/mvm-helper-deadline-20261104.md).
+The fork baseline above has not advanced. None of these checkpoints qualifies
+the full combined service, WAN performance or formal upstream acceptance.
+Branches may advance; immutable commits identify each recorded source.
 
 The development tree contains canonical resident-parent and launcher work,
 original-process guardian custody, shared parent partitions, disposable endpoint

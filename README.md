@@ -45,10 +45,12 @@ Unmerged work includes the canonical resident parent, exact-process guardian
 custody, disposable endpoint-disk inventory, admitted FlowMux/access activation,
 and Small/Ordered/readiness candidates. These are not part of PR72's accepted
 source. [Current checkpoints, failures and open gates →](docs/network/current-status.md)
-Published non-main snapshots: [SpiralCore `ca5d9ca`](https://github.com/R4-Laboratories/SpiralCore/tree/ca5d9ca1266541f71cc5ab7d0b17f4acf14d06b1)
-and [MVM fork `8b833aee`](https://github.com/Casey-allard/mvm/tree/8b833aee8be5c1be9ce0d1197b6b98d4d03625f6).
-These development branches are reviewable code checkpoints; their combined
-dependency graph, installed integration and performance are not qualified releases.
+Published development code: [SpiralCore integration `665e233`](https://github.com/R4-Laboratories/SpiralCore/tree/665e23349e8cf3c644af989b2069815f7885b779)
+and [MVM fork baseline `8b833aee`](https://github.com/Casey-allard/mvm/tree/8b833aee8be5c1be9ce0d1197b6b98d4d03625f6).
+The integration branch records the locked dependency graph, scoped parent and
+disk-retirement tests, and a recoverable source bundle for newer helper fixes.
+These checkpoints are available for review; installed integration and performance
+still require acceptance on the final combined source.
 
 <a id="where-spiralcore-sits-in-the-network-stack"></a>
 
