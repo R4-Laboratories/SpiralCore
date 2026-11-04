@@ -2,545 +2,348 @@
 
 **Move fewer bytes. Reconstruct every byte. Measure the compute cost.**
 
-SpiralCore is an experimental Rust networking project that reuses verified state
-at cooperating endpoints. Instead of repeatedly sending an entire object, it can
-send a reconstruction recipe, an exact residual, or a reference to an object the
-receiver has acknowledged. Ternary state, Kuramoto-coupled cellular automata,
-warm caches and schema fitting are active parts of the object implementation.
+SpiralCore is an experimental Rust networking and lossless object-transfer project. Cooperating
+endpoints reuse verified state, compare exact encodings, and send the information
+needed to reconstruct the original bytes. The implementation combines warm-object
+reuse, sparse deltas, schema codecs and bounded ternary/Kuramoto/CA replay with
+conventional zstd/raw controls.
 
-![Two cooperating endpoints reuse local state and send a compact recipe and exact changes to reconstruct the same object.](docs/figures/overview/object-transfer.png)
+![Cooperating endpoints prepare, transfer, reconstruct and verify an exact object.](docs/figures/overview/object-transfer.png)
 
-*The object-transfer track: turquoise represents reusable state, amber represents
-changes, and the three instruments represent ternary structure, phase state and
-cellular automata. These are conceptual software illustrations, not hardware
-requirements or literal runtime screenshots. Reconstruction is verified against
-the original bytes; a short recipe is useful only when the receiver has the
-required state.*
+*The four images are conceptual software illustrations, not custom hardware or
+experimental evidence. [Figure provenance →](docs/figures/overview/README.md)*
 
-**[Get started](#get-started) · [Results](#measured-results) · [Mechanisms](#how-the-object-core-works) · [Public evidence](docs/network/public-artifacts.md) · [Contribute](CONTRIBUTING.md) · [MIT scope](LICENSING.md)**
+[Start here](#build-and-run) · [Architecture](#architecture-and-protocol-boundaries) ·
+[Measured results](#selected-matched-results) · [Current status](docs/network/current-status.md) ·
+[Evidence](docs/network/public-artifacts.md) · [Contributing](CONTRIBUTING.md)
 
-> Research software with working implementations and reproducible measurements.
-> Exact recovery is mandatory. Byte savings, CPU savings and completion-time
-> savings are reported separately, including workloads that lose.
+<a id="what-works-today"></a>
 
-## What works today?
+## Current delivery status
 
-**Normal networking is implemented, as well as MVM.** There are three distinct paths:
+Working components and measured native demonstrations are published. The complete
+installed MVM networking contribution is still in development. The
+[GitHub roadmap, #42](https://github.com/R4-Laboratories/SpiralCore/issues/42), is
+the delivery authority; a component merge or green platform test is an intermediate
+checkpoint, not completion of that program.
 
-| Track | Implemented interface | Current validation | Remaining boundary |
-|---|---|---|---|
-| **Cooperating objects** | Authenticated QUIC object service; Combined runtime, warm cache, schema and zstd/raw selection | Persistent receivers, exact restart readback, local and calibrated shaped links | Current Combined gateway needs a two-host Internet WAN campaign |
-| **Normal TCP/UDP** | Linux Layer 3 TUN → paired authenticated QUIC gateways → peer TUN | Real IPv4/IPv6 TCP/UDP flows; local and calibrated 80 ms / 10 Mbps tests | No general Internet egress/NAT or transparent warm-cache/CA compression of TCP streams |
-| **MVM mailboxes** | Shared object core at authorized plaintext endpoints; canonical encrypted envelopes over vsock | Native ARM64 macOS/HVF and x86-64 Linux/Firecracker guest → host and two-guest sessions; keyless reboot readback | Experimental binding; production mailbox lifecycle, Linux rate-limit parity and WAN deployment remain open |
+| Path | Published implementation and evidence | Remaining acceptance |
+|---|---|---|
+| Cooperating objects | Authenticated QUIC object service; shared runtime/cache/schema core; exact durable readback | Current-source two-host Internet WAN qualification |
+| Ordinary TCP/UDP | Linux TUN paired tunnel over authenticated QUIC; real IPv4/IPv6 flows and calibrated shaped-link trials | Other packet-attachment platforms and deployment/WAN acceptance |
+| MVM mailbox | Canonical encrypted envelopes, native HVF/Firecracker transfers, event handling and explicit incomplete-Call reconciliation | Complete resident ownership/budgets, retention, final-ACK/closed-stream recovery and WAN |
+| FlowMux stream component | Authenticated paired TCP/TLS/object mapping, cancellation and FIN ownership; **34 tests on each of seven native roles** | Canonical admitted MVM binding, installed lifecycle, sustained capacity and WAN |
+| Installation/storage foundations | Installed-owner/supervisor components, managed reservations and native Windows private-storage components | End-to-end aggregate ownership, recovery and supported capacity envelope |
+| Owner access | Development/sealed-mode integration is active, unmerged work | Canonical authority/lifecycle, shared-core payload binding and native acceptance |
 
-The normal-network gateway sends standard UDP/IP through the physical NIC, with
-no NIC driver changes. Both ends need a cooperating gateway. HTTPS/QUIC payloads
-reaching TUN are already encrypted and generally offer little compression.
-Shared-runtime and warm-object gains currently belong to the **object and MVM
-tracks**, not arbitrary encrypted packet traffic.
+The latest published FlowMux component is [PR72](https://github.com/R4-Laboratories/SpiralCore/pull/72),
+merged as `25a1c786`; [PR77](https://github.com/R4-Laboratories/SpiralCore/pull/77)
+publishes its [reviewed release packet](docs/network/evidence/2026-11-03-flowmux/pr72-release.md).
+This is a native-process component, not a booted-MVM or WAN result.
 
-**Platform scope:** the normal TUN gateway is Linux-native. The MVM witness has
-macOS/HVF and Linux/Firecracker host paths; the default Linux build is the guest,
-and the `linux-host` feature selects the host. Native ephemeral mailbox-client
-tests have passed on Windows Server 2022/2025 x64 and Windows 11 ARM64 at the
-[latest recorded mailbox-client checkpoint](docs/network/session-reconciliation-results-2026-11-03.md).
-Windows private object storage now has native component tests; end-to-end
-durable gateway qualification and packet attachment remain open.
-A portable mailbox client does not establish a Windows MVM host. The current
-published MVM dependency has passed the recorded seven-platform contract run.
-[Linux build and lifecycle details →](docs/network/linux-firecracker.md)
+Unmerged work includes the canonical resident parent, exact-process guardian
+custody, disposable endpoint-disk inventory, admitted FlowMux/access activation,
+and Small/Ordered/readiness candidates. These are not part of PR72's accepted
+source. [Current checkpoints, failures and open gates →](docs/network/current-status.md)
+Published non-main snapshots: [SpiralCore `ca5d9ca`](https://github.com/R4-Laboratories/SpiralCore/tree/ca5d9ca1266541f71cc5ab7d0b17f4acf14d06b1)
+and [MVM fork `8b833aee`](https://github.com/Casey-allard/mvm/tree/8b833aee8be5c1be9ce0d1197b6b98d4d03625f6).
+These development branches are reviewable code checkpoints; their combined
+dependency graph, installed integration and performance are not qualified releases.
 
-**MVM delivery roadmap:** [GitHub issue #42](https://github.com/R4-Laboratories/SpiralCore/issues/42)
-is the status authority for the canonical mailbox service, admitted FlowMux
-integration, owner access and final upstream contribution. The
-[platform contract](docs/specs/2026-11-02-mvm-platforms.md) distinguishes supported
-endpoint roles from candidate OS/version/architecture cells. Native execution,
-real WAN pairs and unavailable backend gates are tracked separately in
-[#46](https://github.com/R4-Laboratories/SpiralCore/issues/46) and
-[#47](https://github.com/R4-Laboratories/SpiralCore/issues/47). The [initial canonical-service native report](docs/network/evidence/2026-11-02-mvm-service/native-ae12/README.md)
-records **16 successful Linux/Firecracker and macOS/HVF sessions**, including
-one-guest/host and two-guest transfers, 32 successful guest boots and 72 exact
-keyless reboot readbacks. At the larger tier (14,851,384-byte objects), complete
-mixed sessions used **41.7–41.8% fewer canonical stream bytes** than prepared
-whole-object zstd/raw with the same warm probe. Endpoint CPU and sender elapsed
-were lower in all eight paired session comparisons; small-session lifecycle and
-individual-operation losses remain visible in the report. These are single-trial
-local native observations, with different backend rate profiles; cross-platform
-WAN support remains unqualified. Historical results below retain their own sources. Fleet capacity and
-long-lived operation are an additional release gate in
-[#49](https://github.com/R4-Laboratories/SpiralCore/issues/49); two guests do not
-establish a scalable deployment envelope. The
-[scale boundary review](docs/network/evidence/2026-11-02-mvm-service/qualification/scale-boundary.md)
-records the starting ownership, retained-state and serial-dispatch constraints.
-The [shared-broker load report](docs/network/evidence/2026-11-02-broker-scale/README.md)
-now records the implemented shared budget/clock, stable ordering and 2/8/32 logical
-endpoint runs. Stable scopes reduced peak RSS in every matched cell and retained
-3/12/48 FIFO checkpoints instead of roughly 1,950 in the paced runs. CPU and
-latency varied; saturation still reached another admission limit. These local
-serial-dispatch results do not qualify concurrent fleet or WAN capacity.
+<a id="where-spiralcore-sits-in-the-network-stack"></a>
 
-The newer [sustained broker report](docs/network/sustained-broker-results-2026-11-02.md)
-records exact quota attribution, recovery after a real five-minute retention
-wait, and **13,684 completed Linux logical-endpoint operations with 20,537 exact
-readbacks** across concurrent 2/8/32-endpoint and interference profiles. Seven
-additional Firecracker sessions verified **62 publications and 44 keyless reboot
-readbacks**. In the large two-MVM pilot, Combined used **62.51 MB of logical
-mailbox traffic / 2.946 s timed sender CPU / 6.309 s full lifecycle**, versus
-zstd's **107.27 MB / 4.342 s / 8.580 s**. Across both vsock hops, accounted stream
-bytes total twice the logical traffic; the report defines the CPU intervals.
-These are bounded local profiles and single native pilots. The Mac one-second
-deadline failure, shared-budget raw refusal, higher Combined memory use and
-small-session lifecycle loss remain recorded. Canonical WAN, aggregate
-cross-process fleet budgets and durable Windows gateway qualification remain
-open release gates.
+## Architecture and protocol boundaries
 
-The [persistent-service checkpoint](docs/network/persistent-mvm-service-results-2026-11-03.md)
-moves object work outside shared mailbox dispatch and bounds orchestrator relay
-credits. The [retained-identity checkpoint](docs/network/persistent-session-identity-results-2026-11-03.md)
-preserves original Calls through refusal, pins sends to their registered
-generation/request and prevents receipt-only completion or lifetime extension.
-Their smaller-workload losses remain recorded: **1.95% lifecycle** and **8.49%
-host-process CPU** increases, respectively.
+![OSI reference and the actual application, transport, TUN and guest-host boundaries.](docs/figures/overview/osi-model.png)
 
-The [explicit reconciliation checkpoint](docs/network/session-reconciliation-results-2026-11-03.md)
-adds an opt-in embedding API for recovering a missing destination receipt or
-application Reply with the original Call, identity and deadline. Six direct and
-actual-relay fault cases and three full public TCP campaigns preserve exact
-bytes and one-time object work. Silence alone sends no retry; finite attempts,
-FIFO ordering, authorization and partial-write deadlines remain enforced.
-The normal guest path remains strict. Native guest opt-in, final ACK loss after
-caller completion and closed-stream resume still need lifecycle work.
-Its matched local strict-transfer measurements retain byte, CPU and lifecycle
-results against whole-object zstd, including individual workload losses;
-they do not establish recovery overhead or WAN performance.
+SpiralCore's object identity, selection, reconstruction and publication state
+are application-protocol functions. Their resemblance to OSI session or
+presentation functions does not make them separate standardized Layer 5/6 wire
+protocols. Carriers retain their own authentication, framing and lifecycle.
 
-The [installed-owner component](docs/network/installed-owner-results-2026-11-03.md)
-adds durable epochs and resource-holder exclusion for host-wide MVM admission.
-Four native Unix architecture rows pass54 component entries. The subsequent
-supervisor slice connects actual workers and Firecracker lifetime holders;
-canonical resident service and aggregate resource integration remain open.
+| Boundary | Actual placement |
+|---|---|
+| Application / object core | Authorization context, object identity, codecs, reconstruction, verified publication |
+| TCP/TLS component | TLS-protected TCP stream; bounded object mapping above the carrier |
+| QUIC services | Reliable object streams or packet datagrams over UDP/IP; QUIC integrates TLS key establishment and packet protection |
+| Linux TUN | Layer 3 attachment: inner IPv4/IPv6 packets enter a paired tunnel |
+| Physical network | Ordinary outer UDP/IP and existing Ethernet/Wi-Fi/NIC stack |
+| MVM guest–host | Canonical application envelopes over virtio-vsock; vsock is a transport, not OSI Layer 5 or owner authorization |
 
-The subsequent [installed-supervisor implementation and native results](docs/network/installed-supervisor-results-2026-11-03.md)
-connect the explicit installed entry to exact owned workers, live-controller boot
-grants and actual Firecracker lifetime leases. A Linux death witness refuses a
-successor while the guest survives supervisor/worker death, then proves durable
-retirement and an exact next-epoch transfer after backend and launcher exit.
-In the larger local two-guest Linux pair, Combined used **62.49 MB versus
-107.30 MB** with whole-object zstd, with **5.48 s versus 8.20 s** of combined
-guest endpoint CPU and **6.39 s versus 8.81 s** of lifecycle time. The larger
-macOS/HVF pair used **62.55 MB versus 107.28 MB**, **14.46 s versus 26.63 s**
-of guest endpoint CPU and **16.37 s versus 30.04 s** of lifecycle time. All
-objects reopened exactly. Each pair is one local observation; the report also
-retains the earlier smaller Linux pair's **0.69% lifecycle loss**. Native HVF
-installed recovery, aggregate plaintext/cache/workspace ownership and canonical
-WAN acceptance remain open. The [Windows private-storage port](docs/api/windows-storage-v1.md)
-uses the same object protocol and passes native component tests on Server
-2022/2025 x64 and Windows 11 ARM64; complete durable gateway and WAN qualification
-remain open. The complete remaining contribution
-is tracked in the [five-outcome Ari delivery plan](docs/plans/2026-11-03-ari-delivery.md)
-and [GitHub roadmap](https://github.com/R4-Laboratories/SpiralCore/issues/42).
+**One shared Rust object core, explicitly versioned endpoint mappings.** The
+[object-v1 contract](docs/specs/spiralcore-v1.md) defines the common object frames
+and codec identities. The object gateway and MVM adapter reuse that core;
+they do not copy a codec or replace the canonical MVM envelope. Independent
+packet encoding is a separate documented mapping, not cross-packet object reuse.
 
-The [duplex relay checkpoint](docs/network/duplex-relay-results-2026-11-03.md)
-adds independently progressing keyless directions and safe half-close handling,
-including a reproduced Darwin shutdown fix. The newer
-[mailbox event checkpoint](docs/network/mailbox-session-events-results-2026-11-03.md)
-retains current Call/Reply/receipt progress, handles duplicate and Late events,
-and replays the exact cached Reply without repeating object work. Failed receiver
-exchanges fence before another read. Four additional Linux/Firecracker cells
-verified **36 publication operations and 36 keyless reboot readbacks**, with
-zero mismatches. The same eight target positions are **14,851,384 bytes** each;
-Combined includes runtime checkpoint/schema setup. At that checkpoint:
+Mailbox delivery, FlowMux network forwarding and owner access have **separate
+admission, queues, rates, audit and lifecycle**. A mailbox grant does not authorize
+network egress or a shell. A TCP destination grant does not authorize a different
+UDP/QUIC exit. Profiles, hashes, vsock connectivity and successful handshakes do
+not manufacture permission. [Canonical MVM delivery requirements →](docs/plans/2026-11-03-ari-delivery.md)
 
-| Arm | Logical mailbox traffic, both directions | Timed sender CPU | Full lifecycle |
-|---|---:|---:|---:|
-| Equally tuned whole zstd/raw | 107.30 MB | 4.384 s | 8.653 s |
-| Combined | 62.55 MB | 3.006 s | 6.386 s |
+### Cooperating object applications
 
-The report defines timer exclusions and two-hop physical traffic. These local
-mixed cold/warm observations are **41.71% fewer bytes, 31.45% less timed sender
-CPU and 26.20% less lifecycle time** than the matched canonical zstd path. They
-do not qualify WAN or fleet capacity. Losses remain explicit: schema drift used
-0.64% fewer bytes but **18.85% more sender CPU and 12.22% more operation time**.
-The unrelated cold target still used about 31.3 MB of canonical traffic for
-14.85 MB of content. Twenty-two matched host cells also retain smaller Raw/zstd
-regressions. Orchestrator transport credits remain separate from guest plaintext/
-cache budgets. Automatic retry/resume, production-retention sessions beyond the
-2,048-Call guard, installed host ownership and negotiated pipelining remain in the
-[active plan](docs/plans/2026-11-03-persistent-mvm-service.md).
+The sender prepares an eligible exact representation at an authorized plaintext
+endpoint, before carrier encryption. The receiver authenticates the carrier,
+checks scope, reconstructs and verifies, then commits to its private store.
 
-The subsequent [idle-read checkpoint](docs/network/stream-idle-results-2026-11-03.md)
-adds a bounded local poll that preserves a ready stream only before any next-frame
-bytes are consumed. Partial frames keep their original deadline and fatal-error
-fence. All seven native client rows passed 88 checks each; two further native
-Linux cells passed 18 publications and 18 keyless readbacks. The recorded normal
-transfers still use strict receive. This API enables future recovery work; it
-does not activate timers, reconnect/resume or longer-lived sessions.
+```mermaid
+sequenceDiagram
+    participant A as Authorized sender
+    participant C as Shared object core
+    participant B as Authorized receiver
+    A->>C: Object + admitted state/profile
+    C->>C: Choose recipe/residual, cache, schema, zstd or raw
+    C->>B: Versioned object frames through authenticated carrier
+    B->>B: Reconstruct, check length/digest, durable publish
+    B-->>C: Authenticated publication acknowledgment
+    C-->>A: Verified publication result
+```
 
-The [registered-Call retry checkpoint](docs/network/registered-call-retry-results-2026-11-03.md)
-adds an explicit API for resending the original Call while preserving its
-unconsumed, budgeted Reply. Six focused tests cover exact bytes, one-time Reply
-consumption, 27 pre-connect refusals and five transport faults. All seven native
-client rows pass 92 checks each. The normal transfer campaign remains on strict
-send; this prerequisite adds no automatic retries or new performance claim.
+Publication is distinct from exactly-once application processing. Candidate
+selection can choose conventional bytes when reuse is ineffective; missing
+required authority or peers cause refusal, not an insecure transport fallback.
+[Object service, configuration and ALPN →](docs/network/runtime-object-gateway.md)
 
-### Where SpiralCore sits in the network stack
+**For socket programmers — published FlowMux component contract:**
 
-![Seven-layer OSI reference highlighting application-level SpiralCore functions and the Layer 3 TUN boundary, beside the actual object, packet-tunnel and MVM protocol paths.](docs/figures/overview/osi-model.png)
+| API / boundary | Contract |
+|---|---|
+| `TlsCarrier` + enrolled `ScopeAuthority` | Match actual mutual TLS identity/role and enrolled scope before `ObjectChannel::from_authenticated`; a connected socket alone grants no permission |
+| `ObjectChannel` | Send/serve shared-core objects; application `MAX_BLOCK` is **16 KiB**, not a whole-stream or whole-memory limit |
+| `Duplex::split` | Separate `DuplexWriter`, `DuplexReader` and owned `JoinGuard`; retain/join lifecycle custody |
+| `MappedStream` | Standard `Read`/`Write` facade over Duplex; partial I/O is normal, with a configured bound per I/O call rather than an automatic whole-stream deadline |
+| Cancellation / half-close | Fatal cancel fences later buffered delivery; normal half-close preserves valid reverse drain |
+| Acknowledgment | Verified object publication is not proof of application processing |
 
-*For network engineers: the left side is a functional OSI mapping; the right side
-shows the implemented stacks. Object identity, codecs, reconstruction and transfer
-state live in SpiralCore's application protocol. They are not separate OSI Layer
-5/6 wire protocols. The packet gateway attaches at Layer 3 through Linux TUN and
-encapsulates inner IP packets in QUIC datagrams over outer UDP/IP. The object
-service instead uses reliable QUIC streams. Existing NIC/link layers remain
-ordinary networking. MVM's mailbox is an application protocol over a separate
-guest–host virtio-vsock path, not a standardized OSI Layer 5 mailbox.*
+These APIs do not construct canonical MVM route/access grants.
 
-[View the full-resolution OSI illustration](docs/figures/overview/osi-model.png)
-· [Object protocol](docs/network/runtime-object-gateway.md)
-· [Packet gateway](crates/spiralcore-gateway/README.md)
-· [MVM boundary](crates/spiralcore-mvm-adapter/README.md)
+### Ordinary sockets through a paired packet tunnel
 
-**Protocol integration:** the [v1 object contract](docs/specs/spiralcore-v1.md)
-defines the shared Rust sender/receiver API, stable frame format and codec IDs.
-The canonical MVM adapter and cooperating QUIC object service pin the same
-`object-v1` profile. Profile metadata grants no authority; each carrier retains
-its own authentication and policy checks. Dynamic wire negotiation, transparent
-packet/stream profiles and guest management services remain separate work.
-The [v1 integration results](docs/network/v1-endpoint-results-2026-11-02.md)
-record 24 native Linux sessions, 240 exact publications and 120 keyless reboot
-checks. Transfer behavior is preserved; the small-session CPU regression is
-reported explicitly rather than counted as a speed improvement.
+![Applications use ordinary sockets; Linux TUN gateways carry their packets through QUIC over normal NICs.](docs/figures/overview/normal-network.png)
 
-## Measured results
+Applications keep their TCP/UDP sockets. Operator-configured routes deliver
+packets to Linux TUN; paired gateways encode independent packets and restore them
+at the peer. This path uses raw/zstd selection, not CA or a cross-packet warm base.
+Already-encrypted HTTPS/QUIC payloads normally have little useful redundancy.
 
-These experiments have different workloads and accounting layers. Do not combine
-their percentages. Elapsed already includes computation; CPU is not an additional
-latency charge. Each report retains setup, durability, loss and trial details.
+```mermaid
+sequenceDiagram
+    participant A as Application / kernel
+    participant G as Local TUN gateway
+    participant H as Peer TUN gateway
+    participant B as Peer kernel / application
+    A->>G: Routed inner IP packet
+    G->>H: Authenticated QUIC datagram(s) over outer UDP/IP
+    H->>B: Reassembled exact inner IP packet
+    B->>H: Inner IP reply
+    H-->>G: Protected QUIC datagram(s)
+    G-->>A: Exact restored reply packet
+```
 
-### Normal networking: real TUN sockets on a constrained link
+This is a paired Layer 3 tunnel, not a Layer 2 bridge, arbitrary Internet egress,
+or a NIC/driver modification. Address allowlists and bounded fragmentation/
+reassembly remain enforced. [Linux setup and packet protocol →](crates/spiralcore-gateway/README.md)
 
-The [packet campaign](docs/network/packet-selection-results-2026-11-01.md) completed
-**32 sessions, 128 application transfers and 256 exact endpoint receipts**.
-The campaign covers unshaped and shaped links plus IPv6 smoke sessions. The table
-shows primary IPv4 shaped-link trials: three 16 MiB TCP objects—patterned, opaque,
-patterned—on one persistent connection, plus UDP smoke. This is actual Linux
-TUN/QUIC traffic on a calibrated **80 ms RTT / 10 Mbps** bidirectional link on one host.
+### MVM mailbox and keyless relay
 
-| Mode | Captured IP bytes, both directions | Both gateways' CPU | Three-object client completion |
-|---|---:|---:|---:|
-| Raw packets | 62,681,599 | 4.947 s | 46.953 s |
-| Conventional zstd | 28,472,420 | 3.294 s | 20.540 s |
-| Fast zstd | 28,034,434 | 3.137 s | 20.653 s |
+![Two MVM guests encode and reconstruct inside their plaintext boundaries while a host relays sealed canonical mailbox envelopes.](docs/figures/overview/mvm-mailbox.png)
 
-Three-trial medians. Fast zstd reduces IP bytes **55.28%** and gateway CPU
-**36.42%** versus Raw by paired medians. On the fast unshaped local link it is
-slower: **0.904 s versus Raw's 0.773 s**. Adaptive remains experimental because
-it can sacrifice bytes. These packet gains use conventional compression, not CA
-or ternary replay. [Full report and losses →](docs/network/packet-selection-results-2026-11-01.md)
+*The illustration shows the mailbox lane in a conceptual two-host arrangement;
+it is not a qualified WAN run or a claim that every vsock service is encrypted.*
 
-### Combined object gateway: shared state plus exact changes
+In the two-guest witness, the sender invokes the shared object core **before
+canonical mailbox encryption**. The host relay forwards sealed envelopes without
+message keys; it performs no plaintext compression. Reconstruction happens after
+receiver authentication/decryption. A one-guest/authorized-host-endpoint variant
+also exists. Keyless forwarding is not a host-blind confidential-computing claim.
 
-The [current selector campaign](docs/network/cpu-conscious-results-2026-11-02.md)
-completed **288 exact reopened deliveries across 18 local/shaped sessions**. Each persistent session includes
-1,047,202-byte and 14,851,384-byte targets, eight targets per size, and paid
-checkpoint/schema setup. The table shows authenticated QUIC transfers on the
-calibrated shaped-link profile, separate from the packet experiment.
+```mermaid
+sequenceDiagram
+    participant A as Sender guest
+    participant H as Keyless host relay
+    participant B as Receiver guest
+    Note over A,B: An object may require multiple Calls
+    A->>A: Authorize + encode plaintext with shared core
+    A->>H: Canonical encrypted Call
+    H->>B: Same sealed envelope
+    B->>B: Apply frame; publish only when the object verifies
+    B-->>H: Separate canonical receipt and application Reply
+    H-->>A: Sealed receipt + Reply
+    A->>H: Canonical Reply receipt
+    H->>B: Same sealed receipt
+```
 
-| Mode | Captured IP bytes, both directions | Both endpoints' process CPU | Client completion |
-|---|---:|---:|---:|
-| Exhaustive Combined, default | 33,946,691 | 1.955 s | 31.038 s |
-| CPU-conscious Combined, opt-in | 33,943,850 | 1.924 s | 31.061 s |
-| Prepared whole-object zstd | 58,149,609 | 2.471 s | 49.862 s |
+Call admission, object publication, application Reply and Reply acknowledgment
+are separate facts. The normal guest path remains strict; explicit reconciliation
+reuses the original Call identity and deadline rather than silently retrying.
+Port 5257 is an experimental mailbox binding; existing FlowMux 5253 is separate.
+[Native witness](crates/spiralcore-mvm-live/README.md) ·
+[Reconciliation](docs/network/session-reconciliation-results-2026-11-03.md)
 
-The opt-in mode retains **41.63% fewer IP bytes, 21.83% less process CPU and
-37.71% less elapsed** than zstd by paired medians. It is not uniformly better
-than exhaustive selection: full-session elapsed is 0.045% worse in this dose,
-and unrelated objects retain overhead. [Workload and remaining costs →](docs/network/cpu-conscious-results-2026-11-02.md)
+<a id="how-the-object-core-works"></a>
 
-### MVM on macOS/HVF: Combined through actual guest/vsock boundaries
-
-The [MVM report](docs/network/mvm-combined-results-2026-11-02.md) records **36 real
-guest sessions, 336 exact publications including setup, and 168 separate keyless,
-read-only reboot verifications**. Below is the two-MVM eight-target session;
-each target contains **14,851,384 bytes**. All modes use the same explicit
-64 MiB/s mailbox allowance; Combined pays checkpoint/schema costs. The default
-4 MiB/s policy is unchanged.
-
-Sender session time includes fixture/codec setup and sends. VM boot and independent
-reboot/readback are measured separately. The CPU column is sender process CPU;
-receiver and enclosing VM-worker CPU remain separate in the full report.
-
-| Mode | Encrypted logical stream bytes, both directions | Sender CPU | Sender session elapsed |
-|---|---:|---:|---:|
-| Exhaustive Combined | 56,538,203 | 1.442 s | 2.621 s |
-| CPU-conscious Combined | 56,535,989 | 1.422 s | 2.568 s |
-| Prepared whole-object zstd | 97,329,036 | 1.925 s | 3.599 s |
-
-Exhaustive Combined saves **41.92% of stream bytes, 25.37% of sender CPU and
-29.21% of elapsed** by three-trial paired medians. Both vsock hops together
-carry twice the logical count. A generated target alone uses **33,866 encrypted
-bytes / 63.6 ms**, versus **6,118,673 bytes / 274.4 ms** with zstd. An opaque
-sparse edit uses **26,846 bytes / 61.8 ms**, versus **28,450,629 bytes / 866.6 ms**.
-
-Schema fit/drift save only about 0.7–1.1% of bytes here and cost more CPU/time.
-An interrupted transfer cannot publish its partial object; a fresh authenticated
-connection recovers exactly. This is local native MVM execution, not production
-mailbox activation or a new WAN result. [Sizes, recovery and full testing report →](docs/network/mvm-combined-results-2026-11-02.md)
-
-### MVM on Linux/Firecracker: native host implementation
-
-The [Linux campaign](docs/network/linux-mvm-results-2026-11-02.md) completed
-**36 native sessions, 336 exact publications and 168 keyless reboot checks**.
-The two-guest eight-target batch below uses 14,851,384 bytes per target and pays
-Combined checkpoint/schema setup. Medians of three trials:
-
-| Mode | Encrypted logical mailbox bytes, both directions | Sender CPU | Sender session elapsed |
-|---|---:|---:|---:|
-| Exhaustive Combined | 56,558,976 | 1.201 s | 2.084 s |
-| CPU-conscious Combined | 56,544,015 | 1.181 s | 2.048 s |
-| Prepared whole-object zstd | 97,347,823 | 1.340 s | 2.425 s |
-
-CPU-conscious Combined saves **41.92% of mailbox bytes, 11.84% of sender CPU and
-15.00% of elapsed** by paired medians. Two mailbox hops carry twice the logical
-count; these counters exclude the separate exit service and virtio headers.
-The Linux path is currently unshaped, so its timings are separate from HVF's
-rate-limited campaign. The 1 MiB tier saves about 35% of bytes but has sender-CPU
-regressions and a one-guest elapsed regression; schema and unrelated objects
-also retain per-operation costs. A forced early worker death
-failed the session and cleaned up its owned VMM. [Full results, losses and remaining qualification →](docs/network/linux-mvm-results-2026-11-02.md)
-
-### Earlier real Internet WAN evidence
-
-An earlier GitHub Linux sender reached a native Apple M1 receiver through a
-temporary HTTPS relay. The [broad WAN campaign](docs/network/broad-wan-results-2026-10-29.md)
-completed **2,640 exact operations**, with 30 paired trials per case. For a
-32-byte edit to a warm 16 MiB object:
-
-| Method | Request + reply HTTP-body bytes | Completion, including compute | Sender + receiver-handler CPU |
-|---|---:|---:|---:|
-| Raw full send | 16,814,026 | 1,594.631 ms | 100.872 ms |
-| Configured zstd prefix delta | 26,245 | 240.178 ms | 101.087 ms |
-| Sparse COPY/LITERAL | 600 | 237.108 ms | 79.839 ms |
-
-The conventional delta baseline is close in time. Including a paid seed and one
-update, Sparse takes **1,873.202 ms versus Raw's 3,153.206 ms**. Historical
-HTTP-body results are not NIC-byte counts and do not qualify the newer QUIC/MVM
-deployment. [All baselines, seed costs and capture limitations →](docs/network/broad-wan-results-2026-10-29.md)
-
-## How the object core works
+## Mechanisms and exactness
 
 ```text
 Decode(verified receiver state, versioned recipe, exact residual) = original bytes
 ```
 
-The original length and whole-object SHA-256 identity are verified before a
-publication acknowledgment. A hash identifies content; it does not grant access.
-State is scoped by authenticated tenant, recipient and policy/epoch.
-Recipes select built-in bounded transitions/codecs; received source code is never executed.
-
-<details>
-<summary>Technical detail: prediction, residual and verification</summary>
-
-```mermaid
-flowchart LR
-    A[Checkpoint<br/>Ternary + phase state] --> B[Kuramoto + memory<br/>CA 184 / 110 / 30]
-    B --> C[Prepared prediction]
-    C --> D[Exact comparison]
-    T[Target bytes] --> D
-    W[Verified rolling cache] --> D
-    D --> E[Recipe + residual<br/>or literal fallback]
-    E --> F[Reconstruct<br/>Verify + commit]
-```
-
-</details>
-
-| Mechanism | Concrete job |
+| Mechanism | Concrete role |
 |---|---|
-| **Ternary structure** | The imported immutable store builds ternary DAGs for sharing; the coupled runtime also retains ternary state. DAG and runtime prediction are distinct mechanisms. |
-| **Kuramoto + CA** | Replay bounded, versioned transitions from a canonical checkpoint. Logical steps and pinned software math make replay reproducible; physical clock synchronization is not required. |
-| **Warm cache + sparse deltas** | Reuse an acknowledged object and send exact COPY/LITERAL changes, including length changes. Repeats avoid unnecessary re-encoding. |
-| **Prepared state** | Reuse predictions and codec state across transfers; measure the preparation cost. |
-| **Schema fitting** | Share a fitted template and compress the value/literal stream. Unmatched content remains exact literal data. |
-| **Byte-first selection** | Compare eligible runtime, sparse, schema, whole-zstd and raw encodings. Exhaustive is default; CPU-conscious may omit schema work and miss a smaller encoding outside the measured workload. |
+| Ternary DAG store | Immutable structural sharing; distinct from runtime prediction |
+| Ternary/Kuramoto/CA runtime | Replay bounded versioned transitions from a canonical checkpoint |
+| Acknowledged warm state | Reuse an object the scoped receiver has verified |
+| Sparse COPY/LITERAL residuals | Preserve exact edits, including length changes |
+| Schema fitting | Share a template; encode values and unmatched literals exactly |
+| Prepared state | Amortize prediction/codec setup; charge that setup in results |
+| Byte-first selection | Compare eligible runtime, sparse, schema, zstd and raw representations |
 
-Predictable data can have a short recipe. All required information must still
-exist in verified receiver state or cross the link as residual/literal data.
-Ternary structure does not remove independent information; prediction quality
-determines savings, and final verification enforces zero fidelity loss.
+A short recipe is useful only when its prerequisites are present. Independent
+information must already exist in authorized receiver state or cross the link.
+Length/digest checks precede publication acknowledgment; experiments additionally
+compare independently reopened bytes. Hash identity does not authorize access.
 
-### Track 1 — cooperating applications and objects
+For Combined, exhaustive evaluation is the published default; CPU-conscious
+selection is opt-in and can miss a smaller candidate outside the measured workload.
+Recipes select bounded built-in operations, not received executable code. Logical replay
+steps do not establish physical clock synchronization or exact cross-machine timing;
+CPU measurements do not establish energy savings.
 
-The opening illustration shows this path: each endpoint retains authorized
-state, a compact recipe or delta crosses the link, and the receiver reconstructs
-and verifies the complete object. If reuse does not help, selection falls back
-to whole-object zstd or raw bytes.
+<a id="measured-results"></a>
 
-<details>
-<summary>Technical detail: the reliable object service</summary>
+## Selected matched results
 
-```mermaid
-flowchart LR
-    A[Application object] --> B[ObjectSender<br/>Choose exact encoding]
-    S[Runtime / cache / schema] --> B
-    B --> C[Authenticated QUIC<br/>Reliable object stream]
-    C --> D[Authorized receiver<br/>Scoped verified state]
-    D --> E[Reconstruct + verify<br/>Durable object store]
-    E -. acknowledgment .-> B
-```
+These are **source-pinned experiments**, not performance promises for every
+current build. Accounting domains and workloads differ: captured IP, canonical
+stream and HTTP-body bytes are not interchangeable. CPU is already part of
+elapsed time; subtracting it does not isolate send time. All tables retain their
+setup, verification, failures and source details in the linked report.
 
-</details>
+**Object gateway — three paired trials, calibrated 80 ms RTT / 10 Mbit/s.**
+Source `30792f17d0a596c4344e4780ebd4b8f455e3bedb`; persistent sessions contain
+eight targets at each of 1,047,202 and 14,851,384 bytes, including paid setup.
 
-`spiralcore-gateway-object` uses the separate `spiralcore-object/1` ALPN. Peers
-agree on scope and policy epoch; checkpoint/schema readiness is explicit.
-[Object service and configuration →](docs/network/runtime-object-gateway.md)
+| Encoding | Captured IP bytes, both directions | Both endpoint process CPU | Client completion |
+|---|---:|---:|---:|
+| Exhaustive Combined | 33,946,691 | 1.955 s | 31.038 s |
+| CPU-conscious Combined | 33,943,850 | 1.924 s | 31.061 s |
+| Prepared whole-object zstd | 58,149,609 | 2.471 s | 49.862 s |
 
-### Track 2 — ordinary TCP/UDP sockets and the NIC
+All 288 deliveries reopened exactly. CPU-conscious had 0.045% worse paired-median
+full-session elapsed than exhaustive; on the unshaped local link its elapsed was
+1.41% worse than whole-zstd. [Full workload, paired ratios and losses →](docs/network/cpu-conscious-results-2026-11-02.md)
 
-![Cutaway of two ordinary computers: applications pass packets through TUN and the packet gateway, then authenticated QUIC crosses their normal NICs.](docs/figures/overview/normal-network.png)
+Displayed cells are column medians. Paired percentage changes use per-trial
+ratios and need not equal ratios of the displayed medians.
 
-*Ordinary applications keep their sockets. A virtual TUN interface brings routed
-packets into the software gateway; the physical NIC carries ordinary UDP/IP.
-The peer restores the packets and delivers them through its TUN interface.
-The illustrated assembly is software running on normal CPUs, not an add-in card.
-Packet payloads use raw/zstd selection; this path does not yet apply cross-packet
-warm-cache or CA reconstruction.*
+**Packet tunnel — three primary IPv4 trials, calibrated 80 ms / 10 Mbit/s.**
+Source `9dd283ca366d6075bd6b423c3a42aa928e222ce2`; three 16 MiB TCP objects on
+one persistent connection plus UDP smoke. These are shaped local Linux trials.
 
-<details>
-<summary>Technical detail: independent packet encoding and delivery</summary>
+| Encoding | Captured IP bytes, mixed session | Both gateway process CPU | Three-object client time |
+|---|---:|---:|---:|
+| Raw | 62,681,599 | 4.947 s | 46.953 s |
+| Conventional zstd | 28,472,420 | 3.294 s | 20.540 s |
+| Fast zstd | 28,034,434 | 3.137 s | 20.653 s |
 
-```mermaid
-flowchart LR
-    A[TCP/UDP application<br/>Kernel route → TUN] --> B[Packet framing<br/>Raw or zstd]
-    B --> C[Authenticated QUIC<br/>NIC carries UDP/IP]
-    C --> D[Peer gateway<br/>Restore + verify packet]
-    D --> E[Peer TUN → kernel<br/>TCP/UDP application]
-```
+The complete campaign passed 32 sessions/256 exact endpoint receipts and retained
+3,027 finite-queue congestion drops. Fast zstd was slower on the fast local link:
+0.904 s versus Raw's 0.773 s. [Calibration, capture and adaptive losses →](docs/network/packet-selection-results-2026-11-01.md)
 
-</details>
+**Installed MVM witness — single local fixed-order pairs, two actual guests.**
+Eight 14,851,384-byte targets; Combined pays checkpoint/schema setup. Exact source
+and protected-binary identities are in the [native report](docs/network/installed-supervisor-results-2026-11-03.md).
 
-The service attaches an existing TUN interface, validates address allowlists and
-uses bounded fragmentation/reassembly. Packet encodings are independent: no
-cross-packet base is assumed. This is a Layer 3 paired tunnel, not a Layer 2
-bridge or transparent compression for arbitrary Internet destinations.
-[Linux setup, certificates, routes and demonstration →](crates/spiralcore-gateway/README.md)
+| Native backend / encoding | Both-direction canonical bytes | Sender guest CPU | Receiver guest CPU | Lifecycle wall |
+|---|---:|---:|---:|---:|
+| Linux/Firecracker whole-zstd | 107,301,660 | 4.488958 s | 3.707541 s | 8.814947 s |
+| Linux/Firecracker Combined | 62,491,548 | 2.963787 s | 2.519790 s | 6.392388 s |
+| macOS/HVF whole-zstd | 107,276,257 | 15.335437 s | 11.293480 s | 30.038789 s |
+| macOS/HVF Combined | 62,546,739 | 9.181874 s | 5.281349 s | 16.368091 s |
 
-### Track 3 — MVM mailboxes and a small orchestrator
+All objects reopened exactly through independent verifier boots. Two vsock hops
+carry twice the canonical count; neither is a NIC capture. Host/VMM CPU overlaps
+nested guest activity and is reported separately. The earlier smaller Linux pair
+retains a 0.685% lifecycle loss. These are not matched OS comparisons or WAN runs.
 
-![A host contains two isolated MVM guests; encrypted mailbox envelopes pass over vsock through a keyless host relay, with encoding and reconstruction inside the guests.](docs/figures/overview/mvm-mailbox.png)
+Earlier [Internet WAN experiments](docs/network/broad-wan-results-2026-10-29.md)
+remain useful historical evidence, with HTTP-body accounting and different
+sources/transports. They do not qualify the current QUIC or canonical MVM path.
 
-*The native two-guest witness: encoding happens inside the sender's authorized
-plaintext boundary, before mailbox encryption. The host relays sealed envelopes
-over vsock. The receiver authenticates and decrypts inside its guest, then
-reconstructs, verifies and commits. The host's small orchestrator manages the
-guests without becoming a plaintext compression endpoint. This picture depicts
-the local host test; it is not evidence of a two-host MVM WAN deployment.*
+## Platform and role matrix
 
-<details>
-<summary>Technical detail: mailbox encryption and acknowledgment boundaries</summary>
+| Role | Recorded scope | Boundary |
+|---|---|---|
+| Linux x86_64 / Firecracker | Native guest transfers and installed death/recovery witness | Full resident/shared-budget/WAN acceptance open |
+| Apple Silicon macOS / HVF | Native guest transfers and installed entry | HVF death recovery and integrated capacity/WAN open |
+| Linux x86_64 + ARM64 | Native portable client/stream components | ARM64 component execution is not Firecracker host evidence |
+| macOS ARM64 + Intel | Native portable client/stream components | Intel component execution is not native MVM hosting |
+| Windows Server 2022/2025 x64 + Windows 11 ARM64 | Native client/TLS components and private-storage components | No native Windows MVM host or end-to-end durable gateway/WAN claim |
+| Linux TUN adapter | Native IPv4/IPv6 packet attachment | Other attachment platforms are not established here |
 
-```mermaid
-flowchart LR
-    subgraph A[Sender MVM]
-        A1[Plaintext application<br/>Shared object selector] --> A2[Canonical mailbox<br/>Authenticate + encrypt]
-    end
-    A2 -->|vsock 5257| H[Keyless host relay<br/>Small orchestrator]
-    subgraph B[Receiver MVM]
-        B1[Verify envelope<br/>Decrypt] --> B2[Scoped reconstruction<br/>Verify + durable commit]
-    end
-    H -->|vsock 5257| B1
-    B2 -. authenticated reply .-> A2
-```
+The seven FlowMux rows repeat 34 tests per role; they are not 238 distinct tests,
+cross-OS network pairs or booted guests. Windows storage uses the same protocol
+with an isolated Win32 backend and supported NTFS profile. Portable compilation,
+WSL and client success do not substitute for native backend execution.
+[Platform contract](docs/specs/2026-11-02-mvm-platforms.md) ·
+[Current acceptance gates](docs/network/current-status.md)
 
-</details>
+<a id="get-started"></a>
 
-The witness also supports a single guest with a host endpoint. It uses actual
-ARM64 Linux guests on macOS Hypervisor.framework and x86-64 Linux guests on
-Linux/Firecracker, with a pinned MVM patch. The Linux pilot uses an unshaped
-mailbox path; its requested rate profile is not reported as an enforced limit.
-**5257 is experimental; FlowMux 5253 is separate and unchanged.** Publication
-acknowledgment does not promise exactly-once application processing.
-[Native MVM build/run instructions →](crates/spiralcore-mvm-live/README.md)
+## Build and run
 
-## Get started
-
-Use Rust **1.97.1** to reproduce recorded builds. Crates are standalone Cargo
-packages with their own lockfiles; no root workspace is required.
+Use Rust 1.97.1 for the recorded builds. Packages are standalone Cargo crates with
+their own committed lockfiles; no root Cargo workspace is required.
+The example uses a POSIX shell. Windows private storage requires a drive-absolute
+NTFS root under its [native profile](docs/api/windows-storage-v1.md).
 
 ```sh
 git clone https://github.com/R4-Laboratories/SpiralCore.git
 cd SpiralCore
 rustup toolchain install 1.97.1 --profile minimal
 
-# Local TCP object-transfer demo; choose a fresh cache path.
+# Loopback-only synthetic object demo; choose a fresh cache directory.
 cargo +1.97.1 run --release --locked \
   --manifest-path crates/spiralcore-transfer/Cargo.toml \
   --bin spiralcore -- demo --cache local/first-demo/cache
 
-# Build the normal packet gateway and cooperating object service.
+# Authenticated QUIC object service and Linux packet-gateway binaries.
 cargo +1.97.1 build --release --locked \
   --manifest-path crates/spiralcore-gateway/Cargo.toml --bins
 ```
 
-The demo is an unauthenticated, loopback-only synthetic harness, not a WAN service
-or benchmark. The gateway paths use their documented authenticated transports.
-Linux TUN needs its documented privileges and interface setup. Native MVM needs
-the pinned patch, guest kernel and HVF host.
+The demo is unauthenticated loopback tooling, not a WAN service. Authenticated
+services need the documented peer pins, certificates, scopes and configuration.
+TUN requires its documented Linux privileges/routes. Native MVM needs the pinned
+MVM source, kernel, guest image and backend-specific setup; default Linux live
+builds select the guest, while `linux-host` selects the host role.
 
-| Task | Guide |
+| Task | Entry point |
 |---|---|
-| Send/retrieve objects and run the local demo | [Transfer crate](crates/spiralcore-transfer/README.md) |
-| Run paired Linux TUN gateways | [Packet gateway](crates/spiralcore-gateway/README.md) |
-| Use Combined, runtime or warm object profiles | [Object gateway](docs/network/runtime-object-gateway.md) |
-| Run actual MVM guests | [MVM witness](crates/spiralcore-mvm-live/README.md) |
-| Inspect the canonical mailbox boundary | [MVM adapter](crates/spiralcore-mvm-adapter/README.md) |
-| Review measurements and downloads | [Public artifacts](docs/network/public-artifacts.md) |
+| Object API, demo and verified storage | [Transfer crate](crates/spiralcore-transfer/README.md) |
+| Paired packet gateways | [Gateway setup](crates/spiralcore-gateway/README.md) |
+| Runtime/cache/schema object service | [Object gateway](docs/network/runtime-object-gateway.md) |
+| Native MVM build and role selection | [MVM witness](crates/spiralcore-mvm-live/README.md), [Linux host](docs/network/linux-firecracker.md) |
+| Canonical mailbox and FlowMux mapping | [Mailbox adapter](crates/spiralcore-mvm-adapter/README.md), [FlowMux contract](docs/api/mvm-flowmux-v1.md) |
 
-## Public evidence and reproducibility
+## Evidence, research and contribution
 
-Source, contracts, compact raw observations, failed cases, analysis and reviews
-live in Git. The [public evidence release](https://github.com/R4-Laboratories/SpiralCore/releases/tag/evidence-2026-11-02)
-provides reviewed MVM, object-gateway and packet-gateway receipts and captures
-without Hugging Face access. [Checksums and source revisions →](docs/network/public-artifacts.md)
-These evidence bundles exclude nine archived executables whose complete third-party
-redistribution notices were not bundled. Their recorded hashes and public source
-pins remain available; build from source using the recorded instructions.
+[Public artifacts](docs/network/public-artifacts.md) link source pins, checksums,
+compact raw observations, analysis, failures and reviews. The
+[GitHub evidence release](https://github.com/R4-Laboratories/SpiralCore/releases/tag/evidence-2026-11-02)
+provides reviewed larger captures/receipts without a private-dataset account.
+Archived executables omitted from that release retain source/hash provenance;
+publication does not silently relicense third-party binaries. Newer component
+packets are linked from [current status](docs/network/current-status.md).
 
-The existing [Hugging Face preservation dataset](https://huggingface.co/datasets/caseyallard/spiralcore-experiment-artifacts)
-remains a private backup, not a prerequisite for reviewing these current results.
-The older 7.7 GB WAN preservation snapshot contains raw network metadata and is
-not republished wholesale; its compact observations/results are public in Git.
-[Historical custody and restoration →](docs/network/artifact-storage.md)
+The wider geometry/E8/routing work is described in the
+[FBS mechanism guide](docs/mechanisms/spiralcore-fbs.md) and
+[research webpage](https://spiralcore.netlify.app/). Those ideas are not automatically
+enabled routing mechanisms in the packet gateway. Rust is the active product and
+measurement language; historical prototypes remain preserved.
 
-## Research and repository map
-
-| Location | Contents |
-|---|---|
-| `crates/spiralcore-transfer` | Exact protocol, bounded codecs, coupled runtime and verified scoped storage |
-| `crates/spiralcore-gateway-core` | Shared object and independent-packet interfaces |
-| `crates/spiralcore-gateway` | Authenticated QUIC object service and Linux TUN adapter |
-| `crates/spiralcore-mvm-adapter`, `crates/spiralcore-mvm-live` | Canonical mailbox, actual guest/vsock witness and small orchestrator |
-| `crates/uor-r4-object-store` | Imported MIT immutable ternary DAG store and peer protocol |
-| `docs/network` | Results, contracts, protocol decisions and evidence |
-| `projects/spiralcore`, `references`, `archive` | Preserved prototypes, supplied research and historical artifacts |
-| `index.html` | Preserved SpiralCore v69 research webpage |
-
-The [research webpage](https://spiralcore.netlify.app/), [FBS mechanism guide](docs/mechanisms/spiralcore-fbs.md)
-and [geometry diagram](docs/figures/mechanisms/spiralcore-fbs.svg) preserve the
-broader geometry/E8 and routing work. Those research routing mechanisms are not
-automatically enabled in the packet gateway. Counterfactual CA rows participate
-in runtime evolution; this does not establish deployed counterfactual routing.
-
-Follow the [optimization ledger](docs/network/optimization-ledger.md) for the full
-experiment history and [delivery status](docs/network/delivery.md) for next work:
-two-host qualification of the latest gateways, production MVM integration and
-bounded stream adaptation. No FIPS/CUI, physical-energy or general-purpose router
-qualification is claimed.
-
-## License and provenance
-
-SpiralCore's **original code and new documentation are MIT-licensed**. Imported
-components retain their notices and terms. Third-party research, owner-supplied
-reference artifacts and historical exports are excluded from this new grant
-unless independently licensed. See [LICENSE](LICENSE), [scope](LICENSING.md)
-and [provenance](PROVENANCE.md).
+Original SpiralCore code and new documentation are MIT-licensed. Imported code,
+research and historical artifacts retain their own terms. See [LICENSE](LICENSE),
+[LICENSING](LICENSING.md), [PROVENANCE](PROVENANCE.md) and [CONTRIBUTING](CONTRIBUTING.md).
