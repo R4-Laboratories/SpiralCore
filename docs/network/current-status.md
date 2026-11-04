@@ -66,8 +66,9 @@ retirement wrapper still needs the resident consumer and a positive sealed-recei
 integration witness; it is not an installed native recovery result.
 
 New helper deadline/admission fixes passed 18 unique selected library tests,
-nine resource tests and seven real helper-process tests, with protected binary
-and source hashes unchanged. Component strict Clippy also passed. Three GitHub
+nine resource tests and seven helper integration tests (five start original
+helper children), with protected binary and source hashes unchanged. Component
+strict Clippy also passed. Three GitHub
 fork pushes failed with server errors; the exact successor commit and its
 original failure/success records are backed up in a
 [verified incremental source bundle](https://github.com/R4-Laboratories/SpiralCore/blob/665e23349e8cf3c644af989b2069815f7885b779/docs/development/mvm-helper-deadline-20261104.md).
