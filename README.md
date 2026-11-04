@@ -45,8 +45,8 @@ Unmerged work includes the canonical resident parent, exact-process guardian
 custody, disposable endpoint-disk inventory, admitted FlowMux/access activation,
 and Small/Ordered/readiness candidates. These are not part of PR72's accepted
 source. [Current checkpoints, failures and open gates →](docs/network/current-status.md)
-Published development code: [SpiralCore integration `f7d06da6`](https://github.com/R4-Laboratories/SpiralCore/tree/f7d06da6b4aa148cd348dd91df3342f1bc53e399)
-and [MVM fork `bef4146c`](https://github.com/Casey-allard/mvm/tree/bef4146c0de18b22ac392118acfd898a369cc64c).
+Published development code: [SpiralCore integration `8476d758`](https://github.com/R4-Laboratories/SpiralCore/tree/8476d7583e083e02d8b6bc571fc505815b85de90)
+and [MVM fork `9a3a964b`](https://github.com/Casey-allard/mvm/tree/9a3a964bd540d5e74c71f9b7df93cc5593295546).
 The [resident lifecycle report](https://github.com/R4-Laboratories/SpiralCore/blob/ef4f5530cb4df41ef534dd63b149f2de5dd107b3/docs/network/evidence/2026-11-04-resident-service/README.md)
 records one original backend, two cancellation-safe resident slots, real registry
 resource drain and protected lifecycle tests. A caught operation panic fences the
@@ -74,9 +74,15 @@ The [mandatory telemetry capacity check](https://github.com/R4-Laboratories/Spir
 now rejects an endpoint allowance smaller than the canonical 8 MiB records cap
 before resource or directory effects. The successor passes 23 ordinary parent
 checks and strict Clippy; real-helper cases are ignored in that ordinary run.
-Actual retained-file ownership, disposable-cache separation, recovery and the
-installed native consumer remain unfinished. The installed profile is inactive;
-these checkpoints add no transfer-performance, capacity or FIPS claim.
+The [retained-catalog successor](https://github.com/R4-Laboratories/SpiralCore/blob/8476d7583e083e02d8b6bc571fc505815b85de90/docs/network/evidence/2026-11-04-retained-catalog/README.md)
+implements original retained-file ownership, the disposable/retained split and
+durable denial after catalog loss. Its final release library run passes 152
+entries with two helper cases ignored; scoped Clippy passes with three
+unconnected-constructor warnings. All 134 compiled inputs match its Git source.
+Original failures and independent reviews are retained. Restart adoption,
+incomplete-I/O recovery and the installed producer/native consumer remain open.
+The installed profile is inactive; these checkpoints add no transfer-performance,
+accepted capacity or FIPS claim.
 
 The [latest reader/TLS development checkpoint](https://github.com/R4-Laboratories/SpiralCore/blob/1025d87d048b15cefd483b4c11c70a6e029cb29c/docs/network/evidence/2026-11-03-flowmux/validation/handshake-startup/README.md)
 preserves original reader ownership and promptly rejects EOF during TLS

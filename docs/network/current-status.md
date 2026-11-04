@@ -52,8 +52,8 @@ Development checkpoints are published for source inspection:
 | Repository / development branch | Immutable checkpoint | Acceptance |
 |---|---|---|
 | [SpiralCore core checkpoint](https://github.com/R4-Laboratories/SpiralCore/tree/codex/spiralcore-tls-startup-20261104) | [`1025d87d048b15cefd483b4c11c70a6e029cb29c`](https://github.com/R4-Laboratories/SpiralCore/commit/1025d87d048b15cefd483b4c11c70a6e029cb29c) | Original reader/deadline, terminal completion and startup EOF component; 43 Linux checks, installed/native/platform acceptance open |
-| [SpiralCore integration checkpoint](https://github.com/R4-Laboratories/SpiralCore/tree/codex/spiralcore-telemetry-capacity-20261104) | [`f7d06da6b4aa148cd348dd91df3342f1bc53e399`](https://github.com/R4-Laboratories/SpiralCore/commit/f7d06da6b4aa148cd348dd91df3342f1bc53e399) | Resident-owned original helper and mandatory telemetry capacity refusal; 23 ordinary parent checks, strict Clippy and earlier separately executed helper witness; full installed acceptance open |
-| [MVM fork installed-service checkpoint](https://github.com/Casey-allard/mvm/tree/codex/spiralcore-parent-config-20261104) | [`bef4146c0de18b22ac392118acfd898a369cc64c`](https://github.com/Casey-allard/mvm/commit/bef4146c0de18b22ac392118acfd898a369cc64c) | Three additive original-owner/config/backend APIs; non-main contribution-preparation fork |
+| [SpiralCore integration checkpoint](https://github.com/R4-Laboratories/SpiralCore/tree/codex/spiralcore-retained-catalog-20261104) | [`8476d7583e083e02d8b6bc571fc505815b85de90`](https://github.com/R4-Laboratories/SpiralCore/commit/8476d7583e083e02d8b6bc571fc505815b85de90) | Original retained-file ownership, checked disk split and catalog-loss denial; 152 library entries pass, two ignored; scoped Clippy passes with three warnings; full installed acceptance open |
+| [MVM fork installed-service checkpoint](https://github.com/Casey-allard/mvm/tree/codex/spiralcore-retained-telemetry-20261104) | [`9a3a964bd540d5e74c71f9b7df93cc5593295546`](https://github.com/Casey-allard/mvm/commit/9a3a964bd540d5e74c71f9b7df93cc5593295546) | Original retained-file handoff and canonical runtime cleanup protection; non-main contribution-preparation fork |
 
 The latest [resident/helper witness](https://github.com/R4-Laboratories/SpiralCore/blob/7a080af1049455f6cb0e07f511cb467d05a902e8/docs/network/evidence/2026-11-04-resident-helper/README.md)
 executes the original canonical daemon/signer through the resident's same backend,
@@ -64,10 +64,18 @@ parent checks pass, two actual-helper cases remain ignored in that invocation,
 and strict Clippy emits no warnings. Both packets bind their exact Git sources;
 iterations and overlapping test scopes are not summed.
 
-The actual disposable/retained disk split, original telemetry-file ownership,
-durable catalog, canonical deletion protection and restart adoption are still
-being implemented. The installed profile remains inactive; these results add no
-native transfer, new WAN measurement, accepted capacity envelope or FIPS claim.
+The [retained-catalog successor](https://github.com/R4-Laboratories/SpiralCore/blob/8476d7583e083e02d8b6bc571fc505815b85de90/docs/network/evidence/2026-11-04-retained-catalog/README.md)
+implements the original retained-file owner, disposable/retained disk split,
+bounded catalog and durable denial after catalog loss. Actual fault tests cover
+new append and restart after process exit, unreadable records and changed
+directory privacy. Final focused five entries overlap the 152 passing library
+entries; the broad run ignores two helper cases. Scoped Clippy passes with three
+unconnected-constructor warnings. All 134 supplied compiled inputs match Git;
+independent source/privacy/publication reviews and original failures are retained.
+Incomplete-I/O recovery, closed-debt adoption, actual producer/controller coupling
+and positive installed-native retirement remain open. The installed profile
+remains inactive; these results add no native transfer, new WAN measurement,
+accepted capacity envelope or FIPS claim.
 Upstream MVM has also changed endpoint wait-failure finality, transient
 volume/secret-session ownership and HVF stop handling; the final integration must
 preserve those semantics before its own qualification. Earlier witnesses retain
