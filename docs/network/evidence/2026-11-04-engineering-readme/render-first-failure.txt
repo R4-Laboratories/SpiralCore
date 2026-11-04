@@ -1,0 +1,14 @@
+GitHub rendered README check, branch codex/spiralcore-engineering-readme
+First head:1b065103442a371ef2d20743cf9cf1e824f16e5e
+Observed through the actual browser DOM after Mermaid loaded.
+Object and TUN sequences rendered; MVM sequence failed:
+
+Unable to render rich display Parse error on line9:
+... the object verifies B-->>H: Separat
+Expecting arrow token, got NEWLINE.
+
+Original label: B->>B: Apply frame; publish only when the object verifies
+The semicolon terminates Mermaid's statement. Replace with:
+B->>B: Apply frame and publish only after object verification
+
+This was caught before PR merge; no product or measurement changed.
