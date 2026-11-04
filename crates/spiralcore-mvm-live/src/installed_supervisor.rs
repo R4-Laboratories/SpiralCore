@@ -5,6 +5,7 @@ use crate::{
         HostTransportBudget, TransportBudgetConfig, TransportBudgetError, TransportLimits,
     },
     installed_owner::{Epoch, InstallationOwner, OwnerError},
+    installed_resources::{ManagedResourceBudget, ManagedResourceError},
 };
 use sha2::{Digest, Sha256};
 use std::{
@@ -55,6 +56,7 @@ pub enum SupervisorError {
     Profile,
     Owner(OwnerError),
     Budget(TransportBudgetError),
+    Resources(ManagedResourceError),
     Io(io::Error),
 }
 impl fmt::Display for SupervisorError {
@@ -73,6 +75,11 @@ impl From<TransportBudgetError> for SupervisorError {
         Self::Budget(error)
     }
 }
+impl From<ManagedResourceError> for SupervisorError {
+    fn from(error: ManagedResourceError) -> Self {
+        Self::Resources(error)
+    }
+}
 type Result<T> = std::result::Result<T, SupervisorError>;
 
 pub(crate) struct InstalledAuthority {
@@ -87,6 +94,11 @@ impl InstalledAuthority {
     }
     pub(crate) fn close_admission(&self) {
         self.open.store(false, Ordering::Release);
+    }
+    pub(crate) fn resource_epoch_current(&self) -> bool {
+        self.owner
+            .lock()
+            .is_ok_and(|owner| owner.active_binding(self.epoch).is_ok())
     }
     fn workers(&self) -> Result<std::sync::MutexGuard<'_, WorkerLedger>> {
         self.workers.lock().map_err(|_| {
@@ -151,6 +163,7 @@ enum Phase {
 pub struct InstalledSupervisor {
     authority: Arc<InstalledAuthority>,
     budget: HostTransportBudget,
+    resources: ManagedResourceBudget,
     phase: Phase,
     session_started: bool,
 }
@@ -167,15 +180,20 @@ impl InstalledSupervisor {
             workers: Mutex::new(WorkerLedger::default()),
         });
         let budget = HostTransportBudget::new_installed(config.transport(), authority.clone())?;
+        let resources = ManagedResourceBudget::new_installed(authority.clone());
         Ok(Self {
             authority,
             budget,
+            resources,
             phase: Phase::Open,
             session_started: false,
         })
     }
     pub fn budget(&self) -> &HostTransportBudget {
         &self.budget
+    }
+    pub fn managed_resources(&self) -> &ManagedResourceBudget {
+        &self.resources
     }
     pub(crate) fn claim_session(&mut self) -> Result<()> {
         if self.phase != Phase::Open || !self.authority.admission_open() || self.session_started {
@@ -396,6 +414,9 @@ impl InstalledSupervisor {
             return Err(SupervisorError::State);
         }
         if snapshot.usage != TransportLimits::default() {
+            return Err(SupervisorError::Busy);
+        }
+        if !self.resources.ensure_drained()? {
             return Err(SupervisorError::Busy);
         }
         {

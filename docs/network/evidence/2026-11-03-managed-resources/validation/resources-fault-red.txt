@@ -1,0 +1,154 @@
+   Compiling installed-supervisor-harness v0.1.0 (/var/tmp/spiralcore-installed-supervisor-20261103/source/crates/spiralcore-mvm-live/tests/installed-supervisor-harness)
+warning: variants `Sender`, `Receiver`, and `Verify` are never constructed
+   --> src/../../../src/installed_supervisor.rs:113:5
+    |
+112 | pub(crate) enum WorkerRole {
+    |                 ---------- variants in this enum
+113 |     Sender,
+    |     ^^^^^^
+114 |     Receiver,
+    |     ^^^^^^^^
+115 |     Verify,
+    |     ^^^^^^
+    |
+    = note: `WorkerRole` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: struct `WorkerGrant` is never constructed
+   --> src/../../../src/installed_supervisor.rs:120:19
+    |
+120 | pub(crate) struct WorkerGrant {
+    |                   ^^^^^^^^^^^
+
+warning: method `close_admission` is never used
+   --> src/../../../src/installed_supervisor.rs:127:19
+    |
+126 | impl WorkerGrant {
+    | ---------------- method in this implementation
+127 |     pub(crate) fn close_admission(&self) {
+    |                   ^^^^^^^^^^^^^^^
+
+warning: struct `WorkerBinding` is never constructed
+   --> src/../../../src/installed_supervisor.rs:133:19
+    |
+133 | pub(crate) struct WorkerBinding {
+    |                   ^^^^^^^^^^^^^
+
+warning: fields `serial` and `role` are never read
+   --> src/../../../src/installed_supervisor.rs:144:5
+    |
+143 | struct WorkerSlot {
+    |        ---------- fields in this struct
+144 |     serial: u64,
+    |     ^^^^^^
+145 |     role: WorkerRole,
+    |     ^^^^
+
+warning: field `serial` is never read
+   --> src/../../../src/installed_supervisor.rs:152:5
+    |
+151 | struct WorkerLedger {
+    |        ------------ field in this struct
+152 |     serial: u64,
+    |     ^^^^^^
+
+warning: field `session_started` is never read
+   --> src/../../../src/installed_supervisor.rs:168:5
+    |
+163 | pub struct InstalledSupervisor {
+    |            ------------------- field in this struct
+...
+168 |     session_started: bool,
+    |     ^^^^^^^^^^^^^^^
+
+warning: multiple methods are never used
+   --> src/../../../src/installed_supervisor.rs:198:19
+    |
+170 | impl InstalledSupervisor {
+    | ------------------------ methods in this implementation
+...
+198 |     pub(crate) fn claim_session(&mut self) -> Result<()> {
+    |                   ^^^^^^^^^^^^^
+...
+209 |     pub(crate) fn worker_binding(&mut self, grant: &WorkerGrant) -> Result<WorkerBinding> {
+    |                   ^^^^^^^^^^^^^^
+...
+250 |     pub(crate) fn reserve_worker(&mut self, role: WorkerRole) -> Result<WorkerGrant> {
+    |                   ^^^^^^^^^^^^^^
+...
+281 |     pub(crate) fn spawn_worker(
+    |                   ^^^^^^^^^^^^
+...
+326 |     fn worker_slot<'a>(
+    |        ^^^^^^^^^^^
+...
+344 |     pub(crate) fn bind_worker(
+    |                   ^^^^^^^^^^^
+...
+363 |     pub(crate) fn try_reap_worker(&mut self, grant: &WorkerGrant) -> Result<Option<ExitStatus>> {
+    |                   ^^^^^^^^^^^^^^^
+...
+386 |     pub(crate) fn confirm_worker_exit(&mut self, grant: &WorkerGrant) -> Result<()> {
+    |                   ^^^^^^^^^^^^^^^^^^^
+
+warning: method `close_admission` is never used
+   --> src/../../../src/installed_supervisor.rs:127:19
+    |
+126 | impl WorkerGrant {
+    | ---------------- method in this implementation
+127 |     pub(crate) fn close_admission(&self) {
+    |                   ^^^^^^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: method `claim_session` is never used
+   --> src/../../../src/installed_supervisor.rs:198:19
+    |
+170 | impl InstalledSupervisor {
+    | ------------------------ method in this implementation
+...
+198 |     pub(crate) fn claim_session(&mut self) -> Result<()> {
+    |                   ^^^^^^^^^^^^^
+
+warning: `installed-supervisor-harness` (lib) generated 8 warnings
+warning: `installed-supervisor-harness` (lib test) generated 3 warnings (1 duplicate)
+    Finished `release` profile [optimized] target(s) in 1.75s
+     Running unittests src/lib.rs (/var/tmp/spiralcore-installed-supervisor-20261103/component-target/release/deps/installed_supervisor_harness-fca87907f678cc2e)
+
+running 18 tests
+test host_budget::tests::installed_authority::poison_closes_installed_worker_authority_immediately ... ok
+test host_budget::tests::installed_authority::underflow_closes_installed_worker_authority_immediately ... ok
+test host_budget::tests::poisoned_ledger_refuses_snapshot_and_admission ... ok
+test host_budget::tests::underflow_fences_without_clamping_and_refusals_saturate ... ok
+test installed_owner::binding_tests::active_binding_returns_only_original_identity_and_current_active_epoch ... ok
+test installed_owner::binding_tests::active_binding_uses_the_existing_canonical_storage_fence ... ok
+test installed_owner::tests::failed_initial_intent_barriers_preserve_original_state_and_fence_reopen ... ok
+test installed_owner::tests::failed_postcommit_cleanup_sync_fences_owner_but_absent_marker_allows_durable_successor ... ok
+test installed_owner::tests::holders_aba_must_reject_the_actual_wrong_fd_and_never_retire_live_original_holders ... ok
+test installed_owner::tests::postrename_directory_sync_failure_must_survive_owner_drop_as_a_durable_fence ... ok
+test installed_resources::tests::accounting_corruption_never_panics_refunds_or_releases_exclusion ... FAILED
+test installed_supervisor::drain_tests::close_and_drain_reaps_exact_child_but_retirement_still_requires_holder_exclusion ... ok
+test installed_supervisor::spawn_tests::binding_requires_the_original_live_child_and_fresh_canonical_owner_state ... ok
+test installed_supervisor::spawn_tests::definite_spawn_failure_closes_launch_and_clears_only_its_proven_empty_slot ... ok
+test installed_supervisor::spawn_tests::owned_spawn_retains_live_child_until_eof_and_rejects_another_controllers_grant ... ok
+test installed_supervisor::tests::controller_drop_reaps_its_exact_live_child_before_releasing_owner_exclusion ... ok
+test installed_supervisor::tests::live_children_block_finish_and_reaped_failure_closes_launch_but_allows_global_retirement ... ok
+test installed_supervisor::tests::two_worker_slots_require_reaping_and_confirmation_and_reject_stale_tokens ... ok
+
+failures:
+
+---- installed_resources::tests::accounting_corruption_never_panics_refunds_or_releases_exclusion stdout ----
+
+thread 'installed_resources::tests::accounting_corruption_never_panics_refunds_or_releases_exclusion' (2510088) panicked at src/../../../src/installed_resources.rs:307:28:
+index out of bounds: the len is 32 but the index is 32
+
+thread 'installed_resources::tests::accounting_corruption_never_panics_refunds_or_releases_exclusion' (2510088) panicked at src/../../../src/installed_resources.rs:430:13:
+assertion failed: std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| drop(lease))).is_ok()
+
+
+failures:
+    installed_resources::tests::accounting_corruption_never_panics_refunds_or_releases_exclusion
+
+test result: FAILED. 17 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.12s
+
+error: test failed, to rerun pass `--lib`
