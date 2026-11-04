@@ -1,7 +1,7 @@
 # Networking delivery status
 
 Snapshot: **2026-11-04**, checked against published `origin/main`
-`d8e90e98e5049721267d7204004132d34c05cb26` and the live GitHub issue graph.
+`673c3b9fb795cbf430cd712eeb39587449532026` and the live GitHub issue graph.
 This page separates accepted components, measured experiments and unmerged work.
 The [README](../../README.md) is the architecture/results entry point;
 [issue #42](https://github.com/R4-Laboratories/SpiralCore/issues/42) remains the
@@ -51,8 +51,8 @@ Development checkpoints are published for source inspection:
 | Repository / development branch | Immutable checkpoint | Acceptance |
 |---|---|---|
 | [SpiralCore core checkpoint](https://github.com/R4-Laboratories/SpiralCore/tree/codex/spiralcore-core-checkpoint-20261104) | [`ca5d9ca1266541f71cc5ab7d0b17f4acf14d06b1`](https://github.com/R4-Laboratories/SpiralCore/commit/ca5d9ca1266541f71cc5ab7d0b17f4acf14d06b1) | Non-main source checkpoint |
-| [SpiralCore integration checkpoint](https://github.com/R4-Laboratories/SpiralCore/tree/codex/spiralcore-integration-checkpoint-20261104) | [`665e23349e8cf3c644af989b2069815f7885b779`](https://github.com/R4-Laboratories/SpiralCore/commit/665e23349e8cf3c644af989b2069815f7885b779) | Locked graph and scoped parent/disk tests; full installed acceptance open |
-| [MVM fork installed-service checkpoint](https://github.com/Casey-allard/mvm/tree/codex/spiralcore-installed-service-checkpoint-20261104) | [`8b833aee8be5c1be9ce0d1197b6b98d4d03625f6`](https://github.com/Casey-allard/mvm/commit/8b833aee8be5c1be9ce0d1197b6b98d4d03625f6) | Non-main contribution-preparation fork |
+| [SpiralCore integration checkpoint](https://github.com/R4-Laboratories/SpiralCore/tree/codex/spiralcore-integration-checkpoint-20261104) | [`7ff84ca7f808e1bc6d9c6d4c2ba5599207c7be47`](https://github.com/R4-Laboratories/SpiralCore/commit/7ff84ca7f808e1bc6d9c6d4c2ba5599207c7be47) | Locked public graph, scoped parent/cleanup tests; full installed acceptance open |
+| [MVM fork installed-service checkpoint](https://github.com/Casey-allard/mvm/tree/codex/spiralcore-unused-preflight-20261104) | [`77752e1967d20caf8bad710de864a0ccd967f9e6`](https://github.com/Casey-allard/mvm/commit/77752e1967d20caf8bad710de864a0ccd967f9e6) | Non-main contribution-preparation fork |
 
 The [immutable graph packet](https://github.com/R4-Laboratories/SpiralCore/tree/4cece3276120606b85de91c554c3d96dc6e5f6d1/docs/network/evidence/2026-11-04-immutable-graph)
 records an actual locked release build and seven installed-parent component
@@ -72,9 +72,25 @@ strict Clippy also passed. Three GitHub
 fork pushes failed with server errors; the exact successor commit and its
 original failure/success records are backed up in a
 [verified incremental source bundle](https://github.com/R4-Laboratories/SpiralCore/blob/665e23349e8cf3c644af989b2069815f7885b779/docs/development/mvm-helper-deadline-20261104.md).
-The fork baseline above has not advanced. None of these checkpoints qualifies
-the full combined service, WAN performance or formal upstream acceptance.
-Branches may advance; immutable commits identify each recorded source.
+The fork publication subsequently recovered: the exact helper files are now
+included in the `77752e19` checkpoint above. The failed pushes and bundle remain
+historical evidence.
+
+The [latest parent/cancellation packet](https://github.com/R4-Laboratories/SpiralCore/blob/7ff84ca7f808e1bc6d9c6d4c2ba5599207c7be47/docs/network/evidence/2026-11-04-unused-parent/README.md)
+records actual locked Linux release builds against MVM777, shared coreCA and
+adapter13d, without local dependency overrides. Four retirement-policy, three
+resource-accounting and eight parent integration entries passed; the eight
+include one API-shape test. A separate opaque Mock-refusal harness and three
+unused-cancellation tests passed. Protected source/executable identities match.
+These scopes overlap older tests; no guest is booted. Safe cancellation requires
+the same sealed unused preparation and actual private owner, and prior admission
+or uncertain effects refuse. Positive native retirement and resident endpoint
+ownership remain open. Known unconnected endpoint/disk dead-code warnings remain
+in the build receipt.
+
+None of these checkpoints qualifies the full combined service, WAN performance
+or formal upstream acceptance. Branches may advance; immutable commits identify
+each recorded source.
 
 The development tree contains canonical resident-parent and launcher work,
 original-process guardian custody, shared parent partitions, disposable endpoint

@@ -45,12 +45,14 @@ Unmerged work includes the canonical resident parent, exact-process guardian
 custody, disposable endpoint-disk inventory, admitted FlowMux/access activation,
 and Small/Ordered/readiness candidates. These are not part of PR72's accepted
 source. [Current checkpoints, failures and open gates →](docs/network/current-status.md)
-Published development code: [SpiralCore integration `665e233`](https://github.com/R4-Laboratories/SpiralCore/tree/665e23349e8cf3c644af989b2069815f7885b779)
-and [MVM fork baseline `8b833aee`](https://github.com/Casey-allard/mvm/tree/8b833aee8be5c1be9ce0d1197b6b98d4d03625f6).
-The integration branch records the locked dependency graph, scoped parent and
-disk-retirement tests, and a recoverable source bundle for newer helper fixes.
-These checkpoints are available for review; installed integration and performance
-still require acceptance on the final combined source.
+Published development code: [SpiralCore integration `7ff84ca7`](https://github.com/R4-Laboratories/SpiralCore/tree/7ff84ca7f808e1bc6d9c6d4c2ba5599207c7be47)
+and [MVM fork `77752e19`](https://github.com/Casey-allard/mvm/tree/77752e1967d20caf8bad710de864a0ccd967f9e6).
+The latest [lifecycle checkpoint and test report](https://github.com/R4-Laboratories/SpiralCore/blob/7ff84ca7f808e1bc6d9c6d4c2ba5599207c7be47/docs/network/evidence/2026-11-04-unused-parent/README.md)
+records a locked public dependency graph, protected parent/cancellation tests and
+original-owner cleanup rules. The newer helper fixes are now published directly
+in the MVM fork; the earlier source bundle remains a historical recovery record.
+These checkpoints are available for review; native installed integration,
+capacity and WAN performance still require acceptance on the final combined source.
 
 <a id="where-spiralcore-sits-in-the-network-stack"></a>
 
