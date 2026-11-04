@@ -1,0 +1,106 @@
+--- a/crates/spiralcore-mvm-flowmux/src/tcp.rs
++++ b/crates/spiralcore-mvm-flowmux/src/tcp.rs
+@@ -122,0 +123 @@
++    delivery_fenced: AtomicBool,
+@@ -128,0 +130,4 @@
++        self.delivery_fenced.store(true, Ordering::Release);
++        self.close();
++    }
++    fn close(&self) {
+@@ -132 +137,6 @@
+-    fn check(&self) -> Result<()> {
++    fn stop_on_drop(&self) {
++        if !self.stopped.load(Ordering::Acquire) {
++            self.stop();
++        }
++    }
++    fn check_delivery(&self) -> Result<()> {
+@@ -134 +144 @@
+-        if self.stopped.load(Ordering::Acquire) {
++        if self.delivery_fenced.load(Ordering::Acquire) {
+@@ -135,0 +146,8 @@
++        } else {
++            Ok(())
++        }
++    }
++    fn check(&self) -> Result<()> {
++        self.check_delivery()?;
++        if self.stopped.load(Ordering::Acquire) {
++            Err(Error::Closed)
+@@ -152,2 +170,5 @@
+-    pub(crate) fn check_scope(&self) -> Result<()> {
+-        self.control.check_scope()
++    pub(crate) fn check_delivery(&self) -> Result<()> {
++        self.control.check_delivery()
++    }
++    pub(crate) fn complete(&self) {
++        self.control.close();
+@@ -238,0 +260 @@
++            delivery_fenced: AtomicBool::new(false),
+@@ -441 +463 @@
+-            self.control.stop();
++            self.control.stop_on_drop();
+@@ -601 +623 @@
+-            self.control.stop();
++            self.control.stop_on_drop();
+--- a/crates/spiralcore-mvm-flowmux/src/stream.rs
++++ b/crates/spiralcore-mvm-flowmux/src/stream.rs
+@@ -144 +144 @@
+-            self.inner.cancellation.check_scope()?;
++            self.inner.cancellation.check_delivery()?;
+@@ -164 +164 @@
+-            self.inner.cancellation.check_scope()?;
++            self.inner.cancellation.check_delivery()?;
+--- a/crates/spiralcore-mvm-flowmux/src/duplex.rs
++++ b/crates/spiralcore-mvm-flowmux/src/duplex.rs
+@@ -137,0 +138 @@
++            completed: false,
+@@ -393 +394 @@
+-        self.cancellation.check_scope()?;
++        self.cancellation.check_delivery()?;
+@@ -399 +400 @@
+-                self.cancellation.check_scope()?;
++                self.cancellation.check_delivery()?;
+@@ -438,6 +439,7 @@
+-        let result = self
+-            .child
+-            .take()
+-            .ok_or(Error::Worker)?
+-            .join()
+-            .map_err(|_| Error::Worker)?;
++        let result = match self.child.take() {
++            Some(child) => child.join().unwrap_or(Err(Error::Worker)),
++            None => Err(Error::Worker),
++        };
++        if expired || result.is_err() {
++            self.cancellation.cancel();
++        }
+@@ -449 +450,0 @@
+-        self.cancellation.cancel();
+@@ -450,0 +452 @@
++            self.cancellation.cancel();
+@@ -456,0 +459 @@
++    completed: bool,
+@@ -473,0 +477,6 @@
++    fn complete(&mut self) -> Result<(Counters, Counters)> {
++        let counters = (lock(&self.tx)?.counters(), self.rx.counters());
++        self.completed = true;
++        self.cancellation.complete();
++        Ok(counters)
++    }
+@@ -545 +554 @@
+-                return Ok((lock(&self.tx)?.counters(), self.rx.counters()));
++                return self.complete();
+@@ -550,0 +560,3 @@
++                    // A peer can observe our FIN before the writing thread
++                    // publishes local_closed. Preserve the original TX barrier
++                    // before deciding whether this EOF is a clean completion.
+@@ -553 +565,2 @@
+-                        return Ok((tx.counters(), self.rx.counters()));
++                        drop(tx);
++                        return self.complete();
+@@ -605 +618,3 @@
+-        self.cancellation.cancel();
++        if !self.completed {
++            self.cancellation.cancel();
++        }
