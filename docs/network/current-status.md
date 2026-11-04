@@ -1,7 +1,7 @@
 # Networking delivery status
 
 Snapshot: **2026-11-04**, checked against published `origin/main`
-`b1fae72688d81e54710d935114ee1445e78c8a9c` and the live GitHub issue graph.
+`0358a238f781ab8cbd14ee9fe092cf0c966597db` and the live GitHub issue graph.
 This page separates accepted components, measured experiments and unmerged work.
 The [README](../../README.md) is the architecture/results entry point;
 [issue #42](https://github.com/R4-Laboratories/SpiralCore/issues/42) remains the
@@ -52,8 +52,8 @@ Development checkpoints are published for source inspection:
 | Repository / development branch | Immutable checkpoint | Acceptance |
 |---|---|---|
 | [SpiralCore core checkpoint](https://github.com/R4-Laboratories/SpiralCore/tree/codex/spiralcore-tls-startup-20261104) | [`1025d87d048b15cefd483b4c11c70a6e029cb29c`](https://github.com/R4-Laboratories/SpiralCore/commit/1025d87d048b15cefd483b4c11c70a6e029cb29c) | Original reader/deadline, terminal completion and startup EOF component; 43 Linux checks, installed/native/platform acceptance open |
-| [SpiralCore integration checkpoint](https://github.com/R4-Laboratories/SpiralCore/tree/codex/spiralcore-parent-host-agent-20261104) | [`0bd0f4d0fc8200467a7164c7d6564adeadf27595`](https://github.com/R4-Laboratories/SpiralCore/commit/0bd0f4d0fc8200467a7164c7d6564adeadf27595) | Original resident/endpoint/store and helper custody; actual daemon/signer shutdown retains credits through registrar aliases; full installed acceptance open |
-| [MVM fork installed-service checkpoint](https://github.com/Casey-allard/mvm/tree/codex/spiralcore-unused-preflight-20261104) | [`f708539f0c2317acf2e74f8f7833d6072a5abafe`](https://github.com/Casey-allard/mvm/commit/f708539f0c2317acf2e74f8f7833d6072a5abafe) | Non-main contribution-preparation fork |
+| [SpiralCore integration checkpoint](https://github.com/R4-Laboratories/SpiralCore/tree/codex/spiralcore-parent-config-20261104) | [`56db5291bf53433340eaf7102041370ee48aa7cc`](https://github.com/R4-Laboratories/SpiralCore/commit/56db5291bf53433340eaf7102041370ee48aa7cc) | Original config/opaque-admission binding and atomic registration facts; 19 parent checks and earlier resident/endpoint/helper checkpoints; full installed acceptance open |
+| [MVM fork installed-service checkpoint](https://github.com/Casey-allard/mvm/tree/codex/spiralcore-parent-config-20261104) | [`bef4146c0de18b22ac392118acfd898a369cc64c`](https://github.com/Casey-allard/mvm/commit/bef4146c0de18b22ac392118acfd898a369cc64c) | Three additive original-owner/config/backend APIs; non-main contribution-preparation fork |
 
 The [immutable graph packet](https://github.com/R4-Laboratories/SpiralCore/tree/4cece3276120606b85de91c554c3d96dc6e5f6d1/docs/network/evidence/2026-11-04-immutable-graph)
 records an actual locked release build and seven installed-parent component
@@ -134,6 +134,27 @@ members verify, and scoped Clippy passes with 18 acknowledged unwired-code
 warnings. Independent source review preserves the original HOLD and successor
 PASS. Shipping profile, actual opaque-plan/config/anchor hook, per-VM registration
 and resident/native integration remain open.
+
+The [config-admission successor](https://github.com/R4-Laboratories/SpiralCore/blob/56db5291bf53433340eaf7102041370ee48aa7cc/docs/network/evidence/2026-11-04-parent-config/README.md)
+binds actual opaque admission to the SAME original config/VM anchor and reserves
+registration facts before one atomic lifecycle commit. An unsupported preflight
+first consumed admission in an actual regression; the fix leaves it available
+for a corrected config. Four new cases and 15 existing parent checks pass on the
+final public Git dependency graph; one real-helper case is ignored by this run.
+Strict Clippy exits zero with 13 acknowledged unconnected Rust warnings, all 131
+supplied inputs match the code candidate, and the SDK tree matches its commit.
+The earlier mixed Core/Contract graph and extraction/compiler failures remain
+recorded. The 854,025-byte packet retains 83 hashed members and its index. These
+checks boot no VM, register no VM and transfer no object; source/model/native
+activation gates remain separate.
+
+A native macOS probe of the newer installed audit capability found that its
+process-exit event descriptor cannot cross the private descriptor-transfer path;
+a separate truncated-ancillary case also exposed a receiver failure. Both are
+recorded in [the platform checkpoint](https://github.com/R4-Laboratories/SpiralCore/issues/46#issuecomment-6639662172).
+An early refusal and native lifetime-pipe/checked-receiver implementation are
+active work. Linux component success does not qualify that new macOS mapping;
+the macOS host role remains a required final delivery gate.
 
 The current provisional two-endpoint collector allowance plus helper already
 exceeds the existing 256 MiB tenant ceiling before carrier/core and other terms.
