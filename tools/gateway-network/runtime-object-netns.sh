@@ -16,6 +16,10 @@ capture_counters() {
 capture_drained() {
   capture_counters "$1" | jq -e 'if .captured>0 and .captured==.received and .dropped==0 then . else false end'
 }
+qdisc_drained() {
+  jq -e '[.[]|select(.kind=="netem")]|length==1 and .[0].qlen==0 and .[0].drops>=0 and
+    .[0].options.limit==256 and .[0].options.delay.delay==0.04 and .[0].options.rate.rate==1250000' "$1"
+}
 receipt_parity() {
   jq -n -e --argjson invariants "${3:-false}" --slurpfile before "$1" --slurpfile after "$2" '
     def preserved: [.operations[]|select(($invariants|not) or (.label=="generated" or .label=="opaque-edited" or .label=="repeat" or .label=="opaque-edited-repeat"))|{
@@ -81,6 +85,7 @@ validate_registration() {
 }
 if [ "$#" = 2 ] && [ "$1" = validate ]; then validate_registration "$2"; exit; fi
 if [ "$#" = 2 ] && [ "$1" = capture-drained ]; then capture_drained "$2"; exit; fi
+if [ "$#" = 2 ] && [ "$1" = qdisc-drained ]; then qdisc_drained "$2"; exit; fi
 if [ "$#" = 3 ] && [ "$1" = receipt-parity ]; then receipt_parity "$2" "$3"; exit; fi
 if [ "$#" = 3 ] && [ "$1" = cpu-invariants ]; then receipt_parity "$2" "$3" true; exit; fi
 { [ "$#" = 6 ] || [ "$#" = 7 ]; } && [ "$1" = run ] || { echo "usage: $0 validate REGISTRATION | run NEW_OUT SERVICE PROBE FIXTURES REGISTRATION [BASELINE_SERVICE]" >&2; exit 2; }
@@ -484,12 +489,30 @@ run_session() {
   jq -e --slurpfile c "$dir/capture-counters.json" \
     '.other_packets==0 and .packets>0 and .packets==$c[0].captured and $c[0].captured==$c[0].received and $c[0].dropped==0' \
     "$dir/capture.json" > "$dir/capture-accepted.txt"
-  qdisc_record "$dir" measurement-after
+  if [ "$profile" = wan80-10 ]; then
+    # The UDP-filtered capture can drain while unrelated link/control packets
+    # remain in netem. Observe both actual queues until empty; never flush/reset
+    # them or accept a nonempty snapshot. Preserve every bounded observation.
+    qdisc_empty=false
+    for poll in $(seq 1 50); do
+      qdisc_record "$dir" "drain-$poll"
+      if qdisc_drained "$dir/tc-left-drain-$poll.json" > "$dir/tc-left-accepted.txt" &&
+         qdisc_drained "$dir/tc-right-drain-$poll.json" > "$dir/tc-right-accepted.txt"; then
+        for link in left right; do
+          cp "$dir/tc-$link-drain-$poll.json" "$dir/tc-$link-measurement-after.json"
+        done
+        qdisc_empty=true
+        break
+      fi
+      sleep 0.1
+    done
+    [ "$qdisc_empty" = true ] || { echo 'netem queues did not drain within bounded wait' >&2; return 1; }
+  else
+    qdisc_record "$dir" measurement-after
+  fi
   if [ "$profile" = wan80-10 ]; then
     for link in left right; do
-      jq -e '[.[]|select(.kind=="netem")]|length==1 and .[0].qlen==0 and .[0].drops>=0 and
-        .[0].options.limit==256 and .[0].options.delay.delay==0.04 and .[0].options.rate.rate==1250000' \
-        "$dir/tc-$link-measurement-after.json" > "$dir/tc-$link-accepted.txt"
+      qdisc_drained "$dir/tc-$link-measurement-after.json" > "$dir/tc-$link-accepted.txt"
     done
   fi
   du -sk "$private/store-$scope-client" "$private/store-$scope-server" > "$dir/store-allocated-kib.txt"

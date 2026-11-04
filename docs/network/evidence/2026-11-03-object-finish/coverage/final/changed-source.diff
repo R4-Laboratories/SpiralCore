@@ -1,0 +1,51 @@
+diff --git a/crates/spiralcore-gateway/src/object_channel.rs b/crates/spiralcore-gateway/src/object_channel.rs
+index 83dcdcaf..1ade1b58 100644
+--- a/crates/spiralcore-gateway/src/object_channel.rs
++++ b/crates/spiralcore-gateway/src/object_channel.rs
+@@ -303 +303,6 @@ impl ObjectChannel {
+-            self.acknowledged(deadline, cancel).await
++            self.acknowledged(deadline, cancel).await?;
++            bounded(deadline, cancel, async {
++                self.peer.object_remote_finished().await?;
++                Ok(())
++            })
++            .await
+@@ -319 +324,6 @@ impl ObjectChannel {
+-            self.acknowledged(deadline, cancel).await
++            self.acknowledged(deadline, cancel).await?;
++            bounded(deadline, cancel, async {
++                self.peer.object_close_and_drain().await?;
++                Ok(())
++            })
++            .await
+diff --git a/crates/spiralcore-gateway/src/object_service.rs b/crates/spiralcore-gateway/src/object_service.rs
+index d232cb95..be6227b2 100644
+--- a/crates/spiralcore-gateway/src/object_service.rs
++++ b/crates/spiralcore-gateway/src/object_service.rs
+@@ -589 +589 @@ async fn run_inner(config: Config, stats: StatsOutput, mut ready: OwnedOutput) -
+-            summary["timing"]=json!("operation includes input read/hash, codec selection and commit reply; setup/group preparation/seeds and finish/readback separately retained; process CPU includes nested work; final JSON write excluded; UDP counters snapshot before endpoint close, packet capture includes close");
++            summary["timing"]=json!("operation includes input read/hash, codec selection and commit reply; setup/group preparation/seeds and finish/readback separately retained; process CPU includes nested work; final JSON write excluded; UDP counters snapshot after object finish and observed close, responder includes endpoint drain; packet capture continues through final teardown");
+diff --git a/crates/spiralcore-gateway/src/transport.rs b/crates/spiralcore-gateway/src/transport.rs
+index 5738c0ed..2f0484ec 100644
+--- a/crates/spiralcore-gateway/src/transport.rs
++++ b/crates/spiralcore-gateway/src/transport.rs
+@@ -363,0 +364,19 @@ impl Peer {
++    /// Only after the object stream's end/FIN checks: retain initiator I/O
++    /// until the responder confirms its acknowledged terminal send by close0.
++    pub(crate) async fn object_remote_finished(&self) -> Result<()> {
++        self.object_connection()?;
++        match self.connection.closed().await {
++            quinn::ConnectionError::ApplicationClosed(close) if close.error_code == 0u8.into() => {
++                Ok(())
++            }
++            error => Err(Error::Connection(error)),
++        }
++    }
++    /// The object profile owns a single connection on this private endpoint.
++    /// Caller bounds the entire close/drain with its original deadline/token.
++    pub(crate) async fn object_close_and_drain(&self) -> Result<()> {
++        self.object_connection()?;
++        self.close();
++        self.endpoint.wait_idle().await;
++        Ok(())
++    }

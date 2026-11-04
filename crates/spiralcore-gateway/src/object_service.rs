@@ -586,7 +586,7 @@ async fn run_inner(config: Config, stats: StatsOutput, mut ready: OwnedOutput) -
             summary["udp"]=serde_json::to_value(channel.udp_counters())?;
             summary["process_cpu_us"]=json!(cpu_us()?-whole_cpu);
             summary["wall_us"]=json!(whole_start.elapsed().as_micros());
-            summary["timing"]=json!("operation includes input read/hash, codec selection and commit reply; setup/group preparation/seeds and finish/readback separately retained; process CPU includes nested work; final JSON write excluded; UDP counters snapshot before endpoint close, packet capture includes close");
+            summary["timing"]=json!("operation includes input read/hash, codec selection and commit reply; setup/group preparation/seeds and finish/readback separately retained; process CPU includes nested work; final JSON write excluded; UDP counters snapshot after object finish and observed close, responder includes endpoint drain; packet capture continues through final teardown");
             write_stats(&stats,&summary)?;
             Ok(())
         }).await?
