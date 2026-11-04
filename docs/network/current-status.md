@@ -1,7 +1,7 @@
 # Networking delivery status
 
 Snapshot: **2026-11-04**, checked against published `origin/main`
-`0358a238f781ab8cbd14ee9fe092cf0c966597db` and the live GitHub issue graph.
+`fdd54faeff4296916a9dd2a616a42a6c642b226e` and the live GitHub issue graph.
 This page separates accepted components, measured experiments and unmerged work.
 The [README](../../README.md) is the architecture/results entry point;
 [issue #42](https://github.com/R4-Laboratories/SpiralCore/issues/42) remains the
@@ -52,8 +52,26 @@ Development checkpoints are published for source inspection:
 | Repository / development branch | Immutable checkpoint | Acceptance |
 |---|---|---|
 | [SpiralCore core checkpoint](https://github.com/R4-Laboratories/SpiralCore/tree/codex/spiralcore-tls-startup-20261104) | [`1025d87d048b15cefd483b4c11c70a6e029cb29c`](https://github.com/R4-Laboratories/SpiralCore/commit/1025d87d048b15cefd483b4c11c70a6e029cb29c) | Original reader/deadline, terminal completion and startup EOF component; 43 Linux checks, installed/native/platform acceptance open |
-| [SpiralCore integration checkpoint](https://github.com/R4-Laboratories/SpiralCore/tree/codex/spiralcore-parent-config-20261104) | [`56db5291bf53433340eaf7102041370ee48aa7cc`](https://github.com/R4-Laboratories/SpiralCore/commit/56db5291bf53433340eaf7102041370ee48aa7cc) | Original config/opaque-admission binding and atomic registration facts; 19 parent checks and earlier resident/endpoint/helper checkpoints; full installed acceptance open |
+| [SpiralCore integration checkpoint](https://github.com/R4-Laboratories/SpiralCore/tree/codex/spiralcore-telemetry-capacity-20261104) | [`f7d06da6b4aa148cd348dd91df3342f1bc53e399`](https://github.com/R4-Laboratories/SpiralCore/commit/f7d06da6b4aa148cd348dd91df3342f1bc53e399) | Resident-owned original helper and mandatory telemetry capacity refusal; 23 ordinary parent checks, strict Clippy and earlier separately executed helper witness; full installed acceptance open |
 | [MVM fork installed-service checkpoint](https://github.com/Casey-allard/mvm/tree/codex/spiralcore-parent-config-20261104) | [`bef4146c0de18b22ac392118acfd898a369cc64c`](https://github.com/Casey-allard/mvm/commit/bef4146c0de18b22ac392118acfd898a369cc64c) | Three additive original-owner/config/backend APIs; non-main contribution-preparation fork |
+
+The latest [resident/helper witness](https://github.com/R4-Laboratories/SpiralCore/blob/7a080af1049455f6cb0e07f511cb467d05a902e8/docs/network/evidence/2026-11-04-resident-helper/README.md)
+executes the original canonical daemon/signer through the resident's same backend,
+then verifies shutdown and final-alias resource drain. It registers no VM and
+boots no guest. The [capacity prerequisite](https://github.com/R4-Laboratories/SpiralCore/blob/f7d06da6b4aa148cd348dd91df3342f1bc53e399/docs/network/evidence/2026-11-04-retained-telemetry/README.md)
+records a reproduced undersized-total defect and pre-effect refusal: 23 ordinary
+parent checks pass, two actual-helper cases remain ignored in that invocation,
+and strict Clippy emits no warnings. Both packets bind their exact Git sources;
+iterations and overlapping test scopes are not summed.
+
+The actual disposable/retained disk split, original telemetry-file ownership,
+durable catalog, canonical deletion protection and restart adoption are still
+being implemented. The installed profile remains inactive; these results add no
+native transfer, new WAN measurement, accepted capacity envelope or FIPS claim.
+Upstream MVM has also changed endpoint wait-failure finality, transient
+volume/secret-session ownership and HVF stop handling; the final integration must
+preserve those semantics before its own qualification. Earlier witnesses retain
+their original revisions.
 
 The [immutable graph packet](https://github.com/R4-Laboratories/SpiralCore/tree/4cece3276120606b85de91c554c3d96dc6e5f6d1/docs/network/evidence/2026-11-04-immutable-graph)
 records an actual locked release build and seven installed-parent component

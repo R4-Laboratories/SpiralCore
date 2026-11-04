@@ -45,7 +45,7 @@ Unmerged work includes the canonical resident parent, exact-process guardian
 custody, disposable endpoint-disk inventory, admitted FlowMux/access activation,
 and Small/Ordered/readiness candidates. These are not part of PR72's accepted
 source. [Current checkpoints, failures and open gates →](docs/network/current-status.md)
-Published development code: [SpiralCore integration `56db5291`](https://github.com/R4-Laboratories/SpiralCore/tree/56db5291bf53433340eaf7102041370ee48aa7cc)
+Published development code: [SpiralCore integration `f7d06da6`](https://github.com/R4-Laboratories/SpiralCore/tree/f7d06da6b4aa148cd348dd91df3342f1bc53e399)
 and [MVM fork `bef4146c`](https://github.com/Casey-allard/mvm/tree/bef4146c0de18b22ac392118acfd898a369cc64c).
 The [resident lifecycle report](https://github.com/R4-Laboratories/SpiralCore/blob/ef4f5530cb4df41ef534dd63b149f2de5dd107b3/docs/network/evidence/2026-11-04-resident-service/README.md)
 records one original backend, two cancellation-safe resident slots, real registry
@@ -63,22 +63,20 @@ new transfer-performance claim.
 These checkpoints are available for review; native installed integration,
 capacity and WAN performance still require acceptance on the final combined source.
 
-The [parent/helper ownership checkpoint](https://github.com/R4-Laboratories/SpiralCore/blob/0bd0f4d0fc8200467a7164c7d6564adeadf27595/docs/network/evidence/2026-11-04-parent-host-agent/README.md)
-executes actual canonical daemon/signer startup and shutdown, including retained
-resource credits until the final registrar alias drops. Fifteen scoped checks
-and the separately executed real-helper case pass. It also fixes a reproduced
-replacement of MVM's shortened broker-socket directory. Its shipping profile
-remains inactive; per-VM registration, resident integration and native transfer
-acceptance are still open. Original failures and scoped review are public in a
-26,672-byte receipt archive; no guest or WAN result is inferred from this test.
+The [resident/helper successor](https://github.com/R4-Laboratories/SpiralCore/blob/7a080af1049455f6cb0e07f511cb467d05a902e8/docs/network/evidence/2026-11-04-resident-helper/README.md)
+connects the actual canonical daemon/signer to the resident's original backend.
+It verifies shutdown and keeps resource credits charged until the final registrar
+reference drops: 22 ordinary passing checks plus one separately executed actual
+helper case. Its original config/admission binding and dependency identities are
+recorded with the source. These tests boot no guest.
 
-The [config-admission successor](https://github.com/R4-Laboratories/SpiralCore/blob/56db5291bf53433340eaf7102041370ee48aa7cc/docs/network/evidence/2026-11-04-parent-config/README.md)
-binds actual opaque admission and the original VM anchor before canonical
-registration facts commit. It fixes a reproduced preflight ordering failure.
-The final locked Git graph passes 19 parent checks (one real-helper case remains
-ignored), strict Clippy and 131 source-to-Git checks, with one MVM Core/Contract
-and no path overrides. This scope starts no guest and issues no VM registration;
-the installed resource profile remains inactive.
+The [mandatory telemetry capacity check](https://github.com/R4-Laboratories/SpiralCore/blob/f7d06da6b4aa148cd348dd91df3342f1bc53e399/docs/network/evidence/2026-11-04-retained-telemetry/README.md)
+now rejects an endpoint allowance smaller than the canonical 8 MiB records cap
+before resource or directory effects. The successor passes 23 ordinary parent
+checks and strict Clippy; real-helper cases are ignored in that ordinary run.
+Actual retained-file ownership, disposable-cache separation, recovery and the
+installed native consumer remain unfinished. The installed profile is inactive;
+these checkpoints add no transfer-performance, capacity or FIPS claim.
 
 The [latest reader/TLS development checkpoint](https://github.com/R4-Laboratories/SpiralCore/blob/1025d87d048b15cefd483b4c11c70a6e029cb29c/docs/network/evidence/2026-11-03-flowmux/validation/handshake-startup/README.md)
 preserves original reader ownership and promptly rejects EOF during TLS
