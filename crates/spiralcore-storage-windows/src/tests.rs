@@ -177,13 +177,15 @@ fn windows_junction_at_root_or_ancestor_refuses_without_target_mutation() {
     let target = fixture.0.join("target");
     private_dir(&target).unwrap();
     let junction = fixture.0.join("junction");
-    let cmd = PathBuf::from(std::env::var_os("SystemRoot").unwrap()).join("System32/cmd.exe");
-    // Fixed relative operands avoid cmd.exe's separate path-quoting rules.
-    // Enable extensions explicitly: mklink is a command-processor builtin.
-    let output = std::process::Command::new(cmd)
+    let powershell = PathBuf::from(std::env::var_os("SystemRoot").unwrap())
+        .join("System32/WindowsPowerShell/v1.0/powershell.exe");
+    // Only fixed fixture-relative operands enter this script. PowerShell's
+    // junction operation avoids cmd.exe's separate builtin argument grammar.
+    let output = std::process::Command::new(powershell)
         .current_dir(&fixture.0)
         .args([
-            "/D", "/E:ON", "/V:OFF", "/C", "mklink", "/J", "junction", "target",
+            "-NoLogo", "-NoProfile", "-NonInteractive", "-Command",
+            "$ErrorActionPreference = 'Stop'; New-Item -ItemType Junction -Path 'junction' -Target (Get-Item -LiteralPath 'target').FullName | Out-Null",
         ])
         .output()
         .unwrap();
