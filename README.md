@@ -45,14 +45,21 @@ Unmerged work includes the canonical resident parent, exact-process guardian
 custody, disposable endpoint-disk inventory, admitted FlowMux/access activation,
 and Small/Ordered/readiness candidates. These are not part of PR72's accepted
 source. [Current checkpoints, failures and open gates →](docs/network/current-status.md)
-Published development code: [SpiralCore integration `ef4f5530`](https://github.com/R4-Laboratories/SpiralCore/tree/ef4f5530cb4df41ef534dd63b149f2de5dd107b3)
+Published development code: [SpiralCore integration `24e6c96d`](https://github.com/R4-Laboratories/SpiralCore/tree/24e6c96df30a84ecb486e788a3f2b70fbfbe5412)
 and [MVM fork `f708539f`](https://github.com/Casey-allard/mvm/tree/f708539f0c2317acf2e74f8f7833d6072a5abafe).
-The latest [lifecycle checkpoint and test report](https://github.com/R4-Laboratories/SpiralCore/blob/ef4f5530cb4df41ef534dd63b149f2de5dd107b3/docs/network/evidence/2026-11-04-resident-service/README.md)
+The [resident lifecycle report](https://github.com/R4-Laboratories/SpiralCore/blob/ef4f5530cb4df41ef534dd63b149f2de5dd107b3/docs/network/evidence/2026-11-04-resident-service/README.md)
 records one original backend, two cancellation-safe resident slots, real registry
 resource drain and protected lifecycle tests. A caught operation panic fences the
 whole owner. The public dependency graph and remaining endpoint/native gates are
 recorded explicitly. The newer helper fixes are now published directly
 in the MVM fork; the earlier source bundle remains a historical recovery record.
+The latest [endpoint-owner checkpoint](https://github.com/R4-Laboratories/SpiralCore/blob/24e6c96df30a84ecb486e788a3f2b70fbfbe5412/docs/network/evidence/2026-11-04-endpoint-owner/README.md)
+connects actual guest, endpoint and disposable-store reservations to the canonical
+partition and resident cleanup path. Eleven focused Linux entries and strict
+Clippy pass; two reproduced ownership/cleanup defects and their fixes are retained.
+The resource profile remains inactive pending the complete helper model and
+positive native endpoint-retirement witness. These tests boot no guest and add no
+new transfer-performance claim.
 These checkpoints are available for review; native installed integration,
 capacity and WAN performance still require acceptance on the final combined source.
 

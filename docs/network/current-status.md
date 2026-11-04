@@ -1,7 +1,7 @@
 # Networking delivery status
 
 Snapshot: **2026-11-04**, checked against published `origin/main`
-`b82e6bffa1887bcf0e21b32b42e556c183795349` and the live GitHub issue graph.
+`6e78a88c010a43be6d780dd9956f1687a82d6dfa` and the live GitHub issue graph.
 This page separates accepted components, measured experiments and unmerged work.
 The [README](../../README.md) is the architecture/results entry point;
 [issue #42](https://github.com/R4-Laboratories/SpiralCore/issues/42) remains the
@@ -51,7 +51,7 @@ Development checkpoints are published for source inspection:
 | Repository / development branch | Immutable checkpoint | Acceptance |
 |---|---|---|
 | [SpiralCore core checkpoint](https://github.com/R4-Laboratories/SpiralCore/tree/codex/spiralcore-core-checkpoint-20261104) | [`ca5d9ca1266541f71cc5ab7d0b17f4acf14d06b1`](https://github.com/R4-Laboratories/SpiralCore/commit/ca5d9ca1266541f71cc5ab7d0b17f4acf14d06b1) | Non-main source checkpoint |
-| [SpiralCore integration checkpoint](https://github.com/R4-Laboratories/SpiralCore/tree/codex/spiralcore-integration-checkpoint-20261104) | [`ef4f5530cb4df41ef534dd63b149f2de5dd107b3`](https://github.com/R4-Laboratories/SpiralCore/commit/ef4f5530cb4df41ef534dd63b149f2de5dd107b3) | Locked public graph, original resident custody and scoped lifecycle tests; full installed acceptance open |
+| [SpiralCore integration checkpoint](https://github.com/R4-Laboratories/SpiralCore/tree/codex/spiralcore-endpoint-owner-20261104) | [`24e6c96df30a84ecb486e788a3f2b70fbfbe5412`](https://github.com/R4-Laboratories/SpiralCore/commit/24e6c96df30a84ecb486e788a3f2b70fbfbe5412) | Original resident/endpoint/store ownership and scoped lifecycle tests on the locked public graph; full installed acceptance open |
 | [MVM fork installed-service checkpoint](https://github.com/Casey-allard/mvm/tree/codex/spiralcore-unused-preflight-20261104) | [`f708539f0c2317acf2e74f8f7833d6072a5abafe`](https://github.com/Casey-allard/mvm/commit/f708539f0c2317acf2e74f8f7833d6072a5abafe) | Non-main contribution-preparation fork |
 
 The [immutable graph packet](https://github.com/R4-Laboratories/SpiralCore/tree/4cece3276120606b85de91c554c3d96dc6e5f6d1/docs/network/evidence/2026-11-04-immutable-graph)
@@ -102,6 +102,22 @@ protected binaries match. These tests boot no guest and supply no synthetic
 native receipt. The earlier HOLD, panic RED and lint failure remain recorded.
 The public graph's serde_json version/features remain separate from the active
 RawValue/bootstrap model; its full composed qualification is still required.
+
+The successor [endpoint-owner packet](https://github.com/R4-Laboratories/SpiralCore/blob/24e6c96df30a84ecb486e788a3f2b70fbfbe5412/docs/network/evidence/2026-11-04-endpoint-owner/README.md)
+implements one-shot canonical partition issuance from the actual original guest,
+endpoint memory/worker reservation and disposable store. The same guard remains
+owned across handoff; uncertain Drop retains credit, and resident cleanup keeps
+the sealed endpoint receipt outside that guard. It preserves the default 4 KiB
+registry footprint. Three endpoint, four resident and four retirement-policy
+entries pass on the final source; strict Clippy passes and seven selected source
+inputs/protected binary match before and after. A real foreign-supervisor
+regression and a caught synchronous cleanup-unwind regression were reproduced
+before their fixes. Both original failures and the independent HOLD/successor
+review remain recorded in 5,567 bytes of compressed official receipts.
+The profile has no production activation constructor yet. Actual positive
+sealed endpoint retirement, failed-disk-barrier retry, complete managed helper
+model and native installed execution remain open. These tests boot no guest,
+transfer no object and supply no new CPU, RSS, latency or WAN result.
 
 None of these checkpoints qualifies the full combined service, WAN performance
 or formal upstream acceptance. Branches may advance; immutable commits identify
