@@ -16,6 +16,9 @@ use mvm_hostd::{host_lifetime_parent::ParentAdmissionProvider, plan_admission::A
 use sha2::{Digest, Sha256};
 use std::sync::{Arc, Mutex, Weak};
 
+mod resident;
+pub use resident::{InstalledResident, ResidentId, ResidentProgress, ResidentStatus};
+
 const BOOKKEEPING_BYTES: u64 = 4096;
 const MIB: u64 = 1024 * 1024;
 

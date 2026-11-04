@@ -1,0 +1,114 @@
+{
+  "date": "2026-11-04",
+  "toolchain": "Rust 1.97.1",
+  "host": "Linux x86_64 on Wick",
+  "cargo_build_jobs": 1,
+  "incremental": false,
+  "registry_red": {
+    "source_mvm": "77752e1967d20caf8bad710de864a0ccd967f9e6",
+    "command": [
+      "cargo",
+      "+1.97.1",
+      "test",
+      "--manifest-path",
+      "crates/spiralcore-mvm-live/tests/parent-retirement-harness/Cargo.toml",
+      "--release",
+      "--offline",
+      "--locked",
+      "--test",
+      "registry",
+      "--no-run",
+      "--message-format=json"
+    ],
+    "execution": "protected registry --test-threads=1",
+    "expected_test_exit": 101
+  },
+  "registry_green": {
+    "source_mvm": "f708539f0c2317acf2e74f8f7833d6072a5abafe",
+    "command": [
+      "cargo",
+      "+1.97.1",
+      "test",
+      "--manifest-path",
+      "crates/spiralcore-mvm-live/tests/parent-retirement-harness/Cargo.toml",
+      "--release",
+      "--offline",
+      "--locked",
+      "--test",
+      "registry",
+      "--test",
+      "unused",
+      "--test",
+      "retirement",
+      "--no-run",
+      "--message-format=json"
+    ],
+    "executions": [
+      "protected registry --test-threads=1",
+      "protected unused --test-threads=1",
+      "protected retirement --test-threads=1"
+    ]
+  },
+  "resident_lib": {
+    "command": [
+      "cargo",
+      "+1.97.1",
+      "test",
+      "--manifest-path",
+      "crates/spiralcore-mvm-live/Cargo.toml",
+      "--release",
+      "--offline",
+      "--locked",
+      "--features",
+      "live,linux-host,canonical-host,mvm-client/test-support,mvm-core/test-support",
+      "--lib",
+      "--no-run",
+      "--message-format=json"
+    ],
+    "execution": "protected lib installed_parent::resident::tests:: --test-threads=1"
+  },
+  "resident_external": {
+    "command": [
+      "cargo",
+      "+1.97.1",
+      "test",
+      "--manifest-path",
+      "crates/spiralcore-mvm-live/tests/parent-retirement-harness/Cargo.toml",
+      "--release",
+      "--offline",
+      "--locked",
+      "--test",
+      "resident",
+      "--no-run",
+      "--message-format=json"
+    ],
+    "execution": "protected external --test-threads=1"
+  },
+  "lint": {
+    "command": [
+      "cargo",
+      "+1.97.1",
+      "clippy",
+      "--manifest-path",
+      "crates/spiralcore-mvm-live/Cargo.toml",
+      "--release",
+      "--offline",
+      "--locked",
+      "--features",
+      "live,linux-host,canonical-host,mvm-client/test-support,mvm-core/test-support",
+      "--lib",
+      "--",
+      "-D",
+      "clippy::all"
+    ],
+    "first_result": "exit101, seven new-resident lint errors; retained separately",
+    "final_result": "exit0 on source d09fb8ea; six pre-existing unconnected endpoint/disk dead-code warnings retained"
+  },
+  "measurement_scope": {
+    "transfer_bytes": "NOT_APPLICABLE: no data transfer or guest boot",
+    "cpu_and_latency": "NOT_BENCHMARKED: test-runner/build elapsed values are not transfer measurements",
+    "guest_memory": "logical reserved bytes, not RSS or booted guest RAM",
+    "native_retirement": "NOT_RUN",
+    "wan": "NOT_RUN"
+  }
+}

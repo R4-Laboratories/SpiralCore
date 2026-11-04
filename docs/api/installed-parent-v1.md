@@ -29,9 +29,13 @@ creation remains explicitly unsupported until its separate held-resource and
 disk-cleanup implementation is connected.
 
 Closing admission is monotonic and serialized with slot publication. Existing
-charges remain until their actual owners drop. The process-wide Hostd install
-registry may retain the provider and owner exclusion until process exit.
-No source pin in this development API is a release-qualified MVM dependency.
+charges remain until their actual owners drop. Hostd's install-once registry now
+holds a weak reference; the resident retains the actual provider strongly through
+operation and shutdown. Each admission call upgrades that same allocation for
+its scope. Expiry refuses, and the consumed registry cannot accept a replacement.
+This permits the real bookkeeping reservation to drain after its last owner,
+without exempting it from accounting. Development source pins do not establish
+complete MVM release qualification.
 
 The resident launch transaction additionally retains a strong owner of the SAME
 grant before handing the lifetime into canonical launch. `begin_launch` arms
