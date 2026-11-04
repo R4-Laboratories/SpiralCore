@@ -2,7 +2,7 @@
   "schema": "spiralcore.cpu-conscious.registration.v1",
   "status": "REGISTERED_NOT_RUN",
   "launch_ready": true,
-  "source_binding": "All three arms run the SAME frozen current-source gateway service executable, built with Rust1.97.1 locked release settings. Revisionf1f30b8fb9890ea22af0b06c64be080a4c952128 anchors unchanged Whole codec/control sources only; no historical timed binary or baseline timing pooling. Freeze service, probe and fixture generator before traffic.",
+  "source_binding": "All three arms run the SAME frozen current-source gateway service executable, built with Rust1.97.1 locked release settings. Revision109fd7711baf609bc102bcbbf07ae59e064dc5e1 anchors unchanged Whole codec/control sources only; no historical timed binary or baseline timing pooling. Freeze service, probe and fixture generator before traffic.",
   "anchor_refresh_2026_11_03": "Previous anchor9f5912698f6ab46ddc771fe15fd0c0a7bcec8c5b has byte-identical zstd_whole.rs, zstd_prefix.rs and zstd_dictionary.rs. The strict lockfile comparison refused the native Windows storage addition: transfer Cargo.lock adds Windows-only windows-sys0.61.2/windows-link0.2.1 and disambiguates0.52.0; gateway Cargo.lock adds the matching target-only dependency edge. Both complete lockfiles remain strictly compared against the new immutable anchor. Failed run41739891631 is retained; dose, arms, timing, transport and hypothesis are unchanged. This refresh precedes the new campaign and substitutes no historical timing or result.",
   "arms": [
     "combined",
@@ -171,5 +171,6 @@
     "combined-cpu": "current",
     "whole-zstd": "current"
   },
-  "control_revision": "9f5912698f6ab46ddc771fe15fd0c0a7bcec8c5b"
+  "control_revision": "9f5912698f6ab46ddc771fe15fd0c0a7bcec8c5b",
+  "storage_boundary_refresh_2026_11_03": "Immutable anchor109fd7711baf609bc102bcbbf07ae59e064dc5e1 preserves all three Whole codec sources byte-for-byte and replaces only the target-specific Windows storage edge with the isolated safe-API crate. Complete transfer and gateway lockfile equality stays mandatory. Failed run41740719870 is retained separately: six sessions completed, then the seventh had exact readbacks/capture but right netem qlen1/backlog42 at the instantaneous final snapshot. New harness waits at most50*100ms for actual empty queues without resetting them, preserving snapshots, shaper drops, identical dose and service timing. It does not retry a transfer or reinterpret the failed campaign as passing."
 }
