@@ -303,6 +303,26 @@ WSL and client success do not substitute for native backend execution.
 [Platform contract](docs/specs/2026-11-02-mvm-platforms.md) ·
 [Current acceptance gates](docs/network/current-status.md)
 
+## Security and deployment scope
+
+The MVM submission targets unclassified/CUI deployments with a concrete
+FIPS 140-3 cryptographic deployment profile, tracked in
+[#83](https://github.com/R4-Laboratories/SpiralCore/issues/83). Current builds
+have **no established FIPS-validated deployment profile**. Qualification must
+map every security-relevant operation to the exact validated module, version,
+build, operating environment and approved mode. Transport crypto and canonical
+mailbox/access crypto both require that mapping; changing outer TLS alone does
+not qualify inner operations. [NIST CMVP](https://csrc.nist.gov/Projects/cryptographic-module-validation-program/validated-modules)
+records module validations, which are distinct from whole-system security and
+customer authorization.
+
+This remains one codec/protocol with explicit deployment and endpoint profiles.
+Compression runs at authorized plaintext endpoints before the canonical
+encryption boundary. Encrypted relays retain their forwarding role. Tenant/cache
+isolation, secret-bearing compression, replay, revocation, key lifecycle and
+retained audit data need their own security evidence. Synthetic demonstrations
+and lossless readbacks do not establish CUI, FIPS or classified-network approval.
+
 <a id="get-started"></a>
 
 ## Build and run

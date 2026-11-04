@@ -1,8 +1,9 @@
 # Complete the networking contribution for Ari / MVM
 
 This is the user-confirmed delivery goal as of 2026-11-03. It supersedes a
-next-milestone-only interpretation of the continuing work. All five outcomes
-below are required. The live [GitHub roadmap #42](https://github.com/R4-Laboratories/SpiralCore/issues/42)
+next-milestone-only interpretation of the continuing work. All five functional
+outcomes and the subsequently requested security submission profile below are
+required. The live [GitHub roadmap #42](https://github.com/R4-Laboratories/SpiralCore/issues/42)
 and linked issues own status; component merges are intermediate progress.
 
 ## Required outcomes
@@ -44,6 +45,18 @@ and linked issues own status; component merges are intermediate progress.
    loads from booted VM counts. Prepare the reviewed, reproducible contribution
    and submit the authorized outside-contributor PR to `tinylabscom/mvm`, with
    every upstream acceptance criterion mapped to evidence.
+6. **Qualify the security deployment profile**
+   ([#83](https://github.com/R4-Laboratories/SpiralCore/issues/83), added by the
+   user on 2026-11-04). Target unclassified/CUI with FIPS 140-3 validated
+   cryptography: inventory both outer transport and canonical inner operations;
+   select exact module certificates, versions/builds, operating environments,
+   approved services/modes and key lifecycle. Preserve one protocol and canonical
+   MVM authority. Execute approved-mode, self-test/fallback refusal, native/WAN
+   and security-boundary checks on the actual selected profile. Record applicable
+   customer/contract controls and all unsupported rows or external qualification
+   gaps. No source/test milestone establishes certification, customer
+   authorization or a currently validated deployment. A FIPS-qualified customer
+   release requires evidence for every applicable profile gate.
 
 ## Execution order and evidence
 
@@ -75,6 +88,6 @@ owned disposable payload/build stores. The Wick native test budget remains at
 most two simultaneous guests, each one vCPU/one GiB, without a guest NIC.
 
 Review and merge validated changes through PRs to `origin/main`. Keep #42 and
-each incomplete child open. Goal completion requires all five outcomes and the
+each incomplete child open. Goal completion requires all required outcomes and the
 upstream contribution; a green component suite or a single native pair is not
 the completion condition.

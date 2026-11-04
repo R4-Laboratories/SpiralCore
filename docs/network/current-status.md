@@ -1,7 +1,7 @@
 # Networking delivery status
 
 Snapshot: **2026-11-04**, checked against published `origin/main`
-`6e78a88c010a43be6d780dd9956f1687a82d6dfa` and the live GitHub issue graph.
+`6aa35867cc24ac987ee42c9bb2fd52a894b763ba` and the live GitHub issue graph.
 This page separates accepted components, measured experiments and unmerged work.
 The [README](../../README.md) is the architecture/results entry point;
 [issue #42](https://github.com/R4-Laboratories/SpiralCore/issues/42) remains the
@@ -43,6 +43,7 @@ are required. The linked issues were open at this snapshot.
 | [#46 platforms](https://github.com/R4-Laboratories/SpiralCore/issues/46) | Exact OS/version/architecture/role matrix and durable client/gateway qualification | Native component rows are recorded; remaining end-to-end platform and backend gates stay open |
 | [#47 WAN/upstream](https://github.com/R4-Laboratories/SpiralCore/issues/47) | Current canonical direct/relay two-host WAN, reproducible supported package and reviewed upstream contribution | Historical WAN is a different source/transport; final canonical WAN and upstream package remain open |
 | [#49 capacity](https://github.com/R4-Laboratories/SpiralCore/issues/49) | Aggregate budgets, bounded retained state, concurrency/fairness, overload/recovery and tail latency | Two guests and logical-endpoint loads do not establish a customer fleet envelope |
+| [#83 security/FIPS profile](https://github.com/R4-Laboratories/SpiralCore/issues/83) | Concrete validated-module/build/environment mapping, approved-mode enforcement, canonical crypto integration and customer security-control evidence | Explicit unclassified/CUI submission target; current builds have no established validated deployment profile |
 
 ## Active work that is not an accepted main release
 
@@ -50,7 +51,7 @@ Development checkpoints are published for source inspection:
 
 | Repository / development branch | Immutable checkpoint | Acceptance |
 |---|---|---|
-| [SpiralCore core checkpoint](https://github.com/R4-Laboratories/SpiralCore/tree/codex/spiralcore-core-checkpoint-20261104) | [`ca5d9ca1266541f71cc5ab7d0b17f4acf14d06b1`](https://github.com/R4-Laboratories/SpiralCore/commit/ca5d9ca1266541f71cc5ab7d0b17f4acf14d06b1) | Non-main source checkpoint |
+| [SpiralCore core checkpoint](https://github.com/R4-Laboratories/SpiralCore/tree/codex/spiralcore-reader-cleanup-20261104) | [`6c885fe5a1a03d65a6f9093edc407c98feff31be`](https://github.com/R4-Laboratories/SpiralCore/commit/6c885fe5a1a03d65a6f9093edc407c98feff31be) | Original reader/deadline and terminal-completion component; 39 Linux checks, installed/native/platform acceptance open |
 | [SpiralCore integration checkpoint](https://github.com/R4-Laboratories/SpiralCore/tree/codex/spiralcore-endpoint-owner-20261104) | [`24e6c96df30a84ecb486e788a3f2b70fbfbe5412`](https://github.com/R4-Laboratories/SpiralCore/commit/24e6c96df30a84ecb486e788a3f2b70fbfbe5412) | Original resident/endpoint/store ownership and scoped lifecycle tests on the locked public graph; full installed acceptance open |
 | [MVM fork installed-service checkpoint](https://github.com/Casey-allard/mvm/tree/codex/spiralcore-unused-preflight-20261104) | [`f708539f0c2317acf2e74f8f7833d6072a5abafe`](https://github.com/Casey-allard/mvm/commit/f708539f0c2317acf2e74f8f7833d6072a5abafe) | Non-main contribution-preparation fork |
 
@@ -123,6 +124,20 @@ None of these checkpoints qualifies the full combined service, WAN performance
 or formal upstream acceptance. Branches may advance; immutable commits identify
 each recorded source.
 
+The [reader-cleanup successor](https://github.com/R4-Laboratories/SpiralCore/blob/6c885fe5a1a03d65a6f9093edc407c98feff31be/docs/network/evidence/2026-11-03-flowmux/validation/reader-completion/README.md)
+retains the original reader handle across deadline expiry, preserves its semantic
+result and shares completion custody across mapped-stream aliases. It also fixes
+a terminal-close race reproduced in 9/10 original and 9/10 reader-only trials.
+Only a next-frame EOF after the authenticated application-completion barrier can
+complete; missing FIN/publication and fatal cancellation remain failures. Final
+protected execution passes 39 entries across six objects, plus 10/10 repetitions
+of the original positive fixture; scoped strict Clippy passes. All 384 executed
+source inputs match committed blobs. The 21,206-byte archive preserves 182 hashed
+receipts and its index. Independent Code/Rust/Security review passes this exact
+component. A separate installed setup test still fails when TLS stalls after
+ClientHello; its original deadline/child-reap failure is retained. Setup wake,
+whole installed reader/relay drain and native qualification remain active work.
+
 The development tree contains canonical resident-parent and launcher work,
 original-process guardian custody, shared parent partitions, disposable endpoint
 disk inventory, and owner-access/FlowMux activation. Focused source reviews or
@@ -144,6 +159,18 @@ uncertainty; stream/driver metadata must remain bounded over sustained use.
 No finite lifetime request counter or periodic all-VM restart is presented as
 the completed sustained model. These are active integration gates, not a claim
 that every existing component already satisfies the combined envelope.
+
+The user added [security/FIPS qualification, #83](https://github.com/R4-Laboratories/SpiralCore/issues/83),
+to the MVM submission goal on 2026-11-04. FIPS 140-3 validates cryptographic
+modules; exact module/version/build, operating environment, approved services,
+mode and security-policy conditions must match the deployment. Transport and
+canonical mailbox/access cryptography both require inventory and qualification;
+changing only outer TLS cannot establish the inner cryptographic boundary.
+The current source uses ring-backed transport and independent Rust crypto paths
+without an established certificate mapping. No current FIPS-compliance claim is
+made. Applicable CUI/contract requirements and customer authorization extend
+beyond cryptographic validation. See [NIST FIPS 140-3](https://csrc.nist.gov/pubs/fips/140-3/final)
+and the [CMVP register](https://csrc.nist.gov/Projects/cryptographic-module-validation-program/validated-modules).
 
 ## Read the native evidence by its actual scope
 
