@@ -1,6 +1,6 @@
 # Original parent bridge for the installed host agent
 
-2026-11-04. Planned Root integration of the existing canonical
+2026-11-04. Implementation checkpoint for the existing canonical
 [owned host-agent API](installed-host-agent-v1.md). SSC reviewed the direction;
 this contract does not activate a profile or assert native completion.
 
@@ -135,9 +135,14 @@ The three API additions are published in MVM development checkpoint
 `7f638428522e70b36a82d68700a6374267ea7e40` preserves its original product/test
 bodies and all locked package versions while repairing older source identities.
 A mixed graph first resolved two MVM Core/Contract identities and was rejected.
-The corrected public Git graph now resolves one of each and one shared transfer
-core, without path overrides; its locked build/test execution is still pending.
-The isolated-path tests do not substitute for that final qualification.
+The corrected public Git graph resolves one of each and one shared transfer
+core without path overrides. Its locked release build passes the same 19 parent
+checks (one real-helper case remains ignored), and strict Clippy over the library
+and test targets exits zero with 13 acknowledged Rust warnings. All 131 supplied
+source inputs match candidate `8ff9e559`; the fetched SDK tree matches its pinned
+commit. The [recorded packet](../network/evidence/2026-11-04-parent-config/README.md)
+retains both diagnostic and final Git scopes, original failures and exclusions.
+No VM registration, native guest or object transfer is exercised by these tests.
 
 Retained telemetry is a separate disk domain. The canonical projection's cache
 total includes the 8 MiB records cap; disposable codec storage must receive only
