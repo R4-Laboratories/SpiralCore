@@ -1,0 +1,75 @@
+   Compiling installed-supervisor-harness v0.1.0 (/var/tmp/spiralcore-installed-supervisor-20261103/source/crates/spiralcore-mvm-live/tests/installed-supervisor-harness)
+warning: method `close_admission` is never used
+   --> src/../../../src/installed_supervisor.rs:127:19
+    |
+126 | impl WorkerGrant {
+    | ---------------- method in this implementation
+127 |     pub(crate) fn close_admission(&self) {
+    |                   ^^^^^^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: field `session_started` is never read
+   --> src/../../../src/installed_supervisor.rs:168:5
+    |
+163 | pub struct InstalledSupervisor {
+    |            ------------------- field in this struct
+...
+168 |     session_started: bool,
+    |     ^^^^^^^^^^^^^^^
+
+warning: method `claim_session` is never used
+   --> src/../../../src/installed_supervisor.rs:198:19
+    |
+170 | impl InstalledSupervisor {
+    | ------------------------ method in this implementation
+...
+198 |     pub(crate) fn claim_session(&mut self) -> Result<()> {
+    |                   ^^^^^^^^^^^^^
+
+warning: `installed-supervisor-harness` (lib test) generated 3 warnings
+    Finished `release` profile [optimized] target(s) in 0.96s
+     Running unittests src/lib.rs (/var/tmp/spiralcore-installed-supervisor-20261103/component-target/release/deps/installed_supervisor_harness-fca87907f678cc2e)
+
+running 1 test
+test installed_resources::tests::accounting_corruption_never_panics_refunds_or_releases_exclusion ... 
+thread 'installed_resources::tests::accounting_corruption_never_panics_refunds_or_releases_exclusion' (2516901) panicked at src/../../../src/installed_resources.rs:431:17:
+assertion failed: matches!(lease.check_current(), Err(ManagedResourceError::State))
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+thread 'installed_resources::tests::accounting_corruption_never_panics_refunds_or_releases_exclusion' (2516901) panicked at src/../../../src/installed_resources.rs:307:28:
+index out of bounds: the len is 32 but the index is 32
+stack backtrace:
+   0:     0x628b3c028918 - <<std[1e3c4ec04c5261a9]::sys::backtrace::BacktraceLock>::print::DisplayBacktrace as core[37f591cfbe66b0b1]::fmt::Display>::fmt
+   1:     0x628b3c03cf8a - core[37f591cfbe66b0b1]::fmt::write
+   2:     0x628b3c02d1e2 - <alloc[24b8200b0946867]::vec::Vec<u8> as std[1e3c4ec04c5261a9]::io::Write>::write_fmt
+   3:     0x628b3c0054b6 - std[1e3c4ec04c5261a9]::panicking::default_hook::{closure#0}
+   4:     0x628b3c020049 - std[1e3c4ec04c5261a9]::panicking::default_hook
+   5:     0x628b3bfb732c - test[498d5a82ff81f7f6]::test_main_inner::<test[498d5a82ff81f7f6]::test_main_static::{closure#0}>::{closure#0}
+   6:     0x628b3c020202 - std[1e3c4ec04c5261a9]::panicking::panic_with_hook
+   7:     0x628b3c005572 - std[1e3c4ec04c5261a9]::panicking::panic_handler::{closure#0}
+   8:     0x628b3bffa509 - std[1e3c4ec04c5261a9]::sys::backtrace::__rust_end_short_backtrace::<std[1e3c4ec04c5261a9]::panicking::panic_handler::{closure#0}, !>
+   9:     0x628b3c00634d - __rustc[6ef78fba13ac776c]::rust_begin_unwind
+  10:     0x628b3c03d6ac - core[37f591cfbe66b0b1]::panicking::panic_fmt
+  11:     0x628b3c03d4fc - core[37f591cfbe66b0b1]::panicking::panic_bounds_check
+  12:     0x628b3bfa97c2 - <installed_supervisor_harness[5595e2022b95e157]::installed_resources::Reservation as core[37f591cfbe66b0b1]::ops::drop::Drop>::drop
+  13:     0x628b3bf91594 - <alloc[24b8200b0946867]::sync::Arc<installed_supervisor_harness[5595e2022b95e157]::installed_resources::Reservation>>::drop_slow
+  14:     0x628b3bf9c77c - <installed_supervisor_harness[5595e2022b95e157]::installed_resources::tests::accounting_corruption_never_panics_refunds_or_releases_exclusion::{closure#0} as core[37f591cfbe66b0b1]::ops::function::FnOnce<()>>::call_once
+  15:     0x628b3bfaa40b - test[498d5a82ff81f7f6]::__rust_begin_short_backtrace::<core[37f591cfbe66b0b1]::result::Result<(), alloc[24b8200b0946867]::string::String>, fn() -> core[37f591cfbe66b0b1]::result::Result<(), alloc[24b8200b0946867]::string::String>>
+  16:     0x628b3bfb7c85 - test[498d5a82ff81f7f6]::run_test::{closure#0}
+  17:     0x628b3bfb1594 - std[1e3c4ec04c5261a9]::sys::backtrace::__rust_begin_short_backtrace::<test[498d5a82ff81f7f6]::run_test::{closure#1}, ()>
+  18:     0x628b3bfbad02 - <std[1e3c4ec04c5261a9]::thread::lifecycle::spawn_unchecked<test[498d5a82ff81f7f6]::run_test::{closure#1}, ()>::{closure#1} as core[37f591cfbe66b0b1]::ops::function::FnOnce<()>>::call_once::{shim:vtable#0}
+  19:     0x628b3c027d9f - <std[1e3c4ec04c5261a9]::sys::thread::unix::Thread>::new::thread_start
+  20:     0x7a2eb929cb84 - start_thread
+                               at ./nptl/pthread_create.c:447:8
+  21:     0x7a2eb9329ecc - clone3
+                               at ./misc/../sysdeps/unix/sysv/linux/x86_64/clone3.S:78:0
+  22:                0x0 - <unknown>
+
+thread 'installed_resources::tests::accounting_corruption_never_panics_refunds_or_releases_exclusion' (2516901) panicked at /rustc/8bab26f4f68e0e26f0bb7960be334d5b520ea452/library/core/src/panicking.rs:233:5:
+panic in a destructor during cleanup
+thread caused non-unwinding panic. aborting.
+error: test failed, to rerun pass `--lib`
+
+Caused by:
+  process didn't exit successfully: `/var/tmp/spiralcore-installed-supervisor-20261103/component-target/release/deps/installed_supervisor_harness-fca87907f678cc2e accounting_corruption --test-threads=1` (signal: 6, SIGABRT: process abort signal)

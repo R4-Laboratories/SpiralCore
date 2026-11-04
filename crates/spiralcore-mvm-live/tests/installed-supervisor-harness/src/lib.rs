@@ -4,3 +4,5 @@ pub mod host_budget;
 pub mod installed_owner;
 #[path = "../../../src/installed_supervisor.rs"]
 pub mod installed_supervisor;
+#[path = "../../../src/installed_resources.rs"]
+pub mod installed_resources;
