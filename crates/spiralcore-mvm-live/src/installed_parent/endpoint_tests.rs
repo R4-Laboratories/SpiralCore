@@ -45,6 +45,11 @@ fn grant(provider: &InstalledParentProvider, name: &str) -> PreparedParentVm {
         .unwrap()
 }
 fn fixture_profile() -> endpoint::QualifiedEndpointProfile {
+    fixture_profile_with_cache(
+        mvm_vmm::host::telemetry_provisioning::DEFAULT_RECORDS_BYTE_CAP + 65536,
+    )
+}
+fn fixture_profile_with_cache(cache_disk_bytes: u64) -> endpoint::QualifiedEndpointProfile {
     // Only private tests may supply these synthetic policy limits. They do not
     // activate native support or qualify a real bootstrap/codec resource model.
     endpoint::QualifiedEndpointProfile::fixture(EndpointPartitionLimits {
@@ -53,7 +58,7 @@ fn fixture_profile() -> endpoint::QualifiedEndpointProfile {
         host_carrier_bytes: 65536,
         host_metadata_bytes: 65536,
         host_stack_bytes: 65536,
-        cache_disk_bytes: 65536,
+        cache_disk_bytes,
         staging_disk_bytes: 65536,
         workers: 1,
         max_streams: 1,
@@ -85,6 +90,48 @@ fn missing_profile_refuses_before_any_endpoint_credit_or_disk_effect() {
         supervisor.managed_resources().snapshot().unwrap().usage,
         before.usage
     );
+    drop(prepared);
+    drop(provider);
+    supervisor.close_admission();
+    supervisor.try_finish().unwrap();
+}
+
+#[test]
+fn mandatory_telemetry_capacity_refuses_before_endpoint_credit_or_disk_effect() {
+    let (home, mut supervisor, mut provider) = fixture();
+    // This deliberately undersized TOTAL allowance cannot contain the
+    // mandatory canonical records buffer, regardless of available host quota.
+    provider
+        .configure_endpoints(&supervisor, fixture_profile_with_cache(65536))
+        .unwrap();
+    let prepared = grant(&provider, "endpoint-telemetry-capacity");
+    fixture_admit(&prepared);
+    let before = supervisor.managed_resources().snapshot().unwrap();
+    let names = || {
+        let mut names: Vec<_> = fs::read_dir(home.path().join("installation"))
+            .unwrap()
+            .map(|entry| entry.unwrap().file_name())
+            .collect();
+        names.sort();
+        names
+    };
+    let before_names = names();
+    assert!(
+        prepared
+            .grant
+            .prepare_endpoint_partition(prepared.binding())
+            .is_err(),
+        "endpoint admitted a total cache smaller than mandatory telemetry"
+    );
+    assert_eq!(
+        prepared.grant.lifecycle.lock().unwrap().endpoint,
+        EndpointIssuance::NeverIssued
+    );
+    assert_eq!(
+        supervisor.managed_resources().snapshot().unwrap().usage,
+        before.usage
+    );
+    assert_eq!(names(), before_names);
     drop(prepared);
     drop(provider);
     supervisor.close_admission();
@@ -146,7 +193,10 @@ fn issued_original_guard_is_one_shot_acyclic_and_quarantines_unproven_resources(
     );
     let before = supervisor.managed_resources().snapshot().unwrap();
     assert_eq!(before.usage.workers, 1);
-    assert_eq!(before.usage.cache_disk_bytes, 65536);
+    assert_eq!(
+        before.usage.cache_disk_bytes,
+        mvm_vmm::host::telemetry_provisioning::DEFAULT_RECORDS_BYTE_CAP + 65536
+    );
     assert_eq!(before.usage.guests, 1);
     provider.close_admission();
     supervisor.close_admission();
@@ -175,7 +225,10 @@ fn issued_original_guard_is_one_shot_acyclic_and_quarantines_unproven_resources(
     let after = supervisor.managed_resources().snapshot().unwrap();
     assert_eq!(after.usage.guests, 1);
     assert_eq!(after.usage.workers, 1);
-    assert_eq!(after.usage.cache_disk_bytes, 65536);
+    assert_eq!(
+        after.usage.cache_disk_bytes,
+        mvm_vmm::host::telemetry_provisioning::DEFAULT_RECORDS_BYTE_CAP + 65536
+    );
     assert!(supervisor.try_finish().is_err());
     // No guest ran. Original uncertain credits intentionally survive until
     // this isolated test process exits, rather than publishing a false drain.

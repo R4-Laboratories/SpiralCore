@@ -31,6 +31,13 @@ impl QualifiedEndpointProfile {
             self.limits.workers > 0 && self.limits.max_streams > 0,
             "endpoint worker model missing"
         );
+        // The projection's disk allowance includes the mandatory collector;
+        // spare host quota cannot enlarge this original endpoint allowance.
+        ensure!(
+            self.limits.cache_disk_bytes
+                >= mvm_vmm::host::telemetry_provisioning::DEFAULT_RECORDS_BYTE_CAP,
+            "endpoint total cache cannot contain mandatory telemetry"
+        );
         self.limits.host_resident_bytes()?;
         Ok(ManagedClaim {
             host_plaintext_bytes: self.limits.host_plaintext_bytes,
