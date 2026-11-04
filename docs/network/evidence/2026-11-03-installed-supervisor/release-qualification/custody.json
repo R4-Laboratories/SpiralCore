@@ -1,0 +1,176 @@
+{
+  "head": "922414932488256f4e9eda3d47760604089f3fc8",
+  "tested_synthetic_merge": "dd3836a807e3b6ba12946750ad111aa66cc3b73b",
+  "tested_tree": "368679d28580e460ed69ede5d43506e702a4802e",
+  "portable_inner_hashes_verified": 294,
+  "rows": [
+    {
+      "row": "macos26-arm64",
+      "inner_hashes_verified": 42,
+      "checkout_text": "LF",
+      "storage": [
+        {
+          "filtered": 43,
+          "ignored": 0,
+          "passed": 3,
+          "target": "private-object-storage",
+          "failed": 0,
+          "listed": 3
+        },
+        {
+          "filtered": 0,
+          "ignored": 0,
+          "passed": 21,
+          "target": "object-endpoint",
+          "failed": 0,
+          "listed": 21
+        }
+      ]
+    },
+    {
+      "row": "macos26-intel",
+      "inner_hashes_verified": 42,
+      "checkout_text": "LF",
+      "storage": [
+        {
+          "listed": 3,
+          "target": "private-object-storage",
+          "passed": 3,
+          "filtered": 43,
+          "failed": 0,
+          "ignored": 0
+        },
+        {
+          "listed": 21,
+          "target": "object-endpoint",
+          "passed": 21,
+          "filtered": 0,
+          "failed": 0,
+          "ignored": 0
+        }
+      ]
+    },
+    {
+      "row": "ubuntu24-arm64",
+      "inner_hashes_verified": 42,
+      "checkout_text": "LF",
+      "storage": [
+        {
+          "ignored": 0,
+          "listed": 3,
+          "failed": 0,
+          "target": "private-object-storage",
+          "passed": 3,
+          "filtered": 43
+        },
+        {
+          "ignored": 0,
+          "listed": 21,
+          "failed": 0,
+          "target": "object-endpoint",
+          "passed": 21,
+          "filtered": 0
+        }
+      ]
+    },
+    {
+      "row": "ubuntu24-x64",
+      "inner_hashes_verified": 42,
+      "checkout_text": "LF",
+      "storage": [
+        {
+          "target": "private-object-storage",
+          "filtered": 43,
+          "listed": 3,
+          "passed": 3,
+          "failed": 0,
+          "ignored": 0
+        },
+        {
+          "target": "object-endpoint",
+          "filtered": 0,
+          "listed": 21,
+          "passed": 21,
+          "failed": 0,
+          "ignored": 0
+        }
+      ]
+    },
+    {
+      "row": "windows11-arm64",
+      "inner_hashes_verified": 42,
+      "checkout_text": "CRLF",
+      "storage": [
+        {
+          "target": "private-object-storage",
+          "ignored": 0,
+          "passed": 4,
+          "failed": 0,
+          "filtered": 43,
+          "listed": 4
+        },
+        {
+          "target": "object-endpoint",
+          "ignored": 0,
+          "passed": 20,
+          "failed": 0,
+          "filtered": 0,
+          "listed": 20
+        }
+      ]
+    },
+    {
+      "row": "windows2022-x64",
+      "inner_hashes_verified": 42,
+      "checkout_text": "CRLF",
+      "storage": [
+        {
+          "passed": 4,
+          "failed": 0,
+          "ignored": 0,
+          "filtered": 43,
+          "listed": 4,
+          "target": "private-object-storage"
+        },
+        {
+          "passed": 20,
+          "failed": 0,
+          "ignored": 0,
+          "filtered": 0,
+          "listed": 20,
+          "target": "object-endpoint"
+        }
+      ]
+    },
+    {
+      "row": "windows2025-x64",
+      "inner_hashes_verified": 42,
+      "checkout_text": "CRLF",
+      "storage": [
+        {
+          "filtered": 43,
+          "passed": 4,
+          "listed": 4,
+          "ignored": 0,
+          "failed": 0,
+          "target": "private-object-storage"
+        },
+        {
+          "filtered": 0,
+          "passed": 20,
+          "listed": 20,
+          "ignored": 0,
+          "failed": 0,
+          "target": "object-endpoint"
+        }
+      ]
+    }
+  ],
+  "skipped": [
+    "runtime-objects manually gated campaigns"
+  ],
+  "verifier_corrections": [
+    "Initial unaccepted manifest check targeted crate Cargo.toml; workflow declares platform JSON.",
+    "Initial Git-blob comparison then exposed Windows CRLF checkout identity. Exact CRLF hashes independently recomputed and match all three Windows rows; Unix LF hashes match four rows. No source/test change."
+  ]
+}
