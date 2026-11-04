@@ -2,7 +2,7 @@ use crate::*;
 use std::{
     ffi::c_void,
     fs,
-    os::windows::ffi::OsStrExt,
+    os::windows::{ffi::OsStrExt, fs::MetadataExt},
     path::{Path, PathBuf},
     ptr::null_mut,
     sync::atomic::{AtomicU64, Ordering},
@@ -10,6 +10,7 @@ use std::{
 use windows_sys::Win32::{
     Foundation::LocalFree,
     Security::{Authorization::*, *},
+    Storage::FileSystem::FILE_ATTRIBUTE_REPARSE_POINT,
 };
 static NEXT: AtomicU64 = AtomicU64::new(0);
 struct Fixture(PathBuf);
@@ -176,14 +177,30 @@ fn windows_junction_at_root_or_ancestor_refuses_without_target_mutation() {
     let target = fixture.0.join("target");
     private_dir(&target).unwrap();
     let junction = fixture.0.join("junction");
-    let cmd = PathBuf::from(std::env::var_os("SystemRoot").unwrap()).join("System32/cmd.exe");
-    let output = std::process::Command::new(cmd)
-        .args(["/D", "/C", "mklink", "/J"])
-        .arg(&junction)
-        .arg(&target)
+    let powershell = PathBuf::from(std::env::var_os("SystemRoot").unwrap())
+        .join("System32/WindowsPowerShell/v1.0/powershell.exe");
+    // Only fixed fixture-relative operands enter this script. PowerShell's
+    // junction operation avoids cmd.exe's separate builtin argument grammar.
+    let output = std::process::Command::new(powershell)
+        .current_dir(&fixture.0)
+        .args([
+            "-NoLogo", "-NoProfile", "-NonInteractive", "-Command",
+            "$ErrorActionPreference = 'Stop'; New-Item -ItemType Junction -Path 'junction' -Target (Get-Item -LiteralPath 'target').FullName | Out-Null",
+        ])
         .output()
         .unwrap();
-    assert!(output.status.success(), "owned junction setup failed");
+    assert!(
+        output.status.success(),
+        "owned junction setup failed: status={:?}, stdout={:?}, stderr={:?}",
+        output.status.code(),
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert_ne!(
+        fs::symlink_metadata(&junction).unwrap().file_attributes() & FILE_ATTRIBUTE_REPARSE_POINT,
+        0,
+        "owned junction setup must create an actual reparse point"
+    );
     assert!(matches!(private_dir(&junction), Err(Error::Storage)));
     assert!(matches!(
         private_dir(&junction.join("nested")),

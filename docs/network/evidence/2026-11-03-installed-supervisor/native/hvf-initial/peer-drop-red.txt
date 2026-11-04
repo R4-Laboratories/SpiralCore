@@ -1,0 +1,22 @@
+   Compiling spiralcore-mvm-live v0.1.0 (/tmp/spiralcore-installed-mac-20261103/source/crates/spiralcore-mvm-live)
+    Finished `release` profile [optimized] target(s) in 31.78s
+     Running unittests src/lib.rs (/tmp/spiralcore-installed-mac-20261103/target/release/deps/spiralcore_mvm_live-1bd25c5fd177ff57)
+
+running 1 test
+test orchestrator::duplex_tests::clean_peer_drop_after_exact_reverse_drain_finishes_without_losing_credits ... FAILED
+
+failures:
+
+---- orchestrator::duplex_tests::clean_peer_drop_after_exact_reverse_drain_finishes_without_losing_credits stdout ----
+
+thread 'orchestrator::duplex_tests::clean_peer_drop_after_exact_reverse_drain_finishes_without_losing_credits' (17616057) panicked at src/orchestrator/duplex_tests.rs:305:25:
+called `Result::unwrap()` on an `Err` value: "relay failed: {\"a\":{\"envelope_bytes_received\":0,\"envelope_bytes_sent\":3735,\"frames_received\":0,\"frames_sent\":1,\"framing_bytes_received\":8,\"framing_bytes_sent\":12},\"b\":{\"envelope_bytes_received\":3735,\"envelope_bytes_sent\":0,\"frames_received\":1,\"frames_sent\":0,\"framing_bytes_received\":12,\"framing_bytes_sent\":8},\"forward\":null,\"reverse\":\"Socket is not connected (os error 57)\"}"
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    orchestrator::duplex_tests::clean_peer_drop_after_exact_reverse_drain_finishes_without_losing_credits
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 106 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `--lib`

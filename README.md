@@ -44,7 +44,8 @@ macOS/HVF and Linux/Firecracker host paths; the default Linux build is the guest
 and the `linux-host` feature selects the host. Native ephemeral mailbox-client
 tests have passed on Windows Server 2022/2025 x64 and Windows 11 ARM64 at the
 [latest recorded mailbox-client checkpoint](docs/network/session-reconciliation-results-2026-11-03.md).
-Windows private/durable object storage and packet attachment still need a port.
+Windows private object storage now has native component tests; end-to-end
+durable gateway qualification and packet attachment remain open.
 A portable mailbox client does not establish a Windows MVM host. The current
 published MVM dependency has passed the recorded seven-platform contract run.
 [Linux build and lifecycle details →](docs/network/linux-firecracker.md)
@@ -114,22 +115,28 @@ results against whole-object zstd, including individual workload losses;
 they do not establish recovery overhead or WAN performance.
 
 The [installed-owner component](docs/network/installed-owner-results-2026-11-03.md)
-adds durable epochs and resource-holder exclusion for the next host-wide MVM
-admission step. Four native Unix architecture rows pass54 component entries;
-the actual worker/Firecracker handoff and crash/readmission qualification remain
-open. Existing session budgets retain their explicit orchestrator scope.
+adds durable epochs and resource-holder exclusion for host-wide MVM admission.
+Four native Unix architecture rows pass54 component entries. The subsequent
+supervisor slice connects actual workers and Firecracker lifetime holders;
+canonical resident service and aggregate resource integration remain open.
 
-The subsequent [installed-supervisor candidate and recorded native results](docs/network/evidence/2026-11-03-installed-supervisor/README.md)
+The subsequent [installed-supervisor implementation and native results](docs/network/installed-supervisor-results-2026-11-03.md)
 connect the explicit installed entry to exact owned workers, live-controller boot
 grants and actual Firecracker lifetime leases. A Linux death witness refuses a
 successor while the guest survives supervisor/worker death, then proves durable
 retirement and an exact next-epoch transfer after backend and launcher exit.
-A single local two-guest comparison preserves **33.06% fewer bytes and 12.12%
-less guest endpoint CPU**, alongside **0.69% longer lifecycle** than matched
-whole-object zstd. Native HVF installed recovery, aggregate plaintext/cache/workspace
-ownership and WAN acceptance remain open. The [Windows private-storage port](docs/api/windows-storage-v1.md)
-uses the same object protocol; its native platform tests must pass before Windows
-durable gateway qualification can be claimed. The complete remaining contribution
+In the larger local two-guest Linux pair, Combined used **62.49 MB versus
+107.30 MB** with whole-object zstd, with **5.48 s versus 8.20 s** of combined
+guest endpoint CPU and **6.39 s versus 8.81 s** of lifecycle time. The larger
+macOS/HVF pair used **62.55 MB versus 107.28 MB**, **14.46 s versus 26.63 s**
+of guest endpoint CPU and **16.37 s versus 30.04 s** of lifecycle time. All
+objects reopened exactly. Each pair is one local observation; the report also
+retains the earlier smaller Linux pair's **0.69% lifecycle loss**. Native HVF
+installed recovery, aggregate plaintext/cache/workspace ownership and canonical
+WAN acceptance remain open. The [Windows private-storage port](docs/api/windows-storage-v1.md)
+uses the same object protocol and passes native component tests on Server
+2022/2025 x64 and Windows 11 ARM64; complete durable gateway and WAN qualification
+remain open. The complete remaining contribution
 is tracked in the [five-outcome Ari delivery plan](docs/plans/2026-11-03-ari-delivery.md)
 and [GitHub roadmap](https://github.com/R4-Laboratories/SpiralCore/issues/42).
 

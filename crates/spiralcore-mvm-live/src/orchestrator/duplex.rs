@@ -87,7 +87,15 @@ fn pump(
             (&mut report.received, &mut report.sent),
             true,
         )? {}
-        output.shutdown(Shutdown::Write)?;
+        // Every complete frame has been written and input ended at a clean
+        // frame boundary. macOS reports NotConnected when the peer has already
+        // closed its last descriptor; the requested half-close is then done.
+        // Read, framing, payload-write and all other shutdown errors stay fatal.
+        if let Err(error) = output.shutdown(Shutdown::Write)
+            && error.kind() != std::io::ErrorKind::NotConnected
+        {
+            return Err(error.into());
+        }
         Ok(())
     }));
     report.failure = match result {

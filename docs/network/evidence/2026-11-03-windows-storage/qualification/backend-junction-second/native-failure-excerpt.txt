@@ -1,0 +1,29 @@
+2026-11-04T01:19:29.6257119Z test tests::broad_or_inherited_windows_acl_refuses_without_permission_repair ... ok
+2026-11-04T01:19:29.6257655Z test tests::windows_junction_at_root_or_ancestor_refuses_without_target_mutation ... FAILED
+2026-11-04T01:19:29.6259912Z 
+2026-11-04T01:19:29.6260032Z failures:
+2026-11-04T01:19:29.6260164Z 
+2026-11-04T01:19:29.6260436Z ---- tests::windows_junction_at_root_or_ancestor_refuses_without_target_mutation stdout ----
+2026-11-04T01:19:29.6260786Z 
+2026-11-04T01:19:29.6261144Z thread 'tests::windows_junction_at_root_or_ancestor_refuses_without_target_mutation' (2732) panicked at src\tests.rs:190:5:
+2026-11-04T01:19:29.6261943Z owned junction setup failed: status=Some(1), stdout="", stderr="The filename, directory name, or volume label syntax is incorrect.\r\n"
+2026-11-04T01:19:29.6262478Z stack backtrace:
+2026-11-04T01:19:29.6262685Z    0: std::panicking::panic_handler
+2026-11-04T01:19:29.6263095Z              at /rustc/8bab26f4f68e0e26f0bb7960be334d5b520ea452/library\std\src\panicking.rs:689
+2026-11-04T01:19:29.6263526Z    1: core::panicking::panic_fmt
+2026-11-04T01:19:29.6263930Z              at /rustc/8bab26f4f68e0e26f0bb7960be334d5b520ea452/library\core\src\panicking.rs:80
+2026-11-04T01:19:29.6264559Z    2: spiralcore_storage_windows::tests::windows_junction_at_root_or_ancestor_refuses_without_target_mutation
+2026-11-04T01:19:29.6265017Z              at .\src\tests.rs:190
+2026-11-04T01:19:29.6265487Z    3: spiralcore_storage_windows::tests::windows_junction_at_root_or_ancestor_refuses_without_target_mutation::closure$0
+2026-11-04T01:19:29.6265973Z              at .\src\tests.rs:174
+2026-11-04T01:19:29.6266637Z    4: core::ops::function::FnOnce::call_once<spiralcore_storage_windows::tests::windows_junction_at_root_or_ancestor_refuses_without_target_mutation::closure_env$0,tuple$<> >
+2026-11-04T01:19:29.6267539Z              at /rustc/8bab26f4f68e0e26f0bb7960be334d5b520ea452/library\core\src\ops\function.rs:250
+2026-11-04T01:19:29.6267992Z    5: core::ops::function::FnOnce::call_once
+2026-11-04T01:19:29.6268406Z              at /rustc/8bab26f4f68e0e26f0bb7960be334d5b520ea452/library\core\src\ops\function.rs:250
+2026-11-04T01:19:29.6268952Z note: Some details are omitted, run with `RUST_BACKTRACE=full` for a verbose backtrace.
+2026-11-04T01:19:29.6269268Z 
+2026-11-04T01:19:29.6269276Z 
+2026-11-04T01:19:29.6269347Z failures:
+2026-11-04T01:19:29.6269650Z     tests::windows_junction_at_root_or_ancestor_refuses_without_target_mutation
+2026-11-04T01:19:29.6269936Z 
+2026-11-04T01:19:29.6270182Z test result: FAILED. 1 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.16s
