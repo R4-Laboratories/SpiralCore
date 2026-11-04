@@ -18,8 +18,8 @@ legacy-interop = ["native"]
 object-v1 = ["native", "mvm-agentd/owner-access-object", "dep:spiralcore-transfer", "dep:tempfile"]
 
 [dependencies]
-mvm-core = { git = "https://github.com/Casey-allard/mvm", rev = "8b833aee8be5c1be9ce0d1197b6b98d4d03625f6", default-features = false }
-mvm-contract = { git = "https://github.com/Casey-allard/mvm", rev = "8b833aee8be5c1be9ce0d1197b6b98d4d03625f6", default-features = false, features = ["protocol"] }
+mvm-core = { git = "https://github.com/Casey-allard/mvm", rev = "77752e1967d20caf8bad710de864a0ccd967f9e6", default-features = false }
+mvm-contract = { git = "https://github.com/Casey-allard/mvm", rev = "77752e1967d20caf8bad710de864a0ccd967f9e6", default-features = false, features = ["protocol"] }
 ed25519-dalek = "3"
 chrono = { version = "0.4", default-features = false, features = ["std"] }
 serde = { version = "1", features = ["derive"] }
@@ -29,13 +29,13 @@ spiralcore-transfer = { git = "https://github.com/R4-Laboratories/SpiralCore", r
 tempfile = {version="3",optional=true}
 
 [target.'cfg(unix)'.dependencies]
-mvm-agentd = { git = "https://github.com/Casey-allard/mvm", rev = "8b833aee8be5c1be9ce0d1197b6b98d4d03625f6", default-features = false, optional = true }
-mvm-hostd = { git = "https://github.com/Casey-allard/mvm", rev = "8b833aee8be5c1be9ce0d1197b6b98d4d03625f6", default-features = false, optional = true }
-mvm-vmm = { git = "https://github.com/Casey-allard/mvm", rev = "8b833aee8be5c1be9ce0d1197b6b98d4d03625f6", default-features = false, optional = true }
+mvm-agentd = { git = "https://github.com/Casey-allard/mvm", rev = "77752e1967d20caf8bad710de864a0ccd967f9e6", default-features = false, optional = true }
+mvm-hostd = { git = "https://github.com/Casey-allard/mvm", rev = "77752e1967d20caf8bad710de864a0ccd967f9e6", default-features = false, optional = true }
+mvm-vmm = { git = "https://github.com/Casey-allard/mvm", rev = "77752e1967d20caf8bad710de864a0ccd967f9e6", default-features = false, optional = true }
 
 [dev-dependencies]
 cpu-time="1"
-mvm-core = { git = "https://github.com/Casey-allard/mvm", rev = "8b833aee8be5c1be9ce0d1197b6b98d4d03625f6", default-features = false, features = ["test-support"] }
+mvm-core = { git = "https://github.com/Casey-allard/mvm", rev = "77752e1967d20caf8bad710de864a0ccd967f9e6", default-features = false, features = ["test-support"] }
 serde_json = "1"
 tempfile = "3"
 
