@@ -12,9 +12,11 @@ Execute within the user's approved installed-service goal. Source contract:
    strict Clippy on Wick; retain RED/GREEN source and executable identities.
 2. **Original retained owner** — `installed_parent/endpoint.rs`,
    `installed_parent/host_agent.rs`, `installed_disk.rs`, and the installation
-   disk-owner modules: reserve only C-R for disposable cache, retain R in the
+   disk-owner modules: reserve only C-R-K for disposable cache, retain R+K in the
    original pool, bind actual state-directory authority before collector effects,
    and keep the retained owner independent of the disposable endpoint lifetime.
+   K is the same canonical Core logical-sidecar declaration, currently 32 KiB;
+   the installed child must use that same checked split.
    Depends on step 1 and the concrete architect-reviewed catalog/lifecycle
    contract. Risk high; actual file and foreign-owner/replacement tests required.
 3. **Canonical cleanup protection and recovery** — canonical MVM runtime
