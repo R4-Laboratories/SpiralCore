@@ -45,7 +45,7 @@ Unmerged work includes the canonical resident parent, exact-process guardian
 custody, disposable endpoint-disk inventory, admitted FlowMux/access activation,
 and Small/Ordered/readiness candidates. These are not part of PR72's accepted
 source. [Current checkpoints, failures and open gates →](docs/network/current-status.md)
-Published development code: [SpiralCore integration `24e6c96d`](https://github.com/R4-Laboratories/SpiralCore/tree/24e6c96df30a84ecb486e788a3f2b70fbfbe5412)
+Published development code: [SpiralCore integration `0bd0f4d0`](https://github.com/R4-Laboratories/SpiralCore/tree/0bd0f4d0fc8200467a7164c7d6564adeadf27595)
 and [MVM fork `f708539f`](https://github.com/Casey-allard/mvm/tree/f708539f0c2317acf2e74f8f7833d6072a5abafe).
 The [resident lifecycle report](https://github.com/R4-Laboratories/SpiralCore/blob/ef4f5530cb4df41ef534dd63b149f2de5dd107b3/docs/network/evidence/2026-11-04-resident-service/README.md)
 records one original backend, two cancellation-safe resident slots, real registry
@@ -62,6 +62,15 @@ positive native endpoint-retirement witness. These tests boot no guest and add n
 new transfer-performance claim.
 These checkpoints are available for review; native installed integration,
 capacity and WAN performance still require acceptance on the final combined source.
+
+The [parent/helper ownership checkpoint](https://github.com/R4-Laboratories/SpiralCore/blob/0bd0f4d0fc8200467a7164c7d6564adeadf27595/docs/network/evidence/2026-11-04-parent-host-agent/README.md)
+executes actual canonical daemon/signer startup and shutdown, including retained
+resource credits until the final registrar alias drops. Fifteen scoped checks
+and the separately executed real-helper case pass. It also fixes a reproduced
+replacement of MVM's shortened broker-socket directory. Its shipping profile
+remains inactive; per-VM registration, resident integration and native transfer
+acceptance are still open. Original failures and scoped review are public in a
+26,672-byte receipt archive; no guest or WAN result is inferred from this test.
 
 The [latest reader/TLS development checkpoint](https://github.com/R4-Laboratories/SpiralCore/blob/1025d87d048b15cefd483b4c11c70a6e029cb29c/docs/network/evidence/2026-11-03-flowmux/validation/handshake-startup/README.md)
 preserves original reader ownership and promptly rejects EOF during TLS
