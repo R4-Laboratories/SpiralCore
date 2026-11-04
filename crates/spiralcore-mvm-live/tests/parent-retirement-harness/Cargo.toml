@@ -11,11 +11,15 @@ publish = false
 name = "retirement"
 path = "retirement.rs"
 
+[[test]]
+name = "unused"
+path = "unused.rs"
+
 [dependencies]
 spiralcore-mvm-live = { path = "../..", default-features = false, features = ["live", "linux-host", "canonical-host"] }
-mvm-client = { git = "https://github.com/Casey-allard/mvm", rev = "8b833aee8be5c1be9ce0d1197b6b98d4d03625f6", default-features = false, features = ["test-support"] }
-mvm-core = { git = "https://github.com/Casey-allard/mvm", rev = "8b833aee8be5c1be9ce0d1197b6b98d4d03625f6", default-features = false, features = ["test-support"] }
-mvm-hostd = { git = "https://github.com/Casey-allard/mvm", rev = "8b833aee8be5c1be9ce0d1197b6b98d4d03625f6", default-features = false }
+mvm-client = { git = "https://github.com/Casey-allard/mvm", rev = "77752e1967d20caf8bad710de864a0ccd967f9e6", default-features = false, features = ["test-support"] }
+mvm-core = { git = "https://github.com/Casey-allard/mvm", rev = "77752e1967d20caf8bad710de864a0ccd967f9e6", default-features = false, features = ["test-support"] }
+mvm-hostd = { git = "https://github.com/Casey-allard/mvm", rev = "77752e1967d20caf8bad710de864a0ccd967f9e6", default-features = false }
 sha2 = "0.10"
 tempfile = "3"
 tokio = { version = "=1.53.3", features = ["rt", "time", "net"] }

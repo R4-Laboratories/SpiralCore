@@ -86,6 +86,15 @@ impl GrantLifecycle {
         self.retired = true;
         Ok(())
     }
+
+    fn seal_unused(&mut self) -> Result<()> {
+        ensure!(
+            self.admitted_plan.is_none() && self.endpoint == EndpointIssuance::NeverIssued,
+            "original preparation has prior admission or endpoint effects"
+        );
+        self.retired = true;
+        Ok(())
+    }
 }
 
 /// Unused preparation refunds on Drop; launched custody keeps this same owner.
@@ -103,6 +112,30 @@ pub struct ParentLaunchOwner {
 impl ParentLaunchOwner {
     pub fn binding(&self) -> &HostLaunchBinding {
         &self.grant.binding
+    }
+
+    /// Cancel only the same unconverted preparation returned by canonical pure
+    /// preflight. Borrowing keeps that original owner live through every check.
+    pub fn cancel_unused(
+        &mut self,
+        unused: &mvm_client::UnusedHostLifetimePreparation,
+    ) -> Result<()> {
+        ensure!(
+            unused.binding() == &self.grant.binding,
+            "unused preparation binding differs"
+        );
+        ensure!(
+            unused.retains_parent_owner(&self.grant),
+            "unused preparation owner differs"
+        );
+        self.grant.reservation.check_retained_identity()?;
+        self.grant
+            .lifecycle
+            .lock()
+            .map_err(|_| anyhow!("parent lifecycle poisoned"))?
+            .seal_unused()?;
+        self.completed = true;
+        Ok(())
     }
 
     /// Complete only this original native owner after its sealed retirement
@@ -149,8 +182,8 @@ impl Drop for ParentLaunchOwner {
     fn drop(&mut self) {
         // Each retained owner consumes one of the SAME two guest reservations.
         // No record eviction, PID query or caller bool can release uncertainty.
-        // Keep this original owner until the process exits; a future positive
-        // retirement path must explicitly disarm this conservative disposition.
+        // Incomplete ownership stays quarantined until process exit. Only an
+        // explicit original unused/retired completion disarms this disposition.
         if !self.completed {
             std::mem::forget(self.grant.clone());
         }
@@ -461,5 +494,30 @@ mod retirement_policy_tests {
                 .check_launch_open()
                 .is_ok()
         );
+    }
+
+    #[test]
+    fn unused_cancellation_policy_requires_no_admission_and_no_endpoint_effects() {
+        let mut unused = GrantLifecycle::default();
+        unused.seal_unused().unwrap();
+        assert!(unused.retired);
+        assert!(unused.check_launch_open().is_err());
+        unused.seal_unused().unwrap();
+        let mut admitted = admitted_policy(EndpointIssuance::NeverIssued);
+        assert!(admitted.seal_unused().is_err());
+        assert!(!admitted.retired);
+        for endpoint in [
+            EndpointIssuance::Preparing,
+            EndpointIssuance::Issued,
+            EndpointIssuance::Uncertain,
+            EndpointIssuance::CleanupComplete,
+        ] {
+            let mut pending = GrantLifecycle {
+                endpoint,
+                ..Default::default()
+            };
+            assert!(pending.seal_unused().is_err());
+            assert!(!pending.retired);
+        }
     }
 }

@@ -43,8 +43,10 @@ and exclusion; at most two such guest grants can consume the existing envelope.
 Only a matching opaque original `OwnedRetirement` receipt, plus positively
 drained endpoint/disk partitions, can complete the owner. All original binding
 fields must match. A separate unarmed preparation may be canceled by Drop.
-This transaction is the next implementation step; the six preparation/admission
-component tests do not yet qualify it or an actual native launch.
+The transaction and explicit completion methods are implemented in the published
+development checkpoint. Focused policy, accounting and opaque-admission tests
+exercise them without booting a guest. A positive original native retirement
+receipt and a connected resident endpoint provider remain execution gates.
 
 The next disk-to-endpoint mapping exposes only a borrowed read-only projection
 of the original prepared store: installation/profile/generation, stable tenant,
@@ -59,10 +61,19 @@ handoff and positive original-child retirement. The locator is never permission.
 ## Positive completion of the original launch owner
 
 The [parent-retirement addendum](installed-parent-retirement-v1.md) specifies the
-next `finish_retired` implementation: exact sealed native receipt and actual
+implemented `finish_retired` and `finish_pending_retired` entries: exact sealed native receipt and actual
 parent-permit Arc, private endpoint issuance/cleanup state, and a Retired state
 that denies later issuance. Normal admission close permits already-authorized
 cleanup. Completion disarms uncertain Drop but refunds only when all original
 grant owners drop. Endpoint creation remains Unsupported; the addendum issues
 no codec profile or limits, and a positive sealed/native consumer is still a
 separate execution gate.
+
+`cancel_unused` is a separate completion path. It borrows the canonical client's
+sealed `UnusedHostLifetimePreparation`, compares the full original binding and
+the actual private parent Arc, then checks cleanup-safe ledger identity. It
+requires no previous admission and exactly NeverIssued endpoint state. A copied
+binding, a Mock outcome, an error after conversion, or uncertain Drop supplies no
+such proof. Success retires the grant without refunding it before its last owner
+drops. The [unused-preflight contract](unused-host-lifetime-preparation-v1.md)
+defines the four pre-conversion branches that can return the original lifetime.

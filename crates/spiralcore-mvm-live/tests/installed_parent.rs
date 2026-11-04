@@ -435,4 +435,8 @@ fn original_launch_owner_requires_the_canonical_outcomes_sealed_retirement() {
         ParentLaunchOwner::finish_retired;
     let _: fn(&mut ParentLaunchOwner, &mvm_client::OwnedRetirement) -> anyhow::Result<()> =
         ParentLaunchOwner::finish_pending_retired;
+    let _: fn(
+        &mut ParentLaunchOwner,
+        &mvm_client::UnusedHostLifetimePreparation,
+    ) -> anyhow::Result<()> = ParentLaunchOwner::cancel_unused;
 }
