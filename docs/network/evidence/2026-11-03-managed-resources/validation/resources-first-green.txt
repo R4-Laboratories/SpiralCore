@@ -1,0 +1,107 @@
+   Compiling installed-supervisor-harness v0.1.0 (/var/tmp/spiralcore-installed-supervisor-20261103/source/crates/spiralcore-mvm-live/tests/installed-supervisor-harness)
+warning: variants `Sender`, `Receiver`, and `Verify` are never constructed
+   --> src/../../../src/installed_supervisor.rs:113:5
+    |
+112 | pub(crate) enum WorkerRole {
+    |                 ---------- variants in this enum
+113 |     Sender,
+    |     ^^^^^^
+114 |     Receiver,
+    |     ^^^^^^^^
+115 |     Verify,
+    |     ^^^^^^
+    |
+    = note: `WorkerRole` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: struct `WorkerGrant` is never constructed
+   --> src/../../../src/installed_supervisor.rs:120:19
+    |
+120 | pub(crate) struct WorkerGrant {
+    |                   ^^^^^^^^^^^
+
+warning: method `close_admission` is never used
+   --> src/../../../src/installed_supervisor.rs:127:19
+    |
+126 | impl WorkerGrant {
+    | ---------------- method in this implementation
+127 |     pub(crate) fn close_admission(&self) {
+    |                   ^^^^^^^^^^^^^^^
+
+warning: struct `WorkerBinding` is never constructed
+   --> src/../../../src/installed_supervisor.rs:133:19
+    |
+133 | pub(crate) struct WorkerBinding {
+    |                   ^^^^^^^^^^^^^
+
+warning: fields `serial` and `role` are never read
+   --> src/../../../src/installed_supervisor.rs:144:5
+    |
+143 | struct WorkerSlot {
+    |        ---------- fields in this struct
+144 |     serial: u64,
+    |     ^^^^^^
+145 |     role: WorkerRole,
+    |     ^^^^
+
+warning: field `serial` is never read
+   --> src/../../../src/installed_supervisor.rs:152:5
+    |
+151 | struct WorkerLedger {
+    |        ------------ field in this struct
+152 |     serial: u64,
+    |     ^^^^^^
+
+warning: field `session_started` is never read
+   --> src/../../../src/installed_supervisor.rs:168:5
+    |
+163 | pub struct InstalledSupervisor {
+    |            ------------------- field in this struct
+...
+168 |     session_started: bool,
+    |     ^^^^^^^^^^^^^^^
+
+warning: multiple methods are never used
+   --> src/../../../src/installed_supervisor.rs:198:19
+    |
+170 | impl InstalledSupervisor {
+    | ------------------------ methods in this implementation
+...
+198 |     pub(crate) fn claim_session(&mut self) -> Result<()> {
+    |                   ^^^^^^^^^^^^^
+...
+209 |     pub(crate) fn worker_binding(&mut self, grant: &WorkerGrant) -> Result<WorkerBinding> {
+    |                   ^^^^^^^^^^^^^^
+...
+250 |     pub(crate) fn reserve_worker(&mut self, role: WorkerRole) -> Result<WorkerGrant> {
+    |                   ^^^^^^^^^^^^^^
+...
+281 |     pub(crate) fn spawn_worker(
+    |                   ^^^^^^^^^^^^
+...
+326 |     fn worker_slot<'a>(
+    |        ^^^^^^^^^^^
+...
+344 |     pub(crate) fn bind_worker(
+    |                   ^^^^^^^^^^^
+...
+363 |     pub(crate) fn try_reap_worker(&mut self, grant: &WorkerGrant) -> Result<Option<ExitStatus>> {
+    |                   ^^^^^^^^^^^^^^^
+...
+386 |     pub(crate) fn confirm_worker_exit(&mut self, grant: &WorkerGrant) -> Result<()> {
+    |                   ^^^^^^^^^^^^^^^^^^^
+
+warning: `installed-supervisor-harness` (lib) generated 8 warnings
+    Finished `release` profile [optimized] target(s) in 0.91s
+     Running tests/resources.rs (/var/tmp/spiralcore-installed-supervisor-20261103/component-target/release/deps/resources-2b78a766f82fd880)
+
+running 6 tests
+test clones_share_one_host_pool_and_failed_reservation_changes_no_usage ... ok
+test close_and_controller_drop_preserve_exclusion_until_last_budget_owner ... ok
+test disk_domains_are_shared_and_refusals_do_not_spend_other_resources ... ok
+test guest_envelopes_are_separate_and_never_authorize_a_third_guest ... ok
+test returned_owned_value_and_lease_clones_hold_one_charge_until_last_drop ... ok
+test tenant_total_includes_codec_plaintext_and_carrier ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.25s
+

@@ -1,0 +1,217 @@
+   Compiling spiralcore-mvm-live v0.1.0 (/var/tmp/spiralcore-installed-supervisor-20261103/source/crates/spiralcore-mvm-live)
+    Finished `release` profile [optimized] target(s) in 24.09s
+     Running unittests src/lib.rs (/var/tmp/spiralcore-installed-supervisor-20261103/component-target/release/deps/spiralcore_mvm_live-a1d1bc5e406dc4ad)
+
+running 102 tests
+test campaign::canonical::ack_tests::failed_reply_ack_retains_exact_service_payload_and_original_pending_identity ... ok
+test campaign::canonical::event_tests::duplicate_authenticated_call_receipts_before_reply_do_not_complete_or_execute_twice ... ok
+test campaign::canonical::event_tests::exact_duplicate_reply_before_call_receipt_is_acknowledged_without_reexecution ... ok
+test campaign::canonical::event_tests::reply_before_duplicated_call_receipts_does_not_poison_the_next_pending_call ... ok
+test campaign::canonical::fifo_tests::signed_capacity_two_current_reply_waits_for_the_earlier_fifo_reply ... ok
+test campaign::canonical::late_tests::unsolicited_late_then_exact_duplicate_is_acknowledged_without_current_progress ... ok
+test campaign::canonical::limit_tests::authenticated_receipt_flood_stops_at_sixteen_events_and_retains_original_call ... ok
+test campaign::canonical::pending_tests::two_authenticated_call_receipts_without_reply_retain_pending_identity ... ok
+test campaign::canonical::receiver_tests::different_call_while_awaiting_reply_receipt_is_rejected_without_admission_or_cache_loss ... ok
+test campaign::canonical::receiver_tests::older_duplicate_reply_receipt_cannot_release_the_current_reply_cache ... ok
+test campaign::canonical::receiver_tests::receiver_boundary_event_sixteen_from_older_controls_fences_and_keeps_current_cache ... ok
+test campaign::canonical::receiver_tests::receiver_boundary_positive_ack_at_eight_reply_sends_still_completes ... ok
+test campaign::canonical::receiver_tests::receiver_cached_reply_replay_stops_at_eight_invocations_and_fences_without_cache_loss ... ok
+test campaign::canonical::receiver_tests::receiver_replays_the_exact_cached_reply_for_same_call_before_its_positive_receipt ... ok
+test campaign::canonical::reconciliation_limits_tests::fifo_ready_idle_keeps_queued_command_until_authenticated_predecessor_without_retry ... ok
+test campaign::canonical::reconciliation_limits_tests::fifteen_authenticated_old_acks_then_fresh_sixteenth_call_allocates_no_application_state ... ok
+test campaign::canonical::reconciliation_limits_tests::generation_or_original_deadline_change_after_preparation_refuses_before_connect ... ok
+test campaign::canonical::reconciliation_tests::explicit_retry_after_receiver_acked_reply_recovers_only_missing_call_receipt ... ok
+test campaign::canonical::reconciliation_tests::explicit_retry_recovers_missing_call_receipt_and_reply_ack_direct ... ok
+test campaign::canonical::reconciliation_tests::explicit_retry_recovers_missing_call_receipt_through_actual_duplex_relay ... ok
+test campaign::canonical::reconciliation_tests::explicit_retry_recovers_missing_receipt_and_ack_through_actual_duplex_relay ... ok
+test campaign::canonical::reconciliation_tests::explicit_retry_recovers_missing_reply_direct ... ok
+test campaign::canonical::reconciliation_tests::explicit_retry_recovers_missing_reply_through_actual_duplex_relay ... ok
+test campaign::canonical::tests::explicit_campaign_tier_reserves_worst_case_raw_control_and_data_identities ... ok
+test campaign::canonical::tests::independent_service_dispatch_progresses_while_application_phase_is_blocked ... ok
+test campaign::canonical::tests::invoked_send_failure_retains_identity_and_blocks_an_implicit_retransmission ... ok
+test campaign::canonical::tests::real_caller_retains_the_partial_identity_and_refuses_a_substitute_frame ... ok
+test campaign::canonical::write_deadline_tests::canonical_ack_initial_reply_and_cached_reply_partial_writes_keep_original_expiry ... ok
+test campaign::canonical::write_deadline_tests::explicit_controller_stops_at_eight_identical_wire_sends_and_silence_never_retries ... ok
+test campaign::canonical::write_deadline_tests::late_explicit_call_retry_partial_write_keeps_original_signed_deadline_and_identity ... ok
+test campaign::reconciliation::tests::retry_commands_have_one_slot_and_drop_disconnects_the_current_signal ... ok
+test campaign::reconciliation::tests::stale_signal_cannot_enqueue_on_the_next_calls_channel ... ok
+test campaign::session::tests::call_refusal_does_not_register_tracker_or_replace_the_prepared_identity ... ok
+test campaign::session::tests::exchange_deadline_check_rejects_elapsed_instant_while_owner_clocks_are_valid ... ok
+test campaign::session::tests::exchange_deadline_keeps_original_monotonic_expiry_despite_wall_rollback ... ok
+test campaign::session::tests::exchange_deadline_rejects_elapsed_receiver_cap_and_checked_overflow ... ok
+test campaign::session::tests::explicit_retry_preparation_retains_charged_reply_identity_facts_and_cumulative_bounds ... ok
+test campaign::session::tests::explicit_retry_refuses_missing_initial_send_fence_and_original_expiry_without_replacement ... ok
+test campaign::session::tests::incoming_event_allowance_remains_cumulative_at_its_boundary ... ok
+test campaign::session::tests::pre_send_refusal_cannot_extend_original_lifetime_when_wall_clock_rolls_back ... ok
+test campaign::session::tests::receipt_dispositions_keep_acceptance_level_and_remote_refusal_distinct ... ok
+test campaign::session::tests::reply_ack_progress_requires_current_handle_bounded_wire_and_invoked_send ... ok
+test campaign::session::tests::starting_send_keeps_identity_but_blocks_implicit_registration_or_replacement ... ok
+test campaign::session::tests::tracker_refusal_retains_partial_call_and_exact_sealed_request_until_capacity_returns ... ok
+test config::tests::provisioning_separates_signers_and_roundtrips_only_private_bootstrap ... ok
+test fixtures::tests::deterministic_mixed_sequence_preserves_exact_lengths_and_binary_edits ... ok
+test guest::tests::accepts_private_sender_receiver_and_keyless_verifier_inputs ... ok
+test guest::tests::canonical_service_refuses_foreign_control_routes_and_excess_private_keys ... ok
+test guest::tests::current_normal_roles_require_the_explicit_canonical_service_profile ... ok
+test guest::tests::exit_report_interoperates_with_mvm_capture_and_requires_its_ack ... ok
+test guest::tests::launch_shape_validation_does_not_authenticate_against_pre_resync_guest_clock ... ok
+test guest::tests::refuses_missing_outgoing_or_excess_incoming_signing_authority ... ok
+test guest::tests::refuses_unbounded_or_malformed_input_without_echoing_private_bytes ... ok
+test guest::tests::verifier_refuses_mailbox_keys_or_unbounded_readback_requests ... ok
+test host_budget::tests::installed_authority::poison_closes_installed_worker_authority_immediately ... ok
+test host_budget::tests::installed_authority::underflow_closes_installed_worker_authority_immediately ... ok
+test host_budget::tests::poisoned_ledger_refuses_snapshot_and_admission ... ok
+test host_budget::tests::underflow_fences_without_clamping_and_refusals_saturate ... ok
+test installed_owner::binding_tests::active_binding_returns_only_original_identity_and_current_active_epoch ... ok
+test installed_owner::binding_tests::active_binding_uses_the_existing_canonical_storage_fence ... ok
+test installed_owner::tests::failed_initial_intent_barriers_preserve_original_state_and_fence_reopen ... ok
+test installed_owner::tests::failed_postcommit_cleanup_sync_fences_owner_but_absent_marker_allows_durable_successor ... ok
+test installed_owner::tests::holders_aba_must_reject_the_actual_wrong_fd_and_never_retire_live_original_holders ... ok
+test installed_owner::tests::postrename_directory_sync_failure_must_survive_owner_drop_as_a_durable_fence ... ok
+test installed_resources::tests::accounting_corruption_never_panics_refunds_or_releases_exclusion ... ok
+test installed_supervisor::drain_tests::close_and_drain_reaps_exact_child_but_retirement_still_requires_holder_exclusion ... ok
+test installed_supervisor::spawn_tests::binding_requires_the_original_live_child_and_fresh_canonical_owner_state ... ok
+test installed_supervisor::spawn_tests::definite_spawn_failure_closes_launch_and_clears_only_its_proven_empty_slot ... ok
+test installed_supervisor::spawn_tests::owned_spawn_retains_live_child_until_eof_and_rejects_another_controllers_grant ... ok
+test installed_supervisor::tests::controller_drop_reaps_its_exact_live_child_before_releasing_owner_exclusion ... ok
+test installed_supervisor::tests::live_children_block_finish_and_reaped_failure_closes_launch_but_allows_global_retirement ... ok
+test installed_supervisor::tests::two_worker_slots_require_reaping_and_confirmation_and_reject_stale_tokens ... ok
+test installed_worker::peer_fixture::inherited_pair_reports_controller_creator_after_actual_exec ... ok
+test installed_worker::peer_fixture::peer_child_entry ... ok
+test installed_worker::tests::actual_controller_death_before_go_refuses_and_worker_lifetime_exits ... ok
+test installed_worker::tests::bounded_write_deadline_keeps_partial_progress_without_restart ... ok
+test installed_worker::tests::child_entry ... ok
+test installed_worker::tests::child_rejects_a_forged_go_nonce_epoch_role_or_root_spelling ... ok
+test installed_worker::tests::child_rejects_wrong_nonce_and_valid_but_wrong_expected_role ... ok
+test installed_worker::tests::five_records_authorize_exact_input_and_retain_actual_holder_until_context_exit ... ok
+test installed_worker::tests::go_rejects_changed_original_facts_and_child_cannot_boot_after_refusal ... ok
+test installed_worker::tests::input_cap_and_empty_input_refuse_on_actual_local_stream ... ok
+test installed_worker::tests::invalid_profile_role_and_closed_parent_refuse_before_child_activation ... ok
+test installed_worker::tests::oversize_and_partial_records_refuse_without_refreshing_original_deadline ... ok
+test linux_host::linux::custody_tests::custody_excludes_a_competing_writer_without_truncating_the_sidecar ... ok
+test linux_host::linux::custody_tests::replaced_disk_path_and_sidecar_symlink_are_rejected ... ok
+test linux_host::linux::custody_tests::writable_receiver_has_custody_and_sender_and_readonly_have_none ... ok
+test linux_host::tests::canonical_exit_must_be_present_and_successful ... ok
+test linux_host::tests::guest_header_matches_host_architecture_and_private_pack_bounds ... ok
+test linux_host::tests::public_completion_requires_one_done_and_valid_clock ... ok
+test orchestrator::duplex_tests::blocked_forward_write_failure_wakes_idle_sibling_and_retains_partial_sent_bytes ... ok
+test orchestrator::duplex_tests::clean_half_close_drains_buffered_reverse_frame_and_matches_exact_counters ... ok
+test orchestrator::duplex_tests::clean_peer_drop_after_exact_reverse_drain_finishes_without_losing_credits ... ok
+test orchestrator::duplex_tests::partial_prefix_and_payload_eof_fail_and_wake_both_pumps_with_partial_counters ... ok
+test orchestrator::duplex_tests::reverse_ciphertext_progresses_before_any_forward_call ... ok
+test orchestrator::duplex_tests::second_direction_credit_refusal_rolls_back_before_handshake_or_read ... ok
+test orchestrator::duplex_tests::two_forward_ciphertexts_progress_while_reverse_is_withheld ... ok
+test orchestrator::tests::canonical_relay_forwards_all_four_envelopes_and_matches_endpoint_counters ... ok
+test orchestrator::tests::partial_read_wrong_route_cancel_and_failed_write_release_buffer_credit ... ok
+test orchestrator::tests::relay_admits_only_the_provisioned_unexpired_outer_route ... ok
+test orchestrator::tests::relay_credit_precedes_payload_read_and_malformed_reads_release_it ... ok
+test orchestrator::tests::shared_owner_refuses_before_spawn_and_partial_link_admission_rolls_back ... ok
+
+test result: ok. 102 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 11.14s
+
+     Running unittests src/main.rs (/var/tmp/spiralcore-installed-supervisor-20261103/component-target/release/deps/spiralcore_mvm_live-97ba85422b3c7179)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running ../spiralcore-mvm-adapter/tests/live.rs (/var/tmp/spiralcore-installed-supervisor-20261103/component-target/release/deps/adapter_live-6bb00b45a69bf414)
+
+running 11 tests
+test authenticated_but_uncorrelated_and_late_replies_cannot_complete_calls ... ok
+test cancellation_before_handshake_closes_the_owned_socket ... ok
+test canonical_call_and_verified_reply_cross_real_socket_io ... ok
+test ciphertext_clean_half_close_keeps_reverse_direction_writable ... ok
+test ciphertext_framing_handles_split_reads_and_rejects_bad_lengths_and_truncation ... ok
+test live_boot_reply_route_and_application_sequence_are_bound_to_the_proof ... ok
+test live_dispatch_keeps_authenticated_request_available_for_reply ... ok
+test live_open_enforces_the_signed_incoming_queue_budget ... ok
+test live_open_refuses_a_grant_inside_the_clock_uncertainty_margin ... ok
+test live_sender_supports_bounded_clock_lag_and_caps_signed_call_expiry ... ok
+test partial_write_timeout_and_bad_handshake_close_without_retrying_fragments ... ok
+
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.05s
+
+     Running tests/bandwidth_profile.rs (/var/tmp/spiralcore-installed-supervisor-20261103/component-target/release/deps/bandwidth_profile-3695e7a9efb21bd9)
+
+running 1 test
+test legacy_and_explicit_profile_inputs_are_bounded_and_unambiguous ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/broker_objects.rs (/var/tmp/spiralcore-installed-supervisor-20261103/component-target/release/deps/broker_objects-7e96258ee59f95c7)
+
+running 4 tests
+test mixed_object_probe_refuses_unregistered_work_before_creating_payload_stores ... ok
+test raw_mixed_campaign_uses_canonical_tcp_shared_broker_and_reopens_all_targets ... ok
+test raw_mixed_is_a_raw_baseline_on_the_same_registered_targets ... ok
+test refused_large_raw_campaign_records_failure_without_claiming_complete_traffic ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 11.22s
+
+     Running tests/campaign.rs (/var/tmp/spiralcore-installed-supervisor-20261103/component-target/release/deps/campaign-a459649c89b6e6f1)
+
+running 9 tests
+test canonical_service_bootstrap_reserves_private_receipt_keys_and_shared_routes ... ok
+test combined_arms_share_payloads_and_reopen_exact_bytes ... ok
+test mixed_persistent_campaign_crosses_real_stream_and_reopens_exact_bytes ... ok
+test mixed_public_fixtures_match_retained_gateway_identities ... ok
+test qualified_16m_whole_mixed_service_session_reopens_exactly ... ok
+test raw_and_whole_baselines_use_the_same_persistent_verified_channel ... ok
+test same_epoch_new_socket_and_endpoint_recover_published_objects_with_fresh_envelopes ... ok
+test service_campaign_counts_destination_receipts_in_both_directions ... ok
+test shared_broker_dispatches_both_endpoints_without_clock_or_fidelity_loss ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 9.54s
+
+     Running tests/combined_recovery.rs (/var/tmp/spiralcore-installed-supervisor-20261103/component-target/release/deps/combined_recovery-d3ea290a6ca13d99)
+
+running 1 test
+test interrupted_combined_object_is_unpublished_and_fresh_stream_recovers_exactly ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.56s
+
+     Running tests/host_budget.rs (/var/tmp/spiralcore-installed-supervisor-20261103/component-target/release/deps/host_budget-43fed05912fa64e0)
+
+running 6 tests
+test arithmetic_overflow_refuses_atomically_and_released_capacity_is_reusable ... ok
+test held_frames_do_not_hold_ledger_mutex_or_block_other_tenants ... ok
+test host_and_tenant_frame_slots_limit_independently_of_bytes ... ok
+test independent_links_share_host_limits_and_frames_pin_link_lifetime ... ok
+test invalid_configuration_and_fractional_report_counters_are_rejected ... ok
+test tenant_scope_and_link_limits_refuse_without_partial_charges ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/host_pack.rs (/var/tmp/spiralcore-installed-supervisor-20261103/component-target/release/deps/host_pack-a9d32a776a747d3c)
+
+running 3 tests
+test creates_private_sparse_ext4_and_never_overwrites_an_existing_path ... ok
+test packs_exact_guest_bytes_and_private_bootstrap_with_only_fixed_paths ... ok
+test refuses_oversized_or_malformed_bootstrap_and_guest_inputs ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/installed_supervisor.rs (/var/tmp/spiralcore-installed-supervisor-20261103/component-target/release/deps/installed_supervisor-1c1034894ee33ea4)
+
+running 3 tests
+test installed_cli_initializes_explicit_identity_and_retires_failed_asset_preflight ... ok
+test installed_session_refuses_missing_assets_without_legacy_fallback_or_activation ... ok
+test legacy_session_rejects_installed_budget_before_run_files_or_guest_assets ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.16s
+
+     Running tests/reconciliation.rs (/var/tmp/spiralcore-installed-supervisor-20261103/component-target/release/deps/reconciliation-d3f16c308a86a818)
+
+running 3 tests
+test public_reconciliation_entry_recovers_missing_call_receipt_and_reopens_all_exact_objects ... ok
+test public_reconciliation_entry_recovers_missing_reply_and_reopens_all_exact_objects ... ok
+test public_reconciliation_entry_uses_a_fresh_signal_for_each_real_tcp_call_and_probe ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.98s
+
+     Running unittests examples/broker_objects.rs (/var/tmp/spiralcore-installed-supervisor-20261103/component-target/release/examples/broker_objects-258ba2a34c5ebc76)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

@@ -3,9 +3,12 @@
 Tracking: [#43](https://github.com/R4-Laboratories/SpiralCore/issues/43),
 [#49](https://github.com/R4-Laboratories/SpiralCore/issues/49).
 This packet continues the sealed Firecracker handoff packet without rewriting it.
-It is a candidate implementation record; exact release CI/coverage, native HVF
-installed recovery, aggregate plaintext/cache/workspace ownership and the wider
-Ari delivery criteria remain open.
+The bounded implementation merged through PR#71. Its
+[final release qualification](release-qualification/README.md) retains exact
+hosted source/tree custody, native client/storage results, scoped Linux coverage
+and independent review. Native HVF installed recovery, aggregate
+plaintext/cache/workspace ownership and the wider Ari delivery criteria remain
+open. The historical candidate failures below retain their original scope.
 
 The [results report](../../installed-supervisor-results-2026-11-03.md) includes
 the later Linux 16 MiB pair and all four native macOS/HVF pairs. Original
