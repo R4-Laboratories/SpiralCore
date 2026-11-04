@@ -1,0 +1,33 @@
+   Compiling mvm-hostd v0.26.0 (/var/tmp/spiralcore-flowmux-20261103/mvm-source/crates/mvm-hostd)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 22.66s
+     Running unittests src/lib.rs (/var/tmp/spiralcore-flowmux-20261103/mvm-target/debug/deps/mvm_hostd-842a1d69eea2bddf)
+
+running 2 tests
+test supervisor::flowmux::open_flow::tests::selected_payload_mapping_never_bypasses_required_tcp_termination ... FAILED
+test supervisor::flowmux::open_flow::tests::selected_payload_mapping_never_bypasses_required_typed_http_mapping ... FAILED
+
+failures:
+
+---- supervisor::flowmux::open_flow::tests::selected_payload_mapping_never_bypasses_required_tcp_termination stdout ----
+
+thread 'supervisor::flowmux::open_flow::tests::selected_payload_mapping_never_bypasses_required_tcp_termination' (1878567) panicked at crates/mvm-hostd/src/supervisor/flowmux/open_flow.rs:526:9:
+assertion `left == right` failed: selected required profile cannot silently become a plain terminated leg
+  left: Opened
+ right: Refused
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- supervisor::flowmux::open_flow::tests::selected_payload_mapping_never_bypasses_required_typed_http_mapping stdout ----
+
+thread 'supervisor::flowmux::open_flow::tests::selected_payload_mapping_never_bypasses_required_typed_http_mapping' (1878568) panicked at crates/mvm-hostd/src/supervisor/flowmux/open_flow.rs:534:9:
+assertion `left == right` failed: typed selected profile must refuse before an ordinary forward task
+  left: HttpResponseHead
+ right: Reset
+
+
+failures:
+    supervisor::flowmux::open_flow::tests::selected_payload_mapping_never_bypasses_required_tcp_termination
+    supervisor::flowmux::open_flow::tests::selected_payload_mapping_never_bypasses_required_typed_http_mapping
+
+test result: FAILED. 0 passed; 2 failed; 0 ignored; 0 measured; 2442 filtered out; finished in 0.02s
+
+error: test failed, to rerun pass `-p mvm-hostd --lib`

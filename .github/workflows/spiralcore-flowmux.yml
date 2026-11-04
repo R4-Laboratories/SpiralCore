@@ -1,0 +1,118 @@
+name: SpiralCore authenticated FlowMux component
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'crates/spiralcore-mvm-flowmux/**'
+      - 'crates/spiralcore-transfer/**'
+      - 'crates/uor-r4-object-store/**'
+      - 'docs/platforms/mvm-mailbox-portable.json'
+      - '.github/workflows/spiralcore-flowmux.yml'
+permissions:
+  contents: read
+concurrency:
+  group: spiralcore-flowmux-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  matrix:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      include: ${{ steps.rows.outputs.include }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - id: rows
+        shell: pwsh
+        run: |
+          $manifest = Get-Content docs/platforms/mvm-mailbox-portable.json -Raw | ConvertFrom-Json
+          "include=$(@{ include = @($manifest.rows) } | ConvertTo-Json -Depth 8 -Compress)" >> $env:GITHUB_OUTPUT
+  native-stream:
+    needs: matrix
+    name: TLS/object stream / ${{ matrix.id }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix: ${{ fromJSON(needs.matrix.outputs.include) }}
+    defaults:
+      run:
+        shell: pwsh
+    env:
+      CARGO_BUILD_JOBS: 2
+      CARGO_INCREMENTAL: 0
+      CARGO_TERM_COLOR: never
+      NATIVE_TARGET: ${{ matrix.target }}
+      EXPECTED_OS: ${{ matrix.os }}
+      EXPECTED_ARCH: ${{ matrix.arch }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Record native source and runner
+        run: |
+          $ErrorActionPreference = 'Stop'
+          New-Item -ItemType Directory flowmux-evidence | Out-Null
+          if ($env:RUNNER_OS -ne $env:EXPECTED_OS -or $env:RUNNER_ARCH -ne $env:EXPECTED_ARCH) { throw 'Native runner mismatch' }
+          $source = (git rev-parse HEAD).Trim()
+          if ($LASTEXITCODE -ne 0) { throw 'Source identity failed' }
+          @{ source = $source; run = $env:GITHUB_RUN_ID; attempt = $env:GITHUB_RUN_ATTEMPT;
+            os = $env:RUNNER_OS; arch = $env:RUNNER_ARCH; image = $env:ImageVersion;
+            description = [System.Runtime.InteropServices.RuntimeInformation]::OSDescription;
+            scope = 'native process; paired TCP/TLS/shared-object component; no MVM backend or WAN';
+            lock_sha256 = (Get-FileHash crates/spiralcore-mvm-flowmux/Cargo.lock -Algorithm SHA256).Hash
+          } | ConvertTo-Json | Set-Content flowmux-evidence/identity.json
+      - name: Install pinned native toolchain
+        run: |
+          rustup toolchain install "1.97.1-$env:NATIVE_TARGET" --profile minimal --component clippy
+          if ($LASTEXITCODE -ne 0) { throw 'Toolchain install failed' }
+          rustc "+1.97.1-$env:NATIVE_TARGET" -vV | Tee-Object flowmux-evidence/rustc.txt
+          if ($LASTEXITCODE -ne 0 -or !(Select-String -Path flowmux-evidence/rustc.txt -SimpleMatch -Pattern "host: $env:NATIVE_TARGET")) { throw 'Toolchain is not native' }
+      - name: Execute nonzero paired TLS and exact-object tests
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $false
+          $cargoArgs = @("+1.97.1-$env:NATIVE_TARGET", 'test', '--release', '--locked', '--manifest-path',
+            'crates/spiralcore-mvm-flowmux/Cargo.toml', '--all-targets')
+          $listing = (& cargo @cargoArgs -- --list --format terse 2>&1 | Out-String)
+          $code = $LASTEXITCODE
+          $listing | Set-Content flowmux-evidence/test-list.txt
+          if ($code -ne 0) { throw 'Test listing failed' }
+          $listed = [regex]::Matches($listing, '(?m)^.+: test\r?$').Count
+          if ($listed -lt 31) { throw "Missing component coverage: $listed" }
+          $log = (& cargo @cargoArgs -- --format pretty --color never 2>&1 | Out-String)
+          $code = $LASTEXITCODE
+          $log | Set-Content flowmux-evidence/tests.txt
+          $log | Write-Output
+          $summaries = [regex]::Matches($log, 'test result: ok\. (\d+) passed; (\d+) failed; (\d+) ignored; (\d+) measured; (\d+) filtered out;')
+          if ($code -ne 0 -or $summaries.Count -eq 0) { throw 'Native component tests failed' }
+          $passed = 0
+          foreach ($summary in $summaries) {
+            $g = $summary.Groups
+            if ([int]$g[2].Value -ne 0 -or [int]$g[3].Value -ne 0 -or [int]$g[4].Value -ne 0 -or [int]$g[5].Value -ne 0) { throw 'Failed, ignored or filtered native scope' }
+            $passed += [int]$g[1].Value
+          }
+          if ($passed -ne $listed) { throw 'Listed tests do not equal passed tests' }
+          @{ listed = $listed; passed = $passed; failed = 0; ignored = 0; scope = 'component only' } | ConvertTo-Json | Set-Content flowmux-evidence/counts.json
+          if (git status --porcelain -- crates/spiralcore-mvm-flowmux/Cargo.lock) { throw 'Locked execution changed source' }
+      - name: Strict component warnings
+        run: |
+          & cargo "+1.97.1-$env:NATIVE_TARGET" clippy --release --locked --manifest-path crates/spiralcore-mvm-flowmux/Cargo.toml --all-targets -- -D warnings 2>&1 | Tee-Object flowmux-evidence/clippy.txt
+          if ($LASTEXITCODE -ne 0) { throw 'Strict Clippy failed' }
+      - name: Checksum retained evidence
+        if: always()
+        run: |
+          if (Test-Path flowmux-evidence) {
+            Get-ChildItem flowmux-evidence -File | Sort-Object Name | ForEach-Object {
+              "$((Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant())  $($_.Name)"
+            } | Set-Content flowmux-evidence/SHA256SUMS
+          }
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: flowmux-component-${{ matrix.id }}-${{ github.run_attempt }}
+          path: flowmux-evidence/
+          if-no-files-found: error
+          retention-days: 14

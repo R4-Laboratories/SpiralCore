@@ -1,0 +1,15 @@
+   Compiling spiralcore-mvm-flowmux v0.1.0 (/var/tmp/spiralcore-flowmux-20261103/source/crates/spiralcore-mvm-flowmux)
+error[E0599]: no method named `peek` found for enum `Carrier` in the current scope
+   --> src/tcp.rs:422:27
+    |
+ 38 | enum Carrier { Tcp(TcpStream), Tls(crate::tls::TlsCarrier) }
+    | ------------ method `peek` not found for this enum
+...
+422 |         match self.socket.peek(&mut [0; 1]) {
+    |                           ^^^^ method not found in `Carrier`
+    |
+note: the method `peek` exists on the type `TcpStream`
+   --> /rustc/8bab26f4f68e0e26f0bb7960be334d5b520ea452/library/std/src/net/tcp.rs:426:4
+
+For more information about this error, try `rustc --explain E0599`.
+error: could not compile `spiralcore-mvm-flowmux` (lib) due to 1 previous error

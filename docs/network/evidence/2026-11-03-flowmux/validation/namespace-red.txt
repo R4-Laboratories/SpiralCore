@@ -1,0 +1,23 @@
+   Compiling spiralcore-mvm-flowmux v0.1.0 (/var/tmp/spiralcore-flowmux-20261103/source/crates/spiralcore-mvm-flowmux)
+    Finished `test` profile [unoptimized] target(s) in 0.21s
+     Running tests/object_tcp.rs (/var/tmp/spiralcore-flowmux-20261103/target/debug/deps/object_tcp-9f9df5b99fdf7acc)
+
+running 1 test
+test object_namespace_is_immutable_and_checked_before_read ... FAILED
+
+failures:
+
+---- object_namespace_is_immutable_and_checked_before_read stdout ----
+
+thread 'object_namespace_is_immutable_and_checked_before_read' (1444180) panicked at tests/object_tcp.rs:322:5:
+assertion failed: matches!(channel.serve_once(&mut endpoint, &wrong, 0),
+    Err(spiralcore_mvm_flowmux::Error::InvalidBinding))
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    object_namespace_is_immutable_and_checked_before_read
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 3 filtered out; finished in 0.06s
+
+error: test failed, to rerun pass `--test object_tcp`

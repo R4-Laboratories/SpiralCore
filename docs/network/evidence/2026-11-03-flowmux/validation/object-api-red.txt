@@ -1,0 +1,11 @@
+   Compiling spiralcore-mvm-flowmux v0.1.0 (/var/tmp/spiralcore-flowmux-20261103/source/crates/spiralcore-mvm-flowmux)
+error[E0432]: unresolved imports `spiralcore_mvm_flowmux::ObjectChannel`, `spiralcore_mvm_flowmux::ServeEvent`
+ --> tests/object_tcp.rs:1:39
+  |
+1 | use spiralcore_mvm_flowmux::{Binding, ObjectChannel, ServeEvent};
+  |                                       ^^^^^^^^^^^^^  ^^^^^^^^^^ no `ServeEvent` in the root
+  |                                       |
+  |                                       no `ObjectChannel` in the root
+
+For more information about this error, try `rustc --explain E0432`.
+error: could not compile `spiralcore-mvm-flowmux` (test "object_tcp") due to 1 previous error
