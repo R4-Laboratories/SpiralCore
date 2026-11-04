@@ -1,0 +1,114 @@
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	﻿2026-11-04T03:06:06.5894000Z ##[group]Run set -euo pipefail
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:06.5895320Z ^[[36;1mset -euo pipefail^[[0m
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:06.5896250Z ^[[36;1mcargo +1.97.1 test --release --locked \^[[0m
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:06.5897950Z ^[[36;1m  --manifest-path crates/spiralcore-mvm-live/tests/installed-supervisor-harness/Cargo.toml \^[[0m
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:06.5899870Z ^[[36;1m  --all-targets -- --test-threads=1 2>&1 | tee parent-evidence/tests.txt^[[0m
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:06.5901170Z ^[[36;1mfor expected in 18 3 11; do^[[0m
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:06.5903040Z ^[[36;1m  grep -E "^test result: ok\\. $expected passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in [0-9.]+s$" parent-evidence/tests.txt^[[0m
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:06.5904980Z ^[[36;1mdone^[[0m
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:06.5906130Z ^[[36;1mshasum -a 256 -c parent-evidence/source.sha256 > parent-evidence/source-after.txt^[[0m
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:06.6007680Z shell: /bin/bash --noprofile --norc -e -o pipefail {0}
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:06.6009180Z env:
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:06.6011290Z   CARGO_BUILD_JOBS: 2
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:06.6012510Z   CARGO_INCREMENTAL: 0
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:06.6013090Z   EXPECTED_TARGET: x86_64-apple-darwin
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:06.6014190Z   CARGO_TARGET_DIR: /Users/runner/work/_temp/installed-parent-target
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:06.6015270Z ##[endgroup]
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:06.8097160Z     Updating crates.io index
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:07.2043160Z  Downloading crates ...
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:07.2429200Z   Downloaded serde v1.0.229
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:07.2819800Z   Downloaded cpufeatures v0.2.17
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:07.3026110Z   Downloaded quote v1.0.47
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:07.3232440Z   Downloaded typenum v1.20.1
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:07.3409470Z   Downloaded proc-macro2 v1.0.107
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:07.3578520Z   Downloaded serde_derive v1.0.229
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:07.3742180Z   Downloaded cfg-if v1.0.5
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:07.3804190Z   Downloaded crypto-common v0.1.7
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:07.3849970Z   Downloaded digest v0.10.7
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:07.3933680Z   Downloaded generic-array v0.14.7
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:07.4029040Z   Downloaded block-buffer v0.10.4
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:07.4081840Z   Downloaded syn v3.0.9
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:07.4640310Z   Downloaded version_check v0.9.5
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:07.4706520Z   Downloaded serde_core v1.0.229
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:07.4833950Z   Downloaded libc v0.2.191
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:07.7570530Z   Downloaded unicode-ident v1.0.27
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:07.7902290Z   Downloaded sha2 v0.10.9
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:07.8465160Z    Compiling version_check v0.9.5
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:07.8468050Z    Compiling proc-macro2 v1.0.107
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:08.2608750Z    Compiling generic-array v0.14.7
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:14.2868790Z    Compiling quote v1.0.47
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:14.4479670Z    Compiling unicode-ident v1.0.27
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:14.5696360Z    Compiling typenum v1.20.1
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:16.0958190Z    Compiling serde_core v1.0.229
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:16.4096400Z    Compiling syn v3.0.9
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:16.9479810Z    Compiling crypto-common v0.1.7
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:17.0586790Z    Compiling block-buffer v0.10.4
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:17.1992910Z    Compiling libc v0.2.191
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:17.8948940Z    Compiling serde v1.0.229
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:18.3079250Z    Compiling digest v0.10.7
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:20.8648310Z    Compiling serde_derive v1.0.229
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:23.3615130Z    Compiling cpufeatures v0.2.17
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:23.4358750Z    Compiling cfg-if v1.0.5
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:23.5120440Z    Compiling sha2 v0.10.9
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:27.9908120Z    Compiling installed-supervisor-harness v0.1.0 (/Users/runner/work/SpiralCore/SpiralCore/crates/spiralcore-mvm-live/tests/installed-supervisor-harness)
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:28.3068720Z error[E0599]: no associated function or constant named `new_installed` found for struct `HostTransportBudget` in the current scope
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:28.3071050Z    --> src/../../../src/installed_supervisor.rs:182:43
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:28.3084210Z     |
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:28.3092860Z 182 |         let budget = HostTransportBudget::new_installed(config.transport(), authority.clone())?;
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:28.3104150Z     |                                           ^^^^^^^^^^^^^ associated function or constant not found in `HostTransportBudget`
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:28.3108030Z     |
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:28.3109980Z    ::: src/../../../src/host_budget.rs:231:1
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:28.3111930Z     |
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:28.3113780Z 231 | pub struct HostTransportBudget {
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:28.3116420Z     | ------------------------------ associated function or constant `new_installed` not found for this struct
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:28.3118850Z     |
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:28.3121850Z note: if you're trying to build a new `HostTransportBudget`, consider using `HostTransportBudget::new` which returns `std::result::Result<HostTransportBudget, TransportBudgetError>`
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:28.3125170Z    --> src/../../../src/host_budget.rs:250:5
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:28.3127200Z     |
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:28.3129440Z 250 |     pub fn new(config: TransportBudgetConfig) -> Result<Self> {
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:28.3131810Z     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:28.3134490Z 
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:28.3356890Z error[E0599]: no method named `admission_barrier` found for struct `HostTransportBudget` in the current scope
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:28.3362200Z    --> src/../../../src/installed_supervisor.rs:397:24
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:28.3368210Z     |
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:28.3371850Z 397 |         if self.budget.admission_barrier().is_err() {
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:28.3388490Z     |                        ^^^^^^^^^^^^^^^^^ method not found in `HostTransportBudget`
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:28.3393530Z     |
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:28.3395980Z    ::: src/../../../src/host_budget.rs:231:1
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:28.3399240Z     |
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:28.3401590Z 231 | pub struct HostTransportBudget {
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:28.3405090Z     | ------------------------------ method `admission_barrier` not found for this struct
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:28.3410670Z 
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:28.5334420Z error[E0599]: no associated function or constant named `new_installed` found for struct `host_budget::HostTransportBudget` in the current scope
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:28.5409860Z    --> src/../../../src/installed_supervisor.rs:182:43
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:28.5431810Z     |
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:28.5495110Z 182 |         let budget = HostTransportBudget::new_installed(config.transport(), authority.clone())?;
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:28.5510470Z     |                                           ^^^^^^^^^^^^^ associated function or constant not found in `host_budget::HostTransportBudget`
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:28.5578840Z     |
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:28.5593960Z    ::: src/../../../src/host_budget.rs:231:1
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:28.5658750Z     |
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:28.5673200Z 231 | pub struct HostTransportBudget {
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:28.5736650Z     | ------------------------------ associated function or constant `new_installed` not found for this struct
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:28.5753180Z     |
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:28.5842110Z note: if you're trying to build a new `host_budget::HostTransportBudget`, consider using `host_budget::HostTransportBudget::new` which returns `std::result::Result<host_budget::HostTransportBudget, host_budget::TransportBudgetError>`
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:28.5922460Z    --> src/../../../src/host_budget.rs:250:5
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:28.5944800Z     |
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:28.6020540Z 250 |     pub fn new(config: TransportBudgetConfig) -> Result<Self> {
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:28.7021400Z     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:28.7926630Z 
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:28.7942440Z error[E0599]: no method named `admission_barrier` found for struct `host_budget::HostTransportBudget` in the current scope
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:28.7997370Z    --> src/../../../src/installed_supervisor.rs:397:24
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:28.8012850Z     |
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:28.8051500Z 397 |         if self.budget.admission_barrier().is_err() {
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:28.8073350Z     |                        ^^^^^^^^^^^^^^^^^ method not found in `host_budget::HostTransportBudget`
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:28.8084020Z     |
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:28.8141820Z    ::: src/../../../src/host_budget.rs:231:1
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:28.8160880Z     |
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:28.8216120Z 231 | pub struct HostTransportBudget {
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:28.8227960Z     | ------------------------------ method `admission_barrier` not found for this struct
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:28.8282160Z 
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:28.8296720Z For more information about this error, try `rustc --explain E0599`.
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:28.9003740Z error: could not compile `installed-supervisor-harness` (lib) due to 2 previous errors
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:28.9120320Z warning: build failed, waiting for other jobs to finish...
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:29.1120790Z error: could not compile `installed-supervisor-harness` (lib test) due to 2 previous errors
+native-parent (macos-26-intel, x86_64-apple-darwin)	Exact production-file process and resource tests	2026-11-04T03:06:29.1304160Z ##[error]Process completed with exit code 101.

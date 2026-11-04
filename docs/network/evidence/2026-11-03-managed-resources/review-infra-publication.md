@@ -44,3 +44,15 @@ source checks and all other gates remain intact. Hosted execution is pending,
 so this is source/schema review PASS rather than a CI result. The initial
 HOLD and original candidate are preserved above. This review and the separate
 code/Rust/security review are frozen for the root's publication branch.
+
+Executed role correction: the first hosted macOS Intel supervisor row failed
+E0599 because `HostTransportBudget::new_installed` and `admission_barrier` are
+intentionally compiled only for Linux with `linux-host`, or macOS ARM64.
+This invalidates the earlier assertion that this supervisor harness provided
+an Intel component role. The root's minimal corrected workflow SHA-256
+`dc9013afe264d324d93ced0fb1fa524971d24b93af7430e7b699692a330de3f9`
+removes only that row. **PASS for the corrected three-role matrix:** Linux x64,
+Linux ARM64, macOS ARM64. Product cfg remains unchanged; the independent
+owner-only four-role workflow is unchanged. The original hosted compiler
+failure remains retained as `validation/managed-native-first-failed.txt`.
+This correction makes no claim that the failed Intel row executed tests.

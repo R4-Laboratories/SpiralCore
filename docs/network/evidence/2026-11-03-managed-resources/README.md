@@ -50,3 +50,12 @@ The final real lease bridge must bind the actual opaque MVM admission, native
 anchor, original pool/slot/serial and private child configuration before
 activation. A generic retained object, byte-count DTO or independent per-process
 quota is insufficient. Those integration gates remain open.
+
+The first hosted supervisor matrix incorrectly included Intel macOS. That row
+failed compilation because installed supervisor helpers intentionally exist only
+for Linux host builds and Apple Silicon macOS; it did not execute tests. Linux
+x64/ARM64 and Apple Silicon rows passed. The corrected supervisor matrix retains
+those three roles without changing any production platform guard. The separate
+four-row Unix installation-owner component remains unchanged. Intel macOS
+client/component support does not imply a native Intel macOS MVM supervisor.
+The original failure and the review correction are retained explicitly.
