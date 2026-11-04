@@ -1,7 +1,7 @@
 # Networking delivery status
 
 Snapshot: **2026-11-04**, checked against published `origin/main`
-`6aa35867cc24ac987ee42c9bb2fd52a894b763ba` and the live GitHub issue graph.
+`fe8e7102287b060b3634d7a53853307cf4b1e2f3` and the live GitHub issue graph.
 This page separates accepted components, measured experiments and unmerged work.
 The [README](../../README.md) is the architecture/results entry point;
 [issue #42](https://github.com/R4-Laboratories/SpiralCore/issues/42) remains the
@@ -51,7 +51,7 @@ Development checkpoints are published for source inspection:
 
 | Repository / development branch | Immutable checkpoint | Acceptance |
 |---|---|---|
-| [SpiralCore core checkpoint](https://github.com/R4-Laboratories/SpiralCore/tree/codex/spiralcore-reader-cleanup-20261104) | [`6c885fe5a1a03d65a6f9093edc407c98feff31be`](https://github.com/R4-Laboratories/SpiralCore/commit/6c885fe5a1a03d65a6f9093edc407c98feff31be) | Original reader/deadline and terminal-completion component; 39 Linux checks, installed/native/platform acceptance open |
+| [SpiralCore core checkpoint](https://github.com/R4-Laboratories/SpiralCore/tree/codex/spiralcore-tls-startup-20261104) | [`1025d87d048b15cefd483b4c11c70a6e029cb29c`](https://github.com/R4-Laboratories/SpiralCore/commit/1025d87d048b15cefd483b4c11c70a6e029cb29c) | Original reader/deadline, terminal completion and startup EOF component; 43 Linux checks, installed/native/platform acceptance open |
 | [SpiralCore integration checkpoint](https://github.com/R4-Laboratories/SpiralCore/tree/codex/spiralcore-endpoint-owner-20261104) | [`24e6c96df30a84ecb486e788a3f2b70fbfbe5412`](https://github.com/R4-Laboratories/SpiralCore/commit/24e6c96df30a84ecb486e788a3f2b70fbfbe5412) | Original resident/endpoint/store ownership and scoped lifecycle tests on the locked public graph; full installed acceptance open |
 | [MVM fork installed-service checkpoint](https://github.com/Casey-allard/mvm/tree/codex/spiralcore-unused-preflight-20261104) | [`f708539f0c2317acf2e74f8f7833d6072a5abafe`](https://github.com/Casey-allard/mvm/commit/f708539f0c2317acf2e74f8f7833d6072a5abafe) | Non-main contribution-preparation fork |
 
@@ -134,9 +134,27 @@ protected execution passes 39 entries across six objects, plus 10/10 repetitions
 of the original positive fixture; scoped strict Clippy passes. All 384 executed
 source inputs match committed blobs. The 21,206-byte archive preserves 182 hashed
 receipts and its index. Independent Code/Rust/Security review passes this exact
-component. A separate installed setup test still fails when TLS stalls after
-ClientHello; its original deadline/child-reap failure is retained. Setup wake,
-whole installed reader/relay drain and native qualification remain active work.
+component. A separate installed setup test originally failed when TLS stalled
+after ClientHello; its original deadline/child-reap failure is retained.
+
+The [TLS startup successor](https://github.com/R4-Laboratories/SpiralCore/blob/1025d87d048b15cefd483b4c11c70a6e029cb29c/docs/network/evidence/2026-11-03-flowmux/validation/handshake-startup/README.md)
+fixes physical EOF during authentication without changing TLS parsing or
+authentication. Both socket roles first failed with timeout; final qualification
+passes 43 entries, ten terminal-close repetitions and eight scoped strict Clippy
+targets. All 385 executed source inputs match published Git blobs. Its 9,008-byte
+archive retains 73 hashed receipts and the original index, with independent
+Code/Rust/Security review. The newer installed consumer separately passes 16
+focused entries for setup cancellation, reader/relay custody and close/poison
+races; full resource integration and native qualification remain separate gates.
+These results do not boot a VM or establish a WAN speedup.
+
+The [requested-allocation witness](evidence/2026-11-04-owned-pii-requested/README.md)
+executes all 325 nonempty ordered selections of the five canonical redaction
+rules, comparing exact legacy outputs and returning every selection to its
+requested-allocation baseline after drop. Its maximum observed constructor peak
+is 2,254,054 bytes, above the earlier default-policy sample. Search input,
+whole-process RSS and full installed budget acceptance remain explicitly open.
+The compact source/results archive is 163,638 bytes; heavy binaries stay remote.
 
 The development tree contains canonical resident-parent and launcher work,
 original-process guardian custody, shared parent partitions, disposable endpoint
