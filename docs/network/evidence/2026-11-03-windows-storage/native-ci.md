@@ -1,7 +1,8 @@
 # Required native storage gate
 
-This is a prepared gate, **NOT_RUN** here. Add it to the existing native client
-matrix, preserving the canonical MVM source/artifact pins and platform roles.
+This prepares the corrected native gate after the retained initial hosted
+failure. Its new extracted candidate is **NOT_RUN** natively here. Keep it in
+the existing native client matrix, preserving canonical MVM source/artifact pins and platform roles.
 The initial Windows profile is native Server 2022/2025 x64 and Windows 11 ARM64
 on local fixed NTFS. Linux and macOS run the same portable Endpoint tests.
 Do not infer native Windows MVM/backend or WAN support from these tests.
@@ -16,8 +17,17 @@ cargo test --locked --manifest-path crates/spiralcore-transfer/Cargo.toml --lib 
 cargo test --locked --manifest-path crates/spiralcore-transfer/Cargo.toml --test endpoint -- --test-threads=1
 ```
 
-The new selected library scope currently contains three portable tests plus
-three `cfg(windows)` tests: expect three on Unix, six on Windows. Enforce a
+On Windows only, also enumerate and execute the independent FFI backend:
+
+```sh
+cargo test --locked --manifest-path crates/spiralcore-storage-windows/Cargo.toml --lib -- --list
+cargo test --locked --manifest-path crates/spiralcore-storage-windows/Cargo.toml --lib -- --test-threads=1
+```
+
+The selected endpoint library scope contains three portable tests plus
+one `cfg(windows)` path-alias test: expect three on Unix, four on Windows.
+The Windows-only backend contains two ACL/junction tests; require exactly two
+executed tests separately. It has no executed Linux or macOS test scope. Enforce a
 positive listed count and equality between listed/passed tests, zero failures
 and zero ignored tests. Record the unrelated library filtered count as an
 excluded scope; do not claim that selected library tests ran the entire
