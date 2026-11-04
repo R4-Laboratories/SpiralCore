@@ -168,7 +168,7 @@ sequenceDiagram
     A->>A: Authorize + encode plaintext with shared core
     A->>H: Canonical encrypted Call
     H->>B: Same sealed envelope
-    B->>B: Apply frame; publish only when the object verifies
+    B->>B: Apply frame and publish only after object verification
     B-->>H: Separate canonical receipt and application Reply
     H-->>A: Sealed receipt + Reply
     A->>H: Canonical Reply receipt

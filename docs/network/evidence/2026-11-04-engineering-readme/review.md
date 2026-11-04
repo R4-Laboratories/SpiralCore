@@ -34,6 +34,8 @@ Documentation author verified63 local links/images/anchors and preserved former
 README anchors. Root verified command syntax against the existing CLI, inspected
 all API/table/report claims above, checked PNG identities/dimensions and repeated
 scoped diff whitespace validation. No product tests were added merely to validate
-this reversible publication. The rendered GitHub page is checked separately
-before merge. No certification, energy, universal speedup or completed fleet/
+this reversible publication. Actual GitHub rendering caught a semicolon in the mailbox sequence label,
+which terminated the Mermaid statement. The original render failure is retained;
+the label was corrected without changing the workflow. All three diagrams and
+four images are checked in the actual rendered page before merge. No certification, energy, universal speedup or completed fleet/
 canonical-MVM delivery claim is added.
