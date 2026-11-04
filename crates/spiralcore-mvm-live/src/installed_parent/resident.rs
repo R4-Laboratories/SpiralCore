@@ -1,5 +1,5 @@
 //! One original backend and two cancellation-safe, explicitly driven slots.
-use super::{InstalledParentProvider, ParentLaunchOwner, tenant_tag};
+use super::{InstalledParentProvider, ParentLaunchOwner, host_agent::RootHostAgent, tenant_tag};
 use crate::{
     installed_resources::{ManagedClaim, ManagedReservation, ManagedSnapshot},
     installed_supervisor::InstalledSupervisor,
@@ -46,6 +46,9 @@ pub struct InstalledResident {
 struct Live {
     backend: Arc<LocalBackend>,
     provider: Arc<InstalledParentProvider>,
+    helper: Option<RootHostAgent>,
+    failed_helper: Option<anyhow::Error>,
+    has_issued_vm: bool,
     slots: [Option<Slot>; 2],
     next: usize,
     _storage: ManagedReservation,
@@ -157,6 +160,9 @@ impl InstalledResident {
             live: Some(Box::new(Live {
                 backend: Arc::new(backend),
                 provider: Arc::new(provider),
+                helper: None,
+                failed_helper: None,
+                has_issued_vm: false,
                 slots: std::array::from_fn(|_| None),
                 next: 0,
                 _storage: storage,
@@ -174,6 +180,71 @@ impl InstalledResident {
             .ok_or_else(|| anyhow!("resident finished"))?
             .managed_resources()
             .snapshot()?)
+    }
+
+    /// Install the configured helper for the canonical LocalBackend tenant.
+    /// A missing qualified profile refuses before any helper effects.
+    pub fn start_owned_host_agent(&mut self) -> Result<()> {
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            self.start_owned_host_agent_inner()
+        }));
+        match result {
+            Ok(result) => result,
+            Err(panic) => {
+                self.quarantine();
+                std::panic::resume_unwind(panic)
+            }
+        }
+    }
+
+    fn start_owned_host_agent_inner(&mut self) -> Result<()> {
+        ensure!(
+            !self.closed && !self.quarantined,
+            "resident admission closed"
+        );
+        let live = self
+            .live
+            .as_mut()
+            .ok_or_else(|| anyhow!("resident drained"))?;
+        ensure!(
+            !live.has_issued_vm
+                && live.slots.iter().all(Option::is_none)
+                && live.helper.is_none()
+                && live.failed_helper.is_none(),
+            "helper must precede original VM operations and install once"
+        );
+        match live.provider.prepare_owned_host_agent("local") {
+            Ok(owner) => live.helper = Some(owner),
+            Err(error) => match RootHostAgent::from_start_failure(error) {
+                Ok(owner) => {
+                    live.helper = Some(owner);
+                    self.close_admission();
+                    return Err(anyhow!(
+                        "original helper startup failed; resident retains cleanup"
+                    ));
+                }
+                Err(error) if live.provider.host_agent_unused() => return Err(error),
+                Err(error) => {
+                    live.failed_helper = Some(error);
+                    self.quarantined = true;
+                    self.close_admission();
+                    return Err(anyhow!(
+                        "uncertain helper startup; resident custody retained"
+                    ));
+                }
+            },
+        }
+        // Store the actual owner before any fallible registrar installation.
+        // Failure retains this same backend/helper for explicit shutdown.
+        let result = (|| -> Result<()> {
+            let registrar = live.helper.as_ref().unwrap().registrar()?;
+            live.backend.install_owned_host_agent(registrar)?;
+            Ok(())
+        })();
+        if result.is_err() {
+            self.close_admission();
+        }
+        result
     }
 
     pub fn begin_launch(&mut self, request: LaunchRequest, tenant: &str) -> Result<ResidentId> {
@@ -197,6 +268,9 @@ impl InstalledResident {
         let prepared =
             live.provider
                 .prepare_vm(&request.host_lifetime_intent(), tenant, backend_kind)?;
+        // This ordering barrier survives even genuine unused retirement and
+        // later failures while constructing the original launch operation.
+        live.has_issued_vm = true;
         let id = ResidentId {
             slot: index,
             serial: prepared.binding().grant_serial,
@@ -299,6 +373,19 @@ impl InstalledResident {
                 .is_none_or(|live| live.slots.iter().all(Option::is_none)),
             "resident still owns operations or cleanup"
         );
+        let shutdown = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            if let Some(helper) = self.live.as_mut().and_then(|live| live.helper.as_mut()) {
+                helper.shutdown()?;
+            }
+            Ok::<(), anyhow::Error>(())
+        }));
+        match shutdown {
+            Ok(result) => result?,
+            Err(panic) => {
+                self.quarantine();
+                std::panic::resume_unwind(panic)
+            }
+        }
         // Weak registration cannot permanently retain these real reservations.
         // Other actual scoped owners still make the SAME global finish refuse.
         drop(self.live.take());
@@ -312,11 +399,11 @@ impl InstalledResident {
 impl Drop for InstalledResident {
     fn drop(&mut self) {
         self.close_admission();
-        if self
-            .live
-            .as_ref()
-            .is_some_and(|live| live.slots.iter().any(Option::is_some))
-        {
+        if self.live.as_ref().is_some_and(|live| {
+            live.slots.iter().any(Option::is_some)
+                || live.helper.is_some()
+                || live.failed_helper.is_some()
+        }) {
             // Preserve backend, futures, outcomes, provider and actual resources
             // together. This is bounded fail-closed custody, not background work.
             self.quarantine();

@@ -7,6 +7,9 @@ use std::{
 };
 
 fn prepared_service() -> (tempfile::TempDir, InstalledResident) {
+    prepared_service_with_backend(LocalBackend::with_hypervisor("mock"))
+}
+fn prepared_service_with_backend(backend: LocalBackend) -> (tempfile::TempDir, InstalledResident) {
     let home = tempfile::Builder::new()
         .permissions(fs::Permissions::from_mode(0o700))
         .tempdir()
@@ -21,9 +24,138 @@ fn prepared_service() -> (tempfile::TempDir, InstalledResident) {
     )
     .unwrap();
     let supervisor = InstalledSupervisor::start(owner, config).unwrap();
-    let service =
-        InstalledResident::prepare(supervisor, LocalBackend::with_hypervisor("mock")).unwrap();
+    let service = InstalledResident::prepare(supervisor, backend).unwrap();
     (home, service)
+}
+
+#[test]
+fn missing_helper_profile_refuses_without_consuming_resident_or_credit() {
+    let (_home, mut service) = prepared_service();
+    let before = service.usage().unwrap();
+    assert!(service.start_owned_host_agent().is_err());
+    assert!(!service.closed && !service.quarantined);
+    assert_eq!(service.usage().unwrap().usage, before.usage);
+    assert_eq!(
+        service.usage().unwrap().active_reservations,
+        before.active_reservations
+    );
+    service.try_finish().unwrap();
+}
+
+#[test]
+fn helper_start_refuses_after_vm_reservation_and_after_admission_close() {
+    let (_home, mut service) = prepared_service();
+    let id = service
+        .begin_launch(request("helper-after-vm-refusal"), "local")
+        .unwrap();
+    let before = service.usage().unwrap().usage;
+    assert!(service.start_owned_host_agent().is_err());
+    assert_eq!(service.usage().unwrap().usage, before);
+    service.request_stop(id).unwrap();
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap();
+    assert_eq!(
+        runtime.block_on(service.drive_once()).unwrap().state,
+        ResidentStatus::UnusedRetired
+    );
+    let error = service.start_owned_host_agent().unwrap_err();
+    assert!(
+        error.to_string().contains("helper must precede"),
+        "completed original preparation was forgotten: {error}"
+    );
+    service.close_admission();
+    let before = service.usage().unwrap().usage;
+    assert!(service.start_owned_host_agent().is_err());
+    assert_eq!(service.usage().unwrap().usage, before);
+    service.try_finish().unwrap();
+}
+
+#[test]
+fn poisoned_helper_state_preserves_whole_resident_without_a_vm() {
+    let (_home, mut service) = prepared_service();
+    let live = service.live.as_ref().unwrap();
+    let backend = Arc::downgrade(&live.backend);
+    let pool = live.provider.shared.pool.clone();
+    let before = pool.snapshot().unwrap().usage;
+    let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        let _held = live.provider.shared.host_agent.lock().unwrap();
+        panic!("controlled helper-state poison before startup");
+    }));
+    assert!(service.start_owned_host_agent().is_err());
+    assert!(service.quarantined && service.closed);
+    assert!(
+        service.live.is_some(),
+        "unknown startup lost actual resident custody"
+    );
+    assert!(service.try_finish().is_err());
+    drop(service);
+    assert!(backend.upgrade().is_some());
+    assert_eq!(pool.snapshot().unwrap().usage, before);
+    // No helper or guest ran. Only original managed-owner retention is tested.
+}
+
+#[test]
+#[ignore = "requires protected same-revision canonical helper binaries and a fresh synthetic MVM_HOME"]
+fn resident_stops_actual_helper_then_drops_backend_before_final_alias_drain() {
+    assert!(std::env::var_os("MVM_HOST_AGENT_PATH").is_some());
+    assert!(std::env::var_os("MVM_HOME").is_some());
+    let keys = mvm_core::config::mvm_keys_dir();
+    assert!(!keys.exists());
+    let _identity = mvm_hostd::audit::host_keypair::load_or_init_at(&keys).unwrap();
+    let (_home, mut service) = prepared_service_with_backend(LocalBackend::with_hypervisor(
+        if cfg!(target_os = "linux") {
+            "firecracker"
+        } else {
+            "hvf"
+        },
+    ));
+    let live = service.live.as_ref().unwrap();
+    live.provider
+        .configure_host_agent(
+            service.supervisor.as_ref().unwrap(),
+            "local",
+            super::super::host_agent::QualifiedHostAgentProfile::fixture(ManagedClaim {
+                // Functional custody fixture; these candidate numbers do not
+                // qualify a shipping resource model or activate a native profile.
+                host_plaintext_bytes: 40 << 20,
+                host_metadata_bytes: 12 << 20,
+                host_stack_bytes: if cfg!(target_os = "linux") {
+                    32 << 20
+                } else {
+                    34 << 20
+                },
+                workers: 2,
+                ..Default::default()
+            }),
+        )
+        .unwrap();
+    let pool = live.provider.shared.pool.clone();
+    let backend = Arc::downgrade(&live.backend);
+    service.start_owned_host_agent().unwrap();
+    let live = service.live.as_ref().unwrap();
+    assert!(Arc::ptr_eq(&backend.upgrade().unwrap(), &live.backend));
+    let alias = live.helper.as_ref().unwrap().registrar().unwrap();
+    assert!(service.start_owned_host_agent().is_err());
+    assert_eq!(pool.snapshot().unwrap().usage.workers, 2);
+    service.close_admission();
+    assert!(
+        service.try_finish().is_err(),
+        "external registrar alias still owns its credit"
+    );
+    assert!(
+        service.live.is_none(),
+        "positive helper shutdown did not release the backend table"
+    );
+    assert!(
+        backend.upgrade().is_none(),
+        "original backend registrar still retained"
+    );
+    assert_eq!(pool.snapshot().unwrap().usage.workers, 2);
+    drop(alias);
+    assert_eq!(pool.snapshot().unwrap().usage.workers, 0);
+    service.try_finish().unwrap();
 }
 fn request(name: &str) -> LaunchRequest {
     LaunchRequest::builder(

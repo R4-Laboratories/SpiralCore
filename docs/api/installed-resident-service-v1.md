@@ -228,3 +228,53 @@ private driver-policy tests and one actual canonical preflight/unused two-slot
 case pass. The earlier source-only decision remains above as history. No guest
 boots in these tests. Positive native retirement, actual endpoint/store ownership
 and complete resource/platform/WAN acceptance remain separate required gates.
+
+## Original helper consumer
+
+The resident's fixed `Live` stores one original `RootHostAgent` beside its SAME
+backend and provider, outside individual VM slots. `start_owned_host_agent`
+uses the canonical LocalBackend tenant `local`; it refuses after admission
+close, any VM operation, or an earlier helper installation. The default missing
+qualified profile refuses before effects. This API adds no profile constructor
+or numeric/resource activation.
+
+Reserve Live's changed inline layout before allocating it, using its existing
+size-based reservation. The provider separately reserves the helper's accepted
+claim from the SAME pool before starting it. After successful preparation,
+store the actual owner BEFORE obtaining/installing its original registrar into
+the existing backend through the nonconsuming SDK API. Installation failure
+closes admission and retains the owner/backend for explicit cleanup; do not
+reconstruct either. A private consuming downcast adopts the original owner from
+typed startup failure. An unrecognized failure is refundable only in the
+provider's privately observed Unused/no-attempt phase. Otherwise retain the
+error and the whole resident, close admission, and refuse global completion.
+Any panic quarantines the whole original live table before resuming unwind.
+
+`try_finish` first closes admission and requires all original VM/endpoint
+operations to retire. Then it calls actual helper shutdown outside bookkeeping
+locks. Failure preserves `Live`. Only positive shutdown permits dropping the
+ENTIRE table, including the backend's registrar reference, before the original
+supervisor's global drain check. An external original alias can still keep that
+check Busy; after its last Drop, the same supervisor may finish. Incomplete
+resident Drop with any helper/error custody quarantines the table even if both
+VM slots are empty. Neither EOF nor an empty slot is a helper-exit receipt.
+
+TDD starts with actual E0599 against the previously qualified library metadata.
+Focused cases cover missing profile/no effects, VM/closed admission refusal,
+poisoned helper-state whole-owner retention, and a separately selected real
+canonical daemon/signer case. The latter uses a fresh synthetic home and
+protected SAME-revision helper binaries, proves original backend identity and
+alias-credit retention across shutdown/drain, and boots no guest. The final locked Linux release scope passes 22 normal parent entries with two
+helper cases excluded by that invocation, then explicitly executes the new
+canonical-helper case: one PASS, zero ignored. It proves actual daemon/signer
+shutdown followed by original backend destruction while an external registrar
+alias still retains the original credit; its last Drop permits the SAME
+supervisor to finish. A later regression first failed after genuine unused VM
+retirement because the original preparation had been forgotten. A monotonic
+flag, set immediately after successful prepare_vm and never reset, now enforces
+helper installation before the first preparation. Strict Clippy over the
+library and test targets exits zero. Source and protected-binary before/after
+readbacks agree. Earlier helper-only results retain their original source
+identity. These cases boot no guest and add no numeric profile, object-transfer
+or WAN qualification. Retained telemetry custody and native guest acceptance
+remain separate integration requirements.

@@ -97,6 +97,15 @@ pub(super) fn synthetic_start_failure_reason(error: &anyhow::Error) -> String {
 }
 
 impl InstalledParentProvider {
+    // This observation only recognizes the private no-attempt phase after a
+    // refusal. Poison or any attempted handoff is conservatively uncertain.
+    pub(super) fn host_agent_unused(&self) -> bool {
+        self.shared
+            .host_agent
+            .lock()
+            .is_ok_and(|slot| slot.phase == Phase::Unused)
+    }
+
     #[cfg(test)]
     pub(super) fn configure_host_agent(
         &self,
@@ -199,16 +208,24 @@ impl InstalledParentProvider {
             if matches!(owner.agent, Some(Agent::Failed(_))) {
                 return Err(StartFailure { owner }.into());
             }
-            let mut slot = self
-                .shared
-                .host_agent
-                .lock()
-                .map_err(|_| anyhow!("helper state poisoned"))?;
-            ensure!(
-                slot.phase == Phase::Preparing,
-                "original helper admission changed"
-            );
-            slot.phase = Phase::Active;
+            let activated = (|| -> Result<()> {
+                let mut slot = self
+                    .shared
+                    .host_agent
+                    .lock()
+                    .map_err(|_| anyhow!("helper state poisoned"))?;
+                ensure!(
+                    slot.phase == Phase::Preparing,
+                    "original helper admission changed"
+                );
+                slot.phase = Phase::Active;
+                Ok(())
+            })();
+            if activated.is_err() {
+                // Startup already produced an actual owner. A late state
+                // failure must return that owner, not erase it through Drop.
+                return Err(StartFailure { owner }.into());
+            }
             Ok(owner)
         })();
         if result.is_err() {
@@ -223,6 +240,12 @@ impl InstalledParentProvider {
     }
 }
 impl RootHostAgent {
+    pub(super) fn from_start_failure(error: anyhow::Error) -> Result<Self> {
+        error
+            .downcast::<StartFailure>()
+            .map(|failure| failure.owner)
+    }
+
     pub(super) fn registrar(&self) -> Result<OwnedHostAgentRegistrar> {
         self.permit.check_current(&self.permit.tenant)?;
         match self.agent.as_ref() {
