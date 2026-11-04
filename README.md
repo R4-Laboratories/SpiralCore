@@ -45,8 +45,8 @@ Unmerged work includes the canonical resident parent, exact-process guardian
 custody, disposable endpoint-disk inventory, admitted FlowMux/access activation,
 and Small/Ordered/readiness candidates. These are not part of PR72's accepted
 source. [Current checkpoints, failures and open gates →](docs/network/current-status.md)
-Published development code: [SpiralCore integration `0bd0f4d0`](https://github.com/R4-Laboratories/SpiralCore/tree/0bd0f4d0fc8200467a7164c7d6564adeadf27595)
-and [MVM fork `f708539f`](https://github.com/Casey-allard/mvm/tree/f708539f0c2317acf2e74f8f7833d6072a5abafe).
+Published development code: [SpiralCore integration `56db5291`](https://github.com/R4-Laboratories/SpiralCore/tree/56db5291bf53433340eaf7102041370ee48aa7cc)
+and [MVM fork `bef4146c`](https://github.com/Casey-allard/mvm/tree/bef4146c0de18b22ac392118acfd898a369cc64c).
 The [resident lifecycle report](https://github.com/R4-Laboratories/SpiralCore/blob/ef4f5530cb4df41ef534dd63b149f2de5dd107b3/docs/network/evidence/2026-11-04-resident-service/README.md)
 records one original backend, two cancellation-safe resident slots, real registry
 resource drain and protected lifecycle tests. A caught operation panic fences the
@@ -71,6 +71,14 @@ replacement of MVM's shortened broker-socket directory. Its shipping profile
 remains inactive; per-VM registration, resident integration and native transfer
 acceptance are still open. Original failures and scoped review are public in a
 26,672-byte receipt archive; no guest or WAN result is inferred from this test.
+
+The [config-admission successor](https://github.com/R4-Laboratories/SpiralCore/blob/56db5291bf53433340eaf7102041370ee48aa7cc/docs/network/evidence/2026-11-04-parent-config/README.md)
+binds actual opaque admission and the original VM anchor before canonical
+registration facts commit. It fixes a reproduced preflight ordering failure.
+The final locked Git graph passes 19 parent checks (one real-helper case remains
+ignored), strict Clippy and 131 source-to-Git checks, with one MVM Core/Contract
+and no path overrides. This scope starts no guest and issues no VM registration;
+the installed resource profile remains inactive.
 
 The [latest reader/TLS development checkpoint](https://github.com/R4-Laboratories/SpiralCore/blob/1025d87d048b15cefd483b4c11c70a6e029cb29c/docs/network/evidence/2026-11-03-flowmux/validation/handshake-startup/README.md)
 preserves original reader ownership and promptly rejects EOF during TLS
