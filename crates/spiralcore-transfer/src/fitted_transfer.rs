@@ -77,7 +77,29 @@ pub(crate) fn append(
     Ok(())
 }
 
-pub(crate) fn decode(mode: Mode, artifact: &[u8], encoded: &[u8], len: usize) -> Result<Vec<u8>> {
+pub(crate) fn decode_with_resource_profile(
+    mode: Mode,
+    artifact: &[u8],
+    encoded: &[u8],
+    len: usize,
+    resources: crate::resource_profile::ResourceProfile,
+) -> Result<Vec<u8>> {
+    if resources == crate::resource_profile::ResourceProfile::SmallV1 {
+        resources.check_target(len, len)?;
+        resources.check_artifact(artifact.len())?;
+        return match mode {
+            Mode::SchemaV1 => crate::schema::decode(artifact, encoded, len),
+            Mode::SchemaZstdV1 => {
+                crate::schema_zstd::PreparedDecoder::new_with_resource_profile(artifact, resources)?
+                    .decode(encoded, len)
+            }
+            Mode::ZstdWholeV1 => {
+                crate::zstd_whole::PreparedDecoder::new_with_resource_profile(resources)?
+                    .decode(encoded, len)
+            }
+            _ => Err(Error::Unsupported),
+        };
+    }
     match mode {
         Mode::SchemaV1 => crate::schema::decode(artifact, encoded, len),
         Mode::ZstdDictionaryV1 => crate::zstd_dictionary::decode(artifact, encoded, len),

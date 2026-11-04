@@ -41,6 +41,7 @@ enum Prepared {
     Combined(Box<CombinedSession>),
 }
 pub struct ObjectSender {
+    resources: crate::resource_profile::ResourceProfile,
     profile: super::NegotiatedProfile,
     namespace: Id,
     prepared: Option<Prepared>,
@@ -61,16 +62,35 @@ impl ObjectSender {
         schema: Option<&[u8]>,
         profile: super::NegotiatedProfile,
     ) -> Result<Self> {
+        Self::new_with_resource_profile(
+            mode,
+            context,
+            schema,
+            profile,
+            crate::resource_profile::ResourceProfile::General,
+        )
+    }
+    pub fn new_with_resource_profile(
+        mode: ObjectMode,
+        context: &Context,
+        schema: Option<&[u8]>,
+        profile: super::NegotiatedProfile,
+        resources: crate::resource_profile::ResourceProfile,
+    ) -> Result<Self> {
+        resources.check_negotiated(profile)?;
         let namespace = context.namespace()?;
         let prepared = match (mode, schema) {
             (ObjectMode::Raw, None) => Prepared::Raw,
-            (ObjectMode::Whole, None) => Prepared::Whole(PreparedEncoder::new()?),
-            (ObjectMode::Warm, Some(schema)) => {
-                Prepared::Warm(Box::new(WarmSession::new(context, schema)?))
+            (ObjectMode::Whole, None) => {
+                Prepared::Whole(PreparedEncoder::new_with_resource_profile(resources)?)
             }
+            (ObjectMode::Warm, Some(schema)) => Prepared::Warm(Box::new(
+                WarmSession::new_with_resource_profile(context, schema, resources)?,
+            )),
             _ => return Err(Error::Malformed),
         };
         Ok(Self {
+            resources,
             namespace,
             profile,
             prepared: Some(prepared),
@@ -90,12 +110,27 @@ impl ObjectSender {
         prediction: PreparedPrediction,
         profile: super::NegotiatedProfile,
     ) -> Result<Self> {
+        Self::with_runtime_resource_profile(
+            context,
+            prediction,
+            profile,
+            crate::resource_profile::ResourceProfile::General,
+        )
+    }
+    pub fn with_runtime_resource_profile(
+        context: &Context,
+        prediction: PreparedPrediction,
+        profile: super::NegotiatedProfile,
+        resources: crate::resource_profile::ResourceProfile,
+    ) -> Result<Self> {
+        resources.check_negotiated(profile)?;
         Ok(Self {
+            resources,
             profile,
             namespace: context.namespace()?,
-            prepared: Some(Prepared::Runtime(Box::new(RuntimeSession::new(
-                context, prediction,
-            )?))),
+            prepared: Some(Prepared::Runtime(Box::new(
+                RuntimeSession::new_with_resource_profile(context, prediction, resources)?,
+            ))),
         })
     }
     /// One prediction and one rolling acknowledged base share prepared codecs.
@@ -130,11 +165,32 @@ impl ObjectSender {
         policy: SelectionPolicy,
         profile: super::NegotiatedProfile,
     ) -> Result<Self> {
+        Self::with_combined_resource_profile(
+            context,
+            prediction,
+            schema,
+            policy,
+            profile,
+            crate::resource_profile::ResourceProfile::General,
+        )
+    }
+    pub fn with_combined_resource_profile(
+        context: &Context,
+        prediction: PreparedPrediction,
+        schema: &[u8],
+        policy: SelectionPolicy,
+        profile: super::NegotiatedProfile,
+        resources: crate::resource_profile::ResourceProfile,
+    ) -> Result<Self> {
+        resources.check_negotiated(profile)?;
         Ok(Self {
+            resources,
             profile,
             namespace: context.namespace()?,
             prepared: Some(Prepared::Combined(Box::new(
-                CombinedSession::new_with_policy(context, prediction, schema, policy)?,
+                CombinedSession::new_with_resource_profile(
+                    context, prediction, schema, policy, resources,
+                )?,
             ))),
         })
     }
@@ -155,6 +211,9 @@ impl ObjectSender {
         mut exchange: F,
     ) -> Result<Stats> {
         let profile = self.profile;
+        if self.resources == crate::resource_profile::ResourceProfile::SmallV1 {
+            self.resources.check_artifact(bytes.capacity())?;
+        }
         self.state(context)?;
         profile.check_len(bytes.len())?;
         let exchange = |frames: &[Frame]| profile.exchange(frames, &mut exchange);
@@ -215,6 +274,9 @@ impl ObjectSender {
         mut exchange: F,
     ) -> Result<ObjectReceipt> {
         let profile = self.profile;
+        if self.resources == crate::resource_profile::ResourceProfile::SmallV1 {
+            self.resources.check_target(bytes.len(), bytes.capacity())?;
+        }
         self.state(context)?;
         profile.check_len(bytes.len())?;
         let exchange = |frames: &[Frame]| profile.exchange(frames, &mut exchange);

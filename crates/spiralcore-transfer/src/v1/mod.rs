@@ -20,6 +20,14 @@ pub struct Capabilities {
     pub codec_mask: u16,
 }
 impl Capabilities {
+    pub fn small_v1() -> Self {
+        Self {
+            profile: 2,
+            max_object_bytes: 64 * 1024,
+            codec_mask: 891,
+            ..Self::full()
+        }
+    }
     pub fn full() -> Self {
         Self {
             major: 1,
@@ -33,10 +41,13 @@ impl Capabilities {
     fn validate(&self) -> Result<()> {
         if self.major != 1
             || self.minor != 0
-            || self.profile != 1
+            || !matches!(self.profile, 1 | 2)
             || self.codec_mask & !1023 != 0
             || self.codec_mask & 1 == 0
         {
+            return Err(Error::Unsupported);
+        }
+        if self.profile == 2 && (self.max_object_bytes > 64 * 1024 || self.codec_mask & !891 != 0) {
             return Err(Error::Unsupported);
         }
         if self.max_frame_bytes != MAX_FRAME as u32
@@ -50,6 +61,9 @@ impl Capabilities {
     pub fn negotiate(&self, peer: &Self) -> Result<NegotiatedProfile> {
         self.validate()?;
         peer.validate()?;
+        if self.profile != peer.profile {
+            return Err(Error::Unsupported);
+        }
         Ok(NegotiatedProfile {
             capabilities: Self {
                 max_object_bytes: self.max_object_bytes.min(peer.max_object_bytes),
@@ -170,8 +184,22 @@ impl<A: Authority> ObjectEndpoint<A> {
         profile: NegotiatedProfile,
         policy: ColdGraphPolicy,
     ) -> Result<Self> {
+        crate::resource_profile::ResourceProfile::General.check_negotiated(profile)?;
         Ok(Self {
             inner: Endpoint::open_with_policy(root, limits, authority, policy)?,
+            profile,
+        })
+    }
+    pub fn open_with_resource_profile(
+        root: &Path,
+        limits: Limits,
+        authority: A,
+        profile: NegotiatedProfile,
+        resources: crate::resource_profile::ResourceProfile,
+    ) -> Result<Self> {
+        resources.check_negotiated(profile)?;
+        Ok(Self {
+            inner: Endpoint::open_with_resource_profile(root, limits, authority, resources)?,
             profile,
         })
     }

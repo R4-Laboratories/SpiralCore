@@ -172,7 +172,14 @@ pub(crate) fn prepare(target: &[u8], base: Option<&[u8]>, warm_probe: bool) -> R
     if best.selection.exact_repeat_probe {
         return Ok(best);
     }
-    conventional(&mut best, target, base, warm_probe, false)?;
+    conventional(
+        &mut best,
+        target,
+        base,
+        warm_probe,
+        false,
+        crate::resource_profile::ResourceProfile::General,
+    )?;
     Ok(best)
 }
 
@@ -185,6 +192,28 @@ pub(crate) fn prepare_runtime<P>(
 where
     P: FnOnce() -> Result<Option<Vec<Vec<u8>>>>,
 {
+    prepare_runtime_with_resource_profile(
+        target,
+        checkpoint,
+        warm_probe,
+        runtime,
+        crate::resource_profile::ResourceProfile::General,
+    )
+}
+pub(crate) fn prepare_runtime_with_resource_profile<P>(
+    target: &[u8],
+    checkpoint: &[u8],
+    warm_probe: bool,
+    runtime: P,
+    resources: crate::resource_profile::ResourceProfile,
+) -> Result<Prepared>
+where
+    P: FnOnce() -> Result<Option<Vec<Vec<u8>>>>,
+{
+    resources.check_target(target.len(), target.len())?;
+    if resources == crate::resource_profile::ResourceProfile::SmallV1 {
+        resources.check_artifact(checkpoint.len())?;
+    }
     let mut best = initial(target, Some(checkpoint), warm_probe)?;
     if best.selection.exact_repeat_probe {
         return Ok(best);
@@ -192,7 +221,14 @@ where
     if let Some(bodies) = runtime()? {
         best.consider(Mode::RuntimeV1, bodies, warm_probe)?;
     }
-    conventional(&mut best, target, Some(checkpoint), warm_probe, true)?;
+    conventional(
+        &mut best,
+        target,
+        Some(checkpoint),
+        warm_probe,
+        true,
+        resources,
+    )?;
     Ok(best)
 }
 
@@ -224,9 +260,14 @@ fn conventional(
     base: Option<&[u8]>,
     warm_probe: bool,
     pruning: bool,
+    resources: crate::resource_profile::ResourceProfile,
 ) -> Result<()> {
     if !pruning || !best.prune(Mode::Zstd, zstd_lower_bound(target.len(), warm_probe)) {
-        best.consider(Mode::Zstd, compressed_chunks(target)?, warm_probe)?;
+        best.consider(
+            Mode::Zstd,
+            compressed_chunks(target, resources)?,
+            warm_probe,
+        )?;
     }
     if let Some(base) = base {
         let prune_sparse = pruning
@@ -246,7 +287,8 @@ fn conventional(
                 prefix_lower_bound(target.len(), warm_probe)?,
             );
         if !prune_prefix {
-            let encoded = crate::zstd_prefix::encode(base, target)?;
+            let encoded =
+                crate::zstd_prefix::encode_with_resource_profile(base, target, resources)?;
             // Cost the contiguous encoded candidate first. Only materialize its
             // transport bodies when it wins, avoiding another full losing copy.
             let prefix_cost = cost(
@@ -279,13 +321,30 @@ fn conventional(
     Ok(())
 }
 
-fn compressed_chunks(target: &[u8]) -> Result<Vec<Vec<u8>>> {
+fn compressed_chunks(
+    target: &[u8],
+    resources: crate::resource_profile::ResourceProfile,
+) -> Result<Vec<Vec<u8>>> {
     let mut bodies = Vec::new();
     bodies
         .try_reserve_exact(target.len().div_ceil(MAX_CHUNK))
         .map_err(|_| Error::Limit)?;
     for chunk in target.chunks(MAX_CHUNK) {
-        let compressed = zstd::bulk::compress(chunk, 1).map_err(|_| Error::Malformed)?;
+        let compressed = if resources == crate::resource_profile::ResourceProfile::General {
+            zstd::bulk::compress(chunk, 1).map_err(|_| Error::Malformed)?
+        } else {
+            let mut encoder = resources.encoder(chunk.len())?;
+            let mut out = Vec::new();
+            out.try_reserve_exact(crate::zstd_prefix::encoded_cap(chunk.len())?)
+                .map_err(|_| Error::Limit)?;
+            encoder
+                .compress2(&mut out, chunk)
+                .map_err(|_| Error::Malformed)?;
+            if encoder.sizeof() as u64 > resources.encoder_charge(chunk.len())? {
+                return Err(Error::Limit);
+            }
+            out
+        };
         let (encoding, payload) = if compressed.len() < chunk.len() {
             (1, compressed.as_slice())
         } else {
@@ -445,7 +504,9 @@ mod runtime_selection_tests {
                 MAX_CHUNK + 1,
             ] {
                 let target: Vec<u8> = (0..len).map(|i| (i % 251) as u8).collect();
-                let zstd = compressed_chunks(&target).unwrap();
+                let zstd =
+                    compressed_chunks(&target, crate::resource_profile::ResourceProfile::General)
+                        .unwrap();
                 assert!(
                     zstd_lower_bound(len, warm)
                         <= cost(Mode::Zstd, zstd.iter().map(Vec::len), warm).unwrap()

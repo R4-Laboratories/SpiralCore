@@ -1010,7 +1010,10 @@ pub fn transfer_runtime_batched<F: FnMut(&[Frame]) -> Result<Vec<Frame>>>(
         checkpoint,
         target,
         transfer_id,
-        warm_probe,
+        (
+            warm_probe,
+            crate::resource_profile::ResourceProfile::General,
+        ),
         exchange,
         || crate::shared_transfer::prepare(checkpoint, target, recipe),
         |needs_base| {
@@ -1032,11 +1035,30 @@ pub fn transfer_prepared_runtime_batched<F: FnMut(&[Frame]) -> Result<Vec<Frame>
     warm_probe: bool,
     exchange: F,
 ) -> Result<AdaptiveStats> {
+    transfer_prepared_runtime_with_resource_profile_batched(
+        prediction,
+        target,
+        transfer_id,
+        warm_probe,
+        crate::resource_profile::ResourceProfile::General,
+        exchange,
+    )
+}
+pub(crate) fn transfer_prepared_runtime_with_resource_profile_batched<
+    F: FnMut(&[Frame]) -> Result<Vec<Frame>>,
+>(
+    prediction: &crate::shared_transfer::PreparedPrediction,
+    target: &[u8],
+    transfer_id: Id,
+    warm_probe: bool,
+    resources: crate::resource_profile::ResourceProfile,
+    exchange: F,
+) -> Result<AdaptiveStats> {
     transfer_runtime_candidate_batched(
         prediction.checkpoint(),
         target,
         transfer_id,
-        warm_probe,
+        (warm_probe, resources),
         exchange,
         || prediction.prepare(target),
         |needs_base| {
@@ -1052,7 +1074,7 @@ fn transfer_runtime_candidate_batched<F, P, I>(
     checkpoint: &[u8],
     target: &[u8],
     transfer_id: Id,
-    warm_probe: bool,
+    preparation: (bool, crate::resource_profile::ResourceProfile),
     exchange: F,
     runtime: P,
     identities: I,
@@ -1062,11 +1084,18 @@ where
     P: FnOnce() -> Result<Option<Vec<Vec<u8>>>>,
     I: FnOnce(bool) -> (Id, Option<Id>),
 {
+    let (warm_probe, resources) = preparation;
     let start = Instant::now();
     if checkpoint.len() > crate::shared_runtime::MAX_CHECKPOINT {
         return Err(Error::Limit);
     }
-    let prepared = crate::selection::prepare_runtime(target, checkpoint, warm_probe, runtime)?;
+    let prepared = if resources == crate::resource_profile::ResourceProfile::General {
+        crate::selection::prepare_runtime(target, checkpoint, warm_probe, runtime)?
+    } else {
+        crate::selection::prepare_runtime_with_resource_profile(
+            target, checkpoint, warm_probe, runtime, resources,
+        )?
+    };
     let mode = prepared.selection.selected;
     let (object, base) = identities(matches!(
         mode,

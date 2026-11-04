@@ -9,6 +9,7 @@ use crate::{
     client::{self, AdaptiveStats, Stats},
     endpoint::Context,
     protocol::{Frame, Mode},
+    resource_profile::ResourceProfile,
     schema_selection::{CandidateCost, PreparedSelector, WarmSelection},
     selection,
     shared_transfer::PreparedPrediction,
@@ -23,8 +24,6 @@ pub use crate::schema_selection::{
 /// Applications retaining several sessions must enforce a shared outer budget.
 pub const MAX_SESSION_CHARGE: u64 = 512 * 1024 * 1024;
 const METADATA_CHARGE: u64 = 4096;
-const WARM_TRANSIENT_CHARGE: u64 = 128 * 1024 * 1024;
-const RUNTIME_TRANSIENT_CHARGE: u64 = 384 * 1024 * 1024;
 
 // Only this module can construct this value, after the existing client has
 // validated publication of these exact owned bytes. No arbitrary hash API.
@@ -77,12 +76,17 @@ impl ScopedState {
     }
 }
 
-fn admit(retained: u64, input_capacity: usize, transient: u64) -> Result<()> {
+fn admit(
+    resources: ResourceProfile,
+    retained: u64,
+    input_capacity: usize,
+    transient: u64,
+) -> Result<()> {
     let peak = retained
         .checked_add(input_capacity as u64)
         .and_then(|n| n.checked_add(transient))
         .ok_or(Error::Limit)?;
-    if input_capacity > client::MAX_BATCHED_OBJECT || peak > MAX_SESSION_CHARGE {
+    if input_capacity > resources.max_target_len() || peak > resources.sender_charge()? {
         return Err(Error::Limit);
     }
     Ok(())
@@ -101,16 +105,26 @@ pub struct WarmSession {
     selector: PreparedSelector,
     state: ScopedState,
     schema_ready: bool,
+    resources: ResourceProfile,
 }
 impl WarmSession {
     pub fn new(context: &Context, artifact: &[u8]) -> Result<Self> {
+        Self::new_with_resource_profile(context, artifact, ResourceProfile::General)
+    }
+    pub fn new_with_resource_profile(
+        context: &Context,
+        artifact: &[u8],
+        resources: ResourceProfile,
+    ) -> Result<Self> {
+        resources.check_artifact(artifact.len())?;
         let state = ScopedState::new(context)?;
         let session = Self {
-            selector: PreparedSelector::new(artifact)?,
+            selector: PreparedSelector::new_with_resource_profile(artifact, resources)?,
             state,
             schema_ready: false,
+            resources,
         };
-        admit(session.retained_charge(), 0, 0)?;
+        admit(session.resources, session.retained_charge(), 0, 0)?;
         Ok(session)
     }
     fn check_context(&mut self, context: &Context) -> Result<()> {
@@ -151,9 +165,10 @@ impl WarmSession {
     ) -> Result<Stats> {
         self.check_context(context)?;
         admit(
+            self.resources,
             self.retained_charge(),
             bytes.capacity(),
-            WARM_TRANSIENT_CHARGE,
+            self.resources.transient(false),
         )?;
         let mut attempted = false;
         let result =
@@ -182,7 +197,12 @@ impl WarmSession {
         mut exchange: F,
     ) -> Result<Stats> {
         self.check_context(context)?;
-        admit(self.retained_charge(), 0, WARM_TRANSIENT_CHARGE)?;
+        admit(
+            self.resources,
+            self.retained_charge(),
+            0,
+            self.resources.transient(false),
+        )?;
         let mut attempted = false;
         let result = client::transfer_batched(
             self.selector.artifact(),
@@ -223,9 +243,10 @@ impl WarmSession {
     ) -> Result<SessionStats> {
         self.check_context(context)?;
         admit(
+            self.resources,
             self.retained_charge(),
             bytes.capacity(),
-            WARM_TRANSIENT_CHARGE,
+            self.resources.transient(false),
         )?;
         let base = self.state.base.as_ref().filter(|_| self.state.ready);
         let mut attempted = false;
@@ -316,15 +337,28 @@ pub struct RuntimeSession {
     prediction: PreparedPrediction,
     state: ScopedState,
     checkpoint_ready: bool,
+    resources: ResourceProfile,
 }
 impl RuntimeSession {
     pub fn new(context: &Context, prediction: PreparedPrediction) -> Result<Self> {
+        Self::new_with_resource_profile(context, prediction, ResourceProfile::General)
+    }
+    pub fn new_with_resource_profile(
+        context: &Context,
+        prediction: PreparedPrediction,
+        resources: ResourceProfile,
+    ) -> Result<Self> {
+        resources.check_artifact(prediction.checkpoint().len())?;
+        if prediction.prediction().len() > resources.max_prediction_len() {
+            return Err(Error::Limit);
+        }
         let session = Self {
             state: ScopedState::new(context)?,
             prediction,
             checkpoint_ready: false,
+            resources,
         };
-        admit(session.retained_charge(), 0, 0)?;
+        admit(session.resources, session.retained_charge(), 0, 0)?;
         Ok(session)
     }
     fn check_context(&mut self, context: &Context) -> Result<()> {
@@ -341,7 +375,12 @@ impl RuntimeSession {
         mut exchange: F,
     ) -> Result<Stats> {
         self.check_context(context)?;
-        admit(self.retained_charge(), 0, RUNTIME_TRANSIENT_CHARGE)?;
+        admit(
+            self.resources,
+            self.retained_charge(),
+            0,
+            self.resources.transient(true),
+        )?;
         let mut attempted = false;
         let result = client::transfer_batched(
             self.prediction.checkpoint(),
@@ -377,19 +416,21 @@ impl RuntimeSession {
     ) -> Result<AdaptiveStats> {
         self.check_context(context)?;
         admit(
+            self.resources,
             self.retained_charge(),
             bytes.capacity(),
-            RUNTIME_TRANSIENT_CHARGE,
+            self.resources.transient(true),
         )?;
         if !self.checkpoint_ready {
             return Err(Error::Missing);
         }
         let mut attempted = false;
-        let result = client::transfer_prepared_runtime_batched(
+        let result = client::transfer_prepared_runtime_with_resource_profile_batched(
             &self.prediction,
             &bytes,
             transfer_id,
             warm_probe,
+            self.resources,
             |frames| {
                 attempted = true;
                 exchange(frames)
@@ -418,9 +459,10 @@ impl RuntimeSession {
     ) -> Result<Stats> {
         self.check_context(context)?;
         admit(
+            self.resources,
             self.retained_charge(),
             bytes.capacity(),
-            RUNTIME_TRANSIENT_CHARGE,
+            self.resources.transient(true),
         )?;
         let mut attempted = false;
         let result =
@@ -487,6 +529,7 @@ pub struct CombinedSession {
     checkpoint_ready: bool,
     schema_ready: bool,
     policy: SelectionPolicy,
+    resources: ResourceProfile,
 }
 impl CombinedSession {
     pub fn new(context: &Context, prediction: PreparedPrediction, artifact: &[u8]) -> Result<Self> {
@@ -499,17 +542,38 @@ impl CombinedSession {
         artifact: &[u8],
         policy: SelectionPolicy,
     ) -> Result<Self> {
+        Self::new_with_resource_profile(
+            context,
+            prediction,
+            artifact,
+            policy,
+            ResourceProfile::General,
+        )
+    }
+    pub fn new_with_resource_profile(
+        context: &Context,
+        prediction: PreparedPrediction,
+        artifact: &[u8],
+        policy: SelectionPolicy,
+        resources: ResourceProfile,
+    ) -> Result<Self> {
+        resources.check_artifact(artifact.len())?;
+        resources.check_artifact(prediction.checkpoint().len())?;
+        if prediction.prediction().len() > resources.max_prediction_len() {
+            return Err(Error::Limit);
+        }
         let session = Self {
             prepared: Some(CombinedPrepared {
                 prediction,
-                selector: PreparedSelector::new(artifact)?,
+                selector: PreparedSelector::new_with_resource_profile(artifact, resources)?,
             }),
             state: ScopedState::new(context)?,
             checkpoint_ready: false,
             schema_ready: false,
             policy,
+            resources,
         };
-        admit(session.retained_charge(), 0, 0)?;
+        admit(session.resources, session.retained_charge(), 0, 0)?;
         Ok(session)
     }
 
@@ -554,7 +618,12 @@ impl CombinedSession {
         mut exchange: F,
     ) -> Result<Stats> {
         self.check_context(context)?;
-        admit(self.retained_charge(), 0, WARM_TRANSIENT_CHARGE)?;
+        admit(
+            self.resources,
+            self.retained_charge(),
+            0,
+            self.resources.transient(false),
+        )?;
         let prepared = self.prepared.as_ref().ok_or(Error::Unauthorized)?;
         let bytes = if checkpoint {
             prepared.prediction.checkpoint()
@@ -609,9 +678,10 @@ impl CombinedSession {
         // separately, yielding <433 MiB at the 16 MiB ceiling. Transport and
         // concurrent sessions still require the caller's shared outer admission.
         admit(
+            self.resources,
             self.retained_charge(),
             bytes.capacity(),
-            WARM_TRANSIENT_CHARGE,
+            self.resources.transient(false),
         )?;
         let base = self.state.base.as_ref().filter(|_| self.state.ready);
         let mut attempted = false;

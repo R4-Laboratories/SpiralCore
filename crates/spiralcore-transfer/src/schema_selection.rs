@@ -115,14 +115,22 @@ pub(crate) enum Payload {
 }
 
 pub struct PreparedSelector {
+    resources: crate::resource_profile::ResourceProfile,
     whole: zstd_whole::PreparedEncoder,
     schema: schema_zstd::PreparedEncoder,
 }
 impl PreparedSelector {
     pub fn new(artifact: &[u8]) -> Result<Self> {
+        Self::new_with_resource_profile(artifact, crate::resource_profile::ResourceProfile::General)
+    }
+    pub fn new_with_resource_profile(
+        artifact: &[u8],
+        resources: crate::resource_profile::ResourceProfile,
+    ) -> Result<Self> {
         Ok(Self {
-            schema: schema_zstd::PreparedEncoder::new(artifact)?,
-            whole: zstd_whole::PreparedEncoder::new()?,
+            resources,
+            schema: schema_zstd::PreparedEncoder::new_with_resource_profile(artifact, resources)?,
+            whole: zstd_whole::PreparedEncoder::new_with_resource_profile(resources)?,
         })
     }
     pub fn artifact(&self) -> &[u8] {
@@ -225,6 +233,12 @@ impl PreparedSelector {
         base_identity: F,
         combined: Option<(&crate::shared_transfer::PreparedPrediction, SelectionPolicy)>,
     ) -> Result<PreparedWarmTransfer> {
+        self.resources.check_target(target.len(), target.len())?;
+        if self.resources == crate::resource_profile::ResourceProfile::SmallV1 {
+            if let Some(base) = base {
+                self.resources.check_artifact(base.len())?;
+            }
+        }
         let prediction = combined.map(|(prediction, _)| prediction);
         let policy = combined.map_or(SelectionPolicy::Exhaustive, |(_, policy)| policy);
         if target.len() > client::MAX_BATCHED_OBJECT
@@ -480,6 +494,7 @@ impl PreparedSelector {
         schema_ready: bool,
         warm_probe: bool,
     ) -> Result<PreparedTransfer> {
+        self.resources.check_target(target.len(), target.len())?;
         if target.len() > client::MAX_BATCHED_OBJECT {
             return Err(Error::Limit);
         }
