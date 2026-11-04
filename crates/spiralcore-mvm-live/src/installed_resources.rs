@@ -190,6 +190,12 @@ pub struct ManagedResourceBudget {
     shared: Arc<Shared>,
 }
 impl ManagedResourceBudget {
+    /// Identity comparison only; equal limits/usage do not identify one owner.
+    #[cfg(test)]
+    pub(crate) fn same_pool(&self, other: &Self) -> bool {
+        Arc::ptr_eq(&self.shared, &other.shared)
+    }
+
     pub(crate) fn new_installed(authority: Arc<InstalledAuthority>) -> Self {
         Self {
             shared: Arc::new(Shared {

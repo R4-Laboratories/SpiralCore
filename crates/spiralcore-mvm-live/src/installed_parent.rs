@@ -16,8 +16,11 @@ use mvm_hostd::{host_lifetime_parent::ParentAdmissionProvider, plan_admission::A
 use sha2::{Digest, Sha256};
 use std::sync::{Arc, Mutex, Weak};
 
+mod endpoint;
 mod resident;
 pub use resident::{InstalledResident, ResidentId, ResidentProgress, ResidentStatus};
+#[cfg(test)]
+mod endpoint_tests;
 
 const BOOKKEEPING_BYTES: u64 = 4096;
 const MIB: u64 = 1024 * 1024;
@@ -31,6 +34,7 @@ struct Shared {
     pool: ManagedResourceBudget,
     issuer: InstalledNativeIssuer,
     _bookkeeping: ManagedReservation,
+    endpoint_inputs: Option<endpoint::EndpointOwnerInputs>,
 }
 
 /// Local parent admission, never a replacement for signed MVM authorization.
@@ -43,6 +47,7 @@ struct VmGrant {
     reservation: ManagedReservation,
     parent: Weak<Shared>,
     lifecycle: Mutex<GrantLifecycle>,
+    original: Weak<VmGrant>,
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -57,7 +62,9 @@ enum EndpointIssuance {
 #[derive(Default)]
 struct GrantLifecycle {
     admitted_plan: Option<String>,
+    admitted_session: Option<[u8; 32]>,
     endpoint: EndpointIssuance,
+    endpoint_owner: Option<Arc<endpoint::RootEndpointOwner>>,
     retired: bool,
 }
 impl GrantLifecycle {
@@ -111,6 +118,7 @@ pub struct PreparedParentVm {
 pub struct ParentLaunchOwner {
     grant: Arc<VmGrant>,
     completed: bool,
+    endpoint_retirement: Option<mvm_client::EndpointRetirement>,
 }
 impl ParentLaunchOwner {
     pub fn binding(&self) -> &HostLaunchBinding {
@@ -189,6 +197,9 @@ impl Drop for ParentLaunchOwner {
         // explicit original unused/retired completion disarms this disposition.
         if !self.completed {
             std::mem::forget(self.grant.clone());
+            if let Some(receipt) = self.endpoint_retirement.take() {
+                std::mem::forget(receipt);
+            }
         }
     }
 }
@@ -204,6 +215,7 @@ impl PreparedParentVm {
             ParentLaunchOwner {
                 grant,
                 completed: false,
+                endpoint_retirement: None,
             },
         ))
     }
@@ -252,6 +264,7 @@ impl InstalledParentProvider {
                 pool,
                 issuer: supervisor.native_issuer(),
                 _bookkeeping: bookkeeping,
+                endpoint_inputs: None,
             }),
         })
     }
@@ -331,7 +344,7 @@ impl InstalledParentProvider {
             "original VM name already reserved"
         );
         let serial = reservation.serial();
-        let grant = Arc::new(VmGrant {
+        let grant = Arc::new_cyclic(|original| VmGrant {
             binding: HostLaunchBinding {
                 installation: installation.key.installation,
                 profile: installation.key.profile,
@@ -346,6 +359,7 @@ impl InstalledParentProvider {
             reservation,
             parent: Arc::downgrade(&self.shared),
             lifecycle: Mutex::new(GrantLifecycle::default()),
+            original: original.clone(),
         });
         registry.slots[slot] = Arc::downgrade(&grant);
         Ok(PreparedParentVm { grant, handoff })
@@ -373,6 +387,13 @@ impl VmGrant {
 }
 
 impl CoreCurrentParentPermit for VmGrant {
+    fn prepare_endpoint_partition(
+        &self,
+        binding: &HostLaunchBinding,
+    ) -> Result<mvm_core::host_lifetime::PreparedEndpointPartition> {
+        self.prepare_original_endpoint(binding)
+    }
+
     fn check_current(&self, binding: &HostLaunchBinding) -> Result<()> {
         ensure!(*binding == self.binding, "parent binding substituted");
         self.check_open()?;
@@ -434,6 +455,14 @@ impl ParentAdmissionProvider for InstalledParentProvider {
             "original parent grant already bound"
         );
         lifecycle.admitted_plan = Some(admitted.plan_id().0.clone());
+        let mut session = Sha256::new();
+        session.update(b"SpiralCore/installed-parent/endpoint-session/v1\0");
+        session.update(binding.installation);
+        session.update(binding.generation.to_le_bytes());
+        session.update(binding.grant_serial.to_le_bytes());
+        session.update(admitted.plan_id().0.as_bytes());
+        session.update(plan.nonce.as_hex().as_bytes());
+        lifecycle.admitted_session = Some(session.finalize().into());
         drop(lifecycle);
         grant.check_current(binding)?;
         Ok(grant)
@@ -450,6 +479,7 @@ mod retirement_policy_tests {
             admitted_plan: Some("state-policy-only".into()),
             endpoint,
             retired: false,
+            ..Default::default()
         }
     }
 

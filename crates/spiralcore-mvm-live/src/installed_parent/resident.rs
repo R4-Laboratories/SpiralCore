@@ -231,13 +231,12 @@ impl InstalledResident {
     }
 
     pub fn request_stop(&mut self, id: ResidentId) -> Result<()> {
-        let live = self
-            .live
-            .as_mut()
-            .ok_or_else(|| anyhow!("resident drained"))?;
-        live.slot(id)?;
-        live.slots[id.slot].as_mut().unwrap().stop_requested = true;
-        live.schedule_stop(id.slot)
+        ensure!(self.live.is_some(), "resident drained");
+        self.drive_guarded(|live| {
+            live.slot(id)?;
+            live.slots[id.slot].as_mut().unwrap().stop_requested = true;
+            live.schedule_stop(id.slot)
+        })
     }
 
     /// Borrow diagnostics; do not copy outcomes, authority or error histories.
@@ -414,16 +413,18 @@ impl Live {
         let slot = self.slots[index]
             .as_mut()
             .ok_or_else(|| anyhow!("resident slot absent"))?;
-        let status = match &slot.state {
+        let status = match &mut slot.state {
             State::Unused(certificate) => {
                 slot.owner.cancel_unused(certificate)?;
                 ResidentStatus::UnusedRetired
             }
             State::RetiringOutcome(outcome) => {
+                slot.owner.cleanup_outcome_endpoint(outcome)?;
                 slot.owner.finish_retired(outcome)?;
                 ResidentStatus::Retired
             }
             State::RetiringPending(receipt) => {
+                slot.owner.cleanup_pending_endpoint(receipt)?;
                 slot.owner.finish_pending_retired(receipt)?;
                 ResidentStatus::Retired
             }

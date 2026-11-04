@@ -205,3 +205,76 @@ fn caught_operation_unwind_fences_admission_reentry_and_global_finish_without_re
     assert_eq!(drops.load(Ordering::SeqCst), 0);
     assert_eq!(pool.snapshot().unwrap().usage, before);
 }
+
+#[derive(Debug)]
+struct CleanupDropPanic;
+impl std::fmt::Display for CleanupDropPanic {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("controlled cleanup diagnostic drop")
+    }
+}
+impl std::error::Error for CleanupDropPanic {}
+impl Drop for CleanupDropPanic {
+    fn drop(&mut self) {
+        panic!("controlled completed-slot cleanup unwind");
+    }
+}
+
+#[test]
+fn caught_request_stop_cleanup_unwind_quarantines_the_other_original_slot() {
+    let (_home, mut service) = prepared_service();
+    let first = service
+        .begin_launch(request("resident-stop-unwind"), "local")
+        .unwrap();
+    let second = service
+        .begin_launch(request("resident-still-owned"), "local")
+        .unwrap();
+    let pool = service.live.as_ref().unwrap().provider.shared.pool.clone();
+    let backend = Arc::downgrade(&service.live.as_ref().unwrap().backend);
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap();
+    // Execute the actual first canonical pure preflight, retain its original
+    // sealed unused certificate, and leave the second future entirely unpolled.
+    let slot = service.live.as_mut().unwrap().slots[first.slot]
+        .as_mut()
+        .unwrap();
+    let mut operation = slot.operation.take().unwrap();
+    let OperationResult::Launch(Err(failure)) = runtime.block_on(operation.future.as_mut()) else {
+        panic!("expected real unsupported-backend preflight result");
+    };
+    let (_, unused) = failure.into_parts();
+    slot.state = State::Unused(unused.expect("original unused certificate"));
+    slot.error = Some(anyhow::Error::new(CleanupDropPanic));
+    let original_second = Arc::downgrade(
+        &service.live.as_ref().unwrap().slots[second.slot]
+            .as_ref()
+            .unwrap()
+            .owner
+            .grant,
+    );
+    let result =
+        std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| service.request_stop(first)));
+    assert!(result.is_err());
+    assert!(
+        service
+            .begin_launch(request("resident-after-stop-unwind"), "local")
+            .is_err(),
+        "caught request_stop cleanup unwind left admission open"
+    );
+    assert!(runtime.block_on(service.drive_once()).is_err());
+    assert!(service.try_finish().is_err());
+    // Only the positively unused first grant may release. The actual unpolled
+    // second grant and original backend must survive the caught cleanup panic.
+    assert_eq!(pool.snapshot().unwrap().usage.guests, 1);
+    assert_eq!(
+        pool.snapshot().unwrap().usage.guest_memory_bytes,
+        1024 * 1024 * 1024
+    );
+    assert!(backend.upgrade().is_some());
+    assert!(original_second.upgrade().is_some());
+    drop(service);
+    assert!(backend.upgrade().is_some());
+    assert!(original_second.upgrade().is_some());
+}

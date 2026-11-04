@@ -1,0 +1,33 @@
+{
+  "date": "2026-11-04",
+  "platform": "Linux x86_64 on Wick",
+  "toolchain": "Rust 1.97.1",
+  "build_environment": { "CARGO_BUILD_JOBS": "1", "CARGO_INCREMENTAL": "0" },
+  "build": [
+    "cargo", "+1.97.1", "test", "--manifest-path", "crates/spiralcore-mvm-live/Cargo.toml",
+    "--release", "--offline", "--locked", "--features",
+    "live,linux-host,canonical-host,mvm-client/test-support,mvm-core/test-support",
+    "--lib", "--no-run", "--message-format=json"
+  ],
+  "protected_binary_runs": [
+    ["installed_parent::endpoint_tests::", "--test-threads=1", "--nocapture"],
+    ["installed_parent::resident::tests::", "--test-threads=1", "--nocapture"],
+    ["installed_parent::retirement_policy_tests::", "--test-threads=1", "--nocapture"]
+  ],
+  "clippy": [
+    "cargo", "+1.97.1", "clippy", "--manifest-path", "crates/spiralcore-mvm-live/Cargo.toml",
+    "--release", "--offline", "--locked", "--features",
+    "live,linux-host,canonical-host,mvm-client/test-support,mvm-core/test-support",
+    "--lib", "--tests", "--", "-D", "clippy::all"
+  ],
+  "custody": "Copy the sole emitted lib-test executable before execution, chmod 0500, compare selected source/executable SHA-256 before and after tests/lint; retain original binaries remotely.",
+  "final_results": { "endpoint": 3, "resident": 4, "retirement_policy": 4, "failures": 0, "clippy_exit": 0 },
+  "measurement_scope": {
+    "transfer_bytes": "NOT_APPLICABLE: no object transfer",
+    "cpu_latency_rss": "NOT_BENCHMARKED: build/test timing is not network performance",
+    "guest_memory": "Logical reservations only; no booted guest",
+    "positive_endpoint_retirement": "NOT_RUN",
+    "native": "NOT_RUN",
+    "wan": "NOT_RUN"
+  }
+}
