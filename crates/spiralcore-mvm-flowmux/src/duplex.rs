@@ -557,7 +557,12 @@ impl<A: Authority> Worker<A> {
                 Ok(false) => continue,
                 Ok(true) => {}
                 Err(Error::Truncated) if self.remote_closed => {
+                    // A peer can observe our FIN before the writing thread
+                    // publishes local_closed. Preserve the original TX barrier
+                    // before deciding whether this EOF is a clean completion.
+                    let tx = lock(&self.tx)?;
                     if self.local_closed.load(Ordering::Acquire) && lock(&self.pending)?.is_none() {
+                        drop(tx);
                         return self.complete();
                     }
                     return Err(Error::Truncated);
