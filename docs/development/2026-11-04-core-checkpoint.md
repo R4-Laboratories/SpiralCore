@@ -1,21 +1,24 @@
-# Development source checkpoint: 2026-11-04
+# Development source checkpoints: 2026-11-04
 
-This branch preserves the latest SpiralCore Rust implementation in progress.
-It is not a release or a claim that every feature/platform has passed. The
-GitHub issue graph #42/#43/#44/#45/#46/#47/#49 remains the delivery authority.
+The original pure/core snapshot is `ca5d9ca1266541f71cc5ab7d0b17f4acf14d06b1`.
+Its adjacent core-checkpoint.sha256 describes that frozen snapshot, including
+its original then-stale canonical-host pin; it is not a hash inventory of later
+integration commits. It remains useful provenance, not an accepted release.
 
-The checkpoint includes Small/Ordered codec and persistent-cache work, TLS/Mio
-readiness work, completed-reply-tail work, access mapping and installed-parent/
-disposable-store ownership. Different component source revisions have different
-qualification. The current canonical-host Cargo pin still names the earlier MVM
-fork; a paired immutable dependency update and lockfile qualification follows.
-Do not treat this checkpoint's canonical-host feature as a locked release build.
+The follow-up integration branch aligns Adapter/Access to MVM8b833aee and the
+same immutable TransferCA source. Live now uses those exact Git sources and a
+refreshed lockfile. The selected graph contains one Core/Contract/Transfer/
+FlowMux identity without local path patches. Seven installed-parent component
+tests pass in an actual locked release build; see
+[the precise graph receipt](../network/evidence/2026-11-04-immutable-graph/README.md).
 
-Latest merged ordinary-process FlowMux acceptance remains PR72/PR77. Native MVM
-service/helper/telemetry integration, final exact dependency closure, sustained
-canonical sessions beyond2048Calls, cross-host/platform/WAN and fleet capacity
-remain open. No new performance/energy/FIPS or whole-process memory claim.
+The checkpoint also preserves Small/Ordered, TLS/Mio, completed-tail, access and
+installed disk/parent work in progress. Qualification differs by component and
+source. It is not a complete installed MVM service, native/WAN or fleet release.
+Newer shared child/factory/helper work continues after the pinned MVM snapshot.
+The live GitHub issue graph #42 and its children remains the roadmap authority.
 
-The adjacent SHA256 manifest records all changed Rust-crate files included in
-this checkpoint. It excludes local runtime/sessions, tooling state, targets,
-VM disks and payload stores. The development checkpoint is distinct from main.
+Code checkpoints exclude local runtime/sessions, tooling state, credentials,
+Cargo targets, VM disks and payload stores. Reviewed/tested component milestones
+merge to main; development snapshots remain clearly labeled until their actual
+integrated acceptance gates have executed evidence.

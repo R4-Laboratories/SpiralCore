@@ -151,6 +151,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ac07cdecf99051d9a5238b80f35af32cdeba5b336e55d957b318b50137e18da5"
 
 [[package]]
+name = "base64ct"
+version = "1.8.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2af50177e190e07a26ab74f8b1efbfe2ef87da2116221318cb1c2e82baf7de06"
+
+[[package]]
 name = "bit-vec"
 version = "0.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -416,6 +422,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "critical-section"
+version = "1.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "790eea4361631c5e7d22598ecd5723ff611904e3344ce8720784c93e3d83d40b"
+
+[[package]]
 name = "crossbeam-channel"
 version = "0.5.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -480,6 +492,7 @@ dependencies = [
  "curve25519-dalek-derive",
  "digest 0.11.3",
  "fiat-crypto",
+ "rand_core",
  "rustc_version",
  "subtle",
  "zeroize",
@@ -557,6 +570,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "der"
+version = "0.8.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6a996a108feb8b427a6e12fcf6af4aa83409b79d72c15337d7741368131ee004"
+dependencies = [
+ "const-oid",
+ "zeroize",
+]
+
+[[package]]
 name = "der-parser"
 version = "10.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -621,6 +644,7 @@ version = "3.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "29fcf32e6c73d1079f83ab4d782de2d81620346a5f38c6237a86a22f8368980a"
 dependencies = [
+ "pkcs8",
  "signature",
 ]
 
@@ -632,7 +656,10 @@ checksum = "6ebaa1a2bf1290ab3bfe5a7b771d050ebffab2711c19a81691c683a5144a25de"
 dependencies = [
  "curve25519-dalek",
  "ed25519",
+ "rand_core",
+ "serde",
  "sha2 0.11.1",
+ "signature",
  "subtle",
  "zeroize",
 ]
@@ -658,6 +685,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "enumflags2"
+version = "0.7.12"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1027f7680c853e056ebcec683615fb6fbbc07dbaa13b4d5d9442b146ded4ecef"
+dependencies = [
+ "enumflags2_derive",
+]
+
+[[package]]
+name = "enumflags2_derive"
+version = "0.7.12"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "67c78a4d8fdf9953a5c9d458f9efe940fd97a0cab0941c075a813ac594733827"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.119",
+]
+
+[[package]]
 name = "env_home"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -676,7 +723,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "39cab71617ae0d63f51a36d69f866391735b51691dbda63cf6f96d042b63efeb"
 dependencies = [
  "libc",
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -1566,6 +1613,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "globset"
+version = "0.4.21"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f98b0d85522dc0a824cfebbc9594ff4a9b289c568bea0370319dfbdf20ccdd2d"
+dependencies = [
+ "aho-corasick",
+ "bstr",
+ "log",
+ "regex-automata",
+ "regex-syntax",
+]
+
+[[package]]
 name = "hash32"
 version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1619,6 +1679,25 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7f24254aa9a54b5c858eaee2f5bccdb46aaf0e486a595ed5fd8f86ba55232a70"
 
 [[package]]
+name = "hickory-proto"
+version = "0.26.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "12b92608f679a6fa515dd1d15c1ff89443026e391200a2c840c7afcba482893d"
+dependencies = [
+ "data-encoding",
+ "idna",
+ "ipnet",
+ "jni",
+ "once_cell",
+ "rand",
+ "ring",
+ "thiserror",
+ "tinyvec",
+ "tracing",
+ "url",
+]
+
+[[package]]
 name = "hmac"
 version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1664,7 +1743,7 @@ dependencies = [
  "js-sys",
  "log",
  "wasm-bindgen",
- "windows-core",
+ "windows-core 0.62.2",
 ]
 
 [[package]]
@@ -1949,10 +2028,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "landlock"
+version = "0.4.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4cca98e95f35b29d469dade6724c6f96cec9236640f745a0e99b0334ec320ab1"
+dependencies = [
+ "enumflags2",
+ "libc",
+ "thiserror",
+]
+
+[[package]]
 name = "lazy_static"
 version = "1.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "20870f649af7073d53e38067b2a84312175d56ea15217e1b15bc83506ec50afb"
+
+[[package]]
+name = "leakguard"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0eeb52dda0c35b04742d9ce5f600550dfb397190f21bd22b86113aa721cbc5d9"
 
 [[package]]
 name = "libc"
@@ -1963,7 +2059,7 @@ checksum = "65cd87c9a6d60536580b316ad985726104730a5151c99845f2490428ef91240a"
 [[package]]
 name = "libkrun-sys"
 version = "0.26.0"
-source = "git+https://github.com/Casey-allard/mvm?rev=7d031c7f3fbeef62826712d2976a764c62cd5852#7d031c7f3fbeef62826712d2976a764c62cd5852"
+source = "git+https://github.com/Casey-allard/mvm?rev=8b833aee8be5c1be9ce0d1197b6b98d4d03625f6#8b833aee8be5c1be9ce0d1197b6b98d4d03625f6"
 dependencies = [
  "libc",
  "mvm-core",
@@ -2016,6 +2112,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "matchers"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d1525a2a28c7f4fa0fc98bb91ae755d1e2d1505079e05539e35bc876b5d65ae9"
+dependencies = [
+ "regex-automata",
+]
+
+[[package]]
 name = "memchr"
 version = "2.8.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2057,9 +2162,9 @@ dependencies = [
 
 [[package]]
 name = "mio"
-version = "1.2.4"
+version = "1.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1788edb87fdc09c7e26304471e2f5be8cdefb1b6930d6e3985fc02ff53bf86ee"
+checksum = "02bd0af71c67b473010cbbc60715ee815645a4dc942899111f494b4b737d6fda"
 dependencies = [
  "libc",
  "log",
@@ -2076,7 +2181,7 @@ checksum = "743fb55ba31b18fb1ecef6bdc9aa2743314978ac084044301a7eee33fb99a20d"
 [[package]]
 name = "mvm-agentd"
 version = "0.26.0"
-source = "git+https://github.com/Casey-allard/mvm?rev=7d031c7f3fbeef62826712d2976a764c62cd5852#7d031c7f3fbeef62826712d2976a764c62cd5852"
+source = "git+https://github.com/Casey-allard/mvm?rev=8b833aee8be5c1be9ce0d1197b6b98d4d03625f6#8b833aee8be5c1be9ce0d1197b6b98d4d03625f6"
 dependencies = [
  "anyhow",
  "base64",
@@ -2102,7 +2207,7 @@ dependencies = [
 [[package]]
 name = "mvm-backends"
 version = "0.26.0"
-source = "git+https://github.com/Casey-allard/mvm?rev=7d031c7f3fbeef62826712d2976a764c62cd5852#7d031c7f3fbeef62826712d2976a764c62cd5852"
+source = "git+https://github.com/Casey-allard/mvm?rev=8b833aee8be5c1be9ce0d1197b6b98d4d03625f6#8b833aee8be5c1be9ce0d1197b6b98d4d03625f6"
 dependencies = [
  "anyhow",
  "ed25519-dalek",
@@ -2124,7 +2229,7 @@ dependencies = [
 [[package]]
 name = "mvm-build"
 version = "0.26.0"
-source = "git+https://github.com/Casey-allard/mvm?rev=7d031c7f3fbeef62826712d2976a764c62cd5852#7d031c7f3fbeef62826712d2976a764c62cd5852"
+source = "git+https://github.com/Casey-allard/mvm?rev=8b833aee8be5c1be9ce0d1197b6b98d4d03625f6#8b833aee8be5c1be9ce0d1197b6b98d4d03625f6"
 dependencies = [
  "anyhow",
  "base64",
@@ -2160,7 +2265,7 @@ dependencies = [
 [[package]]
 name = "mvm-builder-guest"
 version = "0.26.0"
-source = "git+https://github.com/Casey-allard/mvm?rev=7d031c7f3fbeef62826712d2976a764c62cd5852#7d031c7f3fbeef62826712d2976a764c62cd5852"
+source = "git+https://github.com/Casey-allard/mvm?rev=8b833aee8be5c1be9ce0d1197b6b98d4d03625f6#8b833aee8be5c1be9ce0d1197b6b98d4d03625f6"
 dependencies = [
  "anyhow",
  "hex",
@@ -2178,9 +2283,84 @@ dependencies = [
 ]
 
 [[package]]
+name = "mvm-bundler"
+version = "0.26.0"
+source = "git+https://github.com/Casey-allard/mvm?rev=8b833aee8be5c1be9ce0d1197b6b98d4d03625f6#8b833aee8be5c1be9ce0d1197b6b98d4d03625f6"
+dependencies = [
+ "anyhow",
+ "chrono",
+ "ed25519-dalek",
+ "mvm-core",
+ "serde",
+ "serde_json",
+ "tar",
+]
+
+[[package]]
+name = "mvm-client"
+version = "0.26.0"
+source = "git+https://github.com/Casey-allard/mvm?rev=8b833aee8be5c1be9ce0d1197b6b98d4d03625f6#8b833aee8be5c1be9ce0d1197b6b98d4d03625f6"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "chrono",
+ "ed25519-dalek",
+ "ext4-view",
+ "flate2",
+ "globset",
+ "hex",
+ "libc",
+ "mvm-agentd",
+ "mvm-build",
+ "mvm-bundler",
+ "mvm-contract",
+ "mvm-core",
+ "mvm-fs",
+ "mvm-hostd",
+ "mvm-http",
+ "mvm-runtime",
+ "mvm-sdk",
+ "mvm-vmm",
+ "rand",
+ "secrecy",
+ "serde",
+ "serde_jcs",
+ "serde_json",
+ "sha2 0.11.1",
+ "tar",
+ "tempfile",
+ "thiserror",
+ "tokio",
+ "toml",
+ "tracing",
+ "uuid",
+]
+
+[[package]]
+name = "mvm-compiler"
+version = "0.26.0"
+source = "git+https://github.com/Casey-allard/mvm?rev=8b833aee8be5c1be9ce0d1197b6b98d4d03625f6#8b833aee8be5c1be9ce0d1197b6b98d4d03625f6"
+dependencies = [
+ "flate2",
+ "globset",
+ "mvm-contract",
+ "serde",
+ "serde_json",
+ "sha2 0.11.1",
+ "tar",
+ "tempfile",
+ "thiserror",
+ "toml",
+ "tree-sitter",
+ "tree-sitter-javascript",
+ "tree-sitter-python",
+ "tree-sitter-typescript",
+]
+
+[[package]]
 name = "mvm-contract"
 version = "0.26.0"
-source = "git+https://github.com/Casey-allard/mvm?rev=7d031c7f3fbeef62826712d2976a764c62cd5852#7d031c7f3fbeef62826712d2976a764c62cd5852"
+source = "git+https://github.com/Casey-allard/mvm?rev=8b833aee8be5c1be9ce0d1197b6b98d4d03625f6#8b833aee8be5c1be9ce0d1197b6b98d4d03625f6"
 dependencies = [
  "anyhow",
  "base64",
@@ -2198,11 +2378,12 @@ dependencies = [
 [[package]]
 name = "mvm-core"
 version = "0.26.0"
-source = "git+https://github.com/Casey-allard/mvm?rev=7d031c7f3fbeef62826712d2976a764c62cd5852#7d031c7f3fbeef62826712d2976a764c62cd5852"
+source = "git+https://github.com/Casey-allard/mvm?rev=8b833aee8be5c1be9ce0d1197b6b98d4d03625f6#8b833aee8be5c1be9ce0d1197b6b98d4d03625f6"
 dependencies = [
  "aes-gcm",
  "aho-corasick",
  "anyhow",
+ "async-trait",
  "base64",
  "bs58",
  "chrono",
@@ -2239,7 +2420,7 @@ dependencies = [
 [[package]]
 name = "mvm-fs"
 version = "0.26.0"
-source = "git+https://github.com/Casey-allard/mvm?rev=7d031c7f3fbeef62826712d2976a764c62cd5852#7d031c7f3fbeef62826712d2976a764c62cd5852"
+source = "git+https://github.com/Casey-allard/mvm?rev=8b833aee8be5c1be9ce0d1197b6b98d4d03625f6#8b833aee8be5c1be9ce0d1197b6b98d4d03625f6"
 dependencies = [
  "async-trait",
  "ed25519-dalek",
@@ -2264,9 +2445,72 @@ dependencies = [
 ]
 
 [[package]]
+name = "mvm-host-services"
+version = "0.26.0"
+source = "git+https://github.com/Casey-allard/mvm?rev=8b833aee8be5c1be9ce0d1197b6b98d4d03625f6#8b833aee8be5c1be9ce0d1197b6b98d4d03625f6"
+dependencies = [
+ "mvm-agentd",
+ "mvm-core",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "mvm-hostd"
+version = "0.26.0"
+source = "git+https://github.com/Casey-allard/mvm?rev=8b833aee8be5c1be9ce0d1197b6b98d4d03625f6#8b833aee8be5c1be9ce0d1197b6b98d4d03625f6"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "base64",
+ "chrono",
+ "ed25519-dalek",
+ "hex",
+ "hickory-proto",
+ "hmac",
+ "httparse",
+ "ipnet",
+ "landlock",
+ "leakguard",
+ "libc",
+ "libkrun-sys",
+ "mio",
+ "mvm-agentd",
+ "mvm-build",
+ "mvm-contract",
+ "mvm-core",
+ "mvm-fs",
+ "mvm-http",
+ "mvm-net",
+ "mvm-runtime",
+ "mvm-vmm",
+ "rand",
+ "regex",
+ "rustix",
+ "rustls",
+ "seccompiler",
+ "secrecy",
+ "serde",
+ "serde_jcs",
+ "serde_json",
+ "sha2 0.11.1",
+ "spiralcore-mvm-flowmux",
+ "spiralcore-transfer",
+ "sysinfo",
+ "tar",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+ "url",
+ "uuid",
+ "zeroize",
+]
+
+[[package]]
 name = "mvm-http"
 version = "0.26.0"
-source = "git+https://github.com/Casey-allard/mvm?rev=7d031c7f3fbeef62826712d2976a764c62cd5852#7d031c7f3fbeef62826712d2976a764c62cd5852"
+source = "git+https://github.com/Casey-allard/mvm?rev=8b833aee8be5c1be9ce0d1197b6b98d4d03625f6#8b833aee8be5c1be9ce0d1197b6b98d4d03625f6"
 dependencies = [
  "base64",
  "bytes",
@@ -2286,7 +2530,7 @@ dependencies = [
 [[package]]
 name = "mvm-macho-sign"
 version = "0.26.0"
-source = "git+https://github.com/Casey-allard/mvm?rev=7d031c7f3fbeef62826712d2976a764c62cd5852#7d031c7f3fbeef62826712d2976a764c62cd5852"
+source = "git+https://github.com/Casey-allard/mvm?rev=8b833aee8be5c1be9ce0d1197b6b98d4d03625f6#8b833aee8be5c1be9ce0d1197b6b98d4d03625f6"
 dependencies = [
  "plist",
  "sha1",
@@ -2296,7 +2540,7 @@ dependencies = [
 [[package]]
 name = "mvm-net"
 version = "0.26.0"
-source = "git+https://github.com/Casey-allard/mvm?rev=7d031c7f3fbeef62826712d2976a764c62cd5852#7d031c7f3fbeef62826712d2976a764c62cd5852"
+source = "git+https://github.com/Casey-allard/mvm?rev=8b833aee8be5c1be9ce0d1197b6b98d4d03625f6#8b833aee8be5c1be9ce0d1197b6b98d4d03625f6"
 dependencies = [
  "mvm-contract",
  "mvm-core",
@@ -2305,7 +2549,7 @@ dependencies = [
 [[package]]
 name = "mvm-runtime"
 version = "0.26.0"
-source = "git+https://github.com/Casey-allard/mvm?rev=7d031c7f3fbeef62826712d2976a764c62cd5852#7d031c7f3fbeef62826712d2976a764c62cd5852"
+source = "git+https://github.com/Casey-allard/mvm?rev=8b833aee8be5c1be9ce0d1197b6b98d4d03625f6#8b833aee8be5c1be9ce0d1197b6b98d4d03625f6"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2343,9 +2587,34 @@ dependencies = [
 ]
 
 [[package]]
+name = "mvm-sdk"
+version = "0.26.0"
+source = "git+https://github.com/Casey-allard/mvm?rev=8b833aee8be5c1be9ce0d1197b6b98d4d03625f6#8b833aee8be5c1be9ce0d1197b6b98d4d03625f6"
+dependencies = [
+ "base64",
+ "blake3",
+ "flate2",
+ "hex",
+ "mvm-agentd",
+ "mvm-compiler",
+ "mvm-contract",
+ "mvm-core",
+ "mvm-host-services",
+ "serde",
+ "serde_json",
+ "sha2 0.11.1",
+ "tar",
+ "tempfile",
+ "thiserror",
+ "toml",
+ "tree-sitter",
+ "tree-sitter-nix",
+]
+
+[[package]]
 name = "mvm-setpriv"
 version = "0.26.0"
-source = "git+https://github.com/Casey-allard/mvm?rev=7d031c7f3fbeef62826712d2976a764c62cd5852#7d031c7f3fbeef62826712d2976a764c62cd5852"
+source = "git+https://github.com/Casey-allard/mvm?rev=8b833aee8be5c1be9ce0d1197b6b98d4d03625f6#8b833aee8be5c1be9ce0d1197b6b98d4d03625f6"
 dependencies = [
  "libc",
 ]
@@ -2353,7 +2622,7 @@ dependencies = [
 [[package]]
 name = "mvm-vmm"
 version = "0.26.0"
-source = "git+https://github.com/Casey-allard/mvm?rev=7d031c7f3fbeef62826712d2976a764c62cd5852#7d031c7f3fbeef62826712d2976a764c62cd5852"
+source = "git+https://github.com/Casey-allard/mvm?rev=8b833aee8be5c1be9ce0d1197b6b98d4d03625f6#8b833aee8be5c1be9ce0d1197b6b98d4d03625f6"
 dependencies = [
  "anyhow",
  "base64",
@@ -2414,6 +2683,24 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9737e026353e5cd0736f98eddae28665118eb6f6600902a7f50db585621fecb6"
 
 [[package]]
+name = "ntapi"
+version = "0.4.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c3b335231dfd352ffb0f8017f3b6027a4917f7df785ea2143d8af2adc66980ae"
+dependencies = [
+ "winapi",
+]
+
+[[package]]
+name = "nu-ansi-term"
+version = "0.50.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7957b9740744892f114936ab4a57b3f487491bbeafaf8083688b16841a4240e5"
+dependencies = [
+ "windows-sys 0.61.2",
+]
+
+[[package]]
 name = "num-bigint"
 version = "0.4.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2461,6 +2748,10 @@ name = "once_cell"
 version = "1.21.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9f7c3e4beb33f85d45ae3e3a1792185706c8e16d043238c593331cc7cd313b50"
+dependencies = [
+ "critical-section",
+ "portable-atomic",
+]
 
 [[package]]
 name = "openssl-probe"
@@ -2512,6 +2803,16 @@ name = "pin-project-lite"
 version = "0.2.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a89322df9ebe1c1578d689c92318e070967d1042b512afbe49518723f4e6d5cd"
+
+[[package]]
+name = "pkcs8"
+version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "451913da69c775a56034ea8d9003d27ee8948e12443eae7c038ba100a4f21cb7"
+dependencies = [
+ "der",
+ "spki",
+]
 
 [[package]]
 name = "pkg-config"
@@ -2726,7 +3027,7 @@ dependencies = [
  "errno",
  "libc",
  "linux-raw-sys",
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -2783,7 +3084,7 @@ dependencies = [
  "security-framework",
  "security-framework-sys",
  "webpki-root-certs",
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -2934,6 +3235,8 @@ version = "1.0.154"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e7e9cc8b1b85264074fbcc02a88680c4096b1e47df8f739dceb03bf482f04bd6"
 dependencies = [
+ "foldhash",
+ "indexmap",
  "itoa",
  "memchr",
  "serde",
@@ -3010,16 +3313,38 @@ dependencies = [
 ]
 
 [[package]]
+name = "sharded-slab"
+version = "0.1.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f40ca3c46823713e0d4209592e8d6e826aa57e928f09752619fc696c499637f6"
+dependencies = [
+ "lazy_static",
+]
+
+[[package]]
 name = "shlex"
 version = "2.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f8fadd59c855ef2080decdef8ff161eb6661b86933c9d82e5ba29dc602a55aba"
 
 [[package]]
+name = "signal-hook-registry"
+version = "1.4.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c4db69cba1110affc0e9f7bcd48bbf87b3f4fc7c61fc9155afd4c469eb3d6c1b"
+dependencies = [
+ "errno",
+ "libc",
+]
+
+[[package]]
 name = "signature"
 version = "3.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "28d567dcbaf0049cb8ac2608a76cd95ff9e4412e1899d389ee400918ca7537f5"
+dependencies = [
+ "rand_core",
+]
 
 [[package]]
 name = "simd-adler32"
@@ -3068,6 +3393,7 @@ dependencies = [
 [[package]]
 name = "spiralcore-gateway-core"
 version = "0.1.0"
+source = "git+https://github.com/R4-Laboratories/SpiralCore?rev=ca5d9ca1266541f71cc5ab7d0b17f4acf14d06b1#ca5d9ca1266541f71cc5ab7d0b17f4acf14d06b1"
 dependencies = [
  "spiralcore-transfer",
  "zstd",
@@ -3076,6 +3402,7 @@ dependencies = [
 [[package]]
 name = "spiralcore-mvm-adapter"
 version = "0.1.0"
+source = "git+https://github.com/R4-Laboratories/SpiralCore?rev=656fead215d5d1ad1513e83fbf4dc7a654c1d52e#656fead215d5d1ad1513e83fbf4dc7a654c1d52e"
 dependencies = [
  "cpu-time",
  "ed25519-dalek",
@@ -3090,18 +3417,32 @@ dependencies = [
 ]
 
 [[package]]
+name = "spiralcore-mvm-flowmux"
+version = "0.1.0"
+source = "git+https://github.com/R4-Laboratories/SpiralCore?rev=ca5d9ca1266541f71cc5ab7d0b17f4acf14d06b1#ca5d9ca1266541f71cc5ab7d0b17f4acf14d06b1"
+dependencies = [
+ "mio",
+ "rustls",
+ "sha2 0.10.9",
+ "spiralcore-transfer",
+]
+
+[[package]]
 name = "spiralcore-mvm-live"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "cpu-time",
  "ed25519-dalek",
  "libc",
  "mvm-agentd",
  "mvm-backends",
  "mvm-build",
+ "mvm-client",
  "mvm-contract",
  "mvm-core",
  "mvm-fs",
+ "mvm-hostd",
  "mvm-net",
  "mvm-runtime",
  "mvm-vmm",
@@ -3118,6 +3459,7 @@ dependencies = [
 [[package]]
 name = "spiralcore-storage-windows"
 version = "0.1.0"
+source = "git+https://github.com/R4-Laboratories/SpiralCore?rev=ca5d9ca1266541f71cc5ab7d0b17f4acf14d06b1#ca5d9ca1266541f71cc5ab7d0b17f4acf14d06b1"
 dependencies = [
  "windows-sys 0.61.2",
 ]
@@ -3125,6 +3467,7 @@ dependencies = [
 [[package]]
 name = "spiralcore-transfer"
 version = "0.1.0"
+source = "git+https://github.com/R4-Laboratories/SpiralCore?rev=ca5d9ca1266541f71cc5ab7d0b17f4acf14d06b1#ca5d9ca1266541f71cc5ab7d0b17f4acf14d06b1"
 dependencies = [
  "cpu-time",
  "httparse",
@@ -3143,10 +3486,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "spki"
+version = "0.8.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7ef958a98b9d5da290cfc78946e9f3e61e1e62a18db0d92cac0b83cc161491a9"
+dependencies = [
+ "base64ct",
+ "der",
+]
+
+[[package]]
 name = "stable_deref_trait"
 version = "1.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6ce2be8dc25455e1f91df71bfa12ad37d7af1092ae736f3a6cd0e37bc7810596"
+
+[[package]]
+name = "streaming-iterator"
+version = "0.1.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2b2231b7c3057d5e4ad0156fb3dc807d900806020c5ffa3ee6ff2c8c76fb8520"
 
 [[package]]
 name = "subtle"
@@ -3199,6 +3558,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "sysinfo"
+version = "0.30.13"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0a5b4ddaee55fb2bea2bf0e5000747e5f5c0de765e5a5ff87f4cd106439f4bb3"
+dependencies = [
+ "cfg-if",
+ "core-foundation-sys",
+ "libc",
+ "ntapi",
+ "once_cell",
+ "windows",
+]
+
+[[package]]
 name = "tar"
 version = "0.4.46"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3219,7 +3592,7 @@ dependencies = [
  "getrandom 0.4.3",
  "once_cell",
  "rustix",
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -3240,6 +3613,15 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 3.0.9",
+]
+
+[[package]]
+name = "thread_local"
+version = "1.1.10"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1ad99c4c6d32803332c548b1af0540b357b3f5fc0be8f6c6bfe8b2e6ae784070"
+dependencies = [
+ "cfg-if",
 ]
 
 [[package]]
@@ -3298,6 +3680,7 @@ dependencies = [
  "libc",
  "mio",
  "pin-project-lite",
+ "signal-hook-registry",
  "socket2",
  "tokio-macros",
  "windows-sys 0.61.2",
@@ -3394,6 +3777,97 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "db97caf9d906fbde555dd62fa95ddba9eecfd14cb388e4f491a66d74cd5fb79a"
 dependencies = [
  "once_cell",
+ "valuable",
+]
+
+[[package]]
+name = "tracing-serde"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "704b1aeb7be0d0a84fc9828cae51dab5970fee5088f83d1dd7ee6f6246fc6ff1"
+dependencies = [
+ "serde",
+ "tracing-core",
+]
+
+[[package]]
+name = "tracing-subscriber"
+version = "0.3.23"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cb7f578e5945fb242538965c2d0b04418d38ec25c79d160cd279bf0731c8d319"
+dependencies = [
+ "matchers",
+ "nu-ansi-term",
+ "once_cell",
+ "regex-automata",
+ "serde",
+ "serde_json",
+ "sharded-slab",
+ "smallvec",
+ "thread_local",
+ "tracing",
+ "tracing-core",
+ "tracing-serde",
+]
+
+[[package]]
+name = "tree-sitter"
+version = "0.26.13"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "17ebdd3a5a7e28a1890b876fdbd0c3c0fe0a6336cffaa104f11b9f720c9daa29"
+dependencies = [
+ "cc",
+ "regex",
+ "regex-syntax",
+ "serde_json",
+ "streaming-iterator",
+ "tree-sitter-language",
+]
+
+[[package]]
+name = "tree-sitter-javascript"
+version = "0.25.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "68204f2abc0627a90bdf06e605f5c470aa26fdcb2081ea553a04bdad756693f5"
+dependencies = [
+ "cc",
+ "tree-sitter-language",
+]
+
+[[package]]
+name = "tree-sitter-language"
+version = "0.1.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d0af592be68c579aa78a16846bd19422978c3c52e438523d45ff5d1bff1f9d4a"
+
+[[package]]
+name = "tree-sitter-nix"
+version = "0.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3a8d4f8705d377d63242a075331d2d8c1dcc9828fd74aa13d7145185b3d9c004"
+dependencies = [
+ "cc",
+ "tree-sitter-language",
+]
+
+[[package]]
+name = "tree-sitter-python"
+version = "0.25.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6bf85fd39652e740bf60f46f4cda9492c3a9ad75880575bf14960f775cb74a1c"
+dependencies = [
+ "cc",
+ "tree-sitter-language",
+]
+
+[[package]]
+name = "tree-sitter-typescript"
+version = "0.23.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6c5f76ed8d947a75cc446d5fccd8b602ebf0cde64ccf2ffa434d873d7a575eff"
+dependencies = [
+ "cc",
+ "tree-sitter-language",
 ]
 
 [[package]]
@@ -3442,6 +3916,7 @@ checksum = "8ecb6da28b8a351d773b68d5825ac39017e680750f980f3a1a85cd8dd28a47c1"
 [[package]]
 name = "uor-r4-object-store"
 version = "0.1.0"
+source = "git+https://github.com/R4-Laboratories/SpiralCore?rev=ca5d9ca1266541f71cc5ab7d0b17f4acf14d06b1#ca5d9ca1266541f71cc5ab7d0b17f4acf14d06b1"
 dependencies = [
  "sha2 0.10.9",
 ]
@@ -3519,6 +3994,12 @@ dependencies = [
  "sha1_smol",
  "wasm-bindgen",
 ]
+
+[[package]]
+name = "valuable"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ba73ea9cf16a25df0c8caa16c51acb937d5712a8429db78a3ee29d5dcacd3a65"
 
 [[package]]
 name = "version_check"
@@ -3689,7 +4170,7 @@ version = "0.1.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c2a7b1c03c876122aa43f3020e6c3c3ee5c05081c9a00739faf7503aeba10d22"
 dependencies = [
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -3697,6 +4178,25 @@ name = "winapi-x86_64-pc-windows-gnu"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "712e227841d057c1ee1cd2fb22fa7e5a5461ae8e48fa2ca79ec42cfc1931183f"
+
+[[package]]
+name = "windows"
+version = "0.52.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e48a53791691ab099e5e2ad123536d0fff50652600abaf43bbf952894110d0be"
+dependencies = [
+ "windows-core 0.52.0",
+ "windows-targets",
+]
+
+[[package]]
+name = "windows-core"
+version = "0.52.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "33ab640c8d7e35bf8ba19b884ba838ceb4fba93a4e8c65a9059d08afcfc683d9"
+dependencies = [
+ "windows-targets",
+]
 
 [[package]]
 name = "windows-core"
