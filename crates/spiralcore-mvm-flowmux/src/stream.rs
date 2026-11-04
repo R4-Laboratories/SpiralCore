@@ -68,7 +68,22 @@ impl MappedStream {
         operation: impl FnOnce(&mut DuplexWriter, Instant) -> Result<T>,
     ) -> Result<T> {
         let until = deadline(self.inner.timeout)?;
+        self.write_operation_until(until, operation)
+    }
+    fn write_operation_until<T>(
+        &self,
+        until: Instant,
+        operation: impl FnOnce(&mut DuplexWriter, Instant) -> Result<T>,
+    ) -> Result<T> {
         let result = (|| {
+            let now = Instant::now();
+            if until <= now {
+                return Err(Error::Timeout);
+            }
+            if until.saturating_duration_since(now) > self.inner.timeout {
+                return Err(Error::Limit);
+            }
+            self.inner.cancellation.check()?;
             let mut writer = lock_until(&self.inner.writer, until)?;
             operation(&mut writer, until)
         })();
@@ -90,6 +105,15 @@ impl MappedStream {
     }
     pub fn seed_base(&self, bytes: Vec<u8>) -> Result<Stats> {
         self.write_operation(|writer, until| writer.seed_base_until(bytes, until))
+    }
+    pub fn seed_base_until(&self, bytes: Vec<u8>, until: Instant) -> Result<Stats> {
+        self.write_operation_until(until, |writer, until| writer.seed_base_until(bytes, until))
+    }
+    pub fn seed_schema_until(&self, until: Instant) -> Result<Stats> {
+        self.write_operation_until(until, |writer, until| writer.seed_schema_until(until))
+    }
+    pub fn seed_checkpoint_until(&self, until: Instant) -> Result<Stats> {
+        self.write_operation_until(until, |writer, until| writer.seed_checkpoint_until(until))
     }
     pub fn seed_schema(&self) -> Result<Stats> {
         self.write_operation(|writer, until| writer.seed_schema_until(until))

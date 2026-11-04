@@ -1,0 +1,21 @@
+   Compiling mvm-hostd v0.26.0 (/var/tmp/spiralcore-flowmux-20261103/mvm-source/crates/mvm-hostd)
+error[E0432]: unresolved import `crate::supervisor::flowmux::PayloadArtifact`
+   --> crates/mvm-hostd/src/supervisor/flowmux/open_flow.rs:561:13
+    |
+561 |             PayloadArtifact, PayloadScopeController, PreparedPayloadSession,
+    |             ^^^^^^^^^^^^^^^ no `PayloadArtifact` in `supervisor::flowmux`
+
+error[E0599]: no method named `with_artifacts` found for struct `PreparedPayloadSession` in the current scope
+   --> crates/mvm-hostd/src/supervisor/flowmux/open_flow.rs:729:70
+    |
+729 |                 PreparedPayloadSession::new(left, sender, endpoint)?.with_artifacts(artifacts)
+    |                                                                      ^^^^^^^^^^^^^^ method not found in `PreparedPayloadSession`
+    |
+   ::: crates/mvm-hostd/src/supervisor/flowmux/spiralcore_payload.rs:53:1
+    |
+ 53 | pub struct PreparedPayloadSession {
+    | --------------------------------- method `with_artifacts` not found for this struct
+
+Some errors have detailed explanations: E0432, E0599.
+For more information about an error, try `rustc --explain E0432`.
+error: could not compile `mvm-hostd` (lib test) due to 2 previous errors

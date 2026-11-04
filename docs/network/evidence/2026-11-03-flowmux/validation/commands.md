@@ -159,3 +159,47 @@ The complete old workflow and build failures remain in mvm-failures.md and raw
 receipts. Baseline canonical policy-hash test passed1/1 with2020 filtered; its
 first invocation was captured in the tool output but has no retained standalone
 raw log, so that observation is not represented as a sealed command receipt.
+
+## Component31 and canonical authenticated factory
+
+The same owned environments and two-job bounds apply. Component31 adds these
+actual receipts:
+
+```sh
+/home/callard/.cargo/bin/cargo +1.97.1 test --release --test authenticated_stream explicit_artifact_deadline --offline --locked
+/home/callard/.cargo/bin/cargo +1.97.1 test --release --offline --locked -- --nocapture
+/home/callard/.cargo/bin/cargo +1.97.1 clippy --all-targets --offline --locked -- -D warnings
+```
+
+These are artifact-until-api-red/green, component31-release followed by the final
+redacted-Debug exact-source component31-redacted-release, and component31-clippy.
+The final full result is31 PASS. All18 own file hashes and all140 complete
+shared-source members match the copied source and local bytes; see named31
+manifests/check receipts. Source30 remains the published immutable snapshot.
+
+For intermediate canonical factory tests ONLY, the owned remote hostd manifest
+used direct local paths to that one copied adapter/shared core source. Product
+hostd Cargo.toml instead pins both Git dependencies to the same published Git
+revision; final Git-source testing must replace the intermediate override.
+Standard Ed25519 pkcs8 and alloc features were enabled for EncodePrivateKey.
+No handwritten DER or signing implementation was introduced. The first
+factory-api-red also lacked alloc and is not the isolated factory API proof;
+factory-api-red-deps-present contains only the intended unresolved factory types.
+An attempted --locked resolution refusal is retained; the subsequent offline
+resolve used the existing pinned MVM lock plus new dependency edges. Its
+intermediate path lock remains remote, not a product Git lock receipt.
+
+Actual MVM wrapper arguments:
+
+```sh
+test -p mvm-hostd --lib authenticated_payload_peer_without --offline --locked
+test -p mvm-hostd --lib authenticated_canonical_tcp_preserves --offline --locked
+test -p mvm-hostd --lib supervisor::flowmux --offline --locked -- --test-threads=2
+clippy -p mvm-hostd -p mvm-runtime -p mvm-vmm -p mvm-contract -p mvm-core --lib --bin mvm-network-endpoint --offline --locked -- -D warnings
+```
+
+They produced factory-first (unenrolled real TLS refusal),
+factory-artifacts-api-red/factory-artifacts-first (one positive test, four actual
+mode cases), flowmux-regressions (96 PASS,2350 filtered outside this namespace)
+and factory-clippy-first (status is its adjacent actual exit, never inferred).
+No normal performance run or native VM acceptance is represented by these tests.

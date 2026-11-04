@@ -3,7 +3,7 @@
 use crate::{Binding, Error, Result};
 use spiralcore_transfer::{endpoint::Context, hash};
 use std::net::SocketAddr;
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct ScopeFacts {
     pub policy_sha256: [u8; 32],
     pub plan_id: String,
@@ -22,6 +22,11 @@ pub struct ScopeFacts {
     pub initiator_spki: [u8; 32],
     pub acceptor_spki: [u8; 32],
     pub tls_exporter: [u8; 32],
+}
+impl std::fmt::Debug for ScopeFacts {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter.debug_struct("ScopeFacts").finish_non_exhaustive()
+    }
 }
 impl ScopeFacts {
     pub fn canonical_bytes(&self) -> Result<Vec<u8>> {

@@ -244,3 +244,41 @@ fn revocation_fences_already_buffered_application_bytes() {
     );
     assert!(left.write(b"after revoke").is_err());
 }
+
+#[test]
+fn explicit_artifact_deadline_is_not_refreshed_after_tls_or_partial_progress() {
+    let (left, _right, facts) = pair();
+    let counters = left.try_clone().unwrap();
+    let policy = PinnedScopePolicy::new(1).unwrap();
+    let actual = authority(&policy, &facts, Role::Initiator);
+    let store =
+        Store(std::env::temp_dir().join(format!("flow-artifact-timeout-{}", std::process::id())));
+    let stream = MappedStream::from_duplex(duplex(left, &actual, Role::Initiator, &store));
+    let before = counters.counters();
+    let until = Instant::now() - Duration::from_millis(1);
+    assert!(stream.seed_schema_until(until).is_err());
+    assert_eq!(
+        counters.counters().sent,
+        before.sent,
+        "expired publication writes no artifact bytes"
+    );
+    let (left, _right, facts) = pair();
+    let policy = PinnedScopePolicy::new(1).unwrap();
+    let actual = authority(&policy, &facts, Role::Initiator);
+    let store =
+        Store(std::env::temp_dir().join(format!("flow-artifact-partial-{}", std::process::id())));
+    let stream = MappedStream::from_duplex(duplex(left, &actual, Role::Initiator, &store));
+    let until = Instant::now() + Duration::from_millis(50);
+    let start = Instant::now();
+    assert!(stream.seed_base_until(vec![3; 1024], until).is_err());
+    assert!(
+        start.elapsed() < Duration::from_millis(500),
+        "original50ms budget cannot refresh into the stream2s timeout"
+    );
+    assert!(
+        stream
+            .seed_checkpoint_until(Instant::now() + Duration::from_secs(1))
+            .is_err(),
+        "failed original attempt fences artifact reentry"
+    );
+}

@@ -1,9 +1,9 @@
 # FlowMux component checkpoint
 
-Latest frozen component: [authenticated component30](component30.md), with30
+Latest frozen continuation: [component31](component31.md), with31
 release tests and strict Clippy passing against the current shared dependency
 bytes. It uses mutual TLS1.3 RPK, explicit scope enrollment and the120-byte
-full-facts header. The following component20 text and byte table are retained
+full-facts header. The preceding [component30](component30.md) is immutable at a521ac73910ee9c7f421a166a639bdc62024e499. The following component20 text and byte table are retained
 historical evidence for the earlier72-byte prototype, not current totals.
 
 
