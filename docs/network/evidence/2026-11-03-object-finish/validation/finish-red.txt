@@ -1,0 +1,21 @@
+    Finished `release` profile [optimized] target(s) in 0.03s
+     Running tests/object_channel.rs (/var/tmp/spiralcore-mvm-service-20261102/target/release/deps/object_channel-b37c7ba0050c8e11)
+
+running 1 test
+test finish_retains_initiator_until_the_gated_responder_fin_is_acknowledged ... FAILED
+
+failures:
+
+---- finish_retains_initiator_until_the_gated_responder_fin_is_acknowledged stdout ----
+
+thread 'finish_retains_initiator_until_the_gated_responder_fin_is_acknowledged' (7689) panicked at tests/object_channel.rs:606:5:
+initiator reported success before responder FIN acknowledgment
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    finish_retains_initiator_until_the_gated_responder_fin_is_acknowledged
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 9 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `--test object_channel`

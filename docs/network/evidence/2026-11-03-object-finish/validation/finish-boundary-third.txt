@@ -1,0 +1,33 @@
+   Compiling spiralcore-gateway v0.1.0 (/var/tmp/spiralcore-object-finish-20261103/source/crates/spiralcore-gateway)
+    Finished `release` profile [optimized] target(s) in 8.43s
+     Running tests/object_channel.rs (/var/tmp/spiralcore-mvm-service-20261102/target/release/deps/object_channel-b37c7ba0050c8e11)
+
+running 12 tests
+test object_profile_cannot_send_datagrams_even_if_the_authenticated_peer_advertises_support ... ok
+test outbound_invalid_batch_is_rejected_without_writing_a_prefix ... ok
+test object_profile_rejects_packet_alpn_and_wrong_leaf_pins ... ok
+test malformed_length_truncation_and_noncanonical_batches_poison_the_channel ... ok
+test zero_end_rejects_trailing_data_and_finish_requires_acknowledgement ... ok
+test deadlines_explicit_cancellation_and_dropped_futures_cannot_resume_reads ... ok
+test a_finished_client_can_be_dropped_immediately ... ok
+test fragmented_stream_writes_preserve_exact_framing_and_cancellation_abandons_partial_prefix ... ok
+test exact_batches_share_one_authenticated_stream_and_finish_explicitly ... ok
+test terminal_flight_loss_never_substitutes_local_fin_for_observed_remote_close ... FAILED
+test terminal_close_must_follow_fin_and_preserve_original_expiry_and_cancellation ... ok
+test finish_retains_initiator_until_the_gated_responder_fin_is_acknowledged ... ok
+
+failures:
+
+---- terminal_flight_loss_never_substitutes_local_fin_for_observed_remote_close stdout ----
+
+thread 'terminal_flight_loss_never_substitutes_local_fin_for_observed_remote_close' (22865) panicked at tests/object_channel.rs:825:45:
+called `Result::unwrap()` on an `Err` value: Os { code: 111, kind: ConnectionRefused, message: "Connection refused" }
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    terminal_flight_loss_never_substitutes_local_fin_for_observed_remote_close
+
+test result: FAILED. 11 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.39s
+
+error: test failed, to rerun pass `--test object_channel`

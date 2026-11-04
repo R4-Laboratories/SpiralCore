@@ -361,6 +361,25 @@ impl Peer {
         }
         Ok(&self.connection)
     }
+    /// Only after the object stream's end/FIN checks: retain initiator I/O
+    /// until the responder confirms its acknowledged terminal send by close0.
+    pub(crate) async fn object_remote_finished(&self) -> Result<()> {
+        self.object_connection()?;
+        match self.connection.closed().await {
+            quinn::ConnectionError::ApplicationClosed(close) if close.error_code == 0u8.into() => {
+                Ok(())
+            }
+            error => Err(Error::Connection(error)),
+        }
+    }
+    /// The object profile owns a single connection on this private endpoint.
+    /// Caller bounds the entire close/drain with its original deadline/token.
+    pub(crate) async fn object_close_and_drain(&self) -> Result<()> {
+        self.object_connection()?;
+        self.close();
+        self.endpoint.wait_idle().await;
+        Ok(())
+    }
     pub(crate) fn abort(&self) {
         stop(&self.endpoint);
     }
