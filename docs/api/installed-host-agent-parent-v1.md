@@ -8,8 +8,8 @@ The bridge lives beside the original `InstalledParentProvider` and resident.
 It never discovers an agent by socket/PID or calls the legacy ensure/fork path.
 One resident owns one actual `OwnedHostAgent` for its declared tenant and keeps
 that owner outside individual VM grants. The backend receives only a clone of
-that agent's actual `OwnedHostAgentRegistrar` through its existing
-`with_installed_host_agent` seam. A clone retains the same original process,
+that agent's actual `OwnedHostAgentRegistrar` through the additive nonconsuming
+`install_owned_host_agent` seam (the consuming wrapper delegates to it). A clone retains the same original process,
 holder, parent permit and registration ledger; it starts nothing.
 
 ## Admission and resource lifetime
@@ -40,8 +40,23 @@ outside those locks.
 
 ## Canonical registration
 
-Record bounded registration facts only at the existing `bind(&AdmittedPlan,
-&HostLaunchBinding)` boundary. The opaque admitted plan supplies tenant,
+Record bounded registration facts at `bind_config(&AdmittedPlan,
+&VmStartConfig, BackendKind)` through the original canonical caller. Its default
+implementation preserves the existing binding-only provider behavior. The
+installed provider requires that config's actual anchor retain the SAME private
+VM grant, repeats `anchor.bind_admitted` against the opaque admission, and checks
+config tenant/name and exact admitted resource/backend shape before publishing
+its first binding. No current-parent permit exists yet at this stage; comparing
+the original erased owner is necessary and exports no owner or authority.
+
+The signed workload label may differ from the generated VM name only on this
+verified config/anchor path. The older `bind(&AdmittedPlan,
+&HostLaunchBinding)` retains its exact workload/name check. Canonical helper
+`RegisterVm.workload_id` remains the actual config VM name, as in MVM's runtime;
+the separately admitted plan remains the authorization source. Registration
+facts retain only a Weak anchor so the actual grant cannot form a strong cycle.
+
+The opaque admitted plan supplies tenant,
 workload, service set and canonical capability/controller-proxy facts. Preserve
 the exact original VM grant and anchor identity. Record or retain canonical VM
 state-directory and broker-socket authority from that original launch, with
@@ -98,3 +113,38 @@ and lengths, full original endpoint/registration shutdown and durable retirement
 followed by two guests and failure/recovery. Record both-direction bytes, setup
 and endpoint/host CPU, verified transfer/lifecycle time and memory domains.
 Component tests or a typed API alone cannot satisfy these native/WAN gates.
+
+## Config binding implementation checkpoint
+
+The original public f708 dependency lacks `bind_config`; an actual Rust metadata
+probe reproduced E0599 against its unchanged compiled Hostd library before this
+consumer was written. The local successor adds that trait seam and an identity-
+only Core anchor accessor. New tests use actual synthesized/admitted plans and
+two independently prepared original owners with equal projected bindings.
+They cover generated VM names, foreign owner refusal, signed body/tenant
+substitution, one-shot registration and the actual metadata charge. An isolated Linux successor build passes 19 parent checks, including these
+four new cases; one real-helper case remains ignored by that invocation.
+Independent review caught an ordering defect: registration preflight originally
+consumed the binding before it could refuse. Actual execution reproduced that
+failure before the fix. The registration candidate and its real 32 KiB claim
+now prepare before the one atomic plan/session/registration commit; failed or
+losing preparation releases outside the lifecycle lock.
+
+The three API additions are published in MVM development checkpoint
+`bef4146c0de18b22ac392118acfd898a369cc64c`. Adapter dependency binding
+`7f638428522e70b36a82d68700a6374267ea7e40` preserves its original product/test
+bodies and all locked package versions while repairing older source identities.
+A mixed graph first resolved two MVM Core/Contract identities and was rejected.
+The corrected public Git graph now resolves one of each and one shared transfer
+core, without path overrides; its locked build/test execution is still pending.
+The isolated-path tests do not substitute for that final qualification.
+
+Retained telemetry is a separate disk domain. The canonical projection's cache
+total includes the 8 MiB records cap; disposable codec storage must receive only
+the checked remainder. Endpoint Drained and original VM retirement do not prove
+that retained encrypted records or their wrapped key may be deleted or refunded.
+Actual retained-storage custody and durable accounting must survive those
+transitions. Canonical installed stop preserves the VM state directory, while
+later generic reconciliation can recursively remove it; retained installed
+scopes need protection or an authorized durable transfer before that path can
+run. A credit-only split without actual retention ownership is insufficient.

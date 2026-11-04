@@ -487,12 +487,12 @@ fn check_directory(path: &std::path::Path, pin: &Mutex<Option<Arc<File>>>) -> Re
 }
 
 impl VmGrant {
-    pub(super) fn bind_original_registration(
+    pub(super) fn prepare_original_registration(
         &self,
         admitted: &AdmittedPlan,
         config: &mvm_core::vm_backend::VmStartConfig,
         backend: BackendKind,
-    ) -> Result<()> {
+    ) -> Result<Arc<RegistrationBinding>> {
         let anchor = config
             .host_lifetime
             .as_ref()
@@ -563,7 +563,7 @@ impl VmGrant {
             service_proxies: &config.service_proxies,
         };
         mvm_vmm::host::host_agent_spawn::validate_owned_host_agent_services(&params)?;
-        let facts = Arc::new(RegistrationBinding {
+        Ok(Arc::new(RegistrationBinding {
             anchor: Arc::downgrade(anchor),
             commitment: commitment(&params)?,
             state,
@@ -571,18 +571,7 @@ impl VmGrant {
             directory: Mutex::new(None),
             socket_directory: Mutex::new(None),
             _storage: storage,
-        });
-        let mut lifecycle = self
-            .lifecycle
-            .lock()
-            .map_err(|_| anyhow!("parent lifecycle poisoned"))?;
-        ensure!(
-            lifecycle.admitted_plan.as_deref() == Some(&admitted.plan_id().0)
-                && lifecycle.registration.is_none(),
-            "original registration admission differs"
-        );
-        lifecycle.registration = Some(facts);
-        Ok(())
+        }))
     }
 }
 

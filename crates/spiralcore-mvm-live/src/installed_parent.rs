@@ -21,6 +21,8 @@ mod host_agent;
 mod resident;
 pub use resident::{InstalledResident, ResidentId, ResidentProgress, ResidentStatus};
 #[cfg(test)]
+mod config_tests;
+#[cfg(test)]
 mod endpoint_tests;
 #[cfg(test)]
 mod host_agent_tests;
@@ -416,11 +418,12 @@ impl CoreCurrentParentPermit for VmGrant {
     }
 }
 
-impl ParentAdmissionProvider for InstalledParentProvider {
-    fn bind(
+impl InstalledParentProvider {
+    fn bind_original_admission(
         &self,
         admitted: &AdmittedPlan,
         binding: &HostLaunchBinding,
+        config: Option<&mvm_core::vm_backend::VmStartConfig>,
     ) -> Result<Arc<dyn CoreCurrentParentPermit>> {
         let grant = {
             let registry = self
@@ -437,6 +440,7 @@ impl ParentAdmissionProvider for InstalledParentProvider {
                 .ok_or_else(|| anyhow!("original parent grant unavailable"))?
         };
         grant.reservation.check_current()?;
+        grant.check_open()?;
         let plan = admitted.plan();
         let runtime = match binding.backend {
             BackendKind::Firecracker => "firecracker",
@@ -445,19 +449,45 @@ impl ParentAdmissionProvider for InstalledParentProvider {
         };
         ensure!(
             plan.tenant.0 == grant.tenant
-                && plan.workload.0 == binding.vm_name
+                && (config.is_some() || plan.workload.0 == binding.vm_name)
                 && plan.runtime_profile.0 == runtime
                 && plan.resources.cpus == binding.cpus
                 && plan.resources.mem_mib == u64::from(binding.memory_mib),
             "canonical admission differs from original parent grant"
         );
+        if let Some(config) = config {
+            ensure!(
+                config.name == binding.vm_name
+                    && config.tenant_id.as_deref() == Some(grant.tenant.as_str()),
+                "original launch config identity differs"
+            );
+            let anchor = config
+                .host_lifetime
+                .as_ref()
+                .ok_or_else(|| anyhow!("original launch anchor missing"))?;
+            ensure!(
+                anchor.retains_parent_owner(&grant),
+                "launch anchor does not retain original parent grant"
+            );
+            // Recheck the actual opaque plan here, even when the canonical
+            // caller already did so. This public DI method may be called
+            // directly; equal config/plan labels are not admission continuity.
+            anchor.bind_admitted(config, binding.backend, plan)?;
+        }
+        // Validate and reserve the registration candidate before committing
+        // this grant. A pure preflight failure must not consume admission.
+        // Its local owner outlives the lock below, so a losing concurrent
+        // candidate releases its storage only after that mutex guard drops.
+        let registration = config
+            .map(|config| grant.prepare_original_registration(admitted, config, binding.backend))
+            .transpose()?;
         let mut lifecycle = grant
             .lifecycle
             .lock()
             .map_err(|_| anyhow!("parent lifecycle poisoned"))?;
         lifecycle.check_launch_open()?;
         ensure!(
-            lifecycle.admitted_plan.is_none(),
+            lifecycle.admitted_plan.is_none() && lifecycle.registration.is_none(),
             "original parent grant already bound"
         );
         lifecycle.admitted_plan = Some(admitted.plan_id().0.clone());
@@ -469,9 +499,34 @@ impl ParentAdmissionProvider for InstalledParentProvider {
         session.update(admitted.plan_id().0.as_bytes());
         session.update(plan.nonce.as_hex().as_bytes());
         lifecycle.admitted_session = Some(session.finalize().into());
+        lifecycle.registration = registration;
         drop(lifecycle);
         grant.check_current(binding)?;
         Ok(grant)
+    }
+}
+
+impl ParentAdmissionProvider for InstalledParentProvider {
+    fn bind(
+        &self,
+        admitted: &AdmittedPlan,
+        binding: &HostLaunchBinding,
+    ) -> Result<Arc<dyn CoreCurrentParentPermit>> {
+        self.bind_original_admission(admitted, binding, None)
+    }
+
+    fn bind_config(
+        &self,
+        admitted: &AdmittedPlan,
+        config: &mvm_core::vm_backend::VmStartConfig,
+        backend: BackendKind,
+    ) -> Result<Arc<dyn CoreCurrentParentPermit>> {
+        let anchor = config
+            .host_lifetime
+            .as_ref()
+            .ok_or_else(|| anyhow!("original launch anchor missing"))?;
+        anchor.verify_config(config, backend)?;
+        self.bind_original_admission(admitted, anchor.binding(), Some(config))
     }
 }
 
