@@ -5,7 +5,8 @@ use mvm_core::mailbox::{encode_envelope, transport::PreparedMailboxEnvelope};
 use spiralcore_mvm_adapter::{
     receipt::{ReceiptTracker, SendHandle},
     service::{
-        CallHandle, CallStatus, LocalMailboxService, MailboxBinding, ServiceError, ServiceTime,
+        CallHandle, CallStatus, CompletedReplyTail, LocalMailboxService, MailboxBinding,
+        ServiceError, ServiceTime,
     },
     service_sender::{self, MessageOptions},
 };
@@ -109,6 +110,33 @@ pub(super) struct PendingCall {
     receipt_outcome: Option<DeliveryOutcome>,
     reply_wire: Option<Vec<u8>>,
     reply_ack_state: ReplyAckState,
+    reply_ack_invocations: u8,
+}
+
+pub(super) struct CompletedTail {
+    pub(super) lease: CompletedReplyTail,
+    pub(super) send: SendHandle,
+    pub(super) deadline: std::time::Instant,
+    pub(super) events: u8,
+    pub(super) ack_invocations: u8,
+    pub(super) ack: ReplyAckState,
+}
+impl CompletedTail {
+    pub(super) fn receive_event(&mut self) -> Result<()> {
+        if self.events >= 16 {
+            return Err(SessionError::EventLimit);
+        }
+        self.events += 1;
+        Ok(())
+    }
+    pub(super) fn invoke_ack(&mut self) -> Result<()> {
+        if self.ack_invocations >= 16 {
+            return Err(SessionError::EventLimit);
+        }
+        self.ack_invocations += 1;
+        self.ack = ReplyAckState::InvokedUncertain;
+        Ok(())
+    }
 }
 impl PendingCall {
     // The caller validates bounded Frame encoding before allocating options,
@@ -134,6 +162,7 @@ impl PendingCall {
             receipt_outcome: None,
             reply_wire: None,
             reply_ack_state: ReplyAckState::None,
+            reply_ack_invocations: 0,
         }
     }
     pub(super) fn events_received(&self) -> u8 {
@@ -171,20 +200,48 @@ impl PendingCall {
     pub(super) fn reply_wire(&self) -> Option<&[u8]> {
         self.reply_wire.as_deref()
     }
+    pub(super) fn reply_wire_mut(&mut self) -> &mut Option<Vec<u8>> {
+        &mut self.reply_wire
+    }
+    pub(super) fn reply_ack_invocations(&self) -> u8 {
+        self.reply_ack_invocations
+    }
     pub(super) fn reply_observed(&self) -> bool {
         self.reply_wire().is_some()
     }
     /// Only the authenticated handle returned by the canonical tracker selects
     /// current state. The service retains the charged plaintext Reply payload.
     pub(super) fn observe_reply(&mut self, observed: SendHandle, wire: &[u8]) -> Result<bool> {
+        if !self.reply_is_current(observed, wire)? {
+            return Ok(false);
+        }
+        if self.reply_wire.is_none() {
+            self.reply_wire = Some(wire.to_vec());
+        }
+        self.reply_ack_state = ReplyAckState::Needed;
+        Ok(true)
+    }
+    pub(super) fn observe_reply_owned(
+        &mut self,
+        observed: SendHandle,
+        wire: &mut Option<Vec<u8>>,
+    ) -> Result<bool> {
+        if !self.reply_is_current(observed, wire.as_deref().ok_or(ServiceError::State)?)? {
+            return Ok(false);
+        }
+        if self.reply_wire.is_none() {
+            self.reply_wire = wire.take();
+        }
+        self.reply_ack_state = ReplyAckState::Needed;
+        Ok(true)
+    }
+    fn reply_is_current(&self, observed: SendHandle, wire: &[u8]) -> Result<bool> {
         if Some(observed) != self.send {
             return Ok(false);
         }
         if wire.is_empty() || wire.len() > spiralcore_mvm_adapter::MAX_ENVELOPE_BYTES {
             return Err(ServiceError::Limit.into());
         }
-        self.reply_wire = Some(wire.to_vec());
-        self.reply_ack_state = ReplyAckState::Needed;
         Ok(true)
     }
     pub(super) fn reply_ack_state(&self) -> ReplyAckState {
@@ -194,6 +251,10 @@ impl PendingCall {
         if self.reply_ack_state != ReplyAckState::Needed {
             return Err(ServiceError::State.into());
         }
+        if self.reply_ack_invocations >= 16 {
+            return Err(SessionError::EventLimit);
+        }
+        self.reply_ack_invocations += 1;
         self.reply_ack_state = ReplyAckState::InvokedUncertain;
         Ok(())
     }

@@ -333,6 +333,10 @@ pub struct ManagedReservation {
     owner: Arc<Reservation>,
 }
 impl ManagedReservation {
+    /// Identity within this original pool; never a transferable capability.
+    pub(crate) fn serial(&self) -> u64 {
+        self.owner.serial
+    }
     pub fn check_current(&self) -> Result<()> {
         if !self.owner.shared.open() {
             return Err(ManagedResourceError::Fenced);
@@ -347,7 +351,7 @@ impl ManagedReservation {
             .get(self.owner.slot)
             .copied()
             .flatten()
-            .filter(|s| s.serial == self.owner.serial);
+            .filter(|s| s.serial == self.serial());
         if current_slot.is_none_or(|s| ledger.tenants.get(s.tenant).is_none_or(Option::is_none)) {
             self.owner.shared.fence();
             return Err(ManagedResourceError::State);

@@ -24,6 +24,13 @@ pub(in super::super) fn open_read(path: &Path) -> Result<File> {
     check_file(&file.metadata()?)?;
     Ok(file)
 }
+pub(in super::super) fn quota_file_len(path: &Path) -> Result<u64> {
+    // Accounting does not grant content access. Keep the same private-file
+    // checks without opening every retained object just to obtain its length.
+    let metadata = fs::symlink_metadata(path)?;
+    check_file(&metadata)?;
+    Ok(metadata.len())
+}
 pub(in super::super) fn create_new_file(path: &Path) -> Result<File> {
     Ok(OpenOptions::new()
         .read(true)
@@ -46,15 +53,19 @@ pub(in super::super) fn open_owner(path: &Path) -> Result<File> {
     check_file(&file.metadata()?)?;
     Ok(file)
 }
+fn check_directory(metadata: &fs::Metadata) -> Result<()> {
+    if !metadata.is_dir()
+        || metadata.file_type().is_symlink()
+        || metadata.permissions().mode() & 0o077 != 0
+    {
+        return Err(Error::Storage);
+    }
+    Ok(())
+}
 pub(in super::super) fn private_dir(path: &Path) -> Result<()> {
     match fs::symlink_metadata(path) {
         Ok(metadata) => {
-            if !metadata.is_dir()
-                || metadata.file_type().is_symlink()
-                || metadata.permissions().mode() & 0o077 != 0
-            {
-                return Err(Error::Storage);
-            }
+            check_directory(&metadata)?;
         }
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
             let parent = path
@@ -72,10 +83,38 @@ pub(in super::super) fn private_dir(path: &Path) -> Result<()> {
     }
     Ok(())
 }
-pub(in super::super) fn publish(stage: &Path, destination: &Path, root: &Path) -> Result<()> {
+fn open_existing_private_directory(path: &Path) -> Result<File> {
+    let named = fs::symlink_metadata(path)?;
+    check_directory(&named)?;
+    let directory = File::open(path)?;
+    let held = directory.metadata()?;
+    check_directory(&held)?;
+    if (named.dev(), named.ino()) != (held.dev(), held.ino()) {
+        return Err(Error::Storage);
+    }
+    Ok(directory)
+}
+pub(in super::super) fn publish(stage: &Path, destination: &Path, _root: &Path) -> Result<()> {
+    let source = open_existing_private_directory(stage.parent().ok_or(Error::Storage)?)?;
+    let parent = destination.parent().ok_or(Error::Storage)?;
+    let target = open_existing_private_directory(parent)?;
+    let (source_meta, target_meta) = (source.metadata()?, target.metadata()?);
+    // Both existing constructors stage inside the destination directory. Prove
+    // actual parent identity before mutation; unsupported cross-parent moves
+    // must not silently omit a modified source-directory durability barrier.
+    if (source_meta.dev(), source_meta.ino()) != (target_meta.dev(), target_meta.ino()) {
+        return Err(Error::Storage);
+    }
     fs::rename(stage, destination)?;
-    File::open(destination.parent().ok_or(Error::Storage)?)?.sync_all()?;
-    File::open(root)?.sync_all()?;
+    sync_directory(&target, parent)?;
+    Ok(())
+}
+fn sync_directory(directory: &File, path: &Path) -> Result<()> {
+    #[cfg(test)]
+    tests::before_sync(path)?;
+    #[cfg(not(test))]
+    let _ = path;
+    directory.sync_all()?;
     Ok(())
 }
 pub(in super::super) fn sync_existing(path: &Path) -> Result<()> {
@@ -87,3 +126,7 @@ pub(in super::super) fn remove_stage(path: &Path) -> Result<()> {
     fs::remove_file(path)?;
     Ok(())
 }
+
+#[cfg(test)]
+#[path = "unix/tests.rs"]
+mod tests;

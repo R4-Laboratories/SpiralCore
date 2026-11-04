@@ -29,6 +29,21 @@ pub mod installed_resources;
     all(target_os = "linux", feature = "linux-host"),
     all(target_os = "macos", target_arch = "aarch64")
 ))]
+pub mod installed_disk;
+
+#[cfg(all(
+    feature = "canonical-host",
+    any(
+        all(target_os = "linux", feature = "linux-host"),
+        all(target_os = "macos", target_arch = "aarch64")
+    )
+))]
+pub mod installed_parent;
+
+#[cfg(any(
+    all(target_os = "linux", feature = "linux-host"),
+    all(target_os = "macos", target_arch = "aarch64")
+))]
 pub(crate) mod installed_worker;
 
 #[cfg(any(all(target_os = "linux", feature = "linux-host"), all(test, target_os = "macos")))]

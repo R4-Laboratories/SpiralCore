@@ -5,7 +5,7 @@
 //! resulting whole-object ID before publication. The decoder uses one-shot zstd,
 //! never streaming decompression with an attacker-sized internal window buffer.
 use crate::{protocol::Reader, Error, Result, MAX_CHUNK};
-use zstd::zstd_safe::{self, CCtx, CParameter, DCtx};
+use zstd::zstd_safe::{self, DCtx};
 pub const MAX_PREFIX_OBJECT: usize = 16 * 1024 * 1024;
 pub const MAX_PREFIX_CHUNKS: usize = 512;
 pub const DECODER_ALLOWANCE: u64 = 4 * 1024 * 1024;
@@ -32,28 +32,37 @@ pub fn encoded_cap(target_len: usize) -> Result<usize> {
 /// The caller includes this work in sender CPU/wall measurements, including when
 /// the frame is subsequently discarded in favor of Raw before Begin.
 pub fn encode(base: &[u8], target: &[u8]) -> Result<Vec<u8>> {
+    encode_with_resource_profile(
+        base,
+        target,
+        crate::resource_profile::ResourceProfile::General,
+    )
+}
+pub(crate) fn encode_with_resource_profile(
+    base: &[u8],
+    target: &[u8],
+    resources: crate::resource_profile::ResourceProfile,
+) -> Result<Vec<u8>> {
+    resources.check_target(target.len(), target.len())?;
+    if resources == crate::resource_profile::ResourceProfile::SmallV1 {
+        resources.check_artifact(base.len())?;
+    }
     let cap = encoded_cap(target.len())?;
     if base.len() > MAX_PREFIX_OBJECT {
         return Err(Error::Limit);
     }
     let mut encoded = Vec::new();
     encoded.try_reserve_exact(cap).map_err(|_| Error::Limit)?;
-    let mut encoder = CCtx::try_create().ok_or(Error::Limit)?;
-    for p in [
-        CParameter::CompressionLevel(3),
-        CParameter::WindowLog(25),
-        CParameter::EnableLongDistanceMatching(true),
-        CParameter::NbWorkers(0),
-        CParameter::ContentSizeFlag(true),
-        CParameter::ChecksumFlag(true),
-        CParameter::DictIdFlag(false),
-    ] {
-        encoder.set_parameter(p).map_err(|_| Error::Unsupported)?;
-    }
+    let mut encoder = resources.encoder(target.len())?;
     encoder.ref_prefix(base).map_err(|_| Error::Malformed)?;
     encoder
         .compress2(&mut encoded, target)
         .map_err(|_| Error::Malformed)?;
+    if resources == crate::resource_profile::ResourceProfile::SmallV1
+        && encoder.sizeof() as u64 > resources.encoder_charge(target.len())?
+    {
+        return Err(Error::Limit);
+    }
     validate_frame(&encoded, target.len())?;
     Ok(encoded)
 }
@@ -98,6 +107,23 @@ pub(crate) fn validate_frame(encoded: &[u8], target_len: usize) -> Result<()> {
 /// Decode exactly one profile frame into a bounded output. Whole-object identity
 /// and authorization remain the endpoint's responsibility.
 pub fn decode(base: &[u8], encoded: &[u8], target_len: usize) -> Result<Vec<u8>> {
+    decode_with_resource_profile(
+        base,
+        encoded,
+        target_len,
+        crate::resource_profile::ResourceProfile::General,
+    )
+}
+pub(crate) fn decode_with_resource_profile(
+    base: &[u8],
+    encoded: &[u8],
+    target_len: usize,
+    resources: crate::resource_profile::ResourceProfile,
+) -> Result<Vec<u8>> {
+    resources.check_target(target_len, target_len)?;
+    if resources == crate::resource_profile::ResourceProfile::SmallV1 {
+        resources.check_artifact(base.len())?;
+    }
     if base.len() > MAX_PREFIX_OBJECT {
         return Err(Error::Limit);
     }
@@ -114,7 +140,7 @@ pub fn decode(base: &[u8], encoded: &[u8], target_len: usize) -> Result<Vec<u8>>
     // sizeof is an additional drift guard, not a post-hoc allocator quota.
     let mut decoder = DCtx::try_create().ok_or(Error::Limit)?;
     decoder.ref_prefix(base).map_err(|_| Error::Malformed)?;
-    if decoder.sizeof() as u64 > DECODER_ALLOWANCE {
+    if decoder.sizeof() as u64 > resources.decoder_charge() {
         return Err(Error::Limit);
     }
     // Pass the exact length slice, not allocator capacity, as zstd's output cap.
@@ -124,7 +150,7 @@ pub fn decode(base: &[u8], encoded: &[u8], target_len: usize) -> Result<Vec<u8>>
     if written != target_len || output.len() != target_len {
         return Err(Error::Integrity);
     }
-    if decoder.sizeof() as u64 > DECODER_ALLOWANCE {
+    if decoder.sizeof() as u64 > resources.decoder_charge() {
         return Err(Error::Limit);
     }
     Ok(output)

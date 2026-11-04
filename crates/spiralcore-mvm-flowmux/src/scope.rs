@@ -5,6 +5,7 @@ use spiralcore_transfer::{endpoint::Context, hash};
 use std::net::SocketAddr;
 #[derive(Clone, PartialEq, Eq)]
 pub struct ScopeFacts {
+    pub object_profile: u16,
     pub policy_sha256: [u8; 32],
     pub plan_id: String,
     pub plan_version: u32,
@@ -30,7 +31,8 @@ impl std::fmt::Debug for ScopeFacts {
 }
 impl ScopeFacts {
     pub fn canonical_bytes(&self) -> Result<Vec<u8>> {
-        if self.plan_version == 0
+        if !matches!(self.object_profile, 1 | 2)
+            || self.plan_version == 0
             || self.stream_id == 0
             || self.requested_port == 0
             || self.actual_peer.port() == 0
@@ -75,6 +77,7 @@ impl ScopeFacts {
         bytes.extend_from_slice(&self.plan_nonce);
         bytes.extend_from_slice(&self.stream_id.to_be_bytes());
         bytes.extend_from_slice(&self.requested_port.to_be_bytes());
+        bytes.extend_from_slice(&self.object_profile.to_be_bytes());
         match self.actual_peer.ip() {
             std::net::IpAddr::V4(ip) => {
                 bytes.push(4);
@@ -86,6 +89,10 @@ impl ScopeFacts {
             }
         }
         bytes.extend_from_slice(&self.actual_peer.port().to_be_bytes());
+        if let SocketAddr::V6(address) = self.actual_peer {
+            bytes.extend_from_slice(&address.flowinfo().to_be_bytes());
+            bytes.extend_from_slice(&address.scope_id().to_be_bytes());
+        }
         Ok(bytes)
     }
     pub fn commitment(&self) -> Result<[u8; 32]> {
@@ -256,6 +263,9 @@ impl PinnedScopePolicy {
     }
 }
 impl ScopeAuthority {
+    pub fn object_profile(&self) -> u16 {
+        self.facts.object_profile
+    }
     pub fn context(&self) -> &Context {
         &self.context
     }

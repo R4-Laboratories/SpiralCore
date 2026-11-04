@@ -1,6 +1,7 @@
 use spiralcore_mvm_flowmux::scope::ScopeFacts;
 fn facts() -> ScopeFacts {
     ScopeFacts {
+        object_profile: 1,
         policy_sha256: [1; 32],
         plan_id: "actual-plan-id".into(),
         plan_version: 7,
@@ -20,6 +21,23 @@ fn facts() -> ScopeFacts {
         tls_exporter: [7; 32],
     }
 }
+#[test]
+fn shared_object_profile_is_an_exact_enrolled_fact_without_epoch_substitution() {
+    let general = facts();
+    let mut small = general.clone();
+    small.object_profile = 2;
+    assert_eq!(general.object_profile, 1);
+    assert_ne!(general.commitment().unwrap(), small.commitment().unwrap());
+    assert_ne!(
+        general.context().unwrap().namespace().unwrap(),
+        small.context().unwrap().namespace().unwrap()
+    );
+    for invalid in [0, 3, u16::MAX] {
+        small.object_profile = invalid;
+        assert!(small.canonical_bytes().is_err());
+    }
+}
+
 #[test]
 fn full_actual_facts_bind_context_without_numeric_epoch_authority() {
     let actual = facts();
@@ -72,4 +90,55 @@ fn full_actual_facts_bind_context_without_numeric_epoch_authority() {
     invalid = actual;
     invalid.plan_version = 0;
     assert!(invalid.context().is_err());
+}
+
+#[test]
+fn exact_ipv6_socket_scope_and_flowinfo_are_not_dropped_from_enrollment() {
+    use spiralcore_mvm_flowmux::{Role, scope::PinnedScopePolicy};
+    use std::{
+        net::{SocketAddr, SocketAddrV6},
+        time::{Duration, Instant},
+    };
+    let mut original = facts();
+    original.actual_peer = SocketAddr::V6(SocketAddrV6::new(
+        "2001:db8::1".parse().unwrap(),
+        8443,
+        17,
+        2,
+    ));
+    let mut other_zone = original.clone();
+    other_zone.actual_peer = SocketAddr::V6(SocketAddrV6::new(
+        "2001:db8::1".parse().unwrap(),
+        8443,
+        17,
+        3,
+    ));
+    let mut other_flow = original.clone();
+    other_flow.actual_peer = SocketAddr::V6(SocketAddrV6::new(
+        "2001:db8::1".parse().unwrap(),
+        8443,
+        18,
+        2,
+    ));
+    let policy = PinnedScopePolicy::new(1).unwrap();
+    policy
+        .enroll(
+            &original,
+            [5; 32],
+            Role::Acceptor,
+            Instant::now() + Duration::from_secs(1),
+        )
+        .unwrap();
+    for different in [other_zone, other_flow] {
+        assert!(
+            policy
+                .authorize_scope(&different, [5; 32], Role::Acceptor)
+                .is_err(),
+            "different complete IPv6 socket facts are not enrolled"
+        );
+        assert_ne!(
+            original.commitment().unwrap(),
+            different.commitment().unwrap()
+        );
+    }
 }

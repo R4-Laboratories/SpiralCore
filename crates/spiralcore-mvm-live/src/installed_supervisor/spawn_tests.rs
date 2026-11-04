@@ -164,15 +164,24 @@ fn binding_requires_the_original_live_child_and_fresh_canonical_owner_state() {
     let (reader, writer) = UnixStream::pair().unwrap();
     case.writer = Some(writer);
     let mut command = Command::new("/bin/sh");
-    command.args(["-c", "read -r command; exit 0"])
+    command
+        .args(["-c", "read -r command; exit 0"])
         .stdin(Stdio::from(OwnedFd::from(reader)))
-        .stdout(Stdio::null()).stderr(Stdio::null());
-    case.grant = Some(case.controller.spawn_worker(WorkerRole::Sender, &mut command).unwrap());
+        .stdout(Stdio::null())
+        .stderr(Stdio::null());
+    case.grant = Some(
+        case.controller
+            .spawn_worker(WorkerRole::Sender, &mut command)
+            .unwrap(),
+    );
     let grant = case.grant.as_ref().unwrap();
     let binding = case.controller.worker_binding(grant).unwrap();
     assert_eq!(binding.root, case.root);
     assert_eq!(binding.installation, [0x81; 32]);
-    assert_eq!(binding.profile, InstalledConfig::native_profile().profile_hash());
+    assert_eq!(
+        binding.profile,
+        InstalledConfig::native_profile().profile_hash()
+    );
     assert_eq!(binding.generation, 1);
     assert_eq!(binding.role, 1);
     assert_eq!(binding.slot, u8::try_from(grant.slot).unwrap());

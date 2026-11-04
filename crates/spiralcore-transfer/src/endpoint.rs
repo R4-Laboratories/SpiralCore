@@ -1,11 +1,11 @@
 //! Stateful application endpoint. The caller supplies authenticated context and current authority.
 //! This module does not authenticate sockets, implement a mailbox envelope, or claim FIPS validation.
 use crate::{
+    Error, Id, MAX_CHUNK, MAX_OBJECT, Result,
     dag::{self, Node},
     hash, hex, object_id,
     prepared::{self, VerifiedGraph},
     protocol::{Frame, Mode, Offer, Reader},
-    Error, Id, Result, MAX_CHUNK, MAX_OBJECT,
 };
 use std::{
     collections::{BTreeMap, BTreeSet},
@@ -144,6 +144,7 @@ impl Attempt {
     }
 }
 pub struct Endpoint<A: Authority> {
+    resources: crate::resource_profile::ResourceProfile,
     root: PathBuf,
     _owner: File,
     limits: Limits,
@@ -197,6 +198,35 @@ impl<A: Authority> Endpoint<A> {
         authority: A,
         cold_graph_policy: ColdGraphPolicy,
     ) -> Result<Self> {
+        Self::open_config(
+            root,
+            limits,
+            authority,
+            cold_graph_policy,
+            crate::resource_profile::ResourceProfile::General,
+        )
+    }
+    pub fn open_with_resource_profile(
+        root: &Path,
+        limits: Limits,
+        authority: A,
+        resources: crate::resource_profile::ResourceProfile,
+    ) -> Result<Self> {
+        let policy = if resources == crate::resource_profile::ResourceProfile::SmallV1 {
+            ColdGraphPolicy::Disabled
+        } else {
+            ColdGraphPolicy::EagerBounded
+        };
+        Self::open_config(root, limits, authority, policy, resources)
+    }
+    fn open_config(
+        root: &Path,
+        limits: Limits,
+        authority: A,
+        cold_graph_policy: ColdGraphPolicy,
+        resources: crate::resource_profile::ResourceProfile,
+    ) -> Result<Self> {
+        resources.check_limits(&limits)?;
         if limits.max_active == 0
             || limits.max_active > 4
             || limits.max_nodes == 0
@@ -248,6 +278,7 @@ impl<A: Authority> Endpoint<A> {
             }
         }
         Ok(Self {
+            resources,
             root: root.to_path_buf(),
             _owner: owner,
             limits,
@@ -291,6 +322,9 @@ impl<A: Authority> Endpoint<A> {
     /// Opt-in retention of validated fitted decoder state. Changes are allowed
     /// only with no active transfer; disabling drops all unpinned state.
     pub fn set_codec_cache_enabled(&mut self, enabled: bool) -> Result<()> {
+        if enabled && self.resources == crate::resource_profile::ResourceProfile::SmallV1 {
+            return Err(Error::Unsupported);
+        }
         if self.attempts.values().any(|s| s.state == 0) {
             return Err(Error::Sequence);
         }
@@ -440,6 +474,16 @@ impl<A: Authority> Endpoint<A> {
     pub fn handle(&mut self, c: &Context, f: &Frame, now: u64) -> Result<Frame> {
         self.authority.authorize(c)?;
         let ns = c.namespace()?;
+        if self.resources == crate::resource_profile::ResourceProfile::SmallV1
+            && matches!(f.kind, 1 | 4)
+        {
+            let body = if f.kind == 4 {
+                f.body.get(32..).ok_or(Error::Malformed)?
+            } else {
+                &f.body
+            };
+            self.resources.check_offer(&Offer::decode(body)?)?;
+        }
         let wire = f.encode()?;
         if !matches!(f.kind, 1..=6) {
             return Err(Error::Unsupported);
@@ -568,7 +612,7 @@ impl<A: Authority> Endpoint<A> {
         if offer.mode == Mode::ZstdPrefixV1 && existing.is_err() {
             charge = charge
                 .checked_add(crate::zstd_prefix::encoded_cap(offer.len as usize)? as u64)
-                .and_then(|n| n.checked_add(crate::zstd_prefix::DECODER_ALLOWANCE))
+                .and_then(|n| n.checked_add(self.resources.decoder_charge()))
                 .ok_or(Error::Limit)?;
         }
         if crate::fitted_transfer::is_buffered(offer.mode) && existing.is_err() {
@@ -576,7 +620,7 @@ impl<A: Authority> Endpoint<A> {
                 .checked_add(
                     crate::fitted_transfer::encoded_cap(offer.mode, offer.len as usize)? as u64,
                 )
-                .and_then(|n| n.checked_add(crate::zstd_prefix::DECODER_ALLOWANCE))
+                .and_then(|n| n.checked_add(self.resources.decoder_charge()))
                 .ok_or(Error::Limit)?;
         }
         if offer.mode == Mode::SchemaZstdV1 && existing.is_err() {
@@ -592,7 +636,7 @@ impl<A: Authority> Endpoint<A> {
             // Reserve the bounded generator's capacity/growth separately from
             // target output, checkpoint bytes and the existing scratch allowance.
             charge = charge
-                .checked_add(2 * crate::shared_runtime::MAX_OUTPUT as u64)
+                .checked_add(2 * self.resources.max_prediction_len() as u64)
                 .ok_or(Error::Limit)?;
         }
         let cached = if offer.mode == Mode::Dag && existing.is_err() {
@@ -643,6 +687,11 @@ impl<A: Authority> Endpoint<A> {
             None
         };
         if let Some(p) = &base {
+            if self.resources == crate::resource_profile::ResourceProfile::SmallV1
+                && p.len > self.resources.max_artifact_len() as u64
+            {
+                return Err(Error::Limit);
+            }
             if crate::fitted_transfer::is_fitted(offer.mode) && p.len > 64 * 1024 {
                 return Err(Error::Limit);
             }
@@ -808,10 +857,11 @@ impl<A: Authority> Endpoint<A> {
                     return Err(Error::Malformed);
                 }
                 if s.offer.mode == Mode::ZstdPrefixV1 {
-                    s.bytes = crate::zstd_prefix::decode(
+                    s.bytes = crate::zstd_prefix::decode_with_resource_profile(
                         &s.base_bytes,
                         &s.prefix_encoded,
                         s.offer.len as usize,
+                        self.resources,
                     )?;
                 }
                 if crate::fitted_transfer::is_buffered(s.offer.mode) {
@@ -821,11 +871,12 @@ impl<A: Authority> Endpoint<A> {
                             .map_err(|_| Error::Storage)?
                             .decode(&s.prefix_encoded, s.offer.len as usize)?
                     } else {
-                        crate::fitted_transfer::decode(
+                        crate::fitted_transfer::decode_with_resource_profile(
                             s.offer.mode,
                             &s.base_bytes,
                             &s.prefix_encoded,
                             s.offer.len as usize,
+                            self.resources,
                         )?
                     };
                 }
@@ -939,7 +990,11 @@ impl<A: Authority> Endpoint<A> {
             return Ok(());
         }
         if s.offer.mode == Mode::RuntimeV1 && !s.runtime_ready {
-            let prediction = crate::shared_transfer::replay_frame(&s.base_bytes, b)?;
+            let prediction = crate::shared_transfer::replay_frame_with_limit(
+                &s.base_bytes,
+                b,
+                self.resources.max_prediction_len(),
+            )?;
             s.base_bytes = prediction;
             s.runtime_ready = true;
             return Ok(());
@@ -1097,7 +1152,7 @@ impl<A: Authority> Endpoint<A> {
                 if !f.file_type()?.is_file() || f.path().extension().is_none_or(|s| s != "object") {
                     continue;
                 }
-                let n = storage::open_read(&f.path())?.metadata()?.len();
+                let n = storage::quota_file_len(&f.path())?;
                 all = all.checked_add(n).ok_or(Error::Limit)?;
                 if d.file_name() == hex(&ns).as_str() {
                     scoped = scoped.checked_add(n).ok_or(Error::Limit)?;
@@ -1174,10 +1229,153 @@ impl<A: Authority> Endpoint<A> {
     pub fn read_object(&mut self, c: &Context, id: Id) -> Result<Vec<u8>> {
         self.authority.authorize(c)?;
         let p = self.publication(c.namespace()?, id)?;
+        if self.resources == crate::resource_profile::ResourceProfile::SmallV1
+            && p.len > self.resources.max_artifact_len() as u64
+        {
+            return Err(Error::Limit);
+        }
         self.reserve_with_eviction(p.len.checked_mul(2).ok_or(Error::Limit)?)?;
         let bytes = read_publication(&p)?;
         self.authority.authorize(c)?;
         Ok(bytes)
+    }
+    // Only the explicit ordered Small facade may retire/evict. Ordinary v1
+    // endpoints retain their original replay and archival behavior.
+    pub(crate) fn ordered_bounds(&self) -> Result<(usize, u64, u64)> {
+        if self.resources != crate::resource_profile::ResourceProfile::SmallV1 {
+            return Err(Error::Unsupported);
+        }
+        Ok((
+            self.limits.max_publications,
+            self.limits.namespace_bytes,
+            self.limits.cache_bytes,
+        ))
+    }
+    pub(crate) fn ordered_attempt_count(&self, c: &Context) -> Result<usize> {
+        self.authority.authorize(c)?;
+        let ns = c.namespace()?;
+        if self.attempts.keys().any(|(space, _)| *space != ns) {
+            return Err(Error::Unauthorized);
+        }
+        Ok(self.attempts.len())
+    }
+    pub(crate) fn ordered_active_objects(&self, c: &Context) -> Result<BTreeSet<Id>> {
+        self.authority.authorize(c)?;
+        self.ordered_bounds()?;
+        let ns = c.namespace()?;
+        let mut pinned = BTreeSet::new();
+        for ((space, _), attempt) in &self.attempts {
+            if *space != ns {
+                return Err(Error::Unauthorized);
+            }
+            if attempt.state == 0 {
+                pinned.insert(attempt.offer.object);
+                if let Some(base) = attempt.offer.base {
+                    pinned.insert(base);
+                }
+            }
+        }
+        Ok(pinned)
+    }
+    pub(crate) fn ordered_retire(&mut self, c: &Context, transfer: Id) -> Result<()> {
+        self.authority.authorize(c)?;
+        self.ordered_bounds()?;
+        let key = (c.namespace()?, transfer);
+        if self
+            .attempts
+            .get(&key)
+            .is_some_and(|attempt| attempt.state != 1)
+        {
+            return Err(Error::Sequence);
+        }
+        // A successful Probe has no attempt; an expired terminal record may
+        // already have been collected by the unchanged ordinary TTL sweep.
+        self.attempts.remove(&key);
+        Ok(())
+    }
+    pub(crate) fn ordered_cache_scan(&self, c: &Context) -> Result<Vec<(Id, u64, u64)>> {
+        self.authority.authorize(c)?;
+        self.ordered_bounds()?;
+        let ns = c.namespace()?;
+        let namespace = hex(&ns);
+        let mut records = Vec::new();
+        for entry in fs::read_dir(&self.root)? {
+            let entry = entry?;
+            let name = entry.file_name();
+            if name == ".owner" || name == ".spiralcore-profile-v1" {
+                continue;
+            }
+            if !entry.file_type()?.is_dir() || name != namespace.as_str() {
+                return Err(Error::Storage);
+            }
+            private_dir(&entry.path())?;
+            for file in fs::read_dir(entry.path())? {
+                let file = file?;
+                if !file.file_type()?.is_file() || records.len() >= self.limits.max_publications {
+                    return Err(Error::Limit);
+                }
+                let publication = read_meta(&file.path())?;
+                if publication.len > self.resources.max_artifact_len() as u64
+                    || file.file_name() != format!("{}.object", hex(&publication.object)).as_str()
+                {
+                    return Err(Error::Integrity);
+                }
+                self.reserve(publication.len.checked_mul(2).ok_or(Error::Limit)?)?;
+                // Scan uses one bounded verification buffer at a time; the
+                // retained index contains IDs/scalars, never copied paths.
+                drop(read_publication(&publication)?);
+                let disk = publication
+                    .len
+                    .checked_add(if publication.manifest.is_some() {
+                        81
+                    } else {
+                        49
+                    })
+                    .ok_or(Error::Limit)?;
+                records.push((publication.object, publication.len, disk));
+            }
+        }
+        self.authority.authorize(c)?;
+        Ok(records)
+    }
+    pub(crate) fn ordered_cache_meta(&self, c: &Context, id: Id) -> Result<(u64, u64)> {
+        self.authority.authorize(c)?;
+        self.ordered_bounds()?;
+        let p = self.publication(c.namespace()?, id)?;
+        if p.len > self.resources.max_artifact_len() as u64 {
+            return Err(Error::Limit);
+        }
+        self.reserve(p.len.checked_mul(2).ok_or(Error::Limit)?)?;
+        drop(read_publication(&p)?);
+        self.authority.authorize(c)?;
+        Ok((
+            p.len,
+            p.len
+                .checked_add(if p.manifest.is_some() { 81 } else { 49 })
+                .ok_or(Error::Limit)?,
+        ))
+    }
+    pub(crate) fn ordered_remove_cache(&mut self, c: &Context, id: Id) -> Result<()> {
+        self.authority.authorize(c)?;
+        self.ordered_bounds()?;
+        if self.ordered_active_objects(c)?.contains(&id) {
+            return Err(Error::Limit);
+        }
+        let p = self.publication(c.namespace()?, id)?;
+        if p.len > self.resources.max_artifact_len() as u64 {
+            return Err(Error::Limit);
+        }
+        self.reserve(p.len.checked_mul(2).ok_or(Error::Limit)?)?;
+        drop(read_publication(&p)?);
+        self.authority.authorize(c)?;
+        // Reuse the existing private-file deletion backend under this actual
+        // exclusive endpoint owner; Windows checks ACL/reparse/hardlink state
+        // and applies disposition to its exact opened file handle.
+        storage::remove_stage(&p.path)?;
+        match fs::symlink_metadata(&p.path) {
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(()),
+            _ => Err(Error::Storage),
+        }
     }
     fn admit_disk(&self, ns: Id, offer: &Offer) -> Result<()> {
         let (mut scoped, mut all, mut count) = self.disk_usage(ns)?;

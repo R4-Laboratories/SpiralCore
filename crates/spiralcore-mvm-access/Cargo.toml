@@ -1,0 +1,48 @@
+[package]
+name = "spiralcore-mvm-access"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.97.1"
+publish = false
+description = "Separately admitted owner access using canonical MVM authority"
+
+[workspace]
+
+[lib]
+path = "src/lib.rs"
+
+[features]
+default = []
+native = ["dep:mvm-agentd", "dep:mvm-hostd", "dep:mvm-vmm"]
+legacy-interop = ["native"]
+object-v1 = ["native", "mvm-agentd/owner-access-object", "dep:spiralcore-transfer", "dep:tempfile"]
+
+[dependencies]
+mvm-core = { git = "https://github.com/Casey-allard/mvm", rev = "7d031c7f3fbeef62826712d2976a764c62cd5852", default-features = false }
+mvm-contract = { git = "https://github.com/Casey-allard/mvm", rev = "7d031c7f3fbeef62826712d2976a764c62cd5852", default-features = false, features = ["protocol"] }
+ed25519-dalek = "3"
+chrono = { version = "0.4", default-features = false, features = ["std"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha2 = "0.10.9"
+spiralcore-transfer = { git = "https://github.com/R4-Laboratories/SpiralCore", rev = "467e97aeb9cfc213d5cbd80e1c9ec516f5832df5", optional = true }
+tempfile = {version="3",optional=true}
+
+[target.'cfg(unix)'.dependencies]
+mvm-agentd = { git = "https://github.com/Casey-allard/mvm", rev = "7d031c7f3fbeef62826712d2976a764c62cd5852", default-features = false, optional = true }
+mvm-hostd = { git = "https://github.com/Casey-allard/mvm", rev = "7d031c7f3fbeef62826712d2976a764c62cd5852", default-features = false, optional = true }
+mvm-vmm = { git = "https://github.com/Casey-allard/mvm", rev = "7d031c7f3fbeef62826712d2976a764c62cd5852", default-features = false, optional = true }
+
+[dev-dependencies]
+cpu-time="1"
+mvm-core = { git = "https://github.com/Casey-allard/mvm", rev = "7d031c7f3fbeef62826712d2976a764c62cd5852", default-features = false, features = ["test-support"] }
+serde_json = "1"
+tempfile = "3"
+
+[profile.dev]
+debug = 0
+incremental = false
+
+[profile.test]
+debug = 0
+incremental = false

@@ -6,7 +6,10 @@ mod duplex;
 mod stream;
 pub use stream::MappedStream;
 mod object;
-pub use duplex::{BlockReceipt, Duplex, DuplexReader, DuplexWriter, JoinGuard, Role};
+pub use duplex::{
+    BlockReceipt, Duplex, DuplexReader, DuplexWriter, JoinGuard, READER_STACK_BYTES,
+    RetentionObserver, Role,
+};
 mod record;
 pub mod scope;
 mod tcp;

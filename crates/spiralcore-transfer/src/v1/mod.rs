@@ -1,14 +1,18 @@
 //! Transport-neutral object-v1 contract. Capabilities require authenticated
 //! carrier binding or explicit trusted pinning; they grant no authority.
 use crate::{
+    Error, Id, MAX_FRAME, MAX_OBJECT, Result,
     endpoint::{
         Authority, CodecCacheStats, ColdGraphPolicy, Context, Endpoint, GraphCacheStats, Limits,
     },
     protocol::{Frame, Offer},
-    Error, Id, Result, MAX_FRAME, MAX_OBJECT,
 };
 use std::path::Path;
+mod ordered;
 mod sender;
+pub use ordered::{
+    OrderedBinding, OrderedLane, OrderedObjectEndpoint, OrderedSnapshot, ordered_transfer_id,
+};
 pub use sender::{ObjectMode, ObjectReceipt, ObjectSelection, ObjectSender};
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Capabilities {
@@ -20,6 +24,14 @@ pub struct Capabilities {
     pub codec_mask: u16,
 }
 impl Capabilities {
+    pub fn small_v1() -> Self {
+        Self {
+            profile: 2,
+            max_object_bytes: 64 * 1024,
+            codec_mask: 891,
+            ..Self::full()
+        }
+    }
     pub fn full() -> Self {
         Self {
             major: 1,
@@ -33,10 +45,13 @@ impl Capabilities {
     fn validate(&self) -> Result<()> {
         if self.major != 1
             || self.minor != 0
-            || self.profile != 1
+            || !matches!(self.profile, 1 | 2)
             || self.codec_mask & !1023 != 0
             || self.codec_mask & 1 == 0
         {
+            return Err(Error::Unsupported);
+        }
+        if self.profile == 2 && (self.max_object_bytes > 64 * 1024 || self.codec_mask & !891 != 0) {
             return Err(Error::Unsupported);
         }
         if self.max_frame_bytes != MAX_FRAME as u32
@@ -50,6 +65,9 @@ impl Capabilities {
     pub fn negotiate(&self, peer: &Self) -> Result<NegotiatedProfile> {
         self.validate()?;
         peer.validate()?;
+        if self.profile != peer.profile {
+            return Err(Error::Unsupported);
+        }
         Ok(NegotiatedProfile {
             capabilities: Self {
                 max_object_bytes: self.max_object_bytes.min(peer.max_object_bytes),
@@ -170,8 +188,22 @@ impl<A: Authority> ObjectEndpoint<A> {
         profile: NegotiatedProfile,
         policy: ColdGraphPolicy,
     ) -> Result<Self> {
+        crate::resource_profile::ResourceProfile::General.check_negotiated(profile)?;
         Ok(Self {
             inner: Endpoint::open_with_policy(root, limits, authority, policy)?,
+            profile,
+        })
+    }
+    pub fn open_with_resource_profile(
+        root: &Path,
+        limits: Limits,
+        authority: A,
+        profile: NegotiatedProfile,
+        resources: crate::resource_profile::ResourceProfile,
+    ) -> Result<Self> {
+        resources.check_negotiated(profile)?;
+        Ok(Self {
+            inner: Endpoint::open_with_resource_profile(root, limits, authority, resources)?,
             profile,
         })
     }

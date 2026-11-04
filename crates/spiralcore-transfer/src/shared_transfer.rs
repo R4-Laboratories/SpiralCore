@@ -15,6 +15,7 @@ use crate::{delta, object_id, protocol::Reader, shared_runtime, Error, Id, Resul
 /// memory budget. Each value retains at most MAX_OUTPUT + MAX_CHECKPOINT + 69
 /// bytes of buffers; constructing multiple values requires a caller-wide budget.
 pub struct PreparedPrediction {
+    resources: crate::resource_profile::ResourceProfile,
     checkpoint: Box<[u8]>,
     prediction: Box<[u8]>,
     setup: Box<[u8]>,
@@ -24,13 +25,27 @@ pub struct PreparedPrediction {
 
 impl PreparedPrediction {
     pub fn new(checkpoint: &[u8], recipe: &shared_runtime::Recipe) -> Result<Self> {
+        Self::new_with_resource_profile(
+            checkpoint,
+            recipe,
+            crate::resource_profile::ResourceProfile::General,
+        )
+    }
+    pub fn new_with_resource_profile(
+        checkpoint: &[u8],
+        recipe: &shared_runtime::Recipe,
+        resources: crate::resource_profile::ResourceProfile,
+    ) -> Result<Self> {
+        resources.check_artifact(checkpoint.len())?;
         if checkpoint.len() > shared_runtime::MAX_CHECKPOINT {
             return Err(Error::Limit);
         }
-        let prediction = shared_runtime::replay(checkpoint, recipe, shared_runtime::MAX_OUTPUT)?;
+        let prediction =
+            shared_runtime::replay(checkpoint, recipe, resources.max_prediction_len())?;
         let prediction_id = object_id(&prediction);
         let setup = setup_frame(recipe, prediction.len(), prediction_id)?;
         Ok(Self {
+            resources,
             checkpoint_id: object_id(checkpoint),
             prediction_id,
             checkpoint: checkpoint.into(),
@@ -73,6 +88,9 @@ impl PreparedPrediction {
 
     /// Encode a target against the prepared prediction without replaying it.
     pub fn prepare(&self, target: &[u8]) -> Result<Option<Vec<Vec<u8>>>> {
+        if self.resources == crate::resource_profile::ResourceProfile::SmallV1 {
+            self.resources.check_target(target.len(), target.len())?;
+        }
         if target.len() > shared_runtime::MAX_OUTPUT {
             return Err(Error::Limit);
         }
@@ -132,6 +150,13 @@ fn setup_frame(
 
 /// Validate and regenerate one bounded prediction. Caller owns authorization.
 pub fn replay_frame(checkpoint: &[u8], body: &[u8]) -> Result<Vec<u8>> {
+    replay_frame_with_limit(checkpoint, body, shared_runtime::MAX_OUTPUT)
+}
+pub(crate) fn replay_frame_with_limit(
+    checkpoint: &[u8],
+    body: &[u8],
+    limit: usize,
+) -> Result<Vec<u8>> {
     if checkpoint.len() > shared_runtime::MAX_CHECKPOINT {
         return Err(Error::Limit);
     }
@@ -148,7 +173,7 @@ pub fn replay_frame(checkpoint: &[u8], body: &[u8]) -> Result<Vec<u8>> {
     }
     let recipe = shared_runtime::Recipe::decode(r.take(n)?)?;
     let len = r.u32()? as usize;
-    if len > shared_runtime::MAX_OUTPUT {
+    if len > shared_runtime::MAX_OUTPUT || len > limit {
         return Err(Error::Limit);
     }
     let expected = r.id()?;

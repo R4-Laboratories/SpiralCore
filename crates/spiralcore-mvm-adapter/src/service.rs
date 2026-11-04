@@ -1,6 +1,7 @@
 //! Bounded ephemeral admission using canonical MVM envelopes and receipts.
 //! Trusted local bindings own authority. This is not a durable mailbox journal.
 mod ordering;
+mod tail;
 use crate::DirectionConfig;
 use ed25519_dalek::{SigningKey, VerifyingKey};
 use mvm_contract::protocol::mailbox::*;
@@ -24,6 +25,7 @@ use std::{
         atomic::{AtomicU64, Ordering},
     },
 };
+pub use tail::{CompletedCallReply, CompletedReplyTail};
 
 type Result<T> = std::result::Result<T, ServiceError>;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -1696,12 +1698,19 @@ struct Accepted {
     owner: Arc<Mutex<MailboxOwner>>,
     order_entry: Option<Reservation>,
     disposition: DeliveryOutcome,
+    reply_wire: Option<ReplyWireIdentity>,
+}
+#[derive(Clone, Copy)]
+struct ReplyWireIdentity {
+    digest: [u8; 32],
+    len: usize,
 }
 struct CachedReply {
     prepared: PreparedMailboxEnvelope,
     header: MailboxEnvelopeHeader,
     binding: u64,
     generation: u64,
+    deadline: u64,
     policy: Arc<Mutex<BindingPolicy>>,
     _budget: Reservation,
 }
@@ -1730,6 +1739,7 @@ struct PendingCall {
     status: CallStatus,
     active: Reservation,
     reply_budget: Option<Reservation>,
+    reply_key: Option<MessageKey>,
     policy: Arc<Mutex<BindingPolicy>>,
 }
 pub struct LocalMailboxService {
@@ -1801,7 +1811,7 @@ impl LocalMailboxService {
             return Err(ServiceError::Limit);
         }
         let v = binding.verify(encoded, now)?;
-        let receipt = self.admit_verified(binding, v, encoded.len(), now)?;
+        let receipt = self.admit_verified(binding, v, encoded, now)?;
         self.drain_ready_replies(now)?;
         Ok(receipt)
     }
@@ -1827,7 +1837,7 @@ impl LocalMailboxService {
             }
             reserve(&verified)?
         };
-        let receipt = self.admit_verified(binding, verified, encoded.len(), now)?;
+        let receipt = self.admit_verified(binding, verified, encoded, now)?;
         self.drain_ready_replies(now)?;
         Ok((receipt, control))
     }
@@ -1835,7 +1845,7 @@ impl LocalMailboxService {
         &mut self,
         binding: &MailboxBinding,
         v: Verified,
-        encoded_len: usize,
+        encoded: &[u8],
         now: ServiceTime,
     ) -> Result<SignedDestinationReceipt> {
         if v.opened.header().content_type.name() == crate::receipt::RECEIPT_CONTENT_TYPE {
@@ -1898,7 +1908,7 @@ impl LocalMailboxService {
             address: address(&v.context),
             sender: h.sender,
         };
-        let bytes = if queued { encoded_len as u64 } else { 0 };
+        let bytes = if queued { encoded.len() as u64 } else { 0 };
         let owner = match self.budget.claim_owner(scope, h.execution_epoch, self.id) {
             Ok(owner) => owner,
             Err(ServiceError::Unavailable) => {
@@ -2002,6 +2012,15 @@ impl LocalMailboxService {
         reservation.delta.bytes = 0;
         reservation.delta.messages = 0;
         let header = v.opened.header().clone();
+        let reply_wire = if queued && header.kind == MailboxMessageKind::Reply {
+            use sha2::{Digest, Sha256};
+            Some(ReplyWireIdentity {
+                digest: Sha256::digest(encoded).into(),
+                len: encoded.len(),
+            })
+        } else {
+            None
+        };
         self.accepted.insert(
             key,
             Accepted {
@@ -2019,6 +2038,7 @@ impl LocalMailboxService {
                 owner: Arc::clone(&owner),
                 order_entry: Some(entry_charge),
                 disposition: outcome,
+                reply_wire,
             },
         );
         if queued {
@@ -2138,6 +2158,7 @@ impl LocalMailboxService {
                 call.status = CallStatus::Replied(Some(payload.into_payload()));
                 call.active.release_calls()?;
                 call.reply_budget = Some(queue);
+                call.reply_key = Some(key);
                 delivered += 1;
             } else {
                 entry.disposition = DeliveryOutcome::Late;
@@ -2288,6 +2309,7 @@ impl LocalMailboxService {
                 status: CallStatus::Pending,
                 active,
                 reply_budget: None,
+                reply_key: None,
                 policy: Arc::clone(&binding.policy),
             },
         );
@@ -2519,6 +2541,11 @@ impl LocalMailboxService {
             address: address(&verified.context),
             sender: verified.context.expected_sender,
         };
+        let (cache_deadline, _) = binding.deadlines(
+            verified.opened.header(),
+            now,
+            self.budget.limits.retention_ms,
+        )?;
         let reservation = self.budget.reserve(
             scope,
             Usage {
@@ -2533,6 +2560,7 @@ impl LocalMailboxService {
             header: verified.opened.header().clone(),
             binding: binding.id,
             generation: verified.generation,
+            deadline: cache_deadline,
             policy: Arc::clone(&binding.policy),
             _budget: reservation,
         });
@@ -2556,6 +2584,43 @@ impl LocalMailboxService {
             return Err(ServiceError::Unauthorized);
         }
         let key = MessageKey::new(address(&verified.context), verified.replay);
+        self.cached_reply_prepared(binding, key, verified.commitment, verified.generation, now)
+    }
+    /// Replay only an original locally admitted Call selected by its opaque handle.
+    /// This grants no new identity, sequence or application execution.
+    pub fn retry_reply_for_delivery_prepared(
+        &mut self,
+        binding: &MailboxBinding,
+        call: &DeliveryHandle,
+        now: ServiceTime,
+    ) -> Result<Option<PreparedMailboxEnvelope>> {
+        self.clock(now)?;
+        self.expire(now)?;
+        if self.shutting_down {
+            return Err(ServiceError::ShuttingDown);
+        }
+        let (_, generation) = binding.checked(now)?;
+        if call.service != self.id || call.binding != binding.id || call.generation != generation {
+            return Err(ServiceError::Unauthorized);
+        }
+        let (key, entry) = self
+            .accepted
+            .iter()
+            .find(|(_, entry)| entry.handle == *call)
+            .ok_or(ServiceError::UnknownHandle)?;
+        if entry.header.kind != MailboxMessageKind::Call {
+            return Err(ServiceError::Unauthorized);
+        }
+        self.cached_reply_prepared(binding, *key, entry.commitment, generation, now)
+    }
+    fn cached_reply_prepared(
+        &self,
+        binding: &MailboxBinding,
+        key: MessageKey,
+        commitment: [u8; 32],
+        generation: u64,
+        now: ServiceTime,
+    ) -> Result<Option<PreparedMailboxEnvelope>> {
         let original = self
             .budget
             .inner
@@ -2565,7 +2630,7 @@ impl LocalMailboxService {
             .get(&key)
             .map(|a| a.commitment)
             .ok_or(ServiceError::UnknownHandle)?;
-        if original != verified.commitment {
+        if original != commitment {
             return Err(ServiceError::Conflict);
         }
         let entry = self.accepted.get(&key).ok_or(ServiceError::Unavailable)?;
@@ -2574,7 +2639,7 @@ impl LocalMailboxService {
             return Err(ServiceError::Unauthorized);
         }
         drop(owner);
-        if verified.generation != entry.handle.generation || binding.id != entry.handle.binding {
+        if generation != entry.handle.generation || binding.id != entry.handle.binding {
             return Err(ServiceError::Unauthorized);
         }
         if now.monotonic_ms >= entry.deadline || now.unix_ms >= entry.header.expires_at_unix_ms {
@@ -2592,7 +2657,7 @@ impl LocalMailboxService {
         {
             return Err(ServiceError::Unauthorized);
         }
-        if now.unix_ms >= cache.header.expires_at_unix_ms {
+        if now.monotonic_ms >= cache.deadline || now.unix_ms >= cache.header.expires_at_unix_ms {
             return Err(ServiceError::Expired);
         }
         Ok(Some(cache.prepared.clone()))

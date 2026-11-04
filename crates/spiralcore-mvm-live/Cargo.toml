@@ -10,13 +10,17 @@ description = "Bounded native HVF guest/vsock integration witness for SpiralCore
 default = ["live"]
 live = []
 linux-host = ["dep:mvm-backends", "dep:mvm-vmm", "dep:mvm-net", "dep:mvm-build", "dep:mvm-fs"]
+canonical-host = ["dep:anyhow", "dep:mvm-hostd", "dep:mvm-client"]
 
 [dependencies]
+anyhow = { version = "1", optional = true }
 spiralcore-gateway-core = { path = "../spiralcore-gateway-core", features = ["hardware-sha256"] }
 spiralcore-mvm-adapter = { path = "../spiralcore-mvm-adapter", features = ["live", "hardware-sha256"] }
 spiralcore-transfer = { path = "../spiralcore-transfer", features = ["hardware-sha256"] }
 mvm-core = { git = "https://github.com/Casey-allard/mvm", rev = "7d031c7f3fbeef62826712d2976a764c62cd5852", default-features = false }
 mvm-contract = { git = "https://github.com/Casey-allard/mvm", rev = "7d031c7f3fbeef62826712d2976a764c62cd5852", default-features = false, features = ["protocol"] }
+mvm-hostd = { git = "https://github.com/Casey-allard/mvm", rev = "7d031c7f3fbeef62826712d2976a764c62cd5852", default-features = false, optional = true }
+mvm-client = { git = "https://github.com/Casey-allard/mvm", rev = "7d031c7f3fbeef62826712d2976a764c62cd5852", default-features = false, optional = true }
 ed25519-dalek = "3"
 rand = "0.10"
 serde = { version = "1", features = ["derive"] }

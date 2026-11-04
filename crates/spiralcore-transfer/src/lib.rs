@@ -7,6 +7,7 @@ pub mod endpoint;
 mod fitted_transfer;
 pub mod prepared;
 pub mod protocol;
+pub mod resource_profile;
 pub mod schema;
 pub mod schema_selection;
 pub mod schema_zstd;

@@ -25,6 +25,31 @@ pub(super) fn bounded_requests() -> (ReconciliationSignal, RetryRequests) {
     (ReconciliationSignal { sender }, RetryRequests { receiver })
 }
 
+/// Explicit replay of one active cached Reply. No automatic retry or new Call.
+pub struct ReplyReplaySignal {
+    sender: SyncSender<()>,
+}
+impl ReplyReplaySignal {
+    pub fn request_replay(&self) -> Result<(), TrySendError<()>> {
+        self.sender.try_send(())
+    }
+}
+pub(super) struct ReplyReplayRequests {
+    receiver: Receiver<()>,
+}
+impl ReplyReplayRequests {
+    pub(super) fn take_request(&self) -> bool {
+        self.receiver.try_recv().is_ok()
+    }
+}
+pub(super) fn bounded_reply_replays() -> (ReplyReplaySignal, ReplyReplayRequests) {
+    let (sender, receiver) = sync_channel(1);
+    (
+        ReplyReplaySignal { sender },
+        ReplyReplayRequests { receiver },
+    )
+}
+
 #[derive(Default, serde::Serialize)]
 pub(super) struct RecoveryCounters {
     pub(super) idle_outcomes: u64,
@@ -36,6 +61,11 @@ pub(super) struct RecoveryCounters {
     pub(super) cached_reply_retry_invocations: u64,
     pub(super) reply_send_invocations: u64,
     pub(super) receiver_failed_invocations: u64,
+    pub(super) tail_idle_outcomes: u64,
+    pub(super) tail_events: u64,
+    pub(super) tail_ack_invocations: u64,
+    pub(super) tail_acks_written: u64,
+    pub(super) reply_replay_commands_consumed: u64,
 }
 
 pub(super) fn increment(counter: &mut u64) -> crate::Result<()> {
@@ -84,6 +114,19 @@ impl ProcessingTotals {
 mod tests {
     use super::*;
     use std::sync::mpsc::TrySendError;
+
+    #[test]
+    fn reply_replay_signal_is_capacity_one_and_cannot_control_a_later_handle() {
+        let (signal, requests) = bounded_reply_replays();
+        assert_eq!(signal.request_replay(), Ok(()));
+        assert_eq!(signal.request_replay(), Err(TrySendError::Full(())));
+        assert!(requests.take_request());
+        assert!(!requests.take_request());
+        drop(requests);
+        let (_current, current_requests) = bounded_reply_replays();
+        assert_eq!(signal.request_replay(), Err(TrySendError::Disconnected(())));
+        assert!(!current_requests.take_request());
+    }
 
     #[test]
     fn retry_commands_have_one_slot_and_drop_disconnects_the_current_signal() {

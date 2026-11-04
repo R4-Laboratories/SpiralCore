@@ -194,10 +194,116 @@ pub struct TlsCounters {
 }
 struct Session {
     tls: rustls::Connection,
-    socket: TcpStream,
+    socket: mio::net::TcpStream,
+    write_interest: bool,
+}
+struct PollState {
+    poll: mio::Poll,
+    events: mio::Events,
+    notified: Arc<AtomicBool>,
+}
+impl PollState {
+    fn observe_wake(&self) {
+        if self
+            .events
+            .iter()
+            .any(|event| event.token() == mio::Token(1))
+        {
+            // Clear only the consumed internal hint. Progress coalesced
+            // before this clear is covered by the caller's TLS recheck;
+            // progress after it posts another remembered hint.
+            self.notified.store(false, Ordering::Release);
+        }
+    }
+    fn wait(&mut self, until: Instant) -> io::Result<()> {
+        loop {
+            let remaining = until.saturating_duration_since(Instant::now());
+            if remaining.is_zero() {
+                return Err(timeout());
+            }
+            self.events.clear();
+            #[cfg(test)]
+            readiness_tests::before_poll();
+            match self.poll.poll(&mut self.events, Some(remaining)) {
+                Err(e) if e.kind() == io::ErrorKind::Interrupted => continue,
+                outcome => outcome?,
+            }
+            self.observe_wake();
+            if Instant::now() >= until {
+                return Err(timeout());
+            }
+            if !self.events.is_empty() {
+                return Ok(());
+            }
+        }
+    }
+}
+struct Readiness {
+    registry: mio::Registry,
+    state: Mutex<PollState>,
+    waker: mio::Waker,
+    notified: Arc<AtomicBool>,
+}
+impl Readiness {
+    fn new(socket: &mut mio::net::TcpStream) -> io::Result<Self> {
+        let poll = mio::Poll::new()?;
+        poll.registry()
+            .register(socket, mio::Token(0), mio::Interest::READABLE)?;
+        let waker = mio::Waker::new(poll.registry(), mio::Token(1))?;
+        let notified = Arc::new(AtomicBool::new(false));
+        Ok(Self {
+            registry: poll.registry().try_clone()?,
+            state: Mutex::new(PollState {
+                poll,
+                events: mio::Events::with_capacity(4),
+                notified: notified.clone(),
+            }),
+            waker,
+            notified,
+        })
+    }
+    fn poller(&self) -> io::Result<Option<std::sync::MutexGuard<'_, PollState>>> {
+        match self.state.try_lock() {
+            Ok(guard) => Ok(Some(guard)),
+            Err(std::sync::TryLockError::WouldBlock) => Ok(None),
+            Err(std::sync::TryLockError::Poisoned(_)) => Err(error("TLS readiness poisoned")),
+        }
+    }
+    fn interest(&self, session: &mut Session) -> io::Result<()> {
+        let write = session.tls.wants_write();
+        if write != session.write_interest {
+            let interest = if write {
+                mio::Interest::READABLE | mio::Interest::WRITABLE
+            } else {
+                mio::Interest::READABLE
+            };
+            self.registry
+                .reregister(&mut session.socket, mio::Token(0), interest)?;
+            session.write_interest = write;
+        }
+        Ok(())
+    }
+    fn notify(&self) -> io::Result<()> {
+        if self.notified.swap(true, Ordering::AcqRel) {
+            return Ok(());
+        }
+        let result = self.post();
+        if result.is_err() {
+            // Caller propagates failure and fences/shuts down the carrier;
+            // never silently strand a pending flag after a failed post.
+            self.notified.store(false, Ordering::Release);
+        }
+        result
+    }
+    fn post(&self) -> io::Result<()> {
+        #[cfg(test)]
+        readiness_tests::before_wake()?;
+        self.waker.wake()
+    }
 }
 struct Shared {
     session: Mutex<Session>,
+    readiness: Readiness,
     control: TcpStream,
     stopped: AtomicBool,
     received: AtomicU64,
@@ -211,6 +317,7 @@ impl Shared {
     fn stop(&self) {
         self.stopped.store(true, Ordering::Release);
         let _ = self.control.shutdown(Shutdown::Both);
+        let _ = self.readiness.notify();
     }
     fn check(&self) -> io::Result<()> {
         if self.stopped.load(Ordering::Acquire) {
@@ -249,7 +356,7 @@ fn add(counter: &AtomicU64, n: usize) -> io::Result<()> {
         .map_err(|_| error("TLS counter overflow"))
 }
 fn pump(session: &mut Session, received: &AtomicU64, sent: &AtomicU64) -> io::Result<()> {
-    let Session { tls, socket } = session;
+    let Session { tls, socket, .. } = session;
     while tls.wants_write() {
         match tls.write_tls(socket) {
             Ok(0) => return Err(io::Error::new(io::ErrorKind::WriteZero, "TLS write zero")),
@@ -369,7 +476,14 @@ impl TlsCarrier {
         socket.set_nonblocking(true)?;
         socket.set_nodelay(true)?;
         tls.set_buffer_limit(Some(65536));
-        let mut session = Session { tls, socket };
+        let control = socket.try_clone()?;
+        let mut socket = mio::net::TcpStream::from_std(socket);
+        let readiness = Readiness::new(&mut socket)?;
+        let mut session = Session {
+            tls,
+            socket,
+            write_interest: false,
+        };
         let received = AtomicU64::new(0);
         let sent = AtomicU64::new(0);
         let outcome = (|| {
@@ -400,10 +514,10 @@ impl TlsCarrier {
                 return Err(e);
             }
         };
-        let control = session.socket.try_clone()?;
         Ok(Self {
             shared: Arc::new(Shared {
                 session: Mutex::new(session),
+                readiness,
                 control,
                 stopped: AtomicBool::new(false),
                 received,
@@ -453,19 +567,67 @@ impl TlsCarrier {
         }
         let until = Instant::now() + self.read_timeout;
         loop {
+            self.shared.check()?;
             if Instant::now() >= until {
                 return Err(timeout());
             }
+            let mut poller = match self.shared.readiness.poller() {
+                Ok(Some(poller)) => poller,
+                Ok(None) => {
+                    pause(until)?;
+                    continue;
+                }
+                Err(e) => {
+                    self.shared.stop();
+                    return Err(e);
+                }
+            };
+            let mut entered = false;
             let result = self.with_session(|session| {
-                pump(session, &self.shared.received, &self.shared.sent)?;
-                let mut reader = session.tls.reader();
-                let available = reader.fill_buf()?;
-                let n = available.len().min(buffer.len());
-                buffer[..n].copy_from_slice(&available[..n]);
-                Ok(n)
+                entered = true;
+                loop {
+                    if Instant::now() >= until {
+                        return Err(timeout());
+                    }
+                    // Own the poll before this final TLS recheck. Registration
+                    // precedes WouldBlock; control-only input is drained before
+                    // sleeping so edge readiness cannot strand buffered input.
+                    self.shared.readiness.interest(session)?;
+                    let before = self.shared.received.load(Ordering::Relaxed);
+                    pump(session, &self.shared.received, &self.shared.sent)?;
+                    let mut reader = session.tls.reader();
+                    match reader.fill_buf() {
+                        Ok(available) => {
+                            let n = available.len().min(buffer.len());
+                            buffer[..n].copy_from_slice(&available[..n]);
+                            return Ok(n);
+                        }
+                        Err(e) if transient(&e) => {
+                            if session.write_interest != session.tls.wants_write()
+                                || before != self.shared.received.load(Ordering::Relaxed)
+                            {
+                                continue;
+                            }
+                            return Err(e);
+                        }
+                        Err(e) => return Err(e),
+                    }
+                }
             });
             match result {
-                Err(e) if transient(&e) => pause(until)?,
+                Err(e) if transient(&e) && entered => {
+                    self.shared.check()?;
+                    if let Err(e) = poller.wait(until) {
+                        if !transient(&e) {
+                            self.shared.stop();
+                        }
+                        return Err(e);
+                    }
+                }
+                Err(e) if transient(&e) => {
+                    drop(poller);
+                    pause(until)?;
+                }
                 other => return other,
             }
         }
@@ -484,7 +646,14 @@ impl TlsCarrier {
                 self.shared.stop();
                 Ok(())
             }
-            Shutdown::Read => self.shared.control.shutdown(how),
+            Shutdown::Read => {
+                self.shared.control.shutdown(how)?;
+                if let Err(e) = self.shared.readiness.notify() {
+                    self.shared.stop();
+                    return Err(e);
+                }
+                Ok(())
+            }
             Shutdown::Write => {
                 let until = Instant::now() + self.write_timeout;
                 loop {
@@ -519,12 +688,18 @@ impl TlsCarrier {
             }
             Err(std::sync::TryLockError::Poisoned(_)) => return Err(error("TLS poisoned")),
         };
+        let before = self.counters();
         let result = operation(&mut guard);
+        let progressed = result.is_ok() || before != self.counters();
         drop(guard);
         if let Err(e) = &result
             && !transient(e)
         {
             self.shared.stop();
+        }
+        if progressed && let Err(e) = self.shared.readiness.notify() {
+            self.shared.stop();
+            return Err(e);
         }
         result
     }
@@ -692,3 +867,7 @@ mod tests {
         });
     }
 }
+
+#[cfg(test)]
+#[path = "tls/readiness_tests.rs"]
+mod readiness_tests;

@@ -12,7 +12,7 @@ use spiralcore_transfer::protocol::{Mode, Offer};
 use std::{net::TcpStream, sync::mpsc, thread::JoinHandle};
 
 #[path = "../../../tests/common/reconciliation_gate.rs"]
-mod gate;
+pub(super) mod gate;
 
 const WATCHDOG: Duration = Duration::from_secs(5);
 
@@ -41,7 +41,7 @@ struct Workers {
     relay: Option<Relay>,
 }
 
-struct Relay {
+pub(super) struct Relay {
     shutdown: Box<dyn Fn()>,
     worker: Option<JoinHandle<Result<Value>>>,
     budget: crate::host_budget::HostTransportBudget,
@@ -50,7 +50,7 @@ impl Relay {
     fn stop(&self) {
         (self.shutdown)();
     }
-    fn finish(mut self) -> Value {
+    pub(super) fn finish(mut self) -> Value {
         let report = self
             .worker
             .take()
@@ -80,7 +80,7 @@ impl Drop for Relay {
     all(target_os = "linux", feature = "linux-host"),
     all(target_os = "macos", target_arch = "aarch64")
 ))]
-fn relayed_transport(
+pub(super) fn relayed_transport(
     pair: &Pair,
     forward_withheld: Option<u64>,
     reverse_withheld: Option<u64>,
