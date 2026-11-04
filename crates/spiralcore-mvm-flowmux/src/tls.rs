@@ -260,6 +260,12 @@ fn pump(session: &mut Session, received: &AtomicU64, sent: &AtomicU64) -> io::Re
     }
     if tls.wants_read() {
         match tls.read_tls(socket) {
+            Ok(0) if tls.is_handshaking() => {
+                return Err(io::Error::new(
+                    io::ErrorKind::UnexpectedEof,
+                    "TLS peer closed before handshake completed",
+                ));
+            }
             Ok(n) => {
                 add(received, n)?;
                 tls.process_new_packets().map_err(error)?;
