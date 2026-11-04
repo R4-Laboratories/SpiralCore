@@ -467,7 +467,13 @@ fn thirty_two_interleaved_requests_bound_a_waiting_local_operation() {
                 assert_eq!(Frame::decode(&body).unwrap().kind, 101);
             }
             let mut probe = [0; 1];
-            assert_eq!(peer.read(&mut probe).unwrap(), 0);
+            // The fatal limit closes with the33rd request unread. Windows can
+            // report a reset rather than EOF; neither permits a response byte.
+            match peer.read(&mut probe) {
+                Ok(0) => {}
+                Err(error) if error.kind() == std::io::ErrorKind::ConnectionReset => {}
+                other => panic!("expected terminal EOF/reset with no response bytes: {other:?}"),
+            }
         });
         assert!(writer.send_block(vec![2; 1024]).is_err());
         assert!(matches!(
