@@ -1,0 +1,410 @@
+﻿2026-11-04T01:21:18.3551407Z Current runner version: '2.338.2'
+2026-11-04T01:21:18.3576456Z ##[group]Runner Image Provisioner
+2026-11-04T01:21:18.3577275Z Hosted Compute Agent
+2026-11-04T01:21:18.3577759Z Version: 20261021.618
+2026-11-04T01:21:18.3578264Z Commit: 21505ad2541d5be6135ed84fc33697146cf75b8e
+2026-11-04T01:21:18.3578941Z Build Date: 2026-10-21T00:45:21Z
+2026-11-04T01:21:18.3579527Z Worker ID: {589b779a-be6e-45fb-b14d-db561e7e3f9b}
+2026-11-04T01:21:18.3580176Z Region: eastus3
+2026-11-04T01:21:18.3580632Z Cloud: Azure
+2026-11-04T01:21:18.3581088Z ##[endgroup]
+2026-11-04T01:21:18.3582461Z ##[group]Operating System
+2026-11-04T01:21:18.3583013Z Microsoft Windows Server 2022
+2026-11-04T01:21:18.3583592Z 10.0.20348
+2026-11-04T01:21:18.3584031Z Datacenter
+2026-11-04T01:21:18.3584477Z ##[endgroup]
+2026-11-04T01:21:18.3584928Z ##[group]Runner Image
+2026-11-04T01:21:18.3585462Z Image: windows-2022
+2026-11-04T01:21:18.3585959Z Version: 20261025.346.1
+2026-11-04T01:21:18.3587487Z Included Software: https://github.com/actions/runner-images/blob/win22/20261025.346/images/windows/Windows2022-Readme.md
+2026-11-04T01:21:18.3588883Z Image Release: https://github.com/actions/runner-images/releases/tag/win22%2F20261025.346
+2026-11-04T01:21:18.3589671Z ##[endgroup]
+2026-11-04T01:21:18.3590766Z ##[group]GITHUB_TOKEN Permissions
+2026-11-04T01:21:18.3592643Z Contents: read
+2026-11-04T01:21:18.3593203Z Metadata: read
+2026-11-04T01:21:18.3593650Z ##[endgroup]
+2026-11-04T01:21:18.3595739Z Secret source: Actions
+2026-11-04T01:21:18.3596516Z Cache mode: write
+2026-11-04T01:21:18.3597104Z Prepare workflow directory
+2026-11-04T01:21:18.4117603Z Prepare all required actions
+2026-11-04T01:21:18.4175535Z Getting action download info
+2026-11-04T01:21:18.6163219Z Download action repository 'actions/checkout@11d5960a326750d5838078e36cf38b85af677262' (SHA:11d5960a326750d5838078e36cf38b85af677262)
+2026-11-04T01:21:18.7409112Z Download action repository 'actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02' (SHA:ea165f8d65b6e75b540449e92b4886f43607fa02)
+2026-11-04T01:21:19.0131068Z Complete job name: TLS/object stream / windows2022-x64
+2026-11-04T01:21:19.1679443Z ##[group]Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+2026-11-04T01:21:19.1680721Z with:
+2026-11-04T01:21:19.1681106Z   persist-credentials: false
+2026-11-04T01:21:19.1681568Z   repository: R4-Laboratories/SpiralCore
+2026-11-04T01:21:19.1685538Z   token: ***
+2026-11-04T01:21:19.1685882Z   ssh-strict: true
+2026-11-04T01:21:19.1686233Z   ssh-user: git
+2026-11-04T01:21:19.1686567Z   clean: true
+2026-11-04T01:21:19.1686926Z   sparse-checkout-cone-mode: true
+2026-11-04T01:21:19.1687371Z   fetch-depth: 1
+2026-11-04T01:21:19.1687723Z   fetch-tags: false
+2026-11-04T01:21:19.1688089Z   show-progress: true
+2026-11-04T01:21:19.1688451Z   lfs: false
+2026-11-04T01:21:19.1688791Z   submodules: false
+2026-11-04T01:21:19.1689158Z   set-safe-directory: true
+2026-11-04T01:21:19.1689643Z   allow-unsafe-pr-checkout: false
+2026-11-04T01:21:19.1690327Z env:
+2026-11-04T01:21:19.1690697Z   CARGO_BUILD_JOBS: 2
+2026-11-04T01:21:19.1691086Z   CARGO_INCREMENTAL: 0
+2026-11-04T01:21:19.1691504Z   CARGO_TERM_COLOR: never
+2026-11-04T01:21:19.1691916Z   NATIVE_TARGET: x86_64-pc-windows-msvc
+2026-11-04T01:21:19.1692368Z   EXPECTED_OS: Windows
+2026-11-04T01:21:19.1692740Z   EXPECTED_ARCH: X64
+2026-11-04T01:21:19.1693088Z ##[endgroup]
+2026-11-04T01:21:19.3272491Z Syncing repository: R4-Laboratories/SpiralCore
+2026-11-04T01:21:19.3276243Z ##[group]Getting Git version info
+2026-11-04T01:21:19.3276969Z Working directory is 'D:\a\SpiralCore\SpiralCore'
+2026-11-04T01:21:19.4228933Z [command]"C:\Program Files\Git\bin\git.exe" version
+2026-11-04T01:21:19.6815065Z git version 2.56.0.windows.3
+2026-11-04T01:21:19.6857106Z ##[endgroup]
+2026-11-04T01:21:19.6876579Z Temporarily overriding HOME='D:\a\_temp\3e6c9076-5444-4c9b-916e-c37ccbda68e0' before making global git config changes
+2026-11-04T01:21:19.6877830Z Adding repository directory to the temporary git global config as a safe directory
+2026-11-04T01:21:19.6888099Z [command]"C:\Program Files\Git\bin\git.exe" config --global --add safe.directory D:\a\SpiralCore\SpiralCore
+2026-11-04T01:21:19.7455445Z Deleting the contents of 'D:\a\SpiralCore\SpiralCore'
+2026-11-04T01:21:19.7460422Z ##[group]Initializing the repository
+2026-11-04T01:21:19.7470433Z [command]"C:\Program Files\Git\bin\git.exe" init D:\a\SpiralCore\SpiralCore
+2026-11-04T01:21:19.8125792Z Initialized empty Git repository in D:/a/SpiralCore/SpiralCore/.git/
+2026-11-04T01:21:19.8166330Z [command]"C:\Program Files\Git\bin\git.exe" remote add origin https://github.com/R4-Laboratories/SpiralCore
+2026-11-04T01:21:19.8701821Z ##[endgroup]
+2026-11-04T01:21:19.8702540Z ##[group]Disabling automatic garbage collection
+2026-11-04T01:21:19.8711484Z [command]"C:\Program Files\Git\bin\git.exe" config --local gc.auto 0
+2026-11-04T01:21:19.9014015Z ##[endgroup]
+2026-11-04T01:21:19.9014653Z ##[group]Setting up auth
+2026-11-04T01:21:19.9027654Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp core\.sshCommand
+2026-11-04T01:21:19.9338756Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :\""
+2026-11-04T01:21:21.1182987Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-11-04T01:21:21.1492095Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :\""
+2026-11-04T01:21:21.6478712Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-11-04T01:21:21.6790991Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "git config --local --show-origin --name-only --get-regexp remote.origin.url"
+2026-11-04T01:21:22.1647560Z [command]"C:\Program Files\Git\bin\git.exe" config --local http.https://github.com/.extraheader "AUTHORIZATION: basic ***"
+2026-11-04T01:21:22.1958533Z ##[endgroup]
+2026-11-04T01:21:22.1959188Z ##[group]Fetching the repository
+2026-11-04T01:21:22.1970630Z [command]"C:\Program Files\Git\bin\git.exe" -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +037d80770669c6dc9cbf4d2493d444277c296478:refs/remotes/pull/72/merge
+2026-11-04T01:21:25.2097277Z From https://github.com/R4-Laboratories/SpiralCore
+2026-11-04T01:21:25.2098595Z  * [new ref]         037d80770669c6dc9cbf4d2493d444277c296478 -> pull/72/merge
+2026-11-04T01:21:25.2136528Z ##[endgroup]
+2026-11-04T01:21:25.2137006Z ##[group]Determining the checkout info
+2026-11-04T01:21:25.2138526Z ##[endgroup]
+2026-11-04T01:21:25.2147826Z [command]"C:\Program Files\Git\bin\git.exe" sparse-checkout disable
+2026-11-04T01:21:25.2570435Z [command]"C:\Program Files\Git\bin\git.exe" config --local --unset-all extensions.worktreeConfig
+2026-11-04T01:21:25.2884181Z ##[group]Checking out the ref
+2026-11-04T01:21:25.2891187Z [command]"C:\Program Files\Git\bin\git.exe" checkout --progress --force refs/remotes/pull/72/merge
+2026-11-04T01:21:26.4078553Z Updating files:  22% (5431/24192)
+2026-11-04T01:21:26.4687556Z Updating files:  23% (5565/24192)
+2026-11-04T01:21:26.5150713Z Updating files:  24% (5807/24192)
+2026-11-04T01:21:26.5627410Z Updating files:  25% (6048/24192)
+2026-11-04T01:21:26.6088556Z Updating files:  26% (6290/24192)
+2026-11-04T01:21:26.6717598Z Updating files:  27% (6532/24192)
+2026-11-04T01:21:26.7161352Z Updating files:  28% (6774/24192)
+2026-11-04T01:21:26.7567310Z Updating files:  29% (7016/24192)
+2026-11-04T01:21:26.7933909Z Updating files:  30% (7258/24192)
+2026-11-04T01:21:26.8325473Z Updating files:  31% (7500/24192)
+2026-11-04T01:21:26.8719378Z Updating files:  32% (7742/24192)
+2026-11-04T01:21:26.9082381Z Updating files:  33% (7984/24192)
+2026-11-04T01:21:26.9453928Z Updating files:  34% (8226/24192)
+2026-11-04T01:21:26.9926323Z Updating files:  35% (8468/24192)
+2026-11-04T01:21:27.0310813Z Updating files:  36% (8710/24192)
+2026-11-04T01:21:27.0678783Z Updating files:  37% (8952/24192)
+2026-11-04T01:21:27.1033469Z Updating files:  38% (9193/24192)
+2026-11-04T01:21:27.1807633Z Updating files:  39% (9435/24192)
+2026-11-04T01:21:27.2158035Z Updating files:  40% (9677/24192)
+2026-11-04T01:21:27.2510649Z Updating files:  41% (9919/24192)
+2026-11-04T01:21:27.2810799Z Updating files:  42% (10161/24192)
+2026-11-04T01:21:27.3086649Z Updating files:  43% (10403/24192)
+2026-11-04T01:21:27.3363796Z Updating files:  44% (10645/24192)
+2026-11-04T01:21:27.3505335Z Updating files:  45% (10887/24192)
+2026-11-04T01:21:27.3643563Z Updating files:  45% (11005/24192)
+2026-11-04T01:21:27.3933750Z Updating files:  46% (11129/24192)
+2026-11-04T01:21:27.4224714Z Updating files:  47% (11371/24192)
+2026-11-04T01:21:27.4582267Z Updating files:  48% (11613/24192)
+2026-11-04T01:21:27.4865390Z Updating files:  49% (11855/24192)
+2026-11-04T01:21:27.5166877Z Updating files:  50% (12096/24192)
+2026-11-04T01:21:27.5451747Z Updating files:  51% (12338/24192)
+2026-11-04T01:21:27.5737510Z Updating files:  52% (12580/24192)
+2026-11-04T01:21:27.6014528Z Updating files:  53% (12822/24192)
+2026-11-04T01:21:27.6331687Z Updating files:  54% (13064/24192)
+2026-11-04T01:21:27.6583616Z Updating files:  55% (13306/24192)
+2026-11-04T01:21:27.6833314Z Updating files:  56% (13548/24192)
+2026-11-04T01:21:27.7082054Z Updating files:  57% (13790/24192)
+2026-11-04T01:21:27.7414786Z Updating files:  58% (14032/24192)
+2026-11-04T01:21:27.7856878Z Updating files:  59% (14274/24192)
+2026-11-04T01:21:27.8282719Z Updating files:  60% (14516/24192)
+2026-11-04T01:21:27.8639953Z Updating files:  61% (14758/24192)
+2026-11-04T01:21:27.8990193Z Updating files:  62% (15000/24192)
+2026-11-04T01:21:27.9287042Z Updating files:  63% (15241/24192)
+2026-11-04T01:21:27.9606138Z Updating files:  64% (15483/24192)
+2026-11-04T01:21:27.9903997Z Updating files:  65% (15725/24192)
+2026-11-04T01:21:28.0175914Z Updating files:  66% (15967/24192)
+2026-11-04T01:21:28.0491882Z Updating files:  67% (16209/24192)
+2026-11-04T01:21:28.0748900Z Updating files:  68% (16451/24192)
+2026-11-04T01:21:28.1203569Z Updating files:  69% (16693/24192)
+2026-11-04T01:21:28.1633414Z Updating files:  70% (16935/24192)
+2026-11-04T01:21:28.2028781Z Updating files:  71% (17177/24192)
+2026-11-04T01:21:28.2546003Z Updating files:  72% (17419/24192)
+2026-11-04T01:21:28.2868010Z Updating files:  73% (17661/24192)
+2026-11-04T01:21:28.3265245Z Updating files:  74% (17903/24192)
+2026-11-04T01:21:28.3525007Z Updating files:  75% (18144/24192)
+2026-11-04T01:21:28.3528639Z Updating files:  75% (18385/24192)
+2026-11-04T01:21:28.3804671Z Updating files:  76% (18386/24192)
+2026-11-04T01:21:28.4079477Z Updating files:  77% (18628/24192)
+2026-11-04T01:21:28.4359054Z Updating files:  78% (18870/24192)
+2026-11-04T01:21:28.4612492Z Updating files:  79% (19112/24192)
+2026-11-04T01:21:28.5376559Z Updating files:  80% (19354/24192)
+2026-11-04T01:21:28.5843034Z Updating files:  81% (19596/24192)
+2026-11-04T01:21:28.6262067Z Updating files:  82% (19838/24192)
+2026-11-04T01:21:28.6647229Z Updating files:  83% (20080/24192)
+2026-11-04T01:21:28.7055906Z Updating files:  84% (20322/24192)
+2026-11-04T01:21:28.7392511Z Updating files:  85% (20564/24192)
+2026-11-04T01:21:28.7723351Z Updating files:  86% (20806/24192)
+2026-11-04T01:21:28.8080919Z Updating files:  87% (21048/24192)
+2026-11-04T01:21:28.8389259Z Updating files:  88% (21289/24192)
+2026-11-04T01:21:28.8777128Z Updating files:  89% (21531/24192)
+2026-11-04T01:21:28.9132091Z Updating files:  90% (21773/24192)
+2026-11-04T01:21:28.9464492Z Updating files:  91% (22015/24192)
+2026-11-04T01:21:28.9867543Z Updating files:  92% (22257/24192)
+2026-11-04T01:21:29.0189736Z Updating files:  93% (22499/24192)
+2026-11-04T01:21:29.0521642Z Updating files:  94% (22741/24192)
+2026-11-04T01:21:29.0875498Z Updating files:  95% (22983/24192)
+2026-11-04T01:21:29.2355131Z Updating files:  96% (23225/24192)
+2026-11-04T01:21:29.2700355Z Updating files:  97% (23467/24192)
+2026-11-04T01:21:29.3083846Z Updating files:  98% (23709/24192)
+2026-11-04T01:21:29.3572652Z Updating files:  99% (23951/24192)
+2026-11-04T01:21:29.6003686Z Updating files:  99% (24154/24192)
+2026-11-04T01:21:29.6004068Z Updating files: 100% (24192/24192)
+2026-11-04T01:21:29.6004318Z Updating files: 100% (24192/24192), done.
+2026-11-04T01:21:29.6400199Z Note: switching to 'refs/remotes/pull/72/merge'.
+2026-11-04T01:21:29.6400812Z 
+2026-11-04T01:21:29.6401023Z You are in 'detached HEAD' state. You can look around, make experimental
+2026-11-04T01:21:29.6401481Z changes and commit them, and you can discard any commits you make in this
+2026-11-04T01:21:29.6401915Z state without impacting any branches by switching back to a branch.
+2026-11-04T01:21:29.6402175Z 
+2026-11-04T01:21:29.6402430Z If you want to create a new branch to retain commits you create, you may
+2026-11-04T01:21:29.6403077Z do so (now or later) by using -c with the switch command. Example:
+2026-11-04T01:21:29.6403445Z 
+2026-11-04T01:21:29.6403647Z   git switch -c <new-branch-name>
+2026-11-04T01:21:29.6403886Z 
+2026-11-04T01:21:29.6404019Z Or undo this operation with:
+2026-11-04T01:21:29.6404237Z 
+2026-11-04T01:21:29.6404403Z   git switch -
+2026-11-04T01:21:29.6404511Z 
+2026-11-04T01:21:29.6404713Z Turn off this advice by setting config variable advice.detachedHead to false
+2026-11-04T01:21:29.6404990Z 
+2026-11-04T01:21:29.6405330Z HEAD is now at 037d807 Merge 5a0ab4431bcd408da02fc8f73ace4f392c3e487c into f3d5d548965f48a5b74c696feaf648f2cbf97157
+2026-11-04T01:21:29.6657803Z ##[endgroup]
+2026-11-04T01:21:29.7128780Z [command]"C:\Program Files\Git\bin\git.exe" log -1 --format=%H
+2026-11-04T01:21:29.7427045Z 037d80770669c6dc9cbf4d2493d444277c296478
+2026-11-04T01:21:29.7471248Z ##[group]Removing auth
+2026-11-04T01:21:29.7480297Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp core\.sshCommand
+2026-11-04T01:21:29.7811843Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :\""
+2026-11-04T01:21:30.3274870Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-11-04T01:21:30.3548900Z http.https://github.com/.extraheader
+2026-11-04T01:21:30.3592914Z [command]"C:\Program Files\Git\bin\git.exe" config --local --unset-all http.https://github.com/.extraheader
+2026-11-04T01:21:30.3918892Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :\""
+2026-11-04T01:21:30.8893393Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-11-04T01:21:30.9214374Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "git config --local --show-origin --name-only --get-regexp remote.origin.url"
+2026-11-04T01:21:31.4661755Z ##[endgroup]
+2026-11-04T01:21:31.5006671Z ##[group]Run $ErrorActionPreference = 'Stop'
+2026-11-04T01:21:31.5007179Z [36;1m$ErrorActionPreference = 'Stop'[0m
+2026-11-04T01:21:31.5007593Z [36;1mNew-Item -ItemType Directory flowmux-evidence | Out-Null[0m
+2026-11-04T01:21:31.5008172Z [36;1mif ($env:RUNNER_OS -ne $env:EXPECTED_OS -or $env:RUNNER_ARCH -ne $env:EXPECTED_ARCH) { throw 'Native runner mismatch' }[0m
+2026-11-04T01:21:31.5008688Z [36;1m$source = (git rev-parse HEAD).Trim()[0m
+2026-11-04T01:21:31.5009030Z [36;1mif ($LASTEXITCODE -ne 0) { throw 'Source identity failed' }[0m
+2026-11-04T01:21:31.5009494Z [36;1m@{ source = $source; run = $env:GITHUB_RUN_ID; attempt = $env:GITHUB_RUN_ATTEMPT;[0m
+2026-11-04T01:21:31.5010190Z [36;1m  os = $env:RUNNER_OS; arch = $env:RUNNER_ARCH; image = $env:ImageVersion;[0m
+2026-11-04T01:21:31.5010740Z [36;1m  description = [System.Runtime.InteropServices.RuntimeInformation]::OSDescription;[0m
+2026-11-04T01:21:31.5011376Z [36;1m  scope = 'native process; paired TCP/TLS/shared-object component; no MVM backend or WAN';[0m
+2026-11-04T01:21:31.5012009Z [36;1m  lock_sha256 = (Get-FileHash crates/spiralcore-mvm-flowmux/Cargo.lock -Algorithm SHA256).Hash[0m
+2026-11-04T01:21:31.5012537Z [36;1m} | ConvertTo-Json | Set-Content flowmux-evidence/identity.json[0m
+2026-11-04T01:21:31.5130034Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+2026-11-04T01:21:31.5130384Z env:
+2026-11-04T01:21:31.5130594Z   CARGO_BUILD_JOBS: 2
+2026-11-04T01:21:31.5130801Z   CARGO_INCREMENTAL: 0
+2026-11-04T01:21:31.5131005Z   CARGO_TERM_COLOR: never
+2026-11-04T01:21:31.5131240Z   NATIVE_TARGET: x86_64-pc-windows-msvc
+2026-11-04T01:21:31.5131496Z   EXPECTED_OS: Windows
+2026-11-04T01:21:31.5131716Z   EXPECTED_ARCH: X64
+2026-11-04T01:21:31.5131914Z ##[endgroup]
+2026-11-04T01:21:31.9941366Z ##[group]Run rustup toolchain install "1.97.1-$env:NATIVE_TARGET" --profile minimal --component clippy
+2026-11-04T01:21:31.9942140Z [36;1mrustup toolchain install "1.97.1-$env:NATIVE_TARGET" --profile minimal --component clippy[0m
+2026-11-04T01:21:31.9942653Z [36;1mif ($LASTEXITCODE -ne 0) { throw 'Toolchain install failed' }[0m
+2026-11-04T01:21:31.9943132Z [36;1mrustc "+1.97.1-$env:NATIVE_TARGET" -vV | Tee-Object flowmux-evidence/rustc.txt[0m
+2026-11-04T01:21:31.9943928Z [36;1mif ($LASTEXITCODE -ne 0 -or !(Select-String -Path flowmux-evidence/rustc.txt -SimpleMatch -Pattern "host: $env:NATIVE_TARGET")) { throw 'Toolchain is not native' }[0m
+2026-11-04T01:21:31.9987567Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+2026-11-04T01:21:31.9987914Z env:
+2026-11-04T01:21:31.9988100Z   CARGO_BUILD_JOBS: 2
+2026-11-04T01:21:31.9988310Z   CARGO_INCREMENTAL: 0
+2026-11-04T01:21:31.9988529Z   CARGO_TERM_COLOR: never
+2026-11-04T01:21:31.9988814Z   NATIVE_TARGET: x86_64-pc-windows-msvc
+2026-11-04T01:21:31.9989056Z   EXPECTED_OS: Windows
+2026-11-04T01:21:31.9989246Z   EXPECTED_ARCH: X64
+2026-11-04T01:21:31.9989439Z ##[endgroup]
+2026-11-04T01:21:32.7649008Z info: syncing channel updates for 1.97.1-x86_64-pc-windows-msvc
+2026-11-04T01:21:33.2769619Z info: latest update on 2026-07-16 for version 1.97.1 (8bab26f4f 2026-07-14)
+2026-11-04T01:21:33.2853938Z info: downloading 4 components
+2026-11-04T01:21:41.0091686Z 
+2026-11-04T01:21:42.5093831Z   1.97.1-x86_64-pc-windows-msvc installed - rustc 1.97.1 (8bab26f4f 2026-07-14)
+2026-11-04T01:21:42.5095279Z 
+2026-11-04T01:21:43.1620266Z rustc 1.97.1 (8bab26f4f 2026-07-14)
+2026-11-04T01:21:43.1623958Z binary: rustc
+2026-11-04T01:21:43.1626254Z commit-hash: 8bab26f4f68e0e26f0bb7960be334d5b520ea452
+2026-11-04T01:21:43.1628256Z commit-date: 2026-07-14
+2026-11-04T01:21:43.1630271Z host: x86_64-pc-windows-msvc
+2026-11-04T01:21:43.1632265Z release: 1.97.1
+2026-11-04T01:21:43.1634259Z LLVM version: 22.1.6
+2026-11-04T01:21:43.2435738Z ##[group]Run $ErrorActionPreference = 'Stop'
+2026-11-04T01:21:43.2436285Z [36;1m$ErrorActionPreference = 'Stop'[0m
+2026-11-04T01:21:43.2436664Z [36;1m$PSNativeCommandUseErrorActionPreference = $false[0m
+2026-11-04T01:21:43.2437190Z [36;1m$cargoArgs = @("+1.97.1-$env:NATIVE_TARGET", 'test', '--release', '--locked', '--manifest-path',[0m
+2026-11-04T01:21:43.2437725Z [36;1m  'crates/spiralcore-mvm-flowmux/Cargo.toml', '--all-targets')[0m
+2026-11-04T01:21:43.2438198Z [36;1m$listing = (& cargo @cargoArgs -- --list --format terse 2>&1 | Out-String)[0m
+2026-11-04T01:21:43.2438600Z [36;1m$code = $LASTEXITCODE[0m
+2026-11-04T01:21:43.2438905Z [36;1m$listing | Set-Content flowmux-evidence/test-list.txt[0m
+2026-11-04T01:21:43.2439300Z [36;1mif ($code -ne 0) { throw 'Test listing failed' }[0m
+2026-11-04T01:21:43.2439690Z [36;1m$listed = [regex]::Matches($listing, '(?m)^.+: test\r?$').Count[0m
+2026-11-04T01:21:43.2440963Z [36;1mif ($listed -lt 31) { throw "Missing component coverage: $listed" }[0m
+2026-11-04T01:21:43.2441449Z [36;1m$log = (& cargo @cargoArgs -- --format pretty --color never 2>&1 | Out-String)[0m
+2026-11-04T01:21:43.2441848Z [36;1m$code = $LASTEXITCODE[0m
+2026-11-04T01:21:43.2442128Z [36;1m$log | Set-Content flowmux-evidence/tests.txt[0m
+2026-11-04T01:21:43.2442430Z [36;1m$log | Write-Output[0m
+2026-11-04T01:21:43.2442929Z [36;1m$summaries = [regex]::Matches($log, 'test result: ok\. (\d+) passed; (\d+) failed; (\d+) ignored; (\d+) measured; (\d+) filtered out;')[0m
+2026-11-04T01:21:43.2443592Z [36;1mif ($code -ne 0 -or $summaries.Count -eq 0) { throw 'Native component tests failed' }[0m
+2026-11-04T01:21:43.2444018Z [36;1m$passed = 0[0m
+2026-11-04T01:21:43.2444246Z [36;1mforeach ($summary in $summaries) {[0m
+2026-11-04T01:21:43.2444522Z [36;1m  $g = $summary.Groups[0m
+2026-11-04T01:21:43.2445062Z [36;1m  if ([int]$g[2].Value -ne 0 -or [int]$g[3].Value -ne 0 -or [int]$g[4].Value -ne 0 -or [int]$g[5].Value -ne 0) { throw 'Failed, ignored or filtered native scope' }[0m
+2026-11-04T01:21:43.2445624Z [36;1m  $passed += [int]$g[1].Value[0m
+2026-11-04T01:21:43.2445869Z [36;1m}[0m
+2026-11-04T01:21:43.2446173Z [36;1mif ($passed -ne $listed) { throw 'Listed tests do not equal passed tests' }[0m
+2026-11-04T01:21:43.2446883Z [36;1m@{ listed = $listed; passed = $passed; failed = 0; ignored = 0; scope = 'component only' } | ConvertTo-Json | Set-Content flowmux-evidence/counts.json[0m
+2026-11-04T01:21:43.2447724Z [36;1mif (git status --porcelain -- crates/spiralcore-mvm-flowmux/Cargo.lock) { throw 'Locked execution changed source' }[0m
+2026-11-04T01:21:43.2487339Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+2026-11-04T01:21:43.2487702Z env:
+2026-11-04T01:21:43.2487897Z   CARGO_BUILD_JOBS: 2
+2026-11-04T01:21:43.2488123Z   CARGO_INCREMENTAL: 0
+2026-11-04T01:21:43.2488346Z   CARGO_TERM_COLOR: never
+2026-11-04T01:21:43.2488606Z   NATIVE_TARGET: x86_64-pc-windows-msvc
+2026-11-04T01:21:43.2488886Z   EXPECTED_OS: Windows
+2026-11-04T01:21:43.2489263Z   EXPECTED_ARCH: X64
+2026-11-04T01:21:43.2489544Z ##[endgroup]
+2026-11-04T01:23:49.4751450Z     Finished `release` profile [optimized] target(s) in 0.12s
+2026-11-04T01:23:49.4752534Z      Running unittests src\lib.rs (crates\spiralcore-mvm-flowmux\target\release\deps\spiralcore_mvm_flowmux-8c8992bec6e79618.exe)
+2026-11-04T01:23:49.4754043Z 
+2026-11-04T01:23:49.4754231Z running 2 tests
+2026-11-04T01:23:49.4759327Z test tcp::timeout_tests::closed_peer_timeout_exception_requires_observed_nonzero_tighter_deadline ... ok
+2026-11-04T01:23:49.4760001Z test tls::tests::required_alpn_refuses_a_different_authenticated_tls_profile ... ok
+2026-11-04T01:23:49.4760323Z 
+2026-11-04T01:23:49.4760572Z test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+2026-11-04T01:23:49.4760888Z 
+2026-11-04T01:23:49.4763692Z      Running tests\authenticated_stream.rs (crates\spiralcore-mvm-flowmux\target\release\deps\authenticated_stream-ad3fa1f0399b9033.exe)
+2026-11-04T01:23:49.4764253Z 
+2026-11-04T01:23:49.4764346Z running 5 tests
+2026-11-04T01:23:49.4764734Z test authenticated_scope_rejects_changed_exporter_foreign_session_and_reentry_after_revoke ... ok
+2026-11-04T01:23:49.4765287Z test authenticated_direction_cannot_be_replaced_when_spawning_duplex ... ok
+2026-11-04T01:23:49.4765796Z test explicit_artifact_deadline_is_not_refreshed_after_tls_or_partial_progress ... ok
+2026-11-04T01:23:49.4766290Z test revocation_fences_already_buffered_application_bytes ... ok
+2026-11-04T01:23:49.4766830Z test authenticated_object_stream_retains_bidirectional_fidelity_half_close_and_actual_tls_counts ... ok
+2026-11-04T01:23:49.4767196Z 
+2026-11-04T01:23:49.4767435Z test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.45s
+2026-11-04T01:23:49.4767739Z 
+2026-11-04T01:23:49.4768075Z      Running tests\duplex_tcp.rs (crates\spiralcore-mvm-flowmux\target\release\deps\duplex_tcp-c8efc58c773a631f.exe)
+2026-11-04T01:23:49.4768687Z 
+2026-11-04T01:23:49.4768772Z running 8 tests
+2026-11-04T01:23:49.4769072Z test correct_object_published_from_wrong_direction_is_rejected ... ok
+2026-11-04T01:23:49.4769495Z test guard_drop_cancels_and_joins_an_idle_owned_reader ... ok
+2026-11-04T01:23:49.4769987Z test combined_runtime_artifacts_and_repeated_object_deliver_only_two_logical_blocks ... ok
+2026-11-04T01:23:49.4770532Z test same_role_on_both_peers_refuses_cross_direction_application_identity ... ok
+2026-11-04T01:23:49.4771049Z test artifacts_are_not_application_and_ack_path_survives_application_half_close ... ok
+2026-11-04T01:23:49.4771566Z test thirty_two_interleaved_requests_bound_a_waiting_local_operation ... FAILED
+2026-11-04T01:23:49.4772109Z test simultaneous_identical_objects_keep_distinct_direction_ids_and_reverse_after_fin ... ok
+2026-11-04T01:23:49.4772677Z test full_delivery_queue_backpressures_then_times_out_without_extra_published_ack ... ok
+2026-11-04T01:23:49.4773005Z 
+2026-11-04T01:23:49.4773083Z failures:
+2026-11-04T01:23:49.4773201Z 
+2026-11-04T01:23:49.4773406Z ---- thirty_two_interleaved_requests_bound_a_waiting_local_operation stdout ----
+2026-11-04T01:23:49.4773768Z 
+2026-11-04T01:23:49.4774012Z thread '<unnamed>' (7024) panicked at tests\duplex_tcp.rs:470:46:
+2026-11-04T01:23:49.4774716Z called `Result::unwrap()` on an `Err` value: Os { code: 10054, kind: ConnectionReset, message: "An existing connection was forcibly closed by the remote host." }
+2026-11-04T01:23:49.4775426Z note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+2026-11-04T01:23:49.4775717Z 
+2026-11-04T01:23:49.4776050Z thread 'thirty_two_interleaved_requests_bound_a_waiting_local_operation' (3488) panicked at tests\duplex_tcp.rs:477:23:
+2026-11-04T01:23:49.4776606Z called `Result::unwrap()` on an `Err` value: Any { .. }
+2026-11-04T01:23:49.4776842Z 
+2026-11-04T01:23:49.4776845Z 
+2026-11-04T01:23:49.4776980Z failures:
+2026-11-04T01:23:49.4777286Z     thirty_two_interleaved_requests_bound_a_waiting_local_operation
+2026-11-04T01:23:49.4777534Z 
+2026-11-04T01:23:49.4777791Z test result: FAILED. 7 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.54s
+2026-11-04T01:23:49.4778120Z 
+2026-11-04T01:23:49.4778292Z error: test failed, to rerun pass `--test duplex_tcp`
+2026-11-04T01:23:49.4778504Z 
+2026-11-04T01:23:49.5981440Z [31;1mException: [0mD:\a\_temp\4bc15b17-c283-4f2e-95d4-ef4946e47b72.ps1:17[0m
+2026-11-04T01:23:49.5983331Z [31;1m[0m[36;1mLine |[0m
+2026-11-04T01:23:49.5984794Z [31;1m[0m[36;1m[36;1m  17 | [0m … -or $summaries.Count -eq 0) { [36;1mthrow 'Native component tests failed'[0m }[0m
+2026-11-04T01:23:49.5985871Z [31;1m[0m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+2026-11-04T01:23:49.5986496Z [31;1m[0m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mNative component tests failed[0m
+2026-11-04T01:23:49.6207123Z ##[error]Process completed with exit code 1.
+2026-11-04T01:23:49.6364437Z ##[group]Run if (Test-Path flowmux-evidence) {
+2026-11-04T01:23:49.6364929Z [36;1mif (Test-Path flowmux-evidence) {[0m
+2026-11-04T01:23:49.6365367Z [36;1m  Get-ChildItem flowmux-evidence -File | Sort-Object Name | ForEach-Object {[0m
+2026-11-04T01:23:49.6365948Z [36;1m    "$((Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant())  $($_.Name)"[0m
+2026-11-04T01:23:49.6366431Z [36;1m  } | Set-Content flowmux-evidence/SHA256SUMS[0m
+2026-11-04T01:23:49.6366714Z [36;1m}[0m
+2026-11-04T01:23:49.6404509Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+2026-11-04T01:23:49.6404861Z env:
+2026-11-04T01:23:49.6405079Z   CARGO_BUILD_JOBS: 2
+2026-11-04T01:23:49.6405302Z   CARGO_INCREMENTAL: 0
+2026-11-04T01:23:49.6405520Z   CARGO_TERM_COLOR: never
+2026-11-04T01:23:49.6405761Z   NATIVE_TARGET: x86_64-pc-windows-msvc
+2026-11-04T01:23:49.6406019Z   EXPECTED_OS: Windows
+2026-11-04T01:23:49.6406399Z   EXPECTED_ARCH: X64
+2026-11-04T01:23:49.6406706Z ##[endgroup]
+2026-11-04T01:23:50.0523073Z ##[group]Run actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+2026-11-04T01:23:50.0523573Z with:
+2026-11-04T01:23:50.0523819Z   name: flowmux-component-windows2022-x64-1
+2026-11-04T01:23:50.0524118Z   path: flowmux-evidence/
+2026-11-04T01:23:50.0524352Z   if-no-files-found: error
+2026-11-04T01:23:50.0524583Z   retention-days: 14
+2026-11-04T01:23:50.0524798Z   compression-level: 6
+2026-11-04T01:23:50.0525005Z   overwrite: false
+2026-11-04T01:23:50.0525216Z   include-hidden-files: false
+2026-11-04T01:23:50.0525437Z env:
+2026-11-04T01:23:50.0525612Z   CARGO_BUILD_JOBS: 2
+2026-11-04T01:23:50.0525815Z   CARGO_INCREMENTAL: 0
+2026-11-04T01:23:50.0526016Z   CARGO_TERM_COLOR: never
+2026-11-04T01:23:50.0526251Z   NATIVE_TARGET: x86_64-pc-windows-msvc
+2026-11-04T01:23:50.0526520Z   EXPECTED_OS: Windows
+2026-11-04T01:23:50.0526719Z   EXPECTED_ARCH: X64
+2026-11-04T01:23:50.0526937Z ##[endgroup]
+2026-11-04T01:23:50.2413117Z (node:3852) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-11-04T01:23:50.2414265Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-11-04T01:23:50.2496368Z With the provided path, there will be 5 files uploaded
+2026-11-04T01:23:50.2503809Z Artifact name is valid!
+2026-11-04T01:23:50.2506485Z Root directory input is valid!
+2026-11-04T01:23:50.5006529Z Beginning upload of artifact content to blob storage
+2026-11-04T01:23:50.5284516Z (node:3852) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+2026-11-04T01:23:50.6089571Z Uploaded bytes 5064
+2026-11-04T01:23:50.6383117Z Finished uploading artifact content to blob storage!
+2026-11-04T01:23:50.6384140Z SHA256 digest of uploaded artifact zip is 997a1f888e3d943b4f97dd9d73d9b61912c9fec7f600bd5e68b111393e4daa11
+2026-11-04T01:23:50.6386839Z Finalizing artifact upload
+2026-11-04T01:23:51.0573216Z Artifact flowmux-component-windows2022-x64-1.zip successfully finalized. Artifact ID 13286383292
+2026-11-04T01:23:51.0574561Z Artifact flowmux-component-windows2022-x64-1 has been successfully uploaded! Final size is 5064 bytes. Artifact ID is 13286383292
+2026-11-04T01:23:51.0584271Z Artifact download URL: https://github.com/R4-Laboratories/SpiralCore/actions/runs/41753039963/artifacts/13286383292
+2026-11-04T01:23:51.0952608Z Post job cleanup.
+2026-11-04T01:23:51.2801428Z [command]"C:\Program Files\Git\bin\git.exe" version
+2026-11-04T01:23:51.3088056Z git version 2.56.0.windows.3
+2026-11-04T01:23:51.3154418Z Temporarily overriding HOME='D:\a\_temp\2cc02fab-c960-4ad7-b1b8-249b79590164' before making global git config changes
+2026-11-04T01:23:51.3155604Z Adding repository directory to the temporary git global config as a safe directory
+2026-11-04T01:23:51.3166125Z [command]"C:\Program Files\Git\bin\git.exe" config --global --add safe.directory D:\a\SpiralCore\SpiralCore
+2026-11-04T01:23:51.3489301Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp core\.sshCommand
+2026-11-04T01:23:51.3814044Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :\""
+2026-11-04T01:23:51.9322653Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-11-04T01:23:51.9643807Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :\""
+2026-11-04T01:23:52.4790743Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-11-04T01:23:52.5109789Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "git config --local --show-origin --name-only --get-regexp remote.origin.url"
+2026-11-04T01:23:53.0631284Z Cleaning up orphan processes
+2026-11-04T01:23:53.0906310Z Terminate orphan process: pid (2680) (vctip)
+2026-11-04T01:23:53.0992777Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@11d5960a326750d5838078e36cf38b85af677262, actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/

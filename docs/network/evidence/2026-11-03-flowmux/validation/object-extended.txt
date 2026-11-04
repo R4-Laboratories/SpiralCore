@@ -1,0 +1,30 @@
+   Compiling spiralcore-mvm-flowmux v0.1.0 (/var/tmp/spiralcore-flowmux-20261103/source/crates/spiralcore-mvm-flowmux)
+    Finished `test` profile [unoptimized] target(s) in 0.22s
+     Running unittests src/lib.rs (/var/tmp/spiralcore-flowmux-20261103/target/debug/deps/spiralcore_mvm_flowmux-d089d2a9fdc49770)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/object_tcp.rs (/var/tmp/spiralcore-flowmux-20261103/target/debug/deps/object_tcp-9f9df5b99fdf7acc)
+
+running 3 tests
+test wrong_published_identity_is_not_a_warm_commit_and_fences_reentry ... ok
+test runtime_and_combined_use_shared_artifacts_and_verified_publication_over_tcp ... FAILED
+test warm_core_published_receipts_over_real_tcp_preserve_exact_object ... ok
+
+failures:
+
+---- runtime_and_combined_use_shared_artifacts_and_verified_publication_over_tcp stdout ----
+
+thread 'runtime_and_combined_use_shared_artifacts_and_verified_publication_over_tcp' (1436300) panicked at tests/object_tcp.rs:66:9:
+assertion failed: target.len() <= 16384
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    runtime_and_combined_use_shared_artifacts_and_verified_publication_over_tcp
+
+test result: FAILED. 2 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+
+error: test failed, to rerun pass `--test object_tcp`

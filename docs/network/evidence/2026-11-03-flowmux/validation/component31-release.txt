@@ -1,0 +1,99 @@
+   Compiling spiralcore-mvm-flowmux v0.1.0 (/var/tmp/spiralcore-flowmux-20261103/source/crates/spiralcore-mvm-flowmux)
+    Finished `release` profile [optimized] target(s) in 4.49s
+     Running unittests src/lib.rs (/var/tmp/spiralcore-flowmux-20261103/target/release/deps/spiralcore_mvm_flowmux-3570b963ad8ae892)
+
+running 1 test
+test tls::tests::required_alpn_refuses_a_different_authenticated_tls_profile ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/authenticated_stream.rs (/var/tmp/spiralcore-flowmux-20261103/target/release/deps/authenticated_stream-fb00129c7c9e9235)
+
+running 5 tests
+test authenticated_scope_rejects_changed_exporter_foreign_session_and_reentry_after_revoke ... ok
+test authenticated_direction_cannot_be_replaced_when_spawning_duplex ... ok
+test revocation_fences_already_buffered_application_bytes ... ok
+TLS_FLOWMUX_COUNTERS logical_tx=20000 logical_rx=4096 cipher_tx=2617 cipher_rx=2557 peer_tx=2557 peer_rx=2617
+test authenticated_object_stream_retains_bidirectional_fidelity_half_close_and_actual_tls_counts ... ok
+test explicit_artifact_deadline_is_not_refreshed_after_tls_or_partial_progress ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.10s
+
+     Running tests/duplex_tcp.rs (/var/tmp/spiralcore-flowmux-20261103/target/release/deps/duplex_tcp-543a421ec803f1ce)
+
+running 8 tests
+test correct_object_published_from_wrong_direction_is_rejected ... ok
+test thirty_two_interleaved_requests_bound_a_waiting_local_operation ... ok
+test guard_drop_cancels_and_joins_an_idle_owned_reader ... ok
+test same_role_on_both_peers_refuses_cross_direction_application_identity ... ok
+test simultaneous_identical_objects_keep_distinct_direction_ids_and_reverse_after_fin ... ok
+FLOWMUX_COUNTERS duplex-combined wire_tx=2752 wire_rx=2246 peer_wire_tx=2246 peer_wire_rx=2752
+test combined_runtime_artifacts_and_repeated_object_deliver_only_two_logical_blocks ... ok
+test artifacts_are_not_application_and_ack_path_survives_application_half_close ... ok
+test full_delivery_queue_backpressures_then_times_out_without_extra_published_ack ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.27s
+
+     Running tests/full_scope.rs (/var/tmp/spiralcore-flowmux-20261103/target/release/deps/full_scope-b3eee10cbc734ee0)
+
+running 1 test
+test full_actual_facts_bind_context_without_numeric_epoch_authority ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/mapped_stream.rs (/var/tmp/spiralcore-flowmux-20261103/target/release/deps/mapped_stream-22ffac3c73462793)
+
+running 1 test
+test standard_relay_io_preserves_short_reads_clones_and_reverse_after_half_close ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.05s
+
+     Running tests/object_tcp.rs (/var/tmp/spiralcore-flowmux-20261103/target/release/deps/object_tcp-d9ebe7bab5763d1e)
+
+running 4 tests
+test wrong_published_identity_is_not_a_warm_commit_and_fences_reentry ... ok
+test object_namespace_is_immutable_and_checked_before_read ... ok
+FLOWMUX_COUNTERS runtime combined=false wire_tx=1918 wire_rx=1460 peer_wire_tx=1460 peer_wire_rx=1918
+FLOWMUX_COUNTERS warm target_len=8192 wire_tx=9538 wire_rx=1276 peer_wire_tx=1276 peer_wire_rx=9538
+test warm_core_published_receipts_over_real_tcp_preserve_exact_object ... ok
+FLOWMUX_COUNTERS runtime combined=true wire_tx=2530 wire_rx=2038 peer_wire_tx=2038 peer_wire_rx=2530
+test runtime_and_combined_use_shared_artifacts_and_verified_publication_over_tcp ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.09s
+
+     Running tests/paired_tcp.rs (/var/tmp/spiralcore-flowmux-20261103/target/release/deps/paired_tcp-9d1017b2292bec0d)
+
+running 7 tests
+test explicit_reset_and_cancel_are_terminal_in_both_directions ... ok
+test sequence_oversize_and_truncation_are_terminal_and_count_actual_bytes ... ok
+test raw_entropy_roundtrip_and_corrupted_raw_identity_refusal ... ok
+FLOWMUX_COUNTERS tcp-whole payload_tx=4096 payload_rx=3072 wire_tx=311 wire_rx=311 peer_wire_tx=311 peer_wire_rx=311
+test invalid_send_sizes_write_nothing_and_valid_maximum_survives ... ok
+test malformed_unavailable_peer_and_cross_binding_fence_without_payload ... ok
+test exact_bidirectional_stream_and_reverse_after_half_close_use_real_tcp ... ok
+test original_deadline_and_explicit_cancel_bound_idle_receive ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.07s
+
+     Running tests/scope_policy.rs (/var/tmp/spiralcore-flowmux-20261103/target/release/deps/scope_policy-ce2c2bed54670edb)
+
+running 2 tests
+test bounded_enrollment_and_replacement_never_revive_an_old_authority ... ok
+test explicit_enrollment_refuses_unknown_foreign_changed_expired_and_revoked_scopes ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+
+     Running tests/tls_carrier.rs (/var/tmp/spiralcore-flowmux-20261103/target/release/deps/tls_carrier-16b294eeab5177d5)
+
+running 2 tests
+test mutual_pinned_tls_uses_one_session_for_cloned_bidirectional_io ... ok
+test wrong_pin_and_unavailable_peer_refuse_before_application_bytes ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.36s
+
+   Doc-tests spiralcore_mvm_flowmux
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

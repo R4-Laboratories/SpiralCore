@@ -1,0 +1,28 @@
+[package]
+name = "spiralcore-mvm-flowmux"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.97.1"
+publish = false
+description = "Bounded cooperating-peer payload mapping inside canonical MVM FlowMux"
+
+[workspace]
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+spiralcore-transfer = { path = "../spiralcore-transfer" }
+rustls = { version = "0.23.46", default-features = false, features = ["ring", "std"] }
+sha2 = "0.10.9"
+
+[dev-dependencies]
+ring = "0.17.14"
+
+[profile.dev]
+debug = 0
+incremental = false
+
+[profile.test]
+debug = 0
+incremental = false

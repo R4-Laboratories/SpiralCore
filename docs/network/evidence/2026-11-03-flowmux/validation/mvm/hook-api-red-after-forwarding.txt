@@ -1,0 +1,16 @@
+   Compiling xtask v0.0.0 (/var/tmp/spiralcore-flowmux-20261103/mvm-source/xtask)
+   Compiling mvm-runtime v0.26.0 (/var/tmp/spiralcore-flowmux-20261103/mvm-source/crates/mvm-runtime)
+   Compiling landlock v0.4.5
+   Compiling sysinfo v0.30.13
+   Compiling ctor v0.2.9
+   Compiling leakguard v0.8.0
+error[E0560]: struct `workload_runner::runner::WorkloadLaunchInputs<'_>` has no field named `admitted_plan_json`
+   --> crates/mvm-runtime/src/workload_runner/runner.rs:390:17
+    |
+390 |                 admitted_plan_json: inputs.config.plan_json.as_deref(),
+    |                 ^^^^^^^^^^^^^^^^^^ `workload_runner::runner::WorkloadLaunchInputs<'_>` does not have this field
+    |
+    = note: all struct fields are already assigned
+
+For more information about this error, try `rustc --explain E0560`.
+error: could not compile `mvm-runtime` (lib) due to 1 previous error
