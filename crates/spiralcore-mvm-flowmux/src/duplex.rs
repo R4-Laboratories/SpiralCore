@@ -135,6 +135,7 @@ impl Duplex {
         let (delivery, delivery_rx) = mpsc::sync_channel(4);
         let (done, done_rx) = mpsc::sync_channel(1);
         let worker = Worker {
+            completed: false,
             rx: channel.rx,
             tx: shared_tx.clone(),
             pending: pending.clone(),
@@ -390,13 +391,13 @@ impl DuplexReader {
         self.receive_until(deadline(self.timeout)?)
     }
     pub(crate) fn receive_until(&mut self, until: Instant) -> Result<Event> {
-        self.cancellation.check_scope()?;
+        self.cancellation.check_delivery()?;
         if self.ended {
             return Err(Error::Closed);
         }
         match self.delivery.recv_timeout(remaining(until)?) {
             Ok(event) => {
-                self.cancellation.check_scope()?;
+                self.cancellation.check_delivery()?;
                 if event == Event::HalfClose {
                     self.ended = true;
                 }
@@ -435,25 +436,27 @@ impl JoinGuard {
         if expired {
             self.cancellation.cancel();
         }
-        let result = self
-            .child
-            .take()
-            .ok_or(Error::Worker)?
-            .join()
-            .map_err(|_| Error::Worker)?;
+        let result = match self.child.take() {
+            Some(child) => child.join().unwrap_or(Err(Error::Worker)),
+            None => Err(Error::Worker),
+        };
+        if expired || result.is_err() {
+            self.cancellation.cancel();
+        }
         if expired { Err(Error::Timeout) } else { result }
     }
 }
 impl Drop for JoinGuard {
     fn drop(&mut self) {
-        self.cancellation.cancel();
         if let Some(child) = self.child.take() {
+            self.cancellation.cancel();
             let _ = child.join();
         }
     }
 }
 
 struct Worker<A: Authority> {
+    completed: bool,
     rx: Rx,
     tx: SharedTx,
     pending: Pending,
@@ -471,6 +474,12 @@ struct Worker<A: Authority> {
     timeout: Duration,
 }
 impl<A: Authority> Worker<A> {
+    fn complete(&mut self) -> Result<(Counters, Counters)> {
+        let counters = (lock(&self.tx)?.counters(), self.rx.counters());
+        self.completed = true;
+        self.cancellation.complete();
+        Ok(counters)
+    }
     fn deliver(&self, mut event: Event, until: Instant) -> Result<()> {
         loop {
             self.cancellation.check()?;
@@ -542,15 +551,14 @@ impl<A: Authority> Worker<A> {
                 && self.local_closed.load(Ordering::Acquire)
                 && lock(&self.pending)?.is_none()
             {
-                return Ok((lock(&self.tx)?.counters(), self.rx.counters()));
+                return self.complete();
             }
             match self.rx.poll_input() {
                 Ok(false) => continue,
                 Ok(true) => {}
                 Err(Error::Truncated) if self.remote_closed => {
-                    let tx = lock(&self.tx)?;
                     if self.local_closed.load(Ordering::Acquire) && lock(&self.pending)?.is_none() {
-                        return Ok((tx.counters(), self.rx.counters()));
+                        return self.complete();
                     }
                     return Err(Error::Truncated);
                 }
@@ -602,6 +610,8 @@ impl<A: Authority> Worker<A> {
 }
 impl<A: Authority> Drop for Worker<A> {
     fn drop(&mut self) {
-        self.cancellation.cancel();
+        if !self.completed {
+            self.cancellation.cancel();
+        }
     }
 }

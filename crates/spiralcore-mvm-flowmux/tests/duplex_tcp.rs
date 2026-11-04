@@ -234,10 +234,14 @@ fn full_delivery_queue_backpressures_then_times_out_without_extra_published_ack(
     assert!(left_tx.send_block(vec![5; 1024]).is_err());
     assert!(left_guard.join().is_err());
     assert!(right_guard.join().is_err());
-    for i in 0..4 {
-        assert_eq!(right_rx.receive().unwrap(), Event::Data(vec![i; 1024]));
+    // Fatal timeout fences delivery even for the four previously verified
+    // queued blocks; acknowledged publication is not permission after cancel.
+    for _ in 0..5 {
+        assert!(matches!(
+            right_rx.receive(),
+            Err(spiralcore_mvm_flowmux::Error::Cancelled)
+        ));
     }
-    assert!(right_rx.receive().is_err());
 }
 
 #[test]

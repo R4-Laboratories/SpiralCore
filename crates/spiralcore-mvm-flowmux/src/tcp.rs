@@ -120,19 +120,37 @@ impl Write for Carrier {
     }
 }
 struct Control {
+    delivery_fenced: AtomicBool,
     scope: Option<crate::scope::ScopeAuthority>,
     socket: Carrier,
     stopped: AtomicBool,
 }
 impl Control {
     fn stop(&self) {
+        self.delivery_fenced.store(true, Ordering::Release);
+        self.close();
+    }
+    fn close(&self) {
         self.stopped.store(true, Ordering::Release);
         let _ = self.socket.shutdown(Shutdown::Both);
     }
-    fn check(&self) -> Result<()> {
+    fn stop_on_drop(&self) {
+        if !self.stopped.load(Ordering::Acquire) {
+            self.stop();
+        }
+    }
+    fn check_delivery(&self) -> Result<()> {
         self.check_scope()?;
-        if self.stopped.load(Ordering::Acquire) {
+        if self.delivery_fenced.load(Ordering::Acquire) {
             Err(Error::Cancelled)
+        } else {
+            Ok(())
+        }
+    }
+    fn check(&self) -> Result<()> {
+        self.check_delivery()?;
+        if self.stopped.load(Ordering::Acquire) {
+            Err(Error::Closed)
         } else {
             Ok(())
         }
@@ -149,8 +167,11 @@ pub struct Cancellation {
     control: Arc<Control>,
 }
 impl Cancellation {
-    pub(crate) fn check_scope(&self) -> Result<()> {
-        self.control.check_scope()
+    pub(crate) fn check_delivery(&self) -> Result<()> {
+        self.control.check_delivery()
+    }
+    pub(crate) fn complete(&self) {
+        self.control.close();
     }
     pub fn cancel(&self) {
         self.control.stop();
@@ -236,6 +257,7 @@ impl TcpMapping {
         socket.set_write_timeout(initial)?;
         let read = socket.try_clone()?;
         let control = Arc::new(Control {
+            delivery_fenced: AtomicBool::new(false),
             scope,
             socket: socket.try_clone()?,
             stopped: AtomicBool::new(false),
@@ -438,7 +460,7 @@ impl Tx {
 impl Drop for Tx {
     fn drop(&mut self) {
         if !self.ended {
-            self.control.stop();
+            self.control.stop_on_drop();
         }
     }
 }
@@ -598,7 +620,7 @@ impl Rx {
 impl Drop for Rx {
     fn drop(&mut self) {
         if !self.ended {
-            self.control.stop();
+            self.control.stop_on_drop();
         }
     }
 }

@@ -141,7 +141,7 @@ impl Read for MappedStream {
             return Ok(0);
         }
         let result = (|| {
-            self.inner.cancellation.check_scope()?;
+            self.inner.cancellation.check_delivery()?;
             let until = deadline(self.inner.timeout)?;
             let mut buffered = lock_until(&self.inner.reader, until)?;
             if buffered.ended {
@@ -161,7 +161,7 @@ impl Read for MappedStream {
                 }
             }
             let n = output.len().min(buffered.bytes.len() - buffered.offset);
-            self.inner.cancellation.check_scope()?;
+            self.inner.cancellation.check_delivery()?;
             output[..n].copy_from_slice(&buffered.bytes[buffered.offset..buffered.offset + n]);
             buffered.offset += n;
             Ok(n)

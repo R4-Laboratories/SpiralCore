@@ -282,3 +282,113 @@ fn explicit_artifact_deadline_is_not_refreshed_after_tls_or_partial_progress() {
         "failed original attempt fences artifact reentry"
     );
 }
+
+#[test]
+fn fatal_cancel_refuses_verified_buffered_bytes_while_clean_half_close_still_drains() {
+    for mode in 0..3 {
+        let (left, right, facts) = pair();
+        let closed_probe = left.try_clone().unwrap();
+        let policy = PinnedScopePolicy::new(2).unwrap();
+        let left_authority = authority(&policy, &facts, Role::Initiator);
+        let right_authority = authority(&policy, &facts, Role::Acceptor);
+        let stores = [
+            Store(
+                std::env::temp_dir()
+                    .join(format!("flow-buffer-left-{mode}-{}", std::process::id())),
+            ),
+            Store(
+                std::env::temp_dir()
+                    .join(format!("flow-buffer-right-{mode}-{}", std::process::id())),
+            ),
+        ];
+        let mut left =
+            MappedStream::from_duplex(duplex(left, &left_authority, Role::Initiator, &stores[0]));
+        let mut right =
+            MappedStream::from_duplex(duplex(right, &right_authority, Role::Acceptor, &stores[1]));
+        let payload = b"verified-before-fatal-cancel";
+        right.write_all(payload).unwrap();
+        let mut first = [0; 1];
+        left.read_exact(&mut first).unwrap();
+        assert_eq!(first, [payload[0]]);
+        left_authority.check().unwrap();
+        right_authority.check().unwrap();
+        if mode != 1 {
+            right.shutdown(Shutdown::Write).unwrap();
+            left.shutdown(Shutdown::Write).unwrap();
+            assert_eq!(right.read(&mut [0; 1]).unwrap(), 0);
+            // Observe actual shared TLS shutdown, rather than guessing when
+            // the clean worker completed. Cloning never creates another FD.
+            let until = Instant::now() + Duration::from_secs(1);
+            while closed_probe.try_clone().is_ok() {
+                assert!(
+                    Instant::now() < until,
+                    "clean duplex must close its physical carrier"
+                );
+                std::thread::yield_now();
+            }
+        }
+        if mode == 0 {
+            assert!(left.write(b"pre-IO refusal after local FIN").is_err());
+            let mut rest = Vec::new();
+            left.read_to_end(&mut rest).unwrap();
+            assert_eq!(rest, payload[1..]);
+            assert_eq!(left.read(&mut [0; 1]).unwrap(), 0);
+        } else {
+            // mode2 cancels only AFTER actual graceful I/O closure; the
+            // fatal delivery fence must still become effective monotonically.
+            left.shutdown(Shutdown::Both).unwrap();
+            left_authority.check().unwrap();
+            let mut output = [0; 5];
+            assert_eq!(
+                left.read(&mut output)
+                    .expect_err(
+                        "fatal cancellation must not deliver an already verified buffered suffix"
+                    )
+                    .kind(),
+                std::io::ErrorKind::BrokenPipe
+            );
+            assert_eq!(output, [0; 5]);
+            let mut clone = left.clone();
+            assert_eq!(
+                clone.read(&mut output).unwrap_err().kind(),
+                std::io::ErrorKind::BrokenPipe
+            );
+        }
+        left_authority.check().unwrap();
+    }
+    // Joining a positively completed worker is observation, not cancellation.
+    // Its already verified application queue remains readable under live scope.
+    let (left, right, facts) = pair();
+    let policy = PinnedScopePolicy::new(2).unwrap();
+    let left_authority = authority(&policy, &facts, Role::Initiator);
+    let right_authority = authority(&policy, &facts, Role::Acceptor);
+    let stores = [
+        Store(std::env::temp_dir().join(format!("flow-joined-left-{}", std::process::id()))),
+        Store(std::env::temp_dir().join(format!("flow-joined-right-{}", std::process::id()))),
+    ];
+    let (mut left_tx, mut left_rx, left_guard) =
+        duplex(left, &left_authority, Role::Initiator, &stores[0]).split();
+    let (mut right_tx, mut right_rx, right_guard) =
+        duplex(right, &right_authority, Role::Acceptor, &stores[1]).split();
+    let payload = b"queued-before-successful-join".to_vec();
+    right_tx.send_block(payload.clone()).unwrap();
+    left_tx.half_close().unwrap();
+    right_tx.half_close().unwrap();
+    let left_counts = left_guard.join().unwrap();
+    let right_counts = right_guard.join().unwrap();
+    assert_eq!(left_counts.0.wire_bytes, right_counts.1.wire_bytes);
+    assert_eq!(left_counts.1.wire_bytes, right_counts.0.wire_bytes);
+    left_authority.check().unwrap();
+    assert_eq!(
+        left_rx.receive().unwrap(),
+        spiralcore_mvm_flowmux::Event::Data(payload)
+    );
+    assert_eq!(
+        left_rx.receive().unwrap(),
+        spiralcore_mvm_flowmux::Event::HalfClose
+    );
+    assert_eq!(
+        right_rx.receive().unwrap(),
+        spiralcore_mvm_flowmux::Event::HalfClose
+    );
+}
