@@ -1,0 +1,27 @@
+--- a/crates/mvm-hostd/src/telemetry_collector/owned.rs
++++ b/crates/mvm-hostd/src/telemetry_collector/owned.rs
+@@ -213,7 +213,9 @@
+ /// Provisional logical requested-workspace model for the fixed canonical scanner.
+ /// Engine controls alone are not a whole heap bound. The pinned-source and
+ /// requested-allocator witness gate is recorded separately before activation.
+-pub(crate) fn owned_scanner_requested_bytes(
++/// This read-only quote grants no quota or admission; the embedding must retain
++/// an actual same-pool reservation before constructing the collector.
++pub fn owned_scanner_requested_bytes(
+     policy: &mvm_core::policy::RedactionPolicy,
+ ) -> anyhow::Result<u64> {
+     let facts = crate::stream::redact::StreamRedaction::owned_pii_requirements(policy)?;
+--- a/crates/mvm-hostd/src/telemetry_collector/mod.rs
++++ b/crates/mvm-hostd/src/telemetry_collector/mod.rs
+@@ -32,9 +32,9 @@
+ mod sink;
+ pub use owned::{
+     OWNED_COLLECTOR_STATUS_BYTES, OwnedCollectorRequirements, OwnedEmbeddedCollector,
+-    owned_collector_requirements,
++    owned_collector_requirements, owned_scanner_requested_bytes,
+ };
+-pub(crate) use owned::{OwnedCollectorStart, owned_scanner_requested_bytes, start_owned};
++pub(crate) use owned::{OwnedCollectorStart, start_owned};
+ 
+ pub use sink::{
+     CappedJsonlSink, IngestOutcome, LossClass, LossCounters, QueuedSink, RecordFile, RecordSink,

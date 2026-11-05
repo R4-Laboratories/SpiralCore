@@ -1,0 +1,384 @@
+--- a/crates/mvm-core/src/pii.rs
++++ b/crates/mvm-core/src/pii.rs
+@@ -69,10 +69,16 @@
+ pub struct OwnedPiiRequirements {
+     pub rule_count: usize,
+     pub regex_objects: usize,
++    /// Approximate construction cap supplied to the single combined RegexSet.
++    /// Also the maximum per-engine cap in this selected profile; not a sum
++    /// or aggregate scanner heap/RSS bound.
+     pub nfa_size_limit_bytes: usize,
+     pub dfa_cache_limit_bytes: usize,
+     pub nest_limit: u32,
+     pub max_concurrent_searches: usize,
++    /// Uniform approximate NFA cap supplied to each canonical individual Regex.
++    /// No category-specific exception or fallback changes this control.
++    pub rule_nfa_size_limit_bytes: usize,
+ }
+ 
+ struct OwnedSelection {
+@@ -199,6 +205,7 @@
+             dfa_cache_limit_bytes: 256 * 1024,
+             nest_limit: 64,
+             max_concurrent_searches: 1,
++            rule_nfa_size_limit_bytes: 128 * 1024,
+         })
+     }
+ 
+@@ -277,7 +284,7 @@
+             .map(|pattern| {
+                 RegexBuilder::new(pattern)
+                     .unicode(true)
+-                    .size_limit(requirements.nfa_size_limit_bytes)
++                    .size_limit(requirements.rule_nfa_size_limit_bytes)
+                     .dfa_size_limit(requirements.dfa_cache_limit_bytes)
+                     .nest_limit(requirements.nest_limit)
+                     .build()
+@@ -586,6 +593,7 @@
+         assert_eq!(requirements.rule_count, 5);
+         assert_eq!(requirements.regex_objects, 6);
+         assert_eq!(requirements.nfa_size_limit_bytes, 512 * 1024);
++        assert_eq!(requirements.rule_nfa_size_limit_bytes, 128 * 1024);
+         assert_eq!(requirements.dfa_cache_limit_bytes, 256 * 1024);
+         assert_eq!(requirements.nest_limit, 64);
+         assert_eq!(requirements.max_concurrent_searches, 1);
+@@ -671,6 +679,7 @@
+         };
+         let mut controls = PiiRedactor::owned_pii_requirements(&policy).unwrap();
+         controls.nfa_size_limit_bytes = 1;
++        controls.rule_nfa_size_limit_bytes = 1;
+         assert!(
+             PiiRedactor::build_owned(PiiRedactor::owned_selection(&policy).unwrap(), controls)
+                 .is_err()
+@@ -814,3 +823,7 @@
+ #[cfg(test)]
+ #[path = "owned_capacity_tests.rs"]
+ mod owned_capacity_tests;
++
++#[cfg(test)]
++#[path = "owned_dual_tests.rs"]
++mod owned_dual_tests;
+--- a/crates/mvm-core/src/owned_capacity_tests.rs
++++ b/crates/mvm-core/src/owned_capacity_tests.rs
+@@ -32,6 +32,8 @@
+ fn candidate(policy: &PiiPolicy, nfa: usize) -> Result<PiiRedactor, PiiPolicyError> {
+     let mut controls = PiiRedactor::owned_pii_requirements(policy)?;
+     controls.nfa_size_limit_bytes = nfa;
++    // Historical candidates stay uniform at BOTH stages in this new context.
++    controls.rule_nfa_size_limit_bytes = nfa;
+     PiiRedactor::build_owned(PiiRedactor::owned_selection(policy)?, controls)
+ }
+ 
+--- /dev/null
++++ b/crates/mvm-core/src/owned_dual_tests.rs
+@@ -0,0 +1,137 @@
++//! Split control enforcement and actual public-default compatibility.
++use super::*;
++use crate::policy::PiiPolicy;
++
++fn bounded(pattern: &[u8]) -> Vec<u8> {
++    let mut result = Vec::with_capacity(32_768);
++    while result.len() < 32_768 {
++        result.extend_from_slice(&pattern[..pattern.len().min(32_768 - result.len())]);
++    }
++    while std::str::from_utf8(&result).is_err() {
++        result.pop();
++    }
++    result.resize(32_768, b' ');
++    result
++}
++fn orders() -> Vec<Vec<usize>> {
++    fn visit(prefix: &mut Vec<usize>, used: u8, out: &mut Vec<Vec<usize>>) {
++        for index in 0..5 {
++            if used & (1 << index) == 0 {
++                prefix.push(index);
++                out.push(prefix.clone());
++                visit(prefix, used | (1 << index), out);
++                prefix.pop();
++            }
++        }
++    }
++    let mut result = Vec::with_capacity(325);
++    visit(&mut Vec::with_capacity(5), 0, &mut result);
++    assert_eq!(result.len(), 325);
++    result
++}
++#[test]
++fn split_controls_are_reported_and_both_builder_stages_refuse_independently() {
++    let policy = PiiPolicy::default();
++    let base = PiiRedactor::owned_pii_requirements(&policy).unwrap();
++    assert_eq!(base.nfa_size_limit_bytes, 524_288);
++    assert_eq!(base.rule_nfa_size_limit_bytes, 131_072);
++    assert_eq!(base.dfa_cache_limit_bytes, 262_144);
++    assert_eq!(base.nest_limit, 64);
++    assert_eq!(base.max_concurrent_searches, 1);
++    for (set, rule) in [(1, 131_072), (524_288, 1)] {
++        let mut controls = base;
++        controls.nfa_size_limit_bytes = set;
++        controls.rule_nfa_size_limit_bytes = rule;
++        let result =
++            PiiRedactor::build_owned(PiiRedactor::owned_selection(&policy).unwrap(), controls);
++        assert!(
++            matches!(
++                result,
++                Err(PiiPolicyError::OwnedPolicy(
++                    "owned PII regex controls refused construction"
++                ))
++            ),
++            "a builder stage ignored its enforced control"
++        );
++    }
++}
++#[test]
++fn public_split_defaults_preserve_all_325_orders_and_repeated_searches() {
++    let cases = [
++        bounded(b"synthetic@example.invalid 001-01-0001 4111111111111111 +12025550123 GB82WEST12345698765432\n"),
++        bounded("\u{03bb}\u{754c} no-at-domain 000-00-0000 1111111111111 +abcdef GB00INVALID000000000000 \n".as_bytes()),
++        bounded(b"ordinary-synthetic-telemetry-without-sensitive-shaped-fields; "),
++    ];
++    let all = orders();
++    for (index, order) in all.iter().enumerate() {
++        let policy = PiiPolicy {
++            mode: Some("redact".into()),
++            categories: order
++                .iter()
++                .map(|&i| DEFAULT_RULES[i].name.to_owned())
++                .collect(),
++        };
++        let facts = PiiRedactor::owned_pii_requirements(&policy).unwrap();
++        assert_eq!(
++            (facts.nfa_size_limit_bytes, facts.rule_nfa_size_limit_bytes),
++            (524_288, 131_072)
++        );
++        let scanner = PiiRedactor::curated_owned(&policy).unwrap();
++        let legacy = PiiRedactor::from_policy(&policy).unwrap().unwrap();
++        assert_eq!(
++            scanner.redact(&cases[0]),
++            legacy.redact(&cases[0]),
++            "split public selection {} differed",
++            index + 1
++        );
++    }
++    let policies = [
++        PiiPolicy {
++            mode: Some("redact".into()),
++            categories: vec![],
++        },
++        PiiPolicy {
++            mode: Some("redact".into()),
++            categories: vec!["iban".into(), "email".into(), "credit_card".into()],
++        },
++    ];
++    let mut searches = 0;
++    for policy in &policies {
++        let scanner = PiiRedactor::curated_owned(policy).unwrap();
++        let legacy = PiiRedactor::from_policy(policy).unwrap().unwrap();
++        for bytes in &cases {
++            let expected = legacy.redact(bytes);
++            for _ in 0..9 {
++                assert_eq!(scanner.redact(bytes), expected);
++                searches += 1;
++            }
++        }
++    }
++    assert_eq!(searches, 54);
++    for mode in [
++        None,
++        Some("detect"),
++        Some("redact"),
++        Some("refuse"),
++        Some("disabled"),
++    ] {
++        let policy = PiiPolicy {
++            mode: mode.map(str::to_owned),
++            categories: vec![],
++        };
++        let scanner = PiiRedactor::curated_owned(&policy).unwrap();
++        let legacy = PiiRedactor::from_policy(&policy)
++            .unwrap()
++            .unwrap_or_else(PiiRedactor::with_default_rules);
++        assert_eq!(scanner.mode(), legacy.mode());
++        assert_eq!(scanner.scan(&cases[0]), legacy.scan(&cases[0]));
++        assert_eq!(
++            scanner.match_spans(&cases[0]),
++            legacy.match_spans(&cases[0])
++        );
++        assert_eq!(scanner.redact(&cases[0]), legacy.redact(&cases[0]));
++    }
++    println!(
++        "{{\"scope\":\"public-split-default-compatibility\",\"set_nfa\":524288,\"rule_nfa\":131072,\"ordered_policies\":325,\"exact_legacy_tuples\":325,\"representative_searches\":54,\"default_mode_cases\":5}}"
++    );
++}
+--- a/crates/mvm-hostd/src/telemetry_collector/owned.rs
++++ b/crates/mvm-hostd/src/telemetry_collector/owned.rs
+@@ -217,34 +217,42 @@
+     policy: &mvm_core::policy::RedactionPolicy,
+ ) -> anyhow::Result<u64> {
+     let facts = crate::stream::redact::StreamRedaction::owned_pii_requirements(policy)?;
++    checked_owned_scanner_facts(facts)
++}
++
++fn checked_owned_scanner_facts(facts: mvm_core::pii::OwnedPiiRequirements) -> anyhow::Result<u64> {
+     anyhow::ensure!(
+-        facts.rule_count <= 5
+-            && facts.regex_objects == facts.rule_count + 1
+-            && facts.max_concurrent_searches == 1
++        (1..=5).contains(&facts.rule_count)
++            && facts.rule_count.checked_add(1) == Some(facts.regex_objects)
+             && facts.nfa_size_limit_bytes == 524_288
++            && facts.rule_nfa_size_limit_bytes == 131_072
+             && facts.dfa_cache_limit_bytes == 262_144
+-            && facts.nest_limit == 64,
++            && facts.nest_limit == 64
++            && facts.max_concurrent_searches == 1,
+         "unqualified owned collector scanner controls"
+     );
+-    let nfa = u64::try_from(facts.nfa_size_limit_bytes)?;
++    let set_nfa = u64::try_from(facts.nfa_size_limit_bytes)?;
++    let rule_nfa = u64::try_from(facts.rule_nfa_size_limit_bytes)?;
+     let cache = u64::try_from(facts.dfa_cache_limit_bytes)?;
+-    let per_engine = nfa
++    let rules = u64::try_from(facts.rule_count)?;
++    let overflow = || anyhow::anyhow!("owned scanner working envelope overflow");
++    let engine = |nfa: u64| {
++        nfa.checked_mul(8)
++            .and_then(|bytes| cache.checked_mul(2).and_then(|d| bytes.checked_add(d)))
++            .and_then(|bytes| bytes.checked_add(1_048_576 + 40_960))
++    };
++    let set = engine(set_nfa).ok_or_else(overflow)?;
++    let all_rules = engine(rule_nfa)
++        .and_then(|bytes| bytes.checked_mul(rules))
++        .ok_or_else(overflow)?;
++    let compiler = set_nfa
++        .max(rule_nfa)
+         .checked_mul(8)
+-        .and_then(|bytes| {
+-            cache
+-                .checked_mul(2)
+-                .and_then(|cache| bytes.checked_add(cache))
+-        })
+-        .and_then(|bytes| bytes.checked_add(1_048_576 + 40_960))
+-        .ok_or_else(|| anyhow::anyhow!("owned scanner working envelope overflow"))?;
+-    per_engine
+-        .checked_mul(u64::try_from(facts.regex_objects)?)
+-        .and_then(|bytes| {
+-            nfa.checked_mul(8)
+-                .and_then(|compiler| compiler.checked_add(1_048_576))
+-                .and_then(|compiler| bytes.checked_add(compiler))
+-        })
+-        .ok_or_else(|| anyhow::anyhow!("owned scanner working envelope overflow"))
++        .and_then(|bytes| bytes.checked_add(1_048_576))
++        .ok_or_else(overflow)?;
++    set.checked_add(all_rules)
++        .and_then(|bytes| bytes.checked_add(compiler))
++        .ok_or_else(overflow)
+ }
+ 
+ pub(crate) struct OwnedCollectorStart<'a> {
+@@ -822,3 +830,7 @@
+             .unwrap();
+     }
+ }
++
++#[cfg(test)]
++#[path = "owned_dual_model_tests.rs"]
++mod dual_model_tests;
+--- /dev/null
++++ b/crates/mvm-hostd/src/telemetry_collector/owned_dual_model_tests.rs
+@@ -0,0 +1,51 @@
++use super::*;
++#[test]
++fn split_scanner_actual_guard_rejects_each_unsupported_fact() {
++    let policy = mvm_core::policy::RedactionPolicy::default();
++    let facts = crate::stream::redact::StreamRedaction::owned_pii_requirements(&policy).unwrap();
++    assert_eq!(checked_owned_scanner_facts(facts).unwrap(), 24_363_008);
++    let changes: &[fn(&mut mvm_core::pii::OwnedPiiRequirements)] = &[
++        |f| f.nfa_size_limit_bytes = 262_144,
++        |f| f.nfa_size_limit_bytes = usize::MAX,
++        |f| f.rule_nfa_size_limit_bytes = 524_288,
++        |f| f.rule_nfa_size_limit_bytes = 65_536,
++        |f| f.rule_nfa_size_limit_bytes = 0,
++        |f| f.rule_nfa_size_limit_bytes = usize::MAX,
++        |f| f.dfa_cache_limit_bytes = 131_072,
++        |f| f.nest_limit = 65,
++        |f| f.max_concurrent_searches = 2,
++        |f| {
++            f.rule_count = 6;
++            f.regex_objects = 7;
++        },
++        |f| {
++            f.rule_count = 0;
++            f.regex_objects = 1;
++        },
++        |f| f.rule_count = usize::MAX,
++        |f| f.regex_objects = usize::MAX,
++    ];
++    for change in changes {
++        let mut unsupported = facts;
++        change(&mut unsupported);
++        assert!(checked_owned_scanner_facts(unsupported).is_err());
++    }
++}
++#[test]
++fn split_scanner_query_and_actual_model_count_one_set_and_each_rule() {
++    for (count, expected) in
++        (1..=5).zip([13_713_408, 16_375_808, 19_038_208, 21_700_608, 24_363_008])
++    {
++        let mut policy = mvm_core::policy::RedactionPolicy::default();
++        policy.default.pii.categories = mvm_core::pii::DEFAULT_RULES[..count]
++            .iter()
++            .map(|r| r.name.to_owned())
++            .collect();
++        let facts =
++            crate::stream::redact::StreamRedaction::owned_pii_requirements(&policy).unwrap();
++        assert_eq!(facts.rule_count, count);
++        assert_eq!(facts.regex_objects, count + 1);
++        assert_eq!(checked_owned_scanner_facts(facts).unwrap(), expected);
++        assert_eq!(owned_scanner_requested_bytes(&policy).unwrap(), expected);
++    }
++}
+--- a/crates/mvm-hostd/src/installed_endpoint/auxiliary_tests.rs
++++ b/crates/mvm-hostd/src/installed_endpoint/auxiliary_tests.rs
+@@ -192,3 +192,42 @@
+         io::ErrorKind::AlreadyExists
+     );
+ }
++#[test]
++fn dual_nfa_collector_fits_existing_sixty_mib_auxiliary_credit() {
++    use crate::telemetry_collector::{
++        owned_scanner_requested_bytes, owned_collector_requirements,
++    };
++    let policy = mvm_core::policy::RedactionPolicy::default();
++    let facts = owned_collector_requirements().unwrap();
++    let scanner = owned_scanner_requested_bytes(&policy).unwrap();
++    let requested = facts.known_metadata_bytes.checked_add(scanner).unwrap();
++    let prepaid = 60_u64 << 20;
++    println!(
++        "{{\"scope\":\"actual-auxiliary-collector-admission\",\"prepaid_metadata\":{prepaid},\"scanner_requested\":{scanner},\"collector_requested\":{requested}}}"
++    );
++    let ledger = credits(facts.known_rust_stack_bytes, prepaid);
++    ledger
++        .reserve(
++            Component::Collector,
++            facts.known_rust_stack_bytes,
++            requested,
++            || Ok(()),
++        )
++        .expect("canonical collector must fit existing prepaid auxiliary credit");
++    // The SAME ledger still refuses a byte past its actual remainder; no
++    // second pool, refill or live-object repricing is exercised here.
++    assert_eq!(
++        ledger
++            .reserve(Component::Controller, 0, prepaid - requested + 1, || Ok(()))
++            .unwrap_err()
++            .kind(),
++        io::ErrorKind::WouldBlock
++    );
++    assert_eq!(
++        ledger
++            .reserve(Component::Collector, 0, 0, || Ok(()))
++            .unwrap_err()
++            .kind(),
++        io::ErrorKind::AlreadyExists
++    );
++}

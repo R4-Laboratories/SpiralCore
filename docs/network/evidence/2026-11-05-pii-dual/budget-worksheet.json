@@ -1,0 +1,56 @@
+{
+  "schema": "spiralcore.installed-profile-design.v1",
+  "status": "NOT an admitted profile or measured RAM result",
+  "placement": "N mapped endpoint children on ONE installed host in ONE tenant; one local mapped flow per child; remote peers excluded",
+  "tenant_ceiling_bytes": 268435456,
+  "host_ceiling_bytes": 536870912,
+  "known_terms": {
+    "helper_metadata_candidate_once": 54525952,
+    "helper_usable_stacks_linux_once": 33554432,
+    "collector_metadata_per_endpoint": 51757056,
+    "collector_usable_stacks_per_endpoint": 6291456,
+    "controller_main_usable_stack_per_endpoint": 8388608,
+    "local_codec_sender_plus_receiver_per_flow": 8349628,
+    "local_tls_connection_candidate_per_flow": 12582912,
+    "reader_builder_stack_per_flow": 2097152,
+    "relay_builder_stack_per_flow": 2097152,
+    "installed_audit_operation_workspace_per_endpoint": 8388608,
+    "pending_session_worker_builder_stack_per_endpoint": 2097152
+  },
+  "lower_bounds": {
+    "1": {
+      "prior_partial": 162867132,
+      "plus_local_TLS_reader_relay_builder_stacks": 179644348,
+      "plus_original_endpoint_audit_workspace": 188032956,
+      "plus_pending_session_builder_stacks": 190130108,
+      "remaining_before_all_additional_positive_terms": 78305348
+    },
+    "2": {
+      "prior_partial": 237653880,
+      "plus_local_TLS_reader_relay_builder_stacks": 271208312,
+      "plus_original_endpoint_audit_workspace": 287985528,
+      "plus_pending_session_builder_stacks": 292179832,
+      "remaining_before_all_additional_positive_terms": -23744376
+    }
+  },
+  "additional_positive_terms": [
+    "actual Rust alternate-signal mapping supplement for every counted thread",
+    "bootstrap589824+1024*actual_shape_nodes per endpoint; control262144 is INCLUDED, do not add twice",
+    "reader metadata65536 and relay metadata65536+group16384 per endpoint/one stream",
+    "controller metadata65536 plus bounded Network session/runtime/registry/future metadata not yet source-closed",
+    "reader plaintext98304 plus separately proved protocol encode/decode copies per local flow",
+    "per-VM Root bookkeeping4096 plus per-store metadata4096; endpoint-owner/projection/path metadata and operation futures under original claims",
+    "Root global provider4096, disk inventory524288, retained inventory1048576 and exact resident/operation storage in host/pseudo-tenant scopes",
+    "actual mailbox/access/control transport plaintext/carrier/metadata allocations if activated concurrently, with shared HostTransportBudget/ManagedResourceBudget coupling",
+    "native pthread/TLS/guard/cache/allocator/opaque crypto/kernel/RSS domain, separately controlled and observed"
+  ],
+  "overlap_rules": [
+    "Core operation_charge includes ONE local sender+receiver and ordered retention; do not add those again",
+    "helper52MiB includes five40MiB operations+12MiB retained, including BOTH replay tables4,980,736; do not add replay again",
+    "installed per-endpoint audit workspace is a SEPARATE actual operation, not helper workspace",
+    "bootstrap control/header262144 is within bootstrap total",
+    "count one TLS connection per locally constructed TlsCarrier, not remote peer and not client+server pair twice",
+    "global pseudo-tenant claims count under HOST and their own scope, not automatically against real tenant256MiB",
+    "guest RAM and disk are separate dimensions, never converted into resident credit"
+  ]
+}
