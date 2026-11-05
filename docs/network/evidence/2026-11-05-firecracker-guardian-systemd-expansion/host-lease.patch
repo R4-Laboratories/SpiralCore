@@ -1,0 +1,11 @@
+--- a/crates/mvm-backends/src/driver/fc/host_lease.rs
++++ b/crates/mvm-backends/src/driver/fc/host_lease.rs
+@@ -30,7 +30,7 @@
+ markers=$(/usr/bin/find -H "/proc/self/fd/$d" -mindepth 1 -maxdepth 1 \( -name "{absent0}" -o -name "{absent1}" \) -print -quit) || exit 1
+ [[ -z "$markers" ]] || exit 1
+ sum=$(/usr/bin/head -c {read_limit} -- "$s" | /usr/bin/sha256sum) || exit 1
+-[[ "${{sum%% *}}" == "{hash}" ]] || exit 1
++[[ "$sum" == "{hash}  -" ]] || exit 1
+ ' mvm-host-lifetime "$mvm_host_directory" "$mvm_host_holder" || exit 1
+ exec {{mvm_host_directory}}<&- || exit 1
+ "#,
