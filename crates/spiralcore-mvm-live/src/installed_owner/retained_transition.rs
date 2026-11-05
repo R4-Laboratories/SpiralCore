@@ -1074,6 +1074,29 @@ impl PreparedRetainedRestart {
 }
 
 #[cfg(test)]
+impl CommittedRetainedRestart {
+    pub(super) fn attempt_v1_publication_for_format_regression(&self) -> RecoveryResult<()> {
+        let held = self
+            .closed
+            .recovery
+            .held
+            .as_ref()
+            .ok_or(SupervisorError::State)?;
+        let rows: Vec<_> = held
+            .entries
+            .iter()
+            .flatten()
+            .map(|entry| entry.record.clone())
+            .collect();
+        held.funding()?.authority().with_disk_owner(|owner, epoch| {
+            owner.storage.publish_retained(&Catalog {
+                epoch,
+                entries: rows,
+            })
+        })
+    }
+}
+#[cfg(test)]
 mod size_tests {
     use super::*;
     #[test]

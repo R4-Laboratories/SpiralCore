@@ -281,6 +281,13 @@ impl Storage {
         {
             return Err(OwnerError::Fenced);
         }
+        // The legacy publisher may update ONLY its own canonical V1 format.
+        // A migrated V2 file carries immutable origin tuples; encoding the
+        // same scalar records as V1 would silently erase that lineage.
+        // Use the existing bounded canonical decoder, with no format fallback.
+        if self.name_present(CATALOG)? {
+            self.retained_catalog(catalog.epoch)?;
+        }
         let bytes = catalog.encode()?;
         let mut file = open_at(
             &self.directory,

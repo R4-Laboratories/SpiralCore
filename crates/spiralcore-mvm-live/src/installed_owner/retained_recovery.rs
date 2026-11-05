@@ -1120,7 +1120,7 @@ mod tests {
         );
     }
 
-    fn sealed_format_filesystem_fixture() -> tempfile::TempDir {
+    pub(super) fn sealed_format_filesystem_fixture() -> tempfile::TempDir {
         // Real filesystem fixture ONLY. Direct phase4 format publication is NOT
         // a native producer, actual EndpointRetirement or activation evidence.
         use std::{io::Write, os::unix::fs::OpenOptionsExt};
@@ -1575,7 +1575,7 @@ mod tests {
         file.sync_all().unwrap();
         file
     }
-    fn review_prepare(home: &Path) -> super::transition::PreparedRetainedRestart {
+    pub(super) fn review_prepare(home: &Path) -> super::transition::PreparedRetainedRestart {
         let migration = super::transition::CompiledRetainedMigration::current().unwrap();
         prepare_old(home)
             .adopt_closed()
@@ -1823,5 +1823,30 @@ mod tests {
             fs::read(installation.join(TRANSFER_INTENT)).unwrap(),
             b"explicit before-publication collision"
         );
+    }
+    #[test]
+    #[ignore = "actual V2 filesystem publisher boundary; format fixture, no native finality"]
+    fn b2_history_normal_v1_publisher_cannot_erase_origin_lineage() {
+        let home = sealed_format_filesystem_fixture();
+        let installation = home.path().join("installation");
+        let committed = review_prepare(home.path()).commit_closed().unwrap();
+        let before = fs::read(installation.join(CATALOG)).unwrap();
+        let beacon = fs::read(installation.join(OWNER)).unwrap();
+        assert_eq!(&before[..8], b"SCRETN02");
+        let result = committed.attempt_v1_publication_for_format_regression();
+        let after = fs::read(installation.join(CATALOG)).unwrap();
+        eprintln!(
+            "V2 ordinary publisher downgrade: refused={} unchanged={} before_magic={:?} after_magic={:?}",
+            result.is_err(),
+            before == after,
+            &before[..8],
+            &after[..8]
+        );
+        assert!(
+            result.is_err(),
+            "ordinary V1 publisher erased immutable historical origins"
+        );
+        assert!(before == after);
+        assert_eq!(fs::read(installation.join(OWNER)).unwrap(), beacon);
     }
 }
