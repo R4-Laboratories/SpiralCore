@@ -1,0 +1,816 @@
+//! `PiiRedactor` — detect (and eventually redact) PII in outbound bodies.
+//!
+//! Detect-only first cut. Sibling to `SecretsScanner`: same
+//! single-pass `RegexSet` machinery, same "audit-safe deny reasons"
+//! discipline (rule names, never values). The difference is the
+//! threat shape and the eventual verdict semantics.
+//!
+//! Threat shape addressed (PII-specific, distinct from secrets):
+//! - Workload uploads a CSV of customer rows to an LLM for "summary"
+//!   and the rows include emails, SSNs, or phone numbers.
+//! - Tool-call argument copies a chunk of customer-support transcript
+//!   verbatim, including the customer's credit-card number.
+//! - Logs / error messages get shipped to a third-party APM with PII
+//!   embedded in stack-trace context.
+//!
+//! ## Why a *separate* inspector from `SecretsScanner`?
+//!
+//! Different audit channel, different verdict trajectory, and
+//! different rule curation discipline. Secrets are always
+//! deny-on-match (a leaked API key is always a fail). PII is
+//! domain-policy-dependent: some workloads have a HIPAA-class
+//! egress allowlist where any email-shape match must be denied;
+//! others (an analytics pipeline scrubbing customer data) treat
+//! "this body had emails in it" as informational and want the
+//! redactor to *transform* it before forwarding. Mixing the two
+//! into one ruleset would couple their lifecycles.
+//!
+//! Today the inspector ships **detect-only** semantics: it returns
+//! a `Transform { note }` audit signal on match (so operators see
+//! it) but never blocks traffic. A future step promotes this to
+//! true redaction (mutate `ctx.body` in place, replacing matches
+//! with `<REDACTED:rule_name>`) gated by `Mode::Redact`, and to
+//! `Mode::Block` for HIPAA-class workloads. The `Mode` enum is in
+//! the shipping API now so adding those variants later isn't a
+//! breaking change.
+//!
+//! Why detect-only first: PII rules are inherently fuzzier than
+//! secret rules (an email-shape regex catches lots of strings that
+//! aren't really PII — branded `support@acme.com` addresses on a
+//! product page, etc.). Operators need a soak window to tune the
+//! ruleset for their workload before we let it block traffic.
+//!
+//! ## Match strategy
+//!
+//! Same as `SecretsScanner`: curated rules, `regex::bytes::RegexSet`,
+//! single O(body_len) pass. Each rule's pattern is anchored or
+//! shape-specific to keep false-positives bounded. The default
+//! ruleset covers the high-precision cases:
+//! - Email addresses (RFC5321-flavoured)
+//! - US Social Security Numbers (`NNN-NN-NNNN`, with SSA-reserved
+//!   areas excluded)
+//! - Credit-card-shape number runs (Luhn-validated post-match)
+//! - E.164 international phone numbers (the leading `+` keeps the
+//!   precision up)
+//!
+//! High-recall PII detection (names, addresses, free-form fields) is
+//! not in this ruleset — it requires NER models and falls outside
+//! "high-precision regex" territory. A future step can plug in a
+//! model-backed detector behind the same `Inspector` trait without
+//! changing the chain.
+
+use regex::bytes::{Regex, RegexBuilder, RegexSet, RegexSetBuilder};
+
+/// Enforced engine controls for one owned collector scanner. These approximate
+/// regex limits are not a total heap, compiler-workspace or RSS measurement.
+/// The installed caller separately prepays its accepted pinned-source model
+/// and permits only one simultaneous search on its fixed receive thread.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct OwnedPiiRequirements {
+    pub rule_count: usize,
+    pub regex_objects: usize,
+    pub nfa_size_limit_bytes: usize,
+    pub dfa_cache_limit_bytes: usize,
+    pub nest_limit: u32,
+    pub max_concurrent_searches: usize,
+}
+
+struct OwnedSelection {
+    mode: Mode,
+    indices: [usize; 5],
+    len: usize,
+}
+
+/// One PII detection rule. Same shape as `SecretRule` so a future
+/// generic-rule abstraction can dedupe them, but kept separate today
+/// to make the curation pipeline (rule additions, false-positive
+/// triage) easy to evolve independently.
+#[derive(Debug, Clone, Copy)]
+pub struct PiiRule {
+    pub name: &'static str,
+    pub pattern: &'static str,
+    /// Optional post-regex validator (e.g., Luhn for credit cards).
+    /// `None` means "regex match alone is sufficient".
+    pub validator: Option<PiiValidator>,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum PiiValidator {
+    Luhn,
+    Iban,
+}
+
+/// Default curated PII ruleset. Each rule is high-precision; an
+/// "address" rule or "name" rule belongs in a model-backed detector,
+/// not here.
+pub const DEFAULT_RULES: &[PiiRule] = &[
+    PiiRule {
+        name: "email",
+        // Local-part: at least one char from a permissive set, with
+        // no leading/trailing dot. Domain: at least one label + TLD.
+        // Not RFC-complete, but high-precision for outbound bodies.
+        pattern: r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}",
+        validator: None,
+    },
+    PiiRule {
+        name: "us_ssn",
+        // Standard hyphenated form NNN-NN-NNNN with SSA-reserved
+        // areas excluded:
+        //   000 (zero area), 666, 900-999 (ITIN space).
+        // Group also excludes 00, serial also excludes 0000 (both
+        // structurally invalid). Result: only well-formed SSN
+        // shapes match. The regex crate has no lookaround, so
+        // valid ranges are enumerated directly.
+        pattern: r"(?:00[1-9]|0[1-9]\d|[1-5]\d{2}|6[0-5]\d|66[0-57-9]|6[7-9]\d|[78]\d{2})-(?:0[1-9]|[1-9]\d)-(?:000[1-9]|00[1-9]\d|0[1-9]\d{2}|[1-9]\d{3})",
+        validator: None,
+    },
+    PiiRule {
+        name: "credit_card",
+        // 13-19 digit runs. Luhn-validated post-match to weed out
+        // strings of digits that happen to be the right length.
+        pattern: r"\b\d{13,19}\b",
+        validator: Some(PiiValidator::Luhn),
+    },
+    PiiRule {
+        name: "e164_phone",
+        // International format: + then 7-15 digits. Conservative —
+        // the requirement of the leading `+` keeps this from
+        // matching every 10-digit run on the planet.
+        pattern: r"\+\d{7,15}",
+        validator: None,
+    },
+    PiiRule {
+        name: "iban",
+        // Country (2 alpha) + 2 check digits + 11-30 BBAN chars. mod-97
+        // validated post-match so a random alnum run of the right shape
+        // doesn't fire.
+        pattern: r"\b[A-Za-z]{2}\d{2}[A-Za-z0-9]{11,30}\b",
+        validator: Some(PiiValidator::Iban),
+    },
+];
+
+/// Verdict semantics. Detect-only is the sole shipping mode today;
+/// the other variants are present so the type doesn't grow a
+/// breaking variant when later steps promote it.
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+pub enum Mode {
+    /// Match → `Transform { note }` (allows traffic). Default.
+    #[default]
+    Detect,
+    /// Match → mutate `ctx.body`, replacing each match with
+    /// `<REDACTED:rule_name>`, then `Transform { note }`.
+    Redact,
+    /// Match → `Deny` (HIPAA-class workloads).
+    Block,
+}
+
+/// Inspector that scans outbound bodies for PII shapes. Ships in
+/// **detect-only** mode today; see [`Mode`] for the planned
+/// promotion path.
+pub struct PiiRedactor {
+    set: RegexSet,
+    rules: Vec<PiiRule>,
+    /// Per-rule compiled `Regex` (same source pattern as `set`),
+    /// used to extract individual match spans when a rule has a
+    /// post-regex validator (e.g., Luhn).
+    regexes: Vec<Regex>,
+    mode: Mode,
+}
+
+/// One validated PII match span.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct PiiMatch {
+    pub name: &'static str,
+    pub start: usize,
+    pub end: usize,
+}
+
+impl PiiRedactor {
+    /// Validate the bounded curated selection without compiling or copying the
+    /// policy. Reserve the separately accepted workspace before constructing.
+    pub fn owned_pii_requirements(
+        policy: &crate::policy::PiiPolicy,
+    ) -> Result<OwnedPiiRequirements, PiiPolicyError> {
+        let selected = Self::owned_selection(policy)?;
+        Ok(OwnedPiiRequirements {
+            rule_count: selected.len,
+            regex_objects: selected.len + 1,
+            nfa_size_limit_bytes: 512 * 1024,
+            dfa_cache_limit_bytes: 256 * 1024,
+            nest_limit: 64,
+            max_concurrent_searches: 1,
+        })
+    }
+
+    /// Build only canonical rules with explicit owned-profile engine controls.
+    /// Disabled selects the full transcript safety rules by definition; unknown
+    /// policy or compilation/limit failure returns Err without legacy fallback.
+    /// The limits do not account for all compiled/search/construction memory.
+    pub fn curated_owned(policy: &crate::policy::PiiPolicy) -> Result<Self, PiiPolicyError> {
+        let requirements = Self::owned_pii_requirements(policy)?;
+        let selected = Self::owned_selection(policy)?;
+        Self::build_owned(selected, requirements)
+    }
+
+    fn owned_selection(
+        policy: &crate::policy::PiiPolicy,
+    ) -> Result<OwnedSelection, PiiPolicyError> {
+        if DEFAULT_RULES.len() != 5 {
+            return Err(PiiPolicyError::OwnedPolicy(
+                "owned canonical rule profile changed",
+            ));
+        }
+        let (mode, full) = match policy.mode.as_deref() {
+            None | Some("detect") => (Mode::Detect, false),
+            Some("redact") => (Mode::Redact, false),
+            Some("refuse") => (Mode::Block, false),
+            Some("disabled") => (Mode::Detect, true),
+            Some(_) => return Err(PiiPolicyError::OwnedPolicy("unknown owned PII mode")),
+        };
+        if policy.categories.len() > DEFAULT_RULES.len() {
+            return Err(PiiPolicyError::OwnedPolicy("too many owned PII categories"));
+        }
+        let mut indices = [0; 5];
+        let mut seen = [false; 5];
+        for (slot, category) in policy.categories.iter().enumerate() {
+            let index = DEFAULT_RULES
+                .iter()
+                .position(|rule| rule.name == category)
+                .ok_or(PiiPolicyError::OwnedPolicy("unknown owned PII category"))?;
+            if seen[index] {
+                return Err(PiiPolicyError::OwnedPolicy("duplicate owned PII category"));
+            }
+            seen[index] = true;
+            indices[slot] = index;
+        }
+        let len = if full || policy.categories.is_empty() {
+            for (index, selected) in indices.iter_mut().enumerate() {
+                *selected = index;
+            }
+            DEFAULT_RULES.len()
+        } else {
+            policy.categories.len()
+        };
+        Ok(OwnedSelection { mode, indices, len })
+    }
+
+    fn build_owned(
+        selected: OwnedSelection,
+        requirements: OwnedPiiRequirements,
+    ) -> Result<Self, PiiPolicyError> {
+        let rules: Vec<PiiRule> = selected.indices[..selected.len]
+            .iter()
+            .map(|&index| DEFAULT_RULES[index])
+            .collect();
+        let patterns: Vec<&str> = rules.iter().map(|rule| rule.pattern).collect();
+        let failed =
+            |_| PiiPolicyError::OwnedPolicy("owned PII regex controls refused construction");
+        let set = RegexSetBuilder::new(&patterns)
+            .unicode(true)
+            .size_limit(requirements.nfa_size_limit_bytes)
+            .dfa_size_limit(requirements.dfa_cache_limit_bytes)
+            .nest_limit(requirements.nest_limit)
+            .build()
+            .map_err(failed)?;
+        let regexes = patterns
+            .iter()
+            .map(|pattern| {
+                RegexBuilder::new(pattern)
+                    .unicode(true)
+                    .size_limit(requirements.nfa_size_limit_bytes)
+                    .dfa_size_limit(requirements.dfa_cache_limit_bytes)
+                    .nest_limit(requirements.nest_limit)
+                    .build()
+            })
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(failed)?;
+        Ok(Self {
+            set,
+            rules,
+            regexes,
+            mode: selected.mode,
+        })
+    }
+
+    /// Build from a custom rule list. Returns `Err` if any pattern
+    /// fails to compile.
+    pub fn new(rules: &[PiiRule], mode: Mode) -> Result<Self, regex::Error> {
+        let patterns: Vec<&str> = rules.iter().map(|r| r.pattern).collect();
+        let set = RegexSet::new(&patterns)?;
+        let regexes: Vec<Regex> = patterns
+            .iter()
+            .map(|p| Regex::new(p))
+            .collect::<Result<_, _>>()?;
+        Ok(Self {
+            set,
+            rules: rules.to_vec(),
+            regexes,
+            mode,
+        })
+    }
+
+    /// Convenience constructor: curated [`DEFAULT_RULES`] in
+    /// detect-only mode. The 99% callsite.
+    pub fn with_default_rules() -> Self {
+        Self::new(DEFAULT_RULES, Mode::Detect).expect("DEFAULT_RULES must compile")
+    }
+
+    /// Validate a parsed PII policy without constructing a redactor.
+    /// Admission uses this when it needs fail-loud syntax checking but
+    /// does not own the runtime inspector chain.
+    pub fn validate_policy(policy: &crate::policy::PiiPolicy) -> Result<(), PiiPolicyError> {
+        Self::policy_config(policy).map(|_| ())
+    }
+
+    /// Construct from a parsed policy. Returns `Ok(None)` for
+    /// `mode = "disabled"`; unknown modes or categories fail loudly.
+    pub fn from_policy(policy: &crate::policy::PiiPolicy) -> Result<Option<Self>, PiiPolicyError> {
+        let Some((mode, rules)) = Self::policy_config(policy)? else {
+            return Ok(None);
+        };
+
+        // Pattern compilation cannot fail for DEFAULT_RULES (already
+        // proven at runtime by `with_default_rules`), but `new` is
+        // fallible in the general case. Surface as Internal in the
+        // unlikely event the runtime regex compiler hiccups.
+        let red = Self::new(&rules, mode).map_err(|e| PiiPolicyError::Internal(e.to_string()))?;
+        Ok(Some(red))
+    }
+
+    fn policy_config(
+        policy: &crate::policy::PiiPolicy,
+    ) -> Result<Option<(Mode, Vec<PiiRule>)>, PiiPolicyError> {
+        let mode = match policy.mode.as_deref() {
+            None | Some("detect") => Mode::Detect,
+            Some("redact") => Mode::Redact,
+            Some("refuse") => Mode::Block,
+            Some("disabled") => return Ok(None),
+            Some(other) => {
+                return Err(PiiPolicyError::UnknownMode {
+                    value: other.to_string(),
+                    valid: &["disabled", "detect", "redact", "refuse"],
+                });
+            }
+        };
+
+        // Build the rule subset. Empty categories list → all defaults.
+        let rules: Vec<PiiRule> = if policy.categories.is_empty() {
+            DEFAULT_RULES.to_vec()
+        } else {
+            let mut out: Vec<PiiRule> = Vec::with_capacity(policy.categories.len());
+            for (index, want) in policy.categories.iter().enumerate() {
+                let matched = DEFAULT_RULES.iter().find(|r| r.name == want.as_str());
+                match matched {
+                    Some(r) => out.push(*r),
+                    None => {
+                        return Err(PiiPolicyError::UnknownCategory {
+                            index,
+                            name: want.clone(),
+                            valid: PII_CATEGORY_NAMES,
+                        });
+                    }
+                }
+            }
+            out
+        };
+        Ok(Some((mode, rules)))
+    }
+
+    pub fn mode(&self) -> Mode {
+        self.mode
+    }
+}
+
+/// Stable list of category names recognised by [`PiiRedactor::from_policy`].
+/// Matches `DEFAULT_RULES.iter().map(|r| r.name)` order. Public so
+/// callers (the policy resolver and mvmd-facing policy tooling) can
+/// enumerate the valid names.
+pub const PII_CATEGORY_NAMES: &[&str] = &["email", "us_ssn", "credit_card", "e164_phone", "iban"];
+
+/// Errors from [`PiiRedactor::from_policy`]. Each variant names the
+/// offending value + the list of valid alternatives so a single
+/// error message tells the operator exactly what to fix.
+#[derive(Debug, thiserror::Error, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum PiiPolicyError {
+    /// Static detector-side reason; never includes unknown policy text or data.
+    #[error("owned PII policy refused: {0}")]
+    OwnedPolicy(&'static str),
+    #[error(
+        "pii.mode = {value:?} is not recognised; valid values are {valid:?} \
+         (or omit the field for default detect-only)"
+    )]
+    UnknownMode {
+        value: String,
+        valid: &'static [&'static str],
+    },
+
+    #[error(
+        "pii.categories[{index}] = {name:?} is not a known PII category; \
+         valid names are {valid:?}"
+    )]
+    UnknownCategory {
+        index: usize,
+        name: String,
+        valid: &'static [&'static str],
+    },
+
+    #[error("internal regex error compiling PII rules: {0}")]
+    Internal(String),
+}
+
+impl PiiRedactor {
+    /// Scan a byte slice. Returns the rule names that fired,
+    /// post-validator (so a non-Luhn 16-digit run won't appear).
+    /// Stable rule-list order; no duplicates.
+    pub fn scan(&self, body: &[u8]) -> Vec<&'static str> {
+        let candidate_indices: Vec<usize> = self.set.matches(body).into_iter().collect();
+        let mut hits = Vec::with_capacity(candidate_indices.len());
+        for idx in candidate_indices {
+            let rule = &self.rules[idx];
+            if rule_passes_validator(rule, &self.regexes[idx], body) {
+                hits.push(rule.name);
+            }
+        }
+        hits
+    }
+
+    /// Validated match byte ranges (`[start, end)`) across all rules, with
+    /// the category that matched. Same precision as `scan`/`redact` (a match
+    /// failing its validator is excluded). For callers that need positions,
+    /// not just category names — e.g. the name detector's co-occurrence signal
+    /// ("a name adjacent to other PII").
+    pub fn match_spans(&self, body: &[u8]) -> Vec<PiiMatch> {
+        let candidate_indices: Vec<usize> = self.set.matches(body).into_iter().collect();
+        let mut spans = Vec::new();
+        for idx in candidate_indices {
+            let rule = &self.rules[idx];
+            for m in self.regexes[idx].find_iter(body) {
+                if match_passes_validator(rule, m.as_bytes()) {
+                    spans.push(PiiMatch {
+                        name: rule.name,
+                        start: m.start(),
+                        end: m.end(),
+                    });
+                }
+            }
+        }
+        spans
+    }
+
+    /// Replace every *validated* rule match in `body` with
+    /// [`REDACTION_MASK`], returning the redacted bytes + the rule names
+    /// that fired (stable order, no dups). The mask-and-continue path:
+    /// an undeclared PII run on egress is scrubbed in place rather than
+    /// dropping the request. A match that fails its
+    /// validator (e.g. a 16-digit run that isn't Luhn-valid) is left
+    /// intact — the same precision `scan` uses, so we never mangle
+    /// non-PII. Returns `(body.to_vec(), [])` unchanged when nothing fires.
+    pub fn redact(&self, body: &[u8]) -> (Vec<u8>, Vec<&'static str>) {
+        let candidate_indices: Vec<usize> = self.set.matches(body).into_iter().collect();
+        if candidate_indices.is_empty() {
+            return (body.to_vec(), Vec::new());
+        }
+        let mut out = body.to_vec();
+        let mut fired: Vec<&'static str> = Vec::new();
+        for idx in candidate_indices {
+            let rule = &self.rules[idx];
+            let mut hit = false;
+            let replaced = self.regexes[idx].replace_all(&out, |caps: &regex::bytes::Captures| {
+                let m = caps.get(0).expect("capture group 0 always present");
+                if match_passes_validator(rule, m.as_bytes()) {
+                    hit = true;
+                    REDACTION_MASK.to_vec()
+                } else {
+                    m.as_bytes().to_vec()
+                }
+            });
+            out = replaced.into_owned();
+            if hit {
+                fired.push(rule.name);
+            }
+        }
+        (out, fired)
+    }
+}
+
+/// The token an undeclared secret/PII match is replaced with on egress.
+/// Fixed + short; the matched bytes never leave the host.
+pub const REDACTION_MASK: &[u8] = b"XXX";
+
+/// True iff at least one regex match in `body` survives the rule's
+/// post-validator (or the rule has no validator). Stops at the first
+/// surviving match — rule-level confirmation, not span enumeration.
+fn rule_passes_validator(rule: &PiiRule, re: &Regex, body: &[u8]) -> bool {
+    match rule.validator {
+        None => true,
+        Some(_) => re
+            .find_iter(body)
+            .any(|m| match_passes_validator(rule, m.as_bytes())),
+    }
+}
+
+/// True iff a single regex match's bytes survive the rule's post-validator
+/// (or the rule has no validator). The per-match form `redact` needs to
+/// decide whether *this* match should be masked.
+fn match_passes_validator(rule: &PiiRule, m: &[u8]) -> bool {
+    match rule.validator {
+        None => true,
+        Some(PiiValidator::Luhn) => luhn_valid(m),
+        Some(PiiValidator::Iban) => iban_valid(m),
+    }
+}
+
+/// Luhn checksum on a byte slice that must contain only ASCII digits.
+/// Returns false if any byte isn't `b'0'..=b'9'` or if the slice is
+/// empty.
+fn luhn_valid(digits: &[u8]) -> bool {
+    if digits.is_empty() {
+        return false;
+    }
+    let mut sum: u32 = 0;
+    let mut alt = false;
+    for &b in digits.iter().rev() {
+        if !b.is_ascii_digit() {
+            return false;
+        }
+        let mut d = u32::from(b - b'0');
+        if alt {
+            d *= 2;
+            if d > 9 {
+                d -= 9;
+            }
+        }
+        sum += d;
+        alt = !alt;
+    }
+    sum.is_multiple_of(10)
+}
+
+/// ISO 7064 mod-97-10 IBAN checksum: move the first 4 chars to the end, map
+/// letters to two-digit numbers (A=10 … Z=35), and check the integer ≡ 1
+/// (mod 97). Computed digit-by-digit to avoid bignum. Case-insensitive.
+fn iban_valid(iban: &[u8]) -> bool {
+    if iban.len() < 15 || iban.len() > 34 {
+        return false;
+    }
+    let rearranged = iban[4..].iter().chain(iban[..4].iter());
+    let mut remainder: u32 = 0;
+    for &b in rearranged {
+        let val = match b {
+            b'0'..=b'9' => u32::from(b - b'0'),
+            b'A'..=b'Z' => u32::from(b - b'A') + 10,
+            b'a'..=b'z' => u32::from(b - b'a') + 10,
+            _ => return false,
+        };
+        if val >= 10 {
+            remainder = (remainder * 100 + val) % 97;
+        } else {
+            remainder = (remainder * 10 + val) % 97;
+        }
+    }
+    remainder == 1
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn owned_curated_controls_and_all_five_rules_preserve_canonical_redaction() {
+        let policy = crate::policy::PiiPolicy {
+            mode: Some("redact".into()),
+            categories: Vec::new(),
+        };
+        let requirements = PiiRedactor::owned_pii_requirements(&policy).unwrap();
+        assert_eq!(requirements.rule_count, 5);
+        assert_eq!(requirements.regex_objects, 6);
+        assert_eq!(requirements.nfa_size_limit_bytes, 512 * 1024);
+        assert_eq!(requirements.dfa_cache_limit_bytes, 256 * 1024);
+        assert_eq!(requirements.nest_limit, 64);
+        assert_eq!(requirements.max_concurrent_searches, 1);
+        let owned = PiiRedactor::curated_owned(&policy).unwrap();
+        let canonical = PiiRedactor::from_policy(&policy).unwrap().unwrap();
+        let body = b"mail a@b.com ssn 123-45-6789 card 4111111111111111 phone +14155552671 iban GB82WEST12345698765432";
+        assert_eq!(owned.redact(body), canonical.redact(body));
+        assert_eq!(owned.scan(body), canonical.scan(body));
+        assert_eq!(owned.match_spans(body), canonical.match_spans(body));
+        for name in PII_CATEGORY_NAMES {
+            assert!(
+                owned.scan(body).contains(name),
+                "missing canonical rule {name}"
+            );
+        }
+    }
+
+    #[test]
+    fn owned_subsets_modes_and_unicode_preserve_canonical_policy() {
+        let body = "ssn 12٣-45-6789 mail a@b.com card 4111111111111111".as_bytes();
+        for mode in [None, Some("detect"), Some("redact"), Some("refuse")] {
+            let policy = crate::policy::PiiPolicy {
+                mode: mode.map(str::to_owned),
+                categories: vec!["credit_card".into(), "us_ssn".into(), "email".into()],
+            };
+            let owned = PiiRedactor::curated_owned(&policy).unwrap();
+            let canonical = PiiRedactor::from_policy(&policy).unwrap().unwrap();
+            assert_eq!(owned.mode(), canonical.mode());
+            assert_eq!(owned.redact(body), canonical.redact(body));
+            assert_eq!(owned.match_spans(body), canonical.match_spans(body));
+            assert_eq!(owned.scan(body), ["credit_card", "us_ssn", "email"]);
+            assert_eq!(
+                PiiRedactor::owned_pii_requirements(&policy)
+                    .unwrap()
+                    .regex_objects,
+                4
+            );
+        }
+        let disabled = crate::policy::PiiPolicy {
+            mode: Some("disabled".into()),
+            categories: vec!["email".into()],
+        };
+        let full = PiiRedactor::curated_owned(&disabled).unwrap();
+        assert_eq!(
+            PiiRedactor::owned_pii_requirements(&disabled)
+                .unwrap()
+                .rule_count,
+            5
+        );
+        assert_eq!(
+            full.redact(body),
+            PiiRedactor::with_default_rules().redact(body)
+        );
+    }
+
+    #[test]
+    fn owned_invalid_policy_and_tiny_compile_limit_refuse_without_fallback() {
+        for policy in [
+            crate::policy::PiiPolicy {
+                mode: Some("private-invalid-mode".into()),
+                categories: vec![],
+            },
+            crate::policy::PiiPolicy {
+                mode: None,
+                categories: vec!["private-unknown-category".into()],
+            },
+            crate::policy::PiiPolicy {
+                mode: None,
+                categories: vec!["email".into(), "email".into()],
+            },
+            crate::policy::PiiPolicy {
+                mode: None,
+                categories: vec!["email".into(); 6],
+            },
+        ] {
+            let error = PiiRedactor::owned_pii_requirements(&policy).unwrap_err();
+            assert!(!error.to_string().contains("private-"));
+            assert!(PiiRedactor::curated_owned(&policy).is_err());
+        }
+        let policy = crate::policy::PiiPolicy {
+            mode: None,
+            categories: vec![],
+        };
+        let mut controls = PiiRedactor::owned_pii_requirements(&policy).unwrap();
+        controls.nfa_size_limit_bytes = 1;
+        assert!(
+            PiiRedactor::build_owned(PiiRedactor::owned_selection(&policy).unwrap(), controls)
+                .is_err()
+        );
+    }
+
+    #[test]
+    fn redact_masks_validated_matches_and_leaves_non_validated() {
+        let r = PiiRedactor::with_default_rules();
+        // email (no validator), a Luhn-valid card, and a Luhn-INVALID 16-digit
+        // run (4111…1112 — last digit broken) that must be left untouched.
+        let body = b"mail a@b.com good 4111111111111111 bad 4111111111111112 end";
+        let (out, fired) = r.redact(body);
+        let s = String::from_utf8_lossy(&out);
+        assert!(!s.contains("a@b.com"), "email not masked: {s}");
+        assert!(
+            !s.contains("4111111111111111"),
+            "valid card not masked: {s}"
+        );
+        assert!(
+            s.contains("4111111111111112"),
+            "non-Luhn run wrongly masked: {s}"
+        );
+        assert!(s.contains("XXX"), "no redaction mask present: {s}");
+        assert!(
+            fired.contains(&"email") && fired.contains(&"credit_card"),
+            "fired={fired:?}"
+        );
+    }
+
+    #[test]
+    fn redact_passes_clean_body_through_unchanged() {
+        let r = PiiRedactor::with_default_rules();
+        let (out, fired) = r.redact(b"nothing sensitive here");
+        assert_eq!(out, b"nothing sensitive here");
+        assert!(fired.is_empty());
+    }
+
+    // ---- Luhn helper unit tests ----
+
+    #[test]
+    fn luhn_validates_known_good_test_numbers() {
+        // Visa, Mastercard, Amex test numbers — all Luhn-valid.
+        for n in [
+            "4111111111111111", // Visa
+            "5555555555554444", // Mastercard
+            "378282246310005",  // Amex (15-digit)
+        ] {
+            assert!(luhn_valid(n.as_bytes()), "expected luhn-valid: {n}");
+        }
+    }
+
+    #[test]
+    fn luhn_rejects_known_bad_numbers() {
+        for n in [
+            "4111111111111112", // Visa with last digit flipped
+            "1234567890123456",
+            "0000000000000001",
+        ] {
+            assert!(!luhn_valid(n.as_bytes()), "expected luhn-invalid: {n}");
+        }
+    }
+
+    #[test]
+    fn default_rules_compile_with_unique_names() {
+        let r = PiiRedactor::with_default_rules();
+        let mut sorted: Vec<&str> = r.rules.iter().map(|r| r.name).collect();
+        let original_len = sorted.len();
+        sorted.sort();
+        sorted.dedup();
+        assert_eq!(sorted.len(), original_len, "rule names must be unique");
+    }
+
+    #[test]
+    fn iban_valid_is_masked_invalid_is_left() {
+        let r = PiiRedactor::with_default_rules();
+        let body = b"pay GB82WEST12345698765432 not GB82WEST12345698765431 ok";
+        let (out, fired) = r.redact(body);
+        let s = String::from_utf8_lossy(&out);
+        assert!(
+            !s.contains("GB82WEST12345698765432"),
+            "valid IBAN not masked: {s}"
+        );
+        assert!(
+            s.contains("GB82WEST12345698765431"),
+            "invalid IBAN wrongly masked: {s}"
+        );
+        assert!(fired.contains(&"iban"), "fired={fired:?}");
+    }
+
+    #[test]
+    fn iban_category_is_listed() {
+        assert!(PII_CATEGORY_NAMES.contains(&"iban"));
+    }
+
+    #[test]
+    fn policy_validation_accepts_known_modes_and_categories_without_a_redactor() {
+        let policy = crate::policy::PiiPolicy {
+            mode: Some("redact".to_string()),
+            categories: vec!["email".to_string(), "iban".to_string()],
+        };
+        PiiRedactor::validate_policy(&policy).expect("known policy must validate");
+    }
+
+    #[test]
+    fn policy_validation_refuses_unknown_modes_and_categories() {
+        let bad_mode = crate::policy::PiiPolicy {
+            mode: Some("paranoid".to_string()),
+            categories: Vec::new(),
+        };
+        assert!(matches!(
+            PiiRedactor::validate_policy(&bad_mode),
+            Err(PiiPolicyError::UnknownMode { .. })
+        ));
+
+        let bad_category = crate::policy::PiiPolicy {
+            mode: Some("detect".to_string()),
+            categories: vec!["passport".to_string()],
+        };
+        assert!(matches!(
+            PiiRedactor::validate_policy(&bad_category),
+            Err(PiiPolicyError::UnknownCategory { .. })
+        ));
+    }
+
+    #[test]
+    fn iban_checker_accepts_known_good_and_rejects_bad() {
+        assert!(iban_valid(b"GB82WEST12345698765432"));
+        assert!(iban_valid(b"DE89370400440532013000"));
+        assert!(!iban_valid(b"GB82WEST12345698765431"));
+        assert!(!iban_valid(b"XX00"));
+    }
+
+    #[test]
+    fn luhn_rejects_empty_and_non_digits() {
+        assert!(!luhn_valid(b""));
+        assert!(!luhn_valid(b"4111-1111-1111-1111"));
+    }
+}
+
+#[cfg(test)]
+#[path = "owned_capacity_tests.rs"]
+mod owned_capacity_tests;
