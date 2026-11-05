@@ -60,6 +60,7 @@ impl InstalledConfig {
                 include_bytes!("installed_owner/endpoint_disks.rs").as_slice(),
                 include_bytes!("installed_owner/retained_telemetry.rs").as_slice(),
                 include_bytes!("installed_owner/retained_recovery.rs").as_slice(),
+                include_bytes!("installed_owner/retained_transfer.rs").as_slice(),
                 include_bytes!("installed_retained.rs").as_slice(),
                 include_bytes!("../../spiralcore-transfer/Cargo.toml").as_slice(),
                 include_bytes!("../../spiralcore-transfer/Cargo.lock").as_slice(),

@@ -4,6 +4,9 @@
 use super::*;
 use std::os::unix::ffi::OsStringExt;
 
+#[path = "retained_transfer.rs"]
+mod transfer;
+
 #[path = "retained_recovery.rs"]
 pub(crate) mod recovery;
 pub(crate) use recovery::{CanonicalRecoveryLayout, RetainedRecoveryCompatibility};
@@ -79,6 +82,69 @@ impl RetainedRecord {
                 self.sealed_len == 0 && self.sealed_sha256 == [0; 32]
             }
     }
+    fn encode_base(&self) -> Result<[u8; ENTRY]> {
+        if !self.valid() {
+            return Err(OwnerError::Fenced);
+        }
+        let mut raw = [0_u8; ENTRY];
+        raw[..32].copy_from_slice(&self.tenant);
+        raw[32..64].copy_from_slice(&self.session);
+        for (at, value) in [
+            (64, self.parent),
+            (72, self.serial),
+            (80, self.records),
+            (88, self.sidecars),
+            (96, self.state_device),
+            (104, self.state_inode),
+            (4224, self.record_id.0),
+            (4232, self.record_id.1),
+            (4240, self.key_id.0),
+            (4248, self.key_id.1),
+            (4256, self.sealed_len),
+        ] {
+            raw[at..at + 8].copy_from_slice(&value.to_le_bytes());
+        }
+        raw[112] = self.phase;
+        let path = self.state.as_os_str().as_bytes();
+        raw[120..122].copy_from_slice(&(path.len() as u16).to_le_bytes());
+        raw[128..128 + path.len()].copy_from_slice(path);
+        raw[4264..4296].copy_from_slice(&self.sealed_sha256);
+        Ok(raw)
+    }
+    fn decode_base(raw: &[u8]) -> Result<Self> {
+        if raw.len() != ENTRY {
+            return Err(OwnerError::Fenced);
+        }
+        let number = |at| u64::from_le_bytes(raw[at..at + 8].try_into().unwrap());
+        let len = u16::from_le_bytes(raw[120..122].try_into().unwrap()) as usize;
+        if len > 4096
+            || raw[113..120] != [0; 7]
+            || raw[122..128] != [0; 6]
+            || raw[128 + len..4224].iter().any(|byte| *byte != 0)
+        {
+            return Err(OwnerError::Fenced);
+        }
+        let value = Self {
+            tenant: raw[..32].try_into().unwrap(),
+            session: raw[32..64].try_into().unwrap(),
+            parent: number(64),
+            serial: number(72),
+            records: number(80),
+            sidecars: number(88),
+            state_device: number(96),
+            state_inode: number(104),
+            phase: raw[112],
+            state: PathBuf::from(std::ffi::OsString::from_vec(raw[128..128 + len].to_vec())),
+            record_id: (number(4224), number(4232)),
+            key_id: (number(4240), number(4248)),
+            sealed_len: number(4256),
+            sealed_sha256: raw[4264..4296].try_into().unwrap(),
+        };
+        if !value.valid() {
+            return Err(OwnerError::Fenced);
+        }
+        Ok(value)
+    }
     pub(crate) fn marker(&self, epoch: Epoch) -> Vec<u8> {
         let mut bytes = Vec::with_capacity(224);
         bytes.extend_from_slice(b"SCRETM01");
@@ -138,29 +204,7 @@ impl Catalog {
             {
                 return Err(OwnerError::Fenced);
             }
-            let mut raw = [0_u8; ENTRY];
-            raw[..32].copy_from_slice(&entry.tenant);
-            raw[32..64].copy_from_slice(&entry.session);
-            for (at, value) in [
-                (64, entry.parent),
-                (72, entry.serial),
-                (80, entry.records),
-                (88, entry.sidecars),
-                (96, entry.state_device),
-                (104, entry.state_inode),
-                (4224, entry.record_id.0),
-                (4232, entry.record_id.1),
-                (4240, entry.key_id.0),
-                (4248, entry.key_id.1),
-                (4256, entry.sealed_len),
-            ] {
-                raw[at..at + 8].copy_from_slice(&value.to_le_bytes());
-            }
-            raw[112] = entry.phase;
-            let path = entry.state.as_os_str().as_bytes();
-            raw[120..122].copy_from_slice(&(path.len() as u16).to_le_bytes());
-            raw[128..128 + path.len()].copy_from_slice(path);
-            raw[4264..4296].copy_from_slice(&entry.sealed_sha256);
+            let raw = entry.encode_base()?;
             bytes.extend_from_slice(&raw);
         }
         let mut digest = Sha256::new();
@@ -191,33 +235,13 @@ impl Catalog {
         }
         let mut entries = Vec::with_capacity(count);
         for raw in bytes[HEADER..bytes.len() - 32].chunks_exact(ENTRY) {
-            let number = |at| u64::from_le_bytes(raw[at..at + 8].try_into().unwrap());
-            let len = u16::from_le_bytes(raw[120..122].try_into().unwrap()) as usize;
-            if len > 4096
-                || raw[113..120] != [0; 7]
-                || raw[122..128] != [0; 6]
-                || raw[128 + len..4224].iter().any(|byte| *byte != 0)
-                || raw[4296..].iter().any(|byte| *byte != 0)
-            {
+            // V1 keeps all 56 tail bytes reserved and zero.
+            if raw[4296..].iter().any(|byte| *byte != 0) {
                 return Err(OwnerError::Fenced);
             }
-            entries.push(RetainedRecord {
-                tenant: raw[..32].try_into().unwrap(),
-                session: raw[32..64].try_into().unwrap(),
-                parent: number(64),
-                serial: number(72),
-                records: number(80),
-                sidecars: number(88),
-                state_device: number(96),
-                state_inode: number(104),
-                phase: raw[112],
-                state: PathBuf::from(std::ffi::OsString::from_vec(raw[128..128 + len].to_vec())),
-                record_id: (number(4224), number(4232)),
-                key_id: (number(4240), number(4248)),
-                sealed_len: number(4256),
-                sealed_sha256: raw[4264..4296].try_into().unwrap(),
-            });
+            entries.push(RetainedRecord::decode_base(raw)?);
         }
+
         let catalog = Self { epoch, entries };
         if catalog.encode()? != bytes {
             return Err(OwnerError::Fenced);
@@ -388,3 +412,7 @@ impl InstallationOwner {
         self.storage.publish_retained(&catalog)
     }
 }
+
+#[cfg(test)]
+#[path = "retained_transfer_tests.rs"]
+mod transfer_tests;
