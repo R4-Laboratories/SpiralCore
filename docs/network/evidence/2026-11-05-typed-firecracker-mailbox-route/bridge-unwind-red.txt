@@ -1,0 +1,23 @@
+
+running 1 test
+test unwinding_an_armed_bridge_keeps_exact_pins_and_does_not_unlink ... FAILED
+
+failures:
+
+---- unwinding_an_armed_bridge_keeps_exact_pins_and_does_not_unlink stdout ----
+
+thread 'unwinding_an_armed_bridge_keeps_exact_pins_and_does_not_unlink' (740199) panicked at bridge_tests.rs:123:9:
+controlled unresolved bridge unwind
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+thread 'unwinding_an_armed_bridge_keeps_exact_pins_and_does_not_unlink' (740199) panicked at bridge_tests.rs:127:5:
+assertion `left == right` failed: unresolved bridge lost its original pins
+  left: 0
+ right: 2
+
+
+failures:
+    unwinding_an_armed_bridge_keeps_exact_pins_and_does_not_unlink
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 4 filtered out; finished in 0.00s
+

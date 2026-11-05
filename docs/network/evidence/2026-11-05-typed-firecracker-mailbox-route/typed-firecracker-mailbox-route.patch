@@ -1,0 +1,1622 @@
+--- a/sdk/crates/mvm-backends/src/driver/fc.rs
++++ b/sdk/crates/mvm-backends/src/driver/fc.rs
+@@ -29,6 +29,52 @@
+     VmCapabilities, VmExitStatus, VmId, VmStatus,
+ };
+ use mvm_net::channel::GuestService;
++#[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++mod mailbox_bridge;
++#[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++use mailbox_bridge::InstalledMailboxBridge;
++
++#[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++fn mailbox_bridge_name() -> std::ffi::OsString {
++    format!("v.sock_{}", GuestService::Mailbox.port()).into()
++}
++
++#[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++fn reject_raw_mailbox_channel(channels: &[VsockPort]) -> Result<()> {
++    anyhow::ensure!(
++        channels
++            .iter()
++            .all(|port| port.port() != GuestService::Mailbox.port()),
++        "installed mailbox requires the original typed route, not a spec path"
++    );
++    Ok(())
++}
++
++#[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++fn prepare_installed_mailbox_bridge(
++    state_dir: &Path,
++    runtime_dir: &Path,
++    target: &Path,
++) -> Result<InstalledMailboxBridge> {
++    use std::os::unix::fs::DirBuilderExt as _;
++    mvm_core::config::secure_fallback_socket_dir_at(state_dir)
++        .context("secure original Firecracker mailbox socket namespace")?;
++    std::fs::DirBuilder::new()
++        .recursive(true)
++        .mode(0o700)
++        .create(runtime_dir)?;
++    Ok(InstalledMailboxBridge::reserve(runtime_dir, target)?)
++}
++
++#[cfg(all(test, target_os = "linux", target_pointer_width = "64"))]
++mod mailbox_bridge_tests;
++
++#[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++struct InstalledMailboxBoot<'a> {
++    ready: &'a mvm_core::host_lifetime::ReadyInstalledMailbox,
++    before_native_start: &'a mut dyn FnMut() -> Result<()>,
++    bridge: &'a mut Option<InstalledMailboxBridge>,
++}
+ 
+ use crate::fc::{
+     FcCapabilities, FirecrackerGuard, api_put_session, api_session, fc_pid_path,
+@@ -853,6 +899,8 @@
+             None,
+             #[cfg(target_os = "linux")]
+             &mut None,
++            #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++            None,
+         )
+     }
+ 
+@@ -863,12 +911,36 @@
+         handoff: Option<mvm_vmm::driver::prepared_disks::SudoWritableHandoff>,
+         lease: PreparedHostLifetimeLease,
+         binding: &mvm_core::host_lifetime::HostLaunchBinding,
++        #[cfg(all(target_os = "linux", target_pointer_width = "64"))] mailbox: Option<(
++            &mvm_core::host_lifetime::ReadyInstalledMailbox,
++            &mut dyn FnMut() -> Result<()>,
++        )>,
+     ) -> Result<Box<dyn RunningVm>> {
+         let mut original = None;
+-        match self.boot_native_inner(spec, handoff, Some(lease), Some(binding), &mut original) {
++        #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++        let mut bridge = None;
++        match self.boot_native_inner(
++            spec,
++            handoff,
++            Some(lease),
++            Some(binding),
++            &mut original,
++            #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++            mailbox.map(|(ready, before_native_start)| InstalledMailboxBoot {
++                ready,
++                before_native_start,
++                bridge: &mut bridge,
++            }),
++        ) {
+             Ok(vm) => Ok(vm),
+             Err(reason) => match original {
+-                Some(owner) => Err(OwnedFcBootFailure { reason, owner }.into()),
++                Some(owner) => Err(OwnedFcBootFailure {
++                    reason,
++                    owner,
++                    #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++                    bridge,
++                }
++                .into()),
+                 None => Err(reason),
+             },
+         }
+@@ -885,7 +957,14 @@
+         #[cfg(target_os = "linux")] original: &mut Option<
+             mvm_vmm::host::fc_lifetime::OwnedFcLauncher,
+         >,
++        #[cfg(all(target_os = "linux", target_pointer_width = "64"))] mut mailbox: Option<
++            InstalledMailboxBoot<'_>,
++        >,
+     ) -> Result<Box<dyn RunningVm>> {
++        #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++        if host_binding.is_some() {
++            reject_raw_mailbox_channel(&spec.vsock)?;
++        }
+         if !spec.shares.is_empty() {
+             bail!(
+                 "Firecracker does not support virtio-fs shares ({} requested);                  use the HVF or libkrun backend",
+@@ -921,6 +1000,21 @@
+         // which case the API socket, the vsock mux and every guest-dialed
+         // socket move together to the short fallback namespace.
+         let runtime_dir = crate::fc::fc_vsock_runtime_dir(&abs_dir);
++        #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++        if let Some(mailbox) = mailbox.as_mut() {
++            let binding =
++                host_binding.context("installed mailbox has no original native binding")?;
++            let target = mailbox.ready.claimed_path(binding)?;
++            anyhow::ensure!(
++                target.parent() == Some(state_dir.as_path()),
++                "installed mailbox is outside the original VM state directory"
++            );
++            *mailbox.bridge = Some(prepare_installed_mailbox_bridge(
++                &state_dir,
++                &runtime_dir,
++                &target,
++            )?);
++        }
+         std::fs::create_dir_all(&runtime_dir)
+             .map_err(|e| anyhow!("create runtime dir {}: {e}", runtime_dir.display()))?;
+ 
+@@ -958,6 +1052,16 @@
+             let lease = host_lease
+                 .as_ref()
+                 .context("installed Firecracker holder missing")?;
++            #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++            if let Some(mailbox) = mailbox.as_mut() {
++                let target = mailbox.ready.claimed_path(binding)?;
++                mailbox
++                    .bridge
++                    .as_ref()
++                    .context("installed mailbox bridge missing before native start")?
++                    .verify_reserved(&target)?;
++                (mailbox.before_native_start)()?;
++            }
+             crate::fc::owned_launch::start(
+                 crate::fc::owned_launch::OwnedStart {
+                     state_dir: &state_dir,
+@@ -1043,6 +1147,17 @@
+         // capture — the whole host channel set must be in place before the guest
+         // boots and dials out.
+         arm_host_channels(&spec.vsock, &state_dir, &runtime_dir)?;
++        #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++        if let Some(mailbox) = mailbox.as_mut() {
++            let binding = host_binding.context("installed mailbox binding missing before arm")?;
++            let target = mailbox.ready.claimed_path(binding)?;
++            let bridge = mailbox
++                .bridge
++                .as_mut()
++                .context("installed mailbox bridge missing")?;
++            bridge.arm()?;
++            bridge.verify(&target)?;
++        }
+ 
+         let configured_at = Instant::now();
+         tracing::debug!(
+@@ -1051,6 +1166,16 @@
+             "fc boot: API config sequence"
+         );
+ 
++        #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++        if let Some(mailbox) = mailbox.as_ref() {
++            let binding = host_binding.context("installed mailbox binding missing before start")?;
++            let target = mailbox.ready.claimed_path(binding)?;
++            mailbox
++                .bridge
++                .as_ref()
++                .context("installed mailbox bridge missing")?
++                .verify(&target)?;
++        }
+         // Boot the configured instance (same session).
+         api_put_session(
+             &mut session,
+@@ -1131,15 +1256,19 @@
+             crate::fc::idle_pool::refill_in_background(shape);
+         }
+ 
++        let native_pid = read_firecracker_pid(&abs_dir)
++            .with_context(|| format!("capture Firecracker pid for '{}' after boot", spec.name))?;
+         let vm = Box::new(FcRunningVm {
+             #[cfg(target_os = "linux")]
+             owned: original.take().map(std::sync::Mutex::new),
++            #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++            mailbox_bridge: mailbox
++                .and_then(|mailbox| mailbox.bridge.take())
++                .map(std::sync::Mutex::new),
+             id: VmId(spec.name.clone()),
+             state_dir,
+             pid_file,
+-            pid: Some(read_firecracker_pid(&abs_dir).with_context(|| {
+-                format!("capture Firecracker pid for '{}' after boot", spec.name)
+-            })?),
++            pid: Some(native_pid),
+             vsock_uds,
+             flush_via_agent: spec.serves_guest_agent(),
+         });
+@@ -1182,8 +1311,53 @@
+             Some(kernel) => kernel::fc_descriptor_recipe(&recipe, kernel)?,
+             None => recipe,
+         };
+-        self.boot_with_installed_custody(&recipe, handoff, lease, binding)
+-    }
++        self.boot_with_installed_custody(
++            &recipe,
++            handoff,
++            lease,
++            binding,
++            #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++            None,
++        )
++    }
++
++    #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++    fn boot_custodied_with_installed_mailbox(
++        &self,
++        spec: &VmmSpec,
++        kernel: Option<&mvm_vmm::host::restore_image::VerifiedRestoreFile>,
++        disks: mvm_vmm::driver::prepared_disks::PreparedWritableDisks,
++        dispatch: mvm_vmm::driver::traits::InstalledMailboxDispatch<'_>,
++    ) -> Result<Box<dyn RunningVm>> {
++        let (lease, mailbox) = dispatch.claim.into_parts();
++        let binding = mailbox.binding();
++        anyhow::ensure!(
++            binding.vm_name == spec.name
++                && spec.vcpus <= binding.cpus
++                && spec.memory_mib <= binding.memory_mib,
++            "installed Firecracker physical recipe differs"
++        );
++        mailbox.claimed_path(binding)?;
++        disks.validate_spec(spec)?;
++        let (recipe, handoff) = if disks.is_empty() {
++            (spec.clone(), None)
++        } else {
++            let handoff = disks.into_sudo_handoff(spec)?;
++            (handoff.projected().clone(), Some(handoff))
++        };
++        let recipe = match kernel {
++            Some(kernel) => kernel::fc_descriptor_recipe(&recipe, kernel)?,
++            None => recipe,
++        };
++        self.boot_with_installed_custody(
++            &recipe,
++            handoff,
++            lease,
++            binding,
++            Some((mailbox, dispatch.before_native_start)),
++        )
++    }
++
+     fn name(&self) -> &str {
+         "firecracker"
+     }
+@@ -1567,6 +1741,8 @@
+         Ok(Box::new(FcRunningVm {
+             #[cfg(target_os = "linux")]
+             owned: None,
++            #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++            mailbox_bridge: None,
+             pid_file,
+             pid,
+             state_dir,
+@@ -1590,11 +1766,18 @@
+ pub struct OwnedFcBootFailure {
+     reason: anyhow::Error,
+     owner: mvm_vmm::host::fc_lifetime::OwnedFcLauncher,
++    #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++    bridge: Option<InstalledMailboxBridge>,
+ }
+ #[cfg(target_os = "linux")]
+ impl OwnedFcBootFailure {
+-    pub fn owner_mut(&mut self) -> &mut mvm_vmm::host::fc_lifetime::OwnedFcLauncher {
+-        &mut self.owner
++    pub fn stop(&mut self, deadline: Instant) -> Result<mvm_vmm::host::fc_lifetime::ConfirmedExit> {
++        let proof = self.owner.stop(deadline)?;
++        #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++        if let Some(bridge) = &mut self.bridge {
++            bridge.retire()?;
++        }
++        Ok(proof)
+     }
+ }
+ #[cfg(target_os = "linux")]
+@@ -1615,6 +1798,8 @@
+ struct FcRunningVm {
+     #[cfg(target_os = "linux")]
+     owned: Option<std::sync::Mutex<mvm_vmm::host::fc_lifetime::OwnedFcLauncher>>,
++    #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++    mailbox_bridge: Option<std::sync::Mutex<InstalledMailboxBridge>>,
+     id: VmId,
+     state_dir: PathBuf,
+     pid_file: PathBuf,
+@@ -1630,6 +1815,19 @@
+     flush_via_agent: bool,
+ }
+ 
++#[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++impl FcRunningVm {
++    fn retire_mailbox_bridge(&self) -> Result<()> {
++        if let Some(bridge) = &self.mailbox_bridge {
++            bridge
++                .lock()
++                .map_err(|_| anyhow!("installed mailbox bridge custody poisoned"))?
++                .retire()?;
++        }
++        Ok(())
++    }
++}
++
+ impl RunningVm for FcRunningVm {
+     fn id(&self) -> &VmId {
+         &self.id
+@@ -1672,6 +1870,8 @@
+                 .lock()
+                 .map_err(|_| anyhow!("original Firecracker custody poisoned"))?
+                 .stop(Instant::now() + crate::driver::libkrun_process::STOP_TIMEOUT)?;
++            #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++            self.retire_mailbox_bridge()?;
+             if let Some(pid) = self.pid {
+                 remove_pid_marker_if_matches(&self.pid_file, pid);
+             }
+@@ -1712,6 +1912,8 @@
+                 proof.binding().vm_name == self.id.0 && proof.native_pid() == self.pid,
+                 "original Firecracker terminal identity differs"
+             );
++            #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++            self.retire_mailbox_bridge()?;
+             if let Some(pid) = self.pid {
+                 remove_pid_marker_if_matches(&self.pid_file, pid);
+             }
+@@ -2713,6 +2915,8 @@
+         let vm = FcRunningVm {
+             #[cfg(target_os = "linux")]
+             owned: None,
++            #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++            mailbox_bridge: None,
+             id: VmId("gone-vm".into()),
+             state_dir: dir.path().to_path_buf(),
+             pid_file: pid_file.clone(),
+@@ -2738,6 +2942,8 @@
+         let vm = FcRunningVm {
+             #[cfg(target_os = "linux")]
+             owned: None,
++            #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++            mailbox_bridge: None,
+             id: VmId("never-started-vm".into()),
+             state_dir: dir.path().to_path_buf(),
+             pid_file: dir.path().join("fc.pid"),
+@@ -2753,6 +2959,8 @@
+         let vm = FcRunningVm {
+             #[cfg(target_os = "linux")]
+             owned: None,
++            #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++            mailbox_bridge: None,
+             id: VmId("measured-vm".into()),
+             state_dir: PathBuf::from("/state/measured-vm"),
+             pid_file: PathBuf::from("/state/measured-vm/fc.pid"),
+@@ -3042,6 +3250,8 @@
+         let vm = FcRunningVm {
+             #[cfg(target_os = "linux")]
+             owned: None,
++            #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++            mailbox_bridge: None,
+             id: VmId("console-vm".into()),
+             state_dir: PathBuf::from("/state/console-vm"),
+             pid_file: PathBuf::from("/state/console-vm/fc.pid"),
+@@ -3324,6 +3534,8 @@
+             let vm = FcRunningVm {
+                 #[cfg(target_os = "linux")]
+                 owned: None,
++                #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++                mailbox_bridge: None,
+                 id: VmId("agent-vm".into()),
+                 state_dir: dir.path().to_path_buf(),
+                 pid_file: dir.path().join("fc.pid"),
+--- /dev/null
++++ b/sdk/crates/mvm-backends/src/driver/fc/mailbox_bridge.rs
+@@ -0,0 +1,196 @@
++//! Exact guest-dial bridge for the installed Firecracker mailbox.
++use std::{
++    ffi::OsString,
++    fs::{self, File, Metadata, OpenOptions},
++    io,
++    os::{
++        fd::AsRawFd,
++        unix::fs::{MetadataExt, OpenOptionsExt, symlink},
++    },
++    path::{Path, PathBuf},
++};
++
++enum State {
++    Reserved,
++    Uncertain(Option<File>),
++    Armed(File),
++    Unlinked,
++    Retired,
++}
++
++/// The installed native owner retains this record until verified child exit.
++/// Entry mutation is exclusive to the cooperating original driver. Drop does
++/// not infer exit or remove a name whose original identity is uncertain.
++pub(super) struct InstalledMailboxBridge {
++    directory: Option<File>,
++    directory_path: PathBuf,
++    name: OsString,
++    target: PathBuf,
++    state: State,
++}
++
++impl InstalledMailboxBridge {
++    pub(super) fn reserve(directory_path: &Path, target: &Path) -> io::Result<Self> {
++        if !directory_path.is_absolute() || !target.is_absolute() {
++            return Err(io::Error::other("installed mailbox paths must be absolute"));
++        }
++        let directory = OpenOptions::new()
++            .read(true)
++            .custom_flags(libc::O_DIRECTORY | libc::O_NOFOLLOW)
++            .open(directory_path)?;
++        let bridge = Self {
++            directory: Some(directory),
++            directory_path: directory_path.to_owned(),
++            name: super::mailbox_bridge_name(),
++            target: target.to_owned(),
++            state: State::Reserved,
++        };
++        bridge.verify_directory()?;
++        bridge.require_absent()?;
++        Ok(bridge)
++    }
++
++    pub(super) fn verify_reserved(&self, current_target: &Path) -> io::Result<()> {
++        if !matches!(self.state, State::Reserved) || current_target != self.target {
++            return Err(io::Error::other(
++                "installed mailbox bridge reservation differs",
++            ));
++        }
++        self.verify_directory()?;
++        self.require_absent()
++    }
++
++    pub(super) fn arm(&mut self) -> io::Result<()> {
++        if !matches!(self.state, State::Reserved) {
++            return Err(io::Error::other(
++                "installed mailbox bridge already attempted",
++            ));
++        }
++        self.verify_directory()?;
++        symlink(&self.target, self.anchored_entry())?;
++        self.state = State::Uncertain(None);
++        let pin = OpenOptions::new()
++            .read(true)
++            .custom_flags(libc::O_PATH | libc::O_NOFOLLOW)
++            .open(self.anchored_entry())?;
++        self.state = State::Uncertain(Some(pin));
++        let State::Uncertain(Some(pin)) = &self.state else {
++            unreachable!()
++        };
++        self.check_link(pin)?;
++        let State::Uncertain(Some(pin)) =
++            std::mem::replace(&mut self.state, State::Uncertain(None))
++        else {
++            unreachable!()
++        };
++        self.state = State::Armed(pin);
++        self.directory().sync_all()
++    }
++
++    pub(super) fn verify(&self, current_target: &Path) -> io::Result<()> {
++        let State::Armed(pin) = &self.state else {
++            return Err(io::Error::other("original mailbox bridge is not armed"));
++        };
++        if current_target != self.target {
++            return Err(io::Error::other("installed mailbox bridge target differs"));
++        }
++        self.verify_directory()?;
++        self.check_link(pin)
++    }
++
++    pub(super) fn retire(&mut self) -> io::Result<()> {
++        match &self.state {
++            State::Reserved | State::Retired => return Ok(()),
++            State::Uncertain(_) => {
++                return Err(io::Error::other(
++                    "original mailbox bridge identity unavailable",
++                ));
++            }
++            State::Armed(pin) => {
++                self.verify_directory()?;
++                self.check_link(pin)?;
++                fs::remove_file(self.anchored_entry())?;
++                self.state = State::Unlinked;
++            }
++            State::Unlinked => self.verify_directory()?,
++        }
++        self.require_absent()?;
++        self.directory().sync_all()?;
++        self.verify_directory()?;
++        self.require_absent()?;
++        self.state = State::Retired;
++        Ok(())
++    }
++
++    fn verify_directory(&self) -> io::Result<()> {
++        let held = self.directory().metadata()?;
++        let named = fs::symlink_metadata(&self.directory_path)?;
++        mvm_core::private_fs::require_current_owner(&held)?;
++        if !held.is_dir()
++            || !named.is_dir()
++            || !same_object(&held, &named)
++            || held.mode() & 0o022 != 0
++        {
++            return Err(io::Error::other(
++                "installed mailbox bridge directory changed",
++            ));
++        }
++        Ok(())
++    }
++
++    fn check_link(&self, pin: &File) -> io::Result<()> {
++        let entry = self.anchored_entry();
++        let held = pin.metadata()?;
++        let named = fs::symlink_metadata(&entry)?;
++        if !held.is_symlink()
++            || !named.is_symlink()
++            || !same_object(&held, &named)
++            || fs::read_link(entry)? != self.target
++        {
++            return Err(io::Error::other(
++                "original installed mailbox bridge changed",
++            ));
++        }
++        Ok(())
++    }
++
++    fn require_absent(&self) -> io::Result<()> {
++        match fs::symlink_metadata(self.anchored_entry()) {
++            Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(()),
++            Err(error) => Err(error),
++            Ok(_) => Err(io::Error::new(
++                io::ErrorKind::AlreadyExists,
++                "installed mailbox bridge entry occupied",
++            )),
++        }
++    }
++
++    fn anchored_entry(&self) -> PathBuf {
++        PathBuf::from(format!("/proc/self/fd/{}", self.directory().as_raw_fd())).join(&self.name)
++    }
++
++    fn directory(&self) -> &File {
++        self.directory
++            .as_ref()
++            .expect("original bridge directory custody")
++    }
++}
++
++impl Drop for InstalledMailboxBridge {
++    fn drop(&mut self) {
++        if matches!(
++            self.state,
++            State::Uncertain(_) | State::Armed(_) | State::Unlinked
++        ) {
++            // Unknown exit or cleanup must retain original namespace custody.
++            std::mem::forget((
++                self.directory.take(),
++                std::mem::replace(&mut self.state, State::Retired),
++            ));
++        }
++    }
++}
++
++fn same_object(a: &Metadata, b: &Metadata) -> bool {
++    (a.dev(), a.ino()) == (b.dev(), b.ino())
++}
+--- /dev/null
++++ b/sdk/crates/mvm-backends/src/driver/fc/mailbox_bridge_tests.rs
+@@ -0,0 +1,175 @@
++use super::{
++    GuestService, VsockDirection, VsockPort, mailbox_bridge::InstalledMailboxBridge,
++    mailbox_bridge_name, reject_raw_mailbox_channel,
++};
++use std::{
++    fs,
++    io::{Read, Write},
++    os::unix::{
++        fs::{DirBuilderExt, symlink},
++        net::{UnixListener, UnixStream},
++    },
++    path::PathBuf,
++    sync::atomic::{AtomicUsize, Ordering},
++};
++
++struct Fixture {
++    root: PathBuf,
++    runtime: PathBuf,
++    target: PathBuf,
++    link: PathBuf,
++}
++impl Fixture {
++    fn new() -> Self {
++        static NEXT: AtomicUsize = AtomicUsize::new(0);
++        let root = std::env::temp_dir().join(format!(
++            "sc-fc-mailbox-{}-{}",
++            std::process::id(),
++            NEXT.fetch_add(1, Ordering::Relaxed)
++        ));
++        fs::create_dir(&root).unwrap();
++        let runtime = root.join("runtime");
++        fs::DirBuilder::new().mode(0o700).create(&runtime).unwrap();
++        let target = root.join("mailbox.sock");
++        let link = runtime.join(mailbox_bridge_name());
++        Self {
++            root,
++            runtime,
++            target,
++            link,
++        }
++    }
++}
++impl Drop for Fixture {
++    fn drop(&mut self) {
++        fs::remove_dir_all(&self.root).unwrap();
++    }
++}
++#[test]
++fn original_5257_bridge_delivers_exact_bytes_and_retires_its_own_entry() {
++    let f = Fixture::new();
++    let listener = UnixListener::bind(&f.target).unwrap();
++    let mut bridge = InstalledMailboxBridge::reserve(&f.runtime, &f.target).unwrap();
++    assert!(!f.link.exists());
++    bridge.arm().unwrap();
++    bridge.verify(&f.target).unwrap();
++    assert!(bridge.verify(&f.root.join("foreign.sock")).is_err());
++    let mut peer = UnixStream::connect(&f.link).unwrap();
++    peer.write_all(b"a\0z").unwrap();
++    let (mut original, _) = listener.accept().unwrap();
++    let mut bytes = [0; 3];
++    original.read_exact(&mut bytes).unwrap();
++    assert_eq!(&bytes, b"a\0z");
++    bridge.retire().unwrap();
++    bridge.retire().unwrap();
++    assert!(fs::symlink_metadata(&f.link).is_err());
++    assert!(f.target.exists());
++}
++#[test]
++fn occupied_link_is_never_removed_even_if_it_arrives_after_reservation() {
++    let f = Fixture::new();
++    fs::write(&f.link, b"foreign").unwrap();
++    assert!(InstalledMailboxBridge::reserve(&f.runtime, &f.target).is_err());
++    assert_eq!(fs::read(&f.link).unwrap(), b"foreign");
++    fs::remove_file(&f.link).unwrap();
++    let mut bridge = InstalledMailboxBridge::reserve(&f.runtime, &f.target).unwrap();
++    bridge.verify_reserved(&f.target).unwrap();
++    fs::write(&f.link, b"late").unwrap();
++    assert!(bridge.verify_reserved(&f.target).is_err());
++    assert!(bridge.arm().is_err());
++    bridge.retire().unwrap();
++    assert_eq!(fs::read(&f.link).unwrap(), b"late");
++}
++#[test]
++fn identically_targeted_replacement_is_not_original_and_is_preserved() {
++    let f = Fixture::new();
++    let mut bridge = InstalledMailboxBridge::reserve(&f.runtime, &f.target).unwrap();
++    bridge.arm().unwrap();
++    fs::remove_file(&f.link).unwrap();
++    symlink(&f.target, &f.link).unwrap();
++    assert!(bridge.verify(&f.target).is_err());
++    assert!(bridge.retire().is_err());
++    assert_eq!(fs::read_link(&f.link).unwrap(), f.target);
++}
++#[test]
++fn renamed_runtime_directory_cannot_redirect_arm_or_retirement() {
++    let f = Fixture::new();
++    let mut bridge = InstalledMailboxBridge::reserve(&f.runtime, &f.target).unwrap();
++    bridge.arm().unwrap();
++    let moved = f.root.join("moved");
++    fs::rename(&f.runtime, &moved).unwrap();
++    fs::create_dir(&f.runtime).unwrap();
++    assert!(bridge.verify(&f.target).is_err());
++    assert!(bridge.retire().is_err());
++    assert_eq!(
++        fs::read_link(moved.join(mailbox_bridge_name())).unwrap(),
++        f.target
++    );
++}
++
++#[test]
++fn installed_driver_refuses_raw_mailbox_routes_in_either_direction() {
++    let channel = |service, direction| VsockPort {
++        service,
++        direction,
++        host_uds: PathBuf::from("/synthetic/raw-route.sock"),
++    };
++    assert!(
++        reject_raw_mailbox_channel(&[channel(
++            GuestService::NetworkFlow,
++            VsockDirection::GuestDials
++        )])
++        .is_ok()
++    );
++    for direction in [VsockDirection::GuestDials, VsockDirection::HostDials] {
++        assert!(reject_raw_mailbox_channel(&[channel(GuestService::Mailbox, direction)]).is_err());
++    }
++}
++
++#[test]
++fn insecure_short_socket_root_refuses_before_creating_runtime_directory() {
++    let f = Fixture::new();
++    let state = f.root.join("long".repeat(40));
++    let short = crate::fc::fc_socket_dir(state.to_str().unwrap());
++    assert_ne!(short, state);
++    symlink(&f.runtime, &short).unwrap();
++    let runtime = crate::fc::fc_vsock_runtime_dir(state.to_str().unwrap());
++    let result =
++        super::prepare_installed_mailbox_bridge(&state, &runtime, &state.join("mailbox.sock"));
++    let wrote_through = f.runtime.join(runtime.file_name().unwrap()).exists();
++    fs::remove_file(short).unwrap();
++    assert!(result.is_err());
++    assert!(
++        !wrote_through,
++        "driver wrote through a substituted short socket root"
++    );
++}
++
++#[test]
++fn unwinding_an_armed_bridge_keeps_exact_pins_and_does_not_unlink() {
++    let f = Fixture::new();
++    let owns_pin = || {
++        fs::read_dir("/proc/self/fd")
++            .unwrap()
++            .flatten()
++            .filter(|entry| {
++                fs::read_link(entry.path())
++                    .is_ok_and(|target| target == f.runtime || target == f.link)
++            })
++            .count()
++    };
++    let initial = owns_pin();
++    let unwind = std::panic::catch_unwind(|| {
++        let mut bridge = InstalledMailboxBridge::reserve(&f.runtime, &f.target).unwrap();
++        bridge.arm().unwrap();
++        assert_eq!(owns_pin(), initial + 2);
++        panic!("controlled unresolved bridge unwind");
++    });
++    assert!(unwind.is_err());
++    assert_eq!(fs::read_link(&f.link).unwrap(), f.target);
++    assert_eq!(
++        owns_pin(),
++        initial + 2,
++        "unresolved bridge lost its original pins"
++    );
++}
+--- a/sdk/crates/mvm-core/src/host_lifetime.rs
++++ b/sdk/crates/mvm-core/src/host_lifetime.rs
+@@ -24,6 +24,9 @@
+ };
+ 
+ mod endpoint;
++#[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++#[doc(hidden)]
++pub mod mailbox_socket;
+ pub use endpoint::{
+     EndpointPartitionGuard, EndpointPartitionLimits, EndpointPartitionProjection,
+     EndpointStoreLocator, PreparedEndpointHandoff, PreparedEndpointPartition,
+@@ -286,6 +289,8 @@
+     job_taken: bool,
+     #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
+     job_issued: bool,
++    #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++    native_owner: Arc<()>,
+ }
+ 
+ impl InstalledMailboxHandoff {
+@@ -303,6 +308,40 @@
+         self.anchor.verify_current()?;
+         self.prepared.owner.check_current()?;
+         Ok(job)
++    }
++
++    /// Transfer the one socket job and its accepting guard together.
++    #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++    pub fn take_bound_socket_job(&mut self) -> Result<BoundInstalledMailboxJob> {
++        Ok(BoundInstalledMailboxJob {
++            job: self.take_socket_job()?,
++            accepting: mailbox_socket::Accepting::for_owner(&self.native_owner),
++        })
++    }
++
++    /// Pair physical listener readiness with this original admitted handoff.
++    #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++    pub fn ready_for_native(
++        &self,
++        socket: Arc<mailbox_socket::PinnedListener>,
++    ) -> Result<ReadyInstalledMailbox> {
++        ensure!(
++            self.job_issued,
++            "original installed mailbox socket job was not issued"
++        );
++        ensure!(
++            socket.belongs_to(&self.native_owner),
++            "installed mailbox listener belongs to another job"
++        );
++        self.prepared.owner.check_current()?;
++        let ready = ReadyInstalledMailbox {
++            anchor: Arc::clone(&self.anchor),
++            owner: Arc::downgrade(&self.native_owner),
++            plan_id: self.prepared.plan_id.clone(),
++            socket: Arc::downgrade(&socket),
++        };
++        ready.verify_for_anchor(&self.anchor)?;
++        Ok(ready)
+     }
+ 
+     /// Called by the in-process Runtime owner after joining its original
+@@ -324,6 +363,109 @@
+     }
+ }
+ 
++#[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++#[must_use]
++pub struct BoundInstalledMailboxJob {
++    job: InstalledMailboxJob,
++    accepting: mailbox_socket::Accepting,
++}
++
++#[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++impl BoundInstalledMailboxJob {
++    pub fn pin_listener(
++        &self,
++        directory: &File,
++        path: &std::path::Path,
++        listener: &std::os::unix::net::UnixListener,
++    ) -> std::io::Result<mailbox_socket::PinnedListener> {
++        mailbox_socket::PinnedListener::capture(directory, path, listener, &self.accepting)
++    }
++
++    pub fn stop_accepting(&self) {
++        self.accepting.close();
++    }
++
++    pub fn run(self, socket: std::os::unix::net::UnixStream) -> std::io::Result<()> {
++        self.stop_accepting();
++        (self.job)(socket)
++    }
++}
++
++#[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++#[must_use]
++pub struct ReadyInstalledMailbox {
++    anchor: Arc<HostLifetimeAnchor>,
++    owner: std::sync::Weak<()>,
++    plan_id: PlanId,
++    socket: std::sync::Weak<mailbox_socket::PinnedListener>,
++}
++
++#[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++#[must_use]
++pub struct ClaimedInstalledMailbox<'a> {
++    lease: PreparedHostLifetimeLease,
++    ready: &'a ReadyInstalledMailbox,
++}
++
++#[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++impl<'a> ClaimedInstalledMailbox<'a> {
++    pub fn into_parts(self) -> (PreparedHostLifetimeLease, &'a ReadyInstalledMailbox) {
++        (self.lease, self.ready)
++    }
++}
++
++#[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++impl ReadyInstalledMailbox {
++    pub fn binding(&self) -> &HostLaunchBinding {
++        self.anchor.binding()
++    }
++
++    pub fn verify_for_anchor(
++        &self,
++        anchor: &Arc<HostLifetimeAnchor>,
++    ) -> Result<std::path::PathBuf> {
++        ensure!(
++            Arc::ptr_eq(&self.anchor, anchor),
++            "installed mailbox belongs to another original launch"
++        );
++        ensure!(
++            self.owner.strong_count() != 0,
++            "original installed mailbox owner is gone"
++        );
++        anchor.verify_current()?;
++        let socket = self
++            .socket
++            .upgrade()
++            .context("original installed mailbox listener is gone")?;
++        let path = socket.verify()?.to_owned();
++        ensure!(
++            self.owner.strong_count() != 0,
++            "original installed mailbox owner is gone"
++        );
++        Ok(path)
++    }
++
++    /// The driver only receives this original handoff after Core authorizes
++    /// the native claim. Revalidate it before using the physical route.
++    pub fn claimed_path(&self, binding: &HostLaunchBinding) -> Result<std::path::PathBuf> {
++        ensure!(
++            &self.anchor.binding == binding && self.anchor.native_claimed.load(Ordering::Acquire),
++            "installed mailbox native claim or binding differs"
++        );
++        let permit = self
++            .anchor
++            .current_parent
++            .lock()
++            .map_err(|_| anyhow::anyhow!("host parent binding poisoned"))?
++            .as_ref()
++            .cloned()
++            .context("original parent resource permit missing")?;
++        permit.check_current(binding)?;
++        permit.check_native_mailbox_claim(binding, &self.plan_id)?;
++        self.verify_for_anchor(&self.anchor)
++    }
++}
++
+ #[derive(Default)]
+ enum MailboxPreparation {
+     #[default]
+@@ -342,6 +484,15 @@
+     /// while the parent refuses native effects for the same original grant.
+     fn check_native_claim(&self, _binding: &HostLaunchBinding) -> Result<()> {
+         Ok(())
++    }
++
++    #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++    fn check_native_mailbox_claim(
++        &self,
++        _binding: &HostLaunchBinding,
++        _plan_id: &PlanId,
++    ) -> Result<()> {
++        anyhow::bail!("original installed mailbox has no enrolled native authority")
+     }
+ 
+     fn begin_startup_workspace(&self, _binding: &HostLaunchBinding) -> Result<()> {
+@@ -826,7 +977,34 @@
+             job_taken: false,
+             #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
+             job_issued: false,
++            #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++            native_owner: Arc::new(()),
+         }))
++    }
++
++    #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++    pub fn claim_for_native_mailbox<'a>(
++        self: &Arc<Self>,
++        config: &VmStartConfig,
++        backend: BackendKind,
++        ready: &'a ReadyInstalledMailbox,
++    ) -> Result<ClaimedInstalledMailbox<'a>> {
++        let permit = self.checked_parent_permit(config, backend)?;
++        ensure!(
++            backend == BackendKind::Firecracker,
++            "installed mailbox native backend differs"
++        );
++        ready.verify_for_anchor(self)?;
++        permit.check_native_mailbox_claim(&self.binding, &ready.plan_id)?;
++        let lease = self.lease.duplicate()?;
++        ready.verify_for_anchor(self)?;
++        ensure!(
++            self.native_claimed
++                .compare_exchange(false, true, Ordering::AcqRel, Ordering::Acquire)
++                .is_ok(),
++            "host lifetime already claimed"
++        );
++        Ok(ClaimedInstalledMailbox { lease, ready })
+     }
+ 
+     /// Exactly one backend handoff after the original admission was bound.
+--- /dev/null
++++ b/sdk/crates/mvm-core/src/host_lifetime/mailbox_socket.rs
+@@ -0,0 +1,159 @@
++//! Original Linux mailbox listener identity and accepting lifetime.
++use std::{
++    fs::{self, File, Metadata},
++    io,
++    os::{
++        fd::AsRawFd,
++        unix::{
++            fs::{FileTypeExt, MetadataExt},
++            net::UnixListener,
++        },
++    },
++    path::{Path, PathBuf},
++    sync::{
++        Arc,
++        atomic::{AtomicBool, Ordering},
++    },
++};
++
++const NAME: &str = "mailbox.sock";
++
++/// The worker owns this non-cloneable guard. Exit or stop invalidates all
++/// observations. Only creation of a new worker can make a new guard.
++pub(super) struct Accepting {
++    open: Arc<AtomicBool>,
++    owner: std::sync::Weak<()>,
++}
++
++impl Accepting {
++    pub(super) fn for_owner(owner: &Arc<()>) -> Self {
++        Self {
++            open: Arc::new(AtomicBool::new(true)),
++            owner: Arc::downgrade(owner),
++        }
++    }
++
++    pub(super) fn close(&self) {
++        self.open.store(false, Ordering::Release);
++    }
++}
++
++impl Drop for Accepting {
++    fn drop(&mut self) {
++        self.close();
++    }
++}
++
++/// A physical observation of the pinned original Runtime socket. A caller
++/// must separately verify the original admitted launch and service owner.
++pub struct PinnedListener {
++    directory: File,
++    socket: File,
++    path: PathBuf,
++    accepting: Arc<AtomicBool>,
++    owner: std::sync::Weak<()>,
++}
++
++impl PinnedListener {
++    pub(super) fn capture(
++        directory: &File,
++        path: &Path,
++        listener: &UnixListener,
++        accepting: &Accepting,
++    ) -> io::Result<Self> {
++        let anchored = anchored_path(directory);
++        if !path.is_absolute()
++            || path.file_name().is_none_or(|name| name != NAME)
++            || listener.local_addr()?.as_pathname() != Some(anchored.as_path())
++        {
++            return Err(io::Error::other(
++                "mailbox listener is not bound to the original directory",
++            ));
++        }
++        // O_PATH pins the filesystem entry without opening a connection.
++        // O_NOFOLLOW lets verification reject a symlink as the pinned entry.
++        use rustix::fs::{Mode, OFlags, open};
++        let socket = File::from(open(
++            anchored,
++            OFlags::PATH | OFlags::NOFOLLOW | OFlags::CLOEXEC,
++            Mode::empty(),
++        )?);
++        let proof = Self {
++            directory: directory.try_clone()?,
++            socket,
++            path: path.to_owned(),
++            accepting: Arc::clone(&accepting.open),
++            owner: accepting.owner.clone(),
++        };
++        proof.verify()?;
++        Ok(proof)
++    }
++
++    pub(super) fn belongs_to(&self, owner: &Arc<()>) -> bool {
++        self.owner.ptr_eq(&Arc::downgrade(owner))
++    }
++
++    pub fn verify(&self) -> io::Result<&Path> {
++        self.check_accepting()?;
++        let directory = self.directory.metadata()?;
++        let named =
++            fs::symlink_metadata(self.path.parent().expect("validated absolute mailbox path"))?;
++        let euid = rustix::process::geteuid().as_raw();
++        if !directory.is_dir()
++            || !named.is_dir()
++            || !same_object(&directory, &named)
++            || directory.uid() != euid
++            || directory.mode() & 0o7777 != 0o700
++        {
++            return Err(io::Error::other(
++                "original private mailbox directory changed",
++            ));
++        }
++        let socket = self.socket.metadata()?;
++        let anchored = fs::symlink_metadata(anchored_path(&self.directory))?;
++        let named = fs::symlink_metadata(&self.path)?;
++        if !socket.file_type().is_socket()
++            || !anchored.file_type().is_socket()
++            || !named.file_type().is_socket()
++            || !same_object(&socket, &anchored)
++            || !same_object(&socket, &named)
++            || socket.uid() != euid
++        {
++            return Err(io::Error::other("original mailbox socket identity changed"));
++        }
++        self.check_accepting()?;
++        Ok(&self.path)
++    }
++
++    pub fn verify_expected_object(&self, device: u64, inode: u64) -> io::Result<()> {
++        let socket = self.socket.metadata()?;
++        if (socket.dev(), socket.ino()) != (device, inode) {
++            return Err(io::Error::other(
++                "original mailbox socket changed before pinning",
++            ));
++        }
++        Ok(())
++    }
++
++    pub fn invalidate(&self) {
++        self.accepting.store(false, Ordering::Release);
++    }
++
++    fn check_accepting(&self) -> io::Result<()> {
++        if self.accepting.load(Ordering::Acquire) {
++            Ok(())
++        } else {
++            Err(io::Error::other(
++                "original mailbox worker is no longer accepting",
++            ))
++        }
++    }
++}
++
++fn anchored_path(directory: &File) -> PathBuf {
++    PathBuf::from(format!("/proc/self/fd/{}", directory.as_raw_fd())).join(NAME)
++}
++
++fn same_object(a: &Metadata, b: &Metadata) -> bool {
++    (a.dev(), a.ino()) == (b.dev(), b.ino())
++}
+--- a/sdk/crates/mvm-runtime/src/kernel_custody.rs
++++ b/sdk/crates/mvm-runtime/src/kernel_custody.rs
+@@ -156,6 +156,9 @@
+         driver: &dyn mvm_vmm::driver::traits::VmmDriver,
+         spec: &VmmSpec,
+         disks: mvm_vmm::driver::prepared_disks::PreparedWritableDisks,
++        #[cfg(all(target_os = "linux", target_pointer_width = "64"))] mailbox: Option<
++            &mvm_core::host_lifetime::ReadyInstalledMailbox,
++        >,
+         before_installed_driver: impl FnOnce() -> Result<()>,
+     ) -> Result<Box<dyn RunningVm>> {
+         self.before_boot(spec)?;
+@@ -165,6 +168,25 @@
+                 driver.supports_host_lifetime(),
+                 "backend has no original installed native lifetime"
+             );
++            #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++            if let Some(mailbox) = mailbox {
++                let claim = owner.claim_for_native_mailbox(&self.config, driver.kind(), mailbox)?;
++                let mut mark = Some(before_installed_driver);
++                let mut before_native_start = || {
++                    mark.take()
++                        .context("installed mailbox native dispatch already consumed")?(
++                    )
++                };
++                return driver.boot_custodied_with_installed_mailbox(
++                    spec,
++                    self.kernel.as_ref(),
++                    disks,
++                    mvm_vmm::driver::traits::InstalledMailboxDispatch {
++                        claim,
++                        before_native_start: &mut before_native_start,
++                    },
++                );
++            }
+             let lease = owner.claim_for_native(&self.config, driver.kind())?;
+             before_installed_driver()?;
+             return driver.boot_custodied_with_host_lifetime(
+@@ -175,6 +197,11 @@
+                 owner.binding(),
+             );
+         }
++        #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++        ensure!(
++            mailbox.is_none(),
++            "mailbox route requires the original installed host lifetime"
++        );
+         driver.boot_custodied(spec, self.kernel.as_ref(), disks)
+     }
+ 
+@@ -540,6 +567,8 @@
+                 &driver,
+                 &spec,
+                 mvm_vmm::driver::prepared_disks::PreparedWritableDisks::empty(),
++                #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++                None,
+                 || panic!("rejected recipe must not reach installed dispatch"),
+             )
+             .err()
+--- a/sdk/crates/mvm-runtime/src/workload_runner/runner.rs
++++ b/sdk/crates/mvm-runtime/src/workload_runner/runner.rs
+@@ -854,14 +854,29 @@
+                 #[cfg(unix)]
+                 {
+                     match kernel {
+-                        Some(kernel) => kernel.boot_custodied(&self.driver, &spec, disks, || {
++                        Some(kernel) => {
+                             #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
+-                            installed
++                            let mailbox = installed
+                                 .as_ref()
+-                                .context("original installed dispatch slot missing")?
+-                                .mark_native_dispatch()?;
+-                            Ok(())
+-                        }),
++                                .map(|slot| slot.ready_mailbox_for_native())
++                                .transpose()?
++                                .flatten();
++                            kernel.boot_custodied(
++                                &self.driver,
++                                &spec,
++                                disks,
++                                #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++                                mailbox.as_ref(),
++                                || {
++                                    #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++                                    installed
++                                        .as_ref()
++                                        .context("original installed dispatch slot missing")?
++                                        .mark_native_dispatch()?;
++                                    Ok(())
++                                },
++                            )
++                        }
+                         None => {
+                             disks.validate_spec(&spec)?;
+                             self.driver.boot_custodied(&spec, None, disks)
+--- a/sdk/crates/mvm-runtime/src/workload_runner/runner/installed.rs
++++ b/sdk/crates/mvm-runtime/src/workload_runner/runner/installed.rs
+@@ -304,10 +304,29 @@
+         let (path, directory) = directory.context("original mailbox directory was not pinned")?;
+         let worker = mailbox_socket::MailboxSocketWorker::prepare(directory, &path, mailbox)?;
+         let worker = state.mailbox.insert(worker);
+-        let job = worker.charge_mut().take_socket_job()?;
++        let job = worker.charge_mut().take_bound_socket_job()?;
+         worker.start(job)?;
+         worker.socket_path()?;
+         Ok(())
++    }
++
++    #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++    pub(super) fn ready_mailbox_for_native(
++        &self,
++    ) -> Result<Option<mvm_core::host_lifetime::ReadyInstalledMailbox>> {
++        if self.dispatch.load(Ordering::Acquire) == NativeDispatch::MailboxOff as u8 {
++            return Ok(None);
++        }
++        let operation = self.begin_operation()?;
++        let state = operation
++            .state
++            .as_ref()
++            .expect("original installed custody");
++        state
++            .mailbox
++            .as_ref()
++            .map(|worker| worker.charge().ready_for_native(worker.readiness()?))
++            .transpose()
+     }
+ 
+     #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
+@@ -500,9 +519,7 @@
+                 if let Some(failed) =
+                     failure.downcast_mut::<mvm_backends::driver::fc::OwnedFcBootFailure>()
+                 {
+-                    let proof = failed
+-                        .owner_mut()
+-                        .stop(Instant::now() + Duration::from_secs(2))?;
++                    let proof = failed.stop(Instant::now() + Duration::from_secs(2))?;
+                     mvm_vmm::driver::traits::KernelStopOutcome {
+                         fc_exit: Some(proof),
+                         hvf_exit: None,
+--- a/sdk/crates/mvm-runtime/src/workload_runner/runner/installed/mailbox_socket.rs
++++ b/sdk/crates/mvm-runtime/src/workload_runner/runner/installed/mailbox_socket.rs
+@@ -18,9 +18,7 @@
+     time::{Duration, Instant},
+ };
+ 
+-#[path = "mailbox_socket/readiness.rs"]
+-mod readiness;
+-use readiness::{Accepting, PinnedListener};
++use mvm_core::host_lifetime::{BoundInstalledMailboxJob, mailbox_socket::PinnedListener};
+ 
+ const SOCKET_NAME: &CStr = c"mailbox.sock";
+ const STACK_BYTES: usize = 2 * 1024 * 1024;
+@@ -153,7 +151,7 @@
+ 
+ struct Custody<R> {
+     socket: BoundSocket,
+-    readiness: Option<PinnedListener>,
++    readiness: Option<Arc<PinnedListener>>,
+     listener: Option<UnixListener>,
+     wake: Option<UnixStream>,
+     waiter: Option<UnixStream>,
+@@ -208,16 +206,13 @@
+         &mut self.custody.as_mut().expect("owned mailbox custody").charge
+     }
+ 
+-    pub(super) fn start(
+-        &mut self,
+-        job: impl FnOnce(UnixStream) -> io::Result<()> + Send + 'static,
+-    ) -> io::Result<()> {
++    pub(super) fn start(&mut self, job: BoundInstalledMailboxJob) -> io::Result<()> {
+         self.start_checked(job, |path| UnixListener::bind(path), || Ok(()))
+     }
+ 
+     fn start_checked(
+         &mut self,
+-        job: impl FnOnce(UnixStream) -> io::Result<()> + Send + 'static,
++        job: BoundInstalledMailboxJob,
+         bind: impl FnOnce(&Path) -> io::Result<UnixListener>,
+         after_bind: impl FnOnce() -> io::Result<()>,
+     ) -> io::Result<()> {
+@@ -269,13 +264,7 @@
+             .expect("original mailbox listener")
+             .try_clone()?;
+         listener.set_nonblocking(true)?;
+-        let accepting = Accepting::new();
+-        let readiness = PinnedListener::capture(
+-            &state.socket.directory,
+-            &state.socket.path,
+-            &listener,
+-            &accepting,
+-        )?;
++        let readiness = job.pin_listener(&state.socket.directory, &state.socket.path, &listener)?;
+         readiness.verify_expected_object(device, inode)?;
+         let waiter = state.waiter.take().expect("original mailbox accept wake");
+         let control = Arc::clone(&state.control);
+@@ -283,9 +272,9 @@
+             thread::Builder::new()
+                 .name("installed-mailbox".into())
+                 .stack_size(STACK_BYTES)
+-                .spawn(move || run(listener, waiter, control, accepting, job))?,
++                .spawn(move || run(listener, waiter, control, job))?,
+         );
+-        state.readiness = Some(readiness);
++        state.readiness = Some(Arc::new(readiness));
+         state.listener.take();
+         Ok(())
+     }
+@@ -297,6 +286,20 @@
+             .as_ref()
+             .ok_or_else(|| io::Error::other("mailbox worker has no bound socket"))?
+             .verify()
++    }
++
++    pub(super) fn readiness(&self) -> io::Result<Arc<PinnedListener>> {
++        let state = self.custody.as_ref().expect("owned mailbox custody");
++        let ready = state
++            .readiness
++            .as_ref()
++            .ok_or_else(|| io::Error::other("mailbox worker has no bound socket"))?;
++        ready.verify()?;
++        Ok(Arc::clone(ready))
++    }
++
++    pub(super) fn charge(&self) -> &R {
++        &self.custody.as_ref().expect("owned mailbox custody").charge
+     }
+ 
+     pub(super) fn close_admission(&self) -> io::Result<()> {
+@@ -419,8 +422,7 @@
+     listener: UnixListener,
+     wake: UnixStream,
+     control: Arc<Mutex<Control>>,
+-    accepting: Accepting,
+-    job: impl FnOnce(UnixStream) -> io::Result<()>,
++    job: BoundInstalledMailboxJob,
+ ) -> io::Result<()> {
+     loop {
+         if !wait_for_peer(listener.as_raw_fd(), wake.as_raw_fd())? {
+@@ -433,7 +435,7 @@
+         };
+         // This worker takes exactly one peer. The listener is no longer
+         // valid readiness evidence before the session starts doing work.
+-        accepting.close();
++        job.stop_accepting();
+         socket.set_nonblocking(false)?;
+         {
+             let mut state = control
+@@ -445,7 +447,7 @@
+             state.accepted = Some(socket.try_clone()?);
+         }
+         let _accepted = Accepted(Arc::clone(&control));
+-        return job(socket);
++        return job.run(socket);
+     }
+ }
+ 
+--- a/sdk/crates/mvm-runtime/src/workload_runner/runner/installed/mailbox_socket/readiness.rs
++++ /dev/null
+@@ -1,146 +0,0 @@
+-//! Original Linux mailbox listener identity and accepting lifetime.
+-use std::{
+-    fs::{self, File, Metadata, OpenOptions},
+-    io,
+-    os::{
+-        fd::AsRawFd,
+-        unix::{
+-            fs::{FileTypeExt, MetadataExt, OpenOptionsExt},
+-            net::UnixListener,
+-        },
+-    },
+-    path::{Path, PathBuf},
+-    sync::{
+-        Arc,
+-        atomic::{AtomicBool, Ordering},
+-    },
+-};
+-
+-const NAME: &str = "mailbox.sock";
+-
+-/// The worker owns this non-cloneable guard. Exit or stop invalidates all
+-/// observations. Only creation of a new worker can make a new guard.
+-pub(super) struct Accepting(Arc<AtomicBool>);
+-
+-impl Accepting {
+-    pub(super) fn new() -> Self {
+-        Self(Arc::new(AtomicBool::new(true)))
+-    }
+-
+-    pub(super) fn close(&self) {
+-        self.0.store(false, Ordering::Release);
+-    }
+-}
+-
+-impl Drop for Accepting {
+-    fn drop(&mut self) {
+-        self.close();
+-    }
+-}
+-
+-/// A physical observation of the pinned original Runtime socket. A caller
+-/// must separately verify the original admitted launch and service owner.
+-pub(super) struct PinnedListener {
+-    directory: File,
+-    socket: File,
+-    path: PathBuf,
+-    accepting: Arc<AtomicBool>,
+-}
+-
+-impl PinnedListener {
+-    pub(super) fn capture(
+-        directory: &File,
+-        path: &Path,
+-        listener: &UnixListener,
+-        accepting: &Accepting,
+-    ) -> io::Result<Self> {
+-        let anchored = anchored_path(directory);
+-        if !path.is_absolute()
+-            || path.file_name().is_none_or(|name| name != NAME)
+-            || listener.local_addr()?.as_pathname() != Some(anchored.as_path())
+-        {
+-            return Err(io::Error::other(
+-                "mailbox listener is not bound to the original directory",
+-            ));
+-        }
+-        // O_PATH pins the filesystem entry without opening a connection.
+-        // O_NOFOLLOW lets verification reject a symlink as the pinned entry.
+-        let socket = OpenOptions::new()
+-            .read(true)
+-            .custom_flags(libc::O_PATH | libc::O_NOFOLLOW)
+-            .open(anchored)?;
+-        let proof = Self {
+-            directory: directory.try_clone()?,
+-            socket,
+-            path: path.to_owned(),
+-            accepting: Arc::clone(&accepting.0),
+-        };
+-        proof.verify()?;
+-        Ok(proof)
+-    }
+-
+-    pub(super) fn verify(&self) -> io::Result<&Path> {
+-        self.check_accepting()?;
+-        let directory = self.directory.metadata()?;
+-        let named =
+-            fs::symlink_metadata(self.path.parent().expect("validated absolute mailbox path"))?;
+-        // SAFETY: geteuid takes no parameters and has no caller preconditions.
+-        let euid = unsafe { libc::geteuid() };
+-        if !directory.is_dir()
+-            || !named.is_dir()
+-            || !same_object(&directory, &named)
+-            || directory.uid() != euid
+-            || directory.mode() & 0o7777 != 0o700
+-        {
+-            return Err(io::Error::other(
+-                "original private mailbox directory changed",
+-            ));
+-        }
+-        let socket = self.socket.metadata()?;
+-        let anchored = fs::symlink_metadata(anchored_path(&self.directory))?;
+-        let named = fs::symlink_metadata(&self.path)?;
+-        if !socket.file_type().is_socket()
+-            || !anchored.file_type().is_socket()
+-            || !named.file_type().is_socket()
+-            || !same_object(&socket, &anchored)
+-            || !same_object(&socket, &named)
+-            || socket.uid() != euid
+-        {
+-            return Err(io::Error::other("original mailbox socket identity changed"));
+-        }
+-        self.check_accepting()?;
+-        Ok(&self.path)
+-    }
+-
+-    pub(super) fn verify_expected_object(&self, device: u64, inode: u64) -> io::Result<()> {
+-        let socket = self.socket.metadata()?;
+-        if (socket.dev(), socket.ino()) != (device, inode) {
+-            return Err(io::Error::other(
+-                "original mailbox socket changed before pinning",
+-            ));
+-        }
+-        Ok(())
+-    }
+-
+-    pub(super) fn invalidate(&self) {
+-        self.accepting.store(false, Ordering::Release);
+-    }
+-
+-    fn check_accepting(&self) -> io::Result<()> {
+-        if self.accepting.load(Ordering::Acquire) {
+-            Ok(())
+-        } else {
+-            Err(io::Error::other(
+-                "original mailbox worker is no longer accepting",
+-            ))
+-        }
+-    }
+-}
+-
+-fn anchored_path(directory: &File) -> PathBuf {
+-    PathBuf::from(format!("/proc/self/fd/{}", directory.as_raw_fd())).join(NAME)
+-}
+-
+-fn same_object(a: &Metadata, b: &Metadata) -> bool {
+-    (a.dev(), a.ino()) == (b.dev(), b.ino())
+-}
+--- a/sdk/crates/mvm-runtime/src/workload_runner/runner/installed/retirement_tests.rs
++++ b/sdk/crates/mvm-runtime/src/workload_runner/runner/installed/retirement_tests.rs
+@@ -350,11 +350,24 @@
+     assert!(other.attach_prepared_mailbox(&config, backend).is_err());
+     slot.attach_prepared_mailbox(&config, backend).unwrap();
+     assert!(slot.attach_prepared_mailbox(&config, backend).is_err());
++    let ready = slot.ready_mailbox_for_native().unwrap().unwrap();
++    assert_eq!(
++        ready.verify_for_anchor(&anchor).unwrap(),
++        root.path().join("mailbox.sock")
++    );
++    assert!(ready.verify_for_anchor(&foreign).is_err());
++    assert!(
++        anchor
++            .claim_for_native_mailbox(&config, backend, &ready)
++            .is_err()
++    );
++
+     assert!(anchor.claim_for_native(&config, backend).is_err());
+     let path = root.path().join("mailbox.sock");
+     let mut peer = UnixStream::connect(&path).unwrap();
+     peer.write_all(&[1]).unwrap();
+     observed.recv_timeout(Duration::from_secs(2)).unwrap();
++    assert!(ready.verify_for_anchor(&anchor).is_err());
+     {
+         let operation = slot.begin_operation().unwrap();
+         let worker = operation.state.as_ref().unwrap().mailbox.as_ref().unwrap();
+--- a/sdk/crates/mvm-vmm/src/driver/traits.rs
++++ b/sdk/crates/mvm-vmm/src/driver/traits.rs
+@@ -136,6 +136,12 @@
+ pub trait DuplexStream: std::io::Read + std::io::Write + Send {}
+ impl<T: std::io::Read + std::io::Write + Send> DuplexStream for T {}
+ 
++#[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++pub struct InstalledMailboxDispatch<'a> {
++    pub claim: mvm_core::host_lifetime::ClaimedInstalledMailbox<'a>,
++    pub before_native_start: &'a mut dyn FnMut() -> Result<()>,
++}
++
+ /// VMM mechanics, written once per VMM.
+ pub trait VmmDriver: Send + Sync {
+     /// Stable backend token (`"libkrun"`, `"firecracker"`, `"hvf"`, `"mock"`).
+@@ -190,6 +196,17 @@
+         anyhow::bail!("backend does not support original installed host lifetime")
+     }
+ 
++    #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++    fn boot_custodied_with_installed_mailbox(
++        &self,
++        _spec: &VmmSpec,
++        _kernel: Option<&crate::host::restore_image::VerifiedRestoreFile>,
++        _disks: crate::driver::prepared_disks::PreparedWritableDisks,
++        _dispatch: InstalledMailboxDispatch<'_>,
++    ) -> Result<Box<dyn RunningVm>> {
++        anyhow::bail!("backend does not support the original installed mailbox route")
++    }
++
+     /// Consume the same verified, unlinked kernel descriptor, never reopen
+     /// the spec's diagnostic pathname. Unsupported drivers refuse explicitly.
+     #[cfg(unix)]

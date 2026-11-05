@@ -1,0 +1,66 @@
+{
+  "scope": "Linux x86_64 protected component tests and local filesystem/Unix-socket bridge. No guest boot, production enrollment, WAN or FIPS qualification.",
+  "installed_runtime_and_kernel_passed": 12,
+  "firecracker_backend_passed": 7,
+  "pinned_sources": 5417,
+  "inventory_sha256": "ac46d58434468232531ce2c153e6ac226e72b5f12600e11271268deb6adabe86",
+  "runtime_binary_sha256": "3eae827cf849d9e94b9282a32b70a4630351127f6da71e45b1acbeb498e77d7e",
+  "backend_binary_sha256": "baa69ee5fa1da2989a0fa153065763b96d20fb2b415dd20b77dfbf33ed6adbc8",
+  "patch_replay": {
+    "sdk/crates/mvm-backends/src/driver/fc.rs": {
+      "before": "433a5e4882820dbf887340a86d25b5a4b0891b14e8cdf265f15a357216549b66",
+      "after": "5afc4507742043248976c7df7150904875989c9adcf2c82cb56d33eae5768008"
+    },
+    "sdk/crates/mvm-backends/src/driver/fc/mailbox_bridge.rs": {
+      "before": null,
+      "after": "6868daf1f9c7ea3eed6639fbb1e57b1d7d5b7c0f3e51a28518baab4f9fd1dbd8"
+    },
+    "sdk/crates/mvm-backends/src/driver/fc/mailbox_bridge_tests.rs": {
+      "before": null,
+      "after": "3a706b39157959e86dd3b7f05d3b2c301625422cd2f88bc2bfff4cf4560346b2"
+    },
+    "sdk/crates/mvm-core/src/host_lifetime.rs": {
+      "before": "4548c1518a1e3e0d2d6db8aac809ae8b17179070558ca1b187e5d12f73ec5207",
+      "after": "281f0b0269bee3ba3c51bcc1f58d9732f832023c3d7843b60799cd44808e28ff"
+    },
+    "sdk/crates/mvm-core/src/host_lifetime/mailbox_socket.rs": {
+      "before": null,
+      "after": "8640321163ced232d6bd0f98d94e036ff9bb7b6d0d3333bcedcf7ccb72a73ef7"
+    },
+    "sdk/crates/mvm-runtime/src/kernel_custody.rs": {
+      "before": "fb7bfedaaddcf67f37507732a081113067a924394504165392b689833f5ff383",
+      "after": "25189d9788deedbca3b2c3b88b66afc51acdbfa6fc917323529023f8030cd2b8"
+    },
+    "sdk/crates/mvm-runtime/src/workload_runner/runner.rs": {
+      "before": "d1ed8ee2f2f2e856722b43b054967a6895cf2869a02db0832de5271044761277",
+      "after": "b0db8ff92f13aa5bc8c063e213973a5350b2e80b0348830f904026eb06f7fd8e"
+    },
+    "sdk/crates/mvm-runtime/src/workload_runner/runner/installed.rs": {
+      "before": "011720519440823359452894de8fa84d7e87c861cead8340a7462ac03ce197e7",
+      "after": "8899a6ab4df0532f915056455431dc7e433b07e07808ccfa7e5a6380b0735f5e"
+    },
+    "sdk/crates/mvm-runtime/src/workload_runner/runner/installed/mailbox_socket.rs": {
+      "before": "2bb8edd8aecb9df3f16b58ce09c68ea12e06a619071be6797f30db6aeda00a17",
+      "after": "d14c07f3afeac72e91ae7a16f8e75736c27f22f9a815be444caa689454b6c4d6"
+    },
+    "sdk/crates/mvm-runtime/src/workload_runner/runner/installed/mailbox_socket/readiness.rs": {
+      "before": "6bd1cbf6afcd92f9fde603c8f12ada5515de141ae59817ac1290ad8781eb86de",
+      "after": null
+    },
+    "sdk/crates/mvm-runtime/src/workload_runner/runner/installed/retirement_tests.rs": {
+      "before": "f7e34cf7e271c44d749fe6da13e6d137b78c14c8f143efef218eb31147efcd8f",
+      "after": "d5e026bdfaea52400599e0db7f7d447114923cf077a6c67cb595b6655cf7482b"
+    },
+    "sdk/crates/mvm-vmm/src/driver/traits.rs": {
+      "before": "d3edcea4f598476ab564d99f4f0c7010c0c8dfb44a9a64ea8ef1fcf363036084",
+      "after": "b5703e42cebb0b434bbb485f116039dacc0cc4381cf12ae2e2169d047b2bff50"
+    }
+  },
+  "retained_negative_evidence": [
+    "Core RED absent original-ready and claim APIs",
+    "Moved socket identity initially refused by Core unsafe-code lint; converted to Rustix",
+    "Predecessor armed bridge unwind lost both original pins; corrected guard retained them",
+    "Exact foreign short socket root, occupied and replaced bridge, and untyped port controls"
+  ],
+  "review": "Independent Rust, code and security PASS for canonical typed route while original enrollment is closed."
+}
