@@ -8,15 +8,12 @@ admitted-message bridge into the existing object store. The codec selection,
 ternary/Kuramoto/CA replay, warm cache, sparse changes and schema mechanisms stay
 in the shared transfer core; the adapter does not copy those implementations.
 
-The committed manifests and lockfile pin the public contribution-preparation
-fork [`ae12e9deb41cc9a3264196ce22ebc72d4042883d`](https://github.com/Casey-allard/mvm/tree/ae12e9deb41cc9a3264196ce22ebc72d4042883d),
-based on upstream MVM `6ae461a54d85a1b70477c1efb97ea4a33ef3b331`. Its four-patch
-[preparation and provenance bundle](../spiralcore-mvm-live/mvm-service-patch/README.md)
-contains the verified-open/experimental transport primitives, proper canonical
-Reply-operation authorization, a read-only prepared-header accessor, and the
-Firecracker descriptor handoff correction. This is an explicit contributor fork,
-not an assertion that upstream has adopted the proposed service or receipt
-carrier. No local Cargo patch configuration is required for the default build.
+The manifests and lockfile pin the [MVM contribution fork](https://github.com/Casey-allard/mvm/tree/ef1067e3bcce4f72bcd5cdacb6b914e76298ae20),
+reconciled with upstream MVM `e45c787a942053a18e60e3c1b3923216bd7dc549`.
+The [preparation and provenance bundle](../spiralcore-mvm-live/mvm-service-patch/README.md)
+records earlier fork changes. The pinned fork provides canonical verified-open,
+Reply-operation authorization and signed transport-binding revocation checks.
+No local Cargo patch configuration is required for the default build.
 
 The [object-v1 contract](../../docs/specs/spiralcore-v1.md) and
 [MVM delivery contract](../../docs/specs/2026-11-02-mvm-network-delivery.md) define
@@ -29,6 +26,16 @@ Cast; it does not replace MVM's signatures, envelope format or cryptography.
 
 Enable `live` for the service and transport APIs. Authority comes from trusted
 local configuration, never a message payload or object digest.
+
+The trusted policy owner applies a typed `TransportBindingId` revocation to each
+affected Direction policy, service binding and receipt return binding.
+Capability-context replacement preserves transport revocations. Live Call and
+Reply hold both checked policy generations through transport admission. A shared
+Direction policy fences if it cannot record a revocation within its 1,024-ID
+limit. A service binding tracks only its own signed ID.
+`ServiceBindingConfig::from_direction` creates a separate owner and refuses to
+drop recorded revocations during conversion. Revocation distribution and
+restoration at process startup belong to the trusted host policy owner.
 
 | Component | Responsibility |
 |---|---|

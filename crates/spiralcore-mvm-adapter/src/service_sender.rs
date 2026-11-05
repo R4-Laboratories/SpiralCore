@@ -51,7 +51,7 @@ impl OrderingStream {
         expiry: i64,
         policy: crate::issuance::IssuancePolicy,
     ) -> Result<MessageOptions> {
-        let owner = binding.with_sender(now, |config, context, _| {
+        let owner = binding.with_sender(now, |config, context, _, _| {
             if content_type == receipt_content_type()
                 || !config
                     .capability
@@ -103,7 +103,7 @@ impl OrderingStream {
         if request.header().kind != MailboxMessageKind::Call {
             return Err(ServiceError::Unauthorized);
         }
-        binding.with_sender(now, |config, _, _| {
+        binding.with_sender(now, |config, _, _, _| {
             if config.kind != MailboxMessageKind::Reply {
                 return Err(ServiceError::Unauthorized);
             }
@@ -186,7 +186,7 @@ impl MessageOptions {
         policy: crate::issuance::IssuancePolicy,
         ordering: Option<(OrderingScope, SequenceNumber)>,
     ) -> Result<Self> {
-        binding.with_sender(now, |config, _, _| {
+        binding.with_sender(now, |config, _, _, _| {
             let window = policy.window(
                 now,
                 expiry,
@@ -286,7 +286,7 @@ pub fn request<'a>(
     options: &MessageOptions,
     now: ServiceTime,
 ) -> Result<SealRequest<'a>> {
-    binding.with_sender(now, |config, context, _| {
+    binding.with_sender(now, |config, context, _, _| {
         if options.content_type == receipt_content_type()
             || !config
                 .capability
@@ -370,7 +370,7 @@ pub fn prepare(
     now: ServiceTime,
 ) -> Result<PreparedMailboxEnvelope> {
     let request = request(binding, payload, options, now)?;
-    binding.with_sender(now, |config, _, _| {
+    binding.with_sender(now, |config, _, _, _| {
         prepare_mailbox_envelope(
             request,
             &config.encryption_key,
