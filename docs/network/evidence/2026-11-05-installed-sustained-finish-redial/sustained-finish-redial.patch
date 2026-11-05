@@ -1,0 +1,221 @@
+--- a/crates/spiralcore-mvm-live/src/campaign.rs
++++ b/crates/spiralcore-mvm-live/src/campaign.rs
+@@ -164,7 +164,7 @@
+         }
+         let cpu = ProcessTime::now();
+         let wall = Instant::now();
+-        let result = if request.kind == 3 && self.redial.pending() {
++        let result = if request.kind == 3 && self.redial.pending() && self.service.redial_due() {
+             let result = self.service.call_with_redial(
+                 request,
+                 &self.stream,
+@@ -508,7 +508,7 @@
+ }
+ impl<S: SocketIo + 'static, T: BorrowMut<LocalMailboxService>> Server<'_, S, T> {
+     fn handle(&mut self, expected_transfer: Id) -> Result<Handled> {
+-        if self.redial.pending() {
++        if self.redial.pending() && self.service.redial_due() {
+             let result = self.service.handle_with_redial(
+                 expected_transfer,
+                 &mut self.object,
+--- a/crates/spiralcore-mvm-live/src/campaign/canonical.rs
++++ b/crates/spiralcore-mvm-live/src/campaign/canonical.rs
+@@ -57,6 +57,7 @@
+     last_identities: usize,
+     last_fifo_scopes: usize,
+     last_fifo_entries: usize,
++    redial_cut: Option<Value>,
+ }
+ const MAX_CAMPAIGN_CALLS: u64 = 2048;
+ #[derive(Clone, Copy, PartialEq, Eq)]
+@@ -196,9 +197,39 @@
+             last_identities: 0,
+             last_fifo_scopes: 0,
+             last_fifo_entries: 0,
++            redial_cut: None,
+         });
+     }
+ 
++    pub(super) fn redial_due(&self) -> bool {
++        self.sustained.is_none() || self.calls == sustained::REDIAL_AFTER_CALLS
++    }
++
++    fn record_redial_cut(&mut self) -> Result<()> {
++        self.sample_sustained()?;
++        let Some(state) = self.sustained.as_mut() else {
++            return Ok(());
++        };
++        // At the cut the current Call also owns one tracker entry. Using
++        // only prior completed Calls is a conservative expiry count.
++        let expired = self.calls.saturating_sub(state.last_tracker as u64);
++        let elapsed_ms = state.started.elapsed().as_millis();
++        if self.calls != sustained::REDIAL_AFTER_CALLS
++            || elapsed_ms < 330_000
++            || expired == 0
++            || state.redial_cut.is_some()
++        {
++            return Err("sustained replacement lacks prior tracker expiry".into());
++        }
++        state.redial_cut = Some(json!({
++            "completed_calls":self.calls,
++            "elapsed_ms":elapsed_ms,
++            "retained_tracker_entries":state.last_tracker,
++            "expired_tracker_lower_bound":expired
++        }));
++        Ok(())
++    }
++
+     fn campaign_call_limit(&self) -> u64 {
+         if self.sustained.is_some() {
+             sustained::CALLS
+@@ -254,7 +285,8 @@
+                 "peak_identities":s.peak_identities,"peak_tracker":s.peak_tracker,
+                 "last_tracker":s.last_tracker,"last_identities":s.last_identities,
+                 "last_fifo_scopes":s.last_fifo_scopes,"last_fifo_entries":s.last_fifo_entries,
+-                "expired_tracker_lower_bound":self.calls.saturating_sub(s.last_tracker as u64)
++                "expired_tracker_lower_bound":self.calls.saturating_sub(s.last_tracker as u64),
++                "redial_cut":&s.redial_cut
+             })),"pipeline":1,"ordering":"stable-scope-increasing-sequence",
+             "broker_clock":"shared-serialized-dispatch","issuance_policy":{"mode":"bounded","max_clock_ahead_ms":5000,"max_issued_ttl_ms":30000,"max_remaining_ttl_ms":25000}})
+     }
+@@ -298,7 +330,9 @@
+         cancel: &CancellationToken,
+         redial: &mut redial::Replacement<'_, S>,
+     ) -> Result<(Context, Frame)> {
+-        let result = self.call_inner(request, stream, cancel, None, false, Some(redial));
++        let result = self
++            .record_redial_cut()
++            .and_then(|()| self.call_inner(request, stream, cancel, None, false, Some(redial)));
+         if result.is_err() {
+             self.caller_fenced = true;
+         }
+@@ -1128,6 +1162,9 @@
+             if frame.transfer != expected {
+                 return Err("unexpected campaign transfer".into());
+             }
++            if self.sustained.is_some() && redial.is_some() && frame.kind != 3 {
++                return Err("signed sustained replacement requires Finish".into());
++            }
+             let namespace = object.context(&self.incoming, &proof, now)?.namespace()?;
+             let reply = object.handle(&self.incoming, &proof, now)?;
+             Ok((reply, namespace, frame.kind == 3))
+@@ -1171,6 +1208,7 @@
+         meter.add(processed.cpu_us, processed.wall_us)?;
+         let replacement = match redial {
+             Some(redial) if finish && reply.kind == 103 => {
++                self.record_redial_cut()?;
+                 let cap = deadline.instant().min(Instant::now() + redial::WINDOW);
+                 let next = redial.accept(stream, cancel, cap)?;
+                 self.receiver_phase = Some((ProcessTime::now(), Instant::now()));
+--- a/crates/spiralcore-mvm-live/src/campaign/sustained.rs
++++ b/crates/spiralcore-mvm-live/src/campaign/sustained.rs
+@@ -5,7 +5,10 @@
+ pub(crate) const OBJECT_BYTES: usize = 3 << 20;
+ const CHUNK: usize = 4 << 10;
+ pub(crate) const OBJECTS: usize = 3;
+-pub(crate) const CALLS: u64 = 1 + (OBJECTS * (OBJECT_BYTES / CHUNK + 2)) as u64;
++const CALLS_PER_OBJECT: u64 = (OBJECT_BYTES / CHUNK + 2) as u64;
++pub(crate) const CALLS: u64 = 1 + OBJECTS as u64 * CALLS_PER_OBJECT;
++// Probe and the first two object sequences, up to but excluding the second Finish.
++pub(crate) const REDIAL_AFTER_CALLS: u64 = 2 * CALLS_PER_OBJECT;
+ pub(crate) const RUN_LIMIT: Duration = Duration::from_secs(900);
+ pub(super) const INTERVAL: Duration = Duration::from_millis(250);
+ 
+--- a/crates/spiralcore-mvm-live/src/mailbox_witness.rs
++++ b/crates/spiralcore-mvm-live/src/mailbox_witness.rs
+@@ -188,8 +188,10 @@
+ }
+ 
+ #[cfg(test)]
+-pub(crate) fn provision_object_recovery() -> Result<([u8; 32], GuestBootstrap, HostFixture)> {
+-    provision_mode(false, true, true, false, true)
++pub(crate) fn provision_object_recovery(
++    sustained: bool,
++) -> Result<([u8; 32], GuestBootstrap, HostFixture)> {
++    provision_mode(false, true, true, sustained, true)
+ }
+ 
+ pub(crate) fn object_campaign_plan(sustained: bool) -> Plan {
+@@ -244,6 +246,9 @@
+         digest.update([u8::from(sustained)]);
+         if object_redial {
+             digest.update(b"SpiralCore/installed-object-finish-redial/v1\0");
++            if sustained {
++                digest.update(campaign::sustained::REDIAL_AFTER_CALLS.to_le_bytes());
++            }
+         }
+         digest.update(serde_json::to_vec(&plan)?);
+     }
+@@ -805,7 +810,6 @@
+             .ok_or("guest Call material missing")?;
+         let plan_matches = if fixture.object_campaign {
+             fixture.recovery.is_some()
+-                && !(fixture.sustained && fixture.object_redial)
+                 && serde_json::to_vec(&endpoint.plan)?
+                     == serde_json::to_vec(&object_campaign_plan(fixture.sustained))?
+         } else {
+--- a/crates/spiralcore-mvm-live/src/mailbox_witness/object_redial_tests.rs
++++ b/crates/spiralcore-mvm-live/src/mailbox_witness/object_redial_tests.rs
+@@ -3,7 +3,7 @@
+ 
+ #[test]
+ fn finish_receipt_redial_continues_original_object_campaign() {
+-    let (commitment, guest, host) = provision_object_recovery().unwrap();
++    let (commitment, guest, host) = provision_object_recovery(false).unwrap();
+     assert_ne!(commitment, [0; 32]);
+     let guest = GuestBootstrap::decode(&serde_json::to_vec(&guest).unwrap()).unwrap();
+     let (old_guest, old_host) = UnixStream::pair().unwrap();
+--- a/crates/spiralcore-mvm-live/src/installed_parent/native_witness/mod.rs
++++ b/crates/spiralcore-mvm-live/src/installed_parent/native_witness/mod.rs
+@@ -408,6 +408,7 @@
+             Ok("object-v2") if names.len() == 1 => (true, true, true, false, false),
+             Ok("object-redial-v2") if names.len() == 1 => (true, true, true, false, true),
+             Ok("sustained-v2") if names.len() == 1 => (true, true, true, true, false),
++            Ok("sustained-redial-v2") if names.len() == 1 => (true, true, true, true, true),
+             _ => bail!("invalid installed mailbox fixture mode"),
+         };
+     let withhold_first = match std::env::var("SPIRALCORE_NATIVE_WITNESS_WITHHOLD_FIRST").as_deref()
+--- a/crates/spiralcore-mvm-live/src/installed_parent/native_witness/native_mailbox.rs
++++ b/crates/spiralcore-mvm-live/src/installed_parent/native_witness/native_mailbox.rs
+@@ -115,7 +115,7 @@
+         "SPIRALCORE_NATIVE_MAILBOX_GUEST_TOOL_SHA",
+     )?;
+     let (commitment, guest, host) = if object_redial {
+-        mailbox_witness::provision_object_recovery()
++        mailbox_witness::provision_object_recovery(sustained)
+     } else if object_campaign {
+         mailbox_witness::provision_object_campaign(sustained)
+     } else if recovery {
+@@ -327,11 +327,30 @@
+                                             .as_u64()
+                             );
+                         }
++                        let prior_calls = if sustained {
++                            crate::campaign::sustained::REDIAL_AFTER_CALLS
++                        } else {
++                            3
++                        };
+                         ensure!(
+                             sent["first_carrier"]["frames_sent"]
+-                                .as_u64()
+-                                .is_some_and(|n| n > 2 && n < calls * 2)
++                                == 2 * prior_calls + 1 + u64::from(from_host)
+                         );
++                        ensure!(
++                            sent["service"]["recovery"]["cached_reply_retry_invocations"]
++                                == u64::from(from_host)
++                        );
++                        ensure!(sent["service"]["recovery"]["call_retry_invocations"] == 0);
++                        if sustained {
++                            let cut = &sent["service"]["sustained"]["redial_cut"];
++                            ensure!(cut["completed_calls"] == prior_calls);
++                            ensure!(cut["elapsed_ms"].as_u64().is_some_and(|ms| ms >= 330_000));
++                            ensure!(
++                                cut["expired_tracker_lower_bound"]
++                                    .as_u64()
++                                    .is_some_and(|n| n > 0)
++                            );
++                        }
+                     }
+                     if sustained {
+                         let retained = &sent["service"]["sustained"];
