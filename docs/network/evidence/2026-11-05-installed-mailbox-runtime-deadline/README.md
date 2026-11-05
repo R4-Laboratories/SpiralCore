@@ -16,3 +16,8 @@ The helper is staged independently of the ongoing combined Hostd build. The
 future Runtime consumer still needs one-attempt ownership, an original hard
 deadline, actual Firecracker peer verification, and Stop checks around accept
 and descriptor publication. This fixture does not enable Recovery V2.
+
+The separate [Hostd release record](hostd-validation.txt) qualifies the
+preceding four-file typed-handoff candidate. Both admission regressions passed
+on the same binary. That build completed before this poll patch was applied to
+the Wick development tree. The tests do not exercise an installed V2 launch.
