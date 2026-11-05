@@ -14,6 +14,10 @@ use std::os::unix::fs::FileExt;
 #[path = "retained_transition.rs"]
 pub(crate) mod transition;
 
+#[cfg(test)]
+#[path = "retained_live_tests.rs"]
+mod live_tests;
+
 type RecoveryResult<T> = std::result::Result<T, SupervisorError>;
 
 /// Compiled compatibility, never a caller-supplied profile or limit grant.

@@ -235,6 +235,10 @@ impl std::fmt::Debug for RetainedFundingRebindFailure {
 }
 impl ClosedRetainedFunding {
     #[cfg(test)]
+    pub(crate) fn original_ledger_address(&self) -> usize {
+        std::ptr::from_ref(&self.budget.shared.ledger) as usize
+    }
+    #[cfg(test)]
     pub(crate) fn test_ledger_box_bytes() -> usize {
         std::mem::size_of::<Mutex<Ledger>>()
     }

@@ -1,6 +1,7 @@
 //! Actual closed debt transfer. This module exports NO native issuer or grant.
 use super::super::transfer::{TransferIntent, TransferKind};
 use super::*;
+use std::sync::Mutex;
 
 pub(super) struct CompiledRetainedMigration {
     target_profile: [u8; 32],
@@ -55,7 +56,105 @@ impl fmt::Debug for RetainedRestartFailure {
 pub(super) struct CommittedRetainedRestart {
     closed: ClosedRetainedDebt,
 }
+
+/// One owned historical table and its ACTUAL closed ledger, owner, exclusions
+/// and original File pins. No second metadata reservation or row table is
+/// constructed here. Opening a new authority is a separate consuming step.
+pub(super) struct PreparedRetainedInventory {
+    original: Mutex<ClosedRetainedDebt>,
+}
+pub(super) struct PreparedRetainedInventorySnapshot {
+    pub(super) historical_rows: usize,
+    pub(super) new_rows: usize,
+    pub(super) remaining_slots: usize,
+    pub(super) managed: ManagedSnapshot,
+}
+pub(super) struct RetainedInventoryPreparationFailure {
+    _error: SupervisorError,
+    _original: CommittedRetainedRestart,
+}
+impl fmt::Debug for RetainedInventoryPreparationFailure {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str("historical inventory preparation refused; original custody retained")
+    }
+}
+impl PreparedRetainedInventory {
+    #[cfg(test)]
+    pub(super) fn original_custody_identity(&self) -> (usize, usize) {
+        let original = self.original.lock().unwrap();
+        let held = original.recovery.held.as_ref().unwrap();
+        (
+            std::ptr::from_ref(&held.entries) as usize,
+            held.funding().unwrap().original_ledger_address(),
+        )
+    }
+    fn check_locked(original: &mut ClosedRetainedDebt) -> RecoveryResult<()> {
+        let checked = (|| {
+            original.revalidate()?;
+            let held = original
+                .recovery
+                .held
+                .as_ref()
+                .ok_or(SupervisorError::State)?;
+            if held
+                .entries
+                .iter()
+                .flatten()
+                .any(|row| row.record.phase != 4)
+            {
+                return Err(SupervisorError::State);
+            }
+            held.funding()?.can_rebind(held.epoch)?;
+            Ok(())
+        })();
+        if checked.is_err()
+            && let Some(held) = original.recovery.held.as_mut()
+        {
+            held.failed = true;
+        }
+        checked
+    }
+    pub(super) fn check_current(&self) -> RecoveryResult<()> {
+        let mut original = self.original.lock().map_err(|_| SupervisorError::State)?;
+        Self::check_locked(&mut original)
+    }
+    pub(super) fn snapshot(&self) -> RecoveryResult<PreparedRetainedInventorySnapshot> {
+        let mut original = self.original.lock().map_err(|_| SupervisorError::State)?;
+        Self::check_locked(&mut original)?;
+        let snapshot = original.snapshot()?;
+        Ok(PreparedRetainedInventorySnapshot {
+            historical_rows: snapshot.entries,
+            // No new authority or ordinary reserve is available while CLOSED.
+            new_rows: 0,
+            remaining_slots: MAX_ENTRIES
+                .checked_sub(snapshot.entries)
+                .ok_or(SupervisorError::State)?,
+            managed: snapshot.managed,
+        })
+    }
+}
 impl CommittedRetainedRestart {
+    #[cfg(test)]
+    pub(super) fn original_custody_identity(&self) -> (usize, usize) {
+        let held = self.closed.recovery.held.as_ref().unwrap();
+        (
+            std::ptr::from_ref(&held.entries) as usize,
+            held.funding().unwrap().original_ledger_address(),
+        )
+    }
+    pub(super) fn prepare_live_inventory(
+        mut self,
+    ) -> std::result::Result<PreparedRetainedInventory, RetainedInventoryPreparationFailure> {
+        if let Err(error) = PreparedRetainedInventory::check_locked(&mut self.closed) {
+            return Err(RetainedInventoryPreparationFailure {
+                _error: error,
+                _original: self,
+            });
+        }
+        Ok(PreparedRetainedInventory {
+            original: Mutex::new(self.closed),
+        })
+    }
     pub(super) fn snapshot(&self) -> RecoveryResult<RetainedDebtSnapshot> {
         self.closed.snapshot()
     }
