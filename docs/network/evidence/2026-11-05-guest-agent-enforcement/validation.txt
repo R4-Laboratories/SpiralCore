@@ -1,0 +1,22 @@
+Target: Linux x86_64 Firecracker, one planned guest, 1 vCPU, 1024 MiB, no guest NIC.
+Tools: Rust 1.97.1, Zig 0.13.0, cargo-zigbuild 0.23.0.
+Original fork revision: 9a3a964bd540d5e74c71f9b7df93cc5593295546
+Offline lock normalization: 8af7798386281db7e98b8873da0c3d916c5b4e58
+Exact private SDK source checkout: b55d0c4dac04587c918cb1721971af8a33b495ee
+Assembler release build: exit 0. First assembly refused a missing Git checkout.
+Original fork checkout was refused for mismatched protocol source.
+Matching checkout assembly initially refused checkout resolution at final verification.
+With the explicit matching source root, source runtime and overlay assembly: exit 0.
+Archive SHA-256: 011b01828f8328adeba809b351af640345513b1656db40dd6434e97aaba94fe1
+Runtime overlay root hash: 2101e986ec27166a86a25ab75eef241f132a20154a3cc3e0f40158351cea5266
+Actual initramfs /init equals the checked archive's agent member:
+9f9a469f37f61b721f12947f61d0ab00f7b91f5e15a6214939a8abca4782ea6c
+Probe negative controls: unexpected arguments exit 20, ordinary host execution exit 22.
+Host launcher locked release build: exit 0. First build 7m18s; fixture-only rebuild 5.97s.
+Independent review: Code/Rust/Security scoped PASS for the explicit fixture selections.
+Launch attempt 1: exit 1, synthesis builder missing required secrets selection.
+Launch attempt 2: exit 1, canonical verifier rejects scratch cache mode 0775.
+Launch attempt 3: exit 1, derived workload missing its published mvm-meta.json.
+Launch attempt 4: exit 1, backend requires the host signer public anchor.
+After attempt 4: zero Firecracker processes; no guest result or transfer measured.
+Policy was unchanged through the four fixture attempts.
