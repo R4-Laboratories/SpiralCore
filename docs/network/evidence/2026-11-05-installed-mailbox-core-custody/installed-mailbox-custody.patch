@@ -1,0 +1,355 @@
+--- a/crates/mvm-core/src/host_lifetime.rs
++++ b/crates/mvm-core/src/host_lifetime.rs
+@@ -232,6 +232,55 @@
+     pub binding: HostLaunchBinding,
+ }
+ 
++/// A funded mailbox owner supplied by the installed parent before any
++/// listener, worker, or guest effects. Dropping an inert owner is safe.
++pub trait InstalledMailboxOwner: Send + Sync {
++    fn check_current(&self) -> Result<()>;
++}
++
++/// The original parent's inert, identity-bound mailbox preparation.
++pub struct PreparedInstalledMailbox {
++    binding: HostLaunchBinding,
++    plan_id: PlanId,
++    owner: Box<dyn InstalledMailboxOwner>,
++}
++
++impl PreparedInstalledMailbox {
++    pub fn new(
++        binding: HostLaunchBinding,
++        plan_id: PlanId,
++        owner: Box<dyn InstalledMailboxOwner>,
++    ) -> Self {
++        Self { binding, plan_id, owner }
++    }
++}
++
++/// One-shot transfer of the actual owner, with the original launch anchor.
++#[must_use]
++pub struct InstalledMailboxHandoff {
++    prepared: PreparedInstalledMailbox,
++    anchor: Arc<HostLifetimeAnchor>,
++}
++
++impl InstalledMailboxHandoff {
++    pub fn plan_id(&self) -> &PlanId {
++        &self.prepared.plan_id
++    }
++
++    pub fn retains_anchor(&self, original: &Arc<HostLifetimeAnchor>) -> bool {
++        Arc::ptr_eq(&self.anchor, original)
++    }
++}
++
++#[derive(Default)]
++enum MailboxPreparation {
++    #[default]
++    Unselected,
++    // Pending, failed, and taken attempts all bar reuse and native activation.
++    Fenced,
++    Ready(Box<PreparedInstalledMailbox>),
++}
++
+ /// Trusted current parent resource admission, supplied only by installed DI.
+ /// Implementations retain the actual original reservation, not a quota DTO.
+ pub trait CoreCurrentParentPermit: Send + Sync {
+@@ -242,6 +291,14 @@
+     fn complete_startup_workspace(&self, _binding: &HostLaunchBinding) -> Result<()> {
+         Ok(())
+     }
++    fn prepare_installed_mailbox(
++        &self,
++        _binding: &HostLaunchBinding,
++        _plan_id: &PlanId,
++    ) -> Result<PreparedInstalledMailbox> {
++        anyhow::bail!("original parent installed mailbox provider unavailable")
++    }
++
+     fn prepare_endpoint_partition(
+         &self,
+         _binding: &HostLaunchBinding,
+@@ -301,6 +358,7 @@
+             current_parent: Mutex::new(None),
+             native_claimed: AtomicBool::new(false),
+             endpoint_claimed: AtomicBool::new(false),
++            mailbox: Mutex::default(),
+         })
+     }
+ }
+@@ -321,6 +379,7 @@
+     current_parent: Mutex<Option<Arc<dyn CoreCurrentParentPermit>>>,
+     native_claimed: AtomicBool,
+     endpoint_claimed: AtomicBool,
++    mailbox: Mutex<MailboxPreparation>,
+ }
+ 
+ impl fmt::Debug for HostLifetimeAnchor {
+@@ -605,6 +664,99 @@
+         })
+     }
+ 
++    /// Prepare from the original, already-bound parent after Hostd selection.
++    /// The attempt is fenced before any parent callback can reenter.
++    pub fn prepare_installed_mailbox(
++        self: &Arc<Self>,
++        config: &VmStartConfig,
++        backend: BackendKind,
++    ) -> Result<()> {
++        ensure!(
++            cfg!(target_os = "linux") && backend == BackendKind::Firecracker,
++            "installed mailbox preparation requires Linux Firecracker"
++        );
++        self.verify_config(config, backend)?;
++        self.verify_admitted_config(config)?;
++        let plan_id = self
++            .admitted
++            .lock()
++            .map_err(|_| anyhow::anyhow!("host lifetime admission poisoned"))?
++            .as_ref()
++            .context("original admission missing")?
++            .plan_id
++            .clone();
++        let parent = self
++            .current_parent
++            .lock()
++            .map_err(|_| anyhow::anyhow!("host parent binding poisoned"))?
++            .as_ref()
++            .cloned()
++            .context("original parent resource permit missing")?;
++        {
++            let mut mailbox = self
++                .mailbox
++                .lock()
++                .map_err(|_| anyhow::anyhow!("installed mailbox preparation poisoned"))?;
++            ensure!(
++                matches!(*mailbox, MailboxPreparation::Unselected)
++                    && !self.native_claimed.load(Ordering::Acquire),
++                "installed mailbox preparation already attempted or native lifetime claimed"
++            );
++            *mailbox = MailboxPreparation::Fenced;
++        }
++
++        parent.check_current(&self.binding)?;
++        let prepared = parent.prepare_installed_mailbox(&self.binding, &plan_id)?;
++        ensure!(
++            prepared.binding == self.binding && prepared.plan_id == plan_id,
++            "installed mailbox differs from the original launch and plan"
++        );
++        prepared.owner.check_current()?;
++        self.verify_config(config, backend)?;
++        parent.check_current(&self.binding)?;
++        *self
++            .mailbox
++            .lock()
++            .map_err(|_| anyhow::anyhow!("installed mailbox preparation poisoned"))? =
++            MailboxPreparation::Ready(Box::new(prepared));
++        Ok(())
++    }
++
++    /// Move the original inert owner once, before any mailbox effects.
++    pub fn take_installed_mailbox(
++        self: &Arc<Self>,
++        config: &VmStartConfig,
++        backend: BackendKind,
++    ) -> Result<Option<InstalledMailboxHandoff>> {
++        self.verify_config(config, backend)?;
++        self.verify_admitted_config(config)?;
++        let prepared = {
++            let mut mailbox = self
++                .mailbox
++                .lock()
++                .map_err(|_| anyhow::anyhow!("installed mailbox preparation poisoned"))?;
++            match &*mailbox {
++                MailboxPreparation::Unselected => return Ok(None),
++                MailboxPreparation::Fenced => {
++                    anyhow::bail!("original installed mailbox preparation is unavailable")
++                }
++                MailboxPreparation::Ready(_) => {}
++            }
++            let MailboxPreparation::Ready(prepared) =
++                std::mem::replace(&mut *mailbox, MailboxPreparation::Fenced)
++            else {
++                unreachable!("mailbox preparation checked under the same lock")
++            };
++            *prepared
++        };
++        prepared.owner.check_current()?;
++        self.check_parent_current(config, backend)?;
++        Ok(Some(InstalledMailboxHandoff {
++            prepared,
++            anchor: Arc::clone(self),
++        }))
++    }
++
+     /// Exactly one backend handoff after the original admission was bound.
+     pub fn claim_for_native(
+         self: &Arc<Self>,
+@@ -613,6 +765,14 @@
+     ) -> Result<PreparedHostLifetimeLease> {
+         self.check_parent_current(config, backend)?;
+         let lease = self.lease.duplicate()?;
++        let mailbox = self
++            .mailbox
++            .lock()
++            .map_err(|_| anyhow::anyhow!("installed mailbox preparation poisoned"))?;
++        ensure!(
++            matches!(*mailbox, MailboxPreparation::Unselected),
++            "native activation requires the original installed mailbox worker"
++        );
+         ensure!(
+             self.native_claimed
+                 .compare_exchange(false, true, Ordering::AcqRel, Ordering::Acquire)
+--- a/crates/mvm-core/src/host_lifetime/endpoint_retained_tests.rs
++++ b/crates/mvm-core/src/host_lifetime/endpoint_retained_tests.rs
+@@ -162,6 +162,7 @@
+             current_parent: Mutex::new(Some(Arc::new(Parent(self.parent.clone())))),
+             native_claimed: AtomicBool::new(false),
+             endpoint_claimed: AtomicBool::new(true),
++            mailbox: Mutex::default(),
+         });
+         PreparedEndpointHandoff {
+             partition: PreparedEndpointPartition::new(self.projection.clone(), guard).unwrap(),
+--- a/crates/mvm-core/tests/host_lifetime.rs
++++ b/crates/mvm-core/tests/host_lifetime.rs
+@@ -504,3 +504,138 @@
+         plan.nonce
+     );
+ }
++
++#[cfg(all(target_os = "linux", feature = "test-support"))]
++#[test]
++fn installed_mailbox_handoff_requires_original_funded_parent_once() {
++    use mvm_core::host_lifetime::{
++        CoreCurrentParentPermit, InstalledMailboxOwner, PreparedInstalledMailbox,
++    };
++    use mvm_core::plan::{PlanId, sign_plan, test_support::PlanFixture};
++
++    struct Charge(Arc<AtomicUsize>);
++    impl InstalledMailboxOwner for Charge {
++        fn check_current(&self) -> anyhow::Result<()> {
++            Ok(())
++        }
++    }
++    impl Drop for Charge {
++        fn drop(&mut self) {
++            self.0.fetch_add(1, Ordering::SeqCst);
++        }
++    }
++    enum Funding {
++        Original,
++        Foreign,
++        Exhausted,
++        Revoked,
++    }
++    struct MailboxParent {
++        original: HostLaunchBinding,
++        funding: Funding,
++        anchor: std::sync::Weak<mvm_core::host_lifetime::HostLifetimeAnchor>,
++        plan_json: String,
++        revoked: std::sync::atomic::AtomicBool,
++        calls: AtomicUsize,
++        drops: Arc<AtomicUsize>,
++    }
++    impl CoreCurrentParentPermit for MailboxParent {
++        fn check_current(&self, binding: &HostLaunchBinding) -> anyhow::Result<()> {
++            anyhow::ensure!(binding == &self.original, "foreign parent fixture");
++            anyhow::ensure!(!self.revoked.load(Ordering::SeqCst), "original parent revoked");
++            Ok(())
++        }
++
++        fn prepare_installed_mailbox(
++            &self,
++            binding: &HostLaunchBinding,
++            plan_id: &PlanId,
++        ) -> anyhow::Result<PreparedInstalledMailbox> {
++            self.calls.fetch_add(1, Ordering::SeqCst);
++            let anchor = self.anchor.upgrade().unwrap();
++            let mut config = VmStartConfig {
++                name: binding.vm_name.clone(),
++                cpus: binding.cpus,
++                memory_mib: binding.memory_mib,
++                plan_json: Some(self.plan_json.clone()),
++                ..Default::default()
++            };
++            anchor.bind_to_config(&mut config).unwrap();
++            assert!(anchor.take_installed_mailbox(&config, binding.backend).is_err());
++            assert!(anchor.prepare_installed_mailbox(&config, binding.backend).is_err());
++            let mut owner = binding.clone();
++            match self.funding {
++                Funding::Original => {}
++                Funding::Foreign => owner.grant_serial += 1,
++                Funding::Exhausted => anyhow::bail!("mailbox capacity exhausted"),
++                Funding::Revoked => self.revoked.store(true, Ordering::SeqCst),
++            }
++            Ok(PreparedInstalledMailbox::new(
++                owner,
++                plan_id.clone(),
++                Box::new(Charge(Arc::clone(&self.drops))),
++            ))
++        }
++    }
++
++    for funding in [Funding::Original, Funding::Foreign, Funding::Exhausted, Funding::Revoked] {
++        let accepted = matches!(funding, Funding::Original);
++        let root = tempfile::tempdir().unwrap();
++        let anchor = PreparedHostLifetime::bind(inputs(root.path()), ())
++            .unwrap()
++            .into_anchor();
++        let mut config = VmStartConfig {
++            name: "owned-test".into(),
++            cpus: 1,
++            memory_mib: 1024,
++            ..Default::default()
++        };
++        anchor.bind_to_config(&mut config).unwrap();
++        let mut plan = PlanFixture::new().build();
++        plan.resources.mem_mib = 1024;
++        plan.plan_id = mvm_core::plan::compute_plan_id(&plan);
++        config.plan_json = Some(
++            serde_json::to_string(&sign_plan(
++                &plan,
++                &ed25519_dalek::SigningKey::from_bytes(&[4; 32]),
++                "test",
++            ))
++            .unwrap(),
++        );
++        let backend = BackendKind::Firecracker;
++        anchor.bind_admitted(&config, backend, &plan).unwrap();
++        assert!(anchor.prepare_installed_mailbox(&config, backend).is_err());
++        let parent = Arc::new(MailboxParent {
++            original: anchor.binding().clone(),
++            funding,
++            anchor: Arc::downgrade(&anchor),
++            plan_json: config.plan_json.clone().unwrap(),
++            revoked: std::sync::atomic::AtomicBool::new(false),
++            calls: AtomicUsize::new(0),
++            drops: Arc::new(AtomicUsize::new(0)),
++        });
++        anchor
++            .bind_parent_permit(&config, backend, parent.clone())
++            .unwrap();
++        assert!(anchor.take_installed_mailbox(&config, backend).unwrap().is_none());
++        assert!(anchor.prepare_installed_mailbox(&config, BackendKind::Mock).is_err());
++        assert_eq!(parent.calls.load(Ordering::SeqCst), 0);
++
++        assert_eq!(anchor.prepare_installed_mailbox(&config, backend).is_ok(), accepted);
++        assert!(anchor.prepare_installed_mailbox(&config, backend).is_err());
++        assert_eq!(parent.calls.load(Ordering::SeqCst), 1);
++        assert!(anchor.claim_for_native(&config, backend).is_err());
++        if accepted {
++            let handoff = anchor.take_installed_mailbox(&config, backend).unwrap().unwrap();
++            assert!(handoff.retains_anchor(&anchor));
++            assert_eq!(handoff.plan_id(), &plan.plan_id);
++            assert_eq!(parent.drops.load(Ordering::SeqCst), 0);
++            assert!(anchor.take_installed_mailbox(&config, backend).is_err());
++            assert!(anchor.claim_for_native(&config, backend).is_err());
++            drop(handoff);
++            assert_eq!(parent.drops.load(Ordering::SeqCst), 1);
++        } else {
++            assert!(anchor.take_installed_mailbox(&config, backend).is_err());
++        }
++    }
++}
