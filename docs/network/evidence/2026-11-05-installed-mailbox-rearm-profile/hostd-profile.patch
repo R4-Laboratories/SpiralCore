@@ -1,0 +1,124 @@
+--- a/crates/mvm-hostd/src/plan_admission.rs
++++ b/crates/mvm-hostd/src/plan_admission.rs
+@@ -149,6 +149,8 @@
+ #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+ pub enum InstalledMailboxLaunchProfile {
+     LinuxFirecrackerV1,
++    /// Signed selection for a single original-owner replacement carrier.
++    LinuxFirecrackerRecoveryV2,
+ }
+ 
+ const INSTALLED_MAILBOX_ASSET: &str = "installed_mailbox";
+@@ -161,6 +163,9 @@
+     pub fn signed_asset(self) -> Result<mvm_core::plan::AssetIdentity> {
+         let profile: &[u8] = match self {
+             Self::LinuxFirecrackerV1 => b"mvm/installed-mailbox/local-firecracker/v1\0",
++            Self::LinuxFirecrackerRecoveryV2 => {
++                b"mvm/installed-mailbox/local-firecracker/recovery/v2\0"
++            }
+         };
+         Ok(mvm_core::plan::AssetIdentity::new(
+             mvm_core::plan::AssetKind::Policy,
+@@ -769,6 +774,11 @@
+         installed_mailbox_enrollment.is_none() || installed_mailbox.is_some(),
+         "installed mailbox enrollment requires the dedicated host profile"
+     );
++    anyhow::ensure!(
++        installed_mailbox != Some(InstalledMailboxLaunchProfile::LinuxFirecrackerRecoveryV2)
++            || installed_mailbox_enrollment.is_some(),
++        "installed mailbox recovery requires the exact signed enrollment"
++    );
+ 
+     // Spend the nonce only after every fallible descriptor and bundle check.
+     // Refusal must not consume an externally signed plan's replay allowance.
+--- a/crates/mvm-hostd/src/host_lifetime_parent.rs
++++ b/crates/mvm-hostd/src/host_lifetime_parent.rs
+@@ -75,6 +75,13 @@
+     config: &VmStartConfig,
+     backend: BackendKind,
+ ) -> Result<()> {
++    anyhow::ensure!(
++        admitted.installed_mailbox()
++            != Some(
++                crate::plan_admission::InstalledMailboxLaunchProfile::LinuxFirecrackerRecoveryV2
++            ),
++        "original installed mailbox replacement authority is unavailable"
++    );
+     let unavailable = "original installed mailbox listener is unavailable";
+     admitted
+         .installed_mailbox_enrollment()
+--- a/crates/mvm-hostd/src/plan_admission/installed_mailbox_selection_tests.rs
++++ b/crates/mvm-hostd/src/plan_admission/installed_mailbox_selection_tests.rs
+@@ -146,3 +146,72 @@
+     let error = admit(&unbundled, &InMemoryNonceLedger::new(), selected).unwrap_err();
+     assert!(format!("{error:#}").contains("bundled Linux Firecracker HostVsockProxy"));
+ }
++
++#[test]
++fn replacement_profile_requires_its_exact_signed_enrollment_before_spending_nonce() {
++    use mvm_core::plan::NetworkMode;
++
++    let (_env, _home) = host_with_ceiling(Default::default());
++    let keys = tempfile::tempdir().unwrap();
++    let publisher = ed25519_dalek::SigningKey::from_bytes(&[56; 32]);
++    let (archive, pin) = make_test_bundle(&publisher, b"kernel-bytes", b"rootfs-bytes");
++    let key_id = key_id_from_pubkey(&publisher.verifying_key());
++    let trust = MapTrust(HashMap::from([(key_id, publisher.verifying_key())]));
++    let resolver = FixedResolver(archive);
++    let context = BundleAdmissionContext {
++        resolver: &resolver,
++        trust: &trust,
++        image: None,
++    };
++    let legacy = InstalledMailboxLaunchProfile::LinuxFirecrackerV1;
++    let recovery = InstalledMailboxLaunchProfile::LinuxFirecrackerRecoveryV2;
++    let asset = recovery.signed_asset().unwrap();
++    assert_ne!(asset, legacy.signed_asset().unwrap());
++    let enrollment = InstalledMailboxEnrollment::new([83; 32]).unwrap();
++    let foreign = InstalledMailboxEnrollment::new([84; 32]).unwrap();
++    let posture = RunPosture::on_backend(Variant::Dev, BackendKind::Firecracker);
++    let admit = |plan: &ExecutionPlan, ledger: &InMemoryNonceLedger, posture| {
++        admit_plan_for_run(
++            plan,
++            &SystemClock,
++            ledger,
++            Some(keys.path()),
++            Some(&context),
++            None,
++            posture,
++        )
++    };
++
++    let mut input = input_with_pin("installed-mailbox-replacement", &pin);
++    input.backend_name = "firecracker";
++    input.network_mode = NetworkMode::HostVsockProxy;
++    input.assets.push(asset);
++    let unsigned_enrollment = synthesize_plan(&input).unwrap();
++    assert!(
++        admit(
++            &unsigned_enrollment,
++            &InMemoryNonceLedger::new(),
++            posture.with_installed_mailbox(recovery),
++        )
++        .is_err()
++    );
++
++    input.assets.push(enrollment.signed_asset().unwrap());
++    let plan = synthesize_plan(&input).unwrap();
++    let ledger = InMemoryNonceLedger::new();
++    for refused in [
++        posture,
++        posture.with_installed_mailbox_enrollment(legacy, enrollment),
++        posture.with_installed_mailbox_enrollment(recovery, foreign),
++    ] {
++        assert!(admit(&plan, &ledger, refused).is_err());
++    }
++    let admitted = admit(
++        &plan,
++        &ledger,
++        posture.with_installed_mailbox_enrollment(recovery, enrollment),
++    )
++    .expect("refused recovery selections must not spend the exact nonce");
++    assert_eq!(admitted.installed_mailbox(), Some(recovery));
++    assert_eq!(admitted.installed_mailbox_enrollment(), Some(enrollment));
++}
