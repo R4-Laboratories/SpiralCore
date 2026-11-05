@@ -1,0 +1,252 @@
+--- a/crates/spiralcore-mvm-live/src/mailbox_witness.rs
++++ b/crates/spiralcore-mvm-live/src/mailbox_witness.rs
+@@ -446,12 +446,8 @@
+             return Err("fixture recovery authority differs".into());
+         }
+         let start = Instant::now();
+-        let deadline = start
+-            + if acceptor.is_some() {
+-                RECOVERY_CAP
+-            } else {
+-                TIMEOUT
+-            };
++        let cap = acceptor.is_some().then(|| start + RECOVERY_CAP);
++        let deadline = || cap.unwrap_or_else(|| Instant::now() + TIMEOUT);
+         let cpu = cpu_time::ThreadTime::now();
+         let profile = self
+             .endpoint
+@@ -461,7 +457,7 @@
+         let cast = self
+             .cast
+             .service_binding(Some(profile.local_receipt_signing))?;
+-        let recovery = self.recovery.as_ref().map(|pin| (pin, deadline));
++        let recovery = self.recovery.as_ref().zip(cap);
+         let mut peer = Peer::open(
+             &self.endpoint,
+             broker,
+@@ -470,9 +466,9 @@
+             recovery,
+         )?;
+         let mut tracker = peer.tracker()?;
+-        let original_call = peer.stream.receive(&peer.cancel, deadline)?;
++        let original_call = peer.stream.receive(&peer.cancel, deadline())?;
+         let receipt = peer.admit(service, &peer.incoming, &original_call)?;
+-        peer.send_receipt(receipt, deadline)?;
++        peer.send_receipt(receipt, deadline())?;
+         let reply = broker.with_time(|_, now| -> Result<_> {
+             let call = service
+                 .receive(&peer.incoming, now)?
+@@ -513,8 +509,9 @@
+             return peer.finish(start, cpu, true, None);
+         };
+         peer.outgoing
+-            .send_prepared(&reply, &peer.stream.before(deadline), &peer.cancel, now)?;
++            .send_prepared(&reply, &peer.stream.before(deadline()), &peer.cancel, now)?;
+         let first_carrier = if let Some(acceptor) = acceptor {
++            let deadline = deadline();
+             loop {
+                 match peer.stream.receive_or_idle_observing_eof(
+                     &peer.cancel,
+@@ -568,16 +565,16 @@
+         } else {
+             None
+         };
+-        let ack = peer.verified_receipt_before(&mut tracker, &peer.outgoing, send, deadline)?;
++        let ack = peer.verified_receipt_before(&mut tracker, &peer.outgoing, send, deadline())?;
+         broker.with_time(|_, now| -> Result<()> {
+             if !service.acknowledge_reply(&peer.outgoing, &ack, &peer.verifier, now)? {
+                 return Err("fixture reply was not acknowledged".into());
+             }
+             Ok(())
+         })?;
+-        let wire = peer.stream.receive(&peer.cancel, deadline)?;
++        let wire = peer.stream.receive(&peer.cancel, deadline())?;
+         let receipt = peer.admit(service, &cast, &wire)?;
+-        peer.send_receipt(receipt, deadline)?;
++        peer.send_receipt(receipt, deadline())?;
+         broker.with_time(|_, now| -> Result<()> {
+             let message = service.receive(&cast, now)?.ok_or("missing fixture Cast")?;
+             if message.payload() != CAST {
+@@ -632,32 +629,32 @@
+     }
+ 
+     pub fn exchange(self, socket: UnixStream) -> Result<ExchangeResult> {
+-        self.exchange_inner(socket, None::<fn() -> std::io::Result<UnixStream>>)
++        self.exchange_inner(
++            socket,
++            None::<(Instant, fn(Instant) -> std::io::Result<UnixStream>)>,
++        )
+     }
+ 
+     pub(crate) fn exchange_recovery(
+         self,
+         socket: UnixStream,
+-        redial: impl FnOnce() -> std::io::Result<UnixStream>,
++        deadline: Instant,
++        redial: impl FnOnce(Instant) -> std::io::Result<UnixStream>,
+     ) -> Result<ExchangeResult> {
+-        self.exchange_inner(socket, Some(redial))
++        self.exchange_inner(socket, Some((deadline, redial)))
+     }
+ 
+     fn exchange_inner(
+         self,
+         socket: UnixStream,
+-        redial: Option<impl FnOnce() -> std::io::Result<UnixStream>>,
++        redial: Option<(Instant, impl FnOnce(Instant) -> std::io::Result<UnixStream>)>,
+     ) -> Result<ExchangeResult> {
+         if self.recovery.is_some() != redial.is_some() {
+             return Err("fixture recovery profile differs".into());
+         }
+         let start = Instant::now();
+-        let deadline = start
+-            + if redial.is_some() {
+-                RECOVERY_CAP
+-            } else {
+-                TIMEOUT
+-            };
++        let cap = redial.as_ref().map(|(deadline, _)| *deadline);
++        let deadline = || cap.unwrap_or_else(|| Instant::now() + TIMEOUT);
+         let cpu = cpu_time::ThreadTime::now();
+         let broker = campaign::broker_context()?;
+         let mut service = broker.with_time(|budget, _| LocalMailboxService::new(budget.clone()))?;
+@@ -669,7 +666,7 @@
+             .ok_or("missing fixture Call binding")?
+             .reply_to;
+         let socket = GuestSocket::new(socket)?;
+-        let recovery = self.recovery.as_ref().map(|pin| (pin, deadline));
++        let recovery = self.recovery.as_ref().zip(cap);
+         let mut peer = Peer::open(
+             &self.endpoint,
+             &broker,
+@@ -697,9 +694,13 @@
+                 tracker.register_send(&peer.outgoing, &peer.control, &peer.verifier, &wire, now)?;
+             Ok((prepared, call, send, now))
+         })?;
+-        peer.outgoing
+-            .send_prepared(&prepared, &peer.stream.before(deadline), &peer.cancel, now)?;
+-        peer.verified_receipt_before(&mut tracker, &peer.outgoing, send, deadline)?;
++        peer.outgoing.send_prepared(
++            &prepared,
++            &peer.stream.before(deadline()),
++            &peer.cancel,
++            now,
++        )?;
++        peer.verified_receipt_before(&mut tracker, &peer.outgoing, send, deadline())?;
+         if self.close_after_call_receipt {
+             broker.with_time(|_, now| -> Result<()> {
+                 if service.poll_call(&peer.outgoing, &call, now)? != CallStatus::Pending {
+@@ -709,7 +710,7 @@
+             })?;
+             return peer.finish(start, cpu, true, None);
+         }
+-        let wire = peer.stream.receive(&peer.cancel, deadline)?;
++        let wire = peer.stream.receive(&peer.cancel, deadline())?;
+         let receipt = peer.admit(&mut service, &peer.incoming, &wire)?;
+         broker.with_time(|_, now| -> Result<()> {
+             tracker.observe_application_reply(&peer.incoming, &wire, now)?;
+@@ -719,16 +720,16 @@
+             }
+             Ok(())
+         })?;
+-        let first_carrier = if let Some(redial) = redial {
++        let first_carrier = if let Some((cap, redial)) = redial {
+             let first = peer.stream.counters()?;
+             if (first.frames_sent, first.frames_received) != (1, 2) {
+                 return Err("first guest carrier count differs".into());
+             }
+             peer.stream.close()?;
+-            if Instant::now() >= deadline {
++            if Instant::now() >= cap {
+                 return Err("recovery deadline elapsed before dial".into());
+             }
+-            let socket = GuestSocket::new(redial()?)?;
++            let socket = GuestSocket::new(redial(cap)?)?;
+             let stream = Peer::carrier(
+                 &self.endpoint,
+                 socket,
+@@ -736,14 +737,14 @@
+                 &peer.cancel,
+                 recovery,
+             )?;
+-            if stream.receive(&peer.cancel, deadline)? != wire {
++            if stream.receive(&peer.cancel, cap)? != wire {
+                 return Err("fixture replayed Reply bytes differ".into());
+             }
+-            send_receipt(&broker, &stream, &peer.cancel, receipt, deadline)?;
++            send_receipt(&broker, &stream, &peer.cancel, receipt, cap)?;
+             peer.stream = stream;
+             Some(first)
+         } else {
+-            peer.send_receipt(receipt, deadline)?;
++            peer.send_receipt(receipt, deadline())?;
+             None
+         };
+         let (prepared, send, now) = broker.with_time(|_, now| -> Result<_> {
+@@ -761,8 +762,13 @@
+             let send = tracker.register_send(&cast, &peer.control, &peer.verifier, &wire, now)?;
+             Ok((prepared, send, now))
+         })?;
+-        cast.send_prepared(&prepared, &peer.stream.before(deadline), &peer.cancel, now)?;
+-        peer.verified_receipt_before(&mut tracker, &cast, send, deadline)?;
++        cast.send_prepared(
++            &prepared,
++            &peer.stream.before(deadline()),
++            &peer.cancel,
++            now,
++        )?;
++        peer.verified_receipt_before(&mut tracker, &cast, send, deadline())?;
+         broker.with_time(|_, now| service.shutdown(now))?;
+         peer.finish(start, cpu, false, first_carrier)
+     }
+@@ -818,20 +824,22 @@
+     use mvm_contract::protocol::mailbox::MAILBOX_PORT;
+     check_guest_confinement().map_err(|_| 21_u8)?;
+     let bootstrap = read_private(Path::new(BOOTSTRAP_PATH)).map_err(|_| 22_u8)?;
+-    let fd =
+-        vsock::sys::dial(vsock::HOST_CID, MAILBOX_PORT).map_err(|error| match error.kind() {
+-            std::io::ErrorKind::PermissionDenied => 23_u8,
+-            std::io::ErrorKind::ConnectionRefused => 24_u8,
+-            std::io::ErrorKind::TimedOut => 25_u8,
+-            _ => 26_u8,
+-        })?;
+-    let first = UnixStream::from(fd);
++    let dial_error = |error: std::io::Error| match error.kind() {
++        std::io::ErrorKind::PermissionDenied => 23_u8,
++        std::io::ErrorKind::ConnectionRefused => 24_u8,
++        std::io::ErrorKind::TimedOut => 25_u8,
++        _ => 26_u8,
++    };
+     let result = if bootstrap.recovery.is_some() {
+-        bootstrap.exchange_recovery(first, || {
+-            vsock::sys::dial(vsock::HOST_CID, MAILBOX_PORT).map(UnixStream::from)
++        let deadline = Instant::now() + RECOVERY_CAP;
++        let first =
++            vsock::sys::dial_before(vsock::HOST_CID, MAILBOX_PORT, deadline).map_err(dial_error)?;
++        bootstrap.exchange_recovery(UnixStream::from(first), deadline, |cap| {
++            vsock::sys::dial_before(vsock::HOST_CID, MAILBOX_PORT, cap).map(UnixStream::from)
+         })
+     } else {
+-        bootstrap.exchange(first)
++        let first = vsock::sys::dial(vsock::HOST_CID, MAILBOX_PORT).map_err(dial_error)?;
++        bootstrap.exchange(UnixStream::from(first))
+     }
+     .map_err(|_| 27_u8)?;
+     let mut out = std::io::stdout().lock();
+--- a/crates/spiralcore-mvm-live/src/mailbox_witness/tests.rs
++++ b/crates/spiralcore-mvm-live/src/mailbox_witness/tests.rs
+@@ -326,7 +326,13 @@
+         assert!(replacement.0.is_none());
+         result
+     });
+-    let guest = guest.exchange_recovery(b, || Ok(d)).unwrap();
++    let original_cap = Instant::now() + std::time::Duration::from_secs(8);
++    let guest = guest
++        .exchange_recovery(b, original_cap, |deadline| {
++            assert_eq!(deadline, original_cap);
++            Ok(d)
++        })
++        .unwrap();
+     let host = worker.join().unwrap();
+     let old_guest = guest.first_carrier.unwrap();
+     let old_host = host.first_carrier.unwrap();
