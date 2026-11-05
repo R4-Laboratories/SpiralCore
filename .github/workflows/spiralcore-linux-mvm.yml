@@ -24,14 +24,14 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           repository: Casey-allard/mvm
-          ref: bbf0287e0287916399da71d67fb5a2e8e4f01406
+          ref: 845d5ba38752aa95f97e8c4469889793e34deff3
           path: sdk
           persist-credentials: false
       - name: Build the one-guest witness and native fixture preparer
         run: |
           set -euo pipefail
           test "$(git -C spiralcore rev-parse HEAD)" = "$GITHUB_SHA"
-          test "$(git -C sdk rev-parse HEAD)" = bbf0287e0287916399da71d67fb5a2e8e4f01406
+          test "$(git -C sdk rev-parse HEAD)" = 845d5ba38752aa95f97e8c4469889793e34deff3
           rustup toolchain install 1.97.1 --profile minimal
           harness="$GITHUB_WORKSPACE/spiralcore/crates/spiralcore-mvm-live/tests/installed-sdk-native-harness"
           cp sdk/Cargo.lock "$harness/Cargo.lock"
@@ -44,5 +44,7 @@ jobs:
                and all($m[]; .source == null and (.manifest_path | startswith($sdk)))' \
             "$RUNNER_TEMP/sc-native-metadata.json"
           sha256sum "$harness/Cargo.lock"
+          cargo +1.97.1 test --locked --manifest-path sdk/Cargo.toml -p mvm-core \
+            --features host-state --test owned_user_config
           cargo +1.97.1 test --locked --manifest-path "$harness/Cargo.toml" --lib --no-run
           cargo +1.97.1 build --locked --manifest-path "$harness/Cargo.toml" --bin prepare-native-assets

@@ -90,6 +90,57 @@ impl RetainedTelemetryInventory {
             .iter()
             .all(Option::is_none))
     }
+    #[cfg(test)]
+    pub(crate) fn witness_sealed_row(&self, parent: u64, expected_rows: usize) -> Result<u64> {
+        self.metadata.check_retained_identity()?;
+        let (record, funding, directory, records, key) = {
+            let held = self.entries.lock().map_err(|_| SupervisorError::State)?;
+            let mut entries = held.iter().flatten();
+            if entries.clone().count() != expected_rows {
+                return Err(SupervisorError::State);
+            }
+            let entry = entries
+                .find(|entry| entry.parent == parent)
+                .ok_or(SupervisorError::State)?;
+            if entry.phase != Phase::Sealed || entries.any(|other| other.parent == parent) {
+                return Err(SupervisorError::State);
+            }
+            let record = entry.record.as_ref().ok_or(SupervisorError::State)?;
+            if record.phase != 4
+                || record.parent != parent
+                || record.tenant != entry.tenant
+                || record.session != entry.session
+            {
+                return Err(SupervisorError::State);
+            }
+            let directory = entry.directory.as_ref().ok_or(SupervisorError::State)?;
+            let (records, key) = entry.files.as_ref().ok_or(SupervisorError::State)?;
+            (
+                record.clone(),
+                entry.reservation.clone(),
+                directory.try_clone()?,
+                records.try_clone()?,
+                key.try_clone()?,
+            )
+        };
+        funding.check_retained_identity()?;
+        let state_parent = record.state.parent().ok_or(SupervisorError::Profile)?;
+        let parent_file = File::options()
+            .read(true)
+            .custom_flags(libc::O_DIRECTORY | libc::O_NOFOLLOW | libc::O_CLOEXEC)
+            .open(state_parent)?;
+        let protection = RuntimeStateProtection::acquire(state_parent, &parent_file)?;
+        protection.check_state(&record.state, &directory)?;
+        if original_file(&directory, TELEMETRY_RECORDS_FILE, &records, RECORD_BYTES)?
+            != record.record_id
+            || original_file(&directory, TELEMETRY_RECORDS_KEY_FILE, &key, 1024)? != record.key_id
+            || records.metadata()?.len() != record.sealed_len
+        {
+            return Err(SupervisorError::State);
+        }
+        Ok(record.sealed_len)
+    }
+
     pub(crate) fn reserve_for_endpoint(
         self: &Arc<Self>,
         tenant: [u8; 32],
