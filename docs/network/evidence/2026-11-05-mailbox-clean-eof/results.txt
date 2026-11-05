@@ -15,3 +15,8 @@ test idle::cancellation_and_expiry_precede_recovery_fin ... ok
 test idle::recovery_distinguishes_clean_fin_from_truncated_tcp_frames ... ok
 test idle::recovery_fin_fences_an_existing_writer_and_strict_receive_stays_an_error ... ok
 test result: ok. 17 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.94s
+
+Hosted macOS ARM64 job 127315548303 on 916ca2d9: 16 passed, 1 failed.
+The test attempted to set a timeout after both halves shut down and macOS
+returned EINVAL. The helper already sets that timeout before the FIN. The
+test-only successor removes the redundant late setting and retains peer EOF.

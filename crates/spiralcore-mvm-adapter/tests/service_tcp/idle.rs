@@ -833,7 +833,6 @@ fn recovery_distinguishes_clean_fin_from_truncated_tcp_frames() {
             stream.receive_or_idle_observing_eof(&cancel, deadline, Duration::from_millis(250)),
             Err(LiveError::Closed)
         ));
-        peer.set_read_timeout(Some(Duration::from_secs(2))).unwrap();
         assert_eq!(peer.read(&mut [0]).unwrap(), 0);
     }
 }
