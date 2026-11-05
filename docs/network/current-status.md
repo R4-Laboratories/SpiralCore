@@ -37,7 +37,7 @@ are required. The linked issues were open at this snapshot.
 | Gate | Required integrated result | Current boundary |
 |---|---|---|
 | [#43 mailbox](https://github.com/R4-Laboratories/SpiralCore/issues/43) | Canonical resident service, original admitted-plan/child ownership, aggregate plaintext/cache/workspace budgets, shutdown and orphan recovery | Published development witnesses and prerequisites do not complete the installed service |
-| [#43 / #49 sustained sessions](https://github.com/R4-Laboratories/SpiralCore/issues/49) | Final acknowledgment recovery, safe retention/expiry, native qualification beyond the 2,048-Call witness guard and measured control/data coexistence | Installed Firecracker witnesses crossed 2,048 Calls and recovered one deliberately withheld Finish receipt. See the qualification records below. |
+| [#43 / #49 sustained sessions](https://github.com/R4-Laboratories/SpiralCore/issues/49) | Final acknowledgment recovery, safe retention/expiry, native qualification beyond the 2,048-Call witness guard and measured control/data coexistence | An installed Firecracker session completed 2,311 Calls and recovered a withheld Finish receipt after replay tracker expiry. Measured concurrency and production retention remain open. |
 | [#44 FlowMux](https://github.com/R4-Laboratories/SpiralCore/issues/44) | Actual admitted destination/protocol, independent queues/audit/rates, installed lifecycle and shared-core mapping | The paired stream component is accepted; canonical MVM activation is still unmerged work |
 | [#45 owner access](https://github.com/R4-Laboratories/SpiralCore/issues/45) | Separately admitted development access and sealed typed operations, bounded lifecycle and shared-core payload mapping | Implementation is active and unmerged; no implicit shell/PTY permission or development fallback in sealed mode |
 | [#46 platforms](https://github.com/R4-Laboratories/SpiralCore/issues/46) | Exact OS/version/architecture/role matrix and durable client/gateway qualification | Native component rows are recorded; remaining end-to-end platform and backend gates stay open |
@@ -55,8 +55,14 @@ the host independently read back all 9,437,184 bytes.
 The [Finish receipt recovery run](https://github.com/R4-Laboratories/SpiralCore/blob/19cd77e39e4fc10d99431736082234a3fa22394c/docs/network/evidence/2026-11-05-installed-object-finish-redial/README.md)
 withheld the receipt before send, reauthenticated the replacement and replayed
 one exact encrypted Reply. The same guest finished all 20 Calls and the host
-verified all seven publications after retirement. A partial old frame refused
-replacement.
+verified all seven publications after retirement. A separate focused test
+refused replacement after a partial old frame.
+
+The [combined sustained recovery run](https://github.com/R4-Laboratories/SpiralCore/blob/efcec38e265e883f8380f80e5e6cd43b622dbb5a/docs/network/evidence/2026-11-05-installed-sustained-finish-redial/README.md)
+replaced the carrier after 1,540 completed Calls and observed tracker expiry
+on both endpoints before the cut. The host replayed one cached Reply and
+the guest resent zero Calls. The session completed all 2,311 Calls and the
+host independently verified the three 3 MiB objects after original retirement.
 
 These were signed synthetic Linux/Firecracker fixtures. Larger concurrent
 data/control workloads, ambiguous partial receipt writes, the installed
