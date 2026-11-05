@@ -1,0 +1,20 @@
+--- a/crates/spiralcore-mvm-live/src/installed_parent/native_witness/mod.rs
++++ b/crates/spiralcore-mvm-live/src/installed_parent/native_witness/mod.rs
+@@ -404,14 +404,14 @@
+         match std::env::var("SPIRALCORE_NATIVE_MAILBOX_WITNESS").as_deref() {
+             Err(std::env::VarError::NotPresent) => (false, false),
+             Ok("1") => (true, false),
+-            Ok("recovery-v2") if names.len() == 1 => (true, true),
++            Ok("recovery-v2") => (true, true),
+             _ => bail!("invalid installed mailbox fixture mode"),
+         };
+     let withhold_first = match std::env::var("SPIRALCORE_NATIVE_WITNESS_WITHHOLD_FIRST").as_deref()
+     {
+         Err(std::env::VarError::NotPresent) => false,
+-        Ok("1") if names.len() == 2 => true,
+-        _ => bail!("withheld reply requires the two-guest recovery witness"),
++        Ok("1") if names.len() == 2 && !recovery_mode => true,
++        _ => bail!("withheld reply requires the two-guest non-V2 witness"),
+     };
+     for name in names {
+         ensure!(!mvm_core::config::vm_state_dir(name).exists());
