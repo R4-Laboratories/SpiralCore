@@ -1,0 +1,519 @@
+--- a/crates/spiralcore-mvm-adapter/src/broker.rs
++++ b/crates/spiralcore-mvm-adapter/src/broker.rs
+@@ -13,7 +13,7 @@
+ //! scheduling/accounting, not a replacement for canonical authentication.
+ use crate::service::{HostBudget, ServiceError, ServiceTime};
+ use std::{
+-    sync::{Arc, Mutex},
++    sync::{Arc, Mutex, TryLockError},
+     time::{Instant, SystemTime, UNIX_EPOCH},
+ };
+ 
+@@ -42,6 +42,20 @@
+         }
+     }
+ 
++    /// Opportunistically expire shared replay and rate records using this
++    /// broker's original monotonic clock. A busy dispatch or budget returns
++    /// None. This never prunes any service-local state or mailbox owner fence.
++    pub fn try_expire_retained(&self) -> Result<Option<usize>, ServiceError> {
++        let _dispatch = match self.shared.dispatch.try_lock() {
++            Ok(dispatch) => dispatch,
++            Err(TryLockError::WouldBlock) => return Ok(None),
++            Err(TryLockError::Poisoned(_)) => return Err(ServiceError::State),
++        };
++        let now = u64::try_from(self.shared.origin.elapsed().as_millis())
++            .map_err(|_| ServiceError::Clock)?;
++        self.shared.budget.try_expire_retained(now)
++    }
++
+     /// Serialize one synchronous service action and sample its trusted clocks
+     /// after admission to dispatch. Application errors are returned unchanged;
+     /// poisoned dispatch state and invalid clock conversions fail closed.
+@@ -66,3 +80,21 @@
+         action(&self.shared.budget, now)
+     }
+ }
++
++#[cfg(test)]
++mod retained_expiry_tests {
++    use super::*;
++    use crate::service::ServiceLimits;
++
++    #[test]
++    fn retained_expiry_skips_busy_dispatch_then_uses_original_broker() {
++        let broker = BrokerContext::new(HostBudget::new(ServiceLimits::default()).unwrap());
++        broker
++            .with_time(|_, _| -> Result<(), ServiceError> {
++                assert_eq!(broker.try_expire_retained()?, None);
++                Ok(())
++            })
++            .unwrap();
++        assert_eq!(broker.try_expire_retained().unwrap(), Some(0));
++    }
++}
+--- a/crates/spiralcore-mvm-adapter/src/service.rs
++++ b/crates/spiralcore-mvm-adapter/src/service.rs
+@@ -965,38 +965,53 @@
+         })))
+     }
+     fn expire(&self, now: ServiceTime) -> Result<usize> {
+-        let mut b = self.inner.lock().map_err(|_| ServiceError::State)?;
+-        expire_control_rates(&mut b, now.monotonic_ms);
+-        let expired: Vec<_> = b
+-            .accepted
+-            .iter()
+-            .filter_map(|(key, v)| (now.monotonic_ms >= v.retention).then_some(*key))
+-            .collect();
+-        for key in &expired {
+-            let record = b.accepted.remove(key).ok_or(ServiceError::State)?;
+-            release_usage(
+-                &mut b,
+-                record.scope,
+-                Usage {
+-                    identities: 1,
+-                    ..Usage::default()
+-                },
+-                BudgetClass::Data,
+-                None,
+-            );
+-        }
+-        b.arrivals.retain(|_, arrivals| {
+-            while arrivals
+-                .front()
+-                .is_some_and(|t| now.monotonic_ms.saturating_sub(*t) >= 60_000)
+-            {
+-                arrivals.pop_front();
+-            }
+-            !arrivals.is_empty()
+-        });
+-        Ok(expired.len())
++        let mut budget = self.inner.lock().map_err(|_| ServiceError::State)?;
++        expire_retained(&mut budget, now.monotonic_ms)
++    }
++
++    pub(crate) fn try_expire_retained(&self, now: u64) -> Result<Option<usize>> {
++        use std::sync::TryLockError;
++        let mut budget = match self.inner.try_lock() {
++            Ok(budget) => budget,
++            Err(TryLockError::WouldBlock) => return Ok(None),
++            Err(TryLockError::Poisoned(_)) => return Err(ServiceError::State),
++        };
++        expire_retained(&mut budget, now).map(Some)
+     }
+ }
++
++fn expire_retained(b: &mut BudgetState, now: u64) -> Result<usize> {
++    expire_control_rates(b, now);
++    let expired: Vec<_> = b
++        .accepted
++        .iter()
++        .filter_map(|(key, v)| (now >= v.retention).then_some(*key))
++        .collect();
++    for key in &expired {
++        let record = b.accepted.remove(key).ok_or(ServiceError::State)?;
++        release_usage(
++            b,
++            record.scope,
++            Usage {
++                identities: 1,
++                ..Usage::default()
++            },
++            BudgetClass::Data,
++            None,
++        );
++    }
++    b.arrivals.retain(|_, arrivals| {
++        while arrivals
++            .front()
++            .is_some_and(|t| now.saturating_sub(*t) >= 60_000)
++        {
++            arrivals.pop_front();
++        }
++        !arrivals.is_empty()
++    });
++    Ok(expired.len())
++}
++
+ fn expire_control_rates(b: &mut BudgetState, now: u64) {
+     while b.control_rates.front().is_some_and(|r| now >= r.expires) {
+         if let Some(record) = b.control_rates.pop_front() {
+--- a/crates/spiralcore-mvm-live/Cargo.lock
++++ b/crates/spiralcore-mvm-live/Cargo.lock
+@@ -3336,7 +3336,6 @@
+ [[package]]
+ name = "spiralcore-mvm-adapter"
+ version = "0.1.0"
+-source = "git+https://github.com/R4-Laboratories/SpiralCore?rev=9153dfe20be9518a2277519c312dd0709664610d#9153dfe20be9518a2277519c312dd0709664610d"
+ dependencies = [
+  "cpu-time",
+  "ed25519-dalek",
+--- a/crates/spiralcore-mvm-live/src/installed_parent/mailbox_job.rs
++++ b/crates/spiralcore-mvm-live/src/installed_parent/mailbox_job.rs
+@@ -26,9 +26,15 @@
+     #[default]
+     Empty,
+     Staged(std::sync::Weak<ResidentBroker>),
+-    Retained(Arc<ResidentBroker>),
++    Retained {
++        maintenance: maintenance::BrokerMaintenance,
++        broker: Arc<ResidentBroker>,
++    },
+ }
+ 
++#[cfg(test)]
++pub(super) mod maintenance;
++
+ pub(super) struct FundedMailboxJob {
+     #[cfg(test)]
+     parent: std::sync::Weak<super::Shared>,
+@@ -74,7 +80,6 @@
+             callback,
+             broker,
+             fence,
+-
+             workspace,
+             ..
+         } = self;
+@@ -134,9 +139,23 @@
+                     .upgrade()
+                     .is_some_and(|current| Arc::ptr_eq(&current, &self.broker)) =>
+             {
+-                *slot = MailboxBrokerSlot::Retained(Arc::clone(&self.broker));
++                let worker = parent.pool.reserve(
++                    super::tenant_tag("installation-mailbox-broker"),
++                    maintenance::worker_claim()?,
++                )?;
++                let maintenance =
++                    maintenance::BrokerMaintenance::start(self.broker.context.clone(), worker)?;
++                *slot = MailboxBrokerSlot::Retained {
++                    maintenance,
++                    broker: Arc::clone(&self.broker),
++                };
++            }
++            MailboxBrokerSlot::Retained {
++                maintenance,
++                broker,
++            } if Arc::ptr_eq(broker, &self.broker) => {
++                maintenance.check_running()?;
+             }
+-            MailboxBrokerSlot::Retained(current) if Arc::ptr_eq(current, &self.broker) => {}
+             _ => return Err(anyhow::anyhow!("original mailbox broker identity differs")),
+         }
+         Ok(())
+@@ -211,7 +230,7 @@
+             let current = match &*slot {
+                 MailboxBrokerSlot::Empty => None,
+                 MailboxBrokerSlot::Staged(weak) => weak.upgrade(),
+-                MailboxBrokerSlot::Retained(broker) => Some(Arc::clone(broker)),
++                MailboxBrokerSlot::Retained { broker, .. } => Some(Arc::clone(broker)),
+             };
+             if let Some(current) = current {
+                 current
+@@ -364,3 +383,108 @@
+         Ok(())
+     }
+ }
++
++#[cfg(test)]
++mod idle_expiry_tests {
++    use super::*;
++    use crate::config::{Arm, Pair, Plan, Stage};
++    use mvm_contract::protocol::mailbox::{ContentType, DeliveryOutcome};
++    use mvm_core::mailbox::encode_envelope;
++    use spiralcore_mvm_adapter::{
++        CONTENT_TYPE,
++        service::{ControlReserve, HostBudget, ServiceLimits},
++        service_sender::{self, MessageOptions},
++    };
++    use std::time::{Duration, Instant};
++
++    #[test]
++    fn retained_broker_expires_shared_replay_after_worker_retires() {
++        let (_home, mut supervisor, provider) = crate::installed_parent::endpoint_tests::fixture();
++        let budget = HostBudget::with_control(
++            ServiceLimits {
++                retention_ms: 50,
++                ..Default::default()
++            },
++            ControlReserve::default(),
++        )
++        .unwrap();
++        let context = BrokerContext::new(budget);
++        let credit = supervisor
++            .managed_resources()
++            .reserve(
++                super::super::tenant_tag("installation-mailbox-broker"),
++                super::super::ManagedClaim {
++                    host_metadata_bytes: super::super::MIB,
++                    ..Default::default()
++                },
++            )
++            .unwrap();
++        let broker = Arc::new(ResidentBroker {
++            context: context.clone(),
++            _metadata: credit,
++        });
++        *provider.shared.mailbox_broker.lock().unwrap() =
++            MailboxBrokerSlot::Staged(Arc::downgrade(&broker));
++
++        let pair = Pair::provision(Plan {
++            stage: Stage::Two,
++            arm: Arm::Raw,
++            size: 128,
++            trial: 0,
++            bandwidth_profile: Default::default(),
++        })
++        .unwrap();
++        let material = pair.sender.outgoing.unwrap();
++        let outgoing = material.service_binding(None).unwrap();
++        let signing = pair.receiver.service.unwrap().local_receipt_signing;
++        let incoming = pair
++            .receiver
++            .incoming
++            .unwrap()
++            .service_binding(Some(signing))
++            .unwrap();
++        let fence = JobFence::default();
++        let fence = Arc::new(fence);
++        let job = IssuedJob {
++            parent: Arc::downgrade(&provider.shared),
++            broker,
++            ticket: fence.issue().unwrap(),
++            callback: Box::new(move |_, context, service| {
++                context
++                    .with_time(|_, now| -> crate::Result<()> {
++                        let mut options = MessageOptions::fresh(
++                            ContentType::parse(CONTENT_TYPE, 1)?,
++                            now,
++                            now.unix_ms + 200,
++                        )?;
++                        options.reply_to = material.reply_to;
++                        let prepared =
++                            service_sender::prepare(&outgoing, b"idle broker", &options, now)?;
++                        let wire = encode_envelope(prepared.envelope())?;
++                        let receipt = service.admit(&incoming, &wire, now)?;
++                        assert_eq!(receipt.receipt.outcome, DeliveryOutcome::AcceptedEphemeral);
++                        Ok(())
++                    })
++                    .map_err(io::Error::other)
++            }),
++        };
++        let (_peer, socket) = UnixStream::pair().unwrap();
++        job.run(socket).unwrap();
++        fence.confirm_retired().unwrap();
++        let snapshot = || context.with_time(|budget, _| budget.snapshot()).unwrap();
++        let before = snapshot();
++        assert_eq!(before.active_calls, 0);
++        assert_eq!(before.identities, 2);
++        assert_eq!(before.owner_count, 1);
++        let end = Instant::now() + Duration::from_secs(64);
++        while snapshot().identities > 1 && Instant::now() < end {
++            std::thread::sleep(Duration::from_millis(20));
++        }
++        let after = snapshot();
++        assert_eq!(after.identities, 1, "idle broker retained expired replay");
++        assert_eq!(after.owner_count, 1, "idle broker erased its owner fence");
++        drop((provider, context));
++        supervisor.close_admission();
++        supervisor.try_finish().unwrap();
++    }
++}
+--- a/crates/spiralcore-mvm-live/src/installed_parent/config_tests.rs
++++ b/crates/spiralcore-mvm-live/src/installed_parent/config_tests.rs
+@@ -686,6 +686,11 @@
+                 after,
+                 ManagedClaim {
+                     host_metadata_bytes: before.host_metadata_bytes + MIB,
++                    host_stack_bytes: before.host_stack_bytes
++                        + mailbox_job::maintenance::worker_claim()
++                            .unwrap()
++                            .host_stack_bytes,
++                    workers: before.workers + 1,
+                     ..before
+                 }
+             );
+@@ -695,7 +700,7 @@
+             supervisor.try_finish().unwrap();
+         } else {
+             assert!(after.host_carrier_bytes > before.host_carrier_bytes);
+-            assert_eq!(after.workers, before.workers + 1);
++            assert_eq!(after.workers, before.workers + 2);
+             assert!(grant.lifecycle.lock().unwrap().seal_retired().is_err());
+         }
+     }
+@@ -935,6 +940,11 @@
+             supervisor.managed_resources().snapshot().unwrap().usage,
+             ManagedClaim {
+                 host_metadata_bytes: baseline.host_metadata_bytes + MIB,
++                host_stack_bytes: baseline.host_stack_bytes
++                    + mailbox_job::maintenance::worker_claim()
++                        .unwrap()
++                        .host_stack_bytes,
++                workers: baseline.workers + 1,
+                 ..baseline
+             },
+         );
+--- /dev/null
++++ b/crates/spiralcore-mvm-live/src/installed_parent/mailbox_job/maintenance.rs
+@@ -0,0 +1,160 @@
++//! A single funded shared-expiry worker for the retained mailbox broker.
++use crate::installed_parent::{
++    MAILBOX_WORKER_STACK_BYTES, ManagedClaim, ManagedReservation, native_thread_stack_terms,
++};
++use anyhow::{Result, ensure};
++use spiralcore_mvm_adapter::broker::BrokerContext;
++use std::{
++    panic::{AssertUnwindSafe, catch_unwind},
++    sync::{
++        Arc,
++        atomic::{AtomicBool, Ordering},
++    },
++    thread::{self, JoinHandle},
++    time::Duration,
++};
++
++const CADENCE: Duration = Duration::from_millis(250);
++const STACK_BYTES: usize = MAILBOX_WORKER_STACK_BYTES as usize;
++
++pub(in crate::installed_parent) fn worker_claim() -> Result<ManagedClaim> {
++    Ok(ManagedClaim {
++        host_stack_bytes: native_thread_stack_terms(STACK_BYTES as u64)?.known_rust_bytes,
++        workers: 1,
++        ..ManagedClaim::default()
++    })
++}
++
++#[derive(Default)]
++struct State {
++    stop: AtomicBool,
++    failed: AtomicBool,
++}
++
++pub(in crate::installed_parent) struct BrokerMaintenance {
++    state: Arc<State>,
++    handle: Option<JoinHandle<()>>,
++    _credit: ManagedReservation,
++}
++
++impl BrokerMaintenance {
++    pub(super) fn start(context: BrokerContext, credit: ManagedReservation) -> Result<Self> {
++        credit.check_current()?;
++        let state = Arc::new(State::default());
++        let worker_state = Arc::clone(&state);
++        let handle = thread::Builder::new()
++            .name("spiralcore-mailbox-expiry".into())
++            .stack_size(STACK_BYTES)
++            .spawn(move || {
++                let outcome = catch_unwind(AssertUnwindSafe(|| {
++                    while !worker_state.stop.load(Ordering::Acquire) {
++                        thread::park_timeout(CADENCE);
++                        if !worker_state.stop.load(Ordering::Acquire) {
++                            context.try_expire_retained()?;
++                        }
++                    }
++                    Ok::<_, spiralcore_mvm_adapter::service::ServiceError>(())
++                }));
++                if !matches!(outcome, Ok(Ok(()))) {
++                    worker_state.failed.store(true, Ordering::Release);
++                }
++            })?;
++        Ok(Self {
++            state,
++            handle: Some(handle),
++            _credit: credit,
++        })
++    }
++
++    pub(super) fn check_running(&self) -> Result<()> {
++        self._credit.check_current()?;
++        ensure!(
++            !self.state.failed.load(Ordering::Acquire)
++                && self
++                    .handle
++                    .as_ref()
++                    .is_some_and(|handle| !handle.is_finished()),
++            "original mailbox expiry worker is unavailable"
++        );
++        Ok(())
++    }
++}
++
++impl Drop for BrokerMaintenance {
++    fn drop(&mut self) {
++        if let Some(handle) = self.handle.take() {
++            self.state.stop.store(true, Ordering::Release);
++            handle.thread().unpark();
++            // Maintenance uses only try-locks. It cannot wait on a mailbox
++            // dispatch held by an original worker during teardown.
++            let _ = handle.join();
++        }
++    }
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++    use crate::installed_parent::{endpoint_tests, tenant_tag};
++    use spiralcore_mvm_adapter::service::{HostBudget, ServiceError, ServiceLimits};
++
++    #[test]
++    fn maintenance_joins_while_dispatch_is_held_and_releases_its_charge() {
++        let (_home, mut supervisor, provider) = endpoint_tests::fixture();
++        let pool = supervisor.managed_resources().clone();
++        let baseline = pool.snapshot().unwrap().usage;
++        let context = BrokerContext::new(HostBudget::new(ServiceLimits::default()).unwrap());
++        let credit = pool
++            .reserve(tenant_tag("test-expiry-owner"), worker_claim().unwrap())
++            .unwrap();
++        let worker = BrokerMaintenance::start(context.clone(), credit).unwrap();
++        let (completed_tx, completed_rx) = std::sync::mpsc::sync_channel(1);
++        let (dropper, joined_while_busy) = context
++            .with_time(|_, _| -> Result<_, ServiceError> {
++                thread::sleep(CADENCE + Duration::from_millis(100));
++                let dropper = thread::spawn(move || {
++                    drop(worker);
++                    let _ = completed_tx.send(());
++                });
++                let joined = completed_rx.recv_timeout(Duration::from_secs(1)).is_ok();
++                Ok((dropper, joined))
++            })
++            .unwrap();
++        dropper.join().unwrap();
++        assert!(joined_while_busy, "maintenance join waited for dispatch");
++        assert_eq!(pool.snapshot().unwrap().usage, baseline);
++        drop((provider, pool));
++        supervisor.close_admission();
++        supervisor.try_finish().unwrap();
++    }
++
++    #[test]
++    fn poisoned_dispatch_refuses_the_original_worker_until_teardown() {
++        let (_home, mut supervisor, provider) = endpoint_tests::fixture();
++        let pool = supervisor.managed_resources().clone();
++        let baseline = pool.snapshot().unwrap().usage;
++        let context = BrokerContext::new(HostBudget::new(ServiceLimits::default()).unwrap());
++        let credit = pool
++            .reserve(tenant_tag("test-expiry-owner"), worker_claim().unwrap())
++            .unwrap();
++        let worker = BrokerMaintenance::start(context.clone(), credit).unwrap();
++        assert!(
++            catch_unwind(AssertUnwindSafe(|| {
++                let _: Result<(), ServiceError> =
++                    context.with_time(|_, _| panic!("poison expiry fixture"));
++            }))
++            .is_err()
++        );
++        let deadline = std::time::Instant::now() + Duration::from_secs(2);
++        while worker.check_running().is_ok() && std::time::Instant::now() < deadline {
++            thread::sleep(Duration::from_millis(15));
++        }
++        assert!(worker.check_running().is_err());
++        assert_eq!(pool.snapshot().unwrap().usage.workers, baseline.workers + 1);
++        drop(worker);
++        assert_eq!(pool.snapshot().unwrap().usage, baseline);
++        drop((provider, pool));
++        supervisor.close_admission();
++        supervisor.try_finish().unwrap();
++    }
++}

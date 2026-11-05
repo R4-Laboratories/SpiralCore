@@ -1,0 +1,35 @@
+Retained replay test, old source (60-second protocol floor)
+exit=101
+assertion `left == right` failed: idle broker retained expired replay
+  left: 2
+ right: 1
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 220 filtered out; finished in 64.05s
+
+Initial candidate with unqualified 512 KiB stack
+exit=101
+test result: FAILED. 32 passed; 3 failed; 3 ignored; 0 measured; 183 filtered out; finished in 1.58s
+
+Final candidate with existing qualified 2 MiB stack
+exit=0
+test installed_parent::mailbox_job::idle_expiry_tests::retained_broker_expires_shared_replay_after_worker_retires ... ok
+test installed_parent::mailbox_job::maintenance::tests::maintenance_joins_while_dispatch_is_held_and_releases_its_charge ... ok
+test installed_parent::mailbox_job::maintenance::tests::poisoned_dispatch_refuses_the_original_worker_until_teardown ... ok
+test result: ok. 37 passed; 0 failed; 3 ignored; 0 measured; 183 filtered out; finished in 62.42s
+
+Adapter contention control
+exit=0
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 10 filtered out; finished in 0.00s
+
+Native Firecracker development witness
+{
+  "sha256": "e2e8ab74671b42d049a58648a79c64370a2aeb51564a1d12faa1960aecd924bc"
+}
+{
+  "exit": 0,
+  "outer_elapsed_ns": 5149386378
+}
+	User time (seconds): 2.89
+	System time (seconds): 1.10
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:05.03
+	Maximum resident set size (kbytes): 226820
+Input pins checked before and after: 18
