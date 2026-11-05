@@ -1,0 +1,218 @@
+--- a/crates/mvm-core/src/net/session.rs
++++ b/crates/mvm-core/src/net/session.rs
+@@ -269,12 +269,31 @@
+         session_id: &str,
+         signing_key: SigningKey,
+     ) -> Result<(Self, VerifyingKey), SessionError> {
+-        let material = secure_host_handshake(stream, session_id, &signing_key)?;
++        let material = secure_host_handshake(stream, session_id, &signing_key, None)?;
+         let peer_key = material.peer_verifying_key;
+         let session = Self::from_material(signing_key, material, SessionRole::Host);
+         Ok((session, peer_key))
+     }
+ 
++    /// Establish a host session for an independently enrolled guest key.
++    /// Use a fresh session ID bound to the authorized operation and original
++    /// launch. A different guest cannot obtain a host transcript confirmation.
++    pub fn host_for_peer<S: Read + Write>(
++        stream: &mut S,
++        session_id: &str,
++        signing_key: SigningKey,
++        expected_guest: &VerifyingKey,
++    ) -> Result<Self, SessionError> {
++        validate_pinned_session_id(session_id)?;
++        let material =
++            secure_host_handshake(stream, session_id, &signing_key, Some(expected_guest))?;
++        Ok(Self::from_material(
++            signing_key,
++            material,
++            SessionRole::Host,
++        ))
++    }
++
+     /// Establish a guest session and require the host identity to match `anchor`.
+     ///
+     /// Returns the session and the session id assigned by the host.
+@@ -283,11 +302,37 @@
+         signing_key: SigningKey,
+         anchor: &VerifyingKey,
+     ) -> Result<(Self, String), SessionError> {
+-        let material = secure_guest_handshake(stream, &signing_key, anchor)?;
++        let material = secure_guest_handshake(stream, &signing_key, anchor, None)?;
+         let session_id = material.session_id.clone();
+         let session = Self::from_material(signing_key, material, SessionRole::Guest);
+         Ok((session, session_id))
+     }
++
++    /// Require the original authorized session ID and host trust anchor.
++    /// A mismatched session is refused before writing a challenge response.
++    pub fn guest_for_session<S: Read + Write>(
++        stream: &mut S,
++        signing_key: SigningKey,
++        anchor: &VerifyingKey,
++        session_id: &str,
++    ) -> Result<Self, SessionError> {
++        validate_pinned_session_id(session_id)?;
++        let material = secure_guest_handshake(stream, &signing_key, anchor, Some(session_id))?;
++        Ok(Self::from_material(
++            signing_key,
++            material,
++            SessionRole::Guest,
++        ))
++    }
++}
++
++fn validate_pinned_session_id(session_id: &str) -> Result<(), SessionError> {
++    if session_id.is_empty() || session_id.len() > usize::from(u8::MAX) {
++        return Err(SessionError::InvalidHandshake(
++            "expected session identity must fit the sealed frame".into(),
++        ));
++    }
++    Ok(())
+ }
+ 
+ impl<Key> Session<Key> {
+@@ -916,12 +961,13 @@
+     stream: &mut S,
+     session_id: &str,
+     host_signing_key: &SigningKey,
++    expected_guest: Option<&VerifyingKey>,
+ ) -> Result<HandshakeMaterial, SessionError> {
+     secure_host_handshake_signed(
+         stream,
+         session_id,
+         &host_signing_key.verifying_key(),
+-        None,
++        expected_guest,
+         |hello, ack| Ok(host_signing_key.sign(&session_transcript(hello, ack)?)),
+     )
+ }
+@@ -1004,6 +1050,7 @@
+     stream: &mut S,
+     guest_signing_key: &SigningKey,
+     expected_host_key: &VerifyingKey,
++    expected_session: Option<&str>,
+ ) -> Result<HandshakeMaterial, SessionError> {
+     let hello: SessionHello = read_json_frame(stream, 1 << 16)?;
+     if hello.version != PROTOCOL_VERSION_AUTHENTICATED
+@@ -1014,6 +1061,11 @@
+             "invalid SessionHello".to_string(),
+         ));
+     }
++    if expected_session.is_some_and(|expected| hello.session_id != expected) {
++        return Err(SessionError::InvalidHandshake(
++            "host session does not match the authorized identity".into(),
++        ));
++    }
+     let host_key = parse_verifying_key(&hello.host_pubkey, "host")?;
+     if &host_key != expected_host_key {
+         return Err(SessionError::PeerIdentityMismatch(
+@@ -1090,6 +1142,108 @@
+     }
+ 
+     #[test]
++    fn pinned_carrier_requires_the_enrolled_guest_and_original_session() {
++        for (guest_matches, scope_matches) in [(true, true), (false, true), (true, false)] {
++            let (mut host_io, mut guest_io) = pair();
++            let host_key = test_keypair();
++            let guest_key = test_keypair();
++            let host_pin = host_key.verifying_key();
++            let guest_pin = if guest_matches {
++                guest_key.verifying_key()
++            } else {
++                test_keypair().verifying_key()
++            };
++            let original = "installed-mailbox-replacement/one";
++            let expected = if scope_matches {
++                original
++            } else {
++                "other-boot"
++            };
++            std::thread::scope(|scope| {
++                let host = scope.spawn(move || {
++                    let result =
++                        Session::host_for_peer(&mut host_io, original, host_key, &guest_pin);
++                    if guest_matches && scope_matches {
++                        let mut session = result.unwrap();
++                        let sealed = session.seal(b"exact cached reply").unwrap();
++                        write_sealed_frame(&mut host_io, &sealed).unwrap();
++                    } else if !guest_matches {
++                        assert!(matches!(result, Err(SessionError::PeerIdentityMismatch(_))));
++                    } else {
++                        assert!(result.is_err());
++                    }
++                });
++                let result =
++                    Session::guest_for_session(&mut guest_io, guest_key, &host_pin, expected);
++                if guest_matches && scope_matches {
++                    let mut session = result.unwrap();
++                    let sealed = read_sealed_frame(&mut guest_io, 4096).unwrap();
++                    assert_eq!(session.open(&sealed).unwrap(), b"exact cached reply");
++                } else {
++                    if !scope_matches {
++                        assert!(matches!(result, Err(SessionError::InvalidHandshake(_))));
++                    } else {
++                        assert!(result.is_err());
++                    }
++                    drop(guest_io);
++                }
++                host.join().unwrap();
++            });
++        }
++    }
++
++    #[test]
++    fn wrong_purpose_writes_no_guest_challenge_proof() {
++        struct Counted {
++            io: Cursor<Vec<u8>>,
++            writes: usize,
++        }
++        impl Read for Counted {
++            fn read(&mut self, bytes: &mut [u8]) -> std::io::Result<usize> {
++                self.io.read(bytes)
++            }
++        }
++        impl Write for Counted {
++            fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
++                self.writes += bytes.len();
++                Ok(bytes.len())
++            }
++            fn flush(&mut self) -> std::io::Result<()> {
++                Ok(())
++            }
++        }
++
++        let host = test_keypair();
++        let mut wire = Vec::new();
++        write_json_frame(
++            &mut wire,
++            &SessionHello {
++                version: PROTOCOL_VERSION_AUTHENTICATED,
++                session_id: "different-mailbox-purpose".into(),
++                challenge: vec![1; 32],
++                host_pubkey: host.verifying_key().to_bytes().to_vec(),
++                host_ephemeral_pubkey: vec![2; 32],
++            },
++            1 << 16,
++        )
++        .unwrap();
++        let mut counted = Counted {
++            io: Cursor::new(wire),
++            writes: 0,
++        };
++        assert!(matches!(
++            Session::guest_for_session(
++                &mut counted,
++                test_keypair(),
++                &host.verifying_key(),
++                "original-mailbox-purpose",
++            ),
++            Err(SessionError::InvalidHandshake(_))
++        ));
++        assert_eq!(counted.writes, 0);
++    }
++
++    #[test]
+     fn handshake_host_and_guest_succeed() {
+         let (mut host_stream, mut guest_stream) = pair();
+         let host_key = test_keypair();
