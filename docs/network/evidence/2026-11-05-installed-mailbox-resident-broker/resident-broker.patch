@@ -1,0 +1,266 @@
+--- a/crates/spiralcore-mvm-live/src/installed_parent.rs
++++ b/crates/spiralcore-mvm-live/src/installed_parent.rs
+@@ -52,7 +52,7 @@
+     endpoint_inputs: Option<endpoint::EndpointOwnerInputs>,
+     host_agent: Mutex<host_agent::HostAgentSlot>,
+     #[cfg(all(test, target_os = "linux", target_pointer_width = "64"))]
+-    mailbox_broker: Mutex<Weak<mailbox_job::ResidentBroker>>,
++    mailbox_broker: Mutex<mailbox_job::MailboxBrokerSlot>,
+ }
+ 
+ /// Local parent admission, never a replacement for signed MVM authorization.
+@@ -413,7 +413,7 @@
+                 endpoint_inputs: None,
+                 host_agent: Mutex::new(host_agent::HostAgentSlot::default()),
+                 #[cfg(all(test, target_os = "linux", target_pointer_width = "64"))]
+-                mailbox_broker: Mutex::new(Weak::new()),
++                mailbox_broker: Mutex::new(mailbox_job::MailboxBrokerSlot::default()),
+             }),
+         })
+     }
+--- a/crates/spiralcore-mvm-live/src/installed_parent/mailbox_job.rs
++++ b/crates/spiralcore-mvm-live/src/installed_parent/mailbox_job.rs
+@@ -20,7 +20,18 @@
+     _metadata: ManagedReservation,
+ }
+ 
++#[cfg(test)]
++#[derive(Default)]
++pub(super) enum MailboxBrokerSlot {
++    #[default]
++    Empty,
++    Staged(std::sync::Weak<ResidentBroker>),
++    Retained(Arc<ResidentBroker>),
++}
++
+ pub(super) struct FundedMailboxJob {
++    #[cfg(test)]
++    parent: std::sync::Weak<super::Shared>,
+     callback: Option<ServiceJob>,
+     broker: Arc<ResidentBroker>,
+     fence: Arc<JobFence>,
+@@ -41,6 +52,8 @@
+             .take()
+             .context("original mailbox job consumed")?;
+         let issued = IssuedJob {
++            #[cfg(test)]
++            parent: self.parent.clone(),
+             callback,
+             broker: Arc::clone(&self.broker),
+             ticket: self.fence.issue()?,
+@@ -61,7 +74,9 @@
+             callback,
+             broker,
+             fence,
++
+             workspace,
++            ..
+         } = self;
+         drop((callback, broker, fence));
+         Ok(workspace.release_exclusive()?)
+@@ -71,6 +86,8 @@
+ // The ticket drops after the callback and broker. Abandonment cannot make
+ // their workspace releasable while a never-started closure still owns them.
+ struct IssuedJob {
++    #[cfg(test)]
++    parent: std::sync::Weak<super::Shared>,
+     callback: ServiceJob,
+     broker: Arc<ResidentBroker>,
+     ticket: JobTicket,
+@@ -78,10 +95,13 @@
+ impl IssuedJob {
+     fn run(self, socket: UnixStream) -> io::Result<()> {
+         self.ticket.enter()?;
++        #[cfg(test)]
++        self.retain_original_broker().map_err(io::Error::other)?;
+         let Self {
+             callback,
+             broker,
+             ticket,
++            ..
+         } = self;
+         let context = &broker.context;
+         let mut service = context
+@@ -96,6 +116,31 @@
+         ticket.drained()?;
+         result
+     }
++
++    #[cfg(test)]
++    fn retain_original_broker(&self) -> Result<()> {
++        self.broker._metadata.check_current()?;
++        let parent = self
++            .parent
++            .upgrade()
++            .context("original mailbox parent unavailable")?;
++        let mut slot = parent
++            .mailbox_broker
++            .lock()
++            .map_err(|_| anyhow::anyhow!("resident mailbox broker state poisoned"))?;
++        match &*slot {
++            MailboxBrokerSlot::Staged(staged)
++                if staged
++                    .upgrade()
++                    .is_some_and(|current| Arc::ptr_eq(&current, &self.broker)) =>
++            {
++                *slot = MailboxBrokerSlot::Retained(Arc::clone(&self.broker));
++            }
++            MailboxBrokerSlot::Retained(current) if Arc::ptr_eq(current, &self.broker) => {}
++            _ => return Err(anyhow::anyhow!("original mailbox broker identity differs")),
++        }
++        Ok(())
++    }
+ }
+ 
+ // Registration remains private to qualification until the canonical enrolled
+@@ -163,7 +208,12 @@
+                 .mailbox_broker
+                 .lock()
+                 .map_err(|_| anyhow!("resident mailbox broker state poisoned"))?;
+-            if let Some(current) = slot.upgrade() {
++            let current = match &*slot {
++                MailboxBrokerSlot::Empty => None,
++                MailboxBrokerSlot::Staged(weak) => weak.upgrade(),
++                MailboxBrokerSlot::Retained(broker) => Some(Arc::clone(broker)),
++            };
++            if let Some(current) = current {
+                 current
+             } else {
+                 let metadata = parent.pool.reserve(
+@@ -203,11 +253,12 @@
+                     context: BrokerContext::new(budget),
+                     _metadata: metadata,
+                 });
+-                *slot = Arc::downgrade(&current);
++                *slot = MailboxBrokerSlot::Staged(Arc::downgrade(&current));
+                 current
+             }
+         };
+         Ok(FundedMailboxJob {
++            parent: self.parent.clone(),
+             callback: Some(job),
+             broker,
+             fence: Arc::new(JobFence::default()),
+--- a/crates/spiralcore-mvm-live/src/installed_parent/config_tests.rs
++++ b/crates/spiralcore-mvm-live/src/installed_parent/config_tests.rs
+@@ -682,7 +682,13 @@
+         );
+         let after = supervisor.managed_resources().snapshot().unwrap().usage;
+         if drain {
+-            assert_eq!(after, before);
++            assert_eq!(
++                after,
++                ManagedClaim {
++                    host_metadata_bytes: before.host_metadata_bytes + MIB,
++                    ..before
++                }
++            );
+             assert!(grant.lifecycle.lock().unwrap().seal_retired().is_ok());
+             drop((config, grant, provider));
+             supervisor.close_admission();
+@@ -835,3 +841,105 @@
+     supervisor.close_admission();
+     supervisor.try_finish().unwrap();
+ }
++
++#[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++#[test]
++fn resident_mailbox_replay_survives_retirement_of_the_last_worker() {
++    use crate::config::{Arm, Pair, Plan, Stage};
++    use mvm_contract::protocol::mailbox::{ContentType, DeliveryOutcome};
++    use mvm_core::mailbox::encode_envelope;
++    use spiralcore_mvm_adapter::{
++        CONTENT_TYPE,
++        service_sender::{self, MessageOptions},
++    };
++    use std::os::unix::net::UnixStream;
++
++    let (home, mut supervisor, provider) = endpoint_tests::fixture();
++    let baseline = supervisor.managed_resources().snapshot().unwrap().usage;
++    let pair = Pair::provision(Plan {
++        stage: Stage::Two,
++        arm: Arm::Warm,
++        size: 128,
++        trial: 1,
++        bandwidth_profile: Default::default(),
++    })
++    .unwrap();
++    let outgoing = pair.sender.outgoing.as_ref().unwrap();
++    let outbound = outgoing.service_binding(None).unwrap();
++    let broker = crate::campaign::broker_context().unwrap();
++    let wire = broker
++        .with_time(|_, now| -> crate::Result<_> {
++            let mut options = MessageOptions::fresh(
++                ContentType::parse(CONTENT_TYPE, 1)?,
++                now,
++                now.unix_ms + 10_000,
++            )?;
++            options.reply_to = outgoing.reply_to;
++            Ok(encode_envelope(
++                service_sender::prepare(&outbound, b"resident replay", &options, now)?.envelope(),
++            )?)
++        })
++        .unwrap();
++    let receiver = pair.receiver.incoming.unwrap();
++    let signing = pair.receiver.service.unwrap().local_receipt_signing;
++    let mut original_receipt = None;
++    for (name, outcome) in [
++        ("resident-replay-first", DeliveryOutcome::AcceptedEphemeral),
++        ("resident-replay-second", DeliveryOutcome::Duplicate),
++    ] {
++        let admitted = admitted_with_mailbox(home.path(), name, true);
++        let (grant, mut config) = config(&provider, name);
++        config.plan_json = Some(serde_json::to_string(admitted.signed()).unwrap());
++        let permit = provider
++            .bind_config(&admitted, &config, native_backend())
++            .unwrap();
++        let anchor = config.host_lifetime.as_ref().unwrap();
++        anchor
++            .bind_parent_permit(&config, native_backend(), permit)
++            .unwrap();
++        let source = receiver.service_binding(Some(signing)).unwrap();
++        let wire = wire.clone();
++        let (send, receive) = std::sync::mpsc::sync_channel(1);
++        grant
++            .install_mailbox_job(&admitted, move |_, broker, service| {
++                let receipt = broker
++                    .with_time(|_, now| service.admit(&source, &wire, now))
++                    .map_err(std::io::Error::other)?;
++                send.send(receipt).map_err(std::io::Error::other)
++            })
++            .unwrap();
++        anchor
++            .prepare_installed_mailbox(&config, native_backend())
++            .unwrap();
++        let mut handoff = anchor
++            .take_installed_mailbox(&config, native_backend())
++            .unwrap()
++            .unwrap();
++        let (_peer, server) = UnixStream::pair().unwrap();
++        handoff.take_socket_job().unwrap()(server).unwrap();
++        let receipt = receive.try_recv().unwrap();
++        assert_eq!(
++            receipt.receipt.outcome, outcome,
++            "last-worker retirement forgot the accepted envelope"
++        );
++        if let Some(previous) = &original_receipt {
++            assert_eq!(receipt.receipt.message_id, *previous);
++        } else {
++            original_receipt = Some(receipt.receipt.message_id);
++        }
++        handoff.confirm_socket_retired().unwrap();
++        drop(handoff);
++        assert!(grant.lifecycle.lock().unwrap().seal_retired().is_ok());
++        drop((config, grant));
++        assert_eq!(
++            supervisor.managed_resources().snapshot().unwrap().usage,
++            ManagedClaim {
++                host_metadata_bytes: baseline.host_metadata_bytes + MIB,
++                ..baseline
++            },
++        );
++    }
++    drop(provider);
++    supervisor.close_admission();
++    supervisor.try_finish().unwrap();
++}
