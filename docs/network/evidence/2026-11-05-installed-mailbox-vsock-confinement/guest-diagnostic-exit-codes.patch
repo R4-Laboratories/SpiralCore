@@ -1,0 +1,50 @@
+--- a/crates/spiralcore-mvm-live/src/mailbox_witness.rs
++++ b/crates/spiralcore-mvm-live/src/mailbox_witness.rs
+@@ -443,16 +443,26 @@
+     Ok(())
+ }
+ 
+-pub fn run_guest() -> Result<()> {
++// Fixed exit codes keep native diagnosis available without formatting any
++// error that might contain synthetic bootstrap data.
++pub fn run_guest() -> std::result::Result<(), u8> {
+     use mvm_agentd::vsock;
+     use mvm_contract::protocol::mailbox::MAILBOX_PORT;
+-    check_guest_confinement()?;
+-    let bootstrap = read_private(Path::new(BOOTSTRAP_PATH))?;
+-    let fd = vsock::sys::dial(vsock::HOST_CID, MAILBOX_PORT)?;
+-    let result = bootstrap.exchange(UnixStream::from(fd))?;
++    check_guest_confinement().map_err(|_| 21_u8)?;
++    let bootstrap = read_private(Path::new(BOOTSTRAP_PATH)).map_err(|_| 22_u8)?;
++    let fd =
++        vsock::sys::dial(vsock::HOST_CID, MAILBOX_PORT).map_err(|error| match error.kind() {
++            std::io::ErrorKind::PermissionDenied => 23_u8,
++            std::io::ErrorKind::ConnectionRefused => 24_u8,
++            std::io::ErrorKind::TimedOut => 25_u8,
++            _ => 26_u8,
++        })?;
++    let result = bootstrap
++        .exchange(UnixStream::from(fd))
++        .map_err(|_| 27_u8)?;
+     let mut out = std::io::stdout().lock();
+-    serde_json::to_writer(&mut out, &result)?;
+-    writeln!(out)?;
++    serde_json::to_writer(&mut out, &result).map_err(|_| 28_u8)?;
++    writeln!(out).map_err(|_| 28_u8)?;
+     Ok(())
+ }
+ 
+--- a/crates/spiralcore-mvm-live/src/main.rs
++++ b/crates/spiralcore-mvm-live/src/main.rs
+@@ -101,9 +101,8 @@
+         .nth(1)
+         .is_some_and(|arg| arg == "installed-mailbox-witness")
+     {
+-        if spiralcore_mvm_live::mailbox_witness::run_guest().is_err() {
+-            eprintln!("installed mailbox witness failed");
+-            std::process::exit(1);
++        if let Err(code) = spiralcore_mvm_live::mailbox_witness::run_guest() {
++            std::process::exit(i32::from(code));
+         }
+         return;
+     }

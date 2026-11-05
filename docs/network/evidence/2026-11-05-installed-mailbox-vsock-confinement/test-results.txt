@@ -1,0 +1,87 @@
+RED: same canonical filter, original guest transport
+exact guest exchange under MVM's canonical Vsock tier: Io(Os { code: 1, kind: PermissionDenied, message: "Operation not permitted" })
+test result: FAILED. 2 passed; 1 failed; 0 ignored; 0 measured; 59 filtered out; finished in 0.01s
+
+GREEN: all guest-path component checks
+test mailbox_witness::tests::confined_guest_bounds_idle_reads_and_backpressured_writes_and_closes ... ok
+test mailbox_witness::tests::guest_bootstrap_refuses_public_linked_and_oversized_files ... ok
+test mailbox_witness::tests::guest_exchange_under_canonical_vsock_seccomp ... ok
+test mailbox_witness::tests::installed_fixture_carries_exact_call_reply_cast_and_receipts ... {"guest":{"call_bytes":65023,"cast_bytes":23,"counters":{"envelope_bytes_received":131084,"envelope_bytes_sent":129703,"frames_received":3,"frames_sent":3,"framing_bytes_received":20,"framing_bytes_sent":20},"elapsed_us":10783,"reply_bytes":65023,"thread_cpu_us":6455},"host":{"call_bytes":65023,"cast_bytes":23,"counters":{"envelope_bytes_received":129703,"envelope_bytes_sent":131084,"frames_received":3,"frames_sent":3,"framing_bytes_received":20,"framing_bytes_sent":20},"elapsed_us":10600,"reply_bytes":65023,"thread_cpu_us":5667}}
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 59 filtered out; finished in 0.07s
+
+Composed host verification summaries (includes one nested helper summary)
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 216 filtered out; finished in 0.05s
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 216 filtered out; finished in 0.11s
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 216 filtered out; finished in 0.16s
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 216 filtered out; finished in 0.06s
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 216 filtered out; finished in 0.06s
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 213 filtered out; finished in 0.07s
+
+Attempt 1: canonical admission refused before native launch
+Error: managed resources: Full
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:01.37
+	Maximum resident set size (kbytes): 275268
+	Exit status: 101
+{
+  "exit": 101,
+  "outer_elapsed_ns": 1513013288
+}
+
+Protected identities
+37b171c64c46c0be2d1930060105d01a3dbc9c16eb0af60b64de9082247d86d4
+{"sha256": "7e7fdd4d30e7ea5e10d423818c80cf6f0884636037c5339ed701b3b509acdb7c"}
+{"sha256": "02c8c12cebabe4e46bc7b8788b4b0aea3d84d0739aa3b6fd2576a60dc5bc613d", "size": 4853264}
+
+Conservative Rust workspace probe linked to the resident dependencies
+{"exit": 0, "sha256": "8edbeae921e0d8b7eea9550a5166be0772ed8ee793f6845f427545678d719033"}
+[
+  {
+    "rootfs_mib": 14,
+    "exit": 0,
+    "attachment_rust_peak_live_after": [
+      139114148,
+      1037
+    ],
+    "runtime_rust_peak_live_after": [
+      139078841,
+      112933744
+    ]
+  },
+  {
+    "rootfs_mib": 24,
+    "exit": 0,
+    "attachment_rust_peak_live_after": [
+      174200570,
+      1037
+    ],
+    "runtime_rust_peak_live_after": [
+      174165263,
+      134577008
+    ]
+  }
+]
+
+Attempts 2 and 3: guest booted, process failed, original stop returned Retired
+Error: installed mailbox guest exchange failed: Exit { code: 1 }
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:02.65
+	Maximum resident set size (kbytes): 226000
+	Exit status: 101
+{
+  "exit": 101,
+  "outer_elapsed_ns": 2749356677
+}
+Error: installed mailbox guest exchange failed: Exit { code: 21 }
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:02.60
+	Maximum resident set size (kbytes): 225856
+	Exit status: 101
+{
+  "exit": 101,
+  "outer_elapsed_ns": 2696294038
+}
+
+Diagnostic composed host and guest protected identities
+{"sha256": "88d8072eeb55f83df3c6b140221a4c60d14e7050513b122b525533ae5253700e"}
+{"sha256": "ecaa3cd892e02b3c10bbc35e68591651641c3a297ee0f689069e14b2cf0f4960", "size": 4853520}
+
+Booted official guest-agent SHA-256
+28f5735e36bb41759e2e65309c3c1024f4678360348beb6d45db357d7f850e4b

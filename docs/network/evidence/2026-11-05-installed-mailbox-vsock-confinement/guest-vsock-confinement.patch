@@ -1,0 +1,340 @@
+--- a/crates/spiralcore-mvm-live/src/mailbox_witness.rs
++++ b/crates/spiralcore-mvm-live/src/mailbox_witness.rs
+@@ -13,7 +13,7 @@
+ use spiralcore_mvm_adapter::{
+     CONTENT_TYPE,
+     broker::BrokerContext,
+-    live::{HandshakeRole, StreamCounters, StreamTransport},
++    live::{HandshakeRole, SocketIo, StreamCounters, StreamTransport},
+     receipt::{ReceiptObservation, ReceiptReturnConfig, ReceiptTracker, SendHandle},
+     service::{CallStatus, LocalMailboxService, MailboxBinding},
+     service_sender::{self, MessageOptions},
+@@ -29,6 +29,10 @@
+     time::{Duration, Instant},
+ };
+ 
++mod guest_socket;
++
++use guest_socket::GuestSocket;
++
+ const CALL_LEN: usize = 65_023;
+ const CAST: &[u8] = b"\0installed-vsock-cast\0\0";
+ const TIMEOUT: Duration = Duration::from_secs(15);
+@@ -126,22 +130,22 @@
+     ))
+ }
+ 
+-struct Peer<'a> {
++struct Peer<'a, S: SocketIo> {
+     broker: &'a BrokerContext,
+     incoming: MailboxBinding,
+     outgoing: MailboxBinding,
+     control: MailboxBinding,
+     returns: ReceiptReturnConfig,
+     verifier: VerifyingKey,
+-    stream: StreamTransport<UnixStream>,
++    stream: StreamTransport<S>,
+     cancel: CancellationToken,
+ }
+ 
+-impl<'a> Peer<'a> {
++impl<'a, S: SocketIo + 'static> Peer<'a, S> {
+     fn open(
+         endpoint: &Bootstrap,
+         broker: &'a BrokerContext,
+-        socket: UnixStream,
++        socket: S,
+         role: HandshakeRole,
+     ) -> Result<Self> {
+         campaign::validate_service_bootstrap(endpoint)?;
+@@ -343,6 +347,7 @@
+             .as_ref()
+             .ok_or("missing fixture Call binding")?
+             .reply_to;
++        let socket = GuestSocket::new(socket)?;
+         let peer = Peer::open(&self.endpoint, &broker, socket, HandshakeRole::Initiator)?;
+         let mut tracker = peer.tracker()?;
+         let expected = payload();
+@@ -417,9 +422,31 @@
+     GuestBootstrap::decode(&bytes)
+ }
+ 
++/// Fail the native witness if the booted agent did not confine the workload.
++/// This creates no Internet connection and closes an unexpected descriptor.
++fn check_guest_confinement() -> Result<()> {
++    // SAFETY: these queries pass only scalar values. socket either returns a
++    // fresh, exclusively owned descriptor or fails without creating one.
++    unsafe {
++        if libc::prctl(libc::PR_GET_SECCOMP, 0, 0, 0, 0) != 2 {
++            return Err("guest workload seccomp filter missing".into());
++        }
++        let fd = libc::socket(libc::AF_INET, libc::SOCK_STREAM | libc::SOCK_CLOEXEC, 0);
++        if fd >= 0 {
++            libc::close(fd);
++            return Err("guest workload unexpectedly permits Internet sockets".into());
++        }
++        if std::io::Error::last_os_error().raw_os_error() != Some(libc::EPERM) {
++            return Err("guest workload Internet-socket confinement was not established".into());
++        }
++    }
++    Ok(())
++}
++
+ pub fn run_guest() -> Result<()> {
+     use mvm_agentd::vsock;
+     use mvm_contract::protocol::mailbox::MAILBOX_PORT;
++    check_guest_confinement()?;
+     let bootstrap = read_private(Path::new(BOOTSTRAP_PATH))?;
+     let fd = vsock::sys::dial(vsock::HOST_CID, MAILBOX_PORT)?;
+     let result = bootstrap.exchange(UnixStream::from(fd))?;
+--- /dev/null
++++ b/crates/spiralcore-mvm-live/src/mailbox_witness/guest_socket.rs
+@@ -0,0 +1,116 @@
++//! The guest stream uses only operations admitted by MVM's Vsock tier.
++use rustix::fs::{OFlags, fcntl_getfl, fcntl_setfl};
++use spiralcore_mvm_adapter::live::SocketIo;
++use std::{
++    cell::Cell,
++    io::{self, Read, Write},
++    net::Shutdown,
++    os::{fd::AsRawFd, unix::net::UnixStream},
++    time::Duration,
++};
++
++pub(super) struct GuestSocket {
++    // The fixture exclusively owns this descriptor. Full shutdown drops it,
++    // even if a logical transport handle is retained after an I/O failure.
++    stream: Cell<Option<UnixStream>>,
++    read_timeout: Cell<Option<Duration>>,
++    write_timeout: Cell<Option<Duration>>,
++}
++
++impl GuestSocket {
++    pub(super) fn new(stream: UnixStream) -> io::Result<Self> {
++        let flags = fcntl_getfl(&stream)?;
++        fcntl_setfl(&stream, flags | OFlags::NONBLOCK)?;
++        Ok(Self {
++            stream: Cell::new(Some(stream)),
++            read_timeout: Cell::new(None),
++            write_timeout: Cell::new(None),
++        })
++    }
++
++    fn wait_io(
++        &mut self,
++        events: libc::c_short,
++        timeout: Option<Duration>,
++        mut operation: impl FnMut(&mut UnixStream) -> io::Result<usize>,
++    ) -> io::Result<usize> {
++        let stream = self
++            .stream
++            .get_mut()
++            .as_mut()
++            .ok_or(io::ErrorKind::NotConnected)?;
++        let timeout = timeout.ok_or(io::ErrorKind::InvalidInput)?;
++        match operation(stream) {
++            Err(error) if error.kind() == io::ErrorKind::WouldBlock => {}
++            result => return result,
++        }
++        let mut descriptor = libc::pollfd {
++            fd: stream.as_raw_fd(),
++            events,
++            revents: 0,
++        };
++        let timeout = libc::timespec {
++            tv_sec: timeout
++                .as_secs()
++                .try_into()
++                .map_err(|_| io::ErrorKind::InvalidInput)?,
++            tv_nsec: timeout.subsec_nanos() as libc::c_long,
++        };
++        // SAFETY: both structures are initialized and live for the syscall,
++        // and stream owns the nonblocking fd throughout this operation.
++        match unsafe { libc::ppoll(&mut descriptor, 1, &timeout, std::ptr::null()) } {
++            -1 => Err(io::Error::last_os_error()),
++            0 => Err(io::ErrorKind::TimedOut.into()),
++            // Retry nonblocking I/O on readiness, including error/hangup, so
++            // buffered data, EOF, and the socket error keep their usual meaning.
++            _ => operation(stream),
++        }
++    }
++}
++
++fn set_timeout(slot: &Cell<Option<Duration>>, timeout: Option<Duration>) -> io::Result<()> {
++    if timeout.is_none_or(|value| value.is_zero()) {
++        return Err(io::ErrorKind::InvalidInput.into());
++    }
++    slot.set(timeout);
++    Ok(())
++}
++
++impl SocketIo for GuestSocket {
++    fn set_read_timeout(&self, timeout: Option<Duration>) -> io::Result<()> {
++        set_timeout(&self.read_timeout, timeout)
++    }
++
++    fn set_write_timeout(&self, timeout: Option<Duration>) -> io::Result<()> {
++        set_timeout(&self.write_timeout, timeout)
++    }
++
++    fn shutdown(&self, how: Shutdown) -> io::Result<()> {
++        if how != Shutdown::Both {
++            return Err(io::ErrorKind::Unsupported.into());
++        }
++        drop(self.stream.take());
++        Ok(())
++    }
++}
++
++impl Read for GuestSocket {
++    fn read(&mut self, bytes: &mut [u8]) -> io::Result<usize> {
++        self.wait_io(libc::POLLIN, self.read_timeout.get(), |stream| {
++            stream.read(bytes)
++        })
++    }
++}
++
++impl Write for GuestSocket {
++    fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
++        self.wait_io(libc::POLLOUT, self.write_timeout.get(), |stream| {
++            stream.write(bytes)
++        })
++    }
++
++    fn flush(&mut self) -> io::Result<()> {
++        // Writes go directly to the socket.
++        Ok(())
++    }
++}
+--- a/crates/spiralcore-mvm-live/src/mailbox_witness/tests.rs
++++ b/crates/spiralcore-mvm-live/src/mailbox_witness/tests.rs
+@@ -70,3 +70,107 @@
+     file.set_len(65_537).unwrap();
+     assert!(mailbox_witness::read_private(&original).is_err());
+ }
++
++#[test]
++fn guest_exchange_under_canonical_vsock_seccomp() {
++    use mvm_agentd::workload_seccomp;
++    use mvm_core::crypto::seccomp::SeccompTier;
++
++    let (_, guest, host) = mailbox_witness::provision().unwrap();
++    let (host_socket, guest_socket) = UnixStream::pair().unwrap();
++    let worker = std::thread::spawn(move || {
++        let broker = crate::campaign::broker_context().unwrap();
++        let mut service = broker
++            .with_time(|budget, _| {
++                spiralcore_mvm_adapter::service::LocalMailboxService::new(budget.clone())
++            })
++            .unwrap();
++        host.run(host_socket, &broker, &mut service)
++    });
++    let filter = workload_seccomp::compile(SeccompTier::Vsock)
++        .unwrap()
++        .unwrap();
++    let result = std::thread::spawn(move || {
++        workload_seccomp::install(&filter).unwrap();
++        mailbox_witness::check_guest_confinement()?;
++        guest.exchange(guest_socket)
++    })
++    .join()
++    .unwrap()
++    .expect("exact guest exchange under MVM's canonical Vsock tier");
++    let server = worker.join().unwrap().unwrap();
++    assert_eq!(result.call_bytes, 65_023);
++    assert_eq!(result.reply_bytes, 65_023);
++    assert_eq!(result.cast_bytes, 23);
++    assert_eq!(
++        result.counters.envelope_bytes_sent,
++        server.counters.envelope_bytes_received
++    );
++    assert_eq!(
++        result.counters.envelope_bytes_received,
++        server.counters.envelope_bytes_sent
++    );
++}
++
++#[test]
++fn confined_guest_bounds_idle_reads_and_backpressured_writes_and_closes() {
++    use mvm_agentd::workload_seccomp;
++    use mvm_core::crypto::seccomp::SeccompTier;
++    use spiralcore_mvm_adapter::live::SocketIo;
++    use std::{
++        io::{ErrorKind, Read, Write},
++        net::Shutdown,
++        time::{Duration, Instant},
++    };
++
++    let filter = workload_seccomp::compile(SeccompTier::Vsock)
++        .unwrap()
++        .unwrap();
++    let (host, guest) = UnixStream::pair().unwrap();
++    let (host_write, guest_write) = UnixStream::pair().unwrap();
++    let (host_tx, host_rx) = std::sync::mpsc::channel();
++    let worker = std::thread::spawn(move || {
++        workload_seccomp::install(&filter).unwrap();
++        let mut guest = super::GuestSocket::new(guest).unwrap();
++        let mut guest_write = super::GuestSocket::new(guest_write).unwrap();
++        let timeout = Duration::from_millis(20);
++        guest.set_read_timeout(Some(timeout)).unwrap();
++        guest_write.set_write_timeout(Some(timeout)).unwrap();
++
++        let start = Instant::now();
++        assert_eq!(
++            guest.read(&mut [0]).unwrap_err().kind(),
++            ErrorKind::TimedOut
++        );
++        assert!(start.elapsed() >= timeout && start.elapsed() < Duration::from_secs(2));
++
++        let bytes = [0_u8; 65_536];
++        let mut timed_out = false;
++        for _ in 0..128 {
++            let start = Instant::now();
++            match guest_write.write(&bytes) {
++                Ok(written) => assert!(written > 0),
++                Err(error) => {
++                    assert_eq!(error.kind(), ErrorKind::TimedOut);
++                    assert!(start.elapsed() >= timeout && start.elapsed() < Duration::from_secs(2));
++                    timed_out = true;
++                    break;
++                }
++            }
++        }
++        assert!(timed_out);
++        guest.shutdown(Shutdown::Both).unwrap();
++        guest.shutdown(Shutdown::Both).unwrap();
++        assert_eq!(
++            guest.read(&mut [0]).unwrap_err().kind(),
++            ErrorKind::NotConnected
++        );
++        host_tx.send(()).unwrap();
++    });
++    host_rx.recv_timeout(Duration::from_secs(5)).unwrap();
++    let mut host = host;
++    host.set_read_timeout(Some(Duration::from_secs(1))).unwrap();
++    assert_eq!(host.read(&mut [0]).unwrap(), 0);
++    worker.join().unwrap();
++    drop(host_write);
++}
+--- a/crates/spiralcore-mvm-live/src/installed_parent/native_witness/native_plan.rs
++++ b/crates/spiralcore-mvm-live/src/installed_parent/native_witness/native_plan.rs
+@@ -165,13 +165,18 @@
+             assets.push(enrollment.signed_asset()?);
+             posture = posture.with_installed_mailbox_enrollment(profile, enrollment);
+         }
++        let tier = if self.mailbox.is_some() {
++            PlanSeccompTier::Vsock
++        } else {
++            PlanSeccompTier::Standard
++        };
+         let input = SynthesisInput::builder()
+             .vm_name(self.name)
+             .tenant("local")
+             .backend_name("firecracker")
+             .image_name("installed-native-witness")
+             .image_sha256(&self.rootfs_sha)
+-            .seccomp_tier(PlanSeccompTier::Standard)
++            .seccomp_tier(tier)
+             .secret_release(SecretReleasePolicy::None)
+             .secrets(Vec::new())
+             .network_mode(NetworkMode::HostVsockProxy)
