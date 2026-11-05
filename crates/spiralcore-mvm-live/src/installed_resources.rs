@@ -141,6 +141,7 @@ struct Slot {
     tenant: usize,
     claim: ManagedClaim,
 }
+#[derive(Clone)]
 struct Ledger {
     usage: ManagedClaim,
     peak_resident: u64,
@@ -188,6 +189,131 @@ impl Shared {
 #[derive(Clone)]
 pub struct ManagedResourceBudget {
     shared: Arc<Shared>,
+}
+
+/// Fixed, nonrefunding historical debt in one CLOSED original ledger. This
+/// cannot expose a pool, mint an old grant or enable ordinary reservations.
+pub(crate) struct ClosedRetainedFunding {
+    budget: ManagedResourceBudget,
+    imported: bool,
+}
+impl ClosedRetainedFunding {
+    pub(crate) fn new(original: crate::installed_supervisor::ClosedRecoveryAuthority) -> Self {
+        Self {
+            budget: ManagedResourceBudget::new_installed(original.into_authority()),
+            imported: false,
+        }
+    }
+
+    pub(crate) fn authority(&self) -> Arc<InstalledAuthority> {
+        self.budget.shared.authority.clone()
+    }
+
+    pub(crate) fn fund_metadata(&self) -> Result<()> {
+        self.import(
+            &[(
+                [0xd2; 32],
+                ManagedClaim {
+                    host_metadata_bytes: 1 << 20,
+                    cache_disk_bytes: 8192,
+                    ..Default::default()
+                },
+            )],
+            true,
+        )
+    }
+
+    pub(crate) fn fund_rows(&mut self, tenants: &[[u8; 32]]) -> Result<()> {
+        if self.imported || tenants.is_empty() || tenants.len() > 16 {
+            return Err(ManagedResourceError::State);
+        }
+        let mut claims = [([0; 32], ManagedClaim::default()); 16];
+        for (at, tenant) in tenants.iter().enumerate() {
+            claims[at] = (
+                *tenant,
+                ManagedClaim {
+                    cache_disk_bytes: (8 << 20) + (32 << 10),
+                    ..Default::default()
+                },
+            );
+        }
+        self.import(&claims[..tenants.len()], false)?;
+        self.imported = true;
+        Ok(())
+    }
+
+    fn import(&self, claims: &[([u8; 32], ManagedClaim)], metadata: bool) -> Result<()> {
+        self.check()?;
+        let shared = &self.budget.shared;
+        let mut held = shared.ledger()?;
+        if shared.authority.admission_open()
+            || shared.fenced.load(Ordering::Acquire)
+            || (metadata && held.slots.iter().any(Option::is_some))
+            || (!metadata && held.slots.iter().flatten().count() != 1)
+        {
+            return Err(ManagedResourceError::State);
+        }
+        // Candidate is a fixed bounded stack object; all arithmetic, tenant
+        // and slot checks finish before ANY change to the original ledger.
+        let mut next = held.clone();
+        for (tenant, claim) in claims {
+            claim.valid()?;
+            if *tenant == [0; 32] {
+                return Err(ManagedResourceError::InvalidClaim);
+            }
+            let slot = next
+                .slots
+                .iter()
+                .position(Option::is_none)
+                .ok_or(ManagedResourceError::Full)?;
+            let scoped = next
+                .tenants
+                .iter()
+                .position(|entry| entry.is_some_and(|v| v.id == *tenant))
+                .or_else(|| next.tenants.iter().position(Option::is_none))
+                .ok_or(ManagedResourceError::Full)?;
+            let previous = next.tenants[scoped].map(|v| v.usage).unwrap_or_default();
+            let host = next
+                .usage
+                .add(*claim)
+                .ok_or(ManagedResourceError::Overflow)?;
+            let usage = previous.add(*claim).ok_or(ManagedResourceError::Overflow)?;
+            if !ManagedLimits::host().admits(host) || !ManagedLimits::tenant().admits(usage) {
+                return Err(ManagedResourceError::Full);
+            }
+            let serial = next.next;
+            next.next = serial
+                .checked_add(1)
+                .ok_or(ManagedResourceError::Overflow)?;
+            next.slots[slot] = Some(Slot {
+                serial,
+                tenant: scoped,
+                claim: *claim,
+            });
+            next.tenants[scoped] = Some(Tenant { id: *tenant, usage });
+            next.usage = host;
+            next.peak_resident = next.peak_resident.max(host.host_resident_bytes()?);
+        }
+        *held = next;
+        Ok(())
+    }
+
+    pub(crate) fn check(&self) -> Result<()> {
+        let shared = &self.budget.shared;
+        if shared.authority.admission_open()
+            || shared.fenced.load(Ordering::Acquire)
+            || !shared.authority.resource_epoch_current()
+        {
+            shared.fence();
+            return Err(ManagedResourceError::Fenced);
+        }
+        Ok(())
+    }
+
+    pub(crate) fn snapshot(&self) -> Result<ManagedSnapshot> {
+        self.check()?;
+        self.budget.snapshot()
+    }
 }
 impl ManagedResourceBudget {
     /// Identity comparison only; equal limits/usage do not identify one owner.

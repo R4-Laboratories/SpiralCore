@@ -4,6 +4,10 @@
 use super::*;
 use std::os::unix::ffi::OsStringExt;
 
+#[path = "retained_recovery.rs"]
+pub(crate) mod recovery;
+pub(crate) use recovery::{CanonicalRecoveryLayout, RetainedRecoveryCompatibility};
+
 pub(crate) const CATALOG: &str = ".retained-telemetry.bin";
 pub(crate) const CATALOG_INTENT: &str = ".retained-telemetry.intent";
 pub(crate) const CATALOG_NEXT: &str = ".retained-telemetry.next";

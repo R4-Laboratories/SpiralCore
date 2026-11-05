@@ -59,6 +59,7 @@ impl InstalledConfig {
                 include_bytes!("installed_resources.rs").as_slice(),
                 include_bytes!("installed_owner/endpoint_disks.rs").as_slice(),
                 include_bytes!("installed_owner/retained_telemetry.rs").as_slice(),
+                include_bytes!("installed_owner/retained_recovery.rs").as_slice(),
                 include_bytes!("installed_retained.rs").as_slice(),
                 include_bytes!("../../spiralcore-transfer/Cargo.toml").as_slice(),
                 include_bytes!("../../spiralcore-transfer/Cargo.lock").as_slice(),
@@ -129,13 +130,38 @@ impl From<ManagedResourceError> for SupervisorError {
 type Result<T> = std::result::Result<T, SupervisorError>;
 
 pub(crate) struct InstalledAuthority {
+    // Closed recovery owns the actual independent EX description. It grants
+    // neither worker activation nor a positive endpoint-retirement receipt.
+    // Release holder exclusion before the owner's EX on a provably empty drop.
+    _recovery_exclusion: Option<std::fs::File>,
     owner: Mutex<InstallationOwner>,
     epoch: Epoch,
     open: AtomicBool,
     workers: Mutex<WorkerLedger>,
     canonical: bool,
 }
+
+/// Only the actual owner/holders recovery transaction can produce this value.
+pub(crate) struct ClosedRecoveryAuthority(Arc<InstalledAuthority>);
+impl ClosedRecoveryAuthority {
+    pub(crate) fn into_authority(self) -> Arc<InstalledAuthority> {
+        self.0
+    }
+}
 impl InstalledAuthority {
+    pub(crate) fn from_retained_recovery(
+        exclusion: crate::installed_owner::retained_telemetry::recovery::RetainedExclusion,
+    ) -> ClosedRecoveryAuthority {
+        let (owner, holders, epoch) = exclusion.into_parts();
+        ClosedRecoveryAuthority(Arc::new(Self {
+            owner: Mutex::new(owner),
+            epoch,
+            open: AtomicBool::new(false),
+            workers: Mutex::new(WorkerLedger::default()),
+            canonical: true,
+            _recovery_exclusion: Some(holders),
+        }))
+    }
     pub(crate) fn with_disk_owner<T>(
         &self,
         operation: impl FnOnce(&mut InstallationOwner, Epoch) -> std::result::Result<T, OwnerError>,
@@ -274,7 +300,9 @@ impl InstalledSupervisor {
     ) -> Result<Arc<crate::installed_retained::RetainedTelemetryInventory>> {
         let mut original = self.retained.lock().map_err(|_| SupervisorError::State)?;
         if original.is_none() {
-            *original = Some(crate::installed_retained::RetainedTelemetryInventory::new(self)?);
+            *original = Some(crate::installed_retained::RetainedTelemetryInventory::new(
+                self,
+            )?);
         }
         original.as_ref().cloned().ok_or(SupervisorError::State)
     }
@@ -289,6 +317,7 @@ impl InstalledSupervisor {
             open: AtomicBool::new(true),
             workers: Mutex::new(WorkerLedger::default()),
             canonical: config.canonical,
+            _recovery_exclusion: None,
         });
         let budget = HostTransportBudget::new_installed(config.transport(), authority.clone())?;
         let resources = ManagedResourceBudget::new_installed(authority.clone());
@@ -534,8 +563,14 @@ impl InstalledSupervisor {
             return Err(SupervisorError::Busy);
         }
         {
-            let retained = self.retained.get_mut().map_err(|_| SupervisorError::State)?;
-            if retained.as_ref().is_some_and(|inventory| !inventory.is_empty().unwrap_or(false)) {
+            let retained = self
+                .retained
+                .get_mut()
+                .map_err(|_| SupervisorError::State)?;
+            if retained
+                .as_ref()
+                .is_some_and(|inventory| !inventory.is_empty().unwrap_or(false))
+            {
                 return Err(SupervisorError::Busy);
             }
             // Other actual aliases keep the original bookkeeping charged.

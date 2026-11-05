@@ -6,6 +6,110 @@ use std::{
 };
 
 #[test]
+fn retained_recovery_old_process_fixture() {
+    let Some(home) = std::env::var_os("SPIRALCORE_OLD_RETAINED_FIXTURE") else {
+        return;
+    };
+    let home = std::path::PathBuf::from(home);
+    let config = InstalledConfig::canonical_native_profile();
+    let profile = config.profile_hash();
+    let key = crate::installed_owner::InstallationKey {
+        installation: [121; 32],
+        profile,
+    };
+    let owner = InstallationOwner::initialize(&home.join("installation"), key).unwrap();
+    let supervisor = InstalledSupervisor::start(owner, config).unwrap();
+    let inventory = supervisor.retained_telemetry_inventory().unwrap();
+    let vms = home.join("vms");
+    fs::DirBuilder::new().mode(0o700).create(&vms).unwrap();
+    let state = vms.join("retained-before-restart");
+    fs::DirBuilder::new().mode(0o700).create(&state).unwrap();
+    let scope = inventory
+        .reserve_for_endpoint([122; 32], [123; 32], 47)
+        .unwrap();
+    inventory
+        .prepare_state(&scope, &state, &fs::File::open(&state).unwrap())
+        .unwrap();
+    // Synthetic fixture metadata supplies the explicitly expected OLD key to
+    // the parent test. It is not an authorization or a recovered scope.
+    fs::write(
+        home.join("fixture-key.json"),
+        serde_json::to_vec(&serde_json::json!({
+            "installation": key.installation,
+            "profile": profile,
+            "expected_records_bytes": 8_u64 << 20,
+            "expected_sidecar_bytes": 32_u64 << 10,
+        }))
+        .unwrap(),
+    )
+    .unwrap();
+    fs::File::open(&home).unwrap().sync_all().unwrap();
+    // Retain the actual phase-2 catalog and marker. The kernel closes all
+    // original descriptors without a Rust Drop or a fabricated VM receipt.
+    std::process::exit(0);
+}
+
+#[test]
+#[ignore = "requires the protected previous-product process fixture"]
+fn closed_recovery_charges_old_phase_two_debt_without_reopening_admission() {
+    use crate::installed_owner::retained_telemetry::{
+        CanonicalRecoveryLayout, RetainedRecoveryCompatibility,
+    };
+    let home = std::path::PathBuf::from(
+        std::env::var_os("SPIRALCORE_OLD_RETAINED_STATE")
+            .expect("explicit protected previous-product fixture required"),
+    );
+    let facts: serde_json::Value =
+        serde_json::from_slice(&fs::read(home.join("fixture-key.json")).unwrap()).unwrap();
+    let key = crate::installed_owner::InstallationKey {
+        installation: serde_json::from_value(facts["installation"].clone()).unwrap(),
+        profile: serde_json::from_value(facts["profile"].clone()).unwrap(),
+    };
+    assert_ne!(
+        key.profile,
+        InstalledConfig::canonical_native_profile().profile_hash(),
+        "this must cross the actual previous-product profile boundary"
+    );
+    let installation = home.join("installation");
+    let state = home.join("vms/retained-before-restart");
+    let marker_path = state.join(".installed-retained-telemetry");
+    let marker = fs::read(&marker_path).unwrap();
+    let catalog = fs::read(installation.join(".retained-telemetry.bin")).unwrap();
+    let owner = InstallationOwner::open(&installation, key).unwrap();
+    let compatibility = RetainedRecoveryCompatibility::published_v1().unwrap();
+    let vms = home.join("vms");
+    let layout =
+        CanonicalRecoveryLayout::from_trusted_parent(&vms, fs::File::open(&vms).unwrap()).unwrap();
+    let mut closed = owner
+        .prepare_retained_recovery(&compatibility, &layout)
+        .unwrap()
+        .adopt_closed()
+        .unwrap();
+    let snapshot = closed.snapshot().unwrap();
+    assert_eq!(snapshot.entries, 1);
+    assert_eq!(snapshot.unresolved, 1);
+    assert_eq!(
+        snapshot.managed.usage.cache_disk_bytes,
+        (8 << 20) + (32 << 10) + 8192
+    );
+    assert_eq!(snapshot.managed.usage.host_metadata_bytes, 1 << 20);
+    assert_eq!(snapshot.managed.active_reservations, 2);
+    assert!(snapshot.managed.fenced, "recovery must remain closed");
+    closed.revalidate().unwrap();
+    assert!(matches!(
+        InstallationOwner::open(&installation, key),
+        Err(crate::installed_owner::OwnerError::Busy)
+    ));
+    assert_eq!(fs::read(&marker_path).unwrap(), marker);
+    assert_eq!(
+        fs::read(installation.join(".retained-telemetry.bin")).unwrap(),
+        catalog
+    );
+    assert!(!state.join("telemetry-records.jsonl").exists());
+    assert!(!state.join("telemetry-records.key").exists());
+}
+
+#[test]
 fn retained_catalog_preserves_original_debt_after_scope_drop_and_close() {
     let home = tempfile::Builder::new()
         .permissions(fs::Permissions::from_mode(0o700))
