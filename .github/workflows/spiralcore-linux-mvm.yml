@@ -1,82 +1,69 @@
-name: SpiralCore Linux MVM contracts
+name: SpiralCore Firecracker witness preflight
+
 on:
   workflow_dispatch:
-  pull_request:
-    paths:
-      - 'crates/spiralcore-mvm-live/**'
-      - 'crates/spiralcore-mvm-adapter/**'
-      - 'crates/spiralcore-transfer/**'
-      - 'crates/spiralcore-storage-windows/**'
-      - 'crates/spiralcore-gateway-core/**'
-      - 'crates/uor-r4-object-store/**'
-      - 'docs/platforms/mvm-mailbox-portable.json'
-      - '.github/workflows/spiralcore-linux-mvm.yml'
+
 permissions:
   contents: read
+
 jobs:
-  linux-host-build-and-contracts:
+  preflight:
+    if: startsWith(github.ref, 'refs/heads/codex/installed-sdk-native-')
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
-    env:
-      CARGO_BUILD_JOBS: 2
-      CARGO_INCREMENTAL: 0
+    timeout-minutes: 8
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
+          ref: 7d1eed92551ad9d89017f26ff8f6b61103465a27
+          path: evidence
           persist-credentials: false
-      - name: Install pinned Rust toolchain
-        run: rustup toolchain install 1.97.1 --profile minimal --component clippy
-      - name: Verify the published canonical MVM dependency source
-        shell: bash
+          sparse-checkout: docs/network/evidence/2026-11-05-native-preflight
+      - name: Open KVM and create a blank VM
         run: |
           set -euo pipefail
-          expected=$(jq -er '.mvm_source | strings | select(length > 0)' docs/platforms/mvm-mailbox-portable.json)
-          # Resolve the actual default Cargo dependency closure, without a local
-          # patch override or the retired 3104 preparation. No guest is booted.
-          cargo +1.97.1 metadata --locked --format-version 1 \
-            --manifest-path crates/spiralcore-mvm-live/Cargo.toml \
-            --features linux-host --filter-platform x86_64-unknown-linux-gnu \
-            > "$RUNNER_TEMP/mvm-live-metadata.json"
-          jq -e --arg expected "$expected" '
-            [.packages[] | select(.name | startswith("mvm-"))] as $m |
-            ($m | length) > 0 and
-            any($m[]; .name == "mvm-core") and
-            any($m[]; .name == "mvm-contract") and
-            all($m[]; .source == $expected)
-          ' "$RUNNER_TEMP/mvm-live-metadata.json"
-          jq '[.packages[] | select(.name | startswith("mvm-")) | {name, version, source}]' \
-            "$RUNNER_TEMP/mvm-live-metadata.json"
-      - name: Linux host, canonical envelope, recovery and packing tests
-        shell: bash
+          work="$(mktemp -d "$RUNNER_TEMP/sc-kvm.XXXXXX")"
+          cat > "$work/probe.c" <<'C'
+          #include <fcntl.h>
+          #include <linux/kvm.h>
+          #include <stdio.h>
+          #include <sys/ioctl.h>
+          #include <unistd.h>
+
+          int main(void) {
+              int kvm = open("/dev/kvm", O_RDWR | O_CLOEXEC);
+              if (kvm < 0) {
+                  perror("open /dev/kvm");
+                  return 1;
+              }
+              int api = ioctl(kvm, KVM_GET_API_VERSION, 0);
+              if (api != KVM_API_VERSION) {
+                  fprintf(stderr, "unexpected KVM API version %d\n", api);
+                  return 1;
+              }
+              int vm = ioctl(kvm, KVM_CREATE_VM, 0);
+              if (vm < 0) {
+                  perror("KVM_CREATE_VM");
+                  return 1;
+              }
+              close(vm);
+              close(kvm);
+              printf("KVM API %d, empty VM created and closed\n", api);
+              return 0;
+          }
+          C
+          cc -Wall -Wextra -Werror "$work/probe.c" -o "$work/probe"
+          sudo -n -- "$work/probe"
+      - name: Fetch and verify the exact public guest image inputs
         run: |
           set -euo pipefail
-          cargo +1.97.1 test --release --locked \
-            --manifest-path crates/spiralcore-mvm-live/Cargo.toml \
-            --features linux-host --all-targets -- --test-threads=1
-      # Portable service target counts are additionally enforced per native OS
-      # by mvm-mailbox-portable.yml; enable live here so they do not compile away.
-      - name: Shared object-v1 and canonical mailbox conformance
-        shell: bash
-        run: |
-          set -euo pipefail
-          cargo +1.97.1 test --locked \
-            --manifest-path crates/spiralcore-transfer/Cargo.toml --test v1_contract
-          cargo +1.97.1 test --locked \
-            --manifest-path crates/spiralcore-mvm-adapter/Cargo.toml \
-            --features live,conformance,hardware-sha256 --all-targets
-          bash crates/spiralcore-mvm-live/scripts/test-v1-comparison.sh
-      - name: Linux warnings check
-        shell: bash
-        run: |
-          set -euo pipefail
-          cargo +1.97.1 clippy --locked \
-            --manifest-path crates/spiralcore-mvm-live/Cargo.toml \
-            --features linux-host --all-targets -- -D warnings
-      - name: Default Linux guest entry and measurement analyzer
-        shell: bash
-        run: |
-          set -euo pipefail
-          cargo +1.97.1 check --locked \
-            --manifest-path crates/spiralcore-mvm-live/Cargo.toml \
-            --all-targets
-          bash crates/spiralcore-mvm-live/scripts/test-combined-analysis.sh
+          packet="$GITHUB_WORKSPACE/evidence/docs/network/evidence/2026-11-05-native-preflight/native-asset-receipts.tar.xz"
+          work="$(mktemp -d "$RUNNER_TEMP/sc-assets.XXXXXX")"
+          cd "$work"
+          tar -xJOf "$packet" receipt-freeze/official.sha256 > official.sha256
+          test "$(wc -l < official.sha256)" -eq 9
+          while read -r digest name; do
+            [[ "$digest" =~ ^[a-f0-9]{64}$ && "$name" =~ ^[a-zA-Z0-9._-]+$ && "$name" != -* ]]
+            curl --fail --silent --show-error --location --retry 2 --max-time 90 \
+              --output "$name" "https://github.com/tinylabscom/mvm-images/releases/download/image-set%2Fv0.2.4/$name"
+          done < official.sha256
+          sha256sum --strict -c official.sha256
