@@ -1,0 +1,396 @@
+--- a/crates/mvm-vmm/src/host/process_exit.rs
++++ b/crates/mvm-vmm/src/host/process_exit.rs
+@@ -221,6 +221,44 @@
+         })
+     }
+ 
++    /// Pin the kernel peer of an already-connected Unix socket. The cached
++    /// peer PID alone cannot safely be reopened after the peer has exited.
++    #[cfg(target_os = "linux")]
++    pub(super) fn arm_socket_peer(
++        socket: &std::os::unix::net::UnixStream,
++    ) -> Result<Self, ProcessExitError> {
++        use std::os::fd::AsRawFd;
++
++        let pid = super::uds_peer::connected_peer_pid(socket).map_err(ProcessExitError::Io)?;
++        let mut fd = -1;
++        let mut len = std::mem::size_of::<libc::c_int>() as libc::socklen_t;
++        // SAFETY: one live Unix socket and writable fd/length storage of the
++        // exact size required by SO_PEERPIDFD. Success transfers an owned fd.
++        let status = unsafe {
++            libc::getsockopt(
++                socket.as_raw_fd(),
++                libc::SOL_SOCKET,
++                libc::SO_PEERPIDFD,
++                (&mut fd as *mut libc::c_int).cast(),
++                &mut len,
++            )
++        };
++        if status != 0 {
++            return Err(ProcessExitError::Io(io::Error::last_os_error()));
++        }
++        if fd < 0 {
++            return Err(ProcessExitError::Unsupported);
++        }
++        let observer = Self {
++            pid,
++            kind: ObserverKind::PidFd { fd },
++        };
++        if len as usize != std::mem::size_of::<libc::c_int>() {
++            return Err(ProcessExitError::Unsupported);
++        }
++        Ok(observer)
++    }
++
+     #[cfg(target_os = "linux")]
+     fn arm_pidfd(pid: libc::pid_t) -> Result<Self, ProcessExitError> {
+         // SAFETY: pidfd_open is invoked with a validated PID and no flags.
+--- a/crates/mvm-vmm/src/host/fc_lifetime.rs
++++ b/crates/mvm-vmm/src/host/fc_lifetime.rs
+@@ -16,11 +16,16 @@
+         fd::{AsRawFd, FromRawFd},
+         unix::{
+             fs::{MetadataExt, OpenOptionsExt},
++            net::UnixStream,
+             process::{CommandExt, ExitStatusExt},
+         },
+     },
+     path::PathBuf,
+     process::{Child, ChildStdin, ChildStdout, ExitStatus, Stdio},
++    sync::{
++        Arc, Weak,
++        atomic::{AtomicBool, Ordering},
++    },
+     time::{Duration, Instant},
+ };
+ 
+@@ -140,6 +145,55 @@
+     native_pid: Option<u32>,
+     confirmed: Option<ConfirmedExit>,
+     stop_started: bool,
++    route_live: Option<Arc<AtomicBool>>,
++}
++
++/// A read-only pin of the exact original launcher, native process, and launch
++/// binding. This grants neither guest identity nor permission to accept.
++#[must_use]
++pub struct ObservedNativeRoute {
++    binding: HostLaunchBinding,
++    native_pid: libc::pid_t,
++    native: ProcessExitObserver,
++    launcher: ProcessExitObserver,
++    live: Weak<AtomicBool>,
++}
++
++impl ObservedNativeRoute {
++    pub fn verify_peer(&self, binding: &HostLaunchBinding, stream: &UnixStream) -> Result<()> {
++        let live = self
++            .live
++            .upgrade()
++            .context("original Firecracker route owner dropped")?;
++        ensure!(
++            &self.binding == binding && live.load(Ordering::Acquire),
++            "original Firecracker route binding or lifetime differs"
++        );
++        ensure!(
++            super::uds_peer::connected_peer_pid(stream)? == self.native_pid,
++            "socket peer is not the original Firecracker process"
++        );
++        // A cached numeric credential can outlive an exited peer. Both
++        // process pins must still be live around the peer observation.
++        require_live_pidfd(&self.native)?;
++        require_live_pidfd(&ProcessExitObserver::arm_socket_peer(stream)?)?;
++        require_live_pidfd(&self.native)?;
++        require_live_pidfd(&self.launcher)?;
++        ensure!(
++            live.load(Ordering::Acquire),
++            "original Firecracker route closed"
++        );
++        Ok(())
++    }
++}
++
++fn require_live_pidfd(observer: &ProcessExitObserver) -> Result<()> {
++    ensure!(
++        observer.event_fd().is_some()
++            && observer.wait_event(Instant::now())? == ProcessExitWait::TimedOut,
++        "original Firecracker process observation is no longer live"
++    );
++    Ok(())
+ }
+ 
+ pub struct LaunchFailure {
+@@ -177,6 +231,7 @@
+             native_pid: None,
+             confirmed: None,
+             stop_started: false,
++            route_live: None,
+         }
+     }
+     /// The caller must select/verify the real guardian before constructing its command.
+@@ -189,6 +244,7 @@
+             native_pid: None,
+             confirmed: None,
+             stop_started: false,
++            route_live: None,
+         };
+         let result = (|| {
+             require_owned_child_custody()?;
+@@ -244,8 +300,56 @@
+         self.native_pid
+     }
+ 
++    /// Pin the original native route once, using the already connected API
++    /// socket and the verified Ready identity. The guardian keeps its original
++    /// Child unreaped while its private control pipes remain open.
++    pub fn observe_native_route(&mut self, api: &UnixStream) -> Result<ObservedNativeRoute> {
++        require_owned_child_custody()?;
++        ensure!(
++            !self.stop_started
++                && self.confirmed.is_none()
++                && self.route_live.is_none()
++                && self.input.is_some()
++                && self.output.is_some(),
++            "original Firecracker route observation is unavailable"
++        );
++        let native_pid = libc::pid_t::try_from(self.native_pid.context("guardian Ready missing")?)?;
++        ensure!(
++            super::uds_peer::connected_peer_pid(api)? == native_pid,
++            "Firecracker API peer differs from verified guardian Ready"
++        );
++        let child = self.child.as_mut().context("original launcher missing")?;
++        ensure!(
++            child.try_wait()?.is_none(),
++            "original Firecracker launcher exited"
++        );
++        let launcher = ProcessExitObserver::arm(child.id().try_into()?)?;
++        let native = ProcessExitObserver::arm_socket_peer(api)
++            .context("pin the connected Firecracker API peer pidfd")?;
++        require_live_pidfd(&native)?;
++        require_live_pidfd(&launcher)?;
++        let live = Arc::new(AtomicBool::new(true));
++        let route = ObservedNativeRoute {
++            binding: self.binding.clone(),
++            native_pid,
++            native,
++            launcher,
++            live: Arc::downgrade(&live),
++        };
++        route.verify_peer(&self.binding, api)?;
++        self.route_live = Some(live);
++        Ok(route)
++    }
++
++    fn close_native_route(&self) {
++        if let Some(live) = &self.route_live {
++            live.store(false, Ordering::Release);
++        }
++    }
++
+     /// Never sends a numeric signal; the guardian signals only its unreaped Child.
+     pub fn stop(&mut self, deadline: Instant) -> Result<ConfirmedExit> {
++        self.close_native_route();
+         if let Some(proof) = &self.confirmed {
+             return Ok(proof.clone());
+         }
+@@ -335,6 +439,7 @@
+ 
+ impl Drop for OwnedFcLauncher {
+     fn drop(&mut self) {
++        self.close_native_route();
+         if self.confirmed.is_none() {
+             // EOF asks the actual guardian to clean only its owned child. Keep
+             // the exact unreaped launcher handle; a timeout is never a refund.
+--- a/crates/mvm-vmm/src/host/fc_lifetime/tests.rs
++++ b/crates/mvm-vmm/src/host/fc_lifetime/tests.rs
+@@ -3,6 +3,11 @@
+ use std::process::Command;
+ 
+ const MODE: &str = "MVM_FC_GUARDIAN_OWNED_FIXTURE";
++const PEER_MODE: &str = "MVM_FC_GUARDIAN_NATIVE_PEER_FIXTURE";
++
++fn fixture_test(name: &str) -> String {
++    format!("{}::{name}", module_path!().split_once("::").unwrap().1)
++}
+ 
+ fn fixture_binding() -> HostLaunchBinding {
+     HostLaunchBinding {
+@@ -38,21 +43,50 @@
+         .open(path)
+         .unwrap();
+     holder.lock_shared().unwrap();
+-    let child = Command::new("/bin/sh")
+-        .args(["-c", "read -r owned_fixture_input"])
+-        .stdin(Stdio::piped())
+-        .stdout(Stdio::null())
+-        .stderr(Stdio::null())
+-        .spawn()
+-        .unwrap();
++    let child = if let Some(peer) = std::env::var_os(PEER_MODE) {
++        Command::new(std::env::current_exe().unwrap())
++            .args([
++                "--exact",
++                &fixture_test("guardian_fixture_native_peer"),
++                "--test-threads=1",
++            ])
++            .env(PEER_MODE, peer)
++            .stdin(Stdio::null())
++            .stdout(Stdio::null())
++            .stderr(Stdio::null())
++            .spawn()
++            .unwrap()
++    } else {
++        Command::new("/bin/sh")
++            .args(["-c", "read -r owned_fixture_input"])
++            .stdin(Stdio::piped())
++            .stdout(Stdio::null())
++            .stderr(Stdio::null())
++            .spawn()
++            .unwrap()
++    };
+     serve_child(child, holder, prepare, &mut input, &mut output).unwrap();
+ }
+ 
++#[test]
++fn guardian_fixture_native_peer() {
++    let Some(path) = std::env::var_os(PEER_MODE) else {
++        return;
++    };
++    let mut socket = UnixStream::connect(&path).unwrap();
++    let _replacement = UnixStream::connect(path).unwrap();
++    socket
++        .set_read_timeout(Some(Duration::from_secs(5)))
++        .unwrap();
++    assert_eq!(socket.read(&mut [0]).unwrap(), 0);
++}
++
+ fn spawn_fixture(holder: &std::path::Path) -> Child {
+-    let target = format!(
+-        "{}::guardian_fixture_child",
+-        module_path!().split_once("::").unwrap().1
+-    );
++    spawn_fixture_with_peer(holder, None)
++}
++
++fn spawn_fixture_with_peer(holder: &std::path::Path, peer: Option<&std::path::Path>) -> Child {
++    let target = fixture_test("guardian_fixture_child");
+     let mut command = Command::new(std::env::current_exe().unwrap());
+     command
+         .args(["--exact", &target, "--nocapture", "--test-threads=1"])
+@@ -60,6 +94,11 @@
+         .stdin(Stdio::piped())
+         .stdout(Stdio::piped())
+         .stderr(Stdio::null());
++    if let Some(path) = peer {
++        command.env(PEER_MODE, path);
++    } else {
++        command.env_remove(PEER_MODE);
++    }
+     // SAFETY: only descriptor operations in this owned fixture child. Preserve
+     // the protocol pipe before directing libtest's unrelated banners elsewhere.
+     unsafe {
+@@ -276,3 +315,104 @@
+     assert!(reopen_output(&source).is_err());
+     assert_eq!(std::fs::read(&path).unwrap(), b"original");
+ }
++
++#[test]
++fn native_route_observation_requires_exact_peer_and_refuses_dead_original_child() {
++    use std::os::unix::net::UnixListener;
++
++    let root = tempfile::tempdir().unwrap();
++    let path = root.path().join("holders.lock");
++    let file = OpenOptions::new()
++        .read(true)
++        .write(true)
++        .create_new(true)
++        .mode(0o600)
++        .open(&path)
++        .unwrap();
++    let meta = file.metadata().unwrap();
++    let output = OutputFile {
++        parent_pid: std::process::id(),
++        fd: file.as_raw_fd(),
++        object: (meta.dev(), meta.ino().checked_add(1).unwrap()),
++        uid: meta.uid(),
++    };
++    let api_path = root.path().join("api.sock");
++    let listener = UnixListener::bind(&api_path).unwrap();
++    listener.set_nonblocking(true).unwrap();
++    let mut config = FcGuardianConfig {
++        binding: fixture_binding(),
++        program: "/not-used-by-owned-fixture".into(),
++        api_socket: api_path.clone(),
++        state_dir: root.path().to_owned(),
++        holder_object: (meta.dev(), meta.ino()),
++        holder_uid: meta.uid(),
++        console: output.clone(),
++        stderr: output,
++    };
++    config.stderr.object.1 = config.stderr.object.1.checked_add(2).unwrap();
++    let child = spawn_fixture_with_peer(&path, Some(&api_path));
++    let cap = Instant::now() + Duration::from_secs(3);
++    let mut launcher = OwnedFcLauncher::start(child, config, cap).unwrap();
++    let accept = || loop {
++        match listener.accept() {
++            Ok((stream, _)) => break stream,
++            Err(error) if error.kind() == io::ErrorKind::WouldBlock => {
++                assert!(Instant::now() < cap);
++                std::thread::sleep(Duration::from_millis(1));
++            }
++            Err(error) => panic!("accept native fixture peer: {error}"),
++        }
++    };
++    let api = accept();
++    let replacement = accept();
++    let (foreign, _foreign_peer) = UnixStream::pair().unwrap();
++    assert!(launcher.observe_native_route(&foreign).is_err());
++    let observation = launcher.observe_native_route(&api).unwrap();
++    assert!(observation.verify_peer(&fixture_binding(), &api).is_ok());
++    assert!(
++        observation
++            .verify_peer(&fixture_binding(), &replacement)
++            .is_ok()
++    );
++    assert!(
++        observation
++            .verify_peer(&fixture_binding(), &foreign)
++            .is_err()
++    );
++    let mut wrong_binding = fixture_binding();
++    wrong_binding.grant_serial += 1;
++    assert!(observation.verify_peer(&wrong_binding, &api).is_err());
++    assert!(launcher.observe_native_route(&api).is_err());
++
++    api.shutdown(std::net::Shutdown::Write).unwrap();
++    let cap = Instant::now() + Duration::from_secs(2);
++    while observation.verify_peer(&fixture_binding(), &api).is_ok() {
++        assert!(Instant::now() < cap, "the dead child still verifies");
++        std::thread::sleep(Duration::from_millis(1));
++    }
++    assert_eq!(
++        super::super::uds_peer::connected_peer_pid(&api).unwrap(),
++        observation.native_pid,
++        "the original socket still carries its cached peer PID"
++    );
++    assert!(
++        observation
++            .verify_peer(&fixture_binding(), &replacement)
++            .is_err()
++    );
++    assert_eq!(
++        observation.native.wait_event(Instant::now()).unwrap(),
++        ProcessExitWait::Exited
++    );
++    assert!(
++        file.try_lock().is_err(),
++        "guardian still retains the original child"
++    );
++    let exit = launcher
++        .stop(Instant::now() + Duration::from_secs(3))
++        .unwrap();
++    assert_eq!(exit.binding(), &fixture_binding());
++    assert!(launcher.observe_native_route(&api).is_err());
++    assert!(observation.verify_peer(&fixture_binding(), &api).is_err());
++    file.try_lock().unwrap();
++}
