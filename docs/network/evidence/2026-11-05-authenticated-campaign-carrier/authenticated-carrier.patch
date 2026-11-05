@@ -1,0 +1,388 @@
+--- a/crates/spiralcore-mvm-live/src/campaign.rs
++++ b/crates/spiralcore-mvm-live/src/campaign.rs
+@@ -3,6 +3,8 @@
+ mod completed;
+ mod reconciliation;
+ mod session;
++#[cfg(all(target_os = "linux", any(test, feature = "installed-mailbox-witness")))]
++use crate::mailbox_witness::AuthenticatedCampaignCarrier;
+ use crate::{
+     Result,
+     config::{Arm, Bootstrap, Plan, Published, Role},
+@@ -14,8 +16,10 @@
+ pub use reconciliation::{ReconciliationSignal, ReplyReplaySignal};
+ use serde_json::{Value, json};
+ use spiralcore_gateway_core::object::{ObjectMode, ObjectSelection, ObjectSender};
+-use spiralcore_mvm_adapter::live::{
+-    HandshakeRole, LiveError, SocketIo, StreamCounters, StreamTransport,
++use spiralcore_mvm_adapter::{
++    live::{HandshakeRole, LiveError, SocketIo, StreamCounters, StreamTransport},
++    service::LocalMailboxService,
++    service_object::ObjectMailbox,
+ };
+ use spiralcore_transfer::{
+     self as transfer, Id,
+@@ -29,6 +33,7 @@
+     shared_transfer::PreparedPrediction,
+ };
+ use std::{
++    borrow::BorrowMut,
+     fs,
+     io::{self, Read, Write},
+     path::Path,
+@@ -244,13 +249,45 @@
+     let stream = StreamTransport::new(socket, route, CALL_TIMEOUT)?;
+     let cancel = CancellationToken::default();
+     stream.handshake(role, &cancel)?;
+-    let mut client = Client {
++    let client = Client {
+         stream,
+         cancel,
+         exchange: Meter::default(),
+         service,
+         on_call,
+     };
++    send_campaign(bootstrap, cases, client, (cpu, wall), out)
++}
++
++#[cfg(all(target_os = "linux", any(test, feature = "installed-mailbox-witness")))]
++pub(crate) fn sender_on_authenticated<S: SocketIo + 'static>(
++    carrier: AuthenticatedCampaignCarrier<'_, S>,
++    broker: &spiralcore_mvm_adapter::broker::BrokerContext,
++    out: &mut impl Write,
++) -> Result<Value> {
++    let (bootstrap, stream, cancel) = carrier.into_parts();
++    if bootstrap.role != Role::Sender {
++        return Err("sender bootstrap role mismatch".into());
++    }
++    let started = (ProcessTime::now(), Instant::now());
++    let cases = cases(&bootstrap.plan)?;
++    let client = Client {
++        stream,
++        cancel,
++        exchange: Meter::default(),
++        service: canonical::Session::new(bootstrap, broker)?,
++        on_call: None,
++    };
++    send_campaign(bootstrap, cases, client, started, out)
++}
++
++fn send_campaign<S: SocketIo + 'static>(
++    bootstrap: &Bootstrap,
++    cases: Vec<Fixture>,
++    mut client: Client<'_, S>,
++    (cpu, wall): (ProcessTime, Instant),
++    out: &mut impl Write,
++) -> Result<Value> {
+     let (context, probe) = client.call(&Frame {
+         kind: 5,
+         transfer: PROBE,
+@@ -414,11 +451,11 @@
+     }
+ }
+ 
+-struct Server<'a, S: SocketIo> {
++struct Server<'a, S: SocketIo, T = LocalMailboxService> {
+     stream: StreamTransport<S>,
+     cancel: CancellationToken,
+-    service: canonical::Session,
+-    object: spiralcore_mvm_adapter::service_object::ObjectMailbox,
++    service: canonical::Session<T>,
++    object: ObjectMailbox,
+     on_reply_replay: Option<&'a mut dyn FnMut(ReplyReplaySignal) -> Result<()>>,
+ }
+ struct Handled {
+@@ -426,7 +463,7 @@
+     namespace: Id,
+     meter: Meter,
+ }
+-impl<S: SocketIo + 'static> Server<'_, S> {
++impl<S: SocketIo + 'static, T: BorrowMut<LocalMailboxService>> Server<'_, S, T> {
+     fn handle(&mut self, expected_transfer: Id) -> Result<Handled> {
+         if let Some(on_handle) = self.on_reply_replay.as_mut() {
+             let (signal, requests) = reconciliation::bounded_reply_replays();
+@@ -524,6 +561,50 @@
+         namespace_bytes: 128 << 20,
+         ..Limits::default()
+     };
++    let object = open_receiver_object(bootstrap, cache_root, limits)?;
++    stream.handshake(role, &cancel)?;
++    let server = Server {
++        stream,
++        cancel,
++        service,
++        object,
++        on_reply_replay,
++    };
++    receive_campaign(bootstrap, cache_root, cases, server, (cpu, wall), out)
++}
++
++#[cfg(all(target_os = "linux", any(test, feature = "installed-mailbox-witness")))]
++pub(crate) fn receiver_on_authenticated<S: SocketIo + 'static>(
++    carrier: AuthenticatedCampaignCarrier<'_, S>,
++    broker: &spiralcore_mvm_adapter::broker::BrokerContext,
++    service: &mut LocalMailboxService,
++    cache_root: &Path,
++    limits: Limits,
++    out: &mut impl Write,
++) -> Result<Value> {
++    let (bootstrap, stream, cancel) = carrier.into_parts();
++    if bootstrap.role != Role::Receiver {
++        return Err("receiver bootstrap role mismatch".into());
++    }
++    let started = (ProcessTime::now(), Instant::now());
++    let cases = cases(&bootstrap.plan)?;
++    let service = canonical::Session::with_service(bootstrap, broker, |_| Ok(service))?;
++    let object = open_receiver_object(bootstrap, cache_root, limits)?;
++    let server = Server {
++        stream,
++        cancel,
++        service,
++        object,
++        on_reply_replay: None,
++    };
++    receive_campaign(bootstrap, cache_root, cases, server, started, out)
++}
++
++fn open_receiver_object(
++    bootstrap: &Bootstrap,
++    cache_root: &Path,
++    limits: Limits,
++) -> Result<ObjectMailbox> {
+     let policy = spiralcore_mvm_adapter::Policy::new(
+         bootstrap
+             .incoming
+@@ -531,21 +612,19 @@
+             .ok_or("missing incoming")?
+             .context()?,
+     )?;
+-    let mut object = spiralcore_mvm_adapter::service_object::ObjectMailbox::open(
+-        cache_root,
+-        limits,
+-        policy,
+-        ColdGraphPolicy::Disabled,
+-    )?;
++    let mut object = ObjectMailbox::open(cache_root, limits, policy, ColdGraphPolicy::Disabled)?;
+     object.set_codec_cache_enabled(true)?;
+-    stream.handshake(role, &cancel)?;
+-    let mut server = Server {
+-        stream,
+-        cancel,
+-        service,
+-        object,
+-        on_reply_replay,
+-    };
++    Ok(object)
++}
++
++fn receive_campaign<S: SocketIo + 'static, T: BorrowMut<LocalMailboxService>>(
++    bootstrap: &Bootstrap,
++    cache_root: &Path,
++    cases: Vec<Fixture>,
++    mut server: Server<'_, S, T>,
++    (cpu, wall): (ProcessTime, Instant),
++    out: &mut impl Write,
++) -> Result<Value> {
+     let probe = server.handle(PROBE)?;
+     if probe.reply.kind != 127
+         || probe.reply.body != (transfer::Error::Unknown as u16).to_le_bytes()
+--- a/crates/spiralcore-mvm-live/src/mailbox_witness.rs
++++ b/crates/spiralcore-mvm-live/src/mailbox_witness.rs
+@@ -232,6 +232,42 @@
+     ))
+ }
+ 
++/// A campaign carrier can only be minted by the existing installed pin
++/// authentication. It carries the exact endpoint bootstrap used for its route.
++pub(crate) struct AuthenticatedCampaignCarrier<'a, S: SocketIo> {
++    endpoint: &'a Bootstrap,
++    stream: StreamTransport<S>,
++    cancel: CancellationToken,
++}
++
++impl<'a, S: SocketIo + 'static> AuthenticatedCampaignCarrier<'a, S> {
++    fn open(
++        endpoint: &'a Bootstrap,
++        socket: S,
++        role: HandshakeRole,
++        pin: &RecoveryPin,
++    ) -> Result<Self> {
++        campaign::validate_service_bootstrap(endpoint)?;
++        let cancel = CancellationToken::default();
++        let stream = Peer::carrier(
++            endpoint,
++            socket,
++            role,
++            &cancel,
++            Some((pin, Instant::now() + RECOVERY_CAP)),
++        )?;
++        Ok(Self {
++            endpoint,
++            stream,
++            cancel,
++        })
++    }
++
++    pub(crate) fn into_parts(self) -> (&'a Bootstrap, StreamTransport<S>, CancellationToken) {
++        (self.endpoint, self.stream, self.cancel)
++    }
++}
++
+ struct Peer<'a, S: SocketIo> {
+     broker: &'a BrokerContext,
+     incoming: MailboxBinding,
+@@ -850,3 +886,6 @@
+ 
+ #[cfg(test)]
+ mod tests;
++
++#[cfg(test)]
++mod campaign_carrier_tests;
+--- /dev/null
++++ b/crates/spiralcore-mvm-live/src/mailbox_witness/campaign_carrier_tests.rs
+@@ -0,0 +1,145 @@
++use super::*;
++use spiralcore_transfer::endpoint::Limits;
++
++fn pins() -> (RecoveryPin, RecoveryPin) {
++    let guest = SigningKey::from_bytes(&[11; 32]);
++    let host = SigningKey::from_bytes(&[12; 32]);
++    let session = "installed-campaign-component/v1".to_owned();
++    (
++        RecoveryPin {
++            session: session.clone(),
++            signing_key: guest.to_bytes(),
++            peer: host.verifying_key().to_bytes(),
++        },
++        RecoveryPin {
++            session,
++            signing_key: host.to_bytes(),
++            peer: guest.verifying_key().to_bytes(),
++        },
++    )
++}
++
++#[test]
++fn authenticated_carrier_runs_exact_campaign_on_borrowed_service() {
++    let pair = Pair::provision(Plan {
++        stage: Stage::Two,
++        arm: Arm::Raw,
++        size: 128,
++        trial: 2,
++        bandwidth_profile: Default::default(),
++    })
++    .unwrap();
++    let (guest_pin, host_pin) = pins();
++    let (guest, host) = UnixStream::pair().unwrap();
++    let guest = GuestSocket::new(guest).unwrap();
++    let sender = campaign::broker_context().unwrap();
++    let receiver = campaign::broker_context().unwrap();
++    let mut original = receiver
++        .with_time(|budget, _| LocalMailboxService::new(budget.clone()))
++        .unwrap();
++    let root = tempfile::tempdir().unwrap();
++    let cache = root.path().join("cache");
++    let (sent, received) = std::thread::scope(|scope| {
++        let endpoint = &pair.receiver;
++        let receiver = &receiver;
++        let original = &mut original;
++        let cache = &cache;
++        let worker = scope.spawn(move || {
++            let carrier = AuthenticatedCampaignCarrier::open(
++                endpoint,
++                host,
++                HandshakeRole::Acceptor,
++                &host_pin,
++            )
++            .unwrap();
++            campaign::receiver_on_authenticated(
++                carrier,
++                receiver,
++                original,
++                cache,
++                Limits {
++                    max_active: 1,
++                    resident_bytes: 4 << 20,
++                    cache_bytes: 4 << 20,
++                    namespace_bytes: 4 << 20,
++                    ..Limits::default()
++                },
++                &mut std::io::sink(),
++            )
++            .unwrap()
++        });
++        let carrier = AuthenticatedCampaignCarrier::open(
++            &pair.sender,
++            guest,
++            HandshakeRole::Initiator,
++            &guest_pin,
++        )
++        .unwrap();
++        let sent =
++            campaign::sender_on_authenticated(carrier, &sender, &mut std::io::sink()).unwrap();
++        (sent, worker.join().unwrap())
++    });
++    assert_eq!(received["exact_reopened"], true);
++    let published: Vec<crate::config::Published> =
++        serde_json::from_value(received["published"].clone()).unwrap();
++    campaign::verify(&pair.sender.plan, &cache, &published, &mut std::io::sink()).unwrap();
++    let calls = sent["service"]["application_calls"].as_u64().unwrap();
++    assert_eq!(received["service"]["application_calls"], calls);
++    for (a, b) in [(&sent, &received), (&received, &sent)] {
++        for stem in ["envelope_bytes", "framing_bytes", "frames"] {
++            assert_eq!(
++                a["counters"][format!("{stem}_sent")],
++                b["counters"][format!("{stem}_received")]
++            );
++        }
++        assert_eq!(a["counters"]["frames_sent"], calls * 2);
++    }
++    let state = original.snapshot();
++    assert_eq!(state.accepted as u64, calls);
++    assert_eq!((state.fifo_scopes, state.fifo_entries), (1, 0));
++    receiver.with_time(|_, now| original.shutdown(now)).unwrap();
++    println!(
++        "{}",
++        serde_json::json!({
++            "application_calls": calls,
++            "publication_lengths": published.iter().map(|p| p.length).collect::<Vec<_>>(),
++            "sender": {"counters": sent["counters"], "cpu_us": sent["cpu_us"], "wall_us": sent["wall_us"]},
++            "receiver": {"counters": received["counters"], "cpu_us": received["cpu_us"], "wall_us": received["wall_us"]},
++        })
++    );
++}
++
++#[test]
++fn wrong_enrolled_pin_cannot_create_campaign_carrier() {
++    let pair = Pair::provision(Plan {
++        stage: Stage::Two,
++        arm: Arm::Raw,
++        size: 128,
++        trial: 2,
++        bandwidth_profile: Default::default(),
++    })
++    .unwrap();
++    let (mut guest_pin, host_pin) = pins();
++    guest_pin.peer = SigningKey::from_bytes(&[13; 32]).verifying_key().to_bytes();
++    let (guest, host) = UnixStream::pair().unwrap();
++    std::thread::scope(|scope| {
++        let worker = scope.spawn(|| {
++            AuthenticatedCampaignCarrier::open(
++                &pair.receiver,
++                host,
++                HandshakeRole::Acceptor,
++                &host_pin,
++            )
++        });
++        assert!(
++            AuthenticatedCampaignCarrier::open(
++                &pair.sender,
++                guest,
++                HandshakeRole::Initiator,
++                &guest_pin,
++            )
++            .is_err()
++        );
++        let _ = worker.join().unwrap();
++    });
++}
