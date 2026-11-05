@@ -1,0 +1,78 @@
+{
+  "scope": "Linux x86_64 release, authenticated canonical MVM envelope and receipts over Unix socket pair, original signed fixture grant and managed pool, Runtime ownership controls; no guest, WAN or production activation.",
+  "pinned_source_entries": 5414,
+  "source_inventory_sha256": "33cbabde3adaafb93175f503029f728fc7605f6dea326df63866702438d27a3f",
+  "runtime_protected_binary_sha256": "b1ce8935860f739d55f6be84f6efdc273fc65a473d38698b703f539595534180",
+  "resident_protected_binary_sha256": "3accabd085df00ad575a109d2e20fd7df080424c159a36ff45a1bd43cf986907",
+  "before_after_sources": {
+    "sdk/crates/mvm-core/src/host_lifetime.rs": {
+      "before_sha256": "096e98c2a72854063052725f755ac478bb68fd8414d074cdff528bc18f1aa6ab",
+      "after_sha256": "4548c1518a1e3e0d2d6db8aac809ae8b17179070558ca1b187e5d12f73ec5207"
+    },
+    "sdk/crates/mvm-runtime/src/workload_runner/runner/installed.rs": {
+      "before_sha256": "835415e9dda329c93a9456761f9a35a423d78f021867bd748e4f9b1af2594bfe",
+      "after_sha256": "011720519440823359452894de8fa84d7e87c861cead8340a7462ac03ce197e7"
+    },
+    "sdk/crates/mvm-runtime/src/workload_runner/runner/installed/retirement_tests.rs": {
+      "before_sha256": "cc0f352b31e9bb134b7cbffbeba1961aa2a55cc2b5a7fb30f7c739032b3f3051",
+      "after_sha256": "a697f3aba4f9adea297b027f0e35c6cf7060323e49b631ebdf71f7cba84e150b"
+    },
+    "source/crates/spiralcore-mvm-live/src/installed_parent.rs": {
+      "before_sha256": "b4320f32c3dd9722d2508caec97c942c68f57d304565cf6227845cdbfbc2f960",
+      "after_sha256": "ef27ea725a27af3b338f8192cf3131d168e011ec3736d36d6378d389b88a3292"
+    },
+    "source/crates/spiralcore-mvm-live/src/installed_parent/config_tests.rs": {
+      "before_sha256": "f92816a621b9049a6d2d60ff202a060c86ecf92fc58a62087e1c1b744a71ab63",
+      "after_sha256": "59ee299d9394f18f66e21a9338a696c1a2312b4d9d84fec4a72a3576143fa7da"
+    },
+    "source/crates/spiralcore-mvm-live/src/installed_parent/mailbox_job.rs": {
+      "before_sha256": null,
+      "after_sha256": "819235002302f90708d418547c52f137ccb565a7da6c261a1f9d8a459b06e768"
+    },
+    "source/crates/spiralcore-mvm-live/src/installed_parent/mailbox_job/fence.rs": {
+      "before_sha256": null,
+      "after_sha256": "895eb22ec73c93f54bbbe225dc41926bedae2b117d2c9a54ea00102be5e09f4b"
+    }
+  },
+  "protected_tests": {
+    "resident_signed_grant_canonical_round_trip_and_unwind": 1,
+    "original_worker_capacity_refusal": 1,
+    "runtime_installed": 11,
+    "kernel_custody": 1
+  },
+  "local_normal_arm": {
+    "verified_payload_bytes": 65023,
+    "envelope_and_framing_bytes_both_directions": 252163,
+    "call_attempts": 2,
+    "verified_encrypted_receipts": 2,
+    "sender_thread_cpu_us": 5697,
+    "receiver_thread_cpu_before_drain_us": 3714,
+    "setup_to_both_receipts_us": 9125,
+    "through_retirement_wall_us": 9146
+  },
+  "retained_failures": [
+    {
+      "phase": "first compile",
+      "result": "E0433 and E0599, resident registration and drain ownership absent"
+    },
+    {
+      "phase": "canonical fixture compile",
+      "result": "E0061, missing signed application content type version"
+    },
+    {
+      "phase": "canonical queue observation",
+      "result": "assertion expected one slot before dropping a prepared receipt; independent data and control reservations produce two slots"
+    },
+    {
+      "phase": "second Call outcome",
+      "result": "the grant permits one outstanding Call; typed Full remains required after reading the first payload"
+    }
+  ],
+  "production_gates": [
+    "one-shot enrolled signed resident session",
+    "asynchronous authorization and cancellation",
+    "typed Firecracker port 5257 on original accepting socket",
+    "native guest then multi-guest and real-WAN qualification"
+  ],
+  "patch_replay": "Applied to saved original files in isolated directory. All seven resulting file digests match the protected source graph."
+}

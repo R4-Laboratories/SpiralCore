@@ -1,0 +1,18 @@
+
+running 1 test
+test installed_parent::config_tests::original_mailbox_job_keeps_workspace_until_verified_drain ... resident canonical worker thread CPU us: 3714
+canonical sender thread CPU us: 5697; setup-to-second-verified-receipt wall us: 9125
+canonical mailbox fixture counters: {"envelope_bytes_sent":240359,"envelope_bytes_received":11772,"framing_bytes_sent":16,"framing_bytes_received":16,"frames_sent":2,"frames_received":2}
+canonical socket-pair fixture lifecycle wall us: 9146
+resident canonical worker thread CPU us: 4070
+
+thread '<unnamed>' (691031) panicked at src/installed_parent/config_tests.rs:555:21:
+injected unwind before resident-owned service drain
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+canonical sender thread CPU us: 4648; setup-to-second-verified-receipt wall us: 8464
+canonical mailbox fixture counters: {"envelope_bytes_sent":240280,"envelope_bytes_received":11704,"framing_bytes_sent":16,"framing_bytes_received":16,"frames_sent":2,"frames_received":2}
+canonical socket-pair fixture lifecycle wall us: 8471
+ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 211 filtered out; finished in 0.11s
+

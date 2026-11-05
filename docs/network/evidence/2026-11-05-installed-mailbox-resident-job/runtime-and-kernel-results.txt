@@ -1,0 +1,26 @@
+
+running 11 tests
+test workload_runner::runner::installed::operation_tests::blocked_canonical_signed_cleanup_releases_custody_mutex_and_refuses_reentry ... ok
+test workload_runner::runner::installed::operation_tests::failed_restore_quarantines_original_owner_and_cannot_reuse_or_retire_slot ... ok
+test workload_runner::runner::installed::operation_tests::unwinding_partial_operation_restores_original_unpoisoned_custody ... 
+thread 'workload_runner::runner::installed::operation_tests::unwinding_partial_operation_restores_original_unpoisoned_custody' (692575) panicked at crates/mvm-runtime/src/workload_runner/runner/installed/operation_tests.rs:88:9:
+controlled operation unwind
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+ok
+test workload_runner::runner::installed::retirement_tests::attempted_dispatch_never_becomes_pre_dispatch_failure ... ok
+test workload_runner::runner::installed::retirement_tests::consumed_receipt_retains_original_parent_until_its_drop ... ok
+test workload_runner::runner::installed::retirement_tests::helper_free_bookkeeping_never_invents_an_endpoint_retirement ... ok
+test workload_runner::runner::installed::retirement_tests::installed_mailbox_slot_retains_before_start_and_cleans_without_native_receipt ... ok
+test workload_runner::runner::installed::retirement_tests::ordinary_installed_start_retains_existing_pending_stop_behavior ... ok
+test workload_runner::runner::installed::retirement_tests::retired_record_is_not_evicted_by_other_slot_turnover ... ok
+test workload_runner::runner::installed::retirement_tests::retirement_checks_exact_installed_parent_permit_not_copied_facts ... ok
+test workload_runner::runner::installed::retirement_tests::retirement_consume_requires_this_exact_terminal_record ... ok
+
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 1374 filtered out; finished in 0.01s
+
+
+running 1 test
+test kernel_custody::tests::producer_kernel_descriptor_survives_replacement_after_final_check ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 1384 filtered out; finished in 0.01s
+

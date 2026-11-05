@@ -1,0 +1,852 @@
+--- a/sdk/crates/mvm-core/src/host_lifetime.rs
++++ b/sdk/crates/mvm-core/src/host_lifetime.rs
+@@ -247,6 +247,13 @@
+     fn take_socket_job(&mut self) -> Result<InstalledMailboxJob> {
+         anyhow::bail!("original installed mailbox socket job unavailable")
+     }
++
++    /// Confirm service drain after Runtime joins the original worker and
++    /// removes its socket. A job-supplying owner must implement this check.
++    #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++    fn confirm_socket_retired(&mut self) -> Result<()> {
++        anyhow::bail!("original installed mailbox drain proof unavailable")
++    }
+ }
+ 
+ /// The original parent's inert, identity-bound mailbox preparation.
+@@ -262,7 +269,11 @@
+         plan_id: PlanId,
+         owner: Box<dyn InstalledMailboxOwner>,
+     ) -> Self {
+-        Self { binding, plan_id, owner }
++        Self {
++            binding,
++            plan_id,
++            owner,
++        }
+     }
+ }
+ 
+@@ -273,6 +284,8 @@
+     anchor: Arc<HostLifetimeAnchor>,
+     #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
+     job_taken: bool,
++    #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++    job_issued: bool,
+ }
+ 
+ impl InstalledMailboxHandoff {
+@@ -280,12 +293,26 @@
+     pub fn take_socket_job(&mut self) -> Result<InstalledMailboxJob> {
+         self.anchor.verify_current()?;
+         self.prepared.owner.check_current()?;
+-        ensure!(!self.job_taken, "original installed mailbox socket job already taken");
++        ensure!(
++            !self.job_taken,
++            "original installed mailbox socket job already taken"
++        );
+         self.job_taken = true;
+         let job = self.prepared.owner.take_socket_job()?;
++        self.job_issued = true;
+         self.anchor.verify_current()?;
+         self.prepared.owner.check_current()?;
+         Ok(job)
++    }
++
++    /// Called by the in-process Runtime owner after joining its original
++    /// mailbox worker and completing socket cleanup. This is not guest input.
++    #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++    pub fn confirm_socket_retired(&mut self) -> Result<()> {
++        if self.job_issued {
++            self.prepared.owner.confirm_socket_retired()?;
++        }
++        Ok(())
+     }
+ 
+     pub fn plan_id(&self) -> &PlanId {
+@@ -797,6 +824,8 @@
+             anchor: Arc::clone(self),
+             #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
+             job_taken: false,
++            #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++            job_issued: false,
+         }))
+     }
+ 
+--- a/sdk/crates/mvm-runtime/src/workload_runner/runner/installed.rs
++++ b/sdk/crates/mvm-runtime/src/workload_runner/runner/installed.rs
+@@ -101,6 +101,7 @@
+     fn retire_mailbox(&mut self, deadline: Instant) -> Result<()> {
+         if let Some(worker) = &mut self.mailbox {
+             worker.stop(deadline)?;
++            worker.charge_mut().confirm_socket_retired()?;
+             if let Some(Err(error)) = worker.take_worker_result() {
+                 tracing::debug!(%error, "installed mailbox worker returned an error");
+             }
+--- a/sdk/crates/mvm-runtime/src/workload_runner/runner/installed/retirement_tests.rs
++++ b/sdk/crates/mvm-runtime/src/workload_runner/runner/installed/retirement_tests.rs
+@@ -239,12 +239,14 @@
+     use std::{
+         io::{Read, Write},
+         os::unix::net::UnixStream,
+-        sync::mpsc,
++        sync::{atomic::AtomicBool, mpsc},
+     };
+ 
+     struct Charge {
+         drops: Arc<AtomicUsize>,
+         entered: Option<mpsc::Sender<()>>,
++        exited: Arc<AtomicBool>,
++        socket_path: PathBuf,
+     }
+     impl Drop for Charge {
+         fn drop(&mut self) {
+@@ -260,12 +262,22 @@
+                 .entered
+                 .take()
+                 .context("fixture job already consumed")?;
++            let exited = Arc::clone(&self.exited);
+             Ok(Box::new(move |mut socket| {
+                 socket.read_exact(&mut [0])?;
+                 entered.send(()).unwrap();
+                 assert_eq!(socket.read(&mut [0])?, 0);
++                exited.store(true, Ordering::SeqCst);
+                 Ok(())
+             }))
++        }
++        fn confirm_socket_retired(&mut self) -> Result<()> {
++            anyhow::ensure!(
++                self.exited.load(Ordering::SeqCst),
++                "worker exit not observed"
++            );
++            anyhow::ensure!(!self.socket_path.exists(), "socket cleanup not observed");
++            Ok(())
+         }
+     }
+     struct Permit {
+@@ -325,6 +337,8 @@
+         charge: Mutex::new(Some(Charge {
+             drops: Arc::clone(&drops),
+             entered: Some(entered),
++            exited: Arc::new(AtomicBool::new(false)),
++            socket_path: root.path().join("mailbox.sock"),
+         })),
+     });
+     anchor.bind_parent_permit(&config, backend, permit).unwrap();
+--- a/source/crates/spiralcore-mvm-live/src/installed_parent.rs
++++ b/source/crates/spiralcore-mvm-live/src/installed_parent.rs
+@@ -25,6 +25,8 @@
+ 
+ mod endpoint;
+ mod host_agent;
++#[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++mod mailbox_job;
+ mod resident;
+ pub use resident::{InstalledResident, ResidentId, ResidentProgress, ResidentStatus};
+ #[cfg(test)]
+@@ -49,6 +51,8 @@
+     _bookkeeping: ManagedReservation,
+     endpoint_inputs: Option<endpoint::EndpointOwnerInputs>,
+     host_agent: Mutex<host_agent::HostAgentSlot>,
++    #[cfg(all(test, target_os = "linux", target_pointer_width = "64"))]
++    mailbox_broker: Mutex<Weak<mailbox_job::ResidentBroker>>,
+ }
+ 
+ /// Local parent admission, never a replacement for signed MVM authorization.
+@@ -103,6 +107,8 @@
+     endpoint: EndpointIssuance,
+     endpoint_owner: Option<Arc<endpoint::RootEndpointOwner>>,
+     mailbox: MailboxFunding,
++    #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++    mailbox_job: Option<mailbox_job::FundedMailboxJob>,
+     retired: bool,
+ }
+ impl GrantLifecycle {
+@@ -137,6 +143,11 @@
+                 MailboxFunding::Preparing | MailboxFunding::Held(_)
+             ),
+             "original mailbox funding has not retired"
++        );
++        #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++        ensure!(
++            self.mailbox_job.is_none(),
++            "mailbox session workspace is still held"
+         );
+         self.retired = true;
+         Ok(())
+@@ -362,6 +373,8 @@
+                 _bookkeeping: bookkeeping,
+                 endpoint_inputs: None,
+                 host_agent: Mutex::new(host_agent::HostAgentSlot::default()),
++                #[cfg(all(test, target_os = "linux", target_pointer_width = "64"))]
++                mailbox_broker: Mutex::new(Weak::new()),
+             }),
+         })
+     }
+@@ -483,12 +496,14 @@
+     }
+ }
+ 
+-/// A pre-effect mailbox reservation. The active worker will need a separate
+-/// joined-retirement path before it can release these resources.
++/// Original worker and service reservations. An issued job requires verified
++/// service drain and Runtime retirement before those reservations can release.
+ struct InertMailboxCredit {
+     grant: Weak<VmGrant>,
+     credit: Option<ManagedReservation>,
+     phase: MailboxFunding,
++    #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++    job: Option<mailbox_job::FundedMailboxJob>,
+ }
+ 
+ impl InstalledMailboxOwner for InertMailboxCredit {
+@@ -510,7 +525,28 @@
+             !state.retired && state.mailbox == self.phase,
+             "original mailbox credit substituted"
+         );
+-        Ok(())
++        drop(state);
++        #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++        if let Some(job) = &self.job {
++            job.check_current()?;
++        }
++        Ok(())
++    }
++
++    #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++    fn take_socket_job(&mut self) -> Result<mvm_core::host_lifetime::InstalledMailboxJob> {
++        self.job
++            .as_mut()
++            .context("original installed mailbox socket job unavailable")?
++            .take_socket_job()
++    }
++
++    #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++    fn confirm_socket_retired(&mut self) -> Result<()> {
++        self.job
++            .as_ref()
++            .context("original installed mailbox socket job unavailable")?
++            .confirm_socket_retired()
+     }
+ }
+ 
+@@ -519,6 +555,17 @@
+         let Some(credit) = self.credit.take() else {
+             return;
+         };
++        #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++        if let Some(job) = self.job.take() {
++            if !job.release_or_quarantine() {
++                std::mem::forget((credit, job));
++                return;
++            }
++            if job.release().is_err() {
++                std::mem::forget(credit);
++                return;
++            }
++        }
+         if credit.release_exclusive().is_ok()
+             && let Some(grant) = self.grant.upgrade()
+         {
+@@ -529,6 +576,23 @@
+ 
+ impl VmGrant {
+     fn finish_inert_mailbox(&self, phase: MailboxFunding) -> Result<()> {
++        #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++        {
++            let unused_job = {
++                let mut state = self
++                    .lifecycle
++                    .lock()
++                    .map_err(|_| anyhow!("parent lifecycle poisoned"))?;
++                ensure!(
++                    state.mailbox == phase,
++                    "original mailbox funding state changed"
++                );
++                state.mailbox_job.take()
++            };
++            if let Some(job) = unused_job {
++                job.release()?;
++            }
++        }
+         let mut state = self
+             .lifecycle
+             .lock()
+@@ -600,6 +664,8 @@
+             grant: self.original.clone(),
+             credit: Some(credit),
+             phase: MailboxFunding::Preparing,
++            #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++            job: None,
+         };
+         owner
+             .credit
+@@ -622,6 +688,10 @@
+                 state.mailbox == MailboxFunding::Preparing,
+                 "mailbox preparation state changed"
+             );
++            #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++            {
++                owner.job = state.mailbox_job.take();
++            }
+             owner.phase = MailboxFunding::Held(serial);
+             state.mailbox = owner.phase;
+         }
+--- a/source/crates/spiralcore-mvm-live/src/installed_parent/config_tests.rs
++++ b/source/crates/spiralcore-mvm-live/src/installed_parent/config_tests.rs
+@@ -384,6 +384,13 @@
+             .unwrap()
+         });
+         let before = pool.snapshot().unwrap().usage;
++        #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++        if selected && full {
++            grant
++                .install_mailbox_job(&admitted, |_, _, _| unreachable!())
++                .unwrap();
++            assert!(pool.snapshot().unwrap().usage.host_carrier_bytes > before.host_carrier_bytes);
++        }
+         let prepared = anchor.prepare_installed_mailbox(&config, native_backend());
+         if selected && !full {
+             prepared.expect("selected mailbox must reserve one original worker");
+@@ -439,3 +446,227 @@
+         supervisor.try_finish().unwrap();
+     }
+ }
++
++#[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++#[test]
++fn original_mailbox_job_keeps_workspace_until_verified_drain() {
++    use crate::config::{Arm, Pair, Plan, Stage};
++    use ed25519_dalek::{SigningKey, VerifyingKey};
++    use mvm_contract::protocol::mailbox::{ContentType, DeliveryOutcome};
++    use mvm_core::mailbox::{encode_envelope, transport::CancellationToken};
++    use spiralcore_mvm_adapter::{
++        CONTENT_TYPE,
++        live::{HandshakeRole, StreamTransport},
++        receipt::{ReceiptObservation, ReceiptReturnConfig, ReceiptTracker},
++        service_sender::{self, MessageOptions},
++    };
++    use std::{
++        io,
++        os::unix::net::UnixStream,
++        time::{Duration, Instant},
++    };
++
++    let payload: Vec<_> = (0..65_020u32)
++        .map(|index| ((index.wrapping_mul(13_971)) >> 7) as u8)
++        .chain([0, 0, 0])
++        .collect();
++    let timeout = Duration::from_secs(5);
++
++    for drain in [true, false] {
++        let (home, mut supervisor, provider) = endpoint_tests::fixture();
++        let name = "resident-mailbox-job";
++        let admitted = admitted_with_mailbox(home.path(), name, true);
++        let (grant, mut config) = config(&provider, name);
++        config.plan_json = Some(serde_json::to_string(admitted.signed()).unwrap());
++        let permit = provider
++            .bind_config(&admitted, &config, native_backend())
++            .unwrap();
++        let anchor = config.host_lifetime.as_ref().unwrap();
++        anchor
++            .bind_parent_permit(&config, native_backend(), permit)
++            .unwrap();
++        let before = supervisor.managed_resources().snapshot().unwrap().usage;
++        let pair = Pair::provision(Plan {
++            stage: Stage::Two,
++            arm: Arm::Warm,
++            size: payload.len(),
++            trial: 1,
++            bandwidth_profile: Default::default(),
++        })
++        .unwrap();
++        let expected = payload.clone();
++        let receiver = pair.receiver;
++        grant
++            .install_mailbox_job(&admitted, move |socket, broker, service| {
++                let work = || -> crate::Result<()> {
++                    let cpu = cpu_time::ThreadTime::now();
++                    let profile = receiver.service.unwrap();
++                    let source = receiver
++                        .incoming
++                        .unwrap()
++                        .service_binding(Some(profile.local_receipt_signing))?;
++                    let route = receiver.outgoing.unwrap().binding.claims.route_id;
++                    let stream = StreamTransport::new(socket, route, timeout)?;
++                    let cancel = CancellationToken::default();
++                    stream.handshake(HandshakeRole::Acceptor, &cancel)?;
++                    let returns = broker.with_time(|budget, _| {
++                        Ok::<_, Box<dyn std::error::Error + Send + Sync>>(ReceiptReturnConfig::new(
++                            profile.outgoing_control.service_binding(None)?,
++                            budget.clone(),
++                            SigningKey::from_bytes(&profile.local_receipt_signing).verifying_key(),
++                        )?)
++                    })?;
++                    for check_payload in [true, false] {
++                        let wire = stream.receive(&cancel, Instant::now() + timeout)?;
++                        let prepared = broker.with_time(|_, now| -> crate::Result<_> {
++                            let (accepted, prepared) =
++                                returns.admit(service, &source, &wire, now)?;
++                            assert_eq!(
++                                accepted.receipt.outcome,
++                                if check_payload {
++                                    DeliveryOutcome::AcceptedEphemeral
++                                } else {
++                                    DeliveryOutcome::Full
++                                }
++                            );
++                            if check_payload {
++                                let request =
++                                    service.receive(&source, now)?.expect("accepted call");
++                                assert_eq!(request.payload(), expected);
++                            }
++                            Ok(prepared)
++                        })?;
++                        let (permit, now) = broker.with_time(|_, now| -> crate::Result<_> {
++                            Ok((prepared.reserve_send(&cancel, now)?, now))
++                        })?;
++                        permit.send(&stream, &cancel, now)?;
++                        drop(prepared);
++                        // Admission and its receipt both reserve a queue slot.
++                        // Observe the remaining Call after the receipt drops.
++                        let snapshot = broker.with_time(|budget, _| budget.snapshot())?;
++                        assert_eq!(snapshot.queued_messages, 0);
++                        assert_eq!(snapshot.active_calls, 1);
++                    }
++                    eprintln!(
++                        "resident canonical worker thread CPU us: {}",
++                        cpu.elapsed().as_micros()
++                    );
++                    // The first Call stays active until the wrapper drains it.
++                    assert!(drain, "injected unwind before resident-owned service drain");
++                    Ok(())
++                };
++                work().map_err(io::Error::other)
++            })
++            .unwrap();
++        let provisioned = supervisor.managed_resources().snapshot().unwrap().usage;
++        assert!(provisioned.host_carrier_bytes > before.host_carrier_bytes);
++        assert!(provisioned.host_plaintext_bytes > before.host_plaintext_bytes);
++        assert!(
++            grant
++                .install_mailbox_job(&admitted, |_, _, _| unreachable!())
++                .is_err()
++        );
++        assert_eq!(
++            supervisor.managed_resources().snapshot().unwrap().usage,
++            provisioned
++        );
++        anchor
++            .prepare_installed_mailbox(&config, native_backend())
++            .unwrap();
++        let mut handoff = anchor
++            .take_installed_mailbox(&config, native_backend())
++            .unwrap()
++            .unwrap();
++        let job = handoff.take_socket_job().unwrap();
++        assert!(handoff.take_socket_job().is_err());
++        let (peer, server) = UnixStream::pair().unwrap();
++        let start = Instant::now();
++        let cpu = cpu_time::ThreadTime::now();
++        let worker = std::thread::spawn(move || job(server));
++        let sender = pair.sender;
++        let profile = sender.service.unwrap();
++        let material = sender.outgoing.unwrap();
++        let outbound = material.service_binding(None).unwrap();
++        let control = profile.incoming_control.service_binding(None).unwrap();
++        let verifier = VerifyingKey::from_bytes(&profile.peer_receipt_verification).unwrap();
++        let broker = crate::campaign::broker_context().unwrap();
++        let stream = StreamTransport::new(peer, material.binding.claims.route_id, timeout).unwrap();
++        let cancel = CancellationToken::default();
++        stream.handshake(HandshakeRole::Initiator, &cancel).unwrap();
++        let mut tracker = broker
++            .with_time(|budget, _| ReceiptTracker::new(budget.clone(), 4))
++            .unwrap();
++        for outcome in [DeliveryOutcome::AcceptedEphemeral, DeliveryOutcome::Full] {
++            let (prepared, send, now) = broker
++                .with_time(|_, now| -> crate::Result<_> {
++                    let mut options = MessageOptions::fresh(
++                        ContentType::parse(CONTENT_TYPE, 1)?,
++                        now,
++                        now.unix_ms.checked_add(5000).expect("fixture deadline"),
++                    )?;
++                    options.reply_to = material.reply_to;
++                    let prepared = service_sender::prepare(&outbound, &payload, &options, now)?;
++                    let encoded = encode_envelope(prepared.envelope())?;
++                    let send =
++                        tracker.register_send(&outbound, &control, &verifier, &encoded, now)?;
++                    Ok((prepared, send, now))
++                })
++                .unwrap();
++            outbound
++                .send_prepared(&prepared, &stream, &cancel, now)
++                .unwrap();
++            let wire = stream.receive(&cancel, Instant::now() + timeout).unwrap();
++            broker
++                .with_time(|_, now| {
++                    tracker.observe_receipt(&control, &wire, now)?;
++                    let ReceiptObservation::Verified(accepted) =
++                        tracker.take_receipt(&outbound, &send, now)?
++                    else {
++                        panic!("missing canonical encrypted admission receipt");
++                    };
++                    assert_eq!(accepted.receipt.outcome, outcome);
++                    Ok::<_, spiralcore_mvm_adapter::service::ServiceError>(())
++                })
++                .unwrap();
++        }
++        eprintln!(
++            "canonical sender thread CPU us: {}; setup-to-second-verified-receipt wall us: {}",
++            cpu.elapsed().as_micros(),
++            start.elapsed().as_micros()
++        );
++        let counters = stream.counters().unwrap();
++        assert_eq!((counters.frames_sent, counters.frames_received), (2, 2));
++        eprintln!(
++            "canonical mailbox fixture counters: {}",
++            serde_json::to_string(&counters).unwrap()
++        );
++        match worker.join() {
++            Ok(result) => {
++                assert!(drain);
++                result.unwrap();
++                handoff.confirm_socket_retired().unwrap();
++            }
++            Err(_) => {
++                assert!(!drain);
++                assert!(handoff.confirm_socket_retired().is_err());
++            }
++        }
++        drop(handoff);
++        eprintln!(
++            "canonical socket-pair fixture lifecycle wall us: {}",
++            start.elapsed().as_micros()
++        );
++        let after = supervisor.managed_resources().snapshot().unwrap().usage;
++        if drain {
++            assert_eq!(after, before);
++            assert!(grant.lifecycle.lock().unwrap().seal_retired().is_ok());
++            drop((config, grant, provider));
++            supervisor.close_admission();
++            supervisor.try_finish().unwrap();
++        } else {
++            assert!(after.host_carrier_bytes > before.host_carrier_bytes);
++            assert_eq!(after.workers, before.workers + 1);
++            assert!(grant.lifecycle.lock().unwrap().seal_retired().is_err());
++        }
++    }
++}
+--- /dev/null
++++ b/source/crates/spiralcore-mvm-live/src/installed_parent/mailbox_job.rs
+@@ -0,0 +1,207 @@
++//! A mailbox job belongs to the original installed grant and broker.
++use super::ManagedReservation;
++use anyhow::{Context, Result};
++use mvm_core::host_lifetime::InstalledMailboxJob;
++use spiralcore_mvm_adapter::{broker::BrokerContext, service::LocalMailboxService};
++use std::{io, os::unix::net::UnixStream, sync::Arc};
++
++mod fence;
++use fence::{JobFence, JobTicket};
++
++type ServiceJob = Box<
++    dyn FnOnce(UnixStream, &BrokerContext, &mut LocalMailboxService) -> io::Result<()>
++        + Send
++        + Sync
++        + 'static,
++>;
++
++pub(super) struct ResidentBroker {
++    context: BrokerContext,
++    _metadata: ManagedReservation,
++}
++
++pub(super) struct FundedMailboxJob {
++    callback: Option<ServiceJob>,
++    broker: Arc<ResidentBroker>,
++    fence: Arc<JobFence>,
++    workspace: ManagedReservation,
++}
++
++impl FundedMailboxJob {
++    pub(super) fn check_current(&self) -> Result<()> {
++        self.broker._metadata.check_current()?;
++        self.workspace.check_current()?;
++        Ok(())
++    }
++
++    pub(super) fn take_socket_job(&mut self) -> Result<InstalledMailboxJob> {
++        self.check_current()?;
++        let callback = self
++            .callback
++            .take()
++            .context("original mailbox job consumed")?;
++        let issued = IssuedJob {
++            callback,
++            broker: Arc::clone(&self.broker),
++            ticket: self.fence.issue()?,
++        };
++        Ok(Box::new(move |socket| issued.run(socket)))
++    }
++
++    pub(super) fn confirm_socket_retired(&self) -> Result<()> {
++        Ok(self.fence.confirm_retired()?)
++    }
++
++    pub(super) fn release_or_quarantine(&self) -> bool {
++        self.fence.release_or_quarantine()
++    }
++
++    pub(super) fn release(self) -> Result<()> {
++        let Self {
++            callback,
++            broker,
++            fence,
++            workspace,
++        } = self;
++        drop((callback, broker, fence));
++        Ok(workspace.release_exclusive()?)
++    }
++}
++
++// The ticket drops after the callback and broker. Abandonment cannot make
++// their workspace releasable while a never-started closure still owns them.
++struct IssuedJob {
++    callback: ServiceJob,
++    broker: Arc<ResidentBroker>,
++    ticket: JobTicket,
++}
++impl IssuedJob {
++    fn run(self, socket: UnixStream) -> io::Result<()> {
++        self.ticket.enter()?;
++        let Self {
++            callback,
++            broker,
++            ticket,
++        } = self;
++        let context = &broker.context;
++        let mut service = context
++            .with_time(|budget, _| LocalMailboxService::new(budget.clone()))
++            .map_err(io::Error::other)?;
++        let result = callback(socket, context, &mut service);
++        context
++            .with_time(|_, now| service.shutdown(now))
++            .map_err(io::Error::other)?;
++        drop(service);
++        drop(broker);
++        ticket.drained()?;
++        result
++    }
++}
++
++// Registration remains private to qualification until the canonical enrolled
++// mailbox service can supply a session bound to the original admission.
++#[cfg(test)]
++impl super::VmGrant {
++    pub(super) fn install_mailbox_job(
++        &self,
++        admitted: &super::AdmittedPlan,
++        job: impl FnOnce(UnixStream, &BrokerContext, &mut LocalMailboxService) -> io::Result<()>
++        + Send
++        + Sync
++        + 'static,
++    ) -> Result<()> {
++        use super::{MIB, MailboxFunding, ManagedClaim, tenant_tag};
++        use anyhow::{anyhow, ensure};
++        use spiralcore_mvm_adapter::service::{
++            ControlReserve, ControlScope, HostBudget, ScopeLimits, ServiceLimits,
++        };
++
++        self.check_open()?;
++        let parent = self
++            .parent
++            .upgrade()
++            .context("original parent unavailable")?;
++        let workspace = parent.pool.reserve(
++            tenant_tag(&self.tenant),
++            ManagedClaim {
++                host_plaintext_bytes: MIB,
++                host_carrier_bytes: 2 * MIB,
++                host_metadata_bytes: MIB,
++                ..Default::default()
++            },
++        )?;
++        let broker = {
++            let mut slot = parent
++                .mailbox_broker
++                .lock()
++                .map_err(|_| anyhow!("resident mailbox broker state poisoned"))?;
++            if let Some(current) = slot.upgrade() {
++                current
++            } else {
++                let metadata = parent.pool.reserve(
++                    tenant_tag("installation-mailbox-broker"),
++                    ManagedClaim {
++                        host_metadata_bytes: MIB,
++                        ..Default::default()
++                    },
++                )?;
++                let bound = ScopeLimits {
++                    queued_bytes: 512 << 10,
++                    queued_messages: 32,
++                    active_calls: 4,
++                    identities: 64,
++                };
++                let control = ControlScope {
++                    queued_bytes: 128 << 10,
++                    queued_messages: 8,
++                    identities: 16,
++                };
++                let budget = HostBudget::with_control(
++                    ServiceLimits {
++                        host: bound,
++                        tenant: bound,
++                        mailbox: bound,
++                        sender: bound,
++                        ..Default::default()
++                    },
++                    ControlReserve {
++                        host: control,
++                        tenant: control,
++                        mailbox: control,
++                        sender: control,
++                    },
++                )?;
++                let current = Arc::new(ResidentBroker {
++                    context: BrokerContext::new(budget),
++                    _metadata: metadata,
++                });
++                *slot = Arc::downgrade(&current);
++                current
++            }
++        };
++        let candidate = FundedMailboxJob {
++            callback: Some(Box::new(job)),
++            broker,
++            fence: Arc::new(JobFence::default()),
++            workspace,
++        };
++        let registry = parent
++            .registry
++            .lock()
++            .map_err(|_| anyhow!("parent registry poisoned"))?;
++        ensure!(!registry.closed, "parent admission closed");
++        let mut state = self
++            .lifecycle
++            .lock()
++            .map_err(|_| anyhow!("parent lifecycle poisoned"))?;
++        state.check_launch_open()?;
++        ensure!(
++            state.mailbox == MailboxFunding::Selected
++                && state.admitted_plan.as_deref() == Some(admitted.plan_id().0.as_str())
++                && state.mailbox_job.is_none(),
++            "original mailbox selection unavailable or already provisioned"
++        );
++        state.mailbox_job = Some(candidate);
++        Ok(())
++    }
++}
+--- /dev/null
++++ b/source/crates/spiralcore-mvm-live/src/installed_parent/mailbox_job/fence.rs
+@@ -0,0 +1,101 @@
++//! One issued socket job's service and worker retirement fence.
++use std::{
++    io,
++    sync::{
++        Arc,
++        atomic::{AtomicU8, Ordering},
++    },
++};
++
++#[derive(Clone, Copy)]
++#[repr(u8)]
++enum Phase {
++    Unissued,
++    Issued,
++    Running,
++    Drained,
++    Abandoned,
++    Retired,
++    Quarantined,
++}
++
++pub(in crate::installed_parent) struct JobFence(AtomicU8);
++
++impl Default for JobFence {
++    fn default() -> Self {
++        Self(AtomicU8::new(Phase::Unissued as u8))
++    }
++}
++
++impl JobFence {
++    fn transition(&self, from: Phase, to: Phase) -> io::Result<()> {
++        self.0
++            .compare_exchange(from as u8, to as u8, Ordering::AcqRel, Ordering::Acquire)
++            .map(|_| ())
++            .map_err(|_| io::Error::other("original mailbox job state changed"))
++    }
++
++    pub(in crate::installed_parent) fn issue(self: &Arc<Self>) -> io::Result<JobTicket> {
++        self.transition(Phase::Unissued, Phase::Issued)?;
++        Ok(JobTicket(Arc::clone(self)))
++    }
++
++    /// The original Runtime owner calls this after join and socket cleanup.
++    pub(in crate::installed_parent) fn confirm_retired(&self) -> io::Result<()> {
++        let phase = self.0.load(Ordering::Acquire);
++        if phase == Phase::Retired as u8 {
++            return Ok(());
++        }
++        if phase == Phase::Drained as u8 {
++            self.transition(Phase::Drained, Phase::Retired)
++        } else if phase == Phase::Abandoned as u8 {
++            self.transition(Phase::Abandoned, Phase::Retired)
++        } else {
++            Err(io::Error::other("original mailbox service did not drain"))
++        }
++    }
++
++    /// Refuse refund for any issued or running job without both proofs.
++    /// A quarantined ticket cannot start late or turn cleanup into a refund.
++    pub(in crate::installed_parent) fn release_or_quarantine(&self) -> bool {
++        loop {
++            let phase = self.0.load(Ordering::Acquire);
++            if phase == Phase::Unissued as u8
++                || phase == Phase::Abandoned as u8
++                || phase == Phase::Retired as u8
++            {
++                return true;
++            }
++            if self
++                .0
++                .compare_exchange(
++                    phase,
++                    Phase::Quarantined as u8,
++                    Ordering::AcqRel,
++                    Ordering::Acquire,
++                )
++                .is_ok()
++            {
++                return false;
++            }
++        }
++    }
++}
++
++pub(in crate::installed_parent) struct JobTicket(Arc<JobFence>);
++
++impl JobTicket {
++    pub(in crate::installed_parent) fn enter(&self) -> io::Result<()> {
++        self.0.transition(Phase::Issued, Phase::Running)
++    }
++
++    pub(in crate::installed_parent) fn drained(self) -> io::Result<()> {
++        self.0.transition(Phase::Running, Phase::Drained)
++    }
++}
++
++impl Drop for JobTicket {
++    fn drop(&mut self) {
++        let _ = self.0.transition(Phase::Issued, Phase::Abandoned);
++    }
++}
