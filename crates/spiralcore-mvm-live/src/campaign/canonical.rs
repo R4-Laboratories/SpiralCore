@@ -43,6 +43,7 @@ pub(super) struct Session {
     receiver_phase: Option<ProcessingPhase>,
 }
 const MAX_CAMPAIGN_CALLS: u64 = 2048;
+const IDLE_MAINTENANCE: Duration = Duration::from_millis(250);
 const ISSUANCE_POLICY: IssuancePolicy = IssuancePolicy::Bounded {
     max_clock_ahead_ms: 5000,
 };
@@ -83,6 +84,24 @@ fn application_phase<T>(
 }
 
 impl Session {
+    fn expire_idle(&mut self, now: ServiceTime) -> Result<()> {
+        self.service.expire(now)?;
+        self.tracker.expire(now)?;
+        Ok(())
+    }
+
+    fn receive_with_maintenance<S: SocketIo + 'static>(
+        &mut self,
+        stream: &StreamTransport<S>,
+        cancel: &CancellationToken,
+        deadline: Instant,
+    ) -> Result<Vec<u8>> {
+        let broker = self.broker.clone();
+        stream.receive_with_idle(cancel, deadline, IDLE_MAINTENANCE, || {
+            broker.with_time(|_, now| self.expire_idle(now))
+        })
+    }
+
     pub(super) fn new(bootstrap: &Bootstrap, broker: &BrokerContext) -> Result<Self> {
         let profile = bootstrap
             .service
@@ -278,13 +297,10 @@ impl Session {
                     spiralcore_mvm_adapter::live::ReceiveOutcome::Idle => {
                         increment(&mut self.recovery.idle_outcomes)?;
                         let retry_time = broker.with_time(|_, now| -> Result<_> {
+                            self.expire_idle(now)?;
                             let pending =
                                 self.pending.as_ref().ok_or(SessionError::StreamFenced)?;
-                            if let Err(error) = pending.remaining(now) {
-                                self.service.expire(now)?;
-                                self.tracker.expire(now)?;
-                                return Err(error.into());
-                            }
+                            pending.remaining(now)?;
                             if Instant::now() >= deadline {
                                 return Err(SessionError::Service(ServiceError::Expired).into());
                             }
@@ -345,7 +361,7 @@ impl Session {
                     }
                 }
             } else {
-                stream.receive(cancel, deadline)?
+                self.receive_with_maintenance(stream, cancel, deadline)?
             };
             self.pending
                 .as_mut()
@@ -507,7 +523,7 @@ impl Session {
             if events >= 16 {
                 return Err(SessionError::EventLimit.into());
             }
-            let bytes = stream.receive(cancel, deadline)?;
+            let bytes = self.receive_with_maintenance(stream, cancel, deadline)?;
             events += 1;
             self.receiver_phase = Some((ProcessTime::now(), Instant::now()));
             let (receipt, proof, admitted_deadline) = broker.with_time(|_, now| -> Result<_> {
@@ -665,7 +681,7 @@ impl Session {
         let mut acknowledged = false;
         // Preamble and initial Call share this invocation's cumulative bound.
         for _ in events..16 {
-            let event = stream.receive(cancel, deadline.instant())?;
+            let event = self.receive_with_maintenance(stream, cancel, deadline.instant())?;
             self.receiver_phase = Some((ProcessTime::now(), Instant::now()));
             let key = decode_envelope(&event)?.encryption.key_id;
             let repeat = broker.with_time(|_, now| -> Result<_> {
