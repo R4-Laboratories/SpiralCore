@@ -8,7 +8,7 @@ on:
         required: true
         type: string
       hostd:
-        description: Run the focused Hostd signed mapping regression
+        description: Include Hostd admission and local run tests
         default: false
         type: boolean
 
@@ -44,7 +44,16 @@ jobs:
           test "$(git rev-parse HEAD)" = "$SOURCE"
           rustup toolchain install 1.97.1 --profile minimal
           if [[ "$HOSTD" == true ]]; then
-            cargo +1.97.1 test --locked -p mvm-hostd --lib original_bundled_admission_binds_only_its_signed_mapped_policy
+            cargo +1.97.1 test --locked -p mvm-hostd --lib plan_admission::tests
+            cargo +1.97.1 test --locked -p mvm-hostd --lib run::
+          fi
+          cargo +1.97.1 test --locked -p mvm-client --lib launch::bundle_runtime::tests
+          cargo +1.97.1 test --locked -p mvm-runtime --lib bundle_runtime::tests
+      - name: Inspect runner virtualization availability
+        if: always()
+        run: |
+          if [[ -c /dev/kvm ]]; then
+            stat -c 'KVM device type=%F owner=%U group=%G mode=%a' /dev/kvm
           else
-            cargo +1.97.1 test --locked -p mvm-client --lib launch::bundle_runtime::tests
+            echo 'KVM device absent'
           fi
