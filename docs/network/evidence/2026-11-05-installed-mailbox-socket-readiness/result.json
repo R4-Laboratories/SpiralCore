@@ -1,0 +1,20 @@
+{
+  "scope": "Original worker physical listener observation in the Linux Runtime. No VM launch or native mailbox port activation.",
+  "source_entries": 5415,
+  "source_inventory_sha256": "a63fce747c57b5d52f2d5235ee1ca9550b05ec26ca8a4619be749c1e055fe473",
+  "runtime_binary_sha256": "b910e250d7f6f1eaa0e746731d3931da14a3d6054e8036271990a7a3874f6962",
+  "runtime_tests_passed": 12,
+  "standalone_identity_controls_passed": 5,
+  "worker_accept_consumes_readiness_regression_passed": 1,
+  "source_sha256": {
+    "crates/mvm-runtime/src/workload_runner/runner/installed/mailbox_socket.rs": "2bb8edd8aecb9df3f16b58ce09c68ea12e06a619071be6797f30db6aeda00a17",
+    "crates/mvm-runtime/src/workload_runner/runner/installed/retirement_tests.rs": "f7e34cf7e271c44d749fe6da13e6d137b78c14c8f143efef218eb31147efcd8f",
+    "crates/mvm-runtime/src/workload_runner/runner/installed/mailbox_socket/readiness.rs": "6bd1cbf6afcd92f9fde603c8f12ada5515de141ae59817ac1290ad8781eb86de"
+  },
+  "same_uid_cross_process_fd_route_probe": {
+    "result": "Child connected to original listener through a pinned descriptor after socket pathname was rebound. Replacement accepted no connection.",
+    "source_sha256": "dbc48317158b0f082da63a97188d5f1c3fb06c1ee63ead425943668ca0e8be9b",
+    "binary_sha256": "aac1c6de472d51082fd07979421b9682ca0f9df18d52c6982b9c3680fb408432",
+    "boundary": "Linux Unix sockets, no Firecracker process. A proc target also needs process and FD lifetime and privilege qualification before use."
+  }
+}

@@ -1,0 +1,285 @@
+--- a/sdk/crates/mvm-runtime/src/workload_runner/runner/installed/mailbox_socket.rs
++++ b/sdk/crates/mvm-runtime/src/workload_runner/runner/installed/mailbox_socket.rs
+@@ -18,6 +18,10 @@
+     time::{Duration, Instant},
+ };
+ 
++#[path = "mailbox_socket/readiness.rs"]
++mod readiness;
++use readiness::{Accepting, PinnedListener};
++
+ const SOCKET_NAME: &CStr = c"mailbox.sock";
+ const STACK_BYTES: usize = 2 * 1024 * 1024;
+ 
+@@ -149,6 +153,7 @@
+ 
+ struct Custody<R> {
+     socket: BoundSocket,
++    readiness: Option<PinnedListener>,
+     listener: Option<UnixListener>,
+     wake: Option<UnixStream>,
+     waiter: Option<UnixStream>,
+@@ -185,6 +190,7 @@
+         Ok(Self {
+             custody: Some(Box::new(Custody {
+                 socket,
++                readiness: None,
+                 listener: None,
+                 wake: Some(wake),
+                 waiter: Some(waiter),
+@@ -263,38 +269,34 @@
+             .expect("original mailbox listener")
+             .try_clone()?;
+         listener.set_nonblocking(true)?;
++        let accepting = Accepting::new();
++        let readiness = PinnedListener::capture(
++            &state.socket.directory,
++            &state.socket.path,
++            &listener,
++            &accepting,
++        )?;
++        readiness.verify_expected_object(device, inode)?;
+         let waiter = state.waiter.take().expect("original mailbox accept wake");
+         let control = Arc::clone(&state.control);
+         state.thread = Some(
+             thread::Builder::new()
+                 .name("installed-mailbox".into())
+                 .stack_size(STACK_BYTES)
+-                .spawn(move || run(listener, waiter, control, job))?,
++                .spawn(move || run(listener, waiter, control, accepting, job))?,
+         );
++        state.readiness = Some(readiness);
+         state.listener.take();
+         Ok(())
+     }
+ 
+     pub(super) fn socket_path(&self) -> io::Result<&Path> {
+         let state = self.custody.as_ref().expect("owned mailbox custody");
+-        let ready = state
+-            .thread
+-            .as_ref()
+-            .is_some_and(|worker| !worker.is_finished());
+-        let stopping = state
+-            .control
+-            .lock()
+-            .map_err(|_| io::Error::other("mailbox control poisoned"))?
+-            .stopped;
+-        let SocketState::Bound { device, inode } = state.socket.state else {
+-            return Err(io::Error::other("mailbox worker has no bound socket"));
+-        };
+-        if !ready || stopping {
+-            return Err(io::Error::other("original mailbox worker is unavailable"));
+-        }
+-        state.socket.verify_directory()?;
+-        check_socket(&state.socket.path, device, inode)?;
+-        Ok(&state.socket.path)
++        state
++            .readiness
++            .as_ref()
++            .ok_or_else(|| io::Error::other("mailbox worker has no bound socket"))?
++            .verify()
+     }
+ 
+     pub(super) fn close_admission(&self) -> io::Result<()> {
+@@ -336,6 +338,7 @@
+             return Err(io::Error::other("original mailbox worker panicked"));
+         }
+         state.socket.cleanup()?;
++        state.readiness.take();
+         state.listener.take();
+         state.wake.take();
+         state.waiter.take();
+@@ -368,6 +371,9 @@
+ 
+ impl<R> Custody<R> {
+     fn signal_stop(&self) -> io::Result<()> {
++        if let Some(readiness) = &self.readiness {
++            readiness.invalidate();
++        }
+         let mut state = self
+             .control
+             .lock()
+@@ -413,6 +419,7 @@
+     listener: UnixListener,
+     wake: UnixStream,
+     control: Arc<Mutex<Control>>,
++    accepting: Accepting,
+     job: impl FnOnce(UnixStream) -> io::Result<()>,
+ ) -> io::Result<()> {
+     loop {
+@@ -424,6 +431,9 @@
+             Err(error) if error.kind() == io::ErrorKind::WouldBlock => continue,
+             Err(error) => return Err(error),
+         };
++        // This worker takes exactly one peer. The listener is no longer
++        // valid readiness evidence before the session starts doing work.
++        accepting.close();
+         socket.set_nonblocking(false)?;
+         {
+             let mut state = control
+--- a/sdk/crates/mvm-runtime/src/workload_runner/runner/installed/retirement_tests.rs
++++ b/sdk/crates/mvm-runtime/src/workload_runner/runner/installed/retirement_tests.rs
+@@ -355,6 +355,14 @@
+     let mut peer = UnixStream::connect(&path).unwrap();
+     peer.write_all(&[1]).unwrap();
+     observed.recv_timeout(Duration::from_secs(2)).unwrap();
++    {
++        let operation = slot.begin_operation().unwrap();
++        let worker = operation.state.as_ref().unwrap().mailbox.as_ref().unwrap();
++        assert!(
++            worker.socket_path().is_err(),
++            "the original peer already consumed readiness"
++        );
++    }
+     assert_eq!(drops.load(Ordering::SeqCst), 0);
+     let startup_operation = slot.begin_operation().unwrap();
+     assert!(slot.stop(&NoopConsoleStreamer).is_err());
+--- /dev/null
++++ b/sdk/crates/mvm-runtime/src/workload_runner/runner/installed/mailbox_socket/readiness.rs
+@@ -0,0 +1,146 @@
++//! Original Linux mailbox listener identity and accepting lifetime.
++use std::{
++    fs::{self, File, Metadata, OpenOptions},
++    io,
++    os::{
++        fd::AsRawFd,
++        unix::{
++            fs::{FileTypeExt, MetadataExt, OpenOptionsExt},
++            net::UnixListener,
++        },
++    },
++    path::{Path, PathBuf},
++    sync::{
++        Arc,
++        atomic::{AtomicBool, Ordering},
++    },
++};
++
++const NAME: &str = "mailbox.sock";
++
++/// The worker owns this non-cloneable guard. Exit or stop invalidates all
++/// observations. Only creation of a new worker can make a new guard.
++pub(super) struct Accepting(Arc<AtomicBool>);
++
++impl Accepting {
++    pub(super) fn new() -> Self {
++        Self(Arc::new(AtomicBool::new(true)))
++    }
++
++    pub(super) fn close(&self) {
++        self.0.store(false, Ordering::Release);
++    }
++}
++
++impl Drop for Accepting {
++    fn drop(&mut self) {
++        self.close();
++    }
++}
++
++/// A physical observation of the pinned original Runtime socket. A caller
++/// must separately verify the original admitted launch and service owner.
++pub(super) struct PinnedListener {
++    directory: File,
++    socket: File,
++    path: PathBuf,
++    accepting: Arc<AtomicBool>,
++}
++
++impl PinnedListener {
++    pub(super) fn capture(
++        directory: &File,
++        path: &Path,
++        listener: &UnixListener,
++        accepting: &Accepting,
++    ) -> io::Result<Self> {
++        let anchored = anchored_path(directory);
++        if !path.is_absolute()
++            || path.file_name().is_none_or(|name| name != NAME)
++            || listener.local_addr()?.as_pathname() != Some(anchored.as_path())
++        {
++            return Err(io::Error::other(
++                "mailbox listener is not bound to the original directory",
++            ));
++        }
++        // O_PATH pins the filesystem entry without opening a connection.
++        // O_NOFOLLOW lets verification reject a symlink as the pinned entry.
++        let socket = OpenOptions::new()
++            .read(true)
++            .custom_flags(libc::O_PATH | libc::O_NOFOLLOW)
++            .open(anchored)?;
++        let proof = Self {
++            directory: directory.try_clone()?,
++            socket,
++            path: path.to_owned(),
++            accepting: Arc::clone(&accepting.0),
++        };
++        proof.verify()?;
++        Ok(proof)
++    }
++
++    pub(super) fn verify(&self) -> io::Result<&Path> {
++        self.check_accepting()?;
++        let directory = self.directory.metadata()?;
++        let named =
++            fs::symlink_metadata(self.path.parent().expect("validated absolute mailbox path"))?;
++        // SAFETY: geteuid takes no parameters and has no caller preconditions.
++        let euid = unsafe { libc::geteuid() };
++        if !directory.is_dir()
++            || !named.is_dir()
++            || !same_object(&directory, &named)
++            || directory.uid() != euid
++            || directory.mode() & 0o7777 != 0o700
++        {
++            return Err(io::Error::other(
++                "original private mailbox directory changed",
++            ));
++        }
++        let socket = self.socket.metadata()?;
++        let anchored = fs::symlink_metadata(anchored_path(&self.directory))?;
++        let named = fs::symlink_metadata(&self.path)?;
++        if !socket.file_type().is_socket()
++            || !anchored.file_type().is_socket()
++            || !named.file_type().is_socket()
++            || !same_object(&socket, &anchored)
++            || !same_object(&socket, &named)
++            || socket.uid() != euid
++        {
++            return Err(io::Error::other("original mailbox socket identity changed"));
++        }
++        self.check_accepting()?;
++        Ok(&self.path)
++    }
++
++    pub(super) fn verify_expected_object(&self, device: u64, inode: u64) -> io::Result<()> {
++        let socket = self.socket.metadata()?;
++        if (socket.dev(), socket.ino()) != (device, inode) {
++            return Err(io::Error::other(
++                "original mailbox socket changed before pinning",
++            ));
++        }
++        Ok(())
++    }
++
++    pub(super) fn invalidate(&self) {
++        self.accepting.store(false, Ordering::Release);
++    }
++
++    fn check_accepting(&self) -> io::Result<()> {
++        if self.accepting.load(Ordering::Acquire) {
++            Ok(())
++        } else {
++            Err(io::Error::other(
++                "original mailbox worker is no longer accepting",
++            ))
++        }
++    }
++}
++
++fn anchored_path(directory: &File) -> PathBuf {
++    PathBuf::from(format!("/proc/self/fd/{}", directory.as_raw_fd())).join(NAME)
++}
++
++fn same_object(a: &Metadata, b: &Metadata) -> bool {
++    (a.dev(), a.ino()) == (b.dev(), b.ino())
++}
