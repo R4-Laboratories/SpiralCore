@@ -1,0 +1,280 @@
+--- a/crates/mvm-hostd/src/plan_admission.rs
++++ b/crates/mvm-hostd/src/plan_admission.rs
+@@ -141,6 +141,29 @@
+     dispatched: bool,
+     installed_payload_mapping:
+         Option<mvm_contract::policy::network_policy::CooperatingPayloadPolicy>,
++    installed_mailbox: Option<InstalledMailboxLaunchProfile>,
++}
++
++/// Host selection for the dedicated installed mailbox service.
++#[derive(Debug, Clone, Copy, PartialEq, Eq)]
++pub enum InstalledMailboxLaunchProfile {
++    LinuxFirecrackerV1,
++}
++
++const INSTALLED_MAILBOX_ASSET: &str = "installed_mailbox";
++
++impl InstalledMailboxLaunchProfile {
++    /// Identity that the canonical signed plan must bind for this selection.
++    pub fn signed_asset(self) -> Result<mvm_core::plan::AssetIdentity> {
++        let profile: &[u8] = match self {
++            Self::LinuxFirecrackerV1 => b"mvm/installed-mailbox/local-firecracker/v1\0",
++        };
++        Ok(mvm_core::plan::AssetIdentity::new(
++            mvm_core::plan::AssetKind::Policy,
++            INSTALLED_MAILBOX_ASSET,
++            hex::encode(Sha256::digest(profile)),
++        )?)
++    }
+ }
+ 
+ /// Re-verified host artifact behind one extension binding in the signed plan.
+@@ -158,6 +181,12 @@
+ }
+ 
+ impl AdmittedPlan {
++    /// Verified launch intent. Per-message authorization remains separate.
++    #[must_use]
++    pub fn installed_mailbox(&self) -> Option<InstalledMailboxLaunchProfile> {
++        self.installed_mailbox
++    }
++
+     /// Recheck the captured backend and canonical validity window at the host's
+     /// current time without admitting the plan again or granting new authority.
+     ///
+@@ -285,6 +314,7 @@
+             backend: None,
+             dispatched: false,
+             installed_payload_mapping: None,
++            installed_mailbox: None,
+         }
+     }
+ 
+@@ -689,6 +719,35 @@
+         })
+         .transpose()?;
+ 
++    let mut mailbox_assets = verified
++        .asset_identities
++        .iter()
++        .filter(|asset| asset.name == INSTALLED_MAILBOX_ASSET);
++    let installed_mailbox = match posture.installed_mailbox {
++        None => {
++            anyhow::ensure!(
++                !mailbox_assets.any(|asset| asset.kind == mvm_core::plan::AssetKind::Policy),
++                "installed mailbox requires explicit host selection"
++            );
++            None
++        }
++        Some(profile) => {
++            anyhow::ensure!(
++                mailbox_assets.next() == Some(&profile.signed_asset()?)
++                    && mailbox_assets.next().is_none(),
++                "installed mailbox selection requires the unique matching signed policy asset"
++            );
++            anyhow::ensure!(
++                cfg!(target_os = "linux")
++                    && backend == Some(BackendKind::Firecracker)
++                    && verified.network_mode == mvm_core::plan::NetworkMode::HostVsockProxy
++                    && verified.bundle.is_some(),
++                "installed mailbox requires bundled Linux Firecracker HostVsockProxy admission"
++            );
++            Some(profile)
++        }
++    };
++
+     // Spend the nonce only after every fallible descriptor and bundle check.
+     // Refusal must not consume an externally signed plan's replay allowance.
+     ledger.spend(&signer_id, &verified, now)?;
+@@ -704,6 +763,7 @@
+         backend,
+         dispatched: false,
+         installed_payload_mapping,
++        installed_mailbox,
+     })
+ }
+ 
+@@ -916,6 +976,7 @@
+     runtime_config: Option<&'a VmStartConfig>,
+     installed_payload_mapping:
+         Option<&'a mvm_contract::policy::network_policy::CooperatingPayloadPolicy>,
++    installed_mailbox: Option<InstalledMailboxLaunchProfile>,
+ }
+ 
+ impl<'a> RunPosture<'a> {
+@@ -928,6 +989,7 @@
+             backend: Some(backend),
+             runtime_config: None,
+             installed_payload_mapping: None,
++            installed_mailbox: None,
+         }
+     }
+ 
+@@ -945,6 +1007,7 @@
+             backend: None,
+             runtime_config: None,
+             installed_payload_mapping: None,
++            installed_mailbox: None,
+         }
+     }
+ 
+@@ -963,6 +1026,13 @@
+         mapping: &'a mvm_contract::policy::network_policy::CooperatingPayloadPolicy,
+     ) -> Self {
+         self.installed_payload_mapping = Some(mapping);
++        self
++    }
++
++    /// Select the profile that this host is prepared to admit.
++    #[must_use]
++    pub fn with_installed_mailbox(mut self, profile: InstalledMailboxLaunchProfile) -> Self {
++        self.installed_mailbox = Some(profile);
+         self
+     }
+ 
+@@ -2206,6 +2276,12 @@
+     // `plan.admitted` already fired, so a gate refusal emits `plan.failed`
+     // carrying the refusing stage rather than leaving a dangling admission.
+     let gated = (|| {
++        if admitted.installed_mailbox().is_some() {
++            return Err((
++                "installed-mailbox",
++                anyhow::anyhow!("original installed mailbox listener is unavailable"),
++            ));
++        }
+         #[cfg(unix)]
+         let installed = params.config.host_lifetime.is_some();
+         #[cfg(not(unix))]
+@@ -4864,6 +4940,9 @@
+         assert!(backend.list().unwrap().is_empty());
+     }
+ 
++    #[cfg(target_os = "linux")]
++    include!("plan_admission/installed_mailbox_selection_tests.rs");
++
+     #[test]
+     fn original_bundled_admission_binds_only_its_signed_mapped_policy() {
+         use mvm_contract::policy::network_policy::{
+--- /dev/null
++++ b/crates/mvm-hostd/src/plan_admission/installed_mailbox_selection_tests.rs
+@@ -0,0 +1,119 @@
++#[test]
++fn installed_mailbox_selection_precedes_nonce_spend_and_unbound_dispatch() {
++    use mvm_core::plan::{AssetIdentity, AssetKind, NetworkMode};
++
++    let (_env, _home) = host_with_ceiling(Default::default());
++    let keys = tempfile::tempdir().unwrap();
++    let publisher = ed25519_dalek::SigningKey::from_bytes(&[36; 32]);
++    let (archive, pin) = make_test_bundle(&publisher, b"kernel-bytes", b"rootfs-bytes");
++    let key_id = key_id_from_pubkey(&publisher.verifying_key());
++    let trust = MapTrust(HashMap::from([(key_id, publisher.verifying_key())]));
++    let resolver = FixedResolver(archive);
++    let ctx = BundleAdmissionContext {
++        resolver: &resolver,
++        trust: &trust,
++        image: None,
++    };
++    let profile = InstalledMailboxLaunchProfile::LinuxFirecrackerV1;
++    let asset = profile.signed_asset().unwrap();
++    assert_eq!(asset.kind, AssetKind::Policy);
++    assert_eq!(asset.name, "installed_mailbox");
++    assert_eq!(
++        asset.digest,
++        "ae05972a2ff44bf3eae6c9dc33d60ac032616d1cae5d6463d44106f07cf54695"
++    );
++    let ordinary = RunPosture::on_backend(Variant::Dev, BackendKind::Firecracker);
++    let selected = ordinary.with_installed_mailbox(profile);
++    let admit = |plan: &ExecutionPlan, ledger: &InMemoryNonceLedger, posture| {
++        admit_plan_for_run(
++            plan,
++            &SystemClock,
++            ledger,
++            Some(keys.path()),
++            Some(&ctx),
++            None,
++            posture,
++        )
++    };
++    let mut input = input_with_pin("installed-mailbox-selection", &pin);
++    input.backend_name = "firecracker";
++    input.network_mode = NetworkMode::HostVsockProxy;
++    let plain = synthesize_plan(&input).unwrap();
++    let plain_ledger = InMemoryNonceLedger::new();
++    let error = admit(&plain, &plain_ledger, selected).unwrap_err();
++    assert!(format!("{error:#}").contains("installed mailbox selection requires"));
++    assert_eq!(
++        admit(&plain, &plain_ledger, ordinary)
++            .expect("selection without an asset must not spend the nonce")
++            .installed_mailbox(),
++        None
++    );
++
++    input.assets.push(asset.clone());
++    let plan = synthesize_plan(&input).unwrap();
++    let ledger = InMemoryNonceLedger::new();
++    let error = admit(&plan, &ledger, ordinary).unwrap_err();
++    assert!(format!("{error:#}").contains("installed mailbox requires explicit host selection"));
++    let admitted = admit(&plan, &ledger, selected).unwrap();
++    assert_eq!(admitted.installed_mailbox(), Some(profile));
++    let error = admit(&plan, &ledger, selected).unwrap_err();
++    assert!(matches!(
++        error.downcast_ref::<PlanValidityError>(),
++        Some(PlanValidityError::NonceReplay { .. })
++    ));
++
++    let backend = AnyBackend::from_hypervisor("mock");
++    let error = start_admitted(StartAdmittedParams {
++        backend: &backend,
++        admitted,
++        config: VmStartConfig::default(),
++        policy_bundle: None,
++        emitter: None,
++        assurance: None,
++    })
++    .unwrap_err();
++    assert!(format!("{error:#}").contains("admission gate refused (installed-mailbox)"));
++    assert!(format!("{error:#}").contains("original installed mailbox listener is unavailable"));
++    assert!(backend.list().unwrap().is_empty());
++
++    let incompatible =
++        RunPosture::on_backend(Variant::Dev, BackendKind::Mock).with_installed_mailbox(profile);
++    let error = admit(&plan, &InMemoryNonceLedger::new(), incompatible).unwrap_err();
++    assert!(format!("{error:#}").contains("bundled Linux Firecracker HostVsockProxy"));
++
++    let wrong_kind =
++        AssetIdentity::new(AssetKind::Other, "installed_mailbox", asset.digest.clone()).unwrap();
++    input.assets.clear();
++    input.assets.push(wrong_kind.clone());
++    let legacy = synthesize_plan(&input).unwrap();
++    let legacy_ledger = InMemoryNonceLedger::new();
++    let error = admit(&legacy, &legacy_ledger, selected).unwrap_err();
++    assert!(format!("{error:#}").contains("installed mailbox selection requires"));
++    assert_eq!(
++        admit(&legacy, &legacy_ledger, ordinary)
++            .expect("an unrelated asset kind must preserve ordinary admission")
++            .installed_mailbox(),
++        None
++    );
++    input.assets.push(asset.clone());
++    let duplicated = synthesize_plan(&input).unwrap();
++    let error = admit(&duplicated, &InMemoryNonceLedger::new(), selected).unwrap_err();
++    assert!(format!("{error:#}").contains("installed mailbox selection requires"));
++    input.assets.clear();
++    input
++        .assets
++        .push(AssetIdentity::new(AssetKind::Policy, "installed_mailbox", "a".repeat(64)).unwrap());
++    let wrong = synthesize_plan(&input).unwrap();
++    let error = admit(&wrong, &InMemoryNonceLedger::new(), selected).unwrap_err();
++    assert!(format!("{error:#}").contains("installed mailbox selection requires"));
++    input.assets[0] = asset;
++    input.network_mode = NetworkMode::None;
++    let offline = synthesize_plan(&input).unwrap();
++    let error = admit(&offline, &InMemoryNonceLedger::new(), selected).unwrap_err();
++    assert!(format!("{error:#}").contains("bundled Linux Firecracker HostVsockProxy"));
++    input.network_mode = NetworkMode::HostVsockProxy;
++    input.bundle_pin = None;
++    let unbundled = synthesize_plan(&input).unwrap();
++    let error = admit(&unbundled, &InMemoryNonceLedger::new(), selected).unwrap_err();
++    assert!(format!("{error:#}").contains("bundled Linux Firecracker HostVsockProxy"));
++}
