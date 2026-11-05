@@ -1,0 +1,45 @@
+--- a/crates/mvm-vmm/src/host/network_endpoint_spawn/proxy.rs
++++ b/crates/mvm-vmm/src/host/network_endpoint_spawn/proxy.rs
+@@ -18,6 +18,14 @@
+     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+         f.write_str("EgressProxySpawnConfig { <redacted> }")
+     }
++}
++
++/// An original operator snapshot, after canonical proxy resolution.
++/// This carries data only: it grants no egress and has no wire representation.
++#[derive(Debug)]
++pub enum InstalledEndpointSettings {
++    ResolvedDirect,
++    ResolvedConfigured(EgressProxySpawnConfig),
+ }
+ 
+ impl EgressProxySpawnConfig {
+--- a/crates/mvm-vmm/src/host/network_endpoint_spawn.rs
++++ b/crates/mvm-vmm/src/host/network_endpoint_spawn.rs
+@@ -1047,7 +1047,7 @@
+ }
+ 
+ mod proxy;
+-pub use proxy::EgressProxySpawnConfig;
++pub use proxy::{EgressProxySpawnConfig, InstalledEndpointSettings};
+ 
+ /// The endpoint config a spawn with (or without) a FlowMux identity emits.
+ ///
+--- a/crates/mvm-vmm/src/host/host_agent_spawn/owned.rs
++++ b/crates/mvm-vmm/src/host/host_agent_spawn/owned.rs
+@@ -26,6 +26,14 @@
+ pub trait HostAgentParentPermit: Send + Sync {
+     fn check_current(&self, tenant: &str) -> Result<()>;
+     fn check_registration(&self, params: &HostAgentServicesParams<'_>) -> Result<()>;
++    /// Borrow the captured settings under this original permit's lifetime.
++    /// An installed consumer cannot keep the snapshot after its owner.
++    fn installed_endpoint_settings(
++        &self,
++        _params: &HostAgentServicesParams<'_>,
++    ) -> Result<&crate::host::network_endpoint_spawn::InstalledEndpointSettings> {
++        anyhow::bail!("original installed endpoint settings unavailable")
++    }
+ }
+ pub struct OwnedHostAgentInputs {
+     pub tenant: String,
