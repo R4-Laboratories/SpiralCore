@@ -423,6 +423,8 @@ impl Storage {
             retained_telemetry::CATALOG,
             retained_telemetry::CATALOG_INTENT,
             retained_telemetry::CATALOG_NEXT,
+            retained_telemetry::TRANSFER_INTENT,
+            retained_telemetry::TRANSFER_NEXT,
         ])?;
         endpoint_disks::no_namespaces(&self.directory)
     }

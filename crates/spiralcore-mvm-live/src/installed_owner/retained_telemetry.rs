@@ -14,6 +14,8 @@ pub(crate) use recovery::{CanonicalRecoveryLayout, RetainedRecoveryCompatibility
 pub(crate) const CATALOG: &str = ".retained-telemetry.bin";
 pub(crate) const CATALOG_INTENT: &str = ".retained-telemetry.intent";
 pub(crate) const CATALOG_NEXT: &str = ".retained-telemetry.next";
+pub(crate) const TRANSFER_INTENT: &str = ".retained-telemetry.transfer";
+pub(crate) const TRANSFER_NEXT: &str = ".retained-telemetry.transfer.next";
 const MAGIC: &[u8; 8] = b"SCRETN01";
 const DOMAIN: &[u8] = b"spiralcore/retained-telemetry-catalog/v1\0";
 const HEADER: usize = 88;
@@ -270,6 +272,15 @@ impl Storage {
     fn publish_retained(&self, catalog: &Catalog) -> Result<()> {
         self.check()?;
         self.absent_names(&[CATALOG_INTENT, CATALOG_NEXT])?;
+        // Normal publication cannot perform a profile/generation migration.
+        // That requires the separately owned immutable transfer transaction.
+        let current = self.read()?;
+        if current.phase != Phase::Active
+            || current.key != catalog.epoch.key
+            || current.generation != catalog.epoch.generation
+        {
+            return Err(OwnerError::Fenced);
+        }
         let bytes = catalog.encode()?;
         let mut file = open_at(
             &self.directory,

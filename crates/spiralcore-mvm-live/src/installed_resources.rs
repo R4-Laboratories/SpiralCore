@@ -197,7 +197,148 @@ pub(crate) struct ClosedRetainedFunding {
     budget: ManagedResourceBudget,
     imported: bool,
 }
+
+#[derive(Default)]
+struct RetainedFundingMove {
+    budget: Option<ManagedResourceBudget>,
+    ledger: Option<Box<Mutex<Ledger>>>,
+    authority: Option<Arc<InstalledAuthority>>,
+    unwrapped_authority: Option<Box<InstalledAuthority>>,
+    fenced: Option<AtomicBool>,
+    quarantined: Option<AtomicBool>,
+}
+impl Drop for RetainedFundingMove {
+    fn drop(&mut self) {
+        // Partial unwrap failure/unwind retains ACTUAL objects, never a copied
+        // usage snapshot or replacement zero ledger.
+        if let Some(value) = self.budget.take() {
+            std::mem::forget(value);
+        }
+        if let Some(value) = self.ledger.take() {
+            std::mem::forget(value);
+        }
+        if let Some(value) = self.authority.take() {
+            std::mem::forget(value);
+        }
+        if let Some(value) = self.unwrapped_authority.take() {
+            std::mem::forget(value);
+        }
+    }
+}
+pub(crate) struct RetainedFundingRebindFailure {
+    _original: Box<RetainedFundingMove>,
+}
+impl std::fmt::Debug for RetainedFundingRebindFailure {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("retained ledger transfer refused; original objects retained")
+    }
+}
 impl ClosedRetainedFunding {
+    #[cfg(test)]
+    pub(crate) fn test_ledger_box_bytes() -> usize {
+        std::mem::size_of::<Mutex<Ledger>>()
+    }
+    #[cfg(test)]
+    pub(crate) fn test_alias_guards(&self, expected: crate::installed_owner::Epoch) {
+        assert!(self.can_rebind(expected).is_ok());
+        let alias = self.budget.clone();
+        assert!(self.can_rebind(expected).is_err());
+        drop(alias);
+        let weak = Arc::downgrade(&self.budget.shared);
+        assert!(self.can_rebind(expected).is_err());
+        drop(weak);
+        let authority = self.authority();
+        assert!(self.can_rebind(expected).is_err());
+        let weak = Arc::downgrade(&authority);
+        drop(authority);
+        assert!(self.can_rebind(expected).is_err());
+        drop(weak);
+        assert!(self.can_rebind(expected).is_ok());
+    }
+    #[cfg(test)]
+    pub(crate) fn test_ordinary_reserve_refused(&self) -> bool {
+        self.budget
+            .reserve(
+                [122; 32],
+                ManagedClaim {
+                    workers: 1,
+                    ..Default::default()
+                },
+            )
+            .is_err()
+    }
+
+    pub(crate) fn can_rebind(&self, expected: crate::installed_owner::Epoch) -> Result<()> {
+        let shared = &self.budget.shared;
+        if !self.imported
+            || Arc::strong_count(shared) != 1
+            || Arc::weak_count(shared) != 0
+            || Arc::strong_count(&shared.authority) != 1
+            || Arc::weak_count(&shared.authority) != 0
+            || shared.fenced.load(Ordering::Acquire)
+            || shared.quarantined.load(Ordering::Acquire)
+            || shared.ledger.is_poisoned()
+            || !shared.authority.healthy_closed_at(expected)
+        {
+            return Err(ManagedResourceError::State);
+        }
+        Ok(())
+    }
+
+    pub(crate) fn rebind_closed(
+        self,
+        expected: crate::installed_owner::Epoch,
+    ) -> std::result::Result<Self, RetainedFundingRebindFailure> {
+        let valid = self.can_rebind(expected).is_ok();
+        let imported = self.imported;
+        let mut original = Box::<RetainedFundingMove>::default();
+        original.budget = Some(self.budget);
+        let fail = |original| RetainedFundingRebindFailure {
+            _original: original,
+        };
+        if !valid {
+            return Err(fail(original));
+        }
+        let budget = original.budget.take().expect("actual closed pool");
+        let shared = match Arc::try_unwrap(budget.shared) {
+            Ok(shared) => shared,
+            Err(shared) => {
+                original.budget = Some(ManagedResourceBudget { shared });
+                return Err(fail(original));
+            }
+        };
+        original.ledger = Some(Box::new(shared.ledger));
+        original.fenced = Some(shared.fenced);
+        original.quarantined = Some(shared.quarantined);
+        original.authority = Some(shared.authority);
+        let authority = match Arc::try_unwrap(original.authority.take().expect("actual authority"))
+        {
+            Ok(authority) => authority,
+            Err(authority) => {
+                original.authority = Some(authority);
+                return Err(fail(original));
+            }
+        };
+        let rebound = match authority.into_rebound_closed(expected) {
+            Ok(rebound) => rebound.into_authority(),
+            Err(authority) => {
+                original.unwrapped_authority = Some(authority);
+                return Err(fail(original));
+            }
+        };
+        let shared = Shared {
+            authority: rebound,
+            ledger: *original.ledger.take().expect("actual original ledger"),
+            fenced: original.fenced.take().expect("original fence"),
+            quarantined: original.quarantined.take().expect("original quarantine"),
+        };
+        Ok(Self {
+            budget: ManagedResourceBudget {
+                shared: Arc::new(shared),
+            },
+            imported,
+        })
+    }
     pub(crate) fn new(original: crate::installed_supervisor::ClosedRecoveryAuthority) -> Self {
         Self {
             budget: ManagedResourceBudget::new_installed(original.into_authority()),

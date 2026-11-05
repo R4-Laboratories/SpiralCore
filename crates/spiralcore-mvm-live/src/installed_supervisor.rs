@@ -61,6 +61,7 @@ impl InstalledConfig {
                 include_bytes!("installed_owner/retained_telemetry.rs").as_slice(),
                 include_bytes!("installed_owner/retained_recovery.rs").as_slice(),
                 include_bytes!("installed_owner/retained_transfer.rs").as_slice(),
+                include_bytes!("installed_owner/retained_transition.rs").as_slice(),
                 include_bytes!("installed_retained.rs").as_slice(),
                 include_bytes!("../../spiralcore-transfer/Cargo.toml").as_slice(),
                 include_bytes!("../../spiralcore-transfer/Cargo.lock").as_slice(),
@@ -135,6 +136,7 @@ pub(crate) struct InstalledAuthority {
     // neither worker activation nor a positive endpoint-retirement receipt.
     // Release holder exclusion before the owner's EX on a provably empty drop.
     _recovery_exclusion: Option<std::fs::File>,
+    closed_transfer: Mutex<Option<Arc<crate::installed_owner::retained_telemetry::recovery::transition::ClosedTransferCurrent>>>,
     owner: Mutex<InstallationOwner>,
     epoch: Epoch,
     open: AtomicBool,
@@ -150,6 +152,72 @@ impl ClosedRecoveryAuthority {
     }
 }
 impl InstalledAuthority {
+    pub(crate) fn from_retained_transfer(
+        exclusion: crate::installed_owner::retained_telemetry::recovery::RetainedExclusion,
+        current: Arc<
+            crate::installed_owner::retained_telemetry::recovery::transition::ClosedTransferCurrent,
+        >,
+    ) -> ClosedRecoveryAuthority {
+        let mut authority = Self::from_retained_recovery(exclusion);
+        *Arc::get_mut(&mut authority.0)
+            .expect("fresh closed authority")
+            .closed_transfer
+            .get_mut()
+            .expect("fresh mutex") = Some(current);
+        authority
+    }
+    pub(crate) fn clear_closed_transfer(&self, expected: Epoch) -> Result<()> {
+        if self.admission_open() {
+            return Err(SupervisorError::State);
+        }
+        let owner = self.owner.lock().map_err(|_| SupervisorError::State)?;
+        let mut observed = self
+            .closed_transfer
+            .lock()
+            .map_err(|_| SupervisorError::State)?;
+        if let Some(proof) = observed.as_ref() {
+            if proof.target() != expected {
+                return Err(SupervisorError::State);
+            }
+            proof.check(&owner)?;
+            owner.active_binding(expected)?;
+            observed.take();
+        }
+        Ok(())
+    }
+    pub(crate) fn healthy_closed_at(&self, expected: Epoch) -> bool {
+        !self.admission_open()
+            && self.canonical
+            && self
+                .closed_transfer
+                .lock()
+                .is_ok_and(|value| value.is_none())
+            && self._recovery_exclusion.is_some()
+            && self
+                .workers
+                .lock()
+                .is_ok_and(|workers| workers.slots.iter().all(Option::is_none))
+            && self
+                .owner
+                .lock()
+                .is_ok_and(|owner| owner.active_binding(expected).is_ok())
+    }
+
+    pub(crate) fn into_rebound_closed(
+        self,
+        expected: Epoch,
+    ) -> std::result::Result<ClosedRecoveryAuthority, Box<Self>> {
+        if !self.healthy_closed_at(expected) {
+            return Err(Box::new(self));
+        }
+        // NEW authority value, carrying the actual owner/holder/worker mutexes.
+        // The prior closed flag is discarded; it is never reopened.
+        Ok(ClosedRecoveryAuthority(Arc::new(Self {
+            epoch: expected,
+            open: AtomicBool::new(false),
+            ..self
+        })))
+    }
     pub(crate) fn from_retained_recovery(
         exclusion: crate::installed_owner::retained_telemetry::recovery::RetainedExclusion,
     ) -> ClosedRecoveryAuthority {
@@ -161,6 +229,7 @@ impl InstalledAuthority {
             workers: Mutex::new(WorkerLedger::default()),
             canonical: true,
             _recovery_exclusion: Some(holders),
+            closed_transfer: Mutex::new(None),
         }))
     }
     pub(crate) fn with_disk_owner<T>(
@@ -180,9 +249,14 @@ impl InstalledAuthority {
         self.open.store(false, Ordering::Release);
     }
     pub(crate) fn resource_epoch_current(&self) -> bool {
-        self.owner
-            .lock()
-            .is_ok_and(|owner| owner.active_binding(self.epoch).is_ok())
+        self.owner.lock().is_ok_and(|owner| {
+            self.closed_transfer
+                .lock()
+                .is_ok_and(|proof| match proof.as_ref() {
+                    Some(proof) => !self.admission_open() && proof.check(&owner).is_ok(),
+                    None => owner.active_binding(self.epoch).is_ok(),
+                })
+        })
     }
     fn workers(&self) -> Result<std::sync::MutexGuard<'_, WorkerLedger>> {
         self.workers.lock().map_err(|_| {
@@ -319,6 +393,7 @@ impl InstalledSupervisor {
             workers: Mutex::new(WorkerLedger::default()),
             canonical: config.canonical,
             _recovery_exclusion: None,
+            closed_transfer: Mutex::new(None),
         });
         let budget = HostTransportBudget::new_installed(config.transport(), authority.clone())?;
         let resources = ManagedResourceBudget::new_installed(authority.clone());
