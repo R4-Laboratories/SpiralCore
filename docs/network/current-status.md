@@ -1,7 +1,7 @@
 # Networking delivery status
 
-Snapshot: **2026-11-04**, checked against published `origin/main`
-`fdd54faeff4296916a9dd2a616a42a6c642b226e` and the live GitHub issue graph.
+Snapshot: **2026-11-05**, checked against published `origin/main`
+`72415e7c9b92e6ff95342d1bfd23daef6d479e32` and the live GitHub issue graph.
 This page separates accepted components, measured experiments and unmerged work.
 The [README](../../README.md) is the architecture/results entry point;
 [issue #42](https://github.com/R4-Laboratories/SpiralCore/issues/42) remains the
@@ -28,6 +28,20 @@ them as the accepted source. The final seven-role run passed **34 tests per
 role**, across nine nonzero scopes, with original ZIP digests and inner checksums
 verified. These are 34 tests repeated across seven native process roles, not
 238 distinct tests, cross-platform network pairs, or booted MVMs.
+
+[PR #95](https://github.com/R4-Laboratories/SpiralCore/pull/95) adds canonical
+transport-binding revocation to the mailbox adapter. Live Call and Reply keep
+both checked policy generations through transport admission. Prepared receipts
+recheck the source and return bindings before sending. The installed MVM owner
+still needs to distribute current revocations and restore verified policy before
+restart admission.
+
+On the merged tree, each of seven native process roles passed 113 mailbox
+tests, 24 storage/publication tests and 34 FlowMux component tests. The locked
+Linux host job also passed its host and shared conformance suites, strict Clippy
+and the guest-entry build check. The matrix covers native process roles.
+Installed guest, direct/relay WAN, capacity and FIPS gates have separate
+acceptance criteria. [Verified artifacts](https://github.com/R4-Laboratories/SpiralCore/issues/46#issuecomment-6670157754)
 
 ## Full MVM acceptance remains open
 
