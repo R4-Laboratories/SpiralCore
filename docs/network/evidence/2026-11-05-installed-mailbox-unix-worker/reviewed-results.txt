@@ -1,0 +1,20 @@
+running 8 tests
+test canonical_call_and_encrypted_receipts_cross_owned_unix_socket ...
+thread 'canonical_call_and_encrypted_receipts_cross_owned_unix_socket' (574736) panicked at worker_canonical.rs:308:5:
+assertion failed: worker.socket_path().is_err()
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+FAILED
+test composite_bind_failure_retains_path_and_credit_after_namespace_mutation ... ok
+test natural_job_exit_closes_the_accepted_stream_before_stop ... ok
+test post_bind_failure_keeps_unknown_socket_and_charge ... ok
+test stop_wakes_accept_and_refuses_to_unlink_a_replacement ... ok
+test stop_wakes_the_original_stream_during_a_partial_frame ... ok
+test successful_join_and_socket_cleanup_release_the_exact_charge ... ok
+test timed_out_stop_retains_the_original_worker_and_socket ... ok
+
+failures:
+
+failures:
+    canonical_call_and_encrypted_receipts_cross_owned_unix_socket
+
+test result: FAILED. 7 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s

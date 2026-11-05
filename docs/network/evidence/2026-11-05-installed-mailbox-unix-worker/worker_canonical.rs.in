@@ -1,0 +1,437 @@
+mod worker;
+
+use std::{
+    fs::{self, DirBuilder},
+    io::{self, Read, Write},
+    os::unix::{
+        fs::DirBuilderExt,
+        net::{UnixListener, UnixStream},
+    },
+    path::PathBuf,
+    sync::{
+        atomic::{AtomicUsize, Ordering},
+        mpsc,
+    },
+    time::{Duration, Instant},
+};
+use worker::MailboxSocketWorker;
+
+struct TestDirectory(PathBuf);
+impl TestDirectory {
+    fn new() -> Self {
+        static NEXT: AtomicUsize = AtomicUsize::new(0);
+        let path = std::env::temp_dir().join(format!(
+            "scmb-{}-{}",
+            std::process::id(),
+            NEXT.fetch_add(1, Ordering::Relaxed)
+        ));
+        DirBuilder::new().mode(0o700).create(&path).unwrap();
+        Self(path)
+    }
+}
+impl Drop for TestDirectory {
+    fn drop(&mut self) {
+        fs::remove_dir_all(&self.0).unwrap();
+    }
+}
+fn deadline() -> Instant {
+    Instant::now() + Duration::from_secs(2)
+}
+
+#[test]
+fn stop_wakes_accept_and_refuses_to_unlink_a_replacement() {
+    let root = TestDirectory::new();
+    let mut worker = spawn(&root.0, |_| panic!("unexpected connection")).unwrap();
+    let original = worker.socket_path().unwrap().to_owned();
+    let retained = root.0.join("saved.sock");
+    fs::rename(&original, &retained).unwrap();
+    let replacement = UnixListener::bind(&original).unwrap();
+    assert!(worker.stop(deadline()).is_err());
+    assert!(original.exists());
+    drop(replacement);
+    fs::remove_file(&original).unwrap();
+    fs::rename(&retained, &original).unwrap();
+    worker.stop(deadline()).unwrap();
+    assert!(!original.exists());
+}
+
+#[test]
+fn stop_wakes_the_original_stream_during_a_partial_frame() {
+    let root = TestDirectory::new();
+    let (entered, ready) = mpsc::channel();
+    let mut worker = spawn(&root.0, move |mut stream| {
+        let mut prefix = [0; 4];
+        stream.read_exact(&mut prefix[..2]).unwrap();
+        entered.send(prefix[..2].to_vec()).unwrap();
+        assert_eq!(
+            stream.read_exact(&mut prefix[2..]).unwrap_err().kind(),
+            io::ErrorKind::UnexpectedEof
+        );
+        Ok(())
+    })
+    .unwrap();
+    let original = worker.socket_path().unwrap().to_owned();
+    let mut client = UnixStream::connect(&original).unwrap();
+    client.write_all(&[0, 0]).unwrap();
+    assert_eq!(ready.recv_timeout(Duration::from_secs(2)).unwrap(), [0, 0]);
+    worker.stop(deadline()).unwrap();
+    assert!(!original.exists());
+}
+
+#[test]
+fn timed_out_stop_retains_the_original_worker_and_socket() {
+    let root = TestDirectory::new();
+    let (entered, ready) = mpsc::channel();
+    let (finish, wait) = mpsc::channel();
+    let mut worker = spawn(&root.0, move |_| {
+        entered.send(()).unwrap();
+        wait.recv_timeout(Duration::from_secs(2)).unwrap();
+        Ok(())
+    })
+    .unwrap();
+    let original = worker.socket_path().unwrap().to_owned();
+    let _client = UnixStream::connect(&original).unwrap();
+    ready.recv_timeout(Duration::from_secs(2)).unwrap();
+    assert_eq!(
+        worker.stop(Instant::now()).unwrap_err().kind(),
+        io::ErrorKind::TimedOut
+    );
+    assert!(original.exists());
+    finish.send(()).unwrap();
+    worker.stop(deadline()).unwrap();
+    assert!(!original.exists());
+}
+#[path = "@ADAPTER_TESTS@/common/mod.rs"]
+mod common;
+#[path = "@ADAPTER_TESTS@/common/service.rs"]
+mod fixture;
+
+use mvm_contract::protocol::mailbox::*;
+use mvm_core::mailbox::{
+    encode_envelope,
+    transport::{CancellationToken, RouteId},
+};
+use spiralcore_mvm_adapter::{
+    live::{HandshakeRole, StreamTransport},
+    receipt::{ReceiptObservation, ReceiptReturnConfig, ReceiptTracker},
+    service::{CallStatus, ControlReserve, HostBudget, LocalMailboxService, ServiceLimits},
+    service_sender::{self, MessageOptions},
+};
+fn budget() -> HostBudget {
+    HostBudget::with_control(ServiceLimits::default(), ControlReserve::default()).unwrap()
+}
+#[test]
+fn canonical_call_and_encrypted_receipts_cross_owned_unix_socket() {
+    let directory = TestDirectory::new();
+    let (finished, result) = mpsc::channel();
+    let expected = [
+        common::random(65000, 83),
+        b"\0private-service-tail\0\0".to_vec(),
+    ]
+    .concat();
+    let mut worker = spawn(&directory.0, move |socket| {
+        let stream = StreamTransport::new(
+            socket,
+            RouteId::from_bytes([30; 32]),
+            Duration::from_secs(5),
+        )
+        .unwrap();
+        let cancel = CancellationToken::default();
+        stream.handshake(HandshakeRole::Acceptor, &cancel).unwrap();
+        let budget = budget();
+        let mut service = LocalMailboxService::new(budget.clone()).unwrap();
+        let mut tracker = ReceiptTracker::new(budget.clone(), 8).unwrap();
+        let incoming = fixture::binding(MailboxMessageKind::Call, true, false, false);
+        let outgoing = fixture::binding(MailboxMessageKind::Reply, false, false, true);
+        let control = fixture::binding(MailboxMessageKind::Cast, true, true, false);
+        let returns = ReceiptReturnConfig::new(
+            fixture::binding(MailboxMessageKind::Cast, false, true, true),
+            budget,
+            fixture::receipt_key(true).verifying_key(),
+        )
+        .unwrap();
+        let original = stream
+            .receive(&cancel, Instant::now() + Duration::from_secs(5))
+            .unwrap();
+        let (accepted, receipt) = returns
+            .admit(&mut service, &incoming, &original, fixture::time())
+            .unwrap();
+        assert_eq!(accepted.receipt.outcome, DeliveryOutcome::AcceptedEphemeral);
+        // No receipt identity or content type is sent outside canonical ciphertext.
+        assert!(
+            !receipt
+                .encoded_bytes()
+                .windows(16)
+                .any(|w| w == b"mailbox.receipt\"")
+        );
+        receipt.send(&stream, &cancel, fixture::time()).unwrap();
+        let request = service
+            .receive(&incoming, fixture::time())
+            .unwrap()
+            .unwrap();
+        let payload = request.payload().to_vec();
+        let options = MessageOptions::for_reply(&request, fixture::time()).unwrap();
+        let reply = service
+            .reply_prepared(
+                &outgoing,
+                request.handle(),
+                service_sender::request(&outgoing, &payload, &options, fixture::time()).unwrap(),
+                fixture::time(),
+            )
+            .unwrap();
+        let encoded = encode_envelope(reply.envelope()).unwrap();
+        let send = tracker
+            .register_send(
+                &outgoing,
+                &control,
+                &fixture::receipt_key(false).verifying_key(),
+                &encoded,
+                fixture::time(),
+            )
+            .unwrap();
+        outgoing
+            .send_prepared(&reply, &stream, &cancel, fixture::time())
+            .unwrap();
+        let ack = stream
+            .receive(&cancel, Instant::now() + Duration::from_secs(5))
+            .unwrap();
+        tracker
+            .observe_receipt(&control, &ack, fixture::time())
+            .unwrap();
+        let ReceiptObservation::Verified(ack) = tracker
+            .take_receipt(&outgoing, &send, fixture::time())
+            .unwrap()
+        else {
+            panic!("missing application-reply admission")
+        };
+        assert!(
+            service
+                .acknowledge_reply(
+                    &outgoing,
+                    &ack,
+                    &fixture::receipt_key(false).verifying_key(),
+                    fixture::time()
+                )
+                .unwrap()
+        );
+        assert!(
+            service
+                .retry_reply_prepared(&incoming, &original, fixture::time())
+                .unwrap()
+                .is_none()
+        );
+        let counters = stream.counters().unwrap();
+        assert_eq!((counters.frames_sent, counters.frames_received), (2, 2));
+        stream.close().unwrap();
+        finished.send((payload, counters)).unwrap();
+        Ok(())
+    })
+    .unwrap();
+    let socket_path = worker.socket_path().unwrap().to_owned();
+    let socket = UnixStream::connect(&socket_path).unwrap();
+    let stream = StreamTransport::new(
+        socket,
+        RouteId::from_bytes([20; 32]),
+        Duration::from_secs(5),
+    )
+    .unwrap();
+    let cancel = CancellationToken::default();
+    stream.handshake(HandshakeRole::Initiator, &cancel).unwrap();
+    let budget = budget();
+    let mut service = LocalMailboxService::new(budget.clone()).unwrap();
+    let mut tracker = ReceiptTracker::new(budget.clone(), 8).unwrap();
+    let outgoing = fixture::binding(MailboxMessageKind::Call, true, false, true);
+    let incoming = fixture::binding(MailboxMessageKind::Reply, false, false, false);
+    let control = fixture::binding(MailboxMessageKind::Cast, false, true, false);
+    let returns = ReceiptReturnConfig::new(
+        fixture::binding(MailboxMessageKind::Cast, true, true, true),
+        budget,
+        fixture::receipt_key(false).verifying_key(),
+    )
+    .unwrap();
+    let mut options =
+        MessageOptions::fresh(fixture::content_type(), fixture::time(), 2000).unwrap();
+    options.reply_to = common::config(MailboxMessageKind::Call).reply_to;
+    let prepared =
+        service_sender::prepare(&outgoing, &expected, &options, fixture::time()).unwrap();
+    let encoded = encode_envelope(prepared.envelope()).unwrap();
+    let call = service
+        .register_call(&outgoing, &encoded, fixture::time())
+        .unwrap();
+    let send = tracker
+        .register_send(
+            &outgoing,
+            &control,
+            &fixture::receipt_key(true).verifying_key(),
+            &encoded,
+            fixture::time(),
+        )
+        .unwrap();
+    outgoing
+        .send_prepared(&prepared, &stream, &cancel, fixture::time())
+        .unwrap();
+    let receipt = stream
+        .receive(&cancel, Instant::now() + Duration::from_secs(5))
+        .unwrap();
+    tracker
+        .observe_receipt(&control, &receipt, fixture::time())
+        .unwrap();
+    let ReceiptObservation::Verified(accepted) = tracker
+        .take_receipt(&outgoing, &send, fixture::time())
+        .unwrap()
+    else {
+        panic!("missing call admission")
+    };
+    assert_eq!(accepted.receipt.outcome, DeliveryOutcome::AcceptedEphemeral);
+    let reply = stream
+        .receive(&cancel, Instant::now() + Duration::from_secs(5))
+        .unwrap();
+    let (accepted, ack) = returns
+        .admit(&mut service, &incoming, &reply, fixture::time())
+        .unwrap();
+    assert_eq!(accepted.receipt.outcome, DeliveryOutcome::AcceptedEphemeral);
+    tracker
+        .observe_application_reply(&incoming, &reply, fixture::time())
+        .unwrap();
+    ack.send(&stream, &cancel, fixture::time()).unwrap();
+    assert_eq!(
+        service
+            .poll_call(&outgoing, &call, fixture::time())
+            .unwrap(),
+        CallStatus::Replied(Some(expected.clone()))
+    );
+    let facts = tracker.facts(&outgoing, &send, fixture::time()).unwrap();
+    assert!(facts.accepted && facts.application_replied);
+    let counters = stream.counters().unwrap();
+    assert_eq!((counters.frames_sent, counters.frames_received), (2, 2));
+    let (echo, other) = result.recv_timeout(Duration::from_secs(5)).unwrap();
+    worker.stop(deadline()).unwrap();
+    assert!(worker.socket_path().is_err());
+    worker.take_worker_result().unwrap().unwrap();
+    assert!(!socket_path.exists());
+    assert_eq!(echo, expected);
+    assert_eq!(counters.envelope_bytes_sent, other.envelope_bytes_received);
+    assert_eq!(counters.envelope_bytes_received, other.envelope_bytes_sent);
+    println!(
+        "payload={} sent_envelope={} received_envelope={} sent_framing={} received_framing={}",
+        expected.len(),
+        counters.envelope_bytes_sent,
+        counters.envelope_bytes_received,
+        counters.framing_bytes_sent,
+        counters.framing_bytes_received
+    );
+}
+
+#[test]
+fn natural_job_exit_closes_the_accepted_stream_before_stop() {
+    let root = TestDirectory::new();
+    let mut worker = spawn(&root.0, |mut socket| socket.write_all(b"done")).unwrap();
+    let mut peer = UnixStream::connect(worker.socket_path().unwrap()).unwrap();
+    peer.set_read_timeout(Some(Duration::from_millis(200)))
+        .unwrap();
+    let mut bytes = [0; 4];
+    peer.read_exact(&mut bytes).unwrap();
+    assert_eq!(&bytes, b"done");
+    assert_eq!(
+        peer.read(&mut [0])
+            .expect("natural job exit must close the stream"),
+        0
+    );
+    worker.stop(deadline()).unwrap();
+    worker.take_worker_result().unwrap().unwrap();
+}
+
+fn spawn(
+    directory: &std::path::Path,
+    job: impl FnOnce(UnixStream) -> io::Result<()> + Send + 'static,
+) -> io::Result<MailboxSocketWorker<()>> {
+    let mut worker = MailboxSocketWorker::prepare(fs::File::open(directory)?, directory, ())?;
+    worker.start(job)?;
+    Ok(worker)
+}
+
+struct Charge(std::sync::Arc<AtomicUsize>);
+impl Drop for Charge {
+    fn drop(&mut self) {
+        self.0.fetch_add(1, Ordering::SeqCst);
+    }
+}
+
+#[test]
+fn post_bind_failure_keeps_unknown_socket_and_charge() {
+    let root = TestDirectory::new();
+    let drops = std::sync::Arc::new(AtomicUsize::new(0));
+    let mut worker = MailboxSocketWorker::prepare(
+        fs::File::open(&root.0).unwrap(),
+        &root.0,
+        Charge(drops.clone()),
+    )
+    .unwrap();
+    assert!(worker.socket_path().is_err());
+    let path = root.0.join("mailbox.sock");
+    let error = worker
+        .start_checked(
+            |_| panic!("no worker may start"),
+            |path| UnixListener::bind(path),
+            || Err(io::Error::other("injected post-bind observation failure")),
+        )
+        .unwrap_err();
+    assert!(error.to_string().contains("injected"));
+    assert!(path.exists());
+    assert!(worker.stop(deadline()).is_err());
+    // The original listener remains open after the refused stop.
+    drop(UnixStream::connect(&path).unwrap());
+    drop(worker);
+    assert_eq!(drops.load(Ordering::SeqCst), 0);
+    assert!(path.exists());
+}
+
+#[test]
+fn composite_bind_failure_retains_path_and_credit_after_namespace_mutation() {
+    let root = TestDirectory::new();
+    let drops = std::sync::Arc::new(AtomicUsize::new(0));
+    let mut worker = MailboxSocketWorker::prepare(
+        fs::File::open(&root.0).unwrap(),
+        &root.0,
+        Charge(drops.clone()),
+    )
+    .unwrap();
+    assert!(worker.socket_path().is_err());
+    let path = root.0.join("mailbox.sock");
+    let error = worker
+        .start_checked(
+            |_| panic!("no worker may start"),
+            |path| {
+                let listener = UnixListener::bind(path)?;
+                drop(listener);
+                Err(io::Error::other("injected listen failure after bind"))
+            },
+            || panic!("failed composite bind must not reach observation"),
+        )
+        .unwrap_err();
+    assert!(error.to_string().contains("injected listen failure"));
+    assert!(path.exists());
+    assert!(worker.stop(deadline()).is_err());
+    drop(worker);
+    assert_eq!(drops.load(Ordering::SeqCst), 0);
+    assert!(path.exists());
+}
+
+#[test]
+fn successful_join_and_socket_cleanup_release_the_exact_charge() {
+    let root = TestDirectory::new();
+    let drops = std::sync::Arc::new(AtomicUsize::new(0));
+    let mut worker = MailboxSocketWorker::prepare(
+        fs::File::open(&root.0).unwrap(),
+        &root.0,
+        Charge(drops.clone()),
+    )
+    .unwrap();
+    worker.start(|_| panic!("unexpected client")).unwrap();
+    let path = worker.socket_path().unwrap().to_owned();
+    worker.stop(deadline()).unwrap();
+    assert!(!path.exists());
+    assert_eq!(drops.load(Ordering::SeqCst), 0);
+    drop(worker);
+    assert_eq!(drops.load(Ordering::SeqCst), 1);
+}

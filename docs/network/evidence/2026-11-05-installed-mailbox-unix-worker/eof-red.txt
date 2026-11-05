@@ -1,0 +1,16 @@
+running 1 test
+test natural_job_exit_closes_the_accepted_stream_before_stop ... FAILED
+
+failures:
+
+---- natural_job_exit_closes_the_accepted_stream_before_stop stdout ----
+
+thread 'natural_job_exit_closes_the_accepted_stream_before_stop' (569217) panicked at worker_tests.rs:117:36:
+natural job exit must close the stream: Os { code: 11, kind: WouldBlock, message: "Resource temporarily unavailable" }
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    natural_job_exit_closes_the_accepted_stream_before_stop
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 3 filtered out; finished in 0.20s
