@@ -1,5 +1,6 @@
 //! Persistent public-fixture transfers through real canonical mailbox streams.
 mod canonical;
+mod completed;
 mod reconciliation;
 mod session;
 use crate::{
@@ -7,9 +8,10 @@ use crate::{
     config::{Arm, Bootstrap, Plan, Published, Role},
     fixtures::{self, Fixture},
 };
+pub use completed::{CallerEndpoint, TailDriveOutcome};
 use cpu_time::ProcessTime;
 use mvm_core::mailbox::transport::CancellationToken;
-pub use reconciliation::ReconciliationSignal;
+pub use reconciliation::{ReconciliationSignal, ReplyReplaySignal};
 use serde_json::{Value, json};
 use spiralcore_gateway_core::object::{ObjectMode, ObjectSelection, ObjectSender};
 use spiralcore_mvm_adapter::live::{
@@ -412,19 +414,31 @@ fn selection_value(selection: &ObjectSelection) -> Value {
     }
 }
 
-struct Server<S: SocketIo> {
+struct Server<'a, S: SocketIo> {
     stream: StreamTransport<S>,
     cancel: CancellationToken,
     service: canonical::Session,
     object: spiralcore_mvm_adapter::service_object::ObjectMailbox,
+    on_reply_replay: Option<&'a mut dyn FnMut(ReplyReplaySignal) -> Result<()>>,
 }
 struct Handled {
     reply: Frame,
     namespace: Id,
     meter: Meter,
 }
-impl<S: SocketIo + 'static> Server<S> {
+impl<S: SocketIo + 'static> Server<'_, S> {
     fn handle(&mut self, expected_transfer: Id) -> Result<Handled> {
+        if let Some(on_handle) = self.on_reply_replay.as_mut() {
+            let (signal, requests) = reconciliation::bounded_reply_replays();
+            on_handle(signal)?;
+            return self.service.handle_with_reply_replay(
+                expected_transfer,
+                &mut self.object,
+                &self.stream,
+                &self.cancel,
+                requests,
+            );
+        }
         self.service.handle(
             expected_transfer,
             &mut self.object,
@@ -453,6 +467,39 @@ pub fn receiver_with_broker<S: SocketIo + 'static>(
     socket: S,
     role: HandshakeRole,
     out: &mut impl Write,
+) -> Result<Value> {
+    receiver_with_broker_inner(bootstrap, broker, cache_root, socket, role, out, None)
+}
+
+/// Opt-in controller for the active receiver's exact cached Reply only. The
+/// callback runs outside dispatch and its capacity-one signal expires on return.
+pub fn receiver_with_broker_and_reply_replay<S: SocketIo + 'static>(
+    bootstrap: &Bootstrap,
+    broker: &spiralcore_mvm_adapter::broker::BrokerContext,
+    cache_root: &Path,
+    socket: S,
+    role: HandshakeRole,
+    out: &mut impl Write,
+    on_handle: &mut impl FnMut(ReplyReplaySignal) -> Result<()>,
+) -> Result<Value> {
+    receiver_with_broker_inner(
+        bootstrap,
+        broker,
+        cache_root,
+        socket,
+        role,
+        out,
+        Some(on_handle),
+    )
+}
+fn receiver_with_broker_inner<S: SocketIo + 'static>(
+    bootstrap: &Bootstrap,
+    broker: &spiralcore_mvm_adapter::broker::BrokerContext,
+    cache_root: &Path,
+    socket: S,
+    role: HandshakeRole,
+    out: &mut impl Write,
+    on_reply_replay: Option<&mut dyn FnMut(ReplyReplaySignal) -> Result<()>>,
 ) -> Result<Value> {
     if bootstrap.role != Role::Receiver {
         return Err("receiver bootstrap role mismatch".into());
@@ -497,6 +544,7 @@ pub fn receiver_with_broker<S: SocketIo + 'static>(
         cancel,
         service,
         object,
+        on_reply_replay,
     };
     let probe = server.handle(PROBE)?;
     if probe.reply.kind != 127
