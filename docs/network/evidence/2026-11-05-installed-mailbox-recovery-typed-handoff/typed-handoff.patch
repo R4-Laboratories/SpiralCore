@@ -1,0 +1,625 @@
+--- a/crates/mvm-core/src/host_lifetime.rs
++++ b/crates/mvm-core/src/host_lifetime.rs
+@@ -2,7 +2,7 @@
+ //! File exclusion and retained objects are not signed-plan or parent-grant authority.
+ 
+ use crate::{
+-    plan::{ExecutionPlan, Nonce, PlanId},
++    plan::{ExecutionPlan, Nonce, PlanId, installed_mailbox_recovery_asset},
+     vm_backend::{BackendKind, VmStartConfig},
+ };
+ use anyhow::{Context, Result, ensure};
+@@ -239,6 +239,27 @@
+ pub type InstalledMailboxJob =
+     Box<dyn FnOnce(std::os::unix::net::UnixStream) -> std::io::Result<()> + Send + 'static>;
+ 
++/// Runtime's original worker supplies this only to its bound recovery job.
++/// The caller must have observed clean frame-boundary EOF and quiesced the
++/// old carrier. Runtime enforces Stop, original route and one attempt.
++#[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++pub trait InstalledMailboxReplacementAcceptor {
++    fn accept_after_clean_close(
++        &mut self,
++        deadline: std::time::Instant,
++    ) -> std::io::Result<std::os::unix::net::UnixStream>;
++}
++
++#[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++pub type InstalledMailboxRecoveryJob = Box<
++    dyn FnOnce(
++            std::os::unix::net::UnixStream,
++            &mut dyn InstalledMailboxReplacementAcceptor,
++        ) -> std::io::Result<()>
++        + Send
++        + 'static,
++>;
++
+ /// A funded mailbox owner supplied by the installed parent before any
+ /// listener, worker, or guest effects. Dropping an inert owner is safe.
+ pub trait InstalledMailboxOwner: Send + Sync {
+@@ -251,6 +272,11 @@
+         anyhow::bail!("original installed mailbox socket job unavailable")
+     }
+ 
++    #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++    fn take_recovery_socket_job(&mut self) -> Result<InstalledMailboxRecoveryJob> {
++        anyhow::bail!("original installed mailbox recovery job unavailable")
++    }
++
+     /// Confirm service drain after Runtime joins the original worker and
+     /// removes its socket. A job-supplying owner must implement this check.
+     #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
+@@ -259,11 +285,50 @@
+     }
+ }
+ 
++fn mailbox_recovery_enrollment(plan: &ExecutionPlan) -> Result<Option<[u8; 32]>> {
++    let expected = installed_mailbox_recovery_asset()?;
++    let mut profiles = plan
++        .asset_identities
++        .iter()
++        .filter(|asset| asset.name == expected.name);
++    let first = profiles.next();
++    if first != Some(&expected) {
++        ensure!(
++            !profiles.any(|asset| asset == &expected),
++            "installed mailbox recovery policy is ambiguous"
++        );
++        return Ok(None);
++    }
++    ensure!(
++        profiles.next().is_none(),
++        "installed mailbox recovery policy is ambiguous"
++    );
++    let mut enrollments = plan
++        .asset_identities
++        .iter()
++        .filter(|asset| asset.name == "installed_mailbox_session");
++    let asset = enrollments
++        .next()
++        .context("installed mailbox recovery enrollment missing")?;
++    ensure!(
++        asset.kind == crate::plan::AssetKind::Policy && enrollments.next().is_none(),
++        "installed mailbox recovery enrollment differs"
++    );
++    let mut digest = [0; 32];
++    hex::decode_to_slice(&asset.digest, &mut digest)?;
++    ensure!(
++        digest != [0; 32],
++        "installed mailbox recovery enrollment is empty"
++    );
++    Ok(Some(digest))
++}
++
+ /// The original parent's inert, identity-bound mailbox preparation.
+ pub struct PreparedInstalledMailbox {
+     binding: HostLaunchBinding,
+     plan_id: PlanId,
+     owner: Box<dyn InstalledMailboxOwner>,
++    recovery_enrollment: Option<[u8; 32]>,
+ }
+ 
+ impl PreparedInstalledMailbox {
+@@ -276,8 +341,27 @@
+             binding,
+             plan_id,
+             owner,
++            recovery_enrollment: None,
+         }
+     }
++
++    pub fn new_recovery(
++        binding: HostLaunchBinding,
++        plan_id: PlanId,
++        owner: Box<dyn InstalledMailboxOwner>,
++        enrollment: [u8; 32],
++    ) -> Result<Self> {
++        ensure!(
++            enrollment != [0; 32],
++            "installed mailbox recovery enrollment is empty"
++        );
++        Ok(Self {
++            binding,
++            plan_id,
++            owner,
++            recovery_enrollment: Some(enrollment),
++        })
++    }
+ }
+ 
+ /// One-shot transfer of the actual owner, with the original launch anchor.
+@@ -296,6 +380,18 @@
+ impl InstalledMailboxHandoff {
+     #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
+     pub fn take_socket_job(&mut self) -> Result<InstalledMailboxJob> {
++        ensure!(
++            self.prepared.recovery_enrollment.is_none(),
++            "installed mailbox recovery requires a dedicated original worker"
++        );
++        self.take_original_job(|owner| owner.take_socket_job())
++    }
++
++    #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++    fn take_original_job<T>(
++        &mut self,
++        take: impl FnOnce(&mut dyn InstalledMailboxOwner) -> Result<T>,
++    ) -> Result<T> {
+         self.anchor.verify_current()?;
+         self.prepared.owner.check_current()?;
+         ensure!(
+@@ -303,7 +399,7 @@
+             "original installed mailbox socket job already taken"
+         );
+         self.job_taken = true;
+-        let job = self.prepared.owner.take_socket_job()?;
++        let job = take(self.prepared.owner.as_mut())?;
+         self.job_issued = true;
+         self.anchor.verify_current()?;
+         self.prepared.owner.check_current()?;
+@@ -313,8 +409,15 @@
+     /// Transfer the one socket job and its accepting guard together.
+     #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
+     pub fn take_bound_socket_job(&mut self) -> Result<BoundInstalledMailboxJob> {
++        let job = match self.prepared.recovery_enrollment {
++            Some(enrollment) => BoundMailboxJob::Recovery {
++                enrollment,
++                job: self.take_original_job(|owner| owner.take_recovery_socket_job())?,
++            },
++            None => BoundMailboxJob::V1(self.take_socket_job()?),
++        };
+         Ok(BoundInstalledMailboxJob {
+-            job: self.take_socket_job()?,
++            job,
+             accepting: mailbox_socket::Accepting::for_owner(&self.native_owner),
+         })
+     }
+@@ -338,6 +441,7 @@
+             anchor: Arc::clone(&self.anchor),
+             owner: Arc::downgrade(&self.native_owner),
+             plan_id: self.prepared.plan_id.clone(),
++            recovery_enrollment: self.prepared.recovery_enrollment,
+             socket: Arc::downgrade(&socket),
+         };
+         ready.verify_for_anchor(&self.anchor)?;
+@@ -364,9 +468,18 @@
+ }
+ 
+ #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++enum BoundMailboxJob {
++    V1(InstalledMailboxJob),
++    Recovery {
++        enrollment: [u8; 32],
++        job: InstalledMailboxRecoveryJob,
++    },
++}
++
++#[cfg(all(target_os = "linux", target_pointer_width = "64"))]
+ #[must_use]
+ pub struct BoundInstalledMailboxJob {
+-    job: InstalledMailboxJob,
++    job: BoundMailboxJob,
+     accepting: mailbox_socket::Accepting,
+ }
+ 
+@@ -387,7 +500,33 @@
+ 
+     pub fn run(self, socket: std::os::unix::net::UnixStream) -> std::io::Result<()> {
+         self.stop_accepting();
+-        (self.job)(socket)
++        match self.job {
++            BoundMailboxJob::V1(job) => job(socket),
++            BoundMailboxJob::Recovery { .. } => Err(std::io::Error::other(
++                "installed mailbox recovery requires a dedicated original worker",
++            )),
++        }
++    }
++
++    pub fn recovery_enrollment(&self) -> Option<[u8; 32]> {
++        match &self.job {
++            BoundMailboxJob::V1(_) => None,
++            BoundMailboxJob::Recovery { enrollment, .. } => Some(*enrollment),
++        }
++    }
++
++    pub fn run_recovery(
++        self,
++        socket: std::os::unix::net::UnixStream,
++        acceptor: &mut dyn InstalledMailboxReplacementAcceptor,
++    ) -> std::io::Result<()> {
++        self.stop_accepting();
++        match self.job {
++            BoundMailboxJob::Recovery { job, .. } => job(socket, acceptor),
++            BoundMailboxJob::V1(_) => Err(std::io::Error::other(
++                "original installed mailbox job has no recovery authority",
++            )),
++        }
+     }
+ }
+ 
+@@ -397,6 +536,7 @@
+     anchor: Arc<HostLifetimeAnchor>,
+     owner: std::sync::Weak<()>,
+     plan_id: PlanId,
++    recovery_enrollment: Option<[u8; 32]>,
+     socket: std::sync::Weak<mailbox_socket::PinnedListener>,
+ }
+ 
+@@ -420,6 +560,19 @@
+         self.anchor.binding()
+     }
+ 
++    pub fn recovery_enrollment(&self) -> Option<[u8; 32]> {
++        self.recovery_enrollment
++    }
++
++    fn check_native_claim(&self, permit: &dyn CoreCurrentParentPermit) -> Result<()> {
++        match self.recovery_enrollment {
++            Some(enrollment) => {
++                permit.check_native_mailbox_recovery(self.binding(), &self.plan_id, enrollment)
++            }
++            None => permit.check_native_mailbox_claim(self.binding(), &self.plan_id),
++        }
++    }
++
+     pub fn verify_for_anchor(
+         &self,
+         anchor: &Arc<HostLifetimeAnchor>,
+@@ -461,7 +614,7 @@
+             .cloned()
+             .context("original parent resource permit missing")?;
+         permit.check_current(binding)?;
+-        permit.check_native_mailbox_claim(binding, &self.plan_id)?;
++        self.check_native_claim(permit.as_ref())?;
+         self.verify_for_anchor(&self.anchor)
+     }
+ }
+@@ -495,6 +648,16 @@
+         anyhow::bail!("original installed mailbox has no enrolled native authority")
+     }
+ 
++    #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++    fn check_native_mailbox_recovery(
++        &self,
++        _binding: &HostLaunchBinding,
++        _plan_id: &PlanId,
++        _enrollment: [u8; 32],
++    ) -> Result<()> {
++        anyhow::bail!("original installed mailbox has no native recovery authority")
++    }
++
+     fn begin_startup_workspace(&self, _binding: &HostLaunchBinding) -> Result<()> {
+         Ok(())
+     }
+@@ -509,6 +672,15 @@
+         anyhow::bail!("original parent installed mailbox provider unavailable")
+     }
+ 
++    fn prepare_recovery_installed_mailbox(
++        &self,
++        _binding: &HostLaunchBinding,
++        _plan_id: &PlanId,
++        _enrollment: [u8; 32],
++    ) -> Result<PreparedInstalledMailbox> {
++        anyhow::bail!("original parent installed mailbox recovery unavailable")
++    }
++
+     fn prepare_endpoint_partition(
+         &self,
+         _binding: &HostLaunchBinding,
+@@ -890,12 +1062,40 @@
+         config: &VmStartConfig,
+         backend: BackendKind,
+     ) -> Result<()> {
++        self.prepare_mailbox(config, backend, None)
++    }
++
++    pub fn prepare_recovery_installed_mailbox(
++        self: &Arc<Self>,
++        config: &VmStartConfig,
++        backend: BackendKind,
++        enrollment: [u8; 32],
++    ) -> Result<()> {
++        self.prepare_mailbox(config, backend, Some(enrollment))
++    }
++
++    fn prepare_mailbox(
++        self: &Arc<Self>,
++        config: &VmStartConfig,
++        backend: BackendKind,
++        recovery: Option<[u8; 32]>,
++    ) -> Result<()> {
+         ensure!(
+             cfg!(target_os = "linux") && backend == BackendKind::Firecracker,
+             "installed mailbox preparation requires Linux Firecracker"
+         );
+         self.verify_config(config, backend)?;
+         self.verify_admitted_config(config)?;
++        let projected = crate::plan::plan_from_admitted_json(
++            config
++                .plan_json
++                .as_deref()
++                .context("host lifetime signed plan missing")?,
++        )?;
++        ensure!(
++            mailbox_recovery_enrollment(&projected)? == recovery,
++            "installed mailbox preparation differs from signed recovery selection"
++        );
+         let plan_id = self
+             .admitted
+             .lock()
+@@ -925,9 +1125,16 @@
+         }
+ 
+         parent.check_current(&self.binding)?;
+-        let prepared = parent.prepare_installed_mailbox(&self.binding, &plan_id)?;
++        let prepared = match recovery {
++            Some(enrollment) => {
++                parent.prepare_recovery_installed_mailbox(&self.binding, &plan_id, enrollment)?
++            }
++            None => parent.prepare_installed_mailbox(&self.binding, &plan_id)?,
++        };
+         ensure!(
+-            prepared.binding == self.binding && prepared.plan_id == plan_id,
++            prepared.binding == self.binding
++                && prepared.plan_id == plan_id
++                && prepared.recovery_enrollment == recovery,
+             "installed mailbox differs from the original launch and plan"
+         );
+         prepared.owner.check_current()?;
+@@ -995,7 +1202,7 @@
+             "installed mailbox native backend differs"
+         );
+         ready.verify_for_anchor(self)?;
+-        permit.check_native_mailbox_claim(&self.binding, &ready.plan_id)?;
++        ready.check_native_claim(permit.as_ref())?;
+         let lease = self.lease.duplicate()?;
+         ready.verify_for_anchor(self)?;
+         ensure!(
+@@ -1036,3 +1243,200 @@
+ 
+ mod native_stack;
+ pub use native_stack::{NativeThreadStackTerms, native_thread_stack_terms};
++
++#[cfg(test)]
++mod recovery_mode_tests {
++    use super::*;
++    use crate::plan::{AssetIdentity, AssetKind, test_support::PlanFixture};
++
++    #[test]
++    fn signed_recovery_mode_requires_unique_policy_and_nonzero_enrollment() {
++        let mut plan = PlanFixture::new().runtime_profile("firecracker").build();
++        assert_eq!(mailbox_recovery_enrollment(&plan).unwrap(), None);
++        let profile = installed_mailbox_recovery_asset().unwrap();
++        plan.asset_identities.push(profile.clone());
++        assert!(mailbox_recovery_enrollment(&plan).is_err());
++
++        let enrollment = |digest: [u8; 32]| {
++            AssetIdentity::new(
++                AssetKind::Policy,
++                "installed_mailbox_session",
++                hex::encode(digest),
++            )
++            .unwrap()
++        };
++        plan.asset_identities.push(enrollment([0; 32]));
++        assert!(mailbox_recovery_enrollment(&plan).is_err());
++        plan.asset_identities.pop();
++        plan.asset_identities.push(enrollment([7; 32]));
++        assert_eq!(mailbox_recovery_enrollment(&plan).unwrap(), Some([7; 32]));
++        plan.asset_identities.push(enrollment([7; 32]));
++        assert!(mailbox_recovery_enrollment(&plan).is_err());
++        plan.asset_identities.pop();
++        plan.asset_identities.push(profile);
++        assert!(mailbox_recovery_enrollment(&plan).is_err());
++    }
++
++    #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++    #[test]
++    fn signed_recovery_handoff_never_issues_a_v1_job() {
++        use crate::plan::sign_plan;
++        use std::{
++            fs::{self, OpenOptions},
++            io::{self, Read, Write},
++            os::unix::{
++                fs::{OpenOptionsExt, PermissionsExt},
++                net::UnixStream,
++            },
++            sync::atomic::AtomicUsize,
++            time::{Duration, Instant},
++        };
++
++        struct Parent(Arc<AtomicUsize>);
++        struct Owner;
++        impl InstalledMailboxOwner for Owner {
++            fn check_current(&self) -> Result<()> {
++                Ok(())
++            }
++            fn take_recovery_socket_job(&mut self) -> Result<InstalledMailboxRecoveryJob> {
++                Ok(Box::new(|mut original, acceptor| {
++                    let mut first = [0];
++                    original.read_exact(&mut first)?;
++                    let mut replacement = acceptor
++                        .accept_after_clean_close(Instant::now() + Duration::from_secs(1))?;
++                    let mut second = [0];
++                    replacement.read_exact(&mut second)?;
++                    assert_eq!([first[0], second[0]], [19, 29]);
++                    Ok(())
++                }))
++            }
++        }
++        impl CoreCurrentParentPermit for Parent {
++            fn check_current(&self, _: &HostLaunchBinding) -> Result<()> {
++                Ok(())
++            }
++            fn prepare_recovery_installed_mailbox(
++                &self,
++                binding: &HostLaunchBinding,
++                plan: &PlanId,
++                enrollment: [u8; 32],
++            ) -> Result<PreparedInstalledMailbox> {
++                self.0.fetch_add(1, Ordering::AcqRel);
++                assert_eq!(enrollment, [7; 32]);
++                PreparedInstalledMailbox::new_recovery(
++                    binding.clone(),
++                    plan.clone(),
++                    Box::new(Owner),
++                    enrollment,
++                )
++            }
++        }
++        struct Acceptor(Option<UnixStream>);
++        impl InstalledMailboxReplacementAcceptor for Acceptor {
++            fn accept_after_clean_close(&mut self, _: Instant) -> io::Result<UnixStream> {
++                self.0
++                    .take()
++                    .ok_or_else(|| io::Error::other("fixture replacement consumed"))
++            }
++        }
++
++        let root = tempfile::tempdir().unwrap();
++        fs::set_permissions(root.path(), fs::Permissions::from_mode(0o700)).unwrap();
++        let state = root.path().join("state");
++        fs::write(&state, b"v").unwrap();
++        fs::set_permissions(&state, fs::Permissions::from_mode(0o600)).unwrap();
++        let holder = OpenOptions::new()
++            .read(true)
++            .write(true)
++            .create_new(true)
++            .mode(0o600)
++            .open(root.path().join("holders"))
++            .unwrap();
++        let binding = HostLaunchBinding {
++            installation: [1; 32],
++            profile: [2; 32],
++            generation: 1,
++            grant_serial: 8,
++            vm_name: "typed-recovery-job".into(),
++            backend: BackendKind::Firecracker,
++            cpus: 1,
++            memory_mib: 128,
++        };
++        let anchor = PreparedHostLifetime::bind(
++            HostLifetimeInputs {
++                directory: File::open(root.path()).unwrap(),
++                holder,
++                expected: HostLeaseExpectation {
++                    state_name: "state".into(),
++                    state_bytes: 1,
++                    state_sha256: Sha256::digest(b"v").into(),
++                    absent_names: ["next".into(), "intent".into()],
++                },
++                binding,
++            },
++            (),
++        )
++        .unwrap()
++        .into_anchor();
++        let mut config = VmStartConfig {
++            name: anchor.binding().vm_name.clone(),
++            cpus: 1,
++            memory_mib: 128,
++            ..Default::default()
++        };
++        anchor.bind_to_config(&mut config).unwrap();
++        let mut plan = PlanFixture::new().runtime_profile("firecracker").build();
++        plan.resources.cpus = 1;
++        plan.resources.mem_mib = 128;
++        plan.asset_identities
++            .push(installed_mailbox_recovery_asset().unwrap());
++        plan.asset_identities.push(
++            AssetIdentity::new(
++                AssetKind::Policy,
++                "installed_mailbox_session",
++                hex::encode([7; 32]),
++            )
++            .unwrap(),
++        );
++        plan.plan_id = crate::plan::compute_plan_id(&plan);
++        let signed = sign_plan(
++            &plan,
++            &ed25519_dalek::SigningKey::from_bytes(&[8; 32]),
++            "fixture",
++        );
++        config.plan_json = Some(serde_json::to_string(&signed).unwrap());
++        let backend = BackendKind::Firecracker;
++        anchor.bind_admitted(&config, backend, &plan).unwrap();
++        let calls = Arc::new(AtomicUsize::new(0));
++        anchor
++            .bind_parent_permit(&config, backend, Arc::new(Parent(calls.clone())))
++            .unwrap();
++        assert!(anchor.prepare_installed_mailbox(&config, backend).is_err());
++        assert!(
++            anchor
++                .prepare_recovery_installed_mailbox(&config, backend, [9; 32])
++                .is_err()
++        );
++        assert_eq!(calls.load(Ordering::Acquire), 0);
++        anchor
++            .prepare_recovery_installed_mailbox(&config, backend, [7; 32])
++            .unwrap();
++        assert_eq!(calls.load(Ordering::Acquire), 1);
++
++        let mut handoff = anchor
++            .take_installed_mailbox(&config, backend)
++            .unwrap()
++            .unwrap();
++        assert!(handoff.take_socket_job().is_err());
++        let job = handoff.take_bound_socket_job().unwrap();
++        assert_eq!(job.recovery_enrollment(), Some([7; 32]));
++        assert!(handoff.take_bound_socket_job().is_err());
++        let (original, mut old_peer) = UnixStream::pair().unwrap();
++        let (replacement, mut new_peer) = UnixStream::pair().unwrap();
++        old_peer.write_all(&[19]).unwrap();
++        new_peer.write_all(&[29]).unwrap();
++        let mut acceptor = Acceptor(Some(replacement));
++        job.run_recovery(original, &mut acceptor).unwrap();
++        assert!(acceptor.0.is_none());
++    }
++}
+--- a/crates/mvm-core/src/plan/mod.rs
++++ b/crates/mvm-core/src/plan/mod.rs
+@@ -89,3 +89,12 @@
+ pub use verb::{VerbId, VerbIdError};
+ pub use verb_grant::{ToolMediationGrant, VERB_GRANT_BASELINE, VerbGrant, VerbGrantError};
+ pub use verb_trust::{GrantKeySource, VERB_TRUST_POLICY_VERSION, VerbTrustPolicy};
++
++/// The exact signed policy asset for installed Firecracker recovery.
++pub fn installed_mailbox_recovery_asset() -> anyhow::Result<AssetIdentity> {
++    Ok(AssetIdentity::new(
++        AssetKind::Policy,
++        "installed_mailbox",
++        sha256_hex(b"mvm/installed-mailbox/local-firecracker/recovery/v2\0"),
++    )?)
++}
+--- a/crates/mvm-hostd/src/plan_admission.rs
++++ b/crates/mvm-hostd/src/plan_admission.rs
+@@ -164,7 +164,7 @@
+         let profile: &[u8] = match self {
+             Self::LinuxFirecrackerV1 => b"mvm/installed-mailbox/local-firecracker/v1\0",
+             Self::LinuxFirecrackerRecoveryV2 => {
+-                b"mvm/installed-mailbox/local-firecracker/recovery/v2\0"
++                return mvm_core::plan::installed_mailbox_recovery_asset();
+             }
+         };
+         Ok(mvm_core::plan::AssetIdentity::new(
+--- a/crates/mvm-hostd/src/host_lifetime_parent.rs
++++ b/crates/mvm-hostd/src/host_lifetime_parent.rs
+@@ -104,8 +104,16 @@
+     owner.bind_admitted(config, backend, admitted.plan())?;
+     let permit = provider.bind_config(admitted, config, backend)?;
+     owner.bind_parent_permit(config, backend, permit)?;
+-    if admitted.installed_mailbox_enrollment().is_some() {
+-        owner.prepare_installed_mailbox(config, backend)?;
++    if let Some(enrollment) = admitted.installed_mailbox_enrollment() {
++        if admitted.installed_mailbox()
++            == Some(
++                crate::plan_admission::InstalledMailboxLaunchProfile::LinuxFirecrackerRecoveryV2,
++            )
++        {
++            owner.prepare_recovery_installed_mailbox(config, backend, enrollment.digest())?;
++        } else {
++            owner.prepare_installed_mailbox(config, backend)?;
++        }
+     }
+     Ok(())
+ }

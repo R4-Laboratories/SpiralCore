@@ -1,0 +1,18 @@
+Typed worker source SHA-256
+bcc679fe1bec72b566060336bdcf8a1dbb8a2eb8bc483116c0bac0922190f7c0  crates/mvm-core/src/host_lifetime.rs
+7d132828f3f956204c8acbfea4bcc1346ff17a2e7918c217531e9780d429dbcd  crates/mvm-core/src/plan/mod.rs
+21e5f23d3771b1612976878813b0b6ef0f0868641ac9afa1f4ce253d7020e189  crates/mvm-hostd/src/plan_admission.rs
+8ea670914c6e29f15aeb412612080a4c3fe6a88608fd9a7359f15e1c2df97d47  crates/mvm-hostd/src/host_lifetime_parent.rs
+
+API RED status and diagnostics
+101
+error[E0407]: method `take_recovery_socket_job` is not a member of trait `InstalledMailboxOwner`
+error[E0425]: cannot find type `InstalledMailboxRecoveryJob` in this scope
+error[E0405]: cannot find trait `InstalledMailboxReplacementAcceptor` in this scope
+
+Core release GREEN status and output
+0
+test host_lifetime::recovery_mode_tests::signed_recovery_handoff_never_issues_a_v1_job ... ok
+test host_lifetime::recovery_mode_tests::signed_recovery_mode_requires_unique_policy_and_nonzero_enrollment ... ok
+test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 2036 filtered out; finished in 0.00s
+4740561dced4b5b2011ba35cd4ba1e273c8974a83430384fc43c55f769300ef3  /var/tmp/spiralcore-pii-capacity-20261104/target/release/deps/mvm_core-b4336bf502a629df
