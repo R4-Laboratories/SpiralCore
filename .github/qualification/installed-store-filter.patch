@@ -1,0 +1,111 @@
+diff --git a/crates/mvm-hostd/src/jailer/seccomp.rs b/crates/mvm-hostd/src/jailer/seccomp.rs
+index 6644e4a..8347125 100644
+--- a/crates/mvm-hostd/src/jailer/seccomp.rs
++++ b/crates/mvm-hostd/src/jailer/seccomp.rs
+@@ -457,3 +457,7 @@ mod tests {
+         );
+     }
+ }
++
++#[cfg(all(test, target_arch = "x86_64"))]
++#[path = "seccomp_owned_store_tests.rs"]
++mod owned_store_tests;
+diff --git a/crates/mvm-hostd/src/jailer/seccomp_owned_store_tests.rs b/crates/mvm-hostd/src/jailer/seccomp_owned_store_tests.rs
+new file mode 100644
+index 0000000..40e676b
+--- /dev/null
++++ b/crates/mvm-hostd/src/jailer/seccomp_owned_store_tests.rs
+@@ -0,0 +1,93 @@
++//! Exercise original-store retirement in a separate kernel-confined process.
++
++use super::*;
++use std::{
++    os::unix::process::ExitStatusExt,
++    path::{Path, PathBuf},
++    process::Command,
++};
++
++const CHILD: &str = "jailer::seccomp::owned_store_tests::filter_child";
++const CASE: &str = "MVM_OWNED_STORE_FILTER_CASE";
++const ROOT: &str = "MVM_OWNED_STORE_FILTER_ROOT";
++
++#[test]
++fn filter_child() {
++    let Ok(case) = std::env::var(CASE) else {
++        return;
++    };
++    let limits = libc::rlimit {
++        rlim_cur: 0,
++        rlim_max: 0,
++    };
++    // SAFETY: Limit core dumps in this disposable child before a possible SIGSYS.
++    assert_eq!(unsafe { libc::setrlimit(libc::RLIMIT_CORE, &limits) }, 0);
++
++    let root = PathBuf::from(std::env::var_os(ROOT).expect("test-owned directory"));
++    let store = root.join("store");
++    let name = std::ffi::CString::new(store.as_os_str().as_encoded_bytes()).unwrap();
++    let spec = ConfinementSpec::telemetry_collector(&root, None, PathBuf::new());
++    if case == "legacy" {
++        apply(&spec).unwrap();
++    } else {
++        apply_with_owned_store(&spec).unwrap();
++    }
++
++    if case == "cleanup" {
++        std::fs::remove_dir_all(&store).unwrap();
++        assert!(!store.exists());
++    } else {
++        let flags = match case.as_str() {
++            "legacy" => libc::AT_REMOVEDIR as u64,
++            "unknown" => libc::AT_SYMLINK_NOFOLLOW as u64,
++            "upper" => (1 << 32) | libc::AT_REMOVEDIR as u64,
++            _ => panic!("unknown filter case"),
++        };
++        // SAFETY: The test owns the empty directory and name. Use the native
++        // syscall ABI so the upper-bit control reaches seccomp unchanged.
++        unsafe { libc::syscall(libc::SYS_unlinkat, libc::AT_FDCWD, name.as_ptr(), flags) };
++    }
++    std::process::exit(0);
++}
++
++fn run(case: &str, root: &Path) -> std::process::Output {
++    let store = root.join("store");
++    std::fs::create_dir(&store).unwrap();
++    if case == "cleanup" {
++        std::fs::write(store.join("original"), b"owned").unwrap();
++    }
++    Command::new(std::env::current_exe().unwrap())
++        .args(["--exact", CHILD, "--test-threads=1"])
++        .env(CASE, case)
++        .env(ROOT, root)
++        .output()
++        .unwrap()
++}
++
++#[test]
++fn original_store_directory_cleanup_succeeds() {
++    let root = tempfile::tempdir().unwrap();
++    let output = run("cleanup", root.path());
++    assert!(
++        output.status.success(),
++        "owned store cleanup failed: {}",
++        String::from_utf8_lossy(&output.stderr)
++    );
++    assert!(!root.path().join("store").exists());
++}
++
++#[test]
++fn unlinkat_flags_are_scoped_to_original_store() {
++    for case in ["legacy", "unknown", "upper"] {
++        let root = tempfile::tempdir().unwrap();
++        let output = run(case, root.path());
++        assert!(
++            output.status.signal() == Some(libc::SIGSYS) || output.status.code() == Some(159),
++            "{case} did not trap: {}",
++            String::from_utf8_lossy(&output.stderr)
++        );
++        let refusal = format!("seccomp refused x86_64 syscall {};", libc::SYS_unlinkat);
++        assert!(String::from_utf8_lossy(&output.stderr).contains(&refusal));
++        assert!(root.path().join("store").is_dir());
++    }
++}

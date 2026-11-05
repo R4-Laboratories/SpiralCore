@@ -1,4 +1,4 @@
-name: SpiralCore installed SDK native witness build
+name: SpiralCore installed store-filter regression
 
 on:
   workflow_dispatch:
@@ -7,14 +7,13 @@ permissions:
   contents: read
 
 jobs:
-  build:
-    if: startsWith(github.ref, 'refs/heads/codex/installed-sdk-native-witness-')
+  test:
+    if: startsWith(github.ref, 'refs/heads/codex/installed-sdk-native-witness-store-filter-')
     runs-on: ubuntu-24.04
-    timeout-minutes: 25
+    timeout-minutes: 20
     env:
       CARGO_BUILD_JOBS: 2
       CARGO_INCREMENTAL: 0
-      CARGO_PROFILE_DEV_DEBUG: 0
       CARGO_PROFILE_TEST_DEBUG: 0
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
@@ -27,24 +26,14 @@ jobs:
           ref: 845d5ba38752aa95f97e8c4469889793e34deff3
           path: sdk
           persist-credentials: false
-      - name: Build the one-guest witness and native fixture preparer
+      - name: Exercise installed store confinement against the Linux kernel
         run: |
           set -euo pipefail
           test "$(git -C spiralcore rev-parse HEAD)" = "$GITHUB_SHA"
-          test "$(git -C sdk rev-parse HEAD)" = 845d5ba38752aa95f97e8c4469889793e34deff3
+          test "$(git -C sdk rev-parse HEAD)" = "845d5ba38752aa95f97e8c4469889793e34deff3"
           rustup toolchain install 1.97.1 --profile minimal
-          harness="$GITHUB_WORKSPACE/spiralcore/crates/spiralcore-mvm-live/tests/installed-sdk-native-harness"
-          cp sdk/Cargo.lock "$harness/Cargo.lock"
-          export CARGO_TARGET_DIR="$RUNNER_TEMP/sc-native-target"
-          cargo +1.97.1 metadata --manifest-path "$harness/Cargo.toml" --format-version 1 \
-            --filter-platform x86_64-unknown-linux-gnu > "$RUNNER_TEMP/sc-native-metadata.json"
-          jq -e --arg sdk "$GITHUB_WORKSPACE/sdk/crates/" \
-            '[.packages[] | select(.name | startswith("mvm-"))] as $m
-             | ($m | length) > 0 and any($m[]; .name == "mvm-client")
-               and all($m[]; .source == null and (.manifest_path | startswith($sdk)))' \
-            "$RUNNER_TEMP/sc-native-metadata.json"
-          sha256sum "$harness/Cargo.lock"
-          cargo +1.97.1 test --locked --manifest-path sdk/Cargo.toml -p mvm-core \
-            --features host-state --test owned_user_config
-          cargo +1.97.1 test --locked --manifest-path "$harness/Cargo.toml" --lib --no-run
-          cargo +1.97.1 build --locked --manifest-path "$harness/Cargo.toml" --bin prepare-native-assets
+          git -C sdk apply --check ../spiralcore/.github/qualification/installed-store-filter.patch
+          git -C sdk apply ../spiralcore/.github/qualification/installed-store-filter.patch
+          export CARGO_TARGET_DIR="$RUNNER_TEMP/sc-store-filter"
+          cargo +1.97.1 test --locked --manifest-path sdk/Cargo.toml -p mvm-hostd --lib \
+            jailer::seccomp::owned_store_tests:: -- --test-threads=1
