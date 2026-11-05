@@ -501,6 +501,40 @@ fn reply_ack_progress_requires_current_handle_bounded_wire_and_invoked_send() {
 }
 
 #[test]
+fn owned_reply_observation_moves_allocation_once_and_keeps_original_wire_on_duplicate() {
+    let (pair, outgoing, control, peer) = fixture();
+    let now = ServiceTime {
+        unix_ms: now_ms().unwrap(),
+        monotonic_ms: 0,
+    };
+    let budget = budget();
+    let mut service = LocalMailboxService::new(budget.clone()).unwrap();
+    let mut tracker = ReceiptTracker::new(budget, 4).unwrap();
+    let mut call = pending(&outgoing, &pair, now);
+    call.register(&mut service, &mut tracker, &outgoing, &control, &peer, now)
+        .unwrap();
+    let mut original = Vec::with_capacity(1024);
+    original.extend_from_slice(b"already authenticated original wire");
+    let ptr = original.as_ptr();
+    let capacity = original.capacity();
+    let mut wire = Some(original);
+    assert!(
+        call.observe_reply_owned(call.send_handle().unwrap(), &mut wire)
+            .unwrap()
+    );
+    assert!(wire.is_none());
+    assert_eq!(call.reply_wire.as_ref().unwrap().as_ptr(), ptr);
+    assert_eq!(call.reply_wire.as_ref().unwrap().capacity(), capacity);
+    let mut duplicate = Some(b"different authenticated outer routing".to_vec());
+    assert!(
+        call.observe_reply_owned(call.send_handle().unwrap(), &mut duplicate)
+            .unwrap()
+    );
+    assert!(duplicate.is_some());
+    assert_eq!(call.reply_wire.as_ref().unwrap().as_ptr(), ptr);
+}
+
+#[test]
 fn tracker_refusal_retains_partial_call_and_exact_sealed_request_until_capacity_returns() {
     let (pair, outgoing, control, peer) = fixture();
     let start = ServiceTime {
