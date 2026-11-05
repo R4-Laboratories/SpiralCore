@@ -1,0 +1,134 @@
+--- a/crates/mvm-runtime/src/workload_runner/runner/installed/mailbox_socket.rs
++++ b/crates/mvm-runtime/src/workload_runner/runner/installed/mailbox_socket.rs
+@@ -425,7 +425,7 @@
+     job: BoundInstalledMailboxJob,
+ ) -> io::Result<()> {
+     loop {
+-        if !wait_for_peer(listener.as_raw_fd(), wake.as_raw_fd())? {
++        if !wait_for_peer(listener.as_raw_fd(), wake.as_raw_fd(), None)? {
+             return Ok(());
+         }
+         let (socket, _) = match listener.accept() {
+@@ -451,8 +451,21 @@
+     }
+ }
+ 
+-fn wait_for_peer(listener: RawFd, wake: RawFd) -> io::Result<bool> {
++fn wait_for_peer(listener: RawFd, wake: RawFd, deadline: Option<Instant>) -> io::Result<bool> {
+     loop {
++        let timeout = match deadline {
++            Some(deadline) => {
++                let remaining = deadline.saturating_duration_since(Instant::now());
++                if remaining.is_zero() {
++                    return Err(accept_deadline_elapsed());
++                }
++                remaining
++                    .as_nanos()
++                    .div_ceil(1_000_000)
++                    .min(i32::MAX as u128) as i32
++            }
++            None => -1,
++        };
+         let mut inputs = [
+             libc::pollfd {
+                 fd: listener,
+@@ -467,7 +480,8 @@
+         ];
+         // SAFETY: the worker owns both live descriptors and the array holds
+         // initialized writable pollfd entries.
+-        let status = unsafe { libc::poll(inputs.as_mut_ptr(), inputs.len() as libc::nfds_t, -1) };
++        let status =
++            unsafe { libc::poll(inputs.as_mut_ptr(), inputs.len() as libc::nfds_t, timeout) };
+         if status < 0 {
+             let error = io::Error::last_os_error();
+             if error.kind() == io::ErrorKind::Interrupted {
+@@ -478,9 +492,89 @@
+         if inputs[1].revents != 0 {
+             return Ok(false);
+         }
++        if deadline.is_some_and(|deadline| Instant::now() >= deadline) {
++            return Err(accept_deadline_elapsed());
++        }
++        if status == 0 {
++            continue;
++        }
+         if inputs[0].revents & libc::POLLIN != 0 {
+             return Ok(true);
+         }
+         return Err(io::Error::other("original mailbox listener poll failed"));
+     }
+ }
++
++fn accept_deadline_elapsed() -> io::Error {
++    io::Error::new(
++        io::ErrorKind::TimedOut,
++        "original mailbox accept deadline elapsed",
++    )
++}
++
++#[cfg(test)]
++mod deadline_tests {
++    use super::*;
++    use std::os::linux::net::SocketAddrExt;
++    use std::os::unix::net::{UnixListener, UnixStream};
++
++    #[test]
++    fn replacement_wait_expires_while_listener_is_idle() {
++        let (listener, _idle) = UnixStream::pair().unwrap();
++        let (_writer, wake) = UnixStream::pair().unwrap();
++        let deadline = Instant::now() + Duration::from_millis(15);
++        let error =
++            wait_for_peer(listener.as_raw_fd(), wake.as_raw_fd(), Some(deadline)).unwrap_err();
++        assert_eq!(error.kind(), io::ErrorKind::TimedOut);
++        assert!(Instant::now() >= deadline);
++    }
++
++    #[test]
++    fn replacement_wait_never_uses_ready_listener_after_deadline() {
++        let (listener, writer) = UnixStream::pair().unwrap();
++        writer.shutdown(std::net::Shutdown::Write).unwrap();
++        let (_stop, wake) = UnixStream::pair().unwrap();
++        let error = wait_for_peer(listener.as_raw_fd(), wake.as_raw_fd(), Some(Instant::now()))
++            .unwrap_err();
++        assert_eq!(error.kind(), io::ErrorKind::TimedOut);
++    }
++
++    #[test]
++    fn replacement_wait_gives_stop_priority_over_a_ready_listener() {
++        let listener = UnixListener::bind_addr(
++            &std::os::unix::net::SocketAddr::from_abstract_name(format!(
++                "mvm-mailbox-stop-{}",
++                std::process::id()
++            ))
++            .unwrap(),
++        )
++        .unwrap();
++        let _peer = UnixStream::connect_addr(&listener.local_addr().unwrap()).unwrap();
++        let (stop, wake) = UnixStream::pair().unwrap();
++        stop.shutdown(std::net::Shutdown::Write).unwrap();
++        assert!(
++            !wait_for_peer(
++                listener.as_raw_fd(),
++                wake.as_raw_fd(),
++                Some(Instant::now() + Duration::from_secs(1)),
++            )
++            .unwrap()
++        );
++        assert!(listener.accept().is_ok());
++    }
++
++    #[test]
++    fn replacement_wait_observes_ready_before_deadline() {
++        let (listener, writer) = UnixStream::pair().unwrap();
++        writer.shutdown(std::net::Shutdown::Write).unwrap();
++        let (_stop, wake) = UnixStream::pair().unwrap();
++        assert!(
++            wait_for_peer(
++                listener.as_raw_fd(),
++                wake.as_raw_fd(),
++                Some(Instant::now() + Duration::from_secs(1)),
++            )
++            .unwrap()
++        );
++    }
++}
