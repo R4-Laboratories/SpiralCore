@@ -1,11 +1,19 @@
 //! Actual original helper custody. No shipping profile is activated here.
 use super::*;
+use crate::installed_resources::ManagedValue;
 use mvm_core::host_lifetime::{HostLifetimeAnchor, PreparedHostLifetimeLease};
+use mvm_core::user_config::{load_strict_bounded, owned_config_workspace_requirement};
 use mvm_vmm::host::host_agent_spawn::{
     HostAgentParentPermit, HostAgentServicesParams, OwnedHostAgent, OwnedHostAgentInputs,
     OwnedHostAgentRegistrar, OwnedHostAgentSpawnError,
 };
-use std::{fmt, fs::File, io::Write, path::PathBuf};
+use mvm_vmm::host::network_endpoint_spawn::{EgressProxySpawnConfig, InstalledEndpointSettings};
+use std::{
+    fmt,
+    fs::File,
+    io::Write,
+    path::{Path, PathBuf},
+};
 
 #[derive(Clone, Copy, Default, PartialEq, Eq)]
 enum Phase {
@@ -18,11 +26,35 @@ enum Phase {
 }
 pub(super) struct QualifiedHostAgentProfile {
     claim: ManagedClaim,
+    cold_operator: Option<ColdOperatorInput>,
+}
+
+struct ColdOperatorInput {
+    config_dir: PathBuf,
+    telemetry_collect: Option<String>,
 }
 impl QualifiedHostAgentProfile {
     #[cfg(test)]
     pub(super) fn fixture(claim: ManagedClaim) -> Self {
-        Self { claim }
+        Self {
+            claim,
+            cold_operator: None,
+        }
+    }
+
+    #[cfg(test)]
+    pub(super) fn fixture_with_cold_operator(
+        claim: ManagedClaim,
+        config_dir: PathBuf,
+        telemetry_collect: Option<String>,
+    ) -> Self {
+        Self {
+            claim,
+            cold_operator: Some(ColdOperatorInput {
+                config_dir,
+                telemetry_collect,
+            }),
+        }
     }
 }
 // No production constructor until the complete selected helper model is accepted.
@@ -36,6 +68,7 @@ struct Permit {
     parent: Weak<Shared>,
     tenant: String,
     reservation: ManagedReservation,
+    settings: Option<ManagedValue<InstalledEndpointSettings>>,
 }
 
 /// Linear resident custody, separate from the clonable original registrar.
@@ -97,6 +130,63 @@ pub(super) fn synthetic_start_failure_reason(error: &anyhow::Error) -> String {
 }
 
 impl InstalledParentProvider {
+    pub(super) fn capture_cold_operator_settings(
+        &self,
+        tenant: &str,
+        config_dir: &Path,
+        telemetry_collect: Option<&str>,
+    ) -> Result<ManagedValue<InstalledEndpointSettings>> {
+        const CONFIG_BYTES: usize = 8 * 1024;
+        ensure!(
+            telemetry_collect.is_none_or(|value| value.len() <= 64),
+            "installed collection setting exceeds input limit"
+        );
+        ensure!(
+            telemetry_collect.is_some_and(|value| {
+                ["1", "true", "on", "yes"]
+                    .iter()
+                    .any(|enabled| value.trim().eq_ignore_ascii_case(enabled))
+            }),
+            "installed endpoint requires explicit telemetry collection"
+        );
+        mvm_core::naming::validate_vm_name(tenant)?;
+        let tenant = tenant_tag(tenant);
+        let workspace_bytes = owned_config_workspace_requirement(CONFIG_BYTES, CONFIG_BYTES)?;
+        let workspace = self.shared.pool.reserve(
+            tenant,
+            ManagedClaim {
+                host_metadata_bytes: workspace_bytes,
+                ..Default::default()
+            },
+        )?;
+        workspace.check_current()?;
+        {
+            let config = load_strict_bounded(Some(config_dir), CONFIG_BYTES, workspace_bytes)?;
+            let proxy = config.egress_proxy.as_ref().ok_or_else(|| {
+                anyhow!("installed endpoint requires explicit egress proxy table")
+            })?;
+            ensure!(
+                proxy.https.is_none() && proxy.http.is_none() && proxy.no_proxy.is_none(),
+                "installed ObjectTCP proxy service unsupported"
+            );
+        }
+        drop(workspace);
+        let retained = self.shared.pool.reserve(
+            tenant,
+            ManagedClaim {
+                host_metadata_bytes: u64::try_from(std::mem::size_of::<
+                    ManagedValue<InstalledEndpointSettings>,
+                >())?,
+                ..Default::default()
+            },
+        )?;
+        Ok(
+            retained.attach(InstalledEndpointSettings::ResolvedConfigured(
+                EgressProxySpawnConfig::default(),
+            )),
+        )
+    }
+
     // This observation only recognizes the private no-attempt phase after a
     // refusal. Poison or any attempted handoff is conservatively uncertain.
     pub(super) fn host_agent_unused(&self) -> bool {
@@ -145,7 +235,7 @@ impl InstalledParentProvider {
 
     pub(super) fn prepare_owned_host_agent(&self, tenant: &str) -> Result<RootHostAgent> {
         mvm_core::naming::validate_vm_name(tenant)?;
-        let claim = {
+        let (claim, cold_operator) = {
             let mut slot = self
                 .shared
                 .host_agent
@@ -168,17 +258,29 @@ impl InstalledParentProvider {
                 claim.workers == 2 && claim.guests == 0 && claim.host_metadata_bytes >= 65536,
                 "owned helper model incomplete"
             );
+            let cold_operator = slot.profile.as_mut().unwrap().cold_operator.take();
             slot.phase = Phase::Preparing;
-            claim
+            (claim, cold_operator)
         };
         // Reserve before copying identity or handing off any original holder.
         // All later failures fence this one attempt; no reset/reacquire path.
         let result = (|| -> Result<RootHostAgent> {
             let reservation = self.shared.pool.reserve(tenant_tag(tenant), claim)?;
+            let settings = cold_operator
+                .as_ref()
+                .map(|input| {
+                    self.capture_cold_operator_settings(
+                        tenant,
+                        &input.config_dir,
+                        input.telemetry_collect.as_deref(),
+                    )
+                })
+                .transpose()?;
             let permit = Arc::new(Permit {
                 parent: Arc::downgrade(&self.shared),
                 tenant: tenant.into(),
                 reservation,
+                settings,
             });
             permit.check_current(tenant)?;
             let (_, handoff) = self.shared.issuer.prepare()?;
@@ -300,6 +402,17 @@ impl Drop for RootHostAgent {
     }
 }
 impl HostAgentParentPermit for Permit {
+    fn installed_endpoint_settings(
+        &self,
+        params: &HostAgentServicesParams<'_>,
+    ) -> Result<&InstalledEndpointSettings> {
+        self.check_registration(params)?;
+        self.settings
+            .as_ref()
+            .map(AsRef::as_ref)
+            .ok_or_else(|| anyhow!("original installed endpoint settings unavailable"))
+    }
+
     fn check_current(&self, tenant: &str) -> Result<()> {
         ensure!(tenant == self.tenant, "original helper tenant differs");
         self.reservation.check_current()?;

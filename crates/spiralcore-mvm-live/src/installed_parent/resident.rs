@@ -248,6 +248,15 @@ impl InstalledResident {
     }
 
     pub fn begin_launch(&mut self, request: LaunchRequest, tenant: &str) -> Result<ResidentId> {
+        self.begin_launch_with_selection(request, tenant, None)
+    }
+
+    fn begin_launch_with_selection(
+        &mut self,
+        request: LaunchRequest,
+        tenant: &str,
+        mapping: Option<mvm_contract::policy::network_policy::CooperatingPayloadPolicy>,
+    ) -> Result<ResidentId> {
         ensure!(!self.closed, "resident admission closed");
         // LocalBackend's canonical admission uses the fixed local tenant.
         ensure!(tenant == "local", "canonical local tenant differs");
@@ -281,11 +290,18 @@ impl InstalledResident {
                 let (lifetime, owner) = prepared.begin_launch()?;
                 Ok((
                     async move {
-                        OperationResult::Launch(
+                        let outcome = if let Some(mapping) = mapping {
+                            backend
+                                .try_launch_with_host_lifetime_and_mapping(
+                                    request, lifetime, mapping,
+                                )
+                                .await
+                        } else {
                             backend
                                 .try_launch_with_host_lifetime(request, lifetime)
-                                .await,
-                        )
+                                .await
+                        };
+                        OperationResult::Launch(outcome)
                     },
                     owner,
                 ))
@@ -622,3 +638,7 @@ impl Live {
 #[cfg(test)]
 #[path = "resident_tests.rs"]
 mod tests;
+
+#[cfg(all(test, target_os = "linux"))]
+#[path = "native_witness/mod.rs"]
+mod native_witness;

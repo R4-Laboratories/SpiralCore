@@ -1,0 +1,56 @@
+[package]
+name = "spiralcore-installed-sdk-native-witness"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.97.1"
+publish = false
+
+[workspace]
+
+[lib]
+path = "../../src/installed_sdk_native_fixture.rs"
+doctest = false
+
+[features]
+default = ["linux-host", "canonical-host"]
+linux-host = []
+canonical-host = []
+
+[[bin]]
+name = "prepare-native-assets"
+path = "src/prepare.rs"
+
+[dependencies]
+anyhow = "1"
+base64 = "0.22"
+cpu-time = "1"
+ed25519-dalek = { version = "3", features = ["pkcs8"] }
+libc = "0.2"
+rand = "0.10"
+rustix = { version = "=1.1.6", features = ["fs"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha2 = "0.10"
+tempfile = "3"
+tokio = { version = "=1.53.3", features = ["rt", "time", "net"] }
+
+mvm-core = { path = "../../../../../sdk/crates/mvm-core", features = ["manifest-verify", "test-support"] }
+mvm-contract = { path = "../../../../../sdk/crates/mvm-contract", features = ["protocol"] }
+mvm-client = { path = "../../../../../sdk/crates/mvm-client", default-features = false }
+mvm-hostd = { path = "../../../../../sdk/crates/mvm-hostd", default-features = false }
+mvm-net = { path = "../../../../../sdk/crates/mvm-net", default-features = false }
+mvm-build = { path = "../../../../../sdk/crates/mvm-build", default-features = false }
+mvm-bundler = { path = "../../../../../sdk/crates/mvm-bundler" }
+mvm-runtime = { path = "../../../../../sdk/crates/mvm-runtime" }
+mvm-vmm = { path = "../../../../../sdk/crates/mvm-vmm" }
+
+spiralcore-mvm-flowmux = { git = "https://github.com/R4-Laboratories/SpiralCore", rev = "ca5d9ca1266541f71cc5ab7d0b17f4acf14d06b1" }
+spiralcore-transfer = { git = "https://github.com/R4-Laboratories/SpiralCore", rev = "ca5d9ca1266541f71cc5ab7d0b17f4acf14d06b1", features = ["hardware-sha256"] }
+
+[patch.crates-io]
+am-fs-ext4 = { path = "../../../../../sdk/third_party/am-fs-ext4" }
+arrayref = { path = "../../../../../sdk/third_party/arrayref" }
+gix = { path = "../../../../../sdk/third_party/gix-0.87.1" }
+gix-object = { path = "../../../../../sdk/third_party/gix-object-0.64.1" }
+notify = { path = "../../../../../sdk/third_party/notify-8.2.0" }
+io-extras = { path = "../../../../../sdk/third_party/io-extras-0.19.0" }

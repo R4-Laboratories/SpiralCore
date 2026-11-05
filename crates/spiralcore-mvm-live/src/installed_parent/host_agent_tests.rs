@@ -77,6 +77,10 @@ fn original_helper_shutdown_retains_credit_until_last_registrar_alias_drops() {
         !keys.exists(),
         "functional fixture requires a fresh synthetic home"
     );
+    let home = mvm_core::config::mvm_home_strict().unwrap();
+    let operator = mvm_core::config::mvm_config_dir_at(&home);
+    std::fs::create_dir(&operator).unwrap();
+    std::fs::write(operator.join("config.toml"), "[egress_proxy]\n").unwrap();
     // Same canonical enrollment as the upstream owned-host-agent fixtures.
     // This prepares test identity only; product spawn does not mint a fallback.
     let _identity = mvm_hostd::audit::host_keypair::load_or_init_at(&keys).unwrap();
@@ -87,13 +91,17 @@ fn original_helper_shutdown_retains_credit_until_last_registrar_alias_drops() {
         .configure_host_agent(
             &supervisor,
             "local",
-            super::host_agent::QualifiedHostAgentProfile::fixture(super::ManagedClaim {
-                host_plaintext_bytes: 40 * super::MIB,
-                host_metadata_bytes: 12 * super::MIB,
-                host_stack_bytes: 32 * super::MIB,
-                workers: 2,
-                ..Default::default()
-            }),
+            super::host_agent::QualifiedHostAgentProfile::fixture_with_cold_operator(
+                super::ManagedClaim {
+                    host_plaintext_bytes: 40 * super::MIB,
+                    host_metadata_bytes: 12 * super::MIB,
+                    host_stack_bytes: 32 * super::MIB,
+                    workers: 2,
+                    ..Default::default()
+                },
+                operator,
+                Some("on".into()),
+            ),
         )
         .unwrap();
     let mut agent = provider
@@ -150,5 +158,110 @@ fn original_helper_shutdown_retains_credit_until_last_registrar_alias_drops() {
         0
     );
     drop(provider);
+    supervisor.try_finish().unwrap();
+}
+
+#[test]
+fn cold_operator_settings_require_explicit_direct_and_keep_original_credit() {
+    use super::{MIB, ManagedClaim, tenant_tag};
+    use std::fs;
+
+    let (home, mut supervisor, provider) = super::endpoint_tests::fixture();
+    let config_dir = home.path().join("operator");
+    fs::create_dir(&config_dir).unwrap();
+    let config = config_dir.join("config.toml");
+    let pool = supervisor.managed_resources();
+    let initial = pool.snapshot().unwrap();
+    for body in [
+        "",
+        "[egress_proxy",
+        "[egress_proxy]\nhttp = 'http://proxy.invalid:3128'",
+    ] {
+        fs::write(&config, body).unwrap();
+        assert!(
+            provider
+                .capture_cold_operator_settings("local", &config_dir, Some("on"))
+                .is_err()
+        );
+        assert_eq!(pool.snapshot().unwrap().usage, initial.usage);
+    }
+    fs::write(&config, "[egress_proxy]\n").unwrap();
+    for selection in [None, Some(""), Some("ture"), Some(" OFF ")] {
+        assert!(
+            provider
+                .capture_cold_operator_settings("local", &config_dir, selection)
+                .is_err(),
+            "installed cold profile accepted a missing or non-affirmative telemetry selection"
+        );
+        assert_eq!(pool.snapshot().unwrap().usage, initial.usage);
+    }
+    let saturated = pool
+        .reserve(
+            tenant_tag("local"),
+            ManagedClaim {
+                host_metadata_bytes: 256 * MIB,
+                ..Default::default()
+            },
+        )
+        .unwrap();
+    assert!(
+        provider
+            .capture_cold_operator_settings("local", &config_dir, Some("on"))
+            .is_err()
+    );
+    drop(saturated);
+    let captured = provider
+        .capture_cold_operator_settings("local", &config_dir, Some("on"))
+        .unwrap();
+    fs::write(
+        &config,
+        "[egress_proxy]\nhttp = 'http://changed.invalid:3128'",
+    )
+    .unwrap();
+    let mvm_vmm::host::network_endpoint_spawn::InstalledEndpointSettings::ResolvedConfigured(proxy) =
+        captured.as_ref()
+    else {
+        panic!("explicit operator table must remain an explicit override");
+    };
+    assert_eq!(proxy, &Default::default());
+    let held = pool.snapshot().unwrap();
+    assert!(held.usage.host_metadata_bytes > initial.usage.host_metadata_bytes);
+    assert_eq!(held.active_reservations, initial.active_reservations + 1);
+    drop(captured);
+    assert_eq!(pool.snapshot().unwrap().usage, initial.usage);
+    drop(provider);
+    supervisor.close_admission();
+    supervisor.try_finish().unwrap();
+}
+
+#[test]
+fn invalid_cold_operator_settings_refuse_before_original_helper_spawn() {
+    let (home, mut supervisor, provider) = super::endpoint_tests::fixture();
+    let config_dir = home.path().join("operator");
+    std::fs::create_dir(&config_dir).unwrap();
+    std::fs::write(config_dir.join("config.toml"), "[egress_proxy\n").unwrap();
+    let before = supervisor.managed_resources().snapshot().unwrap();
+    provider
+        .configure_host_agent(
+            &supervisor,
+            "local",
+            super::host_agent::QualifiedHostAgentProfile::fixture_with_cold_operator(
+                super::ManagedClaim {
+                    host_metadata_bytes: 65536,
+                    workers: 2,
+                    ..Default::default()
+                },
+                config_dir,
+                Some("on".into()),
+            ),
+        )
+        .unwrap();
+    let error = provider.prepare_owned_host_agent("local").err().unwrap();
+    assert!(error.to_string().contains("host config is invalid"));
+    let after = supervisor.managed_resources().snapshot().unwrap();
+    assert_eq!(after.usage, before.usage);
+    assert_eq!(after.active_reservations, before.active_reservations);
+    drop(provider);
+    supervisor.close_admission();
     supervisor.try_finish().unwrap();
 }
