@@ -1,0 +1,338 @@
+--- a/crates/spiralcore-mvm-live/src/campaign/canonical.rs
++++ b/crates/spiralcore-mvm-live/src/campaign/canonical.rs
+@@ -21,14 +21,12 @@
+     service_sender::{self, OrderingStream},
+ };
+ 
+-// The fixture owns both replacement endpoints and releases this gate only
+-// after joining the old pumps. This is not installed carrier authority.
+-#[cfg(test)]
+-struct FixtureReplacement<'a, S: SocketIo> {
+-    stream: &'a StreamTransport<S>,
+-    role: HandshakeRole,
+-    retired: std::sync::mpsc::Receiver<()>,
+-}
++// The original owner supplies a ready carrier only after old-carrier retirement
++// and enrolled-guest authentication, under the unchanged exchange deadline.
++type AuthenticatedReplacement<'a, S> =
++    Box<dyn FnOnce(Instant, &CancellationToken) -> Result<std::sync::Arc<StreamTransport<S>>> + 'a>;
++
++type ReceivedCall<S> = (Handled, Option<std::sync::Arc<StreamTransport<S>>>);
+ 
+ pub(super) struct Session {
+     incoming: MailboxBinding,
+@@ -826,15 +824,8 @@
+         stream: &StreamTransport<S>,
+         cancel: &CancellationToken,
+     ) -> Result<Handled> {
+-        self.handle_with_replay_mode(
+-            expected,
+-            object,
+-            stream,
+-            cancel,
+-            None,
+-            #[cfg(test)]
+-            None,
+-        )
++        self.handle_with_authenticated_replacement(expected, object, stream, cancel, None)
++            .map(|(handled, _)| handled)
+     }
+     pub(super) fn handle_with_reply_replay<S: SocketIo + 'static>(
+         &mut self,
+@@ -844,40 +835,21 @@
+         cancel: &CancellationToken,
+         requests: ReplyReplayRequests,
+     ) -> Result<Handled> {
+-        self.handle_with_replay_mode(
+-            expected,
+-            object,
+-            stream,
+-            cancel,
+-            Some(requests),
+-            #[cfg(test)]
+-            None,
+-        )
++        self.handle_with_replay_mode(expected, object, stream, cancel, Some(requests), None)
++            .map(|(handled, _)| handled)
+     }
+ 
+-    #[cfg(test)]
+-    fn handle_with_fixture_replacement<S: SocketIo + 'static>(
++    pub(super) fn handle_with_authenticated_replacement<S: SocketIo + 'static>(
+         &mut self,
+         expected: Id,
+         object: &mut ObjectMailbox,
+-        carriers: (&StreamTransport<S>, &StreamTransport<S>),
++        stream: &StreamTransport<S>,
+         cancel: &CancellationToken,
+-        role: HandshakeRole,
+-        retired: std::sync::mpsc::Receiver<()>,
+-    ) -> Result<Handled> {
+-        self.handle_with_replay_mode(
+-            expected,
+-            object,
+-            carriers.0,
+-            cancel,
+-            None,
+-            Some(FixtureReplacement {
+-                stream: carriers.1,
+-                role,
+-                retired,
+-            }),
+-        )
++        replacement: Option<AuthenticatedReplacement<'_, S>>,
++    ) -> Result<ReceivedCall<S>> {
++        self.handle_with_replay_mode(expected, object, stream, cancel, None, replacement)
+     }
++
+     fn handle_with_replay_mode<S: SocketIo + 'static>(
+         &mut self,
+         expected: Id,
+@@ -885,17 +857,9 @@
+         stream: &StreamTransport<S>,
+         cancel: &CancellationToken,
+         requests: Option<ReplyReplayRequests>,
+-        #[cfg(test)] replacement: Option<FixtureReplacement<'_, S>>,
+-    ) -> Result<Handled> {
+-        let result = self.handle_inner(
+-            expected,
+-            object,
+-            stream,
+-            cancel,
+-            requests,
+-            #[cfg(test)]
+-            replacement,
+-        );
++        replacement: Option<AuthenticatedReplacement<'_, S>>,
++    ) -> Result<ReceivedCall<S>> {
++        let result = self.handle_inner(expected, object, stream, cancel, requests, replacement);
+         if let Err(error) = self.receiver_processing.finish(&mut self.receiver_phase) {
+             self.receiver_incomplete = true;
+             return Err(error);
+@@ -969,10 +933,8 @@
+         stream: &StreamTransport<S>,
+         cancel: &CancellationToken,
+         requests: Option<ReplyReplayRequests>,
+-        #[cfg(test)] mut replacement: Option<FixtureReplacement<'_, S>>,
+-    ) -> Result<Handled> {
+-        #[cfg(test)]
+-        let mut stream = stream;
++        mut replacement: Option<AuthenticatedReplacement<'_, S>>,
++    ) -> Result<ReceivedCall<S>> {
+         if self.calls >= MAX_CAMPAIGN_CALLS {
+             return Err("native campaign Call limit".into());
+         }
+@@ -1146,9 +1108,10 @@
+         let processed = self.receiver_processing.finish(&mut self.receiver_phase)?;
+         meter.add(processed.cpu_us, processed.wall_us)?;
+         let mut acknowledged = false;
++        let mut replacement_stream = None;
+         // Preamble and initial Call share this invocation's cumulative bound.
+         while events < 16 {
+-            #[cfg(test)]
++            let stream = replacement_stream.as_deref().unwrap_or(stream);
+             let replacement_event = if replacement.is_some() {
+                 match stream.receive_or_idle_observing_eof(
+                     cancel,
+@@ -1165,9 +1128,6 @@
+                     }
+                     None => {
+                         let next = replacement.take().ok_or(ServiceError::State)?;
+-                        let remaining =
+-                            deadline.instant().saturating_duration_since(Instant::now());
+-                        next.retired.recv_timeout(remaining)?;
+                         if sends >= 8 {
+                             return Err(SessionError::SendLimit.into());
+                         }
+@@ -1182,16 +1142,15 @@
+                                 .ok_or(ServiceError::State)?;
+                             Ok(())
+                         })?;
+-                        next.stream
+-                            .handshake_before(next.role, cancel, deadline.instant())?;
+-                        stream = next.stream;
++                        let carrier = next(deadline.instant(), cancel)?;
+                         self.replay_admitted_reply(
+                             (proof.handle(), &encoded, send),
+                             &deadline,
+                             &mut sends,
+-                            stream,
++                            &carrier,
+                             cancel,
+                         )?;
++                        replacement_stream = Some(carrier);
+                         let processed =
+                             self.receiver_processing.finish(&mut self.receiver_phase)?;
+                         meter.add(processed.cpu_us, processed.wall_us)?;
+@@ -1201,8 +1160,6 @@
+             } else {
+                 None
+             };
+-            #[cfg(not(test))]
+-            let replacement_event = None;
+             let event = if let Some(bytes) = replacement_event {
+                 bytes
+             } else if let Some(requests) = &requests {
+@@ -1359,11 +1316,14 @@
+         }
+         self.calls = self.calls.checked_add(1).ok_or("Call counter overflow")?;
+         self.receiver_incomplete = false;
+-        Ok(Handled {
+-            reply,
+-            namespace,
+-            meter,
+-        })
++        Ok((
++            Handled {
++                reply,
++                namespace,
++                meter,
++            },
++            replacement_stream,
++        ))
+     }
+ }
+ #[cfg(any(target_os = "linux", test))]
+--- a/crates/spiralcore-mvm-live/src/campaign/canonical/closed_replacement_tests.rs
++++ b/crates/spiralcore-mvm-live/src/campaign/canonical/closed_replacement_tests.rs
+@@ -5,7 +5,10 @@
+ use crate::config::{Arm, Pair, Plan, Stage};
+ use cpu_time::ThreadTime;
+ use gate::GateSocket;
+-use std::net::{Shutdown, TcpStream};
++use std::{
++    net::{Shutdown, TcpStream},
++    sync::Arc,
++};
+ 
+ fn carrier<S: SocketIo + 'static>(socket: S, bootstrap: &Bootstrap) -> StreamTransport<S> {
+     StreamTransport::new(
+@@ -26,6 +29,7 @@
+         (a, b, old, None),
+         (c, d, new, None),
+         HandshakeRole::Acceptor,
++        true,
+     );
+ }
+ 
+@@ -44,6 +48,21 @@
+         (a, b, old, Some(old_relay)),
+         (c, d, new, Some(new_relay)),
+         HandshakeRole::Initiator,
++        true,
++    );
++}
++
++#[test]
++fn replacement_authentication_refusal_sends_no_cached_reply() {
++    let pair = fixture_pair();
++    let (a, b, old) = gate::Gate::start_withheld(Some(2), None).unwrap();
++    let (c, d, new) = gate::Gate::start_withheld(None, None).unwrap();
++    exercise(
++        pair,
++        (a, b, old, None),
++        (c, d, new, None),
++        HandshakeRole::Acceptor,
++        false,
+     );
+ }
+ 
+@@ -64,12 +83,16 @@
+     (a, b, old_gate, old_relay): Transport<S>,
+     (c, d, new_gate, new_relay): Transport<S>,
+     receiver_role: HandshakeRole,
++    admit_replacement: bool,
+ ) {
+     let wall = Instant::now();
+     let old_state = old_gate.shared();
+     let (old_a, old_b) = (a.copy_handle().unwrap(), b.copy_handle().unwrap());
+     let (a, c) = (carrier(a, &pair.sender), carrier(c, &pair.sender));
+-    let (b, d) = (carrier(b, &pair.receiver), carrier(d, &pair.receiver));
++    let (b, d) = (
++        carrier(b, &pair.receiver),
++        Arc::new(carrier(d, &pair.receiver)),
++    );
+     let mut caller = Session::new(&pair.sender, &broker_context().unwrap()).unwrap();
+     let mut receiver = Session::new(&pair.receiver, &broker_context().unwrap()).unwrap();
+     let store = tempfile::tempdir().unwrap();
+@@ -97,16 +120,31 @@
+         let cpu = ThreadTime::now();
+         let cancel = CancellationToken::default();
+         b.handshake(receiver_role, &cancel).unwrap();
+-        let handled = receiver
+-            .handle_with_fixture_replacement(
+-                expected,
+-                &mut object,
+-                (&b, &d),
+-                &cancel,
+-                receiver_role,
+-                replacement,
+-            )
+-            .unwrap();
++        let admitted = Arc::clone(&d);
++        let handled = receiver.handle_with_authenticated_replacement(
++            expected,
++            &mut object,
++            &b,
++            &cancel,
++            Some(Box::new(move |deadline, cancel| {
++                replacement.recv_timeout(deadline.saturating_duration_since(Instant::now()))?;
++                if !admit_replacement {
++                    return Err("replacement enrolled identity refused".into());
++                }
++                admitted.handshake_before(receiver_role, cancel, deadline)?;
++                Ok(admitted)
++            })),
++        );
++        if !admit_replacement {
++            assert!(
++                matches!(handled, Err(error) if error.to_string() == "replacement enrolled identity refused")
++            );
++            assert_eq!(d.counters().unwrap().frames_sent, 0);
++            assert_eq!(receiver.recovery.cached_reply_retry_invocations, 0);
++            return None;
++        }
++        let (handled, replacement) = handled.unwrap();
++        assert!(Arc::ptr_eq(&replacement.unwrap(), &d));
+         let call = receiver_state.lock().unwrap().forward.captured[0].clone();
+         let cache_released = receiver
+             .broker
+@@ -120,11 +158,11 @@
+             .unwrap();
+         assert_eq!(receiver.calls, 1);
+         assert!(cache_released);
+-        (
++        Some((
+             handled.reply.encode().unwrap(),
+             [b.counters().unwrap(), d.counters().unwrap()],
+             cpu.elapsed().as_micros(),
+-        )
++        ))
+     });
+ 
+     let cpu = ThreadTime::now();
+@@ -161,6 +199,15 @@
+     assert_eq!(old.forward.written.frames_sent, 1);
+     let old_relay = old_relay.map(Relay::finish);
+     permit.send(()).unwrap();
++    if !admit_replacement {
++        assert!(worker.join().unwrap().is_none());
++        // Refusal never starts the replacement handshake. Dropping the
++        // gate cancels and joins that still-waiting test worker.
++        let state = new_gate.shared();
++        drop(new_gate);
++        assert!(state.lock().unwrap().reverse.captured.is_empty());
++        return;
++    }
+     assert_eq!(
+         caller
+             .drive_completed_tail_with_fixture_replacement(
+@@ -172,7 +219,7 @@
+         TailDriveOutcome::AckWritten
+     );
+     assert_eq!(caller.calls, 1);
+-    let (reply, receiver_counters, receiver_cpu_us) = worker.join().unwrap();
++    let (reply, receiver_counters, receiver_cpu_us) = worker.join().unwrap().unwrap();
+     assert_eq!(reply, original.encode().unwrap());
+     let new = new_gate.finish().unwrap();
+     let new_relay = new_relay.map(Relay::finish);
