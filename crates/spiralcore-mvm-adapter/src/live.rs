@@ -150,13 +150,18 @@ fn remaining(cancel: &CancellationToken, deadline: Instant) -> LiveResult<Durati
 fn bounded_deadline(deadline: Instant) -> Instant {
     deadline.min(Instant::now() + MAX_OPERATION)
 }
-fn close_on_error<S: SocketIo, T>(socket: &S, result: LiveResult<T>) -> LiveResult<T> {
-    if result.is_err() && socket.shutdown(Shutdown::Both).is_err() {
+fn shutdown_both(socket: &impl SocketIo) {
+    if socket.shutdown(Shutdown::Both).is_err() {
         // Darwin can reject SHUT_RDWR after peer FIN while the write half is
         // still usable. Close each remaining half without replacing the
         // original framing/I/O failure or weakening the owner's logical fence.
         let _ = socket.shutdown(Shutdown::Write);
         let _ = socket.shutdown(Shutdown::Read);
+    }
+}
+fn close_on_error<S: SocketIo, T>(socket: &S, result: LiveResult<T>) -> LiveResult<T> {
+    if result.is_err() {
+        shutdown_both(socket);
     }
     result
 }
@@ -379,7 +384,7 @@ fn read_frame_or_idle<S: SocketIo>(
     deadline: Instant,
     idle_deadline: Instant,
     counters: &mut StreamCounters,
-) -> LiveResult<ReceiveOutcome> {
+) -> LiveResult<Option<ReceiveOutcome>> {
     let result = (|| {
         let mut prefix = [0; 4];
         match read_exact_progress(
@@ -390,11 +395,11 @@ fn read_frame_or_idle<S: SocketIo>(
             Some(idle_deadline),
             &mut counters.framing_bytes_received,
         )? {
-            ReadProgress::Idle => Ok(ReceiveOutcome::Idle),
-            ReadProgress::Eof => Err(io::Error::from(io::ErrorKind::UnexpectedEof).into()),
+            ReadProgress::Idle => Ok(Some(ReceiveOutcome::Idle)),
+            ReadProgress::Eof => Ok(None),
             ReadProgress::Complete => {
                 read_frame_payload(socket, prefix, cancel, deadline, counters)
-                    .map(ReceiveOutcome::Frame)
+                    .map(|bytes| Some(ReceiveOutcome::Frame(bytes)))
             }
         }
     })();
@@ -521,6 +526,20 @@ impl<S: SocketIo + 'static> StreamTransport<S> {
         frame_deadline: Instant,
         idle_window: Duration,
     ) -> LiveResult<ReceiveOutcome> {
+        self.receive_or_idle_observing_eof(cancel, frame_deadline, idle_window)?
+            .ok_or_else(|| LiveError::Io(io::ErrorKind::UnexpectedEof.into()))
+    }
+
+    /// Observe a clean peer EOF before any byte of the next frame. On `None`,
+    /// this transport is fenced and both socket halves are shut down as on
+    /// a framing failure. This observation grants no replacement authority.
+    /// A truncated frame, cancellation or deadline remains an error.
+    pub fn receive_or_idle_observing_eof(
+        &self,
+        cancel: &CancellationToken,
+        frame_deadline: Instant,
+        idle_window: Duration,
+    ) -> LiveResult<Option<ReceiveOutcome>> {
         if idle_window < Duration::from_millis(1) || idle_window > Duration::from_secs(1) {
             return Err(io::Error::new(
                 io::ErrorKind::InvalidInput,
@@ -541,7 +560,10 @@ impl<S: SocketIo + 'static> StreamTransport<S> {
             socket, counters, ..
         } = &mut *state;
         let result = read_frame_or_idle(socket, cancel, deadline, idle_deadline, counters);
-        state.closed = result.is_err();
+        if matches!(&result, Ok(None)) {
+            shutdown_both(socket);
+        }
+        state.closed = !matches!(&result, Ok(Some(_)));
         result
     }
     pub fn counters(&self) -> LiveResult<StreamCounters> {

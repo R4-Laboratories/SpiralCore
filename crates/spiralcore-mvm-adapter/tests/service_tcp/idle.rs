@@ -151,7 +151,7 @@ fn frame() -> Vec<u8> {
 }
 
 fn authorized_write(
-    stream: &StreamTransport<FakeSocket>,
+    stream: &impl mvm_core::mailbox::transport::PeerTransport,
 ) -> Result<usize, spiralcore_mvm_adapter::service::ServiceError> {
     let outgoing = fixture::binding(MailboxMessageKind::Call, true, false, true);
     let mut options =
@@ -617,7 +617,7 @@ fn lock_wait_never_becomes_idle_and_idle_clock_starts_after_acquisition() {
         // state and does not globally close the independent current reader.
         assert!(state.lock().unwrap().shutdowns.is_empty());
         assert_eq!(held.finish().unwrap(), frame()[4..]);
-        authorized_write(&stream).unwrap();
+        authorized_write(stream.as_ref()).unwrap();
     }
     let (stream, state, mut held) = held_reader();
     let release = held.release.take().unwrap();
@@ -798,4 +798,106 @@ fn real_tcp_idle_then_later_exact_frame_and_authorized_reverse_write() {
         (peer.framing_bytes_sent, peer.framing_bytes_received),
         (12, 12)
     );
+}
+
+#[test]
+fn recovery_distinguishes_clean_fin_from_truncated_tcp_frames() {
+    let cancel = CancellationToken::default();
+    for bytes in [&[][..], &[0, 0][..], &[0, 0, 0, 4, 7][..]] {
+        let (stream, mut peer) = recovery_tcp_pair();
+        let before = stream.counters().unwrap();
+        peer.write_all(bytes).unwrap();
+        peer.shutdown(Shutdown::Write).unwrap();
+
+        let deadline = Instant::now() + Duration::from_secs(2);
+        let outcome =
+            stream.receive_or_idle_observing_eof(&cancel, deadline, Duration::from_millis(250));
+        if bytes.is_empty() {
+            assert!(matches!(outcome, Ok(None)), "{outcome:?}");
+        } else {
+            assert!(
+                matches!(outcome, Err(LiveError::Io(e)) if e.kind() == io::ErrorKind::UnexpectedEof)
+            );
+        }
+        let after = stream.counters().unwrap();
+        assert_eq!(after.frames_received, before.frames_received);
+        assert_eq!(
+            after.framing_bytes_received - before.framing_bytes_received,
+            bytes.len().min(4) as u64
+        );
+        assert_eq!(
+            after.envelope_bytes_received - before.envelope_bytes_received,
+            bytes.len().saturating_sub(4) as u64
+        );
+        assert!(matches!(
+            stream.receive_or_idle_observing_eof(&cancel, deadline, Duration::from_millis(250)),
+            Err(LiveError::Closed)
+        ));
+        peer.set_read_timeout(Some(Duration::from_secs(2))).unwrap();
+        assert_eq!(peer.read(&mut [0]).unwrap(), 0);
+    }
+}
+
+fn recovery_tcp_pair() -> (StreamTransport<TcpStream>, TcpStream) {
+    let listener = TcpListener::bind(("127.0.0.1", 0)).unwrap();
+    let mut peer = TcpStream::connect(listener.local_addr().unwrap()).unwrap();
+    let (socket, _) = listener.accept().unwrap();
+    peer.write_all(b"SCMVS001").unwrap();
+    let route = common::config(MailboxMessageKind::Call)
+        .binding
+        .claims
+        .route_id;
+    let stream = StreamTransport::new(socket, route, Duration::from_secs(2)).unwrap();
+    stream
+        .handshake(HandshakeRole::Acceptor, &CancellationToken::default())
+        .unwrap();
+    peer.set_read_timeout(Some(Duration::from_secs(2))).unwrap();
+    let mut discriminator = [0; 8];
+    peer.read_exact(&mut discriminator).unwrap();
+    assert_eq!(&discriminator, b"SCMVS001");
+    (stream, peer)
+}
+
+#[test]
+fn recovery_fin_fences_an_existing_writer_and_strict_receive_stays_an_error() {
+    let cancel = CancellationToken::default();
+    let (stream, peer) = recovery_tcp_pair();
+    let deadline = Instant::now() + Duration::from_secs(2);
+    let writer = stream.before(deadline);
+    peer.shutdown(Shutdown::Write).unwrap();
+    assert!(matches!(
+        stream.receive_or_idle_observing_eof(&cancel, deadline, Duration::from_millis(250)),
+        Ok(None)
+    ));
+    assert_eq!(
+        authorized_write(&writer),
+        Err(spiralcore_mvm_adapter::service::ServiceError::ShuttingDown)
+    );
+
+    let (strict, peer) = recovery_tcp_pair();
+    peer.shutdown(Shutdown::Write).unwrap();
+    assert!(matches!(
+        strict.receive_or_idle(&cancel, deadline, Duration::from_millis(250)),
+        Err(LiveError::Io(error)) if error.kind() == io::ErrorKind::UnexpectedEof
+    ));
+}
+
+#[test]
+fn cancellation_and_expiry_precede_recovery_fin() {
+    for cancelled in [true, false] {
+        let (stream, peer) = recovery_tcp_pair();
+        peer.shutdown(Shutdown::Write).unwrap();
+        let cancel = CancellationToken::default();
+        let mut deadline = Instant::now();
+        if cancelled {
+            cancel.cancel();
+            deadline += Duration::from_secs(2);
+        }
+        let result =
+            stream.receive_or_idle_observing_eof(&cancel, deadline, Duration::from_millis(250));
+        assert!(matches!(
+            (cancelled, result),
+            (true, Err(LiveError::Cancelled)) | (false, Err(LiveError::Deadline))
+        ));
+    }
 }
