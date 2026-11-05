@@ -1,0 +1,106 @@
+--- a/crates/spiralcore-mvm-flowmux/examples/installed_remote_peer.rs
++++ b/crates/spiralcore-mvm-flowmux/examples/installed_remote_peer.rs
+@@ -41,6 +41,8 @@
+     session: String,
+     guest_key: [u8; 32],
+     expires_unix_ms: u64,
++    #[serde(default)]
++    fixture: Option<String>,
+ }
+ 
+ fn require(ok: bool, error: &'static str) -> Result<()> {
+@@ -83,7 +85,7 @@
+     Ok(row)
+ }
+ 
+-fn run(ip: Ipv4Addr, root: &Path, case: &str) -> Result<bool> {
++fn run(ip: Ipv4Addr, root: &Path, case: &str, fixture: &str) -> Result<bool> {
+     let (altered_scope, expect_artifacts) = match case {
+         "crosshost" | "combined" => (false, true),
+         "raw" | "whole" => (false, false),
+@@ -129,6 +131,16 @@
+         address,
+         identity.spki_sha256(),
+     )?;
++    require(
++        e.fixture.as_deref().unwrap_or("small") == fixture,
++        "enrolled workload differs",
++    )?;
++    let expected = match fixture {
++        "small" => b"{\"kind\":\"flowmux\",\"value\":1}\n".repeat(400),
++        "mixed" => mixed_fixture()?,
++        _ => return Err("unknown bounded workload".into()),
++    };
++
+     let until = started + ACCEPT;
+     let (socket, peer) = loop {
+         require(
+@@ -236,7 +248,6 @@
+         Role::Acceptor,
+     )?);
+     let mapped_setup_ns = mapped_at.elapsed().as_nanos();
+-    let expected = b"{\"kind\":\"flowmux\",\"value\":1}\n".repeat(400);
+     let mut bytes = vec![0; expected.len()];
+     mapped.read_exact(&mut bytes)?;
+     require(bytes == expected, "remote readback differs")?;
+@@ -301,14 +312,58 @@
+     Ok(false)
+ }
+ 
++fn mixed_fixture() -> Result<Vec<u8>> {
++    use sha2::{Digest, Sha256};
++    let mut bytes = Vec::with_capacity(4 * 8192 * 38);
++    for segment in 0..4 {
++        let mut state = if segment == 3 { 19_u64 } else { 1 };
++        for row in 0..8192 {
++            state = (state * 48271) % 2147483647;
++            let change = u64::from(segment == 2 && row == 4096);
++            let value = 1000000000 + (state + change) % 1000000000;
++            writeln!(bytes, "{{\"kind\":\"flowmux\",\"value\":{value}}}")?;
++        }
++    }
++    require(
++        bytes.len() == 1_245_184
++            && spiralcore_transfer::hex(&Sha256::digest(&bytes).into())
++                == "cb8735a26e7674a87de33c29ad7ec8ccc18167f41f727e4bca922c5f775e4951",
++        "mixed fixture identity differs",
++    )?;
++    Ok(bytes)
++}
++
+ fn main() -> Result<()> {
+     let args: Vec<_> = std::env::args().collect();
+     require(
+-        args.len() == 4,
++        matches!(args.len(), 4 | 5),
+         "expected private IPv4, workspace and fixture case",
+     )?;
+-    if run(args[1].parse()?, Path::new(&args[2]), &args[3])? {
++    let fixture = args.get(4).map_or("small", String::as_str);
++    if run(args[1].parse()?, Path::new(&args[2]), &args[3], fixture)? {
+         std::process::exit(3);
+     }
+     Ok(())
+ }
++
++#[cfg(test)]
++mod fixture_tests {
++    use super::*;
++
++    #[test]
++    fn mixed_fixture_has_repeat_local_edit_and_distinct_segment() {
++        let bytes = mixed_fixture().unwrap();
++        let segments: Vec<_> = bytes.chunks_exact(8192 * 38).collect();
++        assert_eq!(segments.len(), 4);
++        assert_eq!(segments[0], segments[1]);
++        assert_eq!(
++            segments[0]
++                .iter()
++                .zip(segments[2])
++                .filter(|(a, b)| a != b)
++                .count(),
++            1
++        );
++        assert_ne!(segments[0], segments[3]);
++    }
++}
