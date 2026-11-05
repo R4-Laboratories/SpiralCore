@@ -1,0 +1,426 @@
+--- a/crates/spiralcore-mvm-live/src/installed_parent.rs
++++ b/crates/spiralcore-mvm-live/src/installed_parent.rs
+@@ -146,6 +146,21 @@
+             unused.retains_parent_owner(&self.grant),
+             "unused preparation owner differs"
+         );
++        self.seal_original_unused()
++    }
++
++    fn cancel_unused_admitted(
++        &mut self,
++        unused: &mvm_client::UnusedAdmittedHostLifetimePreparation,
++    ) -> Result<()> {
++        ensure!(
++            unused.binding() == &self.grant.binding && unused.retains_parent_owner(&self.grant),
++            "unused admitted preparation differs from original owner"
++        );
++        self.seal_original_unused()
++    }
++
++    fn seal_original_unused(&mut self) -> Result<()> {
+         self.grant.reservation.check_retained_identity()?;
+         self.grant
+             .lifecycle
+--- a/crates/spiralcore-mvm-live/src/installed_parent/resident.rs
++++ b/crates/spiralcore-mvm-live/src/installed_parent/resident.rs
+@@ -6,7 +6,8 @@
+ };
+ use anyhow::{Result, anyhow, ensure};
+ use mvm_client::{LaunchOutcome, LaunchRequest, LocalBackend, OwnedRetirement};
+-use mvm_core::vm_backend::BackendKind;
++use mvm_core::{host_lifetime::PreparedHostLifetime, vm_backend::BackendKind};
++use mvm_hostd::plan_admission::AdmittedPlan;
+ use std::{
+     future::{Future, poll_fn},
+     mem::{align_of, size_of},
+@@ -15,6 +16,12 @@
+     task::{Context, Poll},
+ };
+ 
++const INSTALLED_BACKEND: BackendKind = if cfg!(target_os = "linux") {
++    BackendKind::Firecracker
++} else {
++    BackendKind::Hvf
++};
++
+ /// A local table key, never permission or a retirement proof.
+ #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+ pub struct ResidentId {
+@@ -62,6 +69,14 @@
+     error: Option<anyhow::Error>,
+     operation_capacity: usize,
+     _operation_storage: ManagedReservation,
++    // The token, its result, and any uncertain native custody drop first.
++    _admission_storage: Option<ManagedReservation>,
++}
++
++// Only a qualified admission recipe may construct this profile. The
++// test fixture verifies custody ordering with an explicit prepaid amount.
++struct QualifiedAdmissionFunding {
++    metadata_bytes: u64,
+ }
+ #[allow(
+     clippy::large_enum_variant,
+@@ -71,6 +86,7 @@
+     Launching,
+     Running(Arc<LaunchOutcome>),
+     Unused(mvm_client::UnusedHostLifetimePreparation),
++    UnusedAdmitted(mvm_client::UnusedAdmittedHostLifetimePreparation),
+     Pending,
+     RetiringOutcome(Arc<LaunchOutcome>),
+     RetiringPending(OwnedRetirement),
+@@ -81,6 +97,9 @@
+ )]
+ enum OperationResult {
+     Launch(std::result::Result<LaunchOutcome, mvm_client::HostLifetimeLaunchFailure>),
++    LaunchAdmitted(
++        std::result::Result<LaunchOutcome, mvm_client::AdmittedHostLifetimeLaunchFailure>,
++    ),
+     StopOutcome(Arc<LaunchOutcome>, Result<()>),
+     StopPending(Result<OwnedRetirement>),
+ }
+@@ -248,6 +267,76 @@
+     }
+ 
+     pub fn begin_launch(&mut self, request: LaunchRequest, tenant: &str) -> Result<ResidentId> {
++        self.begin_launch_using(
++            request,
++            tenant,
++            None,
++            |backend, request, lifetime| async move {
++                OperationResult::Launch(
++                    backend
++                        .try_launch_with_host_lifetime(request, lifetime)
++                        .await,
++                )
++            },
++        )
++    }
++
++    // Reserve original managed credit before the installed producer
++    // synthesizes or signs the token. This does not admit a prebuilt token.
++    fn begin_launch_admitted(
++        &mut self,
++        request: LaunchRequest,
++        tenant: &str,
++        profile: &QualifiedAdmissionFunding,
++        create: impl FnOnce() -> Result<AdmittedPlan>,
++    ) -> Result<ResidentId> {
++        ensure!(!self.closed, "resident admission closed");
++        ensure!(tenant == "local", "canonical local tenant differs");
++        let live = self
++            .live
++            .as_ref()
++            .ok_or_else(|| anyhow!("resident drained"))?;
++        ensure!(
++            live.slots.iter().any(Option::is_none),
++            "resident slots full"
++        );
++        let storage = live.provider.shared.pool.reserve(
++            tenant_tag(tenant),
++            ManagedClaim {
++                host_metadata_bytes: profile.metadata_bytes,
++                ..Default::default()
++            },
++        )?;
++        let admitted = create()?;
++        ensure!(
++            admitted.plan().tenant.0 == tenant,
++            "original admitted tenant differs"
++        );
++        admitted.check_unlaunched_for_backend(INSTALLED_BACKEND)?;
++        self.begin_launch_using(
++            request,
++            tenant,
++            Some(storage),
++            move |backend, request, lifetime| async move {
++                OperationResult::LaunchAdmitted(
++                    backend
++                        .try_launch_admitted_with_host_lifetime(request, lifetime, admitted)
++                        .await,
++                )
++            },
++        )
++    }
++
++    fn begin_launch_using<F>(
++        &mut self,
++        request: LaunchRequest,
++        tenant: &str,
++        admission_storage: Option<ManagedReservation>,
++        launch: impl FnOnce(Arc<LocalBackend>, LaunchRequest, PreparedHostLifetime) -> F,
++    ) -> Result<ResidentId>
++    where
++        F: Future<Output = OperationResult> + 'static,
++    {
+         ensure!(!self.closed, "resident admission closed");
+         // LocalBackend's canonical admission uses the fixed local tenant.
+         ensure!(tenant == "local", "canonical local tenant differs");
+@@ -260,14 +349,9 @@
+             .iter()
+             .position(Option::is_none)
+             .ok_or_else(|| anyhow!("resident slots full"))?;
+-        let backend_kind = if cfg!(target_os = "linux") {
+-            BackendKind::Firecracker
+-        } else {
+-            BackendKind::Hvf
+-        };
+         let prepared =
+             live.provider
+-                .prepare_vm(&request.host_lifetime_intent(), tenant, backend_kind)?;
++                .prepare_vm(&request.host_lifetime_intent(), tenant, INSTALLED_BACKEND)?;
+         // This ordering barrier survives even genuine unused retirement and
+         // later failures while constructing the original launch operation.
+         live.has_issued_vm = true;
+@@ -279,16 +363,7 @@
+         let (operation, owner, storage, capacity) =
+             live.own_operation(tenant_tag(tenant), move || {
+                 let (lifetime, owner) = prepared.begin_launch()?;
+-                Ok((
+-                    async move {
+-                        OperationResult::Launch(
+-                            backend
+-                                .try_launch_with_host_lifetime(request, lifetime)
+-                                .await,
+-                        )
+-                    },
+-                    owner,
+-                ))
++                Ok((launch(backend, request, lifetime), owner))
+             })?;
+         // No canonical poll is possible before original custody occupies a slot.
+         live.slots[index] = Some(Slot {
+@@ -300,6 +375,7 @@
+             error: None,
+             operation_capacity: capacity,
+             _operation_storage: storage,
++            _admission_storage: admission_storage,
+         });
+         Ok(id)
+     }
+@@ -487,7 +563,10 @@
+                 let grant = slot.owner.grant.clone();
+                 slot.box_operation(move || stop_pending(backend, grant))?
+             }
+-            State::Unused(_) | State::RetiringOutcome(_) | State::RetiringPending(_) => {
++            State::Unused(_)
++            | State::UnusedAdmitted(_)
++            | State::RetiringOutcome(_)
++            | State::RetiringPending(_) => {
+                 return self.complete(index).map(|_| ());
+             }
+             State::Launching => return Err(anyhow!("launch operation unavailable")),
+@@ -505,6 +584,10 @@
+                 slot.owner.cancel_unused(certificate)?;
+                 ResidentStatus::UnusedRetired
+             }
++            State::UnusedAdmitted(certificate) => {
++                slot.owner.cancel_unused_admitted(certificate)?;
++                ResidentStatus::UnusedRetired
++            }
+             State::RetiringOutcome(outcome) => {
+                 slot.owner.cleanup_outcome_endpoint(outcome)?;
+                 slot.owner.finish_retired(outcome)?;
+@@ -572,7 +655,7 @@
+     fn accept_result(&mut self, index: usize, result: OperationResult) -> ResidentStatus {
+         let slot = self.slots[index].as_mut().unwrap();
+         match result {
+-            OperationResult::Launch(Ok(outcome)) => {
++            OperationResult::Launch(Ok(outcome)) | OperationResult::LaunchAdmitted(Ok(outcome)) => {
+                 slot.state = State::Running(Arc::new(outcome));
+                 slot.error = None;
+                 if slot.stop_requested
+@@ -592,6 +675,15 @@
+                 };
+                 slot.state = State::Unused(certificate);
+             }
++            OperationResult::LaunchAdmitted(Err(failure)) => {
++                let (error, certificate) = failure.into_parts();
++                slot.error = Some(anyhow::Error::new(error));
++                let Some(certificate) = certificate else {
++                    slot.state = State::Pending;
++                    return ResidentStatus::PendingCleanup;
++                };
++                slot.state = State::UnusedAdmitted(certificate);
++            }
+             OperationResult::StopOutcome(outcome, result) => {
+                 if let Err(error) = result {
+                     slot.state = State::Running(outcome);
+--- a/crates/spiralcore-mvm-live/src/installed_parent/resident_tests.rs
++++ b/crates/spiralcore-mvm-live/src/installed_parent/resident_tests.rs
+@@ -410,3 +410,174 @@
+     assert!(backend.upgrade().is_some());
+     assert!(original_second.upgrade().is_some());
+ }
++
++// Included only in the isolated installed-resident test module.
++#[test]
++fn resident_admitted_launch_returns_unused_original_slot() {
++    const CHILD: &str = "SPIRALCORE_RESIDENT_ADMISSION_FIXTURE";
++    if std::env::var_os(CHILD).is_none() {
++        let home = tempfile::tempdir().unwrap();
++        let status = std::process::Command::new(std::env::current_exe().unwrap())
++            .args([
++                "resident_admitted_launch_returns_unused_original_slot",
++                "--test-threads=1",
++                "--nocapture",
++            ])
++            .env(CHILD, "1")
++            .env("MVM_HOME", home.path())
++            .status()
++            .unwrap();
++        assert!(status.success());
++        return;
++    }
++
++    use mvm_core::plan::{
++        NetworkMode, PlanSeccompTier, SecretReleasePolicy, SynthesisInput, Variant,
++    };
++    use mvm_hostd::plan_admission::{InMemoryNonceLedger, RunPosture, SystemClock, admit_for_run};
++
++    let (backend, hypervisor) = if cfg!(target_os = "linux") {
++        (BackendKind::Firecracker, "firecracker")
++    } else {
++        (BackendKind::Hvf, "hvf")
++    };
++    let (_installation, mut service) =
++        prepared_service_with_backend(LocalBackend::with_hypervisor(hypervisor));
++    let keys = mvm_core::config::mvm_keys_dir();
++    let ledger = InMemoryNonceLedger::new();
++    let admit = |tenant| {
++        let input = SynthesisInput::builder()
++            .vm_name("resident-admitted-refusal")
++            .tenant(tenant)
++            .backend_name(hypervisor)
++            .image_name("fixture")
++            .image_sha256("deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef")
++            .seccomp_tier(PlanSeccompTier::Standard)
++            .secret_release(SecretReleasePolicy::None)
++            .secrets(Vec::new())
++            .network_mode(NetworkMode::default())
++            .cpus(1)
++            .mem_mib(1024)
++            .disk_mib(0)
++            .boot_timeout_secs(60)
++            .destroy_on_exit(true)
++            .shares(Vec::new())
++            .redaction(Default::default())
++            .reversible_replacement(Default::default())
++            .audit_labels(Default::default())
++            .services(Vec::new())
++            .stream_edges(Vec::new())
++            .stream_retention(Default::default())
++            .build()
++            .unwrap();
++        admit_for_run(
++            &input,
++            &SystemClock,
++            &ledger,
++            Some(&keys),
++            None,
++            RunPosture::on_backend(Variant::Dev, backend),
++        )
++        .expect("original token from actual MVM signed admission")
++    };
++
++    let before = service.usage().unwrap();
++    let vm = "resident-admitted-refusal";
++    // A fixed fixture fee proves ledger custody only. No shipping size claim.
++    let profile = QualifiedAdmissionFunding {
++        metadata_bytes: 16 << 20,
++    };
++    if std::env::var_os(CHILD).as_deref() == Some(std::ffi::OsStr::new("saturation")) {
++        let pool = &service.live.as_ref().unwrap().provider.shared.pool;
++        let all_local_credit = pool
++            .reserve(
++                tenant_tag("local"),
++                ManagedClaim {
++                    host_metadata_bytes: 256 << 20,
++                    ..Default::default()
++                },
++            )
++            .unwrap();
++        let saturated = service.usage().unwrap();
++        let public_signer = keys.join(mvm_hostd::audit::host_keypair::PUBLIC_FILENAME);
++        assert!(
++            !public_signer.exists(),
++            "isolated signer is initially absent"
++        );
++        assert!(
++            service
++                .begin_launch_admitted(request(vm), "local", &profile, || Ok(admit("local")))
++                .is_err(),
++            "resident must refuse under full tenant metadata usage"
++        );
++        assert!(!service.live.as_ref().unwrap().has_issued_vm);
++        assert_eq!(service.usage().unwrap().usage, saturated.usage);
++        assert!(!mvm_core::config::vm_state_dir(vm).exists());
++        assert!(
++            !public_signer.exists(),
++            "canonical admission created a signer before acquiring resident funding"
++        );
++        drop(all_local_credit);
++        service.try_finish().unwrap();
++        return;
++    }
++    assert!(
++        service
++            .begin_launch_admitted(request(vm), "local", &profile, || Ok(admit("foreign")))
++            .is_err(),
++        "foreign signed tenant must be refused before the resident issues a slot"
++    );
++    assert!(!service.live.as_ref().unwrap().has_issued_vm);
++    assert_eq!(service.usage().unwrap().usage, before.usage);
++
++    // This process deliberately has no global installed provider. The exact
++    // original local token reaches the Client's pure preflight, which returns
++    // both original owners. Resident must retire its exact unused slot.
++    assert!(mvm_hostd::host_lifetime_parent::require_installed().is_err());
++    let pool = service.live.as_ref().unwrap().provider.shared.pool.clone();
++    let id = service
++        .begin_launch_admitted(request(vm), "local", &profile, || {
++            let charged = pool.snapshot().unwrap();
++            assert_eq!(
++                charged.usage.host_metadata_bytes,
++                before.usage.host_metadata_bytes + profile.metadata_bytes
++            );
++            assert_eq!(charged.active_reservations, before.active_reservations + 1);
++            Ok(admit("local"))
++        })
++        .unwrap();
++    assert!(
++        service.usage().unwrap().usage.host_metadata_bytes
++            >= before.usage.host_metadata_bytes + profile.metadata_bytes
++    );
++    let runtime = tokio::runtime::Builder::new_current_thread()
++        .enable_all()
++        .build()
++        .unwrap();
++    let progress = runtime.block_on(service.drive_once()).unwrap();
++    assert_eq!(progress.id, id);
++    assert_eq!(progress.state, ResidentStatus::UnusedRetired);
++    let after = service.usage().unwrap();
++    assert_eq!(after.usage, before.usage);
++    assert_eq!(after.active_reservations, before.active_reservations);
++    assert!(!mvm_core::config::vm_state_dir(vm).exists());
++    assert!(!mvm_core::config::machine_spec_path(vm).exists());
++    drop(pool);
++    service.try_finish().unwrap();
++}
++
++#[test]
++fn saturated_original_resident_refuses_before_canonical_signer_creation() {
++    let home = tempfile::tempdir().unwrap();
++    let status = std::process::Command::new(std::env::current_exe().unwrap())
++        .args([
++            "resident_admitted_launch_returns_unused_original_slot",
++            "--test-threads=1",
++            "--nocapture",
++        ])
++        .env("SPIRALCORE_RESIDENT_ADMISSION_FIXTURE", "saturation")
++        .env("MVM_HOME", home.path())
++        .status()
++        .unwrap();
++    assert!(status.success());
++}

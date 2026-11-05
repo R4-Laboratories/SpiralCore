@@ -1,0 +1,7 @@
+# Resident cold admission funding order
+
+A protected predecessor reproduced canonical signer creation when the original tenant's metadata quota was full. The subsequent resident call refused with no guest slot or state directory. The protected successor reserved from the original resident's managed pool before calling the canonical admission producer, and the same saturated case refused with the signer still absent.
+
+The positive control observed the charge in the actual admission callback before canonical signing. The original resident and Client preserved the unused preparation after pure refusal and retired the original slot, returning usage and active reservation count to their initial values. The installed-parent batch passed 25 tests, including the negative and its real child-process invocation. Two historical tests requiring extra native helper setup were ignored. Source readbacks matched before and after.
+
+The independent source review verified original pool selection and that the slot retains the charge through the operation, outcome, or pending cleanup. The private candidate has no prebuilt-token admission entry. The fixed 16 MiB fixture fee establishes ordering and custody. The supported numeric production bound, successful installed launch and cleanup, and retained restart remain open. This evidence patch is based on the staged installed resident sources used by the activation component.
