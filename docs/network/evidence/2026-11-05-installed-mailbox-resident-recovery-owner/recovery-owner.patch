@@ -1,0 +1,658 @@
+--- a/crates/spiralcore-mvm-live/src/installed_parent.rs
++++ b/crates/spiralcore-mvm-live/src/installed_parent.rs
+@@ -606,6 +606,54 @@
+     }
+ 
+     #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++    fn take_recovery_socket_job(
++        &mut self,
++    ) -> Result<mvm_core::host_lifetime::InstalledMailboxRecoveryJob> {
++        let grant = self
++            .grant
++            .upgrade()
++            .context("original mailbox grant unavailable")?;
++        let (plan, enrollment) = {
++            let state = grant
++                .lifecycle
++                .lock()
++                .map_err(|_| anyhow!("parent lifecycle poisoned"))?;
++            let entry = state
++                .mailbox_enrollment
++                .as_ref()
++                .context("original mailbox enrollment unavailable")?;
++            (
++                entry.plan_id().clone(),
++                entry
++                    .recovery_digest()
++                    .context("original recovery enrollment unavailable")?,
++            )
++        };
++        grant.check_native_mailbox_recovery(&grant.binding, &plan, enrollment)?;
++        let job = self
++            .job
++            .as_mut()
++            .context("original installed mailbox socket job unavailable")?
++            .take_recovery_socket_job()?;
++        let original = self.grant.clone();
++        Ok(Box::new(move |socket, acceptor| {
++            let grant = original.upgrade().ok_or_else(|| {
++                std::io::Error::other("original mailbox grant unavailable at entry")
++            })?;
++            grant
++                .check_native_mailbox_recovery(&grant.binding, &plan, enrollment)
++                .map_err(std::io::Error::other)?;
++            let mut rechecked = ResidentRecoveryAcceptor {
++                grant: &grant,
++                plan: &plan,
++                enrollment,
++                acceptor,
++            };
++            job(socket, &mut rechecked)
++        }))
++    }
++
++    #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
+     fn confirm_socket_retired(&mut self) -> Result<()> {
+         self.job
+             .as_ref()
+@@ -614,6 +662,32 @@
+     }
+ }
+ 
++#[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++struct ResidentRecoveryAcceptor<'a> {
++    grant: &'a VmGrant,
++    plan: &'a PlanId,
++    enrollment: [u8; 32],
++    acceptor: &'a mut dyn mvm_core::host_lifetime::InstalledMailboxReplacementAcceptor,
++}
++
++#[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++impl mvm_core::host_lifetime::InstalledMailboxReplacementAcceptor for ResidentRecoveryAcceptor<'_> {
++    fn accept_after_clean_close(
++        &mut self,
++        deadline: std::time::Instant,
++    ) -> std::io::Result<std::os::unix::net::UnixStream> {
++        let check = || {
++            self.grant
++                .check_native_mailbox_recovery(&self.grant.binding, self.plan, self.enrollment)
++                .map_err(std::io::Error::other)
++        };
++        check()?;
++        let socket = self.acceptor.accept_after_clean_close(deadline)?;
++        check()?;
++        Ok(socket)
++    }
++}
++
+ impl Drop for InertMailboxCredit {
+     fn drop(&mut self) {
+         let Some(credit) = self.credit.take() else {
+@@ -712,26 +786,13 @@
+     })
+ }
+ 
+-impl CoreCurrentParentPermit for VmGrant {
+-    fn check_native_claim(&self, binding: &HostLaunchBinding) -> Result<()> {
+-        ensure!(*binding == self.binding, "parent binding substituted");
+-        let state = self
+-            .lifecycle
+-            .lock()
+-            .map_err(|_| anyhow!("parent lifecycle poisoned"))?;
+-        state.check_launch_open()?;
+-        ensure!(
+-            state.mailbox == MailboxFunding::Unselected,
+-            "native claim requires the original mailbox worker"
+-        );
+-        Ok(())
+-    }
+-
++impl VmGrant {
+     #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
+-    fn check_native_mailbox_claim(
++    fn check_native_mailbox_mode(
+         &self,
+         binding: &HostLaunchBinding,
+         plan_id: &PlanId,
++        expected_recovery: Option<[u8; 32]>,
+     ) -> Result<()> {
+         self.check_current(binding)?;
+         let state = self
+@@ -741,7 +802,9 @@
+         let enrollment = state
+             .mailbox_enrollment
+             .as_ref()
+-            .filter(|entry| entry.plan_id() == plan_id)
++            .filter(|entry| {
++                entry.plan_id() == plan_id && entry.recovery_digest() == expected_recovery
++            })
+             .context("original installed mailbox has no enrolled native authority")?;
+         ensure!(
+             matches!(state.mailbox, MailboxFunding::Held(_))
+@@ -751,10 +814,11 @@
+         enrollment.check_current()
+     }
+ 
+-    fn prepare_installed_mailbox(
++    fn prepare_original_mailbox(
+         &self,
+         binding: &HostLaunchBinding,
+         plan_id: &PlanId,
++        expected_recovery: Option<[u8; 32]>,
+     ) -> Result<PreparedInstalledMailbox> {
+         self.check_current(binding)?;
+         let parent = self
+@@ -777,6 +841,14 @@
+             );
+             #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
+             {
++                let staged_recovery = state
++                    .mailbox_enrollment
++                    .as_ref()
++                    .and_then(|entry| entry.recovery_digest());
++                ensure!(
++                    staged_recovery == expected_recovery,
++                    "original mailbox recovery profile or enrollment differs"
++                );
+                 ensure!(
+                     state.mailbox_enrollment.is_none() || state.mailbox_worker.is_some(),
+                     "original enrolled mailbox worker is not precharged"
+@@ -834,11 +906,77 @@
+             owner.phase = MailboxFunding::Held(serial);
+             state.mailbox = owner.phase;
+         }
+-        Ok(PreparedInstalledMailbox::new(
+-            binding.clone(),
+-            plan_id.clone(),
+-            Box::new(owner),
+-        ))
++        match expected_recovery {
++            Some(enrollment) => PreparedInstalledMailbox::new_recovery(
++                binding.clone(),
++                plan_id.clone(),
++                Box::new(owner),
++                enrollment,
++            ),
++            None => Ok(PreparedInstalledMailbox::new(
++                binding.clone(),
++                plan_id.clone(),
++                Box::new(owner),
++            )),
++        }
++    }
++}
++
++impl CoreCurrentParentPermit for VmGrant {
++    fn check_native_claim(&self, binding: &HostLaunchBinding) -> Result<()> {
++        ensure!(*binding == self.binding, "parent binding substituted");
++        let state = self
++            .lifecycle
++            .lock()
++            .map_err(|_| anyhow!("parent lifecycle poisoned"))?;
++        state.check_launch_open()?;
++        ensure!(
++            state.mailbox == MailboxFunding::Unselected,
++            "native claim requires the original mailbox worker"
++        );
++        Ok(())
++    }
++
++    #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++    fn check_native_mailbox_claim(
++        &self,
++        binding: &HostLaunchBinding,
++        plan_id: &PlanId,
++    ) -> Result<()> {
++        self.check_native_mailbox_mode(binding, plan_id, None)
++    }
++
++    #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++    fn check_native_mailbox_recovery(
++        &self,
++        binding: &HostLaunchBinding,
++        plan_id: &PlanId,
++        enrollment: [u8; 32],
++    ) -> Result<()> {
++        self.check_native_mailbox_mode(binding, plan_id, Some(enrollment))
++    }
++
++    fn prepare_installed_mailbox(
++        &self,
++        binding: &HostLaunchBinding,
++        plan_id: &PlanId,
++    ) -> Result<PreparedInstalledMailbox> {
++        self.prepare_original_mailbox(binding, plan_id, None)
++    }
++
++    fn prepare_recovery_installed_mailbox(
++        &self,
++        binding: &HostLaunchBinding,
++        plan_id: &PlanId,
++        enrollment: [u8; 32],
++    ) -> Result<PreparedInstalledMailbox> {
++        #[cfg(not(all(target_os = "linux", target_pointer_width = "64")))]
++        {
++            let _ = (binding, plan_id, enrollment);
++            anyhow::bail!("installed mailbox recovery requires Linux");
++        }
++        #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++        self.prepare_original_mailbox(binding, plan_id, Some(enrollment))
+     }
+ 
+     fn begin_startup_workspace(&self, binding: &HostLaunchBinding) -> Result<()> {
+@@ -941,16 +1079,16 @@
+     ) -> Result<Arc<dyn CoreCurrentParentPermit>> {
+         let mailbox = match admitted.installed_mailbox() {
+             None => MailboxFunding::Unselected,
+-            Some(InstalledMailboxLaunchProfile::LinuxFirecrackerV1) => {
++            Some(
++                InstalledMailboxLaunchProfile::LinuxFirecrackerV1
++                | InstalledMailboxLaunchProfile::LinuxFirecrackerRecoveryV2,
++            ) => {
+                 ensure!(
+                     config.is_some() && binding.backend == BackendKind::Firecracker,
+                     "original mailbox selection requires the actual Linux launch config"
+                 );
+                 MailboxFunding::Selected
+             }
+-            Some(InstalledMailboxLaunchProfile::LinuxFirecrackerRecoveryV2) => {
+-                anyhow::bail!("original installed mailbox replacement authority is unavailable");
+-            }
+         };
+         if admitted.installed_mailbox_enrollment().is_some() {
+             admitted.check_unlaunched_for_backend(binding.backend)?;
+@@ -1043,8 +1181,13 @@
+         backend: BackendKind,
+     ) -> Result<()> {
+         ensure!(
+-            admitted.installed_mailbox() == Some(InstalledMailboxLaunchProfile::LinuxFirecrackerV1)
+-                && admitted.installed_mailbox_enrollment().is_some()
++            matches!(
++                admitted.installed_mailbox(),
++                Some(
++                    InstalledMailboxLaunchProfile::LinuxFirecrackerV1
++                        | InstalledMailboxLaunchProfile::LinuxFirecrackerRecoveryV2,
++                )
++            ) && admitted.installed_mailbox_enrollment().is_some()
+                 && backend == BackendKind::Firecracker,
+             "original installed mailbox requires a signed Linux Firecracker enrollment"
+         );
+--- a/crates/spiralcore-mvm-live/src/installed_parent/mailbox_job.rs
++++ b/crates/spiralcore-mvm-live/src/installed_parent/mailbox_job.rs
+@@ -1,20 +1,45 @@
+ //! A mailbox job belongs to the original installed grant and broker.
+ use super::ManagedReservation;
+ use anyhow::{Context, Result};
+-use mvm_core::host_lifetime::InstalledMailboxJob;
++use mvm_core::host_lifetime::{
++    InstalledMailboxJob, InstalledMailboxRecoveryJob, InstalledMailboxReplacementAcceptor,
++};
+ use spiralcore_mvm_adapter::{broker::BrokerContext, service::LocalMailboxService};
+ use std::{io, os::unix::net::UnixStream, sync::Arc};
+ 
+ mod fence;
+ use fence::{JobFence, JobTicket};
+ 
+-type ServiceJob = Box<
++type LegacyServiceJob = Box<
+     dyn FnOnce(UnixStream, &BrokerContext, &mut LocalMailboxService) -> io::Result<()>
+         + Send
+         + Sync
+         + 'static,
+ >;
+ 
++type RecoveryServiceJob = Box<
++    dyn FnOnce(
++            UnixStream,
++            &mut dyn InstalledMailboxReplacementAcceptor,
++            &BrokerContext,
++            &mut LocalMailboxService,
++        ) -> io::Result<()>
++        + Send
++        + Sync
++        + 'static,
++>;
++
++enum ServiceJob {
++    Legacy(LegacyServiceJob),
++    Recovery(RecoveryServiceJob),
++}
++
++impl ServiceJob {
++    fn is_recovery(&self) -> bool {
++        matches!(self, Self::Recovery(_))
++    }
++}
++
+ pub(super) struct ResidentBroker {
+     context: BrokerContext,
+     _metadata: ManagedReservation,
+@@ -52,19 +77,36 @@
+     }
+ 
+     pub(super) fn take_socket_job(&mut self) -> Result<InstalledMailboxJob> {
++        let issued = self.issue(false)?;
++        Ok(Box::new(move |socket| issued.run(socket, None)))
++    }
++
++    pub(super) fn take_recovery_socket_job(&mut self) -> Result<InstalledMailboxRecoveryJob> {
++        let issued = self.issue(true)?;
++        Ok(Box::new(move |socket, acceptor| {
++            issued.run(socket, Some(acceptor))
++        }))
++    }
++
++    fn issue(&mut self, recovery: bool) -> Result<IssuedJob> {
+         self.check_current()?;
++        anyhow::ensure!(
++            self.callback
++                .as_ref()
++                .is_some_and(|job| job.is_recovery() == recovery),
++            "original mailbox job unavailable for requested profile"
++        );
+         let callback = self
+             .callback
+             .take()
+             .context("original mailbox job consumed")?;
+-        let issued = IssuedJob {
++        Ok(IssuedJob {
+             #[cfg(test)]
+             parent: self.parent.clone(),
+             callback,
+             broker: Arc::clone(&self.broker),
+             ticket: self.fence.issue()?,
+-        };
+-        Ok(Box::new(move |socket| issued.run(socket)))
++        })
+     }
+ 
+     pub(super) fn confirm_socket_retired(&self) -> Result<()> {
+@@ -98,7 +140,11 @@
+     ticket: JobTicket,
+ }
+ impl IssuedJob {
+-    fn run(self, socket: UnixStream) -> io::Result<()> {
++    fn run(
++        self,
++        socket: UnixStream,
++        acceptor: Option<&mut dyn InstalledMailboxReplacementAcceptor>,
++    ) -> io::Result<()> {
+         self.ticket.enter()?;
+         #[cfg(test)]
+         self.retain_original_broker().map_err(io::Error::other)?;
+@@ -112,7 +158,13 @@
+         let mut service = context
+             .with_time(|budget, _| LocalMailboxService::new(budget.clone()))
+             .map_err(io::Error::other)?;
+-        let result = callback(socket, context, &mut service);
++        let result = match (callback, acceptor) {
++            (ServiceJob::Legacy(job), None) => job(socket, context, &mut service),
++            (ServiceJob::Recovery(job), Some(acceptor)) => {
++                job(socket, acceptor, context, &mut service)
++            }
++            _ => Err(io::Error::other("original mailbox job profile differs")),
++        };
+         context
+             .with_time(|_, now| service.shutdown(now))
+             .map_err(io::Error::other)?;
+@@ -180,7 +232,7 @@
+             .parent
+             .upgrade()
+             .context("original parent unavailable")?;
+-        let candidate = self.fund_mailbox_job(Box::new(job))?;
++        let candidate = self.fund_mailbox_job(ServiceJob::Legacy(Box::new(job)))?;
+         let registry = parent
+             .registry
+             .lock()
+@@ -290,6 +342,7 @@
+     commitment: mvm_hostd::plan_admission::InstalledMailboxEnrollment,
+     plan: mvm_core::plan::PlanId,
+     signer: String,
++    recovery: bool,
+     window: mvm_core::plan::validity::CheckedFreshness,
+ }
+ 
+@@ -306,6 +359,10 @@
+         &self.plan
+     }
+ 
++    pub(super) fn recovery_digest(&self) -> Option<[u8; 32]> {
++        self.recovery.then(|| self.commitment.digest())
++    }
++
+     pub(super) fn matches(
+         &self,
+         commitment: mvm_hostd::plan_admission::InstalledMailboxEnrollment,
+@@ -314,6 +371,9 @@
+         self.commitment == commitment
+             && &self.plan == admitted.plan_id()
+             && self.signer == admitted.signer_id()
++            && self.recovery
++                == (admitted.installed_mailbox()
++                    == Some(super::InstalledMailboxLaunchProfile::LinuxFirecrackerRecoveryV2))
+     }
+ }
+ 
+@@ -328,21 +388,55 @@
+         + Sync
+         + 'static,
+     ) -> Result<()> {
++        self.stage_mailbox_enrollment(admitted, trusted, ServiceJob::Legacy(Box::new(job)))
++    }
++
++    pub(super) fn stage_mailbox_recovery_enrollment_fixture(
++        &self,
++        admitted: &super::AdmittedPlan,
++        trusted: mvm_hostd::plan_admission::InstalledMailboxEnrollment,
++        job: impl FnOnce(
++            UnixStream,
++            &mut dyn InstalledMailboxReplacementAcceptor,
++            &BrokerContext,
++            &mut LocalMailboxService,
++        ) -> io::Result<()>
++        + Send
++        + Sync
++        + 'static,
++    ) -> Result<()> {
++        self.stage_mailbox_enrollment(admitted, trusted, ServiceJob::Recovery(Box::new(job)))
++    }
++
++    fn stage_mailbox_enrollment(
++        &self,
++        admitted: &super::AdmittedPlan,
++        trusted: mvm_hostd::plan_admission::InstalledMailboxEnrollment,
++        job: ServiceJob,
++    ) -> Result<()> {
+         use super::MailboxFunding;
+         use anyhow::{anyhow, ensure};
++        let recovery = job.is_recovery();
++        let profile = if recovery {
++            super::InstalledMailboxLaunchProfile::LinuxFirecrackerRecoveryV2
++        } else {
++            super::InstalledMailboxLaunchProfile::LinuxFirecrackerV1
++        };
+         ensure!(
+-            admitted.installed_mailbox_enrollment() == Some(trusted)
++            admitted.installed_mailbox() == Some(profile)
++                && admitted.installed_mailbox_enrollment() == Some(trusted)
+                 && admitted.plan().tenant.0 == self.grant.tenant,
+             "fixture mailbox differs from the signed resident enrollment"
+         );
+         admitted.check_unlaunched_for_backend(self.grant.binding.backend)?;
+-        let candidate = self.grant.fund_mailbox_job(Box::new(job))?;
++        let candidate = self.grant.fund_mailbox_job(job)?;
+         use mvm_core::plan::validity::{CheckedFreshness, Freshness};
+         let plan = admitted.plan();
+         let original = OriginalMailboxEnrollment {
+             commitment: trusted,
+             plan: admitted.plan_id().clone(),
+             signer: admitted.signer_id().to_owned(),
++            recovery,
+             window: CheckedFreshness {
+                 valid_from: plan.valid_from(),
+                 valid_until: plan.valid_until(),
+@@ -449,7 +543,7 @@
+             parent: Arc::downgrade(&provider.shared),
+             broker,
+             ticket: fence.issue().unwrap(),
+-            callback: Box::new(move |_, context, service| {
++            callback: ServiceJob::Legacy(Box::new(move |_, context, service| {
+                 context
+                     .with_time(|_, now| -> crate::Result<()> {
+                         let mut options = MessageOptions::fresh(
+@@ -466,10 +560,10 @@
+                         Ok(())
+                     })
+                     .map_err(io::Error::other)
+-            }),
++            })),
+         };
+         let (_peer, socket) = UnixStream::pair().unwrap();
+-        job.run(socket).unwrap();
++        job.run(socket, None).unwrap();
+         fence.confirm_retired().unwrap();
+         let snapshot = || context.with_time(|budget, _| budget.snapshot()).unwrap();
+         let before = snapshot();
+--- a/crates/spiralcore-mvm-live/src/installed_parent/config_tests.rs
++++ b/crates/spiralcore-mvm-live/src/installed_parent/config_tests.rs
+@@ -969,7 +969,7 @@
+ 
+ #[cfg(target_os = "linux")]
+ #[test]
+-fn recovery_profile_cannot_bind_the_original_parent_before_rearm_is_supported() {
++fn recovery_profile_cannot_bind_without_original_resident_enrollment() {
+     let (home, supervisor, provider) = endpoint_tests::fixture();
+     let name = "signed-recovery-refused-before-binding";
+     let admitted = admitted_with_profile(
+@@ -987,7 +987,7 @@
+         .unwrap();
+     assert!(
+         format!("{error:#}")
+-            .contains("original installed mailbox replacement authority is unavailable")
++            .contains("signed mailbox session differs from the original resident enrollment")
+     );
+     assert_eq!(
+         supervisor.managed_resources().snapshot().unwrap().usage,
+@@ -995,3 +995,122 @@
+     );
+     assert!(grant.lifecycle.lock().unwrap().mailbox_enrollment.is_none());
+ }
++
++#[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++#[test]
++fn recovery_job_uses_only_its_original_enrolled_parent_and_funding() {
++    use mvm_core::host_lifetime::InstalledMailboxReplacementAcceptor;
++    use std::{
++        io::{self, Read, Write},
++        net::Shutdown,
++        os::unix::net::UnixStream,
++        time::{Duration, Instant},
++    };
++
++    struct OneRedial {
++        socket: Option<UnixStream>,
++        deadline: Instant,
++    }
++    impl InstalledMailboxReplacementAcceptor for OneRedial {
++        fn accept_after_clean_close(&mut self, deadline: Instant) -> io::Result<UnixStream> {
++            assert_eq!(deadline, self.deadline);
++            self.socket
++                .take()
++                .ok_or_else(|| io::Error::other("fixture attempt used"))
++        }
++    }
++
++    let (home, supervisor, provider) = endpoint_tests::fixture();
++    let name = "signed-recovery-original-owner";
++    let trusted = InstalledMailboxEnrollment::new([94; 32]).unwrap();
++    let admitted = admitted_with_profile(
++        home.path(),
++        name,
++        Some(InstalledMailboxLaunchProfile::LinuxFirecrackerRecoveryV2),
++        Some(trusted),
++    );
++    let prepared = prepared_vm(&provider, name);
++    let deadline = Instant::now() + Duration::from_secs(5);
++    let (notified, completed) = std::sync::mpsc::sync_channel(1);
++    prepared
++        .stage_mailbox_recovery_enrollment_fixture(
++            &admitted,
++            trusted,
++            move |mut old, acceptor, _, _| {
++                assert_eq!(old.read(&mut [0])?, 0);
++                drop(old);
++                let mut socket = acceptor.accept_after_clean_close(deadline)?;
++                let mut bytes = [0; 4];
++                socket.read_exact(&mut bytes)?;
++                assert_eq!(&bytes, b"same");
++                notified.send(()).unwrap();
++                Ok(())
++            },
++        )
++        .unwrap();
++    let (grant, mut config) = config_for_prepared(prepared, name);
++    config.plan_json = Some(serde_json::to_string(admitted.signed()).unwrap());
++    provider
++        .check_installed_mailbox_enrollment(&admitted, &config, native_backend())
++        .unwrap();
++    let permit = provider
++        .bind_config(&admitted, &config, native_backend())
++        .unwrap();
++    let anchor = config.host_lifetime.as_ref().unwrap();
++    anchor
++        .bind_parent_permit(&config, native_backend(), permit.clone())
++        .unwrap();
++    assert!(
++        anchor
++            .prepare_installed_mailbox(&config, native_backend())
++            .is_err()
++    );
++    assert!(
++        anchor
++            .prepare_recovery_installed_mailbox(&config, native_backend(), [95; 32])
++            .is_err()
++    );
++    anchor
++        .prepare_recovery_installed_mailbox(&config, native_backend(), trusted.digest())
++        .unwrap();
++    assert!(
++        permit
++            .check_native_mailbox_claim(&grant.binding, admitted.plan_id())
++            .is_err()
++    );
++    assert!(
++        permit
++            .check_native_mailbox_recovery(&grant.binding, admitted.plan_id(), [95; 32])
++            .is_err()
++    );
++    permit
++        .check_native_mailbox_recovery(&grant.binding, admitted.plan_id(), trusted.digest())
++        .unwrap();
++
++    let mut handoff = anchor
++        .take_installed_mailbox(&config, native_backend())
++        .unwrap()
++        .unwrap();
++    assert!(handoff.take_socket_job().is_err());
++    let job = handoff.take_bound_socket_job().unwrap();
++    assert_eq!(job.recovery_enrollment(), Some(trusted.digest()));
++    assert!(handoff.take_bound_socket_job().is_err());
++    let (socket, peer) = UnixStream::pair().unwrap();
++    peer.shutdown(Shutdown::Write).unwrap();
++    let (replacement, mut writer) = UnixStream::pair().unwrap();
++    writer.write_all(b"same").unwrap();
++    let mut redial = OneRedial {
++        socket: Some(replacement),
++        deadline,
++    };
++    job.run_recovery(socket, &mut redial).unwrap();
++    assert!(redial.socket.is_none());
++    completed.recv_timeout(Duration::from_secs(1)).unwrap();
++    handoff.confirm_socket_retired().unwrap();
++    drop(handoff);
++    assert!(grant.lifecycle.lock().unwrap().seal_retired().is_ok());
++    drop((permit, config, grant, provider));
++    let mut supervisor = supervisor;
++    supervisor.close_admission();
++    supervisor.try_finish().unwrap();
++}
