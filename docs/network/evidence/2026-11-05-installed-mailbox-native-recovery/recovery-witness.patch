@@ -1,0 +1,379 @@
+--- a/crates/spiralcore-mvm-live/src/mailbox_witness.rs
++++ b/crates/spiralcore-mvm-live/src/mailbox_witness.rs
+@@ -14,7 +14,9 @@
+     CONTENT_TYPE,
+     broker::BrokerContext,
+     issuance::IssuancePolicy,
+-    live::{HandshakeRole, MAX_CLOCK_OFFSET_MS, SocketIo, StreamCounters, StreamTransport},
++    live::{
++        HandshakeRole, LiveError, MAX_CLOCK_OFFSET_MS, SocketIo, StreamCounters, StreamTransport,
++    },
+     receipt::{ReceiptObservation, ReceiptReturnConfig, ReceiptTracker, SendHandle},
+     service::{CallStatus, LocalMailboxService, MailboxBinding},
+     service_sender::{self, MessageOptions},
+@@ -53,11 +55,14 @@
+ #[derive(Deserialize, Serialize)]
+ #[serde(deny_unknown_fields)]
+ pub struct GuestBootstrap {
++    #[serde(default)]
++    close_after_call_receipt: bool,
+     endpoint: Bootstrap,
+     cast: Material,
+ }
+ 
+ pub struct HostFixture {
++    close_after_call_receipt: bool,
+     endpoint: Bootstrap,
+     cast: Material,
+ }
+@@ -67,6 +72,7 @@
+     pub call_bytes: usize,
+     pub reply_bytes: usize,
+     pub cast_bytes: usize,
++    pub abandoned_after_receipt: bool,
+     pub counters: StreamCounters,
+     pub thread_cpu_us: u128,
+     pub elapsed_us: u128,
+@@ -75,6 +81,12 @@
+ /// Synthetic, single-use fixture keys. Only the returned commitment is
+ /// public. The separately signed plan binds that commitment.
+ pub fn provision() -> Result<([u8; 32], GuestBootstrap, HostFixture)> {
++    provision_with_close(false)
++}
++
++pub(crate) fn provision_with_close(
++    close_after_call_receipt: bool,
++) -> Result<([u8; 32], GuestBootstrap, HostFixture)> {
+     let (pair, guest_cast, host_cast) = Pair::provision_installed_witness(Plan {
+         stage: Stage::Two,
+         arm: Arm::Warm,
+@@ -95,6 +107,7 @@
+     let mut digest = Sha256::new();
+     digest.update(b"SpiralCore/installed-mailbox-synthetic-enrollment/v1\0");
+     digest.update(rand::random::<[u8; 32]>());
++    digest.update([u8::from(close_after_call_receipt)]);
+     for material in [
+         pair.sender
+             .outgoing
+@@ -124,10 +137,12 @@
+     Ok((
+         digest.finalize().into(),
+         GuestBootstrap {
++            close_after_call_receipt,
+             endpoint: pair.sender,
+             cast: guest_cast,
+         },
+         HostFixture {
++            close_after_call_receipt,
+             endpoint: pair.receiver,
+             cast: host_cast,
+         },
+@@ -232,16 +247,27 @@
+         })
+     }
+ 
+-    fn finish(&self, start: Instant, cpu: cpu_time::ThreadTime) -> Result<ExchangeResult> {
++    fn finish(
++        &self,
++        start: Instant,
++        cpu: cpu_time::ThreadTime,
++        abandoned_after_receipt: bool,
++    ) -> Result<ExchangeResult> {
+         let counters = self.stream.counters()?;
+-        if (counters.frames_sent, counters.frames_received) != (3, 3) {
++        let frames = if abandoned_after_receipt { 1 } else { 3 };
++        if (counters.frames_sent, counters.frames_received) != (frames, frames) {
+             return Err("unexpected fixture frame count".into());
+         }
+         self.stream.close()?;
+         Ok(ExchangeResult {
+             call_bytes: CALL_LEN,
+-            reply_bytes: CALL_LEN,
+-            cast_bytes: CAST.len(),
++            reply_bytes: if abandoned_after_receipt { 0 } else { CALL_LEN },
++            cast_bytes: if abandoned_after_receipt {
++                0
++            } else {
++                CAST.len()
++            },
++            abandoned_after_receipt,
+             counters,
+             thread_cpu_us: cpu.elapsed().as_micros(),
+             elapsed_us: start.elapsed().as_micros(),
+@@ -270,13 +296,16 @@
+         let mut tracker = peer.tracker()?;
+         let wire = peer.receive()?;
+         peer.accept(service, &peer.incoming, &wire)?;
+-        let (reply, send, now) = broker.with_time(|_, now| -> Result<_> {
++        let reply = broker.with_time(|_, now| -> Result<_> {
+             let call = service
+                 .receive(&peer.incoming, now)?
+                 .ok_or("missing fixture Call")?;
+             if call.payload() != payload() {
+                 return Err("fixture Call bytes differ".into());
+             }
++            if self.close_after_call_receipt {
++                return Ok(None);
++            }
+             let options =
+                 MessageOptions::for_reply_with_policy(&peer.outgoing, &call, now, ISSUANCE_POLICY)?;
+             let reply = service.reply_prepared(
+@@ -288,8 +317,24 @@
+             let wire = encode_envelope(reply.envelope())?;
+             let send =
+                 tracker.register_send(&peer.outgoing, &peer.control, &peer.verifier, &wire, now)?;
+-            Ok((reply, send, now))
++            Ok(Some((reply, send, now)))
+         })?;
++        let Some((reply, send, now)) = reply else {
++            let before = peer.stream.counters()?;
++            if !matches!(
++                peer.stream.receive(&peer.cancel, Instant::now() + TIMEOUT),
++                Err(LiveError::Io(error)) if error.kind() == std::io::ErrorKind::UnexpectedEof
++            ) {
++                return Err("expected caller EOF after verified Call receipt".into());
++            }
++            let after = peer.stream.counters()?;
++            if before.framing_bytes_received != after.framing_bytes_received
++                || before.envelope_bytes_received != after.envelope_bytes_received
++            {
++                return Err("caller disconnected inside a frame".into());
++            }
++            return peer.finish(start, cpu, true);
++        };
+         peer.outgoing
+             .send_prepared(&reply, &peer.stream, &peer.cancel, now)?;
+         let ack = peer.verified_receipt(&mut tracker, &peer.outgoing, send)?;
+@@ -308,7 +353,7 @@
+             }
+             Ok(())
+         })?;
+-        peer.finish(start, cpu)
++        peer.finish(start, cpu, false)
+     }
+ }
+ 
+@@ -378,6 +423,15 @@
+         peer.outgoing
+             .send_prepared(&prepared, &peer.stream, &peer.cancel, now)?;
+         peer.verified_receipt(&mut tracker, &peer.outgoing, send)?;
++        if self.close_after_call_receipt {
++            broker.with_time(|_, now| -> Result<()> {
++                if service.poll_call(&peer.outgoing, &call, now)? != CallStatus::Pending {
++                    return Err("abandoned fixture Call was no longer pending".into());
++                }
++                Ok(service.shutdown(now)?)
++            })?;
++            return peer.finish(start, cpu, true);
++        }
+         let wire = peer.receive()?;
+         peer.accept(&mut service, &peer.incoming, &wire)?;
+         broker.with_time(|_, now| -> Result<()> {
+@@ -406,7 +460,7 @@
+         cast.send_prepared(&prepared, &peer.stream, &peer.cancel, now)?;
+         peer.verified_receipt(&mut tracker, &cast, send)?;
+         broker.with_time(|_, now| service.shutdown(now))?;
+-        peer.finish(start, cpu)
++        peer.finish(start, cpu, false)
+     }
+ }
+ 
+--- a/crates/spiralcore-mvm-live/src/mailbox_witness/tests.rs
++++ b/crates/spiralcore-mvm-live/src/mailbox_witness/tests.rs
+@@ -253,3 +253,41 @@
+         super::ReceiptObservation::Verified(_)
+     ));
+ }
++
++#[test]
++fn caller_can_abandon_after_authenticated_call_receipt_without_reply() {
++    let (_, guest, host) = super::provision_with_close(true).unwrap();
++    let (a, b) = UnixStream::pair().unwrap();
++    let worker = std::thread::spawn(move || {
++        let broker = crate::campaign::broker_context().unwrap();
++        let mut service = broker
++            .with_time(|budget, _| {
++                spiralcore_mvm_adapter::service::LocalMailboxService::new(budget.clone())
++            })
++            .unwrap();
++        host.run(a, &broker, &mut service).unwrap()
++    });
++    let encoded = serde_json::to_vec(&guest).unwrap();
++    let guest = super::GuestBootstrap::decode(&encoded).unwrap();
++    assert!(guest.close_after_call_receipt);
++    let client = guest.exchange(b).unwrap();
++    let server = worker.join().unwrap();
++    for result in [&client, &server] {
++        assert_eq!(
++            (result.call_bytes, result.reply_bytes, result.cast_bytes),
++            (65_023, 0, 0)
++        );
++        assert_eq!(
++            (result.counters.frames_sent, result.counters.frames_received),
++            (1, 1)
++        );
++    }
++    assert_eq!(
++        client.counters.envelope_bytes_sent,
++        server.counters.envelope_bytes_received
++    );
++    assert_eq!(
++        client.counters.envelope_bytes_received,
++        server.counters.envelope_bytes_sent
++    );
++}
+--- a/crates/spiralcore-mvm-live/src/installed_parent/native_witness/native_mailbox.rs
++++ b/crates/spiralcore-mvm-live/src/installed_parent/native_witness/native_mailbox.rs
+@@ -39,7 +39,7 @@
+     Ok((path, expected))
+ }
+ 
+-pub(super) fn prepare(root: &Path) -> Result<Fixture> {
++pub(super) fn prepare(root: &Path, slot: u8, abandoned: bool) -> Result<Fixture> {
+     let (image_tool, _) = pinned_tool(
+         "SPIRALCORE_NATIVE_MAILBOX_IMAGE_TOOL",
+         "SPIRALCORE_NATIVE_MAILBOX_IMAGE_TOOL_SHA",
+@@ -48,7 +48,7 @@
+         "SPIRALCORE_NATIVE_MAILBOX_GUEST_TOOL",
+         "SPIRALCORE_NATIVE_MAILBOX_GUEST_TOOL_SHA",
+     )?;
+-    let (commitment, guest, host) = mailbox_witness::provision()
++    let (commitment, guest, host) = mailbox_witness::provision_with_close(abandoned)
+         .map_err(|_| anyhow!("synthetic mailbox provisioning failed"))?;
+     let mut child = Command::new(&image_tool)
+         .arg(root)
+@@ -56,6 +56,7 @@
+         .arg(guest_sha)
+         .arg(WORKLOAD_UID.to_string())
+         .arg(WORKLOAD_GID.to_string())
++        .arg(slot.to_string())
+         .stdin(Stdio::piped())
+         .stdout(Stdio::piped())
+         .stderr(Stdio::inherit())
+@@ -141,6 +142,7 @@
+     disk: ManagedReservation,
+     root: &Path,
+     host: Receiver<HostReport>,
++    abandoned: bool,
+ ) -> Result<(serde_json::Value, u64)> {
+     let mut disk = NativeCredit(Some(disk));
+     let name = service
+@@ -172,6 +174,11 @@
+             .recv_timeout(Duration::from_secs(20))?
+             .map_err(|_| anyhow!("original resident mailbox exchange failed"))?;
+         compare(&host, &guest)?;
++        ensure!(
++            host.abandoned_after_receipt == abandoned
++                && guest["abandoned_after_receipt"].as_bool() == Some(abandoned),
++            "installed mailbox completed a different signed fixture mode"
++        );
+         Ok(serde_json::json!({"guest":guest,"host":host,"vsock_port":5257}))
+     })();
+     if unused {
+--- a/crates/spiralcore-mvm-live/src/installed_parent/native_witness/native_plan.rs
++++ b/crates/spiralcore-mvm-live/src/installed_parent/native_witness/native_plan.rs
+@@ -49,7 +49,14 @@
+         ensure!(asset_root.is_absolute() && asset_root.canonicalize()? == asset_root);
+         ensure!(mvm_core::config::mvm_home_strict()? == asset_root.join("mvm"));
+         let (file, expected_bundle) = if let Some((_, digest)) = mailbox {
+-            ("installed-mailbox-native-witness.mvmpkg", digest)
++            (
++                if value == 1 {
++                    "installed-mailbox-native-witness.mvmpkg"
++                } else {
++                    "installed-mailbox-native-witness-b.mvmpkg"
++                },
++                digest,
++            )
+         } else {
+             (
+                 "installed-native-witness.mvmpkg",
+--- a/crates/spiralcore-mvm-live/src/installed_parent/native_witness/mod.rs
++++ b/crates/spiralcore-mvm-live/src/installed_parent/native_witness/mod.rs
+@@ -402,8 +402,8 @@
+     };
+     let mailbox_mode = match std::env::var("SPIRALCORE_NATIVE_MAILBOX_WITNESS").as_deref() {
+         Err(std::env::VarError::NotPresent) => false,
+-        Ok("1") if names.len() == 1 => true,
+-        _ => bail!("installed mailbox fixture requires one guest"),
++        Ok("1") => true,
++        _ => bail!("invalid installed mailbox fixture mode"),
+     };
+     let withhold_first = match std::env::var("SPIRALCORE_NATIVE_WITNESS_WITHHOLD_FIRST").as_deref()
+     {
+@@ -480,11 +480,6 @@
+     let runtime = tokio::runtime::Builder::new_current_thread()
+         .enable_all()
+         .build()?;
+-    let mut mailbox = if mailbox_mode {
+-        Some(native_mailbox::prepare(&root)?)
+-    } else {
+-        None
+-    };
+     let mut retained = Vec::with_capacity(names.len());
+     let mut parents = Vec::with_capacity(names.len());
+     let mut results = Vec::with_capacity(names.len());
+@@ -501,7 +496,16 @@
+                 ..Default::default()
+             },
+         )?;
+-        let fixture = mailbox.take();
++        // Mint each signed image and enrollment only after the preceding
++        // resident slot and its original retirement checks have completed.
++        let fixture = if mailbox_mode {
++            Some(native_mailbox::prepare(&root, value, reply_withheld)?)
++        } else {
++            None
++        };
++        let mailbox_identity = fixture
++            .as_ref()
++            .map(|f| (hex::encode(f.enrollment.digest()), f.bundle_digest.clone()));
+         let native = native_plan::NativeRequest::verified(
+             &root,
+             peer.address(),
+@@ -600,7 +604,20 @@
+         retained.push(NativeCredit(Some(retained_runtime)));
+         let (result, runtime_allocated) = if let Some(mailbox_result) = mailbox_result {
+             drop(peer);
+-            native_mailbox::run_roundtrip(&mut service, &runtime, id, disk, &root, mailbox_result)?
++            let (mut result, allocated) = native_mailbox::run_roundtrip(
++                &mut service,
++                &runtime,
++                id,
++                disk,
++                &root,
++                mailbox_result,
++                reply_withheld,
++            )?;
++            let (enrollment, bundle) =
++                mailbox_identity.context("mailbox fixture identity missing")?;
++            result["scope_commitment"] = enrollment.into();
++            result["bundle_sha256"] = bundle.into();
++            (result, allocated)
+         } else {
+             let (result, runtime_allocated) = run_roundtrip(
+                 &mut service,
+@@ -635,7 +652,8 @@
+             "grant_serial": id.serial,
+             "peer": result,
+             "guest_readback_exact": !reply_withheld,
+-            "incomplete_reply_rejected": reply_withheld,
++            "incomplete_reply_rejected": reply_withheld && !mailbox_mode,
++            "caller_abandoned_after_receipt": reply_withheld && mailbox_mode,
+             "original_retirement": true,
+             "admission_elapsed_ns": admission.as_nanos(),
+             "wall_with_retirement_ns": guest_elapsed.elapsed().as_nanos(),
+@@ -648,7 +666,12 @@
+         results.push(row);
+     }
+     if results.len() == 2 {
+-        for key in ["scope_commitment", "payload_sha256"] {
++        let second_identity = if mailbox_mode {
++            "bundle_sha256"
++        } else {
++            "payload_sha256"
++        };
++        for key in ["scope_commitment", second_identity] {
+             ensure!(
+                 results[0]["peer"][key] != results[1]["peer"][key],
+                 "sequential guests share an expected-unique peer identity: {key}"

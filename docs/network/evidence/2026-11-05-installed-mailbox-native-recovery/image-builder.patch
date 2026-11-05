@@ -1,0 +1,52 @@
+--- a/prepare-mailbox.rs
++++ b/prepare-mailbox.rs
+@@ -11,6 +11,7 @@
+     image_set::{ArtifactName, ImageSetVerification, image_train_lock, verify_image_set_artifacts},
+     plan::{
+         FsTrustStore,
++        bundle::TrustStore,
+         bundle::{ArtifactRole, BundleRegistry, verify_bundle_file},
+     },
+     security::AgentProfile,
+@@ -106,7 +107,12 @@
+             .context("verified asset missing")
+     };
+ 
+-    let stage = root.join("workload");
++    let (stage_name, bundle_name) = match std::env::args().nth(6).as_deref() {
++        None | Some("1") => ("workload", "installed-mailbox-native-witness.mvmpkg"),
++        Some("2") => ("workload-b", "installed-mailbox-native-witness-b.mvmpkg"),
++        _ => anyhow::bail!("invalid fixture slot"),
++    };
++    let stage = root.join(stage_name);
+     fs::create_dir(&stage)?;
+     mvm_core::private_fs::set_mode(&stage, 0o700)?;
+     let initramfs_stage = stage.join("ramdisk");
+@@ -212,7 +218,7 @@
+     let kernel = actual("default-microvm-vmlinux-x86_64")?;
+     let tree = fs::read(stage.join("rootfs.verity"))?;
+     let roothash = private_root_hash;
+-    let archive = root.join("installed-mailbox-native-witness.mvmpkg");
++    let archive = root.join(bundle_name);
+     let mut inputs = BundleExportInputs::new(text(kernel)?, text(&workload)?, "x86_64", &archive)
+         .initrd(text(&initrd.image_path)?)
+         .verity(&tree, roothash.trim_end())
+@@ -231,10 +237,16 @@
+     let trust = FsTrustStore::default_path()?;
+     mvm_core::config::create_private_dir(trust.root())?;
+     let key = mvm_client::bundle::BundleSigner::verifying_key(&signer);
+-    mvm_core::util::atomic_io::write_private_new(
++    match mvm_core::util::atomic_io::write_private_new(
+         &trust.root().join(format!("{}.pub", exported.key_id.0)),
+         key.as_bytes(),
+-    )?;
++    ) {
++        Ok(_) => {}
++        Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => {
++            ensure!(trust.lookup(&exported.key_id) == Some(key), "fixture trust changed");
++        }
++        Err(error) => return Err(error.into()),
++    }
+     let verified = verify_bundle_file(&archive, &trust)?;
+     let registry = BundleRegistry::default_path()?;
+     let installed = registry.install_file(&archive, &trust, false)?;
