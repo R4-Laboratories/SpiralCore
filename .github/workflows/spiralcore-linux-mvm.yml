@@ -1,4 +1,4 @@
-name: SpiralCore installed store-filter regression
+name: SpiralCore installed carrier regression
 
 on:
   workflow_dispatch:
@@ -8,7 +8,7 @@ permissions:
 
 jobs:
   test:
-    if: startsWith(github.ref, 'refs/heads/codex/installed-sdk-native-witness-store-filter-')
+    if: startsWith(github.ref, 'refs/heads/codex/installed-sdk-native-witness-carrier-')
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
@@ -26,12 +26,14 @@ jobs:
           ref: 11bf7c69b65dc6f32b898bcbc77193ebd999a9df
           path: sdk
           persist-credentials: false
-      - name: Exercise installed store confinement against the Linux kernel
+      - name: Exercise installed carrier credit before TLS
         run: |
           set -euo pipefail
           test "$(git -C spiralcore rev-parse HEAD)" = "$GITHUB_SHA"
           test "$(git -C sdk rev-parse HEAD)" = "11bf7c69b65dc6f32b898bcbc77193ebd999a9df"
           rustup toolchain install 1.97.1 --profile minimal
-          export CARGO_TARGET_DIR="$RUNNER_TEMP/sc-store-filter"
+          git -C sdk apply --check ../spiralcore/.github/qualification/installed-carrier.patch
+          git -C sdk apply ../spiralcore/.github/qualification/installed-carrier.patch
+          export CARGO_TARGET_DIR="$RUNNER_TEMP/sc-carrier"
           cargo +1.97.1 test --locked --manifest-path sdk/Cargo.toml -p mvm-hostd --lib \
-            jailer::seccomp::owned_store_tests:: -- --test-threads=1
+            supervisor::flowmux::installed_carrier_tests:: -- --test-threads=1
