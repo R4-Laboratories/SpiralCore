@@ -1,0 +1,7 @@
+# One-use dispatch source review
+
+**PASS for the frozen three-file source delta.** All six preimage/current SHA-256 values matched the Wick `validation/dispatch-once-source/source.json`. The observed successors were `cff7ccf0044bdc9252a8a29b9c91fb8e90dd7f7702f58c8a9420997f2062b147` (Hostd admission), `3f7b125af8f1b0e89edd0a985439fdc4b743d20537ec5b8ffc7a457c406415b9` (Hostd local run), and `e2275ad3861179db0b9a3711f596d8b9344d07a0cea1fa620cf42e177a321bb7` (Client launch).
+
+The original opaque non-cloneable token carries the private dispatch state. Only actual admission and the existing test fixture initialize it unspent. The dispatch gate rejects a spent token before post-admission processing. The local wrapper rejects it before hashing the image, and Client rejects it before converting the original lifetime anchor. The only spent transition happens immediately before the backend start attempt after the existing final backend/window check. Backend success and subsequent unwind/rollback cannot produce an unspent token. No signed body, nonce or authority construction changed.
+
+The protected predecessor in `dispatch-reuse-red-reboot` failed the expected case at “same returned admission started a second backend.” The source review does not confer successor execution acceptance. A recovery activator must check `check_unlaunched_for_backend` to exclude an already-dispatched token whose backend and validity window still match.

@@ -1,0 +1,93 @@
+--- a/crates/mvm-hostd/src/plan_admission.rs
++++ b/crates/mvm-hostd/src/plan_admission.rs
+@@ -138,6 +138,7 @@
+     assurance_runtime: Option<AssuranceRuntimeBinding>,
+     canonical_kernel: Option<std::sync::Arc<canonical_kernel::AdmittedKernel>>,
+     backend: Option<BackendKind>,
++    dispatched: bool,
+ }
+ 
+ /// Re-verified host artifact behind one extension binding in the signed plan.
+@@ -157,6 +158,18 @@
+         self.check_backend_window_at(backend, SystemClock.now())
+     }
+ 
++    /// Check an original token before any consuming launch preparation.
++    /// Dispatch itself still performs its final backend and window check.
++    pub fn check_unlaunched_for_backend(&self, backend: BackendKind) -> Result<()> {
++        self.check_not_dispatched()?;
++        self.check_current_for_backend(backend)
++    }
++
++    pub(crate) fn check_not_dispatched(&self) -> Result<()> {
++        anyhow::ensure!(!self.dispatched, "original admitted plan was already dispatched");
++        Ok(())
++    }
++
+     fn check_backend_window_at(
+         &self,
+         backend: BackendKind,
+@@ -225,6 +238,7 @@
+             assurance_runtime: None,
+             canonical_kernel: None,
+             backend: None,
++            dispatched: false,
+         }
+     }
+ 
+@@ -614,6 +628,7 @@
+         assurance_runtime,
+         canonical_kernel,
+         backend,
++        dispatched: false,
+     })
+ }
+ 
+@@ -2090,7 +2105,8 @@
+         crate::host_lifetime_parent::require_installed()?;
+     }
+     let backend = params.backend;
+-    let admitted = params.admitted;
++    let mut admitted = params.admitted;
++    admitted.check_not_dispatched()?;
+     crate::owner_access::require_selected(admitted.plan())?;
+     if let Some(registry) = crate::owner_access::installed() {
+         registry.preflight(&admitted, &params.config)?;
+@@ -2144,6 +2160,7 @@
+         .check_current_for_backend(backend.kind())
+         .context("admitted backend/window recheck at dispatch")
+         .and_then(|()| {
++            admitted.dispatched = true;
+             backend
+                 .start(&config)
+                 .context("backend start after signed-plan admission")
+--- a/crates/mvm-hostd/src/run.rs
++++ b/crates/mvm-hostd/src/run.rs
+@@ -475,6 +475,7 @@
+     assurance: Option<&crate::assurance_session::CampaignRequest>,
+     #[cfg(unix)] owner: Option<std::sync::Arc<mvm_core::host_lifetime::HostLifetimeAnchor>>,
+ ) -> Result<StartedMachine> {
++    admitted.check_not_dispatched()?;
+     let rootfs_sha = mvm_core::crypto::image_verify::sha256_file_cached(&req.rootfs_path)
+         .with_context(|| format!("hashing rootfs at {}", req.rootfs_path.display()))?;
+     boot_admitted_local_verified(
+@@ -499,7 +500,7 @@
+     #[cfg(unix)] owner: Option<std::sync::Arc<mvm_core::host_lifetime::HostLifetimeAnchor>>,
+ ) -> Result<StartedMachine> {
+     use crate::plan_admission::{StartAdmittedParams, start_admitted};
+-    admitted.check_current_for_backend(backend.kind())?;
++    admitted.check_unlaunched_for_backend(backend.kind())?;
+     anyhow::ensure!(
+         req.backend_name == backend.name(),
+         "local request backend differs from actual backend"
+--- a/crates/mvm-client/src/launch/mod.rs
++++ b/crates/mvm-client/src/launch/mod.rs
+@@ -1004,7 +1004,7 @@
+     ) -> std::result::Result<LaunchOutcome, AdmittedHostLifetimeLaunchFailure> {
+         let preflight = self.check_installed_launch_preflight(&request).and_then(|()| {
+             admitted
+-                .check_current_for_backend(self.backend.kind())
++                .check_unlaunched_for_backend(self.backend.kind())
+                 .map_err(crate::local::backend_err)?;
+             let plan = admitted.plan();
+             let binding = lifetime.binding();
