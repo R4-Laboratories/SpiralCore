@@ -23,17 +23,15 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           repository: Casey-allard/mvm
-          ref: 845d5ba38752aa95f97e8c4469889793e34deff3
+          ref: 11bf7c69b65dc6f32b898bcbc77193ebd999a9df
           path: sdk
           persist-credentials: false
       - name: Exercise installed store confinement against the Linux kernel
         run: |
           set -euo pipefail
           test "$(git -C spiralcore rev-parse HEAD)" = "$GITHUB_SHA"
-          test "$(git -C sdk rev-parse HEAD)" = "845d5ba38752aa95f97e8c4469889793e34deff3"
+          test "$(git -C sdk rev-parse HEAD)" = "11bf7c69b65dc6f32b898bcbc77193ebd999a9df"
           rustup toolchain install 1.97.1 --profile minimal
-          git -C sdk apply --check ../spiralcore/.github/qualification/installed-store-filter.patch
-          git -C sdk apply ../spiralcore/.github/qualification/installed-store-filter.patch
           export CARGO_TARGET_DIR="$RUNNER_TEMP/sc-store-filter"
           cargo +1.97.1 test --locked --manifest-path sdk/Cargo.toml -p mvm-hostd --lib \
             jailer::seccomp::owned_store_tests:: -- --test-threads=1
