@@ -31,7 +31,7 @@ checkpoint, not completion of that program.
 |---|---|---|
 | Cooperating objects | Authenticated QUIC object service; shared runtime/cache/schema core; exact durable readback | Current-source two-host Internet WAN qualification |
 | Ordinary TCP/UDP | Linux TUN paired tunnel over authenticated QUIC; real IPv4/IPv6 flows and calibrated shaped-link trials | Other packet-attachment platforms and deployment/WAN acceptance |
-| MVM mailbox | Canonical encrypted envelopes, native HVF/Firecracker transfers, event handling and explicit incomplete-Call reconciliation | Complete resident ownership/budgets, retention, final-ACK/closed-stream recovery and WAN |
+| MVM mailbox | Canonical encrypted envelopes, native HVF/Firecracker transfers, and installed Firecracker qualification for sustained Calls and receipt recovery | Complete installed-service release, concurrent capacity, canonical WAN, and security qualification |
 | FlowMux stream component | Authenticated paired TCP/TLS/object mapping, cancellation and FIN ownership; **34 tests on each of seven native roles** | Canonical admitted MVM binding, installed lifecycle, sustained capacity and WAN |
 | Installation/storage foundations | Installed-owner/supervisor components, managed reservations and native Windows private-storage components | End-to-end aggregate ownership, recovery and supported capacity envelope |
 | Owner access | Development/sealed-mode integration is active, unmerged work | Canonical authority/lifecycle, shared-core payload binding and native acceptance |

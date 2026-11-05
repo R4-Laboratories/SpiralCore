@@ -37,13 +37,31 @@ are required. The linked issues were open at this snapshot.
 | Gate | Required integrated result | Current boundary |
 |---|---|---|
 | [#43 mailbox](https://github.com/R4-Laboratories/SpiralCore/issues/43) | Canonical resident service, original admitted-plan/child ownership, aggregate plaintext/cache/workspace budgets, shutdown and orphan recovery | Published development witnesses and prerequisites do not complete the installed service |
-| [#43 / #49 sustained sessions](https://github.com/R4-Laboratories/SpiralCore/issues/49) | Final acknowledgment recovery, safe retention/expiry, native qualification beyond the 2,048-Call witness guard and measured control/data coexistence | Explicit incomplete-Call recovery is published; general completed-tail/closed-stream recovery and production retention remain open |
+| [#43 / #49 sustained sessions](https://github.com/R4-Laboratories/SpiralCore/issues/49) | Final acknowledgment recovery, safe retention/expiry, native qualification beyond the 2,048-Call witness guard and measured control/data coexistence | Installed Firecracker witnesses crossed 2,048 Calls and recovered one deliberately withheld Finish receipt. See the qualification records below. |
 | [#44 FlowMux](https://github.com/R4-Laboratories/SpiralCore/issues/44) | Actual admitted destination/protocol, independent queues/audit/rates, installed lifecycle and shared-core mapping | The paired stream component is accepted; canonical MVM activation is still unmerged work |
 | [#45 owner access](https://github.com/R4-Laboratories/SpiralCore/issues/45) | Separately admitted development access and sealed typed operations, bounded lifecycle and shared-core payload mapping | Implementation is active and unmerged; no implicit shell/PTY permission or development fallback in sealed mode |
 | [#46 platforms](https://github.com/R4-Laboratories/SpiralCore/issues/46) | Exact OS/version/architecture/role matrix and durable client/gateway qualification | Native component rows are recorded; remaining end-to-end platform and backend gates stay open |
 | [#47 WAN/upstream](https://github.com/R4-Laboratories/SpiralCore/issues/47) | Current canonical direct/relay two-host WAN, reproducible supported package and reviewed upstream contribution | Historical WAN is a different source/transport; final canonical WAN and upstream package remain open |
 | [#49 capacity](https://github.com/R4-Laboratories/SpiralCore/issues/49) | Aggregate budgets, bounded retained state, concurrency/fairness, overload/recovery and tail latency | Two guests and logical-endpoint loads do not establish a customer fleet envelope |
 | [#83 security/FIPS profile](https://github.com/R4-Laboratories/SpiralCore/issues/83) | Concrete validated-module/build/environment mapping, approved-mode enforcement, canonical crypto integration and customer security-control evidence | Explicit unclassified/CUI submission target; current builds have no established validated deployment profile |
+
+## Installed Firecracker mailbox qualification
+
+The [2,311-Call sustained run](https://github.com/R4-Laboratories/SpiralCore/blob/d0ede350f3055d8cd9bf6eabaaf814296ee4ef4f/docs/network/evidence/2026-11-05-installed-sustained-campaign/README.md)
+transferred three 3 MiB objects on one authenticated carrier and observed
+tracker expiry on both sides. The original MVM owner retired the guest before
+the host independently read back all 9,437,184 bytes.
+
+The [Finish receipt recovery run](https://github.com/R4-Laboratories/SpiralCore/blob/19cd77e39e4fc10d99431736082234a3fa22394c/docs/network/evidence/2026-11-05-installed-object-finish-redial/README.md)
+withheld the receipt before send, reauthenticated the replacement and replayed
+one exact encrypted Reply. The same guest finished all 20 Calls and the host
+verified all seven publications after retirement. A partial old frame refused
+replacement.
+
+These were signed synthetic Linux/Firecracker fixtures. Larger concurrent
+data/control workloads, ambiguous partial receipt writes, the installed
+release and cross-platform WAN remain open. The reports retain byte counts,
+CPU, elapsed time, source pins and failed runs.
 
 ## Active work that is not an accepted main release
 
