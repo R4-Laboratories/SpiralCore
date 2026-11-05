@@ -1,0 +1,131 @@
+{
+  "mailbox-runtime-red": {
+    "terminal": {
+      "exit": 101
+    },
+    "build": {
+      "exit": 101
+    },
+    "source_manifest_sha256": "ff2cf6f3c15f8de2b82aa0c3d5b718602751b76104c177c2678784c81f59e115",
+    "pinned_sources": 5410,
+    "errors": [
+      "couldn't read `crates/mvm-runtime/src/legacy_portable_runtime/verity_asset_tests.rs`: No such file or directory (os error 2)"
+    ]
+  },
+  "mailbox-runtime-red-fixture": {
+    "terminal": {
+      "exit": 101
+    },
+    "build": {
+      "exit": 101
+    },
+    "source_manifest_sha256": "23ffb19340f777c1e05ba894d18c0ded0e4ebf8aca20404c43f88429a861659e",
+    "pinned_sources": 5411,
+    "errors": [
+      "unresolved import `mvm_core::host_lifetime::InstalledMailboxJob`",
+      "method `take_socket_job` is not a member of trait `InstalledMailboxOwner`",
+      "no method named `attach_prepared_mailbox` found for struct `std::sync::Arc<workload_runner::runner::installed::InstalledSlot>` in the current scope",
+      "no method named `attach_prepared_mailbox` found for struct `std::sync::Arc<workload_runner::runner::installed::InstalledSlot>` in the current scope",
+      "no method named `attach_prepared_mailbox` found for struct `std::sync::Arc<workload_runner::runner::installed::InstalledSlot>` in the current scope",
+      "no method named `close_mailbox_admission` found for mutable reference `&mut workload_runner::runner::installed::Custody` in the current scope",
+      "no method named `retire_mailbox` found for mutable reference `&mut workload_runner::runner::installed::Custody` in the current scope",
+      "no field `mailbox` on type `&mut workload_runner::runner::installed::Custody`"
+    ]
+  },
+  "mailbox-runtime-green": {
+    "terminal": {
+      "exit": 0
+    },
+    "build": {
+      "exit": 0
+    },
+    "source_manifest_sha256": "9e1b3dfe2bc911d682b7c1dc69635b8e66b62e5dd623430b81f234b458187c4f",
+    "pinned_sources": 5412,
+    "binary_sha256": "f418b30ae3e1ed8aeed403673b7e8eb830bfb444c536cd10b72e2c92eedf7809",
+    "execution": "running 1 test\ntest workload_runner::runner::installed::retirement_tests::installed_mailbox_slot_retains_before_start_and_cleans_without_native_receipt ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 1382 filtered out; finished in 0.01s"
+  },
+  "mailbox-runtime-stop-red": {
+    "terminal": {
+      "exit": 101
+    },
+    "build": {
+      "exit": 0
+    },
+    "source_manifest_sha256": "2b23d41851fa363c7a07a0ea4f1378626278a115e4bb8e0e9656d21dc359cad6",
+    "pinned_sources": 5412,
+    "binary_sha256": "3ab584cc26527b143411c670582c77af3b567d2f0f64b4d7fed68332dd64f6b0",
+    "execution": "running 1 test\ntest workload_runner::runner::installed::retirement_tests::installed_mailbox_slot_retains_before_start_and_cleans_without_native_receipt ... \nthread 'workload_runner::runner::installed::retirement_tests::installed_mailbox_slot_retains_before_start_and_cleans_without_native_receipt' (626965) panicked at crates/mvm-runtime/src/workload_runner/runner/installed/retirement_tests.rs:354:5:\nthe real stop must clean up the mailbox despite absent native proof\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\nFAILED\n\nfailures:\n\nfailures:\n    workload_runner::runner::installed::retirement_tests::installed_mailbox_slot_retains_before_start_and_cleans_without_native_receipt\n\ntest result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 1382 filtered out; finished in 0.00s"
+  },
+  "mailbox-runtime-stop-green": {
+    "terminal": {
+      "exit": 0
+    },
+    "build": {
+      "exit": 0
+    },
+    "source_manifest_sha256": "537c19fe64a127797cfa7f97f2d28828e66d462861743d4f99084aa8c47a966b",
+    "pinned_sources": 5412,
+    "binary_sha256": "7941af9d206a4e1804f66a607957ceda5f2fff867349cd9562d47c079048c349",
+    "execution": "running 1 test\ntest workload_runner::runner::installed::retirement_tests::installed_mailbox_slot_retains_before_start_and_cleans_without_native_receipt ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 1382 filtered out; finished in 0.01s"
+  },
+  "mailbox-runtime-dispatch-red": {
+    "terminal": {
+      "exit": 101
+    },
+    "build": {
+      "exit": 0
+    },
+    "source_manifest_sha256": "5c9032d3e9ab6623401617c39af40271e9e4fbc78226b352b475366d39d43229",
+    "pinned_sources": 5412,
+    "binary_sha256": "662c74700ed3759caa249f8a904235436032243f3f205caeb44d03411e5c3bd9",
+    "execution": "running 1 test\ntest workload_runner::runner::installed::retirement_tests::installed_mailbox_slot_retains_before_start_and_cleans_without_native_receipt ... \nthread 'workload_runner::runner::installed::retirement_tests::installed_mailbox_slot_retains_before_start_and_cleans_without_native_receipt' (646608) panicked at crates/mvm-runtime/src/workload_runner/runner/installed/retirement_tests.rs:346:5:\nstartup in progress must retain the original mailbox until dispatch status is terminal\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\nFAILED\n\nfailures:\n\nfailures:\n    workload_runner::runner::installed::retirement_tests::installed_mailbox_slot_retains_before_start_and_cleans_without_native_receipt\n\ntest result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 1382 filtered out; finished in 0.01s"
+  },
+  "mailbox-runtime-dispatch-green": {
+    "terminal": {
+      "exit": 0
+    },
+    "build": {
+      "exit": 0
+    },
+    "source_manifest_sha256": "8c3273889e55d39aa8b172ad95f7bdd8180e1221e542ec7a77729609d229d4f0",
+    "pinned_sources": 5412,
+    "binary_sha256": "f8c1aa420398df9a706f8d9ded536f5b8a79ed14c323f8be0e3f47a750e714fe",
+    "execution": "running 1 test\ntest workload_runner::runner::installed::retirement_tests::installed_mailbox_slot_retains_before_start_and_cleans_without_native_receipt ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 1383 filtered out; finished in 0.00s"
+  },
+  "mailbox-runtime-default-red": {
+    "terminal": {
+      "exit": 101
+    },
+    "build": {
+      "exit": 0
+    },
+    "source_manifest_sha256": "4dcc46be992ee3f1da05831c762b884aef7848d5ff476ad8e8e9763182cc5ac3",
+    "pinned_sources": 5412,
+    "binary_sha256": "98a47e75ca824820b530d59999500e5dd77ffa6e8a359f5817f5a23e7c994de4",
+    "execution": "running 1 test\ntest workload_runner::runner::installed::retirement_tests::ordinary_installed_start_retains_existing_pending_stop_behavior ... \nthread 'workload_runner::runner::installed::retirement_tests::ordinary_installed_start_retains_existing_pending_stop_behavior' (648589) panicked at crates/mvm-runtime/src/workload_runner/runner/installed/retirement_tests.rs:411:5:\nan unselected mailbox must not latch a new dispatch refusal\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\nFAILED\n\nfailures:\n\nfailures:\n    workload_runner::runner::installed::retirement_tests::ordinary_installed_start_retains_existing_pending_stop_behavior\n\ntest result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 1384 filtered out; finished in 0.00s"
+  },
+  "mailbox-runtime-default-green": {
+    "terminal": {
+      "exit": 0
+    },
+    "build": {
+      "exit": 0
+    },
+    "source_manifest_sha256": "31e2458877882049cbbec52bee9189edea6608ac9f2ce9d4bf348af60ff30ca7",
+    "pinned_sources": 5412,
+    "binary_sha256": "c949d95b31118007ae20d7aeebfbdb590145a9eb0567a25733cf4fa12763aa4a",
+    "execution": "running 1 test\ntest workload_runner::runner::installed::retirement_tests::ordinary_installed_start_retains_existing_pending_stop_behavior ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 1384 filtered out; finished in 0.00s"
+  },
+  "final_controls": {
+    "exit": 0,
+    "distinct_tests": 12
+  },
+  "final_source_sha256": {
+    "crates/mvm-core/src/host_lifetime.rs": "096e98c2a72854063052725f755ac478bb68fd8414d074cdff528bc18f1aa6ab",
+    "crates/mvm-runtime/src/kernel_custody.rs": "fb7bfedaaddcf67f37507732a081113067a924394504165392b689833f5ff383",
+    "crates/mvm-runtime/src/workload_runner/runner.rs": "d1ed8ee2f2f2e856722b43b054967a6895cf2869a02db0832de5271044761277",
+    "crates/mvm-runtime/src/workload_runner/runner/installed.rs": "835415e9dda329c93a9456761f9a35a423d78f021867bd748e4f9b1af2594bfe",
+    "crates/mvm-runtime/src/workload_runner/runner/installed/mailbox_socket.rs": "337c59af942d2bfc91ba62a1d7c1f42a681b69fd67f1e92b5ca178daf41b95ce",
+    "crates/mvm-runtime/src/workload_runner/runner/installed/retirement_tests.rs": "cc0f352b31e9bb134b7cbffbeba1961aa2a55cc2b5a7fb30f7c739032b3f3051"
+  }
+}

@@ -1,0 +1,1144 @@
+--- a/crates/mvm-core/src/host_lifetime.rs
++++ b/crates/mvm-core/src/host_lifetime.rs
+@@ -232,10 +232,21 @@
+     pub binding: HostLaunchBinding,
+ }
+ 
++#[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++pub type InstalledMailboxJob =
++    Box<dyn FnOnce(std::os::unix::net::UnixStream) -> std::io::Result<()> + Send + 'static>;
++
+ /// A funded mailbox owner supplied by the installed parent before any
+ /// listener, worker, or guest effects. Dropping an inert owner is safe.
+ pub trait InstalledMailboxOwner: Send + Sync {
+     fn check_current(&self) -> Result<()>;
++
++    /// Supply the original authorized session's one-shot socket job.
++    /// Preparation must remain inert until Runtime retains the handoff.
++    #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++    fn take_socket_job(&mut self) -> Result<InstalledMailboxJob> {
++        anyhow::bail!("original installed mailbox socket job unavailable")
++    }
+ }
+ 
+ /// The original parent's inert, identity-bound mailbox preparation.
+@@ -260,9 +271,23 @@
+ pub struct InstalledMailboxHandoff {
+     prepared: PreparedInstalledMailbox,
+     anchor: Arc<HostLifetimeAnchor>,
++    #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++    job_taken: bool,
+ }
+ 
+ impl InstalledMailboxHandoff {
++    #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++    pub fn take_socket_job(&mut self) -> Result<InstalledMailboxJob> {
++        self.anchor.verify_current()?;
++        self.prepared.owner.check_current()?;
++        ensure!(!self.job_taken, "original installed mailbox socket job already taken");
++        self.job_taken = true;
++        let job = self.prepared.owner.take_socket_job()?;
++        self.anchor.verify_current()?;
++        self.prepared.owner.check_current()?;
++        Ok(job)
++    }
++
+     pub fn plan_id(&self) -> &PlanId {
+         &self.prepared.plan_id
+     }
+@@ -770,6 +795,8 @@
+         Ok(Some(InstalledMailboxHandoff {
+             prepared,
+             anchor: Arc::clone(self),
++            #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++            job_taken: false,
+         }))
+     }
+ 
+--- a/crates/mvm-runtime/src/workload_runner/runner/installed.rs
++++ b/crates/mvm-runtime/src/workload_runner/runner/installed.rs
+@@ -4,7 +4,13 @@
+ 
+ use super::*;
+ use mvm_core::host_lifetime::{HostLaunchBinding, HostLifetimeAnchor};
++#[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++use std::sync::atomic::{AtomicU8, Ordering};
+ use std::sync::{Mutex, MutexGuard, TryLockError};
++
++#[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++#[path = "installed/mailbox_socket.rs"]
++mod mailbox_socket;
+ 
+ #[derive(Default)]
+ pub(super) struct InstalledSlots(Mutex<Vec<Arc<InstalledSlot>>>);
+@@ -13,6 +19,19 @@
+     id: VmId,
+     owner: Arc<HostLifetimeAnchor>,
+     state: Mutex<Option<Custody>>,
++    #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++    dispatch: AtomicU8,
++}
++
++#[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++#[repr(u8)]
++enum NativeDispatch {
++    MailboxOff,
++    Preparing,
++    StopRequested,
++    Attempted,
++    FailedBeforeDispatch,
++    AttemptedTerminal,
+ }
+ 
+ /// Linear local evidence of completed original native and supporting cleanup.
+@@ -56,12 +75,39 @@
+     endpoint: Option<crate::workload_runner::claim::EndpointHandle>,
+     endpoint_retirement: Option<mvm_vmm::host::network_endpoint_spawn::EndpointRetirement>,
+     broker: Option<BrokerGuard>,
++    #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++    mailbox: Option<
++        mailbox_socket::MailboxSocketWorker<mvm_core::host_lifetime::InstalledMailboxHandoff>,
++    >,
++    #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++    mailbox_directory: Option<(PathBuf, std::fs::File)>,
+     launch: Option<(
+         crate::runtime_evidence::RuntimeLifecycleLease,
+         crate::kernel_custody::KernelBoundLaunch,
+     )>,
+     retired: bool,
+     exit: Option<mvm_vmm::driver::traits::KernelStopOutcome>,
++}
++
++#[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++impl Custody {
++    fn close_mailbox_admission(&self) -> Result<()> {
++        if let Some(worker) = &self.mailbox {
++            worker.close_admission()?;
++        }
++        Ok(())
++    }
++
++    fn retire_mailbox(&mut self, deadline: Instant) -> Result<()> {
++        if let Some(worker) = &mut self.mailbox {
++            worker.stop(deadline)?;
++            if let Some(Err(error)) = worker.take_worker_result() {
++                tracing::debug!(%error, "installed mailbox worker returned an error");
++            }
++            drop(self.mailbox.take());
++        }
++        Ok(())
++    }
+ }
+ 
+ /// One exclusive operation owns the original state outside the table mutex.
+@@ -111,12 +157,18 @@
+         let slot = Arc::new(InstalledSlot {
+             id: VmId(owner.binding().vm_name.clone()),
+             owner: Arc::clone(owner),
++            #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++            dispatch: AtomicU8::new(NativeDispatch::MailboxOff as u8),
+             state: Mutex::new(Some(Custody {
+                 vm: None,
+                 failure: None,
+                 endpoint: None,
+                 endpoint_retirement: None,
+                 broker: None,
++                #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++                mailbox: None,
++                #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++                mailbox_directory: None,
+                 launch: None,
+                 retired: false,
+                 exit: None,
+@@ -204,25 +256,123 @@
+         Box::new(InstalledVmView(Arc::clone(self)))
+     }
+ 
++    #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++    pub(super) fn pin_mailbox_directory(
++        &self,
++        path: PathBuf,
++        directory: std::fs::File,
++    ) -> Result<()> {
++        let mut operation = self.begin_operation()?;
++        let state = operation
++            .state
++            .as_mut()
++            .context("installed custody unavailable")?;
++        anyhow::ensure!(
++            !state.retired && state.mailbox_directory.is_none() && state.mailbox.is_none(),
++            "installed mailbox directory already pinned"
++        );
++        state.mailbox_directory = Some((path, directory));
++        Ok(())
++    }
++
++    #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++    pub(super) fn attach_prepared_mailbox(
++        &self,
++        config: &VmStartConfig,
++        backend: BackendKind,
++    ) -> Result<()> {
++        let anchor = config
++            .host_lifetime
++            .as_ref()
++            .context("original mailbox anchor missing")?;
++        anyhow::ensure!(self.matches(anchor), "installed mailbox slot owner differs");
++        let mut operation = self.begin_operation()?;
++        let state = operation
++            .state
++            .as_mut()
++            .context("installed custody unavailable")?;
++        anyhow::ensure!(
++            !state.retired && state.mailbox.is_none(),
++            "mailbox slot unavailable"
++        );
++        let directory = state.mailbox_directory.take();
++        let Some(mailbox) = anchor.take_installed_mailbox(config, backend)? else {
++            return Ok(());
++        };
++        self.arm_mailbox_dispatch()?;
++        let (path, directory) = directory.context("original mailbox directory was not pinned")?;
++        let worker = mailbox_socket::MailboxSocketWorker::prepare(directory, &path, mailbox)?;
++        let worker = state.mailbox.insert(worker);
++        let job = worker.charge_mut().take_socket_job()?;
++        worker.start(job)?;
++        worker.socket_path()?;
++        Ok(())
++    }
++
++    #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++    fn arm_mailbox_dispatch(&self) -> Result<()> {
++        self.dispatch
++            .compare_exchange(
++                NativeDispatch::MailboxOff as u8,
++                NativeDispatch::Preparing as u8,
++                Ordering::AcqRel,
++                Ordering::Acquire,
++            )
++            .map_err(|_| anyhow::anyhow!("installed mailbox dispatch already armed"))?;
++        Ok(())
++    }
++
++    #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++    pub(super) fn mark_native_dispatch(&self) -> Result<()> {
++        if self.dispatch.load(Ordering::Acquire) == NativeDispatch::MailboxOff as u8 {
++            return Ok(());
++        }
++        self.dispatch
++            .compare_exchange(
++                NativeDispatch::Preparing as u8,
++                NativeDispatch::Attempted as u8,
++                Ordering::AcqRel,
++                Ordering::Acquire,
++            )
++            .map_err(|_| {
++                anyhow::anyhow!("installed native dispatch refused after stop or prior attempt")
++            })?;
++        Ok(())
++    }
++
+     pub(super) fn retain_launch(
+         &self,
+         lifecycle: crate::runtime_evidence::RuntimeLifecycleLease,
+         kernel: crate::kernel_custody::KernelBoundLaunch,
++        failure: Option<anyhow::Error>,
+     ) -> Result<()> {
+-        let (mut guard, (lifecycle, kernel)) = self.retain_guard((lifecycle, kernel))?;
++        let (mut guard, (lifecycle, kernel, failure)) =
++            self.retain_guard((lifecycle, kernel, failure))?;
+         let state = guard.as_mut().context("installed custody unavailable")?;
+         anyhow::ensure!(state.launch.is_none(), "installed launch already retained");
+         state.launch = Some((lifecycle, kernel));
+-        Ok(())
+-    }
+-
+-    pub(super) fn retain_failure(&self, error: anyhow::Error) -> Result<()> {
+-        let (mut guard, error) = self.retain_guard(error)?;
+-        guard
+-            .as_mut()
+-            .context("installed custody unavailable")?
+-            .failure = Some(error);
+-        Ok(())
++        self.finish_startup(state, failure);
++        Ok(())
++    }
++
++    fn finish_startup(&self, state: &mut Custody, failure: Option<anyhow::Error>) {
++        state.failure = failure;
++        #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++        {
++            // Only the completed outer launch may publish a terminal phase.
++            // Once driver dispatch has won, a missing VM or an error is
++            // never evidence of a pre-dispatch refusal.
++            let phase = self.dispatch.load(Ordering::Acquire);
++            if phase == NativeDispatch::MailboxOff as u8 {
++                return;
++            }
++            let terminal = if state.failure.is_some() && phase < NativeDispatch::Attempted as u8 {
++                NativeDispatch::FailedBeforeDispatch
++            } else {
++                NativeDispatch::AttemptedTerminal
++            };
++            self.dispatch.store(terminal as u8, Ordering::Release);
++        }
+     }
+ 
+     pub(super) fn retain_endpoint(
+@@ -284,8 +434,31 @@
+         Ok(Box::new(InstalledVmView(Arc::clone(self))))
+     }
+ 
++    #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++    fn mailbox_dispatch_for_stop(&self) -> Result<u8> {
++        // Latch before attempting custody: attach temporarily takes it out
++        // of the slot, but an armed mailbox cannot hide the stop request.
++        let _ = self.dispatch.compare_exchange(
++            NativeDispatch::Preparing as u8,
++            NativeDispatch::StopRequested as u8,
++            Ordering::AcqRel,
++            Ordering::Acquire,
++        );
++        let phase = self.dispatch.load(Ordering::Acquire);
++        anyhow::ensure!(
++            phase == NativeDispatch::MailboxOff as u8
++                || phase >= NativeDispatch::FailedBeforeDispatch as u8,
++            "installed startup still in progress; original custody retained"
++        );
++        Ok(phase)
++    }
++
+     pub(super) fn stop(&self, streamer: &dyn ConsoleStreamer) -> Result<()> {
++        #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++        self.mailbox_dispatch_for_stop()?;
+         let mut operation = self.begin_operation()?;
++        #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++        let dispatch = self.mailbox_dispatch_for_stop()?;
+         let state = operation
+             .state
+             .as_mut()
+@@ -293,10 +466,26 @@
+         if state.retired {
+             return Ok(());
+         }
++        #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++        let early_mailbox_cleanup = {
++            if let Err(error) = state.close_mailbox_admission() {
++                tracing::debug!(%error, "installed mailbox wake refused; retaining custody");
++            }
++            if dispatch == NativeDispatch::FailedBeforeDispatch as u8 {
++                Some(state.retire_mailbox(Instant::now() + Duration::from_secs(2)))
++            } else {
++                None
++            }
++        };
+         if state.endpoint_retirement.is_none()
+             && let Some(endpoint) = state.endpoint.as_mut()
+         {
+             endpoint.close_owned_admission()?;
++        }
++        #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++        if let Some(result) = early_mailbox_cleanup {
++            result?;
++            anyhow::bail!("installed startup ended before native dispatch; no native exit receipt");
+         }
+         if state.exit.is_none() {
+             let stopped = if let Some(vm) = state.vm.as_deref() {
+@@ -351,6 +540,8 @@
+             }
+             state.exit = Some(stopped);
+         }
++        #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++        state.retire_mailbox(Instant::now() + Duration::from_secs(2))?;
+         if state.endpoint_retirement.is_none()
+             && let Some(endpoint) = state.endpoint.as_mut()
+         {
+@@ -443,7 +634,7 @@
+ }
+ 
+ /// Create the installed VM's state without repairing pre-existing paths.
+-pub(super) fn ensure_private_state_directory(state: &Path) -> Result<()> {
++pub(super) fn ensure_private_state_directory(state: &Path) -> Result<std::fs::File> {
+     use rustix::fs::{Mode, OFlags, mkdirat, open, openat};
+     use std::{fs::File, os::unix::fs::MetadataExt as _};
+ 
+@@ -483,7 +674,7 @@
+         metadata.mode() & 0o7777 == mode,
+         "installed state directory is not private"
+     );
+-    Ok(())
++    Ok(state)
+ }
+ 
+ pub(super) fn marker(id: &VmId) -> PathBuf {
+--- a/crates/mvm-runtime/src/workload_runner/runner.rs
++++ b/crates/mvm-runtime/src/workload_runner/runner.rs
+@@ -471,8 +471,20 @@
+         #[cfg(unix)]
+         let installed = match &inputs.config.host_lifetime {
+             Some(owner) => {
++                #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++                let mailbox_directory = {
++                    mvm_core::naming::validate_vm_name(&inputs.config.name)?;
++                    let path = vm_state_dir(&inputs.config.name);
++                    let directory = installed::ensure_private_state_directory(&path)
++                        .context("prepare installed state directory")?;
++                    (path, directory)
++                };
++                #[cfg(not(all(target_os = "linux", target_pointer_width = "64")))]
+                 prepare_state_directory(inputs.config)?;
+-                Some(self.installed.reserve(owner)?)
++                let slot = self.installed.reserve(owner)?;
++                #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++                slot.pin_mailbox_directory(mailbox_directory.0, mailbox_directory.1)?;
++                Some(slot)
+             }
+             None => None,
+         };
+@@ -530,12 +542,14 @@
+         })();
+         #[cfg(unix)]
+         if let Some(slot) = installed {
+-            slot.retain_launch(lifecycle, kernel_binding)?;
+             return match result {
+-                Ok(vm) => Ok(vm),
++                Ok(vm) => {
++                    slot.retain_launch(lifecycle, kernel_binding, None)?;
++                    Ok(vm)
++                }
+                 Err(error) => {
+                     let message = format!("installed native startup retained: {error:#}");
+-                    slot.retain_failure(error)?;
++                    slot.retain_launch(lifecycle, kernel_binding, Some(error))?;
+                     anyhow::bail!(message)
+                 }
+             };
+@@ -604,6 +618,10 @@
+         };
+ 
+         let state_dir = prepare_state_directory(inputs.config)?;
++        #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++        if let Some(slot) = &installed {
++            slot.attach_prepared_mailbox(inputs.config, self.driver.kind())?;
++        }
+         crate::base::runtime_meta::record_from_start_config(
+             &inputs.config.name,
+             StartMode::Detached,
+@@ -836,7 +854,14 @@
+                 #[cfg(unix)]
+                 {
+                     match kernel {
+-                        Some(kernel) => kernel.boot_custodied(&self.driver, &spec, disks),
++                        Some(kernel) => kernel.boot_custodied(&self.driver, &spec, disks, || {
++                            #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++                            installed
++                                .as_ref()
++                                .context("original installed dispatch slot missing")?
++                                .mark_native_dispatch()?;
++                            Ok(())
++                        }),
+                         None => {
+                             disks.validate_spec(&spec)?;
+                             self.driver.boot_custodied(&spec, None, disks)
+--- a/crates/mvm-runtime/src/kernel_custody.rs
++++ b/crates/mvm-runtime/src/kernel_custody.rs
+@@ -156,6 +156,7 @@
+         driver: &dyn mvm_vmm::driver::traits::VmmDriver,
+         spec: &VmmSpec,
+         disks: mvm_vmm::driver::prepared_disks::PreparedWritableDisks,
++        before_installed_driver: impl FnOnce() -> Result<()>,
+     ) -> Result<Box<dyn RunningVm>> {
+         self.before_boot(spec)?;
+         disks.validate_spec(spec)?;
+@@ -165,6 +166,7 @@
+                 "backend has no original installed native lifetime"
+             );
+             let lease = owner.claim_for_native(&self.config, driver.kind())?;
++            before_installed_driver()?;
+             return driver.boot_custodied_with_host_lifetime(
+                 spec,
+                 self.kernel.as_ref(),
+@@ -538,6 +540,7 @@
+                 &driver,
+                 &spec,
+                 mvm_vmm::driver::prepared_disks::PreparedWritableDisks::empty(),
++                || panic!("rejected recipe must not reach installed dispatch"),
+             )
+             .err()
+             .expect("changed kernel must refuse before driver dispatch");
+--- /dev/null
++++ b/crates/mvm-runtime/src/workload_runner/runner/installed/mailbox_socket.rs
+@@ -0,0 +1,474 @@
++//! One Linux mailbox socket, its original worker, and the caller's charge.
++use std::{
++    ffi::CStr,
++    fs::{self, File},
++    io,
++    mem::MaybeUninit,
++    net::Shutdown,
++    os::{
++        fd::{AsRawFd, RawFd},
++        unix::{
++            fs::{FileTypeExt, MetadataExt},
++            net::{UnixListener, UnixStream},
++        },
++    },
++    path::{Path, PathBuf},
++    sync::{Arc, Mutex},
++    thread::{self, JoinHandle},
++    time::{Duration, Instant},
++};
++
++const SOCKET_NAME: &CStr = c"mailbox.sock";
++const STACK_BYTES: usize = 2 * 1024 * 1024;
++
++#[derive(Clone, Copy)]
++enum SocketState {
++    Empty,
++    Uncertain,
++    Bound { device: u64, inode: u64 },
++    Unlinked,
++}
++
++struct SocketEntry {
++    device: u64,
++    inode: u64,
++    mode: libc::mode_t,
++}
++
++impl SocketEntry {
++    fn is_socket(&self) -> bool {
++        self.mode & libc::S_IFMT == libc::S_IFSOCK
++    }
++}
++
++struct BoundSocket {
++    directory: File,
++    path: PathBuf,
++    state: SocketState,
++}
++
++impl BoundSocket {
++    fn verify_directory(&self) -> io::Result<()> {
++        let held = self.directory.metadata()?;
++        let named = fs::symlink_metadata(self.path.parent().expect("absolute socket path"))?;
++        // SAFETY: geteuid has no pointer arguments or caller preconditions.
++        let uid = unsafe { libc::geteuid() };
++        if !named.is_dir()
++            || (held.dev(), held.ino()) != (named.dev(), named.ino())
++            || held.uid() != uid
++            || held.mode() & 0o7777 != 0o700
++        {
++            return Err(io::Error::new(
++                io::ErrorKind::PermissionDenied,
++                "original private mailbox directory changed",
++            ));
++        }
++        Ok(())
++    }
++
++    fn descriptor_path(&self) -> PathBuf {
++        PathBuf::from(format!("/proc/self/fd/{}", self.directory.as_raw_fd()))
++            .join(SOCKET_NAME.to_str().expect("ASCII mailbox socket name"))
++    }
++
++    fn entry(&self) -> io::Result<SocketEntry> {
++        let mut stat = MaybeUninit::<libc::stat>::uninit();
++        // SAFETY: the original directory and fixed C string are live, and the
++        // kernel initializes stat on a successful descriptor-relative lookup.
++        let result = unsafe {
++            libc::fstatat(
++                self.directory.as_raw_fd(),
++                SOCKET_NAME.as_ptr(),
++                stat.as_mut_ptr(),
++                libc::AT_SYMLINK_NOFOLLOW,
++            )
++        };
++        if result != 0 {
++            return Err(io::Error::last_os_error());
++        }
++        // SAFETY: fstatat returned success.
++        let stat = unsafe { stat.assume_init() };
++        Ok(SocketEntry {
++            device: stat.st_dev,
++            inode: stat.st_ino,
++            mode: stat.st_mode,
++        })
++    }
++
++    fn cleanup(&mut self) -> io::Result<()> {
++        if matches!(self.state, SocketState::Empty) {
++            return Ok(());
++        }
++        self.verify_directory()?;
++        match self.state {
++            SocketState::Uncertain => {
++                return Err(io::Error::other(
++                    "original mailbox socket identity unavailable",
++                ));
++            }
++            SocketState::Bound { device, inode } => {
++                let entry = self.entry()?;
++                if !entry.is_socket() || (entry.device, entry.inode) != (device, inode) {
++                    return Err(io::Error::other("original mailbox socket identity changed"));
++                }
++                // SAFETY: the original directory and fixed C string are live.
++                // Installed custody must exclude cooperating entry writers.
++                if unsafe { libc::unlinkat(self.directory.as_raw_fd(), SOCKET_NAME.as_ptr(), 0) }
++                    != 0
++                {
++                    return Err(io::Error::last_os_error());
++                }
++                self.state = SocketState::Unlinked;
++            }
++            SocketState::Unlinked => {}
++            SocketState::Empty => unreachable!(),
++        }
++        self.directory.sync_all()?;
++        self.verify_directory()?;
++        match self.entry() {
++            Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(()),
++            Err(error) => Err(error),
++            Ok(_) => Err(io::Error::other("mailbox socket name is no longer empty")),
++        }
++    }
++}
++
++fn check_socket(path: &Path, device: u64, inode: u64) -> io::Result<()> {
++    let socket = fs::symlink_metadata(path)?;
++    if !socket.file_type().is_socket() || (socket.dev(), socket.ino()) != (device, inode) {
++        return Err(io::Error::other("original mailbox socket identity changed"));
++    }
++    Ok(())
++}
++
++#[derive(Default)]
++struct Control {
++    stopped: bool,
++    accepted: Option<UnixStream>,
++}
++
++struct Custody<R> {
++    socket: BoundSocket,
++    listener: Option<UnixListener>,
++    wake: Option<UnixStream>,
++    waiter: Option<UnixStream>,
++    control: Arc<Mutex<Control>>,
++    thread: Option<JoinHandle<io::Result<()>>>,
++    result: Option<io::Result<()>>,
++    panicked: bool,
++    retired: bool,
++    charge: R,
++}
++
++/// The caller retains this owner before start. Directory-entry mutation must
++/// be exclusive to the cooperating original Runtime owner.
++#[must_use]
++pub(super) struct MailboxSocketWorker<R> {
++    custody: Option<Box<Custody<R>>>,
++}
++
++impl<R> MailboxSocketWorker<R> {
++    pub(super) fn prepare(directory: File, directory_path: &Path, charge: R) -> io::Result<Self> {
++        if !directory_path.is_absolute() {
++            return Err(io::Error::new(
++                io::ErrorKind::InvalidInput,
++                "mailbox directory must be absolute",
++            ));
++        }
++        let socket = BoundSocket {
++            directory,
++            path: directory_path.join(SOCKET_NAME.to_str().expect("ASCII mailbox socket name")),
++            state: SocketState::Empty,
++        };
++        socket.verify_directory()?;
++        let (wake, waiter) = UnixStream::pair()?;
++        Ok(Self {
++            custody: Some(Box::new(Custody {
++                socket,
++                listener: None,
++                wake: Some(wake),
++                waiter: Some(waiter),
++                control: Arc::new(Mutex::new(Control::default())),
++                thread: None,
++                result: None,
++                panicked: false,
++                retired: false,
++                charge,
++            })),
++        })
++    }
++
++    pub(super) fn charge_mut(&mut self) -> &mut R {
++        &mut self.custody.as_mut().expect("owned mailbox custody").charge
++    }
++
++    pub(super) fn start(
++        &mut self,
++        job: impl FnOnce(UnixStream) -> io::Result<()> + Send + 'static,
++    ) -> io::Result<()> {
++        self.start_checked(job, |path| UnixListener::bind(path), || Ok(()))
++    }
++
++    fn start_checked(
++        &mut self,
++        job: impl FnOnce(UnixStream) -> io::Result<()> + Send + 'static,
++        bind: impl FnOnce(&Path) -> io::Result<UnixListener>,
++        after_bind: impl FnOnce() -> io::Result<()>,
++    ) -> io::Result<()> {
++        let state = self.custody.as_mut().expect("owned mailbox custody");
++        if state.retired || !matches!(state.socket.state, SocketState::Empty) {
++            return Err(io::Error::other("mailbox socket startup already attempted"));
++        }
++        state.socket.verify_directory()?;
++        let path = state.socket.descriptor_path();
++        match state.socket.entry() {
++            Ok(_) => {
++                return Err(io::Error::new(
++                    io::ErrorKind::AddrInUse,
++                    "mailbox socket name is occupied",
++                ));
++            }
++            Err(error) if error.kind() == io::ErrorKind::NotFound => {}
++            Err(error) => return Err(error),
++        }
++        // UnixListener::bind includes listen(2), which can fail after
++        // bind(2) already created the pathname.
++        state.socket.state = SocketState::Uncertain;
++        match bind(&path) {
++            Ok(listener) => state.listener = Some(listener),
++            Err(error) => {
++                if state.socket.verify_directory().is_ok()
++                    && matches!(state.socket.entry(), Err(error) if error.kind() == io::ErrorKind::NotFound)
++                {
++                    state.socket.state = SocketState::Empty;
++                }
++                return Err(error);
++            }
++        }
++        after_bind()?;
++        let metadata = state.socket.entry()?;
++        if !metadata.is_socket() {
++            return Err(io::Error::other(
++                "original mailbox socket identity unavailable",
++            ));
++        }
++        let (device, inode) = (metadata.device, metadata.inode);
++        state.socket.state = SocketState::Bound { device, inode };
++        state.socket.verify_directory()?;
++        check_socket(&state.socket.path, device, inode)?;
++
++        let listener = state
++            .listener
++            .as_ref()
++            .expect("original mailbox listener")
++            .try_clone()?;
++        listener.set_nonblocking(true)?;
++        let waiter = state.waiter.take().expect("original mailbox accept wake");
++        let control = Arc::clone(&state.control);
++        state.thread = Some(
++            thread::Builder::new()
++                .name("installed-mailbox".into())
++                .stack_size(STACK_BYTES)
++                .spawn(move || run(listener, waiter, control, job))?,
++        );
++        state.listener.take();
++        Ok(())
++    }
++
++    pub(super) fn socket_path(&self) -> io::Result<&Path> {
++        let state = self.custody.as_ref().expect("owned mailbox custody");
++        let ready = state
++            .thread
++            .as_ref()
++            .is_some_and(|worker| !worker.is_finished());
++        let stopping = state
++            .control
++            .lock()
++            .map_err(|_| io::Error::other("mailbox control poisoned"))?
++            .stopped;
++        let SocketState::Bound { device, inode } = state.socket.state else {
++            return Err(io::Error::other("mailbox worker has no bound socket"));
++        };
++        if !ready || stopping {
++            return Err(io::Error::other("original mailbox worker is unavailable"));
++        }
++        state.socket.verify_directory()?;
++        check_socket(&state.socket.path, device, inode)?;
++        Ok(&state.socket.path)
++    }
++
++    pub(super) fn close_admission(&self) -> io::Result<()> {
++        self.custody
++            .as_ref()
++            .expect("owned mailbox custody")
++            .signal_stop()
++    }
++
++    /// The deadline bounds waiting to join. Filesystem synchronization is a
++    /// separate blocking operation. A refusal keeps the exact owner for retry.
++    pub(super) fn stop(&mut self, join_deadline: Instant) -> io::Result<()> {
++        let state = self.custody.as_mut().expect("owned mailbox custody");
++        if state.retired {
++            return Ok(());
++        }
++        state.signal_stop()?;
++        while state
++            .thread
++            .as_ref()
++            .is_some_and(|thread| !thread.is_finished())
++        {
++            let remaining = join_deadline.saturating_duration_since(Instant::now());
++            if remaining.is_zero() {
++                return Err(io::Error::new(
++                    io::ErrorKind::TimedOut,
++                    "original mailbox worker still running",
++                ));
++            }
++            thread::park_timeout(remaining.min(Duration::from_millis(1)));
++        }
++        if let Some(thread) = state.thread.take() {
++            match thread.join() {
++                Ok(result) => state.result = Some(result),
++                Err(_) => state.panicked = true,
++            }
++        }
++        if state.panicked {
++            return Err(io::Error::other("original mailbox worker panicked"));
++        }
++        state.socket.cleanup()?;
++        state.listener.take();
++        state.wake.take();
++        state.waiter.take();
++        state.retired = true;
++        Ok(())
++    }
++
++    pub(super) fn take_worker_result(&mut self) -> Option<io::Result<()>> {
++        self.custody
++            .as_mut()
++            .expect("owned mailbox custody")
++            .result
++            .take()
++    }
++}
++
++impl<R> Drop for MailboxSocketWorker<R> {
++    fn drop(&mut self) {
++        let Some(custody) = self.custody.take() else {
++            return;
++        };
++        if !custody.retired && !matches!(custody.socket.state, SocketState::Empty) {
++            let _ = custody.signal_stop();
++            // Preserve the original thread handle, namespace and charge. The
++            // active Runtime slot will retain the owner across stop refusals.
++            std::mem::forget(custody);
++        }
++    }
++}
++
++impl<R> Custody<R> {
++    fn signal_stop(&self) -> io::Result<()> {
++        let mut state = self
++            .control
++            .lock()
++            .map_err(|_| io::Error::other("mailbox control poisoned"))?;
++        state.stopped = true;
++        let wake = self
++            .wake
++            .as_ref()
++            .map_or(Ok(()), |s| shutdown(s, Shutdown::Write));
++        let accepted = state
++            .accepted
++            .as_ref()
++            .map_or(Ok(()), |s| shutdown(s, Shutdown::Both));
++        wake.and(accepted)
++    }
++}
++
++fn shutdown(socket: &UnixStream, how: Shutdown) -> io::Result<()> {
++    match socket.shutdown(how) {
++        Err(error)
++            if matches!(
++                error.kind(),
++                io::ErrorKind::NotConnected | io::ErrorKind::BrokenPipe
++            ) =>
++        {
++            Ok(())
++        }
++        result => result,
++    }
++}
++
++struct Accepted(Arc<Mutex<Control>>);
++
++impl Drop for Accepted {
++    fn drop(&mut self) {
++        if let Ok(mut state) = self.0.lock() {
++            state.accepted.take();
++        }
++    }
++}
++
++fn run(
++    listener: UnixListener,
++    wake: UnixStream,
++    control: Arc<Mutex<Control>>,
++    job: impl FnOnce(UnixStream) -> io::Result<()>,
++) -> io::Result<()> {
++    loop {
++        if !wait_for_peer(listener.as_raw_fd(), wake.as_raw_fd())? {
++            return Ok(());
++        }
++        let (socket, _) = match listener.accept() {
++            Ok(accepted) => accepted,
++            Err(error) if error.kind() == io::ErrorKind::WouldBlock => continue,
++            Err(error) => return Err(error),
++        };
++        socket.set_nonblocking(false)?;
++        {
++            let mut state = control
++                .lock()
++                .map_err(|_| io::Error::other("mailbox control poisoned"))?;
++            if state.stopped {
++                return Ok(());
++            }
++            state.accepted = Some(socket.try_clone()?);
++        }
++        let _accepted = Accepted(Arc::clone(&control));
++        return job(socket);
++    }
++}
++
++fn wait_for_peer(listener: RawFd, wake: RawFd) -> io::Result<bool> {
++    loop {
++        let mut inputs = [
++            libc::pollfd {
++                fd: listener,
++                events: libc::POLLIN,
++                revents: 0,
++            },
++            libc::pollfd {
++                fd: wake,
++                events: libc::POLLIN,
++                revents: 0,
++            },
++        ];
++        // SAFETY: the worker owns both live descriptors and the array holds
++        // initialized writable pollfd entries.
++        let status = unsafe { libc::poll(inputs.as_mut_ptr(), inputs.len() as libc::nfds_t, -1) };
++        if status < 0 {
++            let error = io::Error::last_os_error();
++            if error.kind() == io::ErrorKind::Interrupted {
++                continue;
++            }
++            return Err(error);
++        }
++        if inputs[1].revents != 0 {
++            return Ok(false);
++        }
++        if inputs[0].revents & libc::POLLIN != 0 {
++            return Ok(true);
++        }
++        return Err(io::Error::other("original mailbox listener poll failed"));
++    }
++}
+--- a/crates/mvm-runtime/src/workload_runner/runner/installed/retirement_tests.rs
++++ b/crates/mvm-runtime/src/workload_runner/runner/installed/retirement_tests.rs
+@@ -225,3 +225,196 @@
+     assert!(receipt.take_endpoint_retirement().is_none());
+     assert!(receipt.take_endpoint_retirement().is_none());
+ }
++
++#[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++#[test]
++fn installed_mailbox_slot_retains_before_start_and_cleans_without_native_receipt() {
++    use mvm_core::{
++        host_lifetime::{
++            CoreCurrentParentPermit, InstalledMailboxJob, InstalledMailboxOwner,
++            PreparedInstalledMailbox,
++        },
++        plan::{PlanId, sign_plan, test_support::PlanFixture},
++    };
++    use std::{
++        io::{Read, Write},
++        os::unix::net::UnixStream,
++        sync::mpsc,
++    };
++
++    struct Charge {
++        drops: Arc<AtomicUsize>,
++        entered: Option<mpsc::Sender<()>>,
++    }
++    impl Drop for Charge {
++        fn drop(&mut self) {
++            self.drops.fetch_add(1, Ordering::SeqCst);
++        }
++    }
++    impl InstalledMailboxOwner for Charge {
++        fn check_current(&self) -> Result<()> {
++            Ok(())
++        }
++        fn take_socket_job(&mut self) -> Result<InstalledMailboxJob> {
++            let entered = self
++                .entered
++                .take()
++                .context("fixture job already consumed")?;
++            Ok(Box::new(move |mut socket| {
++                socket.read_exact(&mut [0])?;
++                entered.send(()).unwrap();
++                assert_eq!(socket.read(&mut [0])?, 0);
++                Ok(())
++            }))
++        }
++    }
++    struct Permit {
++        binding: HostLaunchBinding,
++        charge: Mutex<Option<Charge>>,
++    }
++    impl CoreCurrentParentPermit for Permit {
++        fn check_current(&self, binding: &HostLaunchBinding) -> Result<()> {
++            anyhow::ensure!(*binding == self.binding, "foreign original grant");
++            Ok(())
++        }
++        fn prepare_installed_mailbox(
++            &self,
++            binding: &HostLaunchBinding,
++            plan_id: &PlanId,
++        ) -> Result<PreparedInstalledMailbox> {
++            let charge = self
++                .charge
++                .lock()
++                .unwrap()
++                .take()
++                .context("fixture charge already used")?;
++            Ok(PreparedInstalledMailbox::new(
++                binding.clone(),
++                plan_id.clone(),
++                Box::new(charge),
++            ))
++        }
++    }
++
++    let table = InstalledSlots::default();
++    let (root, anchor, _) = owner("mailbox-slot", 81);
++    let (_foreign_root, foreign, _) = owner("mailbox-slot-other", 82);
++    let mut config = VmStartConfig {
++        name: anchor.binding().vm_name.clone(),
++        cpus: 1,
++        memory_mib: 128,
++        ..Default::default()
++    };
++    anchor.bind_to_config(&mut config).unwrap();
++    let mut plan = PlanFixture::new().runtime_profile("firecracker").build();
++    plan.plan_id = mvm_core::plan::compute_plan_id(&plan);
++    config.plan_json = Some(
++        serde_json::to_string(&sign_plan(
++            &plan,
++            &ed25519_dalek::SigningKey::from_bytes(&[81; 32]),
++            "test",
++        ))
++        .unwrap(),
++    );
++    let backend = BackendKind::Firecracker;
++    anchor.bind_admitted(&config, backend, &plan).unwrap();
++    let drops = Arc::new(AtomicUsize::new(0));
++    let (entered, observed) = mpsc::channel();
++    let permit = Arc::new(Permit {
++        binding: anchor.binding().clone(),
++        charge: Mutex::new(Some(Charge {
++            drops: Arc::clone(&drops),
++            entered: Some(entered),
++        })),
++    });
++    anchor.bind_parent_permit(&config, backend, permit).unwrap();
++    anchor.prepare_installed_mailbox(&config, backend).unwrap();
++    let slot = table.reserve(&anchor).unwrap();
++    slot.pin_mailbox_directory(root.path().to_owned(), File::open(root.path()).unwrap())
++        .unwrap();
++    let other = table.reserve(&foreign).unwrap();
++    assert!(other.attach_prepared_mailbox(&config, backend).is_err());
++    slot.attach_prepared_mailbox(&config, backend).unwrap();
++    assert!(slot.attach_prepared_mailbox(&config, backend).is_err());
++    assert!(anchor.claim_for_native(&config, backend).is_err());
++    let path = root.path().join("mailbox.sock");
++    let mut peer = UnixStream::connect(&path).unwrap();
++    peer.write_all(&[1]).unwrap();
++    observed.recv_timeout(Duration::from_secs(2)).unwrap();
++    assert_eq!(drops.load(Ordering::SeqCst), 0);
++    let startup_operation = slot.begin_operation().unwrap();
++    assert!(slot.stop(&NoopConsoleStreamer).is_err());
++    assert!(
++        slot.mark_native_dispatch().is_err(),
++        "stop must latch while custody is busy"
++    );
++    drop(startup_operation);
++    assert!(
++        path.exists(),
++        "startup in progress must retain the original mailbox until dispatch status is terminal"
++    );
++    assert_eq!(drops.load(Ordering::SeqCst), 0);
++    {
++        let mut operation = slot.begin_operation().unwrap();
++        slot.finish_startup(
++            operation.state.as_mut().unwrap(),
++            Some(anyhow::anyhow!("injected pre-native startup refusal")),
++        );
++    }
++    assert!(slot.stop(&NoopConsoleStreamer).is_err());
++    assert!(
++        !path.exists(),
++        "the real stop must clean up the mailbox despite absent native proof"
++    );
++    assert_eq!(drops.load(Ordering::SeqCst), 1);
++    assert!(
++        table.take_retired(&slot).is_err(),
++        "mailbox cleanup alone is not native proof"
++    );
++}
++
++#[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++#[test]
++fn attempted_dispatch_never_becomes_pre_dispatch_failure() {
++    let table = InstalledSlots::default();
++    let (_root, anchor, _) = owner("mailbox-attempted", 83);
++    let slot = table.reserve(&anchor).unwrap();
++    slot.arm_mailbox_dispatch().unwrap();
++    slot.mark_native_dispatch().unwrap();
++    assert!(slot.stop(&NoopConsoleStreamer).is_err());
++    assert!(slot.mark_native_dispatch().is_err());
++    {
++        let mut operation = slot.begin_operation().unwrap();
++        slot.finish_startup(
++            operation.state.as_mut().unwrap(),
++            Some(anyhow::anyhow!(
++                "driver failed without returning a VM handle"
++            )),
++        );
++    }
++    assert_eq!(
++        slot.dispatch.load(Ordering::Acquire),
++        NativeDispatch::AttemptedTerminal as u8
++    );
++    assert!(slot.stop(&NoopConsoleStreamer).is_err());
++    assert!(table.take_retired(&slot).is_err());
++}
++
++#[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++#[test]
++fn ordinary_installed_start_retains_existing_pending_stop_behavior() {
++    let table = InstalledSlots::default();
++    let (_root, anchor, _) = owner("ordinary-installed", 84);
++    let slot = table.reserve(&anchor).unwrap();
++    let operation = slot.begin_operation().unwrap();
++    assert!(slot.stop(&NoopConsoleStreamer).is_err());
++    drop(operation);
++    assert!(
++        slot.mark_native_dispatch().is_ok(),
++        "an unselected mailbox must not latch a new dispatch refusal"
++    );
++    assert_eq!(
++        slot.dispatch.load(Ordering::Acquire),
++        NativeDispatch::MailboxOff as u8
++    );
++}
