@@ -1,0 +1,89 @@
+--- a/crates/mvm-core/src/host_lifetime/mailbox_socket.rs
++++ b/crates/mvm-core/src/host_lifetime/mailbox_socket.rs
+@@ -95,6 +95,22 @@
+ 
+     pub fn verify(&self) -> io::Result<&Path> {
+         self.check_accepting()?;
++        self.verify_entry()?;
++        self.check_accepting()?;
++        Ok(&self.path)
++    }
++
++    /// Revalidate the same original socket after boot readiness was revoked.
++    /// This verifies identity only; the original worker's separate recovery
++    /// and Stop controls decide whether any replacement may be accepted.
++    pub fn verify_original_identity(&self) -> io::Result<&Path> {
++        self.check_owner()?;
++        self.verify_entry()?;
++        self.check_owner()?;
++        Ok(&self.path)
++    }
++
++    fn verify_entry(&self) -> io::Result<()> {
+         let directory = self.directory.metadata()?;
+         let named =
+             fs::symlink_metadata(self.path.parent().expect("validated absolute mailbox path"))?;
+@@ -121,8 +137,7 @@
+         {
+             return Err(io::Error::other("original mailbox socket identity changed"));
+         }
+-        self.check_accepting()?;
+-        Ok(&self.path)
++        Ok(())
+     }
+ 
+     pub fn verify_expected_object(&self, device: u64, inode: u64) -> io::Result<()> {
+@@ -139,6 +154,13 @@
+         self.accepting.store(false, Ordering::Release);
+     }
+ 
++    fn check_owner(&self) -> io::Result<()> {
++        if self.owner.strong_count() == 0 {
++            return Err(io::Error::other("original mailbox listener owner is gone"));
++        }
++        Ok(())
++    }
++
+     fn check_accepting(&self) -> io::Result<()> {
+         if self.accepting.load(Ordering::Acquire) {
+             Ok(())
+@@ -157,3 +179,39 @@
+ fn same_object(a: &Metadata, b: &Metadata) -> bool {
+     (a.dev(), a.ino()) == (b.dev(), b.ino())
+ }
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++    use std::os::unix::fs::PermissionsExt;
++
++    #[test]
++    fn recovery_verifies_the_original_entry_without_reviving_boot_readiness() {
++        let home = tempfile::tempdir().unwrap();
++        fs::set_permissions(home.path(), fs::Permissions::from_mode(0o700)).unwrap();
++        let directory = File::open(home.path()).unwrap();
++        let original = home.path().join(NAME);
++        let renamed = home.path().join("original.sock");
++        let listener = UnixListener::bind(anchored_path(&directory)).unwrap();
++        let owner = Arc::new(());
++        let accepting = Accepting::for_owner(&owner);
++        let pinned = PinnedListener::capture(&directory, &original, &listener, &accepting).unwrap();
++
++        assert_eq!(pinned.verify().unwrap(), original);
++        accepting.close();
++        assert!(pinned.verify().is_err());
++        assert_eq!(pinned.verify_original_identity().unwrap(), original);
++
++        fs::rename(&original, &renamed).unwrap();
++        let foreign = UnixListener::bind(&original).unwrap();
++        assert!(pinned.verify_original_identity().is_err());
++        drop(foreign);
++        fs::remove_file(&original).unwrap();
++        fs::rename(&renamed, &original).unwrap();
++        assert_eq!(pinned.verify_original_identity().unwrap(), original);
++
++        drop(owner);
++        assert!(pinned.verify_original_identity().is_err());
++        assert!(pinned.verify().is_err());
++    }
++}
