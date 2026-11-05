@@ -1,0 +1,463 @@
+--- a/crates/spiralcore-mvm-adapter/src/live.rs
++++ b/crates/spiralcore-mvm-adapter/src/live.rs
+@@ -23,6 +23,7 @@
+ 
+ #[derive(Debug)]
+ pub enum LiveError {
++    Authentication(mvm_core::net::session::SessionError),
+     Adapter(Error),
+     Io(io::Error),
+     Deadline,
+@@ -439,6 +440,77 @@
+     close_on_error(socket, result)
+ }
+ 
++/// Independently enrolled local and peer keys for the original recovery session.
++pub enum ReplacementIdentity<'a> {
++    Host {
++        signing_key: &'a ed25519_dalek::SigningKey,
++        expected_guest: &'a ed25519_dalek::VerifyingKey,
++    },
++    Guest {
++        signing_key: &'a ed25519_dalek::SigningKey,
++        expected_host: &'a ed25519_dalek::VerifyingKey,
++    },
++}
++
++struct ReplacementIo<'a, S> {
++    socket: &'a mut S,
++    counters: &'a mut StreamCounters,
++    cancel: &'a CancellationToken,
++    deadline: Instant,
++}
++
++impl<S> ReplacementIo<'_, S> {
++    fn timeout(&self) -> io::Result<Duration> {
++        remaining(self.cancel, self.deadline).map_err(io::Error::other)
++    }
++
++    fn retry(error: &io::Error) -> bool {
++        matches!(
++            error.kind(),
++            io::ErrorKind::Interrupted | io::ErrorKind::WouldBlock | io::ErrorKind::TimedOut
++        )
++    }
++}
++
++impl<S: SocketIo> Read for ReplacementIo<'_, S> {
++    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
++        loop {
++            self.socket.set_read_timeout(Some(self.timeout()?))?;
++            match self.socket.read(buf) {
++                Ok(count) => {
++                    increment(&mut self.counters.framing_bytes_received, count)
++                        .map_err(io::Error::other)?;
++                    return Ok(count);
++                }
++                Err(error) if Self::retry(&error) => {}
++                Err(error) => return Err(error),
++            }
++        }
++    }
++}
++
++impl<S: SocketIo> Write for ReplacementIo<'_, S> {
++    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
++        loop {
++            self.socket.set_write_timeout(Some(self.timeout()?))?;
++            match self.socket.write(buf) {
++                Ok(count) => {
++                    increment(&mut self.counters.framing_bytes_sent, count)
++                        .map_err(io::Error::other)?;
++                    return Ok(count);
++                }
++                Err(error) if Self::retry(&error) => {}
++                Err(error) => return Err(error),
++            }
++        }
++    }
++
++    fn flush(&mut self) -> io::Result<()> {
++        self.socket.set_write_timeout(Some(self.timeout()?))?;
++        self.socket.flush()
++    }
++}
++
+ struct StreamState<S> {
+     socket: S,
+     counters: StreamCounters,
+@@ -495,6 +567,64 @@
+         state.ready = result.is_ok();
+         result
+     }
++    /// Prove the enrolled peer on this exact recovery socket before framing
++    /// any mailbox envelopes. Both ends supply an independently selected
++    /// recovery session ID bound to the original launch and authorization.
++    /// Handshake traffic counts as framing bytes. Mailbox envelopes continue
++    /// to use their existing end-to-end encryption and authentication.
++    pub fn authenticate_replacement(
++        &self,
++        identity: ReplacementIdentity<'_>,
++        original_session: &str,
++        cancel: &CancellationToken,
++        deadline: Instant,
++    ) -> LiveResult<()> {
++        use mvm_core::net::session::Session;
++
++        let deadline = deadline.min(Instant::now() + self.timeout);
++        let mut state = lock(&self.state, cancel, deadline)?;
++        if state.closed || state.ready {
++            return Err(LiveError::Closed);
++        }
++        let StreamState {
++            socket, counters, ..
++        } = &mut *state;
++        let mut io = ReplacementIo {
++            socket,
++            counters,
++            cancel,
++            deadline,
++        };
++        let handshake = match identity {
++            ReplacementIdentity::Host {
++                signing_key,
++                expected_guest,
++            } => Session::host_for_peer(
++                &mut io,
++                original_session,
++                signing_key.clone(),
++                expected_guest,
++            ),
++            ReplacementIdentity::Guest {
++                signing_key,
++                expected_host,
++            } => Session::guest_for_session(
++                &mut io,
++                signing_key.clone(),
++                expected_host,
++                original_session,
++            ),
++        };
++        let result = remaining(cancel, deadline)
++            .and_then(|_| handshake.map(drop).map_err(LiveError::Authentication));
++        state.closed = result.is_err();
++        state.ready = result.is_ok();
++        if result.is_err() {
++            shutdown_both(&state.socket);
++        }
++        result
++    }
++
+     pub fn receive(&self, cancel: &CancellationToken, deadline: Instant) -> LiveResult<Vec<u8>> {
+         let deadline = deadline.min(Instant::now() + self.timeout);
+         let mut state = lock(&self.state, cancel, deadline)?;
+--- a/crates/spiralcore-mvm-adapter/tests/live.rs
++++ b/crates/spiralcore-mvm-adapter/tests/live.rs
+@@ -94,6 +94,20 @@
+ 
+ #[test]
+ fn canonical_call_and_verified_reply_cross_real_socket_io() {
++    canonical_socket_exchange(false);
++}
++
++#[test]
++fn pinned_recovery_socket_carries_canonical_encrypted_call_and_reply() {
++    canonical_socket_exchange(true);
++}
++
++fn canonical_socket_exchange(pinned_recovery: bool) {
++    use ed25519_dalek::SigningKey;
++    use spiralcore_mvm_adapter::live::ReplacementIdentity;
++    const SESSION: &str = "installed-mailbox-v2/fixture/launch-1/route-1";
++    let start = Instant::now();
++    let deadline = start + Duration::from_secs(2);
+     let (client_socket, server_socket) = UnixStream::pair().unwrap();
+     let mut outgoing = Direction::new(live_config(MailboxMessageKind::Call, true)).unwrap();
+     let mut replies = Direction::new(live_config(MailboxMessageKind::Reply, false)).unwrap();
+@@ -110,7 +124,21 @@
+         )
+         .unwrap();
+         let cancel = CancellationToken::default();
+-        stream.handshake(HandshakeRole::Acceptor, &cancel).unwrap();
++        if pinned_recovery {
++            stream
++                .authenticate_replacement(
++                    ReplacementIdentity::Host {
++                        signing_key: &SigningKey::from_bytes(&[1; 32]),
++                        expected_guest: &SigningKey::from_bytes(&[2; 32]).verifying_key(),
++                    },
++                    SESSION,
++                    &cancel,
++                    deadline,
++                )
++                .unwrap();
++        } else {
++            stream.handshake(HandshakeRole::Acceptor, &cancel).unwrap();
++        }
+         let wire = stream
+             .receive(&cancel, Instant::now() + Duration::from_secs(2))
+             .unwrap();
+@@ -122,7 +150,21 @@
+         stream.counters().unwrap()
+     });
+     let cancel = CancellationToken::default();
+-    client.handshake(HandshakeRole::Initiator, &cancel).unwrap();
++    if pinned_recovery {
++        client
++            .authenticate_replacement(
++                ReplacementIdentity::Guest {
++                    signing_key: &SigningKey::from_bytes(&[2; 32]),
++                    expected_host: &SigningKey::from_bytes(&[1; 32]).verifying_key(),
++                },
++                SESSION,
++                &cancel,
++                deadline,
++            )
++            .unwrap();
++    } else {
++        client.handshake(HandshakeRole::Initiator, &cancel).unwrap();
++    }
+     let request = Frame {
+         kind: 5,
+         transfer: [71; 32],
+@@ -150,8 +192,22 @@
+     assert_eq!(sent.frames_received, 1);
+     assert_eq!(sent.envelope_bytes_sent, received.envelope_bytes_received);
+     assert_eq!(sent.envelope_bytes_received, received.envelope_bytes_sent);
+-    assert_eq!(sent.framing_bytes_sent, 12);
+-    assert_eq!(sent.framing_bytes_received, 12);
++    assert_eq!(sent.framing_bytes_sent, received.framing_bytes_received);
++    assert_eq!(sent.framing_bytes_received, received.framing_bytes_sent);
++    if pinned_recovery {
++        assert!(sent.framing_bytes_sent > 12 && sent.framing_bytes_received > 12);
++        println!(
++            "replacement authenticated exchange: guest auth tx={} rx={} envelope tx={} rx={} elapsed_us={}",
++            sent.framing_bytes_sent - 4,
++            sent.framing_bytes_received - 4,
++            sent.envelope_bytes_sent,
++            sent.envelope_bytes_received,
++            start.elapsed().as_micros()
++        );
++    } else {
++        assert_eq!(sent.framing_bytes_sent, 12);
++        assert_eq!(sent.framing_bytes_received, 12);
++    }
+ }
+ 
+ #[test]
+--- /dev/null
++++ b/crates/spiralcore-mvm-adapter/tests/replacement_auth.rs
+@@ -0,0 +1,213 @@
++#![cfg(all(feature = "live", unix))]
++
++mod common;
++use ed25519_dalek::SigningKey;
++use mvm_contract::protocol::mailbox::MailboxMessageKind;
++use mvm_core::{mailbox::transport::CancellationToken, net::session::SessionError};
++use spiralcore_mvm_adapter::live::{LiveError, ReplacementIdentity, StreamTransport};
++use std::{
++    os::unix::net::UnixStream,
++    time::{Duration, Instant},
++};
++
++const SESSION: &str = "installed-mailbox-v2/fixture/launch-1/route-1";
++
++fn carrier(socket: UnixStream) -> StreamTransport<UnixStream> {
++    let route = common::config(MailboxMessageKind::Call)
++        .binding
++        .claims
++        .route_id;
++    StreamTransport::new(socket, route, Duration::from_secs(2)).unwrap()
++}
++
++#[test]
++fn exact_pins_prove_both_peers_on_the_same_socket_and_count_wire_bytes() {
++    let (a, b) = UnixStream::pair().unwrap();
++    let host = carrier(a);
++    let guest = carrier(b);
++    let host_key = SigningKey::from_bytes(&[1; 32]);
++    let guest_key = SigningKey::from_bytes(&[2; 32]);
++    let deadline = Instant::now() + Duration::from_secs(2);
++    let cancel = CancellationToken::default();
++    std::thread::scope(|scope| {
++        let server = scope.spawn(|| {
++            host.authenticate_replacement(
++                ReplacementIdentity::Host {
++                    signing_key: &host_key,
++                    expected_guest: &guest_key.verifying_key(),
++                },
++                SESSION,
++                &cancel,
++                deadline,
++            )
++        });
++        guest
++            .authenticate_replacement(
++                ReplacementIdentity::Guest {
++                    signing_key: &guest_key,
++                    expected_host: &host_key.verifying_key(),
++                },
++                SESSION,
++                &cancel,
++                deadline,
++            )
++            .unwrap();
++        server.join().unwrap().unwrap();
++    });
++    let h = host.counters().unwrap();
++    let g = guest.counters().unwrap();
++    assert!(h.framing_bytes_sent > 8 && h.framing_bytes_received > 8);
++    assert_eq!(h.framing_bytes_sent, g.framing_bytes_received);
++    assert_eq!(h.framing_bytes_received, g.framing_bytes_sent);
++    assert_eq!((h.frames_sent, g.frames_sent), (0, 0));
++}
++
++#[test]
++fn valid_but_unenrolled_guest_is_refused_and_carrier_fenced() {
++    let (a, b) = UnixStream::pair().unwrap();
++    let host = carrier(a);
++    let guest = carrier(b);
++    let host_key = SigningKey::from_bytes(&[1; 32]);
++    let guest_key = SigningKey::from_bytes(&[2; 32]);
++    let enrolled = SigningKey::from_bytes(&[3; 32]).verifying_key();
++    let deadline = Instant::now() + Duration::from_secs(2);
++    let cancel = CancellationToken::default();
++    std::thread::scope(|scope| {
++        let server = scope.spawn(|| {
++            host.authenticate_replacement(
++                ReplacementIdentity::Host {
++                    signing_key: &host_key,
++                    expected_guest: &enrolled,
++                },
++                SESSION,
++                &cancel,
++                deadline,
++            )
++        });
++        assert!(
++            guest
++                .authenticate_replacement(
++                    ReplacementIdentity::Guest {
++                        signing_key: &guest_key,
++                        expected_host: &host_key.verifying_key()
++                    },
++                    SESSION,
++                    &cancel,
++                    deadline,
++                )
++                .is_err()
++        );
++        assert!(matches!(
++            server.join().unwrap(),
++            Err(LiveError::Authentication(
++                SessionError::PeerIdentityMismatch(_)
++            ))
++        ));
++    });
++    assert!(matches!(
++        host.receive(&cancel, deadline),
++        Err(LiveError::Closed)
++    ));
++    assert_eq!(host.counters().unwrap().frames_sent, 0);
++}
++
++#[test]
++fn guest_rejects_wrong_session_before_sending_any_proof() {
++    let (a, b) = UnixStream::pair().unwrap();
++    let host = carrier(a);
++    let guest = carrier(b);
++    let host_key = SigningKey::from_bytes(&[1; 32]);
++    let guest_key = SigningKey::from_bytes(&[2; 32]);
++    let deadline = Instant::now() + Duration::from_secs(2);
++    let cancel = CancellationToken::default();
++    std::thread::scope(|scope| {
++        let server = scope.spawn(|| {
++            host.authenticate_replacement(
++                ReplacementIdentity::Host {
++                    signing_key: &host_key,
++                    expected_guest: &guest_key.verifying_key(),
++                },
++                "other-session",
++                &cancel,
++                deadline,
++            )
++        });
++        assert!(matches!(
++            guest.authenticate_replacement(
++                ReplacementIdentity::Guest {
++                    signing_key: &guest_key,
++                    expected_host: &host_key.verifying_key()
++                },
++                SESSION,
++                &cancel,
++                deadline,
++            ),
++            Err(LiveError::Authentication(
++                SessionError::InvalidHandshake(reason)
++            )) if reason == "host session does not match the authorized identity"
++        ));
++        assert!(server.join().unwrap().is_err());
++    });
++    assert_eq!(guest.counters().unwrap().framing_bytes_sent, 0);
++}
++
++#[test]
++fn silent_peer_cannot_extend_original_deadline() {
++    let (a, _silent) = UnixStream::pair().unwrap();
++    let host = carrier(a);
++    let host_key = SigningKey::from_bytes(&[1; 32]);
++    let guest_key = SigningKey::from_bytes(&[2; 32]).verifying_key();
++    let start = Instant::now();
++    let cancel = CancellationToken::default();
++    assert!(matches!(
++        host.authenticate_replacement(
++            ReplacementIdentity::Host {
++                signing_key: &host_key,
++                expected_guest: &guest_key
++            },
++            SESSION,
++            &cancel,
++            start + Duration::from_millis(80),
++        ),
++        Err(LiveError::Deadline)
++    ));
++    assert!(start.elapsed() < Duration::from_secs(1));
++    assert!(matches!(
++        host.receive(&cancel, Instant::now() + Duration::from_secs(1)),
++        Err(LiveError::Closed)
++    ));
++}
++
++#[test]
++fn cancellation_interrupts_authentication_after_hello_has_started() {
++    use std::io::Read as _;
++    let (a, mut silent) = UnixStream::pair().unwrap();
++    silent
++        .set_read_timeout(Some(Duration::from_secs(2)))
++        .unwrap();
++    let host = carrier(a);
++    let host_key = SigningKey::from_bytes(&[1; 32]);
++    let guest_key = SigningKey::from_bytes(&[2; 32]).verifying_key();
++    let deadline = Instant::now() + Duration::from_secs(2);
++    let cancel = CancellationToken::default();
++    std::thread::scope(|scope| {
++        let server = scope.spawn(|| {
++            host.authenticate_replacement(
++                ReplacementIdentity::Host {
++                    signing_key: &host_key,
++                    expected_guest: &guest_key,
++                },
++                SESSION,
++                &cancel,
++                deadline,
++            )
++        });
++        silent.read_exact(&mut [0; 4]).unwrap();
++        cancel.cancel();
++        assert!(matches!(server.join().unwrap(), Err(LiveError::Cancelled)));
++    });
++    assert!(matches!(
++        host.receive(&CancellationToken::default(), deadline),
++        Err(LiveError::Closed),
++    ));
++}

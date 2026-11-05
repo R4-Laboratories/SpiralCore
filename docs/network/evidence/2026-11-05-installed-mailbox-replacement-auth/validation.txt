@@ -1,0 +1,31 @@
+Source and lock SHA-256
+4009b70aa0645fe302025290281b21d4aaa07499cc2296ff6d6a5af510327145  crates/spiralcore-mvm-adapter/src/live.rs
+78f917a8d900ba713e085292173b68722291f74b17200172c3d8f2f3af2c0c6a  crates/spiralcore-mvm-adapter/tests/live.rs
+6db5d7fcb46999672ccd5ed3c034d0c519cbe32111d0373d05f326ae30890a2f  crates/spiralcore-mvm-adapter/tests/replacement_auth.rs
+6c57ef6c8b1fa1d174a8096994e44dc108b4f0ccd7fe00603a13c1c967d7b82a  mvm-sdk/crates/mvm-core/src/net/session.rs
+6ec2b45050c5a6c5072b5feafd0abe0cba5296c0c232f5bf6a92b385d617e296  crates/spiralcore-mvm-adapter/Cargo.lock
+
+Expected API-absence RED
+101
+      1 error[E0432]: unresolved import `spiralcore_mvm_adapter::live::ReplacementIdentity`
+      7 error[E0599]: no method named `authenticate_replacement` found for struct `StreamTransport<S>` in the current scope
+      2 error[E0599]: no variant, associated function, or constant named `Authentication` found for enum `LiveError` in the current scope
+
+Initial regression mismatched the MVM error variant
+101
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.04s
+    Err(LiveError::Authentication(SessionError::SessionIdMismatch { .. })))
+test result: FAILED. 3 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.08s
+
+Locked release final status and executed tests
+0
+test pinned_recovery_socket_carries_canonical_encrypted_call_and_reply ... replacement authenticated exchange: guest auth tx=731 rx=799 envelope tx=3923 rx=3425 elapsed_us=1921
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.04s
+test cancellation_interrupts_authentication_after_hello_has_started ... ok
+test exact_pins_prove_both_peers_on_the_same_socket_and_count_wire_bytes ... ok
+test guest_rejects_wrong_session_before_sending_any_proof ... ok
+test silent_peer_cannot_extend_original_deadline ... ok
+test valid_but_unenrolled_guest_is_refused_and_carrier_fenced ... ok
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.14s
+e29a2142f2bf90e9950780dbe0e5167ab1809aa39a87812419c0e5382ff18f56  /var/tmp/spiralcore-pii-capacity-20261104/target/release/deps/live-231898245d92634b
+90ae6c3f9dbea4c7889dca56bba31540a20b77e76fca6fb3cc13a151cb8ef951  /var/tmp/spiralcore-pii-capacity-20261104/target/release/deps/replacement_auth-57ba03c391b50473
