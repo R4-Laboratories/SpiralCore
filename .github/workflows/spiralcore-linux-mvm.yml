@@ -7,6 +7,10 @@ on:
         description: Exact MVM fork commit to build
         required: true
         type: string
+      hostd:
+        description: Run the focused Hostd signed mapping regression
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -34,8 +38,13 @@ jobs:
       - name: Test portable bundle preparation and SDK dispatch
         env:
           SOURCE: ${{ inputs.source }}
+          HOSTD: ${{ inputs.hostd }}
         run: |
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$SOURCE"
           rustup toolchain install 1.97.1 --profile minimal
-          cargo +1.97.1 test --locked -p mvm-client --lib launch::bundle_runtime::tests
+          if [[ "$HOSTD" == true ]]; then
+            cargo +1.97.1 test --locked -p mvm-hostd --lib original_bundled_admission_binds_only_its_signed_mapped_policy
+          else
+            cargo +1.97.1 test --locked -p mvm-client --lib launch::bundle_runtime::tests
+          fi
