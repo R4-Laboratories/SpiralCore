@@ -1,0 +1,51 @@
+--- a/crates/mvm-core/src/host_lifetime.rs
++++ b/crates/mvm-core/src/host_lifetime.rs
+@@ -285,6 +285,13 @@
+ /// Implementations retain the actual original reservation, not a quota DTO.
+ pub trait CoreCurrentParentPermit: Send + Sync {
+     fn check_current(&self, binding: &HostLaunchBinding) -> Result<()>;
++
++    /// Final parent policy for native claim. Preparation can remain current
++    /// while the parent refuses native effects for the same original grant.
++    fn check_native_claim(&self, _binding: &HostLaunchBinding) -> Result<()> {
++        Ok(())
++    }
++
+     fn begin_startup_workspace(&self, _binding: &HostLaunchBinding) -> Result<()> {
+         Ok(())
+     }
+@@ -630,6 +637,14 @@
+         config: &VmStartConfig,
+         backend: BackendKind,
+     ) -> Result<()> {
++        self.checked_parent_permit(config, backend).map(drop)
++    }
++
++    fn checked_parent_permit(
++        self: &Arc<Self>,
++        config: &VmStartConfig,
++        backend: BackendKind,
++    ) -> Result<Arc<dyn CoreCurrentParentPermit>> {
+         self.verify_config(config, backend)?;
+         self.verify_admitted_config(config)?;
+         let permit = self
+@@ -639,7 +654,8 @@
+             .as_ref()
+             .cloned()
+             .context("original parent resource permit missing")?;
+-        permit.check_current(&self.binding)
++        permit.check_current(&self.binding)?;
++        Ok(permit)
+     }
+ 
+     /// Acquire the one-shot verification phase before reading the portable
+@@ -763,7 +779,8 @@
+         config: &VmStartConfig,
+         backend: BackendKind,
+     ) -> Result<PreparedHostLifetimeLease> {
+-        self.check_parent_current(config, backend)?;
++        let permit = self.checked_parent_permit(config, backend)?;
++        permit.check_native_claim(&self.binding)?;
+         let lease = self.lease.duplicate()?;
+         let mailbox = self
+             .mailbox

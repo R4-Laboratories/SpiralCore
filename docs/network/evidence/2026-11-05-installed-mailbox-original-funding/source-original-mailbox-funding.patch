@@ -1,0 +1,543 @@
+--- a/crates/spiralcore-mvm-live/src/installed_parent.rs
++++ b/crates/spiralcore-mvm-live/src/installed_parent.rs
+@@ -1,6 +1,8 @@
+ //! Original installed reservations bound to canonical opaque MVM admission.
+ use crate::{
+-    installed_resources::{ManagedClaim, ManagedReservation, ManagedResourceBudget},
++    installed_resources::{
++        ManagedClaim, ManagedReservation, ManagedResourceBudget, ManagedResourceError,
++    },
+     installed_supervisor::{InstalledNativeIssuer, InstalledSupervisor},
+ };
+ use anyhow::{Context, Result, anyhow, ensure};
+@@ -8,11 +10,16 @@
+ use mvm_core::{
+     host_lifetime::{
+         CoreCurrentParentPermit, HostLaunchBinding, HostLeaseExpectation, HostLifetimeInputs,
+-        PreparedHostLifetime,
++        InstalledMailboxOwner, PreparedHostLifetime, PreparedInstalledMailbox,
++        native_thread_stack_terms,
+     },
++    plan::PlanId,
+     vm_backend::BackendKind,
+ };
+-use mvm_hostd::{host_lifetime_parent::ParentAdmissionProvider, plan_admission::AdmittedPlan};
++use mvm_hostd::{
++    host_lifetime_parent::ParentAdmissionProvider,
++    plan_admission::{AdmittedPlan, InstalledMailboxLaunchProfile},
++};
+ use sha2::{Digest, Sha256};
+ use std::sync::{Arc, Mutex, Weak};
+ 
+@@ -29,6 +36,7 @@
+ 
+ const BOOKKEEPING_BYTES: u64 = 4096;
+ const MIB: u64 = 1024 * 1024;
++const MAILBOX_WORKER_STACK_BYTES: u64 = 2 * MIB;
+ 
+ struct Registry {
+     closed: bool,
+@@ -76,6 +84,16 @@
+     Complete,
+ }
+ 
++#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
++enum MailboxFunding {
++    #[default]
++    Unselected,
++    Selected,
++    Preparing,
++    Held(u64),
++    InertDone,
++}
++
+ #[derive(Default)]
+ struct GrantLifecycle {
+     startup_workspace: StartupWorkspace,
+@@ -84,6 +102,7 @@
+     registration: Option<Arc<host_agent::RegistrationBinding>>,
+     endpoint: EndpointIssuance,
+     endpoint_owner: Option<Arc<endpoint::RootEndpointOwner>>,
++    mailbox: MailboxFunding,
+     retired: bool,
+ }
+ impl GrantLifecycle {
+@@ -111,6 +130,13 @@
+                 EndpointIssuance::NeverIssued | EndpointIssuance::CleanupComplete
+             ),
+             "original endpoint cleanup incomplete"
++        );
++        ensure!(
++            !matches!(
++                self.mailbox,
++                MailboxFunding::Preparing | MailboxFunding::Held(_)
++            ),
++            "original mailbox funding has not retired"
+         );
+         self.retired = true;
+         Ok(())
+@@ -457,7 +483,155 @@
+     }
+ }
+ 
++/// A pre-effect mailbox reservation. The active worker will need a separate
++/// joined-retirement path before it can release these resources.
++struct InertMailboxCredit {
++    grant: Weak<VmGrant>,
++    credit: Option<ManagedReservation>,
++    phase: MailboxFunding,
++}
++
++impl InstalledMailboxOwner for InertMailboxCredit {
++    fn check_current(&self) -> Result<()> {
++        self.credit
++            .as_ref()
++            .context("original mailbox credit missing")?
++            .check_current()?;
++        let grant = self
++            .grant
++            .upgrade()
++            .context("original mailbox grant unavailable")?;
++        grant.check_open()?;
++        let state = grant
++            .lifecycle
++            .lock()
++            .map_err(|_| anyhow!("parent lifecycle poisoned"))?;
++        ensure!(
++            !state.retired && state.mailbox == self.phase,
++            "original mailbox credit substituted"
++        );
++        Ok(())
++    }
++}
++
++impl Drop for InertMailboxCredit {
++    fn drop(&mut self) {
++        let Some(credit) = self.credit.take() else {
++            return;
++        };
++        if credit.release_exclusive().is_ok()
++            && let Some(grant) = self.grant.upgrade()
++        {
++            let _ = grant.finish_inert_mailbox(self.phase);
++        }
++    }
++}
++
++impl VmGrant {
++    fn finish_inert_mailbox(&self, phase: MailboxFunding) -> Result<()> {
++        let mut state = self
++            .lifecycle
++            .lock()
++            .map_err(|_| anyhow!("parent lifecycle poisoned"))?;
++        ensure!(
++            state.mailbox == phase,
++            "original mailbox funding state changed"
++        );
++        state.mailbox = MailboxFunding::InertDone;
++        Ok(())
++    }
++}
++
+ impl CoreCurrentParentPermit for VmGrant {
++    fn check_native_claim(&self, binding: &HostLaunchBinding) -> Result<()> {
++        ensure!(*binding == self.binding, "parent binding substituted");
++        let state = self
++            .lifecycle
++            .lock()
++            .map_err(|_| anyhow!("parent lifecycle poisoned"))?;
++        state.check_launch_open()?;
++        ensure!(
++            state.mailbox == MailboxFunding::Unselected,
++            "native claim requires the original mailbox worker"
++        );
++        Ok(())
++    }
++
++    fn prepare_installed_mailbox(
++        &self,
++        binding: &HostLaunchBinding,
++        plan_id: &PlanId,
++    ) -> Result<PreparedInstalledMailbox> {
++        self.check_current(binding)?;
++        let parent = self
++            .parent
++            .upgrade()
++            .context("original parent unavailable")?;
++        let claim = ManagedClaim {
++            host_metadata_bytes: BOOKKEEPING_BYTES,
++            host_stack_bytes: native_thread_stack_terms(MAILBOX_WORKER_STACK_BYTES)?
++                .known_rust_bytes,
++            workers: 1,
++            ..ManagedClaim::default()
++        };
++        {
++            let mut state = self
++                .lifecycle
++                .lock()
++                .map_err(|_| anyhow!("parent lifecycle poisoned"))?;
++            state.check_launch_open()?;
++            ensure!(
++                state.mailbox == MailboxFunding::Selected
++                    && state.admitted_plan.as_deref() == Some(plan_id.0.as_str()),
++                "original mailbox selection missing, changed, or already used"
++            );
++            state.mailbox = MailboxFunding::Preparing;
++        }
++        let credit = match parent.pool.reserve(tenant_tag(&self.tenant), claim) {
++            Ok(credit) => credit,
++            Err(error @ ManagedResourceError::Full) => {
++                self.finish_inert_mailbox(MailboxFunding::Preparing)?;
++                return Err(error.into());
++            }
++            Err(error) => return Err(error.into()),
++        };
++        let serial = credit.serial();
++        let mut owner = InertMailboxCredit {
++            grant: self.original.clone(),
++            credit: Some(credit),
++            phase: MailboxFunding::Preparing,
++        };
++        owner
++            .credit
++            .as_ref()
++            .expect("new original credit")
++            .check_current()?;
++        self.reservation.check_current()?;
++        {
++            let registry = parent
++                .registry
++                .lock()
++                .map_err(|_| anyhow!("parent registry poisoned"))?;
++            ensure!(!registry.closed, "parent admission closed");
++            let mut state = self
++                .lifecycle
++                .lock()
++                .map_err(|_| anyhow!("parent lifecycle poisoned"))?;
++            state.check_launch_open()?;
++            ensure!(
++                state.mailbox == MailboxFunding::Preparing,
++                "mailbox preparation state changed"
++            );
++            owner.phase = MailboxFunding::Held(serial);
++            state.mailbox = owner.phase;
++        }
++        Ok(PreparedInstalledMailbox::new(
++            binding.clone(),
++            plan_id.clone(),
++            Box::new(owner),
++        ))
++    }
++
+     fn begin_startup_workspace(&self, binding: &HostLaunchBinding) -> Result<()> {
+         self.check_current(binding)?;
+         let mut state = self
+@@ -541,6 +715,16 @@
+         binding: &HostLaunchBinding,
+         config: Option<&mvm_core::vm_backend::VmStartConfig>,
+     ) -> Result<Arc<dyn CoreCurrentParentPermit>> {
++        let mailbox = match admitted.installed_mailbox() {
++            None => MailboxFunding::Unselected,
++            Some(InstalledMailboxLaunchProfile::LinuxFirecrackerV1) => {
++                ensure!(
++                    config.is_some() && binding.backend == BackendKind::Firecracker,
++                    "original mailbox selection requires the actual Linux launch config"
++                );
++                MailboxFunding::Selected
++            }
++        };
+         let grant = {
+             let registry = self
+                 .shared
+@@ -616,6 +800,7 @@
+         session.update(plan.nonce.as_hex().as_bytes());
+         lifecycle.admitted_session = Some(session.finalize().into());
+         lifecycle.registration = registration;
++        lifecycle.mailbox = mailbox;
+         drop(lifecycle);
+         grant.check_current(binding)?;
+         Ok(grant)
+--- a/crates/spiralcore-mvm-live/src/installed_resources.rs
++++ b/crates/spiralcore-mvm-live/src/installed_resources.rs
+@@ -883,6 +883,23 @@
+         }
+         Ok(())
+     }
++    /// Release a sole inert credit and verify that the original ledger
++    /// no longer contains its serial. Normal admission closure permits this.
++    pub(crate) fn release_exclusive(self) -> Result<()> {
++        let reservation = Arc::try_unwrap(self.owner).map_err(|_| ManagedResourceError::State)?;
++        let shared = Arc::clone(&reservation.shared);
++        let (slot, serial) = (reservation.slot, reservation.serial);
++        drop(reservation);
++
++        let ledger = shared.ledger()?;
++        if shared.fenced.load(Ordering::Acquire)
++            || ledger.slots[slot].is_some_and(|entry| entry.serial == serial)
++        {
++            return Err(ManagedResourceError::State);
++        }
++        Ok(())
++    }
++
+     pub fn attach<T>(self, value: T) -> ManagedValue<T> {
+         ManagedValue {
+             value,
+--- a/crates/spiralcore-mvm-live/src/installed_parent/config_tests.rs
++++ b/crates/spiralcore-mvm-live/src/installed_parent/config_tests.rs
+@@ -3,12 +3,24 @@
+ use mvm_core::vm_backend::VmStartConfig;
+ 
+ fn admitted(home: &std::path::Path, workload: &str) -> AdmittedPlan {
++    admitted_with_mailbox(home, workload, false)
++}
++
++fn admitted_with_mailbox(home: &std::path::Path, workload: &str, selected: bool) -> AdmittedPlan {
+     use mvm_core::plan::{
+         PlanSeccompTier, SecretReleasePolicy, SynthesisInput, Variant, synthesize_plan,
+     };
+     use mvm_hostd::plan_admission::{
+-        InMemoryNonceLedger, RunPosture, SystemClock, admit_plan_for_run,
++        BundleAdmissionContext, InMemoryNonceLedger, InstalledMailboxLaunchProfile, RunPosture,
++        SystemClock, admit_plan_for_run,
+     };
++    let bundle = selected.then(SignedMailboxFixture::new);
++    let bundle_context = bundle.as_ref().map(|bundle| BundleAdmissionContext {
++        resolver: bundle,
++        trust: bundle,
++        image: None,
++    });
++    let profile = InstalledMailboxLaunchProfile::LinuxFirecrackerV1;
+     let backend = if cfg!(target_os = "linux") {
+         "firecracker"
+     } else {
+@@ -23,7 +35,17 @@
+         .seccomp_tier(PlanSeccompTier::Standard)
+         .secret_release(SecretReleasePolicy::None)
+         .secrets(vec![])
+-        .network_mode(Default::default())
++        .network_mode(if selected {
++            mvm_core::plan::NetworkMode::HostVsockProxy
++        } else {
++            Default::default()
++        })
++        .bundle_pin(bundle.as_ref().map(|bundle| bundle.pin.clone()))
++        .assets(if selected {
++            vec![profile.signed_asset().unwrap()]
++        } else {
++            vec![]
++        })
+         .cpus(1)
+         .mem_mib(1024)
+         .disk_mib(0)
+@@ -38,14 +60,20 @@
+         .stream_retention(Default::default())
+         .build()
+         .unwrap();
++    let posture = RunPosture::on_backend(Variant::Dev, native_backend());
++    let posture = if selected {
++        posture.with_installed_mailbox(profile)
++    } else {
++        posture
++    };
+     admit_plan_for_run(
+         &synthesize_plan(&input).unwrap(),
+         &SystemClock,
+         &InMemoryNonceLedger::new(),
+         Some(&home.join("admission-keys")),
++        bundle_context.as_ref(),
+         None,
+-        None,
+-        RunPosture::on_backend(Variant::Dev, native_backend()),
++        posture,
+     )
+     .unwrap()
+ }
+@@ -227,3 +255,187 @@
+     supervisor.close_admission();
+     supervisor.try_finish().unwrap();
+ }
++
++struct SignedMailboxFixture {
++    archive: Vec<u8>,
++    publisher: ed25519_dalek::VerifyingKey,
++    pin: mvm_core::plan::bundle::PlanArtifact,
++}
++
++impl SignedMailboxFixture {
++    fn new() -> Self {
++        use ed25519_dalek::Signer;
++        use mvm_core::plan::bundle::{
++            ARTIFACTS_DIR, ArtifactRole, BUNDLE_SCHEMA_VERSION, BundleArtifact, BundleManifest,
++            PlanArtifact, bundle_sha256, canonical_manifest_bytes, key_id_from_pubkey, sha256_hex,
++            write_bundle,
++        };
++        let signing = ed25519_dalek::SigningKey::from_bytes(&[62; 32]);
++        let publisher = signing.verifying_key();
++        let key_id = key_id_from_pubkey(&publisher);
++        let parts = [
++            (
++                "vmlinux",
++                ArtifactRole::Kernel,
++                b"fixture-kernel".as_slice(),
++            ),
++            (
++                "rootfs.ext4",
++                ArtifactRole::Rootfs,
++                b"fixture-rootfs".as_slice(),
++            ),
++        ];
++        let manifest = BundleManifest {
++            schema_version: BUNDLE_SCHEMA_VERSION,
++            publisher: "test".into(),
++            key_id: key_id.clone(),
++            arch: mvm_core::arch::GuestArch::host().to_string(),
++            kernel_version: None,
++            profile: None,
++            workload_label: None,
++            created_at: "2026-05-13T00:00:00Z".into(),
++            labels: Default::default(),
++            artifacts: parts
++                .iter()
++                .map(|(name, role, bytes)| BundleArtifact {
++                    name: (*name).into(),
++                    role: role.clone(),
++                    path: format!("{ARTIFACTS_DIR}/{name}"),
++                    sha256: sha256_hex(bytes),
++                    size_bytes: bytes.len() as u64,
++                })
++                .collect(),
++            members: Vec::new(),
++            verity: None,
++            resources: None,
++        };
++        let signature = signing.sign(&canonical_manifest_bytes(&manifest).unwrap());
++        let archive = write_bundle(
++            &manifest,
++            &signing,
++            parts
++                .into_iter()
++                .map(|(name, _, bytes)| (format!("{ARTIFACTS_DIR}/{name}"), bytes.to_vec()))
++                .collect(),
++        )
++        .unwrap();
++        let pin = PlanArtifact::new(bundle_sha256(&archive), &signature.to_bytes(), key_id);
++        Self {
++            archive,
++            publisher,
++            pin,
++        }
++    }
++}
++
++impl mvm_core::plan::bundle::BundleResolver for SignedMailboxFixture {
++    fn resolve(
++        &self,
++        _: &str,
++    ) -> std::result::Result<Vec<u8>, mvm_core::plan::bundle::BundleResolveError> {
++        Ok(self.archive.clone())
++    }
++}
++
++impl mvm_core::plan::bundle::TrustStore for SignedMailboxFixture {
++    fn lookup(&self, key: &mvm_core::plan::bundle::KeyId) -> Option<ed25519_dalek::VerifyingKey> {
++        (*key == mvm_core::plan::bundle::key_id_from_pubkey(&self.publisher))
++            .then_some(self.publisher)
++    }
++}
++
++#[cfg(target_os = "linux")]
++#[test]
++fn installed_mailbox_funding_uses_original_selected_grant_and_host_ledger() {
++    for (selected, full) in [(true, false), (true, true), (false, false)] {
++        let (home, mut supervisor, provider) = endpoint_tests::fixture();
++        let name = "funded-mailbox-vm";
++        let admitted = admitted_with_mailbox(home.path(), name, selected);
++        let (grant, mut config) = config(&provider, name);
++        config.plan_json = Some(serde_json::to_string(admitted.signed()).unwrap());
++        let permit = provider
++            .bind_config(&admitted, &config, native_backend())
++            .unwrap();
++        let erased: Arc<dyn CoreCurrentParentPermit> = grant.clone();
++        assert!(Arc::ptr_eq(&permit, &erased));
++        let anchor = config.host_lifetime.as_ref().unwrap();
++        anchor
++            .bind_parent_permit(&config, native_backend(), permit)
++            .unwrap();
++
++        if selected {
++            let error = anchor
++                .claim_for_native(&config, native_backend())
++                .err()
++                .expect("the selected original grant must fence native before preparation");
++            assert!(format!("{error:#}").contains("original mailbox worker"));
++        }
++
++        let pool = supervisor.managed_resources();
++        let occupied = full.then(|| {
++            let used = pool.snapshot().unwrap().usage.workers;
++            pool.reserve(
++                tenant_tag("local"),
++                ManagedClaim {
++                    workers: pool.limits().workers - used,
++                    ..ManagedClaim::default()
++                },
++            )
++            .unwrap()
++        });
++        let before = pool.snapshot().unwrap().usage;
++        let prepared = anchor.prepare_installed_mailbox(&config, native_backend());
++        if selected && !full {
++            prepared.expect("selected mailbox must reserve one original worker");
++            let funded = pool.snapshot().unwrap().usage;
++            assert_eq!(funded.workers, before.workers + 1);
++            let stack = native_thread_stack_terms(MAILBOX_WORKER_STACK_BYTES)
++                .unwrap()
++                .known_rust_bytes;
++            assert_eq!(funded.host_stack_bytes, before.host_stack_bytes + stack);
++            assert_eq!(
++                funded.host_metadata_bytes,
++                before.host_metadata_bytes + BOOKKEEPING_BYTES
++            );
++            assert!(
++                grant
++                    .prepare_installed_mailbox(&grant.binding, admitted.plan_id())
++                    .is_err()
++            );
++            assert_eq!(pool.snapshot().unwrap().usage, funded);
++            assert!(grant.lifecycle.lock().unwrap().seal_retired().is_err());
++            let owner = anchor
++                .take_installed_mailbox(&config, native_backend())
++                .unwrap()
++                .unwrap();
++            assert!(owner.retains_anchor(anchor));
++            assert_eq!(owner.plan_id(), admitted.plan_id());
++            assert_eq!(pool.snapshot().unwrap().usage, funded);
++            drop(owner);
++            assert_eq!(pool.snapshot().unwrap().usage, before);
++            assert!(
++                grant
++                    .prepare_installed_mailbox(&grant.binding, admitted.plan_id())
++                    .is_err()
++            );
++            assert!(grant.lifecycle.lock().unwrap().seal_retired().is_ok());
++        } else {
++            let error = prepared.unwrap_err();
++            if full {
++                assert!(format!("{error:#}").contains("managed resources: Full"));
++            } else {
++                assert!(format!("{error:#}").contains("original mailbox selection"));
++            }
++            assert_eq!(pool.snapshot().unwrap().usage, before);
++            assert!(
++                anchor
++                    .take_installed_mailbox(&config, native_backend())
++                    .is_err()
++            );
++            assert!(grant.lifecycle.lock().unwrap().seal_retired().is_ok());
++        }
++        drop((occupied, erased, config, grant, provider));
++        supervisor.close_admission();
++        supervisor.try_finish().unwrap();
++    }
++}
