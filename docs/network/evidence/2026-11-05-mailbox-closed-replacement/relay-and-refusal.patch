@@ -1,0 +1,181 @@
+--- a/crates/spiralcore-mvm-live/src/campaign/canonical/closed_replacement_tests.rs
++++ b/crates/spiralcore-mvm-live/src/campaign/canonical/closed_replacement_tests.rs
+@@ -1,9 +1,13 @@
+-use super::{reconciliation_tests::gate, *};
++use super::{
++    reconciliation_tests::{Relay, gate},
++    *,
++};
+ use crate::config::{Arm, Pair, Plan, Stage};
+ use cpu_time::ThreadTime;
++use gate::GateSocket;
+ use std::net::{Shutdown, TcpStream};
+ 
+-fn carrier(socket: TcpStream, bootstrap: &Bootstrap) -> StreamTransport<TcpStream> {
++fn carrier<S: SocketIo + 'static>(socket: S, bootstrap: &Bootstrap) -> StreamTransport<S> {
+     StreamTransport::new(
+         socket,
+         bootstrap.outgoing.as_ref().unwrap().binding.claims.route_id,
+@@ -14,19 +18,56 @@
+ 
+ #[test]
+ fn closed_carrier_replays_only_the_original_reply_and_releases_its_cache() {
+-    let wall = Instant::now();
+-    let pair = Pair::provision(Plan {
++    let pair = fixture_pair();
++    let (a, b, old) = gate::Gate::start_withheld(Some(2), None).unwrap();
++    let (c, d, new) = gate::Gate::start_withheld(None, None).unwrap();
++    exercise(
++        pair,
++        (a, b, old, None),
++        (c, d, new, None),
++        HandshakeRole::Acceptor,
++    );
++}
++
++#[cfg(any(
++    all(target_os = "linux", feature = "linux-host"),
++    all(target_os = "macos", target_arch = "aarch64")
++))]
++#[test]
++fn closed_carrier_recovers_through_two_actual_duplex_relays() {
++    use super::reconciliation_tests::relayed_transport;
++    let pair = fixture_pair();
++    let (a, b, old, old_relay) = relayed_transport(&pair, Some(2), None);
++    let (c, d, new, new_relay) = relayed_transport(&pair, None, None);
++    exercise(
++        pair,
++        (a, b, old, Some(old_relay)),
++        (c, d, new, Some(new_relay)),
++        HandshakeRole::Initiator,
++    );
++}
++
++fn fixture_pair() -> Pair {
++    Pair::provision(Plan {
+         stage: Stage::Two,
+         arm: Arm::Raw,
+         size: 4096,
+         trial: 0,
+         bandwidth_profile: Default::default(),
+     })
+-    .unwrap();
+-    let (a, b, old_gate) = gate::Gate::start_withheld(Some(2), None).unwrap();
+-    let (c, d, new_gate) = gate::Gate::start_withheld(None, None).unwrap();
++    .unwrap()
++}
++
++type Transport<S> = (TcpStream, S, gate::Gate, Option<Relay>);
++fn exercise<S: GateSocket + 'static>(
++    pair: Pair,
++    (a, b, old_gate, old_relay): Transport<S>,
++    (c, d, new_gate, new_relay): Transport<S>,
++    receiver_role: HandshakeRole,
++) {
++    let wall = Instant::now();
+     let old_state = old_gate.shared();
+-    let old_writes = [a.try_clone().unwrap(), b.try_clone().unwrap()];
++    let (old_a, old_b) = (a.copy_handle().unwrap(), b.copy_handle().unwrap());
+     let (a, c) = (carrier(a, &pair.sender), carrier(c, &pair.sender));
+     let (b, d) = (carrier(b, &pair.receiver), carrier(d, &pair.receiver));
+     let mut caller = Session::new(&pair.sender, &broker_context().unwrap()).unwrap();
+@@ -55,14 +96,14 @@
+     let worker = std::thread::spawn(move || {
+         let cpu = ThreadTime::now();
+         let cancel = CancellationToken::default();
+-        b.handshake(HandshakeRole::Acceptor, &cancel).unwrap();
++        b.handshake(receiver_role, &cancel).unwrap();
+         let handled = receiver
+             .handle_with_fixture_replacement(
+                 expected,
+                 &mut object,
+                 (&b, &d),
+                 &cancel,
+-                HandshakeRole::Acceptor,
++                receiver_role,
+                 replacement,
+             )
+             .unwrap();
+@@ -99,9 +140,8 @@
+         assert!(Instant::now() < deadline, "the original ACK did not arrive");
+         std::thread::sleep(Duration::from_millis(1));
+     }
+-    for socket in old_writes {
+-        socket.shutdown(Shutdown::Write).unwrap();
+-    }
++    old_a.shutdown(Shutdown::Write).unwrap();
++    old_b.shutdown(Shutdown::Write).unwrap();
+     loop {
+         let state = old_state.lock().unwrap();
+         if state.forward.terminal.is_some() && state.reverse.terminal.is_some() {
+@@ -119,6 +159,7 @@
+     assert_eq!(old.reverse.terminal.as_deref(), Some("clean EOF"));
+     assert_eq!(old.forward.withheld.as_ref().unwrap().ordinal, 2);
+     assert_eq!(old.forward.written.frames_sent, 1);
++    let old_relay = old_relay.map(Relay::finish);
+     permit.send(()).unwrap();
+     assert_eq!(
+         caller
+@@ -134,6 +175,7 @@
+     let (reply, receiver_counters, receiver_cpu_us) = worker.join().unwrap();
+     assert_eq!(reply, original.encode().unwrap());
+     let new = new_gate.finish().unwrap();
++    let new_relay = new_relay.map(Relay::finish);
+     assert_eq!(new.forward.read.frames_received, 1, "ACK only, no new Call");
+     assert_eq!(new.reverse.read.frames_received, 1);
+     assert_eq!(new.reverse.captured[0], old.reverse.captured[1]);
+@@ -142,6 +184,7 @@
+         json!({
+             "fixture": "one-completed-call-two-loopback-carriers",
+             "exact": true,
++            "actual_duplex_relays": [old_relay, new_relay],
+             "caller": [a.counters().unwrap(), c.counters().unwrap()],
+             "receiver": receiver_counters,
+             "withheld_envelope_bytes": old.forward.withheld.unwrap().length,
+@@ -151,3 +194,46 @@
+         })
+     );
+ }
++
++#[test]
++fn replacement_readiness_cannot_refresh_an_expired_exchange_cap() {
++    let pair = fixture_pair();
++    let [socket, peer] = gate::tcp_pair().unwrap();
++    let stream = carrier(socket, &pair.sender);
++    let before = stream.counters().unwrap();
++    let cancel = CancellationToken::default();
++    assert!(matches!(
++        stream.handshake_before(HandshakeRole::Initiator, &cancel, Instant::now()),
++        Err(LiveError::Deadline)
++    ));
++    assert_eq!(json!(stream.counters().unwrap()), json!(before));
++    assert!(matches!(
++        stream.handshake(HandshakeRole::Initiator, &cancel),
++        Err(LiveError::Closed)
++    ));
++    use std::io::Read;
++    assert_eq!((&peer).read(&mut [0]).unwrap(), 0);
++}
++
++#[test]
++fn replacement_is_not_started_without_a_completed_tail() {
++    let pair = fixture_pair();
++    let [old, _old_peer] = gate::tcp_pair().unwrap();
++    let [replacement, _replacement_peer] = gate::tcp_pair().unwrap();
++    let old = carrier(old, &pair.sender);
++    let replacement = carrier(replacement, &pair.sender);
++    let broker = broker_context().unwrap();
++    let mut session = Session::new(&pair.sender, &broker).unwrap();
++    let before = replacement.counters().unwrap();
++    assert_eq!(
++        session
++            .drive_completed_tail_with_fixture_replacement(
++                (&old, &replacement),
++                &CancellationToken::default(),
++                HandshakeRole::Initiator,
++            )
++            .unwrap(),
++        TailDriveOutcome::NoTail
++    );
++    assert_eq!(json!(replacement.counters().unwrap()), json!(before));
++}

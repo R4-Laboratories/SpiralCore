@@ -31,3 +31,18 @@ are separate gates.
 Apply the patch to the combination of PR #91 head `933f36f9` and the adapter
 transport in PR #92 head `971dc5cf`. The patch is the original positive direct
 witness. The full relay and additional refusal controls are tracked separately.
+
+## Actual Linux duplex relay and final regressions
+
+The follow-up used two actual duplex relay instances, with a joined original
+relay before the fixture signalled the replacement. Each relay finished with
+zero links, frame slots and serialized-buffer reservations. The replacement
+carried 5,853 framed bytes from caller to receiver and 3,847 in the reverse
+direction, including discriminator/framing. Caller and receiver thread CPU
+were 5.017 ms and 4.262 ms. Full local fixture wall time was 10.796 ms.
+
+The exact Linux-host canonical run passed 42 tests. Its focused additions
+cover direct and actual-relay recovery, refusal without a completed tail,
+and deadline expiry before the replacement readiness exchange. This is local
+component evidence. The production authority and native acceptance plan is
+described in [installed-rearm-plan.md](installed-rearm-plan.md).
