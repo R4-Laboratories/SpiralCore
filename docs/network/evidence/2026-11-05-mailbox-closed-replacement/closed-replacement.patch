@@ -1,0 +1,601 @@
+--- a/crates/spiralcore-mvm-live/src/campaign/canonical.rs
++++ b/crates/spiralcore-mvm-live/src/campaign/canonical.rs
+@@ -20,6 +20,15 @@
+     service_object::ObjectMailbox,
+     service_sender::{self, OrderingStream},
+ };
++
++// The fixture owns both replacement endpoints and releases this gate only
++// after joining the old pumps. This is not installed carrier authority.
++#[cfg(test)]
++struct FixtureReplacement<'a, S: SocketIo> {
++    stream: &'a StreamTransport<S>,
++    role: HandshakeRole,
++    retired: std::sync::mpsc::Receiver<()>,
++}
+ 
+ pub(super) struct Session {
+     incoming: MailboxBinding,
+@@ -648,9 +657,33 @@
+         }
+     }
+     pub(super) fn drive_completed_tail<S: SocketIo + 'static>(
++        &mut self,
++        stream: &StreamTransport<S>,
++        cancel: &CancellationToken,
++    ) -> Result<TailDriveOutcome> {
++        self.drive_completed_tail_mode(
++            stream,
++            cancel,
++            #[cfg(test)]
++            None,
++        )
++    }
++
++    #[cfg(test)]
++    fn drive_completed_tail_with_fixture_replacement<S: SocketIo + 'static>(
+         &mut self,
++        carriers: (&StreamTransport<S>, &StreamTransport<S>),
++        cancel: &CancellationToken,
++        role: HandshakeRole,
++    ) -> Result<TailDriveOutcome> {
++        self.drive_completed_tail_mode(carriers.0, cancel, Some((carriers.1, role)))
++    }
++
++    fn drive_completed_tail_mode<S: SocketIo + 'static>(
++        &mut self,
+         stream: &StreamTransport<S>,
+         cancel: &CancellationToken,
++        #[cfg(test)] replacement: Option<(&StreamTransport<S>, HandshakeRole)>,
+     ) -> Result<TailDriveOutcome> {
+         if self.caller_fenced {
+             return Err(SessionError::StreamFenced.into());
+@@ -658,7 +691,12 @@
+         if self.pending.is_some() {
+             return Err(SessionError::Busy.into());
+         }
+-        let result = self.drive_completed_tail_inner(stream, cancel);
++        let result = self.drive_completed_tail_inner(
++            stream,
++            cancel,
++            #[cfg(test)]
++            replacement,
++        );
+         if result.is_err() {
+             self.caller_fenced = true;
+         }
+@@ -668,7 +706,10 @@
+         &mut self,
+         stream: &StreamTransport<S>,
+         cancel: &CancellationToken,
++        #[cfg(test)] mut replacement: Option<(&StreamTransport<S>, HandshakeRole)>,
+     ) -> Result<TailDriveOutcome> {
++        #[cfg(test)]
++        let mut stream = stream;
+         let Some(tail) = &self.completed_tail else {
+             return Ok(TailDriveOutcome::NoTail);
+         };
+@@ -688,14 +729,40 @@
+                 }
+                 Ok(())
+             })?;
+-            let bytes =
+-                match stream.receive_or_idle(cancel, deadline, Duration::from_millis(250))? {
+-                    spiralcore_mvm_adapter::live::ReceiveOutcome::Idle => {
+-                        increment(&mut self.recovery.tail_idle_outcomes)?;
+-                        return Ok(TailDriveOutcome::Idle);
++            #[cfg(test)]
++            let received = if replacement.is_some() {
++                match stream.receive_or_idle_observing_eof(cancel, deadline, IDLE_MAINTENANCE)? {
++                    Some(outcome) => outcome,
++                    None => {
++                        let (next, role) = replacement.take().ok_or(ServiceError::State)?;
++                        broker.with_time(|_, now| -> Result<()> {
++                            let tail = self.completed_tail.as_ref().ok_or(ServiceError::State)?;
++                            tail.lease.validate(&self.outgoing, &self.incoming, now)?;
++                            if tail.ack != ReplyAckState::Sent {
++                                return Err(SessionError::StreamFenced.into());
++                            }
++                            if tail.ack_invocations >= 16 {
++                                return Err(SessionError::EventLimit.into());
++                            }
++                            Ok(())
++                        })?;
++                        next.handshake_before(role, cancel, deadline)?;
++                        stream = next;
++                        continue;
+                     }
+-                    spiralcore_mvm_adapter::live::ReceiveOutcome::Frame(bytes) => bytes,
+-                };
++                }
++            } else {
++                stream.receive_or_idle(cancel, deadline, IDLE_MAINTENANCE)?
++            };
++            #[cfg(not(test))]
++            let received = stream.receive_or_idle(cancel, deadline, IDLE_MAINTENANCE)?;
++            let bytes = match received {
++                spiralcore_mvm_adapter::live::ReceiveOutcome::Idle => {
++                    increment(&mut self.recovery.tail_idle_outcomes)?;
++                    return Ok(TailDriveOutcome::Idle);
++                }
++                spiralcore_mvm_adapter::live::ReceiveOutcome::Frame(bytes) => bytes,
++            };
+             self.completed_tail
+                 .as_mut()
+                 .ok_or(ServiceError::State)?
+@@ -759,7 +826,15 @@
+         stream: &StreamTransport<S>,
+         cancel: &CancellationToken,
+     ) -> Result<Handled> {
+-        self.handle_with_replay_mode(expected, object, stream, cancel, None)
++        self.handle_with_replay_mode(
++            expected,
++            object,
++            stream,
++            cancel,
++            None,
++            #[cfg(test)]
++            None,
++        )
+     }
+     pub(super) fn handle_with_reply_replay<S: SocketIo + 'static>(
+         &mut self,
+@@ -769,8 +844,40 @@
+         cancel: &CancellationToken,
+         requests: ReplyReplayRequests,
+     ) -> Result<Handled> {
+-        self.handle_with_replay_mode(expected, object, stream, cancel, Some(requests))
++        self.handle_with_replay_mode(
++            expected,
++            object,
++            stream,
++            cancel,
++            Some(requests),
++            #[cfg(test)]
++            None,
++        )
+     }
++
++    #[cfg(test)]
++    fn handle_with_fixture_replacement<S: SocketIo + 'static>(
++        &mut self,
++        expected: Id,
++        object: &mut ObjectMailbox,
++        carriers: (&StreamTransport<S>, &StreamTransport<S>),
++        cancel: &CancellationToken,
++        role: HandshakeRole,
++        retired: std::sync::mpsc::Receiver<()>,
++    ) -> Result<Handled> {
++        self.handle_with_replay_mode(
++            expected,
++            object,
++            carriers.0,
++            cancel,
++            None,
++            Some(FixtureReplacement {
++                stream: carriers.1,
++                role,
++                retired,
++            }),
++        )
++    }
+     fn handle_with_replay_mode<S: SocketIo + 'static>(
+         &mut self,
+         expected: Id,
+@@ -778,8 +885,17 @@
+         stream: &StreamTransport<S>,
+         cancel: &CancellationToken,
+         requests: Option<ReplyReplayRequests>,
++        #[cfg(test)] replacement: Option<FixtureReplacement<'_, S>>,
+     ) -> Result<Handled> {
+-        let result = self.handle_inner(expected, object, stream, cancel, requests);
++        let result = self.handle_inner(
++            expected,
++            object,
++            stream,
++            cancel,
++            requests,
++            #[cfg(test)]
++            replacement,
++        );
+         if let Err(error) = self.receiver_processing.finish(&mut self.receiver_phase) {
+             self.receiver_incomplete = true;
+             return Err(error);
+@@ -788,6 +904,62 @@
+             increment(&mut self.recovery.receiver_failed_invocations)?;
+         }
+         result
++    }
++
++    fn replay_admitted_reply<S: SocketIo + 'static>(
++        &mut self,
++        (delivery, encoded, send): (
++            &spiralcore_mvm_adapter::service::DeliveryHandle,
++            &[u8],
++            spiralcore_mvm_adapter::receipt::SendHandle,
++        ),
++        deadline: &ExchangeDeadline,
++        sends: &mut u8,
++        stream: &StreamTransport<S>,
++        cancel: &CancellationToken,
++    ) -> Result<()> {
++        let broker = self.broker.clone();
++        if *sends >= 8 {
++            return Err(SessionError::SendLimit.into());
++        }
++        self.receiver_phase = Some((ProcessTime::now(), Instant::now()));
++        let cached = broker.with_time(|_, now| -> Result<_> {
++            deadline.check(now)?;
++            let cached = self
++                .service
++                .retry_reply_for_delivery_prepared(&self.incoming, delivery, now)?
++                .ok_or(ServiceError::State)?;
++            let wire = encode_envelope(cached.envelope())?;
++            if wire != encoded
++                || self.tracker.register_send(
++                    &self.outgoing,
++                    &self.control,
++                    &self.peer_key,
++                    &wire,
++                    now,
++                )? != send
++            {
++                return Err(ServiceError::Conflict.into());
++            }
++            Ok(cached)
++        })?;
++        let now = broker.with_time(|_, now| -> Result<_> {
++            deadline.check(now)?;
++            let fresh = self
++                .service
++                .retry_reply_for_delivery_prepared(&self.incoming, delivery, now)?
++                .ok_or(ServiceError::State)?;
++            if encode_envelope(fresh.envelope())? != encoded {
++                return Err(ServiceError::Conflict.into());
++            }
++            Ok(now)
++        })?;
++        *sends += 1;
++        increment(&mut self.recovery.cached_reply_retry_invocations)?;
++        increment(&mut self.recovery.reply_send_invocations)?;
++        self.outgoing
++            .send_prepared(&cached, &stream.before(deadline.instant()), cancel, now)?;
++        Ok(())
+     }
+ 
+     fn handle_inner<S: SocketIo + 'static>(
+@@ -797,7 +969,10 @@
+         stream: &StreamTransport<S>,
+         cancel: &CancellationToken,
+         requests: Option<ReplyReplayRequests>,
++        #[cfg(test)] mut replacement: Option<FixtureReplacement<'_, S>>,
+     ) -> Result<Handled> {
++        #[cfg(test)]
++        let mut stream = stream;
+         if self.calls >= MAX_CAMPAIGN_CALLS {
+             return Err("native campaign Call limit".into());
+         }
+@@ -973,74 +1148,49 @@
+         let mut acknowledged = false;
+         // Preamble and initial Call share this invocation's cumulative bound.
+         while events < 16 {
+-            let event = if let Some(requests) = &requests {
+-                match stream.receive_or_idle(
++            #[cfg(test)]
++            let replacement_event = if replacement.is_some() {
++                match stream.receive_or_idle_observing_eof(
+                     cancel,
+                     deadline.instant(),
+                     IDLE_MAINTENANCE,
+                 )? {
+-                    spiralcore_mvm_adapter::live::ReceiveOutcome::Frame(bytes) => bytes,
+-                    spiralcore_mvm_adapter::live::ReceiveOutcome::Idle => {
++                    Some(spiralcore_mvm_adapter::live::ReceiveOutcome::Frame(bytes)) => Some(bytes),
++                    Some(spiralcore_mvm_adapter::live::ReceiveOutcome::Idle) => {
+                         broker.with_time(|_, now| -> Result<()> {
+                             deadline.check(now)?;
+-                            self.expire_idle(now)?;
+-                            Ok(())
++                            self.expire_idle(now)
+                         })?;
+-                        if !requests.take_request() {
+-                            continue;
+-                        }
+-                        increment(&mut self.recovery.reply_replay_commands_consumed)?;
++                        continue;
++                    }
++                    None => {
++                        let next = replacement.take().ok_or(ServiceError::State)?;
++                        let remaining =
++                            deadline.instant().saturating_duration_since(Instant::now());
++                        next.retired.recv_timeout(remaining)?;
+                         if sends >= 8 {
+                             return Err(SessionError::SendLimit.into());
+                         }
+-                        self.receiver_phase = Some((ProcessTime::now(), Instant::now()));
+-                        let cached = broker.with_time(|_, now| -> Result<_> {
++                        broker.with_time(|_, now| -> Result<()> {
+                             deadline.check(now)?;
+-                            let cached = self
+-                                .service
+-                                .retry_reply_for_delivery_prepared(
+-                                    &self.incoming,
+-                                    proof.handle(),
+-                                    now,
+-                                )?
+-                                .ok_or(ServiceError::State)?;
+-                            let wire = encode_envelope(cached.envelope())?;
+-                            if wire != encoded
+-                                || self.tracker.register_send(
+-                                    &self.outgoing,
+-                                    &self.control,
+-                                    &self.peer_key,
+-                                    &wire,
+-                                    now,
+-                                )? != send
+-                            {
+-                                return Err(ServiceError::Conflict.into());
+-                            }
+-                            Ok(cached)
+-                        })?;
+-                        let now = broker.with_time(|_, now| -> Result<_> {
+-                            deadline.check(now)?;
+-                            let fresh = self
+-                                .service
++                            self.service
+                                 .retry_reply_for_delivery_prepared(
+                                     &self.incoming,
+                                     proof.handle(),
+                                     now,
+                                 )?
+                                 .ok_or(ServiceError::State)?;
+-                            if encode_envelope(fresh.envelope())? != encoded {
+-                                return Err(ServiceError::Conflict.into());
+-                            }
+-                            Ok(now)
++                            Ok(())
+                         })?;
+-                        sends += 1;
+-                        increment(&mut self.recovery.cached_reply_retry_invocations)?;
+-                        increment(&mut self.recovery.reply_send_invocations)?;
+-                        self.outgoing.send_prepared(
+-                            &cached,
+-                            &stream.before(deadline.instant()),
++                        next.stream
++                            .handshake_before(next.role, cancel, deadline.instant())?;
++                        stream = next.stream;
++                        self.replay_admitted_reply(
++                            (proof.handle(), &encoded, send),
++                            &deadline,
++                            &mut sends,
++                            stream,
+                             cancel,
+-                            now,
+                         )?;
+                         let processed =
+                             self.receiver_processing.finish(&mut self.receiver_phase)?;
+@@ -1049,6 +1199,39 @@
+                     }
+                 }
+             } else {
++                None
++            };
++            #[cfg(not(test))]
++            let replacement_event = None;
++            let event = if let Some(bytes) = replacement_event {
++                bytes
++            } else if let Some(requests) = &requests {
++                match stream.receive_or_idle(cancel, deadline.instant(), IDLE_MAINTENANCE)? {
++                    spiralcore_mvm_adapter::live::ReceiveOutcome::Frame(bytes) => bytes,
++                    spiralcore_mvm_adapter::live::ReceiveOutcome::Idle => {
++                        broker.with_time(|_, now| -> Result<()> {
++                            deadline.check(now)?;
++                            self.expire_idle(now)?;
++                            Ok(())
++                        })?;
++                        if !requests.take_request() {
++                            continue;
++                        }
++                        increment(&mut self.recovery.reply_replay_commands_consumed)?;
++                        self.replay_admitted_reply(
++                            (proof.handle(), &encoded, send),
++                            &deadline,
++                            &mut sends,
++                            stream,
++                            cancel,
++                        )?;
++                        let processed =
++                            self.receiver_processing.finish(&mut self.receiver_phase)?;
++                        meter.add(processed.cpu_us, processed.wall_us)?;
++                        continue;
++                    }
++                }
++            } else {
+                 self.receive_with_maintenance(stream, cancel, deadline.instant())?
+             };
+             events += 1;
+@@ -1503,3 +1686,6 @@
+     )
+ ))]
+ mod completed_tail_tests;
++
++#[cfg(test)]
++mod closed_replacement_tests;
+--- a/crates/spiralcore-mvm-adapter/src/live.rs
++++ b/crates/spiralcore-mvm-adapter/src/live.rs
+@@ -471,7 +471,18 @@
+         })
+     }
+     pub fn handshake(&self, role: HandshakeRole, cancel: &CancellationToken) -> LiveResult<()> {
+-        let deadline = Instant::now() + self.timeout;
++        self.handshake_before(role, cancel, Instant::now() + self.timeout)
++    }
++
++    /// Exchange the readiness discriminator within the caller's existing cap.
++    /// This handshake does not authenticate the peer or authorize a route.
++    pub fn handshake_before(
++        &self,
++        role: HandshakeRole,
++        cancel: &CancellationToken,
++        deadline: Instant,
++    ) -> LiveResult<()> {
++        let deadline = deadline.min(Instant::now() + self.timeout);
+         let mut state = lock(&self.state, cancel, deadline)?;
+         if state.closed || state.ready {
+             return Err(LiveError::Closed);
+--- /dev/null
++++ b/crates/spiralcore-mvm-live/src/campaign/canonical/closed_replacement_tests.rs
+@@ -0,0 +1,153 @@
++use super::{reconciliation_tests::gate, *};
++use crate::config::{Arm, Pair, Plan, Stage};
++use cpu_time::ThreadTime;
++use std::net::{Shutdown, TcpStream};
++
++fn carrier(socket: TcpStream, bootstrap: &Bootstrap) -> StreamTransport<TcpStream> {
++    StreamTransport::new(
++        socket,
++        bootstrap.outgoing.as_ref().unwrap().binding.claims.route_id,
++        Duration::from_secs(5),
++    )
++    .unwrap()
++}
++
++#[test]
++fn closed_carrier_replays_only_the_original_reply_and_releases_its_cache() {
++    let wall = Instant::now();
++    let pair = Pair::provision(Plan {
++        stage: Stage::Two,
++        arm: Arm::Raw,
++        size: 4096,
++        trial: 0,
++        bandwidth_profile: Default::default(),
++    })
++    .unwrap();
++    let (a, b, old_gate) = gate::Gate::start_withheld(Some(2), None).unwrap();
++    let (c, d, new_gate) = gate::Gate::start_withheld(None, None).unwrap();
++    let old_state = old_gate.shared();
++    let old_writes = [a.try_clone().unwrap(), b.try_clone().unwrap()];
++    let (a, c) = (carrier(a, &pair.sender), carrier(c, &pair.sender));
++    let (b, d) = (carrier(b, &pair.receiver), carrier(d, &pair.receiver));
++    let mut caller = Session::new(&pair.sender, &broker_context().unwrap()).unwrap();
++    let mut receiver = Session::new(&pair.receiver, &broker_context().unwrap()).unwrap();
++    let store = tempfile::tempdir().unwrap();
++    let policy = spiralcore_mvm_adapter::Policy::new(
++        pair.receiver.incoming.as_ref().unwrap().context().unwrap(),
++    )
++    .unwrap();
++    let mut object = ObjectMailbox::open(
++        &store.path().join("cache"),
++        Limits::default(),
++        policy,
++        ColdGraphPolicy::Disabled,
++    )
++    .unwrap();
++    let request = Frame {
++        kind: 5,
++        transfer: [0; 32],
++        seq: 0,
++        body: vec![],
++    };
++    let expected = request.transfer;
++    let receiver_state = old_state.clone();
++    let (permit, replacement) = std::sync::mpsc::sync_channel(1);
++    let worker = std::thread::spawn(move || {
++        let cpu = ThreadTime::now();
++        let cancel = CancellationToken::default();
++        b.handshake(HandshakeRole::Acceptor, &cancel).unwrap();
++        let handled = receiver
++            .handle_with_fixture_replacement(
++                expected,
++                &mut object,
++                (&b, &d),
++                &cancel,
++                HandshakeRole::Acceptor,
++                replacement,
++            )
++            .unwrap();
++        let call = receiver_state.lock().unwrap().forward.captured[0].clone();
++        let cache_released = receiver
++            .broker
++            .clone()
++            .with_time(|_, now| {
++                receiver
++                    .service
++                    .retry_reply_prepared(&receiver.incoming, &call, now)
++                    .map(|cached| cached.is_none())
++            })
++            .unwrap();
++        assert_eq!(receiver.calls, 1);
++        assert!(cache_released);
++        (
++            handled.reply.encode().unwrap(),
++            [b.counters().unwrap(), d.counters().unwrap()],
++            cpu.elapsed().as_micros(),
++        )
++    });
++
++    let cpu = ThreadTime::now();
++    let cancel = CancellationToken::default();
++    a.handshake(HandshakeRole::Initiator, &cancel).unwrap();
++    let (_, original) = caller
++        .call_with_completed_tail(&request, &a, &cancel, None)
++        .unwrap();
++    assert_eq!(original.kind, 127);
++    assert_eq!(caller.calls, 1);
++    let deadline = Instant::now() + Duration::from_secs(5);
++    while old_state.lock().unwrap().forward.withheld.is_none() {
++        assert!(Instant::now() < deadline, "the original ACK did not arrive");
++        std::thread::sleep(Duration::from_millis(1));
++    }
++    for socket in old_writes {
++        socket.shutdown(Shutdown::Write).unwrap();
++    }
++    loop {
++        let state = old_state.lock().unwrap();
++        if state.forward.terminal.is_some() && state.reverse.terminal.is_some() {
++            break;
++        }
++        drop(state);
++        assert!(
++            Instant::now() < deadline,
++            "the old fault gate did not drain"
++        );
++        std::thread::sleep(Duration::from_millis(1));
++    }
++    let old = old_gate.finish().unwrap();
++    assert_eq!(old.forward.terminal.as_deref(), Some("clean EOF"));
++    assert_eq!(old.reverse.terminal.as_deref(), Some("clean EOF"));
++    assert_eq!(old.forward.withheld.as_ref().unwrap().ordinal, 2);
++    assert_eq!(old.forward.written.frames_sent, 1);
++    permit.send(()).unwrap();
++    assert_eq!(
++        caller
++            .drive_completed_tail_with_fixture_replacement(
++                (&a, &c),
++                &cancel,
++                HandshakeRole::Initiator,
++            )
++            .unwrap(),
++        TailDriveOutcome::AckWritten
++    );
++    assert_eq!(caller.calls, 1);
++    let (reply, receiver_counters, receiver_cpu_us) = worker.join().unwrap();
++    assert_eq!(reply, original.encode().unwrap());
++    let new = new_gate.finish().unwrap();
++    assert_eq!(new.forward.read.frames_received, 1, "ACK only, no new Call");
++    assert_eq!(new.reverse.read.frames_received, 1);
++    assert_eq!(new.reverse.captured[0], old.reverse.captured[1]);
++    println!(
++        "{}",
++        json!({
++            "fixture": "one-completed-call-two-loopback-carriers",
++            "exact": true,
++            "caller": [a.counters().unwrap(), c.counters().unwrap()],
++            "receiver": receiver_counters,
++            "withheld_envelope_bytes": old.forward.withheld.unwrap().length,
++            "caller_thread_cpu_us": cpu.elapsed().as_micros(),
++            "receiver_thread_cpu_us": receiver_cpu_us,
++            "total_wall_us": wall.elapsed().as_micros(),
++        })
++    );
++}
