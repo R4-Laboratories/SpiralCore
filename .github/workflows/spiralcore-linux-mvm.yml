@@ -1,82 +1,41 @@
-name: SpiralCore Linux MVM contracts
+name: SpiralCore installed SDK validation
+
 on:
   workflow_dispatch:
-  pull_request:
-    paths:
-      - 'crates/spiralcore-mvm-live/**'
-      - 'crates/spiralcore-mvm-adapter/**'
-      - 'crates/spiralcore-transfer/**'
-      - 'crates/spiralcore-storage-windows/**'
-      - 'crates/spiralcore-gateway-core/**'
-      - 'crates/uor-r4-object-store/**'
-      - 'docs/platforms/mvm-mailbox-portable.json'
-      - '.github/workflows/spiralcore-linux-mvm.yml'
+    inputs:
+      source:
+        description: Exact MVM fork commit to build
+        required: true
+        type: string
+
 permissions:
   contents: read
+
 jobs:
-  linux-host-build-and-contracts:
+  sdk:
+    if: startsWith(github.ref, 'refs/heads/codex/installed-sdk-validation-')
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 22
     env:
       CARGO_BUILD_JOBS: 2
       CARGO_INCREMENTAL: 0
+      CARGO_PROFILE_DEV_DEBUG: 0
+      CARGO_PROFILE_TEST_DEBUG: 0
     steps:
+      - name: Validate requested fork commit
+        env:
+          SOURCE: ${{ inputs.source }}
+        run: '[[ "$SOURCE" =~ ^[a-f0-9]{40}$ ]]'
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
+          repository: Casey-allard/mvm
+          ref: ${{ inputs.source }}
           persist-credentials: false
-      - name: Install pinned Rust toolchain
-        run: rustup toolchain install 1.97.1 --profile minimal --component clippy
-      - name: Verify the published canonical MVM dependency source
-        shell: bash
+      - name: Test portable bundle preparation and SDK dispatch
+        env:
+          SOURCE: ${{ inputs.source }}
         run: |
           set -euo pipefail
-          expected=$(jq -er '.mvm_source | strings | select(length > 0)' docs/platforms/mvm-mailbox-portable.json)
-          # Resolve the actual default Cargo dependency closure, without a local
-          # patch override or the retired 3104 preparation. No guest is booted.
-          cargo +1.97.1 metadata --locked --format-version 1 \
-            --manifest-path crates/spiralcore-mvm-live/Cargo.toml \
-            --features linux-host --filter-platform x86_64-unknown-linux-gnu \
-            > "$RUNNER_TEMP/mvm-live-metadata.json"
-          jq -e --arg expected "$expected" '
-            [.packages[] | select(.name | startswith("mvm-"))] as $m |
-            ($m | length) > 0 and
-            any($m[]; .name == "mvm-core") and
-            any($m[]; .name == "mvm-contract") and
-            all($m[]; .source == $expected)
-          ' "$RUNNER_TEMP/mvm-live-metadata.json"
-          jq '[.packages[] | select(.name | startswith("mvm-")) | {name, version, source}]' \
-            "$RUNNER_TEMP/mvm-live-metadata.json"
-      - name: Linux host, canonical envelope, recovery and packing tests
-        shell: bash
-        run: |
-          set -euo pipefail
-          cargo +1.97.1 test --release --locked \
-            --manifest-path crates/spiralcore-mvm-live/Cargo.toml \
-            --features linux-host --all-targets -- --test-threads=1
-      # Portable service target counts are additionally enforced per native OS
-      # by mvm-mailbox-portable.yml; enable live here so they do not compile away.
-      - name: Shared object-v1 and canonical mailbox conformance
-        shell: bash
-        run: |
-          set -euo pipefail
-          cargo +1.97.1 test --locked \
-            --manifest-path crates/spiralcore-transfer/Cargo.toml --test v1_contract
-          cargo +1.97.1 test --locked \
-            --manifest-path crates/spiralcore-mvm-adapter/Cargo.toml \
-            --features live,conformance,hardware-sha256 --all-targets
-          bash crates/spiralcore-mvm-live/scripts/test-v1-comparison.sh
-      - name: Linux warnings check
-        shell: bash
-        run: |
-          set -euo pipefail
-          cargo +1.97.1 clippy --locked \
-            --manifest-path crates/spiralcore-mvm-live/Cargo.toml \
-            --features linux-host --all-targets -- -D warnings
-      - name: Default Linux guest entry and measurement analyzer
-        shell: bash
-        run: |
-          set -euo pipefail
-          cargo +1.97.1 check --locked \
-            --manifest-path crates/spiralcore-mvm-live/Cargo.toml \
-            --all-targets
-          bash crates/spiralcore-mvm-live/scripts/test-combined-analysis.sh
+          test "$(git rev-parse HEAD)" = "$SOURCE"
+          rustup toolchain install 1.97.1 --profile minimal
+          cargo +1.97.1 test --locked -p mvm-client --lib launch::bundle_runtime::tests
