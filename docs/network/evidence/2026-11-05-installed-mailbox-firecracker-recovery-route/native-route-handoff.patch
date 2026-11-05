@@ -1,0 +1,787 @@
+--- a/crates/mvm-backends/src/driver/fc.rs
++++ b/crates/mvm-backends/src/driver/fc.rs
+@@ -33,6 +33,12 @@
+ mod mailbox_bridge;
+ #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
+ use mailbox_bridge::InstalledMailboxBridge;
++#[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++use mvm_core::host_lifetime::HostLaunchBinding;
++#[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++use mvm_vmm::{
++    driver::traits::InstalledMailboxRecoveryRoute, host::fc_lifetime::ObservedNativeRoute,
++};
+ 
+ #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
+ fn mailbox_bridge_name() -> std::ffi::OsString {
+@@ -1167,6 +1173,8 @@
+         );
+ 
+         #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++        let mut recovery_route = None;
++        #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
+         if let Some(mailbox) = mailbox.as_ref() {
+             let binding = host_binding.context("installed mailbox binding missing before start")?;
+             let target = mailbox.ready.claimed_path(binding)?;
+@@ -1175,6 +1183,12 @@
+                 .as_ref()
+                 .context("installed mailbox bridge missing")?
+                 .verify(&target)?;
++            if mailbox.ready.recovery_enrollment().is_some() {
++                let launcher = original
++                    .as_mut()
++                    .context("original Firecracker launcher missing for mailbox recovery")?;
++                recovery_route = Some(launcher.observe_native_route(session.connected_stream())?);
++            }
+         }
+         // Boot the configured instance (same session).
+         api_put_session(
+@@ -1264,7 +1278,12 @@
+             #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
+             mailbox_bridge: mailbox
+                 .and_then(|mailbox| mailbox.bridge.take())
+-                .map(std::sync::Mutex::new),
++                .map(|bridge| {
++                    std::sync::Arc::new(FcMailboxCustody {
++                        bridge: std::sync::Mutex::new(bridge),
++                        recovery_route,
++                    })
++                }),
+             id: VmId(spec.name.clone()),
+             state_dir,
+             pid_file,
+@@ -1795,11 +1814,43 @@
+ #[cfg(target_os = "linux")]
+ impl std::error::Error for OwnedFcBootFailure {}
+ 
++#[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++struct FcMailboxCustody {
++    bridge: std::sync::Mutex<InstalledMailboxBridge>,
++    recovery_route: Option<ObservedNativeRoute>,
++}
++
++#[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++impl InstalledMailboxRecoveryRoute for FcMailboxCustody {
++    fn verify_route(&self, binding: &HostLaunchBinding, target: &Path) -> Result<()> {
++        let route = self
++            .recovery_route
++            .as_ref()
++            .context("original mailbox recovery route missing")?;
++        self.bridge
++            .lock()
++            .map_err(|_| anyhow!("installed mailbox bridge custody poisoned"))?
++            .verify(target)?;
++        route.verify_current(binding)
++    }
++
++    fn verify_peer(
++        &self,
++        binding: &HostLaunchBinding,
++        socket: &std::os::unix::net::UnixStream,
++    ) -> Result<()> {
++        self.recovery_route
++            .as_ref()
++            .context("original mailbox recovery route missing")?
++            .verify_peer(binding, socket)
++    }
++}
++
+ struct FcRunningVm {
+     #[cfg(target_os = "linux")]
+     owned: Option<std::sync::Mutex<mvm_vmm::host::fc_lifetime::OwnedFcLauncher>>,
+     #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
+-    mailbox_bridge: Option<std::sync::Mutex<InstalledMailboxBridge>>,
++    mailbox_bridge: Option<std::sync::Arc<FcMailboxCustody>>,
+     id: VmId,
+     state_dir: PathBuf,
+     pid_file: PathBuf,
+@@ -1818,8 +1869,9 @@
+ #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
+ impl FcRunningVm {
+     fn retire_mailbox_bridge(&self) -> Result<()> {
+-        if let Some(bridge) = &self.mailbox_bridge {
+-            bridge
++        if let Some(custody) = &self.mailbox_bridge {
++            custody
++                .bridge
+                 .lock()
+                 .map_err(|_| anyhow!("installed mailbox bridge custody poisoned"))?
+                 .retire()?;
+@@ -1829,6 +1881,16 @@
+ }
+ 
+ impl RunningVm for FcRunningVm {
++    #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++    fn installed_mailbox_recovery_route(
++        &self,
++    ) -> Option<std::sync::Weak<dyn InstalledMailboxRecoveryRoute>> {
++        let custody = self.mailbox_bridge.as_ref()?;
++        custody.recovery_route.as_ref()?;
++        let route: std::sync::Arc<dyn InstalledMailboxRecoveryRoute> = custody.clone();
++        Some(std::sync::Arc::downgrade(&route))
++    }
++
+     fn id(&self) -> &VmId {
+         &self.id
+     }
+--- a/crates/mvm-backends/src/fc/fc_api.rs
++++ b/crates/mvm-backends/src/fc/fc_api.rs
+@@ -222,6 +222,11 @@
+         })
+     }
+ 
++    #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++    pub(crate) fn connected_stream(&self) -> &UnixStream {
++        self.reader.get_ref()
++    }
++
+     /// Send one request and read its response, reusing the connection.
+     pub fn call(&mut self, method: &str, path: &str, body: Option<&str>) -> Result<String> {
+         let stream = self.reader.get_mut();
+@@ -492,6 +497,30 @@
+         server.join().unwrap();
+     }
+ 
++    #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++    #[test]
++    fn session_observes_the_original_connected_peer_after_path_rebind() {
++        let dir = tempfile::tempdir().unwrap();
++        let path = dir.path().join("api.socket");
++        let listener = UnixListener::bind(&path).unwrap();
++        let session = FcSession::connect(&path).unwrap();
++        let (mut original, _) = listener.accept().unwrap();
++        std::fs::remove_file(&path).unwrap();
++        let replacement = UnixListener::bind(&path).unwrap();
++        replacement.set_nonblocking(true).unwrap();
++        original.write_all(b"original").unwrap();
++        let mut readback = [0; 8];
++        session
++            .connected_stream()
++            .read_exact(&mut readback)
++            .unwrap();
++        assert_eq!(&readback, b"original");
++        assert_eq!(
++            replacement.accept().unwrap_err().kind(),
++            std::io::ErrorKind::WouldBlock,
++        );
++    }
++
+     #[test]
+     fn session_errors_when_the_socket_is_absent() {
+         let dir = tempfile::tempdir().unwrap();
+--- a/crates/mvm-vmm/src/driver/traits.rs
++++ b/crates/mvm-vmm/src/driver/traits.rs
+@@ -387,7 +387,30 @@
+ 
+ /// A live VM handle. Launch-model-agnostic: an in-process VMM, a subprocess,
+ /// and an external supervisor all present the same surface.
++#[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++pub trait InstalledMailboxRecoveryRoute: Send + Sync {
++    fn verify_route(
++        &self,
++        binding: &mvm_core::host_lifetime::HostLaunchBinding,
++        target: &Path,
++    ) -> Result<()>;
++
++    fn verify_peer(
++        &self,
++        binding: &mvm_core::host_lifetime::HostLaunchBinding,
++        socket: &std::os::unix::net::UnixStream,
++    ) -> Result<()>;
++}
++
+ pub trait RunningVm: Send {
++    /// A borrowed observation of the original VM's installed recovery route.
++    #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++    fn installed_mailbox_recovery_route(
++        &self,
++    ) -> Option<std::sync::Weak<dyn InstalledMailboxRecoveryRoute>> {
++        None
++    }
++
+     fn id(&self) -> &VmId;
+     /// Host process that owns this VM's address space, when the driver can
+     /// identify it. This is an observation surface for diagnostics and
+--- a/crates/mvm-vmm/src/host/fc_lifetime.rs
++++ b/crates/mvm-vmm/src/host/fc_lifetime.rs
+@@ -160,6 +160,25 @@
+ }
+ 
+ impl ObservedNativeRoute {
++    #[cfg(target_pointer_width = "64")]
++    pub fn verify_current(&self, binding: &HostLaunchBinding) -> Result<()> {
++        let live = self
++            .live
++            .upgrade()
++            .context("original Firecracker route owner dropped")?;
++        ensure!(
++            &self.binding == binding,
++            "original Firecracker route binding differs"
++        );
++        require_live_pidfd(&self.native)?;
++        require_live_pidfd(&self.launcher)?;
++        ensure!(
++            live.load(Ordering::Acquire),
++            "original Firecracker route closed"
++        );
++        Ok(())
++    }
++
+     pub fn verify_peer(&self, binding: &HostLaunchBinding, stream: &UnixStream) -> Result<()> {
+         let live = self
+             .live
+--- a/crates/mvm-runtime/src/workload_runner/runner/installed.rs
++++ b/crates/mvm-runtime/src/workload_runner/runner/installed.rs
+@@ -21,6 +21,8 @@
+     state: Mutex<Option<Custody>>,
+     #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
+     dispatch: AtomicU8,
++    #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++    mailbox_stop: std::sync::OnceLock<mailbox_socket::MailboxStop>,
+ }
+ 
+ #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
+@@ -160,6 +162,8 @@
+             owner: Arc::clone(owner),
+             #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
+             dispatch: AtomicU8::new(NativeDispatch::MailboxOff as u8),
++            #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++            mailbox_stop: std::sync::OnceLock::new(),
+             state: Mutex::new(Some(Custody {
+                 vm: None,
+                 failure: None,
+@@ -305,7 +309,13 @@
+         let worker = mailbox_socket::MailboxSocketWorker::prepare(directory, &path, mailbox)?;
+         let worker = state.mailbox.insert(worker);
+         let job = worker.charge_mut().take_bound_socket_job()?;
+-        worker.start(job)?;
++        let recovery_binding = job.recovery_enrollment().map(|_| self.binding().clone());
++        if recovery_binding.is_some() {
++            self.mailbox_stop
++                .set(worker.stop_handle())
++                .map_err(|_| anyhow::anyhow!("original mailbox recovery stop already armed"))?;
++        }
++        worker.start(job, recovery_binding)?;
+         worker.socket_path()?;
+         Ok(())
+     }
+@@ -371,10 +381,37 @@
+         let state = guard.as_mut().context("installed custody unavailable")?;
+         anyhow::ensure!(state.launch.is_none(), "installed launch already retained");
+         state.launch = Some((lifecycle, kernel));
++        #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++        if failure.is_none() && self.mailbox_stop.get().is_some() {
++            if let Err(error) = self.publish_recovery_route(state) {
++                self.finish_startup(
++                    state,
++                    Some(anyhow::anyhow!(
++                        "original mailbox recovery publication failed: {error:#}"
++                    )),
++                );
++                return Err(error);
++            }
++        }
+         self.finish_startup(state, failure);
+         Ok(())
+     }
+ 
++    #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++    fn publish_recovery_route(&self, state: &Custody) -> Result<()> {
++        let vm = state.vm.as_ref().context("original native VM missing")?;
++        anyhow::ensure!(vm.id() == &self.id, "original native VM identity differs");
++        let route = vm
++            .installed_mailbox_recovery_route()
++            .context("original native recovery route missing")?;
++        state
++            .mailbox
++            .as_ref()
++            .context("original mailbox worker missing")?
++            .publish_recovery_route(route)?;
++        Ok(())
++    }
++
+     fn finish_startup(&self, state: &mut Custody, failure: Option<anyhow::Error>) {
+         state.failure = failure;
+         #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
+@@ -475,7 +512,14 @@
+ 
+     pub(super) fn stop(&self, streamer: &dyn ConsoleStreamer) -> Result<()> {
+         #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
+-        self.mailbox_dispatch_for_stop()?;
++        {
++            if let Some(stop) = self.mailbox_stop.get()
++                && let Err(error) = stop.signal()
++            {
++                tracing::debug!(%error, "early installed mailbox wake refused; retaining custody");
++            }
++            self.mailbox_dispatch_for_stop()?;
++        }
+         let mut operation = self.begin_operation()?;
+         #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
+         let dispatch = self.mailbox_dispatch_for_stop()?;
+--- a/crates/mvm-runtime/src/workload_runner/runner/installed/mailbox_socket.rs
++++ b/crates/mvm-runtime/src/workload_runner/runner/installed/mailbox_socket.rs
+@@ -13,12 +13,16 @@
+         },
+     },
+     path::{Path, PathBuf},
+-    sync::{Arc, Mutex},
++    sync::{Arc, Mutex, Weak},
+     thread::{self, JoinHandle},
+     time::{Duration, Instant},
+ };
+ 
+-use mvm_core::host_lifetime::{BoundInstalledMailboxJob, mailbox_socket::PinnedListener};
++use mvm_core::host_lifetime::{
++    BoundInstalledMailboxJob, HostLaunchBinding, InstalledMailboxReplacementAcceptor,
++    mailbox_socket::PinnedListener,
++};
++use mvm_vmm::driver::traits::InstalledMailboxRecoveryRoute;
+ 
+ const SOCKET_NAME: &CStr = c"mailbox.sock";
+ const STACK_BYTES: usize = 2 * 1024 * 1024;
+@@ -147,13 +151,59 @@
+ struct Control {
+     stopped: bool,
+     accepted: Option<UnixStream>,
++    wake: Option<UnixStream>,
++    recovery_route: Option<Weak<dyn InstalledMailboxRecoveryRoute>>,
++    replacement_started: bool,
++}
++
++impl Control {
++    fn signal_stop(&mut self) -> io::Result<()> {
++        self.stopped = true;
++        self.recovery_route.take();
++        let wake = self
++            .wake
++            .as_ref()
++            .map_or(Ok(()), |s| shutdown(s, Shutdown::Write));
++        let accepted = self
++            .accepted
++            .as_ref()
++            .map_or(Ok(()), |s| shutdown(s, Shutdown::Both));
++        wake.and(accepted)
++    }
++
++    fn publish_route(&mut self, route: Weak<dyn InstalledMailboxRecoveryRoute>) -> io::Result<()> {
++        if self.stopped || self.replacement_started || self.recovery_route.is_some() {
++            return Err(io::Error::other(
++                "original mailbox recovery publication refused",
++            ));
++        }
++        self.recovery_route = Some(route);
++        Ok(())
++    }
++
++    fn begin_replacement(&mut self) -> io::Result<Weak<dyn InstalledMailboxRecoveryRoute>> {
++        if std::mem::replace(&mut self.replacement_started, true) || self.stopped {
++            return Err(io::Error::other(
++                "original mailbox replacement attempt unavailable",
++            ));
++        }
++        let route = self
++            .recovery_route
++            .take()
++            .ok_or_else(|| io::Error::other("original mailbox recovery route unpublished"))?;
++        let old = self
++            .accepted
++            .take()
++            .ok_or_else(|| io::Error::other("original accepted mailbox socket unavailable"))?;
++        shutdown(&old, Shutdown::Both)?;
++        Ok(route)
++    }
+ }
+ 
+ struct Custody<R> {
+     socket: BoundSocket,
+     readiness: Option<Arc<PinnedListener>>,
+     listener: Option<UnixListener>,
+-    wake: Option<UnixStream>,
+     waiter: Option<UnixStream>,
+     control: Arc<Mutex<Control>>,
+     thread: Option<JoinHandle<io::Result<()>>>,
+@@ -190,9 +240,11 @@
+                 socket,
+                 readiness: None,
+                 listener: None,
+-                wake: Some(wake),
+                 waiter: Some(waiter),
+-                control: Arc::new(Mutex::new(Control::default())),
++                control: Arc::new(Mutex::new(Control {
++                    wake: Some(wake),
++                    ..Control::default()
++                })),
+                 thread: None,
+                 result: None,
+                 panicked: false,
+@@ -206,13 +258,46 @@
+         &mut self.custody.as_mut().expect("owned mailbox custody").charge
+     }
+ 
+-    pub(super) fn start(&mut self, job: BoundInstalledMailboxJob) -> io::Result<()> {
+-        self.start_checked(job, |path| UnixListener::bind(path), || Ok(()))
++    pub(super) fn start(
++        &mut self,
++        job: BoundInstalledMailboxJob,
++        recovery_binding: Option<HostLaunchBinding>,
++    ) -> io::Result<()> {
++        self.start_checked(
++            job,
++            recovery_binding,
++            |path| UnixListener::bind(path),
++            || Ok(()),
++        )
++    }
++
++    pub(super) fn stop_handle(&self) -> MailboxStop {
++        MailboxStop(Arc::downgrade(
++            &self
++                .custody
++                .as_ref()
++                .expect("owned mailbox custody")
++                .control,
++        ))
++    }
++
++    pub(super) fn publish_recovery_route(
++        &self,
++        route: Weak<dyn InstalledMailboxRecoveryRoute>,
++    ) -> io::Result<()> {
++        self.custody
++            .as_ref()
++            .expect("owned mailbox custody")
++            .control
++            .lock()
++            .map_err(|_| io::Error::other("mailbox control poisoned"))?
++            .publish_route(route)
+     }
+ 
+     fn start_checked(
+         &mut self,
+         job: BoundInstalledMailboxJob,
++        recovery_binding: Option<HostLaunchBinding>,
+         bind: impl FnOnce(&Path) -> io::Result<UnixListener>,
+         after_bind: impl FnOnce() -> io::Result<()>,
+     ) -> io::Result<()> {
+@@ -264,17 +349,19 @@
+             .expect("original mailbox listener")
+             .try_clone()?;
+         listener.set_nonblocking(true)?;
+-        let readiness = job.pin_listener(&state.socket.directory, &state.socket.path, &listener)?;
++        let readiness =
++            Arc::new(job.pin_listener(&state.socket.directory, &state.socket.path, &listener)?);
+         readiness.verify_expected_object(device, inode)?;
++        let recovery = recovery_binding.map(|binding| (binding, Arc::clone(&readiness)));
+         let waiter = state.waiter.take().expect("original mailbox accept wake");
+         let control = Arc::clone(&state.control);
+         state.thread = Some(
+             thread::Builder::new()
+                 .name("installed-mailbox".into())
+                 .stack_size(STACK_BYTES)
+-                .spawn(move || run(listener, waiter, control, job))?,
++                .spawn(move || run(listener, waiter, control, job, recovery))?,
+         );
+-        state.readiness = Some(Arc::new(readiness));
++        state.readiness = Some(readiness);
+         state.listener.take();
+         Ok(())
+     }
+@@ -343,7 +430,12 @@
+         state.socket.cleanup()?;
+         state.readiness.take();
+         state.listener.take();
+-        state.wake.take();
++        state
++            .control
++            .lock()
++            .map_err(|_| io::Error::other("mailbox control poisoned"))?
++            .wake
++            .take();
+         state.waiter.take();
+         state.retired = true;
+         Ok(())
+@@ -377,20 +469,24 @@
+         if let Some(readiness) = &self.readiness {
+             readiness.invalidate();
+         }
+-        let mut state = self
+-            .control
++        self.control
+             .lock()
+-            .map_err(|_| io::Error::other("mailbox control poisoned"))?;
+-        state.stopped = true;
+-        let wake = self
+-            .wake
+-            .as_ref()
+-            .map_or(Ok(()), |s| shutdown(s, Shutdown::Write));
+-        let accepted = state
+-            .accepted
+-            .as_ref()
+-            .map_or(Ok(()), |s| shutdown(s, Shutdown::Both));
+-        wake.and(accepted)
++            .map_err(|_| io::Error::other("mailbox control poisoned"))?
++            .signal_stop()
++    }
++}
++
++pub(super) struct MailboxStop(Weak<Mutex<Control>>);
++
++impl MailboxStop {
++    pub(super) fn signal(&self) -> io::Result<()> {
++        let Some(control) = self.0.upgrade() else {
++            return Ok(());
++        };
++        control
++            .lock()
++            .map_err(|_| io::Error::other("mailbox control poisoned"))?
++            .signal_stop()
+     }
+ }
+ 
+@@ -423,6 +519,7 @@
+     wake: UnixStream,
+     control: Arc<Mutex<Control>>,
+     job: BoundInstalledMailboxJob,
++    recovery: Option<(HostLaunchBinding, Arc<PinnedListener>)>,
+ ) -> io::Result<()> {
+     loop {
+         if !wait_for_peer(listener.as_raw_fd(), wake.as_raw_fd(), None)? {
+@@ -433,8 +530,7 @@
+             Err(error) if error.kind() == io::ErrorKind::WouldBlock => continue,
+             Err(error) => return Err(error),
+         };
+-        // This worker takes exactly one peer. The listener is no longer
+-        // valid readiness evidence before the session starts doing work.
++        // The first peer consumes boot readiness before session work.
+         job.stop_accepting();
+         socket.set_nonblocking(false)?;
+         {
+@@ -447,8 +543,103 @@
+             state.accepted = Some(socket.try_clone()?);
+         }
+         let _accepted = Accepted(Arc::clone(&control));
+-        return job.run(socket);
++        return match recovery {
++            Some((binding, readiness)) => job.run_recovery(
++                socket,
++                &mut Replacement {
++                    listener: &listener,
++                    wake: &wake,
++                    control: &control,
++                    readiness: &readiness,
++                    binding: &binding,
++                },
++            ),
++            None => job.run(socket),
++        };
++    }
++}
++
++struct Replacement<'a> {
++    listener: &'a UnixListener,
++    wake: &'a UnixStream,
++    control: &'a Mutex<Control>,
++    readiness: &'a PinnedListener,
++    binding: &'a HostLaunchBinding,
++}
++
++impl InstalledMailboxReplacementAcceptor for Replacement<'_> {
++    fn accept_after_clean_close(&mut self, deadline: Instant) -> io::Result<UnixStream> {
++        let route = self
++            .control
++            .lock()
++            .map_err(|_| io::Error::other("mailbox control poisoned"))?
++            .begin_replacement()?;
++        {
++            let route = route.upgrade().ok_or_else(recovery_route_expired)?;
++            route
++                .verify_route(self.binding, self.readiness.verify_original_identity()?)
++                .map_err(io::Error::other)?;
++        }
++        let socket = loop {
++            if !wait_for_peer(
++                self.listener.as_raw_fd(),
++                self.wake.as_raw_fd(),
++                Some(deadline),
++            )? {
++                return Err(io::Error::new(
++                    io::ErrorKind::Interrupted,
++                    "original mailbox stopped",
++                ));
++            }
++            let state = self
++                .control
++                .lock()
++                .map_err(|_| io::Error::other("mailbox control poisoned"))?;
++            check_replacement_window(&state, deadline)?;
++            // The listener remains nonblocking. Stop shares this lock, so
++            // its latch cannot race a subsequent accept or publication.
++            match self.listener.accept() {
++                Ok((socket, _)) => break socket,
++                Err(error) if error.kind() == io::ErrorKind::WouldBlock => continue,
++                Err(error) => return Err(error),
++            }
++        };
++        {
++            let route = route.upgrade().ok_or_else(recovery_route_expired)?;
++            route
++                .verify_peer(self.binding, &socket)
++                .map_err(io::Error::other)?;
++            route
++                .verify_route(self.binding, self.readiness.verify_original_identity()?)
++                .map_err(io::Error::other)?;
++        }
++        socket.set_nonblocking(false)?;
++        let shutdown_socket = socket.try_clone()?;
++        let mut state = self
++            .control
++            .lock()
++            .map_err(|_| io::Error::other("mailbox control poisoned"))?;
++        check_replacement_window(&state, deadline)?;
++        state.accepted = Some(shutdown_socket);
++        Ok(socket)
++    }
++}
++
++fn check_replacement_window(state: &Control, deadline: Instant) -> io::Result<()> {
++    if state.stopped {
++        return Err(io::Error::new(
++            io::ErrorKind::Interrupted,
++            "original mailbox stopped",
++        ));
+     }
++    if Instant::now() >= deadline {
++        return Err(accept_deadline_elapsed());
++    }
++    Ok(())
++}
++
++fn recovery_route_expired() -> io::Error {
++    io::Error::other("original mailbox recovery route expired")
+ }
+ 
+ fn wait_for_peer(listener: RawFd, wake: RawFd, deadline: Option<Instant>) -> io::Result<bool> {
+@@ -578,3 +769,123 @@
+         );
+     }
+ }
++
++#[cfg(test)]
++mod replacement_control_tests {
++    use super::*;
++
++    struct Route;
++    impl InstalledMailboxRecoveryRoute for Route {
++        fn verify_route(&self, _: &HostLaunchBinding, _: &Path) -> anyhow::Result<()> {
++            unreachable!("these tests exercise Runtime control only")
++        }
++
++        fn verify_peer(&self, _: &HostLaunchBinding, _: &UnixStream) -> anyhow::Result<()> {
++            unreachable!("these tests exercise Runtime control only")
++        }
++    }
++
++    #[test]
++    fn replacement_before_successful_launch_consumes_the_attempt() {
++        let route: Arc<dyn InstalledMailboxRecoveryRoute> = Arc::new(Route);
++        let mut control = Control::default();
++        assert!(control.begin_replacement().is_err());
++        assert!(control.publish_route(Arc::downgrade(&route)).is_err());
++        assert!(control.begin_replacement().is_err());
++    }
++
++    #[test]
++    fn replacement_retires_the_old_socket_and_takes_one_attempt() {
++        use std::io::Read as _;
++        let route: Arc<dyn InstalledMailboxRecoveryRoute> = Arc::new(Route);
++        let (old, mut peer) = UnixStream::pair().unwrap();
++        peer.set_read_timeout(Some(Duration::from_secs(1))).unwrap();
++        let mut control = Control {
++            accepted: Some(old),
++            ..Control::default()
++        };
++        control.publish_route(Arc::downgrade(&route)).unwrap();
++        assert!(control.begin_replacement().unwrap().upgrade().is_some());
++        assert_eq!(peer.read(&mut [0]).unwrap(), 0);
++        assert!(control.begin_replacement().is_err());
++        assert!(control.publish_route(Arc::downgrade(&route)).is_err());
++    }
++
++    #[test]
++    fn stop_closes_the_accepted_socket_and_refuses_recovery() {
++        use std::io::Read as _;
++        let route: Arc<dyn InstalledMailboxRecoveryRoute> = Arc::new(Route);
++        let (old, mut peer) = UnixStream::pair().unwrap();
++        let (wake, mut waiter) = UnixStream::pair().unwrap();
++        peer.set_read_timeout(Some(Duration::from_secs(1))).unwrap();
++        waiter
++            .set_read_timeout(Some(Duration::from_secs(1)))
++            .unwrap();
++        let mut control = Control {
++            accepted: Some(old),
++            wake: Some(wake),
++            ..Control::default()
++        };
++        control.publish_route(Arc::downgrade(&route)).unwrap();
++        control.signal_stop().unwrap();
++        assert_eq!(peer.read(&mut [0]).unwrap(), 0);
++        assert_eq!(waiter.read(&mut [0]).unwrap(), 0);
++        assert!(control.begin_replacement().is_err());
++    }
++}
++
++#[cfg(test)]
++#[test]
++fn early_recovery_wake_failure_does_not_skip_original_native_stop() {
++    use super::super::{NoopConsoleStreamer, VmId};
++    use super::{InstalledSlots, NativeDispatch, Ordering, retirement_tests::owner};
++    use mvm_core::vm_backend::{VmExitStatus, VmStatus};
++    use mvm_vmm::driver::traits::{DuplexStream, RunningVm};
++
++    struct StopProbe(VmId);
++    impl RunningVm for StopProbe {
++        fn id(&self) -> &VmId {
++            &self.0
++        }
++        fn wait(&self) -> anyhow::Result<VmExitStatus> {
++            unreachable!()
++        }
++        fn kill(&self) -> anyhow::Result<()> {
++            anyhow::bail!("original native stop probe reached")
++        }
++        fn pause(&self) -> anyhow::Result<()> {
++            unreachable!()
++        }
++        fn resume(&self) -> anyhow::Result<()> {
++            unreachable!()
++        }
++        fn status(&self) -> anyhow::Result<VmStatus> {
++            unreachable!()
++        }
++        fn vsock_connect(&self, _: u32) -> anyhow::Result<Box<dyn DuplexStream>> {
++            unreachable!()
++        }
++    }
++
++    let table = InstalledSlots::default();
++    let (_root, anchor, _) = owner("recovery-wake-failure", 91);
++    let slot = table.reserve(&anchor).unwrap();
++    slot.dispatch
++        .store(NativeDispatch::AttemptedTerminal as u8, Ordering::Release);
++    let control = Arc::new(Mutex::new(Control::default()));
++    let _ = std::panic::catch_unwind(|| {
++        let _held = control.lock().unwrap();
++        panic!("injected recovery wake poison");
++    });
++    assert!(control.is_poisoned());
++    assert!(
++        slot.mailbox_stop
++            .set(MailboxStop(Arc::downgrade(&control)))
++            .is_ok()
++    );
++    slot.retain_vm(Box::new(StopProbe(VmId(anchor.binding().vm_name.clone()))))
++        .unwrap();
++    let error = slot.stop(&NoopConsoleStreamer).unwrap_err();
++    assert_eq!(error.to_string(), "original native stop probe reached");
++    assert!(table.take_retired(&slot).is_err());
++}

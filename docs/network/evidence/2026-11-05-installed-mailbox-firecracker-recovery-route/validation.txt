@@ -1,0 +1,60 @@
+Source SHA-256
+f8e463c439e8be92dab82a236b8054222befeb7ffa7d6ca6a07307611aea8d8a  crates/mvm-backends/src/driver/fc.rs
+4e11d106e2bac8a93ec8d8e8436d67b45eaf814021d199a9e357e2f0541060a3  crates/mvm-backends/src/fc/fc_api.rs
+f3680b8c2efd023b86fc78a133fab2cfd0c052de6ed98873b2795ae925ba0fb6  crates/mvm-vmm/src/driver/traits.rs
+426ef5ecdcdc66c57b41f0efef6a9a478fcd5fbacdd707b554f0a4e8352ac49c  crates/mvm-vmm/src/host/fc_lifetime.rs
+1293d28f464651ce031f45f8836e9f6d5d8b30a19b2180a262d40e253c9a8423  crates/mvm-runtime/src/workload_runner/runner/installed.rs
+bbe0b01eaefda45937a0e92726a5e637f7deb10e9fc6fd550b4484df38a2cb3d  crates/mvm-runtime/src/workload_runner/runner/installed/mailbox_socket.rs
+
+API observation RED status and diagnostic
+1
+error[E0599]: no method named `connected_stream` found for struct `FcSession` in the current scope
+
+Runtime control RED status and diagnostic counts
+1
+      1 error[E0560]: struct `Control` has no field named `wake`
+      5 error[E0599]: no method named `begin_replacement` found for struct `Control` in the current scope
+      4 error[E0599]: no method named `publish_route` found for struct `Control` in the current scope
+      1 error[E0599]: no method named `signal_stop` found for struct `Control` in the current scope
+
+Locked backend release status, socket regression and suite result
+0
+test fc::fc_api::tests::session_observes_the_original_connected_peer_after_path_rebind ... ok
+test result: ok. 246 passed; 0 failed; 0 ignored; 0 measured; 180 filtered out; finished in 0.59s
+0bb7054da352695eb85ab73847cb08911d538770e4e230d2e41f0b181b0f8487  /var/tmp/spiralcore-pii-capacity-20261104/target/release/deps/mvm_backends-bbbb0d7339ec1be3
+
+Exact extracted API and control fixture results before composed Runtime build
+
+running 1 test
+test session_observes_the_original_connected_peer_after_path_rebind ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 3 tests
+test replacement_control_tests::replacement_before_successful_launch_consumes_the_attempt ... ok
+test replacement_control_tests::replacement_retires_the_old_socket_and_takes_one_attempt ... ok
+test replacement_control_tests::stop_closes_the_accepted_socket_and_refuses_recovery ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+Locked Runtime release binary and focused installed module
+b9efb53670d28cf8943b218f6c8053b1567bede40534b0c163a6e2cf6bc50a1b  /var/tmp/spiralcore-pii-capacity-20261104/target/release/deps/mvm_runtime-a738d6b240e0626b
+test workload_runner::runner::installed::mailbox_socket::early_recovery_wake_failure_does_not_skip_original_native_stop ... ok
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 1374 filtered out; finished in 0.02s
+
+Broader installed-prefix run, same binary
+101
+test workload_runner::runner::installed_tests::owned_native_handle_survives_canonical_runner_start_return ... FAILED
+called `Result::unwrap()` on an `Err` value: installed native startup retained: original installed host agent missing
+test result: FAILED. 22 passed; 1 failed; 0 ignored; 0 measured; 1370 filtered out; finished in 0.02s
+
+Retained earlier binary, exact re-execution of the failing fixture
+3eae827cf849d9e94b9282a32b70a4630351127f6da71e45b1acbeb498e77d7e  /var/tmp/spiralcore-pii-capacity-20261104/target/release/deps/mvm_runtime-698d4cd7dc2673d5
+called `Result::unwrap()` on an `Err` value: installed native startup retained: original installed host agent missing
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 1384 filtered out; finished in 0.00s
+
+Unchanged fixture and pre-mailbox host-agent gate source
+b0db8ff92f13aa5bc8c063e213973a5350b2e80b0348830f904026eb06f7fd8e  crates/mvm-runtime/src/workload_runner/runner.rs
+b2a2612417a14bbe4bdec5e5438a838a7259dd3ea373976aa6cf2e5860ecda54  crates/mvm-runtime/src/workload_runner/runner/installed_tests.rs
