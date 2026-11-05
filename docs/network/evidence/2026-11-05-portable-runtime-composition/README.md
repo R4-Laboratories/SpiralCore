@@ -1,0 +1,7 @@
+# Installed portable runtime composition
+
+The canonical Client now carries the original signed bundle's portable selection into installed Hostd launch. The selection checks the full original pin and supported legacy format before cache or canonical preparation effects. Hostd checks that same pin before handing the selected files to Runtime. The predecessor had attempted to attach an unrelated CLI runtime cache.
+
+Runtime now requires the signed workload verity root hash and the exact signed tree bytes. Its private launch generation uses the authenticated archive bytes. The signed-image Runtime fixture refused five altered or missing bindings, then checked byte equality, mode 0400 and verification of the private generation. All four existing portable tests passed on the same protected binary with a private temporary namespace and umask 0077. The archive retains the earlier permission failures and their environment correction.
+
+The composed source passed 27 installed-resident checks and the original helper shutdown test. The pinned test binary and all source and helper readbacks matched. The portable selector and Runtime changes received independent scoped source review for the cold path. The separate real-image Client and Hostd carrier tests are in execution. This record covers neither retained/checkpoint startup nor an executed guest transfer, WAN, capacity or FIPS qualification.

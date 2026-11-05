@@ -1,0 +1,509 @@
+--- a/crates/mvm-hostd/src/run.rs
++++ b/crates/mvm-hostd/src/run.rs
+@@ -445,10 +445,91 @@
+         ctx.emitter,
+         ctx.assurance,
+         #[cfg(unix)]
+-        owner,
++        owner.map(|owner| InstalledLocalLaunch {
++            owner,
++            portable: None,
++        }),
+     )
+ }
+ 
++/// Selected boot evidence handed from the canonical Client bundle resolver.
++#[cfg(unix)]
++pub struct InstalledPortableRuntime {
++    proof: mvm_core::vm_backend::LegacyPortableRuntimeProof,
++    boot_assets: mvm_core::vm_backend::BundleBootAssetsPin,
++    initrd: String,
++    overlay: String,
++    overlay_verity: String,
++    overlay_roothash: String,
++    overlay_version: String,
++}
++
++#[cfg(unix)]
++impl InstalledPortableRuntime {
++    /// Copy only the selected runtime fields. Hostd verifies the evidence again.
++    pub fn from_config(config: &VmStartConfig) -> Result<Self> {
++        Ok(Self {
++            proof: config
++                .legacy_portable_runtime
++                .clone()
++                .context("selected portable proof missing")?,
++            boot_assets: config
++                .bundle_boot_assets
++                .clone()
++                .context("selected portable boot assets missing")?,
++            initrd: config
++                .initrd_path
++                .clone()
++                .context("selected portable initrd missing")?,
++            overlay: config
++                .runtime_overlay_path
++                .clone()
++                .context("selected portable overlay missing")?,
++            overlay_verity: config
++                .runtime_overlay_verity_path
++                .clone()
++                .context("selected portable overlay verity missing")?,
++            overlay_roothash: config
++                .runtime_overlay_roothash
++                .clone()
++                .context("selected portable overlay root hash missing")?,
++            overlay_version: config
++                .runtime_overlay_version
++                .clone()
++                .context("selected portable overlay version missing")?,
++        })
++    }
++
++    fn attach(
++        self,
++        config: &mut VmStartConfig,
++        pin: Option<&mvm_core::plan::PlanArtifact>,
++    ) -> Result<()> {
++        anyhow::ensure!(
++            Some(&self.proof.pin) == pin,
++            "selected portable runtime differs from original admitted bundle"
++        );
++        config.legacy_portable_runtime = Some(self.proof);
++        config.bundle_boot_assets = Some(self.boot_assets);
++        config.initrd_path = Some(self.initrd);
++        config.runtime_overlay_path = Some(self.overlay);
++        config.runtime_overlay_verity_path = Some(self.overlay_verity);
++        config.runtime_overlay_roothash = Some(self.overlay_roothash);
++        config.runtime_overlay_version = Some(self.overlay_version);
++        mvm_runtime::runtime_evidence::verify_runtime_for_launch(
++            config,
++            mvm_runtime::runtime_evidence::MIN_GUEST_RPC_PROTOCOL_VERSION,
++        )?;
++        Ok(())
++    }
++}
++
++#[cfg(unix)]
++struct InstalledLocalLaunch {
++    owner: std::sync::Arc<mvm_core::host_lifetime::HostLifetimeAnchor>,
++    portable: Option<InstalledPortableRuntime>,
++}
++
+ /// Boot the original admitted authority with the original installation owner.
+ ///
+ /// This route never synthesizes, signs or admits a replacement plan and never
+@@ -462,8 +543,16 @@
+     emitter: Option<&AuditEmitter>,
+     assurance: Option<&crate::assurance_session::CampaignRequest>,
+     owner: std::sync::Arc<mvm_core::host_lifetime::HostLifetimeAnchor>,
++    portable: Option<InstalledPortableRuntime>,
+ ) -> Result<StartedMachine> {
+-    boot_admitted_local_inner(backend, req, admitted, emitter, assurance, Some(owner))
++    boot_admitted_local_inner(
++        backend,
++        req,
++        admitted,
++        emitter,
++        assurance,
++        Some(InstalledLocalLaunch { owner, portable }),
++    )
+ }
+ 
+ #[cfg(unix)]
+@@ -473,7 +562,7 @@
+     admitted: crate::plan_admission::AdmittedPlan,
+     emitter: Option<&AuditEmitter>,
+     assurance: Option<&crate::assurance_session::CampaignRequest>,
+-    #[cfg(unix)] owner: Option<std::sync::Arc<mvm_core::host_lifetime::HostLifetimeAnchor>>,
++    #[cfg(unix)] owner: Option<InstalledLocalLaunch>,
+ ) -> Result<StartedMachine> {
+     admitted.check_not_dispatched()?;
+     let rootfs_sha = mvm_core::crypto::image_verify::sha256_file_cached(&req.rootfs_path)
+@@ -497,7 +586,7 @@
+     rootfs_sha: &str,
+     emitter: Option<&AuditEmitter>,
+     assurance: Option<&crate::assurance_session::CampaignRequest>,
+-    #[cfg(unix)] owner: Option<std::sync::Arc<mvm_core::host_lifetime::HostLifetimeAnchor>>,
++    #[cfg(unix)] owner: Option<InstalledLocalLaunch>,
+ ) -> Result<StartedMachine> {
+     use crate::plan_admission::{StartAdmittedParams, start_admitted};
+     admitted.check_unlaunched_for_backend(backend.kind())?;
+@@ -555,9 +644,24 @@
+         ..Default::default()
+     };
+     #[cfg(unix)]
+-    if let Some(owner) = owner {
+-        owner.bind_to_config(&mut config)?;
++    let portable = match owner {
++        Some(InstalledLocalLaunch { owner, portable }) => {
++            owner.bind_to_config(&mut config)?;
++            anyhow::ensure!(
++                portable.is_some() || plan.bundle.is_none(),
++                "installed bundled launch requires its original portable runtime"
++            );
++            portable
++        }
++        None => None,
++    };
++    #[cfg(unix)]
++    if let Some(portable) = portable {
++        portable.attach(&mut config, plan.bundle.as_ref())?;
++    } else {
++        attach_guest_runtime(&mut config, &req.backend_name)?;
+     }
++    #[cfg(not(unix))]
+     attach_guest_runtime(&mut config, &req.backend_name)?;
+ 
+     crate::audit::durability::record_admission(
+--- a/crates/mvm-client/src/launch/mod.rs
++++ b/crates/mvm-client/src/launch/mod.rs
+@@ -567,37 +567,69 @@
+         if !installed && !self.machine_running(&params.name) {
+             remove_vm_runtime_dirs(&params.name)?;
+         }
+-        let (rootfs, kernel_path, verity_path, roothash, registry_pack_image) = match &params.source
+-        {
+-            LaunchSource::Image(image) => {
+-                let rootfs = crate::local::resolve_local_rootfs(image, &params.name).await?;
+-                let (verity, hash) = crate::local::host_verity_sidecars(&rootfs);
++        #[cfg(unix)]
++        let portable = params
++            .original_admitted
++            .as_ref()
++            .and_then(|admitted| admitted.plan().bundle.as_ref())
++            .map(|pin| {
++                let LaunchSource::Image(mvm_core::rootfs_source::RootfsSource::LocalPath(rootfs)) = &params.source else {
++                    return Err(crate::local::backend_err(
++                        "installed bundled launch requires its original local rootfs",
++                    ));
++                };
++                bundle_runtime::select_original_portable_runtime(pin, rootfs, backend.name())
++                    .map_err(|error| crate::local::backend_err(format!("{error:#}")))
++            })
++            .transpose()?;
++        #[cfg(not(unix))]
++        let portable: Option<mvm_core::vm_backend::VmStartConfig> = None;
++        let (rootfs, kernel_path, verity_path, roothash, registry_pack_image) =
++            if let Some(selected) = &portable {
+                 (
+-                    rootfs,
+-                    Self::resolve_workload_kernel(&backend)?,
+-                    verity.map(PathBuf::from),
+-                    hash,
++                    PathBuf::from(&selected.rootfs_path),
++                    selected.kernel_path.as_ref().map(PathBuf::from),
++                    selected.verity_path.as_ref().map(PathBuf::from),
++                    selected.roothash.clone(),
+                     None,
+                 )
+-            }
+-            LaunchSource::RegistryPack { pin } => {
+-                let image =
+-                    built_pack::resolve_built_pack_image(pin, backend.name(), &params.profile)
++            } else {
++                match &params.source {
++                    LaunchSource::Image(image) => {
++                        let rootfs =
++                            crate::local::resolve_local_rootfs(image, &params.name).await?;
++                        let (verity, hash) = crate::local::host_verity_sidecars(&rootfs);
++                        (
++                            rootfs,
++                            Self::resolve_workload_kernel(&backend)?,
++                            verity.map(PathBuf::from),
++                            hash,
++                            None,
++                        )
++                    }
++                    LaunchSource::RegistryPack { pin } => {
++                        let image = built_pack::resolve_built_pack_image(
++                            pin,
++                            backend.name(),
++                            &params.profile,
++                        )
+                         .map_err(|error| crate::local::backend_err(format!("{error:#}")))?;
+-                (
+-                    PathBuf::from(image.rootfs_path),
+-                    image.kernel_path.map(PathBuf::from),
+-                    image.verity_path.map(PathBuf::from),
+-                    image.roothash,
+-                    Some(pin.clone()),
+-                )
+-            }
+-            LaunchSource::Built { .. } => {
+-                return Err(MvmError::InvalidSpec {
+-                    reason: "a manifest-built workload boots as a persistent machine".into(),
+-                });
+-            }
+-        };
++                        (
++                            PathBuf::from(image.rootfs_path),
++                            image.kernel_path.map(PathBuf::from),
++                            image.verity_path.map(PathBuf::from),
++                            image.roothash,
++                            Some(pin.clone()),
++                        )
++                    }
++                    LaunchSource::Built { .. } => {
++                        return Err(MvmError::InvalidSpec {
++                            reason: "a manifest-built workload boots as a persistent machine"
++                                .into(),
++                        });
++                    }
++                }
++            };
+ 
+         let req = LocalRunRequest {
+             name: params.name.clone(),
+@@ -679,6 +711,11 @@
+                 emitter.as_deref(),
+                 campaign.as_ref(),
+                 owner,
++                portable
++                    .as_ref()
++                    .map(mvm_hostd::run::InstalledPortableRuntime::from_config)
++                    .transpose()
++                    .map_err(|e| crate::local::backend_err(format!("{e:#}")))?,
+             )
+             .map_err(|e| crate::local::backend_err(format!("{e:#}")));
+         }
+--- a/crates/mvm-client/src/launch/bundle_runtime.rs
++++ b/crates/mvm-client/src/launch/bundle_runtime.rs
+@@ -42,12 +42,59 @@
+ /// False means an ordinary source or a legacy bundle without boot assets.
+ pub fn attach_if_installed_bundle(config: &mut VmStartConfig, backend: &str) -> Result<bool> {
+     let mut selected = config.clone();
+-    let attached = attach_installed_bundle(&mut selected, backend)?;
++    let attached = attach_installed_bundle(&mut selected, backend, None)?;
+     *config = selected;
+     Ok(attached)
+ }
+ 
+-fn attach_installed_bundle(config: &mut VmStartConfig, backend: &str) -> Result<bool> {
++#[cfg(unix)]
++pub(super) fn select_original_portable_runtime(
++    pin: &mvm_core::plan::PlanArtifact,
++    rootfs: &Path,
++    backend: &str,
++) -> Result<VmStartConfig> {
++    let registry = BundleRegistry::default_path()?;
++    let installed = registry
++        .find(&pin.bundle_sha256)?
++        .context("original installed bundle missing")?;
++    let kernel = installed
++        .manifest
++        .find_by_role(&ArtifactRole::Kernel)
++        .context("original bundle kernel missing")?;
++    let mut config = VmStartConfig {
++        rootfs_path: rootfs
++            .to_str()
++            .context("original bundle rootfs path is not UTF-8")?
++            .into(),
++        kernel_path: Some(
++            installed
++                .root
++                .join(&kernel.path)
++                .to_str()
++                .context("original bundle kernel path is not UTF-8")?
++                .into(),
++        ),
++        ..Default::default()
++    };
++    ensure!(
++        attach_installed_bundle(&mut config, backend, Some(pin))?,
++        "original bundle has no portable boot assets"
++    );
++    ensure!(
++        config
++            .legacy_portable_runtime
++            .as_ref()
++            .is_some_and(|proof| proof.pin == *pin),
++        "selected portable runtime differs from original admitted bundle"
++    );
++    Ok(config)
++}
++
++fn attach_installed_bundle(
++    config: &mut VmStartConfig,
++    backend: &str,
++    expected_legacy: Option<&mvm_core::plan::PlanArtifact>,
++) -> Result<bool> {
+     let Some(archive) = installed_archive_for_rootfs(Path::new(&config.rootfs_path))? else {
+         return Ok(false);
+     };
+@@ -60,6 +107,17 @@
+             mvm_core::plan::bundle::BundleMember::CanonicalLinuxProof(_)
+         )
+     });
++    if let Some(pin) = expected_legacy {
++        ensure!(
++            verified.plan_artifact() == *pin,
++            "selected portable runtime differs from original admitted bundle"
++        );
++        ensure!(
++            !canonical
++                && verified.boot_assets.as_ref().is_some_and(|assets| assets.cli_runtime.is_none()),
++            "installed selected runtime requires original legacy portable boot assets"
++        );
++    }
+     let kind = BackendKind::from_label(backend).context("unknown bundle boot backend")?;
+     if let Some(owner) = &config.canonical_kernel {
+         ensure!(
+--- a/crates/mvm-runtime/src/legacy_portable_runtime.rs
++++ b/crates/mvm-runtime/src/legacy_portable_runtime.rs
+@@ -6,18 +6,26 @@
+     select_boot_asset_members, verify_plan_bundle,
+ };
+ use mvm_core::vm_backend::VmStartConfig;
+-use std::path::Path;
++use std::{fs::OpenOptions, io::Read as _, path::Path};
+ 
+ #[derive(Debug)]
+ pub struct VerifiedLegacyPortableRuntime {
+     archive: Vec<u8>,
+     rootfs: Vec<u8>,
+     kernel: Vec<u8>,
++    workload_verity: Option<WorkloadVerity>,
+     overlay: Vec<u8>,
+     verity: Vec<u8>,
+     initrd: Vec<u8>,
+ }
+ 
++#[derive(Debug)]
++struct WorkloadVerity {
++    roothash: String,
++    tree: Vec<u8>,
++    tree_sha256: String,
++}
++
+ struct OriginalArchive(Vec<u8>);
+ 
+ impl BundleResolver for OriginalArchive {
+@@ -51,7 +59,13 @@
+             ("overlay.ext4", &self.overlay),
+             ("overlay.verity", &self.verity),
+             ("initramfs.cpio.gz", &self.initrd),
+-        ] {
++        ]
++        .into_iter()
++        .chain(
++            self.workload_verity
++                .as_ref()
++                .map(|verity| ("rootfs.verity", &verity.tree)),
++        ) {
+             let path = generation.path().join(name);
+             mvm_core::util::atomic_io::write_private_new(&path, bytes)?;
+             mvm_core::private_fs::set_mode(&path, 0o400)?;
+@@ -66,6 +80,16 @@
+             .archive = generation.path().join("bundle.mvmpkg");
+         bound.rootfs_path = generation.path().join("rootfs").display().to_string();
+         bound.kernel_path = Some(generation.path().join("kernel").display().to_string());
++        if let Some(verity) = &self.workload_verity {
++            bound.verity_path = Some(
++                generation
++                    .path()
++                    .join("rootfs.verity")
++                    .display()
++                    .to_string(),
++            );
++            bound.roothash = Some(verity.roothash.clone());
++        }
+         bound.runtime_overlay_path =
+             Some(generation.path().join("overlay.ext4").display().to_string());
+         bound.runtime_overlay_verity_path = Some(
+@@ -106,9 +130,48 @@
+         )? == verified.kernel,
+         "selected portable kernel differs from signed bundle"
+     );
++    match (
++        &verified.workload_verity,
++        config.verity_path.as_deref(),
++        config.roothash.as_deref(),
++    ) {
++        (None, None, None) => {}
++        (Some(verity), Some(path), Some(roothash)) if roothash == verity.roothash => {
++            verify_workload_verity_tree(Path::new(path), verity)?;
++        }
++        _ => anyhow::bail!("selected portable workload verity binding differs from signed bundle"),
++    }
+     Ok(verified)
+ }
+ 
++fn verify_workload_verity_tree(path: &Path, verity: &WorkloadVerity) -> Result<()> {
++    let mut options = OpenOptions::new();
++    options.read(true);
++    #[cfg(unix)]
++    {
++        use std::os::unix::fs::OpenOptionsExt as _;
++        options.custom_flags(libc::O_NONBLOCK | libc::O_NOFOLLOW);
++    }
++    let file = options
++        .open(path)
++        .context("open selected portable workload verity tree")?;
++    let metadata = file.metadata()?;
++    let signed_len = u64::try_from(verity.tree.len())?;
++    ensure!(
++        metadata.is_file() && metadata.len() == signed_len,
++        "selected portable workload verity tree differs from signed bundle"
++    );
++    let read_limit = signed_len
++        .checked_add(1)
++        .context("portable verity tree length overflow")?;
++    let actual_sha256 = mvm_core::crypto::image_verify::sha256_reader(file.take(read_limit))?;
++    ensure!(
++        actual_sha256 == verity.tree_sha256,
++        "selected portable workload verity tree differs from signed bundle"
++    );
++    Ok(())
++}
++
+ /// Root and kernel observations are compared separately, allowing authenticated
+ /// checkpoint forks to remap an identical copy without changing its identity.
+ pub(crate) fn verify_retained(
+@@ -131,7 +194,7 @@
+         "portable guest architecture mismatch"
+     );
+     let original = OriginalArchive(std::fs::read(&proof.archive)?);
+-    let bundle = verify_plan_bundle(&proof.pin, &original, &FsTrustStore::default_path()?)?;
++    let mut bundle = verify_plan_bundle(&proof.pin, &original, &FsTrustStore::default_path()?)?;
+     ensure!(
+         matches!(bundle.manifest.schema_version, 4 | 5)
+             && bundle.manifest.members.iter().any(|member| {
+@@ -235,7 +298,29 @@
+             "portable boot pin differs from original bundle"
+         );
+     }
++    let workload_verity = match &bundle.manifest.verity {
++        None => None,
++        Some(binding) => {
++            let artifact = bundle
++                .manifest
++                .find_by_name(&binding.sidecar_artifact)
++                .context("portable signed workload verity artifact missing")?;
++            ensure!(
++                artifact.role == ArtifactRole::VerityHashSidecar,
++                "portable signed workload verity artifact role mismatch"
++            );
++            Some(WorkloadVerity {
++                roothash: binding.roothash.clone(),
++                tree: bundle
++                    .artifacts
++                    .remove(&artifact.path)
++                    .context("portable signed workload verity bytes missing")?,
++                tree_sha256: artifact.sha256.clone(),
++            })
++        }
++    };
+     Ok(VerifiedLegacyPortableRuntime {
++        workload_verity,
+         rootfs: role_bytes(&bundle, ArtifactRole::Rootfs)?.to_vec(),
+         kernel: role_bytes(&bundle, ArtifactRole::Kernel)?.to_vec(),
+         archive: original.0,
+@@ -856,3 +941,7 @@
+         assert!(crate::checkpoint::verify_checkpoint_runtime(&store, &meta).is_err());
+     }
+ }
++
++#[cfg(all(test, target_os = "linux", target_arch = "x86_64"))]
++#[path = "legacy_portable_runtime/verity_asset_tests.rs"]
++mod verity_asset_tests;
