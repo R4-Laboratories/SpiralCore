@@ -1,0 +1,25 @@
+RED clock regression
+signed receipt from an endpoint one second ahead: Unauthorized
+test result: FAILED. 4 passed; 1 failed; 0 ignored; 0 measured; 59 filtered out; finished in 0.07s
+
+GREEN clock regression and native components
+mailbox-native-vsock-clock-composed/execute.out:test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 217 filtered out; finished in 0.06s
+mailbox-native-vsock-clock-composed/execute.out:test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 217 filtered out; finished in 0.14s
+mailbox-native-vsock-clock-composed/execute.out:test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 217 filtered out; finished in 0.32s
+mailbox-native-vsock-clock-composed/execute.out:test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 217 filtered out; finished in 0.06s
+mailbox-native-vsock-clock-composed/execute.out:test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 217 filtered out; finished in 0.06s
+mailbox-native-vsock-clock-composed/execute.out:test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 213 filtered out; finished in 0.07s
+mailbox-vsock-clock-green/execute.out:test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 59 filtered out; finished in 0.09s
+
+Protected host and developmental guest
+{"sha256": "8fbecccdd33ef74fd868dfb9acfd5bc9dfc7fd162199c1f126e3072e725ffa7e"}
+{"sha256": "052b17d81ac72f1fb4e312f77e930ee89b29ec2e129211135642603d1494b1c2", "size": 3100240, "entry_sha256": "cfe77cd8ba4868c02793c313cc3305802edf427395b4ff9edc273f3d1167c01b"}
+{"unexpected": 29, "installed-mailbox-witness": 31}
+
+Pre-fix native refusal and post-fix process measurement
+Error: installed mailbox guest exchange failed: Exit { code: 27 }
+	User time (seconds): 1.72
+	System time (seconds): 0.98
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:03.78
+	Maximum resident set size (kbytes): 226428
+	Exit status: 0

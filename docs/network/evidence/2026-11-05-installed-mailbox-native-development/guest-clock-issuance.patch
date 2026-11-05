@@ -1,0 +1,162 @@
+--- a/crates/spiralcore-mvm-live/src/mailbox_witness.rs
++++ b/crates/spiralcore-mvm-live/src/mailbox_witness.rs
+@@ -13,7 +13,8 @@
+ use spiralcore_mvm_adapter::{
+     CONTENT_TYPE,
+     broker::BrokerContext,
+-    live::{HandshakeRole, SocketIo, StreamCounters, StreamTransport},
++    issuance::IssuancePolicy,
++    live::{HandshakeRole, MAX_CLOCK_OFFSET_MS, SocketIo, StreamCounters, StreamTransport},
+     receipt::{ReceiptObservation, ReceiptReturnConfig, ReceiptTracker, SendHandle},
+     service::{CallStatus, LocalMailboxService, MailboxBinding},
+     service_sender::{self, MessageOptions},
+@@ -36,6 +37,9 @@
+ const CALL_LEN: usize = 65_023;
+ const CAST: &[u8] = b"\0installed-vsock-cast\0\0";
+ const TIMEOUT: Duration = Duration::from_secs(15);
++const ISSUANCE_POLICY: IssuancePolicy = IssuancePolicy::Bounded {
++    max_clock_ahead_ms: MAX_CLOCK_OFFSET_MS as u64,
++};
+ const BOOTSTRAP_MAX: usize = 64 << 10;
+ const BOOTSTRAP_PATH: &str = "/usr/lib/spiralcore/installed-mailbox.json";
+ 
+@@ -154,10 +158,11 @@
+         let outbound = endpoint.outgoing.as_ref().ok_or("missing fixture output")?;
+         let local_receipt = SigningKey::from_bytes(&profile.local_receipt_signing);
+         let returns = broker.with_time(|budget, _| -> Result<_> {
+-            Ok(ReceiptReturnConfig::new(
++            Ok(ReceiptReturnConfig::new_with_policy(
+                 profile.outgoing_control.service_binding(None)?,
+                 budget.clone(),
+                 local_receipt.verifying_key(),
++                ISSUANCE_POLICY,
+             )?)
+         })?;
+         let stream = StreamTransport::new(socket, outbound.binding.claims.route_id, TIMEOUT)?;
+@@ -272,7 +277,8 @@
+             if call.payload() != payload() {
+                 return Err("fixture Call bytes differ".into());
+             }
+-            let options = MessageOptions::for_reply(&call, now)?;
++            let options =
++                MessageOptions::for_reply_with_policy(&peer.outgoing, &call, now, ISSUANCE_POLICY)?;
+             let reply = service.reply_prepared(
+                 &peer.outgoing,
+                 call.handle(),
+@@ -352,12 +358,14 @@
+         let mut tracker = peer.tracker()?;
+         let expected = payload();
+         let (prepared, call, send, now) = broker.with_time(|_, now| -> Result<_> {
+-            let mut options = MessageOptions::fresh(
++            let mut options = MessageOptions::fresh_for_binding(
++                &peer.outgoing,
+                 ContentType::parse(CONTENT_TYPE, 1)?,
+                 now,
+                 now.unix_ms
+                     .checked_add(10_000)
+                     .ok_or("fixture expiry overflow")?,
++                ISSUANCE_POLICY,
+             )?;
+             options.reply_to = reply_to;
+             let prepared = service_sender::prepare(&peer.outgoing, &expected, &options, now)?;
+@@ -381,12 +389,14 @@
+             Ok(())
+         })?;
+         let (prepared, send, now) = broker.with_time(|_, now| -> Result<_> {
+-            let options = MessageOptions::fresh(
++            let options = MessageOptions::fresh_for_binding(
++                &cast,
+                 ContentType::parse(CONTENT_TYPE, 1)?,
+                 now,
+                 now.unix_ms
+                     .checked_add(10_000)
+                     .ok_or("fixture expiry overflow")?,
++                ISSUANCE_POLICY,
+             )?;
+             let prepared = service_sender::prepare(&cast, CAST, &options, now)?;
+             let wire = encode_envelope(prepared.envelope())?;
+--- a/crates/spiralcore-mvm-live/src/mailbox_witness/tests.rs
++++ b/crates/spiralcore-mvm-live/src/mailbox_witness/tests.rs
+@@ -174,3 +174,82 @@
+     worker.join().unwrap();
+     drop(host_write);
+ }
++
++#[test]
++fn native_receipt_accepts_bounded_sender_clock_ahead_without_relaxing_validation() {
++    use super::{CONTENT_TYPE, HandshakeRole, MessageOptions, Peer, campaign, service_sender};
++    use mvm_contract::protocol::mailbox::ContentType;
++    use mvm_core::mailbox::encode_envelope;
++    use spiralcore_mvm_adapter::service::{LocalMailboxService, ServiceTime};
++    use std::sync::mpsc::sync_channel;
++
++    let (_, guest, host) = mailbox_witness::provision().unwrap();
++    let broker = campaign::broker_context().unwrap();
++    let host_now = broker
++        .with_time(|_, now| Ok::<_, Box<dyn std::error::Error + Send + Sync>>(now))
++        .unwrap();
++    let guest_now = ServiceTime {
++        unix_ms: host_now.unix_ms - 1_000,
++        ..host_now
++    };
++    let (a, b) = UnixStream::pair().unwrap();
++    let (call_tx, call_rx) = sync_channel::<Vec<u8>>(1);
++    let worker = std::thread::spawn(move || {
++        let broker = campaign::broker_context().unwrap();
++        let mut service = broker
++            .with_time(|budget, _| LocalMailboxService::new(budget.clone()))
++            .unwrap();
++        let peer = Peer::open(&host.endpoint, &broker, a, HandshakeRole::Acceptor).unwrap();
++        let call = call_rx.recv_timeout(super::TIMEOUT).unwrap();
++        let (_, receipt) = peer
++            .returns
++            .admit(&mut service, &peer.incoming, &call, host_now)
++            .unwrap();
++        receipt.encoded_bytes().to_vec()
++    });
++    let peer = Peer::open(&guest.endpoint, &broker, b, HandshakeRole::Initiator).unwrap();
++    let mut tracker = peer.tracker().unwrap();
++    let mut options = MessageOptions::fresh(
++        ContentType::parse(CONTENT_TYPE, 1).unwrap(),
++        guest_now,
++        guest_now.unix_ms + 10_000,
++    )
++    .unwrap();
++    options.reply_to = guest.endpoint.outgoing.as_ref().unwrap().reply_to;
++    let prepared = service_sender::prepare(&peer.outgoing, b"skew", &options, guest_now).unwrap();
++    let wire = encode_envelope(prepared.envelope()).unwrap();
++    let send = tracker
++        .register_send(
++            &peer.outgoing,
++            &peer.control,
++            &peer.verifier,
++            &wire,
++            guest_now,
++        )
++        .unwrap();
++    call_tx.send(wire).unwrap();
++    let receipt = worker.join().unwrap();
++    let beyond_bound = ServiceTime {
++        unix_ms: host_now.unix_ms - 6_000,
++        ..guest_now
++    };
++    assert_eq!(
++        tracker.observe_receipt(&peer.control, &receipt, beyond_bound),
++        Err(spiralcore_mvm_adapter::service::ServiceError::Unauthorized)
++    );
++    assert!(matches!(
++        tracker
++            .take_receipt(&peer.outgoing, &send, beyond_bound)
++            .unwrap(),
++        super::ReceiptObservation::Pending
++    ));
++    tracker
++        .observe_receipt(&peer.control, &receipt, guest_now)
++        .expect("signed receipt from an endpoint one second ahead");
++    assert!(matches!(
++        tracker
++            .take_receipt(&peer.outgoing, &send, guest_now)
++            .unwrap(),
++        super::ReceiptObservation::Verified(_)
++    ));
++}
