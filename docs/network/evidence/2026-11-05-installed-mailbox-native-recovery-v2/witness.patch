@@ -1,0 +1,988 @@
+--- a/crates/spiralcore-mvm-live/src/mailbox_witness.rs
++++ b/crates/spiralcore-mvm-live/src/mailbox_witness.rs
+@@ -15,9 +15,12 @@
+     broker::BrokerContext,
+     issuance::IssuancePolicy,
+     live::{
+-        HandshakeRole, LiveError, MAX_CLOCK_OFFSET_MS, SocketIo, StreamCounters, StreamTransport,
++        HandshakeRole, LiveError, MAX_CLOCK_OFFSET_MS, ReceiveOutcome, ReplacementIdentity,
++        SocketIo, StreamCounters, StreamTransport,
++    },
++    receipt::{
++        PreparedReceipt, ReceiptObservation, ReceiptReturnConfig, ReceiptTracker, SendHandle,
+     },
+-    receipt::{ReceiptObservation, ReceiptReturnConfig, ReceiptTracker, SendHandle},
+     service::{CallStatus, LocalMailboxService, MailboxBinding},
+     service_sender::{self, MessageOptions},
+ };
+@@ -39,6 +42,8 @@
+ const CALL_LEN: usize = 65_023;
+ const CAST: &[u8] = b"\0installed-vsock-cast\0\0";
+ const TIMEOUT: Duration = Duration::from_secs(15);
++const RECOVERY_CAP: Duration = Duration::from_secs(8);
++const RECOVERY_SESSION: &str = "spiralcore-installed-mailbox-recovery-v2/";
+ const ISSUANCE_POLICY: IssuancePolicy = IssuancePolicy::Bounded {
+     max_clock_ahead_ms: MAX_CLOCK_OFFSET_MS as u64,
+ };
+@@ -54,15 +59,51 @@
+ 
+ #[derive(Deserialize, Serialize)]
+ #[serde(deny_unknown_fields)]
++struct RecoveryPin {
++    session: String,
++    signing_key: [u8; 32],
++    peer: [u8; 32],
++}
++
++impl RecoveryPin {
++    fn authenticate<S: SocketIo + 'static>(
++        &self,
++        stream: &StreamTransport<S>,
++        role: HandshakeRole,
++        cancel: &CancellationToken,
++        deadline: Instant,
++    ) -> Result<()> {
++        let signing_key = SigningKey::from_bytes(&self.signing_key);
++        let peer = VerifyingKey::from_bytes(&self.peer)?;
++        let identity = match role {
++            HandshakeRole::Acceptor => ReplacementIdentity::Host {
++                signing_key: &signing_key,
++                expected_guest: &peer,
++            },
++            HandshakeRole::Initiator => ReplacementIdentity::Guest {
++                signing_key: &signing_key,
++                expected_host: &peer,
++            },
++        };
++        stream.authenticate_replacement(identity, &self.session, cancel, deadline)?;
++        Ok(())
++    }
++}
++
++#[derive(Deserialize, Serialize)]
++#[serde(deny_unknown_fields)]
+ pub struct GuestBootstrap {
+     #[serde(default)]
+     close_after_call_receipt: bool,
++    #[serde(default, skip_serializing_if = "Option::is_none")]
++    recovery: Option<RecoveryPin>,
+     endpoint: Bootstrap,
+     cast: Material,
+ }
+ 
+ pub struct HostFixture {
+     close_after_call_receipt: bool,
++    recovery: Option<RecoveryPin>,
+     endpoint: Bootstrap,
+     cast: Material,
+ }
+@@ -74,6 +115,8 @@
+     pub cast_bytes: usize,
+     pub abandoned_after_receipt: bool,
+     pub counters: StreamCounters,
++    #[serde(skip_serializing_if = "Option::is_none")]
++    pub first_carrier: Option<StreamCounters>,
+     pub thread_cpu_us: u128,
+     pub elapsed_us: u128,
+ }
+@@ -87,6 +130,17 @@
+ pub(crate) fn provision_with_close(
+     close_after_call_receipt: bool,
+ ) -> Result<([u8; 32], GuestBootstrap, HostFixture)> {
++    provision_mode(close_after_call_receipt, false)
++}
++
++pub(crate) fn provision_recovery() -> Result<([u8; 32], GuestBootstrap, HostFixture)> {
++    provision_mode(false, true)
++}
++
++fn provision_mode(
++    close_after_call_receipt: bool,
++    recovery: bool,
++) -> Result<([u8; 32], GuestBootstrap, HostFixture)> {
+     let (pair, guest_cast, host_cast) = Pair::provision_installed_witness(Plan {
+         stage: Stage::Two,
+         arm: Arm::Warm,
+@@ -134,15 +188,44 @@
+     }
+     digest.update(sender_profile.peer_receipt_verification);
+     digest.update(receiver_profile.peer_receipt_verification);
++    let (guest_recovery, host_recovery) = if recovery {
++        let host = SigningKey::from_bytes(&rand::random());
++        let guest = SigningKey::from_bytes(&rand::random());
++        let session = format!(
++            "{RECOVERY_SESSION}{:032x}{:032x}",
++            rand::random::<u128>(),
++            rand::random::<u128>(),
++        );
++        digest.update(b"SpiralCore/installed-mailbox-recovery-v2\0");
++        digest.update(session.as_bytes());
++        digest.update(host.verifying_key().to_bytes());
++        digest.update(guest.verifying_key().to_bytes());
++        (
++            Some(RecoveryPin {
++                session: session.clone(),
++                signing_key: guest.to_bytes(),
++                peer: host.verifying_key().to_bytes(),
++            }),
++            Some(RecoveryPin {
++                session,
++                signing_key: host.to_bytes(),
++                peer: guest.verifying_key().to_bytes(),
++            }),
++        )
++    } else {
++        (None, None)
++    };
+     Ok((
+         digest.finalize().into(),
+         GuestBootstrap {
+             close_after_call_receipt,
++            recovery: guest_recovery,
+             endpoint: pair.sender,
+             cast: guest_cast,
+         },
+         HostFixture {
+             close_after_call_receipt,
++            recovery: host_recovery,
+             endpoint: pair.receiver,
+             cast: host_cast,
+         },
+@@ -166,6 +249,7 @@
+         broker: &'a BrokerContext,
+         socket: S,
+         role: HandshakeRole,
++        recovery: Option<(&RecoveryPin, Instant)>,
+     ) -> Result<Self> {
+         campaign::validate_service_bootstrap(endpoint)?;
+         let profile = endpoint.service.as_ref().ok_or("missing fixture service")?;
+@@ -180,9 +264,8 @@
+                 ISSUANCE_POLICY,
+             )?)
+         })?;
+-        let stream = StreamTransport::new(socket, outbound.binding.claims.route_id, TIMEOUT)?;
+         let cancel = CancellationToken::default();
+-        stream.handshake(role, &cancel)?;
++        let stream = Self::carrier(endpoint, socket, role, &cancel, recovery)?;
+         Ok(Self {
+             broker,
+             incoming: inbound.service_binding(Some(profile.local_receipt_signing))?,
+@@ -195,6 +278,23 @@
+         })
+     }
+ 
++    fn carrier(
++        endpoint: &Bootstrap,
++        socket: S,
++        role: HandshakeRole,
++        cancel: &CancellationToken,
++        recovery: Option<(&RecoveryPin, Instant)>,
++    ) -> Result<StreamTransport<S>> {
++        let outbound = endpoint.outgoing.as_ref().ok_or("missing fixture output")?;
++        let stream = StreamTransport::new(socket, outbound.binding.claims.route_id, TIMEOUT)?;
++        if let Some((pin, deadline)) = recovery {
++            pin.authenticate(&stream, role, cancel, deadline)?;
++        } else {
++            stream.handshake(role, cancel)?;
++        }
++        Ok(stream)
++    }
++
+     fn receive(&self) -> Result<Vec<u8>> {
+         Ok(self
+             .stream
+@@ -207,18 +307,27 @@
+         binding: &MailboxBinding,
+         wire: &[u8],
+     ) -> Result<()> {
+-        let receipt = self.broker.with_time(|_, now| -> Result<_> {
++        let receipt = self.admit(service, binding, wire)?;
++        self.send_receipt(receipt, Instant::now() + TIMEOUT)
++    }
++
++    fn admit<'b>(
++        &'b self,
++        service: &mut LocalMailboxService,
++        binding: &'b MailboxBinding,
++        wire: &[u8],
++    ) -> Result<PreparedReceipt<'b>> {
++        self.broker.with_time(|_, now| -> Result<_> {
+             let (accepted, receipt) = self.returns.admit(service, binding, wire, now)?;
+             if accepted.receipt.outcome != DeliveryOutcome::AcceptedEphemeral {
+                 return Err("fixture admission did not accept the message".into());
+             }
+             Ok(receipt)
+-        })?;
+-        let (permit, now) = self.broker.with_time(|_, now| -> Result<_> {
+-            Ok((receipt.reserve_send(&self.cancel, now)?, now))
+-        })?;
+-        permit.send(&self.stream, &self.cancel, now)?;
+-        Ok(())
++        })
++    }
++
++    fn send_receipt(&self, receipt: PreparedReceipt<'_>, deadline: Instant) -> Result<()> {
++        send_receipt(self.broker, &self.stream, &self.cancel, receipt, deadline)
+     }
+ 
+     fn tracker(&self) -> Result<ReceiptTracker> {
+@@ -233,7 +342,17 @@
+         binding: &MailboxBinding,
+         send: SendHandle,
+     ) -> Result<Box<SignedDestinationReceipt>> {
+-        let wire = self.receive()?;
++        self.verified_receipt_before(tracker, binding, send, Instant::now() + TIMEOUT)
++    }
++
++    fn verified_receipt_before(
++        &self,
++        tracker: &mut ReceiptTracker,
++        binding: &MailboxBinding,
++        send: SendHandle,
++        deadline: Instant,
++    ) -> Result<Box<SignedDestinationReceipt>> {
++        let wire = self.stream.receive(&self.cancel, deadline)?;
+         self.broker.with_time(|_, now| -> Result<_> {
+             tracker.observe_receipt(&self.control, &wire, now)?;
+             match tracker.take_receipt(binding, &send, now)? {
+@@ -252,9 +371,16 @@
+         start: Instant,
+         cpu: cpu_time::ThreadTime,
+         abandoned_after_receipt: bool,
++        first_carrier: Option<StreamCounters>,
+     ) -> Result<ExchangeResult> {
+         let counters = self.stream.counters()?;
+-        let frames = if abandoned_after_receipt { 1 } else { 3 };
++        let frames = if abandoned_after_receipt {
++            1
++        } else if first_carrier.is_some() {
++            2
++        } else {
++            3
++        };
+         if (counters.frames_sent, counters.frames_received) != (frames, frames) {
+             return Err("unexpected fixture frame count".into());
+         }
+@@ -269,12 +395,26 @@
+             },
+             abandoned_after_receipt,
+             counters,
++            first_carrier,
+             thread_cpu_us: cpu.elapsed().as_micros(),
+             elapsed_us: start.elapsed().as_micros(),
+         })
+     }
+ }
+ 
++fn send_receipt<S: SocketIo + 'static>(
++    broker: &BrokerContext,
++    stream: &StreamTransport<S>,
++    cancel: &CancellationToken,
++    receipt: PreparedReceipt<'_>,
++    deadline: Instant,
++) -> Result<()> {
++    let (permit, now) = broker
++        .with_time(|_, now| -> Result<_> { Ok((receipt.reserve_send(cancel, now)?, now)) })?;
++    permit.send(&stream.before(deadline), cancel, now)?;
++    Ok(())
++}
++
+ impl HostFixture {
+     pub fn run(
+         self,
+@@ -282,7 +422,36 @@
+         broker: &BrokerContext,
+         service: &mut LocalMailboxService,
+     ) -> Result<ExchangeResult> {
++        self.run_inner(socket, broker, service, None)
++    }
++
++    pub(crate) fn run_recovery(
++        self,
++        socket: UnixStream,
++        acceptor: &mut dyn mvm_core::host_lifetime::InstalledMailboxReplacementAcceptor,
++        broker: &BrokerContext,
++        service: &mut LocalMailboxService,
++    ) -> Result<ExchangeResult> {
++        self.run_inner(socket, broker, service, Some(acceptor))
++    }
++
++    fn run_inner(
++        self,
++        socket: UnixStream,
++        broker: &BrokerContext,
++        service: &mut LocalMailboxService,
++        acceptor: Option<&mut dyn mvm_core::host_lifetime::InstalledMailboxReplacementAcceptor>,
++    ) -> Result<ExchangeResult> {
++        if self.recovery.is_some() != acceptor.is_some() {
++            return Err("fixture recovery authority differs".into());
++        }
+         let start = Instant::now();
++        let deadline = start
++            + if acceptor.is_some() {
++                RECOVERY_CAP
++            } else {
++                TIMEOUT
++            };
+         let cpu = cpu_time::ThreadTime::now();
+         let profile = self
+             .endpoint
+@@ -292,10 +461,18 @@
+         let cast = self
+             .cast
+             .service_binding(Some(profile.local_receipt_signing))?;
+-        let peer = Peer::open(&self.endpoint, broker, socket, HandshakeRole::Acceptor)?;
++        let recovery = self.recovery.as_ref().map(|pin| (pin, deadline));
++        let mut peer = Peer::open(
++            &self.endpoint,
++            broker,
++            socket,
++            HandshakeRole::Acceptor,
++            recovery,
++        )?;
+         let mut tracker = peer.tracker()?;
+-        let wire = peer.receive()?;
+-        peer.accept(service, &peer.incoming, &wire)?;
++        let original_call = peer.stream.receive(&peer.cancel, deadline)?;
++        let receipt = peer.admit(service, &peer.incoming, &original_call)?;
++        peer.send_receipt(receipt, deadline)?;
+         let reply = broker.with_time(|_, now| -> Result<_> {
+             let call = service
+                 .receive(&peer.incoming, now)?
+@@ -333,19 +510,74 @@
+             {
+                 return Err("caller disconnected inside a frame".into());
+             }
+-            return peer.finish(start, cpu, true);
++            return peer.finish(start, cpu, true, None);
+         };
+         peer.outgoing
+-            .send_prepared(&reply, &peer.stream, &peer.cancel, now)?;
+-        let ack = peer.verified_receipt(&mut tracker, &peer.outgoing, send)?;
++            .send_prepared(&reply, &peer.stream.before(deadline), &peer.cancel, now)?;
++        let first_carrier = if let Some(acceptor) = acceptor {
++            loop {
++                match peer.stream.receive_or_idle_observing_eof(
++                    &peer.cancel,
++                    deadline,
++                    Duration::from_millis(100),
++                )? {
++                    None => break,
++                    Some(ReceiveOutcome::Idle) => continue,
++                    Some(ReceiveOutcome::Frame(_)) => {
++                        return Err("fixture sent a frame before clean redial".into());
++                    }
++                }
++            }
++            let first = peer.stream.counters()?;
++            if (first.frames_sent, first.frames_received) != (2, 1) {
++                return Err("first host carrier count differs".into());
++            }
++            let socket = acceptor.accept_after_clean_close(deadline)?;
++            peer.stream = Peer::carrier(
++                &self.endpoint,
++                socket,
++                HandshakeRole::Acceptor,
++                &peer.cancel,
++                recovery,
++            )?;
++            let (cached, now) = broker.with_time(|_, now| -> Result<_> {
++                let cached = service
++                    .retry_reply_prepared(&peer.incoming, &original_call, now)?
++                    .ok_or("fixture retained Reply unavailable")?;
++                let wire = encode_envelope(cached.envelope())?;
++                if wire != encode_envelope(reply.envelope())?
++                    || tracker.register_send(
++                        &peer.outgoing,
++                        &peer.control,
++                        &peer.verifier,
++                        &wire,
++                        now,
++                    )? != send
++                {
++                    return Err("fixture retained Reply identity changed".into());
++                }
++                Ok((cached, now))
++            })?;
++            peer.outgoing.send_prepared(
++                &cached,
++                &peer.stream.before(deadline),
++                &peer.cancel,
++                now,
++            )?;
++            Some(first)
++        } else {
++            None
++        };
++        let ack = peer.verified_receipt_before(&mut tracker, &peer.outgoing, send, deadline)?;
+         broker.with_time(|_, now| -> Result<()> {
+             if !service.acknowledge_reply(&peer.outgoing, &ack, &peer.verifier, now)? {
+                 return Err("fixture reply was not acknowledged".into());
+             }
+             Ok(())
+         })?;
+-        let wire = peer.receive()?;
+-        peer.accept(service, &cast, &wire)?;
++        let wire = peer.stream.receive(&peer.cancel, deadline)?;
++        let receipt = peer.admit(service, &cast, &wire)?;
++        peer.send_receipt(receipt, deadline)?;
+         broker.with_time(|_, now| -> Result<()> {
+             let message = service.receive(&cast, now)?.ok_or("missing fixture Cast")?;
+             if message.payload() != CAST {
+@@ -353,7 +585,7 @@
+             }
+             Ok(())
+         })?;
+-        peer.finish(start, cpu, false)
++        peer.finish(start, cpu, false, first_carrier)
+     }
+ }
+ 
+@@ -382,12 +614,50 @@
+         {
+             return Err("fixture bootstrap scope differs".into());
+         }
++        if let Some(pin) = &fixture.recovery {
++            let suffix = pin
++                .session
++                .strip_prefix(RECOVERY_SESSION)
++                .ok_or("wrong recovery session domain")?;
++            if fixture.close_after_call_receipt
++                || suffix.len() != 64
++                || !suffix.bytes().all(|b| b.is_ascii_hexdigit())
++            {
++                return Err("invalid recovery bootstrap".into());
++            }
++            VerifyingKey::from_bytes(&pin.peer)?;
++        }
+         campaign::validate_service_bootstrap(endpoint)?;
+         Ok(fixture)
+     }
+ 
+     pub fn exchange(self, socket: UnixStream) -> Result<ExchangeResult> {
++        self.exchange_inner(socket, None::<fn() -> std::io::Result<UnixStream>>)
++    }
++
++    pub(crate) fn exchange_recovery(
++        self,
++        socket: UnixStream,
++        redial: impl FnOnce() -> std::io::Result<UnixStream>,
++    ) -> Result<ExchangeResult> {
++        self.exchange_inner(socket, Some(redial))
++    }
++
++    fn exchange_inner(
++        self,
++        socket: UnixStream,
++        redial: Option<impl FnOnce() -> std::io::Result<UnixStream>>,
++    ) -> Result<ExchangeResult> {
++        if self.recovery.is_some() != redial.is_some() {
++            return Err("fixture recovery profile differs".into());
++        }
+         let start = Instant::now();
++        let deadline = start
++            + if redial.is_some() {
++                RECOVERY_CAP
++            } else {
++                TIMEOUT
++            };
+         let cpu = cpu_time::ThreadTime::now();
+         let broker = campaign::broker_context()?;
+         let mut service = broker.with_time(|budget, _| LocalMailboxService::new(budget.clone()))?;
+@@ -399,7 +669,14 @@
+             .ok_or("missing fixture Call binding")?
+             .reply_to;
+         let socket = GuestSocket::new(socket)?;
+-        let peer = Peer::open(&self.endpoint, &broker, socket, HandshakeRole::Initiator)?;
++        let recovery = self.recovery.as_ref().map(|pin| (pin, deadline));
++        let mut peer = Peer::open(
++            &self.endpoint,
++            &broker,
++            socket,
++            HandshakeRole::Initiator,
++            recovery,
++        )?;
+         let mut tracker = peer.tracker()?;
+         let expected = payload();
+         let (prepared, call, send, now) = broker.with_time(|_, now| -> Result<_> {
+@@ -421,8 +698,8 @@
+             Ok((prepared, call, send, now))
+         })?;
+         peer.outgoing
+-            .send_prepared(&prepared, &peer.stream, &peer.cancel, now)?;
+-        peer.verified_receipt(&mut tracker, &peer.outgoing, send)?;
++            .send_prepared(&prepared, &peer.stream.before(deadline), &peer.cancel, now)?;
++        peer.verified_receipt_before(&mut tracker, &peer.outgoing, send, deadline)?;
+         if self.close_after_call_receipt {
+             broker.with_time(|_, now| -> Result<()> {
+                 if service.poll_call(&peer.outgoing, &call, now)? != CallStatus::Pending {
+@@ -430,10 +707,10 @@
+                 }
+                 Ok(service.shutdown(now)?)
+             })?;
+-            return peer.finish(start, cpu, true);
++            return peer.finish(start, cpu, true, None);
+         }
+-        let wire = peer.receive()?;
+-        peer.accept(&mut service, &peer.incoming, &wire)?;
++        let wire = peer.stream.receive(&peer.cancel, deadline)?;
++        let receipt = peer.admit(&mut service, &peer.incoming, &wire)?;
+         broker.with_time(|_, now| -> Result<()> {
+             tracker.observe_application_reply(&peer.incoming, &wire, now)?;
+             if service.poll_call(&peer.outgoing, &call, now)? != CallStatus::Replied(Some(expected))
+@@ -442,6 +719,33 @@
+             }
+             Ok(())
+         })?;
++        let first_carrier = if let Some(redial) = redial {
++            let first = peer.stream.counters()?;
++            if (first.frames_sent, first.frames_received) != (1, 2) {
++                return Err("first guest carrier count differs".into());
++            }
++            peer.stream.close()?;
++            if Instant::now() >= deadline {
++                return Err("recovery deadline elapsed before dial".into());
++            }
++            let socket = GuestSocket::new(redial()?)?;
++            let stream = Peer::carrier(
++                &self.endpoint,
++                socket,
++                HandshakeRole::Initiator,
++                &peer.cancel,
++                recovery,
++            )?;
++            if stream.receive(&peer.cancel, deadline)? != wire {
++                return Err("fixture replayed Reply bytes differ".into());
++            }
++            send_receipt(&broker, &stream, &peer.cancel, receipt, deadline)?;
++            peer.stream = stream;
++            Some(first)
++        } else {
++            peer.send_receipt(receipt, deadline)?;
++            None
++        };
+         let (prepared, send, now) = broker.with_time(|_, now| -> Result<_> {
+             let options = MessageOptions::fresh_for_binding(
+                 &cast,
+@@ -457,10 +761,10 @@
+             let send = tracker.register_send(&cast, &peer.control, &peer.verifier, &wire, now)?;
+             Ok((prepared, send, now))
+         })?;
+-        cast.send_prepared(&prepared, &peer.stream, &peer.cancel, now)?;
+-        peer.verified_receipt(&mut tracker, &cast, send)?;
++        cast.send_prepared(&prepared, &peer.stream.before(deadline), &peer.cancel, now)?;
++        peer.verified_receipt_before(&mut tracker, &cast, send, deadline)?;
+         broker.with_time(|_, now| service.shutdown(now))?;
+-        peer.finish(start, cpu, false)
++        peer.finish(start, cpu, false, first_carrier)
+     }
+ }
+ 
+@@ -521,9 +825,15 @@
+             std::io::ErrorKind::TimedOut => 25_u8,
+             _ => 26_u8,
+         })?;
+-    let result = bootstrap
+-        .exchange(UnixStream::from(fd))
+-        .map_err(|_| 27_u8)?;
++    let first = UnixStream::from(fd);
++    let result = if bootstrap.recovery.is_some() {
++        bootstrap.exchange_recovery(first, || {
++            vsock::sys::dial(vsock::HOST_CID, MAILBOX_PORT).map(UnixStream::from)
++        })
++    } else {
++        bootstrap.exchange(first)
++    }
++    .map_err(|_| 27_u8)?;
+     let mut out = std::io::stdout().lock();
+     serde_json::to_writer(&mut out, &result).map_err(|_| 28_u8)?;
+     writeln!(out).map_err(|_| 28_u8)?;
+--- a/crates/spiralcore-mvm-live/src/mailbox_witness/tests.rs
++++ b/crates/spiralcore-mvm-live/src/mailbox_witness/tests.rs
+@@ -199,7 +199,7 @@
+         let mut service = broker
+             .with_time(|budget, _| LocalMailboxService::new(budget.clone()))
+             .unwrap();
+-        let peer = Peer::open(&host.endpoint, &broker, a, HandshakeRole::Acceptor).unwrap();
++        let peer = Peer::open(&host.endpoint, &broker, a, HandshakeRole::Acceptor, None).unwrap();
+         let call = call_rx.recv_timeout(super::TIMEOUT).unwrap();
+         let (_, receipt) = peer
+             .returns
+@@ -207,7 +207,7 @@
+             .unwrap();
+         receipt.encoded_bytes().to_vec()
+     });
+-    let peer = Peer::open(&guest.endpoint, &broker, b, HandshakeRole::Initiator).unwrap();
++    let peer = Peer::open(&guest.endpoint, &broker, b, HandshakeRole::Initiator, None).unwrap();
+     let mut tracker = peer.tracker().unwrap();
+     let mut options = MessageOptions::fresh(
+         ContentType::parse(CONTENT_TYPE, 1).unwrap(),
+@@ -291,3 +291,64 @@
+         server.counters.envelope_bytes_sent
+     );
+ }
++
++#[test]
++fn recovery_witness_replays_exact_reply_after_one_authenticated_redial() {
++    use mvm_core::host_lifetime::InstalledMailboxReplacementAcceptor;
++    use std::{io, time::Instant};
++
++    struct Once(Option<UnixStream>);
++    impl InstalledMailboxReplacementAcceptor for Once {
++        fn accept_after_clean_close(&mut self, deadline: Instant) -> io::Result<UnixStream> {
++            assert!(Instant::now() < deadline);
++            self.0
++                .take()
++                .ok_or_else(|| io::Error::other("fixture replacement already used"))
++        }
++    }
++    let (commitment, guest, host) = mailbox_witness::provision_recovery().unwrap();
++    assert_ne!(commitment, [0; 32]);
++    let guest =
++        mailbox_witness::GuestBootstrap::decode(&serde_json::to_vec(&guest).unwrap()).unwrap();
++    let (a, b) = UnixStream::pair().unwrap();
++    let (c, d) = UnixStream::pair().unwrap();
++    let worker = std::thread::spawn(move || {
++        let broker = crate::campaign::broker_context().unwrap();
++        let mut service = broker
++            .with_time(|budget, _| {
++                spiralcore_mvm_adapter::service::LocalMailboxService::new(budget.clone())
++            })
++            .unwrap();
++        let mut replacement = Once(Some(c));
++        let result = host
++            .run_recovery(a, &mut replacement, &broker, &mut service)
++            .unwrap();
++        assert!(replacement.0.is_none());
++        result
++    });
++    let guest = guest.exchange_recovery(b, || Ok(d)).unwrap();
++    let host = worker.join().unwrap();
++    let old_guest = guest.first_carrier.unwrap();
++    let old_host = host.first_carrier.unwrap();
++    assert_eq!((old_guest.frames_sent, old_guest.frames_received), (1, 2));
++    assert_eq!((old_host.frames_sent, old_host.frames_received), (2, 1));
++    assert_eq!(
++        (guest.counters.frames_sent, guest.counters.frames_received),
++        (2, 2)
++    );
++    assert_eq!(
++        (host.counters.frames_sent, host.counters.frames_received),
++        (2, 2)
++    );
++    assert_eq!(guest.reply_bytes, 65_023);
++    assert_eq!(host.cast_bytes, 23);
++    assert_eq!(
++        guest.counters.envelope_bytes_sent,
++        host.counters.envelope_bytes_received
++    );
++    assert_eq!(
++        guest.counters.envelope_bytes_received,
++        host.counters.envelope_bytes_sent
++    );
++    println!("{}", serde_json::json!({"host":host,"guest":guest}));
++}
+--- a/crates/spiralcore-mvm-live/src/installed_parent.rs
++++ b/crates/spiralcore-mvm-live/src/installed_parent.rs
+@@ -1174,6 +1174,21 @@
+ 
+ impl ParentAdmissionProvider for InstalledParentProvider {
+     #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++    fn check_installed_mailbox_recovery_enrollment(
++        &self,
++        admitted: &AdmittedPlan,
++        config: &mvm_core::vm_backend::VmStartConfig,
++        backend: BackendKind,
++    ) -> Result<()> {
++        ensure!(
++            admitted.installed_mailbox()
++                == Some(InstalledMailboxLaunchProfile::LinuxFirecrackerRecoveryV2),
++            "original resident recovery profile differs"
++        );
++        self.check_installed_mailbox_enrollment(admitted, config, backend)
++    }
++
++    #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
+     fn check_installed_mailbox_enrollment(
+         &self,
+         admitted: &AdmittedPlan,
+--- a/crates/spiralcore-mvm-live/src/installed_parent/native_witness/mod.rs
++++ b/crates/spiralcore-mvm-live/src/installed_parent/native_witness/mod.rs
+@@ -400,11 +400,13 @@
+         Ok("2") => &[native_plan::NAME, "spiralcore-installed-witness-b"],
+         _ => bail!("native witness admits one or two sequential guests"),
+     };
+-    let mailbox_mode = match std::env::var("SPIRALCORE_NATIVE_MAILBOX_WITNESS").as_deref() {
+-        Err(std::env::VarError::NotPresent) => false,
+-        Ok("1") => true,
+-        _ => bail!("invalid installed mailbox fixture mode"),
+-    };
++    let (mailbox_mode, recovery_mode) =
++        match std::env::var("SPIRALCORE_NATIVE_MAILBOX_WITNESS").as_deref() {
++            Err(std::env::VarError::NotPresent) => (false, false),
++            Ok("1") => (true, false),
++            Ok("recovery-v2") if names.len() == 1 => (true, true),
++            _ => bail!("invalid installed mailbox fixture mode"),
++        };
+     let withhold_first = match std::env::var("SPIRALCORE_NATIVE_WITNESS_WITHHOLD_FIRST").as_deref()
+     {
+         Err(std::env::VarError::NotPresent) => false,
+@@ -499,7 +501,12 @@
+         // Mint each signed image and enrollment only after the preceding
+         // resident slot and its original retirement checks have completed.
+         let fixture = if mailbox_mode {
+-            Some(native_mailbox::prepare(&root, value, reply_withheld)?)
++            Some(native_mailbox::prepare(
++                &root,
++                value,
++                reply_withheld,
++                recovery_mode,
++            )?)
+         } else {
+             None
+         };
+@@ -513,7 +520,7 @@
+             value,
+             fixture
+                 .as_ref()
+-                .map(|f| (f.enrollment, f.bundle_digest.as_str())),
++                .map(|f| (f.enrollment, f.bundle_digest.as_str(), recovery_mode)),
+         )?;
+         let (provision, mailbox_result) = native_mailbox::split(fixture);
+         let request = native.request()?;
+@@ -569,21 +576,33 @@
+             prepare,
+             move |prepared, admitted| {
+                 if let Some((enrollment, host, result)) = provision {
+-                    prepared.stage_mailbox_enrollment_fixture(
+-                        admitted,
+-                        enrollment,
+-                        move |socket, broker, service| {
+-                            let measured = host.run(socket, broker, service);
+-                            let succeeded = measured.is_ok();
+-                            result.send(measured).map_err(std::io::Error::other)?;
+-                            if !succeeded {
+-                                return Err(std::io::Error::other(
+-                                    "original mailbox exchange failed",
+-                                ));
+-                            }
+-                            Ok(())
+-                        },
+-                    )?;
++                    let report = move |measured: crate::Result<
++                        crate::mailbox_witness::ExchangeResult,
++                    >| {
++                        let succeeded = measured.is_ok();
++                        result.send(measured).map_err(std::io::Error::other)?;
++                        if !succeeded {
++                            return Err(std::io::Error::other("original mailbox exchange failed"));
++                        }
++                        Ok(())
++                    };
++                    if recovery_mode {
++                        prepared.stage_mailbox_recovery_enrollment_fixture(
++                            admitted,
++                            enrollment,
++                            move |socket, acceptor, broker, service| {
++                                report(host.run_recovery(socket, acceptor, broker, service))
++                            },
++                        )?;
++                    } else {
++                        prepared.stage_mailbox_enrollment_fixture(
++                            admitted,
++                            enrollment,
++                            move |socket, broker, service| {
++                                report(host.run(socket, broker, service))
++                            },
++                        )?;
++                    }
+                 }
+                 Ok(())
+             },
+@@ -612,6 +631,7 @@
+                 &root,
+                 mailbox_result,
+                 reply_withheld,
++                recovery_mode,
+             )?;
+             let (enrollment, bundle) =
+                 mailbox_identity.context("mailbox fixture identity missing")?;
+--- a/crates/spiralcore-mvm-live/src/installed_parent/native_witness/native_plan.rs
++++ b/crates/spiralcore-mvm-live/src/installed_parent/native_witness/native_plan.rs
+@@ -35,7 +35,7 @@
+     target: SocketAddr,
+     name: &'static str,
+     value: u8,
+-    mailbox: Option<InstalledMailboxEnrollment>,
++    mailbox: Option<(InstalledMailboxEnrollment, bool)>,
+ }
+ 
+ impl NativeRequest {
+@@ -44,11 +44,11 @@
+         target: SocketAddr,
+         name: &'static str,
+         value: u8,
+-        mailbox: Option<(InstalledMailboxEnrollment, &str)>,
++        mailbox: Option<(InstalledMailboxEnrollment, &str, bool)>,
+     ) -> Result<Self> {
+         ensure!(asset_root.is_absolute() && asset_root.canonicalize()? == asset_root);
+         ensure!(mvm_core::config::mvm_home_strict()? == asset_root.join("mvm"));
+-        let (file, expected_bundle) = if let Some((_, digest)) = mailbox {
++        let (file, expected_bundle) = if let Some((_, digest, _)) = mailbox {
+             (
+                 if value == 1 {
+                     "installed-mailbox-native-witness.mvmpkg"
+@@ -89,7 +89,7 @@
+             target,
+             name,
+             value,
+-            mailbox: mailbox.map(|(enrollment, _)| enrollment),
++            mailbox: mailbox.map(|(enrollment, _, recovery)| (enrollment, recovery)),
+         })
+     }
+ 
+@@ -166,8 +166,12 @@
+         let mut assets = vec![policy_asset];
+         let mut posture = RunPosture::on_backend(Variant::Dev, BackendKind::Firecracker)
+             .with_installed_payload_mapping(mapping);
+-        if let Some(enrollment) = self.mailbox {
+-            let profile = InstalledMailboxLaunchProfile::LinuxFirecrackerV1;
++        if let Some((enrollment, recovery)) = self.mailbox {
++            let profile = if recovery {
++                InstalledMailboxLaunchProfile::LinuxFirecrackerRecoveryV2
++            } else {
++                InstalledMailboxLaunchProfile::LinuxFirecrackerV1
++            };
+             assets.push(profile.signed_asset()?);
+             assets.push(enrollment.signed_asset()?);
+             posture = posture.with_installed_mailbox_enrollment(profile, enrollment);
+--- a/crates/spiralcore-mvm-live/src/installed_parent/native_witness/native_mailbox.rs
++++ b/crates/spiralcore-mvm-live/src/installed_parent/native_witness/native_mailbox.rs
+@@ -5,6 +5,7 @@
+ use mvm_agentd::guest_mount::{WORKLOAD_GID, WORKLOAD_UID};
+ use mvm_client::guest::{ProcWaitEvent, wait_process};
+ use mvm_hostd::plan_admission::InstalledMailboxEnrollment;
++use spiralcore_mvm_adapter::live::StreamCounters;
+ use std::{
+     io::Write,
+     path::{Path, PathBuf},
+@@ -39,7 +40,7 @@
+     Ok((path, expected))
+ }
+ 
+-pub(super) fn prepare(root: &Path, slot: u8, abandoned: bool) -> Result<Fixture> {
++pub(super) fn prepare(root: &Path, slot: u8, abandoned: bool, recovery: bool) -> Result<Fixture> {
+     let (image_tool, _) = pinned_tool(
+         "SPIRALCORE_NATIVE_MAILBOX_IMAGE_TOOL",
+         "SPIRALCORE_NATIVE_MAILBOX_IMAGE_TOOL_SHA",
+@@ -48,8 +49,12 @@
+         "SPIRALCORE_NATIVE_MAILBOX_GUEST_TOOL",
+         "SPIRALCORE_NATIVE_MAILBOX_GUEST_TOOL_SHA",
+     )?;
+-    let (commitment, guest, host) = mailbox_witness::provision_with_close(abandoned)
+-        .map_err(|_| anyhow!("synthetic mailbox provisioning failed"))?;
++    let (commitment, guest, host) = if recovery {
++        mailbox_witness::provision_recovery()
++    } else {
++        mailbox_witness::provision_with_close(abandoned)
++    }
++    .map_err(|_| anyhow!("synthetic mailbox provisioning failed"))?;
+     let mut child = Command::new(&image_tool)
+         .arg(root)
+         .arg(guest_tool)
+@@ -114,22 +119,25 @@
+     Ok(serde_json::from_slice(&bytes)?)
+ }
+ 
++fn compare_carriers(host: StreamCounters, counters: &serde_json::Value) -> bool {
++    counters["frames_sent"].as_u64() == Some(host.frames_received)
++        && counters["frames_received"].as_u64() == Some(host.frames_sent)
++        && counters["envelope_bytes_sent"].as_u64() == Some(host.envelope_bytes_received)
++        && counters["envelope_bytes_received"].as_u64() == Some(host.envelope_bytes_sent)
++        && counters["framing_bytes_sent"].as_u64() == Some(host.framing_bytes_received)
++        && counters["framing_bytes_received"].as_u64() == Some(host.framing_bytes_sent)
++}
++
+ fn compare(host: &ExchangeResult, guest: &serde_json::Value) -> Result<()> {
+-    let counters = &guest["counters"];
+     ensure!(
+         guest["call_bytes"].as_u64() == Some(host.call_bytes as u64)
+             && guest["reply_bytes"].as_u64() == Some(host.reply_bytes as u64)
+             && guest["cast_bytes"].as_u64() == Some(host.cast_bytes as u64)
+-            && counters["frames_sent"].as_u64() == Some(host.counters.frames_received)
+-            && counters["frames_received"].as_u64() == Some(host.counters.frames_sent)
+-            && counters["envelope_bytes_sent"].as_u64()
+-                == Some(host.counters.envelope_bytes_received)
+-            && counters["envelope_bytes_received"].as_u64()
+-                == Some(host.counters.envelope_bytes_sent)
+-            && counters["framing_bytes_sent"].as_u64()
+-                == Some(host.counters.framing_bytes_received)
+-            && counters["framing_bytes_received"].as_u64()
+-                == Some(host.counters.framing_bytes_sent),
++            && compare_carriers(host.counters, &guest["counters"])
++            && host.first_carrier.map_or_else(
++                || guest["first_carrier"].is_null(),
++                |first| compare_carriers(first, &guest["first_carrier"]),
++            ),
+         "installed mailbox paired byte counters differ"
+     );
+     Ok(())
+@@ -143,6 +151,7 @@
+     root: &Path,
+     host: Receiver<HostReport>,
+     abandoned: bool,
++    recovery: bool,
+ ) -> Result<(serde_json::Value, u64)> {
+     let mut disk = NativeCredit(Some(disk));
+     let name = service
+@@ -176,7 +185,8 @@
+         compare(&host, &guest)?;
+         ensure!(
+             host.abandoned_after_receipt == abandoned
+-                && guest["abandoned_after_receipt"].as_bool() == Some(abandoned),
++                && guest["abandoned_after_receipt"].as_bool() == Some(abandoned)
++                && host.first_carrier.is_some() == recovery,
+             "installed mailbox completed a different signed fixture mode"
+         );
+         Ok(serde_json::json!({"guest":guest,"host":host,"vsock_port":5257}))
+--- /dev/null
++++ b/crates/spiralcore-mvm-live/examples/recovery-v2-qualification-guest.rs
+@@ -0,0 +1,38 @@
++//! Synthetic Firecracker witness entrypoint for a legacy guest agent.
++//! This file is built only into the private development fixture.
++use mvm_agentd::workload_seccomp;
++use mvm_core::crypto::seccomp::SeccompTier;
++use std::{fs::File, io::Read as _};
++
++fn run() -> Result<(), u8> {
++    let mut arguments = std::env::args_os();
++    if arguments.nth(1).as_deref() != Some(std::ffi::OsStr::new("installed-mailbox-witness"))
++        || arguments.next().is_some()
++    {
++        return Err(29);
++    }
++    let mut cmdline = String::new();
++    File::open("/proc/cmdline")
++        .map_err(|_| 30_u8)?
++        .take(4097)
++        .read_to_string(&mut cmdline)
++        .map_err(|_| 30_u8)?;
++    if cmdline.len() > 4096
++        || workload_seccomp::tier_from_cmdline(&cmdline) != Ok(Some(SeccompTier::Vsock))
++    {
++        return Err(31);
++    }
++    let program = workload_seccomp::compile(SeccompTier::Vsock)
++        .map_err(|_| 32_u8)?
++        .ok_or(32_u8)?;
++    workload_seccomp::install(&program).map_err(|_| 33_u8)?;
++    // The normal witness still runs its effective filter check before it
++    // opens credentials or dials. Only the source of confinement differs.
++    spiralcore_mvm_live::mailbox_witness::run_guest()
++}
++
++fn main() {
++    if let Err(code) = run() {
++        std::process::exit(i32::from(code));
++    }
++}
