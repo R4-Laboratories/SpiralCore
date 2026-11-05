@@ -2,7 +2,7 @@
 //! Trusted local bindings own authority. This is not a durable mailbox journal.
 mod ordering;
 mod tail;
-use crate::DirectionConfig;
+use crate::{DirectionConfig, policy::record_binding_revocation};
 use ed25519_dalek::{SigningKey, VerifyingKey};
 use mvm_contract::protocol::mailbox::*;
 use mvm_core::{
@@ -10,8 +10,8 @@ use mvm_core::{
     mailbox::{
         self, OpenContext, OpenedMailboxEnvelope, ReplayIdentity, ReplayProtector, SealRequest,
         transport::{
-            CancellationToken, ChannelLimits, OutboundAuthorization, PeerTransport,
-            PreparedMailboxEnvelope, SignedTransportBinding, TransportAssurance,
+            AuthorizedRoute, CancellationToken, ChannelLimits, OutboundAuthorization,
+            PeerTransport, PreparedMailboxEnvelope, SignedTransportBinding, TransportAssurance,
             TransportBindingContext, TransportError, authorize_outbound, authorize_route,
             prepare_mailbox_envelope,
         },
@@ -1131,12 +1131,19 @@ pub struct ServiceBindingConfig {
     pub encryption_key_id: [u8; 32],
 }
 impl ServiceBindingConfig {
+    /// Make a one-time configuration snapshot for a separate policy owner.
+    /// Subsequent trusted revocations must be applied to each live owner.
     pub fn from_direction(c: DirectionConfig) -> Result<Self> {
+        let (context, _, revoked_bindings) = c
+            .policy
+            .route_snapshot()
+            .map_err(|_| ServiceError::Unauthorized)?;
+        // This compatibility configuration cannot carry route policy.
+        if !revoked_bindings.is_empty() {
+            return Err(ServiceError::Unauthorized);
+        }
         Ok(Self {
-            context: c
-                .policy
-                .snapshot()
-                .map_err(|_| ServiceError::Unauthorized)?,
+            context,
             capability: c.capability,
             binding: c.binding,
             sender_verifying_key: c.sender_verifying_key,
@@ -1157,6 +1164,7 @@ pub struct DestinationReceiptSigner {
 struct BindingPolicy {
     context: OpenContext,
     generation: u64,
+    revoked_bindings: Vec<TransportBindingId>,
 }
 // All operations spanning two independently revocable bindings acquire them in
 // immutable binding-id order. Retain these guards through the state transition.
@@ -1286,6 +1294,7 @@ impl MailboxBinding {
                 current_policy_epoch: context.current_policy_epoch,
                 minimum_assurance: self.config.minimum_assurance,
                 now_unix_ms: now.unix_ms,
+                revoked_bindings: policy.revoked_bindings.clone(),
             },
             &self.config.authority_key,
         )
@@ -1339,9 +1348,9 @@ impl MailboxBinding {
     pub(crate) fn with_sender<T>(
         &self,
         now: ServiceTime,
-        f: impl FnOnce(&ServiceBindingConfig, &OpenContext, u64) -> Result<T>,
+        f: impl FnOnce(&ServiceBindingConfig, &OpenContext, u64, &AuthorizedRoute) -> Result<T>,
     ) -> Result<T> {
-        let (context, generation) = self.checked(now)?;
+        let (context, generation, route) = self.checked_route(now)?;
         if self.config.signing_key.is_none() {
             return Err(ServiceError::Unauthorized);
         }
@@ -1349,7 +1358,7 @@ impl MailboxBinding {
         if policy.generation != generation {
             return Err(ServiceError::Unauthorized);
         }
-        f(&self.config, &context, generation)
+        f(&self.config, &context, generation, &route)
     }
     pub(crate) fn capability_grant(&self) -> &MailboxCapabilityGrant {
         &self.config.capability.grant
@@ -1404,6 +1413,7 @@ impl MailboxBinding {
         let policy = BindingPolicy {
             context: config.context.clone(),
             generation: 0,
+            revoked_bindings: Vec::new(),
         };
         let out = Self {
             config,
@@ -1423,7 +1433,26 @@ impl MailboxBinding {
         p.context = context;
         Ok(())
     }
+    /// Apply a trusted transport binding revocation and fence older proofs.
+    pub fn revoke_transport_binding(&self, id: TransportBindingId) -> Result<()> {
+        if id != self.config.binding.claims.binding_id {
+            return Ok(());
+        }
+        let mut policy = self.policy.lock().map_err(|_| ServiceError::State)?;
+        let BindingPolicy {
+            revoked_bindings,
+            generation,
+            ..
+        } = &mut *policy;
+        record_binding_revocation(revoked_bindings, generation, id).map_err(|_| ServiceError::Limit)
+    }
+
     fn checked(&self, now: ServiceTime) -> Result<(OpenContext, u64)> {
+        let (context, generation, _) = self.checked_route(now)?;
+        Ok((context, generation))
+    }
+
+    fn checked_route(&self, now: ServiceTime) -> Result<(OpenContext, u64, AuthorizedRoute)> {
         let p = self.policy.lock().map_err(|_| ServiceError::State)?;
         let mut c = p.context.clone();
         c.now_unix_ms = now.unix_ms;
@@ -1453,7 +1482,7 @@ impl MailboxBinding {
         {
             return Err(ServiceError::Unauthorized);
         }
-        authorize_route(
+        let route = authorize_route(
             &self.config.binding,
             &TransportBindingContext {
                 expected_issuer: c.expected_capability_issuer,
@@ -1462,6 +1491,7 @@ impl MailboxBinding {
                 current_policy_epoch: c.current_policy_epoch,
                 minimum_assurance: self.config.minimum_assurance,
                 now_unix_ms: now.unix_ms,
+                revoked_bindings: p.revoked_bindings.clone(),
             },
             &self.config.authority_key,
         )
@@ -1473,7 +1503,7 @@ impl MailboxBinding {
         {
             return Err(ServiceError::Unauthorized);
         }
-        Ok((c, p.generation))
+        Ok((c, p.generation, route))
     }
     fn verify(&self, encoded: &[u8], now: ServiceTime) -> Result<Verified> {
         let (c, generation) = self.checked(now)?;

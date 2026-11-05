@@ -1,5 +1,5 @@
 use crate::{Error, Result, content_type};
-use mvm_contract::protocol::mailbox::MailboxOperation;
+use mvm_contract::protocol::mailbox::{MailboxOperation, TransportBindingId};
 use mvm_core::mailbox::OpenContext;
 use spiralcore_transfer::endpoint::{Authority, Context};
 use std::sync::{Arc, Mutex};
@@ -12,6 +12,34 @@ pub struct Policy {
 pub(crate) struct PolicyState {
     pub context: OpenContext,
     pub generation: u64,
+    revoked_bindings: Vec<TransportBindingId>,
+    revocation_fenced: bool,
+}
+
+impl PolicyState {
+    fn permits(&self, generation: u64) -> bool {
+        !self.revocation_fenced && self.generation == generation
+    }
+}
+
+// Bound policy snapshots and canonical authorization work per endpoint.
+const MAX_REVOKED_BINDINGS: usize = 1024;
+
+pub(crate) fn record_binding_revocation(
+    revoked: &mut Vec<TransportBindingId>,
+    generation: &mut u64,
+    id: TransportBindingId,
+) -> Result<()> {
+    if revoked.contains(&id) {
+        return Ok(());
+    }
+    if revoked.len() >= MAX_REVOKED_BINDINGS {
+        return Err(Error::Limit);
+    }
+    let next = generation.checked_add(1).ok_or(Error::Limit)?;
+    revoked.push(id);
+    *generation = next;
+    Ok(())
 }
 fn validate(context: &OpenContext) -> Result<()> {
     if !matches!(
@@ -31,6 +59,8 @@ impl Policy {
             state: Arc::new(Mutex::new(PolicyState {
                 context,
                 generation: 0,
+                revoked_bindings: Vec::new(),
+                revocation_fenced: false,
             })),
         })
     }
@@ -45,17 +75,85 @@ impl Policy {
         state.generation = generation;
         Ok(())
     }
+    /// Apply a binding revocation received from trusted control-plane policy.
+    /// Ordinary context replacement preserves recorded binding revocations.
+    pub fn revoke_transport_binding(&self, id: TransportBindingId) -> Result<()> {
+        let mut state = self.state.lock().map_err(|_| Error::State)?;
+        if state.revocation_fenced {
+            return Err(Error::Policy);
+        }
+        let PolicyState {
+            revoked_bindings,
+            generation,
+            revocation_fenced,
+            ..
+        } = &mut *state;
+        let result = record_binding_revocation(revoked_bindings, generation, id);
+        // A trusted revocation that cannot be represented must stop authority.
+        *revocation_fenced = result.is_err();
+        result
+    }
+
+    pub(crate) fn route_snapshot(&self) -> Result<(OpenContext, u64, Vec<TransportBindingId>)> {
+        let state = self.state.lock().map_err(|_| Error::State)?;
+        if state.revocation_fenced {
+            return Err(Error::Policy);
+        }
+        Ok((
+            state.context.clone(),
+            state.generation,
+            state.revoked_bindings.clone(),
+        ))
+    }
+
     pub(crate) fn versioned(&self) -> Result<(OpenContext, u64)> {
         let state = self.state.lock().map_err(|_| Error::State)?;
+        if state.revocation_fenced {
+            return Err(Error::Policy);
+        }
         Ok((state.context.clone(), state.generation))
     }
     pub(crate) fn check_generation(&self, generation: u64) -> Result<()> {
         let state = self.state.lock().map_err(|_| Error::State)?;
-        if state.generation != generation {
+        if !state.permits(generation) {
             return Err(Error::Policy);
         }
         Ok(())
     }
+    pub(crate) fn with_send_generations<T>(
+        &self,
+        generation: u64,
+        related: Option<(&Self, u64)>,
+        send: impl FnOnce() -> Result<T>,
+    ) -> Result<T> {
+        let Some((other, other_generation)) = related else {
+            let state = self.state.lock().map_err(|_| Error::State)?;
+            if !state.permits(generation) {
+                return Err(Error::Policy);
+            }
+            return send();
+        };
+        if Arc::ptr_eq(&self.state, &other.state) {
+            if generation != other_generation {
+                return Err(Error::Policy);
+            }
+            return self.with_send_generations(generation, None, send);
+        }
+        // Calls and replies can lock the same policies in opposite logical order.
+        let (first, first_generation, second, second_generation) =
+            if Arc::as_ptr(&self.state).addr() < Arc::as_ptr(&other.state).addr() {
+                (self, generation, other, other_generation)
+            } else {
+                (other, other_generation, self, generation)
+            };
+        let first = first.state.lock().map_err(|_| Error::State)?;
+        let second = second.state.lock().map_err(|_| Error::State)?;
+        if !first.permits(first_generation) || !second.permits(second_generation) {
+            return Err(Error::Policy);
+        }
+        send()
+    }
+
     #[cfg(feature = "live")]
     pub(crate) fn refresh_time(&self, now_unix_ms: i64) -> Result<()> {
         self.state
@@ -102,7 +200,7 @@ impl MailboxAuthority {
         // Keep lock order policy -> lease, matching authorize. Replacement cannot
         // race between the generation check and installation.
         let policy = self.policy.state.lock().map_err(|_| Error::State)?;
-        if policy.generation != generation {
+        if !policy.permits(generation) {
             return Err(Error::Policy);
         }
         let mut lease = self.lease.lock().map_err(|_| Error::State)?;
@@ -120,7 +218,7 @@ impl Authority for MailboxAuthority {
         let policy = self.policy.state.lock().map_err(|_| Unauthorized)?;
         let lease = self.lease.lock().map_err(|_| Unauthorized)?;
         match lease.as_ref() {
-            Some(lease) if lease.context == *context && lease.generation == policy.generation => {
+            Some(lease) if lease.context == *context && policy.permits(lease.generation) => {
                 if let Some((expiry, deadline)) = lease.expiry {
                     let now = std::time::SystemTime::now()
                         .duration_since(std::time::UNIX_EPOCH)
@@ -133,6 +231,59 @@ impl Authority for MailboxAuthority {
                 Ok(())
             }
             _ => Err(Unauthorized),
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use mvm_contract::protocol::mailbox::{
+        AuthorizationDomainId, ExecutionEpoch, MailboxId, PrincipalId, TenantId,
+    };
+
+    fn policy() -> Policy {
+        let sender = PrincipalId::from_bytes([3; 32]);
+        Policy::new(OpenContext {
+            expected_tenant: TenantId::from_bytes([1; 32]),
+            expected_authorization_domain: AuthorizationDomainId::from_bytes([2; 32]),
+            expected_mailbox: MailboxId::from_bytes([5; 32]),
+            expected_sender: sender,
+            expected_recipient: PrincipalId::from_bytes([4; 32]),
+            acting_principal: sender,
+            expected_capability_issuer: PrincipalId::from_bytes([6; 32]),
+            current_execution_epoch: ExecutionEpoch::new(1).unwrap(),
+            current_policy_epoch: 1,
+            required_operation: MailboxOperation::Send,
+            now_unix_ms: 100,
+            accepted_content_types: vec![content_type().unwrap()],
+            revoked_capabilities: vec![],
+        })
+        .unwrap()
+    }
+
+    #[test]
+    fn opposite_policy_revocation_between_snapshot_and_send_admission_emits_nothing() {
+        for reverse in [false, true] {
+            let request = policy();
+            let reply = policy();
+            let request_generation = request.versioned().unwrap().1;
+            let reply_generation = reply.versioned().unwrap().1;
+            let (outbound, generation, other, old) = if reverse {
+                (&reply, reply_generation, &request, request_generation)
+            } else {
+                (&request, request_generation, &reply, reply_generation)
+            };
+            other
+                .revoke_transport_binding(TransportBindingId::from_bytes([7; 32]))
+                .unwrap();
+            let mut sends = 0;
+            let result = outbound.with_send_generations(generation, Some((other, old)), || {
+                sends += 1;
+                Ok(())
+            });
+            assert!(matches!(result, Err(Error::Policy)));
+            assert_eq!(sends, 0);
         }
     }
 }

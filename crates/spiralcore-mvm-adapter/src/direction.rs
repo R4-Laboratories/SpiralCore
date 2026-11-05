@@ -102,6 +102,14 @@ pub struct Direction {
     #[cfg(feature = "live")]
     live_state: live::DirectionState,
 }
+struct SendLifetime<'a> {
+    backdate: i64,
+    expiry: i64,
+    generation: u64,
+    related_policy: &'a Policy,
+    related_generation: u64,
+}
+
 impl Direction {
     pub fn new(config: DirectionConfig) -> Result<Self> {
         let content = content_type()?;
@@ -150,7 +158,11 @@ impl Direction {
         self.config.policy.clone()
     }
 
-    fn route(&self, context: &OpenContext) -> Result<AuthorizedRoute> {
+    fn route(
+        &self,
+        context: &OpenContext,
+        revoked_bindings: Vec<TransportBindingId>,
+    ) -> Result<AuthorizedRoute> {
         authorize_route(
             &self.config.binding,
             &TransportBindingContext {
@@ -165,6 +177,7 @@ impl Direction {
                 current_policy_epoch: context.current_policy_epoch,
                 minimum_assurance: TransportAssurance::Development,
                 now_unix_ms: context.now_unix_ms,
+                revoked_bindings,
             },
             &self.config.authority_key,
         )
@@ -205,15 +218,15 @@ impl Direction {
         transport: &impl PeerTransport,
         cancel: &CancellationToken,
         request: Option<SentMetadata>,
-        lifetime: Option<(i64, i64)>,
+        lifetime: Option<SendLifetime<'_>>,
     ) -> Result<usize> {
         self.check_frame_kind(frame)?;
         let signing_key = self.config.signing_key.as_ref().ok_or(Error::Policy)?;
         let bytes = frame.encode()?;
-        let (context, generation) = self.config.policy.versioned()?;
+        let (context, generation, revoked_bindings) = self.config.policy.route_snapshot()?;
         // Reverify the signed route on every send: an old AuthorizedRoute alone
         // does not carry the live expiry/epoch checks required by this profile.
-        let route = self.route(&context)?;
+        let route = self.route(&context, revoked_bindings)?;
         let next = self.sequence.checked_add(1).ok_or(Error::Limit)?;
         let expiry = context
             .now_unix_ms
@@ -221,7 +234,7 @@ impl Direction {
             .ok_or(Error::Limit)?
             .min(self.config.capability.grant.expires_at_unix_ms)
             .min(self.config.binding.claims.expires_at_unix_ms)
-            .min(lifetime.map_or(i64::MAX, |(_, expiry)| expiry));
+            .min(lifetime.as_ref().map_or(i64::MAX, |lease| lease.expiry));
         if expiry <= context.now_unix_ms {
             return Err(Error::Policy);
         }
@@ -254,7 +267,7 @@ impl Direction {
             sequence: SequenceNumber::new(next).map_err(|_| Error::Limit)?,
             issued_at_unix_ms: context
                 .now_unix_ms
-                .checked_sub(lifetime.map_or(0, |(backdate, _)| backdate))
+                .checked_sub(lifetime.as_ref().map_or(0, |lease| lease.backdate))
                 .ok_or(Error::Limit)?,
             expires_at_unix_ms: expiry,
             nonce: ReplayNonce::from_bytes(rand::random()),
@@ -310,19 +323,27 @@ impl Direction {
             envelopes_sent: 1,
             ..Counters::default()
         })?;
-        // The final policy lock spans admission. A concurrent replace cannot
-        // approve an envelope under an old generation after this check.
-        let live = self.config.policy.state.lock().map_err(|_| Error::State)?;
-        if live.generation != generation {
-            return Err(Error::Policy);
-        }
-        let limits = ChannelLimits::new(queue_limit, queue_limit).map_err(Error::Transport)?;
-        let mut channel = transport
-            .connect(&route, limits, cancel)
-            .map_err(Error::Transport)?;
-        channel
-            .try_send(&authorized, cancel)
-            .map_err(Error::Transport)?;
+        let related = if let Some(lease) = lifetime {
+            if lease.generation != generation {
+                return Err(Error::Policy);
+            }
+            Some((lease.related_policy, lease.related_generation))
+        } else {
+            None
+        };
+        // Both authority generations stay locked through transport admission.
+        self.config
+            .policy
+            .with_send_generations(generation, related, || {
+                let limits =
+                    ChannelLimits::new(queue_limit, queue_limit).map_err(Error::Transport)?;
+                let mut channel = transport
+                    .connect(&route, limits, cancel)
+                    .map_err(Error::Transport)?;
+                channel
+                    .try_send(&authorized, cancel)
+                    .map_err(Error::Transport)
+            })?;
         self.sequence = next;
         self.counters = counters;
         self.last_sent = Some(metadata);
@@ -348,8 +369,8 @@ impl Direction {
         if wire.len() > queue_limit {
             return Err(Error::Limit);
         }
-        let (context, generation) = self.config.policy.versioned()?;
-        self.route(&context)?;
+        let (context, generation, revoked_bindings) = self.config.policy.route_snapshot()?;
+        self.route(&context, revoked_bindings)?;
         let envelope = decode_envelope(wire).map_err(Error::Mailbox)?;
         let binding = &self.config.binding.claims;
         if envelope.encryption.key_id != self.config.key_id
