@@ -1,0 +1,122 @@
+--- a/crates/spiralcore-mvm-live/src/installed_parent.rs
++++ b/crates/spiralcore-mvm-live/src/installed_parent.rs
+@@ -948,6 +948,9 @@
+                 );
+                 MailboxFunding::Selected
+             }
++            Some(InstalledMailboxLaunchProfile::LinuxFirecrackerRecoveryV2) => {
++                anyhow::bail!("original installed mailbox replacement authority is unavailable");
++            }
+         };
+         if admitted.installed_mailbox_enrollment().is_some() {
+             admitted.check_unlaunched_for_backend(binding.backend)?;
+--- a/crates/spiralcore-mvm-live/src/installed_parent/config_tests.rs
++++ b/crates/spiralcore-mvm-live/src/installed_parent/config_tests.rs
+@@ -17,20 +17,32 @@
+     selected: bool,
+     enrollment: Option<InstalledMailboxEnrollment>,
+ ) -> AdmittedPlan {
++    admitted_with_profile(
++        home,
++        workload,
++        selected.then_some(InstalledMailboxLaunchProfile::LinuxFirecrackerV1),
++        enrollment,
++    )
++}
++
++fn admitted_with_profile(
++    home: &std::path::Path,
++    workload: &str,
++    profile: Option<InstalledMailboxLaunchProfile>,
++    enrollment: Option<InstalledMailboxEnrollment>,
++) -> AdmittedPlan {
+     use mvm_core::plan::{
+         PlanSeccompTier, SecretReleasePolicy, SynthesisInput, Variant, synthesize_plan,
+     };
+     use mvm_hostd::plan_admission::{
+-        BundleAdmissionContext, InMemoryNonceLedger, InstalledMailboxLaunchProfile, RunPosture,
+-        SystemClock, admit_plan_for_run,
++        BundleAdmissionContext, InMemoryNonceLedger, RunPosture, SystemClock, admit_plan_for_run,
+     };
+-    let bundle = selected.then(SignedMailboxFixture::new);
++    let bundle = profile.is_some().then(SignedMailboxFixture::new);
+     let bundle_context = bundle.as_ref().map(|bundle| BundleAdmissionContext {
+         resolver: bundle,
+         trust: bundle,
+         image: None,
+     });
+-    let profile = InstalledMailboxLaunchProfile::LinuxFirecrackerV1;
+     let backend = if cfg!(target_os = "linux") {
+         "firecracker"
+     } else {
+@@ -45,7 +57,7 @@
+         .seccomp_tier(PlanSeccompTier::Standard)
+         .secret_release(SecretReleasePolicy::None)
+         .secrets(vec![])
+-        .network_mode(if selected {
++        .network_mode(if profile.is_some() {
+             mvm_core::plan::NetworkMode::HostVsockProxy
+         } else {
+             Default::default()
+@@ -53,7 +65,7 @@
+         .bundle_pin(bundle.as_ref().map(|bundle| bundle.pin.clone()))
+         .assets({
+             let mut assets = Vec::new();
+-            if selected {
++            if let Some(profile) = profile {
+                 assets.push(profile.signed_asset().unwrap());
+             }
+             if let Some(enrollment) = enrollment {
+@@ -76,12 +88,13 @@
+         .build()
+         .unwrap();
+     let posture = RunPosture::on_backend(Variant::Dev, native_backend());
+-    let posture = if let Some(enrollment) = enrollment {
+-        posture.with_installed_mailbox_enrollment(profile, enrollment)
+-    } else if selected {
+-        posture.with_installed_mailbox(profile)
+-    } else {
+-        posture
++    let posture = match (profile, enrollment) {
++        (Some(profile), Some(enrollment)) => {
++            posture.with_installed_mailbox_enrollment(profile, enrollment)
++        }
++        (Some(profile), None) => posture.with_installed_mailbox(profile),
++        (None, None) => posture,
++        (None, Some(_)) => panic!("mailbox enrollment requires a profile"),
+     };
+     admit_plan_for_run(
+         &synthesize_plan(&input).unwrap(),
+@@ -953,3 +966,32 @@
+     supervisor.close_admission();
+     supervisor.try_finish().unwrap();
+ }
++
++#[cfg(target_os = "linux")]
++#[test]
++fn recovery_profile_cannot_bind_the_original_parent_before_rearm_is_supported() {
++    let (home, supervisor, provider) = endpoint_tests::fixture();
++    let name = "signed-recovery-refused-before-binding";
++    let admitted = admitted_with_profile(
++        home.path(),
++        name,
++        Some(InstalledMailboxLaunchProfile::LinuxFirecrackerRecoveryV2),
++        Some(InstalledMailboxEnrollment::new([93; 32]).unwrap()),
++    );
++    let (grant, mut config) = config(&provider, name);
++    config.plan_json = Some(serde_json::to_string(admitted.signed()).unwrap());
++    let before = supervisor.managed_resources().snapshot().unwrap().usage;
++    let error = provider
++        .bind_config(&admitted, &config, native_backend())
++        .err()
++        .unwrap();
++    assert!(
++        format!("{error:#}")
++            .contains("original installed mailbox replacement authority is unavailable")
++    );
++    assert_eq!(
++        supervisor.managed_resources().snapshot().unwrap().usage,
++        before
++    );
++    assert!(grant.lifecycle.lock().unwrap().mailbox_enrollment.is_none());
++}
