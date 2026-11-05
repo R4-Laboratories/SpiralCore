@@ -1,0 +1,23 @@
+error[E0599]: no method named `entry` found for reference `&BoundSocket` in the current scope
+   --> worker.rs:432:31
+    |
+432 |         let original = socket.entry().unwrap();
+    |                               ^^^^^ method not found in `&BoundSocket`
+    |
+    = help: items from traits can only be used if the trait is implemented and in scope
+    = note: the following trait defines an item `entry`, perhaps you need to implement it:
+            candidate #1: `toml_edit::table::TableLike`
+
+error[E0599]: no method named `entry` found for reference `&BoundSocket` in the current scope
+   --> worker.rs:436:31
+    |
+436 |         let observed = socket.entry().unwrap();
+    |                               ^^^^^ method not found in `&BoundSocket`
+    |
+    = help: items from traits can only be used if the trait is implemented and in scope
+    = note: the following trait defines an item `entry`, perhaps you need to implement it:
+            candidate #1: `toml_edit::table::TableLike`
+
+error: aborting due to 2 previous errors
+
+For more information about this error, try `rustc --explain E0599`.
