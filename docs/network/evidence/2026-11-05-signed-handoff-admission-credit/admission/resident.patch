@@ -1,0 +1,53 @@
+--- a/crates/spiralcore-mvm-live/src/installed_parent/resident.rs
++++ b/crates/spiralcore-mvm-live/src/installed_parent/resident.rs
+@@ -4,7 +4,7 @@
+     installed_resources::{ManagedClaim, ManagedReservation, ManagedSnapshot},
+     installed_supervisor::InstalledSupervisor,
+ };
+-use anyhow::{Result, anyhow, ensure};
++use anyhow::{Context as _, Result, anyhow, ensure};
+ use mvm_client::{LaunchOutcome, LaunchRequest, LocalBackend, OwnedRetirement};
+ use mvm_core::{host_lifetime::PreparedHostLifetime, vm_backend::BackendKind};
+ use mvm_hostd::plan_admission::AdmittedPlan;
+@@ -77,6 +77,7 @@
+ // test fixture verifies custody ordering with an explicit prepaid amount.
+ struct QualifiedAdmissionFunding {
+     metadata_bytes: u64,
++    retained_metadata_bytes: u64,
+ }
+ #[allow(
+     clippy::large_enum_variant,
+@@ -300,10 +301,23 @@
+             live.slots.iter().any(Option::is_none),
+             "resident slots full"
+         );
++        let scratch_bytes = profile
++            .metadata_bytes
++            .checked_sub(profile.retained_metadata_bytes)
++            .filter(|bytes| *bytes > 0 && profile.retained_metadata_bytes > 0)
++            .context("invalid admission scratch or retained token funding")?;
++        let tenant_key = tenant_tag(tenant);
+         let storage = live.provider.shared.pool.reserve(
+-            tenant_tag(tenant),
++            tenant_key,
+             ManagedClaim {
+-                host_metadata_bytes: profile.metadata_bytes,
++                host_metadata_bytes: profile.retained_metadata_bytes,
++                ..Default::default()
++            },
++        )?;
++        let scratch = live.provider.shared.pool.reserve(
++            tenant_key,
++            ManagedClaim {
++                host_metadata_bytes: scratch_bytes,
+                 ..Default::default()
+             },
+         )?;
+@@ -313,6 +327,7 @@
+             "original admitted tenant differs"
+         );
+         admitted.check_unlaunched_for_backend(INSTALLED_BACKEND)?;
++        drop(scratch);
+         self.begin_launch_using(
+             request,
+             tenant,
