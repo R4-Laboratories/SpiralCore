@@ -492,6 +492,27 @@ impl<S: SocketIo + 'static> StreamTransport<S> {
         state.closed = result.is_err();
         result
     }
+    /// Receive one frame under the original operation deadline, allowing
+    /// synchronous maintenance between frames while the peer is quiet.
+    /// The hook runs outside the transport lock and never sees partial frames.
+    /// The caller must own the receive direction for this whole operation.
+    /// A hook error returns with the next frame still unread.
+    pub fn receive_with_idle<E: From<LiveError>>(
+        &self,
+        cancel: &CancellationToken,
+        deadline: Instant,
+        idle_window: Duration,
+        mut on_idle: impl FnMut() -> std::result::Result<(), E>,
+    ) -> std::result::Result<Vec<u8>, E> {
+        let deadline = deadline.min(Instant::now() + self.timeout);
+        loop {
+            match self.receive_or_idle(cancel, deadline, idle_window)? {
+                ReceiveOutcome::Frame(bytes) => return Ok(bytes),
+                ReceiveOutcome::Idle => on_idle()?,
+            }
+        }
+    }
+
     /// Yield only before consuming any next-frame bytes. Lock waiting is not
     /// Idle, and prefix/payload progress keeps the original absolute deadline.
     pub fn receive_or_idle(
