@@ -1,0 +1,7 @@
+# Independent history downgrade guard review
+
+PASS, bounded Code/Rust/Security source review of frozen production retained_telemetry.rs5ee84bd4, test-source recovery4da8bbba/transition356c5d39. All three extracted files rehashed against source.sha256.json and compiled-source139.json. No authoring or build by this reviewer.
+
+The only production addition checks an existing catalog with the existing bounded canonical V1 decoder before encoding/opening any publication intent. The decoder enforces MAGIC SCRETN01, fixed maximum16 entries/length, exact epoch, reserved bytes, checksum and canonical roundtrip; migrated V2 MAGIC SCRETN02 refuses before writes/rename. Existing intent/next/Active/current-epoch guards remain. With no catalog, the added branch is skipped and the existing first-publication path is unchanged. This does not authorize migration or weaken the separate typed V2 transaction. Test-only scope widens helper visibility and adds the actual same-epoch filesystem downgrade countercase.
+
+Independently read the actual protected-run receipts: original build0/test101 had refused=false/unchanged=false and02→01; successor build0/test0,14selectedPASS plusABI0/strict0 had refused=true/unchanged=true and02→02. Both139-input manifests match before/after, and the separately retained old fixture inventory remains byte-identical. The explicit countercase also compares the actual owner beacon bytes. No new test run, native VM, producer activation or full live-writer model acceptance is claimed. No blocking finding in this minimal delta.
