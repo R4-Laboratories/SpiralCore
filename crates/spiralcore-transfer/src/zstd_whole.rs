@@ -59,15 +59,25 @@ fn first_block_bound(header: &[u8], consumed: usize, target_len: usize) -> Optio
 
 pub struct PreparedEncoder {
     encoder: Option<CCtx<'static>>,
+    resources: crate::resource_profile::ResourceProfile,
+    charge: u64,
 }
 impl PreparedEncoder {
     pub fn new() -> Result<Self> {
-        let encoder = zstd_dictionary::new_encoder()?;
-        if encoder.sizeof() as u64 > ENCODER_ALLOWANCE {
+        Self::new_with_resource_profile(crate::resource_profile::ResourceProfile::General)
+    }
+    pub fn new_with_resource_profile(
+        resources: crate::resource_profile::ResourceProfile,
+    ) -> Result<Self> {
+        let charge = resources.encoder_charge(resources.max_target_len())?;
+        let encoder = resources.encoder(resources.max_target_len())?;
+        if encoder.sizeof() as u64 > charge {
             return Err(Error::Limit);
         }
         Ok(Self {
             encoder: Some(encoder),
+            resources,
+            charge,
         })
     }
     /// zstd-reported workspace; excludes Rust/allocator bookkeeping.
@@ -75,7 +85,7 @@ impl PreparedEncoder {
         self.encoder.as_ref().map_or(0, CCtx::sizeof)
     }
     pub fn retained_charge(&self) -> u64 {
-        ENCODER_ALLOWANCE
+        self.charge
     }
     /// The first block only; no returned bytes can be sent as a candidate.
     /// Inconclusive shape returns None; actual codec/reset/resource errors fail.
@@ -105,7 +115,7 @@ impl PreparedEncoder {
         // Discard an unfinished frame even when the probe errored. Never reuse
         // an error state through another streaming call without this reset.
         let reset = encoder.reset(ResetDirective::SessionOnly);
-        if encoder.sizeof() as u64 > ENCODER_ALLOWANCE {
+        if encoder.sizeof() as u64 > self.charge {
             self.encoder = None;
             return Err(Error::Limit);
         }
@@ -121,12 +131,13 @@ impl PreparedEncoder {
         ))
     }
     pub fn encode(&mut self, target: &[u8]) -> Result<Vec<u8>> {
+        self.resources.check_target(target.len(), target.len())?;
         let cap = encoded_cap(target.len())?;
         let encoder = self.encoder.as_mut().ok_or(Error::Limit)?;
         let mut encoded = Vec::new();
         encoded.try_reserve_exact(cap).map_err(|_| Error::Limit)?;
         let result = encoder.compress2(&mut encoded, target);
-        if encoder.sizeof() as u64 > ENCODER_ALLOWANCE {
+        if encoder.sizeof() as u64 > self.charge {
             self.encoder = None;
             return Err(Error::Limit);
         }
@@ -138,24 +149,33 @@ impl PreparedEncoder {
 
 pub struct PreparedDecoder {
     decoder: Option<DCtx<'static>>,
+    resources: crate::resource_profile::ResourceProfile,
 }
 impl PreparedDecoder {
     pub fn new() -> Result<Self> {
+        Self::new_with_resource_profile(crate::resource_profile::ResourceProfile::General)
+    }
+    pub fn new_with_resource_profile(
+        resources: crate::resource_profile::ResourceProfile,
+    ) -> Result<Self> {
+        resources.check_supported()?;
         let decoder = DCtx::try_create().ok_or(Error::Limit)?;
-        if decoder.sizeof() as u64 > DECODER_ALLOWANCE {
+        if decoder.sizeof() as u64 > resources.decoder_charge() {
             return Err(Error::Limit);
         }
         Ok(Self {
             decoder: Some(decoder),
+            resources,
         })
     }
     pub fn retained_bytes(&self) -> usize {
         self.decoder.as_ref().map_or(0, DCtx::sizeof)
     }
     pub fn retained_charge(&self) -> u64 {
-        DECODER_ALLOWANCE
+        self.resources.decoder_charge()
     }
     pub fn decode(&mut self, encoded: &[u8], len: usize) -> Result<Vec<u8>> {
+        self.resources.check_target(len, len)?;
         zstd_prefix::validate_frame(encoded, len)?;
         let decoder = self.decoder.as_mut().ok_or(Error::Limit)?;
         decoder
@@ -165,7 +185,7 @@ impl PreparedDecoder {
         output.try_reserve_exact(len).map_err(|_| Error::Limit)?;
         output.resize(len, 0);
         let result = decoder.decompress(output.as_mut_slice(), encoded);
-        if decoder.sizeof() as u64 > DECODER_ALLOWANCE {
+        if decoder.sizeof() as u64 > self.resources.decoder_charge() {
             self.decoder = None;
             return Err(Error::Limit);
         }
@@ -343,7 +363,11 @@ mod probe_tests {
         ] {
             assert_eq!(first_block_maximum_bound(len), None);
         }
-        let mut unavailable = PreparedEncoder { encoder: None };
+        let mut unavailable = PreparedEncoder {
+            encoder: None,
+            resources: crate::resource_profile::ResourceProfile::General,
+            charge: ENCODER_ALLOWANCE,
+        };
         for len in [0, 1, PROBE_BLOCK] {
             assert_eq!(
                 unavailable

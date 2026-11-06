@@ -446,7 +446,7 @@ enum Sender {
         artifact: Vec<u8>,
         base: Option<Vec<u8>>,
     },
-    Persistent(WarmSession),
+    Persistent(Box<WarmSession>),
     Whole {
         encoder: zstd_whole::PreparedEncoder,
         base: Option<Vec<u8>>,
@@ -499,7 +499,7 @@ impl Sender {
             "persistent-selector" | "baseline-selector" | "candidate-selector" => {
                 let w = Instant::now();
                 let t = ProcessTime::now();
-                let session = WarmSession::new(c, &artifact)?;
+                let session = Box::new(WarmSession::new(c, &artifact)?);
                 stages.constructor = (t.elapsed().as_micros(), w.elapsed().as_micros());
                 Ok(Self::Persistent(session))
             }

@@ -133,7 +133,7 @@ fn priority(mode: Mode) -> u8 {
         Mode::SchemaV1 => 6, // Explicit prototype sender only.
         Mode::ZstdDictionaryV1 => 7,
         Mode::SchemaZstdV1 => 8,
-        Mode::ZstdWholeV1 => 9, // Explicit whole-object/selector API only.
+        Mode::ZstdWholeV1 => 9,
     }
 }
 
@@ -172,7 +172,14 @@ pub(crate) fn prepare(target: &[u8], base: Option<&[u8]>, warm_probe: bool) -> R
     if best.selection.exact_repeat_probe {
         return Ok(best);
     }
-    conventional(&mut best, target, base, warm_probe, false)?;
+    conventional(
+        &mut best,
+        target,
+        base,
+        warm_probe,
+        false,
+        crate::resource_profile::ResourceProfile::General,
+    )?;
     Ok(best)
 }
 
@@ -185,6 +192,28 @@ pub(crate) fn prepare_runtime<P>(
 where
     P: FnOnce() -> Result<Option<Vec<Vec<u8>>>>,
 {
+    prepare_runtime_with_resource_profile(
+        target,
+        checkpoint,
+        warm_probe,
+        runtime,
+        crate::resource_profile::ResourceProfile::General,
+    )
+}
+pub(crate) fn prepare_runtime_with_resource_profile<P>(
+    target: &[u8],
+    checkpoint: &[u8],
+    warm_probe: bool,
+    runtime: P,
+    resources: crate::resource_profile::ResourceProfile,
+) -> Result<Prepared>
+where
+    P: FnOnce() -> Result<Option<Vec<Vec<u8>>>>,
+{
+    resources.check_target(target.len(), target.len())?;
+    if resources == crate::resource_profile::ResourceProfile::SmallV1 {
+        resources.check_artifact(checkpoint.len())?;
+    }
     let mut best = initial(target, Some(checkpoint), warm_probe)?;
     if best.selection.exact_repeat_probe {
         return Ok(best);
@@ -192,7 +221,14 @@ where
     if let Some(bodies) = runtime()? {
         best.consider(Mode::RuntimeV1, bodies, warm_probe)?;
     }
-    conventional(&mut best, target, Some(checkpoint), warm_probe, true)?;
+    conventional(
+        &mut best,
+        target,
+        Some(checkpoint),
+        warm_probe,
+        true,
+        resources,
+    )?;
     Ok(best)
 }
 
@@ -224,8 +260,17 @@ fn conventional(
     base: Option<&[u8]>,
     warm_probe: bool,
     pruning: bool,
+    resources: crate::resource_profile::ResourceProfile,
 ) -> Result<()> {
-    if !pruning || !best.prune(Mode::Zstd, zstd_lower_bound(target.len(), warm_probe)) {
+    if resources == crate::resource_profile::ResourceProfile::SmallV1 {
+        let encoded = crate::zstd_whole::PreparedEncoder::new_with_resource_profile(resources)?
+            .encode(target)?;
+        best.consider(
+            Mode::ZstdWholeV1,
+            crate::fitted_transfer::chunks(Mode::ZstdWholeV1, &encoded)?,
+            warm_probe,
+        )?;
+    } else if !pruning || !best.prune(Mode::Zstd, zstd_lower_bound(target.len(), warm_probe)) {
         best.consider(Mode::Zstd, compressed_chunks(target)?, warm_probe)?;
     }
     if let Some(base) = base {
@@ -246,7 +291,8 @@ fn conventional(
                 prefix_lower_bound(target.len(), warm_probe)?,
             );
         if !prune_prefix {
-            let encoded = crate::zstd_prefix::encode(base, target)?;
+            let encoded =
+                crate::zstd_prefix::encode_with_resource_profile(base, target, resources)?;
             // Cost the contiguous encoded candidate first. Only materialize its
             // transport bodies when it wins, avoiding another full losing copy.
             let prefix_cost = cost(

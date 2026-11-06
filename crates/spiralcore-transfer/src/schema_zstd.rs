@@ -14,6 +14,8 @@ pub fn encoded_cap(target_len: usize) -> Result<usize> {
 pub struct PreparedEncoder {
     schema: schema::PreparedSchema,
     encoder: Option<CCtx<'static>>,
+    resources: crate::resource_profile::ResourceProfile,
+    charge: u64,
     #[cfg(test)]
     pub(crate) compression_calls: usize,
 }
@@ -36,14 +38,24 @@ impl PreparedIntermediate {
 
 impl PreparedEncoder {
     pub fn new(artifact: &[u8]) -> Result<Self> {
+        Self::new_with_resource_profile(artifact, crate::resource_profile::ResourceProfile::General)
+    }
+    pub fn new_with_resource_profile(
+        artifact: &[u8],
+        resources: crate::resource_profile::ResourceProfile,
+    ) -> Result<Self> {
+        resources.check_artifact(artifact.len())?;
+        let charge = resources.encoder_charge(schema::encoded_cap(resources.max_target_len())?)?;
         let schema = schema::PreparedSchema::new(artifact)?;
-        let encoder = zstd_dictionary::new_encoder()?;
-        if encoder.sizeof() as u64 > ENCODER_ALLOWANCE {
+        let encoder = resources.encoder(crate::schema::encoded_cap(resources.max_target_len())?)?;
+        if encoder.sizeof() as u64 > charge {
             return Err(Error::Limit);
         }
         Ok(Self {
             schema,
             encoder: Some(encoder),
+            resources,
+            charge,
             #[cfg(test)]
             compression_calls: 0,
         })
@@ -60,13 +72,14 @@ impl PreparedEncoder {
         self.schema.retained_bytes() + self.encoder.as_ref().map_or(0, CCtx::sizeof)
     }
     pub fn retained_charge(&self) -> u64 {
-        schema::PREPARED_CHARGE + ENCODER_ALLOWANCE
+        schema::PREPARED_CHARGE + self.charge
     }
     pub fn encode(&mut self, target: &[u8]) -> Result<Vec<u8>> {
         let intermediate = self.prepare_intermediate(target)?;
         self.encode_prepared(intermediate)
     }
     pub(crate) fn prepare_intermediate(&self, target: &[u8]) -> Result<PreparedIntermediate> {
+        self.resources.check_target(target.len(), target.len())?;
         let (intermediate, useful_template_records) = self.schema.encode_counted(target)?;
         if intermediate.len() > schema::encoded_cap(target.len())? {
             return Err(Error::Limit);
@@ -93,7 +106,7 @@ impl PreparedEncoder {
             self.compression_calls += 1;
         }
         let result = encoder.compress2(&mut encoded, &intermediate.bytes);
-        if encoder.sizeof() as u64 > ENCODER_ALLOWANCE {
+        if encoder.sizeof() as u64 > self.charge {
             self.encoder = None;
             return Err(Error::Limit);
         }
@@ -108,18 +121,27 @@ impl PreparedEncoder {
 pub struct PreparedDecoder {
     schema: schema::PreparedSchema,
     decoder: Option<DCtx<'static>>,
+    resources: crate::resource_profile::ResourceProfile,
 }
 
 impl PreparedDecoder {
     pub fn new(artifact: &[u8]) -> Result<Self> {
+        Self::new_with_resource_profile(artifact, crate::resource_profile::ResourceProfile::General)
+    }
+    pub fn new_with_resource_profile(
+        artifact: &[u8],
+        resources: crate::resource_profile::ResourceProfile,
+    ) -> Result<Self> {
+        resources.check_artifact(artifact.len())?;
         let schema = schema::PreparedSchema::new(artifact)?;
         let decoder = DCtx::try_create().ok_or(Error::Limit)?;
-        if decoder.sizeof() as u64 > DECODER_ALLOWANCE {
+        if decoder.sizeof() as u64 > resources.decoder_charge() {
             return Err(Error::Limit);
         }
         Ok(Self {
             schema,
             decoder: Some(decoder),
+            resources,
         })
     }
     pub fn artifact(&self) -> &[u8] {
@@ -134,9 +156,10 @@ impl PreparedDecoder {
         self.schema.retained_bytes() + self.decoder.as_ref().map_or(0, DCtx::sizeof)
     }
     pub fn retained_charge(&self) -> u64 {
-        schema::PREPARED_CHARGE + DECODER_ALLOWANCE
+        schema::PREPARED_CHARGE + self.resources.decoder_charge()
     }
     pub fn decode(&mut self, encoded: &[u8], target_len: usize) -> Result<Vec<u8>> {
+        self.resources.check_target(target_len, target_len)?;
         let len = frame_size(encoded, target_len)?;
         let decoder = self.decoder.as_mut().ok_or(Error::Limit)?;
         decoder
@@ -148,7 +171,7 @@ impl PreparedDecoder {
             .map_err(|_| Error::Limit)?;
         intermediate.resize(len, 0);
         let result = decoder.decompress(intermediate.as_mut_slice(), encoded);
-        if decoder.sizeof() as u64 > DECODER_ALLOWANCE {
+        if decoder.sizeof() as u64 > self.resources.decoder_charge() {
             self.decoder = None;
             return Err(Error::Limit);
         }

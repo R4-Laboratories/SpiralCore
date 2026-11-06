@@ -144,6 +144,7 @@ impl Attempt {
     }
 }
 pub struct Endpoint<A: Authority> {
+    resources: crate::resource_profile::ResourceProfile,
     root: PathBuf,
     _owner: File,
     limits: Limits,
@@ -197,6 +198,35 @@ impl<A: Authority> Endpoint<A> {
         authority: A,
         cold_graph_policy: ColdGraphPolicy,
     ) -> Result<Self> {
+        Self::open_config(
+            root,
+            limits,
+            authority,
+            cold_graph_policy,
+            crate::resource_profile::ResourceProfile::General,
+        )
+    }
+    pub fn open_with_resource_profile(
+        root: &Path,
+        limits: Limits,
+        authority: A,
+        resources: crate::resource_profile::ResourceProfile,
+    ) -> Result<Self> {
+        let policy = if resources == crate::resource_profile::ResourceProfile::SmallV1 {
+            ColdGraphPolicy::Disabled
+        } else {
+            ColdGraphPolicy::EagerBounded
+        };
+        Self::open_config(root, limits, authority, policy, resources)
+    }
+    fn open_config(
+        root: &Path,
+        limits: Limits,
+        authority: A,
+        cold_graph_policy: ColdGraphPolicy,
+        resources: crate::resource_profile::ResourceProfile,
+    ) -> Result<Self> {
+        resources.check_limits(&limits)?;
         if limits.max_active == 0
             || limits.max_active > 4
             || limits.max_nodes == 0
@@ -248,6 +278,7 @@ impl<A: Authority> Endpoint<A> {
             }
         }
         Ok(Self {
+            resources,
             root: root.to_path_buf(),
             _owner: owner,
             limits,
@@ -291,6 +322,9 @@ impl<A: Authority> Endpoint<A> {
     /// Opt-in retention of validated fitted decoder state. Changes are allowed
     /// only with no active transfer; disabling drops all unpinned state.
     pub fn set_codec_cache_enabled(&mut self, enabled: bool) -> Result<()> {
+        if enabled && self.resources == crate::resource_profile::ResourceProfile::SmallV1 {
+            return Err(Error::Unsupported);
+        }
         if self.attempts.values().any(|s| s.state == 0) {
             return Err(Error::Sequence);
         }
@@ -440,6 +474,16 @@ impl<A: Authority> Endpoint<A> {
     pub fn handle(&mut self, c: &Context, f: &Frame, now: u64) -> Result<Frame> {
         self.authority.authorize(c)?;
         let ns = c.namespace()?;
+        if self.resources == crate::resource_profile::ResourceProfile::SmallV1
+            && matches!(f.kind, 1 | 4)
+        {
+            let body = if f.kind == 4 {
+                f.body.get(32..).ok_or(Error::Malformed)?
+            } else {
+                &f.body
+            };
+            self.resources.check_offer(&Offer::decode(body)?)?;
+        }
         let wire = f.encode()?;
         if !matches!(f.kind, 1..=6) {
             return Err(Error::Unsupported);
@@ -459,6 +503,11 @@ impl<A: Authority> Endpoint<A> {
                     return Err(Error::Integrity);
                 }
                 let p = self.publication(ns, offer.object)?;
+                if self.resources == crate::resource_profile::ResourceProfile::SmallV1
+                    && p.len != offer.len
+                {
+                    return Err(Error::Integrity);
+                }
                 self.reserve_with_eviction(p.len.checked_mul(2).ok_or(Error::Limit)?)?;
                 let bytes = read_publication(&p)?;
                 if bytes.len() as u64 != offer.len {
@@ -568,7 +617,7 @@ impl<A: Authority> Endpoint<A> {
         if offer.mode == Mode::ZstdPrefixV1 && existing.is_err() {
             charge = charge
                 .checked_add(crate::zstd_prefix::encoded_cap(offer.len as usize)? as u64)
-                .and_then(|n| n.checked_add(crate::zstd_prefix::DECODER_ALLOWANCE))
+                .and_then(|n| n.checked_add(self.resources.decoder_charge()))
                 .ok_or(Error::Limit)?;
         }
         if crate::fitted_transfer::is_buffered(offer.mode) && existing.is_err() {
@@ -576,7 +625,7 @@ impl<A: Authority> Endpoint<A> {
                 .checked_add(
                     crate::fitted_transfer::encoded_cap(offer.mode, offer.len as usize)? as u64,
                 )
-                .and_then(|n| n.checked_add(crate::zstd_prefix::DECODER_ALLOWANCE))
+                .and_then(|n| n.checked_add(self.resources.decoder_charge()))
                 .ok_or(Error::Limit)?;
         }
         if offer.mode == Mode::SchemaZstdV1 && existing.is_err() {
@@ -592,7 +641,7 @@ impl<A: Authority> Endpoint<A> {
             // Reserve the bounded generator's capacity/growth separately from
             // target output, checkpoint bytes and the existing scratch allowance.
             charge = charge
-                .checked_add(2 * crate::shared_runtime::MAX_OUTPUT as u64)
+                .checked_add(2 * self.resources.max_prediction_len() as u64)
                 .ok_or(Error::Limit)?;
         }
         let cached = if offer.mode == Mode::Dag && existing.is_err() {
@@ -643,6 +692,11 @@ impl<A: Authority> Endpoint<A> {
             None
         };
         if let Some(p) = &base {
+            if self.resources == crate::resource_profile::ResourceProfile::SmallV1
+                && p.len > self.resources.max_artifact_len() as u64
+            {
+                return Err(Error::Limit);
+            }
             if crate::fitted_transfer::is_fitted(offer.mode) && p.len > 64 * 1024 {
                 return Err(Error::Limit);
             }
@@ -808,10 +862,11 @@ impl<A: Authority> Endpoint<A> {
                     return Err(Error::Malformed);
                 }
                 if s.offer.mode == Mode::ZstdPrefixV1 {
-                    s.bytes = crate::zstd_prefix::decode(
+                    s.bytes = crate::zstd_prefix::decode_with_resource_profile(
                         &s.base_bytes,
                         &s.prefix_encoded,
                         s.offer.len as usize,
+                        self.resources,
                     )?;
                 }
                 if crate::fitted_transfer::is_buffered(s.offer.mode) {
@@ -821,11 +876,12 @@ impl<A: Authority> Endpoint<A> {
                             .map_err(|_| Error::Storage)?
                             .decode(&s.prefix_encoded, s.offer.len as usize)?
                     } else {
-                        crate::fitted_transfer::decode(
+                        crate::fitted_transfer::decode_with_resource_profile(
                             s.offer.mode,
                             &s.base_bytes,
                             &s.prefix_encoded,
                             s.offer.len as usize,
+                            self.resources,
                         )?
                     };
                 }
@@ -939,7 +995,11 @@ impl<A: Authority> Endpoint<A> {
             return Ok(());
         }
         if s.offer.mode == Mode::RuntimeV1 && !s.runtime_ready {
-            let prediction = crate::shared_transfer::replay_frame(&s.base_bytes, b)?;
+            let prediction = crate::shared_transfer::replay_frame_with_limit(
+                &s.base_bytes,
+                b,
+                self.resources.max_prediction_len(),
+            )?;
             s.base_bytes = prediction;
             s.runtime_ready = true;
             return Ok(());
@@ -1174,6 +1234,11 @@ impl<A: Authority> Endpoint<A> {
     pub fn read_object(&mut self, c: &Context, id: Id) -> Result<Vec<u8>> {
         self.authority.authorize(c)?;
         let p = self.publication(c.namespace()?, id)?;
+        if self.resources == crate::resource_profile::ResourceProfile::SmallV1
+            && p.len > self.resources.max_artifact_len() as u64
+        {
+            return Err(Error::Limit);
+        }
         self.reserve_with_eviction(p.len.checked_mul(2).ok_or(Error::Limit)?)?;
         let bytes = read_publication(&p)?;
         self.authority.authorize(c)?;
