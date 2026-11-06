@@ -25,7 +25,8 @@ Existing negotiated object limits still apply. `Capabilities::small_v1()`
 selects existing capability profile field2 (General remains1), max object64KiB
 and the bounded Raw/Sparse/Prefix/Runtime/Schema/SchemaZstd/Whole modes.
 SmallV1 excludes legacy streaming Zstd and retains the one-shot Whole and
-Prefix zstd modes.
+Prefix zstd modes. SmallV1 Runtime selection uses Whole for its independent
+compression candidate when the checkpoint and prediction offer little reuse.
 Both authenticated/pinned peers must select2; mixed1/2 refuses Unsupported,
 without fallback. Capability/frame layout and codec versions do not change.
 Constructors require the explicit local ResourceProfile to match that agreement.

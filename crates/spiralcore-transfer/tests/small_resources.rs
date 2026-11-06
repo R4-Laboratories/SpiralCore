@@ -90,7 +90,7 @@ fn small_facade_all_modes_publish_exactly_with_one_aggregate_envelope() {
         session::SelectionPolicy,
         shared_runtime::{OutputKind, Recipe, State},
         shared_transfer::PreparedPrediction,
-        v1::{ObjectEndpoint, ObjectMode, ObjectSender},
+        v1::{ObjectEndpoint, ObjectMode, ObjectSelection, ObjectSender},
         wan,
     };
     let resources = ResourceProfile::SmallV1;
@@ -177,6 +177,23 @@ fn small_facade_all_modes_publish_exactly_with_one_aggregate_envelope() {
             .send(&c, target.clone(), [4; 32], true, &mut exchange)
             .unwrap();
         assert_eq!(repeated.object, stats.object);
+        if mode == ObjectMode::Runtime {
+            let unrelated = vec![b'Z'; resources.max_target_len()];
+            let receipt = sender
+                .send_with_receipt(&c, unrelated.clone(), [5; 32], true, &mut exchange)
+                .unwrap();
+            let ObjectSelection::Runtime(selection) = receipt.selection else {
+                panic!("expected runtime selection");
+            };
+            assert_eq!(
+                selection.selected,
+                spiralcore_transfer::protocol::Mode::ZstdWholeV1
+            );
+            assert_eq!(
+                receiver.read_object(&c, receipt.transfer.object).unwrap(),
+                unrelated
+            );
+        }
         assert!(sender.retained_charge() < resources.operation_charge().unwrap());
         assert_eq!(receiver.read_object(&c, stats.object).unwrap(), target);
     }

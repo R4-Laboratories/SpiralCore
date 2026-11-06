@@ -133,7 +133,7 @@ fn priority(mode: Mode) -> u8 {
         Mode::SchemaV1 => 6, // Explicit prototype sender only.
         Mode::ZstdDictionaryV1 => 7,
         Mode::SchemaZstdV1 => 8,
-        Mode::ZstdWholeV1 => 9, // Explicit whole-object/selector API only.
+        Mode::ZstdWholeV1 => 9,
     }
 }
 
@@ -262,12 +262,16 @@ fn conventional(
     pruning: bool,
     resources: crate::resource_profile::ResourceProfile,
 ) -> Result<()> {
-    if !pruning || !best.prune(Mode::Zstd, zstd_lower_bound(target.len(), warm_probe)) {
+    if resources == crate::resource_profile::ResourceProfile::SmallV1 {
+        let encoded = crate::zstd_whole::PreparedEncoder::new_with_resource_profile(resources)?
+            .encode(target)?;
         best.consider(
-            Mode::Zstd,
-            compressed_chunks(target, resources)?,
+            Mode::ZstdWholeV1,
+            crate::fitted_transfer::chunks(Mode::ZstdWholeV1, &encoded)?,
             warm_probe,
         )?;
+    } else if !pruning || !best.prune(Mode::Zstd, zstd_lower_bound(target.len(), warm_probe)) {
+        best.consider(Mode::Zstd, compressed_chunks(target)?, warm_probe)?;
     }
     if let Some(base) = base {
         let prune_sparse = pruning
@@ -321,30 +325,13 @@ fn conventional(
     Ok(())
 }
 
-fn compressed_chunks(
-    target: &[u8],
-    resources: crate::resource_profile::ResourceProfile,
-) -> Result<Vec<Vec<u8>>> {
+fn compressed_chunks(target: &[u8]) -> Result<Vec<Vec<u8>>> {
     let mut bodies = Vec::new();
     bodies
         .try_reserve_exact(target.len().div_ceil(MAX_CHUNK))
         .map_err(|_| Error::Limit)?;
     for chunk in target.chunks(MAX_CHUNK) {
-        let compressed = if resources == crate::resource_profile::ResourceProfile::General {
-            zstd::bulk::compress(chunk, 1).map_err(|_| Error::Malformed)?
-        } else {
-            let mut encoder = resources.encoder(chunk.len())?;
-            let mut out = Vec::new();
-            out.try_reserve_exact(crate::zstd_prefix::encoded_cap(chunk.len())?)
-                .map_err(|_| Error::Limit)?;
-            encoder
-                .compress2(&mut out, chunk)
-                .map_err(|_| Error::Malformed)?;
-            if encoder.sizeof() as u64 > resources.encoder_charge(chunk.len())? {
-                return Err(Error::Limit);
-            }
-            out
-        };
+        let compressed = zstd::bulk::compress(chunk, 1).map_err(|_| Error::Malformed)?;
         let (encoding, payload) = if compressed.len() < chunk.len() {
             (1, compressed.as_slice())
         } else {
@@ -504,9 +491,7 @@ mod runtime_selection_tests {
                 MAX_CHUNK + 1,
             ] {
                 let target: Vec<u8> = (0..len).map(|i| (i % 251) as u8).collect();
-                let zstd =
-                    compressed_chunks(&target, crate::resource_profile::ResourceProfile::General)
-                        .unwrap();
+                let zstd = compressed_chunks(&target).unwrap();
                 assert!(
                     zstd_lower_bound(len, warm)
                         <= cost(Mode::Zstd, zstd.iter().map(Vec::len), warm).unwrap()
