@@ -131,6 +131,13 @@ claim the signer capability once and cannot deregister while it is held. The
 parent and child still need to pass that capability through the full installed
 endpoint startup and use it in the audited controller.
 
+The [endpoint Prepare run](https://github.com/R4-Laboratories/SpiralCore/actions/runs/42147389249)
+passed 15 Hostd and 12 VMM tests. The executable adopted audit and records
+descriptors supplied by a process fixture. It rejected foreign VM identity,
+and the VMM cases verified distinct process targets and fencing on event loss.
+The registered VMM producer still needs to send the original descriptors and
+the audited controller still needs to consume them before readiness.
+
 These checkpoints cover components and host prerequisites. The current
 combined installed guest transfer, original-owner retirement and real-WAN
 acceptance remain open. Follow
