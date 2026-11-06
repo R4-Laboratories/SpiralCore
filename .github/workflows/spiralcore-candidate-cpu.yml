@@ -1,7 +1,7 @@
 name: SpiralCore CPU-conscious exhaustive and zstd
 on:
   pull_request:
-    types: [opened, synchronize, reopened]
+    types: [opened, synchronize, reopened, labeled]
     paths:
       - 'crates/spiralcore-gateway/src/object_service.rs'
       - 'crates/spiralcore-gateway/src/object_channel.rs'
@@ -32,7 +32,12 @@ concurrency:
   cancel-in-progress: false
 jobs:
   candidate-cpu:
-    if: github.event.pull_request.head.repo.full_name == github.repository && github.run_attempt == 1
+    # The registered comparison requires the frozen control files below.
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.run_attempt == 1 &&
+      contains(github.event.pull_request.labels.*.name, 'benchmark-candidate-cpu') &&
+      (github.event.action != 'labeled' || github.event.label.name == 'benchmark-candidate-cpu')
     runs-on: ubuntu-24.04
     timeout-minutes: 40
     env:
