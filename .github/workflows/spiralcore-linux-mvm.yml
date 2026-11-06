@@ -23,14 +23,14 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           repository: Casey-allard/mvm
-          ref: 6289078c727e453782a4a2c7f73c0440d5baff54
+          ref: c13e50d74bae2cd224a063116e88129b2e195bec
           path: sdk
           persist-credentials: false
       - name: Exercise actual audited controller Ready and original retirement
         run: |
           set -euo pipefail
           test "$(git -C spiralcore rev-parse HEAD)" = "$GITHUB_SHA"
-          test "$(git -C sdk rev-parse HEAD)" = "6289078c727e453782a4a2c7f73c0440d5baff54"
+          test "$(git -C sdk rev-parse HEAD)" = "c13e50d74bae2cd224a063116e88129b2e195bec"
           rustup toolchain install 1.97.1 --profile minimal
           git -C sdk apply --check ../spiralcore/.github/qualification/controller.patch
           git -C sdk apply ../spiralcore/.github/qualification/controller.patch
