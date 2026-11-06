@@ -23,16 +23,15 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           repository: Casey-allard/mvm
-          ref: 9df8ceec88b4a49c1065719f147f323fbda75e86
+          ref: c7e02bceda4acdd0b0ae0fa75b7709d300f4797a
           path: sdk
           persist-credentials: false
       - name: Exercise installed records Prepare descriptor mapping
         run: |
           set -euo pipefail
           test "$(git -C spiralcore rev-parse HEAD)" = "$GITHUB_SHA"
-          test "$(git -C sdk rev-parse HEAD)" = "9df8ceec88b4a49c1065719f147f323fbda75e86"
+          test "$(git -C sdk rev-parse HEAD)" = "c7e02bceda4acdd0b0ae0fa75b7709d300f4797a"
           rustup toolchain install 1.97.1 --profile minimal
-          git -C sdk apply --check ../spiralcore/.github/qualification/records-prepare.patch
-          git -C sdk apply ../spiralcore/.github/qualification/records-prepare.patch
           export CARGO_TARGET_DIR="$RUNNER_TEMP/sc-endpoint-binary"
-          cargo +1.97.1 test --locked --manifest-path sdk/Cargo.toml -p mvm-hostd --test installed_endpoint_resources records_ -- --test-threads=1
+          cargo +1.97.1 test --locked --manifest-path sdk/Cargo.toml -p mvm-hostd --test installed_endpoint_resources -- --test-threads=1
+          cargo +1.97.1 test --locked --manifest-path sdk/Cargo.toml -p mvm-vmm --lib network_endpoint_spawn::installed::records::tests:: -- --test-threads=1
