@@ -1,4 +1,4 @@
-name: SpiralCore installed records descriptor regression
+name: SpiralCore original registered audit capability
 
 on:
   workflow_dispatch:
@@ -8,7 +8,7 @@ permissions:
 
 jobs:
   test:
-    if: startsWith(github.ref, 'refs/heads/codex/installed-sdk-native-witness-endpoint-records-')
+    if: startsWith(github.ref, 'refs/heads/codex/installed-sdk-native-witness-registered-audit-')
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
@@ -26,12 +26,13 @@ jobs:
           ref: c7e02bceda4acdd0b0ae0fa75b7709d300f4797a
           path: sdk
           persist-credentials: false
-      - name: Exercise installed records Prepare descriptor mapping
+      - name: Exercise the original host-agent and signer registration
         run: |
           set -euo pipefail
           test "$(git -C spiralcore rev-parse HEAD)" = "$GITHUB_SHA"
           test "$(git -C sdk rev-parse HEAD)" = "c7e02bceda4acdd0b0ae0fa75b7709d300f4797a"
           rustup toolchain install 1.97.1 --profile minimal
-          export CARGO_TARGET_DIR="$RUNNER_TEMP/sc-endpoint-binary"
-          cargo +1.97.1 test --locked --manifest-path sdk/Cargo.toml -p mvm-hostd --test installed_endpoint_resources -- --test-threads=1
-          cargo +1.97.1 test --locked --manifest-path sdk/Cargo.toml -p mvm-vmm --lib network_endpoint_spawn::installed::records::tests:: -- --test-threads=1
+          git -C sdk apply --check ../spiralcore/.github/qualification/registered-audit.patch
+          git -C sdk apply ../spiralcore/.github/qualification/registered-audit.patch
+          export CARGO_TARGET_DIR="$RUNNER_TEMP/sc-registered-audit"
+          cargo +1.97.1 test --locked --manifest-path sdk/Cargo.toml -p mvm-hostd --test owned_host_agent original_registered_audit_event_is_claimed_once_and_pins_cleanup -- --test-threads=1
