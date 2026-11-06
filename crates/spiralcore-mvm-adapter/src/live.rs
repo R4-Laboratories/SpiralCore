@@ -150,13 +150,18 @@ fn remaining(cancel: &CancellationToken, deadline: Instant) -> LiveResult<Durati
 fn bounded_deadline(deadline: Instant) -> Instant {
     deadline.min(Instant::now() + MAX_OPERATION)
 }
-fn close_on_error<S: SocketIo, T>(socket: &S, result: LiveResult<T>) -> LiveResult<T> {
-    if result.is_err() && socket.shutdown(Shutdown::Both).is_err() {
+fn shutdown_both(socket: &impl SocketIo) {
+    if socket.shutdown(Shutdown::Both).is_err() {
         // Darwin can reject SHUT_RDWR after peer FIN while the write half is
         // still usable. Close each remaining half without replacing the
         // original framing/I/O failure or weakening the owner's logical fence.
         let _ = socket.shutdown(Shutdown::Write);
         let _ = socket.shutdown(Shutdown::Read);
+    }
+}
+fn close_on_error<S: SocketIo, T>(socket: &S, result: LiveResult<T>) -> LiveResult<T> {
+    if result.is_err() {
+        shutdown_both(socket);
     }
     result
 }
@@ -379,7 +384,7 @@ fn read_frame_or_idle<S: SocketIo>(
     deadline: Instant,
     idle_deadline: Instant,
     counters: &mut StreamCounters,
-) -> LiveResult<ReceiveOutcome> {
+) -> LiveResult<Option<ReceiveOutcome>> {
     let result = (|| {
         let mut prefix = [0; 4];
         match read_exact_progress(
@@ -390,11 +395,11 @@ fn read_frame_or_idle<S: SocketIo>(
             Some(idle_deadline),
             &mut counters.framing_bytes_received,
         )? {
-            ReadProgress::Idle => Ok(ReceiveOutcome::Idle),
-            ReadProgress::Eof => Err(io::Error::from(io::ErrorKind::UnexpectedEof).into()),
+            ReadProgress::Idle => Ok(Some(ReceiveOutcome::Idle)),
+            ReadProgress::Eof => Ok(None),
             ReadProgress::Complete => {
                 read_frame_payload(socket, prefix, cancel, deadline, counters)
-                    .map(ReceiveOutcome::Frame)
+                    .map(|bytes| Some(ReceiveOutcome::Frame(bytes)))
             }
         }
     })();
@@ -492,6 +497,27 @@ impl<S: SocketIo + 'static> StreamTransport<S> {
         state.closed = result.is_err();
         result
     }
+    /// Receive one frame under the original operation deadline, allowing
+    /// synchronous maintenance between frames while the peer is quiet.
+    /// The hook runs outside the transport lock and never sees partial frames.
+    /// The caller must own the receive direction for this whole operation.
+    /// A hook error returns with the next frame still unread.
+    pub fn receive_with_idle<E: From<LiveError>>(
+        &self,
+        cancel: &CancellationToken,
+        deadline: Instant,
+        idle_window: Duration,
+        mut on_idle: impl FnMut() -> std::result::Result<(), E>,
+    ) -> std::result::Result<Vec<u8>, E> {
+        let deadline = deadline.min(Instant::now() + self.timeout);
+        loop {
+            match self.receive_or_idle(cancel, deadline, idle_window)? {
+                ReceiveOutcome::Frame(bytes) => return Ok(bytes),
+                ReceiveOutcome::Idle => on_idle()?,
+            }
+        }
+    }
+
     /// Yield only before consuming any next-frame bytes. Lock waiting is not
     /// Idle, and prefix/payload progress keeps the original absolute deadline.
     pub fn receive_or_idle(
@@ -500,6 +526,20 @@ impl<S: SocketIo + 'static> StreamTransport<S> {
         frame_deadline: Instant,
         idle_window: Duration,
     ) -> LiveResult<ReceiveOutcome> {
+        self.receive_or_idle_observing_eof(cancel, frame_deadline, idle_window)?
+            .ok_or_else(|| LiveError::Io(io::ErrorKind::UnexpectedEof.into()))
+    }
+
+    /// Observe a clean peer EOF before any byte of the next frame. On `None`,
+    /// this transport is fenced and both socket halves are shut down as on
+    /// a framing failure. This observation grants no replacement authority.
+    /// A truncated frame, cancellation or deadline remains an error.
+    pub fn receive_or_idle_observing_eof(
+        &self,
+        cancel: &CancellationToken,
+        frame_deadline: Instant,
+        idle_window: Duration,
+    ) -> LiveResult<Option<ReceiveOutcome>> {
         if idle_window < Duration::from_millis(1) || idle_window > Duration::from_secs(1) {
             return Err(io::Error::new(
                 io::ErrorKind::InvalidInput,
@@ -520,7 +560,10 @@ impl<S: SocketIo + 'static> StreamTransport<S> {
             socket, counters, ..
         } = &mut *state;
         let result = read_frame_or_idle(socket, cancel, deadline, idle_deadline, counters);
-        state.closed = result.is_err();
+        if matches!(&result, Ok(None)) {
+            shutdown_both(socket);
+        }
+        state.closed = !matches!(&result, Ok(Some(_)));
         result
     }
     pub fn counters(&self) -> LiveResult<StreamCounters> {
@@ -821,8 +864,9 @@ impl Direction {
         let now = unix_ms()?;
         self.config.policy.refresh_time(now)?;
         replies.config.policy.refresh_time(now)?;
-        let (context, generation) = self.config.policy.versioned()?;
-        let (reverse, reverse_generation) = replies.config.policy.versioned()?;
+        let (context, generation, revoked_bindings) = self.config.policy.route_snapshot()?;
+        let (reverse, reverse_generation, reverse_revocations) =
+            replies.config.policy.route_snapshot()?;
         let expected_route = ReplyRoute {
             address: address(&reverse),
             capability_id: replies.config.capability.grant.capability_id,
@@ -835,8 +879,8 @@ impl Direction {
         {
             return Err(LiveError::Policy);
         }
-        self.route(&context)?;
-        replies.route(&reverse)?;
+        self.route(&context, revoked_bindings)?;
+        replies.route(&reverse, reverse_revocations)?;
         let budget = deadline
             .checked_duration_since(Instant::now())
             .ok_or(LiveError::Deadline)?;
@@ -867,7 +911,13 @@ impl Direction {
             &transport.before(deadline),
             cancel,
             None,
-            Some((MAX_CLOCK_OFFSET_MS, expiry)),
+            Some(SendLifetime {
+                backdate: MAX_CLOCK_OFFSET_MS,
+                expiry,
+                generation,
+                related_policy: &replies.config.policy,
+                related_generation: reverse_generation,
+            }),
         )?;
         let metadata = self.last_sent.ok_or(LiveError::State)?;
         Ok(SentCall {
@@ -904,7 +954,7 @@ impl Direction {
     ) -> LiveResult<usize> {
         check_verified(request)?;
         self.config.policy.refresh_time(unix_ms()?)?;
-        let context = self.config.policy.snapshot()?;
+        let (context, generation) = self.config.policy.versioned()?;
         let header = &request.header;
         let route = ReplyRoute {
             address: address(&context),
@@ -943,7 +993,13 @@ impl Direction {
                 message_id: header.message_id,
                 correlation_id: header.correlation_id,
             }),
-            Some((MAX_CLOCK_OFFSET_MS, expiry)),
+            Some(SendLifetime {
+                backdate: MAX_CLOCK_OFFSET_MS,
+                expiry,
+                generation,
+                related_policy: &request.policy,
+                related_generation: request.generation,
+            }),
         )
         .map_err(LiveError::Adapter)
     }

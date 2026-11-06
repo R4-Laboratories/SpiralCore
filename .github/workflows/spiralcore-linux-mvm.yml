@@ -9,6 +9,7 @@ on:
       - 'crates/spiralcore-storage-windows/**'
       - 'crates/spiralcore-gateway-core/**'
       - 'crates/uor-r4-object-store/**'
+      - 'docs/platforms/mvm-mailbox-portable.json'
       - '.github/workflows/spiralcore-linux-mvm.yml'
 permissions:
   contents: read
@@ -29,7 +30,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          expected='git+https://github.com/Casey-allard/mvm?rev=7d031c7f3fbeef62826712d2976a764c62cd5852#7d031c7f3fbeef62826712d2976a764c62cd5852'
+          expected=$(jq -er '.mvm_source | strings | select(length > 0)' docs/platforms/mvm-mailbox-portable.json)
           # Resolve the actual default Cargo dependency closure, without a local
           # patch override or the retired 3104 preparation. No guest is booted.
           cargo +1.97.1 metadata --locked --format-version 1 \

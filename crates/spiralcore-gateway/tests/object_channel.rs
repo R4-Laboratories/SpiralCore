@@ -404,6 +404,515 @@ async fn a_finished_client_can_be_dropped_immediately() {
     server.await.unwrap().unwrap();
 }
 
+#[derive(Default, Clone, Copy, serde::Serialize)]
+struct GateCounts {
+    client_received: u64,
+    client_forwarded: u64,
+    client_discarded: u64,
+    server_received: u64,
+    server_forwarded: u64,
+    server_discarded: u64,
+    held_datagrams: u64,
+    held_bytes: u64,
+}
+
+// Holds real UDP datagrams, never acknowledges a fictitious successful write.
+// The gate is armed only after the authenticated initiator's end prefix.
+struct AckGate {
+    address: std::net::SocketAddr,
+    armed: std::sync::Arc<std::sync::atomic::AtomicBool>,
+    blocked: std::sync::Arc<tokio::sync::Notify>,
+    release: std::sync::Arc<tokio::sync::Notify>,
+    discard_held: std::sync::Arc<std::sync::atomic::AtomicBool>,
+    discard_next_server: std::sync::Arc<std::sync::atomic::AtomicBool>,
+    discard_server_flight: std::sync::Arc<std::sync::atomic::AtomicBool>,
+    server_discarded: std::sync::Arc<tokio::sync::Notify>,
+    stop: CancellationToken,
+    task: Option<tokio::task::JoinHandle<std::io::Result<GateCounts>>>,
+}
+impl AckGate {
+    async fn start(server: std::net::SocketAddr) -> Self {
+        use std::sync::{atomic::Ordering, Arc};
+        let front = tokio::net::UdpSocket::bind("127.0.0.1:0").await.unwrap();
+        let back = tokio::net::UdpSocket::bind("127.0.0.1:0").await.unwrap();
+        back.connect(server).await.unwrap();
+        let address = front.local_addr().unwrap();
+        let armed = Arc::new(std::sync::atomic::AtomicBool::new(false));
+        let blocked = Arc::new(tokio::sync::Notify::new());
+        let release = Arc::new(tokio::sync::Notify::new());
+        let discard_held = Arc::new(std::sync::atomic::AtomicBool::new(false));
+        let discard_next_server = Arc::new(std::sync::atomic::AtomicBool::new(false));
+        let discard_server_flight = Arc::new(std::sync::atomic::AtomicBool::new(false));
+        let server_discarded = Arc::new(tokio::sync::Notify::new());
+        let stop = CancellationToken::new();
+        let (gate, observed, flush, cancelled) = (
+            armed.clone(),
+            blocked.clone(),
+            release.clone(),
+            stop.clone(),
+        );
+        let (discard, discard_server, observed_server) = (
+            discard_held.clone(),
+            discard_next_server.clone(),
+            server_discarded.clone(),
+        );
+        let discard_flight = discard_server_flight.clone();
+        let task = tokio::spawn(async move {
+            let mut client = None;
+            let mut held = std::collections::VecDeque::<Vec<u8>>::new();
+            let mut incoming = vec![0; 65536];
+            let mut outgoing = vec![0; 65536];
+            let mut counts = GateCounts::default();
+            loop {
+                tokio::select! {
+                    biased;
+                    _ = cancelled.cancelled() => {
+                        if !held.is_empty() {
+                            return Err(std::io::Error::other("ACK gate stopped with retained datagrams"));
+                        }
+                        return Ok(counts);
+                    }
+                    _ = flush.notified() => {
+                        while let Some(packet) = held.pop_front() {
+                            if discard.load(Ordering::Acquire) {
+                                counts.client_discarded += 1;
+                            } else {
+                                back.send(&packet).await?;
+                                counts.client_forwarded += 1;
+                            }
+                        }
+                    }
+                    packet = front.recv_from(&mut incoming) => {
+                        let (len, from) = packet?;
+                        if client.is_some_and(|original| original != from) {
+                            return Err(std::io::Error::other("unexpected second proxy client"));
+                        }
+                        client = Some(from);
+                        counts.client_received += 1;
+                        if gate.load(Ordering::Acquire) {
+                            if held.len() == 64 {
+                                return Err(std::io::Error::other("bounded ACK gate capacity"));
+                            }
+                            held.push_back(incoming[..len].to_vec());
+                            counts.held_datagrams += 1;
+                            counts.held_bytes += len as u64;
+                            observed.notify_one();
+                        } else {
+                            back.send(&incoming[..len]).await?;
+                            counts.client_forwarded += 1;
+                        }
+                    }
+                    packet = back.recv(&mut outgoing) => {
+                        let len = packet?;
+                        counts.server_received += 1;
+                        if discard_flight.load(Ordering::Acquire) || discard_server.swap(false, Ordering::AcqRel) {
+                            counts.server_discarded += 1;
+                            observed_server.notify_one();
+                            continue;
+                        }
+                        let to = client.ok_or_else(|| std::io::Error::other("response before proxy client"))?;
+                        front.send_to(&outgoing[..len], to).await?;
+                        counts.server_forwarded += 1;
+                    }
+                }
+            }
+        });
+        Self {
+            address,
+            armed,
+            blocked,
+            release,
+            discard_held,
+            discard_next_server,
+            discard_server_flight,
+            server_discarded,
+            stop,
+            task: Some(task),
+        }
+    }
+    fn open(&self) {
+        self.armed
+            .store(false, std::sync::atomic::Ordering::Release);
+        self.release.notify_one();
+    }
+}
+impl Drop for AckGate {
+    fn drop(&mut self) {
+        self.open();
+        self.stop.cancel();
+        if let Some(task) = self.task.take() {
+            task.abort();
+        }
+    }
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn finish_retains_initiator_until_the_gated_responder_fin_is_acknowledged() {
+    for discard in [false, true] {
+        gated_finish(discard).await;
+    }
+}
+
+async fn gated_finish(discard: bool) {
+    let (server_identity, client_identity) = identities();
+    let local = "127.0.0.1:0".parse().unwrap();
+    let listener = Listener::bind_objects(local, server_identity).unwrap();
+    let mut proxy = AckGate::start(listener.local_addr().unwrap()).await;
+    proxy
+        .discard_held
+        .store(discard, std::sync::atomic::Ordering::Release);
+    let deadline = Instant::now() + Duration::from_secs(5);
+    let (server, client) = tokio::join!(
+        listener.accept(deadline),
+        Peer::connect_objects(
+            local,
+            proxy.address,
+            "gateway.test",
+            client_identity,
+            deadline
+        )
+    );
+    let (server, client) = (server.unwrap(), client.unwrap());
+    let armed = proxy.armed.clone();
+    let responder = tokio::spawn(async move {
+        let cancel = CancellationToken::new();
+        let mut channel = server
+            .accept_object_channel(deadline, &cancel)
+            .await
+            .unwrap();
+        let result = async {
+            if channel.recv_batch(deadline, &cancel).await?.is_some() {
+                return Err(Error::UnexpectedEnd);
+            }
+            armed.store(true, std::sync::atomic::Ordering::Release);
+            channel.acknowledge_finish(deadline, &cancel).await
+        }
+        .await;
+        (result, channel)
+    });
+    let mut initiator = tokio::spawn(async move {
+        let cancel = CancellationToken::new();
+        let mut channel = client.open_object_channel(deadline, &cancel).await.unwrap();
+        let result = channel.finish(deadline, &cancel).await;
+        (result, channel)
+    });
+    let blocked = tokio::time::timeout_at(deadline, proxy.blocked.notified())
+        .await
+        .is_ok();
+    // A bounded negative observation, not a sleep or product grace allowance.
+    let early = tokio::time::timeout(Duration::from_millis(200), &mut initiator)
+        .await
+        .ok();
+    let premature_success = early
+        .as_ref()
+        .is_some_and(|value| value.as_ref().is_ok_and(|(result, _)| result.is_ok()));
+    let responder_pending = !responder.is_finished();
+    // Complete cleanup before semantic assertions, including the RED path.
+    proxy.open();
+    let completed = match early {
+        Some(value) => Some(value),
+        None => tokio::time::timeout_at(deadline, &mut initiator).await.ok(),
+    };
+    let responder = tokio::time::timeout_at(deadline, responder).await;
+    proxy.stop.cancel();
+    let traffic = tokio::time::timeout(Duration::from_secs(1), proxy.task.take().unwrap()).await;
+    if let Some(directory) = std::env::var_os("SPIRALCORE_OBJECT_FINISH_EVIDENCE_DIR") {
+        let file = std::fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(std::path::PathBuf::from(directory).join(if discard {
+                "lost-fin-ack.json"
+            } else {
+                "delayed-fin-ack.json"
+            }))
+            .unwrap();
+        let counts = traffic
+            .as_ref()
+            .ok()
+            .and_then(|r| r.as_ref().ok())
+            .and_then(|r| r.as_ref().ok());
+        serde_json::to_writer_pretty(file, &serde_json::json!({
+            "scope":"real pinned-mTLS QUIC localhost UDP gate; no WAN claim",
+            "held_observed":blocked,"premature_initiator_success":premature_success,
+            "discard_held_flight":discard,
+            "responder_pending_while_gated":responder_pending,"traffic":counts,
+            "initiator_result":format!("{:?}",completed.as_ref().map(|r|r.as_ref().map(|(r,_)|r))),
+            "responder_result":format!("{:?}",responder.as_ref().map(|r|r.as_ref().map(|(r,_)|r)))
+        })).unwrap();
+    }
+    assert!(
+        blocked,
+        "the real transport must actually withhold datagrams"
+    );
+    assert!(
+        responder_pending,
+        "the responder must still require its terminal ACK"
+    );
+    assert!(
+        !premature_success,
+        "initiator reported success before responder FIN acknowledgment"
+    );
+    let (client_result, client) = completed.unwrap().unwrap();
+    let (server_result, server) = responder.unwrap().unwrap();
+    client_result.unwrap();
+    server_result.unwrap();
+    let traffic = traffic.unwrap().unwrap().unwrap();
+    assert!(traffic.held_datagrams > 0 && traffic.held_bytes > 0);
+    assert_eq!(
+        traffic.client_received,
+        traffic.client_forwarded + traffic.client_discarded
+    );
+    if discard {
+        assert_eq!(traffic.client_discarded, traffic.held_datagrams);
+    } else {
+        assert_eq!(traffic.client_discarded, 0);
+    }
+    for channel in [&client, &server] {
+        assert_eq!(channel.counters().framing_bytes_sent, 4);
+        assert_eq!(channel.counters().framing_bytes_received, 4);
+        assert_eq!(channel.counters().batches_sent, 0);
+        assert_eq!(channel.counters().batches_received, 0);
+    }
+}
+
+fn raw_object_listener(identity: Identity) -> quinn::Endpoint {
+    use std::sync::Arc;
+    let mut roots = rustls::RootCertStore::empty();
+    for certificate in identity.trusted_roots {
+        roots.add(certificate).unwrap();
+    }
+    let provider = Arc::new(rustls::crypto::ring::default_provider());
+    let verifier = rustls::server::WebPkiClientVerifier::builder_with_provider(
+        Arc::new(roots),
+        provider.clone(),
+    )
+    .build()
+    .unwrap();
+    let mut tls = rustls::ServerConfig::builder_with_provider(provider)
+        .with_protocol_versions(&[&rustls::version::TLS13])
+        .unwrap()
+        .with_client_cert_verifier(verifier)
+        .with_single_cert(identity.certificate_chain, identity.private_key)
+        .unwrap();
+    tls.alpn_protocols = vec![spiralcore_gateway::transport::OBJECT_ALPN.to_vec()];
+    tls.max_early_data_size = 0;
+    tls.send_tls13_tickets = 0;
+    let crypto = quinn::crypto::rustls::QuicServerConfig::try_from(tls).unwrap();
+    let mut config = quinn::ServerConfig::with_crypto(Arc::new(crypto));
+    let mut transport = quinn::TransportConfig::default();
+    transport
+        .max_concurrent_bidi_streams(1u8.into())
+        .max_concurrent_uni_streams(0u8.into())
+        .datagram_receive_buffer_size(None)
+        .datagram_send_buffer_size(0);
+    config.transport_config(Arc::new(transport));
+    quinn::Endpoint::server(config, "127.0.0.1:0".parse().unwrap()).unwrap()
+}
+
+#[derive(Clone, Copy, Debug)]
+enum TerminalFault {
+    EarlyZero,
+    Nonzero,
+    MissingClose,
+    Cancel,
+    ClosePhaseDrop,
+    LostTerminalFlight,
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn terminal_close_must_follow_fin_and_preserve_original_expiry_and_cancellation() {
+    for fault in [
+        TerminalFault::EarlyZero,
+        TerminalFault::Nonzero,
+        TerminalFault::MissingClose,
+        TerminalFault::Cancel,
+    ] {
+        terminal_fault(fault).await;
+    }
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn terminal_flight_loss_never_substitutes_local_fin_for_observed_remote_close() {
+    for fault in [
+        TerminalFault::ClosePhaseDrop,
+        TerminalFault::LostTerminalFlight,
+    ] {
+        terminal_fault(fault).await;
+    }
+}
+
+async fn terminal_fault(fault: TerminalFault) {
+    let (server_identity, client_identity) = identities();
+    let endpoint = raw_object_listener(server_identity);
+    let mut proxy = AckGate::start(endpoint.local_addr().unwrap()).await;
+    let watchdog = Instant::now() + Duration::from_secs(5);
+    let (ready_tx, ready_rx) = tokio::sync::oneshot::channel();
+    let (release_tx, release_rx) = tokio::sync::oneshot::channel();
+    let discard = proxy.discard_next_server.clone();
+    let discard_flight = proxy.discard_server_flight.clone();
+    let responder = tokio::spawn(async move {
+        let mut release_rx = release_rx;
+        let connection = endpoint.accept().await.unwrap().await.unwrap();
+        let (mut send, mut receive) = connection.accept_bi().await.unwrap();
+        let mut prefix = [255; 4];
+        receive.read_exact(&mut prefix).await.unwrap();
+        assert_eq!(prefix, [0; 4]);
+        if !matches!(fault, TerminalFault::EarlyZero) {
+            assert!(receive.read(&mut [0; 1]).await.unwrap().is_none());
+            send.write_all(&[0; 4]).await.unwrap();
+            send.finish().unwrap();
+            assert_eq!(send.stopped().await.unwrap(), None);
+        }
+        let _ = ready_tx.send(());
+        if matches!(fault, TerminalFault::MissingClose | TerminalFault::Cancel) {
+            let _ = (&mut release_rx).await;
+        }
+        if matches!(fault, TerminalFault::ClosePhaseDrop) {
+            discard.store(true, std::sync::atomic::Ordering::Release);
+        }
+        if matches!(fault, TerminalFault::LostTerminalFlight) {
+            discard_flight.store(true, std::sync::atomic::Ordering::Release);
+        }
+        connection.close(
+            if matches!(fault, TerminalFault::Nonzero) {
+                7u8
+            } else {
+                0u8
+            }
+            .into(),
+            b"owned terminal fixture",
+        );
+        endpoint.wait_idle().await;
+        if !matches!(fault, TerminalFault::MissingClose | TerminalFault::Cancel) {
+            let _ = release_rx.await;
+        }
+    });
+    let client = Peer::connect_objects(
+        "127.0.0.1:0".parse().unwrap(),
+        proxy.address,
+        "gateway.test",
+        client_identity,
+        watchdog,
+    )
+    .await
+    .unwrap();
+    let cancel = CancellationToken::new();
+    let mut channel = client.open_object_channel(watchdog, &cancel).await.unwrap();
+    let original = Instant::now() + Duration::from_millis(600);
+    let signal = cancel.clone();
+    let initiator = tokio::spawn(async move {
+        let result = channel.finish(original, &cancel).await;
+        let finished_at = Instant::now();
+        (result, channel, finished_at)
+    });
+    let ready = tokio::time::timeout_at(watchdog, ready_rx).await;
+    let close_discarded = if matches!(
+        fault,
+        TerminalFault::ClosePhaseDrop | TerminalFault::LostTerminalFlight
+    ) {
+        tokio::time::timeout_at(watchdog, proxy.server_discarded.notified())
+            .await
+            .is_ok()
+    } else {
+        false
+    };
+    if matches!(fault, TerminalFault::Cancel) {
+        signal.cancel();
+    }
+    let completed = tokio::time::timeout_at(watchdog, initiator).await;
+    // Keep the raw endpoint/socket alive until the proxy has stopped, including
+    // the negative path's client abort; otherwise Linux can inject ICMP refusal.
+    proxy.stop.cancel();
+    let traffic = tokio::time::timeout(Duration::from_secs(1), proxy.task.take().unwrap()).await;
+    let _ = release_tx.send(());
+    let responder = tokio::time::timeout_at(watchdog, responder).await;
+    let (result, mut channel, finished_at) = completed.unwrap().unwrap();
+    let traffic = traffic.unwrap().unwrap().unwrap();
+    if let Some(directory) = std::env::var_os("SPIRALCORE_OBJECT_FINISH_EVIDENCE_DIR") {
+        let file = std::fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(std::path::PathBuf::from(directory).join(format!("terminal-{fault:?}.json")))
+            .unwrap();
+        serde_json::to_writer_pretty(
+            file,
+            &serde_json::json!({
+                "scope":"real pinned-mTLS QUIC controlled terminal peer; no WAN claim",
+                "fault":format!("{fault:?}"),"result":format!("{result:?}"),"traffic":traffic,
+            "close_phase_datagram_discard_observed":close_discarded,
+                "framing_sent":channel.counters().framing_bytes_sent,
+                "framing_received":channel.counters().framing_bytes_received,
+                "original_cap_ms":600,"completion_after_original_cap":finished_at>=original,
+                "owned_responder_joined":responder.is_ok()
+            }),
+        )
+        .unwrap();
+    }
+    ready.unwrap().unwrap();
+    responder.unwrap().unwrap();
+    if matches!(
+        fault,
+        TerminalFault::ClosePhaseDrop | TerminalFault::LostTerminalFlight
+    ) {
+        assert!(close_discarded);
+        assert!(traffic.server_discarded > 0);
+        assert_eq!(
+            traffic.server_received,
+            traffic.server_forwarded + traffic.server_discarded
+        );
+        if matches!(fault, TerminalFault::ClosePhaseDrop) {
+            assert_eq!(traffic.server_discarded, 1);
+        }
+    }
+    match fault {
+        TerminalFault::MissingClose | TerminalFault::LostTerminalFlight => {
+            assert!(matches!(result, Err(Error::Deadline)), "{result:?}")
+        }
+        TerminalFault::Cancel => assert!(matches!(result, Err(Error::Cancelled)), "{result:?}"),
+        TerminalFault::EarlyZero => assert_eq!(
+            result.as_ref().err().and_then(application_close_code),
+            Some(0)
+        ),
+        TerminalFault::Nonzero => assert_eq!(
+            result.as_ref().err().and_then(application_close_code),
+            Some(7)
+        ),
+        TerminalFault::ClosePhaseDrop => assert!(
+            result.is_ok(),
+            "a later valid close must actually be observed: {result:?}"
+        ),
+    }
+    assert!(finished_at <= original + Duration::from_millis(150));
+    assert_eq!(channel.counters().framing_bytes_sent, 4);
+    if !matches!(fault, TerminalFault::EarlyZero) {
+        assert_eq!(channel.counters().framing_bytes_received, 4);
+    }
+    assert!(matches!(
+        channel
+            .recv_batch(watchdog, &CancellationToken::new())
+            .await,
+        Err(Error::Poisoned)
+    ));
+}
+
+fn application_close_code(error: &Error) -> Option<u64> {
+    match error {
+        Error::Transport(spiralcore_gateway::transport::Error::Connection(
+            quinn::ConnectionError::ApplicationClosed(close),
+        ))
+        | Error::Stopped(quinn::StoppedError::ConnectionLost(
+            quinn::ConnectionError::ApplicationClosed(close),
+        ))
+        | Error::Read(quinn::ReadExactError::ReadError(quinn::ReadError::ConnectionLost(
+            quinn::ConnectionError::ApplicationClosed(close),
+        )))
+        | Error::End(quinn::ReadError::ConnectionLost(
+            quinn::ConnectionError::ApplicationClosed(close),
+        )) => Some(close.error_code.into_inner()),
+        _ => None,
+    }
+}
+
 fn frames() -> Vec<Frame> {
     (0..20)
         .map(|seq| Frame {

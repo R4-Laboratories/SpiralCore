@@ -1139,3 +1139,202 @@ fn receiver_boundary_event_sixteen_from_older_controls_fences_and_keeps_current_
     assert_eq!(counts.framing_bytes_sent, 8 + 4 * 4);
     assert_eq!(counts.framing_bytes_received, 8 + 18 * 4);
 }
+
+#[test]
+fn quiet_strict_receiver_releases_expired_call_before_frame_deadline() {
+    let pair = Pair::provision(Plan {
+        stage: Stage::Two,
+        arm: Arm::Raw,
+        size: 128,
+        trial: 1,
+        bandwidth_profile: Default::default(),
+    })
+    .unwrap();
+    let sender_broker = broker_context().unwrap();
+    let mut sender = Session::new(&pair.sender, &sender_broker).unwrap();
+    let broker = broker_context().unwrap();
+    let mut receiver = Session::new(&pair.receiver, &broker).unwrap();
+    let route = pair
+        .receiver
+        .outgoing
+        .as_ref()
+        .unwrap()
+        .binding
+        .claims
+        .route_id;
+    let (client, server) = UnixStream::pair().unwrap();
+    let client = StreamTransport::new(client, route, WATCHDOG).unwrap();
+    let server = StreamTransport::new(server, route, WATCHDOG).unwrap();
+    let cancel = CancellationToken::default();
+    let peer_cancel = cancel.clone();
+    let policy = spiralcore_mvm_adapter::Policy::new(
+        pair.receiver.incoming.as_ref().unwrap().context().unwrap(),
+    )
+    .unwrap();
+    let (ready_tx, ready_rx) = mpsc::sync_channel(1);
+    let worker = std::thread::spawn(move || {
+        let store = tempfile::tempdir().unwrap();
+        let mut object = ObjectMailbox::open(
+            &store.path().join("cache"),
+            Limits::default(),
+            policy,
+            ColdGraphPolicy::Disabled,
+        )
+        .unwrap();
+        server
+            .handshake(HandshakeRole::Acceptor, &peer_cancel)
+            .unwrap();
+        let broker = receiver.broker.clone();
+        broker
+            .with_time(|_, now| -> Result<()> {
+                let mut options = sender.ordering.next_for_binding(
+                    &sender.outgoing,
+                    ContentType::parse(spiralcore_mvm_adapter::CONTENT_TYPE, 1)?,
+                    now,
+                    now.unix_ms + 350,
+                    ISSUANCE_POLICY,
+                )?;
+                options.reply_to = sender.reply_to;
+                let call =
+                    service_sender::prepare(&sender.outgoing, b"idle expiry", &options, now)?;
+                let wire = encode_envelope(call.envelope())?;
+                let receipt = receiver.service.admit(&receiver.incoming, &wire, now)?;
+                assert_eq!(receipt.receipt.outcome, DeliveryOutcome::AcceptedEphemeral);
+                Ok(())
+            })
+            .unwrap();
+        ready_tx.send(()).unwrap();
+        let result = receiver.handle([54; 32], &mut object, &server, &peer_cancel);
+        assert!(result.is_err());
+        (server.counters().unwrap(), receiver.service.snapshot())
+    });
+    client.handshake(HandshakeRole::Initiator, &cancel).unwrap();
+    ready_rx.recv_timeout(WATCHDOG).unwrap();
+    let snapshot = || {
+        broker
+            .with_time::<_, ServiceError>(|budget, _| budget.snapshot())
+            .unwrap()
+    };
+    assert_eq!(snapshot().active_calls, 1);
+    let limit = Instant::now() + Duration::from_millis(1400);
+    while snapshot().active_calls != 0 && Instant::now() < limit {
+        std::thread::sleep(Duration::from_millis(20));
+    }
+    let active = snapshot();
+    cancel.cancel();
+    let (counts, service) = worker.join().unwrap();
+    assert_eq!(counts.frames_received, 0);
+    assert_eq!(counts.frames_sent, 0);
+    assert_eq!(
+        active.active_calls, 0,
+        "idle receive retained an expired active Call"
+    );
+    assert_eq!(active.queued_messages, 0);
+    assert_eq!(service.accepted, 1);
+    assert_eq!(service.fifo_scopes, 1);
+    assert_eq!(service.fifo_entries, 0);
+}
+
+#[test]
+fn idle_maintenance_keeps_the_first_transport_deadline_and_releases_the_lock() {
+    let pair = Pair::provision(Plan {
+        stage: Stage::Two,
+        arm: Arm::Raw,
+        size: 128,
+        trial: 0,
+        bandwidth_profile: Default::default(),
+    })
+    .unwrap();
+    let route = pair
+        .receiver
+        .outgoing
+        .as_ref()
+        .unwrap()
+        .binding
+        .claims
+        .route_id;
+    let (client, server) = UnixStream::pair().unwrap();
+    let client = StreamTransport::new(client, route, WATCHDOG).unwrap();
+    let configured = Duration::from_millis(480);
+    let server = StreamTransport::new(server, route, configured).unwrap();
+    let cancel = CancellationToken::default();
+    let handshake = std::thread::spawn(move || {
+        client
+            .handshake(HandshakeRole::Initiator, &CancellationToken::default())
+            .unwrap();
+        client
+    });
+    server.handshake(HandshakeRole::Acceptor, &cancel).unwrap();
+    let _client = handshake.join().unwrap();
+    let start = Instant::now();
+    let mut idle_ticks = 0;
+    let result = server.receive_with_idle(
+        &cancel,
+        start + WATCHDOG,
+        Duration::from_millis(100),
+        || -> std::result::Result<(), spiralcore_mvm_adapter::live::LiveError> {
+            idle_ticks += 1;
+            assert_eq!(server.counters()?.frames_received, 0);
+            Ok(())
+        },
+    );
+    assert!(matches!(
+        result,
+        Err(spiralcore_mvm_adapter::live::LiveError::Deadline)
+    ));
+    assert!(idle_ticks > 0);
+    assert!(start.elapsed() >= configured && start.elapsed() < Duration::from_millis(1200));
+    assert_eq!(server.counters().unwrap().framing_bytes_received, 8);
+}
+
+#[test]
+fn idle_maintenance_does_not_run_after_a_partial_prefix() {
+    let pair = Pair::provision(Plan {
+        stage: Stage::Two,
+        arm: Arm::Raw,
+        size: 128,
+        trial: 0,
+        bandwidth_profile: Default::default(),
+    })
+    .unwrap();
+    let route = pair
+        .receiver
+        .outgoing
+        .as_ref()
+        .unwrap()
+        .binding
+        .claims
+        .route_id;
+    let (client, server) = UnixStream::pair().unwrap();
+    let mut writer = client.try_clone().unwrap();
+    let client = StreamTransport::new(client, route, WATCHDOG).unwrap();
+    let server = StreamTransport::new(server, route, Duration::from_millis(350)).unwrap();
+    let cancel = CancellationToken::default();
+    let handshake = std::thread::spawn(move || {
+        client
+            .handshake(HandshakeRole::Initiator, &CancellationToken::default())
+            .unwrap();
+        client
+    });
+    server.handshake(HandshakeRole::Acceptor, &cancel).unwrap();
+    let _client = handshake.join().unwrap();
+    writer.write_all(&[0, 0]).unwrap();
+    let mut idle_ticks = 0;
+    let result = server.receive_with_idle(
+        &cancel,
+        Instant::now() + WATCHDOG,
+        Duration::from_millis(100),
+        || -> std::result::Result<(), spiralcore_mvm_adapter::live::LiveError> {
+            idle_ticks += 1;
+            Ok(())
+        },
+    );
+    assert!(matches!(
+        result,
+        Err(spiralcore_mvm_adapter::live::LiveError::Deadline)
+    ));
+    assert_eq!(idle_ticks, 0);
+    let counts = server.counters().unwrap();
+    assert_eq!(counts.frames_received, 0);
+    assert_eq!(counts.framing_bytes_received, 10);
+}

@@ -1,0 +1,22 @@
+   Compiling spiralcore-mvm-flowmux v0.1.0 (/var/tmp/spiralcore-flowmux-20261103/source/crates/spiralcore-mvm-flowmux)
+    Finished `release` profile [optimized] target(s) in 1.24s
+     Running tests/authenticated_stream.rs (/var/tmp/spiralcore-flowmux-20261103/target/release/deps/authenticated_stream-fb00129c7c9e9235)
+
+running 1 test
+test authenticated_direction_cannot_be_replaced_when_spawning_duplex ... FAILED
+
+failures:
+
+---- authenticated_direction_cannot_be_replaced_when_spawning_duplex stdout ----
+
+thread 'authenticated_direction_cannot_be_replaced_when_spawning_duplex' (1875430) panicked at tests/authenticated_stream.rs:32:585:
+a trusted TLS initiator role must not be overwritten at duplex startup
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    authenticated_direction_cannot_be_replaced_when_spawning_duplex
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 2 filtered out; finished in 0.02s
+
+error: test failed, to rerun pass `--test authenticated_stream`

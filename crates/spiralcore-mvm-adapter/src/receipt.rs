@@ -11,13 +11,14 @@ use mvm_contract::protocol::mailbox::{
     ExecutionEpoch, MailboxAddress, MailboxEnvelopeHeader, MailboxId, MailboxMessageKind,
     MailboxOperation, MailboxRoutingFrame, MessageId, OrderingScope, PrincipalId, ProtocolVersion,
     ReplayNonce, SequenceNumber, SignatureAlgorithm, SignedDestinationReceipt, TenantId,
+    TransportBindingId,
 };
 use mvm_core::mailbox::{
     OpenContext, SealRequest,
     transport::{
-        AuthorizedMailboxFrame, CancellationToken, OutboundAuthorization, PeerTransport,
-        PreparedMailboxEnvelope, TransportBindingContext, TransportError, authorize_outbound,
-        authorize_route, prepare_mailbox_envelope,
+        AuthorizedMailboxFrame, AuthorizedRoute, CancellationToken, OutboundAuthorization,
+        PeerTransport, PreparedMailboxEnvelope, TransportError, authorize_outbound,
+        prepare_mailbox_envelope,
     },
     verify_receipt,
 };
@@ -727,6 +728,11 @@ impl ReceiptReturnConfig {
             issuance,
         })
     }
+    /// Apply a trusted revocation to the independently authorized return route.
+    pub fn revoke_transport_binding(&self, id: TransportBindingId) -> Result<()> {
+        self.binding.revoke_transport_binding(id)
+    }
+
     fn clock(&self, now: ServiceTime) -> Result<()> {
         self.last_monotonic
             .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |last| {
@@ -816,7 +822,7 @@ impl ReceiptReturnConfig {
             return Err(ServiceError::Unauthorized);
         }
         self.binding
-            .with_sender(now, |config, context, return_generation| {
+            .with_sender(now, |config, context, return_generation, _| {
                 if context.expected_tenant != header.tenant
                     || context.expected_authorization_domain != header.authorization_domain
                     || context.expected_sender != header.recipient
@@ -872,9 +878,9 @@ impl<'a> ReceiptPermit<'a> {
                 if generation != self.source_generation {
                     return Err(ServiceError::Unauthorized);
                 }
-                self.returns
-                    .binding
-                    .with_sender(now, |config, context, generation| {
+                self.returns.binding.with_sender(
+                    now,
+                    |config, context, generation, authorized_route| {
                         if generation != self.return_generation {
                             return Err(ServiceError::Unauthorized);
                         }
@@ -955,12 +961,13 @@ impl<'a> ReceiptPermit<'a> {
                                 .ok_or(ServiceError::Unauthorized)?,
                         )
                         .map_err(|_| ServiceError::Unauthorized)?;
-                        let (_, authorized) = authorize(&prepared, config, context, now)?;
+                        let authorized = authorize(&prepared, config, context, authorized_route)?;
                         if authorized.encoded_len() > MAX_RECEIPT_ENVELOPE_BYTES {
                             return Err(ServiceError::Limit);
                         }
                         Ok((prepared, authorized, deadline, expiry))
-                    })
+                    },
+                )
             })?;
         Ok(PreparedReceipt {
             returns: self.returns,
@@ -1081,34 +1088,18 @@ fn authorize(
     prepared: &PreparedMailboxEnvelope,
     config: &ServiceBindingConfig,
     context: &OpenContext,
-    now: ServiceTime,
-) -> Result<(
-    mvm_core::mailbox::transport::AuthorizedRoute,
-    AuthorizedMailboxFrame,
-)> {
-    let route = authorize_route(
-        &config.binding,
-        &TransportBindingContext {
-            expected_issuer: context.expected_capability_issuer,
-            expected_address: address(context),
-            current_execution_epoch: context.current_execution_epoch,
-            current_policy_epoch: context.current_policy_epoch,
-            minimum_assurance: config.minimum_assurance,
-            now_unix_ms: now.unix_ms,
-        },
-        &config.authority_key,
-    )
-    .map_err(|_| ServiceError::Unauthorized)?;
+    route: &AuthorizedRoute,
+) -> Result<AuthorizedMailboxFrame> {
     let frame = authorize_outbound(OutboundAuthorization {
         prepared,
         capability: &config.capability,
         context,
         capability_authority_key: &config.authority_key,
-        route: &route,
+        route,
     })
     .map_err(|_| ServiceError::Unauthorized)?;
     if frame.encoded_len() as u64 > config.capability.grant.max_queue_contribution_bytes {
         return Err(ServiceError::Limit);
     }
-    Ok((route, frame))
+    Ok(frame)
 }

@@ -132,6 +132,48 @@ fn reserved_send_rechecks_revocation_cancellation_expiry_and_own_clock() {
 }
 
 #[test]
+fn reserved_receipt_refuses_revoked_source_or_return_binding_without_sending() {
+    for revoke_source in [true, false] {
+        let mut c = case();
+        let (_, prepared) = c
+            .returns
+            .admit(&mut c.service, &c.source, &c.wire, at(0))
+            .unwrap();
+        let cancel = CancellationToken::default();
+        let permit = prepared.reserve_send(&cancel, at(1)).unwrap();
+        if revoke_source {
+            c.source
+                .revoke_transport_binding(
+                    common::config(MailboxMessageKind::Call)
+                        .binding
+                        .claims
+                        .binding_id,
+                )
+                .unwrap();
+        } else {
+            c.returns
+                .revoke_transport_binding(
+                    common::config(MailboxMessageKind::Reply)
+                        .binding
+                        .claims
+                        .binding_id,
+                )
+                .unwrap();
+        }
+        assert!(matches!(
+            permit.send(&c.transport, &cancel, at(2)),
+            Err(ReceiptSendError::Service(ServiceError::Unauthorized))
+        ));
+        assert!(
+            c.transport
+                .drain(RouteId::from_bytes([30; 32]))
+                .unwrap()
+                .is_empty()
+        );
+    }
+}
+
+#[test]
 fn dropping_send_permit_releases_queue_credits_but_retains_attempt_rate_history() {
     let mut c = case();
     let (_, prepared) = c

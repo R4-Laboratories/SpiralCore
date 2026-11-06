@@ -496,6 +496,53 @@ fn canonical_authentication_boot_key_and_live_revocation_gate_admission_and_read
 }
 
 #[test]
+fn transport_binding_revocation_survives_context_replacement() {
+    use spiralcore_mvm_adapter::service::ServiceError;
+
+    let c = config(MailboxMessageKind::Cast);
+    let binding_id = c.binding.claims.binding_id;
+    let context = c.policy.snapshot().unwrap();
+    let encoded = wire(&c, b"exact", 25);
+    let b = binding(c);
+    let mut service =
+        LocalMailboxService::new(HostBudget::new(ServiceLimits::default()).unwrap()).unwrap();
+
+    for number in 0..1025u32 {
+        let mut id = [0; 32];
+        id[..4].copy_from_slice(&number.to_le_bytes());
+        b.revoke_transport_binding(TransportBindingId::from_bytes(id))
+            .unwrap();
+    }
+    assert_eq!(
+        service.admit(&b, &encoded, time()).unwrap().receipt.outcome,
+        DeliveryOutcome::AcceptedEphemeral
+    );
+    b.revoke_transport_binding(binding_id).unwrap();
+    b.revoke_transport_binding(binding_id).unwrap();
+    b.replace_policy(context).unwrap();
+    assert!(matches!(
+        service.receive(&b, time()),
+        Err(ServiceError::Unauthorized)
+    ));
+    assert!(matches!(
+        service.admit(&b, &encoded, time()),
+        Err(ServiceError::Unauthorized)
+    ));
+}
+
+#[test]
+fn legacy_direction_conversion_refuses_to_drop_recorded_binding_revocations() {
+    let c = config(MailboxMessageKind::Cast);
+    c.policy
+        .revoke_transport_binding(c.binding.claims.binding_id)
+        .unwrap();
+    assert!(matches!(
+        ServiceBindingConfig::from_direction(c),
+        Err(spiralcore_mvm_adapter::service::ServiceError::Unauthorized)
+    ));
+}
+
+#[test]
 fn lost_reply_retry_replays_same_prepared_envelope_without_second_handler_and_ack_releases_cache() {
     let c = config(MailboxMessageKind::Call);
     let request = wire(&c, b"question", 26);

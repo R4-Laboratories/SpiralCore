@@ -1,0 +1,25 @@
+   Compiling spiralcore-mvm-flowmux v0.1.0 (/var/tmp/spiralcore-flowmux-20261103/source/crates/spiralcore-mvm-flowmux)
+    Finished `test` profile [unoptimized] target(s) in 0.22s
+     Running tests/mapped_stream.rs (/var/tmp/spiralcore-flowmux-20261103/target/debug/deps/mapped_stream-43662081901ca726)
+
+running 1 test
+test standard_relay_io_preserves_short_reads_clones_and_reverse_after_half_close ... FAILED
+
+failures:
+
+---- standard_relay_io_preserves_short_reads_clones_and_reverse_after_half_close stdout ----
+
+thread 'standard_relay_io_preserves_short_reads_clones_and_reverse_after_half_close' (1548641) panicked at tests/mapped_stream.rs:37:70:
+called `Result::unwrap()` on an `Err` value: Custom { kind: BrokenPipe, error: Closed }
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+thread '<unnamed>' (1548644) panicked at tests/mapped_stream.rs:32:45:
+called `Result::unwrap()` on an `Err` value: Custom { kind: BrokenPipe, error: Cancelled }
+
+
+failures:
+    standard_relay_io_preserves_short_reads_clones_and_reverse_after_half_close
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+
+error: test failed, to rerun pass `--test mapped_stream`

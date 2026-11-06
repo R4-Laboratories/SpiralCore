@@ -215,6 +215,61 @@ fn changed_recipient_epoch_or_revocation_fails_on_open_and_on_outbound() {
 }
 
 #[test]
+fn binding_revocation_denies_direction_open_and_send() {
+    use mvm_core::mailbox::transport::TransportBindingError;
+
+    let config = common::config(MailboxMessageKind::Call);
+    let id = config.binding.claims.binding_id;
+    let policy = config.policy.clone();
+    let mut direction = Direction::new(config).unwrap();
+    let transport = InMemoryPeerTransport::default();
+    transport.register_route(direction.route_id()).unwrap();
+    let wire = queued(&mut direction, &begin(), &transport);
+    policy.revoke_transport_binding(id).unwrap();
+    assert!(matches!(
+        direction.open(&wire),
+        Err(Error::Route(TransportBindingError::Revoked))
+    ));
+    assert!(matches!(
+        direction.send(&begin(), &transport, &CancellationToken::default()),
+        Err(Error::Route(TransportBindingError::Revoked))
+    ));
+    assert!(transport.drain(direction.route_id()).unwrap().is_empty());
+}
+
+#[test]
+fn exhausted_binding_revocations_fence_shared_direction_policy() {
+    use mvm_contract::protocol::mailbox::TransportBindingId;
+
+    let config = common::config(MailboxMessageKind::Call);
+    let binding_id = config.binding.claims.binding_id;
+    let policy = config.policy.clone();
+    let context = policy.snapshot().unwrap();
+    let mut direction = Direction::new(config).unwrap();
+    let transport = InMemoryPeerTransport::default();
+    transport.register_route(direction.route_id()).unwrap();
+    let wire = queued(&mut direction, &begin(), &transport);
+    for number in 0..1024u32 {
+        let mut bytes = [0; 32];
+        bytes[..4].copy_from_slice(&number.to_le_bytes());
+        policy
+            .revoke_transport_binding(TransportBindingId::from_bytes(bytes))
+            .unwrap();
+    }
+    assert!(matches!(
+        policy.revoke_transport_binding(binding_id),
+        Err(Error::Limit)
+    ));
+    policy.replace(context).unwrap();
+    assert!(matches!(direction.open(&wire), Err(Error::Policy)));
+    assert!(matches!(
+        direction.send(&begin(), &transport, &CancellationToken::default()),
+        Err(Error::Policy)
+    ));
+    assert!(transport.drain(direction.route_id()).unwrap().is_empty());
+}
+
+#[test]
 fn maximum_frame_fits_and_oversize_cancellation_and_queue_pressure_refuse() {
     let mut direction = Direction::new(common::config(MailboxMessageKind::Call)).unwrap();
     let transport = InMemoryPeerTransport::default();

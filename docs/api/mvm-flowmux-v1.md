@@ -202,3 +202,57 @@ macOS native backends, Windows role distinctions, matched raw/equally-tuned-zstd
 measurements, MVM performance limits, real WAN and scale remain separate executed
 gates. Socket tests are not booted-MVM capacity or WAN/energy/security certification.
 Whole issue44 and the parent delivery goal remain open until those gates pass.
+
+## Explicit first-profile enrollment and original-deadline setup
+
+Mutual TLS proves possession of the pinned peer key; it does not admit a foreign
+plan or tenant. The first cooperating endpoint requires a trusted local
+controller to provision PinnedScopePolicy with exact full ScopeFacts, peer SPKI,
+profile/direction and original expiry Instant before object allocation. This
+bounded policy starts empty, permits at most32 enrollments and caps each lifetime
+at300s. Revocation advances its local generation; replacing an enrollment cannot
+revive an older authority handle. This local revocation generation is not a wire
+MVM epoch. ScopeAuthority implements the existing core endpoint::Authority and
+checks the exact Context and current enrollment before publication/I/O, including
+release of a previously verified buffered application suffix.
+
+The trusted initiating controller derives facts from the actual private admitted
+flow token and authenticated TLS session, then explicitly provisions both ends.
+The receiver does not boot or re-admit the initiating VM's plan. Received facts
+are not grants. Unknown scope, wrong peer/direction/tenant/plan/nonce/exporter,
+expiry or revocation refuses. General remote discovery, issuer delegation and
+cross-organization enrollment are separate open control-plane gates. ScopeFacts
+Debug deliberately omits cryptographic/session material.
+
+The current full-facts Context partitions verified object state per authenticated
+flow, including the fresh TLS exporter and session/stream identity. Warm state
+reuse is within that flow. Reuse across connections requires an explicit stable
+CacheScope capability and fresh full-flow authorization; silently omitting fresh
+authentication facts to obtain a cache hit is forbidden. No cross-flow cache
+benefit is established by this component.
+
+The additive MappedStream seed_base_until(Vec<u8>, Instant), seed_schema_until
+and seed_checkpoint_until APIs reuse the existing exact core publication paths.
+They preserve the caller's original monotonic setup deadline through lock waits,
+artifact preparation, partial writes and interleaved replies. The supplied future
+budget must fit the configured stream timeout, at most30s. An expired attempt
+writes no artifact bytes; failure fences reentry. Existing convenience seed APIs
+retain their bounded per-operation behavior. Canonical factory setup uses only
+the explicit original-Instant APIs, at most one schema, one checkpoint and one
+base artifact, with core Published verification before readiness. Artifacts are
+never application stream data or synthetic object commits.
+
+The hostd SpiralCorePayloadFactory consumes the same admitted TCP and actual
+endpoint SigningKey through standard PKCS8/rustls facilities. Its explicit
+PayloadScopeController receives the private admitted request, full TLS-bound
+facts, fixed v1 shared NegotiatedProfile and original deadline, and returns an
+explicitly enrolled PreparedPayloadSession containing the existing core sender
+and endpoint. The factory verifies the exact returned scope, current authority
+and actual TLS role/exporter before mapped I/O. The cooperating acceptor requires
+its own enrolled prepared session. A controlled canonical NetworkFlow socket test
+executes Whole, Warm, Runtime and Combined with real artifact publication and
+exact bidirectional half-close readbacks; an authenticated but unenrolled peer
+is refused. These are component sockets, not booted MVMs or production daemon
+provider provisioning. The full integrated source, production controller,
+independent reviews, platform/backend, aggregate scale, matched performance and
+real-WAN gates remain required. Issue44 remains OPEN.

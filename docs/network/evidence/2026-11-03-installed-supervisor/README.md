@@ -3,9 +3,34 @@
 Tracking: [#43](https://github.com/R4-Laboratories/SpiralCore/issues/43),
 [#49](https://github.com/R4-Laboratories/SpiralCore/issues/49).
 This packet continues the sealed Firecracker handoff packet without rewriting it.
-It is a candidate implementation record; exact release CI/coverage, native HVF
-installed recovery, aggregate plaintext/cache/workspace ownership and the wider
-Ari delivery criteria remain open.
+The bounded implementation merged through PR#71. Its
+[final release qualification](release-qualification/README.md) retains exact
+hosted source/tree custody, native client/storage results, scoped Linux coverage
+and independent review. Native HVF installed recovery, aggregate
+plaintext/cache/workspace ownership and the wider Ari delivery criteria remain
+open. The historical candidate failures below retain their original scope.
+
+The [results report](../../installed-supervisor-results-2026-11-03.md) includes
+the later Linux 16 MiB pair and all four native macOS/HVF pairs. Original
+records are in `native/final-linux/` and `native/hvf-transfers/`; the smaller
+Linux lifecycle loss below remains part of the result.
+
+## Hosted capture gate remains unresolved
+
+Source `4a86c7e9` passes all seven portable/storage rows, Linux host contracts,
+all four Unix owner rows and the registered candidate-CPU campaign. The Intel
+portable first attempt failed toolchain DNS download before tests; the explicit
+failed-job rerun passes.
+
+The unrelated TUN campaign `41757732453`, attempt 1, failed its first strict
+capture gate: pcap/captured 34,659 versus filter-received 34,660, zero reported
+drops. All application and gateway predicates passed, but the capture gate is
+**FAILED**. A two-cell default/immediate capture diagnostic on Wick passed both
+and did **not** reproduce the gap; see `validation/tun-phase2/`. No driver,
+codec, assertion or limit changed. A requested same-source hosted rerun did not
+execute: the workflow intentionally admits only attempt 1. Its skipped status
+is not a successful qualification or a repair. Subsequent source qualification
+must retain this failure rather than claiming that a later pass explains it.
 
 ## Actual installed Linux transfers
 

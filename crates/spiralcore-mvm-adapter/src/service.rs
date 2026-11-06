@@ -1,7 +1,8 @@
 //! Bounded ephemeral admission using canonical MVM envelopes and receipts.
 //! Trusted local bindings own authority. This is not a durable mailbox journal.
 mod ordering;
-use crate::DirectionConfig;
+mod tail;
+use crate::{DirectionConfig, policy::record_binding_revocation};
 use ed25519_dalek::{SigningKey, VerifyingKey};
 use mvm_contract::protocol::mailbox::*;
 use mvm_core::{
@@ -9,8 +10,8 @@ use mvm_core::{
     mailbox::{
         self, OpenContext, OpenedMailboxEnvelope, ReplayIdentity, ReplayProtector, SealRequest,
         transport::{
-            CancellationToken, ChannelLimits, OutboundAuthorization, PeerTransport,
-            PreparedMailboxEnvelope, SignedTransportBinding, TransportAssurance,
+            AuthorizedRoute, CancellationToken, ChannelLimits, OutboundAuthorization,
+            PeerTransport, PreparedMailboxEnvelope, SignedTransportBinding, TransportAssurance,
             TransportBindingContext, TransportError, authorize_outbound, authorize_route,
             prepare_mailbox_envelope,
         },
@@ -24,6 +25,7 @@ use std::{
         atomic::{AtomicU64, Ordering},
     },
 };
+pub use tail::{CompletedCallReply, CompletedReplyTail};
 
 type Result<T> = std::result::Result<T, ServiceError>;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -1129,12 +1131,19 @@ pub struct ServiceBindingConfig {
     pub encryption_key_id: [u8; 32],
 }
 impl ServiceBindingConfig {
+    /// Make a one-time configuration snapshot for a separate policy owner.
+    /// Subsequent trusted revocations must be applied to each live owner.
     pub fn from_direction(c: DirectionConfig) -> Result<Self> {
+        let (context, _, revoked_bindings) = c
+            .policy
+            .route_snapshot()
+            .map_err(|_| ServiceError::Unauthorized)?;
+        // This compatibility configuration cannot carry route policy.
+        if !revoked_bindings.is_empty() {
+            return Err(ServiceError::Unauthorized);
+        }
         Ok(Self {
-            context: c
-                .policy
-                .snapshot()
-                .map_err(|_| ServiceError::Unauthorized)?,
+            context,
             capability: c.capability,
             binding: c.binding,
             sender_verifying_key: c.sender_verifying_key,
@@ -1155,6 +1164,7 @@ pub struct DestinationReceiptSigner {
 struct BindingPolicy {
     context: OpenContext,
     generation: u64,
+    revoked_bindings: Vec<TransportBindingId>,
 }
 // All operations spanning two independently revocable bindings acquire them in
 // immutable binding-id order. Retain these guards through the state transition.
@@ -1284,6 +1294,7 @@ impl MailboxBinding {
                 current_policy_epoch: context.current_policy_epoch,
                 minimum_assurance: self.config.minimum_assurance,
                 now_unix_ms: now.unix_ms,
+                revoked_bindings: policy.revoked_bindings.clone(),
             },
             &self.config.authority_key,
         )
@@ -1337,9 +1348,9 @@ impl MailboxBinding {
     pub(crate) fn with_sender<T>(
         &self,
         now: ServiceTime,
-        f: impl FnOnce(&ServiceBindingConfig, &OpenContext, u64) -> Result<T>,
+        f: impl FnOnce(&ServiceBindingConfig, &OpenContext, u64, &AuthorizedRoute) -> Result<T>,
     ) -> Result<T> {
-        let (context, generation) = self.checked(now)?;
+        let (context, generation, route) = self.checked_route(now)?;
         if self.config.signing_key.is_none() {
             return Err(ServiceError::Unauthorized);
         }
@@ -1347,7 +1358,7 @@ impl MailboxBinding {
         if policy.generation != generation {
             return Err(ServiceError::Unauthorized);
         }
-        f(&self.config, &context, generation)
+        f(&self.config, &context, generation, &route)
     }
     pub(crate) fn capability_grant(&self) -> &MailboxCapabilityGrant {
         &self.config.capability.grant
@@ -1402,6 +1413,7 @@ impl MailboxBinding {
         let policy = BindingPolicy {
             context: config.context.clone(),
             generation: 0,
+            revoked_bindings: Vec::new(),
         };
         let out = Self {
             config,
@@ -1421,7 +1433,26 @@ impl MailboxBinding {
         p.context = context;
         Ok(())
     }
+    /// Apply a trusted transport binding revocation and fence older proofs.
+    pub fn revoke_transport_binding(&self, id: TransportBindingId) -> Result<()> {
+        if id != self.config.binding.claims.binding_id {
+            return Ok(());
+        }
+        let mut policy = self.policy.lock().map_err(|_| ServiceError::State)?;
+        let BindingPolicy {
+            revoked_bindings,
+            generation,
+            ..
+        } = &mut *policy;
+        record_binding_revocation(revoked_bindings, generation, id).map_err(|_| ServiceError::Limit)
+    }
+
     fn checked(&self, now: ServiceTime) -> Result<(OpenContext, u64)> {
+        let (context, generation, _) = self.checked_route(now)?;
+        Ok((context, generation))
+    }
+
+    fn checked_route(&self, now: ServiceTime) -> Result<(OpenContext, u64, AuthorizedRoute)> {
         let p = self.policy.lock().map_err(|_| ServiceError::State)?;
         let mut c = p.context.clone();
         c.now_unix_ms = now.unix_ms;
@@ -1451,7 +1482,7 @@ impl MailboxBinding {
         {
             return Err(ServiceError::Unauthorized);
         }
-        authorize_route(
+        let route = authorize_route(
             &self.config.binding,
             &TransportBindingContext {
                 expected_issuer: c.expected_capability_issuer,
@@ -1460,6 +1491,7 @@ impl MailboxBinding {
                 current_policy_epoch: c.current_policy_epoch,
                 minimum_assurance: self.config.minimum_assurance,
                 now_unix_ms: now.unix_ms,
+                revoked_bindings: p.revoked_bindings.clone(),
             },
             &self.config.authority_key,
         )
@@ -1471,7 +1503,7 @@ impl MailboxBinding {
         {
             return Err(ServiceError::Unauthorized);
         }
-        Ok((c, p.generation))
+        Ok((c, p.generation, route))
     }
     fn verify(&self, encoded: &[u8], now: ServiceTime) -> Result<Verified> {
         let (c, generation) = self.checked(now)?;
@@ -1696,12 +1728,19 @@ struct Accepted {
     owner: Arc<Mutex<MailboxOwner>>,
     order_entry: Option<Reservation>,
     disposition: DeliveryOutcome,
+    reply_wire: Option<ReplyWireIdentity>,
+}
+#[derive(Clone, Copy)]
+struct ReplyWireIdentity {
+    digest: [u8; 32],
+    len: usize,
 }
 struct CachedReply {
     prepared: PreparedMailboxEnvelope,
     header: MailboxEnvelopeHeader,
     binding: u64,
     generation: u64,
+    deadline: u64,
     policy: Arc<Mutex<BindingPolicy>>,
     _budget: Reservation,
 }
@@ -1730,6 +1769,7 @@ struct PendingCall {
     status: CallStatus,
     active: Reservation,
     reply_budget: Option<Reservation>,
+    reply_key: Option<MessageKey>,
     policy: Arc<Mutex<BindingPolicy>>,
 }
 pub struct LocalMailboxService {
@@ -1801,7 +1841,7 @@ impl LocalMailboxService {
             return Err(ServiceError::Limit);
         }
         let v = binding.verify(encoded, now)?;
-        let receipt = self.admit_verified(binding, v, encoded.len(), now)?;
+        let receipt = self.admit_verified(binding, v, encoded, now)?;
         self.drain_ready_replies(now)?;
         Ok(receipt)
     }
@@ -1827,7 +1867,7 @@ impl LocalMailboxService {
             }
             reserve(&verified)?
         };
-        let receipt = self.admit_verified(binding, verified, encoded.len(), now)?;
+        let receipt = self.admit_verified(binding, verified, encoded, now)?;
         self.drain_ready_replies(now)?;
         Ok((receipt, control))
     }
@@ -1835,7 +1875,7 @@ impl LocalMailboxService {
         &mut self,
         binding: &MailboxBinding,
         v: Verified,
-        encoded_len: usize,
+        encoded: &[u8],
         now: ServiceTime,
     ) -> Result<SignedDestinationReceipt> {
         if v.opened.header().content_type.name() == crate::receipt::RECEIPT_CONTENT_TYPE {
@@ -1898,7 +1938,7 @@ impl LocalMailboxService {
             address: address(&v.context),
             sender: h.sender,
         };
-        let bytes = if queued { encoded_len as u64 } else { 0 };
+        let bytes = if queued { encoded.len() as u64 } else { 0 };
         let owner = match self.budget.claim_owner(scope, h.execution_epoch, self.id) {
             Ok(owner) => owner,
             Err(ServiceError::Unavailable) => {
@@ -2002,6 +2042,15 @@ impl LocalMailboxService {
         reservation.delta.bytes = 0;
         reservation.delta.messages = 0;
         let header = v.opened.header().clone();
+        let reply_wire = if queued && header.kind == MailboxMessageKind::Reply {
+            use sha2::{Digest, Sha256};
+            Some(ReplyWireIdentity {
+                digest: Sha256::digest(encoded).into(),
+                len: encoded.len(),
+            })
+        } else {
+            None
+        };
         self.accepted.insert(
             key,
             Accepted {
@@ -2019,6 +2068,7 @@ impl LocalMailboxService {
                 owner: Arc::clone(&owner),
                 order_entry: Some(entry_charge),
                 disposition: outcome,
+                reply_wire,
             },
         );
         if queued {
@@ -2138,6 +2188,7 @@ impl LocalMailboxService {
                 call.status = CallStatus::Replied(Some(payload.into_payload()));
                 call.active.release_calls()?;
                 call.reply_budget = Some(queue);
+                call.reply_key = Some(key);
                 delivered += 1;
             } else {
                 entry.disposition = DeliveryOutcome::Late;
@@ -2288,6 +2339,7 @@ impl LocalMailboxService {
                 status: CallStatus::Pending,
                 active,
                 reply_budget: None,
+                reply_key: None,
                 policy: Arc::clone(&binding.policy),
             },
         );
@@ -2519,6 +2571,11 @@ impl LocalMailboxService {
             address: address(&verified.context),
             sender: verified.context.expected_sender,
         };
+        let (cache_deadline, _) = binding.deadlines(
+            verified.opened.header(),
+            now,
+            self.budget.limits.retention_ms,
+        )?;
         let reservation = self.budget.reserve(
             scope,
             Usage {
@@ -2533,6 +2590,7 @@ impl LocalMailboxService {
             header: verified.opened.header().clone(),
             binding: binding.id,
             generation: verified.generation,
+            deadline: cache_deadline,
             policy: Arc::clone(&binding.policy),
             _budget: reservation,
         });
@@ -2556,6 +2614,43 @@ impl LocalMailboxService {
             return Err(ServiceError::Unauthorized);
         }
         let key = MessageKey::new(address(&verified.context), verified.replay);
+        self.cached_reply_prepared(binding, key, verified.commitment, verified.generation, now)
+    }
+    /// Replay only an original locally admitted Call selected by its opaque handle.
+    /// This grants no new identity, sequence or application execution.
+    pub fn retry_reply_for_delivery_prepared(
+        &mut self,
+        binding: &MailboxBinding,
+        call: &DeliveryHandle,
+        now: ServiceTime,
+    ) -> Result<Option<PreparedMailboxEnvelope>> {
+        self.clock(now)?;
+        self.expire(now)?;
+        if self.shutting_down {
+            return Err(ServiceError::ShuttingDown);
+        }
+        let (_, generation) = binding.checked(now)?;
+        if call.service != self.id || call.binding != binding.id || call.generation != generation {
+            return Err(ServiceError::Unauthorized);
+        }
+        let (key, entry) = self
+            .accepted
+            .iter()
+            .find(|(_, entry)| entry.handle == *call)
+            .ok_or(ServiceError::UnknownHandle)?;
+        if entry.header.kind != MailboxMessageKind::Call {
+            return Err(ServiceError::Unauthorized);
+        }
+        self.cached_reply_prepared(binding, *key, entry.commitment, generation, now)
+    }
+    fn cached_reply_prepared(
+        &self,
+        binding: &MailboxBinding,
+        key: MessageKey,
+        commitment: [u8; 32],
+        generation: u64,
+        now: ServiceTime,
+    ) -> Result<Option<PreparedMailboxEnvelope>> {
         let original = self
             .budget
             .inner
@@ -2565,7 +2660,7 @@ impl LocalMailboxService {
             .get(&key)
             .map(|a| a.commitment)
             .ok_or(ServiceError::UnknownHandle)?;
-        if original != verified.commitment {
+        if original != commitment {
             return Err(ServiceError::Conflict);
         }
         let entry = self.accepted.get(&key).ok_or(ServiceError::Unavailable)?;
@@ -2574,7 +2669,7 @@ impl LocalMailboxService {
             return Err(ServiceError::Unauthorized);
         }
         drop(owner);
-        if verified.generation != entry.handle.generation || binding.id != entry.handle.binding {
+        if generation != entry.handle.generation || binding.id != entry.handle.binding {
             return Err(ServiceError::Unauthorized);
         }
         if now.monotonic_ms >= entry.deadline || now.unix_ms >= entry.header.expires_at_unix_ms {
@@ -2592,7 +2687,7 @@ impl LocalMailboxService {
         {
             return Err(ServiceError::Unauthorized);
         }
-        if now.unix_ms >= cache.header.expires_at_unix_ms {
+        if now.monotonic_ms >= cache.deadline || now.unix_ms >= cache.header.expires_at_unix_ms {
             return Err(ServiceError::Expired);
         }
         Ok(Some(cache.prepared.clone()))

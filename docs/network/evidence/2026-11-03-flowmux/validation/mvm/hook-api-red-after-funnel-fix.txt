@@ -1,0 +1,22 @@
+   Compiling mvm-runtime v0.26.0 (/var/tmp/spiralcore-flowmux-20261103/mvm-source/crates/mvm-runtime)
+   Compiling mvm-hostd v0.26.0 (/var/tmp/spiralcore-flowmux-20261103/mvm-source/crates/mvm-hostd)
+error[E0432]: unresolved import `crate::supervisor::flowmux::PayloadMappingConfig`
+   --> crates/mvm-hostd/src/supervisor/flowmux/open_flow.rs:497:13
+    |
+497 |         use crate::supervisor::flowmux::PayloadMappingConfig;
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ no `PayloadMappingConfig` in `supervisor::flowmux`
+
+error[E0599]: no method named `with_payload_mapping` found for struct `supervisor::flowmux::FlowMuxAccept` in the current scope
+   --> crates/mvm-hostd/src/supervisor/flowmux/open_flow.rs:521:162
+    |
+521 | ...,key,anchor,limits,gate).with_payload_mapping(Some(mapping)));
+    |                             ^^^^^^^^^^^^^^^^^^^^ method not found in `supervisor::flowmux::FlowMuxAccept`
+    |
+   ::: crates/mvm-hostd/src/supervisor/flowmux.rs:190:1
+    |
+190 | pub struct FlowMuxAccept {
+    | ------------------------ method `with_payload_mapping` not found for this struct
+
+Some errors have detailed explanations: E0432, E0599.
+For more information about an error, try `rustc --explain E0432`.
+error: could not compile `mvm-hostd` (lib test) due to 2 previous errors

@@ -1,0 +1,90 @@
+   Compiling spiralcore-mvm-flowmux v0.1.0 (/var/tmp/spiralcore-pr72-20261104/cancel-source/crates/spiralcore-mvm-flowmux)
+    Finished `release` profile [optimized] target(s) in 3.84s
+     Running unittests src/lib.rs (/var/tmp/spiralcore-flowmux-20261103/target/release/deps/spiralcore_mvm_flowmux-cf1b7d70cbfbdb2a)
+
+running 2 tests
+test tcp::timeout_tests::closed_peer_timeout_exception_requires_observed_nonzero_tighter_deadline ... ok
+test tls::tests::required_alpn_refuses_a_different_authenticated_tls_profile ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/authenticated_stream.rs (/var/tmp/spiralcore-flowmux-20261103/target/release/deps/authenticated_stream-5642dd06286cce9f)
+
+running 6 tests
+test authenticated_direction_cannot_be_replaced_when_spawning_duplex ... ok
+test authenticated_object_stream_retains_bidirectional_fidelity_half_close_and_actual_tls_counts ... ok
+test authenticated_scope_rejects_changed_exporter_foreign_session_and_reentry_after_revoke ... ok
+test explicit_artifact_deadline_is_not_refreshed_after_tls_or_partial_progress ... ok
+test fatal_cancel_refuses_verified_buffered_bytes_while_clean_half_close_still_drains ... ok
+test revocation_fences_already_buffered_application_bytes ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.16s
+
+     Running tests/duplex_tcp.rs (/var/tmp/spiralcore-flowmux-20261103/target/release/deps/duplex_tcp-2bb20cc1c4f9af8a)
+
+running 8 tests
+test artifacts_are_not_application_and_ack_path_survives_application_half_close ... ok
+test combined_runtime_artifacts_and_repeated_object_deliver_only_two_logical_blocks ... ok
+test correct_object_published_from_wrong_direction_is_rejected ... ok
+test full_delivery_queue_backpressures_then_times_out_without_extra_published_ack ... ok
+test guard_drop_cancels_and_joins_an_idle_owned_reader ... ok
+test same_role_on_both_peers_refuses_cross_direction_application_identity ... ok
+test simultaneous_identical_objects_keep_distinct_direction_ids_and_reverse_after_fin ... ok
+test thirty_two_interleaved_requests_bound_a_waiting_local_operation ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.27s
+
+     Running tests/full_scope.rs (/var/tmp/spiralcore-flowmux-20261103/target/release/deps/full_scope-49e3bd0742bc4140)
+
+running 1 test
+test full_actual_facts_bind_context_without_numeric_epoch_authority ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/mapped_stream.rs (/var/tmp/spiralcore-flowmux-20261103/target/release/deps/mapped_stream-54dbbcf6271f062c)
+
+running 1 test
+test standard_relay_io_preserves_short_reads_clones_and_reverse_after_half_close ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/object_tcp.rs (/var/tmp/spiralcore-flowmux-20261103/target/release/deps/object_tcp-ea0440d5a6c3d6b0)
+
+running 4 tests
+test object_namespace_is_immutable_and_checked_before_read ... ok
+test runtime_and_combined_use_shared_artifacts_and_verified_publication_over_tcp ... ok
+test warm_core_published_receipts_over_real_tcp_preserve_exact_object ... ok
+test wrong_published_identity_is_not_a_warm_commit_and_fences_reentry ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/paired_tcp.rs (/var/tmp/spiralcore-flowmux-20261103/target/release/deps/paired_tcp-87a3a44482920657)
+
+running 8 tests
+test closed_peer_buffered_reverse_data_and_fin_remain_exact_under_original_deadline ... ok
+test exact_bidirectional_stream_and_reverse_after_half_close_use_real_tcp ... ok
+test explicit_reset_and_cancel_are_terminal_in_both_directions ... ok
+test invalid_send_sizes_write_nothing_and_valid_maximum_survives ... ok
+test malformed_unavailable_peer_and_cross_binding_fence_without_payload ... ok
+test original_deadline_and_explicit_cancel_bound_idle_receive ... ok
+test raw_entropy_roundtrip_and_corrupted_raw_identity_refusal ... ok
+test sequence_oversize_and_truncation_are_terminal_and_count_actual_bytes ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.08s
+
+     Running tests/scope_policy.rs (/var/tmp/spiralcore-flowmux-20261103/target/release/deps/scope_policy-694c300c2a73d911)
+
+running 2 tests
+test bounded_enrollment_and_replacement_never_revive_an_old_authority ... ok
+test explicit_enrollment_refuses_unknown_foreign_changed_expired_and_revoked_scopes ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+
+     Running tests/tls_carrier.rs (/var/tmp/spiralcore-flowmux-20261103/target/release/deps/tls_carrier-00af950d3718f35d)
+
+running 2 tests
+test mutual_pinned_tls_uses_one_session_for_cloned_bidirectional_io ... ok
+test wrong_pin_and_unavailable_peer_refuse_before_application_bytes ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.37s
+

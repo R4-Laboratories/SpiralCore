@@ -1,0 +1,39 @@
+   Compiling spiralcore-mvm-flowmux v0.1.0 (/var/tmp/spiralcore-flowmux-20261103/source/crates/spiralcore-mvm-flowmux)
+error[E0599]: no method named `seed_schema_until` found for struct `MappedStream` in the current scope
+   --> tests/authenticated_stream.rs:251:101
+    |
+251 |     let before=counters.counters();let until=Instant::now()-Duration::from_millis(1);assert!(stream.seed_schema_until(until).is_err...
+    |                                                                                                     ^^^^^^^^^^^^^^^^^
+    |
+help: there is a method `seed_schema` with a similar name, but with different arguments
+   --> src/stream.rs:94:5
+    |
+ 94 |     pub fn seed_schema(&self) -> Result<Stats> {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0599]: no method named `seed_base_until` found for struct `MappedStream` in the current scope
+   --> tests/authenticated_stream.rs:252:407
+    |
+252 | ...from_millis(50);let start=Instant::now();assert!(stream.seed_base_until(vec![3;1024],until).is_err());assert!(start.elapsed()<Du...
+    |                                                            ^^^^^^^^^^^^^^^
+    |
+help: there is a method `seed_base` with a similar name, but with different arguments
+   --> src/stream.rs:91:5
+    |
+ 91 |     pub fn seed_base(&self, bytes: Vec<u8>) -> Result<Stats> {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0599]: no method named `seed_checkpoint_until` found for struct `MappedStream` in the current scope
+   --> tests/authenticated_stream.rs:252:583
+    |
+252 | ...t refresh into the stream2s timeout");assert!(stream.seed_checkpoint_until(Instant::now()+Duration::from_secs(1)).is_err(),"fail...
+    |                                                         ^^^^^^^^^^^^^^^^^^^^^
+    |
+help: there is a method `seed_checkpoint` with a similar name, but with different arguments
+   --> src/stream.rs:97:5
+    |
+ 97 |     pub fn seed_checkpoint(&self) -> Result<Stats> {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+For more information about this error, try `rustc --explain E0599`.
+error: could not compile `spiralcore-mvm-flowmux` (test "authenticated_stream") due to 3 previous errors

@@ -1,0 +1,45 @@
+   Compiling spiralcore-mvm-flowmux v0.1.0 (/var/tmp/spiralcore-flowmux-20261103/source/crates/spiralcore-mvm-flowmux)
+    Finished `release` profile [optimized] target(s) in 5.60s
+     Running unittests src/lib.rs (/var/tmp/spiralcore-flowmux-20261103/target/release/deps/spiralcore_mvm_flowmux-3570b963ad8ae892)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/duplex_tcp.rs (/var/tmp/spiralcore-flowmux-20261103/target/release/deps/duplex_tcp-543a421ec803f1ce)
+
+running 8 tests
+test correct_object_published_from_wrong_direction_is_rejected ... ok
+test thirty_two_interleaved_requests_bound_a_waiting_local_operation ... FAILED
+test guard_drop_cancels_and_joins_an_idle_owned_reader ... ok
+test same_role_on_both_peers_refuses_cross_direction_application_identity ... FAILED
+test simultaneous_identical_objects_keep_distinct_direction_ids_and_reverse_after_fin ... ok
+test combined_runtime_artifacts_and_repeated_object_deliver_only_two_logical_blocks ... ok
+test artifacts_are_not_application_and_ack_path_survives_application_half_close ... ok
+test full_delivery_queue_backpressures_then_times_out_without_extra_published_ack ... ok
+
+failures:
+
+---- thirty_two_interleaved_requests_bound_a_waiting_local_operation stdout ----
+
+thread '<unnamed>' (1856800) panicked at tests/duplex_tcp.rs:453:43:
+called `Result::unwrap()` on an `Err` value: Error { kind: UnexpectedEof, message: "failed to fill whole buffer" }
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+thread 'thirty_two_interleaved_requests_bound_a_waiting_local_operation' (1856794) panicked at tests/duplex_tcp.rs:465:9:
+assertion failed: matches!(guard.join(), Err(spiralcore_mvm_flowmux::Error::Limit))
+
+---- same_role_on_both_peers_refuses_cross_direction_application_identity stdout ----
+
+thread 'same_role_on_both_peers_refuses_cross_direction_application_identity' (1856792) panicked at tests/duplex_tcp.rs:261:5:
+assertion failed: matches!(left, Err(spiralcore_mvm_flowmux::Error::Sequence)) ||
+    matches!(right, Err(spiralcore_mvm_flowmux::Error::Sequence))
+
+
+failures:
+    same_role_on_both_peers_refuses_cross_direction_application_identity
+    thirty_two_interleaved_requests_bound_a_waiting_local_operation
+
+test result: FAILED. 6 passed; 2 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.26s
+
+error: test failed, to rerun pass `--test duplex_tcp`

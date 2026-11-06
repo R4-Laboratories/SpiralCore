@@ -1,0 +1,49 @@
+   Compiling spiralcore-mvm-flowmux v0.1.0 (/var/tmp/spiralcore-pr72-20261104/cancel-source/crates/spiralcore-mvm-flowmux)
+    Finished `release` profile [optimized] target(s) in 13.85s
+     Running unittests src/lib.rs (/var/tmp/spiralcore-flowmux-20261103/target/release/deps/spiralcore_mvm_flowmux-cf1b7d70cbfbdb2a)
+
+running 2 tests
+test tcp::timeout_tests::closed_peer_timeout_exception_requires_observed_nonzero_tighter_deadline ... ok
+test tls::tests::required_alpn_refuses_a_different_authenticated_tls_profile ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/authenticated_stream.rs (/var/tmp/spiralcore-flowmux-20261103/target/release/deps/authenticated_stream-5642dd06286cce9f)
+
+running 6 tests
+test authenticated_direction_cannot_be_replaced_when_spawning_duplex ... ok
+test authenticated_object_stream_retains_bidirectional_fidelity_half_close_and_actual_tls_counts ... ok
+test authenticated_scope_rejects_changed_exporter_foreign_session_and_reentry_after_revoke ... ok
+test explicit_artifact_deadline_is_not_refreshed_after_tls_or_partial_progress ... ok
+test fatal_cancel_refuses_verified_buffered_bytes_while_clean_half_close_still_drains ... ok
+test revocation_fences_already_buffered_application_bytes ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.14s
+
+     Running tests/duplex_tcp.rs (/var/tmp/spiralcore-flowmux-20261103/target/release/deps/duplex_tcp-2bb20cc1c4f9af8a)
+
+running 8 tests
+test artifacts_are_not_application_and_ack_path_survives_application_half_close ... ok
+test combined_runtime_artifacts_and_repeated_object_deliver_only_two_logical_blocks ... ok
+test correct_object_published_from_wrong_direction_is_rejected ... ok
+test full_delivery_queue_backpressures_then_times_out_without_extra_published_ack ... FAILED
+test guard_drop_cancels_and_joins_an_idle_owned_reader ... ok
+test same_role_on_both_peers_refuses_cross_direction_application_identity ... ok
+test simultaneous_identical_objects_keep_distinct_direction_ids_and_reverse_after_fin ... ok
+test thirty_two_interleaved_requests_bound_a_waiting_local_operation ... ok
+
+failures:
+
+---- full_delivery_queue_backpressures_then_times_out_without_extra_published_ack stdout ----
+
+thread 'full_delivery_queue_backpressures_then_times_out_without_extra_published_ack' (213145) panicked at tests/duplex_tcp.rs:238:39:
+called `Result::unwrap()` on an `Err` value: Cancelled
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    full_delivery_queue_backpressures_then_times_out_without_extra_published_ack
+
+test result: FAILED. 7 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.21s
+
+error: test failed, to rerun pass `--test duplex_tcp`

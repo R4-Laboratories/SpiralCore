@@ -1,0 +1,57 @@
+     Locking 24 packages to latest compatible versions
+ Downgrading console v0.16.4 -> v0.16.3
+      Adding cpu-time v1.0.0
+ Downgrading glob v0.3.4 -> v0.3.3
+    Updating hermit-abi v0.5.2 -> v0.5.3
+    Updating ignore v0.4.28 -> v0.4.31
+    Updating lru-slab v0.1.2 -> v0.1.3
+    Updating quinn v0.11.11 -> v0.11.12
+    Updating quinn-udp v0.5.15 -> v0.5.16
+ Downgrading rustc-demangle v0.1.28 -> v0.1.27
+      Adding spiralcore-mvm-flowmux v0.1.0 (/var/tmp/spiralcore-flowmux-20261103/source/crates/spiralcore-mvm-flowmux)
+      Adding spiralcore-transfer v0.1.0 (/var/tmp/spiralcore-flowmux-20261103/source/crates/spiralcore-transfer)
+ Downgrading tokio-util v0.7.18 -> v0.7.11
+      Adding uor-r4-object-store v0.1.0 (/var/tmp/spiralcore-flowmux-20261103/source/crates/uor-r4-object-store)
+      Adding ureq v3.5.0
+      Adding ureq-proto v0.6.5
+      Adding utf8-zero v0.8.1
+    Updating wasip2 v1.0.2+wasi-0.2.9 -> v1.0.4+wasi-0.2.12
+      Adding webpki-roots v1.0.11
+      Adding wit-bindgen v0.57.1
+    Updating zerocopy v0.8.53 -> v0.8.63
+    Updating zerocopy-derive v0.8.53 -> v0.8.63
+      Adding zstd v0.13.4
+      Adding zstd-safe v7.4.0
+      Adding zstd-sys v2.1.2+zstd.1.5.7
+   Compiling curve25519-dalek v5.0.0
+   Compiling der v0.8.3
+   Compiling spki v0.8.1
+   Compiling pkcs8 v0.11.0
+   Compiling signature v3.0.0
+   Compiling ed25519 v3.0.0
+   Compiling ed25519-dalek v3.0.0
+   Compiling mvm-contract v0.26.0 (/var/tmp/spiralcore-flowmux-20261103/mvm-source/crates/mvm-contract)
+   Compiling x25519-dalek v3.0.0
+   Compiling mvm-core v0.26.0 (/var/tmp/spiralcore-flowmux-20261103/mvm-source/crates/mvm-core)
+   Compiling mvm-agentd v0.26.0 (/var/tmp/spiralcore-flowmux-20261103/mvm-source/crates/mvm-agentd)
+   Compiling mvm-fs v0.26.0 (/var/tmp/spiralcore-flowmux-20261103/mvm-source/crates/mvm-fs)
+   Compiling mvm-net v0.26.0 (/var/tmp/spiralcore-flowmux-20261103/mvm-source/crates/mvm-net)
+   Compiling mvm-builder-guest v0.26.0 (/var/tmp/spiralcore-flowmux-20261103/mvm-source/crates/mvm-builder-guest)
+   Compiling libkrun-sys v0.26.0 (/var/tmp/spiralcore-flowmux-20261103/mvm-source/crates/deps/libkrun-sys)
+   Compiling mvm-vmm v0.26.0 (/var/tmp/spiralcore-flowmux-20261103/mvm-source/crates/mvm-vmm)
+   Compiling xtask v0.0.0 (/var/tmp/spiralcore-flowmux-20261103/mvm-source/xtask)
+   Compiling mvm-backends v0.26.0 (/var/tmp/spiralcore-flowmux-20261103/mvm-source/crates/mvm-backends)
+   Compiling mvm-build v0.26.0 (/var/tmp/spiralcore-flowmux-20261103/mvm-source/crates/mvm-build)
+   Compiling mvm-runtime v0.26.0 (/var/tmp/spiralcore-flowmux-20261103/mvm-source/crates/mvm-runtime)
+   Compiling mvm-hostd v0.26.0 (/var/tmp/spiralcore-flowmux-20261103/mvm-source/crates/mvm-hostd)
+error[E0432]: unresolved imports `crate::supervisor::flowmux::PayloadScopeController`, `crate::supervisor::flowmux::PreparedPayloadSession`, `crate::supervisor::flowmux::SpiralCorePayloadFactory`
+   --> crates/mvm-hostd/src/supervisor/flowmux/open_flow.rs:560:42
+    |
+560 |         use crate::supervisor::flowmux::{PayloadScopeController,PreparedPayloadSession,SpiralCorePayloadFactory};
+    |                                          ^^^^^^^^^^^^^^^^^^^^^^ ^^^^^^^^^^^^^^^^^^^^^^ ^^^^^^^^^^^^^^^^^^^^^^^^ no `SpiralCorePayloadFactory` in `supervisor::flowmux`
+    |                                          |                      |
+    |                                          |                      no `PreparedPayloadSession` in `supervisor::flowmux`
+    |                                          no `PayloadScopeController` in `supervisor::flowmux`
+
+For more information about this error, try `rustc --explain E0432`.
+error: could not compile `mvm-hostd` (lib test) due to 1 previous error
