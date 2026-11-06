@@ -1,4 +1,4 @@
-name: SpiralCore Darwin owned registration compatibility
+name: SpiralCore signed installed Prepare producer
 
 on:
   workflow_dispatch:
@@ -8,13 +8,9 @@ permissions:
 
 jobs:
   test:
-    if: startsWith(github.ref, 'refs/heads/codex/installed-sdk-native-witness-darwin-registered-audit-')
-    strategy:
-      fail-fast: false
-      matrix:
-        runner: [macos-15, ubuntu-24.04]
-    runs-on: ${{ matrix.runner }}
-    timeout-minutes: 25
+    if: startsWith(github.ref, 'refs/heads/codex/installed-sdk-native-witness-prepare-producer-')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
     env:
       CARGO_BUILD_JOBS: 2
       CARGO_INCREMENTAL: 0
@@ -30,20 +26,13 @@ jobs:
           ref: 1102ef8d5334ac1dabef45361eb6421f1f873bc5
           path: sdk
           persist-credentials: false
-      - name: Exercise the original host-agent and signer registration
+      - name: Exercise inherited audit and records in the canonical endpoint
         run: |
           set -euo pipefail
           test "$(git -C spiralcore rev-parse HEAD)" = "$GITHUB_SHA"
           test "$(git -C sdk rev-parse HEAD)" = "1102ef8d5334ac1dabef45361eb6421f1f873bc5"
           rustup toolchain install 1.97.1 --profile minimal
-          export CARGO_TARGET_DIR="$RUNNER_TEMP/sc-registered-audit"
-          if test "$(uname -s)" = Darwin; then
-            test "$(uname -m)" = arm64
-            sw_vers
-            uname -r
-            cargo +1.97.1 test --locked --manifest-path sdk/Cargo.toml -p mvm-hostd --test owned_host_agent \
-              installed_signer_requires_the_original_current_registration -- --test-threads=1
-          else
-            cargo +1.97.1 test --locked --manifest-path sdk/Cargo.toml -p mvm-hostd --test owned_host_agent -- --test-threads=1
-            cargo +1.97.1 test --locked --manifest-path sdk/Cargo.toml -p mvm-vmm --lib host_agent_spawn::owned:: -- --test-threads=1
-          fi
+          git -C sdk apply --check ../spiralcore/.github/qualification/prepare-producer.patch
+          git -C sdk apply ../spiralcore/.github/qualification/prepare-producer.patch
+          export CARGO_TARGET_DIR="$RUNNER_TEMP/sc-prepare-audit"
+          cargo +1.97.1 test --locked --manifest-path sdk/Cargo.toml -p mvm-hostd --test owned_host_agent signed_parent_delivers_original_audit_and_records_to_canonical_child -- --test-threads=1
