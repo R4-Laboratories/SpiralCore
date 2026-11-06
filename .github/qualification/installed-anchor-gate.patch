@@ -1,0 +1,67 @@
+diff --git a/crates/mvm-runtime/src/workload_runner/runner/installed_tests.rs b/crates/mvm-runtime/src/workload_runner/runner/installed_tests.rs
+index e7b48c2..375f058 100644
+--- a/crates/mvm-runtime/src/workload_runner/runner/installed_tests.rs
++++ b/crates/mvm-runtime/src/workload_runner/runner/installed_tests.rs
+@@ -227,6 +227,54 @@ fn owned_native_handle_survives_canonical_runner_start_return() {
+         )
+         .unwrap();
+     let runner = WorkloadRunner::new(driver, NoEndpoint, NoBroker);
++    // An installed mapped workload must not accept an anchor preinserted by
++    // a caller. The genuine signer is selected at original endpoint startup.
++    use mvm_contract::policy::network_policy::{
++        CooperatingPayloadPolicy, CooperatingTcpPeer, PayloadMappingProfile,
++    };
++    let mut injected_config = config.clone();
++    injected_config.network_policy =
++        NetworkPolicy::allow_list(vec![mvm_core::policy::network_policy::HostPort::new(
++            "peer.example",
++            443,
++        )])
++        .with_payload_mapping(Some(
++            CooperatingPayloadPolicy::new(vec![CooperatingTcpPeer {
++                host: "peer.example".into(),
++                port: 443,
++                server_name: "peer.example".into(),
++                spki_sha256: [5; 32],
++                profile: PayloadMappingProfile::SpiralCoreObjectStreamSmallV1,
++            }])
++            .unwrap(),
++        ));
++    let redaction = RedactionPolicy::default();
++    let injected = WorkloadLaunchInputs {
++        config: &injected_config,
++        tenant: "local",
++        secrets: &[],
++        redaction: &redaction,
++        network_policy: &injected_config.network_policy,
++        cmdline: format!(
++            "console=ttyS0 mvm.host_signer_pub={}",
++            hex::encode(
++                ed25519_dalek::SigningKey::from_bytes(&[19; 32])
++                    .verifying_key()
++                    .to_bytes()
++            )
++        ),
++    };
++    let refused = runner
++        .start_workload(&injected)
++        .err()
++        .expect("injected signer");
++    assert!(
++        refused.to_string().contains("unbound host signer anchor"),
++        "{refused:#}"
++    );
++    let id = VmId(config.name.clone());
++    assert!(!installed::marker(&id).exists());
++    assert!(runner.installed.find(&id).unwrap().is_none());
+     runner.start(&config).unwrap();
+     assert_eq!(
+         dropped.load(Ordering::SeqCst),
+@@ -234,7 +282,6 @@ fn owned_native_handle_survives_canonical_runner_start_return() {
+         "start discarded the actual original native handle"
+     );
+     assert_eq!(attached.load(Ordering::SeqCst), 0);
+-    let id = VmId(config.name.clone());
+     assert!(
+         runner.status(&id).is_ok(),
+         "owned status uses the original handle"

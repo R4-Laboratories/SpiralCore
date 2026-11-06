@@ -1,4 +1,4 @@
-name: SpiralCore installed registration regression
+name: SpiralCore installed anchor admission regression
 
 on:
   workflow_dispatch:
@@ -8,7 +8,7 @@ permissions:
 
 jobs:
   test:
-    if: startsWith(github.ref, 'refs/heads/codex/installed-sdk-native-witness-registration-')
+    if: startsWith(github.ref, 'refs/heads/codex/installed-sdk-native-witness-anchor-')
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
@@ -26,12 +26,14 @@ jobs:
           ref: 9c2361423c86082a48d23e3f5651cb3ff0881e3f
           path: sdk
           persist-credentials: false
-      - name: Exercise original installed host-agent registration
+      - name: Exercise installed anchor admission before launch effects
         run: |
           set -euo pipefail
           test "$(git -C spiralcore rev-parse HEAD)" = "$GITHUB_SHA"
           test "$(git -C sdk rev-parse HEAD)" = "9c2361423c86082a48d23e3f5651cb3ff0881e3f"
           rustup toolchain install 1.97.1 --profile minimal
-          export CARGO_TARGET_DIR="$RUNNER_TEMP/sc-registration"
-          cargo +1.97.1 test --locked --manifest-path sdk/Cargo.toml -p mvm-hostd --test owned_host_agent \
-            -- --test-threads=1
+          git -C sdk apply --check ../spiralcore/.github/qualification/installed-anchor-gate.patch
+          git -C sdk apply ../spiralcore/.github/qualification/installed-anchor-gate.patch
+          export CARGO_TARGET_DIR="$RUNNER_TEMP/sc-anchor"
+          cargo +1.97.1 test --locked --manifest-path sdk/Cargo.toml -p mvm-runtime --lib \
+            owned_native_handle_survives_canonical_runner_start_return -- --test-threads=1
