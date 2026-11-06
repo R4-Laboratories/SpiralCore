@@ -821,8 +821,9 @@ impl Direction {
         let now = unix_ms()?;
         self.config.policy.refresh_time(now)?;
         replies.config.policy.refresh_time(now)?;
-        let (context, generation) = self.config.policy.versioned()?;
-        let (reverse, reverse_generation) = replies.config.policy.versioned()?;
+        let (context, generation, revoked_bindings) = self.config.policy.route_snapshot()?;
+        let (reverse, reverse_generation, reverse_revocations) =
+            replies.config.policy.route_snapshot()?;
         let expected_route = ReplyRoute {
             address: address(&reverse),
             capability_id: replies.config.capability.grant.capability_id,
@@ -835,8 +836,8 @@ impl Direction {
         {
             return Err(LiveError::Policy);
         }
-        self.route(&context)?;
-        replies.route(&reverse)?;
+        self.route(&context, revoked_bindings)?;
+        replies.route(&reverse, reverse_revocations)?;
         let budget = deadline
             .checked_duration_since(Instant::now())
             .ok_or(LiveError::Deadline)?;
@@ -867,7 +868,13 @@ impl Direction {
             &transport.before(deadline),
             cancel,
             None,
-            Some((MAX_CLOCK_OFFSET_MS, expiry)),
+            Some(SendLifetime {
+                backdate: MAX_CLOCK_OFFSET_MS,
+                expiry,
+                generation,
+                related_policy: &replies.config.policy,
+                related_generation: reverse_generation,
+            }),
         )?;
         let metadata = self.last_sent.ok_or(LiveError::State)?;
         Ok(SentCall {
@@ -904,7 +911,7 @@ impl Direction {
     ) -> LiveResult<usize> {
         check_verified(request)?;
         self.config.policy.refresh_time(unix_ms()?)?;
-        let context = self.config.policy.snapshot()?;
+        let (context, generation) = self.config.policy.versioned()?;
         let header = &request.header;
         let route = ReplyRoute {
             address: address(&context),
@@ -943,7 +950,13 @@ impl Direction {
                 message_id: header.message_id,
                 correlation_id: header.correlation_id,
             }),
-            Some((MAX_CLOCK_OFFSET_MS, expiry)),
+            Some(SendLifetime {
+                backdate: MAX_CLOCK_OFFSET_MS,
+                expiry,
+                generation,
+                related_policy: &request.policy,
+                related_generation: request.generation,
+            }),
         )
         .map_err(LiveError::Adapter)
     }

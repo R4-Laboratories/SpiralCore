@@ -107,6 +107,7 @@ fn route(kind: MailboxMessageKind) -> AuthorizedRoute {
             current_policy_epoch: context.current_policy_epoch,
             minimum_assurance: TransportAssurance::Development,
             now_unix_ms: fixture::time().unix_ms,
+            revoked_bindings: Vec::new(),
         },
         &config.authority_key,
     )
