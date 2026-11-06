@@ -1,0 +1,38 @@
+Scoped source SHA-256
+834ba2cdd8ee11ec5460f9f443d31d23e5a37d2e4c82ddf8882be59a413a31c1  /var/tmp/spiralcore-mailbox-listener-identity-20261105/sdk/crates/mvm-agentd/src/vsock/sys.rs
+deb27b5c309e1f80accaaef484cbc2908400e099e51c73d624668e590881d50c  src/mailbox_witness.rs
+544d8774ff775e37dce10053fe0a0e1cb5678d23156f41eb2d2125f517a43b0f  src/mailbox_witness/tests.rs
+
+Expected missing API RED
+101
+error[E0425]: cannot find function `dial_before` in this scope
+error[E0425]: cannot find function `wait_for_connect_candidate` in this scope
+error[E0425]: cannot find function `wait_for_connect_candidate` in this scope
+
+Locked Linux release SDK socket tests
+0
+test vsock::sys::tests::any_cid_is_the_wildcard_bind_value ... ok
+test vsock::sys::tests::connect_wait_refuses_a_closed_peer ... ok
+test vsock::sys::tests::dial_to_dead_port_surfaces_os_error ... ok
+test vsock::sys::tests::every_vsock_is_created_close_on_exec ... ok
+test vsock::sys::tests::expired_dial_refuses_before_opening_a_socket ... ok
+test vsock::sys::tests::pending_connect_wait_is_bounded_by_original_deadline ... ok
+test vsock::sys::tests::vsock_addr_maps_family_cid_port ... ok
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 1086 filtered out; finished in 0.08s
+eee6960fa35cf11b99939ede32022ac97f8e8da6af91ede38c4738dfabfdf508  /var/tmp/spiralcore-pii-capacity-20261104/target/release/deps/mvm_agentd-4fbdea7a52eeff1f
+
+Composed locked release and static guest status
+0
+0
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 219 filtered out; finished in 0.09s
+
+Protected executable pins
+{"host": "6e7627ff27cffdd6394d5bee6f98f2642a11882ef617403489c5fe534eb98c15", "guest": "6f90b5e5dfb207b3b8f79b2a9c83955bd6e0123450576cfa277cb611b90970b7"}
+
+One-guest native terminal
+0
+{
+  "exit": 0,
+  "outer_elapsed_ns": 2845158639
+}
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 225 filtered out; finished in 2.74s

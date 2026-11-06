@@ -1,0 +1,314 @@
+--- a/crates/spiralcore-mvm-live/src/installed_parent/native_witness/mod.rs
++++ b/crates/spiralcore-mvm-live/src/installed_parent/native_witness/mod.rs
+@@ -400,9 +400,12 @@
+         Ok("2") => &[native_plan::NAME, "spiralcore-installed-witness-b"],
+         _ => bail!("native witness admits one or two sequential guests"),
+     };
++    let mode = std::env::var("SPIRALCORE_NATIVE_MAILBOX_WITNESS");
++    let remote_flowmux = mode.as_deref() == Ok("flowmux-remote-v1");
+     let (mailbox_mode, recovery_mode, object_campaign, sustained, object_redial) =
+-        match std::env::var("SPIRALCORE_NATIVE_MAILBOX_WITNESS").as_deref() {
++        match mode.as_deref() {
+             Err(std::env::VarError::NotPresent) => (false, false, false, false, false),
++            Ok("flowmux-remote-v1") if names.len() == 1 => (false, false, false, false, false),
+             Ok("1") => (true, false, false, false, false),
+             Ok("recovery-v2") => (true, true, false, false, false),
+             Ok("object-v2") if names.len() == 1 => (true, true, true, false, false),
+@@ -493,7 +496,12 @@
+         let guest_elapsed = Instant::now();
+         let value = u8::try_from(index + 1)?;
+         let reply_withheld = withhold_first && index == 0;
+-        let peer = native_peer::NativePeer::bind(bind, value, reply_withheld)?;
++        let peer = if remote_flowmux {
++            ensure!(!reply_withheld);
++            native_peer::NativePeer::from_remote(&root, bind)?
++        } else {
++            native_peer::NativePeer::bind(bind, value, reply_withheld)?
++        };
+         let policy = peer.network_policy()?;
+         let selection = pool.reserve(
+             tenant_tag("local"),
+--- a/crates/spiralcore-mvm-live/src/installed_parent/native_witness/native_peer.rs
++++ b/crates/spiralcore-mvm-live/src/installed_parent/native_witness/native_peer.rs
+@@ -35,17 +35,35 @@
+     os::unix::fs::OpenOptionsExt as _,
+     path::{Path, PathBuf},
+     thread,
+-    time::{Duration, Instant},
++    time::{Duration, Instant, SystemTime, UNIX_EPOCH},
+ };
+ 
+ const REPETITIONS: usize = 400;
+ const IDENTITY_BYTES: u64 = 1024;
+ const TRANSFER_WINDOW: Duration = Duration::from_secs(10);
+ 
++enum PeerTransport {
++    Local(TcpListener, PinnedIdentity),
++    Remote {
++        root: PathBuf,
++        control_id: [u8; 32],
++        origin: Ipv4Addr,
++    },
++}
++
++#[derive(serde::Deserialize)]
++#[serde(deny_unknown_fields)]
++struct RemoteReady {
++    event: String,
++    listener: SocketAddr,
++    peer_spki: [u8; 32],
++    control_id: [u8; 32],
++}
++
+ pub(super) struct NativePeer {
+-    listener: TcpListener,
++    transport: PeerTransport,
+     address: SocketAddr,
+-    identity: PinnedIdentity,
++    peer_spki: [u8; 32],
+     value: u8,
+     withhold_reply: bool,
+ }
+@@ -66,14 +84,34 @@
+         let pkcs8 = signing_key.to_pkcs8_der()?;
+         let identity = PinnedIdentity::from_pkcs8(pkcs8.as_bytes().to_vec())?;
+         Ok(Self {
+-            listener,
++            peer_spki: identity.spki_sha256(),
++            transport: PeerTransport::Local(listener, identity),
+             address,
+-            identity,
+             value,
+             withhold_reply,
+         })
+     }
+ 
++    pub(super) fn from_remote(root: &Path, origin: Ipv4Addr) -> Result<Self> {
++        let ready: RemoteReady = read_control(&root.join("flowmux-ready.json"))?;
++        ensure!(matches!(ready.listener, SocketAddr::V4(address)
++            if address.ip().is_private() && *address.ip() != origin && address.port() != 0));
++        ensure!(
++            ready.event == "ready" && ready.peer_spki != [0; 32] && ready.control_id != [0; 32]
++        );
++        Ok(Self {
++            transport: PeerTransport::Remote {
++                root: root.to_owned(),
++                control_id: ready.control_id,
++                origin,
++            },
++            address: ready.listener,
++            peer_spki: ready.peer_spki,
++            value: 1,
++            withhold_reply: false,
++        })
++    }
++
+     pub(super) fn address(&self) -> SocketAddr {
+         self.address
+     }
+@@ -85,7 +123,7 @@
+             host: host.clone(),
+             port,
+             server_name: host.clone(),
+-            spki_sha256: self.identity.spki_sha256(),
++            spki_sha256: self.peer_spki,
+             profile: PayloadMappingProfile::SpiralCoreObjectStreamSmallV1,
+         }])?;
+         Ok(NetworkPolicy::allow_list(vec![HostPort::new(&host, port)])
+@@ -128,7 +166,7 @@
+     host_spki: [u8; 32],
+ }
+ 
+-#[derive(Debug, serde::Serialize)]
++#[derive(Debug, serde::Serialize, serde::Deserialize)]
+ pub(super) struct NativePeerResult {
+     pub received_bytes: usize,
+     pub sent_bytes: usize,
+@@ -140,6 +178,8 @@
+     pub elapsed_after_accept_ns: u128,
+     pub application_thread_cpu_ns: u128,
+     pub scope_commitment: String,
++    #[serde(default, skip_serializing_if = "Option::is_none")]
++    pub process_cpu_ns: Option<u128>,
+ }
+ 
+ impl EnrolledNativePeer {
+@@ -151,12 +191,33 @@
+             session,
+             host_spki,
+         } = self;
++        let (listener, identity) = match peer.transport {
++            PeerTransport::Local(listener, identity) => (listener, identity),
++            PeerTransport::Remote {
++                root,
++                control_id,
++                origin,
++            } => {
++                return serve_remote(
++                    &root,
++                    control_id,
++                    origin,
++                    peer.address,
++                    peer.peer_spki,
++                    &plan,
++                    &state_dir,
++                    session,
++                    host_spki,
++                    until,
++                );
++            }
++        };
+         let socket = loop {
+             ensure!(
+                 Instant::now() < until,
+                 "original peer accept deadline expired"
+             );
+-            match peer.listener.accept() {
++            match listener.accept() {
+                 Ok((socket, _)) => break socket,
+                 Err(error) if error.kind() == ErrorKind::WouldBlock => {
+                     thread::sleep(Duration::from_millis(1));
+@@ -178,7 +239,7 @@
+         // can dial. Read it from the parent's enrolled state, never from TLS.
+         let guest_key = read_original_identity(&state_dir, &expected_session)?;
+         let tls_started_at = Instant::now();
+-        let tls = TlsCarrier::accept(socket, &peer.identity, host_spki, until)?;
++        let tls = TlsCarrier::accept(socket, &identity, host_spki, until)?;
+         let tls_setup_ns = tls_started_at.elapsed().as_nanos();
+         let carrier_meter = tls.try_clone()?;
+         let caps = Capabilities::small_v1();
+@@ -270,7 +331,7 @@
+             !path.exists(),
+             "peer namespace survived resource retirement"
+         );
+-        match peer.listener.accept() {
++        match listener.accept() {
+             Err(error) if error.kind() == ErrorKind::WouldBlock => {}
+             Err(error) => return Err(error.into()),
+             Ok(_) => anyhow::bail!("witness opened a second connection"),
+@@ -291,10 +352,125 @@
+             elapsed_after_accept_ns: accepted_at.elapsed().as_nanos(),
+             application_thread_cpu_ns: cpu.elapsed().as_nanos(),
+             scope_commitment,
++            process_cpu_ns: None,
+         })
+     }
+ }
+ 
++fn read_control<T: serde::de::DeserializeOwned>(path: &Path) -> Result<T> {
++    use std::os::unix::fs::MetadataExt as _;
++    let file = OpenOptions::new()
++        .read(true)
++        .custom_flags(libc::O_NONBLOCK | libc::O_NOFOLLOW)
++        .open(path)?;
++    let metadata = file.metadata()?;
++    mvm_core::private_fs::require_current_owner(&metadata)?;
++    ensure!(
++        metadata.is_file()
++            && metadata.mode() & 0o7777 == 0o600
++            && metadata.nlink() == 1
++            && metadata.len() <= 4096
++    );
++    let mut bytes = Vec::new();
++    file.take(4097).read_to_end(&mut bytes)?;
++    ensure!(bytes.len() <= 4096);
++    Ok(serde_json::from_slice(&bytes)?)
++}
++
++fn wait_for<T>(until: Instant, mut open: impl FnMut() -> Result<T>) -> Result<T> {
++    loop {
++        ensure!(
++            Instant::now() < until,
++            "remote FlowMux control deadline expired"
++        );
++        match open() {
++            Ok(value) => return Ok(value),
++            Err(error)
++                if error
++                    .downcast_ref::<std::io::Error>()
++                    .is_some_and(|error| error.kind() == ErrorKind::NotFound) =>
++            {
++                thread::sleep(Duration::from_millis(10))
++            }
++            Err(error) => return Err(error),
++        }
++    }
++}
++
++#[derive(serde::Deserialize)]
++struct RemoteOutcome {
++    event: String,
++    control_id: [u8; 32],
++    peer: SocketAddr,
++    listener: SocketAddr,
++    peer_store_removed: bool,
++    setup_artifacts_exact: bool,
++    result: NativePeerResult,
++}
++
++fn serve_remote(
++    root: &Path,
++    control_id: [u8; 32],
++    origin: Ipv4Addr,
++    address: SocketAddr,
++    peer_spki: [u8; 32],
++    plan: &AdmittedNetworkPlan,
++    state: &Path,
++    session: [u8; 32],
++    host_spki: [u8; 32],
++    until: Instant,
++) -> Result<NativePeerResult> {
++    let session = spiralcore_transfer::hex(&session);
++    let guest_key = wait_for(until, || read_original_identity(state, &session))?;
++    let transfer_deadline = until.min(Instant::now() + Duration::from_secs(20));
++    let remaining = transfer_deadline.saturating_duration_since(Instant::now());
++    ensure!(!remaining.is_zero());
++    let expires_unix_ms = (SystemTime::now().duration_since(UNIX_EPOCH)? + remaining).as_millis();
++    let projection = serde_json::json!({
++        "control_id":control_id, "listener":address, "peer_spki":peer_spki, "host_spki":host_spki,
++        "policy_sha256":digest::<32>(&plan.policy_sha256)?,
++        "plan_id":plan.plan_id.0, "plan_version":plan.plan_version,
++        "plan_nonce":digest::<16>(plan.plan_nonce.as_hex())?,
++        "bundle_sha256":digest::<32>(&plan.bundle_sha256)?,
++        "tenant":plan.tenant_id, "instance":plan.instance_id,
++        "session":session, "guest_key":guest_key, "expires_unix_ms":expires_unix_ms
++    });
++    let bytes = serde_json::to_vec(&projection)?;
++    ensure!(bytes.len() < 4096);
++    let temporary = root.join("flowmux-scope.tmp");
++    let mut output = OpenOptions::new()
++        .write(true)
++        .create_new(true)
++        .mode(0o600)
++        .open(&temporary)?;
++    output.write_all(&bytes)?;
++    output.write_all(b"\n")?;
++    drop(output);
++    std::fs::rename(temporary, root.join("flowmux-scope.json"))?;
++    let report: RemoteOutcome = wait_for(transfer_deadline, || {
++        read_control(&root.join("flowmux-result.json"))
++    })?;
++    ensure!(
++        report.event == "done"
++            && report.control_id == control_id
++            && report.listener == address
++            && report.peer.ip() == std::net::IpAddr::V4(origin)
++            && report.peer_store_removed
++            && report.setup_artifacts_exact
++    );
++    let expected = b"{\"kind\":\"flowmux\",\"value\":1}\n".repeat(REPETITIONS);
++    ensure!(
++        report.result.received_bytes == expected.len()
++            && report.result.sent_bytes == expected.len()
++            && report.result.payload_sha256 == hex::encode(Sha256::digest(&expected))
++            && digest::<32>(&report.result.scope_commitment)? != [0; 32]
++            && report.result.tls_received_bytes > 0
++            && report.result.tls_sent_bytes > 0
++            && report.result.process_cpu_ns.is_some()
++    );
++    Ok(report.result)
++}
++
+ fn read_original_identity(state_dir: &Path, expected_session: &str) -> Result<[u8; 32]> {
+     let file = OpenOptions::new()
+         .read(true)

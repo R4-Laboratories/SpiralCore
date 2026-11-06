@@ -1,0 +1,1212 @@
+--- a/crates/spiralcore-mvm-live/src/campaign.rs
++++ b/crates/spiralcore-mvm-live/src/campaign.rs
+@@ -3,6 +3,7 @@
+ mod completed;
+ mod reconciliation;
+ mod session;
++pub(crate) mod sustained;
+ #[cfg(all(target_os = "linux", any(test, feature = "installed-mailbox-witness")))]
+ use crate::mailbox_witness::AuthenticatedCampaignCarrier;
+ use crate::{
+@@ -150,9 +151,14 @@
+     exchange: Meter,
+     service: canonical::Session,
+     on_call: Option<ReconciliationController<'a>>,
++    next_call: Option<Instant>,
+ }
+ impl<S: SocketIo + 'static> Client<'_, S> {
+     fn call(&mut self, request: &Frame) -> Result<(Context, Frame)> {
++        if let Some(next) = &mut self.next_call {
++            std::thread::sleep(next.saturating_duration_since(Instant::now()));
++            *next = Instant::now() + sustained::INTERVAL;
++        }
+         let cpu = ProcessTime::now();
+         let wall = Instant::now();
+         let result = if let Some(on_call) = self.on_call.as_mut() {
+@@ -255,14 +261,16 @@
+         exchange: Meter::default(),
+         service,
+         on_call,
++        next_call: None,
+     };
+-    send_campaign(bootstrap, cases, client, (cpu, wall), out)
++    send_campaign(bootstrap, cases, client, (cpu, wall), false, out)
+ }
+ 
+ #[cfg(all(target_os = "linux", any(test, feature = "installed-mailbox-witness")))]
+ pub(crate) fn sender_on_authenticated<S: SocketIo + 'static>(
+     carrier: AuthenticatedCampaignCarrier<'_, S>,
+     broker: &spiralcore_mvm_adapter::broker::BrokerContext,
++    sustained_run: bool,
+     out: &mut impl Write,
+ ) -> Result<Value> {
+     let (bootstrap, stream, cancel) = carrier.into_parts();
+@@ -270,15 +278,20 @@
+         return Err("sender bootstrap role mismatch".into());
+     }
+     let started = (ProcessTime::now(), Instant::now());
+-    let cases = cases(&bootstrap.plan)?;
++    let cases = qualification_cases(&bootstrap.plan, sustained_run)?;
++    let mut service = canonical::Session::new(bootstrap, broker)?;
++    if sustained_run {
++        service.enable_sustained();
++    }
+     let client = Client {
+         stream,
+         cancel,
+         exchange: Meter::default(),
+-        service: canonical::Session::new(bootstrap, broker)?,
++        service,
+         on_call: None,
++        next_call: sustained_run.then(Instant::now),
+     };
+-    send_campaign(bootstrap, cases, client, started, out)
++    send_campaign(bootstrap, cases, client, started, sustained_run, out)
+ }
+ 
+ fn send_campaign<S: SocketIo + 'static>(
+@@ -286,6 +299,7 @@
+     cases: Vec<Fixture>,
+     mut client: Client<'_, S>,
+     (cpu, wall): (ProcessTime, Instant),
++    sustained_run: bool,
+     out: &mut impl Write,
+ ) -> Result<Value> {
+     let (context, probe) = client.call(&Frame {
+@@ -370,6 +384,7 @@
+         let wall = Instant::now();
+         let mut selection = None;
+         let result = match case.kind {
++            "sustained-raw" if sustained_run => sustained::send(&owned, id, &mut exchange),
+             "runtime-checkpoint" if bootstrap.plan.arm.is_combined() => {
+                 sender.seed_checkpoint(&context, id, &mut exchange)
+             }
+@@ -423,6 +438,7 @@
+             "application_request_bytes":stats.request_bytes,"application_response_bytes":stats.response_bytes}),
+         )?;
+     }
++    client.service.sample_sustained()?;
+     let counters = client.stream.counters()?;
+     client.stream.close()?;
+     let result = json!({"event":"sender_done","plan":bootstrap.plan,"operations":cases.len(),
+@@ -570,7 +586,15 @@
+         object,
+         on_reply_replay,
+     };
+-    receive_campaign(bootstrap, cache_root, cases, server, (cpu, wall), out)
++    receive_campaign(
++        bootstrap,
++        cache_root,
++        cases,
++        server,
++        (cpu, wall),
++        false,
++        out,
++    )
+ }
+ 
+ #[cfg(all(target_os = "linux", any(test, feature = "installed-mailbox-witness")))]
+@@ -580,6 +604,7 @@
+     service: &mut LocalMailboxService,
+     cache_root: &Path,
+     limits: Limits,
++    sustained_run: bool,
+     out: &mut impl Write,
+ ) -> Result<Value> {
+     let (bootstrap, stream, cancel) = carrier.into_parts();
+@@ -587,8 +612,11 @@
+         return Err("receiver bootstrap role mismatch".into());
+     }
+     let started = (ProcessTime::now(), Instant::now());
+-    let cases = cases(&bootstrap.plan)?;
+-    let service = canonical::Session::with_service(bootstrap, broker, |_| Ok(service))?;
++    let cases = qualification_cases(&bootstrap.plan, sustained_run)?;
++    let mut service = canonical::Session::with_service(bootstrap, broker, |_| Ok(service))?;
++    if sustained_run {
++        service.enable_sustained();
++    }
+     let object = open_receiver_object(bootstrap, cache_root, limits)?;
+     let server = Server {
+         stream,
+@@ -597,7 +625,15 @@
+         object,
+         on_reply_replay: None,
+     };
+-    receive_campaign(bootstrap, cache_root, cases, server, started, out)
++    receive_campaign(
++        bootstrap,
++        cache_root,
++        cases,
++        server,
++        started,
++        sustained_run,
++        out,
++    )
+ }
+ 
+ fn open_receiver_object(
+@@ -623,6 +659,7 @@
+     cases: Vec<Fixture>,
+     mut server: Server<'_, S, T>,
+     (cpu, wall): (ProcessTime, Instant),
++    sustained_run: bool,
+     out: &mut impl Write,
+ ) -> Result<Value> {
+     let probe = server.handle(PROBE)?;
+@@ -697,10 +734,11 @@
+     if tail.envelope_bytes_received != 0 || tail.framing_bytes_received != 0 {
+         return Err("trailing partial frame after campaign".into());
+     }
++    server.service.sample_sustained()?;
+     let service_report = server.service.report();
+     drop(server);
+     drop(cases);
+-    verify(&bootstrap.plan, cache_root, &published, out)?;
++    verify_qualification(&bootstrap.plan, cache_root, &published, sustained_run, out)?;
+     let result = json!({"event":"receiver_done","plan":bootstrap.plan,"operations":published.len(),
+         "service_profile":"canonical-ephemeral-v1","service":service_report,
+         "cpu_us":total.cpu_us,"wall_us":total.wall_us,"counters":counters,"published":published,
+@@ -771,7 +809,25 @@
+     published: &[Published],
+     out: &mut impl Write,
+ ) -> Result<()> {
+-    let cases = cases(plan)?;
++    verify_qualification(plan, cache_root, published, false, out)
++}
++
++fn qualification_cases(plan: &Plan, sustained_run: bool) -> Result<Vec<Fixture>> {
++    if sustained_run {
++        sustained::fixtures(plan)
++    } else {
++        cases(plan)
++    }
++}
++
++pub(crate) fn verify_qualification(
++    plan: &Plan,
++    cache_root: &Path,
++    published: &[Published],
++    sustained_run: bool,
++    out: &mut impl Write,
++) -> Result<()> {
++    let cases = qualification_cases(plan, sustained_run)?;
+     if cases.len() != published.len() {
+         return Err("publication count mismatch".into());
+     }
+--- a/crates/spiralcore-mvm-live/src/campaign/canonical.rs
++++ b/crates/spiralcore-mvm-live/src/campaign/canonical.rs
+@@ -46,6 +46,17 @@
+     recovery: RecoveryCounters,
+     receiver_processing: ProcessingTotals,
+     receiver_phase: Option<ProcessingPhase>,
++    sustained: Option<SustainedState>,
++}
++struct SustainedState {
++    started: Instant,
++    samples: u64,
++    peak_identities: usize,
++    peak_tracker: usize,
++    last_tracker: usize,
++    last_identities: usize,
++    last_fifo_scopes: usize,
++    last_fifo_entries: usize,
+ }
+ const MAX_CAMPAIGN_CALLS: u64 = 2048;
+ #[derive(Clone, Copy, PartialEq, Eq)]
+@@ -171,9 +182,64 @@
+                 recovery: RecoveryCounters::default(),
+                 receiver_processing: ProcessingTotals::default(),
+                 receiver_phase: None,
++                sustained: None,
+             })
+         })
+     }
++    pub(super) fn enable_sustained(&mut self) {
++        self.sustained = Some(SustainedState {
++            started: Instant::now(),
++            samples: 0,
++            peak_identities: 0,
++            peak_tracker: 0,
++            last_tracker: 0,
++            last_identities: 0,
++            last_fifo_scopes: 0,
++            last_fifo_entries: 0,
++        });
++    }
++
++    fn campaign_call_limit(&self) -> u64 {
++        if self.sustained.is_some() {
++            sustained::CALLS
++        } else {
++            MAX_CAMPAIGN_CALLS
++        }
++    }
++
++    fn check_sustained(&mut self) -> Result<()> {
++        if let Some(state) = &self.sustained {
++            if state.started.elapsed() >= sustained::RUN_LIMIT {
++                return Err("installed sustained campaign elapsed limit".into());
++            }
++            if self.calls % 64 == 0 {
++                self.sample_sustained()?;
++            }
++        }
++        Ok(())
++    }
++
++    pub(super) fn sample_sustained(&mut self) -> Result<()> {
++        let Some(state) = &mut self.sustained else {
++            return Ok(());
++        };
++        self.broker.with_time(|budget, now| -> Result<()> {
++            self.service.borrow_mut().expire(now)?;
++            self.tracker.expire(now)?;
++            let service = self.service.borrow_mut().snapshot();
++            let retained = self.tracker.snapshot().retained_entries;
++            let identities = budget.snapshot()?.identities;
++            state.samples += 1;
++            state.peak_identities = state.peak_identities.max(identities);
++            state.peak_tracker = state.peak_tracker.max(retained);
++            state.last_tracker = retained;
++            state.last_identities = identities;
++            state.last_fifo_scopes = service.fifo_scopes;
++            state.last_fifo_entries = service.fifo_entries;
++            Ok(())
++        })
++    }
++
+     pub(super) fn report(&self) -> Value {
+         json!({"session_report":"canonical-session-report/v2","application_calls":self.calls,
+             "normal_envelopes_per_call":2,"normal_encrypted_destination_receipts_per_call":2,
+@@ -181,9 +247,15 @@
+             "receiver_processing":&self.receiver_processing,
+             "receiver_processing_domain":"post-frame process CPU and wall; includes unfinished work; excludes receive waits; co-located CPU intervals overlap",
+             "profile":"canonical-ephemeral-v1","durability":"AcceptedEphemeral; object commit separately verified durable",
+-            "identity_tier":"broker-owned","witness_tier":"native-16m-v1",
++            "identity_tier":"broker-owned","witness_tier":if self.sustained.is_some() {"installed-sustained-v2"} else {"native-16m-v1"},
+             "identity_limits":self.owner_capacity["identity_limits"],"control_identity_limits":self.owner_capacity["control_identity_limits"],
+-            "max_application_calls":MAX_CAMPAIGN_CALLS,"pipeline":1,"ordering":"stable-scope-increasing-sequence",
++            "max_application_calls":self.campaign_call_limit(),"sustained":self.sustained.as_ref().map(|s| json!({
++                "elapsed_ms":s.started.elapsed().as_millis(),"samples":s.samples,
++                "peak_identities":s.peak_identities,"peak_tracker":s.peak_tracker,
++                "last_tracker":s.last_tracker,"last_identities":s.last_identities,
++                "last_fifo_scopes":s.last_fifo_scopes,"last_fifo_entries":s.last_fifo_entries,
++                "expired_tracker_lower_bound":self.calls.saturating_sub(s.last_tracker as u64)
++            })),"pipeline":1,"ordering":"stable-scope-increasing-sequence",
+             "broker_clock":"shared-serialized-dispatch","issuance_policy":{"mode":"bounded","max_clock_ahead_ms":5000,"max_issued_ttl_ms":30000,"max_remaining_ttl_ms":25000}})
+     }
+     pub(super) fn call<S: SocketIo + 'static>(
+@@ -230,7 +302,8 @@
+         if self.caller_fenced {
+             return Err(SessionError::StreamFenced.into());
+         }
+-        if self.calls >= MAX_CAMPAIGN_CALLS {
++        self.check_sustained()?;
++        if self.calls >= self.campaign_call_limit() {
+             return Err(SessionError::WitnessLimit.into());
+         }
+         if let Some(tail) = &self.completed_tail {
+@@ -804,7 +877,8 @@
+         cancel: &CancellationToken,
+         requests: Option<ReplyReplayRequests>,
+     ) -> Result<Handled> {
+-        if self.calls >= MAX_CAMPAIGN_CALLS {
++        self.check_sustained()?;
++        if self.calls >= self.campaign_call_limit() {
+             return Err("native campaign Call limit".into());
+         }
+         if self.receiver_incomplete {
+--- a/crates/spiralcore-mvm-live/src/campaign/completed.rs
++++ b/crates/spiralcore-mvm-live/src/campaign/completed.rs
+@@ -40,6 +40,7 @@
+                 exchange: Meter::default(),
+                 service,
+                 on_call: None,
++                next_call: None,
+             },
+         })
+     }
+--- /dev/null
++++ b/crates/spiralcore-mvm-live/src/campaign/sustained.rs
+@@ -0,0 +1,90 @@
++//! Fixed installed qualification dose using the existing raw object frames.
++use super::*;
++use transfer::protocol::{Mode, Offer};
++
++pub(crate) const OBJECT_BYTES: usize = 3 << 20;
++const CHUNK: usize = 4 << 10;
++pub(crate) const OBJECTS: usize = 3;
++pub(crate) const CALLS: u64 = 1 + (OBJECTS * (OBJECT_BYTES / CHUNK + 2)) as u64;
++pub(crate) const RUN_LIMIT: Duration = Duration::from_secs(900);
++pub(super) const INTERVAL: Duration = Duration::from_millis(250);
++
++pub(super) fn fixtures(plan: &Plan) -> Result<Vec<Fixture>> {
++    if plan.stage != crate::config::Stage::Two
++        || plan.arm != Arm::Raw
++        || plan.size != OBJECT_BYTES
++        || plan.trial != 2
++    {
++        return Err("installed sustained fixture plan differs".into());
++    }
++    Ok((0..OBJECTS)
++        .map(|i| Fixture {
++            kind: "sustained-raw",
++            bytes: crate::fixtures::opaque(OBJECT_BYTES, 0x5343_5355_5354_0000 + i as u64),
++        })
++        .collect())
++}
++
++pub(super) fn send(
++    bytes: &[u8],
++    transfer: Id,
++    exchange: &mut impl FnMut(&[Frame]) -> transfer::Result<Vec<Frame>>,
++) -> transfer::Result<Stats> {
++    use transfer::Error;
++    if bytes.len() != OBJECT_BYTES {
++        return Err(Error::Limit);
++    }
++    let started = Instant::now();
++    let offer = Offer::cold(bytes, Mode::Raw);
++    let mut stats = Stats {
++        object: offer.object,
++        mode: Mode::Raw,
++        request_bytes: 0,
++        response_bytes: 0,
++        data_bytes: 0,
++        records_sent: 0,
++        requests: 0,
++        elapsed_micros: 0,
++    };
++    let mut call = |kind, body| -> transfer::Result<Frame> {
++        let seq = stats.requests as u64;
++        let frame = Frame {
++            kind,
++            transfer,
++            seq,
++            body,
++        };
++        let replies = exchange(std::slice::from_ref(&frame))?;
++        let [reply]: [Frame; 1] = replies.try_into().map_err(|_| Error::Integrity)?;
++        if reply.transfer != transfer || reply.seq != seq {
++            return Err(Error::Integrity);
++        }
++        stats.request_bytes += frame.encode()?.len() as u64;
++        stats.response_bytes += reply.encode()?.len() as u64;
++        stats.requests += 1;
++        Ok(reply)
++    };
++    let ready = call(1, offer.encode()?)?;
++    let mut expected = vec![Mode::Raw as u8, 0];
++    expected.extend_from_slice(&1_u64.to_le_bytes());
++    if ready.kind != 101 || ready.body != expected {
++        return Err(Error::Integrity);
++    }
++    for chunk in bytes.chunks_exact(CHUNK) {
++        let mut body = Vec::with_capacity(5 + CHUNK);
++        body.push(0);
++        body.extend_from_slice(&(CHUNK as u32).to_le_bytes());
++        body.extend_from_slice(chunk);
++        let reply = call(2, body)?;
++        if reply.kind != 102 || reply.body.len() != 8 {
++            return Err(Error::Integrity);
++        }
++    }
++    let done = call(3, Vec::new())?;
++    if done.kind != 103 || done.body != offer.object {
++        return Err(Error::Integrity);
++    }
++    stats.data_bytes = bytes.len() as u64;
++    stats.elapsed_micros = started.elapsed().as_micros();
++    Ok(stats)
++}
+--- a/crates/spiralcore-mvm-live/src/config.rs
++++ b/crates/spiralcore-mvm-live/src/config.rs
+@@ -225,12 +225,15 @@
+ }
+ impl Pair {
+     pub fn provision(plan: Plan) -> Result<Self> {
+-        Self::provision_inner(plan, false).map(|(pair, _)| pair)
++        Self::provision_inner(plan, false, false).map(|(pair, _)| pair)
+     }
+ 
+     #[cfg(all(target_os = "linux", any(test, feature = "installed-mailbox-witness")))]
+-    pub(crate) fn provision_installed_witness(plan: Plan) -> Result<(Self, Material, Material)> {
+-        let (pair, cast) = Self::provision_inner(plan, true)?;
++    pub(crate) fn provision_installed_witness(
++        plan: Plan,
++        sustained: bool,
++    ) -> Result<(Self, Material, Material)> {
++        let (pair, cast) = Self::provision_inner(plan, true, sustained)?;
+         let (guest, host) = cast.ok_or("installed witness Cast material missing")?;
+         Ok((pair, guest, host))
+     }
+@@ -238,6 +241,7 @@
+     fn provision_inner(
+         plan: Plan,
+         installed_witness: bool,
++        sustained: bool,
+     ) -> Result<(Self, Option<(Material, Material)>)> {
+         if !(64..=(16 << 20)).contains(&plan.size) {
+             return Err("object size outside live profile".into());
+@@ -265,7 +269,7 @@
+         let reverse_capability = CapabilityId::from_bytes(rand::random());
+         let recipe = Provision {
+             now,
+-            lifetime_ms: if installed_witness {
++            lifetime_ms: if installed_witness && !sustained {
+                 300_000
+             } else {
+                 1_800_000
+--- a/crates/spiralcore-mvm-live/src/fixtures.rs
++++ b/crates/spiralcore-mvm-live/src/fixtures.rs
+@@ -29,7 +29,7 @@
+ 
+ // Same public SHA-256 fixture definition as gateway::measurement::fixture;
+ // reuse the existing hash primitive without adding a second dependency tree.
+-fn opaque(size: usize, seed: u64) -> Vec<u8> {
++pub(crate) fn opaque(size: usize, seed: u64) -> Vec<u8> {
+     let mut out = Vec::with_capacity(size);
+     for index in 0..size.div_ceil(32) {
+         let block = spiralcore_transfer::hash(
+--- a/crates/spiralcore-mvm-live/src/mailbox_witness.rs
++++ b/crates/spiralcore-mvm-live/src/mailbox_witness.rs
+@@ -57,6 +57,38 @@
+         .collect()
+ }
+ 
++fn ensure_sustained_authority(endpoint: &Bootstrap) -> Result<()> {
++    let service = endpoint
++        .service
++        .as_ref()
++        .ok_or("missing sustained controls")?;
++    let minimum_expiry = i64::try_from(
++        (std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH)?
++            + campaign::sustained::RUN_LIMIT
++            + Duration::from_secs(30))
++        .as_millis(),
++    )?;
++    for material in [
++        endpoint
++            .incoming
++            .as_ref()
++            .ok_or("missing sustained incoming grant")?,
++        endpoint
++            .outgoing
++            .as_ref()
++            .ok_or("missing sustained outgoing grant")?,
++        &service.incoming_control,
++        &service.outgoing_control,
++    ] {
++        if material.capability.grant.expires_at_unix_ms <= minimum_expiry
++            || material.binding.claims.expires_at_unix_ms <= minimum_expiry
++        {
++            return Err("insufficient remaining sustained mailbox authority".into());
++        }
++    }
++    Ok(())
++}
++
+ #[derive(Deserialize, Serialize)]
+ #[serde(deny_unknown_fields)]
+ struct RecoveryPin {
+@@ -99,6 +131,8 @@
+     recovery: Option<RecoveryPin>,
+     #[serde(default)]
+     object_campaign: bool,
++    #[serde(default)]
++    sustained: bool,
+     endpoint: Bootstrap,
+     cast: Material,
+ }
+@@ -106,6 +140,7 @@
+ pub struct HostFixture {
+     close_after_call_receipt: bool,
+     object_campaign: bool,
++    sustained: bool,
+     recovery: Option<RecoveryPin>,
+     endpoint: Bootstrap,
+     cast: Material,
+@@ -133,23 +168,29 @@
+ pub(crate) fn provision_with_close(
+     close_after_call_receipt: bool,
+ ) -> Result<([u8; 32], GuestBootstrap, HostFixture)> {
+-    provision_mode(close_after_call_receipt, false, false)
++    provision_mode(close_after_call_receipt, false, false, false)
+ }
+ 
+ pub(crate) fn provision_recovery() -> Result<([u8; 32], GuestBootstrap, HostFixture)> {
+-    provision_mode(false, true, false)
++    provision_mode(false, true, false, false)
+ }
+ 
+ #[cfg(test)]
+-pub(crate) fn provision_object_campaign() -> Result<([u8; 32], GuestBootstrap, HostFixture)> {
+-    provision_mode(false, true, true)
++pub(crate) fn provision_object_campaign(
++    sustained: bool,
++) -> Result<([u8; 32], GuestBootstrap, HostFixture)> {
++    provision_mode(false, true, true, sustained)
+ }
+ 
+-pub(crate) fn object_campaign_plan() -> Plan {
++pub(crate) fn object_campaign_plan(sustained: bool) -> Plan {
+     Plan {
+         stage: Stage::Two,
+         arm: Arm::Raw,
+-        size: 128,
++        size: if sustained {
++            campaign::sustained::OBJECT_BYTES
++        } else {
++            128
++        },
+         trial: 2,
+         bandwidth_profile: Default::default(),
+     }
+@@ -159,9 +200,10 @@
+     close_after_call_receipt: bool,
+     recovery: bool,
+     object_campaign: bool,
++    sustained: bool,
+ ) -> Result<([u8; 32], GuestBootstrap, HostFixture)> {
+     let plan = if object_campaign {
+-        object_campaign_plan()
++        object_campaign_plan(sustained)
+     } else {
+         Plan {
+             stage: Stage::Two,
+@@ -171,7 +213,7 @@
+             bandwidth_profile: Default::default(),
+         }
+     };
+-    let (pair, guest_cast, host_cast) = Pair::provision_installed_witness(plan.clone())?;
++    let (pair, guest_cast, host_cast) = Pair::provision_installed_witness(plan.clone(), sustained)?;
+     let sender_profile = pair
+         .sender
+         .service
+@@ -188,6 +230,7 @@
+     digest.update([u8::from(close_after_call_receipt)]);
+     if object_campaign {
+         digest.update(b"SpiralCore/installed-object-campaign/v1\0");
++        digest.update([u8::from(sustained)]);
+         digest.update(serde_json::to_vec(&plan)?);
+     }
+     for material in [
+@@ -249,6 +292,7 @@
+             close_after_call_receipt,
+             recovery: guest_recovery,
+             object_campaign,
++            sustained,
+             endpoint: pair.sender,
+             cast: guest_cast,
+         },
+@@ -256,6 +300,7 @@
+             close_after_call_receipt,
+             recovery: host_recovery,
+             object_campaign,
++            sustained,
+             endpoint: pair.receiver,
+             cast: host_cast,
+         },
+@@ -489,6 +534,9 @@
+         if !self.object_campaign {
+             return Err("object campaign was not enrolled".into());
+         }
++        if self.sustained {
++            ensure_sustained_authority(&self.endpoint)?;
++        }
+         let pin = self
+             .recovery
+             .as_ref()
+@@ -506,6 +554,7 @@
+             service,
+             cache,
+             limits,
++            self.sustained,
+             &mut std::io::sink(),
+         )
+     }
+@@ -696,9 +745,9 @@
+         let plan_matches = if fixture.object_campaign {
+             fixture.recovery.is_some()
+                 && serde_json::to_vec(&endpoint.plan)?
+-                    == serde_json::to_vec(&object_campaign_plan())?
++                    == serde_json::to_vec(&object_campaign_plan(fixture.sustained))?
+         } else {
+-            endpoint.plan.size == CALL_LEN
++            !fixture.sustained && endpoint.plan.size == CALL_LEN
+         };
+         if endpoint.role != Role::Sender
+             || endpoint.plan.stage != Stage::Two
+@@ -932,6 +981,9 @@
+         _ => 26_u8,
+     };
+     let result = if bootstrap.object_campaign {
++        if bootstrap.sustained {
++            ensure_sustained_authority(&bootstrap.endpoint).map_err(|_| 22_u8)?;
++        }
+         let deadline = Instant::now() + RECOVERY_CAP;
+         let first =
+             vsock::sys::dial_before(vsock::HOST_CID, MAILBOX_PORT, deadline).map_err(dial_error)?;
+@@ -944,13 +996,30 @@
+             pin,
+             deadline,
+         )
+-        .map_err(|_| 27_u8)?;
++        .map_err(|_| if bootstrap.sustained { 30_u8 } else { 27_u8 })?;
+         campaign::sender_on_authenticated(
+             carrier,
+             &campaign::broker_context().map_err(|_| 27_u8)?,
++            bootstrap.sustained,
+             &mut std::io::sink(),
+         )
+-        .map_err(|_| 27_u8)?
++        .map_err(|error| {
++            if !bootstrap.sustained {
++                return 27_u8;
++            }
++            if let Some(error) = error.downcast_ref::<spiralcore_transfer::Error>() {
++                return 40 + *error as u8;
++            }
++            if let Some(error) =
++                error.downcast_ref::<spiralcore_mvm_adapter::service::ServiceError>()
++            {
++                return 60 + *error as u8;
++            }
++            if error.downcast_ref::<std::io::Error>().is_some() {
++                return 31;
++            }
++            32
++        })?
+     } else {
+         let exchanged = if bootstrap.recovery.is_some() {
+             let deadline = Instant::now() + RECOVERY_CAP;
+--- a/crates/spiralcore-mvm-live/src/mailbox_witness/campaign_carrier_tests.rs
++++ b/crates/spiralcore-mvm-live/src/mailbox_witness/campaign_carrier_tests.rs
+@@ -65,6 +65,7 @@
+                     namespace_bytes: 4 << 20,
+                     ..Limits::default()
+                 },
++                false,
+                 &mut std::io::sink(),
+             )
+             .unwrap()
+@@ -77,8 +78,8 @@
+             Instant::now() + RECOVERY_CAP,
+         )
+         .unwrap();
+-        let sent =
+-            campaign::sender_on_authenticated(carrier, &sender, &mut std::io::sink()).unwrap();
++        let sent = campaign::sender_on_authenticated(carrier, &sender, false, &mut std::io::sink())
++            .unwrap();
+         (sent, worker.join().unwrap())
+     });
+     assert_eq!(received["exact_reopened"], true);
+--- a/crates/spiralcore-mvm-live/src/installed_parent/mailbox_job.rs
++++ b/crates/spiralcore-mvm-live/src/installed_parent/mailbox_job.rs
+@@ -43,6 +43,8 @@
+ pub(super) struct ResidentBroker {
+     #[cfg(test)]
+     object_campaign: bool,
++    #[cfg(test)]
++    sustained: bool,
+     context: BrokerContext,
+     _metadata: ManagedReservation,
+ }
+@@ -234,7 +236,7 @@
+             .parent
+             .upgrade()
+             .context("original parent unavailable")?;
+-        let candidate = self.fund_mailbox_job(ServiceJob::Legacy(Box::new(job)), false)?;
++        let candidate = self.fund_mailbox_job(ServiceJob::Legacy(Box::new(job)), false, false)?;
+         let registry = parent
+             .registry
+             .lock()
+@@ -255,7 +257,12 @@
+         Ok(())
+     }
+ 
+-    fn fund_mailbox_job(&self, job: ServiceJob, object_campaign: bool) -> Result<FundedMailboxJob> {
++    fn fund_mailbox_job(
++        &self,
++        job: ServiceJob,
++        object_campaign: bool,
++        sustained: bool,
++    ) -> Result<FundedMailboxJob> {
+         use super::{MIB, ManagedClaim, tenant_tag};
+         use anyhow::anyhow;
+         use spiralcore_mvm_adapter::service::{
+@@ -288,7 +295,7 @@
+             };
+             if let Some(current) = current {
+                 anyhow::ensure!(
+-                    current.object_campaign == object_campaign,
++                    current.object_campaign == object_campaign && current.sustained == sustained,
+                     "original mailbox broker qualification profile differs"
+                 );
+                 current
+@@ -296,7 +303,13 @@
+                 let metadata = parent.pool.reserve(
+                     tenant_tag("installation-mailbox-broker"),
+                     ManagedClaim {
+-                        host_metadata_bytes: if object_campaign { 2 * MIB } else { MIB },
++                        host_metadata_bytes: if sustained {
++                            16 * MIB
++                        } else if object_campaign {
++                            2 * MIB
++                        } else {
++                            MIB
++                        },
+                         ..Default::default()
+                     },
+                 )?;
+@@ -304,12 +317,24 @@
+                     queued_bytes: 512 << 10,
+                     queued_messages: 32,
+                     active_calls: 4,
+-                    identities: if object_campaign { 128 } else { 64 },
++                    identities: if sustained {
++                        8192
++                    } else if object_campaign {
++                        128
++                    } else {
++                        64
++                    },
+                 };
+                 let control = ControlScope {
+                     queued_bytes: 128 << 10,
+                     queued_messages: 8,
+-                    identities: if object_campaign { 64 } else { 16 },
++                    identities: if sustained {
++                        4096
++                    } else if object_campaign {
++                        64
++                    } else {
++                        16
++                    },
+                 };
+                 let budget = HostBudget::with_control(
+                     ServiceLimits {
+@@ -328,6 +353,7 @@
+                 )?;
+                 let current = Arc::new(ResidentBroker {
+                     object_campaign,
++                    sustained,
+                     context: BrokerContext::new(budget),
+                     _metadata: metadata,
+                 });
+@@ -395,7 +421,13 @@
+         + Sync
+         + 'static,
+     ) -> Result<()> {
+-        self.stage_mailbox_enrollment(admitted, trusted, ServiceJob::Legacy(Box::new(job)), false)
++        self.stage_mailbox_enrollment(
++            admitted,
++            trusted,
++            ServiceJob::Legacy(Box::new(job)),
++            false,
++            false,
++        )
+     }
+ 
+     pub(super) fn stage_mailbox_recovery_enrollment_fixture(
+@@ -403,6 +435,7 @@
+         admitted: &super::AdmittedPlan,
+         trusted: mvm_hostd::plan_admission::InstalledMailboxEnrollment,
+         object_campaign: bool,
++        sustained: bool,
+         job: impl FnOnce(
+             UnixStream,
+             &mut dyn InstalledMailboxReplacementAcceptor,
+@@ -418,6 +451,7 @@
+             trusted,
+             ServiceJob::Recovery(Box::new(job)),
+             object_campaign,
++            sustained,
+         )
+     }
+ 
+@@ -427,6 +461,7 @@
+         trusted: mvm_hostd::plan_admission::InstalledMailboxEnrollment,
+         job: ServiceJob,
+         object_campaign: bool,
++        sustained: bool,
+     ) -> Result<()> {
+         use super::MailboxFunding;
+         use anyhow::{anyhow, ensure};
+@@ -443,7 +478,9 @@
+             "fixture mailbox differs from the signed resident enrollment"
+         );
+         admitted.check_unlaunched_for_backend(self.grant.binding.backend)?;
+-        let candidate = self.grant.fund_mailbox_job(job, object_campaign)?;
++        let candidate = self
++            .grant
++            .fund_mailbox_job(job, object_campaign, sustained)?;
+         use mvm_core::plan::validity::{CheckedFreshness, Freshness};
+         let plan = admitted.plan();
+         let original = OriginalMailboxEnrollment {
+@@ -529,6 +566,7 @@
+             .unwrap();
+         let broker = Arc::new(ResidentBroker {
+             object_campaign: false,
++            sustained: false,
+             context: context.clone(),
+             _metadata: credit,
+         });
+--- a/crates/spiralcore-mvm-live/src/installed_parent/config_tests.rs
++++ b/crates/spiralcore-mvm-live/src/installed_parent/config_tests.rs
+@@ -1037,6 +1037,7 @@
+             &admitted,
+             trusted,
+             false,
++            false,
+             move |mut old, acceptor, _, _| {
+                 assert_eq!(old.read(&mut [0])?, 0);
+                 drop(old);
+--- a/crates/spiralcore-mvm-live/src/installed_parent/native_witness/mod.rs
++++ b/crates/spiralcore-mvm-live/src/installed_parent/native_witness/mod.rs
+@@ -400,12 +400,13 @@
+         Ok("2") => &[native_plan::NAME, "spiralcore-installed-witness-b"],
+         _ => bail!("native witness admits one or two sequential guests"),
+     };
+-    let (mailbox_mode, recovery_mode, object_campaign) =
++    let (mailbox_mode, recovery_mode, object_campaign, sustained) =
+         match std::env::var("SPIRALCORE_NATIVE_MAILBOX_WITNESS").as_deref() {
+-            Err(std::env::VarError::NotPresent) => (false, false, false),
+-            Ok("1") => (true, false, false),
+-            Ok("recovery-v2") => (true, true, false),
+-            Ok("object-v2") if names.len() == 1 => (true, true, true),
++            Err(std::env::VarError::NotPresent) => (false, false, false, false),
++            Ok("1") => (true, false, false, false),
++            Ok("recovery-v2") => (true, true, false, false),
++            Ok("object-v2") if names.len() == 1 => (true, true, true, false),
++            Ok("sustained-v2") if names.len() == 1 => (true, true, true, true),
+             _ => bail!("invalid installed mailbox fixture mode"),
+         };
+     let withhold_first = match std::env::var("SPIRALCORE_NATIVE_WITNESS_WITHHOLD_FIRST").as_deref()
+@@ -508,6 +509,7 @@
+                 reply_withheld,
+                 recovery_mode,
+                 object_campaign,
++                sustained,
+             )?)
+         } else {
+             None
+@@ -531,8 +533,8 @@
+             let credit = pool.reserve(
+                 tenant_tag("local"),
+                 ManagedClaim {
+-                    cache_disk_bytes: 4 * MIB,
+-                    staging_disk_bytes: 4 * MIB,
++                    cache_disk_bytes: if sustained { 16 } else { 4 } * MIB,
++                    staging_disk_bytes: if sustained { 8 } else { 4 } * MIB,
+                     ..Default::default()
+                 },
+             )?;
+@@ -586,7 +588,7 @@
+                 retained_metadata_bytes: 128 * 1024,
+             },
+             || {
+-                let token = native.admit(&policy, &ledger)?;
++                let token = native.admit(&policy, &ledger, sustained)?;
+                 peer_plan = Some(token.plan().clone());
+                 Ok(token)
+             },
+@@ -606,6 +608,7 @@
+                             admitted,
+                             enrollment,
+                             object_campaign,
++                            sustained,
+                             move |socket, acceptor, broker, service| {
+                                 let outcome = if let Some(path) = object_path {
+                                     // Object work starts only after Runtime has booted the
+@@ -614,11 +617,19 @@
+                                         .reserve(
+                                             tenant_tag("local"),
+                                             ManagedClaim {
+-                                                host_codec_bytes: 4 * MIB,
++                                                // 12 MiB object endpoint, 9 MiB fixed input
++                                                // fixtures and 1 MiB campaign glue.
++                                                host_codec_bytes: if sustained { 22 } else { 4 } * MIB,
+                                                 ..Default::default()
+                                             },
+                                         )
+                                         .map_err(|error| {
++                                            if sustained {
++                                                eprintln!("sustained host codec reservation refused: {error}");
++                                                if let Ok(snapshot) = object_pool.snapshot() {
++                                                    eprintln!("sustained installation charges before refusal: {snapshot:?}");
++                                                }
++                                            }
+                                             std::io::Error::other(format!(
+                                                 "object campaign codec workspace: {error}"
+                                             ))
+@@ -627,9 +638,9 @@
+                                         max_active: 1,
+                                         max_states: 8,
+                                         max_publications: 8,
+-                                        resident_bytes: 4 * MIB,
+-                                        cache_bytes: 4 * MIB,
+-                                        namespace_bytes: 4 * MIB,
++                                        resident_bytes: if sustained { 12 } else { 4 } * MIB,
++                                        cache_bytes: if sustained { 16 } else { 4 } * MIB,
++                                        namespace_bytes: if sustained { 16 } else { 4 } * MIB,
+                                         graph_cache_bytes: 0,
+                                         graph_cache_entries: 0,
+                                         ..Default::default()
+@@ -640,6 +651,15 @@
+                                     host.run_recovery(socket, acceptor, broker, service)
+                                         .map(native_mailbox::HostOutcome::Exchange)
+                                 };
++                                if sustained && let Err(error) = &outcome {
++                                    if let Some(service) = error.downcast_ref::<spiralcore_mvm_adapter::service::ServiceError>() {
++                                        eprintln!("sustained host service refusal: {service}");
++                                    } else if let Some(transfer) = error.downcast_ref::<spiralcore_transfer::Error>() {
++                                        eprintln!("sustained host transfer refusal: {transfer}");
++                                    } else {
++                                        eprintln!("sustained host campaign setup or transport refused");
++                                    }
++                                }
+                                 report(outcome)
+                             },
+                         )?;
+@@ -685,6 +705,7 @@
+                 reply_withheld,
+                 recovery_mode,
+                 campaign_store,
++                sustained,
+             )?;
+             let (enrollment, bundle) =
+                 mailbox_identity.context("mailbox fixture identity missing")?;
+--- a/crates/spiralcore-mvm-live/src/installed_parent/native_witness/native_mailbox.rs
++++ b/crates/spiralcore-mvm-live/src/installed_parent/native_witness/native_mailbox.rs
+@@ -7,12 +7,11 @@
+ use mvm_hostd::plan_admission::InstalledMailboxEnrollment;
+ use spiralcore_mvm_adapter::live::StreamCounters;
+ use std::{
+-    io::Write,
+     os::unix::fs::MetadataExt,
+     path::{Path, PathBuf},
+     process::{Command, Stdio},
+     sync::mpsc::{self, Receiver, SyncSender},
+-    time::Duration,
++    time::{Duration, Instant},
+ };
+ 
+ use super::{InstalledResident, ManagedReservation, ResidentId, ResidentStatus};
+@@ -46,7 +45,7 @@
+         &self.path
+     }
+ 
+-    fn verify_and_remove(mut self, host: &serde_json::Value) -> Result<()> {
++    fn verify_and_remove(mut self, host: &serde_json::Value, sustained: bool) -> Result<()> {
+         let path = &self.path;
+         let metadata = std::fs::symlink_metadata(&path)?;
+         mvm_core::private_fs::require_current_owner(&metadata)?;
+@@ -58,10 +57,11 @@
+         );
+         let published: Vec<crate::config::Published> =
+             serde_json::from_value(host["published"].clone())?;
+-        crate::campaign::verify(
+-            &mailbox_witness::object_campaign_plan(),
++        crate::campaign::verify_qualification(
++            &mailbox_witness::object_campaign_plan(sustained),
+             &path,
+             &published,
++            sustained,
+             &mut std::io::sink(),
+         )
+         .map_err(|_| anyhow!("stopped campaign store exact readback failed"))?;
+@@ -103,6 +103,7 @@
+     abandoned: bool,
+     recovery: bool,
+     object_campaign: bool,
++    sustained: bool,
+ ) -> Result<Fixture> {
+     let (image_tool, _) = pinned_tool(
+         "SPIRALCORE_NATIVE_MAILBOX_IMAGE_TOOL",
+@@ -113,7 +114,7 @@
+         "SPIRALCORE_NATIVE_MAILBOX_GUEST_TOOL_SHA",
+     )?;
+     let (commitment, guest, host) = if object_campaign {
+-        mailbox_witness::provision_object_campaign()
++        mailbox_witness::provision_object_campaign(sustained)
+     } else if recovery {
+         mailbox_witness::provision_recovery()
+     } else {
+@@ -165,10 +166,10 @@
+     (Some((fixture.enrollment, fixture.host, tx)), Some(rx))
+ }
+ 
+-fn guest_report(name: &str, process: &str) -> Result<serde_json::Value> {
++fn guest_report(name: &str, process: &str, timeout: u64) -> Result<serde_json::Value> {
+     let mut bytes = Vec::new();
+     let mut invalid = false;
+-    let terminal = wait_process(name, process, Some(25), |event| match event {
++    let on_event = |event: &ProcWaitEvent| match event {
+         ProcWaitEvent::Stdout { chunk } if chunk.len() <= 4096usize.saturating_sub(bytes.len()) => {
+             bytes.extend_from_slice(chunk);
+         }
+@@ -176,7 +177,25 @@
+         | ProcWaitEvent::Stderr { .. }
+         | ProcWaitEvent::Backpressure { .. } => invalid = true,
+         _ => {}
+-    })?;
++    };
++    let terminal = if timeout == 25 {
++        wait_process(name, process, Some(timeout), on_event)?
++    } else {
++        use mvm_agentd::vsock::{GUEST_AGENT_PORT, GuestRequest, send_proc_wait_on};
++        mvm_core::naming::validate_vm_name(name)?;
++        mvm_client::guest::emit_vsock_rpc_audit(
++            name,
++            &GuestRequest::ProcWait {
++                pid_token: process.to_owned(),
++                timeout_secs: Some(timeout),
++            },
++        );
++        let mut stream = mvm_client::vsock_transport::for_vm(name)?.connect(GUEST_AGENT_PORT)?;
++        // This fixture reports once, after a paced campaign. Leave the ordinary
++        // connect/handshake write timeout in place and bound its idle read.
++        stream.set_read_timeout(Some(Duration::from_secs(timeout + 5)))?;
++        send_proc_wait_on(&mut stream, process, Some(timeout), on_event)?
++    };
+     ensure!(
+         matches!(terminal, ProcWaitEvent::Exit { code: 0 }) && !invalid,
+         "installed mailbox guest exchange failed: {terminal:?}"
+@@ -218,6 +237,7 @@
+     abandoned: bool,
+     recovery: bool,
+     campaign_store: Option<CampaignStore>,
++    sustained: bool,
+ ) -> Result<(serde_json::Value, u64)> {
+     let mut disk = NativeCredit(Some(disk));
+     let name = service
+@@ -244,9 +264,15 @@
+             service.last_error(id).ok().flatten()
+         );
+         let (name, process) = launched_process(service, id, &name)?;
+-        let guest = guest_report(name, process)?;
++        let deadline =
++            Instant::now() + crate::campaign::sustained::RUN_LIMIT + Duration::from_secs(20);
++        let guest = guest_report(name, process, if sustained { 920 } else { 25 })?;
+         let host = host
+-            .recv_timeout(Duration::from_secs(20))?
++            .recv_timeout(if sustained {
++                deadline.saturating_duration_since(Instant::now())
++            } else {
++                Duration::from_secs(20)
++            })?
+             .map_err(|_| anyhow!("original resident mailbox exchange failed"))?;
+         let host = match (host, campaign_store.is_some()) {
+             (HostOutcome::Exchange(host), false) => {
+@@ -260,14 +286,19 @@
+                 serde_json::to_value(host)?
+             }
+             (HostOutcome::Object(host), true) => {
++                let (objects, calls) = if sustained {
++                    (3_u64, crate::campaign::sustained::CALLS)
++                } else {
++                    (7, 20)
++                };
+                 ensure!(
+                     guest["event"] == "sender_done"
+                         && host["event"] == "receiver_done"
+                         && host["exact_reopened"] == true
+-                        && guest["operations"] == 7
+-                        && host["operations"] == 7
+-                        && guest["service"]["application_calls"] == 20
+-                        && host["service"]["application_calls"] == 20
++                        && guest["operations"] == objects
++                        && host["operations"] == objects
++                        && guest["service"]["application_calls"] == calls
++                        && host["service"]["application_calls"] == calls
+                 );
+                 for (sent, received) in [(&guest, &host), (&host, &guest)] {
+                     for field in ["frames", "envelope_bytes", "framing_bytes"] {
+@@ -278,7 +309,25 @@
+                                     == received["counters"][format!("{field}_received")].as_u64()
+                         );
+                     }
+-                    ensure!(sent["counters"]["frames_sent"] == 40);
++                    ensure!(sent["counters"]["frames_sent"] == calls * 2);
++                    if sustained {
++                        let retained = &sent["service"]["sustained"];
++                        ensure!(
++                            retained["elapsed_ms"]
++                                .as_u64()
++                                .is_some_and(|ms| ms >= 330_000)
++                        );
++                        ensure!(
++                            retained["expired_tracker_lower_bound"]
++                                .as_u64()
++                                .is_some_and(|count| count > 0)
++                        );
++                        ensure!(
++                            retained["peak_tracker"]
++                                .as_u64()
++                                .is_some_and(|count| count < calls)
++                        );
++                    }
+                 }
+                 host
+             }
+@@ -304,7 +353,7 @@
+     }
+     let mut exchange = exchange?;
+     if let Some(store) = campaign_store {
+-        store.verify_and_remove(&exchange["host"])?;
++        store.verify_and_remove(&exchange["host"], sustained)?;
+         exchange["stopped_store_exact_and_removed"] = true.into();
+     }
+     for path in [
+--- a/crates/spiralcore-mvm-live/src/installed_parent/native_witness/native_plan.rs
++++ b/crates/spiralcore-mvm-live/src/installed_parent/native_witness/native_plan.rs
+@@ -17,9 +17,9 @@
+     vm_backend::BackendKind,
+ };
+ use mvm_hostd::plan_admission::{
+-    AdmittedPlan, BundleAdmissionContext, BundleImageAdmissionContext, InMemoryNonceLedger,
++    AdmittedPlan, BundleAdmissionContext, BundleImageAdmissionContext, Clock, InMemoryNonceLedger,
+     InstalledMailboxEnrollment, InstalledMailboxLaunchProfile, RunPosture, SystemClock,
+-    admit_for_run,
++    admit_for_run, admit_plan_for_run,
+ };
+ use std::{
+     net::SocketAddr,
+@@ -127,6 +127,7 @@
+         &self,
+         policy: &NetworkPolicy,
+         ledger: &InMemoryNonceLedger,
++        sustained: bool,
+     ) -> Result<AdmittedPlan> {
+         let grants = Grants {
+             egress: Some(EgressGrant {
+@@ -207,6 +208,27 @@
+             .stream_edges(Vec::new())
+             .stream_retention(Default::default())
+             .build()?;
+-        admit_for_run(&input, &SystemClock, ledger, None, Some(&bundle), posture)
++        if !sustained {
++            return admit_for_run(&input, &SystemClock, ledger, None, Some(&bundle), posture);
++        }
++        let mut plan = mvm_core::plan::synthesize_plan(&input)?;
++        plan.valid_until = plan.valid_from + std::time::Duration::from_secs(1200);
++        plan.plan_id = mvm_core::plan::compute_plan_id(&plan);
++        let admitted = admit_plan_for_run(
++            &plan,
++            &SystemClock,
++            ledger,
++            None,
++            Some(&bundle),
++            None,
++            posture,
++        )?;
++        ensure!(
++            admitted.plan().valid_until
++                > SystemClock.now()
++                    + crate::campaign::sustained::RUN_LIMIT
++                    + std::time::Duration::from_secs(100)
++        );
++        Ok(admitted)
+     }
+ }

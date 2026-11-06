@@ -1,0 +1,162 @@
+--- a/crates/mvm-agentd/src/vsock/sys.rs
++++ b/crates/mvm-agentd/src/vsock/sys.rs
+@@ -27,15 +27,15 @@
+ /// Servers listen on this rather than a specific CID.
+ pub const ANY_CID: u32 = libc::VMADDR_CID_ANY;
+ 
+-/// Create a blocking AF_VSOCK stream socket as an owned fd.
+-fn vsock_stream_socket() -> io::Result<OwnedFd> {
++/// Create an AF_VSOCK stream socket as an owned fd.
++fn vsock_stream_socket(flags: sock::SockFlag) -> io::Result<OwnedFd> {
+     // `socket()` infers the protocol slot from `None`; vsock has a single
+     // stream protocol so an explicit protocol is neither needed nor accepted.
+     let protocol: Option<sock::SockProtocol> = None;
+     sock::socket(
+         sock::AddressFamily::Vsock,
+         sock::SockType::Stream,
+-        socket_flags(),
++        socket_flags() | flags,
+         protocol,
+     )
+     .map_err(io::Error::from)
+@@ -46,17 +46,86 @@
+ /// The returned [`OwnedFd`] closes on drop, so a failure mid-dial (whether at
+ /// `socket()` or `connect()`) needs no manual cleanup.
+ pub fn dial(cid: u32, port: u32) -> io::Result<OwnedFd> {
+-    let fd = vsock_stream_socket()?;
++    let fd = vsock_stream_socket(sock::SockFlag::empty())?;
+     sock::connect(fd.as_raw_fd(), &sock::VsockAddr::new(cid, port)).map_err(io::Error::from)?;
+     Ok(fd)
+ }
+ 
++/// Start one AF_VSOCK connect and bound its wait by the original deadline.
++/// Writable readiness is only a carrier candidate. The caller must still
++/// authenticate the intended peer on this same descriptor.
++pub fn dial_before(cid: u32, port: u32, deadline: std::time::Instant) -> io::Result<OwnedFd> {
++    check_connect_deadline(deadline)?;
++    let fd = vsock_stream_socket(sock::SockFlag::SOCK_NONBLOCK)?;
++    match sock::connect(fd.as_raw_fd(), &sock::VsockAddr::new(cid, port)) {
++        Ok(()) => check_connect_deadline(deadline)?,
++        Err(nix::errno::Errno::EINPROGRESS) => {
++            wait_for_connect_candidate(fd.as_raw_fd(), deadline)?;
++        }
++        Err(error) => return Err(io::Error::from(error)),
++    }
++    Ok(fd)
++}
++
++fn check_connect_deadline(deadline: std::time::Instant) -> io::Result<()> {
++    if std::time::Instant::now() >= deadline {
++        return Err(io::ErrorKind::TimedOut.into());
++    }
++    Ok(())
++}
++
++fn wait_for_connect_candidate(
++    fd: std::os::fd::RawFd,
++    deadline: std::time::Instant,
++) -> io::Result<()> {
++    loop {
++        let remaining = deadline.saturating_duration_since(std::time::Instant::now());
++        if remaining.is_zero() {
++            return Err(io::ErrorKind::TimedOut.into());
++        }
++        let timeout = libc::timespec {
++            tv_sec: remaining
++                .as_secs()
++                .try_into()
++                .map_err(|_| io::ErrorKind::InvalidInput)?,
++            tv_nsec: remaining.subsec_nanos() as libc::c_long,
++        };
++        let mut poll = libc::pollfd {
++            fd,
++            events: libc::POLLOUT | libc::POLLRDHUP,
++            revents: 0,
++        };
++        // SAFETY: caller owns a live fd, and both ppoll arguments refer to
++        // initialized, suitably sized stack objects for this syscall.
++        let count = unsafe { libc::ppoll(&mut poll, 1, &timeout, std::ptr::null()) };
++        check_connect_deadline(deadline)?;
++        if count < 0 {
++            let error = io::Error::last_os_error();
++            if error.kind() == io::ErrorKind::Interrupted {
++                continue;
++            }
++            return Err(error);
++        }
++        if count == 0 {
++            continue;
++        }
++        if poll.revents & (libc::POLLERR | libc::POLLHUP | libc::POLLRDHUP | libc::POLLNVAL) != 0
++            || poll.revents & libc::POLLOUT == 0
++        {
++            return Err(io::ErrorKind::ConnectionAborted.into());
++        }
++        // Linux can also report writable on a closing vsock. This only
++        // authorizes attempting the pinned session proof, never mailbox I/O.
++        return Ok(());
++    }
++}
++
+ /// Bind an AF_VSOCK stream socket to `(cid, port)` and start listening.
+ ///
+ /// `backlog` is the accept-queue depth. Returns the listening socket as an
+ /// [`OwnedFd`].
+ pub fn bind_listen(cid: u32, port: u32, backlog: i32) -> io::Result<OwnedFd> {
+-    let fd = vsock_stream_socket()?;
++    let fd = vsock_stream_socket(sock::SockFlag::empty())?;
+     sock::bind(fd.as_raw_fd(), &sock::VsockAddr::new(cid, port)).map_err(io::Error::from)?;
+     let backlog = sock::Backlog::new(backlog).map_err(io::Error::from)?;
+     sock::listen(&fd, backlog).map_err(io::Error::from)?;
+@@ -79,6 +148,51 @@
+     use nix::sys::socket::{AddressFamily, SockaddrLike, VsockAddr};
+ 
+     #[test]
++    fn expired_dial_refuses_before_opening_a_socket() {
++        let error = dial_before(2, 5257, std::time::Instant::now()).unwrap_err();
++        assert_eq!(error.kind(), io::ErrorKind::TimedOut);
++    }
++
++    #[test]
++    fn pending_connect_wait_is_bounded_by_original_deadline() {
++        use std::{
++            io::Write,
++            os::unix::net::UnixStream,
++            time::{Duration, Instant},
++        };
++        let (mut blocked, _peer) = UnixStream::pair().unwrap();
++        blocked.set_nonblocking(true).unwrap();
++        loop {
++            match blocked.write(&[0; 4096]) {
++                Ok(0) => panic!("fixture socket closed"),
++                Ok(_) => {}
++                Err(error) if error.kind() == io::ErrorKind::WouldBlock => break,
++                Err(error) => panic!("fixture write failed: {error}"),
++            }
++        }
++        let start = Instant::now();
++        let deadline = start + Duration::from_millis(20);
++        let error = wait_for_connect_candidate(blocked.as_raw_fd(), deadline).unwrap_err();
++        assert_eq!(error.kind(), io::ErrorKind::TimedOut);
++        assert!(Instant::now() >= deadline);
++        assert!(start.elapsed() < Duration::from_secs(1));
++    }
++
++    #[test]
++    fn connect_wait_refuses_a_closed_peer() {
++        use std::{
++            os::unix::net::UnixStream,
++            time::{Duration, Instant},
++        };
++        let (socket, peer) = UnixStream::pair().unwrap();
++        drop(peer);
++        let error =
++            wait_for_connect_candidate(socket.as_raw_fd(), Instant::now() + Duration::from_secs(1))
++                .unwrap_err();
++        assert_eq!(error.kind(), io::ErrorKind::ConnectionAborted);
++    }
++
++    #[test]
+     fn every_vsock_is_created_close_on_exec() {
+         assert!(socket_flags().contains(sock::SockFlag::SOCK_CLOEXEC));
+     }

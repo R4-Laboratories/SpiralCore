@@ -1,0 +1,452 @@
+--- a/crates/spiralcore-mvm-live/src/campaign/canonical.rs
++++ b/crates/spiralcore-mvm-live/src/campaign/canonical.rs
+@@ -21,12 +21,14 @@
+     service_sender::{self, OrderingStream},
+ };
+ 
+-pub(super) struct Session {
++use std::borrow::BorrowMut;
++
++pub(super) struct Session<T = LocalMailboxService> {
+     incoming: MailboxBinding,
+     outgoing: MailboxBinding,
+     control: MailboxBinding,
+     returns: ReceiptReturnConfig,
+-    service: LocalMailboxService,
++    service: T,
+     tracker: ReceiptTracker,
+     peer_key: VerifyingKey,
+     normal_key: [u8; 32],
+@@ -93,6 +95,17 @@
+ 
+ impl Session {
+     pub(super) fn new(bootstrap: &Bootstrap, broker: &BrokerContext) -> Result<Self> {
++        Self::with_service(bootstrap, broker, |budget| {
++            LocalMailboxService::new(budget.clone())
++        })
++    }
++}
++impl<T: BorrowMut<LocalMailboxService>> Session<T> {
++    pub(super) fn with_service(
++        bootstrap: &Bootstrap,
++        broker: &BrokerContext,
++        create_service: impl FnOnce(&HostBudget) -> std::result::Result<T, ServiceError>,
++    ) -> Result<Self> {
+         let profile = bootstrap
+             .service
+             .as_ref()
+@@ -113,6 +126,8 @@
+         let local = SigningKey::from_bytes(&profile.local_receipt_signing);
+         let peer_key = VerifyingKey::from_bytes(&profile.peer_receipt_verification)?;
+         broker.with_time(|budget, _| -> Result<Self> {
++            let service = create_service(budget)?;
++            broker.check_service_budget(service.borrow())?;
+             let snapshot = budget.snapshot()?;
+             let owner_capacity = json!({
+                 "identity_limits": {
+@@ -138,7 +153,7 @@
+                     local.verifying_key(),
+                     ISSUANCE_POLICY,
+                 )?,
+-                service: LocalMailboxService::new(budget.clone())?,
++                service,
+                 tracker: ReceiptTracker::new(budget.clone(), 4096)?,
+                 peer_key,
+                 normal_key: incoming.key_id,
+@@ -244,7 +259,7 @@
+         {
+             self.broker
+                 .with_time::<_, spiralcore_mvm_adapter::service::ServiceError>(|_, now| {
+-                    self.service.expire(now)?;
++                    self.service.borrow_mut().expire(now)?;
+                     self.tracker.expire(now)?;
+                     Ok(())
+                 })?;
+@@ -271,7 +286,7 @@
+                 }
+                 let pending = self.pending.as_mut().ok_or(SessionError::StreamFenced)?;
+                 pending.register(
+-                    &mut self.service,
++                    self.service.borrow_mut(),
+                     &mut self.tracker,
+                     &self.outgoing,
+                     &self.control,
+@@ -298,7 +313,7 @@
+                 Ok((context, call, send, deadline, now))
+             })?;
+         // No broker lease spans potentially blocking transport I/O.
+-        self.service.send_call_prepared(
++        self.service.borrow_mut().send_call_prepared(
+             &self.outgoing,
+             &call,
+             self.pending
+@@ -336,7 +351,7 @@
+                             let pending =
+                                 self.pending.as_ref().ok_or(SessionError::StreamFenced)?;
+                             if let Err(error) = pending.remaining(now) {
+-                                self.service.expire(now)?;
++                                self.service.borrow_mut().expire(now)?;
+                                 self.tracker.expire(now)?;
+                                 return Err(error.into());
+                             }
+@@ -354,7 +369,7 @@
+                             let pending =
+                                 self.pending.as_mut().ok_or(SessionError::StreamFenced)?;
+                             pending.prepare_retry(
+-                                &mut self.service,
++                                self.service.borrow_mut(),
+                                 &mut self.tracker,
+                                 &self.outgoing,
+                                 &self.control,
+@@ -384,7 +399,7 @@
+                                 .ok_or(SessionError::StreamFenced)?
+                                 .start_retry()?;
+                             increment(&mut self.recovery.call_retry_invocations)?;
+-                            self.service.retry_call_prepared(
++                            self.service.borrow_mut().retry_call_prepared(
+                                 &self.outgoing,
+                                 &call,
+                                 self.pending
+@@ -448,9 +463,12 @@
+                             return Err(ServiceError::Expired.into());
+                         }
+                     }
+-                    let (accepted, ack) =
+-                        self.returns
+-                            .admit(&mut self.service, &self.incoming, bytes, now)?;
++                    let (accepted, ack) = self.returns.admit(
++                        self.service.borrow_mut(),
++                        &self.incoming,
++                        bytes,
++                        now,
++                    )?;
+                     if tail_event {
+                         let tail = self.completed_tail.as_mut().ok_or(ServiceError::State)?;
+                         if accepted.receipt.outcome != DeliveryOutcome::Duplicate
+@@ -597,7 +615,7 @@
+             let send = pending.send_handle().ok_or(ServiceError::State)?;
+             let events = pending.events_received();
+             let ack_invocations = pending.reply_ack_invocations();
+-            let completed = match self.service.take_call_reply_with_tail(
++            let completed = match self.service.borrow_mut().take_call_reply_with_tail(
+                 &self.outgoing,
+                 &self.incoming,
+                 &call,
+@@ -619,7 +637,11 @@
+             });
+             return Ok(Some(reply));
+         }
+-        match self.service.poll_call(&self.outgoing, &call, now)? {
++        match self
++            .service
++            .borrow_mut()
++            .poll_call(&self.outgoing, &call, now)?
++        {
+             CallStatus::Pending => Ok(None),
+             CallStatus::Replied(Some(payload)) => Ok(Some(Frame::decode(&payload)?)),
+             CallStatus::Replied(None) => Err(SessionError::Service(ServiceError::State).into()),
+@@ -660,7 +682,7 @@
+         let broker = self.broker.clone();
+         loop {
+             broker.with_time(|_, now| -> Result<()> {
+-                self.service.expire(now)?;
++                self.service.borrow_mut().expire(now)?;
+                 self.tracker.expire(now)?;
+                 let tail = self.completed_tail.as_ref().ok_or(ServiceError::State)?;
+                 tail.lease.validate(&self.outgoing, &self.incoming, now)?;
+@@ -704,7 +726,7 @@
+                 }
+                 let (accepted, ack) =
+                     self.returns
+-                        .admit(&mut self.service, &self.incoming, &bytes, now)?;
++                        .admit(self.service.borrow_mut(), &self.incoming, &bytes, now)?;
+                 if accepted.receipt.outcome != DeliveryOutcome::Duplicate
+                     || self.tracker.observe_registered_application_reply(
+                         &self.incoming,
+@@ -818,10 +840,11 @@
+                 // At the event ceiling, only an authenticated historical Call
+                 // may proceed: a fresh admission would have no room for its ACK.
+                 if events == 16 {
+-                    match self
+-                        .service
+-                        .retry_reply_prepared(&self.incoming, &bytes, now)
+-                    {
++                    match self.service.borrow_mut().retry_reply_prepared(
++                        &self.incoming,
++                        &bytes,
++                        now,
++                    ) {
+                         Ok(None) => {}
+                         Ok(Some(_)) => return Err(ServiceError::State.into()),
+                         Err(ServiceError::UnknownHandle) => {
+@@ -834,7 +857,7 @@
+                 // The active ACK-wait loop below still prechecks cached identity.
+                 let (accepted, receipt) =
+                     self.returns
+-                        .admit(&mut self.service, &self.incoming, &bytes, now)?;
++                        .admit(self.service.borrow_mut(), &self.incoming, &bytes, now)?;
+                 match accepted.receipt.outcome {
+                     DeliveryOutcome::AcceptedEphemeral => {
+                         if events == 16 {
+@@ -842,6 +865,7 @@
+                         }
+                         let proof = self
+                             .service
++                            .borrow_mut()
+                             .receive(&self.incoming, now)?
+                             .ok_or("missing admitted Call")?;
+                         let cap = ExchangeDeadline::new(
+@@ -877,6 +901,7 @@
+                     cap.check(now)?;
+                     if self
+                         .service
++                        .borrow_mut()
+                         .retry_reply_prepared(&self.incoming, &bytes, now)?
+                         .is_some()
+                     {
+@@ -888,6 +913,7 @@
+                     cap.check(now)?;
+                     if self
+                         .service
++                        .borrow_mut()
+                         .retry_reply_prepared(&self.incoming, &bytes, now)?
+                         .is_some()
+                     {
+@@ -923,7 +949,7 @@
+             let options = self
+                 .ordering
+                 .next_reply(&self.outgoing, &proof, now, ISSUANCE_POLICY)?;
+-            let prepared = self.service.reply_prepared(
++            let prepared = self.service.borrow_mut().reply_prepared(
+                 &self.outgoing,
+                 proof.handle(),
+                 service_sender::request(&self.outgoing, &payload, &options, now)?,
+@@ -967,7 +993,7 @@
+                     spiralcore_mvm_adapter::live::ReceiveOutcome::Idle => {
+                         broker.with_time(|_, now| -> Result<()> {
+                             deadline.check(now)?;
+-                            self.service.expire(now)?;
++                            self.service.borrow_mut().expire(now)?;
+                             self.tracker.expire(now)?;
+                             Ok(())
+                         })?;
+@@ -983,6 +1009,7 @@
+                             deadline.check(now)?;
+                             let cached = self
+                                 .service
++                                .borrow_mut()
+                                 .retry_reply_for_delivery_prepared(
+                                     &self.incoming,
+                                     proof.handle(),
+@@ -1007,6 +1034,7 @@
+                             deadline.check(now)?;
+                             let fresh = self
+                                 .service
++                                .borrow_mut()
+                                 .retry_reply_for_delivery_prepared(
+                                     &self.incoming,
+                                     proof.handle(),
+@@ -1057,7 +1085,7 @@
+                                     SessionError::RemoteRefusal(receipt.receipt.outcome).into()
+                                 );
+                             }
+-                            if !self.service.acknowledge_reply(
++                            if !self.service.borrow_mut().acknowledge_reply(
+                                 &self.outgoing,
+                                 &receipt,
+                                 &self.peer_key,
+@@ -1080,6 +1108,7 @@
+                 // admitting a candidate: a new Call must not gain fresh state.
+                 let cached = self
+                     .service
++                    .borrow_mut()
+                     .retry_reply_prepared(&self.incoming, &event, now)?
+                     .ok_or(ServiceError::State)?;
+                 if encode_envelope(cached.envelope())? != encoded {
+@@ -1087,7 +1116,7 @@
+                 }
+                 let (accepted, receipt) =
+                     self.returns
+-                        .admit(&mut self.service, &self.incoming, &event, now)?;
++                        .admit(self.service.borrow_mut(), &self.incoming, &event, now)?;
+                 if accepted.receipt.outcome != DeliveryOutcome::Duplicate {
+                     return Err(ServiceError::State.into());
+                 }
+@@ -1101,6 +1130,7 @@
+                     deadline.check(now)?;
+                     let cached = self
+                         .service
++                        .borrow_mut()
+                         .retry_reply_prepared(&self.incoming, &event, now)?
+                         .ok_or(ServiceError::State)?;
+                     let wire = encode_envelope(cached.envelope())?;
+@@ -1132,6 +1162,7 @@
+                     deadline.check(now)?;
+                     let cached = self
+                         .service
++                        .borrow_mut()
+                         .retry_reply_prepared(&self.incoming, &event, now)?
+                         .ok_or(ServiceError::State)?;
+                     let wire = encode_envelope(cached.envelope())?;
+@@ -1488,3 +1519,6 @@
+     )
+ ))]
+ mod completed_tail_tests;
++
++#[cfg(all(test, unix))]
++mod owner_tests;
+--- a/crates/spiralcore-mvm-adapter/src/broker.rs
++++ b/crates/spiralcore-mvm-adapter/src/broker.rs
+@@ -11,7 +11,7 @@
+ //! reacquire it for the next local phase. A sampled time must not be saved for
+ //! use in later service operations outside the action. This context is local
+ //! scheduling/accounting, not a replacement for canonical authentication.
+-use crate::service::{HostBudget, ServiceError, ServiceTime};
++use crate::service::{HostBudget, LocalMailboxService, ServiceError, ServiceTime};
+ use std::{
+     sync::{Arc, Mutex, TryLockError},
+     time::{Instant, SystemTime, UNIX_EPOCH},
+@@ -42,6 +42,15 @@
+         }
+     }
+ 
++    /// Refuse a service charged to another budget. The caller must still
++    /// supply the original broker context to retain its dispatch clock.
++    pub fn check_service_budget(&self, service: &LocalMailboxService) -> Result<(), ServiceError> {
++        if !service.uses_budget(&self.shared.budget) {
++            return Err(ServiceError::State);
++        }
++        Ok(())
++    }
++
+     /// Opportunistically expire shared replay and rate records using this
+     /// broker's original monotonic clock. A busy dispatch or budget returns
+     /// None. This never prunes any service-local state or mailbox owner fence.
+--- /dev/null
++++ b/crates/spiralcore-mvm-live/src/campaign/canonical/owner_tests.rs
+@@ -0,0 +1,125 @@
++use super::*;
++use crate::config::{Arm, Pair, Plan, Stage};
++use spiralcore_transfer::protocol::{Mode, Offer};
++use std::os::unix::net::UnixStream;
++
++fn pair() -> Pair {
++    Pair::provision(Plan {
++        stage: Stage::Two,
++        arm: Arm::Raw,
++        size: 128,
++        trial: 0,
++        bandwidth_profile: Default::default(),
++    })
++    .unwrap()
++}
++
++fn service_for(broker: &BrokerContext) -> LocalMailboxService {
++    broker
++        .with_time(|budget, _| LocalMailboxService::new(budget.clone()))
++        .unwrap()
++}
++
++#[test]
++fn foreign_service_is_refused_before_campaign_dispatch() {
++    let pair = pair();
++    let broker = broker_context().unwrap();
++    let foreign = broker_context().unwrap();
++    let mut original = service_for(&foreign);
++    let before = original.snapshot();
++    assert!(matches!(
++        Session::with_service(&pair.receiver, &broker, |_| Ok(&mut original))
++            .err()
++            .unwrap()
++            .downcast_ref::<ServiceError>(),
++        Some(ServiceError::State)
++    ));
++    let after = original.snapshot();
++    assert_eq!(
++        (
++            before.accepted,
++            before.calls,
++            before.fifo_scopes,
++            before.fifo_entries
++        ),
++        (
++            after.accepted,
++            after.calls,
++            after.fifo_scopes,
++            after.fifo_entries
++        )
++    );
++    assert!(foreign.check_service_budget(&original).is_ok());
++}
++
++#[test]
++fn canonical_exchange_uses_the_original_service_and_returns_it_to_owner() {
++    let pair = pair();
++    let broker = broker_context().unwrap();
++    let mut original = service_for(&broker);
++    let sender_broker = broker_context().unwrap();
++    let mut sender = Session::new(&pair.sender, &sender_broker).unwrap();
++    let policy = spiralcore_mvm_adapter::Policy::new(
++        pair.receiver.incoming.as_ref().unwrap().context().unwrap(),
++    )
++    .unwrap();
++    let store = tempfile::tempdir().unwrap();
++    let mut object = ObjectMailbox::open(
++        &store.path().join("cache"),
++        Limits::default(),
++        policy,
++        ColdGraphPolicy::Disabled,
++    )
++    .unwrap();
++    let request = Frame {
++        kind: 1,
++        transfer: [59; 32],
++        seq: 0,
++        body: Offer::cold(b"x", Mode::Raw).encode().unwrap(),
++    };
++    let (a, b) = UnixStream::pair().unwrap();
++    let route = pair
++        .sender
++        .outgoing
++        .as_ref()
++        .unwrap()
++        .binding
++        .claims
++        .route_id;
++    let receive_route = pair
++        .receiver
++        .outgoing
++        .as_ref()
++        .unwrap()
++        .binding
++        .claims
++        .route_id;
++    std::thread::scope(|scope| {
++        let mut receiver =
++            Session::with_service(&pair.receiver, &broker, |_| Ok(&mut original)).unwrap();
++        let transfer = request.transfer;
++        let worker = scope.spawn(move || {
++            let stream = StreamTransport::new(b, receive_route, Duration::from_secs(3)).unwrap();
++            let cancel = CancellationToken::default();
++            stream.handshake(HandshakeRole::Acceptor, &cancel).unwrap();
++            receiver
++                .handle(transfer, &mut object, &stream, &cancel)
++                .unwrap()
++        });
++        let stream = StreamTransport::new(a, route, Duration::from_secs(3)).unwrap();
++        let cancel = CancellationToken::default();
++        stream.handshake(HandshakeRole::Initiator, &cancel).unwrap();
++        let (_, reply) = sender.call(&request, &stream, &cancel).unwrap();
++        let handled = worker.join().unwrap();
++        assert_eq!(reply.encode().unwrap(), handled.reply.encode().unwrap());
++    });
++    // Delivery consumes the FIFO entry but preserves its scope and the
++    // accepted identity on the original resident service.
++    let after = original.snapshot();
++    assert_eq!(
++        (after.accepted, after.fifo_scopes, after.fifo_entries),
++        (1, 1, 0)
++    );
++    assert!(broker.check_service_budget(&original).is_ok());
++    broker.with_time(|_, now| original.shutdown(now)).unwrap();
++}

@@ -1,0 +1,63 @@
+--- a/crates/spiralcore-mvm-flowmux/examples/installed_remote_peer.rs
++++ b/crates/spiralcore-mvm-flowmux/examples/installed_remote_peer.rs
+@@ -83,7 +83,13 @@
+     Ok(row)
+ }
+ 
+-fn run(ip: Ipv4Addr, root: &Path, altered_scope: bool) -> Result<bool> {
++fn run(ip: Ipv4Addr, root: &Path, case: &str) -> Result<bool> {
++    let (altered_scope, expect_artifacts) = match case {
++        "crosshost" | "combined" => (false, true),
++        "raw" | "whole" => (false, false),
++        "altered-scope" => (true, true),
++        _ => return Err("unknown peer fixture case".into()),
++    };
+     use ring::rand::{SecureRandom, SystemRandom};
+     use std::os::unix::fs::{MetadataExt, PermissionsExt};
+     require(ip.is_private(), "expected explicit private LAN address")?;
+@@ -250,10 +256,19 @@
+         spiralcore_transfer::schema::fit(&[b"{\"kind\":\"flowmux\",\"value\":0}\n"])?,
+         spiralcore_transfer::shared_runtime::State::seeded(32)?.encode()?,
+     ] {
+-        require(
+-            readback.read_object(&context, spiralcore_transfer::object_id(&artifact))? == artifact,
+-            "exact setup artifact readback differs",
+-        )?;
++        let result = readback.read_object(&context, spiralcore_transfer::object_id(&artifact));
++        if expect_artifacts {
++            require(result? == artifact, "exact setup artifact readback differs")?;
++        } else {
++            match result {
++                Err(spiralcore_transfer::Error::Missing | spiralcore_transfer::Error::Unknown) => {}
++                Ok(bytes) if bytes == artifact => {
++                    return Err("baseline carried unexpected setup artifact".into());
++                }
++                Ok(_) => return Err("unexpected artifact content differs".into()),
++                Err(error) => return Err(error.into()),
++            }
++        }
+     }
+     drop(readback);
+     std::fs::remove_dir_all(&path)?;
+@@ -272,6 +287,7 @@
+         json!({
+             "event":"done","control_id":control_id,"peer":peer,"listener":address,
+             "peer_store_removed":true,"setup_artifacts_exact":true,
++            "setup_artifacts":if expect_artifacts {2} else {0},
+         "result": {"received_bytes":bytes.len(),"sent_bytes":bytes.len(),
+             "payload_sha256":spiralcore_transfer::hex(&Sha256::digest(&bytes).into()),
+             "tls_received_bytes":tls.received,"tls_sent_bytes":tls.sent,"tls_setup_ns":tls_setup_ns,
+@@ -291,12 +307,7 @@
+         args.len() == 4,
+         "expected private IPv4, workspace and fixture case",
+     )?;
+-    let altered_scope = match args[3].as_str() {
+-        "crosshost" => false,
+-        "altered-scope" => true,
+-        _ => return Err("unknown peer fixture case".into()),
+-    };
+-    if run(args[1].parse()?, Path::new(&args[2]), altered_scope)? {
++    if run(args[1].parse()?, Path::new(&args[2]), &args[3])? {
+         std::process::exit(3);
+     }
+     Ok(())
