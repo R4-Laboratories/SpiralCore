@@ -83,6 +83,67 @@ data/control workloads, ambiguous partial receipt writes, the installed
 release and cross-platform WAN remain open. The reports retain byte counts,
 CPU, elapsed time, source pins and failed runs.
 
+## Current installed FlowMux qualification
+
+The [MVM contribution fork checkpoint](https://github.com/Casey-allard/mvm/commit/9c2361423c86082a48d23e3f5651cb3ff0881e3f)
+includes the original host-agent registration and signer check. The
+[hosted helper run](https://github.com/R4-Laboratories/SpiralCore/actions/runs/42135824037)
+passed all eight tests, including foreign signer, changed registration facts,
+parent revocation and same-name replacement controls.
+
+Earlier pins on the same branch passed [x86 store cleanup and flag controls](https://github.com/R4-Laboratories/SpiralCore/actions/runs/42132613337)
+and [pre-TLS carrier and resource checks](https://github.com/R4-Laboratories/SpiralCore/actions/runs/42134384311).
+Both resource refusals emitted zero TLS bytes on an already connected loopback
+socket. The funded failed handshake returned the original credit. The
+[hosted scope check](https://github.com/R4-Laboratories/SpiralCore/actions/runs/42135240936)
+verified kernel CPU, memory, swap and task limits and scope retirement.
+
+The [Runtime retention run](https://github.com/R4-Laboratories/SpiralCore/actions/runs/42140574877)
+passed both focused tests. An inert endpoint and mock backend showed that the
+original handle survives a boot-preparation failure, a competing operation is
+fenced during cleanup, and retirement needs the original receipt. The fixture
+did not boot a guest.
+
+The [canonical executable baseline](https://github.com/R4-Laboratories/SpiralCore/actions/runs/42141356436)
+built and reproduced early EOF before the first framed Challenge. The
+[reviewed fork candidate](https://github.com/Casey-allard/mvm/commit/9df8ceec88b4a49c1065719f147f323fbda75e86)
+routes the actual binary into the original installed protocol. All 10 entries
+passed in the [exact-source hosted run](https://github.com/R4-Laboratories/SpiralCore/actions/runs/42142321535).
+The actual executable issued Challenge, adopted a valid Prepare and withheld
+Ready until the audited controller is available. It also rejected an
+incomplete Prepare and mixed installed/probe arguments. The next gate carries
+the original audit and records descriptors through Prepare and attaches the
+owned collector and FlowMux controller before Ready.
+
+The [Hostd records-adoption run](https://github.com/R4-Laboratories/SpiralCore/actions/runs/42143892252)
+passed all 13 integration tests, including inherited records identity, holder
+alias refusal, and the one-time claim. Its VMM unit build exposed an existing
+fixture missing the new optional field. The fixture-only successor preserved
+the previous wire encoding and passed all nine selected installed VMM tests
+in the [hosted follow-up](https://github.com/R4-Laboratories/SpiralCore/actions/runs/42144793237).
+The parent still needs to send both original audit and records descriptors,
+and the controller still needs to adopt them before readiness.
+
+The [original signer handoff run](https://github.com/R4-Laboratories/SpiralCore/actions/runs/42146422478)
+passed 10 real-helper integration tests, three Hostd descriptor sideband tests,
+and four VMM parser and readiness tests. The original signed registration can
+claim the signer capability once and cannot deregister while it is held. The
+parent and child still need to pass that capability through the full installed
+endpoint startup and use it in the audited controller.
+
+The [endpoint Prepare run](https://github.com/R4-Laboratories/SpiralCore/actions/runs/42147389249)
+passed 15 Hostd and 12 VMM tests. The executable adopted audit and records
+descriptors supplied by a process fixture. It rejected foreign VM identity,
+and the VMM cases verified distinct process targets and refusal on event loss.
+The registered VMM producer still needs to send the original descriptors and
+the audited controller still needs to consume them before readiness.
+
+These checkpoints cover components and host prerequisites. The current
+combined installed guest transfer, original-owner retirement and real-WAN
+acceptance remain open. Follow
+[#44](https://github.com/R4-Laboratories/SpiralCore/issues/44) for exact pins,
+failures and successor runs.
+
 ## Active work that is not an accepted main release
 
 Development checkpoints are published for source inspection:
