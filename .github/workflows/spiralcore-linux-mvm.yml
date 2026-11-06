@@ -27,14 +27,14 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           repository: Casey-allard/mvm
-          ref: 1102ef8d5334ac1dabef45361eb6421f1f873bc5
+          ref: 6289078c727e453782a4a2c7f73c0440d5baff54
           path: sdk
           persist-credentials: false
       - name: Exercise the original host-agent and signer registration
         run: |
           set -euo pipefail
           test "$(git -C spiralcore rev-parse HEAD)" = "$GITHUB_SHA"
-          test "$(git -C sdk rev-parse HEAD)" = "1102ef8d5334ac1dabef45361eb6421f1f873bc5"
+          test "$(git -C sdk rev-parse HEAD)" = "6289078c727e453782a4a2c7f73c0440d5baff54"
           rustup toolchain install 1.97.1 --profile minimal
           export CARGO_TARGET_DIR="$RUNNER_TEMP/sc-registered-audit"
           if test "$(uname -s)" = Darwin; then
