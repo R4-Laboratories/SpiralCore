@@ -1,11 +1,15 @@
 //! One original backend and two cancellation-safe, explicitly driven slots.
-use super::{InstalledParentProvider, ParentLaunchOwner, host_agent::RootHostAgent, tenant_tag};
+use super::{
+    InstalledParentProvider, ParentLaunchOwner, PortableStartupQuote, host_agent::RootHostAgent,
+    tenant_tag,
+};
 use crate::{
     installed_resources::{ManagedClaim, ManagedReservation, ManagedSnapshot},
     installed_supervisor::InstalledSupervisor,
 };
 use anyhow::{Result, anyhow, ensure};
 use mvm_client::{LaunchOutcome, LaunchRequest, LocalBackend, OwnedRetirement};
+use mvm_contract::policy::network_policy::CooperatingPayloadPolicy;
 use mvm_core::vm_backend::BackendKind;
 use std::{
     future::{Future, poll_fn},
@@ -248,6 +252,27 @@ impl InstalledResident {
     }
 
     pub fn begin_launch(&mut self, request: LaunchRequest, tenant: &str) -> Result<ResidentId> {
+        self.begin_launch_inner(request, tenant, None)
+    }
+
+    /// Start an installed mapped launch with the original installer quote.
+    /// Budget terms must come from the installation, never the workload.
+    pub fn begin_mapped_launch(
+        &mut self,
+        request: LaunchRequest,
+        tenant: &str,
+        mapping: CooperatingPayloadPolicy,
+        quote: PortableStartupQuote,
+    ) -> Result<ResidentId> {
+        self.begin_launch_inner(request, tenant, Some((mapping, quote)))
+    }
+
+    fn begin_launch_inner(
+        &mut self,
+        request: LaunchRequest,
+        tenant: &str,
+        portable: Option<(CooperatingPayloadPolicy, PortableStartupQuote)>,
+    ) -> Result<ResidentId> {
         ensure!(!self.closed, "resident admission closed");
         // LocalBackend's canonical admission uses the fixed local tenant.
         ensure!(tenant == "local", "canonical local tenant differs");
@@ -268,6 +293,10 @@ impl InstalledResident {
         let prepared =
             live.provider
                 .prepare_vm(&request.host_lifetime_intent(), tenant, backend_kind)?;
+        let (prepared, mapping) = match portable {
+            Some((mapping, quote)) => (prepared.with_portable_startup(quote)?, Some(mapping)),
+            None => (prepared, None),
+        };
         // This ordering barrier survives even genuine unused retirement and
         // later failures while constructing the original launch operation.
         live.has_issued_vm = true;
@@ -281,11 +310,20 @@ impl InstalledResident {
                 let (lifetime, owner) = prepared.begin_launch()?;
                 Ok((
                     async move {
-                        OperationResult::Launch(
-                            backend
-                                .try_launch_with_host_lifetime(request, lifetime)
-                                .await,
-                        )
+                        OperationResult::Launch(match mapping {
+                            Some(mapping) => {
+                                backend
+                                    .try_launch_with_host_lifetime_and_mapping(
+                                        request, lifetime, mapping,
+                                    )
+                                    .await
+                            }
+                            None => {
+                                backend
+                                    .try_launch_with_host_lifetime(request, lifetime)
+                                    .await
+                            }
+                        })
                     },
                     owner,
                 ))

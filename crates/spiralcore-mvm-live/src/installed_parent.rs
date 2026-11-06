@@ -7,9 +7,10 @@ use anyhow::{Result, anyhow, ensure};
 use mvm_client::{HostLifetimeIntent, LifecycleMode};
 use mvm_core::{
     host_lifetime::{
-        CoreCurrentParentPermit, HostLaunchBinding, HostLeaseExpectation, HostLifetimeInputs,
-        PreparedHostLifetime,
+        CoreCurrentParentPermit, HostLaunchBinding, HostLeaseExpectation, HostLifetimeAnchor,
+        HostLifetimeInputs, PreparedHostLifetime,
     },
+    plan::PlanArtifact,
     vm_backend::BackendKind,
 };
 use mvm_hostd::{host_lifetime_parent::ParentAdmissionProvider, plan_admission::AdmittedPlan};
@@ -19,7 +20,10 @@ use std::sync::{Arc, Mutex, Weak};
 mod endpoint;
 mod host_agent;
 mod resident;
+mod startup;
 pub use resident::{InstalledResident, ResidentId, ResidentProgress, ResidentStatus};
+pub use startup::PortableStartupQuote;
+use startup::{Phase, StartupWorkspace};
 #[cfg(test)]
 mod config_tests;
 #[cfg(test)]
@@ -72,6 +76,7 @@ struct GrantLifecycle {
     registration: Option<Arc<host_agent::RegistrationBinding>>,
     endpoint: EndpointIssuance,
     endpoint_owner: Option<Arc<endpoint::RootEndpointOwner>>,
+    startup: Option<StartupWorkspace>,
     retired: bool,
 }
 impl GrantLifecycle {
@@ -89,6 +94,12 @@ impl GrantLifecycle {
         Ok(())
     }
     fn seal_retired(&mut self) -> Result<()> {
+        // Native/endpoint exit does not establish disposal or adoption of
+        // the portable generation and shared-cache artifacts.
+        ensure!(
+            self.startup.is_none(),
+            "original portable runtime disk custody remains charged"
+        );
         ensure!(
             self.admitted_plan.is_some(),
             "original canonical admission unavailable"
@@ -216,7 +227,7 @@ impl PreparedParentVm {
     }
     pub fn begin_launch(self) -> Result<(PreparedHostLifetime, ParentLaunchOwner)> {
         let grant = self.grant.clone();
-        let lifetime = self.into_lifetime()?;
+        let lifetime = self.into_lifetime_inner()?;
         Ok((
             lifetime,
             ParentLaunchOwner {
@@ -227,6 +238,19 @@ impl PreparedParentVm {
         ))
     }
     pub fn into_lifetime(self) -> Result<PreparedHostLifetime> {
+        ensure!(
+            self.grant
+                .lifecycle
+                .lock()
+                .map_err(|_| anyhow!("parent lifecycle poisoned"))?
+                .startup
+                .is_none(),
+            "portable startup requires the original launch owner"
+        );
+        self.into_lifetime_inner()
+    }
+
+    fn into_lifetime_inner(self) -> Result<PreparedHostLifetime> {
         self.grant.check_open()?;
         let inputs = HostLifetimeInputs {
             directory: self.handoff.directory,
@@ -239,7 +263,8 @@ impl PreparedParentVm {
             },
             binding: self.grant.binding.clone(),
         };
-        PreparedHostLifetime::bind(inputs, self.grant)
+        let lifetime = PreparedHostLifetime::bind(inputs, self.grant.clone())?;
+        self.grant.bind_portable_quote(lifetime)
     }
 }
 
@@ -395,10 +420,31 @@ impl VmGrant {
 }
 
 impl CoreCurrentParentPermit for VmGrant {
+    fn begin_startup_workspace(&self, binding: &HostLaunchBinding) -> Result<()> {
+        self.transition_portable_workspace(binding, Phase::Held, Phase::Active)
+    }
+
+    fn complete_startup_workspace(&self, binding: &HostLaunchBinding) -> Result<()> {
+        self.transition_portable_workspace(binding, Phase::Active, Phase::Complete)
+    }
+
     fn prepare_endpoint_partition(
         &self,
         binding: &HostLaunchBinding,
     ) -> Result<mvm_core::host_lifetime::PreparedEndpointPartition> {
+        {
+            let lifecycle = self
+                .lifecycle
+                .lock()
+                .map_err(|_| anyhow!("parent lifecycle poisoned"))?;
+            ensure!(
+                lifecycle
+                    .startup
+                    .as_ref()
+                    .is_none_or(|startup| startup.phase == Phase::Complete),
+                "original portable workspace has not completed"
+            );
+        }
         self.prepare_original_endpoint(binding)
     }
 
@@ -419,26 +465,28 @@ impl CoreCurrentParentPermit for VmGrant {
 }
 
 impl InstalledParentProvider {
+    fn original_grant(&self, binding: &HostLaunchBinding) -> Result<Arc<VmGrant>> {
+        let registry = self
+            .shared
+            .registry
+            .lock()
+            .map_err(|_| anyhow!("parent registry poisoned"))?;
+        ensure!(!registry.closed, "parent admission closed");
+        registry
+            .slots
+            .iter()
+            .filter_map(Weak::upgrade)
+            .find(|grant| grant.binding == *binding)
+            .ok_or_else(|| anyhow!("original parent grant unavailable"))
+    }
+
     fn bind_original_admission(
         &self,
         admitted: &AdmittedPlan,
         binding: &HostLaunchBinding,
         config: Option<&mvm_core::vm_backend::VmStartConfig>,
     ) -> Result<Arc<dyn CoreCurrentParentPermit>> {
-        let grant = {
-            let registry = self
-                .shared
-                .registry
-                .lock()
-                .map_err(|_| anyhow!("parent registry poisoned"))?;
-            ensure!(!registry.closed, "parent admission closed");
-            registry
-                .slots
-                .iter()
-                .filter_map(Weak::upgrade)
-                .find(|grant| grant.binding == *binding)
-                .ok_or_else(|| anyhow!("original parent grant unavailable"))?
-        };
+        let grant = self.original_grant(binding)?;
         grant.reservation.check_current()?;
         grant.check_open()?;
         let plan = admitted.plan();
@@ -473,6 +521,9 @@ impl InstalledParentProvider {
             // caller already did so. This public DI method may be called
             // directly; equal config/plan labels are not admission continuity.
             anchor.bind_admitted(config, binding.backend, plan)?;
+            if let Some(proof) = &config.legacy_portable_runtime {
+                grant.check_portable_quote(anchor, &proof.pin)?;
+            }
         }
         // Validate and reserve the registration candidate before committing
         // this grant. A pure preflight failure must not consume admission.
@@ -489,6 +540,15 @@ impl InstalledParentProvider {
         ensure!(
             lifecycle.admitted_plan.is_none() && lifecycle.registration.is_none(),
             "original parent grant already bound"
+        );
+        ensure!(
+            match &lifecycle.startup {
+                Some(startup) =>
+                    startup.phase == Phase::Held
+                        && config.is_some_and(|config| config.legacy_portable_runtime.is_some()),
+                None => config.is_none_or(|config| config.legacy_portable_runtime.is_none()),
+            },
+            "portable launch differs from original workspace admission"
         );
         lifecycle.admitted_plan = Some(admitted.plan_id().0.clone());
         let mut session = Sha256::new();
@@ -507,6 +567,19 @@ impl InstalledParentProvider {
 }
 
 impl ParentAdmissionProvider for InstalledParentProvider {
+    fn check_portable_startup_workspace(
+        &self,
+        owner: &Arc<HostLifetimeAnchor>,
+        pin: &PlanArtifact,
+    ) -> Result<()> {
+        let grant = self.original_grant(owner.binding())?;
+        ensure!(
+            owner.retains_parent_owner(&grant),
+            "launch anchor does not retain original parent grant"
+        );
+        grant.check_portable_quote(owner, pin)
+    }
+
     fn bind(
         &self,
         admitted: &AdmittedPlan,

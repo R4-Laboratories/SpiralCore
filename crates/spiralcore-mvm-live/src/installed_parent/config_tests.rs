@@ -227,3 +227,104 @@ fn unsupported_registration_preflight_does_not_consume_original_binding() {
     supervisor.close_admission();
     supervisor.try_finish().unwrap();
 }
+
+#[test]
+fn original_portable_workspace_is_funded_once_and_does_not_refund_retained_disk() {
+    use mvm_core::plan::{KeyId, PlanArtifact};
+    use std::num::NonZeroU64;
+
+    let (_home, mut supervisor, provider) = endpoint_tests::fixture();
+    let before = supervisor.managed_resources().snapshot().unwrap().usage;
+    let pin = PlanArtifact::new("a".repeat(64), &[7; 64], KeyId("installer".into()));
+    let prepare = || {
+        provider
+            .prepare_vm(
+                &HostLifetimeIntent {
+                    name: Some("quoted-runtime".into()),
+                    mode: LifecycleMode::Transient,
+                    cpus: 1,
+                    memory_mib: 1024,
+                    backend: None,
+                },
+                "local",
+                native_backend(),
+            )
+            .unwrap()
+    };
+    let quote = || {
+        PortableStartupQuote::new(
+            pin.clone(),
+            NonZeroU64::new(4096).unwrap(),
+            NonZeroU64::new(8192).unwrap(),
+            NonZeroU64::new(16384).unwrap(),
+        )
+        .unwrap()
+    };
+    assert!(
+        prepare()
+            .with_portable_startup(quote())
+            .unwrap()
+            .into_lifetime()
+            .is_err()
+    );
+    assert_eq!(
+        supervisor.managed_resources().snapshot().unwrap().usage,
+        before
+    );
+    let prepared = prepare();
+    let grant = prepared.grant.clone();
+    let unfunded = supervisor.managed_resources().snapshot().unwrap().usage;
+    let prepared = prepared.with_portable_startup(quote()).unwrap();
+    let funded = supervisor.managed_resources().snapshot().unwrap().usage;
+    assert_eq!(
+        funded.host_metadata_bytes,
+        unfunded.host_metadata_bytes + 12288
+    );
+    assert_eq!(
+        funded.staging_disk_bytes,
+        unfunded.staging_disk_bytes + 20480
+    );
+    let (lifetime, mut owner) = prepared.begin_launch().unwrap();
+    let anchor = lifetime.into_anchor();
+    provider
+        .check_portable_startup_workspace(&anchor, &pin)
+        .unwrap();
+    let mut wrong = pin.clone();
+    wrong.bundle_sha256 = "b".repeat(64);
+    assert!(
+        provider
+            .check_portable_startup_workspace(&anchor, &wrong)
+            .is_err()
+    );
+    assert!(grant.begin_startup_workspace(&grant.binding).is_err());
+    assert!(grant.complete_startup_workspace(&grant.binding).is_err());
+
+    // Isolate the workspace callbacks from opaque admission and native boot.
+    grant.lifecycle.lock().unwrap().admitted_plan = Some("fixture".into());
+    assert!(grant.complete_startup_workspace(&grant.binding).is_err());
+    grant.begin_startup_workspace(&grant.binding).unwrap();
+    assert!(grant.begin_startup_workspace(&grant.binding).is_err());
+    assert!(
+        provider
+            .check_portable_startup_workspace(&anchor, &pin)
+            .is_err()
+    );
+    grant.complete_startup_workspace(&grant.binding).unwrap();
+    assert!(grant.complete_startup_workspace(&grant.binding).is_err());
+    assert_eq!(
+        supervisor.managed_resources().snapshot().unwrap().usage,
+        funded
+    );
+    assert!(grant.lifecycle.lock().unwrap().seal_retired().is_err());
+
+    // Test-only cleanup. The synthetic callback test issued no runtime files.
+    owner.completed = true;
+    drop((anchor, grant, owner));
+    assert_eq!(
+        supervisor.managed_resources().snapshot().unwrap().usage,
+        before
+    );
+    drop(provider);
+    supervisor.close_admission();
+    supervisor.try_finish().unwrap();
+}

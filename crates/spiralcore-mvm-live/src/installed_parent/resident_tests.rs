@@ -73,6 +73,65 @@ fn helper_start_refuses_after_vm_reservation_and_after_admission_close() {
 }
 
 #[test]
+fn mapped_resident_refunds_only_the_unused_original_preparation() {
+    use mvm_contract::policy::network_policy::{CooperatingTcpPeer, PayloadMappingProfile};
+    use mvm_core::plan::{KeyId, PlanArtifact};
+    use std::num::NonZeroU64;
+
+    let (_home, mut service) = prepared_service();
+    let before = service.usage().unwrap().usage;
+    let pin = PlanArtifact::new("a".repeat(64), &[7; 64], KeyId("installer".into()));
+    let quote = |workspace| {
+        PortableStartupQuote::new(
+            pin.clone(),
+            NonZeroU64::new(4096).unwrap(),
+            NonZeroU64::new(workspace).unwrap(),
+            NonZeroU64::new(16384).unwrap(),
+        )
+        .unwrap()
+    };
+    let mapping = CooperatingPayloadPolicy::new(vec![CooperatingTcpPeer {
+        host: "peer.example".into(),
+        port: 443,
+        server_name: "peer.example".into(),
+        spki_sha256: [4; 32],
+        profile: PayloadMappingProfile::SpiralCoreObjectStreamSmallV1,
+    }])
+    .unwrap();
+    assert!(
+        service
+            .begin_mapped_launch(
+                request("oversized-workspace"),
+                "local",
+                mapping.clone(),
+                quote(1 << 30),
+            )
+            .is_err()
+    );
+    assert_eq!(service.usage().unwrap().usage, before);
+    service
+        .begin_mapped_launch(request("unsigned-mapped"), "local", mapping, quote(8192))
+        .unwrap();
+    let reserved = service.usage().unwrap().usage;
+    assert_eq!(
+        reserved.staging_disk_bytes,
+        before.staging_disk_bytes + 20480
+    );
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap();
+    // The canonical Client returns the exact preparation for this unsigned
+    // request, before it opens the deliberately nonexistent rootfs.
+    assert_eq!(
+        runtime.block_on(service.drive_once()).unwrap().state,
+        ResidentStatus::UnusedRetired,
+    );
+    assert_eq!(service.usage().unwrap().usage, before);
+    service.try_finish().unwrap();
+}
+
+#[test]
 fn poisoned_helper_state_preserves_whole_resident_without_a_vm() {
     let (_home, mut service) = prepared_service();
     let live = service.live.as_ref().unwrap();
