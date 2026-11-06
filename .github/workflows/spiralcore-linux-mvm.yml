@@ -1,4 +1,4 @@
-name: SpiralCore installed pre-dispatch endpoint regression
+name: SpiralCore installed endpoint binary regression
 
 on:
   workflow_dispatch:
@@ -8,7 +8,7 @@ permissions:
 
 jobs:
   test:
-    if: startsWith(github.ref, 'refs/heads/codex/installed-sdk-native-witness-endpoint-retain-')
+    if: startsWith(github.ref, 'refs/heads/codex/installed-sdk-native-witness-endpoint-binary-')
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
@@ -26,12 +26,14 @@ jobs:
           ref: 78da22eb6104ce9bbe9e4ebebba4ab81ccad7326
           path: sdk
           persist-credentials: false
-      - name: Exercise original installed endpoint pre-dispatch custody
+      - name: Exercise canonical installed endpoint binary dispatch
         run: |
           set -euo pipefail
           test "$(git -C spiralcore rev-parse HEAD)" = "$GITHUB_SHA"
           test "$(git -C sdk rev-parse HEAD)" = "78da22eb6104ce9bbe9e4ebebba4ab81ccad7326"
           rustup toolchain install 1.97.1 --profile minimal
-          export CARGO_TARGET_DIR="$RUNNER_TEMP/sc-endpoint-retain"
-          cargo +1.97.1 test --locked --manifest-path sdk/Cargo.toml -p mvm-runtime --lib \
-            workload_runner::runner::installed_tests:: -- --test-threads=1
+          git -C sdk apply --check ../spiralcore/.github/qualification/endpoint-binary.patch
+          git -C sdk apply ../spiralcore/.github/qualification/endpoint-binary.patch
+          export CARGO_TARGET_DIR="$RUNNER_TEMP/sc-endpoint-binary"
+          cargo +1.97.1 test --locked --manifest-path sdk/Cargo.toml -p mvm-hostd --test installed_endpoint_resources \
+            canonical_endpoint_binary_enters_installed_stdio_before_legacy_input -- --test-threads=1
