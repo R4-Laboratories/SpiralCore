@@ -1,4 +1,4 @@
-name: SpiralCore original registered audit capability
+name: SpiralCore Darwin owned registration compatibility
 
 on:
   workflow_dispatch:
@@ -8,9 +8,9 @@ permissions:
 
 jobs:
   test:
-    if: startsWith(github.ref, 'refs/heads/codex/installed-sdk-native-witness-registered-audit-')
-    runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    if: startsWith(github.ref, 'refs/heads/codex/installed-sdk-native-witness-darwin-registered-audit-')
+    runs-on: macos-15
+    timeout-minutes: 25
     env:
       CARGO_BUILD_JOBS: 2
       CARGO_INCREMENTAL: 0
@@ -31,8 +31,9 @@ jobs:
           set -euo pipefail
           test "$(git -C spiralcore rev-parse HEAD)" = "$GITHUB_SHA"
           test "$(git -C sdk rev-parse HEAD)" = "ec723f60d0abce8f8a77ea4a80ec23b8fba9674f"
+          test "$(uname -m)" = arm64
+          sw_vers
+          uname -r
           rustup toolchain install 1.97.1 --profile minimal
           export CARGO_TARGET_DIR="$RUNNER_TEMP/sc-registered-audit"
-          cargo +1.97.1 test --locked --manifest-path sdk/Cargo.toml -p mvm-hostd --test owned_host_agent -- --test-threads=1
-          cargo +1.97.1 test --locked --manifest-path sdk/Cargo.toml -p mvm-hostd --lib owned_resources::registered::sideband_tests:: -- --test-threads=1
-          cargo +1.97.1 test --locked --manifest-path sdk/Cargo.toml -p mvm-vmm --lib host_agent_spawn::owned:: -- --test-threads=1
+          cargo +1.97.1 test --locked --manifest-path sdk/Cargo.toml -p mvm-hostd --test owned_host_agent installed_signer_requires_the_original_current_registration -- --test-threads=1
