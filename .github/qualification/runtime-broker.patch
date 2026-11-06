@@ -1,0 +1,41 @@
+diff --git a/crates/mvm-hostd/tests/owned_host_agent.rs b/crates/mvm-hostd/tests/owned_host_agent.rs
+index b50384d..6bf64ae 100644
+--- a/crates/mvm-hostd/tests/owned_host_agent.rs
++++ b/crates/mvm-hostd/tests/owned_host_agent.rs
+@@ -503,3 +503,36 @@ fn installed_signer_requires_the_original_current_registration() {
+     replacement.shutdown().unwrap();
+     agent.shutdown().unwrap();
+ }
++
++#[test]
++fn installed_runtime_broker_uses_the_original_registrar_even_without_services() {
++    use mvm_runtime::workload_runner::{
++        BrokerRegisterRequest, BrokerRegistrar, RealBrokerRegistrar,
++    };
++
++    let fixture = Fixture::new();
++    let mut agent = OwnedHostAgent::spawn(fixture.inputs()).unwrap();
++    let registrar = agent.registrar();
++    let (state, socket) = fixture.vm("vm-1");
++    let request = BrokerRegisterRequest {
++        vm_name: "vm-1",
++        state_dir: &state,
++        tenant: Some("local"),
++        broker_listen_socket: Some(&socket),
++        services: &[],
++        capability_bindings: &[],
++        service_proxies: &[],
++    };
++
++    let mut broker = RealBrokerRegistrar
++        .register_installed(&request, &registrar)
++        .unwrap();
++    assert!(socket.exists());
++    assert!(register(&registrar, "vm-1", &state, &socket).is_err());
++    broker.defuse();
++    drop(broker);
++    assert!(!socket.exists());
++    let mut replacement = register(&registrar, "vm-1", &state, &socket).unwrap();
++    replacement.shutdown().unwrap();
++    agent.shutdown().unwrap();
++}
