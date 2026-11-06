@@ -1,0 +1,114 @@
+--- a/crates/mvm-hostd/src/supervisor/flowmux/spiralcore_payload/installed.rs
++++ b/crates/mvm-hostd/src/supervisor/flowmux/spiralcore_payload/installed.rs
+@@ -10,11 +10,24 @@
+     session::SelectionPolicy,
+     shared_runtime::{OutputKind, Recipe, State},
+     shared_transfer::PreparedPrediction,
++    v1::ObjectMode,
+ };
+ use std::{fs::File, os::unix::fs::MetadataExt};
+ 
+ const READER_METADATA_BYTES: u64 = 64 << 10;
+ 
++// Qualification binaries select the sender at compile time. Normal builds
++// retain the shipped Combined sender and all admission is unchanged.
++const QUALIFICATION_MODE: ObjectMode = match option_env!("SPIRALCORE_FLOWMUX_QUALIFICATION_ARM") {
++    None => ObjectMode::Combined,
++    Some(arm) => match arm.as_bytes() {
++        b"raw" => ObjectMode::Raw,
++        b"whole" => ObjectMode::Whole,
++        b"combined" => ObjectMode::Combined,
++        _ => panic!("invalid installed FlowMux qualification arm"),
++    },
++};
++
+ impl SpiralCorePayloadFactory {
+     /// Consume no projected DTO as authority and never create another pool.
+     pub fn from_installed_resources(
+@@ -312,32 +325,52 @@
+         let path = self.create_store(permit, facts)?;
+         remaining(deadline)?;
+         let context = authority.context();
+-        let checkpoint = State::seeded(32)
+-            .map_err(invalid)?
+-            .encode()
+-            .map_err(invalid)?;
+-        let prediction = PreparedPrediction::new_with_resource_profile(
+-            &checkpoint,
+-            &Recipe {
+-                steps: 16,
+-                payload: 1.25,
+-                output: OutputKind::Trace,
+-            },
+-            resources,
+-        )
+-        .map_err(invalid)?;
+-        let sample: &[u8] = b"{\"kind\":\"flowmux\",\"value\":0}\n";
+-        let schema = spiralcore_transfer::schema::fit(&[sample]).map_err(invalid)?;
+-        remaining(deadline)?;
+-        let sender = ObjectSender::with_combined_resource_profile(
+-            context,
+-            prediction,
+-            &schema,
+-            SelectionPolicy::Exhaustive,
+-            profile,
+-            resources,
+-        )
+-        .map_err(invalid)?;
++        let (sender, artifacts) = match QUALIFICATION_MODE {
++            ObjectMode::Raw | ObjectMode::Whole => (
++                ObjectSender::new_with_resource_profile(
++                    QUALIFICATION_MODE,
++                    context,
++                    None,
++                    profile,
++                    resources,
++                )
++                .map_err(invalid)?,
++                Vec::new(),
++            ),
++            ObjectMode::Combined => {
++                let checkpoint = State::seeded(32)
++                    .map_err(invalid)?
++                    .encode()
++                    .map_err(invalid)?;
++                let prediction = PreparedPrediction::new_with_resource_profile(
++                    &checkpoint,
++                    &Recipe {
++                        steps: 16,
++                        payload: 1.25,
++                        output: OutputKind::Trace,
++                    },
++                    resources,
++                )
++                .map_err(invalid)?;
++                let sample: &[u8] = b"{\"kind\":\"flowmux\",\"value\":0}\n";
++                let schema = spiralcore_transfer::schema::fit(&[sample]).map_err(invalid)?;
++                remaining(deadline)?;
++                let sender = ObjectSender::with_combined_resource_profile(
++                    context,
++                    prediction,
++                    &schema,
++                    SelectionPolicy::Exhaustive,
++                    profile,
++                    resources,
++                )
++                .map_err(invalid)?;
++                (
++                    sender,
++                    vec![PayloadArtifact::Schema, PayloadArtifact::Checkpoint],
++                )
++            }
++            _ => return Err(invalid("unsupported installed FlowMux qualification arm")),
++        };
+         let endpoint = ObjectEndpoint::open_with_resource_profile(
+             &path,
+             resources.receiver_limits(),
+@@ -352,7 +385,6 @@
+             .owned_relay()
+             .ok_or_else(|| invalid("installed reader relay witness missing"))?;
+         relay.check(&self.reader_resources)?;
+-        let artifacts = vec![PayloadArtifact::Schema, PayloadArtifact::Checkpoint];
+         Ok(PreparedPayloadSession {
+             artifacts,
+             authority,

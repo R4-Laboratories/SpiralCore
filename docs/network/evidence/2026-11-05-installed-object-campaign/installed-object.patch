@@ -1,0 +1,711 @@
+--- a/crates/spiralcore-mvm-live/src/mailbox_witness.rs
++++ b/crates/spiralcore-mvm-live/src/mailbox_witness.rs
+@@ -97,12 +97,15 @@
+     close_after_call_receipt: bool,
+     #[serde(default, skip_serializing_if = "Option::is_none")]
+     recovery: Option<RecoveryPin>,
++    #[serde(default)]
++    object_campaign: bool,
+     endpoint: Bootstrap,
+     cast: Material,
+ }
+ 
+ pub struct HostFixture {
+     close_after_call_receipt: bool,
++    object_campaign: bool,
+     recovery: Option<RecoveryPin>,
+     endpoint: Bootstrap,
+     cast: Material,
+@@ -130,24 +133,45 @@
+ pub(crate) fn provision_with_close(
+     close_after_call_receipt: bool,
+ ) -> Result<([u8; 32], GuestBootstrap, HostFixture)> {
+-    provision_mode(close_after_call_receipt, false)
++    provision_mode(close_after_call_receipt, false, false)
+ }
+ 
+ pub(crate) fn provision_recovery() -> Result<([u8; 32], GuestBootstrap, HostFixture)> {
+-    provision_mode(false, true)
++    provision_mode(false, true, false)
++}
++
++#[cfg(test)]
++pub(crate) fn provision_object_campaign() -> Result<([u8; 32], GuestBootstrap, HostFixture)> {
++    provision_mode(false, true, true)
++}
++
++pub(crate) fn object_campaign_plan() -> Plan {
++    Plan {
++        stage: Stage::Two,
++        arm: Arm::Raw,
++        size: 128,
++        trial: 2,
++        bandwidth_profile: Default::default(),
++    }
+ }
+ 
+ fn provision_mode(
+     close_after_call_receipt: bool,
+     recovery: bool,
++    object_campaign: bool,
+ ) -> Result<([u8; 32], GuestBootstrap, HostFixture)> {
+-    let (pair, guest_cast, host_cast) = Pair::provision_installed_witness(Plan {
+-        stage: Stage::Two,
+-        arm: Arm::Warm,
+-        size: CALL_LEN,
+-        trial: 1,
+-        bandwidth_profile: Default::default(),
+-    })?;
++    let plan = if object_campaign {
++        object_campaign_plan()
++    } else {
++        Plan {
++            stage: Stage::Two,
++            arm: Arm::Warm,
++            size: CALL_LEN,
++            trial: 1,
++            bandwidth_profile: Default::default(),
++        }
++    };
++    let (pair, guest_cast, host_cast) = Pair::provision_installed_witness(plan.clone())?;
+     let sender_profile = pair
+         .sender
+         .service
+@@ -162,6 +186,10 @@
+     digest.update(b"SpiralCore/installed-mailbox-synthetic-enrollment/v1\0");
+     digest.update(rand::random::<[u8; 32]>());
+     digest.update([u8::from(close_after_call_receipt)]);
++    if object_campaign {
++        digest.update(b"SpiralCore/installed-object-campaign/v1\0");
++        digest.update(serde_json::to_vec(&plan)?);
++    }
+     for material in [
+         pair.sender
+             .outgoing
+@@ -220,12 +248,14 @@
+         GuestBootstrap {
+             close_after_call_receipt,
+             recovery: guest_recovery,
++            object_campaign,
+             endpoint: pair.sender,
+             cast: guest_cast,
+         },
+         HostFixture {
+             close_after_call_receipt,
+             recovery: host_recovery,
++            object_campaign,
+             endpoint: pair.receiver,
+             cast: host_cast,
+         },
+@@ -246,16 +276,11 @@
+         socket: S,
+         role: HandshakeRole,
+         pin: &RecoveryPin,
++        deadline: Instant,
+     ) -> Result<Self> {
+         campaign::validate_service_bootstrap(endpoint)?;
+         let cancel = CancellationToken::default();
+-        let stream = Peer::carrier(
+-            endpoint,
+-            socket,
+-            role,
+-            &cancel,
+-            Some((pin, Instant::now() + RECOVERY_CAP)),
+-        )?;
++        let stream = Peer::carrier(endpoint, socket, role, &cancel, Some((pin, deadline)))?;
+         Ok(Self {
+             endpoint,
+             stream,
+@@ -452,6 +477,39 @@
+ }
+ 
+ impl HostFixture {
++    #[cfg(test)]
++    pub(crate) fn run_object_campaign(
++        self,
++        socket: UnixStream,
++        broker: &BrokerContext,
++        service: &mut LocalMailboxService,
++        cache: &Path,
++        limits: spiralcore_transfer::endpoint::Limits,
++    ) -> Result<serde_json::Value> {
++        if !self.object_campaign {
++            return Err("object campaign was not enrolled".into());
++        }
++        let pin = self
++            .recovery
++            .as_ref()
++            .ok_or("object campaign pin missing")?;
++        let carrier = AuthenticatedCampaignCarrier::open(
++            &self.endpoint,
++            socket,
++            HandshakeRole::Acceptor,
++            pin,
++            Instant::now() + RECOVERY_CAP,
++        )?;
++        campaign::receiver_on_authenticated(
++            carrier,
++            broker,
++            service,
++            cache,
++            limits,
++            &mut std::io::sink(),
++        )
++    }
++
+     pub fn run(
+         self,
+         socket: UnixStream,
+@@ -478,7 +536,7 @@
+         service: &mut LocalMailboxService,
+         acceptor: Option<&mut dyn mvm_core::host_lifetime::InstalledMailboxReplacementAcceptor>,
+     ) -> Result<ExchangeResult> {
+-        if self.recovery.is_some() != acceptor.is_some() {
++        if self.object_campaign || self.recovery.is_some() != acceptor.is_some() {
+             return Err("fixture recovery authority differs".into());
+         }
+         let start = Instant::now();
+@@ -635,9 +693,16 @@
+             .outgoing
+             .as_ref()
+             .ok_or("guest Call material missing")?;
++        let plan_matches = if fixture.object_campaign {
++            fixture.recovery.is_some()
++                && serde_json::to_vec(&endpoint.plan)?
++                    == serde_json::to_vec(&object_campaign_plan())?
++        } else {
++            endpoint.plan.size == CALL_LEN
++        };
+         if endpoint.role != Role::Sender
+             || endpoint.plan.stage != Stage::Two
+-            || endpoint.plan.size != CALL_LEN
++            || !plan_matches
+             || !endpoint.published.is_empty()
+             || cast.kind != MailboxMessageKind::Cast
+             || cast.reply_to.is_some()
+@@ -866,18 +931,41 @@
+         std::io::ErrorKind::TimedOut => 25_u8,
+         _ => 26_u8,
+     };
+-    let result = if bootstrap.recovery.is_some() {
++    let result = if bootstrap.object_campaign {
+         let deadline = Instant::now() + RECOVERY_CAP;
+         let first =
+             vsock::sys::dial_before(vsock::HOST_CID, MAILBOX_PORT, deadline).map_err(dial_error)?;
+-        bootstrap.exchange_recovery(UnixStream::from(first), deadline, |cap| {
+-            vsock::sys::dial_before(vsock::HOST_CID, MAILBOX_PORT, cap).map(UnixStream::from)
+-        })
++        let socket = GuestSocket::new(UnixStream::from(first)).map_err(|_| 26_u8)?;
++        let pin = bootstrap.recovery.as_ref().ok_or(22_u8)?;
++        let carrier = AuthenticatedCampaignCarrier::open(
++            &bootstrap.endpoint,
++            socket,
++            HandshakeRole::Initiator,
++            pin,
++            deadline,
++        )
++        .map_err(|_| 27_u8)?;
++        campaign::sender_on_authenticated(
++            carrier,
++            &campaign::broker_context().map_err(|_| 27_u8)?,
++            &mut std::io::sink(),
++        )
++        .map_err(|_| 27_u8)?
+     } else {
+-        let first = vsock::sys::dial(vsock::HOST_CID, MAILBOX_PORT).map_err(dial_error)?;
+-        bootstrap.exchange(UnixStream::from(first))
+-    }
+-    .map_err(|_| 27_u8)?;
++        let exchanged = if bootstrap.recovery.is_some() {
++            let deadline = Instant::now() + RECOVERY_CAP;
++            let first = vsock::sys::dial_before(vsock::HOST_CID, MAILBOX_PORT, deadline)
++                .map_err(dial_error)?;
++            bootstrap.exchange_recovery(UnixStream::from(first), deadline, |cap| {
++                vsock::sys::dial_before(vsock::HOST_CID, MAILBOX_PORT, cap).map(UnixStream::from)
++            })
++        } else {
++            let first = vsock::sys::dial(vsock::HOST_CID, MAILBOX_PORT).map_err(dial_error)?;
++            bootstrap.exchange(UnixStream::from(first))
++        }
++        .map_err(|_| 27_u8)?;
++        serde_json::to_value(exchanged).map_err(|_| 28_u8)?
++    };
+     let mut out = std::io::stdout().lock();
+     serde_json::to_writer(&mut out, &result).map_err(|_| 28_u8)?;
+     writeln!(out).map_err(|_| 28_u8)?;
+--- a/crates/spiralcore-mvm-live/src/installed_parent/mailbox_job.rs
++++ b/crates/spiralcore-mvm-live/src/installed_parent/mailbox_job.rs
+@@ -41,6 +41,8 @@
+ }
+ 
+ pub(super) struct ResidentBroker {
++    #[cfg(test)]
++    object_campaign: bool,
+     context: BrokerContext,
+     _metadata: ManagedReservation,
+ }
+@@ -232,7 +234,7 @@
+             .parent
+             .upgrade()
+             .context("original parent unavailable")?;
+-        let candidate = self.fund_mailbox_job(ServiceJob::Legacy(Box::new(job)))?;
++        let candidate = self.fund_mailbox_job(ServiceJob::Legacy(Box::new(job)), false)?;
+         let registry = parent
+             .registry
+             .lock()
+@@ -253,7 +255,7 @@
+         Ok(())
+     }
+ 
+-    fn fund_mailbox_job(&self, job: ServiceJob) -> Result<FundedMailboxJob> {
++    fn fund_mailbox_job(&self, job: ServiceJob, object_campaign: bool) -> Result<FundedMailboxJob> {
+         use super::{MIB, ManagedClaim, tenant_tag};
+         use anyhow::anyhow;
+         use spiralcore_mvm_adapter::service::{
+@@ -285,12 +287,16 @@
+                 MailboxBrokerSlot::Retained { broker, .. } => Some(Arc::clone(broker)),
+             };
+             if let Some(current) = current {
++                anyhow::ensure!(
++                    current.object_campaign == object_campaign,
++                    "original mailbox broker qualification profile differs"
++                );
+                 current
+             } else {
+                 let metadata = parent.pool.reserve(
+                     tenant_tag("installation-mailbox-broker"),
+                     ManagedClaim {
+-                        host_metadata_bytes: MIB,
++                        host_metadata_bytes: if object_campaign { 2 * MIB } else { MIB },
+                         ..Default::default()
+                     },
+                 )?;
+@@ -298,12 +304,12 @@
+                     queued_bytes: 512 << 10,
+                     queued_messages: 32,
+                     active_calls: 4,
+-                    identities: 64,
++                    identities: if object_campaign { 128 } else { 64 },
+                 };
+                 let control = ControlScope {
+                     queued_bytes: 128 << 10,
+                     queued_messages: 8,
+-                    identities: 16,
++                    identities: if object_campaign { 64 } else { 16 },
+                 };
+                 let budget = HostBudget::with_control(
+                     ServiceLimits {
+@@ -321,6 +327,7 @@
+                     },
+                 )?;
+                 let current = Arc::new(ResidentBroker {
++                    object_campaign,
+                     context: BrokerContext::new(budget),
+                     _metadata: metadata,
+                 });
+@@ -388,13 +395,14 @@
+         + Sync
+         + 'static,
+     ) -> Result<()> {
+-        self.stage_mailbox_enrollment(admitted, trusted, ServiceJob::Legacy(Box::new(job)))
++        self.stage_mailbox_enrollment(admitted, trusted, ServiceJob::Legacy(Box::new(job)), false)
+     }
+ 
+     pub(super) fn stage_mailbox_recovery_enrollment_fixture(
+         &self,
+         admitted: &super::AdmittedPlan,
+         trusted: mvm_hostd::plan_admission::InstalledMailboxEnrollment,
++        object_campaign: bool,
+         job: impl FnOnce(
+             UnixStream,
+             &mut dyn InstalledMailboxReplacementAcceptor,
+@@ -405,7 +413,12 @@
+         + Sync
+         + 'static,
+     ) -> Result<()> {
+-        self.stage_mailbox_enrollment(admitted, trusted, ServiceJob::Recovery(Box::new(job)))
++        self.stage_mailbox_enrollment(
++            admitted,
++            trusted,
++            ServiceJob::Recovery(Box::new(job)),
++            object_campaign,
++        )
+     }
+ 
+     fn stage_mailbox_enrollment(
+@@ -413,6 +426,7 @@
+         admitted: &super::AdmittedPlan,
+         trusted: mvm_hostd::plan_admission::InstalledMailboxEnrollment,
+         job: ServiceJob,
++        object_campaign: bool,
+     ) -> Result<()> {
+         use super::MailboxFunding;
+         use anyhow::{anyhow, ensure};
+@@ -429,7 +443,7 @@
+             "fixture mailbox differs from the signed resident enrollment"
+         );
+         admitted.check_unlaunched_for_backend(self.grant.binding.backend)?;
+-        let candidate = self.grant.fund_mailbox_job(job)?;
++        let candidate = self.grant.fund_mailbox_job(job, object_campaign)?;
+         use mvm_core::plan::validity::{CheckedFreshness, Freshness};
+         let plan = admitted.plan();
+         let original = OriginalMailboxEnrollment {
+@@ -514,6 +528,7 @@
+             )
+             .unwrap();
+         let broker = Arc::new(ResidentBroker {
++            object_campaign: false,
+             context: context.clone(),
+             _metadata: credit,
+         });
+--- a/crates/spiralcore-mvm-live/src/installed_parent/native_witness/native_mailbox.rs
++++ b/crates/spiralcore-mvm-live/src/installed_parent/native_witness/native_mailbox.rs
+@@ -8,6 +8,7 @@
+ use spiralcore_mvm_adapter::live::StreamCounters;
+ use std::{
+     io::Write,
++    os::unix::fs::MetadataExt,
+     path::{Path, PathBuf},
+     process::{Command, Stdio},
+     sync::mpsc::{self, Receiver, SyncSender},
+@@ -16,7 +17,63 @@
+ 
+ use super::{InstalledResident, ManagedReservation, ResidentId, ResidentStatus};
+ 
+-type HostReport = crate::Result<ExchangeResult>;
++pub(super) enum HostOutcome {
++    Exchange(ExchangeResult),
++    Object(serde_json::Value),
++}
++type HostReport = crate::Result<HostOutcome>;
++
++pub(super) struct CampaignStore {
++    path: PathBuf,
++    identity: (u64, u64),
++    credit: NativeCredit,
++}
++impl CampaignStore {
++    pub(super) fn new(root: &Path, credit: ManagedReservation) -> Result<Self> {
++        let dir = tempfile::Builder::new()
++            .prefix("object-campaign-")
++            .tempdir_in(root.join("tmp"))?;
++        mvm_core::private_fs::set_mode(dir.path(), 0o700)?;
++        let metadata = std::fs::symlink_metadata(dir.path())?;
++        Ok(Self {
++            path: dir.keep(),
++            identity: (metadata.dev(), metadata.ino()),
++            credit: NativeCredit(Some(credit)),
++        })
++    }
++
++    pub(super) fn path(&self) -> &Path {
++        &self.path
++    }
++
++    fn verify_and_remove(mut self, host: &serde_json::Value) -> Result<()> {
++        let path = &self.path;
++        let metadata = std::fs::symlink_metadata(&path)?;
++        mvm_core::private_fs::require_current_owner(&metadata)?;
++        ensure!(
++            metadata.is_dir()
++                && metadata.mode() & 0o7777 == 0o700
++                && (metadata.dev(), metadata.ino()) == self.identity,
++            "original campaign store changed"
++        );
++        let published: Vec<crate::config::Published> =
++            serde_json::from_value(host["published"].clone())?;
++        crate::campaign::verify(
++            &mailbox_witness::object_campaign_plan(),
++            &path,
++            &published,
++            &mut std::io::sink(),
++        )
++        .map_err(|_| anyhow!("stopped campaign store exact readback failed"))?;
++        std::fs::remove_dir_all(path)?;
++        ensure!(
++            std::fs::symlink_metadata(path)
++                .is_err_and(|e| e.kind() == std::io::ErrorKind::NotFound)
++        );
++        self.credit.release();
++        Ok(())
++    }
++}
+ type Provision = (
+     InstalledMailboxEnrollment,
+     HostFixture,
+@@ -40,7 +97,13 @@
+     Ok((path, expected))
+ }
+ 
+-pub(super) fn prepare(root: &Path, slot: u8, abandoned: bool, recovery: bool) -> Result<Fixture> {
++pub(super) fn prepare(
++    root: &Path,
++    slot: u8,
++    abandoned: bool,
++    recovery: bool,
++    object_campaign: bool,
++) -> Result<Fixture> {
+     let (image_tool, _) = pinned_tool(
+         "SPIRALCORE_NATIVE_MAILBOX_IMAGE_TOOL",
+         "SPIRALCORE_NATIVE_MAILBOX_IMAGE_TOOL_SHA",
+@@ -49,7 +112,9 @@
+         "SPIRALCORE_NATIVE_MAILBOX_GUEST_TOOL",
+         "SPIRALCORE_NATIVE_MAILBOX_GUEST_TOOL_SHA",
+     )?;
+-    let (commitment, guest, host) = if recovery {
++    let (commitment, guest, host) = if object_campaign {
++        mailbox_witness::provision_object_campaign()
++    } else if recovery {
+         mailbox_witness::provision_recovery()
+     } else {
+         mailbox_witness::provision_with_close(abandoned)
+@@ -152,6 +217,7 @@
+     host: Receiver<HostReport>,
+     abandoned: bool,
+     recovery: bool,
++    campaign_store: Option<CampaignStore>,
+ ) -> Result<(serde_json::Value, u64)> {
+     let mut disk = NativeCredit(Some(disk));
+     let name = service
+@@ -182,13 +248,46 @@
+         let host = host
+             .recv_timeout(Duration::from_secs(20))?
+             .map_err(|_| anyhow!("original resident mailbox exchange failed"))?;
+-        compare(&host, &guest)?;
+-        ensure!(
+-            host.abandoned_after_receipt == abandoned
+-                && guest["abandoned_after_receipt"].as_bool() == Some(abandoned)
+-                && host.first_carrier.is_some() == recovery,
+-            "installed mailbox completed a different signed fixture mode"
+-        );
++        let host = match (host, campaign_store.is_some()) {
++            (HostOutcome::Exchange(host), false) => {
++                compare(&host, &guest)?;
++                ensure!(
++                    host.abandoned_after_receipt == abandoned
++                        && guest["abandoned_after_receipt"].as_bool() == Some(abandoned)
++                        && host.first_carrier.is_some() == recovery,
++                    "installed mailbox completed a different signed fixture mode"
++                );
++                serde_json::to_value(host)?
++            }
++            (HostOutcome::Object(host), true) => {
++                ensure!(
++                    guest["event"] == "sender_done"
++                        && host["event"] == "receiver_done"
++                        && host["exact_reopened"] == true
++                        && guest["operations"] == 7
++                        && host["operations"] == 7
++                        && guest["service"]["application_calls"] == 20
++                        && host["service"]["application_calls"] == 20
++                );
++                for (sent, received) in [(&guest, &host), (&host, &guest)] {
++                    for field in ["frames", "envelope_bytes", "framing_bytes"] {
++                        let count = sent["counters"][format!("{field}_sent")].as_u64();
++                        ensure!(
++                            count.is_some()
++                                && count
++                                    == received["counters"][format!("{field}_received")].as_u64()
++                        );
++                    }
++                    ensure!(sent["counters"]["frames_sent"] == 40);
++                }
++                host
++            }
++            _ => {
++                return Err(anyhow!(
++                    "installed mailbox completed a different signed fixture mode"
++                ));
++            }
++        };
+         Ok(serde_json::json!({"guest":guest,"host":host,"vsock_port":5257}))
+     })();
+     if unused {
+@@ -203,7 +302,11 @@
+             service.last_error(id).ok().flatten()
+         );
+     }
+-    let exchange = exchange?;
++    let mut exchange = exchange?;
++    if let Some(store) = campaign_store {
++        store.verify_and_remove(&exchange["host"])?;
++        exchange["stopped_store_exact_and_removed"] = true.into();
++    }
+     for path in [
+         state.join("mailbox.sock"),
+         mvm_backends::fc::fc_vsock_runtime_dir(&state.to_string_lossy()).join("v.sock_5257"),
+--- a/crates/spiralcore-mvm-live/src/installed_parent/native_witness/mod.rs
++++ b/crates/spiralcore-mvm-live/src/installed_parent/native_witness/mod.rs
+@@ -400,11 +400,12 @@
+         Ok("2") => &[native_plan::NAME, "spiralcore-installed-witness-b"],
+         _ => bail!("native witness admits one or two sequential guests"),
+     };
+-    let (mailbox_mode, recovery_mode) =
++    let (mailbox_mode, recovery_mode, object_campaign) =
+         match std::env::var("SPIRALCORE_NATIVE_MAILBOX_WITNESS").as_deref() {
+-            Err(std::env::VarError::NotPresent) => (false, false),
+-            Ok("1") => (true, false),
+-            Ok("recovery-v2") => (true, true),
++            Err(std::env::VarError::NotPresent) => (false, false, false),
++            Ok("1") => (true, false, false),
++            Ok("recovery-v2") => (true, true, false),
++            Ok("object-v2") if names.len() == 1 => (true, true, true),
+             _ => bail!("invalid installed mailbox fixture mode"),
+         };
+     let withhold_first = match std::env::var("SPIRALCORE_NATIVE_WITNESS_WITHHOLD_FIRST").as_deref()
+@@ -506,6 +507,7 @@
+                 value,
+                 reply_withheld,
+                 recovery_mode,
++                object_campaign,
+             )?)
+         } else {
+             None
+@@ -525,6 +527,20 @@
+         let (provision, mailbox_result) = native_mailbox::split(fixture);
+         let request = native.request()?;
+         drop(selection);
++        let campaign_store = if object_campaign {
++            let credit = pool.reserve(
++                tenant_tag("local"),
++                ManagedClaim {
++                    cache_disk_bytes: 4 * MIB,
++                    staging_disk_bytes: 4 * MIB,
++                    ..Default::default()
++                },
++            )?;
++            Some(native_mailbox::CampaignStore::new(&root, credit)?)
++        } else {
++            None
++        };
++        let object_path = campaign_store.as_ref().map(|store| store.path().to_owned());
+         // Verify the endpoint and boot tail fit while admission owns the token.
+         // The original grant funds startup separately until Runtime completes it.
+         let prepare = || {
+@@ -560,6 +576,7 @@
+             )?;
+             Ok::<_, anyhow::Error>((startup_bytes, (disk, retained_runtime)))
+         };
++        let object_pool = pool.clone();
+         let mut peer_plan = None;
+         let prepared = service.begin_launch_admitted_with_original_provision(
+             request,
+@@ -576,9 +593,7 @@
+             prepare,
+             move |prepared, admitted| {
+                 if let Some((enrollment, host, result)) = provision {
+-                    let report = move |measured: crate::Result<
+-                        crate::mailbox_witness::ExchangeResult,
+-                    >| {
++                    let report = move |measured: crate::Result<native_mailbox::HostOutcome>| {
+                         let succeeded = measured.is_ok();
+                         result.send(measured).map_err(std::io::Error::other)?;
+                         if !succeeded {
+@@ -590,8 +605,42 @@
+                         prepared.stage_mailbox_recovery_enrollment_fixture(
+                             admitted,
+                             enrollment,
++                            object_campaign,
+                             move |socket, acceptor, broker, service| {
+-                                report(host.run_recovery(socket, acceptor, broker, service))
++                                let outcome = if let Some(path) = object_path {
++                                    // Object work starts only after Runtime has booted the
++                                    // original guest and released startup workspace.
++                                    let _codec = object_pool
++                                        .reserve(
++                                            tenant_tag("local"),
++                                            ManagedClaim {
++                                                host_codec_bytes: 4 * MIB,
++                                                ..Default::default()
++                                            },
++                                        )
++                                        .map_err(|error| {
++                                            std::io::Error::other(format!(
++                                                "object campaign codec workspace: {error}"
++                                            ))
++                                        })?;
++                                    let limits = spiralcore_transfer::endpoint::Limits {
++                                        max_active: 1,
++                                        max_states: 8,
++                                        max_publications: 8,
++                                        resident_bytes: 4 * MIB,
++                                        cache_bytes: 4 * MIB,
++                                        namespace_bytes: 4 * MIB,
++                                        graph_cache_bytes: 0,
++                                        graph_cache_entries: 0,
++                                        ..Default::default()
++                                    };
++                                    host.run_object_campaign(socket, broker, service, &path, limits)
++                                        .map(native_mailbox::HostOutcome::Object)
++                                } else {
++                                    host.run_recovery(socket, acceptor, broker, service)
++                                        .map(native_mailbox::HostOutcome::Exchange)
++                                };
++                                report(outcome)
+                             },
+                         )?;
+                     } else {
+@@ -599,7 +648,10 @@
+                             admitted,
+                             enrollment,
+                             move |socket, broker, service| {
+-                                report(host.run(socket, broker, service))
++                                report(
++                                    host.run(socket, broker, service)
++                                        .map(native_mailbox::HostOutcome::Exchange),
++                                )
+                             },
+                         )?;
+                     }
+@@ -632,6 +684,7 @@
+                 mailbox_result,
+                 reply_withheld,
+                 recovery_mode,
++                campaign_store,
+             )?;
+             let (enrollment, bundle) =
+                 mailbox_identity.context("mailbox fixture identity missing")?;
+--- a/crates/spiralcore-mvm-live/src/mailbox_witness/campaign_carrier_tests.rs
++++ b/crates/spiralcore-mvm-live/src/mailbox_witness/campaign_carrier_tests.rs
+@@ -50,6 +50,7 @@
+                 host,
+                 HandshakeRole::Acceptor,
+                 &host_pin,
++                Instant::now() + RECOVERY_CAP,
+             )
+             .unwrap();
+             campaign::receiver_on_authenticated(
+@@ -73,6 +74,7 @@
+             guest,
+             HandshakeRole::Initiator,
+             &guest_pin,
++            Instant::now() + RECOVERY_CAP,
+         )
+         .unwrap();
+         let sent =
+@@ -129,6 +131,7 @@
+                 host,
+                 HandshakeRole::Acceptor,
+                 &host_pin,
++                Instant::now() + RECOVERY_CAP,
+             )
+         });
+         assert!(
+@@ -137,6 +140,7 @@
+                 guest,
+                 HandshakeRole::Initiator,
+                 &guest_pin,
++                Instant::now() + RECOVERY_CAP,
+             )
+             .is_err()
+         );
+--- a/crates/spiralcore-mvm-live/src/installed_parent/config_tests.rs
++++ b/crates/spiralcore-mvm-live/src/installed_parent/config_tests.rs
+@@ -1036,6 +1036,7 @@
+         .stage_mailbox_recovery_enrollment_fixture(
+             &admitted,
+             trusted,
++            false,
+             move |mut old, acceptor, _, _| {
+                 assert_eq!(old.read(&mut [0])?, 0);
+                 drop(old);

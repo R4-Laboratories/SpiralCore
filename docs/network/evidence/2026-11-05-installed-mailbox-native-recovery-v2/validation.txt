@@ -1,0 +1,31 @@
+Source SHA-256
+76d6d29d6f2d631e2eeeb2e3d9b0ee122f3f6cbef44f052fcefa6dbace397962  src/mailbox_witness.rs
+e3536869c5a3acfcb64ae2809ba3e8730bafc4e05e6a9187b548da38cbab86d5  src/mailbox_witness/tests.rs
+ea6e55648c2519e9dc699d8bafbfd8106a86a820bf66087627e92b14c7c35d78  src/installed_parent.rs
+3c5f97f07c56efeba6764ce844c296d73ca64a9d41844e2b0050469000af2bef  src/installed_parent/native_witness/native_mailbox.rs
+f4956c6e51cfe8f4a5555c773200d01bacc0b43a73099a0c1804c8882ef74bf1  src/installed_parent/native_witness/native_plan.rs
+d5c81f63d7ee23825b73c7178e91a6de3cbfbe853555b3e7ff99e1ffede55b5f  src/installed_parent/native_witness/mod.rs
+7ef25ca35bfd14f42a47b99aa043c8667bd4fb0985c9f506cba012e8d05dfa8d  /var/tmp/spiralcore-mailbox-listener-identity-20261105/sdk/crates/mvm-hostd/src/host_lifetime_parent.rs
+4009b70aa0645fe302025290281b21d4aaa07499cc2296ff6d6a5af510327145  /var/tmp/spiralcore-rearm-parent-composition-20261105/native-recovery/adapter/src/live.rs
+cfe77cd8ba4868c02793c313cc3305802edf427395b4ff9edc273f3d1167c01b  examples/recovery-v2-qualification-guest.rs
+
+API-absence RED
+101
+error[E0425]: cannot find function `provision_recovery` in module `mailbox_witness`
+error[E0599]: no method named `exchange_recovery` found for struct `mailbox_witness::GuestBootstrap` in the current scope
+
+Composed locked Linux release and static guest status
+0
+0
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 219 filtered out; finished in 0.12s
+
+Protected native binaries
+{"host": "ab40aa579262f7e27c03f16c812edb0e617bd14d5f18d311c84ead5873923b7a", "guest": "29f0c274ae772ae7edaa1e8ed70c3b26678a362549843dec107d2a2c04073a91"}
+
+One-guest native terminal
+0
+{
+  "exit": 0,
+  "outer_elapsed_ns": 3329625970
+}
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 225 filtered out; finished in 3.17s

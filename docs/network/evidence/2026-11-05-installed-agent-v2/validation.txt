@@ -1,0 +1,8 @@
+Original Linux image checkout b455ca71fe6d780b244da20ce09187ed47d0fb02 and composed runtime SDK b55d0c4dac04587c918cb1721971af8a33b495ee observed clean.
+Initial no-default-feature image tool refused upstream signature verification because manifest-verify was disabled. Rebuilt with the real verifier. No bypass used.
+Exact local manifest preserves all required Linux image declarations and only two same-generation x86_64 retired-runtime entries. Existing MVM schema, exporter, verifier, and runtime selection are unchanged.
+No-boot image tool lock/compile, typed empty-trust refusal, installation and exact runtime readback all verified. Logical closure estimate 107329311 bytes.
+Independent scoped Code/Rust/Security source review passed for exact image tool and direct guest. Independent Python review passed for supervised launcher.
+Static direct guest negative controls exited 29 on unexpected argv and 21 on unfiltered host execution before credential read.
+Native launcher independently rechecked source and binary pins, canonical paired byte counters, exact payloads, original retirement, and fresh native bundle digest.
+Host command maximum RSS 189752 KiB. Host witness process CPU 1003883937 ns as recorded in native JSON.

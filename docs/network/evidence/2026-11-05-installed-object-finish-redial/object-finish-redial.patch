@@ -1,0 +1,1187 @@
+--- a/crates/spiralcore-mvm-live/src/campaign.rs
++++ b/crates/spiralcore-mvm-live/src/campaign.rs
+@@ -2,6 +2,8 @@
+ mod canonical;
+ mod completed;
+ mod reconciliation;
++mod redial;
++pub(crate) use redial::Redial;
+ mod session;
+ pub(crate) mod sustained;
+ #[cfg(all(target_os = "linux", any(test, feature = "installed-mailbox-witness")))]
+@@ -152,6 +154,7 @@
+     service: canonical::Session,
+     on_call: Option<ReconciliationController<'a>>,
+     next_call: Option<Instant>,
++    redial: redial::Replacement<'a, S>,
+ }
+ impl<S: SocketIo + 'static> Client<'_, S> {
+     fn call(&mut self, request: &Frame) -> Result<(Context, Frame)> {
+@@ -161,7 +164,16 @@
+         }
+         let cpu = ProcessTime::now();
+         let wall = Instant::now();
+-        let result = if let Some(on_call) = self.on_call.as_mut() {
++        let result = if request.kind == 3 && self.redial.pending() {
++            let result = self.service.call_with_redial(
++                request,
++                &self.stream,
++                &self.cancel,
++                &mut self.redial,
++            )?;
++            self.redial.install(&mut self.stream)?;
++            result
++        } else if let Some(on_call) = self.on_call.as_mut() {
+             let (signal, requests) = reconciliation::bounded_requests();
+             on_call(signal)?;
+             self.service
+@@ -262,6 +274,7 @@
+         service,
+         on_call,
+         next_call: None,
++        redial: redial::Replacement::new(None),
+     };
+     send_campaign(bootstrap, cases, client, (cpu, wall), false, out)
+ }
+@@ -273,6 +286,17 @@
+     sustained_run: bool,
+     out: &mut impl Write,
+ ) -> Result<Value> {
++    sender_on_authenticated_with_redial(carrier, broker, sustained_run, None, out)
++}
++
++#[cfg(all(target_os = "linux", any(test, feature = "installed-mailbox-witness")))]
++pub(crate) fn sender_on_authenticated_with_redial<S: SocketIo + 'static>(
++    carrier: AuthenticatedCampaignCarrier<'_, S>,
++    broker: &spiralcore_mvm_adapter::broker::BrokerContext,
++    sustained_run: bool,
++    redial: Option<Redial<'_, S>>,
++    out: &mut impl Write,
++) -> Result<Value> {
+     let (bootstrap, stream, cancel) = carrier.into_parts();
+     if bootstrap.role != Role::Sender {
+         return Err("sender bootstrap role mismatch".into());
+@@ -290,6 +314,7 @@
+         service,
+         on_call: None,
+         next_call: sustained_run.then(Instant::now),
++        redial: redial::Replacement::new(redial),
+     };
+     send_campaign(bootstrap, cases, client, started, sustained_run, out)
+ }
+@@ -361,7 +386,7 @@
+     emit(
+         out,
+         &json!({"event":"sender_setup","plan":bootstrap.plan,"cpu_us":total.cpu_us,
+-        "wall_us":total.wall_us,"counters":client.stream.counters()?,"service_profile":"canonical-ephemeral-v1",
++        "wall_us":total.wall_us,"counters":client.redial.counters(&client.stream)?,"service_profile":"canonical-ephemeral-v1",
+         "includes":"fixture generation, codec preparation, handshake and authenticated Status probe",
+         "seed_baseline":if bootstrap.plan.arm.is_mixed() {"Combined pays checkpoint/schema publication; all arms send the same eight targets with warm_probe=true; WholeMixed uses prepared whole-object zstd"} else {"all arms seed raw; Whole uses prepared whole-object zstd for subsequent objects"}}),
+     )?;
+@@ -369,7 +394,7 @@
+         let expected = transfer::object_id(&case.bytes);
+         let owned = case.bytes.clone();
+         let id = transfer_id(&bootstrap.plan, position)?;
+-        let before = client.stream.counters()?;
++        let before = client.redial.counters(&client.stream)?;
+         let exchange_cpu = client.exchange.cpu_us;
+         let exchange_wall = client.exchange.wall_us;
+         let mut failure = None;
+@@ -434,16 +459,17 @@
+             "cpu_us":cpu_us,"wall_us":wall_us,"exchange_cpu_us":io_cpu,"exchange_wall_us":io_wall,
+             "selection":selection.as_ref().map(selection_value),
+             "service_profile":"canonical-ephemeral-v1",
+-            "counters":difference(client.stream.counters()?, before)?,
++            "counters":difference(client.redial.counters(&client.stream)?, before)?,
+             "application_request_bytes":stats.request_bytes,"application_response_bytes":stats.response_bytes}),
+         )?;
+     }
+     client.service.sample_sustained()?;
+-    let counters = client.stream.counters()?;
++    client.redial.ensure_complete()?;
++    let counters = client.redial.counters(&client.stream)?;
+     client.stream.close()?;
+     let result = json!({"event":"sender_done","plan":bootstrap.plan,"operations":cases.len(),
+         "service_profile":"canonical-ephemeral-v1","service":client.service.report(),
+-        "cpu_us":total.cpu_us,"wall_us":total.wall_us,"counters":counters,
++        "cpu_us":total.cpu_us,"wall_us":total.wall_us,"counters":counters,"first_carrier":client.redial.first(),
+         "timing":"setup plus operations; JSON output and fixture ownership copies excluded from operation timing"});
+     emit(out, &result)?;
+     Ok(result)
+@@ -473,6 +499,7 @@
+     service: canonical::Session<T>,
+     object: ObjectMailbox,
+     on_reply_replay: Option<&'a mut dyn FnMut(ReplyReplaySignal) -> Result<()>>,
++    redial: redial::Replacement<'a, S>,
+ }
+ struct Handled {
+     reply: Frame,
+@@ -481,6 +508,17 @@
+ }
+ impl<S: SocketIo + 'static, T: BorrowMut<LocalMailboxService>> Server<'_, S, T> {
+     fn handle(&mut self, expected_transfer: Id) -> Result<Handled> {
++        if self.redial.pending() {
++            let result = self.service.handle_with_redial(
++                expected_transfer,
++                &mut self.object,
++                &self.stream,
++                &self.cancel,
++                &mut self.redial,
++            )?;
++            self.redial.install_if_ready(&mut self.stream)?;
++            return Ok(result);
++        }
+         if let Some(on_handle) = self.on_reply_replay.as_mut() {
+             let (signal, requests) = reconciliation::bounded_reply_replays();
+             on_handle(signal)?;
+@@ -585,6 +623,7 @@
+         service,
+         object,
+         on_reply_replay,
++        redial: redial::Replacement::new(None),
+     };
+     receive_campaign(
+         bootstrap,
+@@ -607,6 +646,29 @@
+     sustained_run: bool,
+     out: &mut impl Write,
+ ) -> Result<Value> {
++    receiver_on_authenticated_with_redial(
++        carrier,
++        broker,
++        service,
++        cache_root,
++        limits,
++        sustained_run,
++        None,
++        out,
++    )
++}
++
++#[cfg(all(target_os = "linux", any(test, feature = "installed-mailbox-witness")))]
++pub(crate) fn receiver_on_authenticated_with_redial<S: SocketIo + 'static>(
++    carrier: AuthenticatedCampaignCarrier<'_, S>,
++    broker: &spiralcore_mvm_adapter::broker::BrokerContext,
++    service: &mut LocalMailboxService,
++    cache_root: &Path,
++    limits: Limits,
++    sustained_run: bool,
++    redial: Option<Redial<'_, S>>,
++    out: &mut impl Write,
++) -> Result<Value> {
+     let (bootstrap, stream, cancel) = carrier.into_parts();
+     if bootstrap.role != Role::Receiver {
+         return Err("receiver bootstrap role mismatch".into());
+@@ -624,6 +686,7 @@
+         service,
+         object,
+         on_reply_replay: None,
++        redial: redial::Replacement::new(redial),
+     };
+     receive_campaign(
+         bootstrap,
+@@ -674,12 +737,12 @@
+     emit(
+         out,
+         &json!({"event":"receiver_setup","plan":bootstrap.plan,"cpu_us":total.cpu_us,
+-        "wall_us":total.wall_us,"counters":server.stream.counters()?,"service_profile":"canonical-ephemeral-v1"}),
++        "wall_us":total.wall_us,"counters":server.redial.counters(&server.stream)?,"service_profile":"canonical-ephemeral-v1"}),
+     )?;
+     let mut published = Vec::with_capacity(cases.len());
+     for (position, case) in cases.iter().enumerate() {
+         let expected = transfer::object_id(&case.bytes);
+-        let before = server.stream.counters()?;
++        let before = server.redial.counters(&server.stream)?;
+         let mut processing = Meter::default();
+         let mut messages = 0usize;
+         loop {
+@@ -715,13 +778,14 @@
+             "kind":case.kind,"object":transfer::hex(&expected),"bytes":case.bytes.len(),
+             "cpu_us":processing.cpu_us,"wall_us":processing.wall_us,
+             "service_profile":"canonical-ephemeral-v1",
+-            "counters":difference(server.stream.counters()?, before)?,
++            "counters":difference(server.redial.counters(&server.stream)?, before)?,
+             "timing":"open, endpoint processing and authenticated reply; idle receive wait excluded"}),
+         )?;
+     }
+     // Never close after merely writing the last ACK: the sender must read and
+     // validate it, then close. A partial trailing prefix is not a clean EOF.
+-    let before_eof = server.stream.counters()?;
++    server.redial.ensure_complete()?;
++    let before_eof = server.redial.counters(&server.stream)?;
+     match server
+         .stream
+         .receive(&server.cancel, Instant::now() + CALL_TIMEOUT)
+@@ -729,7 +793,8 @@
+         Err(LiveError::Io(error)) if error.kind() == io::ErrorKind::UnexpectedEof => {}
+         _ => return Err("expected sender EOF after final publication reply".into()),
+     }
+-    let counters = server.stream.counters()?;
++    let counters = server.redial.counters(&server.stream)?;
++    let first_carrier = server.redial.first();
+     let tail = difference(counters, before_eof)?;
+     if tail.envelope_bytes_received != 0 || tail.framing_bytes_received != 0 {
+         return Err("trailing partial frame after campaign".into());
+@@ -741,7 +806,7 @@
+     verify_qualification(&bootstrap.plan, cache_root, &published, sustained_run, out)?;
+     let result = json!({"event":"receiver_done","plan":bootstrap.plan,"operations":published.len(),
+         "service_profile":"canonical-ephemeral-v1","service":service_report,
+-        "cpu_us":total.cpu_us,"wall_us":total.wall_us,"counters":counters,"published":published,
++        "cpu_us":total.cpu_us,"wall_us":total.wall_us,"counters":counters,"first_carrier":first_carrier,"published":published,
+         "exact_reopened":true,"timing":"setup plus receiver processing; independent readback recorded separately"});
+     emit(out, &result)?;
+     Ok(result)
+--- a/crates/spiralcore-mvm-live/src/campaign/canonical.rs
++++ b/crates/spiralcore-mvm-live/src/campaign/canonical.rs
+@@ -264,7 +264,7 @@
+         stream: &StreamTransport<S>,
+         cancel: &CancellationToken,
+     ) -> Result<(Context, Frame)> {
+-        self.call_inner(request, stream, cancel, None, false)
++        self.call_inner(request, stream, cancel, None, false, None)
+     }
+ 
+     pub(super) fn call_with_reconciliation<S: SocketIo + 'static>(
+@@ -274,7 +274,7 @@
+         cancel: &CancellationToken,
+         retry_requests: RetryRequests,
+     ) -> Result<(Context, Frame)> {
+-        self.call_inner(request, stream, cancel, Some(retry_requests), false)
++        self.call_inner(request, stream, cancel, Some(retry_requests), false, None)
+     }
+ 
+     pub(super) fn call_with_completed_tail<S: SocketIo + 'static>(
+@@ -284,7 +284,21 @@
+         cancel: &CancellationToken,
+         retry_requests: Option<RetryRequests>,
+     ) -> Result<(Context, Frame)> {
+-        let result = self.call_inner(request, stream, cancel, retry_requests, true);
++        let result = self.call_inner(request, stream, cancel, retry_requests, true, None);
++        if result.is_err() {
++            self.caller_fenced = true;
++        }
++        result
++    }
++
++    pub(super) fn call_with_redial<S: SocketIo + 'static>(
++        &mut self,
++        request: &Frame,
++        stream: &StreamTransport<S>,
++        cancel: &CancellationToken,
++        redial: &mut redial::Replacement<'_, S>,
++    ) -> Result<(Context, Frame)> {
++        let result = self.call_inner(request, stream, cancel, None, false, Some(redial));
+         if result.is_err() {
+             self.caller_fenced = true;
+         }
+@@ -298,6 +312,7 @@
+         cancel: &CancellationToken,
+         retry_requests: Option<RetryRequests>,
+         retain_tail: bool,
++        mut redial: Option<&mut redial::Replacement<'_, S>>,
+     ) -> Result<(Context, Frame)> {
+         if self.caller_fenced {
+             return Err(SessionError::StreamFenced.into());
+@@ -613,6 +628,70 @@
+                 }
+             })?;
+             if let Some((ack, target)) = acknowledgment {
++                let replacement_deadline = if target == AckTarget::Current {
++                    if let Some(redial) = redial.take() {
++                        let pending = self.pending.as_mut().ok_or(ServiceError::State)?;
++                        if request.kind != 3
++                            || !matches!(
++                                pending.receipt_outcome(),
++                                Some(
++                                    DeliveryOutcome::AcceptedEphemeral
++                                        | DeliveryOutcome::AcceptedDurable
++                                )
++                            )
++                        {
++                            return Err(ServiceError::State.into());
++                        }
++                        let original = owned_wire.as_deref().ok_or(ServiceError::State)?;
++                        let cap = ExchangeDeadline::new(
++                            deadline.min(Instant::now() + redial::WINDOW),
++                            envelope.routing.expires_at_unix_ms,
++                            broker.with_time(|_, now| -> Result<_> {
++                                pending.remaining(now)?;
++                                Ok(now)
++                            })?,
++                        )?;
++                        // Decode the already admitted reply before the planned
++                        // disconnect. Nothing is returned to the caller before ACK.
++                        let finish = broker.with_time(|_, now| -> Result<_> {
++                            cap.check(now)?;
++                            redial::check(cancel, cap.instant())?;
++                            let CallStatus::Replied(Some(payload)) = self
++                                .service
++                                .borrow_mut()
++                                .poll_call(&self.outgoing, &call, now)?
++                            else {
++                                return Err(ServiceError::State.into());
++                            };
++                            // SCMOBJ01 has a 56-byte frame header and a 32-byte Done digest.
++                            if payload.len() != 56 + 32 {
++                                return Err(ServiceError::Conflict.into());
++                            }
++                            let frame = Frame::decode(&payload)?;
++                            if frame.kind != 103
++                                || frame.transfer != request.transfer
++                                || frame.seq != request.seq
++                                || frame.body.len() != 32
++                            {
++                                return Err(ServiceError::Conflict.into());
++                            }
++                            Ok(frame)
++                        })?;
++                        pending.receive_event()?;
++                        let next = redial.initiate(stream, cancel, cap.instant())?;
++                        if next.receive(cancel, cap.instant())? != original {
++                            return Err(ServiceError::Conflict.into());
++                        }
++                        Some((next, cap, finish))
++                    } else {
++                        None
++                    }
++                } else {
++                    None
++                };
++                let ack_stream = replacement_deadline
++                    .as_ref()
++                    .map_or(stream, |(next, _, _)| *next);
+                 let (permit, now) = broker.with_time(|_, now| -> Result<_> {
+                     if target == AckTarget::Tail {
+                         self.completed_tail
+@@ -621,6 +700,14 @@
+                             .lease
+                             .validate(&self.outgoing, &self.incoming, now)?;
+                     }
++                    if let Some((_, cap, _)) = &replacement_deadline {
++                        cap.check(now)?;
++                        redial::check(cancel, cap.instant())?;
++                        self.pending
++                            .as_ref()
++                            .ok_or(ServiceError::State)?
++                            .remaining(now)?;
++                    }
+                     Ok((ack.reserve_send(cancel, now)?, now))
+                 })?;
+                 if target == AckTarget::Current {
+@@ -635,14 +722,30 @@
+                     increment(&mut self.recovery.tail_ack_invocations)?;
+                     tail.deadline.min(deadline)
+                 } else {
+-                    deadline
++                    replacement_deadline
++                        .as_ref()
++                        .map_or(deadline, |(_, cap, _)| cap.instant())
+                 };
+-                permit.send(&stream.before(ack_deadline), cancel, now)?;
++                permit.send(&ack_stream.before(ack_deadline), cancel, now)?;
+                 if target == AckTarget::Current {
+                     self.pending
+                         .as_mut()
+                         .ok_or(SessionError::StreamFenced)?
+                         .sent_reply_ack()?;
++                    if let Some((_, cap, finish)) = replacement_deadline {
++                        broker.with_time(|_, now| -> Result<()> {
++                            cap.check(now)?;
++                            redial::check(cancel, cap.instant())?;
++                            let pending = self.pending.as_ref().ok_or(ServiceError::State)?;
++                            pending.remaining(now)?;
++                            if !pending.ready_to_complete() {
++                                return Err(ServiceError::State.into());
++                            }
++                            Ok(())
++                        })?;
++                        reply = Some(finish);
++                        break;
++                    }
+                 } else if target == AckTarget::Tail {
+                     self.completed_tail.as_mut().ok_or(ServiceError::State)?.ack =
+                         ReplyAckState::Sent;
+@@ -838,7 +941,7 @@
+         stream: &StreamTransport<S>,
+         cancel: &CancellationToken,
+     ) -> Result<Handled> {
+-        self.handle_with_replay_mode(expected, object, stream, cancel, None)
++        self.handle_with_replay_mode(expected, object, stream, cancel, None, None)
+     }
+     pub(super) fn handle_with_reply_replay<S: SocketIo + 'static>(
+         &mut self,
+@@ -848,7 +951,17 @@
+         cancel: &CancellationToken,
+         requests: ReplyReplayRequests,
+     ) -> Result<Handled> {
+-        self.handle_with_replay_mode(expected, object, stream, cancel, Some(requests))
++        self.handle_with_replay_mode(expected, object, stream, cancel, Some(requests), None)
++    }
++    pub(super) fn handle_with_redial<S: SocketIo + 'static>(
++        &mut self,
++        expected: Id,
++        object: &mut ObjectMailbox,
++        stream: &StreamTransport<S>,
++        cancel: &CancellationToken,
++        redial: &mut redial::Replacement<'_, S>,
++    ) -> Result<Handled> {
++        self.handle_with_replay_mode(expected, object, stream, cancel, None, Some(redial))
+     }
+     fn handle_with_replay_mode<S: SocketIo + 'static>(
+         &mut self,
+@@ -857,8 +970,9 @@
+         stream: &StreamTransport<S>,
+         cancel: &CancellationToken,
+         requests: Option<ReplyReplayRequests>,
++        redial: Option<&mut redial::Replacement<'_, S>>,
+     ) -> Result<Handled> {
+-        let result = self.handle_inner(expected, object, stream, cancel, requests);
++        let result = self.handle_inner(expected, object, stream, cancel, requests, redial);
+         if let Err(error) = self.receiver_processing.finish(&mut self.receiver_phase) {
+             self.receiver_incomplete = true;
+             return Err(error);
+@@ -876,6 +990,7 @@
+         stream: &StreamTransport<S>,
+         cancel: &CancellationToken,
+         requests: Option<ReplyReplayRequests>,
++        redial: Option<&mut redial::Replacement<'_, S>>,
+     ) -> Result<Handled> {
+         self.check_sustained()?;
+         if self.calls >= self.campaign_call_limit() {
+@@ -1007,7 +1122,7 @@
+             Ok((receipt.reserve_send(cancel, now)?, now))
+         })?;
+         permit.send(&stream.before(deadline.instant()), cancel, now)?;
+-        let (reply, namespace) = application_phase(&broker, |now| {
++        let (reply, namespace, finish) = application_phase(&broker, |now| {
+             deadline.check(now)?;
+             let frame = Frame::decode(proof.payload())?;
+             if frame.transfer != expected {
+@@ -1015,7 +1130,7 @@
+             }
+             let namespace = object.context(&self.incoming, &proof, now)?.namespace()?;
+             let reply = object.handle(&self.incoming, &proof, now)?;
+-            Ok((reply, namespace))
++            Ok((reply, namespace, frame.kind == 3))
+         })?;
+         let (prepared, encoded, send) = broker.with_time(|_, now| -> Result<_> {
+             deadline.check(now)?;
+@@ -1054,6 +1169,45 @@
+         // Receiver idle waits stay outside processing CPU/wall intervals.
+         let processed = self.receiver_processing.finish(&mut self.receiver_phase)?;
+         meter.add(processed.cpu_us, processed.wall_us)?;
++        let replacement = match redial {
++            Some(redial) if finish && reply.kind == 103 => {
++                let cap = deadline.instant().min(Instant::now() + redial::WINDOW);
++                let next = redial.accept(stream, cancel, cap)?;
++                self.receiver_phase = Some((ProcessTime::now(), Instant::now()));
++                let (cached, now) = broker.with_time(|_, now| -> Result<_> {
++                    deadline.check(now)?;
++                    redial::check(cancel, cap)?;
++                    let cached = self
++                        .service
++                        .borrow_mut()
++                        .retry_reply_for_delivery_prepared(&self.incoming, proof.handle(), now)?
++                        .ok_or(ServiceError::State)?;
++                    let wire = encode_envelope(cached.envelope())?;
++                    if wire != encoded
++                        || self.tracker.register_send(
++                            &self.outgoing,
++                            &self.control,
++                            &self.peer_key,
++                            &wire,
++                            now,
++                        )? != send
++                    {
++                        return Err(ServiceError::Conflict.into());
++                    }
++                    Ok((cached, now))
++                })?;
++                sends += 1;
++                increment(&mut self.recovery.cached_reply_retry_invocations)?;
++                increment(&mut self.recovery.reply_send_invocations)?;
++                self.outgoing
++                    .send_prepared(&cached, &next.before(cap), cancel, now)?;
++                let processed = self.receiver_processing.finish(&mut self.receiver_phase)?;
++                meter.add(processed.cpu_us, processed.wall_us)?;
++                Some((next, cap))
++            }
++            _ => None,
++        };
++        let (stream, ack_deadline) = replacement.unwrap_or((stream, deadline.instant()));
+         let mut acknowledged = false;
+         // Preamble and initial Call share this invocation's cumulative bound.
+         while events < 16 {
+@@ -1136,13 +1290,16 @@
+                     }
+                 }
+             } else {
+-                stream.receive(cancel, deadline.instant())?
++                stream.receive(cancel, ack_deadline)?
+             };
+             events += 1;
+             self.receiver_phase = Some((ProcessTime::now(), Instant::now()));
+             let key = decode_envelope(&event)?.encryption.key_id;
+             let repeat = broker.with_time(|_, now| -> Result<_> {
+                 deadline.check(now)?;
++                if replacement.is_some() {
++                    redial::check(cancel, ack_deadline)?;
++                }
+                 if key == self.control_key {
+                     self.tracker.observe_receipt(&self.control, &event, now)?;
+                     match self.tracker.take_receipt(&self.outgoing, &send, now)? {
+@@ -1159,6 +1316,9 @@
+                                     SessionError::RemoteRefusal(receipt.receipt.outcome).into()
+                                 );
+                             }
++                            if replacement.is_some() {
++                                redial::check(cancel, ack_deadline)?;
++                            }
+                             if !self.service.borrow_mut().acknowledge_reply(
+                                 &self.outgoing,
+                                 &receipt,
+@@ -1172,6 +1332,9 @@
+                         }
+                     }
+                 }
++                if replacement.is_some() {
++                    return Err("expected original Reply receipt on replacement carrier".into());
++                }
+                 if key != self.normal_key {
+                     return Err("unprovisioned incoming encryption key".into());
+                 }
+--- a/crates/spiralcore-mvm-live/src/campaign/completed.rs
++++ b/crates/spiralcore-mvm-live/src/campaign/completed.rs
+@@ -41,6 +41,7 @@
+                 service,
+                 on_call: None,
+                 next_call: None,
++                redial: redial::Replacement::new(None),
+             },
+         })
+     }
+--- /dev/null
++++ b/crates/spiralcore-mvm-live/src/campaign/redial.rs
+@@ -0,0 +1,166 @@
++use super::*;
++
++pub(super) const WINDOW: Duration = Duration::from_secs(8);
++
++pub(super) fn check(cancel: &CancellationToken, cap: Instant) -> Result<()> {
++    use spiralcore_mvm_adapter::service::ServiceError;
++    if cancel.is_cancelled() {
++        return Err(ServiceError::Cancelled.into());
++    }
++    if Instant::now() >= cap {
++        return Err(ServiceError::Expired.into());
++    }
++    Ok(())
++}
++
++pub(crate) type Redial<'a, S> =
++    Box<dyn FnOnce(&CancellationToken, Instant) -> Result<StreamTransport<S>> + 'a>;
++
++pub(super) struct Replacement<'a, S: SocketIo> {
++    dial: Option<Redial<'a, S>>,
++    first: Option<StreamCounters>,
++    next: Option<StreamTransport<S>>,
++}
++
++impl<'a, S: SocketIo + 'static> Replacement<'a, S> {
++    pub(super) fn new(dial: Option<Redial<'a, S>>) -> Self {
++        Self {
++            dial,
++            first: None,
++            next: None,
++        }
++    }
++
++    pub(super) fn pending(&self) -> bool {
++        self.dial.is_some()
++    }
++
++    pub(super) fn first(&self) -> Option<StreamCounters> {
++        self.first
++    }
++
++    pub(super) fn ensure_complete(&self) -> Result<()> {
++        if self.pending() || self.next.is_some() {
++            return Err("required campaign replacement did not complete".into());
++        }
++        Ok(())
++    }
++
++    pub(super) fn initiate(
++        &mut self,
++        old: &StreamTransport<S>,
++        cancel: &CancellationToken,
++        cap: Instant,
++    ) -> Result<&StreamTransport<S>> {
++        check(cancel, cap)?;
++        old.close()?;
++        self.switch(old, cancel, cap)
++    }
++
++    pub(super) fn accept(
++        &mut self,
++        old: &StreamTransport<S>,
++        cancel: &CancellationToken,
++        cap: Instant,
++    ) -> Result<&StreamTransport<S>> {
++        loop {
++            match old.receive_or_idle_observing_eof(cancel, cap, Duration::from_millis(100))? {
++                None => return self.switch(old, cancel, cap),
++                Some(spiralcore_mvm_adapter::live::ReceiveOutcome::Idle) => continue,
++                Some(spiralcore_mvm_adapter::live::ReceiveOutcome::Frame(_)) => {
++                    return Err("unexpected frame before campaign replacement".into());
++                }
++            }
++        }
++    }
++
++    fn switch(
++        &mut self,
++        old: &StreamTransport<S>,
++        cancel: &CancellationToken,
++        cap: Instant,
++    ) -> Result<&StreamTransport<S>> {
++        let dial = self
++            .dial
++            .take()
++            .ok_or("campaign replacement already used")?;
++        let counters = old.counters()?;
++        self.next = Some(dial(cancel, cap)?);
++        self.first = Some(counters);
++        self.next
++            .as_ref()
++            .ok_or_else(|| "campaign replacement missing".into())
++    }
++
++    pub(super) fn install(&mut self, stream: &mut StreamTransport<S>) -> Result<()> {
++        *stream = self.next.take().ok_or("campaign replacement missing")?;
++        Ok(())
++    }
++
++    pub(super) fn install_if_ready(&mut self, stream: &mut StreamTransport<S>) -> Result<()> {
++        if self.next.is_some() {
++            self.install(stream)?;
++        }
++        Ok(())
++    }
++
++    pub(super) fn counters(&self, stream: &StreamTransport<S>) -> Result<StreamCounters> {
++        let current = stream.counters()?;
++        let Some(first) = self.first else {
++            return Ok(current);
++        };
++        let add = |a: u64, b: u64| a.checked_add(b).ok_or("campaign counter overflow");
++        Ok(StreamCounters {
++            envelope_bytes_sent: add(first.envelope_bytes_sent, current.envelope_bytes_sent)?,
++            envelope_bytes_received: add(
++                first.envelope_bytes_received,
++                current.envelope_bytes_received,
++            )?,
++            framing_bytes_sent: add(first.framing_bytes_sent, current.framing_bytes_sent)?,
++            framing_bytes_received: add(
++                first.framing_bytes_received,
++                current.framing_bytes_received,
++            )?,
++            frames_sent: add(first.frames_sent, current.frames_sent)?,
++            frames_received: add(first.frames_received, current.frames_received)?,
++        })
++    }
++}
++
++#[test]
++#[cfg(unix)]
++fn partial_old_frame_does_not_open_replacement() {
++    use mvm_core::mailbox::transport::RouteId;
++    use std::cell::Cell;
++    use std::os::unix::net::UnixStream;
++    let route = RouteId::from_bytes([33; 32]);
++    let (guest, host) = UnixStream::pair().unwrap();
++    let mut raw_guest = guest.try_clone().unwrap();
++    let attempts = Cell::new(0);
++    std::thread::scope(|scope| {
++        let worker = scope.spawn(|| {
++            let stream = StreamTransport::new(guest, route, Duration::from_secs(3)).unwrap();
++            stream
++                .handshake(HandshakeRole::Initiator, &CancellationToken::default())
++                .unwrap();
++        });
++        let old = StreamTransport::new(host, route, Duration::from_secs(3)).unwrap();
++        let cancel = CancellationToken::default();
++        old.handshake(HandshakeRole::Acceptor, &cancel).unwrap();
++        worker.join().unwrap();
++        raw_guest.write_all(&[0]).unwrap();
++        raw_guest.shutdown(std::net::Shutdown::Both).unwrap();
++        let redial: Redial<'_, _> = Box::new(|_, _| {
++            attempts.set(attempts.get() + 1);
++            Err("unexpected replacement invocation".into())
++        });
++        let mut replacement = Replacement::new(Some(redial));
++        assert!(
++            replacement
++                .accept(&old, &cancel, Instant::now() + WINDOW)
++                .is_err()
++        );
++        assert!(replacement.first().is_none());
++    });
++    assert_eq!(attempts.get(), 0);
++}
+--- a/crates/spiralcore-mvm-live/src/mailbox_witness.rs
++++ b/crates/spiralcore-mvm-live/src/mailbox_witness.rs
+@@ -39,6 +39,8 @@
+ 
+ use guest_socket::GuestSocket;
+ 
++pub(crate) type DialSocket<'a, S> = Box<dyn FnOnce(Instant) -> Result<S> + 'a>;
++
+ const CALL_LEN: usize = 65_023;
+ const CAST: &[u8] = b"\0installed-vsock-cast\0\0";
+ const TIMEOUT: Duration = Duration::from_secs(15);
+@@ -133,6 +135,8 @@
+     object_campaign: bool,
+     #[serde(default)]
+     sustained: bool,
++    #[serde(default)]
++    object_redial: bool,
+     endpoint: Bootstrap,
+     cast: Material,
+ }
+@@ -141,6 +145,7 @@
+     close_after_call_receipt: bool,
+     object_campaign: bool,
+     sustained: bool,
++    object_redial: bool,
+     recovery: Option<RecoveryPin>,
+     endpoint: Bootstrap,
+     cast: Material,
+@@ -168,18 +173,23 @@
+ pub(crate) fn provision_with_close(
+     close_after_call_receipt: bool,
+ ) -> Result<([u8; 32], GuestBootstrap, HostFixture)> {
+-    provision_mode(close_after_call_receipt, false, false, false)
++    provision_mode(close_after_call_receipt, false, false, false, false)
+ }
+ 
+ pub(crate) fn provision_recovery() -> Result<([u8; 32], GuestBootstrap, HostFixture)> {
+-    provision_mode(false, true, false, false)
++    provision_mode(false, true, false, false, false)
+ }
+ 
+ #[cfg(test)]
+ pub(crate) fn provision_object_campaign(
+     sustained: bool,
+ ) -> Result<([u8; 32], GuestBootstrap, HostFixture)> {
+-    provision_mode(false, true, true, sustained)
++    provision_mode(false, true, true, sustained, false)
++}
++
++#[cfg(test)]
++pub(crate) fn provision_object_recovery() -> Result<([u8; 32], GuestBootstrap, HostFixture)> {
++    provision_mode(false, true, true, false, true)
+ }
+ 
+ pub(crate) fn object_campaign_plan(sustained: bool) -> Plan {
+@@ -201,6 +211,7 @@
+     recovery: bool,
+     object_campaign: bool,
+     sustained: bool,
++    object_redial: bool,
+ ) -> Result<([u8; 32], GuestBootstrap, HostFixture)> {
+     let plan = if object_campaign {
+         object_campaign_plan(sustained)
+@@ -231,6 +242,9 @@
+     if object_campaign {
+         digest.update(b"SpiralCore/installed-object-campaign/v1\0");
+         digest.update([u8::from(sustained)]);
++        if object_redial {
++            digest.update(b"SpiralCore/installed-object-finish-redial/v1\0");
++        }
+         digest.update(serde_json::to_vec(&plan)?);
+     }
+     for material in [
+@@ -293,11 +307,13 @@
+             recovery: guest_recovery,
+             object_campaign,
+             sustained,
++            object_redial,
+             endpoint: pair.sender,
+             cast: guest_cast,
+         },
+         HostFixture {
+             close_after_call_receipt,
++            object_redial,
+             recovery: host_recovery,
+             object_campaign,
+             sustained,
+@@ -523,15 +539,16 @@
+ 
+ impl HostFixture {
+     #[cfg(test)]
+-    pub(crate) fn run_object_campaign(
++    pub(crate) fn run_object_campaign_with_redial(
+         self,
+         socket: UnixStream,
+         broker: &BrokerContext,
+         service: &mut LocalMailboxService,
+         cache: &Path,
+         limits: spiralcore_transfer::endpoint::Limits,
++        dial: Option<DialSocket<'_, UnixStream>>,
+     ) -> Result<serde_json::Value> {
+-        if !self.object_campaign {
++        if !self.object_campaign || self.object_redial != dial.is_some() {
+             return Err("object campaign was not enrolled".into());
+         }
+         if self.sustained {
+@@ -548,13 +565,15 @@
+             pin,
+             Instant::now() + RECOVERY_CAP,
+         )?;
+-        campaign::receiver_on_authenticated(
++        let redial = pinned_redial(&self.endpoint, pin, HandshakeRole::Acceptor, dial);
++        campaign::receiver_on_authenticated_with_redial(
+             carrier,
+             broker,
+             service,
+             cache,
+             limits,
+             self.sustained,
++            redial,
+             &mut std::io::sink(),
+         )
+     }
+@@ -729,7 +748,49 @@
+     }
+ }
+ 
++fn pinned_redial<'a, S: SocketIo + 'static>(
++    endpoint: &'a Bootstrap,
++    pin: &'a RecoveryPin,
++    role: HandshakeRole,
++    dial: Option<DialSocket<'a, S>>,
++) -> Option<campaign::Redial<'a, S>> {
++    let dial = dial?;
++    Some(Box::new(move |cancel, cap| {
++        Peer::carrier(endpoint, dial(cap)?, role, cancel, Some((pin, cap)))
++    }))
++}
++
+ impl GuestBootstrap {
++    fn run_object_sender(
++        &self,
++        socket: GuestSocket,
++        dial: Option<DialSocket<'_, GuestSocket>>,
++        deadline: Instant,
++    ) -> Result<serde_json::Value> {
++        if !self.object_campaign || self.object_redial != dial.is_some() {
++            return Err("fixture object replacement authority differs".into());
++        }
++        let pin = self
++            .recovery
++            .as_ref()
++            .ok_or("missing object campaign pin")?;
++        let carrier = AuthenticatedCampaignCarrier::open(
++            &self.endpoint,
++            socket,
++            HandshakeRole::Initiator,
++            pin,
++            deadline,
++        )?;
++        let redial = pinned_redial(&self.endpoint, pin, HandshakeRole::Initiator, dial);
++        campaign::sender_on_authenticated_with_redial(
++            carrier,
++            &campaign::broker_context()?,
++            self.sustained,
++            redial,
++            &mut std::io::sink(),
++        )
++    }
++
+     pub fn decode(bytes: &[u8]) -> Result<Self> {
+         if bytes.is_empty() || bytes.len() > BOOTSTRAP_MAX {
+             return Err("fixture bootstrap size invalid".into());
+@@ -744,10 +805,11 @@
+             .ok_or("guest Call material missing")?;
+         let plan_matches = if fixture.object_campaign {
+             fixture.recovery.is_some()
++                && !(fixture.sustained && fixture.object_redial)
+                 && serde_json::to_vec(&endpoint.plan)?
+                     == serde_json::to_vec(&object_campaign_plan(fixture.sustained))?
+         } else {
+-            !fixture.sustained && endpoint.plan.size == CALL_LEN
++            !fixture.sustained && !fixture.object_redial && endpoint.plan.size == CALL_LEN
+         };
+         if endpoint.role != Role::Sender
+             || endpoint.plan.stage != Stage::Two
+@@ -988,38 +1050,33 @@
+         let first =
+             vsock::sys::dial_before(vsock::HOST_CID, MAILBOX_PORT, deadline).map_err(dial_error)?;
+         let socket = GuestSocket::new(UnixStream::from(first)).map_err(|_| 26_u8)?;
+-        let pin = bootstrap.recovery.as_ref().ok_or(22_u8)?;
+-        let carrier = AuthenticatedCampaignCarrier::open(
+-            &bootstrap.endpoint,
+-            socket,
+-            HandshakeRole::Initiator,
+-            pin,
+-            deadline,
+-        )
+-        .map_err(|_| if bootstrap.sustained { 30_u8 } else { 27_u8 })?;
+-        campaign::sender_on_authenticated(
+-            carrier,
+-            &campaign::broker_context().map_err(|_| 27_u8)?,
+-            bootstrap.sustained,
+-            &mut std::io::sink(),
+-        )
+-        .map_err(|error| {
+-            if !bootstrap.sustained {
+-                return 27_u8;
+-            }
+-            if let Some(error) = error.downcast_ref::<spiralcore_transfer::Error>() {
+-                return 40 + *error as u8;
+-            }
+-            if let Some(error) =
+-                error.downcast_ref::<spiralcore_mvm_adapter::service::ServiceError>()
+-            {
+-                return 60 + *error as u8;
+-            }
+-            if error.downcast_ref::<std::io::Error>().is_some() {
+-                return 31;
+-            }
+-            32
+-        })?
++        let redial: Option<DialSocket<'_, GuestSocket>> = if bootstrap.object_redial {
++            Some(Box::new(|cap| {
++                let socket = vsock::sys::dial_before(vsock::HOST_CID, MAILBOX_PORT, cap)?;
++                Ok(GuestSocket::new(UnixStream::from(socket))?)
++            }))
++        } else {
++            None
++        };
++        bootstrap
++            .run_object_sender(socket, redial, deadline)
++            .map_err(|error| {
++                if !bootstrap.sustained {
++                    return 27_u8;
++                }
++                if let Some(error) = error.downcast_ref::<spiralcore_transfer::Error>() {
++                    return 40 + *error as u8;
++                }
++                if let Some(error) =
++                    error.downcast_ref::<spiralcore_mvm_adapter::service::ServiceError>()
++                {
++                    return 60 + *error as u8;
++                }
++                if error.downcast_ref::<std::io::Error>().is_some() {
++                    return 31;
++                }
++                32
++            })?
+     } else {
+         let exchanged = if bootstrap.recovery.is_some() {
+             let deadline = Instant::now() + RECOVERY_CAP;
+@@ -1046,3 +1103,6 @@
+ 
+ #[cfg(test)]
+ mod campaign_carrier_tests;
++
++#[cfg(test)]
++mod object_redial_tests;
+--- /dev/null
++++ b/crates/spiralcore-mvm-live/src/mailbox_witness/object_redial_tests.rs
+@@ -0,0 +1,74 @@
++use super::*;
++use spiralcore_transfer::endpoint::Limits;
++
++#[test]
++fn finish_receipt_redial_continues_original_object_campaign() {
++    let (commitment, guest, host) = provision_object_recovery().unwrap();
++    assert_ne!(commitment, [0; 32]);
++    let guest = GuestBootstrap::decode(&serde_json::to_vec(&guest).unwrap()).unwrap();
++    let (old_guest, old_host) = UnixStream::pair().unwrap();
++    let (new_guest, new_host) = UnixStream::pair().unwrap();
++    let receiver = campaign::broker_context().unwrap();
++    let mut original = receiver
++        .with_time(|budget, _| LocalMailboxService::new(budget.clone()))
++        .unwrap();
++    let root = tempfile::tempdir().unwrap();
++    let cache = root.path().join("cache");
++    let (sent, received) = std::thread::scope(|scope| {
++        let worker = scope.spawn(|| {
++            host.run_object_campaign_with_redial(
++                old_host,
++                &receiver,
++                &mut original,
++                &cache,
++                Limits::default(),
++                Some(Box::new(move |_| Ok(new_host))),
++            )
++        });
++        let sent = guest.run_object_sender(
++            GuestSocket::new(old_guest).unwrap(),
++            Some(Box::new(move |_| Ok(GuestSocket::new(new_guest)?))),
++            Instant::now() + RECOVERY_CAP,
++        );
++        let received = worker.join().unwrap();
++        (sent.unwrap(), received.unwrap())
++    });
++    let published: Vec<crate::config::Published> =
++        serde_json::from_value(received["published"].clone()).unwrap();
++    campaign::verify(
++        &object_campaign_plan(false),
++        &cache,
++        &published,
++        &mut std::io::sink(),
++    )
++    .unwrap();
++    assert_eq!(published.len(), 7);
++    assert_eq!(sent["service"]["application_calls"], 20);
++    assert_eq!(received["service"]["application_calls"], 20);
++    assert_eq!(original.snapshot().accepted, 20);
++    assert_eq!(original.snapshot().fifo_entries, 0);
++    for (a, b) in [(&sent, &received), (&received, &sent)] {
++        for stem in ["envelope_bytes", "framing_bytes", "frames"] {
++            assert_eq!(
++                a["counters"][format!("{stem}_sent")],
++                b["counters"][format!("{stem}_received")]
++            );
++            assert_eq!(
++                a["first_carrier"][format!("{stem}_sent")],
++                b["first_carrier"][format!("{stem}_received")]
++            );
++        }
++    }
++    assert_eq!(sent["counters"]["frames_sent"], 40);
++    assert_eq!(received["counters"]["frames_sent"], 41);
++    let first = &sent["first_carrier"];
++    assert_eq!(first["frames_sent"], 7);
++    assert_eq!(first["frames_received"], 8);
++    receiver.with_time(|_, now| original.shutdown(now)).unwrap();
++    println!(
++        "{}",
++        serde_json::json!({
++            "sent": sent, "received": received, "verified_objects": published.len()
++        })
++    );
++}
+--- a/crates/spiralcore-mvm-live/src/installed_parent/native_witness/mod.rs
++++ b/crates/spiralcore-mvm-live/src/installed_parent/native_witness/mod.rs
+@@ -400,13 +400,14 @@
+         Ok("2") => &[native_plan::NAME, "spiralcore-installed-witness-b"],
+         _ => bail!("native witness admits one or two sequential guests"),
+     };
+-    let (mailbox_mode, recovery_mode, object_campaign, sustained) =
++    let (mailbox_mode, recovery_mode, object_campaign, sustained, object_redial) =
+         match std::env::var("SPIRALCORE_NATIVE_MAILBOX_WITNESS").as_deref() {
+-            Err(std::env::VarError::NotPresent) => (false, false, false, false),
+-            Ok("1") => (true, false, false, false),
+-            Ok("recovery-v2") => (true, true, false, false),
+-            Ok("object-v2") if names.len() == 1 => (true, true, true, false),
+-            Ok("sustained-v2") if names.len() == 1 => (true, true, true, true),
++            Err(std::env::VarError::NotPresent) => (false, false, false, false, false),
++            Ok("1") => (true, false, false, false, false),
++            Ok("recovery-v2") => (true, true, false, false, false),
++            Ok("object-v2") if names.len() == 1 => (true, true, true, false, false),
++            Ok("object-redial-v2") if names.len() == 1 => (true, true, true, false, true),
++            Ok("sustained-v2") if names.len() == 1 => (true, true, true, true, false),
+             _ => bail!("invalid installed mailbox fixture mode"),
+         };
+     let withhold_first = match std::env::var("SPIRALCORE_NATIVE_WITNESS_WITHHOLD_FIRST").as_deref()
+@@ -510,6 +511,7 @@
+                 recovery_mode,
+                 object_campaign,
+                 sustained,
++                object_redial,
+             )?)
+         } else {
+             None
+@@ -645,7 +647,13 @@
+                                         graph_cache_entries: 0,
+                                         ..Default::default()
+                                     };
+-                                    host.run_object_campaign(socket, broker, service, &path, limits)
++                                    let redial: Option<crate::mailbox_witness::DialSocket<'_, _>> =
++                                        if object_redial {
++                                            Some(Box::new(|cap| Ok(acceptor.accept_after_clean_close(cap)?)))
++                                        } else {
++                                            None
++                                        };
++                                    host.run_object_campaign_with_redial(socket, broker, service, &path, limits, redial)
+                                         .map(native_mailbox::HostOutcome::Object)
+                                 } else {
+                                     host.run_recovery(socket, acceptor, broker, service)
+@@ -706,6 +714,7 @@
+                 recovery_mode,
+                 campaign_store,
+                 sustained,
++                object_redial,
+             )?;
+             let (enrollment, bundle) =
+                 mailbox_identity.context("mailbox fixture identity missing")?;
+--- a/crates/spiralcore-mvm-live/src/installed_parent/native_witness/native_mailbox.rs
++++ b/crates/spiralcore-mvm-live/src/installed_parent/native_witness/native_mailbox.rs
+@@ -104,6 +104,7 @@
+     recovery: bool,
+     object_campaign: bool,
+     sustained: bool,
++    object_redial: bool,
+ ) -> Result<Fixture> {
+     let (image_tool, _) = pinned_tool(
+         "SPIRALCORE_NATIVE_MAILBOX_IMAGE_TOOL",
+@@ -113,7 +114,9 @@
+         "SPIRALCORE_NATIVE_MAILBOX_GUEST_TOOL",
+         "SPIRALCORE_NATIVE_MAILBOX_GUEST_TOOL_SHA",
+     )?;
+-    let (commitment, guest, host) = if object_campaign {
++    let (commitment, guest, host) = if object_redial {
++        mailbox_witness::provision_object_recovery()
++    } else if object_campaign {
+         mailbox_witness::provision_object_campaign(sustained)
+     } else if recovery {
+         mailbox_witness::provision_recovery()
+@@ -238,6 +241,7 @@
+     recovery: bool,
+     campaign_store: Option<CampaignStore>,
+     sustained: bool,
++    object_redial: bool,
+ ) -> Result<(serde_json::Value, u64)> {
+     let mut disk = NativeCredit(Some(disk));
+     let name = service
+@@ -300,7 +304,7 @@
+                         && guest["service"]["application_calls"] == calls
+                         && host["service"]["application_calls"] == calls
+                 );
+-                for (sent, received) in [(&guest, &host), (&host, &guest)] {
++                for (from_host, sent, received) in [(false, &guest, &host), (true, &host, &guest)] {
+                     for field in ["frames", "envelope_bytes", "framing_bytes"] {
+                         let count = sent["counters"][format!("{field}_sent")].as_u64();
+                         ensure!(
+@@ -309,7 +313,26 @@
+                                     == received["counters"][format!("{field}_received")].as_u64()
+                         );
+                     }
+-                    ensure!(sent["counters"]["frames_sent"] == calls * 2);
++                    ensure!(
++                        sent["counters"]["frames_sent"]
++                            == calls * 2 + u64::from(from_host && object_redial)
++                    );
++                    if object_redial {
++                        for field in ["frames", "envelope_bytes", "framing_bytes"] {
++                            let count = sent["first_carrier"][format!("{field}_sent")].as_u64();
++                            ensure!(
++                                count.is_some()
++                                    && count
++                                        == received["first_carrier"][format!("{field}_received")]
++                                            .as_u64()
++                            );
++                        }
++                        ensure!(
++                            sent["first_carrier"]["frames_sent"]
++                                .as_u64()
++                                .is_some_and(|n| n > 2 && n < calls * 2)
++                        );
++                    }
+                     if sustained {
+                         let retained = &sent["service"]["sustained"];
+                         ensure!(

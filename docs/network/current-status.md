@@ -147,6 +147,16 @@ direction and original endpoint-store retirement on its protected build.
 Those results describe their recorded builds and same-host fixtures. The
 current upstream candidate still needs its own installed guest and WAN runs.
 
+The [matched cold trial](evidence/2026-11-05-installed-flowmux-matched-cold/README.md)
+verified an exact 11,600-byte payload and echo on a private LAN in each arm.
+Combined used 8,190 both-direction TLS bytes, compared with 16,729 for Raw
+and 5,233 for whole-object zstd. The report separates peer CPU, verified
+wall time and the supervised lifecycle from codec-worker CPU.
+The [mixed-workload preflight](evidence/2026-11-05-installed-flowmux-mixed-preflight/README.md)
+records the 1,245,184-byte fixture and the native macOS peer's refusal of a
+mismatched enrollment before TLS. The matched mixed-workload transfer is
+still pending.
+
 These checkpoints cover components and host prerequisites. The current
 combined installed guest transfer, original-owner retirement and real-WAN
 acceptance remain open. Follow
@@ -157,9 +167,15 @@ failures and successor runs.
 
 Development checkpoints are published for source inspection:
 
+The [resident startup reservation report](evidence/2026-11-06-resident-startup-quote/README.md)
+records the original-grant accounting tests. Its implementation remains on
+the [startup source checkpoint](https://github.com/R4-Laboratories/SpiralCore/commit/76008adb31fae145f5ecc78dc2c7bee64967bc76).
+The reservation still needs a verified Runtime storage-retirement receipt
+before an installed launch can release the final startup charge.
+
 | Repository / development branch | Immutable checkpoint | Acceptance |
 |---|---|---|
-| [SpiralCore core checkpoint](https://github.com/R4-Laboratories/SpiralCore/tree/codex/spiralcore-tls-startup-20261104) | [`1025d87d048b15cefd483b4c11c70a6e029cb29c`](https://github.com/R4-Laboratories/SpiralCore/commit/1025d87d048b15cefd483b4c11c70a6e029cb29c) | Original reader/deadline, terminal completion and startup EOF component; 43 Linux checks, installed/native/platform acceptance open |
+| SpiralCore FlowMux component | [#101](https://github.com/R4-Laboratories/SpiralCore/pull/101) and [#102](https://github.com/R4-Laboratories/SpiralCore/pull/102) | Pre-authentication EOF and original-reader deadline/terminal handling are on main. Installed and real-WAN acceptance remain open. |
 | [SpiralCore integration checkpoint](https://github.com/R4-Laboratories/SpiralCore/tree/codex/spiralcore-retained-catalog-20261104) | [`8476d7583e083e02d8b6bc571fc505815b85de90`](https://github.com/R4-Laboratories/SpiralCore/commit/8476d7583e083e02d8b6bc571fc505815b85de90) | Original retained-file ownership, checked disk split and catalog-loss denial; 152 library entries pass, two ignored; scoped Clippy passes with three warnings; full installed acceptance open |
 | [MVM fork installed-service checkpoint](https://github.com/Casey-allard/mvm/tree/codex/spiralcore-retained-telemetry-20261104) | [`9a3a964bd540d5e74c71f9b7df93cc5593295546`](https://github.com/Casey-allard/mvm/commit/9a3a964bd540d5e74c71f9b7df93cc5593295546) | Original retained-file handoff and canonical runtime cleanup protection; non-main contribution-preparation fork |
 

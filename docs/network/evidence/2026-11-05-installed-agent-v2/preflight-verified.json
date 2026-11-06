@@ -1,0 +1,64 @@
+{
+  "bundle_schema": 4,
+  "executed_firecracker": false,
+  "firecracker_preflight_put_paths": [
+    "/logger",
+    "/boot-source",
+    "/machine-config",
+    "/entropy",
+    "/drives/blk0",
+    "/drives/blk1",
+    "/drives/blk2",
+    "/drives/blk3",
+    "/vsock"
+  ],
+  "local_image_set": "125780f15613fb34a94542d1dee50bd91e8ebfe59fb4f079e91ba7c2f1974215",
+  "memory_mib": 1024,
+  "metadata_scope": "adjacent release digest; locally attested, absent from signed image-set root",
+  "publisher_image_set": "5033520a59514f5d206d76d13db8c9b7e5841f068c83dd8585ef141879a1bb24",
+  "resolver": "mvm_client::launch::bundle_runtime::attach_if_installed_bundle/firecracker",
+  "runtime_trust": "isolated contributor bundle publisher",
+  "selected": [
+    {
+      "role": "rootfs",
+      "bytes": 14680064,
+      "sha256": "bff2d0a4d379be2e84a41f04b9e58048212f608e7242ba119e4016f2a91b7e1d"
+    },
+    {
+      "role": "kernel",
+      "bytes": 19995452,
+      "sha256": "1701ccb2c46b2497066225d6ba05f3f33a3a845ca636fbeedb202835c83b49b6"
+    },
+    {
+      "role": "initramfs",
+      "bytes": 1457635,
+      "sha256": "53dfb449db8842c2b9381f50be9d7a3cbbb6647ad31800f3af55d97d16e6f507"
+    },
+    {
+      "role": "overlay",
+      "bytes": 19726336,
+      "sha256": "374c422f2460d80adfa1afb889da557f0ab542ea22642152b7c3e85b180a77ef"
+    },
+    {
+      "role": "overlay_verity",
+      "bytes": 159744,
+      "sha256": "a0f64fa005cf0d3595c1084add39e30815a81c8983c4d749f674e5c5b5222e4a"
+    },
+    {
+      "role": "rootfs_verity",
+      "bytes": 462848,
+      "sha256": "5160828973c8341d731fb96fa1c84f8add9c219d5041a7f03cb673dda6cae712"
+    }
+  ],
+  "signed_plan_pin": {
+    "bundle_sha256": "b6f117b6665e74eb3424762b69767ce307413e52b96b6207b6c45cb9867cb004",
+    "key_id": "23e70c2b6dfe7dd77ab8163f7bd2bf0c",
+    "manifest_sig_base64": "0h7o8XdHpFloKzgSIvyA8bSDnTNtarXrVC6Ej0NyUA0cQ0mC0lzElBJKIvSkuRUxOpMm6gVdXi5FgWyDdtCHAA=="
+  },
+  "untrusted_control": true,
+  "vcpus": 1,
+  "wire_policy": "HostVsockProxy to be bound by original signed plan, no NIC",
+  "bundle_bytes": 50847232,
+  "peak_rss_kib": 170672,
+  "elapsed_seconds": 1.02
+}

@@ -1,0 +1,50 @@
+--- a/crates/mvm-hostd/src/host_lifetime_parent.rs
++++ b/crates/mvm-hostd/src/host_lifetime_parent.rs
+@@ -30,6 +30,16 @@
+         anyhow::bail!("original installed mailbox enrollment unavailable")
+     }
+ 
++    #[cfg(all(target_os = "linux", target_pointer_width = "64"))]
++    fn check_installed_mailbox_recovery_enrollment(
++        &self,
++        _admitted: &AdmittedPlan,
++        _config: &VmStartConfig,
++        _backend: BackendKind,
++    ) -> Result<()> {
++        anyhow::bail!("original installed mailbox replacement authority is unavailable")
++    }
++
+     /// The same opaque admission with its original verified launch anchor.
+     /// Existing providers retain their prior behavior. Installed helper parents
+     /// override this to bind actual config/anchor facts before registration.
+@@ -75,13 +85,8 @@
+     config: &VmStartConfig,
+     backend: BackendKind,
+ ) -> Result<()> {
+-    anyhow::ensure!(
+-        admitted.installed_mailbox()
+-            != Some(
+-                crate::plan_admission::InstalledMailboxLaunchProfile::LinuxFirecrackerRecoveryV2
+-            ),
+-        "original installed mailbox replacement authority is unavailable"
+-    );
++    let recovery = admitted.installed_mailbox()
++        == Some(crate::plan_admission::InstalledMailboxLaunchProfile::LinuxFirecrackerRecoveryV2);
+     let unavailable = "original installed mailbox listener is unavailable";
+     admitted
+         .installed_mailbox_enrollment()
+@@ -89,7 +94,13 @@
+     let owner = config.host_lifetime.as_ref().context(unavailable)?;
+     admitted.check_unlaunched_for_backend(backend)?;
+     owner.verify_config(config, backend)?;
+-    require_installed()?.check_installed_mailbox_enrollment(admitted, config, backend)
++    if recovery {
++        require_installed()
++            .context("original installed mailbox replacement authority is unavailable")?
++            .check_installed_mailbox_recovery_enrollment(admitted, config, backend)
++    } else {
++        require_installed()?.check_installed_mailbox_enrollment(admitted, config, backend)
++    }
+ }
+ 
+ pub(crate) fn bind_current(
