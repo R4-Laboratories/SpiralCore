@@ -1,5 +1,27 @@
 # TLS startup EOF successor
 
+## Port to main
+
+The original results below are for `1025d87d048b15cefd483b4c11c70a6e029cb29c`.
+The port at `3ac1534292c7bea726917277a62b8a88f6b9c29d` applies the same
+handshake guard to `f531b5776c157eace3bdfbb16c3e8ee594f4606d`, which has
+newer FlowMux code and a different dependency lock. The original archive,
+manifests and 43 test results retain their historical source identity.
+
+On Linux x86_64 with Rust 1.97.1, both original TCP tests returned
+`TimedOut` when run against the main implementation before the port.
+The port passed all 36 FlowMux tests, including both TCP EOF regressions,
+with zero failures or skips. Locked release build and strict all-target
+Clippy also passed. These runs cover the FlowMux component.
+
+| Port input | SHA-256 |
+| --- | --- |
+| `crates/spiralcore-mvm-flowmux/src/tls.rs` | `496cfe4b52e43847205307aa287f502919bc7b2d95b75690a956149462156a27` |
+| `crates/spiralcore-mvm-flowmux/tests/tls_handshake_eof.rs` | `5345b0c4c63ebbb95499f24035917146e0c586f3760429bb2e25b8dd473a002b` |
+| `crates/spiralcore-mvm-flowmux/Cargo.lock` | `2d5344f59c7734046d6a718fb77f7dc1ac66ba88522fcdd99e6c2cae0c9a9405` |
+
+## Historical qualification
+
 Linux x86_64, Rust 1.97.1; successor to immutable
 `6c885fe5a1a03d65a6f9093edc407c98feff31be`. The earlier 39-case checkpoint
 keeps its original source/result identity. No native MVM, installed-profile,

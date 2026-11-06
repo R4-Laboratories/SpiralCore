@@ -315,7 +315,7 @@ receipts and its index. Independent Code/Rust/Security review passes this exact
 component. A separate installed setup test originally failed when TLS stalled
 after ClientHello; its original deadline/child-reap failure is retained.
 
-The [TLS startup successor](https://github.com/R4-Laboratories/SpiralCore/blob/1025d87d048b15cefd483b4c11c70a6e029cb29c/docs/network/evidence/2026-11-03-flowmux/validation/handshake-startup/README.md)
+The [TLS startup successor](evidence/2026-11-03-flowmux/validation/handshake-startup/README.md)
 fixes physical EOF during authentication without changing TLS parsing or
 authentication. Both socket roles first failed with timeout; final qualification
 passes 43 entries, ten terminal-close repetitions and eight scoped strict Clippy
