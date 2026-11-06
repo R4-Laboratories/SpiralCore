@@ -1,7 +1,7 @@
 //! Local admission bounds for the explicitly agreed SmallV1 codec profile.
 //! Declared bytes are not RSS. An embedding reserves one aggregate envelope
 //! before constructing both endpoints and keeps it through all retained state.
-use crate::{endpoint::Limits, Error, Result};
+use crate::{endpoint::Limits, protocol::Mode, Error, Result};
 use zstd::zstd_safe::{CCtx, CParameter, Strategy};
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -14,6 +14,13 @@ const KIB: u64 = 1024;
 const MIB: u64 = 1024 * KIB;
 pub const SMALL_TARGET: usize = 16 * 1024;
 pub const SMALL_ARTIFACT: usize = 64 * 1024;
+pub(crate) const SMALL_CODEC_MASK: u16 = (1 << Mode::Raw as u8)
+    | (1 << Mode::SparseV1 as u8)
+    | (1 << Mode::ZstdPrefixV1 as u8)
+    | (1 << Mode::RuntimeV1 as u8)
+    | (1 << Mode::SchemaV1 as u8)
+    | (1 << Mode::SchemaZstdV1 as u8)
+    | (1 << Mode::ZstdWholeV1 as u8);
 
 impl ResourceProfile {
     pub fn max_target_len(self) -> usize {
@@ -58,13 +65,10 @@ impl ResourceProfile {
             return Ok(());
         }
         self.check_supported()?;
-        if matches!(
-            offer.mode,
-            crate::protocol::Mode::Dag | crate::protocol::Mode::ZstdDictionaryV1
-        ) {
+        if SMALL_CODEC_MASK & (1 << offer.mode as u8) == 0 {
             return Err(Error::Unsupported);
         }
-        let limit = if offer.mode == crate::protocol::Mode::Raw {
+        let limit = if offer.mode == Mode::Raw {
             self.max_artifact_len()
         } else {
             self.max_target_len()

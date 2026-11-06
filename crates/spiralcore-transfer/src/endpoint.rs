@@ -503,6 +503,11 @@ impl<A: Authority> Endpoint<A> {
                     return Err(Error::Integrity);
                 }
                 let p = self.publication(ns, offer.object)?;
+                if self.resources == crate::resource_profile::ResourceProfile::SmallV1
+                    && p.len != offer.len
+                {
+                    return Err(Error::Integrity);
+                }
                 self.reserve_with_eviction(p.len.checked_mul(2).ok_or(Error::Limit)?)?;
                 let bytes = read_publication(&p)?;
                 if bytes.len() as u64 != offer.len {

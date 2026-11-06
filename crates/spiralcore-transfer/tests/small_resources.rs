@@ -24,6 +24,47 @@ fn small_profile_is_explicit_bounded_and_never_negotiates_general_fallback() {
     assert!(!agreed.supports(spiralcore_transfer::protocol::Mode::ZstdDictionaryV1));
 }
 
+#[test]
+fn small_profile_refuses_legacy_streaming_zstd_at_negotiation_and_admission() {
+    use spiralcore_transfer::{
+        endpoint::Endpoint,
+        protocol::{Frame, Mode, Offer},
+        wan,
+    };
+
+    let small = Capabilities::small_v1();
+    let agreed = small.negotiate(&small).unwrap();
+    let legacy = Capabilities::full()
+        .negotiate(&Capabilities::full())
+        .unwrap();
+    assert!(legacy.supports(Mode::Zstd));
+    assert!(agreed.supports(Mode::ZstdWholeV1));
+    assert!(!agreed.supports(Mode::Zstd));
+    let mut peer = small;
+    peer.codec_mask |= 1 << Mode::Zstd as u8;
+    assert_eq!(small.negotiate(&peer), Err(Error::Unsupported));
+
+    let store = Store::new();
+    let resources = ResourceProfile::SmallV1;
+    let mut receiver = Endpoint::open_with_resource_profile(
+        &store.0,
+        resources.receiver_limits(),
+        wan::BenchAuthority,
+        resources,
+    )
+    .unwrap();
+    let begin = Frame {
+        kind: 1,
+        transfer: [1; 32],
+        seq: 0,
+        body: Offer::cold(b"legacy", Mode::Zstd).encode().unwrap(),
+    };
+    assert_eq!(
+        receiver.handle(&wan::context([177; 32]), &begin, 0),
+        Err(Error::Unsupported)
+    );
+}
+
 struct Store(std::path::PathBuf);
 impl Store {
     fn new() -> Self {
@@ -306,7 +347,7 @@ fn runtime_receiver_rejects_large_declared_or_computed_prediction_before_evoluti
 }
 
 #[test]
-fn small_receiver_refuses_oversized_existing_general_base_before_admitting_attempt() {
+fn small_receiver_rejects_oversized_general_base_and_forged_probe_before_read() {
     use spiralcore_transfer::{
         client,
         endpoint::{ColdGraphPolicy, Endpoint},
@@ -365,6 +406,30 @@ fn small_receiver_refuses_oversized_existing_general_base_before_admitting_attem
         ),
         Err(Error::Unknown)
     );
+    drop(small);
+    let mut limits = resources.receiver_limits();
+    // Below twice the publication's actual size. A reservation before the
+    // metadata comparison would return Limit instead of Integrity.
+    limits.resident_bytes = base.len() as u64;
+    let mut small =
+        Endpoint::open_with_resource_profile(&store.0, limits, wan::BenchAuthority, resources)
+            .unwrap();
+    let offer = Offer {
+        mode: Mode::Raw,
+        len: 16 * 1024,
+        object: base_id,
+        manifest: None,
+        base: None,
+    };
+    let mut body = offer.id().unwrap().to_vec();
+    body.extend(offer.encode().unwrap());
+    let probe = Frame {
+        kind: 4,
+        transfer: [3; 32],
+        seq: 0,
+        body,
+    };
+    assert_eq!(small.handle(&c, &probe, 0), Err(Error::Integrity));
     drop(small);
     let mut general = Endpoint::open_with_policy(
         &store.0,

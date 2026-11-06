@@ -24,7 +24,7 @@ impl Capabilities {
         Self {
             profile: 2,
             max_object_bytes: 64 * 1024,
-            codec_mask: 891,
+            codec_mask: crate::resource_profile::SMALL_CODEC_MASK,
             ..Self::full()
         }
     }
@@ -47,7 +47,10 @@ impl Capabilities {
         {
             return Err(Error::Unsupported);
         }
-        if self.profile == 2 && (self.max_object_bytes > 64 * 1024 || self.codec_mask & !891 != 0) {
+        if self.profile == 2
+            && (self.max_object_bytes > 64 * 1024
+                || self.codec_mask & !crate::resource_profile::SMALL_CODEC_MASK != 0)
+        {
             return Err(Error::Unsupported);
         }
         if self.max_frame_bytes != MAX_FRAME as u32

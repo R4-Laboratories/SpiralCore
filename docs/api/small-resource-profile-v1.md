@@ -2,7 +2,7 @@
 
 Proposed additive local resource contract, reviewed before implementation.
 General constructors and their codec settings remain unchanged. SmallV1 uses
-the same modes, frames, artifacts, authority, object IDs and exact decoded bytes;
+the existing frames, artifacts, authority, object IDs and exact decoded bytes;
 compressed bytes may differ under its explicit bounded encoder settings.
 
 ```rust
@@ -23,7 +23,9 @@ length before candidate preparation. Auxiliary Raw artifact publication may be
 before core dispatch. Local resource selection is not remote authorization.
 Existing negotiated object limits still apply. `Capabilities::small_v1()`
 selects existing capability profile field2 (General remains1), max object64KiB
-and the bounded Raw/Zstd/Sparse/Prefix/Runtime/Schema/SchemaZstd/Whole modes.
+and the bounded Raw/Sparse/Prefix/Runtime/Schema/SchemaZstd/Whole modes.
+SmallV1 excludes legacy streaming Zstd and retains the one-shot Whole and
+Prefix zstd modes.
 Both authenticated/pinned peers must select2; mixed1/2 refuses Unsupported,
 without fallback. Capability/frame layout and codec versions do not change.
 Constructors require the explicit local ResourceProfile to match that agreement.
