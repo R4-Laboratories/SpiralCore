@@ -98,10 +98,26 @@ socket. The funded failed handshake returned the original credit. The
 [hosted scope check](https://github.com/R4-Laboratories/SpiralCore/actions/runs/42135240936)
 verified kernel CPU, memory, swap and task limits and scope retirement.
 
-These checkpoints cover components and host prerequisites. The current combined
-installed guest transfer, original-owner retirement and real-WAN acceptance
-remain open. The canonical Runtime must pass the original registration into the
-installed endpoint before identity publication and child startup. Follow
+The [Runtime retention run](https://github.com/R4-Laboratories/SpiralCore/actions/runs/42140574877)
+passed both focused tests. An inert endpoint and mock backend showed that the
+original handle survives a boot-preparation failure, a competing operation is
+fenced during cleanup, and retirement needs the original receipt. The fixture
+did not boot a guest.
+
+The [canonical executable baseline](https://github.com/R4-Laboratories/SpiralCore/actions/runs/42141356436)
+built and reproduced early EOF before the first framed Challenge. The
+[reviewed fork candidate](https://github.com/Casey-allard/mvm/commit/9df8ceec88b4a49c1065719f147f323fbda75e86)
+routes the actual binary into the original installed protocol. All 10 entries
+passed in the [exact-source hosted run](https://github.com/R4-Laboratories/SpiralCore/actions/runs/42142321535).
+The actual executable issued Challenge, adopted a valid Prepare and withheld
+Ready until the audited controller is available. It also rejected an
+incomplete Prepare and mixed installed/probe arguments. The next gate carries
+the original audit and records descriptors through Prepare and attaches the
+owned collector and FlowMux controller before Ready.
+
+These checkpoints cover components and host prerequisites. The current
+combined installed guest transfer, original-owner retirement and real-WAN
+acceptance remain open. Follow
 [#44](https://github.com/R4-Laboratories/SpiralCore/issues/44) for exact pins,
 failures and successor runs.
 
