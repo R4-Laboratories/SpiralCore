@@ -1,4 +1,4 @@
-name: SpiralCore original registered audit capability
+name: SpiralCore installed audit Prepare regression
 
 on:
   workflow_dispatch:
@@ -8,7 +8,7 @@ permissions:
 
 jobs:
   test:
-    if: startsWith(github.ref, 'refs/heads/codex/installed-sdk-native-witness-registered-audit-')
+    if: startsWith(github.ref, 'refs/heads/codex/installed-sdk-native-witness-prepare-audit-')
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
@@ -26,13 +26,13 @@ jobs:
           ref: bffd589c746a07956ee6e506973f8a3ebffb9a1b
           path: sdk
           persist-credentials: false
-      - name: Exercise the original host-agent and signer registration
+      - name: Exercise inherited audit and records in the canonical endpoint
         run: |
           set -euo pipefail
           test "$(git -C spiralcore rev-parse HEAD)" = "$GITHUB_SHA"
           test "$(git -C sdk rev-parse HEAD)" = "bffd589c746a07956ee6e506973f8a3ebffb9a1b"
           rustup toolchain install 1.97.1 --profile minimal
-          export CARGO_TARGET_DIR="$RUNNER_TEMP/sc-registered-audit"
-          cargo +1.97.1 test --locked --manifest-path sdk/Cargo.toml -p mvm-hostd --test owned_host_agent -- --test-threads=1
-          cargo +1.97.1 test --locked --manifest-path sdk/Cargo.toml -p mvm-hostd --lib owned_resources::registered::sideband_tests:: -- --test-threads=1
-          cargo +1.97.1 test --locked --manifest-path sdk/Cargo.toml -p mvm-vmm --lib host_agent_spawn::owned:: -- --test-threads=1
+          git -C sdk apply --check ../spiralcore/.github/qualification/prepare-audit.patch
+          git -C sdk apply ../spiralcore/.github/qualification/prepare-audit.patch
+          export CARGO_TARGET_DIR="$RUNNER_TEMP/sc-prepare-audit"
+          cargo +1.97.1 test --locked --manifest-path sdk/Cargo.toml -p mvm-hostd --test installed_endpoint_resources canonical_endpoint_binary_ -- --test-threads=1
