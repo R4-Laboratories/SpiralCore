@@ -10,7 +10,7 @@ jobs:
   test:
     if: startsWith(github.ref, 'refs/heads/codex/installed-sdk-native-witness-prepare-producer-')
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 25
     env:
       CARGO_BUILD_JOBS: 2
       CARGO_INCREMENTAL: 0
@@ -23,16 +23,17 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           repository: Casey-allard/mvm
-          ref: 1102ef8d5334ac1dabef45361eb6421f1f873bc5
+          ref: 94cefe582f157e301fe716e563d5c43734793127
           path: sdk
           persist-credentials: false
-      - name: Exercise inherited audit and records in the canonical endpoint
+      - name: Exercise signed producer and canonical endpoint bootstrap
         run: |
           set -euo pipefail
           test "$(git -C spiralcore rev-parse HEAD)" = "$GITHUB_SHA"
-          test "$(git -C sdk rev-parse HEAD)" = "1102ef8d5334ac1dabef45361eb6421f1f873bc5"
+          test "$(git -C sdk rev-parse HEAD)" = "94cefe582f157e301fe716e563d5c43734793127"
           rustup toolchain install 1.97.1 --profile minimal
-          git -C sdk apply --check ../spiralcore/.github/qualification/prepare-producer.patch
-          git -C sdk apply ../spiralcore/.github/qualification/prepare-producer.patch
           export CARGO_TARGET_DIR="$RUNNER_TEMP/sc-prepare-audit"
-          cargo +1.97.1 test --locked --manifest-path sdk/Cargo.toml -p mvm-hostd --test owned_host_agent signed_parent_delivers_original_audit_and_records_to_canonical_child -- --test-threads=1
+          cargo +1.97.1 test --locked --manifest-path sdk/Cargo.toml -p mvm-hostd --test owned_host_agent --test installed_endpoint_resources -- --test-threads=1
+          cargo +1.97.1 test --locked --manifest-path sdk/Cargo.toml -p mvm-vmm --lib host::network_endpoint_spawn:: -- --test-threads=1
+          cargo +1.97.1 test --locked --manifest-path sdk/Cargo.toml -p mvm-core --test bounded_owned_json -- --test-threads=1
+          cargo +1.97.1 test --locked --manifest-path sdk/Cargo.toml -p mvm-vmm --lib host::telemetry_provisioning::tests:: -- --test-threads=1
