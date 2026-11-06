@@ -23,16 +23,16 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           repository: Casey-allard/mvm
-          ref: c7e02bceda4acdd0b0ae0fa75b7709d300f4797a
+          ref: bffd589c746a07956ee6e506973f8a3ebffb9a1b
           path: sdk
           persist-credentials: false
       - name: Exercise the original host-agent and signer registration
         run: |
           set -euo pipefail
           test "$(git -C spiralcore rev-parse HEAD)" = "$GITHUB_SHA"
-          test "$(git -C sdk rev-parse HEAD)" = "c7e02bceda4acdd0b0ae0fa75b7709d300f4797a"
+          test "$(git -C sdk rev-parse HEAD)" = "bffd589c746a07956ee6e506973f8a3ebffb9a1b"
           rustup toolchain install 1.97.1 --profile minimal
-          git -C sdk apply --check ../spiralcore/.github/qualification/registered-audit.patch
-          git -C sdk apply ../spiralcore/.github/qualification/registered-audit.patch
           export CARGO_TARGET_DIR="$RUNNER_TEMP/sc-registered-audit"
-          cargo +1.97.1 test --locked --manifest-path sdk/Cargo.toml -p mvm-hostd --test owned_host_agent original_registered_audit_event_is_claimed_once_and_pins_cleanup -- --test-threads=1
+          cargo +1.97.1 test --locked --manifest-path sdk/Cargo.toml -p mvm-hostd --test owned_host_agent -- --test-threads=1
+          cargo +1.97.1 test --locked --manifest-path sdk/Cargo.toml -p mvm-hostd --lib owned_resources::registered::sideband_tests:: -- --test-threads=1
+          cargo +1.97.1 test --locked --manifest-path sdk/Cargo.toml -p mvm-vmm --lib host_agent_spawn::owned:: -- --test-threads=1
