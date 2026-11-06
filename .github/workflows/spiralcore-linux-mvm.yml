@@ -1,4 +1,4 @@
-name: SpiralCore signed installed Prepare producer
+name: SpiralCore installed audited endpoint controller
 
 on:
   workflow_dispatch:
@@ -8,7 +8,7 @@ permissions:
 
 jobs:
   test:
-    if: startsWith(github.ref, 'refs/heads/codex/installed-sdk-native-witness-prepare-producer-')
+    if: startsWith(github.ref, 'refs/heads/codex/installed-sdk-native-witness-installed-controller-')
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     env:
@@ -23,17 +23,16 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           repository: Casey-allard/mvm
-          ref: 94cefe582f157e301fe716e563d5c43734793127
+          ref: 6289078c727e453782a4a2c7f73c0440d5baff54
           path: sdk
           persist-credentials: false
-      - name: Exercise signed producer and canonical endpoint bootstrap
+      - name: Exercise actual audited controller Ready and original retirement
         run: |
           set -euo pipefail
           test "$(git -C spiralcore rev-parse HEAD)" = "$GITHUB_SHA"
-          test "$(git -C sdk rev-parse HEAD)" = "94cefe582f157e301fe716e563d5c43734793127"
+          test "$(git -C sdk rev-parse HEAD)" = "6289078c727e453782a4a2c7f73c0440d5baff54"
           rustup toolchain install 1.97.1 --profile minimal
+          git -C sdk apply --check ../spiralcore/.github/qualification/controller.patch
+          git -C sdk apply ../spiralcore/.github/qualification/controller.patch
           export CARGO_TARGET_DIR="$RUNNER_TEMP/sc-prepare-audit"
-          cargo +1.97.1 test --locked --manifest-path sdk/Cargo.toml -p mvm-hostd --test owned_host_agent --test installed_endpoint_resources -- --test-threads=1
-          cargo +1.97.1 test --locked --manifest-path sdk/Cargo.toml -p mvm-vmm --lib host::network_endpoint_spawn:: -- --test-threads=1
-          cargo +1.97.1 test --locked --manifest-path sdk/Cargo.toml -p mvm-core --test bounded_owned_json -- --test-threads=1
-          cargo +1.97.1 test --locked --manifest-path sdk/Cargo.toml -p mvm-vmm --lib host::telemetry_provisioning::tests:: -- --test-threads=1
+          cargo +1.97.1 test --locked --manifest-path sdk/Cargo.toml -p mvm-hostd --test owned_host_agent signed_parent_starts_and_retires_canonical_audited_controller -- --test-threads=1

@@ -1,0 +1,73 @@
+--- a/crates/mvm-hostd/tests/owned_host_agent.rs
++++ b/crates/mvm-hostd/tests/owned_host_agent.rs
+@@ -849,7 +849,7 @@
+     }
+ 
+     #[test]
+-    fn signed_parent_delivers_original_audit_and_records_to_canonical_child() -> Result<()> {
++    fn signed_parent_starts_and_retires_canonical_audited_controller() -> Result<()> {
+         use mvm_contract::policy::network_policy::{
+             CooperatingPayloadPolicy, CooperatingTcpPeer, PayloadMappingProfile,
+         };
+@@ -926,18 +926,43 @@
+             })
+             .build()?;
+ 
+-        let error = match spawn_network_endpoint_installed_registered(params, handoff, &original) {
+-            Ok(_) => anyhow::bail!("endpoint published readiness before controller startup"),
+-            Err(error) => error,
+-        };
+-        drop(error);
+-        let log = File::open(state.join("network-endpoint.stderr.log"))?;
+-        let mut diagnostics = String::new();
+-        log.take(8192).read_to_string(&mut diagnostics)?;
++        let mut endpoint = spawn_network_endpoint_installed_registered(params, handoff, &original)?;
++        drop(original);
++        ensure!(
++            registration.shutdown().is_err(),
++            "active endpoint lost original audit pin"
++        );
+         ensure!(
+-            diagnostics.contains("installed endpoint controller unavailable"),
+-            "real child did not adopt its original Prepare: {diagnostics}"
++            endpoint.take_retirement().is_err(),
++            "startup published retirement"
++        );
++
++        let mut guest = std::os::unix::net::UnixStream::connect(state.join("network.sock"))?;
++        let timeout = Some(std::time::Duration::from_secs(3));
++        guest.set_read_timeout(timeout)?;
++        guest.set_write_timeout(timeout)?;
++        let _session = mvm_core::net::session::Session::guest(
++            &mut guest,
++            SigningKey::from_bytes(&[7; 32]),
++            &SigningKey::from_bytes(&[9; 32]).verifying_key(),
++        )?;
++
++        endpoint.shutdown()?;
++        ensure!(
++            guest.read(&mut [0; 1])? == 0,
++            "authenticated guest did not close"
+         );
++        let retirement = endpoint.take_retirement()?;
++        let original_guard: Arc<dyn EndpointPartitionGuard> = guard.clone();
++        ensure!(
++            retirement.retains_partition_guard(&original_guard),
++            "foreign retirement"
++        );
++        ensure!(
++            endpoint.take_retirement().is_err(),
++            "retirement was not single-use"
++        );
++        drop(endpoint);
+         let retained = guard.retained.as_ref().unwrap().lock().unwrap();
+         let (records, wrapped) = retained
+             .files
+@@ -956,7 +981,6 @@
+                 ))?)?
+         );
+         drop(retained);
+-        drop(original);
+         registration.shutdown()?;
+         agent.shutdown()?;
+         Ok(())
