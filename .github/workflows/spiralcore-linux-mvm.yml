@@ -23,17 +23,15 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           repository: Casey-allard/mvm
-          ref: 32566c048936813c7df32dfb7de0ac79d173c68b
+          ref: 78da22eb6104ce9bbe9e4ebebba4ab81ccad7326
           path: sdk
           persist-credentials: false
       - name: Exercise original installed endpoint pre-dispatch custody
         run: |
           set -euo pipefail
           test "$(git -C spiralcore rev-parse HEAD)" = "$GITHUB_SHA"
-          test "$(git -C sdk rev-parse HEAD)" = "32566c048936813c7df32dfb7de0ac79d173c68b"
+          test "$(git -C sdk rev-parse HEAD)" = "78da22eb6104ce9bbe9e4ebebba4ab81ccad7326"
           rustup toolchain install 1.97.1 --profile minimal
-          git -C sdk apply --check ../spiralcore/.github/qualification/endpoint-retain.patch
-          git -C sdk apply ../spiralcore/.github/qualification/endpoint-retain.patch
           export CARGO_TARGET_DIR="$RUNNER_TEMP/sc-endpoint-retain"
           cargo +1.97.1 test --locked --manifest-path sdk/Cargo.toml -p mvm-runtime --lib \
-            installed_pre_dispatch_failure_retains_and_retires_endpoint -- --test-threads=1
+            workload_runner::runner::installed_tests:: -- --test-threads=1
