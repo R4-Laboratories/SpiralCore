@@ -23,14 +23,14 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           repository: Casey-allard/mvm
-          ref: bffd589c746a07956ee6e506973f8a3ebffb9a1b
+          ref: ec723f60d0abce8f8a77ea4a80ec23b8fba9674f
           path: sdk
           persist-credentials: false
       - name: Exercise the original host-agent and signer registration
         run: |
           set -euo pipefail
           test "$(git -C spiralcore rev-parse HEAD)" = "$GITHUB_SHA"
-          test "$(git -C sdk rev-parse HEAD)" = "bffd589c746a07956ee6e506973f8a3ebffb9a1b"
+          test "$(git -C sdk rev-parse HEAD)" = "ec723f60d0abce8f8a77ea4a80ec23b8fba9674f"
           rustup toolchain install 1.97.1 --profile minimal
           export CARGO_TARGET_DIR="$RUNNER_TEMP/sc-registered-audit"
           cargo +1.97.1 test --locked --manifest-path sdk/Cargo.toml -p mvm-hostd --test owned_host_agent -- --test-threads=1
