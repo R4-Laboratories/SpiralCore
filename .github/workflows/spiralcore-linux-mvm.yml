@@ -9,7 +9,11 @@ permissions:
 jobs:
   test:
     if: startsWith(github.ref, 'refs/heads/codex/installed-sdk-native-witness-darwin-registered-audit-')
-    runs-on: macos-15
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [macos-15, ubuntu-24.04]
+    runs-on: ${{ matrix.runner }}
     timeout-minutes: 25
     env:
       CARGO_BUILD_JOBS: 2
@@ -23,17 +27,23 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           repository: Casey-allard/mvm
-          ref: ec723f60d0abce8f8a77ea4a80ec23b8fba9674f
+          ref: 1102ef8d5334ac1dabef45361eb6421f1f873bc5
           path: sdk
           persist-credentials: false
       - name: Exercise the original host-agent and signer registration
         run: |
           set -euo pipefail
           test "$(git -C spiralcore rev-parse HEAD)" = "$GITHUB_SHA"
-          test "$(git -C sdk rev-parse HEAD)" = "ec723f60d0abce8f8a77ea4a80ec23b8fba9674f"
-          test "$(uname -m)" = arm64
-          sw_vers
-          uname -r
+          test "$(git -C sdk rev-parse HEAD)" = "1102ef8d5334ac1dabef45361eb6421f1f873bc5"
           rustup toolchain install 1.97.1 --profile minimal
           export CARGO_TARGET_DIR="$RUNNER_TEMP/sc-registered-audit"
-          cargo +1.97.1 test --locked --manifest-path sdk/Cargo.toml -p mvm-hostd --test owned_host_agent installed_signer_requires_the_original_current_registration -- --test-threads=1
+          if test "$(uname -s)" = Darwin; then
+            test "$(uname -m)" = arm64
+            sw_vers
+            uname -r
+            cargo +1.97.1 test --locked --manifest-path sdk/Cargo.toml -p mvm-hostd --test owned_host_agent \
+              installed_signer_requires_the_original_current_registration -- --test-threads=1
+          else
+            cargo +1.97.1 test --locked --manifest-path sdk/Cargo.toml -p mvm-hostd --test owned_host_agent -- --test-threads=1
+            cargo +1.97.1 test --locked --manifest-path sdk/Cargo.toml -p mvm-vmm --lib host_agent_spawn::owned:: -- --test-threads=1
+          fi
