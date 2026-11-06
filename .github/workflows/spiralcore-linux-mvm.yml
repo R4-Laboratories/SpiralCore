@@ -1,4 +1,4 @@
-name: SpiralCore installed carrier regression
+name: SpiralCore installed registration regression
 
 on:
   workflow_dispatch:
@@ -8,7 +8,7 @@ permissions:
 
 jobs:
   test:
-    if: startsWith(github.ref, 'refs/heads/codex/installed-sdk-native-witness-carrier-')
+    if: startsWith(github.ref, 'refs/heads/codex/installed-sdk-native-witness-registration-')
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
@@ -26,16 +26,14 @@ jobs:
           ref: 819938bf7f891654532e8b6830df5530e99eb464
           path: sdk
           persist-credentials: false
-      - name: Exercise installed carrier credit before TLS
+      - name: Exercise original installed host-agent registration
         run: |
           set -euo pipefail
           test "$(git -C spiralcore rev-parse HEAD)" = "$GITHUB_SHA"
           test "$(git -C sdk rev-parse HEAD)" = "819938bf7f891654532e8b6830df5530e99eb464"
           rustup toolchain install 1.97.1 --profile minimal
-          export CARGO_TARGET_DIR="$RUNNER_TEMP/sc-carrier"
-          cargo +1.97.1 test --locked --manifest-path sdk/Cargo.toml -p mvm-hostd --lib \
-            supervisor::flowmux::installed_carrier_tests:: -- --test-threads=1
-          cargo +1.97.1 test --locked --manifest-path sdk/Cargo.toml -p mvm-hostd --lib \
-            supervisor::flowmux::spiralcore_payload:: -- --test-threads=1
-          cargo +1.97.1 test --locked --manifest-path sdk/Cargo.toml -p mvm-hostd \
-            --test installed_endpoint_resources -- --test-threads=1
+          git -C sdk apply --check ../spiralcore/.github/qualification/installed-registration.patch
+          git -C sdk apply ../spiralcore/.github/qualification/installed-registration.patch
+          export CARGO_TARGET_DIR="$RUNNER_TEMP/sc-registration"
+          cargo +1.97.1 test --locked --manifest-path sdk/Cargo.toml -p mvm-hostd --test owned_host_agent \
+            installed_signer_requires_the_original_current_registration -- --test-threads=1

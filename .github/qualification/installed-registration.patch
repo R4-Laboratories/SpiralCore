@@ -1,0 +1,79 @@
+diff --git a/crates/mvm-hostd/tests/owned_host_agent.rs b/crates/mvm-hostd/tests/owned_host_agent.rs
+index 76b3b91..b50384d 100644
+--- a/crates/mvm-hostd/tests/owned_host_agent.rs
++++ b/crates/mvm-hostd/tests/owned_host_agent.rs
+@@ -432,3 +432,74 @@ fn owned_telemetry_uses_actual_canonical_handshake_and_original_host_key() {
+     drop((sender, receiver));
+     agent.shutdown().unwrap();
+ }
++
++#[test]
++fn installed_signer_requires_the_original_current_registration() {
++    use mvm_vmm::host::network_endpoint_spawn::InstalledHostServices;
++
++    let fixture = Fixture::new();
++    let mut agent = OwnedHostAgent::spawn(fixture.inputs()).unwrap();
++    let registrar = agent.registrar();
++    let sibling = registrar.clone();
++    let (state, socket) = fixture.vm("vm-1");
++    let (other_state, other_socket) = fixture.vm("vm-2");
++    let mut registration = register(&registrar, "vm-1", &state, &socket).unwrap();
++    let audit = [ServiceId::parse("host.audit.v1").unwrap()];
++    let time = [ServiceId::parse("host.time.v1").unwrap()];
++    let params = || HostAgentServicesParams {
++        workload_id: "vm-1",
++        tenant_id: Some("local"),
++        vm_name: "vm-1",
++        state_dir: &state,
++        broker_listen_socket: &socket,
++        services: &audit,
++        capability_bindings: &[],
++        service_proxies: &[],
++    };
++    let original_anchor = fixture.verifying.to_bytes();
++    let foreign_anchor = ed25519_dalek::SigningKey::from_bytes(&[17; 32])
++        .verifying_key()
++        .to_bytes();
++    {
++        let original = InstalledHostServices::new(&sibling, &registration, params()).unwrap();
++        original
++            .check_endpoint_binding("vm-1", "local", &state)
++            .unwrap();
++        original
++            .check_flowmux_host_anchor(&original_anchor)
++            .unwrap();
++        assert!(original.check_flowmux_host_anchor(&foreign_anchor).is_err());
++        assert!(
++            original
++                .check_endpoint_binding("vm-1", "local", &other_state)
++                .is_err()
++        );
++
++        let mut changed = params();
++        changed.workload_id = "changed";
++        assert!(InstalledHostServices::new(&registrar, &registration, changed).is_err());
++        let mut changed = params();
++        changed.broker_listen_socket = &other_socket;
++        assert!(InstalledHostServices::new(&registrar, &registration, changed).is_err());
++        let mut changed = params();
++        changed.services = &time;
++        assert!(InstalledHostServices::new(&registrar, &registration, changed).is_err());
++
++        fixture.parent.current.store(false, Ordering::Release);
++        assert!(
++            original
++                .check_flowmux_host_anchor(&original_anchor)
++                .is_err()
++        );
++        fixture.parent.current.store(true, Ordering::Release);
++    }
++    registration.shutdown().unwrap();
++    let mut replacement = register(&registrar, "vm-1", &state, &socket).unwrap();
++    assert!(InstalledHostServices::new(&registrar, &registration, params()).is_err());
++    InstalledHostServices::new(&registrar, &replacement, params())
++        .unwrap()
++        .check_flowmux_host_anchor(&original_anchor)
++        .unwrap();
++    replacement.shutdown().unwrap();
++    agent.shutdown().unwrap();
++}
