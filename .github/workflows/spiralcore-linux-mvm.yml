@@ -23,16 +23,15 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           repository: Casey-allard/mvm
-          ref: ec723f60d0abce8f8a77ea4a80ec23b8fba9674f
+          ref: dc6c0f107c7113205f9026c8dba9af6e2673dc74
           path: sdk
           persist-credentials: false
       - name: Exercise inherited audit and records in the canonical endpoint
         run: |
           set -euo pipefail
           test "$(git -C spiralcore rev-parse HEAD)" = "$GITHUB_SHA"
-          test "$(git -C sdk rev-parse HEAD)" = "ec723f60d0abce8f8a77ea4a80ec23b8fba9674f"
+          test "$(git -C sdk rev-parse HEAD)" = "dc6c0f107c7113205f9026c8dba9af6e2673dc74"
           rustup toolchain install 1.97.1 --profile minimal
-          git -C sdk apply --check ../spiralcore/.github/qualification/prepare-audit.patch
-          git -C sdk apply ../spiralcore/.github/qualification/prepare-audit.patch
           export CARGO_TARGET_DIR="$RUNNER_TEMP/sc-prepare-audit"
-          cargo +1.97.1 test --locked --manifest-path sdk/Cargo.toml -p mvm-hostd --test installed_endpoint_resources canonical_endpoint_binary_ -- --test-threads=1
+          cargo +1.97.1 test --locked --manifest-path sdk/Cargo.toml -p mvm-hostd --test installed_endpoint_resources -- --test-threads=1
+          cargo +1.97.1 test --locked --manifest-path sdk/Cargo.toml -p mvm-vmm --lib network_endpoint_spawn::installed:: -- --test-threads=1
