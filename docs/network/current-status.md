@@ -138,6 +138,15 @@ and the VMM cases verified distinct process targets and refusal on event loss.
 The registered VMM producer still needs to send the original descriptors and
 the audited controller still needs to consume them before readiness.
 
+Two earlier installed-path reports are retained here with their original source
+and binary identities. The [canonical endpoint executable replay](evidence/2026-11-05-installed-endpoint-normal/README.md)
+exercised the original producer, audit, collector and worker shutdown with
+synthetic peers. The [installed Linux/Firecracker witness](evidence/2026-11-05-first-installed-firecracker-transfer/README.md)
+booted one signed guest and verified exact 11,600-byte readbacks in each
+direction and original endpoint-store retirement on its protected build.
+Those results describe their recorded builds and same-host fixtures. The
+current upstream candidate still needs its own installed guest and WAN runs.
+
 These checkpoints cover components and host prerequisites. The current
 combined installed guest transfer, original-owner retirement and real-WAN
 acceptance remain open. Follow
