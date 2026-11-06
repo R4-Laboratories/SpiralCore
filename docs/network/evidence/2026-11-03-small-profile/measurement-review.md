@@ -1,5 +1,27 @@
 # SmallV1 component measurement and source freeze
 
+## Admission follow-up on 2026-11-06
+
+Reran the same three-trial SmallV1 harness on one native Linux x86-64 host
+(Ryzen 9 9950X, Rust 1.97.1, locked release build, private stores on tmpfs).
+Compared the original branch `4d2bb2cf` with the bounded Whole fallback at
+`6164c455`. Both runs passed all 105 exact target readbacks. Each row sums
+21 targets and excludes setup, seeding and independent verification.
+
+| Mode | Core frame bytes before → after | Thread CPU µs before → after | Elapsed µs before → after |
+| --- | ---: | ---: | ---: |
+| Raw | 183,756 → 183,756 | 1,324 → 1,335 | 1,328 → 1,334 |
+| Whole | 72,075 → 72,075 | 1,512 → 1,504 | 1,517 → 1,503 |
+| Warm | 66,057 → 66,057 | 1,793 → 1,832 | 1,793 → 1,831 |
+| Runtime | 61,143 → 61,152 | 1,747 → 1,871 | 1,747 → 1,877 |
+| Combined | 60,585 → 60,585 | 1,945 → 2,051 | 1,946 → 2,051 |
+
+Runtime added nine bytes across the measured targets. The elapsed and CPU
+figures describe a short in-process run on a shared host. They are separate
+from the original source freeze below and from network or WAN measurements.
+
+## Original component qualification
+
 The shared-core profile is implemented and frozen for independent final review.
 General source baseline is2a9d2197d7c73fed46203d00440555665660ff13. Final
 product/test files are in the shared worktree; root owns the publication pin.

@@ -49,7 +49,7 @@ impl Capabilities {
         }
         if self.profile == 2
             && (self.max_object_bytes > 64 * 1024
-                || self.codec_mask & !crate::resource_profile::SMALL_CODEC_MASK != 0)
+                || self.codec_mask != crate::resource_profile::SMALL_CODEC_MASK)
         {
             return Err(Error::Unsupported);
         }

@@ -20,6 +20,11 @@ fn small_profile_is_explicit_bounded_and_never_negotiates_general_fallback() {
     );
     let agreed = small.negotiate(&small).unwrap();
     assert_eq!(agreed.capabilities().profile, 2);
+    let raw_only = Capabilities {
+        codec_mask: 1,
+        ..small
+    };
+    assert_eq!(small.negotiate(&raw_only), Err(Error::Unsupported));
     assert!(!agreed.supports(spiralcore_transfer::protocol::Mode::Dag));
     assert!(!agreed.supports(spiralcore_transfer::protocol::Mode::ZstdDictionaryV1));
 }

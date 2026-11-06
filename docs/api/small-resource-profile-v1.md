@@ -28,7 +28,8 @@ SmallV1 excludes legacy streaming Zstd and retains the one-shot Whole and
 Prefix zstd modes. SmallV1 Runtime selection uses Whole for its independent
 compression candidate when the checkpoint and prediction offer little reuse.
 Both authenticated/pinned peers must select2; mixed1/2 refuses Unsupported,
-without fallback. Capability/frame layout and codec versions do not change.
+and profile 2 requires the complete codec set on both peers. Capability/frame
+layout and codec versions do not change.
 Constructors require the explicit local ResourceProfile to match that agreement.
 
 `operation_charge()` returns the conservative envelope to reserve in the ONE
