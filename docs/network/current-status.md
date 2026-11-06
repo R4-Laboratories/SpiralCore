@@ -115,6 +115,15 @@ incomplete Prepare and mixed installed/probe arguments. The next gate carries
 the original audit and records descriptors through Prepare and attaches the
 owned collector and FlowMux controller before Ready.
 
+The [Hostd records-adoption run](https://github.com/R4-Laboratories/SpiralCore/actions/runs/42143892252)
+passed all 13 integration tests, including inherited records identity, holder
+alias refusal, and the one-time claim. Its VMM unit build exposed an existing
+fixture missing the new optional field. The fixture-only successor preserved
+the previous wire encoding and passed all nine selected installed VMM tests
+in the [hosted follow-up](https://github.com/R4-Laboratories/SpiralCore/actions/runs/42144793237).
+The parent still needs to send both original audit and records descriptors,
+and the controller still needs to adopt them before readiness.
+
 These checkpoints cover components and host prerequisites. The current
 combined installed guest transfer, original-owner retirement and real-WAN
 acceptance remain open. Follow
