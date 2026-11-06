@@ -23,17 +23,14 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           repository: Casey-allard/mvm
-          ref: 78da22eb6104ce9bbe9e4ebebba4ab81ccad7326
+          ref: 9df8ceec88b4a49c1065719f147f323fbda75e86
           path: sdk
           persist-credentials: false
-      - name: Exercise canonical installed endpoint binary dispatch
+      - name: Exercise installed endpoint challenge and resource adoption
         run: |
           set -euo pipefail
           test "$(git -C spiralcore rev-parse HEAD)" = "$GITHUB_SHA"
-          test "$(git -C sdk rev-parse HEAD)" = "78da22eb6104ce9bbe9e4ebebba4ab81ccad7326"
+          test "$(git -C sdk rev-parse HEAD)" = "9df8ceec88b4a49c1065719f147f323fbda75e86"
           rustup toolchain install 1.97.1 --profile minimal
-          git -C sdk apply --check ../spiralcore/.github/qualification/endpoint-binary.patch
-          git -C sdk apply ../spiralcore/.github/qualification/endpoint-binary.patch
           export CARGO_TARGET_DIR="$RUNNER_TEMP/sc-endpoint-binary"
-          cargo +1.97.1 test --locked --manifest-path sdk/Cargo.toml -p mvm-hostd --test installed_endpoint_resources \
-            canonical_endpoint_binary_enters_installed_stdio_before_legacy_input -- --test-threads=1
+          cargo +1.97.1 test --locked --manifest-path sdk/Cargo.toml -p mvm-hostd --test installed_endpoint_resources -- --test-threads=1
