@@ -1,0 +1,54 @@
+name: Installed MVM helper qualification
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - .github/workflows/spiralcore-installed-mvm-helpers.yml
+
+permissions:
+  contents: read
+
+jobs:
+  helpers:
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-24.04, macos-15]
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 25
+    env:
+      MVM_SOURCE_REVISION: c13e50d74bae2cd224a063116e88129b2e195bec
+      CARGO_BUILD_JOBS: 2
+      CARGO_INCREMENTAL: 0
+      CARGO_PROFILE_TEST_DEBUG: 0
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: Casey-allard/mvm
+          ref: ${{ env.MVM_SOURCE_REVISION }}
+          path: mvm
+          persist-credentials: false
+      - name: Qualify installed helper custody and startup
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C mvm rev-parse HEAD)" = "$MVM_SOURCE_REVISION"
+          rustup toolchain install 1.97.1 --profile minimal
+          export CARGO_TARGET_DIR="$RUNNER_TEMP/spiralcore-installed-mvm-helpers"
+          if test "$(uname -s)" = Darwin; then
+            test "$(uname -m)" = arm64
+            sw_vers
+            uname -r
+            cargo +1.97.1 test --locked --manifest-path mvm/Cargo.toml -p mvm-hostd \
+              --test owned_host_agent installed_signer_requires_the_original_current_registration -- --test-threads=1
+          else
+            cargo +1.97.1 test --locked --manifest-path mvm/Cargo.toml -p mvm-hostd \
+              --test owned_host_agent --test installed_endpoint_resources -- --test-threads=1
+            cargo +1.97.1 test --locked --manifest-path mvm/Cargo.toml -p mvm-vmm \
+              --lib host::network_endpoint_spawn:: -- --test-threads=1
+            cargo +1.97.1 test --locked --manifest-path mvm/Cargo.toml -p mvm-vmm \
+              --lib host::telemetry_provisioning::tests:: -- --test-threads=1
+            cargo +1.97.1 test --locked --manifest-path mvm/Cargo.toml -p mvm-core \
+              --test bounded_owned_json -- --test-threads=1
+          fi
