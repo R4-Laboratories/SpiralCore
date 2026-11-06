@@ -124,6 +124,13 @@ in the [hosted follow-up](https://github.com/R4-Laboratories/SpiralCore/actions/
 The parent still needs to send both original audit and records descriptors,
 and the controller still needs to adopt them before readiness.
 
+The [original signer handoff run](https://github.com/R4-Laboratories/SpiralCore/actions/runs/42146422478)
+passed 10 real-helper integration tests, three Hostd descriptor sideband tests,
+and four VMM parser and readiness tests. The original signed registration can
+claim the signer capability once and cannot deregister while it is held. The
+parent and child still need to pass that capability through the full installed
+endpoint startup and use it in the audited controller.
+
 These checkpoints cover components and host prerequisites. The current
 combined installed guest transfer, original-owner retirement and real-WAN
 acceptance remain open. Follow
