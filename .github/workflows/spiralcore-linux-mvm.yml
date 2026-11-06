@@ -23,17 +23,17 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           repository: Casey-allard/mvm
-          ref: 9c2361423c86082a48d23e3f5651cb3ff0881e3f
+          ref: d3d7272004ba01b0834719848eaf3b585bc75457
           path: sdk
           persist-credentials: false
       - name: Exercise installed anchor admission before launch effects
         run: |
           set -euo pipefail
           test "$(git -C spiralcore rev-parse HEAD)" = "$GITHUB_SHA"
-          test "$(git -C sdk rev-parse HEAD)" = "9c2361423c86082a48d23e3f5651cb3ff0881e3f"
+          test "$(git -C sdk rev-parse HEAD)" = "d3d7272004ba01b0834719848eaf3b585bc75457"
           rustup toolchain install 1.97.1 --profile minimal
-          git -C sdk apply --check ../spiralcore/.github/qualification/installed-anchor-gate.patch
-          git -C sdk apply ../spiralcore/.github/qualification/installed-anchor-gate.patch
           export CARGO_TARGET_DIR="$RUNNER_TEMP/sc-anchor"
           cargo +1.97.1 test --locked --manifest-path sdk/Cargo.toml -p mvm-runtime --lib \
             owned_native_handle_survives_canonical_runner_start_return -- --test-threads=1
+          cargo +1.97.1 test --locked --manifest-path sdk/Cargo.toml -p mvm-vmm --lib \
+            host::cmdline::tests:: -- --test-threads=1
