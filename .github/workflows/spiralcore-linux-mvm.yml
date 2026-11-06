@@ -1,4 +1,4 @@
-name: SpiralCore installed Runtime broker regression
+name: SpiralCore installed pre-dispatch endpoint regression
 
 on:
   workflow_dispatch:
@@ -8,7 +8,7 @@ permissions:
 
 jobs:
   test:
-    if: startsWith(github.ref, 'refs/heads/codex/installed-sdk-native-witness-runtime-broker-')
+    if: startsWith(github.ref, 'refs/heads/codex/installed-sdk-native-witness-endpoint-retain-')
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
@@ -26,14 +26,14 @@ jobs:
           ref: 32566c048936813c7df32dfb7de0ac79d173c68b
           path: sdk
           persist-credentials: false
-      - name: Exercise original installed Runtime broker registration
+      - name: Exercise original installed endpoint pre-dispatch custody
         run: |
           set -euo pipefail
           test "$(git -C spiralcore rev-parse HEAD)" = "$GITHUB_SHA"
           test "$(git -C sdk rev-parse HEAD)" = "32566c048936813c7df32dfb7de0ac79d173c68b"
           rustup toolchain install 1.97.1 --profile minimal
-          export CARGO_TARGET_DIR="$RUNNER_TEMP/sc-runtime-broker"
-          cargo +1.97.1 test --locked --manifest-path sdk/Cargo.toml -p mvm-hostd --test owned_host_agent \
-            -- --test-threads=1
+          git -C sdk apply --check ../spiralcore/.github/qualification/endpoint-retain.patch
+          git -C sdk apply ../spiralcore/.github/qualification/endpoint-retain.patch
+          export CARGO_TARGET_DIR="$RUNNER_TEMP/sc-endpoint-retain"
           cargo +1.97.1 test --locked --manifest-path sdk/Cargo.toml -p mvm-runtime --lib \
-            owned_native_handle_survives_canonical_runner_start_return -- --test-threads=1
+            installed_pre_dispatch_failure_retains_and_retires_endpoint -- --test-threads=1
