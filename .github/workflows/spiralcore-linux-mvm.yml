@@ -23,17 +23,15 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           repository: Casey-allard/mvm
-          ref: 819938bf7f891654532e8b6830df5530e99eb464
+          ref: 9c2361423c86082a48d23e3f5651cb3ff0881e3f
           path: sdk
           persist-credentials: false
       - name: Exercise original installed host-agent registration
         run: |
           set -euo pipefail
           test "$(git -C spiralcore rev-parse HEAD)" = "$GITHUB_SHA"
-          test "$(git -C sdk rev-parse HEAD)" = "819938bf7f891654532e8b6830df5530e99eb464"
+          test "$(git -C sdk rev-parse HEAD)" = "9c2361423c86082a48d23e3f5651cb3ff0881e3f"
           rustup toolchain install 1.97.1 --profile minimal
-          git -C sdk apply --check ../spiralcore/.github/qualification/installed-registration.patch
-          git -C sdk apply ../spiralcore/.github/qualification/installed-registration.patch
           export CARGO_TARGET_DIR="$RUNNER_TEMP/sc-registration"
           cargo +1.97.1 test --locked --manifest-path sdk/Cargo.toml -p mvm-hostd --test owned_host_agent \
-            installed_signer_requires_the_original_current_registration -- --test-threads=1
+            -- --test-threads=1
