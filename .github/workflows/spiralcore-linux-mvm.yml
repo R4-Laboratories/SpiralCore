@@ -23,17 +23,17 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           repository: Casey-allard/mvm
-          ref: d3d7272004ba01b0834719848eaf3b585bc75457
+          ref: 32566c048936813c7df32dfb7de0ac79d173c68b
           path: sdk
           persist-credentials: false
       - name: Exercise original installed Runtime broker registration
         run: |
           set -euo pipefail
           test "$(git -C spiralcore rev-parse HEAD)" = "$GITHUB_SHA"
-          test "$(git -C sdk rev-parse HEAD)" = "d3d7272004ba01b0834719848eaf3b585bc75457"
+          test "$(git -C sdk rev-parse HEAD)" = "32566c048936813c7df32dfb7de0ac79d173c68b"
           rustup toolchain install 1.97.1 --profile minimal
-          git -C sdk apply --check ../spiralcore/.github/qualification/runtime-broker.patch
-          git -C sdk apply ../spiralcore/.github/qualification/runtime-broker.patch
           export CARGO_TARGET_DIR="$RUNNER_TEMP/sc-runtime-broker"
           cargo +1.97.1 test --locked --manifest-path sdk/Cargo.toml -p mvm-hostd --test owned_host_agent \
-            installed_runtime_broker_uses_the_original_registrar_even_without_services -- --test-threads=1
+            -- --test-threads=1
+          cargo +1.97.1 test --locked --manifest-path sdk/Cargo.toml -p mvm-runtime --lib \
+            owned_native_handle_survives_canonical_runner_start_return -- --test-threads=1
