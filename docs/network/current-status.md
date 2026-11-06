@@ -83,6 +83,28 @@ data/control workloads, ambiguous partial receipt writes, the installed
 release and cross-platform WAN remain open. The reports retain byte counts,
 CPU, elapsed time, source pins and failed runs.
 
+## Current installed FlowMux qualification
+
+The [MVM contribution fork checkpoint](https://github.com/Casey-allard/mvm/commit/9c2361423c86082a48d23e3f5651cb3ff0881e3f)
+includes the original host-agent registration and signer check. The
+[hosted helper run](https://github.com/R4-Laboratories/SpiralCore/actions/runs/42135824037)
+passed all eight tests, including foreign signer, changed registration facts,
+parent revocation and same-name replacement controls.
+
+Earlier pins on the same branch passed [x86 store cleanup and flag controls](https://github.com/R4-Laboratories/SpiralCore/actions/runs/42132613337)
+and [pre-TLS carrier and resource checks](https://github.com/R4-Laboratories/SpiralCore/actions/runs/42134384311).
+Both resource refusals emitted zero TLS bytes on an already connected loopback
+socket. The funded failed handshake returned the original credit. The
+[hosted scope check](https://github.com/R4-Laboratories/SpiralCore/actions/runs/42135240936)
+verified kernel CPU, memory, swap and task limits and scope retirement.
+
+These checkpoints cover components and host prerequisites. The current combined
+installed guest transfer, original-owner retirement and real-WAN acceptance
+remain open. The canonical Runtime must pass the original registration into the
+installed endpoint before identity publication and child startup. Follow
+[#44](https://github.com/R4-Laboratories/SpiralCore/issues/44) for exact pins,
+failures and successor runs.
+
 ## Active work that is not an accepted main release
 
 Development checkpoints are published for source inspection:
