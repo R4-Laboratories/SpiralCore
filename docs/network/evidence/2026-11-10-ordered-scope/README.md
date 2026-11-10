@@ -274,3 +274,69 @@ Different hosted runners and incomplete doses do not establish a causal
 before/after throughput improvement. CPU and full traffic on these failure
 paths remain missing; the optional timing witness is being implemented to
 retain those observations without changing the workload or deadline.
+
+## Optional timing witness and its retained failures
+
+At `f9cf39bc`, the diagnostic feature is default-off. Its fixed state records
+requested/actual TLS pauses, poll outcomes, sender/receiver frame phases and
+read/acknowledgment ordinals. The witness adds actual process CPU and TLS
+counters on workload failure. Preparation failures retain their original
+errors; the report guard starts only after both streams are prepared. Snapshot
+times are concurrent and overlapping, and are not send-only or per-phase CPU.
+
+The [first native diagnostic artifact and verified receipt](native-f9cf39bc/receipts.json)
+retain a Windows Server 2025 operation-timeout failure before the overall
+watchdog: 1,720 exact blocks read and acknowledged per direction,
+137.719083 s to snapshot, 52.968750 s actual process CPU including both local
+peers, setup 0.101080 s wall/0.015625 s CPU. TLS counters at that snapshot were
+left sent/received 2,266,614/2,266,571 bytes and right sent/received
+2,266,777/2,266,614 bytes. In-flight/failed work means the counters need not
+balance. This incomplete dose is no successful-transfer result.
+
+Commit handler elapsed totals were 68.313372/65.179094 seconds across
+1,721/1,720 calls (means 39.694/37.895 ms). Those spans cover shared endpoint
+commit and ordered cache bookkeeping, including durable publication and
+readback. They exclude the later application delivery read. TLS session
+pauses requested 1.790/1.677 seconds in aggregate but took
+15.762247/13.293386 seconds, with maxima around 16.6 ms. These overlapping
+measurements identify both costs without attributing every Commit millisecond
+to a particular syscall or adding wait totals to wall time.
+
+The initial native coverage collector also refused its profile set after two
+instrumented primitive tests passed. Its original artifact is retained in the
+same packet. The log did not record profile discovery, so missing versus
+oversized files and their locations remain unresolved. The collector successor
+uses one compile/run pattern, records bounded profile discovery and separates
+source-pinned test hooks from the production denominator. That successor still
+requires native execution; no Windows production coverage is credited yet.
+
+Independent review found that the original returned timing observer exposed
+producer mutators publicly. The successor makes those methods crate-private;
+an external compile-fail example first compiled unexpectedly (RED), then
+refused after the visibility fix (GREEN). A focused diagnostic-label regression
+also first observed `Resume` for wire kind 4, then passed with the canonical
+`Probe` label. The two timing unit checks, external privacy doctest and strict
+feature-on Clippy passed on Wick after these fixes. No protocol frame or
+transport-authority change follows from diagnostic visibility or labels.
+
+## Exact-source diagnostic coverage
+
+The [fresh Linux receipt](coverage-f9/summary.json) pins `f9cf39bc` against
+`dc7098fc` and executes **143 checks: 57 feature-on FlowMux and 86 transfer**,
+zero failed or ignored. Changed mapped production is **794/890 = 89.213%**;
+new timing production is **92/92 = 100%**. Changed duplex is 172/183,
+TLS 61/70, endpoint 159/196 and ordered retention 277/316. All mapped FlowMux
+is 2,432/2,646; transfer is 5,616/8,315; union is 8,048/10,961 (73.424%).
+Those broader limits remain, and branch coverage is NA without mappings.
+Windows code is unmapped and receives no Linux credit.
+
+All 197 source pins and 17 protected original/copied executable pins stayed
+stable. Eight files in the earlier shared narrow snapshot differed from the
+frozen source. The collector left it intact and assembled an isolated exact
+copy; the [assembly delta](coverage-f9/assembly-delta.json) and original
+collector-only refusal remain. Earlier runs that matched only the changed
+FlowMux files are not promoted to whole-revision performance evidence. Raw
+profiles, complete exports and helper scripts stay on Wick under
+`/var/tmp/spiralcore-f9-timing-coverage-20261110`; the repository retains compact
+summaries, pins, exclusions and uncovered lines. New observer visibility and
+label edits are later than this frozen receipt and need final-source accounting.

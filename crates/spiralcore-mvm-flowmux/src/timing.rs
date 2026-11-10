@@ -35,6 +35,7 @@ mod tests {
         assert!(result.is_err());
         assert_eq!(owner.snapshot().get(metric).count, 1);
         assert_eq!(FrameKind::from_wire(255), FrameKind::Other);
+        assert_eq!(format!("{:?}", FrameKind::from_wire(4)), "Probe");
         assert_ne!(
             Metric::PauseActual(PauseReason::Read).slot(),
             Metric::PauseRequested(PauseReason::Read).slot()
@@ -131,7 +132,7 @@ pub enum FrameKind {
     Begin,
     Data,
     Commit,
-    Resume,
+    Probe,
     Status,
     Cancel,
     Other,
@@ -141,7 +142,7 @@ impl FrameKind {
         Self::Begin,
         Self::Data,
         Self::Commit,
-        Self::Resume,
+        Self::Probe,
         Self::Status,
         Self::Cancel,
         Self::Other,
@@ -151,7 +152,7 @@ impl FrameKind {
             1 => Self::Begin,
             2 => Self::Data,
             3 => Self::Commit,
-            4 => Self::Resume,
+            4 => Self::Probe,
             5 => Self::Status,
             6 => Self::Cancel,
             _ => Self::Other,
@@ -222,6 +223,13 @@ struct Owner {
     cells: [Cell; SLOTS],
     overflow: AtomicBool,
 }
+/// Read-only access to counters produced by the owning carrier or duplex.
+///
+/// ```compile_fail,E0624
+/// use spiralcore_mvm_flowmux::timing::{Metric, PauseReason, TimingObserver};
+/// let observer = TimingObserver::default();
+/// observer.record(Metric::PauseActual(PauseReason::Read), std::time::Duration::ZERO);
+/// ```
 #[derive(Clone)]
 pub struct TimingObserver {
     inner: Arc<Owner>,
@@ -279,7 +287,7 @@ impl TimingObserver {
             }))
         });
     }
-    pub fn record(&self, metric: Metric, elapsed: Duration) {
+    pub(crate) fn record(&self, metric: Metric, elapsed: Duration) {
         let ns = u64::try_from(elapsed.as_nanos()).unwrap_or_else(|_| {
             self.inner.overflow.store(true, Ordering::Relaxed);
             u64::MAX
@@ -289,10 +297,10 @@ impl TimingObserver {
         self.add(&cell.total, ns);
         cell.maximum.fetch_max(ns, Ordering::Relaxed);
     }
-    pub fn count(&self, observation: Observation) {
+    pub(crate) fn count(&self, observation: Observation) {
         self.record(Metric::Count(observation), Duration::ZERO);
     }
-    pub fn span(&self, metric: Metric) -> Span<'_> {
+    pub(crate) fn span(&self, metric: Metric) -> Span<'_> {
         Span {
             owner: self,
             metric,
@@ -313,7 +321,7 @@ impl TimingObserver {
         }
     }
 }
-pub struct Span<'a> {
+pub(crate) struct Span<'a> {
     owner: &'a TimingObserver,
     metric: Metric,
     began: Instant,

@@ -13,23 +13,44 @@ Missing tools, native host mismatch or incompatible versions fail the step.
 No cross-compilation or Linux mapping receives native Windows credit.
 
 A fresh GUID directory beneath `RUNNER_TEMP` contains the isolated Cargo target,
-copied test executable, listing profiles, executed-test profiles, merged profile,
+copied test executable, executed-test profiles, merged profile,
 build diagnostics and LLVM exports. No binary or raw profile is placed in the
 checkout or uploaded by the ordinary evidence artifact. The directory remains
 on the disposable runner through collection; runner disposal removes it. No
 separate raw artifact upload is introduced by this change.
 
+Compile and execution use one absolute profile filename pattern. The binary
+runs with its current directory under the owned runner-temporary directory,
+so a runtime default-file fallback also stays outside the checkout. Recursive
+owned-directory profile discovery records all observed parent directories,
+counts and bytes plus at most 16 full file-detail rows after enumeration and
+after execution. Only the enumerated owned
+`.profraw` files are removed between enumeration and execution; the collector
+requires zero remaining profiles before running the two tests. It merges only
+fresh post-test profiles and never silently accepts enumeration coverage.
+
 The collector checks Cargo/LLVM/test exits, exactly two listed and passed tests,
 no ignored or filtered tests, a nonempty bounded profile set, exactly one mapped
 production `src/windows/quota.rs`, and a positive executable-line denominator.
-The whole new production file is the gate: covered executable lines must reach
-at least 80%, using integer comparison. There are no source-line exclusions.
-LLVM JSON summary counts must agree with the independently parsed LCOV line map.
+The new production file is the gate: covered executable lines must reach
+at least 80%, using integer comparison. Preserve whole-file raw LLVM counts,
+then exclude only the exact `#[cfg(test)]` blocks at lines 200–205, 207–208 and
+303–304 from the production line map. The exact LF Git source SHA-256 is pinned to
+`f7a1433d083cb9b16a2e4316cba797655b5f257b5e4ae970bfcf9e971ffb074c`;
+the observed raw checkout hash is retained separately. Windows checkout CRLF
+normalizes to LF solely for this Git content comparison (the observed f9 CRLF
+hash is `178dea30ebf931e5675316f154d0fb5fd2d1ae93cd3631d409e872b12a101df9`);
+every excluded snippet is checked against those exact source lines. Source or
+snippet drift refuses collection until the exclusions receive review. No entire
+production function or unmapped gap receives an exclusion. Retain both raw and
+production denominators, the complete compact line-hit map and exclusions.
+LLVM JSON raw counts must agree with the independently parsed raw LCOV line map.
 Branch coverage is reported as unavailable if LLVM supplies no branch mappings;
 line coverage is not presented as branch coverage.
 
 `portable-evidence/windows-quota-coverage-*` retains only source hashes, test
-enumeration/output, the compact summary and uncovered executable-line numbers,
+enumeration/output, profile-discovery records, the compact summary and uncovered
+production executable-line numbers,
 with a 32 KiB per-file and combined 256 KiB limit. An oversized text is replaced
 by a short refusal marker; its full content stays only in runner temporary
 storage, and the step fails. The summary pins the original and copied binary,
@@ -39,12 +60,19 @@ crate inputs are hashed before/after, including the lockfile, and the binary and
 LLVM tool hashes must remain unchanged. The existing final evidence checksum
 step covers these compact outputs, including a failed below-threshold receipt.
 
-Implementation status: workflow/source inspection only; no coverage build or
-native execution has been run for this collector. Pinned LLVM-tool availability
-on all three hosted Windows roles is unverified until execution. The previous
-plain primitive passes and historical Linux f26 coverage do not satisfy this
-gate. A native refusal or a result below 80% remains a failed gate requiring
-investigation and focused tests; the threshold must not silently change.
+The initial f9 collector installed matching LLVM tools and passed its two
+instrumented tests on the native Windows roles, then refused its profile set.
+The [Server 2025 job](https://github.com/R4-Laboratories/SpiralCore/actions/runs/42915575247/job/130177088484)
+retains the refusal. Its compact artifact recorded neither actual profile
+locations nor the failing count/size, so it cannot establish a filename-location
+cause. The successor uses consistent paths and captures that missing evidence;
+this is a collector correction awaiting execution, not a demonstrated diagnosis.
+
+Implementation status: static inspection only for this successor; no new native
+coverage collection has run. The earlier plain/instrumented primitive passes and
+historical Linux coverage do not satisfy the production gate. A native refusal
+or a result below 80% remains a failed gate requiring investigation and focused
+tests; the threshold must not silently change.
 
 References: [Rust instrumentation](https://doc.rust-lang.org/rustc/instrument-coverage.html)
 and [LLVM coverage exports](https://llvm.org/docs/CommandGuide/llvm-cov.html).
