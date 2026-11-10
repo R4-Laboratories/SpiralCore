@@ -306,11 +306,36 @@ fn explicit_artifact_deadline_is_not_refreshed_after_tls_or_partial_progress() {
 fn small_profile_sustains_more_than_128_distinct_verified_blocks_in_one_scope() {
     use spiralcore_transfer::resource_profile::ResourceProfile;
     const BLOCKS: usize = 129;
+    let began = Instant::now();
+    let run_until = began + Duration::from_secs(30);
     let (left, right, mut facts) = pair();
     facts.object_profile = 2;
     let policy = PinnedScopePolicy::new(2).unwrap();
-    let left_authority = authority(&policy, &facts, Role::Initiator);
-    let right_authority = authority(&policy, &facts, Role::Acceptor);
+    // This sustained fixture must outlive the short helper's three-second
+    // enrollment without refreshing either scope or operation deadlines.
+    let enrollment_until = began + Duration::from_secs(35);
+    policy
+        .enroll(
+            &facts,
+            facts.acceptor_spki,
+            Role::Initiator,
+            enrollment_until,
+        )
+        .unwrap();
+    policy
+        .enroll(
+            &facts,
+            facts.initiator_spki,
+            Role::Acceptor,
+            enrollment_until,
+        )
+        .unwrap();
+    let left_authority = policy
+        .authorize_scope(&facts, facts.acceptor_spki, Role::Initiator)
+        .unwrap();
+    let right_authority = policy
+        .authorize_scope(&facts, facts.initiator_spki, Role::Acceptor)
+        .unwrap();
     let stores = [
         Store(
             std::env::temp_dir().join(format!("flow-small-sustained-left-{}", std::process::id())),
@@ -375,12 +400,11 @@ fn small_profile_sustains_more_than_128_distinct_verified_blocks_in_one_scope() 
             );
             Ok(BLOCKS)
         });
-        let until = Instant::now() + Duration::from_secs(5);
         let mut sent = 0;
         let mut failure = None;
         for index in 0..BLOCKS {
-            if Instant::now() >= until {
-                failure = Some("fixture original5s watchdog".into());
+            if Instant::now() >= run_until {
+                failure = Some("fixture original30s watchdog".into());
                 break;
             }
             if let Err(error) = left.write_all(&block(index)) {
@@ -397,7 +421,10 @@ fn small_profile_sustains_more_than_128_distinct_verified_blocks_in_one_scope() 
         (sent, failure, reader.join().unwrap())
     });
     eprintln!(
-        "SMALL_SUSTAINED expected_blocks={BLOCKS} sent_verified_blocks={sent} receive={received:?} failure={failure:?}"
+        "SMALL_SUSTAINED expected_blocks={BLOCKS} sent_verified_blocks={sent} receive={received:?} failure={failure:?} elapsed_us={} left_scope={:?} right_scope={:?}",
+        began.elapsed().as_micros(),
+        left_authority.check(),
+        right_authority.check()
     );
     assert_eq!(
         sent, BLOCKS,

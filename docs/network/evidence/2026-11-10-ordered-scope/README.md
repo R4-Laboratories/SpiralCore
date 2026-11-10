@@ -100,3 +100,58 @@ of the v2 Small scope, canonical direct/relay WAN, recovery and scale remain
 open under [#44](https://github.com/R4-Laboratories/SpiralCore/issues/44),
 [#46](https://github.com/R4-Laboratories/SpiralCore/issues/46) and
 [#49](https://github.com/R4-Laboratories/SpiralCore/issues/49).
+
+## Scoped coverage receipt
+
+The [exact candidate receipt](coverage/summary.json) pins `f26b7803` against
+`8535b10d`. Selective LLVM instrumentation executed 55 FlowMux and 86 focused
+shared-core tests: **141 passed, zero failed or ignored**. All 189 source-file
+hashes matched the Git archive before/after collection; all 18 protected
+executables stayed unchanged. The fixture-only successor `de4907e3` changes
+no product source.
+
+The aggregate changed-production gate covered **538/618 executable lines
+(87.055%)**. Per-file changed coverage includes ordered retention 277/316,
+FlowMux duplex 90/96, scope 25/25 and endpoint 138/173 (79.769%). The endpoint
+file is below 80% individually. All mapped production coverage was 91.711%
+for FlowMux and 67.533% for transfer, a combined 72.993%. This is not an 80%
+whole-core claim. The [uncovered lines](coverage/uncovered-changed.tsv) remain
+visible. Linux provides no mapping for the changed Windows backend, which
+receives no coverage credit; LLVM emitted no branch mappings.
+
+Raw profiles, JSON/LCOV exports and original binaries remain on Wick under
+`/var/tmp/spiralcore-ordered-coverage-f26b7803-20261110`. This repository retains
+only the compact summaries, exclusions and [artifact hashes](coverage/artifact.sha256).
+The temporary directory fixture correction was tested separately; it did not
+alter the measured production source.
+
+## Native fixture-budget failures and correction
+
+At `de4907e3`, [run 42891282541](https://github.com/R4-Laboratories/SpiralCore/actions/runs/42891282541)
+passed the Linux and macOS ARM64 FlowMux rows but failed macOS Intel's
+4,096-block fixture at its original 90-second watchdog (92.25-second test).
+Windows Server 2022, Server 2025 and Windows 11 ARM64 stopped the 129-block
+fixture after respectively 69, 70 and 72 blocks. Those tests enrolled scope
+for only three seconds while allowing five seconds for transfer; their test
+durations were 3.52, 3.40 and 3.38 seconds. Scope expiry is consistent with
+the observed `Closed`, but the original log did not retain the worker's exact
+semantic error, so it does not establish that cause conclusively.
+
+The sustained fixtures now use a single fixed enrollment deadline covering
+their entire bounded run: 35-second enrollment/30-second watchdog for 129
+blocks, and 270-second enrollment/240-second watchdog for 4,096 blocks.
+Enrollment remains below the product's 300-second maximum. The product's
+two-second per-operation deadlines, authorization checks, workload counts,
+cache bounds and exact-byte assertions are unchanged. This corrects fixture
+lifetime coverage; it does not qualify the original 90-second performance
+bound. Failure diagnostics include the ordinal, retained state and current
+scope checks. CI retains successful test output so per-role timing and TLS
+counters remain available alongside failures.
+
+A subsequent Wick run passed all 11 tests in the two affected targets. The
+129-block case took 300,691 microseconds with both scopes current. The same
+4,096-block workload retained the identical TLS byte counts and cache bounds,
+with 11,980,047-microsecond lifecycle, 20.07/1.30 seconds process user/system
+CPU and 9,296 KiB process high-water RSS. These are repeat observations under
+different scheduling, not evidence of a product speed optimization. Native
+success after the correction remains a separate acceptance gate.

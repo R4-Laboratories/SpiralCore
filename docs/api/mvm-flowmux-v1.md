@@ -73,9 +73,7 @@ plan, run, session and authenticated peer facts bind its application namespace
 and authorization. Mailbox epochs and resource-owner lifetime generations retain
 their separate domains.
 
-## Authenticated carrier
-
-### Authenticated scope versions and ordered Small retention
+## Authenticated scope versions and ordered Small retention
 
 `ScopeFacts.object_profile` selects the scope serialization explicitly. General
 object profile 1 retains the published `spiralcore.flow.scope.v1\0` canonical
@@ -108,6 +106,8 @@ can leave a partially evicted cache: the facade fences, sends no success reply
 and requires owner-controlled recovery. This operation provides no transactional
 rollback or durable cache-eviction acknowledgment. Object publication still
 requires the existing exact-byte and length verification.
+
+## Authenticated carrier
 
 The cooperating profile uses mutual TLS1.3 with RFC7250 raw public keys, full
 SPKI SHA-256 pins and ALPN spiralcore-flowmux/object-stream/1. Both actual

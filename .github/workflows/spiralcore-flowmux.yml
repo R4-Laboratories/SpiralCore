@@ -82,7 +82,7 @@ jobs:
           if ($code -ne 0) { throw 'Test listing failed' }
           $listed = [regex]::Matches($listing, '(?m)^.+: test\r?$').Count
           if ($listed -lt 34) { throw "Missing component coverage: $listed" }
-          $log = (& cargo @cargoArgs -- --format pretty --color never 2>&1 | Out-String)
+          $log = (& cargo @cargoArgs -- --format pretty --color never --show-output 2>&1 | Out-String)
           $code = $LASTEXITCODE
           $log | Set-Content flowmux-evidence/tests.txt
           $log | Write-Output

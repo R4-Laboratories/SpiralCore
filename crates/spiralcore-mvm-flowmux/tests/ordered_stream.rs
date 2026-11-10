@@ -126,7 +126,7 @@ fn four_thousand_distinct_blocks_each_direction_keep_exact_bytes_and_bounded_ret
         tls_exporter: left.exporter(),
     };
     let policy = PinnedScopePolicy::new(2).unwrap();
-    let enrollment_until = Instant::now() + Duration::from_secs(120);
+    let enrollment_until = began + Duration::from_secs(270);
     let authorize = |role: Role| {
         let peer = if role == Role::Initiator {
             server_pin
@@ -180,13 +180,26 @@ fn four_thousand_distinct_blocks_each_direction_keep_exact_bytes_and_bounded_ret
     let setup_wall = began.elapsed();
     let cpu_setup = cpu();
     let rss_prepared = memory("VmRSS:");
-    let run_until = Instant::now() + Duration::from_secs(90);
+    let run_until = began + Duration::from_secs(240);
     std::thread::scope(|scope| {
         let writer = |mut stream: MappedStream,
                       observer: spiralcore_mvm_flowmux::RetentionObserver| {
             for index in 0..BLOCKS {
-                assert!(Instant::now() < run_until, "original90s fixture deadline");
-                stream.write_all(&block(index)).unwrap();
+                assert!(
+                    Instant::now() < run_until,
+                    "original240s fixture deadline at block{index}; retained={:?}; left_scope={:?}; right_scope={:?}",
+                    observer.snapshot(),
+                    left_auth.check(),
+                    right_auth.check()
+                );
+                stream.write_all(&block(index)).unwrap_or_else(|error| {
+                    panic!(
+                        "block{index}: {error}; retained={:?}; left_scope={:?}; right_scope={:?}",
+                        observer.snapshot(),
+                        left_auth.check(),
+                        right_auth.check()
+                    )
+                });
                 let state = observer
                     .snapshot()
                     .unwrap()
