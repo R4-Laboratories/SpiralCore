@@ -68,8 +68,43 @@ locations nor the failing count/size, so it cannot establish a filename-location
 cause. The successor uses consistent paths and captures that missing evidence;
 this is a collector correction awaiting execution, not a demonstrated diagnosis.
 
-Implementation status: static inspection only for this successor; no new native
-coverage collection has run. The earlier plain/instrumented primitive passes and
+The `5fc29bd4` native run then recorded zero profiles at enumeration,
+before tests and after both tests passed. This rules out an oversized profile
+set in that run. It still did not retain actual compiler invocations.
+
+A source-level collector defect is now documented: PowerShell 7.5+ treats
+`[Environment]::SetEnvironmentVariable(name, $null, 'Process')` as an empty
+variable rather than removing it. Cargo gives a present
+`CARGO_ENCODED_RUSTFLAGS` precedence over `RUSTFLAGS`, including an empty value.
+The collector used that .NET call to clear encoded flags, so its intended
+instrumentation could be suppressed. The observed Server 2025 image documents
+PowerShell 7.6.9. This establishes the defective source mechanism; proving that
+it caused the observed binary's missing instrumentation still requires the
+actual native compiler invocation, which the failed packet lacks.
+[PowerShell behavior](https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_environment_variables?view=powershell-7.5#use-the-systemenvironment-methods),
+[Cargo precedence](https://doc.rust-lang.org/cargo/reference/config.html#buildrustflags),
+[observed runner image](https://github.com/actions/runner-images/blob/win25-vs2026/20261103.298/images/windows/Windows2025-VS2026-Readme.md#powershell-tools).
+
+The minimal correction explicitly removes the encoded environment variable and
+asserts its absence before building. The compact prebuild receipt records only
+flag presence, the collector's known flag string and PowerShell/.NET versions;
+it dumps no inherited environment. Cargo `-vv` remains under owned temporary
+storage, while the actual storage `--test` compiler invocation is retained in
+compact evidence and must contain `-C instrument-coverage`. Missing invocations
+or missing instrumentation fail before test execution. Finally, absent saved
+variables are removed and existing values, including empty strings, restored;
+each restoration checks the resulting presence/value without printing it.
+
+No calibration executable is added in this patch. If actual compiler flags
+contain instrumentation and profiles still remain absent, the next bounded
+investigation is a minimal Rust calibration and binary coverage-section probe
+under the same pinned compiler/environment. The known ARM64 MSVC
+[issue #150123](https://github.com/rust-lang/rust/issues/150123) concerns malformed
+profiles after generation; it does not explain zero profiles on both x64 roles.
+All native production coverage gates remain unresolved until actual collection.
+
+Implementation status: static inspection only for this environment correction;
+no new native coverage collection has run. The earlier plain/instrumented primitive passes and
 historical Linux coverage do not satisfy the production gate. A native refusal
 or a result below 80% remains a failed gate requiring investigation and focused
 tests; the threshold must not silently change.

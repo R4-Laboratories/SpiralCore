@@ -303,12 +303,24 @@ measurements identify both costs without attributing every Commit millisecond
 to a particular syscall or adding wait totals to wall time.
 
 The initial native coverage collector also refused its profile set after two
-instrumented primitive tests passed. Its original artifact is retained in the
+primitive tests passed in the attempted instrumented run. Instrumentation was
+not established without profiles or the actual compiler invocation. Its original artifact is retained in the
 same packet. The log did not record profile discovery, so missing versus
 oversized files and their locations remain unresolved. The collector successor
 uses one compile/run pattern, records bounded profile discovery and separates
 source-pinned test hooks from the production denominator. That successor still
 requires native execution; no Windows production coverage is credited yet.
+
+The `5fc29bd4` collector's discovery then established zero profiles after both
+enumeration and successful tests on all three Windows roles. Source review
+identified the environment-removal defect: the current PowerShell .NET setter
+with null retains an empty `CARGO_ENCODED_RUSTFLAGS`, and Cargo gives that
+variable precedence over `RUSTFLAGS`. The successor explicitly removes and
+checks absence, captures the actual verbose test compiler invocation and
+requires the coverage flag, and restores absent versus empty environment
+states distinctly. Actual native proof of this correction remains pending;
+there is no coverage-threshold exemption. [PowerShell contract](https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_environment_variables?view=powershell-7.5#use-the-systemenvironment-methods),
+[Cargo precedence](https://doc.rust-lang.org/cargo/reference/config.html#buildrustflags).
 
 Independent review found that the original returned timing observer exposed
 producer mutators publicly. The successor makes those methods crate-private;

@@ -206,14 +206,29 @@ jobs:
             }
             $env:CARGO_TARGET_DIR = Join-Path $owned 'target'
             $env:RUSTFLAGS = '-C instrument-coverage -C opt-level=0'
-            [Environment]::SetEnvironmentVariable('CARGO_ENCODED_RUSTFLAGS', $null, 'Process')
+            # In PowerShell 7.5+, SetEnvironmentVariable($null) leaves an empty
+            # encoded variable, which Cargo prefers to RUSTFLAGS. Remove it explicitly.
+            Remove-Item Env:CARGO_ENCODED_RUSTFLAGS -ErrorAction SilentlyContinue
+            if (Test-Path Env:CARGO_ENCODED_RUSTFLAGS) { throw 'Encoded Rust flags must be absent for instrumentation' }
+            Save-Compact 'windows-quota-coverage-flags.json' (@{
+              powershell = $PSVersionTable.PSVersion.ToString(); dotnet = [Environment]::Version.ToString()
+              rustflags_present = (Test-Path Env:RUSTFLAGS); configured_rustflags = '-C instrument-coverage -C opt-level=0'
+              encoded_rustflags_present_before = ($null -ne $saved['CARGO_ENCODED_RUSTFLAGS'])
+              encoded_rustflags_present_at_build = (Test-Path Env:CARGO_ENCODED_RUSTFLAGS)
+            } | ConvertTo-Json)
             # Use the same absolute default at compile and execution time. Enumeration
             # profiles are discovered and removed before the actual tests execute.
             $env:LLVM_PROFILE_FILE = Join-Path $owned 'profiles/tests-%p-%m.profraw'
-            $build = @(& cargo "+$toolchain" test --locked --manifest-path $crate --lib --no-run --target $env:NATIVE_TARGET --message-format=json 2> (Join-Path $owned 'build-stderr.txt'))
+            $build = @(& cargo "+$toolchain" test --locked --manifest-path $crate --lib --no-run --target $env:NATIVE_TARGET --message-format=json -vv 2> (Join-Path $owned 'build-stderr.txt'))
             $buildExit = $LASTEXITCODE
             $build | Set-Content (Join-Path $owned 'build.jsonl')
             if ($buildExit -ne 0) { throw "Instrumented native build failed; diagnostics: $owned" }
+            $compilerLines = @(Get-Content -LiteralPath (Join-Path $owned 'build-stderr.txt') | Where-Object {
+              $_ -match '\bRunning\b' -and $_ -match '--crate-name\s+spiralcore_storage_windows(?:\s|$)' -and $_ -match '(?:^|\s)--test(?:\s|$)'
+            })
+            Save-Compact 'windows-quota-coverage-rustc.txt' ($compilerLines -join "`n")
+            if ($compilerLines.Count -eq 0) { throw 'No actual Windows storage test rustc invocation was retained' }
+            if (@($compilerLines | Where-Object { $_ -notmatch '(?:^|\s)-C\s+instrument-coverage(?:\s|$)' }).Count -ne 0) { throw 'Actual storage test rustc invocation omitted coverage instrumentation' }
             $messages = @($build | Where-Object { $_.Trim() } | ForEach-Object { $_ | ConvertFrom-Json })
             $finished = @($messages | Where-Object { $_.reason -eq 'build-finished' -and $_.success })
             $artifacts = @($messages | Where-Object { $_.reason -eq 'compiler-artifact' -and $_.target.name -eq 'spiralcore_storage_windows' -and $_.profile.test -and $_.executable })
@@ -312,7 +327,15 @@ jobs:
             if (($compact | Measure-Object Length -Sum).Sum -gt 262144) { throw 'Coverage evidence exceeds 256 KiB compact budget' }
             if (!$pass) { throw 'Native Windows quota production executable-line coverage is below 80 percent' }
           } finally {
-            foreach ($name in $saved.Keys) { [Environment]::SetEnvironmentVariable($name, $saved[$name], 'Process') }
+            foreach ($name in $saved.Keys) {
+              if ($null -eq $saved[$name]) {
+                Remove-Item -LiteralPath "Env:$name" -ErrorAction SilentlyContinue
+                if (Test-Path -LiteralPath "Env:$name") { throw "Absent coverage environment variable was not removed: $name" }
+              } else {
+                Set-Item -LiteralPath "Env:$name" -Value $saved[$name]
+                if (!(Test-Path -LiteralPath "Env:$name") -or [Environment]::GetEnvironmentVariable($name, 'Process') -cne $saved[$name]) { throw "Coverage environment restoration mismatch: $name" }
+              }
+            }
             Write-Output "Native quota coverage raw data retained only on runner: $owned"
           }
       - name: Execute nonzero canonical service, receipt, epoch, sender and TCP tests
