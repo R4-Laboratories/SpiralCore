@@ -766,6 +766,9 @@ impl<A: Authority> Worker<A> {
         }
     }
 }
+#[cfg(test)]
+mod tests;
+
 impl<A: Authority> Drop for Worker<A> {
     fn drop(&mut self) {
         if !self.completed {

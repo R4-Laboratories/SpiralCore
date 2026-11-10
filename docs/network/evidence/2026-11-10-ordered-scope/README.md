@@ -203,3 +203,23 @@ direct regression creates/writes/renames/removes an unrelated sibling while
 the scan holds its namespace; owned root/namespace rename must still refuse
 and work after release. Native backend preflight now runs before larger
 endpoint tests so a refusal cannot hide its own diagnostic suite.
+
+At successor `d6e3d669`, the two native Windows primitive suites passed on
+Server 2022, Server 2025 and Windows 11 ARM64. Server 2025's portable endpoint
+job also passed. These are component observations, not a full matrix result.
+The Server 2022 FlowMux job failed earlier than the sustained test: the
+queue-backpressure fixture timed out while filling its first four delivery
+slots. Its shared 180 ms operation budget applied to successful durable writes
+as well as the intended fifth-send timeout. The original authenticated
+[6,445-byte artifact](native-d6e3d669/flowmux-windows2022-failed.zip) and
+[API/hash receipt](native-d6e3d669/receipt.json) retain that failure; all four
+inner file checksums verify. [Native job](https://github.com/R4-Laboratories/SpiralCore/actions/runs/42911665467/job/130163745487).
+
+The fixture successor moves the same nine TCP tests into the internal duplex
+test module, preserving one setup helper and the 55-test total. This allows
+the queue fixture to use the existing private absolute-deadline operation:
+four positive sends use the normal two-second budget, then the fifth send has
+its original fresh 180 ms deadline. The two-second negative bound, failed
+joins, subsequent-send refusal and cancellation of queued delivery remain.
+No public API, product timeout or sustained-workload gate changes. Linux and
+native successor execution are required before acceptance.
