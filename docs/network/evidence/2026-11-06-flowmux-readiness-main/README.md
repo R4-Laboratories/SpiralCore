@@ -60,3 +60,11 @@ because the checked wait did not exist. With the fix, all **47 FlowMux
 tests passed with zero skipped** on Wick/Linux x64, Rust 1.97.1, and
 strict all-target Clippy passed. These are component correctness checks;
 they do not measure WAN throughput, CPU savings or installed MVM capacity.
+
+The next hosted run at `8535b10d` passed the wake regressions on macOS
+Intel but exposed a fixture collision: its two concurrent reader-completion
+tests used only PID and wall-clock nanoseconds for their directory names.
+They observed the same timestamp and one received `AlreadyExists`.
+The directory name now also includes the test's distinct mapped/guard mode.
+The failed run remains retained at
+[run 42889647457](https://github.com/R4-Laboratories/SpiralCore/actions/runs/42889647457).
