@@ -118,6 +118,116 @@ jobs:
           cargo "+1.97.1-$env:NATIVE_TARGET" clippy --locked --manifest-path $crate --all-targets -- -D warnings
           if ($LASTEXITCODE -ne 0) { throw 'Windows primitive Clippy failed' }
           if (git status --porcelain -- crates/spiralcore-storage-windows/Cargo.lock) { throw 'Windows primitive tests mutated committed lockfile' }
+      - name: Execute nonzero canonical service, receipt, epoch, sender and TCP tests
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $false
+          $manifest = Get-Content docs/platforms/mvm-mailbox-portable.json -Raw | ConvertFrom-Json
+          $crate = 'crates/spiralcore-mvm-adapter/Cargo.toml'
+          $metadata = (& cargo "+1.97.1-$env:NATIVE_TARGET" metadata --locked --no-default-features --features live --filter-platform $env:NATIVE_TARGET --format-version 1 --manifest-path $crate) -join "`n"
+          if ($LASTEXITCODE -ne 0) { throw 'Locked dependency resolution failed' }
+          $resolved = $metadata | ConvertFrom-Json
+          $mvm = @($resolved.packages | Where-Object { $_.name -in @('mvm-core','mvm-contract') })
+          if ($mvm.Count -ne 2 -or @($mvm | Where-Object { $_.source -ne $manifest.mvm_source }).Count -ne 0) {
+            throw 'Canonical MVM dependencies do not match pinned published source'
+          }
+          @($mvm | Select-Object name,version,source) | ConvertTo-Json | Set-Content portable-evidence/mvm-source.json
+          $counts = @()
+          foreach ($test in $manifest.tests) {
+            $cargoArgs = @("+1.97.1-$env:NATIVE_TARGET", 'test', '--locked', '--manifest-path', $crate,
+              '--no-default-features', '--features', 'live', '--test', $test.name)
+            $listing = (& cargo @cargoArgs -- --list --format terse 2>&1 | Out-String)
+            $code = $LASTEXITCODE
+            $listing | Set-Content "portable-evidence/$($test.name)-list.txt"
+            if ($code -ne 0) { throw "Cannot enumerate $($test.name)" }
+            $listed = [regex]::Matches($listing, '(?m)^.+: test\r?$').Count
+            if ($listed -lt $test.minimum_count) { throw "Missing native coverage: $($test.name) lists $listed" }
+            $log = (& cargo @cargoArgs -- --format pretty --color never 2>&1 | Out-String)
+            $code = $LASTEXITCODE
+            $log | Set-Content "portable-evidence/$($test.name).txt"
+            $log | Write-Output
+            $summary = [regex]::Matches($log, 'test result: ok\. (\d+) passed; (\d+) failed; (\d+) ignored; (\d+) measured; (\d+) filtered out;')
+            if ($code -ne 0 -or $summary.Count -ne 1) { throw "Native test failure: $($test.name)" }
+            $s = $summary[0].Groups
+            if ([int]$s[1].Value -ne $listed -or [int]$s[2].Value -ne 0 -or [int]$s[3].Value -ne 0 -or [int]$s[4].Value -ne 0 -or [int]$s[5].Value -ne 0) {
+              throw "Zero, ignored or filtered coverage is not accepted: $($test.name)"
+            }
+            $counts += @{ target = $test.name; listed = $listed; passed = [int]$s[1].Value; failed = 0; ignored = 0; filtered = 0 }
+            $counts | ConvertTo-Json -Depth 4 | Set-Content portable-evidence/test-counts.json
+          }
+          $enabled = @($resolved.resolve.nodes | Where-Object {
+            ($_.id -like '*spiralcore*' -and 'hardware-sha256' -in $_.features) -or
+            ($_.id -match '[/#]sha2[@/]' -and 'asm' -in $_.features)
+          })
+          if ($enabled.Count -ne 0) { throw 'Portable profile must not enable hardware-sha256' }
+          $dirty = git status --porcelain -- crates/spiralcore-mvm-adapter/Cargo.lock
+          if ($dirty) { throw 'Locked test mutated the committed lockfile' }
+          'PASS: native ephemeral mailbox contracts; no MVM backend, durability or WAN claim' | Set-Content portable-evidence/result.txt
+      - name: Execute separate Unix durable storage dispatch witnesses
+        if: runner.os != 'Windows'
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $false
+          $manifest = Get-Content docs/platforms/mvm-mailbox-portable.json -Raw | ConvertFrom-Json
+          $counts = @()
+          foreach ($test in $manifest.unix_storage_tests) {
+            $cargoArgs = @("+1.97.1-$env:NATIVE_TARGET", 'test', '--locked', '--manifest-path',
+              'crates/spiralcore-mvm-adapter/Cargo.toml', '--no-default-features', '--features', 'live', '--test', $test.name)
+            $listing = (& cargo @cargoArgs -- --list --format terse 2>&1 | Out-String)
+            $code = $LASTEXITCODE
+            $listing | Set-Content "portable-evidence/$($test.name)-list.txt"
+            if ($code -ne 0) { throw "Cannot enumerate Unix storage target $($test.name)" }
+            $listed = [regex]::Matches($listing, '(?m)^.+: test\r?$').Count
+            if ($listed -lt $test.minimum_count) { throw 'Missing Unix storage coverage' }
+            $log = (& cargo @cargoArgs -- --format pretty --color never 2>&1 | Out-String)
+            $code = $LASTEXITCODE
+            $log | Set-Content "portable-evidence/$($test.name).txt"
+            $log | Write-Output
+            $summary = [regex]::Matches($log, 'test result: ok\. (\d+) passed; (\d+) failed; (\d+) ignored; (\d+) measured; (\d+) filtered out;')
+            if ($code -ne 0 -or $summary.Count -ne 1) { throw 'Unix storage test failure' }
+            $s = $summary[0].Groups
+            if ([int]$s[1].Value -ne $listed -or [int]$s[2].Value -ne 0 -or [int]$s[3].Value -ne 0 -or [int]$s[4].Value -ne 0 -or [int]$s[5].Value -ne 0) {
+              throw 'Zero, ignored or filtered Unix storage coverage is not accepted'
+            }
+            $counts += @{ target = $test.name; scope = $test.scope; listed = $listed; passed = [int]$s[1].Value; failed = 0; ignored = 0; filtered = 0 }
+          }
+          $counts | ConvertTo-Json -Depth 4 | Set-Content portable-evidence/unix-storage-counts.json
+      - name: Execute native private object storage and exact publication tests
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $false
+          $crate = 'crates/spiralcore-transfer/Cargo.toml'
+          $storageExpected = if ($IsWindows) { 4 } else { 3 }
+          $endpointExpected = if ($IsWindows) { 20 } else { 21 }
+          $targets = @(
+            @{ id = 'private-object-storage'; flags = @('--lib', 'endpoint::storage_tests'); expected = $storageExpected; filtered = $true },
+            @{ id = 'object-endpoint'; flags = @('--test', 'endpoint'); expected = $endpointExpected; filtered = $false }
+          )
+          $counts = @()
+          foreach ($target in $targets) {
+            $cargoArgs = @("+1.97.1-$env:NATIVE_TARGET", 'test', '--locked', '--manifest-path', $crate) + $target.flags
+            $listing = (& cargo @cargoArgs -- --list --format terse 2>&1 | Out-String)
+            $code = $LASTEXITCODE
+            $listing | Set-Content "portable-evidence/$($target.id)-list.txt"
+            if ($code -ne 0) { throw "Cannot enumerate $($target.id)" }
+            $listed = [regex]::Matches($listing, '(?m)^.+: test\r?$').Count
+            if ($listed -ne $target.expected) { throw "Expected $($target.expected) $($target.id) tests, listed $listed" }
+            $log = (& cargo @cargoArgs -- --format pretty --color never 2>&1 | Out-String)
+            $code = $LASTEXITCODE
+            $log | Set-Content "portable-evidence/$($target.id).txt"
+            $log | Write-Output
+            $summary = [regex]::Matches($log, 'test result: ok\. (\d+) passed; (\d+) failed; (\d+) ignored; (\d+) measured; (\d+) filtered out;')
+            if ($code -ne 0 -or $summary.Count -ne 1) { throw "Native storage failure: $($target.id)" }
+            $s = $summary[0].Groups
+            if ([int]$s[1].Value -ne $listed -or [int]$s[2].Value -ne 0 -or [int]$s[3].Value -ne 0 -or [int]$s[4].Value -ne 0 -or (!$target.filtered -and [int]$s[5].Value -ne 0)) {
+              throw "Incomplete native storage coverage: $($target.id)"
+            }
+            $counts += @{ target = $target.id; listed = $listed; passed = [int]$s[1].Value; failed = 0; ignored = 0; filtered = [int]$s[5].Value }
+          }
+          $counts | ConvertTo-Json -Depth 4 | Set-Content portable-evidence/object-storage-counts.json
+          (Get-FileHash crates/spiralcore-transfer/Cargo.lock -Algorithm SHA256).Hash | Set-Content portable-evidence/object-storage-lock.sha256
+          if (git status --porcelain -- crates/spiralcore-transfer/Cargo.lock) { throw 'Storage tests mutated committed lockfile' }
+          'Native private filesystem and exact publication/reopen tests; no physical power-loss, MVM backend or WAN qualification' | Set-Content portable-evidence/object-storage-scope.txt
       - name: Measure native Windows quota line coverage
         if: runner.os == 'Windows'
         run: |
@@ -267,24 +377,41 @@ jobs:
             if ($LASTEXITCODE -ne 0 -or (Get-Item (Join-Path $owned 'merge-stderr.txt')).Length -ne 0) { throw 'Native profile merge failed or emitted diagnostics' }
             $jsonPath = Join-Path $owned 'summary.json'
             & $cov export $binary "--instr-profile=$merged" --summary-only $quota > $jsonPath 2> (Join-Path $owned 'export-stderr.txt')
-            if ($LASTEXITCODE -ne 0 -or (Get-Item (Join-Path $owned 'export-stderr.txt')).Length -ne 0) { throw 'Native LLVM summary export failed or emitted diagnostics' }
-            $export = Get-Content -LiteralPath $jsonPath -Raw | ConvertFrom-Json
-            $files = @($export.data | ForEach-Object { $_.files } | Where-Object { (Normalize $_.filename) -eq (Normalize $quota) })
-            if ($files.Count -ne 1) { throw 'Quota production file missing or duplicated in native coverage mapping' }
-            $lines = $files[0].summary.lines
-            if ([long]$lines.count -le 0 -or [long]$lines.covered -lt 0 -or [long]$lines.covered -gt [long]$lines.count) { throw 'Invalid native executable-line denominator' }
+            $jsonExit = $LASTEXITCODE
+            Save-Compact 'windows-quota-coverage-raw-summary.json' ([IO.File]::ReadAllText($jsonPath))
+            if ($jsonExit -ne 0 -or (Get-Item (Join-Path $owned 'export-stderr.txt')).Length -ne 0) { throw 'Native LLVM summary export failed or emitted diagnostics' }
             $lcov = Join-Path $owned 'quota.lcov'
-            & $cov export $binary "--instr-profile=$merged" --format=lcov $quota > $lcov 2> (Join-Path $owned 'lcov-stderr.txt')
-            if ($LASTEXITCODE -ne 0 -or (Get-Item (Join-Path $owned 'lcov-stderr.txt')).Length -ne 0) { throw 'Native LLVM line export failed or emitted diagnostics' }
+            & $cov export $binary "--instr-profile=$merged" --format=lcov --skip-functions $quota > $lcov 2> (Join-Path $owned 'lcov-stderr.txt')
+            $lcovExit = $LASTEXITCODE
+            Save-Compact 'windows-quota-coverage-raw-lcov.txt' ([IO.File]::ReadAllText($lcov))
+            if ($lcovExit -ne 0 -or (Get-Item (Join-Path $owned 'lcov-stderr.txt')).Length -ne 0) { throw 'Native LLVM line export failed or emitted diagnostics' }
+            $export = Get-Content -LiteralPath $jsonPath -Raw | ConvertFrom-Json
+            $jsonFiles = @($export.data | ForEach-Object { $_.files })
+            $files = @($jsonFiles | Where-Object { (Normalize $_.filename) -eq (Normalize $quota) })
+            $jsonPaths = @($jsonFiles | ForEach-Object { @{ original = $_.filename; normalized = (Normalize $_.filename); matches_quota = ((Normalize $_.filename) -eq (Normalize $quota)) } })
             $mapped = @{}
             $branchMap = @{}
+            $lcovPaths = @()
+            $lfCounts = @()
+            $lhCounts = @()
+            $selectedRecords = 0
+            $invalidLineRecords = 0
             $selected = $false
             foreach ($line in Get-Content -LiteralPath $lcov) {
-              if ($line.StartsWith('SF:')) { $selected = (Normalize $line.Substring(3)) -eq (Normalize $quota) }
+              if ($line.StartsWith('SF:')) {
+                $normalized = Normalize $line.Substring(3)
+                $selected = $normalized -eq (Normalize $quota)
+                $lcovPaths += @{ original = $line.Substring(3); normalized = $normalized; matches_quota = $selected }
+                if ($selected) { $selectedRecords++ }
+              }
               elseif ($selected -and $line -match '^DA:(\d+),(\d+)(?:,.*)?$') {
                 $number = [int]$Matches[1]; $hits = [long]$Matches[2]
+                if ($number -le 0 -or $number -gt $sourceLines.Count) { $invalidLineRecords++ }
                 if (!$mapped.ContainsKey($number) -or $mapped[$number] -lt $hits) { $mapped[$number] = $hits }
               }
+              elseif ($selected -and $line.StartsWith('DA:')) { $invalidLineRecords++ }
+              elseif ($selected -and $line -match '^LF:(\d+)$') { $lfCounts += [long]$Matches[1] }
+              elseif ($selected -and $line -match '^LH:(\d+)$') { $lhCounts += [long]$Matches[1] }
               elseif ($selected -and $line -match '^BRDA:(\d+),(\d+),(\d+),(\d+|-)$') {
                 $number = [int]$Matches[1]; $key = "$number,$($Matches[2]),$($Matches[3])"
                 $hits = if ($Matches[4] -eq '-') { 0L } else { [long]$Matches[4] }
@@ -293,13 +420,28 @@ jobs:
               elseif ($line -eq 'end_of_record') { $selected = $false }
             }
             $uncovered = @($mapped.Keys | Where-Object { $mapped[$_] -eq 0 } | Sort-Object)
-            if ($mapped.Count -ne [long]$lines.count -or ($mapped.Count - $uncovered.Count) -ne [long]$lines.covered) { throw 'LLVM summary/line-map mismatch' }
             $production = @($mapped.Keys | Where-Object { !$excluded.ContainsKey([int]$_) })
             $productionUncovered = @($production | Where-Object { $mapped[$_] -eq 0 } | Sort-Object)
             $productionCovered = $production.Count - $productionUncovered.Count
-            if ($production.Count -le 0) { throw 'Production-only quota executable-line denominator is empty' }
             Save-Compact 'windows-quota-coverage-uncovered.tsv' ((@('line') + @($productionUncovered | ForEach-Object { [string]$_ })) -join "`n")
             Save-Compact 'windows-quota-coverage-lines.tsv' ((@("line`thits`texcluded_cfg_test") + @($mapped.Keys | Sort-Object | ForEach-Object { "$_`t$($mapped[$_])`t$($excluded.ContainsKey([int]$_))" })) -join "`n")
+            # LLVM's JSON/LF/LH are function-summary totals, not distinct physical DA lines.
+            # Retain both representations before enforcing their own consistency guards.
+            $lines = if ($files.Count -eq 1) { $files[0].summary.lines } else { $null }
+            $summaryMatchesLcov = $files.Count -eq 1 -and $lfCounts.Count -eq 1 -and $lhCounts.Count -eq 1 -and [long]$lines.count -eq $lfCounts[0] -and [long]$lines.covered -eq $lhCounts[0]
+            Save-Compact 'windows-quota-coverage-comparison.json' (@{
+              expected_quota = $quota; normalized_expected = (Normalize $quota)
+              json_paths = $jsonPaths; lcov_paths = $lcovPaths; selected_json_records = $files.Count; selected_lcov_records = $selectedRecords
+              llvm_json_function_summary = $lines; lcov_function_summary = @{ LF = $lfCounts; LH = $lhCounts }
+              json_matches_lcov_function_summary = $summaryMatchesLcov
+              distinct_physical_lines = @{ count = $mapped.Count; covered = ($mapped.Count - $uncovered.Count); invalid_records = $invalidLineRecords }
+              production_physical_lines = @{ count = $production.Count; covered = $productionCovered; excluded = ($mapped.Count - $production.Count); minimum_percent = 80 }
+              method = 'JSON summary and LCOV LF/LH share LLVM function-summary semantics; DA is one mapped physical source-line union; only source-pinned cfg(test) statements excluded from production'
+            } | ConvertTo-Json -Depth 7)
+            Write-Host "COVERAGE_COUNTS json_matches_lcov=$summaryMatchesLcov selected_json=$($files.Count) selected_lcov=$selectedRecords DA_total=$($mapped.Count) DA_covered=$($mapped.Count - $uncovered.Count) production_total=$($production.Count) production_covered=$productionCovered"
+            if ($files.Count -ne 1 -or $selectedRecords -ne 1) { throw 'Quota production path missing or duplicated in coverage exports; see path comparison receipt' }
+            if (!$summaryMatchesLcov) { throw 'LLVM JSON/LCOV LF-LH function-summary mismatch; raw exports retained' }
+            if ([long]$lines.count -le 0 -or [long]$lines.covered -lt 0 -or [long]$lines.covered -gt [long]$lines.count -or $mapped.Count -le 0 -or $production.Count -le 0 -or $invalidLineRecords -ne 0) { throw 'Invalid native source-line mapping; raw exports retained' }
             foreach ($pin in $pins) { if ((Sha $pin.path) -ne $pin.sha256) { throw "Coverage source changed: $($pin.path)" } }
             if ((Sha $binary) -ne $binaryHash -or (Sha $original) -ne $binaryHash) { throw 'Coverage binary changed during collection' }
             foreach ($tool in $tools) { if ((Sha $tool.path) -ne $tool.sha256) { throw 'Coverage LLVM tool changed' } }
@@ -313,6 +455,7 @@ jobs:
               run = $env:GITHUB_RUN_ID; attempt = $env:GITHUB_RUN_ATTEMPT; scope = 'native Windows quota.rs production lines; only source-pinned cfg(test) hooks excluded'
               tests = @{ listed = 2; passed = 2; failed = 0; ignored = 0; filtered = 0; serial = $true }
               raw_lines = @{ count = $lines.count; covered = $lines.covered; percent = (100.0 * $lines.covered / $lines.count) }
+              raw_physical_lines = @{ count = $mapped.Count; covered = ($mapped.Count - $uncovered.Count); method = 'distinct LCOV DA physical source lines' }
               lines = @{ count = $production.Count; covered = $productionCovered; percent = (100.0 * $productionCovered / $production.Count); minimum_percent = 80; passed = $pass }
               exclusions = @{ source_sha256 = $quotaHash; source_lf_sha256 = $quotaLfHash; ranges = $exclusions; mapped_lines_removed = ($mapped.Count - $production.Count) }
               branches = $branchResult; binary_sha256 = $binaryHash; binary_original = $original; binary_copy = $binary
@@ -338,116 +481,6 @@ jobs:
             }
             Write-Output "Native quota coverage raw data retained only on runner: $owned"
           }
-      - name: Execute nonzero canonical service, receipt, epoch, sender and TCP tests
-        run: |
-          $ErrorActionPreference = 'Stop'
-          $PSNativeCommandUseErrorActionPreference = $false
-          $manifest = Get-Content docs/platforms/mvm-mailbox-portable.json -Raw | ConvertFrom-Json
-          $crate = 'crates/spiralcore-mvm-adapter/Cargo.toml'
-          $metadata = (& cargo "+1.97.1-$env:NATIVE_TARGET" metadata --locked --no-default-features --features live --filter-platform $env:NATIVE_TARGET --format-version 1 --manifest-path $crate) -join "`n"
-          if ($LASTEXITCODE -ne 0) { throw 'Locked dependency resolution failed' }
-          $resolved = $metadata | ConvertFrom-Json
-          $mvm = @($resolved.packages | Where-Object { $_.name -in @('mvm-core','mvm-contract') })
-          if ($mvm.Count -ne 2 -or @($mvm | Where-Object { $_.source -ne $manifest.mvm_source }).Count -ne 0) {
-            throw 'Canonical MVM dependencies do not match pinned published source'
-          }
-          @($mvm | Select-Object name,version,source) | ConvertTo-Json | Set-Content portable-evidence/mvm-source.json
-          $counts = @()
-          foreach ($test in $manifest.tests) {
-            $cargoArgs = @("+1.97.1-$env:NATIVE_TARGET", 'test', '--locked', '--manifest-path', $crate,
-              '--no-default-features', '--features', 'live', '--test', $test.name)
-            $listing = (& cargo @cargoArgs -- --list --format terse 2>&1 | Out-String)
-            $code = $LASTEXITCODE
-            $listing | Set-Content "portable-evidence/$($test.name)-list.txt"
-            if ($code -ne 0) { throw "Cannot enumerate $($test.name)" }
-            $listed = [regex]::Matches($listing, '(?m)^.+: test\r?$').Count
-            if ($listed -lt $test.minimum_count) { throw "Missing native coverage: $($test.name) lists $listed" }
-            $log = (& cargo @cargoArgs -- --format pretty --color never 2>&1 | Out-String)
-            $code = $LASTEXITCODE
-            $log | Set-Content "portable-evidence/$($test.name).txt"
-            $log | Write-Output
-            $summary = [regex]::Matches($log, 'test result: ok\. (\d+) passed; (\d+) failed; (\d+) ignored; (\d+) measured; (\d+) filtered out;')
-            if ($code -ne 0 -or $summary.Count -ne 1) { throw "Native test failure: $($test.name)" }
-            $s = $summary[0].Groups
-            if ([int]$s[1].Value -ne $listed -or [int]$s[2].Value -ne 0 -or [int]$s[3].Value -ne 0 -or [int]$s[4].Value -ne 0 -or [int]$s[5].Value -ne 0) {
-              throw "Zero, ignored or filtered coverage is not accepted: $($test.name)"
-            }
-            $counts += @{ target = $test.name; listed = $listed; passed = [int]$s[1].Value; failed = 0; ignored = 0; filtered = 0 }
-            $counts | ConvertTo-Json -Depth 4 | Set-Content portable-evidence/test-counts.json
-          }
-          $enabled = @($resolved.resolve.nodes | Where-Object {
-            ($_.id -like '*spiralcore*' -and 'hardware-sha256' -in $_.features) -or
-            ($_.id -match '[/#]sha2[@/]' -and 'asm' -in $_.features)
-          })
-          if ($enabled.Count -ne 0) { throw 'Portable profile must not enable hardware-sha256' }
-          $dirty = git status --porcelain -- crates/spiralcore-mvm-adapter/Cargo.lock
-          if ($dirty) { throw 'Locked test mutated the committed lockfile' }
-          'PASS: native ephemeral mailbox contracts; no MVM backend, durability or WAN claim' | Set-Content portable-evidence/result.txt
-      - name: Execute separate Unix durable storage dispatch witnesses
-        if: runner.os != 'Windows'
-        run: |
-          $ErrorActionPreference = 'Stop'
-          $PSNativeCommandUseErrorActionPreference = $false
-          $manifest = Get-Content docs/platforms/mvm-mailbox-portable.json -Raw | ConvertFrom-Json
-          $counts = @()
-          foreach ($test in $manifest.unix_storage_tests) {
-            $cargoArgs = @("+1.97.1-$env:NATIVE_TARGET", 'test', '--locked', '--manifest-path',
-              'crates/spiralcore-mvm-adapter/Cargo.toml', '--no-default-features', '--features', 'live', '--test', $test.name)
-            $listing = (& cargo @cargoArgs -- --list --format terse 2>&1 | Out-String)
-            $code = $LASTEXITCODE
-            $listing | Set-Content "portable-evidence/$($test.name)-list.txt"
-            if ($code -ne 0) { throw "Cannot enumerate Unix storage target $($test.name)" }
-            $listed = [regex]::Matches($listing, '(?m)^.+: test\r?$').Count
-            if ($listed -lt $test.minimum_count) { throw 'Missing Unix storage coverage' }
-            $log = (& cargo @cargoArgs -- --format pretty --color never 2>&1 | Out-String)
-            $code = $LASTEXITCODE
-            $log | Set-Content "portable-evidence/$($test.name).txt"
-            $log | Write-Output
-            $summary = [regex]::Matches($log, 'test result: ok\. (\d+) passed; (\d+) failed; (\d+) ignored; (\d+) measured; (\d+) filtered out;')
-            if ($code -ne 0 -or $summary.Count -ne 1) { throw 'Unix storage test failure' }
-            $s = $summary[0].Groups
-            if ([int]$s[1].Value -ne $listed -or [int]$s[2].Value -ne 0 -or [int]$s[3].Value -ne 0 -or [int]$s[4].Value -ne 0 -or [int]$s[5].Value -ne 0) {
-              throw 'Zero, ignored or filtered Unix storage coverage is not accepted'
-            }
-            $counts += @{ target = $test.name; scope = $test.scope; listed = $listed; passed = [int]$s[1].Value; failed = 0; ignored = 0; filtered = 0 }
-          }
-          $counts | ConvertTo-Json -Depth 4 | Set-Content portable-evidence/unix-storage-counts.json
-      - name: Execute native private object storage and exact publication tests
-        run: |
-          $ErrorActionPreference = 'Stop'
-          $PSNativeCommandUseErrorActionPreference = $false
-          $crate = 'crates/spiralcore-transfer/Cargo.toml'
-          $storageExpected = if ($IsWindows) { 4 } else { 3 }
-          $endpointExpected = if ($IsWindows) { 20 } else { 21 }
-          $targets = @(
-            @{ id = 'private-object-storage'; flags = @('--lib', 'endpoint::storage_tests'); expected = $storageExpected; filtered = $true },
-            @{ id = 'object-endpoint'; flags = @('--test', 'endpoint'); expected = $endpointExpected; filtered = $false }
-          )
-          $counts = @()
-          foreach ($target in $targets) {
-            $cargoArgs = @("+1.97.1-$env:NATIVE_TARGET", 'test', '--locked', '--manifest-path', $crate) + $target.flags
-            $listing = (& cargo @cargoArgs -- --list --format terse 2>&1 | Out-String)
-            $code = $LASTEXITCODE
-            $listing | Set-Content "portable-evidence/$($target.id)-list.txt"
-            if ($code -ne 0) { throw "Cannot enumerate $($target.id)" }
-            $listed = [regex]::Matches($listing, '(?m)^.+: test\r?$').Count
-            if ($listed -ne $target.expected) { throw "Expected $($target.expected) $($target.id) tests, listed $listed" }
-            $log = (& cargo @cargoArgs -- --format pretty --color never 2>&1 | Out-String)
-            $code = $LASTEXITCODE
-            $log | Set-Content "portable-evidence/$($target.id).txt"
-            $log | Write-Output
-            $summary = [regex]::Matches($log, 'test result: ok\. (\d+) passed; (\d+) failed; (\d+) ignored; (\d+) measured; (\d+) filtered out;')
-            if ($code -ne 0 -or $summary.Count -ne 1) { throw "Native storage failure: $($target.id)" }
-            $s = $summary[0].Groups
-            if ([int]$s[1].Value -ne $listed -or [int]$s[2].Value -ne 0 -or [int]$s[3].Value -ne 0 -or [int]$s[4].Value -ne 0 -or (!$target.filtered -and [int]$s[5].Value -ne 0)) {
-              throw "Incomplete native storage coverage: $($target.id)"
-            }
-            $counts += @{ target = $target.id; listed = $listed; passed = [int]$s[1].Value; failed = 0; ignored = 0; filtered = [int]$s[5].Value }
-          }
-          $counts | ConvertTo-Json -Depth 4 | Set-Content portable-evidence/object-storage-counts.json
-          (Get-FileHash crates/spiralcore-transfer/Cargo.lock -Algorithm SHA256).Hash | Set-Content portable-evidence/object-storage-lock.sha256
-          if (git status --porcelain -- crates/spiralcore-transfer/Cargo.lock) { throw 'Storage tests mutated committed lockfile' }
-          'Native private filesystem and exact publication/reopen tests; no physical power-loss, MVM backend or WAN qualification' | Set-Content portable-evidence/object-storage-scope.txt
       - name: Checksum compact evidence
         if: always()
         run: |

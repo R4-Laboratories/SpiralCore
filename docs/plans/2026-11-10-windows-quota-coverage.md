@@ -1,8 +1,10 @@
 # Native Windows quota coverage gate
 
-The portable mailbox workflow collects native Windows coverage after the two
-uninstrumented storage primitive tests and their strict Clippy check, before
-the larger endpoint suites. The same two library tests run serially in a separate
+The portable mailbox workflow collects native Windows coverage after the
+uninstrumented primitive tests, canonical portable component tests and private
+storage/endpoint suites. Thus a collector defect cannot skip those earlier
+positive witnesses. Coverage remains a required failing step, with no
+`continue-on-error`. The same two library tests run serially in a separate
 instrumented build. Their timing is not quota performance evidence. The original
 uninstrumented output remains the performance record.
 
@@ -44,7 +46,15 @@ every excluded snippet is checked against those exact source lines. Source or
 snippet drift refuses collection until the exclusions receive review. No entire
 production function or unmapped gap receives an exclusion. Retain both raw and
 production denominators, the complete compact line-hit map and exclusions.
-LLVM JSON raw counts must agree with the independently parsed raw LCOV line map.
+LLVM JSON raw line counts must agree with the selected LCOV `LF`/`LH` totals.
+The production gate uses distinct physical `DA` source lines, removing only the
+approved test statements. JSON summary totals and distinct `DA` lines are
+different LLVM metrics and are retained separately, rather than forced equal.
+Both formats, the complete bounded line-hit map, normalized JSON/LCOV paths and
+all comparison counts are saved before any numeric/path consistency guard.
+Exactly one quota-file record must match in each export; malformed or out-of-file
+`DA` lines refuse collection. The 80% physical-production-line formula remains
+unchanged.
 Branch coverage is reported as unavailable if LLVM supplies no branch mappings;
 line coverage is not presented as branch coverage.
 
@@ -103,8 +113,30 @@ under the same pinned compiler/environment. The known ARM64 MSVC
 profiles after generation; it does not explain zero profiles on both x64 roles.
 All native production coverage gates remain unresolved until actual collection.
 
-Implementation status: static inspection only for this environment correction;
-no new native coverage collection has run. The earlier plain/instrumented primitive passes and
+At `18fd806c`, actual native compiler invocations include coverage instrumentation
+and fresh post-test profiles were produced after the enumeration profile was
+removed. The [Server 2025 job](https://github.com/R4-Laboratories/SpiralCore/actions/runs/42919503756/job/130190580623)
+retains one 42,248-byte enumeration profile, zero profiles before execution and
+one fresh 42,248-byte profile after two passed tests. Its collector then rejected
+JSON-summary versus physical-line counts without retaining either export.
+Those exact Windows counts remain unavailable; no quota coverage pass follows.
+
+LLVM 22.1.6 source explains the distinct metrics: file summaries aggregate
+function/instantiation-group summaries, whereas detailed LCOV `DA` rows iterate
+file-level mapped lines. LCOV `LF`/`LH` reuse the function-summary values.
+[Summary construction](https://github.com/llvm/llvm-project/blob/llvmorg-22.1.6/llvm/tools/llvm-cov/CoverageReport.cpp#L445),
+[physical line export](https://github.com/llvm/llvm-project/blob/llvmorg-22.1.6/llvm/tools/llvm-cov/CoverageExporterLcov.cpp#L87),
+[summary export](https://github.com/llvm/llvm-project/blob/llvmorg-22.1.6/llvm/tools/llvm-cov/CoverageExporterLcov.cpp#L240).
+A collector-only read of the retained f9 Linux exports reproduced the difference:
+timing JSON/`LF`/`LH` is 138/138 versus distinct `DA` 132/132, and duplex is
+651/603 versus 635/591. This reads existing exports; no product build or test
+was rerun. The successor compares matching summary metrics and retains native
+physical counts for the unchanged production gate. Actual Windows collection
+still must execute and satisfy every guard.
+
+Implementation status: static inspection and retained-export collector check
+only for this summary-semantics correction; no new native collection has run.
+The earlier plain/instrumented primitive passes and
 historical Linux coverage do not satisfy the production gate. A native refusal
 or a result below 80% remains a failed gate requiring investigation and focused
 tests; the threshold must not silently change.
