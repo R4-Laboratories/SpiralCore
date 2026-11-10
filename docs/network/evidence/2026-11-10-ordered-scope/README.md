@@ -155,3 +155,32 @@ with 11,980,047-microsecond lifecycle, 20.07/1.30 seconds process user/system
 CPU and 9,296 KiB process high-water RSS. These are repeat observations under
 different scheduling, not evidence of a product speed optimization. Native
 success after the correction remains a separate acceptance gate.
+
+## Windows sustained performance refusal
+
+At `b43a1da0`, [Server 2022 job 130104398191](https://github.com/R4-Laboratories/SpiralCore/actions/runs/42894601561/job/130104398191)
+passed all 129 blocks in 5.78 seconds, but the 4,096-block workload missed the
+unchanged 240-second watchdog at 2,626/2,619 blocks in the two directions.
+Both scopes were current. Each receiver still held one attempt, 64 publications
+and 1,051,712 cache bytes; evictions were 2,562/2,555. The test took 242.12
+seconds including secondary reader teardown. This is an incomplete workload,
+not a throughput acceptance pass or evidence of fidelity failure. CPU and
+complete TLS traffic for that failed dose were not recorded.
+
+The source performs quota scans at admission and publication. At steady state
+that checks roughly 64+63 files per distinct object. The failed dose implies
+about 658,000 quota-file opens and the complete dose projects about 1.03 million.
+These are source-derived operation counts, not measured CPU attribution.
+Each old Windows open repeats ancestor opens, volume admission, SID, descriptor
+construction and held-file privacy checks.
+
+The [quota scan repair](../../../specs/2026-11-10-windows-quota-batch.md) shares
+directory setup within one scan while retaining filesystem observation and
+per-file checks. Its first Windows-target test build failed E0425 because the
+new API did not exist. The implementation then passed the pinned Windows-target
+metadata and strict Clippy checks, and 83 focused Linux core regressions passed.
+This does not execute Windows behavior. The two existing native suites now also
+check pin/release, ACL, hardlink, sharing, type and token-change refusals and
+record six alternating paired 64-file metadata comparisons, including actual
+process CPU counters. Native execution and the original 4,096-block/240-second
+workload remain mandatory before this successor can merge.

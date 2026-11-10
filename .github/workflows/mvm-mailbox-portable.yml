@@ -213,7 +213,7 @@ jobs:
           if ($code -ne 0) { throw 'Cannot enumerate Windows storage primitives' }
           $listed = [regex]::Matches($listing, '(?m)^.+: test\r?$').Count
           if ($listed -ne 2) { throw "Expected two Windows storage primitive tests, listed $listed" }
-          $log = (& cargo @cargoArgs -- --format pretty --color never 2>&1 | Out-String)
+          $log = (& cargo @cargoArgs -- --format pretty --color never --show-output --test-threads=1 2>&1 | Out-String)
           $code = $LASTEXITCODE
           $log | Set-Content portable-evidence/windows-primitives.txt
           $log | Write-Output

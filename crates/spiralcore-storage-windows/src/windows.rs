@@ -23,6 +23,8 @@ use windows_sys::Win32::{
         Threading::{GetCurrentProcess, GetCurrentThread, OpenProcessToken, OpenThreadToken},
     },
 };
+mod quota;
+pub use quota::quota_usage;
 
 struct Local(*mut c_void);
 impl Drop for Local {

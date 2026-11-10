@@ -1,11 +1,11 @@
 //! Stateful application endpoint. The caller supplies authenticated context and current authority.
 //! This module does not authenticate sockets, implement a mailbox envelope, or claim FIPS validation.
 use crate::{
-    Error, Id, MAX_CHUNK, MAX_OBJECT, Result,
     dag::{self, Node},
     hash, hex, object_id,
     prepared::{self, VerifiedGraph},
     protocol::{Frame, Mode, Offer, Reader},
+    Error, Id, Result, MAX_CHUNK, MAX_OBJECT,
 };
 use std::{
     collections::{BTreeMap, BTreeSet},
@@ -1177,32 +1177,41 @@ impl<A: Authority> Endpoint<A> {
         Err(Error::Missing)
     }
     fn disk_usage(&self, ns: Id) -> Result<(u64, u64, usize)> {
-        let mut all = 0u64;
-        let mut scoped = 0u64;
-        let mut count = 0;
-        for d in fs::read_dir(&self.root)? {
-            let d = d?;
-            if !d.file_type()?.is_dir() || !canonical_namespace(&d.file_name().to_string_lossy()) {
-                continue;
-            }
-            private_dir(&d.path())?;
-            for f in fs::read_dir(d.path())? {
-                let f = f?;
-                if !f.file_type()?.is_file() || f.path().extension().is_none_or(|s| s != "object") {
+        #[cfg(windows)]
+        return storage::quota_usage(&self.root, &hex(&ns), self.limits.max_publications);
+        #[cfg(not(windows))]
+        {
+            let mut all = 0u64;
+            let mut scoped = 0u64;
+            let mut count = 0;
+            for d in fs::read_dir(&self.root)? {
+                let d = d?;
+                if !d.file_type()?.is_dir()
+                    || !canonical_namespace(&d.file_name().to_string_lossy())
+                {
                     continue;
                 }
-                let n = storage::quota_file_len(&f.path())?;
-                all = all.checked_add(n).ok_or(Error::Limit)?;
-                if d.file_name() == hex(&ns).as_str() {
-                    scoped = scoped.checked_add(n).ok_or(Error::Limit)?;
-                }
-                count += 1;
-                if count > self.limits.max_publications {
-                    return Err(Error::Limit);
+                private_dir(&d.path())?;
+                for f in fs::read_dir(d.path())? {
+                    let f = f?;
+                    if !f.file_type()?.is_file()
+                        || f.path().extension().is_none_or(|s| s != "object")
+                    {
+                        continue;
+                    }
+                    let n = storage::quota_file_len(&f.path())?;
+                    all = all.checked_add(n).ok_or(Error::Limit)?;
+                    if d.file_name() == hex(&ns).as_str() {
+                        scoped = scoped.checked_add(n).ok_or(Error::Limit)?;
+                    }
+                    count += 1;
+                    if count > self.limits.max_publications {
+                        return Err(Error::Limit);
+                    }
                 }
             }
+            Ok((scoped, all, count))
         }
-        Ok((scoped, all, count))
     }
     fn publish(
         &self,
