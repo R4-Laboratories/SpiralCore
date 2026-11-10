@@ -6,13 +6,13 @@ filesystem accounting and all per-file checks. The existing Windows sustained
 workload is the performance RED; the new quota API test also fails with E0425
 under the pinned Windows-target metadata check. No protocol changes are planned.
 
-1. In `crates/spiralcore-storage-windows/src/windows.rs`, add bounded kernel
-   GUID-name and single-child validators, then a private synchronous directory
-   owner. Request directory-list access with read-only sharing, retain original
-   ancestry, and verify identity/volume through acquisition. Depend on the
+1. In `crates/spiralcore-storage-windows/src/windows/quota.rs`, add single-child
+   validators, generated native relative-open bindings and bounded aligned
+   handle-based directory parsing. Pin only owned root/namespace directories;
+   preserve the initial traversal boundary and release shared ancestors. Depend on the
    reviewed design. Risk: high, because this is a filesystem trust boundary.
 2. In the same file, implement a scalar-only `quota_usage` scan of the anchored
-   root and namespaces. Recheck effective identity and each publication's
+   root and namespace handles. Recheck effective identity and each publication's
    original access, ACL, type, links, reparse state, parent and held-file size.
    Preserve checked totals and count limits. Depend on step 1. Risk: high.
 3. Extend the existing two native suites in
@@ -37,3 +37,6 @@ under the pinned Windows-target metadata check. No protocol changes are planned.
 
 The release gate retains every original count, fidelity, cache and operation
 deadline assertion. A missing native platform gate remains incomplete.
+Unexpected pending native opens are a documented process fail-stop invariant,
+tested in a separate child with simulated status after completed I/O. This slice
+does not implement asynchronous-open completion or cancellation.

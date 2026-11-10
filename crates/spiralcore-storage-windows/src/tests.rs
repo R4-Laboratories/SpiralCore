@@ -25,6 +25,9 @@ static NEXT: AtomicU64 = AtomicU64::new(0);
 thread_local! {
     static QUOTA_PINNED: RefCell<Option<Box<dyn FnOnce()>>> = RefCell::new(None);
 }
+pub(crate) fn pending_requested() -> bool {
+    std::env::var_os("SC_TEST_PENDING_QUOTA").is_some()
+}
 pub(crate) fn quota_namespace_pinned() {
     let action = QUOTA_PINNED.with(|slot| slot.borrow_mut().take());
     if let Some(action) = action {
@@ -238,6 +241,32 @@ fn replace_acl(path: &Path, text: &str, protected: bool) {
 
 #[test]
 fn broad_or_inherited_windows_acl_refuses_without_permission_repair() {
+    if !pending_requested() {
+        let sandbox = Fixture::new();
+        private_dir(&sandbox.0).unwrap();
+        let result = std::process::Command::new(std::env::current_exe().unwrap())
+            .args([
+                "--exact",
+                "tests::broad_or_inherited_windows_acl_refuses_without_permission_repair",
+                "--nocapture",
+                "--test-threads=1",
+            ])
+            .env("SC_TEST_PENDING_QUOTA", "1")
+            .env("TEMP", &sandbox.0)
+            .env("TMP", &sandbox.0)
+            .output()
+            .unwrap();
+        assert!(!result.status.success());
+        assert!(
+            String::from_utf8_lossy(&result.stderr).contains("QUOTA_UNEXPECTED_PENDING_FAIL_STOP")
+        );
+        let path = sandbox.0.clone();
+        drop(sandbox);
+        assert!(
+            !path.exists(),
+            "aborted child's owned sandbox must be retired"
+        );
+    }
     for inherited in [false, true] {
         let fixture = Fixture::new();
         private_dir(&fixture.0).unwrap();
@@ -311,8 +340,20 @@ fn broad_or_inherited_windows_acl_refuses_without_permission_repair() {
     let renamed = fixture.0.join("renamed");
     let from = namespace.clone();
     let to = renamed.clone();
+    let sibling = fixture.0.with_extension("sibling");
     QUOTA_PINNED.with(|slot| {
         *slot.borrow_mut() = Some(Box::new(move || {
+            let created = private_dir(&sibling);
+            assert!(
+                created.is_ok(),
+                "unrelated sibling creation must stay available: {created:?}"
+            );
+            let moved = sibling.with_extension("moved");
+            let mut payload = create_new_file(&sibling.join("owned")).unwrap();
+            payload.write_all(b"independent sibling").unwrap();
+            drop(payload);
+            fs::rename(&sibling, &moved).unwrap();
+            fs::remove_dir_all(moved).unwrap();
             assert!(
                 fs::rename(from, to).is_err(),
                 "original namespace must be pinned"

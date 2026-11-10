@@ -95,23 +95,28 @@ does not claim atomic revocation or guaranteed outcome after power loss.
 
 ### Quota scan addition, 2026-11-10
 
-Windows accounting uses a synchronous scalar-only scan. It rescans the actual
-root and namespaces on each call, using kernel-resolved internal volume-GUID
-paths from the original held directories. Every directory pin requests
-`FILE_LIST_DIRECTORY | FILE_READ_ATTRIBUTES | READ_CONTROL` with read-only
-sharing. Directory-list access participates in sharing checks; a parent ACL
-without that access, an incompatible writer/deleter or an unavailable GUID-name
-query refuses the scan. There is no weaker fallback. This adds a supported-path
-availability requirement and changes no on-wire record.
+Windows accounting uses a synchronous scalar-only scan. After initial root
+capture through the existing drive-absolute checks, enumeration and child opens
+use the actual retained root and namespace handles. Shared ancestors retain
+their previous traversal checks and get no new write exclusion. Only owned
+directories are pinned with list/traverse/read-control access and read-only
+sharing. An incompatible owned-directory writer/deleter refuses the scan.
+There is no weaker fallback and no on-wire change.
 
-Acquisition verifies connected canonical parents and one volume. Publication
+Native opens use one validated basename with `NtCreateFile.RootDirectory`;
+enumeration uses bounded handle-based directory records. Publication
 opens preserve their original generic-read/read-control access, sharing,
 effective SID, protected ACL, reparse and hardlink checks. Each held file must
-resolve under the original namespace on the original volume before its length
+match the full enumerated file ID on the original volume before its length
 contributes to checked totals. The effective SID is queried afresh and must
 equal the opening identity. Only aggregate/scoped byte totals and a count leave
 the native function; its pins, paths and content handles remain private and end
 before mutation. Ordinary content reads retain their existing implementation.
+The admitted NTFS profile requests completed synchronous opens. An unexpected
+`STATUS_PENDING` is a fail-stop invariant violation: the process aborts rather
+than unwinding storage still potentially referenced by I/O. This is not support
+for asynchronous metadata operations or timed cancellation. A separate child
+test exercises that path without issuing actual pending I/O.
 The [design and native gates](../specs/2026-11-10-windows-quota-batch.md) record
 the stricter pin behavior and the unqualified platform/performance cases.
 

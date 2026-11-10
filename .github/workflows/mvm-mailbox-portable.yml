@@ -36,7 +36,7 @@ jobs:
     timeout-minutes: 30
     strategy:
       fail-fast: false
-      max-parallel: 3
+      max-parallel: 7
       matrix: ${{ fromJSON(needs.matrix.outputs.include) }}
     defaults:
       run:
@@ -90,6 +90,34 @@ jobs:
           }
           cargo "+1.97.1-$env:NATIVE_TARGET" -V | Set-Content portable-evidence/cargo.txt
           if ($LASTEXITCODE -ne 0) { throw 'cargo identity failed' }
+      - name: Execute isolated native Windows storage primitives
+        if: runner.os == 'Windows'
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $false
+          $crate = 'crates/spiralcore-storage-windows/Cargo.toml'
+          $cargoArgs = @("+1.97.1-$env:NATIVE_TARGET", 'test', '--locked', '--manifest-path', $crate, '--lib')
+          $listing = (& cargo @cargoArgs -- --list --format terse 2>&1 | Out-String)
+          $code = $LASTEXITCODE
+          $listing | Set-Content portable-evidence/windows-primitives-list.txt
+          if ($code -ne 0) { throw 'Cannot enumerate Windows storage primitives' }
+          $listed = [regex]::Matches($listing, '(?m)^.+: test\r?$').Count
+          if ($listed -ne 2) { throw "Expected two Windows storage primitive tests, listed $listed" }
+          $log = (& cargo @cargoArgs -- --format pretty --color never --show-output --test-threads=1 2>&1 | Out-String)
+          $code = $LASTEXITCODE
+          $log | Set-Content portable-evidence/windows-primitives.txt
+          $log | Write-Output
+          $summary = [regex]::Matches($log, 'test result: ok\. (\d+) passed; (\d+) failed; (\d+) ignored; (\d+) measured; (\d+) filtered out;')
+          if ($code -ne 0 -or $summary.Count -ne 1) { throw 'Native Windows storage primitives failed' }
+          $s = $summary[0].Groups
+          if ([int]$s[1].Value -ne $listed -or [int]$s[2].Value -ne 0 -or [int]$s[3].Value -ne 0 -or [int]$s[4].Value -ne 0 -or [int]$s[5].Value -ne 0) {
+            throw 'Incomplete native Windows storage primitive coverage'
+          }
+          @{ target = 'windows-primitives'; listed = $listed; passed = 2; failed = 0; ignored = 0; filtered = 0 } |
+            ConvertTo-Json | Set-Content portable-evidence/windows-primitives-counts.json
+          cargo "+1.97.1-$env:NATIVE_TARGET" clippy --locked --manifest-path $crate --all-targets -- -D warnings
+          if ($LASTEXITCODE -ne 0) { throw 'Windows primitive Clippy failed' }
+          if (git status --porcelain -- crates/spiralcore-storage-windows/Cargo.lock) { throw 'Windows primitive tests mutated committed lockfile' }
       - name: Execute nonzero canonical service, receipt, epoch, sender and TCP tests
         run: |
           $ErrorActionPreference = 'Stop'
@@ -200,34 +228,6 @@ jobs:
           (Get-FileHash crates/spiralcore-transfer/Cargo.lock -Algorithm SHA256).Hash | Set-Content portable-evidence/object-storage-lock.sha256
           if (git status --porcelain -- crates/spiralcore-transfer/Cargo.lock) { throw 'Storage tests mutated committed lockfile' }
           'Native private filesystem and exact publication/reopen tests; no physical power-loss, MVM backend or WAN qualification' | Set-Content portable-evidence/object-storage-scope.txt
-      - name: Execute isolated native Windows storage primitives
-        if: runner.os == 'Windows'
-        run: |
-          $ErrorActionPreference = 'Stop'
-          $PSNativeCommandUseErrorActionPreference = $false
-          $crate = 'crates/spiralcore-storage-windows/Cargo.toml'
-          $cargoArgs = @("+1.97.1-$env:NATIVE_TARGET", 'test', '--locked', '--manifest-path', $crate, '--lib')
-          $listing = (& cargo @cargoArgs -- --list --format terse 2>&1 | Out-String)
-          $code = $LASTEXITCODE
-          $listing | Set-Content portable-evidence/windows-primitives-list.txt
-          if ($code -ne 0) { throw 'Cannot enumerate Windows storage primitives' }
-          $listed = [regex]::Matches($listing, '(?m)^.+: test\r?$').Count
-          if ($listed -ne 2) { throw "Expected two Windows storage primitive tests, listed $listed" }
-          $log = (& cargo @cargoArgs -- --format pretty --color never --show-output --test-threads=1 2>&1 | Out-String)
-          $code = $LASTEXITCODE
-          $log | Set-Content portable-evidence/windows-primitives.txt
-          $log | Write-Output
-          $summary = [regex]::Matches($log, 'test result: ok\. (\d+) passed; (\d+) failed; (\d+) ignored; (\d+) measured; (\d+) filtered out;')
-          if ($code -ne 0 -or $summary.Count -ne 1) { throw 'Native Windows storage primitives failed' }
-          $s = $summary[0].Groups
-          if ([int]$s[1].Value -ne $listed -or [int]$s[2].Value -ne 0 -or [int]$s[3].Value -ne 0 -or [int]$s[4].Value -ne 0 -or [int]$s[5].Value -ne 0) {
-            throw 'Incomplete native Windows storage primitive coverage'
-          }
-          @{ target = 'windows-primitives'; listed = $listed; passed = 2; failed = 0; ignored = 0; filtered = 0 } |
-            ConvertTo-Json | Set-Content portable-evidence/windows-primitives-counts.json
-          cargo "+1.97.1-$env:NATIVE_TARGET" clippy --locked --manifest-path $crate --all-targets -- -D warnings
-          if ($LASTEXITCODE -ne 0) { throw 'Windows primitive Clippy failed' }
-          if (git status --porcelain -- crates/spiralcore-storage-windows/Cargo.lock) { throw 'Windows primitive tests mutated committed lockfile' }
       - name: Checksum compact evidence
         if: always()
         run: |

@@ -184,3 +184,22 @@ check pin/release, ACL, hardlink, sharing, type and token-change refusals and
 record six alternating paired 64-file metadata comparisons, including actual
 process CPU counters. Native execution and the original 4,096-block/240-second
 workload remain mandatory before this successor can merge.
+
+The first batch prototype at `a3100c50` failed native execution: all three
+Windows FlowMux rows stopped after two verified blocks with current scopes;
+Server 2022's parallel endpoint suite passed 17 and failed three during store
+opening. [FlowMux refusal](https://github.com/R4-Laboratories/SpiralCore/actions/runs/42902543720/job/130132370658),
+[endpoint refusal](https://github.com/R4-Laboratories/SpiralCore/actions/runs/42902543422/job/130132277593).
+Its directory-list pins denied write sharing on common ancestors, including
+Temp. Shared-ancestor interference is consistent with those failures, but the
+original errors did not retain a specific Windows sharing code. The prototype
+is unaccepted; no speedup is attributed to it.
+
+The successor captures only the owned root and namespace with strict pins,
+enumerates by handle and opens immediate children with `NtCreateFile` relative
+to those handles. Shared ancestors receive no persistent new write exclusion.
+It matches full enumerated/opened file IDs and retains per-file checks. A new
+direct regression creates/writes/renames/removes an unrelated sibling while
+the scan holds its namespace; owned root/namespace rename must still refuse
+and work after release. Native backend preflight now runs before larger
+endpoint tests so a refusal cannot hide its own diagnostic suite.
