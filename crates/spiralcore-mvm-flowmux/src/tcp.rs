@@ -4,7 +4,7 @@ use std::{
     io::{Read, Write},
     net::{Shutdown, SocketAddr, TcpStream},
     sync::{
-        Arc,
+        Arc, Mutex, Weak,
         atomic::{AtomicBool, Ordering},
     },
     time::{Duration, Instant},
@@ -124,6 +124,7 @@ struct Control {
     scope: Option<crate::scope::ScopeAuthority>,
     socket: Carrier,
     stopped: AtomicBool,
+    tx_wake: Mutex<Option<Weak<crate::lock_wait::Gate>>>,
 }
 impl Control {
     fn stop(&self) {
@@ -132,6 +133,15 @@ impl Control {
     }
     fn close(&self) {
         self.stopped.store(true, Ordering::Release);
+        let wake = self
+            .tx_wake
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .as_ref()
+            .and_then(Weak::upgrade);
+        if let Some(wake) = wake {
+            wake.notify();
+        }
         let _ = self.socket.shutdown(Shutdown::Both);
     }
     fn stop_on_drop(&self) {
@@ -167,6 +177,30 @@ pub struct Cancellation {
     control: Arc<Control>,
 }
 impl Cancellation {
+    #[cfg(feature = "witness-timing")]
+    pub(crate) const fn wake_binding_bytes() -> usize {
+        std::mem::size_of::<Mutex<Option<Weak<crate::lock_wait::Gate>>>>()
+    }
+    pub(crate) fn stopped(&self) -> &AtomicBool {
+        &self.control.stopped
+    }
+    pub(crate) fn bind_tx_wake(&self, gate: &Arc<crate::lock_wait::Gate>) -> Result<()> {
+        let mut binding = self.control.tx_wake.lock().map_err(|_| Error::Worker)?;
+        let weak = Arc::downgrade(gate);
+        if binding
+            .as_ref()
+            .is_some_and(|old| !Weak::ptr_eq(old, &weak))
+        {
+            return Err(Error::Protocol);
+        }
+        *binding = Some(weak);
+        let stopped = self.control.stopped.load(Ordering::Acquire);
+        drop(binding);
+        if stopped {
+            gate.notify();
+        }
+        Ok(())
+    }
     pub(crate) fn check_delivery(&self) -> Result<()> {
         self.control.check_delivery()
     }
@@ -261,6 +295,7 @@ impl TcpMapping {
             scope,
             socket: socket.try_clone()?,
             stopped: AtomicBool::new(false),
+            tx_wake: Mutex::new(None),
         });
         let cap = if object {
             spiralcore_transfer::MAX_FRAME

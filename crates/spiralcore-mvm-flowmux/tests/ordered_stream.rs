@@ -105,15 +105,19 @@ impl Drop for WitnessReport<'_> {
         #[cfg(feature = "witness-timing")]
         {
             use spiralcore_mvm_flowmux::timing::{Snapshot, TimingObserver};
-            // Four owners (TLS pair and duplex pair). Twelve Arc handles include
-            // the eight embedded handles and these four observer clones. Arc
-            // allocator bookkeeping is not measurable through std and is excluded.
+            // Four owners (TLS pair and duplex pair). Sixteen observer handles
+            // include four new wait-wrapper handles. Those four are already in
+            // the synchronization metadata below; this inventory is nonadditive.
+            // Allocator bookkeeping is not measurable through std and is excluded.
             let owner_bytes = 4 * TimingObserver::owned_bytes();
-            let handles_bytes = 12 * std::mem::size_of::<TimingObserver>();
+            let handles_bytes = 16 * std::mem::size_of::<TimingObserver>();
+            let handles_overlap = 4 * std::mem::size_of::<TimingObserver>();
+            let synchronization_bytes =
+                2 * TlsCarrier::ownership_wait_bytes() + 2 * Duplex::ownership_wait_bytes();
             let snapshot_bytes = std::mem::size_of::<Snapshot>();
             let _ = writeln!(
                 std::io::stderr(),
-                "ORDERED_TIMING_STORAGE outside_small_v1=true fixed_owner_heap_requested_bytes={owner_bytes} observer_handles_bytes={handles_bytes} one_snapshot_value_bytes={snapshot_bytes} allocator_bookkeeping=excluded fixed_progress_bytes={} retention_nonblocking={:?}",
+                "ORDERED_TIMING_STORAGE outside_small_v1=true fixed_owner_heap_requested_bytes={owner_bytes} observer_handles_bytes={handles_bytes} ownership_wait_additional_requested_bytes={synchronization_bytes} observer_handle_overlap_with_wait_metadata_bytes={handles_overlap} component_inventory_nonadditive=true one_snapshot_value_bytes={snapshot_bytes} allocator_bookkeeping=excluded fixed_progress_bytes={} retention_nonblocking={:?}",
                 std::mem::size_of::<[AtomicU64; 4]>() + 2 * std::mem::size_of::<usize>(),
                 self.retention.map(|r| r.try_snapshot())
             );

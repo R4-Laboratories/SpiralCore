@@ -97,42 +97,32 @@ struct Expected {
     seen: Arc<AtomicUsize>,
 }
 type Pending = Arc<Mutex<Option<Expected>>>;
-type SharedTx = Arc<Mutex<Tx>>;
-
-#[cfg(feature = "witness-timing")]
-fn timed_tx_lock<'a>(
+type SharedTx = Arc<crate::lock_wait::ReleaseMutex<Tx>>;
+fn acquire_tx<'a>(
     tx: &'a SharedTx,
     until: Instant,
-    timing: &TimingObserver,
-    phase: Phase,
-    kind: FrameKind,
-) -> Result<MutexGuard<'a, Tx>> {
-    let _span = timing.span(Metric::Frame(phase, kind));
-    loop {
-        let left = remaining(until)?;
-        match tx.try_lock() {
-            Ok(guard) => return Ok(guard),
-            Err(std::sync::TryLockError::Poisoned(_)) => return Err(Error::Worker),
-            Err(std::sync::TryLockError::WouldBlock) => {
-                timing.count(match phase {
-                    Phase::SenderLock => Observation::SenderLockContended,
-                    _ => Observation::ReceiverLockContended,
-                });
-                thread::park_timeout(left.min(Duration::from_millis(1)));
+    cancellation: &Cancellation,
+) -> Result<crate::lock_wait::Guard<'a, Tx>> {
+    cancellation.check()?;
+    let guard = tx
+        .acquire(until, cancellation.stopped())
+        .map_err(|error| match error {
+            crate::lock_wait::AcquireError::Timeout => Error::Timeout,
+            crate::lock_wait::AcquireError::Poisoned => Error::Worker,
+            crate::lock_wait::AcquireError::Stopped => {
+                cancellation.check().err().unwrap_or(Error::Closed)
             }
-        }
-    }
+        })?;
+    cancellation.check()?;
+    remaining(until)?;
+    Ok(guard)
 }
+
 macro_rules! tx_lock {
-    ($tx:expr, $until:expr, $timing:expr, $phase:ident, $kind:expr) => {{
+    ($tx:expr, $until:expr, $cancellation:expr, $timing:expr, $phase:ident, $kind:expr) => {{
         #[cfg(feature = "witness-timing")]
-        {
-            timed_tx_lock($tx, $until, $timing, Phase::$phase, $kind)
-        }
-        #[cfg(not(feature = "witness-timing"))]
-        {
-            lock_until($tx, $until)
-        }
+        let _span = $timing.span(Metric::Frame(Phase::$phase, $kind));
+        acquire_tx($tx, $until, $cancellation)
     }};
 }
 
@@ -172,6 +162,12 @@ impl RetentionObserver {
     }
 }
 impl Duplex {
+    /// Fixed additional TX wrapper/control state; excludes original TX and timing-owner heap.
+    #[cfg(feature = "witness-timing")]
+    pub const fn ownership_wait_bytes() -> usize {
+        crate::lock_wait::ReleaseMutex::<Tx>::additional_owned_bytes()
+            + Cancellation::wake_binding_bytes()
+    }
     #[cfg(feature = "witness-timing")]
     pub fn timing_observer(&self) -> TimingObserver {
         self.writer.timing.clone()
@@ -218,15 +214,19 @@ impl Duplex {
         } else {
             ReceiveEndpoint::General(Box::new(endpoint))
         };
-        let shared_tx = Arc::new(Mutex::new(channel.tx));
+        #[cfg(feature = "witness-timing")]
+        let timing = TimingObserver::default();
+        let shared_tx = crate::lock_wait::ReleaseMutex::new(channel.tx);
+        #[cfg(feature = "witness-timing")]
+        let shared_tx = shared_tx.observed(timing.clone(), crate::timing::LockKind::Tx);
+        let shared_tx = Arc::new(shared_tx);
+        cancellation.bind_tx_wake(shared_tx.gate())?;
         let pending = Arc::new(Mutex::new(None));
         let closed = Arc::new(AtomicBool::new(false));
         let (responses, response_rx) = mpsc::sync_channel(1);
         let (delivery, delivery_rx) = mpsc::sync_channel(4);
         let (done, done_rx) = mpsc::sync_channel(1);
         let retention = RetentionObserver::default();
-        #[cfg(feature = "witness-timing")]
-        let timing = TimingObserver::default();
         let worker = Worker {
             #[cfg(feature = "witness-timing")]
             timing: timing.clone(),
@@ -315,7 +315,7 @@ pub struct DuplexWriter {
 }
 impl DuplexWriter {
     // The optional observer is the sole eighth argument; transport inputs stay unchanged.
-    #[cfg_attr(feature = "witness-timing", allow(clippy::too_many_arguments))]
+    #[allow(clippy::too_many_arguments)]
     fn exchange(
         tx: &SharedTx,
         pending: &Pending,
@@ -324,6 +324,7 @@ impl DuplexWriter {
         purpose: Purpose,
         until: Instant,
         budget: &Arc<AtomicUsize>,
+        cancellation: &Cancellation,
         #[cfg(feature = "witness-timing")] timing: &TimingObserver,
     ) -> Result<Vec<Frame>> {
         if frames.is_empty() || frames.len() > 8 {
@@ -355,6 +356,7 @@ impl DuplexWriter {
                 let mut tx = tx_lock!(
                     tx,
                     until,
+                    cancellation,
                     timing,
                     SenderLock,
                     FrameKind::from_wire(frame.kind)
@@ -422,6 +424,7 @@ impl DuplexWriter {
                 purpose,
                 until,
                 &budget,
+                &self.cancellation,
                 #[cfg(feature = "witness-timing")]
                 &self.timing,
             )
@@ -508,7 +511,7 @@ impl DuplexWriter {
             return Err(Error::Closed);
         }
         let result = (|| {
-            let mut tx = lock_until(&self.tx, until)?;
+            let mut tx = acquire_tx(&self.tx, until, &self.cancellation)?;
             tx.application_half_close(until)?;
             self.closed.store(true, Ordering::Release);
             Ok(())
@@ -717,7 +720,10 @@ struct Worker<A: Authority> {
 impl<A: Authority> Worker<A> {
     fn complete(&mut self) -> Result<(Counters, Counters)> {
         self.cancellation.check_delivery()?;
-        let counters = (lock(&self.tx)?.counters(), self.rx.counters());
+        let counters = (
+            acquire_tx(&self.tx, deadline(self.timeout)?, &self.cancellation)?.counters(),
+            self.rx.counters(),
+        );
         self.completed = true;
         self.cancellation.complete();
         Ok(counters)
@@ -804,6 +810,7 @@ impl<A: Authority> Worker<A> {
         let mut tx = tx_lock!(
             &self.tx,
             until,
+            &self.cancellation,
             &self.timing,
             ReceiverLock,
             FrameKind::from_wire(request.kind)
@@ -834,7 +841,7 @@ impl<A: Authority> Worker<A> {
                     // A peer can observe our FIN before the writing thread
                     // publishes local_closed. Preserve the original TX barrier
                     // before deciding whether this EOF is a clean completion.
-                    let tx = lock(&self.tx)?;
+                    let tx = acquire_tx(&self.tx, deadline(self.timeout)?, &self.cancellation)?;
                     if self.local_closed.load(Ordering::Acquire) && lock(&self.pending)?.is_none() {
                         drop(tx);
                         return self.complete();

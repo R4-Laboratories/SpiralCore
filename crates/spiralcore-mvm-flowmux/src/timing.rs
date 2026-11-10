@@ -185,14 +185,35 @@ impl Observation {
     ];
 }
 #[derive(Clone, Copy, Debug)]
+pub enum LockKind {
+    Session,
+    Tx,
+}
+impl LockKind {
+    const ALL: [Self; 2] = [Self::Session, Self::Tx];
+}
+#[derive(Clone, Copy, Debug)]
+pub enum LockOutcome {
+    Acquired,
+    Timeout,
+    Stopped,
+    Poisoned,
+}
+impl LockOutcome {
+    const ALL: [Self; 4] = [Self::Acquired, Self::Timeout, Self::Stopped, Self::Poisoned];
+}
+#[derive(Clone, Copy, Debug)]
 pub enum Metric {
     PauseRequested(PauseReason),
     PauseActual(PauseReason),
     Poll(PollOutcome),
     Frame(Phase, FrameKind),
     Count(Observation),
+    LockRequested(LockKind),
+    LockActual(LockKind),
+    LockResult(LockKind, LockOutcome),
 }
-const SLOTS: usize = 74;
+const SLOTS: usize = 86;
 impl Metric {
     fn slot(self) -> usize {
         match self {
@@ -201,6 +222,9 @@ impl Metric {
             Self::Poll(r) => 14 + r as usize,
             Self::Frame(p, k) => 23 + p as usize * 7 + k as usize,
             Self::Count(o) => 65 + o as usize,
+            Self::LockRequested(k) => 74 + k as usize,
+            Self::LockActual(k) => 76 + k as usize,
+            Self::LockResult(k, o) => 78 + k as usize * 4 + o as usize,
         }
     }
     fn at(slot: usize) -> Self {
@@ -209,7 +233,13 @@ impl Metric {
             7..14 => Self::PauseActual(PauseReason::ALL[slot - 7]),
             14..23 => Self::Poll(PollOutcome::ALL[slot - 14]),
             23..65 => Self::Frame(Phase::ALL[(slot - 23) / 7], FrameKind::ALL[(slot - 23) % 7]),
-            _ => Self::Count(Observation::ALL[slot - 65]),
+            65..74 => Self::Count(Observation::ALL[slot - 65]),
+            74..76 => Self::LockRequested(LockKind::ALL[slot - 74]),
+            76..78 => Self::LockActual(LockKind::ALL[slot - 76]),
+            _ => Self::LockResult(
+                LockKind::ALL[(slot - 78) / 4],
+                LockOutcome::ALL[(slot - 78) % 4],
+            ),
         }
     }
 }

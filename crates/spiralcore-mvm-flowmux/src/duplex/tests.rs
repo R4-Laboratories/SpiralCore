@@ -578,3 +578,40 @@ fn oversized_application_offer_is_refused_before_shared_core_dispatch() {
         "oversized application Begin must not dispatch/allocate core state"
     );
 }
+
+#[test]
+fn cancellation_wakes_original_tx_owner_and_conflicting_registration_is_refused() {
+    let mut pair = peers(
+        "tx-release-cancel",
+        ObjectMode::Whole,
+        [Role::Initiator, Role::Acceptor],
+        Duration::from_secs(2),
+    );
+    let tx = pair.left.0.tx.clone();
+    let cancellation = pair.left.0.cancellation.clone();
+    cancellation.bind_tx_wake(tx.gate()).unwrap();
+    let other = crate::lock_wait::ReleaseMutex::new(());
+    assert!(matches!(
+        cancellation.bind_tx_wake(other.gate()),
+        Err(crate::Error::Protocol)
+    ));
+    let held = tx.try_acquire().unwrap().unwrap();
+    std::thread::scope(|scope| {
+        let waiter = scope.spawn(|| {
+            super::acquire_tx(
+                &tx,
+                std::time::Instant::now() + Duration::from_secs(2),
+                &cancellation,
+            )
+            .err()
+        });
+        tx.wait_for_enrollment();
+        cancellation.cancel();
+        assert!(matches!(
+            waiter.join().unwrap(),
+            Some(crate::Error::Cancelled)
+        ));
+        drop(held);
+    });
+    let _ = pair.left.1.receive();
+}

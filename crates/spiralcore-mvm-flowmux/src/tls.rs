@@ -407,7 +407,7 @@ impl Readiness {
     }
 }
 struct Shared {
-    session: Mutex<Session>,
+    session: crate::lock_wait::ReleaseMutex<Session>,
     readiness: Readiness,
     control: TcpStream,
     stopped: AtomicBool,
@@ -421,6 +421,7 @@ struct Shared {
 impl Shared {
     fn stop(&self) {
         self.stopped.store(true, Ordering::Release);
+        self.session.gate().notify();
         let _ = self.control.shutdown(Shutdown::Both);
         let _ = self.readiness.notify();
     }
@@ -625,9 +626,12 @@ impl TlsCarrier {
                 return Err(e);
             }
         };
+        let session = crate::lock_wait::ReleaseMutex::new(session);
+        #[cfg(feature = "witness-timing")]
+        let session = session.observed(readiness.timing.clone(), crate::timing::LockKind::Session);
         Ok(Self {
             shared: Arc::new(Shared {
-                session: Mutex::new(session),
+                session,
                 readiness,
                 control,
                 stopped: AtomicBool::new(false),
@@ -641,6 +645,11 @@ impl TlsCarrier {
             read_timeout: Duration::from_secs(30),
             write_timeout: Duration::from_secs(30),
         })
+    }
+    /// Fixed additional Session ownership state; excludes original Session and timing-owner heap.
+    #[cfg(feature = "witness-timing")]
+    pub const fn ownership_wait_bytes() -> usize {
+        crate::lock_wait::ReleaseMutex::<Session>::additional_owned_bytes()
     }
     #[cfg(feature = "witness-timing")]
     pub fn timing_observer(&self) -> TimingObserver {
@@ -742,7 +751,7 @@ impl TlsCarrier {
                 }
                 Err(e) if transient(&e) => {
                     drop(poller);
-                    pause_for!(until, &self.shared.readiness.timing, Session)?;
+                    drop(self.session_until(until)?);
                 }
                 other => return other,
             }
@@ -776,7 +785,7 @@ impl TlsCarrier {
                     if Instant::now() >= until {
                         return Err(timeout());
                     }
-                    match self.with_session(|session| {
+                    match self.with_session_until(until, |session| {
                         session.tls.send_close_notify();
                         Ok(())
                     }) {
@@ -799,9 +808,9 @@ impl TlsCarrier {
         operation: impl FnOnce(&mut Session) -> io::Result<T>,
     ) -> io::Result<T> {
         self.shared.check()?;
-        let mut guard = match self.shared.session.try_lock() {
-            Ok(value) => value,
-            Err(std::sync::TryLockError::WouldBlock) => {
+        let guard = match self.shared.session.try_acquire().map_err(lock_error)? {
+            Some(value) => value,
+            None => {
                 #[cfg(feature = "witness-timing")]
                 self.shared
                     .readiness
@@ -809,8 +818,35 @@ impl TlsCarrier {
                     .count(Observation::SessionContended);
                 return Err(io::ErrorKind::WouldBlock.into());
             }
-            Err(std::sync::TryLockError::Poisoned(_)) => return Err(error("TLS poisoned")),
         };
+        self.session_operation(guard, operation)
+    }
+    fn session_until(&self, until: Instant) -> io::Result<crate::lock_wait::Guard<'_, Session>> {
+        self.shared.check()?;
+        let guard = self
+            .shared
+            .session
+            .acquire(until, &self.shared.stopped)
+            .map_err(lock_error)?;
+        self.shared.check()?;
+        if Instant::now() >= until {
+            return Err(timeout());
+        }
+        Ok(guard)
+    }
+    fn with_session_until<T>(
+        &self,
+        until: Instant,
+        operation: impl FnOnce(&mut Session) -> io::Result<T>,
+    ) -> io::Result<T> {
+        self.session_operation(self.session_until(until)?, operation)
+    }
+    fn session_operation<T>(
+        &self,
+        mut guard: crate::lock_wait::Guard<'_, Session>,
+        operation: impl FnOnce(&mut Session) -> io::Result<T>,
+    ) -> io::Result<T> {
+        self.shared.check()?;
         let before = self.counters();
         let result = {
             #[cfg(feature = "witness-timing")]
@@ -842,7 +878,7 @@ impl TlsCarrier {
             if Instant::now() >= until {
                 return Err(timeout());
             }
-            let result = self.with_session(|session| {
+            let result = self.with_session_until(until, |session| {
                 match session.tls.reader().read(buffer) {
                     Ok(n) => return Ok(n),
                     Err(e) if transient(&e) => {}
@@ -875,7 +911,7 @@ impl TlsCarrier {
             if Instant::now() >= until {
                 return Err(timeout());
             }
-            let result = self.with_session(|session| {
+            let result = self.with_session_until(until, |session| {
                 pump(session, &self.shared.received, &self.shared.sent)?;
                 let n = session.tls.writer().write(buffer)?;
                 pump(session, &self.shared.received, &self.shared.sent)?;
@@ -902,7 +938,7 @@ impl TlsCarrier {
             if Instant::now() >= until {
                 return Err(timeout());
             }
-            let result = self.with_session(|session| {
+            let result = self.with_session_until(until, |session| {
                 pump(session, &self.shared.received, &self.shared.sent)?;
                 if session.tls.wants_write() {
                     Err(io::ErrorKind::WouldBlock.into())
@@ -1002,3 +1038,13 @@ mod tests {
 #[cfg(test)]
 #[path = "tls/readiness_tests.rs"]
 mod readiness_tests;
+
+fn lock_error(error: crate::lock_wait::AcquireError) -> io::Error {
+    match error {
+        crate::lock_wait::AcquireError::Timeout => timeout(),
+        crate::lock_wait::AcquireError::Stopped => {
+            io::Error::new(io::ErrorKind::BrokenPipe, "TLS carrier closed")
+        }
+        crate::lock_wait::AcquireError::Poisoned => self::error("TLS poisoned"),
+    }
+}
