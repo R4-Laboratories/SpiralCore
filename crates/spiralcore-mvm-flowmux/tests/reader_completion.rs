@@ -108,7 +108,7 @@ impl OriginalReader {
 }
 fn exercise(mapped: bool) {
     let path = std::env::temp_dir().join(format!(
-        "spiral-reader-completion-{}-{}",
+        "spiral-reader-completion-{}-{mapped}-{}",
         std::process::id(),
         SystemTime::now()
             .duration_since(UNIX_EPOCH)

@@ -527,6 +527,7 @@ struct Worker<A: Authority> {
 }
 impl<A: Authority> Worker<A> {
     fn complete(&mut self) -> Result<(Counters, Counters)> {
+        self.cancellation.check_delivery()?;
         let counters = (lock(&self.tx)?.counters(), self.rx.counters());
         self.completed = true;
         self.cancellation.complete();
@@ -608,7 +609,11 @@ impl<A: Authority> Worker<A> {
             match self.rx.poll_input() {
                 Ok(false) => continue,
                 Ok(true) => {}
-                Err(Error::Truncated) if self.remote_closed => {
+                Err(error)
+                    if self.remote_closed
+                        && (matches!(&error, Error::Truncated)
+                            || matches!(&error, Error::Io(io) if io.kind() == std::io::ErrorKind::UnexpectedEof)) =>
+                {
                     // A peer can observe our FIN before the writing thread
                     // publishes local_closed. Preserve the original TX barrier
                     // before deciding whether this EOF is a clean completion.
@@ -617,7 +622,7 @@ impl<A: Authority> Worker<A> {
                         drop(tx);
                         return self.complete();
                     }
-                    return Err(Error::Truncated);
+                    return Err(error);
                 }
                 Err(error) => return Err(error),
             }
