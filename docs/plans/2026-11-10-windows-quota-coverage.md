@@ -134,6 +134,33 @@ was rerun. The successor compares matching summary metrics and retains native
 physical counts for the unchanged production gate. Actual Windows collection
 still must execute and satisfy every guard.
 
+At `661c74e7`, all seven native roles completed their portable functional
+checks. Server 2022 and Server 2025 each passed quota production coverage at
+216/228 mapped physical lines (94.7368%). Windows ARM64 produced profiles and
+passed its functional/storage tests, but its
+[profile merge step refused](https://github.com/R4-Laboratories/SpiralCore/actions/runs/42922116307/job/130199422213).
+That collector did not upload actual merge stdout/stderr, so the error cannot
+yet be attributed to Rust issue #150123 or called a demonstrated tool limitation.
+ARM64 functional results remain valid within their scope; its coverage gate
+remains failed and receives no x64 substitution or skipped-pass classification.
+
+The diagnostic successor captures merge exit status, stdout and stderr before
+the existing refusal guard. Each stream retains up to 24 KiB of tool output; longer output
+retains its first/last 12 KiB with an explicit truncation marker. The merge
+receipt pins full stream sizes/hashes, raw profile names/sizes/hashes and the
+exact tool/version, source, target and arguments. Full logs/profiles remain only
+in owned runner temporary storage. Existing 32 KiB per-file, 256 KiB combined
+compact-evidence caps and the 80% production gate remain enforced.
+
+First inspect the genuine error from the next native attempt. If it reports a
+malformed profile, separate a writer/runtime defect from merge-tool mismatch
+using the already pinned compiler/tool versions and a bounded calibration only
+when needed. Retain a profile/PE pair externally only if diagnosis requires it;
+do not put those raw artifacts in Git or download them to the local HDD. If the
+pinned toolchain is reproducibly unsupported, document that exact coverage
+limitation while keeping ARM64's functional/end-to-end role and open coverage
+gate distinct. No unsupported-tool conclusion is established by this patch.
+
 Implementation status: static inspection and retained-export collector check
 only for this summary-semantics correction; no new native collection has run.
 The earlier plain/instrumented primitive passes and

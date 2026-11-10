@@ -352,3 +352,66 @@ profiles, complete exports and helper scripts stay on Wick under
 `/var/tmp/spiralcore-f9-timing-coverage-20261110`; the repository retains compact
 summaries, pins, exclusions and uncovered lines. New observer visibility and
 label edits are later than this frozen receipt and need final-source accounting.
+
+## Release-driven ownership waits and remaining native gates
+
+Source `661c74e7b223736e440e1e41c3cd70603d050d80` replaces Session/TX
+ownership retry sleeps with original-owner release/cancellation notifications.
+The [native receipts](native-661c74e7/receipts.json) retain all seven original
+FlowMux artifacts from [run 42922116102](https://github.com/R4-Laboratories/SpiralCore/actions/runs/42922116102),
+three Windows portable/coverage artifacts and the Windows timing artifact.
+Their 207,114 archive bytes match GitHub API digests; all 235 inner checksum
+entries verify. Actual tested synthetic-merge trees equal the intended source
+tree. Both successful and failed executions are retained.
+
+Six FlowMux roles pass, including all three native Windows roles. Each completed
+sustained witness transfers 4,096 exact 16 KiB blocks per direction (67,108,864
+bytes each way), with 5,395,050/5,395,015 actual TLS bytes sent/received by one
+peer and matching opposite counters. These are compressible synthetic component
+inputs on one runner, not WAN, MVM, IP/TCP/retransmission accounting or a matched
+zstd performance comparison. The uninstrumented observations are:
+
+| Native role | Lifecycle wall seconds | Both-peer process CPU seconds | Sustained gate |
+| --- | ---: | ---: | --- |
+| Ubuntu 24 x64 | 24.897403 | 10.487072 | Pass |
+| Ubuntu 24 ARM64 | 10.557735 | 12.416549 | Pass |
+| macOS 26 ARM64 | 30.259422 | 22.831194 | Pass |
+| Windows 2022 x64 | 195.181567 | 150.828125 | Pass |
+| Windows 2025 x64 | 189.383965 | 170.328125 | Pass |
+| Windows 11 ARM64 | 228.861835 | 178.765625 | Pass |
+| macOS 26 Intel | Failed; snapshot 59.840499 | 35.786480 to snapshot | Operation timeout |
+
+Successful receivers retain 64 publications, 1,051,712 cache bytes and 4,032
+evictions each. Windows/macOS RSS is unavailable in this witness; Linux process
+high-water observations are 6,544 KiB x64 and 5,328 KiB ARM64. These observations
+do not establish a capacity envelope or a causal speedup across different runs.
+
+The separate timing-enabled Windows 2025 run completes in 224.491075 lifecycle
+seconds and 170.984375 process CPU seconds, with the same exact bytes and bounded
+cache. Intel macOS fails its two-second operation at block 1,790, before the
+240-second overall watchdog, while scope checks still succeed. Its phase timing
+was disabled. The [next diagnostic](../../../plans/2026-11-10-macos-intel-flow-timing.md)
+keeps the workload/deadlines and adds native phase observations; the cause is
+unresolved and the seven-role release gate remains open.
+
+The [portable run](https://github.com/R4-Laboratories/SpiralCore/actions/runs/42922116307)
+passes functional portable tests on all seven roles. Native x64 Windows quota
+coverage passes **216/228 production physical lines = 94.7368%** on both 2022
+and 2025 after only pinned test hooks are excluded. ARM64 executes the two
+instrumented tests and emits a profile, but profile merging refuses; no ARM64
+coverage percentage is accepted. The original collector did not preserve merge
+stderr in the artifact. The successor retains bounded stdout/stderr, tool exit
+and full-file/profile hash receipts before the unchanged refusal. It neither
+waives that gate nor attributes the failure to a toolchain bug without evidence.
+
+The [fresh Linux coverage](coverage-661/summary.json) executes **154 checks**
+(68 feature-on FlowMux, 86 transfer), zero failures/ignored. Changed mapped
+production is **997/1,103 = 90.390%**, new lock-wait code **103/108 = 95.370%**
+and timing **101/101**. All FlowMux is 2,622/2,847, transfer 5,616/8,315 and
+their union 8,238/11,162 (73.804%); branch mappings are unavailable and Windows
+code receives no Linux credit. All 198 source pins and 17 original/copied
+executable pins stayed stable. Raw profiles/exports and helper scripts remain
+on Wick at `/var/tmp/spiralcore-661-lock-coverage-20261110`; only compact evidence
+is retained here, with its own inventory. No payload store, VM disk or local
+Cargo target was added. The later workflow/documentation changes need their
+own native execution; these results are bound to `661c74e7`.

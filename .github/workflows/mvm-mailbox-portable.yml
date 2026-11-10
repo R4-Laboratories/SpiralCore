@@ -254,6 +254,22 @@ jobs:
             }
             $value | Set-Content (Join-Path $out $name)
           }
+          function Read-MergeDiagnostic([string] $path) {
+            $stream = [IO.File]::OpenRead($path)
+            try {
+              if ($stream.Length -le 24576) {
+                $buffer = [byte[]]::new([int]$stream.Length)
+                $stream.ReadExactly($buffer, 0, $buffer.Length)
+                return [Text.Encoding]::UTF8.GetString($buffer)
+              }
+              $buffer = [byte[]]::new(12288)
+              $stream.ReadExactly($buffer, 0, $buffer.Length)
+              $head = [Text.Encoding]::UTF8.GetString($buffer)
+              $stream.Seek(-12288, [IO.SeekOrigin]::End) | Out-Null
+              $stream.ReadExactly($buffer, 0, $buffer.Length)
+              return $head + "`n[diagnostic truncated: first/last 12 KiB; full file hash/size in merge receipt]`n" + [Text.Encoding]::UTF8.GetString($buffer)
+            } finally { $stream.Dispose() }
+          }
           function Find-OwnedProfiles([string] $phase) {
             $found = @(Get-ChildItem -LiteralPath $owned -Recurse -File -Filter '*.profraw')
             $bytes = ($found | Measure-Object Length -Sum).Sum
@@ -373,8 +389,23 @@ jobs:
             if ($raw.Count -eq 0) { throw 'Missing native profiles after completed instrumented tests; see owned-directory discovery receipt' }
             if (@($raw | Where-Object { $_.Length -eq 0 }).Count -ne 0) { throw 'Empty native profile refused' }
             $merged = Join-Path $owned 'quota.profdata'
-            & $profdata merge -sparse @($raw.FullName) -o $merged 2> (Join-Path $owned 'merge-stderr.txt')
-            if ($LASTEXITCODE -ne 0 -or (Get-Item (Join-Path $owned 'merge-stderr.txt')).Length -ne 0) { throw 'Native profile merge failed or emitted diagnostics' }
+            $mergeOut = Join-Path $owned 'merge-stdout.txt'
+            $mergeErr = Join-Path $owned 'merge-stderr.txt'
+            $mergeProfiles = @($raw | ForEach-Object { @{ relative_path = [IO.Path]::GetRelativePath($owned, $_.FullName); bytes = $_.Length; sha256 = (Sha $_.FullName) } })
+            & $profdata merge -sparse @($raw.FullName) -o $merged > $mergeOut 2> $mergeErr
+            $mergeExit = $LASTEXITCODE
+            # Retain the actual tool diagnostics before refusing; do not infer an ARM bug.
+            Save-Compact 'windows-quota-coverage-merge-stdout.txt' (Read-MergeDiagnostic $mergeOut)
+            Save-Compact 'windows-quota-coverage-merge-stderr.txt' (Read-MergeDiagnostic $mergeErr)
+            Save-Compact 'windows-quota-coverage-merge.json' (@{
+              source = $source; target = $env:NATIVE_TARGET; run = $env:GITHUB_RUN_ID; attempt = $env:GITHUB_RUN_ATTEMPT
+              tool = @($tools | Where-Object { $_.path -eq $profdata }); operation = 'merge -sparse'; exit_code = $mergeExit
+              profile_count = $raw.Count; profiles = $mergeProfiles; output_path = $merged
+              stdout = @{ path = $mergeOut; bytes = (Get-Item -LiteralPath $mergeOut).Length; sha256 = (Sha $mergeOut); excerpt_payload_limit_bytes = 24576 }
+              stderr = @{ path = $mergeErr; bytes = (Get-Item -LiteralPath $mergeErr).Length; sha256 = (Sha $mergeErr); excerpt_payload_limit_bytes = 24576 }
+              classification = 'native profile merge diagnostics; refusal remains failed coverage, not platform functional refusal'
+            } | ConvertTo-Json -Depth 7)
+            if ($mergeExit -ne 0 -or (Get-Item -LiteralPath $mergeErr).Length -ne 0) { throw "Native profile merge failed or emitted diagnostics; exit=$mergeExit; see compact merge stdout/stderr/receipt" }
             $jsonPath = Join-Path $owned 'summary.json'
             & $cov export $binary "--instr-profile=$merged" --summary-only $quota > $jsonPath 2> (Join-Path $owned 'export-stderr.txt')
             $jsonExit = $LASTEXITCODE

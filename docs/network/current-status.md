@@ -1,7 +1,7 @@
 # Networking delivery status
 
 Snapshot: **2026-11-10**, checked against published `origin/main`
-`dc7098fcb328138c6d880f77f13fad99ac114738` and the live GitHub issue graph.
+`a1634ec46e0741df76eff325401357c9fdfaf2d6` and the live GitHub issue graph.
 This page separates accepted components, measured experiments and unmerged work.
 The [README](../../README.md) is the architecture/results entry point;
 [issue #42](https://github.com/R4-Laboratories/SpiralCore/issues/42) remains the
@@ -39,13 +39,33 @@ progress, not installed MVM or WAN qualification.
 
 [PR106](https://github.com/R4-Laboratories/SpiralCore/pull/106) remains an
 unmerged ordered-cache, authenticated-scope and Windows quota successor.
-At `8a109ae4`, all four Linux/macOS FlowMux roles passed their full stages;
-all three Windows roles still missed the unchanged 4,096-block/240-second
-sustained gate, with current scopes and bounded retention. The separate
-seven-role portable matrix at `d6e3d669` passed. The
-[recorded development results](https://github.com/R4-Laboratories/SpiralCore/blob/5fc29bd4/docs/network/evidence/2026-11-10-ordered-scope/README.md) distinguish
-those scopes and preserve every failed native artifact. Optional bounded
-timing and native Windows coverage are being added before further optimization.
+At `661c74e7`, six native FlowMux roles, including all three Windows roles,
+pass the unchanged 4,096-block/240-second sustained workload after release-driven
+Session/TX ownership waits. Intel macOS hits a two-second object timeout before
+the overall gate; its phase-timing diagnostic remains pending. Functional
+portable tests pass on seven roles. Native Windows x64 quota coverage passes
+216/228 production physical lines on 2022 and 2025; ARM64 profile merging fails,
+so no ARM64 coverage percentage is accepted. The
+[recorded development results](evidence/2026-11-10-ordered-scope/README.md#release-driven-ownership-waits-and-remaining-native-gates)
+retain source-bound bytes, CPU, lifecycle time and all failed gates. This
+candidate has not passed final release acceptance and is not merged to main.
+
+The inspected upstream `d27a20cb` already ships a signed-plan mailbox grant,
+guest listener on 5257, per-VM host helper and audited host receive. SpiralCore
+will reuse those owners. The concrete path forwards guest plaintext to the
+host helper, which owns sealing keys; it does not establish host-blind guest
+encryption. Its one-way outbox currently consumes a message before the host
+verdict, so reliable retries and bidirectional object-v1 cannot be inferred.
+
+The [source comparison](../research/2026-11-10-current-mvm-mailbox-delta.md),
+[integration contract](../specs/2026-11-10-current-native-mailbox-integration.md)
+and [implementation sequence](../plans/2026-11-10-current-native-mailbox-integration.md)
+target narrow verified-header/Reply authorization APIs first, then retained
+producer identity and an explicitly admitted correlated return path through the
+canonical helper. The later upstream `b3dd575b` CLI runtime-preparation change
+leaves mailbox files unchanged but adds first-use storage/lifecycle accounting
+requirements. The historical installed fork remains evidence, not the current
+port target. Issue #4629 and the full contribution requirements remain open.
 
 [PR #95](https://github.com/R4-Laboratories/SpiralCore/pull/95) adds canonical
 transport-binding revocation to the mailbox adapter. Live Call and Reply keep
