@@ -6,9 +6,11 @@ use spiralcore_transfer::{
     Id,
     client::Stats,
     endpoint::{Authority, Context},
-    hash,
     protocol::{Frame, Offer},
-    v1::{ObjectEndpoint, ObjectReceipt, ObjectSender},
+    v1::{
+        ObjectEndpoint, ObjectReceipt, ObjectSender, OrderedBinding, OrderedLane,
+        OrderedObjectEndpoint, OrderedSnapshot, ordered_transfer_id,
+    },
 };
 use std::{
     sync::{
@@ -19,6 +21,8 @@ use std::{
     thread::{self, JoinHandle},
     time::{Duration, Instant, SystemTime, UNIX_EPOCH},
 };
+/// One owned reader's explicit stack, charged separately from core workspace.
+pub const READER_STACK_BYTES: usize = 2 * 1024 * 1024;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Role {
@@ -40,13 +44,15 @@ impl Role {
     }
 }
 fn transfer(binding: Binding, role: Role, index: u64, artifact: bool) -> Id {
-    hash(
+    ordered_transfer_id(
         if artifact {
             b"spiralcore.flow.artifact.v1\0"
         } else {
             b"spiralcore.flow.application.v1\0"
         },
-        &[&binding.flow, &[role.tag()], &index.to_be_bytes()],
+        &binding.flow,
+        role.tag(),
+        index,
     )
 }
 fn lock<T>(value: &Mutex<T>) -> Result<MutexGuard<'_, T>> {
@@ -101,8 +107,26 @@ pub struct Duplex {
     writer: DuplexWriter,
     reader: DuplexReader,
     guard: JoinGuard,
+    retention: RetentionObserver,
+}
+/// Copied diagnostics only; it owns no endpoint, file, socket or resource lease.
+#[derive(Clone, Default)]
+pub struct RetentionObserver {
+    inner: Arc<Mutex<Option<OrderedSnapshot>>>,
+}
+impl RetentionObserver {
+    pub fn snapshot(&self) -> Result<Option<OrderedSnapshot>> {
+        Ok(*lock(&self.inner)?)
+    }
+    fn publish(&self, snapshot: Option<OrderedSnapshot>) -> Result<()> {
+        *lock(&self.inner)? = snapshot;
+        Ok(())
+    }
 }
 impl Duplex {
+    pub fn retention_observer(&self) -> RetentionObserver {
+        self.retention.clone()
+    }
     pub(crate) fn stream_config(&self) -> (Cancellation, Duration) {
         (self.writer.cancellation.clone(), self.writer.timeout)
     }
@@ -128,12 +152,27 @@ impl Duplex {
         let cancellation = channel.cancellation();
         let timeout = channel.timeout;
         let binding = channel.binding;
+        let endpoint = if endpoint.profile().capabilities().profile == 2 {
+            let ordered = OrderedBinding::new(
+                &context,
+                binding.flow,
+                role.remote().tag(),
+                b"spiralcore.flow.application.v1\0",
+                b"spiralcore.flow.artifact.v1\0",
+            )?;
+            ReceiveEndpoint::Ordered(Box::new(OrderedObjectEndpoint::new(
+                endpoint, ordered, &context,
+            )?))
+        } else {
+            ReceiveEndpoint::General(Box::new(endpoint))
+        };
         let shared_tx = Arc::new(Mutex::new(channel.tx));
         let pending = Arc::new(Mutex::new(None));
         let closed = Arc::new(AtomicBool::new(false));
         let (responses, response_rx) = mpsc::sync_channel(1);
         let (delivery, delivery_rx) = mpsc::sync_channel(4);
         let (done, done_rx) = mpsc::sync_channel(1);
+        let retention = RetentionObserver::default();
         let worker = Worker {
             completed: false,
             rx: channel.rx,
@@ -146,13 +185,16 @@ impl Duplex {
             binding,
             role: role.remote(),
             index: 0,
+            artifact_index: 0,
             active: None,
             remote_closed: false,
             local_closed: closed.clone(),
             cancellation: cancellation.clone(),
             timeout,
+            retention: retention.clone(),
         };
         let child = thread::Builder::new()
+            .stack_size(READER_STACK_BYTES)
             .name("spiral-flow-reader".into())
             .spawn(move || {
                 let result = worker.run();
@@ -189,6 +231,7 @@ impl Duplex {
                 cancellation,
                 timeout,
             },
+            retention,
         })
     }
     pub fn split(self) -> (DuplexWriter, DuplexReader, JoinGuard) {
@@ -507,6 +550,47 @@ impl Drop for JoinGuard {
     }
 }
 
+enum ReceiveEndpoint<A: Authority> {
+    General(Box<ObjectEndpoint<A>>),
+    Ordered(Box<OrderedObjectEndpoint<A>>),
+}
+impl<A: Authority> ReceiveEndpoint<A> {
+    fn snapshot(&self, context: &Context) -> spiralcore_transfer::Result<Option<OrderedSnapshot>> {
+        match self {
+            Self::General(_) => Ok(None),
+            Self::Ordered(endpoint) => endpoint.snapshot(context).map(Some),
+        }
+    }
+    fn handle(
+        &mut self,
+        purpose: Purpose,
+        ordinal: u64,
+        context: &Context,
+        frame: &Frame,
+        now: u64,
+    ) -> spiralcore_transfer::Result<Frame> {
+        match self {
+            Self::General(endpoint) => endpoint.handle(context, frame, now),
+            Self::Ordered(endpoint) => endpoint.handle(
+                if purpose == Purpose::Application {
+                    OrderedLane::Application
+                } else {
+                    OrderedLane::Artifact
+                },
+                ordinal,
+                context,
+                frame,
+                now,
+            ),
+        }
+    }
+    fn read_object(&mut self, context: &Context, id: Id) -> spiralcore_transfer::Result<Vec<u8>> {
+        match self {
+            Self::General(endpoint) => endpoint.read_object(context, id),
+            Self::Ordered(endpoint) => endpoint.read_object(context, id),
+        }
+    }
+}
 struct Worker<A: Authority> {
     completed: bool,
     rx: Rx,
@@ -514,16 +598,18 @@ struct Worker<A: Authority> {
     pending: Pending,
     responses: SyncSender<Frame>,
     delivery: SyncSender<Event>,
-    endpoint: ObjectEndpoint<A>,
+    endpoint: ReceiveEndpoint<A>,
     context: Context,
     binding: Binding,
     role: Role,
     index: u64,
+    artifact_index: u64,
     active: Option<(Id, Id, u64)>,
     remote_closed: bool,
     local_closed: Arc<AtomicBool>,
     cancellation: Cancellation,
     timeout: Duration,
+    retention: RetentionObserver,
 }
 impl<A: Authority> Worker<A> {
     fn complete(&mut self) -> Result<(Counters, Counters)> {
@@ -563,38 +649,48 @@ impl<A: Authority> Worker<A> {
                 return Err(Error::Protocol);
             }
         }
-        let reply = self.endpoint.handle(&self.context, &request, now()?)?;
-        if purpose == Purpose::Application {
-            if matches!(request.kind, 1 | 4) {
-                let body = if request.kind == 4 {
-                    request.body.get(32..).ok_or(Error::Protocol)?
-                } else {
-                    &request.body
-                };
-                let offer = Offer::decode(body)?;
-                if offer.len == 0 || offer.len > MAX_BLOCK as u64 {
-                    return Err(Error::Limit);
-                }
-                let candidate = (request.transfer, offer.object, offer.len);
-                if self.active.is_some_and(|active| active != candidate) {
-                    return Err(Error::Protocol);
-                }
-                self.active = Some(candidate);
+        if purpose == Purpose::Application && matches!(request.kind, 1 | 4) {
+            let body = if request.kind == 4 {
+                request.body.get(32..).ok_or(Error::Protocol)?
+            } else {
+                &request.body
+            };
+            let offer = Offer::decode(body)?;
+            if offer.len == 0 || offer.len > MAX_BLOCK as u64 {
+                return Err(Error::Limit);
             }
-            if reply.kind == 103 {
-                let (_, id, len) = self.active.ok_or(Error::Protocol)?;
-                if reply.body != id {
-                    return Err(Error::Integrity);
-                }
-                let bytes = self.endpoint.read_object(&self.context, id)?;
-                if bytes.len() as u64 != len {
-                    return Err(Error::Integrity);
-                }
-                let next = self.index.checked_add(1).ok_or(Error::Sequence)?;
-                self.deliver(Event::Data(bytes), until)?;
-                self.index = next;
-                self.active = None;
+            let candidate = (request.transfer, offer.object, offer.len);
+            if self.active.is_some_and(|active| active != candidate) {
+                return Err(Error::Protocol);
             }
+            self.active = Some(candidate);
+        }
+        let ordinal = if purpose == Purpose::Application {
+            self.index
+        } else {
+            self.artifact_index
+        };
+        let reply = self
+            .endpoint
+            .handle(purpose, ordinal, &self.context, &request, now()?)?;
+        self.retention
+            .publish(self.endpoint.snapshot(&self.context)?)?;
+        if purpose == Purpose::Application && reply.kind == 103 {
+            let (_, id, len) = self.active.ok_or(Error::Protocol)?;
+            if reply.body != id {
+                return Err(Error::Integrity);
+            }
+            let bytes = self.endpoint.read_object(&self.context, id)?;
+            if bytes.len() as u64 != len {
+                return Err(Error::Integrity);
+            }
+            let next = self.index.checked_add(1).ok_or(Error::Sequence)?;
+            self.deliver(Event::Data(bytes), until)?;
+            self.index = next;
+            self.active = None;
+        }
+        if purpose == Purpose::Artifact && reply.kind == 103 {
+            self.artifact_index = self.artifact_index.checked_add(1).ok_or(Error::Sequence)?;
         }
         lock_until(&self.tx, until)?.send_object(&reply, purpose, until)
     }

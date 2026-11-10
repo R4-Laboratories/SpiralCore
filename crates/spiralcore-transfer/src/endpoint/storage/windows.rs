@@ -20,6 +20,10 @@ pub(in super::super) fn private_dir(path: &Path) -> Result<()> {
 pub(in super::super) fn open_read(path: &Path) -> Result<File> {
     Ok(spiralcore_storage_windows::open_read(path)?)
 }
+pub(in super::super) fn quota_file_len(path: &Path) -> Result<u64> {
+    // Preserve the native backend's held-file ACL/reparse/sharing checks.
+    Ok(open_read(path)?.metadata()?.len())
+}
 pub(in super::super) fn create_new_file(path: &Path) -> Result<File> {
     Ok(spiralcore_storage_windows::create_new_file(path)?)
 }

@@ -42,6 +42,9 @@ impl ObjectChannel {
     ) -> Result<Self> {
         scope.check_carrier(&socket, role)?;
         let profile = local.negotiate(&trusted_peer)?;
+        if profile.capabilities().profile != scope.object_profile() {
+            return Err(Error::PeerMismatch);
+        }
         if profile.max_object_bytes() > 65536 {
             return Err(Error::Limit);
         }

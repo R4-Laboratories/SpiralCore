@@ -1,14 +1,18 @@
 //! Transport-neutral object-v1 contract. Capabilities require authenticated
 //! carrier binding or explicit trusted pinning; they grant no authority.
 use crate::{
+    Error, Id, MAX_FRAME, MAX_OBJECT, Result,
     endpoint::{
         Authority, CodecCacheStats, ColdGraphPolicy, Context, Endpoint, GraphCacheStats, Limits,
     },
     protocol::{Frame, Offer},
-    Error, Id, Result, MAX_FRAME, MAX_OBJECT,
 };
 use std::path::Path;
+mod ordered;
 mod sender;
+pub use ordered::{
+    OrderedBinding, OrderedLane, OrderedObjectEndpoint, OrderedSnapshot, ordered_transfer_id,
+};
 pub use sender::{ObjectMode, ObjectReceipt, ObjectSelection, ObjectSender};
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Capabilities {

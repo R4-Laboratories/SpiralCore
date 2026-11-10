@@ -75,6 +75,40 @@ their separate domains.
 
 ## Authenticated carrier
 
+### Authenticated scope versions and ordered Small retention
+
+`ScopeFacts.object_profile` selects the scope serialization explicitly. General
+object profile 1 retains the published `spiralcore.flow.scope.v1\0` canonical
+bytes and `spiralcore.flow.scope.commit.v1\0` hash domain for IPv4 and unscoped
+IPv6. General rejects IPv6 addresses with nonzero flow information or scope ID,
+because its existing encoding cannot represent those fields.
+
+Small object profile 2 uses `spiralcore.flow.scope.v2\0` and
+`spiralcore.flow.scope.commit.v2\0`. Its canonical facts additionally bind the
+big-endian object profile and complete IPv6 flow information and scope ID.
+The authenticated object capability must match that scope's profile before
+the object channel is created. There is no implicit downgrade or fallback.
+Existing experimental Small peers must update together. These scope versions
+do not change the object-v1 frames or introduce a second codec protocol.
+
+Only an explicitly selected Small endpoint uses ordered retention. Application
+and artifact lanes have independent, strictly increasing ordinals and immutable
+direction/scope-derived transfer IDs. The next admitted ordinal retires the
+previous completed attempt in that lane. Replays of retired ordinals and wrap
+to zero refuse; this is a live ordered connection contract, not reconnect or
+final-acknowledgment recovery. General endpoints keep their existing retention.
+
+The bounded cache pins at most two published artifacts, the current lane objects
+and active bases. Space planning selects unpinned LRU victims without deleting
+files or aging cache entries. Canonical Begin admission validates the offer and
+aggregate limits using projected space credits. Pre-admission refusal leaves
+verified publications and LRU state intact. Only after successful admission are
+the verified victims removed. A post-admission storage or authorization failure
+can leave a partially evicted cache: the facade fences, sends no success reply
+and requires owner-controlled recovery. This operation provides no transactional
+rollback or durable cache-eviction acknowledgment. Object publication still
+requires the existing exact-byte and length verification.
+
 The cooperating profile uses mutual TLS1.3 with RFC7250 raw public keys, full
 SPKI SHA-256 pins and ALPN spiralcore-flowmux/object-stream/1. Both actual
 handshake signatures use rustls's existing standard crypto provider and raw-key
