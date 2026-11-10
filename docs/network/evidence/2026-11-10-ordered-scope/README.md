@@ -223,3 +223,34 @@ its original fresh 180 ms deadline. The two-second negative bound, failed
 joins, subsequent-send refusal and cancellation of queued delivery remain.
 No public API, product timeout or sustained-workload gate changes. Linux and
 native successor execution are required before acceptance.
+
+Server 2025 at the same `d6e3d669` source reached the full sustained fixture and
+failed after 243.51 seconds: the unchanged 240-second watchdog stopped writers
+at blocks 2,879 and 2,880. Both scopes remained current. Each receiver retained
+one attempt, 64 publications and 1,051,712 cache bytes, with 2,815/2,816
+evictions. The queue-fixture correction does not address this separate
+performance failure. The original [7,436-byte artifact](native-d6e3d669/flowmux-windows2025-sustained-failed.zip)
+and [verified receipt](native-d6e3d669/windows2025-receipt.json) preserve it.
+[Native job](https://github.com/R4-Laboratories/SpiralCore/actions/runs/42911665467/job/130163745489).
+Actual CPU and complete traffic were not printed on this failing path; those
+measurements remain missing, rather than inferred from elapsed time.
+
+The [three original native portable archives and custody receipts](native-d6e3d669/portable-windows-receipts.json)
+verify against the API archive digests, every inner checksum and the exact
+tested synthetic-merge tree. All seven portable roles passed at `d6e3d669`;
+that separate matrix does not establish sustained FlowMux or WAN acceptance.
+The Windows primitive comparison records these sums over six alternating
+paired scans of the same 64-file namespace:
+
+| Native role | Old scan wall ms | Batched scan wall ms | Old process CPU ms | Batched process CPU ms |
+|---|---:|---:|---:|---:|
+| Server 2022 x64 | 117.982 | 33.126 | 125.000 | 31.250 |
+| Server 2025 x64 | 57.813 | 17.405 | 62.500 | 15.625 |
+| Windows 11 ARM64 | 133.421 | 33.080 | 140.625 | 31.250 |
+
+CPU comes from actual process kernel-plus-user counters in 100 ns units;
+their coarse observed increments limit interpretation of these short totals.
+The six rounds are one local metadata microbenchmark, not independent WAN
+trials or proof that quota scans dominate object transfer. Server 2025's new
+scan averaged 2.90 ms; the sustained fixture still missed its gate. Transport
+park/poll scheduling and other per-object work require measured attribution.
