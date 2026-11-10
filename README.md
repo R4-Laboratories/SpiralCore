@@ -393,6 +393,12 @@ builds select the guest, while `linux-host` selects the host role.
 
 ## Evidence, research and contribution
 
+The [UORC v0.3.0 comparison](docs/research/2026-11-10-uorc-v0.3.0-comparison.md)
+examines its released context model, frame deduplication and decoder techniques
+against SpiralCore's warm-cache, schema and CA paths. It records published
+byte/compute tradeoffs, resource and integration limits, and proposed matched
+experiments. This is source research; no production codec has been replaced.
+
 [Public artifacts](docs/network/public-artifacts.md) link source pins, checksums,
 compact raw observations, analysis, failures and reviews. The
 [GitHub evidence release](https://github.com/R4-Laboratories/SpiralCore/releases/tag/evidence-2026-11-02)
