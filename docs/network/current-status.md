@@ -43,7 +43,7 @@ At `8a109ae4`, all four Linux/macOS FlowMux roles passed their full stages;
 all three Windows roles still missed the unchanged 4,096-block/240-second
 sustained gate, with current scopes and bounded retention. The separate
 seven-role portable matrix at `d6e3d669` passed. The
-[recorded results](evidence/2026-11-10-ordered-scope/README.md) distinguish
+[recorded development results](https://github.com/R4-Laboratories/SpiralCore/blob/5fc29bd4/docs/network/evidence/2026-11-10-ordered-scope/README.md) distinguish
 those scopes and preserve every failed native artifact. Optional bounded
 timing and native Windows coverage are being added before further optimization.
 
