@@ -215,8 +215,17 @@ impl PollState {
             self.notified.store(false, Ordering::Release);
         }
     }
+    #[cfg(test)]
     fn wait(&mut self, until: Instant) -> io::Result<()> {
+        self.wait_checked(until, || Ok(()))
+    }
+    fn wait_checked(
+        &mut self,
+        until: Instant,
+        check: impl Fn() -> io::Result<()>,
+    ) -> io::Result<()> {
         loop {
+            check()?;
             let remaining = until.saturating_duration_since(Instant::now());
             if remaining.is_zero() {
                 return Err(timeout());
@@ -224,7 +233,14 @@ impl PollState {
             self.events.clear();
             #[cfg(test)]
             readiness_tests::before_poll();
-            match self.poll.poll(&mut self.events, Some(remaining)) {
+            // A failed wake post and cloned-socket shutdown need not wake
+            // Windows IOCP. Recheck the owner's fence without relying on either.
+            let outcome = self.poll.poll(
+                &mut self.events,
+                Some(remaining.min(Duration::from_millis(50))),
+            );
+            check()?;
+            match outcome {
                 Err(e) if e.kind() == io::ErrorKind::Interrupted => continue,
                 outcome => outcome?,
             }
@@ -623,7 +639,8 @@ impl TlsCarrier {
             match result {
                 Err(e) if transient(&e) && entered => {
                     self.shared.check()?;
-                    if let Err(e) = poller.wait(until) {
+                    if let Err(e) = poller.wait_checked(until, || self.shared.check()) {
+                        self.shared.check()?;
                         if !transient(&e) {
                             self.shared.stop();
                         }

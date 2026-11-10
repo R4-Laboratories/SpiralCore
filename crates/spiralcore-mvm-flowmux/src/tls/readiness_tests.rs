@@ -286,3 +286,38 @@ fn failed_wake_post_propagates_and_fences_waiting_carrier_without_stuck_flag() {
         assert!(control.try_clone().is_err());
     });
 }
+
+#[test]
+fn stopped_waiter_observes_fence_without_socket_or_waker_event() {
+    let (mut socket, _peer) = raw_pair();
+    let readiness = Arc::new(Readiness::new(&mut socket).unwrap());
+    let stopped = AtomicBool::new(false);
+    let (entered, entry) = mpsc::channel();
+    let (result, finished) = mpsc::channel();
+    std::thread::scope(|scope| {
+        let readiness = &readiness;
+        let stopped = &stopped;
+        scope.spawn(move || {
+            ENTER_POLL.with(|slot| *slot.borrow_mut() = Some(entered));
+            let mut poller = readiness.poller().unwrap().unwrap();
+            let until = Instant::now() + Duration::from_secs(2);
+            let outcome = poller.wait_checked(until, || {
+                if stopped.load(Ordering::Acquire) {
+                    Err(io::Error::new(
+                        io::ErrorKind::BrokenPipe,
+                        "closed by original owner",
+                    ))
+                } else {
+                    Ok(())
+                }
+            });
+            result.send(outcome.unwrap_err().kind()).unwrap();
+        });
+        entry.recv_timeout(Duration::from_secs(1)).unwrap();
+        stopped.store(true, Ordering::Release);
+        assert_eq!(
+            finished.recv_timeout(Duration::from_millis(500)).unwrap(),
+            io::ErrorKind::BrokenPipe,
+        );
+    });
+}

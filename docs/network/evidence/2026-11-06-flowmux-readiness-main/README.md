@@ -35,3 +35,28 @@ cargo +1.97.1 clippy --locked --manifest-path crates/spiralcore-mvm-flowmux/Carg
 The component tests verify actual paired TCP and TLS behavior. Installed
 MVM resource, CPU, platform, and real-WAN measurements remain separate
 qualification work under [issue #44](https://github.com/R4-Laboratories/SpiralCore/issues/44).
+
+## Windows wake correction, 2026-11-10
+
+The first hosted matrix at source `2eb707ad` passed Linux x64/ARM64 and
+macOS Intel/ARM64, but failed Windows Server 2022 x64, Server 2025 x64
+and Windows 11 ARM64. In all three, the injected failed-wake test received
+`TimedOut` instead of `BrokenPipe` after the owner closed the carrier.
+[Original failed run](https://github.com/R4-Laboratories/SpiralCore/actions/runs/42170936885).
+Cloned socket shutdown did not reliably interrupt the Windows readiness wait
+when both the normal and shutdown wake posts failed.
+
+The correction checks the original owner's stopped flag before and after
+each poll, with each poll capped at the lesser of 50 ms and the remaining
+original deadline. Healthy readiness notifications remain immediate. This
+fallback introduces at most 20 requested idle poll intervals per second
+per continuously parked reader; observed wake latency also depends on
+scheduling. It changes no wire bytes or object identity.
+
+A new deterministic regression leaves both sockets open, posts no waker,
+sets only the owner fence after poll entry, and requires `BrokenPipe`
+within 500 ms of a two-second original deadline. Its initial build failed
+because the checked wait did not exist. With the fix, all **47 FlowMux
+tests passed with zero skipped** on Wick/Linux x64, Rust 1.97.1, and
+strict all-target Clippy passed. These are component correctness checks;
+they do not measure WAN throughput, CPU savings or installed MVM capacity.
