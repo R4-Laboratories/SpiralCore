@@ -254,3 +254,23 @@ The six rounds are one local metadata microbenchmark, not independent WAN
 trials or proof that quota scans dominate object transfer. Server 2025's new
 scan averaged 2.90 ms; the sustained fixture still missed its gate. Transport
 park/poll scheduling and other per-object work require measured attribution.
+
+The queue-fixture successor `8a109ae4` cleared that queue test on all seven
+native roles. Its [seven original FlowMux archives and verified receipts](native-8a109ae4/receipts.json)
+total 70,108 compressed bytes, with API digests, all inner checksums and
+synthetic-merge tree equality checked. All four Linux/macOS roles completed
+their full component, ordered/Small and strict-Clippy stages. All three
+Windows roles still failed the unchanged sustained gate:
+
+| Windows role | Writer ordinals at 240 s | Test including failed teardown |
+|---|---|---:|
+| Server 2022 x64 | 3,806 / 3,809 | 242.11 s |
+| Server 2025 x64 | 3,222 / 3,224 | 242.07 s |
+| Windows 11 ARM64 | 3,505 / 3,505 | 242.15 s |
+
+Scopes remained current and each receiver kept 64 publications and 1,051,712
+cache bytes. Later stages skipped after those failures have no pass claim.
+Different hosted runners and incomplete doses do not establish a causal
+before/after throughput improvement. CPU and full traffic on these failure
+paths remain missing; the optional timing witness is being implemented to
+retain those observations without changing the workload or deadline.

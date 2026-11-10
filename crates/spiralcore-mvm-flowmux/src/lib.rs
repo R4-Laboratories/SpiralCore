@@ -4,6 +4,8 @@
 //! and the canonical post-admission endpoint hook remain separate required work.
 mod duplex;
 mod stream;
+#[cfg(feature = "witness-timing")]
+pub mod timing;
 pub use stream::MappedStream;
 mod object;
 pub use duplex::{

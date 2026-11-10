@@ -1,4 +1,6 @@
 //! A single TLS1.3 session on an already admitted TCP connection.
+#[cfg(feature = "witness-timing")]
+use crate::timing::{Metric, Observation, PauseReason, PollOutcome, TimingObserver};
 use rustls::{
     DigitallySignedStruct, DistinguishedName, SignatureScheme,
     client::danger::{HandshakeSignatureValid, ServerCertVerified, ServerCertVerifier},
@@ -35,13 +37,38 @@ fn transient(e: &io::Error) -> bool {
         io::ErrorKind::WouldBlock | io::ErrorKind::Interrupted | io::ErrorKind::TimedOut
     )
 }
-fn pause(until: Instant) -> io::Result<()> {
+fn pause_impl(
+    until: Instant,
+    #[cfg(feature = "witness-timing")] observer: &TimingObserver,
+    #[cfg(feature = "witness-timing")] reason: PauseReason,
+) -> io::Result<()> {
     let remaining = until.saturating_duration_since(Instant::now());
     if remaining.is_zero() {
         return Err(timeout());
     }
-    std::thread::park_timeout(remaining.min(Duration::from_millis(1)));
+    let requested = remaining.min(Duration::from_millis(1));
+    #[cfg(feature = "witness-timing")]
+    observer.record(Metric::PauseRequested(reason), requested);
+    #[cfg(feature = "witness-timing")]
+    let _span = observer.span(Metric::PauseActual(reason));
+    std::thread::park_timeout(requested);
     Ok(())
+}
+#[cfg(feature = "witness-timing")]
+macro_rules! pause_for {
+    ($until:expr, $observer:expr, $reason:ident) => {
+        pause_impl($until, $observer, PauseReason::$reason)
+    };
+}
+#[cfg(not(feature = "witness-timing"))]
+macro_rules! pause_for {
+    ($until:expr, $observer:expr, $reason:ident) => {
+        pause_impl($until)
+    };
+}
+#[cfg(test)]
+fn pause(until: Instant) -> io::Result<()> {
+    pause_for!(until, &TimingObserver::default(), Read)
 }
 #[derive(Clone)]
 pub struct PinnedIdentity {
@@ -201,6 +228,8 @@ struct PollState {
     poll: mio::Poll,
     events: mio::Events,
     notified: Arc<AtomicBool>,
+    #[cfg(feature = "witness-timing")]
+    timing: TimingObserver,
 }
 impl PollState {
     fn observe_wake(&self) {
@@ -225,6 +254,13 @@ impl PollState {
         check: impl Fn() -> io::Result<()>,
     ) -> io::Result<()> {
         loop {
+            #[cfg(feature = "witness-timing")]
+            if let Err(error) = check() {
+                self.timing
+                    .record(Metric::Poll(PollOutcome::OwnerRefused), Duration::ZERO);
+                return Err(error);
+            }
+            #[cfg(not(feature = "witness-timing"))]
             check()?;
             let remaining = until.saturating_duration_since(Instant::now());
             if remaining.is_zero() {
@@ -235,10 +271,55 @@ impl PollState {
             readiness_tests::before_poll();
             // A failed wake post and cloned-socket shutdown need not wake
             // Windows IOCP. Recheck the owner's fence without relying on either.
-            let outcome = self.poll.poll(
-                &mut self.events,
-                Some(remaining.min(Duration::from_millis(50))),
-            );
+            let requested = remaining.min(Duration::from_millis(50));
+            #[cfg(feature = "witness-timing")]
+            self.timing
+                .record(Metric::Poll(PollOutcome::Requested), requested);
+            let outcome = {
+                #[cfg(feature = "witness-timing")]
+                let _span = self.timing.span(Metric::Poll(PollOutcome::Actual));
+                self.poll.poll(&mut self.events, Some(requested))
+            };
+            #[cfg(feature = "witness-timing")]
+            {
+                if let Err(error) = &outcome {
+                    self.timing.record(
+                        Metric::Poll(if error.kind() == io::ErrorKind::Interrupted {
+                            PollOutcome::Interrupted
+                        } else {
+                            PollOutcome::Error
+                        }),
+                        Duration::ZERO,
+                    );
+                } else if self.events.is_empty() {
+                    self.timing
+                        .record(Metric::Poll(PollOutcome::Empty), Duration::ZERO);
+                }
+                for event in self.events.iter() {
+                    for (matches, reason) in [
+                        (event.token() == mio::Token(1), PollOutcome::Wake),
+                        (
+                            event.token() == mio::Token(0) && event.is_readable(),
+                            PollOutcome::SocketRead,
+                        ),
+                        (
+                            event.token() == mio::Token(0) && event.is_writable(),
+                            PollOutcome::SocketWrite,
+                        ),
+                    ] {
+                        if matches {
+                            self.timing.record(Metric::Poll(reason), Duration::ZERO);
+                        }
+                    }
+                }
+            }
+            #[cfg(feature = "witness-timing")]
+            if let Err(error) = check() {
+                self.timing
+                    .record(Metric::Poll(PollOutcome::OwnerRefused), Duration::ZERO);
+                return Err(error);
+            }
+            #[cfg(not(feature = "witness-timing"))]
             check()?;
             match outcome {
                 Err(e) if e.kind() == io::ErrorKind::Interrupted => continue,
@@ -259,6 +340,8 @@ struct Readiness {
     state: Mutex<PollState>,
     waker: mio::Waker,
     notified: Arc<AtomicBool>,
+    #[cfg(feature = "witness-timing")]
+    timing: TimingObserver,
 }
 impl Readiness {
     fn new(socket: &mut mio::net::TcpStream) -> io::Result<Self> {
@@ -267,15 +350,21 @@ impl Readiness {
             .register(socket, mio::Token(0), mio::Interest::READABLE)?;
         let waker = mio::Waker::new(poll.registry(), mio::Token(1))?;
         let notified = Arc::new(AtomicBool::new(false));
+        #[cfg(feature = "witness-timing")]
+        let timing = TimingObserver::default();
         Ok(Self {
             registry: poll.registry().try_clone()?,
             state: Mutex::new(PollState {
                 poll,
                 events: mio::Events::with_capacity(4),
                 notified: notified.clone(),
+                #[cfg(feature = "witness-timing")]
+                timing: timing.clone(),
             }),
             waker,
             notified,
+            #[cfg(feature = "witness-timing")]
+            timing,
         })
     }
     fn poller(&self) -> io::Result<Option<std::sync::MutexGuard<'_, PollState>>> {
@@ -517,7 +606,7 @@ impl TlsCarrier {
                 if !session.tls.is_handshaking() && !session.tls.wants_write() {
                     break;
                 }
-                pause(until)?;
+                pause_for!(until, &readiness.timing, Handshake)?;
             }
             if session.tls.alpn_protocol() != Some(ALPN)
                 || session.tls.protocol_version() != Some(rustls::ProtocolVersion::TLSv1_3)
@@ -552,6 +641,10 @@ impl TlsCarrier {
             read_timeout: Duration::from_secs(30),
             write_timeout: Duration::from_secs(30),
         })
+    }
+    #[cfg(feature = "witness-timing")]
+    pub fn timing_observer(&self) -> TimingObserver {
+        self.shared.readiness.timing.clone()
     }
     pub fn local_spki_sha256(&self) -> [u8; 32] {
         self.shared.local_pin
@@ -596,7 +689,7 @@ impl TlsCarrier {
             let mut poller = match self.shared.readiness.poller() {
                 Ok(Some(poller)) => poller,
                 Ok(None) => {
-                    pause(until)?;
+                    pause_for!(until, &self.shared.readiness.timing, Poller)?;
                     continue;
                 }
                 Err(e) => {
@@ -649,7 +742,7 @@ impl TlsCarrier {
                 }
                 Err(e) if transient(&e) => {
                     drop(poller);
-                    pause(until)?;
+                    pause_for!(until, &self.shared.readiness.timing, Session)?;
                 }
                 other => return other,
             }
@@ -687,7 +780,9 @@ impl TlsCarrier {
                         session.tls.send_close_notify();
                         Ok(())
                     }) {
-                        Err(e) if transient(&e) => pause(until)?,
+                        Err(e) if transient(&e) => {
+                            pause_for!(until, &self.shared.readiness.timing, Shutdown)?
+                        }
                         outcome => {
                             outcome?;
                             break;
@@ -707,12 +802,25 @@ impl TlsCarrier {
         let mut guard = match self.shared.session.try_lock() {
             Ok(value) => value,
             Err(std::sync::TryLockError::WouldBlock) => {
+                #[cfg(feature = "witness-timing")]
+                self.shared
+                    .readiness
+                    .timing
+                    .count(Observation::SessionContended);
                 return Err(io::ErrorKind::WouldBlock.into());
             }
             Err(std::sync::TryLockError::Poisoned(_)) => return Err(error("TLS poisoned")),
         };
         let before = self.counters();
-        let result = operation(&mut guard);
+        let result = {
+            #[cfg(feature = "witness-timing")]
+            let _span = self
+                .shared
+                .readiness
+                .timing
+                .span(Metric::Count(Observation::SessionOperation));
+            operation(&mut guard)
+        };
         let progressed = result.is_ok() || before != self.counters();
         drop(guard);
         if let Err(e) = &result
@@ -744,7 +852,7 @@ impl TlsCarrier {
                 session.tls.reader().read(buffer)
             });
             match result {
-                Err(e) if transient(&e) => pause(until)?,
+                Err(e) if transient(&e) => pause_for!(until, &self.shared.readiness.timing, Read)?,
                 other => return other,
             }
         }
@@ -777,7 +885,7 @@ impl TlsCarrier {
                 Ok(n)
             });
             match result {
-                Err(e) if transient(&e) => pause(until)?,
+                Err(e) if transient(&e) => pause_for!(until, &self.shared.readiness.timing, Write)?,
                 other => return other,
             }
         }
@@ -803,7 +911,7 @@ impl TlsCarrier {
                 }
             });
             match result {
-                Err(e) if transient(&e) => pause(until)?,
+                Err(e) if transient(&e) => pause_for!(until, &self.shared.readiness.timing, Flush)?,
                 other => return other,
             }
         }

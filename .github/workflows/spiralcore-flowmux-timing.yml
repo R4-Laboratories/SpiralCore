@@ -1,0 +1,76 @@
+name: SpiralCore native FlowMux timing witness
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'crates/spiralcore-mvm-flowmux/**'
+      - 'crates/spiralcore-transfer/**'
+      - 'crates/spiralcore-storage-windows/**'
+      - '.github/workflows/spiralcore-flowmux-timing.yml'
+permissions:
+  contents: read
+concurrency:
+  group: spiralcore-flowmux-timing-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  windows-timing:
+    runs-on: windows-2025
+    timeout-minutes: 20
+    defaults:
+      run:
+        shell: pwsh
+    env:
+      CARGO_BUILD_JOBS: 2
+      CARGO_INCREMENTAL: 0
+      CARGO_TERM_COLOR: never
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Record native diagnostic source
+        run: |
+          $ErrorActionPreference = 'Stop'
+          New-Item -ItemType Directory timing-evidence | Out-Null
+          if ($env:RUNNER_OS -ne 'Windows' -or $env:RUNNER_ARCH -ne 'X64') { throw 'Native Windows x64 required' }
+          $source = (git rev-parse HEAD).Trim()
+          if ($LASTEXITCODE -ne 0) { throw 'Source identity failed' }
+          $tree = (git rev-parse 'HEAD^{tree}').Trim()
+          if ($LASTEXITCODE -ne 0) { throw 'Tree identity failed' }
+          @{ source = $source; tree = $tree; run = $env:GITHUB_RUN_ID;
+            attempt = $env:GITHUB_RUN_ATTEMPT; image = $env:ImageVersion;
+            os = $env:RUNNER_OS; arch = $env:RUNNER_ARCH;
+            features = 'witness-timing'; blocks_each_direction = 4096; watchdog_seconds = 240;
+            scope = 'instrumented native process; both peers on one runner; no MVM backend or WAN';
+            lock_sha256 = (Get-FileHash crates/spiralcore-mvm-flowmux/Cargo.lock -Algorithm SHA256).Hash
+          } | ConvertTo-Json | Set-Content timing-evidence/identity.json
+      - name: Install pinned native toolchain
+        run: |
+          rustup toolchain install 1.97.1-x86_64-pc-windows-msvc --profile minimal
+          if ($LASTEXITCODE -ne 0) { throw 'Pinned Rust unavailable' }
+          rustc +1.97.1-x86_64-pc-windows-msvc -vV | Tee-Object timing-evidence/rustc.txt
+          if ($LASTEXITCODE -ne 0 -or !(Select-String -Path timing-evidence/rustc.txt -SimpleMatch 'host: x86_64-pc-windows-msvc')) { throw 'Native toolchain required' }
+      - name: Execute unchanged sustained workload with bounded timing
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $false
+          $log = (& cargo +1.97.1-x86_64-pc-windows-msvc test --release --locked --manifest-path crates/spiralcore-mvm-flowmux/Cargo.toml --features witness-timing --test ordered_stream -- --show-output --color never 2>&1 | Out-String)
+          $code = $LASTEXITCODE
+          $log | Set-Content timing-evidence/tests.txt
+          $log | Write-Output
+          if ($code -ne 0 -or $log -notmatch 'test result: ok\. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out;') { throw 'Instrumented sustained gate failed; preserve diagnostics' }
+          if (git status --porcelain -- crates/spiralcore-mvm-flowmux/Cargo.lock) { throw 'Locked execution changed source' }
+      - name: Checksum compact diagnostics
+        if: always()
+        run: |
+          if (Test-Path timing-evidence) {
+            Get-ChildItem timing-evidence -File | Sort-Object Name | ForEach-Object {
+              "$((Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant())  $($_.Name)"
+            } | Set-Content timing-evidence/SHA256SUMS
+          }
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: flowmux-windows-timing-${{ github.run_attempt }}
+          path: timing-evidence/
+          if-no-files-found: error
+          retention-days: 14

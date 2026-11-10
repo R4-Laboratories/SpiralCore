@@ -1,3 +1,5 @@
+#[cfg(feature = "witness-timing")]
+use crate::timing::{FrameKind, Metric, Observation, Phase, TimingObserver};
 use crate::{
     Binding, Cancellation, Counters, Error, Event, MAX_BLOCK, ObjectChannel, ObjectRecord, Purpose,
     Result, Rx, Tx,
@@ -97,6 +99,43 @@ struct Expected {
 type Pending = Arc<Mutex<Option<Expected>>>;
 type SharedTx = Arc<Mutex<Tx>>;
 
+#[cfg(feature = "witness-timing")]
+fn timed_tx_lock<'a>(
+    tx: &'a SharedTx,
+    until: Instant,
+    timing: &TimingObserver,
+    phase: Phase,
+    kind: FrameKind,
+) -> Result<MutexGuard<'a, Tx>> {
+    let _span = timing.span(Metric::Frame(phase, kind));
+    loop {
+        let left = remaining(until)?;
+        match tx.try_lock() {
+            Ok(guard) => return Ok(guard),
+            Err(std::sync::TryLockError::Poisoned(_)) => return Err(Error::Worker),
+            Err(std::sync::TryLockError::WouldBlock) => {
+                timing.count(match phase {
+                    Phase::SenderLock => Observation::SenderLockContended,
+                    _ => Observation::ReceiverLockContended,
+                });
+                thread::park_timeout(left.min(Duration::from_millis(1)));
+            }
+        }
+    }
+}
+macro_rules! tx_lock {
+    ($tx:expr, $until:expr, $timing:expr, $phase:ident, $kind:expr) => {{
+        #[cfg(feature = "witness-timing")]
+        {
+            timed_tx_lock($tx, $until, $timing, Phase::$phase, $kind)
+        }
+        #[cfg(not(feature = "witness-timing"))]
+        {
+            lock_until($tx, $until)
+        }
+    }};
+}
+
 #[derive(Debug)]
 pub struct BlockReceipt {
     pub index: u64,
@@ -115,6 +154,15 @@ pub struct RetentionObserver {
     inner: Arc<Mutex<Option<OrderedSnapshot>>>,
 }
 impl RetentionObserver {
+    /// A concurrent diagnostic observation; never waits for the publisher.
+    #[cfg(feature = "witness-timing")]
+    pub fn try_snapshot(&self) -> Result<Option<OrderedSnapshot>> {
+        match self.inner.try_lock() {
+            Ok(snapshot) => Ok(*snapshot),
+            Err(std::sync::TryLockError::WouldBlock) => Err(Error::Timeout),
+            Err(std::sync::TryLockError::Poisoned(_)) => Err(Error::Worker),
+        }
+    }
     pub fn snapshot(&self) -> Result<Option<OrderedSnapshot>> {
         Ok(*lock(&self.inner)?)
     }
@@ -124,6 +172,10 @@ impl RetentionObserver {
     }
 }
 impl Duplex {
+    #[cfg(feature = "witness-timing")]
+    pub fn timing_observer(&self) -> TimingObserver {
+        self.writer.timing.clone()
+    }
     pub fn retention_observer(&self) -> RetentionObserver {
         self.retention.clone()
     }
@@ -173,7 +225,11 @@ impl Duplex {
         let (delivery, delivery_rx) = mpsc::sync_channel(4);
         let (done, done_rx) = mpsc::sync_channel(1);
         let retention = RetentionObserver::default();
+        #[cfg(feature = "witness-timing")]
+        let timing = TimingObserver::default();
         let worker = Worker {
+            #[cfg(feature = "witness-timing")]
+            timing: timing.clone(),
             completed: false,
             rx: channel.rx,
             tx: shared_tx.clone(),
@@ -203,6 +259,8 @@ impl Duplex {
             })?;
         Ok(Self {
             writer: DuplexWriter {
+                #[cfg(feature = "witness-timing")]
+                timing,
                 tx: shared_tx,
                 pending,
                 responses: response_rx,
@@ -240,6 +298,8 @@ impl Duplex {
 }
 
 pub struct DuplexWriter {
+    #[cfg(feature = "witness-timing")]
+    timing: TimingObserver,
     tx: SharedTx,
     pending: Pending,
     responses: Receiver<Frame>,
@@ -254,6 +314,8 @@ pub struct DuplexWriter {
     timeout: Duration,
 }
 impl DuplexWriter {
+    // The optional observer is the sole eighth argument; transport inputs stay unchanged.
+    #[cfg_attr(feature = "witness-timing", allow(clippy::too_many_arguments))]
     fn exchange(
         tx: &SharedTx,
         pending: &Pending,
@@ -262,6 +324,7 @@ impl DuplexWriter {
         purpose: Purpose,
         until: Instant,
         budget: &Arc<AtomicUsize>,
+        #[cfg(feature = "witness-timing")] timing: &TimingObserver,
     ) -> Result<Vec<Frame>> {
         if frames.is_empty() || frames.len() > 8 {
             return Err(Error::Limit);
@@ -288,13 +351,40 @@ impl DuplexWriter {
                     seen: budget.clone(),
                 });
             }
-            lock_until(tx, until)?.send_object(frame, purpose, until)?;
-            let reply = responses
-                .recv_timeout(remaining(until)?)
-                .map_err(|error| match error {
-                    RecvTimeoutError::Timeout => Error::Timeout,
-                    RecvTimeoutError::Disconnected => Error::Closed,
-                })?;
+            {
+                let mut tx = tx_lock!(
+                    tx,
+                    until,
+                    timing,
+                    SenderLock,
+                    FrameKind::from_wire(frame.kind)
+                )?;
+                #[cfg(feature = "witness-timing")]
+                let _span = timing.span(Metric::Frame(
+                    Phase::SenderSend,
+                    FrameKind::from_wire(frame.kind),
+                ));
+                tx.send_object(frame, purpose, until)?;
+            }
+            let response = {
+                #[cfg(feature = "witness-timing")]
+                let _span = timing.span(Metric::Frame(
+                    Phase::SenderWait,
+                    FrameKind::from_wire(frame.kind),
+                ));
+                responses.recv_timeout(remaining(until)?)
+            };
+            #[cfg(feature = "witness-timing")]
+            timing.count(match &response {
+                Ok(reply) if reply.kind == 127 => Observation::WaitRefused,
+                Ok(_) => Observation::WaitOk,
+                Err(RecvTimeoutError::Timeout) => Observation::WaitTimeout,
+                Err(RecvTimeoutError::Disconnected) => Observation::WaitDisconnected,
+            });
+            let reply = response.map_err(|error| match error {
+                RecvTimeoutError::Timeout => Error::Timeout,
+                RecvTimeoutError::Disconnected => Error::Closed,
+            })?;
             remaining(until)?;
             let terminal = matches!(reply.kind, 103 | 127);
             replies.push(reply);
@@ -324,12 +414,21 @@ impl DuplexWriter {
         let pending = &self.pending;
         let responses = &self.responses;
         let result = operation(&mut self.sender, &self.context, &mut |frames| {
-            Self::exchange(tx, pending, responses, frames, purpose, until, &budget).map_err(
-                |error| {
-                    transport_error = Some(error);
-                    spiralcore_transfer::Error::Unknown
-                },
+            Self::exchange(
+                tx,
+                pending,
+                responses,
+                frames,
+                purpose,
+                until,
+                &budget,
+                #[cfg(feature = "witness-timing")]
+                &self.timing,
             )
+            .map_err(|error| {
+                transport_error = Some(error);
+                spiralcore_transfer::Error::Unknown
+            })
         });
         match result {
             Ok(value) if Instant::now() < until => Ok(value),
@@ -357,6 +456,8 @@ impl DuplexWriter {
             sender.send_with_receipt(c, bytes, transfer, false, exchange)
         })?;
         self.index = next;
+        #[cfg(feature = "witness-timing")]
+        self.timing.count(Observation::Ack);
         Ok(BlockReceipt {
             index,
             transfer,
@@ -592,6 +693,8 @@ impl<A: Authority> ReceiveEndpoint<A> {
     }
 }
 struct Worker<A: Authority> {
+    #[cfg(feature = "witness-timing")]
+    timing: TimingObserver,
     completed: bool,
     rx: Rx,
     tx: SharedTx,
@@ -670,9 +773,15 @@ impl<A: Authority> Worker<A> {
         } else {
             self.artifact_index
         };
-        let reply = self
-            .endpoint
-            .handle(purpose, ordinal, &self.context, &request, now()?)?;
+        let reply = {
+            #[cfg(feature = "witness-timing")]
+            let _span = self.timing.span(Metric::Frame(
+                Phase::ReceiverHandle,
+                FrameKind::from_wire(request.kind),
+            ));
+            self.endpoint
+                .handle(purpose, ordinal, &self.context, &request, now()?)?
+        };
         self.retention
             .publish(self.endpoint.snapshot(&self.context)?)?;
         if purpose == Purpose::Application && reply.kind == 103 {
@@ -692,7 +801,19 @@ impl<A: Authority> Worker<A> {
         if purpose == Purpose::Artifact && reply.kind == 103 {
             self.artifact_index = self.artifact_index.checked_add(1).ok_or(Error::Sequence)?;
         }
-        lock_until(&self.tx, until)?.send_object(&reply, purpose, until)
+        let mut tx = tx_lock!(
+            &self.tx,
+            until,
+            &self.timing,
+            ReceiverLock,
+            FrameKind::from_wire(request.kind)
+        )?;
+        #[cfg(feature = "witness-timing")]
+        let _span = self.timing.span(Metric::Frame(
+            Phase::ReceiverSend,
+            FrameKind::from_wire(request.kind),
+        ));
+        tx.send_object(&reply, purpose, until)
     }
     fn run(mut self) -> Result<(Counters, Counters)> {
         loop {

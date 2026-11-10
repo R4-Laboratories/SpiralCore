@@ -1,3 +1,4 @@
+use cpu_time::ProcessTime;
 use spiralcore_mvm_flowmux::{
     Duplex, MappedStream, ObjectChannel, Role,
     scope::{PinnedScopePolicy, ScopeAuthority, ScopeFacts},
@@ -11,6 +12,10 @@ use std::{
     io::{Read, Write},
     net::{Shutdown, TcpListener, TcpStream},
     path::{Path, PathBuf},
+    sync::{
+        Arc,
+        atomic::{AtomicU64, Ordering},
+    },
     time::{Duration, Instant},
 };
 struct Store(PathBuf);
@@ -62,6 +67,67 @@ fn files(root: &Path) -> (usize, u64) {
     }
     (count, bytes)
 }
+// Only fixed scalar counters are retained. The product's SmallV1 charge is unchanged.
+// Timing totals overlap across nested operations and the two directions.
+struct WitnessReport<'a> {
+    began: Instant,
+    process_start: Option<ProcessTime>,
+    setup_wall: Duration,
+    setup_cpu: Option<Duration>,
+    tls: [&'a TlsCarrier; 2],
+    progress: Arc<[AtomicU64; 4]>,
+    #[cfg(feature = "witness-timing")]
+    retention: [&'a spiralcore_mvm_flowmux::RetentionObserver; 2],
+    #[cfg(feature = "witness-timing")]
+    timing: [spiralcore_mvm_flowmux::timing::TimingObserver; 4],
+    success: bool,
+}
+impl Drop for WitnessReport<'_> {
+    fn drop(&mut self) {
+        let cpu = self
+            .process_start
+            .and_then(|start| start.try_elapsed().ok());
+        let progress = self.progress.each_ref().map(|v| v.load(Ordering::Relaxed));
+        let traffic = self.tls.map(|tls| tls.counters());
+        // Ignore a closed diagnostic output stream; never mask the original failure.
+        let _ = writeln!(
+            std::io::stderr(),
+            "ORDERED_WITNESS success={} witness_timing={} snapshot=concurrent wall_us={} original_gate_us=240000000 setup_wall_us={} setup_process_cpu_us={:?} process_cpu_to_snapshot_us={:?} progress_write_ack_left_right_read_left_right={progress:?} actual_tls={traffic:?} scopes=unavailable_nonblocking scope_status_at_existing_failure_assertion=see_original_error rss_kib={:?} hwm_kib={:?}",
+            self.success,
+            cfg!(feature = "witness-timing"),
+            self.began.elapsed().as_micros(),
+            self.setup_wall.as_micros(),
+            self.setup_cpu.map(|v| v.as_micros()),
+            cpu.map(|v| v.as_micros()),
+            memory("VmRSS:"),
+            memory("VmHWM:")
+        );
+        #[cfg(feature = "witness-timing")]
+        {
+            use spiralcore_mvm_flowmux::timing::{Snapshot, TimingObserver};
+            // Four owners (TLS pair and duplex pair). Twelve Arc handles include
+            // the eight embedded handles and these four observer clones. Arc
+            // allocator bookkeeping is not measurable through std and is excluded.
+            let owner_bytes = 4 * TimingObserver::owned_bytes();
+            let handles_bytes = 12 * std::mem::size_of::<TimingObserver>();
+            let snapshot_bytes = std::mem::size_of::<Snapshot>();
+            let _ = writeln!(
+                std::io::stderr(),
+                "ORDERED_TIMING_STORAGE outside_small_v1=true fixed_owner_heap_requested_bytes={owner_bytes} observer_handles_bytes={handles_bytes} one_snapshot_value_bytes={snapshot_bytes} allocator_bookkeeping=excluded fixed_progress_bytes={} retention_nonblocking={:?}",
+                std::mem::size_of::<[AtomicU64; 4]>() + 2 * std::mem::size_of::<usize>(),
+                self.retention.map(|r| r.try_snapshot())
+            );
+            // Format one snapshot at a time; no event collection or variable buffer.
+            for (slot, observer) in self.timing.iter().enumerate() {
+                let _ = writeln!(
+                    std::io::stderr(),
+                    "ORDERED_TIMING slot={slot} order=tls_left,tls_right,duplex_left,duplex_right snapshot=concurrent overlapping_elapsed_not_cpu {:?}",
+                    observer.snapshot()
+                );
+            }
+        }
+    }
+}
 #[test]
 fn four_thousand_distinct_blocks_each_direction_keep_exact_bytes_and_bounded_retention() {
     const BLOCKS: u64 = 4096;
@@ -73,6 +139,7 @@ fn four_thousand_distinct_blocks_each_direction_keep_exact_bytes_and_bounded_ret
         .and_then(|out| String::from_utf8(out.stdout).ok())
         .and_then(|value| value.trim().parse::<u64>().ok());
     let began = Instant::now();
+    let process_start = ProcessTime::try_now().ok();
     let cpu_before = cpu();
     let rss_before = memory("VmRSS:");
     let client_key = identity();
@@ -103,6 +170,8 @@ fn four_thousand_distinct_blocks_each_direction_keep_exact_bytes_and_bounded_ret
         .unwrap();
         (left, peer.join().unwrap())
     });
+    #[cfg(feature = "witness-timing")]
+    let tls_timing = [left.timing_observer(), right.timing_observer()];
     let left_counters = left.try_clone().unwrap();
     let right_counters = right.try_clone().unwrap();
     let facts = ScopeFacts {
@@ -170,19 +239,48 @@ fn four_thousand_distinct_blocks_each_direction_keep_exact_bytes_and_bounded_ret
             ResourceProfile::SmallV1,
         )
         .unwrap();
-        let duplex =
-            Duplex::spawn(channel, sender, endpoint, authority.context().clone(), role).unwrap();
-        let observer = duplex.retention_observer();
-        (MappedStream::from_duplex(duplex), observer)
+        Duplex::spawn(channel, sender, endpoint, authority.context().clone(), role).unwrap()
     };
-    let (left, left_state) = engine(left, &left_auth, Role::Initiator, &stores[0].0);
-    let (right, right_state) = engine(right, &right_auth, Role::Acceptor, &stores[1].0);
+    let left = engine(left, &left_auth, Role::Initiator, &stores[0].0);
+    let right = engine(right, &right_auth, Role::Acceptor, &stores[1].0);
+    let left_state = left.retention_observer();
+    let right_state = right.retention_observer();
+    #[cfg(feature = "witness-timing")]
+    let duplex_timing = [left.timing_observer(), right.timing_observer()];
+    let left = MappedStream::from_duplex(left);
+    let right = MappedStream::from_duplex(right);
     let setup_wall = began.elapsed();
     let cpu_setup = cpu();
     let rss_prepared = memory("VmRSS:");
+    let progress = Arc::new(std::array::from_fn(|_| AtomicU64::new(0)));
+    let mut report = WitnessReport {
+        began,
+        process_start,
+        setup_wall,
+        setup_cpu: process_start.and_then(|start| start.try_elapsed().ok()),
+        tls: [&left_counters, &right_counters],
+        progress: progress.clone(),
+        #[cfg(feature = "witness-timing")]
+        retention: [&left_state, &right_state],
+        #[cfg(feature = "witness-timing")]
+        timing: [
+            tls_timing[0].clone(),
+            tls_timing[1].clone(),
+            duplex_timing[0].clone(),
+            duplex_timing[1].clone(),
+        ],
+        success: false,
+    };
+    // Drop temporary observer arrays; the report retains the four fixed clones.
+    #[cfg(feature = "witness-timing")]
+    {
+        drop(tls_timing);
+        drop(duplex_timing);
+    }
     let run_until = began + Duration::from_secs(240);
     std::thread::scope(|scope| {
         let writer = |mut stream: MappedStream,
+                      direction: usize,
                       observer: spiralcore_mvm_flowmux::RetentionObserver| {
             for index in 0..BLOCKS {
                 assert!(
@@ -200,6 +298,7 @@ fn four_thousand_distinct_blocks_each_direction_keep_exact_bytes_and_bounded_ret
                         right_auth.check()
                     )
                 });
+                progress[direction].store(index + 1, Ordering::Relaxed);
                 let state = observer
                     .snapshot()
                     .unwrap()
@@ -210,11 +309,12 @@ fn four_thousand_distinct_blocks_each_direction_keep_exact_bytes_and_bounded_ret
             }
             stream.shutdown(Shutdown::Write).unwrap();
         };
-        let reader = |mut stream: MappedStream| {
+        let reader = |mut stream: MappedStream, direction: usize| {
             for index in 0..BLOCKS {
                 let mut actual = [0; 16384];
                 stream.read_exact(&mut actual).unwrap();
                 assert_eq!(actual, block(index), "exact block{index}");
+                progress[2 + direction].store(index + 1, Ordering::Relaxed);
             }
             let mut byte = [0];
             assert_eq!(stream.read(&mut byte).unwrap(), 0);
@@ -225,10 +325,10 @@ fn four_thousand_distinct_blocks_each_direction_keep_exact_bytes_and_bounded_ret
         let right_read = right.clone();
         let left_observer = left_state.clone();
         let right_observer = right_state.clone();
-        let lw = scope.spawn(move || writer(left_write, right_observer));
-        let rw = scope.spawn(move || writer(right_write, left_observer));
-        let lr = scope.spawn(move || reader(left_read));
-        let rr = scope.spawn(move || reader(right_read));
+        let lw = scope.spawn(move || writer(left_write, 0, right_observer));
+        let rw = scope.spawn(move || writer(right_write, 1, left_observer));
+        let lr = scope.spawn(move || reader(left_read, 0));
+        let rr = scope.spawn(move || reader(right_read, 1));
         lw.join().unwrap();
         rw.join().unwrap();
         lr.join().unwrap();
@@ -250,6 +350,8 @@ fn four_thousand_distinct_blocks_each_direction_keep_exact_bytes_and_bounded_ret
     assert_eq!(rf.0, rs.publications);
     assert_eq!(lf.1, ls.cache_bytes);
     assert_eq!(rf.1, rs.cache_bytes);
+    report.success = true;
+    drop(report);
     drop(left_counters);
     drop(right_counters);
     let paths = [stores[0].0.clone(), stores[1].0.clone()];
@@ -257,9 +359,12 @@ fn four_thousand_distinct_blocks_each_direction_keep_exact_bytes_and_bounded_ret
     assert!(paths.iter().all(|path| !path.exists()));
     let cpu_after = cpu();
     let lifecycle_wall = began.elapsed();
+    let lifecycle_cpu = process_start
+        .and_then(|start| start.try_elapsed().ok())
+        .map(|v| v.as_micros());
     let hwm = memory("VmHWM:");
     eprintln!(
-        "ORDERED_BULK blocks_each_direction={BLOCKS} exact_bytes_each_direction={} actual_tls_a_sent={} actual_tls_a_received={} peer_sent={} peer_received={} setup_wall_us={} lifecycle_wall_us={} cpu_process_before={cpu_before:?} cpu_process_setup={cpu_setup:?} cpu_process_after={cpu_after:?} cpu_ticks_per_second={tick_rate:?} rss_before_kib={rss_before:?} rss_prepared_kib={rss_prepared:?} process_hwm_kib={hwm:?} core_pair_charge_each={} reader_stack_each={} left={ls:?} right={rs:?} files_left={lf:?} files_right={rf:?}",
+        "ORDERED_BULK blocks_each_direction={BLOCKS} exact_bytes_each_direction={} actual_tls_a_sent={} actual_tls_a_received={} peer_sent={} peer_received={} setup_wall_us={} lifecycle_wall_us={} cpu_process_before={cpu_before:?} cpu_process_setup={cpu_setup:?} cpu_process_after={cpu_after:?} lifecycle_process_cpu_us={lifecycle_cpu:?} cpu_ticks_per_second={tick_rate:?} rss_before_kib={rss_before:?} rss_prepared_kib={rss_prepared:?} process_hwm_kib={hwm:?} core_pair_charge_each={} reader_stack_each={} left={ls:?} right={rs:?} files_left={lf:?} files_right={rf:?}",
         BLOCKS * 16384,
         a.sent,
         a.received,

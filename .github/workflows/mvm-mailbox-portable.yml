@@ -118,6 +118,152 @@ jobs:
           cargo "+1.97.1-$env:NATIVE_TARGET" clippy --locked --manifest-path $crate --all-targets -- -D warnings
           if ($LASTEXITCODE -ne 0) { throw 'Windows primitive Clippy failed' }
           if (git status --porcelain -- crates/spiralcore-storage-windows/Cargo.lock) { throw 'Windows primitive tests mutated committed lockfile' }
+      - name: Measure native Windows quota line coverage
+        if: runner.os == 'Windows'
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $false
+          $toolchain = "1.97.1-$env:NATIVE_TARGET"
+          $crate = 'crates/spiralcore-storage-windows/Cargo.toml'
+          $quota = (Resolve-Path 'crates/spiralcore-storage-windows/src/windows/quota.rs').Path
+          $out = Join-Path $env:GITHUB_WORKSPACE 'portable-evidence'
+          $owned = Join-Path $env:RUNNER_TEMP ("quota-coverage-" + [guid]::NewGuid().ToString('N'))
+          New-Item -ItemType Directory $owned | Out-Null
+          New-Item -ItemType Directory (Join-Path $owned 'profiles') | Out-Null
+          New-Item -ItemType Directory (Join-Path $owned 'listing-profiles') | Out-Null
+          $saved = @{}
+          foreach ($name in @('CARGO_TARGET_DIR','RUSTFLAGS','CARGO_ENCODED_RUSTFLAGS','LLVM_PROFILE_FILE')) {
+            $saved[$name] = [Environment]::GetEnvironmentVariable($name, 'Process')
+          }
+          function Sha([string] $path) { (Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash.ToLowerInvariant() }
+          function Normalize([string] $path) { [IO.Path]::GetFullPath($path).Replace('\','/').ToLowerInvariant() }
+          function Save-Compact([string] $name, [string] $value) {
+            if ([Text.Encoding]::UTF8.GetByteCount($value) -gt 32768) {
+              $value | Set-Content (Join-Path $owned $name)
+              "Oversized evidence refused; full text retained only under $owned" | Set-Content (Join-Path $out $name)
+              throw "Coverage compact file exceeds 32 KiB: $name"
+            }
+            $value | Set-Content (Join-Path $out $name)
+          }
+          try {
+            $source = (& git rev-parse HEAD | Out-String).Trim()
+            if ($LASTEXITCODE -ne 0 -or $source -notmatch '^[0-9a-f]{40}$') { throw 'Coverage source identity failed' }
+            $tracked = @(& git ls-files -- crates/spiralcore-storage-windows)
+            if ($LASTEXITCODE -ne 0 -or $tracked.Count -eq 0) { throw 'Cannot enumerate coverage sources' }
+            $dirty = @(& git status --porcelain -- crates/spiralcore-storage-windows)
+            if ($LASTEXITCODE -ne 0 -or $dirty.Count -ne 0) { throw 'Coverage requires clean committed storage sources' }
+            $pins = @($tracked | Sort-Object | ForEach-Object { @{ path = $_; sha256 = (Sha $_) } })
+            Save-Compact 'windows-quota-coverage-sources.json' ($pins | ConvertTo-Json -Depth 4)
+            & rustup component add llvm-tools-preview --toolchain $toolchain
+            if ($LASTEXITCODE -ne 0) { throw 'Pinned native LLVM tools unavailable; no substitute coverage accepted' }
+            $sysroot = (& rustc "+$toolchain" --print sysroot | Out-String).Trim()
+            if ($LASTEXITCODE -ne 0) { throw 'Cannot locate pinned native sysroot' }
+            $rustVersion = (& rustc "+$toolchain" -vV | Out-String).Trim()
+            if ($LASTEXITCODE -ne 0 -or $rustVersion -notmatch "(?m)^host: $([regex]::Escape($env:NATIVE_TARGET))\r?$") { throw 'Coverage compiler is not native' }
+            $rustcPath = (& rustup which --toolchain $toolchain rustc | Out-String).Trim()
+            if ($LASTEXITCODE -ne 0 -or !(Test-Path -LiteralPath $rustcPath -PathType Leaf)) { throw 'Cannot pin native compiler executable' }
+            $rustcHash = Sha $rustcPath
+            $llvmVersion = [regex]::Match($rustVersion, '(?m)^LLVM version: (\d+\.\d+\.\d+)').Groups[1].Value
+            if (!$llvmVersion) { throw 'Compiler LLVM version missing' }
+            $llvmBin = Join-Path $sysroot "lib/rustlib/$env:NATIVE_TARGET/bin"
+            $cov = Join-Path $llvmBin 'llvm-cov.exe'
+            $profdata = Join-Path $llvmBin 'llvm-profdata.exe'
+            $tools = @()
+            foreach ($tool in @($cov, $profdata)) {
+              if (!(Test-Path -LiteralPath $tool -PathType Leaf)) { throw "Pinned LLVM executable missing: $tool" }
+              $version = (& $tool --version | Out-String).Trim()
+              if ($LASTEXITCODE -ne 0 -or $version -notmatch "LLVM version:? $([regex]::Escape($llvmVersion))(?![0-9.])") { throw 'Compiler/LLVM tool version mismatch' }
+              $tools += @{ path = $tool; sha256 = (Sha $tool); version = $version }
+            }
+            $env:CARGO_TARGET_DIR = Join-Path $owned 'target'
+            $env:RUSTFLAGS = '-C instrument-coverage -C opt-level=0'
+            [Environment]::SetEnvironmentVariable('CARGO_ENCODED_RUSTFLAGS', $null, 'Process')
+            $env:LLVM_PROFILE_FILE = Join-Path $owned 'listing-profiles/list-%p-%m.profraw'
+            $build = @(& cargo "+$toolchain" test --locked --manifest-path $crate --lib --no-run --target $env:NATIVE_TARGET --message-format=json 2> (Join-Path $owned 'build-stderr.txt'))
+            $buildExit = $LASTEXITCODE
+            $build | Set-Content (Join-Path $owned 'build.jsonl')
+            if ($buildExit -ne 0) { throw "Instrumented native build failed; diagnostics: $owned" }
+            $messages = @($build | Where-Object { $_.Trim() } | ForEach-Object { $_ | ConvertFrom-Json })
+            $finished = @($messages | Where-Object { $_.reason -eq 'build-finished' -and $_.success })
+            $artifacts = @($messages | Where-Object { $_.reason -eq 'compiler-artifact' -and $_.target.name -eq 'spiralcore_storage_windows' -and $_.profile.test -and $_.executable })
+            if ($finished.Count -ne 1 -or $artifacts.Count -ne 1) { throw 'Expected exactly one native instrumented library test binary' }
+            $original = [string]$artifacts[0].executable
+            if (!(Normalize $original).StartsWith((Normalize $env:CARGO_TARGET_DIR) + '/')) { throw 'Coverage binary escaped owned target' }
+            $binary = Join-Path $owned 'windows-storage-coverage.exe'
+            Copy-Item -LiteralPath $original -Destination $binary
+            $binaryHash = Sha $binary
+            if ($binaryHash -ne (Sha $original)) { throw 'Coverage binary copy mismatch' }
+            $listing = (& $binary --list --format terse 2>&1 | Out-String)
+            $listExit = $LASTEXITCODE
+            Save-Compact 'windows-quota-coverage-list.txt' $listing
+            $listed = [regex]::Matches($listing, '(?m)^.+: test\r?$').Count
+            if ($listExit -ne 0 -or $listed -ne 2) { throw 'Instrumented native enumeration must list exactly two primitives' }
+            $env:LLVM_PROFILE_FILE = Join-Path $owned 'profiles/tests-%p-%m.profraw'
+            $log = (& $binary --format pretty --color never --test-threads=1 2>&1 | Out-String)
+            $testExit = $LASTEXITCODE
+            Save-Compact 'windows-quota-coverage-tests.txt' $log
+            $summaries = [regex]::Matches($log, 'test result: ok\. (\d+) passed; (\d+) failed; (\d+) ignored; (\d+) measured; (\d+) filtered out;')
+            if ($testExit -ne 0 -or $summaries.Count -ne 1) { throw 'Instrumented native primitives failed' }
+            $s = $summaries[0].Groups
+            if ([int]$s[1].Value -ne 2 -or [int]$s[2].Value -ne 0 -or [int]$s[3].Value -ne 0 -or [int]$s[4].Value -ne 0 -or [int]$s[5].Value -ne 0) { throw 'Instrumented native tests were incomplete' }
+            $raw = @(Get-ChildItem -LiteralPath (Join-Path $owned 'profiles') -File -Filter '*.profraw')
+            if ($raw.Count -eq 0 -or $raw.Count -gt 128 -or ($raw | Measure-Object Length -Sum).Sum -gt 134217728) { throw 'Missing or oversized native profile set' }
+            $merged = Join-Path $owned 'quota.profdata'
+            & $profdata merge -sparse @($raw.FullName) -o $merged 2> (Join-Path $owned 'merge-stderr.txt')
+            if ($LASTEXITCODE -ne 0 -or (Get-Item (Join-Path $owned 'merge-stderr.txt')).Length -ne 0) { throw 'Native profile merge failed or emitted diagnostics' }
+            $jsonPath = Join-Path $owned 'summary.json'
+            & $cov export $binary "--instr-profile=$merged" --summary-only $quota > $jsonPath 2> (Join-Path $owned 'export-stderr.txt')
+            if ($LASTEXITCODE -ne 0 -or (Get-Item (Join-Path $owned 'export-stderr.txt')).Length -ne 0) { throw 'Native LLVM summary export failed or emitted diagnostics' }
+            $export = Get-Content -LiteralPath $jsonPath -Raw | ConvertFrom-Json
+            $files = @($export.data | ForEach-Object { $_.files } | Where-Object { (Normalize $_.filename) -eq (Normalize $quota) })
+            if ($files.Count -ne 1) { throw 'Quota production file missing or duplicated in native coverage mapping' }
+            $lines = $files[0].summary.lines
+            if ([long]$lines.count -le 0 -or [long]$lines.covered -lt 0 -or [long]$lines.covered -gt [long]$lines.count) { throw 'Invalid native executable-line denominator' }
+            $lcov = Join-Path $owned 'quota.lcov'
+            & $cov export $binary "--instr-profile=$merged" --format=lcov $quota > $lcov 2> (Join-Path $owned 'lcov-stderr.txt')
+            if ($LASTEXITCODE -ne 0 -or (Get-Item (Join-Path $owned 'lcov-stderr.txt')).Length -ne 0) { throw 'Native LLVM line export failed or emitted diagnostics' }
+            $mapped = @{}
+            $selected = $false
+            foreach ($line in Get-Content -LiteralPath $lcov) {
+              if ($line.StartsWith('SF:')) { $selected = (Normalize $line.Substring(3)) -eq (Normalize $quota) }
+              elseif ($selected -and $line -match '^DA:(\d+),(\d+)(?:,.*)?$') {
+                $number = [int]$Matches[1]; $hits = [long]$Matches[2]
+                if (!$mapped.ContainsKey($number) -or $mapped[$number] -lt $hits) { $mapped[$number] = $hits }
+              }
+              elseif ($line -eq 'end_of_record') { $selected = $false }
+            }
+            $uncovered = @($mapped.Keys | Where-Object { $mapped[$_] -eq 0 } | Sort-Object)
+            if ($mapped.Count -ne [long]$lines.count -or ($mapped.Count - $uncovered.Count) -ne [long]$lines.covered) { throw 'LLVM summary/line-map mismatch' }
+            Save-Compact 'windows-quota-coverage-uncovered.tsv' ((@('line') + @($uncovered | ForEach-Object { [string]$_ })) -join "`n")
+            foreach ($pin in $pins) { if ((Sha $pin.path) -ne $pin.sha256) { throw "Coverage source changed: $($pin.path)" } }
+            if ((Sha $binary) -ne $binaryHash -or (Sha $original) -ne $binaryHash) { throw 'Coverage binary changed during collection' }
+            foreach ($tool in $tools) { if ((Sha $tool.path) -ne $tool.sha256) { throw 'Coverage LLVM tool changed' } }
+            if ((Sha $rustcPath) -ne $rustcHash) { throw 'Coverage compiler changed' }
+            $dirty = @(& git status --porcelain -- crates/spiralcore-storage-windows)
+            if ($LASTEXITCODE -ne 0 -or $dirty.Count -ne 0) { throw 'Coverage changed committed storage inputs' }
+            $branch = $files[0].summary.branches
+            $branchResult = if ($null -eq $branch -or [long]$branch.count -eq 0) { 'NA: no branch mappings' } else { @{ count = $branch.count; covered = $branch.covered; percent = $branch.percent } }
+            $pass = ([long]$lines.covered * 100) -ge ([long]$lines.count * 80)
+            $receipt = [ordered]@{
+              source = $source; target = $env:NATIVE_TARGET; runner_os = $env:RUNNER_OS; runner_arch = $env:RUNNER_ARCH
+              run = $env:GITHUB_RUN_ID; attempt = $env:GITHUB_RUN_ATTEMPT; scope = 'native Windows production quota.rs; entire new file'
+              tests = @{ listed = 2; passed = 2; failed = 0; ignored = 0; filtered = 0; serial = $true }
+              lines = @{ count = $lines.count; covered = $lines.covered; percent = (100.0 * $lines.covered / $lines.count); minimum_percent = 80; passed = $pass }
+              branches = $branchResult; binary_sha256 = $binaryHash; binary_original = $original; binary_copy = $binary
+              rustc = $rustVersion; rustc_path = $rustcPath; rustc_sha256 = $rustcHash; tools = $tools; flags = $env:RUSTFLAGS
+              raw_profiles = @($raw | ForEach-Object { @{ name = $_.Name; bytes = $_.Length; sha256 = (Sha $_.FullName) } })
+              profdata_sha256 = (Sha $merged); summary_export_sha256 = (Sha $jsonPath); lcov_export_sha256 = (Sha $lcov)
+              raw_storage = $owned; source_and_binary_pins_stable = $true
+              classification = 'instrumented correctness/coverage only; exclude all timings from quota microbenchmark performance'
+            }
+            Save-Compact 'windows-quota-coverage-summary.json' ($receipt | ConvertTo-Json -Depth 8)
+            $compact = @(Get-ChildItem -Path "$out/windows-quota-coverage-*" -File)
+            if (($compact | Measure-Object Length -Sum).Sum -gt 262144) { throw 'Coverage evidence exceeds 256 KiB compact budget' }
+            if (!$pass) { throw 'Native Windows quota production executable-line coverage is below 80 percent' }
+          } finally {
+            foreach ($name in $saved.Keys) { [Environment]::SetEnvironmentVariable($name, $saved[$name], 'Process') }
+            Write-Output "Native quota coverage raw data retained only on runner: $owned"
+          }
       - name: Execute nonzero canonical service, receipt, epoch, sender and TCP tests
         run: |
           $ErrorActionPreference = 'Stop'

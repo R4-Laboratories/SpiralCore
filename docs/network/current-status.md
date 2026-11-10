@@ -1,7 +1,7 @@
 # Networking delivery status
 
-Snapshot: **2026-11-05**, checked against published `origin/main`
-`72415e7c9b92e6ff95342d1bfd23daef6d479e32` and the live GitHub issue graph.
+Snapshot: **2026-11-10**, checked against published `origin/main`
+`dc7098fcb328138c6d880f77f13fad99ac114738` and the live GitHub issue graph.
 This page separates accepted components, measured experiments and unmerged work.
 The [README](../../README.md) is the architecture/results entry point;
 [issue #42](https://github.com/R4-Laboratories/SpiralCore/issues/42) remains the
@@ -20,7 +20,7 @@ delivery authority. The complete MVM contribution is **not finished**.
 | FlowMux paired stream component | Authenticated TCP/TLS/object mapping, monotonic fatal delivery fencing and original FIN serialization | [PR72 release](evidence/2026-11-03-flowmux/pr72-release.md) |
 | QUIC object finish custody | Original-deadline terminal ownership and retained fault evidence | [Finish packet](evidence/2026-11-03-object-finish/README.md) |
 
-The latest FlowMux source is [PR72](https://github.com/R4-Laboratories/SpiralCore/pull/72),
+The earlier FlowMux baseline is [PR72](https://github.com/R4-Laboratories/SpiralCore/pull/72),
 merged at `25a1c786263afcc0a955927f10b441cea401dbd2`. Its
 [PR77 evidence publication](https://github.com/R4-Laboratories/SpiralCore/pull/77)
 preserves the older baseline and rejected intermediate rather than relabeling
@@ -29,6 +29,24 @@ role**, across nine nonzero scopes, with original ZIP digests and inner checksum
 verified. These are 34 tests repeated across seven native process roles, not
 238 distinct tests, cross-platform network pairs, or booted MVMs.
 
+The current published FlowMux readiness/closure successor is
+[PR104](https://github.com/R4-Laboratories/SpiralCore/pull/104), merged at
+`4f9b4fbbf4ae2ea2d1b5c18550bb26ded7372485`. Its exact-source seven native
+process roles each passed 47 component tests and strict Clippy. The
+[report](evidence/2026-11-06-flowmux-readiness-main/README.md) retains the
+failed Windows wake and macOS fixture attempts. This is accepted component
+progress, not installed MVM or WAN qualification.
+
+[PR106](https://github.com/R4-Laboratories/SpiralCore/pull/106) remains an
+unmerged ordered-cache, authenticated-scope and Windows quota successor.
+At `8a109ae4`, all four Linux/macOS FlowMux roles passed their full stages;
+all three Windows roles still missed the unchanged 4,096-block/240-second
+sustained gate, with current scopes and bounded retention. The separate
+seven-role portable matrix at `d6e3d669` passed. The
+[recorded results](evidence/2026-11-10-ordered-scope/README.md) distinguish
+those scopes and preserve every failed native artifact. Optional bounded
+timing and native Windows coverage are being added before further optimization.
+
 [PR #95](https://github.com/R4-Laboratories/SpiralCore/pull/95) adds canonical
 transport-binding revocation to the mailbox adapter. Live Call and Reply keep
 both checked policy generations through transport admission. Prepared receipts
@@ -36,7 +54,7 @@ recheck the source and return bindings before sending. The installed MVM owner
 still needs to distribute current revocations and restore verified policy before
 restart admission.
 
-On the merged tree, each of seven native process roles passed 113 mailbox
+On that earlier merged tree, each of seven native process roles passed 113 mailbox
 tests, 24 storage/publication tests and 34 FlowMux component tests. The locked
 Linux host job also passed its host and shared conformance suites, strict Clippy
 and the guest-entry build check. The matrix covers native process roles.
