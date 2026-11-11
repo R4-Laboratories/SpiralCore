@@ -1,0 +1,22 @@
+
+running 1 test
+test controlled_startup_distinguishes_missing_from_canonical_provisioning ... STARTUP_PRECONDITION_WITNESS {"first_error":"Error: open existing canonical host-agent provisioning at <fixture-home>/host-agent/local/resource-owner-v1; missing or legacy provisioning requires canonical reconciliation","first_error_truncated":false,"fixture_adopted_reaped":0,"original_collections":0,"prior_resource_epoch":0,"profile":"explicit_unprovisioned_private_home","ready":0,"trace_bytes":232,"trace_truncated":false,"worker_code":1}
+STARTUP_PRECONDITION_WITNESS {"first_error":null,"first_error_truncated":false,"fixture_adopted_reaped":0,"original_collections":1,"prior_resource_epoch":0,"profile":"canonical_absent_home_provisioned","ready":1,"trace_bytes":1010,"trace_truncated":false,"worker_code":42}
+STARTUP_PRECONDITION_WITNESS {"first_error":null,"first_error_truncated":false,"fixture_adopted_reaped":0,"original_collections":1,"prior_resource_epoch":1,"profile":"issued_finished_epoch_missing_journal","ready":1,"trace_bytes":1010,"trace_truncated":false,"worker_code":42}
+
+thread 'controlled_startup_distinguishes_missing_from_canonical_provisioning' (3901980) panicked at crates/mvm-hostd/tests/host_agent_idle_collection.rs:411:13:
+assertion `left == right` failed: nonfresh missing journal cannot silently reset to empty
+  left: Some(42)
+ right: Some(1)
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+FAILED
+
+failures:
+
+failures:
+    controlled_startup_distinguishes_missing_from_canonical_provisioning
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 1 filtered out; finished in 6.08s
+
+Command exited with non-zero status 101
+TEST_WALL_S=6.07 TEST_USER_S=0.00 TEST_SYSTEM_S=0.01 TEST_MAX_RSS_KIB=7740

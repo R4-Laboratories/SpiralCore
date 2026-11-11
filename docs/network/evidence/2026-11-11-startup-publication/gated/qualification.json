@@ -1,0 +1,51 @@
+{
+  "checks": [
+    {
+      "command": [
+        "nice",
+        "-n",
+        "10",
+        "./scripts/cargo.sh",
+        "--direct",
+        "cargo-zigbuild",
+        "check",
+        "--target",
+        "x86_64-unknown-linux-gnu",
+        "--workspace",
+        "--all-targets"
+      ],
+      "exit": 0,
+      "label": "linux-all-targets",
+      "log_sha256": "16750f4fc586bbd393e6ed7b6f50d165c24593edbd4807c64e12ec331848a33f",
+      "wall_seconds": 66.37867162999464
+    },
+    {
+      "command": [
+        "nice",
+        "-n",
+        "10",
+        "./scripts/cargo.sh",
+        "check",
+        "-p",
+        "mvm-conformance",
+        "--all-targets",
+        "--features",
+        "bdd"
+      ],
+      "exit": 0,
+      "label": "bdd-all-targets",
+      "log_sha256": "7dd23b159d57b7c82c75a1508246ffb720c18694ad83edfc29febf3566e15391",
+      "wall_seconds": 33.80895767098991
+    }
+  ],
+  "commit": "081901d0285ccf00d9dd824746354e9f82d8b6ce",
+  "execution": "Both exact gated recipe commands executed directly from workspace cwd",
+  "just_available": false,
+  "recipe_sha256": "e7283610cc326d662c568c5b3949531ebecfbcd2db7c737d8234e84a3ba2c9a8",
+  "scope": "Exact immutable commit compile checks only; earlier runtime composition, failed strict and restart gates remain separate",
+  "shared_target_override": "MVM_DEV_ENV_KEEP_INHERITED=1; owned serialized target",
+  "source_files": 4478,
+  "source_hashes_unchanged": true,
+  "tree": "0aa3bdd86ca0e1ebcaf8778c114f91ece00fec51",
+  "vm_booted": false
+}

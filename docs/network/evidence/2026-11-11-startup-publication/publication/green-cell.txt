@@ -1,0 +1,30 @@
+
+running 11 tests
+test broker::control_prepare::tests::a_registration_cannot_substitute_another_tenants_ingress_budget ... ok
+test broker::control_prepare::tests::a_stopped_cell_refuses_new_registration_before_binding ... ok
+test broker::control_prepare::tests::canceled_io_wait_retains_and_finishes_the_same_blocking_operation ... ok
+test broker::control_prepare::tests::canceled_loan_restores_the_same_original_field_without_dropping_it ... ok
+test broker::control_prepare::tests::failed_io_retains_original_error_and_cannot_replay_its_stage ... ok
+test broker::control_prepare::tests::original_operation_capture_survives_unwind_and_refuses_replacement ... 
+thread 'broker::control_prepare::tests::original_operation_capture_survives_unwind_and_refuses_replacement' (3917980) panicked at crates/mvm-hostd/src/broker/control_prepare.rs:1082:13:
+controlled original-operation waiter unwind
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+ok
+test broker::control_prepare::tests::parked_start_defers_typed_dispatch_and_original_assurance_publication ... 
+running 1 test
+test broker::control_prepare::tests::parked_start_defers_typed_dispatch_and_original_assurance_publication ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2374 filtered out; finished in 0.04s
+
+ok
+test broker::control_prepare::tests::rollback_io_executes_a_distinct_effect_after_new_registration ... ok
+test broker::control_prepare::tests::stopping_a_parked_start_joins_without_releasing_the_original_latch ... ok
+test broker::control_prepare::tests::stopping_an_unreleased_registration_joins_its_original_listener ... ok
+test broker::control_prepare::tests::unwinding_restores_original_custody_before_an_explicit_retry ... 
+thread 'broker::control_prepare::tests::unwinding_restores_original_custody_before_an_explicit_retry' (3917988) panicked at crates/mvm-hostd/src/broker/control_prepare.rs:1137:13:
+controlled preparation unwind
+ok
+
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 2364 filtered out; finished in 0.07s
+
+WALL=0.06 USER=0.00 SYS=0.00 MAXRSS_KIB=18244

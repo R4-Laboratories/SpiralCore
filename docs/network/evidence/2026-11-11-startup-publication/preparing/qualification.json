@@ -1,0 +1,66 @@
+{
+  "schema": "spiralcore.tenant-lifecycle.preparing-turn.v1",
+  "source_status": "reviewed uncommitted two-file slice over98ec9d27",
+  "source_sha256": {
+    "crates/mvm-core/src/tenant_lifecycle.rs": "61f5b35ab96eb75f9db12bb6a131bb5f99d8b3deb56cd17031ffcc5990f8e573",
+    "crates/mvm-core/tests/tenant_lifecycle_coordinator.rs": "b474c709db4f3c3fa4d1ca59ee8bb54381462a2543337022f57a7be48c68fe4f"
+  },
+  "red": {
+    "packet": "/var/tmp/spiralcore-mailbox-worker-owner-20261111/combined-api-red-20261111",
+    "logs": [
+      "core-api-red.jsonl",
+      "core-api-red.stderr",
+      "compiler-diagnostics.json"
+    ],
+    "exit": 101,
+    "expected_missing_with_preparing_errors": 5,
+    "runtime_tests": 0
+  },
+  "green": {
+    "packet": "/var/tmp/spiralcore-mailbox-worker-owner-20261111/preparing-green",
+    "reader_passed": 5,
+    "coordinator_passed": 11,
+    "private_passed": 9,
+    "distinct_selected_passed": 25,
+    "failed": 0,
+    "ignored": 0,
+    "private_filtered": 2058,
+    "private_test_seconds": 0.05,
+    "strict_clippy": {
+      "exit": 0,
+      "scope": "mvm-core --lib --test tenant_lifecycle_coordinator --test tenant_lifecycle -- -D warnings",
+      "reported_cargo_seconds": 6.35
+    }
+  },
+  "execution": {
+    "host": "wick Linux x86_64",
+    "rust": "1.97.1",
+    "release": true,
+    "locked": true,
+    "offline": true,
+    "jobs": 2,
+    "nice": 10,
+    "incremental": false,
+    "umask": "022",
+    "MVM_EMBED": "0"
+  },
+  "source_composition": {
+    "regular_manifest_entries": 4490,
+    "all_before_after_identical": true,
+    "whole_commit_qualification": false
+  },
+  "reviews": {
+    "independent_code_rust": "PASS root",
+    "independent_security_rust": "PASS compliance_review"
+  },
+  "artifacts": {
+    "public.txt": "42c55a8d46373bd386cef8d552cc4518caa12f57a0a9137f960397d596ea46fd",
+    "private.txt": "542c7a78bd1429ca8142b359eb245877d37db1b31a99175d424de3628f2aba0b",
+    "clippy.txt": "9f28fc125ea978d9ec37078f5b87c83bffb6be113642da4d9c812e153cb9f90c"
+  },
+  "limitations": [
+    "Storage coordination only, not permission, service readiness, original Child collection or actual caller integration.",
+    "No VM/WAN, transfer bytes, fidelity, performance or certification workload.",
+    "Original resource custody stays external; callbacks must be short nonblocking memory operations."
+  ]
+}

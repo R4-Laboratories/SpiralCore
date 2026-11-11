@@ -1,0 +1,19 @@
+[
+  "nice",
+  "-n",
+  "10",
+  "/usr/bin/time",
+  "-f",
+  "WALL=%e USER=%U SYS=%S MAXRSS_KIB=%M",
+  "cargo",
+  "test",
+  "--release",
+  "--locked",
+  "--offline",
+  "-p",
+  "mvm-hostd",
+  "--test",
+  "host_agent_idle_collection",
+  "--no-run",
+  "--message-format=json"
+]

@@ -1,0 +1,79 @@
+{
+  "candidate_source_copies": {
+    "candidate-agent-86ad57b3.rs": "86ad57b3dd5c680609eb365f99e76e8ad44d1805b8d0fb16bddafcea4436e432",
+    "candidate-idle-test-83e73bcf.rs": "83e73bcf161d47813726a06878a6f0e6690221223dec04d8c91a03a7a64830f3"
+  },
+  "executable_stable": true,
+  "executables_after": {
+    "/var/tmp/spiralcore-installed-controller.MDjnre/target/release/deps/host_agent_idle_collection-31828ea4c4bbf3a7": "c1b9002959e06289f28bfafcfd180f4529f02b29c96ca3fdb50e9fee1670777b",
+    "/var/tmp/spiralcore-installed-controller.MDjnre/target/release/mvm-host-agent": "1d3d33c9d77028affb85fbf5a630dba5a29437d5541bae270e3451ce44d3f89b",
+    "/var/tmp/spiralcore-installed-controller.MDjnre/target/release/mvm-signer-helper": "23fe0999af2c11c6340ec5801eb98a3946406ad48f0dba61082590d2ce2eed23"
+  },
+  "executables_before": {
+    "/var/tmp/spiralcore-installed-controller.MDjnre/target/release/deps/host_agent_idle_collection-31828ea4c4bbf3a7": "c1b9002959e06289f28bfafcfd180f4529f02b29c96ca3fdb50e9fee1670777b",
+    "/var/tmp/spiralcore-installed-controller.MDjnre/target/release/mvm-host-agent": "1d3d33c9d77028affb85fbf5a630dba5a29437d5541bae270e3451ce44d3f89b",
+    "/var/tmp/spiralcore-installed-controller.MDjnre/target/release/mvm-signer-helper": "23fe0999af2c11c6340ec5801eb98a3946406ad48f0dba61082590d2ce2eed23"
+  },
+  "green": {
+    "build": {
+      "exit": 0,
+      "wall_seconds": 27.827212603995577
+    },
+    "runtime": [
+      {
+        "exit": 0,
+        "log_sha256": "e95041fe7d392fc6d2422e9c07f43426f6a65d2e5fb28f11128b0c2b80825b15",
+        "name": "worker_without_home_refuses_before_owned_startup_effects",
+        "wall_seconds": 0.0023152389912866056
+      },
+      {
+        "exit": 0,
+        "log_sha256": "49df4e5d23694efabdc61ea2444bd75968ec1629d0961fcc51900c65cba2f370",
+        "name": "controlled_startup_distinguishes_missing_from_canonical_provisioning",
+        "wall_seconds": 1.035036844026763
+      },
+      {
+        "exit": 0,
+        "log_sha256": "464d3df34652e57f2d1ae51576af95acd1e0e5b86dc496b4b91df267e14c6435",
+        "name": "idle_42_follows_original_signer_collection",
+        "wall_seconds": 1.032638184959069
+      }
+    ]
+  },
+  "limitations": [
+    "Runtime CPU/RSS not collected; no runtime performance comparison",
+    "No original-four restart/native socket recovery claim",
+    "No ReconciledStopped implementation qualification",
+    "No strict all-target Clippy claim"
+  ],
+  "original_source_copies": {
+    "original-agent-eb878a73.rs": "eb878a7399fbf043a395dc69ee3c2e6cf9d284d630c548399baeb6a7842d670c",
+    "original-idle-collection.rs": "ddc935c3016f46ddbe3dfb881913a3cf97f3b1e3659d83ef7d75c8cb67bba87c"
+  },
+  "red": {
+    "build": {
+      "exit": 0,
+      "wall_seconds": 9.191387099039275
+    },
+    "runtime": [
+      {
+        "exit": 101,
+        "log_sha256": "50d8bb6b7d1e884d3a7dc1f04a0fe24e285ebad3718f26f564432f67f44187fe",
+        "name": "worker_without_home_refuses_before_owned_startup_effects",
+        "wall_seconds": 0.00216812698636204
+      }
+    ]
+  },
+  "scope": "Linux actual worker/signer process startup only; no VM or WAN qualification",
+  "source_count": 4492,
+  "source_stable": true,
+  "strict-home-process-green-20261111_logs": {
+    "controlled_startup_distinguishes_missing_from_canonical_provisioning.txt": "49df4e5d23694efabdc61ea2444bd75968ec1629d0961fcc51900c65cba2f370",
+    "idle_42_follows_original_signer_collection.txt": "464d3df34652e57f2d1ae51576af95acd1e0e5b86dc496b4b91df267e14c6435",
+    "worker_without_home_refuses_before_owned_startup_effects.txt": "e95041fe7d392fc6d2422e9c07f43426f6a65d2e5fb28f11128b0c2b80825b15"
+  },
+  "strict-home-process-red-20261111_logs": {
+    "worker_without_home_refuses_before_owned_startup_effects.txt": "50d8bb6b7d1e884d3a7dc1f04a0fe24e285ebad3718f26f564432f67f44187fe"
+  },
+  "test_prefix_byte_identical": true
+}
