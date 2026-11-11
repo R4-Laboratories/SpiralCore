@@ -1,0 +1,68 @@
+{
+  "schema": "spiralcore.cooperative-owner.strict-restart-qualification.v1",
+  "packet": "/var/tmp/spiralcore-mailbox-worker-owner-20261111/integrated-cooperative-first-20261111",
+  "source_status": "same exact source as focused25/fresh idle positive; no hotfix or overlay between stages",
+  "source_manifest_entries": 4488,
+  "source_before_after_pass": true,
+  "production_agent_signer_before_after_pass": true,
+  "commands": [
+    {
+      "command": "cargo +1.97.1 clippy --release --locked --offline -p mvm-hostd --all-targets -j 2 -- -D warnings",
+      "exit": 101,
+      "wall_seconds": 29.6,
+      "result": "FAIL",
+      "diagnostics": [
+        "unused store_and_loan",
+        "unused JournalSnapshots.original",
+        "unused MutationStartFailure and its original field",
+        "unused MutationCell stopped/begin_mutation",
+        "unused cancel_services",
+        "unused park_start/release_parked_start",
+        "unused MailboxWorkers contains",
+        "984-byte large error variant",
+        "host_agent_idle question_mark style"
+      ]
+    },
+    {
+      "command": "cargo +1.97.1 test --release --locked --offline -p mvm-hostd --test host_agent_restart -j 2 -- --test-threads=1",
+      "exit": 101,
+      "wall_seconds": 51.96,
+      "test_seconds": 40.07,
+      "passed": 0,
+      "failed": 4,
+      "ignored": 0,
+      "filtered": 0,
+      "result": "FAIL",
+      "failure_stage": "all four initial ensure_host_agent_daemon calls timed out before registration or any restart scenario",
+      "fixture_source_sha256": "57c6b3f2014a2ce0684be042765d85c22597625cbff29d785f9e7e0f2faaa33e"
+    }
+  ],
+  "phase1": {
+    "source_fact": "Frozen restart fixture has no explicit resource provisioning. Existing ensure_host_agent_daemon creates spawn/socket directories but never initializes resource owner; current worker opens existing provisioning only.",
+    "inference": "Missing provisioning is sufficient to prevent Ready. Actual earliest worker stderr was not preserved by this old fixture, so no sole-runtime-cause claim is made.",
+    "not_reached": [
+      "initial signed registration",
+      "crash/restart behavior",
+      "stale socket recovery",
+      "journal replay"
+    ]
+  },
+  "actions": {
+    "source_edits": 0,
+    "lint_suppression": false,
+    "deadline_changes": false,
+    "reruns": 0,
+    "cargo_loan_returned_to": "root"
+  },
+  "limitations": [
+    "Fresh idle positive retained separately; these failures do not erase its bounded result.",
+    "Not release-ready; strict and four restart gates remain open.",
+    "No VM, WAN, data-transfer performance or certification claim."
+  ],
+  "artifacts": {
+    "strict-all-targets-attempt1.txt": "b21c2a37556577c4faa692f16fd3fc3e17956d37c163af3ca345f05aa83d3bc0",
+    "original-restart4-attempt1.txt": "05799af6ce8c34c7ab68696e11df3b9d02929a08a7a3bef23a8d4bdceebf397c",
+    "source.attempt2.sha256": "c53094483a087bd9723f461b9cbcdeee055589b931f090d889714e1508595765",
+    "strict-restart.production-before.sha256": "db58c3e88fb2bb41221b15cc60809d401a3163fbe4a2256f6f7a4ca8f7f85fa6"
+  }
+}
