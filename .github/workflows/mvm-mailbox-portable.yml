@@ -102,7 +102,7 @@ jobs:
           $listing | Set-Content portable-evidence/windows-primitives-list.txt
           if ($code -ne 0) { throw 'Cannot enumerate Windows storage primitives' }
           $listed = [regex]::Matches($listing, '(?m)^.+: test\r?$').Count
-          if ($listed -ne 2) { throw "Expected two Windows storage primitive tests, listed $listed" }
+          if ($listed -ne 3) { throw "Expected three Windows storage primitive tests, listed $listed" }
           $log = (& cargo @cargoArgs -- --format pretty --color never --show-output --test-threads=1 2>&1 | Out-String)
           $code = $LASTEXITCODE
           $log | Set-Content portable-evidence/windows-primitives.txt
@@ -113,7 +113,7 @@ jobs:
           if ([int]$s[1].Value -ne $listed -or [int]$s[2].Value -ne 0 -or [int]$s[3].Value -ne 0 -or [int]$s[4].Value -ne 0 -or [int]$s[5].Value -ne 0) {
             throw 'Incomplete native Windows storage primitive coverage'
           }
-          @{ target = 'windows-primitives'; listed = $listed; passed = 2; failed = 0; ignored = 0; filtered = 0 } |
+          @{ target = 'windows-primitives'; listed = $listed; passed = 3; failed = 0; ignored = 0; filtered = 0 } |
             ConvertTo-Json | Set-Content portable-evidence/windows-primitives-counts.json
           cargo "+1.97.1-$env:NATIVE_TARGET" clippy --locked --manifest-path $crate --all-targets -- -D warnings
           if ($LASTEXITCODE -ne 0) { throw 'Windows primitive Clippy failed' }
@@ -397,7 +397,7 @@ jobs:
               $listExit = $LASTEXITCODE
               Save-Compact 'windows-quota-coverage-list.txt' $listing
               $listed = [regex]::Matches($listing, '(?m)^.+: test\r?$').Count
-              if ($listExit -ne 0 -or $listed -ne 2) { throw 'Instrumented native enumeration must list exactly two primitives' }
+              if ($listExit -ne 0 -or $listed -ne 3) { throw 'Instrumented native enumeration must list exactly three primitives' }
               $listingProfiles = @(Find-OwnedProfiles 'enumeration')
               foreach ($file in $listingProfiles) { Remove-Item -LiteralPath $file.FullName }
               if (@(Find-OwnedProfiles 'before-tests').Count -ne 0) { throw 'Enumeration profiles remained before test execution' }
@@ -409,7 +409,7 @@ jobs:
             $summaries = [regex]::Matches($log, 'test result: ok\. (\d+) passed; (\d+) failed; (\d+) ignored; (\d+) measured; (\d+) filtered out;')
             if ($testExit -ne 0 -or $summaries.Count -ne 1) { throw 'Instrumented native primitives failed' }
             $s = $summaries[0].Groups
-            if ([int]$s[1].Value -ne 2 -or [int]$s[2].Value -ne 0 -or [int]$s[3].Value -ne 0 -or [int]$s[4].Value -ne 0 -or [int]$s[5].Value -ne 0) { throw 'Instrumented native tests were incomplete' }
+            if ([int]$s[1].Value -ne 3 -or [int]$s[2].Value -ne 0 -or [int]$s[3].Value -ne 0 -or [int]$s[4].Value -ne 0 -or [int]$s[5].Value -ne 0) { throw 'Instrumented native tests were incomplete' }
             if ($raw.Count -eq 0) { throw 'Missing native profiles after completed instrumented tests; see owned-directory discovery receipt' }
             if (@($raw | Where-Object { $_.Length -eq 0 }).Count -ne 0) { throw 'Empty native profile refused' }
             $merged = Join-Path $owned 'quota.profdata'
@@ -508,7 +508,7 @@ jobs:
             $receipt = [ordered]@{
               source = $source; target = $env:NATIVE_TARGET; runner_os = $env:RUNNER_OS; runner_arch = $env:RUNNER_ARCH
               run = $env:GITHUB_RUN_ID; attempt = $env:GITHUB_RUN_ATTEMPT; scope = 'native Windows quota.rs production lines; only source-pinned cfg(test) hooks excluded'
-              tests = @{ listed = 2; passed = 2; failed = 0; ignored = 0; filtered = 0; serial = $true }
+              tests = @{ listed = 3; passed = 3; failed = 0; ignored = 0; filtered = 0; serial = $true }
               raw_lines = @{ count = $lines.count; covered = $lines.covered; percent = (100.0 * $lines.covered / $lines.count) }
               raw_physical_lines = @{ count = $mapped.Count; covered = ($mapped.Count - $uncovered.Count); method = 'distinct LCOV DA physical source lines' }
               lines = @{ count = $production.Count; covered = $productionCovered; percent = (100.0 * $productionCovered / $production.Count); minimum_percent = 80; passed = $pass }

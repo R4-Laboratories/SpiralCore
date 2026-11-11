@@ -105,6 +105,48 @@ jobs:
             $rows | ConvertTo-Json -Depth 6 | Set-Content flowmux-evidence/metadata-pairs.json
           }
           if (git status --porcelain -- crates/spiralcore-transfer/Cargo.lock) { throw 'Locked metadata execution changed source' }
+      - name: Execute native existing-file descriptor comparison
+        if: runner.os == 'Windows'
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $false
+          $cargoArgs = @("+1.97.1-$env:NATIVE_TARGET", 'test', '--release', '--locked', '--manifest-path',
+            'crates/spiralcore-storage-windows/Cargo.toml', '--lib',
+            'tests::existing_open_descriptor_elision_preserves_guards_and_records_paired_cost')
+          $listing = (& cargo @cargoArgs -- --list --format terse 2>&1 | Out-String)
+          $code = $LASTEXITCODE
+          $listing | Set-Content flowmux-evidence/existing-open-list.txt
+          $listed = [regex]::Matches($listing, '(?m)^.+: test\r?$').Count
+          if ($code -ne 0 -or $listed -ne 1) { throw "Expected one native existing-open comparison, listed $listed" }
+          $log = (& cargo @cargoArgs -- --exact --show-output --test-threads=1 --color never 2>&1 | Out-String)
+          $code = $LASTEXITCODE
+          $log | Set-Content flowmux-evidence/existing-open-tests.txt
+          $log | Write-Output
+          $summaries = [regex]::Matches($log, 'test result: ok\. (\d+) passed; (\d+) failed; (\d+) ignored; (\d+) measured; (\d+) filtered out;')
+          if ($code -ne 0 -or $summaries.Count -ne 1) { throw 'Native existing-open comparison failed' }
+          $g = $summaries[0].Groups
+          if ([int]$g[1].Value -ne 1 -or [int]$g[2].Value -ne 0 -or [int]$g[3].Value -ne 0 -or [int]$g[4].Value -ne 0) { throw 'Incomplete existing-open comparison' }
+          $pairs = [regex]::Matches($log, '(?m)^EXISTING_OPEN_PAIR (.+)\r?$')
+          $setup = [regex]::Matches($log, '(?m)^EXISTING_OPEN_SETUP (.+)\r?$')
+          $guards = [regex]::Matches($log, '(?m)^EXISTING_OPEN_GUARDS (.+)\r?$')
+          if ($pairs.Count -ne 6 -or $setup.Count -ne 1 -or $guards.Count -ne 1) { throw 'Missing existing-open paired measurements or guards' }
+          $rows = @($pairs | ForEach-Object { $_.Groups[1].Value | ConvertFrom-Json })
+          for ($i = 0; $i -lt 6; $i++) {
+            $row = $rows[$i]
+            $order = if ($i % 2 -eq 0) { 'old-new' } else { 'new-old' }
+            if ($row.trial -ne $i -or $row.order -ne $order -or $row.exact_readbacks -ne $true -or $row.files -ne 64 -or $row.bytes -ne 1048576) { throw 'Incomplete alternating existing-open readback' }
+          }
+          $guardRow = $guards[0].Groups[1].Value | ConvertFrom-Json
+          foreach ($name in @('exact_readbacks','noninherit','owner_dacl_unchanged','missing','directory','hardlink','conflicting_writer','broad_acl_no_repair','reparse_ancestor')) {
+            if ($guardRow.$name -ne $true) { throw "Missing existing-open guard: $name" }
+          }
+          @{ listed = $listed; passed = 1; failed = 0; ignored = 0;
+            filtered_other_storage_tests = [int]$g[5].Value; setup = ($setup[0].Groups[1].Value | ConvertFrom-Json);
+            pairs = $rows; guards = $guardRow; scope = 'native checked-open and full-read comparison; not network or MVM'
+          } | ConvertTo-Json -Depth 6 | Set-Content flowmux-evidence/existing-open-results.json
+          & cargo "+1.97.1-$env:NATIVE_TARGET" clippy --release --locked --manifest-path crates/spiralcore-storage-windows/Cargo.toml --all-targets -- -D warnings 2>&1 | Tee-Object flowmux-evidence/existing-open-clippy.txt
+          if ($LASTEXITCODE -ne 0) { throw 'Strict Windows storage Clippy failed' }
+          if (git status --porcelain -- crates/spiralcore-storage-windows/Cargo.lock) { throw 'Locked existing-open execution changed source' }
       - name: Strict metadata and transfer warnings
         run: |
           & cargo "+1.97.1-$env:NATIVE_TARGET" clippy --release --locked --keep-going --manifest-path crates/spiralcore-transfer/Cargo.toml --all-targets -- -D warnings 2>&1 | Tee-Object flowmux-evidence/metadata-clippy.txt

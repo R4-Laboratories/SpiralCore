@@ -389,13 +389,41 @@ fn open(path: &Path, access: u32, sharing: u32, creation: u32) -> Result<File> {
     let path = normalized(path)?;
     let _parents = ancestors(&path)?;
     let sid = Sid::current()?;
+    let file = if creation == OPEN_EXISTING {
+        // CreateFileW ignores creation descriptors for existing files. NULL
+        // attributes also retain the original non-inheritable handle policy.
+        // Fresh identity and the consumed-handle checks below remain mandatory.
+        raw_open(&path, access | READ_CONTROL, sharing, creation, null())?
+    } else {
+        let descriptor = sid.descriptor()?;
+        let security = SECURITY_ATTRIBUTES {
+            nLength: size_of::<SECURITY_ATTRIBUTES>() as u32,
+            lpSecurityDescriptor: descriptor.0,
+            bInheritHandle: 0,
+        };
+        raw_open(&path, access | READ_CONTROL, sharing, creation, &security)?
+    };
+    private(&file, false, &sid)?;
+    Ok(file)
+}
+#[cfg(test)]
+pub(crate) fn legacy_existing_read(path: &Path) -> Result<File> {
+    let path = normalized(path)?;
+    let _parents = ancestors(&path)?;
+    let sid = Sid::current()?;
     let descriptor = sid.descriptor()?;
     let security = SECURITY_ATTRIBUTES {
         nLength: size_of::<SECURITY_ATTRIBUTES>() as u32,
         lpSecurityDescriptor: descriptor.0,
         bInheritHandle: 0,
     };
-    let file = raw_open(&path, access | READ_CONTROL, sharing, creation, &security)?;
+    let file = raw_open(
+        &path,
+        GENERIC_READ | READ_CONTROL,
+        FILE_SHARE_READ,
+        OPEN_EXISTING,
+        &security,
+    )?;
     private(&file, false, &sid)?;
     Ok(file)
 }

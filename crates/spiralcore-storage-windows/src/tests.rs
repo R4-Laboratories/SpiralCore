@@ -470,3 +470,141 @@ fn windows_junction_at_root_or_ancestor_refuses_without_target_mutation() {
     assert!(fs::read_dir(&target).unwrap().next().is_none());
     fs::remove_dir(&junction).unwrap();
 }
+
+// Same-executable control: the previous production existing-file path creates
+// a descriptor that CreateFileW ignores. Never used by production callers.
+fn legacy_existing_read(path: &Path) -> Result<std::fs::File> {
+    crate::windows::legacy_existing_read(path)
+}
+#[test]
+fn existing_open_descriptor_elision_preserves_guards_and_records_paired_cost() {
+    use std::io::Read;
+    use std::os::windows::io::AsRawHandle;
+    use windows_sys::Win32::Foundation::{GetHandleInformation, HANDLE_FLAG_INHERIT};
+    const FILES: usize = 64;
+    const BYTES: usize = 16 * 1024;
+    let fixture = Fixture::new();
+    private_dir(&fixture.0).unwrap();
+    let namespace = fixture.0.join("existing-open");
+    private_dir(&namespace).unwrap();
+    let mut records = Vec::with_capacity(FILES);
+    let (_, setup_us, setup_cpu) = timed(|| {
+        for index in 0..FILES {
+            let mut bytes = vec![0x61; BYTES];
+            bytes[..8].copy_from_slice(&(index as u64).to_le_bytes());
+            bytes[BYTES - 1] = 0;
+            let path = namespace.join(format!("{index}.object"));
+            let mut file = create_new_file(&path).unwrap();
+            file.write_all(&bytes).unwrap();
+            file.sync_all().unwrap();
+            drop(file);
+            records.push((path, bytes));
+        }
+    });
+    type Reader = fn(&Path) -> Result<std::fs::File>;
+    let check = |read: Reader| {
+        for (path, bytes) in &records {
+            let mut file = read(path).unwrap();
+            let mut actual = Vec::new();
+            file.read_to_end(&mut actual).unwrap();
+            assert_eq!(&actual, bytes, "exact length and original bytes");
+        }
+    };
+    let (_, warm_us, warm_cpu) = timed(|| {
+        check(legacy_existing_read);
+        check(open_read);
+    });
+    let serialized: u64 = records
+        .iter()
+        .map(|(p, _)| fs::metadata(p).unwrap().len())
+        .sum();
+    assert_eq!(serialized, (FILES * BYTES) as u64);
+    assert!(serialized < 2 * 1024 * 1024);
+    eprintln!("EXISTING_OPEN_SETUP {{\"files\":{FILES},\"payload_bytes_each\":{BYTES},\"serialized_bytes\":{serialized},\"setup_wall_us\":{setup_us},\"setup_process_cpu_100ns\":{setup_cpu},\"warm_wall_us\":{warm_us},\"warm_process_cpu_100ns\":{warm_cpu},\"cold_cache_claim\":false,\"scope\":\"synthetic checked native opens and full exact reads; not network or MVM\"}}");
+    for trial in 0..6 {
+        let (old, candidate) = if trial % 2 == 0 {
+            let old = timed(|| check(legacy_existing_read));
+            (old, timed(|| check(open_read)))
+        } else {
+            let candidate = timed(|| check(open_read));
+            (timed(|| check(legacy_existing_read)), candidate)
+        };
+        eprintln!("EXISTING_OPEN_PAIR {{\"trial\":{trial},\"order\":\"{}\",\"files\":{FILES},\"bytes\":{serialized},\"old_wall_us\":{},\"candidate_wall_us\":{},\"old_process_cpu_100ns\":{},\"candidate_process_cpu_100ns\":{},\"exact_readbacks\":true}}", if trial % 2 == 0 { "old-new" } else { "new-old" }, old.1, candidate.1, old.2, candidate.2);
+    }
+    for (path, _) in &records {
+        let before = Acl::read(path);
+        let owner = before.owner_sid();
+        let descriptor = before.bytes();
+        for read in [legacy_existing_read as Reader, open_read] {
+            let file = read(path).unwrap();
+            let mut flags = 0;
+            // SAFETY: live file handle and valid writable flag output.
+            assert_ne!(
+                unsafe { GetHandleInformation(file.as_raw_handle(), &mut flags) },
+                0
+            );
+            assert_eq!(flags & HANDLE_FLAG_INHERIT, 0, "non-inheritable handle");
+            assert_eq!(Acl::read(path).owner_sid(), owner);
+            assert_eq!(
+                Acl::read(path).bytes(),
+                descriptor,
+                "no descriptor mutation"
+            );
+        }
+    }
+    let refuse = |path: &Path| {
+        for read in [legacy_existing_read as Reader, open_read] {
+            assert!(matches!(read(path), Err(Error::Storage)));
+        }
+    };
+    refuse(&namespace.join("missing.object"));
+    refuse(&namespace);
+    let path = &records[0].0;
+    let alias = namespace.join("hardlink.alias");
+    fs::hard_link(path, &alias).unwrap();
+    refuse(path);
+    fs::remove_file(alias).unwrap();
+    let writer = fs::OpenOptions::new().write(true).open(path).unwrap();
+    refuse(path);
+    drop(writer);
+    let broad = namespace.join("broad.object");
+    let mut file = create_new_file(&broad).unwrap();
+    file.write_all(b"owned broad ACL guard").unwrap();
+    drop(file);
+    replace_acl(&broad, "D:P(A;;FA;;;WD)", true);
+    let descriptor = Acl::read(&broad).bytes();
+    let owner = Acl::read(&broad).owner_sid();
+    refuse(&broad);
+    assert_eq!(Acl::read(&broad).bytes(), descriptor, "no ACL repair");
+    assert_eq!(Acl::read(&broad).owner_sid(), owner, "no owner repair");
+    let powershell = PathBuf::from(std::env::var_os("SystemRoot").unwrap())
+        .join("System32/WindowsPowerShell/v1.0/powershell.exe");
+    let output = std::process::Command::new(powershell)
+        .current_dir(&fixture.0)
+        .env_remove("PSModulePath")
+        .args(["-NoLogo", "-NoProfile", "-NonInteractive", "-Command",
+            "$ErrorActionPreference='Stop'; New-Item -ItemType Junction -Path 'existing-junction' -Target (Get-Item -LiteralPath 'existing-open').FullName | Out-Null"])
+        .output().unwrap();
+    assert!(
+        output.status.success(),
+        "owned junction setup failed: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let junction = fixture.0.join("existing-junction");
+    assert_ne!(
+        fs::symlink_metadata(&junction).unwrap().file_attributes() & FILE_ATTRIBUTE_REPARSE_POINT,
+        0
+    );
+    refuse(&junction.join(path.file_name().unwrap()));
+    fs::remove_dir(junction).unwrap();
+    check(legacy_existing_read);
+    check(open_read);
+    eprintln!("EXISTING_OPEN_GUARDS {{\"exact_readbacks\":true,\"noninherit\":true,\"owner_dacl_unchanged\":true,\"missing\":true,\"directory\":true,\"hardlink\":true,\"conflicting_writer\":true,\"broad_acl_no_repair\":true,\"reparse_ancestor\":true}}");
+    let root = fixture.0.clone();
+    drop(records);
+    drop(fixture);
+    assert!(
+        !root.exists(),
+        "owned synthetic store cleanup after verification"
+    );
+}
