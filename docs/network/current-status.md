@@ -1,7 +1,7 @@
 # Networking delivery status
 
 Snapshot: **2026-11-11**, checked against published `origin/main`
-`a1634ec46e0741df76eff325401357c9fdfaf2d6` and the live GitHub issue graph.
+`7671039cb3e7aeeac23cfa3f45995f919645080f` and the live GitHub issue graph.
 This page separates accepted components, measured experiments and unmerged work.
 The [README](../../README.md) is the architecture/results entry point;
 [issue #42](https://github.com/R4-Laboratories/SpiralCore/issues/42) remains the
@@ -50,17 +50,27 @@ retains earlier source-scoped failures.
 
 ## Active upstream MVM coordination
 
-The verified-header/Reply-authority API contribution is open upstream as draft
-[MVM #5328](https://github.com/tinylabscom/mvm/pull/5328), with head
-`ee632fbb3a746709c496a95f167559a01a19fcaf`. It is a scoped interface contribution;
-the complete networking delivery remains unfinished. Ari and this contribution
-stream have [agreed ownership](https://github.com/tinylabscom/mvm/pull/5328#issuecomment-6787136945):
-Ari owns the new ciphertext journal/dedup/recovery module; we own the mailbox
-service/launch/process and guest-local framing/spool, typed operations, aggregate
-budgets and lifecycle. The [journal handoff proposal](../specs/2026-11-10-canonical-mailbox-journal-handoff.md)
-records the admission and receipt boundary. Durable acceptance remains disabled
-until journal, trusted rollback anchor, recoverable custody and service integration
-are qualified.
+The verified-admission/Reply-authority API contribution is open upstream as draft
+[MVM #5328](https://github.com/tinylabscom/mvm/pull/5328), with verified head
+`78d30afb8c2d988657951933b01dad2945b7328a`. Its implemented admission capsule
+retains the original ciphertext and canonical verification result; the journal
+receives a borrowed authenticated view with no plaintext accessor. The
+[capsule qualification](evidence/2026-11-11-verified-admission/README.md) records
+24 crypto tests, seven privacy compile-fail checks, strict scoped Clippy and
+independent code/Rust/security reviews. These are API checks, not durable service
+or native/WAN acceptance.
+
+The [original ownership agreement](https://github.com/tinylabscom/mvm/pull/5328#issuecomment-6787136945)
+assigned the journal to Ari and service/launch/process integration to this stream.
+A newer private guest-reader/journal handoff also claims those service paths.
+We have [requested the exact source and reconciled file ownership](https://github.com/tinylabscom/mvm/pull/5328#issuecomment-6790212802)
+before editing them. The [journal handoff proposal](../specs/2026-11-10-canonical-mailbox-journal-handoff.md)
+records the proposed admission/receipt boundary; its initial ownership paragraph
+is historical, pending that reconciliation. The separate original-child broker
+owner continues without modifying those private service files. Durable acceptance
+requires current destination/Receive authority, resource admission, journal and
+independent anchor commit, recoverable history-key custody and qualified service
+integration; the capsule itself establishes none of those later decisions.
 
 A narrow SDK fix is submitted separately as
 [MVM #5336](https://github.com/tinylabscom/mvm/pull/5336), head
@@ -78,14 +88,24 @@ missing lifetime owner/collected exit. This is one local raw-mailbox case,
 without wire counts, guest CPU, compression/zstd comparison or WAN qualification.
 
 The proposed reliable local-service contract and bounded frame codec are public
-on the [development branch](https://github.com/Casey-allard/mvm/tree/811fd9c5994df088c674c97ead3b353855245054).
-That branch includes upstream through `28afdfe9`, and needs the SDK fix and later
-upstream reconciliation before another qualified service build. It does not
-activate a reliable service. The current inspected upstream is `46d50a5f`;
-QueueFull retention and detached lifecycle changes from #5325 have merged, but
-lost-verdict recovery, bidirectional typed operations and aggregate service
-ownership remain implementation gates. Cross-host key establishment, final
-native/WAN/platform acceptance and the security/FIPS profile remain open.
+on the [development branch](https://github.com/Casey-allard/mvm/tree/89c24132851b7b7e78eb2ec4e45a3153f2718247).
+It incorporates the SDK grant fix and upstream through `46d50a5f`; runtime
+activation remains unavailable, and qualification of the composed source is
+separate from earlier component tests. QueueFull retention and detached lifecycle
+changes from upstream #5325 have merged. Current upstream `a707f5e8` also includes
+[#5339](https://github.com/tinylabscom/mvm/pull/5339), which stops replying to a
+peer that sent no frame; that host-side service fix must be incorporated before
+new integrated acceptance. Its live HVF recheck remains separate. Lost-verdict
+recovery, bidirectional typed
+operations, aggregate service ownership, cross-host key establishment and final
+native/WAN/platform/security acceptance remain open.
+
+The [inactive worker-control foundation](evidence/2026-11-11-mailbox-worker-foundation/README.md)
+is public at MVM fork `b08bbebd`. Twenty control/descriptor tests pass on its frozen
+Linux source. It adds no active production child owner; non-Linux delegation
+remains Unsupported at that revision. Original-child runtime ownership is a
+separate development successor. Native delivery, cleanup and the complete
+production signer/worker integration remain required by issue #111.
 
 [PR #95](https://github.com/R4-Laboratories/SpiralCore/pull/95) adds canonical
 transport-binding revocation to the mailbox adapter. Live Call and Reply keep
