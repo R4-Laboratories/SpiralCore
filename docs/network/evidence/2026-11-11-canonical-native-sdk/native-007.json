@@ -1,0 +1,43 @@
+{
+  "source": "18b58e1ad2262a1c0bfa23d51f8e5679d3376f60",
+  "scope": "one canonical guest-to-host mailbox; no object-v1/WAN qualification",
+  "status": "failed",
+  "expected_bytes": 1024,
+  "expected_sha256": "3cafacf7f3f4628dcc4da6be8a679c3d283911100632476924fc76fa0e2a20ad",
+  "received_bytes": 1024,
+  "received_sha256": "3cafacf7f3f4628dcc4da6be8a679c3d283911100632476924fc76fa0e2a20ad",
+  "exact_readback": true,
+  "setup_wall_ns": 658947536,
+  "receive_wall_ns": 104021653,
+  "receive_probes": 2,
+  "receive_wait_class": "at most five bounded external probes; functional wait, not performance-qualified",
+  "lifecycle_wall_ns": 2821557744,
+  "host_orchestrator_cpu_ns": 475934232,
+  "guest_cpu": "unavailable",
+  "wire_bytes": "unavailable; not inferred from payload",
+  "stop": "canonical_stop_ok",
+  "cleanup": "canonical_cleanup_ok",
+  "error": "pidfd observed helper exit, but the original helper remained zombie (Z) and was not collected",
+  "processes": [
+    {
+      "role": "vmm",
+      "executable_sha256": "99ad0f5cd0514a88aad0e9ae8cfdb3cc3b4ab9d190e1194602406c786b5de7a5",
+      "initial_user_ticks": 6,
+      "initial_system_ticks": 2,
+      "before_stop_user_ticks": 6,
+      "before_stop_system_ticks": 3,
+      "final_status": "original_process_exited_and_absent_or_pid_reused"
+    },
+    {
+      "role": "mailbox_helper",
+      "executable_sha256": "27852a39f045a0a5eeb0d3b5a64aacec2ae4a5bbc046b9322aef00adaa90e2ea",
+      "initial_user_ticks": 0,
+      "initial_system_ticks": 0,
+      "before_stop_user_ticks": 0,
+      "before_stop_system_ticks": 0,
+      "final_status": "exited_not_reaped"
+    }
+  ],
+  "original_private_report_sha256": "df6963be9a809d28f1db322c778ba9a2f8e090d4a1d02b294d0bc35839971dd8",
+  "redaction": "Private paths, numeric process identities and plan ID excluded; original result/timing fields retained."
+}

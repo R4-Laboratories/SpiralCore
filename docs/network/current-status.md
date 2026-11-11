@@ -68,8 +68,14 @@ A narrow SDK fix is submitted separately as
 mailbox grant before canonical admission. The fix forwards it for that start
 while ordinary restart remains ungranted. The [recorded regression qualification](evidence/2026-11-11-mvm-sdk-mailbox/README.md)
 contains actual RED/GREEN, 55 passing launch-module tests, overlapping 31-test
-persistent scope, strict Clippy, source hashes and limitations. It does not yet
-establish a successful current-runtime native transfer.
+persistent scope, strict Clippy, source hashes and limitations. A subsequent [canonical native diagnostic](evidence/2026-11-11-canonical-native-sdk/README.md)
+now verifies all 1,024 binary bytes after this fix. Setup was 658.948 ms,
+functional receive 104.022 ms (including bounded probe delay), attempted lifecycle
+2,821.558 ms and host-orchestrator CPU 475.934 ms. The complete gate remains
+failed: Stop/remove returned success but the original helper was still a zombie.
+[Issue #111](https://github.com/R4-Laboratories/SpiralCore/issues/111) tracks the
+missing lifetime owner/collected exit. This is one local raw-mailbox case,
+without wire counts, guest CPU, compression/zstd comparison or WAN qualification.
 
 The proposed reliable local-service contract and bounded frame codec are public
 on the [development branch](https://github.com/Casey-allard/mvm/tree/811fd9c5994df088c674c97ead3b353855245054).
