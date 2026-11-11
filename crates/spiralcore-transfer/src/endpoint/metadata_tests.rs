@@ -131,6 +131,8 @@ mod windows {
         let program =
             PathBuf::from(std::env::var_os("SystemRoot").expect("native Windows system root"))
                 .join("System32/WindowsPowerShell/v1.0/powershell.exe");
+        // PS7 -> Cargo -> Windows PowerShell otherwise inherits PS7 module paths.
+        // Let this child reconstruct its own defaults without mutating the parent.
         let output = Command::new(program)
             .args([
                 "-NoLogo",
@@ -139,6 +141,7 @@ mod windows {
                 "-Command",
                 script,
             ])
+            .env_remove("PSModulePath")
             .env("SC_METADATA_TEST_FILE", path)
             .env("SC_METADATA_TEST_SDDL", sddl)
             .output()

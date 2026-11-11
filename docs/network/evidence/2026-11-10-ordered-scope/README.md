@@ -475,3 +475,15 @@ authorization, byte verification, durability and all deadlines. Its 85 portable
 checks and strict transfer Clippy pass. Native old/new paired costs and the
 unchanged sustained acceptance remain pending. No speed improvement is claimed
 for the unexecuted Windows candidate.
+
+The [a26c4882 receipts](native-a26c4882/receipts.json) retain five archives
+(21,859 bytes), API digests, full-tree identity and 18 inner checksums. All
+three Windows metadata test binaries compile, pass their two portable guards
+and emit six exact paired rows. They then fail in the ACL fixture's Windows
+PowerShell module loading, before completion of the ACL/reparse guards. The
+paired rows remain partial, guard-failed evidence. The separate Windows/macOS
+instrumented sustained runs pass, but they do not turn those incomplete guards
+into accepted native qualification. The test-only child-environment correction
+removes inherited `PSModulePath`, following Microsoft's documented startup
+contract, without changing the product or any assertion. Its 85 portable checks
+and strict Clippy pass; native execution with all guards intact remains pending.
