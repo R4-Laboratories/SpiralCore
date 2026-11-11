@@ -193,6 +193,24 @@ compile commands separately pass on the immutable commit, with every one of its
 replay, stale-socket/retained-operation recovery, installed native retirement and
 WAN/platform/capacity/security qualification remain open.
 
+The [startup/publication successor](evidence/2026-11-11-startup-publication/README.md)
+now records actual RED/GREEN for missing inventory after a prior resource epoch
+and for direct-worker home selection. The final process composition passes three
+selected cases: strict no-home refusal, the unchanged three-profile startup
+control, and original signer collection before idle exit. The same control
+distinguishes unprovisioned refusal, genuine-fresh readiness and used-installation
+missing-journal refusal. Source and all three executable hashes remain unchanged
+through execution. Separately, 21 publication/cell/token/two-record-replay cases
+pass on their pinned composition; the old real-latch contention failure remains
+retained. The supporting Core/VMM changes are published at
+[`081901d02`](https://github.com/Casey-allard/mvm/commit/081901d0285ccf00d9dd824746354e9f82d8b6ce),
+with both exact immutable gated compile commands passing and 4,478 source hashes
+matched to Git. The supplied Hostd runtime overlay is distinct from that public
+commit and is not an enabled production release. Interrupted-mutation caller
+recovery, historical socket ownership, actual assurance activation, original-four
+restart acceptance and installed native/WAN/platform gates remain open. These
+functional results add no transfer-speed, capacity or FIPS claim.
+
 [PR #95](https://github.com/R4-Laboratories/SpiralCore/pull/95) adds canonical
 transport-binding revocation to the mailbox adapter. Live Call and Reply keep
 both checked policy generations through transport admission. Prepared receipts

@@ -1,0 +1,16 @@
+
+running 1 test
+test worker_without_home_refuses_before_owned_startup_effects ... STRICT_HOME_WITNESS {"first_error":"Error: installed owner: InvalidStorage","fixture_adopted_reaped":0,"original_collections":0,"owned_fixture_unchanged":true,"ready":0,"strict_error":false,"trace_bytes":39,"trace_truncated":false,"worker_code":1}
+
+thread 'worker_without_home_refuses_before_owned_startup_effects' (3967144) panicked at crates/mvm-hostd/tests/host_agent_idle_collection.rs:598:5:
+worker must refuse with the canonical strict-home error before attempting fallback storage
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+FAILED
+
+failures:
+
+failures:
+    worker_without_home_refuses_before_owned_startup_effects
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 2 filtered out; finished in 0.00s
+

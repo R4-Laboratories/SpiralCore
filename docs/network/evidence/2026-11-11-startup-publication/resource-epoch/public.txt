@@ -1,0 +1,31 @@
+   Compiling mvm-core v0.27.0 (/var/tmp/spiralcore-mailbox-worker-owner-20261111/source/crates/mvm-core)
+    Finished `release` profile [optimized] target(s) in 4.21s
+     Running tests/tenant_lifecycle.rs (/var/tmp/spiralcore-installed-controller.MDjnre/target/release/deps/tenant_lifecycle-361abd36ec370544)
+
+running 5 tests
+test a_client_cannot_initialize_missing_lifecycle_as_active ... ok
+test lifecycle_symlinks_are_refused_without_changing_the_target ... ok
+test malformed_and_oversize_lifecycle_metadata_never_become_zero_work ... ok
+test replacing_the_lock_between_turns_fences_the_original_gate ... ok
+test tenant_path_components_cannot_select_another_gate ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/tenant_lifecycle_coordinator.rs (/var/tmp/spiralcore-installed-controller.MDjnre/target/release/deps/tenant_lifecycle_coordinator-5f74340c6c387f18)
+
+running 12 tests
+test activation_callbacks_keep_original_file_turn_and_publish_only_durable_active ... ok
+test activation_callbacks_refuse_stale_generation_and_expired_admission_before_any_callback ... ok
+test activation_precheck_refusal_preserves_preparing_bytes_and_never_publishes ... ok
+test bootstrap_is_fenced_until_checked_drain_and_reconciliation ... ok
+test failed_or_panicking_partial_publication_fences_same_generation_without_claiming_rollback ... ok
+test generation_resource_epoch_exposes_only_its_original_checked_sequence ... ok
+test open_existing_preserves_active_original_generation_revision_and_pending_until_explicit_drain ... ok
+test open_existing_refuses_absence_and_missing_state_without_initializing_anything ... ok
+test pending_launch_cannot_vanish_when_drain_wins_or_cleanup_is_uncertain ... ok
+test preparing_a_replacement_never_resets_old_generation_or_pending_rows ... ok
+test preparing_turn_refuses_stale_expired_active_and_draining_without_invoking_action ... ok
+test preparing_turn_retains_original_file_lock_and_durably_advances_revision_before_action ... ok
+
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

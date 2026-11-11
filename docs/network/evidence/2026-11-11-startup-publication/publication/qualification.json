@@ -1,0 +1,92 @@
+{
+  "artifacts": {
+    "compiler.jsonl": "4601a88528a853aee6b0c5e21c8794e9bfdbcd7f31cd2f0875ae9f94e271aea6",
+    "compiler.stderr": "2e1259d8ee9caca1ac6313ff2bfbfa41aacdbe640b44396b661d6444a6153759",
+    "control_prepare.before-release-fix.rs": "e5b0219f43c659217a6de9bf3ed608c069e65ad5e7be0dac5346609f0aca6b05",
+    "descriptor.txt": "90afc9291a83a03361a3f09c995fbfec497e812439206ebfe658098842cb27ae",
+    "executable.before.json": "47f3bc07d708fc7f3862627737ad2657b67bb952be0f3707108df5421e272535",
+    "green-cell.txt": "4eaaecb4af73f75187a9778b86daebf7f0644b95620efd1b12e595248372ba66",
+    "green-latch.txt": "4e78afd0f2eecfff1752288b0f8d3a21dec05c4a1063165a71c92d7934c67c2b",
+    "green-primitive.txt": "818912f5ba8b9dcaf195cb072db33c189444195205769edd84c0cab56044ddb1",
+    "green-startup.txt": "d17152ec687914ac6d4515919cb33e7258600feea3847ddb3e8a57bae728d796",
+    "green-token.txt": "bfbe4c11c4e4f847e53fd9479240b1d02d6dd4cbb904f2749a3b5347ec89a247",
+    "green.compiler.jsonl": "c11cef84875a8b6519e5ccf063c0c228c597218d443f5a61abd7f8c63ff5ee15",
+    "green.compiler.stderr": "535b14dcbb3f169f42e3f9eb7d48a6a108dbfd99a5b8aa7639e2c563ccff15b8",
+    "green.executable.before.json": "02ca8e5d68c21e9924e98d0bc5c6835113a0c089f83f2965642bd2668beeee58",
+    "green.source.after.json": "99efd2bfa7302d74b66feea1e43248d9f6efd5e5d353e4d5b0f956e85c36ac0b",
+    "green.source.before.json": "99efd2bfa7302d74b66feea1e43248d9f6efd5e5d353e4d5b0f956e85c36ac0b",
+    "green.tests.json": "fa5fe6322f8ac8b7d9737dd0ba1146922fd9648ca448f1743ca95de3413e918e",
+    "old-latch-runtime-red.txt": "371769259fff1cef1a17817403e819709ce12b9f04851c9824dae088fa0e3964",
+    "primitive.txt": "16ff7d7198d4283761aa73f21680732dd1363ea18b4d6ea931292c25d3fdbd4c",
+    "selected-source.json": "0ac7bb04cc4ffb46f0b5c3278f34d1955f6dfaaca0df9fdc27081bd3f0e30252",
+    "source.after-build.json": "888cf29d8e68de552ac980df129e17c9ee391393dceaa2c56abe9a51cbf18e42",
+    "source.after-tests.json": "888cf29d8e68de552ac980df129e17c9ee391393dceaa2c56abe9a51cbf18e42",
+    "source.before.json": "888cf29d8e68de552ac980df129e17c9ee391393dceaa2c56abe9a51cbf18e42",
+    "source.preoverlay.json": "a473fee144650a131cba41534e032b0ff058626dba5a06d4e7c94e71df5190be",
+    "tests.json": "28c886374cf1d8a338831bc7424898b238fcf1f19f9f35de2ff64f710d582050"
+  },
+  "breakdown": {
+    "original_control_cell": 11,
+    "original_mutation_token": 4,
+    "publication_primitives": 3,
+    "real_start_latch": 2,
+    "trusted_two_record_preparing_replay": 1
+  },
+  "distinct_selected_outer_tests_passed": 21,
+  "execution_host": "wick Linux x86_64",
+  "failed": 0,
+  "green_executable_sha256": {
+    "/var/tmp/spiralcore-installed-controller.MDjnre/target/release/deps/mvm_hostd-0ad15abce9da80e8": "2d0915066ac8587ff494ae4245aa69aefde526937318699e6c564f8228cc55e4"
+  },
+  "green_rows": [
+    {
+      "exit": 0,
+      "filter": "assurance_session::publication::tests::",
+      "name": "green-primitive",
+      "sha256": "818912f5ba8b9dcaf195cb072db33c189444195205769edd84c0cab56044ddb1"
+    },
+    {
+      "exit": 0,
+      "filter": "broker::control_prepare::publication_tests::",
+      "name": "green-latch",
+      "sha256": "4e78afd0f2eecfff1752288b0f8d3a21dec05c4a1063165a71c92d7934c67c2b"
+    },
+    {
+      "exit": 0,
+      "filter": "broker::control_prepare::tests::",
+      "name": "green-cell",
+      "sha256": "4eaaecb4af73f75187a9778b86daebf7f0644b95620efd1b12e595248372ba66"
+    },
+    {
+      "exit": 0,
+      "filter": "broker::daemon::token_tests::",
+      "name": "green-token",
+      "sha256": "bfbe4c11c4e4f847e53fd9479240b1d02d6dd4cbb904f2749a3b5347ec89a247"
+    },
+    {
+      "exit": 0,
+      "filter": "broker::daemon::startup_tests::trusted_preparing_replay_keeps_two_original_services_parked_until_active",
+      "name": "green-startup",
+      "sha256": "d17152ec687914ac6d4515919cb33e7258600feea3847ddb3e8a57bae728d796"
+    }
+  ],
+  "ignored": 0,
+  "isolated_subprocess_repeats_are_not_additional_cases": true,
+  "limitations": [
+    "No actual host-agent integration process outcome in this packet.",
+    "No native MVM, WAN, transfer throughput, production or FIPS qualification.",
+    "Actual lifecycle-bound assurance replay still explicitly refused pending caller qualification."
+  ],
+  "new_latch_source_sha256": "8c3be2bcc9583f681d3e581444ab1a2f29c2258c4f35fbb6c7736fd5c47c91c4",
+  "runtime_red": {
+    "exit": 101,
+    "failure": "old release body waited for held writer; actual timeout; original writer unlocked and thread joined before assertion",
+    "file": "old-latch-runtime-red.txt",
+    "seconds": 5.0,
+    "sha256": "371769259fff1cef1a17817403e819709ce12b9f04851c9824dae088fa0e3964"
+  },
+  "schema": "spiralcore.assurance-startup-composed.v1",
+  "scope": "manifest-pinned composed candidate; not a whole committed-release qualification",
+  "source_before_after_identical": true,
+  "source_entries": 4492
+}

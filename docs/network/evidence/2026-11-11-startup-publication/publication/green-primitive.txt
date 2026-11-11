@@ -1,0 +1,13 @@
+
+running 3 tests
+test assurance_session::publication::tests::busy_reservation_returns_before_the_original_writer_unlocks ... ok
+test assurance_session::publication::tests::poisoned_original_writer_refuses_without_repair_or_publication ... 
+thread '<unnamed>' (3917960) panicked at crates/mvm-hostd/src/assurance_session/publication.rs:146:13:
+controlled original publication writer poison
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+ok
+test assurance_session::publication::tests::reservation_drop_and_first_wins_preserve_the_original_plane ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 2372 filtered out; finished in 0.00s
+
+WALL=0.00 USER=0.00 SYS=0.00 MAXRSS_KIB=12204

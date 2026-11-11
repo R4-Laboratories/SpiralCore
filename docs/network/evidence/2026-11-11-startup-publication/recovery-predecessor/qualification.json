@@ -1,0 +1,59 @@
+{
+  "schema": "spiralcore.recovery-exclusion.predecessor.v1",
+  "source_status": "reviewed uncommitted VMM two-file slice",
+  "source_sha256": {
+    "crates/mvm-vmm/src/host/installed_owner.rs": "5803ef21d9f35fd00a48557d4da596633bed15118d1dbc2434a397bbd3bc5d39",
+    "crates/mvm-vmm/tests/installed_owner_recovery_exclusion.rs": "8d2632529c7648f29e35b44802def0e33bb278818aeeb7567ecb810ed69240d4"
+  },
+  "execution": {
+    "host": "wick Linux x86_64",
+    "rust": "1.97.1",
+    "release": true,
+    "locked": true,
+    "offline": true,
+    "jobs": 2,
+    "nice": 10,
+    "incremental": false,
+    "umask": "022",
+    "MVM_EMBED": "0"
+  },
+  "red": {
+    "exit": 101,
+    "expected_missing_api_errors": 9,
+    "packet": "/var/tmp/spiralcore-mailbox-worker-owner-20261111/recovery-predecessor"
+  },
+  "green": {
+    "owner_integration_passed": 11,
+    "recovery_exclusion_passed": 4,
+    "private_owner_passed": 6,
+    "distinct_selected_passed": 21,
+    "failed": 0,
+    "ignored": 0,
+    "private_filtered": 1068,
+    "strict_clippy": {
+      "exit": 0,
+      "scope": "mvm-vmm --lib --test installed_owner_recovery_exclusion --test installed_owner -- -D warnings",
+      "reported_cargo_seconds": 12.22
+    }
+  },
+  "source_composition": {
+    "manifest_files": 4490,
+    "before_after_identical": true,
+    "whole_commit_runtime_qualification": false
+  },
+  "reviews": {
+    "independent_code_rust": "PASS root",
+    "independent_security": "PASS compliance_review"
+  },
+  "artifacts": {
+    "api-red.txt": "9cab804ed637070b982c23e6d06534d4ddc0e39c5fc866e666747f4456a14a9f",
+    "public.txt": "a137437cc7685fb9c35a7ef1ed3a96b231446a3af1b46a722c53364b3789ca51",
+    "private.txt": "5ab8b733c60ef2afe2fc9d55acc6c8b3c98d7514f7c810f4f47651d7e4f5b6a9",
+    "clippy.txt": "b7a047a4bb1f04a312ec52dd15bfb49057cfe08c5318c68bc9db3b56852d3f75"
+  },
+  "limitations": [
+    "Predecessor snapshot is copied facts only; original borrowed exclusion remains mandatory.",
+    "No new storage format, extra holder, authority, legacy-resource absence, Child collection or readiness proof.",
+    "No VM/WAN/transfer/compression/performance/certification workload."
+  ]
+}

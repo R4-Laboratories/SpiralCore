@@ -27,6 +27,15 @@ installed MVM networking contribution is still in development. The
 the delivery authority; a component merge or green platform test is an intermediate
 checkpoint, not completion of that program.
 
+The latest [installed-startup report](docs/network/evidence/2026-11-11-startup-publication/README.md)
+records actual Linux worker/signing-helper checks: a fresh installation starts
+and collects its original signer; a previously used installation with a missing
+journal refuses before readiness; a directly invoked worker with no configured
+home refuses without modifying its owned fixture. The publication/custody/replay
+candidate passes 21 selected cases. Interrupted-registration and historical
+socket recovery remain open; these startup checks are not new transfer-speed or
+WAN results.
+
 | Path | Published implementation and evidence | Remaining acceptance |
 |---|---|---|
 | Cooperating objects | Authenticated QUIC object service; shared runtime/cache/schema core; exact durable readback | Current-source two-host Internet WAN qualification |
@@ -46,7 +55,7 @@ custody, disposable endpoint-disk inventory, admitted FlowMux/access activation,
 and Small/Ordered/readiness candidates. These are not part of PR72's accepted
 source. [Current checkpoints, failures and open gates →](docs/network/current-status.md)
 Published development code: [SpiralCore integration `8476d758`](https://github.com/R4-Laboratories/SpiralCore/tree/8476d7583e083e02d8b6bc571fc505815b85de90)
-and [MVM fork `9a3a964b`](https://github.com/Casey-allard/mvm/tree/9a3a964bd540d5e74c71f9b7df93cc5593295546).
+and [MVM fork `081901d02`](https://github.com/Casey-allard/mvm/tree/081901d0285ccf00d9dd824746354e9f82d8b6ce).
 The [resident lifecycle report](https://github.com/R4-Laboratories/SpiralCore/blob/ef4f5530cb4df41ef534dd63b149f2de5dd107b3/docs/network/evidence/2026-11-04-resident-service/README.md)
 records one original backend, two cancellation-safe resident slots, real registry
 resource drain and protected lifecycle tests. A caught operation panic fences the

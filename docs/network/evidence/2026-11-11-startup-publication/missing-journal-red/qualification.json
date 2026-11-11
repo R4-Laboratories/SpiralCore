@@ -1,0 +1,70 @@
+{
+  "schema": "spiralcore.nonfresh-missing-journal.runtime-red.v1",
+  "packet": "/var/tmp/spiralcore-mailbox-worker-owner-20261111/nonfresh-missing-journal-red-20261111",
+  "profiles": [
+    {
+      "first_error": "Error: open existing canonical host-agent provisioning at <fixture-home>/host-agent/local/resource-owner-v1; missing or legacy provisioning requires canonical reconciliation",
+      "first_error_truncated": false,
+      "fixture_adopted_reaped": 0,
+      "original_collections": 0,
+      "prior_resource_epoch": 0,
+      "profile": "explicit_unprovisioned_private_home",
+      "ready": 0,
+      "trace_bytes": 232,
+      "trace_truncated": false,
+      "worker_code": 1
+    },
+    {
+      "first_error": null,
+      "first_error_truncated": false,
+      "fixture_adopted_reaped": 0,
+      "original_collections": 1,
+      "prior_resource_epoch": 0,
+      "profile": "canonical_absent_home_provisioned",
+      "ready": 1,
+      "trace_bytes": 1010,
+      "trace_truncated": false,
+      "worker_code": 42
+    },
+    {
+      "first_error": null,
+      "first_error_truncated": false,
+      "fixture_adopted_reaped": 0,
+      "original_collections": 1,
+      "prior_resource_epoch": 1,
+      "profile": "issued_finished_epoch_missing_journal",
+      "ready": 1,
+      "trace_bytes": 1010,
+      "trace_truncated": false,
+      "worker_code": 42
+    }
+  ],
+  "compile_exit": 0,
+  "build_wall_seconds": 281.25,
+  "runtime_exit": 101,
+  "outer_passed": 0,
+  "outer_failed": 1,
+  "ignored": 0,
+  "filtered": 1,
+  "test_seconds": 6.08,
+  "guard_unchanged": true,
+  "no_journal_fixture_seed": true,
+  "production_source_edits": 0,
+  "reruns": 0,
+  "vm_boots": 0,
+  "source_files": 4490,
+  "source_before_after_pass": true,
+  "three_executables_before_after_pass": true,
+  "intended_failure": "prior issued/finished epoch1 plus missing physical journal incorrectly reached Ready1/idle42 instead of refusing before signer readiness",
+  "original_cleanup_completed_before_assertion": true,
+  "all_profiles_fixture_adopted_reaped": 0,
+  "scope": "manifest-pinned current product with Core61f; not whole Git or WAN/VM qualification",
+  "artifacts": {
+    "source.before.sha256": "17bbed18bdb9db5585298b9979d28ad6228138d230f5e547d1e4ae392ae056aa",
+    "selected.before.sha256": "a6c53cbfd7bf4408cfd05903761cb741b8014905d290233adc031ac9af14b306",
+    "compiler.jsonl": "1c1a8b10c1b027d32c152cf18be6e2d626b6575b9e1fc23a44c597472ab4fb27",
+    "compiler.stderr": "7ea1251fb3a6c7d20f4979fd7db5eea99e81cab923564591dc6df1733eb711ac",
+    "executables.before.sha256": "5e0064b116fe6c3342dfd4ae4c43b170e0015605d6d711865ff89fbac1ad0437",
+    "runtime-attempt1.txt": "9f4db0f2266597f72c51904d9c451abc79bb3a34af1144e62b746e06bffdea3e"
+  }
+}

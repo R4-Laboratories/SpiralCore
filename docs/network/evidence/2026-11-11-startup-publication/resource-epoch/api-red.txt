@@ -1,0 +1,15 @@
+   Compiling mvm-core v0.27.0 (/var/tmp/spiralcore-mailbox-worker-owner-20261111/source/crates/mvm-core)
+error[E0599]: no method named `resource_epoch` found for struct `LifecycleGeneration` in the current scope
+  --> crates/mvm-core/tests/tenant_lifecycle_coordinator.rs:19:27
+   |
+19 |     assert_eq!(generation.resource_epoch(), 17);
+   |                           ^^^^^^^^^^^^^^ method not found in `LifecycleGeneration`
+
+error[E0599]: no method named `resource_epoch` found for struct `LifecycleGeneration` in the current scope
+  --> crates/mvm-core/tests/tenant_lifecycle_coordinator.rs:21:25
+   |
+21 |     assert_eq!(restored.resource_epoch(), 17);
+   |                         ^^^^^^^^^^^^^^ method not found in `LifecycleGeneration`
+
+For more information about this error, try `rustc --explain E0599`.
+error: could not compile `mvm-core` (test "tenant_lifecycle_coordinator") due to 2 previous errors

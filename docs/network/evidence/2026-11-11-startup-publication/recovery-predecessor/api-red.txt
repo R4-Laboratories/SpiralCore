@@ -1,0 +1,98 @@
+   Compiling mvm-core v0.27.0 (/var/tmp/spiralcore-mailbox-worker-owner-20261111/source/crates/mvm-core)
+   Compiling mvm-net v0.27.0 (/var/tmp/spiralcore-mailbox-worker-owner-20261111/source/crates/mvm-net)
+   Compiling mvm-fs v0.27.0 (/var/tmp/spiralcore-mailbox-worker-owner-20261111/source/crates/mvm-fs)
+   Compiling mvm-agentd v0.27.0 (/var/tmp/spiralcore-mailbox-worker-owner-20261111/source/crates/mvm-agentd)
+   Compiling mvm-vmm v0.27.0 (/var/tmp/spiralcore-mailbox-worker-owner-20261111/source/crates/mvm-vmm)
+error[E0599]: no method named `original_predecessor` found for struct `RecoveryExclusion<'owner>` in the current scope
+   --> crates/mvm-vmm/tests/installed_owner_recovery_exclusion.rs:135:19
+    |
+135 |             guard.original_predecessor().unwrap(),
+    |                   ^^^^^^^^^^^^^^^^^^^^ method not found in `RecoveryExclusion<'_>`
+
+error[E0599]: no method named `revalidate_for` found for struct `RecoveryExclusion<'owner>` in the current scope
+   --> crates/mvm-vmm/tests/installed_owner_recovery_exclusion.rs:141:15
+    |
+141 |         guard.revalidate_for(&root, key()).unwrap();
+    |               ^^^^^^^^^^^^^^
+    |
+help: there is a method `revalidate` with a similar name, but with different arguments
+   --> crates/mvm-vmm/src/host/installed_owner.rs:608:5
+    |
+608 |     pub fn revalidate(&self) -> Result<()> {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0599]: no method named `revalidate_for` found for struct `RecoveryExclusion<'owner>` in the current scope
+   --> crates/mvm-vmm/tests/installed_owner_recovery_exclusion.rs:144:18
+    |
+143 | /             guard
+144 | |                 .revalidate_for(&base.path().join("wrong-root"), key())
+    | |_________________-^^^^^^^^^^^^^^
+    |
+help: there is a method `revalidate` with a similar name, but with different arguments
+   --> crates/mvm-vmm/src/host/installed_owner.rs:608:5
+    |
+608 |     pub fn revalidate(&self) -> Result<()> {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0599]: no method named `revalidate_for` found for struct `RecoveryExclusion<'owner>` in the current scope
+   --> crates/mvm-vmm/tests/installed_owner_recovery_exclusion.rs:149:23
+    |
+149 |         assert!(guard.revalidate_for(&root, wrong).is_err());
+    |                       ^^^^^^^^^^^^^^
+    |
+help: there is a method `revalidate` with a similar name, but with different arguments
+   --> crates/mvm-vmm/src/host/installed_owner.rs:608:5
+    |
+608 |     pub fn revalidate(&self) -> Result<()> {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0599]: no method named `revalidate_for` found for struct `RecoveryExclusion<'owner>` in the current scope
+   --> crates/mvm-vmm/tests/installed_owner_recovery_exclusion.rs:150:15
+    |
+150 |         guard.revalidate_for(&root, key()).unwrap();
+    |               ^^^^^^^^^^^^^^
+    |
+help: there is a method `revalidate` with a similar name, but with different arguments
+   --> crates/mvm-vmm/src/host/installed_owner.rs:608:5
+    |
+608 |     pub fn revalidate(&self) -> Result<()> {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0599]: no method named `original_predecessor` found for struct `RecoveryExclusion<'owner>` in the current scope
+   --> crates/mvm-vmm/tests/installed_owner_recovery_exclusion.rs:168:19
+    |
+168 |             guard.original_predecessor().unwrap(),
+    |                   ^^^^^^^^^^^^^^^^^^^^ method not found in `RecoveryExclusion<'_>`
+
+error[E0599]: no method named `revalidate_for` found for struct `RecoveryExclusion<'owner>` in the current scope
+   --> crates/mvm-vmm/tests/installed_owner_recovery_exclusion.rs:174:15
+    |
+174 |         guard.revalidate_for(&root, key()).unwrap();
+    |               ^^^^^^^^^^^^^^
+    |
+help: there is a method `revalidate` with a similar name, but with different arguments
+   --> crates/mvm-vmm/src/host/installed_owner.rs:608:5
+    |
+608 |     pub fn revalidate(&self) -> Result<()> {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0599]: no method named `original_predecessor` found for struct `RecoveryExclusion<'owner>` in the current scope
+   --> crates/mvm-vmm/tests/installed_owner_recovery_exclusion.rs:181:19
+    |
+181 |             guard.original_predecessor().unwrap(),
+    |                   ^^^^^^^^^^^^^^^^^^^^ method not found in `RecoveryExclusion<'_>`
+
+error[E0599]: no method named `revalidate_for` found for struct `RecoveryExclusion<'owner>` in the current scope
+   --> crates/mvm-vmm/tests/installed_owner_recovery_exclusion.rs:187:15
+    |
+187 |         guard.revalidate_for(&root, key()).unwrap();
+    |               ^^^^^^^^^^^^^^
+    |
+help: there is a method `revalidate` with a similar name, but with different arguments
+   --> crates/mvm-vmm/src/host/installed_owner.rs:608:5
+    |
+608 |     pub fn revalidate(&self) -> Result<()> {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+For more information about this error, try `rustc --explain E0599`.
+error: could not compile `mvm-vmm` (test "installed_owner_recovery_exclusion") due to 9 previous errors
