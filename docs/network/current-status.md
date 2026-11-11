@@ -1,7 +1,7 @@
 # Networking delivery status
 
 Snapshot: **2026-11-11**, checked against published `origin/main`
-`7671039cb3e7aeeac23cfa3f45995f919645080f` and the live GitHub issue graph.
+`179fb1eba84e1056b86ac7027de5dc777138c512` and the live GitHub issue graph.
 This page separates accepted components, measured experiments and unmerged work.
 The [README](../../README.md) is the architecture/results entry point;
 [issue #42](https://github.com/R4-Laboratories/SpiralCore/issues/42) remains the
@@ -106,6 +106,22 @@ Linux source. It adds no active production child owner; non-Linux delegation
 remains Unsupported at that revision. Original-child runtime ownership is a
 separate development successor. Native delivery, cleanup and the complete
 production signer/worker integration remain required by issue #111.
+
+The public worker-owner successor is MVM fork
+[`058d6a94b`](https://github.com/Casey-allard/mvm/commit/058d6a94b4cda0803f1a4c399c9c08cc6e948116).
+It retains original worker children and bounded in-process reservations, with
+default activation still unavailable. The existing resource-lease component is
+now also imported at
+[`c009524ea`](https://github.com/Casey-allard/mvm/commit/c009524ea1da35db52ea909084220b10c36aafd2):
+11 integration entries and six private units pass on the declared Linux
+composition, with strict scoped Clippy and preserved MIT provenance. The
+[source-bound report](evidence/2026-11-11-mvm-resource-owner/README.md) distinguishes
+participating-holder exclusion from original-child collection and records the
+additive qualification overlay. [Issue #114](https://github.com/R4-Laboratories/SpiralCore/issues/114)
+tracks cooperative admission fencing and watcher/worker/signer drain; its actual
+idle-collection regression remains failed until the coordinator is integrated.
+The [upstream ownership index](https://github.com/tinylabscom/mvm/issues/4629#issuecomment-6794294611)
+keeps these implementations visible before final service/WAN qualification.
 
 [PR #95](https://github.com/R4-Laboratories/SpiralCore/pull/95) adds canonical
 transport-binding revocation to the mailbox adapter. Live Call and Reply keep
