@@ -1,0 +1,106 @@
+{
+  "schema": "spiralcore.component-qualification.v1",
+  "date": "2026-11-11",
+  "published_source": {
+    "repository": "https://github.com/Casey-allard/mvm",
+    "commit": "c009524ea1da35db52ea909084220b10c36aafd2",
+    "parent": "058d6a94b4cda0803f1a4c399c9c08cc6e948116",
+    "upstream_merged": false
+  },
+  "source_scope": "Seven component/configuration files match the published commit; additive Core library overlay was present. Not whole unmodified-commit/workspace qualification.",
+  "component_sha256": {
+    "crates/mvm-vmm/src/host/installed_owner.rs": "94006668298fbb172ae52e23105db51b57a44aa881ae6a84c556e0f85991100c",
+    "crates/mvm-vmm/src/host/installed_owner/tests.rs": "4d9b5151bdf013e2c27e553dd74d69599fa058b3d141017a64a2e722382f66bf",
+    "crates/mvm-vmm/src/host/installed_owner/binding_tests.rs": "e992c83c683dfc8b597f0fcbf0c6dde7a35195de517149977377b2073f4087fa",
+    "crates/mvm-vmm/src/host/mod.rs": "25d982a88a1deabab4feebfa1445cbc0136ee7aae9264005c5ec93955b9d50f5",
+    "crates/mvm-vmm/tests/installed_owner.rs": "d83921d08fc35d7f17099f78ac2c8803901787c5be3aa6ef8443cb06c88c0bea",
+    "crates/mvm-vmm/Cargo.toml": "39f58e5fe28844801171e06e9019b671340f4cc5796341c76abb277d128092f6",
+    "Cargo.lock": "5dacb59768de44679a8aa938fc58c5692ae9575ca0364a937cd1e9314a682597"
+  },
+  "additive_core_library_overlay_sha256": {
+    "crates/mvm-core/src/lib.rs": "c11a1f5ad9e018046ef5c83a0e92add3b586516618f06bf9d4c79ec82e37ccfa",
+    "crates/mvm-core/src/tenant_lifecycle.rs": "191bf9e0d782f6b462987a3c4ccfe933a030712e9b9acbbedd48c463ecc05264",
+    "crates/mvm-core/src/util/atomic_io.rs": "3e89e9c910feaf05dfcc76cdd48891da87aa32d09d81fbcdcfde670b9c8d71de"
+  },
+  "environment": {
+    "host": "wick",
+    "os": "Linux",
+    "architecture": "x86_64",
+    "rust": "1.97.1",
+    "profile": "release",
+    "locked": true,
+    "jobs": 2,
+    "nice": 10,
+    "incremental": false,
+    "umask": "022",
+    "test_threads": 1
+  },
+  "results": {
+    "missing_module_red": {
+      "exit_code": 101,
+      "diagnostic": "E0432",
+      "runtime_tests_executed": 0
+    },
+    "integration": {
+      "command": "cargo test --release --locked -p mvm-vmm --test installed_owner -- --test-threads=1",
+      "passed": 11,
+      "failed": 0,
+      "ignored": 0,
+      "fixture_entries": 1,
+      "compile_seconds": 11.2,
+      "test_seconds_rounded": 0.01
+    },
+    "private_units": {
+      "command": "cargo test --release --locked -p mvm-vmm --lib host::installed_owner -- --test-threads=1",
+      "passed": 6,
+      "failed": 0,
+      "ignored": 0,
+      "filtered": 1066,
+      "compile_seconds": 41.92,
+      "test_seconds_rounded": 0.0
+    },
+    "clippy": {
+      "command": "cargo clippy --release --locked -p mvm-vmm --lib --test installed_owner -- -D warnings",
+      "exit_code": 0,
+      "check_seconds": 19.0
+    },
+    "format": {
+      "command": "rustfmt --check --edition 2024 on imported module, both private tests and integration test",
+      "exit_code": 0
+    },
+    "code_rust_review": "PASS scoped source",
+    "security_review": "PASS scoped source",
+    "component_manifests_before_after_equal": true
+  },
+  "retained_outputs": {
+    "host": "wick",
+    "directory": "/var/tmp/spiralcore-mailbox-worker-owner-20261111",
+    "sha256": {
+      "installed-owner-api-red.txt": "60de722b8ac6a45b5b363d06aff69d3f6c6cf85f14387c00a3b6073e7aef7269",
+      "installed-owner-green.txt": "868a2a96f7e2ba5df60e37f24660a17fbef7fc9702af57e24f1a40496d164591",
+      "installed-owner-private-green.txt": "a9a8d5f593857dc6f04d9660ef757cde151fb8df9256222a8ada198960106cfd",
+      "installed-owner-clippy.txt": "87fe92f6ac495de110a1c31b5b6671b830d2f80dd70e8322e5476a5568abc579"
+    }
+  },
+  "measurements": {
+    "transfer_workload": "NOT_RUN",
+    "payload_bytes": null,
+    "wire_bytes_both_directions": null,
+    "sender_cpu": null,
+    "receiver_cpu": null,
+    "transfer_time": null,
+    "memory": null,
+    "energy": "NOT_MEASURED",
+    "vm_booted": false
+  },
+  "remaining_gates": [
+    "Canonical fresh-install provisioning and legacy reconciliation",
+    "Actual signer/helper/watcher resource participation",
+    "Cooperative installed shutdown and original child collection",
+    "Complete workspace/features/conformance checks",
+    "Native backend and role matrix",
+    "Canonical two-host direct and relay WAN",
+    "Supported capacity/fairness envelope",
+    "Concrete validated crypto deployment and security profile"
+  ]
+}
