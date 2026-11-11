@@ -359,7 +359,9 @@ fn execute(options: Options) -> Result<()> {
     }
     let out = fs::canonicalize(options.out).map_err(error)?;
     let state = out.join(".capture-control");
-    let mut db = fs::DirBuilder::new();
+    let db = fs::DirBuilder::new();
+    #[cfg(unix)]
+    let mut db = db;
     #[cfg(unix)]
     db.mode(0o700);
     db.create(&state).map_err(error)?;

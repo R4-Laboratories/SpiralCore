@@ -1,0 +1,118 @@
+   Compiling libc v0.2.191
+   Compiling syn v3.0.9
+   Compiling jobserver v0.1.35
+   Compiling cc v1.10.0
+   Compiling synstructure v0.14.0
+   Compiling zerovec-derive v0.11.7
+   Compiling zerofrom-derive v0.1.8
+   Compiling zerofrom v0.1.8
+   Compiling yoke-derive v0.8.4
+   Compiling displaydoc v0.2.7
+   Compiling generic-array v0.14.7
+   Compiling yoke v0.8.4
+   Compiling typenum v1.20.1
+   Compiling zerovec v0.11.9
+   Compiling pkg-config v0.3.34
+   Compiling tinystr v0.8.5
+   Compiling icu_locale_core v2.4.0
+   Compiling zstd-sys v2.1.2+zstd.1.5.7
+   Compiling potential_utf v0.1.6
+   Compiling zerotrie v0.2.5
+   Compiling ring v0.17.14
+   Compiling utf8_iter v1.0.4
+   Compiling icu_collections v2.4.0
+   Compiling icu_provider v2.4.0
+   Compiling zeroize v1.9.1
+   Compiling rustls-pki-types v1.15.1
+   Compiling getrandom v0.2.17
+   Compiling crypto-common v0.1.7
+   Compiling block-buffer v0.10.4
+   Compiling smallvec v1.16.4
+   Compiling serde_core v1.0.229
+   Compiling itoa v1.0.18
+   Compiling icu_normalizer v2.4.0
+   Compiling digest v0.10.7
+   Compiling icu_properties v2.4.0
+   Compiling cpufeatures v0.2.17
+   Compiling log v0.4.34
+   Compiling rustls v0.23.46
+   Compiling cfg-if v1.0.5
+   Compiling zstd-safe v7.3.0
+   Compiling sha2 v0.10.9
+   Compiling http v1.5.0
+   Compiling idna_adapter v1.2.2
+   Compiling rustls-webpki v0.103.16
+   Compiling libm v0.2.16
+   Compiling once_cell v1.21.4
+   Compiling serde_json v1.0.154
+   Compiling subtle v2.6.1
+   Compiling serde v1.0.229
+   Compiling base64 v0.23.1
+   Compiling ureq-proto v0.6.5
+   Compiling idna v1.1.0
+   Compiling spiralcore-transfer v0.1.0 (/var/tmp/spiralcore-windows-cfg-mut-20261110/source/crates/spiralcore-transfer)
+   Compiling webpki-roots v1.0.11
+   Compiling serde_derive v1.0.229
+   Compiling utf8-zero v0.8.1
+   Compiling memchr v2.8.3
+   Compiling ureq v3.5.0
+   Compiling url v2.5.8
+   Compiling zstd v0.13.3
+   Compiling uor-r4-object-store v0.1.0 (/var/tmp/spiralcore-windows-cfg-mut-20261110/source/crates/uor-r4-object-store)
+    Finished `release` profile [optimized] target(s) in 29.36s
+     Running unittests src/bin/spiralcore-capture-control.rs (/var/tmp/spiralcore-installed-controller.MDjnre/target/release/deps/spiralcore_capture_control-0e99f944e54acb2d)
+
+running 13 tests
+test capture_fixture::tests::all_required_offloads_must_be_explicitly_disabled ... ok
+test capture_fixture::tests::fixture_tool_output_is_bounded_before_collection_finishes ... ok
+test capture_fixture::tests::fixture_collision_check_accepts_default_route_but_rejects_overlaps ... ok
+test capture_lifecycle::tests::linux_tcpdump_inline_usr1_is_separate_from_the_final_three_line_block ... ok
+test capture_fixture::tests::privileged_deadline_wraps_the_actual_tool_without_foreground_escape ... ok
+test capture_lifecycle::tests::changing_or_regressing_counters_are_not_a_quiet_interval ... ok
+test capture_lifecycle::tests::stats_samples_must_be_complete_separate_blocks ... ok
+test capture_lifecycle::tests::old_counter_gap_is_not_normalized_by_new_control_evidence ... ok
+test tests::ethernet_capture_filter_has_no_direction_metadata_load ... ok
+test capture_lifecycle::tests::qualified_control_evidence_requires_a_complete_ordered_lifecycle ... ok
+test tests::no_shell_text_can_enter_the_interface_and_port ... ok
+test tests::stderr_collection_is_bounded_even_for_a_noisy_child ... ok
+test capture_fixture::tests::successful_creation_remains_owned_when_receipt_writing_fails ... ok
+
+successes:
+
+successes:
+    capture_fixture::tests::all_required_offloads_must_be_explicitly_disabled
+    capture_fixture::tests::fixture_collision_check_accepts_default_route_but_rejects_overlaps
+    capture_fixture::tests::fixture_tool_output_is_bounded_before_collection_finishes
+    capture_fixture::tests::privileged_deadline_wraps_the_actual_tool_without_foreground_escape
+    capture_fixture::tests::successful_creation_remains_owned_when_receipt_writing_fails
+    capture_lifecycle::tests::changing_or_regressing_counters_are_not_a_quiet_interval
+    capture_lifecycle::tests::linux_tcpdump_inline_usr1_is_separate_from_the_final_three_line_block
+    capture_lifecycle::tests::old_counter_gap_is_not_normalized_by_new_control_evidence
+    capture_lifecycle::tests::qualified_control_evidence_requires_a_complete_ordered_lifecycle
+    capture_lifecycle::tests::stats_samples_must_be_complete_separate_blocks
+    tests::ethernet_capture_filter_has_no_direction_metadata_load
+    tests::no_shell_text_can_enter_the_interface_and_port
+    tests::stderr_collection_is_bounded_even_for_a_noisy_child
+
+test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running unittests examples/receiver_stages.rs (/var/tmp/spiralcore-installed-controller.MDjnre/target/release/examples/receiver_stages-536e899ede37d5d9)
+
+running 5 tests
+test tests::existing_root_is_rejected_without_deleting_user_files ... ok
+test tests::malformed_data_stops_before_finish_and_never_publishes ... ok
+test tests::prepared_frames_are_complete_and_exact_before_receiver_timing ... ok
+test tests::rolling_fixture_has_nine_local_edits_one_escape_and_no_duplicate_object ... ok
+test tests::each_clock_mode_runs_one_seed_ten_updates_and_reopens_all_exactly ... ok
+
+successes:
+
+successes:
+    tests::each_clock_mode_runs_one_seed_ten_updates_and_reopens_all_exactly
+    tests::existing_root_is_rejected_without_deleting_user_files
+    tests::malformed_data_stops_before_finish_and_never_publishes
+    tests::prepared_frames_are_complete_and_exact_before_receiver_timing
+    tests::rolling_fixture_has_nine_local_edits_one_escape_and_no_duplicate_object
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
