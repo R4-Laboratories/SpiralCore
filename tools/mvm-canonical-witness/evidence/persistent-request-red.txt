@@ -1,0 +1,43 @@
+    Blocking waiting for file lock on build directory
+   Compiling spiralcore-mvm-canonical-witness v0.1.0 (/var/tmp/spiralcore-witness-latest-20261110/tools/mvm-canonical-witness)
+    Finished `release` profile [optimized] target(s) in 3m 29s
+     Running tests/canonical_request.rs (/var/tmp/spiralcore-installed-controller.MDjnre/target/release/deps/canonical_request-a720a8022c460662)
+
+running 1 test
+
+running 1 test
+test canonical_client_constructs_only_the_named_persistent_mailbox_request ... FAILED
+
+failures:
+
+---- canonical_client_constructs_only_the_named_persistent_mailbox_request stdout ----
+
+thread 'canonical_client_constructs_only_the_named_persistent_mailbox_request' (2581682) panicked at tests/canonical_request.rs:19:9:
+assertion `left == right` failed
+  left: Transient
+ right: Persistent
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    canonical_client_constructs_only_the_named_persistent_mailbox_request
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+test canonical_client_constructs_only_the_named_persistent_mailbox_request ... FAILED
+
+failures:
+
+---- canonical_client_constructs_only_the_named_persistent_mailbox_request stdout ----
+
+thread 'canonical_client_constructs_only_the_named_persistent_mailbox_request' (2581680) panicked at tests/canonical_request.rs:43:5:
+assertion failed: status.success()
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    canonical_client_constructs_only_the_named_persistent_mailbox_request
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `--test canonical_request`

@@ -1,5 +1,5 @@
 //! One-way baseline through the current canonical helper, without a custom port.
-use crate::{Config, cleanup_after_launch, expected_body};
+use crate::{Config, cleanup_after_launch, expected_body, receive_probe_offsets};
 use anyhow::{Context, Result, ensure};
 use cpu_time::ProcessTime;
 use mvm_client::{LaunchRequest, LifecycleMode, LocalBackend, MvmClient, RootfsSource};
@@ -12,12 +12,16 @@ use std::{
     time::{Duration, Instant},
 };
 
-pub const MVM_SOURCE: &str = "ee632fbb3a746709c496a95f167559a01a19fcaf";
+pub const MVM_SOURCE: &str = "18b58e1ad2262a1c0bfa23d51f8e5679d3376f60";
 pub const PRODUCER_PATH: &str = "/usr/local/bin/spiralcore-mailbox-producer";
 mod process {
     include!("process.rs");
 }
 use process::{HeldExecutable, ProcessObservation};
+mod definition {
+    include!("definition.rs");
+}
+pub use definition::DefinitionGuard;
 #[derive(Serialize)]
 pub struct Report {
     pub source: &'static str,
@@ -32,6 +36,8 @@ pub struct Report {
     pub exact_readback: bool,
     pub setup_wall_ns: Option<u128>,
     pub receive_wall_ns: Option<u128>,
+    pub receive_probes: usize,
+    pub receive_wait_class: &'static str,
     pub lifecycle_wall_ns: u128,
     pub host_orchestrator_cpu_ns: u128,
     pub guest_cpu: &'static str,
@@ -50,7 +56,7 @@ pub fn request(config: &Config) -> Result<LaunchRequest> {
     let grant = mvm_client::admission::mailbox_grant::resolve(Some(&config.mailbox_hex), None)?
         .context("requested mailbox grant unavailable")?;
     Ok(LaunchRequest::builder(
-        LifecycleMode::Transient,
+        LifecycleMode::Persistent,
         RootfsSource::LocalPath(config.rootfs.clone()),
     )
     .name(&config.name)
@@ -112,6 +118,13 @@ pub async fn run(config: &Config) -> Result<Report> {
         Err(error) => return Err(error.into()),
         Ok(_) => anyhow::bail!("fresh isolated home must have no prior VM namespace"),
     }
+    match fs::symlink_metadata(mvm_core::config::machine_state_root()) {
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+        Err(error) => return Err(error.into()),
+        Ok(_) => {
+            anyhow::bail!("fresh isolated home must have no prior persistent machine namespace")
+        }
+    }
     ensure!(!state.exists(), "fresh name required");
     ensure!(!state.exists(), "refusing a name with existing VM state");
     validate_rootfs_input(&config.rootfs)?;
@@ -148,6 +161,8 @@ pub async fn run(config: &Config) -> Result<Report> {
         exact_readback: false,
         setup_wall_ns: None,
         receive_wall_ns: None,
+        receive_probes: 0,
+        receive_wait_class: "at most five bounded external probes; functional wait, not performance-qualified",
         lifecycle_wall_ns: 0,
         host_orchestrator_cpu_ns: 0,
         guest_cpu: "unavailable",
@@ -158,12 +173,16 @@ pub async fn run(config: &Config) -> Result<Report> {
     };
     let backend = LocalBackend::with_hypervisor("firecracker");
     let mut launched = None;
+    let mut definition_guard = None;
     let operation = async {
         launched = Some(backend.launch(request(config)?).await?);
         let outcome = launched
             .as_ref()
             .expect("successful original launch retained");
         report.plan_id = Some(outcome.plan_id.clone());
+        definition_guard = Some(DefinitionGuard::capture(
+            &mvm_core::config::machine_spec_path(&outcome.machine.name),
+        )?);
         report.setup_wall_ns = Some(started.elapsed().as_nanos());
         let receive_started = Instant::now();
         let until = receive_started + Duration::from_secs(config.deadline_seconds);
@@ -178,8 +197,19 @@ pub async fn run(config: &Config) -> Result<Report> {
             &mailbox_pid,
             Some(&expected_helper),
         )?);
-        loop {
-            match mvm_client::mailbox::recv(&config.name) {
+        for offset in receive_probe_offsets(Duration::from_secs(config.deadline_seconds)) {
+            let target = receive_started + offset;
+            if let Some(wait) = target.checked_duration_since(Instant::now()) {
+                thread::sleep(wait);
+            }
+            ensure!(Instant::now() < until, "canonical mailbox receive deadline");
+            report.receive_probes += 1;
+            let received = mvm_client::mailbox::recv(&config.name);
+            ensure!(
+                Instant::now() < until,
+                "canonical receive completed after original deadline"
+            );
+            match received {
                 Ok(Some(actual)) => {
                     report.received_bytes = Some(actual.len());
                     report.received_sha256 = Some(digest(&actual));
@@ -206,9 +236,11 @@ pub async fn run(config: &Config) -> Result<Report> {
                     }
                 }
             }
-            ensure!(Instant::now() < until, "canonical mailbox receive deadline");
-            thread::sleep(Duration::from_millis(20));
         }
+        ensure!(
+            report.exact_readback,
+            "bounded canonical receive probes exhausted without verified delivery"
+        );
         report.receive_wall_ns = Some(receive_started.elapsed().as_nanos());
         Ok::<(), anyhow::Error>(())
     }
@@ -227,15 +259,32 @@ pub async fn run(config: &Config) -> Result<Report> {
         launched.as_ref(),
         async {
             let original = launched.as_ref().context("original launch absent")?;
+            let plan = mvm_client::audit::chain::plan_persist::read_plan(&original.machine.name)?;
+            ensure!(
+                plan.plan_id.0 == original.plan_id && plan.workload.0 == original.machine.name,
+                "persisted admission differs from original launch; stop not authorized"
+            );
+            definition_guard
+                .as_ref()
+                .context("original definition fence unavailable; retain state")?
+                .verify()?;
             backend
                 .stop_machine(&original.machine.id)
                 .await
                 .map_err(anyhow::Error::from)
         },
-        || {
+        async {
             let original = launched.as_ref().context("original launch absent")?;
+            definition_guard
+                .as_ref()
+                .context("original definition fence unavailable; retain state")?
+                .verify()?;
             backend
-                .cleanup_transient(&original.machine.name)
+                .remove_machine_with(
+                    &original.machine.id,
+                    mvm_client::RemoveOptions { force: false },
+                )
+                .await
                 .map_err(anyhow::Error::from)
         },
     )
@@ -258,6 +307,13 @@ pub async fn run(config: &Config) -> Result<Report> {
         Ok(_) => errors.push("canonical runtime state remains after cleanup".into()),
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
         Err(error) => errors.push(format!("cannot establish runtime-state removal: {error}")),
+    }
+    match fs::symlink_metadata(mvm_core::config::machine_state_dir(&config.name)) {
+        Ok(_) => errors.push("canonical persistent definition remains after cleanup".into()),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+        Err(error) => errors.push(format!(
+            "cannot establish persistent-definition removal: {error}"
+        )),
     }
     if report.processes.len() != 2 {
         errors.push("both original process identities were not captured".into());

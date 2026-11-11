@@ -86,7 +86,7 @@ pub struct CleanupResult {
 pub async fn cleanup_after_launch<T>(
     original: Option<&T>,
     stop: impl std::future::Future<Output = Result<()>>,
-    cleanup: impl FnOnce() -> Result<()>,
+    cleanup: impl std::future::Future<Output = Result<()>>,
 ) -> CleanupResult {
     if original.is_none() {
         return CleanupResult {
@@ -102,7 +102,7 @@ pub async fn cleanup_after_launch<T>(
             error: Some(format!("{error:#}")),
         };
     }
-    match cleanup() {
+    match cleanup.await {
         Ok(()) => CleanupResult {
             stop: "canonical_stop_ok",
             cleanup: "canonical_cleanup_ok",
@@ -116,5 +116,14 @@ pub async fn cleanup_after_launch<T>(
     }
 }
 pub fn preflight_failure(error: &str) -> serde_json::Value {
-    serde_json::json!({ "sdk_source": "ee632fbb3a746709c496a95f167559a01a19fcaf", "status": "failed_preflight", "native_transfer": "NOT_RUN", "received_bytes": null, "received_sha256": null, "error": error })
+    serde_json::json!({ "sdk_source": "18b58e1ad2262a1c0bfa23d51f8e5679d3376f60", "status": "failed_preflight", "native_transfer": "NOT_RUN", "received_bytes": null, "received_sha256": null, "error": error })
+}
+
+/// Bounded external probes for this diagnostic consumer, not a service poll loop.
+pub fn receive_probe_offsets(deadline: std::time::Duration) -> Vec<std::time::Duration> {
+    [0, 100, 500, 2_000, 8_000]
+        .into_iter()
+        .map(std::time::Duration::from_millis)
+        .filter(|offset| *offset < deadline)
+        .collect()
 }

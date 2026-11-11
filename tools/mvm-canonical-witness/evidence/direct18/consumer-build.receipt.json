@@ -1,0 +1,131 @@
+{
+  "source": "18b58e1ad2262a1c0bfa23d51f8e5679d3376f60",
+  "host": "wick",
+  "toolchain": "1.97.1",
+  "profile": "release;locked;jobs2;incremental0;nice10",
+  "consumer_distinct_tests": 18,
+  "consumer_test_names": [
+    "canonical_client_constructs_only_the_named_persistent_mailbox_request",
+    "canonical_input_accepts_private_owned_directory_and_refuses_alias_or_public_directory",
+    "external_receive_probes_are_bounded_escalating_and_inside_original_deadline",
+    "failed_launch_without_original_outcome_never_stops_or_cleans_by_name",
+    "fixture_is_exact_nonempty_binary_with_zeros_within_default_grant",
+    "invalid_preflight_writes_nonempty_private_failure_evidence_without_vm_state",
+    "native::process::tests::original_pidfd_is_armed_before_stop_and_requires_reaped_process",
+    "native::process::tests::process_executable_must_match_the_held_expected_file_and_digest",
+    "native::process::tests::same_pid_exec_change_is_not_silently_recorded_as_original_cpu",
+    "native::process::tests::writable_expected_helper_cannot_authorize_matching_process",
+    "only_bounded_isolated_native_inputs_are_admitted",
+    "original_definition_fence_rejects_content_change_and_same_bytes_replacement",
+    "original_successful_launch_still_stops_after_receive_or_capture_failure",
+    "preflight_failure_is_explicit_json_without_invented_transfer_counts",
+    "preparation_refuses_a_dangling_vm_namespace_before_resolving_sources",
+    "preparation_refuses_unprotected_home_without_building_or_creating_vm_state",
+    "proc_stat_parsing_binds_start_identity_and_never_invents_cpu",
+    "stop_refusal_retains_cleanup_without_polling_another_owner"
+  ],
+  "nested_canonical_subprocess_counted_once": true,
+  "consumer_tests": "PASS",
+  "strict_all_target_clippy": "PASS",
+  "host_bins_release": "PASS",
+  "producer_musl_build": "PASS",
+  "producer_musl_strict_clippy": "PASS",
+  "registry_dependency_changes": "none; both lockfiles differ solely by exact MVM revision substitution",
+  "source_files": {
+    "Cargo.toml": "3fc991686844cd8b5ae35f6ae60f1f61c5ec807e6602e670a76b474bda2ded73",
+    "README.md": "7771ef0e1d3ea13dbb17ccbfe7bef78bb986e3880068b23dd2db433b1494a051",
+    "Cargo.lock": "43d8ddae307f0cd56ffc9bae1298640fc1567b232c67f5eb2deb5013449ca9da",
+    "src/native.rs": "8c0df104d1be5f4648467585b802af1430c174d9b6b346e6311f8f7f93b812d3",
+    "src/definition.rs": "d1b15e6ef13bd74141c09cc37c7c2152dc3c20aa1cf5bf96e993a505acbf53f0",
+    "src/main.rs": "9219556ec817d81c3d1d7d29275c3e8ea4ec1dc2acfdbed99fa7f5840460b2f1",
+    "src/process.rs": "5375aaf9a4d452fb846fefb5e4c7eb8566198c9e2af17b64cde9420626de8428",
+    "src/payload.rs": "07c41f9ff125f0d9742309562063ff0cda3efb8442f54ab4e9580317d3e95a4d",
+    "src/lib.rs": "ae6d14e7739ab152e749090592cb81d6c8698b1a85fdc91a45d013ee786d37d6",
+    "tests/validation.rs": "3767696b33af46d3bb39a6472d81696dfb4990210c3582e33ef4b66e389d270b",
+    "tests/runtime_preparation.rs": "3560b2263564fdcd21bb02f00579d70b921ca78ae9197184ff3268f1c34ec4dd",
+    "tests/output_failure.rs": "66d8dfde506103499caf7ed589ed202dc1e251e7853bfff9a0810fed8ce9ca10",
+    "tests/rootfs_input.rs": "7282eb7df3aff34d2ef78217536d5a570ca4a0eb1d1684a02fdd01b687f220b1",
+    "tests/ownership.rs": "24a8428bd7ff00b45f746b25014a5ede7b11afcccd564bd7dff1d6b5f77d5ced",
+    "tests/probe_schedule.rs": "cb14baffc780113855d0c6d6f30f0b49f8b25d1bfc816ee86082164d6c1f6892",
+    "tests/owned_definition.rs": "065023af12ceed4830338e484607750b450835de3c765851f211381aa9ff7239",
+    "tests/canonical_request.rs": "538daafdf9357a26a8dfa68898279c25fdbefb63ca194072a8e2cda4abb98355",
+    "guest/Cargo.toml": "7ffea06e8f9da92128542155fb07b13ab2a3cb9d123535f9c4c8e5cb59bed97e",
+    "guest/Cargo.lock": "66d84ab30846da0719d60dfef5e0447245b245a2f4bd84d069ddb9cd3f86b5ec",
+    "guest/src/main.rs": "d99e299c4d50ee6dcdb521662964a40f9b1c7ff10d6b047b56379d3e88d4e1ad",
+    "src/bin/prepare-runtime.rs": "45676b48133e9b8d100760c240eb1d7541109d35428860f3cba88d6e05f350eb"
+  },
+  "binaries": [
+    {
+      "name": "spiralcore-mvm-canonical-witness",
+      "bytes": 44295896,
+      "sha256": "58920dc8898cc1fc4ea4209f2a90d2962c6a697947528f6d7ce118435dc14a0f",
+      "mode": "0o500",
+      "uid": 1000,
+      "nlink": 1
+    },
+    {
+      "name": "spiralcore-mvm-prepare-runtime",
+      "bytes": 9444552,
+      "sha256": "ea0453cab42bf4e66aadf77b918b4af5affb969a32ca0399328b07ac4bb727ac",
+      "mode": "0o500",
+      "uid": 1000,
+      "nlink": 1
+    },
+    {
+      "name": "spiralcore-mailbox-producer",
+      "bytes": 623736,
+      "sha256": "517f483fa6904133152e0cc6ca2645f5d62b32bee1512472cf30fabda63f5e55",
+      "mode": "0o555",
+      "uid": 1000,
+      "nlink": 1
+    }
+  ],
+  "native_vm": "NOT_RUN",
+  "runtime_preparation": "PENDING",
+  "commands": {
+    "host_lock": "cargo update -p mvm-client",
+    "guest_lock": "cargo update --manifest-path guest/Cargo.toml -p mvm-agentd",
+    "tests": "cargo test --release --locked --lib --test canonical_request --test owned_definition --test probe_schedule --test ownership --test validation --test output_failure --test rootfs_input --test runtime_preparation",
+    "host_clippy": "cargo clippy --release --locked --all-targets -- -D warnings",
+    "host_build": "cargo build --release --locked --bins",
+    "guest_build": "cargo build --release --locked --target x86_64-unknown-linux-musl --manifest-path guest/Cargo.toml",
+    "guest_clippy": "cargo clippy --release --locked --target x86_64-unknown-linux-musl --manifest-path guest/Cargo.toml -- -D warnings"
+  },
+  "log_index": {
+    "host-lock-update.txt": {
+      "path": "/var/tmp/spiralcore-witness-18b58-20261111/host-lock-update.txt",
+      "sha256": "e2008ec4a06d980423a907a4ecd6ff4dda218c4e2328669d392600b4c946f4e6",
+      "bytes": 5210
+    },
+    "guest-lock-update.txt": {
+      "path": "/var/tmp/spiralcore-witness-18b58-20261111/guest-lock-update.txt",
+      "sha256": "b50d6b4ef54b3167f3773118e4e046df6a90ec1a1d4135fb3d9d027fd1be403c",
+      "bytes": 1480
+    },
+    "consumer-tests.txt": {
+      "path": "/var/tmp/spiralcore-witness-18b58-20261111/consumer-tests.txt",
+      "sha256": "0979ec0a4f6100e2915f6ece9bfdbd866e94f5cce0b935afdb80924bcc8eed24",
+      "bytes": 6552
+    },
+    "consumer-clippy.txt": {
+      "path": "/var/tmp/spiralcore-witness-18b58-20261111/consumer-clippy.txt",
+      "sha256": "4818f56f560bbd3ae6158036cf2c51b16d0ceb33e69eaf2fad1f7971bcc467c8",
+      "bytes": 2550
+    },
+    "consumer-build.txt": {
+      "path": "/var/tmp/spiralcore-witness-18b58-20261111/consumer-build.txt",
+      "sha256": "1ff8bbcb4151dc887e69b78a29bc241d5062cba4757aa5f4639926ae712a8181",
+      "bytes": 62
+    },
+    "producer-build.txt": {
+      "path": "/var/tmp/spiralcore-witness-18b58-20261111/producer-build.txt",
+      "sha256": "5e85d19165840b1b058b43639404315065020f4c8fe7d7ce6f455f0b7f0f9b5c",
+      "bytes": 687
+    },
+    "producer-clippy.txt": {
+      "path": "/var/tmp/spiralcore-witness-18b58-20261111/producer-clippy.txt",
+      "sha256": "aeede5d54cbfd549af8333bb7ad94423ca8b6fa8d0a05dedaa092cf35755b174",
+      "bytes": 687
+    }
+  }
+}

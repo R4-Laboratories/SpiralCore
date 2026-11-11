@@ -4,7 +4,7 @@ use spiralcore_mvm_canonical_witness::{
     native::{PRODUCER_PATH, request},
 };
 #[test]
-fn canonical_client_constructs_only_the_named_transient_mailbox_request() {
+fn canonical_client_constructs_only_the_named_persistent_mailbox_request() {
     if std::env::var_os("SPIRALCORE_REQUEST_TEST_CHILD").is_some() {
         let home = std::env::var_os("MVM_HOME").expect("isolated child home");
         let config = Config {
@@ -16,7 +16,7 @@ fn canonical_client_constructs_only_the_named_transient_mailbox_request() {
         };
         let actual = request(&config).unwrap();
         assert_eq!(actual.name(), Some(config.name.as_str()));
-        assert_eq!(actual.mode(), mvm_client::LifecycleMode::Transient);
+        assert_eq!(actual.mode(), mvm_client::LifecycleMode::Persistent);
         assert_eq!(actual.command(), [PRODUCER_PATH]);
         assert!(config.home.join("keys").is_dir());
         assert!(
@@ -33,7 +33,7 @@ fn canonical_client_constructs_only_the_named_transient_mailbox_request() {
     let status = std::process::Command::new(std::env::current_exe().unwrap())
         .args([
             "--exact",
-            "canonical_client_constructs_only_the_named_transient_mailbox_request",
+            "canonical_client_constructs_only_the_named_persistent_mailbox_request",
         ])
         .env("SPIRALCORE_REQUEST_TEST_CHILD", "1")
         .env("MVM_HOME", &home)
