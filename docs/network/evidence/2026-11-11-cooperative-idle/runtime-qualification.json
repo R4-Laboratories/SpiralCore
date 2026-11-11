@@ -1,0 +1,123 @@
+{
+  "schema": "spiralcore.cooperative-idle.focused-qualification.v1",
+  "packet": "/var/tmp/spiralcore-mailbox-worker-owner-20261111/integrated-cooperative-first-20261111",
+  "source_status": "uncommitted exact integration; full source manifest retained",
+  "host": {
+    "system": "Linux",
+    "release": "7.0.0-42-generic",
+    "machine": "x86_64"
+  },
+  "rust": "1.97.1",
+  "profile": {
+    "release": true,
+    "locked": true,
+    "offline": true,
+    "jobs": 2,
+    "nice": 10,
+    "umask": "022",
+    "mvm_embed": "0",
+    "incremental": "0",
+    "new_target": false
+  },
+  "source_checks": {
+    "compiler_attempt1": true,
+    "compiler_attempt2": true,
+    "library_tests": true,
+    "production_compiler": true,
+    "idle_process": true
+  },
+  "executables": {
+    "library": [
+      "ccb10e484c41f2123bf435589cfdc712f87e68bf9a4d7ea5ab10cc5440372c0c  /var/tmp/spiralcore-installed-controller.MDjnre/target/release/deps/mvm_hostd-0ad15abce9da80e8"
+    ],
+    "idle_and_production": [
+      "23c28ad4042a6f563bf3c65df1bf7024cdbfd0926aa26c9d273361f916815bde  /var/tmp/spiralcore-installed-controller.MDjnre/target/release/deps/host_agent_idle_collection-31828ea4c4bbf3a7",
+      "2c52d3e74d67afb0ba75b49c5ccd8ade72fe1b6573a9831022c9b83918a4d8bc  /var/tmp/spiralcore-installed-controller.MDjnre/target/release/mvm-host-agent",
+      "c9eb2a6b1d31f40d68d2715f6ce570db0fb8a2694dcfacd2ae977cca8a903f33  /var/tmp/spiralcore-installed-controller.MDjnre/target/release/mvm-signer-helper"
+    ]
+  },
+  "checks": [
+    {
+      "scope": "direct_daemon_custody_and_signed_cancellation",
+      "passed": 3,
+      "failed": 0,
+      "ignored": 0,
+      "filtered": 2366
+    },
+    {
+      "scope": "accepted_token_resource_and_drain",
+      "passed": 4,
+      "failed": 0,
+      "ignored": 0,
+      "filtered": 2365
+    },
+    {
+      "scope": "retained_cell_and_parked_start",
+      "passed": 11,
+      "failed": 0,
+      "ignored": 0,
+      "filtered": 2358,
+      "note": "one same-case isolated subprocess invocation; not an additional distinct outer case"
+    },
+    {
+      "scope": "owned_service_connections",
+      "passed": 6,
+      "failed": 0,
+      "ignored": 0,
+      "filtered": 2363
+    },
+    {
+      "scope": "actual_production_idle_signer_collection",
+      "passed": 1,
+      "failed": 0,
+      "ignored": 0,
+      "filtered": 0,
+      "elapsed_seconds": 1.03,
+      "worker_exit_code": 42,
+      "ready": 1,
+      "original_collections": 1,
+      "fixture_adopted_reaped": 0,
+      "trace_bytes": 833,
+      "trace_truncated": false
+    }
+  ],
+  "distinct_selected_outer_tests": 25,
+  "preserved_failures": [
+    {
+      "kind": "compile_fixture_only",
+      "attempt": 1,
+      "error": "E0308: temporary PathBuf needed &Path in direct fixture initialize call",
+      "fix": "single borrow; no product/test semantic change"
+    }
+  ],
+  "transport_metadata": {
+    "sidecars": 11,
+    "preexisting": 4,
+    "deleted": 0,
+    "compiled_as_rust": false
+  },
+  "limitations": [
+    "Focused component and Linux host-process evidence only; no VM or WAN was exercised.",
+    "Not strict Clippy/all-target or full workspace qualification.",
+    "Four original real-process restart consumers, startup replay and stale-socket recovery remain open.",
+    "Authenticated explicit recovery of retained unresolved work remains open.",
+    "No data-transfer bytes, fidelity, CPU-speedup, memory-capacity or energy claim follows from these lifecycle tests.",
+    "GNU time build/test accounting retained in raw logs; build cost is separate from product transfer performance."
+  ],
+  "artifacts": {
+    "compiler-attempt1.jsonl": "93b15d343c004abba21b17a27b8c1bd9c31d89dfa825217d1231e7cd34da9634",
+    "compiler-attempt1.stderr": "2cc68a1e9906a363399476f6e49b0791e2567a54a2eb758cd4226ec9fddbdebe",
+    "compiler-attempt2.jsonl": "519e0563b3927bdd548094100bf0cc36333f4fe65a26cafda57c11256c1a8a76",
+    "compiler-attempt2.stderr": "095084a54c338bcfa58701404fff0a653c9a5abaf7317ee3519a069ce68bfc9d",
+    "cooperative-tests.txt": "c9e624e5606fb9f7420da2cc3e5162408765bd57f8910dfe8ae94765bb2f085c",
+    "token-tests.txt": "dbd43e0bbf3bfecd356c4df9c367b3ea9ae4473995664a79c7424250ef43a6be",
+    "cell-tests.txt": "387452711f05200391110cc1523bb6533df0aa33d39350d0a6ca378fc2d0343f",
+    "server-tests.txt": "ebdff988c13caac691de472e8ebdefc2d124f100728fcdfee6535aa4510926bc",
+    "idle-compiler-attempt1.jsonl": "db94970db4045ef9d5b2e7839214f810d63b2a7d1d8f0444093861dd462b15ca",
+    "idle-compiler-attempt1.stderr": "4e11603df74eb78b4884a82c5d4c7a4aa75369e6c935c1908675a449711d6952",
+    "idle-process-attempt1.txt": "72ea26ece9d3df66b16e30b15153d69740d601e94eb61a9082eb5f2a370788f6",
+    "source.attempt2.sha256": "c53094483a087bd9723f461b9cbcdeee055589b931f090d889714e1508595765",
+    "library-executable.before.sha256": "7ed501fd0c7781f4d5738ae1a456a78432ed8c7e88254a3e6f4ee82dc7c512c5",
+    "idle-executables.before.sha256": "b20de66c56919038e116edbda6bba89d478ff6cc26429e309df1ecbdb4bdc32d"
+  }
+}

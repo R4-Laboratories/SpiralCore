@@ -1,0 +1,113 @@
+warning: method `store_and_loan` is never used
+  --> crates/mvm-hostd/src/broker/control_prepare.rs:66:8
+   |
+53 | impl<T> CustodyField<T> {
+   | ----------------------- method in this implementation
+...
+66 |     fn store_and_loan(
+   |        ^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: field `original` is never read
+   --> crates/mvm-hostd/src/broker/control_prepare.rs:167:16
+    |
+166 | pub(crate) struct JournalSnapshots {
+    |                   ---------------- field in this struct
+167 |     pub(crate) original: Vec<mvm_core::protocol::broker_control::RegisterVm>,
+    |                ^^^^^^^^
+
+warning: struct `MutationStartFailure` is never constructed
+   --> crates/mvm-hostd/src/broker/control_prepare.rs:304:19
+    |
+304 | pub(crate) struct MutationStartFailure {
+    |                   ^^^^^^^^^^^^^^^^^^^^
+
+warning: methods `stopped` and `begin_mutation` are never used
+   --> crates/mvm-hostd/src/broker/control_prepare.rs:341:25
+    |
+314 | impl MutationCell {
+    | ----------------- methods in this implementation
+...
+341 |     pub(crate) async fn stopped(&self) {
+    |                         ^^^^^^^
+...
+413 |     pub(crate) fn begin_mutation(
+    |                   ^^^^^^^^^^^^^^
+
+warning: method `cancel_services` is never used
+   --> crates/mvm-hostd/src/broker/control_prepare.rs:657:25
+    |
+597 | impl PreparedRegistration {
+    | ------------------------- method in this implementation
+...
+657 |     pub(crate) async fn cancel_services(&mut self) -> Result<RegistrationDrainReceipt> {
+    |                         ^^^^^^^^^^^^^^^
+
+warning: methods `park_start` and `release_parked_start` are never used
+   --> crates/mvm-hostd/src/broker/control_prepare.rs:845:19
+    |
+770 | impl LiveVmHandle {
+    | ----------------- methods in this implementation
+...
+845 |     pub(crate) fn park_start(&mut self, start: StartLatch) -> Result<()> {
+    |                   ^^^^^^^^^^
+...
+859 |     pub(crate) fn release_parked_start(&mut self) -> Result<()> {
+    |                   ^^^^^^^^^^^^^^^^^^^^
+
+warning: method `contains` is never used
+   --> crates/mvm-hostd/src/broker/mailbox_workers.rs:743:19
+    |
+708 | impl MailboxWorkers {
+    | ------------------- method in this implementation
+...
+743 |     pub(crate) fn contains(&self, vm: &str) -> io::Result<bool> {
+    |                   ^^^^^^^^
+
+warning: `mvm-hostd` (lib) generated 7 warnings
+   Compiling mvm-hostd v0.27.0 (/var/tmp/spiralcore-mailbox-worker-owner-20261111/source/crates/mvm-hostd)
+    Finished `release` profile [optimized] target(s) in 11.86s
+     Running tests/host_agent_restart.rs (/var/tmp/spiralcore-installed-controller.MDjnre/target/release/deps/host_agent_restart-4014508e74522de5)
+
+running 4 tests
+test daemon_crash_mid_flight_loses_at_most_one_call_and_preserves_chain ... FAILED
+test idle_daemon_self_terminates_when_last_vm_deregisters ... FAILED
+test worker_restart_restores_journaled_registration_and_chain ... FAILED
+test wrapper_restart_restores_journaled_registration_and_chain ... FAILED
+
+failures:
+
+---- daemon_crash_mid_flight_loses_at_most_one_call_and_preserves_chain stdout ----
+
+thread 'daemon_crash_mid_flight_loses_at_most_one_call_and_preserves_chain' (3816530) panicked at crates/mvm-hostd/tests/host_agent_restart.rs:74:67:
+start host-agent: mvm-host-agent did not bind /tmp/.tmppgFbLm/host-agent/local/control.sock within 10s
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- idle_daemon_self_terminates_when_last_vm_deregisters stdout ----
+
+thread 'idle_daemon_self_terminates_when_last_vm_deregisters' (3816588) panicked at crates/mvm-hostd/tests/host_agent_restart.rs:74:67:
+start host-agent: mvm-host-agent did not bind /tmp/.tmpHXAcv1/host-agent/local/control.sock within 10s
+
+---- worker_restart_restores_journaled_registration_and_chain stdout ----
+
+thread 'worker_restart_restores_journaled_registration_and_chain' (3816610) panicked at crates/mvm-hostd/tests/host_agent_restart.rs:74:67:
+start host-agent: mvm-host-agent did not bind /tmp/.tmp5yECn3/host-agent/local/control.sock within 10s
+
+---- wrapper_restart_restores_journaled_registration_and_chain stdout ----
+
+thread 'wrapper_restart_restores_journaled_registration_and_chain' (3816636) panicked at crates/mvm-hostd/tests/host_agent_restart.rs:74:67:
+start host-agent: mvm-host-agent did not bind /tmp/.tmpdm3MvW/host-agent/local/control.sock within 10s
+
+
+failures:
+    daemon_crash_mid_flight_loses_at_most_one_call_and_preserves_chain
+    idle_daemon_self_terminates_when_last_vm_deregisters
+    worker_restart_restores_journaled_registration_and_chain
+    wrapper_restart_restores_journaled_registration_and_chain
+
+test result: FAILED. 0 passed; 4 failed; 0 ignored; 0 measured; 0 filtered out; finished in 40.07s
+
+error: test failed, to rerun pass `-p mvm-hostd --test host_agent_restart`
+Command exited with non-zero status 101
+RESTART_WALL_S=51.96 RESTART_USER_S=21.42 RESTART_SYSTEM_S=1.84 RESTART_MAX_RSS_KIB=680884

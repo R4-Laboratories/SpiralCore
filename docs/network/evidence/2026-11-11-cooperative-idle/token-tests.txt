@@ -1,0 +1,14 @@
+
+running 4 tests
+test broker::daemon::token_tests::accepted_settlement_failure_keeps_the_same_original_token ... 
+thread '<unnamed>' (3789426) panicked at crates/mvm-hostd/src/broker/daemon/token_tests.rs:25:13:
+controlled accepted-ledger poison
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+ok
+test broker::daemon::token_tests::mutation_keeps_its_original_resource_lease_until_explicit_settlement ... ok
+test broker::daemon::token_tests::mutation_reserves_its_original_cell_before_creating_accepted_work ... ok
+test broker::daemon::token_tests::service_drain_refuses_a_retained_or_loaned_original_mutation ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 2365 filtered out; finished in 0.00s
+
+TEST_WALL_S=0.00 TEST_USER_S=0.00 TEST_SYSTEM_S=0.00 TEST_MAX_RSS_KIB=18904

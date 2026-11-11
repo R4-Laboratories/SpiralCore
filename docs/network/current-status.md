@@ -1,7 +1,7 @@
 # Networking delivery status
 
 Snapshot: **2026-11-11**, checked against published `origin/main`
-`74e2fd6fa74ebf33169f9b7289684d21b0a62c72` and the live GitHub issue graph.
+`fabea816dd7b3e2fccd542a38ece920c27e754a1` and the live GitHub issue graph.
 This page separates accepted components, measured experiments and unmerged work.
 The [README](../../README.md) is the architecture/results entry point;
 [issue #42](https://github.com/R4-Laboratories/SpiralCore/issues/42) remains the
@@ -121,8 +121,10 @@ composition, with strict scoped Clippy and preserved MIT provenance. The
 [source-bound report](evidence/2026-11-11-mvm-resource-owner/README.md) distinguishes
 participating-holder exclusion from original-child collection and records the
 additive qualification overlay. [Issue #114](https://github.com/R4-Laboratories/SpiralCore/issues/114)
-tracks cooperative admission fencing and watcher/worker/signer drain; its actual
-idle-collection regression remains failed until the coordinator is integrated.
+tracks cooperative admission fencing and watcher/worker/signer drain. The first
+integrated fresh Linux host-process idle witness now passes, with original signer
+collection before exit42; strict and restart-consumer gates remain open as
+recorded below.
 The [upstream ownership index](https://github.com/tinylabscom/mvm/issues/4629#issuecomment-6794294611)
 keeps these implementations visible before final service/WAN qualification.
 
@@ -152,6 +154,21 @@ regular source files unchanged. Original failed client fixtures and the missing-
 PATH attempt remain retained. These are component and compile results; actual
 cooperative coordinator activation, installed retirement and final native/WAN
 acceptance remain open.
+
+The [cooperative-idle checkpoint](evidence/2026-11-11-cooperative-idle/README.md)
+is public at MVM fork
+[`0aa190b32`](https://github.com/Casey-allard/mvm/commit/0aa190b32753b6862bed51a6c7a2d2a0b6b701e4).
+Its declared runtime composition passes 25 selected outer cases, including the
+actual production agent/signing-helper process: ready1, one original collection,
+zero fixture-adopted reaping, then exit42 in a 1.03-second test. The packet keeps
+all source differences explicit; the older core mailbox API in that runtime
+composition is not relabeled as whole-commit runtime execution. Both required
+gated compile commands pass separately on the exact immutable commit, with
+4,478 regular source hashes unchanged. **Strict Clippy fails, and all four
+original restart consumers fail during initial startup before registration or
+replay.** Canonical early provisioning, startup/recovery and native guest/WAN
+qualification remain open. This repairs a scoped shutdown result and does not
+complete the installed service or #114.
 
 [PR #95](https://github.com/R4-Laboratories/SpiralCore/pull/95) adds canonical
 transport-binding revocation to the mailbox adapter. Live Call and Reply keep
