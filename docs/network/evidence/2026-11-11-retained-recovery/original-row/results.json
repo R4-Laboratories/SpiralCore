@@ -1,0 +1,92 @@
+{
+  "profile": "Linux, Rust 1.97.1; mvm-hostd lib tests, release/locked/offline. Each filter invoked the identified executable with --exact --nocapture --test-threads=1.",
+  "measurements": "Single whole-fixture wall seconds; no per-test CPU, network bytes, guest throughput or memory measurement in this batch.",
+  "runs": {
+    "red": {
+      "build_wall_s": 164.31087697896874,
+      "binary_sha256": "51a98982c23812054f588850750c888237eac32eb96f57f74fa93a412e9b48fb",
+      "source_files": 4494,
+      "source_manifest_sha256": "a199cc6d542954ad9ed82b0a728ce7794aa2b3af20e0a0d796ae50e05872cb60",
+      "cases": [
+        {
+          "exit": 101,
+          "log_sha256": "fb33f2787c1e5f1cbb57b13625a426503d8352e100d9461609986e7a49754fe2",
+          "name": "broker::daemon::row_identity_tests::stale_recovery_caller_cannot_settle_a_replacement_row_in_the_same_cell",
+          "wall_seconds": 0.0036246380186639726,
+          "output": "\nrunning 1 test\ntest broker::daemon::row_identity_tests::stale_recovery_caller_cannot_settle_a_replacement_row_in_the_same_cell ... RECOVERY_ROW_ABA original=1 replacement=2 stale_error=None replacement_retained=false permits_before_fixture_cleanup=1 lease_retained=false\n\nthread 'broker::daemon::row_identity_tests::stale_recovery_caller_cannot_settle_a_replacement_row_in_the_same_cell' (4034100) panicked at crates/mvm-hostd/src/broker/daemon/row_identity_tests.rs:280:5:\nstale recovery must reject the changed original row, never retarget to the newest same-VM row\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\nFAILED\n\nfailures:\n\nfailures:\n    broker::daemon::row_identity_tests::stale_recovery_caller_cannot_settle_a_replacement_row_in_the_same_cell\n\ntest result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 2380 filtered out; finished in 0.00s\n\n"
+        },
+        {
+          "exit": 101,
+          "log_sha256": "0aaceae220f7d912b5de9cb2eb4c31aae9aa852db34401d818a242a9ce378b0a",
+          "name": "broker::daemon::row_identity_tests::stale_normal_publication_cannot_mutate_a_replacement_row_in_the_same_cell",
+          "wall_seconds": 0.002848411037120968,
+          "output": "\nrunning 1 test\ntest broker::daemon::row_identity_tests::stale_normal_publication_cannot_mutate_a_replacement_row_in_the_same_cell ... NORMAL_ROW_ABA original=1 replacement=2 stale_error=None replacement_retained=false permits_before_fixture_cleanup=1 endpoint_exposed=true\n\nthread 'broker::daemon::row_identity_tests::stale_normal_publication_cannot_mutate_a_replacement_row_in_the_same_cell' (4034103) panicked at crates/mvm-hostd/src/broker/daemon/row_identity_tests.rs:333:5:\nstale normal caller must reject the changed original row before effects\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\nFAILED\n\nfailures:\n\nfailures:\n    broker::daemon::row_identity_tests::stale_normal_publication_cannot_mutate_a_replacement_row_in_the_same_cell\n\ntest result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 2380 filtered out; finished in 0.00s\n\n"
+        }
+      ]
+    },
+    "green": {
+      "build_wall_s": 164.7448535290314,
+      "binary_sha256": "f4f7a05a587279b09db5ddb841a3d601cfa02abcdd86f78097182e7c71df267f",
+      "source_files": 4494,
+      "source_manifest_sha256": "c4e18334faa8d7187515d70cc58f9cb205ad9c888a43efee7b2f885ba36d536d",
+      "cases": [
+        {
+          "exit": 0,
+          "log_sha256": "c72fcf02b4a1b3a9707d2847978e6a116b761c8a11ad5c8410296c95cac1dac5",
+          "name": "broker::daemon::row_identity_tests::stale_recovery_caller_cannot_settle_a_replacement_row_in_the_same_cell",
+          "wall_seconds": 0.0029370009433478117,
+          "output": "\nrunning 1 test\ntest broker::daemon::row_identity_tests::stale_recovery_caller_cannot_settle_a_replacement_row_in_the_same_cell ... RECOVERY_ROW_ABA original=1 replacement=2 stale_error=Some(\"original recovery row changed\") replacement_retained=true permits_before_fixture_cleanup=0 lease_retained=true\nok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2380 filtered out; finished in 0.00s\n\n"
+        },
+        {
+          "exit": 0,
+          "log_sha256": "10823b976205477597fd11971392eeb1c1b12f0bd28660816ab9f5917a7135da",
+          "name": "broker::daemon::row_identity_tests::stale_normal_publication_cannot_mutate_a_replacement_row_in_the_same_cell",
+          "wall_seconds": 0.002363816020078957,
+          "output": "\nrunning 1 test\ntest broker::daemon::row_identity_tests::stale_normal_publication_cannot_mutate_a_replacement_row_in_the_same_cell ... NORMAL_ROW_ABA original=1 replacement=2 stale_error=Some(\"original mutation row changed before effects\") replacement_retained=true permits_before_fixture_cleanup=0 endpoint_exposed=false\nok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2380 filtered out; finished in 0.00s\n\n"
+        },
+        {
+          "exit": 0,
+          "log_sha256": "cd2b683f85b2b37a17c043bcff508fd051f144b33dba5607c0a2b84d17126044",
+          "name": "broker::daemon::recovery_tests::signed_deregister_reconciles_original_then_commits_its_own_removal",
+          "wall_seconds": 0.02492059499491006,
+          "output": "\nrunning 1 test\ntest broker::daemon::recovery_tests::signed_deregister_reconciles_original_then_commits_its_own_removal ... RECONCILED_STOPPED_WITNESS returned_before_join=false charged=true original_row_retained=true original_settled=true new_current_turn_completed=true current_error=None\nok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2380 filtered out; finished in 0.02s\n\n"
+        },
+        {
+          "exit": 0,
+          "log_sha256": "a5be2a01eb9ce8a95b892b4ea1479692950cc34d4e266c8c35c2164651b51074",
+          "name": "broker::daemon::recovery_tests::signed_deregister_preserves_conflicting_journal_and_charge",
+          "wall_seconds": 0.024175483034923673,
+          "output": "\nrunning 1 test\ntest broker::daemon::recovery_tests::signed_deregister_preserves_conflicting_journal_and_charge ... RECONCILED_STOPPED_WITNESS returned_before_join=false charged=true original_row_retained=true original_settled=false new_current_turn_completed=false current_error=Some(\"original I/O failed; retained outcome requires reconciliation\")\nok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2380 filtered out; finished in 0.02s\n\n"
+        },
+        {
+          "exit": 0,
+          "log_sha256": "bb00d4e0c4034272dbe89bf724e5d1b2353f20f26a4d94529dfd95a07fe7ff3b",
+          "name": "broker::daemon::recovery_tests::stopped_inventory_compares_each_complete_registration_exactly_once",
+          "wall_seconds": 0.000977666990365833,
+          "output": "\nrunning 1 test\ntest broker::daemon::recovery_tests::stopped_inventory_compares_each_complete_registration_exactly_once ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2380 filtered out; finished in 0.00s\n\n"
+        },
+        {
+          "exit": 0,
+          "log_sha256": "554e1f9f350c9e6703bcdefc649f6edf7cc4f67a80ef05e1e0d5d0448ef6834c",
+          "name": "broker::daemon::tests::register_binds_socket_then_deregister_unbinds",
+          "wall_seconds": 0.0011862459941767156,
+          "output": "\nrunning 1 test\ntest broker::daemon::tests::register_binds_socket_then_deregister_unbinds ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2380 filtered out; finished in 0.00s\n\n"
+        },
+        {
+          "exit": 0,
+          "log_sha256": "fbc3149ab2b1a72b12f6dde73f36a537da73f69f01d84d369437a2da56a9a2d6",
+          "name": "broker::daemon::cooperative_tests::cancelled_signed_replacement_retains_original_service_and_mutation_credit",
+          "wall_seconds": 0.0015943560283631086,
+          "output": "\nrunning 1 test\ntest broker::daemon::cooperative_tests::cancelled_signed_replacement_retains_original_service_and_mutation_credit ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2380 filtered out; finished in 0.00s\n\n"
+        },
+        {
+          "exit": 0,
+          "log_sha256": "08b29fc53998aa527fbc03e3075f8ee0839ec73c3a94399b17a9c8faa5c44391",
+          "name": "broker::daemon::startup_tests::trusted_preparing_replay_keeps_two_original_services_parked_until_active",
+          "wall_seconds": 0.046571756014600396,
+          "output": "\nrunning 1 test\ntest broker::daemon::startup_tests::trusted_preparing_replay_keeps_two_original_services_parked_until_active ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2380 filtered out; finished in 0.05s\n\n"
+        }
+      ]
+    }
+  }
+}
