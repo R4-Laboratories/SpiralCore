@@ -30,7 +30,7 @@ No journal or anchor I/O runs under the broker dispatch or service state mutex. 
 
 ## History key custody
 
-The current separate encryption root plus host-local per-launch secret is not a durable history recovery provider. The secret is shredded on stop/replacement. A signing seed is not a fallback decryption authority. Durable admission remains disabled when history custody is unavailable.
+The current separate encryption root plus host-local per-launch secret is not a durable history recovery provider. Canonical teardown attempts logical overwrite/unlink of the launch secret on stop/replacement; failures remain explicit. A signing seed is not a fallback decryption authority. Durable admission remains disabled when history custody is unavailable.
 
 Ari can own the initial `HistoryKeyCustody` trait proposal alongside the journal contract. Its operations must identify tenant/domain, mailbox, canonical epoch, encryption algorithm and key ID; produce a bounded recoverability lease/reference before durable acceptance; and support recovery, expiry, rotation, revocation and retirement under the intended journal retention policy. The journal receives opaque custody references, never plaintext keys or the raw launch secret. The actual encryption/wrapping scheme, provider trust boundary, external anchor and deployment persistence guarantees require review before implementation claims. This proposal chooses no key scheme and makes no host-blind or physical-erasure guarantee.
 
