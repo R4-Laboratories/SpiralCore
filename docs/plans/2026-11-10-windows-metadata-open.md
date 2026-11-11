@@ -51,3 +51,15 @@ The jobs subsequently stopped at the new strict transfer all-target Clippy step.
 
 
 Linux validation for the three binding corrections passed 13 release capture-control tests and five release `receiver_stages` tests, with zero failures or ignores. Strict release all-target transfer Clippy also passed. The Wick source packet is a verified 199-file `5c617d7f` baseline with only the three separately hashed source overlays, using the existing Cargo target, two build jobs and nice level 10 after the MVM witness queue released it. Native Windows Clippy and sustained qualification remain pending publication and execution; the Linux result is not substituted for them.
+
+
+## Canonical restoration for the schema-reuse fixture
+
+At `91f597cf97d0a14ea66d35216a8927b3142fa203`, run [42943545286](https://github.com/R4-Laboratories/SpiralCore/actions/runs/42943545286), the Windows 2025 and Windows 2022 jobs again passed all three selected metadata tests and complete refusal/readback markers. Strict all-target transfer Clippy then exposed two compile errors in one pre-existing integration fixture: the unguarded Unix `PermissionsExt` import and `Permissions::from_mode` call in `tests/schema_reuse.rs`. The sustained FlowMux stage was not reached. This Clippy invocation compiles integration targets; it does not establish that their tests ran on Windows.
+
+The fixture had deleted a publication to prove missing-artifact refusal, then recreated it with raw file I/O and Unix chmod. Merely hiding chmod on Windows would not establish the required private Windows DACL. Instead, restore the same artifact through the existing public `seed` transfer helper using a fresh, unused transfer ID, then assert that its serialized bytes equal the original. Canonical Endpoint publication creates the correct platform-private artifact. The missing-artifact assertion remains before restoration; corrupt-cache, authorization, epoch, recipient, reuse and exact-recovery assertions remain intact. No product storage or permissions validation changes.
+
+A bounded scan of Unix filesystem imports and conditional directory-builder mutation in transfer tests/examples and source found no other unguarded use in the matching category: the endpoint permissions test, receiver-stage mode block, capture-control imports and Unix storage module are gated appropriately. All mutable OpenOptions/File bindings in the inspected category also have unconditional uses. This is a scoped source finding, not a substitute for native strict all-target compilation. Existing native positive metadata evidence and failed CI rows remain separate.
+
+
+The corrected fixture passed all five existing `schema_reuse` release tests on Wick, with zero failures, ignores or filters, and strict release all-target transfer Clippy passed. A fresh 199-file `91f597cf` source closure plus one fixture overlay was used with the existing target and bounded build settings. Native Windows execution of this integration test remains required; the earlier metadata tests passing does not substitute for it.

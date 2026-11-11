@@ -107,7 +107,7 @@ jobs:
           if (git status --porcelain -- crates/spiralcore-transfer/Cargo.lock) { throw 'Locked metadata execution changed source' }
       - name: Strict metadata and transfer warnings
         run: |
-          & cargo "+1.97.1-$env:NATIVE_TARGET" clippy --release --locked --manifest-path crates/spiralcore-transfer/Cargo.toml --all-targets -- -D warnings 2>&1 | Tee-Object flowmux-evidence/metadata-clippy.txt
+          & cargo "+1.97.1-$env:NATIVE_TARGET" clippy --release --locked --keep-going --manifest-path crates/spiralcore-transfer/Cargo.toml --all-targets -- -D warnings 2>&1 | Tee-Object flowmux-evidence/metadata-clippy.txt
           if ($LASTEXITCODE -ne 0) { throw 'Strict transfer Clippy failed' }
       - name: Execute nonzero paired TLS and exact-object tests
         run: |
@@ -136,23 +136,23 @@ jobs:
           if ($passed -ne $listed) { throw 'Listed tests do not equal passed tests' }
           @{ listed = $listed; passed = $passed; failed = 0; ignored = 0; scope = 'component only' } | ConvertTo-Json | Set-Content flowmux-evidence/counts.json
           if (git status --porcelain -- crates/spiralcore-mvm-flowmux/Cargo.lock) { throw 'Locked execution changed source' }
-      - name: Execute ordered cache and Small resource regressions
+      - name: Execute ordered cache, Small resource and schema reuse regressions
         run: |
           $ErrorActionPreference = 'Stop'
           $PSNativeCommandUseErrorActionPreference = $false
           $cargoArgs = @("+1.97.1-$env:NATIVE_TARGET", 'test', '--release', '--locked', '--manifest-path',
-            'crates/spiralcore-transfer/Cargo.toml', '--test', 'ordered_retention', '--test', 'small_resources')
+            'crates/spiralcore-transfer/Cargo.toml', '--test', 'ordered_retention', '--test', 'small_resources', '--test', 'schema_reuse')
           $listing = (& cargo @cargoArgs -- --list --format terse 2>&1 | Out-String)
           $code = $LASTEXITCODE
           $listing | Set-Content flowmux-evidence/ordered-list.txt
           $listed = [regex]::Matches($listing, '(?m)^.+: test\r?$').Count
-          if ($code -ne 0 -or $listed -ne 15) { throw "Expected 15 ordered/Small regressions, listed $listed" }
+          if ($code -ne 0 -or $listed -ne 20) { throw "Expected 20 ordered/Small/schema regressions, listed $listed" }
           $log = (& cargo @cargoArgs -- --format pretty --color never 2>&1 | Out-String)
           $code = $LASTEXITCODE
           $log | Set-Content flowmux-evidence/ordered-tests.txt
           $log | Write-Output
           $summaries = [regex]::Matches($log, 'test result: ok\. (\d+) passed; (\d+) failed; (\d+) ignored; (\d+) measured; (\d+) filtered out;')
-          if ($code -ne 0 -or $summaries.Count -ne 2) { throw 'Ordered/Small regressions failed' }
+          if ($code -ne 0 -or $summaries.Count -ne 3) { throw 'Ordered/Small/schema regressions failed' }
           $passed = 0
           foreach ($summary in $summaries) {
             $g = $summary.Groups
@@ -160,7 +160,7 @@ jobs:
             $passed += [int]$g[1].Value
           }
           if ($passed -ne $listed) { throw 'Ordered listed/passed mismatch' }
-          @{ listed = $listed; passed = $passed; failed = 0; ignored = 0; scope = 'ordered cache and Small resources; component only' } | ConvertTo-Json | Set-Content flowmux-evidence/ordered-counts.json
+          @{ listed = $listed; passed = $passed; failed = 0; ignored = 0; scope = 'ordered cache, Small resources and schema reuse; component only' } | ConvertTo-Json | Set-Content flowmux-evidence/ordered-counts.json
       - name: Strict component warnings
         run: |
           & cargo "+1.97.1-$env:NATIVE_TARGET" clippy --release --locked --manifest-path crates/spiralcore-mvm-flowmux/Cargo.toml --all-targets -- -D warnings 2>&1 | Tee-Object flowmux-evidence/clippy.txt
