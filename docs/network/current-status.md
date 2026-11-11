@@ -211,6 +211,13 @@ recovery, historical socket ownership, actual assurance activation, original-fou
 restart acceptance and installed native/WAN/platform gates remain open. These
 functional results add no transfer-speed, capacity or FIPS claim.
 
+The [interrupted-registration checkpoint](evidence/2026-11-11-retained-recovery/README.md)
+adds a passing signed deregistration after a cancelled replacement and a physical
+journal regression: a repeated VM record cannot substitute for a missing one.
+Both pre-fix failures, three passing inventory cases, and the source delta are
+retained. Concurrent callers must still prove they reacquire the exact original
+row, and the installed worker must join the control reply before signer shutdown.
+
 [PR #95](https://github.com/R4-Laboratories/SpiralCore/pull/95) adds canonical
 transport-binding revocation to the mailbox adapter. Live Call and Reply keep
 both checked policy generations through transport admission. Prepared receipts
