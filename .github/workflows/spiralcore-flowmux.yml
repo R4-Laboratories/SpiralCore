@@ -71,6 +71,44 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Toolchain install failed' }
           rustc "+1.97.1-$env:NATIVE_TARGET" -vV | Tee-Object flowmux-evidence/rustc.txt
           if ($LASTEXITCODE -ne 0 -or !(Select-String -Path flowmux-evidence/rustc.txt -SimpleMatch -Pattern "host: $env:NATIVE_TARGET")) { throw 'Toolchain is not native' }
+      - name: Execute checked metadata guards and native paired comparison
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $false
+          $cargoArgs = @("+1.97.1-$env:NATIVE_TARGET", 'test', '--release', '--locked', '--manifest-path',
+            'crates/spiralcore-transfer/Cargo.toml', '--lib', 'endpoint::metadata_tests')
+          $expected = if ($env:RUNNER_OS -eq 'Windows') { 3 } else { 2 }
+          $listing = (& cargo @cargoArgs -- --list --format terse 2>&1 | Out-String)
+          $code = $LASTEXITCODE
+          $listing | Set-Content flowmux-evidence/metadata-list.txt
+          $listed = [regex]::Matches($listing, '(?m)^.+: test\r?$').Count
+          if ($code -ne 0 -or $listed -ne $expected) { throw "Expected $expected metadata guards, listed $listed" }
+          $log = (& cargo @cargoArgs -- --show-output --test-threads=1 --color never 2>&1 | Out-String)
+          $code = $LASTEXITCODE
+          $log | Set-Content flowmux-evidence/metadata-tests.txt
+          $log | Write-Output
+          $summaries = [regex]::Matches($log, 'test result: ok\. (\d+) passed; (\d+) failed; (\d+) ignored; (\d+) measured; (\d+) filtered out;')
+          if ($code -ne 0 -or $summaries.Count -ne 1) { throw 'Metadata guards failed' }
+          $g = $summaries[0].Groups
+          if ([int]$g[1].Value -ne $expected -or [int]$g[2].Value -ne 0 -or [int]$g[3].Value -ne 0 -or [int]$g[4].Value -ne 0) { throw 'Incomplete metadata guards' }
+          @{ listed = $listed; passed = [int]$g[1].Value; failed = 0; ignored = 0;
+            filtered_other_library_tests = [int]$g[5].Value;
+            scope = 'selected metadata equivalence guards; Windows includes six paired native trials'
+          } | ConvertTo-Json | Set-Content flowmux-evidence/metadata-counts.json
+          if ($env:RUNNER_OS -eq 'Windows') {
+            $pairs = [regex]::Matches($log, '(?m)^METADATA_OPEN_PAIR (.+)\r?$')
+            if ($pairs.Count -ne 6 -or [regex]::Matches($log, '(?m)^METADATA_OPEN_SETUP ').Count -ne 1 -or [regex]::Matches($log, '(?m)^METADATA_OPEN_GUARDS ').Count -ne 1) { throw 'Missing native metadata measurements or refusal guards' }
+            $rows = @($pairs | ForEach-Object { $_.Groups[1].Value | ConvertFrom-Json })
+            foreach ($row in $rows) {
+              if ($row.exact_readbacks -ne $true -or $row.files -ne 64) { throw 'Incomplete native paired metadata readback' }
+            }
+            $rows | ConvertTo-Json -Depth 6 | Set-Content flowmux-evidence/metadata-pairs.json
+          }
+          if (git status --porcelain -- crates/spiralcore-transfer/Cargo.lock) { throw 'Locked metadata execution changed source' }
+      - name: Strict metadata and transfer warnings
+        run: |
+          & cargo "+1.97.1-$env:NATIVE_TARGET" clippy --release --locked --manifest-path crates/spiralcore-transfer/Cargo.toml --all-targets -- -D warnings 2>&1 | Tee-Object flowmux-evidence/metadata-clippy.txt
+          if ($LASTEXITCODE -ne 0) { throw 'Strict transfer Clippy failed' }
       - name: Execute nonzero paired TLS and exact-object tests
         run: |
           $ErrorActionPreference = 'Stop'

@@ -448,3 +448,30 @@ has not been measured in our failed executable. Default functional builds keep
 their original linker. Acceptance still requires native tests, fresh profile
 merge/export and the unchanged production threshold; no profile rewriting,
 skipped role or coverage waiver is introduced.
+
+## ARM64 coverage passes; sustained Windows cost remains open
+
+The [bf7107e6 receipts](native-bf7107e6/receipts.json) retain 12 original
+archives totaling 217,268 bytes, matching API digests, 252 inner checksums and
+the intended full source tree. The seven-role portable run passes. All three
+Windows roles now collect accepted quota coverage at **216/228 = 94.7368%**,
+with two actual instrumented tests each. Only ARM64 coverage uses the pinned
+bundled LLD linker; its ordinary functional build keeps the native default.
+The failed earlier profile and external-mechanism attribution limits remain.
+
+The same-head sustained matrix passes five roles, but Windows 2025 x64 and
+Windows 11 ARM64 fail. The instrumented Windows 2025 run also reaches the
+240-second overall gate at 3,065 acknowledged/read blocks in each direction.
+Its 242.002462-second failure snapshot records 103.046875 process CPU seconds;
+scope and cache bounds remain valid. This is not a successful complete transfer.
+
+The [phase analysis](native-bf7107e6/windows-timing-analysis.md) records Commit
+means of 38.966/41.512 ms while Session/TX ownership maxima stay below 1 ms.
+Commit includes storage work; the counters do not isolate every substep.
+The [next bounded repair](../../../plans/2026-11-10-windows-metadata-open.md)
+removes one Windows checked preflight handle that is discarded immediately
+before a fully checked open on the actual consumed handle. It preserves quota,
+authorization, byte verification, durability and all deadlines. Its 85 portable
+checks and strict transfer Clippy pass. Native old/new paired costs and the
+unchanged sustained acceptance remain pending. No speed improvement is claimed
+for the unexecuted Windows candidate.

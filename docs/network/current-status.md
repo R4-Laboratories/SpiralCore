@@ -39,13 +39,15 @@ progress, not installed MVM or WAN qualification.
 
 [PR106](https://github.com/R4-Laboratories/SpiralCore/pull/106) remains an
 unmerged ordered-cache, authenticated-scope and Windows quota successor.
-At `661c74e7`, six native FlowMux roles, including all three Windows roles,
-pass the unchanged 4,096-block/240-second sustained workload after release-driven
-Session/TX ownership waits. Intel macOS hits a two-second object timeout before
-the overall gate; its phase-timing diagnostic remains pending. Functional
-portable tests pass on seven roles. Native Windows x64 quota coverage passes
-216/228 production physical lines on 2022 and 2025; ARM64 profile merging fails,
-so no ARM64 coverage percentage is accepted. The
+At `1ae9fa35`, all seven native FlowMux roles pass the unchanged sustained
+workload; the earlier Intel macOS timeout remains unexplained and retained.
+At `bf7107e6`, the seven-role portable matrix passes and all three Windows
+quota coverage rows pass 216/228 production physical lines. ARM64 coverage uses
+the pinned bundled linker, preserving its default functional linker. The same
+head's sustained matrix passes five roles, but Windows 2025 x64 and Windows 11
+ARM64 miss acceptance. A Windows metadata successor removes one discarded
+checked open while preserving validation of the consumed handle; its native
+paired measurements and unchanged 4,096-block/240-second gate are pending. The
 [recorded development results](evidence/2026-11-10-ordered-scope/README.md#release-driven-ownership-waits-and-remaining-native-gates)
 retain source-bound bytes, CPU, lifecycle time and all failed gates. This
 candidate has not passed final release acceptance and is not merged to main.
@@ -66,6 +68,16 @@ canonical helper. The later upstream `b3dd575b` CLI runtime-preparation change
 leaves mailbox files unchanged but adds first-use storage/lifecycle accounting
 requirements. The historical installed fork remains evidence, not the current
 port target. Issue #4629 and the full contribution requirements remain open.
+
+The [canonical API checkpoint](evidence/2026-11-10-current-mvm-api/README.md)
+is published in the contribution fork at `241a2fe`: verified header/plaintext
+access and correct outbound Reply authority, with no new envelope or crypto.
+Its controlled serial default core profile passes 2,113 tests with four existing
+ignored entries; the original parallel environment-fixture failures remain.
+Focused changed-production coverage is 43/43 lines. The current canonical helper
+builds on Wick. A current-runtime guest/host transfer, complete consumer binding,
+retained producer/return semantics and whole-workspace/platform/WAN acceptance
+remain open; the final upstream delivery PR has not been opened.
 
 [PR #95](https://github.com/R4-Laboratories/SpiralCore/pull/95) adds canonical
 transport-binding revocation to the mailbox adapter. Live Call and Reply keep

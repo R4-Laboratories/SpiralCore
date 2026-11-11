@@ -1,0 +1,217 @@
+{
+  "base": "d27a20cb1a12a7c21b253a3bf6b7579925a7d1f3",
+  "candidate": "frozen four-file patch; uncommitted candidate",
+  "patch_sha256": "0e5af83ba7abafa95417b5f927ce91b965a0418d52e1b1fe8d50b40593b83790",
+  "source_root": "/var/tmp/spiralcore-current-mailbox.msif1y/source",
+  "configuration": {
+    "toolchain": "1.97.1",
+    "target": "x86_64-unknown-linux-gnu",
+    "package": "mvm-core",
+    "features": "default",
+    "selective_instrumentation": "only mvm-core package, including mailbox_crypto final test driver, via unique RUSTC_WORKSPACE_WRAPPER",
+    "build_jobs": 2,
+    "nice": 10,
+    "umask": "022",
+    "path": "/home/callard/.cargo/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+    "serial_tests": true
+  },
+  "tests": [
+    {
+      "generated_profiles": [
+        "13509343915911107046_0-2188835.profraw"
+      ],
+      "target": "mailbox_crypto",
+      "filter": [],
+      "listed": 20,
+      "exit": 0,
+      "passed": 20,
+      "failed": 0,
+      "ignored": 0,
+      "measured": 0,
+      "filtered": 0
+    },
+    {
+      "generated_profiles": [
+        "806865879825044371_0-2188857.profraw"
+      ],
+      "target": "mvm_core",
+      "filter": [
+        "mailbox::transport::"
+      ],
+      "listed": 23,
+      "exit": 0,
+      "passed": 23,
+      "failed": 0,
+      "ignored": 0,
+      "measured": 0,
+      "filtered": 2032
+    }
+  ],
+  "total_passed": 43,
+  "failed": 0,
+  "ignored": 0,
+  "coverage": [
+    {
+      "scope": "production-whole-file",
+      "file": "crates/mvm-core/src/mailbox.rs",
+      "covered": 354,
+      "total": 375,
+      "percent": 94.4
+    },
+    {
+      "scope": "changed-production",
+      "file": "crates/mvm-core/src/mailbox.rs",
+      "covered": 37,
+      "total": 37,
+      "percent": 100.0
+    },
+    {
+      "scope": "production-whole-file",
+      "file": "crates/mvm-core/src/mailbox/transport.rs",
+      "covered": 340,
+      "total": 376,
+      "percent": 90.4255
+    },
+    {
+      "scope": "changed-production",
+      "file": "crates/mvm-core/src/mailbox/transport.rs",
+      "covered": 6,
+      "total": 6,
+      "percent": 100.0
+    },
+    {
+      "scope": "changed-production-total",
+      "file": "two-production-files",
+      "covered": 43,
+      "total": 43,
+      "percent": 100.0
+    },
+    {
+      "scope": "mapped-production-total",
+      "file": "two-production-files",
+      "covered": 694,
+      "total": 751,
+      "percent": 92.4101
+    }
+  ],
+  "changed_production_meets_80_percent": true,
+  "raw_llvm_function_summary": {
+    "crates/mvm-core/src/mailbox.rs": {
+      "count": 375,
+      "covered": 354,
+      "percent": 94.39999999999999
+    },
+    "crates/mvm-core/src/mailbox/transport.rs": {
+      "count": 379,
+      "covered": 343,
+      "percent": 90.50131926121372
+    }
+  },
+  "branches": {
+    "status": "NA-no-mapped-branches",
+    "covered": 0,
+    "total": 0
+  },
+  "pins": {
+    "exported_source_files": 4430,
+    "all_source_before_after_match": true,
+    "full_source_manifest_sha256": "795dbeb4feaa804df0b84b3b8358d2268f6722d31cefa24b6dfbe92a15eb62b6",
+    "compiled_source_files": 353,
+    "original_and_copied_binaries": 2,
+    "all_binary_before_after_match": true,
+    "compiler_and_llvm_tools_stable": true
+  },
+  "tools": [
+    {
+      "path": "/home/callard/.rustup/toolchains/1.97.1-x86_64-unknown-linux-gnu/bin/rustc",
+      "sha256": "d3a664c970a9fd8361b64194861bebc1ae37b9054e5ee3400dc1c9e691797eea",
+      "version": "rustc 1.97.1 (8bab26f4f 2026-07-14)"
+    },
+    {
+      "path": "/home/callard/.rustup/toolchains/1.97.1-x86_64-unknown-linux-gnu/lib/rustlib/x86_64-unknown-linux-gnu/bin/llvm-cov",
+      "sha256": "bb415d8767d2ad73d72c01941f409ffc8f9478747ec7c18a7a69356735551ed9",
+      "version": "LLVM (http://llvm.org/):\n  LLVM version 22.1.6-rust-1.97.1-stable\n  Optimized build."
+    },
+    {
+      "path": "/home/callard/.rustup/toolchains/1.97.1-x86_64-unknown-linux-gnu/lib/rustlib/x86_64-unknown-linux-gnu/bin/llvm-profdata",
+      "sha256": "1465f86d90a101aec15998c83e0466b960c5ab8130cccbd175db4f9c790ae230",
+      "version": "LLVM (http://llvm.org/):\n  LLVM version 22.1.6-rust-1.97.1-stable\n  Optimized build."
+    }
+  ],
+  "profiles": [
+    {
+      "name": "13509343915911107046_0-2188835.profraw",
+      "bytes": 55552,
+      "sha256": "0cb223df26d116237a624e0708555d53c46612a595f8e698cd0bad40c74ffdbc"
+    },
+    {
+      "name": "806865879825044371_0-2188857.profraw",
+      "bytes": 620296,
+      "sha256": "997486ff610eee33b6a54ae50d6f6189fc4da437821fb78d731080dff441dce8"
+    }
+  ],
+  "exports": {
+    "merged.profdata": {
+      "bytes": 34800,
+      "sha256": "4a6b84aa11ccbaed667b881db6b9f347baa87780ae1a3cd38edc0a6262fead67"
+    },
+    "coverage.json": {
+      "bytes": 5005366,
+      "sha256": "37bbd5ea98d377c0ed7bd6ca26231a001c2c5d05105d8701f9750b7c922acf81"
+    },
+    "coverage.lcov": {
+      "bytes": 35812,
+      "sha256": "94d3a36a2c65fafa49db78778c808bc953380995836a8afaf7324642c59a0391"
+    },
+    "rustc-core-invocations.log": {
+      "bytes": 15956,
+      "sha256": "9355a9c7a1f6fb1a1c31578290e59bdbf98d476506e0d6b67fff53029a201e14"
+    },
+    "compile-env-deps.json": {
+      "bytes": 1916,
+      "sha256": "a11c406f0e4269e9eff8649b4a455ce6d8464d2c41f124711508de268eb2bc31"
+    }
+  },
+  "collector_correction": {
+    "prior_attempt": "attempt-v1",
+    "reason": "Uninstrumented crypto driver produced no profile; package-only instrumentation now requires fresh profiles from both processes; dependency lookup resolves workspace-relative paths"
+  },
+  "raw_packet": "/var/tmp/spiralcore-mvm-api-coverage-20261110",
+  "method": "Union of distinct LLVM LCOV DA production source lines; exact cfg(test) items excluded with source hashes; added/replaced diff lines; JSON and LF/LH are retained function-summary metrics, not forced equal to physical DA",
+  "limitations": [
+    "Only23transport library tests and20mailbox_crypto integration tests executed under instrumentation",
+    "Library test filter deliberately excludes other unit tests",
+    "Privacy doctest passed separately; not part of this instrumentation",
+    "Broader package serial2113pass/4existingignored is a separate prior record",
+    "No ignored tests were requested; systemd-live and fixture regeneration not executed",
+    "No native guest, WAN, scale or completeMVM acceptance claim"
+  ],
+  "instrumentation_scope": {
+    "package": "mvm-core",
+    "driver_instrumentation_required": true,
+    "dependency_instrumentation": false,
+    "observed_crate_names": [
+      "mvm_core",
+      "mvm_core",
+      "mvm_extension_pack_verify",
+      "mailbox_crypto"
+    ],
+    "package_target_names": [
+      "mailbox_crypto",
+      "mvm_core",
+      "mvm_extension_pack_verify"
+    ],
+    "note": "Cargo also builds its package extension-pack verifier helper; only the two selected test binaries ran",
+    "wrapper_path": "/var/tmp/spiralcore-mvm-api-coverage-20261110/coverage-wrapper-v2.sh",
+    "wrapper_sha256": "40cc549dd7f614d6337f5906d694ef15f43731f999e99120f09948bdbc19926c",
+    "prior_attempt_preserved": true,
+    "prior_original_and_copy_binary_pins_stable": true
+  },
+  "whole_production_uncovered_lines": 57,
+  "collector_files": {
+    "coverage-wrapper-v2.sh": "40cc549dd7f614d6337f5906d694ef15f43731f999e99120f09948bdbc19926c",
+    "run-v2.sh": "64cc7c70dfcb036876418a06d9734671936525067ece3c258c5dd5f4654671ff",
+    "collect.py": "d443973cdd977de1e537a319221bd63cf244c3b3415ec072b6e0d1893c3c8e1d",
+    "export.py": "640e705204b336ca74b95a2e2d73a1c3926f081f70e4bd8c3f2dba6e59397616"
+  }
+}

@@ -1538,7 +1538,12 @@ fn state_reply(f: &Frame, s: &Attempt) -> Frame {
 }
 fn read_meta(path: &Path) -> Result<Publication> {
     match fs::symlink_metadata(path) {
-        Ok(_) => private_file(path)?,
+        Ok(_) => {
+            // Windows open_read validates the actual consumed handle. Its
+            // discarded private_file preflight repeats the same native checks.
+            #[cfg(not(windows))]
+            private_file(path)?;
+        }
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Err(Error::Unknown),
         Err(_) => return Err(Error::Storage),
     }
@@ -1661,3 +1666,7 @@ pub fn decode_zstd(b: &[u8], decoded: usize) -> Result<Vec<u8>> {
 #[cfg(test)]
 #[path = "endpoint/storage/tests.rs"]
 mod storage_tests;
+
+#[cfg(test)]
+#[path = "endpoint/metadata_tests.rs"]
+mod metadata_tests;
