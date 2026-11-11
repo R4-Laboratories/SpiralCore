@@ -1,0 +1,106 @@
+    Checking mvm-core v0.27.0 (/var/tmp/spiralcore-mailbox-worker-owner-20261111/source/crates/mvm-core)
+    Checking mvm-agentd v0.27.0 (/var/tmp/spiralcore-mailbox-worker-owner-20261111/source/crates/mvm-agentd)
+    Checking mvm-net v0.27.0 (/var/tmp/spiralcore-mailbox-worker-owner-20261111/source/crates/mvm-net)
+    Checking mvm-fs v0.27.0 (/var/tmp/spiralcore-mailbox-worker-owner-20261111/source/crates/mvm-fs)
+    Checking libkrun-sys v0.27.0 (/var/tmp/spiralcore-mailbox-worker-owner-20261111/source/crates/deps/libkrun-sys)
+    Checking mvm-bundler v0.27.0 (/var/tmp/spiralcore-mailbox-worker-owner-20261111/source/crates/mvm-bundler)
+    Checking mvm-vmm v0.27.0 (/var/tmp/spiralcore-mailbox-worker-owner-20261111/source/crates/mvm-vmm)
+    Checking mvm-builder-guest v0.27.0 (/var/tmp/spiralcore-mailbox-worker-owner-20261111/source/crates/mvm-builder-guest)
+    Checking mvm-host-services v0.27.0 (/var/tmp/spiralcore-mailbox-worker-owner-20261111/source/crates/mvm-host-services)
+    Checking mvm-sdk v0.27.0 (/var/tmp/spiralcore-mailbox-worker-owner-20261111/source/crates/mvm-sdk)
+    Checking mvm-backends v0.27.0 (/var/tmp/spiralcore-mailbox-worker-owner-20261111/source/crates/mvm-backends)
+    Checking mvm-build v0.27.0 (/var/tmp/spiralcore-mailbox-worker-owner-20261111/source/crates/mvm-build)
+    Checking mvm-runtime v0.27.0 (/var/tmp/spiralcore-mailbox-worker-owner-20261111/source/crates/mvm-runtime)
+    Checking mvm-hostd v0.27.0 (/var/tmp/spiralcore-mailbox-worker-owner-20261111/source/crates/mvm-hostd)
+error: method `store_and_loan` is never used
+  --> crates/mvm-hostd/src/broker/control_prepare.rs:66:8
+   |
+53 | impl<T> CustodyField<T> {
+   | ----------------------- method in this implementation
+...
+66 |     fn store_and_loan(
+   |        ^^^^^^^^^^^^^^
+   |
+   = note: `-D dead-code` implied by `-D warnings`
+   = help: to override `-D warnings` add `#[expect(dead_code)]` or `#[allow(dead_code)]`
+
+error: field `original` is never read
+   --> crates/mvm-hostd/src/broker/control_prepare.rs:167:16
+    |
+166 | pub(crate) struct JournalSnapshots {
+    |                   ---------------- field in this struct
+167 |     pub(crate) original: Vec<mvm_core::protocol::broker_control::RegisterVm>,
+    |                ^^^^^^^^
+
+error: struct `MutationStartFailure` is never constructed
+   --> crates/mvm-hostd/src/broker/control_prepare.rs:304:19
+    |
+304 | pub(crate) struct MutationStartFailure {
+    |                   ^^^^^^^^^^^^^^^^^^^^
+
+error: methods `stopped` and `begin_mutation` are never used
+   --> crates/mvm-hostd/src/broker/control_prepare.rs:341:25
+    |
+314 | impl MutationCell {
+    | ----------------- methods in this implementation
+...
+341 |     pub(crate) async fn stopped(&self) {
+    |                         ^^^^^^^
+...
+413 |     pub(crate) fn begin_mutation(
+    |                   ^^^^^^^^^^^^^^
+
+error: method `cancel_services` is never used
+   --> crates/mvm-hostd/src/broker/control_prepare.rs:657:25
+    |
+597 | impl PreparedRegistration {
+    | ------------------------- method in this implementation
+...
+657 |     pub(crate) async fn cancel_services(&mut self) -> Result<RegistrationDrainReceipt> {
+    |                         ^^^^^^^^^^^^^^^
+
+error: methods `park_start` and `release_parked_start` are never used
+   --> crates/mvm-hostd/src/broker/control_prepare.rs:845:19
+    |
+770 | impl LiveVmHandle {
+    | ----------------- methods in this implementation
+...
+845 |     pub(crate) fn park_start(&mut self, start: StartLatch) -> Result<()> {
+    |                   ^^^^^^^^^^
+...
+859 |     pub(crate) fn release_parked_start(&mut self) -> Result<()> {
+    |                   ^^^^^^^^^^^^^^^^^^^^
+
+error: method `contains` is never used
+   --> crates/mvm-hostd/src/broker/mailbox_workers.rs:743:19
+    |
+708 | impl MailboxWorkers {
+    | ------------------- method in this implementation
+...
+743 |     pub(crate) fn contains(&self, vm: &str) -> io::Result<bool> {
+    |                   ^^^^^^^^
+
+error: the `Err`-variant returned from this function is very large
+   --> crates/mvm-hostd/src/broker/control_prepare.rs:417:10
+    |
+417 |     ) -> std::result::Result<MutationLoan<'_>, MutationStartFailure> {
+    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 984 bytes
+    |
+    = help: try reducing the size of `broker::control_prepare::MutationStartFailure`, for example by boxing large elements or replacing it with `Box<broker::control_prepare::MutationStartFailure>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.97.0/index.html#result_large_err
+    = note: `-D clippy::result-large-err` implied by `-D warnings`
+    = help: to override `-D warnings` add `#[allow(clippy::result_large_err)]`
+
+error: this `let...else` may be rewritten with the `?` operator
+   --> crates/mvm-hostd/src/host_agent_idle.rs:453:5
+    |
+453 | /     let Some(timeout) = timeout else {
+454 | |         return None;
+455 | |     };
+    | |______^ help: replace it with: `let timeout = timeout?;`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.97.0/index.html#question_mark
+    = note: `-D clippy::question-mark` implied by `-D warnings`
+    = help: to override `-D warnings` add `#[allow(clippy::question_mark)]`
+
+error: could not compile `mvm-hostd` (lib) due to 9 previous errors

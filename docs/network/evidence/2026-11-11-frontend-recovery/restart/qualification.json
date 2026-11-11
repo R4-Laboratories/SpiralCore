@@ -1,0 +1,115 @@
+{
+  "schema": "spiralcore.host-agent.restart-preconditions.trial.v1",
+  "packet": "/var/tmp/spiralcore-mailbox-worker-owner-20261111/restart-preconditions-trial-20261111",
+  "source_scope": "exact full frozen composition in source.trial.sha256; not a whole published Git revision qualification",
+  "fixture_pins": {
+    "idle_collection": "215df315986e6b53e8d1e15791c2f0345d541af10f3de02f20e5952320f529cb",
+    "restart": "599fecea11598a0c7ef9136b08269d4b44707e596fbd0e4e67022374d1e59c0f"
+  },
+  "source_files": 4489,
+  "all_source_before_after_pass": true,
+  "all_four_executables_before_after_pass": true,
+  "host": "Linux 7.0.0-42-generic x86_64",
+  "online_cpus": 32,
+  "profiles": [
+    {
+      "first_error": "Error: open existing canonical host-agent provisioning at <fixture-home>/host-agent/local/resource-owner-v1; missing or legacy provisioning requires canonical reconciliation",
+      "first_error_truncated": false,
+      "fixture_adopted_reaped": 0,
+      "original_collections": 0,
+      "profile": "explicit_unprovisioned_private_home",
+      "ready": 0,
+      "trace_bytes": 232,
+      "trace_truncated": false,
+      "worker_code": 1
+    },
+    {
+      "first_error": null,
+      "first_error_truncated": false,
+      "fixture_adopted_reaped": 0,
+      "original_collections": 1,
+      "profile": "canonical_absent_home_provisioned",
+      "ready": 1,
+      "trace_bytes": 795,
+      "trace_truncated": false,
+      "worker_code": 42
+    }
+  ],
+  "build": {
+    "exit": 0,
+    "wall_seconds": 19.96,
+    "user_seconds": 37.18,
+    "system_seconds": 2.94,
+    "max_rss_kib": 590052,
+    "note": "build accounting, not product transfer performance"
+  },
+  "controlled": {
+    "exit": 0,
+    "outer_passed": 1,
+    "failed": 0,
+    "ignored": 0,
+    "filtered": 1,
+    "wall_seconds": 1.03
+  },
+  "original_idle": {
+    "exit": 0,
+    "passed": 1,
+    "failed": 0,
+    "ignored": 0,
+    "filtered": 1,
+    "wall_seconds": 1.03,
+    "worker_exit": 42,
+    "ready": 1,
+    "original_collections": 1,
+    "fixture_adopted_reaped": 0
+  },
+  "original_restart_four": {
+    "exit": 101,
+    "passed": 2,
+    "failed": 2,
+    "ignored": 0,
+    "filtered": 0,
+    "wall_seconds": 2.46,
+    "passed_cases": [
+      "idle_daemon_self_terminates_when_last_vm_deregisters",
+      "wrapper_restart_restores_journaled_registration_and_chain"
+    ],
+    "failed_cases": [
+      "daemon_crash_mid_flight_loses_at_most_one_call_and_preserves_chain",
+      "worker_restart_restores_journaled_registration_and_chain"
+    ],
+    "failure": "daemon exited after 15 original recovery attempts in approximately0.4seconds; broker connection refused",
+    "scope": "cases now reached after canonical provisioning; precise earliest restart error not captured by old null-stderr launcher"
+  },
+  "invariants": {
+    "original_four_test_bodies_byte_identical": true,
+    "deadline_changes": false,
+    "fixture_empty_journal_seed": false,
+    "product_source_edits": 0,
+    "reruns": 0,
+    "new_target_directory": false,
+    "vm_boots": 0
+  },
+  "limitations": [
+    "Two restart consumers still fail; no full delivery/#114 closure.",
+    "Nonfresh issued-epoch/missing-journal control was not part of this frozen trial.",
+    "Direct fresh startup success does not qualify unknown/missing nonfresh journal recovery.",
+    "Normal replay still has a source-visible Active gate under Preparing; stale socket and resource recovery may also block; sole runtime cause not proven.",
+    "No VM/WAN/data-transfer speed/energy/security certification claim."
+  ],
+  "artifacts": {
+    "source.original.sha256": "d05d1f018984f1cb5f1056594a34dd708d5ad99dcf19ed09ebf7827b49ec8119",
+    "source.trial.sha256": "6923d6aa1312b6a6850d552825c53c3874a4b32b6caad4bf46679ed1bf6cd9e3",
+    "fixture-pins.sha256": "a3e46a56f71bf139c3dce30c4289cd1ac4a2b3b36aa83c3719e7c0b960252d65",
+    "compiler-attempt1.jsonl": "f6507c39055aa48cbe6325f5652d8d5af6348ebcb2527f8bba728133b22919b7",
+    "compiler-attempt1.stderr": "a889df8796a0bfeb1c181ef9a8edfb920a47ad9bf6a792bcf170d75d017c5921",
+    "executables.before.sha256": "99462b2b50a7811e177c80dfdff8baa5cac64b7a567de4afae44c68c4f71b71d",
+    "controlled-startup-attempt1.txt": "3229f3f31a8088178c6ba4a2c8f959b4e1f2d0fa3c6d91668f2225ac51cacfc3",
+    "original-idle-attempt1.txt": "668c93924a38c414bdb6ed44d084b1b02e38e96b4212c0f6be41c3af916dcba1",
+    "provisioned-restart4-attempt1.txt": "e7b041787c6faae76de845f766ffd2d2971d5dee31aff4046b9493bab0acceaf",
+    "host.txt": "2bf5f00d4c2174a57b370bb4e0afc36fa01994ac7c7cb7bd5eac6051107d084e",
+    "cpu.txt": "a5c27bd62403114c45b5ce024d6d9454227c3385a8f851606b78c2f843306d6d",
+    "load.before.txt": "06e1eed0d7261bfe6cab5f35bb87e64ce1b91d15d3d1b1b3d1a00f6223c7ff46",
+    "load.after.txt": "2fff7efb2a1d23496beb2d9d3c6fd6df0c79b637a4004452931af75affe9e861"
+  }
+}

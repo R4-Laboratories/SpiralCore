@@ -1,0 +1,70 @@
+   Compiling mvm-core v0.27.0 (/var/tmp/spiralcore-mailbox-worker-owner-20261111/source/crates/mvm-core)
+error[E0599]: no method named `activate_after_reconciliation_with` found for struct `LifecycleCoordinator` in the current scope
+   --> crates/mvm-core/tests/tenant_lifecycle_coordinator.rs:47:10
+    |
+ 46 | /     coordinator
+ 47 | |         .activate_after_reconciliation_with(
+    | |_________-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+help: there is a method `activate_after_reconciliation` with a similar name, but with different arguments
+   --> crates/mvm-core/src/tenant_lifecycle.rs:381:5
+    |
+381 | /     pub fn activate_after_reconciliation(
+382 | |         &self,
+383 | |         generation: &LifecycleGeneration,
+384 | |         deadline: Instant,
+385 | |     ) -> Result<()> {
+    | |___________________^
+
+error[E0599]: no method named `activate_after_reconciliation_with` found for struct `LifecycleCoordinator` in the current scope
+   --> crates/mvm-core/tests/tenant_lifecycle_coordinator.rs:81:30
+    |
+ 81 |     let result = coordinator.activate_after_reconciliation_with(
+    |                  ------------^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+help: there is a method `activate_after_reconciliation` with a similar name, but with different arguments
+   --> crates/mvm-core/src/tenant_lifecycle.rs:381:5
+    |
+381 | /     pub fn activate_after_reconciliation(
+382 | |         &self,
+383 | |         generation: &LifecycleGeneration,
+384 | |         deadline: Instant,
+385 | |     ) -> Result<()> {
+    | |___________________^
+
+error[E0599]: no method named `activate_after_reconciliation_with` found for struct `LifecycleCoordinator` in the current scope
+   --> crates/mvm-core/tests/tenant_lifecycle_coordinator.rs:102:18
+    |
+101 | /             coordinator
+102 | |                 .activate_after_reconciliation_with(
+    | |_________________-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+help: there is a method `activate_after_reconciliation` with a similar name, but with different arguments
+   --> crates/mvm-core/src/tenant_lifecycle.rs:381:5
+    |
+381 | /     pub fn activate_after_reconciliation(
+382 | |         &self,
+383 | |         generation: &LifecycleGeneration,
+384 | |         deadline: Instant,
+385 | |     ) -> Result<()> {
+    | |___________________^
+
+error[E0599]: no method named `activate_after_reconciliation_with` found for struct `LifecycleCoordinator` in the current scope
+   --> crates/mvm-core/tests/tenant_lifecycle_coordinator.rs:122:34
+    |
+122 |         let result = coordinator.activate_after_reconciliation_with(
+    |                      ------------^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+help: there is a method `activate_after_reconciliation` with a similar name, but with different arguments
+   --> crates/mvm-core/src/tenant_lifecycle.rs:381:5
+    |
+381 | /     pub fn activate_after_reconciliation(
+382 | |         &self,
+383 | |         generation: &LifecycleGeneration,
+384 | |         deadline: Instant,
+385 | |     ) -> Result<()> {
+    | |___________________^
+
+For more information about this error, try `rustc --explain E0599`.
+error: could not compile `mvm-core` (test "tenant_lifecycle_coordinator") due to 4 previous errors
+warning: build failed, waiting for other jobs to finish...
