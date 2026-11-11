@@ -1,0 +1,23 @@
+    Blocking waiting for file lock on build directory
+   Compiling spiralcore-mvm-canonical-witness v0.1.0 (/var/tmp/spiralcore-current-canonical-witness-20261110/mvm-canonical-witness)
+    Finished `release` profile [optimized] target(s) in 6m 15s
+     Running unittests src/lib.rs (/var/tmp/spiralcore-installed-controller.MDjnre/target/release/deps/spiralcore_mvm_canonical_witness-60fa53e7aa3ea12f)
+
+running 1 test
+test native::process::tests::writable_expected_helper_cannot_authorize_matching_process ... FAILED
+
+failures:
+
+---- native::process::tests::writable_expected_helper_cannot_authorize_matching_process stdout ----
+
+thread 'native::process::tests::writable_expected_helper_cannot_authorize_matching_process' (2236502) panicked at src/process.rs:163:9:
+a writable expected helper cannot authorize capture
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    native::process::tests::writable_expected_helper_cannot_authorize_matching_process
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 3 filtered out; finished in 0.02s
+
+error: test failed, to rerun pass `--lib`

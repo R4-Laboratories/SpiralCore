@@ -1,0 +1,25 @@
+   Compiling spiralcore-mvm-canonical-witness v0.1.0 (/var/tmp/spiralcore-current-canonical-witness-20261110/mvm-canonical-witness)
+    Finished `release` profile [optimized] target(s) in 1.10s
+     Running unittests src/lib.rs (/var/tmp/spiralcore-installed-controller.MDjnre/target/release/deps/spiralcore_mvm_canonical_witness-e9a6a2c26aab5215)
+
+running 4 tests
+test native::process::tests::writable_expected_helper_cannot_authorize_matching_process ... FAILED
+test native::process::tests::same_pid_exec_change_is_not_silently_recorded_as_original_cpu ... ok
+test native::process::tests::process_executable_must_match_the_held_expected_file_and_digest ... ok
+test native::process::tests::original_pidfd_is_armed_before_stop_and_requires_reaped_process ... ok
+
+failures:
+
+---- native::process::tests::writable_expected_helper_cannot_authorize_matching_process stdout ----
+
+thread 'native::process::tests::writable_expected_helper_cannot_authorize_matching_process' (2246802) panicked at src/process.rs:181:77:
+called `Result::unwrap()` on an `Err` value: Os { code: 26, kind: ExecutableFileBusy, message: "Text file busy" }
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    native::process::tests::writable_expected_helper_cannot_authorize_matching_process
+
+test result: FAILED. 3 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+error: test failed, to rerun pass `--lib`

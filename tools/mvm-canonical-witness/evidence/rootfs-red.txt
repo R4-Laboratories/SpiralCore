@@ -1,0 +1,22 @@
+   Compiling spiralcore-mvm-canonical-witness v0.1.0 (/var/tmp/spiralcore-current-canonical-witness-20261110/mvm-canonical-witness)
+    Finished `release` profile [optimized] target(s) in 6.02s
+     Running tests/rootfs_input.rs (/var/tmp/spiralcore-installed-controller.MDjnre/target/release/deps/rootfs_input-427d18296fe8e8bb)
+
+running 1 test
+test canonical_input_accepts_private_owned_directory_and_refuses_alias_or_public_directory ... FAILED
+
+failures:
+
+---- canonical_input_accepts_private_owned_directory_and_refuses_alias_or_public_directory stdout ----
+
+thread 'canonical_input_accepts_private_owned_directory_and_refuses_alias_or_public_directory' (2237095) panicked at tests/rootfs_input.rs:18:5:
+private source tree should use canonical SDK materialization
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    canonical_input_accepts_private_owned_directory_and_refuses_alias_or_public_directory
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `--test rootfs_input`

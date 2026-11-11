@@ -52,32 +52,43 @@ paired measurements and unchanged 4,096-block/240-second gate are pending. The
 retain source-bound bytes, CPU, lifecycle time and all failed gates. This
 candidate has not passed final release acceptance and is not merged to main.
 
-The inspected upstream `d27a20cb` already ships a signed-plan mailbox grant,
-guest listener on 5257, per-VM host helper and audited host receive. SpiralCore
-will reuse those owners. The concrete path forwards guest plaintext to the
-host helper, which owns sealing keys; it does not establish host-blind guest
-encryption. Its one-way outbox currently consumes a message before the host
-verdict, so reliable retries and bidirectional object-v1 cannot be inferred.
+The current inspected MVM target is merged upstream `b3b2afd8f5183b48632c6ff85c0781801d60aabf`.
+Ari has added a bounded many-message outbox spool, backend-owned host dial routes,
+workload-ledger epoch alignment, an independent encryption root and per-launch
+secret cleanup. The CLI also prepares missing kernels on first use. SpiralCore
+reuses the signed-plan mailbox grant, original helper and port 5257. Compression
+remains at the admitted plaintext endpoint; the host helper still sees plaintext.
+The new host-local key custody does not establish remote recipient key agreement.
+The [upstream refresh](../research/2026-11-10-mvm-mailbox-upstream-refresh.md)
+records exact merged/open boundaries and the remaining service gaps.
 
-The [source comparison](../research/2026-11-10-current-mvm-mailbox-delta.md),
-[integration contract](../specs/2026-11-10-current-native-mailbox-integration.md)
-and [implementation sequence](../plans/2026-11-10-current-native-mailbox-integration.md)
-target narrow verified-header/Reply authorization APIs first, then retained
-producer identity and an explicitly admitted correlated return path through the
-canonical helper. The later upstream `b3dd575b` CLI runtime-preparation change
-leaves mailbox files unchanged but adds first-use storage/lifecycle accounting
-requirements. The historical installed fork remains evidence, not the current
-port target. Issue #4629 and the full contribution requirements remain open.
+Our four-file verified-header/Reply-authority API patch is rebased and published
+in the contribution fork at `ee632fbb3a746709c496a95f167559a01a19fcaf`, with
+independent code/Rust and security source reviews. Its diff is byte-identical to
+the earlier [API checkpoint](evidence/2026-11-10-current-mvm-api/README.md);
+that earlier checkpoint's counts and coverage retain their original source pin.
+The scoped [upstream draft #5328](https://github.com/tinylabscom/mvm/pull/5328)
+is open for interface review and coordination. Fresh
+[qualification at the new pin](../../tools/mvm-canonical-witness/evidence/ee632fbb/README.md)
+passes 2,114 core tests with four existing ignored entries, 35 host-mailbox tests,
+14 guest-outbox tests, sixteen distinct consumer tests, strict checks and the
+musl producer build. Full-workspace/gated/platform acceptance remains open.
+The standalone canonical host/guest consumer moves both manifests, lockfiles and
+reported-source constants together. Historical installed campaign pins remain
+unchanged pending their real API and service migration.
 
-The [canonical API checkpoint](evidence/2026-11-10-current-mvm-api/README.md)
-is published in the contribution fork at `241a2fe`: verified header/plaintext
-access and correct outbound Reply authority, with no new envelope or crypto.
-Its controlled serial default core profile passes 2,113 tests with four existing
-ignored entries; the original parallel environment-fixture failures remain.
-Focused changed-production coverage is 43/43 lines. The current canonical helper
-builds on Wick. A current-runtime guest/host transfer, complete consumer binding,
-retained producer/return semantics and whole-workspace/platform/WAN acceptance
-remain open; the final upstream delivery PR has not been opened.
+The [reliable endpoint contract](../specs/2026-11-10-canonical-mailbox-reliable-endpoint.md)
+and [implementation plan](../plans/2026-11-10-canonical-mailbox-reliable-endpoint.md)
+extend Ari's canonical service rather than replacing it. At this source pin,
+the guest consumes an outbox item before its host verdict; typed return/retry,
+current admission time, bounded replay and aggregate budgets remain work. Open
+upstream #5325 proposes QueueFull-only retention and lifecycle fixes; it is not
+yet included and does not solve lost acknowledgments. Cross-host key agreement
+is another prerequisite for canonical WAN delivery. Current-runtime native
+attempts have not achieved an exact message readback; their startup refusals and
+30-second guest-agent timeout remain negative evidence. The complete upstream
+MVM integration is not ready for submission; the scoped API draft is its first
+review point.
 
 [PR #95](https://github.com/R4-Laboratories/SpiralCore/pull/95) adds canonical
 transport-binding revocation to the mailbox adapter. Live Call and Reply keep

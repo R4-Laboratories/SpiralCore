@@ -1,0 +1,12 @@
+[package]
+name = "spiralcore-mailbox-producer"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.97.1"
+publish = false
+license = "MIT"
+[workspace]
+[dependencies]
+mvm-agentd = { git = "https://github.com/Casey-allard/mvm", rev = "ee632fbb3a746709c496a95f167559a01a19fcaf" }
+mvm-core = { git = "https://github.com/Casey-allard/mvm", rev = "ee632fbb3a746709c496a95f167559a01a19fcaf", default-features = false, features = ["host-state"] }
+mvm-contract = { git = "https://github.com/Casey-allard/mvm", rev = "ee632fbb3a746709c496a95f167559a01a19fcaf", default-features = false, features = ["protocol"] }

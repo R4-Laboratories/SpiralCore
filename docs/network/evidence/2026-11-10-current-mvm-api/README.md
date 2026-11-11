@@ -1,5 +1,10 @@
 # Current canonical MVM mailbox API checkpoint
 
+This packet retains the original `241a2fe9` test and coverage identity. The
+[upstream refresh](../../../research/2026-11-10-mvm-mailbox-upstream-refresh.md)
+records the newer merged target and rebased contribution; these older counts
+must not be relabeled as results from the successor.
+
 The contribution fork publishes [241a2fe94907d160641adaf2ec3a97fc849910b8](https://github.com/Casey-allard/mvm/commit/241a2fe94907d160641adaf2ec3a97fc849910b8)
 on inspected upstream `d27a20cb1a12a7c21b253a3bf6b7579925a7d1f3`.
 The four-file patch SHA-256 is

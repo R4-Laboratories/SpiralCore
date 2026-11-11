@@ -1,0 +1,26 @@
+   Compiling proc-macro2 v1.0.107
+   Compiling typenum v1.20.1
+   Compiling quote v1.0.47
+   Compiling generic-array v0.14.7
+   Compiling serde_core v1.0.228
+   Compiling libc v0.2.191
+   Compiling syn v2.0.119
+   Compiling block-buffer v0.10.4
+   Compiling crypto-common v0.1.7
+   Compiling serde_json v1.0.151
+   Compiling serde v1.0.228
+   Compiling serde_derive v1.0.228
+   Compiling digest v0.10.7
+   Compiling sha2 v0.10.9
+   Compiling cpu-time v1.0.0
+   Compiling spiralcore-mvm-canonical-witness v0.1.0 (/var/tmp/spiralcore-current-canonical-witness-20261110/mvm-canonical-witness)
+error[E0432]: unresolved imports `spiralcore_mvm_canonical_witness::cleanup_after_launch`, `spiralcore_mvm_canonical_witness::preflight_failure`
+ --> tests/ownership.rs:2:40
+  |
+2 | use spiralcore_mvm_canonical_witness::{cleanup_after_launch, preflight_failure};
+  |                                        ^^^^^^^^^^^^^^^^^^^^  ^^^^^^^^^^^^^^^^^ no `preflight_failure` in the root
+  |                                        |
+  |                                        no `cleanup_after_launch` in the root
+
+For more information about this error, try `rustc --explain E0432`.
+error: could not compile `spiralcore-mvm-canonical-witness` (test "ownership") due to 1 previous error

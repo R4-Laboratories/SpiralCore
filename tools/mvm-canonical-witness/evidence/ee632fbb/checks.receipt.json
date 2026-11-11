@@ -1,0 +1,127 @@
+{
+  "upstream": "b3b2afd8f5183b48632c6ff85c0781801d60aabf",
+  "candidate": "ee632fbb3a746709c496a95f167559a01a19fcaf",
+  "host": "wick",
+  "toolchain": "1.97.1-x86_64-unknown-linux-gnu",
+  "profile": "release; locked; jobs=2; incremental=0; nice=10; serial test threads; umask=022",
+  "api_core": {
+    "passed": 2114,
+    "failed": 0,
+    "ignored": 4,
+    "target_summaries": 10
+  },
+  "api_host_mailbox": {
+    "passed": 35,
+    "failed": 0,
+    "ignored": 0,
+    "filtered": 2293
+  },
+  "api_guest_outbox": {
+    "passed": 14,
+    "failed": 0,
+    "ignored": 0,
+    "filtered": 1014
+  },
+  "api_core_clippy": "PASS",
+  "contract_protocol_check": "PASS",
+  "consumer_distinct_tests": 16,
+  "consumer_test_names": [
+    "canonical_client_constructs_only_the_named_transient_mailbox_request",
+    "canonical_input_accepts_private_owned_directory_and_refuses_alias_or_public_directory",
+    "failed_launch_without_original_outcome_never_stops_or_cleans_by_name",
+    "fixture_is_exact_nonempty_binary_with_zeros_within_default_grant",
+    "invalid_preflight_writes_nonempty_private_failure_evidence_without_vm_state",
+    "native::process::tests::original_pidfd_is_armed_before_stop_and_requires_reaped_process",
+    "native::process::tests::process_executable_must_match_the_held_expected_file_and_digest",
+    "native::process::tests::same_pid_exec_change_is_not_silently_recorded_as_original_cpu",
+    "native::process::tests::writable_expected_helper_cannot_authorize_matching_process",
+    "only_bounded_isolated_native_inputs_are_admitted",
+    "original_successful_launch_still_stops_after_receive_or_capture_failure",
+    "preflight_failure_is_explicit_json_without_invented_transfer_counts",
+    "preparation_refuses_a_dangling_vm_namespace_before_resolving_sources",
+    "preparation_refuses_unprotected_home_without_building_or_creating_vm_state",
+    "proc_stat_parsing_binds_start_identity_and_never_invents_cpu",
+    "stop_refusal_retains_cleanup_without_polling_another_owner"
+  ],
+  "consumer_passed_result_sum": 17,
+  "nested_child_is_additional_independent_test": false,
+  "consumer_clippy": "PASS",
+  "guest_musl_build": "PASS",
+  "guest_musl_clippy": "PASS",
+  "source_archive_regular_files_rechecked_after_all_commands": 4437,
+  "consumer_source_files_rechecked": 17,
+  "current_runtime_preparation": "NOT_RUN",
+  "native_transfer": "NOT_RUN",
+  "wan_transfer": "NOT_RUN",
+  "full_workspace_acceptance": "NOT_RUN",
+  "gated_conformance_acceptance": "NOT_RUN",
+  "network_bytes": null,
+  "transfer_cpu": null,
+  "transfer_time": null,
+  "members": {
+    "api/core-tests.txt": {
+      "bytes": 174105,
+      "sha256": "24d75da06db0568e3efa8e47696e6efb1d5744df335872914d1c963186bccbe3"
+    },
+    "api/mailbox-host-tests.txt": {
+      "bytes": 5895,
+      "sha256": "6751a9977471653d49bd167f1b73a04eb1449e57abadf76b757a22f99a7a5467"
+    },
+    "api/mailbox-outbox-tests.txt": {
+      "bytes": 1955,
+      "sha256": "31a04fe065f2e951031cf6a38325c49919d861c7880eecfc688ea2e4aa4ca5cf"
+    },
+    "api/core-clippy.txt": {
+      "bytes": 2939,
+      "sha256": "393e700fa40f83e25b59e3f1773e4c3beb5885e284d7a6aba273ac3c175d4221"
+    },
+    "api/protocol-check.txt": {
+      "bytes": 791,
+      "sha256": "4dee4b5d80b1637d41afe96d6e84bc5f64eb959ae3b18be92eee2eacb48d6e9c"
+    },
+    "api/source-verification.json": {
+      "bytes": 296,
+      "sha256": "9bc998b8ab8bcb728a8135723d9f760d60c9742daa0e35e1096d27b7c66c2fe2"
+    },
+    "consumer/tests.txt": {
+      "bytes": 6524,
+      "sha256": "40b094ed4bdb19f43ffbd9fdbc4a609042de9722cb4a0fe58c94d536cecce1a2"
+    },
+    "consumer/clippy.txt": {
+      "bytes": 2605,
+      "sha256": "73ca7ee5e2433125901dc991e403f441645a7dbaaee428d5f9d255c03bc40827"
+    },
+    "consumer/guest-build.txt": {
+      "bytes": 742,
+      "sha256": "ff16bf74714918ad958297eb27dacfc0b3c86e73f7cb4b5bc9424f077fdd065e"
+    },
+    "consumer/guest-clippy.txt": {
+      "bytes": 742,
+      "sha256": "be63b015635878ec8de6dacaad94b8dd93ff439ae0c9138e10e5ceb30ce87287"
+    },
+    "consumer/host-lock.txt": {
+      "bytes": 733,
+      "sha256": "549fd57724c563253a8eb2d00d7b6c701bcfb63113c5950572005e4b965bb7ca"
+    },
+    "consumer/host-lock-preserve.txt": {
+      "bytes": 149,
+      "sha256": "04e5fb72dc2bfea9b3285c658126b04c04c5e889d91242a51a79410b15f7cb90"
+    },
+    "consumer/guest-lock.txt": {
+      "bytes": 266,
+      "sha256": "5101d7965f7e5c48c746c2533accd6cab8beff7ffe3059604ded77c21aef8186"
+    },
+    "consumer/source-pins.json": {
+      "bytes": 1664,
+      "sha256": "83968f648f019f369f7ee166aeff075dc553a3ef70e9b2356810bb168e4c5eb2"
+    },
+    "consumer/source-verification.json": {
+      "bytes": 99,
+      "sha256": "9429843c13af088e18b2f7ae91d78818a55dc57f7e8dc843aeccfdd4863cdfd5"
+    }
+  },
+  "archive": {
+    "bytes": 44058,
+    "sha256": "523c2623fe7aa53d3fb42b666d58ea53a2bf988b489ccdfc5aefaa75fdc0319a"
+  }
+}

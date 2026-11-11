@@ -1,0 +1,38 @@
+[package]
+name = "spiralcore-mvm-canonical-witness"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.97.1"
+publish = false
+license = "MIT"
+
+[workspace]
+
+[features]
+default = ["native"]
+native = ["dep:mvm-client", "dep:mvm-core", "dep:mvm-backends", "dep:mvm-vmm", "dep:mvm-build", "dep:tokio", "dep:rustix"]
+
+[dependencies]
+anyhow = "=1.0.103"
+cpu-time = "1.0"
+serde = { version = "=1.0.228", features = ["derive"] }
+serde_json = "=1.0.151"
+sha2 = "=0.10.9"
+mvm-client = { git = "https://github.com/Casey-allard/mvm", rev = "ee632fbb3a746709c496a95f167559a01a19fcaf", optional = true }
+tokio = { version = "=1.53.3", features = ["rt"], optional = true }
+
+mvm-core = { git = "https://github.com/Casey-allard/mvm", rev = "ee632fbb3a746709c496a95f167559a01a19fcaf", default-features = false, features = ["host-state"], optional = true }
+mvm-backends = { git = "https://github.com/Casey-allard/mvm", rev = "ee632fbb3a746709c496a95f167559a01a19fcaf", default-features = false, optional = true }
+mvm-vmm = { git = "https://github.com/Casey-allard/mvm", rev = "ee632fbb3a746709c496a95f167559a01a19fcaf", default-features = false, optional = true }
+mvm-build = { git = "https://github.com/Casey-allard/mvm", rev = "ee632fbb3a746709c496a95f167559a01a19fcaf", default-features = false, optional = true }
+rustix = { version = "=1.1.6", features = ["process", "event", "fs"], optional = true }
+
+[[bin]]
+name = "spiralcore-mvm-canonical-witness"
+path = "src/main.rs"
+required-features = ["native"]
+
+[[bin]]
+name = "spiralcore-mvm-prepare-runtime"
+path = "src/bin/prepare-runtime.rs"
+required-features = ["native"]

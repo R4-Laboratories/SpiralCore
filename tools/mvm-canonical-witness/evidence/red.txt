@@ -1,0 +1,32 @@
+    Updating crates.io index
+    Updating git repository `https://github.com/Casey-allard/mvm`
+     Locking 437 packages to latest Rust 1.97.1 compatible versions
+      Adding async-trait v0.1.89 (available: v0.1.92)
+      Adding generic-array v0.14.7 (available: v0.14.9)
+      Adding leakguard v0.8.0 (available: v0.8.1)
+      Adding sha1 v0.10.6 (available: v0.10.7)
+      Adding sha2 v0.10.9 (available: v0.11.1)
+ Downloading crates ...
+  Downloaded itoa v1.0.19
+  Downloaded syn v3.0.10
+   Compiling proc-macro2 v1.0.107
+   Compiling quote v1.0.47
+   Compiling anyhow v1.0.104
+   Compiling memchr v2.8.3
+   Compiling syn v3.0.10
+   Compiling itoa v1.0.19
+   Compiling serde_json v1.0.154
+   Compiling serde_derive v1.0.229
+   Compiling serde v1.0.229
+   Compiling spiralcore-mvm-canonical-witness v0.1.0 (/var/tmp/spiralcore-current-canonical-witness-20261110/mvm-canonical-witness)
+error[E0432]: unresolved imports `spiralcore_mvm_canonical_witness::Config`, `spiralcore_mvm_canonical_witness::ProcessSample`, `spiralcore_mvm_canonical_witness::expected_body`
+ --> tests/validation.rs:1:40
+  |
+1 | use spiralcore_mvm_canonical_witness::{Config, ProcessSample, expected_body};
+  |                                        ^^^^^^  ^^^^^^^^^^^^^  ^^^^^^^^^^^^^ no `expected_body` in the root
+  |                                        |       |
+  |                                        |       no `ProcessSample` in the root
+  |                                        no `Config` in the root
+
+For more information about this error, try `rustc --explain E0432`.
+error: could not compile `spiralcore-mvm-canonical-witness` (test "validation") due to 1 previous error
