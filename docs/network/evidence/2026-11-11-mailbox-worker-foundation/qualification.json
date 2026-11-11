@@ -1,0 +1,207 @@
+{
+  "status": "PASS_SCOPED_LINUX_FOUNDATION_INACTIVE",
+  "base_revision": "89c24132851b7b7e78eb2ec4e45a3153f2718247",
+  "source_unchanged": true,
+  "source_files_and_lock_sha256": {
+    "crates/mvm-contract/src/protocol/mailbox_worker.rs": "3e5799207aa009f3c45eee02a6c6043c7f7ef9645db74e7f909a596734610966",
+    "crates/mvm-contract/src/protocol/mod.rs": "e8c42bfa3ec1aa33d6a0aa9a526d7b05eac2a407b41afcfaa9ea0aec4960b2fe",
+    "crates/mvm-contract/src/protocol/broker_control.rs": "0ba5c984c26ae0bdd51c78ce2e9a45582fb1b104dd46bf6d14b328464a9bb944",
+    "crates/mvm-core/src/protocol/mailbox_worker_control.rs": "12383b79061506d3f3c5c3687849828bdd49dca1689164d9665e2fbb034f5457",
+    "crates/mvm-core/src/protocol/mod.rs": "b9e07bcf4bffadc6c59fbdd45179feefb244f4403aa7694c119990955c0cd7fd",
+    "crates/mvm-core/tests/mailbox_worker_control.rs": "31b45e5bcb99dd892bbd33e76816a37e50540fc806b3e541fd42186240cd877b",
+    "crates/mvm-vmm/src/host/mod.rs": "26b8af8c76bbeb365fa2c4312f934d03f78e365f5e66561cec35d8c98cb9a6a2",
+    "crates/mvm-vmm/src/host/mailbox_worker_transport.rs": "d5ecb96cf1592d7730411553b3e818003810011c2c6242bed4ee8ed771148465",
+    "crates/mvm-vmm/src/host/host_agent_spawn.rs": "a2a6d1a54839c9f03a77b96c8f0a834abc73eae08f766b09a2729521c61f1085",
+    "crates/mvm-vmm/tests/mailbox_worker_transport.rs": "623abe39cd8e55e08c3bb93e7b56463425800aa70882506ab1591362bca026f4",
+    "crates/mvm-hostd/src/broker/daemon.rs": "b22085125c4771cf387913570b66fd1d65252a81e6f10a97c661d2c70eb0f00e",
+    "Cargo.lock": "cb2ddb835c3fa525b1f590a87c9ab9aebad3b967b83c784e4fdbaf37e56ab788"
+  },
+  "toolchain": "rustc 1.97.1 (8bab26f4f 2026-07-14)",
+  "host": "Linux 7.0.0-42-generic x86_64",
+  "execution": {
+    "nice": 10,
+    "jobs": 2,
+    "incremental": false,
+    "target_dir": "/var/tmp/spiralcore-installed-controller.MDjnre/target"
+  },
+  "checks": [
+    {
+      "name": "api_absence_red",
+      "log": "foundation-red.txt",
+      "sha256": "5fc00809ce118245bf8c367f618af989fb3140ed47866810afc314babeb99783",
+      "exit_code": 101,
+      "passed": 0,
+      "failed": 0,
+      "command": [
+        "cargo",
+        "test",
+        "--release",
+        "--locked",
+        "-p",
+        "mvm-core",
+        "--test",
+        "mailbox_worker_control",
+        "--test",
+        "mailbox_worker_transport"
+      ]
+    },
+    {
+      "name": "pipe_nlink_semantic_red",
+      "log": "foundation-green.txt",
+      "sha256": "a7898929c5709feff36c62d1258962300487a2ef1a23c9f02a991373b3cdeed0",
+      "exit_code": 101,
+      "passed": 10,
+      "failed": 2,
+      "command": [
+        "cargo",
+        "test",
+        "--release",
+        "--locked",
+        "-p",
+        "mvm-core",
+        "--test",
+        "mailbox_worker_control",
+        "-p",
+        "mvm-vmm",
+        "--test",
+        "mailbox_worker_transport"
+      ]
+    },
+    {
+      "name": "typed_response_semantic_red",
+      "log": "typed-response-red.txt",
+      "sha256": "7f4cca18a2dc3535439eb47c992ff0050b625c25e02da0d9378007046c6321b6",
+      "exit_code": 101,
+      "passed": 0,
+      "failed": 1,
+      "command": [
+        "cargo",
+        "test",
+        "--release",
+        "--locked",
+        "-p",
+        "mvm-vmm",
+        "--test",
+        "mailbox_worker_transport",
+        "new_wire_response_is_canonical_typed_control_variant"
+      ]
+    },
+    {
+      "name": "cleanup_context_semantic_red",
+      "log": "cleanup-query-context-red.txt",
+      "sha256": "5bb8ba31b5c17b00f62c07ed2e49f20ecc0594e4fe24a45df1c77516d0f470a0",
+      "exit_code": 101,
+      "passed": 0,
+      "failed": 2,
+      "command": [
+        "cargo",
+        "test",
+        "--release",
+        "--locked",
+        "-p",
+        "mvm-core",
+        "--test",
+        "mailbox_worker_control",
+        "cleanup_"
+      ]
+    },
+    {
+      "name": "qualified_tests",
+      "log": "foundation-reviewed-tests.txt",
+      "sha256": "7a8a0f0f691fdc608f316455451af4d51809e762e295692527cd71ed24ce2997",
+      "exit_code": 0,
+      "passed": 20,
+      "failed": 0,
+      "command": [
+        "cargo",
+        "test",
+        "--release",
+        "--locked",
+        "-p",
+        "mvm-core",
+        "--test",
+        "mailbox_worker_control",
+        "-p",
+        "mvm-vmm",
+        "--test",
+        "mailbox_worker_transport"
+      ]
+    },
+    {
+      "name": "qualified_clippy_tests",
+      "log": "foundation-reviewed-clippy-tests.txt",
+      "sha256": "87cee0444b38ef41328964ba0e9c1cc233c9f633e1bb3748f5a36ace232c3a02",
+      "exit_code": 0,
+      "passed": null,
+      "failed": null,
+      "command": [
+        "cargo",
+        "clippy",
+        "--release",
+        "--locked",
+        "-p",
+        "mvm-core",
+        "--test",
+        "mailbox_worker_control",
+        "-p",
+        "mvm-vmm",
+        "--test",
+        "mailbox_worker_transport",
+        "--",
+        "-D",
+        "warnings"
+      ]
+    },
+    {
+      "name": "qualified_clippy_libs",
+      "log": "foundation-reviewed-clippy-libs.txt",
+      "sha256": "6baa8dc601be415e8a9bf76c56f4f3c17d367b2c8fbcc9a151e0f4a84336c6b8",
+      "exit_code": 0,
+      "passed": null,
+      "failed": null,
+      "command": [
+        "cargo",
+        "clippy",
+        "--release",
+        "--locked",
+        "-p",
+        "mvm-core",
+        "-p",
+        "mvm-vmm",
+        "-p",
+        "mvm-hostd",
+        "--lib",
+        "--",
+        "-D",
+        "warnings"
+      ]
+    },
+    {
+      "name": "qualified_no_std",
+      "log": "foundation-reviewed-no-std.txt",
+      "sha256": "9ba28fda094b18037d78021be8c7152d9f630a18997e337bfc631a2a3a0fad2c",
+      "exit_code": 0,
+      "passed": null,
+      "failed": null,
+      "command": [
+        "cargo",
+        "check",
+        "--release",
+        "--locked",
+        "-p",
+        "mvm-contract",
+        "--no-default-features",
+        "--features",
+        "protocol"
+      ]
+    }
+  ],
+  "test_counting": "Final source has 8 control and 12 Linux transport tests; 20 unique, zero ignored. Earlier passing subsets and repeated checks overlap and are not additional coverage. foundation-final-tests.txt was source-overlap exploratory and is superseded, not exact-source qualification.",
+  "limitations": [
+    "All new operations remain unavailable in daemon; no Child spawned, retained or collected by this implementation.",
+    "Signed DTOs and received Collected states are data, not authority or terminal custody/refund evidence.",
+    "Actual daemon, aggregate budgets, registration ownership, FD3 readiness/lifetime, public caller and stop integration remain future work.",
+    "Linux anonymous pipefs check qualified; nonLinux pipe delegation explicitly Unsupported. No native Darwin, Windows, VM, WAN, fidelity or performance qualification."
+  ],
+  "contribution_commit": "b08bbebd5d8070486c8d1966edb0c8f2af466b7e"
+}
