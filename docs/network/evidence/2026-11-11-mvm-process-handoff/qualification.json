@@ -1,0 +1,312 @@
+{
+  "date": "2026-11-11",
+  "environment": {
+    "architecture": "x86_64",
+    "incremental": false,
+    "jobs": 2,
+    "locked": true,
+    "nice": 10,
+    "os": "Linux",
+    "profile": "release",
+    "rustc": "rustc 1.97.1 (8bab26f4f 2026-07-14)",
+    "test_threads": 1,
+    "umask": "022"
+  },
+  "measurements": {
+    "energy": "NOT_MEASURED",
+    "memory": null,
+    "payload_bytes": null,
+    "receiver_cpu": null,
+    "scope": "Build/test command durations only; no transfer workload",
+    "sender_cpu": null,
+    "transfer_time": null,
+    "vm_booted": false,
+    "wire_bytes_both_directions": null
+  },
+  "process": {
+    "checks": [
+      {
+        "command": [
+          "nice",
+          "-n",
+          "10",
+          "/home/callard/.cargo/bin/cargo",
+          "test",
+          "--release",
+          "--locked",
+          "-p",
+          "mvm-vmm",
+          "--test",
+          "installed_owner_handoff",
+          "--",
+          "--test-threads=1"
+        ],
+        "exit_code": 0,
+        "label": "handoff",
+        "output_sha256": "6f711ef725649e074d754ee87430b91f629814efc1a6e0263d49b44ac7c85389",
+        "wall_seconds": 44.93374530202709
+      },
+      {
+        "command": [
+          "nice",
+          "-n",
+          "10",
+          "/home/callard/.cargo/bin/cargo",
+          "test",
+          "--release",
+          "--locked",
+          "-p",
+          "mvm-hostd",
+          "--test",
+          "watcher_jobs",
+          "--",
+          "--test-threads=1"
+        ],
+        "exit_code": 0,
+        "label": "watcher",
+        "output_sha256": "52b39e16e3c9740b0a83f4f1dcb7ed78f3513108dc15d3fd472fffe27855f4a8",
+        "wall_seconds": 286.2694858459872
+      },
+      {
+        "command": [
+          "nice",
+          "-n",
+          "10",
+          "/home/callard/.cargo/bin/cargo",
+          "test",
+          "--release",
+          "--locked",
+          "-p",
+          "mvmctl",
+          "--test",
+          "resource_lease_entry",
+          "--",
+          "--test-threads=1"
+        ],
+        "exit_code": 0,
+        "label": "cli",
+        "output_sha256": "8e2a21869160542eb5f63b71ad6a224331b6201e8ea03e7c632815b7e1aedda7",
+        "wall_seconds": 319.65554284403333
+      },
+      {
+        "command": [
+          "nice",
+          "-n",
+          "10",
+          "/home/callard/.cargo/bin/cargo",
+          "clippy",
+          "--release",
+          "--locked",
+          "-p",
+          "mvm-vmm",
+          "--lib",
+          "--test",
+          "installed_owner_handoff",
+          "--",
+          "-D",
+          "warnings"
+        ],
+        "exit_code": 0,
+        "label": "clippy-vmm",
+        "output_sha256": "a0502499bfed8146aba5e5ffdf41089635fe7c95eb56eca1e3c1a222c6967546",
+        "wall_seconds": 18.958117545000277
+      },
+      {
+        "command": [
+          "nice",
+          "-n",
+          "10",
+          "/home/callard/.cargo/bin/cargo",
+          "clippy",
+          "--release",
+          "--locked",
+          "-p",
+          "mvm-hostd",
+          "--lib",
+          "--bin",
+          "mvm-signer-helper",
+          "--test",
+          "watcher_jobs",
+          "--",
+          "-D",
+          "warnings"
+        ],
+        "exit_code": 0,
+        "label": "clippy-hostd",
+        "output_sha256": "2896adae49d88c1fce104f7deb896435f2b3b516e57ee7c6ab3e4e28a9d3cd00",
+        "wall_seconds": 30.643293103028554
+      },
+      {
+        "command": [
+          "nice",
+          "-n",
+          "10",
+          "/home/callard/.cargo/bin/cargo",
+          "clippy",
+          "--release",
+          "--locked",
+          "-p",
+          "mvmctl",
+          "--bin",
+          "mvmctl",
+          "--test",
+          "resource_lease_entry",
+          "--",
+          "-D",
+          "warnings"
+        ],
+        "exit_code": 0,
+        "label": "clippy-cli",
+        "output_sha256": "51f3336b0ae711866dbe861b6746270bf16d6462ae0222e969cac1e4b1f6917c",
+        "wall_seconds": 43.08395661402028
+      }
+    ],
+    "commit": "b0958e006a9bd6b0dcdb0dcf771442fc60ce762c",
+    "limitations": [
+      "component scopes only",
+      "CLI build may omit embedded Linux host assets; not installed package qualification",
+      "no full workspace or gated features",
+      "no guest/WAN/platform/FIPS qualification"
+    ],
+    "published_component_sha256": {
+      "Cargo.toml": "d867c8bdf767a7f2edaee778d21d6cd06c6798e23c465fdbda28c5816ec54d62",
+      "crates/mvm-hostd/src/bin/mvm-signer-helper.rs": "a8bc60273e2f5450a54c078646eb4426a79982b1b3bb6c7205fea6a2d2367562",
+      "crates/mvm-hostd/src/lib.rs": "850de579ee77c44d33f99e919003b52ad88f1adb7a3a98ab0388806fc26645e9",
+      "crates/mvm-hostd/src/watcher_jobs.rs": "665949643dea41610e2a0dfb70323c477b243c62bd69f4867aea72f833c2b027",
+      "crates/mvm-hostd/tests/watcher_jobs.rs": "44ab12e7bc3ed2140db4c31ee1ee8358fc94d5484670f316b966338b4870d6c8",
+      "crates/mvm-vmm/src/host/installed_owner.rs": "55836a32a85ff418ee8919eeaa56e3476af4223b33394a4e5dca32456e7b9768",
+      "crates/mvm-vmm/src/host/installed_owner/command_lease.rs": "d168a9418120f80e46c8639941e14933c63d9c6e3b33bc04e9cb25a531e5ffd8",
+      "crates/mvm-vmm/tests/installed_owner_handoff.rs": "2ad655ba6d5f2fbe184e762000413b5182949ed583848bc2c71998a218984588",
+      "src/main.rs": "8431e4c7112b82515dfe9e6b46fb2696474a697c319f19f08dbbb0429343f1e9",
+      "tests/resource_lease_entry.rs": "dee976b1ebdeccd226727fc9328a3652990a80851a5ec855983d60ecd8922970",
+      "third_party/spiralcore-installed-owner/README.md": "5dd22e22089d721dc60974ed0b012a8f2b0352eef84fc13269a51d8ce9de3052",
+      "third_party/spiralcore-installed-owner/provenance.json": "f7332e6d12d6fc5f7071511b111762239be82f61c1912e419a54c95dc2d1835f"
+    },
+    "regular_source_files": 4466,
+    "scoped_test_entries": {
+      "cli": {
+        "fixture_entries": 0,
+        "passed": 3
+      },
+      "handoff": {
+        "fixture_entries": 1,
+        "negative_controls_within_one_test": 10,
+        "passed": 3
+      },
+      "watcher": {
+        "fixture_entries": 2,
+        "passed": 5
+      }
+    },
+    "source_receipts_sha256": {
+      "source-after.json": "5801bf60968626a27d5cdbaa289eb8bfc24764dcd77b7598ac928df158090f64",
+      "source-before.json": "6ccf7c6f51a2983f35b41284cf45dba5a5e8186dec034bf5d7aea5626dfaab24"
+    },
+    "source_unchanged": true,
+    "tree": "feefd3ed0463cd98ce835667d1e9888b4648c241"
+  },
+  "reviews": {
+    "code_rust": "PASS exact 12-file source projection",
+    "execution": "Fresh immutable Git exports; no Core/classifier/daemon WIP overlays",
+    "security": "PASS exact 12-file source projection"
+  },
+  "schema": "spiralcore.component-qualification.v1",
+  "upstream": {
+    "checks": [
+      {
+        "batch_child_cpu_seconds": 77.743722,
+        "command": [
+          "nice",
+          "-n",
+          "10",
+          "/home/callard/.cargo/bin/cargo",
+          "test",
+          "--release",
+          "--locked",
+          "-p",
+          "mvm-vmm",
+          "--test",
+          "installed_owner",
+          "--",
+          "--test-threads=1"
+        ],
+        "exit_code": 0,
+        "label": "integration",
+        "output_sha256": "54658252d27379513464b8def5c5641a06ea6060b8e30568ed09058c226073a7",
+        "wall_seconds": 43.593119359982666
+      },
+      {
+        "batch_child_cpu_seconds": 78.46272699999999,
+        "command": [
+          "nice",
+          "-n",
+          "10",
+          "/home/callard/.cargo/bin/cargo",
+          "test",
+          "--release",
+          "--locked",
+          "-p",
+          "mvm-vmm",
+          "--lib",
+          "host::installed_owner",
+          "--",
+          "--test-threads=1"
+        ],
+        "exit_code": 0,
+        "label": "private",
+        "output_sha256": "b3499115b229a60d777e8bdbf4187548bf538becef1b986f4912178d9296803b",
+        "wall_seconds": 41.47124075901229
+      },
+      {
+        "batch_child_cpu_seconds": 20.277439000000022,
+        "command": [
+          "nice",
+          "-n",
+          "10",
+          "/home/callard/.cargo/bin/cargo",
+          "clippy",
+          "--release",
+          "--locked",
+          "-p",
+          "mvm-vmm",
+          "--lib",
+          "--test",
+          "installed_owner",
+          "--",
+          "-D",
+          "warnings"
+        ],
+        "exit_code": 0,
+        "label": "clippy",
+        "output_sha256": "523308f4861246ab44de4248710bd7eab63ed0b15606bafb2ceba16db36434ac",
+        "wall_seconds": 18.665909670991823
+      }
+    ],
+    "commit": "7cd704aefe01ed90169037415dd1574f876fdfea",
+    "limitations": [
+      "component only",
+      "no full workspace or gated-feature acceptance",
+      "no guest or WAN execution",
+      "no platform or FIPS qualification"
+    ],
+    "platform": "x86_64",
+    "regular_source_files": 4446,
+    "rustc": "rustc 1.97.1 (8bab26f4f 2026-07-14)",
+    "scoped_test_entries": {
+      "integration": {
+        "fixture_entries": 1,
+        "passed": 11
+      },
+      "private": {
+        "filtered": 1070,
+        "passed": 6
+      }
+    },
+    "source_receipts_sha256": {
+      "source-after.json": "44af67fcabd6872666af97e53777d0dfdbbdd152b18041f687cd6e1b3655f978",
+      "source-before.json": "af57475bebd170bae8056c4747dd64fd70758329ede3f567ce11b343427e2b74"
+    },
+    "source_unchanged": true,
+    "umask": "022"
+  }
+}

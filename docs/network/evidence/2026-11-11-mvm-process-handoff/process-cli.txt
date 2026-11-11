@@ -1,0 +1,50 @@
+   Compiling gix-object v0.64.1 (/var/tmp/spiralcore-exec-component-20261111-b0958e00/source/third_party/gix-object-0.64.1)
+   Compiling mvm-contract v0.27.0 (/var/tmp/spiralcore-exec-component-20261111-b0958e00/source/crates/mvm-contract)
+   Compiling mvm-http v0.27.0 (/var/tmp/spiralcore-exec-component-20261111-b0958e00/source/crates/mvm-http)
+   Compiling mvm-setpriv v0.27.0 (/var/tmp/spiralcore-exec-component-20261111-b0958e00/source/crates/mvm-setpriv)
+   Compiling gix-revwalk v0.35.0
+   Compiling gix-ref v0.67.1
+   Compiling gix-traverse v0.61.0
+   Compiling gix-index v0.55.0
+   Compiling mvm-core v0.27.0 (/var/tmp/spiralcore-exec-component-20261111-b0958e00/source/crates/mvm-core)
+   Compiling mvm-agentd v0.27.0 (/var/tmp/spiralcore-exec-component-20261111-b0958e00/source/crates/mvm-agentd)
+   Compiling mvm-net v0.27.0 (/var/tmp/spiralcore-exec-component-20261111-b0958e00/source/crates/mvm-net)
+   Compiling mvm-fs v0.27.0 (/var/tmp/spiralcore-exec-component-20261111-b0958e00/source/crates/mvm-fs)
+   Compiling mvm-vmm v0.27.0 (/var/tmp/spiralcore-exec-component-20261111-b0958e00/source/crates/mvm-vmm)
+   Compiling gix-pack v0.74.2
+   Compiling gix-config v0.60.0
+   Compiling gix-protocol v0.65.1
+   Compiling gix-filter v0.34.0
+   Compiling gix-submodule v0.34.0
+   Compiling gix-worktree v0.56.0
+   Compiling gix-odb v0.84.0
+   Compiling libkrun-sys v0.27.0 (/var/tmp/spiralcore-exec-component-20261111-b0958e00/source/crates/deps/libkrun-sys)
+   Compiling gix-discover v0.55.0
+   Compiling gix-revision v0.49.1
+   Compiling gix-diff v0.67.1
+   Compiling blake3 v1.8.5
+   Compiling gix v0.87.1 (/var/tmp/spiralcore-exec-component-20261111-b0958e00/source/third_party/gix-0.87.1)
+   Compiling mvm-builder-guest v0.27.0 (/var/tmp/spiralcore-exec-component-20261111-b0958e00/source/crates/mvm-builder-guest)
+   Compiling mvm-build v0.27.0 (/var/tmp/spiralcore-exec-component-20261111-b0958e00/source/crates/mvm-build)
+   Compiling mvm-backends v0.27.0 (/var/tmp/spiralcore-exec-component-20261111-b0958e00/source/crates/mvm-backends)
+   Compiling mvm-compiler v0.27.0 (/var/tmp/spiralcore-exec-component-20261111-b0958e00/source/crates/mvm-compiler)
+   Compiling mvm-runtime v0.27.0 (/var/tmp/spiralcore-exec-component-20261111-b0958e00/source/crates/mvm-runtime)
+   Compiling mvm-host-services v0.27.0 (/var/tmp/spiralcore-exec-component-20261111-b0958e00/source/crates/mvm-host-services)
+   Compiling mvm-cli v0.27.0 (/var/tmp/spiralcore-exec-component-20261111-b0958e00/source/crates/mvm-cli)
+   Compiling mvm-sdk v0.27.0 (/var/tmp/spiralcore-exec-component-20261111-b0958e00/source/crates/mvm-sdk)
+   Compiling mvm-hostd v0.27.0 (/var/tmp/spiralcore-exec-component-20261111-b0958e00/source/crates/mvm-hostd)
+   Compiling mvm-bundler v0.27.0 (/var/tmp/spiralcore-exec-component-20261111-b0958e00/source/crates/mvm-bundler)
+   Compiling mvm-client v0.27.0 (/var/tmp/spiralcore-exec-component-20261111-b0958e00/source/crates/mvm-client)
+warning: mvm-cli@0.27.0: this release mvmctl does not embed its Linux host binaries, because the pinned cross-compile toolchain is unavailable: cargo-zigbuild 0.23.0 is required to cross-compile the embedded host binaries but `/home/callard/.rustup/toolchains/1.97.1-x86_64-unknown-linux-gnu/bin/cargo zigbuild` did not run. Install it with `cargo install cargo-zigbuild --version 0.23.0 --locked`. It will try to build them the first time it needs a builder VM, which needs the same toolchain. Install it with `just payload::toolchain`, or set MVM_EMBED=0 to build without them on purpose.
+   Compiling mvm-capture v0.27.0 (/var/tmp/spiralcore-exec-component-20261111-b0958e00/source/crates/mvm-capture)
+   Compiling mvmctl v0.27.0 (/var/tmp/spiralcore-exec-component-20261111-b0958e00/source)
+    Finished `release` profile [optimized] target(s) in 5m 19s
+     Running tests/resource_lease_entry.rs (/var/tmp/spiralcore-installed-controller.MDjnre/target/release/deps/resource_lease_entry-d3efe70701af7ccb)
+
+running 3 tests
+test actual_cli_accepts_and_releases_an_exact_typed_resource_handoff ... ok
+test malformed_inherited_resource_metadata_refuses_before_cli_dispatch ... ok
+test version_without_a_resource_handoff_preserves_normal_cli_behavior ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+

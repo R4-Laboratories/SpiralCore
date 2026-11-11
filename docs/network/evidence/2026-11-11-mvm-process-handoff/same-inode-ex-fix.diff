@@ -1,0 +1,19 @@
+--- before/command_lease.rs
++++ after/command_lease.rs
+@@ -10,7 +10,7 @@
+ 
+ use super::{
+     File, HolderLease, InstallationKey, OwnerError, Phase, RECORD_BYTES, Storage, check_private,
+-    lock, object_id,
++    object_id,
+ };
+ 
+ const MARKER: &str = "MVM_RESOURCE_LEASE_V1";
+@@ -151,7 +151,6 @@
+     {
+         return Err(invalid());
+     }
+-    lock(&holder, true).map_err(owner_error)?;
+     let record = storage.read().map_err(owner_error)?;
+     let expected_hash: [u8; 32] = Sha256::digest(record.encode()).into();
+     if record.phase != Phase::Active
