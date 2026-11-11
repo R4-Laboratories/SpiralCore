@@ -1,7 +1,7 @@
 # Networking delivery status
 
 Snapshot: **2026-11-11**, checked against published `origin/main`
-`fabea816dd7b3e2fccd542a38ece920c27e754a1` and the live GitHub issue graph.
+`80d6c08c89e5aa9a38f23290de1a12a3f7db912c` and the live GitHub issue graph.
 This page separates accepted components, measured experiments and unmerged work.
 The [README](../../README.md) is the architecture/results entry point;
 [issue #42](https://github.com/R4-Laboratories/SpiralCore/issues/42) remains the
@@ -164,11 +164,34 @@ zero fixture-adopted reaping, then exit42 in a 1.03-second test. The packet keep
 all source differences explicit; the older core mailbox API in that runtime
 composition is not relabeled as whole-commit runtime execution. Both required
 gated compile commands pass separately on the exact immutable commit, with
-4,478 regular source hashes unchanged. **Strict Clippy fails, and all four
-original restart consumers fail during initial startup before registration or
-replay.** Canonical early provisioning, startup/recovery and native guest/WAN
-qualification remain open. This repairs a scoped shutdown result and does not
+4,478 regular source hashes unchanged. At that baseline, **strict Clippy fails,
+and all four original restart consumers fail during initial startup before
+registration or replay.** This repairs a scoped shutdown result and does not
 complete the installed service or #114.
+
+The newer [frontend/recovery checkpoint](evidence/2026-11-11-frontend-recovery/README.md)
+is public at
+[`98ec9d270`](https://github.com/Casey-allard/mvm/commit/98ec9d270f5f88606b49677c266fd08f26e97369).
+It wires canonical local-home preparation before CLI and four SDK entrypoint
+writers, preserving pure SDK construction, existing CLI early paths and separate
+native admission. Its selected Core publication scopes pass 23 cases and strict
+checks; the SDK launch scope passes 56 cases; the actual CLI first-use regression
+and two caller-identity controls pass. Original API/regression failures and an
+intermediate 26-case SDK fixture failure remain recorded. SDK strict checking
+still fails in the Hostd dependency, so this is not workspace strict acceptance.
+
+With canonical fresh provisioning in the original restart fixture, the four
+unchanged scenarios now reach their intended setup: **two pass and two fail**.
+Idle after deregistration and wrapper restart pass; worker restart and crash
+mid-flight still fail during recovery. Controlled startup distinguishes a real
+unprovisioned refusal from provisioned Ready/original-signer collection. It does
+not qualify a nonfresh installation with missing inventory. The supplied
+qualified fixture revisions are separate from published commit `98ec9d270`.
+All runtime compositions and their source differences are explicit; both gated
+compile commands separately pass on the immutable commit, with every one of its
+4,478 regular files independently matched to Git and unchanged. Trusted Preparing
+replay, stale-socket/retained-operation recovery, installed native retirement and
+WAN/platform/capacity/security qualification remain open.
 
 [PR #95](https://github.com/R4-Laboratories/SpiralCore/pull/95) adds canonical
 transport-binding revocation to the mailbox adapter. Live Call and Reply keep

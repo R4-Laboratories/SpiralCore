@@ -1,0 +1,24 @@
+
+running 4 tests
+test daemon_crash_mid_flight_loses_at_most_one_call_and_preserves_chain ... 
+thread 'daemon_crash_mid_flight_loses_at_most_one_call_and_preserves_chain' (3840579) panicked at crates/mvm-hostd/tests/host_agent_restart.rs:165:17:
+host-agent daemon (pid 3840582) exited after 15 recovery attempt(s) in 0.4s; the broker cannot recover. Last error: connect broker socket /tmp/.tmp6GghWi/mvm-home/broker.sock: Connection refused (os error 111)
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+FAILED
+test idle_daemon_self_terminates_when_last_vm_deregisters ... ok
+test worker_restart_restores_journaled_registration_and_chain ... 
+thread 'worker_restart_restores_journaled_registration_and_chain' (3840624) panicked at crates/mvm-hostd/tests/host_agent_restart.rs:165:17:
+host-agent daemon (pid 3840627) exited after 15 recovery attempt(s) in 0.4s; the broker cannot recover. Last error: connect broker socket /tmp/.tmpT4pDJA/mvm-home/broker.sock: Connection refused (os error 111)
+FAILED
+test wrapper_restart_restores_journaled_registration_and_chain ... ok
+
+failures:
+
+failures:
+    daemon_crash_mid_flight_loses_at_most_one_call_and_preserves_chain
+    worker_restart_restores_journaled_registration_and_chain
+
+test result: FAILED. 2 passed; 2 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.46s
+
+Command exited with non-zero status 101
+TEST_WALL_S=2.46 TEST_USER_S=0.01 TEST_SYSTEM_S=0.03 TEST_MAX_RSS_KIB=7604

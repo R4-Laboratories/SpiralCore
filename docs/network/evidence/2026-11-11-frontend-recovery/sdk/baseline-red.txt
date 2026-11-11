@@ -1,0 +1,104 @@
+   Compiling mvm-core v0.27.0 (/var/tmp/spiralcore-mailbox-worker-owner-20261111/source/crates/mvm-core)
+   Compiling mvm-agentd v0.27.0 (/var/tmp/spiralcore-mailbox-worker-owner-20261111/source/crates/mvm-agentd)
+   Compiling mvm-net v0.27.0 (/var/tmp/spiralcore-mailbox-worker-owner-20261111/source/crates/mvm-net)
+   Compiling mvm-fs v0.27.0 (/var/tmp/spiralcore-mailbox-worker-owner-20261111/source/crates/mvm-fs)
+   Compiling mvm-vmm v0.27.0 (/var/tmp/spiralcore-mailbox-worker-owner-20261111/source/crates/mvm-vmm)
+   Compiling mvm-builder-guest v0.27.0 (/var/tmp/spiralcore-mailbox-worker-owner-20261111/source/crates/mvm-builder-guest)
+   Compiling libkrun-sys v0.27.0 (/var/tmp/spiralcore-mailbox-worker-owner-20261111/source/crates/deps/libkrun-sys)
+   Compiling mvm-backends v0.27.0 (/var/tmp/spiralcore-mailbox-worker-owner-20261111/source/crates/mvm-backends)
+   Compiling mvm-build v0.27.0 (/var/tmp/spiralcore-mailbox-worker-owner-20261111/source/crates/mvm-build)
+   Compiling mvm-runtime v0.27.0 (/var/tmp/spiralcore-mailbox-worker-owner-20261111/source/crates/mvm-runtime)
+   Compiling mvm-host-services v0.27.0 (/var/tmp/spiralcore-mailbox-worker-owner-20261111/source/crates/mvm-host-services)
+   Compiling mvm-sdk v0.27.0 (/var/tmp/spiralcore-mailbox-worker-owner-20261111/source/crates/mvm-sdk)
+   Compiling mvm-hostd v0.27.0 (/var/tmp/spiralcore-mailbox-worker-owner-20261111/source/crates/mvm-hostd)
+warning: method `store_and_loan` is never used
+  --> crates/mvm-hostd/src/broker/control_prepare.rs:66:8
+   |
+53 | impl<T> CustodyField<T> {
+   | ----------------------- method in this implementation
+...
+66 |     fn store_and_loan(
+   |        ^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: field `original` is never read
+   --> crates/mvm-hostd/src/broker/control_prepare.rs:167:16
+    |
+166 | pub(crate) struct JournalSnapshots {
+    |                   ---------------- field in this struct
+167 |     pub(crate) original: Vec<mvm_core::protocol::broker_control::RegisterVm>,
+    |                ^^^^^^^^
+
+warning: struct `MutationStartFailure` is never constructed
+   --> crates/mvm-hostd/src/broker/control_prepare.rs:304:19
+    |
+304 | pub(crate) struct MutationStartFailure {
+    |                   ^^^^^^^^^^^^^^^^^^^^
+
+warning: methods `stopped` and `begin_mutation` are never used
+   --> crates/mvm-hostd/src/broker/control_prepare.rs:341:25
+    |
+314 | impl MutationCell {
+    | ----------------- methods in this implementation
+...
+341 |     pub(crate) async fn stopped(&self) {
+    |                         ^^^^^^^
+...
+413 |     pub(crate) fn begin_mutation(
+    |                   ^^^^^^^^^^^^^^
+
+warning: method `cancel_services` is never used
+   --> crates/mvm-hostd/src/broker/control_prepare.rs:657:25
+    |
+597 | impl PreparedRegistration {
+    | ------------------------- method in this implementation
+...
+657 |     pub(crate) async fn cancel_services(&mut self) -> Result<RegistrationDrainReceipt> {
+    |                         ^^^^^^^^^^^^^^^
+
+warning: methods `park_start` and `release_parked_start` are never used
+   --> crates/mvm-hostd/src/broker/control_prepare.rs:845:19
+    |
+770 | impl LiveVmHandle {
+    | ----------------- methods in this implementation
+...
+845 |     pub(crate) fn park_start(&mut self, start: StartLatch) -> Result<()> {
+    |                   ^^^^^^^^^^
+...
+859 |     pub(crate) fn release_parked_start(&mut self) -> Result<()> {
+    |                   ^^^^^^^^^^^^^^^^^^^^
+
+warning: method `contains` is never used
+   --> crates/mvm-hostd/src/broker/mailbox_workers.rs:743:19
+    |
+708 | impl MailboxWorkers {
+    | ------------------- method in this implementation
+...
+743 |     pub(crate) fn contains(&self, vm: &str) -> io::Result<bool> {
+    |                   ^^^^^^^^
+
+   Compiling mvm-bundler v0.27.0 (/var/tmp/spiralcore-mailbox-worker-owner-20261111/source/crates/mvm-bundler)
+warning: `mvm-hostd` (lib) generated 7 warnings
+   Compiling mvm-client v0.27.0 (/var/tmp/spiralcore-mailbox-worker-owner-20261111/source/crates/mvm-client)
+    Finished `release` profile [optimized] target(s) in 4m 08s
+     Running unittests src/lib.rs (/var/tmp/spiralcore-installed-controller.MDjnre/target/release/deps/mvm_client-37199dddff8b47c2)
+
+running 1 test
+test launch::tests::fresh_sdk_definition_prepares_only_its_canonical_local_tenant ... FAILED
+
+failures:
+
+---- launch::tests::fresh_sdk_definition_prepares_only_its_canonical_local_tenant stdout ----
+
+thread 'launch::tests::fresh_sdk_definition_prepares_only_its_canonical_local_tenant' (3825303) panicked at crates/mvm-client/src/launch/tests.rs:165:10:
+selected private home: Custom { kind: Other, error: InvalidStorage }
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    launch::tests::fresh_sdk_definition_prepares_only_its_canonical_local_tenant
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 1471 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `-p mvm-client --lib`

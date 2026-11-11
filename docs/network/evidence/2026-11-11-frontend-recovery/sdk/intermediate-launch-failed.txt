@@ -1,0 +1,296 @@
+warning: method `store_and_loan` is never used
+  --> crates/mvm-hostd/src/broker/control_prepare.rs:66:8
+   |
+53 | impl<T> CustodyField<T> {
+   | ----------------------- method in this implementation
+...
+66 |     fn store_and_loan(
+   |        ^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: field `original` is never read
+   --> crates/mvm-hostd/src/broker/control_prepare.rs:167:16
+    |
+166 | pub(crate) struct JournalSnapshots {
+    |                   ---------------- field in this struct
+167 |     pub(crate) original: Vec<mvm_core::protocol::broker_control::RegisterVm>,
+    |                ^^^^^^^^
+
+warning: struct `MutationStartFailure` is never constructed
+   --> crates/mvm-hostd/src/broker/control_prepare.rs:304:19
+    |
+304 | pub(crate) struct MutationStartFailure {
+    |                   ^^^^^^^^^^^^^^^^^^^^
+
+warning: methods `stopped` and `begin_mutation` are never used
+   --> crates/mvm-hostd/src/broker/control_prepare.rs:341:25
+    |
+314 | impl MutationCell {
+    | ----------------- methods in this implementation
+...
+341 |     pub(crate) async fn stopped(&self) {
+    |                         ^^^^^^^
+...
+413 |     pub(crate) fn begin_mutation(
+    |                   ^^^^^^^^^^^^^^
+
+warning: method `cancel_services` is never used
+   --> crates/mvm-hostd/src/broker/control_prepare.rs:657:25
+    |
+597 | impl PreparedRegistration {
+    | ------------------------- method in this implementation
+...
+657 |     pub(crate) async fn cancel_services(&mut self) -> Result<RegistrationDrainReceipt> {
+    |                         ^^^^^^^^^^^^^^^
+
+warning: methods `park_start` and `release_parked_start` are never used
+   --> crates/mvm-hostd/src/broker/control_prepare.rs:845:19
+    |
+770 | impl LiveVmHandle {
+    | ----------------- methods in this implementation
+...
+845 |     pub(crate) fn park_start(&mut self, start: StartLatch) -> Result<()> {
+    |                   ^^^^^^^^^^
+...
+859 |     pub(crate) fn release_parked_start(&mut self) -> Result<()> {
+    |                   ^^^^^^^^^^^^^^^^^^^^
+
+warning: method `contains` is never used
+   --> crates/mvm-hostd/src/broker/mailbox_workers.rs:743:19
+    |
+708 | impl MailboxWorkers {
+    | ------------------- method in this implementation
+...
+743 |     pub(crate) fn contains(&self, vm: &str) -> io::Result<bool> {
+    |                   ^^^^^^^^
+
+warning: `mvm-hostd` (lib) generated 7 warnings
+    Finished `release` profile [optimized] target(s) in 0.12s
+     Running unittests src/lib.rs (/var/tmp/spiralcore-installed-controller.MDjnre/target/release/deps/mvm_client-37199dddff8b47c2)
+
+running 56 tests
+test launch::tests::a_command_the_guest_refuses_fails_the_launch_and_stops_the_machine ... FAILED
+test launch::tests::a_corrupt_receipt_retains_every_resource ... ok
+test launch::tests::a_failed_transient_dispatch_never_attests_exit_zero ... FAILED
+test launch::tests::a_fresh_client_cleans_up_a_session_it_did_not_launch ... ok
+test launch::tests::a_launch_without_a_command_starts_no_process ... FAILED
+test launch::tests::a_missing_receipt_retains_registrations ... ok
+test launch::tests::a_partly_registered_request_leaves_nothing_behind ... ok
+test launch::tests::a_persistent_launch_starts_its_command_once_the_machine_is_up ... FAILED
+test launch::tests::a_persistent_request_stripped_of_its_name_is_refused_not_panicked ... ok
+test launch::tests::a_restart_re_admits_under_the_persisted_grants_not_deny_all ... ok
+test launch::tests::a_tampered_transient_plan_cannot_create_an_exit_seal ... FAILED
+test launch::tests::a_transient_command_exit_is_sealed_from_its_admitted_plan ... FAILED
+test launch::tests::a_transient_launch_starts_its_command_once_the_machine_is_up ... FAILED
+test launch::tests::a_transient_run_that_did_not_complete_records_no_boot_records_and_is_sealed_failed ... FAILED
+test launch::tests::a_transient_runs_boot_records_land_before_its_seal_and_are_covered_by_it ... FAILED
+test launch::tests::a_transient_stop_failure_is_recorded_under_its_plan_and_left_unsealed ... FAILED
+test launch::tests::an_exit_records_the_host_state_size_even_when_the_backend_measured_nothing ... FAILED
+test launch::tests::cleanup_keeps_a_registration_recreated_after_the_session_made_it ... ok
+test launch::tests::cleanup_keeps_a_registration_the_session_borrowed ... ok
+test launch::tests::cleanup_keeps_secret_references_changed_after_the_session_wrote_them ... ok
+test launch::tests::concurrent_persistent_creates_of_one_name_produce_exactly_one_success ... FAILED
+test launch::tests::create_machine_persists_the_callers_grants ... FAILED
+test launch::tests::create_refuses_a_command_it_would_have_nowhere_to_keep ... ok
+test launch::tests::failed_stop_during_command_rollback_preserves_persistent_state ... ok
+test launch::tests::failed_stop_during_transient_command_rollback_preserves_state ... ok
+test launch::tests::failed_stop_preserves_persistent_definition_on_force_recreate ... FAILED
+test launch::tests::failed_stop_preserves_persistent_definition_on_force_remove ... FAILED
+test launch::tests::failed_stop_preserves_transient_sidecar_and_runtime_state ... ok
+test launch::tests::firecracker_admitted_boot_receives_a_concrete_kernel_path ... ok
+test launch::tests::fresh_sdk_definition_prepares_only_its_canonical_local_tenant ... ok
+test launch::tests::launch_attaches_a_writable_managed_volume_under_standard_only_when_granted ... ok
+test launch::tests::launch_over_a_deployment_backed_spec_never_boots_it_as_a_plain_image ... FAILED
+test launch::tests::launch_recovers_from_stale_runtime_dir_leftovers ... FAILED
+test launch::tests::launch_refuses_cross_scope_secret_reference ... FAILED
+test launch::tests::launch_refuses_secret_ref_without_binding_and_boots_nothing ... ok
+test launch::tests::launch_request_carries_ports_into_the_persisted_spec ... ok
+test launch::tests::launch_request_refuses_a_malformed_port_before_anything_is_persisted ... ok
+test launch::tests::launch_with_managed_volume_takes_and_releases_the_lease ... ok
+test launch::tests::lifecycle_audit_carries_no_secret_values_or_env ... ok
+test launch::tests::malformed_transient_plan_cannot_create_an_exit_seal ... ok
+test launch::tests::persistent_definition_restart_does_not_inherit_request_mailbox ... ok
+test launch::tests::persistent_launch_boots_and_reuses_same_config ... FAILED
+test launch::tests::persistent_name_collision_needs_force_to_recreate ... FAILED
+test launch::tests::persistent_relaunch_revalidates_sidecar_refs_recorded_earlier ... ok
+test launch::tests::persistent_request_mailbox_reaches_canonical_backend_admission ... ok
+test launch::tests::removing_a_running_persistent_machine_needs_the_force_flow ... FAILED
+test launch::tests::start_refuses_spec_shapes_the_in_process_backend_cannot_honor ... ok
+test launch::tests::successful_command_rollback_removes_only_a_new_definition ... FAILED
+test launch::tests::transient_cleanup_removes_what_the_session_registered_and_leased ... ok
+test launch::tests::transient_declared_volume_is_registered_and_leased_without_preregistration ... ok
+test launch::tests::transient_declared_volume_missing_from_catalog_refuses_before_boot ... FAILED
+test launch::tests::transient_exit_reports_code_and_cleanup_is_idempotent ... ok
+test launch::tests::transient_failed_launch_rolls_back_session_state ... ok
+test launch::tests::transient_launch_boots_admitted_and_audited ... FAILED
+test launch::tests::transient_launch_without_a_name_generates_one ... FAILED
+test launch::tests::transient_name_collisions_are_refused ... FAILED
+
+failures:
+
+---- launch::tests::a_command_the_guest_refuses_fails_the_launch_and_stops_the_machine stdout ----
+
+thread 'launch::tests::a_command_the_guest_refuses_fails_the_launch_and_stops_the_machine' (3828869) panicked at crates/mvm-client/src/launch/tests.rs:1765:5:
+backend error: preparing canonical local home: installed owner: InvalidStorage
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- launch::tests::a_failed_transient_dispatch_never_attests_exit_zero stdout ----
+
+thread 'launch::tests::a_failed_transient_dispatch_never_attests_exit_zero' (3828885) panicked at crates/mvm-client/src/launch/tests.rs:569:48:
+launch: Backend { reason: "preparing canonical local home: installed owner: InvalidStorage" }
+
+---- launch::tests::a_launch_without_a_command_starts_no_process stdout ----
+
+thread 'launch::tests::a_launch_without_a_command_starts_no_process' (3828901) panicked at crates/mvm-client/src/launch/tests.rs:1741:48:
+launch: Backend { reason: "preparing canonical local home: installed owner: InvalidStorage" }
+
+---- launch::tests::a_persistent_launch_starts_its_command_once_the_machine_is_up stdout ----
+
+thread 'launch::tests::a_persistent_launch_starts_its_command_once_the_machine_is_up' (3828918) panicked at crates/mvm-client/src/launch/tests.rs:1699:48:
+launch with a command: Backend { reason: "preparing canonical local home: installed owner: InvalidStorage" }
+
+---- launch::tests::a_tampered_transient_plan_cannot_create_an_exit_seal stdout ----
+
+thread 'launch::tests::a_tampered_transient_plan_cannot_create_an_exit_seal' (3828941) panicked at crates/mvm-client/src/launch/tests.rs:543:48:
+launch: Backend { reason: "preparing canonical local home: installed owner: InvalidStorage" }
+
+---- launch::tests::a_transient_command_exit_is_sealed_from_its_admitted_plan stdout ----
+
+thread 'launch::tests::a_transient_command_exit_is_sealed_from_its_admitted_plan' (3828942) panicked at crates/mvm-client/src/launch/tests.rs:425:48:
+launch: Backend { reason: "preparing canonical local home: installed owner: InvalidStorage" }
+
+---- launch::tests::a_transient_launch_starts_its_command_once_the_machine_is_up stdout ----
+
+thread 'launch::tests::a_transient_launch_starts_its_command_once_the_machine_is_up' (3828943) panicked at crates/mvm-client/src/launch/tests.rs:1728:48:
+launch with a command: Backend { reason: "preparing canonical local home: installed owner: InvalidStorage" }
+
+---- launch::tests::a_transient_run_that_did_not_complete_records_no_boot_records_and_is_sealed_failed stdout ----
+
+thread 'launch::tests::a_transient_run_that_did_not_complete_records_no_boot_records_and_is_sealed_failed' (3828944) panicked at crates/mvm-client/src/launch/tests.rs:383:48:
+launch: Backend { reason: "preparing canonical local home: installed owner: InvalidStorage" }
+
+---- launch::tests::a_transient_runs_boot_records_land_before_its_seal_and_are_covered_by_it stdout ----
+
+thread 'launch::tests::a_transient_runs_boot_records_land_before_its_seal_and_are_covered_by_it' (3828945) panicked at crates/mvm-client/src/launch/tests.rs:329:48:
+launch: Backend { reason: "preparing canonical local home: installed owner: InvalidStorage" }
+
+---- launch::tests::a_transient_stop_failure_is_recorded_under_its_plan_and_left_unsealed stdout ----
+
+thread 'launch::tests::a_transient_stop_failure_is_recorded_under_its_plan_and_left_unsealed' (3828946) panicked at crates/mvm-client/src/launch/tests.rs:501:48:
+launch: Backend { reason: "preparing canonical local home: installed owner: InvalidStorage" }
+
+---- launch::tests::an_exit_records_the_host_state_size_even_when_the_backend_measured_nothing stdout ----
+
+thread 'launch::tests::an_exit_records_the_host_state_size_even_when_the_backend_measured_nothing' (3828947) panicked at crates/mvm-client/src/launch/tests.rs:306:48:
+launch: Backend { reason: "preparing canonical local home: installed owner: InvalidStorage" }
+
+---- launch::tests::concurrent_persistent_creates_of_one_name_produce_exactly_one_success stdout ----
+
+thread 'launch::tests::concurrent_persistent_creates_of_one_name_produce_exactly_one_success' (3828993) panicked at crates/mvm-client/src/launch/tests.rs:753:5:
+assertion `left == right` failed: exactly one creator should win the race
+  left: 0
+ right: 1
+
+---- launch::tests::create_machine_persists_the_callers_grants stdout ----
+
+thread 'launch::tests::create_machine_persists_the_callers_grants' (3829010) panicked at crates/mvm-client/src/launch/tests.rs:1527:39:
+create: Backend { reason: "preparing canonical local home: installed owner: InvalidStorage" }
+
+---- launch::tests::failed_stop_preserves_persistent_definition_on_force_recreate stdout ----
+
+thread 'launch::tests::failed_stop_preserves_persistent_definition_on_force_recreate' (3829118) panicked at crates/mvm-client/src/launch/tests.rs:826:10:
+launch: Backend { reason: "preparing canonical local home: installed owner: InvalidStorage" }
+
+---- launch::tests::failed_stop_preserves_persistent_definition_on_force_remove stdout ----
+
+thread 'launch::tests::failed_stop_preserves_persistent_definition_on_force_remove' (3829119) panicked at crates/mvm-client/src/launch/tests.rs:802:10:
+launch: Backend { reason: "preparing canonical local home: installed owner: InvalidStorage" }
+
+---- launch::tests::launch_over_a_deployment_backed_spec_never_boots_it_as_a_plain_image stdout ----
+
+thread 'launch::tests::launch_over_a_deployment_backed_spec_never_boots_it_as_a_plain_image' (3829159) panicked at crates/mvm-client/src/launch/tests.rs:1222:5:
+got: backend error: preparing canonical local home: installed owner: InvalidStorage
+
+---- launch::tests::launch_recovers_from_stale_runtime_dir_leftovers stdout ----
+
+thread 'launch::tests::launch_recovers_from_stale_runtime_dir_leftovers' (3829160) panicked at crates/mvm-client/src/launch/tests.rs:214:48:
+launch over residue: Backend { reason: "preparing canonical local home: installed owner: InvalidStorage" }
+
+---- launch::tests::launch_refuses_cross_scope_secret_reference stdout ----
+
+thread 'launch::tests::launch_refuses_cross_scope_secret_reference' (3829161) panicked at crates/mvm-client/src/launch/tests.rs:1131:5:
+got: backend error: preparing canonical local home: installed owner: InvalidStorage
+
+---- launch::tests::persistent_launch_boots_and_reuses_same_config stdout ----
+
+thread 'launch::tests::persistent_launch_boots_and_reuses_same_config' (3829228) panicked at crates/mvm-client/src/launch/tests.rs:651:48:
+launch persistent: Backend { reason: "preparing canonical local home: installed owner: InvalidStorage" }
+
+---- launch::tests::persistent_name_collision_needs_force_to_recreate stdout ----
+
+thread 'launch::tests::persistent_name_collision_needs_force_to_recreate' (3829229) panicked at crates/mvm-client/src/launch/tests.rs:681:10:
+create: Backend { reason: "preparing canonical local home: installed owner: InvalidStorage" }
+
+---- launch::tests::removing_a_running_persistent_machine_needs_the_force_flow stdout ----
+
+thread 'launch::tests::removing_a_running_persistent_machine_needs_the_force_flow' (3829270) panicked at crates/mvm-client/src/launch/tests.rs:773:34:
+launch: Backend { reason: "preparing canonical local home: installed owner: InvalidStorage" }
+
+---- launch::tests::successful_command_rollback_removes_only_a_new_definition stdout ----
+
+thread 'launch::tests::successful_command_rollback_removes_only_a_new_definition' (3829272) panicked at crates/mvm-client/src/launch/tests.rs:1800:9:
+assertion failed: error.to_string().contains("guest refused the command")
+
+---- launch::tests::transient_declared_volume_missing_from_catalog_refuses_before_boot stdout ----
+
+thread 'launch::tests::transient_declared_volume_missing_from_catalog_refuses_before_boot' (3829303) panicked at crates/mvm-client/src/launch/tests.rs:1901:5:
+backend error: preparing canonical local home: installed owner: InvalidStorage
+
+---- launch::tests::transient_launch_boots_admitted_and_audited stdout ----
+
+thread 'launch::tests::transient_launch_boots_admitted_and_audited' (3829325) panicked at crates/mvm-client/src/launch/tests.rs:183:48:
+launch: Backend { reason: "preparing canonical local home: installed owner: InvalidStorage" }
+
+---- launch::tests::transient_launch_without_a_name_generates_one stdout ----
+
+thread 'launch::tests::transient_launch_without_a_name_generates_one' (3829326) panicked at crates/mvm-client/src/launch/tests.rs:235:48:
+launch: Backend { reason: "preparing canonical local home: installed owner: InvalidStorage" }
+
+---- launch::tests::transient_name_collisions_are_refused stdout ----
+
+thread 'launch::tests::transient_name_collisions_are_refused' (3829327) panicked at crates/mvm-client/src/launch/tests.rs:622:32:
+first launch: Backend { reason: "preparing canonical local home: installed owner: InvalidStorage" }
+
+
+failures:
+    launch::tests::a_command_the_guest_refuses_fails_the_launch_and_stops_the_machine
+    launch::tests::a_failed_transient_dispatch_never_attests_exit_zero
+    launch::tests::a_launch_without_a_command_starts_no_process
+    launch::tests::a_persistent_launch_starts_its_command_once_the_machine_is_up
+    launch::tests::a_tampered_transient_plan_cannot_create_an_exit_seal
+    launch::tests::a_transient_command_exit_is_sealed_from_its_admitted_plan
+    launch::tests::a_transient_launch_starts_its_command_once_the_machine_is_up
+    launch::tests::a_transient_run_that_did_not_complete_records_no_boot_records_and_is_sealed_failed
+    launch::tests::a_transient_runs_boot_records_land_before_its_seal_and_are_covered_by_it
+    launch::tests::a_transient_stop_failure_is_recorded_under_its_plan_and_left_unsealed
+    launch::tests::an_exit_records_the_host_state_size_even_when_the_backend_measured_nothing
+    launch::tests::concurrent_persistent_creates_of_one_name_produce_exactly_one_success
+    launch::tests::create_machine_persists_the_callers_grants
+    launch::tests::failed_stop_preserves_persistent_definition_on_force_recreate
+    launch::tests::failed_stop_preserves_persistent_definition_on_force_remove
+    launch::tests::launch_over_a_deployment_backed_spec_never_boots_it_as_a_plain_image
+    launch::tests::launch_recovers_from_stale_runtime_dir_leftovers
+    launch::tests::launch_refuses_cross_scope_secret_reference
+    launch::tests::persistent_launch_boots_and_reuses_same_config
+    launch::tests::persistent_name_collision_needs_force_to_recreate
+    launch::tests::removing_a_running_persistent_machine_needs_the_force_flow
+    launch::tests::successful_command_rollback_removes_only_a_new_definition
+    launch::tests::transient_declared_volume_missing_from_catalog_refuses_before_boot
+    launch::tests::transient_launch_boots_admitted_and_audited
+    launch::tests::transient_launch_without_a_name_generates_one
+    launch::tests::transient_name_collisions_are_refused
+
+test result: FAILED. 30 passed; 26 failed; 0 ignored; 0 measured; 1416 filtered out; finished in 0.60s
+
+error: test failed, to rerun pass `-p mvm-client --lib`

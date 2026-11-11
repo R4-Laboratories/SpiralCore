@@ -1,0 +1,17 @@
+   Compiling mvm-core v0.27.0 (/var/tmp/spiralcore-mailbox-worker-owner-20261111/source/crates/mvm-core)
+    Finished `release` profile [optimized] target(s) in 1m 03s
+     Running unittests src/lib.rs (/var/tmp/spiralcore-installed-controller.MDjnre/target/release/deps/mvm_core-7184b5b9122c8ce7)
+
+running 9 tests
+test tenant_lifecycle::tests::a_fresh_gate_rejects_old_active_metadata_after_lock_inode_replacement ... ok
+test tenant_lifecycle::tests::a_retired_generation_cannot_reactivate_without_a_new_resource_epoch ... ok
+test tenant_lifecycle::tests::activation_deadline_expiring_after_active_commit_never_releases_publication ... ok
+test tenant_lifecycle::tests::activation_state_barrier_failures_never_publish_and_attempt_conservative_fencing ... ok
+test tenant_lifecycle::tests::an_aba_path_restore_cannot_hide_the_actual_opened_lock_inode ... ok
+test tenant_lifecycle::tests::an_intervening_launch_invalidates_an_empty_inventory_scan ... ok
+test tenant_lifecycle::tests::cleanup_sync_failure_reports_error_but_preserves_the_durable_draining_state ... ok
+test tenant_lifecycle::tests::failed_draining_publication_cannot_leave_another_gate_active ... ok
+test tenant_lifecycle::tests::failed_publication_and_failed_fencing_keep_original_error_and_durable_uncertainty ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 2058 filtered out; finished in 0.05s
+

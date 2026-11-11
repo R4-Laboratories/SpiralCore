@@ -1,0 +1,34 @@
+{
+  "schema": "spiralcore.mvm.exact-commit-gated.v1",
+  "commit": "98ec9d270f5f88606b49677c266fd08f26e97369",
+  "source_files": 4478,
+  "all_source_unchanged": true,
+  "commands": [
+    {
+      "name": "linux-all-targets",
+      "args": [
+        "./scripts/cargo.sh",
+        "--direct",
+        "cargo-zigbuild",
+        "check",
+        "--target",
+        "x86_64-unknown-linux-gnu",
+        "--workspace",
+        "--all-targets"
+      ],
+      "exit": 127,
+      "log_sha256": "bb1677b2271ae2585217df8ae11658ba53605a4fc59918ed49010a287df22a16"
+    }
+  ],
+  "scope": "immutable exact-commit gated compilation only; runtime compositions and failed strict gates remain separate",
+  "environment": {
+    "shared_target": "/var/tmp/spiralcore-installed-controller.MDjnre/target",
+    "jobs": 2,
+    "nice": 10,
+    "incremental": false,
+    "umask": "022",
+    "MVM_DEV_ENV_KEEP_INHERITED": "1",
+    "MVM_EMBED": "0"
+  },
+  "source_manifest_sha256": "8e85c0888711e774d49d91fb81a07c8e7753d98756a6ab795a782c5254017508"
+}

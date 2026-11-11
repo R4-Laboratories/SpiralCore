@@ -1,0 +1,81 @@
+{
+  "schema": "spiralcore.cli.canonical-home-preparation.v1",
+  "published_source_candidate": "98ec9d270f5f88606b49677c266fd08f26e97369",
+  "source_scope": "three exact reviewed CLI blobs on an explicitly recorded development composition; not whole-commit runtime qualification",
+  "source_files": 4489,
+  "source_unchanged": true,
+  "executables_unchanged": true,
+  "source_sha256": {
+    "crates/mvm-cli/src/commands/mod.rs": "adc2d2c1777a2ed792b60660ce81749479e61a5cbc5a465d6320defc9b73302f",
+    "tests/cli.rs": "fa79cb3378a5a5d27f7a09fd743b7dc042a2ce6faf9fce73ff034b36a0652bdb",
+    "public/src/content/docs/reference/cli-commands.md": "48ff1c37fcbcb3596e5c0d7981024c3cfd2ee820f1ec10342a46deff9c5fee7c"
+  },
+  "profile": {
+    "host": "wick Linux x86_64",
+    "rust": "1.97.1",
+    "release": true,
+    "locked": true,
+    "offline": true,
+    "default_features": false,
+    "embed": false,
+    "jobs": 2,
+    "nice": 10,
+    "incremental": false,
+    "umask": "022"
+  },
+  "red": {
+    "compile_exit": 0,
+    "test_exit": 101,
+    "passed": 0,
+    "failed": 1,
+    "filtered": 102,
+    "failure": "normal command succeeded; canonical InstallationOwner::open returned InvalidStorage"
+  },
+  "green": {
+    "compile_exit": 0,
+    "passed": 3,
+    "failed": 0,
+    "ignored": 0,
+    "cases": [
+      {
+        "case": "normal_cli_writers_prepare_only_the_canonical_local_home",
+        "exit": 0
+      },
+      {
+        "case": "caller_identity_show_does_not_create_state",
+        "exit": 0
+      },
+      {
+        "case": "caller_identity_help_exposes_explicit_enrollment_and_read_only_show",
+        "exit": 0
+      }
+    ],
+    "semantics": "canonical local Clean epoch0 and no audit-label resource namespace; existing caller-identity show/help preserved"
+  },
+  "reviews": {
+    "code_rust": "PASS independent broker_context",
+    "security_input_claims": "PASS independent compliance_review"
+  },
+  "artifacts": {
+    "red.compiler.jsonl": "1a5225f2dd6c10061b40eb6e457b5f1cc9d813e84bb18940013945f168308a6e",
+    "red.compiler.stderr": "6725f12f26894fefed78271891f036e5bc0ce05d2979413c9bd668b3d32cb9e6",
+    "red.test.txt": "9c0dc3ccc0b23e615c1b90d0e67421b5ff3265ac9420100114d5439d91133c15",
+    "red.source.before.json": "ee2a96fe1cf03cf4a47e487b879f9601582bae9236b78147f41d70d07a18816c",
+    "red.source.after-build.json": "ee2a96fe1cf03cf4a47e487b879f9601582bae9236b78147f41d70d07a18816c",
+    "red.executables.before.json": "e14c2908101e326a6a14c363eb09f0a77488c7b3319848bf98f63467337916e2",
+    "green.compiler.jsonl": "0290f1be56d856c017cd32541f511fb290f7e2d25acaa11ec4c04552dbb4dbb0",
+    "green.compiler.stderr": "fd1a4a82ed352e606ef64581ff938eec63e492a9f0d518aa87050b5bc24a31c4",
+    "green.source.before.json": "e30e1167a1e09395c40c95bb7d9daa46a7f7a42892c2d14f212cb2be8bd49316",
+    "green.source.after.json": "e30e1167a1e09395c40c95bb7d9daa46a7f7a42892c2d14f212cb2be8bd49316",
+    "green.executables.before.json": "da0d8dd85be3c0b267ff51ae9c3bf4028bbf6885cc96ef6439589a3791a7840a",
+    "green.normal_cli_writers_prepare_only_the_canonical_local_home.txt": "283b48e003a5c82d22ca436e14371ec90ba3bba5f6305c73f1cea9558022792b",
+    "green.caller_identity_show_does_not_create_state.txt": "061bce38aec752ef95cef6735522a7d371e7734c8b926e477ad963783d83938f",
+    "green.caller_identity_help_exposes_explicit_enrollment_and_read_only_show.txt": "4681267b8d53c526643912906966bd32e417eb19c3f09b66f559b8aa619b3803"
+  },
+  "limitations": [
+    "Actual unembedded no-default-features CLI; no VM or transfer workload.",
+    "Strict Hostd/SDK/CLI workspace qualification remains open; no suppressions or waivers.",
+    "Time counters are rounded command/build accounting, not transfer speed, energy or zero-loss object evidence.",
+    "Mac parent ACL and native/platform/WAN/capacity/FIPS gates remain open."
+  ]
+}

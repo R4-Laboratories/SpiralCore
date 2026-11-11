@@ -1,0 +1,77 @@
+warning: method `store_and_loan` is never used
+  --> crates/mvm-hostd/src/broker/control_prepare.rs:66:8
+   |
+53 | impl<T> CustodyField<T> {
+   | ----------------------- method in this implementation
+...
+66 |     fn store_and_loan(
+   |        ^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: field `original` is never read
+   --> crates/mvm-hostd/src/broker/control_prepare.rs:167:16
+    |
+166 | pub(crate) struct JournalSnapshots {
+    |                   ---------------- field in this struct
+167 |     pub(crate) original: Vec<mvm_core::protocol::broker_control::RegisterVm>,
+    |                ^^^^^^^^
+
+warning: struct `MutationStartFailure` is never constructed
+   --> crates/mvm-hostd/src/broker/control_prepare.rs:304:19
+    |
+304 | pub(crate) struct MutationStartFailure {
+    |                   ^^^^^^^^^^^^^^^^^^^^
+
+warning: methods `stopped` and `begin_mutation` are never used
+   --> crates/mvm-hostd/src/broker/control_prepare.rs:341:25
+    |
+314 | impl MutationCell {
+    | ----------------- methods in this implementation
+...
+341 |     pub(crate) async fn stopped(&self) {
+    |                         ^^^^^^^
+...
+413 |     pub(crate) fn begin_mutation(
+    |                   ^^^^^^^^^^^^^^
+
+warning: method `cancel_services` is never used
+   --> crates/mvm-hostd/src/broker/control_prepare.rs:657:25
+    |
+597 | impl PreparedRegistration {
+    | ------------------------- method in this implementation
+...
+657 |     pub(crate) async fn cancel_services(&mut self) -> Result<RegistrationDrainReceipt> {
+    |                         ^^^^^^^^^^^^^^^
+
+warning: methods `park_start` and `release_parked_start` are never used
+   --> crates/mvm-hostd/src/broker/control_prepare.rs:845:19
+    |
+770 | impl LiveVmHandle {
+    | ----------------- methods in this implementation
+...
+845 |     pub(crate) fn park_start(&mut self, start: StartLatch) -> Result<()> {
+    |                   ^^^^^^^^^^
+...
+859 |     pub(crate) fn release_parked_start(&mut self) -> Result<()> {
+    |                   ^^^^^^^^^^^^^^^^^^^^
+
+warning: method `contains` is never used
+   --> crates/mvm-hostd/src/broker/mailbox_workers.rs:743:19
+    |
+708 | impl MailboxWorkers {
+    | ------------------- method in this implementation
+...
+743 |     pub(crate) fn contains(&self, vm: &str) -> io::Result<bool> {
+    |                   ^^^^^^^^
+
+warning: `mvm-hostd` (lib) generated 7 warnings
+   Compiling mvm-client v0.27.0 (/var/tmp/spiralcore-mailbox-worker-owner-20261111/source/crates/mvm-client)
+    Finished `release` profile [optimized] target(s) in 2m 27s
+     Running unittests src/lib.rs (/var/tmp/spiralcore-installed-controller.MDjnre/target/release/deps/mvm_client-37199dddff8b47c2)
+
+running 1 test
+test launch::tests::fresh_sdk_definition_prepares_only_its_canonical_local_tenant ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 1471 filtered out; finished in 0.00s
+

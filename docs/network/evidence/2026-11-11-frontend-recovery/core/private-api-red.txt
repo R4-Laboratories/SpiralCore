@@ -1,0 +1,30 @@
+   Compiling mvm-core v0.27.0 (/var/tmp/spiralcore-mailbox-worker-owner-20261111/source/crates/mvm-core)
+error[E0599]: no method named `activate_with_writer` found for struct `tenant_lifecycle::LifecycleCoordinator` in the current scope
+   --> crates/mvm-core/src/tenant_lifecycle.rs:712:35
+    |
+ 96 | pub struct LifecycleCoordinator {
+    | ------------------------------- method `activate_with_writer` not found for this struct
+...
+712 |         let outcome = coordinator.activate_with_writer(
+    |                       ------------^^^^^^^^^^^^^^^^^^^^ method not found in `tenant_lifecycle::LifecycleCoordinator`
+
+error[E0599]: no method named `activate_with_writer` found for struct `tenant_lifecycle::LifecycleCoordinator` in the current scope
+   --> crates/mvm-core/src/tenant_lifecycle.rs:759:39
+    |
+ 96 | pub struct LifecycleCoordinator {
+    | ------------------------------- method `activate_with_writer` not found for this struct
+...
+759 |             let outcome = coordinator.activate_with_writer(
+    |                           ------------^^^^^^^^^^^^^^^^^^^^ method not found in `tenant_lifecycle::LifecycleCoordinator`
+
+error[E0599]: no method named `activate_with_writer` found for struct `tenant_lifecycle::LifecycleCoordinator` in the current scope
+   --> crates/mvm-core/src/tenant_lifecycle.rs:822:35
+    |
+ 96 | pub struct LifecycleCoordinator {
+    | ------------------------------- method `activate_with_writer` not found for this struct
+...
+822 |         let outcome = coordinator.activate_with_writer(
+    |                       ------------^^^^^^^^^^^^^^^^^^^^ method not found in `tenant_lifecycle::LifecycleCoordinator`
+
+For more information about this error, try `rustc --explain E0599`.
+error: could not compile `mvm-core` (lib test) due to 3 previous errors
