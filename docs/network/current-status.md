@@ -1,7 +1,7 @@
 # Networking delivery status
 
-Snapshot: **2026-11-10**, checked against published `origin/main`
-`dc7098fcb328138c6d880f77f13fad99ac114738` and the live GitHub issue graph.
+Snapshot: **2026-11-11**, checked against published `origin/main`
+`a1634ec46e0741df76eff325401357c9fdfaf2d6` and the live GitHub issue graph.
 This page separates accepted components, measured experiments and unmerged work.
 The [README](../../README.md) is the architecture/results entry point;
 [issue #42](https://github.com/R4-Laboratories/SpiralCore/issues/42) remains the
@@ -39,13 +39,47 @@ progress, not installed MVM or WAN qualification.
 
 [PR106](https://github.com/R4-Laboratories/SpiralCore/pull/106) remains an
 unmerged ordered-cache, authenticated-scope and Windows quota successor.
-At `8a109ae4`, all four Linux/macOS FlowMux roles passed their full stages;
-all three Windows roles still missed the unchanged 4,096-block/240-second
-sustained gate, with current scopes and bounded retention. The separate
-seven-role portable matrix at `d6e3d669` passed. The
-[recorded development results](https://github.com/R4-Laboratories/SpiralCore/blob/5fc29bd4/docs/network/evidence/2026-11-10-ordered-scope/README.md) distinguish
-those scopes and preserve every failed native artifact. Optional bounded
-timing and native Windows coverage are being added before further optimization.
+At candidate `5db896ab`, the [default sustained FlowMux matrix](https://github.com/R4-Laboratories/SpiralCore/actions/runs/42956544302)
+passes all seven native process roles. The separate optional instrumented
+Windows 2025 run still fails its original two-second read deadline; the
+[failed run](https://github.com/R4-Laboratories/SpiralCore/actions/runs/42956544106)
+remains an unresolved declared gate. The default pass does not waive it.
+PR106 is held; these are component results, not installed MVM or WAN acceptance.
+The [development evidence](https://github.com/R4-Laboratories/SpiralCore/blob/5db896ab/docs/network/evidence/2026-11-10-ordered-scope/README.md)
+retains earlier source-scoped failures.
+
+## Active upstream MVM coordination
+
+The verified-header/Reply-authority API contribution is open upstream as draft
+[MVM #5328](https://github.com/tinylabscom/mvm/pull/5328), with head
+`ee632fbb3a746709c496a95f167559a01a19fcaf`. It is a scoped interface contribution;
+the complete networking delivery remains unfinished. Ari and this contribution
+stream have [agreed ownership](https://github.com/tinylabscom/mvm/pull/5328#issuecomment-6787136945):
+Ari owns the new ciphertext journal/dedup/recovery module; we own the mailbox
+service/launch/process and guest-local framing/spool, typed operations, aggregate
+budgets and lifecycle. The [journal handoff proposal](../specs/2026-11-10-canonical-mailbox-journal-handoff.md)
+records the admission and receipt boundary. Durable acceptance remains disabled
+until journal, trusted rollback anchor, recoverable custody and service integration
+are qualified.
+
+A narrow SDK fix is submitted separately as
+[MVM #5336](https://github.com/tinylabscom/mvm/pull/5336), head
+`18b58e1ad2262a1c0bfa23d51f8e5679d3376f60`. A persistent request dropped its
+mailbox grant before canonical admission. The fix forwards it for that start
+while ordinary restart remains ungranted. The [recorded regression qualification](evidence/2026-11-11-mvm-sdk-mailbox/README.md)
+contains actual RED/GREEN, 55 passing launch-module tests, overlapping 31-test
+persistent scope, strict Clippy, source hashes and limitations. It does not yet
+establish a successful current-runtime native transfer.
+
+The proposed reliable local-service contract and bounded frame codec are public
+on the [development branch](https://github.com/Casey-allard/mvm/tree/811fd9c5994df088c674c97ead3b353855245054).
+That branch includes upstream through `28afdfe9`, and needs the SDK fix and later
+upstream reconciliation before another qualified service build. It does not
+activate a reliable service. The current inspected upstream is `46d50a5f`;
+QueueFull retention and detached lifecycle changes from #5325 have merged, but
+lost-verdict recovery, bidirectional typed operations and aggregate service
+ownership remain implementation gates. Cross-host key establishment, final
+native/WAN/platform acceptance and the security/FIPS profile remain open.
 
 [PR #95](https://github.com/R4-Laboratories/SpiralCore/pull/95) adds canonical
 transport-binding revocation to the mailbox adapter. Live Call and Reply keep

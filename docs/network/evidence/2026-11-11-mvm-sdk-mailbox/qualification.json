@@ -1,0 +1,51 @@
+{
+  "base": "28afdfe9ef7e36518ca42788d57c54f1d7275f57",
+  "changed_source_files": {
+    "crates/mvm-client/src/launch/mod.rs": "d932c4ad018a24b377236eb22c55ce28444fac0b0f860b0a922d6610e9602697",
+    "crates/mvm-client/src/launch/tests.rs": "465a563e9d235bdcc00d64265fb89db21420772f1a4ca09a611c8ea92eba0eb6"
+  },
+  "other_source_files_unchanged": 4436,
+  "persistent_filtered_tests": {
+    "passed": 31,
+    "failed": 0,
+    "ignored": 0
+  },
+  "whole_launch_module_tests": {
+    "passed": 55,
+    "failed": 0,
+    "ignored": 0
+  },
+  "test_overlap": "do not add31and55; suites overlap",
+  "strict_lib_clippy": "PASS",
+  "strict_tests_clippy": "PASS",
+  "native_vm": "NOT_RUN",
+  "reconstruction_or_WAN": "NOT_RUN",
+  "toolchain": "Rust1.97.1-x86_64-unknown-linux-gnu",
+  "host": "wick",
+  "profile": "release; locked; test-support; jobs2; incremental0; nice10; serial tests; umask022",
+  "format_check": "PASS",
+  "commands": [
+    "cargo test --release --locked -p mvm-client --features test-support --lib -- --list",
+    "cargo test --release --locked -p mvm-client --features test-support --lib launch::tests::persistent_request_mailbox_reaches_canonical_backend_admission -- --exact --test-threads=1 [RED before fix]",
+    "cargo test --release --locked -p mvm-client --features test-support --lib launch::tests::persistent_definition_restart_does_not_inherit_request_mailbox -- --exact --test-threads=1 [control before fix]",
+    "cargo test --release --locked -p mvm-client --features test-support --lib persistent_ -- --test-threads=1",
+    "cargo test --release --locked -p mvm-client --features test-support --lib launch::tests:: -- --test-threads=1",
+    "cargo clippy --release --locked -p mvm-client --features test-support --lib -- -D warnings",
+    "cargo clippy --release --locked -p mvm-client --features test-support --tests -- -D warnings",
+    "cargo fmt -p mvm-client -- --check"
+  ],
+  "log_sha256": {
+    "tests-list.txt": "5f811559d794163025796bd012bbc826828871488db9c6fcf7aa5212db5bb938",
+    "request-red.txt": "b2178970be9d2aba76cfff36708739207b8b3a2519a12bd907b42b663485f041",
+    "restart-control.txt": "e48cd6d2c3d45eb3488db2b9fa43d98e9d6642917e5c98729a997bd2ee4d2755",
+    "green-persistent.txt": "627e80f5a5685391fc82c490a4ea63f8dc073bf2e7876ab1c53ab9b1fb66877a",
+    "green-launch-module.txt": "cc653f795d65cf036f06c6b2a8c377a40a6d44fc6ea6ff36e5ac503cdd5f74d7",
+    "clippy.txt": "7de96d98c480674390b3a7b74fec9451beb54d187f5b87e12d810881b7b15cdc",
+    "clippy-tests.txt": "4004479017012f0d54c701b1396a16aeb894487501e71cc1a73e534306ad5ed2",
+    "fmt-check.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "raw_red_log_privacy": "private0600; contains synthetic LaunchOutcome debug; publish compact receipt/excerpts only",
+  "contribution_commit": "18b58e1ad2262a1c0bfa23d51f8e5679d3376f60",
+  "upstream_pr": "https://github.com/tinylabscom/mvm/pull/5336",
+  "source_scope_note": "Tests ran on upstream 28afdfe9 plus the two identified files; public contribution commit has that same source tree. Current main 46d50a5f has additional containment/blog changes and was not the executed base."
+}
