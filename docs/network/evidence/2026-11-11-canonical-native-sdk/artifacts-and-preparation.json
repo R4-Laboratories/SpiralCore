@@ -1,0 +1,85 @@
+{
+  "source": "18b58e1ad2262a1c0bfa23d51f8e5679d3376f60",
+  "source_tree": "e909cc461fb42778a274c207115d72ef63710ca1",
+  "source_regular_files_verified": 4438,
+  "consumer_publication_commit": "f1dba8763cb81bdc3f8e000a091394de9cd12b7a",
+  "consumer_tests_distinct": 18,
+  "host": "Linux x86_64 / Firecracker on Wick",
+  "guest_resources_configured_not_measured": {
+    "vcpus": 1,
+    "memory_mib": 256,
+    "guest_nic": false,
+    "ttl_seconds": 180,
+    "idle_pool": false,
+    "readiness_seconds": 30,
+    "receive_seconds": 60
+  },
+  "runtime_archive_sha256": "35680d8adc5f5fb0f51e69b3febe4377813dc9bf245632ec8d881734d7bb827d",
+  "runtime_archive_members_verified": 56,
+  "runtime_archive_member_bytes": 23299886,
+  "runtime_preparation_wall_ns": 801291876625,
+  "runtime_preparation_process_cpu_ns": 2363029754,
+  "runtime_preparation_process_cpu_scope": "this process only; compiler children excluded",
+  "runtime_preparation_inclusive_cpu_seconds": {
+    "user": 1487.97,
+    "system": 57.21
+  },
+  "runtime_preparation_max_single_process_rss_kib": 2722344,
+  "preparation_accounting": "One-time source runtime build; separate from native transfer/lifecycle. Inclusive CPU includes children and overlaps parent CPU; do not add them. Maximum RSS is not aggregate peak memory.",
+  "binaries": [
+    {
+      "name": "spiralcore-mvm-canonical-witness",
+      "sha256": "58920dc8898cc1fc4ea4209f2a90d2962c6a697947528f6d7ce118435dc14a0f",
+      "bytes": 44295896,
+      "mode": "0o500",
+      "uid": 1000,
+      "nlink": 1
+    },
+    {
+      "name": "spiralcore-mvm-prepare-runtime",
+      "sha256": "ea0453cab42bf4e66aadf77b918b4af5affb969a32ca0399328b07ac4bb727ac",
+      "bytes": 9444552,
+      "mode": "0o500",
+      "uid": 1000,
+      "nlink": 1
+    },
+    {
+      "name": "spiralcore-mailbox-producer",
+      "sha256": "517f483fa6904133152e0cc6ca2645f5d62b32bee1512472cf30fabda63f5e55",
+      "bytes": 623736,
+      "mode": "0o555",
+      "uid": 1000,
+      "nlink": 1
+    }
+  ],
+  "mailbox_helper": {
+    "sha256": "27852a39f045a0a5eeb0d3b5a64aacec2ae4a5bbc046b9322aef00adaa90e2ea",
+    "bytes": 2895288,
+    "mode": "0500",
+    "nlink": 1
+  },
+  "runtime_assembled": [
+    {
+      "role": "initramfs",
+      "bytes": 1282896,
+      "sha256": "3e0eb4a4e008db50586d240e310526435ed182816a9ed26ba4d871ece29f4e65"
+    },
+    {
+      "role": "overlay",
+      "bytes": 18063360,
+      "sha256": "d80a01e94c0f3f5eea5fca57dcd1fe699649d8f6d508e036a84ca976c530222a"
+    },
+    {
+      "role": "verity",
+      "bytes": 147456,
+      "sha256": "6c6c75bb9d6d9cebdb7d435fea5d8f44eaf4239919bea7624f0c8144ec46161e"
+    }
+  ],
+  "kernel_sha256": "1701ccb2c46b2497066225d6ba05f3f33a3a845ca636fbeedb202835c83b49b6",
+  "firecracker_sha256": "99ad0f5cd0514a88aad0e9ae8cfdb3cc3b4ab9d190e1194602406c786b5de7a5",
+  "fixture": "Explicit new synthetic guest-content directory: private host root0700; only listed guest-content parents0755; producer0555; guest workload home not precreated. Not a canonical injection fix.",
+  "session_bus": "Existing UID1000 manager reachable, degraded; mandatory SDK quota enforcement preserved.",
+  "authority": "Canonical signed-plan persistent launch, mailbox helper5257, audited SDK receive, original Stop and non-force Remove; no guest NIC, manual helper launch, forged plan, external waitpid or process repair.",
+  "original_preflight_sha256": "8b1eb9f5b632c6a66dbd9b2ef9707fb29ba332ed1734a16d97ac668a33e8e10e",
+  "original_runtime_verification_sha256": "ed3a1f93203f492e28780934a1807a85e4b863d008169ddae985702160c6994b"
+}
