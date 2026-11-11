@@ -4,7 +4,23 @@ Status is a proposal for coordination with Ari's first bounded [#4630](https://g
 
 ## Ownership
 
-Ari owns a new MVM-local canonical ciphertext journal, its bounded dedup/recovery module, and focused tests/docs. SpiralCore's contribution stream owns the four #5328 API files, the existing host service/launch/process files, guest-local framing/spool, typed operations, aggregate budgets and lifecycle integration. Shared public contract changes are coordinated before editing. Neither side creates a new envelope, signature domain, transport port or alternate authority.
+The initial agreement assigned service/launch/process integration to this
+contribution. The [2026-11-11 ownership reconciliation](https://github.com/tinylabscom/mvm/pull/5328#issuecomment-6801025652)
+supersedes that split: the separate guest Receive/ACK owner retains the hostd
+mailbox process, service and reader, plus agentd guest integration. The journal
+owner retains the existing `mvm-core/src/mailbox/journal.rs` and its focused
+tests/docs. SpiralCore retains the four #5328 API files and disjoint
+original-child/lifecycle work. Overlapping edits require an explicit interface
+and file handoff first. Independent lifecycle ownership does not authorize
+changes to the other stream's mailbox process implementation.
+
+The reconciliation identifies private guest handoff `6e75656a...` and journal
+pin `cac0122...`; these abbreviated names are coordination references, not
+accessible or independently reviewed source. The owner is seeking permission
+to share a read-only source patch. Integration qualification requires that
+actual source and its complete identities. Shared public contract changes are
+coordinated before editing. Neither side creates a new envelope, signature
+domain, transport port or alternate authority.
 
 ## Admission input
 
@@ -33,6 +49,35 @@ No journal or anchor I/O runs under the broker dispatch or service state mutex. 
 The current separate encryption root plus host-local per-launch secret is not a durable history recovery provider. Canonical teardown attempts logical overwrite/unlink of the launch secret on stop/replacement; failures remain explicit. A signing seed is not a fallback decryption authority. Durable admission remains disabled when history custody is unavailable.
 
 Ari can own the initial `HistoryKeyCustody` trait proposal alongside the journal contract. Its operations must identify tenant/domain, mailbox, canonical epoch, encryption algorithm and key ID; produce a bounded recoverability lease/reference before durable acceptance; and support recovery, expiry, rotation, revocation and retirement under the intended journal retention policy. The journal receives opaque custody references, never plaintext keys or the raw launch secret. The actual encryption/wrapping scheme, provider trust boundary, external anchor and deployment persistence guarantees require review before implementation claims. This proposal chooses no key scheme and makes no host-blind or physical-erasure guarantee.
+
+The [new versioned-custody proposal](https://github.com/tinylabscom/mvm/pull/5328#issuecomment-6801033061)
+and [our acceptance](https://github.com/tinylabscom/mvm/pull/5328#issuecomment-6801088479)
+select a scoped `HistoryKeyRef` and `load_existing(&ref)` recovery contract.
+The reference binds the canonical mailbox address, execution epoch, history
+algorithm, opaque history-key ID and nonzero key version. The record must
+authenticate that complete reference. Recovery retrieves the exact existing
+version or refuses; it never creates a replacement or rewrites retained
+references to a new epoch/version.
+
+The authenticated envelope's algorithm/key ID is a separate `EnvelopeKeyRef`;
+`VerifiedMailboxScope::encryption_key_id()` must not implicitly select a history
+key. History algorithm, key ID and version come from the approved custody
+binding. Boot/session, local resource-owner generation, canonical execution
+epoch and key version remain distinct. Current authorization is revalidated
+separately from historical record verification. Retaining only a journal-auth
+key is insufficient if the original envelope ciphertext cannot be recovered
+after its per-launch secret is retired; the provider must establish the
+original envelope-key recovery or an explicitly approved wrapping relationship.
+
+One trust-boundary detail remains to reconcile before adapter wiring: Ari's
+proposed `load_existing -> Key` can expose raw key bytes to the journal, whereas
+the earlier proposal above kept the journal keyless. Prefer the trusted custody
+adapter owning the key and supplying a provider-bound opaque cryptographic
+handle with closed canonical record operations. If the reviewed implementation
+instead puts the key in the journal's trusted computing base, document and
+review that explicit change; do not describe it as opaque-reference-only.
+Neither interface proposal supplies a deployed independent anchor or persistent
+custody provider, and neither enables durable receipts or guest-reader activation.
 
 ## First bounded module tests
 

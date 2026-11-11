@@ -1,7 +1,7 @@
 # Networking delivery status
 
 Snapshot: **2026-11-11**, checked against published `origin/main`
-`851664278f65183194cc9eca1a85ca2ebd8d8dd0` and the live GitHub issue graph.
+`74e2fd6fa74ebf33169f9b7289684d21b0a62c72` and the live GitHub issue graph.
 This page separates accepted components, measured experiments and unmerged work.
 The [README](../../README.md) is the architecture/results entry point;
 [issue #42](https://github.com/R4-Laboratories/SpiralCore/issues/42) remains the
@@ -60,14 +60,17 @@ receives a borrowed authenticated view with no plaintext accessor. The
 independent code/Rust/security reviews. These are API checks, not durable service
 or native/WAN acceptance.
 
-The [original ownership agreement](https://github.com/tinylabscom/mvm/pull/5328#issuecomment-6787136945)
-assigned the journal to Ari and service/launch/process integration to this stream.
-A newer private guest-reader/journal handoff also claims those service paths.
-We have [requested the exact source and reconciled file ownership](https://github.com/tinylabscom/mvm/pull/5328#issuecomment-6790212802)
-before editing them. The [journal handoff proposal](../specs/2026-11-10-canonical-mailbox-journal-handoff.md)
-records the proposed admission/receipt boundary; its initial ownership paragraph
-is historical, pending that reconciliation. The separate original-child broker
-owner continues without modifying those private service files. Durable acceptance
+The [updated ownership split](https://github.com/tinylabscom/mvm/pull/5328#issuecomment-6801025652)
+is [accepted by this contribution](https://github.com/tinylabscom/mvm/pull/5328#issuecomment-6801088479):
+the separate guest Receive/ACK owner retains hostd mailbox process/service/reader
+and agentd guest integration; the journal owner retains the existing core journal
+and focused tests/docs. We retain the four #5328 API files and disjoint original-child/
+lifecycle work. This supersedes the earlier service-file assignment. The private
+guest/journal source still requires an approved readable patch and explicit handoff
+before overlapping edits or integration qualification. The [journal handoff proposal](../specs/2026-11-10-canonical-mailbox-journal-handoff.md)
+records this split and the accepted versioned history-key lookup contract, including
+the distinct envelope/history keys and the remaining key-custody trust-boundary
+decision. The original-child broker work continues independently. Durable acceptance
 requires current destination/Receive authority, resource admission, journal and
 independent anchor commit, recoverable history-key custody and qualified service
 integration; the capsule itself establishes none of those later decisions.
@@ -137,6 +140,18 @@ The [new report and retained runtime failure](evidence/2026-11-11-mvm-process-ha
 record source hashes, fixtures, the inherited-EX-lock repair and the CLI build's
 missing embedded-host assets. These are qualified components; installed
 coordinator/service activation, native retirement and WAN acceptance remain open.
+
+The lifecycle/admission successor
+[`50877f564`](https://github.com/Casey-allard/mvm/commit/50877f5641e96d32838120706c185db225195d80)
+is also public. It adds the four-phase tenant lifecycle gate, original preboot
+reservations and Running-publication fences. The [source-scoped checkpoint](https://github.com/tinylabscom/mvm/pull/5328#issuecomment-6800386474)
+records 14 lifecycle, three classifier and 107 client tests plus strict checks on
+the declared development composition. Separately, both required gated compile
+commands passed on an immutable export of that exact commit, with all 4,471
+regular source files unchanged. Original failed client fixtures and the missing-Zig
+PATH attempt remain retained. These are component and compile results; actual
+cooperative coordinator activation, installed retirement and final native/WAN
+acceptance remain open.
 
 [PR #95](https://github.com/R4-Laboratories/SpiralCore/pull/95) adds canonical
 transport-binding revocation to the mailbox adapter. Live Call and Reply keep
