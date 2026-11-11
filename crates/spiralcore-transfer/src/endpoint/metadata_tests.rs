@@ -155,6 +155,35 @@ mod windows {
     }
     const ACL_READ: &str =
         "$ErrorActionPreference='Stop'; (Get-Acl -LiteralPath $env:SC_METADATA_TEST_FILE).Sddl";
+    #[derive(serde::Deserialize)]
+    struct AclSnapshot {
+        sddl: String,
+        canonical: String,
+        control: u32,
+    }
+    fn acl_snapshot(path: &Path) -> AclSnapshot {
+        // Use binary input: SDDL omits some descriptor control flags. Only the
+        // OS-managed DACL AutoInherited bit is ignored for restoration equality.
+        let output = powershell(
+            path,
+            "",
+            r#"
+$ErrorActionPreference='Stop'
+$acl=Get-Acl -LiteralPath $env:SC_METADATA_TEST_FILE
+[byte[]]$binary=$acl.GetSecurityDescriptorBinaryForm()
+$descriptor=[System.Security.AccessControl.RawSecurityDescriptor]::new($binary,0)
+$flags=[int]$descriptor.ControlFlags
+$required=([int][System.Security.AccessControl.ControlFlags]::DiscretionaryAclPresent) -bor ([int][System.Security.AccessControl.ControlFlags]::DiscretionaryAclProtected) -bor ([int][System.Security.AccessControl.ControlFlags]::SelfRelative)
+if (($flags -band $required) -ne $required) { throw 'Expected a present protected self-relative DACL' }
+$ignore=[int][System.Security.AccessControl.ControlFlags]::DiscretionaryAclAutoInherited
+$descriptor.SetFlags([System.Security.AccessControl.ControlFlags]($flags -band (-bnot $ignore)))
+[byte[]]$normalized=[byte[]]::new($descriptor.BinaryLength)
+$descriptor.GetBinaryForm($normalized,0)
+@{sddl=$acl.Sddl;canonical=[Convert]::ToBase64String($normalized);control=$flags} | ConvertTo-Json -Compress
+"#,
+        );
+        serde_json::from_str(&output).expect("owned descriptor snapshot")
+    }
     fn verify_all(records: &[(PathBuf, Vec<u8>)]) {
         for (path, bytes) in records {
             for read in [
@@ -234,18 +263,29 @@ mod windows {
         let writer = fs::OpenOptions::new().write(true).open(path).unwrap();
         both_refuse(path, Error::Storage);
         drop(writer);
-        let original_acl = powershell(path, "", ACL_READ);
+        let original_descriptor = acl_snapshot(path);
+        let original_acl = &original_descriptor.sddl;
         powershell(path,"","$ErrorActionPreference='Stop'; $acl=Get-Acl -LiteralPath $env:SC_METADATA_TEST_FILE; $sid=[System.Security.Principal.SecurityIdentifier]::new('S-1-1-0'); $rule=[System.Security.AccessControl.FileSystemAccessRule]::new($sid,[System.Security.AccessControl.FileSystemRights]::FullControl,[System.Security.AccessControl.AccessControlType]::Allow); $acl.AddAccessRule($rule); Set-Acl -LiteralPath $env:SC_METADATA_TEST_FILE -AclObject $acl");
         let broad = powershell(path, "", ACL_READ);
-        assert_ne!(broad, original_acl);
+        assert_ne!(&broad, original_acl);
         both_refuse(path, Error::Storage);
         assert_eq!(
             powershell(path, "", ACL_READ),
             broad,
             "reader must not repair permissions"
         );
-        powershell(path,&original_acl,"$ErrorActionPreference='Stop'; $acl=Get-Acl -LiteralPath $env:SC_METADATA_TEST_FILE; $acl.SetSecurityDescriptorSddlForm($env:SC_METADATA_TEST_SDDL,[System.Security.AccessControl.AccessControlSections]::Access); Set-Acl -LiteralPath $env:SC_METADATA_TEST_FILE -AclObject $acl");
-        assert_eq!(powershell(path, "", ACL_READ), original_acl);
+        powershell(path,original_acl,"$ErrorActionPreference='Stop'; $acl=Get-Acl -LiteralPath $env:SC_METADATA_TEST_FILE; $acl.SetSecurityDescriptorSddlForm($env:SC_METADATA_TEST_SDDL,[System.Security.AccessControl.AccessControlSections]::Access); Set-Acl -LiteralPath $env:SC_METADATA_TEST_FILE -AclObject $acl");
+        let restored_descriptor = acl_snapshot(path);
+        assert_eq!(
+            restored_descriptor.control & !0x0400,
+            original_descriptor.control & !0x0400,
+            "every control bit except SE_DACL_AUTO_INHERITED must match"
+        );
+        assert_eq!(
+            restored_descriptor.canonical, original_descriptor.canonical,
+            "restoration preserves owner, group, ACL bytes and every other control bit"
+        );
+        verify_all(&records[..1]);
         powershell(&namespace,"","$ErrorActionPreference='Stop'; $parent=Split-Path -Parent $env:SC_METADATA_TEST_FILE; New-Item -ItemType Junction -Path (Join-Path $parent 'metadata-junction') -Target $env:SC_METADATA_TEST_FILE | Out-Null");
         let junction = fixture.0.join("metadata-junction");
         let through = junction.join(path.file_name().unwrap());
