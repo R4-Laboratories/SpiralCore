@@ -1,7 +1,7 @@
 # Networking delivery status
 
 Snapshot: **2026-11-11**, checked against published `origin/main`
-`179fb1eba84e1056b86ac7027de5dc777138c512` and the live GitHub issue graph.
+`851664278f65183194cc9eca1a85ca2ebd8d8dd0` and the live GitHub issue graph.
 This page separates accepted components, measured experiments and unmerged work.
 The [README](../../README.md) is the architecture/results entry point;
 [issue #42](https://github.com/R4-Laboratories/SpiralCore/issues/42) remains the
@@ -122,6 +122,21 @@ tracks cooperative admission fencing and watcher/worker/signer drain; its actual
 idle-collection regression remains failed until the coordinator is integrated.
 The [upstream ownership index](https://github.com/tinylabscom/mvm/issues/4629#issuecomment-6794294611)
 keeps these implementations visible before final service/WAN qualification.
+
+The resource primitive also has standalone upstream draft
+[MVM #5340](https://github.com/tinylabscom/mvm/pull/5340), exact head
+`7cd704aefe01ed90169037415dd1574f876fdfea`. Fresh Linux execution passes its
+11 integration entries, six private units and strict scoped Clippy on the
+immutable export, with all 4,446 regular source files unchanged. The process
+handoff successor
+[`b0958e006`](https://github.com/Casey-allard/mvm/commit/b0958e006a9bd6b0dcdb0dcf771442fc60ce762c)
+adds real CLI/signer lease adoption and retained watcher jobs. Its clean export
+passes three handoff entries, five watcher entries, three actual CLI entries
+and three strict scopes, with all 4,466 regular source files unchanged.
+The [new report and retained runtime failure](evidence/2026-11-11-mvm-process-handoff/README.md)
+record source hashes, fixtures, the inherited-EX-lock repair and the CLI build's
+missing embedded-host assets. These are qualified components; installed
+coordinator/service activation, native retirement and WAN acceptance remain open.
 
 [PR #95](https://github.com/R4-Laboratories/SpiralCore/pull/95) adds canonical
 transport-binding revocation to the mailbox adapter. Live Call and Reply keep

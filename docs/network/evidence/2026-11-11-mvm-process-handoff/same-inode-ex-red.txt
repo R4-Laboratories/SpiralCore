@@ -1,0 +1,26 @@
+   Compiling mvm-core v0.27.0 (/var/tmp/spiralcore-mailbox-worker-owner-20261111/source/crates/mvm-core)
+   Compiling mvm-agentd v0.27.0 (/var/tmp/spiralcore-mailbox-worker-owner-20261111/source/crates/mvm-agentd)
+   Compiling mvm-fs v0.27.0 (/var/tmp/spiralcore-mailbox-worker-owner-20261111/source/crates/mvm-fs)
+   Compiling mvm-net v0.27.0 (/var/tmp/spiralcore-mailbox-worker-owner-20261111/source/crates/mvm-net)
+   Compiling mvm-vmm v0.27.0 (/var/tmp/spiralcore-mailbox-worker-owner-20261111/source/crates/mvm-vmm)
+    Finished `release` profile [optimized] target(s) in 38.51s
+     Running tests/installed_owner_handoff.rs (/var/tmp/spiralcore-installed-controller.MDjnre/target/release/deps/installed_owner_handoff-d67e8cc2839efe44)
+
+running 1 test
+test malformed_handoff_refuses_before_work_and_never_releases_parent_lease ... same-inode-ex: child outcome=LEASE_EVENT UNEXPECTEDLY_ACCEPTED
+
+thread 'malformed_handoff_refuses_before_work_and_never_releases_parent_lease' (3631951) panicked at crates/mvm-vmm/tests/installed_owner_handoff.rs:302:13:
+assertion `left == right` failed: same-inode-ex: receiver changed the parent's original EX lock
+  left: 0
+ right: -1
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+FAILED
+
+failures:
+
+failures:
+    malformed_handoff_refuses_before_work_and_never_releases_parent_lease
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 2 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `-p mvm-vmm --test installed_owner_handoff`
