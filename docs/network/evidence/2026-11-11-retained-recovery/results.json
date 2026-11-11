@@ -1,0 +1,96 @@
+{
+  "build_profile": "Linux Rust 1.97.1; cargo test --release --locked --offline -p mvm-hostd --lib --no-run; MVM_EMBED=0; CARGO_INCREMENTAL=0; CARGO_BUILD_JOBS=2",
+  "measurements": "Each wall/user/system value covers one entire test-process invocation, including fixture setup and cleanup. No guest or transfer benchmark.",
+  "runs": {
+    "red": {
+      "source_files": 4493,
+      "source_manifest_sha256": "347660305606056036c5cde83b30b5cb9f87a4b835db8a926f1bfbaa0035c62e",
+      "binary_sha256": "22a167581a837484c5a27f85b2f3f06b2b36137d044782eefc9482c574695a79",
+      "tests": [
+        {
+          "name": "signed_deregister_reconciles_original_then_commits_its_own_removal",
+          "exit": 0,
+          "wall_s": 0.026816896977834404,
+          "user_s": 0.0027919999999994616,
+          "system_s": 0.00279100000000021,
+          "output": "\nrunning 1 test\ntest broker::daemon::recovery_tests::signed_deregister_reconciles_original_then_commits_its_own_removal ... RECONCILED_STOPPED_WITNESS returned_before_join=false charged=true original_row_retained=true original_settled=true new_current_turn_completed=true current_error=None\nok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2378 filtered out; finished in 0.02s\n\n",
+          "output_sha256": "20a2761060fc0a3484d00cbf64a762cc1843e437135284c76d7dd5c79162533c"
+        },
+        {
+          "name": "stopped_inventory_compares_each_complete_registration_exactly_once",
+          "exit": 101,
+          "wall_s": 0.0019076800090260804,
+          "user_s": 0.0,
+          "system_s": 0.0018419999999998993,
+          "output": "\nrunning 1 test\ntest broker::daemon::recovery_tests::stopped_inventory_compares_each_complete_registration_exactly_once ... \nthread 'broker::daemon::recovery_tests::stopped_inventory_compares_each_complete_registration_exactly_once' (4028231) panicked at crates/mvm-hostd/src/broker/daemon/recovery_tests.rs:406:5:\nassertion failed: !same_recordset(&duplicate, &expected)\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\nFAILED\n\nfailures:\n\nfailures:\n    broker::daemon::recovery_tests::stopped_inventory_compares_each_complete_registration_exactly_once\n\ntest result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 2378 filtered out; finished in 0.00s\n\n",
+          "output_sha256": "1e05a3bb888b9df11b202861fe1b7051b7cddcfe5a924f02dabff4fbc0bc7097"
+        },
+        {
+          "name": "signed_deregister_preserves_conflicting_journal_and_charge",
+          "exit": 101,
+          "wall_s": 0.025394209020305425,
+          "user_s": 0.0021200000000476393,
+          "system_s": 0.0021209999999998175,
+          "output": "\nrunning 1 test\ntest broker::daemon::recovery_tests::signed_deregister_preserves_conflicting_journal_and_charge ... RECONCILED_STOPPED_WITNESS returned_before_join=false charged=true original_row_retained=true original_settled=true new_current_turn_completed=true current_error=None\n\nthread 'broker::daemon::recovery_tests::signed_deregister_preserves_conflicting_journal_and_charge' (4028233) panicked at crates/mvm-hostd/src/broker/daemon/recovery_tests.rs:308:9:\ninconsistent journal admitted: Ok(())\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\nFAILED\n\nfailures:\n\nfailures:\n    broker::daemon::recovery_tests::signed_deregister_preserves_conflicting_journal_and_charge\n\ntest result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 2378 filtered out; finished in 0.02s\n\n",
+          "output_sha256": "0711ef2b9ce41d2810c3c863b1009259ea852ee5b6c418becd5607fada50e3ce"
+        }
+      ],
+      "build_wall_s": 164.5646938100108
+    },
+    "green": {
+      "source_files": 4493,
+      "source_manifest_sha256": "0e36fe55dbab1f7efa85f87fc9356926b62cd9a3bb99f5d9b0b4498f8d93c856",
+      "binary_sha256": "a97d507cf813fe2b5ce3c8e9855d5809f02d98b07ee58f5a47bf02bc394ffa19",
+      "tests": [
+        {
+          "name": "signed_deregister_reconciles_original_then_commits_its_own_removal",
+          "exit": 0,
+          "wall_s": 0.026822939049452543,
+          "user_s": 0.0011160000000245418,
+          "system_s": 0.004465000000000607,
+          "output": "\nrunning 1 test\ntest broker::daemon::recovery_tests::signed_deregister_reconciles_original_then_commits_its_own_removal ... RECONCILED_STOPPED_WITNESS returned_before_join=false charged=true original_row_retained=true original_settled=true new_current_turn_completed=true current_error=None\nok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2378 filtered out; finished in 0.02s\n\n",
+          "output_sha256": "20a2761060fc0a3484d00cbf64a762cc1843e437135284c76d7dd5c79162533c"
+        },
+        {
+          "name": "stopped_inventory_compares_each_complete_registration_exactly_once",
+          "exit": 0,
+          "wall_s": 0.0022959299967624247,
+          "user_s": 0.0,
+          "system_s": 0.0022359999999999047,
+          "output": "\nrunning 1 test\ntest broker::daemon::recovery_tests::stopped_inventory_compares_each_complete_registration_exactly_once ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2378 filtered out; finished in 0.00s\n\n",
+          "output_sha256": "264e129a2922c8afa9c62532a36a7f5f1b9089b7602b010b6dc4f3f8552bdaf2"
+        },
+        {
+          "name": "signed_deregister_preserves_conflicting_journal_and_charge",
+          "exit": 0,
+          "wall_s": 0.024964561976958066,
+          "user_s": 0.0,
+          "system_s": 0.0038169999999997373,
+          "output": "\nrunning 1 test\ntest broker::daemon::recovery_tests::signed_deregister_preserves_conflicting_journal_and_charge ... RECONCILED_STOPPED_WITNESS returned_before_join=false charged=true original_row_retained=true original_settled=false new_current_turn_completed=false current_error=Some(\"original I/O failed; retained outcome requires reconciliation\")\nok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2378 filtered out; finished in 0.02s\n\n",
+          "output_sha256": "44c4ca4e2207135d74ff3fe40887dad1a51345ee30a335b88fae5b38729af8cb"
+        }
+      ],
+      "build_wall_s": 162.59154887398472
+    }
+  },
+  "original_signed_deregistration": {
+    "before": {
+      "exit": 101,
+      "wall_s": 0.003520800033584237,
+      "output_sha256": "7e8f3dbb8496e2cb9d1e01f0df4608deef5cc0d89802bdba63e96db6b1c0b312",
+      "output": "\nrunning 1 test\ntest broker::daemon::recovery_tests::signed_deregister_reconciles_original_then_commits_its_own_removal ... RECONCILED_STOPPED_WITNESS returned_before_join=true charged=true original_row_retained=true original_settled=false new_current_turn_completed=false current_error=Some(\"original daemon mutation remains busy\")\n\nthread 'broker::daemon::recovery_tests::signed_deregister_reconciles_original_then_commits_its_own_removal' (4007160) panicked at crates/mvm-hostd/src/broker/daemon/recovery_tests.rs:250:5:\ncurrent signed Deregister must reconcile the original and execute its OWN coherent removal: Some(\"original daemon mutation remains busy\")\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\nFAILED\n\nfailures:\n\nfailures:\n    broker::daemon::recovery_tests::signed_deregister_reconciles_original_then_commits_its_own_removal\n\ntest result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 2376 filtered out; finished in 0.00s\n\n",
+      "daemon_sha256": "9477ccf9024c9f2a04abb3e9274f83f121a43b3815e4e587f17b744262ce42e7",
+      "fixture_sha256": "6581a0754b121e49401371a6a65f05e15dd4c5d14b3ad23c7c3878025ce033e4",
+      "binary_sha256": "c5c0b7483cd46f0e16ee1d11968e38e4f3e01f9feedc20b855cb161a79487f6c"
+    },
+    "after": {
+      "exit": 0,
+      "wall_s": 0.026135659019928426,
+      "output_sha256": "350f08fd54297a094ea1eb7eea3dfbd239afb32b212db27c78181f3828228f9e",
+      "output": "\nrunning 1 test\ntest broker::daemon::recovery_tests::signed_deregister_reconciles_original_then_commits_its_own_removal ... RECONCILED_STOPPED_WITNESS returned_before_join=false charged=true original_row_retained=true original_settled=true new_current_turn_completed=true current_error=None\nok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2376 filtered out; finished in 0.02s\n\n",
+      "daemon_sha256": "644391f6e19bfefe78d475d7946a07690d75678690f92c8b09b990eb8332a7c2",
+      "fixture_sha256": "6581a0754b121e49401371a6a65f05e15dd4c5d14b3ad23c7c3878025ce033e4",
+      "binary_sha256": "004490e1c2745f45410efee5f8b1a31913246f7a1890fd26c49eb0030ee49051"
+    }
+  }
+}

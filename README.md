@@ -32,9 +32,10 @@ records actual Linux worker/signing-helper checks: a fresh installation starts
 and collects its original signer; a previously used installation with a missing
 journal refuses before readiness; a directly invoked worker with no configured
 home refuses without modifying its owned fixture. The publication/custody/replay
-candidate passes 21 selected cases. Interrupted-registration and historical
-socket recovery remain open; these startup checks are not new transfer-speed or
-WAN results.
+candidate passes 21 selected cases. A [Linux daemon recovery test](docs/network/evidence/2026-11-11-retained-recovery/README.md)
+now shows a signed deregistration waiting for its original handler and preserving
+the other VM’s record; conflicting inventory refuses without a rewrite. Concurrent
+row ownership and installed-worker shutdown remain open. Neither report measures WAN speed.
 
 | Path | Published implementation and evidence | Remaining acceptance |
 |---|---|---|
