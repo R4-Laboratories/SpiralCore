@@ -218,7 +218,12 @@ Both pre-fix failures, three passing inventory cases, and the source delta are
 retained. The [original-row successor](evidence/2026-11-11-retained-recovery/original-row/README.md)
 reproduced two stale callers settling replacement work. Both now refuse while
 preserving the replacement charge; all eight selected tests passed on one binary.
-The installed worker must still join the control reply before signer shutdown.
+The [Linux host-agent shutdown report](evidence/2026-11-11-retained-recovery/worker-shutdown/README.md)
+records all nine focused checks passing on the repaired source. After a journal
+failure the client received its deregistration reply, the journal was empty,
+and the worker collected its original signer and exited 1. The ordinary idle
+control exited 42. The installed worker still needs to collect a per-VM mailbox
+helper under shared budgets and demonstrate transfer and retirement with an actual guest.
 
 [PR #95](https://github.com/R4-Laboratories/SpiralCore/pull/95) adds canonical
 transport-binding revocation to the mailbox adapter. Live Call and Reply keep

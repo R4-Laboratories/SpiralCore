@@ -36,8 +36,10 @@ candidate passes 21 selected cases. A [Linux daemon recovery test](docs/network/
 now shows a signed deregistration waiting for its original handler and preserving
 the other VM’s record; conflicting inventory refuses without a rewrite. Eight
 [follow-up checks](docs/network/evidence/2026-11-11-retained-recovery/original-row/README.md)
-pass after binding resumed callers to their original resource charges. Installed
-worker shutdown remains open. These checks do not measure WAN speed.
+pass after binding resumed callers to their original resource charges. In a
+[Linux worker recovery test](docs/network/evidence/2026-11-11-retained-recovery/worker-shutdown/README.md),
+the client received the deregistration reply and the worker collected its original
+signer before exiting. Retirement with a per-VM mailbox helper remains open.
 
 | Path | Published implementation and evidence | Remaining acceptance |
 |---|---|---|

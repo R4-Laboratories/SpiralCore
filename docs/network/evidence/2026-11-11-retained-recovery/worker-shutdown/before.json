@@ -1,0 +1,121 @@
+{
+  "profile": "Linux x86_64, MVM 0.27.0 composition, Rust 1.97.1, release/locked/offline. One invocation per case, one test thread.",
+  "scope": "Wall time spans the full fixture. User/system CPU and maximum RSS are GNU time observations for the fixture process tree. CPU resolution is 0.01 s. No payload, transfer-time benchmark or WAN run.",
+  "executables_sha256": {
+    "host_agent_idle_collection-31828ea4c4bbf3a7": "9f56d51cb613eb28902b249f5132ef752813ab3979eacc6ab87a77957e430b86",
+    "mvm_host_agent-bc30e67a571dc9bf": "df85c89fd1c009ce63d239d52a41e602e3d60a435503de1295fb994f227309a8",
+    "mvm_hostd-0ad15abce9da80e8": "afdadbba97ca872ce112f2f4ad3b0a0bee3f214a3ba0af5eea26cdf0ec15e918",
+    "mvm-host-agent": "bf1115f0476a9c381a99019866ede432f5b63083937a018c0587603788be5b17",
+    "mvm-signer-helper": "8457a61612e309b41876fb4135907990862ac132c812fa2707cbcf9b0543ec52"
+  },
+  "source_manifest_sha256": "39e6b6a9deb719344b6a0fca21258e35e11d1c24c1f78028d2b91f31af54c3da",
+  "source_files": 4496,
+  "changed_files_sha256": {
+    "crates/mvm-hostd/src/bin/mvm-host-agent.rs": "859e161a605343fca828474c863854dfb5421c0bf098173a19d5dc0c94af61c1",
+    "crates/mvm-hostd/src/bin/mvm-host-agent/worker_deadline_tests.rs": "f95c796d6206132b19bd70b472c6b0fc9e5cfcfc1fdd57a2892104f47a311bbd",
+    "crates/mvm-hostd/src/broker/daemon.rs": "7577ce63c08ee6ba71aac946fb9daaa40e3f849f9d240241f94b84def91df020",
+    "crates/mvm-hostd/src/broker/daemon/drain_request_tests.rs": "1bad090d189bd1af78af266612b670182c7922763a5ceab8b0bb5cad584b72b7",
+    "crates/mvm-hostd/tests/host_agent_idle_collection.rs": "c76afefe3d2f3a3b3e3adc4e9a7a5bcf5345756d2f8461d621b6c5b4a7c3da9d"
+  },
+  "cases": [
+    {
+      "exit": 0,
+      "log_sha256": "7cac0a84aa5700c35ade9fe03c7db84688414d68ba530e7693011611656f727a",
+      "name": "worker_deadline_tests::repeated_worker_drain_reuses_first_grace_deadline",
+      "target": "mvm-host-agent",
+      "wall_seconds": 0.0025218799710273743,
+      "user_s": 0.0,
+      "system_s": 0.0,
+      "max_rss_KiB": 7092,
+      "output": "\nrunning 1 test\ntest worker_deadline_tests::repeated_worker_drain_reuses_first_grace_deadline ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 13 filtered out; finished in 0.00s\n\nWALL=0.00 USER=0.00 SYS=0.00 MAXRSS_KIB=7092\n"
+    },
+    {
+      "exit": 0,
+      "log_sha256": "88b069782c7145e167ce5cc302e8673aedf563df7f0831ec3a3570439d114fb7",
+      "name": "worker_deadline_tests::refused_idle_does_not_consume_the_next_shutdown_grace",
+      "target": "mvm-host-agent",
+      "wall_seconds": 0.002343169995583594,
+      "user_s": 0.0,
+      "system_s": 0.0,
+      "max_rss_KiB": 7212,
+      "output": "\nrunning 1 test\ntest worker_deadline_tests::refused_idle_does_not_consume_the_next_shutdown_grace ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 13 filtered out; finished in 0.00s\n\nWALL=0.00 USER=0.00 SYS=0.00 MAXRSS_KIB=7212\n"
+    },
+    {
+      "exit": 0,
+      "log_sha256": "a90481169f1941f6e3bafca4ce1a58e267b3f323dde983c17558d6c890c4e29d",
+      "name": "worker_deadline_tests::original_control_task_joins_before_signer_stop",
+      "target": "mvm-host-agent",
+      "wall_seconds": 0.001969419012311846,
+      "user_s": 0.0,
+      "system_s": 0.0,
+      "max_rss_KiB": 7236,
+      "output": "\nrunning 1 test\ntest worker_deadline_tests::original_control_task_joins_before_signer_stop ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 13 filtered out; finished in 0.00s\n\nWALL=0.00 USER=0.00 SYS=0.00 MAXRSS_KIB=7236\n"
+    },
+    {
+      "exit": 101,
+      "log_sha256": "cdf915e43911aa8a36b112a7bd313267d2c8dc70e0baaddbd09dc66de0c61f69",
+      "name": "worker_deadline_tests::forced_worker_drain_fences_while_the_control_loop_owns_the_daemon",
+      "target": "mvm-host-agent",
+      "wall_seconds": 0.002529553952626884,
+      "user_s": 0.0,
+      "system_s": 0.0,
+      "max_rss_KiB": 7232,
+      "output": "\nrunning 1 test\ntest worker_deadline_tests::forced_worker_drain_fences_while_the_control_loop_owns_the_daemon ... Error: original global drain fence unresolved\n\nCaused by:\n    original daemon drain check contended\nFAILED\n\nfailures:\n\nfailures:\n    worker_deadline_tests::forced_worker_drain_fences_while_the_control_loop_owns_the_daemon\n\ntest result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 13 filtered out; finished in 0.00s\n\nCommand exited with non-zero status 101\nWALL=0.00 USER=0.00 SYS=0.00 MAXRSS_KIB=7232\n"
+    },
+    {
+      "exit": 101,
+      "log_sha256": "d8b11e4d43230c5d621b2ed964947aaca45e7eb84988fbca39ebc4c5380a17e1",
+      "name": "worker_deadline_tests::queued_idle_cannot_claim_a_drain_started_by_another_owner",
+      "target": "mvm-host-agent",
+      "wall_seconds": 0.002253148006275296,
+      "user_s": 0.0,
+      "system_s": 0.0,
+      "max_rss_KiB": 6928,
+      "output": "\nrunning 1 test\ntest worker_deadline_tests::queued_idle_cannot_claim_a_drain_started_by_another_owner ... Error: queued idle claimed another owner's shutdown\nFAILED\n\nfailures:\n\nfailures:\n    worker_deadline_tests::queued_idle_cannot_claim_a_drain_started_by_another_owner\n\ntest result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 13 filtered out; finished in 0.00s\n\nCommand exited with non-zero status 101\nWALL=0.00 USER=0.00 SYS=0.00 MAXRSS_KIB=6928\n"
+    },
+    {
+      "exit": 0,
+      "log_sha256": "5a9438b6e0241b0b4a90435370856d8ba5084930efa3c25012c6b1a1eaaaddc6",
+      "name": "broker::daemon::drain_request_tests::original_drain_request_keeps_first_deadline_and_wakes_original_observer",
+      "target": "mvm_hostd",
+      "wall_seconds": 0.013533357996493578,
+      "user_s": 0.0,
+      "system_s": 0.0,
+      "max_rss_KiB": 13020,
+      "output": "\nrunning 1 test\ntest broker::daemon::drain_request_tests::original_drain_request_keeps_first_deadline_and_wakes_original_observer ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2382 filtered out; finished in 0.01s\n\nWALL=0.01 USER=0.00 SYS=0.00 MAXRSS_KIB=13020\n"
+    },
+    {
+      "exit": 0,
+      "log_sha256": "8bf79c764b59d7d4730fea6d08b5764704edb66c2ee09ee58aa9503d86363dae",
+      "name": "broker::daemon::drain_request_tests::original_inline_control_turn_is_shared_without_creating_another_budget",
+      "target": "mvm_hostd",
+      "wall_seconds": 0.0020136419916525483,
+      "user_s": 0.0,
+      "system_s": 0.0,
+      "max_rss_KiB": 9896,
+      "output": "\nrunning 1 test\ntest broker::daemon::drain_request_tests::original_inline_control_turn_is_shared_without_creating_another_budget ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2382 filtered out; finished in 0.00s\n\nWALL=0.00 USER=0.00 SYS=0.00 MAXRSS_KIB=9896\n"
+    },
+    {
+      "exit": 101,
+      "log_sha256": "15fe13ec0393617de51f896f7cf65c2a7e3a58ad5c6dd09a60ca2927b9798d9d",
+      "name": "retained_registration_reply_precedes_original_worker_recovery_exit",
+      "target": "host_agent_idle_collection",
+      "wall_seconds": 20.057103177998215,
+      "user_s": 0.0,
+      "system_s": 0.0,
+      "max_rss_KiB": 7740,
+      "output": "\nrunning 1 test\ntest retained_registration_reply_precedes_original_worker_recovery_exit ... INLINE_RECOVERY_WITNESS completed=true worker_code=None ready=1 original_collections=0 adopted=1 truncated=false\n\nthread 'retained_registration_reply_precedes_original_worker_recovery_exit' (4079146) panicked at crates/mvm-hostd/tests/host_agent_idle_collection.rs:790:5:\nworker error must identify the intended registration-recovery shutdown\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\nFAILED\n\nfailures:\n\nfailures:\n    retained_registration_reply_precedes_original_worker_recovery_exit\n\ntest result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 3 filtered out; finished in 20.06s\n\nCommand exited with non-zero status 101\nWALL=20.05 USER=0.00 SYS=0.00 MAXRSS_KIB=7740\n"
+    },
+    {
+      "exit": 0,
+      "log_sha256": "ec5d73d4dcb43da11eea6b76cdd71d36b3a4f6661b785a0dcaf8b1700254fc2c",
+      "name": "idle_42_follows_original_signer_collection",
+      "target": "host_agent_idle_collection",
+      "wall_seconds": 1.0345951649942435,
+      "user_s": 0.0,
+      "system_s": 0.0,
+      "max_rss_KiB": 7740,
+      "output": "\nrunning 1 test\ntest idle_42_follows_original_signer_collection ... IDLE_COLLECTION_WITNESS worker_code=Some(42) ready=1 original_collections=1 fixture_adopted_reaped=0 trace_bytes=833 trace_truncated=false\nok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 3 filtered out; finished in 1.03s\n\nWALL=1.03 USER=0.00 SYS=0.00 MAXRSS_KIB=7740\n"
+    }
+  ]
+}
