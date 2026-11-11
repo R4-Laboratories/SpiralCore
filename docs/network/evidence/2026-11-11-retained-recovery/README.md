@@ -58,9 +58,10 @@ the [MVM Apache-2.0 license](../2026-11-11-startup-publication/composition/LICEN
 
 The comparison now consumes each VM identity exactly once, and fresh storage
 records pass canonical registration validation before restoration writes.
-A separate concurrency issue remains: after releasing a mutation loan, a caller
+In this inventory-only candidate, a separate concurrency issue remains: after releasing a mutation loan, a caller
 must verify that it reacquired the original ledger row before changing or
-settling it. The installed worker must also join its control loop through the
+settling it. The [subsequent row-binding repair](original-row/README.md) covers
+that issue on a separate build. The installed worker must also join its control loop through the
 reply before stopping the signer. This candidate is not ready to deploy.
 Native guest retirement, session recovery, WAN transfer and platform
 qualification remain tracked in [#42](https://github.com/R4-Laboratories/SpiralCore/issues/42).

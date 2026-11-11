@@ -215,8 +215,10 @@ The [interrupted-registration checkpoint](evidence/2026-11-11-retained-recovery/
 adds a passing signed deregistration after a cancelled replacement and a physical
 journal regression: a repeated VM record cannot substitute for a missing one.
 Both pre-fix failures, three passing inventory cases, and the source delta are
-retained. Concurrent callers must still prove they reacquire the exact original
-row, and the installed worker must join the control reply before signer shutdown.
+retained. The [original-row successor](evidence/2026-11-11-retained-recovery/original-row/README.md)
+reproduced two stale callers settling replacement work. Both now refuse while
+preserving the replacement charge; all eight selected tests passed on one binary.
+The installed worker must still join the control reply before signer shutdown.
 
 [PR #95](https://github.com/R4-Laboratories/SpiralCore/pull/95) adds canonical
 transport-binding revocation to the mailbox adapter. Live Call and Reply keep

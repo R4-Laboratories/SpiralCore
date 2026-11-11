@@ -34,8 +34,10 @@ journal refuses before readiness; a directly invoked worker with no configured
 home refuses without modifying its owned fixture. The publication/custody/replay
 candidate passes 21 selected cases. A [Linux daemon recovery test](docs/network/evidence/2026-11-11-retained-recovery/README.md)
 now shows a signed deregistration waiting for its original handler and preserving
-the other VM’s record; conflicting inventory refuses without a rewrite. Concurrent
-row ownership and installed-worker shutdown remain open. Neither report measures WAN speed.
+the other VM’s record; conflicting inventory refuses without a rewrite. Eight
+[follow-up checks](docs/network/evidence/2026-11-11-retained-recovery/original-row/README.md)
+pass after binding resumed callers to their original resource charges. Installed
+worker shutdown remains open. These checks do not measure WAN speed.
 
 | Path | Published implementation and evidence | Remaining acceptance |
 |---|---|---|
