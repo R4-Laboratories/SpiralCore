@@ -415,3 +415,36 @@ on Wick at `/var/tmp/spiralcore-661-lock-coverage-20261110`; only compact eviden
 is retained here, with its own inventory. No payload store, VM disk or local
 Cargo target was added. The later workflow/documentation changes need their
 own native execution; these results are bound to `661c74e7`.
+
+## Subsequent Intel macOS timing and ARM64 collector diagnosis
+
+At `1ae9fa35`, all seven native FlowMux roles pass
+[run 42925924918](https://github.com/R4-Laboratories/SpiralCore/actions/runs/42925924918).
+The [retained archives and custody](native-1ae9fa35/receipts.json) include all
+seven full component artifacts, both timing artifacts and the ARM64 coverage
+failure: 138,486 archive bytes, matching API digests and 126 inner checksum
+entries. The tested PR-merge tree equals the intended source tree. No Rust
+source changed from `661c74e7`.
+
+The Intel macOS feature-off witness completes in 61.437129 lifecycle seconds
+and 37.515710 process CPU seconds. Its separate instrumented observation takes
+70.160776/39.570219 seconds. Both recover every 4,096 block per direction with
+unchanged traffic and retention; these are not paired causal timing estimates.
+The [phase analysis](native-1ae9fa35/spiralcore-macintel-timing-analysis-20261110.md)
+finds no observed phase near the two-second operation deadline. Session/TX
+ownership maxima remain below 1.5 ms; Commit handler maxima are 88.629/76.022 ms.
+The earlier failure has no phase trace and remains unexplained. Neither these
+passes nor the non-FIFO mutex/condition variable establishes absence of rare
+tails or multi-tenant fairness. No product patch or deadline relaxation follows
+from this successful diagnostic.
+
+The new ARM64 artifact retains the actual LLVM error: **malformed instrumentation
+profile data: symbol name is empty**, with merge exit 1 for one fresh 42,168-byte
+profile. This is a tooling-stage failure before source-line export, not a failed
+functional role. The [coverage plan](../../../plans/2026-11-10-windows-quota-coverage.md)
+records a coverage-only bundled-LLD candidate motivated by a pinned external
+project's reported ARM64 linker alignment problem. The precise section defect
+has not been measured in our failed executable. Default functional builds keep
+their original linker. Acceptance still requires native tests, fresh profile
+merge/export and the unchanged production threshold; no profile rewriting,
+skipped role or coverage waiver is introduced.

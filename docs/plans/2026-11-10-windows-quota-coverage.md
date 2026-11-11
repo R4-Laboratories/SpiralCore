@@ -161,6 +161,41 @@ pinned toolchain is reproducibly unsupported, document that exact coverage
 limitation while keeping ARM64's functional/end-to-end role and open coverage
 gate distinct. No unsupported-tool conclusion is established by this patch.
 
+The subsequent `1ae9fa35` ARM64 attempt retained the actual merge refusal:
+`malformed instrumentation profile data: symbol name is empty`, then no profile
+could merge (exit 1). Its single fresh 42,168-byte profile has SHA-256
+`76279090f1be9f14870c2ba8a89e075844d35b68ce5b13a31769a49852d6bd29`.
+The API archive is 36,205 bytes with SHA-256
+`3ad11077ea24e50a5e4f463569349c0f3057b8c55eb688bdef2b1b50610fb7cb`;
+all 57 inner checksums verify. [Actual native job](https://github.com/R4-Laboratories/SpiralCore/actions/runs/42925925039/job/130212364374).
+The failure occurs while reading raw profile names, before coverage export or
+the source-line gate. Its symptom matches issue #150123; matching text alone
+does not prove the precise writer/linker defect in this binary.
+
+A pinned primary project workflow reports that ARM64 `link.exe` padded the
+one-byte LLVM profile-section markers to four bytes, producing three leading
+zero name bytes and this error; it selects the toolchain's bundled
+`rust-lld`/COFF linker. [Reported mechanism and workaround](https://github.com/pingdotgg/ts-rust/blob/a1ffd25de53f2f06dd2a4fa6704bd9fc0cc17f6c/.github/workflows/release.yml#L149).
+That is an external project's observation, not a section-layout measurement
+of SpiralCore's failed executable.
+
+The next candidate changes only the isolated ARM64 coverage build's linker,
+using the `rust-lld.exe` bundled with the same pinned Rust 1.97.1 native
+toolchain. Its path, SHA-256 and reported LLVM version must match the pinned
+toolchain; the actual storage-test rustc command must contain that exact linker
+selection as well as instrumentation. Cargo receives a command-local target
+configuration argument; no persistent configuration or linker environment
+variable changes. Earlier uninstrumented functional builds, x64 coverage and
+all other roles keep their existing linker selection.
+[Cargo linker configuration](https://doc.rust-lang.org/cargo/reference/config.html#targettriplelinker).
+
+This is a falsifiable coverage-tooling candidate, not a qualified repair.
+Acceptance requires fresh profiles from the same two passed native tests,
+successful pinned-tool merge/export, exact source/line-map validation and the
+unchanged 80% production gate. Missing bundled tools, version/command mismatch
+or another malformed profile remains a failed gate. No ARM64 waiver, skipped
+pass, raw-profile rewriting or functional-role downgrade is introduced.
+
 Implementation status: static inspection and retained-export collector check
 only for this summary-semantics correction; no new native collection has run.
 The earlier plain/instrumented primitive passes and

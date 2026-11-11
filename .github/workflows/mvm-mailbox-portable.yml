@@ -330,6 +330,24 @@ jobs:
               if ($LASTEXITCODE -ne 0 -or $version -notmatch "LLVM version:? $([regex]::Escape($llvmVersion))(?![0-9.])") { throw 'Compiler/LLVM tool version mismatch' }
               $tools += @{ path = $tool; sha256 = (Sha $tool); version = $version }
             }
+            $coverageLinkerArgs = @()
+            $coverageLinker = @{ override = $false; kind = 'native default; no collector linker override' }
+            if ($env:NATIVE_TARGET -eq 'aarch64-pc-windows-msvc') {
+              # Coverage-only candidate for the reported ARM64 link.exe profile-section
+              # alignment defect. Earlier functional checks keep their native default.
+              $linkerPath = Join-Path $llvmBin 'rust-lld.exe'
+              if (!(Test-Path -LiteralPath $linkerPath -PathType Leaf)) { throw 'Pinned bundled ARM64 coverage linker unavailable' }
+              $linkerVersion = (& $linkerPath -flavor link --version | Out-String).Trim()
+              if ($LASTEXITCODE -ne 0 -or $linkerVersion -notmatch "\bLLD $([regex]::Escape($llvmVersion))(?![0-9.])") { throw 'Bundled coverage linker version mismatch' }
+              $linkerHash = Sha $linkerPath
+              $tools += @{ path = $linkerPath; sha256 = $linkerHash; version = $linkerVersion; role = 'ARM64 instrumented coverage linker only' }
+              # JSON string quoting is also valid for this TOML string argument;
+              # pass it as a structured Cargo argument, never shell command text.
+              $linkerConfig = 'target.aarch64-pc-windows-msvc.linker=' + (ConvertTo-Json -InputObject $linkerPath -Compress)
+              $coverageLinkerArgs = @('--config', $linkerConfig)
+              $coverageLinker = @{ override = $true; kind = 'bundled rust-lld / COFF'; path = $linkerPath; sha256 = $linkerHash; version = $linkerVersion; cargo_config = $linkerConfig; qualification = 'candidate pending native profile merge and production gate' }
+            }
+            Save-Compact 'windows-quota-coverage-linker.json' ($coverageLinker | ConvertTo-Json -Depth 4)
             $env:CARGO_TARGET_DIR = Join-Path $owned 'target'
             $env:RUSTFLAGS = '-C instrument-coverage -C opt-level=0'
             # In PowerShell 7.5+, SetEnvironmentVariable($null) leaves an empty
@@ -345,7 +363,7 @@ jobs:
             # Use the same absolute default at compile and execution time. Enumeration
             # profiles are discovered and removed before the actual tests execute.
             $env:LLVM_PROFILE_FILE = Join-Path $owned 'profiles/tests-%p-%m.profraw'
-            $build = @(& cargo "+$toolchain" test --locked --manifest-path $crate --lib --no-run --target $env:NATIVE_TARGET --message-format=json -vv 2> (Join-Path $owned 'build-stderr.txt'))
+            $build = @(& cargo "+$toolchain" test --locked --manifest-path $crate --lib --no-run --target $env:NATIVE_TARGET --message-format=json -vv @coverageLinkerArgs 2> (Join-Path $owned 'build-stderr.txt'))
             $buildExit = $LASTEXITCODE
             $build | Set-Content (Join-Path $owned 'build.jsonl')
             if ($buildExit -ne 0) { throw "Instrumented native build failed; diagnostics: $owned" }
@@ -355,6 +373,12 @@ jobs:
             Save-Compact 'windows-quota-coverage-rustc.txt' ($compilerLines -join "`n")
             if ($compilerLines.Count -eq 0) { throw 'No actual Windows storage test rustc invocation was retained' }
             if (@($compilerLines | Where-Object { $_ -notmatch '(?:^|\s)-C\s+instrument-coverage(?:\s|$)' }).Count -ne 0) { throw 'Actual storage test rustc invocation omitted coverage instrumentation' }
+            if ($coverageLinker.override) {
+              $linkerPattern = '(?:^|\s)-C\s+"?' + [regex]::Escape('linker=' + $linkerPath) + '"?(?:\s|$)'
+              $linkerProof = @($compilerLines | Where-Object { $_ -match $linkerPattern }).Count
+              Save-Compact 'windows-quota-coverage-linker-proof.json' (@{ expected_linker = $linkerPath; test_compiler_invocations = $compilerLines.Count; matching_linker_invocations = $linkerProof; all_match = ($linkerProof -eq $compilerLines.Count) } | ConvertTo-Json)
+              if ($linkerProof -ne $compilerLines.Count) { throw 'Actual ARM64 coverage test compiler invocation did not select the pinned bundled linker' }
+            }
             $messages = @($build | Where-Object { $_.Trim() } | ForEach-Object { $_ | ConvertFrom-Json })
             $finished = @($messages | Where-Object { $_.reason -eq 'build-finished' -and $_.success })
             $artifacts = @($messages | Where-Object { $_.reason -eq 'compiler-artifact' -and $_.target.name -eq 'spiralcore_storage_windows' -and $_.profile.test -and $_.executable })
@@ -491,6 +515,7 @@ jobs:
               exclusions = @{ source_sha256 = $quotaHash; source_lf_sha256 = $quotaLfHash; ranges = $exclusions; mapped_lines_removed = ($mapped.Count - $production.Count) }
               branches = $branchResult; binary_sha256 = $binaryHash; binary_original = $original; binary_copy = $binary
               rustc = $rustVersion; rustc_path = $rustcPath; rustc_sha256 = $rustcHash; tools = $tools; flags = $env:RUSTFLAGS
+              coverage_linker = $coverageLinker
               raw_profiles = @($raw | ForEach-Object { @{ name = $_.Name; bytes = $_.Length; sha256 = (Sha $_.FullName) } })
               profdata_sha256 = (Sha $merged); summary_export_sha256 = (Sha $jsonPath); lcov_export_sha256 = (Sha $lcov)
               raw_storage = $owned; source_and_binary_pins_stable = $true
