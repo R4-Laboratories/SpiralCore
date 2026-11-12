@@ -59,7 +59,7 @@ index 70bf143d39a1639b9e178eeaab45168c2f8f3776..5783cf66902e18828b8d171970bf8a45
      .or_else(|err| -> Result<_> {
          if let Some(refused) =
 diff --git a/crates/mvm-client/src/launch/detached.rs b/crates/mvm-client/src/launch/detached.rs
-index 3e1385fd32779f5914edc904ee58aaac4baedb98..ee2018dab21f599943b8e44cf05045c586922915 100644
+index 3e1385fd32779f5914edc904ee58aaac4baedb98..ddf2baebb51aa086ba9af722b7f925bf0ab3ac34 100644
 --- a/crates/mvm-client/src/launch/detached.rs
 +++ b/crates/mvm-client/src/launch/detached.rs
 @@ -17,7 +17,9 @@ use std::collections::BTreeMap;
@@ -73,12 +73,13 @@ index 3e1385fd32779f5914edc904ee58aaac4baedb98..ee2018dab21f599943b8e44cf05045c5
  use crate::secret::MachineSecretRef;
  
  /// How long a boot command waits for the guest agent to answer before giving
-@@ -225,7 +227,16 @@ pub fn boot_recorded(
+@@ -225,7 +227,18 @@ pub fn boot_recorded(
      host: &dyn StartHost,
      params: MachineStartParams<'_>,
  ) -> Result<MachineStart> {
 -    let started = start_machine_spec(spec, host, params)?;
-+    boot_recorded_with_journal(spec, host, params, None)
++    let reservation = super::PairedBootReservation::for_lifecycle_mutation(&spec.name)?;
++    boot_recorded_with_journal(spec, host, params, None, &reservation)
 +}
 +
 +pub(super) fn boot_recorded_with_journal(
@@ -86,8 +87,9 @@ index 3e1385fd32779f5914edc904ee58aaac4baedb98..ee2018dab21f599943b8e44cf05045c5
 +    host: &dyn StartHost,
 +    params: MachineStartParams<'_>,
 +    journal: Option<&mut super::persistent::journal::InstalledJournal<'_>>,
++    reservation: &super::PairedBootReservation,
 +) -> Result<MachineStart> {
-+    let started = start_machine_spec_with_journal(spec, host, params, journal)?;
++    let started = start_machine_spec_with_journal(spec, host, params, journal, reservation)?;
      super::machine_start::record_machine_started(spec, started.resolved_digest.clone());
      if let Err(err) = mp::overwrite_machine_spec(spec) {
          tracing::warn!(error = %err, machine = %spec.name, "updating machine start metadata failed (non-fatal)");
@@ -141,7 +143,7 @@ index 04a3392fc9b5000c8939f2d33b946cfc555f5e5a..275f934e6e57198c30bfca68838f41a0
  
  /// The operator-visible sentence for a boot that asked for a bound and did not
 diff --git a/crates/mvm-client/src/launch/machine_start.rs b/crates/mvm-client/src/launch/machine_start.rs
-index 70b34b110efa73f362893984cec248d8933a5900..30864823376718510b42007ab8b55750df02a105 100644
+index 70b34b110efa73f362893984cec248d8933a5900..f0430e3172967b8c8af6b590258b3ba62e567a2e 100644
 --- a/crates/mvm-client/src/launch/machine_start.rs
 +++ b/crates/mvm-client/src/launch/machine_start.rs
 @@ -19,7 +19,7 @@ use anyhow::{Context, Result, bail};
@@ -153,11 +155,12 @@ index 70b34b110efa73f362893984cec248d8933a5900..30864823376718510b42007ab8b55750
  use crate::secret::SecretService;
  use crate::volume::LaunchPreparation;
  
-@@ -239,8 +239,27 @@ pub fn start_machine_spec(
+@@ -239,8 +239,26 @@ pub fn start_machine_spec(
      host: &dyn StartHost,
      params: MachineStartParams<'_>,
  ) -> Result<MachineStart> {
-+    start_machine_spec_with_journal(spec, host, params, None)
++    let reservation = super::PairedBootReservation::for_lifecycle_mutation(&spec.name)?;
++    start_machine_spec_with_journal(spec, host, params, None, &reservation)
 +}
 +
 +pub(super) fn start_machine_spec_with_journal(
@@ -165,16 +168,14 @@ index 70b34b110efa73f362893984cec248d8933a5900..30864823376718510b42007ab8b55750
 +    host: &dyn StartHost,
 +    params: MachineStartParams<'_>,
 +    journal: Option<&mut InstalledJournal<'_>>,
++    reservation: &super::PairedBootReservation,
 +) -> Result<MachineStart> {
++    reservation.require_name(&spec.name)?;
 +    persistent::journal::validate_slot(journal.as_deref(), params.mailbox.as_ref())?;
      AnyBackend::require_hypervisor_selectable(params.hypervisor)?;
 -    super::discard_stopped_runtime_state(params.hypervisor, &spec.name)?;
-+    let _boot_reservation = if journal.is_some() {
-+        Some(
-+            mvm_hostd::mailbox_process::original_journal::PairedBootReservation::acquire(
-+                &spec.name,
-+            )?,
-+        )
++    let fresh_state = if journal.is_some() {
++        Some(reservation.prepare_journal_runtime(&spec.name)?)
 +    } else {
 +        super::discard_stopped_runtime_state(params.hypervisor, &spec.name)?;
 +        None
@@ -182,7 +183,7 @@ index 70b34b110efa73f362893984cec248d8933a5900..30864823376718510b42007ab8b55750
      validate_registry_pack_source(spec)?;
      let network_policy = persisted_network_policy(spec)?;
      let (memory_mib, mem_initial_mib) =
-@@ -273,32 +292,35 @@ pub fn start_machine_spec(
+@@ -273,32 +291,36 @@ pub fn start_machine_spec(
          .prepare_volumes(&spec.name, &spec.volumes)
          .context("resolving registered local volumes before admission")?;
      let workload_dir = persistent_workload_dir(spec);
@@ -240,15 +241,47 @@ index 70b34b110efa73f362893984cec248d8933a5900..30864823376718510b42007ab8b55750
 +            backend: host.backend(params.hypervisor),
 +        },
 +        journal,
++        fresh_state,
 +    )?;
      Ok(MachineStart {
          resolved_digest: boot.digest,
          admitted,
 diff --git a/crates/mvm-client/src/launch/mod.rs b/crates/mvm-client/src/launch/mod.rs
-index 96a1e235b63a866b26bdea5ffddee494bb106095..d1c63f7236bd110fe7cc8649698da8655026dfc1 100644
+index 96a1e235b63a866b26bdea5ffddee494bb106095..aa290912928b22a8632d62fd6061c9419188cfc1 100644
 --- a/crates/mvm-client/src/launch/mod.rs
 +++ b/crates/mvm-client/src/launch/mod.rs
-@@ -826,6 +826,10 @@ impl LocalBackend {
+@@ -32,6 +32,7 @@ mod tests;
+ mod transient;
+ mod unbooted;
+ 
++use mvm_hostd::mailbox_process::original_journal::PairedBootReservation;
+ use unbooted::DefinitionOrigin;
+ 
+ pub use request::{
+@@ -398,6 +399,22 @@ pub(crate) fn record_session_stop_failure(
+     }
+ }
+ 
++pub(crate) fn reserve_named_lifecycle(name: &str) -> Result<PairedBootReservation> {
++    PairedBootReservation::for_lifecycle_mutation(name).map_err(|error| {
++        match error
++            .downcast_ref::<std::io::Error>()
++            .map(std::io::Error::kind)
++        {
++            Some(std::io::ErrorKind::WouldBlock | std::io::ErrorKind::AlreadyExists) => {
++                MvmError::Conflict {
++                    reason: error.to_string(),
++                }
++            }
++            _ => crate::local::backend_err(error),
++        }
++    })
++}
++
+ impl LocalBackend {
+     /// The secret lifecycle service to validate/record references through:
+     /// the injected one, else the production-wired local service.
+@@ -826,6 +843,10 @@ impl LocalBackend {
      /// requests persist their definition first, then boot from it — both
      /// through the one canonical signed-admission seam.
      pub async fn launch(&self, request: LaunchRequest) -> Result<LaunchOutcome> {
@@ -259,19 +292,54 @@ index 96a1e235b63a866b26bdea5ffddee494bb106095..d1c63f7236bd110fe7cc8649698da865
          if let LaunchSource::RegistryPack { pin } = &request.source {
              let backend = self.launch_backend(request.backend.as_deref())?;
              built_pack::resolve_built_pack_image(pin, backend.name(), &request.profile)
-@@ -926,6 +930,7 @@ impl LocalBackend {
+@@ -835,8 +856,9 @@ impl LocalBackend {
+             LifecycleMode::Transient => self.launch_transient(request).await,
+             LifecycleMode::Persistent => {
+                 let name = persistent_name(&request)?;
++                let reservation = reserve_named_lifecycle(&name)?;
+                 let (_, origin) = self.create_definition(&request, &name)?;
+-                let booted = self.boot_persistent(&name, &request).await;
++                let booted = self.boot_persistent(&name, &request, &reservation).await;
+                 let outcome = self.discard_definition_on_failure(&name, origin, booted)?;
+                 match self.start_requested_command(outcome, &request) {
+                     Ok(outcome) => Ok(outcome),
+@@ -868,6 +890,7 @@ impl LocalBackend {
+             });
+         }
+         let name = persistent_name(request)?;
++        let _reservation = reserve_named_lifecycle(&name)?;
+         let (spec, _) = self.create_definition(request, &name)?;
+         Ok(MachineState {
+             id: MachineId(name.clone()),
+@@ -910,7 +933,12 @@ impl LocalBackend {
+     /// secret references are re-validated fail-closed even when this
+     /// request carries none. The request's mailbox is separate one-start
+     /// authority, passed into admission without persisting it in the definition.
+-    async fn boot_persistent(&self, name: &str, request: &LaunchRequest) -> Result<LaunchOutcome> {
++    async fn boot_persistent(
++        &self,
++        name: &str,
++        request: &LaunchRequest,
++        reservation: &PairedBootReservation,
++    ) -> Result<LaunchOutcome> {
+         if self.machine_running(name) {
+             return Err(MvmError::Conflict {
+                 reason: format!("machine {name:?} is already running"),
+@@ -926,6 +954,8 @@ impl LocalBackend {
                  request.backend.as_deref(),
                  !request.command.is_empty(),
                  request.mailbox,
 +                None,
++                reservation,
              )
              .await?;
          if let Some(ttl) = request.ttl_seconds {
-@@ -967,11 +972,14 @@ impl LocalBackend {
+@@ -967,13 +997,14 @@ impl LocalBackend {
          backend_override: Option<&str>,
          has_ad_hoc_argv: bool,
          mailbox: Option<mvm_contract::protocol::mailbox::MailboxGrant>,
 +        journal: Option<&mut persistent::journal::InstalledJournal<'_>>,
++        reservation: &PairedBootReservation,
      ) -> Result<(machine_start::MachineStart, String)> {
 +        persistent::journal::validate_slot(journal.as_deref(), mailbox.as_ref())
 +            .map_err(crate::local::backend_err)?;
@@ -279,11 +347,12 @@ index 96a1e235b63a866b26bdea5ffddee494bb106095..d1c63f7236bd110fe7cc8649698da865
              .map(str::to_string)
              .unwrap_or_else(|| self.backend.name().to_string());
 -        if !self.machine_running(&spec.name) {
-+        if journal.is_none() && !self.machine_running(&spec.name) {
-             remove_vm_runtime_dirs(&spec.name)?;
-         }
+-            remove_vm_runtime_dirs(&spec.name)?;
+-        }
          let image = match spec.image.clone() {
-@@ -985,7 +993,7 @@ impl LocalBackend {
+             Some(reference) => Some(
+                 machine_start::resolve_boot_image(&reference, &spec.name)
+@@ -985,7 +1016,7 @@ impl LocalBackend {
          let host = machine_start::EmbedderStartHost::new(image, &spec.profile)
              .with_secret_service(self.secrets()?)
              .with_backend(&self.backend);
@@ -292,15 +361,16 @@ index 96a1e235b63a866b26bdea5ffddee494bb106095..d1c63f7236bd110fe7cc8649698da865
              spec,
              &host,
              machine_start::MachineStartParams {
-@@ -993,6 +1001,7 @@ impl LocalBackend {
+@@ -993,6 +1024,8 @@ impl LocalBackend {
                  has_ad_hoc_argv,
                  mailbox,
              },
 +            journal,
++            reservation,
          )
          .map_err(|e| crate::local::backend_err(format!("{e:#}")))?;
          Ok((started, backend))
-@@ -1221,6 +1230,36 @@ fn ensure_spec_bootable_in_process(spec: &mp::MachineSpec) -> Result<()> {
+@@ -1221,11 +1254,49 @@ fn ensure_spec_bootable_in_process(spec: &mp::MachineSpec) -> Result<()> {
  }
  
  impl LocalBackend {
@@ -315,7 +385,7 @@ index 96a1e235b63a866b26bdea5ffddee494bb106095..d1c63f7236bd110fe7cc8649698da865
 +    ) -> Result<machine_start::MachineStart> {
 +        persistent::journal::validate_slot(Some(journal), Some(&grant))
 +            .map_err(crate::local::backend_err)?;
-+        mvm_core::naming::validate_vm_name(name).map_err(crate::local::backend_err)?;
++        let reservation = reserve_named_lifecycle(name)?;
 +        let mut spec = mp::load_machine_spec(name).map_err(|e| MvmError::NotFound {
 +            id: format!("{name}: {e}"),
 +        })?;
@@ -329,7 +399,14 @@ index 96a1e235b63a866b26bdea5ffddee494bb106095..d1c63f7236bd110fe7cc8649698da865
 +        ensure_spec_bootable_in_process(&spec)?;
 +        self.validate_sidecar_refs(name)?;
 +        let (started, _) = self
-+            .boot_spec(&mut spec, None, false, Some(grant), Some(journal))
++            .boot_spec(
++                &mut spec,
++                None,
++                false,
++                Some(grant),
++                Some(journal),
++                &reservation,
++            )
 +            .await?;
 +        Ok(started)
 +    }
@@ -337,17 +414,44 @@ index 96a1e235b63a866b26bdea5ffddee494bb106095..d1c63f7236bd110fe7cc8649698da865
      /// Start a stopped persistent machine from its persisted definition:
      /// sidecar secret references re-validated fail-closed, registered
      /// attachments re-resolved and leased, then the canonical admitted boot.
-@@ -1241,7 +1280,7 @@ impl LocalBackend {
+     /// Starting a machine that is already running returns its state.
+     pub async fn start_persistent(&self, name: &str) -> Result<MachineState> {
++        let reservation = reserve_named_lifecycle(name)?;
+         let spec = mp::load_machine_spec(name).map_err(|e| MvmError::NotFound {
+             id: format!("{name}: {e}"),
+         })?;
+@@ -1241,7 +1312,9 @@ impl LocalBackend {
          ensure_spec_bootable_in_process(&spec)?;
          self.validate_sidecar_refs(name)?;
          let mut spec = spec;
 -        let (_, backend) = self.boot_spec(&mut spec, None, false, None).await?;
-+        let (_, backend) = self.boot_spec(&mut spec, None, false, None, None).await?;
++        let (_, backend) = self
++            .boot_spec(&mut spec, None, false, None, None, &reservation)
++            .await?;
          let memory_mib = mvm_core::util::parse_human_size(&spec.memory).unwrap_or_default();
          Ok(MachineState {
              id: MachineId(name.to_string()),
+@@ -1324,6 +1397,18 @@ impl LocalBackend {
+     /// while the receipt still describes the resources; otherwise they are
+     /// retained, with the state that records them.
+     pub fn cleanup_transient(&self, name: &str) -> Result<()> {
++        let reservation = reserve_named_lifecycle(name)?;
++        self.cleanup_transient_reserved(name, &reservation)
++    }
++
++    pub(crate) fn cleanup_transient_reserved(
++        &self,
++        name: &str,
++        reservation: &PairedBootReservation,
++    ) -> Result<()> {
++        reservation
++            .require_name(name)
++            .map_err(crate::local::backend_err)?;
+         if self.machine_running(name) {
+             self.stop_for_recreate(name)?;
+         }
 diff --git a/crates/mvm-client/src/launch/persistent.rs b/crates/mvm-client/src/launch/persistent.rs
-index 9ece9fdebbf42302aef0cc18b87b038fada05c38..b89a9d88384a7bef7467e53c5be32c550d5b7e0d 100644
+index 9ece9fdebbf42302aef0cc18b87b038fada05c38..e994ac9735871045ace2bf43b9e5622eaee387f2 100644
 --- a/crates/mvm-client/src/launch/persistent.rs
 +++ b/crates/mvm-client/src/launch/persistent.rs
 @@ -4,6 +4,7 @@
@@ -369,16 +473,18 @@ index 9ece9fdebbf42302aef0cc18b87b038fada05c38..b89a9d88384a7bef7467e53c5be32c55
  };
  
  fn preopen_console_for_profile(profile: &str) -> bool {
-@@ -184,13 +185,21 @@ fn register_vm_name(vm_name: &str, network_name: &str) {
+@@ -184,13 +185,23 @@ fn register_vm_name(vm_name: &str, network_name: &str) {
  pub fn start_persistent_oci_machine(
      params: PersistentImageStartParams<'_>,
  ) -> Result<mvm_hostd::plan_admission::AdmittedPlan> {
-+    start_persistent(params, None)
++    let _reservation = super::PairedBootReservation::for_lifecycle_mutation(params.name)?;
++    start_persistent(params, None, None)
 +}
 +
 +pub(super) fn start_persistent(
 +    params: PersistentImageStartParams<'_>,
 +    journal: Option<&mut journal::InstalledJournal<'_>>,
++    fresh_state: Option<mvm_hostd::mailbox_process::original_journal::FreshState>,
 +) -> Result<mvm_hostd::plan_admission::AdmittedPlan> {
 +    journal::validate_slot(journal.as_deref(), params.mailbox.as_ref())?;
      let PreparedPersistentBoot {
@@ -392,15 +498,16 @@ index 9ece9fdebbf42302aef0cc18b87b038fada05c38..b89a9d88384a7bef7467e53c5be32c55
      let name_label = start_config.name.clone();
      let name = name_label.as_str();
      let backend_label = backend.name().to_string();
-@@ -202,6 +211,7 @@ pub fn start_persistent_oci_machine(
+@@ -202,6 +213,8 @@ pub fn start_persistent_oci_machine(
          prepared_volumes,
          name,
          backend_name,
 +        journal,
++        fresh_state,
      )
  }
  
-@@ -215,6 +225,7 @@ struct PreparedPersistentBoot {
+@@ -215,6 +228,7 @@ struct PreparedPersistentBoot {
  
  fn prepare_persistent_boot(
      params: PersistentImageStartParams<'_>,
@@ -408,7 +515,7 @@ index 9ece9fdebbf42302aef0cc18b87b038fada05c38..b89a9d88384a7bef7467e53c5be32c55
  ) -> Result<PreparedPersistentBoot> {
      let PersistentImageStartParams {
          name,
-@@ -330,7 +341,7 @@ fn prepare_persistent_boot(
+@@ -330,7 +344,7 @@ fn prepare_persistent_boot(
                      })
                  })
                  .collect::<Vec<_>>();
@@ -417,7 +524,7 @@ index 9ece9fdebbf42302aef0cc18b87b038fada05c38..b89a9d88384a7bef7467e53c5be32c55
                  AdmitPlanForBootParams {
                      mailbox,
                      // What the backend will arm, so the admitted tier opens
-@@ -395,6 +406,7 @@ fn prepare_persistent_boot(
+@@ -395,6 +409,7 @@ fn prepare_persistent_boot(
                          ),
                  },
                  ingress,
@@ -425,15 +532,26 @@ index 9ece9fdebbf42302aef0cc18b87b038fada05c38..b89a9d88384a7bef7467e53c5be32c55
              )
          },
      )?;
-@@ -487,6 +499,7 @@ fn finish_legacy_persistent(
+@@ -487,6 +502,8 @@ fn finish_legacy_persistent(
      mut prepared_volumes: crate::volume::LaunchPreparation,
      name: &str,
      backend_name: &str,
 +    journal: Option<&mut journal::InstalledJournal<'_>>,
++    fresh_state: Option<mvm_hostd::mailbox_process::original_journal::FreshState>,
  ) -> Result<mvm_hostd::plan_admission::AdmittedPlan> {
      let mailbox_posture = admission.admitted.mailbox_posture();
      // VMM selection + workload-support check + start move behind the facade; the
-@@ -524,7 +537,33 @@ fn finish_legacy_persistent(
+@@ -500,6 +517,9 @@ fn finish_legacy_persistent(
+             &backend,
+             mailbox_posture.as_ref(),
+         )?;
++        if let Some(state) = fresh_state {
++            state.commit();
++        }
+         Ok(crate::boot::start_prepared_custodied(
+             backend,
+             &start_config,
+@@ -524,7 +544,33 @@ fn finish_legacy_persistent(
      };
      // The guest asserts a mailbox exactly when the plan grants one, so the
      // host side starts here or the launch is rolled back.
@@ -468,7 +586,7 @@ index 9ece9fdebbf42302aef0cc18b87b038fada05c38..b89a9d88384a7bef7467e53c5be32c55
          started.backend(),
          started.vm_id(),
          &start_config,
-@@ -554,7 +593,8 @@ fn finish_legacy_persistent(
+@@ -554,7 +600,8 @@ fn finish_legacy_persistent(
              audit_detached_readiness_failure(&admission, name, &error);
              // The failure record and session seal live under the runtime
              // state directory, so cleanup must follow audit finalization.
@@ -478,7 +596,7 @@ index 9ece9fdebbf42302aef0cc18b87b038fada05c38..b89a9d88384a7bef7467e53c5be32c55
                  tracing::warn!(
                      error = %cleanup_error,
                      machine = name,
-@@ -564,19 +604,18 @@ fn finish_legacy_persistent(
+@@ -564,19 +611,18 @@ fn finish_legacy_persistent(
          }
          return Err(anyhow::Error::new(error));
      }
@@ -746,19 +864,21 @@ index 0000000000000000000000000000000000000000..6c0805501b63e29b54492e3a1fb54555
 +    }
 +}
 diff --git a/crates/mvm-client/src/launch/tests.rs b/crates/mvm-client/src/launch/tests.rs
-index f84fca3ac49501ce43cbe42d343d7670eb0991fb..d52dee6ed3b64b520a84018a4f31d96accdd6828 100644
+index f84fca3ac49501ce43cbe42d343d7670eb0991fb..a31102c86f2b1acbb4eb748904335231d46b3777 100644
 --- a/crates/mvm-client/src/launch/tests.rs
 +++ b/crates/mvm-client/src/launch/tests.rs
-@@ -1537,7 +1537,7 @@ async fn a_restart_re_admits_under_the_persisted_grants_not_deny_all() {
+@@ -1536,8 +1536,9 @@ async fn a_restart_re_admits_under_the_persisted_grants_not_deny_all() {
+     });
      mp::save_machine_spec(&spec, false).unwrap();
  
++    let reservation = super::PairedBootReservation::for_lifecycle_mutation(&spec.name).unwrap();
      let (started, _) = client
 -        .boot_spec(&mut spec, None, false, None)
-+        .boot_spec(&mut spec, None, false, None, None)
++        .boot_spec(&mut spec, None, false, None, None, &reservation)
          .await
          .expect("the start boots");
      let admitted = started
-@@ -2067,9 +2067,10 @@ async fn persistent_request_mailbox_reaches_canonical_backend_admission() {
+@@ -2067,9 +2068,10 @@ async fn persistent_request_mailbox_reaches_canonical_backend_admission() {
          ..Default::default()
      };
      mvm_core::user_config::save(&host, None).expect("host retention ceiling");
@@ -772,7 +892,7 @@ index f84fca3ac49501ce43cbe42d343d7670eb0991fb..d52dee6ed3b64b520a84018a4f31d96a
      let request = persistent_request(&home.rootfs(), name)
          .mailbox(grant)
          .build()
-@@ -2091,6 +2092,25 @@ async fn persistent_request_mailbox_reaches_canonical_backend_admission() {
+@@ -2091,6 +2093,51 @@ async fn persistent_request_mailbox_reaches_canonical_backend_admission() {
      );
  }
  
@@ -795,92 +915,414 @@ index f84fca3ac49501ce43cbe42d343d7670eb0991fb..d52dee6ed3b64b520a84018a4f31d96a
 +    assert!(!machine_spec_path(name).exists());
 +}
 +
++/// An already reserved machine must retain its original runtime through ordinary SDK calls.
++#[tokio::test]
++async fn persistent_ordinary_and_transient_starts_respect_the_original_reservation() {
++    use mvm_hostd::mailbox_process::original_journal::PairedBootReservation;
++    let home = Isolated::new();
++    let name = "reserved-sdk";
++    let client = mock_client();
++    let _reservation = PairedBootReservation::for_lifecycle_mutation(name).unwrap();
++    let state = mvm_core::config::vm_state_dir(name);
++    std::fs::create_dir_all(&state).unwrap();
++    let original = state.join("original-custody");
++    std::fs::write(&original, b"preserved").unwrap();
++    for request in [
++        persistent_request(&home.rootfs(), name).build().unwrap(),
++        transient_request(&home.rootfs())
++            .name(name)
++            .build()
++            .unwrap(),
++    ] {
++        let error = client.launch(request).await.unwrap_err();
++        assert!(error.to_string().contains("machine lifecycle"), "{error}");
++        assert_eq!(std::fs::read(&original).unwrap(), b"preserved");
++        assert!(!machine_spec_path(name).exists());
++    }
++}
++
  /// Persisting a definition never persists the request's mailbox authority.
  /// A later ordinary start must explicitly re-admit without that one-start grant.
  #[tokio::test]
+diff --git a/crates/mvm-client/src/launch/transient.rs b/crates/mvm-client/src/launch/transient.rs
+index a682b1bc9169c591570d81abfbf436e3faba07dc..28ab1d3037851519b5b5443cfaa1081907756d85 100644
+--- a/crates/mvm-client/src/launch/transient.rs
++++ b/crates/mvm-client/src/launch/transient.rs
+@@ -16,6 +16,7 @@ impl LocalBackend {
+             .name
+             .clone()
+             .unwrap_or_else(generated_transient_name);
++        let reservation = super::reserve_named_lifecycle(&name)?;
+         self.ensure_transient_name_free(&name)?;
+         crate::volume::ownership::begin_session(&self.session_root(), &name)
+             .map_err(|e| crate::local::backend_err(format!("{e:#}")))?;
+@@ -47,7 +48,7 @@ impl LocalBackend {
+             Err(e) => {
+                 observe_then_cleanup(Record::new(phase), Record::emit, || {
+                     // Idempotent rollback of everything this session recorded.
+-                    if let Err(cleanup) = self.cleanup_transient(&name) {
++                    if let Err(cleanup) = self.cleanup_transient_reserved(&name, &reservation) {
+                         tracing::warn!(error = %cleanup, machine = %name, "transient cleanup after failed launch");
+                     }
+                 });
 diff --git a/crates/mvm-hostd/src/mailbox_process/original_journal.rs b/crates/mvm-hostd/src/mailbox_process/original_journal.rs
-index 93928be84477aa0c9d57ff946149ecef496a9a7e..a66558e7f3323a0fd36c227be62938f7d69aa3db 100644
+index 93928be84477aa0c9d57ff946149ecef496a9a7e..79ceab8450973e2b3f714140cf668906c0336131 100644
 --- a/crates/mvm-hostd/src/mailbox_process/original_journal.rs
 +++ b/crates/mvm-hostd/src/mailbox_process/original_journal.rs
-@@ -235,6 +235,42 @@ pub(super) fn claim_launch(
+@@ -6,6 +6,8 @@ pub mod authorization;
+ #[cfg(test)]
+ mod paired_process_tests;
+ pub mod relay;
++mod runtime_state;
++pub use runtime_state::FreshState;
+ 
+ use super::{MailboxLaunchPosture, MailboxProcessConfig, spawn_serving, spawn_with_original};
+ use anyhow::{Context, Result, ensure};
+@@ -235,6 +237,84 @@ pub(super) fn claim_launch(
      }))
  }
  
-+/// Serializes paired SDK starts for one machine through admission, helper
-+/// installation and readiness. Persistent custody lives outside disposable VM state.
++/// Per-name exclusion held across lifecycle operations for ordinary and paired machines.
 +pub struct PairedBootReservation {
 +    _boot: FileLock,
++    owner: PathBuf,
++    state: PathBuf,
 +}
 +
 +impl PairedBootReservation {
-+    pub fn acquire(name: &str) -> Result<Self> {
++    /// Serialize mutations without granting access to a helper. The paired
++    /// stop path must separately establish custody of its exact original Child.
++    pub fn for_original_lifecycle(name: &str) -> Result<Self> {
++        use sha2::{Digest, Sha256};
 +        mvm_core::naming::validate_vm_name(name)?;
-+        let owner = owner_dir(&mvm_core::config::mvm_keys_dir(), name)?;
-+        Self::acquire_at(
-+            &owner,
-+            &mvm_core::config::vm_state_dir(name),
-+            &mvm_core::config::instance_dir(name),
-+        )
++        let keys = mvm_core::config::mvm_keys_dir();
++        let digest = Sha256::digest(name.as_bytes());
++        let shard = u16::from_be_bytes([digest[0], digest[1]]) >> 4;
++        let locks = keys.join("mailbox-sdk-locks-v1");
++        mvm_core::private_fs::ensure_private_dir(&locks)?;
++        let boot =
++            FileLock::try_acquire(&locks.join(format!("{shard:03x}")))?.ok_or_else(|| {
++                std::io::Error::new(
++                    std::io::ErrorKind::WouldBlock,
++                    "machine lifecycle operation is already in progress",
++                )
++            })?;
++        Ok(Self {
++            _boot: boot,
++            owner: keys
++                .join("mailbox-original-owners-v1")
++                .join(hex::encode(digest)),
++            state: mvm_core::config::vm_state_dir(name),
++        })
 +    }
 +
-+    fn acquire_at(
-+        owner: &std::path::Path,
-+        state: &std::path::Path,
-+        instance: &std::path::Path,
-+    ) -> Result<Self> {
-+        let boot = FileLock::try_acquire(&owner.join("paired-sdk-boot"))?
-+            .context("paired persistent machine start is already in progress")?;
-+        // Hold the canonical mailbox lock over cleanup; a surviving original
-+        // marker, child pidfile or mailbox socket requires its original owner.
-+        let _claim = claim_launch(state, owner, true)?;
++    pub fn for_lifecycle_mutation(name: &str) -> Result<Self> {
++        let reserved = Self::for_original_lifecycle(name)?;
++        // Ordinary transient names take a bounded shard lock without creating
++        // a permanent owner entry. Only an actual mailbox enrollment needs one.
++        match std::fs::symlink_metadata(&reserved.owner) {
++            Ok(_) => {
++                let original = owner_dir(&mvm_core::config::mvm_keys_dir(), name)?;
++                claim_launch(&reserved.state, &original, false)?;
++            }
++            Err(e) if e.kind() == std::io::ErrorKind::NotFound => (),
++            Err(e) => return Err(e.into()),
++        }
++        Ok(reserved)
++    }
++
++    pub fn require_name(&self, name: &str) -> Result<()> {
++        mvm_core::naming::validate_vm_name(name)?;
 +        ensure!(
-+            mvm_runtime::vm::reconcile::reap_unowned_state_dir(state, instance)
-+                .map_err(anyhow::Error::msg)?,
-+            "VM runtime is still owned"
++            self.state == mvm_core::config::vm_state_dir(name),
++            "reservation is for a different machine or MVM home"
 +        );
-+        Ok(Self { _boot: boot })
++        Ok(())
++    }
++
++    pub fn prepare_journal_runtime(&self, name: &str) -> Result<FreshState> {
++        self.require_name(name)?;
++        let home = mvm_core::config::mvm_home_strict()?;
++        let state = mvm_core::config::vm_state_dir_at(&home, name);
++        let original = owner_dir(&mvm_core::config::mvm_keys_dir(), name)?;
++        let _claim = claim_launch(&state, &original, true)?;
++        runtime_state::prepare(&home, name, || {
++            ensure!(
++                mvm_runtime::vm::reconcile::reap_unowned_state_dir(
++                    &state,
++                    &mvm_core::config::instance_dir(name)
++                )
++                .map_err(anyhow::Error::msg)?,
++                "VM runtime is still owned"
++            );
++            Ok(())
++        })
 +    }
 +}
 +
  pub(super) const MARKER: &str = "mailbox-paired-original-v1";
  
  /// Kept on disk through either launcher crash or an uncollected Child. The
-@@ -323,6 +359,35 @@ mod tests {
+@@ -323,6 +403,62 @@ mod tests {
      use std::process::{Command, Stdio};
      use std::time::Duration;
  
 +    #[test]
-+    fn paired_sdk_reap_preserves_owned_state_and_serializes_starts() {
++    fn unpaired_names_leave_only_bounded_lock_shards() {
 +        let root = tempfile::tempdir().unwrap();
-+        let owner = root.path().join("owner");
-+        let state = root.path().join("runtime");
-+        let instance = root.path().join("instance");
-+        std::fs::create_dir_all(&owner).unwrap();
++        let mut env = mvm_core::util::test_env::TestEnv::new();
++        env.isolate_mvm_home(root.path());
++        let keys = mvm_core::config::mvm_keys_dir();
++        for i in 0..128 {
++            let name = format!("ephemeral-{i}");
++            let reservation = PairedBootReservation::for_lifecycle_mutation(&name).unwrap();
++            assert!(reservation.require_name("another-name").is_err());
++        }
++        assert!(!keys.join("mailbox-original-owners-v1").exists());
++        for shard in std::fs::read_dir(keys.join("mailbox-sdk-locks-v1")).unwrap() {
++            let path = shard.unwrap().path();
++            assert_eq!(path.extension().unwrap(), "lock");
++            let stem = path.file_stem().unwrap().to_str().unwrap();
++            assert_eq!(stem.len(), 3);
++            assert!(u16::from_str_radix(stem, 16).unwrap() < 4096);
++        }
++    }
++
++    #[test]
++    fn paired_sdk_reap_preserves_owned_state_and_serializes_starts() {
++        let root = tempfile::Builder::new()
++            .prefix("sc")
++            .tempdir_in("/tmp")
++            .unwrap();
++        let mut env = mvm_core::util::test_env::TestEnv::new();
++        env.isolate_mvm_home(root.path());
++        let name = "short";
++        let owner = owner_dir(&mvm_core::config::mvm_keys_dir(), name).unwrap();
++        let state = mvm_core::config::vm_state_dir(name);
++        let instance = mvm_core::config::instance_dir(name);
 +        std::fs::create_dir_all(&state).unwrap();
 +        let sample = state.join("preserved");
 +        std::fs::write(&sample, b"original").unwrap();
 +        let mut marker = OriginalMarker::claim(&owner).unwrap();
-+        assert!(PairedBootReservation::acquire_at(&owner, &state, &instance).is_err());
++        assert!(PairedBootReservation::for_lifecycle_mutation(name).is_err());
 +        assert_eq!(std::fs::read(&sample).unwrap(), b"original");
 +        let mut child = std::process::Command::new("true").spawn().unwrap();
 +        child.wait().unwrap();
 +        assert!(marker.collect(&mut child).unwrap().is_some());
++        let first = PairedBootReservation::for_lifecycle_mutation(name).unwrap();
 +        let live = mvm_runtime::vm::instance_snapshot::try_lock_resume_in(&instance)
 +            .unwrap()
 +            .unwrap();
-+        assert!(PairedBootReservation::acquire_at(&owner, &state, &instance).is_err());
++        assert!(first.prepare_journal_runtime(name).is_err());
 +        assert!(sample.exists());
 +        drop(live);
-+        let first = PairedBootReservation::acquire_at(&owner, &state, &instance).unwrap();
-+        assert!(!state.exists());
-+        assert!(PairedBootReservation::acquire_at(&owner, &state, &instance).is_err());
++        first.prepare_journal_runtime(name).unwrap().commit();
++        assert!(!sample.exists());
++        assert!(PairedBootReservation::for_lifecycle_mutation(name).is_err());
 +        drop(first);
-+        PairedBootReservation::acquire_at(&owner, &state, &instance).unwrap();
++        PairedBootReservation::for_lifecycle_mutation(name).unwrap();
 +    }
 +
      #[test]
      fn journal_peer_child() {
          let Some(path) = std::env::var_os("MVM_TEST_ORIGINAL_JOURNAL_SOCKET") else {
+diff --git a/crates/mvm-hostd/src/mailbox_process/original_journal/runtime_state.rs b/crates/mvm-hostd/src/mailbox_process/original_journal/runtime_state.rs
+new file mode 100644
+index 0000000000000000000000000000000000000000..4bfabc09f321c908d9088da82f36a7191ab9c09a
+--- /dev/null
++++ b/crates/mvm-hostd/src/mailbox_process/original_journal/runtime_state.rs
+@@ -0,0 +1,191 @@
++//! Create the explicitly enrolled original pair's runtime directories with
++//! private modes before plan preparation writes its signed boot sidecars.
++use anyhow::{Context, Result, ensure};
++use rustix::fs::{Mode, OFlags, mkdirat, open, openat};
++use std::{
++    fs::{self, File},
++    os::unix::fs::MetadataExt,
++    path::{Path, PathBuf},
++};
++
++const DIR: OFlags = OFlags::RDONLY
++    .union(OFlags::DIRECTORY)
++    .union(OFlags::NOFOLLOW)
++    .union(OFlags::CLOEXEC);
++
++fn trusted(fd: &File) -> Result<()> {
++    let m = fd.metadata()?;
++    mvm_core::private_fs::require_current_owner(&m)?;
++    ensure!(
++        m.is_dir() && m.mode() & 0o022 == 0,
++        "original mailbox runtime directory writable by another user"
++    );
++    Ok(())
++}
++
++struct FreshDirectory {
++    path: PathBuf,
++    original: File,
++}
++pub struct FreshState(Vec<FreshDirectory>);
++impl FreshState {
++    fn create(&mut self, parent: &File, path: &Path) -> Result<()> {
++        let name = path.file_name().context("original directory name absent")?;
++        mkdirat(parent, name, Mode::RWXU)?;
++        let original = File::from(openat(parent, name, DIR, Mode::empty())?);
++        trusted(&original)?;
++        self.0.push(FreshDirectory {
++            path: path.to_owned(),
++            original,
++        });
++        Ok(())
++    }
++    pub fn commit(mut self) {
++        self.0.clear();
++    }
++}
++impl Drop for FreshState {
++    fn drop(&mut self) {
++        for d in self.0.iter().rev() {
++            if let (Ok(a), Ok(b)) = (d.original.metadata(), fs::symlink_metadata(&d.path))
++                && (a.dev(), a.ino()) == (b.dev(), b.ino())
++            {
++                // Empty directories only; populated or uncertain state remains.
++                let _ = fs::remove_dir(&d.path);
++            }
++        }
++    }
++}
++
++/// The SDK holds the VM name claim. Inline stopped-state cleanup may operate
++/// only on a trusted namespace. A split socket path lives outside MVM_HOME and
++/// must be freshly claimed without traversing or removing a prior entry.
++pub(super) fn prepare(
++    home: &Path,
++    name: &str,
++    discard: impl FnOnce() -> Result<()>,
++) -> Result<FreshState> {
++    mvm_core::naming::validate_vm_name(name)?;
++    let root = File::from(open(home, DIR, Mode::empty())?);
++    trusted(&root)?;
++    match mkdirat(&root, "vms", Mode::RWXU) {
++        Ok(()) | Err(rustix::io::Errno::EXIST) => (),
++        Err(e) => return Err(e.into()),
++    }
++    let vms = File::from(openat(&root, "vms", DIR, Mode::empty())?);
++    trusted(&vms)?;
++    let existing = match openat(&vms, name, DIR, Mode::empty()) {
++        Ok(fd) => {
++            trusted(&File::from(fd))?;
++            true
++        }
++        Err(rustix::io::Errno::NOENT) => false,
++        Err(e) => return Err(e.into()),
++    };
++    let state = mvm_core::config::vm_state_dir_at(home, name);
++    let socket = mvm_core::config::vm_socket_dir_at(&state);
++    let mut new = FreshState(Vec::with_capacity(2));
++    if socket == state {
++        discard()?;
++    } else {
++        ensure!(
++            !existing,
++            "existing split original runtime must be retired by its owner"
++        );
++        // macOS /tmp itself is a symlink. Resolve only the OS temporary root,
++        // then require its owner and sticky protections before mkdirat.
++        ensure!(
++            socket.parent() == Some(Path::new("/tmp")),
++            "unknown split socket root"
++        );
++        let tmp = File::from(open(fs::canonicalize("/tmp")?, DIR, Mode::empty())?);
++        let m = tmp.metadata()?;
++        ensure!(
++            m.uid() == 0 && m.mode() & 0o1000 != 0,
++            "untrusted split-socket temporary root"
++        );
++        new.create(&tmp, &socket)?;
++    }
++    new.create(&vms, &state)?;
++    Ok(new)
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++    use std::{
++        cell::Cell,
++        fs,
++        os::unix::fs::{PermissionsExt, symlink},
++    };
++
++    #[test]
++    fn original_cast_creates_private_state_and_refuses_unsafe_existing_namespace() -> Result<()> {
++        let home = tempfile::Builder::new().prefix("sc").tempdir_in("/tmp")?;
++        fs::set_permissions(home.path(), fs::Permissions::from_mode(0o700))?;
++        let fresh = prepare(home.path(), "alpha", || Ok(()))?;
++        fresh.commit();
++        let vms = home.path().join("vms");
++        let alpha = vms.join("alpha");
++        assert_eq!(fs::metadata(&vms)?.mode() & 0o777, 0o700);
++        assert_eq!(fs::metadata(&alpha)?.mode() & 0o777, 0o700);
++        let called = Cell::new(false);
++        let discard = || {
++            called.set(true);
++            Ok(())
++        };
++        fs::set_permissions(&alpha, fs::Permissions::from_mode(0o770))?;
++        assert!(prepare(home.path(), "alpha", discard).is_err());
++        assert!(!called.get());
++        assert_eq!(fs::metadata(&alpha)?.mode() & 0o777, 0o770);
++        symlink(&alpha, vms.join("beta"))?;
++        assert!(prepare(home.path(), "beta", discard).is_err());
++        assert!(!called.get());
++        fs::set_permissions(&vms, fs::Permissions::from_mode(0o770))?;
++        assert!(prepare(home.path(), "gamma", discard).is_err());
++        assert!(!called.get());
++        assert!(!vms.join("gamma").exists());
++        Ok(())
++    }
++    #[test]
++    fn split_original_refuses_foreign_socket_before_cleanup_and_releases_empty_fresh_paths()
++    -> Result<()> {
++        let base = tempfile::tempdir()?;
++        let home = base.path().join("s".repeat(112));
++        fs::create_dir(&home)?;
++        fs::set_permissions(&home, fs::Permissions::from_mode(0o700))?;
++        let state = mvm_core::config::vm_state_dir_at(&home, "alpha");
++        let short = mvm_core::config::vm_socket_dir_at(&state);
++        assert_ne!(state, short);
++        // Guard against collisions with any existing path in the real /tmp.
++        fs::create_dir(&short)?;
++        struct MarkerDir(PathBuf);
++        impl Drop for MarkerDir {
++            fn drop(&mut self) {
++                let _ = fs::remove_file(self.0.join("marker"));
++                let _ = fs::remove_dir(&self.0);
++            }
++        }
++        let guard = MarkerDir(short.clone());
++        let marker = short.join("marker");
++        fs::write(&marker, b"existing original")?;
++        fs::set_permissions(&short, fs::Permissions::from_mode(0o770))?;
++        assert!(
++            prepare(&home, "alpha", || panic!(
++                "untrusted split directory reached cleanup"
++            ))
++            .is_err()
++        );
++        assert_eq!(fs::read(&marker)?, b"existing original");
++        assert!(!state.exists());
++        drop(guard);
++        let fresh = prepare(&home, "alpha", || {
++            panic!("fresh split must not recurse through /tmp")
++        })?;
++        assert_eq!(fs::metadata(&short)?.mode() & 0o777, 0o700);
++        assert_eq!(fs::metadata(&state)?.mode() & 0o777, 0o700);
++        drop(fresh);
++        assert!(!short.exists() && !state.exists());
++        Ok(())
++    }
++}
 diff --git a/crates/mvm-hostd/src/plan_admission.rs b/crates/mvm-hostd/src/plan_admission.rs
 index 3e7f319aeb70cf575c2ee040d24fb6b1afd8bb57..b52a125aec977f65354d4e8601dbd04c7c9c357d 100644
 --- a/crates/mvm-hostd/src/plan_admission.rs

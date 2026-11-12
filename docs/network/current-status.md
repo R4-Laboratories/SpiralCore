@@ -11,7 +11,7 @@ tracks delivery. The next installed gate is an authorized Cast from guest A to
 guest B with exact readback inside the destination workload. Cross-host WAN and
 platform qualification follow. [Guest retry and worker capacity regressions](evidence/2026-11-12-paired-mailbox/README.md).
 
-The persistent machine SDK can now boot B with its original incoming journal policy and A with the independently authorized source/recipient pair. The owners stay with the orchestrator through startup, rollback and collection. Apple Silicon macOS passed 38 persistent SDK tests and one original-custody test. [API, source and recorded checks](evidence/2026-11-12-paired-mailbox/persistent-sdk/README.md).
+The persistent machine SDK can now boot B with its original incoming journal policy and A with the independently authorized source/recipient pair. The owners stay with the orchestrator through startup, rollback and collection. Ordinary and paired starts share the same lifecycle lock. Apple Silicon macOS passed 217 launch tests and 11 original-helper tests. [API, source and recorded checks](evidence/2026-11-12-paired-mailbox/persistent-sdk/README.md).
 
 Two original Firecracker guests now retire through the SDK without operator intervention after both addressed workload Calls exceed their shared 15-second deadline. The driver used 8.482 s of CPU over a 121.586 s lifecycle. A’s port-5257 stream accepted 52 bytes toward the guest and returned none. B recorded no dial or exact readback. [Native measurements and comparison with assisted teardown](evidence/2026-11-12-paired-mailbox/addressed-native-launch/paired-deadline-native.md).
 
