@@ -236,6 +236,10 @@ fn run(args: &[String]) -> Result<()> {
         [flag, backend, rest @ ..] if flag == "--backend" => (Some(backend.as_str()), rest),
         _ => (None, args),
     };
+    let (restart_helpers, inputs) = match inputs {
+        [flag, rest @ ..] if flag == "--restart-helpers" => (true, rest),
+        _ => (false, inputs),
+    };
     #[cfg(feature = "sender-ordinal-v1")]
     let (ordinal_count, inputs) = match inputs {
         [flag, total, rest @ ..] if flag == "--sender-ordinals" => {
@@ -250,6 +254,10 @@ fn run(args: &[String]) -> Result<()> {
     };
     #[cfg(not(feature = "sender-ordinal-v1"))]
     let ordinal_count: Option<usize> = None;
+    ensure!(
+        !restart_helpers || (cfg!(target_os = "linux") && ordinal_count == Some(1)),
+        "controlled helper recovery requires one Linux sender ordinal"
+    );
     let (operations, inputs) = match inputs {
         [flag, total, rest @ ..] if flag == "--objects" => (Some(series::count(total)?), rest),
         _ => (None, inputs),
@@ -391,7 +399,16 @@ fn run(args: &[String]) -> Result<()> {
         let helper = state.a.as_mut().context("source helper missing")?;
         #[cfg(feature = "sender-ordinal-v1")]
         let ordinal_result = ordinal_count
-            .map(|count| sender_ordinal::campaign(count, &home, &direction, commitment, helper))
+            .map(|count| {
+                sender_ordinal::campaign(
+                    count,
+                    &home,
+                    &direction,
+                    commitment,
+                    helper,
+                    restart_helpers,
+                )
+            })
             .transpose()?;
         #[cfg(not(feature = "sender-ordinal-v1"))]
         let ordinal_result: Option<Value> = None;
@@ -511,4 +528,32 @@ fn main() -> Result<()> {
         return object_repeat::run(pair);
     }
     run(&args)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::run;
+
+    #[test]
+    fn helper_restart_requires_an_explicit_single_ordinal() {
+        let args = vec!["--restart-helpers".to_owned()];
+        let error = run(&args).expect_err("missing ordinal must refuse before setup");
+        assert!(
+            error
+                .to_string()
+                .contains("requires one Linux sender ordinal")
+        );
+    }
+
+    #[cfg(feature = "sender-ordinal-v1")]
+    #[test]
+    fn helper_restart_refuses_a_campaign_before_preparing_guests() {
+        let args = ["--restart-helpers", "--sender-ordinals", "2"].map(str::to_owned);
+        let error = run(&args).expect_err("multi-ordinal restart must refuse before setup");
+        assert!(
+            error
+                .to_string()
+                .contains("requires one Linux sender ordinal")
+        );
+    }
 }
