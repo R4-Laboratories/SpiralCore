@@ -1,0 +1,46 @@
+{
+  "commit": "8ff62f25aa549967fb76aad879927537ee5609d8",
+  "tree": "b5717e19727457e62eefd27d1f410898e8e7c50c",
+  "source_files": 4539,
+  "platform": "Darwin arm64",
+  "rustc": "rustc 1.97.1 (8bab26f4f 2026-07-14)",
+  "profile": "cargo test, debug information disabled",
+  "workload": "Two real helper subprocesses. The custody fixture sends a synthetic 257-byte body over a length-prefixed AF_UNIX connection. The helper verifies the complete bytes and closes before sending a verdict. This isolates the owner/budget boundary. It does not boot an MVM, decode a mailbox envelope, or run a compression comparison.",
+  "tests": [
+    {
+      "binary_sha256": "8821f28882b3019226483b066651db3013e0eaa6bd64be542ceb8f0f94b897a5",
+      "result": "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2428 filtered out; finished in 0.04s",
+      "output_sha256": "96ad9459ea899e9b044d0677fed2610033533d4f3dd1b87c9c4ebf79029e3a8b"
+    },
+    {
+      "binary_sha256": "8821f28882b3019226483b066651db3013e0eaa6bd64be542ceb8f0f94b897a5",
+      "result": "test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 2424 filtered out; finished in 0.06s",
+      "output_sha256": "e4798434cd3da3e531bd9d8c71f52459ebf0575217870bc97b2fbf03e42ca024"
+    },
+    {
+      "binary_sha256": "7b4def725a94e82438b3ac5c5c486277cc670e9868c5c6c23374d5379a4b4a75",
+      "result": "test result: ok. 21 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.08s",
+      "output_sha256": "54eb969f2f1ff787d95f4fe459c6d6a4024eddb8aeca830de806be4c24c1729d"
+    },
+    {
+      "binary_sha256": "41cb7fcb990de92fa7cff24cd25dbbfe9c38a457f9f00c4a1d047a8ca6c4e957",
+      "result": "test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+      "output_sha256": "54eb969f2f1ff787d95f4fe459c6d6a4024eddb8aeca830de806be4c24c1729d"
+    }
+  ],
+  "measured": {
+    "body_bytes": 257,
+    "prefix_bytes": 4,
+    "reply_bytes": 0,
+    "charged_bytes": 32768,
+    "through_eof_ns": 1365000,
+    "source_thread_cpu_ns": 113334,
+    "receiver_thread_cpu_ns": 62959
+  },
+  "lost_reply_before_fix": {
+    "held_before_request_bytes": 628736,
+    "actual_after_abandoned_call_bytes": 628736,
+    "expected_until_original_exit_bytes": 661504,
+    "log_sha256": "65ed44a3176a619a8ab5fc3a6431360a0acd9a16640247de628c1835a043f0cd"
+  }
+}

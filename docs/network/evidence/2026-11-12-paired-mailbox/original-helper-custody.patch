@@ -1,0 +1,835 @@
+diff --git a/crates/mvm-core/src/mailbox/frame.rs b/crates/mvm-core/src/mailbox/frame.rs
+index 81193d299d4772cd6c9bcbb56599e8f195f477d3..022d6c7540e11443176ce4928e4998015bdf913b 100644
+--- a/crates/mvm-core/src/mailbox/frame.rs
++++ b/crates/mvm-core/src/mailbox/frame.rs
+@@ -40,11 +40,21 @@ pub fn encode_frame(
+     capability: &SignedMailboxCapability,
+     envelope: &MailboxEnvelope,
+ ) -> Result<Vec<u8>, Refusal> {
+-    let cap = serde_json::to_vec(capability).map_err(|_| Refusal::Malformed)?;
+     let env = encode_envelope(envelope).map_err(|e| Refusal::Mailbox(e.to_string()))?;
++    encode_frame_from_canonical(capability, &env)
++}
++
++/// Frame the original canonical envelope retained by an admitted route.
++/// Receiver signature, scope and ciphertext verification still take place
++/// when opening the envelope. Framing does not assert any of those results.
++pub fn encode_frame_from_canonical(
++    capability: &SignedMailboxCapability,
++    env: &[u8],
++) -> Result<Vec<u8>, Refusal> {
++    let cap = serde_json::to_vec(capability).map_err(|_| Refusal::Malformed)?;
+     let mut body = (cap.len() as u32).to_be_bytes().to_vec();
+     body.extend_from_slice(&cap);
+-    body.extend_from_slice(&env);
++    body.extend_from_slice(env);
+     Ok(body)
+ }
+
+@@ -128,6 +138,24 @@ pub fn outbox_verdict<S: Read + Write>(
+ const MAX_VERDICT_BYTES: usize = 4096;
+
+ fn exchange<S: Read + Write>(stream: &mut S, body: &[u8]) -> io::Result<Result<(), Refusal>> {
++    exchange_body(stream, body, true)
++}
++
++/// Exchange an already encoded canonical peer frame on one authenticated
++/// connection. A verdict is terminal only after complete EOF, even for an
++/// early capacity refusal. A read or write failure leaves custody unknown.
++pub fn strict_peer_verdict<S: Read + Write>(
++    stream: &mut S,
++    body: &[u8],
++) -> io::Result<Result<(), Refusal>> {
++    exchange_body(stream, body, false)
++}
++
++fn exchange_body<S: Read + Write>(
++    stream: &mut S,
++    body: &[u8],
++    allow_early_capacity: bool,
++) -> io::Result<Result<(), Refusal>> {
+     let len = u32::try_from(body.len()).map_err(io::Error::other)?;
+     let sent = stream.write_all(&len.to_be_bytes())
+         .and_then(|()| stream.write_all(body))
+@@ -141,7 +169,7 @@ fn exchange<S: Read + Write>(stream: &mut S, body: &[u8]) -> io::Result<Result<(
+         .map_err(|_| io::Error::new(io::ErrorKind::InvalidData, "incomplete or invalid mailbox verdict"))?;
+     // A host may refuse declared length before reading the body. A complete
+     // capacity refusal only retains the original, including on a reset.
+-    if matches!(verdict, Err(Refusal::Oversized(_) | Refusal::QueueFull(_))) {
++    if allow_early_capacity && matches!(verdict, Err(Refusal::Oversized(_) | Refusal::QueueFull(_))) {
+         return Ok(verdict);
+     }
+     sent?;
+diff --git a/crates/mvm-hostd/src/broker/mailbox_workers.rs b/crates/mvm-hostd/src/broker/mailbox_workers.rs
+index 03af886752d0a4152274eefd21a4a814f6ee09c5..e85d69af195086668aad3c48a9ddb7e9e15614e8 100644
+--- a/crates/mvm-hostd/src/broker/mailbox_workers.rs
++++ b/crates/mvm-hostd/src/broker/mailbox_workers.rs
+@@ -463,6 +463,7 @@ fn collect_child(worker: &mut Worker) -> io::Result<Option<ExitStatus>> {
+     match worker.child.try_wait() {
+         Ok(status) => {
+             if status.is_some() {
++                drop(worker.cast_workspace.take());
+                 drop(worker.parent_lease.take());
+             }
+             worker.status = status;
+@@ -687,6 +688,8 @@ pub struct SpawnedMailboxWorker {
+     pub parent_lease: Option<mvm_vmm::host::installed_owner::HolderLease>,
+ }
+ struct Worker {
++    ingress: crate::mailbox_process::owned_wire::ReadyIngress,
++    cast_workspace: Option<Arc<cast_credit::HandoffWorkspace>>,
+     parent_lease: Option<mvm_vmm::host::installed_owner::HolderLease>,
+     child: Child,
+     control: UnixStream,
+@@ -1650,6 +1653,8 @@ impl MailboxWorkers {
+                     Err(MailboxSpawnFailure::Uncertain(error)) => return Err(error),
+                 };
+                 *worker = Some(Worker {
++                    ingress: crate::mailbox_process::owned_wire::ReadyIngress::Legacy,
++                    cast_workspace: None,
+                     parent_lease: spawned.parent_lease,
+                     child: spawned.child,
+                     control: spawned.control,
+@@ -1719,11 +1724,16 @@ impl MailboxWorkers {
+                     && fd.is_none()
+                     && child.parent_lease.is_some()
+                 {
+-                    if crate::mailbox_process::owned_wire::poll_ready(
++                    if let Some(ingress) = crate::mailbox_process::owned_wire::poll_ready(
+                         &mut child.control,
+                         &mut child.ready,
+                         &owner,
+                     )? {
++                        if !matches!(ingress, crate::mailbox_process::owned_wire::ReadyIngress::Legacy)
++                            && request.mailbox_grant.local_service.is_none() {
++                            return Err(refused("addressed readiness on legacy grant"));
++                        }
++                        child.ingress = ingress;
+                         state = MailboxWorkerState::Serving;
+                     }
+                 } else if matches!(state, MailboxWorkerState::Starting) && fd.is_none() {
+@@ -1882,6 +1892,7 @@ pub(crate) fn write_error(stream: &mut UnixStream, message: &str) -> io::Result<
+
+ #[cfg(test)]
+ mod tests {
++    include!("mailbox_workers/cast_handoff_tests.rs");
+     use super::*;
+     use crate::broker::daemon::HostAgentDaemon;
+     use ed25519_dalek::SigningKey;
+diff --git a/crates/mvm-hostd/src/broker/mailbox_workers/cast_credit.rs b/crates/mvm-hostd/src/broker/mailbox_workers/cast_credit.rs
+index bf531cc7ec0b60f454d1513ecc887ffc16fd1f4c..2c5ee20d6a669b71dd1f2fc6b85fe5657898a569 100644
+--- a/crates/mvm-hostd/src/broker/mailbox_workers/cast_credit.rs
++++ b/crates/mvm-hostd/src/broker/mailbox_workers/cast_credit.rs
+@@ -7,13 +7,14 @@ pub(crate) const CAST_WORK_BYTES: usize = 8 * CAST_BODY_LIMIT;
+
+ #[derive(Default)]
+ pub(super) struct CastLane {
+-    active: bool,
++    active: std::sync::Weak<HandoffWorkspace>,
+     source_active: bool,
+     last_admission: Option<Instant>,
+ }
+
+ pub(crate) struct CastCredit<'a> {
+     workers: &'a MailboxWorkers,
++    charge: Arc<HandoffWorkspace>,
+     source: (&'a str, &'a MailboxWorkerOwner),
+     destination: (&'a str, &'a MailboxWorkerOwner),
+ }
+@@ -24,6 +25,15 @@ impl MailboxWorkers {
+         source: (&str, &MailboxWorkerOwner),
+         destination: (&str, &MailboxWorkerOwner),
+     ) -> io::Result<()> {
++        self.with_cast_participants(source, destination, |_| Ok(()))
++    }
++
++    fn with_cast_participants<T>(
++        &self,
++        source: (&str, &MailboxWorkerOwner),
++        destination: (&str, &MailboxWorkerOwner),
++        operation: impl FnOnce(&mut Worker) -> io::Result<T>,
++    ) -> io::Result<T> {
+         if source.0 == destination.0 || source.1 == destination.1 {
+             return Err(refused("Cast requires two original workers"));
+         }
+@@ -63,7 +73,11 @@ impl MailboxWorkers {
+                 return Err(refused("original Cast worker has exited"));
+             }
+         }
+-        Ok(())
++        operation(
++            b.worker
++                .as_mut()
++                .ok_or_else(|| refused("destination child absent"))?,
++        )
+     }
+
+     /// Bind original slots directly in the coordinator that owns them. The
+@@ -100,16 +114,25 @@ impl MailboxWorkers {
+         let _activation = self.try_activation()?;
+         self.check_cast_participants(source, destination)?;
+         let mut lane = lock(&self.cast_lane)?;
+-        if lane.active
++        if lane.active.upgrade().is_some()
+             || lane
+                 .last_admission
+                 .is_some_and(|last| last.elapsed() < std::time::Duration::from_secs(60))
+         {
+             return Err(refused("addressed Cast lane busy or rate limited"));
+         }
++        if self.budget.cleanup.failed.load(Ordering::Acquire) {
++            return Err(refused("original Cast accounting unavailable"));
++        }
+         self.budget.charge_cast_space(&self.tenant)?;
+-        lane.active = true;
++        let charge = Arc::new(HandoffWorkspace {
++            ledger: self.budget.ledger.clone(),
++            failed: self.budget.cleanup.failed.clone(),
++            tenant: self.tenant.clone(),
++        });
++        lane.active = Arc::downgrade(&charge);
+         Ok(CastCredit {
++            charge,
+             workers: self,
+             source,
+             destination,
+@@ -211,22 +234,90 @@ impl CastCredit<'_> {
+         Ok(())
+     }
+ }
+-impl Drop for CastCredit<'_> {
++/// The routing call and the original receiving process can hold the same
++/// allocation. A dropped caller or a lost reply does not close the process.
++pub(super) struct HandoffWorkspace {
++    ledger: Arc<Mutex<Ledger>>,
++    failed: Arc<AtomicBool>,
++    tenant: String,
++}
++impl Drop for HandoffWorkspace {
+     fn drop(&mut self) {
+-        // Keep the lane closed on accounting failure; do not mint replacement credit.
+-        let result = lock(&self.workers.cast_lane).and_then(|mut lane| {
+-            let mut ledger = lock(&self.workers.budget.ledger)?;
+-            refund_bytes(&mut ledger, &self.workers.tenant, CAST_WORK_BYTES)?;
+-            lane.active = false;
+-            Ok(())
+-        });
+-        if result.is_err() {
+-            self.workers
+-                .budget
+-                .cleanup
+-                .failed
+-                .store(true, Ordering::Release);
++        if lock(&self.ledger)
++            .and_then(|mut ledger| refund_bytes(&mut ledger, &self.tenant, CAST_WORK_BYTES))
++            .is_err()
++        {
++            self.failed.store(true, Ordering::Release);
++        }
++    }
++}
++
++impl CastCredit<'_> {
++    /// Link the real connected peer to its still-held original Child before
++    /// writing any bytes. An incomplete exchange retains the allocation
++    /// until that Child is collected. No PID reopen or filesystem receipt.
++    fn receiving_worker<T>(
++        &self,
++        pid: i32,
++        visit: impl FnOnce(&mut Worker) -> io::Result<T>,
++    ) -> io::Result<T> {
++        let slots = lock(&self.workers.slots)?;
++        let mut slot = lock(
++            slots
++                .get(self.destination.0)
++                .ok_or_else(|| refused("destination slot absent"))?,
++        )?;
++        if &slot.owner != self.destination.1 || slot.busy {
++            return Err(refused("destination worker changed or busy"));
++        }
++        let worker = slot
++            .worker
++            .as_mut()
++            .ok_or_else(|| refused("destination worker absent"))?;
++        if u32::try_from(pid).ok() != Some(worker.child.id()) || collect_child(worker)?.is_some() {
++            return Err(refused(
++                "socket peer differs from the live original mailbox helper",
++            ));
+         }
++        visit(worker)
++    }
++    fn hold_for_peer(&self, peer: &UnixStream, direction: [u8; 32]) -> io::Result<i32> {
++        let _admission = self.workers.try_activation()?;
++        let peer_pid = mvm_vmm::host::uds_peer::connected_peer_pid(peer)?;
++        self.workers
++            .with_cast_participants(self.source, self.destination, |worker| {
++                if u32::try_from(peer_pid).ok() != Some(worker.child.id()) {
++                    return Err(refused("data socket is not held by original destination"));
++                }
++                if direction == [0; 32]
++                    || worker.ingress
++                        != crate::mailbox_process::owned_wire::ReadyIngress::CastDestination(
++                            direction,
++                        )
++                {
++                    return Err(refused(
++                        "original helper did not select this addressed ingress",
++                    ));
++                }
++                if worker.cast_workspace.is_some() {
++                    return Err(refused("original helper still owns an unresolved Cast"));
++                }
++                worker.cast_workspace = Some(self.charge.clone());
++                Ok(peer_pid)
++            })
++    }
++    fn finish_peer_turn(&self, authenticated_pid: i32) -> io::Result<()> {
++        self.receiving_worker(authenticated_pid, |worker| {
++            if !worker
++                .cast_workspace
++                .as_ref()
++                .is_some_and(|hold| Arc::ptr_eq(hold, &self.charge))
++            {
++                return Err(refused("no matching original Cast charge"));
++            }
++            worker.cast_workspace = None;
++            Ok(())
++        })
+     }
+ }
+
+@@ -292,3 +383,31 @@ mod tests {
+         }
+     }
+ }
++
++impl CastCredit<'_> {
++    /// One canonical peer frame on a fresh, kernel-identified connection.
++    /// Only a complete peer response closes this transfer's temporary
++    /// workspace. Errors leave the coordinator's charge on its original
++    /// receiving Child through collection, including after this call drops.
++    pub(crate) fn exchange_with_original(
++        &self,
++        stream: &mut UnixStream,
++        encoded: &[u8],
++        direction: [u8; 32],
++        deadline: Instant,
++    ) -> anyhow::Result<Result<(), mvm_core::mailbox::frame::Refusal>> {
++        let limit = crate::mailbox_process::installed_profile::pair_queue_limits().max_frame_bytes;
++        anyhow::ensure!(
++            !encoded.is_empty() && encoded.len() <= limit,
++            "invalid private peer frame size"
++        );
++        anyhow::ensure!(Instant::now() < deadline, "expired private handoff");
++        // macOS no longer exposes LOCAL_PEERPID after the peer closes.
++        // Keep the identity checked before writing on this same connection.
++        let authenticated_pid = self.hold_for_peer(stream, direction)?;
++        let mut io = crate::mailbox_process::owned_wire::DeadlineStream::new(stream, deadline);
++        let verdict = mvm_core::mailbox::frame::strict_peer_verdict(&mut io, encoded)?;
++        self.finish_peer_turn(authenticated_pid)?;
++        Ok(verdict)
++    }
++}
+diff --git a/crates/mvm-hostd/src/broker/mailbox_workers/cast_handoff_tests.rs b/crates/mvm-hostd/src/broker/mailbox_workers/cast_handoff_tests.rs
+new file mode 100644
+index 0000000000000000000000000000000000000000..c6bec6bdc13d59bbbd630b65433271283d13ec1a
+--- /dev/null
++++ b/crates/mvm-hostd/src/broker/mailbox_workers/cast_handoff_tests.rs
+@@ -0,0 +1,252 @@
++// Included inside mailbox_workers::tests to exercise the real registry and Child.
++use std::time::Duration;
++fn handoff_cpu_ns() -> u64 {
++    let mut time = std::mem::MaybeUninit::<libc::timespec>::uninit();
++    // SAFETY: a successful call initializes the writable timespec.
++    assert_eq!(
++        unsafe { libc::clock_gettime(libc::CLOCK_THREAD_CPUTIME_ID, time.as_mut_ptr()) },
++        0
++    );
++    let time = unsafe { time.assume_init() };
++    (time.tv_sec as u64) * 1_000_000_000 + time.tv_nsec as u64
++}
++struct SocketHelper {
++    dir: std::path::PathBuf,
++}
++
++impl MailboxWorkerFactory for SocketHelper {
++    fn spawn(
++        &self,
++        request: &MailboxWorkerRequest,
++        _: &MailboxWorkerOwner,
++    ) -> io::Result<SpawnedMailboxWorker> {
++        let (control, child_control) = UnixStream::pair()?;
++        let child = Command::new(std::env::current_exe()?)
++            .arg("--exact")
++            .arg("broker::mailbox_workers::tests::original_socket_helper_process")
++            .arg("--nocapture")
++            .arg("--quiet")
++            .env("MVM_TEST_CAST_SOCKET", self.dir.join(&request.vm_id))
++            .stdin(Stdio::piped())
++            .stderr(Stdio::from(OwnedFd::from(child_control)))
++            .stdout(Stdio::null())
++            .spawn()?;
++        Ok(SpawnedMailboxWorker {
++            child,
++            control,
++            parent_lease: None,
++        })
++    }
++}
++
++#[test]
++fn original_socket_helper_process() {
++    use std::io::{BufRead, Read, Write};
++    let Some(path) = std::env::var_os("MVM_TEST_CAST_SOCKET") else {
++        return;
++    };
++    let listener = std::os::unix::net::UnixListener::bind(&path).unwrap();
++    let mut input = std::io::stdin().lock();
++    let mut owner = String::new();
++    input.read_line(&mut owner).unwrap();
++    let original = serde_json::from_str(&owner).unwrap();
++    let status = crate::mailbox_process::owned_wire::OwnedStatusV1::ReadyCastDestinationV1 {
++        owner: original,
++        direction_commitment: [42; 32],
++    };
++    // Only this child has the write half of the private status socket.
++    let body = serde_json::to_vec(&status).unwrap();
++    let mut status_io = std::io::stderr().lock();
++    status_io
++        .write_all(&(body.len() as u32).to_be_bytes())
++        .unwrap();
++    status_io.write_all(&body).unwrap();
++    drop(status_io);
++    listener.set_nonblocking(true).unwrap();
++    let limit = Instant::now() + Duration::from_secs(8);
++    loop {
++        let peer = match listener.accept() {
++            Ok((stream, _)) => stream,
++            Err(e) if e.kind() == io::ErrorKind::WouldBlock && Instant::now() < limit => {
++                std::thread::sleep(Duration::from_millis(1));
++                continue;
++            }
++            Err(_) => return,
++        };
++        let mut data = crate::mailbox_process::owned_wire::DeadlineStream::new(&peer, limit);
++        let cpu = handoff_cpu_ns();
++        let mut size = [0; 4];
++        if data.read_exact(&mut size).is_err() {
++            continue;
++        }
++        let n = u32::from_be_bytes(size) as usize;
++        assert!(n <= 8192);
++        let mut bytes = vec![0; n];
++        data.read_exact(&mut bytes).unwrap();
++        if bytes == [0x7e] {
++            data.write_all(br#"{"Ok":null}"#).unwrap();
++            continue;
++        }
++        assert_eq!(bytes, (0..=255).chain([0]).collect::<Vec<u8>>());
++        let elapsed = handoff_cpu_ns() - cpu;
++        // Close with no verdict after exact readback, prior to reporting.
++        drop(peer);
++        std::fs::write(
++            std::path::Path::new(&path).with_extension("cpu"),
++            elapsed.to_be_bytes(),
++        )
++        .unwrap();
++        let pending = std::path::Path::new(&path).with_extension("partial");
++        std::fs::write(&pending, &bytes).unwrap();
++        std::fs::rename(pending, std::path::Path::new(&path).with_extension("read")).unwrap();
++        break;
++    }
++    // Lost reply, still holding the original process and its work until EOF.
++    let mut end = [0; 1];
++    assert_eq!(input.read(&mut end).unwrap(), 0);
++    let _ = std::io::stdout().flush();
++}
++
++#[test]
++fn lost_peer_reply_keeps_cast_workspace_until_the_original_child_exits() {
++    use crate::mailbox_process::installed_profile::{MailboxPair, development_cast_capacity};
++    use mvm_contract::protocol::mailbox::local_service::MailboxLocalServiceGrant;
++    use std::io::Write;
++    let dir = tempfile::tempdir().unwrap();
++    let cap = development_cast_capacity(&MailboxPair::new(["a", "b"]).unwrap());
++    let budget = MailboxWorkerBudget::new(cap.worker).unwrap();
++    let registry = MailboxWorkers::new(
++        "local",
++        budget.clone(),
++        Arc::new(SocketHelper {
++            dir: dir.path().into(),
++        }),
++    )
++    .unwrap();
++    let make = |vm: &str, nonce: u8| {
++        let mut r = request(&budget, "local");
++        r.vm_id = vm.into();
++        r.workload_id = vm.into();
++        r.request_nonce = [nonce; 32];
++        r.mailbox_grant.local_service = Some(MailboxLocalServiceGrant::reliable_v1());
++        let owner = registry.handle(&r).unwrap().0.owner;
++        r.operation = MailboxWorkerOperation::DelegateConfig {
++            owner: owner.clone(),
++        };
++        let (_, input) = registry.handle(&r).unwrap();
++        let mut input = std::fs::File::from(input.unwrap());
++        serde_json::to_writer(&mut input, &owner).unwrap();
++        input.write_all(b"\n").unwrap();
++        let until = Instant::now() + Duration::from_secs(5);
++        loop {
++            let slots = lock(&registry.slots).unwrap();
++            let mut slot = lock(&slots[vm]).unwrap();
++            let worker = slot.worker.as_mut().unwrap();
++            if let Some(ingress) = crate::mailbox_process::owned_wire::poll_ready(
++                &mut worker.control,
++                &mut worker.ready,
++                &owner,
++            )
++            .unwrap()
++            {
++                worker.ingress = ingress;
++                slot.state = MailboxWorkerState::Serving;
++                break;
++            }
++            drop(slot);
++            drop(slots);
++            assert!(Instant::now() < until);
++            std::thread::sleep(Duration::from_millis(1));
++        }
++        (owner, input)
++    };
++    let (a, a_input) = make("a", 1);
++    let (b, b_input) = make("b", 2);
++    let base = budget.usage().unwrap();
++    let route = registry.reserve_cast(("a", &a), ("b", &b)).unwrap();
++    let bytes = (0..=255).chain([0]).collect::<Vec<u8>>();
++    let deadline = || Instant::now() + Duration::from_secs(3);
++    // Correct path spelling and a valid direction do not replace peer identity.
++    let mut foreign = UnixStream::connect(dir.path().join("a")).unwrap();
++    assert!(
++        route
++            .exchange_with_original(&mut foreign, &bytes, [42; 32], deadline())
++            .is_err()
++    );
++    drop(foreign);
++    let mut wrong = UnixStream::connect(dir.path().join("b")).unwrap();
++    assert!(
++        route
++            .exchange_with_original(&mut wrong, &bytes, [43; 32], deadline())
++            .is_err()
++    );
++    drop(wrong);
++    let mut complete = UnixStream::connect(dir.path().join("b")).unwrap();
++    assert_eq!(
++        route
++            .exchange_with_original(&mut complete, &[0x7e], [42; 32], deadline())
++            .unwrap(),
++        Ok(())
++    );
++    let mut peer = UnixStream::connect(dir.path().join("b")).unwrap();
++    let started = Instant::now();
++    let cpu = handoff_cpu_ns();
++    assert!(
++        route
++            .exchange_with_original(&mut peer, &bytes, [42; 32], deadline())
++            .is_err()
++    );
++    let elapsed = started.elapsed();
++    let sender_cpu = handoff_cpu_ns() - cpu;
++    let until = deadline();
++    while !dir.path().join("b.read").exists() {
++        assert!(Instant::now() < until);
++        std::thread::sleep(Duration::from_millis(1));
++    }
++    let receiver_cpu = u64::from_be_bytes(
++        std::fs::read(dir.path().join("b.cpu"))
++            .unwrap()
++            .try_into()
++            .unwrap(),
++    );
++    assert_eq!(std::fs::read(dir.path().join("b.read")).unwrap(), bytes);
++    drop(route);
++    assert_eq!(
++        budget.usage().unwrap().bytes,
++        base.bytes + cast_credit::CAST_WORK_BYTES,
++        "lost peer reply prematurely refunded the live original's workspace"
++    );
++    assert!(registry.reserve_cast(("a", &a), ("b", &b)).is_err());
++    budget.charge("local", None).unwrap();
++    budget.release_control("local");
++    println!(
++        "private_peer_loss body_bytes={} prefix_bytes=4 reply_bytes=0 charged_bytes={} through_eof_ns={} source_thread_cpu_ns={} receiver_thread_cpu_ns={}",
++        bytes.len(),
++        cast_credit::CAST_WORK_BYTES,
++        elapsed.as_nanos(),
++        sender_cpu,
++        receiver_cpu
++    );
++    drop(b_input);
++    let until = Instant::now() + Duration::from_secs(5);
++    loop {
++        let slots = lock(&registry.slots).unwrap();
++        let mut slot = lock(&slots["b"]).unwrap();
++        if collect_child(slot.worker.as_mut().unwrap())
++            .unwrap()
++            .is_some()
++        {
++            break;
++        }
++        drop(slot);
++        drop(slots);
++        assert!(Instant::now() < until);
++        std::thread::sleep(Duration::from_millis(1));
++    }
++    assert_eq!(budget.usage().unwrap().bytes, base.bytes);
++    let mut peer = UnixStream::connect(dir.path().join("a")).unwrap();
++    peer.write_all(&(bytes.len() as u32).to_be_bytes()).unwrap();
++    peer.write_all(&bytes).unwrap();
++    drop(a_input);
++    drop(peer);
++}
+diff --git a/crates/mvm-hostd/src/mailbox_launch/cast_pair.rs b/crates/mvm-hostd/src/mailbox_launch/cast_pair.rs
+index aead7345056893b18d3aa5f73b27d54ebcc3fbef..37912fcacfe20ebc5c77212b628250aca34cafda 100644
+--- a/crates/mvm-hostd/src/mailbox_launch/cast_pair.rs
++++ b/crates/mvm-hostd/src/mailbox_launch/cast_pair.rs
+@@ -76,6 +76,7 @@ pub struct InstalledCastMapping {
+ pub struct ServingCastMapping {
+     channel: CastChannel,
+     destination_route: HostDialRoute,
++    destination_socket: std::path::PathBuf,
+     source_vm: String,
+     destination_vm: String,
+     source_owner: MailboxWorkerOwner,
+@@ -219,6 +220,7 @@ pub fn map_serving_cast_pair(
+     let mapping = ServingCastMapping {
+         channel,
+         destination_route: route,
++        destination_socket: mvm_core::config::vm_mailbox_socket_at(&state),
+         source_vm: a.to_owned(),
+         destination_vm: b.to_owned(),
+         source_owner: source.owner.clone(),
+@@ -329,6 +331,24 @@ pub struct AuthorizedOpaqueCast<'a> {
+     pub grants: AddressedCastGrants<'a>,
+ }
+ impl RoutedCast<'_> {
++    /// Forward to the original helper's preselected local data socket. Its
++    /// immediate peer verdict is an ingress result, never a journal receipt
++    /// or evidence of guest workload delivery. Source and destination policy
++    /// must be resampled after connecting, immediately before transmission.
++    pub fn forward_to_original_helper<'p>(
++        self,
++        direction: &development::DevelopmentDirection,
++        deadline: Instant,
++        current: impl FnOnce() -> Result<(&'p OpenContext, &'p OpenContext)>,
++    ) -> Result<Result<(), mvm_core::mailbox::frame::Refusal>> {
++        let deadline = deadline.min(Instant::now() + std::time::Duration::from_secs(5));
++        let mut socket = mvm_agentd::vsock::connect_unix_before(&self.mapping.destination_socket, deadline)?;
++        let (source, destination) = current()?;
++        self.check_direction(direction, source, destination)?;
++        let body = mvm_core::mailbox::frame::encode_frame_from_canonical(self.grants.send, &self.canonical)?;
++        self.credit.exchange_with_original(&mut socket, &body, direction.commitment(), deadline)
++    }
++
+     pub(crate) fn channel(&self) -> &CastChannel {
+         &self.mapping.channel
+     }
+diff --git a/crates/mvm-hostd/src/mailbox_process/owned_wire.rs b/crates/mvm-hostd/src/mailbox_process/owned_wire.rs
+index 805a429dd9ab7f28307f9329d6679e0b10623946..9bfe48fd05b2880b3b3bc81780929617a2d69e9c 100644
+--- a/crates/mvm-hostd/src/mailbox_process/owned_wire.rs
++++ b/crates/mvm-hostd/src/mailbox_process/owned_wire.rs
+@@ -6,7 +6,7 @@ use super::MailboxProcessConfig;
+ use mvm_contract::protocol::{mailbox::MailboxGrant, mailbox_worker::MailboxWorkerOwner};
+ use mvm_core::vm_backend::HostDialRoute;
+ use serde::{Deserialize, Serialize, de::DeserializeOwned};
+-use std::io::{self, Cursor, Error, ErrorKind};
++use std::io::{self, Cursor, Error, ErrorKind, Read, Write};
+ use std::os::{fd::AsRawFd, unix::net::UnixStream};
+ use std::path::PathBuf;
+ use std::time::Instant;
+@@ -54,8 +54,18 @@ impl PrepareOwnedV1 {
+ #[derive(Serialize, Deserialize)]
+ #[serde(tag = "status", deny_unknown_fields)]
+ pub enum OwnedStatusV1 {
+-    Ready { owner: MailboxWorkerOwner },
+-    Failed { owner: MailboxWorkerOwner },
++    Ready {
++        owner: MailboxWorkerOwner,
++    },
++    /// The helper has exclusively bound the addressed ingress. Emit only
++    /// after selecting the dedicated authenticated parent-only handler.
++    ReadyCastDestinationV1 {
++        owner: MailboxWorkerOwner,
++        direction_commitment: [u8; 32],
++    },
++    Failed {
++        owner: MailboxWorkerOwner,
++    },
+ }
+
+ // The entry mode selects v1; direction fixes the expected document type.
+@@ -84,7 +94,13 @@ pub fn read_ready(
+     owner: &MailboxWorkerOwner,
+     deadline: Instant,
+ ) -> io::Result<()> {
+-    validate_status(read_frame(stream, deadline)?, owner)
++    match validate_status(read_frame(stream, deadline)?, owner)? {
++        ReadyIngress::Legacy => Ok(()),
++        ReadyIngress::CastDestination(_) => Err(Error::new(
++            ErrorKind::PermissionDenied,
++            "expected legacy readiness",
++        )),
++    }
+ }
+ /// Poll one framed status on the broker's nonblocking socket. Preserve a
+ /// partial header/body across Query calls until a complete status is available.
+@@ -92,7 +108,7 @@ pub(crate) fn poll_ready(
+     stream: &mut UnixStream,
+     pending: &mut Vec<u8>,
+     owner: &MailboxWorkerOwner,
+-) -> io::Result<bool> {
++) -> io::Result<Option<ReadyIngress>> {
+     use std::io::Read;
+     let mut chunk = [0u8; 512];
+     loop {
+@@ -108,23 +124,33 @@ pub(crate) fn poll_ready(
+         if pending.len() == end {
+             let status =
+                 serde_json::from_slice(&pending[4..]).map_err(|_| ErrorKind::InvalidData)?;
+-            validate_status(status, owner)?;
+-            return Ok(true);
++            return validate_status(status, owner).map(Some);
+         }
+         let left = (end - pending.len()).min(chunk.len());
+         match stream.read(&mut chunk[..left]) {
+             Ok(0) => return Err(ErrorKind::UnexpectedEof.into()),
+             Ok(n) => pending.extend_from_slice(&chunk[..n]),
+             Err(e) if matches!(e.kind(), ErrorKind::WouldBlock | ErrorKind::Interrupted) => {
+-                return Ok(false);
++                return Ok(None);
+             }
+             Err(e) => return Err(e),
+         }
+     }
+ }
+-fn validate_status(status: OwnedStatusV1, owner: &MailboxWorkerOwner) -> io::Result<()> {
++#[derive(Debug, Clone, Copy, PartialEq, Eq)]
++pub(crate) enum ReadyIngress {
++    Legacy,
++    CastDestination([u8; 32]),
++}
++fn validate_status(status: OwnedStatusV1, owner: &MailboxWorkerOwner) -> io::Result<ReadyIngress> {
+     match status {
+-        OwnedStatusV1::Ready { owner: received } if received == *owner => Ok(()),
++        OwnedStatusV1::Ready { owner: received } if received == *owner => Ok(ReadyIngress::Legacy),
++        OwnedStatusV1::ReadyCastDestinationV1 {
++            owner: received,
++            direction_commitment,
++        } if received == *owner && direction_commitment != [0; 32] => {
++            Ok(ReadyIngress::CastDestination(direction_commitment))
++        }
+         OwnedStatusV1::Failed { owner: received } if received == *owner => {
+             Err(Error::other("owned helper failed"))
+         }
+@@ -137,7 +163,8 @@ fn validate_status(status: OwnedStatusV1, owner: &MailboxWorkerOwner) -> io::Res
+
+ fn read_frame<T: DeserializeOwned>(s: &UnixStream, deadline: Instant) -> io::Result<T> {
+     let mut header = [0; 4];
+-    receive(s, &mut header, deadline)?;
++    let mut stream = DeadlineStream::new(s, deadline);
++    stream.read_exact(&mut header)?;
+     let n = u32::from_be_bytes(header) as usize;
+     if n == 0 || n > FRAME_LIMIT {
+         return Err(Error::new(
+@@ -146,7 +173,7 @@ fn read_frame<T: DeserializeOwned>(s: &UnixStream, deadline: Instant) -> io::Res
+         ));
+     }
+     let mut bytes = [0; FRAME_LIMIT];
+-    receive(s, &mut bytes[..n], deadline)?;
++    stream.read_exact(&mut bytes[..n])?;
+     serde_json::from_slice(&bytes[..n])
+         .map_err(|_| Error::new(ErrorKind::InvalidData, "invalid control frame"))
+ }
+@@ -162,46 +189,52 @@ fn write_frame<T: Serialize>(s: &UnixStream, value: &T, deadline: Instant) -> io
+     })?;
+     let n = body.position() as usize;
+     bytes[..4].copy_from_slice(&(n as u32).to_be_bytes());
+-    let mut remaining = &bytes[..4 + n];
+-    while !remaining.is_empty() {
+-        let written = attempt(s, libc::POLLOUT, deadline, || {
+-            // SAFETY: the slice remains readable for the duration of send.
++    DeadlineStream::new(s, deadline).write_all(&bytes[..4 + n])
++}
++
++/// Use the existing bounded control I/O on a separate, already connected
++/// data socket without creating a watchdog thread or changing its FD flags.
++pub(crate) struct DeadlineStream<'a> {
++    socket: &'a UnixStream,
++    deadline: Instant,
++}
++impl<'a> DeadlineStream<'a> {
++    pub(crate) fn new(socket: &'a UnixStream, deadline: Instant) -> Self {
++        Self { socket, deadline }
++    }
++}
++impl Read for DeadlineStream<'_> {
++    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
++        attempt(self.socket, libc::POLLIN, self.deadline, || {
++            // SAFETY: the borrowed socket and writable buffer stay live.
+             unsafe {
+-                libc::send(
+-                    s.as_raw_fd(),
+-                    remaining.as_ptr().cast(),
+-                    remaining.len(),
+-                    libc::MSG_DONTWAIT | libc::MSG_NOSIGNAL,
++                libc::recv(
++                    self.socket.as_raw_fd(),
++                    buf.as_mut_ptr().cast(),
++                    buf.len(),
++                    libc::MSG_DONTWAIT,
+                 )
+             }
+-        })?;
+-        if written == 0 {
+-            return Err(ErrorKind::WriteZero.into());
+-        }
+-        remaining = &remaining[written..];
++        })
+     }
+-    Ok(())
+ }
+-
+-fn receive(s: &UnixStream, mut remaining: &mut [u8], deadline: Instant) -> io::Result<()> {
+-    while !remaining.is_empty() {
+-        let read = attempt(s, libc::POLLIN, deadline, || {
+-            // SAFETY: the mutable slice covers all bytes passed to recv.
++impl Write for DeadlineStream<'_> {
++    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
++        attempt(self.socket, libc::POLLOUT, self.deadline, || {
++            // SAFETY: the borrowed socket and readable buffer stay live.
+             unsafe {
+-                libc::recv(
+-                    s.as_raw_fd(),
+-                    remaining.as_mut_ptr().cast(),
+-                    remaining.len(),
+-                    libc::MSG_DONTWAIT,
++                libc::send(
++                    self.socket.as_raw_fd(),
++                    buf.as_ptr().cast(),
++                    buf.len(),
++                    libc::MSG_DONTWAIT | libc::MSG_NOSIGNAL,
+                 )
+             }
+-        })?;
+-        if read == 0 {
+-            return Err(ErrorKind::UnexpectedEof.into());
+-        }
+-        remaining = &mut remaining[read..];
++        })
++    }
++    fn flush(&mut self) -> io::Result<()> {
++        Ok(())
+     }
+-    Ok(())
+ }
+
+ // Per-call nonblocking I/O also works on blocking descriptors. No socket
