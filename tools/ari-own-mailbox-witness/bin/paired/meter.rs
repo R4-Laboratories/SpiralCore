@@ -64,7 +64,11 @@ pub(super) mod selected {
     use std::os::unix::fs::FileExt;
     const SEALED: &str = "mvm/owned-mailbox/selected-object/sealed-stream/read-write/v1";
     const CHANNELS: [(&str, &str, &str); 3] = [
-        ("guest_5257", stream::NAME, stream::SCOPE),
+        (
+            "guest_5257",
+            "object-guest-stream-v1.counts",
+            stream::SELECTED_GUEST,
+        ),
         ("sealed_in", "object-sealed-in-v1.counts", SEALED),
         ("sealed_out", "object-sealed-out-v1.counts", SEALED),
     ];
@@ -81,7 +85,14 @@ pub(super) mod selected {
             let mut result = serde_json::Map::new();
             for (original, (key, _, scope)) in self.0.iter().zip(CHANNELS) {
                 let len = usize::try_from(original.file.metadata()?.len())?;
-                ensure!(len <= 32768, "original stream meter exceeds bound");
+                ensure!(
+                    len <= if scope == stream::SELECTED_GUEST {
+                        65536
+                    } else {
+                        32768
+                    },
+                    "original stream meter exceeds bound"
+                );
                 let mut bytes = vec![0; len];
                 original.file.read_exact_at(&mut bytes, 0)?;
                 if let Some((home, name)) = capture {

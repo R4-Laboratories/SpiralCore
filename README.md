@@ -33,14 +33,15 @@ A subsequent Linux run kept both original Firecracker guests up for **eight sepa
 
 **Two installed Linux guests now exchange warm objects through their own mailboxes.** Guest A sent a 4 KiB object cold, then offered it again to the same worker on B. B returned all 4,096 bytes exactly on each transfer. The cold transfer required four signed Calls. The repeat needed one Call, one Reply and zero literal payload bytes.
 
-| First Firecracker pair on one host | Cold | Exact repeat |
+| Fully metered Firecracker pair on one Linux host | Cold | Exact repeat |
 |---|---:|---:|
-| Object-v1 requests and responses, both directions | 4,658 B | 190 B |
-| Sealed host socket traffic, including signed destination receipts | 63,797 B | 14,223 B |
-| CPU in A and B’s guest workloads combined | 38.58 ms | 10.87 ms |
-| Elapsed through both guest results, including exact readback | 8.002 s | 2.200 s |
+| Object-v1 requests and replies | 4,658 B | 190 B |
+| Both guest↔host vsock links at port 5257, reads plus writes | 481,989 B | 124,813 B |
+| Sealed helper↔helper socket traffic, including signed receipts | 63,610 B | 14,170 B |
+| CPU in A / B’s guest workloads | 5.144 / 23.898 ms | 1.819 / 7.404 ms |
+| Elapsed through both guest results and exact readback | 3.793 s | 1.045 s |
 
-The repeat saved **77.7% of the bytes on the sealed host sockets**. A’s writes matched B’s reads, and vice versa. Both original mailbox helpers exited cleanly. The separate guest-vsock counters overflowed during this first trial. An equivalent secured zstd comparison and a canonical two-host WAN run remain open. [Reproduction, original counters and qualification results](docs/network/evidence/2026-11-12-paired-mailbox/paired-durable-native/native-object/README.md)
+On this pair the repeat used **74.1% fewer bytes across the two guest-vsock links** and **77.7% fewer bytes on the sealed host sockets**. These are separate observation points on the same delivery. All six original streams produced complete records. Both helpers stopped without assistance, and both VMMs exited. The earlier pilot retained its guest-port overflow at 64 exchanges. A matched secured zstd comparison, native HVF qualification for this object profile, and a two-host WAN trial remain open. [Reproduction, complete counters and earlier pilot](docs/network/evidence/2026-11-12-paired-mailbox/paired-durable-native/native-object/README.md)
 
 The four single-message trials are shown below.
 
