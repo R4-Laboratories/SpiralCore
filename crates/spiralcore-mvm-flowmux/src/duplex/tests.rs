@@ -234,7 +234,14 @@ fn full_delivery_queue_backpressures_then_times_out_without_extra_published_ack(
         "fifth block cannot receive Published while delivery queue remains full"
     );
     assert!(start.elapsed() < Duration::from_secs(2));
-    assert!(left_tx.send_block(vec![5; 1024]).is_err());
+    // The peer cannot send Published before delivery, so the short original
+    // send deadline expires before the receiver's two-second queue budget.
+    let first = left_tx.cancellation.first_failure().expect("original failure");
+    assert_eq!(first.site, crate::FailureSite::SenderReplyWait);
+    assert_eq!(first.frame_kind, Some(3));
+    assert_eq!(first.reason, crate::FailureReason::Timeout);
+    assert!(matches!(left_tx.send_block(vec![5; 1024]), Err(crate::Error::Cancelled)));
+    assert_eq!(left_tx.cancellation.first_failure(), Some(first));
     assert!(left_guard.join().is_err());
     assert!(right_guard.join().is_err());
     // Fatal timeout fences delivery even for the four previously verified
