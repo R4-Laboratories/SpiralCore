@@ -4,11 +4,13 @@ fn main() -> anyhow::Result<()> {
     use spiralcore_mvm_canonical_witness::{Config, native, preflight_failure};
     use std::{fs, io::Write, os::unix::fs::OpenOptionsExt, path::PathBuf};
     let args: Vec<_> = std::env::args_os().skip(1).collect();
+    let paired = args.first().is_some_and(|arg| arg == "--pair");
+    let args = if paired { &args[1..] } else { &args[..] };
     anyhow::ensure!(
-        args.len() == 4,
-        "usage: spiralcore-mvm-canonical-witness ROOTFS NAME MAILBOX_HEX REPORT_JSON"
+        args.len() == if paired { 6 } else { 4 },
+        "usage: spiralcore-mvm-canonical-witness ROOTFS NAME MAILBOX_HEX REPORT_JSON; paired: --pair ROOTFS NAME_A MAILBOX_A NAME_B MAILBOX_B REPORT_JSON"
     );
-    let output_path = PathBuf::from(&args[3]);
+    let output_path = PathBuf::from(args.last().expect("checked parameters"));
     let output_parent = fs::canonicalize(
         output_path
             .parent()
@@ -45,9 +47,22 @@ fn main() -> anyhow::Result<()> {
         let runtime = tokio::runtime::Builder::new_current_thread()
             .enable_all()
             .build()?;
-        Ok(serde_json::to_value(
-            runtime.block_on(native::run(&config))?,
-        )?)
+        if paired {
+            let mut second = config.clone();
+            second.name = args[3]
+                .to_str()
+                .ok_or_else(|| anyhow::anyhow!("UTF-8 name required"))?
+                .into();
+            second.mailbox_hex = args[4]
+                .to_str()
+                .ok_or_else(|| anyhow::anyhow!("UTF-8 mailbox required"))?
+                .into();
+            runtime.block_on(native::run_pair(&config, &second))
+        } else {
+            Ok(serde_json::to_value(
+                runtime.block_on(native::run(&config))?,
+            )?)
+        }
     })();
     let record = match result {
         Ok(record) => record,

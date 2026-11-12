@@ -12,8 +12,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-pub const MVM_SOURCE: &str =
-    "91fea4e72352f8fa676635ad38b34213cd3bbcb6";
+pub const MVM_SOURCE: &str = "11c6f04bd1f6fa261b6543d678acf8226e699f33";
 pub const PRODUCER_PATH: &str = "/usr/local/bin/spiralcore-mailbox-producer";
 mod process {
     include!("process.rs");
@@ -25,6 +24,8 @@ mod definition {
 pub use definition::DefinitionGuard;
 mod installed;
 use installed::InstalledWitness;
+mod pair;
+pub use pair::run_pair;
 #[derive(Serialize)]
 pub struct Report {
     pub source: &'static str,
@@ -46,7 +47,8 @@ pub struct Report {
     pub guest_cpu: &'static str,
     pub wire_bytes: &'static str,
     pub guest_mailbox_stream_scope: &'static str,
-    pub guest_mailbox_stream_counts: Option<mvm_hostd::mailbox_service::guest_io::GuestStreamCounts>,
+    pub guest_mailbox_stream_counts:
+        Option<mvm_hostd::mailbox_service::guest_io::GuestStreamCounts>,
     pub verified_helper_receipt_wall_ns: Option<u128>,
     pub host_orchestrator_cpu_through_receipt_ns: Option<u128>,
     pub processes: Vec<ProcessObservation>,
@@ -60,6 +62,9 @@ fn digest(bytes: &[u8]) -> String {
 }
 /// Build through the real facade; no VM is started by this function.
 pub fn request(config: &Config) -> Result<LaunchRequest> {
+    request_with_command(config, vec![PRODUCER_PATH.to_owned()])
+}
+fn request_with_command(config: &Config, command: Vec<String>) -> Result<LaunchRequest> {
     config.validate()?;
     mvm_client::validate_vm_name(&config.name)?;
     let grant = mvm_client::admission::mailbox_grant::resolve(Some(&config.mailbox_hex), None)?
@@ -74,7 +79,7 @@ pub fn request(config: &Config) -> Result<LaunchRequest> {
     .memory_mib(256)
     .ttl_seconds(180)
     .mailbox(grant)
-    .command([PRODUCER_PATH.to_owned()])
+    .command(command)
     .build()?)
 }
 
@@ -105,7 +110,7 @@ pub fn validate_rootfs_input(path: &std::path::Path) -> Result<()> {
     Ok(())
 }
 
-pub async fn run(config: &Config) -> Result<Report> {
+fn claim_fresh_home(config: &Config) -> Result<(PathBuf, HeldExecutable, PathBuf, fs::File)> {
     config.validate()?;
     ensure!(
         std::env::var_os("MVM_HOME").as_deref() == Some(config.home.as_os_str()),
@@ -154,10 +159,11 @@ pub async fn run(config: &Config) -> Result<Report> {
         .create_new(true)
         .mode(0o600)
         .open(&claim_path)?;
-    let body = expected_body();
-    let started = Instant::now();
-    let cpu = ProcessTime::now();
-    let mut report = Report {
+    Ok((helper, expected_helper, claim_path, _claim))
+}
+
+fn new_report(body: &[u8]) -> Report {
+    Report {
         source: MVM_SOURCE,
         scope: "one canonical guest-to-host mailbox; no object-v1/WAN qualification",
         status: "failed",
@@ -185,7 +191,16 @@ pub async fn run(config: &Config) -> Result<Report> {
         installed_daemon: None,
         stop: "not_attempted".into(),
         cleanup: "not_attempted".into(),
-    };
+    }
+}
+
+pub async fn run(config: &Config) -> Result<Report> {
+    let (helper, expected_helper, claim_path, _claim) = claim_fresh_home(config)?;
+    let state = mvm_core::config::vm_state_dir_at(&config.home, &config.name);
+    let body = expected_body();
+    let started = Instant::now();
+    let cpu = ProcessTime::now();
+    let mut report = new_report(&body);
     let mut installed = InstalledWitness::start(config, &helper)?;
     let backend = LocalBackend::with_hypervisor("firecracker")
         .with_installed_mailbox(installed.provider.clone());
@@ -203,7 +218,6 @@ pub async fn run(config: &Config) -> Result<Report> {
         )?);
         report.setup_wall_ns = Some(started.elapsed().as_nanos());
         let receive_started = Instant::now();
-        let until = receive_started + Duration::from_secs(config.deadline_seconds);
         // These are the canonical per-VM process records, not lookup authority.
         let vmm_pid = mvm_backends::fc::fc_pid_path(&config.name)
             .context("canonical Firecracker pid path missing")?;
@@ -222,51 +236,7 @@ pub async fn run(config: &Config) -> Result<Report> {
         report
             .processes
             .push(installed.observe_helper(&expected_helper)?);
-        for offset in receive_probe_offsets(Duration::from_secs(config.deadline_seconds)) {
-            let target = receive_started + offset;
-            if let Some(wait) = target.checked_duration_since(Instant::now()) {
-                thread::sleep(wait);
-            }
-            ensure!(Instant::now() < until, "canonical mailbox receive deadline");
-            report.receive_probes += 1;
-            let received = mvm_client::mailbox::recv(&config.name);
-            ensure!(
-                Instant::now() < until,
-                "canonical receive completed after original deadline"
-            );
-            match received {
-                Ok(Some(actual)) => {
-                    report.received_bytes = Some(actual.len());
-                    report.received_sha256 = Some(digest(&actual));
-                    report.exact_readback = actual == body;
-                    ensure!(report.exact_readback, "canonical mailbox bytes differ");
-                    break;
-                }
-                Ok(None) => {}
-                Err(error) => {
-                    let unavailable = error.to_string()
-                        == format!("{} has no reachable mailbox", config.name)
-                        && error
-                            .chain()
-                            .filter_map(|cause| cause.downcast_ref::<std::io::Error>())
-                            .any(|io| {
-                                matches!(
-                                    io.kind(),
-                                    std::io::ErrorKind::NotFound
-                                        | std::io::ErrorKind::ConnectionRefused
-                                )
-                            });
-                    if !unavailable {
-                        return Err(error.context("canonical audited receive"));
-                    }
-                }
-            }
-        }
-        ensure!(
-            report.exact_readback,
-            "bounded canonical receive probes exhausted without verified delivery"
-        );
-        report.receive_wall_ns = Some(receive_started.elapsed().as_nanos());
+        receive_payload(config, &body, receive_started, &mut report)?;
         Ok::<(), anyhow::Error>(())
     }
     .await;
@@ -280,40 +250,7 @@ pub async fn run(config: &Config) -> Result<Report> {
         }
     }
     // An unsuccessful launch provides no original ownership for name-based stop.
-    let cleaned = cleanup_after_launch(
-        launched.as_ref(),
-        async {
-            let original = launched.as_ref().context("original launch absent")?;
-            let plan = mvm_client::audit::chain::plan_persist::read_plan(&original.machine.name)?;
-            ensure!(
-                plan.plan_id.0 == original.plan_id && plan.workload.0 == original.machine.name,
-                "persisted admission differs from original launch; stop not authorized"
-            );
-            definition_guard
-                .as_ref()
-                .context("original definition fence unavailable; retain state")?
-                .verify()?;
-            backend
-                .stop_machine(&original.machine.id)
-                .await
-                .map_err(anyhow::Error::from)
-        },
-        async {
-            let original = launched.as_ref().context("original launch absent")?;
-            definition_guard
-                .as_ref()
-                .context("original definition fence unavailable; retain state")?
-                .verify()?;
-            backend
-                .remove_machine_with(
-                    &original.machine.id,
-                    mvm_client::RemoveOptions { force: false },
-                )
-                .await
-                .map_err(anyhow::Error::from)
-        },
-    )
-    .await;
+    let cleaned = clean_original(&backend, &launched, &definition_guard).await;
     report.stop = cleaned.stop.into();
     report.cleanup = cleaned.cleanup.into();
     if let Some(error) = cleaned.error {
@@ -362,16 +299,24 @@ pub async fn run(config: &Config) -> Result<Report> {
     if report.installed_helper.is_some() {
         if let Some(owner) = retained_client.as_ref().and_then(|client| client.owner()) {
             let counts = mvm_hostd::mailbox_service::guest_io::private_channel::take_reader(
-                &installed.report_socket, owner,
-            ).and_then(|reader| mvm_hostd::mailbox_service::guest_io::receive_original(&reader, owner));
+                &installed.report_socket,
+                owner,
+            )
+            .and_then(|reader| {
+                mvm_hostd::mailbox_service::guest_io::receive_original(&reader, owner)
+            });
             match counts {
-                Ok(counts) if report.exact_readback && counts.guest_to_host_read_bytes < body.len() as u64 => {
+                Ok(counts)
+                    if report.exact_readback
+                        && counts.guest_to_host_read_bytes < body.len() as u64 =>
+                {
                     errors.push("guest stream receipt below verified application length".into());
                 }
                 Ok(counts) => {
                     report.guest_mailbox_stream_counts = Some(counts);
                     report.verified_helper_receipt_wall_ns = Some(started.elapsed().as_nanos());
-                    report.host_orchestrator_cpu_through_receipt_ns = Some(cpu.elapsed().as_nanos());
+                    report.host_orchestrator_cpu_through_receipt_ns =
+                        Some(cpu.elapsed().as_nanos());
                 }
                 Err(error) => errors.push(format!("guest stream receipt unavailable: {error}")),
             }
@@ -398,4 +343,100 @@ pub async fn run(config: &Config) -> Result<Report> {
         report.error = Some(errors.join("; "));
     }
     Ok(report)
+}
+
+fn receive_payload(
+    config: &Config,
+    body: &[u8],
+    receive_started: Instant,
+    report: &mut Report,
+) -> Result<()> {
+    let until = receive_started + Duration::from_secs(config.deadline_seconds);
+    for offset in receive_probe_offsets(Duration::from_secs(config.deadline_seconds)) {
+        let target = receive_started + offset;
+        if let Some(wait) = target.checked_duration_since(Instant::now()) {
+            thread::sleep(wait);
+        }
+        ensure!(Instant::now() < until, "canonical mailbox receive deadline");
+        report.receive_probes += 1;
+        let received = mvm_client::mailbox::recv(&config.name);
+        ensure!(
+            Instant::now() < until,
+            "canonical receive completed after original deadline"
+        );
+        match received {
+            Ok(Some(actual)) => {
+                report.received_bytes = Some(actual.len());
+                report.received_sha256 = Some(digest(&actual));
+                report.exact_readback = actual.as_slice() == body;
+                ensure!(report.exact_readback, "canonical mailbox bytes differ");
+                break;
+            }
+            Ok(None) => {}
+            Err(error) => {
+                let unavailable = error.to_string()
+                    == format!("{} has no reachable mailbox", config.name)
+                    && error
+                        .chain()
+                        .filter_map(|cause| cause.downcast_ref::<std::io::Error>())
+                        .any(|io| {
+                            matches!(
+                                io.kind(),
+                                std::io::ErrorKind::NotFound
+                                    | std::io::ErrorKind::ConnectionRefused
+                            )
+                        });
+                if !unavailable {
+                    return Err(error.context("canonical audited receive"));
+                }
+            }
+        }
+    }
+    ensure!(
+        report.exact_readback,
+        "bounded canonical receive probes exhausted without verified delivery"
+    );
+    report.receive_wall_ns = Some(receive_started.elapsed().as_nanos());
+    Ok(())
+}
+
+async fn clean_original(
+    backend: &LocalBackend,
+    launched: &Option<mvm_client::launch::LaunchOutcome>,
+    definition_guard: &Option<DefinitionGuard>,
+) -> crate::CleanupResult {
+    cleanup_after_launch(
+        launched.as_ref(),
+        async {
+            let original = launched.as_ref().context("original launch absent")?;
+            let plan = mvm_client::audit::chain::plan_persist::read_plan(&original.machine.name)?;
+            ensure!(
+                plan.plan_id.0 == original.plan_id && plan.workload.0 == original.machine.name,
+                "persisted admission differs from original launch; stop not authorized"
+            );
+            definition_guard
+                .as_ref()
+                .context("original definition fence unavailable; retain state")?
+                .verify()?;
+            backend
+                .stop_machine(&original.machine.id)
+                .await
+                .map_err(anyhow::Error::from)
+        },
+        async {
+            let original = launched.as_ref().context("original launch absent")?;
+            definition_guard
+                .as_ref()
+                .context("original definition fence unavailable; retain state")?
+                .verify()?;
+            backend
+                .remove_machine_with(
+                    &original.machine.id,
+                    mvm_client::RemoveOptions { force: false },
+                )
+                .await
+                .map_err(anyhow::Error::from)
+        },
+    )
+    .await
 }
