@@ -22,3 +22,9 @@ cargo test --release --locked -p mvm-hostd --bin mvm-host-agent \
 ```
 
 The JSON identifies each additional Cargo target and exact test name. Use `--lib` for the `mvm_hostd` cases and `--test host_agent_idle_collection` for the process cases.
+
+## Guest compatibility with MVM 0.28.0-rc.1
+
+The [combined source](https://github.com/Casey-allard/mvm/commit/f61a8bd67c61b3f213923cdd073e865094e5d804) incorporates upstream `3010cfdb`, including [Ari's change to hold an idle mailbox dial open](https://github.com/tinylabscom/mvm/pull/5343). On November 12, two guest-agent mailbox tests and 17 outbox tests passed on a Linux x86-64 host. Cases covered exact frame bytes, ordered spool delivery after a full-queue refusal, concurrent writers, and refusal of an ambiguous service grant. The outbox suite took 1.09 s wall time, 0.02 s user CPU and 0.02 s system CPU, with 14,072 KiB maximum RSS. The previous coordinator evidence remains pinned to 0.27. [Test names, executable hashes and measurements](linux-028-guest.json).
+
+To reproduce, use Rust 1.97.1 and build the `mvm-agentd` binary and library test harnesses with `cargo test --locked -p mvm-agentd --target x86_64-unknown-linux-musl --bin mvm-guest-agent --lib --no-run`. We used the debug test profile with debug symbols and incremental compilation disabled, cross-linked with `rust-lld` on macOS, checked SHA-256 after copying both executables to Linux and ran them with one test thread. Select `mailbox::tests::` in the binary harness and `mailbox_outbox::tests::` in the library harness. Both ran as unprivileged host processes. The native Firecracker transfer, installed helper lifecycle and WAN tests require their own runs.

@@ -1,0 +1,12 @@
+[
+  {
+    "suite": "guest",
+    "executable_sha256": "1d65f04f96be76551f87b828ce115c36295a66216cb1ba28a65d13e2ad58ac74",
+    "output": "\nrunning 2 tests\ntest mailbox::tests::an_idle_guest_logs_a_bounded_number_of_refusals ... ok\ntest mailbox::tests::only_the_exact_token_asserts_a_mailbox ... ok\n\ntest result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 80 filtered out; finished in 0.00s\n\nWALL=0.00 USER=0.00 SYS=0.00 MAXRSS_KIB=2808\n"
+  },
+  {
+    "suite": "outbox",
+    "executable_sha256": "db4bff1a4fe60f37493665ff7bacf34aae252dac4ccf38040aaa8f424782ae07",
+    "output": "\nrunning 17 tests\ntest mailbox_outbox::tests::a_forwarded_outbox_is_consumed_and_leaves_nothing_behind ... ok\ntest mailbox_outbox::tests::a_frame_the_host_queue_refused_as_full_stays_spooled_and_arrives_in_order ... ok\ntest mailbox_outbox::tests::a_full_spool_refuses_the_writer_and_keeps_what_it_holds ... ok\ntest mailbox_outbox::tests::a_missing_or_malformed_outbox_sends_nothing ... ok\ntest mailbox_outbox::tests::a_peer_that_never_answers_fails_the_forward_within_the_bound ... ok\ntest mailbox_outbox::tests::a_permanent_refusal_still_consumes_the_frame ... ok\ntest mailbox_outbox::tests::a_refused_frame_in_the_middle_does_not_wedge_the_spool ... ok\ntest mailbox_outbox::tests::a_writers_temp_file_is_never_forwarded ... ok\ntest mailbox_outbox::tests::a_written_outbox_is_forwarded_as_the_same_message ... ok\ntest mailbox_outbox::tests::back_to_back_writes_are_all_delivered_in_order ... ok\ntest mailbox_outbox::tests::concurrent_writers_lose_and_duplicate_nothing ... ok\ntest mailbox_outbox::tests::no_outbox_dir_is_created_unless_the_cmdline_asserts_a_mailbox ... ok\ntest mailbox_outbox::tests::oversized_empty_and_ungranted_writes_are_refused_without_touching_disk ... ok\ntest mailbox_outbox::tests::reliable_or_ambiguous_mailbox_mode_creates_no_producer_directory ... ok\ntest mailbox_outbox::tests::the_frame_on_the_wire_is_exactly_the_plaintext_message ... ok\ntest mailbox_outbox::tests::the_outbox_dir_is_owner_only_owned_by_the_given_identity_and_idempotent ... ok\ntest mailbox_outbox::tests::the_outbox_file_is_group_readable_never_world_readable_and_leaves_no_temp ... ok\n\ntest result: ok. 17 passed; 0 failed; 0 ignored; 0 measured; 1014 filtered out; finished in 1.09s\n\nWALL=1.09 USER=0.02 SYS=0.02 MAXRSS_KIB=14072\n"
+  }
+]
