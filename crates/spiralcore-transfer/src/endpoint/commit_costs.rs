@@ -158,7 +158,7 @@ fn held_read_comparison() {
     let ns = context.namespace().unwrap();
     let resources = ResourceProfile::SmallV1;
     let root = metadata_tests::Fixture::new();
-    let mut endpoint = Endpoint::open_with_resource_profile(
+    let endpoint = Endpoint::open_with_resource_profile(
         &root.0,
         resources.receiver_limits(),
         crate::wan::BenchAuthority,
@@ -169,7 +169,7 @@ fn held_read_comparison() {
     expected[16367..].fill(0);
     let offer = Offer::cold(&expected, Mode::Raw);
     endpoint.publish(&context, ns, &offer, &expected, None).unwrap();
-    let mut run = |held: bool| {
+    let run = |held: bool| {
         let cpu = ThreadTime::now();
         let wall = Instant::now();
         for _ in 0..READS {

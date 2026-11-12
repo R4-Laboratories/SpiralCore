@@ -13,7 +13,7 @@ fn an_ordered_read_uses_the_current_private_file_from_header_through_eof() {
     let resources = crate::resource_profile::ResourceProfile::SmallV1;
     let context = crate::wan::context([7; 32]);
     let ns = context.namespace().unwrap();
-    let mut endpoint = Endpoint::open_with_resource_profile(
+    let endpoint = Endpoint::open_with_resource_profile(
         &root.0,
         resources.receiver_limits(),
         crate::wan::BenchAuthority,
