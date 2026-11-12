@@ -1,0 +1,28 @@
+
+thread 'volume::tests::launch_volume_contention_waits_and_reads_committed_catalog' (1185330) panicked at crates/mvm-client/src/volume.rs:133:17:
+assertion `left == right` failed
+  left: Ok(Err("another local volume lifecycle operation is already in progress"))
+ right: Err(Timeout)
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test volume::tests::launch_volume_contention_waits_and_reads_committed_catalog ... FAILED
+
+failures:
+
+failures:
+    volume::tests::launch_volume_contention_waits_and_reads_committed_catalog
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 1368 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `-p mvm-client --lib`
+test volume::tests::launch_volume_contention_keeps_original_owner_at_deadline_and_propagates_io_errors ... ok
+test volume::tests::launch_volume_contention_waits_and_reads_committed_catalog ... ok
+test volume::tests::launch_volume_special_file_dangling_link_never_creates_target ... ok
+test volume::tests::launch_volume_special_file_fifo_refuses_before_reader_opens ... ok
+test result: ok. 66 passed; 0 failed; 0 ignored; 0 measured; 1306 filtered out; finished in 1.99s
+4530 source blobs matched
+elapsed=16.95 user=10.68 system=0.27 max_rss_kib=82904 status=0
+VERIFIED chain: 17 entries, 2 sessions, 2 seals
+{"assisted":false,"exit_code":0,"first_stop_attempt":true,"name":"sc-journal-a","success":true}
+{"assisted":false,"exit_code":0,"first_stop_attempt":true,"name":"sc-journal-b","success":true}
+elapsed=16.95 user=10.68 system=0.27 max_rss_kib=82904 status=0
+firecracker_after=0
