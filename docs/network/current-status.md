@@ -21,6 +21,8 @@ The addressed driver checks materialized role images and preserves the initial f
 
 ### Addressed mailbox delivery
 
+A signed Query can now collect its original mailbox helper after a Stop timeout. Worker credit remains charged until the coordinator observes the child exit, and a later Query returns the same terminal status. The Linux worker owner suite passed 17/17. [Late worker collection](evidence/2026-11-12-paired-mailbox/addressed-native-launch/late-worker-collection.md)
+
 Concurrent SDK launches now wait on the tenant coordinator’s original publication lock. A surviving intent after writer failure still refuses admission. Linux passed ten lifecycle tests. macOS passed the same ten and fifteen public coordinator integration tests. [Publication and crash-recovery results](evidence/2026-11-12-paired-mailbox/addressed-native-launch/concurrent-publication.md)
 
 The intended path is **guest A Submit → original A helper → host coordinator → original B helper → guest B Deliver**. A seals the submission. The coordinator handles the signed Send credential and opaque envelope. B authenticates and opens that envelope before invoking its guest. The following steps have been exercised individually.

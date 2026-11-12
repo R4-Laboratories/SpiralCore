@@ -1,0 +1,71 @@
+diff --git a/crates/mvm-hostd/src/broker/mailbox_workers.rs b/crates/mvm-hostd/src/broker/mailbox_workers.rs
+index d6da4e72acc08d6cbc55e8db78feb9133bc0340c..3ad839f98d000f44d25a788fad94287010d5dec3 100644
+--- a/crates/mvm-hostd/src/broker/mailbox_workers.rs
++++ b/crates/mvm-hostd/src/broker/mailbox_workers.rs
+@@ -1450,7 +1450,7 @@ impl MailboxWorkers {
+             return Err(refused("installed mailbox provisioning disabled"));
+         }
+         self.factory.admit(request)?;
+-        let _operation = self.operation_permit(request)?;
++        let operation_turn = self.operation_permit(request)?;
+         if request.tenant != self.tenant {
+             return Err(refused("foreign worker tenant"));
+         }
+@@ -1598,7 +1598,14 @@ impl MailboxWorkers {
+             }
+             if matches!(request.operation, MailboxWorkerOperation::Query { .. })
+                 && slot.stop_requested
++                && (!operation_turn.counted
++                    || slot.busy
++                    || slot.worker.is_none()
++                    || slot.state != MailboxWorkerState::Unresolved)
+             {
++                // The retirement owner or an in-flight loan retains collection.
++                // A pre-fence query of an idle unresolved original with its
++                // Child present instead uses the normal nonblocking try_wait below.
+                 let state = if matches!(slot.state, MailboxWorkerState::Collected { .. }) {
+                     slot.state.clone()
+                 } else {
+diff --git a/crates/mvm-hostd/tests/mailbox_worker_owner.rs b/crates/mvm-hostd/tests/mailbox_worker_owner.rs
+index 69cf9e194fbb5c7489ebeba886bdd7dbb359034d..e738d4af0f1e7bf23b3cd20efeaea6fa5fe86db9 100644
+--- a/crates/mvm-hostd/tests/mailbox_worker_owner.rs
++++ b/crates/mvm-hostd/tests/mailbox_worker_owner.rs
+@@ -394,7 +394,7 @@ async fn stop_timeout_retains_original_owner_and_credit_until_later_collection()
+         r.deadline_unix_ms = now() + 100;
+         assert!(call(&path, &r).is_err());
+         r.request_nonce = [4; 32];
+-        r.operation = MailboxWorkerOperation::Query { owner };
++        r.operation = MailboxWorkerOperation::Query { owner: owner.clone() };
+         r.deadline_unix_ms = now() + 4_000;
+         assert_eq!(
+             call(&path, &r).unwrap().0.state,
+@@ -405,18 +405,22 @@ async fn stop_timeout_retains_original_owner_and_credit_until_later_collection()
+         // Release only the fixture's injected fault; the daemon remains the
+         // sole process reaper. No external kill/waitpid/Child wait is used.
+         drop(factory.0.lock().unwrap().take());
+-        let mut collected = false;
++        let mut collected = None;
+         for _ in 0..100 {
+-            if matches!(
+-                call(&path, &r).unwrap().0.state,
+-                MailboxWorkerState::Collected { .. }
+-            ) {
+-                collected = true;
++            let reply = call(&path, &r).unwrap().0;
++            if matches!(reply.state, MailboxWorkerState::Collected { .. }) {
++                collected = Some(reply);
+                 break;
+             }
+             std::thread::sleep(Duration::from_millis(5));
+         }
+-        assert!(collected);
++        let original = collected.expect("original child exit collection");
++        assert_eq!(original.owner, owner);
++        assert_eq!(budget.usage().unwrap().workers, 0);
++        r.request_nonce = [5; 32];
++        let replay = call(&path, &r).unwrap().0;
++        assert_eq!(replay.owner, original.owner);
++        assert_eq!(replay.state, original.state);
+         assert_eq!(budget.usage().unwrap().workers, 0);
+     })
+     .await
