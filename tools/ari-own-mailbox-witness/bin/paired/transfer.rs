@@ -15,7 +15,7 @@ pub fn one(
 ) -> Result<Value> {
     let transaction = Instant::now();
     let until = transaction + Duration::from_secs(50);
-    let source_request = json!({"frame_hex":hex::encode(&raw),"recipient":hex::encode(direction.address.recipient.as_bytes()),"direction":hex::encode(commitment)});
+    let source_request = json!({"frame_hex":hex::encode(raw),"recipient":hex::encode(direction.address.recipient.as_bytes()),"direction":hex::encode(commitment)});
     let mut source_call = workload::Call::start(A, &source_request, until)?;
     let mut staged = None;
     let mut relay = None;
