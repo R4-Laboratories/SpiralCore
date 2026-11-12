@@ -1,0 +1,18 @@
+
+running 1 test
+test mailbox_service::accept_loop_tests::paired_installed_unknown_verdict_keeps_original_and_reports_failed_removal ... FAILED
+
+failures:
+
+---- mailbox_service::accept_loop_tests::paired_installed_unknown_verdict_keeps_original_and_reports_failed_removal stdout ----
+
+thread 'mailbox_service::accept_loop_tests::paired_installed_unknown_verdict_keeps_original_and_reports_failed_removal' (2776440) panicked at crates/mvm-hostd/src/mailbox_service.rs:878:54:
+called `Result::unwrap()` on an `Err` value: Os { code: 2, kind: NotFound, message: "No such file or directory" }
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    mailbox_service::accept_loop_tests::paired_installed_unknown_verdict_keeps_original_and_reports_failed_removal
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 2433 filtered out; finished in 0.00s
+

@@ -7,7 +7,7 @@ The [README](../../README.md) is the architecture/results entry point;
 delivery authority. The complete MVM contribution is **not finished**.
 
 For the two-guest milestone, the Linux coordinator now has an opt-in pair of
-named VM workers under one host budget. The guest Submit retry path and
+named VM workers under one host budget. The Linux guest forwarder now retains its original at the replay and frame-size limits and after an indeterminate host reply. [Three regression results](evidence/2026-11-12-paired-mailbox/README.md#guest-outbox-custody-after-the-fix). The guest Submit retry path and
 destination Cast path have separate local socket measurements. The next native
 gate is an installed two-guest Cast with exact destination readback and
 independent worker shutdown. [Paired mailbox evidence](evidence/2026-11-12-paired-mailbox/README.md)
