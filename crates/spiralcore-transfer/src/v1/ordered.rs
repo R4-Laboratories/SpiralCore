@@ -1,11 +1,11 @@
 //! Explicit ordered, bounded cache mapping over the unchanged object protocol.
 use super::ObjectEndpoint;
 use crate::{
-    Error, Id, Result,
     endpoint::{Authority, Context, OrderedEviction},
     hash,
     protocol::{Frame, Offer},
     resource_profile::SMALL_TARGET,
+    Error, Id, Result,
 };
 use std::collections::BTreeMap;
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -129,7 +129,8 @@ impl<A: Authority> OrderedObjectEndpoint<A> {
         endpoint.check_cache_bound()?;
         Ok(endpoint)
     }
-    fn check(&self, c: &Context) -> Result<()> {
+    /// Recheck the live endpoint authority, its bound namespace and its storage fence.
+    pub fn check_delivery_authority(&self, c: &Context) -> Result<()> {
         self.inner.inner.authorize(c)?;
         if c.namespace()? != self.binding.namespace {
             return Err(Error::Unauthorized);
@@ -237,7 +238,30 @@ impl<A: Authority> OrderedObjectEndpoint<A> {
         frame: &Frame,
         now: u64,
     ) -> Result<Frame> {
-        self.check(c)?;
+        self.handle_turn(lane, ordinal, c, frame, now, false)
+            .map(|v| v.0)
+    }
+    /// Return the original on-disk readback used to account for a completed application turn.
+    /// A later independent read still reopens and checks the current publication.
+    pub fn handle_application(
+        &mut self,
+        ordinal: u64,
+        c: &Context,
+        frame: &Frame,
+        now: u64,
+    ) -> Result<(Frame, Option<Vec<u8>>)> {
+        self.handle_turn(OrderedLane::Application, ordinal, c, frame, now, true)
+    }
+    fn handle_turn(
+        &mut self,
+        lane: OrderedLane,
+        ordinal: u64,
+        c: &Context,
+        frame: &Frame,
+        now: u64,
+        return_bytes: bool,
+    ) -> Result<(Frame, Option<Vec<u8>>)> {
+        self.check_delivery_authority(c)?;
         if frame.transfer != self.binding.transfer_id(lane, ordinal) {
             return Err(Error::Sequence);
         }
@@ -329,21 +353,26 @@ impl<A: Authority> OrderedObjectEndpoint<A> {
                 self.touch(base)?;
             }
         }
+        let mut readback = None;
         if reply.kind == 103 {
             if reply.body != admitted.object {
                 self.fenced = true;
                 return Err(Error::Integrity);
             }
-            let (len, disk) = match self.inner.inner.ordered_cache_meta(c, admitted.object) {
+            let (bytes, disk) = match self.inner.inner.ordered_cache_read(c, admitted.object) {
                 Ok(meta) => meta,
                 Err(error) => {
                     self.fenced = true;
                     return Err(error);
                 }
             };
+            let len = bytes.len() as u64;
             if len != admitted.len {
                 self.fenced = true;
                 return Err(Error::Integrity);
+            }
+            if return_bytes {
+                readback = Some(bytes);
             }
             if let Err(error) =
                 self.record(admitted.object, len, disk, lane == OrderedLane::Artifact)
@@ -371,10 +400,20 @@ impl<A: Authority> OrderedObjectEndpoint<A> {
         } else if let Some(current) = self.lanes[lane.slot()].as_mut() {
             current.complete = complete;
         }
-        Ok(reply)
+        if readback.is_some() {
+            // Release only after the original lane, quota and authority are current.
+            self.check_delivery_authority(c)?;
+            let id = reply
+                .body
+                .as_slice()
+                .try_into()
+                .map_err(|_| Error::Integrity)?;
+            self.touch(id)?;
+        }
+        Ok((reply, readback))
     }
     pub fn read_object(&mut self, c: &Context, id: Id) -> Result<Vec<u8>> {
-        self.check(c)?;
+        self.check_delivery_authority(c)?;
         let bytes = match self.inner.read_object(c, id) {
             Ok(bytes) => bytes,
             Err(error) => {
@@ -394,7 +433,7 @@ impl<A: Authority> OrderedObjectEndpoint<A> {
         Ok(bytes)
     }
     pub fn snapshot(&self, c: &Context) -> Result<OrderedSnapshot> {
-        self.check(c)?;
+        self.check_delivery_authority(c)?;
         Ok(OrderedSnapshot {
             attempts: self.inner.inner.ordered_attempt_count(c)?,
             publications: self.cache.len(),

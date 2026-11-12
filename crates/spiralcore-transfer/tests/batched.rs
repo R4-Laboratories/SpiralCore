@@ -682,3 +682,80 @@ fn leased_sender_settles_valid_refusal_and_stops_on_ambiguous_ack() {
         assert_eq!((exchanged, acknowledged), (1, 1));
     }
 }
+
+#[test]
+fn leased_whole_zstd_counts_exact_encoded_fragments_even_when_they_expand() {
+    use spiralcore_transfer::client::{transfer_zstd_whole_leased, RawFrameLimits};
+    use spiralcore_transfer::zstd_whole::PreparedEncoder;
+    use std::cell::Cell;
+    let mut encoder = PreparedEncoder::new().unwrap();
+    for original in [vec![], bytes(4096), vec![0; 4096]] {
+        let tmp = Temp::new();
+        let mut endpoint = tmp.endpoint();
+        let expected = encoder.encode(&original).unwrap();
+        let limits = RawFrameLimits {
+            request_bytes: 4152,
+            reply_bytes: 88,
+        };
+        for (id, cold) in [(61, true), (62, false)] {
+            let mut received = Vec::new();
+            let pending = Cell::new(None);
+            let stats = transfer_zstd_whole_leased(
+                &mut encoder,
+                &original,
+                [id; 32],
+                limits,
+                |request| -> Result<_> {
+                    assert_eq!(pending.replace(Some(request.seq)), None);
+                    assert!(request.encoded_len()? <= limits.request_bytes);
+                    if request.kind == 2 {
+                        assert_eq!(request.body[0], Mode::ZstdWholeV1 as u8);
+                        assert_eq!(request.body[5], 1);
+                        received.extend_from_slice(&request.body[6..]);
+                    }
+                    Ok((endpoint.handle(&context(), request, 0)?, request.seq))
+                },
+                |seq| {
+                    assert_eq!(pending.take(), Some(seq));
+                    Ok(())
+                },
+            )
+            .unwrap();
+            assert_eq!(stats.mode, Mode::ZstdWholeV1);
+            assert_eq!(stats.object, object_id(&original));
+            assert_eq!(received, if cold { expected.as_slice() } else { &[] });
+            assert_eq!(stats.data_bytes, received.len() as u64);
+            assert_eq!(
+                stats.requests,
+                if cold {
+                    2 + received.len().div_ceil(4090)
+                } else {
+                    1
+                }
+            );
+            assert_eq!(
+                endpoint.read_object(&context(), stats.object).unwrap(),
+                original
+            );
+            assert!(pending.get().is_none());
+        }
+    }
+}
+
+#[test]
+fn leased_whole_zstd_refuses_more_fragments_than_receiver_can_accept() {
+    use spiralcore_transfer::client::{transfer_zstd_whole_leased, RawFrameLimits};
+    use spiralcore_transfer::zstd_whole::PreparedEncoder;
+    let result: Result<_> = transfer_zstd_whole_leased(
+        &mut PreparedEncoder::new().unwrap(),
+        &bytes(33_000),
+        [63; 32],
+        RawFrameLimits {
+            request_bytes: 102,
+            reply_bytes: 88,
+        },
+        |_| -> Result<(Frame, ())> { panic!("unusable offer reached the carrier") },
+        |_| panic!("no lease to acknowledge"),
+    );
+    assert!(matches!(result, Err(Error::Limit)));
+}

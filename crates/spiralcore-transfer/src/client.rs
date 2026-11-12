@@ -307,8 +307,18 @@ impl BatchSender {
             self.stats.request_bytes += length as u64;
             self.stats.requests += 1;
             if frame.kind == 2 {
-                self.stats.data_bytes +=
-                    frame.body.len().checked_sub(5).ok_or(Error::Malformed)? as u64;
+                let header = if crate::fitted_transfer::is_buffered(self.mode)
+                    || self.mode == Mode::ZstdPrefixV1
+                {
+                    crate::fitted_transfer::DATA_HEADER
+                } else {
+                    5
+                };
+                self.stats.data_bytes += frame
+                    .body
+                    .len()
+                    .checked_sub(header)
+                    .ok_or(Error::Malformed)? as u64;
                 if self.mode == Mode::Dag {
                     let count = frame.body.get(5..7).ok_or(Error::Malformed)?;
                     self.stats.records_sent +=
@@ -516,20 +526,27 @@ pub struct RawFrameLimits {
 }
 
 impl RawFrameLimits {
-    fn raw_chunk(self, offer: &Offer, len: usize) -> Result<usize> {
+    fn data_chunk(self, offer: &Offer, payload_len: usize) -> Result<usize> {
         let offer_bytes = Frame::HEADER_BYTES + offer.encode()?.len();
         let published_bytes = Frame::HEADER_BYTES + offer.object.len();
         if self.request_bytes < offer_bytes || self.reply_bytes < published_bytes {
             return Err(Error::Limit);
         }
-        // A literal Data body contains the encoding tag and original u32 length.
+        let (header, max_fragments) = match offer.mode {
+            Mode::Raw => (1 + size_of::<u32>(), MAX_TRANSFER_FRAMES - 2),
+            Mode::ZstdWholeV1 => (
+                crate::fitted_transfer::DATA_HEADER,
+                crate::fitted_transfer::MAX_FRAGMENTS,
+            ),
+            _ => return Err(Error::Unsupported),
+        };
         let chunk = self
             .request_bytes
-            .checked_sub(Frame::HEADER_BYTES + 1 + size_of::<u32>())
+            .checked_sub(Frame::HEADER_BYTES + header)
             .filter(|n| *n > 0)
             .ok_or(Error::Limit)?
             .min(MAX_CHUNK);
-        if len.div_ceil(chunk) > MAX_TRANSFER_FRAMES - 2 {
+        if payload_len.div_ceil(chunk) > max_fragments {
             return Err(Error::Limit);
         }
         Ok(chunk)
@@ -545,18 +562,65 @@ pub fn transfer_raw_leased<L, E: From<Error>>(
     bytes: &[u8],
     transfer_id: Id,
     limits: RawFrameLimits,
-    mut exchange: impl FnMut(&Frame) -> std::result::Result<(Frame, L), E>,
-    mut acknowledge: impl FnMut(L) -> std::result::Result<(), E>,
+    exchange: impl FnMut(&Frame) -> std::result::Result<(Frame, L), E>,
+    acknowledge: impl FnMut(L) -> std::result::Result<(), E>,
 ) -> std::result::Result<Stats, E> {
     let start = Instant::now();
     if bytes.len() > MAX_BATCHED_OBJECT {
         return Err(Error::Limit.into());
     }
-    let offer = Offer::cold(bytes, Mode::Raw);
-    let chunk = limits.raw_chunk(&offer, bytes.len())?;
+    send_leased(
+        Offer::cold(bytes, Mode::Raw),
+        bytes,
+        transfer_id,
+        limits,
+        exchange,
+        acknowledge,
+        start,
+    )
+}
+
+/// Encode one complete checksummed zstd frame and send it using the existing
+/// leased Object-v1 mapping. The fixed codec never selects Raw on expansion.
+/// An already published object still settles on the Offer. Encoder construction
+/// is caller setup; encoding, hashing and all lease settlements are timed here.
+pub fn transfer_zstd_whole_leased<L, E: From<Error>>(
+    encoder: &mut crate::zstd_whole::PreparedEncoder,
+    bytes: &[u8],
+    transfer_id: Id,
+    limits: RawFrameLimits,
+    exchange: impl FnMut(&Frame) -> std::result::Result<(Frame, L), E>,
+    acknowledge: impl FnMut(L) -> std::result::Result<(), E>,
+) -> std::result::Result<Stats, E> {
+    let start = Instant::now();
+    if bytes.len() > MAX_BATCHED_OBJECT {
+        return Err(Error::Limit.into());
+    }
+    let encoded = encoder.encode(bytes)?;
+    send_leased(
+        Offer::cold(bytes, Mode::ZstdWholeV1),
+        &encoded,
+        transfer_id,
+        limits,
+        exchange,
+        acknowledge,
+        start,
+    )
+}
+
+fn send_leased<L, E: From<Error>>(
+    offer: Offer,
+    payload: &[u8],
+    transfer_id: Id,
+    limits: RawFrameLimits,
+    mut exchange: impl FnMut(&Frame) -> std::result::Result<(Frame, L), E>,
+    mut acknowledge: impl FnMut(L) -> std::result::Result<(), E>,
+    start: Instant,
+) -> std::result::Result<Stats, E> {
+    let chunk = limits.data_chunk(&offer, payload.len())?;
     let mut sender = BatchSender::new(&offer, transfer_id);
     let mut request = sender.frame(1, offer.encode()?)?;
-    let mut chunks = bytes.chunks(chunk);
+    let mut chunks = payload.chunks(chunk);
     loop {
         let requests = std::slice::from_ref(&request);
         sender.record_requests(requests)?;
@@ -579,6 +643,9 @@ pub fn transfer_raw_leased<L, E: From<Error>>(
             return Ok(sender.stats);
         }
         request = match chunks.next() {
+            Some(data) if offer.mode == Mode::ZstdWholeV1 => {
+                sender.frame(2, crate::fitted_transfer::fragment(offer.mode, data))?
+            }
             Some(data) => {
                 let mut body = Vec::with_capacity(5 + data.len());
                 body.push(0);
@@ -606,7 +673,7 @@ pub fn transfer_raw_capped_batched<F: FnMut(&[Frame]) -> Result<Vec<Frame>>>(
         return Err(Error::Limit);
     }
     let offer = Offer::cold(bytes, Mode::Raw);
-    let chunk = limits.raw_chunk(&offer, bytes.len())?;
+    let chunk = limits.data_chunk(&offer, bytes.len())?;
     send_batched(
         offer,
         BatchedPayload::Bytes(bytes, chunk),
