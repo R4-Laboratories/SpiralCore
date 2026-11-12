@@ -47,3 +47,82 @@ jobs:
             --features object-reader-v1,large-object-fixture,sender-ordinal-v1 --all-targets
           cargo +1.97.1 test --locked --manifest-path source/Cargo.toml \
             -p mvm-agentd --bin mvm-guest-agent mailbox_reader::object_guest_tests
+
+  windows-core:
+    name: Portable core (${{ matrix.runner }})
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: windows-2022
+            arch: X64
+            target: x86_64-pc-windows-msvc
+          - runner: windows-2025
+            arch: X64
+            target: x86_64-pc-windows-msvc
+          - runner: windows-11-arm
+            arch: ARM64
+            target: aarch64-pc-windows-msvc
+    env:
+      MVM_REVISION: ea58be69e1481a3b84938bdaf41514cb165caaca
+      NATIVE_TARGET: ${{ matrix.target }}
+      EXPECTED_ARCH: ${{ matrix.arch }}
+      CARGO_BUILD_JOBS: 2
+      CARGO_INCREMENTAL: 0
+      CARGO_PROFILE_DEV_DEBUG: 0
+      CARGO_PROFILE_TEST_DEBUG: 0
+      CARGO_TERM_COLOR: never
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: Casey-allard/mvm
+          ref: ${{ env.MVM_REVISION }}
+          persist-credentials: false
+      - name: Verify native runner, source and compiler
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $true
+          if ($env:RUNNER_OS -ne 'Windows' -or $env:RUNNER_ARCH -ne $env:EXPECTED_ARCH) {
+            throw 'Unexpected native runner'
+          }
+          $head = (git rev-parse HEAD).Trim()
+          if ($head -ne $env:MVM_REVISION) { throw 'Unexpected MVM source' }
+          $toolchain = "1.97.1-$env:NATIVE_TARGET"
+          rustup toolchain install $toolchain --profile minimal --component clippy
+          $compiler = rustc "+$toolchain" --version --verbose
+          $compiler
+          if ($compiler -notcontains "host: $env:NATIVE_TARGET" -or $compiler -notcontains 'release: 1.97.1') {
+            throw 'Unexpected compiler identity'
+          }
+          "MVM $head; Windows $env:ImageOS $env:ImageVersion; $env:RUNNER_ARCH"
+          "RUSTUP_TOOLCHAIN=$toolchain" >> $env:GITHUB_ENV
+      - name: Check and lint the portable library
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $true
+          cargo check --locked -p mvm-core --lib
+          cargo clippy --locked -p mvm-core --lib -- -D warnings
+      - name: Execute private filesystem and signed reader controls
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $true
+          function Test-Selection([int] $expected, [string[]] $selection) {
+            $lines = cargo test --locked -p mvm-core @selection
+            $lines | Write-Output
+            if (-not ($lines -match "^test result: ok\. $expected passed; 0 failed; 0 ignored;")) {
+              throw "Missing native assertions for $selection"
+            }
+          }
+          Test-Selection 1 @('--lib', 'private_fs::readonly_platform_tests::')
+          Test-Selection 3 @('--lib', 'private_fs::refusal_tests::')
+          Test-Selection 5 @('--test', 'mailbox_reader')
+          foreach ($prefix in @('mvm_core', 'mailbox_reader')) {
+            $files = @(Get-ChildItem "target/debug/deps/$prefix-*.exe")
+            if ($files.Count -ne 1) { throw "Expected one native executable for $prefix" }
+            "$($files[0].Name) SHA256 $((Get-FileHash $files[0].FullName).Hash)"
+          }
