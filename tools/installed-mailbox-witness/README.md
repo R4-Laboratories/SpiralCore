@@ -15,7 +15,7 @@ scratch=$(mktemp -d /var/tmp/sc.XXXXXXXX)
 cp -R tools/installed-mailbox-witness/. "$scratch/"
 cd "$scratch"
 sha256sum --check inputs.sha256
-revision=f780207089dbc1c90876c44d54e7221b6d79108d
+revision=a7e8e5f9f17e6f5bfb8e33da24962abfe38f43ef
 git init -q source
 git -C source fetch --depth=1 https://github.com/Casey-allard/mvm.git "$revision"
 git -C source checkout -q --detach FETCH_HEAD
@@ -80,3 +80,5 @@ The mailbox ID above is a synthetic fixture. Each invocation needs a fresh VM na
 ## Read the measurements
 
 `runtime.json` measures runtime preparation. `native.json` distinguishes setup, time spent receiving (including polling), full lifecycle wall time, and orchestrator process CPU. The payload length and digest refer to application bytes. Guest CPU and transport wire bytes have their own availability fields. This command provides a functional witness for the installed mailbox. Compression gains, sender/receiver CPU comparisons and WAN performance require a paired transfer benchmark.
+
+The measured helper emits one bounded receipt after its original dial thread joins. The receiver accepts that receipt only after signed helper collection and coordinator retirement. `guest_mailbox_stream_counts` records completed, post-mux reads and locally accepted writes on port 5257. It includes framing and attempted application exchanges that transferred bytes before a failure. Guest receipt of a reply, host API traffic, Firecracker CONNECT negotiation, virtio headers, NIC bytes and WAN transport require separate measurements. An absent, duplicate, overflowing or mismatched receipt leaves the measurement unavailable and fails the measured-witness gate.

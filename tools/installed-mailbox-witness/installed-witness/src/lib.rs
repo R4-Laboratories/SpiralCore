@@ -116,7 +116,7 @@ pub async fn cleanup_after_launch<T>(
     }
 }
 pub fn preflight_failure(error: &str) -> serde_json::Value {
-    serde_json::json!({ "sdk_source": "f780207089dbc1c90876c44d54e7221b6d79108d", "status": "failed_preflight", "native_transfer": "NOT_RUN", "received_bytes": null, "received_sha256": null, "error": error })
+    serde_json::json!({ "sdk_source": "a7e8e5f9f17e6f5bfb8e33da24962abfe38f43ef", "status": "failed_preflight", "native_transfer": "NOT_RUN", "received_bytes": null, "received_sha256": null, "error": error })
 }
 
 /// Bounded external probes for this diagnostic consumer, not a service poll loop.

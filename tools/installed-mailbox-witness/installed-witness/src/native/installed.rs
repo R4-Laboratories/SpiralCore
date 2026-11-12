@@ -27,6 +27,7 @@ const DRAIN_AND_OBSERVE: Duration = Duration::from_secs(30);
 pub(super) struct InstalledWitness {
     pub(super) provider: Arc<HostAgentMailboxProvisioner>,
     child: Arc<Mutex<Child>>,
+    pub(super) report_socket: std::os::unix::net::UnixDatagram,
 }
 
 /// The installed worker reads all of stdin before starting its runtime or signer.
@@ -90,7 +91,9 @@ impl InstalledWitness {
             !socket.try_exists()?,
             "fresh witness tenant socket required"
         );
+        let (report_socket, transmit) = std::os::unix::net::UnixDatagram::pair()?;
         let child = Command::new(daemon)
+            .env(mvm_hostd::mailbox_service::guest_io::ENABLE_ENV, "1")
             .arg("--owned-mailbox-v1")
             .env("MVM_HOST_AGENT_WORKER", "1")
             .env(
@@ -98,7 +101,7 @@ impl InstalledWitness {
                 IDLE_HOLD.as_secs().to_string(),
             )
             .stdin(Stdio::piped())
-            .stdout(Stdio::null())
+            .stdout(Stdio::from(std::os::fd::OwnedFd::from(transmit)))
             .stderr(Stdio::inherit())
             .spawn()?;
         let (original, provider) = bind_unconfigured(child, |owner| {
@@ -142,6 +145,7 @@ impl InstalledWitness {
         Ok(Self {
             provider: Arc::new(provider),
             child: original,
+            report_socket,
         })
     }
 
