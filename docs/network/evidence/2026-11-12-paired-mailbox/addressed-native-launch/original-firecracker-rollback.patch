@@ -1,0 +1,557 @@
+From f8feff807e46b877e4785ebc89714398de0fe6ac Mon Sep 17 00:00:00 2001
+From: casey-allard <lionelcallardiv@gmail.com>
+Date: Thu, 12 Nov 2026 06:33:16 -0500
+Subject: [PATCH] Retain original Firecracker peer lifetime through installed
+ post-boot rollback
+
+---
+ .../owned_client/native_start.rs              |  12 +
+ crates/mvm-runtime/Cargo.toml                 |   2 +-
+ crates/mvm-runtime/src/kernel_custody.rs      |   9 +
+ .../mvm-runtime/src/workload_runner/runner.rs | 103 ++++++--
+ .../runner/firecracker_failure.rs             | 102 ++++++++
+ .../runner/firecracker_process.rs             | 235 ++++++++++++++++++
+ 6 files changed, 440 insertions(+), 23 deletions(-)
+ create mode 100644 crates/mvm-runtime/src/workload_runner/runner/firecracker_failure.rs
+ create mode 100644 crates/mvm-runtime/src/workload_runner/runner/firecracker_process.rs
+
+diff --git a/crates/mvm-hostd/src/mailbox_process/owned_client/native_start.rs b/crates/mvm-hostd/src/mailbox_process/owned_client/native_start.rs
+index 4add56005638683cda41b8c23ee8e52524c66d96..4223b7bc7953d8bb0c8b53c091cc701e7308134e 100644
+--- a/crates/mvm-hostd/src/mailbox_process/owned_client/native_start.rs
++++ b/crates/mvm-hostd/src/mailbox_process/owned_client/native_start.rs
+@@ -55,6 +55,18 @@ impl NativeStartCustody {
+ 
+     pub(super) fn settle(&self, owner: &MailboxWorkerOwner) -> Result<()> {
+         self.settle_with(owner, |error| {
++            #[cfg(target_os = "linux")]
++            let error = match error
++                .downcast::<mvm_runtime::workload_runner::runner::FirecrackerPostBootFailure>()
++            {
++                Ok(mut failure) => {
++                    if let Err(reason) = failure.retry_stop(owner) {
++                        return Err(anyhow::Error::new(failure).context(reason));
++                    }
++                    return Ok(());
++                }
++                Err(error) => error,
++            };
+             let failure = error.downcast::<ColdHvfBootFailure>()?;
+             // The existing native owner knows whether its original child was
+             // never launched, already collected, or still requires a live stop.
+diff --git a/crates/mvm-runtime/Cargo.toml b/crates/mvm-runtime/Cargo.toml
+index 448a4836ac13a3bfea2216ac626f01273cad182f..a43ae204280a7d1322f113856572c21b2553ac39 100644
+--- a/crates/mvm-runtime/Cargo.toml
++++ b/crates/mvm-runtime/Cargo.toml
+@@ -48,7 +48,7 @@ bytes = "1"
+ chrono.workspace = true
+ ed25519-dalek.workspace = true
+ rand.workspace = true
+-rustix = { version = "1.1", default-features = false, features = ["fs", "std"] }
++rustix = { version = "1.1", default-features = false, features = ["event", "fs", "process", "std"] }
+ # Folded in with the former mvm-base crate: the base substrate's ui
+ # (ANSI output, in-house spinners + prompts) and secret handling (secrecy).
+ # Crypto helpers come from mvm_core::crypto, already available via the
+diff --git a/crates/mvm-runtime/src/kernel_custody.rs b/crates/mvm-runtime/src/kernel_custody.rs
+index 376e242ab16f2e6f94b9c15c9d50367b9003c7d5..e472127bfe13969568c9f347b349e49121e2176c 100644
+--- a/crates/mvm-runtime/src/kernel_custody.rs
++++ b/crates/mvm-runtime/src/kernel_custody.rs
+@@ -366,6 +366,15 @@ pub(crate) fn release_after_process_exit(lifecycle: &RuntimeLifecycleLease) -> R
+     })
+ }
+ 
++#[cfg(target_os = "linux")]
++pub(crate) fn release_after_original_firecracker_exit(
++    lifecycle: &RuntimeLifecycleLease,
++    process: &crate::workload_runner::runner::firecracker_process::OriginalFirecracker,
++) -> Result<()> {
++    process.verify_exit()?;
++    release_process_generation(lifecycle, &process.identity, || process.verify_exit())
++}
++
+ #[cfg(unix)]
+ fn release_process_generation(
+     lifecycle: &RuntimeLifecycleLease,
+diff --git a/crates/mvm-runtime/src/workload_runner/runner.rs b/crates/mvm-runtime/src/workload_runner/runner.rs
+index 90d6b5149eee8a6e3b0757e4ac12a0010f07e698..be27d2ed4ef7ad27d55e26c8b38141b9deedde19 100644
+--- a/crates/mvm-runtime/src/workload_runner/runner.rs
++++ b/crates/mvm-runtime/src/workload_runner/runner.rs
+@@ -59,6 +59,12 @@ mod broker;
+ mod claim_lease;
+ mod cold_hvf_channel;
+ mod console_boot;
++#[cfg(target_os = "linux")]
++mod firecracker_failure;
++#[cfg(target_os = "linux")]
++pub(crate) mod firecracker_process;
++#[cfg(target_os = "linux")]
++pub use firecracker_failure::FirecrackerPostBootFailure;
+ mod durability;
+ mod parent_verify;
+ mod preload;
+@@ -393,6 +399,11 @@ impl<D: VmmDriver, S: NetworkEndpointSpawner, B: BrokerRegistrar> WorkloadRunner
+         let result =
+             self.boot_bound_workload_guarded(inputs, Some(&kernel_binding), writable_images);
+         result.map_err(|error| {
++            #[cfg(target_os = "linux")]
++            let error = match error.downcast::<FirecrackerPostBootFailure>() {
++                Ok(failure) => return failure.with_lifetime(lifecycle, kernel_binding).into(),
++                Err(error) => error,
++            };
+             cold_hvf_channel::retain_boot_error(error, (lifecycle, kernel_binding))
+         })
+     }
+@@ -546,6 +557,14 @@ impl<D: VmmDriver, S: NetworkEndpointSpawner, B: BrokerRegistrar> WorkloadRunner
+             redaction: inputs.redaction,
+             retention: plan_stream_retention(inputs.config.plan_json.as_deref()),
+         };
++        let owns_firecracker = cfg!(target_os = "linux")
++            && self.driver.kind() == BackendKind::Firecracker
++            && inputs.config.installed_mailbox_owner.is_some();
++        #[cfg(target_os = "linux")]
++        if owns_firecracker {
++            firecracker_process::require_peer_pidfd()
++                .context("installed Firecracker rollback requires SO_PEERPIDFD")?;
++        }
+         durability::wait_for_unactivated_boot(inputs.config)?;
+         if let Some(kernel) = kernel {
+             kernel.before_boot(&spec)?;
+@@ -595,28 +614,68 @@ impl<D: VmmDriver, S: NetworkEndpointSpawner, B: BrokerRegistrar> WorkloadRunner
+                 ));
+             }
+         };
+-        if let Some(kernel) = kernel {
+-            kernel.observe_booted(&*vm)?;
+-        }
+-        trace.mark("console_stream_start");
+-
+-        // Universal initramfs path: the guest PID-1 agent waits for a signed
+-        // ActivateEnvironment before exposing operational RPCs. Send it now,
+-        // while the broker registration below still has a guard that rolls back
+-        // on failure. A rootfs boot whose universal initramfs could not be
+-        // resolved was refused at launch resolution, before the VMM started.
+-        if crate::microvm::booted_with_universal_initramfs(inputs.config) {
+-            durability::wait_for_activation(inputs.config, &*vm, &*self.console_streamer)?;
+-            trace.mark("admission_durable");
+-            crate::microvm::activate_workload(&*vm, inputs.config)
+-                .context("activate workload after boot")?;
+-        }
+-        trace.mark("activate_workload");
+-
+-        // Register the per-VM broker for the exact admitted host-service set.
+-        // The guard's Drop reaps on any early return until it is defused. A
+-        // requested service whose broker cannot start fails the launch closed.
+-        let (mut broker_guard, services) = self.register_workload_broker(inputs.config, &socks)?;
++        #[cfg(target_os = "linux")]
++        let mut process = None;
++        let finish = (|| {
++            #[cfg(target_os = "linux")]
++            if owns_firecracker {
++                process = Some(firecracker_process::OriginalFirecracker::capture(
++                    &*vm,
++                    &inputs.config.name,
++                    &state_dir,
++                )?);
++            }
++            if let Some(kernel) = kernel {
++                kernel.observe_booted(&*vm)?;
++            }
++            trace.mark("console_stream_start");
++
++            // Universal initramfs path: the guest PID-1 agent waits for a signed
++            // ActivateEnvironment before exposing operational RPCs. Send it now,
++            // while the broker registration below still has a guard that rolls back
++            // on failure. A rootfs boot whose universal initramfs could not be
++            // resolved was refused at launch resolution, before the VMM started.
++            if crate::microvm::booted_with_universal_initramfs(inputs.config) {
++                if owns_firecracker {
++                    durability::wait_for_owned_activation(inputs.config)?;
++                } else {
++                    durability::wait_for_activation(inputs.config, &*vm, &*self.console_streamer)?;
++                }
++                trace.mark("admission_durable");
++                crate::microvm::activate_workload(&*vm, inputs.config)
++                    .context("activate workload after boot")?;
++            }
++            trace.mark("activate_workload");
++
++            // Register the per-VM broker for the exact admitted host-service set.
++            // The guard's Drop reaps on any early return until it is defused. A
++            // requested service whose broker cannot start fails the launch closed.
++            self.register_workload_broker(inputs.config, &socks)
++        })();
++        let (mut broker_guard, services) = match finish {
++            Ok(registered) => registered,
++            Err(error) => {
++                #[cfg(target_os = "linux")]
++                if owns_firecracker {
++                    let owner = &inputs
++                        .config
++                        .installed_mailbox_owner
++                        .as_ref()
++                        .expect("installed owner selected")
++                        .owner;
++                    return Err(FirecrackerPostBootFailure::new(
++                        error,
++                        owner.clone(),
++                        process,
++                        vm,
++                        endpoint,
++                        Arc::clone(&self.console_streamer),
++                    )
++                    .into());
++                }
++                return Err(error);
++            }
++        };
+         endpoint.defuse();
+         broker_guard.defuse();
+         trace.mark("broker_register");
+diff --git a/crates/mvm-runtime/src/workload_runner/runner/firecracker_failure.rs b/crates/mvm-runtime/src/workload_runner/runner/firecracker_failure.rs
+new file mode 100644
+index 0000000000000000000000000000000000000000..4c53e3b887b59597bc433fc340ce1b28a8145a4f
+--- /dev/null
++++ b/crates/mvm-runtime/src/workload_runner/runner/firecracker_failure.rs
+@@ -0,0 +1,102 @@
++//! Retain the original running instance and its supporting launch guards on
++//! errors between driver boot and successful runtime registration.
++use super::{ConsoleStreamer, RunningVm, firecracker_process::OriginalFirecracker};
++use crate::{
++    kernel_custody::KernelBoundLaunch, runtime_evidence::RuntimeLifecycleLease,
++    workload_runner::claim::EndpointHandle,
++};
++use anyhow::{Context, Result, ensure};
++use mvm_contract::protocol::mailbox_worker::MailboxWorkerOwner;
++use std::sync::{Arc, Mutex};
++
++#[derive(Debug, thiserror::Error)]
++#[error("{cause}")]
++pub struct FirecrackerPostBootFailure {
++    #[source]
++    cause: anyhow::Error,
++    held: Option<Box<Mutex<Held>>>,
++}
++struct Held {
++    owner: MailboxWorkerOwner,
++    process: Option<OriginalFirecracker>,
++    vm: Box<dyn RunningVm>,
++    _endpoint: EndpointHandle,
++    console: Arc<dyn ConsoleStreamer>,
++    lifetime: Option<(RuntimeLifecycleLease, KernelBoundLaunch)>,
++}
++impl std::fmt::Debug for Held {
++    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
++        f.debug_struct("Held").finish_non_exhaustive()
++    }
++}
++impl FirecrackerPostBootFailure {
++    pub(super) fn new(
++        cause: anyhow::Error,
++        owner: MailboxWorkerOwner,
++        process: Option<OriginalFirecracker>,
++        vm: Box<dyn RunningVm>,
++        endpoint: EndpointHandle,
++        console: Arc<dyn ConsoleStreamer>,
++    ) -> Self {
++        Self {
++            cause,
++            held: Some(Box::new(Mutex::new(Held {
++                owner,
++                process,
++                vm,
++                _endpoint: endpoint,
++                console,
++                lifetime: None,
++            }))),
++        }
++    }
++    fn held(&mut self) -> Result<&mut Held> {
++        self.held
++            .as_mut()
++            .context("original instance already released")?
++            .get_mut()
++            .map_err(|_| anyhow::anyhow!("original Firecracker custody is unavailable"))
++    }
++    pub(super) fn with_lifetime(
++        mut self,
++        lifecycle: RuntimeLifecycleLease,
++        kernel: KernelBoundLaunch,
++    ) -> Self {
++        self.held
++            .as_mut()
++            .unwrap()
++            .get_mut()
++            .unwrap_or_else(std::sync::PoisonError::into_inner)
++            .lifetime = Some((lifecycle, kernel));
++        self
++    }
++    pub fn retry_stop(&mut self, owner: &MailboxWorkerOwner) -> Result<()> {
++        let held = self.held()?;
++        ensure!(&held.owner == owner, "different installed mailbox owner");
++        let (lifecycle, _) = held
++            .lifetime
++            .as_ref()
++            .context("original runtime lifecycle guard missing")?;
++        let process = held
++            .process
++            .as_ref()
++            .context("original Firecracker peer lifetime was not captured")?;
++        process.stop()?;
++        crate::kernel_custody::release_after_original_firecracker_exit(lifecycle, process)?;
++        lifecycle.release_installed_bundle_after_stop(&held.vm.id().0)?;
++        held.console.stop(&held.vm.id().0);
++        // Drop endpoint and the original runtime name lock only after exit and
++        // generation-bound release have both succeeded.
++        self.held.take();
++        Ok(())
++    }
++}
++impl Drop for FirecrackerPostBootFailure {
++    fn drop(&mut self) {
++        // A string-only caller must not release a live VM's guards. The owning
++        // installed SDK keeps this typed error for a bounded retry.
++        if let Some(held) = self.held.take() {
++            std::mem::forget(held);
++        }
++    }
++}
+diff --git a/crates/mvm-runtime/src/workload_runner/runner/firecracker_process.rs b/crates/mvm-runtime/src/workload_runner/runner/firecracker_process.rs
+new file mode 100644
+index 0000000000000000000000000000000000000000..3dca45e067b6756a50c95232883b7ed5eccb413e
+--- /dev/null
++++ b/crates/mvm-runtime/src/workload_runner/runner/firecracker_process.rs
+@@ -0,0 +1,235 @@
++//! A post-boot rollback may signal only the original process behind the
++//! Firecracker API socket. The lifetime descriptor is acquired before guest
++//! activation and is reused on every attempt, including after the path changes.
++use anyhow::{Context, Result, ensure};
++use mvm_vmm::host::{process_identity::ProcessIdentity, uds_peer::connected_peer_pid};
++use rustix::event::{PollFd, PollFlags, Timespec, poll};
++use rustix::io::Errno;
++use rustix::process::{Signal, pidfd_send_signal};
++use std::os::fd::{AsRawFd, FromRawFd, OwnedFd};
++use std::os::unix::net::UnixStream;
++use std::path::Path;
++use std::time::{Duration, Instant};
++
++pub(crate) struct OriginalFirecracker {
++    pub(crate) identity: ProcessIdentity,
++    descriptor: OwnedFd,
++}
++
++impl OriginalFirecracker {
++    pub(super) fn capture(vm: &dyn super::RunningVm, name: &str, state_dir: &Path) -> Result<Self> {
++        ensure!(vm.id().0 == name, "driver returned a different original VM");
++        let path = mvm_backends::fc::fc_api_socket_path(&state_dir.to_string_lossy());
++        Self::from_original_peer(name, Path::new(&path), || {
++            vm.process_identity()?
++                .context("driver has no original Firecracker identity")
++        })
++    }
++
++    fn from_original_peer(
++        name: &str,
++        socket: &Path,
++        identity: impl Fn() -> Result<ProcessIdentity>,
++    ) -> Result<Self> {
++        let before = identity()?;
++        ensure!(before.vm_id == name, "original VM name differs");
++        let stream = mvm_agentd::vsock::connect_unix_before(
++            socket,
++            Instant::now() + Duration::from_secs(2),
++        )?;
++        ensure!(
++            u32::try_from(connected_peer_pid(&stream)?)? == before.pid,
++            "Firecracker API belongs to another process"
++        );
++        let descriptor = peer_pidfd(&stream)?;
++        ensure!(
++            identity()? == before,
++            "original process changed during binding"
++        );
++        let pinned = Self {
++            identity: before,
++            descriptor,
++        };
++        ensure!(
++            !pinned.exited_before(Instant::now())?,
++            "original process exited during binding"
++        );
++        Ok(pinned)
++    }
++
++    fn exited_before(&self, until: Instant) -> Result<bool> {
++        loop {
++            let mut fds = [PollFd::new(&self.descriptor, PollFlags::IN)];
++            let timeout = Timespec::try_from(until.saturating_duration_since(Instant::now()))?;
++            match poll(&mut fds, Some(&timeout)) {
++                Err(Errno::INTR) if Instant::now() < until => continue,
++                Err(error) => return Err(error.into()),
++                Ok(0) => return Ok(false),
++                Ok(_) => {
++                    let events = fds[0].revents();
++                    ensure!(
++                        events.contains(PollFlags::IN)
++                            && !events.intersects(PollFlags::ERR | PollFlags::NVAL),
++                        "unconfirmed original pidfd terminal events: {events:?}"
++                    );
++                    return Ok(true);
++                }
++            }
++        }
++    }
++
++    pub(crate) fn verify_exit(&self) -> Result<()> {
++        ensure!(
++            self.exited_before(Instant::now())?,
++            "original Firecracker exit is unconfirmed"
++        );
++        Ok(())
++    }
++
++    pub(super) fn stop(&self) -> Result<()> {
++        if self.exited_before(Instant::now())? {
++            return Ok(());
++        }
++        let start = Instant::now();
++        for (signal, until) in [
++            (Signal::TERM, start + Duration::from_secs(1)),
++            (Signal::KILL, start + Duration::from_secs(4)),
++        ] {
++            match pidfd_send_signal(&self.descriptor, signal) {
++                Ok(()) | Err(Errno::SRCH) => {}
++                Err(error) => return Err(error.into()),
++            }
++            if self.exited_before(until)? {
++                return Ok(());
++            }
++        }
++        anyhow::bail!("original Firecracker pidfd did not report exit")
++    }
++}
++
++/// Check kernel support before launching a VM. The actual authority is
++/// obtained later from the original Firecracker socket, never from this pair.
++pub(super) fn require_peer_pidfd() -> Result<()> {
++    let (probe, _other) = UnixStream::pair()?;
++    peer_pidfd(&probe)?;
++    Ok(())
++}
++
++// Linux >= 6.5 supplies the lifetime descriptor directly from the connected
++// socket. Unsupported kernels fail closed before the workload is activated.
++fn peer_pidfd(stream: &UnixStream) -> Result<OwnedFd> {
++    let mut fd: libc::c_int = -1;
++    let mut len = std::mem::size_of_val(&fd) as libc::socklen_t;
++    // SAFETY: all pointers reference live buffers of the indicated size.
++    let rc = unsafe {
++        libc::getsockopt(
++            stream.as_raw_fd(),
++            libc::SOL_SOCKET,
++            libc::SO_PEERPIDFD,
++            (&mut fd as *mut libc::c_int).cast(),
++            &mut len,
++        )
++    };
++    if rc != 0 {
++        return Err(std::io::Error::last_os_error())
++            .context("obtain original Firecracker API peer pidfd");
++    }
++    ensure!(fd >= 0, "invalid original API peer pidfd");
++    // SAFETY: SO_PEERPIDFD installs a fresh caller-owned descriptor on success.
++    let fd = unsafe { OwnedFd::from_raw_fd(fd) };
++    ensure!(
++        len as usize == std::mem::size_of::<libc::c_int>(),
++        "invalid API peer pidfd size"
++    );
++    Ok(fd)
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++    use std::os::unix::net::UnixListener;
++    use std::process::{Child, Command, Stdio};
++
++    const FIXTURE: &str = "workload_runner::runner::firecracker_process::tests::fixture_listener";
++    #[test]
++    #[ignore = "spawned by the original pidfd tests"]
++    fn fixture_listener() {
++        let _socket =
++            UnixListener::bind(std::env::var_os("MVM_TEST_ORIGINAL_PIDFD_SOCKET").unwrap())
++                .unwrap();
++        loop {
++            std::thread::park();
++        }
++    }
++    struct OriginalChild(Child);
++    impl Drop for OriginalChild {
++        fn drop(&mut self) {
++            let _ = self.0.kill();
++            let _ = self.0.wait();
++        }
++    }
++    fn original(path: &Path) -> OriginalChild {
++        let mut child = OriginalChild(
++            Command::new(std::env::current_exe().unwrap())
++                .args(["--ignored", "--exact", FIXTURE])
++                .env("MVM_TEST_ORIGINAL_PIDFD_SOCKET", path)
++                .stdout(Stdio::null())
++                .spawn()
++                .unwrap(),
++        );
++        let deadline = Instant::now() + Duration::from_secs(5);
++        while !path.exists() {
++            assert!(child.0.try_wait().unwrap().is_none() && Instant::now() < deadline);
++            std::thread::sleep(Duration::from_millis(2));
++        }
++        child
++    }
++    #[test]
++    fn changed_identity_and_missing_peer_retain_original_process() {
++        let temp = tempfile::tempdir().unwrap();
++        let path = temp.path().join("fc.socket");
++        let mut child = original(&path);
++        let pid = child.0.id();
++        let calls = std::cell::Cell::new(0);
++        let capture = || {
++            let mut identity = ProcessIdentity::capture("vm", pid)?;
++            if calls.replace(1) != 0 {
++                identity.start_ticks += 1;
++            }
++            Ok(identity)
++        };
++        assert!(OriginalFirecracker::from_original_peer("vm", &path, capture).is_err());
++        assert!(
++            OriginalFirecracker::from_original_peer("vm", &temp.path().join("absent"), || Ok(
++                ProcessIdentity::capture("vm", pid)?
++            ))
++            .is_err()
++        );
++        assert!(child.0.try_wait().unwrap().is_none());
++    }
++    #[test]
++    fn only_original_process_exits_even_after_socket_replacement() {
++        let temp = tempfile::tempdir().unwrap();
++        let path = temp.path().join("fc.socket");
++        let mut original_child = original(&path);
++        let pid = original_child.0.id();
++        let held = OriginalFirecracker::from_original_peer("vm", &path, || {
++            Ok(ProcessIdentity::capture("vm", pid)?)
++        })
++        .unwrap();
++        std::fs::remove_file(&path).unwrap();
++        let mut replacement = original(&path);
++        assert!(
++            OriginalFirecracker::from_original_peer("vm", &path, || Ok(ProcessIdentity::capture(
++                "vm", pid
++            )?))
++            .is_err()
++        );
++        assert!(held.verify_exit().is_err());
++        held.stop().unwrap();
++        held.verify_exit().unwrap();
++        held.stop().unwrap();
++        assert!(!original_child.0.wait().unwrap().success());
++        assert!(replacement.0.try_wait().unwrap().is_none());
++    }
++}
