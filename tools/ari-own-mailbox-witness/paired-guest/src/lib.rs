@@ -1,3 +1,4 @@
+mod control;
 mod retirement;
 use anyhow::{Context, Result, ensure};
 use cpu_time::ProcessTime;
@@ -93,7 +94,8 @@ fn stage(v: &Value, deadline: Instant) -> Result<Value> {
 fn receive(v: &Value, deadline: Instant) -> Result<Value> {
     let id = field(v, "message_id")?;
     ensure!(
-        v.as_object().is_some_and(|o| o.len() == 1),
+        v.as_object()
+            .is_some_and(|o| o.len() == 1 || (o.len() == 2 && v["ephemeral_readback"] == true)),
         "unexpected destination Call parameters"
     );
     let mut traffic = ReaderTraffic::default();
@@ -134,6 +136,12 @@ fn receive(v: &Value, deadline: Instant) -> Result<Value> {
     );
     let mut ack = ReaderTraffic::default();
     delivery.acknowledge_before(deadline, &mut ack)?;
+    if v["ephemeral_readback"] == true {
+        // The guest retained and verified this file through ACK. Bound scratch
+        // space for the next distinct operation on this same worker.
+        fs::remove_file(path)?;
+        File::open("/tmp")?.sync_all()?;
+    }
     let mut result = json!({"role":"received_and_acknowledged","message_id":hex::encode(id),"frame_bytes":frame.len(),
       "readback_hex":hex::encode(recovered),"receive_to_agent":traffic.written,"receive_from_agent":traffic.read,
       "ack_to_agent":ack.written,"ack_from_agent":ack.read});
@@ -159,9 +167,10 @@ fn run(call: WorkerCallRequest, role: &Role) -> Result<Value> {
         call.stdin.len() <= 2048 && call.timeout_secs >= 2,
         "bounded paired workload input required"
     );
-    let value = serde_json::from_slice(&call.stdin)?;
+    let value: Value = serde_json::from_slice(&call.stdin)?;
     let end = start + Duration::from_secs((call.timeout_secs - 1).min(30));
     let mut result = match role {
+        Role::Source if value.get("control_probe").is_some() => control::probe(&value, end),
         Role::Source => stage(&value, end),
         Role::Destination => receive(&value, end),
     }?;
