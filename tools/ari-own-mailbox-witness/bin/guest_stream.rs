@@ -4,11 +4,16 @@ pub(super) const NAME: &str = "mailbox-guest-stream-v1.counts";
 // A prefix can still identify the last protocol phase. Publish totals only
 // for paired begin/end records, without truncation, overflow or sequence gaps.
 pub(super) fn completed(raw: &str) -> Option<(u64, u64, u64, bool)> {
+    completed_for(raw, SCOPE).map(|(n, r, w, _, _, finished)| (n, r, w, finished))
+}
+
+pub(super) fn completed_for(raw: &str, scope: &str) -> Option<(u64, u64, u64, u64, u64, bool)> {
     let mut lines = raw.strip_suffix('\n')?.lines();
-    if lines.next()? != SCOPE {
+    if lines.next()? != scope {
         return None;
     }
     let (mut exchanges, mut read, mut written) = (0_u64, 0_u64, 0_u64);
+    let (mut read_errors, mut write_errors) = (0u64, 0u64);
     let mut active = None;
     let mut finished = false;
     for line in lines {
@@ -36,8 +41,8 @@ pub(super) fn completed(raw: &str) -> Option<(u64, u64, u64, bool)> {
             "end" if active == Some(seq) => {
                 read = read.checked_add(fields.next()?.parse().ok()?)?;
                 written = written.checked_add(fields.next()?.parse().ok()?)?;
-                fields.next()?.parse::<u64>().ok()?;
-                fields.next()?.parse::<u64>().ok()?;
+                read_errors = read_errors.checked_add(fields.next()?.parse().ok()?)?;
+                write_errors = write_errors.checked_add(fields.next()?.parse().ok()?)?;
                 if fields.next()? != "false" {
                     return None;
                 }
@@ -50,8 +55,14 @@ pub(super) fn completed(raw: &str) -> Option<(u64, u64, u64, bool)> {
             return None;
         }
     }
-    ((finished || exchanges > 0) && active.is_none())
-        .then_some((exchanges, read, written, finished))
+    ((finished || exchanges > 0) && active.is_none()).then_some((
+        exchanges,
+        read,
+        written,
+        read_errors,
+        write_errors,
+        finished,
+    ))
 }
 
 #[cfg(test)]

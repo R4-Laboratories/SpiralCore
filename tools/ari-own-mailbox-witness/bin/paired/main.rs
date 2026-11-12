@@ -1,5 +1,7 @@
 //! One synthetic B-addressed operation through two original persistent native guests.
 mod enrollment;
+#[cfg(all(target_os = "linux", feature = "installed-object-pair"))]
+mod installed_object;
 mod meter;
 mod native_backend;
 mod object_enrollment;
@@ -93,7 +95,12 @@ fn image(path: &Path, digest: &str) -> Result<PathBuf> {
     );
     Ok(path)
 }
+#[derive(Default)]
 struct State {
+    #[cfg(all(target_os = "linux", feature = "installed-object-pair"))]
+    objects: [Option<
+        mvm_hostd::mailbox_process::original_journal::object_workers::OriginalObjectWorker,
+    >; 2],
     a: Option<OriginalJournalSourceHost>,
     b: Option<BHandle>,
     b_pending: Option<OriginalJournalDestination>,
@@ -127,7 +134,15 @@ impl State {
                     continue;
                 }
                 let until = Instant::now() + Duration::from_secs(20);
-                let outcome = if i == 0 {
+                #[cfg(all(target_os = "linux", feature = "installed-object-pair"))]
+                let object = self.objects[i].as_mut().map(|worker| {
+                    rt.block_on(backend.stop_persistent_journal(&id, &mut worker.owner(), until))
+                });
+                #[cfg(not(all(target_os = "linux", feature = "installed-object-pair")))]
+                let object = None;
+                let outcome = if object.is_some() {
+                    object
+                } else if i == 0 {
                     self.a.as_mut().map(|a| {
                         rt.block_on(backend.stop_persistent_journal(
                             &id,
@@ -191,6 +206,10 @@ impl State {
         }
         // A also owns an Arc to B. Drop only already-collected originals
         // before deleting their definitions via the normal SDK.
+        #[cfg(all(target_os = "linux", feature = "installed-object-pair"))]
+        for worker in &mut self.objects {
+            drop(worker.take());
+        }
         drop(self.a.take());
         drop(self.b_pending.take());
         drop(self.b.take());
@@ -255,13 +274,7 @@ fn run(args: &[String]) -> Result<()> {
     let begin = Instant::now();
     let cpu = cpu_time::ProcessTime::now();
     let mut meters: [Option<meter::OriginalMeter>; 2] = [None, None];
-    let mut state = State {
-        a: None,
-        b: None,
-        b_pending: None,
-        defined: [false; 2],
-        attempted: [false; 2],
-    };
+    let mut state = State::default();
     let measured = (|| -> Result<Value> {
         let setup = Enrollment::new()?;
         for (i, name, path) in [(1, B, bi), (0, A, ai)] {
@@ -402,6 +415,12 @@ fn main() -> Result<()> {
         && cmd == "call"
     {
         return workload::dispatch(name);
+    }
+    #[cfg(all(target_os = "linux", feature = "installed-object-pair"))]
+    if let [cmd, images @ ..] = args.as_slice()
+        && cmd == "installed-object-repeat"
+    {
+        return installed_object::run(images);
     }
     if args.as_slice() == ["object-enrollment-check"] {
         println!(
