@@ -13,6 +13,8 @@ platform qualification follow. [Guest retry and worker capacity regressions](evi
 
 Two original Firecracker guests now retire through the SDK without operator intervention after both addressed workload Calls exceed their shared 15-second deadline. The driver used 8.482 s of CPU over a 121.586 s lifecycle. A’s port-5257 stream accepted 52 bytes toward the guest and returned none. B recorded no dial or exact readback. [Native measurements and comparison with assisted teardown](evidence/2026-11-12-paired-mailbox/addressed-native-launch/paired-deadline-native.md).
 
+A native macOS host test sealed 257 bytes, verified B’s V2 receipt over a Unix socket, reopened the original destination journal and read all 257 bytes back using B’s signed Receive. Its positive exchange used 5,503 bytes toward B and 1,119 bytes in reply. [Destination enrollment, CPU and timing](evidence/2026-11-12-paired-mailbox/durable-guest-binding/incoming-journal.md).
+
 Linux host tests now cover original mailbox helper ownership across socket replacement and launcher failure, and exact source ciphertext retries with an independent destination credential. [Source, regression tests and remaining installed gate](evidence/2026-11-12-paired-mailbox/durable-guest-binding/original-journal-host.md).
 
 A guest-side candidate now keeps an explicitly B-addressed pending operation across a lost reply, fences older boot or agent versions, and removes the original bytes after verifying a matching B receipt. Six directed and nine original mailbox component tests passed on macOS. [Original scope, wire costs and installed gates](evidence/2026-11-12-paired-mailbox/durable-guest-binding/directed-source.md).
