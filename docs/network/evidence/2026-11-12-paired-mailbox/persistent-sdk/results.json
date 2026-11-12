@@ -1,0 +1,201 @@
+{
+  "source": "8b5e86b2d822cfecc03b2288d554a8bd953a0c78",
+  "parent": "f17ddafd3749bf0dcc24e68b3386d07133aa86aa",
+  "tree": "bf07e16ada6c4470068e5cc6f0288b15069eaabd",
+  "patch_sha256": "cd0215e8b66220c1ffedb62d835ba0b43f7e3dc0180e674d5aa38701307767bb",
+  "rustc": "1.97.1",
+  "macos_arm64": {
+    "source": "3b77224edb3d44636c91efa606452cfb5fe5a763",
+    "tests": [
+      {
+        "selector_log": "spiralcore-sdk-release-client.log",
+        "passed": 217,
+        "failed": 0,
+        "ignored": 1,
+        "filtered": 1271,
+        "suite_wall_seconds": 13.4,
+        "log_sha256": "9d3d4efa83d9a180bbbe6a47c4498b767a81bb4289ea2c957eabf8e12c66a8c7",
+        "focused_tests": [
+          "launch::persistent::journal::tests::persistent_journal_accounting_retains_ownership_when_abort_is_uncertain",
+          "launch::persistent::journal::tests::persistent_journal_role_must_match_both_signed_direction_fields",
+          "launch::tests::cleanup_keeps_a_registration_recreated_after_the_session_made_it",
+          "launch::tests::cleanup_keeps_a_registration_the_session_borrowed",
+          "launch::tests::cleanup_keeps_secret_references_changed_after_the_session_wrote_them",
+          "launch::tests::concurrent_persistent_creates_of_one_name_produce_exactly_one_success",
+          "launch::tests::persistent_journal_request_without_original_owner_never_creates_a_machine",
+          "launch::tests::persistent_ordinary_and_transient_starts_respect_the_original_reservation",
+          "launch::tests::transient_cleanup_removes_what_the_session_registered_and_leased",
+          "launch::tests::transient_exit_reports_code_and_cleanup_is_idempotent",
+          "launch::transient::tests::typed_observation_precedes_cleanup_even_when_the_writer_refuses"
+        ],
+        "skipped": [
+          "launch::bundle_runtime::tests::a_canonical_bundle_is_refused_for_libkrun_and_qemu_before_runtime_assembly"
+        ]
+      },
+      {
+        "selector_log": "spiralcore-sdk-release-host.log",
+        "passed": 14,
+        "failed": 0,
+        "ignored": 1,
+        "filtered": 2351,
+        "suite_wall_seconds": 0.54,
+        "log_sha256": "5f40a118ee0b77b93711cd182706d7bae54ff9423c3bb7c159d6961edd9caed4",
+        "focused_tests": [
+          "mailbox_process::original_journal::authorization::tests::signatures_original_shared_scope_and_current_revocations_gate_the_proposal",
+          "mailbox_process::original_journal::runtime_state::tests::original_cast_creates_private_state_and_refuses_unsafe_existing_namespace",
+          "mailbox_process::original_journal::runtime_state::tests::split_original_refuses_foreign_socket_before_cleanup_and_releases_empty_fresh_paths",
+          "mailbox_process::original_journal::stop::tests::replaced_socket_directory_cannot_be_cleaned_as_the_original",
+          "mailbox_process::original_journal::stop::tests::unresolved_vmm_keeps_actual_helper_until_original_kernel_exit",
+          "mailbox_process::original_journal::tests::a_second_launcher_cannot_rotate_a_live_original_or_adopt_stale_state",
+          "mailbox_process::original_journal::tests::crash_before_child_publication_preserves_unresolved_custody",
+          "mailbox_process::original_journal::tests::definitive_original_collection_is_idempotent_and_protects_the_marker",
+          "mailbox_process::original_journal::tests::dropping_original_custody_keeps_both_normal_and_paired_starts_fenced",
+          "mailbox_process::original_journal::tests::journal_peer_child",
+          "mailbox_process::original_journal::tests::only_original_kernel_peer_can_receive_the_direction",
+          "mailbox_process::original_journal::tests::original_exec_refusal_releases_only_its_unstarted_claim",
+          "mailbox_process::original_journal::tests::paired_sdk_reap_preserves_owned_state_and_serializes_starts",
+          "mailbox_process::original_journal::tests::unpaired_names_leave_only_bounded_lock_shards"
+        ],
+        "skipped": [
+          "mailbox_process::original_journal::paired_process_tests::original_a_and_b_helpers_relay_same_sealed_intent_after_lost_guest_reply"
+        ]
+      }
+    ]
+  },
+  "linux_x86_64": {
+    "source": "8b5e86b2d822cfecc03b2288d554a8bd953a0c78",
+    "tests": [
+      {
+        "selector_log": "release-client.log",
+        "passed": 3,
+        "failed": 0,
+        "ignored": 0,
+        "filtered": 1469,
+        "suite_wall_seconds": 0.09,
+        "log_sha256": "c1dfe3bf4cf619934446454393a8df1863c4e541c7a1bf7ab49bd860233f191d",
+        "focused_tests": [
+          "launch::persistent::journal::tests::persistent_journal_accounting_retains_ownership_when_abort_is_uncertain",
+          "launch::persistent::journal::tests::persistent_journal_role_must_match_both_signed_direction_fields",
+          "launch::tests::persistent_journal_request_without_original_owner_never_creates_a_machine"
+        ],
+        "skipped": []
+      },
+      {
+        "selector_log": "release-compat.log",
+        "passed": 1,
+        "failed": 0,
+        "ignored": 0,
+        "filtered": 1471,
+        "suite_wall_seconds": 0.03,
+        "log_sha256": "8f2d5611cb5053872a1fc723a34e60ede4b7dc7add1fedd092d978906b3f6396",
+        "focused_tests": [
+          "local::tests::stop_machine_falls_back_to_configured_backend_and_is_idempotent"
+        ],
+        "skipped": []
+      },
+      {
+        "selector_log": "release-handshake.log",
+        "passed": 1,
+        "failed": 0,
+        "ignored": 0,
+        "filtered": 2380,
+        "suite_wall_seconds": 0.0,
+        "log_sha256": "1875dc1aca36d9b3c70ce2be0572420871d17cf6746b26a9eba975e912073ec7",
+        "focused_tests": [
+          "mailbox_process::tests::post_exec_handshake_failure_retains_original_child_and_marker"
+        ],
+        "skipped": []
+      },
+      {
+        "selector_log": "release-hostd.log",
+        "passed": 9,
+        "failed": 0,
+        "ignored": 0,
+        "filtered": 2372,
+        "suite_wall_seconds": 0.01,
+        "log_sha256": "bbdd38fad314381c3e9251a8a7c7c8b2051100da09b76279df5f3094efa24349",
+        "focused_tests": [
+          "mailbox_process::original_journal::tests::a_second_launcher_cannot_rotate_a_live_original_or_adopt_stale_state",
+          "mailbox_process::original_journal::tests::crash_before_child_publication_preserves_unresolved_custody",
+          "mailbox_process::original_journal::tests::definitive_original_collection_is_idempotent_and_protects_the_marker",
+          "mailbox_process::original_journal::tests::dropping_original_custody_keeps_both_normal_and_paired_starts_fenced",
+          "mailbox_process::original_journal::tests::journal_peer_child",
+          "mailbox_process::original_journal::tests::only_original_kernel_peer_can_receive_the_direction",
+          "mailbox_process::original_journal::tests::original_exec_refusal_releases_only_its_unstarted_claim",
+          "mailbox_process::original_journal::tests::paired_sdk_reap_preserves_owned_state_and_serializes_starts",
+          "mailbox_process::original_journal::tests::unpaired_names_leave_only_bounded_lock_shards"
+        ],
+        "skipped": []
+      },
+      {
+        "selector_log": "release-ordinary.log",
+        "passed": 1,
+        "failed": 0,
+        "ignored": 0,
+        "filtered": 1471,
+        "suite_wall_seconds": 0.0,
+        "log_sha256": "8d04d369dd8ae86f819c2931c3a3788022ab23831a375d81cb9c25b03230c19e",
+        "focused_tests": [
+          "local::tests::ordinary_stop_remove_and_cleanup_cannot_clear_an_original_journal"
+        ],
+        "skipped": []
+      },
+      {
+        "selector_log": "release-pair.log",
+        "passed": 1,
+        "failed": 0,
+        "ignored": 0,
+        "filtered": 2380,
+        "suite_wall_seconds": 0.61,
+        "log_sha256": "a52478e47cf59b14c122aae605c76df0c2cdb257ccba9f5fc437799347555ee7",
+        "focused_tests": [
+          "mailbox_process::original_journal::paired_process_tests::original_a_and_b_helpers_relay_same_sealed_intent_after_lost_guest_reply"
+        ],
+        "skipped": []
+      },
+      {
+        "selector_log": "release-stop.log",
+        "passed": 3,
+        "failed": 0,
+        "ignored": 0,
+        "filtered": 2378,
+        "suite_wall_seconds": 0.29,
+        "log_sha256": "59e62450a7ff1e47d4f9d5e9ee4858d8ad880dba20a9076e524b9dbe539571d2",
+        "focused_tests": [
+          "mailbox_process::original_journal::stop::tests::observed_helper_exit_keeps_the_original_claim_while_its_vm_lives",
+          "mailbox_process::original_journal::stop::tests::replaced_socket_directory_cannot_be_cleaned_as_the_original",
+          "mailbox_process::original_journal::stop::tests::unresolved_vmm_keeps_actual_helper_until_original_kernel_exit"
+        ],
+        "skipped": []
+      },
+      {
+        "selector_log": "release-vmm.log",
+        "passed": 5,
+        "failed": 0,
+        "ignored": 0,
+        "filtered": 1068,
+        "suite_wall_seconds": 2.03,
+        "log_sha256": "37e3c440d33a628e090c057dd7ddf5fd6a242510666ddb566e6ad1bcd061e870",
+        "focused_tests": [
+          "host::vm_helpers::tests::a_vm_that_started_no_helpers_reaps_cleanly",
+          "host::vm_helpers::tests::paired_original_keeps_epoch_custody_until_owner_collection",
+          "host::vm_helpers::tests::the_mailbox_epoch_secret_is_shredded_when_the_vm_is_reaped",
+          "host::vm_helpers::tests::the_mailbox_process_a_vm_started_is_stopped_and_forgotten",
+          "host::vm_helpers::tests::the_network_endpoint_a_vm_started_is_stopped_and_forgotten"
+        ],
+        "skipped": []
+      }
+    ],
+    "executable_sha256": {
+      "mvm_client-f0b56d6eafe7faa4": "b583a8a1f5c61e0f2a8e699a5a9e54b0ef033de5e41580f343aab18299567f43",
+      "mvm_hostd-4ed3451d86f0ae3c": "b48abdbe7aa665cb0194ee8e4d1819ac2cb7e9f12390c0c30d951c0547bbd4c0",
+      "mvm_vmm-5eb3d803652e7153": "f608d52e36b87029cda177c0de2e26c5148f42ca051dc1f2cdb469208c166713",
+      "mvm-mailbox": "f1468f7457a0c900c6f9f1d828e1cf50a53c1b2b54d14f109c16d9637dca8d72"
+    }
+  },
+  "scope": "SDK launch, original helper lifetime, rollback, and two real helper processes using fixture guest sockets. Native guest transfer measurements are recorded separately.",
+  "native_guest_payload_transferred": false,
+  "wan_bytes": null,
+  "endpoint_cpu": null,
+  "transfer_wall_time": null
+}
