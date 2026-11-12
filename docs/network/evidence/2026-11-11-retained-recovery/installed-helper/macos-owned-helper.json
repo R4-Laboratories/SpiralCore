@@ -1,0 +1,153 @@
+{
+  "platform": "Apple Silicon macOS; native host process and synthetic Unix guest socket; MVM 0.27.0 development composition",
+  "toolchain": "rustc 1.97.1 (8bab26f4f 2026-07-14)",
+  "cpu": "getrusage RUSAGE_CHILDREN difference for each test invocation, includes waited-for helper",
+  "timing": "fixture wall including process setup and collection; inner timer spans canonical guest write through exact host readback",
+  "executables": {
+    "mvm_hostd": "80995c14667b2222357a16e7af9a2496d46508fc5bf43ce56ec3ac0a6536dcaf",
+    "owned_mailbox_helper": "81570773dd205312bd2ee08b5f9b1ba43ccd4b5ba38d8562940acf4071858257"
+  },
+  "tests": [
+    {
+      "test": "mailbox_launch::tests::owned_launch_reports_bind_failure_before_advertising_readiness",
+      "exe": "mvm_hostd-86f84a82dc70773d",
+      "exit": 0,
+      "wall_ms": 93.962542,
+      "user_ms": 5.316,
+      "system_ms": 11.282999999999998,
+      "output": "\nrunning 1 test\ntest mailbox_launch::tests::owned_launch_reports_bind_failure_before_advertising_readiness ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2388 filtered out; finished in 0.08s\n\n",
+      "ran_one": true
+    },
+    {
+      "test": "mailbox_launch::tests::owned_launch_returns_with_the_canonical_host_queue_serving",
+      "exe": "mvm_hostd-86f84a82dc70773d",
+      "exit": 0,
+      "wall_ms": 153.334041,
+      "user_ms": 5.009999999999999,
+      "system_ms": 10.415000000000004,
+      "output": "\nrunning 1 test\ntest mailbox_launch::tests::owned_launch_returns_with_the_canonical_host_queue_serving ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2388 filtered out; finished in 0.14s\n\n",
+      "ran_one": true
+    },
+    {
+      "test": "mailbox_process::owned::tests::owned_config_is_bounded_and_requires_eof",
+      "exe": "mvm_hostd-86f84a82dc70773d",
+      "exit": 0,
+      "wall_ms": 18.454875,
+      "user_ms": 5.482000000000001,
+      "system_ms": 5.012999999999996,
+      "output": "\nrunning 1 test\ntest mailbox_process::owned::tests::owned_config_is_bounded_and_requires_eof ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2388 filtered out; finished in 0.00s\n\n",
+      "ran_one": true
+    },
+    {
+      "test": "mailbox_process::owned::tests::owner_eof_interrupts_open_config_pipe",
+      "exe": "mvm_hostd-86f84a82dc70773d",
+      "exit": 0,
+      "wall_ms": 11.749625,
+      "user_ms": 4.271000000000001,
+      "system_ms": 3.6590000000000025,
+      "output": "\nrunning 1 test\ntest mailbox_process::owned::tests::owner_eof_interrupts_open_config_pipe ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2388 filtered out; finished in 0.00s\n\n",
+      "ran_one": true
+    },
+    {
+      "test": "mailbox_process::owned::tests::stalled_config_hits_original_deadline",
+      "exe": "mvm_hostd-86f84a82dc70773d",
+      "exit": 0,
+      "wall_ms": 22.884334,
+      "user_ms": 4.171999999999999,
+      "system_ms": 3.2919999999999963,
+      "output": "\nrunning 1 test\ntest mailbox_process::owned::tests::stalled_config_hits_original_deadline ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2388 filtered out; finished in 0.01s\n\n",
+      "ran_one": true
+    },
+    {
+      "test": "mailbox_process::owned_wire::tests::config_binds_to_original_parent_grant_paths_and_backend_route",
+      "exe": "mvm_hostd-86f84a82dc70773d",
+      "exit": 0,
+      "wall_ms": 201.695583,
+      "user_ms": 4.641000000000003,
+      "system_ms": 8.842999999999996,
+      "output": "\nrunning 1 test\ntest mailbox_process::owned_wire::tests::config_binds_to_original_parent_grant_paths_and_backend_route ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2388 filtered out; finished in 0.19s\n\n",
+      "ran_one": true
+    },
+    {
+      "test": "mailbox_process::owned_wire::tests::private_status_rejects_extra_or_duplicate_fields",
+      "exe": "mvm_hostd-86f84a82dc70773d",
+      "exit": 0,
+      "wall_ms": 41.584042,
+      "user_ms": 5.796999999999997,
+      "system_ms": 7.056,
+      "output": "\nrunning 1 test\ntest mailbox_process::owned_wire::tests::private_status_rejects_extra_or_duplicate_fields ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2388 filtered out; finished in 0.01s\n\n",
+      "ran_one": true
+    },
+    {
+      "test": "mailbox_process::owned_wire::tests::ready_requires_the_original_tuple_and_success_status",
+      "exe": "mvm_hostd-86f84a82dc70773d",
+      "exit": 0,
+      "wall_ms": 22.327,
+      "user_ms": 4.947,
+      "system_ms": 5.612000000000005,
+      "output": "\nrunning 1 test\ntest mailbox_process::owned_wire::tests::ready_requires_the_original_tuple_and_success_status ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2388 filtered out; finished in 0.00s\n\n",
+      "ran_one": true
+    },
+    {
+      "test": "mailbox_process::owned_wire::tests::stalled_parent_write_honors_its_deadline",
+      "exe": "mvm_hostd-86f84a82dc70773d",
+      "exit": 0,
+      "wall_ms": 47.497375,
+      "user_ms": 4.562999999999998,
+      "system_ms": 6.4239999999999995,
+      "output": "\nrunning 1 test\ntest mailbox_process::owned_wire::tests::stalled_parent_write_honors_its_deadline ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2388 filtered out; finished in 0.03s\n\n",
+      "ran_one": true
+    },
+    {
+      "test": "mailbox_process::owned_wire::tests::truncated_oversized_and_partial_control_frames_fail_closed",
+      "exe": "mvm_hostd-86f84a82dc70773d",
+      "exit": 0,
+      "wall_ms": 40.36075,
+      "user_ms": 4.469000000000001,
+      "system_ms": 5.418999999999993,
+      "output": "\nrunning 1 test\ntest mailbox_process::owned_wire::tests::truncated_oversized_and_partial_control_frames_fail_closed ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2388 filtered out; finished in 0.03s\n\n",
+      "ran_one": true
+    },
+    {
+      "test": "owned_mailbox_binds_reports_ready_and_retires_on_parent_eof",
+      "exe": "owned_mailbox_helper-e8862ea957a3d1ec",
+      "exit": 0,
+      "wall_ms": 459.531917,
+      "user_ms": 12.014999999999997,
+      "system_ms": 22.989999999999995,
+      "output": "\nrunning 1 test\ntest owned_mailbox_binds_reports_ready_and_retires_on_parent_eof ... owned mailbox payload=4098 guest_to_helper=4134 helper_to_guest=11 send_to_verified_readback_us=2736\nok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 1 filtered out; finished in 0.45s\n\n",
+      "ran_one": true
+    },
+    {
+      "test": "owned_mailbox_refuses_mismatched_backend_route_before_bind",
+      "exe": "owned_mailbox_helper-e8862ea957a3d1ec",
+      "exit": 0,
+      "wall_ms": 122.855333,
+      "user_ms": 7.629999999999998,
+      "system_ms": 14.604000000000006,
+      "output": "\nrunning 1 test\ntest owned_mailbox_refuses_mismatched_backend_route_before_bind ... Error: owned mailbox helper failed\n\nCaused by:\n    owned mailbox config mismatch\nok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 1 filtered out; finished in 0.12s\n\n",
+      "ran_one": true
+    }
+  ],
+  "without_lease": {
+    "exit": 1,
+    "wait_s": 0.01603225000144448,
+    "message": "Error: owned mailbox requires an installation resource lease"
+  },
+  "helper_sha256": "03c5d4ec2985ee71d41b2e52c7d7c4d027ca58af43e1971fec1542b265d41312",
+  "helper_files_sha256": {
+    "src/bin/mvm-mailbox.rs": "11854ce3b01fed8ac0893d27774a08f81bbcf975967b899ceb0dca8e60773dcd",
+    "src/mailbox_launch.rs": "2a84f2ba82cf16b19b5da79b129dd6d04b7d9d1169ab13af18059d73f0fbd6ca",
+    "src/mailbox_process.rs": "0e35ee698428071333b403bedf4d8f44d052b7422f70926d7fa15a1f61276779",
+    "src/mailbox_process/owned.rs": "db43a6b0539c0429b0fc2fbc0f8c7399fcf30bfc71c4a8179c1688f4238ba89e",
+    "src/mailbox_process/owned_wire.rs": "caf494b9023a24cb256493306f3de6b9d1888253c4b73460ab14da19d3e063b8",
+    "tests/owned_mailbox_helper.rs": "ac708d461191f03c2848b847ee70019224ca9edc1e8f59e3b353f49eadd078b0"
+  },
+  "pre_fix_linux_process": {
+    "source": "installed Linux fixture prior to owned entry",
+    "binary_sha256": "c7018467608fafa3c43ed8bba57d1f4467161758f82e4a137b5e82db42eec9e1",
+    "blocked_with_fd3_absent": true,
+    "post_cleanup_exit": 1,
+    "elapsed_s": 0.5189577869605273
+  }
+}
