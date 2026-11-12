@@ -7,7 +7,7 @@ A fresh installed MVM coordinator admitted the two original guest plans on each 
 | 7 | Permission denied reading the sealed image’s runtime configuration | 5.354 s | 7.931 s | 215.443 s |
 | 8 | Cast outside the admitted local endpoint | 5.340 s | 7.891 s | 215.432 s |
 
-In run 7 the configuration file had read permission, but the service account lacked traversal permission on its parent directories. Run 8 used separately verified images with traversable workload paths. That run reached the Cast authorization check on both guests. The public SDK reports contain sanitized refusal categories. Only the corresponding fixed error labels from the private guest diagnostics appear here.
+In run 7 the configuration file had read permission, but the service account lacked traversal permission on its parent directories. Run 8 used images with traversable workload paths. [Service-account readback of the sealed images](../operator-image-service-access/README.md). That run reached the Cast authorization check on both guests. The public SDK reports contain sanitized refusal categories. Only the corresponding fixed error labels from the private guest diagnostics appear here.
 
 For both runs the SDK reported that original backend termination was unconfirmed. The operator verified each original systemd scope, invocation identity, retained cgroup identity, VMM executable and private API endpoint before stopping that scope on Wick. All four scopes became inactive and empty. The operator confirmed zero remaining Firecracker processes after each pair and retained the machine definitions and mailbox owner records for reconciliation.
 
