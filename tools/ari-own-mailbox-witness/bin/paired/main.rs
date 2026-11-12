@@ -1,6 +1,7 @@
 //! One synthetic B-addressed operation through two original persistent Firecracker guests.
 mod enrollment;
 mod meter;
+mod receipt_retry;
 mod workload;
 use anyhow::{Context, Result, ensure};
 use enrollment::Enrollment;
@@ -311,6 +312,7 @@ fn run(args: &[String]) -> Result<()> {
         let mut source_call = workload::Call::start(A, &source_request)?;
         let mut staged = None;
         let mut relay = None;
+        let mut first_receipt: Option<receipt_retry::FirstReceipt<MailboxEnvelope>> = None;
         let helper = state.a.as_mut().context("source helper missing")?;
         loop {
             if staged.is_none() {
@@ -319,14 +321,48 @@ fn run(args: &[String]) -> Result<()> {
             if relay.is_none() {
                 let mut observed = None;
                 let counts = helper.forward_once_observed(until, |env, bytes| {
-                    observed = Some(verify_return(&direction, env, bytes))
+                    observed = Some((
+                        env.clone(),
+                        bytes.to_vec(),
+                        verify_return(&direction, env, bytes),
+                    ))
                 })?;
                 if let Some(counts) = counts {
-                    relay = Some((
-                        counts,
-                        observed.context("missing original relay observation")??,
-                        transaction.elapsed().as_nanos() as u64,
-                    ));
+                    let (envelope, raw_receipt, checked) =
+                        observed.context("missing original relay observation")?;
+                    let receipt = checked?;
+                    let at_ns = transaction.elapsed().as_nanos() as u64;
+                    if cfg!(feature = "receipt-loss-qualification") {
+                        if let Some(first) = &first_receipt {
+                            first
+                                .verify_retry(
+                                    &envelope,
+                                    &raw_receipt,
+                                    counts.sealed_to_destination,
+                                    counts.reply_to_source,
+                                )
+                                .map_err(anyhow::Error::msg)?;
+                        } else {
+                            eprintln!(
+                                "first verified B receipt: {} bytes, forward {} bytes, returned {}",
+                                raw_receipt.len(),
+                                counts.sealed_to_destination,
+                                counts.reply_to_source
+                            );
+                            first_receipt = Some(
+                                receipt_retry::FirstReceipt::lost(
+                                    envelope,
+                                    raw_receipt,
+                                    counts.sealed_to_destination,
+                                    counts.reply_to_source,
+                                    at_ns,
+                                )
+                                .map_err(anyhow::Error::msg)?,
+                            );
+                            continue;
+                        }
+                    }
+                    relay = Some((counts, receipt, at_ns));
                 }
             }
             if staged.is_some() && relay.is_some() {
@@ -372,6 +408,28 @@ fn run(args: &[String]) -> Result<()> {
                 .all(|k| destination[k].as_u64().is_some_and(|n| n > 0)),
             "missing destination application acceptance"
         );
+        let recovery = if let Some(first) = first_receipt {
+            ensure!(
+                transaction.elapsed() < Duration::from_secs(30),
+                "empty probe outside journal retention"
+            );
+            ensure!(
+                source["outbox_retired_without_archive"] == true
+                    && source["outbox_retirement_wait_ns"].is_u64()
+                    && destination["after_ack"]["empty"] == true
+                    && ["to_agent", "from_agent"]
+                        .iter()
+                        .all(|k| destination["after_ack"][*k].as_u64().is_some_and(|v| v > 0)),
+                "guest did not confirm original outbox retirement and empty B queue"
+            );
+            json!({"first_b_receipt_ns":first.at_ns,"verified_retry_ns":verified_ns,
+                "first_sealed_a_to_b":first.forward_bytes,"first_receipt_from_b":first.bytes.len(),
+                "first_receipt_to_a":0,"retry_sealed_a_to_b":counts.sealed_to_destination,
+                "retry_receipt_from_b":first.bytes.len(),"retry_receipt_to_a":counts.reply_to_source,
+                "exact_envelope_equal":true,"exact_signed_receipt_bytes_equal":true})
+        } else {
+            Value::Null
+        };
         let reply_hex = destination
             .as_object_mut()
             .context("expected guest record")?
@@ -387,7 +445,7 @@ fn run(args: &[String]) -> Result<()> {
             "guest_a":source,"guest_b":destination,"sealed_a_to_b_bytes":counts.sealed_to_destination,"signed_b_to_a_bytes":counts.reply_to_source,
             "sdk_call_application_io":{"source_request":source_call.input_bytes,"source_reply":source_call.output_bytes,"destination_request":bcall.input_bytes,"destination_reply_with_readback":bcall.output_bytes},
             "through_observed_v2_ns":verified_ns,"through_verified_destination_call_ns":transaction.elapsed().as_nanos() as u64,
-            "verified_body_bytes":bytes.len(),"receipt_outcome":"AcceptedLocalDurable","guest_a_observed_receipt":null,"wan_bytes":null}),
+            "receipt_recovery":recovery, "verified_body_bytes":bytes.len(),"receipt_outcome":"AcceptedLocalDurable","guest_a_observed_receipt":null,"wan_bytes":null}),
         )
     })();
     let recorded = (|| -> Result<()> {
