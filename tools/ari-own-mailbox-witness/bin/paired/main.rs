@@ -2,6 +2,7 @@
 mod enrollment;
 mod meter;
 mod native_backend;
+mod object_repeat;
 mod receipt_retry;
 mod series;
 mod transfer;
@@ -400,6 +401,11 @@ fn main() -> Result<()> {
         && cmd == "call"
     {
         return workload::dispatch(name);
+    }
+    if let [cmd, pair] = args.as_slice()
+        && cmd == "object-repeat"
+    {
+        return object_repeat::run(pair);
     }
     run(&args)
 }

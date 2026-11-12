@@ -95,3 +95,15 @@ cargo +1.97.1 build --locked --manifest-path paired-guest/Cargo.toml \
 ```
 
 Linux x86-64 passed eight library checks and strict Clippy, and built both worker binaries. Two tests exchange the real typed reader messages on AF_UNIX socket pairs with fixture peers. They exercise matching staging, pending and terminal responses, including wrong ID, V1, refusal and ambiguous settlement controls. These tests do not boot guests or establish WAN or compression speed. A direct macOS build of the Linux workload encountered Linux-only socket flags. Apple Silicon host acceptance uses a Linux guest built for arm64.
+
+### Measuring an installed cold object and its exact repeat
+
+With the original pair owner running, point `MVM_HOME` at its existing private installation and supply the lowercase SHA-256 commitment from its selected signed pair. Build the host witness and both guest workloads with matching fixture sizes. The default is 257 bytes. The `large-object-fixture` build uses 4,096 bytes. The installed owner must service both the admitted Call and Reply throughout both transfers. Start with a fresh receiver cache.
+
+```sh
+MVM_HOME="$qualification_home" paired-journal object-repeat "$pair_sha256"
+```
+
+The driver submits the fixture only to `sc-journal-a`. It asks `sc-journal-b` to consume each original Call by pair, transfer and sequence. B must ACK each Call and return the complete object on the terminal operation of both transfers. The driver compares all bytes, checks both original boot bindings between phases and requires the same B worker throughout. The cold phase must send the full literal. The repeat must finish in one Call with zero literal data and fewer application bytes in both directions combined. Fresh transfer IDs go to stderr before either submission. Each completed phase logs its measurements before the savings check.
+
+The final JSON gives the Object-v1 request and reply bytes, per-role reader I/O and process CPU, SDK control I/O including the readback, and elapsed time through both guest results. Coordinator CPU excludes its SDK subprocesses. The application total excludes envelopes and vsock framing. Collect the original port-5257 counters, sealed relay counters, and retirement outcomes from the running owner separately. The driver leaves host relay and network wire byte totals null. The qualification command requires a running installed pair. Its component checks alone establish no transfer-time or WAN result.
