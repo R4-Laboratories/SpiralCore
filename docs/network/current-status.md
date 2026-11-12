@@ -11,7 +11,7 @@ tracks delivery. The next installed gate is an authorized Cast from guest A to
 guest B with exact readback inside the destination workload. Cross-host WAN and
 platform qualification follow. [Guest retry and worker capacity regressions](evidence/2026-11-12-paired-mailbox/README.md).
 
-Both addressed Firecracker roles booted in two paced runs. The source SDK admitted guest A each time. The destination SDK then reported that guest B was missing from the host name registry. All three paced-attempt coordinators returned exit 42. Exact destination workload readback is still open. [Installed results, CPU and timing](evidence/2026-11-12-paired-mailbox/addressed-native-launch/paced-runs.md).
+Both original SDK launches now return admitted Firecracker guests on the same host. In the first paired Call, A’s original mailbox stream accepted 52 host-to-guest bytes and returned none. B’s mailbox saw no dial. Both OCI workers reported EPERM. The Call exceeded its 15-second deadline and required administrative VMM teardown. The coordinator subsequently exited 42. Exact destination readback is still open. [Paired workload Call, byte counters, CPU and timings](evidence/2026-11-12-paired-mailbox/addressed-native-launch/paired-call.md).
 
 The repaired SDK serialized concurrent VM name registration, TTL, readiness and stop updates in 13 passing Linux detached-launch tests. Replaying the two original guest grants independently located a 252 ms clock admission boundary. [SDK regression, original clock replay and limits](evidence/2026-11-12-paired-mailbox/addressed-native-launch/sdk-name-and-clock.md).
 

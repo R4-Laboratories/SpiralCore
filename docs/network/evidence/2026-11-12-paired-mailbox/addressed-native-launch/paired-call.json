@@ -1,0 +1,91 @@
+{
+  "coordinator_exit": "exit status: 42",
+  "errors": [
+    "original A to B: Streaming RunEntrypoint response: control frame read failed: session i/o error: failed to fill whole buffer: failed to fill whole buffer"
+  ],
+  "expected_bytes": 257,
+  "expected_sha256": "e993f9d5e87f64ee8ad11d9cc523c33d3ddf4a54533177d04d7ac3258b61800b",
+  "guest_stream_scope": "mvm/owned-mailbox/guest-5257/post-mux-host-stream/v1",
+  "host_driver_process_cpu_ns": 8378644722,
+  "lifecycle_wall_ns": 292932121178,
+  "message_id_correlation_across_guests": null,
+  "participants": [
+    {
+      "cleanup": "canonical_cleanup_ok",
+      "guest_stream_counts": {
+        "dial_attempts": 1,
+        "failed_dials": 0,
+        "guest_to_host_read_bytes": 0,
+        "host_to_guest_write_accepted_bytes": 52,
+        "overflow": false,
+        "read_errors": 1,
+        "write_errors": 0,
+        "zero_data_connections": 0
+      },
+      "name": "spiralcore-cast-alpha",
+      "original_plan": "sha256:236ba09df0cfd84f8f33eb113a79bf800cf2b5bbab330730e474cca6715609b5",
+      "retirement_wall_ns": 238849008,
+      "stop": "canonical_stop_ok"
+    },
+    {
+      "cleanup": "canonical_cleanup_ok",
+      "guest_stream_counts": {
+        "dial_attempts": 0,
+        "failed_dials": 0,
+        "guest_to_host_read_bytes": 0,
+        "host_to_guest_write_accepted_bytes": 0,
+        "overflow": false,
+        "read_errors": 0,
+        "write_errors": 0,
+        "zero_data_connections": 0
+      },
+      "name": "spiralcore-cast-beta",
+      "original_plan": "sha256:c338b5c55b610454ecc805e5274024b03a370069c8fa29a95343ca61827d80b9",
+      "retirement_wall_ns": 87116079,
+      "stop": "canonical_stop_ok"
+    }
+  ],
+  "readback": null,
+  "scope": "Linux Firecracker same-host addressed Cast, ephemeral Submit and exact destination workload readback",
+  "send_only_ns": null,
+  "setup_wall_ns": 5581339033,
+  "status": "failed",
+  "wan_bytes": null,
+  "native_report_sha256": "e0a505dbefb74a61157284b11aeb346136dde89bc894b69566f27c15d97ee526",
+  "mvm_host_source": "4f64492d44538e919f2e566ea8a325212b4c824b",
+  "guest_runtime_source": "9d7224cf1d08949aed0b08311e9ed94d1f904303",
+  "driver_source": "9f139f466a5ca79318e4640a4cbbefc483385738",
+  "sdk_admission": {
+    "source": "admitted",
+    "destination": "admitted",
+    "seed_pacing_ns": 94728510
+  },
+  "administrative_scope_stops": [
+    {
+      "role": "alpha",
+      "stop_started_utc": "2026-11-12T11:39:07.002068+00:00",
+      "stop_completed_utc": "2026-11-12T11:39:07.035745+00:00",
+      "systemctl_exit": 0,
+      "terminal_active_state": "inactive",
+      "terminal_substate": "dead",
+      "cgroup_vacant": true,
+      "original_vmm_running": false
+    },
+    {
+      "role": "beta",
+      "stop_started_utc": "2026-11-12T11:39:07.039217+00:00",
+      "stop_completed_utc": "2026-11-12T11:39:07.072742+00:00",
+      "systemctl_exit": 0,
+      "terminal_active_state": "inactive",
+      "terminal_substate": "dead",
+      "cgroup_vacant": true,
+      "original_vmm_running": false
+    }
+  ],
+  "post_driver_tenant": {
+    "phase": "Drained",
+    "pending": 0,
+    "unresolved": false
+  },
+  "post_stop_host_firecracker_count": 0
+}
