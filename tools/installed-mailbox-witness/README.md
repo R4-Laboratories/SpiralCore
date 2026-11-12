@@ -45,8 +45,13 @@ for service in mvm-host-agent mvm-mailbox mvm-signer-helper; do
 done
 
 # Reuse the canonical guest runtime's target directory to avoid a duplicate build.
-guest_targets=("$MVM_HOME"/cache/guest-agent-build/targets/*)
-test "${#guest_targets[@]}" -eq 1 && test -d "${guest_targets[0]}" || exit 1
+guest_targets=()
+for dir in "$MVM_HOME"/cache/guest-agent-build/targets/*; do
+    if [[ ${dir##*/} =~ ^[0-9a-f]{16}$ && -d "$dir/x86_64-unknown-linux-musl/release" ]]; then
+        guest_targets+=("$dir")
+    fi
+done
+test "${#guest_targets[@]}" -eq 1 || exit 1
 CARGO_TARGET_DIR="${guest_targets[0]}" cargo zigbuild --release --locked \
     --manifest-path guest-producer/Cargo.toml --target x86_64-unknown-linux-musl
 runtime_tree=$(jq -er '.runtime_root' results/runtime.json)
