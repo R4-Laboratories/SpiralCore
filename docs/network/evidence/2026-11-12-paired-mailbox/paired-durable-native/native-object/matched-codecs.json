@@ -1,0 +1,569 @@
+{
+  "schema": "spiralcore.installed-matched-object.v1",
+  "spiralcore_driver_and_workloads": "615d8ff98429b2339a069dcd0735c3df1a40af25",
+  "leased_codec_core": "06e041da",
+  "mvm_host": "30ca64feba564f8a3a3f62ee96c746c51176567c",
+  "mvm_guest_runtime": "c9d9fe87b27cd2e5fc64d2b1d9c3a31b522b2097",
+  "architecture": "x86_64",
+  "backend": "firecracker",
+  "original_bytes": 4096,
+  "original_sha256": "4a29fe7d84bd3c8097343ec5723341ac8768f67914bf61e4d3c078bb6b5fc9d9",
+  "object_id": "0f6b13787cb3e42e48ab190848ddb08a9427a0eeebda8aa5b41f2095c9bedc51",
+  "vcpu_per_guest": 1,
+  "memory_mib_per_guest": 256,
+  "guest_nic": false,
+  "received_call_limit": 4152,
+  "received_reply_limit": 88,
+  "outstanding_calls": 1,
+  "host_binary_sha256": {
+    "mvm-host-agent": "70a5cef5d06500eaf74c45cdc96464173816ca8ecf93475016314abc9e89b44c",
+    "mvm-mailbox": "eadf9b6379223490516e0faa7c32c80fd93540eb1f7df26317c80cec3f48c0d9",
+    "mvm-network-endpoint": "914a647bf4d007f7bc7063558ed3d4ef8c95f311b8b23ba9845a826e27a8d9e6",
+    "mvm-signer-helper": "c999eb976a779ab3cfacf2dcba709e13e1817612dcdbc5cc0ba7577f6a43be1f",
+    "paired-journal": "6e6c3efdc1f3e81ad18130782103f7a85c9f718d0f22e2e72576e8bbbb2c6679"
+  },
+  "workload_binary_sha256": {
+    "spiralcore-durable-source": "e4ffa6fdc625acae7eae4e3fb01b9bed75f89310169c60648773bab018e58942",
+    "spiralcore-durable-destination": "7880c7584e7d65e5f6730b44dfe388d1796e78498df73b6a8a15d2e9ba6d7bcc"
+  },
+  "image_a_sha256": {
+    "rootfs.ext4": "58adde52ce4d8bae993364598dafde80957ba666033eec6e434bd6df624ffc2f",
+    "rootfs.verity": "30a829d80fd5abc27ca2707287b12448da48fb8670463f3dd8a7779752e1048a",
+    "rootfs.roothash": "03a6a5826b9794b2649a5cd1b2dd15c2741ebcf5079db834117dd31865129449",
+    "mvm-meta.json": "1e2ebf272b1b45cd2a9c4f1ea32b847c3824a8208dddeb07fb8d456c14be0a68"
+  },
+  "image_b_sha256": {
+    "rootfs.ext4": "3f97cb27aa4a5a18e3e9c4f5a017b83a823d1bdd38149bbe38f69ea0640a48d9",
+    "rootfs.verity": "54ca7bedf9933c446e3f2d882393437940ed2e95e42b5bd2c4f8dd146eed57dc",
+    "rootfs.roothash": "9292855ab491e04b8713c5bd761838c0b74f5ce9284ccfb06451d1cbbd4b429c",
+    "mvm-meta.json": "e279d13ea18d559f6c5f572e248f212c7856c678be9d7adcb5320a4c22a07ddf"
+  },
+  "mvm_guest_binary_sha256": {
+    "mvm-guest-agent": "b33ed3064f2b17934d5bcda6a8d1551e9f40def3a5f2c9b42f6b22b6a0d4d6be",
+    "mvm-oci-entrypoint": "950e2a44597a1fb9b43999b317d7e2fe3629e86634756a9af419dd1ff85db6cc"
+  },
+  "original_build_evidence_sha256": {
+    "bin-digests": "8698424736f749c535c7ca46a6ef1ad7f6d711cf10d30da38ed11716507d9c39",
+    "driver-build.log": "1ee838a4362eea431e487fd8668c25fc8cf84756ef94e845190887722db0f6e9",
+    "driver-tests.log": "2e345619d8a3feb96108b5a44c0db0af3edc379c4efdace31233a0d945f5cb6b",
+    "host.sha256": "6e0c56fbcb0a2e964b8088a86cb87765d8789e9d2b3d3b494dfb9a8d02f2f0aa",
+    "image-a.sha256": "6b45f99e6ad504b5f0803343927aec1027e665c4a9ffdcabbd8032ccb669b9e7",
+    "image-b.sha256": "dcbef4e43fcd78bf29eb564dde30fb05007c46f4a184aaa4368ba8772ed8e428",
+    "runtime.json": "3738383d4edef0a7c15cbd4a8ce2550347f9a943f2fa5e461367e91d90e3ca40",
+    "worker-sha256": "e74691f7f49bdebda4fdb4a8c5d5649358f28c89a4536cd4361373cfc03e87d3",
+    "workers.log": "85bb2c4d76bb77c76dc79599432ad41cf999954067d6182eb08326ed90af0565"
+  },
+  "host_concurrency": "Independent transfer crate all-target tests active in this interval; fixed-order single observations.",
+  "wan_bytes": null,
+  "energy": null,
+  "arms": {
+    "raw": {
+      "codec": "raw",
+      "setup_to_both_starts_ns": 5125397932,
+      "whole_driver_wall_ns": 19771870686,
+      "whole_driver_process_cpu_ns": 8141461328,
+      "process_time": "elapsed=19.87 user=11.11 system=0.21 max_rss_kib=83952 status=0",
+      "audit": "VERIFIED chain: 17 entries, 2 sessions, 2 seals",
+      "sdk_stops": [
+        {
+          "assisted": false,
+          "exit_code": 0,
+          "first_stop_attempt": true,
+          "name": "sc-journal-a",
+          "success": true
+        },
+        {
+          "assisted": false,
+          "exit_code": 0,
+          "first_stop_attempt": true,
+          "name": "sc-journal-b",
+          "success": true
+        }
+      ],
+      "whole_session_meters_a_b": [
+        {
+          "guest_5257": {
+            "capture": "closed_session",
+            "read": 92909,
+            "read_errors": 0,
+            "turns": 172,
+            "write": 677447,
+            "write_errors": 1
+          },
+          "sealed_in": {
+            "capture": "closed_session",
+            "read": 27148,
+            "read_errors": 0,
+            "turns": 5,
+            "write": 6039,
+            "write_errors": 0
+          },
+          "sealed_out": {
+            "capture": "closed_session",
+            "read": 6044,
+            "read_errors": 0,
+            "turns": 5,
+            "write": 38767,
+            "write_errors": 0
+          }
+        },
+        {
+          "guest_5257": {
+            "capture": "closed_session",
+            "read": 117084,
+            "read_errors": 0,
+            "turns": 101,
+            "write": 429756,
+            "write_errors": 0
+          },
+          "sealed_in": {
+            "capture": "closed_session",
+            "read": 38767,
+            "read_errors": 0,
+            "turns": 5,
+            "write": 6044,
+            "write_errors": 0
+          },
+          "sealed_out": {
+            "capture": "closed_session",
+            "read": 6039,
+            "read_errors": 0,
+            "turns": 5,
+            "write": 27148,
+            "write_errors": 0
+          }
+        }
+      ],
+      "original_evidence_sha256": {
+        "evidence/audit.log": "5b7cb24bc38132f35843e640eed08542a0c2870d9531d5568ac4fe243688e1d1",
+        "evidence/inputs-verified.log": "c17faf30e614e6574d62fc038f1bbda98924f56272aaad81de1e4f94966ed651",
+        "evidence/native.time": "f6f918a3e26d9572cf64dd5bc8165ab79ee943e7ee5268715ac5b26af668dcb0",
+        "evidence/retirement-verified.txt": "9538397bb6ac1d1fbdaa6e3d2c5b88a94a4aef0c5ebd45e319da39f581a0c820",
+        "evidence/scopes.after": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "home/object-pair-progress.jsonl": "db288f7a9ad9732f2184679b72c9a8335dd907f37eabec7aa932f98980f4a455",
+        "home/object-pair-result.json": "25ad17f000f6c2ef111f88bf19cb5326ea57c0788e9fca1d667a13460a83707a",
+        "home/original-sc-journal-a-guest_5257.counts": "380cbaf5f10202feca8be8ee18b51fb8668d97d77359b6113ed2f29c2dfac53d",
+        "home/original-sc-journal-a-sealed_in.counts": "e51ff5fb02582b9ed880f2a593d222f50031afd90e3f73127753d47e1dabbae8",
+        "home/original-sc-journal-a-sealed_out.counts": "f90ea145f2eab41dce0b015adaba166be0a83bade48d55123238a5e7ac6af288",
+        "home/original-sc-journal-b-guest_5257.counts": "98faa06af63795d98721639716a0feac45750899d3e6cdbfa16a8805cf852718",
+        "home/original-sc-journal-b-sealed_in.counts": "f46d4c0c3045078995b3291042e973fbd5ece62530f615c0faea0740ca0bd30d",
+        "home/original-sc-journal-b-sealed_out.counts": "8b9e78e100160eb1d223678efbe108f48d3081913976bb32310e08be146d3564",
+        "home/paired-retirement.jsonl": "4ecd19450145bb63b443a2b3a6cad36c420a9b2c97d065dae534eb4cc42901f6"
+      },
+      "cold": {
+        "offer_mode": 0,
+        "app_request_bytes": 4376,
+        "app_reply_bytes": 282,
+        "actual_data_payload_bytes": 4096,
+        "original_calls": 4,
+        "callee_frames": [
+          {
+            "frame_kind": 1,
+            "wire_mode": 0,
+            "exact_readback_bytes": 0
+          },
+          {
+            "frame_kind": 2,
+            "wire_mode": 0,
+            "data_payload_bytes": 4091,
+            "exact_readback_bytes": 0
+          },
+          {
+            "frame_kind": 2,
+            "wire_mode": 0,
+            "data_payload_bytes": 5,
+            "exact_readback_bytes": 0
+          },
+          {
+            "frame_kind": 3,
+            "exact_readback_bytes": 4096
+          }
+        ],
+        "through_both_results_ns": 11403829305,
+        "sender_workload_cpu_ns": 9458178,
+        "receiver_workload_cpu_ns": 26827606,
+        "coordinator_cpu_ns": 36309335,
+        "encoder_construction_wall_ns": 0,
+        "encoder_construction_cpu_ns": 0,
+        "guest_5257_read_write_bytes_a_b": 901588,
+        "unique_sealed_bytes_both_directions": 63801,
+        "original_role_stream_deltas_a_b": [
+          {
+            "guest_5257": {
+              "read": 66272,
+              "read_errors": 0,
+              "turns": 108,
+              "write": 382361,
+              "write_errors": 0
+            },
+            "sealed_in": {
+              "read": 21702,
+              "read_errors": 0,
+              "turns": 4,
+              "write": 4836,
+              "write_errors": 0
+            },
+            "sealed_out": {
+              "read": 4835,
+              "read_errors": 0,
+              "turns": 4,
+              "write": 32428,
+              "write_errors": 0
+            }
+          },
+          {
+            "guest_5257": {
+              "read": 95342,
+              "read_errors": 0,
+              "turns": 87,
+              "write": 357613,
+              "write_errors": 0
+            },
+            "sealed_in": {
+              "read": 32428,
+              "read_errors": 0,
+              "turns": 4,
+              "write": 4835,
+              "write_errors": 0
+            },
+            "sealed_out": {
+              "read": 4836,
+              "read_errors": 0,
+              "turns": 4,
+              "write": 21702,
+              "write_errors": 0
+            }
+          }
+        ],
+        "workload_verification_stdin_bytes": 9112,
+        "workload_verification_stdout_bytes_including_readback": 11018
+      },
+      "warm": {
+        "offer_mode": 0,
+        "app_request_bytes": 102,
+        "app_reply_bytes": 88,
+        "actual_data_payload_bytes": 0,
+        "original_calls": 1,
+        "callee_frames": [
+          {
+            "frame_kind": 1,
+            "wire_mode": 0,
+            "exact_readback_bytes": 4096
+          }
+        ],
+        "through_both_results_ns": 2888814097,
+        "sender_workload_cpu_ns": 2414853,
+        "receiver_workload_cpu_ns": 6702181,
+        "coordinator_cpu_ns": 8610372,
+        "encoder_construction_wall_ns": 0,
+        "encoder_construction_cpu_ns": 0,
+        "guest_5257_read_write_bytes_a_b": 185044,
+        "unique_sealed_bytes_both_directions": 14197,
+        "original_role_stream_deltas_a_b": [
+          {
+            "guest_5257": {
+              "read": 15717,
+              "read_errors": 0,
+              "turns": 28,
+              "write": 99086,
+              "write_errors": 0
+            },
+            "sealed_in": {
+              "read": 5446,
+              "read_errors": 0,
+              "turns": 1,
+              "write": 1203,
+              "write_errors": 0
+            },
+            "sealed_out": {
+              "read": 1209,
+              "read_errors": 0,
+              "turns": 1,
+              "write": 6339,
+              "write_errors": 0
+            }
+          },
+          {
+            "guest_5257": {
+              "read": 20518,
+              "read_errors": 0,
+              "turns": 10,
+              "write": 49723,
+              "write_errors": 0
+            },
+            "sealed_in": {
+              "read": 6339,
+              "read_errors": 0,
+              "turns": 1,
+              "write": 1209,
+              "write_errors": 0
+            },
+            "sealed_out": {
+              "read": 1203,
+              "read_errors": 0,
+              "turns": 1,
+              "write": 5446,
+              "write_errors": 0
+            }
+          }
+        ],
+        "workload_verification_stdin_bytes": 8572,
+        "workload_verification_stdout_bytes_including_readback": 9171
+      }
+    },
+    "zstd": {
+      "codec": "zstd-whole-v1",
+      "setup_to_both_starts_ns": 4728874763,
+      "whole_driver_wall_ns": 16732637856,
+      "whole_driver_process_cpu_ns": 7504167360,
+      "process_time": "elapsed=16.85 user=10.33 system=0.20 max_rss_kib=83380 status=0",
+      "audit": "VERIFIED chain: 17 entries, 2 sessions, 2 seals",
+      "sdk_stops": [
+        {
+          "assisted": false,
+          "exit_code": 0,
+          "first_stop_attempt": true,
+          "name": "sc-journal-a",
+          "success": true
+        },
+        {
+          "assisted": false,
+          "exit_code": 0,
+          "first_stop_attempt": true,
+          "name": "sc-journal-b",
+          "success": true
+        }
+      ],
+      "whole_session_meters_a_b": [
+        {
+          "guest_5257": {
+            "capture": "closed_session",
+            "read": 70925,
+            "read_errors": 0,
+            "turns": 115,
+            "write": 408948,
+            "write_errors": 1
+          },
+          "sealed_in": {
+            "capture": "closed_session",
+            "read": 27295,
+            "read_errors": 0,
+            "turns": 5,
+            "write": 6072,
+            "write_errors": 0
+          },
+          "sealed_out": {
+            "capture": "closed_session",
+            "read": 6082,
+            "read_errors": 0,
+            "turns": 5,
+            "write": 38880,
+            "write_errors": 0
+          }
+        },
+        {
+          "guest_5257": {
+            "capture": "closed_session",
+            "read": 109149,
+            "read_errors": 0,
+            "turns": 84,
+            "write": 364912,
+            "write_errors": 0
+          },
+          "sealed_in": {
+            "capture": "closed_session",
+            "read": 38880,
+            "read_errors": 0,
+            "turns": 5,
+            "write": 6082,
+            "write_errors": 0
+          },
+          "sealed_out": {
+            "capture": "closed_session",
+            "read": 6072,
+            "read_errors": 0,
+            "turns": 5,
+            "write": 27295,
+            "write_errors": 0
+          }
+        }
+      ],
+      "original_evidence_sha256": {
+        "evidence/audit.log": "5b7cb24bc38132f35843e640eed08542a0c2870d9531d5568ac4fe243688e1d1",
+        "evidence/inputs-verified.log": "c17faf30e614e6574d62fc038f1bbda98924f56272aaad81de1e4f94966ed651",
+        "evidence/native.time": "0acbc2e6b9ce459a1aad3dce01bd585b7be78738e8745ae3abed0ece6b8bca8c",
+        "evidence/retirement-verified.txt": "9538397bb6ac1d1fbdaa6e3d2c5b88a94a4aef0c5ebd45e319da39f581a0c820",
+        "evidence/scopes.after": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "home/object-pair-progress.jsonl": "39f2f0249a0d80aa5bb0fc697dd77d7f58a53b1c903527be02c260361f6b8a37",
+        "home/object-pair-result.json": "dc02de33dd37fd7e4e388fddc765e4559857d40fda74c007f5484fcdc5427084",
+        "home/original-sc-journal-a-guest_5257.counts": "79c875f747e34bba6012cd4ef0af7cc23cc1707cb64d328c1fc17e81d4592976",
+        "home/original-sc-journal-a-sealed_in.counts": "f5065b053e71fbbf9f2d318a34ed063fbfda75c7f03841d0446e1fce6ea767c5",
+        "home/original-sc-journal-a-sealed_out.counts": "6bc2081a1dd38acf54d523af4867ed4e1bfb899a72bcaf7819603596d76dee9f",
+        "home/original-sc-journal-b-guest_5257.counts": "1b144838bfb4aba51a6b704faeb06c77c64f9ccc1985676745c7f270dfc8f687",
+        "home/original-sc-journal-b-sealed_in.counts": "9ba259368618bf15499b64e6a67276ac698396ee732faf74d50e348c7c0b21c4",
+        "home/original-sc-journal-b-sealed_out.counts": "1909d22088b40e519672c2aaf948b70be2537f639532ab02b0bbafab7bc34615",
+        "home/paired-retirement.jsonl": "4ecd19450145bb63b443a2b3a6cad36c420a9b2c97d065dae534eb4cc42901f6"
+      },
+      "cold": {
+        "offer_mode": 9,
+        "app_request_bytes": 4392,
+        "app_reply_bytes": 282,
+        "actual_data_payload_bytes": 4110,
+        "original_calls": 4,
+        "callee_frames": [
+          {
+            "frame_kind": 1,
+            "wire_mode": 9,
+            "exact_readback_bytes": 0
+          },
+          {
+            "frame_kind": 2,
+            "wire_mode": 9,
+            "data_payload_bytes": 4090,
+            "exact_readback_bytes": 0
+          },
+          {
+            "frame_kind": 2,
+            "wire_mode": 9,
+            "data_payload_bytes": 20,
+            "exact_readback_bytes": 0
+          },
+          {
+            "frame_kind": 3,
+            "exact_readback_bytes": 4096
+          }
+        ],
+        "through_both_results_ns": 9153374150,
+        "sender_workload_cpu_ns": 8780655,
+        "receiver_workload_cpu_ns": 29877172,
+        "coordinator_cpu_ns": 30294866,
+        "encoder_construction_wall_ns": 215865,
+        "encoder_construction_cpu_ns": 31700,
+        "guest_5257_read_write_bytes_a_b": 772403,
+        "unique_sealed_bytes_both_directions": 64055,
+        "original_role_stream_deltas_a_b": [
+          {
+            "guest_5257": {
+              "read": 56879,
+              "read_errors": 0,
+              "turns": 89,
+              "write": 317737,
+              "write_errors": 0
+            },
+            "sealed_in": {
+              "read": 21812,
+              "read_errors": 0,
+              "turns": 4,
+              "write": 4858,
+              "write_errors": 0
+            },
+            "sealed_out": {
+              "read": 4867,
+              "read_errors": 0,
+              "turns": 4,
+              "write": 32518,
+              "write_errors": 0
+            }
+          },
+          {
+            "guest_5257": {
+              "read": 88360,
+              "read_errors": 0,
+              "turns": 73,
+              "write": 309427,
+              "write_errors": 0
+            },
+            "sealed_in": {
+              "read": 32518,
+              "read_errors": 0,
+              "turns": 4,
+              "write": 4867,
+              "write_errors": 0
+            },
+            "sealed_out": {
+              "read": 4858,
+              "read_errors": 0,
+              "turns": 4,
+              "write": 21812,
+              "write_errors": 0
+            }
+          }
+        ],
+        "workload_verification_stdin_bytes": 9122,
+        "workload_verification_stdout_bytes_including_readback": 11028
+      },
+      "warm": {
+        "offer_mode": 9,
+        "app_request_bytes": 102,
+        "app_reply_bytes": 88,
+        "actual_data_payload_bytes": 0,
+        "original_calls": 1,
+        "callee_frames": [
+          {
+            "frame_kind": 1,
+            "wire_mode": 9,
+            "exact_readback_bytes": 4096
+          }
+        ],
+        "through_both_results_ns": 2449770665,
+        "sender_workload_cpu_ns": 2513776,
+        "receiver_workload_cpu_ns": 8597446,
+        "coordinator_cpu_ns": 12229548,
+        "encoder_construction_wall_ns": 14788,
+        "encoder_construction_cpu_ns": 15969,
+        "guest_5257_read_write_bytes_a_b": 169681,
+        "unique_sealed_bytes_both_directions": 14274,
+        "original_role_stream_deltas_a_b": [
+          {
+            "guest_5257": {
+              "read": 13734,
+              "read_errors": 0,
+              "turns": 24,
+              "write": 85597,
+              "write_errors": 0
+            },
+            "sealed_in": {
+              "read": 5483,
+              "read_errors": 0,
+              "turns": 1,
+              "write": 1214,
+              "write_errors": 0
+            },
+            "sealed_out": {
+              "read": 1215,
+              "read_errors": 0,
+              "turns": 1,
+              "write": 6362,
+              "write_errors": 0
+            }
+          },
+          {
+            "guest_5257": {
+              "read": 20486,
+              "read_errors": 0,
+              "turns": 10,
+              "write": 49864,
+              "write_errors": 0
+            },
+            "sealed_in": {
+              "read": 6362,
+              "read_errors": 0,
+              "turns": 1,
+              "write": 1215,
+              "write_errors": 0
+            },
+            "sealed_out": {
+              "read": 1214,
+              "read_errors": 0,
+              "turns": 1,
+              "write": 5483,
+              "write_errors": 0
+            }
+          }
+        ],
+        "workload_verification_stdin_bytes": 8582,
+        "workload_verification_stdout_bytes_including_readback": 9179
+      }
+    }
+  }
+}
