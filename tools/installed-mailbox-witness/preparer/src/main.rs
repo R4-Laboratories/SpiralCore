@@ -82,7 +82,7 @@ fn main() -> anyhow::Result<()> {
             .collect();
         Ok(serde_json::json!({
             "status": "prepared", "native_transfer": "NOT_RUN",
-            "mvm_api_revision": "a7e8e5f9f17e6f5bfb8e33da24962abfe38f43ef",
+            "mvm_api_revision": "91fea4e72352f8fa676635ad38b34213cd3bbcb6",
             "source_checkout": source, "runtime_archive_sha256": runtime.digest,
             "runtime_manifest": runtime.manifest, "runtime_root": runtime.root,
             "arch": arch.to_string(), "version": version,
