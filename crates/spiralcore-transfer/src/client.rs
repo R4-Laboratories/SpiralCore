@@ -307,7 +307,9 @@ impl BatchSender {
             self.stats.request_bytes += length as u64;
             self.stats.requests += 1;
             if frame.kind == 2 {
-                let header = if self.mode == Mode::ZstdWholeV1 {
+                let header = if crate::fitted_transfer::is_buffered(self.mode)
+                    || self.mode == Mode::ZstdPrefixV1
+                {
                     crate::fitted_transfer::DATA_HEADER
                 } else {
                     5
