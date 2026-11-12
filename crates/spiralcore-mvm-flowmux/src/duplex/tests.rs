@@ -228,9 +228,10 @@ fn full_delivery_queue_backpressures_then_times_out_without_extra_published_ack(
     }
     let start = std::time::Instant::now();
     assert!(
-        left_tx
-            .send_until(vec![4; 1024], start + Duration::from_millis(180))
-            .is_err(),
+        matches!(
+            left_tx.send_until(vec![4; 1024], start + Duration::from_millis(180)),
+            Err(crate::Error::Timeout)
+        ),
         "fifth block cannot receive Published while delivery queue remains full"
     );
     assert!(start.elapsed() < Duration::from_secs(2));

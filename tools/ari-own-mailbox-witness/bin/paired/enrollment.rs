@@ -33,7 +33,7 @@ pub struct Enrollment {
     pub incoming: IncomingJournalAdmission,
 }
 
-fn original_grant(id: &str, name: &str) -> Result<MailboxGrant> {
+pub(super) fn original_grant(id: &str, name: &str) -> Result<MailboxGrant> {
     let grant =
         resolve(Some(&id.repeat(32)), Some(30_000), None)?.context("fixture mailbox absent")?;
     at_workload_epoch(grant, name)

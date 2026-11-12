@@ -9,7 +9,7 @@ use std::{
     time::{Duration, Instant},
 };
 const CALL_OUTPUT_LIMIT: usize = if cfg!(feature = "large-object-fixture") {
-    2 * BODY_LEN + 1024
+    2 * BODY_LEN + 4096
 } else {
     4096
 };

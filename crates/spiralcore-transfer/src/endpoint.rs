@@ -247,14 +247,7 @@ impl<A: Authority> Endpoint<A> {
         let marker = root.join(".spiralcore-profile-v1");
         let initialized = marker.exists();
         if initialized {
-            private_file(&marker)?;
-            let mut bytes = Vec::new();
-            storage::open_read(&marker)?
-                .take(64)
-                .read_to_end(&mut bytes)?;
-            if bytes != b"SpiralCore private object cache v1\n" {
-                return Err(Error::Storage);
-            }
+            storage::check_profile(&marker)?;
         } else if fs::read_dir(root)?.next().is_some() {
             return Err(Error::Storage);
         }
@@ -263,9 +256,9 @@ impl<A: Authority> Endpoint<A> {
             private_file(&owner_path)?;
         }
         let owner = storage::open_owner(&owner_path)?;
-        owner.try_lock().map_err(|_| Error::Storage)?;
+        storage::lock_owner(&owner, &owner_path, initialized)?;
         if !initialized {
-            storage::initialize_profile(root, b"SpiralCore private object cache v1\n")?;
+            storage::initialize_profile(root, storage::PROFILE_CONTENT)?;
         }
         // Only our reserved staging name is collected, with exclusive root ownership.
         for dir in fs::read_dir(root)? {

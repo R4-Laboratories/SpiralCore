@@ -50,6 +50,23 @@ mod unsupported {
 #[cfg(not(any(unix, windows)))]
 pub(super) use unsupported::*;
 
+pub(super) const PROFILE_CONTENT: &[u8] = b"SpiralCore private object cache v1\n";
+
+pub(super) fn check_profile(path: &Path) -> Result<()> {
+    private_file(path)?;
+    let mut bytes = Vec::new();
+    open_read(path)?.take(64).read_to_end(&mut bytes)?;
+    if bytes != PROFILE_CONTENT {
+        return Err(crate::Error::Storage);
+    }
+    Ok(())
+}
+
+#[cfg(not(unix))]
+pub(super) fn lock_owner(file: &File, _: &Path, _: bool) -> Result<()> {
+    file.try_lock().map_err(|_| crate::Error::Storage)
+}
+
 static PROFILE_STAGE: AtomicU64 = AtomicU64::new(0);
 
 pub(super) fn initialize_profile(root: &Path, bytes: &[u8]) -> Result<()> {

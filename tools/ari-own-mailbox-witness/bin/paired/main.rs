@@ -2,6 +2,8 @@
 mod enrollment;
 mod meter;
 mod native_backend;
+mod object_enrollment;
+mod object_repeat;
 mod receipt_retry;
 mod series;
 mod transfer;
@@ -400,6 +402,18 @@ fn main() -> Result<()> {
         && cmd == "call"
     {
         return workload::dispatch(name);
+    }
+    if args.as_slice() == ["object-enrollment-check"] {
+        println!(
+            "{}",
+            object_enrollment::ObjectEnrollment::issue()?.summary()?
+        );
+        return Ok(());
+    }
+    if let [cmd, pair] = args.as_slice()
+        && cmd == "object-repeat"
+    {
+        return object_repeat::run(pair);
     }
     run(&args)
 }
