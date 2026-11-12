@@ -1,0 +1,290 @@
+{
+  "source": "93e8608cf158c8e529b4c54af959c63551470051",
+  "tree": "a439389a2714198f9363c136b26078702939788b",
+  "platform": "macOS arm64",
+  "scope": "Local host control, storage and boot-ownership checks; no guest payload or WAN. Run timing excludes Cargo builds. CPU is RUSAGE_CHILDREN delta for each suite invocation.",
+  "builds": [
+    {
+      "target": "mvm-client-lib",
+      "exit": 0
+    },
+    {
+      "target": "mvm-hostd-lib",
+      "exit": 0
+    },
+    {
+      "target": "mvm-runtime-lib",
+      "exit": 0
+    },
+    {
+      "target": "mvm-core-lib",
+      "exit": 0
+    },
+    {
+      "target": "mvm-vmm-mailbox_worker_transport",
+      "exit": 0
+    },
+    {
+      "target": "mvm-core-mailbox_worker_control",
+      "exit": 0
+    },
+    {
+      "target": "mvm-backends-lib",
+      "exit": 0
+    }
+  ],
+  "cases": [
+    {
+      "target": "mvm-client-lib",
+      "selector": "launch::mailbox_owner::tests::",
+      "test_binary_sha256": "778bed163bef6e306492091e3102846f17dff76e7326df2dc56fdfbcb2b0982b",
+      "exit": 0,
+      "passed": 8,
+      "wall_ms": 1440.4344999999807,
+      "user_ms": 23.663999999996577,
+      "system_ms": 55.144000000000304,
+      "tests": [
+        "launch::mailbox_owner::tests::absent_owner_stop_preserves_legacy_result_under_name_lock",
+        "launch::mailbox_owner::tests::forged_stop_locator_remains_on_disk_and_cannot_authorize_vm_cleanup",
+        "launch::mailbox_owner::tests::independent_process_cannot_claim_active_vm",
+        "launch::mailbox_owner::tests::lost_acquire_reply_recovers_only_original_and_persists_stop_before_cleanup",
+        "launch::mailbox_owner::tests::malformed_or_linked_locator_never_allows_cleanup",
+        "launch::mailbox_owner::tests::original_claim_excludes_same_name_and_allows_another_vm",
+        "launch::mailbox_owner::tests::refuses_linked_state_directory_and_claim_file",
+        "launch::mailbox_owner::tests::uncertain_acquire_survives_reopen_and_prevents_runtime_deletion"
+      ],
+      "child_harnesses": [
+        {
+          "outcome": "ok",
+          "passed": 1,
+          "failed": 0
+        }
+      ],
+      "failed_tests": []
+    },
+    {
+      "target": "mvm-client-lib",
+      "selector": "persistent_start_preserves_runtime_while_an_original_mailbox_launch_holds_the_name",
+      "test_binary_sha256": "778bed163bef6e306492091e3102846f17dff76e7326df2dc56fdfbcb2b0982b",
+      "exit": 0,
+      "passed": 1,
+      "wall_ms": 24.038042000000814,
+      "user_ms": 4.25999999998794,
+      "system_ms": 4.922000000000537,
+      "tests": [
+        "launch::machine_start::tests::persistent_start_preserves_runtime_while_an_original_mailbox_launch_holds_the_name"
+      ],
+      "failed_tests": []
+    },
+    {
+      "target": "mvm-client-lib",
+      "selector": "a_stopped_machines_leftover_runtime_state_is_cleared_before_it_starts_again",
+      "test_binary_sha256": "778bed163bef6e306492091e3102846f17dff76e7326df2dc56fdfbcb2b0982b",
+      "exit": 0,
+      "passed": 1,
+      "wall_ms": 11.280290999991394,
+      "user_ms": 4.271000000017011,
+      "system_ms": 4.303000000000168,
+      "tests": [
+        "launch::machine_start::tests::a_stopped_machines_leftover_runtime_state_is_cleared_before_it_starts_again"
+      ],
+      "failed_tests": []
+    },
+    {
+      "target": "mvm-hostd-lib",
+      "selector": "signed_broker_and_mailbox_share_only_the_original_vm_admission",
+      "test_binary_sha256": "9ad88e2b9b34c4f808c6260977e76fd64c5a9fa8afe7cb10e2ff21bb32d7ae3c",
+      "exit": 0,
+      "passed": 1,
+      "wall_ms": 1185.9269579999818,
+      "user_ms": 12.734000000023116,
+      "system_ms": 21.75799999999839,
+      "tests": [
+        "broker::daemon::tests::signed_broker_and_mailbox_share_only_the_original_vm_admission"
+      ],
+      "failed_tests": []
+    },
+    {
+      "target": "mvm-hostd-lib",
+      "selector": "paired_publication_holds_original_slot_until_listener_activation",
+      "test_binary_sha256": "9ad88e2b9b34c4f808c6260977e76fd64c5a9fa8afe7cb10e2ff21bb32d7ae3c",
+      "exit": 0,
+      "passed": 1,
+      "wall_ms": 15.119208999976763,
+      "user_ms": 6.677000000081534,
+      "system_ms": 5.832000000001614,
+      "tests": [
+        "broker::mailbox_workers::tests::paired_publication_holds_original_slot_until_listener_activation"
+      ],
+      "failed_tests": []
+    },
+    {
+      "target": "mvm-hostd-lib",
+      "selector": "mailbox_process::owned_client::native_start::tests::",
+      "test_binary_sha256": "9ad88e2b9b34c4f808c6260977e76fd64c5a9fa8afe7cb10e2ff21bb32d7ae3c",
+      "exit": 0,
+      "passed": 2,
+      "wall_ms": 15.145749999987856,
+      "user_ms": 5.781999999953769,
+      "system_ms": 4.922999999998012,
+      "tests": [
+        "mailbox_process::owned_client::native_start::tests::entered_backend_error_survives_retry_without_claiming_exit_or_releasing_another_owner",
+        "mailbox_process::owned_client::native_start::tests::panicked_backend_keeps_original_slot_and_blocks_cleanup"
+      ],
+      "failed_tests": []
+    },
+    {
+      "target": "mvm-hostd-lib",
+      "selector": "missing_vm_state_before_spawn_allows_signed_release_and_joined_retirement",
+      "test_binary_sha256": "9ad88e2b9b34c4f808c6260977e76fd64c5a9fa8afe7cb10e2ff21bb32d7ae3c",
+      "exit": 0,
+      "passed": 1,
+      "wall_ms": 15.806999999995242,
+      "user_ms": 7.719999999949323,
+      "system_ms": 4.8560000000001935,
+      "tests": [
+        "broker::mailbox_workers::tests::missing_vm_state_before_spawn_allows_signed_release_and_joined_retirement"
+      ],
+      "failed_tests": []
+    },
+    {
+      "target": "mvm-hostd-lib",
+      "selector": "uncertain_or_panicked_spawn_cannot_redelegate_or_release",
+      "test_binary_sha256": "9ad88e2b9b34c4f808c6260977e76fd64c5a9fa8afe7cb10e2ff21bb32d7ae3c",
+      "exit": 0,
+      "passed": 1,
+      "wall_ms": 12.755624999954307,
+      "user_ms": 5.69400000006226,
+      "system_ms": 4.411000000001053,
+      "tests": [
+        "broker::mailbox_workers::tests::uncertain_or_panicked_spawn_cannot_redelegate_or_release"
+      ],
+      "failed_tests": []
+    },
+    {
+      "target": "mvm-hostd-lib",
+      "selector": "run::signed_boot_tests::",
+      "test_binary_sha256": "9ad88e2b9b34c4f808c6260977e76fd64c5a9fa8afe7cb10e2ff21bb32d7ae3c",
+      "exit": 0,
+      "passed": 4,
+      "wall_ms": 56.24683399997821,
+      "user_ms": 7.1619999999938955,
+      "system_ms": 14.154000000001332,
+      "tests": [
+        "run::signed_boot_tests::a_fleet_signed_plan_boots_through_the_local_seam",
+        "run::signed_boot_tests::a_fleet_signed_plan_is_refused_when_the_host_pins_nobody",
+        "run::signed_boot_tests::a_rootfs_that_is_not_the_pinned_image_is_refused",
+        "run::signed_boot_tests::installed_mailbox_rejects_a_fleet_grant_absent_from_the_transient_request"
+      ],
+      "failed_tests": []
+    },
+    {
+      "target": "mvm-hostd-lib",
+      "selector": "original_stop_failure_survives_error_context",
+      "test_binary_sha256": "9ad88e2b9b34c4f808c6260977e76fd64c5a9fa8afe7cb10e2ff21bb32d7ae3c",
+      "exit": 0,
+      "passed": 1,
+      "wall_ms": 11.385249999989355,
+      "user_ms": 5.004999999982829,
+      "system_ms": 3.2199999999988904,
+      "tests": [
+        "plan_admission::rollback::mailbox_rollback_tests::original_stop_failure_survives_error_context"
+      ],
+      "failed_tests": []
+    },
+    {
+      "target": "mvm-runtime-lib",
+      "selector": "paired_broker_rejects_a_different_or_modified_admitted_plan",
+      "test_binary_sha256": "fe4c5cd49f90e5bbeb3f7f7cd54234e20304120d3d52e122bdf315ab562b8a6d",
+      "exit": 0,
+      "passed": 1,
+      "wall_ms": 656.7231669999956,
+      "user_ms": 4.40800000001218,
+      "system_ms": 8.662999999998533,
+      "tests": [
+        "workload_runner::runner::paired_broker_rejects_a_different_or_modified_admitted_plan"
+      ],
+      "failed_tests": []
+    },
+    {
+      "target": "mvm-core-lib",
+      "selector": "control_request_canonical_bytes_are_pinned",
+      "test_binary_sha256": "f7b441becf848a5144c6baff20218cf2de0500c57f3b129636e132353bcca53e",
+      "exit": 0,
+      "passed": 1,
+      "wall_ms": 319.60016599998653,
+      "user_ms": 3.6849999999049032,
+      "system_ms": 4.594999999994798,
+      "tests": [
+        "protocol::broker_control::tests::control_request_canonical_bytes_are_pinned"
+      ],
+      "failed_tests": []
+    },
+    {
+      "target": "mvm-vmm-mailbox_worker_transport",
+      "selector": "",
+      "test_binary_sha256": "0ea65206d7653ef3b876a2d4af52789743650e3e4bbb972ca682114d29a09f7c",
+      "exit": 101,
+      "passed": 12,
+      "wall_ms": 293.123291000029,
+      "user_ms": 7.2339999999258,
+      "system_ms": 8.872999999994136,
+      "tests": [
+        "bad_marker_oversize_truncated_and_expired_frames_fail_closed",
+        "companion_deregister_requires_the_bound_owner_and_a_regular_ok_reply",
+        "delegated_config_refuses_a_regular_file_before_writing",
+        "first_delegation_without_descriptor_is_rejected",
+        "new_wire_response_is_canonical_typed_control_variant",
+        "no_descriptor_for_query_and_wrong_fd_kind_rejected_before_send",
+        "partial_frame_cannot_restart_absolute_deadline",
+        "rights_on_length_prefix_are_rejected_and_closed",
+        "transferred_writer_is_closed_on_bad_marker_length_json_eof_and_timeout",
+        "unqualified_platform_refuses_pipe_delegation_explicitly",
+        "worker_request_uses_the_daemons_existing_length_and_signed_body",
+        "wrong_kind_from_untrusted_raw_sender_is_closed"
+      ],
+      "failed_tests": [
+        "excess_and_truncated_rights_are_all_closed"
+      ]
+    },
+    {
+      "target": "mvm-core-mailbox_worker_control",
+      "selector": "",
+      "test_binary_sha256": "1762cfb186b638a392089799572467d28630f4a247e9ec77442609feca69cd46",
+      "exit": 0,
+      "passed": 10,
+      "wall_ms": 172.4094589999936,
+      "user_ms": 14.51099999999883,
+      "system_ms": 5.784000000000233,
+      "tests": [
+        "acquire_commitment_changes_with_any_immutable_admission_context",
+        "cleanup_context_commitment_is_bound_even_with_valid_host_signature",
+        "cleanup_query_remains_available_after_expiry_but_start_work_does_not",
+        "legacy_signed_shape_and_unit_ok_stay_exact",
+        "lookup_requires_original_nonce_and_context_without_delegating_or_extending_admission",
+        "release_before_spawn_proof_is_only_valid_for_the_explicit_operation",
+        "response_correlates_exact_request_and_original_owner_before_fd_exposure",
+        "signed_worker_request_binds_domain_version_and_every_context_field",
+        "stop_can_collect_existing_owner_after_admission_expiry_but_not_after_deadline",
+        "worker_signed_jcs_matches_independent_fixed_vector"
+      ],
+      "failed_tests": []
+    },
+    {
+      "target": "mvm-backends-lib",
+      "selector": "prelaunch_failure_releases_support_and_survives_legacy_anyhow_boundary",
+      "test_binary_sha256": "411b48cb86979e22505e171450495ea8efa9d1794300292a459dc034394fc5c4",
+      "exit": 0,
+      "passed": 1,
+      "wall_ms": 298.2359169999995,
+      "user_ms": 4.082999999980075,
+      "system_ms": 5.705000000000737,
+      "tests": [
+        "driver::hvf::cold_channel::tests::prelaunch_failure_releases_support_and_survives_legacy_anyhow_boundary"
+      ],
+      "failed_tests": []
+    }
+  ],
+  "distinct_passing_tests": 46,
+  "distinct_failed_tests": 1
+}
