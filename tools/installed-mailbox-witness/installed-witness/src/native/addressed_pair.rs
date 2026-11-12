@@ -9,7 +9,7 @@ use mvm_client::launch::{
 };
 use mvm_core::protocol::mailbox_worker_control::{MailboxWorkerExit, MailboxWorkerState};
 use mvm_hostd::{
-    mailbox_launch::cast_fixture::{self, ReservedFixture, SignedFixtureDirection},
+    mailbox_launch::cast_fixture::{self, ReservedFixture},
     mailbox_service::guest_io::{self, private_channel::take_pair_readers},
 };
 use serde_json::{Value, json};
@@ -40,18 +40,9 @@ fn runtime() -> Result<tokio::runtime::Runtime> {
         .build()?)
 }
 
-/// The caller supplies the installed coordinator's opaque original-owner carrier.
-/// A successful carrier returns only a transient disposition.
-pub fn run(
-    first: &Config,
-    second: &Config,
-    expected: &[u8],
-    route: impl FnOnce(
-        &SignedFixtureDirection,
-        OriginalParticipant<'_>,
-        OriginalParticipant<'_>,
-    ) -> Result<()>,
-) -> Result<Value> {
+/// Two normal entrypoint calls with one coordinator-owned, single-use turn.
+/// The clear message identifier remains inside the authorized guest endpoint.
+pub fn run(first: &Config, second: &Config, expected: &[u8]) -> Result<Value> {
     first.validate()?;
     second.validate()?;
     mvm_client::validate_vm_name(&first.name)?;
@@ -101,9 +92,10 @@ pub fn run(
     let vm_runtime = runtime()?;
     let start = Instant::now();
     let cpu = ProcessTime::now();
-    let mut installed = InstalledWitness::start_configured(first, &helper, Some(names), |p| {
-        p.with_original_cast_pair(names[0], names[1], Duration::from_secs(30), prepare)
-    })?;
+    let mut installed =
+        InstalledWitness::start_configured(first, &helper, Some(names), true, |p| {
+            p.with_original_cast_pair(names[0], names[1], Duration::from_secs(30), prepare)
+        })?;
     let backend = LocalBackend::with_hypervisor("firecracker")
         .with_installed_mailbox(installed.provider.clone());
     // Each synchronous SDK reservation must be able to meet its peer.
@@ -162,7 +154,7 @@ pub fn run(
                 .try_recv()
                 .context("two original admissions did not issue one direction")?;
             readback = Some(verify_original_pair(a, b, expected, || {
-                route(&signed, a, b)
+                signed.forward_once(Instant::now() + Duration::from_secs(14))
             })?);
             Ok(())
         })();
@@ -242,7 +234,7 @@ pub fn run(
     Ok(
         json!({"status":if errors.is_empty() && readback.is_some(){"passed"}else{"failed"},
         "scope":"Linux Firecracker same-host addressed Cast, ephemeral Submit and exact destination workload readback",
-        "readback":readback,"message_id_correlation_across_guests":null,"participants":rows,"coordinator_exit":coordinator,
+        "expected_bytes":expected.len(),"expected_sha256":digest(expected),"readback":readback,"message_id_correlation_across_guests":null,"participants":rows,"coordinator_exit":coordinator,
         "setup_wall_ns":setup_ns,"lifecycle_wall_ns":start.elapsed().as_nanos(),
         "host_driver_process_cpu_ns":cpu.elapsed().as_nanos(),"guest_stream_scope":guest_io::SCOPE,
         "wan_bytes":null,"send_only_ns":null,"errors":errors}),

@@ -75,12 +75,13 @@ impl InstalledWitness {
         helper: &Path,
         pair: Option<[&str; 2]>,
     ) -> Result<Self> {
-        Self::start_configured(cfg, helper, pair, |p| Ok(p))
+        Self::start_configured(cfg, helper, pair, false, |p| Ok(p))
     }
     pub(super) fn start_configured(
         cfg: &Config,
         helper: &Path,
         pair: Option<[&str; 2]>,
+        original_cast: bool,
         configure: impl FnOnce(HostAgentMailboxProvisioner) -> Result<HostAgentMailboxProvisioner>,
     ) -> Result<Self> {
         let install = helper
@@ -113,8 +114,12 @@ impl InstalledWitness {
         match pair {
             Some(names) => {
                 command.arg("--owned-mailbox-pair-v1").args(names);
+                if original_cast {
+                    command.arg("--immutable-cast-v1");
+                }
             }
             None => {
+                ensure!(!original_cast, "Cast requires two different original names");
                 command.arg("--owned-mailbox-v1");
             }
         }
