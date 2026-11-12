@@ -6,3 +6,5 @@ pub mod installed_owner;
 pub mod installed_supervisor;
 #[path = "../../../src/installed_resources.rs"]
 pub mod installed_resources;
+#[path = "../../../src/installed_disk.rs"]
+pub mod installed_disk;

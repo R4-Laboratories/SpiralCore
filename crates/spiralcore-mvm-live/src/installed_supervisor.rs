@@ -4,7 +4,7 @@ use crate::{
     host_budget::{
         HostTransportBudget, TransportBudgetConfig, TransportBudgetError, TransportLimits,
     },
-    installed_owner::{Epoch, InstallationOwner, OwnerError},
+    installed_owner::{Epoch, HolderHandoff, InstallationBinding, InstallationOwner, OwnerError},
     installed_resources::{ManagedResourceBudget, ManagedResourceError},
 };
 use sha2::{Digest, Sha256};
@@ -20,17 +20,55 @@ use std::{
 };
 
 pub struct InstalledConfig {
-    _private: (),
+    canonical: bool,
 }
 impl InstalledConfig {
     pub fn native_profile() -> Self {
-        Self { _private: () }
+        Self { canonical: false }
+    }
+    /// Fresh provisioning for the canonical resource/disk contract. The stamp
+    /// identifies included model definitions, not an executed child or RSS.
+    pub fn canonical_native_profile() -> Self {
+        Self { canonical: true }
     }
     pub fn profile_hash(&self) -> [u8; 32] {
         let mut digest = Sha256::new();
         digest.update(b"spiralcore/installed-profile/v1\0");
         for value in [2_u64, 2, 524_288, 1, 262_144, 2, 1, 1024] {
             digest.update(value.to_be_bytes());
+        }
+        if self.canonical {
+            digest.update(b"spiralcore/canonical-installed-model-definition/v2\0");
+            for tag in [
+                b"endpoint-bootstrap-v1".as_slice(),
+                b"owned-helper-model-v1",
+                b"disposable-inventory-v1",
+                b"native-fc-hvf-role-v1",
+            ] {
+                digest.update((tag.len() as u64).to_be_bytes());
+                digest.update(tag);
+            }
+            digest.update(usize::BITS.to_be_bytes());
+            digest.update(std::env::consts::OS.as_bytes());
+            digest.update(std::env::consts::ARCH.as_bytes());
+            // These are compiled-in definition stamps. Final activation also
+            // requires the actual one-Core/MVM build closure and child checks.
+            for definition in [
+                include_bytes!("../Cargo.toml").as_slice(),
+                include_bytes!("installed_resources.rs").as_slice(),
+                include_bytes!("installed_owner/endpoint_disks.rs").as_slice(),
+                include_bytes!("../../spiralcore-transfer/Cargo.toml").as_slice(),
+                include_bytes!("../../spiralcore-transfer/Cargo.lock").as_slice(),
+                include_bytes!("../../spiralcore-transfer/src/resource_profile.rs").as_slice(),
+                include_bytes!("../../spiralcore-transfer/src/schema.rs").as_slice(),
+                include_bytes!("../../spiralcore-transfer/src/schema_zstd.rs").as_slice(),
+                include_bytes!("../../spiralcore-transfer/src/session.rs").as_slice(),
+                include_bytes!("../../spiralcore-transfer/src/endpoint.rs").as_slice(),
+                include_bytes!("../../spiralcore-transfer/src/v1/ordered.rs").as_slice(),
+            ] {
+                digest.update((definition.len() as u64).to_be_bytes());
+                digest.update(definition);
+            }
         }
         digest.finalize().into()
     }
@@ -87,8 +125,19 @@ pub(crate) struct InstalledAuthority {
     epoch: Epoch,
     open: AtomicBool,
     workers: Mutex<WorkerLedger>,
+    canonical: bool,
 }
 impl InstalledAuthority {
+    pub(crate) fn with_disk_owner<T>(
+        &self,
+        operation: impl FnOnce(&mut InstallationOwner, Epoch) -> std::result::Result<T, OwnerError>,
+    ) -> Result<T> {
+        let mut owner = self.owner.lock().map_err(|_| {
+            self.close_admission();
+            SupervisorError::State
+        })?;
+        operation(&mut owner, self.epoch).map_err(Into::into)
+    }
     pub(crate) fn admission_open(&self) -> bool {
         self.open.load(Ordering::Acquire)
     }
@@ -105,6 +154,36 @@ impl InstalledAuthority {
             self.close_admission();
             SupervisorError::State
         })
+    }
+}
+
+/// Original descriptor custody for the installed parent's native bridge.
+/// This grants no VM or service permission and retains no idle SH descriptor.
+pub struct InstalledNativeIssuer {
+    authority: Arc<InstalledAuthority>,
+}
+impl InstalledNativeIssuer {
+    pub fn prepare(&self) -> Result<(InstallationBinding, HolderHandoff)> {
+        if !self.authority.admission_open() {
+            return Err(SupervisorError::State);
+        }
+        let result = (|| {
+            let owner = self
+                .authority
+                .owner
+                .lock()
+                .map_err(|_| SupervisorError::State)?;
+            let binding = owner.active_binding(self.authority.epoch)?;
+            let handoff = owner.prepare_original_handoff(self.authority.epoch)?;
+            if !self.authority.admission_open() {
+                return Err(SupervisorError::State);
+            }
+            Ok((binding, handoff))
+        })();
+        if result.is_err() {
+            self.authority.close_admission();
+        }
+        result
     }
 }
 
@@ -168,6 +247,19 @@ pub struct InstalledSupervisor {
     session_started: bool,
 }
 impl InstalledSupervisor {
+    pub(crate) fn require_canonical_profile(&self) -> Result<()> {
+        if self.authority.canonical {
+            Ok(())
+        } else {
+            Err(SupervisorError::Profile)
+        }
+    }
+    pub(crate) fn disk_authority(&self) -> Arc<InstalledAuthority> {
+        self.authority.clone()
+    }
+    pub fn endpoint_disk_inventory(&self) -> Result<crate::installed_disk::EndpointDiskInventory> {
+        crate::installed_disk::EndpointDiskInventory::new(self)
+    }
     pub fn start(mut owner: InstallationOwner, config: InstalledConfig) -> Result<Self> {
         if owner.profile_hash()? != config.profile_hash() {
             return Err(SupervisorError::Profile);
@@ -178,6 +270,7 @@ impl InstalledSupervisor {
             epoch,
             open: AtomicBool::new(true),
             workers: Mutex::new(WorkerLedger::default()),
+            canonical: config.canonical,
         });
         let budget = HostTransportBudget::new_installed(config.transport(), authority.clone())?;
         let resources = ManagedResourceBudget::new_installed(authority.clone());
@@ -194,6 +287,11 @@ impl InstalledSupervisor {
     }
     pub fn managed_resources(&self) -> &ManagedResourceBudget {
         &self.resources
+    }
+    pub fn native_issuer(&self) -> InstalledNativeIssuer {
+        InstalledNativeIssuer {
+            authority: self.authority.clone(),
+        }
     }
     pub(crate) fn claim_session(&mut self) -> Result<()> {
         if self.phase != Phase::Open || !self.authority.admission_open() || self.session_started {

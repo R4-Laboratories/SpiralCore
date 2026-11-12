@@ -203,6 +203,25 @@ impl ManagedResourceBudget {
     pub fn limits(&self) -> ManagedLimits {
         ManagedLimits::host()
     }
+    pub(crate) fn original_vm_serial(
+        &self,
+        parent: &ManagedReservation,
+        tenant: [u8; 32],
+    ) -> Result<u64> {
+        if !Arc::ptr_eq(&self.shared, &parent.owner.shared) {
+            return Err(ManagedResourceError::InvalidClaim);
+        }
+        parent.check_current()?;
+        let ledger = self.shared.ledger()?;
+        let slot = ledger.slots[parent.owner.slot].ok_or(ManagedResourceError::State)?;
+        if slot.serial != parent.serial()
+            || slot.claim.guests != 1
+            || ledger.tenants[slot.tenant].is_none_or(|entry| entry.id != tenant)
+        {
+            return Err(ManagedResourceError::InvalidClaim);
+        }
+        Ok(slot.serial)
+    }
     pub fn reserve(&self, tenant: [u8; 32], claim: ManagedClaim) -> Result<ManagedReservation> {
         claim.valid()?;
         if tenant == [0; 32] {
@@ -333,6 +352,10 @@ pub struct ManagedReservation {
     owner: Arc<Reservation>,
 }
 impl ManagedReservation {
+    /// Identity within this original pool; never a transferable capability.
+    pub fn serial(&self) -> u64 {
+        self.owner.serial
+    }
     pub fn check_current(&self) -> Result<()> {
         if !self.owner.shared.open() {
             return Err(ManagedResourceError::Fenced);
@@ -347,7 +370,7 @@ impl ManagedReservation {
             .get(self.owner.slot)
             .copied()
             .flatten()
-            .filter(|s| s.serial == self.owner.serial);
+            .filter(|s| s.serial == self.serial());
         if current_slot.is_none_or(|s| ledger.tenants.get(s.tenant).is_none_or(Option::is_none)) {
             self.owner.shared.fence();
             return Err(ManagedResourceError::State);
