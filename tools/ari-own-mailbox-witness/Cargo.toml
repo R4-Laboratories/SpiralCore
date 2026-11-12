@@ -23,6 +23,9 @@ mvm-contract = { path = "../source/crates/mvm-contract", features = ["protocol"]
 hex = "0.4"
 rand = "0.10"
 ed25519-dalek = "3"
+[dev-dependencies]
+mvm-core = { path = "../source/crates/mvm-core", features = ["test-support"] }
+
 [patch.crates-io]
 am-fs-ext4 = { path = "../source/third_party/am-fs-ext4" }
 arrayref = { path = "../source/third_party/arrayref" }

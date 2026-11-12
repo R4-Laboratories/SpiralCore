@@ -71,7 +71,11 @@ fn reply_request<'a>(
     )
     .unwrap()
 }
-fn request_wire(binding: &MailboxBinding, payload: &[u8]) -> Vec<u8> {
+fn prepare_request(
+    binding: &MailboxBinding,
+    payload: &[u8],
+    route: Option<mvm_contract::protocol::mailbox::ReplyRoute>,
+) -> mvm_core::mailbox::transport::PreparedMailboxEnvelope {
     let mut options = MessageOptions::fresh(
         mvm_contract::protocol::mailbox::ContentType::parse("application/spiralcore-object", 1)
             .unwrap(),
@@ -79,13 +83,17 @@ fn request_wire(binding: &MailboxBinding, payload: &[u8]) -> Vec<u8> {
         2000,
     )
     .unwrap();
-    options.reply_to = common::config(MailboxMessageKind::Call).reply_to;
-    mvm_core::mailbox::encode_envelope(
-        service_sender::prepare(binding, payload, &options, now())
-            .unwrap()
-            .envelope(),
-    )
-    .unwrap()
+    options.reply_to = route;
+    service_sender::prepare(binding, payload, &options, now()).unwrap()
+}
+
+fn request_wire(binding: &MailboxBinding, payload: &[u8]) -> Vec<u8> {
+    let prepared = prepare_request(
+        binding,
+        payload,
+        common::config(MailboxMessageKind::Call).reply_to,
+    );
+    mvm_core::mailbox::encode_envelope(prepared.envelope()).unwrap()
 }
 
 #[test]
@@ -106,91 +114,98 @@ fn admitted_object_calls_use_shared_core_and_exact_readback() {
     .unwrap();
     endpoint.set_codec_cache_enabled(true).unwrap();
     let expected = [common::random(131073, 51), vec![0; 17]].concat();
-    let mut exact = false;
-    let stats = client::transfer_batched(&expected, Mode::Raw, None, [73; 32], false, |frames| {
-        let mut replies = Vec::new();
-        for frame in frames {
-            let wire = request_wire(&binding, &frame.encode()?);
-            let call = caller.register_call(&binding, &wire, now()).unwrap();
-            let receipt = service.admit(&binding, &wire, now()).unwrap();
-            assert_eq!(receipt.receipt.outcome, DeliveryOutcome::AcceptedEphemeral);
-            mvm_core::mailbox::verify_receipt(
-                &receipt,
-                &SigningKey::from_bytes(&[57; 32]).verifying_key(),
-            )
-            .unwrap();
-            let message = service.receive(&binding, now()).unwrap().unwrap();
-            let receiver_context = endpoint.context(&binding, &message, now()).unwrap();
-            let prepared_scope = service_sender::object_context(
-                &binding,
-                &service_sender::prepare(
-                    &binding,
-                    &frame.encode()?,
-                    &{
-                        let mut options = MessageOptions::fresh(
-                            mvm_contract::protocol::mailbox::ContentType::parse(
-                                "application/spiralcore-object",
-                                1,
-                            )
-                            .unwrap(),
+    let route = common::config(MailboxMessageKind::Call).reply_to;
+    for (attempt, warm) in [false, true].into_iter().enumerate() {
+        let mut exact = false;
+        let mut forward_envelopes = 0;
+        let mut reverse_envelopes = 0;
+        let wall = std::time::Instant::now();
+        let cpu = cpu_time::ThreadTime::now();
+        let stats = client::transfer_batched(
+            &expected,
+            Mode::Raw,
+            None,
+            [73 + attempt as u8; 32],
+            warm,
+            |frames| {
+                let mut replies = Vec::new();
+                for frame in frames {
+                    let original = prepare_request(&binding, &frame.encode()?, route.clone());
+                    let wire = mvm_core::mailbox::encode_envelope(original.envelope()).unwrap();
+                    forward_envelopes += wire.len();
+                    let call = caller.register_call(&binding, &wire, now()).unwrap();
+                    let receipt = service.admit(&binding, &wire, now()).unwrap();
+                    assert_eq!(receipt.receipt.outcome, DeliveryOutcome::AcceptedEphemeral);
+                    mvm_core::mailbox::verify_receipt(
+                        &receipt,
+                        &SigningKey::from_bytes(&[57; 32]).verifying_key(),
+                    )
+                    .unwrap();
+                    let message = service.receive(&binding, now()).unwrap().unwrap();
+                    let receiver_context = endpoint.context(&binding, &message, now()).unwrap();
+                    let prepared_scope =
+                        service_sender::object_context(&binding, &original, now()).unwrap();
+                    assert_eq!(receiver_context, prepared_scope);
+                    let reply = endpoint.handle(&binding, &message, now()).unwrap();
+                    if reply.kind == 103 {
+                        assert_eq!(
+                            endpoint
+                                .read_object(&binding, &message, object_id(&expected), now())
+                                .unwrap(),
+                            expected
+                        );
+                        exact = true;
+                    }
+                    let payload = reply.encode()?;
+                    let envelope = service
+                        .reply(
+                            &reverse,
+                            message.handle(),
+                            reply_request(&reverse, &message, &payload),
                             now(),
-                            2000,
                         )
                         .unwrap();
-                        options.reply_to = common::config(MailboxMessageKind::Call).reply_to;
-                        options
-                    },
-                    now(),
-                )
-                .unwrap(),
-                now(),
-            )
-            .unwrap();
-            assert_eq!(receiver_context, prepared_scope);
-            let reply = endpoint.handle(&binding, &message, now()).unwrap();
-            if reply.kind == 103 {
-                assert_eq!(
-                    endpoint
-                        .read_object(&binding, &message, object_id(&expected), now())
-                        .unwrap(),
-                    expected
-                );
-                exact = true;
-            }
-            let payload = reply.encode()?;
-            let envelope = service
-                .reply(
-                    &reverse,
-                    message.handle(),
-                    reply_request(&reverse, &message, &payload),
-                    now(),
-                )
-                .unwrap();
-            let accepted = caller
-                .admit(
-                    &reverse,
-                    &mvm_core::mailbox::encode_envelope(&envelope).unwrap(),
-                    now(),
-                )
-                .unwrap();
-            assert_eq!(accepted.receipt.outcome, DeliveryOutcome::AcceptedEphemeral);
-            let CallStatus::Replied(Some(payload)) =
-                caller.poll_call(&binding, &call, now()).unwrap()
-            else {
-                panic!("canonical application reply missing")
-            };
-            let reply = spiralcore_transfer::protocol::Frame::decode(&payload)?;
-            let done = matches!(reply.kind, 103 | 127);
-            replies.push(reply);
-            if done {
-                break;
-            }
+                    let encoded = mvm_core::mailbox::encode_envelope(&envelope).unwrap();
+                    reverse_envelopes += encoded.len();
+                    let accepted = caller.admit(&reverse, &encoded, now()).unwrap();
+                    assert_eq!(accepted.receipt.outcome, DeliveryOutcome::AcceptedEphemeral);
+                    let CallStatus::Replied(Some(payload)) =
+                        caller.poll_call(&binding, &call, now()).unwrap()
+                    else {
+                        panic!("canonical application reply missing")
+                    };
+                    let reply = spiralcore_transfer::protocol::Frame::decode(&payload)?;
+                    let done = matches!(reply.kind, 103 | 127);
+                    replies.push(reply);
+                    if done {
+                        break;
+                    }
+                }
+                Ok(replies)
+            },
+        )
+        .unwrap();
+        assert_eq!(stats.object, object_id(&expected));
+        assert!(exact);
+        if warm {
+            assert_eq!(
+                stats.requests, 1,
+                "repeat needs only the authenticated Offer"
+            );
+            assert_eq!(stats.data_bytes, 0);
+        } else {
+            assert_eq!(stats.data_bytes, expected.len() as u64);
         }
-        Ok(replies)
-    })
-    .unwrap();
-    assert_eq!(stats.object, object_id(&expected));
-    assert!(exact);
+        eprintln!(
+            "warm={warm} original={} object_request_bytes={} object_reply_bytes={} data_bytes={} forward_envelope_bytes={forward_envelopes} reverse_envelope_bytes={reverse_envelopes} thread_cpu_ns={} wall_ns={}",
+            expected.len(),
+            stats.request_bytes,
+            stats.response_bytes,
+            stats.data_bytes,
+            cpu.elapsed().as_nanos(),
+            wall.elapsed().as_nanos()
+        );
+    }
 }
 
 #[test]
@@ -387,7 +402,14 @@ fn admitted_cast_is_not_an_object_protocol_call() {
     .unwrap();
     service.admit(&binding, &wire, now()).unwrap();
     let message = service.receive(&binding, now()).unwrap().unwrap();
-    assert!(endpoint.handle(&binding, &message, now()).is_err());
+    assert!(matches!(
+        MessageOptions::for_reply(&message, now()),
+        Err(ServiceError::Unauthorized)
+    ));
+    assert!(matches!(
+        endpoint.handle(&binding, &message, now()),
+        Err(ServiceError::Unauthorized)
+    ));
     assert!(
         endpoint
             .read_object(&binding, &message, object_id(&[]), now())

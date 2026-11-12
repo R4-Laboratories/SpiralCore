@@ -31,6 +31,8 @@ checkpoint, not completion of that program.
 
 A subsequent Linux run kept both original Firecracker guests up for **eight separately addressed messages**. Each carried the same 257-byte body. Guest B returned every byte, then its application ACK was confirmed. The median was 220.763 ms through the verified receipt and 883.826 ms through ACK and independently checked readback. The relay carried 46,819 bytes forward and 9,590 back for 2,056 application bytes. Eight control calls completed while messages awaited forwarding. [Persistent-pair measurements and reproduction](docs/network/evidence/2026-11-12-paired-mailbox/paired-durable-native/sustained/README.md)
 
+**Warm-object status.** The installed guests transferred complete 257-byte and 4 KiB fixtures under a one-way Cast grant. In a separate local component with independent Call and Reply credentials, the receiver recovered a 131,090-byte repeat from a 102-byte Offer and returned an 88-byte object response. Carrying that response between installed guests requires a signed return route. [Authority, envelope overhead and CPU](docs/network/evidence/2026-11-12-paired-mailbox/paired-durable-native/object-reply-boundary.md)
+
 The four single-message trials are shown below.
 
 | Backend and case | Sealed A → B | Signed receipt read from B | Verified receipt returned to A’s helper | ACK and host comparison of B’s readback |
