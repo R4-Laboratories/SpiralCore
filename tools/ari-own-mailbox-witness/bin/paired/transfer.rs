@@ -98,7 +98,9 @@ pub fn one(
     let (counts, v2, verified_ns) = relay.unwrap();
     let id = hex::encode(v2.receipt.message_id.as_bytes());
     ensure!(
-        source["role"] == "staged" && source["message_id"] == id && source["frame_bytes"] == 313,
+        source["role"] == "staged"
+            && source["message_id"] == id
+            && source["frame_bytes"] == super::fixture::FRAME_LEN,
         "B receipt differs from A original staged ID"
     );
     let mut b_request = json!({"message_id":id});
@@ -119,7 +121,7 @@ pub fn one(
     ensure!(
         destination["role"] == "received_and_acknowledged"
             && destination["message_id"] == id
-            && destination["frame_bytes"] == 313
+            && destination["frame_bytes"] == super::fixture::FRAME_LEN
             && [
                 "receive_to_agent",
                 "receive_from_agent",

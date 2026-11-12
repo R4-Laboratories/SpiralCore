@@ -1,4 +1,5 @@
 mod control;
+mod fixture;
 mod retirement;
 use anyhow::{Context, Result, ensure};
 use cpu_time::ProcessTime;
@@ -18,10 +19,12 @@ use std::{
     time::{Duration, Instant},
 };
 
-const LEN: usize = 257;
-const FRAME: usize = 313;
-pub const BODY_SHA: &str = "54acfbfedc4d8da40f76f275e1a98f10af8ef1fb9fb39e5a67a00aabcbe6597c";
-const FRAME_SHA: &str = "ff26a66df5b1d9de994e60824757686d2af8eb4433b91e74a2f24b279f600044";
+use fixture::{BODY_LEN as LEN, FRAME_LEN as FRAME, FRAME_SHA};
+pub const BODY_SHA: &str = if cfg!(feature = "large-object-fixture") {
+    "4a29fe7d84bd3c8097343ec5723341ac8768f67914bf61e4d3c078bb6b5fc9d9"
+} else {
+    "54acfbfedc4d8da40f76f275e1a98f10af8ef1fb9fb39e5a67a00aabcbe6597c"
+};
 
 fn field(v: &Value, name: &str) -> Result<[u8; 32]> {
     let value = v
@@ -164,7 +167,7 @@ fn run(call: WorkerCallRequest, role: &Role) -> Result<Value> {
     let start = Instant::now();
     let cpu = ProcessTime::now();
     ensure!(
-        call.stdin.len() <= 2048 && call.timeout_secs >= 2,
+        call.stdin.len() <= fixture::CALL_INPUT_LIMIT && call.timeout_secs >= 2,
         "bounded paired workload input required"
     );
     let value: Value = serde_json::from_slice(&call.stdin)?;
@@ -206,6 +209,34 @@ pub fn serve(role: Role) -> io::Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[cfg(feature = "large-object-fixture")]
+    #[test]
+    fn four_kib_fixture_is_canonical_and_fits_the_bounded_call() {
+        let mut state = 7u32;
+        let mut body: Vec<u8> = (0..4096)
+            .map(|_| {
+                state ^= state << 13;
+                state ^= state >> 17;
+                state ^= state << 5;
+                state as u8
+            })
+            .collect();
+        body[0] = 0;
+        body[4095] = 0;
+        let frame = Frame {
+            kind: 2,
+            transfer: [7; 32],
+            seq: 1,
+            body: body.clone(),
+        };
+        let bytes = frame.encode().unwrap();
+        assert_eq!(Frame::decode(&bytes).unwrap(), frame);
+        assert_eq!(bytes.len(), FRAME);
+        assert_eq!(hex::encode(Sha256::digest(&body)), BODY_SHA);
+        assert_eq!(hex::encode(Sha256::digest(&bytes)), FRAME_SHA);
+        let request = json!({"frame_hex":hex::encode(bytes),"recipient":"00".repeat(32),"direction":"01".repeat(32)});
+        assert!(serde_json::to_vec(&request).unwrap().len() <= fixture::CALL_INPUT_LIMIT);
+    }
     #[test]
     fn refuses_unexpected_inputs_before_opening_either_original_reader() {
         let until = Instant::now() + Duration::from_secs(1);
