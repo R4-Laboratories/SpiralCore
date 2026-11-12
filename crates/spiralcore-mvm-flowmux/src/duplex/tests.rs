@@ -635,3 +635,95 @@ fn cancellation_wakes_original_tx_owner_and_conflicting_registration_is_refused(
     });
     let _ = pair.left.1.receive();
 }
+
+#[test]
+fn revocation_after_commit_and_retention_snapshot_exposes_no_application_bytes() {
+    use spiralcore_transfer::{
+        resource_profile::ResourceProfile,
+        v1::{OrderedBinding, OrderedLane, OrderedObjectEndpoint},
+    };
+    use std::sync::{
+        Arc,
+        atomic::{AtomicBool, Ordering},
+        mpsc,
+    };
+    struct Revocable(Arc<AtomicBool>);
+    impl Authority for Revocable {
+        fn authorize(&self, _: &Context) -> spiralcore_transfer::Result<()> {
+            if self.0.load(Ordering::Acquire) {
+                Err(spiralcore_transfer::Error::Unauthorized)
+            } else {
+                Ok(())
+            }
+        }
+    }
+    let c = context();
+    let revoked = Arc::new(AtomicBool::new(false));
+    let store = Store(
+        std::env::temp_dir().join(format!("spiral-post-commit-revoke-{}", std::process::id())),
+    );
+    let caps = Capabilities::small_v1();
+    let profile = caps.negotiate(&caps).unwrap();
+    let resources = ResourceProfile::SmallV1;
+    let endpoint = ObjectEndpoint::open_with_resource_profile(
+        &store.0,
+        resources.receiver_limits(),
+        Revocable(revoked.clone()),
+        profile,
+        resources,
+    )
+    .unwrap();
+    let binding = OrderedBinding::new(
+        &c,
+        c.namespace().unwrap(),
+        0,
+        b"application\0",
+        b"artifact\0",
+    )
+    .unwrap();
+    let mut receiver = super::ReceiveEndpoint::Ordered(Box::new(
+        OrderedObjectEndpoint::new(endpoint, binding.clone(), &c).unwrap(),
+    ));
+    let mut sender =
+        ObjectSender::new_with_resource_profile(ObjectMode::Whole, &c, None, profile, resources)
+            .unwrap();
+    let mut readback = None;
+    sender
+        .send(
+            &c,
+            b"original data\0".to_vec(),
+            binding.transfer_id(OrderedLane::Application, 0),
+            false,
+            |frames| {
+                frames
+                    .iter()
+                    .map(|f| {
+                        let (reply, bytes) =
+                            receiver.handle(crate::Purpose::Application, 0, &c, f, 1)?;
+                        if reply.kind == 103 {
+                            readback = bytes;
+                        }
+                        Ok(reply)
+                    })
+                    .collect()
+            },
+        )
+        .unwrap();
+    let observer = super::RetentionObserver::default();
+    observer.publish(receiver.snapshot(&c).unwrap()).unwrap();
+    let (tx, rx) = mpsc::sync_channel(1);
+    let bytes = readback.unwrap();
+    assert_eq!(bytes, b"original data\0");
+    tx.try_send(Event::HalfClose).unwrap();
+    let pending = match receiver.enqueue(&c, &tx, Event::Data(bytes)).unwrap() {
+        Err(mpsc::TrySendError::Full(event)) => event,
+        _ => panic!("full delivery queue must keep the original event"),
+    };
+    assert_eq!(rx.try_recv().unwrap(), Event::HalfClose);
+    revoked.store(true, Ordering::Release);
+    assert!(
+        receiver.enqueue(&c, &tx, pending).is_err(),
+        "revoked readback escaped the worker"
+    );
+    assert!(matches!(rx.try_recv(), Err(mpsc::TryRecvError::Empty)));
+}

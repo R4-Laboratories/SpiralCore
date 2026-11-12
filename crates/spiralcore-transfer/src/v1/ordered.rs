@@ -129,7 +129,8 @@ impl<A: Authority> OrderedObjectEndpoint<A> {
         endpoint.check_cache_bound()?;
         Ok(endpoint)
     }
-    fn check(&self, c: &Context) -> Result<()> {
+    /// Recheck the live endpoint authority, its bound namespace and its storage fence.
+    pub fn check_delivery_authority(&self, c: &Context) -> Result<()> {
         self.inner.inner.authorize(c)?;
         if c.namespace()? != self.binding.namespace {
             return Err(Error::Unauthorized);
@@ -260,7 +261,7 @@ impl<A: Authority> OrderedObjectEndpoint<A> {
         now: u64,
         return_bytes: bool,
     ) -> Result<(Frame, Option<Vec<u8>>)> {
-        self.check(c)?;
+        self.check_delivery_authority(c)?;
         if frame.transfer != self.binding.transfer_id(lane, ordinal) {
             return Err(Error::Sequence);
         }
@@ -401,7 +402,7 @@ impl<A: Authority> OrderedObjectEndpoint<A> {
         }
         if readback.is_some() {
             // Release only after the original lane, quota and authority are current.
-            self.check(c)?;
+            self.check_delivery_authority(c)?;
             let id = reply
                 .body
                 .as_slice()
@@ -412,7 +413,7 @@ impl<A: Authority> OrderedObjectEndpoint<A> {
         Ok((reply, readback))
     }
     pub fn read_object(&mut self, c: &Context, id: Id) -> Result<Vec<u8>> {
-        self.check(c)?;
+        self.check_delivery_authority(c)?;
         let bytes = match self.inner.read_object(c, id) {
             Ok(bytes) => bytes,
             Err(error) => {
@@ -432,7 +433,7 @@ impl<A: Authority> OrderedObjectEndpoint<A> {
         Ok(bytes)
     }
     pub fn snapshot(&self, c: &Context) -> Result<OrderedSnapshot> {
-        self.check(c)?;
+        self.check_delivery_authority(c)?;
         Ok(OrderedSnapshot {
             attempts: self.inner.inner.ordered_attempt_count(c)?,
             publications: self.cache.len(),

@@ -737,6 +737,17 @@ impl<A: Authority> ReceiveEndpoint<A> {
                 .map(|reply| (reply, None)),
         }
     }
+    fn enqueue(
+        &self,
+        context: &Context,
+        sender: &SyncSender<Event>,
+        event: Event,
+    ) -> Result<std::result::Result<(), TrySendError<Event>>> {
+        if let (Self::Ordered(endpoint), Event::Data(_)) = (self, &event) {
+            endpoint.check_delivery_authority(context)?;
+        }
+        Ok(sender.try_send(event))
+    }
     fn application_bytes(
         &mut self,
         context: &Context,
@@ -789,7 +800,10 @@ impl<A: Authority> Worker<A> {
         loop {
             self.cancellation.check()?;
             let left = remaining(until)?;
-            match self.delivery.try_send(event) {
+            match self
+                .endpoint
+                .enqueue(&self.context, &self.delivery, event)?
+            {
                 Ok(()) => return Ok(()),
                 Err(TrySendError::Disconnected(_)) => return Err(Error::Closed),
                 Err(TrySendError::Full(returned)) => {
