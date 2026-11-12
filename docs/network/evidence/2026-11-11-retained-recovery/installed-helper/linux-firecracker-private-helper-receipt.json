@@ -1,0 +1,133 @@
+{
+  "scope": "One x86-64 Linux Firecracker guest, 1 vCPU, 256 MiB, no guest NIC; guest to same-host canonical installed mailbox on port 5257; one synthetic message.",
+  "status": "passed",
+  "error": null,
+  "receipt_authority": "Dedicated per-original anonymous reporter channel delivered by trusted coordinator; valid original-owner receipt after signed helper exit zero.",
+  "coordinator_observation_deadline_seconds": 210,
+  "host_source": "91fea4e72352f8fa676635ad38b34213cd3bbcb6",
+  "host_tree": "0ea25796e58806386d933009e5565aabc7d89783",
+  "witness_source": "61290d3f7857cf6f323e7efe36e22a03e2626e63",
+  "witness_inputs_sha256": "83999aac27f4133698b56a93a14731149b9bc366493a90b75b429b1121b74978",
+  "guest_runtime": {
+    "selection": "canonical verified cache reuse",
+    "producer_source": {
+      "commit": "f780207089dbc1c90876c44d54e7221b6d79108d",
+      "worktree": {
+        "state": "clean"
+      }
+    },
+    "guest_source_fingerprint": "e288852437370375c2bf8de485fba0d7c65b8d2366f4ee8bd11d365d94b485e3",
+    "sdk_source_fingerprint": "efc030d5e3b9cdce76dcc3f7278741aea2d2dccaf39911588ec05f78b2a14fb7",
+    "archive_sha256": "2884634e4287109741842e519d368c7b3869f1de0fbd351163380979417ba460",
+    "initramfs_sha256": "027dc4bc900c15e70843f88ac81b5a28332ff37d5f660aadfbcdbc576e56c7ec",
+    "preparation_wall_ns": 141413866,
+    "preparation_process_cpu_ns": 125387461
+  },
+  "synthetic_workload": {
+    "producer_source": "61290d3f7857cf6f323e7efe36e22a03e2626e63",
+    "mvm_compile_source": "91fea4e72352f8fa676635ad38b34213cd3bbcb6",
+    "rebuilt_producer_sha256": "f1e0ae53a2c1511859b97d973974b5b1f41f37db074b28f59bc1426c6b7981ab",
+    "rootfs_files_sha256": {
+      "./etc/group": "d8d9d7fa94f51801243d778ece8770affeb53765e1b758f0b9270a928f0600b4",
+      "./etc/mvm/name": "a60825819f949202a404b439965b319e0310ba8400bfb88c689bd14c925c7158",
+      "./etc/mvm/variant": "9c5955fc99a60b8f6dee6cf582c4420d91e1b3e2a201f532c91e2cbdfce7fa51",
+      "./etc/passwd": "d5ba59e27caa926a8d189dd5b8d4585b80eee37630d92e422ffc644e76349f48",
+      "./usr/lib/mvm/wrappers/oci-entrypoint": "8fae5841203f4439328eb23af81be26cb9a3a626f0b422a038adf0454f8ddef6",
+      "./usr/local/bin/spiralcore-mailbox-producer": "f1e0ae53a2c1511859b97d973974b5b1f41f37db074b28f59bc1426c6b7981ab"
+    }
+  },
+  "firecracker_sha256": "99ad0f5cd0514a88aad0e9ae8cfdb3cc3b4ab9d190e1194602406c786b5de7a5",
+  "workload_kernel_sha256": "1701ccb2c46b2497066225d6ba05f3f33a3a845ca636fbeedb202835c83b49b6",
+  "executables_sha256": {
+    "results/preparer": "9381fcdf1bfab11fe7b6a9e0c5d74c10e53f31ae6e10dcc9c0de9cf76c9df380",
+    "results/witness": "7fb1b837e02a6d42c02bce94582df68f262bb754da6b3235e1fb367d219980bb",
+    "install/mvm-host-agent": "332b8ce636163ec9bb262d5fbae82b8b6ce75ad6c61336415f40809fc7c726b6",
+    "install/mvm-mailbox": "4b90c0b393e37ab6bd8d885008816ccd6048da809939f1e097e330cb8e8eea84",
+    "install/mvm-network-endpoint": "52102df9ace8b7d06e7ad0586b080d8810c2fadaeec34c0be200ba8ef6c34875",
+    "install/mvm-signer-helper": "f6c68bbba060390da706066f18d569df05eda033341907613945ff1d18a1b8a2"
+  },
+  "readback": {
+    "expected_bytes": 1024,
+    "received_bytes": 1024,
+    "expected_sha256": "3cafacf7f3f4628dcc4da6be8a679c3d283911100632476924fc76fa0e2a20ad",
+    "received_sha256": "3cafacf7f3f4628dcc4da6be8a679c3d283911100632476924fc76fa0e2a20ad",
+    "exact_readback": true
+  },
+  "guest_mailbox_stream_scope": "mvm/owned-mailbox/guest-5257/post-mux-host-stream/v1",
+  "guest_mailbox_stream_counts": {
+    "dial_attempts": 2,
+    "failed_dials": 0,
+    "guest_to_host_read_bytes": 1060,
+    "host_to_guest_write_accepted_bytes": 11,
+    "overflow": false,
+    "read_errors": 0,
+    "write_errors": 0,
+    "zero_data_connections": 1
+  },
+  "bidirectional_guest_stream_bytes": 1071,
+  "timing": {
+    "setup_wall_ns": 932338279,
+    "receive_wall_ns": 103065563,
+    "receive_probes": 2,
+    "receive_wait_class": "at most five bounded external probes; functional wait, not performance-qualified",
+    "lifecycle_wall_ns": 110464167055,
+    "host_orchestrator_cpu_ns": 439932426,
+    "verified_helper_receipt_wall_ns": 1216587352,
+    "host_orchestrator_cpu_through_receipt_ns": 431566803
+  },
+  "concurrent_activity": "No concurrent SpiralCore qualification build was admitted during transfer. The host Cargo lane was released after original VM state and definition removal at 07:56:23 UTC during separate tenant idle observation; host was not otherwise reserved.",
+  "outer_command": {
+    "wall_seconds": 110.48,
+    "user_cpu_seconds": 0.35,
+    "system_cpu_seconds": 0.14,
+    "max_rss_kib": 55188,
+    "scope": "GNU time around the Linux launch command, includes wait for coordinator idle retirement; scheduling and descendant accounting differ from orchestrator CPU."
+  },
+  "process_cpu_samples": {
+    "ticks_per_second": 100,
+    "scope": "Original Firecracker and helper process ticks from capture after setup to before stop. Firecracker includes VMM threads and is not an isolated guest workload CPU counter. Do not add overlapping timing domains.",
+    "processes": {
+      "firecracker": {
+        "executable_sha256": "99ad0f5cd0514a88aad0e9ae8cfdb3cc3b4ab9d190e1194602406c786b5de7a5",
+        "sample_start_user_ticks": 6,
+        "sample_start_system_ticks": 3,
+        "before_stop_user_ticks": 6,
+        "before_stop_system_ticks": 3,
+        "sampled_delta_user_ticks": 0,
+        "sampled_delta_system_ticks": 0,
+        "original_exit_observed": true
+      },
+      "mvm-mailbox": {
+        "executable_sha256": "4b90c0b393e37ab6bd8d885008816ccd6048da809939f1e097e330cb8e8eea84",
+        "sample_start_user_ticks": 0,
+        "sample_start_system_ticks": 0,
+        "before_stop_user_ticks": 0,
+        "before_stop_system_ticks": 0,
+        "sampled_delta_user_ticks": 0,
+        "sampled_delta_system_ticks": 0,
+        "original_exit_observed": true
+      }
+    }
+  },
+  "lifecycle": {
+    "stop": "canonical_stop_ok",
+    "cleanup": "canonical_cleanup_ok",
+    "helper": "original signed owner collected helper exit 0",
+    "coordinator": "original Child::wait returned exit status: 42",
+    "lifecycle_phase_at_post_witness_check": "Drained",
+    "runtime_and_definition_absent": true
+  },
+  "unmeasured": {
+    "guest_workload_cpu": "unavailable",
+    "transport_wire_bytes": "unavailable; no virtio, NIC or WAN byte counters",
+    "guest_consumption_of_reply": "not independently metered inside the native guest",
+    "performance_baseline": "No object codec or zstd was applied; single native conformance run, no compression or WAN speed claim."
+  },
+  "component_tests": {
+    "passed": 5,
+    "failed": 0,
+    "linux_hostd_test_log_sha256": "4f518878b38326c7c9b98ccc22906349bc19d8c4123a4a4d6a81278767228d60"
+  },
+  "raw_report_sha256": "85aa03906dc7527a41f467c4b683b782be552194e22e509afa66fe0730c57bcf",
+  "raw_external_time_sha256": "2394e083edd122deb39e02a87e3ff2f1a5cc02792d981b404bd9bdb0b51964fc"
+}
