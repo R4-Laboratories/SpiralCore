@@ -1,0 +1,150 @@
+{
+  "schema": "spiralcore.native-object-cold-warm.v1",
+  "mvm_host": "68e4239602314d3c0226cd2dbb951f526c5cc9bf",
+  "mvm_guest": "c9d9fe87b27cd2e5fc64d2b1d9c3a31b522b2097",
+  "spiralcore_driver": "424c36ba5c47dab768ae0e4ebfa98d1af6fb6620",
+  "spiralcore_guest": "584f7f29c3b67406525dba0002a3601264c1fbc6",
+  "backend": "Firecracker x86_64 Linux; two guests, 1 vCPU/256 MiB each, one host, no guest NIC",
+  "object_sha256": "4a29fe7d84bd3c8097343ec5723341ac8768f67914bf61e4d3c078bb6b5fc9d9",
+  "observed_guest_backends": [
+    "firecracker",
+    "firecracker"
+  ],
+  "same_b_worker_and_boot": true,
+  "rounds": {
+    "cold": {
+      "calls": 4,
+      "literal_bytes": 4096,
+      "object_request_bytes": 4376,
+      "object_reply_bytes": 282,
+      "readback_verified_bytes": 4096,
+      "application_bytes": 4658,
+      "sealed_peer_channels": {
+        "A_outbound": {
+          "write": 32393,
+          "read": 4790
+        },
+        "B_outbound": {
+          "write": 21800,
+          "read": 4814
+        }
+      },
+      "sealed_total_unique": 63797,
+      "guest_5257_bytes": null,
+      "sender_cpu_ns": 8327771,
+      "receiver_cpu_ns": 30250310,
+      "coordinator_cpu_ns": 29947445,
+      "time_through_both_guest_results_ns": 8002419916,
+      "workload_stdin_bytes": 9098,
+      "workload_stdout_including_readback_bytes": 10803
+    },
+    "warm": {
+      "calls": 1,
+      "literal_bytes": 0,
+      "object_request_bytes": 102,
+      "object_reply_bytes": 88,
+      "readback_verified_bytes": 4096,
+      "application_bytes": 190,
+      "sealed_peer_channels": {
+        "A_outbound": {
+          "write": 6326,
+          "read": 1192
+        },
+        "B_outbound": {
+          "write": 5494,
+          "read": 1211
+        }
+      },
+      "sealed_total_unique": 14223,
+      "guest_5257_bytes": null,
+      "sender_cpu_ns": 2281177,
+      "receiver_cpu_ns": 8593210,
+      "coordinator_cpu_ns": 11304759,
+      "time_through_both_guest_results_ns": 2199722792,
+      "workload_stdin_bytes": 8558,
+      "workload_stdout_including_readback_bytes": 9079
+    }
+  },
+  "guest_5257": {
+    "bound": 64,
+    "outcome": [
+      "overflow",
+      "overflow"
+    ],
+    "full_counts": null
+  },
+  "retirement": [
+    {
+      "assisted": false,
+      "exit_code": 0,
+      "first_stop_attempt": true,
+      "name": "sc-journal-a",
+      "success": true
+    },
+    {
+      "assisted": false,
+      "exit_code": 0,
+      "first_stop_attempt": true,
+      "name": "sc-journal-b",
+      "success": true
+    }
+  ],
+  "gnu_time": {
+    "elapsed_s": 16.63,
+    "user_s": 10.53,
+    "system_s": 0.21,
+    "max_rss_kib": 79944,
+    "status": 1
+  },
+  "audit": {
+    "entries": 17,
+    "sessions": 2,
+    "seals": 2
+  },
+  "remaining_firecracker": 0,
+  "remaining_scopes": 0,
+  "wan": null,
+  "artifacts": {
+    "audit.log": "5b7cb24bc38132f35843e640eed08542a0c2870d9531d5568ac4fe243688e1d1",
+    "driver-tests.log": "ec87d17d8260c2eee5c9e59a243332c3ff70439a4597d04450f2a08da69807c3",
+    "host.sha256": "7466ce9f5cdc4e7d7c411f334a41ffb878bdf7c446d40265304ea3a5045e2303",
+    "inputs-host-source.log": "0da976b848f01c4f6ca1dc9979016ce9acbf38566caf931f789109a7552de767",
+    "inputs-verified.log": "c17faf30e614e6574d62fc038f1bbda98924f56272aaad81de1e4f94966ed651",
+    "native.time": "5a5024f79dda3b1e0c8d1a9cc9b4b4d9b5d8e2bcb76ee01b550fb9f9a4a726c9",
+    "object-pair-progress.jsonl": "81d49fdd462cbb3e9b7117cfbb96a0ab9cd04f63ecbadcefb9d98dcd86cbc920",
+    "object-pair-result.json": "5dd40605fc80001889109ea1f104894a76554089b675bd91dc510cf3d7867a6a",
+    "original-sc-journal-a-guest_5257.counts": "535350bc9456f3ec0b0ec525923afbaa53a2132bcf5ba1879ae5b9780af30ad3",
+    "original-sc-journal-a-sealed_in.counts": "79419831671d9564bee6949cf9b8b21ed8bb93c6b9a7467b346ca3011b27b835",
+    "original-sc-journal-a-sealed_out.counts": "c0394f55fc029927dcb2516dbb8b8cda44f551e6df5a24d9e73e76f634737525",
+    "original-sc-journal-b-guest_5257.counts": "a18641de2633e7f71b4ec3131e47cef35bdaeb47a9d0864e318d13927fa26a9f",
+    "original-sc-journal-b-sealed_in.counts": "b234fc0069f61b3d2334f314ddd048486805a74678ea796a42ab9192fdc78d76",
+    "original-sc-journal-b-sealed_out.counts": "8bbd5db9f562999d577ef998bd5f357f977ae440f684b28fd12fd46874ada11c",
+    "scopes.after": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "zstd-1.row": "9e85bbe50ab8f59e539078649c88ff0e9fb588d2e8c74b65631762f66fc52eff",
+    "zstd-1.time": "013c23948220ac24b82ec46e32b8acd05e1030d8bfa8818873565f610c3c1fca",
+    "zstd-3.row": "a21b9289fb01ee72e4e93a0764962916f7cb975c6687d6b8169ec4730f58701b",
+    "zstd-3.time": "b5d4cb7975804967f939c0196126e075309670fed12f6614f1b77caee52b4cf5"
+  },
+  "host_binaries": {
+    "mvm-host-agent": "6d87ff123a7d8f7f2ef8d4cc4f5a6c9f46bb0f3892f8d11c27eadbcb39e208bd",
+    "mvm-mailbox": "3776b08b0bcae312467e9b07c7526ecaae9888aed5258026b0daeee9db15f794",
+    "mvm-network-endpoint": "d6917055605f26157ca7f8f56dc3edb17b44cc0be276a8092f9623d083f3f15d",
+    "mvm-signer-helper": "adb5f9820c5e2b0db42430cc03392387968d6168352cf16f94fcf16845ca5f2a",
+    "paired-journal": "72192021a1057278249f76782a6c50a252c8d5c3ad0e006bce07d1986151e461"
+  },
+  "zstd_isolated": {
+    "version": "1.5.7",
+    "independent_frames_per_level": 8192,
+    "levels": {
+      "1": {
+        "row": "1.5.7 level=1 raw=4096 frame=4106 decodes_verified=8192 elapsed_ns=16134228",
+        "gnu_time": "wall_s=0.01 user_s=0.01 system_s=0.00 max_rss_kib=2576"
+      },
+      "3": {
+        "row": "1.5.7 level=3 raw=4096 frame=4106 decodes_verified=8192 elapsed_ns=21642102",
+        "gnu_time": "wall_s=0.02 user_s=0.02 system_s=0.00 max_rss_kib=2528"
+      }
+    },
+    "native_two_guest_transfer": null
+  }
+}
