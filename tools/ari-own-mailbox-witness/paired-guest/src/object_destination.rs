@@ -22,7 +22,7 @@ use std::{
     io::Read,
     os::unix::fs::DirBuilderExt,
     rc::Rc,
-    time::{Duration, Instant, SystemTime, UNIX_EPOCH},
+    time::{Instant, SystemTime, UNIX_EPOCH},
 };
 
 struct Active {
@@ -228,6 +228,7 @@ impl GuestDestination {
             );
         }
         if self.pending.is_none() {
+            let mut empty = crate::object_reader::EmptyPollDelay::default();
             loop {
                 ensure!(
                     Instant::now() < until,
@@ -242,9 +243,7 @@ impl GuestDestination {
                     });
                     break;
                 }
-                std::thread::sleep(
-                    Duration::from_millis(5).min(until.saturating_duration_since(Instant::now())),
-                )
+                empty.wait(until);
             }
         }
         let p = self.pending.as_mut().context("original delivery missing")?;

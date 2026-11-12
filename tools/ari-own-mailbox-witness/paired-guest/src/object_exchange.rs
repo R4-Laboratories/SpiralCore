@@ -231,6 +231,7 @@ impl GuestObjectSource {
                 deadline,
                 &mut traffic.operations,
             )?;
+            let mut empty = crate::object_reader::EmptyPollDelay::default();
             loop {
                 ensure!(
                     Instant::now() < deadline,
@@ -247,7 +248,7 @@ impl GuestObjectSource {
                     );
                     return Ok((delivery.reply_frame()?.clone(), (request.seq, delivery)));
                 }
-                wait_to_poll(deadline);
+                empty.wait(deadline);
             }
         };
         let acknowledge = |(seq, delivery)| {

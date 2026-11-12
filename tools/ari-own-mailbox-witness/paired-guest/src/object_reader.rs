@@ -1,5 +1,8 @@
 //! Object-v1 at the guest application boundary. MVM's paired reader owns
 //! enrollment, lease verification, correlation and the guest's ACK key.
+mod empty_poll;
+pub(crate) use empty_poll::EmptyPollDelay;
+
 use anyhow::{Result, ensure};
 use mvm_contract::protocol::mailbox::{
     MailboxEnvelopeHeader, MailboxMessageKind, SignedMailboxDeliveryLease,
