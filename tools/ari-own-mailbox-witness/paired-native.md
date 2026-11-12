@@ -40,6 +40,8 @@ Build the canonical original guest overlay with `prepare "$(realpath source)"` u
 
 Use that same home and original runtime for the launch. Set `MVM_FIRECRACKER_BIN`, `MVM_MAILBOX_PATH` and `MVM_SUBSTITUTION_ENDPOINT_PATH` to the respective measured binaries, put their matched siblings on PATH and set `MVM_FC_IDLE_POOL=0`. Invoke `paired-journal A_EXT4 A_EXT4_SHA256 B_EXT4 B_EXT4_SHA256 fixtures/workload-frame.bin` from the witness directory. Preserve the pre-stop result, per-original child outcomes and measured socket records even when the harness returns failure. [Observed native measurement](../../docs/network/evidence/2026-11-12-paired-mailbox/paired-durable-native/README.md).
 
+The subsequent same-host run used the same original guest image digests and rebuilt the host executables at [27038e3f](https://github.com/Casey-allard/mvm/tree/27038e3f322e4336df180073e12cae59cc4dba54). Both original helpers exited with status 0 on the first attempt. [Measured rerun](../../docs/network/evidence/2026-11-12-paired-mailbox/paired-durable-native/graceful.md).
+
 ## Qualifying a lost first receipt
 
 Use the same isolated two-guest setup and 313-byte frame. Pin the host and its installed service binaries to MVM `27038e3f322e4336df180073e12cae59cc4dba54` and the guest runtime to `93b3b65ae72a4746a54a21c7c158d5453cceb8f5`. Set aside the original host service binaries for installation **before** applying the relay fixture. Build the orchestrator against a *separate private checkout* of that exact host source. Apply the following overlay only to the library linked into the test orchestrator. The workload feature adds read-only probes for A’s retired outbox and B’s queue after ACK.

@@ -1,5 +1,7 @@
 # Native delivery between two Firecracker guests
 
+A later run of the same payload and guest images verified unassisted shutdown of both original helpers. This page retains the first pilot. [Graceful rerun and comparison](graceful.md).
+
 On 2026-11-12, two separately admitted Linux x86-64 Firecracker guests exchanged one synthetic object through MVM’s trusted-host mailbox service. Each guest had one vCPU and 256 MiB of RAM. Only guest A received the original 313-byte SpiralCore frame. Guest B reopened a file containing the reconstructed 257 bytes, including the trailing zero, acknowledged its lease and returned its readback for an independent byte-for-byte comparison. **Delivery passed. Graceful helper shutdown failed for both guests.**
 
 | Measurement | Single observed run |
