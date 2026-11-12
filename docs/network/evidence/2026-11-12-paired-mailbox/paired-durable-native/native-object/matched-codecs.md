@@ -33,7 +33,7 @@ All six meter sessions closed in both arms. No transfer phase recorded a read or
 
 ## Reproduction
 
-Build both guest programs from the same tested SpiralCore revision with `large-object-fixture,object-reader-v1` and seal the resulting role images once. Build the paired driver with `installed-object-pair`. Use the measured MVM host with `durable-guest-io-witness`, the recorded guest runtime, and the same operator settings for two freshly provisioned homes. Run one installation at a time with the same role images and digests.
+The measured guest executables were release-profile x86_64 musl builds. The host helpers and driver were dev-profile debug builds with debug information disabled. Build both guest programs from the same tested SpiralCore revision with `large-object-fixture,object-reader-v1` and seal the resulting role images once. Build the paired driver with `installed-object-pair`. Use the measured MVM host with `durable-guest-io-witness`, the recorded guest runtime, and the same operator settings for two freshly provisioned homes. Run one installation at a time with the same role images and digests.
 
 ```text
 paired-journal installed-object-codec raw A.ext4 A_SHA256 B.ext4 B_SHA256

@@ -565,5 +565,10 @@
         "workload_verification_stdout_bytes_including_readback": 9179
       }
     }
+  },
+  "build_profiles": {
+    "host_driver_and_helpers": "Cargo dev (debug), debug info disabled",
+    "caller_and_receiver_worker_executables": "Cargo release, x86_64-unknown-linux-musl via cargo-zigbuild",
+    "host_driver_tests": "Cargo test, debug info disabled"
   }
 }
