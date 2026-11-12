@@ -1,0 +1,48 @@
+{
+  "mvm_source": "9d08b503c0d5a85c21e097edd05760024115d17d",
+  "mvm_tree": "0eac13bc99dec82771bc3a266fb6b75b82fd4f92",
+  "mvm_patch_base": "b2a28474d861dd30a7e47edbb9c346cc669ecec2",
+  "upstream_journal": "543efc7f94aa756c09785b38bdd024b6ba8199c7",
+  "patch_sha256": "13a4d08b7878e904656ae491a3ca5c882d30d1371d94c3807a7b055657368547",
+  "platform": "native macOS arm64",
+  "cargo": "1.97.1 --offline --locked, test/debug unoptimized, no debug information, no incremental codegen, two build jobs",
+  "hostd_test_sha256": "17c7d90113b82e9b60780dfa44c90e6a0bdc097aae457ea6e152b831c4a21e12",
+  "checks": {
+    "incoming": 2,
+    "original_journal": 7,
+    "original_reader": 1,
+    "durable": 2,
+    "ordinary_production_own_mailbox": 1
+  },
+  "positive_run": {
+    "body_bytes": 257,
+    "fixture": "00..ff plus 00",
+    "source_socket_written_bytes": 5503,
+    "source_socket_read_bytes": 1119,
+    "seal_through_verified_v2_receipt_ns": 35371375,
+    "seal_through_reopened_journal_reader_readback_ns": 96098834,
+    "process_time_wall_s": 0.27,
+    "process_time_user_s": 0.03,
+    "process_time_system_s": 0.01,
+    "maximum_rss_bytes": 24150016
+  },
+  "timing_scope": "One static-test executable invocation for the positive case. OS CPU covers both endpoints, fixture setup, measured exchange, restart/readback, negative controls and teardown; OS time output is rounded to 0.01 s.",
+  "transport": "Single real AF_UNIX stream, sender receive and write return lengths. Signed V2 local-durable journal receipt. A separate denial and the storage readback use their own scope.",
+  "unmeasured": [
+    "guest and VM launch; original process pair",
+    "application ACK",
+    "guest vsock traffic",
+    "CPU for separate endpoints",
+    "WAN throughput",
+    "compression gain"
+  ],
+  "logs_sha256": {
+    "revoke.log": "859d1f1a1465c17b76fa891d3ff9a046d609779163253c7088cd2981738d0d33",
+    "final-durable.log": "fa7a162530a581b40172e9949f18c88885c37249f765ec2bc6496d00c6fe870c",
+    "final-measure.log": "e946e6c159b187e5794e5de97953de26bf171600f5f9c601b4de977dacaeeb13",
+    "final-ordinary.log": "df5e9f18881379c7a00655deb7ec6e4b2829302b024708e57b67aeda079372e1",
+    "final-originals.log": "406fea8c62ae23b3bad4989975efd1b96c02d5e660a0ea926f88b9b0af0fe013",
+    "final-readers.log": "21079e8dd96e047167a8abb27be23a85ee02c0cad70178adb5a67a071e24d476",
+    "final-resources.log": "12a56964ed681168e0aaf19aa4f8efe4d8441d4dc97dec44b7267529a5663839"
+  }
+}
