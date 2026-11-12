@@ -175,6 +175,42 @@ fn request(cfg: &Config) -> Result<LaunchRequest> {
     .build()?)
 }
 
+// Experiment for a guest runtime whose authenticated cold-boot clock seed
+// uses whole seconds. This runs on the host after the actual direction was
+// signed, before either participant can publish its role or start its VMM.
+fn next_seed_time(after_signing: Duration) -> Result<Duration> {
+    let ceil = after_signing
+        .as_secs()
+        .checked_add(u64::from(after_signing.subsec_nanos() != 0))
+        .context("guest clock seed exceeds host clock range")?;
+    Ok(Duration::from_secs(ceil))
+}
+fn pace_original_seed(deadline: Instant) -> Result<()> {
+    use std::time::{SystemTime, UNIX_EPOCH};
+    let after_signing = SystemTime::now().duration_since(UNIX_EPOCH)?;
+    let seed = next_seed_time(after_signing)?;
+    let wait = seed
+        .checked_sub(after_signing)
+        .context("guest seed before signing")?;
+    let start = Instant::now();
+    ensure!(
+        start.checked_add(wait).is_some_and(|at| at < deadline),
+        "guest clock pacing outside original deadline"
+    );
+    std::thread::sleep(wait);
+    let actual = SystemTime::now().duration_since(UNIX_EPOCH)?;
+    ensure!(
+        actual >= seed && Instant::now() < deadline,
+        "host clock or original deadline changed during pacing"
+    );
+    eprintln!(
+        "addressed clock pacing completed host_wait_ns={} seed_unix_s={}",
+        start.elapsed().as_nanos(),
+        actual.as_secs()
+    );
+    Ok(())
+}
+
 fn runtime() -> Result<tokio::runtime::Runtime> {
     Ok(tokio::runtime::Builder::new_current_thread()
         .enable_all()
@@ -233,6 +269,11 @@ pub fn run(
                 || format!("{e:#}"),
             )
         })?;
+        match std::env::var_os("SPIRALCORE_PACE_ORIGINAL_CAST_SEED").as_deref() {
+            Some(v) if v == "1" => pace_original_seed(deadline)?,
+            None => (),
+            _ => anyhow::bail!("Cast seed pacing must be 1 or absent"),
+        }
         tx.try_send(pair.retained)
             .map_err(|_| anyhow::anyhow!("pair issuer already used or closed"))?;
         Ok([
@@ -429,6 +470,24 @@ pub fn run(
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn whole_second_guest_seed_must_reach_original_issue_time() {
+        let observed = Duration::from_millis(1_794_482_256_252);
+        assert!(Duration::from_secs(observed.as_secs()) < observed);
+        assert_eq!(
+            next_seed_time(observed).unwrap(),
+            Duration::from_secs(1_794_482_257)
+        );
+        assert_eq!(
+            next_seed_time(Duration::from_secs(17)).unwrap(),
+            Duration::from_secs(17)
+        );
+        assert_eq!(
+            next_seed_time(Duration::new(17, 1)).unwrap(),
+            Duration::from_secs(18)
+        );
+        assert!(next_seed_time(Duration::new(u64::MAX, 1)).is_err());
+    }
     #[test]
     fn only_complete_materialized_role_reaches_sdk() -> Result<()> {
         use std::os::unix::fs::{DirBuilderExt, PermissionsExt, symlink};
