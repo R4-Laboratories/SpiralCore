@@ -251,6 +251,14 @@ impl InstalledWitness {
         matched.context("original installed daemon has no matching helper child")
     }
 
+    pub(super) fn collect_after_deadline(&mut self) -> Result<ExitStatus> {
+        let mut child = self
+            .child
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        Ok(child.wait()?)
+    }
+
     pub(super) fn finish(&mut self) -> Result<ExitStatus> {
         let until = Instant::now() + COLLECTED_WORKER_RETENTION + IDLE_HOLD + DRAIN_AND_OBSERVE;
         let mut child = self

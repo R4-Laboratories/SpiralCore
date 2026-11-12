@@ -15,6 +15,53 @@ use mvm_hostd::{
 use serde_json::{Value, json};
 use std::sync::{Arc, mpsc};
 
+// The SDK treats a LocalPath directory as an unpacked image and rewrites its
+// configuration. Only the operator's already-materialized role may run here.
+fn materialized_role(path: &std::path::Path) -> Result<()> {
+    validate_rootfs_input(path)?;
+    ensure!(
+        path.file_name() == Some(std::ffi::OsStr::new("rootfs.ext4"))
+            && fs::symlink_metadata(path)?.is_file(),
+        "addressed role requires a materialized rootfs.ext4"
+    );
+    let dir = path.parent().context("role image directory missing")?;
+    for name in [
+        "rootfs.verity",
+        "rootfs.roothash",
+        mvm_core::guest_sidecar::SIDECAR_FILENAME,
+    ] {
+        let sidecar = dir.join(name);
+        validate_rootfs_input(&sidecar)?;
+        let m = fs::symlink_metadata(sidecar)?;
+        ensure!(
+            m.is_file() && m.len() > 0,
+            "incomplete materialized role metadata"
+        );
+    }
+    ensure!(
+        mvm_build::run_image::rootfs_build_is_complete(path),
+        "role metadata failed MVM validation"
+    );
+    let hash = fs::read_to_string(dir.join("rootfs.roothash"))?;
+    let hash = hash.trim();
+    ensure!(
+        hash.len() == 64 && hash.bytes().all(|b| b.is_ascii_hexdigit()),
+        "invalid role verity root"
+    );
+    Ok(())
+}
+
+fn launch_diagnostic(err: &mvm_core::client::MvmError) -> (&'static str, &'static str) {
+    use mvm_core::client::MvmError;
+    let detail = match err {
+        MvmError::Backend { reason } if reason.contains("needs a verified workload kernel") => {
+            "workload_kernel_unverified"
+        }
+        _ => "sdk_error",
+    };
+    (err.code(), detail)
+}
+
 fn request(cfg: &Config) -> Result<LaunchRequest> {
     let mut grant = mvm_client::admission::mailbox_grant::resolve(Some(&cfg.mailbox_hex), None)?
         .context("missing requested mailbox")?;
@@ -42,12 +89,19 @@ fn runtime() -> Result<tokio::runtime::Runtime> {
 
 /// Two normal entrypoint calls with one coordinator-owned, single-use turn.
 /// The clear message identifier remains inside the authorized guest endpoint.
-pub fn run(first: &Config, second: &Config, expected: &[u8]) -> Result<Value> {
+pub fn run(
+    first: &Config,
+    second: &Config,
+    expected: &[u8],
+    record_failed: impl FnOnce(&Value) -> Result<()>,
+    record_late: impl FnOnce(std::process::ExitStatus) -> Result<()>,
+) -> Result<Value> {
     first.validate()?;
     second.validate()?;
     mvm_client::validate_vm_name(&first.name)?;
     mvm_client::validate_vm_name(&second.name)?;
-    validate_rootfs_input(&second.rootfs)?;
+    materialized_role(&first.rootfs)?;
+    materialized_role(&second.rootfs)?;
     ensure!(
         first.home == second.home
             && fs::canonicalize(&first.rootfs)? != fs::canonicalize(&second.rootfs)?
@@ -88,7 +142,10 @@ pub fn run(first: &Config, second: &Config, expected: &[u8]) -> Result<Value> {
     });
     let names = [first.name.as_str(), second.name.as_str()];
     let cfg = [first, second];
-    let reqs = [request(first)?, request(second)?];
+    let reqs = [
+        ("source", request(first)?),
+        ("destination", request(second)?),
+    ];
     let vm_runtime = runtime()?;
     let start = Instant::now();
     let cpu = ProcessTime::now();
@@ -100,12 +157,27 @@ pub fn run(first: &Config, second: &Config, expected: &[u8]) -> Result<Value> {
         .with_installed_mailbox(installed.provider.clone());
     // Each synchronous SDK reservation must be able to meet its peer.
     let launches = thread::scope(|scope| {
-        let jobs = reqs.map(|req| {
+        let jobs = reqs.map(|(role, req)| {
             let provider = installed.provider.clone();
             scope.spawn(move || -> Result<LaunchOutcome> {
                 let local =
                     LocalBackend::with_hypervisor("firecracker").with_installed_mailbox(provider);
-                Ok(runtime()?.block_on(local.launch(req))?)
+                let rt = runtime().inspect_err(|_| {
+                    eprintln!("addressed role={role} launch=failed category=runtime_init")
+                })?;
+                match rt.block_on(local.launch(req)) {
+                    Ok(vm) => {
+                        eprintln!("addressed role={role} launch=admitted");
+                        Ok(vm)
+                    }
+                    Err(error) => {
+                        let (code, detail) = launch_diagnostic(&error);
+                        eprintln!(
+                            "addressed role={role} launch=failed code={code} category={detail}"
+                        );
+                        anyhow::bail!("SDK launch refused ({code}, {detail})")
+                    }
+                }
             })
         });
         jobs.map(|job| {
@@ -231,12 +303,86 @@ pub fn run(first: &Config, second: &Config, expected: &[u8]) -> Result<Value> {
     {
         errors.push(format!("release fixture claim: {e}"));
     }
-    Ok(
-        json!({"status":if errors.is_empty() && readback.is_some(){"passed"}else{"failed"},
+    let drain_failed = coordinator.is_none();
+    let record = json!({"status":if errors.is_empty() && readback.is_some(){"passed"}else{"failed"},
         "scope":"Linux Firecracker same-host addressed Cast, ephemeral Submit and exact destination workload readback",
         "expected_bytes":expected.len(),"expected_sha256":digest(expected),"readback":readback,"message_id_correlation_across_guests":null,"participants":rows,"coordinator_exit":coordinator,
         "setup_wall_ns":setup_ns,"lifecycle_wall_ns":start.elapsed().as_nanos(),
         "host_driver_process_cpu_ns":cpu.elapsed().as_nanos(),"guest_stream_scope":guest_io::SCOPE,
-        "wan_bytes":null,"send_only_ns":null,"errors":errors}),
-    )
+        "wan_bytes":null,"send_only_ns":null,"errors":errors});
+    if drain_failed {
+        // Persist the observation deadline before waiting on the original
+        // Child. Even an output error must not relinquish the process handle.
+        let saved = record_failed(&record);
+        let late = installed.collect_after_deadline()?;
+        let observed = record_late(late);
+        saved?;
+        observed?;
+    }
+    Ok(record)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn only_complete_materialized_role_reaches_sdk() -> Result<()> {
+        use std::os::unix::fs::{DirBuilderExt, PermissionsExt, symlink};
+        let n = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)?
+            .as_nanos();
+        let dir =
+            std::env::temp_dir().join(format!("sc-addressed-role-{}-{n}", std::process::id()));
+        fs::DirBuilder::new().mode(0o700).create(&dir)?;
+        struct Remove(std::path::PathBuf);
+        impl Drop for Remove {
+            fn drop(&mut self) {
+                let _ = fs::remove_dir_all(&self.0);
+            }
+        }
+        let _cleanup = Remove(dir.clone());
+        let image = dir.join("rootfs.ext4");
+        assert!(materialized_role(&dir).is_err());
+        for file in [
+            "rootfs.ext4",
+            "rootfs.verity",
+            "rootfs.roothash",
+            mvm_core::guest_sidecar::SIDECAR_FILENAME,
+        ] {
+            assert!(materialized_role(&image).is_err());
+            let path = dir.join(file);
+            match file {
+                mvm_core::guest_sidecar::SIDECAR_FILENAME => {
+                    mvm_build::builder_vm::GuestSidecar::for_oci_run("test", false, true)
+                        .write_to_dir(&dir)?;
+                }
+                "rootfs.roothash" => fs::write(&path, "ab".repeat(32))?,
+                _ => fs::write(&path, [1])?,
+            }
+            fs::set_permissions(&path, fs::Permissions::from_mode(0o600))?;
+        }
+        materialized_role(&image)?;
+        let tree = dir.join("rootfs.verity");
+        fs::remove_file(&tree)?;
+        symlink(&image, &tree)?;
+        assert!(materialized_role(&image).is_err());
+        Ok(())
+    }
+
+    #[test]
+    fn predrain_diagnostic_contains_only_stable_categories() {
+        use mvm_core::client::MvmError;
+        assert_eq!(
+            launch_diagnostic(&MvmError::Backend {
+                reason: "firecracker needs a verified workload kernel at /private/secret".into()
+            }),
+            ("BACKEND_ERROR", "workload_kernel_unverified")
+        );
+        assert_eq!(
+            launch_diagnostic(&MvmError::Unauthorized {
+                reason: "secret-do-not-emit".into()
+            }),
+            ("UNAUTHORIZED", "sdk_error")
+        );
+    }
 }
