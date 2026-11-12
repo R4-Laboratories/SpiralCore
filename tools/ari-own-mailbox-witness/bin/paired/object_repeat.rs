@@ -151,7 +151,13 @@ fn reader_counts(traffic: &Value, previous: Option<[u64; 6]>) -> Result<[u64; 6]
     Ok(total)
 }
 
-fn check_turn(row: &Value, tx: &str, seq: u64, worker: &str, body: &[u8]) -> Result<bool> {
+pub(super) fn check_turn(
+    row: &Value,
+    tx: &str,
+    seq: u64,
+    worker: &str,
+    body: &[u8],
+) -> Result<bool> {
     ensure!(
         row["transfer"] == tx && row["seq"] == seq && id(&row["receiver_instance"], 16)? == worker,
         "B returned another transfer, sequence or worker"

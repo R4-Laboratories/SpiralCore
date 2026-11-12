@@ -2,6 +2,8 @@
 
 The matched Raw and whole-object zstd controls used two fresh installations with the same role images. Both returned all 4,096 original bytes. Fixed zstd carried 4,110 bytes of encoded data. [Matched controls, readbacks, CPU and six-stream measurements](matched-codecs.md)
 
+A dedicated Firecracker pair also recovered a final Published ACK after the workload withheld the genuine reader response. The original lease retry used one A guest-port exchange and zero sealed bytes. [Native reconciliation controls](ack-reconciliation.md)
+
 ### Complete measurement on a fresh pair
 
 The second Linux trial equipped each original guest link with a bounded 512-exchange observer. Both original Firecracker guests returned the same 4,096-byte fixture on a four-Call cold transfer and a one-Call repeat. The receiver boot and worker instance matched across the two operations. All six independent observers produced closed final records, and the native qualification exited 0. [Exact per-direction counters, whole sessions, binary identities and timing](closed-streams.json) · [Qualified MVM host revision](https://github.com/Casey-allard/mvm/commit/30ca64feba564f8a3a3f62ee96c746c51176567c)

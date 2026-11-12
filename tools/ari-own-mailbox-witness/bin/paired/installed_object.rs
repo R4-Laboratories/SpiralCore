@@ -90,6 +90,11 @@ fn boundary(meters: &[Option<Meters>; 2]) -> Result<[Value; 2]> {
 }
 
 fn phase_counts(before: &[Value; 2], after: &[Value; 2]) -> Result<[Value; 2]> {
+    let delta = counter_deltas(before, after)?;
+    positive_crossed_counts(&delta[0], &delta[1])?;
+    Ok(delta)
+}
+fn counter_deltas(before: &[Value; 2], after: &[Value; 2]) -> Result<[Value; 2]> {
     let mut delta = [json!({}), json!({})];
     for i in 0..2 {
         for ch in CHANNELS {
@@ -112,7 +117,6 @@ fn phase_counts(before: &[Value; 2], after: &[Value; 2]) -> Result<[Value; 2]> {
             );
         }
     }
-    positive_crossed_counts(&delta[0], &delta[1])?;
     Ok(delta)
 }
 fn start(
@@ -168,7 +172,11 @@ fn start(
     )
 }
 
-pub fn run(args: &[String], codec: Option<object_repeat::Codec>) -> Result<()> {
+#[cfg(feature = "object-ack-loss-qualification")]
+#[path = "object_ack_loss.rs"]
+mod ack_loss;
+
+pub fn run(args: &[String], codec: Option<object_repeat::Codec>, recovery: bool) -> Result<()> {
     let [ap, ad, bp, bd] = args else {
         anyhow::bail!("expected original caller ext4 and SHA-256, then callee ext4 and SHA-256")
     };
@@ -271,6 +279,13 @@ pub fn run(args: &[String], codec: Option<object_repeat::Codec>) -> Result<()> {
                 Ok(())
             },
         )?;
+        #[cfg(feature = "object-ack-loss-qualification")]
+        if recovery {
+            result["ack_recovery"] =
+                ack_loss::measure(&hex::encode(pair), &result, &meters, previous, &mut history)?;
+        }
+        #[cfg(not(feature = "object-ack-loss-qualification"))]
+        ensure!(!recovery, "ACK loss qualification not compiled");
         result["transport_phases"] = Value::Object(phases);
         Ok(result)
     })();

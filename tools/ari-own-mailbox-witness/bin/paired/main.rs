@@ -420,13 +420,19 @@ fn main() -> Result<()> {
     if let [cmd, images @ ..] = args.as_slice()
         && cmd == "installed-object-repeat"
     {
-        return installed_object::run(images, None);
+        return installed_object::run(images, None, false);
     }
     #[cfg(all(target_os = "linux", feature = "installed-object-pair"))]
     if let [cmd, mode, images @ ..] = args.as_slice()
         && cmd == "installed-object-codec"
     {
-        return installed_object::run(images, Some(object_repeat::Codec::parse(mode)?));
+        return installed_object::run(images, Some(object_repeat::Codec::parse(mode)?), false);
+    }
+    #[cfg(all(target_os = "linux", feature = "object-ack-loss-qualification"))]
+    if let [cmd, images @ ..] = args.as_slice()
+        && cmd == "installed-object-ack-loss"
+    {
+        return installed_object::run(images, Some(object_repeat::Codec::Raw), true);
     }
     if args.as_slice() == ["object-enrollment-check"] {
         println!(
