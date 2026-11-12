@@ -55,6 +55,7 @@ fn one(
     let mut req_bytes = 0_usize;
     let mut reply_bytes = 0_usize;
     let mut pending_cpu = 0_u64;
+    let (mut pending_write, mut pending_read) = (0_u64, 0_u64);
     let source = loop {
         if relay.is_none() {
             let mut seen = None;
@@ -82,6 +83,12 @@ fn one(
             match row["outcome"].as_str() {
                 Some("accepted") => break row,
                 Some("pending") => {
+                    pending_write += row["agent_request_bytes"]
+                        .as_u64()
+                        .context("missing original reader write")?;
+                    pending_read += row["agent_reply_bytes"]
+                        .as_u64()
+                        .context("missing original reader read")?;
                     pending_cpu += row["cpu_ns"].as_u64().context("missing guest CPU")?;
                     ensure!(Instant::now() < until, "pending ordinal deadline");
                     c = Call::start(A, &operation("status"), until)?;
@@ -121,7 +128,23 @@ fn one(
     let readback_at_ns = begin.elapsed().as_nanos();
     let mut req = operation("settle");
     req["receipt_digest"] = json!(digest);
-    let settle = worker(A, &req, until)?;
+    let mut settle = worker(A, &req, until)?;
+    let mut pending_settles = 0u64;
+    let (mut settle_write, mut settle_read, mut settle_cpu) = (0u64, 0u64, 0u64);
+    while settle["message_id"] == id && settle["outcome"] == "pending" {
+        pending_settles += 1;
+        settle_write += settle["agent_request_bytes"]
+            .as_u64()
+            .context("missing settlement request cost")?;
+        settle_read += settle["agent_reply_bytes"]
+            .as_u64()
+            .context("missing settlement response cost")?;
+        settle_cpu += settle["cpu_ns"]
+            .as_u64()
+            .context("missing settlement CPU")?;
+        ensure!(Instant::now() < until, "original guest settlement deadline");
+        settle = worker(A, &operation("status"), until)?;
+    }
     ensure!(
         settle["outcome"] == "settled"
             && settle["message_id"] == id
@@ -131,7 +154,7 @@ fn one(
     Ok(
         json!({"ordinal":n,"source_stage":stage,"source_return":source,"source_settlement":settle,"destination":b,"empty_control":control,
         "staged_ns":staged_ns,"control_start_ns":control_begin_ns,"control_end_ns":control_end_ns,"verified_host_receipt_ns":relay_at_ns,"verified_guest_readback_ns":readback_at_ns,"verified_settlement_ns":begin.elapsed().as_nanos(),
-        "source_status_calls":poll_count,"source_status_request_bytes":req_bytes,"source_status_response_bytes":reply_bytes,"pending_status_guest_cpu_ns":pending_cpu,
+        "source_status_calls":poll_count,"source_status_request_bytes":req_bytes,"source_status_response_bytes":reply_bytes,"pending_status_guest_cpu_ns":pending_cpu,"pending_status_agent_written":pending_write,"pending_status_agent_read":pending_read,"pending_settlement_statuses":pending_settles,"pending_settlement_agent_written":settle_write,"pending_settlement_agent_read":settle_read,"pending_settlement_cpu_ns":settle_cpu,
         "sealed_to_b":counts.sealed_to_destination,"signed_to_a":counts.reply_to_source,"exact_bytes":recovered.len()}),
     )
 }
