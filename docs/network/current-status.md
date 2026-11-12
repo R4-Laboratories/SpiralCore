@@ -303,6 +303,8 @@ acceptance criteria. [Verified artifacts](https://github.com/R4-Laboratories/Spi
 
 ## Full MVM acceptance remains open
 
+The local destination journal now reuses record capacity after signed retention and compaction in the contributor candidate. Linux verified the repair and the original sender's 64-identity boundary. Repeated transfers on the same live direction beyond that boundary need an explicit sender settlement decision. [Journal capacity evidence](evidence/2026-11-12-paired-mailbox/durable-journal-capacity/README.md) · [Sender settlement, #195](https://github.com/R4-Laboratories/SpiralCore/issues/195)
+
 All five outcomes in the [Ari delivery plan](../plans/2026-11-03-ari-delivery.md)
 are required. The linked issues were open at this snapshot.
 
