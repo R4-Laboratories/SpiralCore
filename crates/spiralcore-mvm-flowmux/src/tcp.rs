@@ -513,7 +513,27 @@ impl Tx {
         result
     }
     pub(crate) fn application_half_close(&mut self, until: Instant) -> Result<()> {
-        let result = self.write_record(record::APP_FIN, &[], 0, false, until);
+        let result = match &mut self.socket {
+            Carrier::Tls(socket) => (|| {
+                let next = self.sequence.checked_add(1).ok_or(Error::Sequence)?;
+                let header =
+                    record::header(self.binding, self.sequence, record::APP_FIN, 0, self.role)?;
+                socket.write_application_fin(
+                    &header,
+                    until,
+                    || self.control.check(),
+                    |n| self.counters.wire(n),
+                )?;
+                #[cfg(test)]
+                fin_tests::after_record_write();
+                self.control.check()?;
+                poll_budget(until)?;
+                self.counters.complete(0, false)?;
+                self.sequence = next;
+                Ok(())
+            })(),
+            Carrier::Tcp(_) => self.write_record(record::APP_FIN, &[], 0, false, until),
+        };
         if result.is_err() {
             self.control.stop();
         }
@@ -726,3 +746,6 @@ mod timeout_tests {
         assert!(checked_timeout(other, requested, || Ok(Some(Duration::from_millis(1)))).is_err());
     }
 }
+
+#[cfg(test)]
+mod fin_tests;

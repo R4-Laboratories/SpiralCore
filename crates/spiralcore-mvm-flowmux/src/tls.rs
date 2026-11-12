@@ -926,6 +926,56 @@ impl TlsCarrier {
             }
         }
     }
+    /// The peer may close as soon as it receives our last authenticated FIN.
+    /// Keep one TLS session guard from queuing that fixed-size record until all
+    /// its ciphertext reaches the socket. A concurrent EOF cannot invalidate
+    /// the confirmed write between two independently locked write/flush calls.
+    pub(crate) fn write_application_fin(
+        &self,
+        header: &[u8],
+        until: Instant,
+        check: impl Fn() -> crate::Result<()>,
+        mut accepted: impl FnMut(usize) -> crate::Result<()>,
+    ) -> crate::Result<()> {
+        debug_assert_eq!(header.len(), crate::HEADER_LEN);
+        let mut session = self.session_until(until)?;
+        let Session { tls, socket, .. } = &mut *session;
+        let mut header = header;
+        loop {
+            check()?;
+            self.shared.check()?;
+            if Instant::now() >= until {
+                return Err(crate::Error::Timeout);
+            }
+            if !header.is_empty() {
+                match tls.writer().write(header) {
+                    Ok(n) => {
+                        accepted(n)?;
+                        header = &header[n..];
+                    }
+                    Err(e) if transient(&e) => {}
+                    Err(e) => return Err(e.into()),
+                }
+            }
+            if tls.wants_write() {
+                match tls.write_tls(socket) {
+                    Ok(0) => return Err(io::Error::from(io::ErrorKind::WriteZero).into()),
+                    Ok(n) => {
+                        add(&self.shared.sent, n)?;
+                        continue;
+                    }
+                    Err(e) if transient(&e) => {}
+                    Err(e) => return Err(e.into()),
+                }
+            } else if header.is_empty() {
+                break;
+            }
+            pause_for!(until, &self.shared.readiness.timing, Flush)?;
+        }
+        drop(session);
+        self.shared.readiness.notify()?;
+        Ok(())
+    }
     fn write_all_until(&mut self, mut buffer: &[u8], until: Instant) -> io::Result<()> {
         while !buffer.is_empty() {
             let n = self.write_until(buffer, until)?;
@@ -1037,7 +1087,7 @@ mod tests {
 
 #[cfg(test)]
 #[path = "tls/readiness_tests.rs"]
-mod readiness_tests;
+pub(crate) mod readiness_tests;
 
 fn lock_error(error: crate::lock_wait::AcquireError) -> io::Error {
     match error {

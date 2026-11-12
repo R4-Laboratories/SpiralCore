@@ -85,7 +85,7 @@ pub(super) fn before_poll() {
         }
     });
 }
-fn carriers() -> (TlsCarrier, TlsCarrier) {
+pub(crate) fn carriers() -> (TlsCarrier, TlsCarrier) {
     let identity = || {
         let key = ring::signature::Ed25519KeyPair::generate_pkcs8(&ring::rand::SystemRandom::new())
             .unwrap();
