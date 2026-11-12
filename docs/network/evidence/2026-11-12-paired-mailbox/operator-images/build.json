@@ -1,0 +1,63 @@
+{
+  "scope": "host-side sealed artifact preparation, Linux x86_64",
+  "host_build_source": "5ae2cdc4977e12a574a5baa2e4f0522c3f7a1ae7",
+  "guest_runtime_producer_source": "9d7224cf1d08949aed0b08311e9ed94d1f904303",
+  "runtime_archive_sha256": "c7d22b6506cad0ad2455622664b2498cf2ff953d29a5f22726e253df0833477c",
+  "build_compiler": [
+    "rustc 1.97.1 (8bab26f4f 2026-07-14)",
+    "binary: rustc",
+    "commit-hash: 8bab26f4f68e0e26f0bb7960be334d5b520ea452",
+    "commit-date: 2026-07-14",
+    "host: x86_64-unknown-linux-gnu",
+    "release: 1.97.1",
+    "LLVM version: 22.1.6"
+  ],
+  "native_tested_link_command": "rustc --edition=2024 -C debuginfo=0 -C strip=debuginfo -L dependency=$DEPS --extern mvm_build=$BUILD_RLIB --extern mvm_agentd=$AGENT_RLIB --extern mvm_core=$CORE_RLIB --extern serde_json=$JSON_RLIB prepare_addressed_rootfs.rs -o prepare-addressed-rootfs",
+  "native_tested_rlibs_sha256": {
+    "libmvm_build-018e1da5cd91b26f.rlib": "aa3e8a40d87ecd1939bbcc0e99da0b2d2a46ba8522ae91479061504783438d71",
+    "libmvm_agentd-420bea345a39ac1f.rlib": "ee7b9dbf3b9d1062e26008073a3b7aa0a5069850d0beae1617a9f5e2e7a86d51",
+    "libmvm_core-db363a4f9187521f.rlib": "effdb62388e3dcce4582bfab42119ef394304f713f8573e9e7d56e0dae46bd2d",
+    "libserde_json-0dca954edc24957e.rlib": "9ae648a531b1b5d2799bf6636da5f1911c9a0904d4cd4531a15ec746a4ee79b2"
+  },
+  "initial_builder_source_sha256": "06dedad8cff649fcdb774e193951bcbf986786453e3482ccbfe73aa1cff93efd",
+  "initial_builder_binary_sha256": "f9cd7ede3828b8443527fe742d91935de64fe551ce0119eb6d458327022cbd0b",
+  "reviewed_builder_source_sha256": "188a0967eaff31d5ac4f248cfbb9b963e24116e1775b29d6b062c64457f3f984",
+  "reviewed_builder_binary_sha256": "c3bef0dd7f6e03ab378091d2ecfa30440730f403015cac6d85b24615d79f0d2b",
+  "reviewed_verifier_sha256": "0056aab4c5cd98ea201ca8ea2d4bd11fb31c48d563dd621079cd98baf085bf27",
+  "images_manifest_sha256": "1da534e0efe7c62ea5a34b17a5c0ccb08222c6195ffeca716d753c240c626fe7",
+  "initial_and_reviewed_ext4_artifact_sets_byte_identical": true,
+  "verified_json_sha256": "00eaec705d874c9f1960cc3db4c0def412198ceb2f796cc3c475149be755ea0f",
+  "measured_samples_per_build_per_role": 1,
+  "initial_wall_user_system_s": {
+    "a": [
+      0.05,
+      0.08,
+      0.0
+    ],
+    "b": [
+      0.05,
+      0.08,
+      0.0
+    ]
+  },
+  "reviewed_wall_user_system_s": {
+    "a": [
+      0.04,
+      0.06,
+      0.01
+    ],
+    "b": [
+      0.04,
+      0.07,
+      0.0
+    ],
+    "independent_pair_verify": [
+      0.05,
+      0.02,
+      0.01
+    ]
+  },
+  "guest_execution": null,
+  "wire_bytes": null,
+  "wan_time": null
+}

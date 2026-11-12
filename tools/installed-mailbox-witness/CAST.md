@@ -49,3 +49,5 @@ cargo build --locked --manifest-path addressed-witness/Cargo.toml --bin spiralco
 ```
 
 The driver generates 257 random fixture bytes with explicit binary boundary values. A receives them in an ordinary call to its original OCI workload. B receives only a fresh 32-byte challenge in its own call. The report checks every payload and challenge byte, records the two original post-I/O vsock meters where available, and separates guest workload CPU, host driver CPU, elapsed application time and lifecycle time. The outcome remains pending until those actual VM roles have run.
+
+For the installed two-guest test, prepare the two sealed ext4 files and verify their complete dm-verity trees before supplying them as SDK image inputs. [Build and verify the operator-selected guest images](operator-images/README.md)
