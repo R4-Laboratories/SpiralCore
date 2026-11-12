@@ -1,0 +1,83 @@
+{
+  "test_source": "01135baa662b1d28fb8e15df4596a57b2c0963b7",
+  "failing_test_source": "1c06134f",
+  "mvm_component_source": "ef1067e3bcce4f72bcd5cdacb6b914e76298ae20",
+  "host": "macOS arm64",
+  "rust": "1.97.1",
+  "profile": "unoptimized Cargo test, no debug info",
+  "scope": "two in-process ephemeral mailbox services with synthetic, independently issued Call and Reply grants",
+  "trials_per_condition": 1,
+  "fixture_order": [
+    "cold then exact repeat with fresh transfer IDs"
+  ],
+  "recorded_rows": [
+    {
+      "warm": false,
+      "original": 131090,
+      "object_request_bytes": 131431,
+      "object_reply_bytes": 346,
+      "data_bytes": 131090,
+      "forward_envelope_bytes": 252802,
+      "reverse_envelope_bytes": 17140,
+      "thread_cpu_ns": 318059542,
+      "wall_ns": 330769500
+    },
+    {
+      "warm": true,
+      "original": 131090,
+      "object_request_bytes": 102,
+      "object_reply_bytes": 88,
+      "data_bytes": 0,
+      "forward_envelope_bytes": 4034,
+      "reverse_envelope_bytes": 3467,
+      "thread_cpu_ns": 45881708,
+      "wall_ns": 46127834
+    },
+    {
+      "warm": false,
+      "original": 4096,
+      "object_request_bytes": 4376,
+      "object_reply_bytes": 282,
+      "data_bytes": 4096,
+      "forward_envelope_bytes": 23096,
+      "reverse_envelope_bytes": 13765,
+      "thread_cpu_ns": 91114584,
+      "wall_ns": 100468416
+    },
+    {
+      "warm": true,
+      "original": 4096,
+      "object_request_bytes": 102,
+      "object_reply_bytes": 88,
+      "data_bytes": 0,
+      "forward_envelope_bytes": 4026,
+      "reverse_envelope_bytes": 3476,
+      "thread_cpu_ns": 23295083,
+      "wall_ns": 23403041
+    }
+  ],
+  "scope_of_row_units": {
+    "original": "verified object bytes",
+    "request_and_reply": "encoded object-v1 bytes",
+    "envelopes": "encoded bytes at service API, no separately transported admission receipts",
+    "cpu": "one test thread and both endpoints",
+    "wall": "immediately before frame budget calculation through B readback and A correlation",
+    "excludes": "one-time service setup, OS transport, vsock, VMs, WAN, physical energy"
+  },
+  "checks": {
+    "red": "1 failed with Limit under forward signed cap",
+    "green_object_service": 8,
+    "green_core_batched": 14,
+    "clippy": "pass -D warnings"
+  },
+  "log_sha256": {
+    "red": "ae84fd290566ebce1ab7baa623d1522c23615210d81c2f0c345b2cc397e78ee0",
+    "adapter": "eebd25d0015954109284259b4d57e9ac469c07fc2e5144fa7b60bca99addc47b",
+    "core": "e9f9ad6a2bda4469676131905b942da36d304f9da0f73dbd2e242a4a44e4e433",
+    "clippy": "7d9b9be06f1a1ca7dbd879e07e61f4fe1a5762a33f9a244bf5b0e1e609f9485d"
+  },
+  "test_binary_sha256": {
+    "service_object": "f033474c3b1d39518cbfdcab29bc5a1d3f716d6ad80d987a8b57ba2bbeac8627",
+    "batched": "6b6547465f85502db4dd86fb2392fd0183519ff933f7c711a01ea66d12ae25b7"
+  }
+}

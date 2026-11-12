@@ -30,6 +30,23 @@ This single ordered component sample used Cargo’s unoptimized test profile, de
 3. Size each object frame to the original signed limits. For example, the 4 KiB native fixture grants 4,152 bytes. A single Raw Data frame containing all 4,096 bytes needs 4,157 bytes (56 frame + 5 Raw Data metadata + body). Test segmentation and truncation against the original grant independently of reciprocal authorization.
 4. Repeat cold, exact-repeat, lost-reply, eviction and epoch/revocation trials on actual installed guests. Count both envelope directions, receipts, guest↔host traffic and CPU through verified application readback. Carry the accepted mapping to the two-host WAN matrix. [Delivery tracker](https://github.com/R4-Laboratories/SpiralCore/issues/43)
 
+## Raw Data under a signed frame cap
+
+The 4 KiB Call/Reply regression initially failed with `Limit` when sealing a Data frame. The shared Raw sender now sizes each chunk to the available plaintext budget. The adapter verifies the original forward Call and reverse Reply credentials and their route, and intersects each signed limit with both services’ plaintext ceilings. Each turn still passes through the normal sealing, admission and reply checks. Envelope, queue and rate limits apply independently. [Raw sender](../../../../../crates/spiralcore-transfer/src/client.rs) · [Binding checks](../../../../../crates/spiralcore-mvm-adapter/src/service_sender.rs)
+
+The test issued a 4,152-byte Call cap and a separate 88-byte Reply cap. Cold transmission used 4,091 and 5 literal bytes in two Data frames, respectively 4,152 and 66 bytes after encoding. B read back all 4,096 bytes, including 17 trailing zeros. The repeat completed with one Offer and B’s correlated Published reply.
+
+| 4 KiB, macOS arm64 component | Cold | Exact repeat |
+|---|---:|---:|
+| Object request / reply bytes | 4,376 / 282 | 102 / 88 |
+| Encoded Call / Reply envelope bytes | 23,096 / 13,765 | 4,026 / 3,476 |
+| CPU on the test thread | 91.115 ms | 23.295 ms |
+| Elapsed through verified readback and reply | 100.468 ms | 23.403 ms |
+
+Both measurements use one unoptimized in-process trial. For this small repeat, the **7,502 encoded envelope bytes exceed the 4,096 application bytes**, even with zero Data payload. The separately documented installed 4 KiB trial sent the complete fixture. Only the component has exercised capped warm transfer. [Recorded rows, sources, executable hashes and timing domains](raw-frame-cap-results.json) · [Installed 4 KiB results](size-control/README.md)
+
+At SpiralCore `01135baa662b1d28fb8e15df4596a57b2c0963b7`, run the adapter command below and `cargo test --locked --manifest-path crates/spiralcore-transfer/Cargo.toml --test batched`. Eight service tests and fourteen core tests passed. The controls cover a single frame at the exact fit, oversized replies, budgets too small for the Offer or Published reply, the 4,096-frame sequence ceiling, empty input, expired grants and a mismatched return capability. The previously observed admission failure remains reproducible at `1c06134f`.
+
 ## Reproduction
 
 Use SpiralCore `d2e21e3c830c4e4a2e0f4dd370c0cdcb9add1874`. The first command uses the adapter lockfile. For the second, place the native witness beside `../source` checked out at MVM `8238000662f59893b6ec703ab4b37d7a86c08340`, following the [native setup](size-control/README.md).
