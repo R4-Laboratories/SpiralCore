@@ -10,17 +10,17 @@ Use the source revision for each row and Rust 1.97.1. The two Linux commands on 
 
 | Platform | MVM source | Cargo command after `cargo` | Outcome | Original log SHA-256 |
 | --- | --- | --- | --- | --- |
-| Linux x86-64 | `af88b36fb` | `check -p mvm-client --lib` | Compiled | `cd3aad0b92c60ed9372cd975670009b5746b012f6ff254a129dd2becf9a4b87b` |
+| Linux x86-64 | `af88b36fb` | `check -p mvm-client --lib` | Type-check passed | `cd3aad0b92c60ed9372cd975670009b5746b012f6ff254a129dd2becf9a4b87b` |
 | Linux x86-64 | `af88b36fb` | `test -p mvm-hostd --lib mailbox_launch::object_pair::tests::` | 8/8 passed in 0.08s | `d916b687b9e894c5d0024fd2d7de574e37e2d1f2d963784d53106a85c6a0771b` |
 | macOS arm64 | `af88b36fb` | `check -p mvm-client --lib` | Constructor unavailable in production build | `9d135157c037c9deb07210174f11fa02bdab74c48c8e6983eb465e846286c5e4` |
-| macOS arm64 | `495835d39` | `check -p mvm-client --lib` | Compiled | `ac7970060a2973f69f0cce8ee88b41cf243fae2b3fbb06b0d4cf32cfe26be1c3` |
-| macOS arm64 | `495835d39` | `check -p mvm-hostd --bin mvm-mailbox --features durable-guest-io-witness` | Compiled | `3742c813f3b096e63972466d7a6c74fa7b08ba5dd467d834f8c567d7d8273696` |
+| macOS arm64 | `495835d39` | `check -p mvm-client --lib` | Type-check passed | `ac7970060a2973f69f0cce8ee88b41cf243fae2b3fbb06b0d4cf32cfe26be1c3` |
+| macOS arm64 | `495835d39` | `check -p mvm-hostd --bin mvm-mailbox --features durable-guest-io-witness` | Type-check passed | `3742c813f3b096e63972466d7a6c74fa7b08ba5dd467d834f8c567d7d8273696` |
 | macOS arm64 | `495835d39` | `test -p mvm-hostd --lib mailbox_process::object_worker::hvf::` | 3/3 passed in 0.02s | `32e1d513ca6113b509e476c50b8ed29757259aba613321257f0abef3998e2191` |
 | macOS arm64 | `495835d39` | `test -p mvm-vmm --lib hvf_stop::mailbox::` | 3/3 passed in 0.03s | `ac5b56f20d186253332c9cb64a732c870f1a87e5c5032a6679d60b2771fde670` |
 | macOS arm64 | `495835d39` | `test -p mvm-hostd --lib mailbox_launch::object_pair::tests::` | 7/7 passed in 0.62s | `c39c7e2fcba6b6eb25a5fe288bd5a59e85d3e03b441ef4462cb0b6d294b9baf2` |
 
 All 4,530 tracked Linux source files and modes matched contributor tree `ca7130499ab59ec0bfd5b1fc9f5c419a18ae8fd4`. The commands used `--locked`, one build job and the dev or test profile.
 
-The host source was built for Apple Silicon and Linux x86-64. The native-arm64 workload packs were signed and their eight image members were checked on reopen. The retained runtime came from a source build. The release verifier rejected that provenance before the selected Apple guest boot could proceed. Executing the installed pair requires a matching release runtime accepted by the original admission policy. [ARM64 image identities and release check](arm64-object-images.md) · [Signed packs and observed admission refusal](https://github.com/R4-Laboratories/SpiralCore/issues/202#issuecomment-6834424108)
+The SDK was type-checked on Apple Silicon and Linux x86-64. The test executables ran natively on their recorded hosts. The native-arm64 workload packs were signed and their eight image members were checked on reopen. The retained runtime came from a source build. The release verifier rejected that provenance before the selected Apple guest boot could proceed. Executing the installed pair requires a matching release runtime accepted by the original admission policy. [ARM64 image identities and release check](arm64-object-images.md) · [Signed packs and observed admission refusal](https://github.com/R4-Laboratories/SpiralCore/issues/202#issuecomment-6834424108)
 
 No VM started in these SDK and worker controls. Application bytes, vsock or WAN traffic, and transfer CPU and elapsed time remain unmeasured for this Apple object-pair profile.
