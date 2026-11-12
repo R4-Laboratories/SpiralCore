@@ -111,6 +111,27 @@ impl PrivateLaunchDiagnostics {
         Ok(())
     }
 }
+fn unstarted_diagnostics<T>(
+    claim: &std::path::Path,
+    original: &fs::File,
+    prepare: impl FnOnce() -> Result<T>,
+) -> Result<T> {
+    match prepare() {
+        Ok(value) => Ok(value),
+        Err(error) => {
+            use std::os::unix::fs::MetadataExt;
+            let held = original.metadata()?;
+            let current = fs::symlink_metadata(claim)?;
+            ensure!(
+                (held.dev(), held.ino()) == (current.dev(), current.ino()),
+                "unstarted original home claim changed"
+            );
+            fs::remove_file(claim)?;
+            Err(error)
+        }
+    }
+}
+
 fn observe_refusal(
     sink: &Option<Arc<PrivateLaunchDiagnostics>>,
     phase: &'static str,
@@ -184,7 +205,9 @@ pub fn run(
         "two original roles and a bounded addressed body required"
     );
     let (helper, _image, claim, held) = claim_fresh_home(first)?;
-    let diagnostics = PrivateLaunchDiagnostics::open(&first.home)?;
+    let diagnostics = unstarted_diagnostics(&claim, &held, || {
+        PrivateLaunchDiagnostics::open(&first.home)
+    })?;
     let prepare_diagnostics = diagnostics.clone();
     let (tx, rx) = mpsc::sync_channel(1);
     let home = first.home.clone();
@@ -476,7 +499,23 @@ mod tests {
         let sink = PrivateLaunchDiagnostics::create(&home)?;
         let path = home.join("addressed-sdk.private.jsonl");
         assert_eq!(fs::metadata(&path)?.mode() & 0o777, 0o600);
-        assert!(PrivateLaunchDiagnostics::create(&home).is_err());
+        let claim = home.join("original-claim");
+        let held = fs::File::create_new(&claim)?;
+        assert!(
+            unstarted_diagnostics(&claim, &held, || PrivateLaunchDiagnostics::create(&home))
+                .is_err()
+        );
+        assert!(!claim.exists());
+        let replaced = fs::File::create_new(&claim)?;
+        fs::rename(&claim, home.join("retained-prior"))?;
+        fs::write(&claim, b"replacement")?;
+        assert!(
+            unstarted_diagnostics(&claim, &replaced, || PrivateLaunchDiagnostics::create(
+                &home
+            ))
+            .is_err()
+        );
+        assert_eq!(fs::read(&claim)?, b"replacement");
         let cause = "x".repeat(4095)
             + "é
 operator-only";
