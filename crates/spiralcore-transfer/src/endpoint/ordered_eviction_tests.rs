@@ -69,6 +69,11 @@ fn single_and_multiple_victim_validation_precedes_removal() {
         disk: second.len + 49,
     };
     assert_eq!(
+        endpoint.apply_ordered_evictions(&c, std::slice::from_ref(&poisoned)),
+        Err(Error::Storage)
+    );
+    assert!(endpoint.path(ns, second.object).exists());
+    assert_eq!(
         endpoint.apply_ordered_evictions(&c, &[victim, poisoned]),
         Err(Error::Storage)
     );
