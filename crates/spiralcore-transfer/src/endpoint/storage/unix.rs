@@ -46,6 +46,53 @@ pub(in super::super) fn open_owner(path: &Path) -> Result<File> {
     check_file(&file.metadata()?)?;
     Ok(file)
 }
+pub(in super::super) fn lock_owner(file: &File, path: &Path, initialized: bool) -> Result<()> {
+    match file.try_lock() {
+        Ok(()) => Ok(()),
+        Err(std::fs::TryLockError::WouldBlock) if initialized => lock_reopened_owner(file, path),
+        Err(_) => Err(Error::Storage),
+    }
+}
+
+pub(in super::super) fn lock_reopened_owner(file: &File, path: &Path) -> Result<()> {
+    use std::time::{Duration, Instant};
+
+    // A concurrent fork/exec briefly retains the old open file description.
+    // Keep the kernel lock authoritative. Only an initialized cache may wait.
+    let deadline = Instant::now() + Duration::from_millis(50);
+    loop {
+        let remaining = deadline.saturating_duration_since(Instant::now());
+        if remaining.is_zero() {
+            return Err(Error::Storage);
+        }
+        std::thread::sleep(remaining.min(Duration::from_millis(2)));
+        if Instant::now() >= deadline {
+            return Err(Error::Storage);
+        }
+        match file.try_lock() {
+            Ok(()) => break,
+            Err(std::fs::TryLockError::WouldBlock) => continue,
+            Err(_) => return Err(Error::Storage),
+        }
+    }
+
+    let named = fs::symlink_metadata(path)?;
+    let locked = file.metadata()?;
+    check_file(&named)?;
+    if (named.dev(), named.ino()) != (locked.dev(), locked.ino()) {
+        return Err(Error::Storage);
+    }
+    let root = path.parent().ok_or(Error::Storage)?;
+    let directory = fs::symlink_metadata(root)?;
+    if !directory.is_dir() || directory.permissions().mode() & 0o077 != 0 {
+        return Err(Error::Storage);
+    }
+    super::check_profile(&root.join(".spiralcore-profile-v1"))?;
+    if Instant::now() >= deadline {
+        return Err(Error::Storage);
+    }
+    Ok(())
+}
 pub(in super::super) fn private_dir(path: &Path) -> Result<()> {
     match fs::symlink_metadata(path) {
         Ok(metadata) => {

@@ -69,6 +69,64 @@ fn context() -> Context {
     }
 }
 
+#[cfg(unix)]
+#[test]
+fn reopen_waits_for_a_transient_duplicate_of_the_original_lock() {
+    let fixture = Fixture::new();
+    let first = Endpoint::open(&fixture.0, Limits::default(), Allow).unwrap();
+    // dup and fork share the same open file description and its flock.
+    let inherited = first._owner.try_clone().unwrap();
+    drop(first);
+    let start = std::sync::Barrier::new(2);
+    std::thread::scope(|scope| {
+        let start = &start;
+        scope.spawn(move || {
+            start.wait();
+            std::thread::sleep(std::time::Duration::from_millis(10));
+            drop(inherited);
+        });
+        start.wait();
+        let reopened = Endpoint::open(&fixture.0, Limits::default(), Allow).unwrap();
+        assert!(matches!(
+            Endpoint::open(&fixture.0, Limits::default(), Allow),
+            Err(Error::Storage)
+        ));
+        drop(reopened);
+    });
+}
+
+#[cfg(unix)]
+#[test]
+fn contended_handoff_revalidates_the_profile_and_named_owner() {
+    let fixture = Fixture::new();
+    drop(Endpoint::open(&fixture.0, Limits::default(), Allow).unwrap());
+    let marker = fixture.0.join(".spiralcore-profile-v1");
+    let path = fixture.0.join(".owner");
+    let file = storage::open_owner(&path).unwrap();
+    fs::write(&marker, b"unexpected profile").unwrap();
+    assert_eq!(
+        storage::lock_reopened_owner(&file, &path),
+        Err(Error::Storage)
+    );
+    drop(file);
+    assert_eq!(fs::read(&marker).unwrap(), b"unexpected profile");
+
+    fs::write(&marker, storage::PROFILE_CONTENT).unwrap();
+    let old = storage::open_owner(&path).unwrap();
+    fs::rename(&path, fixture.0.join("previous")).unwrap();
+    let replacement = storage::open_owner(&path).unwrap();
+    replacement.try_lock().unwrap();
+    assert_eq!(
+        storage::lock_reopened_owner(&old, &path),
+        Err(Error::Storage)
+    );
+    drop(old);
+    assert!(matches!(
+        storage::open_owner(&path).unwrap().try_lock(),
+        Err(std::fs::TryLockError::WouldBlock)
+    ));
+}
+
 #[test]
 fn published_bytes_survive_restart_and_fresh_read_rejects_corruption() {
     let fixture = Fixture::new();
