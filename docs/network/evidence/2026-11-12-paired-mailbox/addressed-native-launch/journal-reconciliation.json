@@ -1,0 +1,91 @@
+{
+  "platform": "Linux x86_64",
+  "rustc": "1.97.1 (8bab26f4f)",
+  "candidate": "2a8917f27f46e22d0b25b725be7d5dc935825f49",
+  "first_parent": "543efc7f94aa756c09785b38bdd024b6ba8199c7",
+  "second_parent": "78d30afb8c2d988657951933b01dad2945b7328a",
+  "common_base": "b3b2afd8f5183b48632c6ff85c0781801d60aabf",
+  "tested_git_tree": "9247ab76f25cf7818268e21e35e821470e7fc843",
+  "candidate_diff_paths_vs_first_parent": [],
+  "named_epoch_test_source_sha256": "21643e3c91dca0d66f0b1cf6ee07179d6da4873a560da37af9d89d5bfcd969c8",
+  "named_epoch_test_source_hash_scope": "fn signature through closing brace, excluding trailing newline, matching both parent sources",
+  "positive_test_counts": 113,
+  "expected_compile_fail_tests_included": 7,
+  "suites": [
+    {
+      "suite": "crypto",
+      "command": "cargo test --locked --offline -j2 -p mvm-core --features test-support --test mailbox_crypto -- --test-threads=1",
+      "passed": 27,
+      "failed": 0,
+      "harness_group_pass_counts": [
+        27
+      ],
+      "log_sha256": "c383c27d9687d0eeab4f86811db985defd3b6ee71d485c66e6fb42cb90552414",
+      "exe_sha256": {
+        "mailbox_crypto-fa4b6b89e00635ff": "fb08680b0e9562e7b59280f46fffad5274ca99227067363f373f28bff8a3240b"
+      }
+    },
+    {
+      "suite": "lib",
+      "command": "cargo test --locked --offline -j2 -p mvm-core --features test-support --lib mailbox:: -- --test-threads=1",
+      "passed": 57,
+      "failed": 0,
+      "harness_group_pass_counts": [
+        57
+      ],
+      "log_sha256": "df5731e20444a5f720da2e1c95e85f7823bb2d15f741f5786de4fb541c4bb4e7",
+      "exe_sha256": {
+        "mvm_core-a363df5aa818de4d": "93e04b290242eecf08d83ca4a17f87e303cf82e6f78a4246482397b27a9979bf"
+      }
+    },
+    {
+      "suite": "reader",
+      "command": "cargo test --locked --offline -j2 -p mvm-core --features test-support --test mailbox_reader --test mailbox_reader_wire -- --test-threads=1",
+      "passed": 8,
+      "failed": 0,
+      "harness_group_pass_counts": [
+        4,
+        4
+      ],
+      "log_sha256": "133e85c2f377ab374e682faaecfb44bb78893b051977d525628174a2447739e9",
+      "exe_sha256": {
+        "mailbox_reader-84bcb4fdaeb16789": "063e8ebd5dcb94500f79496933747778e0ff809f81d0ca392ab49a2e880bf15f",
+        "mailbox_reader_wire-dcd0918a197eb370": "80c94871e6ab759994acf1b48e58f16f46d3e8f3b43d29814facfa7d9f5a4b72"
+      }
+    },
+    {
+      "suite": "contract",
+      "command": "cargo test --locked --offline -j2 -p mvm-contract --test mailbox_delivery --test mailbox_receipt --test mailbox_retention -- --test-threads=1",
+      "passed": 14,
+      "failed": 0,
+      "harness_group_pass_counts": [
+        8,
+        3,
+        3
+      ],
+      "log_sha256": "2f65b7bf70c3fa3ff0f4dcaac494a30e427633e7cd3645d2c8ec1a2323fd1065",
+      "exe_sha256": {
+        "mailbox_delivery-203bebcc78e24928": "53d4b9996df8f562fffba645dc734e085d53d5c824d0a35ba4f8fbf5ab76ad84",
+        "mailbox_receipt-db3c8a48b3ad13d9": "b26ee0d3208d3551c3d3ab7c96c276803996d24f0623341890bd137dc1a39e60",
+        "mailbox_retention-293407d218fdfb16": "0778b00bd3791ee4cc0d8f30c5e8ccdcb4f77352f5a3a3329b2a253ebf5c0f95"
+      }
+    },
+    {
+      "suite": "proofs",
+      "command": "cargo test --locked --offline -j2 -p mvm-core --features test-support --doc mailbox:: -- --test-threads=1",
+      "passed": 7,
+      "failed": 0,
+      "harness_group_pass_counts": [
+        0,
+        7
+      ],
+      "log_sha256": "53acce4453c7f1e539c380437012f31d5774763bf9716718ce3f778e8b27134f",
+      "exe_sha256": {}
+    }
+  ],
+  "additional_scope": "The doctest harness first reported zero ordinary doc tests selected, then seven successful expected compile-fail tests. No duplicate cases counted.",
+  "guest_runs": 0,
+  "wire_bytes": null,
+  "endpoint_cpu_ns": null,
+  "transfer_elapsed_ns": null
+}
