@@ -374,8 +374,8 @@ pub fn run(
             let signed = rx
                 .try_recv()
                 .context("two original admissions did not issue one direction")?;
-            readback = Some(verify_original_pair(a, b, expected, || {
-                signed.forward_once(Instant::now() + Duration::from_secs(14))
+            readback = Some(verify_original_pair(a, b, expected, |deadline| {
+                signed.forward_once(deadline)
             })?);
             Ok(())
         })();
