@@ -1,0 +1,90 @@
+{
+  "status": "admission_failed_before_VM_boot",
+  "platform": "Linux x86_64 Firecracker",
+  "host": "5ae2cdc4977e12a574a5baa2e4f0522c3f7a1ae7",
+  "guest_producer": "9d7224cf1d08949aed0b08311e9ed94d1f904303",
+  "driver": "2e3c92835c2e41ccc79688c4bbe88b9f59282736",
+  "images_manifest": "b75a29baf61470b29283384ca08a0beb8ef5af4ce8f1cab49f27c40f69bde1df",
+  "preparation": {
+    "preparation_wall_ns": 812731318709,
+    "preparation_process_cpu_ns": 2448812411,
+    "timings_including_child_processes": {
+      "runtime_build": "wall=812.73 user=1506.02 sys=52.68 rss_kib=2798376",
+      "static_workloads": "wall=39.62 user=67.41 sys=3.53 rss_kib=1418472",
+      "host_checkout_resolution": "wall=0.15 user=0.11 sys=0.02 rss_kib=22924"
+    }
+  },
+  "guest_assets": {
+    "source_revision": "11c6f04bd1f6fa261b6543d678acf8226e699f33",
+    "artifact_build_commit": "9d7224cf1d08949aed0b08311e9ed94d1f904303",
+    "guest_source_fingerprint": "ad1a43b549a19034c9a3ed9ac4a066461dbca833b1540085e1f4253cca3c25e7",
+    "archive_sha256": "c7d22b6506cad0ad2455622664b2498cf2ff953d29a5f22726e253df0833477c",
+    "runtime_overlay_sha256": "dc2da165075594518bd089ae55bc158080636e034e87ca901298a23f88cf0d48",
+    "embedded_overlay_agent_sha256": "d1b2a9594a544847dfde68e7d9f700d8a59647852da01f1645f62ebf726e6b3d",
+    "initramfs_gzip_sha256": "a6504385528e472024c01a3ca0dda43daaa0e12cd0ea1611ecf5568def138d5f",
+    "decompressed_initramfs_cpio_sha256": "6db377e067571bf71ac9e8e3e5940baf3505dd7bf9f0303b872bcd403f0540ec",
+    "embedded_init_binary_sha256": "cbb0b2219089c61d1b855d948f57016d9ea1182492898319f6ff446ec5cf9e19",
+    "verity_root_hash": "a221e16d84f4ca6307206556decdc89579a95230b8072a5e19ec63ccbadaef4f",
+    "overlay_verity_sha256": "604b566390af7cf51098861d8afff1d905772261ec183cabfe2d4b4245cb39ad",
+    "retained_generation": null
+  },
+  "witness": {
+    "coordinator_exit": null,
+    "errors": [
+      "spiralcore-cast-alpha launch: backend error: firecracker needs a verified workload kernel at /var/tmp/sc-cast-native.wqIAdQ/live/h/cache/kernels/x86_64/workload/vmlinux, and this process does not build one \u2014 create it once with `mvmctl kernel build --which workload`, then retry",
+      "spiralcore-cast-beta launch: backend error: firecracker needs a verified workload kernel at /var/tmp/sc-cast-native.wqIAdQ/live/h/cache/kernels/x86_64/workload/vmlinux, and this process does not build one \u2014 create it once with `mvmctl kernel build --which workload`, then retry",
+      "spiralcore-cast-alpha receipt: original signed controller absent",
+      "spiralcore-cast-beta receipt: original signed controller absent",
+      "original coordinator drain: original coordinator idle retirement deadline"
+    ],
+    "expected_bytes": 257,
+    "expected_sha256": "df66ca2b6477aef8d2d4146436a6099e1535f5adcf4d38b838eb8dcfd1d81c61",
+    "guest_stream_scope": "mvm/owned-mailbox/guest-5257/post-mux-host-stream/v1",
+    "host_driver_process_cpu_ns": 3406612795,
+    "lifecycle_wall_ns": 212259836147,
+    "message_id_correlation_across_guests": null,
+    "participants": [
+      {
+        "cleanup": "RETAINED_UNOWNED_LAUNCH",
+        "guest_stream_counts": null,
+        "name": "spiralcore-cast-alpha",
+        "original_plan": null,
+        "retirement_wall_ns": 32802,
+        "stop": "NOT_AUTHORIZED"
+      },
+      {
+        "cleanup": "RETAINED_UNOWNED_LAUNCH",
+        "guest_stream_counts": null,
+        "name": "spiralcore-cast-beta",
+        "original_plan": null,
+        "retirement_wall_ns": 2966,
+        "stop": "NOT_AUTHORIZED"
+      }
+    ],
+    "readback": null,
+    "scope": "Linux Firecracker same-host addressed Cast, ephemeral Submit and exact destination workload readback",
+    "send_only_ns": null,
+    "setup_wall_ns": 2243825581,
+    "status": "failed",
+    "wan_bytes": null
+  },
+  "original_report_sha256": "5b15650a8b081388167b6466ea4a07dc6fd3acfab71da3f660a231b05af9bef6",
+  "actual_sdk_post_materialization_sha256": {
+    "a/usr/lib/mvm/wrappers/oci-entrypoint": "64e8b2577db974fbf716ca344a50c39bac5e989beeeff68aa6682effd76de5e9",
+    "b/usr/lib/mvm/wrappers/oci-entrypoint": "64e8b2577db974fbf716ca344a50c39bac5e989beeeff68aa6682effd76de5e9",
+    "a/usr/local/bin/spiralcore-mailbox-producer": "cfce88360c319ea605f670c02843e36f482356c899b20bbb8f2654a7a56a7902",
+    "b/usr/local/bin/spiralcore-cast-recipient": "961336687077f651d4ee264fd528434b5ceaa4901410e0b7be2362730368b8bc"
+  },
+  "absent_after_directory_injection": [
+    "a/etc/mvm/entrypoint",
+    "a/etc/mvm/image-runtime.json",
+    "a/etc/mvm/runtime.json",
+    "b/etc/mvm/entrypoint",
+    "b/etc/mvm/image-runtime.json",
+    "b/etc/mvm/runtime.json"
+  ],
+  "followup": {
+    "kernel": "Fresh installation passed the unmodified MVM workload kernel resolver with the original donor digest sidecar and verification enabled.",
+    "second_guest_launch": "Not started: original guest-input file hash preflight failed."
+  }
+}
