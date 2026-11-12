@@ -55,18 +55,27 @@ pub(in super::super) fn lock_owner(file: &File, path: &Path, initialized: bool) 
 }
 
 pub(in super::super) fn lock_reopened_owner(file: &File, path: &Path) -> Result<()> {
-    use std::time::{Duration, Instant};
+    lock_reopened_owner_with(file, path, std::time::Instant::now, std::thread::sleep)
+}
+
+pub(in super::super) fn lock_reopened_owner_with(
+    file: &File,
+    path: &Path,
+    now: impl Fn() -> std::time::Instant,
+    mut wait: impl FnMut(std::time::Duration),
+) -> Result<()> {
+    use std::time::Duration;
 
     // A concurrent fork/exec briefly retains the old open file description.
     // Keep the kernel lock authoritative. Only an initialized cache may wait.
-    let deadline = Instant::now() + Duration::from_millis(50);
+    let deadline = now() + Duration::from_millis(50);
     loop {
-        let remaining = deadline.saturating_duration_since(Instant::now());
+        let remaining = deadline.saturating_duration_since(now());
         if remaining.is_zero() {
             return Err(Error::Storage);
         }
-        std::thread::sleep(remaining.min(Duration::from_millis(2)));
-        if Instant::now() >= deadline {
+        wait(remaining.min(Duration::from_millis(2)));
+        if now() >= deadline {
             return Err(Error::Storage);
         }
         match file.try_lock() {
@@ -88,7 +97,7 @@ pub(in super::super) fn lock_reopened_owner(file: &File, path: &Path) -> Result<
         return Err(Error::Storage);
     }
     super::check_profile(&root.join(".spiralcore-profile-v1"))?;
-    if Instant::now() >= deadline {
+    if now() >= deadline {
         return Err(Error::Storage);
     }
     Ok(())
