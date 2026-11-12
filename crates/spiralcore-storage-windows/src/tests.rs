@@ -501,6 +501,33 @@ fn existing_open_descriptor_elision_preserves_guards_and_records_paired_cost() {
             records.push((path, bytes));
         }
     });
+    // Both paths check the same live private file and re-query its effective
+    // token on every iteration. The control varies only descriptor acquisition.
+    {
+        let held = open_read(&records[0].0).unwrap();
+        let compare = |inline: bool| {
+            for _ in 0..2048 {
+                let used_inline = if inline {
+                    crate::windows::compare_descriptor_query::<true>(&held)
+                } else {
+                    crate::windows::compare_descriptor_query::<false>(&held)
+                }
+                .unwrap();
+                assert_eq!(used_inline, inline);
+            }
+        };
+        for trial in 0..6 {
+            let (dynamic, bounded) = if trial % 2 == 0 {
+                let old = timed(|| compare(false));
+                (old, timed(|| compare(true)))
+            } else {
+                let new = timed(|| compare(true));
+                (timed(|| compare(false)), new)
+            };
+            eprintln!("PRIVATE_ACL_PAIR trial={trial} checks=2048 dynamic_wall_us={} bounded_wall_us={} dynamic_process_cpu_100ns={} bounded_process_cpu_100ns={}",
+                dynamic.1, bounded.1, dynamic.2, bounded.2);
+        }
+    }
     type Reader = fn(&Path) -> Result<std::fs::File>;
     let check = |read: Reader| {
         for (path, bytes) in &records {

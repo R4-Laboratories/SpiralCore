@@ -296,6 +296,15 @@ fn ancestors(path: &Path) -> Result<Vec<File>> {
     Ok(held)
 }
 fn private(file: &File, directory: bool, sid: &Sid) -> Result<()> {
+    private_checked::<true>(file, directory, sid).map(|_| ())
+}
+
+#[cfg(test)]
+pub(crate) fn compare_descriptor_query<const INLINE: bool>(file: &File) -> Result<bool> {
+    private_checked::<INLINE>(file, false, &Sid::current()?)
+}
+
+fn private_checked<const INLINE: bool>(file: &File, directory: bool, sid: &Sid) -> Result<bool> {
     information(file, directory)?;
     // Ask for the same OWNER|DACL from this live handle in one bounded call.
     // NTFS normally returns a small self-relative descriptor for our one-ACE
@@ -308,16 +317,17 @@ fn private(file: &File, directory: bool, sid: &Sid) -> Result<()> {
     let _allocated;
     let info = OWNER_SECURITY_INFORMATION | DACL_SECURITY_INFORMATION;
     // SAFETY: the aligned buffer is writable for its entire advertised extent.
-    if unsafe {
-        GetKernelObjectSecurity(
-            file.as_raw_handle(),
-            info,
-            descriptor,
-            size_of_val(&buffer) as u32,
-            &mut used,
-        )
-    } != 0
-    {
+    let inline_used = INLINE
+        && unsafe {
+            GetKernelObjectSecurity(
+                file.as_raw_handle(),
+                info,
+                descriptor,
+                size_of_val(&buffer) as u32,
+                &mut used,
+            )
+        } != 0;
+    if inline_used {
         if !(size_of::<SECURITY_DESCRIPTOR_RELATIVE>()..=size_of_val(&buffer))
             .contains(&(used as usize))
         {
@@ -414,7 +424,7 @@ fn private(file: &File, directory: bool, sid: &Sid) -> Result<()> {
     {
         return Err(Error::Storage);
     }
-    Ok(())
+    Ok(inline_used)
 }
 fn open(path: &Path, access: u32, sharing: u32, creation: u32) -> Result<File> {
     let path = normalized(path)?;
