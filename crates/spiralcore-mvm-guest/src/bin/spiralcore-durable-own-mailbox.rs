@@ -164,12 +164,13 @@ mod tests {
     #[test]
     fn runtime_overlay_metadata_cannot_change_original_frame_or_call_budget() {
         let root = tempfile::tempdir().unwrap();
-        std::fs::create_dir(root.path().join("bin")).unwrap();
+        std::fs::write(root.path().join("VERSION"), b"1").unwrap();
+        std::fs::create_dir(root.path().join("sdk-py")).unwrap();
         let env = mvm_agentd::workload_env::with_runtime_overlay_env(
             vec![("recipient".into(), "ignored".into())],
             root.path(),
         );
-        assert!(env.iter().any(|(k, _)| k == "PATH"));
+        assert!(env.iter().any(|(k, _)| k == "MVM_RUNTIME_OVERLAY"));
         let original = Frame {
             kind: 2,
             transfer: [7; 32],
