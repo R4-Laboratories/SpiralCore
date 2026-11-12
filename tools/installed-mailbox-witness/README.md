@@ -94,3 +94,5 @@ Prepare the same private Firecracker home and rootfs as for one guest, including
 The witness boots two 1-vCPU, 256 MiB guests without guest NICs. Each receives its own signed plan and local mailbox grant. The guest producer writes a distinct deterministic 1,024-byte message for each mailbox. Both helpers must be serving when the host reads the first message. The witness stops and collects that original worker, then verifies the second guest's readback while its own original worker remains live. Each per-helper byte report comes from a separate connected socket obtained before the next VM is launched.
 
 The JSON records plan and mailbox identities, exact lengths and hashes, byte counts in each direction, the receive and cleanup times, process CPU samples, and the shared coordinator's original exit. Guest-to-guest Cast, WAN and zstd are separate acceptance gates. A failed or incomplete run preserves its claim and reports which lifecycle and measurement steps were observed.
+
+The [addressed two-guest witness integration](CAST.md) describes the separate source and destination images, ordinary-call readback and the pending installed carrier.
