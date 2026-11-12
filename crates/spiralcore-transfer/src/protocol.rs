@@ -1,4 +1,4 @@
-use crate::{Error, Id, MAX_FRAME, MAX_OBJECT, Result, dag::Manifest, hash};
+use crate::{dag::Manifest, hash, Error, Id, Result, MAX_FRAME, MAX_OBJECT};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Frame {

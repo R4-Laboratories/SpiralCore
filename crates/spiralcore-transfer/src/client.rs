@@ -1,9 +1,9 @@
 //! Synchronous bounded sender. The exchange implementation owns transport authentication.
 use crate::{
-    Error, Id, MAX_CHUNK, MAX_OBJECT, Result,
     dag::{Graph, Node},
     prepared::PreparedDelta,
     protocol::{Frame, Mode, Offer, Reader},
+    Error, Id, Result, MAX_CHUNK, MAX_OBJECT,
 };
 use std::{collections::BTreeSet, time::Instant};
 
@@ -473,14 +473,6 @@ fn repair_nodes_from<'a>(
         .collect()
 }
 
-/// Transfer ordered batches through a WAN transport adapter without changing SCMOBJ01 frames.
-///
-/// Each batch fits 512 frames and a 20 MiB SCWBAT01 body, including envelope/length words. Objects
-/// are limited to 16 MiB for this campaign; DAG construction retains its 262,144-node ceiling.
-/// `warm_probe` sends Begin alone, avoiding a data upload on an exact-object cache hit. Without it,
-/// Begin/Data/Finish are uploaded together when they fit, even if Begin later returns Published.
-/// Request statistics count all uploaded frames; response statistics count only actual replies.
-/// Envelope/TLS/HTTP bytes belong to the adapter's separate measurements.
 /// Per-message plaintext budgets. These numbers constrain framing only; the
 /// exchange still owns authorization, receipt correlation and transport I/O.
 #[derive(Clone, Copy, Debug)]
@@ -542,6 +534,14 @@ pub fn transfer_raw_capped_batched<F: FnMut(&[Frame]) -> Result<Vec<Frame>>>(
     )
 }
 
+/// Transfer ordered batches through a WAN transport adapter without changing SCMOBJ01 frames.
+///
+/// Each batch fits 512 frames and a 20 MiB SCWBAT01 body, including envelope/length words. Objects
+/// are limited to 16 MiB for this campaign; DAG construction retains its 262,144-node ceiling.
+/// `warm_probe` sends Begin alone, avoiding a data upload on an exact-object cache hit. Without it,
+/// Begin/Data/Finish are uploaded together when they fit, even if Begin later returns Published.
+/// Request statistics count all uploaded frames; response statistics count only actual replies.
+/// Envelope/TLS/HTTP bytes belong to the adapter's separate measurements.
 pub fn transfer_batched<F: FnMut(&[Frame]) -> Result<Vec<Frame>>>(
     bytes: &[u8],
     mode: Mode,

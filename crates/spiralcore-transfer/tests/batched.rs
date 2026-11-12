@@ -1,10 +1,10 @@
 use spiralcore_transfer::{
-    Error, Result,
     client::{transfer, transfer_batched},
     dag::Graph,
     endpoint::{Authority, Context, Endpoint, Limits},
     object_id,
     protocol::{Frame, Mode},
+    Error, Result,
 };
 use std::{
     path::PathBuf,
@@ -429,7 +429,7 @@ fn large_dag_is_split_with_bounded_batches_and_exact_sequence() {
 
 #[test]
 fn capped_raw_fits_each_frame_and_preserves_legacy_wire_at_the_default_cap() {
-    use spiralcore_transfer::client::{RawFrameLimits, transfer_raw_capped_batched};
+    use spiralcore_transfer::client::{transfer_raw_capped_batched, RawFrameLimits};
     let body = bytes(4096);
     for (cap, payloads) in [(4152, vec![4091, 5]), (4157, vec![4096])] {
         let root = Temp::new();
@@ -482,7 +482,7 @@ fn capped_raw_fits_each_frame_and_preserves_legacy_wire_at_the_default_cap() {
 
 #[test]
 fn capped_raw_checks_offer_reply_and_sequence_limits_before_exchange() {
-    use spiralcore_transfer::client::{RawFrameLimits, transfer_raw_capped_batched};
+    use spiralcore_transfer::client::{transfer_raw_capped_batched, RawFrameLimits};
     for (request_bytes, reply_bytes, len) in [
         (0, 88, 1),
         (101, 88, 0),
@@ -515,10 +515,8 @@ fn capped_raw_checks_offer_reply_and_sequence_limits_before_exchange() {
         process(&mut endpoint, frames)
     })
     .unwrap();
-    assert!(
-        endpoint
-            .read_object(&context(), empty.object)
-            .unwrap()
-            .is_empty()
-    );
+    assert!(endpoint
+        .read_object(&context(), empty.object)
+        .unwrap()
+        .is_empty());
 }

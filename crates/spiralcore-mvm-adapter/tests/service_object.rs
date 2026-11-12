@@ -166,7 +166,7 @@ fn check_exact_repeat(binding: MailboxBinding, reverse: MailboxBinding, expected
             |frames| {
                 let mut replies = Vec::new();
                 for frame in frames {
-                    let original = prepare_request(&binding, &frame.encode()?, route.clone());
+                    let original = prepare_request(&binding, &frame.encode()?, route);
                     let wire = mvm_core::mailbox::encode_envelope(original.envelope()).unwrap();
                     forward_envelopes += wire.len();
                     let call = caller.register_call(&binding, &wire, now()).unwrap();
