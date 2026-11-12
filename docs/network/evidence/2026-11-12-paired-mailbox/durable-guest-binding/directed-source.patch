@@ -1,0 +1,1319 @@
+diff --git a/crates/mvm-agentd/src/bin/mvm-guest-agent/mailbox.rs b/crates/mvm-agentd/src/bin/mvm-guest-agent/mailbox.rs
+index 9db911d5da4a902adff30409720ba0d5a2cedf34..d09ae44e2876cda6220a2049cf47236c5aaa2a6e 100644
+--- a/crates/mvm-agentd/src/bin/mvm-guest-agent/mailbox.rs
++++ b/crates/mvm-agentd/src/bin/mvm-guest-agent/mailbox.rs
+@@ -16,7 +16,9 @@ use ed25519_dalek::{SigningKey, VerifyingKey};
+ use mvm_agentd::flowmux_drive::{MAILBOX_ACK_SIGNING_KEY_FILE, RUN_MVM_DIR};
+ use mvm_agentd::mailbox_outbox::{
+     LOCAL_OUTBOX_PATH, MAILBOX_CMDLINE_TOKEN, MAILBOX_HOLD, MAILBOX_IO_TIMEOUT, OUTBOX_PATH,
+-    forward_local_outbox, forward_outbox, peer_gone, wait_for_outbox,
++    forward_local_outbox, forward_outbox,
++    journal_direction::{JournalAttempts, forward_for_original_boot},
++    peer_gone, wait_for_outbox,
+ };
+ use mvm_agentd::telemetry_capture::session::TimedStream;
+ use mvm_contract::protocol::mailbox::MAILBOX_PORT;
+@@ -244,6 +246,7 @@ fn accept_loop(
+     reader_boot: Option<MailboxReaderBootBinding>,
+ ) {
+     let mut refused = 0u32;
++    let mut attempts = JournalAttempts::default();
+     while !SHUTDOWN_REQUESTED.load(Ordering::Acquire) {
+         let Some(cfd) = accept_vsock(listener_fd, "mailbox") else {
+             continue;
+@@ -258,6 +261,7 @@ fn accept_loop(
+         let mut deadline = MailboxDeadline::new(&mut stream);
+         let result = wait_for_operation(
+             &mut deadline,
++            &mut attempts,
+             reader.as_ref(),
+             reader_boot.as_ref(),
+             Path::new(LOCAL_OUTBOX_PATH),
+@@ -277,13 +281,34 @@ fn accept_loop(
+ 
+ fn wait_for_operation(
+     stream: &mut (impl Read + Write + AsRawFd),
++    attempts: &mut JournalAttempts,
+     reader: Option<&std::sync::mpsc::Receiver<crate::mailbox_reader::PendingReader>>,
+     reader_boot: Option<&MailboxReaderBootBinding>,
+     local_outbox: &Path,
+     outbox: &Path,
+ ) -> Result<(), Refusal> {
+     let until = Instant::now() + MAILBOX_HOLD;
++    let directed = reader_boot
++        .filter(|b| b.outbound_journal_v1.is_some())
++        .map(|b| {
++            mvm_agentd::mailbox_outbox::journal_direction::slot_name(b)
++                .map(|name| (local_outbox.with_file_name(name), b))
++        })
++        .transpose()?;
+     loop {
++        if let Some((path, boot)) = &directed
++            && path.exists()
++        {
++            return forward_for_original_boot(
++                stream,
++                path,
++                boot,
++                attempts,
++                crate::mailbox_reader::now_unix_ms,
++            )
++            .map(|_| ());
++        }
++
+         // A local-durable request cannot be downgraded to the older unit
+         // verdict even when both requests share the guest mailbox port.
+         if local_outbox.exists()
+@@ -399,7 +424,15 @@ mod tests {
+             host.write_all(&serde_json::to_vec(&Ok::<(), Refusal>(())).unwrap())
+                 .unwrap();
+         });
+-        wait_for_operation(&mut guest, Some(&reader), None, &local_outbox, &outbox).unwrap();
++        wait_for_operation(
++            &mut guest,
++            &mut JournalAttempts::default(),
++            Some(&reader),
++            None,
++            &local_outbox,
++            &outbox,
++        )
++        .unwrap();
+         peer.join().unwrap();
+         assert!(!outbox.exists(), "accepted Send is removed as before");
+         assert!(
+@@ -426,7 +459,14 @@ mod tests {
+         mvm_agentd::mailbox_outbox::write_outbox(&local, &operation).expect("pending report");
+         let (mut guest, _host) = std::os::unix::net::UnixStream::pair().expect("socket");
+         assert_eq!(
+-            wait_for_operation(&mut guest, None, None, &local, &legacy),
++            wait_for_operation(
++                &mut guest,
++                &mut JournalAttempts::default(),
++                None,
++                None,
++                &local,
++                &legacy
++            ),
+             Err(Refusal::Unavailable)
+         );
+         assert!(local.exists(), "no boot authority means no acceptance");
+@@ -435,6 +475,7 @@ mod tests {
+         let signer = SigningKey::from_bytes(&[51; 32]);
+         let plan = mvm_core::plan::test_support::PlanFixture::new().build();
+         let boot = MailboxReaderBootBinding {
++            outbound_journal_v1: None,
+             plan_id: plan.plan_id,
+             plan_nonce: plan.nonce,
+             mailbox: MailboxId::from_bytes([52; 32]),
+@@ -474,8 +515,15 @@ mod tests {
+             host.write_all(&serde_json::to_vec(&Ok::<_, Refusal>(signed)).expect("receipt wire"))
+                 .expect("reply");
+         });
+-        wait_for_operation(&mut guest, None, Some(&boot), &local, &legacy)
+-            .expect("boot-pinned signed acceptance");
++        wait_for_operation(
++            &mut guest,
++            &mut JournalAttempts::default(),
++            None,
++            Some(&boot),
++            &local,
++            &legacy,
++        )
++        .expect("boot-pinned signed acceptance");
+         responder.join().expect("host reply");
+         assert!(!local.exists(), "verified V2 receipt closes pending send");
+     }
+diff --git a/crates/mvm-agentd/src/bin/mvm-guest-agent/mailbox_reader.rs b/crates/mvm-agentd/src/bin/mvm-guest-agent/mailbox_reader.rs
+index df93b7c4cae8ca81ffc5f2a9b471643777982b27..311f84809134a81d85c9965748f0dd00c4b7f336 100644
+--- a/crates/mvm-agentd/src/bin/mvm-guest-agent/mailbox_reader.rs
++++ b/crates/mvm-agentd/src/bin/mvm-guest-agent/mailbox_reader.rs
+@@ -43,7 +43,7 @@ pub(crate) struct PendingReader {
+     reader: Arc<GuestReader>,
+ }
+ 
+-fn now_unix_ms() -> Result<i64, Refusal> {
++pub(crate) fn now_unix_ms() -> Result<i64, Refusal> {
+     SystemTime::now()
+         .duration_since(UNIX_EPOCH)
+         .map_err(|_| Refusal::Unavailable)?
+@@ -106,6 +106,20 @@ fn application_request(
+     reader: &Arc<GuestReader>,
+ ) -> Result<ReaderResponse, Refusal> {
+     let request = match read_application_request(stream)? {
++        ApplicationReaderRequest::CheckOutboundJournalV1 {
++            commitment,
++            recipient,
++            payload_bytes,
++        } => {
++            mvm_agentd::mailbox_outbox::journal_direction::check_available(
++                &reader.boot,
++                commitment,
++                recipient,
++                payload_bytes,
++                now_unix_ms()?,
++            )?;
++            return Ok(ReaderResponse::OutboundJournalAvailableV1 { commitment });
++        }
+         ApplicationReaderRequest::Receive => ReaderRequest::Receive,
+         ApplicationReaderRequest::Ack { lease } => {
+             let mut active = reader.active.lock().expect("mailbox reader lock poisoned");
+@@ -184,6 +198,7 @@ fn perform_exchange(
+             };
+             let boot = &pending.reader.boot;
+             let grant = MailboxGrant {
++                outbound_journal_v1: None,
+                 mailbox: boot.mailbox,
+                 authority_key: boot.authority_key,
+                 epoch: boot.execution_epoch,
+@@ -290,6 +305,7 @@ mod tests {
+         let ack_seed = SEED.get_or_init(|| Zeroizing::new([7; 32]));
+         let reader = Arc::new(GuestReader {
+             boot: MailboxReaderBootBinding {
++                outbound_journal_v1: None,
+                 plan_id: PlanId("current".into()),
+                 plan_nonce: Nonce::from_bytes([1; 16]),
+                 mailbox: MailboxId::from_bytes([2; 32]),
+diff --git a/crates/mvm-agentd/src/mailbox_outbox.rs b/crates/mvm-agentd/src/mailbox_outbox.rs
+index 8eb6f51cb351859d6416b2199a4f02cd215d3012..84a3f1728e06e25f4daa0f8a0e81b062acab6d00 100644
+--- a/crates/mvm-agentd/src/mailbox_outbox.rs
++++ b/crates/mvm-agentd/src/mailbox_outbox.rs
+@@ -19,6 +19,8 @@
+ //! `outbox-local` is a separate, single-operation request that is removed only
+ //! after [`forward_local_outbox`] verifies a boot-bound signed V2 receipt.
+ 
++pub mod journal_direction;
++
+ use std::io::{Read, Write};
+ use std::os::unix::fs::{MetadataExt, OpenOptionsExt};
+ use std::path::Path;
+@@ -139,7 +141,11 @@ fn forward_with<S: Read + Write, R>(
+     Ok(accepted)
+ }
+ 
+-fn archive_outbox(outbox: &Path, message: &OutboxMessage, prefix: &str) -> Result<(), Refusal> {
++fn archive_path(
++    outbox: &Path,
++    message: &OutboxMessage,
++    prefix: &str,
++) -> Result<std::path::PathBuf, Refusal> {
+     let dir = outbox.parent().ok_or(Refusal::Malformed)?;
+     let id = message
+         .message_id
+@@ -147,7 +153,19 @@ fn archive_outbox(outbox: &Path, message: &OutboxMessage, prefix: &str) -> Resul
+         .iter()
+         .map(|b| format!("{b:02x}"))
+         .collect::<String>();
+-    let archived = dir.join(format!("{prefix}-{id}"));
++    let scope = outbox
++        .file_name()
++        .and_then(|n| n.to_str())
++        .and_then(|n| n.strip_prefix("outbox-directed-v1-"));
++    Ok(match scope {
++        Some(scope) => dir.join(format!("{prefix}-directed-v1-{scope}-{id}")),
++        None => dir.join(format!("{prefix}-{id}")),
++    })
++}
++
++fn archive_outbox(outbox: &Path, message: &OutboxMessage, prefix: &str) -> Result<(), Refusal> {
++    let dir = outbox.parent().ok_or(Refusal::Malformed)?;
++    let archived = archive_path(outbox, message, prefix)?;
+     let bytes = message.encode();
+     let mut previous = Vec::new();
+     match open_outbox(&archived)
+@@ -391,6 +409,13 @@ fn write_single_outbox(outbox: &Path, message: &OutboxMessage) -> Result<(), Ref
+         .filter(|d| d.is_dir())
+         .ok_or(Refusal::Malformed)?;
+     let _lock = lock_outbox_dir(dir)?;
++    if outbox
++        .file_name()
++        .and_then(|n| n.to_str())
++        .is_some_and(|n| n.starts_with("outbox-directed-v1-"))
++    {
++        journal_direction::require_unarchived(outbox, message)?;
++    }
+     let mut existing = Vec::new();
+     match open_outbox(outbox)
+         .and_then(|file| file.take(MAX_OUTBOX_BYTES + 1).read_to_end(&mut existing))
+diff --git a/crates/mvm-agentd/src/mailbox_outbox/journal_direction.rs b/crates/mvm-agentd/src/mailbox_outbox/journal_direction.rs
+new file mode 100644
+index 0000000000000000000000000000000000000000..fff6941af5251032b9f73e33ae21fc7aac850222
+--- /dev/null
++++ b/crates/mvm-agentd/src/mailbox_outbox/journal_direction.rs
+@@ -0,0 +1,556 @@
++//! One retained directed operation on the original guest's local-durable slot.
++use super::{forward_with, send_local_outbox_message, write_single_outbox};
++use ed25519_dalek::VerifyingKey;
++use mvm_contract::protocol::mailbox::{MessageId, SignedDestinationReceipt};
++use mvm_core::mailbox::outbound::{journal_intent_digest, journal_slot_name};
++use mvm_core::mailbox::{
++    frame::{OutboxMessage, Refusal},
++    reader::MailboxReaderBootBinding,
++};
++use std::{
++    io::{Read, Write},
++    path::Path,
++};
++
++/// The canonical guest listener services one durable outbox at a time. Keep
++/// at most one retry identity, including the original plaintext commitment.
++#[derive(Default)]
++pub struct JournalAttempts(Option<(MessageId, [u8; 32], u8)>);
++
++/// Only the original generation is eligible. Old agents read their fixed
++/// outbox-local path and a replacement generation computes a different name.
++pub fn slot_name(boot: &MailboxReaderBootBinding) -> Result<String, Refusal> {
++    let digest = mvm_core::mailbox::outbound::journal_direction_commitment(boot)
++        .map_err(|_| Refusal::NotAuthorized)?;
++    Ok(journal_slot_name(&digest))
++}
++
++pub fn check_available(
++    boot: &MailboxReaderBootBinding,
++    commitment: [u8; 32],
++    recipient: mvm_contract::protocol::mailbox::PrincipalId,
++    len: u32,
++    now: i64,
++) -> Result<(), Refusal> {
++    let d = boot
++        .outbound_journal_v1
++        .as_ref()
++        .ok_or(Refusal::NotAuthorized)?;
++    if mvm_core::mailbox::outbound::journal_direction_commitment(boot)
++        .map_err(|_| Refusal::NotAuthorized)?
++        != commitment
++        || recipient != d.address.recipient
++    {
++        return Err(Refusal::NotAuthorized);
++    }
++    if len == 0 || len > d.max_payload_bytes {
++        return Err(Refusal::Oversized(d.max_payload_bytes as usize));
++    }
++    if !(d.not_before_unix_ms..d.expires_at_unix_ms).contains(&now) {
++        return Err(Refusal::Expired);
++    }
++    Ok(())
++}
++
++/// Public guest-writer operation. The caller supplies the original
++/// generation's public commitment and a bounded connection to the canonical
++/// agent socket. An old or unavailable agent cannot stage a directed request.
++pub fn stage_on_original_reader<S: Read + Write>(
++    stream: &mut S,
++    expected: [u8; 32],
++    message: &OutboxMessage,
++) -> Result<(), Refusal> {
++    let dir = Path::new(super::LOCAL_OUTBOX_PATH)
++        .parent()
++        .ok_or(Refusal::Malformed)?;
++    stage_in(stream, expected, message, dir)
++}
++
++fn stage_in<S: Read + Write>(
++    stream: &mut S,
++    expected: [u8; 32],
++    message: &OutboxMessage,
++    dir: &Path,
++) -> Result<(), Refusal> {
++    use mvm_core::mailbox::reader_wire::{
++        ApplicationReaderRequest, ReaderResponse, read_response, write_application_request,
++    };
++    let len = u32::try_from(message.body.len()).map_err(|_| Refusal::Malformed)?;
++    if len == 0 || len > 32 * 1024 {
++        return Err(Refusal::Oversized(32 * 1024));
++    }
++    write_application_request(
++        stream,
++        &ApplicationReaderRequest::CheckOutboundJournalV1 {
++            commitment: expected,
++            recipient: message.recipient,
++            payload_bytes: len,
++        },
++    )?;
++    match read_response(stream)? {
++        ReaderResponse::OutboundJournalAvailableV1 { commitment } if commitment == expected => {
++            write_single_outbox(&dir.join(journal_slot_name(&expected)), message)
++        }
++        ReaderResponse::Refused { reason } => Err(reason),
++        _ => Err(Refusal::Unavailable),
++    }
++}
++
++/// A terminal archive fences this same ID even after an intervening message.
++pub(super) fn require_unarchived(slot: &Path, message: &OutboxMessage) -> Result<(), Refusal> {
++    for (prefix, reason) in [
++        ("uncertain", Refusal::RetriesExhausted),
++        ("rejected", Refusal::NotAuthorized),
++    ] {
++        match std::fs::symlink_metadata(super::archive_path(slot, message, prefix)?) {
++            Ok(_) => return Err(reason),
++            Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
++            Err(_) => return Err(Refusal::Unavailable),
++        }
++    }
++    Ok(())
++}
++
++pub fn forward_for_original_boot<S: Read + Write>(
++    stream: &mut S,
++    outbox: &Path,
++    boot: &MailboxReaderBootBinding,
++    attempts: &mut JournalAttempts,
++    now: impl Fn() -> Result<i64, Refusal>,
++) -> Result<SignedDestinationReceipt, Refusal> {
++    if outbox.file_name().and_then(|n| n.to_str()) != Some(slot_name(boot)?.as_str()) {
++        return Err(Refusal::NotAuthorized);
++    }
++    let remote = boot
++        .outbound_journal_v1
++        .as_ref()
++        .ok_or(Refusal::NotAuthorized)?;
++    forward_with(stream, outbox, |stream, message| {
++        require_unarchived(outbox, message)?;
++        if message.recipient != remote.address.recipient {
++            return Err(Refusal::NotAuthorized);
++        }
++        if message.body.len() > remote.max_payload_bytes as usize {
++            return Err(Refusal::Oversized(remote.max_payload_bytes as usize));
++        }
++        let key = VerifyingKey::from_bytes(&remote.receipt_key).map_err(|_| Refusal::Malformed)?;
++        let window = remote.not_before_unix_ms..remote.expires_at_unix_ms;
++        let digest: [u8; 32] = journal_intent_digest(message);
++        let id = message.message_id;
++        if let Some((previous, original, count)) = attempts.0
++            && previous == id
++        {
++            if original != digest || count >= 3 || !window.contains(&now()?) {
++                return Err(Refusal::RetriesExhausted);
++            }
++        } else {
++            if !window.contains(&now()?) {
++                return Err(Refusal::Expired);
++            }
++            attempts.0 = Some((id, digest, 0));
++        }
++        let (_, _, count) = attempts.0.as_mut().ok_or(Refusal::Unavailable)?;
++        *count += 1;
++        // Every other response, including an unsigned refusal or dropped reply,
++        // lacks evidence of acceptance. Keep this exact pending operation.
++        let receipt = send_local_outbox_message(
++            stream,
++            message,
++            &key,
++            remote.address.mailbox,
++            remote.execution_epoch,
++        )
++        .map_err(|_| Refusal::Unavailable)?;
++        if receipt.receipt.address != remote.address
++            || !window.contains(&receipt.receipt.observed_at_unix_ms)
++            || !window.contains(&now()?)
++        {
++            return Err(Refusal::Unavailable);
++        }
++        Ok(receipt)
++    })
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++    use crate::mailbox_outbox::write_single_outbox;
++    use ed25519_dalek::SigningKey;
++    use mvm_contract::protocol::mailbox::*;
++    use mvm_core::{
++        mailbox::{frame::OutboxMessage, sign_receipt},
++        plan::{Nonce, PlanId},
++    };
++    use std::io::{self, Cursor};
++
++    struct Peer {
++        response: Cursor<Vec<u8>>,
++        sent: Vec<u8>,
++    }
++    impl Peer {
++        fn new(receipt: Option<SignedDestinationReceipt>) -> Self {
++            Self {
++                response: Cursor::new(
++                    receipt
++                        .map(|r| serde_json::to_vec(&Ok::<_, Refusal>(r)).unwrap())
++                        .unwrap_or_default(),
++                ),
++                sent: Vec::new(),
++            }
++        }
++    }
++    impl Read for Peer {
++        fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
++            self.response.read(buf)
++        }
++    }
++    impl Write for Peer {
++        fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
++            self.sent.write(buf)
++        }
++        fn flush(&mut self) -> io::Result<()> {
++            Ok(())
++        }
++    }
++    fn fixture() -> (
++        MailboxReaderBootBinding,
++        OutboxMessage,
++        DestinationReceipt,
++        SigningKey,
++    ) {
++        let b = SigningKey::from_bytes(&[44; 32]);
++        let address = MailboxAddress {
++            tenant: TenantId::from_bytes([7; 32]),
++            authorization_domain: AuthorizationDomainId::from_bytes([9; 32]),
++            mailbox: MailboxId::from_bytes([10; 32]),
++            recipient: PrincipalId::from_bytes([11; 32]),
++        };
++        let epoch = ExecutionEpoch::new(1).unwrap();
++        let direction = MailboxJournalDirectionV1 {
++            source: PrincipalId::from_bytes([12; 32]),
++            destination_plan_sha256: [1; 32],
++            destination_plan_nonce: [2; 16],
++            destination_boot: BootId::from_bytes([3; 32]),
++            address,
++            execution_epoch: epoch,
++            policy_epoch: 1,
++            receipt_key: b.verifying_key().to_bytes(),
++            source_scope_grant_sha256: [4; 32],
++            send_grant_sha256: [5; 32],
++            receive_grant_sha256: [6; 32],
++            not_before_unix_ms: 100,
++            expires_at_unix_ms: 200,
++            max_payload_bytes: 313,
++        };
++        let boot = MailboxReaderBootBinding {
++            outbound_journal_v1: Some(direction),
++            plan_id: PlanId(format!("sha256:{}", "ab".repeat(32))),
++            plan_nonce: Nonce::from_bytes([6; 16]),
++            mailbox: MailboxId::from_bytes([17; 32]),
++            authority_key: SigningKey::from_bytes(&[8; 32]).verifying_key().to_bytes(),
++            execution_epoch: epoch,
++            boot: BootId::from_bytes([19; 32]),
++            guest_identity_key: [20; 32],
++            ack_public_key: [21; 32],
++        };
++        let msg = OutboxMessage::new(address.recipient, (0..=255).chain([0]).collect());
++        let receipt = DestinationReceipt {
++            protocol_version: ProtocolVersion::V2,
++            signature_algorithm: SignatureAlgorithm::ED25519,
++            delivery_id: DeliveryId::from_bytes([13; 32]),
++            message_id: msg.message_id,
++            address,
++            execution_epoch: epoch,
++            outcome: DeliveryOutcome::AcceptedLocalDurable,
++            observed_at_unix_ms: 149,
++            ciphertext_commitment: [14; 32],
++        };
++        (boot, msg, receipt, b)
++    }
++    #[test]
++    fn original_remote_intent_survives_lost_reply_and_wrong_domain_before_exact_b_receipt() {
++        let (boot, msg, receipt, b) = fixture();
++        let dir = tempfile::tempdir().unwrap();
++        let slot = dir.path().join(slot_name(&boot).unwrap());
++        write_single_outbox(&slot, &msg).unwrap();
++        let mut attempts = JournalAttempts::default();
++        let mut lost = Peer::new(None);
++        assert_eq!(
++            forward_for_original_boot(&mut lost, &slot, &boot, &mut attempts, || Ok(150)),
++            Err(Refusal::Unavailable)
++        );
++        let mut unrelated = receipt.clone();
++        unrelated.address.authorization_domain = AuthorizationDomainId::from_bytes([27; 32]);
++        let mut wrong = Peer::new(Some(sign_receipt(unrelated, &b).unwrap()));
++        assert_eq!(
++            forward_for_original_boot(&mut wrong, &slot, &boot, &mut attempts, || Ok(150)),
++            Err(Refusal::Unavailable)
++        );
++        assert_eq!(std::fs::read(&slot).unwrap(), msg.encode());
++        let signed = sign_receipt(receipt, &b).unwrap();
++        let mut exact = Peer::new(Some(signed.clone()));
++        assert_eq!(
++            forward_for_original_boot(&mut exact, &slot, &boot, &mut attempts, || Ok(150)).unwrap(),
++            signed
++        );
++        assert_eq!(lost.sent, wrong.sent);
++        assert_eq!(lost.sent, exact.sent);
++        assert_eq!(&exact.sent[4..], msg.encode());
++        assert!(!slot.exists());
++    }
++    #[test]
++    fn own_authority_cannot_retire_remote_intent_and_retry_credit_ends_without_dispatch() {
++        let (boot, msg, receipt, _) = fixture();
++        let dir = tempfile::tempdir().unwrap();
++        let slot = dir.path().join(slot_name(&boot).unwrap());
++        write_single_outbox(&slot, &msg).unwrap();
++        let wrong = sign_receipt(receipt, &SigningKey::from_bytes(&[8; 32])).unwrap();
++        let mut attempts = JournalAttempts::default();
++        for _ in 0..3 {
++            let mut peer = Peer::new(Some(wrong.clone()));
++            assert_eq!(
++                forward_for_original_boot(&mut peer, &slot, &boot, &mut attempts, || Ok(150)),
++                Err(Refusal::Unavailable)
++            );
++            assert_eq!(&peer.sent[4..], msg.encode());
++            assert!(slot.exists());
++        }
++        let mut fourth = Peer::new(None);
++        assert_eq!(
++            forward_for_original_boot(&mut fourth, &slot, &boot, &mut attempts, || Ok(150)),
++            Err(Refusal::RetriesExhausted)
++        );
++        assert!(fourth.sent.is_empty());
++        let files = std::fs::read_dir(dir.path())
++            .unwrap()
++            .map(|entry| entry.unwrap().path())
++            .collect::<Vec<_>>();
++        assert_eq!(files.len(), 1);
++        assert!(
++            files[0]
++                .file_name()
++                .unwrap()
++                .to_str()
++                .unwrap()
++                .starts_with("uncertain-")
++        );
++        assert_eq!(std::fs::read(&files[0]).unwrap(), msg.encode());
++        assert_eq!(
++            write_single_outbox(&slot, &msg),
++            Err(Refusal::RetriesExhausted)
++        );
++        assert!(!slot.exists());
++    }
++    #[test]
++    fn original_signed_plan_and_boot_commit_the_destination_and_both_credentials() {
++        use mvm_core::mailbox::outbound::journal_direction_commitment;
++        use mvm_core::plan::{
++            signing::{sign_plan, verify_plan},
++            test_support::PlanFixture,
++        };
++        let (boot, _, _, _) = fixture();
++        let key = SigningKey::from_bytes(&[31; 32]);
++        let mut grant = MailboxGrant {
++            outbound_journal_v1: None,
++            mailbox: boot.mailbox,
++            authority_key: boot.authority_key,
++            epoch: boot.execution_epoch,
++            report: None,
++            retention: Some(MailboxRetentionPolicy::new(1000).unwrap()),
++        };
++        assert!(
++            serde_json::to_value(grant)
++                .unwrap()
++                .get("outbound_journal_v1")
++                .is_none()
++        );
++        grant.outbound_journal_v1 = boot.outbound_journal_v1;
++        let mut plan = PlanFixture::new().build();
++        plan.mailbox = Some(grant);
++        let signed = sign_plan(&plan, &key, "original-host");
++        let checked = verify_plan(&signed, &[("original-host", &key.verifying_key())]).unwrap();
++        let original = MailboxReaderBootBinding::mint(
++            &checked,
++            key.verifying_key(),
++            key.verifying_key().to_bytes(),
++        )
++        .unwrap();
++        original.check_plan(&checked).unwrap();
++        let commitment = journal_direction_commitment(&original).unwrap();
++        for edit in 0..4 {
++            let mut changed = original.clone();
++            let d = changed.outbound_journal_v1.as_mut().unwrap();
++            match edit {
++                0 => d.receipt_key = key.verifying_key().to_bytes(),
++                1 => d.source_scope_grant_sha256[0] ^= 1,
++                2 => d.send_grant_sha256[0] ^= 1,
++                _ => d.receive_grant_sha256[0] ^= 1,
++            }
++            assert!(changed.check_plan(&checked).is_err());
++            assert_ne!(journal_direction_commitment(&changed).unwrap(), commitment);
++        }
++        let other_boot = MailboxReaderBootBinding::mint(
++            &checked,
++            key.verifying_key(),
++            key.verifying_key().to_bytes(),
++        )
++        .unwrap();
++        assert_ne!(
++            journal_direction_commitment(&other_boot).unwrap(),
++            commitment
++        );
++    }
++
++    #[test]
++    fn expiry_after_dispatch_retains_original_in_uncertain_archive() {
++        use std::cell::Cell;
++        let (boot, msg, receipt, b) = fixture();
++        let dir = tempfile::tempdir().unwrap();
++        let slot = dir.path().join(slot_name(&boot).unwrap());
++        write_single_outbox(&slot, &msg).unwrap();
++        let mut attempts = JournalAttempts::default();
++        let mut peer = Peer::new(Some(sign_receipt(receipt, &b).unwrap()));
++        let time = Cell::new(150);
++        assert_eq!(
++            forward_for_original_boot(&mut peer, &slot, &boot, &mut attempts, || Ok(
++                time.replace(200)
++            )),
++            Err(Refusal::Unavailable)
++        );
++        assert_eq!(std::fs::read(&slot).unwrap(), msg.encode());
++        let mut retry = Peer::new(None);
++        assert_eq!(
++            forward_for_original_boot(&mut retry, &slot, &boot, &mut attempts, || Ok(200)),
++            Err(Refusal::RetriesExhausted)
++        );
++        assert!(retry.sent.is_empty());
++        let stored = std::fs::read_dir(dir.path())
++            .unwrap()
++            .next()
++            .unwrap()
++            .unwrap();
++        assert!(
++            stored
++                .file_name()
++                .to_str()
++                .unwrap()
++                .starts_with("uncertain-")
++        );
++        assert_eq!(std::fs::read(stored.path()).unwrap(), msg.encode());
++    }
++
++    #[test]
++    fn legacy_or_unenrolled_agent_cannot_stage_and_new_boot_cannot_rebind_original_slot() {
++        use mvm_core::mailbox::outbound::journal_direction_commitment;
++        use mvm_core::mailbox::reader_wire::{ReaderResponse, write_response};
++        let (boot, msg, _, _) = fixture();
++        let commitment = journal_direction_commitment(&boot).unwrap();
++        let mut legacy = boot.clone();
++        legacy.outbound_journal_v1 = None;
++        assert_eq!(
++            check_available(&legacy, commitment, msg.recipient, 257, 150),
++            Err(Refusal::NotAuthorized)
++        );
++        assert!(check_available(&boot, commitment, msg.recipient, 257, 150).is_ok());
++        let dir = tempfile::tempdir().unwrap();
++        let mut peer = Peer::new(None);
++        let mut frame = Vec::new();
++        write_response(
++            &mut frame,
++            &ReaderResponse::Refused {
++                reason: Refusal::Malformed,
++            },
++        )
++        .unwrap();
++        peer.response = Cursor::new(frame);
++        assert!(stage_in(&mut peer, commitment, &msg, dir.path()).is_err());
++        assert_eq!(std::fs::read_dir(dir.path()).unwrap().count(), 0);
++        let mut good = Vec::new();
++        write_response(
++            &mut good,
++            &ReaderResponse::OutboundJournalAvailableV1 { commitment },
++        )
++        .unwrap();
++        peer.response = Cursor::new(good);
++        stage_in(&mut peer, commitment, &msg, dir.path()).unwrap();
++        let original_slot = dir.path().join(slot_name(&boot).unwrap());
++        assert_eq!(std::fs::read(&original_slot).unwrap(), msg.encode());
++        assert!(!dir.path().join("outbox-local").exists());
++        let mut rotated = boot.clone();
++        rotated.boot = BootId::from_bytes([88; 32]);
++        let mut peer = Peer::new(None);
++        assert_eq!(
++            forward_for_original_boot(
++                &mut peer,
++                &original_slot,
++                &rotated,
++                &mut JournalAttempts::default(),
++                || Ok(150)
++            ),
++            Err(Refusal::NotAuthorized)
++        );
++        assert!(peer.sent.is_empty());
++        assert!(original_slot.exists());
++    }
++
++    #[test]
++    fn original_directed_file_moves_identical_bytes_across_two_real_socket_turns() {
++        use std::{
++            os::unix::net::UnixStream,
++            time::{Duration, Instant},
++        };
++        let (boot, msg, receipt, b) = fixture();
++        let signed = sign_receipt(receipt, &b).unwrap();
++        let dir = tempfile::tempdir().unwrap();
++        let slot = dir.path().join(slot_name(&boot).unwrap());
++        write_single_outbox(&slot, &msg).unwrap();
++        let mut attempts = JournalAttempts::default();
++        for reply in [false, true] {
++            let (mut guest, mut host) = UnixStream::pair().unwrap();
++            for socket in [&host, &guest] {
++                socket
++                    .set_read_timeout(Some(Duration::from_secs(2)))
++                    .unwrap();
++                socket
++                    .set_write_timeout(Some(Duration::from_secs(2)))
++                    .unwrap();
++            }
++            let original = msg.clone();
++            let verdict = serde_json::to_vec(&Ok::<_, Refusal>(&signed)).unwrap();
++            let t = std::thread::spawn(move || {
++                let mut header = [0; 4];
++                host.read_exact(&mut header).unwrap();
++                assert_eq!(u32::from_be_bytes(header) as usize, original.encode().len());
++                let mut bytes = vec![0; u32::from_be_bytes(header) as usize];
++                host.read_exact(&mut bytes).unwrap();
++                assert_eq!(OutboxMessage::decode(&bytes).unwrap(), original);
++                if reply {
++                    host.write_all(&verdict).unwrap();
++                }
++                (
++                    header.len() + bytes.len(),
++                    if reply { verdict.len() } else { 0 },
++                )
++            });
++            let started = Instant::now();
++            let result =
++                forward_for_original_boot(&mut guest, &slot, &boot, &mut attempts, || Ok(150));
++            let wall = started.elapsed();
++            let (to_peer, from_peer) = t.join().unwrap();
++            assert_eq!(slot.exists(), !reply);
++            if reply {
++                assert_eq!(result.unwrap(), signed);
++            } else {
++                assert_eq!(result, Err(Refusal::Unavailable));
++            }
++            println!(
++                "original-directed-uds reply={} app_bytes={} to_peer_bytes={} from_peer_bytes={} host_component_wall_ns={}",
++                reply,
++                msg.body.len(),
++                to_peer,
++                from_peer,
++                wall.as_nanos()
++            );
++        }
++    }
++}
+diff --git a/crates/mvm-cli/src/exec/transient.rs b/crates/mvm-cli/src/exec/transient.rs
+index c2987af42730a825bde09205d6c44149bb799ba8..790c5b2dc5b7384de208ec1588a485ff0250c73f 100644
+--- a/crates/mvm-cli/src/exec/transient.rs
++++ b/crates/mvm-cli/src/exec/transient.rs
+@@ -845,6 +845,7 @@ mod tests {
+             boot_transient_vm("mailbox-launch".into(), false, &mut attempt, None, &mut sub)
+         };
+         let granted = MailboxGrant {
++            outbound_journal_v1: None,
+             mailbox: MailboxId::from_bytes([1; 32]),
+             authority_key: [2; 32],
+             epoch: ExecutionEpoch::new(1).unwrap(),
+diff --git a/crates/mvm-client/src/admission/mailbox_grant.rs b/crates/mvm-client/src/admission/mailbox_grant.rs
+index be2a1d3be11f4babb78d7aeb445cc320f33bf417..a5018d0a6fce0e34f156a30d1819b8726cff7ff3 100644
+--- a/crates/mvm-client/src/admission/mailbox_grant.rs
++++ b/crates/mvm-client/src/admission/mailbox_grant.rs
+@@ -29,6 +29,7 @@ pub fn grant_for(
+     epoch: ExecutionEpoch,
+ ) -> MailboxGrant {
+     MailboxGrant {
++        outbound_journal_v1: None,
+         mailbox,
+         authority_key: authority.to_bytes(),
+         epoch,
+@@ -53,6 +54,8 @@ pub fn at_workload_epoch(grant: MailboxGrant, workload: &str) -> Result<MailboxG
+     let mut current = grant_for(grant.mailbox, &authority, epoch);
+     current.report = grant.report;
+     current.retention = grant.retention;
++    // Never silently turn a requested directed send into own-mailbox access.
++    current.outbound_journal_v1 = grant.outbound_journal_v1;
+     Ok(current)
+ }
+ 
+diff --git a/crates/mvm-contract/src/protocol/mailbox.rs b/crates/mvm-contract/src/protocol/mailbox.rs
+index 42fb3cae8f3722d6ca42b4a6fd178c1fc0ec5e26..96126c8b6e1ee5a4ab0b2c6a7df17b16e67af592 100644
+--- a/crates/mvm-contract/src/protocol/mailbox.rs
++++ b/crates/mvm-contract/src/protocol/mailbox.rs
+@@ -305,6 +305,27 @@ impl From<MailboxRetentionPolicy> for MailboxRetentionPolicyWire {
+     }
+ }
+ 
++/// One approved outbound trusted-host journal direction. B is admitted before A
++/// so none of these immutable fields refer circularly to A's eventual plan ID.
++#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
++#[serde(deny_unknown_fields)]
++pub struct MailboxJournalDirectionV1 {
++    pub source: PrincipalId,
++    pub destination_plan_sha256: [u8; 32],
++    pub destination_plan_nonce: [u8; 16],
++    pub destination_boot: BootId,
++    pub address: MailboxAddress,
++    pub execution_epoch: ExecutionEpoch,
++    pub policy_epoch: u64,
++    pub receipt_key: [u8; 32],
++    pub source_scope_grant_sha256: [u8; 32],
++    pub send_grant_sha256: [u8; 32],
++    pub receive_grant_sha256: [u8; 32],
++    pub not_before_unix_ms: i64,
++    pub expires_at_unix_ms: i64,
++    pub max_payload_bytes: u32,
++}
++
+ /// What a signed `ExecutionPlan` admits for one workload's mailbox: which
+ /// mailbox, the key whose capabilities are honored, and the execution epoch.
+ /// Presence grants that workload its own mailbox, including the ability for
+@@ -316,6 +337,10 @@ impl From<MailboxRetentionPolicy> for MailboxRetentionPolicyWire {
+ #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+ #[serde(deny_unknown_fields)]
+ pub struct MailboxGrant {
++    /// A single explicitly admitted remote direction. Existing signed bytes
++    /// and the legacy own-mailbox operation remain unchanged when absent.
++    #[serde(default, skip_serializing_if = "Option::is_none")]
++    pub outbound_journal_v1: Option<MailboxJournalDirectionV1>,
+     pub mailbox: MailboxId,
+     /// Ed25519 verifying key that must have signed any accepted capability.
+     pub authority_key: [u8; 32],
+diff --git a/crates/mvm-contract/tests/mailbox_delivery.rs b/crates/mvm-contract/tests/mailbox_delivery.rs
+index 2f6a996e9f8383b86e0d09d1381c7cc318143b7b..bae4b5cf840cd77f7516c97a5d40586d95bf0d35 100644
+--- a/crates/mvm-contract/tests/mailbox_delivery.rs
++++ b/crates/mvm-contract/tests/mailbox_delivery.rs
+@@ -20,6 +20,7 @@ fn address() -> MailboxAddress {
+ 
+ fn plan_grant() -> MailboxGrant {
+     MailboxGrant {
++        outbound_journal_v1: None,
+         mailbox: address().mailbox,
+         authority_key: [5; 32],
+         epoch: ExecutionEpoch::new(7).expect("epoch"),
+diff --git a/crates/mvm-contract/tests/mailbox_retention.rs b/crates/mvm-contract/tests/mailbox_retention.rs
+index 5fa2293d774c329e2b4e596e89fa4437df0a7c91..58560a59f6033454307f87328011fb82afc934f3 100644
+--- a/crates/mvm-contract/tests/mailbox_retention.rs
++++ b/crates/mvm-contract/tests/mailbox_retention.rs
+@@ -12,6 +12,7 @@ struct LegacyGrant {
+ 
+ fn grant() -> MailboxGrant {
+     MailboxGrant {
++        outbound_journal_v1: None,
+         mailbox: MailboxId::from_bytes([1; 32]),
+         authority_key: [2; 32],
+         epoch: ExecutionEpoch::new(3).expect("epoch"),
+diff --git a/crates/mvm-core/src/mailbox.rs b/crates/mvm-core/src/mailbox.rs
+index 89992c7e760ff06ed550a112a9fff88b3eabdf28..1963710f0c71b404b2ff5350df3509e450b0c614 100644
+--- a/crates/mvm-core/src/mailbox.rs
++++ b/crates/mvm-core/src/mailbox.rs
+@@ -29,6 +29,9 @@ const ENVELOPE_AEAD_DOMAIN: &[u8] = b"mvm.mailbox.payload.v1\0";
+ /// The one-frame exchange the guest and the host mailbox service share.
+ pub mod frame;
+ 
++/// Original boot projection for one separately admitted remote journal.
++pub mod outbound;
++
+ /// Bounded destination-side ciphertext journal and durable acceptance.
+ pub mod journal;
+ 
+diff --git a/crates/mvm-core/src/mailbox/journal.rs b/crates/mvm-core/src/mailbox/journal.rs
+index e820338471c04743d8dde8e2f16ae6d84b56a001..82479716d269654bd3d57b34d783b3d2ea97dfaa 100644
+--- a/crates/mvm-core/src/mailbox/journal.rs
++++ b/crates/mvm-core/src/mailbox/journal.rs
+@@ -521,6 +521,7 @@ fn verify_recovered_lease(
+     now_unix_ms: i64,
+ ) -> Result<VerifyingKey, JournalError> {
+     let plan = MailboxGrant {
++        outbound_journal_v1: None,
+         mailbox: lease.lease.address.mailbox,
+         authority_key: authority.to_bytes(),
+         epoch: lease.lease.execution_epoch,
+diff --git a/crates/mvm-core/src/mailbox/outbound.rs b/crates/mvm-core/src/mailbox/outbound.rs
+new file mode 100644
+index 0000000000000000000000000000000000000000..4a7717febd598f08523c11f12df08f0b8f0f824e
+--- /dev/null
++++ b/crates/mvm-core/src/mailbox/outbound.rs
+@@ -0,0 +1,75 @@
++use anyhow::{Result, ensure};
++use ed25519_dalek::VerifyingKey;
++use mvm_contract::protocol::mailbox::{
++    MailboxGrant, MailboxJournalDirectionV1, SignedMailboxCapability,
++};
++use sha2::{Digest, Sha256};
++
++use super::reader::MailboxReaderBootBinding;
++
++/// The retained request's canonical plaintext tuple, hashed without allocating a second body.
++pub fn journal_intent_digest(message: &super::frame::OutboxMessage) -> [u8; 32] {
++    let mut hash = Sha256::new();
++    hash.update(message.recipient.as_bytes());
++    hash.update(message.message_id.as_bytes());
++    hash.update(&message.body);
++    hash.finalize().into()
++}
++
++/// Commit the canonical signed credential, including its signature.
++pub fn journal_capability_digest(capability: &SignedMailboxCapability) -> Result<[u8; 32]> {
++    Ok(Sha256::digest(serde_jcs::to_vec(capability)?).into())
++}
++
++/// The separate host admission step authenticates both original plans, the
++/// production posture, and all three credentials before allowing this shape.
++pub fn check_projection(local: &MailboxGrant, d: &MailboxJournalDirectionV1) -> Result<()> {
++    ensure!(
++        local.retention.is_some()
++            && local.mailbox != d.address.mailbox
++            && d.source != d.address.recipient
++            && d.address.recipient.as_bytes() != local.mailbox.as_bytes()
++            && d.receipt_key != local.authority_key,
++        "journal requires distinct local and destination authority"
++    );
++    ensure!(
++        d.not_before_unix_ms >= 0
++            && d.expires_at_unix_ms > d.not_before_unix_ms
++            && (1..=32 * 1024).contains(&d.max_payload_bytes),
++        "invalid remote journal limits"
++    );
++    ensure!(
++        ![
++            d.destination_plan_sha256,
++            *d.destination_boot.as_bytes(),
++            *d.source.as_bytes(),
++            *d.address.recipient.as_bytes(),
++            d.source_scope_grant_sha256,
++            d.send_grant_sha256,
++            d.receive_grant_sha256
++        ]
++        .contains(&[0; 32]),
++        "missing remote journal identity"
++    );
++    VerifyingKey::from_bytes(&d.receipt_key)?;
++    Ok(())
++}
++
++/// Both the originally admitted helper and guest compute the same commitment
++/// after A's final plan and boot become known. It is never a bearer credential.
++pub fn journal_direction_commitment(boot: &MailboxReaderBootBinding) -> Result<[u8; 32]> {
++    ensure!(
++        boot.outbound_journal_v1.is_some(),
++        "original boot has no outbound journal direction"
++    );
++    let mut digest = Sha256::new();
++    digest.update(b"mvm.mailbox.original-journal-direction.v1\0");
++    digest.update(serde_jcs::to_vec(boot)?);
++    Ok(digest.finalize().into())
++}
++
++/// A single operation slot per original cold guest direction. Stale slots
++/// are never discovered or reinterpreted under another generation.
++pub fn journal_slot_name(commitment: &[u8; 32]) -> String {
++    format!("outbox-directed-v1-{}", hex::encode(commitment))
++}
+diff --git a/crates/mvm-core/src/mailbox/reader.rs b/crates/mvm-core/src/mailbox/reader.rs
+index 8d7dbb0cd2f7ed5c3a696bcfe43fb89437aff657..943500b8b942c6658d9c36fa82eb785b0469128f 100644
+--- a/crates/mvm-core/src/mailbox/reader.rs
++++ b/crates/mvm-core/src/mailbox/reader.rs
+@@ -23,13 +23,15 @@ use super::{MailboxError, canonical_bytes, sign_capability, verify_capability_si
+ /// Name shared by the host writer and guest reader of one public boot binding.
+ pub const MAILBOX_READER_BOOT_FILE: &str = "mailbox-reader-boot.json";
+ /// Maximum encoded size before parsing a guest-visible boot binding.
+-pub const MAX_MAILBOX_READER_BOOT_BYTES: u64 = 2048;
++pub const MAX_MAILBOX_READER_BOOT_BYTES: u64 = 8192;
+ 
+ /// Public plan/boot/ACK-key binding projected into one cold guest identity
+ /// drive and retained privately by the host for helper restart.
+ #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+ #[serde(deny_unknown_fields)]
+ pub struct MailboxReaderBootBinding {
++    #[serde(default, skip_serializing_if = "Option::is_none")]
++    pub outbound_journal_v1: Option<mvm_contract::protocol::mailbox::MailboxJournalDirectionV1>,
+     pub plan_id: crate::plan::PlanId,
+     pub plan_nonce: crate::plan::Nonce,
+     pub mailbox: MailboxId,
+@@ -59,7 +61,11 @@ impl MailboxReaderBootBinding {
+         rand::rngs::SysRng
+             .try_fill_bytes(&mut boot)
+             .context("drawing system entropy for the mailbox reader boot")?;
++        if let Some(direction) = grant.outbound_journal_v1 {
++            super::outbound::check_projection(&grant, &direction)?;
++        }
+         Ok(Self {
++            outbound_journal_v1: grant.outbound_journal_v1,
+             plan_id: plan.plan_id.clone(),
+             plan_nonce: plan.nonce.clone(),
+             mailbox: grant.mailbox,
+@@ -119,6 +125,7 @@ impl MailboxReaderBootBinding {
+             plan.plan_id == crate::plan::compute_plan_id(plan)
+                 && self.plan_id == plan.plan_id
+                 && self.plan_nonce == plan.nonce
++                && self.outbound_journal_v1 == grant.outbound_journal_v1
+                 && self.mailbox == grant.mailbox
+                 && self.authority_key == grant.authority_key
+                 && self.execution_epoch == grant.epoch
+diff --git a/crates/mvm-core/src/mailbox/reader_wire.rs b/crates/mvm-core/src/mailbox/reader_wire.rs
+index 087d6da774a547a6335e66bffc4acbb2b98b18eb..9784093859275d5a5574325ea234f0dce611fa5e 100644
+--- a/crates/mvm-core/src/mailbox/reader_wire.rs
++++ b/crates/mvm-core/src/mailbox/reader_wire.rs
+@@ -44,6 +44,12 @@ pub enum ReaderRequest {
+ #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+ #[serde(tag = "operation", rename_all = "snake_case", deny_unknown_fields)]
+ pub enum ApplicationReaderRequest {
++    /// Feature availability only. The guest verifies the same boot again on dispatch.
++    CheckOutboundJournalV1 {
++        commitment: [u8; 32],
++        recipient: mvm_contract::protocol::mailbox::PrincipalId,
++        payload_bytes: u32,
++    },
+     Receive,
+     Ack {
+         lease: Box<SignedMailboxDeliveryLease>,
+@@ -54,6 +60,10 @@ pub enum ApplicationReaderRequest {
+ #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+ #[serde(tag = "outcome", rename_all = "snake_case", deny_unknown_fields)]
+ pub enum ReaderResponse {
++    /// Returned only on the original local reader socket; never a delivery receipt.
++    OutboundJournalAvailableV1 {
++        commitment: [u8; 32],
++    },
+     Challenge {
+         enrollment: Box<SignedMailboxGuestReaderEnrollment>,
+         capability: Box<SignedMailboxCapability>,
+diff --git a/crates/mvm-core/src/mailbox/transport/tests.rs b/crates/mvm-core/src/mailbox/transport/tests.rs
+index cbadbb7cf97a6cb13304e3e5fd0173c8dfa96299..d3f31a83eb140d39cdfd569296f38c7478c4692f 100644
+--- a/crates/mvm-core/src/mailbox/transport/tests.rs
++++ b/crates/mvm-core/src/mailbox/transport/tests.rs
+@@ -561,6 +561,7 @@ fn guest_lease_and_signed_ack_are_durable_replay_fenced_and_boot_bound() {
+         sender_key: &sender,
+     };
+     let plan = MailboxGrant {
++        outbound_journal_v1: None,
+         mailbox: address().mailbox,
+         authority_key: signer.verifying_key().to_bytes(),
+         epoch: epoch(),
+diff --git a/crates/mvm-core/src/plan/signing.rs b/crates/mvm-core/src/plan/signing.rs
+index 829e9f5d186014f7aa35dc9e57be0aeabec964dc..742decdb0176c1f6cc5b6a0820a5060ef994f59e 100644
+--- a/crates/mvm-core/src/plan/signing.rs
++++ b/crates/mvm-core/src/plan/signing.rs
+@@ -500,6 +500,7 @@ mod tests {
+     fn mailbox_grant() -> mvm_contract::protocol::mailbox::MailboxGrant {
+         use mvm_contract::protocol::mailbox::{ExecutionEpoch, MailboxGrant, MailboxId};
+         MailboxGrant {
++            outbound_journal_v1: None,
+             mailbox: MailboxId::from_bytes([7; 32]),
+             authority_key: [9; 32],
+             epoch: ExecutionEpoch::new(3).unwrap(),
+diff --git a/crates/mvm-core/src/plan/synthesis.rs b/crates/mvm-core/src/plan/synthesis.rs
+index 2da0cb98ceffa4b9d642091b0d45e3dc2b788f51..5c400428574e9b124f78ecc4c7adde1422a7fca0 100644
+--- a/crates/mvm-core/src/plan/synthesis.rs
++++ b/crates/mvm-core/src/plan/synthesis.rs
+@@ -1631,6 +1631,7 @@ mod tests {
+         assert!(synthesize_plan(&input("vm")).unwrap().mailbox.is_none());
+ 
+         let grant = MailboxGrant {
++            outbound_journal_v1: None,
+             mailbox: MailboxId::from_bytes([7; 32]),
+             authority_key: [9; 32],
+             epoch: ExecutionEpoch::new(1).unwrap(),
+diff --git a/crates/mvm-core/tests/mailbox_reader.rs b/crates/mvm-core/tests/mailbox_reader.rs
+index dd1c6f38bed558e734fd3ec0cf1bd5e33d47140a..d93345463387156dcf4e8ca6d4125cb3f7471d02 100644
+--- a/crates/mvm-core/tests/mailbox_reader.rs
++++ b/crates/mvm-core/tests/mailbox_reader.rs
+@@ -39,6 +39,7 @@ fn fixture() -> (
+     };
+     let epoch = ExecutionEpoch::new(7).unwrap();
+     let plan = MailboxGrant {
++        outbound_journal_v1: None,
+         mailbox: address.mailbox,
+         authority_key: authority.verifying_key().to_bytes(),
+         epoch,
+@@ -94,6 +95,7 @@ fn fixture() -> (
+ fn own_mailbox_grant_mints_a_distinct_boot_bound_receive_capability() {
+     let (authority, guest, grant, plan_id, plan_nonce, mut send, mut enrollment) = fixture();
+     let binding = MailboxReaderBootBinding {
++        outbound_journal_v1: None,
+         plan_id: plan_id.clone(),
+         plan_nonce: plan_nonce.clone(),
+         mailbox: grant.mailbox,
+diff --git a/crates/mvm-hostd/src/mailbox_custody.rs b/crates/mvm-hostd/src/mailbox_custody.rs
+index 91f44d0dc6a46aec62ada5808723184eb96a6ce4..6698778c91229e96cd7865cf048bc0b2585d35c5 100644
+--- a/crates/mvm-hostd/src/mailbox_custody.rs
++++ b/crates/mvm-hostd/src/mailbox_custody.rs
+@@ -415,6 +415,7 @@ mod tests {
+         let mailbox = MailboxId::from_bytes([4; 32]);
+         let mut plan = PlanFixture::new().build();
+         plan.mailbox = Some(MailboxGrant {
++            outbound_journal_v1: None,
+             mailbox,
+             authority_key: crate::mailbox_launch::authority_key_for(
+                 dir.path(),
+diff --git a/crates/mvm-hostd/src/mailbox_launch.rs b/crates/mvm-hostd/src/mailbox_launch.rs
+index afc87e5942bfdb55fd7b501faefecff9f9d81cfe..0ae2ddfaa78f61bfe2b8642617c6aba39de09dee 100644
+--- a/crates/mvm-hostd/src/mailbox_launch.rs
++++ b/crates/mvm-hostd/src/mailbox_launch.rs
+@@ -581,6 +581,7 @@ mod tests {
+     fn grant_at(dir: &Path, mailbox: [u8; 32], n: u64) -> MailboxGrant {
+         let mailbox = MailboxId::from_bytes(mailbox);
+         MailboxGrant {
++            outbound_journal_v1: None,
+             mailbox,
+             authority_key: authority_key_for(dir, &mailbox, epoch(n))
+                 .unwrap()
+diff --git a/crates/mvm-hostd/src/mailbox_process.rs b/crates/mvm-hostd/src/mailbox_process.rs
+index f46efd198f54e9083d904a7d26329653149143b6..0f61cf5b739931d0b8f5048fc7a89c0cefae5d9d 100644
+--- a/crates/mvm-hostd/src/mailbox_process.rs
++++ b/crates/mvm-hostd/src/mailbox_process.rs
+@@ -745,6 +745,7 @@ mod tests {
+     fn grant(dir: &Path) -> MailboxGrant {
+         let mailbox = MailboxId::from_bytes([4; 32]);
+         MailboxGrant {
++            outbound_journal_v1: None,
+             mailbox,
+             authority_key: crate::mailbox_launch::authority_key_for(
+                 dir,
+diff --git a/crates/mvm-hostd/src/mailbox_process/reader.rs b/crates/mvm-hostd/src/mailbox_process/reader.rs
+index 891f889804ebde9577a632a1a5ca7978fb069c6e..843b942a90b318e3df75b56fb2abcffb5d2f3203 100644
+--- a/crates/mvm-hostd/src/mailbox_process/reader.rs
++++ b/crates/mvm-hostd/src/mailbox_process/reader.rs
+@@ -212,6 +212,7 @@ mod tests {
+         crate::audit::host_keypair::load_or_init_at(keys.path()).unwrap();
+         let mailbox = MailboxId::from_bytes([42; 32]);
+         let grant = MailboxGrant {
++            outbound_journal_v1: None,
+             mailbox,
+             authority_key: crate::mailbox_launch::authority_key_for(
+                 keys.path(),
+diff --git a/crates/mvm-hostd/src/mailbox_service.rs b/crates/mvm-hostd/src/mailbox_service.rs
+index b1f7e9b651d8332e04ea0f425bfa56c27b3d3023..1f4939623e980e3c7f9f549351cde6286e218e19 100644
+--- a/crates/mvm-hostd/src/mailbox_service.rs
++++ b/crates/mvm-hostd/src/mailbox_service.rs
+@@ -857,6 +857,7 @@ mod accept_loop_tests {
+         crate::audit::host_keypair::load_or_init_at(dir).unwrap();
+         let mailbox = mvm_contract::protocol::mailbox::MailboxId::from_bytes([5; 32]);
+         let grant = MailboxGrant {
++            outbound_journal_v1: None,
+             mailbox,
+             authority_key: crate::mailbox_launch::authority_key_for(
+                 dir,
+@@ -993,6 +994,7 @@ mod tests {
+         let mailbox = MailboxId::from_bytes(MAILBOX);
+         let epoch = ExecutionEpoch::new(epoch).unwrap();
+         MailboxGrant {
++            outbound_journal_v1: None,
+             mailbox,
+             authority_key: authority_key_for(keys, &mailbox, epoch).unwrap().to_bytes(),
+             epoch,
+diff --git a/crates/mvm-hostd/src/plan_admission.rs b/crates/mvm-hostd/src/plan_admission.rs
+index 34242348df6598c4202bfabcf1035766fbdbf405..b52e7f88df84a4e95a6ef56fbf1f5d4ea0bf0862 100644
+--- a/crates/mvm-hostd/src/plan_admission.rs
++++ b/crates/mvm-hostd/src/plan_admission.rs
+@@ -2359,6 +2359,7 @@ mod tests {
+     #[test]
+     fn local_retention_requires_a_configured_host_ceiling() {
+         let mut grant = MailboxGrant {
++            outbound_journal_v1: None,
+             mailbox: MailboxId::from_bytes([1; 32]),
+             authority_key: [2; 32],
+             epoch: ExecutionEpoch::new(1).expect("epoch"),
+@@ -3927,6 +3928,7 @@ mod tests {
+         let keys = tempfile::tempdir().expect("keystore");
+         let mut input = fixture_input("vm-retention");
+         input.mailbox = Some(MailboxGrant {
++            outbound_journal_v1: None,
+             mailbox: MailboxId::from_bytes([1; 32]),
+             authority_key: [2; 32],
+             epoch: ExecutionEpoch::new(1).expect("epoch"),
+diff --git a/crates/mvm-hostd/src/plan_admission/grant_validation.rs b/crates/mvm-hostd/src/plan_admission/grant_validation.rs
+index a86ca99808a63f83eba9b88c63d2c053320bf490..1493866af002308e01e8f78054d6113d55a037f9 100644
+--- a/crates/mvm-hostd/src/plan_admission/grant_validation.rs
++++ b/crates/mvm-hostd/src/plan_admission/grant_validation.rs
+@@ -9,6 +9,12 @@ pub(super) fn enforce_mailbox_retention(
+     mailbox: Option<&MailboxGrant>,
+     max_ms: Option<u64>,
+ ) -> Result<()> {
++    // The generic launch path has no authentic second participant from which
++    // to verify this proposal. Paired admission must provide both originals.
++    anyhow::ensure!(
++        mailbox.and_then(|g| g.outbound_journal_v1).is_none(),
++        "a remote journal direction requires paired admission"
++    );
+     let Some(requested) = mailbox.and_then(|grant| grant.retention) else {
+         return Ok(());
+     };
+diff --git a/crates/mvm-hostd/tests/mission_demo.rs b/crates/mvm-hostd/tests/mission_demo.rs
+index a7fcf37867d195de0f80a3d6af285bed92d2976d..3f4189b53edcf9ef7c0507a9c83847c02b6b1bb4 100644
+--- a/crates/mvm-hostd/tests/mission_demo.rs
++++ b/crates/mvm-hostd/tests/mission_demo.rs
+@@ -841,6 +841,7 @@ fn plan_and_trust(channel: &Channel, granted: bool) -> (ExecutionPlan, MailboxPo
+     let mut plan = mvm_core::plan::test_support::PlanFixture::new().build();
+     if granted {
+         plan.mailbox = Some(mvm_contract::protocol::mailbox::MailboxGrant {
++            outbound_journal_v1: None,
+             mailbox: address().mailbox,
+             authority_key: channel.authority_key.verifying_key().to_bytes(),
+             epoch: MbEpoch::new(1).unwrap(),
+@@ -983,6 +984,7 @@ fn host_keys(dir: &std::path::Path, seed: u8) {
+ fn granted_plan(authority_key: [u8; 32]) -> ExecutionPlan {
+     let mut plan = mvm_core::plan::test_support::PlanFixture::new().build();
+     plan.mailbox = Some(mvm_contract::protocol::mailbox::MailboxGrant {
++        outbound_journal_v1: None,
+         mailbox: address().mailbox,
+         authority_key,
+         epoch: MbEpoch::new(1).unwrap(),
+@@ -1645,6 +1647,7 @@ fn signed_guest_lease_and_exact_ack_survive_mock_anchored_restart() {
+     )
+     .unwrap();
+     let plan = MailboxGrant {
++        outbound_journal_v1: None,
+         mailbox: address().mailbox,
+         authority_key: authority.to_bytes(),
+         epoch: MbEpoch::new(1).unwrap(),
+diff --git a/crates/mvm-runtime/src/workload_runner/runner/sockets.rs b/crates/mvm-runtime/src/workload_runner/runner/sockets.rs
+index b536522b730e4a757e06663ee6af78ec62cd6815..5d38169188ffae32df3f5ade675ea566e4d0b794 100644
+--- a/crates/mvm-runtime/src/workload_runner/runner/sockets.rs
++++ b/crates/mvm-runtime/src/workload_runner/runner/sockets.rs
+@@ -133,6 +133,7 @@ mod tests {
+ 
+         let mut plan = mvm_core::plan::test_support::PlanFixture::new().build();
+         plan.mailbox = Some(mvm_contract::protocol::mailbox::MailboxGrant {
++            outbound_journal_v1: None,
+             mailbox: mvm_contract::protocol::mailbox::MailboxId::from_bytes([4; 32]),
+             authority_key: [0; 32],
+             epoch: mvm_contract::protocol::mailbox::ExecutionEpoch::new(1).unwrap(),
+diff --git a/crates/mvm-runtime/src/workload_runner/runner/spawner.rs b/crates/mvm-runtime/src/workload_runner/runner/spawner.rs
+index 49f24af0583be2f39782f233c86d2e1cf12b628e..cba61b2780b393761a9f0ed137872987c5607c44 100644
+--- a/crates/mvm-runtime/src/workload_runner/runner/spawner.rs
++++ b/crates/mvm-runtime/src/workload_runner/runner/spawner.rs
+@@ -766,6 +766,7 @@ mod tests {
+         std::fs::write(&anchor, host.verifying_key().as_bytes()).unwrap();
+         let mut plan = mvm_core::plan::test_support::PlanFixture::new().build();
+         plan.mailbox = Some(MailboxGrant {
++            outbound_journal_v1: None,
+             mailbox: MailboxId::from_bytes([9; 32]),
+             authority_key: host.verifying_key().to_bytes(),
+             epoch: ExecutionEpoch::new(3).unwrap(),
+diff --git a/crates/mvm-vmm/src/host/cmdline.rs b/crates/mvm-vmm/src/host/cmdline.rs
+index 3baa4aacb4d9968aa98ee52892664821a2bc01d0..f539eaefbebd91208191f806f08c0d28f443897a 100644
+--- a/crates/mvm-vmm/src/host/cmdline.rs
++++ b/crates/mvm-vmm/src/host/cmdline.rs
+@@ -548,6 +548,7 @@ mod tests {
+             workload_cmdline(&config, dir.path(), hvf_like_workload_bootargs).expect("cmdline")
+         };
+         let granted = build(Some(MailboxGrant {
++            outbound_journal_v1: None,
+             mailbox: MailboxId::from_bytes([1; 32]),
+             authority_key: [2; 32],
+             epoch: ExecutionEpoch::new(1).unwrap(),
+diff --git a/crates/mvm-vmm/src/host/flowmux_identity.rs b/crates/mvm-vmm/src/host/flowmux_identity.rs
+index 51749921427230bdcca53d2dc6579bceb6073d81..907dd2ddb79a2e5213105a8381ec5e6112ca08b8 100644
+--- a/crates/mvm-vmm/src/host/flowmux_identity.rs
++++ b/crates/mvm-vmm/src/host/flowmux_identity.rs
+@@ -541,6 +541,7 @@ mod tests {
+ 
+         let mut plan = mvm_core::plan::test_support::PlanFixture::new().build();
+         plan.mailbox = Some(MailboxGrant {
++            outbound_journal_v1: None,
+             mailbox: MailboxId::from_bytes([8; 32]),
+             authority_key: anchor.to_bytes(),
+             epoch: ExecutionEpoch::new(3).unwrap(),
+@@ -594,6 +595,7 @@ mod tests {
+         use mvm_contract::protocol::mailbox::{ExecutionEpoch, MailboxGrant, MailboxId};
+         let mut plan = mvm_core::plan::test_support::PlanFixture::new().build();
+         plan.mailbox = Some(MailboxGrant {
++            outbound_journal_v1: None,
+             mailbox: MailboxId::from_bytes([8; 32]),
+             authority_key: host_key().verifying_key().to_bytes(),
+             epoch: ExecutionEpoch::new(3).unwrap(),
