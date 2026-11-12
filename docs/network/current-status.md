@@ -19,6 +19,8 @@ Linux and macOS component tests recovered the same five-byte Cast using a fresh 
 
 A coordinator handoff now checks the original helper’s kernel PID and addressed readiness. Losing the reply keeps 32 KiB charged until the original helper is collected. Two real helper processes exercised this boundary on macOS. [Original helper custody and measured readback](evidence/2026-11-12-paired-mailbox/helper-handoff.md).
 
+The two SDK launches now stage their signed source and destination roles together. The Linux workload tests record each edge independently, including exact bytes, CPU and elapsed time. [Guest roles and measurements](evidence/2026-11-12-paired-mailbox/guest-sdk/README.md).
+
 ## Published checkpoints
 
 | Component | What the checkpoint establishes | Evidence |

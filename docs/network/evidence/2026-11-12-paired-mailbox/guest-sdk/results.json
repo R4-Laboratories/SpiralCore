@@ -1,0 +1,95 @@
+{
+  "platform": "Linux x86_64",
+  "sdk": {
+    "commit": "60965c80db91ca98f51eb647dc32e7dcf16495ee",
+    "tracked_source_files": 4548,
+    "passed": [
+      "launch::cast_rendezvous::tests::abort_while_both_originals_are_in_preparation_wakes_waiting_launch",
+      "launch::cast_rendezvous::tests::both_admissions_release_original_arcs_before_dispatch_returns",
+      "launch::cast_rendezvous::tests::committed_publication_survives_delayed_original_and_late_cancellation",
+      "launch::cast_rendezvous::tests::missing_expired_or_cancelled_original_wakes_peer",
+      "launch::cast_rendezvous::tests::real_arrivals_order_once_and_retire_without_replacement",
+      "launch::mailbox_owner::tests::failed_pair_publication_restores_only_its_own_boot_grant",
+      "launch::mailbox_owner::tests::publication_respects_the_inclusive_start_and_exclusive_capability_expiry",
+      "revoked_submit_after_greeting_keeps_claim_bytes_off_stream",
+      "mailbox_launch::cast_pair::development::tests::independent_original_development_keys_carry_exact_bytes_and_refuse_swaps"
+    ],
+    "executables": {
+      "mailbox_submit_exchange-7215d86ad5e9f44f": "58726279ae3f0b201b326cd4bcba642aa81cf9c097721efb589167ed2bbd1814",
+      "mvm_client-8e20e6d44d79f0c3": "2ac24da947f69c92383b2a7d0013a8c64ad25da06d81f72e7b25b81411f3c88d",
+      "mvm_hostd-a412d43fdc4d5293": "88f6bca7151f91b3a9b1eaea0de1c6c2379c3cdd41e6522c7c6dcdf527914f9b"
+    },
+    "results_sha256": "c55c4f1867a32a344fba1d494463bcad343f62991a63269ee3012caab49f564f",
+    "pre_fix_delayed_observer": "Shared publication had already succeeded when the late observer saw original Cast admission expired.",
+    "pre_fix_output_sha256": "aa7e3b66053f2515eab2a32efe8413f7bf4c4c04a8d8b685fbf892f9e48fc742"
+  },
+  "source_workload": {
+    "commit": "a0cc1f3ce34796d82caeb2da18334742b8ee7d5f",
+    "scope": "Actual OCI worker inside isolated Linux namespaces, guest Submit role over a local test descriptor; single trial. Framing includes greetings and correlated disposition.",
+    "result": {
+      "agent_thread_cpu_ns": 88396,
+      "application_result_bytes": 32,
+      "dispatch_through_result_wall_ns": 50228348,
+      "guest_to_host_bytes": 477,
+      "host_to_guest_bytes": 194,
+      "payload_bytes": 257,
+      "source_workload": {
+        "workload_cpu_ns": 98765,
+        "workload_wall_ns": 137883
+      }
+    },
+    "binary_and_log_hashes": {
+      "final-bin.log": "787a267db6173e0b62729b3d357b5bbdbe05ac576fe42b11295307725f189c0f",
+      "final-check.log": "c240833eb860fd98cab607c988208a3ee9eb6579c77b256addc1f2df3b1c4ec8",
+      "final-guest.log": "971e8dc63877fa48c33424d7d6ef1ee34e5698f583b7d7ef5de19aaf674d9e63",
+      "final-namespace.log": "e8f3a73858e9c566382004951f8f2d46a5789dbf54a1876630b797338153411c",
+      "final-witness.log": "de41fd665bc9b5c6e1ce8efea60ce230f1b66b36bd1eeae6ade8d057aaf7a8ee",
+      "workload": "c0324d9cc0f5feb97c9e2498079ed6411eaa97a8fcf8f701fdf6be0fad123c21",
+      "agent-test": "6324d86f5fa4d474a4cbb1031d728491b2b5e16a87d119a5c8c9ad811dc350fc",
+      "oci-entrypoint": "3092102bdb3064438ebe58d16d39cd4081b6d658b050fd6e8b261044534c187a",
+      "mvm-guest-agent": "213402aeae860137910004141b7c439980622e89626f8964c6b8a7080e22bc9f"
+    }
+  },
+  "destination_workload": {
+    "format": "spiralcore.mvm.guest-oci-cast-component.v1",
+    "mvm_source": "e670d5fc7267b1023f662f79649ae09ea5f6c2ef",
+    "source_verification": {
+      "tracked_blob_count": 4543,
+      "mismatched": 0
+    },
+    "system": "Linux x86_64",
+    "scope": "One synthetic original PID 1 in private Linux PID and mount namespaces, actual original worker, actual pinned OCI wrapper, Rust workload, no VM and no WAN.",
+    "uid": 1000,
+    "gid": 1000,
+    "binary_sha256": {
+      "pid1_libtest": "a6518d5128b49bbf601442bc96fc2a294351873df0d8d065892cd932e3327177",
+      "workload": "98f09b3f0fb121a6a53557cf217d2f3cb8ccef4c5b6f00b81ff23214769aaf28",
+      "oci_entrypoint": "d3f13b3e3ef2846dd479ce95e6960be020dfdf74d8393263fde6b3071da243e3"
+    },
+    "measurement": {
+      "agent_thread_cpu_ns": 832171,
+      "agent_to_workload_cast_accepted_bytes": 474,
+      "context_datagram_bytes": 250,
+      "setup_wall_ns": 867442,
+      "total_wall_ns": 51254002,
+      "verified_cast_bytes": 257,
+      "workload_cpu_ns": 88426,
+      "workload_to_agent_cast_read_bytes": 46,
+      "workload_wall_ns": 91585
+    },
+    "exact_readback": true,
+    "ordinary_stdin": "ordinary-stdin",
+    "workload_stdout": "checked Cast + ordinary stdin",
+    "workload_stderr_observed": true,
+    "terminal_slot": "Dead after max_calls_per_worker=1; original not replaced",
+    "excluded": [
+      "ordinary call framing",
+      "process startup outside private namespace test",
+      "host-to-guest vsock",
+      "WAN",
+      "energy",
+      "whole-system CPU"
+    ],
+    "trials": 1
+  }
+}
