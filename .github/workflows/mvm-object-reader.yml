@@ -119,7 +119,7 @@ jobs:
             }
           }
           Test-Selection 1 @('--lib', 'private_fs::readonly_platform_tests::')
-          Test-Selection 2 @('--lib', 'private_fs::refusal_tests::')
+          Test-Selection 3 @('--lib', 'private_fs::refusal_tests::')
           Test-Selection 5 @('--test', 'mailbox_reader')
           foreach ($prefix in @('mvm_core', 'mailbox_reader')) {
             $files = @(Get-ChildItem "target/debug/deps/$prefix-*.exe")
