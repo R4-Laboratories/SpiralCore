@@ -13,6 +13,10 @@ platform qualification follow. [Guest retry and worker capacity regressions](evi
 
 The first installed addressed launch reached kernel admission. Both guests were refused before boot because the staged kernel lacked its original digest sidecar. A fresh installation passed the kernel resolver. SDK root filesystem materialization also replaced the test workloads’ image-supplied startup metadata. The next run needs the operator-approved entrypoint and worker configuration verified inside the actual boot images. [Failed launch, timings and recovery](evidence/2026-11-12-paired-mailbox/addressed-native-launch/README.md).
 
+The installed addressed SDK now creates private VM and short Unix socket directories under either tested umask. Linux and macOS both passed the ownership and signed-publication controls. [Filesystem evidence](evidence/2026-11-12-paired-mailbox/installed-driver/private-state.md).
+
+The addressed driver checks materialized role images and preserves the initial failure report through a late coordinator exit. Its Linux library suite passed nine tests. [Input and custody checks](evidence/2026-11-12-paired-mailbox/installed-driver/materialized-driver.md).
+
 ### Addressed mailbox delivery
 
 The intended path is **guest A Submit → original A helper → host coordinator → original B helper → guest B Deliver**. A seals the submission. The coordinator handles the signed Send credential and opaque envelope. B authenticates and opens that envelope before invoking its guest. The following steps have been exercised individually.
