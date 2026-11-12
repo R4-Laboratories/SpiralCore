@@ -15,6 +15,8 @@ The addressed Cast component now verifies separate Send and Receive grants befor
 
 The source can now seal an authorized Cast at its original worker and reuse the ciphertext across a reconnect. A macOS component run carried the complete peer frame and checked the application bytes at the local inbox. The installed two-guest gate still needs a private handoff between the original helper processes. [Sender, retry regressions and measured socket transfer](evidence/2026-11-12-paired-mailbox/source-cast.md).
 
+Linux and macOS component tests recovered the same five-byte Cast using a fresh directional key and the source and destination workers’ separate wrapping keys. The public enrollment binds the guest boot record to the original worker pair. The installed two-VM route remains open. [Directional key placement, socket bytes and CPU](evidence/2026-11-12-paired-mailbox/directional-key/README.md).
+
 ## Published checkpoints
 
 | Component | What the checkpoint establishes | Evidence |

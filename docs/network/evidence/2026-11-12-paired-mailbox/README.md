@@ -2,6 +2,8 @@
 
 A two-guest Cast needs an admitted sender, a host that owns both workers, and an admitted destination. Each measurement below exercises one of those interfaces. The installed same-host acceptance test still requires two booted MVMs exchanging one object, a verified read at the destination, and collection of both original workers. A two-host WAN test follows that gate.
 
+The development key enrollment now binds each role to the original worker pair before boot. Linux and macOS exact readbacks include separate ciphertext and local Deliver socket counters. [Directional key enrollment and measured CPU](directional-key/README.md).
+
 | Interface | Executed result | Where the measurement begins and ends |
 |---|---|---|
 | Guest Submit on macOS | One 3-byte Cast was submitted six times. The host read 1,338 bytes and wrote 1,022 bytes in total. The six exchanges took 0.305 ms. The entire test process used 4.798 ms of CPU, including its harness. | Connected Unix socketpairs, exact guest request read on every attempt. The sixth attempt completed local publication after a matching duplicate verdict. [Bytes, time, process CPU and binary hash](guest-submit.json) |
