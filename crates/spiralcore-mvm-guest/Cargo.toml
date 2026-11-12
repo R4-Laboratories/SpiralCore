@@ -1,0 +1,21 @@
+[package]
+name = "spiralcore-mvm-guest"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.97"
+license = "MIT"
+publish = false
+description = "SpiralCore frame binding for MVM's trusted-host local durable guest mailbox"
+
+[dependencies]
+mvm-agentd = { git = "https://github.com/tinylabscom/mvm", rev = "543efc7f94aa756c09785b38bdd024b6ba8199c7", default-features = false }
+mvm-contract = { git = "https://github.com/tinylabscom/mvm", rev = "543efc7f94aa756c09785b38bdd024b6ba8199c7", default-features = false, features = ["protocol"] }
+mvm-core = { git = "https://github.com/tinylabscom/mvm", rev = "543efc7f94aa756c09785b38bdd024b6ba8199c7", default-features = false }
+spiralcore-transfer = { path = "../spiralcore-transfer" }
+thiserror = "2"
+rustix = { version = "1.1", features = ["net", "event"] }
+
+[dev-dependencies]
+tempfile = "3"
+ed25519-dalek = "3"
+cpu-time = "1"
