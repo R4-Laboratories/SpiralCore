@@ -13,6 +13,8 @@ platform qualification follow. [Guest retry and worker capacity regressions](evi
 
 Both addressed Firecracker roles booted in two paced runs. The source SDK admitted guest A each time. The destination SDK then reported that guest B was missing from the host name registry. All three paced-attempt coordinators returned exit 42. Exact destination workload readback is still open. [Installed results, CPU and timing](evidence/2026-11-12-paired-mailbox/addressed-native-launch/paced-runs.md).
 
+The repaired SDK serialized concurrent VM name registration, TTL, readiness and stop updates in 13 passing Linux detached-launch tests. Replaying the two original guest grants independently located a 252 ms clock admission boundary. [SDK regression, original clock replay and limits](evidence/2026-11-12-paired-mailbox/addressed-native-launch/sdk-name-and-clock.md).
+
 The installed addressed SDK now creates private VM and short Unix socket directories under either tested umask. Linux and macOS both passed the ownership and signed-publication controls. [Filesystem evidence](evidence/2026-11-12-paired-mailbox/installed-driver/private-state.md).
 
 The failed launch also exposed a coordinator retirement problem. Session probes repeatedly lost a brief daemon lock and restarted the idle timer. The watcher now retries that contention within its original admission deadline. The macOS host regression suite passed 18/18. [Original Linux observation and host tests](evidence/2026-11-12-paired-mailbox/addressed-native-launch/watcher-retirement.md)
