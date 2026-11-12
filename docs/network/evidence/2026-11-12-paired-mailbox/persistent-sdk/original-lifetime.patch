@@ -1,0 +1,473 @@
+diff --git a/crates/mvm-hostd/src/bin/mvm-mailbox.rs b/crates/mvm-hostd/src/bin/mvm-mailbox.rs
+index 6d0bbaaa8..a1002b77f 100644
+--- a/crates/mvm-hostd/src/bin/mvm-mailbox.rs
++++ b/crates/mvm-hostd/src/bin/mvm-mailbox.rs
+@@ -17,6 +17,14 @@ fn main() -> Result<()> {
+     // its payload unredacted.
+     mvm_hostd::panic_hook::install("mailbox");
+     let raw = mvm_hostd::read_launch_config("mvm-mailbox")?;
++    if std::env::args_os().nth(1).as_deref()
++        == Some(std::ffi::OsStr::new(
++            mvm_hostd::mailbox_process::ORIGINAL_JOURNAL_V1,
++        ))
++    {
++        return mvm_hostd::mailbox_process::serve_original_launch(&raw)
++            .context("original mailbox service failed");
++    }
+     let config = parse(&raw).context("mvm-mailbox config parse failed")?;
+     std::process::exit(serve(config));
+ }
+diff --git a/crates/mvm-hostd/src/mailbox_process.rs b/crates/mvm-hostd/src/mailbox_process.rs
+index 81eeac26f..d31156e33 100644
+--- a/crates/mvm-hostd/src/mailbox_process.rs
++++ b/crates/mvm-hostd/src/mailbox_process.rs
+@@ -49,6 +49,7 @@ use crate::mailbox_service::durable::DurableMailboxService;
+ use crate::plan_admission::{MailboxLaunchPosture, MailboxPostureHandoff};
+ use crate::vm_lifetime::{endpoint_needed, launcher_is_alive};
+ 
++mod lifetime;
+ pub mod original_journal;
+ pub mod paired_incoming;
+ pub(crate) mod reader;
+@@ -136,6 +137,28 @@ pub fn serve(config: MailboxProcessConfig) -> i32 {
+ }
+ 
+ fn serve_verified(config: MailboxProcessConfig) -> Result<()> {
++    serve_with_lifetime(config, None)
++}
++
++pub const ORIGINAL_JOURNAL_V1: &str = "--original-journal-v1";
++
++/// This private original-launch message is never a guest or relay frame.
++#[derive(serde::Serialize, serde::Deserialize)]
++#[serde(deny_unknown_fields)]
++struct OriginalJournalStartup<C> {
++    config: C,
++    original_vmm_v1: lifetime::OriginalVmm,
++}
++
++pub fn serve_original_launch(raw: &[u8]) -> Result<()> {
++    let launch: OriginalJournalStartup<MailboxProcessConfig> = serde_json::from_slice(raw)?;
++    serve_with_lifetime(launch.config, Some(launch.original_vmm_v1))
++}
++
++fn serve_with_lifetime(
++    config: MailboxProcessConfig,
++    lifetime: Option<lifetime::OriginalVmm>,
++) -> Result<()> {
+     // SAFETY: `getppid` is async-signal-safe and infallible.
+     let launcher = unsafe { libc::getppid() };
+     let MailboxProcessConfig {
+@@ -181,6 +204,7 @@ fn serve_verified(config: MailboxProcessConfig) -> Result<()> {
+     if posture.variant() == Variant::Prod {
+         return serve_local(
+             launcher,
++            lifetime,
+             &plan,
+             MailboxProcessConfig {
+                 grant,
+@@ -194,7 +218,7 @@ fn serve_verified(config: MailboxProcessConfig) -> Result<()> {
+             },
+         );
+     }
+-    if posture.variant() != Variant::Dev {
++    if posture.variant() != Variant::Dev || lifetime.is_some() {
+         return Err(Error::new(
+             ErrorKind::PermissionDenied,
+             "invalid mailbox posture",
+@@ -220,6 +244,7 @@ fn serve_verified(config: MailboxProcessConfig) -> Result<()> {
+ 
+ fn serve_local(
+     launcher: libc::pid_t,
++    lifetime: Option<lifetime::OriginalVmm>,
+     plan: &ExecutionPlan,
+     config: MailboxProcessConfig,
+ ) -> Result<()> {
+@@ -233,6 +258,12 @@ fn serve_local(
+         reader_boot,
+         vm_state_dir,
+     } = config;
++    let original = lifetime.map(lifetime::OriginalVmm::observe).transpose()?;
++    let active = || match &original {
++        Some(lifetime) => vm_state_dir.exists() && lifetime.alive_until(std::time::Instant::now()),
++        None => keep_serving(launcher, &vm_state_dir),
++    };
++
+     let posture = posture.ok_or_else(|| {
+         Error::new(
+             ErrorKind::PermissionDenied,
+@@ -386,20 +417,26 @@ fn serve_local(
+         ));
+     }
+     std::io::stdout().write_all(READY_MARKER)?;
+-    while keep_serving(launcher, &vm_state_dir) {
++    while active() {
+         if service
+-            .serve_guest_while(&route, &mut sealer, &mut turn, || {
+-                keep_serving(launcher, &vm_state_dir)
+-            })
++            .serve_guest_while(&route, &mut sealer, &mut turn, active)
+             .is_err()
+         {
+-            std::thread::sleep(POLL_INTERVAL);
++            if let Some(lifetime) = &original {
++                lifetime.alive_until(std::time::Instant::now() + POLL_INTERVAL);
++            } else {
++                std::thread::sleep(POLL_INTERVAL);
++            }
+         }
+         match service.maintain_local() {
+             Ok(()) | Err(JournalError::MaintenancePending) => {}
+             Err(error) => return Err(Error::other(error)),
+         }
+     }
++    if let Some(lifetime) = original {
++        lifetime.finish()?;
++    }
++
+     Ok(())
+ }
+ 
+@@ -719,7 +756,10 @@ fn serving_command() -> Result<Command> {
+ 
+ // Keep this handshake separate from exec: a rejected configuration can have
+ // a real Child while a failed executable lookup or failed exec has none.
+-fn configure_serving(config: &MailboxProcessConfig, child: &mut std::process::Child) -> Result<()> {
++fn configure_serving(
++    config: &impl serde::Serialize,
++    child: &mut std::process::Child,
++) -> Result<()> {
+     let mut stdin = child
+         .stdin
+         .take()
+diff --git a/crates/mvm-hostd/src/mailbox_process/lifetime.rs b/crates/mvm-hostd/src/mailbox_process/lifetime.rs
+new file mode 100644
+index 000000000..d73079a54
+--- /dev/null
++++ b/crates/mvm-hostd/src/mailbox_process/lifetime.rs
+@@ -0,0 +1,97 @@
++//! Optional original VMM lifetime on the launcher's private configuration pipe.
++use std::cell::RefCell;
++use std::io::{Error, ErrorKind, Result};
++use std::time::Instant;
++
++use mvm_vmm::host::{
++    network_endpoint_spawn::EndpointPid,
++    process_exit::{ProcessExitError, ProcessExitObserver, ProcessExitWait},
++};
++
++#[derive(Debug, serde::Deserialize, serde::Serialize)]
++#[serde(deny_unknown_fields)]
++pub(super) struct OriginalVmm {
++    pid: libc::pid_t,
++    started: u64,
++}
++
++impl OriginalVmm {
++    pub(super) fn from_held(original: EndpointPid) -> Result<Self> {
++        Ok(Self {
++            pid: original.pid,
++            started: original
++                .started
++                .ok_or_else(|| Error::other("no VMM birth identity"))?,
++        })
++    }
++
++    pub(super) fn observe(self) -> Result<Lifetime> {
++        let original = EndpointPid {
++            pid: self.pid,
++            started: Some(self.started),
++        };
++        let check = || {
++            if original.pid > 1 && original.is_live_and_ours() {
++                Ok(())
++            } else {
++                Err(Error::new(
++                    ErrorKind::PermissionDenied,
++                    "original VMM generation changed",
++                ))
++            }
++        };
++        check()?;
++        let observer = ProcessExitObserver::arm(original.pid).map_err(Error::other)?;
++        check()?;
++        Ok(Lifetime {
++            observer,
++            terminal: RefCell::new(None),
++        })
++    }
++}
++
++pub(super) struct Lifetime {
++    observer: ProcessExitObserver,
++    // kqueue consumes an exit note. Retain the first terminal outcome so the
++    // guest-read predicate and the outer service loop observe the same exit.
++    terminal: RefCell<Option<std::result::Result<(), ProcessExitError>>>,
++}
++
++impl Lifetime {
++    pub(super) fn alive_until(&self, until: Instant) -> bool {
++        if self.terminal.borrow().is_some() {
++            return false;
++        }
++        match self.observer.wait_event(until) {
++            Ok(ProcessExitWait::TimedOut) => true,
++            Ok(ProcessExitWait::Exited) => {
++                *self.terminal.borrow_mut() = Some(Ok(()));
++                false
++            }
++            Err(ProcessExitError::Io(err)) if err.kind() == ErrorKind::Interrupted => true,
++            Err(error) => {
++                *self.terminal.borrow_mut() = Some(Err(error));
++                false
++            }
++        }
++    }
++
++    pub(super) fn finish(self) -> Result<()> {
++        self.terminal
++            .into_inner()
++            .unwrap_or(Ok(()))
++            .map_err(Error::other)
++    }
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++    #[test]
++    fn stale_original_generation_refuses_before_service() {
++        let original = EndpointPid::of_child(std::process::id());
++        let mut handoff = OriginalVmm::from_held(original).unwrap();
++        handoff.started ^= 1;
++        assert!(matches!(handoff.observe(), Err(e) if e.kind() == ErrorKind::PermissionDenied));
++    }
++}
+diff --git a/crates/mvm-hostd/src/mailbox_process/original_journal.rs b/crates/mvm-hostd/src/mailbox_process/original_journal.rs
+index aab1c9954..bcfed9b4a 100644
+--- a/crates/mvm-hostd/src/mailbox_process/original_journal.rs
++++ b/crates/mvm-hostd/src/mailbox_process/original_journal.rs
+@@ -160,10 +160,7 @@ impl OriginalJournalDestination {
+             None
+         };
+         let current = &policy.context;
+-        let (mut child, marker) = spawn_claimed(&guard.owner_dir, super::serving_command()?)?;
+-        let readiness = super::configure_serving(config, &mut child)
+-            .err()
+-            .map(|e| e.to_string());
++        let (child, marker, readiness) = stop.spawn_helper(config, &guard.owner_dir)?;
+         Ok(Self {
+             child,
+             readiness,
+diff --git a/crates/mvm-hostd/src/mailbox_process/original_journal/paired_process_tests.rs b/crates/mvm-hostd/src/mailbox_process/original_journal/paired_process_tests.rs
+index ce9aded4c..3a57201e0 100644
+--- a/crates/mvm-hostd/src/mailbox_process/original_journal/paired_process_tests.rs
++++ b/crates/mvm-hostd/src/mailbox_process/original_journal/paired_process_tests.rs
+@@ -209,6 +209,17 @@ fn read_and_ack(
+     Ok(())
+ }
+ 
++// The helper receives a real, originally observed process generation; this
++// fixture process supplies only lifetime, never a VMM or a guest workload.
++fn lifetime_fixture(name: &str) -> Result<std::process::Child> {
++    let child = std::process::Command::new("sleep").arg("40").spawn()?;
++    std::fs::write(
++        mvm_core::config::vm_state_dir(name).join("fc.pid"),
++        child.id().to_string(),
++    )?;
++    Ok(child)
++}
++
+ fn run() -> Result<()> {
+     let keys = mvm_core::config::mvm_keys_dir();
+     mvm_core::private_fs::ensure_private_dir(&keys)?;
+@@ -223,13 +234,8 @@ fn run() -> Result<()> {
+         OriginalJournalDestination::start_custodied(&bp, &backend, "journal-b", &posture_b)
+             .is_err()
+     );
+-    let b = OriginalJournalDestination::start_with_mode(
+-        &bp,
+-        &backend,
+-        "journal-b",
+-        &posture_b,
+-        super::stop::VmmMode::HelperFixture,
+-    )?;
++    let mut b_vm = lifetime_fixture("journal-b")?;
++    let b = OriginalJournalDestination::start_custodied(&bp, &backend, "journal-b", &posture_b)?;
+     b.require_ready()?;
+     let signed_recv = b.original_receive()?.clone();
+     let grants = Arc::new(JournalCredentials {
+@@ -296,13 +302,8 @@ fn run() -> Result<()> {
+             .launch_custodied_source(&ap, &backend, "journal-a", &posture_a)
+             .is_err()
+     );
+-    let mut a = admission.launch_source_with_mode(
+-        &ap,
+-        &backend,
+-        "journal-a",
+-        &posture_a,
+-        super::stop::VmmMode::HelperFixture,
+-    )?;
++    let mut a_vm = lifetime_fixture("journal-a")?;
++    let mut a = admission.launch_custodied_source(&ap, &backend, "journal-a", &posture_a)?;
+     a.require_ready()?;
+     let message = OutboxMessage::new(direction.address.recipient, (0..=255).chain([0]).collect());
+     let mut receipt = None;
+@@ -382,25 +383,57 @@ fn run() -> Result<()> {
+         "ORIGINAL_TRANSACTION first_connection_through_b_ack_ns={}",
+         transaction.elapsed().as_nanos()
+     );
+-    drop(guest);
++    // A holds a real mux connection waiting for the next guest frame. B has
++    // no listener and may be in reconnect backoff. The SDK and both original
++    // state directories stay alive throughout. Stop only A first.
++    let _a_idle = guest_stream(&guest, deadline)?;
+     drop(b_guest);
+-
+-    // Withdraw only the synthetic runtime state from this fixture. The helpers
+-    // observe this normally and the caller waits on the real original handles.
+-    for name in ["journal-a", "journal-b"] {
+-        let state = mvm_core::config::vm_state_dir(name);
+-        std::fs::rename(&state, state.with_file_name(format!("{name}-retired")))?;
+-    }
+-    let until = Instant::now() + Duration::from_secs(9);
++    let before = Instant::now();
++    a_vm.kill()?;
++    a_vm.wait()?;
++    let until = Instant::now() + Duration::from_secs(2);
++    let outcome = loop {
++        if let Some(status) = a.try_collect()? {
++            break status;
++        }
++        ensure!(
++            Instant::now() < until,
++            "original A did not retire with its VMM"
++        );
++        std::thread::sleep(Duration::from_millis(5));
++    };
++    ensure!(outcome.success() && b.lock().unwrap().try_collect()?.is_none());
++    eprintln!(
++        "ORIGINAL_A_UNASSISTED_EXIT_NS={}",
++        before.elapsed().as_nanos()
++    );
++    ensure!(b_vm.try_wait()?.is_none());
++    let before = Instant::now();
++    b_vm.kill()?;
++    b_vm.wait()?;
++    let until = Instant::now() + Duration::from_secs(2);
+     loop {
+-        let ea = a.try_collect()?;
+-        let eb = b.lock().unwrap().try_collect()?;
+-        if let (Some(a), Some(b)) = (ea, eb) {
+-            ensure!(a.success() && b.success());
++        if let Some(status) = b.lock().unwrap().try_collect()? {
++            ensure!(status.success());
+             break;
+         }
+-        ensure!(Instant::now() < until, "original helpers did not retire");
+-        std::thread::sleep(Duration::from_millis(20));
++        ensure!(
++            Instant::now() < until,
++            "original B did not retire with its VMM"
++        );
++        std::thread::sleep(Duration::from_millis(5));
++    }
++    eprintln!(
++        "ORIGINAL_B_UNASSISTED_EXIT_NS={}",
++        before.elapsed().as_nanos()
++    );
++    for name in ["journal-a", "journal-b"] {
++        ensure!(mvm_core::config::vm_state_dir(name).is_dir());
++        ensure!(
++            mvm_core::config::vm_mailbox_original_owner_at(&keys, name)
++                .join(super::MARKER)
++                .exists()
++        );
+     }
+     Ok(())
+ }
+diff --git a/crates/mvm-hostd/src/mailbox_process/original_journal/relay.rs b/crates/mvm-hostd/src/mailbox_process/original_journal/relay.rs
+index 9a68ed9df..afa843fc6 100644
+--- a/crates/mvm-hostd/src/mailbox_process/original_journal/relay.rs
++++ b/crates/mvm-hostd/src/mailbox_process/original_journal/relay.rs
+@@ -304,11 +304,8 @@ impl PairedJournalAdmission {
+                     };
+                     config.keys.outbound_source = Some(delegated);
+                     let listener = OwnedListener::bind(&config.vm_state_dir)?;
+-                    let (mut source, marker) =
+-                        super::spawn_claimed(&guard.owner_dir, super::super::serving_command()?)?;
+-                    let readiness = super::super::configure_serving(config, &mut source)
+-                        .err()
+-                        .map(|e| e.to_string());
++                    let (source, marker, readiness) =
++                        stop.spawn_helper(config, &guard.owner_dir)?;
+                     Ok(OriginalJournalSourceHost {
+                         source,
+                         boot: boot.clone(),
+diff --git a/crates/mvm-hostd/src/mailbox_process/original_journal/stop.rs b/crates/mvm-hostd/src/mailbox_process/original_journal/stop.rs
+index 761134bb2..f950fc19a 100644
+--- a/crates/mvm-hostd/src/mailbox_process/original_journal/stop.rs
++++ b/crates/mvm-hostd/src/mailbox_process/original_journal/stop.rs
+@@ -86,6 +86,33 @@ impl StopCustody {
+             sdk_cleanup: None,
+         })
+     }
++    pub(super) fn spawn_helper(
++        &self,
++        config: &crate::mailbox_process::MailboxProcessConfig,
++        owner_dir: &std::path::Path,
++    ) -> Result<(Child, OriginalMarker, Option<String>)> {
++        let mut command = super::super::serving_command()?;
++        let original = self
++            .vmm
++            .as_ref()
++            .map(|(id, _)| super::super::lifetime::OriginalVmm::from_held(*id))
++            .transpose()?;
++        if original.is_some() {
++            command.arg(super::super::ORIGINAL_JOURNAL_V1);
++        }
++        let (mut child, marker) = super::spawn_claimed(owner_dir, command)?;
++        let readiness = match original {
++            Some(original_vmm_v1) => super::super::configure_serving(
++                &super::super::OriginalJournalStartup {
++                    config,
++                    original_vmm_v1,
++                },
++                &mut child,
++            ),
++            None => super::super::configure_serving(config, &mut child),
++        };
++        Ok((child, marker, readiness.err().map(|e| e.to_string())))
++    }
+     pub(super) fn observe_helper(
+         &self,
+         marker: &mut OriginalMarker,
+@@ -289,7 +316,14 @@ fn collect_after_vm(
+         );
+         *kernel_exit_observed = true;
+     }
+-    let natural = Instant::now() + Duration::from_millis(250);
++    // Allow one admitted in-flight exchange to unwind. An idle helper wakes
++    // on kernel exit during backoff or at its next first-byte poll. Reserve a
++    // short collection interval inside the caller's existing total deadline.
++    let now = Instant::now();
++    let remaining = until.saturating_duration_since(now);
++    let reserve = Duration::from_millis(250).min(remaining / 4);
++    let natural =
++        now + (remaining - reserve).min(crate::mailbox_service::durable::GUEST_EXCHANGE_TIMEOUT);
+     loop {
+         if let Some(status) = child.try_wait()? {
+             return Ok(status);
+diff --git a/crates/mvm-hostd/src/mailbox_service/durable.rs b/crates/mvm-hostd/src/mailbox_service/durable.rs
+index 6cd4a7d1b..701ec4d46 100644
+--- a/crates/mvm-hostd/src/mailbox_service/durable.rs
++++ b/crates/mvm-hostd/src/mailbox_service/durable.rs
+@@ -38,7 +38,7 @@ use super::{
+ };
+ 
+ const ACCEPT_POLL: std::time::Duration = std::time::Duration::from_millis(20);
+-const GUEST_EXCHANGE_TIMEOUT: Duration = Duration::from_secs(12);
++pub(crate) const GUEST_EXCHANGE_TIMEOUT: Duration = Duration::from_secs(12);
+ const MAX_EXPIRY_RECORDS_PER_REQUEST: usize = 8;
+ 
+ pub(crate) struct GuestDeadline<'a> {

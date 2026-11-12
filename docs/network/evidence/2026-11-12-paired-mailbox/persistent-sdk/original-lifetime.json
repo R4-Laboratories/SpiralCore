@@ -1,0 +1,160 @@
+{
+  "scope": "Linux local original mvm-mailbox executable pair, Unix socket fixture guest traffic and two actual process-lifetime stand-ins; no VM launched",
+  "mvm_source": {
+    "base": "8b5e86b2d822cfecc03b2288d554a8bd953a0c78",
+    "regression": "c1ca1f3ab11b4da80a0efadbb33b39279e7c45b1",
+    "fixed": "628bf93a2573b21287776dab1c9ac89621242d59",
+    "fixed_tree": "9672ab8a1a055e224422af28459d1b4f90c40fb2",
+    "patch_sha256": "a1963c4edca46b4f3ef256ddd60de678535eb6135e47a66cc0372e2afadf1201"
+  },
+  "regression": {
+    "authenticated_return_completed": true,
+    "readback_bytes": 257,
+    "source_helper_exit_confirmed_by_2000_ms": false,
+    "limitation": "The first deadline refusal stops this fixture before checking B."
+  },
+  "fixed": {
+    "relay": [
+      {
+        "turn": 0,
+        "sealed_to_b": 5498,
+        "b_reply_to_a": 1128
+      },
+      {
+        "turn": 1,
+        "sealed_to_b": 5498,
+        "b_reply_to_a": 1128
+      },
+      {
+        "turn": 2,
+        "sealed_to_b": 5498,
+        "b_reply_to_a": 1128
+      }
+    ],
+    "source_verdict": [
+      {
+        "turn": 1,
+        "guest_submit_to_verified_v2_ns": 18901053
+      },
+      {
+        "turn": 2,
+        "guest_submit_to_verified_v2_ns": 20540703
+      }
+    ],
+    "source_guest": [
+      {
+        "turn": 1,
+        "plaintext_bytes": 257,
+        "guest_submit_bytes": 325,
+        "guest_receipt_bytes": 1128
+      },
+      {
+        "turn": 2,
+        "plaintext_bytes": 257,
+        "guest_submit_bytes": 325,
+        "guest_receipt_bytes": 1128
+      }
+    ],
+    "destination_reader": {
+      "exact_bytes": 257,
+      "receive_guest_to_helper": 357,
+      "receive_helper_to_guest": 5654,
+      "ack_guest_to_helper": 2203,
+      "ack_helper_to_guest": 2207
+    },
+    "first_guest_connection_through_verified_destination_ack_ns": 57991630,
+    "source_process_exit_through_helper_exit_ns": 206619500,
+    "destination_process_exit_through_helper_exit_ns": 15665985,
+    "helper_exit_codes": [
+      0,
+      0
+    ],
+    "assisted": [
+      false,
+      false
+    ]
+  },
+  "resource_replication": {
+    "relay": [
+      {
+        "turn": 0,
+        "sealed_to_b": 5520,
+        "b_reply_to_a": 1139
+      },
+      {
+        "turn": 1,
+        "sealed_to_b": 5520,
+        "b_reply_to_a": 1139
+      },
+      {
+        "turn": 2,
+        "sealed_to_b": 5520,
+        "b_reply_to_a": 1139
+      }
+    ],
+    "source_verdict": [
+      {
+        "turn": 1,
+        "guest_submit_to_verified_v2_ns": 19699422
+      },
+      {
+        "turn": 2,
+        "guest_submit_to_verified_v2_ns": 20972545
+      }
+    ],
+    "source_guest": [
+      {
+        "turn": 1,
+        "plaintext_bytes": 257,
+        "guest_submit_bytes": 325,
+        "guest_receipt_bytes": 1139
+      },
+      {
+        "turn": 2,
+        "plaintext_bytes": 257,
+        "guest_submit_bytes": 325,
+        "guest_receipt_bytes": 1139
+      }
+    ],
+    "destination_reader": {
+      "exact_bytes": 257,
+      "receive_guest_to_helper": 351,
+      "receive_helper_to_guest": 5671,
+      "ack_guest_to_helper": 2210,
+      "ack_helper_to_guest": 2214
+    },
+    "first_guest_connection_through_verified_destination_ack_ns": 59885995,
+    "source_process_exit_through_helper_exit_ns": 206249151,
+    "destination_process_exit_through_helper_exit_ns": 15554884,
+    "helper_exit_codes": [
+      0,
+      0
+    ],
+    "assisted": [
+      false,
+      false
+    ]
+  },
+  "resource_replication_whole_test_including_waited_children": {
+    "wall_s": 0.31,
+    "user_cpu_s": 0.04,
+    "system_cpu_s": 0.01,
+    "max_rss_kib": 41604
+  },
+  "tests": {
+    "mailbox_process_pass": 40,
+    "separately_executed_ignored_pair_pass": 1
+  },
+  "executable_sha256": {
+    "mvm_hostd_lib_test": "1b10078d077448eecb7b615cd5626318141888b4b9830bf9f5648c78f52966d2",
+    "mvm_mailbox": "9fbd65af84acd55145af4177555dc6629b358c9f8b41c4a1e4711b6fa183842e"
+  },
+  "retained_log_sha256": {
+    "grace-build.log": "68c487ff60ffa7d59b4c17c2c8632812d270787f3bde1b5563f414cdb17cd205",
+    "grace-hostd.log": "560a8b851bd369d13ad92e2645fb8ed245fcfdb1517626f20ae9b047132b78a1",
+    "grace-pair.log": "db3f33a3bcf42cd4eae48397ee2d1490769bd6fee991c5146fa09d325bd81da8",
+    "grace-red.log": "ad50a6e7dcf6f1b3c8de04e72b2f03e7c735027e93499c708effc2eb7adec923",
+    "grace-timed-pair.log": "f99a4fca03199e726f23dad0ebcecafdf1f7decd1db481b293ad3ac63aa4fe27",
+    "grace-timed-resources.log": "79dc9eef28a056ad92efbf130ce2afc1ac7e1d31f20aedcc1c15ff445bb6c800"
+  }
+}
