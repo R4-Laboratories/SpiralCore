@@ -1,0 +1,102 @@
+{
+  "source": "f9cf39bc389679873cd0264383aa0e4f27de92fc",
+  "classification": "native Windows process, failed component/collector gates; not WAN or MVM host",
+  "receipts": [
+    {
+      "artifact": {
+        "id": 13810515393,
+        "node_id": "MDg6QXJ0aWZhY3QxMzgxMDUxNTM5Mw==",
+        "name": "flowmux-windows-timing-1",
+        "size_in_bytes": 4787,
+        "url": "https://api.github.com/repos/R4-Laboratories/SpiralCore/actions/artifacts/13810515393",
+        "archive_download_url": "https://api.github.com/repos/R4-Laboratories/SpiralCore/actions/artifacts/13810515393/zip",
+        "expired": false,
+        "digest": "sha256:569fe25038047b2d13cd908b52c589cf32cad38460f2967068537d6a11ca9aac",
+        "created_at": "2026-11-10T22:37:31Z",
+        "updated_at": "2026-11-10T22:37:31Z",
+        "expires_at": "2026-11-24T22:37:30Z",
+        "workflow_run": {
+          "id": 42915575599,
+          "repository_id": 1433848227,
+          "head_repository_id": 1433848227,
+          "head_branch": "codex/spiralcore-ordered-scope-main",
+          "head_sha": "f9cf39bc389679873cd0264383aa0e4f27de92fc"
+        }
+      },
+      "archive": "windows2025-timing-failed.zip",
+      "archive_sha256": "569fe25038047b2d13cd908b52c589cf32cad38460f2967068537d6a11ca9aac",
+      "inner_files_verified": 3,
+      "source_identity": {
+        "os": "Windows",
+        "attempt": "1",
+        "source": "67b9d5eb509fdad2ec8b0ed85cbfa2cb1636499c",
+        "tree": "a6e431a6ff85a8af2d71dc266dba5372af7edaa6",
+        "blocks_each_direction": 4096,
+        "scope": "instrumented native process; both peers on one runner; no MVM backend or WAN",
+        "lock_sha256": "3D549BC7F9A94A4BF057B19BA7C3E1106B5E89B7CB19433A6BAAA1BA15C5E385",
+        "watchdog_seconds": 240,
+        "image": "20261103.298.1",
+        "arch": "X64",
+        "features": "witness-timing",
+        "run": "42915575599"
+      },
+      "tested_tree": "a6e431a6ff85a8af2d71dc266dba5372af7edaa6",
+      "tree_matches": true,
+      "timing_rows": [
+        "ORDERED_WITNESS success=false witness_timing=true snapshot=concurrent wall_us=137719083 original_gate_us=240000000 setup_wall_us=101080 setup_process_cpu_us=Some(15625) process_cpu_to_snapshot_us=Some(52968750) progress_write_ack_left_right_read_left_right=[1720, 1720, 1720, 1720] actual_tls=[TlsCounters { received: 2266571, sent: 2266614 }, TlsCounters { received: 2266614, sent: 2266777 }] scopes=unavailable_nonblocking scope_status_at_existing_failure_assertion=see_original_error rss_kib=None hwm_kib=None",
+        "ORDERED_TIMING_STORAGE outside_small_v1=true fixed_owner_heap_requested_bytes=7200 observer_handles_bytes=96 one_snapshot_value_bytes=1784 allocator_bookkeeping=excluded fixed_progress_bytes=48 retention_nonblocking=[Ok(Some(OrderedSnapshot { attempts: 1, publications: 64, cache_bytes: 1051712, pinned: 0, evictions: 1657 })), Ok(Some(OrderedSnapshot { attempts: 1, publications: 63, cache_bytes: 1035279, pinned: 0, evictions: 1657 }))]",
+        "ORDERED_TIMING slot=0 order=tls_left,tls_right,duplex_left,duplex_right snapshot=concurrent overlapping_elapsed_not_cpu {\"overflow\": false, PauseRequested(Handshake): SpanSnapshot { count: 2, total_ns: 2000000, max_ns: 1000000 }, PauseRequested(Session): SpanSnapshot { count: 1790, total_ns: 1790000000, max_ns: 1000000 }, PauseRequested(Read): SpanSnapshot { count: 53, total_ns: 53000000, max_ns: 1000000 }, PauseRequested(Write): SpanSnapshot { count: 207, total_ns: 207000000, max_ns: 1000000 }, PauseRequested(Flush): SpanSnapshot { count: 99, total_ns: 99000000, max_ns: 1000000 }, PauseActual(Handshake): SpanSnapshot { count: 2, total_ns: 26859600, max_ns: 15511300 }, PauseActual(Session): SpanSnapshot { count: 1790, total_ns: 15762247100, max_ns: 16628700 }, PauseActual(Read): SpanSnapshot { count: 53, total_ns: 489846500, max_ns: 15975700 }, PauseActual(Write): SpanSnapshot { count: 207, total_ns: 2171124700, max_ns: 16047400 }, PauseActual(Flush): SpanSnapshot { count: 99, total_ns: 876630100, max_ns: 16424600 }, Poll(Requested): SpanSnapshot { count: 16854, total_ns: 335805357100, max_ns: 19999400 }, Poll(Actual): SpanSnapshot { count: 16854, total_ns: 36312990800, max_ns: 35346800 }, Poll(SocketRead): SpanSnapshot { count: 7623, total_ns: 0, max_ns: 0 }, Poll(Wake): SpanSnapshot { count: 9709, total_ns: 0, max_ns: 0 }, Poll(Empty): SpanSnapshot { count: 588, total_ns: 0, max_ns: 0 }, Count(SessionOperation): SpanSnapshot { count: 68428, total_ns: 417457300, max_ns: 11857000 }, Count(SessionContended): SpanSnapshot { count: 2148, total_ns: 0, max_ns: 0 }}",
+        "ORDERED_TIMING slot=1 order=tls_left,tls_right,duplex_left,duplex_right snapshot=concurrent overlapping_elapsed_not_cpu {\"overflow\": false, PauseRequested(Handshake): SpanSnapshot { count: 4, total_ns: 4000000, max_ns: 1000000 }, PauseRequested(Session): SpanSnapshot { count: 1677, total_ns: 1677000000, max_ns: 1000000 }, PauseRequested(Read): SpanSnapshot { count: 38, total_ns: 38000000, max_ns: 1000000 }, PauseRequested(Write): SpanSnapshot { count: 178, total_ns: 178000000, max_ns: 1000000 }, PauseRequested(Flush): SpanSnapshot { count: 109, total_ns: 109000000, max_ns: 1000000 }, PauseActual(Handshake): SpanSnapshot { count: 4, total_ns: 27047200, max_ns: 15901200 }, PauseActual(Session): SpanSnapshot { count: 1677, total_ns: 13293386100, max_ns: 16631400 }, PauseActual(Read): SpanSnapshot { count: 38, total_ns: 305717500, max_ns: 15983500 }, PauseActual(Write): SpanSnapshot { count: 178, total_ns: 1045965600, max_ns: 16263300 }, PauseActual(Flush): SpanSnapshot { count: 109, total_ns: 475483200, max_ns: 15968600 }, Poll(Requested): SpanSnapshot { count: 17404, total_ns: 346945262300, max_ns: 19999400 }, Poll(Actual): SpanSnapshot { count: 17404, total_ns: 42669918600, max_ns: 35446500 }, Poll(SocketRead): SpanSnapshot { count: 7812, total_ns: 0, max_ns: 0 }, Poll(Wake): SpanSnapshot { count: 10055, total_ns: 0, max_ns: 0 }, Poll(Empty): SpanSnapshot { count: 671, total_ns: 0, max_ns: 0 }, Poll(OwnerRefused): SpanSnapshot { count: 1, total_ns: 0, max_ns: 0 }, Count(SessionOperation): SpanSnapshot { count: 68992, total_ns: 392808700, max_ns: 1946600 }, Count(SessionContended): SpanSnapshot { count: 2002, total_ns: 0, max_ns: 0 }}",
+        "ORDERED_TIMING slot=2 order=tls_left,tls_right,duplex_left,duplex_right snapshot=concurrent overlapping_elapsed_not_cpu {\"overflow\": false, Frame(SenderLock, Begin): SpanSnapshot { count: 1721, total_ns: 1324171800, max_ns: 17110800 }, Frame(SenderLock, Data): SpanSnapshot { count: 1721, total_ns: 226500, max_ns: 500 }, Frame(SenderLock, Commit): SpanSnapshot { count: 1720, total_ns: 15954300, max_ns: 15752200 }, Frame(SenderSend, Begin): SpanSnapshot { count: 1721, total_ns: 426758800, max_ns: 15302400 }, Frame(SenderSend, Data): SpanSnapshot { count: 1721, total_ns: 956463700, max_ns: 16232400 }, Frame(SenderSend, Commit): SpanSnapshot { count: 1720, total_ns: 1865510400, max_ns: 16457000 }, Frame(SenderWait, Begin): SpanSnapshot { count: 1721, total_ns: 28390094200, max_ns: 474911700 }, Frame(SenderWait, Data): SpanSnapshot { count: 1721, total_ns: 20860368400, max_ns: 1541209200 }, Frame(SenderWait, Commit): SpanSnapshot { count: 1720, total_ns: 83157620000, max_ns: 1461753500 }, Frame(ReceiverHandle, Begin): SpanSnapshot { count: 1721, total_ns: 10706280400, max_ns: 18882400 }, Frame(ReceiverHandle, Data): SpanSnapshot { count: 1721, total_ns: 15964200, max_ns: 52000 }, Frame(ReceiverHandle, Commit): SpanSnapshot { count: 1721, total_ns: 68313371900, max_ns: 1540354900 }, Frame(ReceiverLock, Begin): SpanSnapshot { count: 1721, total_ns: 571531400, max_ns: 23848000 }, Frame(ReceiverLock, Data): SpanSnapshot { count: 1721, total_ns: 3103079800, max_ns: 31571300 }, Frame(ReceiverLock, Commit): SpanSnapshot { count: 1720, total_ns: 17682600, max_ns: 17385300 }, Frame(ReceiverSend, Begin): SpanSnapshot { count: 1721, total_ns: 63044700, max_ns: 472100 }, Frame(ReceiverSend, Data): SpanSnapshot { count: 1721, total_ns: 43036100, max_ns: 465000 }, Frame(ReceiverSend, Commit): SpanSnapshot { count: 1720, total_ns: 92441300, max_ns: 206300 }, Count(SenderLockContended): SpanSnapshot { count: 227, total_ns: 0, max_ns: 0 }, Count(ReceiverLockContended): SpanSnapshot { count: 452, total_ns: 0, max_ns: 0 }, Count(WaitOk): SpanSnapshot { count: 5161, total_ns: 0, max_ns: 0 }, Count(WaitDisconnected): SpanSnapshot { count: 1, total_ns: 0, max_ns: 0 }, Count(Ack): SpanSnapshot { count: 1720, total_ns: 0, max_ns: 0 }}",
+        "ORDERED_TIMING slot=3 order=tls_left,tls_right,duplex_left,duplex_right snapshot=concurrent overlapping_elapsed_not_cpu {\"overflow\": false, Frame(SenderLock, Begin): SpanSnapshot { count: 1721, total_ns: 636969800, max_ns: 16786700 }, Frame(SenderLock, Data): SpanSnapshot { count: 1721, total_ns: 216700, max_ns: 500 }, Frame(SenderLock, Commit): SpanSnapshot { count: 1721, total_ns: 221600, max_ns: 18600 }, Frame(SenderSend, Begin): SpanSnapshot { count: 1721, total_ns: 343813900, max_ns: 14978200 }, Frame(SenderSend, Data): SpanSnapshot { count: 1721, total_ns: 607337200, max_ns: 15927800 }, Frame(SenderSend, Commit): SpanSnapshot { count: 1721, total_ns: 755134800, max_ns: 16371000 }, Frame(SenderWait, Begin): SpanSnapshot { count: 1721, total_ns: 29746781800, max_ns: 531846100 }, Frame(SenderWait, Data): SpanSnapshot { count: 1721, total_ns: 18953502100, max_ns: 1079026000 }, Frame(SenderWait, Commit): SpanSnapshot { count: 1721, total_ns: 85871286400, max_ns: 1461732500 }, Frame(ReceiverHandle, Begin): SpanSnapshot { count: 1721, total_ns: 10693595600, max_ns: 41163600 }, Frame(ReceiverHandle, Data): SpanSnapshot { count: 1721, total_ns: 15557600, max_ns: 58100 }, Frame(ReceiverHandle, Commit): SpanSnapshot { count: 1720, total_ns: 65179093500, max_ns: 1445129500 }, Frame(ReceiverLock, Begin): SpanSnapshot { count: 1721, total_ns: 232741900, max_ns: 26360600 }, Frame(ReceiverLock, Data): SpanSnapshot { count: 1721, total_ns: 2815804000, max_ns: 31538600 }, Frame(ReceiverLock, Commit): SpanSnapshot { count: 1720, total_ns: 378400, max_ns: 900 }, Frame(ReceiverSend, Begin): SpanSnapshot { count: 1721, total_ns: 56185200, max_ns: 199600 }, Frame(ReceiverSend, Data): SpanSnapshot { count: 1721, total_ns: 38408700, max_ns: 161800 }, Frame(ReceiverSend, Commit): SpanSnapshot { count: 1720, total_ns: 91370000, max_ns: 196500 }, Count(SenderLockContended): SpanSnapshot { count: 207, total_ns: 0, max_ns: 0 }, Count(ReceiverLockContended): SpanSnapshot { count: 404, total_ns: 0, max_ns: 0 }, Count(WaitOk): SpanSnapshot { count: 5162, total_ns: 0, max_ns: 0 }, Count(WaitTimeout): SpanSnapshot { count: 1, total_ns: 0, max_ns: 0 }, Count(Ack): SpanSnapshot { count: 1720, total_ns: 0, max_ns: 0 }}"
+      ]
+    },
+    {
+      "artifact": {
+        "id": 13808014587,
+        "node_id": "MDg6QXJ0aWZhY3QxMzgwODAxNDU4Nw==",
+        "name": "mvm-mailbox-portable-windows2025-x64-1",
+        "size_in_bytes": 4001,
+        "url": "https://api.github.com/repos/R4-Laboratories/SpiralCore/actions/artifacts/13808014587",
+        "archive_download_url": "https://api.github.com/repos/R4-Laboratories/SpiralCore/actions/artifacts/13808014587/zip",
+        "expired": false,
+        "digest": "sha256:b9280a7c7deecfdfe80a9ea37ff92f60fff1cb8ea1b836bf79ecd00b8a77f4e8",
+        "created_at": "2026-11-10T22:34:16Z",
+        "updated_at": "2026-11-10T22:34:16Z",
+        "expires_at": "2026-11-24T22:34:15Z",
+        "workflow_run": {
+          "id": 42915575247,
+          "repository_id": 1433848227,
+          "head_repository_id": 1433848227,
+          "head_branch": "codex/spiralcore-ordered-scope-main",
+          "head_sha": "f9cf39bc389679873cd0264383aa0e4f27de92fc"
+        }
+      },
+      "archive": "windows2025-coverage-collector-failed.zip",
+      "archive_sha256": "b9280a7c7deecfdfe80a9ea37ff92f60fff1cb8ea1b836bf79ecd00b8a77f4e8",
+      "inner_files_verified": 9,
+      "source_identity": {
+        "row": "windows2025-x64",
+        "source_commit": "67b9d5eb509fdad2ec8b0ed85cbfa2cb1636499c",
+        "github_sha": "67b9d5eb509fdad2ec8b0ed85cbfa2cb1636499c",
+        "run_id": "42915575247",
+        "attempt": "1",
+        "runner_os": "Windows",
+        "runner_arch": "X64",
+        "image_os": "win25-vs2026",
+        "image_version": "20261103.298.1",
+        "os_description": "Microsoft Windows 10.0.26100",
+        "process_architecture": "X64",
+        "os_architecture": "X64",
+        "expected_target": "x86_64-pc-windows-msvc",
+        "classification": "native-process / TCP-loopback / ephemeral",
+        "manifest_sha256": "5857C70369B1BA5042DE8A0D210BFEA0233469DD2005A8102535C8495026DE7A",
+        "lock_sha256": "2133A28A03306B1F148941AE2782876242072F270BD09984854BC3FAEF252748",
+        "windows_version": "10.0.26100.0"
+      },
+      "tested_tree": "a6e431a6ff85a8af2d71dc266dba5372af7edaa6",
+      "tree_matches": true,
+      "timing_rows": []
+    }
+  ]
+}

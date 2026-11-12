@@ -185,6 +185,13 @@ struct Publication {
 }
 static TEMP: AtomicU64 = AtomicU64::new(0);
 
+/// A victim selected by the ordered owner from its bounded verified index.
+pub(crate) struct OrderedEviction {
+    pub(crate) id: Id,
+    pub(crate) len: u64,
+    pub(crate) disk: u64,
+}
+
 impl<A: Authority> Endpoint<A> {
     pub(crate) fn authorize(&self, context: &Context) -> Result<()> {
         self.authority.authorize(context)
@@ -472,6 +479,15 @@ impl<A: Authority> Endpoint<A> {
         self.handle(c, &Frame::decode(b)?, now)?.encode()
     }
     pub fn handle(&mut self, c: &Context, f: &Frame, now: u64) -> Result<Frame> {
+        self.handle_with_evictions(c, f, now, &[])
+    }
+    pub(crate) fn handle_with_evictions(
+        &mut self,
+        c: &Context,
+        f: &Frame,
+        now: u64,
+        evictions: &[OrderedEviction],
+    ) -> Result<Frame> {
         self.authority.authorize(c)?;
         let ns = c.namespace()?;
         if self.resources == crate::resource_profile::ResourceProfile::SmallV1
@@ -490,6 +506,12 @@ impl<A: Authority> Endpoint<A> {
         }
         self.sweep(now);
         let key = (ns, f.transfer);
+        if !evictions.is_empty() {
+            self.ordered_bounds()?;
+            if f.kind != 1 || f.seq != 0 || self.attempts.contains_key(&key) {
+                return Err(Error::Sequence);
+            }
+        }
         let digest = hash(b"spiralcore.object.request.v1\0", &[&wire]);
         if !self.attempts.contains_key(&key) {
             if f.seq != 0 {
@@ -519,7 +541,9 @@ impl<A: Authority> Endpoint<A> {
             if f.kind != 1 {
                 return Err(Error::Unknown);
             }
-            return self.begin(c, ns, f, digest, now);
+            let reply = self.begin(c, ns, f, digest, now, evictions)?;
+            self.apply_ordered_evictions(c, evictions)?;
+            return Ok(reply);
         }
         let mut s = self.attempts.remove(&key).ok_or(Error::Unknown)?;
         let result = (|| {
@@ -570,7 +594,15 @@ impl<A: Authority> Endpoint<A> {
         self.attempts.insert(key, s);
         result
     }
-    fn begin(&mut self, c: &Context, ns: Id, f: &Frame, digest: Id, now: u64) -> Result<Frame> {
+    fn begin(
+        &mut self,
+        c: &Context,
+        ns: Id,
+        f: &Frame,
+        digest: Id,
+        now: u64,
+        evictions: &[OrderedEviction],
+    ) -> Result<Frame> {
         let offer = Offer::decode(&f.body)?;
         if self.attempts.len() >= self.limits.max_states
             || self.attempts.values().filter(|s| s.state == 0).count() >= self.limits.max_active
@@ -584,9 +616,11 @@ impl<A: Authority> Endpoint<A> {
             }
         }
         if matches!(existing, Err(Error::Unknown)) {
-            self.admit_disk(ns, &offer)?;
+            self.admit_disk(ns, &offer, evictions)?;
         } else if let Err(e) = existing {
             return Err(e);
+        } else if !evictions.is_empty() {
+            return Err(Error::Integrity);
         }
         // Charge conservative peak allocations, including construction/indexes and two output buffers.
         let mut charge = offer.len.checked_mul(2).ok_or(Error::Limit)?;
@@ -1143,32 +1177,41 @@ impl<A: Authority> Endpoint<A> {
         Err(Error::Missing)
     }
     fn disk_usage(&self, ns: Id) -> Result<(u64, u64, usize)> {
-        let mut all = 0u64;
-        let mut scoped = 0u64;
-        let mut count = 0;
-        for d in fs::read_dir(&self.root)? {
-            let d = d?;
-            if !d.file_type()?.is_dir() || !canonical_namespace(&d.file_name().to_string_lossy()) {
-                continue;
-            }
-            private_dir(&d.path())?;
-            for f in fs::read_dir(d.path())? {
-                let f = f?;
-                if !f.file_type()?.is_file() || f.path().extension().is_none_or(|s| s != "object") {
+        #[cfg(windows)]
+        return storage::quota_usage(&self.root, &hex(&ns), self.limits.max_publications);
+        #[cfg(not(windows))]
+        {
+            let mut all = 0u64;
+            let mut scoped = 0u64;
+            let mut count = 0;
+            for d in fs::read_dir(&self.root)? {
+                let d = d?;
+                if !d.file_type()?.is_dir()
+                    || !canonical_namespace(&d.file_name().to_string_lossy())
+                {
                     continue;
                 }
-                let n = storage::open_read(&f.path())?.metadata()?.len();
-                all = all.checked_add(n).ok_or(Error::Limit)?;
-                if d.file_name() == hex(&ns).as_str() {
-                    scoped = scoped.checked_add(n).ok_or(Error::Limit)?;
-                }
-                count += 1;
-                if count > self.limits.max_publications {
-                    return Err(Error::Limit);
+                private_dir(&d.path())?;
+                for f in fs::read_dir(d.path())? {
+                    let f = f?;
+                    if !f.file_type()?.is_file()
+                        || f.path().extension().is_none_or(|s| s != "object")
+                    {
+                        continue;
+                    }
+                    let n = storage::quota_file_len(&f.path())?;
+                    all = all.checked_add(n).ok_or(Error::Limit)?;
+                    if d.file_name() == hex(&ns).as_str() {
+                        scoped = scoped.checked_add(n).ok_or(Error::Limit)?;
+                    }
+                    count += 1;
+                    if count > self.limits.max_publications {
+                        return Err(Error::Limit);
+                    }
                 }
             }
+            Ok((scoped, all, count))
         }
-        Ok((scoped, all, count))
     }
     fn publish(
         &self,
@@ -1244,8 +1287,175 @@ impl<A: Authority> Endpoint<A> {
         self.authority.authorize(c)?;
         Ok(bytes)
     }
-    fn admit_disk(&self, ns: Id, offer: &Offer) -> Result<()> {
+    // Only the explicit ordered Small facade may retire/evict. Ordinary v1
+    // endpoints retain their original replay and archival behavior.
+    pub(crate) fn ordered_bounds(&self) -> Result<(usize, u64, u64)> {
+        if self.resources != crate::resource_profile::ResourceProfile::SmallV1 {
+            return Err(Error::Unsupported);
+        }
+        Ok((
+            self.limits.max_publications,
+            self.limits.namespace_bytes,
+            self.limits.cache_bytes,
+        ))
+    }
+    pub(crate) fn ordered_attempt_count(&self, c: &Context) -> Result<usize> {
+        self.authority.authorize(c)?;
+        let ns = c.namespace()?;
+        if self.attempts.keys().any(|(space, _)| *space != ns) {
+            return Err(Error::Unauthorized);
+        }
+        Ok(self.attempts.len())
+    }
+    pub(crate) fn ordered_active_objects(&self, c: &Context) -> Result<BTreeSet<Id>> {
+        self.authority.authorize(c)?;
+        self.ordered_bounds()?;
+        let ns = c.namespace()?;
+        let mut pinned = BTreeSet::new();
+        for ((space, _), attempt) in &self.attempts {
+            if *space != ns {
+                return Err(Error::Unauthorized);
+            }
+            if attempt.state == 0 {
+                pinned.insert(attempt.offer.object);
+                if let Some(base) = attempt.offer.base {
+                    pinned.insert(base);
+                }
+            }
+        }
+        Ok(pinned)
+    }
+    pub(crate) fn ordered_retire(&mut self, c: &Context, transfer: Id) -> Result<()> {
+        self.authority.authorize(c)?;
+        self.ordered_bounds()?;
+        let key = (c.namespace()?, transfer);
+        if self
+            .attempts
+            .get(&key)
+            .is_some_and(|attempt| attempt.state != 1)
+        {
+            return Err(Error::Sequence);
+        }
+        // A successful Probe has no attempt; an expired terminal record may
+        // already have been collected by the unchanged ordinary TTL sweep.
+        self.attempts.remove(&key);
+        Ok(())
+    }
+    pub(crate) fn ordered_cache_scan(&self, c: &Context) -> Result<Vec<(Id, u64, u64)>> {
+        self.authority.authorize(c)?;
+        self.ordered_bounds()?;
+        let ns = c.namespace()?;
+        let namespace = hex(&ns);
+        let mut records = Vec::new();
+        for entry in fs::read_dir(&self.root)? {
+            let entry = entry?;
+            let name = entry.file_name();
+            if name == ".owner" || name == ".spiralcore-profile-v1" {
+                continue;
+            }
+            if !entry.file_type()?.is_dir() || name != namespace.as_str() {
+                return Err(Error::Storage);
+            }
+            private_dir(&entry.path())?;
+            for file in fs::read_dir(entry.path())? {
+                let file = file?;
+                if !file.file_type()?.is_file() || records.len() >= self.limits.max_publications {
+                    return Err(Error::Limit);
+                }
+                let publication = read_meta(&file.path())?;
+                if publication.len > self.resources.max_artifact_len() as u64
+                    || file.file_name() != format!("{}.object", hex(&publication.object)).as_str()
+                {
+                    return Err(Error::Integrity);
+                }
+                self.reserve(publication.len.checked_mul(2).ok_or(Error::Limit)?)?;
+                // Scan uses one bounded verification buffer at a time; the
+                // retained index contains IDs/scalars, never copied paths.
+                drop(read_publication(&publication)?);
+                let disk = publication
+                    .len
+                    .checked_add(if publication.manifest.is_some() {
+                        81
+                    } else {
+                        49
+                    })
+                    .ok_or(Error::Limit)?;
+                records.push((publication.object, publication.len, disk));
+            }
+        }
+        self.authority.authorize(c)?;
+        Ok(records)
+    }
+    pub(crate) fn ordered_cache_meta(&self, c: &Context, id: Id) -> Result<(u64, u64)> {
+        self.authority.authorize(c)?;
+        self.ordered_bounds()?;
+        let p = self.publication(c.namespace()?, id)?;
+        if p.len > self.resources.max_artifact_len() as u64 {
+            return Err(Error::Limit);
+        }
+        self.reserve(p.len.checked_mul(2).ok_or(Error::Limit)?)?;
+        drop(read_publication(&p)?);
+        self.authority.authorize(c)?;
+        Ok((
+            p.len,
+            p.len
+                .checked_add(if p.manifest.is_some() { 81 } else { 49 })
+                .ok_or(Error::Limit)?,
+        ))
+    }
+    pub(crate) fn ordered_remove_cache(&mut self, c: &Context, id: Id) -> Result<()> {
+        self.authority.authorize(c)?;
+        self.ordered_bounds()?;
+        if self.ordered_active_objects(c)?.contains(&id) {
+            return Err(Error::Limit);
+        }
+        let p = self.publication(c.namespace()?, id)?;
+        if p.len > self.resources.max_artifact_len() as u64 {
+            return Err(Error::Limit);
+        }
+        self.reserve(p.len.checked_mul(2).ok_or(Error::Limit)?)?;
+        drop(read_publication(&p)?);
+        self.authority.authorize(c)?;
+        // Reuse the existing private-file deletion backend under this actual
+        // exclusive endpoint owner; Windows checks ACL/reparse/hardlink state
+        // and applies disposition to its exact opened file handle.
+        storage::remove_stage(&p.path)?;
+        match fs::symlink_metadata(&p.path) {
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(()),
+            _ => Err(Error::Storage),
+        }
+    }
+    fn apply_ordered_evictions(
+        &mut self,
+        c: &Context,
+        evictions: &[OrderedEviction],
+    ) -> Result<()> {
+        // Recheck the whole set before deleting any file. The original
+        // admitted attempt now holds its resident charge and pins its base.
+        for victim in evictions {
+            if self.ordered_cache_meta(c, victim.id).ok() != Some((victim.len, victim.disk)) {
+                return Err(Error::Storage);
+            }
+        }
+        for victim in evictions {
+            self.ordered_remove_cache(c, victim.id)
+                .map_err(|_| Error::Storage)?;
+        }
+        Ok(())
+    }
+    fn admit_disk(&self, ns: Id, offer: &Offer, evictions: &[OrderedEviction]) -> Result<()> {
         let (mut scoped, mut all, mut count) = self.disk_usage(ns)?;
+        // Ordered Small admission projects the exact space to be freed.
+        // The ordered owner performs deletions only after Begin succeeds.
+        for victim in evictions {
+            let bytes = storage::quota_file_len(&self.path(ns, victim.id))?;
+            if bytes != victim.disk {
+                return Err(Error::Storage);
+            }
+            scoped = scoped.checked_sub(bytes).ok_or(Error::Storage)?;
+            all = all.checked_sub(bytes).ok_or(Error::Storage)?;
+            count = count.checked_sub(1).ok_or(Error::Storage)?;
+        }
         let mut pending = BTreeMap::new();
         for ((space, _), s) in &self.attempts {
             if s.state == 0 && !self.path(*space, s.offer.object).exists() {
@@ -1328,7 +1538,12 @@ fn state_reply(f: &Frame, s: &Attempt) -> Frame {
 }
 fn read_meta(path: &Path) -> Result<Publication> {
     match fs::symlink_metadata(path) {
-        Ok(_) => private_file(path)?,
+        Ok(_) => {
+            // Windows open_read validates the actual consumed handle. Its
+            // discarded private_file preflight repeats the same native checks.
+            #[cfg(not(windows))]
+            private_file(path)?;
+        }
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Err(Error::Unknown),
         Err(_) => return Err(Error::Storage),
     }
@@ -1451,3 +1666,7 @@ pub fn decode_zstd(b: &[u8], decoded: usize) -> Result<Vec<u8>> {
 #[cfg(test)]
 #[path = "endpoint/storage/tests.rs"]
 mod storage_tests;
+
+#[cfg(test)]
+#[path = "endpoint/metadata_tests.rs"]
+mod metadata_tests;

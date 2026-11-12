@@ -64,6 +64,12 @@ The intended path is **guest A Submit → original A helper → host coordinator
 | Pull and forward | The coordinator identifies the original source process and reserves memory before its one-byte pull. Reconnecting to A reuses its 32 KiB. A lost response from B retains B’s separate 32 KiB until collection. | [Source pull and exact framing](evidence/2026-11-12-paired-mailbox/source-pull/README.md), [destination ownership](evidence/2026-11-12-paired-mailbox/helper-handoff.md) |
 | Open at B | B rechecks policy when the guest answers. A macOS socket test carried a 4,962-byte peer frame and an 11-byte verdict for five exact payload bytes. | [Destination ingress, CPU and elapsed time](evidence/2026-11-12-paired-mailbox/destination-ingress/README.md) |
 
+## Ordered Small FlowMux streams
+
+The Small profile has a bounded receiver cache, independent application and artifact sequence numbers, and versioned scope commitments covering IPv6 scope and flow fields. The endpoint checks the enrolled profile during negotiation. On Windows, quota enumeration opens children relative to the original owned directory handles. Session and transmit waiters recheck their conditions when ownership changes. [Wire and ownership contract](../api/mvm-flowmux-v1.md) · [Windows storage contract](../api/windows-storage-v1.md)
+
+Earlier Windows Server 2022 x64, Server 2025 x64 and Windows 11 ARM64 localhost tests each carried 4,096 blocks of 16 KiB in each direction. In the separately instrumented Server 2025 test, one run timed out near block 1,120 and the unchanged rerun passed in 217.420 seconds. Those measurements belong to the earlier PR source. The current-base qualification and installed MVM FlowMux integration are tracked in [#44](https://github.com/R4-Laboratories/SpiralCore/issues/44#issuecomment-6827611515).
+
 ## Published checkpoints
 
 | Component | What the checkpoint establishes | Evidence |

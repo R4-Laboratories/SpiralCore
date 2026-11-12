@@ -6,6 +6,7 @@ use spiralcore_transfer::endpoint::Authority;
 use std::time::{Duration, Instant};
 fn facts() -> ScopeFacts {
     ScopeFacts {
+        object_profile: 1,
         policy_sha256: [1; 32],
         plan_id: "actual-plan".into(),
         plan_version: 1,

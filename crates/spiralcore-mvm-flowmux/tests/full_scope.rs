@@ -1,6 +1,7 @@
 use spiralcore_mvm_flowmux::scope::ScopeFacts;
 fn facts() -> ScopeFacts {
     ScopeFacts {
+        object_profile: 1,
         policy_sha256: [1; 32],
         plan_id: "actual-plan-id".into(),
         plan_version: 7,
@@ -20,6 +21,60 @@ fn facts() -> ScopeFacts {
         tls_exporter: [7; 32],
     }
 }
+#[test]
+fn general_scope_keeps_published_ipv4_and_unscoped_ipv6_commitments() {
+    let mut original = facts();
+    for (address, expected) in [
+        (
+            "127.0.0.1:8443",
+            "479316e82d833fb82b8941611b5fe7dad840ae1074168bd22c8c87df7c84a815",
+        ),
+        (
+            "[2001:db8::1]:8443",
+            "3af5595193e0a20c1bdc6829a4a48c38b5b5b5f94fa664260d20fffabab419ee",
+        ),
+    ] {
+        original.actual_peer = address.parse().unwrap();
+        let digest: String = original
+            .commitment()
+            .unwrap()
+            .iter()
+            .map(|byte| format!("{byte:02x}"))
+            .collect();
+        assert_eq!(digest, expected);
+    }
+    original.actual_peer = std::net::SocketAddr::V6(std::net::SocketAddrV6::new(
+        "fe80::1".parse().unwrap(),
+        8443,
+        0,
+        2,
+    ));
+    assert!(original.commitment().is_err());
+}
+
+#[test]
+fn shared_object_profile_is_an_exact_enrolled_fact_without_epoch_substitution() {
+    let general = facts();
+    let mut small = general.clone();
+    small.object_profile = 2;
+    assert!(
+        small
+            .canonical_bytes()
+            .unwrap()
+            .starts_with(b"spiralcore.flow.scope.v2\0")
+    );
+    assert_eq!(general.object_profile, 1);
+    assert_ne!(general.commitment().unwrap(), small.commitment().unwrap());
+    assert_ne!(
+        general.context().unwrap().namespace().unwrap(),
+        small.context().unwrap().namespace().unwrap()
+    );
+    for invalid in [0, 3, u16::MAX] {
+        small.object_profile = invalid;
+        assert!(small.canonical_bytes().is_err());
+    }
+}
+
 #[test]
 fn full_actual_facts_bind_context_without_numeric_epoch_authority() {
     let actual = facts();
@@ -72,4 +127,56 @@ fn full_actual_facts_bind_context_without_numeric_epoch_authority() {
     invalid = actual;
     invalid.plan_version = 0;
     assert!(invalid.context().is_err());
+}
+
+#[test]
+fn exact_ipv6_socket_scope_and_flowinfo_are_not_dropped_from_enrollment() {
+    use spiralcore_mvm_flowmux::{Role, scope::PinnedScopePolicy};
+    use std::{
+        net::{SocketAddr, SocketAddrV6},
+        time::{Duration, Instant},
+    };
+    let mut original = facts();
+    original.object_profile = 2;
+    original.actual_peer = SocketAddr::V6(SocketAddrV6::new(
+        "2001:db8::1".parse().unwrap(),
+        8443,
+        17,
+        2,
+    ));
+    let mut other_zone = original.clone();
+    other_zone.actual_peer = SocketAddr::V6(SocketAddrV6::new(
+        "2001:db8::1".parse().unwrap(),
+        8443,
+        17,
+        3,
+    ));
+    let mut other_flow = original.clone();
+    other_flow.actual_peer = SocketAddr::V6(SocketAddrV6::new(
+        "2001:db8::1".parse().unwrap(),
+        8443,
+        18,
+        2,
+    ));
+    let policy = PinnedScopePolicy::new(1).unwrap();
+    policy
+        .enroll(
+            &original,
+            [5; 32],
+            Role::Acceptor,
+            Instant::now() + Duration::from_secs(1),
+        )
+        .unwrap();
+    for different in [other_zone, other_flow] {
+        assert!(
+            policy
+                .authorize_scope(&different, [5; 32], Role::Acceptor)
+                .is_err(),
+            "different complete IPv6 socket facts are not enrolled"
+        );
+        assert_ne!(
+            original.commitment().unwrap(),
+            different.commitment().unwrap()
+        );
+    }
 }

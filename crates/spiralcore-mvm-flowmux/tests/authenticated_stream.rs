@@ -54,6 +54,7 @@ fn pair() -> (TlsCarrier, TlsCarrier, ScopeFacts) {
         (left, peer.join().unwrap())
     });
     let facts = ScopeFacts {
+        object_profile: 1,
         policy_sha256: [1; 32],
         plan_id: "actual-plan".into(),
         plan_version: 1,
@@ -89,6 +90,24 @@ fn caps() -> Capabilities {
     let mut caps = Capabilities::full();
     caps.max_object_bytes = 65536;
     caps
+}
+#[test]
+fn authenticated_enrollment_refuses_substituted_core_resource_profile_before_mapping() {
+    let (left, _right, mut facts) = pair();
+    facts.object_profile = 2;
+    let policy = PinnedScopePolicy::new(1).unwrap();
+    let enrolled = authority(&policy, &facts, Role::Initiator);
+    assert!(matches!(
+        ObjectChannel::from_authenticated(
+            left,
+            &enrolled,
+            Duration::from_secs(2),
+            Role::Initiator,
+            caps(),
+            caps()
+        ),
+        Err(spiralcore_mvm_flowmux::Error::PeerMismatch)
+    ));
 }
 fn duplex(socket: TlsCarrier, authority: &ScopeAuthority, role: Role, store: &Store) -> Duplex {
     let caps = caps();
@@ -281,6 +300,137 @@ fn explicit_artifact_deadline_is_not_refreshed_after_tls_or_partial_progress() {
             .is_err(),
         "failed original attempt fences artifact reentry"
     );
+}
+
+#[test]
+fn small_profile_sustains_more_than_128_distinct_verified_blocks_in_one_scope() {
+    use spiralcore_transfer::resource_profile::ResourceProfile;
+    const BLOCKS: usize = 129;
+    let began = Instant::now();
+    let run_until = began + Duration::from_secs(30);
+    let (left, right, mut facts) = pair();
+    facts.object_profile = 2;
+    let policy = PinnedScopePolicy::new(2).unwrap();
+    // This sustained fixture must outlive the short helper's three-second
+    // enrollment without refreshing either scope or operation deadlines.
+    let enrollment_until = began + Duration::from_secs(35);
+    policy
+        .enroll(
+            &facts,
+            facts.acceptor_spki,
+            Role::Initiator,
+            enrollment_until,
+        )
+        .unwrap();
+    policy
+        .enroll(
+            &facts,
+            facts.initiator_spki,
+            Role::Acceptor,
+            enrollment_until,
+        )
+        .unwrap();
+    let left_authority = policy
+        .authorize_scope(&facts, facts.acceptor_spki, Role::Initiator)
+        .unwrap();
+    let right_authority = policy
+        .authorize_scope(&facts, facts.initiator_spki, Role::Acceptor)
+        .unwrap();
+    let stores = [
+        Store(
+            std::env::temp_dir().join(format!("flow-small-sustained-left-{}", std::process::id())),
+        ),
+        Store(
+            std::env::temp_dir().join(format!("flow-small-sustained-right-{}", std::process::id())),
+        ),
+    ];
+    let engine = |socket: TlsCarrier, auth: &ScopeAuthority, role: Role, store: &Store| {
+        let caps = Capabilities::small_v1();
+        let channel = ObjectChannel::from_authenticated(
+            socket,
+            auth,
+            Duration::from_secs(2),
+            role,
+            caps,
+            caps,
+        )
+        .unwrap();
+        let profile = channel.profile();
+        let sender = ObjectSender::new_with_resource_profile(
+            ObjectMode::Whole,
+            auth.context(),
+            None,
+            profile,
+            ResourceProfile::SmallV1,
+        )
+        .unwrap();
+        let receiver = ObjectEndpoint::open_with_resource_profile(
+            &store.0,
+            ResourceProfile::SmallV1.receiver_limits(),
+            auth.clone(),
+            profile,
+            ResourceProfile::SmallV1,
+        )
+        .unwrap();
+        MappedStream::from_duplex(
+            Duplex::spawn(channel, sender, receiver, auth.context().clone(), role).unwrap(),
+        )
+    };
+    let mut left = engine(left, &left_authority, Role::Initiator, &stores[0]);
+    let mut right = engine(right, &right_authority, Role::Acceptor, &stores[1]);
+    fn block(index: usize) -> [u8; 16384] {
+        let mut bytes = [0x61; 16384];
+        bytes[..8].copy_from_slice(&(index as u64).to_be_bytes());
+        bytes
+    }
+    let (sent, failure, received) = std::thread::scope(|scope| {
+        let reader = scope.spawn(move || {
+            for index in 0..BLOCKS {
+                let mut bytes = [0; 16384];
+                if let Err(error) = right.read_exact(&mut bytes) {
+                    return Err((index, error.to_string()));
+                }
+                assert_eq!(bytes, block(index), "distinct verified block{index}");
+            }
+            let mut byte = [0; 1];
+            assert_eq!(
+                right.read(&mut byte).unwrap(),
+                0,
+                "application FIN after all blocks"
+            );
+            Ok(BLOCKS)
+        });
+        let mut sent = 0;
+        let mut failure = None;
+        for index in 0..BLOCKS {
+            if Instant::now() >= run_until {
+                failure = Some("fixture original30s watchdog".into());
+                break;
+            }
+            if let Err(error) = left.write_all(&block(index)) {
+                failure = Some(error.to_string());
+                break;
+            }
+            sent += 1;
+        }
+        let _ = left.shutdown(if failure.is_some() {
+            Shutdown::Both
+        } else {
+            Shutdown::Write
+        });
+        (sent, failure, reader.join().unwrap())
+    });
+    eprintln!(
+        "SMALL_SUSTAINED expected_blocks={BLOCKS} sent_verified_blocks={sent} receive={received:?} failure={failure:?} elapsed_us={} left_scope={:?} right_scope={:?}",
+        began.elapsed().as_micros(),
+        left_authority.check(),
+        right_authority.check()
+    );
+    assert_eq!(
+        sent, BLOCKS,
+        "bounded persistent scope stopped: {failure:?}, receiver={received:?}"
+    );
+    assert_eq!(received.unwrap(), BLOCKS);
 }
 
 #[test]

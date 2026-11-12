@@ -780,7 +780,9 @@ pub(super) fn qualify(out: &Path) -> Result<()> {
     if !cfg!(target_os = "linux") {
         return Err("live capture qualification requires Linux".into());
     }
-    let mut builder = fs::DirBuilder::new();
+    let builder = fs::DirBuilder::new();
+    #[cfg(unix)]
+    let mut builder = builder;
     #[cfg(unix)]
     builder.mode(0o700);
     builder.create(out).map_err(error)?;

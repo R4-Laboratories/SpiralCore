@@ -321,3 +321,22 @@ fn stopped_waiter_observes_fence_without_socket_or_waker_event() {
         );
     });
 }
+
+#[test]
+fn peek_releases_poller_before_waiting_for_session_and_owner_stop_wakes_it() {
+    let (client, _server) = carriers();
+    let mut reader = client.try_clone().unwrap();
+    let held = client.shared.session.try_acquire().unwrap().unwrap();
+    std::thread::scope(|scope| {
+        let waiter = scope.spawn(move || reader.peek(&mut [0]));
+        client.shared.session.wait_for_enrollment();
+        // An enrolled Session waiter cannot retain the sole readiness poller.
+        assert!(client.shared.readiness.poller().unwrap().is_some());
+        client.shared.stop();
+        assert_eq!(
+            waiter.join().unwrap().unwrap_err().kind(),
+            io::ErrorKind::BrokenPipe
+        );
+        drop(held);
+    });
+}
