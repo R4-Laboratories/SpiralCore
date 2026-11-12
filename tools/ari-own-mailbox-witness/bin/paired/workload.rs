@@ -57,6 +57,18 @@ impl Call {
             .write_all(&bytes)?;
         Ok(call)
     }
+    pub fn wait(&mut self, until: std::time::Instant) -> Result<Value> {
+        loop {
+            if let Some(result) = self.completed()? {
+                return Ok(result);
+            }
+            ensure!(
+                std::time::Instant::now() < until,
+                "original guest Call timed out"
+            );
+            std::thread::sleep(std::time::Duration::from_millis(5));
+        }
+    }
     pub fn completed(&mut self) -> Result<Option<Value>> {
         if self.done {
             return Ok(None);

@@ -1,0 +1,541 @@
+{
+  "host": {
+    "architecture": "x86_64",
+    "observed_destination_backend": "firecracker",
+    "observed_source_backend": "firecracker",
+    "os": "linux",
+    "requested_backend": "firecracker"
+  },
+  "product_source": "8238000662f59893b6ec703ab4b37d7a86c08340",
+  "guest_source": "93b3b65ae72a4746a54a21c7c158d5453cceb8f5",
+  "driver_and_image_source": "cd85d075d996173d3fc195b3083a066cc5244004",
+  "archive_sha256": "fa939b0899e2a3f60ef7a6697f6bb24ae080c5ea38f60df991c10b8ba1b193e1",
+  "completed_objects": 8,
+  "distinct_ids": 8,
+  "sum_body_bytes": 2056,
+  "sum_frame_bytes": 2504,
+  "series_ns": 7070418537,
+  "setup_ns": 5446952831,
+  "whole_driver_ns": 12819395118,
+  "driver_process_cpu_ns": 6076927853,
+  "external_time": "wall=12.89 user=6.80 system=0.17 max_rss_kib=77084 status=0",
+  "audit": "VERIFIED chain: 17 entries, 2 sessions, 2 seals",
+  "original_5257_helper_streams_a_b": [
+    {
+      "capture": "closed_session",
+      "completed_exchanges": 9,
+      "guest_to_host_read_bytes": 3048,
+      "host_to_guest_write_accepted_bytes": 9590
+    },
+    {
+      "capture": "closed_session",
+      "completed_exchanges": 17,
+      "guest_to_host_read_bytes": 21052,
+      "host_to_guest_write_accepted_bytes": 65805
+    }
+  ],
+  "original_exits": [
+    {
+      "assisted": false,
+      "exit_code": 0,
+      "first_stop_attempt": true,
+      "name": "sc-journal-a",
+      "success": true
+    },
+    {
+      "assisted": false,
+      "exit_code": 0,
+      "first_stop_attempt": true,
+      "name": "sc-journal-b",
+      "success": true
+    }
+  ],
+  "pids_after": {
+    "firecracker": 0,
+    "mvm-mailbox": 0
+  },
+  "stats": {
+    "sealed_a_to_b_bytes": {
+      "minimum": 5840,
+      "median": 5852.5,
+      "p95_nearest_rank": 5864,
+      "maximum": 5864,
+      "total": 46819
+    },
+    "signed_b_to_a_bytes": {
+      "minimum": 1190,
+      "median": 1198.0,
+      "p95_nearest_rank": 1205,
+      "maximum": 1205,
+      "total": 9590
+    },
+    "through_observed_v2_ns": {
+      "minimum": 199907082,
+      "median": 220762853.0,
+      "p95_nearest_rank": 229981105,
+      "maximum": 229981105,
+      "total": 1760605164
+    },
+    "through_verified_destination_call_ns": {
+      "minimum": 831321931,
+      "median": 883825908.0,
+      "p95_nearest_rank": 908223184,
+      "maximum": 908223184,
+      "total": 7043559313
+    },
+    "guest_a_workload_cpu_ns": {
+      "minimum": 139771,
+      "median": 145882.5,
+      "p95_nearest_rank": 169536,
+      "maximum": 169536,
+      "total": 1186233
+    },
+    "guest_b_workload_cpu_ns": {
+      "minimum": 353942,
+      "median": 434079.5,
+      "p95_nearest_rank": 613313,
+      "maximum": 613313,
+      "total": 3622257
+    },
+    "interleaved_control_workload_cpu_ns": {
+      "minimum": 36809,
+      "median": 45789.5,
+      "p95_nearest_rank": 84419,
+      "maximum": 84419,
+      "total": 401603
+    },
+    "interleaved_control_host_ns": {
+      "minimum": 76843123,
+      "median": 83784770.0,
+      "p95_nearest_rank": 86688292,
+      "maximum": 86688292,
+      "total": 665871185
+    }
+  },
+  "rows": [
+    {
+      "guest_a": {
+        "cpu_ns": 145662,
+        "frame_bytes": 313,
+        "probe_from_agent": 207,
+        "probe_to_agent": 352,
+        "role": "staged",
+        "wall_ns": 262944
+      },
+      "guest_a_observed_receipt": null,
+      "guest_b": {
+        "ack_from_agent": 2278,
+        "ack_to_agent": 1997,
+        "cpu_ns": 613313,
+        "frame_bytes": 313,
+        "receive_from_agent": 2505,
+        "receive_to_agent": 54,
+        "role": "received_and_acknowledged",
+        "wall_ns": 590372023
+      },
+      "interleaved_control": {
+        "agent_reply_bytes": 207,
+        "agent_request_bytes": 352,
+        "control_probe": 1,
+        "cpu_ns": 45954,
+        "data_staged_before_control_ns": 76869623,
+        "end_ns": 153722755,
+        "sdk_reply_bytes": 101,
+        "sdk_request_bytes": 177,
+        "start_ns": 76879632,
+        "wall_ns": 165691
+      },
+      "receipt_outcome": "AcceptedLocalDurable",
+      "receipt_recovery": null,
+      "sdk_call_application_io": {
+        "destination_reply_with_readback": 792,
+        "destination_request": 107,
+        "source_reply": 192,
+        "source_request": 800
+      },
+      "sealed_a_to_b_bytes": 5840,
+      "signed_b_to_a_bytes": 1190,
+      "through_observed_v2_ns": 199907082,
+      "through_verified_destination_call_ns": 831321931,
+      "verified_body_bytes": 257,
+      "wan_bytes": null,
+      "original_id_fingerprint_sha256": "6b72030082188a215f775782038d743017681cc07dc4e9865d032b28a06a986a"
+    },
+    {
+      "guest_a": {
+        "cpu_ns": 142910,
+        "frame_bytes": 313,
+        "probe_from_agent": 207,
+        "probe_to_agent": 352,
+        "role": "staged",
+        "wall_ns": 293842
+      },
+      "guest_a_observed_receipt": null,
+      "guest_b": {
+        "ack_from_agent": 2283,
+        "ack_to_agent": 2002,
+        "cpu_ns": 400832,
+        "frame_bytes": 313,
+        "receive_from_agent": 2510,
+        "receive_to_agent": 54,
+        "role": "received_and_acknowledged",
+        "wall_ns": 622406121
+      },
+      "interleaved_control": {
+        "agent_reply_bytes": 207,
+        "agent_request_bytes": 352,
+        "control_probe": 2,
+        "cpu_ns": 52979,
+        "data_staged_before_control_ns": 86835412,
+        "end_ns": 168155245,
+        "sdk_reply_bytes": 101,
+        "sdk_request_bytes": 177,
+        "start_ns": 86847495,
+        "wall_ns": 195176
+      },
+      "receipt_outcome": "AcceptedLocalDurable",
+      "receipt_recovery": null,
+      "sdk_call_application_io": {
+        "destination_reply_with_readback": 792,
+        "destination_request": 107,
+        "source_reply": 192,
+        "source_request": 800
+      },
+      "sealed_a_to_b_bytes": 5854,
+      "signed_b_to_a_bytes": 1199,
+      "through_observed_v2_ns": 222801919,
+      "through_verified_destination_call_ns": 908223184,
+      "verified_body_bytes": 257,
+      "wan_bytes": null,
+      "original_id_fingerprint_sha256": "a602959ba2995f754ae8fe7cd61d1c9394a180f8fd40cbda4431d22c7da91fb5"
+    },
+    {
+      "guest_a": {
+        "cpu_ns": 142429,
+        "frame_bytes": 313,
+        "probe_from_agent": 207,
+        "probe_to_agent": 352,
+        "role": "staged",
+        "wall_ns": 293901
+      },
+      "guest_a_observed_receipt": null,
+      "guest_b": {
+        "ack_from_agent": 2286,
+        "ack_to_agent": 2007,
+        "cpu_ns": 430719,
+        "frame_bytes": 313,
+        "receive_from_agent": 2515,
+        "receive_to_agent": 54,
+        "role": "received_and_acknowledged",
+        "wall_ns": 590495324
+      },
+      "interleaved_control": {
+        "agent_reply_bytes": 207,
+        "agent_request_bytes": 352,
+        "control_probe": 3,
+        "cpu_ns": 84419,
+        "data_staged_before_control_ns": 86492529,
+        "end_ns": 172922510,
+        "sdk_reply_bytes": 101,
+        "sdk_request_bytes": 177,
+        "start_ns": 86505033,
+        "wall_ns": 256191
+      },
+      "receipt_outcome": "AcceptedLocalDurable",
+      "receipt_recovery": null,
+      "sdk_call_application_io": {
+        "destination_reply_with_readback": 792,
+        "destination_request": 107,
+        "source_reply": 192,
+        "source_request": 800
+      },
+      "sealed_a_to_b_bytes": 5860,
+      "signed_b_to_a_bytes": 1203,
+      "through_observed_v2_ns": 229981105,
+      "through_verified_destination_call_ns": 866313404,
+      "verified_body_bytes": 257,
+      "wan_bytes": null,
+      "original_id_fingerprint_sha256": "2b6e37abcdded97ac497cb4ec3207b6be5a5459f83b51def061e89ac4eee69f7"
+    },
+    {
+      "guest_a": {
+        "cpu_ns": 146103,
+        "frame_bytes": 313,
+        "probe_from_agent": 207,
+        "probe_to_agent": 352,
+        "role": "staged",
+        "wall_ns": 294924
+      },
+      "guest_a_observed_receipt": null,
+      "guest_b": {
+        "ack_from_agent": 2282,
+        "ack_to_agent": 2000,
+        "cpu_ns": 467087,
+        "frame_bytes": 313,
+        "receive_from_agent": 2508,
+        "receive_to_agent": 54,
+        "role": "received_and_acknowledged",
+        "wall_ns": 626455309
+      },
+      "interleaved_control": {
+        "agent_reply_bytes": 207,
+        "agent_request_bytes": 352,
+        "control_probe": 4,
+        "cpu_ns": 37250,
+        "data_staged_before_control_ns": 86271909,
+        "end_ns": 167328402,
+        "sdk_reply_bytes": 101,
+        "sdk_request_bytes": 177,
+        "start_ns": 86275236,
+        "wall_ns": 164439
+      },
+      "receipt_outcome": "AcceptedLocalDurable",
+      "receipt_recovery": null,
+      "sdk_call_application_io": {
+        "destination_reply_with_readback": 792,
+        "destination_request": 107,
+        "source_reply": 192,
+        "source_request": 800
+      },
+      "sealed_a_to_b_bytes": 5847,
+      "signed_b_to_a_bytes": 1197,
+      "through_observed_v2_ns": 216221354,
+      "through_verified_destination_call_ns": 901338412,
+      "verified_body_bytes": 257,
+      "wan_bytes": null,
+      "original_id_fingerprint_sha256": "ac379ab7829f5546ccaaf9e50455981641d542426e7f3d1a45aec9ed86210914"
+    },
+    {
+      "guest_a": {
+        "cpu_ns": 148788,
+        "frame_bytes": 313,
+        "probe_from_agent": 207,
+        "probe_to_agent": 352,
+        "role": "staged",
+        "wall_ns": 350839
+      },
+      "guest_a_observed_receipt": null,
+      "guest_b": {
+        "ack_from_agent": 2278,
+        "ack_to_agent": 1997,
+        "cpu_ns": 496572,
+        "frame_bytes": 313,
+        "receive_from_agent": 2505,
+        "receive_to_agent": 54,
+        "role": "received_and_acknowledged",
+        "wall_ns": 594953940
+      },
+      "interleaved_control": {
+        "agent_reply_bytes": 207,
+        "agent_request_bytes": 352,
+        "control_probe": 5,
+        "cpu_ns": 36809,
+        "data_staged_before_control_ns": 86505674,
+        "end_ns": 173200178,
+        "sdk_reply_bytes": 101,
+        "sdk_request_bytes": 177,
+        "start_ns": 86511886,
+        "wall_ns": 156674
+      },
+      "receipt_outcome": "AcceptedLocalDurable",
+      "receipt_recovery": null,
+      "sdk_call_application_io": {
+        "destination_reply_with_readback": 792,
+        "destination_request": 107,
+        "source_reply": 192,
+        "source_request": 800
+      },
+      "sealed_a_to_b_bytes": 5849,
+      "signed_b_to_a_bytes": 1194,
+      "through_observed_v2_ns": 229517102,
+      "through_verified_destination_call_ns": 866192686,
+      "verified_body_bytes": 257,
+      "wan_bytes": null,
+      "original_id_fingerprint_sha256": "b19b21ce51d48f8b5f97f913eff5fbfe480ebc6d4bc73c230bab43738acb4b75"
+    },
+    {
+      "guest_a": {
+        "cpu_ns": 139771,
+        "frame_bytes": 313,
+        "probe_from_agent": 207,
+        "probe_to_agent": 352,
+        "role": "staged",
+        "wall_ns": 278713
+      },
+      "guest_a_observed_receipt": null,
+      "guest_b": {
+        "ack_from_agent": 2296,
+        "ack_to_agent": 2012,
+        "cpu_ns": 353942,
+        "frame_bytes": 313,
+        "receive_from_agent": 2520,
+        "receive_to_agent": 54,
+        "role": "received_and_acknowledged",
+        "wall_ns": 623277747
+      },
+      "interleaved_control": {
+        "agent_reply_bytes": 207,
+        "agent_request_bytes": 352,
+        "control_probe": 6,
+        "cpu_ns": 59473,
+        "data_staged_before_control_ns": 86479735,
+        "end_ns": 172773015,
+        "sdk_reply_bytes": 101,
+        "sdk_request_bytes": 177,
+        "start_ns": 86489734,
+        "wall_ns": 192842
+      },
+      "receipt_outcome": "AcceptedLocalDurable",
+      "receipt_recovery": null,
+      "sdk_call_application_io": {
+        "destination_reply_with_readback": 792,
+        "destination_request": 107,
+        "source_reply": 192,
+        "source_request": 800
+      },
+      "sealed_a_to_b_bytes": 5854,
+      "signed_b_to_a_bytes": 1205,
+      "through_observed_v2_ns": 218723787,
+      "through_verified_destination_call_ns": 904757089,
+      "verified_body_bytes": 257,
+      "wan_bytes": null,
+      "original_id_fingerprint_sha256": "07d03927a9ec563436b80695ec9240b843d1e24b629fae81fe8dc3b595655021"
+    },
+    {
+      "guest_a": {
+        "cpu_ns": 169536,
+        "frame_bytes": 313,
+        "probe_from_agent": 207,
+        "probe_to_agent": 352,
+        "role": "staged",
+        "wall_ns": 336862
+      },
+      "guest_a_observed_receipt": null,
+      "guest_b": {
+        "ack_from_agent": 2289,
+        "ack_to_agent": 2008,
+        "cpu_ns": 437440,
+        "frame_bytes": 313,
+        "receive_from_agent": 2516,
+        "receive_to_agent": 54,
+        "role": "received_and_acknowledged",
+        "wall_ns": 600539931
+      },
+      "interleaved_control": {
+        "agent_reply_bytes": 207,
+        "agent_request_bytes": 352,
+        "control_probe": 7,
+        "cpu_ns": 45625,
+        "data_staged_before_control_ns": 86475847,
+        "end_ns": 172743669,
+        "sdk_reply_bytes": 101,
+        "sdk_request_bytes": 177,
+        "start_ns": 86481879,
+        "wall_ns": 185398
+      },
+      "receipt_outcome": "AcceptedLocalDurable",
+      "receipt_recovery": null,
+      "sdk_call_application_io": {
+        "destination_reply_with_readback": 792,
+        "destination_request": 107,
+        "source_reply": 192,
+        "source_request": 800
+      },
+      "sealed_a_to_b_bytes": 5864,
+      "signed_b_to_a_bytes": 1205,
+      "through_observed_v2_ns": 226957549,
+      "through_verified_destination_call_ns": 863904130,
+      "verified_body_bytes": 257,
+      "wan_bytes": null,
+      "original_id_fingerprint_sha256": "56c1d145de2ace3de0af2d22763f9cafcc7bb6d91e0c9d2624f8cf90fb1084d8"
+    },
+    {
+      "guest_a": {
+        "cpu_ns": 151034,
+        "frame_bytes": 313,
+        "probe_from_agent": 207,
+        "probe_to_agent": 352,
+        "role": "staged",
+        "wall_ns": 273373
+      },
+      "guest_a_observed_receipt": null,
+      "guest_b": {
+        "ack_from_agent": 2282,
+        "ack_to_agent": 2002,
+        "cpu_ns": 422352,
+        "frame_bytes": 313,
+        "receive_from_agent": 2510,
+        "receive_to_agent": 54,
+        "role": "received_and_acknowledged",
+        "wall_ns": 647601387
+      },
+      "interleaved_control": {
+        "agent_reply_bytes": 207,
+        "agent_request_bytes": 352,
+        "control_probe": 8,
+        "cpu_ns": 39094,
+        "data_staged_before_control_ns": 86327746,
+        "end_ns": 167347469,
+        "sdk_reply_bytes": 101,
+        "sdk_request_bytes": 177,
+        "start_ns": 86331163,
+        "wall_ns": 156373
+      },
+      "receipt_outcome": "AcceptedLocalDurable",
+      "receipt_recovery": null,
+      "sdk_call_application_io": {
+        "destination_reply_with_readback": 792,
+        "destination_request": 107,
+        "source_reply": 192,
+        "source_request": 800
+      },
+      "sealed_a_to_b_bytes": 5851,
+      "signed_b_to_a_bytes": 1197,
+      "through_observed_v2_ns": 216495266,
+      "through_verified_destination_call_ns": 901508477,
+      "verified_body_bytes": 257,
+      "wan_bytes": null,
+      "original_id_fingerprint_sha256": "cb463ff2f620827854ad0111705159b9897fd09c5dcd71718fc4ae7206dce68c"
+    }
+  ],
+  "raw_artifact_sha256": {
+    "audit.log": "5b7cb24bc38132f35843e640eed08542a0c2870d9531d5568ac4fe243688e1d1",
+    "host-sha256": "d0751c29c78517da1228859446b843e2e1c00195e33bbc2e320c2706561d20dd",
+    "host-tests.log": "7a3fc57bea0ffb249405cda8cd7bd7a2f3b61aee9360eda0c57f7e23667349b6",
+    "image-a.sha256": "243e2452c1218b93280b05f366854ccd0832999b6f8ed97b91920e2db0db8c0b",
+    "image-b.sha256": "80e1f0fa241614149bed8ca451ffde9d35815ddae301ebae0472871196ae5562",
+    "native.time": "fbab210c709608eb6e36885017fa050feb1083dad88566e144fb4147031c4259",
+    "original-sc-journal-a.counts": "af87fb6d17d9690d5c05de6ea6c451b211fd297ac803c5f2523ab48e94c5e6a3",
+    "original-sc-journal-b.counts": "9e9f6b1df4ee1a54a175758f70d880089ea7c22f5078e2649a853dd0f66eb4d4",
+    "paired-result.json": "c32e850fd466eeed37037e06381fa0df48a0c9fc1540a3d2391afa6a9512a673",
+    "paired-retirement.jsonl": "4ecd19450145bb63b443a2b3a6cad36c420a9b2c97d065dae534eb4cc42901f6",
+    "paired-series.jsonl": "99f440d3f1f2e042fe1ede67ba02f0f2c4015b00149de618ab6bbe8b446c99eb",
+    "runtime.json": "97b5ece13c7d862af7896b194e5e4788837af494d8476e6539958577e65444f2",
+    "worker-sha256": "25032a666b99970e240eb88472aef6064a16fbc776c35a3f5e43c8c7cc47caec"
+  },
+  "worker-sha256": {
+    "spiralcore-durable-destination": "c03c1ba434fecf896ded4c9533d840331cb79d030c5dca7446fd96d15f5472a4",
+    "spiralcore-durable-source": "6ae5c3da25b141718cde5bb86674197ae86a799da6c821b60fb75f86d32ca048"
+  },
+  "host-sha256": {
+    "paired-journal": "93b0d11a8567595068b6b38daf3d79696006da8ffc5bab58440714f82adf89fc",
+    "image": "39525bb45fe227efef39f967b32d3adb9b0442181b99c2aeb0d2dad498ddc5fe",
+    "mvm-mailbox": "0cc277b47807e330ef0a29e877a6044421cbc9503a05e8db1b6ff3c597856093",
+    "mvm-host-agent": "c4722228c8a65946aa1579835cabfed35bc1a6abdf25224d6160a589de270563",
+    "mvm-signer-helper": "07a2e2aa9d834242c60cefcb5b1bf333ed882322b1c43879b932378fd8fb5ac0",
+    "mvm-network-endpoint": "0f738a2d6e255b9c3222975235d2fd6ed711b196a0df1f69804714986b26ed8a",
+    "mvmctl": "8130448a7d528814a77d0bef23cf50fc7a1c32d7a80aa245e469d765d056763f"
+  },
+  "image-a.sha256": {
+    "rootfs.ext4": "e4a6672662871982afdcba8643646e2b4f791ca5e3bdc547aaa8e5667cb891f4",
+    "rootfs.verity": "7e3787e13ee8515968ceb7964531d74e7fa9c240f1f7e5558e882cb88d4e1d82",
+    "rootfs.roothash": "5df93cff0bc57ef4c120d558717d2f164acdef60a7aa65bb095347ca7890c1ea",
+    "mvm-meta.json": "1e2ebf272b1b45cd2a9c4f1ea32b847c3824a8208dddeb07fb8d456c14be0a68"
+  },
+  "image-b.sha256": {
+    "rootfs.ext4": "1fba22e9769619f5f64ccefa5d144013f5b3adecc9dbb9a2e5b014f2aabf8fe8",
+    "rootfs.verity": "242455ed3679b36d8c9155d2db4e796bc6860a03c8b0c1d95530cf1d9820ac95",
+    "rootfs.roothash": "6c51ce3223b9c8302cd5f10e19c7f4ea1e77e3acddfd834b65fbb0a47dd0b28f",
+    "mvm-meta.json": "e279d13ea18d559f6c5f572e248f212c7856c678be9d7adcb5320a4c22a07ddf"
+  }
+}

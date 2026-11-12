@@ -30,8 +30,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     };
     let (machine, basename) = match role.as_str() {
         "own" => ("sc-ari-own", "spiralcore-durable-own-mailbox"),
-        "journal-a" => ("sc-journal-a", "spiralcore-durable-source"),
-        "journal-b" => ("sc-journal-b", "spiralcore-durable-destination"),
+        "journal-a" | "series-a" => ("sc-journal-a", "spiralcore-durable-source"),
+        "journal-b" | "series-b" => ("sc-journal-b", "spiralcore-durable-destination"),
         _ => return Err("unknown original mailbox workload role".into()),
     };
     let work = Path::new(work);
@@ -96,8 +96,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     let worker = RuntimeConfig {
         language: "rust".into(),
         module: match role.as_str() {
-            "journal-a" => "journal-source",
-            "journal-b" => "journal-destination",
+            "journal-a" | "series-a" => "journal-source",
+            "journal-b" | "series-b" => "journal-destination",
             _ => "own-mailbox",
         }
         .into(),
@@ -105,7 +105,12 @@ fn main() -> Result<(), Box<dyn Error>> {
         format: "binary".into(),
         source_path: guest_path,
         concurrency: Some(ConcurrencyConfig::WarmProcess(WarmProcessConfig {
-            max_calls_per_worker: if role == "own" { 1 } else { 2 },
+            max_calls_per_worker: match role.as_str() {
+                "own" => 1,
+                "series-a" => 16,
+                "series-b" => 8,
+                _ => 2,
+            },
             max_rss_mb: 64,
             pool_size: 1,
             in_process: InProcessMode::Serial,
