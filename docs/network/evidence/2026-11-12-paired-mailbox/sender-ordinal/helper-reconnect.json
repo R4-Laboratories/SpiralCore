@@ -1,0 +1,142 @@
+{
+  "schema": 1,
+  "source": "e003cf04dd589993ca5372baf1b95dd72cbd8565",
+  "tree": "8a3248b265a7b4d11942c1028a5b6aac86901196",
+  "fixture": "two installed helper executables, Unix guest stream fixtures and two process-lifetime stand-ins",
+  "platform": "Linux x86_64",
+  "launched_vms": 0,
+  "libtest_sha256": "86512ab75643050bdfb24e157b3f16c5e0329229bb81606266edbaaf16ed5899",
+  "helper_sha256": "305fbc7b214443e27e65cd4a6f3bd5c552825fba28d94b8a0a70ac84edc30196",
+  "payload_bytes": 257,
+  "guest_submit_bytes_per_turn": 325,
+  "turns": [
+    {
+      "turn": 0,
+      "sealed_a_to_b_bytes": 5531,
+      "signed_return_b_to_a_bytes": 1144,
+      "guest_read_signed_v2": false
+    },
+    {
+      "turn": 1,
+      "sealed_a_to_b_bytes": 5531,
+      "signed_return_b_to_a_bytes": 1144,
+      "submit_to_verified_v2_ns": 18710858,
+      "guest_read_signed_v2": true
+    },
+    {
+      "turn": 2,
+      "sealed_a_to_b_bytes": 5531,
+      "signed_return_b_to_a_bytes": 1144,
+      "submit_to_verified_v2_ns": 12265622,
+      "guest_read_signed_v2": true
+    }
+  ],
+  "exact_envelope_and_signed_return_across_all_turns": true,
+  "original_reader_and_lease_correlated": true,
+  "post_replacement_b_readback_bytes": 257,
+  "reader_io_bytes": {
+    "receive_guest_to_helper": 348,
+    "receive_helper_to_guest": 5695,
+    "ack_guest_to_helper": 2217,
+    "ack_helper_to_guest": 2221
+  },
+  "first_connection_through_ack_ns": 73251168,
+  "unassisted_exit_ns": {
+    "source": 207586712,
+    "destination": 10385431
+  },
+  "whole_fixture": {
+    "wall_s": 0.32,
+    "user_cpu_s": 0.05,
+    "system_cpu_s": 0.01,
+    "max_rss_kib": 46216
+  },
+  "closed_link_total_bytes": null,
+  "wan_bytes": null,
+  "resource_scope": "GNU time on libtest and its children; per-helper CPU unavailable",
+  "linux_controls": {
+    "original_journal_passed": 23,
+    "original_journal_ignored": 3,
+    "original_reader_passed": 1,
+    "paired_reconnect_passed": 1,
+    "isolated_upstream_idle_silent_guest_passed": 1
+  },
+  "logs_sha256": {
+    "reconnect-final-pair.log": "baa6d3e15f28da32e742d3beca95225502223e7685404c94085b10150c1d1886",
+    "reconnect-final-original-controls.log": "5ddbfabaaf4ac42d0fcbcf2ff82c10c3d4cca0846e991df94f389f6bd9f56a96",
+    "reconnect-final-reader.log": "5995d333ed9daae539234362a984b7df900613835f5949b0bb82759f264563b3",
+    "reconnect-5387.log": "106eb1b2b0f2183c6083a6b36e8767702e207f537bec806421530cb09333d93a",
+    "pair.log": "68d727b422db82910fda6badcd731a7d2dc20ee99f96aa6d95d83bb4c8b13e49",
+    "pair-private.log": "cced3ce5b3e073b32aa8acf5f0cfcee620dab5cd30fa190b99d4f93a16eb416d",
+    "helper-reconnect-pair.log": "d3e1e124bf59e8a0ea21b12c529f9573d19d41cb1a312345ffa6d59b3d5a01b3",
+    "helper-reconnect-pair2.log": "272c249c2e28c3488ce2c862bbc5d29ef7aefe7350fcbe8db9296073eecddc4c",
+    "helper-reconnect-pair3.log": "7e7a00d10f8df65f6276e6079edb051984284105532be2932174f90f2efdeec2",
+    "reconnect-darwin-peer-lifetime.log": "aadb5763144938f5337028b66917e0e788c2f2eb937ed812a13478cecf3b79fa",
+    "reconnect-all-targets.log": "446edcb076c0dc81f7c6be6d8bae6736ba28a87c3a9037404218cbd7eb6f6b64",
+    "reconnect-bdd.log": "acf976929b0c0c78e0a59fa7a1f274e8491d71b0d7d053448c5637df0bfc1565",
+    "reconnect-exact-tree.log": "0758bb09fa0ce2c6fd38e932413dcbef28a370d3b1b08dacc1fa19af14c3b997",
+    "reconnect-joined-pair.log": "e8131bf68f17ceaad11d44011a30f1d964edb2c1e4e6656fa6c2ab2d17f46ca2",
+    "reconnect-darwin-socket-timeout.log": "a9276bf0eb8d610422092ea199005547bf23fb63b9fe1c8ea3ff90eb56427fc7",
+    "reconnect-joined-final-pair.log": "6e283afb85d94e1e875fb258e631b9667d95e01d1e70203fe70b067ee57cc73d"
+  },
+  "linux_compile_checks": {
+    "workspace_all_targets": true,
+    "conformance_all_targets_bdd": true,
+    "bdd_scenarios_executed": 0,
+    "verified_source_blob_modes": 4539
+  },
+  "macos_joined_case": {
+    "platform": "macOS arm64",
+    "source": "1beaea4d71041ebd09a250f21a953d5d60866962",
+    "helper_build_source": "a894a25cda6c99c4014ad2bae7f34476a48aedc6",
+    "test_only_socket_option_change": "01af074b50a15e43cf86088e8de52757cb273d91",
+    "libtest_sha256": "8fc39007f0032b5d10e74c839ddac73223aebf1a571492629b5f45178cd82771",
+    "helper_sha256": "24d863eb011483805bdcfbe329d043082944b95122379837dbc55a1dc0eb5b10",
+    "launched_vms": 0,
+    "stale_socket_path_refused": true,
+    "fixture_removed_predecessor_names_after_authenticated_collection": true,
+    "turns": [
+      {
+        "turn": 0,
+        "sealed_a_to_b_bytes": 5518,
+        "signed_return_b_to_a_bytes": 1129,
+        "guest_read_signed_v2": false
+      },
+      {
+        "turn": 1,
+        "sealed_a_to_b_bytes": 5518,
+        "signed_return_b_to_a_bytes": 1129,
+        "guest_read_signed_v2": true,
+        "submit_to_verified_v2_ns": 73699792
+      },
+      {
+        "turn": 2,
+        "sealed_a_to_b_bytes": 5518,
+        "signed_return_b_to_a_bytes": 1129,
+        "guest_read_signed_v2": true,
+        "submit_to_verified_v2_ns": 235717750
+      }
+    ],
+    "guest_submit_bytes_per_turn": 325,
+    "post_replacement_b_readback_bytes": 257,
+    "reader_io_bytes": {
+      "receive_guest_to_helper": 340,
+      "receive_helper_to_guest": 5665,
+      "ack_guest_to_helper": 2204,
+      "ack_helper_to_guest": 2208
+    },
+    "first_connection_through_ack_ns": 1296151792,
+    "unassisted_exit_ns": {
+      "source": 227323875,
+      "destination": 37556042
+    },
+    "whole_fixture": {
+      "wall_s": 4.2,
+      "user_cpu_s": 0.17,
+      "system_cpu_s": 0.14,
+      "max_rss_bytes": 25821184
+    },
+    "closed_link_total_bytes": null,
+    "wan_bytes": null
+  }
+}
