@@ -128,7 +128,7 @@ role**, across nine nonzero scopes, with original ZIP digests and inner checksum
 verified. These are 34 tests repeated across seven native process roles, not
 238 distinct tests, cross-platform network pairs, or booted MVMs.
 
-The current published FlowMux readiness/closure successor is
+The earlier FlowMux readiness and closure tests were published in
 [PR104](https://github.com/R4-Laboratories/SpiralCore/pull/104), merged at
 `4f9b4fbbf4ae2ea2d1b5c18550bb26ded7372485`. Its exact-source seven native
 process roles each passed 47 component tests and strict Clippy. The
@@ -136,9 +136,9 @@ process roles each passed 47 component tests and strict Clippy. The
 failed Windows wake and macOS fixture attempts. This is accepted component
 progress, not installed MVM or WAN qualification.
 
-The ordered-cache successor [PR194](https://github.com/R4-Laboratories/SpiralCore/pull/194) carries forward the scoped FlowMux and Windows storage changes from [PR106](https://github.com/R4-Laboratories/SpiralCore/pull/106). Its ordinary Windows Server 2022 run reached the whole-test deadline after 3,598 blocks each way. The ordinary Windows Server 2025 run stopped on a read deadline despite a passing instrumented run. The release gate remains open. [Current platform measurements](evidence/2026-11-12-ordered-flowmux/README.md) · [Earlier development evidence](https://github.com/R4-Laboratories/SpiralCore/blob/5db896ab/docs/network/evidence/2026-11-10-ordered-scope/README.md)
+The ordered-cache and scope changes merged through [PR194](https://github.com/R4-Laboratories/SpiralCore/pull/194) at `9fc3ce12`. All seven native roles recovered 64 MiB in each direction over two local TLS endpoints. The measured streams carried 5,395,050 bytes A→B and 5,395,015 bytes B→A. The ordinary Windows Server 2025 run took 180.537 s wall and 131.625 s process CPU. Earlier Windows runs exceeded their deadlines. The final Server 2022 diagnostic recorded eight samples at or above 1.25 s against a 2 s operation deadline. Installed FlowMux forwarding and cross-host WAN acceptance remain open. [Seven-role CPU and timing results](https://github.com/R4-Laboratories/SpiralCore/issues/44#issuecomment-6833354143) · [Earlier native trials](evidence/2026-11-12-ordered-flowmux/README.md)
 
-A later Windows Server 2025 ordinary stream stopped at block 2,352. In the same workflow, a separate Linux persistent HTTP test failed to reopen its cache. The Unix reopen correction passed the original two concurrent tests 30 times on Linux and preserves exclusive access during handoff. [Cache-reopen trace and results](evidence/2026-11-12-ordered-flowmux/cache-reopen.md) · [Latest Windows timing and quota measurements](https://github.com/R4-Laboratories/SpiralCore/issues/44#issuecomment-6831573987).
+Before the final merge, a Windows Server 2025 ordinary stream stopped at block 2,352. In the same workflow, a separate Linux persistent HTTP test failed to reopen its cache. The Unix reopen correction passed the original two concurrent tests 30 times on Linux and preserves exclusive access during handoff. [Cache-reopen trace and results](evidence/2026-11-12-ordered-flowmux/cache-reopen.md) · [Latest Windows timing and quota measurements](https://github.com/R4-Laboratories/SpiralCore/issues/44#issuecomment-6831573987).
 
 ## Active upstream MVM coordination
 
