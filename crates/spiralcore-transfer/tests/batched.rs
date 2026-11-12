@@ -520,3 +520,165 @@ fn capped_raw_checks_offer_reply_and_sequence_limits_before_exchange() {
         .unwrap()
         .is_empty());
 }
+
+#[test]
+fn leased_sender_settles_each_validated_reply_before_next_call_and_warm_repeat() {
+    use cpu_time::ThreadTime;
+    use spiralcore_transfer::client::{transfer_raw_leased, RawFrameLimits};
+    use std::cell::Cell;
+    use std::time::{Duration, Instant};
+    let root = Temp::new();
+    let mut receiver = root.endpoint();
+    let body = bytes(4096);
+    for (id, data_bytes, calls) in [(51, 4096, 4), (52, 0, 1)] {
+        let pending = Cell::new(None);
+        let start = Instant::now();
+        let cpu = ThreadTime::now();
+        let mut receiver_cpu = Duration::ZERO;
+        let mut request_bytes = 0;
+        let mut reply_bytes = 0;
+        let stats = transfer_raw_leased(
+            &body,
+            [id; 32],
+            RawFrameLimits {
+                request_bytes: 4152,
+                reply_bytes: 88,
+            },
+            |frame| -> Result<_> {
+                assert_eq!(pending.replace(Some(frame.seq)), None);
+                // Exercise the bytes crossing the application boundary in each direction.
+                let encoded = frame.encode()?;
+                request_bytes += encoded.len();
+                let cpu = ThreadTime::now();
+                let reply = receiver
+                    .handle(&context(), &Frame::decode(&encoded)?, 0)?
+                    .encode()?;
+                receiver_cpu += cpu.elapsed();
+                reply_bytes += reply.len();
+                Ok((Frame::decode(&reply)?, frame.seq))
+            },
+            |lease| {
+                assert_eq!(pending.take(), Some(lease));
+                Ok(())
+            },
+        )
+        .unwrap();
+        let until_settled = start.elapsed();
+        let through_settlement_cpu = cpu.elapsed();
+        assert_eq!(
+            (stats.request_bytes, stats.response_bytes),
+            (request_bytes as u64, reply_bytes as u64)
+        );
+        assert_eq!(stats.data_bytes, data_bytes);
+        assert_eq!(stats.requests, calls);
+        assert!(pending.get().is_none());
+        assert_eq!(
+            receiver.read_object(&context(), stats.object).unwrap(),
+            body
+        );
+        eprintln!("data={data_bytes} call_bytes={request_bytes} reply_bytes={reply_bytes} through_settlement_us={} through_readback_us={} sender_and_harness_cpu_us={} receiver_handle_cpu_us={}",
+            until_settled.as_micros(), start.elapsed().as_micros(),
+            through_settlement_cpu.saturating_sub(receiver_cpu).as_micros(), receiver_cpu.as_micros());
+    }
+}
+
+#[test]
+fn leased_sender_keeps_malformed_or_unrelated_reply_unsettled() {
+    use spiralcore_transfer::client::{transfer_raw_leased, RawFrameLimits};
+    for case in [
+        "transfer",
+        "seq",
+        "digest",
+        "oversized",
+        "mode",
+        "count",
+        "bad-refusal",
+        "published-on-data",
+    ] {
+        let root = Temp::new();
+        let mut receiver = root.endpoint();
+        let mut settled = Vec::new();
+        let result = transfer_raw_leased(
+            &bytes(4096),
+            [53; 32],
+            RawFrameLimits {
+                request_bytes: 4152,
+                reply_bytes: 88,
+            },
+            |request| -> Result<_> {
+                let mut reply = receiver.handle(&context(), request, 0)?;
+                match case {
+                    "transfer" => reply.transfer[0] ^= 1,
+                    "seq" => reply.seq += 1,
+                    "digest" => reply = request.reply(103, vec![0; 32]),
+                    "oversized" => reply = request.reply(103, vec![1; 33]),
+                    "mode" => reply.body[0] ^= 1,
+                    "count" if request.kind == 2 => reply.body = 1u64.to_le_bytes().to_vec(),
+                    "bad-refusal" => reply = request.reply(127, vec![2, 0, 0]),
+                    "published-on-data" if request.kind == 2 => {
+                        reply = request.reply(103, object_id(&bytes(4096)).to_vec())
+                    }
+                    _ => (),
+                }
+                Ok((reply, request.seq))
+            },
+            |lease| {
+                settled.push(lease);
+                Ok(())
+            },
+        );
+        assert!(result.is_err(), "{case}");
+        assert_eq!(
+            settled,
+            if matches!(case, "count" | "published-on-data") {
+                vec![0]
+            } else {
+                vec![]
+            },
+            "{case}"
+        );
+    }
+}
+
+#[test]
+fn leased_sender_settles_valid_refusal_and_stops_on_ambiguous_ack() {
+    use spiralcore_transfer::client::{transfer_raw_leased, RawFrameLimits};
+    let limits = RawFrameLimits {
+        request_bytes: 4152,
+        reply_bytes: 88,
+    };
+    for (refuse, fail_ack, expected) in [
+        (true, false, Error::Unauthorized),
+        (true, true, Error::Storage),
+        (false, true, Error::Storage),
+    ] {
+        let mut exchanged = 0;
+        let mut acknowledged = 0;
+        let body = b"exact\0";
+        let result = transfer_raw_leased(
+            body,
+            [54; 32],
+            limits,
+            |req| -> Result<_> {
+                exchanged += 1;
+                let reply = if refuse {
+                    req.reply(127, (Error::Unauthorized as u16).to_le_bytes().to_vec())
+                } else {
+                    req.reply(103, object_id(body).to_vec())
+                };
+                Ok((reply, 9))
+            },
+            |lease| {
+                assert_eq!(lease, 9);
+                acknowledged += 1;
+                if fail_ack {
+                    Err(Error::Storage)
+                } else {
+                    Ok(())
+                }
+            },
+        );
+        assert_eq!(result.unwrap_err(), expected);
+        assert_eq!((exchanged, acknowledged), (1, 1));
+    }
+}
