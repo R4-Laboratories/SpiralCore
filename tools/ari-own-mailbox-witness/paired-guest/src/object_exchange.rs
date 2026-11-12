@@ -23,7 +23,7 @@ fn operation_id(label: &[u8], pair: &Id, frame: &Frame) -> Id {
     hash(label, &[pair, &frame.transfer, &frame.seq.to_le_bytes()])
 }
 
-fn call_id(pair: &Id, frame: &Frame) -> MessageId {
+pub(super) fn call_id(pair: &Id, frame: &Frame) -> MessageId {
     MessageId::from_bytes(operation_id(
         b"spiralcore.mvm.object.call.v1\0",
         pair,
@@ -31,7 +31,7 @@ fn call_id(pair: &Id, frame: &Frame) -> MessageId {
     ))
 }
 
-fn correlation(pair: &Id, frame: &Frame) -> CorrelationId {
+pub(super) fn correlation(pair: &Id, frame: &Frame) -> CorrelationId {
     CorrelationId::from_bytes(operation_id(
         b"spiralcore.mvm.object.correlation.v1\0",
         pair,
@@ -99,7 +99,7 @@ fn wait_to_poll(deadline: Instant) {
     );
 }
 
-fn submit_before(
+pub(super) fn submit_before(
     pair: Id,
     submission: ObjectSubmissionV1,
     deadline: Instant,
@@ -328,17 +328,28 @@ pub fn send_response_before<A: Authority>(
         "original Call processing deadline expired"
     );
     let reply = call.handle_call(endpoint, monotonic_seconds)?;
+    submit_before(
+        call.pair(),
+        response_submission(call, &reply)?,
+        deadline,
+        traffic,
+    )
+}
+
+pub(super) fn response_submission(
+    call: &ObjectDelivery,
+    reply: &Frame,
+) -> Result<ObjectSubmissionV1> {
     let pair = call.pair();
     let id = hash(
         b"spiralcore.mvm.object.reply.v1\0",
         &[&pair, call.header().message_id.as_bytes()],
     );
-    let submission = ObjectSubmissionV1::Reply {
+    Ok(ObjectSubmissionV1::Reply {
         message_id: MessageId::from_bytes(id),
         original_call: Box::new(call.lease().clone()),
         payload: reply.encode()?,
-    };
-    submit_before(pair, submission, deadline, traffic)
+    })
 }
 #[cfg(test)]
 mod tests;

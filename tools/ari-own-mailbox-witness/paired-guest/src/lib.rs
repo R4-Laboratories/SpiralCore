@@ -4,6 +4,8 @@ mod fixture;
 pub mod object_reader;
 #[cfg(feature = "object-reader-v1")]
 pub mod object_exchange;
+#[cfg(feature="object-reader-v1")]
+mod object_destination;
 mod retirement;
 use anyhow::{Context, Result, ensure};
 use cpu_time::ProcessTime;
@@ -170,6 +172,8 @@ struct Worker {
     role: Role,
     #[cfg(feature = "object-reader-v1")]
     objects: object_exchange::GuestObjectSource,
+    #[cfg(feature="object-reader-v1")]
+    destination:object_destination::GuestDestination,
 }
 fn run(call: WorkerCallRequest, worker: &mut Worker) -> Result<Value> {
     let start = Instant::now();
@@ -193,6 +197,11 @@ fn run(call: WorkerCallRequest, worker: &mut Worker) -> Result<Value> {
         }
         Role::Source if value.get("control_probe").is_some() => control::probe(&value, end),
         Role::Source => stage(&value, end),
+        #[cfg(feature="object-reader-v1")]
+        Role::Destination if value.get("object_receive").is_some()=>{
+            ensure!(value.as_object().is_some_and(|fields|fields.len()==1),"ambiguous object receive");
+            worker.destination.run(&value["object_receive"],end)
+        }
         Role::Destination => receive(&value, end),
     }?;
     result["cpu_ns"] = json!(cpu.elapsed().as_nanos() as u64);
@@ -204,6 +213,8 @@ pub fn serve(role: Role) -> io::Result<()> {
         role,
         #[cfg(feature = "object-reader-v1")]
         objects: object_exchange::GuestObjectSource::default(),
+        #[cfg(feature="object-reader-v1")]
+        destination:Default::default(),
     };
     let mut input = io::stdin().lock();
     let mut output = io::stdout().lock();
