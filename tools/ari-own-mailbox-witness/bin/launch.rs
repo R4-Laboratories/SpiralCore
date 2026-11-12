@@ -1,3 +1,5 @@
+mod guest_stream;
+
 use anyhow::{Context, Result, ensure};
 use mvm_client::entrypoint::dispatch::{self, CapturedOutput, DispatchStdin, EntrypointDispatch};
 use mvm_client::{LaunchRequest, LifecycleMode, LocalBackend, MvmClient, RootfsSource};
@@ -90,6 +92,7 @@ fn main() -> Result<()> {
     let started = Instant::now();
     let outcome = rt.block_on(backend.launch(request))?;
     let setup = started.elapsed().as_nanos();
+    let mut meter = None;
     let entered = (|| -> Result<_> {
         let posture = outcome
             .admitted
@@ -103,6 +106,21 @@ fn main() -> Result<()> {
         let signed_boot = mvm_core::config::vm_state_dir(NAME).join("mailbox-reader-boot.json");
         ensure!(signed_boot.exists(), "original boot reader record absent");
         posture.verify(outcome.admitted.plan(), NAME)?;
+        if env::var_os("SPIRALCORE_CAPTURE_DURABLE_MAILBOX_IO").as_deref()
+            == Some(std::ffi::OsStr::new("1"))
+        {
+            use std::os::unix::fs::{MetadataExt, OpenOptionsExt};
+            let file = fs::OpenOptions::new()
+                .read(true)
+                .custom_flags(libc::O_NOFOLLOW | libc::O_NONBLOCK)
+                .open(mvm_core::config::vm_state_dir(NAME).join(guest_stream::NAME))?;
+            let meta = file.metadata()?;
+            ensure!(
+                meta.is_file() && meta.nlink() == 1 && meta.mode() & 0o777 == 0o600,
+                "expected private regular file from original metered helper"
+            );
+            meter = Some(file);
+        }
         let mut child = Command::new(env::current_exe()?)
             .args(["call"])
             .arg(frame)
@@ -156,6 +174,31 @@ fn main() -> Result<()> {
         anyhow::bail!("original stop failed: {error}; call={entered:?}");
     }
     rt.block_on(backend.remove_machine(&outcome.machine.id))?;
+    if let Some(file) = meter {
+        use std::io::Read;
+        use std::os::unix::fs::OpenOptionsExt;
+        let mut raw = String::new();
+        file.take(32769).read_to_string(&mut raw)?;
+        ensure!(raw.len() <= 32768, "oversized guest stream report");
+        let mut retained = fs::OpenOptions::new()
+            .create_new(true)
+            .write(true)
+            .mode(0o600)
+            .open(report.join(guest_stream::NAME))?;
+        retained.write_all(raw.as_bytes())?;
+        retained.sync_all()?;
+        match guest_stream::completed(&raw) {
+            Some((turns, read, written, finished)) => eprintln!(
+                "mailbox recorded_exchanges={turns} guest_to_host_read_bytes={read} host_to_guest_write_accepted_bytes={written} capture={}",
+                if finished {
+                    "closed_session"
+                } else {
+                    "prefix_only"
+                }
+            ),
+            None => eprintln!("mailbox stream observation incomplete; raw prefix retained"),
+        }
+    }
     let measured = entered?;
     println!(
         "{}",
