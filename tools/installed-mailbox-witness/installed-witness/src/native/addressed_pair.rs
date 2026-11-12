@@ -458,6 +458,46 @@ mod tests {
     }
 
     #[test]
+    fn private_cause_retains_phase_with_exclusive_private_bounded_records() -> Result<()> {
+        use std::os::unix::fs::{DirBuilderExt, MetadataExt};
+        let stamp = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)?
+            .as_nanos();
+        let home =
+            std::env::temp_dir().join(format!("sc-private-refusal-{}-{stamp}", std::process::id()));
+        fs::DirBuilder::new().mode(0o700).create(&home)?;
+        struct Cleanup(std::path::PathBuf);
+        impl Drop for Cleanup {
+            fn drop(&mut self) {
+                let _ = fs::remove_dir_all(&self.0);
+            }
+        }
+        let _cleanup = Cleanup(home.clone());
+        let sink = PrivateLaunchDiagnostics::create(&home)?;
+        let path = home.join("addressed-sdk.private.jsonl");
+        assert_eq!(fs::metadata(&path)?.mode() & 0o777, 0o600);
+        assert!(PrivateLaunchDiagnostics::create(&home).is_err());
+        let cause = "x".repeat(4095)
+            + "é
+operator-only";
+        sink.record("sdk_launch", "source", &cause)?;
+        sink.record("signed_direction_prepare", "pair", "second-layer fallback")?;
+        let bytes = fs::read_to_string(path)?;
+        let rows = bytes
+            .lines()
+            .map(serde_json::from_str::<Value>)
+            .collect::<std::result::Result<Vec<_>, _>>()?;
+        assert_eq!(rows.len(), 2);
+        assert_eq!(rows[0]["truncated"], true);
+        assert_eq!(rows[0]["cause"].as_str().unwrap().len(), 4095);
+        assert_eq!(
+            rows[1],
+            json!({"phase":"signed_direction_prepare","role":"pair","cause":"second-layer fallback","truncated":false})
+        );
+        Ok(())
+    }
+
+    #[test]
     fn predrain_diagnostic_contains_only_stable_categories() {
         use mvm_core::client::MvmError;
         assert_eq!(
