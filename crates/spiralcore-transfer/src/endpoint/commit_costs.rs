@@ -147,4 +147,60 @@ fn cold_whole_ordered_commit_after_full_cache() {
         }
         eprintln!("ORDERED_COMMIT_EXACT trial={repetition} blocks={BLOCKS} plaintext={} object_request={request_bytes} object_reply={reply_bytes} evictions={}", BLOCKS * SIZE as u64, snapshot.evictions);
     }
+    held_read_comparison();
+}
+
+// Compare the original two checked opens with the held-file implementation on
+// the same published bytes, using fresh authority and I/O for every operation.
+fn held_read_comparison() {
+    const READS: usize = 256;
+    let context = crate::wan::context([7; 32]);
+    let ns = context.namespace().unwrap();
+    let resources = ResourceProfile::SmallV1;
+    let root = metadata_tests::Fixture::new();
+    let endpoint = Endpoint::open_with_resource_profile(
+        &root.0,
+        resources.receiver_limits(),
+        crate::wan::BenchAuthority,
+        resources,
+    )
+    .unwrap();
+    let mut expected = vec![0x73; 16384];
+    expected[16367..].fill(0);
+    let offer = Offer::cold(&expected, Mode::Raw);
+    endpoint.publish(&context, ns, &offer, &expected, None).unwrap();
+    let run = |held: bool| {
+        let cpu = ThreadTime::now();
+        let wall = Instant::now();
+        for _ in 0..READS {
+            let (bytes, disk) = if held {
+                endpoint.ordered_cache_read(&context, offer.object).unwrap()
+            } else {
+                // Original 4266155f ordered_cache_read on the same authority,
+                // profile, persisted object and allocation reservation.
+                endpoint.authority.authorize(&context).unwrap();
+                endpoint.ordered_bounds().unwrap();
+                let p = endpoint.publication(context.namespace().unwrap(), offer.object).unwrap();
+                assert!(p.len <= resources.max_artifact_len() as u64);
+                endpoint.reserve(p.len.checked_mul(2).unwrap()).unwrap();
+                let bytes = read_publication(&p).unwrap();
+                endpoint.authority.authorize(&context).unwrap();
+                (bytes, p.len + if p.manifest.is_some() { 81 } else { 49 })
+            };
+            assert_eq!(bytes, expected);
+            assert_eq!(disk, offer.len + 49);
+        }
+        (wall.elapsed().as_nanos(), cpu.elapsed().as_nanos())
+    };
+    for pair in 0..6 {
+        let (prior, held) = if pair % 2 == 0 {
+            (run(false), run(true))
+        } else {
+            let held = run(true);
+            (run(false), held)
+        };
+        eprintln!("ORDERED_HELD_READ pair={pair} reads_each={READS} bytes_each={} prior_wall_ns={} prior_thread_cpu_ns={} held_wall_ns={} held_thread_cpu_ns={}",
+            expected.len() * READS, prior.0, prior.1, held.0, held.1);
+    }
+
 }

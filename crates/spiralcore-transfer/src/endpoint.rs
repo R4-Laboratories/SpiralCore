@@ -1129,16 +1129,19 @@ impl<A: Authority> Endpoint<A> {
         }
     }
     fn publication(&self, ns: Id, id: Id) -> Result<Publication> {
+        self.open_publication(ns, id).map(|(metadata, _)| metadata)
+    }
+    fn open_publication(&self, ns: Id, id: Id) -> Result<(Publication, File)> {
         let dir = self.root.join(hex(&ns));
         if !dir.exists() {
             return Err(Error::Unknown);
         }
         private_dir(&dir)?;
-        let p = read_meta(&self.path(ns, id))?;
+        let (p, file) = open_meta(&self.path(ns, id))?;
         if p.object != id {
             return Err(Error::Integrity);
         }
-        Ok(p)
+        Ok((p, file))
     }
     fn find_base(&self, ns: Id, mid: Id) -> Result<Publication> {
         let dir = self.root.join(hex(&ns));
@@ -1216,9 +1219,9 @@ impl<A: Authority> Endpoint<A> {
         bytes: &[u8],
         mid: Option<Id>,
     ) -> Result<()> {
-        match self.publication(ns, offer.object) {
-            Ok(p) => {
-                verify_publication(&p, bytes)?;
+        match self.open_publication(ns, offer.object) {
+            Ok((p, file)) => {
+                verify_publication(&p, file, bytes)?;
                 storage::sync_existing(&p.path)?;
                 self.authority.authorize(context)?;
                 return Ok(());
@@ -1268,8 +1271,8 @@ impl<A: Authority> Endpoint<A> {
             drop(publish);
             #[cfg(test)]
             let _verify = commit_costs::span(commit_costs::Stage::VerifyPublished);
-            let published = self.publication(ns, offer.object)?;
-            verify_publication(&published, bytes)?;
+            let (published, file) = self.open_publication(ns, offer.object)?;
+            verify_publication(&published, file, bytes)?;
             self.authority.authorize(context)?;
             Ok(())
         })();
@@ -1398,12 +1401,12 @@ impl<A: Authority> Endpoint<A> {
     pub(crate) fn ordered_cache_read(&self, c: &Context, id: Id) -> Result<(Vec<u8>, u64)> {
         self.authority.authorize(c)?;
         self.ordered_bounds()?;
-        let p = self.publication(c.namespace()?, id)?;
+        let (p, file) = self.open_publication(c.namespace()?, id)?;
         if p.len > self.resources.max_artifact_len() as u64 {
             return Err(Error::Limit);
         }
         self.reserve(p.len.checked_mul(2).ok_or(Error::Limit)?)?;
-        let bytes = read_publication(&p)?;
+        let bytes = read_publication_body(&p, file)?;
         self.authority.authorize(c)?;
         Ok((
             bytes,
@@ -1420,7 +1423,7 @@ impl<A: Authority> Endpoint<A> {
         if self.ordered_active_objects(c)?.contains(&victim.id) {
             return Err(Error::Limit);
         }
-        let p = self.publication(c.namespace()?, victim.id)?;
+        let (p, file) = self.open_publication(c.namespace()?, victim.id)?;
         let disk = p
             .len
             .checked_add(if p.manifest.is_some() { 81 } else { 49 })
@@ -1432,7 +1435,7 @@ impl<A: Authority> Endpoint<A> {
             return Err(Error::Limit);
         }
         self.reserve(p.len.checked_mul(2).ok_or(Error::Limit)?)?;
-        drop(read_publication(&p)?);
+        drop(read_publication_body(&p, file)?);
         self.authority.authorize(c)?;
         // Reuse the existing private-file deletion backend under this actual
         // exclusive endpoint owner; Windows checks ACL/reparse/hardlink state
@@ -1560,6 +1563,9 @@ fn state_reply(f: &Frame, s: &Attempt) -> Frame {
     f.reply(105, b)
 }
 fn read_meta(path: &Path) -> Result<Publication> {
+    open_meta(path).map(|(metadata, _)| metadata)
+}
+fn open_meta(path: &Path) -> Result<(Publication, File)> {
     match fs::symlink_metadata(path) {
         Ok(_) => {
             // Windows open_read validates the actual consumed handle. Its
@@ -1571,9 +1577,12 @@ fn read_meta(path: &Path) -> Result<Publication> {
         Err(_) => return Err(Error::Storage),
     }
     let mut f = storage::open_read(path)?;
-    read_meta_file(path, &mut f)
+    let metadata = read_meta_file(path, &mut f)?;
+    Ok((metadata, f))
 }
 fn read_meta_file(path: &Path, f: &mut File) -> Result<Publication> {
+    #[cfg(test)]
+    ordered_eviction_tests::HEADER_READS.with(|count| count.set(count.get() + 1));
     let mut h = [0u8; 49];
     f.read_exact(&mut h).map_err(|_| Error::Integrity)?;
     if &h[..8] != b"SCPUB001" {
@@ -1619,13 +1628,17 @@ fn owned_stage(s: &str) -> bool {
     digits(p.next()) && digits(p.next()) && p.next().is_none()
 }
 fn read_publication(p: &Publication) -> Result<Vec<u8>> {
-    #[cfg(test)]
-    ordered_eviction_tests::FULL_READS.with(|count| count.set(count.get() + 1));
     let mut f = storage::open_read(&p.path)?;
     let fresh = read_meta_file(&p.path, &mut f)?;
     if fresh.object != p.object || fresh.len != p.len || fresh.manifest != p.manifest {
         return Err(Error::Integrity);
     }
+    read_publication_body(p, f)
+}
+// The freshly opened, checked file is positioned just after its validated header.
+fn read_publication_body(p: &Publication, f: File) -> Result<Vec<u8>> {
+    #[cfg(test)]
+    ordered_eviction_tests::FULL_READS.with(|count| count.set(count.get() + 1));
     let mut data = Vec::new();
     data.try_reserve_exact(p.len as usize)
         .map_err(|_| Error::Limit)?;
@@ -1635,15 +1648,8 @@ fn read_publication(p: &Publication) -> Result<Vec<u8>> {
     }
     Ok(data)
 }
-fn verify_publication(p: &Publication, expected: &[u8]) -> Result<()> {
-    let mut f = storage::open_read(&p.path)?;
-    let fresh = read_meta_file(&p.path, &mut f)?;
-    if fresh.object != p.object
-        || fresh.len != p.len
-        || fresh.manifest != p.manifest
-        || expected.len() as u64 != p.len
-        || object_id(expected) != p.object
-    {
+fn verify_publication(p: &Publication, mut f: File, expected: &[u8]) -> Result<()> {
+    if expected.len() as u64 != p.len || object_id(expected) != p.object {
         return Err(Error::Integrity);
     }
     // Full byte equality against the canonical-digest-checked bytes proves the

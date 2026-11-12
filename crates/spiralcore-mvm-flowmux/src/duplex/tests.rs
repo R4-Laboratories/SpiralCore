@@ -477,13 +477,10 @@ fn thirty_two_interleaved_requests_bound_a_waiting_local_operation() {
             header[9] = 1;
             header[12..44].copy_from_slice(&binding.directional_flow(Role::Acceptor));
             header[116..120].copy_from_slice(&(request.len() as u32).to_be_bytes());
-            for index in 0u64..33 {
+            for index in 0u64..32 {
                 header[108..116].copy_from_slice(&index.to_be_bytes());
                 peer.write_all(&header).unwrap();
                 peer.write_all(&request).unwrap();
-                if index == 32 {
-                    break;
-                }
                 let mut ack = [0; spiralcore_mvm_flowmux::HEADER_LEN];
                 peer.read_exact(&mut ack).unwrap();
                 assert_eq!(ack[8], 7);
@@ -493,9 +490,16 @@ fn thirty_two_interleaved_requests_bound_a_waiting_local_operation() {
                 peer.read_exact(&mut body).unwrap();
                 assert_eq!(Frame::decode(&body).unwrap().kind, 101);
             }
+            // The worker sees the next input byte and returns Limit before it
+            // reads the record. A reset can arrive during this final write.
+            header[108..116].copy_from_slice(&32u64.to_be_bytes());
+            let terminal = peer
+                .write_all(&header)
+                .and_then(|()| peer.write_all(&request));
+            if let Err(error) = terminal {
+                assert_eq!(error.kind(), std::io::ErrorKind::ConnectionReset);
+            }
             let mut probe = [0; 1];
-            // The fatal limit closes with the33rd request unread. Windows can
-            // report a reset rather than EOF; neither permits a response byte.
             match peer.read(&mut probe) {
                 Ok(0) => {}
                 Err(error) if error.kind() == std::io::ErrorKind::ConnectionReset => {}
