@@ -1,0 +1,24 @@
+{
+  "source": "8794d3e7",
+  "original_mvm_guest_api": "543efc7f94aa756c09785b38bdd024b6ba8199c7",
+  "previous_workload_source": "0385b57722f528c2411e9a00424c2da3e97bc3b0",
+  "previous_native_observation": "The installed guest agent attached runtime overlay environment entries and the old workload rejected the call before staging.",
+  "fix": "Discard per-call environment metadata. Decode only the original frame from stdin, bound the operation by the caller's timeout, and use fixed own-mailbox endpoints.",
+  "profile": "x86_64-unknown-linux-musl release on native Linux",
+  "static_elf_bytes": 1293712,
+  "static_elf_sha256": "8651d96a37895c0b3e447dccf1ce348fafcb53f4171097503cfe61c578c95814",
+  "workload_test_binary_sha256": "cde123502391d1e5283d9960669db0a031f4fdd42fb23aefeeca33de38cddb56",
+  "library_test_binary_sha256": "a8d4ff51cc4e73ffbab2af5f8e0306e67c5f64969c25677cb4145b7b8479b98a",
+  "workload_cases_passed": 3,
+  "library_cases_passed": 4,
+  "workload_log_sha256": "5452b2ea961c31eea17b7d1e616d6e24f7ec18a5f13be1f04c49f704c5622eab",
+  "library_log_sha256": "73ac7463d834152ba3972d01a872ba08fc005d9444f85349c2c808aab1261845",
+  "application_unit_socket_sample": {
+    "body_bytes": 257, "frame_bytes": 313, "staged_file_bytes": 377,
+    "receive_request_bytes": 54, "receive_response_bytes": 2008,
+    "ack_request_bytes": 1500, "ack_response_bytes": 1763,
+    "application_thread_cpu_ns": 1129307, "application_wall_ns": 2552531,
+    "peer": "synthetic reader; real local Unix stream under compiled upstream Standard plus mailbox policy"
+  },
+  "booted_transfer_in_this_component_result": null
+}

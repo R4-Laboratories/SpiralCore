@@ -41,4 +41,4 @@ cargo zigbuild --locked --release --target x86_64-unknown-linux-musl \
   --manifest-path crates/spiralcore-mvm-guest/Cargo.toml --bin spiralcore-durable-own-mailbox
 ```
 
-[Static binary and component measurements](../../docs/network/evidence/2026-11-12-paired-mailbox/durable-guest-binding/own-workload.json)
+[Original static workload measurements](../../docs/network/evidence/2026-11-12-paired-mailbox/durable-guest-binding/own-workload.json) · [Runtime overlay compatibility and current static executable](../../docs/network/evidence/2026-11-12-paired-mailbox/durable-guest-binding/runtime-overlay.json)
