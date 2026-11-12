@@ -1,0 +1,39 @@
+{
+  "scope": "Darwin arm64 component. One native workload exec with original anonymous Unix datagram on stdin, verified paired service time and limits passed as trusted launcher configuration. Guest host-CID/AF_VSOCK not exercised.",
+  "source": "26cd66e00eb6b61fa9a244bd13513396f3e0a729",
+  "tree": "cb5d50b00a21d07023ba0c2c1357b5da2637f680",
+  "mode": "unoptimized Rust test profile; one sample. Synthetic signed pair.",
+  "mvm_agentd_binary_sha256": "80230c9d4d781b21726fd6ecd414ced874e9e6d91d024b4cfc2c95b779d7c0ca",
+  "linux_kvm": "not exercised by this test",
+  "workload_controls": {
+    "passed": 5,
+    "failed": 0,
+    "log_sha256": "1aa0b0d762ff42e3a0bc354c3b97ae0ee2fb8c390d99a50a8670ffdb87375566"
+  },
+  "core_signed_pair_control": {
+    "passed": 1,
+    "failed": 0,
+    "log_sha256": "ed3f761b51298dda7f1ec3cc88796bc7625d2fab9ad04943ee2aafc583f493d1",
+    "source_checkout": "b32dd07a10df2c75e95b067cfd3723dbf9b33daa"
+  },
+  "measurement": {
+    "agent_cpu_ns": 51125,
+    "agent_to_workload_accepted_bytes": 474,
+    "expected_and_verified_digest": "ad6e06a474a10aa7e5939f8d8d1b3d41a7d415512655744e1e85c9b7236275e2",
+    "offer_through_confirmed_ack_wall_ns": 140958,
+    "setup_through_workload_ready_wall_ns": 12961916,
+    "start_through_confirmed_ack_wall_ns": 13103750,
+    "verified_payload_bytes": 257,
+    "workload_cpu_ns": 118083,
+    "workload_to_agent_accepted_bytes": 46,
+    "workload_wait_and_callback_wall_ns": 156625
+  },
+  "lost_ack": "Only the same live reader can re-emit the last receipt. Successful read clears unread once. A callback that performs effects then reports failure can run again on retry.",
+  "unqualified": [
+    "production guest startup and actual launcher fd delivery",
+    "guest-to-host carrier for this role",
+    "aggregate fleet budgets",
+    "WAN and zstd",
+    "crash recovery or independent application processing proof"
+  ]
+}
