@@ -96,6 +96,7 @@ struct Session {
     gate: Rc<Gate>,
     endpoint: Endpoint<OriginalAuthority>,
     since: Instant,
+    instance: [u8; 16],
 }
 impl Session {
     fn start(
@@ -103,6 +104,8 @@ impl Session {
         until: Instant,
         traffic: Rc<RefCell<ReaderTraffic>>,
     ) -> Result<Self> {
+        let mut instance = [0u8; 16];
+        File::open("/dev/urandom")?.read_exact(&mut instance)?;
         let boot = MailboxReaderBootBinding::load_guest_original()?;
         ensure!(
             Some(call.pair()) == boot.durable_object_pair_sha256_v1,
@@ -136,6 +139,7 @@ impl Session {
             gate,
             endpoint,
             since: Instant::now(),
+            instance,
         })
     }
 }
@@ -175,6 +179,12 @@ impl GuestDestination {
         let counters = json!({"this_invocation":std::array::from_fn::<u64,6,_>(|n|total[n]-before[n]),"worker_cumulative":total,"order":["operations_to_agent","operations_from_agent","ack_to_agent","ack_from_agent","authority_to_agent","authority_from_agent"]});
         match result {
             Ok(mut value) => {
+                let s = self
+                    .session
+                    .as_ref()
+                    .context("original destination session missing")?;
+                value["receiver_instance"] = json!(hex::encode(s.instance));
+                value["receiver_boot"] = json!(hex::encode(s.gate.boot.boot.as_bytes()));
                 value["reader_bytes"] = counters;
                 Ok(value)
             }
