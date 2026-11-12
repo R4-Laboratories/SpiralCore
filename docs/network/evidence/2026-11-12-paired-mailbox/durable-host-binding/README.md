@@ -1,0 +1,18 @@
+# Addressed SpiralCore Cast to B’s local-durable MVM journal
+
+On Linux x86-64 and Apple Silicon macOS, A’s host-side sender delivered a 313-byte SpiralCore v1 data frame to B’s signed direct Unix socket. B’s canonical journal returned its signed V2 `AcceptedLocalDurable` receipt. After stopping the service, observing that the socket was unavailable and reopening the journal and anchor, A sent the original sealed envelope again. B returned the byte-identical signed receipt. A host reader with a separate Receive capability recovered the exact frame and 257-byte binary body, acknowledged the journal entry and observed an empty inbox. [Source and reproduction command](../../../../../crates/spiralcore-mvm-journal-host/README.md) · [Ari’s pinned journal source](https://github.com/tinylabscom/mvm/tree/543efc7f94aa756c09785b38bdd024b6ba8199c7)
+
+| Native host | Operation | Socket bytes A → B | Socket bytes B → A | Through verified receipt | Sender thread CPU | Whole process CPU |
+|---|---|---:|---:|---:|---:|---:|
+| macOS arm64 | Initial admission | 5,100 | 1,020 | 56.624 ms | 7.200 ms | 20.687 ms |
+| macOS arm64 | Exact retry | 5,100 | 1,020 | 34.259 ms | 8.486 ms | 12.897 ms |
+| Linux x86-64 | Initial admission | 5,096 | 1,020 | 60.068 ms | 39.725 ms | 53.950 ms |
+| Linux x86-64 | Exact retry | 5,096 | 1,020 | 58.524 ms | 37.275 ms | 49.724 ms |
+
+Each row is one unoptimized test-profile observation. Wall time runs from the call to `send_cast` through verification of B’s signed receipt. CPU for the whole test process includes the journal worker, sender thread and deadline watchdog. Receiver-only CPU and send-only wall time were unmeasured. Preparing the original frame and sealed envelope took 3.343 ms wall / 3.330 ms sender CPU on macOS and 30.988 / 30.980 ms on Linux. The listener startup, shutdown, outage probe, journal recovery, host readback and ACK fall outside the two timed exchanges. A separate stale-policy refusal occurred before the timed initial admission. [Machine-readable results and executable identities](results.json)
+
+The userspace meter counted successful writes and reads by the canonical sender on B’s Unix socket, including both length prefixes, the signed Send credential and the signed verdict. The original encoded envelopes measured 3,760 bytes on macOS and 3,756 bytes on Linux. Each run used a fresh message identity and seal. Failed probes and recovery operations can also consume resources; the table counts completed exchanges only. This small frame expanded on the measured socket. No zstd, compression, WAN or fleet performance comparison was run here.
+
+The source binding refused a foreign recipient and a revoked route. The actual destination service refused a stale policy epoch and its host reader refused a foreign recipient. Existing v1 registered-Call and receipt-sender regression suites passed 10/10 on Linux.
+
+**Installed acceptance remains open.** These tests use synthetic grants and two endpoint policies in one trusted host process. They start the canonical journal service on a real Unix socket. The prior two-Firecracker witness used ephemeral mailboxes. Installed acceptance needs the operator’s `max_mailbox_retention_ms`, signed `--mailbox-retention-ms`, normal admission, verified guest boot binding and separate reader enrollment. A’s original pending intent must survive ambiguity and retire only after B’s signed V2 receipt. B’s workload must read the original frame and explicitly ACK its lease. [Paired delivery tracker](https://github.com/R4-Laboratories/SpiralCore/issues/168) · [Separate guest workload adapter](../durable-guest-binding/README.md)
