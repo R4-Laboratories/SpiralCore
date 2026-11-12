@@ -1,0 +1,143 @@
+{
+  "scope": "Original host Unix stream deadline exchange. Linux real helper processes used fixture guest sockets. No VM or WAN measurement in this packet.",
+  "source": {
+    "base": "27038e3f322e4336df180073e12cae59cc4dba54",
+    "regression": "3323941c66bcd6522d87c3172bfe6ab8d842a791",
+    "fixed": "8238000662f59893b6ec703ab4b37d7a86c08340",
+    "fixed_tree": "75898e014dabd5aeddfbded96a6a0e58d5df90ac",
+    "patch_sha256": "d02ccf3442a8d83c79f0364ad859e8f950cb980789d1eed29c0669d8850f92a5"
+  },
+  "socket_controls": {
+    "macos_arm64_before": {
+      "outcome": "FAILED",
+      "passed": 1,
+      "failed": 3,
+      "ignored": 0,
+      "elapsed_s": 0.1
+    },
+    "macos_arm64_after": {
+      "outcome": "ok",
+      "passed": 4,
+      "failed": 0,
+      "ignored": 0,
+      "elapsed_s": 0.11
+    },
+    "linux_x86_64_after": {
+      "outcome": "ok",
+      "passed": 4,
+      "failed": 0,
+      "ignored": 0,
+      "elapsed_s": 0.1
+    },
+    "buffered_reply_exact_bytes": 1197,
+    "deadline_ms_for_stalled_reads_and_writes": 50,
+    "macos_fixed_suite_external_cpu_s": {
+      "user": 0.0,
+      "system": 0.0
+    },
+    "linux_fixed_suite_external_cpu_s": {
+      "user": 0.0,
+      "system": 0.0
+    },
+    "cpu_reporting_resolution_s": 0.01,
+    "macos_fixed_test_sha256": "684865a23c0df4d2a97d7c651eca79fb2610beef5547d1f796c1e48de3a3534b",
+    "macos_baseline_test_sha256": "43bd06684c1edd9bc26f99bb75c4ba60d550377efc2c09cc5c22df8eb8f44289",
+    "linux_fixed_test_sha256": "d77d821db5f42d1ae5cad69802afbd257c3bcb00503424ec6d8d2b5ff66b41c2"
+  },
+  "linux_metered_cargo": {
+    "mailbox_service": {
+      "outcome": "ok",
+      "passed": 25,
+      "failed": 0,
+      "ignored": 0,
+      "elapsed_s": 0.43
+    },
+    "mailbox_process": {
+      "outcome": "FAILED",
+      "passed": 40,
+      "failed": 1,
+      "ignored": 1,
+      "elapsed_s": 13.01
+    },
+    "explicit_original_helper_pair": {
+      "outcome": "ok",
+      "passed": 1,
+      "failed": 0,
+      "ignored": 0,
+      "elapsed_s": 0.31
+    }
+  },
+  "signed_pair_process_fixture": {
+    "relay": [
+      {
+        "turn": 0,
+        "sealed_to_b": 5540,
+        "b_reply_to_a": 1145
+      },
+      {
+        "turn": 1,
+        "sealed_to_b": 5540,
+        "b_reply_to_a": 1145
+      },
+      {
+        "turn": 2,
+        "sealed_to_b": 5540,
+        "b_reply_to_a": 1145
+      }
+    ],
+    "source_verdict": [
+      {
+        "turn": 1,
+        "guest_submit_to_verified_v2_ns": 19006584
+      },
+      {
+        "turn": 2,
+        "guest_submit_to_verified_v2_ns": 20403535
+      }
+    ],
+    "source_guest": [
+      {
+        "turn": 1,
+        "plaintext_bytes": 257,
+        "guest_submit_bytes": 325,
+        "guest_receipt_bytes": 1145
+      },
+      {
+        "turn": 2,
+        "plaintext_bytes": 257,
+        "guest_submit_bytes": 325,
+        "guest_receipt_bytes": 1145
+      }
+    ],
+    "destination_guest": {
+      "exact_bytes": 257,
+      "receive_guest_to_helper": 355,
+      "receive_helper_to_guest": 5696,
+      "ack_guest_to_helper": 2214,
+      "ack_helper_to_guest": 2218
+    },
+    "first_guest_connection_through_b_ack_ns": 59032004,
+    "source_original_collection_ns": 204800872,
+    "destination_original_collection_ns": 15599666,
+    "whole_cargo_test_command_including_waited_children": {
+      "wall_s": 0.48,
+      "user_cpu_s": 0.17,
+      "system_cpu_s": 0.05,
+      "max_rss_kib": 125576,
+      "exit_code": 0
+    }
+  },
+  "linux_host_executables_sha256": {
+    "mvm_hostd-2e1087f6292829b4": "74ad5711f1bf3350f118733feb5f9b0cd63cc32e0aca09f826656b1a64f70f2b",
+    "mvm-mailbox": "0cc277b47807e330ef0a29e877a6044421cbc9503a05e8db1b6ff3c597856093"
+  },
+  "retained_log_sha256": {
+    "deadline-red.log": "c189490f29181df3f81fb845fcac0c5227e1841b1076a28ca211569530fe3589",
+    "deadline-green.log": "c5301c4dedcad584eeea37c9f798fe56ea89974f903967259d7ca49c659ef52b",
+    "component-linux.log": "b747aa2d272bba746c594e96de4eed603a7ea531d6d22d7995ff04785a7fd950",
+    "linux-mailbox-service.log": "25bb464bcf86a99291108775cb7b7e1bd618dd799ea0ce6ef37b1cf154e046a7",
+    "linux-mailbox-process.log": "02e98182d99dceaa2c45409c2460caf2e33669350f7a3e0dfdb12691902a549e",
+    "linux-pair.log": "189828342d0ba34a926113acba52c420af1aac1e4e11da5afa9f52e4efb9fbf9",
+    "host-build.log": "a0ffe2c3045cc8df280f8c6af87be10383d304b949763cacef535b222114b75b"
+  }
+}
