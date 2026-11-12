@@ -1,0 +1,87 @@
+{
+  "base": "c492c52c3e6054e640367ad72f857c5314ff22b5",
+  "candidate": "f8feff807e46b877e4785ebc89714398de0fe6ac",
+  "patch_sha256": "812eff52f8e3c45f41d7c4cf328f8ddad2fd9c07e5e408e8968412458dadc536",
+  "platform": {
+    "architecture": "x86_64",
+    "kernel": "7.0.0-42-generic",
+    "required_socket_option": "SO_PEERPIDFD"
+  },
+  "component_runs": [
+    {
+      "command": "cargo test --locked --offline -p mvm-runtime --lib firecracker_process::tests -- --test-threads=1 --nocapture",
+      "passed": 2,
+      "failed": 0,
+      "ignored_fixture_entrypoints": 1,
+      "harness_elapsed_seconds": 0.01,
+      "log_sha256": "3707910e61fb080df008d87176e79961637e9eeabf8a2d34f16908d26cbe6679",
+      "executable_sha256": "0fa636f22df99dbf6cca4567648329bcd3ecfe1e09aafe80a348fdabf2e89468"
+    },
+    {
+      "command": "cargo test --locked --offline -p mvm-hostd --lib owned_client::native_start::tests -- --test-threads=1 --nocapture",
+      "passed": 2,
+      "failed": 0,
+      "ignored_fixture_entrypoints": 0,
+      "harness_elapsed_seconds": 0.0,
+      "log_sha256": "b17d816bd966a3e441af31ddb4ef5fb48f4276aa2d7c8b92564b30f3d76cb9a7",
+      "executable_sha256": "662fd46f897cb14379a67c654549bff6638dfc26daf2af61763bd0912c476c35"
+    }
+  ],
+  "historical_administrative_stops": [
+    {
+      "attempt": 7,
+      "log_sha256": "7836e1045f96171fb6165835161cc1b76889ce945236c8b69dfd774f173c3198",
+      "roles": [
+        {
+          "role": "alpha",
+          "systemctl_exit": 0,
+          "unit_state": "inactive",
+          "unit_substate": "dead",
+          "original_cgroup_vacant": true,
+          "original_vmm_running": false,
+          "sdk_reaped_exit_status": null
+        },
+        {
+          "role": "beta",
+          "systemctl_exit": 0,
+          "unit_state": "inactive",
+          "unit_substate": "dead",
+          "original_cgroup_vacant": true,
+          "original_vmm_running": false,
+          "sdk_reaped_exit_status": null
+        }
+      ]
+    },
+    {
+      "attempt": 8,
+      "log_sha256": "8a1b325a8aa329b89956163ae36bd8d581f302eecacf2a7cf7b424ef80b8d6f6",
+      "roles": [
+        {
+          "role": "alpha",
+          "systemctl_exit": 0,
+          "unit_state": "inactive",
+          "unit_substate": "dead",
+          "original_cgroup_vacant": true,
+          "original_vmm_running": false,
+          "sdk_reaped_exit_status": null
+        },
+        {
+          "role": "beta",
+          "systemctl_exit": 0,
+          "unit_state": "inactive",
+          "unit_substate": "dead",
+          "original_cgroup_vacant": true,
+          "original_vmm_running": false,
+          "sdk_reaped_exit_status": null
+        }
+      ]
+    }
+  ],
+  "installed_guest_sdk_rollback": "pending",
+  "transfer": {
+    "bytes_in": null,
+    "bytes_out": null,
+    "cpu_ns": null,
+    "total_time_ns": null
+  }
+}
