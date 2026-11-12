@@ -224,7 +224,7 @@ failure the client received its deregistration reply, the journal was empty,
 and the worker collected its original signer and exited 1. The ordinary idle
 control exited 42. The [nine-check source revision](https://github.com/Casey-allard/mvm/tree/fc7c4ab41dc8900c8f736ef5c105f814feb4e3f4) is available in one checkout.
 
-The [installed-helper report](evidence/2026-11-11-retained-recovery/installed-helper/README.md) records 27 passing Linux checks. The coordinator collected an injected per-VM child through its original owner and preserved exit code 0. Production helper installation, resource release after collection and transfer through an actual guest remain open. The same report records 19 Linux guest-agent and outbox checks on the combined MVM 0.28.0-rc.1 source.
+The [installed-helper report](evidence/2026-11-11-retained-recovery/installed-helper/README.md) records 27 passing Linux checks. The coordinator collected an injected per-VM child through its original owner and preserved exit code 0. A follow-up Linux run verified that the final receipt releases its shared quota. On macOS the real helper delivered 4,098 exact bytes over a synthetic guest socket. Installed launcher integration and a Firecracker guest transfer remain open. The same report records 19 Linux guest-agent and outbox checks on the combined MVM 0.28.0-rc.1 source.
 
 [PR #95](https://github.com/R4-Laboratories/SpiralCore/pull/95) adds canonical
 transport-binding revocation to the mailbox adapter. Live Call and Reply keep
