@@ -168,7 +168,7 @@ fn start(
     )
 }
 
-pub fn run(args: &[String]) -> Result<()> {
+pub fn run(args: &[String], codec: Option<object_repeat::Codec>) -> Result<()> {
     let [ap, ad, bp, bd] = args else {
         anyhow::bail!("expected original caller ext4 and SHA-256, then callee ext4 and SHA-256")
     };
@@ -254,19 +254,23 @@ pub fn run(args: &[String]) -> Result<()> {
             &mut history,
             &json!({"stage":"before_cold","meters_a_b":previous}),
         )?;
-        let mut result = object_repeat::measure_observed(&hex::encode(pair), |phase, row| {
-            let observed = boundary(&meters)?;
-            let delta = phase_counts(&previous, &observed);
-            event(
-                &mut history,
-                &json!({"stage":phase,"data":row,"meters_a_b":observed,"transport_delta":delta.as_ref().ok(),
+        let mut result = object_repeat::measure_observed(
+            &hex::encode(pair),
+            codec,
+            |phase, row| {
+                let observed = boundary(&meters)?;
+                let delta = phase_counts(&previous, &observed);
+                event(
+                    &mut history,
+                    &json!({"stage":phase,"data":row,"meters_a_b":observed,"transport_delta":delta.as_ref().ok(),
                 "transport_delta_error":delta.as_ref().err().map(|e|format!("{e:#}")),"elapsed_ns":begin.elapsed().as_nanos() as u64}),
-            )?;
-            // Preserve the actual cold/warm application gate even if a capture is incomplete.
-            phases.insert(phase.into(),json!({"meters_a_b":delta.as_ref().ok(),"error":delta.err().map(|e|format!("{e:#}"))}));
-            previous = observed;
-            Ok(())
-        })?;
+                )?;
+                // Preserve the actual cold/warm application gate even if a capture is incomplete.
+                phases.insert(phase.into(),json!({"meters_a_b":delta.as_ref().ok(),"error":delta.err().map(|e|format!("{e:#}"))}));
+                previous = observed;
+                Ok(())
+            },
+        )?;
         result["transport_phases"] = Value::Object(phases);
         Ok(result)
     })();

@@ -333,7 +333,20 @@ impl GuestDestination {
         let Phase::Accepted { readback } = &p.phase else {
             anyhow::bail!("missing original Reply acceptance")
         };
-        let result = json!({"original_call_acknowledged":true,"seq":op.seq,"transfer":hex::encode(op.transfer),"readback_hex":readback.as_ref().map(hex::encode)});
+        // Report only scalar framing metadata of the original handled Call.
+        let mut result = json!({"original_call_acknowledged":true,"seq":op.seq,"transfer":hex::encode(op.transfer),"readback_hex":readback.as_ref().map(hex::encode)});
+        result["frame_kind"] = json!(f.kind);
+        if f.kind == 1 || f.kind == 2 {
+            result["wire_mode"] = json!(f.body.first());
+        }
+        if f.kind == 2 {
+            let len = f
+                .body
+                .get(1..5)
+                .and_then(|b| <[u8; 4]>::try_from(b).ok())
+                .map(u32::from_le_bytes);
+            result["data_payload_bytes"] = json!(len);
+        }
         self.last_ack = Some(op);
         self.pending = None;
         Ok(result)
