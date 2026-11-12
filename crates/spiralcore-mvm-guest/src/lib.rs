@@ -138,6 +138,15 @@ impl Delivery {
     }
 }
 
+/// Connect to this workload's canonical mailbox reader under an absolute
+/// deadline. Counts the actual locally exchanged bytes for a paired request.
+pub fn application_reader_before(
+    deadline: Instant,
+    traffic: &mut ReaderTraffic,
+) -> io::Result<impl io::Read + io::Write + '_> {
+    reader_io::ReaderIo::connect(Path::new(GUEST_READER_SOCKET_PATH), deadline, traffic)
+}
+
 fn request(
     value: ApplicationReaderRequest,
     deadline: Instant,

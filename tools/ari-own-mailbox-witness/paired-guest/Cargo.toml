@@ -1,0 +1,28 @@
+[package]
+name = "spiralcore-paired-journal-workloads"
+version = "0.1.0"
+edition = "2024"
+publish = false
+[workspace]
+[dependencies]
+mvm-agentd = {path="../source/crates/mvm-agentd", default-features=false}
+mvm-contract = {path="../source/crates/mvm-contract", default-features=false, features=["protocol"]}
+mvm-core = {path="../source/crates/mvm-core", default-features=false}
+spiralcore-transfer = {path="../spiralcore/crates/spiralcore-transfer"}
+spiralcore-mvm-guest = {path="../spiralcore/crates/spiralcore-mvm-guest"}
+cpu-time="1"
+sha2="0.10"
+hex="0.4"
+serde_json="1"
+anyhow="1"
+[patch."https://github.com/tinylabscom/mvm"]
+mvm-contract={path="../source/crates/mvm-contract"}
+mvm-core={path="../source/crates/mvm-core"}
+mvm-agentd={path="../source/crates/mvm-agentd"}
+[patch.crates-io]
+am-fs-ext4 = { path = "../source/third_party/am-fs-ext4" }
+arrayref = { path = "../source/third_party/arrayref" }
+gix = { path = "../source/third_party/gix-0.87.1" }
+gix-object = { path = "../source/third_party/gix-object-0.64.1" }
+notify = { path = "../source/third_party/notify-8.2.0" }
+io-extras = { path = "../source/third_party/io-extras-0.19.0" }

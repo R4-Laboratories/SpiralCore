@@ -4,6 +4,8 @@ version = "0.1.0"
 edition = "2024"
 publish = false
 [workspace]
+[features]
+paired-journal-qualification = []
 [dependencies]
 libc = "=0.2.186"
 anyhow = "=1.0.103"
@@ -14,6 +16,11 @@ mvm-client = { path = "../source/crates/mvm-client" }
 mvm-agentd = { path = "../source/crates/mvm-agentd" }
 mvm-build = { path = "../source/crates/mvm-build" }
 mvm-core = { path = "../source/crates/mvm-core", features = ["host-state"] }
+mvm-hostd = { path = "../source/crates/mvm-hostd" }
+mvm-contract = { path = "../source/crates/mvm-contract", features = ["protocol"] }
+hex = "0.4"
+rand = "0.10"
+ed25519-dalek = "3"
 [patch.crates-io]
 am-fs-ext4 = { path = "../source/third_party/am-fs-ext4" }
 arrayref = { path = "../source/third_party/arrayref" }
@@ -30,3 +37,8 @@ path = "bin/image.rs"
 [[bin]]
 name = "own-mailbox"
 path = "bin/launch.rs"
+
+[[bin]]
+name = "paired-journal"
+path = "bin/paired/main.rs"
+required-features = ["paired-journal-qualification"]
