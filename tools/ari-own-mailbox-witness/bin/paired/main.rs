@@ -1,6 +1,7 @@
-//! One synthetic B-addressed operation through two original persistent Firecracker guests.
+//! One synthetic B-addressed operation through two original persistent native guests.
 mod enrollment;
 mod meter;
+mod native_backend;
 mod receipt_retry;
 mod workload;
 use anyhow::{Context, Result, ensure};
@@ -202,7 +203,13 @@ impl State {
     }
 }
 fn run(args: &[String]) -> Result<()> {
-    let [ar, ad, br, bd, frame] = args else {
+    let (requested, inputs) = match args {
+        [flag, backend, rest @ ..] if flag == "--backend" => (Some(backend.as_str()), rest),
+        _ => (None, args),
+    };
+    let native = native_backend::select(env::consts::OS, env::consts::ARCH, requested)
+        .map_err(anyhow::Error::msg)?;
+    let [ar, ad, br, bd, frame] = inputs else {
         anyhow::bail!("expected A ext4 + digest, B ext4 + digest, and fixture frame")
     };
     let home = private_home()?;
@@ -224,7 +231,8 @@ fn run(args: &[String]) -> Result<()> {
         .create_new(true)
         .mode(0o600)
         .open(report)?;
-    let backend = LocalBackend::with_hypervisor("firecracker");
+    let backend = LocalBackend::with_hypervisor(native);
+    let mut observed = [None; 2];
     let rt = tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()?;
@@ -245,7 +253,7 @@ fn run(args: &[String]) -> Result<()> {
                 LaunchRequest::builder(LifecycleMode::Persistent, RootfsSource::LocalPath(path))
                     .name(name)
                     .profile("standard")
-                    .backend("firecracker")
+                    .backend(native)
                     .cpus(1)
                     .memory_mib(256)
                     .ttl_seconds(180)
@@ -262,6 +270,8 @@ fn run(args: &[String]) -> Result<()> {
                 owner: &mut state.b_pending,
             },
         ))?;
+        observed[1] = mvm_client::AnyBackend::started_vm_kind(B).map(|kind| kind.as_str());
+        native_backend::check_observation(native, observed[1]).map_err(anyhow::Error::msg)?;
         meters[1] = Some(meter::OriginalMeter::open(B)?);
         let b = Arc::new(Mutex::new(
             state
@@ -287,6 +297,8 @@ fn run(args: &[String]) -> Result<()> {
                 owner: &mut state.a,
             },
         ))?;
+        observed[0] = mvm_client::AnyBackend::started_vm_kind(A).map(|kind| kind.as_str());
+        native_backend::check_observation(native, observed[0]).map_err(anyhow::Error::msg)?;
         meters[0] = Some(meter::OriginalMeter::open(A)?);
         for (name, original, admitted) in [
             (A, grant, &astart.admitted),
@@ -468,7 +480,9 @@ fn run(args: &[String]) -> Result<()> {
             streams[i] = meter.finish(&home.join(format!("original-{}.counts", [A, B][i])))?;
         }
     }
-    let row = json!({"original_5257_helper_streams_a_b":streams,"result":measured.as_ref().ok(),"transfer_error":measured.as_ref().err().map(|e|format!("{e:#}")),
+    let row = json!({"native_host":{"os":env::consts::OS,"architecture":env::consts::ARCH,
+        "requested_backend":native,"observed_source_backend":observed[0],"observed_destination_backend":observed[1]},
+        "original_5257_helper_streams_a_b":streams,"result":measured.as_ref().ok(),"transfer_error":measured.as_ref().err().map(|e|format!("{e:#}")),
         "original_exits":exit.as_ref().ok(),"teardown_error":exit.as_ref().err().map(|e|format!("{e:#}")),"driver_process_cpu_ns":cpu.elapsed().as_nanos() as u64,
         "whole_wall_ns":begin.elapsed().as_nanos() as u64});
     serde_json::to_writer(&mut output, &row)?;
