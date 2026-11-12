@@ -23,7 +23,9 @@ A guest-side candidate now keeps an explicitly B-addressed pending operation acr
 
 The [single-guest warm workload](../../crates/spiralcore-mvm-guest/README.md#single-guest-warm-workload) now builds as a static Linux x86-64 executable. Its component tests cover exact file readback before ACK and counts for the local reader socket.
 
-A real Linux/Firecracker guest submitted a 313-byte SpiralCore frame to its own production mailbox. The host retained one journal entry and an anchor at cursor 1. The guest reader returned an authorization refusal before exact readback or ACK. [Three native attempts, resource use and remaining reader gate](evidence/2026-11-12-paired-mailbox/own-mailbox-native/README.md).
+A single Linux/Firecracker guest now recovers its own 313-byte SpiralCore frame under Ari's signed production mailbox, verifies the 257-byte body including its trailing zero, and ACKs after file readback. Its journal reached cursor 3. Three host-side vsock exchanges recorded 2,971 bytes read and 9,272 bytes accepted for writing. The SDK Call took 2.005 s. Addressed A→B and WAN acceptance are still open. [Native exact readback, CPU, counts and reproduction](evidence/2026-11-12-paired-mailbox/own-mailbox-native/verified-own-mailbox.md).
+
+In an earlier attempt, a Linux/Firecracker guest submitted a 313-byte SpiralCore frame to its own production mailbox. The host retained one journal entry and an anchor at cursor 1. The guest reader returned an authorization refusal before exact readback or ACK. [Three native attempts, resource use and remaining reader gate](evidence/2026-11-12-paired-mailbox/own-mailbox-native/README.md).
 
 In a follow-up Firecracker guest, the original reader's wall clock was 677 ms before the signed enrollment at the start of Receive and 606 ms before it on refusal. The original verifier returned `NotYetValid` at both samples and accepted at issue time. Two later guests stopped during boot. [Reader measurements, original journal cursors and recovery criterion](evidence/2026-11-12-paired-mailbox/own-mailbox-native/reader-clock.md).
 

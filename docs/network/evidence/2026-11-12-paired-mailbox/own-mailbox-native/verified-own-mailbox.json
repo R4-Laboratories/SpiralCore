@@ -1,0 +1,165 @@
+{
+  "trial": 7,
+  "linux_arch": "x86_64",
+  "single_guest": {
+    "backend": "Firecracker 1.17.0",
+    "vcpu": 1,
+    "memory_mib": 256,
+    "actual_application_calls": 1,
+    "own_mailbox": true,
+    "max_calls_per_worker": 2,
+    "retention_ms": 10000,
+    "host_retention_ceiling_ms": 30000
+  },
+  "sources": {
+    "guest_mvm": "161c30cf81064d4c4dcf844cea88a64a46b0bad2",
+    "guest_workload_spiralcore": "e6be57323de5ffa99409a142d8c5e9f841faafba",
+    "host_sdk_mvm": "1755a2dea880ae5b7fcdf0479ca7f9807face651",
+    "original_host_mailbox_helper_mvm": "bd43ebb76b8239978151aed0a6950190141811ee"
+  },
+  "input": {
+    "frame_bytes": 313,
+    "frame_sha256": "ff26a66df5b1d9de994e60824757686d2af8eb4433b91e74a2f24b279f600044",
+    "original_body_bytes": 257,
+    "trailing_zero": true,
+    "workload_elf_sha256": "d34c7a37d99d465d3f3ad9c78ac04ecada448ff6b4ff9edc87310f683d2dc19c"
+  },
+  "application_result": {
+    "setup_ns": 3836482466,
+    "call_wall_ns": 2004563810,
+    "including_stop_ns": 8002940710,
+    "guest": {
+      "ack_ns": 70455021,
+      "ack_request_bytes": 1966,
+      "ack_response_bytes": 2250,
+      "body_bytes": 257,
+      "body_sha256": "54acfbfedc4d8da40f76f275e1a98f10af8ef1fb9fb39e5a67a00aabcbe6597c",
+      "compare_and_file_commit_ns": 48751,
+      "empty_polls": 0,
+      "frame_bytes": 313,
+      "profile": "mvm_own_mailbox_guest_v1",
+      "receive_ns": 1873851640,
+      "receive_request_bytes": 54,
+      "receive_response_bytes": 2474,
+      "stage_ns": 43211,
+      "workload_process_cpu_ns": 622517,
+      "workload_wall_ns": 1944468445
+    }
+  },
+  "guest_archived_runtime": {
+    "arch": "x86_64",
+    "guest_archive_sha256": "3bcaf6b2cd199b5ff3f41f30353a355779655251d31cba80cd2be5185cd5df78",
+    "host_retention_ceiling_ms": 30000,
+    "initramfs_hash_record_sha256": "90c41b1e9a5c8352af47a43a8b0d082b1c185bd18b6a8b4e3a7061d1d5defcb9",
+    "initramfs_sha256": "42007d8235fa8dad1b2a2caadc5fb7dfcf28fb6f913c67d14b0c2d187d7eb19e",
+    "mvm_version": "0.28.0-rc.1",
+    "overlay_root_hash": "4e56581a039006a18011c3216b579400a76c3c2af73020fda261ed933f0ce13f",
+    "overlay_sha256": "4101ae500806b683388b19bf9caab7ec212fb228c000f58c9bfe151083ef0a10",
+    "overlay_verity_sha256": "81388c66bdc49861b914544e494a31716632e33b310fdba4e9345345c2043548",
+    "sdk_sidecars": 2
+  },
+  "guest_executables_sha256": {
+    "mvm-guest-agent": "905db36efd9ffdd9e9d4881f32702dff13efdd1a01f6cf7d11c6af8199deb74b",
+    "mvm-guest-netinit": "0d764ea3038b9d64d3b975f83673775ab11e186455e32cd1e7903d91be2ed284",
+    "mvm-oci-entrypoint": "34b3b5360a3a19aa29ab562fae5469ceb07e07fc0e98e21b90db77d7a9d2c773",
+    "mvm-egress-client": "b1f5538d5eba9b38c938e3ff403c1e90ccc3231f18d0c10078f89f4b8a8aa25e"
+  },
+  "sealed_image_sha256": {
+    "rootfs.ext4": "3c6b2fafb370c184a6f1b4524f18a1425471baa395ccf40d46639211e28db14c",
+    "rootfs.verity": "7bc15b3d71842136499db183beea1539be70e9f8c07a5ecedfcb3fb16d522874",
+    "rootfs.roothash": "1e922513317f2089e7714bc74ef162a32a1ded590daad1024d52d2df40c1a0b7",
+    "mvm-meta.json": "9bfaef19683a08fd8c4d7b1616c30fadfee1f0d8d000ec0a36cb144532ea91f2"
+  },
+  "host_executables_sha256": {
+    "mvm-host-agent": "896381b1fc2f5e0b40686e36f7543ffecbc7f8fff680f5789c8824152806409e",
+    "mvm-mailbox": "bf076aabafc0372bd5630c81bc10b65d1e2e2cf16d5620078427e5af37f925d1",
+    "mvm-network-endpoint": "999198d67d52b6bcc67a965eae8054c92f88919070e21085aaad77885dbc671d",
+    "mvm-signer-helper": "fc15bde04293362feb9b82cb06267a9eb3bb3e439d1e82be65541ce282cbcc73",
+    "mvmctl": "842e6bf5827108e84f4225893c88d3c1f8870dc0b755a8c62422b606b9d9ec32"
+  },
+  "witness_executable_sha256": {
+    "own-mailbox": "78e167be582305144ebc6c08c1273f3a1d9b4bab81bf7ab67105b88ad63b927b",
+    "prepare": "eeba035ff3ea22b34375faf94c934238eaf6d22cb0dae079b9d9d24bd17c3d01",
+    "image": "c3c78616948bf6596c2edb713433bd670618dff0ac436efdb6e54236af3535c1"
+  },
+  "host_mailbox_exchanges": [
+    {
+      "exchange": 1,
+      "host_read": 381,
+      "host_write_accepted": 1169,
+      "read_errors": 0,
+      "write_errors": 0,
+      "overflow": false
+    },
+    {
+      "exchange": 2,
+      "host_read": 344,
+      "host_write_accepted": 5853,
+      "read_errors": 0,
+      "write_errors": 0,
+      "overflow": false
+    },
+    {
+      "exchange": 3,
+      "host_read": 2246,
+      "host_write_accepted": 2250,
+      "read_errors": 0,
+      "write_errors": 0,
+      "overflow": false
+    }
+  ],
+  "host_mailbox_observed_read_bytes": 2971,
+  "host_mailbox_observed_write_accepted_bytes": 9272,
+  "normal_close_footer": false,
+  "exhaustive_lifetime_host_stream_bytes": null,
+  "firecracker_data_header_bytes_per_exchange": [
+    {
+      "guest_to_host": 381,
+      "host_to_guest": 1169
+    },
+    {
+      "guest_to_host": 344,
+      "host_to_guest": 5853
+    },
+    {
+      "guest_to_host": 2246,
+      "host_to_guest": 2250
+    }
+  ],
+  "journal_file_sizes_by_cursor": [
+    11934,
+    7105,
+    4059
+  ],
+  "anchors_after_sdk_stop": [
+    {
+      "bytes": 797,
+      "cursor": 3
+    }
+  ],
+  "native_usage": "wall=8.04 user=4.54 sys=0.07 rss_kib=81272",
+  "audit_after_sdk_stop": "VERIFIED chain: 11 entries, 1 session, 1 seal",
+  "surviving_original_firecracker_or_mailbox_processes": 0,
+  "source_controls": {
+    "target": "Linux standalone compiled validity module",
+    "passed": 3,
+    "test_binary_sha256": "7636936eb2b7410dc4d8fbffa533ebcd1294e3a590bc8ab94a9f5790fb5df076",
+    "test_log_sha256": "9d238732bbe5b99ba67b50f4c234f63bd28297cc3d4ffef175e9d31ef2842c0a"
+  },
+  "evidence_sha256": {
+    "private-firecracker.log": "a1d6be805d5a12503e3afecdf93987d2e811c408f2aaa3c8866fead35356ee3c",
+    "private-console.log": "1020106e220f38776f5acd705969c4418c76e885c9924c34bf4ffcfb4a4d1d91",
+    "driver.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "workload-error.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "usage.txt": "7bad32cf5a7c55dee602dad4121e4355839101a37c395910099b428f47879f4a",
+    "outcome.json": "c802b16a5bc697d139dc40780be0d848c1238c86314fe28e4590b7d0c0b3d385",
+    "workload-output.json": "24884a589a2e48c348dadbbbc4ed946451f47bf719a851384a453dc3989bd9b5",
+    "guest-5257.counts": "8f5f70312591cca23ef0a2d63091d30b41ea3281fe941bdaca766214db1ca602",
+    "runtime-pieces.json": "bf465638d9df62841607c0548adfe0a3220cd35261033e2b439a9d0dea64d2db"
+  },
+  "wan_bytes": null,
+  "zstd_comparison": null,
+  "host_send_only_ns": null,
+  "whole_guest_and_host_cpu_ns": null,
+  "native_sample_count": 1
+}
