@@ -11,7 +11,7 @@ cargo zigbuild --release --locked --target x86_64-unknown-linux-musl \
   -p mvm-agentd --example original_cast_workload
 ```
 
-Build A's actual Submit workload against the same signed guest-role mapping. Provide its executable and the B receiver to the existing rootfs builder. The paired builder requires a new directory and distinct binaries, and records SHA-256 for both packaged workloads and wrappers. Record the final guest-agent binary and assembled images separately.
+Build A’s `mvm-agentd --example original_submit_workload` for the same target. Provide its executable and the B receiver to the existing rootfs builder. The paired builder requires a new directory and distinct binaries, and records SHA-256 for both packaged workloads and wrappers. Record the final guest-agent binary and assembled images separately.
 
 ```sh
 bash make-addressed-pair-rootfs.sh "$fresh_images" "$wrapper" "$submit_workload" "$receive_workload"
@@ -21,7 +21,7 @@ The A image contains the Submit producer. The B image contains the recipient alo
 
 ## Observe B independently
 
-Call `native::cast_readback::verify_during_delivery` with the original SDK launch results and retained worker-control clients, the expected synthetic bytes and the admitted A→B submission operation. The driver starts B’s ordinary call with a fresh 32-byte challenge and concurrently invokes the submission. The call’s stdin contains only the challenge. At most 1,024 source bytes are admitted for this fixture.
+Call `native::cast_readback::verify_original_pair` with the original SDK launch results and retained worker-control clients, the expected synthetic bytes and the admitted A→B carrier operation that returns its message identifier. The driver hands the original bytes only to A’s ordinary workload call and verifies its 32-byte ephemeral admission result equals the routed identifier. The driver starts B’s ordinary call with a fresh 32-byte challenge and concurrently invokes the submission. The call’s stdin contains only the challenge. At most 1,024 source bytes are admitted for this fixture.
 
 B must return exactly the entire source byte string followed by that challenge. The verifier also requires a successful call, complete output, no control records, guest application CPU and wall time, and both original workers still Serving after the result. Failed delivery, timeout, partial responses, echoed stdin alone and a stale challenge fail the test. The application response is observed separately from mailbox admission, journal persistence and signed receipts. Meter both actual role streams, encrypted carrier and reply, and both worker CPU domains when the native route is active.
 
@@ -31,4 +31,4 @@ The original A helper retains the sealed request and sequence, and retries with 
 
 Before routing, the coordinator verifies the two live original workers, signed grants, admitted plans, tenant, direction, epochs, time and revocation state. B’s original helper independently checks its binding and current grants when opening the envelope and before publishing plaintext on its admitted Deliver stream. Keep private key material in each authorized endpoint. FD 3 remains the installed helper’s private Prepare/liveness channel. A coordinator-local Rust borrow must remain local. The process boundary needs an original-bound handoff plus terminal reconciliation. A guest-role Deliver acknowledgment alone cannot authorize durable acceptance or refund an ambiguous publication.
 
-The paired source workload, original-bound carrier across the installed processes, and native SDK orchestration must be connected before the driver can produce a two-guest acceptance report. The own-mailbox CLI performs its original operation.
+The paired workloads, original-bound carrier across the installed processes, and native SDK orchestration must be connected before the driver can produce a two-guest acceptance report. The own-mailbox CLI performs its original operation.

@@ -22,6 +22,7 @@ const READBACK_WINDOW: Duration = Duration::from_secs(15);
 const CHALLENGE_BYTES: usize = 32;
 const MAX_FIXTURE: usize = 1024;
 
+#[derive(Clone, Copy)]
 pub struct OriginalParticipant<'a> {
     pub launch: &'a LaunchOutcome,
     pub control: &'a InstalledMailboxClient,
@@ -142,28 +143,9 @@ pub fn verify_during_delivery(
     let cpu = ProcessTime::now();
     let captured = thread::scope(|s| -> Result<CapturedOutput> {
         let call = s.spawn(|| -> Result<CapturedOutput> {
-            let mut observer = ReadbackObserver {
-                captured: CapturedOutput::default(),
-                controls: false,
-                captured_bytes: 0,
-            };
-            // The call thread is scheduled; this local signal is not evidence
-            // of workload readiness. Only the verified guest response is.
+            // The thread is scheduled. The signal is not guest-readiness evidence.
             begun.send(()).context("source delivery turn closed")?;
-            let outcome = dispatch::dispatch(
-                EntrypointDispatch {
-                    vm_name: &destination,
-                    stdin: DispatchStdin::OneShot(challenge.to_vec()),
-                    timeout_secs: READBACK_WINDOW.as_secs(),
-                    session_id: None,
-                },
-                &mut observer,
-            )?;
-            ensure!(
-                outcome.exit_code() == 0 && !observer.controls && !observer.captured.truncated,
-                "destination call did not finish with complete workload output"
-            );
-            Ok(observer.captured)
+            call_original(&destination, challenge.to_vec())
         });
         let direction = notice
             .recv_timeout(READBACK_WINDOW)
@@ -193,5 +175,81 @@ pub fn verify_during_delivery(
         workload,
         driver_process_cpu_ns: cpu_ns,
         dispatch_through_verified_readback_ns: wall_ns,
+    })
+}
+
+fn call_original(name: &str, input: Vec<u8>) -> Result<CapturedOutput> {
+    let mut observer = ReadbackObserver {
+        captured: CapturedOutput::default(),
+        controls: false,
+        captured_bytes: 0,
+    };
+    let outcome = dispatch::dispatch(
+        EntrypointDispatch {
+            vm_name: name,
+            stdin: DispatchStdin::OneShot(input),
+            timeout_secs: READBACK_WINDOW.as_secs(),
+            session_id: None,
+        },
+        &mut observer,
+    )?;
+    ensure!(
+        outcome.exit_code() == 0 && !observer.controls && !observer.captured.truncated,
+        "original call did not finish with complete workload output"
+    );
+    Ok(observer.captured)
+}
+
+#[derive(Serialize)]
+pub struct AddressedReadback {
+    pub destination: CastReadback,
+    pub source_message_id: [u8; 32],
+    pub source_workload: WorkloadTime,
+    pub source_call_through_ephemeral_acceptance_ns: u128,
+}
+
+/// Execute the normal guest A workload call and B's independent workload call
+/// while the installed carrier delivers the canonical Send. The carrier's
+/// receipt must identify A's actual mailbox message. This measures an ephemeral
+/// source response and an application read at B.
+pub fn verify_original_pair(
+    a: OriginalParticipant<'_>,
+    b: OriginalParticipant<'_>,
+    expected: &[u8],
+    route: impl FnOnce() -> Result<[u8; 32]>,
+) -> Result<AddressedReadback> {
+    let name = a.launch.machine.name.clone();
+    let mut source = None;
+    let destination = verify_during_delivery(a, b, expected, || {
+        thread::scope(|scope| -> Result<()> {
+            let send = scope.spawn(|| {
+                let start = Instant::now();
+                let out = call_original(&name, expected.to_vec())?;
+                let workload: WorkloadTime = serde_json::from_slice(&out.stderr)
+                    .context("invalid original source workload timings")?;
+                let id: [u8; 32] = out.stdout.try_into().map_err(|_| {
+                    anyhow::anyhow!("source did not return a complete message identifier")
+                })?;
+                ensure!(id != [0; 32], "missing source message identifier");
+                Ok::<_, anyhow::Error>((id, start.elapsed().as_nanos(), workload))
+            });
+            let routed = route();
+            let (id, elapsed, workload) = send
+                .join()
+                .map_err(|_| anyhow::anyhow!("source workload call ended unexpectedly"))??;
+            ensure!(
+                routed? == id,
+                "route and original source returned different message identifiers"
+            );
+            source = Some((id, elapsed, workload));
+            Ok(())
+        })
+    })?;
+    let (id, elapsed, workload) = source.context("missing original source observation")?;
+    Ok(AddressedReadback {
+        destination,
+        source_message_id: id,
+        source_workload: workload,
+        source_call_through_ephemeral_acceptance_ns: elapsed,
     })
 }
