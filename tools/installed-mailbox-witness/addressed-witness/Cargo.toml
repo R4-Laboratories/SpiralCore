@@ -1,0 +1,43 @@
+[package]
+name = "spiralcore-mvm-canonical-witness"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.97.1"
+publish = false
+license = "MIT"
+
+[lib]
+path = "../installed-witness/src/lib.rs"
+
+[workspace]
+
+[features]
+default = ["native","addressed"]
+addressed = ["native", "mvm-hostd/installed-cast-witness"]
+native = ["dep:mvm-hostd", "dep:mvm-client", "dep:mvm-core", "dep:mvm-backends", "dep:mvm-vmm", "dep:mvm-build", "dep:tokio", "dep:rustix"]
+
+[dependencies]
+anyhow = "=1.0.103"
+cpu-time = "1.0"
+serde = { version = "=1.0.228", features = ["derive"] }
+serde_json = "=1.0.151"
+sha2 = "=0.10.9"
+mvm-client = { path = "../source/crates/mvm-client", optional = true }
+tokio = { version = "=1.53.3", features = ["rt"], optional = true }
+
+mvm-hostd = { path = "../source/crates/mvm-hostd", optional = true }
+mvm-core = { path = "../source/crates/mvm-core", default-features = false, features = ["host-state"], optional = true }
+mvm-backends = { path = "../source/crates/mvm-backends", default-features = false, optional = true }
+mvm-vmm = { path = "../source/crates/mvm-vmm", default-features = false, optional = true }
+mvm-build = { path = "../source/crates/mvm-build", default-features = false, optional = true }
+rustix = { version = "=1.1.6", features = ["process", "event", "fs"], optional = true }
+
+[[bin]]
+name = "spiralcore-mvm-canonical-witness"
+path = "../installed-witness/src/main.rs"
+required-features = ["native"]
+
+[[bin]]
+name = "spiralcore-mvm-prepare-runtime"
+path = "../installed-witness/src/bin/prepare-runtime.rs"
+required-features = ["native"]

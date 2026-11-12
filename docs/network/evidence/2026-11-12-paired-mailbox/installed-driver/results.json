@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "planned_payload_bytes": 257,
+  "planned_destination_private_challenge_bytes": 32,
+  "native_guest_to_guest_readback": null,
+  "guest_wire_bytes": null,
+  "payload_transfer_elapsed_ns": null,
+  "wan": null,
+  "controls": [
+    {
+      "platform": "linux-x86_64",
+      "kind": "cargo_check",
+      "mvm_revision": "4f929db57496a583dfcfde9dd9c81fbd3e33d01a",
+      "spiralcore_driver_revision": "84ccbe537acdafe09645d856dd85775c99827031",
+      "command": "cargo check --offline --locked -j2 --features addressed",
+      "scope": "Original Linux driver, installed coordinator turn, guest readback and retirement in the standalone witness test build",
+      "result": "passed",
+      "log_sha256": "c3dde888ec0ed7832cac8360f8902abd4d6413eb74aef5bf8b6f936a1471695b"
+    },
+    {
+      "platform": "linux-x86_64",
+      "kind": "component",
+      "mvm_revision": "36981259b447de8207c0949d102b1bb850d54bd9",
+      "selector": "compact_original_cast_profile_rejects_unjoined_names_grants_and_backends",
+      "passed": 1,
+      "log_sha256": "916f29f85d7fe89c4c9db76c5aa4497f4252f3170097bde17d6a3e579bd210c2",
+      "scope": "Pre-correction selector. Checked peer, backend, grant and budget selection; this revision requested insufficient signed host workspace."
+    },
+    {
+      "platform": "macos-arm64",
+      "kind": "component",
+      "mvm_revision": "5ae2cdc4977e12a574a5baa2e4f0522c3f7a1ae7",
+      "selector": "mailbox_launch::cast_enrollment::publication::tests::pair_publication_rejects_missing_stale_and_replaced_original_sidecars",
+      "passed": 1,
+      "log_sha256": "133eaf6d8addfe7900d3bfb3194a8de4fb719bc05bab740a6df39862e23fadf7",
+      "executable_sha256": "46175723fb6591e273991fd76ee4b7c38784030ef94ab699a7f89f155e0048bf"
+    },
+    {
+      "platform": "macos-arm64",
+      "kind": "component",
+      "mvm_revision": "5ae2cdc4977e12a574a5baa2e4f0522c3f7a1ae7",
+      "selector": "broker::mailbox_workers::tests::compact_original_cast_profile_rejects_unjoined_names_grants_and_backends",
+      "passed": 1,
+      "log_sha256": "84f14163e28de95132019ab4de8ee5dd106a5d322b0087feddd2d334a910f202",
+      "executable_sha256": "46175723fb6591e273991fd76ee4b7c38784030ef94ab699a7f89f155e0048bf"
+    },
+    {
+      "platform": "macos-arm64",
+      "kind": "readback-component",
+      "spiralcore_driver_revision": "84ccbe537acdafe09645d856dd85775c99827031",
+      "selector": "cast_echo::tests::only_exact_cast_and_challenge_pass",
+      "passed": 1,
+      "source_sha256": "19384528e1cf61ccd989fe054e648f96b44381121d0839dffb6052c25579b55b",
+      "log_sha256": "df4b268ba20b8b545c0a36e3206927b1d153b5a929d8c4c1831ca681506ec856"
+    }
+  ]
+}

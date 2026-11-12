@@ -5,10 +5,26 @@ fn main() -> anyhow::Result<()> {
     use std::{fs, io::Write, os::unix::fs::OpenOptionsExt, path::PathBuf};
     let args: Vec<_> = std::env::args_os().skip(1).collect();
     let paired = args.first().is_some_and(|arg| arg == "--pair");
-    let args = if paired { &args[1..] } else { &args[..] };
+    let addressed = args.first().is_some_and(|arg| arg == "--addressed");
     anyhow::ensure!(
-        args.len() == if paired { 6 } else { 4 },
-        "usage: spiralcore-mvm-canonical-witness ROOTFS NAME MAILBOX_HEX REPORT_JSON; paired: --pair ROOTFS NAME_A MAILBOX_A NAME_B MAILBOX_B REPORT_JSON"
+        !addressed || cfg!(feature = "addressed"),
+        "addressed terminal requires the addressed build"
+    );
+    let args = if paired || addressed {
+        &args[1..]
+    } else {
+        &args[..]
+    };
+    anyhow::ensure!(
+        args.len()
+            == if addressed {
+                7
+            } else if paired {
+                6
+            } else {
+                4
+            },
+        "usage: spiralcore-mvm-canonical-witness ROOTFS NAME MAILBOX_HEX REPORT_JSON; paired: --pair ROOTFS NAME_A MAILBOX_A NAME_B MAILBOX_B REPORT_JSON; --addressed ROOTFS_A NAME_A MAILBOX_A ROOTFS_B NAME_B MAILBOX_B REPORT_JSON"
     );
     let output_path = PathBuf::from(args.last().expect("checked parameters"));
     let output_parent = fs::canonicalize(
@@ -44,6 +60,26 @@ fn main() -> anyhow::Result<()> {
             deadline_seconds: 60,
         };
         config.validate()?;
+        #[cfg(feature = "addressed")]
+        if addressed {
+            use std::io::Read;
+            let mut b = config.clone();
+            b.rootfs = PathBuf::from(&args[3]);
+            b.name = args[4]
+                .to_str()
+                .ok_or_else(|| anyhow::anyhow!("UTF-8 name required"))?
+                .into();
+            b.mailbox_hex = args[5]
+                .to_str()
+                .ok_or_else(|| anyhow::anyhow!("UTF-8 mailbox required"))?
+                .into();
+            let mut body = [0; 257];
+            fs::File::open("/dev/urandom")?.read_exact(&mut body)?;
+            body[0] = 0;
+            body[1] = 255;
+            body[256] = 0;
+            return native::addressed_pair::run(&config, &b, &body);
+        }
         let runtime = tokio::runtime::Builder::new_current_thread()
             .enable_all()
             .build()?;

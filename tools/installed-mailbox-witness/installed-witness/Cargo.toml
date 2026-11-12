@@ -37,3 +37,6 @@ required-features = ["native"]
 name = "spiralcore-mvm-prepare-runtime"
 path = "src/bin/prepare-runtime.rs"
 required-features = ["native"]
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(feature, values("addressed"))'] }

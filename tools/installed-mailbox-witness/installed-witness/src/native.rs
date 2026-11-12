@@ -24,6 +24,10 @@ mod definition {
 pub use definition::DefinitionGuard;
 mod installed;
 use installed::InstalledWitness;
+#[cfg(feature = "addressed")]
+pub mod addressed_pair;
+mod cast_echo;
+pub mod cast_readback;
 mod pair;
 pub use pair::run_pair;
 #[derive(Serialize)]
