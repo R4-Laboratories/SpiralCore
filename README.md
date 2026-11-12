@@ -27,7 +27,13 @@ installed MVM networking contribution is still in development. The
 the delivery authority; a component merge or green platform test is an intermediate
 checkpoint, not completion of that program.
 
-The latest [installed-startup report](docs/network/evidence/2026-11-11-startup-publication/README.md)
+On Linux x86-64, one Firecracker guest sent a 1,024-byte message through the installed
+MVM mailbox. The host verified every byte in 106.467 ms of receive time including
+two polls. Signed Stop and VM cleanup succeeded. The tenant coordinator exceeded
+the witness deadline. The run used a local mailbox and measured no WAN or codec speedup.
+[Installed mailbox results and timing breakdown](docs/network/evidence/2026-11-11-retained-recovery/installed-helper/README.md#installed-guest-delivered-1024-exact-bytes).
+
+The [installed-startup report](docs/network/evidence/2026-11-11-startup-publication/README.md)
 records actual Linux worker/signing-helper checks: a fresh installation starts
 and collects its original signer; a previously used installation with a missing
 journal refuses before readiness; a directly invoked worker with no configured
