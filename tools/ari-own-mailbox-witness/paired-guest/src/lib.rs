@@ -1,3 +1,4 @@
+mod retirement;
 use anyhow::{Context, Result, ensure};
 use cpu_time::ProcessTime;
 use mvm_agentd::worker_protocol::{
@@ -12,7 +13,7 @@ use spiralcore_transfer::protocol::Frame;
 use std::{
     fs::{self, File, OpenOptions},
     io::{self, Write},
-    os::unix::fs::OpenOptionsExt,
+    os::unix::fs::{MetadataExt, OpenOptionsExt},
     time::{Duration, Instant},
 };
 
@@ -52,10 +53,42 @@ fn stage(v: &Value, deadline: Instant) -> Result<Value> {
             &message,
         )?;
     }
-    Ok(
-        json!({"role":"staged","message_id":hex::encode(message.message_id.as_bytes()),"frame_bytes":FRAME,
-              "probe_to_agent":traffic.written,"probe_from_agent":traffic.read}),
-    )
+    let mut result = json!({"role":"staged","message_id":hex::encode(message.message_id.as_bytes()),"frame_bytes":FRAME,
+              "probe_to_agent":traffic.written,"probe_from_agent":traffic.read});
+    if cfg!(feature = "receipt-loss-qualification") {
+        // The original guest agent is the only process allowed to retire this
+        // single staged operation. Do not restage or consume its receipt here.
+        let staged_at = Instant::now();
+        let slot = std::path::Path::new(mvm_agentd::mailbox_outbox::LOCAL_OUTBOX_PATH)
+            .with_file_name(mvm_core::mailbox::outbound::journal_slot_name(&commitment));
+        let dir = slot
+            .parent()
+            .context("missing canonical outbox directory")?;
+        let dir_handle = File::open(dir)?;
+        let held = dir_handle.metadata()?;
+        loop {
+            match fs::symlink_metadata(&slot) {
+                Err(e) if e.kind() == io::ErrorKind::NotFound => break,
+                Ok(meta) => ensure!(meta.is_file(), "unexpected outbox file type"),
+                Err(e) => return Err(e.into()),
+            }
+            ensure!(
+                Instant::now() < deadline,
+                "original outbox remained pending"
+            );
+            std::thread::sleep(Duration::from_millis(5));
+        }
+        let current = fs::symlink_metadata(dir)?;
+        ensure!(
+            current.is_dir() && (current.dev(), current.ino()) == (held.dev(), held.ino()),
+            "canonical outbox directory changed"
+        );
+        let message_id = hex::encode(message.message_id.as_bytes());
+        retirement::require_no_directed_archive(&slot, &message_id)?;
+        result["outbox_retired_without_archive"] = json!(true);
+        result["outbox_retirement_wait_ns"] = json!(staged_at.elapsed().as_nanos() as u64);
+    }
+    Ok(result)
 }
 fn receive(v: &Value, deadline: Instant) -> Result<Value> {
     let id = field(v, "message_id")?;
@@ -101,11 +134,19 @@ fn receive(v: &Value, deadline: Instant) -> Result<Value> {
     );
     let mut ack = ReaderTraffic::default();
     delivery.acknowledge_before(deadline, &mut ack)?;
-    Ok(
-        json!({"role":"received_and_acknowledged","message_id":hex::encode(id),"frame_bytes":frame.len(),
+    let mut result = json!({"role":"received_and_acknowledged","message_id":hex::encode(id),"frame_bytes":frame.len(),
       "readback_hex":hex::encode(recovered),"receive_to_agent":traffic.written,"receive_from_agent":traffic.read,
-      "ack_to_agent":ack.written,"ack_from_agent":ack.read}),
-    )
+      "ack_to_agent":ack.written,"ack_from_agent":ack.read});
+    if cfg!(feature = "receipt-loss-qualification") {
+        let mut empty = ReaderTraffic::default();
+        ensure!(
+            receive_before(deadline, &mut empty)?.is_none(),
+            "retry made a second delivery available after ACK"
+        );
+        result["after_ack"] =
+            json!({"empty":true,"to_agent":empty.written,"from_agent":empty.read});
+    }
+    Ok(result)
 }
 pub enum Role {
     Source,
