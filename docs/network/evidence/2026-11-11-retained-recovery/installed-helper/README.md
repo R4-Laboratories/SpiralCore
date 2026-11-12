@@ -117,3 +117,7 @@ One Linux x86-64 Firecracker guest delivered the deterministic 1,024-byte fixtur
 | Guest CPU, send-only time and transport bytes in either direction | Unavailable |
 
 One earlier attempt with the same source was rejected before guest boot because the test cache directory was group-writable. The repeat used a new private home and retained the source and binary pins. The timer above covers a functional mailbox receive on one host. The test used the plain mailbox message, with no object-codec or zstd comparison. [Both attempts, binary identities and measured times](linux-028-installed-readback.json).
+
+## Retrying the final owner-file operation after 60 seconds
+
+On macOS, the same surviving SDK controller completed the final signed owner-file retirement after the helper's receipt expired. It already had confirmation for helper and companion-service retirement and had successfully completed local backend cleanup. The retry finished the file operation without reissuing Stop, reacquiring a worker or repeating destructive VM cleanup. The opt-in test waited 61 seconds; it took 61.155 seconds wall and 68.16 ms process CPU. The previous implementation failed this case when it tried to reconnect to the retired listener. Losing the original controller, or lacking confirmation that destructive cleanup succeeded, remains a separate recovery condition. [Combined implementation](https://github.com/Casey-allard/mvm/commit/ef5894e146398572fe00a12ad01a938fc758ac01) · [Retained failure and 30 distinct passing checks](macos-028-terminal-retirement.json).
