@@ -1,0 +1,56 @@
+{
+  "source": "a23e0b54d7c1bd2ea7976a57a77c6b5b60205fb2",
+  "mvm_version": "0.28.0-rc.1",
+  "architecture": "x86_64",
+  "stage": "guest runtime build and assembly",
+  "native_transfer": "NOT_RUN during preparation",
+  "attempts": [
+    {
+      "source": "04c8881926f1180f51b38871c23292ffe8fd7032",
+      "status": "failed_preparation",
+      "reason": "checkout lacked Git metadata",
+      "gnu_time": {
+        "wall": 0.2,
+        "user": 0.01,
+        "sys": 0.01,
+        "rss_kib": 7876
+      }
+    },
+    {
+      "source": "04c8881926f1180f51b38871c23292ffe8fd7032",
+      "status": "failed_preparation",
+      "reason": "musl compile failed during the mandatory CUDA shim build in the canonical runtime",
+      "gnu_time": {
+        "wall": 479.19,
+        "user": 862.11,
+        "sys": 46.38,
+        "rss_kib": 2762352
+      }
+    },
+    {
+      "source": "a23e0b54d7c1bd2ea7976a57a77c6b5b60205fb2",
+      "status": "prepared",
+      "gnu_time": {
+        "wall": 384.83,
+        "user": 697.87,
+        "sys": 24.19,
+        "rss_kib": 2764876
+      },
+      "wall_ns": 384829380630,
+      "preparer_only_cpu_ns": 2360267817,
+      "runtime_archive_sha256": "00d61960a561d4cbdfea51cdcbe83d73730c2c209d1f3569d34c997dda52e2ea",
+      "initramfs_sha256": "027dc4bc900c15e70843f88ac81b5a28332ff37d5f660aadfbcdbc576e56c7ec",
+      "sdk_sidecars": [
+        {
+          "libc": "glibc",
+          "sha256": "caef643a1afddbc11846c370da3d3eada5891070d543f9e46e9bd19973a72f48"
+        },
+        {
+          "libc": "musl",
+          "sha256": "cff6e14597cb9415a28625083af0f81bf21d150f1618d0378ce05397fe662422"
+        }
+      ]
+    }
+  ],
+  "gnu_time_scope": "seconds wall, user and system CPU for command and waited-for children; peak RSS in KiB"
+}

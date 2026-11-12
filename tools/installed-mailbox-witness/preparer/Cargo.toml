@@ -1,0 +1,13 @@
+[package]
+name = "spiralcore-prepare-installed-guest"
+version = "0.1.0"
+edition = "2024"
+publish = false
+[workspace]
+[dependencies]
+anyhow = "=1.0.103"
+cpu-time = "1.0"
+serde_json = "=1.0.151"
+mvm-build = { path = "../source/crates/mvm-build", default-features = false }
+mvm-core = { path = "../source/crates/mvm-core", default-features = false, features = ["host-state"] }
+mvm-vmm = { path = "../source/crates/mvm-vmm", default-features = false }

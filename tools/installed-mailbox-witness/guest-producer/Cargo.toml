@@ -1,0 +1,12 @@
+[package]
+name = "spiralcore-mailbox-producer"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.97.1"
+publish = false
+license = "MIT"
+[workspace]
+[dependencies]
+mvm-agentd = { path = "../source/crates/mvm-agentd" }
+mvm-core = { path = "../source/crates/mvm-core", default-features = false, features = ["host-state"] }
+mvm-contract = { path = "../source/crates/mvm-contract", default-features = false, features = ["protocol"] }

@@ -1,5 +1,7 @@
 # Installed host-agent collection of a per-VM helper
 
+The [Linux witness source and reproduction instructions](../../../../../tools/installed-mailbox-witness/README.md) pin the host runner, guest workload and runtime preparer used for the installed Firecracker attempt.
+
 On Linux x86-64, a real pipe-backed child reached `Serving` through signed `Acquire`, `DelegateConfig` and `Query` requests. Before the repair the host agent refused retirement because it had no receipt from the original worker provider. The fixture used a separate signed `Stop` to collect the child, then failed its coordinator assertion. After the repair the coordinator collected the original child with exit code 0, joined the original control loop and retained the exit receipt. The success path used no fixture stop.
 
 | Single release-build invocation | Result | Elapsed |
@@ -69,3 +71,7 @@ Seven Apple Silicon SDK tests verified ownership, signature and file checks, ind
 A missing VM state directory exposed a capacity bug. The broker charged its only worker slot and refused to release it even though the factory had failed before creating a child. The repaired factory distinguishes a known failure before spawn from an uncertain outcome. The regression released the first reservation, admitted a different VM and completed coordinator retirement. A second test verified that an uncertain or panicked spawn retains its reservation and cannot start another worker. [Repair and regression source](https://github.com/Casey-allard/mvm/commit/e2a388860db3a5ac6b71a9e0e78a90f42265eb2e).
 
 The runs above exercised host lifecycle operations. Recovery across terminal-receipt expiry, co-admission with broker services and integrated guest transfer have separate acceptance criteria. [Installed service tracker](https://github.com/R4-Laboratories/SpiralCore/issues/111).
+
+## Building the installed Linux guest runtime
+
+The first preparation attempt refused a source tree without its Git revision. The second stopped in the mandatory musl build because the installed owner's filesystem checks used GNU-specific constants and types. After the portability fix, the canonical builder produced an x86-64 runtime archive, initramfs, overlay and both libc sidecars. Preparation took 384.83 seconds wall, 697.87 seconds user CPU and 24.19 seconds system CPU including compiler processes. The preparer itself consumed 2.36 seconds of CPU. These are build costs. The [three recorded attempts](linux-028-installed-runtime.json) and [filesystem portability change](https://github.com/Casey-allard/mvm/commit/a23e0b54d7c1bd2ea7976a57a77c6b5b60205fb2) let reviewers distinguish a failed build from a guest-transfer result.
