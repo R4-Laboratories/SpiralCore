@@ -11,17 +11,16 @@ tracks delivery. The next installed gate is an authorized Cast from guest A to
 guest B with exact readback inside the destination workload. Cross-host WAN and
 platform qualification follow. [Guest retry and worker capacity regressions](evidence/2026-11-12-paired-mailbox/README.md).
 
-The addressed Cast component now verifies separate Send and Receive grants before it records a replay. Linux x86-64 and macOS arm64 tests checked exact local readback and measured the socket bytes and CPU on each side. [Addressed route results and upstream timeout regression](evidence/2026-11-12-paired-mailbox/addressed-route.md).
+### Addressed mailbox delivery
 
-The source can now seal an authorized Cast at its original worker and reuse the ciphertext across a reconnect. A macOS component run carried the complete peer frame and checked the application bytes at the local inbox. The installed two-guest gate still needs a private handoff between the original helper processes. [Sender, retry regressions and measured socket transfer](evidence/2026-11-12-paired-mailbox/source-cast.md).
+The intended path is **guest A Submit → original A helper → host coordinator → original B helper → guest B Deliver**. A seals the submission. The coordinator handles the signed Send credential and opaque envelope. B authenticates and opens that envelope before invoking its guest. The following steps have been exercised individually.
 
-Linux and macOS component tests recovered the same five-byte Cast using a fresh directional key and the source and destination workers’ separate wrapping keys. The public enrollment binds the guest boot record to the original worker pair. The installed two-VM route remains open. [Directional key placement, socket bytes and CPU](evidence/2026-11-12-paired-mailbox/directional-key/README.md).
-
-A coordinator handoff now checks the original helper’s kernel PID and addressed readiness. Losing the reply keeps 32 KiB charged until the original helper is collected. Two real helper processes exercised this boundary on macOS. [Original helper custody and measured readback](evidence/2026-11-12-paired-mailbox/helper-handoff.md).
-
-The two SDK launches now stage their signed source and destination roles together. The Linux workload tests record each edge independently, including exact bytes, CPU and elapsed time. [Guest roles and measurements](evidence/2026-11-12-paired-mailbox/guest-sdk/README.md).
-
-The destination helper now opens an authorized Cast and sends it to the guest role. In a macOS socket test, the complete peer frame carried 4,962 bytes forward and the verdict carried 11 bytes back for five exact application bytes. The installed two-guest A→B transfer still needs a native run. [Destination ingress, CPU and timing](evidence/2026-11-12-paired-mailbox/destination-ingress/README.md).
+| Step | Tested behavior | Evidence |
+|---|---|---|
+| Launch A and B | Two SDK launches jointly publish complementary signed boot roles. Each workload edge has independent Linux measurements. | [SDK publication and workload tests](evidence/2026-11-12-paired-mailbox/guest-sdk/README.md) |
+| Authorize and seal | Original endpoint keys bind the approved direction. Send and Receive grants are checked independently. A can reuse its original ciphertext after a reconnect. | [Directional keys](evidence/2026-11-12-paired-mailbox/directional-key/README.md), [grant checks](evidence/2026-11-12-paired-mailbox/addressed-route.md), [source sealing](evidence/2026-11-12-paired-mailbox/source-cast.md) |
+| Pull and forward | The coordinator identifies the original source process and reserves memory before its one-byte pull. Reconnecting to A reuses its 32 KiB. A lost response from B retains B’s separate 32 KiB until collection. | [Source pull and exact framing](evidence/2026-11-12-paired-mailbox/source-pull/README.md), [destination ownership](evidence/2026-11-12-paired-mailbox/helper-handoff.md) |
+| Open at B | B rechecks policy when the guest answers. A macOS socket test carried a 4,962-byte peer frame and an 11-byte verdict for five exact payload bytes. | [Destination ingress, CPU and elapsed time](evidence/2026-11-12-paired-mailbox/destination-ingress/README.md) |
 
 ## Published checkpoints
 

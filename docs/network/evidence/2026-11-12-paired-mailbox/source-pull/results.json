@@ -1,0 +1,81 @@
+{
+  "scope": "Component subprocess and socketpair tests. The 257-byte metered transfer exercises original B after source reservation. The separate 5-byte pull fixture tests A-side framing. No combined guest A to guest B trial or WAN timing.",
+  "base_commit": "8ff62f25aa549967fb76aad879927537ee5609d8",
+  "patch_uncompressed_sha256": "0d00a9ab5d9a1150606b27bc200972c541f7e301153016b77efd50d4ae9e7ba9",
+  "source_check": "Verified 4540 tracked files, content and modes",
+  "pre_fix": {
+    "component": "The in-process source reservation lifetime ended on coordinator drop. Live helper generation was no longer charged.",
+    "bytes_before_and_after": 628736,
+    "expected_bytes_until_collection": 661504,
+    "red_output_sha256": "410b999db475bb9300cbe8081a7edb1031050f718a41691267813e3db9abd3b9"
+  },
+  "runs": [
+    {
+      "commit": "da4004eba97d31b18ac15d8956d675487f5eb341",
+      "platform": "Linux x86_64",
+      "tracked_source_files": 4540,
+      "passed_counts": [
+        1,
+        1,
+        2,
+        5
+      ],
+      "test_names": [
+        "broker::mailbox_workers::tests::lost_peer_reply_keeps_cast_workspace_until_the_original_child_exits",
+        "mailbox_launch::cast_pair::source_pull::tests::original_pull_is_binary_exact_and_checks_length_before_reading_body",
+        "broker::mailbox_workers::cast_credit::tests::development_source_and_routed_turn_share_the_unchanged_host_budget",
+        "broker::mailbox_workers::cast_credit::tests::addressed_cast_shares_the_two_workers_and_preserves_control_headroom",
+        "mailbox_process::owned_wire::tests::ready_requires_the_original_tuple_and_success_status",
+        "mailbox_process::owned_wire::tests::private_status_rejects_extra_or_duplicate_fields",
+        "mailbox_process::owned_wire::tests::config_binds_to_original_parent_grant_paths_and_backend_route",
+        "mailbox_process::owned_wire::tests::truncated_oversized_and_partial_control_frames_fail_closed",
+        "mailbox_process::owned_wire::tests::stalled_parent_write_honors_its_deadline"
+      ],
+      "log_sha256": "157eb943ee19eff191f80dc7df6fc05962d50a1af425cc26adc69e1ae2fbaa9b",
+      "executable_sha256": "48ea6d311256012d96c873b35cdb49d1b57660b61e0518620e11029c538c31dd",
+      "original_destination_lost_reply_measurement": {
+        "body_bytes": 257,
+        "prefix_bytes": 4,
+        "reply_bytes": 0,
+        "charged_bytes": 32768,
+        "through_eof_ns": 1073806,
+        "source_thread_cpu_ns": 11983,
+        "receiver_thread_cpu_ns": 29485
+      }
+    },
+    {
+      "commit": "43e99217dc7ff94d4f4f24aa7596dba18281bd7c",
+      "platform": "macOS arm64",
+      "tracked_source_files": 4540,
+      "passed_counts": [
+        1,
+        2,
+        2,
+        5
+      ],
+      "test_names": [
+        "broker::mailbox_workers::tests::lost_peer_reply_keeps_cast_workspace_until_the_original_child_exits",
+        "mailbox_launch::cast_pair::source_pull::tests::original_pull_requires_byte_identical_credential_before_admission",
+        "mailbox_launch::cast_pair::source_pull::tests::original_pull_is_binary_exact_and_checks_length_before_reading_body",
+        "broker::mailbox_workers::cast_credit::tests::addressed_cast_shares_the_two_workers_and_preserves_control_headroom",
+        "broker::mailbox_workers::cast_credit::tests::development_source_and_routed_turn_share_the_unchanged_host_budget",
+        "mailbox_process::owned_wire::tests::ready_requires_the_original_tuple_and_success_status",
+        "mailbox_process::owned_wire::tests::private_status_rejects_extra_or_duplicate_fields",
+        "mailbox_process::owned_wire::tests::truncated_oversized_and_partial_control_frames_fail_closed",
+        "mailbox_process::owned_wire::tests::stalled_parent_write_honors_its_deadline",
+        "mailbox_process::owned_wire::tests::config_binds_to_original_parent_grant_paths_and_backend_route"
+      ],
+      "log_sha256": "8a5f85c760022ee720bb6f6a64c48d8cf7d1dd0c3db8bc786ddbfd81814d8951",
+      "executable_sha256": "b2947f2fcbd72acac98c2a27bbf591f5bb9fa4c0900d1e46cd78274bab2838c3",
+      "original_destination_lost_reply_measurement": {
+        "body_bytes": 257,
+        "prefix_bytes": 4,
+        "reply_bytes": 0,
+        "charged_bytes": 32768,
+        "through_eof_ns": 1338041,
+        "source_thread_cpu_ns": 95916,
+        "receiver_thread_cpu_ns": 66167
+      }
+    }
+  ]
+}
