@@ -56,6 +56,15 @@ impl std::fmt::Display for SubmissionRefused {
     }
 }
 impl std::error::Error for SubmissionRefused {}
+impl SubmissionRefused {
+    pub(super) fn retryable(&self) -> bool {
+        use mvm_core::mailbox::frame::Refusal;
+        matches!(
+            &self.0,
+            Refusal::Unavailable | Refusal::QueueFull(_) | Refusal::StorageFull
+        )
+    }
+}
 
 fn stage_on(io: &mut (impl Read + Write), pair: Id, submission: ObjectSubmissionV1) -> Result<()> {
     let expected = submission.message_id();

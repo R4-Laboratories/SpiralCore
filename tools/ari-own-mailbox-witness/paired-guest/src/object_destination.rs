@@ -313,7 +313,10 @@ impl GuestDestination {
                     until,
                     &mut self.operations,
                 ) {
-                    if let Some(decoded) = e.downcast_ref::<object_exchange::SubmissionRefused>() {
+                    if let Some(decoded) = e
+                        .downcast_ref::<object_exchange::SubmissionRefused>()
+                        .filter(|refused| !refused.retryable())
+                    {
                         *refusal = Some(decoded.0.clone());
                     }
                     return Err(e);
