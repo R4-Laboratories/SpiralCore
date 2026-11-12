@@ -3,6 +3,8 @@
 //! This grants no route/peer authority. Full object-v1 warm/Combined integration
 //! and the canonical post-admission endpoint hook remain separate required work.
 mod duplex;
+#[cfg(feature = "witness-stall")]
+pub use duplex::stall;
 mod lock_wait;
 mod stream;
 #[cfg(feature = "witness-timing")]

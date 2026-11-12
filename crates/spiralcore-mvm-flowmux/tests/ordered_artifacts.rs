@@ -1,3 +1,6 @@
+#[cfg(feature = "witness-stall")]
+#[path = "ordered_stream/stall.rs"]
+mod stall;
 use spiralcore_mvm_flowmux::{
     Duplex, MappedStream, ObjectChannel, Role,
     scope::{PinnedScopePolicy, ScopeFacts},
@@ -57,6 +60,8 @@ fn ordered_small_warm_runtime_and_combined_keep_verified_setup_pinned_through_ev
             .unwrap();
             (client, peer.join().unwrap())
         });
+        #[cfg(feature = "witness-stall")]
+        let (left_tls, right_tls) = (left.try_clone().unwrap(), right.try_clone().unwrap());
         let facts = ScopeFacts {
             object_profile: 2,
             policy_sha256: [1; 32],
@@ -193,6 +198,8 @@ fn ordered_small_warm_runtime_and_combined_keep_verified_setup_pinned_through_ev
         )
         .unwrap();
         let observed = right.retention_observer();
+        #[cfg(feature = "witness-stall")]
+        let observers = [left.stall_observer(), right.stall_observer()];
         let mut left = MappedStream::from_duplex(left);
         let mut right = MappedStream::from_duplex(right);
         let setup_until = Instant::now() + Duration::from_secs(2);
@@ -204,15 +211,51 @@ fn ordered_small_warm_runtime_and_combined_keep_verified_setup_pinned_through_ev
         }
         let expected = original.clone();
         let size = original.len();
+        #[cfg(feature = "witness-stall")]
+        let progress: [std::sync::atomic::AtomicU64; 4] = std::array::from_fn(|_| 0.into());
+        #[cfg(feature = "witness-stall")]
+        let label = format!("ordered-artifacts-{mode:?}");
         std::thread::scope(|scope| {
+            #[cfg(feature = "witness-stall")]
+            let _sampler_guard = {
+                let (complete, stop_sampler) = std::sync::mpsc::sync_channel(0);
+                scope.spawn(|| {
+                    stall::watch(
+                        stop_sampler,
+                        observers,
+                        [&left_tls, &right_tls],
+                        &progress,
+                        Instant::now(),
+                        129,
+                        &label,
+                    )
+                });
+                complete
+            };
+            #[cfg(feature = "witness-stall")]
+            let peer_progress = &progress;
             let peer = scope.spawn(move || {
                 for index in 0..129u64 {
                     let mut actual = vec![0; size];
-                    right.read_exact(&mut actual).unwrap();
+                    right.read_exact(&mut actual).unwrap_or_else(|e| {
+                        panic!(
+                            "mode={mode:?} index={index} B-read scope_remaining_ms={}: {e}",
+                            until.saturating_duration_since(Instant::now()).as_millis()
+                        )
+                    });
+                    #[cfg(feature = "witness-stall")]
+                    peer_progress[3].store(index + 1, std::sync::atomic::Ordering::Relaxed);
                     let mut target = expected.clone();
                     target[..8].copy_from_slice(&index.to_be_bytes());
                     assert_eq!(actual, target, "artifact bytes never become application");
-                    right.write_all(&actual).unwrap();
+                    right.write_all(&actual).unwrap_or_else(|e| {
+                        panic!(
+                            "mode={mode:?} index={index} B-echo scope_remaining_ms={}: {e}",
+                            until.saturating_duration_since(Instant::now()).as_millis()
+                        )
+                    });
+                    #[cfg(feature = "witness-stall")]
+                    peer_progress[1].store(index + 1, std::sync::atomic::Ordering::Relaxed);
                 }
                 let mut byte = [0];
                 assert_eq!(right.read(&mut byte).unwrap(), 0);
@@ -221,9 +264,23 @@ fn ordered_small_warm_runtime_and_combined_keep_verified_setup_pinned_through_ev
             for index in 0..129u64 {
                 let mut target = original.clone();
                 target[..8].copy_from_slice(&index.to_be_bytes());
-                left.write_all(&target).unwrap();
+                left.write_all(&target).unwrap_or_else(|e| {
+                    panic!(
+                        "mode={mode:?} index={index} A-write scope_remaining_ms={}: {e}",
+                        until.saturating_duration_since(Instant::now()).as_millis()
+                    )
+                });
+                #[cfg(feature = "witness-stall")]
+                progress[0].store(index + 1, std::sync::atomic::Ordering::Relaxed);
                 let mut echoed = vec![0; size];
-                left.read_exact(&mut echoed).unwrap();
+                left.read_exact(&mut echoed).unwrap_or_else(|e| {
+                    panic!(
+                        "mode={mode:?} index={index} A-read scope_remaining_ms={}: {e}",
+                        until.saturating_duration_since(Instant::now()).as_millis()
+                    )
+                });
+                #[cfg(feature = "witness-stall")]
+                progress[2].store(index + 1, std::sync::atomic::Ordering::Relaxed);
                 assert_eq!(echoed, target);
             }
             left.shutdown(Shutdown::Write).unwrap();

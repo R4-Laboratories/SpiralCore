@@ -89,7 +89,14 @@ fn now() -> Result<u64> {
         .map_err(|_| Error::Protocol)?
         .as_secs())
 }
+#[cfg(feature = "witness-stall")]
+pub mod stall;
+#[cfg(feature = "witness-stall")]
+use stall::{SenderPhase, StallObserver, WorkerPhase};
+
 struct Expected {
+    #[cfg(feature = "witness-stall")]
+    kind: u8,
     purpose: Purpose,
     transfer: Id,
     seq: u64,
@@ -162,6 +169,12 @@ impl RetentionObserver {
     }
 }
 impl Duplex {
+    /// Bounded diagnostics only in the opt-in stall witness.
+    #[cfg(feature = "witness-stall")]
+    pub fn stall_observer(&self) -> StallObserver {
+        self.writer.stall.clone()
+    }
+
     /// Fixed additional TX wrapper/control state; excludes original TX and timing-owner heap.
     #[cfg(feature = "witness-timing")]
     pub const fn ownership_wait_bytes() -> usize {
@@ -227,7 +240,11 @@ impl Duplex {
         let (delivery, delivery_rx) = mpsc::sync_channel(4);
         let (done, done_rx) = mpsc::sync_channel(1);
         let retention = RetentionObserver::default();
+        #[cfg(feature = "witness-stall")]
+        let stall = StallObserver::new(pending.clone());
         let worker = Worker {
+            #[cfg(feature = "witness-stall")]
+            stall: stall.clone(),
             #[cfg(feature = "witness-timing")]
             timing: timing.clone(),
             completed: false,
@@ -259,6 +276,8 @@ impl Duplex {
             })?;
         Ok(Self {
             writer: DuplexWriter {
+                #[cfg(feature = "witness-stall")]
+                stall,
                 #[cfg(feature = "witness-timing")]
                 timing,
                 tx: shared_tx,
@@ -298,6 +317,8 @@ impl Duplex {
 }
 
 pub struct DuplexWriter {
+    #[cfg(feature = "witness-stall")]
+    stall: StallObserver,
     #[cfg(feature = "witness-timing")]
     timing: TimingObserver,
     tx: SharedTx,
@@ -314,7 +335,7 @@ pub struct DuplexWriter {
     timeout: Duration,
 }
 impl DuplexWriter {
-    // The optional observer is the sole eighth argument; transport inputs stay unchanged.
+    // Diagnostic observers are optional; transport inputs stay unchanged.
     #[allow(clippy::too_many_arguments)]
     fn exchange(
         tx: &SharedTx,
@@ -326,6 +347,7 @@ impl DuplexWriter {
         budget: &Arc<AtomicUsize>,
         cancellation: &Cancellation,
         #[cfg(feature = "witness-timing")] timing: &TimingObserver,
+        #[cfg(feature = "witness-stall")] stall: &StallObserver,
     ) -> Result<Vec<Frame>> {
         if frames.is_empty() || frames.len() > 8 {
             return Err(Error::Limit);
@@ -345,6 +367,8 @@ impl DuplexWriter {
                     return Err(Error::Protocol);
                 }
                 *pending = Some(Expected {
+                    #[cfg(feature = "witness-stall")]
+                    kind: frame.kind,
                     purpose,
                     transfer: frame.transfer,
                     seq: frame.seq,
@@ -353,6 +377,8 @@ impl DuplexWriter {
                 });
             }
             {
+                #[cfg(feature = "witness-stall")]
+                stall.sender(SenderPhase::TxLock);
                 let mut tx = tx_lock!(
                     tx,
                     until,
@@ -366,8 +392,12 @@ impl DuplexWriter {
                     Phase::SenderSend,
                     FrameKind::from_wire(frame.kind),
                 ));
+                #[cfg(feature = "witness-stall")]
+                stall.sender(SenderPhase::Send);
                 tx.send_object(frame, purpose, until)?;
             }
+            #[cfg(feature = "witness-stall")]
+            stall.sender(SenderPhase::Wait);
             let response = {
                 #[cfg(feature = "witness-timing")]
                 let _span = timing.span(Metric::Frame(
@@ -394,6 +424,8 @@ impl DuplexWriter {
                 break;
             }
         }
+        #[cfg(feature = "witness-stall")]
+        stall.sender(SenderPhase::Caller);
         Ok(replies)
     }
     fn run<T>(
@@ -427,6 +459,8 @@ impl DuplexWriter {
                 &self.cancellation,
                 #[cfg(feature = "witness-timing")]
                 &self.timing,
+                #[cfg(feature = "witness-stall")]
+                &self.stall,
             )
             .map_err(|error| {
                 transport_error = Some(error);
@@ -696,6 +730,8 @@ impl<A: Authority> ReceiveEndpoint<A> {
     }
 }
 struct Worker<A: Authority> {
+    #[cfg(feature = "witness-stall")]
+    stall: StallObserver,
     #[cfg(feature = "witness-timing")]
     timing: TimingObserver,
     completed: bool,
@@ -779,6 +815,9 @@ impl<A: Authority> Worker<A> {
         } else {
             self.artifact_index
         };
+        #[cfg(feature = "witness-stall")]
+        self.stall
+            .mark(WorkerPhase::EndpointHandle, request.kind, ordinal);
         let reply = {
             #[cfg(feature = "witness-timing")]
             let _span = self.timing.span(Metric::Frame(
@@ -788,6 +827,9 @@ impl<A: Authority> Worker<A> {
             self.endpoint
                 .handle(purpose, ordinal, &self.context, &request, now()?)?
         };
+        #[cfg(feature = "witness-stall")]
+        self.stall
+            .mark(WorkerPhase::Retention, request.kind, ordinal);
         self.retention
             .publish(self.endpoint.snapshot(&self.context)?)?;
         if purpose == Purpose::Application && reply.kind == 103 {
@@ -795,11 +837,17 @@ impl<A: Authority> Worker<A> {
             if reply.body != id {
                 return Err(Error::Integrity);
             }
+            #[cfg(feature = "witness-stall")]
+            self.stall
+                .mark(WorkerPhase::Readback, request.kind, ordinal);
             let bytes = self.endpoint.read_object(&self.context, id)?;
             if bytes.len() as u64 != len {
                 return Err(Error::Integrity);
             }
             let next = self.index.checked_add(1).ok_or(Error::Sequence)?;
+            #[cfg(feature = "witness-stall")]
+            self.stall
+                .mark(WorkerPhase::Delivery, request.kind, ordinal);
             self.deliver(Event::Data(bytes), until)?;
             self.index = next;
             self.active = None;
@@ -807,6 +855,9 @@ impl<A: Authority> Worker<A> {
         if purpose == Purpose::Artifact && reply.kind == 103 {
             self.artifact_index = self.artifact_index.checked_add(1).ok_or(Error::Sequence)?;
         }
+        #[cfg(feature = "witness-stall")]
+        self.stall
+            .mark(WorkerPhase::ReplyLock, request.kind, ordinal);
         let mut tx = tx_lock!(
             &self.tx,
             until,
@@ -820,6 +871,9 @@ impl<A: Authority> Worker<A> {
             Phase::ReceiverSend,
             FrameKind::from_wire(request.kind),
         ));
+        #[cfg(feature = "witness-stall")]
+        self.stall
+            .mark(WorkerPhase::ReplyWrite, request.kind, ordinal);
         tx.send_object(&reply, purpose, until)
     }
     fn run(mut self) -> Result<(Counters, Counters)> {
@@ -830,6 +884,8 @@ impl<A: Authority> Worker<A> {
             {
                 return self.complete();
             }
+            #[cfg(feature = "witness-stall")]
+            self.stall.mark(WorkerPhase::Poll, 0, self.index);
             match self.rx.poll_input() {
                 Ok(false) => continue,
                 Ok(true) => {}
@@ -865,6 +921,8 @@ impl<A: Authority> Worker<A> {
                     until = until.min(expected.until);
                 }
             }
+            #[cfg(feature = "witness-stall")]
+            self.stall.mark(WorkerPhase::Receive, 0, self.index);
             match self.rx.receive_object(until)? {
                 ObjectRecord::Frame(purpose, frame) if matches!(frame.kind, 1..=6) => {
                     self.request(purpose, frame, until)?

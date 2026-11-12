@@ -1,3 +1,6 @@
+#[cfg(feature = "witness-stall")]
+#[path = "ordered_stream/stall.rs"]
+mod stall;
 use cpu_time::ProcessTime;
 use spiralcore_mvm_flowmux::{
     Duplex, MappedStream, ObjectChannel, Role,
@@ -251,6 +254,8 @@ fn four_thousand_distinct_blocks_each_direction_keep_exact_bytes_and_bounded_ret
     let right_state = right.retention_observer();
     #[cfg(feature = "witness-timing")]
     let duplex_timing = [left.timing_observer(), right.timing_observer()];
+    #[cfg(feature = "witness-stall")]
+    let stall_observers = [left.stall_observer(), right.stall_observer()];
     let left = MappedStream::from_duplex(left);
     let right = MappedStream::from_duplex(right);
     let setup_wall = began.elapsed();
@@ -283,6 +288,22 @@ fn four_thousand_distinct_blocks_each_direction_keep_exact_bytes_and_bounded_ret
     }
     let run_until = began + Duration::from_secs(240);
     std::thread::scope(|scope| {
+        #[cfg(feature = "witness-stall")]
+        let _sampler_guard = {
+            let (complete, stop_sampler) = std::sync::mpsc::sync_channel(0);
+            scope.spawn(|| {
+                stall::watch(
+                    stop_sampler,
+                    stall_observers,
+                    [&left_counters, &right_counters],
+                    &progress,
+                    began,
+                    BLOCKS,
+                    "ordered-stream",
+                )
+            });
+            complete
+        };
         let writer = |mut stream: MappedStream,
                       direction: usize,
                       observer: spiralcore_mvm_flowmux::RetentionObserver| {
