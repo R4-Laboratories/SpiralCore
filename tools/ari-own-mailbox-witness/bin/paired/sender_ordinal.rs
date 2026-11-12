@@ -131,8 +131,15 @@ fn one(
     let mut settle = worker(A, &req, until)?;
     let mut pending_settles = 0u64;
     let (mut settle_write, mut settle_read, mut settle_cpu) = (0u64, 0u64, 0u64);
+    let (mut pending_sdk_request, mut pending_sdk_response) = (0u64, 0u64);
     while settle["message_id"] == id && settle["outcome"] == "pending" {
         pending_settles += 1;
+        pending_sdk_request += settle["sdk_request_bytes"]
+            .as_u64()
+            .context("missing pending settlement SDK request size")?;
+        pending_sdk_response += settle["sdk_response_bytes"]
+            .as_u64()
+            .context("missing pending settlement SDK response size")?;
         settle_write += settle["agent_request_bytes"]
             .as_u64()
             .context("missing settlement request cost")?;
@@ -155,6 +162,7 @@ fn one(
         json!({"ordinal":n,"source_stage":stage,"source_return":source,"source_settlement":settle,"destination":b,"empty_control":control,
         "staged_ns":staged_ns,"control_start_ns":control_begin_ns,"control_end_ns":control_end_ns,"verified_host_receipt_ns":relay_at_ns,"verified_guest_readback_ns":readback_at_ns,"verified_settlement_ns":begin.elapsed().as_nanos(),
         "source_status_calls":poll_count,"source_status_request_bytes":req_bytes,"source_status_response_bytes":reply_bytes,"pending_status_guest_cpu_ns":pending_cpu,"pending_status_agent_written":pending_write,"pending_status_agent_read":pending_read,"pending_settlement_statuses":pending_settles,"pending_settlement_agent_written":settle_write,"pending_settlement_agent_read":settle_read,"pending_settlement_cpu_ns":settle_cpu,
+        "pending_settlement_sdk_request_bytes":pending_sdk_request,"pending_settlement_sdk_response_bytes":pending_sdk_response,
         "sealed_to_b":counts.sealed_to_destination,"signed_to_a":counts.reply_to_source,"exact_bytes":recovered.len()}),
     )
 }
