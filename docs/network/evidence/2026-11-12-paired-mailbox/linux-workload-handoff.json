@@ -1,0 +1,40 @@
+{
+  "scope": "Linux x86-64 release component. Canonical signed Cast admitted locally, transferred through inherited anonymous Unix workload descriptor across actual exec, callback verified original bytes and identity. Additional explicit AF_UNIX rejection on the Linux canonical host-vsock entrypoint.",
+  "source": "26cd66e00eb6b61fa9a244bd13513396f3e0a729",
+  "tree": "cb5d50b00a21d07023ba0c2c1357b5da2637f680",
+  "rustc": "rustc 1.97.1 (8bab26f4f 2026-07-14)",
+  "mode": "Rust optimized release test profile. One synthetic measurement sample.",
+  "test_executables_sha256": {
+    "mvm_agentd-3cbbffcc79da94b3": "eda7b39558cecce0f3dca5859172987299da195d90f7a40ea751fe113779f7c9",
+    "mailbox_cast_endpoint-bacf82053efd0dcb": "01930e75199b326500a09bae34bc0fd05550ad4131e0b7aabf8fa376d41bf58e"
+  },
+  "workload_controls": {
+    "passed": 6,
+    "failed": 0,
+    "log_sha256": "86bd620d09dbb96fae1da02773e700d58b980daa1e1a1a97b24cb188f3890ca7"
+  },
+  "core_signed_pair_control": {
+    "passed": 1,
+    "failed": 0,
+    "log_sha256": "d0e3c4dcfe2c002c0e2ead67443e36f1aca7096bc7cbd98120878a9ce2fb4b34"
+  },
+  "measurement": {
+    "agent_cpu_ns": 8476,
+    "agent_to_workload_accepted_bytes": 474,
+    "expected_and_verified_digest": "ad6e06a474a10aa7e5939f8d8d1b3d41a7d415512655744e1e85c9b7236275e2",
+    "offer_through_confirmed_ack_wall_ns": 40216,
+    "setup_through_workload_ready_wall_ns": 944087,
+    "start_through_confirmed_ack_wall_ns": 984384,
+    "verified_payload_bytes": 257,
+    "workload_cpu_ns": 34725,
+    "workload_to_agent_accepted_bytes": 46,
+    "workload_wait_and_callback_wall_ns": 39455
+  },
+  "callback_after_error": "A callback that applies an external effect before returning an error can repeat that effect. After positive callback the same original reader may re-emit the last receipt without a second callback.",
+  "limits": [
+    "No production launcher enrollment or positive guest AF_VSOCK traffic in this component run.",
+    "Single ephemeral reader and original grant; expired unread items can block the lane until original-generation retirement.",
+    "No independent application-processing proof, crash journal, or WAN/compression measurement.",
+    "CPU timers are per original role thread; do not add overlapping intervals to wall time."
+  ]
+}
