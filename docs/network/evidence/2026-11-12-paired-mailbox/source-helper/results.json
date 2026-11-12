@@ -1,0 +1,72 @@
+{
+  "mvm": "ba2cc8db503881cf29027ba8fd68a7f425a0cc22",
+  "tracked_blobs_verified": 4553,
+  "system": "macOS 27.0 arm64",
+  "tests": {
+    "hostd_signed_role_integration": 1,
+    "core_mailbox_cast_endpoint": 21
+  },
+  "binary_sha256": {
+    "hostd_test": "032fbc87b94bde6c88fed296fa63fefda41cfded1c0435c27d059bd95620d951",
+    "core_test": "b8531e2089f32596e88b413cc7c05470098d9ca41cf4f6c225fb97b98093c4cc"
+  },
+  "capture_sha256": {
+    "host": "a985b576c0dd4104ec97acd305fb0bc01499e774ff5589ced00171fee3124a62",
+    "core": "f0433152f40f02d62bf8be78cea4c045aa08efd188b6e02660bccf96acb05c43"
+  },
+  "scope": "One signed immutable direction, original private A/B role capsules, production source/destination exchange functions, canonical guest APIs and separate AF_UNIX stream pairs. In-process fixture, source-generation workspace supplied by component test.",
+  "payload_bytes": 5,
+  "source_turns": [
+    {
+      "accepted": false,
+      "helper_to_relay": 4954,
+      "relay_to_helper": 0,
+      "helper_to_guest": 52,
+      "guest_to_helper": 255,
+      "elapsed_ns": 7339416,
+      "helper_cpu_ns": 2973375,
+      "guest_cpu_ns": 47250,
+      "relay_cpu_ns": 43458
+    },
+    {
+      "accepted": true,
+      "helper_to_relay": 4954,
+      "relay_to_helper": 11,
+      "helper_to_guest": 194,
+      "guest_to_helper": 255,
+      "elapsed_ns": 4120834,
+      "helper_cpu_ns": 2785916,
+      "guest_cpu_ns": 13333,
+      "relay_cpu_ns": 33292
+    }
+  ],
+  "destination_of_retried_frame": {
+    "payload": 5,
+    "peer_forward": 4954,
+    "peer_reverse": 11,
+    "role_forward": 283,
+    "role_reverse": 98,
+    "peer_cpu_ns": 13250,
+    "helper_cpu_ns": 3703625,
+    "guest_cpu_ns": 56958,
+    "receive_through_join_ns": 10055917
+  },
+  "verified": {
+    "identical_sealed_frame_after_unknown_verdict": true,
+    "destination_exact_five_bytes": true,
+    "guest_source_result_correlated_with_retained_message_id": true
+  },
+  "accounting": "Counts are completed application-stream I/O within this fixture. Source turn covers guest Submit through result/peer closure including setup of its test threads. Destination row times and counts its separate phase. The A exchange socket excludes the coordinator pull byte, real process startup, guest boot, and service lifecycle.",
+  "source_trials": {
+    "lost_verdict": 1,
+    "successful_retry": 1
+  },
+  "not_executed": [
+    "installed helper child and owner socket for A",
+    "VM boot",
+    "WAN",
+    "compression baseline",
+    "whole-process CPU",
+    "energy"
+  ]
+}
