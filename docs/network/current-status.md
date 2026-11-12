@@ -222,8 +222,9 @@ The [Linux host-agent shutdown report](evidence/2026-11-11-retained-recovery/wor
 records all nine focused checks passing on the repaired source. After a journal
 failure the client received its deregistration reply, the journal was empty,
 and the worker collected its original signer and exited 1. The ordinary idle
-control exited 42. The installed worker still needs to collect a per-VM mailbox
-helper under shared budgets and demonstrate transfer and retirement with an actual guest.
+control exited 42. The [nine-check source revision](https://github.com/Casey-allard/mvm/tree/fc7c4ab41dc8900c8f736ef5c105f814feb4e3f4) is available in one checkout.
+
+The [installed-helper report](evidence/2026-11-11-retained-recovery/installed-helper/README.md) records 27 passing Linux checks. The coordinator collected an injected per-VM child through its original owner and preserved exit code 0. Production helper installation, resource release after collection and transfer through an actual guest remain open.
 
 [PR #95](https://github.com/R4-Laboratories/SpiralCore/pull/95) adds canonical
 transport-binding revocation to the mailbox adapter. Live Call and Reply keep

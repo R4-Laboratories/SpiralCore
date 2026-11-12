@@ -1,0 +1,247 @@
+{
+  "baseline": {
+    "source_files": 4498,
+    "source_manifest_sha256": "20ffa6a1d394e7c7417231d5596f8a1301593b56df24ef720a4c9ee672a3a5de",
+    "executables_sha256": {
+      "mvm_host_agent-bc30e67a571dc9bf": "5707b6d9ef06e9b7228e392c6bba259c941021ac8a5908a466307bcb654e040b"
+    },
+    "cases": [
+      {
+        "exit": 101,
+        "log_sha256": "fa0cacf47a43b9c95f91ee3dd98e3e13ab50317545f3d868ec75005e0cecb072",
+        "name": "worker_injected_owner_tests::installed_retirement_collects_injected_original_mailbox_child",
+        "wall_seconds": 0.008748091000597924,
+        "output": "running 1 test\ntest worker_injected_owner_tests::installed_retirement_collects_injected_original_mailbox_child ... Error: expected RED: installed retirement refuses injected owner without its original collection receipt\nFAILED\n\nfailures:\n\nfailures:\n    worker_injected_owner_tests::installed_retirement_collects_injected_original_mailbox_child\n\ntest result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 14 filtered out; finished in 0.01s"
+      }
+    ]
+  },
+  "repaired": {
+    "source_files": 4498,
+    "source_manifest_sha256": "404ee94167c399e2d09bd96f4457b63a2e680fcba82a8b94e72b22f50d9523c8",
+    "executables_sha256": {
+      "host_agent_idle_collection-31828ea4c4bbf3a7": "28089c1ed292c674a0918b2843b4c7de520d739121f289d69e2b4e97b1cde6b9",
+      "mvm_host_agent-bc30e67a571dc9bf": "900b10b006f69b80a9fe9b0c9b114b806348ba587bf0c7b58a5f293954e14347",
+      "mvm_hostd-0ad15abce9da80e8": "3e2d2d7b13fd262a929badb0bde31d94fbd7b99230fe6fefa806d11f2441d674",
+      "mvm-host-agent": "4191e1fdce3b7f042b742f561939cdf4386ce47997655d87d319c052e649e0bb",
+      "mvm-signer-helper": "59db0c3683ae54ea8c9ff9944f5c19510b9ff345a59770b115bdca4dc4999132"
+    },
+    "cases": [
+      {
+        "exit": 0,
+        "log_sha256": "f510ce9f0c233ae290ed3b4dea2e0742380c051ef30fdc53e69545d43f7321f8",
+        "name": "worker_injected_owner_tests::installed_retirement_collects_injected_original_mailbox_child",
+        "target": "mvm-host-agent",
+        "wall_seconds": 0.009649384999647737,
+        "output": "running 1 test\ntest worker_injected_owner_tests::installed_retirement_collects_injected_original_mailbox_child ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 14 filtered out; finished in 0.01s\n\nWALL=0.00 USER=0.00 SYS=0.00 MAXRSS_KIB=7888"
+      },
+      {
+        "exit": 0,
+        "log_sha256": "37e61862672a59f2bbdf50c97d256fc8c9cd74e3584bb28202e10f4e1e5a4a15",
+        "name": "worker_deadline_tests::repeated_worker_drain_reuses_first_grace_deadline",
+        "target": "mvm-host-agent",
+        "wall_seconds": 0.0020608719787560403,
+        "output": "running 1 test\ntest worker_deadline_tests::repeated_worker_drain_reuses_first_grace_deadline ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 14 filtered out; finished in 0.00s\n\nWALL=0.00 USER=0.00 SYS=0.00 MAXRSS_KIB=6964"
+      },
+      {
+        "exit": 0,
+        "log_sha256": "ca8925f3b82e53a242cad91848ddee4715aa8fd98feb963534e74038eeef0d24",
+        "name": "worker_deadline_tests::refused_idle_does_not_consume_the_next_shutdown_grace",
+        "target": "mvm-host-agent",
+        "wall_seconds": 0.0024275899631902575,
+        "output": "running 1 test\ntest worker_deadline_tests::refused_idle_does_not_consume_the_next_shutdown_grace ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 14 filtered out; finished in 0.00s\n\nWALL=0.00 USER=0.00 SYS=0.00 MAXRSS_KIB=7292"
+      },
+      {
+        "exit": 0,
+        "log_sha256": "799e83bbd44dadbe62f0d89adbd18beac5bb8621548f8ff067ec85ae01002c96",
+        "name": "worker_deadline_tests::original_control_task_joins_before_signer_stop",
+        "target": "mvm-host-agent",
+        "wall_seconds": 0.0024579479941166937,
+        "output": "running 1 test\ntest worker_deadline_tests::original_control_task_joins_before_signer_stop ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 14 filtered out; finished in 0.00s\n\nWALL=0.00 USER=0.00 SYS=0.00 MAXRSS_KIB=7364"
+      },
+      {
+        "exit": 0,
+        "log_sha256": "37823130cccbb0c758be8334a0df7883c76c35200f3c247765dd5c3d0f5aff10",
+        "name": "worker_deadline_tests::forced_worker_drain_fences_while_the_control_loop_owns_the_daemon",
+        "target": "mvm-host-agent",
+        "wall_seconds": 0.0018729949952103198,
+        "output": "running 1 test\ntest worker_deadline_tests::forced_worker_drain_fences_while_the_control_loop_owns_the_daemon ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 14 filtered out; finished in 0.00s\n\nWALL=0.00 USER=0.00 SYS=0.00 MAXRSS_KIB=7004"
+      },
+      {
+        "exit": 0,
+        "log_sha256": "226301255e0e92dd9f92ce89065e6559a8639cf2b667b85b6959412af32dbc62",
+        "name": "worker_deadline_tests::queued_idle_cannot_claim_a_drain_started_by_another_owner",
+        "target": "mvm-host-agent",
+        "wall_seconds": 0.0027805219870060682,
+        "output": "running 1 test\ntest worker_deadline_tests::queued_idle_cannot_claim_a_drain_started_by_another_owner ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 14 filtered out; finished in 0.00s\n\nWALL=0.00 USER=0.00 SYS=0.00 MAXRSS_KIB=7300"
+      },
+      {
+        "exit": 0,
+        "log_sha256": "7e12b22814bc353f864092eaa716763670a63584ae2f8dae96060f16d152fe95",
+        "name": "broker::daemon::drain_request_tests::original_drain_request_keeps_first_deadline_and_wakes_original_observer",
+        "target": "mvm_hostd",
+        "wall_seconds": 0.013637324969749898,
+        "output": "running 1 test\ntest broker::daemon::drain_request_tests::original_drain_request_keeps_first_deadline_and_wakes_original_observer ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2391 filtered out; finished in 0.01s\n\nWALL=0.01 USER=0.00 SYS=0.00 MAXRSS_KIB=13300"
+      },
+      {
+        "exit": 0,
+        "log_sha256": "6cf3565a92aabbe5651178da1546e59cfd2de6756dbbe0ebfa05dff397158322",
+        "name": "broker::daemon::drain_request_tests::original_inline_control_turn_is_shared_without_creating_another_budget",
+        "target": "mvm_hostd",
+        "wall_seconds": 0.002067524997983128,
+        "output": "running 1 test\ntest broker::daemon::drain_request_tests::original_inline_control_turn_is_shared_without_creating_another_budget ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2391 filtered out; finished in 0.00s\n\nWALL=0.00 USER=0.00 SYS=0.00 MAXRSS_KIB=10264"
+      },
+      {
+        "exit": 0,
+        "log_sha256": "d7a583ce9bf1eb7635bfd542a5db07f55135dbc5a2df58efd82dbfa85ff182b6",
+        "name": "retained_registration_reply_precedes_original_worker_recovery_exit",
+        "target": "host_agent_idle_collection",
+        "wall_seconds": 0.03167295298771933,
+        "output": "running 1 test\ntest retained_registration_reply_precedes_original_worker_recovery_exit ... INLINE_RECOVERY_WITNESS completed=true worker_code=Some(1) ready=1 original_collections=1 adopted=0 truncated=false\nok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 3 filtered out; finished in 0.03s\n\nWALL=0.03 USER=0.00 SYS=0.00 MAXRSS_KIB=7836"
+      },
+      {
+        "exit": 0,
+        "log_sha256": "c038e9411a397a4257fa8ffc86b82e0b8dfecbdde4f9662fd61ab907d331feb8",
+        "name": "idle_42_follows_original_signer_collection",
+        "target": "host_agent_idle_collection",
+        "wall_seconds": 1.0326834809966385,
+        "output": "running 1 test\ntest idle_42_follows_original_signer_collection ... IDLE_COLLECTION_WITNESS worker_code=Some(42) ready=1 original_collections=1 fixture_adopted_reaped=0 trace_bytes=833 trace_truncated=false\nok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 3 filtered out; finished in 1.03s\n\nWALL=1.03 USER=0.00 SYS=0.00 MAXRSS_KIB=7556"
+      },
+      {
+        "exit": 0,
+        "log_sha256": "65554a9e1c6e4b3605e50495f29f21cd7548684d6cebdef09dce999c5a4b6cc3",
+        "name": "broker::control_prepare::release_tests::release_observer_wakes_only_after_original_guard_unlocks",
+        "target": "mvm_hostd",
+        "wall_seconds": 0.013771830999758095,
+        "output": "running 1 test\ntest broker::control_prepare::release_tests::release_observer_wakes_only_after_original_guard_unlocks ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2391 filtered out; finished in 0.01s\n\nWALL=0.01 USER=0.00 SYS=0.00 MAXRSS_KIB=11248"
+      },
+      {
+        "exit": 0,
+        "log_sha256": "f6e1d9815aea1446b09afa3cd7416d4978e624fac55f31d7b320eab6762cae60",
+        "name": "broker::control_prepare::release_tests::subscribe_before_busy_preserves_release_before_wait",
+        "target": "mvm_hostd",
+        "wall_seconds": 0.002395068993791938,
+        "output": "running 1 test\ntest broker::control_prepare::release_tests::subscribe_before_busy_preserves_release_before_wait ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2391 filtered out; finished in 0.00s\n\nWALL=0.00 USER=0.00 SYS=0.00 MAXRSS_KIB=10952"
+      },
+      {
+        "exit": 0,
+        "log_sha256": "21d22d8901860c9ca3af197a1526217ae79f30e78676ffcee718b0558ff59930",
+        "name": "broker::control_prepare::release_tests::canceled_original_loan_wakes_without_dropping_its_value",
+        "target": "mvm_hostd",
+        "wall_seconds": 0.002101439982652664,
+        "output": "running 1 test\ntest broker::control_prepare::release_tests::canceled_original_loan_wakes_without_dropping_its_value ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2391 filtered out; finished in 0.00s\n\nWALL=0.00 USER=0.00 SYS=0.00 MAXRSS_KIB=12348"
+      },
+      {
+        "exit": 0,
+        "log_sha256": "224b9b18c8d3bf64f23689c2ddee3b25a01aedc5b29785c6d4613b11176ca025",
+        "name": "broker::control_prepare::release_tests::unwinding_original_loan_wakes_without_erasing_custody",
+        "target": "mvm_hostd",
+        "wall_seconds": 0.0022115089814178646,
+        "output": "running 1 test\ntest broker::control_prepare::release_tests::unwinding_original_loan_wakes_without_erasing_custody ... \nthread 'broker::control_prepare::release_tests::unwinding_original_loan_wakes_without_erasing_custody' (4121350) panicked at crates/mvm-hostd/src/broker/control_prepare/release_tests.rs:98:9:\ncontrolled original-loan unwind\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\nok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2391 filtered out; finished in 0.00s\n\nWALL=0.00 USER=0.00 SYS=0.00 MAXRSS_KIB=12388"
+      },
+      {
+        "exit": 0,
+        "log_sha256": "6bb355262ee354af4baf31507d306b47571e220b9223e2bf609e6a447539333a",
+        "name": "broker::control_prepare::release_tests::completion_wakes_only_after_original_field_is_vacant",
+        "target": "mvm_hostd",
+        "wall_seconds": 0.002092301961965859,
+        "output": "running 1 test\ntest broker::control_prepare::release_tests::completion_wakes_only_after_original_field_is_vacant ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2391 filtered out; finished in 0.00s\n\nWALL=0.00 USER=0.00 SYS=0.00 MAXRSS_KIB=11104"
+      },
+      {
+        "exit": 0,
+        "log_sha256": "56b6889e858116227d71d69fa006103d650b55df0cd6943364dc2a4a05232c68",
+        "name": "broker::control_prepare::release_tests::vacant_raw_guard_reports_typed_busy_and_signals_after_release",
+        "target": "mvm_hostd",
+        "wall_seconds": 0.0020191739895381033,
+        "output": "running 1 test\ntest broker::control_prepare::release_tests::vacant_raw_guard_reports_typed_busy_and_signals_after_release ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2391 filtered out; finished in 0.00s\n\nWALL=0.00 USER=0.00 SYS=0.00 MAXRSS_KIB=11116"
+      },
+      {
+        "exit": 0,
+        "log_sha256": "894186606c1bfe3ccd75cd3a54c30832f3f95618f85ae45dcb3a99a1ac354851",
+        "name": "broker::daemon::row_identity_tests::shutdown_reconciliation_waits_for_the_original_busy_loan_release",
+        "target": "mvm_hostd",
+        "wall_seconds": 0.02480638399720192,
+        "output": "running 1 test\ntest broker::daemon::row_identity_tests::shutdown_reconciliation_waits_for_the_original_busy_loan_release ... SHUTDOWN_BUSY_RELEASE returned_while_held=false original_still_retained=false permits_before_fixture_cleanup=1 actual_error=None\nok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2391 filtered out; finished in 0.02s\n\nWALL=0.02 USER=0.00 SYS=0.00 MAXRSS_KIB=16980"
+      },
+      {
+        "exit": 0,
+        "log_sha256": "de857f601bdc42f7741a9c568d7ff3d92f1f1e1bf3fffe7aea07ce76e8ba8f46",
+        "name": "broker::mailbox_workers::tests::provider_fence_waits_original_activation_beyond_grace_without_renewing_it",
+        "target": "mvm_hostd",
+        "wall_seconds": 0.0020516550284810364,
+        "output": "running 1 test\ntest broker::mailbox_workers::tests::provider_fence_waits_original_activation_beyond_grace_without_renewing_it ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2391 filtered out; finished in 0.00s\n\nWALL=0.00 USER=0.00 SYS=0.00 MAXRSS_KIB=11640"
+      },
+      {
+        "exit": 0,
+        "log_sha256": "3edfdf34148ac09ae4db453d1a9f5430eb4e7e71e78db395c66e0e6c2eae624c",
+        "name": "broker::mailbox_workers::tests::original_provider_retirement_releases_only_never_spawned_and_binds_its_receipt",
+        "target": "mvm_hostd",
+        "wall_seconds": 0.00217847601743415,
+        "output": "running 1 test\ntest broker::mailbox_workers::tests::original_provider_retirement_releases_only_never_spawned_and_binds_its_receipt ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2391 filtered out; finished in 0.00s\n\nWALL=0.00 USER=0.00 SYS=0.00 MAXRSS_KIB=14288"
+      },
+      {
+        "exit": 0,
+        "log_sha256": "d51e4ee3571893db35624811f992eac2ef35ceda699dc370fbbb8ea5e64749b7",
+        "name": "broker::mailbox_workers::tests::nonblocking_collision_read_refuses_contention_poison_and_retains_terminal_slots",
+        "target": "mvm_hostd",
+        "wall_seconds": 0.0023624059977009892,
+        "output": "running 1 test\ntest broker::mailbox_workers::tests::nonblocking_collision_read_refuses_contention_poison_and_retains_terminal_slots ... \nthread '<unnamed>' (4121374) panicked at crates/mvm-hostd/src/broker/mailbox_workers.rs:1747:17:\ncontrolled worker-map poison\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\nok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2391 filtered out; finished in 0.00s\n\nWALL=0.00 USER=0.00 SYS=0.00 MAXRSS_KIB=14956"
+      },
+      {
+        "exit": 0,
+        "log_sha256": "b644b21b34bac847ae4fec32f5bff0e71dfbdb5b2b5cc3569ff2c4cea212de4c",
+        "name": "broker::mailbox_workers::tests::handoff_wakeup_retries_interrupted_write_worker_review_red",
+        "target": "mvm_hostd",
+        "wall_seconds": 0.0019413449917919934,
+        "output": "running 1 test\ntest broker::mailbox_workers::tests::handoff_wakeup_retries_interrupted_write_worker_review_red ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2391 filtered out; finished in 0.00s\n\nWALL=0.00 USER=0.00 SYS=0.00 MAXRSS_KIB=9564"
+      },
+      {
+        "exit": 0,
+        "log_sha256": "877f3cb3b14c36de42e8e54c23aa93d57df2f38faf13b4bd5c2705231d2d80c1",
+        "name": "broker::mailbox_workers::tests::handoff_wakeup_reports_hard_failure_worker_review_red",
+        "target": "mvm_hostd",
+        "wall_seconds": 0.001893603999633342,
+        "output": "running 1 test\ntest broker::mailbox_workers::tests::handoff_wakeup_reports_hard_failure_worker_review_red ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2391 filtered out; finished in 0.00s\n\nWALL=0.00 USER=0.00 SYS=0.00 MAXRSS_KIB=9200"
+      },
+      {
+        "exit": 0,
+        "log_sha256": "c09e74b22c1d13864360198f74393429261399c7c559db165e186a0e39a6fd96",
+        "name": "broker::mailbox_workers::tests::ordinary_collection_refuses_ignored_sigchld_worker_review_red",
+        "target": "mvm_hostd",
+        "wall_seconds": 0.00470138801028952,
+        "output": "running 1 test\ntest broker::mailbox_workers::tests::ordinary_collection_refuses_ignored_sigchld_worker_review_red ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2391 filtered out; finished in 0.00s\n\nWALL=0.00 USER=0.00 SYS=0.00 MAXRSS_KIB=13988"
+      },
+      {
+        "exit": 0,
+        "log_sha256": "ef359d2568769d03ac3445e7f105d284b113085baa251b9d07d2530b23d2a863",
+        "name": "broker::mailbox_workers::tests::poisoned_owner_with_watched_session_keeps_actual_idle_watcher_live_worker_review_red",
+        "target": "mvm_hostd",
+        "wall_seconds": 0.02468458202201873,
+        "output": "running 1 test\ntest broker::mailbox_workers::tests::poisoned_owner_with_watched_session_keeps_actual_idle_watcher_live_worker_review_red ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2391 filtered out; finished in 0.02s\n\nWALL=0.02 USER=0.00 SYS=0.00 MAXRSS_KIB=15476"
+      },
+      {
+        "exit": 0,
+        "log_sha256": "b31567b7874b30bd42f5ba63bcf6fe7f31da91097e2605f40723582a995d0101",
+        "name": "broker::mailbox_workers::tests::returned_handoff_cell_keeps_original_child_and_credit_on_queue_failure",
+        "target": "mvm_hostd",
+        "wall_seconds": 0.0023695300333201885,
+        "output": "running 1 test\ntest broker::mailbox_workers::tests::returned_handoff_cell_keeps_original_child_and_credit_on_queue_failure ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2391 filtered out; finished in 0.00s\n\nWALL=0.00 USER=0.00 SYS=0.00 MAXRSS_KIB=13972"
+      },
+      {
+        "exit": 0,
+        "log_sha256": "55675c5e0b726207b2da68b149641b826bd4999155f230491dd258fbcd51a061",
+        "name": "broker::mailbox_workers::tests::idle_terminal_expiry_removes_zero_charge_tenants_worker_review_red",
+        "target": "mvm_hostd",
+        "wall_seconds": 0.002690380031708628,
+        "output": "running 1 test\ntest broker::mailbox_workers::tests::idle_terminal_expiry_removes_zero_charge_tenants_worker_review_red ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2391 filtered out; finished in 0.00s\n\nWALL=0.00 USER=0.00 SYS=0.00 MAXRSS_KIB=13700"
+      },
+      {
+        "exit": 0,
+        "log_sha256": "d7322144c4c918f22e0a58faf420b059464b6bca9543d41ec6eeb9048de31966",
+        "name": "broker::mailbox_workers::tests::spawn_completion_rechecks_admission_before_writer_worker_review_red",
+        "target": "mvm_hostd",
+        "wall_seconds": 0.010565910022705793,
+        "output": "running 1 test\ntest broker::mailbox_workers::tests::spawn_completion_rechecks_admission_before_writer_worker_review_red ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2391 filtered out; finished in 0.01s\n\nWALL=0.01 USER=0.00 SYS=0.00 MAXRSS_KIB=20052"
+      }
+    ]
+  }
+}
