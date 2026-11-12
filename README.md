@@ -29,6 +29,10 @@ checkpoint, not completion of that program.
 
 **Linux/Firecracker and Apple Silicon/HVF both passed clean delivery and automatic retry on the same mailbox code.** In four single-host runs, guest A staged a 313-byte SpiralCore frame. Guest B recovered all 257 payload bytes, including the trailing zero, synced and reopened its local copy, and acknowledged its lease. Both original helpers stopped unassisted in each run. The loss trials withheld B’s first signed receipt. A’s agent retried the original envelope, B returned the identical receipt, and an authenticated read after the ACK found the queue empty.
 
+A subsequent Linux run kept both original Firecracker guests up for **eight separately addressed messages**. Each carried the same 257-byte body. Guest B returned every byte, then its application ACK was confirmed. The median was 220.763 ms through the verified receipt and 883.826 ms through ACK and independently checked readback. The relay carried 46,819 bytes forward and 9,590 back for 2,056 application bytes. Eight control calls completed while messages awaited forwarding. [Persistent-pair measurements and reproduction](docs/network/evidence/2026-11-12-paired-mailbox/paired-durable-native/sustained/README.md)
+
+The four single-message trials are shown below.
+
 | Backend and case | Sealed A → B | Signed receipt read from B | Verified receipt returned to A’s helper | ACK and host comparison of B’s readback |
 |---|---:|---:|---:|---:|
 | Linux x86-64 Firecracker, clean | 5,808 B | 1,188 B | 105.627 ms | 0.440133 s |
@@ -59,18 +63,20 @@ signer before exiting. Retirement with a per-VM mailbox helper remains open.
 | Cooperating objects | Authenticated QUIC object service; shared runtime/cache/schema core; exact durable readback | Current-source two-host Internet WAN qualification |
 | Ordinary TCP/UDP | Linux TUN paired tunnel over authenticated QUIC; real IPv4/IPv6 flows and calibrated shaped-link trials | Other packet-attachment platforms and deployment/WAN acceptance |
 | MVM mailbox | Canonical encrypted envelopes, native HVF/Firecracker transfers, and installed Firecracker qualification for sustained Calls and receipt recovery | Complete installed-service release, concurrent capacity, canonical WAN, and security qualification |
-| FlowMux stream component | Authenticated paired TCP/TLS/object mapping, cancellation and FIN ownership; **34 tests on each of seven native roles** | Canonical admitted MVM binding, installed lifecycle, sustained capacity and WAN |
+| FlowMux stream component | Authenticated paired TCP/TLS/object mapping, cancellation and FIN ownership; **47 component tests per native role on the PR104 release** | Canonical admitted MVM binding, installed lifecycle, sustained capacity and WAN |
 | Installation/storage foundations | Installed-owner/supervisor components, managed reservations and native Windows private-storage components | End-to-end aggregate ownership, recovery and supported capacity envelope |
 | Owner access | Development/sealed-mode integration is active, unmerged work | Canonical authority/lifecycle, shared-core payload binding and native acceptance |
 
-The latest published FlowMux component is [PR72](https://github.com/R4-Laboratories/SpiralCore/pull/72),
+The earlier FlowMux component baseline was [PR72](https://github.com/R4-Laboratories/SpiralCore/pull/72),
 merged as `25a1c786`; [PR77](https://github.com/R4-Laboratories/SpiralCore/pull/77)
 publishes its [reviewed release packet](docs/network/evidence/2026-11-03-flowmux/pr72-release.md).
-This is a native-process component, not a booted-MVM or WAN result.
+The following release added readiness and stream closure. All seven native process roles passed 47 component checks. [PR104 results](docs/network/evidence/2026-11-06-flowmux-readiness-main/README.md)
+
+The ordered-cache candidate exercised 4,096 blocks of 16 KiB in each direction. The instrumented Windows Server 2025 run passed, while the ordinary Windows Server 2022 and 2025 runs exceeded their deadlines. The release gate remains open. [Measurements, failure points and source](docs/network/evidence/2026-11-12-ordered-flowmux/README.md) · [FlowMux integration tracker](https://github.com/R4-Laboratories/SpiralCore/issues/44)
 
 Unmerged work includes the canonical resident parent, exact-process guardian
 custody, disposable endpoint-disk inventory, admitted FlowMux/access activation,
-and Small/Ordered/readiness candidates. These are not part of PR72's accepted
+and the ordered Small profile candidate. These are not part of PR72's accepted
 source. [Current checkpoints, failures and open gates →](docs/network/current-status.md)
 Published development code: [SpiralCore integration `8476d758`](https://github.com/R4-Laboratories/SpiralCore/tree/8476d7583e083e02d8b6bc571fc505815b85de90)
 and [MVM fork `081901d02`](https://github.com/Casey-allard/mvm/tree/081901d0285ccf00d9dd824746354e9f82d8b6ce).
@@ -353,8 +359,7 @@ sources/transports. They do not qualify the current QUIC or canonical MVM path.
 | Windows Server 2022/2025 x64 + Windows 11 ARM64 | Native client/TLS components and private-storage components | No native Windows MVM host or end-to-end durable gateway/WAN claim |
 | Linux TUN adapter | Native IPv4/IPv6 packet attachment | Other attachment platforms are not established here |
 
-The seven FlowMux rows repeat 34 tests per role; they are not 238 distinct tests,
-cross-OS network pairs or booted guests. Windows storage uses the same protocol
+Each FlowMux platform row ran both endpoints in one native test process on one host. Cross-OS pairs and booted guests require separate tests. Windows storage uses the same protocol
 with an isolated Win32 backend and supported NTFS profile. Portable compilation,
 WSL and client success do not substitute for native backend execution.
 [Platform contract](docs/specs/2026-11-02-mvm-platforms.md) ·

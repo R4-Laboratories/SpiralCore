@@ -4,6 +4,10 @@ Updated **2026-11-12**. Native Linux x86-64/Firecracker and Apple Silicon/HVF no
 
 One persistent Linux Firecracker pair verified eight separately addressed operations and eight admitted control Calls. The median time through signed receipt was 220.763 ms, and the median through B’s ACK and exact returned readback was 883.826 ms. Both original helpers exited cleanly. [Operation timing, bytes, CPU and scope](evidence/2026-11-12-paired-mailbox/paired-durable-native/sustained/README.md).
 
+### Cross-host carrier handoff
+
+Same-host delivery uses each guest’s vsock and original mailbox helper. For different hosts, the proposed MVMD Iroh/Hydro adapter carries the encrypted canonical envelope between the two MVM endpoints. The destination journal still owns the signed acceptance receipt. The adapter and MVMD #254 are private. A versioned test binary with a public invocation contract, explicit direct/relay settings and a documented return path for B’s original signed receipt would allow the two-host test to proceed. A public repository or private signing keys are unnecessary. The WAN trial must record the actual path, each relay hop, exact readback, CPU and elapsed time. [Public ownership discussion](https://github.com/tinylabscom/mvm/issues/4633#issuecomment-6751136680) · [WAN acceptance and handoff](https://github.com/R4-Laboratories/SpiralCore/issues/47)
+
 A Linux regression reproduced the cleanup failure with two real mailbox helpers and two process-lifetime fixtures. After the fix, the source helper exited normally in 207 ms and the destination in 16 ms while the orchestrator and both state directories remained live. [Original-helper test, byte counts and CPU](evidence/2026-11-12-paired-mailbox/persistent-sdk/original-lifetime.md).
 
 A separate two-guest Linux trial withheld B’s first signed receipt. A’s original agent retried the same sealed envelope and B returned a byte-identical receipt. After one confirmed ACK the destination queue was empty. Exact readback and that empty probe took 1.159652 s, and both helpers exited unaided with complete stream meters. [Native retry measurements, controls and reproduction](evidence/2026-11-12-paired-mailbox/paired-durable-native/receipt-loss.md).
@@ -32,11 +36,11 @@ In an earlier attempt, a Linux/Firecracker guest submitted a 313-byte SpiralCore
 
 In a follow-up Firecracker guest, the original reader's wall clock was 677 ms before the signed enrollment at the start of Receive and 606 ms before it on refusal. The original verifier returned `NotYetValid` at both samples and accepted at issue time. Two later guests stopped during boot. [Reader measurements, original journal cursors and recovery criterion](evidence/2026-11-12-paired-mailbox/own-mailbox-native/reader-clock.md).
 
-Ari’s [draft trusted-host journal](https://github.com/tinylabscom/mvm/pull/5377) adds a local-durable outbox, boot-bound guest reader and application ACK. A native Linux guest-application component now stages a SpiralCore frame and checks its readback and explicit ACK on a real local Unix stream with a synthetic reader. [257-byte fixture, on-socket counts and CPU](evidence/2026-11-12-paired-mailbox/durable-guest-binding/README.md). For the trusted-host local-durable tier, the destination journal returns a signed V2 receipt. The separately witnessed durable tier retains its V1 receipt. The same-host addressed delivery gate still requires B to read and verify A’s bytes through its own admitted reader. [Paired-route integration points](evidence/2026-11-12-paired-mailbox/addressed-native-launch/ari-journal-binding.md).
+Ari’s [draft trusted-host journal](https://github.com/tinylabscom/mvm/pull/5377) adds a local-durable outbox, boot-bound guest reader and application ACK. A native Linux guest-application component now stages a SpiralCore frame and checks its readback and explicit ACK on a real local Unix stream with a synthetic reader. [257-byte fixture, on-socket counts and CPU](evidence/2026-11-12-paired-mailbox/durable-guest-binding/README.md). For the trusted-host local-durable tier, the destination journal returns a signed V2 receipt. The separately witnessed durable tier retains its V1 receipt. The subsequent paired runs above exercised B’s own admitted reader on Firecracker and HVF. [Paired-route integration points](evidence/2026-11-12-paired-mailbox/addressed-native-launch/ari-journal-binding.md).
 
 Ari's journal draft already contains the verified admission and Reply authorization APIs from the contributor draft. Reconciling the pinned branches produced an identical source tree to Ari's draft. Linux passed 113 scoped checks, including the signed header 7 versus verifier 8 regression. [Source identity, receipt authority and compatibility tests](evidence/2026-11-12-paired-mailbox/addressed-native-launch/journal-reconciliation.md).
 
-A signed, B-addressed SpiralCore frame reached the canonical local-durable journal over a real Unix socket. After the service restarted, it returned the original signed V2 receipt for the same sealed bytes. A separately authorized host reader recovered the 313-byte frame and acknowledged it. The two-guest delivery gate remains open. [Host journal exchange, counters and timings](evidence/2026-11-12-paired-mailbox/durable-host-binding/README.md).
+A signed, B-addressed SpiralCore frame reached the canonical local-durable journal over a real Unix socket. After the service restarted, it returned the original signed V2 receipt for the same sealed bytes. A separately authorized host reader recovered the 313-byte frame and acknowledged it. The subsequent two-guest runs above exercised that path through guest B. [Host journal exchange, counters and timings](evidence/2026-11-12-paired-mailbox/durable-host-binding/README.md).
 
 The repaired SDK serialized concurrent VM name registration, TTL, readiness and stop updates in 13 passing Linux detached-launch tests. Replaying the two original guest grants independently located a 252 ms clock admission boundary. [SDK regression, original clock replay and limits](evidence/2026-11-12-paired-mailbox/addressed-native-launch/sdk-name-and-clock.md).
 
@@ -102,16 +106,7 @@ process roles each passed 47 component tests and strict Clippy. The
 failed Windows wake and macOS fixture attempts. This is accepted component
 progress, not installed MVM or WAN qualification.
 
-[PR106](https://github.com/R4-Laboratories/SpiralCore/pull/106) remains an
-unmerged ordered-cache, authenticated-scope and Windows quota successor.
-At candidate `5db896ab`, the [default sustained FlowMux matrix](https://github.com/R4-Laboratories/SpiralCore/actions/runs/42956544302)
-passes all seven native process roles. The separate optional instrumented
-Windows 2025 run still fails its original two-second read deadline; the
-[failed run](https://github.com/R4-Laboratories/SpiralCore/actions/runs/42956544106)
-remains an unresolved declared gate. The default pass does not waive it.
-PR106 is held; these are component results, not installed MVM or WAN acceptance.
-The [development evidence](https://github.com/R4-Laboratories/SpiralCore/blob/5db896ab/docs/network/evidence/2026-11-10-ordered-scope/README.md)
-retains earlier source-scoped failures.
+The ordered-cache successor [PR194](https://github.com/R4-Laboratories/SpiralCore/pull/194) carries forward the scoped FlowMux and Windows storage changes from [PR106](https://github.com/R4-Laboratories/SpiralCore/pull/106). Its ordinary Windows Server 2022 run reached the whole-test deadline after 3,598 blocks each way. The ordinary Windows Server 2025 run stopped on a read deadline despite a passing instrumented run. The release gate remains open. [Current platform measurements](evidence/2026-11-12-ordered-flowmux/README.md) · [Earlier development evidence](https://github.com/R4-Laboratories/SpiralCore/blob/5db896ab/docs/network/evidence/2026-11-10-ordered-scope/README.md)
 
 ## Active upstream MVM coordination
 
@@ -308,6 +303,8 @@ Installed guest, direct/relay WAN, capacity and FIPS gates have separate
 acceptance criteria. [Verified artifacts](https://github.com/R4-Laboratories/SpiralCore/issues/46#issuecomment-6670157754)
 
 ## Full MVM acceptance remains open
+
+The local destination journal now reuses record capacity after signed retention and compaction in the contributor candidate. Linux verified the repair and the original sender's 64-identity boundary. Repeated transfers on the same live direction beyond that boundary need an explicit sender settlement decision. [Journal capacity evidence](evidence/2026-11-12-paired-mailbox/durable-journal-capacity/README.md) · [Sender settlement, #195](https://github.com/R4-Laboratories/SpiralCore/issues/195)
 
 All five outcomes in the [Ari delivery plan](../plans/2026-11-03-ari-delivery.md)
 are required. The linked issues were open at this snapshot.
