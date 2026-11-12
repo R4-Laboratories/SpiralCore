@@ -98,13 +98,43 @@ fn request_wire(binding: &MailboxBinding, payload: &[u8]) -> Vec<u8> {
 
 #[test]
 fn admitted_object_calls_use_shared_core_and_exact_readback() {
+    let expected = [common::random(131073, 51), vec![0; 17]].concat();
+    check_exact_repeat(binding(), reply_binding(), expected);
+}
+
+#[test]
+fn four_kib_raw_object_fits_original_4152_byte_call_and_88_byte_reply() {
+    let limit = |kind, max_payload_bytes, recipient, key| {
+        let mut cfg = ServiceBindingConfig::from_direction(common::config(kind)).unwrap();
+        cfg.capability.grant.max_payload_bytes = max_payload_bytes;
+        cfg.capability = mvm_core::mailbox::sign_capability(
+            cfg.capability.grant,
+            &SigningKey::from_bytes(&[22; 32]),
+        )
+        .unwrap();
+        MailboxBinding::new(
+            cfg,
+            Some(DestinationReceiptSigner {
+                recipient: PrincipalId::from_bytes([recipient; 32]),
+                signing_key: SigningKey::from_bytes(&[key; 32]),
+            }),
+        )
+        .unwrap()
+    };
+    let expected = [common::random(4079, 51), vec![0; 17]].concat();
+    check_exact_repeat(
+        limit(MailboxMessageKind::Call, 4152, 3, 57),
+        limit(MailboxMessageKind::Reply, 88, 2, 59),
+        expected,
+    );
+}
+
+fn check_exact_repeat(binding: MailboxBinding, reverse: MailboxBinding, expected: Vec<u8>) {
     let store = common::Store::new();
-    let binding = binding();
     let mut service =
         LocalMailboxService::new(HostBudget::new(ServiceLimits::default()).unwrap()).unwrap();
     let mut caller =
         LocalMailboxService::new(HostBudget::new(ServiceLimits::default()).unwrap()).unwrap();
-    let reverse = reply_binding();
     let mut endpoint = ObjectMailbox::open(
         &store.0,
         Limits::default(),
@@ -113,7 +143,6 @@ fn admitted_object_calls_use_shared_core_and_exact_readback() {
     )
     .unwrap();
     endpoint.set_codec_cache_enabled(true).unwrap();
-    let expected = [common::random(131073, 51), vec![0; 17]].concat();
     let route = common::config(MailboxMessageKind::Call).reply_to;
     for (attempt, warm) in [false, true].into_iter().enumerate() {
         let mut exact = false;
