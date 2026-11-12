@@ -1,0 +1,144 @@
+{
+  "scope": "Local process and Unix socketpair components. Each timed socket row is one observation. No guest VMs or WAN transport.",
+  "mvm_commit": "50bc377cae41aa3cec10eb547d2d8ebcb6954d14",
+  "mvm_tree": "600221a9df017deb63a8f5d52762ce909c85b6cf",
+  "source_files_verified": 4518,
+  "platforms": {
+    "linux_x86_64": {
+      "suite_record_sha256": "1e831d4e293179db132b1bf617ba2db75649c86346ce445f8540dedb88e74613",
+      "tests": {
+        "mailbox_cast_endpoint": {
+          "passed": 21,
+          "test_binary_sha256": "751e11d4e561f27bbd14f456a371e9f0ca29de3ec5a4ce9ca43ecf332657227d",
+          "log_sha256": "9447c7981fb164930219a4addd49f7e3a2466b4e419f0a13577112a15e277e1e",
+          "test_process_elapsed_ns": 48519308,
+          "test_process_user_ms": 41.766,
+          "test_process_system_ms": 6.265
+        },
+        "mailbox_cast-tests": {
+          "passed": 6,
+          "test_binary_sha256": "3439e940032804134360d2cd1661c1f644f969de4ccf7b2007a16bcf30c0466d",
+          "log_sha256": "8ada1d8edd58dfb2b16b378ea691e4c67d968317d8ea3688b7840f71e21f2be5",
+          "test_process_elapsed_ns": 33963809,
+          "test_process_user_ms": 5.237,
+          "test_process_system_ms": 1.341
+        },
+        "addressed_cast_shares_the_two_workers_and_preserves_control_headroom": {
+          "passed": 1,
+          "test_binary_sha256": "1086a0c3f745f2e9184057e6b0ec41b6d23172d157e74b8c578854fd9dd80b00",
+          "log_sha256": "8f14a99a47417863d8983e5c1cc4397fea125da95a85ecc82bcffff276d1e83e",
+          "test_process_elapsed_ns": 3237696,
+          "test_process_user_ms": 2.102,
+          "test_process_system_ms": 1.05
+        },
+        "installed_default_mailbox_domains_differ_between_named_guests": {
+          "passed": 1,
+          "test_binary_sha256": "1086a0c3f745f2e9184057e6b0ec41b6d23172d157e74b8c578854fd9dd80b00",
+          "log_sha256": "3284365df4c49ca4c1fd4e8e868181e105ccbbfd92dd431f7e01dd06cb8207fe",
+          "test_process_elapsed_ns": 3360730,
+          "test_process_user_ms": 0.0,
+          "test_process_system_ms": 3.238
+        }
+      },
+      "addressed_cast_socketpair": {
+        "payload": 5,
+        "encoded_envelope_not_sent": 2975,
+        "host_to_guest": 276,
+        "guest_to_host": 98,
+        "open_through_ack_ns": 460247,
+        "destination_host_thread_cpu_ns": 453108,
+        "guest_thread_cpu_ns": 7455
+      },
+      "separate_workload_handoff": {
+        "agent_cpu_ns": 24526,
+        "agent_to_workload_accepted_bytes": 474,
+        "expected_and_verified_digest": "ad6e06a474a10aa7e5939f8d8d1b3d41a7d415512655744e1e85c9b7236275e2",
+        "offer_through_confirmed_ack_wall_ns": 55846,
+        "setup_through_workload_ready_wall_ns": 1667876,
+        "start_through_confirmed_ack_wall_ns": 1724404,
+        "verified_payload_bytes": 257,
+        "workload_cpu_ns": 42510,
+        "workload_to_agent_accepted_bytes": 46,
+        "workload_wait_and_callback_wall_ns": 74261
+      }
+    },
+    "macos_arm64": {
+      "suite_record_sha256": "73906986e9f49e33042171c9c007c81919b4be755e9afbc409a23c182f2a1cb4",
+      "tests": {
+        "mailbox_cast_endpoint": {
+          "passed": 21,
+          "test_binary_sha256": "c85f80c4b381a78fc0f6bac435f26451e10cd69f74eb75becdf2704d73225fbd",
+          "log_sha256": "7c3e4831cc237d3eec1de1b8048fa3163954d8887fa1d797ed6e9e85022e73a5",
+          "test_process_elapsed_ns": 94577792,
+          "test_process_user_ms": 80.142,
+          "test_process_system_ms": 7.745
+        },
+        "mailbox_cast-tests": {
+          "passed": 5,
+          "test_binary_sha256": "b81cd4f763430806a57d277e174d8a4abb92e04ca6925350b94a2d3023a3b14c",
+          "log_sha256": "f7e9e5aa51561c4113b7f3acf3cdd6c25645093318721eca76b984d324d172bc",
+          "test_process_elapsed_ns": 43214000,
+          "test_process_user_ms": 8.083,
+          "test_process_system_ms": 4.496
+        },
+        "addressed_cast_shares_the_two_workers_and_preserves_control_headroom": {
+          "passed": 1,
+          "test_binary_sha256": "44c77bf0f5d4c8c4fc8ac37a23a89bdfe9b119b66763125b24b484591b43edfc",
+          "log_sha256": "a0985b47f8fcdbcc41b26d69311190e14f01ea54b7c533d5a1abd272b6afa9d1",
+          "test_process_elapsed_ns": 1113537333,
+          "test_process_user_ms": 4.955,
+          "test_process_system_ms": 10.236
+        },
+        "installed_default_mailbox_domains_differ_between_named_guests": {
+          "passed": 1,
+          "test_binary_sha256": "44c77bf0f5d4c8c4fc8ac37a23a89bdfe9b119b66763125b24b484591b43edfc",
+          "log_sha256": "1b5d0f536872faa85b7b8c741d7bb55392f2737449ffbf99fbf1127afdf034dd",
+          "test_process_elapsed_ns": 50448459,
+          "test_process_user_ms": 5.648,
+          "test_process_system_ms": 6.118
+        }
+      },
+      "addressed_cast_socketpair": {
+        "payload": 5,
+        "encoded_envelope_not_sent": 2967,
+        "host_to_guest": 276,
+        "guest_to_host": 98,
+        "open_through_ack_ns": 867834,
+        "destination_host_thread_cpu_ns": 855916,
+        "guest_thread_cpu_ns": 14167
+      },
+      "separate_workload_handoff": {
+        "agent_cpu_ns": 14250,
+        "agent_to_workload_accepted_bytes": 474,
+        "expected_and_verified_digest": "ad6e06a474a10aa7e5939f8d8d1b3d41a7d415512655744e1e85c9b7236275e2",
+        "offer_through_confirmed_ack_wall_ns": 49208,
+        "setup_through_workload_ready_wall_ns": 4754292,
+        "start_through_confirmed_ack_wall_ns": 4803875,
+        "verified_payload_bytes": 257,
+        "workload_cpu_ns": 46792,
+        "workload_to_agent_accepted_bytes": 46,
+        "workload_wait_and_callback_wall_ns": 55083
+      }
+    }
+  },
+  "prior_failed_receive_retry": {
+    "commit": "c5e0d6efc2f87fa8adcb50786a5ef7f1e436dfd3",
+    "verified_tracked_files": 4514,
+    "semantic_red_log_sha256": "a2a27d36f678f420c5a540a75a027bd96dbe89abbfd975a000cf73b3fe6ef846",
+    "boundary": "original sender-open API consumed replay before separate destination Receive, provisional proof explicitly dropped; fresh opener refused the retry",
+    "test_binary_sha256": null,
+    "reason": "the next qualification cleaned its shared Cargo target before collection"
+  },
+  "upstream_timeval_regression": {
+    "upstream_commit": "4edd30fe53553972a0e0d23b0737dd618b424555",
+    "applied_commit": "87cc624e8bb7bb8053d5794633ced35f4d510baf",
+    "platform": "Linux x86_64",
+    "test": "mailbox_outbox::tests::a_timeout_outside_timeval_range_is_refused_before_touching_the_socket",
+    "red_exit": 101,
+    "red_log_sha256": "18a8f86459a0c277f38e6c4905bcec6370b3c23c976d2b383f6f716e9a2587e8",
+    "green_exit": 0,
+    "green_log_sha256": "f4068f0c145cd3addfae0e2074bfe86e69fbfd05849d56fc9f8ec28a7e0fa846",
+    "red_error_kind": "Uncategorized",
+    "green_error_kind": "InvalidInput"
+  }
+}
