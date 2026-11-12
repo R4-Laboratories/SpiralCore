@@ -102,3 +102,18 @@ The combined SDK, host, runtime, control encoding, socket transport and HVF chec
 The failing case was descriptor cleanup after rejecting a control message with excess file descriptors on macOS. Twelve of the thirteen socket transport checks passed on this revision. The [per-suite results](macos-028-owner-and-broker.json) record the failure, binary hashes and CPU and wall times; child test processes are excluded from the distinct-case count. [MVM development source](https://github.com/Casey-allard/mvm/commit/93e8608cf158c8e529b4c54af959c63551470051).
 
 The Darwin transport repair passed all 13 cases, including the unchanged regression that failed above. The run took 326.82 ms wall and 17.32 ms CPU across the test harness. The upstream HVF supervisor start-time fix was also incorporated. On that intermediate revision, 16 host-side ownership and process-identity checks passed, and the native supervisor binary built. Those checks did not launch a guest. [Transport repair](https://github.com/Casey-allard/mvm/commit/a2d446baa49b64e3816f597ba1f4e4019c1ff867) · [Platform evidence](macos-028-lifetime-and-transport.json).
+
+## Installed guest delivered 1,024 exact bytes
+
+One Linux x86-64 Firecracker guest delivered the deterministic 1,024-byte fixture over the canonical MVM mailbox. Its length, SHA-256 and direct byte comparison all matched. The SDK completed signed Stop and removed the VM's runtime state and persistent definition. The original VM process and per-VM mailbox helper exited; the signed worker receipt recorded helper exit code 0. The tenant coordinator remained alive at the 60-second retirement deadline, so the **full lifecycle result is failed**.
+
+| Single guest, one local transfer | Observed |
+| --- | ---: |
+| Guest application bytes / verified host bytes | 1,024 / 1,024 |
+| Setup through admitted launch | 755.703 ms |
+| Receive through exact readback, including two polling probes | 106.467 ms |
+| Full lifecycle including coordinator timeout | 61.047 s |
+| Host orchestrator CPU across the lifecycle | 415.087 ms |
+| Guest CPU, send-only time and transport bytes in either direction | Unavailable |
+
+One earlier attempt with the same source was rejected before guest boot because the test cache directory was group-writable. The repeat used a new private home and retained the source and binary pins. The timer above covers a functional mailbox receive on one host. The test used the plain mailbox message, with no object-codec or zstd comparison. [Both attempts, binary identities and measured times](linux-028-installed-readback.json).
