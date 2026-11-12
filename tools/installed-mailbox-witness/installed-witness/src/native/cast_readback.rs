@@ -210,13 +210,14 @@ pub struct AddressedReadback {
 
 /// Execute the normal guest A workload call and B's independent workload call
 /// while the installed carrier delivers the canonical Send. The carrier's
-/// receipt must identify A's actual mailbox message. This measures an ephemeral
-/// source response and an application read at B.
+/// verdict only confirms transient ingress. The coordinator cannot see the
+/// encrypted message identifier. Only A reports it; B independently returns
+/// the original bytes and the private call challenge.
 pub fn verify_original_pair(
     a: OriginalParticipant<'_>,
     b: OriginalParticipant<'_>,
     expected: &[u8],
-    route: impl FnOnce() -> Result<[u8; 32]>,
+    route: impl FnOnce() -> Result<()>,
 ) -> Result<AddressedReadback> {
     let name = a.launch.machine.name.clone();
     let mut source = None;
@@ -237,10 +238,7 @@ pub fn verify_original_pair(
             let (id, elapsed, workload) = send
                 .join()
                 .map_err(|_| anyhow::anyhow!("source workload call ended unexpectedly"))??;
-            ensure!(
-                routed? == id,
-                "route and original source returned different message identifiers"
-            );
+            routed?;
             source = Some((id, elapsed, workload));
             Ok(())
         })

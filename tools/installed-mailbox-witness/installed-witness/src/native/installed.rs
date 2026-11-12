@@ -75,6 +75,14 @@ impl InstalledWitness {
         helper: &Path,
         pair: Option<[&str; 2]>,
     ) -> Result<Self> {
+        Self::start_configured(cfg, helper, pair, |p| Ok(p))
+    }
+    pub(super) fn start_configured(
+        cfg: &Config,
+        helper: &Path,
+        pair: Option<[&str; 2]>,
+        configure: impl FnOnce(HostAgentMailboxProvisioner) -> Result<HostAgentMailboxProvisioner>,
+    ) -> Result<Self> {
         let install = helper
             .parent()
             .context("missing installed binary directory")?;
@@ -124,11 +132,13 @@ impl InstalledWitness {
             .stdout(Stdio::from(std::os::fd::OwnedFd::from(transmit)))
             .stderr(Stdio::inherit())
             .spawn()?;
-        let (original, provider) = bind_unconfigured(child, |owner| match pair {
-            Some(names) => {
-                HostAgentMailboxProvisioner::from_original_worker_pair(&cfg.home, owner, names)
-            }
-            None => HostAgentMailboxProvisioner::from_original_worker(&cfg.home, owner),
+        let (original, provider) = bind_unconfigured(child, |owner| {
+            configure(match pair {
+                Some(names) => {
+                    HostAgentMailboxProvisioner::from_original_worker_pair(&cfg.home, owner, names)
+                }
+                None => HostAgentMailboxProvisioner::from_original_worker(&cfg.home, owner),
+            }?)
         })?;
         let mut child = original
             .lock()
