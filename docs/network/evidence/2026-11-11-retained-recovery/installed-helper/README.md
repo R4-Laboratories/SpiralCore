@@ -75,3 +75,18 @@ The runs above exercised host lifecycle operations. Recovery across terminal-rec
 ## Building the installed Linux guest runtime
 
 The first preparation attempt refused a source tree without its Git revision. The second stopped in the mandatory musl build because the installed owner's filesystem checks used GNU-specific constants and types. After the portability fix, the canonical builder produced an x86-64 runtime archive, initramfs, overlay and both libc sidecars. Preparation took 384.83 seconds wall, 697.87 seconds user CPU and 24.19 seconds system CPU including compiler processes. The preparer itself consumed 2.36 seconds of CPU. These are build costs. The [three recorded attempts](linux-028-installed-runtime.json) and [filesystem portability change](https://github.com/Casey-allard/mvm/commit/a23e0b54d7c1bd2ea7976a57a77c6b5b60205fb2) let reviewers distinguish a failed build from a guest-transfer result.
+
+## First installed guest boot
+
+Firecracker v1.17.0 started the guest; its console reached the guest control agent. The SDK had acquired the mailbox worker. During rollback it could no longer connect to the tenant control socket. Its original coordinator was still alive and the witness could not establish retirement before the deadline. The run retained the VM state and persistent definition.
+
+| Measurement | First run |
+| --- | ---: |
+| Synthetic payload requested | 1,024 B |
+| Receive probes attempted | 0 |
+| Verified readback | Unavailable |
+| Time through failed lifecycle | 60.817 s |
+| Host orchestrator CPU | 394.227 ms |
+| Guest CPU, wire bytes, transfer time | Unavailable |
+
+This run localizes the failure to installed host coordination before the first application receive. It supplies no transfer or compression benchmark. [Run record, report digest and actual executable hashes](linux-028-installed-launch-01.json)
