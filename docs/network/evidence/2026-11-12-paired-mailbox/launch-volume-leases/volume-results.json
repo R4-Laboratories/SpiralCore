@@ -1,0 +1,46 @@
+{
+  "scope": "Volume launch service component tests on macOS 27.0 (26A5378n), arm64. One host, zero guest launches, zero application transfers.",
+  "rustc": "1.97.1 (8bab26f4f)",
+  "base": "c492c52c3e6054e640367ad72f857c5314ff22b5",
+  "command": "cargo test --locked --offline -p mvm-client --lib <selector> -- --test-threads=1",
+  "environment": {
+    "CARGO_INCREMENTAL": "0",
+    "CARGO_PROFILE_TEST_DEBUG": "0",
+    "CARGO_PROFILE_DEV_DEBUG": "0",
+    "CARGO_BUILD_JOBS": "2"
+  },
+  "runs": [
+    {
+      "source": "b5ff85c54a038a11928fbe44cda7b90db8415cc5",
+      "selector": "launch_volume_contention_waits_and_reads_committed_catalog",
+      "passed": 0,
+      "failed": 1,
+      "suite_wall_seconds": 0.0
+    },
+    {
+      "source": "fbc96c144bb467867d51e5c02477eb38e1b9010c",
+      "selector": "launch_volume_contention_",
+      "passed": 2,
+      "failed": 0,
+      "suite_wall_seconds": 0.25
+    },
+    {
+      "source": "aa17477e3192703e90f528a7011be5cde032989a",
+      "selector": "launch_volume_special_file_",
+      "passed": 0,
+      "failed": 2,
+      "suite_wall_seconds": 0.52
+    },
+    {
+      "source": "16eabe49c7981cf41a0a6dcb788cd1d86f8fbf62",
+      "selector": "volume::tests::",
+      "passed": 46,
+      "failed": 0,
+      "suite_wall_seconds": 6.41
+    }
+  ],
+  "final_test_executable_sha256": "18d8ab94f50356e61f8060fbe17d14a940a4e3930d8a127729147d0b700c9d42",
+  "verified_transfer_bytes": null,
+  "transfer_cpu_seconds": null,
+  "transfer_time_seconds": null
+}
