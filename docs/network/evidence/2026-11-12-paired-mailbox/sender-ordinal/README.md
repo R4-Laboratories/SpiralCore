@@ -1,0 +1,30 @@
+# Original sender ordinal and receipt settlement
+
+The opt-in `OrdinalV1` profile gave the original Linux sender a bounded retry window. In one component check B opened sequences 1 through 65 and recovered each three-byte payload exactly. The source reopened the identical 5,159-byte frame for ordinal 1 after losing its in-memory state. Separate original Linux helper processes exercised the normal durable-journal transport with a 257-byte input and fixture guest sockets. [Reviewed contributor source](https://github.com/Casey-allard/mvm/commit/121ff94ea1a22d5d5156230318aa139264ccea3a) · [Scale gate](https://github.com/R4-Laboratories/SpiralCore/issues/195)
+
+| Linux check | Observation |
+| --- | --- |
+| Sender capacity | 64 unresolved ordinals filled the window. Ordinal 65 returned `QueueFull(64)` and 66 returned `SenderOrdinalGap`. Ordinal 1 reopened with its original credential and ciphertext. Changed content was refused. |
+| Contiguous settlement | The original A guest key signed each stored B receipt digest. Settling ordinals 64 through 2 left the prefix at zero and 65 still refused. Settling 1 advanced the prefix to 64. A repeated signed settlement returned 64 after reopening. Resubmission of retired 1 refused. The next accepted sequence was 65. |
+| Original-generation loss | A partially written replacement snapshot was ignored. A different boot-direction commitment refused. Removing the state directory while retaining its separate generation marker prevented reinitialization. |
+| Two helper processes | The fixture closed A’s first submission stream before receiving its response. Replaying the identical submission returned the signed B V2. B recovered the exact 257 bytes and signed its delivery ACK. After a lost settlement response, the original guest’s signed settlement replay returned prefix 1. A fresh submission for 1 was refused. |
+
+One source-to-destination relay turn wrote 5,517 bytes and read 1,136 bytes. B's fixture guest sent 349 bytes and received 5,630 on the read. Its subsequent ACK sent 2,204 and received 2,208. These are completed userspace socket counts at their listed boundaries. A's guest-local socket byte totals and per-endpoint transfer-only CPU were unmeasured. The two-helper fixture and its children took 0.28 s wall, 0.02 s user and 0.01 s system, with a maximum RSS of 44,668 KiB as reported by GNU time. Original helper collection took 222.733 ms for A and 10.306 ms for B. Both exited successfully without assistance. [Machine-readable results](results.json)
+
+## What persists
+
+A signed outbound journal direction selects the version and commits the original plans, boot and credentials. Its derived message ID binds the direction and positive ordinal. The source rechecks the current three capabilities before disclosing a receipt or accepting settlement. Each unresolved entry stores a digest of the requested recipient, message ID and body, its original sealed frame, the bounded attempt count and any verified B receipt. The original A guest signer authorizes retirement by signing the digest of that receipt. A receiving guest ACK continues to settle B’s own lease. Existing arbitrary-ID senders retain their original behavior. [Sender protocol](https://github.com/Casey-allard/mvm/blob/121ff94ea1a22d5d5156230318aa139264ccea3a/crates/mvm-core/src/mailbox/sender_ordinal.rs) · [Original host dispatch](https://github.com/Casey-allard/mvm/blob/121ff94ea1a22d5d5156230318aa139264ccea3a/crates/mvm-hostd/src/mailbox_service/directed_journal.rs)
+
+One private snapshot atomically commits the contiguous retired prefix and all later live ordinals. Their count and the prefix jointly determine the issued high-water. The limit is 64 entries, eight attempts per entry, 8,192 bytes of application payload subject to the signed grant, and 65,536 bytes per sealed frame. The encoded snapshot limit is 8,913,920 bytes. Publication can additionally occupy one replacement snapshot of the same maximum size, plus fixed lock and original-generation metadata. These are configured file-content bounds. This test did not measure filesystem allocation or maximum resident storage at saturation. Recovery requires the original protected state directory and generation. [Snapshot implementation](https://github.com/Casey-allard/mvm/blob/121ff94ea1a22d5d5156230318aa139264ccea3a/crates/mvm-hostd/src/mailbox_service/sender_window.rs)
+
+## Reproduction and remaining qualification
+
+At the pinned MVM source on x86-64 Linux, use Rust 1.97.1 with two Cargo jobs, disabled incremental compilation and debug symbols disabled for the test and dev profiles.
+
+```sh
+cargo build --locked --offline -p mvm-hostd --bin mvm-mailbox
+cargo test --locked --offline -p mvm-hostd --lib mailbox_service:: -- --nocapture --test-threads=1
+cargo test --locked --offline -p mvm-hostd --lib original_helpers_settle_ordinal_only_on_signed_receipt -- --ignored --nocapture
+```
+
+The first selector passed 26 tests, including the legacy FIFO and directed arbitrary-ID capacity checks. The separate executable selector passed once and created two genuine Linux mailbox helpers. Its private guest streams and observed lifetime processes were test fixtures. Reopening A’s store in the capacity test measured persistent-state recovery within the same test process. VM boots, restart of both actual helpers on the same still-authorized guests, an aggregate capacity measurement, and more than 2,048 installed transfers remain open. [Acceptance criteria](https://github.com/R4-Laboratories/SpiralCore/issues/195)
