@@ -1,0 +1,179 @@
+{
+  "scope": "Three same-host ARM64 HVF attempts on macOS 27.0 (26A5378n), each starting and retiring two separate guests under the original SDK. The third run used a diagnostics-only driver with error context on relay socket operations. No verified application readback or complete sealed-relay byte count in these attempts. The 5257 meters cover post-mux guest/helper transport only.",
+  "mvm_host": "27038e3f322e4336df180073e12cae59cc4dba54",
+  "mvm_guest": "93b3b65ae72a4746a54a21c7c158d5453cceb8f5",
+  "spiralcore_driver": "f096d110e5daa2045cf9ad645eeaa67139e47ee9",
+  "driver_sha256": "7c465490b2bec688cf8256ed0e9534d7c77e25924c59ea208a8dc7bf5a0f6894",
+  "diagnostic_driver_sha256": "65dcff52e196adbeccac0de9060166ee2dc02529b39ad3de4e47adcbb51c14a9",
+  "payload_bytes": 257,
+  "frame_bytes": 313,
+  "kernel_sha256": "0f97f109154a173352c07db223ecff48d44b38514b500f39cd9897701dbac0b6",
+  "runtime": {
+    "arch": "aarch64",
+    "guest_archive_sha256": "c17e0f1b9c92ff31143582e549ae22b25f7c17b146b0f4e853e14073c8b4b380",
+    "host_retention_ceiling_ms": 30000,
+    "initramfs_hash_record_sha256": "cffc4a95444219233eceec9481a826fadd42a248198c7ce817ff2273073822c6",
+    "initramfs_sha256": "b0754b24cc8d94b59e36bc669ac1fd6bf472bb35ed62dba11a0bddde3c3d7d50",
+    "mvm_version": "0.28.0-rc.1",
+    "overlay_root_hash": "6e5930f28c537bde63b2b38e19707ab40563b5d4629782c03992f3073b98fde0",
+    "overlay_sha256": "7d07b3d77af9ba79ff9b2462185915c7627b3c75a61c5c30087d4de20a440db2",
+    "overlay_verity_sha256": "c32887768aaaa7f3a24588b044291f298e95d9bf0edddb891c2355b7ae6ed917",
+    "sdk_sidecars": 2
+  },
+  "image_sha256": {
+    "image-clean-a": "9e6d747cb844caee778054f797fefe6981afa6f79c55db0ca6b5651e85e02ba6",
+    "image-clean-b": "8a6858b89bc95d350e02eab6e4e89b18e28c37ef70f9b41e1eedf4f1f9692941"
+  },
+  "runs": {
+    "first": {
+      "driver_process_cpu_ns": 3661847000,
+      "native_host": {
+        "architecture": "aarch64",
+        "observed_destination_backend": "hvf",
+        "observed_source_backend": "hvf",
+        "os": "macos",
+        "requested_backend": "hvf"
+      },
+      "original_5257_helper_streams_a_b": [
+        {
+          "capture": "closed_session",
+          "completed_exchanges": 2,
+          "guest_to_host_read_bytes": 762,
+          "host_to_guest_write_accepted_bytes": 19
+        },
+        {
+          "capture": "closed_session",
+          "completed_exchanges": 2,
+          "guest_to_host_read_bytes": 0,
+          "host_to_guest_write_accepted_bytes": 0
+        }
+      ],
+      "original_exits": [
+        {
+          "assisted": false,
+          "exit_code": 0,
+          "first_stop_attempt": true,
+          "name": "sc-journal-a",
+          "success": true
+        },
+        {
+          "assisted": false,
+          "exit_code": 0,
+          "first_stop_attempt": true,
+          "name": "sc-journal-b",
+          "success": true
+        }
+      ],
+      "result": null,
+      "teardown_error": null,
+      "transfer_error": "Invalid argument (os error 22)",
+      "whole_wall_ns": 17170696583,
+      "audit_verification": "VERIFIED chain: 23 entries, 2 sessions, 2 seals",
+      "raw_result_sha256": "33086519b7cedfa53efe5c4f472b3d286423ea8a15a44002c20753ddbcadb916",
+      "meter_file_sha256": {
+        "a": "40f411b2c430bc16a23af6ae93b6db23f98179be881bd093bf6da201167a948a",
+        "b": "7360c58248d2c8401a0206f68edb27d27bceb42e31df5a1374993184608dd5a5"
+      }
+    },
+    "second": {
+      "driver_process_cpu_ns": 3557851000,
+      "native_host": {
+        "architecture": "aarch64",
+        "observed_destination_backend": "hvf",
+        "observed_source_backend": "hvf",
+        "os": "macos",
+        "requested_backend": "hvf"
+      },
+      "original_5257_helper_streams_a_b": [
+        {
+          "capture": "closed_session",
+          "completed_exchanges": 2,
+          "guest_to_host_read_bytes": 762,
+          "host_to_guest_write_accepted_bytes": 19
+        },
+        {
+          "capture": "closed_session",
+          "completed_exchanges": 2,
+          "guest_to_host_read_bytes": 0,
+          "host_to_guest_write_accepted_bytes": 0
+        }
+      ],
+      "original_exits": [
+        {
+          "assisted": false,
+          "exit_code": 0,
+          "first_stop_attempt": true,
+          "name": "sc-journal-a",
+          "success": true
+        },
+        {
+          "assisted": false,
+          "exit_code": 0,
+          "first_stop_attempt": true,
+          "name": "sc-journal-b",
+          "success": true
+        }
+      ],
+      "result": null,
+      "teardown_error": null,
+      "transfer_error": "Invalid argument (os error 22)",
+      "whole_wall_ns": 16697315458,
+      "audit_verification": "VERIFIED chain: 23 entries, 2 sessions, 2 seals",
+      "raw_result_sha256": "30edf12b2cb782ae92b02538c853372ddaba1fc7b88a67e7bc03fd68cd72935d",
+      "meter_file_sha256": {
+        "a": "40f411b2c430bc16a23af6ae93b6db23f98179be881bd093bf6da201167a948a",
+        "b": "7360c58248d2c8401a0206f68edb27d27bceb42e31df5a1374993184608dd5a5"
+      }
+    },
+    "diagnostic": {
+      "driver_process_cpu_ns": 3693716000,
+      "native_host": {
+        "architecture": "aarch64",
+        "observed_destination_backend": "hvf",
+        "observed_source_backend": "hvf",
+        "os": "macos",
+        "requested_backend": "hvf"
+      },
+      "original_5257_helper_streams_a_b": [
+        {
+          "capture": "closed_session",
+          "completed_exchanges": 2,
+          "guest_to_host_read_bytes": 762,
+          "host_to_guest_write_accepted_bytes": 19
+        },
+        {
+          "capture": "closed_session",
+          "completed_exchanges": 2,
+          "guest_to_host_read_bytes": 0,
+          "host_to_guest_write_accepted_bytes": 0
+        }
+      ],
+      "original_exits": [
+        {
+          "assisted": false,
+          "exit_code": 0,
+          "first_stop_attempt": true,
+          "name": "sc-journal-a",
+          "success": true
+        },
+        {
+          "assisted": false,
+          "exit_code": 0,
+          "first_stop_attempt": true,
+          "name": "sc-journal-b",
+          "success": true
+        }
+      ],
+      "result": null,
+      "teardown_error": null,
+      "transfer_error": "read B signed verdict: Invalid argument (os error 22)",
+      "whole_wall_ns": 16709459416,
+      "audit_verification": "VERIFIED chain: 23 entries, 2 sessions, 2 seals",
+      "raw_result_sha256": "b58791889073a75d3f97f4ef152615312db4210cac0e6206e9026313864f5638",
+      "meter_file_sha256": {
+        "a": "40f411b2c430bc16a23af6ae93b6db23f98179be881bd093bf6da201167a948a",
+        "b": "7360c58248d2c8401a0206f68edb27d27bceb42e31df5a1374993184608dd5a5"
+      }
+    }
+  }
+}

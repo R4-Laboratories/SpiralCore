@@ -1,0 +1,275 @@
+{
+  "source": {
+    "host": "8238000662f59893b6ec703ab4b37d7a86c08340",
+    "guest": "93b3b65ae72a4746a54a21c7c158d5453cceb8f5",
+    "spiralcore_driver": "f096d110e5daa2045cf9ad645eeaa67139e47ee9",
+    "receipt_loss_driver_overlay_sha256": "e8f8da3066cd2721212567b284f410046f092fa50dad1b873c5e39d75f33629a"
+  },
+  "platform": {
+    "os": "macOS",
+    "version": "27.0",
+    "build": "26A5378n",
+    "arch": "aarch64",
+    "rust": "1.97.1",
+    "vcpus_per_guest": 1,
+    "mib_per_guest": 256,
+    "guest_nic": false
+  },
+  "fixture_sha256": {
+    "body": "54acfbfedc4d8da40f76f275e1a98f10af8ef1fb9fb39e5a67a00aabcbe6597c",
+    "frame": "ff26a66df5b1d9de994e60824757686d2af8eb4433b91e74a2f24b279f600044"
+  },
+  "executables_sha256": {
+    "mvm-host-agent": "c9e2bc365064041b3ff18a1238ea56c19906b4db8a9915a1ffb6a0316cb6a746",
+    "mvm-hvf-supervisor": "ee0141887dd6e507ae68f3a3ce7815a0bcf3a7cb5d0b3ae4671fb8432fa9169d",
+    "mvm-mailbox": "2a4699d8f6d4bdceb127453552786e7a607a95c5703a26e113f5928ac6a4ad8e",
+    "mvm-network-endpoint": "c280fa3f6523ab828c13e5c0bd9a0c169774cb699809198355ee8406a330d40f",
+    "mvm-signer-helper": "248430cd2728250d0d67b779bf227167b54610ad6ccfa06ff0122e7b15541df0",
+    "mvmctl": "37f7705ca1d7db122dde1e22ecdf6cabc72eeedd6e033e59c7492b3b44bc24cb",
+    "paired-journal": "866105a30ffca1be1f8291eb6608a70373598d4d52473ae57054a76e2e1c95ed",
+    "paired-journal-receipt-loss": "2d72e39d826835827a183cc7158e138d06ad2ad2614154e8fbfcc5eb2e914654"
+  },
+  "kernel_sha256": "0f97f109154a173352c07db223ecff48d44b38514b500f39cd9897701dbac0b6",
+  "runtime": {
+    "arch": "aarch64",
+    "guest_archive_sha256": "c17e0f1b9c92ff31143582e549ae22b25f7c17b146b0f4e853e14073c8b4b380",
+    "host_retention_ceiling_ms": 30000,
+    "initramfs_hash_record_sha256": "cffc4a95444219233eceec9481a826fadd42a248198c7ce817ff2273073822c6",
+    "initramfs_sha256": "b0754b24cc8d94b59e36bc669ac1fd6bf472bb35ed62dba11a0bddde3c3d7d50",
+    "mvm_version": "0.28.0-rc.1",
+    "overlay_root_hash": "6e5930f28c537bde63b2b38e19707ab40563b5d4629782c03992f3073b98fde0",
+    "overlay_sha256": "7d07b3d77af9ba79ff9b2462185915c7627b3c75a61c5c30087d4de20a440db2",
+    "overlay_verity_sha256": "c32887768aaaa7f3a24588b044291f298e95d9bf0edddb891c2355b7ae6ed917",
+    "sdk_sidecars": 2
+  },
+  "images": {
+    "image-clean-a": {
+      "mvm-meta.json": "1e2ebf272b1b45cd2a9c4f1ea32b847c3824a8208dddeb07fb8d456c14be0a68",
+      "rootfs.ext4": "9e6d747cb844caee778054f797fefe6981afa6f79c55db0ca6b5651e85e02ba6",
+      "rootfs.roothash": "affd7a67add5bb9a5c93ac6ebc45e78adf179042fa68a2f2e87704aa799bef90",
+      "rootfs.verity": "1cc44660c75b778d3ee319b84cb975904b9f97f92f0299e4c5b94dc9fffe320f"
+    },
+    "image-clean-b": {
+      "mvm-meta.json": "e279d13ea18d559f6c5f572e248f212c7856c678be9d7adcb5320a4c22a07ddf",
+      "rootfs.ext4": "8a6858b89bc95d350e02eab6e4e89b18e28c37ef70f9b41e1eedf4f1f9692941",
+      "rootfs.roothash": "496e106452e7586e8f0a5c2fd02b07423e1e10705a0c0e30e2f031a7dc1f2326",
+      "rootfs.verity": "8d77b10aa4f533c47eb9c85bfd36390a3da3512aae094f564cf59deecaab0f3d"
+    },
+    "image-a": {
+      "mvm-meta.json": "1e2ebf272b1b45cd2a9c4f1ea32b847c3824a8208dddeb07fb8d456c14be0a68",
+      "rootfs.ext4": "d8c06c92e7a59711793670245e2433ec6d0823473fda00358342765b11f5bc29",
+      "rootfs.roothash": "4f7a4feddbcf95cdd19cc5b180eaa164756efaf319d9cd6e62d9415a868983cc",
+      "rootfs.verity": "33cbb7d8d047803215f87e718fabf432fe8c8fd203df3190a2d7ab4a5d468503"
+    },
+    "image-b": {
+      "mvm-meta.json": "e279d13ea18d559f6c5f572e248f212c7856c678be9d7adcb5320a4c22a07ddf",
+      "rootfs.ext4": "36c3cec6e75ce8a77a103bd24cdc8b49eea831221e4b449d707186ae21f62bda",
+      "rootfs.roothash": "613fa8e7c34d8efdb2a0cf94b4d16e3448c67ad6dc8f690048f9dbe6d83dfd41",
+      "rootfs.verity": "7a2a1621c6eaf72ea18350b11af2179c804eeaf2964f977495c847bb165ceb50"
+    }
+  },
+  "runs": {
+    "clean": {
+      "driver_process_cpu_ns": 3695377000,
+      "native_host": {
+        "architecture": "aarch64",
+        "observed_destination_backend": "hvf",
+        "observed_source_backend": "hvf",
+        "os": "macos",
+        "requested_backend": "hvf"
+      },
+      "original_5257_helper_streams_a_b": [
+        {
+          "capture": "closed_session",
+          "completed_exchanges": 3,
+          "guest_to_host_read_bytes": 381,
+          "host_to_guest_write_accepted_bytes": 1208
+        },
+        {
+          "capture": "closed_session",
+          "completed_exchanges": 4,
+          "guest_to_host_read_bytes": 2628,
+          "host_to_guest_write_accepted_bytes": 8224
+        }
+      ],
+      "original_exits": [
+        {
+          "assisted": false,
+          "exit_code": 0,
+          "first_stop_attempt": true,
+          "name": "sc-journal-a",
+          "success": true
+        },
+        {
+          "assisted": false,
+          "exit_code": 0,
+          "first_stop_attempt": true,
+          "name": "sc-journal-b",
+          "success": true
+        }
+      ],
+      "result": {
+        "guest_a": {
+          "cpu_ns": 300667,
+          "frame_bytes": 313,
+          "probe_from_agent": 209,
+          "probe_to_agent": 353,
+          "role": "staged",
+          "wall_ns": 500417
+        },
+        "guest_a_observed_receipt": null,
+        "guest_b": {
+          "ack_from_agent": 2280,
+          "ack_to_agent": 1997,
+          "cpu_ns": 649249,
+          "frame_bytes": 313,
+          "receive_from_agent": 2505,
+          "receive_to_agent": 54,
+          "role": "received_and_acknowledged",
+          "wall_ns": 1956397292
+        },
+        "receipt_outcome": "AcceptedLocalDurable",
+        "receipt_recovery": null,
+        "sdk_call_application_io": {
+          "destination_reply_with_readback": 793,
+          "destination_request": 81,
+          "source_reply": 192,
+          "source_request": 800
+        },
+        "sealed_a_to_b_bytes": 5863,
+        "setup_ns": 4821589417,
+        "signed_b_to_a_bytes": 1208,
+        "through_observed_v2_ns": 85393625,
+        "through_verified_destination_call_ns": 2117139541,
+        "verified_body_bytes": 257,
+        "wan_bytes": null,
+        "original_message_id_matched": true
+      },
+      "teardown_error": null,
+      "transfer_error": null,
+      "whole_wall_ns": 7443821084,
+      "raw_result_sha256": "4a5cf913cb3d16acbb0fd920e8f03e7dc00a787cb6c64f0b44674127e983ab50",
+      "audit_verification": "VERIFIED chain: 23 entries, 2 sessions, 2 seals",
+      "meter_file_sha256": {
+        "arm64-hvf-clean-a.counts": "499ee85740eb9701e102e4a358ccf6cd676df31bd32e33d03b004c8f18a5fb47",
+        "arm64-hvf-clean-b.counts": "5c1468ec43e757097cff67f5fd0bbbc42382c44733243f3cfa2f80a57cb602ad"
+      },
+      "external_command": {
+        "wall_s": 8.67,
+        "user_s": 4.12,
+        "system_s": 0.55,
+        "peak_rss_bytes": 76726272
+      }
+    },
+    "retry": {
+      "driver_process_cpu_ns": 4036026000,
+      "native_host": {
+        "architecture": "aarch64",
+        "observed_destination_backend": "hvf",
+        "observed_source_backend": "hvf",
+        "os": "macos",
+        "requested_backend": "hvf"
+      },
+      "original_5257_helper_streams_a_b": [
+        {
+          "capture": "closed_session",
+          "completed_exchanges": 4,
+          "guest_to_host_read_bytes": 762,
+          "host_to_guest_write_accepted_bytes": 1233
+        },
+        {
+          "capture": "closed_session",
+          "completed_exchanges": 5,
+          "guest_to_host_read_bytes": 2976,
+          "host_to_guest_write_accepted_bytes": 11759
+        }
+      ],
+      "original_exits": [
+        {
+          "assisted": false,
+          "exit_code": 0,
+          "first_stop_attempt": true,
+          "name": "sc-journal-a",
+          "success": true
+        },
+        {
+          "assisted": false,
+          "exit_code": 0,
+          "first_stop_attempt": true,
+          "name": "sc-journal-b",
+          "success": true
+        }
+      ],
+      "result": {
+        "guest_a": {
+          "cpu_ns": 533249,
+          "frame_bytes": 313,
+          "outbox_retired_without_archive": true,
+          "outbox_retirement_wait_ns": 96364375,
+          "probe_from_agent": 204,
+          "probe_to_agent": 353,
+          "role": "staged",
+          "wall_ns": 96900709
+        },
+        "guest_a_observed_receipt": null,
+        "guest_b": {
+          "ack_from_agent": 2286,
+          "ack_to_agent": 2005,
+          "after_ack": {
+            "empty": true,
+            "from_agent": 50,
+            "to_agent": 54
+          },
+          "cpu_ns": 937666,
+          "frame_bytes": 313,
+          "receive_from_agent": 2513,
+          "receive_to_agent": 54,
+          "role": "received_and_acknowledged",
+          "wall_ns": 407280917
+        },
+        "receipt_outcome": "AcceptedLocalDurable",
+        "receipt_recovery": {
+          "exact_envelope_equal": true,
+          "exact_signed_receipt_bytes_equal": true,
+          "first_b_receipt_ns": 72128875,
+          "first_receipt_from_b": 1214,
+          "first_receipt_to_a": 0,
+          "first_sealed_a_to_b": 5854,
+          "retry_receipt_from_b": 1214,
+          "retry_receipt_to_a": 1214,
+          "retry_sealed_a_to_b": 5854,
+          "verified_retry_ns": 100209250
+        },
+        "sdk_call_application_io": {
+          "destination_reply_with_readback": 849,
+          "destination_request": 81,
+          "source_reply": 269,
+          "source_request": 800
+        },
+        "sealed_a_to_b_bytes": 5854,
+        "setup_ns": 5241460500,
+        "signed_b_to_a_bytes": 1214,
+        "through_observed_v2_ns": 100209250,
+        "through_verified_destination_call_ns": 550778334,
+        "verified_body_bytes": 257,
+        "wan_bytes": null,
+        "original_message_id_matched": true
+      },
+      "teardown_error": null,
+      "transfer_error": null,
+      "whole_wall_ns": 6306997542,
+      "raw_result_sha256": "7acbf335b492ac26b7b963bd76098f26e90981841adaed66bbf8f0a11168b03f",
+      "audit_verification": "VERIFIED chain: 23 entries, 2 sessions, 2 seals",
+      "meter_file_sha256": {
+        "arm64-hvf-retry-a.counts": "3e45e7dbadea3651aba16bcc8a2758c4a93baa35fa41076a612cf9f28848e2df",
+        "arm64-hvf-retry-b.counts": "c89d42bf5b29aaf7254b439a0426f47f0822d8151b96f65cee6225aa17d25a04"
+      },
+      "external_command": {
+        "wall_s": 7.7,
+        "user_s": 4.26,
+        "system_s": 0.65,
+        "peak_rss_bytes": 74170368
+      }
+    }
+  }
+}

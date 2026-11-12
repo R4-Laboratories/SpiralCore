@@ -27,6 +27,8 @@ installed MVM networking contribution is still in development. The
 the delivery authority; a component merge or green platform test is an intermediate
 checkpoint, not completion of that program.
 
+**Apple Silicon/HVF now has native two-guest mailbox evidence for clean delivery and a lost receipt.** B reopened and acknowledged the exact 257-byte payload in both runs. On the clean run, the relay carried 5,863 bytes toward B and 1,208 back. B’s signed durable receipt was verified in 85.394 ms and its application readback in 2.117 s. After a deliberate receipt loss, A retried the identical sealed envelope and B’s next authenticated read after ACK returned empty. Both original helpers stopped unassisted in each run. [Apple measurements, CPU and reproduction](docs/network/evidence/2026-11-12-paired-mailbox/paired-durable-native/arm64-hvf.md)
+
 **Verified durable delivery and clean shutdown between two Linux/Firecracker guests.** Guest A staged a 313-byte SpiralCore frame. Guest B recovered all 257 payload bytes, including the trailing zero, synced and reopened its guest file, acknowledged its original lease and returned the readback for independent comparison. The host verified B’s signed durable receipt after **118.420 ms**. The ACK and exact application readback took **850.304 ms** from A’s first Call. The original helpers exchanged **5,856 bytes toward B and 1,207 back** and both exited unassisted with code 0. This single same-host run measures the mailbox workflow. WAN and matched zstd qualification remain open. [Original socket counters, CPU, timings and reproduction](docs/network/evidence/2026-11-12-paired-mailbox/paired-durable-native/graceful.md) · [Earlier assisted result](docs/network/evidence/2026-11-12-paired-mailbox/paired-durable-native/README.md).
 
 When a test relay withheld B’s first signed receipt, A retried the original sealed envelope. B returned exactly the same signed receipt, delivered once, and an authenticated read after ACK found its queue empty. The host verified the 257-byte readback and empty-queue result in **1.160 s**. Both helpers exited normally. [Two-guest recovery measurements](docs/network/evidence/2026-11-12-paired-mailbox/paired-durable-native/receipt-loss.md).
@@ -340,7 +342,7 @@ sources/transports. They do not qualify the current QUIC or canonical MVM path.
 | Role | Recorded scope | Boundary |
 |---|---|---|
 | Linux x86_64 / Firecracker | Native guest transfers and installed death/recovery witness | Full resident/shared-budget/WAN acceptance open |
-| Apple Silicon macOS / HVF | Native guest transfers and installed entry | HVF death recovery and integrated capacity/WAN open |
+| Apple Silicon macOS / HVF | Native guest transfers, installed durable mailbox and lost-receipt recovery | HVF death recovery and integrated capacity/WAN open |
 | Linux x86_64 + ARM64 | Native portable client/stream components | ARM64 component execution is not Firecracker host evidence |
 | macOS ARM64 + Intel | Native portable client/stream components | Intel component execution is not native MVM hosting |
 | Windows Server 2022/2025 x64 + Windows 11 ARM64 | Native client/TLS components and private-storage components | No native Windows MVM host or end-to-end durable gateway/WAN claim |
