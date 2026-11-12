@@ -148,6 +148,8 @@ The ordered-cache and scope changes merged through [PR194](https://github.com/R4
 
 Before the final merge, a Windows Server 2025 ordinary stream stopped at block 2,352. In the same workflow, a separate Linux persistent HTTP test failed to reopen its cache. The Unix reopen correction passed the original two concurrent tests 30 times on Linux and preserves exclusive access during handoff. [Cache-reopen trace and results](evidence/2026-11-12-ordered-flowmux/cache-reopen.md) · [Latest Windows timing and quota measurements](https://github.com/R4-Laboratories/SpiralCore/issues/44#issuecomment-6831573987).
 
+The verified application readback and final TLS shutdown changes merged in PR #223. Its ordinary local TCP/TLS runs on Windows Server 2022, Server 2025 and Windows 11 ARM64 each recovered 64 MiB in both directions in 184.194, 227.042 and 167.307 seconds respectively. A separate Server 2025 run with identical FlowMux and transfer crate contents reached block 3,742 before the 240-second deadline. Repeatable Windows latency remains open under #44. [Windows source, traffic and CPU results](evidence/2026-11-12-windows-ordered-stream/README.md) · [FlowMux tracker](https://github.com/R4-Laboratories/SpiralCore/issues/44)
+
 ## Active upstream MVM coordination
 
 The verified-admission/Reply-authority API contribution is open upstream as draft
