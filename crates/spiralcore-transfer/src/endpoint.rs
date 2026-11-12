@@ -1177,6 +1177,8 @@ impl<A: Authority> Endpoint<A> {
         Err(Error::Missing)
     }
     fn disk_usage(&self, ns: Id) -> Result<(u64, u64, usize)> {
+        #[cfg(test)]
+        let _quota = commit_costs::span(commit_costs::Stage::Quota);
         #[cfg(windows)]
         return storage::quota_usage(&self.root, &hex(&ns), self.limits.max_publications);
         #[cfg(not(windows))]
@@ -1259,10 +1261,20 @@ impl<A: Authority> Endpoint<A> {
                 f.write_all(&m)?;
             }
             f.write_all(bytes)?;
+            #[cfg(test)]
+            let file_sync = commit_costs::span(commit_costs::Stage::FileSync);
             f.sync_all()?;
+            #[cfg(test)]
+            drop(file_sync);
             drop(f);
             self.authority.authorize(context)?;
+            #[cfg(test)]
+            let publish = commit_costs::span(commit_costs::Stage::NamespacePublish);
             storage::publish(&tmp, &path, &self.root)?;
+            #[cfg(test)]
+            drop(publish);
+            #[cfg(test)]
+            let _verify = commit_costs::span(commit_costs::Stage::VerifyPublished);
             let published = self.publication(ns, offer.object)?;
             verify_publication(&published, bytes)?;
             self.authority.authorize(context)?;
@@ -1404,6 +1416,8 @@ impl<A: Authority> Endpoint<A> {
         ))
     }
     fn ordered_remove_cache(&mut self, c: &Context, victim: &OrderedEviction) -> Result<()> {
+        #[cfg(test)]
+        let _victim = commit_costs::span(commit_costs::Stage::Victim);
         self.authority.authorize(c)?;
         self.ordered_bounds()?;
         if self.ordered_active_objects(c)?.contains(&victim.id) {
@@ -1687,3 +1701,6 @@ mod metadata_tests;
 
 #[cfg(test)]
 mod ordered_eviction_tests;
+
+#[cfg(test)]
+mod commit_costs;

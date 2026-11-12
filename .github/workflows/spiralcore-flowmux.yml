@@ -154,6 +154,19 @@ jobs:
           $code = $LASTEXITCODE
           $log | Set-Content flowmux-evidence/single-eviction.txt
           if ($code -ne 0 -or $log -notmatch 'ORDERED_SINGLE_EVICTION bytes=16384 full_reads=1' -or $log -notmatch 'test result: ok\. 1 passed; 0 failed; 0 ignored;') { throw 'Original single-victim read, expected charge and preflight controls failed' }
+      - name: Measure verified cold commit costs on Server 2025
+        if: matrix.id == 'windows2025-x64'
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $false
+          $selector = 'endpoint::commit_costs::cold_whole_ordered_commit_after_full_cache'
+          $log = (& cargo "+1.97.1-$env:NATIVE_TARGET" test --release --locked --manifest-path crates/spiralcore-transfer/Cargo.toml --lib $selector -- --exact --ignored --nocapture 2>&1 | Out-String)
+          $code = $LASTEXITCODE
+          $log | Set-Content flowmux-evidence/commit-costs.txt
+          $log | Write-Output
+          if ($code -ne 0 -or $log -notmatch 'test result: ok\. 1 passed; 0 failed; 0 ignored;' -or [regex]::Matches($log, '(?m)^ORDERED_COMMIT_EXACT ').Count -ne 3) {
+            throw 'Cold commit timings missing or exact readback failed'
+          }
       - name: Strict metadata and transfer warnings
         run: |
           & cargo "+1.97.1-$env:NATIVE_TARGET" clippy --release --locked --keep-going --manifest-path crates/spiralcore-transfer/Cargo.toml --all-targets -- -D warnings 2>&1 | Tee-Object flowmux-evidence/metadata-clippy.txt
