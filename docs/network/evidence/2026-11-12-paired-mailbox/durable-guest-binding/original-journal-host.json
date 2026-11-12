@@ -1,0 +1,38 @@
+{
+  "upstream_journal": "543efc7f94aa756c09785b38bdd024b6ba8199c7",
+  "patch_base": "6d531c2fd5681c4b914d8406794bc44597526127",
+  "tested_mvm_source": "69f905e2712c4e3c36a08ae7d6aa0d9e3d51cab2",
+  "tested_tree": "efdf0d5a34638a9f9beb3c30ec58d1bdd5dc1b7e",
+  "patch_sha256": "4d5faade9289f12b58f62abd764bd08fab5e9494b41e29a7206e5064a0a0498d",
+  "platform": "Linux x86_64",
+  "profile": "debug, offline locked; 2 build jobs; no incremental build",
+  "command": "cargo +1.97.1 test --locked --offline -p mvm-hostd --lib original_ -- --test-threads=1",
+  "original_tests": {
+    "first_source": "52dcd5ca22e63046c1b1f108f3fab4963a559ae0",
+    "tests_passed": 2,
+    "tests_failed": 1,
+    "log_sha256": "8977b2261f5e050f2c8ad7d086d399bf383464711d0efe64efa59ff6a4b4e477",
+    "observation": "Original and substituted Unix peer checks completed. The harness then dropped stdout before its original child exited and Rust's test harness reported BrokenPipe."
+  },
+  "final_tests": {
+    "passed": 18,
+    "failed": 0,
+    "filtered": 2349,
+    "test_suite_wall_seconds": 0.03,
+    "log_sha256": "808cfd8af974f523f21e6c420264d4d4162750dee5966283903702262d62cc74",
+    "targeted": [
+      "duplicate launcher/stale state",
+      "abrupt launcher exit",
+      "original marker replacement and repeated exit collection",
+      "uncollected live process after owner drop",
+      "kernel-authenticated original vs pathname replacement",
+      "externally signed Send and sealed bytes retained across retry"
+    ]
+  },
+  "payload": "embedded and trailing zero in a three-byte synthetic input to the source sealer",
+  "whole_vm_traffic_bytes": null,
+  "transfer_wall_time": null,
+  "verified_endpoint_cpu": null,
+  "wan_traffic_bytes": null,
+  "original_child_binary_digest": null
+}
