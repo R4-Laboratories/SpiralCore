@@ -1,6 +1,6 @@
 # Recovering a lost destination receipt between two Firecracker guests
 
-Two Linux x86-64 guests on the same host completed one addressed transfer after the relay withheld B’s first signed admission receipt. A staged the 313-byte SpiralCore frame once. The same original guest agent retried its pending operation. B returned the same complete envelope commitment, delivery and message identity, and its signed receipt bytes compared equal across both turns. B’s workload read, synced, reopened and returned all 257 payload bytes, including the final zero, then completed one lease acknowledgment. The host compared the returned body byte-for-byte. One additional authenticated read from B returned empty within the original 30-second retention window.
+Two Linux x86-64 guests on the same host completed one addressed transfer after the relay withheld B’s first signed admission receipt. A staged the 313-byte SpiralCore frame once. The same original guest agent retried its pending operation. B returned the same complete envelope commitment, delivery and message identity, and its signed receipt bytes compared equal across both turns. B’s workload read, synced and reopened all 257 payload bytes, including the final zero. It acknowledged the lease once and returned the readback for independent byte-for-byte comparison by the host. One additional authenticated read from B returned empty within the original 30-second retention window.
 
 | Original relay I/O | First turn | Automatic retry |
 |---|---:|---:|
