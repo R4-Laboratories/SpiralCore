@@ -13,7 +13,7 @@ use std::{
 };
 
 pub const MVM_SOURCE: &str =
-    "f780207089dbc1c90876c44d54e7221b6d79108d";
+    "a7e8e5f9f17e6f5bfb8e33da24962abfe38f43ef";
 pub const PRODUCER_PATH: &str = "/usr/local/bin/spiralcore-mailbox-producer";
 mod process {
     include!("process.rs");
@@ -45,6 +45,8 @@ pub struct Report {
     pub host_orchestrator_cpu_ns: u128,
     pub guest_cpu: &'static str,
     pub wire_bytes: &'static str,
+    pub guest_mailbox_stream_scope: &'static str,
+    pub guest_mailbox_stream_counts: Option<mvm_hostd::mailbox_service::guest_io::GuestStreamCounts>,
     pub processes: Vec<ProcessObservation>,
     pub installed_helper: Option<String>,
     pub installed_daemon: Option<String>,
@@ -171,7 +173,9 @@ pub async fn run(config: &Config) -> Result<Report> {
         lifecycle_wall_ns: 0,
         host_orchestrator_cpu_ns: 0,
         guest_cpu: "unavailable",
-        wire_bytes: "unavailable; not inferred from payload",
+        wire_bytes: "unavailable; no virtio, NIC or WAN byte counters",
+        guest_mailbox_stream_scope: mvm_hostd::mailbox_service::guest_io::SCOPE,
+        guest_mailbox_stream_counts: None,
         processes: Vec::new(),
         installed_helper: None,
         installed_daemon: None,
@@ -335,7 +339,7 @@ pub async fn run(config: &Config) -> Result<Report> {
     if report.processes.len() != 2 {
         errors.push("both original process identities were not captured".into());
     }
-    if let Some(original) = retained_client {
+    if let Some(original) = retained_client.as_ref() {
         match original.query(Instant::now() + Duration::from_secs(2)) {
             Ok(mvm_core::protocol::mailbox_worker_control::MailboxWorkerState::Collected {
                 exit:
@@ -356,6 +360,19 @@ pub async fn run(config: &Config) -> Result<Report> {
         Err(error) => errors.push(format!(
             "installed coordinator shutdown unresolved: {error:#}"
         )),
+    }
+    if report.installed_helper.is_some() && report.installed_daemon.is_some() {
+        if let Some(owner) = retained_client.as_ref().and_then(|client| client.owner()) {
+            match mvm_hostd::mailbox_service::guest_io::receive_original(&installed.report_socket, owner) {
+                Ok(counts) if report.exact_readback && counts.guest_to_host_read_bytes < body.len() as u64 => {
+                    errors.push("guest stream receipt below verified application length".into());
+                }
+                Ok(counts) => report.guest_mailbox_stream_counts = Some(counts),
+                Err(error) => errors.push(format!("guest stream receipt unavailable: {error}")),
+            }
+        } else {
+            errors.push("guest stream receipt lacks original owner".into());
+        }
     }
     report.lifecycle_wall_ns = started.elapsed().as_nanos();
     report.host_orchestrator_cpu_ns = cpu.elapsed().as_nanos();
