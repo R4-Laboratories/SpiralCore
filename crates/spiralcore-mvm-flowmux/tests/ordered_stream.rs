@@ -316,6 +316,10 @@ fn four_thousand_distinct_blocks_each_direction_keep_exact_bytes_and_bounded_ret
                     right_auth.check()
                 );
                 stream.write_all(&block(index)).unwrap_or_else(|error| {
+                    eprintln!(
+                        "ORDERED_FIRST_FAILURE role={direction} operation=write local={:?}",
+                        stream.first_failure()
+                    );
                     panic!(
                         "block{index}: {error}; retained={:?}; left_scope={:?}; right_scope={:?}",
                         observer.snapshot(),
@@ -337,7 +341,9 @@ fn four_thousand_distinct_blocks_each_direction_keep_exact_bytes_and_bounded_ret
         let reader = |mut stream: MappedStream, direction: usize| {
             for index in 0..BLOCKS {
                 let mut actual = [0; 16384];
-                stream.read_exact(&mut actual).unwrap();
+                stream.read_exact(&mut actual).unwrap_or_else(|error| {
+                    panic!("block{index} read: {error}; ORDERED_FIRST_FAILURE role={direction} operation=read local={:?}", stream.first_failure());
+                });
                 assert_eq!(actual, block(index), "exact block{index}");
                 progress[2 + direction].store(index + 1, Ordering::Relaxed);
             }

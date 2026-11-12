@@ -236,11 +236,17 @@ fn full_delivery_queue_backpressures_then_times_out_without_extra_published_ack(
     assert!(start.elapsed() < Duration::from_secs(2));
     // The peer cannot send Published before delivery, so the short original
     // send deadline expires before the receiver's two-second queue budget.
-    let first = left_tx.cancellation.first_failure().expect("original failure");
+    let first = left_tx
+        .cancellation
+        .first_failure()
+        .expect("original failure");
     assert_eq!(first.site, crate::FailureSite::SenderReplyWait);
     assert_eq!(first.frame_kind, Some(3));
     assert_eq!(first.reason, crate::FailureReason::Timeout);
-    assert!(matches!(left_tx.send_block(vec![5; 1024]), Err(crate::Error::Cancelled)));
+    assert!(matches!(
+        left_tx.send_block(vec![5; 1024]),
+        Err(crate::Error::Cancelled)
+    ));
     assert_eq!(left_tx.cancellation.first_failure(), Some(first));
     assert!(left_guard.join().is_err());
     assert!(right_guard.join().is_err());
@@ -363,6 +369,12 @@ fn correct_object_published_from_wrong_direction_is_rejected() {
             guard.join(),
             Err(spiralcore_mvm_flowmux::Error::Protocol)
         ));
+        let original = writer
+            .cancellation
+            .first_failure()
+            .expect("original worker error");
+        assert_eq!(original.site, crate::FailureSite::WorkerExit);
+        assert_eq!(original.reason, crate::FailureReason::Protocol);
         peer.join().unwrap();
     });
 }

@@ -1,5 +1,6 @@
 use crate::{
-    Cancellation, Duplex, DuplexReader, DuplexWriter, Error, Event, JoinGuard, MAX_BLOCK, Result,
+    Cancellation, Duplex, DuplexReader, DuplexWriter, Error, Event, FailureObservation,
+    FailureSite, JoinGuard, MAX_BLOCK, Result,
     duplex::{deadline, lock_until},
 };
 use spiralcore_transfer::client::Stats;
@@ -45,6 +46,12 @@ impl std::fmt::Debug for MappedStream {
     }
 }
 impl MappedStream {
+    /// First observed non-cancellation error at this endpoint. Peer causality
+    /// requires independent evidence. The observation owns no transfer resource.
+    pub fn first_failure(&self) -> Option<FailureObservation> {
+        self.inner.cancellation.first_failure()
+    }
+
     pub fn from_duplex(duplex: Duplex) -> Self {
         let (cancellation, timeout) = duplex.stream_config();
         let (writer, reader, guard) = duplex.split();
@@ -87,7 +94,12 @@ impl MappedStream {
             let mut writer = lock_until(&self.inner.writer, until)?;
             operation(&mut writer, until)
         })();
-        if result.is_err() && !matches!(&result, Err(Error::Closed)) {
+        if let Err(error) = &result
+            && !matches!(error, Error::Closed)
+        {
+            self.inner
+                .cancellation
+                .observe(FailureSite::CallerWrite, None, error);
             self.inner.cancellation.cancel();
         }
         result
@@ -177,7 +189,10 @@ impl Read for MappedStream {
             buffered.offset += n;
             Ok(n)
         })();
-        if result.is_err() {
+        if let Err(error) = &result {
+            self.inner
+                .cancellation
+                .observe(FailureSite::CallerRead, None, error);
             self.inner.cancellation.cancel();
         }
         result.map_err(io_error)

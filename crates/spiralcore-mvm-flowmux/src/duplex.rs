@@ -1,3 +1,4 @@
+use crate::FailureSite;
 #[cfg(feature = "witness-timing")]
 use crate::timing::{FrameKind, Metric, Observation, Phase, TimingObserver};
 use crate::{
@@ -386,7 +387,10 @@ impl DuplexWriter {
                     timing,
                     SenderLock,
                     FrameKind::from_wire(frame.kind)
-                )?;
+                )
+                .inspect_err(|e| {
+                    cancellation.observe(FailureSite::SenderTxLock, Some(frame.kind), e)
+                })?;
                 #[cfg(feature = "witness-timing")]
                 let _span = timing.span(Metric::Frame(
                     Phase::SenderSend,
@@ -404,7 +408,9 @@ impl DuplexWriter {
                     Phase::SenderWait,
                     FrameKind::from_wire(frame.kind),
                 ));
-                responses.recv_timeout(remaining(until)?)
+                responses.recv_timeout(remaining(until).inspect_err(|e| {
+                    cancellation.observe(FailureSite::SenderReplyWait, Some(frame.kind), e)
+                })?)
             };
             #[cfg(feature = "witness-timing")]
             timing.count(match &response {
@@ -413,11 +419,17 @@ impl DuplexWriter {
                 Err(RecvTimeoutError::Timeout) => Observation::WaitTimeout,
                 Err(RecvTimeoutError::Disconnected) => Observation::WaitDisconnected,
             });
-            let reply = response.map_err(|error| match error {
-                RecvTimeoutError::Timeout => Error::Timeout,
-                RecvTimeoutError::Disconnected => Error::Closed,
+            let reply = response
+                .map_err(|error| match error {
+                    RecvTimeoutError::Timeout => Error::Timeout,
+                    RecvTimeoutError::Disconnected => Error::Closed,
+                })
+                .inspect_err(|e| {
+                    cancellation.observe(FailureSite::SenderReplyWait, Some(frame.kind), e)
+                })?;
+            remaining(until).inspect_err(|e| {
+                cancellation.observe(FailureSite::SenderReplyWait, Some(frame.kind), e)
             })?;
-            remaining(until)?;
             let terminal = matches!(reply.kind, 103 | 127);
             replies.push(reply);
             if terminal {
@@ -470,12 +482,15 @@ impl DuplexWriter {
         match result {
             Ok(value) if Instant::now() < until => Ok(value),
             result => {
-                self.cancellation.cancel();
-                self.sender.invalidate_receiver_state();
-                Err(transport_error.unwrap_or(match result {
+                let failure = transport_error.unwrap_or(match result {
                     Ok(_) => Error::Timeout,
                     Err(error) => Error::Core(error),
-                }))
+                });
+                self.cancellation
+                    .observe(FailureSite::SenderOperation, None, &failure);
+                self.cancellation.cancel();
+                self.sender.invalidate_receiver_state();
+                Err(failure)
             }
         }
     }
@@ -588,11 +603,14 @@ impl DuplexReader {
                 Ok(event)
             }
             Err(error) => {
-                self.cancellation.cancel();
-                Err(match error {
+                let failure = match error {
                     RecvTimeoutError::Timeout => Error::Timeout,
                     RecvTimeoutError::Disconnected => Error::Closed,
-                })
+                };
+                self.cancellation
+                    .observe(FailureSite::CallerRead, None, &failure);
+                self.cancellation.cancel();
+                Err(failure)
             }
         }
     }
@@ -825,7 +843,12 @@ impl<A: Authority> Worker<A> {
                 FrameKind::from_wire(request.kind),
             ));
             self.endpoint
-                .handle(purpose, ordinal, &self.context, &request, now()?)?
+                .handle(purpose, ordinal, &self.context, &request, now()?)
+                .map_err(Error::from)
+                .inspect_err(|e| {
+                    self.cancellation
+                        .observe(FailureSite::ReceiverHandle, Some(request.kind), e)
+                })?
         };
         #[cfg(feature = "witness-stall")]
         self.stall
@@ -840,7 +863,14 @@ impl<A: Authority> Worker<A> {
             #[cfg(feature = "witness-stall")]
             self.stall
                 .mark(WorkerPhase::Readback, request.kind, ordinal);
-            let bytes = self.endpoint.read_object(&self.context, id)?;
+            let bytes = self
+                .endpoint
+                .read_object(&self.context, id)
+                .map_err(Error::from)
+                .inspect_err(|e| {
+                    self.cancellation
+                        .observe(FailureSite::ReceiverReadback, Some(request.kind), e)
+                })?;
             if bytes.len() as u64 != len {
                 return Err(Error::Integrity);
             }
@@ -848,7 +878,10 @@ impl<A: Authority> Worker<A> {
             #[cfg(feature = "witness-stall")]
             self.stall
                 .mark(WorkerPhase::Delivery, request.kind, ordinal);
-            self.deliver(Event::Data(bytes), until)?;
+            self.deliver(Event::Data(bytes), until).inspect_err(|e| {
+                self.cancellation
+                    .observe(FailureSite::ReceiverDelivery, Some(request.kind), e)
+            })?;
             self.index = next;
             self.active = None;
         }
@@ -865,7 +898,11 @@ impl<A: Authority> Worker<A> {
             &self.timing,
             ReceiverLock,
             FrameKind::from_wire(request.kind)
-        )?;
+        )
+        .inspect_err(|e| {
+            self.cancellation
+                .observe(FailureSite::ReceiverReplyLock, Some(request.kind), e)
+        })?;
         #[cfg(feature = "witness-timing")]
         let _span = self.timing.span(Metric::Frame(
             Phase::ReceiverSend,
@@ -877,6 +914,10 @@ impl<A: Authority> Worker<A> {
         tx.send_object(&reply, purpose, until)
     }
     fn run(mut self) -> Result<(Counters, Counters)> {
+        self.run_inner()
+            .inspect_err(|e| self.cancellation.observe(FailureSite::WorkerExit, None, e))
+    }
+    fn run_inner(&mut self) -> Result<(Counters, Counters)> {
         loop {
             if self.remote_closed
                 && self.local_closed.load(Ordering::Acquire)

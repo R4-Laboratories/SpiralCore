@@ -239,8 +239,8 @@ fn ordered_small_warm_runtime_and_combined_keep_verified_setup_pinned_through_ev
                     let mut actual = vec![0; size];
                     right.read_exact(&mut actual).unwrap_or_else(|e| {
                         panic!(
-                            "mode={mode:?} index={index} B-read scope_remaining_ms={}: {e}",
-                            until.saturating_duration_since(Instant::now()).as_millis()
+                            "mode={mode:?} index={index} B-read scope_remaining_ms={}: {e}; ORDERED_FIRST_FAILURE local={:?}",
+                            until.saturating_duration_since(Instant::now()).as_millis(), right.first_failure()
                         )
                     });
                     #[cfg(feature = "witness-stall")]
@@ -250,8 +250,8 @@ fn ordered_small_warm_runtime_and_combined_keep_verified_setup_pinned_through_ev
                     assert_eq!(actual, target, "artifact bytes never become application");
                     right.write_all(&actual).unwrap_or_else(|e| {
                         panic!(
-                            "mode={mode:?} index={index} B-echo scope_remaining_ms={}: {e}",
-                            until.saturating_duration_since(Instant::now()).as_millis()
+                            "mode={mode:?} index={index} B-echo scope_remaining_ms={}: {e}; ORDERED_FIRST_FAILURE local={:?}",
+                            until.saturating_duration_since(Instant::now()).as_millis(), right.first_failure()
                         )
                     });
                     #[cfg(feature = "witness-stall")]
@@ -266,8 +266,8 @@ fn ordered_small_warm_runtime_and_combined_keep_verified_setup_pinned_through_ev
                 target[..8].copy_from_slice(&index.to_be_bytes());
                 left.write_all(&target).unwrap_or_else(|e| {
                     panic!(
-                        "mode={mode:?} index={index} A-write scope_remaining_ms={}: {e}",
-                        until.saturating_duration_since(Instant::now()).as_millis()
+                        "mode={mode:?} index={index} A-write scope_remaining_ms={}: {e}; ORDERED_FIRST_FAILURE local={:?}",
+                        until.saturating_duration_since(Instant::now()).as_millis(), left.first_failure()
                     )
                 });
                 #[cfg(feature = "witness-stall")]
@@ -275,8 +275,8 @@ fn ordered_small_warm_runtime_and_combined_keep_verified_setup_pinned_through_ev
                 let mut echoed = vec![0; size];
                 left.read_exact(&mut echoed).unwrap_or_else(|e| {
                     panic!(
-                        "mode={mode:?} index={index} A-read scope_remaining_ms={}: {e}",
-                        until.saturating_duration_since(Instant::now()).as_millis()
+                        "mode={mode:?} index={index} A-read scope_remaining_ms={}: {e}; ORDERED_FIRST_FAILURE local={:?}",
+                        until.saturating_duration_since(Instant::now()).as_millis(), left.first_failure()
                     )
                 });
                 #[cfg(feature = "witness-stall")]
