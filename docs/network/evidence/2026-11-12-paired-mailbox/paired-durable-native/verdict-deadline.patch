@@ -1,0 +1,291 @@
+diff --git a/crates/mvm-hostd/src/mailbox_process/original_journal/relay.rs b/crates/mvm-hostd/src/mailbox_process/original_journal/relay.rs
+index 28243db28..8dd5dd8f3 100644
+--- a/crates/mvm-hostd/src/mailbox_process/original_journal/relay.rs
++++ b/crates/mvm-hostd/src/mailbox_process/original_journal/relay.rs
+@@ -176,7 +176,7 @@ impl OriginalJournalSourceHost {
+             Instant::now() < until && self.source.try_wait()?.is_none(),
+             "original A helper unavailable"
+         );
+-        let (mut a, _) = match self.listener.socket.accept() {
++        let (a, _) = match self.listener.socket.accept() {
+             Ok(v) => v,
+             Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => return Ok(None),
+             Err(e) => return Err(e.into()),
+@@ -189,10 +189,7 @@ impl OriginalJournalSourceHost {
+             .destination
+             .try_lock()
+             .map_err(|_| anyhow::anyhow!("original B helper is busy"))?;
+-        let mut a = crate::mailbox_service::durable::GuestDeadline {
+-            stream: &mut a,
+-            until,
+-        };
++        let mut a = crate::mailbox_service::durable::GuestDeadline::new(a, until)?;
+         let body = crate::mailbox_service::read_frame(
+             crate::mailbox_service::MAX_SOURCE_INTENT_BYTES,
+             &mut a,
+@@ -205,11 +202,8 @@ impl OriginalJournalSourceHost {
+                 && encode_frame(&send, &envelope).ok().as_ref() == Some(&body),
+             "A ciphertext did not carry the original canonical Send credential"
+         );
+-        let mut b = dest.connect_for_proposal(&self.plan, &self.grants, until)?;
+-        let mut b = crate::mailbox_service::durable::GuestDeadline {
+-            stream: &mut b,
+-            until,
+-        };
++        let b = dest.connect_for_proposal(&self.plan, &self.grants, until)?;
++        let mut b = crate::mailbox_service::durable::GuestDeadline::new(b, until)?;
+         b.write_all(&u32::try_from(body.len())?.to_be_bytes())?;
+         b.write_all(&body)?;
+         let mut verdict = Vec::new();
+diff --git a/crates/mvm-hostd/src/mailbox_service/directed_journal.rs b/crates/mvm-hostd/src/mailbox_service/directed_journal.rs
+index 217e60160..f57c6be12 100644
+--- a/crates/mvm-hostd/src/mailbox_service/directed_journal.rs
++++ b/crates/mvm-hostd/src/mailbox_service/directed_journal.rs
+@@ -190,12 +190,10 @@ impl DirectedJournalSource {
+             }),
+         )?;
+         self.authorize(len)?;
+-        let mut stream = connect(deadline)?;
++        let stream = connect(deadline)?;
+         self.authorize(len)?;
+-        let mut stream = super::durable::GuestDeadline {
+-            stream: &mut stream,
+-            until: deadline,
+-        };
++        let mut stream = super::durable::GuestDeadline::new(stream, deadline)
++            .map_err(|_| Refusal::Unavailable)?;
+         let receipt =
+             send_local_receipted_frame(&mut stream, &cap, &envelope, &expected, &self.verifier)?;
+         if Instant::now() >= deadline
+diff --git a/crates/mvm-hostd/src/mailbox_service/durable.rs b/crates/mvm-hostd/src/mailbox_service/durable.rs
+index 30b4974a9..92dafd17f 100644
+--- a/crates/mvm-hostd/src/mailbox_service/durable.rs
++++ b/crates/mvm-hostd/src/mailbox_service/durable.rs
+@@ -44,42 +44,8 @@ const MAX_EXPIRY_RECORDS_PER_REQUEST: usize = 8;
+ #[cfg(feature = "durable-guest-io-witness")]
+ mod witness_io;
+ 
+-pub(crate) struct GuestDeadline<'a> {
+-    pub(crate) stream: &'a mut UnixStream,
+-    pub(crate) until: Instant,
+-}
+-
+-impl GuestDeadline<'_> {
+-    fn remaining(&self) -> std::io::Result<Duration> {
+-        let remaining = self.until.saturating_duration_since(Instant::now());
+-        if remaining.is_zero() {
+-            Err(std::io::Error::new(
+-                std::io::ErrorKind::TimedOut,
+-                "mailbox guest exchange deadline",
+-            ))
+-        } else {
+-            Ok(remaining)
+-        }
+-    }
+-}
+-
+-impl Read for GuestDeadline<'_> {
+-    fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
+-        self.stream.set_read_timeout(Some(self.remaining()?))?;
+-        self.stream.read(buf)
+-    }
+-}
+-
+-impl Write for GuestDeadline<'_> {
+-    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+-        self.stream.set_write_timeout(Some(self.remaining()?))?;
+-        self.stream.write(buf)
+-    }
+-
+-    fn flush(&mut self) -> std::io::Result<()> {
+-        self.stream.flush()
+-    }
+-}
++mod guest_deadline;
++pub(crate) use guest_deadline::GuestDeadline;
+ 
+ /// Commit delivery-state events; this callback alone cannot authorize a
+ /// strong `accepted_durable` receipt.
+@@ -367,7 +333,7 @@ impl DurableMailboxService {
+         hold: Duration,
+         active: impl Fn() -> bool,
+     ) -> std::io::Result<bool> {
+-        let mut stream = crate::telemetry_collector::dial_route(
++        let stream = crate::telemetry_collector::dial_route(
+             route,
+             mvm_contract::protocol::mailbox::MAILBOX_PORT,
+         )?;
+@@ -375,10 +341,7 @@ impl DurableMailboxService {
+             return Ok(false);
+         }
+         let until = Instant::now() + GUEST_EXCHANGE_TIMEOUT;
+-        let mut stream = GuestDeadline {
+-            stream: &mut stream,
+-            until,
+-        };
++        let mut stream = GuestDeadline::new(stream, until)?;
+         #[cfg(feature = "durable-guest-io-witness")]
+         if let Some(meter) = &self.guest_meter {
+             return meter.observe(&mut stream, |io, mark| {
+@@ -816,11 +779,9 @@ mod reader_tests {
+ 
+     #[test]
+     fn an_expired_guest_exchange_refuses_more_reads_and_writes() {
+-        let (mut socket, _peer) = UnixStream::pair().unwrap();
+-        let mut expired = GuestDeadline {
+-            stream: &mut socket,
+-            until: Instant::now() - Duration::from_millis(1),
+-        };
++        let (socket, _peer) = UnixStream::pair().unwrap();
++        let mut expired =
++            GuestDeadline::new(socket, Instant::now() - Duration::from_millis(1)).unwrap();
+         assert_eq!(
+             expired.read(&mut [0; 1]).unwrap_err().kind(),
+             std::io::ErrorKind::TimedOut
+diff --git a/crates/mvm-hostd/src/mailbox_service/durable/guest_deadline.rs b/crates/mvm-hostd/src/mailbox_service/durable/guest_deadline.rs
+new file mode 100644
+index 000000000..06cf9a83c
+--- /dev/null
++++ b/crates/mvm-hostd/src/mailbox_service/durable/guest_deadline.rs
+@@ -0,0 +1,141 @@
++use rustix::event::{PollFd, PollFlags, Timespec, poll};
++use std::io::{self, Read, Write};
++use std::os::unix::net::UnixStream;
++use std::time::{Duration, Instant};
++
++pub(crate) struct GuestDeadline {
++    stream: UnixStream,
++    until: Instant,
++}
++
++impl GuestDeadline {
++    /// This private exchange consumes the connected socket. No other handler
++    /// reads it or relies on its former blocking mode.
++    pub(crate) fn new(stream: UnixStream, until: Instant) -> io::Result<Self> {
++        stream.set_nonblocking(true)?;
++        Ok(Self { stream, until })
++    }
++
++    fn remaining(&self) -> io::Result<Duration> {
++        let remaining = self.until.saturating_duration_since(Instant::now());
++        if remaining.is_zero() {
++            Err(io::Error::new(
++                io::ErrorKind::TimedOut,
++                "mailbox guest exchange deadline",
++            ))
++        } else {
++            Ok(remaining)
++        }
++    }
++
++    // Darwin can refuse SO_RCVTIMEO after the peer closes even when a signed
++    // response is buffered. A nonblocking read drains those bytes and then EOF.
++    fn transfer(
++        &self,
++        events: PollFlags,
++        mut operation: impl FnMut(&UnixStream) -> io::Result<usize>,
++    ) -> io::Result<usize> {
++        loop {
++            self.remaining()?;
++            match operation(&self.stream) {
++                Err(e) if e.kind() == io::ErrorKind::Interrupted => continue,
++                Err(e) if e.kind() == io::ErrorKind::WouldBlock => {}
++                result => return result,
++            }
++            let timeout = Timespec::try_from(self.remaining()?).map_err(io::Error::other)?;
++            let mut wait = [PollFd::new(&self.stream, events)];
++            match poll(&mut wait, Some(&timeout)) {
++                // Read/write again for buffered data, EOF, and the actual socket error.
++                Ok(_) | Err(rustix::io::Errno::INTR) => {}
++                Err(error) => return Err(error.into()),
++            }
++        }
++    }
++}
++
++impl Read for GuestDeadline {
++    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
++        if buf.is_empty() {
++            return Ok(0);
++        }
++        self.transfer(PollFlags::IN, |mut socket| socket.read(buf))
++    }
++}
++
++impl Write for GuestDeadline {
++    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
++        if buf.is_empty() {
++            return Ok(0);
++        }
++        self.transfer(PollFlags::OUT, |mut socket| socket.write(buf))
++    }
++
++    fn flush(&mut self) -> io::Result<()> {
++        self.stream.flush()
++    }
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++
++    #[test]
++    fn queued_reply_and_eof_survive_peer_exit() {
++        let (local, mut peer) = UnixStream::pair().unwrap();
++        let expected: Vec<_> = (0..=255).cycle().take(1197).collect();
++        peer.write_all(&expected).unwrap();
++        drop(peer);
++        let mut stream =
++            GuestDeadline::new(local, Instant::now() + Duration::from_secs(2)).unwrap();
++        let mut reply = Vec::new();
++        Read::by_ref(&mut stream)
++            .take(4097)
++            .read_to_end(&mut reply)
++            .unwrap();
++        assert_eq!(reply, expected);
++        assert_eq!(stream.read(&mut [0]).unwrap(), 0);
++    }
++
++    #[test]
++    fn empty_peer_close_stays_eof_and_write_remains_an_error() {
++        let (local, peer) = UnixStream::pair().unwrap();
++        drop(peer);
++        let mut stream =
++            GuestDeadline::new(local, Instant::now() + Duration::from_secs(2)).unwrap();
++        assert_eq!(stream.read(&mut [0]).unwrap(), 0);
++        assert!(stream.write(b"x").is_err());
++    }
++
++    #[test]
++    fn partial_reads_do_not_extend_the_original_deadline() {
++        let (local, mut peer) = UnixStream::pair().unwrap();
++        peer.write_all(b"x").unwrap();
++        let until = Instant::now() + Duration::from_millis(50);
++        let mut stream = GuestDeadline::new(local, until).unwrap();
++        let mut bytes = [0; 2];
++        assert_eq!(
++            stream.read_exact(&mut bytes).unwrap_err().kind(),
++            io::ErrorKind::TimedOut
++        );
++        assert_eq!(bytes[0], b'x');
++        assert!(Instant::now() >= until);
++    }
++
++    #[test]
++    fn a_full_open_socket_obeys_the_absolute_write_deadline() {
++        let (local, _peer) = UnixStream::pair().unwrap();
++        let until = Instant::now() + Duration::from_millis(50);
++        let mut stream = GuestDeadline::new(local, until).unwrap();
++        let block = [1; 16 * 1024];
++        loop {
++            match stream.write(&block) {
++                Ok(n) => assert!(n > 0),
++                Err(e) => {
++                    assert_eq!(e.kind(), io::ErrorKind::TimedOut);
++                    break;
++                }
++            }
++        }
++        assert!(Instant::now() >= until);
++    }
++}

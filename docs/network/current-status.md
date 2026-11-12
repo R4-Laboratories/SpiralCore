@@ -8,6 +8,8 @@ A Linux regression reproduced the cleanup failure with two real mailbox helpers 
 
 A separate two-guest Linux trial withheld B’s first signed receipt. A’s original agent retried the same sealed envelope and B returned a byte-identical receipt. After one confirmed ACK the destination queue was empty. Exact readback and that empty probe took 1.159652 s, and both helpers exited unaided with complete stream meters. [Native retry measurements, controls and reproduction](evidence/2026-11-12-paired-mailbox/paired-durable-native/receipt-loss.md).
 
+The host relay now drains B's buffered signed verdict after a normal Unix socket close under the original transfer deadline. Four connected-socket regressions passed on Apple Silicon macOS and Linux. [Failure, fix and exact test inputs](evidence/2026-11-12-paired-mailbox/paired-durable-native/verdict-deadline.md).
+
 An earlier two-guest test exercised each guest’s own mailbox. A separate addressed attempt recorded a deadline failure and zero bytes on B’s port-5257 stream. [Independent own-mailbox measurements](evidence/2026-11-12-paired-mailbox/firecracker.md) · [Earlier addressed timeout](evidence/2026-11-12-paired-mailbox/addressed-native-launch/paired-deadline-native.md).
 
 The persistent machine SDK can now boot B with its original incoming journal policy and A with the independently authorized source/recipient pair. The orchestrator retains both owners through startup and rollback. Its typed stop waits for original VMM and helper exit before releasing runtime state. Apple Silicon macOS passed 217 launch and 14 original-helper tests. Linux passed 24 focused checks. [API, source and recorded checks](evidence/2026-11-12-paired-mailbox/persistent-sdk/README.md).
