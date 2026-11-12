@@ -935,6 +935,7 @@ impl TlsCarrier {
         header: &[u8],
         until: Instant,
         check: impl Fn() -> crate::Result<()>,
+        mut accepted: impl FnMut(usize) -> crate::Result<()>,
     ) -> crate::Result<()> {
         debug_assert_eq!(header.len(), crate::HEADER_LEN);
         let mut session = self.session_until(until)?;
@@ -948,7 +949,10 @@ impl TlsCarrier {
             }
             if !header.is_empty() {
                 match tls.writer().write(header) {
-                    Ok(n) => header = &header[n..],
+                    Ok(n) => {
+                        accepted(n)?;
+                        header = &header[n..];
+                    }
                     Err(e) if transient(&e) => {}
                     Err(e) => return Err(e.into()),
                 }
