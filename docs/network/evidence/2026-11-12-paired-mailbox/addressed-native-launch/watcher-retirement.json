@@ -1,0 +1,47 @@
+{
+  "linux_original_observation": {
+    "observed_utc": "2026-11-12T10:43:36.291302+00:00",
+    "source": "5ae2cdc4977e12a574a5baa2e4f0522c3f7a1ae7",
+    "initial_report_sha256": "5b15650a8b081388167b6466ea4a07dc6fd3acfab71da3f660a231b05af9bef6",
+    "source_driver": "2e3c92835c2e41ccc79688c4bbe88b9f59282736",
+    "log_prefix_bytes": 68135,
+    "log_prefix_sha256": "999ec02f9b76948d5d26f60cec7357aba9b766dcf6a2d3fc610c149033b1c650",
+    "watcher_refusals": 314,
+    "max_observed_consecutive_warning_gap_s": 10.000079,
+    "advisory_idle_hold_s": 40,
+    "lifecycle": {
+      "phase": "Active",
+      "revision": 70,
+      "unresolved": false,
+      "pending_launches": 0
+    },
+    "registration_journal_entries": 0,
+    "retained_owner_locators": 0,
+    "original_driver_report": "failed",
+    "original_coordinator_wait_status": null,
+    "operator_intervention": "none"
+  },
+  "macos_host_component": {
+    "platform": "macOS arm64",
+    "portable_control": "cargo test --locked --offline -p mvm-hostd --lib host_agent_idle::tests:: -- --nocapture --test-threads=1",
+    "regression_selector": "host_agent_idle::tests::original_watcher_waits_for_transient_daemon_contention_before_admitting",
+    "red": {
+      "revision": "a5cddf9ce327885e1c6c4e1bf643d71ad6ed10a3",
+      "passed": 0,
+      "failed": 1,
+      "error": "original daemon unavailable for watcher admission",
+      "log_sha256": "e79fe8f299aeafcd153fc47643467a998c9882001d9b02e59b8866434036245d"
+    },
+    "green": {
+      "revision": "0945135d205ed6461bcdf4086229e7c7953ae720",
+      "passed": 18,
+      "failed": 0,
+      "log_sha256": "9452a84b046bb1f842ae185838338c94e8a5781f317bd0c9385338c4f22d4101",
+      "test_binary_sha256": "ddb62b77013ab61a425634e75a7d32213733670bd45e05164282237e357ad899"
+    }
+  },
+  "patch_sha256": "5099d7698d050dc3ab60f4c1632a54cb083332a162a3f0c9663f420fb4e57b81",
+  "new_guest_boots": 0,
+  "new_guest_traffic_bytes": null,
+  "new_wan_time_ns": null
+}

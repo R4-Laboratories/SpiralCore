@@ -20,3 +20,5 @@ bash "$SPIRALCORE/tools/installed-mailbox-witness/make-addressed-pair-rootfs.sh"
 The manifest records the actual prepared files. End-to-end qualification additionally requires a source submission, an authorized coordinator transfer and a successful independent read from the booted B workload.
 
 The installed SDK subsequently changed both directory inputs during image materialization. Use these hashes for the prepared directories only. [Observed changes and next boot-image requirement](../addressed-native-launch/README.md)
+
+The successor builder seals operator-selected workloads into ext4 files. Both images passed independent filesystem and full dm-verity readback. [Verified role images](../operator-images/README.md)

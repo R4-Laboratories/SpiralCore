@@ -11,7 +11,13 @@ tracks delivery. The next installed gate is an authorized Cast from guest A to
 guest B with exact readback inside the destination workload. Cross-host WAN and
 platform qualification follow. [Guest retry and worker capacity regressions](evidence/2026-11-12-paired-mailbox/README.md).
 
-The first installed addressed launch reached kernel admission. Both guests were refused before boot because the staged kernel lacked its original digest sidecar. A fresh installation passed the kernel resolver. SDK root filesystem materialization also replaced the test workloads’ image-supplied startup metadata. The next run needs the operator-approved entrypoint and worker configuration verified inside the actual boot images. [Failed launch, timings and recovery](evidence/2026-11-12-paired-mailbox/addressed-native-launch/README.md).
+Two subsequent installed runs used separately sealed workload images and reached signed plan admission for both guests. Each coordinator drained and exited with status 42. The destination in run 5 refused a concurrent lifecycle publication, which cancelled the source’s Cast rendezvous before guest readback. [Launch results and timings](evidence/2026-11-12-paired-mailbox/addressed-native-launch/reservations.md).
+
+The installed addressed SDK now creates private VM and short Unix socket directories under either tested umask. Linux and macOS both passed the ownership and signed-publication controls. [Filesystem evidence](evidence/2026-11-12-paired-mailbox/installed-driver/private-state.md).
+
+The failed launch also exposed a coordinator retirement problem. Session probes repeatedly lost a brief daemon lock and restarted the idle timer. The watcher now retries that contention within its original admission deadline. The macOS host regression suite passed 18/18. [Original Linux observation and host tests](evidence/2026-11-12-paired-mailbox/addressed-native-launch/watcher-retirement.md)
+
+The addressed driver checks materialized role images and preserves the initial failure report through a late coordinator exit. Its Linux library suite passed nine tests. [Input and custody checks](evidence/2026-11-12-paired-mailbox/installed-driver/materialized-driver.md).
 
 ### Addressed mailbox delivery
 

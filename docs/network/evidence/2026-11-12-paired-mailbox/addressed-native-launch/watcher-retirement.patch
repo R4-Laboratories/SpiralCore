@@ -1,0 +1,152 @@
+diff --git a/crates/mvm-hostd/src/host_agent_idle.rs b/crates/mvm-hostd/src/host_agent_idle.rs
+index d38829bc5aa89f321a11659fe9ef9b5b44bdd2c8..ac24107846905f63faab91a1e36140239e3be9c6 100644
+--- a/crates/mvm-hostd/src/host_agent_idle.rs
++++ b/crates/mvm-hostd/src/host_agent_idle.rs
+@@ -101,17 +101,8 @@ fn admit_watcher_turn(
+     daemon: &Arc<Mutex<HostAgentDaemon>>,
+     resources: &InstallationBinding,
+ ) -> anyhow::Result<crate::broker::daemon::AcceptedDaemonWork> {
+-    let (gate, generation) = daemon
+-        .try_lock()
+-        .map_err(|_| anyhow::anyhow!("original daemon unavailable for watcher admission"))?
+-        .coordination_binding()?;
+-    let mut accepted =
+-        gate.with_active(&generation, Instant::now() + Duration::from_secs(5), || {
+-            daemon
+-                .try_lock()
+-                .map_err(|_| anyhow::anyhow!("original daemon admission contended"))?
+-                .reserve_accepted_work(&generation)
+-        })?;
++    let deadline = Instant::now() + Duration::from_secs(5);
++    let mut accepted = reserve_watcher_turn_before(daemon, deadline)?;
+     // No file gate or daemon mutex is held during resource/thread preparation.
+     let lease = match HolderLease::acquire(&resources.root, resources.key, resources.generation) {
+         Ok(lease) => lease,
+@@ -124,6 +115,42 @@ fn admit_watcher_turn(
+     Ok(accepted)
+ }
+
++/// Session and health passes run on blocking workers. Their two-second timers can
++/// repeatedly coincide. Retry only daemon mutex contention; a closed generation,
++/// unavailable ledger or filesystem failure is an immediate refusal.
++fn reserve_watcher_turn_before(
++    daemon: &Mutex<HostAgentDaemon>,
++    deadline: Instant,
++) -> anyhow::Result<crate::broker::daemon::AcceptedDaemonWork> {
++    let mut backoff = Duration::from_millis(1);
++    loop {
++        anyhow::ensure!(
++            Instant::now() < deadline,
++            "watcher admission deadline expired"
++        );
++        let binding = daemon
++            .try_lock()
++            .ok()
++            .map(|original| original.coordination_binding())
++            .transpose()?;
++        if let Some((gate, generation)) = binding {
++            // Active authorization and the original ledger reservation share the same
++            // lifecycle gate. Never wait for the daemon mutex inside that file gate.
++            if let Some(turn) = gate.with_active(&generation, deadline, || {
++                let Ok(original) = daemon.try_lock() else {
++                    return Ok(None);
++                };
++                original.reserve_accepted_work(&generation).map(Some)
++            })? {
++                return Ok(turn);
++            }
++        }
++        // Both locks are released. Recheck the original generation on every attempt.
++        std::thread::sleep(backoff.min(deadline.saturating_duration_since(Instant::now())));
++        backoff = (backoff * 2).min(Duration::from_millis(32));
++    }
++}
++
+ async fn drain_watcher_jobs(
+     jobs: WatcherJobOwner,
+ ) -> Result<WatcherDrainReceipt, WatcherDrainError> {
+@@ -769,6 +796,84 @@ async fn health_watcher_passes(
+ mod tests {
+     use super::*;
+
++    #[test]
++    fn original_watcher_waits_for_transient_daemon_contention_before_admitting()
++    -> anyhow::Result<()> {
++        use mvm_core::tenant_lifecycle::{LifecycleCoordinator, LifecycleGeneration};
++        use mvm_vmm::host::installed_owner::{InstallationKey, InstallationOwner};
++        use std::os::unix::fs::PermissionsExt;
++        let temp = tempfile::tempdir()?;
++        let home = temp.path();
++        std::fs::set_permissions(home, std::fs::Permissions::from_mode(0o700))?;
++        let key = InstallationKey {
++            installation: [1; 32],
++            profile: [2; 32],
++        };
++        let mut owner = InstallationOwner::initialize(&home.join("resources"), key)?;
++        let epoch = owner.begin()?;
++        let binding = owner.active_binding(epoch)?;
++        let generation = LifecycleGeneration::new([3; 32], epoch.generation())?;
++        let deadline = Instant::now() + Duration::from_secs(5);
++        let lifecycle = LifecycleCoordinator::prepare_after_exclusion(
++            home,
++            "local",
++            generation.clone(),
++            1,
++            deadline,
++        )?;
++        lifecycle.activate_after_reconciliation(&generation, deadline)?;
++        let signer = ed25519_dalek::SigningKey::from_bytes(&[4; 32]);
++        let mut original = HostAgentDaemon::new("local", signer.verifying_key(), 65_536)
++            .with_lifecycle_coordination(home, generation.clone())?;
++        original.open_local_admission(&generation)?;
++        let daemon = Arc::new(Mutex::new(original));
++        let held = daemon.try_lock().unwrap();
++        let (entered, ready) = std::sync::mpsc::sync_channel(0);
++        let probe = daemon.clone();
++        std::thread::scope(|scope| -> anyhow::Result<()> {
++            let observer = scope.spawn(move || {
++                entered.send(()).unwrap();
++                admit_watcher_turn(&probe, &binding)
++            });
++            ready.recv()?;
++            std::thread::sleep(Duration::from_millis(40));
++            drop(held);
++            let mut turn = observer.join().unwrap()?;
++            assert!(daemon.try_lock().unwrap().has_accepted_work()?);
++            turn.settle()?;
++            assert!(!daemon.try_lock().unwrap().has_accepted_work()?);
++            Ok(())
++        })?;
++        let revision = lifecycle.snapshot(deadline)?.revision();
++        lifecycle.begin_drain(&generation, revision, deadline, |_| Ok(()))?;
++        assert!(reserve_watcher_turn_before(&daemon, deadline).is_err());
++        assert!(!daemon.try_lock().unwrap().has_accepted_work()?);
++        owner.finish(epoch)?;
++        Ok(())
++    }
++
++    #[test]
++    fn watcher_deadline_preserves_unknown_until_original_lock_is_available() {
++        let signer = ed25519_dalek::SigningKey::from_bytes(&[5; 32]);
++        let daemon = Mutex::new(HostAgentDaemon::new(
++            "local",
++            signer.verifying_key(),
++            65_536,
++        ));
++        let held = daemon.try_lock().unwrap();
++        let deadline = Instant::now() + Duration::from_millis(15);
++        let error = reserve_watcher_turn_before(&daemon, deadline)
++            .err()
++            .unwrap();
++        assert!(Instant::now() >= deadline);
++        assert!(
++            error
++                .to_string()
++                .contains("watcher admission deadline expired")
++        );
++        assert!(!held.has_accepted_work().unwrap());
++    }
++
+     // --- parse_idle_timeout ---
+
+     #[test]
