@@ -1,0 +1,647 @@
+diff --git a/crates/mvm-hostd/src/mailbox_process.rs b/crates/mvm-hostd/src/mailbox_process.rs
+index ef0f24c36..4103e0384 100644
+--- a/crates/mvm-hostd/src/mailbox_process.rs
++++ b/crates/mvm-hostd/src/mailbox_process.rs
+@@ -338,7 +338,7 @@ fn serve_local(
+                 private.grants.clone(),
+                 private.material(),
+                 &vm_state_dir,
+-                &mvm_core::config::vm_state_dir(&private.destination_name),
++                &vm_state_dir.with_file_name(&private.destination_name),
+             )
+             .map_err(Error::other)?;
+         Some(source)
+diff --git a/crates/mvm-hostd/src/mailbox_process/original_journal.rs b/crates/mvm-hostd/src/mailbox_process/original_journal.rs
+index b8328c0a4..93928be84 100644
+--- a/crates/mvm-hostd/src/mailbox_process/original_journal.rs
++++ b/crates/mvm-hostd/src/mailbox_process/original_journal.rs
+@@ -3,6 +3,8 @@
+ //! retains the original Child until collection. A pidfile cannot recreate it.
+ 
+ pub mod authorization;
++#[cfg(test)]
++mod paired_process_tests;
+ pub mod relay;
+ 
+ use super::{MailboxLaunchPosture, MailboxProcessConfig, spawn_serving, spawn_with_original};
+@@ -140,6 +142,15 @@ impl OriginalJournalDestination {
+         })
+     }
+ 
++    pub(crate) fn peer_state(&self, name: &str) -> Result<PathBuf> {
++        mvm_core::naming::validate_vm_name(name)?;
++        let state = self
++            .revocations_path
++            .parent()
++            .context("missing original VM state")?;
++        Ok(state.with_file_name(name))
++    }
++
+     /// Before sending any credential or ciphertext, authenticate the connected
+     /// kernel peer against the exclusively owned, still-live original Child.
+     pub fn connect(&mut self, deadline: Instant) -> Result<UnixStream> {
+diff --git a/crates/mvm-hostd/src/mailbox_process/original_journal/authorization.rs b/crates/mvm-hostd/src/mailbox_process/original_journal/authorization.rs
+index 6323e67ed..3330353ad 100644
+--- a/crates/mvm-hostd/src/mailbox_process/original_journal/authorization.rs
++++ b/crates/mvm-hostd/src/mailbox_process/original_journal/authorization.rs
+@@ -174,6 +174,15 @@ impl OriginalJournalDestination {
+         grants: &JournalCredentials,
+         deadline: Instant,
+     ) -> Result<()> {
++        self.connect_for_proposal(plan, grants, deadline).map(drop)
++    }
++
++    pub(super) fn connect_for_proposal(
++        &mut self,
++        plan: &ExecutionPlan,
++        grants: &JournalCredentials,
++        deadline: Instant,
++    ) -> Result<std::os::unix::net::UnixStream> {
+         let grant = plan.mailbox.as_ref().context("source has no mailbox")?;
+         let d = grant
+             .outbound_journal_v1
+@@ -185,7 +194,10 @@ impl OriginalJournalDestination {
+         );
+         check_projection(grant, d)?;
+         require_destination(d, &self.boot, self.address, self.policy_epoch)?;
+-        ensure!(self.incoming.as_ref().is_some_and(|i|i.agrees(grants)), "B did not admit these original sender and reader credentials");
++        ensure!(
++            self.incoming.as_ref().is_some_and(|i| i.agrees(grants)),
++            "B did not admit these original sender and reader credentials"
++        );
+         let now = now_ms()?;
+         let source = journal_scope_before_launch(&self.keys_dir, grant, now)?;
+         mvm_core::naming::validate_vm_name(&plan.image.name)?;
+@@ -193,7 +205,7 @@ impl OriginalJournalDestination {
+             crate::mailbox_service::durable::reader_revocations(path)
+                 .map_err(|e| anyhow::anyhow!("original mailbox revocation state: {e:?}"))
+         };
+-        let source_state = mvm_core::config::vm_state_dir(&plan.image.name);
++        let source_state = self.peer_state(&plan.image.name)?;
+         let mut inbound = self.inbound.clone();
+         inbound.revoked_capabilities = read_revocations(&self.revocations_path)?;
+         let h = &source.header;
+@@ -227,8 +239,7 @@ impl OriginalJournalDestination {
+             now,
+             d.max_payload_bytes,
+         )?;
+-        drop(self.connect(deadline)?);
+-        Ok(())
++        self.connect(deadline)
+     }
+ }
+ 
+diff --git a/crates/mvm-hostd/src/mailbox_process/original_journal/paired_process_tests.rs b/crates/mvm-hostd/src/mailbox_process/original_journal/paired_process_tests.rs
+new file mode 100644
+index 000000000..3bc40048f
+--- /dev/null
++++ b/crates/mvm-hostd/src/mailbox_process/original_journal/paired_process_tests.rs
+@@ -0,0 +1,404 @@
++//! Two real helper binaries and a fixture guest stream; no VMM or guest is booted.
++use super::{
++    OriginalJournalDestination,
++    authorization::{JournalCredentials, PairedJournalAdmission},
++};
++use crate::mailbox_process::paired_incoming::{IncomingJournalAdmission, tests::setup};
++use crate::plan_admission::MailboxLaunchPosture;
++use anyhow::{Result, ensure};
++use base64::Engine as _;
++use ed25519_dalek::SigningKey;
++use mvm_contract::protocol::mailbox::{MailboxGrant, MailboxJournalDirectionV1};
++use mvm_core::mailbox::{
++    frame::OutboxMessage, outbound::journal_capability_digest, reader::MailboxReaderBootBinding,
++};
++use mvm_core::plan::{ExecutionPlan, Variant, compute_plan_id, test_support::PlanFixture};
++use mvm_runtime::backend::AnyBackend;
++use std::io::{Read, Write};
++use std::os::unix::net::{UnixListener, UnixStream};
++use std::path::Path;
++use std::sync::{Arc, Mutex};
++use std::time::{Duration, Instant};
++
++fn original_plan(
++    name: &str,
++    grant: MailboxGrant,
++) -> Result<(
++    ExecutionPlan,
++    MailboxReaderBootBinding,
++    MailboxLaunchPosture,
++    SigningKey,
++)> {
++    let mut plan = PlanFixture::new().build();
++    plan.image.name = name.into();
++    plan.mailbox = Some(grant);
++    plan.plan_id = compute_plan_id(&plan);
++    let state = mvm_core::config::vm_state_dir(name);
++    mvm_core::private_fs::ensure_private_dir(&state)?;
++    let guest = SigningKey::from_bytes(&rand::random()).verifying_key();
++    let ack = SigningKey::from_bytes(&rand::random());
++    let boot = MailboxReaderBootBinding::mint(&plan, guest, ack.verifying_key().to_bytes())?;
++    boot.persist(&state)?;
++    mvm_vmm::host::flowmux_identity::InheritableIdentity {
++        session_id: name.into(),
++        guest_verifying_key_base64: base64::engine::general_purpose::STANDARD
++            .encode(guest.to_bytes()),
++    }
++    .persist(&state)?;
++    mvm_core::atomic_io::write_private(&state.join("plan.json"), &serde_json::to_vec(&plan)?)?;
++    let posture = MailboxLaunchPosture::for_test(&plan, Variant::Prod);
++    Ok((plan, boot, posture, ack))
++}
++
++fn guest_stream(listener: &UnixListener, until: Instant) -> Result<UnixStream> {
++    let mut stream = loop {
++        match listener.accept() {
++            Ok((s, _)) => break s,
++            Err(e) if e.kind() == std::io::ErrorKind::WouldBlock && Instant::now() < until => {
++                std::thread::sleep(Duration::from_millis(2))
++            }
++            Err(e) => return Err(e.into()),
++        }
++    };
++    stream.set_read_timeout(Some(Duration::from_secs(4)))?;
++    stream.set_write_timeout(Some(Duration::from_secs(4)))?;
++    let mut command = [0u8; 13];
++    stream.read_exact(&mut command)?;
++    ensure!(
++        &command == b"CONNECT 5257\n",
++        "unexpected fixture mux request"
++    );
++    stream.write_all(b"OK 5257\n")?;
++    Ok(stream)
++}
++
++fn fixture_listener(state: &Path) -> Result<UnixListener> {
++    let uds = mvm_agentd::vsock::vsock_uds_path(&state.to_string_lossy());
++    let uds = Path::new(&uds);
++    mvm_core::private_fs::ensure_private_dir(uds.parent().unwrap())?;
++    let listener = UnixListener::bind(uds)?;
++    listener.set_nonblocking(true)?;
++    Ok(listener)
++}
++struct Wire {
++    stream: UnixStream,
++    read: usize,
++    written: usize,
++}
++impl Wire {
++    fn new(stream: UnixStream) -> Self {
++        Self {
++            stream,
++            read: 0,
++            written: 0,
++        }
++    }
++}
++impl Read for Wire {
++    fn read(&mut self, b: &mut [u8]) -> std::io::Result<usize> {
++        let n = self.stream.read(b)?;
++        self.read += n;
++        Ok(n)
++    }
++}
++impl Write for Wire {
++    fn write(&mut self, b: &[u8]) -> std::io::Result<usize> {
++        let n = self.stream.write(b)?;
++        self.written += n;
++        Ok(n)
++    }
++    fn flush(&mut self) -> std::io::Result<()> {
++        self.stream.flush()
++    }
++}
++
++fn read_and_ack(
++    listener: &UnixListener,
++    until: Instant,
++    boot: &MailboxReaderBootBinding,
++    grant: &MailboxGrant,
++    key: &SigningKey,
++    sent: &OutboxMessage,
++    received: &mvm_contract::protocol::mailbox::SignedDestinationReceipt,
++) -> Result<()> {
++    use mvm_contract::protocol::mailbox::{
++        DeliveryAckNonce, MailboxDeliveryAck, MailboxGuestReaderScope, ProtocolVersion,
++        SignatureAlgorithm,
++    };
++    use mvm_core::mailbox::{
++        reader::{
++            sign_delivery_ack, sign_reader_possession, verify_delivery_lease_signature,
++            verify_guest_reader_enrollment,
++        },
++        reader_wire::{ReaderRequest, ReaderResponse, read_response, write_request},
++    };
++    let authority = ed25519_dalek::VerifyingKey::from_bytes(&grant.authority_key)?;
++    let now = super::authorization::now_ms;
++    let mut s = Wire::new(guest_stream(listener, until)?);
++    write_request(&mut s, &ReaderRequest::Receive)?;
++    let ReaderResponse::Challenge {
++        enrollment,
++        capability,
++        challenge,
++    } = read_response(&mut s)?
++    else {
++        anyhow::bail!("missing real B reader challenge");
++    };
++    let scope = MailboxGuestReaderScope {
++        plan: grant,
++        plan_id: &boot.plan_id,
++        plan_nonce: &boot.plan_nonce,
++        receive: &capability.grant,
++        current_boot: boot.boot,
++        current_session: enrollment.enrollment.consumer_session,
++        now_unix_ms: now()?,
++    };
++    verify_guest_reader_enrollment(&enrollment, &capability, &scope, &authority, &[])?;
++    ensure!(enrollment.enrollment.ack_public_key == key.verifying_key().to_bytes());
++    let sig = sign_reader_possession(&enrollment, &challenge, key)?;
++    write_request(
++        &mut s,
++        &ReaderRequest::Possession {
++            signature: sig.to_vec(),
++        },
++    )?;
++    let ReaderResponse::Delivery { lease, payload, .. } = read_response(&mut s)? else {
++        anyhow::bail!("B reader did not lease original record");
++    };
++    verify_delivery_lease_signature(&lease, &authority)?;
++    ensure!(
++        payload == sent.body
++            && payload.len() == sent.body.len()
++            && lease.lease.message_id == sent.message_id
++            && lease.lease.address == received.receipt.address
++            && lease.lease.delivery_id == received.receipt.delivery_id
++            && lease.lease.ciphertext_commitment == received.receipt.ciphertext_commitment
++            && lease.lease.consumer_session == enrollment.enrollment.consumer_session
++    );
++    let reader_counts = (s.written, s.read);
++    drop(s);
++    let signed = sign_delivery_ack(
++        MailboxDeliveryAck {
++            protocol_version: ProtocolVersion::V1,
++            signature_algorithm: SignatureAlgorithm::ED25519,
++            lease: *lease,
++            ack_nonce: DeliveryAckNonce::from_bytes(rand::random()),
++            acknowledged_at_unix_ms: now()?,
++        },
++        key,
++    )?;
++    let mut s = Wire::new(guest_stream(listener, until)?);
++    write_request(
++        &mut s,
++        &ReaderRequest::Ack {
++            signed: Box::new(signed.clone()),
++        },
++    )?;
++    let ReaderResponse::Acknowledged { ack } = read_response(&mut s)? else {
++        anyhow::bail!("B failed to acknowledge signed lease");
++    };
++    ensure!(*ack == signed);
++    eprintln!(
++        "ORIGINAL_PAIRED_B_READER exact_bytes={} receive_guest_to_helper={} receive_helper_to_guest={} ack_guest_to_helper={} ack_helper_to_guest={}",
++        payload.len(),
++        reader_counts.0,
++        reader_counts.1,
++        s.written,
++        s.read
++    );
++    Ok(())
++}
++
++fn run() -> Result<()> {
++    let keys = mvm_core::config::mvm_keys_dir();
++    mvm_core::private_fs::ensure_private_dir(&keys)?;
++    let (b_grant, incoming, _) = setup(&keys);
++    IncomingJournalAdmission::install(&b_grant, &incoming)?;
++    let backend = AnyBackend::from_hypervisor("firecracker");
++    let (bp, boot_b, posture_b, ack_b) = original_plan("journal-b", b_grant)?;
++    let b_guest = fixture_listener(&mvm_core::config::vm_state_dir("journal-b"))?;
++    let b = OriginalJournalDestination::start(&bp, &backend, "journal-b", &posture_b)?;
++    let signed_recv = b.original_receive()?.clone();
++    let grants = Arc::new(JournalCredentials {
++        source_scope: incoming.source_scope.clone(),
++        destination_send: incoming.destination_send.clone(),
++        destination_receive: signed_recv,
++    });
++    let b = Arc::new(Mutex::new(b));
++    let start = [
++        &grants.source_scope,
++        &grants.destination_send,
++        &grants.destination_receive,
++    ]
++    .into_iter()
++    .map(|c| c.grant.not_before_unix_ms)
++    .max()
++    .unwrap();
++    let end = [
++        &grants.source_scope,
++        &grants.destination_send,
++        &grants.destination_receive,
++    ]
++    .into_iter()
++    .map(|c| c.grant.expires_at_unix_ms)
++    .min()
++    .unwrap();
++    let direction = MailboxJournalDirectionV1 {
++        source: grants.destination_send.grant.subject,
++        destination_plan_sha256: hex::decode(&bp.plan_id.0[7..])?.try_into().unwrap(),
++        destination_plan_nonce: hex::decode(bp.nonce.as_hex())?.try_into().unwrap(),
++        destination_boot: boot_b.boot,
++        address: grants.destination_send.grant.address,
++        execution_epoch: b_grant.epoch,
++        policy_epoch: grants.destination_send.grant.policy_epoch,
++        receipt_key: b_grant.authority_key,
++        source_scope_grant_sha256: journal_capability_digest(&grants.source_scope)?,
++        send_grant_sha256: journal_capability_digest(&grants.destination_send)?,
++        receive_grant_sha256: journal_capability_digest(&grants.destination_receive)?,
++        not_before_unix_ms: start,
++        expires_at_unix_ms: end,
++        max_payload_bytes: 313,
++    };
++    let a_grant = MailboxGrant {
++        mailbox: incoming.source_mailbox,
++        epoch: incoming.source_epoch,
++        authority_key: crate::mailbox_launch::authority_key_for(
++            &keys,
++            &incoming.source_mailbox,
++            incoming.source_epoch,
++        )?
++        .to_bytes(),
++        retention: b_grant.retention,
++        report: None,
++        outbound_journal_v1: Some(direction),
++        incoming_journal_policy_sha256_v1: None,
++    };
++    let (ap, _, posture_a, _) = original_plan("journal-a", a_grant)?;
++    let a_state = mvm_core::config::vm_state_dir("journal-a");
++    let guest = fixture_listener(&a_state)?;
++    let deadline = Instant::now() + Duration::from_secs(20);
++    let admission = PairedJournalAdmission::new(b.clone(), grants, deadline);
++    let mut a = admission.launch_original_source(&ap, &backend, "journal-a", &posture_a)?;
++    let message = OutboxMessage::new(direction.address.recipient, (0..=255).chain([0]).collect());
++    let mut receipt = None;
++    let transaction = Instant::now();
++    for turn in 0..3 {
++        let mut socket = guest_stream(&guest, deadline)?;
++        let encoded = message.encode();
++        let send_start = Instant::now();
++        socket.write_all(&u32::try_from(encoded.len())?.to_be_bytes())?;
++        socket.write_all(&encoded)?;
++        let mut socket = Some(socket);
++        if turn == 0 {
++            drop(socket.take());
++        }
++        let relay = loop {
++            if let Some(value) = a.forward_once_with_counts(deadline)? {
++                break value;
++            }
++            ensure!(Instant::now() < deadline, "A helper did not request relay");
++            std::thread::sleep(Duration::from_millis(2));
++        };
++        eprintln!(
++            "ORIGINAL_PAIRED_RELAY turn={turn} sealed_to_b={} b_reply_to_a={}",
++            relay.sealed_to_destination, relay.reply_to_source
++        );
++        if let Some(socket) = socket {
++            let mut raw = Vec::new();
++            socket.take(4097).read_to_end(&mut raw)?;
++            ensure!(raw.len() <= 4096, "oversized fixture guest verdict");
++            let received = serde_json::from_slice::<
++                Result<
++                    mvm_contract::protocol::mailbox::SignedDestinationReceipt,
++                    mvm_core::mailbox::frame::Refusal,
++                >,
++            >(&raw)??;
++            mvm_core::mailbox::verify_receipt(
++                &received,
++                &ed25519_dalek::VerifyingKey::from_bytes(&direction.receipt_key)?,
++            )?;
++            ensure!(
++                received.receipt.message_id == message.message_id
++                    && received.receipt.address == direction.address
++                    && received.receipt.execution_epoch == direction.execution_epoch
++                    && received.receipt.outcome
++                        == mvm_contract::protocol::mailbox::DeliveryOutcome::AcceptedLocalDurable,
++                "wrong guest verdict"
++            );
++            if let Some(prior) = receipt.as_ref() {
++                ensure!(
++                    *prior == received,
++                    "duplicate returned different original receipt"
++                );
++            }
++            receipt = Some(received);
++            eprintln!(
++                "ORIGINAL_ACCEPT turn={turn} guest_submit_to_verified_v2_ns={}",
++                send_start.elapsed().as_nanos()
++            );
++            eprintln!(
++                "ORIGINAL_PAIRED_HELPERS turn={turn} plaintext_bytes={} guest_submit_bytes={} guest_receipt_bytes={}",
++                message.body.len(),
++                encoded.len() + 4,
++                raw.len()
++            );
++        }
++    }
++    read_and_ack(
++        &b_guest,
++        deadline,
++        &boot_b,
++        &b_grant,
++        &ack_b,
++        &message,
++        receipt.as_ref().unwrap(),
++    )?;
++    eprintln!(
++        "ORIGINAL_TRANSACTION first_connection_through_b_ack_ns={}",
++        transaction.elapsed().as_nanos()
++    );
++    drop(guest);
++    drop(b_guest);
++
++    // Withdraw only the synthetic runtime state from this fixture. The helpers
++    // observe this normally and the caller waits on the real original handles.
++    for name in ["journal-a", "journal-b"] {
++        let state = mvm_core::config::vm_state_dir(name);
++        std::fs::rename(&state, state.with_file_name(format!("{name}-retired")))?;
++    }
++    let until = Instant::now() + Duration::from_secs(9);
++    loop {
++        let ea = a.try_collect()?;
++        let eb = b.lock().unwrap().try_collect()?;
++        if let (Some(a), Some(b)) = (ea, eb) {
++            ensure!(a.success() && b.success());
++            break;
++        }
++        ensure!(Instant::now() < until, "original helpers did not retire");
++        std::thread::sleep(Duration::from_millis(20));
++    }
++    Ok(())
++}
++
++#[test]
++#[ignore = "requires the separately compiled mvm-mailbox binary from this exact tree"]
++fn original_a_and_b_helpers_relay_same_sealed_intent_after_lost_guest_reply() {
++    const IDENT: &str = "MVM_ORIGINAL_JOURNAL_HOST_COMPONENT";
++    if std::env::var_os(IDENT).is_some() {
++        run().unwrap();
++        return;
++    }
++    let temp = tempfile::tempdir_in("/tmp").unwrap();
++    let helper = std::env::current_exe()
++        .unwrap()
++        .parent()
++        .unwrap()
++        .parent()
++        .unwrap()
++        .join("mvm-mailbox");
++    assert!(helper.is_file(), "build same-source mvm-mailbox first");
++    let child=std::process::Command::new(std::env::current_exe().unwrap())
++        .args(["mailbox_process::original_journal::paired_process_tests::original_a_and_b_helpers_relay_same_sealed_intent_after_lost_guest_reply","--exact","--ignored","--nocapture"])
++        .env(IDENT,"1").env("MVM_HOME",temp.path()).env("MVM_MAILBOX_PATH",helper).status().unwrap();
++    assert!(child.success());
++}
+diff --git a/crates/mvm-hostd/src/mailbox_process/original_journal/relay.rs b/crates/mvm-hostd/src/mailbox_process/original_journal/relay.rs
+index c0a76323c..9749528e4 100644
+--- a/crates/mvm-hostd/src/mailbox_process/original_journal/relay.rs
++++ b/crates/mvm-hostd/src/mailbox_process/original_journal/relay.rs
+@@ -109,6 +109,14 @@ pub struct OriginalJournalSourceHost {
+     grants: std::sync::Arc<JournalCredentials>,
+ }
+ 
++#[derive(Clone, Copy, Debug)]
++pub struct CompletedRelayIo {
++    /// Exact userspace bytes read from A and written to B.
++    pub sealed_to_destination: usize,
++    /// Exact reply bytes read from B through EOF and written to A.
++    pub reply_to_source: usize,
++}
++
+ impl OriginalJournalSourceHost {
+     pub fn try_collect(&mut self) -> std::io::Result<Option<ExitStatus>> {
+         self.marker.collect(&mut self.source)
+@@ -117,13 +125,31 @@ impl OriginalJournalSourceHost {
+     /// Nonblocking on an idle listener. One shared action deadline for all
+     /// socket traffic and revocation sampling once A has connected.
+     pub fn forward_once(&mut self, until: Instant) -> Result<bool> {
++        Ok(self.forward_once_with_counts(until)?.is_some())
++    }
++
++    pub fn forward_once_with_counts(&mut self, until: Instant) -> Result<Option<CompletedRelayIo>> {
++        let d = self
++            .plan
++            .mailbox
++            .as_ref()
++            .and_then(|g| g.outbound_journal_v1.as_ref())
++            .context("missing enrolled A direction")?;
++        let now = super::authorization::now_ms()?;
++        ensure!(
++            (d.not_before_unix_ms..d.expires_at_unix_ms).contains(&now),
++            "original A direction expired"
++        );
++        let window = std::time::Duration::from_millis((d.expires_at_unix_ms - now) as u64)
++            .min(std::time::Duration::from_secs(12));
++        let until = until.min(Instant::now() + window);
+         ensure!(
+             Instant::now() < until && self.source.try_wait()?.is_none(),
+             "original A helper unavailable"
+         );
+         let (mut a, _) = match self.listener.socket.accept() {
+             Ok(v) => v,
+-            Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => return Ok(false),
++            Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => return Ok(None),
+             Err(e) => return Err(e.into()),
+         };
+         ensure!(
+@@ -134,7 +160,6 @@ impl OriginalJournalSourceHost {
+             .destination
+             .try_lock()
+             .map_err(|_| anyhow::anyhow!("original B helper is busy"))?;
+-        dest.check_proposal(&self.plan, &self.grants, until)?;
+         let mut a = crate::mailbox_service::durable::GuestDeadline {
+             stream: &mut a,
+             until,
+@@ -151,8 +176,7 @@ impl OriginalJournalSourceHost {
+                 && encode_frame(&send, &envelope).ok().as_ref() == Some(&body),
+             "A ciphertext did not carry the original canonical Send credential"
+         );
+-        dest.check_proposal(&self.plan, &self.grants, until)?;
+-        let mut b = dest.connect(until)?;
++        let mut b = dest.connect_for_proposal(&self.plan, &self.grants, until)?;
+         let mut b = crate::mailbox_service::durable::GuestDeadline {
+             stream: &mut b,
+             until,
+@@ -168,7 +192,10 @@ impl OriginalJournalSourceHost {
+             "incomplete or oversized B journal reply"
+         );
+         a.write_all(&verdict)?;
+-        Ok(true)
++        Ok(Some(CompletedRelayIo {
++            sealed_to_destination: 4 + body.len(),
++            reply_to_source: verdict.len(),
++        }))
+     }
+ }
+ 
+@@ -194,21 +221,22 @@ impl PairedJournalAdmission {
+             |config, plan, guard| {
+                 let setup = (|| -> Result<_> {
+                     let boot = config.reader_boot.as_ref().context("absent A boot")?;
+-                    let material = self
++                    let mut dest = self
+                         .original
+                         .try_lock()
+-                        .map_err(|_| anyhow::anyhow!("original B busy"))?
+-                        .source_material(plan, posture, boot, &self.grants, self.deadline)?;
++                        .map_err(|_| anyhow::anyhow!("original B busy"))?;
++                    ensure!(
++                        config.vm_state_dir == dest.peer_state(name)?
++                            && config.keys_dir == dest.keys_dir,
++                        "A and B require the same original installed authority"
++                    );
++                    let material =
++                        dest.source_material(plan, posture, boot, &self.grants, self.deadline)?;
+                     ensure!(
+                         material.commitment
+                             == mvm_core::mailbox::outbound::journal_direction_commitment(boot)?,
+                         "source data key belongs to a different original boot"
+                     );
+-                    let mut dest = self
+-                        .original
+-                        .try_lock()
+-                        .map_err(|_| anyhow::anyhow!("original B busy"))?;
+-                    dest.check_proposal(plan, &self.grants, self.deadline)?;
+ 
+                     let delegated = SourceConfiguration {
+                         parent: std::process::id(),
+diff --git a/crates/mvm-hostd/src/mailbox_process/paired_incoming.rs b/crates/mvm-hostd/src/mailbox_process/paired_incoming.rs
+index 17e9d20b4..f8dc5bad2 100644
+--- a/crates/mvm-hostd/src/mailbox_process/paired_incoming.rs
++++ b/crates/mvm-hostd/src/mailbox_process/paired_incoming.rs
+@@ -384,7 +384,7 @@ impl OriginalJournalDestination {
+         posture.verify(plan, &plan.image.name)?;
+         boot.check_plan(plan)?;
+         mvm_core::naming::validate_vm_name(&plan.image.name)?;
+-        let state = mvm_core::config::vm_state_dir(&plan.image.name);
++        let state = self.peer_state(&plan.image.name)?;
+         ensure!(
+             MailboxReaderBootBinding::load(&state)? == *boot,
+             "A boot differs from original retained identity"
+@@ -410,7 +410,7 @@ impl OriginalJournalDestination {
+ }
+ 
+ #[cfg(test)]
+-mod tests {
++pub(super) mod tests {
+     use super::*;
+     use crate::mailbox_launch::derive_launch_keys;
+     use ed25519_dalek::SigningKey;
+@@ -419,7 +419,7 @@ mod tests {
+     };
+     use mvm_core::plan::{compute_plan_id, test_support::PlanFixture};
+ 
+-    fn setup(dir: &Path) -> (MailboxGrant, IncomingJournalPolicy, SigningKey) {
++    pub(crate) fn setup(dir: &Path) -> (MailboxGrant, IncomingJournalPolicy, SigningKey) {
+         crate::audit::host_keypair::load_or_init_at(dir).unwrap();
+         let grant = |id| {
+             let mailbox = MailboxId::from_bytes([id; 32]);
