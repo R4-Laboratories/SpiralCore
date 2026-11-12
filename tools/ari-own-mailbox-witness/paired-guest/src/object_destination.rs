@@ -4,7 +4,7 @@
 use super::{object_exchange, object_reader::ObjectDelivery};
 use anyhow::{Context as _, Result, ensure};
 use mvm_core::mailbox::{
-    reader::{MailboxReaderBootBinding, verify_object_call_authority},
+    reader::{MailboxReaderBootBinding, ObjectCallAuthority},
     reader_wire::{
         ApplicationReaderRequest, ObjectSubmissionV1, read_response, write_application_request,
     },
@@ -61,16 +61,9 @@ impl Gate {
             .duration_since(UNIX_EPOCH)?
             .as_millis()
             .try_into()?;
-        verify_object_call_authority(
-            &self.boot,
-            &call.pair(),
-            call.lease(),
-            call.header(),
-            &call.frame().encode()?,
-            &challenge,
-            &verdict,
-            now,
-        )?;
+        ObjectCallAuthority::builder(&self.boot, &call.pair())
+            .with_delivery(call.lease(), call.header(), &call.frame().encode()?)
+            .verify(&challenge, &verdict, now)?;
         ensure!(
             Instant::now() < *until,
             "object authority reply arrived after deadline"

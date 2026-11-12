@@ -1,0 +1,49 @@
+name: MVM object reader
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'crates/spiralcore-mvm-guest/**'
+      - 'crates/spiralcore-transfer/**'
+      - 'crates/uor-r4-object-store/**'
+      - 'tools/ari-own-mailbox-witness/paired-guest/**'
+      - 'tools/ari-own-mailbox-witness/fixtures/**'
+      - '.github/workflows/mvm-object-reader.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  linux-guest:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      CARGO_BUILD_JOBS: 2
+      CARGO_INCREMENTAL: 0
+      CARGO_PROFILE_TEST_DEBUG: 0
+      MVM_REVISION: efaffa969161d7101aef135e70046a7220eca970
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          path: spiralcore
+          persist-credentials: false
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: Casey-allard/mvm
+          ref: ${{ env.MVM_REVISION }}
+          path: source
+          persist-credentials: false
+      - name: Test the application and canonical reader on Linux
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C source rev-parse HEAD)" = "$MVM_REVISION"
+          rustup toolchain install 1.97.1 --profile minimal
+          cp -R spiralcore/tools/ari-own-mailbox-witness/paired-guest paired-guest
+          ln -s spiralcore/tools/ari-own-mailbox-witness/fixtures fixtures
+          export CARGO_TARGET_DIR="$RUNNER_TEMP/object-reader-target"
+          cargo +1.97.1 test --locked --manifest-path paired-guest/Cargo.toml \
+            --features object-reader-v1,large-object-fixture,sender-ordinal-v1 --all-targets
+          cargo +1.97.1 test --locked --manifest-path source/Cargo.toml \
+            -p mvm-agentd --bin mvm-guest-agent mailbox_reader::object_guest_tests
