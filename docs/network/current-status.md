@@ -13,6 +13,8 @@ platform qualification follow. [Guest retry and worker capacity regressions](evi
 
 The addressed Cast component now verifies separate Send and Receive grants before it records a replay. Linux x86-64 and macOS arm64 tests checked exact local readback and measured the socket bytes and CPU on each side. [Addressed route results and upstream timeout regression](evidence/2026-11-12-paired-mailbox/addressed-route.md).
 
+The source can now seal an authorized Cast at its original worker and reuse the ciphertext across a reconnect. A macOS component run carried the complete peer frame and checked the application bytes at the local inbox. The installed two-guest gate still needs a private handoff between the original helper processes. [Sender, retry regressions and measured socket transfer](evidence/2026-11-12-paired-mailbox/source-cast.md).
+
 ## Published checkpoints
 
 | Component | What the checkpoint establishes | Evidence |
