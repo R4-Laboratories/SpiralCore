@@ -182,10 +182,15 @@ fn fitted_transfer_is_exact_durable_and_scoped_to_artifact_namespace() {
                 Err(Error::Missing)
             );
         }
+        let mut encoded_bytes = 0;
         let stats = send(mode, &artifact, &target, |frames| {
+            for data in frames.iter().filter(|f| f.kind == 2) {
+                encoded_bytes += u32::from_le_bytes(data.body[1..5].try_into().unwrap()) as u64;
+            }
             frames.iter().map(|f| ep.handle(&c, f, 1)).collect()
         })
         .unwrap();
+        assert_eq!(stats.data_bytes, encoded_bytes);
         assert_eq!(stats.mode, mode);
         assert!(stats.request_bytes + stats.response_bytes < target.len() as u64);
         assert_eq!(ep.read_object(&c, object_id(&target)).unwrap(), target);
