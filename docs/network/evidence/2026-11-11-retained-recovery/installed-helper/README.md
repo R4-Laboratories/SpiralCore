@@ -90,3 +90,7 @@ Firecracker v1.17.0 started the guest; its console reached the guest control age
 | Guest CPU, wire bytes, transfer time | Unavailable |
 
 This run localizes the failure to installed host coordination before the first application receive. It supplies no transfer or compression benchmark. [Run record, report digest and actual executable hashes](linux-028-installed-launch-01.json)
+
+## Keeping the installed control socket reachable
+
+The installed worker can have a live Unix listener and no legacy supervisor PID file. During telemetry startup, the legacy launcher treated that configuration as stale and removed the socket pathname. On Linux the focused regression reproduced the loss of the original listener address. With the repair, the launcher left the inode in place, declined to adopt it, and a subsequent client could still connect. The failed native run's coordinator and signer subsequently exited under operator cleanup using held kernel process handles. That cleanup produced no signed mailbox Stop or original child-wait receipt. [Implementation](https://github.com/Casey-allard/mvm/commit/f780207089dbc1c90876c44d54e7221b6d79108d) · [Regression and cleanup record](linux-028-control-socket-recovery.json).

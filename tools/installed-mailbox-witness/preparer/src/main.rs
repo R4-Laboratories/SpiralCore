@@ -6,6 +6,13 @@ fn main() -> anyhow::Result<()> {
     use std::{fs, io::Write, os::unix::fs::OpenOptionsExt, path::PathBuf, time::Instant};
 
     let args: Vec<_> = std::env::args_os().skip(1).collect();
+    if args.len() == 2 && args[0] == "--provision-only" {
+        let home = PathBuf::from(&args[1]);
+        ensure!(!home.try_exists()?, "fresh private home required");
+        mvm_vmm::host::host_agent_installation::create_new_home_and_provision(&home, "local")?
+            .verify()?;
+        return Ok(());
+    }
     ensure!(
         args.len() == 3,
         "usage: spiralcore-mvm-prepare-runtime SOURCE_ROOT PRIVATE_MVM_HOME REPORT_JSON"
@@ -75,7 +82,7 @@ fn main() -> anyhow::Result<()> {
             .collect();
         Ok(serde_json::json!({
             "status": "prepared", "native_transfer": "NOT_RUN",
-            "mvm_api_revision": "a23e0b54d7c1bd2ea7976a57a77c6b5b60205fb2",
+            "mvm_api_revision": "f780207089dbc1c90876c44d54e7221b6d79108d",
             "source_checkout": source, "runtime_archive_sha256": runtime.digest,
             "runtime_manifest": runtime.manifest, "runtime_root": runtime.root,
             "arch": arch.to_string(), "version": version,

@@ -13,7 +13,7 @@ use std::{
 };
 
 pub const MVM_SOURCE: &str =
-    "a23e0b54d7c1bd2ea7976a57a77c6b5b60205fb2";
+    "f780207089dbc1c90876c44d54e7221b6d79108d";
 pub const PRODUCER_PATH: &str = "/usr/local/bin/spiralcore-mailbox-producer";
 mod process {
     include!("process.rs");

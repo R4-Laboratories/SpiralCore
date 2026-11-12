@@ -1,0 +1,66 @@
+{
+  "platform": "Linux x86-64",
+  "checks": [
+    {
+      "stage": "red",
+      "source": "e601227d3dcaa4c0e30d099c2f430145855f3ca9",
+      "test": "host::host_agent_spawn::tests::ensure_preserves_live_control_without_a_supervisor_pid",
+      "outer_passed": 0,
+      "outer_failed": 1,
+      "subprocess": "same logical test in isolated home",
+      "raw_output_sha256": "285bf1ea7a85994d64fbae14c6af180ee6a05e876bf6fcb79fadc3387a88f95d"
+    },
+    {
+      "stage": "green",
+      "source": "f780207089dbc1c90876c44d54e7221b6d79108d",
+      "test": "host::host_agent_spawn::tests::ensure_preserves_live_control_without_a_supervisor_pid",
+      "outer_passed": 1,
+      "outer_failed": 0,
+      "subprocess": "same logical test in isolated home",
+      "raw_output_sha256": "272e5432847cb2da614df2b21efd43e85eadc5fbd79c286a2b47df23cb3f9df7"
+    }
+  ],
+  "scope": "local Unix control socket and original process cleanup; no object transfer",
+  "failed_native_attempt_followup": {
+    "status": "operator_retired_observed_pidfd_exit",
+    "signed_stop": "unavailable",
+    "original_child_wait": "unavailable",
+    "observed_executables": [
+      {
+        "executable": "mvm-host-agent",
+        "sha256": "ab3cd27029c78c99bdc77b98b7ba921572eaabe5457c8db7fd0e94fe0bcc66f5"
+      },
+      {
+        "executable": "mvm-signer-helper",
+        "sha256": "f917b7a8ad92c635f5f21ec9489d4483ee513064aa9d06ba9b9c6739ab8d2f5f"
+      }
+    ]
+  },
+  "constructor_binding_rust_control": {
+    "platform": "Apple Silicon macOS",
+    "scope": "extracted Rust helper and its regression, actual child using /bin/cat; no Linux product integration",
+    "results": [
+      {
+        "stage": "red",
+        "helper_and_test_sha256": "6c6f488d787da2a2316aa2868635ede060d864108f07b22838835a45c7a7eb92",
+        "exit": 101,
+        "elapsed_ns": 68584708
+      },
+      {
+        "stage": "green",
+        "helper_and_test_sha256": "ad3a1afc46e13c814425d7efeac27850f5c8068bbeab59ed24c35f73a8a47cb1",
+        "exit": 0,
+        "elapsed_ns": 67937917
+      }
+    ]
+  },
+  "linux_witness_constructor": {
+    "mvm_source": "f780207089dbc1c90876c44d54e7221b6d79108d",
+    "witness_implementation_sha256": "ec31e3df4cfc0c3a00d33a8c14b45061f0b3c18138b301489332cd4922fa271e",
+    "command": "cargo test --release --locked --manifest-path installed-witness/Cargo.toml --lib provider_refusal_collects_the_original_before_sending_configuration",
+    "passed": 1,
+    "failed": 0,
+    "raw_output_sha256": "fdddc367979e6ec1756b68167d6d273d9af1de0e3d8c5d3d0eee425c6e0e4cb0",
+    "scope": "actual Linux witness crate, unconfigured child refusal; no VM or data transfer"
+  }
+}

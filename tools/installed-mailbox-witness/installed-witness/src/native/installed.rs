@@ -23,6 +23,40 @@ pub(super) struct InstalledWitness {
     child: Arc<Mutex<Child>>,
 }
 
+/// The installed worker reads all of stdin before starting its runtime or signer.
+/// Bind its original process while this witness still holds the empty config pipe.
+fn bind_unconfigured<T>(
+    original: Child,
+    bind: impl FnOnce(Arc<Mutex<Child>>) -> Result<T>,
+) -> Result<(Arc<Mutex<Child>>, T)> {
+    let child = Arc::new(Mutex::new(original));
+    match bind(child.clone()) {
+        Ok(provider) => Ok((child, provider)),
+        Err(error) => {
+            let rollback = (|| -> std::io::Result<()> {
+                let mut original = child
+                    .lock()
+                    .unwrap_or_else(std::sync::PoisonError::into_inner);
+                if original.try_wait()?.is_none() {
+                    if let Err(kill) = original.kill() {
+                        if original.try_wait()?.is_none() {
+                            return Err(kill);
+                        }
+                    }
+                }
+                original.wait()?;
+                Ok(())
+            })();
+            if let Err(rollback) = rollback {
+                return Err(error.context(format!(
+                    "unconfigured original coordinator collection unconfirmed: {rollback}"
+                )));
+            }
+            Err(error)
+        }
+    }
+}
+
 impl InstalledWitness {
     pub(super) fn start(cfg: &Config, helper: &Path) -> Result<Self> {
         let install = helper
@@ -50,7 +84,7 @@ impl InstalledWitness {
             !socket.try_exists()?,
             "fresh witness tenant socket required"
         );
-        let mut child = Command::new(daemon)
+        let child = Command::new(daemon)
             .arg("--owned-mailbox-v1")
             .env("MVM_HOST_AGENT_WORKER", "1")
             .env("MVM_HOST_AGENT_IDLE_TIMEOUT", "40")
@@ -58,6 +92,12 @@ impl InstalledWitness {
             .stdout(Stdio::null())
             .stderr(Stdio::inherit())
             .spawn()?;
+        let (original, provider) = bind_unconfigured(child, |owner| {
+            HostAgentMailboxProvisioner::from_original_worker(&cfg.home, owner)
+        })?;
+        let mut child = original
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         let startup = (|| -> Result<()> {
             let mut stdin = child
                 .stdin
@@ -89,12 +129,11 @@ impl InstalledWitness {
             }
             return Err(error);
         }
-        let child = Arc::new(Mutex::new(child));
-        let provider = Arc::new(HostAgentMailboxProvisioner::from_original_worker(
-            &cfg.home,
-            child.clone(),
-        )?);
-        Ok(Self { provider, child })
+        drop(child);
+        Ok(Self {
+            provider: Arc::new(provider),
+            child: original,
+        })
     }
 
     pub(super) fn original_owner(&self, cfg: &Config) -> Result<InstalledMailboxClient> {
@@ -170,5 +209,42 @@ impl InstalledWitness {
             }
             thread::sleep(Duration::from_millis(100));
         }
+    }
+}
+
+#[cfg(test)]
+mod binding_tests {
+    use super::*;
+
+    #[test]
+    fn provider_refusal_collects_the_original_before_sending_configuration() {
+        let child = Command::new("/bin/cat")
+            .stdin(Stdio::piped())
+            .stdout(Stdio::null())
+            .spawn()
+            .unwrap();
+        let mut retained = None;
+        let error = bind_unconfigured(child, |child| -> Result<()> {
+            assert!(child.lock().unwrap().stdin.is_some());
+            retained = Some(child);
+            bail!("injected provider binding refusal")
+        })
+        .unwrap_err();
+        let original = retained.unwrap();
+        let mut child = original.lock().unwrap();
+        let observed = child.try_wait().unwrap();
+        if observed.is_none() {
+            child.kill().unwrap();
+            child.wait().unwrap();
+        }
+        assert!(
+            error
+                .to_string()
+                .contains("injected provider binding refusal")
+        );
+        assert!(
+            observed.is_some(),
+            "constructor returned before collecting the original child"
+        );
     }
 }

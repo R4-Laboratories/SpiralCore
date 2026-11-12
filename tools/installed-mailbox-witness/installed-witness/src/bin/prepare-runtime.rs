@@ -6,6 +6,13 @@ fn main() -> anyhow::Result<()> {
     use std::{fs, io::Write, os::unix::fs::OpenOptionsExt, path::PathBuf, time::Instant};
 
     let args: Vec<_> = std::env::args_os().skip(1).collect();
+    if args.len() == 2 && args[0] == "--provision-only" {
+        let home = PathBuf::from(&args[1]);
+        ensure!(!home.try_exists()?, "fresh private home required");
+        mvm_vmm::host::host_agent_installation::create_new_home_and_provision(&home, "local")?
+            .verify()?;
+        return Ok(());
+    }
     ensure!(
         args.len() == 3,
         "usage: spiralcore-mvm-prepare-runtime SOURCE_ROOT PRIVATE_MVM_HOME REPORT_JSON"

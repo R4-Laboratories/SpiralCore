@@ -15,7 +15,7 @@ scratch=$(mktemp -d /var/tmp/sc.XXXXXXXX)
 cp -R tools/installed-mailbox-witness/. "$scratch/"
 cd "$scratch"
 sha256sum --check inputs.sha256
-revision=a23e0b54d7c1bd2ea7976a57a77c6b5b60205fb2
+revision=f780207089dbc1c90876c44d54e7221b6d79108d
 git init -q source
 git -C source fetch --depth=1 https://github.com/Casey-allard/mvm.git "$revision"
 git -C source checkout -q --detach FETCH_HEAD
@@ -39,8 +39,8 @@ cargo build --release --locked --manifest-path preparer/Cargo.toml
 cargo build --release --locked --manifest-path installed-witness/Cargo.toml \
     --bin spiralcore-mvm-canonical-witness
 cargo build --release --locked --manifest-path source/Cargo.toml -p mvm-hostd \
-    --bin mvm-host-agent --bin mvm-mailbox --bin mvm-signer-helper
-for service in mvm-host-agent mvm-mailbox mvm-signer-helper; do
+    --bin mvm-host-agent --bin mvm-mailbox --bin mvm-signer-helper --bin mvm-network-endpoint
+for service in mvm-host-agent mvm-mailbox mvm-signer-helper mvm-network-endpoint; do
     install -m 500 "$CARGO_TARGET_DIR/release/$service" "install/$service"
 done
 
@@ -63,6 +63,7 @@ install -m 600 "$WORKLOAD_KERNEL" "$kernel_dir/vmlinux"
 sha256sum "$kernel_dir/vmlinux" | cut -d ' ' -f 1 > "$kernel_dir/vmlinux.sha256"
 
 export MVM_MAILBOX_PATH="$scratch/install/mvm-mailbox"
+export MVM_FC_IDLE_POOL=0 MVM_SUBSTITUTION_ENDPOINT_PATH="$scratch/install/mvm-network-endpoint"
 export MVM_RUNTIME_OVERLAY_ACQUIRE_MODE=build MVM_RUNTIME_OVERLAY_SOURCE_ROOT="$scratch/source"
 : "${MVM_FIRECRACKER_BIN:?set the absolute path to the verified Firecracker binary}"
 export MVM_FIRECRACKER_BIN
@@ -74,7 +75,7 @@ jq -e '.status == "passed" and .exact_readback == true and
        .received_bytes == 1024 and .expected_sha256 == .received_sha256' results/native.json
 ```
 
-The mailbox ID above is a synthetic fixture. Each invocation needs a fresh VM namespace and an unused report path outside the private MVM home. On failure, preserve the report and inspect the original process and service state before disposing of the test directory. In this revision a failure attaching the SDK provider after daemon startup, or a timeout waiting for idle retirement, can leave the daemon alive. Only count retirement when the runner records it.
+The mailbox ID above is a synthetic fixture. Each invocation needs a fresh VM namespace and an unused report path outside the private MVM home. On failure, preserve the report and inspect the original process and service state before disposing of the test directory. The [first installed run's source](https://github.com/R4-Laboratories/SpiralCore/tree/4980cf8e3fa8ffbbcaa3f8596d54fd3276331bf9/tools/installed-mailbox-witness) attached its SDK provider after starting the daemon. The current runner retains the original child before releasing its configuration and collects it if provider binding fails. A timeout waiting for idle retirement can still leave the daemon alive. Only count retirement when the runner records it.
 
 ## Read the measurements
 
