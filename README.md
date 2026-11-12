@@ -36,6 +36,8 @@ of orchestrator CPU across 104.402 s including retention and idle shutdown.
 The two guests each addressed their own mailbox. Direct A→B Cast and cross-host
 delivery are the next qualification steps. [Paired native measurements](docs/network/evidence/2026-11-12-paired-mailbox/firecracker.md) · [Single-guest measurements](docs/network/evidence/2026-11-11-retained-recovery/installed-helper/README.md#measured-linux-guest-mailbox-stream).
 
+**Ari’s trusted-host journal is the target for durable delivery.** The Rust guest adapter stages a SpiralCore frame in the admitted MVM outbox and receives a leased frame through the guest reader socket. The application decodes the frame and acknowledges the lease after processing. A Linux process test under MVM’s Standard mailbox policy recovered a 257-byte binary payload exactly. The installed two-guest addressed test reached both guests and retired them automatically after their Calls timed out. B received no application bytes in that test. [Guest binding and wire measurements](docs/network/evidence/2026-11-12-paired-mailbox/durable-guest-binding/README.md) · [Two-guest deadline result](docs/network/evidence/2026-11-12-paired-mailbox/addressed-native-launch/paired-deadline-native.md) · [Remaining A→B acceptance](https://github.com/R4-Laboratories/SpiralCore/issues/168).
+
 The [installed-startup report](docs/network/evidence/2026-11-11-startup-publication/README.md)
 records actual Linux worker/signing-helper checks: a fresh installation starts
 and collects its original signer; a previously used installation with a missing
@@ -244,7 +246,7 @@ sequenceDiagram
 Call admission, object publication, application Reply and Reply acknowledgment
 are separate facts. The normal guest path remains strict; explicit reconciliation
 reuses the original Call identity and deadline rather than silently retrying.
-Port 5257 is an experimental mailbox binding; existing FlowMux 5253 is separate.
+MVM assigns **vsock port 5257 to the mailbox**. FlowMux uses its own service on **5253**. For the trusted-host local-durable path, the destination helper commits the sealed envelope to its journal before signing a V2 receipt. The reader’s later ACK identifies the delivery lease. A forwarding relay can carry the envelope and receipt without holding the journal’s signing key. [Upstream port allocation](https://github.com/tinylabscom/mvm/blob/8fd62a0d4958fad1d0e61114b35a7576a2e7a10e/crates/mvm-contract/src/protocol/mailbox.rs#L15) · [Journal and endpoint bindings](docs/network/evidence/2026-11-12-paired-mailbox/addressed-native-launch/ari-journal-binding.md).
 [Native witness](crates/spiralcore-mvm-live/README.md) ·
 [Reconciliation](docs/network/session-reconciliation-results-2026-11-03.md)
 
