@@ -19,6 +19,16 @@ The 32.65 ms covers fixture setup, both client requests, process exit and test c
 
 ## Reproduce
 
+The complete repaired source is available as [a single MVM fork commit](https://github.com/Casey-allard/mvm/tree/fc7c4ab41dc8900c8f736ef5c105f814feb4e3f4). All 4,485 regular Git files match the Linux run's SHA-256 manifest. The additional 11 entries in the run manifest are AppleDouble file metadata. The executable measurements above came from the recorded Linux run. To run the repaired cases from a new checkout:
+
+```sh
+git clone --single-branch --branch codex/spiralcore-installed-mailbox-qualification https://github.com/Casey-allard/mvm.git
+cd mvm
+git checkout --detach fc7c4ab41dc8900c8f736ef5c105f814feb4e3f4
+```
+
+Run the four Cargo commands below against that checkout with the recorded release profile. To reproduce the earlier failures and apply each fix separately, use the patch sequence below.
+
 Start with the [original-row source](../original-row/README.md) and its repair applied, using its MVM 0.27.0 composition. Set `REPORT` to this report directory. Apply the first patch in the MVM source tree and run the scoped tests. Apply the worker-fence patch and repeat the same commands. The third failure before the repair is sensitive to process scheduling. The two coordinator tests exercise the lock and stale idle conditions directly. [Per-file and patch hashes](source.json).
 
 ```sh
