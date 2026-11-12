@@ -1,6 +1,6 @@
 # Networking delivery status
 
-Updated **2026-11-12**. The Linux installed-lifecycle and macOS directional-byte results are on SpiralCore main at [e9ebf6d0](https://github.com/R4-Laboratories/SpiralCore/commit/e9ebf6d0e41edffc7c0000aacb3c0f77f5888c2e).
+Updated **2026-11-12**. One installed Linux/Firecracker guest delivered 1,024 exact bytes with 1,071 bidirectional mailbox stream bytes at the original helper. [Measured native run](evidence/2026-11-11-retained-recovery/installed-helper/README.md#measured-linux-guest-mailbox-stream).
 This page separates accepted components, measured experiments and unmerged work.
 The [README](../../README.md) is the architecture/results entry point;
 [issue #42](https://github.com/R4-Laboratories/SpiralCore/issues/42) remains the

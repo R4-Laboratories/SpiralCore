@@ -13,7 +13,7 @@ use std::{
 };
 
 pub const MVM_SOURCE: &str =
-    "a7e8e5f9f17e6f5bfb8e33da24962abfe38f43ef";
+    "91fea4e72352f8fa676635ad38b34213cd3bbcb6";
 pub const PRODUCER_PATH: &str = "/usr/local/bin/spiralcore-mailbox-producer";
 mod process {
     include!("process.rs");
@@ -47,6 +47,8 @@ pub struct Report {
     pub wire_bytes: &'static str,
     pub guest_mailbox_stream_scope: &'static str,
     pub guest_mailbox_stream_counts: Option<mvm_hostd::mailbox_service::guest_io::GuestStreamCounts>,
+    pub verified_helper_receipt_wall_ns: Option<u128>,
+    pub host_orchestrator_cpu_through_receipt_ns: Option<u128>,
     pub processes: Vec<ProcessObservation>,
     pub installed_helper: Option<String>,
     pub installed_daemon: Option<String>,
@@ -176,6 +178,8 @@ pub async fn run(config: &Config) -> Result<Report> {
         wire_bytes: "unavailable; no virtio, NIC or WAN byte counters",
         guest_mailbox_stream_scope: mvm_hostd::mailbox_service::guest_io::SCOPE,
         guest_mailbox_stream_counts: None,
+        verified_helper_receipt_wall_ns: None,
+        host_orchestrator_cpu_through_receipt_ns: None,
         processes: Vec::new(),
         installed_helper: None,
         installed_daemon: None,
@@ -353,6 +357,28 @@ pub async fn run(config: &Config) -> Result<Report> {
             )),
         }
     }
+    // Only the original helper received the writer for this channel. Its signed
+    // exit settles the measurement even when the tenant still admits work.
+    if report.installed_helper.is_some() {
+        if let Some(owner) = retained_client.as_ref().and_then(|client| client.owner()) {
+            let counts = mvm_hostd::mailbox_service::guest_io::private_channel::take_reader(
+                &installed.report_socket, owner,
+            ).and_then(|reader| mvm_hostd::mailbox_service::guest_io::receive_original(&reader, owner));
+            match counts {
+                Ok(counts) if report.exact_readback && counts.guest_to_host_read_bytes < body.len() as u64 => {
+                    errors.push("guest stream receipt below verified application length".into());
+                }
+                Ok(counts) => {
+                    report.guest_mailbox_stream_counts = Some(counts);
+                    report.verified_helper_receipt_wall_ns = Some(started.elapsed().as_nanos());
+                    report.host_orchestrator_cpu_through_receipt_ns = Some(cpu.elapsed().as_nanos());
+                }
+                Err(error) => errors.push(format!("guest stream receipt unavailable: {error}")),
+            }
+        } else {
+            errors.push("guest stream receipt lacks original owner".into());
+        }
+    }
     match installed.finish() {
         Ok(status) => {
             report.installed_daemon = Some(format!("original Child::wait returned {status}"))
@@ -360,19 +386,6 @@ pub async fn run(config: &Config) -> Result<Report> {
         Err(error) => errors.push(format!(
             "installed coordinator shutdown unresolved: {error:#}"
         )),
-    }
-    if report.installed_helper.is_some() && report.installed_daemon.is_some() {
-        if let Some(owner) = retained_client.as_ref().and_then(|client| client.owner()) {
-            match mvm_hostd::mailbox_service::guest_io::receive_original(&installed.report_socket, owner) {
-                Ok(counts) if report.exact_readback && counts.guest_to_host_read_bytes < body.len() as u64 => {
-                    errors.push("guest stream receipt below verified application length".into());
-                }
-                Ok(counts) => report.guest_mailbox_stream_counts = Some(counts),
-                Err(error) => errors.push(format!("guest stream receipt unavailable: {error}")),
-            }
-        } else {
-            errors.push("guest stream receipt lacks original owner".into());
-        }
     }
     report.lifecycle_wall_ns = started.elapsed().as_nanos();
     report.host_orchestrator_cpu_ns = cpu.elapsed().as_nanos();

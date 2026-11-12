@@ -148,3 +148,16 @@ Send through verified readback took 3.441 ms, and the test lifecycle consumed 33
 The metered Linux helper again delivered 1,024 exact application bytes. Setup took 843.897 ms, the two-poll receive took 103.133 ms, and the host orchestrator consumed 426.608 ms CPU over the lifecycle. Signed Stop collected the helper with code 0. The tenant coordinator was still active when the witness reached its 130-second observation deadline. The witness deferred reading its private counter report until coordinator exit and consequently published no directional byte totals. The native metering result is **unavailable** for this attempt. The coordinator subsequently drained outside the witness.
 
 The host and guest workload producer were built against MVM `a7e8e5f9`. MVM verified and reused the canonical guest runtime archive produced by `f7802070`. [Run record, source fingerprints and executable hashes](linux-028-meter-attempt-01.json).
+
+## Measured Linux guest mailbox stream
+
+One x86-64 Firecracker guest ran with 1 vCPU, 256 MiB and no NIC. The host read all 1,024 application bytes from the canonical installed mailbox and verified them against the original. On port 5257 the original helper read **1,060 bytes** from the guest and accepted **11 bytes** for writing back to it. This gives **1,071 bidirectional stream bytes**, including framing. There were two dials, one connection with no data, and zero I/O errors. The host accepted the 11-byte reply locally. The guest's consumption of that reply was unmeasured.
+
+| Measured interval | Wall time | CPU accounting |
+|---|---:|---|
+| Native setup | 932.338 ms | Included in the orchestrator interval below |
+| Host receive through verified readback, including two polls | 103.066 ms | Guest workload CPU unavailable |
+| Witness start through signed helper collection and byte receipt | 1.217 s | 431.567 ms host orchestrator CPU |
+| Entire lifecycle through original coordinator exit | 110.464 s | 439.932 ms host orchestrator CPU |
+
+The original helper exited with code 0, the coordinator returned its idle-drain code 42, and the tenant reached Drained. This one-message run used the plain mailbox. Virtio framing, WAN traffic, send-only time and comparative codec performance require separate measurements. The earlier counter attempt above retains its unavailable result. [Run record and build identities](linux-firecracker-private-helper-receipt.json) · [Executed witness](https://github.com/R4-Laboratories/SpiralCore/tree/61290d3f7857cf6f323e7efe36e22a03e2626e63/tools/installed-mailbox-witness) · [Measured MVM source](https://github.com/Casey-allard/mvm/commit/91fea4e72352f8fa676635ad38b34213cd3bbcb6).

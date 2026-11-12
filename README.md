@@ -27,12 +27,13 @@ installed MVM networking contribution is still in development. The
 the delivery authority; a component merge or green platform test is an intermediate
 checkpoint, not completion of that program.
 
-On Linux x86-64, one Firecracker guest sent a 1,024-byte message through the installed
-MVM mailbox. The host verified every byte in 104.049 ms of receive time including
-two polls. Signed Stop collected the helper, and the tenant reached `Drained` with
-zero pending operations. The full lifecycle took 120.494 s including receipt retention
-and idle shutdown. This single-host measurement covers the plain mailbox path.
-[Installed mailbox results and timing breakdown](docs/network/evidence/2026-11-11-retained-recovery/installed-helper/README.md#complete-linux-guest-to-host-mailbox-lifecycle).
+On Linux x86-64, one Firecracker guest with no NIC sent a 1,024-byte message
+through the installed MVM mailbox. The host verified every byte. On vsock port
+5257, the helper read 1,060 bytes from the guest and wrote 11 back. Host receive
+took 103.066 ms including two polls. From launch through verified helper
+collection took 1.217 s and 431.567 ms of host orchestrator CPU. The tenant
+drained after 110.464 s including receipt retention and idle shutdown.
+[Native stream counts, timing and source revisions](docs/network/evidence/2026-11-11-retained-recovery/installed-helper/README.md#measured-linux-guest-mailbox-stream).
 
 The [installed-startup report](docs/network/evidence/2026-11-11-startup-publication/README.md)
 records actual Linux worker/signing-helper checks: a fresh installation starts

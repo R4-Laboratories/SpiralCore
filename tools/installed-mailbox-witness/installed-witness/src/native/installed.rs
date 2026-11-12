@@ -22,7 +22,9 @@ const IDLE_HOLD: Duration = Duration::from_secs(40);
 // mvm-hostd keeps a collected worker queryable for 60s. Only after that
 // retention does the coordinator's ordinary no-registration idle hold begin.
 const COLLECTED_WORKER_RETENTION: Duration = Duration::from_secs(60);
-const DRAIN_AND_OBSERVE: Duration = Duration::from_secs(30);
+// The 130s observation timed out when rejected session watcher passes reset
+// zero_since. Permit two extra idle windows, separately from helper receipt.
+const DRAIN_AND_OBSERVE: Duration = Duration::from_secs(110);
 
 pub(super) struct InstalledWitness {
     pub(super) provider: Arc<HostAgentMailboxProvisioner>,
@@ -93,7 +95,10 @@ impl InstalledWitness {
         );
         let (report_socket, transmit) = std::os::unix::net::UnixDatagram::pair()?;
         let child = Command::new(daemon)
-            .env(mvm_hostd::mailbox_service::guest_io::ENABLE_ENV, "1")
+            .env(
+                mvm_hostd::mailbox_service::guest_io::ENABLE_ENV,
+                mvm_hostd::mailbox_service::guest_io::private_channel::ISOLATED_HELPER_MODE,
+            )
             .arg("--owned-mailbox-v1")
             .env("MVM_HOST_AGENT_WORKER", "1")
             .env(
