@@ -121,3 +121,18 @@ One earlier attempt with the same source was rejected before guest boot because 
 ## Retrying the final owner-file operation after 60 seconds
 
 On macOS, the same surviving SDK controller completed the final signed owner-file retirement after the helper's receipt expired. It already had confirmation for helper and companion-service retirement and had successfully completed local backend cleanup. The retry finished the file operation without reissuing Stop, reacquiring a worker or repeating destructive VM cleanup. The opt-in test waited 61 seconds; it took 61.155 seconds wall and 68.16 ms process CPU. The previous implementation failed this case when it tried to reconnect to the retired listener. Losing the original controller, or lacking confirmation that destructive cleanup succeeded, remains a separate recovery condition. [Combined implementation](https://github.com/Casey-allard/mvm/commit/ef5894e146398572fe00a12ad01a938fc758ac01) · [Retained failure and 30 distinct passing checks](macos-028-terminal-retirement.json).
+
+## Complete Linux guest-to-host mailbox lifecycle
+
+On the next run the witness held the original coordinator handle through MVM's 60-second worker-receipt retention window and the subsequent 40-second idle hold. The witness allowed 30 additional seconds for draining and observation. MVM's production timeouts stayed the same. All lifecycle checks passed. The guest and original mailbox helper exited, the coordinator collected its signer, the witness collected the original coordinator with its expected idle exit code 42, and the tenant reached `Drained` with zero pending operations.
+
+| One guest, Linux x86-64, Firecracker 1.17.0 | Measured |
+| --- | ---: |
+| Guest application bytes / bytewise-verified host bytes | 1,024 / 1,024 |
+| Setup through admitted launch | 707.430 ms |
+| Receive including two application polls | 104.049 ms |
+| Host orchestrator CPU across the lifecycle | 440.364 ms |
+| Full lifecycle including receipt retention and idle shutdown | 120.494 s |
+| Maximum RSS reported by GNU time | 58,344 KiB |
+
+The measured guest and host use the canonical mailbox service on vsock port 5257. This test exercises guest to host on one machine. It has no guest CPU counter, transport byte totals, send-only timer, or zstd comparison. An authenticated telemetry session was outside the observed result. [Measurements, exact bytes and final tenant state](linux-028-installed-complete-lifecycle.json) · [Reproduction instructions](../../../../../tools/installed-mailbox-witness/README.md).

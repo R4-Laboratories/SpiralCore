@@ -28,10 +28,11 @@ the delivery authority; a component merge or green platform test is an intermedi
 checkpoint, not completion of that program.
 
 On Linux x86-64, one Firecracker guest sent a 1,024-byte message through the installed
-MVM mailbox. The host verified every byte in 106.467 ms of receive time including
-two polls. Signed Stop and VM cleanup succeeded. The tenant coordinator exceeded
-the witness deadline. The run used a local mailbox and measured no WAN or codec speedup.
-[Installed mailbox results and timing breakdown](docs/network/evidence/2026-11-11-retained-recovery/installed-helper/README.md#installed-guest-delivered-1024-exact-bytes).
+MVM mailbox. The host verified every byte in 104.049 ms of receive time including
+two polls. Signed Stop collected the helper, and the tenant reached `Drained` with
+zero pending operations. The full lifecycle took 120.494 s including receipt retention
+and idle shutdown. This single-host measurement covers the plain mailbox path.
+[Installed mailbox results and timing breakdown](docs/network/evidence/2026-11-11-retained-recovery/installed-helper/README.md#complete-linux-guest-to-host-mailbox-lifecycle).
 
 The [installed-startup report](docs/network/evidence/2026-11-11-startup-publication/README.md)
 records actual Linux worker/signing-helper checks: a fresh installation starts
