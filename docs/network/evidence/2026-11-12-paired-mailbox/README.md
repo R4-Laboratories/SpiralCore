@@ -28,7 +28,7 @@ Independent review found a fidelity defect in the six-test Linux revision. After
 64 admissions, its worker reported replay exhaustion using a general mailbox
 refusal. The legacy guest forwarder removes its original file for that refusal.
 Draining the plaintext queue leaves the replay budget exhausted, so the next
-item can be lost. Hold this revision from deployment. The composed regression
+item can be lost. This original revision remains unsuitable for deployment. The corrected revision and regression outcomes follow. The composed regression
 must deliver the first 64 items and check that the 65th original remains
 byte-for-byte available after the refused attempt. The timers above describe
 the earlier component tests.
@@ -37,3 +37,15 @@ The legacy guest writer also permits a larger item than this opt-in host
 profile admits. The 8,160/8,161-byte boundary requires an explicit test for
 pre-publication refusal or retention of an already spooled original. Neither
 component timing qualifies general guest traffic above the signed bound.
+
+## Guest outbox custody after the fix
+
+The production host service and guest forwarder were exercised together over Linux socketpairs. On the original source all three tests found a missing guest file. On the corrected source all three passed. Each retry compared the surviving file with its original bytes. [Failing revision](https://github.com/Casey-allard/mvm/commit/048bb293a8b26fd22dae29214f88e3af68306c8e) · [Corrected MVM revision](https://github.com/Casey-allard/mvm/commit/628b66d39e53ce1b4429a07197bc2d50e2b084ed).
+
+| Test | Result on corrected source | Test wall time | Test process CPU |
+|---|---|---:|---:|
+| Lifetime replay budget | Delivered 64 items. The 65th remained byte-exact after two refused attempts. | 39.099 ms | 38.666 ms |
+| Frame-body limit | Delivered 8,160 application bytes. The 8,161-byte original remained after two refused attempts. | 3.848 ms | 3.810 ms |
+| Ambiguous reply or unlink failure | Retained the original after EOF, partial reply, timeout, write failure and oversized reply. A failed unlink after acceptance surfaced to the caller. | 2.416 ms | 2.349 ms |
+
+The reply reader limits verdict data to 4,096 bytes plus a one-byte oversize check. An explicitly decoded terminal refusal retains its original semantics. Legacy replay after a lost acknowledgment can deliver a message more than once. All timings cover a complete Linux test process. Byte savings, guest execution time and WAN throughput require different trials. [Full recorded results](custody/results.json) · [Evidence checksums](custody/evidence.sha256).
