@@ -151,11 +151,17 @@ pub(super) fn submit_before(
     }
 }
 
+#[cfg(feature = "object-ack-loss-qualification")]
+#[path = "object_ack_loss.rs"]
+pub(super) mod ack_loss;
+
 /// The original mailbox retains durable intent. Keep the last accepted Reply
 /// lease if its guest ACK is ambiguous, so the same owner can retry that ACK.
 #[derive(Default)]
 pub struct GuestObjectSource {
     unsettled: Option<PendingReply<ObjectDelivery>>,
+    #[cfg(feature = "object-ack-loss-qualification")]
+    loss: ack_loss::WithholdOnce,
 }
 
 struct PendingReply<L> {
@@ -204,7 +210,18 @@ impl GuestObjectSource {
             "object Reply settlement deadline expired"
         );
         settle_original(&mut self.unsettled, pair, transfer, seq, |delivery| {
-            delivery.acknowledge_before(deadline, traffic)
+            #[cfg(feature = "object-ack-loss-qualification")]
+            let before = (traffic.written, traffic.read);
+            delivery.acknowledge_before(deadline, traffic)?;
+            #[cfg(feature = "object-ack-loss-qualification")]
+            self.loss.after_original_ack(
+                pair,
+                transfer,
+                seq,
+                delivery,
+                [traffic.written - before.0, traffic.read - before.1],
+            )?;
+            Ok(())
         })
     }
 
