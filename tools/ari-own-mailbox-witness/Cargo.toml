@@ -4,6 +4,8 @@ version = "0.1.0"
 edition = "2024"
 publish = false
 [workspace]
+[features]
+paired-journal-qualification = []
 [dependencies]
 libc = "=0.2.186"
 anyhow = "=1.0.103"
@@ -39,3 +41,4 @@ path = "bin/launch.rs"
 [[bin]]
 name = "paired-journal"
 path = "bin/paired/main.rs"
+required-features = ["paired-journal-qualification"]

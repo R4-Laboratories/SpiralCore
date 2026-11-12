@@ -1,0 +1,177 @@
+{
+  "driver_process_cpu_ns": 5169023019,
+  "original_5257_helper_streams_a_b": [
+    {
+      "capture": "prefix_only",
+      "completed_exchanges": 2,
+      "guest_to_host_read_bytes": 381,
+      "host_to_guest_write_accepted_bytes": 1195
+    },
+    {
+      "capture": "prefix_only",
+      "completed_exchanges": 3,
+      "guest_to_host_read_bytes": 2622,
+      "host_to_guest_write_accepted_bytes": 8189
+    }
+  ],
+  "original_exits": null,
+  "result": {
+    "guest_a": {
+      "cpu_ns": 211465,
+      "frame_bytes": 313,
+      "probe_from_agent": 208,
+      "probe_to_agent": 351,
+      "role": "staged",
+      "wall_ns": 614303
+    },
+    "guest_a_observed_receipt": null,
+    "guest_b": {
+      "ack_from_agent": 2268,
+      "ack_to_agent": 1988,
+      "cpu_ns": 601859,
+      "frame_bytes": 313,
+      "receive_from_agent": 2496,
+      "receive_to_agent": 54,
+      "role": "received_and_acknowledged",
+      "wall_ns": 935310775
+    },
+    "receipt_outcome": "AcceptedLocalDurable",
+    "sdk_call_application_io": {
+      "destination_reply_with_readback": 792,
+      "destination_request": 81,
+      "source_reply": 192,
+      "source_request": 800
+    },
+    "sealed_a_to_b_bytes": 5810,
+    "setup_ns": 4678693259,
+    "signed_b_to_a_bytes": 1195,
+    "through_observed_v2_ns": 117818712,
+    "through_verified_destination_call_ns": 1103198980,
+    "verified_body_bytes": 257,
+    "wan_bytes": null
+  },
+  "teardown_error": "paired retirement needs review: sc-journal-a: assisted, delayed, or nonzero original exit, sc-journal-b: assisted, delayed, or nonzero original exit",
+  "transfer_error": null,
+  "whole_wall_ns": 6567857208,
+  "sample": {
+    "date": "2026-11-12",
+    "platform": "Linux x86_64 Firecracker KVM",
+    "guest_count": 2,
+    "vcpu_per_guest": 1,
+    "ram_mib_per_guest": 256,
+    "link": "same host, no guest NIC",
+    "paired_objects": 1,
+    "body_sha256": "54acfbfedc4d8da40f76f275e1a98f10af8ef1fb9fb39e5a67a00aabcbe6597c",
+    "frame_sha256": "ff26a66df5b1d9de994e60824757686d2af8eb4433b91e74a2f24b279f600044",
+    "whole_driver_time_scope": "setup through SDK confirmed stop and collection",
+    "helper_cpu_ns": null,
+    "zstd_baseline": null
+  },
+  "source": {
+    "driver_before_packaging": "83fbc1dd9bcc13ecb24c44733f9fc96a2c86038a",
+    "host": "7a1aa5bc5f92e7530e3939d0b3917ab9491cd207",
+    "guest": "93b3b65ae72a4746a54a21c7c158d5453cceb8f5"
+  },
+  "raw_artifact_sha256": {
+    "record": {
+      "paired-journal": "226faab38c25fe32b5e47d9d4b0fdb46028953f707b17603ca1e27fcba96c7d5",
+      "image": "fb1771657693dc5d6ffd74ff353239669d327a1d20d018ed2b5fba41e7b26d3a",
+      "mvm-mailbox": "93b24659579df46b7934e2fa676a6bd3c50ed01df983affcb29f520f882fb738",
+      "mvm-host-agent": "15745c3583cd042c23740bfa5e178efc49962a0f27d377b0bd03e254f08dd80c",
+      "mvm-network-endpoint": "a1b0dfc2678ca09f83e1a01543ae548bf6e0880fd4791f407b230c3bfaad95c0",
+      "mvm-signer-helper": "b335e055b30e32171729f93c97b9bdc9a5e24c70c605f84f3fdd907bc78c2491",
+      "mvmctl": "65076103ba2b9a2b3a8c8c848baef510092c41924123c6a60e3809894257a49b",
+      "spiralcore-durable-source": "79b2cb0883074e947dd50a52ac6cab55894e850b8cec39edcbc77b8e52ef57d4",
+      "spiralcore-durable-destination": "257709b3f114899c9bd30d5503b18d7ca5184efb6033d10eb321ea5c6a74c23b",
+      "home/paired-result.json": "c1750caafb689ebd2ae96f6553bc4ed6dd95c0de414e647e75667ce1ab7c0c54",
+      "home/paired-retirement.jsonl": "95f583886ead5533253f8f9916177c7638ff9aae1247bb0f5c524756af75b557",
+      "home/paired-transfer-before-stop.json": "754f28652ef098973568edba1a8c07e2959f2eeb83e46dd5809d9122b175b20a",
+      "home/original-sc-journal-a.counts": "5b587ae9aea049223d684adf315b8723cc33e892bc3ae9b9a9688f66623c3ce8",
+      "home/original-sc-journal-b.counts": "a0129a165dd69defd0dd45107d08078ae0d49ee576c8d4c80c5abaf098f14740",
+      "evidence/native.time": "650a62f5dd4d8003dd15a718d0fda851e5e89860b3e25ed481b4b2bcb1dad84f",
+      "evidence/native.log": "b50b164ed415753abe38f6af414f116e40f1b6289ab1c8af75b10b4c97cbf51e",
+      "evidence/native.stdout": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "evidence/native-checks.log": "2d4a2bcde5491be73dd311a75633faacadd3fb732ed14e037469554869d74187",
+      "evidence/audit.log": "5b7cb24bc38132f35843e640eed08542a0c2870d9531d5568ac4fe243688e1d1",
+      "evidence/guest-role-tests.log": "38410c2dfd0602b3568758076b25edebab2766fbaa4f6e368ac804b951a263b5",
+      "evidence/runtime.json": "97b5ece13c7d862af7896b194e5e4788837af494d8476e6539958577e65444f2"
+    },
+    "host": {
+      "paired-journal": "226faab38c25fe32b5e47d9d4b0fdb46028953f707b17603ca1e27fcba96c7d5",
+      "image": "fb1771657693dc5d6ffd74ff353239669d327a1d20d018ed2b5fba41e7b26d3a",
+      "mvm-mailbox": "93b24659579df46b7934e2fa676a6bd3c50ed01df983affcb29f520f882fb738",
+      "mvm-host-agent": "15745c3583cd042c23740bfa5e178efc49962a0f27d377b0bd03e254f08dd80c",
+      "mvm-network-endpoint": "a1b0dfc2678ca09f83e1a01543ae548bf6e0880fd4791f407b230c3bfaad95c0",
+      "mvm-signer-helper": "b335e055b30e32171729f93c97b9bdc9a5e24c70c605f84f3fdd907bc78c2491",
+      "mvmctl": "65076103ba2b9a2b3a8c8c848baef510092c41924123c6a60e3809894257a49b"
+    },
+    "guest_workers": {
+      "spiralcore-durable-source": "79b2cb0883074e947dd50a52ac6cab55894e850b8cec39edcbc77b8e52ef57d4",
+      "spiralcore-durable-destination": "257709b3f114899c9bd30d5503b18d7ca5184efb6033d10eb321ea5c6a74c23b"
+    },
+    "image_a": {
+      "rootfs.ext4": "4f8d53827bfcb38e9d0575123ab0243bd7ecf18ea2b8ea3202eafa47ee285bbb",
+      "rootfs.verity": "f2e306f7fc980823bc19700752ac15d0d17b12a06fa285638f1344fc18b759b9",
+      "rootfs.roothash": "8e56409330a7d8d9448b4ec787a9da088515ec5a3cea5666f6a8b51048f9c3f0",
+      "mvm-meta.json": "1e2ebf272b1b45cd2a9c4f1ea32b847c3824a8208dddeb07fb8d456c14be0a68"
+    },
+    "image_b": {
+      "rootfs.ext4": "0f238e60883c316d057289b74305a6b4da6b77094da6a532645a1666c98cf7ca",
+      "rootfs.verity": "0231443c9b0151092d82d0ce4e295dbf8896e1c4d35b33be8c84ba26f4f3281e",
+      "rootfs.roothash": "c45c45e0014c5d571576394b7ca89053c46f116feafc9a6baf7e72a5a322e3c6",
+      "mvm-meta.json": "e279d13ea18d559f6c5f572e248f212c7856c678be9d7adcb5320a4c22a07ddf"
+    },
+    "build_inputs": {
+      "host/witness/bin/paired/main.rs": "9b8361b593876780ad6e7a7c3df9af4d08c2e5224ba5aef2454c958a76b850ba",
+      "host/witness/bin/paired/enrollment.rs": "076034a85fa4d1f2258dfd6ac10e514cdd925be558a8f7effc59504d5c1222a6",
+      "host/witness/bin/paired/workload.rs": "524ef2a9706ae5cf1c2a23b9aa03c1061f8ca988143fa8f03f34b0bb5b42b1bf",
+      "host/witness/bin/paired/meter.rs": "933050be14d4fdf0e07ab7ad4d10de9327e1155610c5cf5c20a4ba9ec602a3f1",
+      "paired-guest/src/lib.rs": "457c875a8487c7acfac2e708affe202838178ed174517413e3c058aa10ef9ab1"
+    }
+  },
+  "guest_runtime": {
+    "arch": "x86_64",
+    "guest_archive_sha256": "fa939b0899e2a3f60ef7a6697f6bb24ae080c5ea38f60df991c10b8ba1b193e1",
+    "host_retention_ceiling_ms": 30000,
+    "initramfs_hash_record_sha256": "61933f8c8c8770c4a632853ba8aab85d9e0636e92895e9a63a92a8dee80afe63",
+    "initramfs_sha256": "854cf584a283ec04ca3e93ea955711cbed79aab0074f91ef1135f996ea2cb992",
+    "mvm_version": "0.28.0-rc.1",
+    "overlay_root_hash": "b5b0e686c0e711842d6139a2e1c8aecda19661cb820ce64e733c91961b70b33b",
+    "overlay_sha256": "2bce003dfaf6b2b138e8f6ad9f0808c2874e27cae9305f2a91d0a976ccc115b3",
+    "overlay_verity_sha256": "2c67e255e47a2604016ef248667d620768f0e09083942093ae8deb62ef29949a",
+    "sdk_sidecars": 2
+  },
+  "guest_agent_elf_sha256": "21390409134dc4354ac28e1d3c1c23598d40b7c57b250dcabf7ee45b5b21da39",
+  "original_child_collection": [
+    {
+      "assisted": true,
+      "exit_code": null,
+      "first_stop_attempt": true,
+      "name": "sc-journal-a",
+      "success": false
+    },
+    {
+      "assisted": true,
+      "exit_code": null,
+      "first_stop_attempt": true,
+      "name": "sc-journal-b",
+      "success": false
+    }
+  ],
+  "external_time": {
+    "wall_s": 6.63,
+    "user_s": 5.2,
+    "system_s": 0.13,
+    "max_rss_kib": 81936,
+    "driver_exit_status": 1
+  },
+  "audit": {
+    "verified_entries": 17,
+    "sessions": 2,
+    "seals": 2
+  },
+  "poststop": {
+    "firecracker_processes": 0,
+    "mailbox_helper_processes": 0
+  }
+}

@@ -1,17 +1,8 @@
 # Networking delivery status
 
-Updated **2026-11-12**. Two installed Linux/Firecracker guests served under one
-coordinator. Both delivered distinct byte-exact messages to the host under their
-own signed mailboxes, and guest B remained usable after guest A retired.
-[Native run and measured scope](evidence/2026-11-12-paired-mailbox/firecracker.md).
+Updated **2026-11-12**. Two independently admitted Firecracker guests on a Linux host exchanged one durable addressed object. B recovered all 257 original bytes from a 313-byte frame, reopened them, acknowledged its lease and returned them for byte comparison. From A’s first Call, B’s signed durable receipt was verified after 117.819 ms and the destination workload readback after 1.103199 s. The original helpers exchanged 5,810 bytes forward and 1,195 back. The SDK collected both original helpers with assistance after stopping their VMMs. Graceful helper stop, cross-host WAN and platform qualification remain open. [Actual socket measurements, CPU and lifecycle](evidence/2026-11-12-paired-mailbox/paired-durable-native/README.md) · [Acceptance issue](https://github.com/R4-Laboratories/SpiralCore/issues/168) · [MVM roadmap](https://github.com/R4-Laboratories/SpiralCore/issues/42).
 
-The [README](../../README.md) presents the architecture and results. The
-[GitHub roadmap](https://github.com/R4-Laboratories/SpiralCore/issues/42)
-tracks delivery. The next installed gate is an authorized Cast from guest A to
-guest B with exact readback inside the destination workload. Cross-host WAN and
-platform qualification follow. [Guest retry and worker capacity regressions](evidence/2026-11-12-paired-mailbox/README.md).
-
-Two original Firecracker guests now retire through the SDK without operator intervention after both addressed workload Calls exceed their shared 15-second deadline. The driver used 8.482 s of CPU over a 121.586 s lifecycle. A’s port-5257 stream accepted 52 bytes toward the guest and returned none. B recorded no dial or exact readback. [Native measurements and comparison with assisted teardown](evidence/2026-11-12-paired-mailbox/addressed-native-launch/paired-deadline-native.md).
+An earlier two-guest test exercised each guest’s own mailbox. A separate addressed attempt recorded a deadline failure and zero bytes on B’s port-5257 stream. [Independent own-mailbox measurements](evidence/2026-11-12-paired-mailbox/firecracker.md) · [Earlier addressed timeout](evidence/2026-11-12-paired-mailbox/addressed-native-launch/paired-deadline-native.md).
 
 The guest worker pool can return its final complete response while retaining the original process for collection. One macOS 257-byte process fixture returned in 60 ms, down from 2,174 ms. [Linux and macOS worker lifecycle tests](evidence/2026-11-12-paired-mailbox/warm-worker/README.md).
 
@@ -25,7 +16,7 @@ A guest-side candidate now keeps an explicitly B-addressed pending operation acr
 
 The [single-guest warm workload](../../crates/spiralcore-mvm-guest/README.md#single-guest-warm-workload) now builds as a static Linux x86-64 executable. Its component tests cover exact file readback before ACK and counts for the local reader socket.
 
-A single Linux/Firecracker guest now recovers its own 313-byte SpiralCore frame under Ari's signed production mailbox, verifies the 257-byte body including its trailing zero, and ACKs after file readback. Its journal reached cursor 3. Three host-side vsock exchanges recorded 2,971 bytes read and 9,272 bytes accepted for writing. The SDK Call took 2.005 s. Addressed A→B and WAN acceptance are still open. [Native exact readback, CPU, counts and reproduction](evidence/2026-11-12-paired-mailbox/own-mailbox-native/verified-own-mailbox.md).
+A single Linux/Firecracker guest now recovers its own 313-byte SpiralCore frame under Ari's signed production mailbox, verifies the 257-byte body including its trailing zero, and ACKs after file readback. Its journal reached cursor 3. Three host-side vsock exchanges recorded 2,971 bytes read and 9,272 bytes accepted for writing. The SDK Call took 2.005 s. That single-guest test exercised its own signed mailbox. [Native exact readback, CPU, counts and reproduction](evidence/2026-11-12-paired-mailbox/own-mailbox-native/verified-own-mailbox.md).
 
 In an earlier attempt, a Linux/Firecracker guest submitted a 313-byte SpiralCore frame to its own production mailbox. The host retained one journal entry and an anchor at cursor 1. The guest reader returned an authorization refusal before exact readback or ACK. [Three native attempts, resource use and remaining reader gate](evidence/2026-11-12-paired-mailbox/own-mailbox-native/README.md).
 
