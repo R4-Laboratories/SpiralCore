@@ -31,7 +31,16 @@ checkpoint, not completion of that program.
 
 A subsequent Linux run kept both original Firecracker guests up for **eight separately addressed messages**. Each carried the same 257-byte body. Guest B returned every byte, then its application ACK was confirmed. The median was 220.763 ms through the verified receipt and 883.826 ms through ACK and independently checked readback. The relay carried 46,819 bytes forward and 9,590 back for 2,056 application bytes. Eight control calls completed while messages awaited forwarding. [Persistent-pair measurements and reproduction](docs/network/evidence/2026-11-12-paired-mailbox/paired-durable-native/sustained/README.md)
 
-**Warm-object status.** The installed guests transferred complete 257-byte and 4 KiB fixtures under a one-way Cast grant. In a separate local component with independent Call and Reply credentials, the receiver recovered a 131,090-byte repeat from a 102-byte Offer and returned an 88-byte object response. Carrying that response between installed guests requires a signed return route. [Authority, envelope overhead and CPU](docs/network/evidence/2026-11-12-paired-mailbox/paired-durable-native/object-reply-boundary.md)
+**Two installed Linux guests now exchange warm objects through their own mailboxes.** Guest A sent a 4 KiB object cold, then offered it again to the same worker on B. B returned all 4,096 bytes exactly on each transfer. The cold transfer required four signed Calls. The repeat needed one Call, one Reply and zero literal payload bytes.
+
+| First Firecracker pair on one host | Cold | Exact repeat |
+|---|---:|---:|
+| Object-v1 requests and responses, both directions | 4,658 B | 190 B |
+| Sealed host socket traffic, including signed destination receipts | 63,797 B | 14,223 B |
+| CPU in A and B’s guest workloads combined | 38.58 ms | 10.87 ms |
+| Elapsed through both guest results, including exact readback | 8.002 s | 2.200 s |
+
+The repeat saved **77.7% of the bytes on the sealed host sockets**. A’s writes matched B’s reads, and vice versa. Both original mailbox helpers exited cleanly. The separate guest-vsock counters overflowed during this first trial. An equivalent secured zstd comparison and a canonical two-host WAN run remain open. [Reproduction, original counters and qualification results](docs/network/evidence/2026-11-12-paired-mailbox/paired-durable-native/native-object/README.md)
 
 The four single-message trials are shown below.
 
