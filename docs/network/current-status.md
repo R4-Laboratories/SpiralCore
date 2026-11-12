@@ -11,6 +11,8 @@ tracks delivery. The next installed gate is an authorized Cast from guest A to
 guest B with exact readback inside the destination workload. Cross-host WAN and
 platform qualification follow. [Guest retry and worker capacity regressions](evidence/2026-11-12-paired-mailbox/README.md).
 
+The addressed Cast component now verifies separate Send and Receive grants before it records a replay. Linux x86-64 and macOS arm64 tests checked exact local readback and measured the socket bytes and CPU on each side. [Addressed route results and upstream timeout regression](evidence/2026-11-12-paired-mailbox/addressed-route.md).
+
 ## Published checkpoints
 
 | Component | What the checkpoint establishes | Evidence |
