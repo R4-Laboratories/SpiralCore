@@ -21,7 +21,16 @@ pub(super) struct ObjectEnrollment {
 /// prepared (still unlaunched) original signed-grant projection.
 impl ObjectEnrollment {
     pub fn issue() -> Result<Self> {
-        super::private_home()?;
+        let home = super::private_home()?;
+        mvm_core::private_fs::require_current_owner(&std::fs::symlink_metadata(home)?)?;
+        let template = mvm_core::config::mvm_keys_dir().join("mailbox-template.json");
+        match std::fs::symlink_metadata(template) {
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+            Err(error) => return Err(error.into()),
+            Ok(_) => {
+                anyhow::bail!("fixture requires a fresh installation without an operator template")
+            }
+        }
         let caller = super::enrollment::original_grant("a1", super::A)?;
         let callee = super::enrollment::original_grant("b2", super::B)?;
         let (credentials, caller_nonce, callee_nonce) = issue_credentials(&caller, &callee)?;
