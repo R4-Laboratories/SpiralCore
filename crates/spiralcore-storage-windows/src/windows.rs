@@ -2,7 +2,7 @@ use crate::{Error, Result};
 use std::{
     ffi::c_void,
     fs::{self, File},
-    mem::{size_of, zeroed},
+    mem::{size_of, size_of_val, zeroed, MaybeUninit},
     os::windows::{
         ffi::OsStrExt,
         io::{AsRawHandle, FromRawHandle, OwnedHandle},
@@ -13,8 +13,7 @@ use std::{
 };
 use windows_sys::Win32::{
     Foundation::{
-        GetLastError, LocalFree, ERROR_INSUFFICIENT_BUFFER, ERROR_NO_TOKEN, GENERIC_READ,
-        GENERIC_WRITE, INVALID_HANDLE_VALUE,
+        GetLastError, LocalFree, ERROR_NO_TOKEN, GENERIC_READ, GENERIC_WRITE, INVALID_HANDLE_VALUE,
     },
     Security::{Authorization::*, *},
     Storage::FileSystem::*,
@@ -23,6 +22,8 @@ use windows_sys::Win32::{
         Threading::{GetCurrentProcess, GetCurrentThread, OpenProcessToken, OpenThreadToken},
     },
 };
+mod quota;
+pub use quota::quota_usage;
 
 struct Local(*mut c_void);
 impl Drop for Local {
@@ -35,7 +36,8 @@ impl Drop for Local {
         }
     }
 }
-struct Sid(Vec<u32>);
+// A Windows SID has at most fifteen 32-bit subauthorities and an eight-byte header.
+struct Sid([u32; 17]);
 impl Sid {
     fn ptr(&self) -> PSID {
         self.0.as_ptr().cast_mut().cast()
@@ -53,51 +55,42 @@ impl Sid {
         }
         // SAFETY: successful call returned one fresh real token handle.
         let token = unsafe { OwnedHandle::from_raw_handle(token) };
-        let mut required = 0;
-        // SAFETY: this first query obtains the bounded buffer requirement.
-        let queried = unsafe {
-            GetTokenInformation(
-                token.as_raw_handle(),
-                TokenUser,
-                null_mut(),
-                0,
-                &mut required,
-            )
-        };
-        if queried != 0 || unsafe { GetLastError() } != ERROR_INSUFFICIENT_BUFFER {
-            return Err(Error::Storage);
-        }
-        if !(size_of::<TOKEN_USER>() as u32..=4096).contains(&required) {
-            return Err(Error::Storage);
-        }
-        let mut buffer = vec![0usize; (required as usize).div_ceil(size_of::<usize>())];
-        // SAFETY: aligned buffer has at least the reported required size.
+        // Query the same fresh effective token directly into the previous 4 KiB
+        // ceiling. TokenUser writes only its actual result, including the SID.
+        let mut buffer = [MaybeUninit::<usize>::uninit(); 4096 / size_of::<usize>()];
+        let mut used = 0;
+        // SAFETY: the aligned output has 4096 writable bytes for the kernel result.
         if unsafe {
             GetTokenInformation(
                 token.as_raw_handle(),
                 TokenUser,
                 buffer.as_mut_ptr().cast(),
-                required,
-                &mut required,
+                size_of_val(&buffer) as u32,
+                &mut used,
             )
         } == 0
+            || !(size_of::<TOKEN_USER>()..=size_of_val(&buffer)).contains(&(used as usize))
         {
             return Err(Error::Storage);
         }
-        // SAFETY: successful TokenUser query initialized the aligned structure.
-        let source = unsafe { (*(buffer.as_ptr().cast::<TOKEN_USER>())).User.Sid };
-        // SAFETY: source belongs to the live kernel-populated TokenUser buffer.
-        if unsafe { IsValidSid(source) } == 0 {
+        // SAFETY: successful TokenUser query initialized this structure within used.
+        let source = unsafe { (*buffer.as_ptr().cast::<TOKEN_USER>()).User.Sid };
+        let offset = (source as usize)
+            .checked_sub(buffer.as_ptr() as usize)
+            .ok_or(Error::Storage)?;
+        let remaining = (used as usize).checked_sub(offset).ok_or(Error::Storage)?;
+        if remaining < 8 || !(source as usize).is_multiple_of(4) {
             return Err(Error::Storage);
         }
-        // SAFETY: validated SID; Windows limits a SID to 68 bytes.
-        let bytes = unsafe { GetLengthSid(source) };
-        if !(8..=68).contains(&bytes) {
+        // SAFETY: the SID header is in bounds. Check the complete encoded length
+        // before asking Windows to inspect the SID or copy it into aligned storage.
+        let bytes = 8 + 4 * usize::from(unsafe { *source.cast::<u8>().add(1) });
+        if bytes > 68 || bytes > remaining || unsafe { IsValidSid(source) } == 0 {
             return Err(Error::Storage);
         }
-        let sid = Self(vec![0u32; (bytes as usize).div_ceil(4)]);
-        // SAFETY: aligned destination covers the complete validated source SID.
-        if unsafe { CopySid(bytes, sid.ptr(), source) } == 0 {
+        let mut sid = Self([0; 17]);
+        // SAFETY: both sides cover the length of the validated SID.
+        if unsafe { CopySid(bytes as u32, sid.0.as_mut_ptr().cast(), source) } == 0 {
             return Err(Error::Storage);
         }
         Ok(sid)
@@ -303,30 +296,80 @@ fn ancestors(path: &Path) -> Result<Vec<File>> {
     Ok(held)
 }
 fn private(file: &File, directory: bool, sid: &Sid) -> Result<()> {
+    private_checked::<true>(file, directory, sid).map(|_| ())
+}
+
+#[cfg(test)]
+pub(crate) fn compare_descriptor_query<const INLINE: bool>(file: &File) -> Result<bool> {
+    private_checked::<INLINE>(file, false, &Sid::current()?)
+}
+
+fn private_checked<const INLINE: bool>(file: &File, directory: bool, sid: &Sid) -> Result<bool> {
     information(file, directory)?;
+    // Ask for the same OWNER|DACL from this live handle in one bounded call.
+    // NTFS normally returns a small self-relative descriptor for our one-ACE
+    // layout. Keep the original Win32 path for descriptors needing more space.
+    let mut buffer = [MaybeUninit::<usize>::uninit(); 512 / size_of::<usize>()];
+    let mut used = 0;
     let mut owner = null_mut();
     let mut dacl = null_mut();
-    let mut descriptor = null_mut();
-    // SAFETY: live handle with READ_CONTROL and writable descriptor outputs.
-    let code = unsafe {
-        GetSecurityInfo(
-            file.as_raw_handle(),
-            SE_FILE_OBJECT,
-            OWNER_SECURITY_INFORMATION | DACL_SECURITY_INFORMATION,
-            &mut owner,
-            null_mut(),
-            &mut dacl,
-            null_mut(),
-            &mut descriptor,
-        )
-    };
-    let _descriptor = Local(descriptor);
-    if code != 0 || owner.is_null() || dacl.is_null() {
+    let mut descriptor = buffer.as_mut_ptr().cast();
+    let _allocated;
+    let info = OWNER_SECURITY_INFORMATION | DACL_SECURITY_INFORMATION;
+    // SAFETY: the aligned buffer is writable for its entire advertised extent.
+    let inline_used = INLINE
+        && unsafe {
+            GetKernelObjectSecurity(
+                file.as_raw_handle(),
+                info,
+                descriptor,
+                size_of_val(&buffer) as u32,
+                &mut used,
+            )
+        } != 0;
+    if inline_used {
+        if !(size_of::<SECURITY_DESCRIPTOR_RELATIVE>()..=size_of_val(&buffer))
+            .contains(&(used as usize))
+        {
+            return Err(Error::Storage);
+        }
+        let mut defaulted = 0;
+        let mut present = 0;
+        // SAFETY: successful kernel output is a live self-relative descriptor.
+        if unsafe { GetSecurityDescriptorOwner(descriptor, &mut owner, &mut defaulted) } == 0
+            || unsafe {
+                GetSecurityDescriptorDacl(descriptor, &mut present, &mut dacl, &mut defaulted)
+            } == 0
+            || present == 0
+        {
+            return Err(Error::Storage);
+        }
+    } else {
+        descriptor = null_mut();
+        // SAFETY: this is the existing checked, dynamically-sized security query.
+        let code = unsafe {
+            GetSecurityInfo(
+                file.as_raw_handle(),
+                SE_FILE_OBJECT,
+                info,
+                &mut owner,
+                null_mut(),
+                &mut dacl,
+                null_mut(),
+                &mut descriptor,
+            )
+        };
+        _allocated = Local(descriptor);
+        if code != 0 {
+            return Err(Error::Storage);
+        }
+    }
+    if owner.is_null() || dacl.is_null() {
         return Err(Error::Storage);
     }
     let mut control = 0;
     let mut revision = 0;
-    // SAFETY: successful GetSecurityInfo owns every pointer until _descriptor drops.
+    // SAFETY: descriptor and its owner/ACL remain live through all checks below.
     if unsafe { EqualSid(owner, sid.ptr()) } == 0
         || unsafe { GetSecurityDescriptorControl(descriptor, &mut control, &mut revision) } == 0
         || control & SE_DACL_PROTECTED == 0
@@ -381,9 +424,31 @@ fn private(file: &File, directory: bool, sid: &Sid) -> Result<()> {
     {
         return Err(Error::Storage);
     }
-    Ok(())
+    Ok(inline_used)
 }
 fn open(path: &Path, access: u32, sharing: u32, creation: u32) -> Result<File> {
+    let path = normalized(path)?;
+    let _parents = ancestors(&path)?;
+    let sid = Sid::current()?;
+    let file = if creation == OPEN_EXISTING {
+        // CreateFileW ignores creation descriptors for existing files. NULL
+        // attributes also retain the original non-inheritable handle policy.
+        // Fresh identity and the consumed-handle checks below remain mandatory.
+        raw_open(&path, access | READ_CONTROL, sharing, creation, null())?
+    } else {
+        let descriptor = sid.descriptor()?;
+        let security = SECURITY_ATTRIBUTES {
+            nLength: size_of::<SECURITY_ATTRIBUTES>() as u32,
+            lpSecurityDescriptor: descriptor.0,
+            bInheritHandle: 0,
+        };
+        raw_open(&path, access | READ_CONTROL, sharing, creation, &security)?
+    };
+    private(&file, false, &sid)?;
+    Ok(file)
+}
+#[cfg(test)]
+pub(crate) fn legacy_existing_read(path: &Path) -> Result<File> {
     let path = normalized(path)?;
     let _parents = ancestors(&path)?;
     let sid = Sid::current()?;
@@ -393,7 +458,13 @@ fn open(path: &Path, access: u32, sharing: u32, creation: u32) -> Result<File> {
         lpSecurityDescriptor: descriptor.0,
         bInheritHandle: 0,
     };
-    let file = raw_open(&path, access | READ_CONTROL, sharing, creation, &security)?;
+    let file = raw_open(
+        &path,
+        GENERIC_READ | READ_CONTROL,
+        FILE_SHARE_READ,
+        OPEN_EXISTING,
+        &security,
+    )?;
     private(&file, false, &sid)?;
     Ok(file)
 }

@@ -24,6 +24,13 @@ pub(in super::super) fn open_read(path: &Path) -> Result<File> {
     check_file(&file.metadata()?)?;
     Ok(file)
 }
+pub(in super::super) fn quota_file_len(path: &Path) -> Result<u64> {
+    // Accounting does not grant content access. Keep the same private-file
+    // checks without opening every retained object just to obtain its length.
+    let metadata = fs::symlink_metadata(path)?;
+    check_file(&metadata)?;
+    Ok(metadata.len())
+}
 pub(in super::super) fn create_new_file(path: &Path) -> Result<File> {
     Ok(OpenOptions::new()
         .read(true)

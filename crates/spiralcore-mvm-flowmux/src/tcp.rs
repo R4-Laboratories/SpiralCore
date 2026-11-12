@@ -1,10 +1,12 @@
-use crate::{Binding, Error, HEADER_LEN, Result, record};
+use crate::{
+    Binding, Error, FailureObservation, FailureReason, FailureSite, HEADER_LEN, Result, record,
+};
 use spiralcore_transfer::zstd_whole::{PreparedDecoder, PreparedEncoder};
 use std::{
     io::{Read, Write},
     net::{Shutdown, SocketAddr, TcpStream},
     sync::{
-        Arc,
+        Arc, Mutex, OnceLock, Weak,
         atomic::{AtomicBool, Ordering},
     },
     time::{Duration, Instant},
@@ -120,18 +122,43 @@ impl Write for Carrier {
     }
 }
 struct Control {
+    failure_claimed: AtomicBool,
+    failure: OnceLock<FailureObservation>,
     delivery_fenced: AtomicBool,
     scope: Option<crate::scope::ScopeAuthority>,
     socket: Carrier,
     stopped: AtomicBool,
+    tx_wake: Mutex<Option<Weak<crate::lock_wait::Gate>>>,
 }
 impl Control {
+    fn observe(&self, site: FailureSite, kind: Option<u8>, error: &Error) {
+        if !self.stopped.load(Ordering::Acquire)
+            && let Some(reason) = FailureReason::observed(error)
+            // No error/cancellation thread waits for a stalled diagnostic writer.
+            && !self.failure_claimed.swap(true, Ordering::Relaxed)
+        {
+            let _ = self.failure.set(FailureObservation {
+                site,
+                reason,
+                frame_kind: kind,
+            });
+        }
+    }
     fn stop(&self) {
         self.delivery_fenced.store(true, Ordering::Release);
         self.close();
     }
     fn close(&self) {
         self.stopped.store(true, Ordering::Release);
+        let wake = self
+            .tx_wake
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .as_ref()
+            .and_then(Weak::upgrade);
+        if let Some(wake) = wake {
+            wake.notify();
+        }
         let _ = self.socket.shutdown(Shutdown::Both);
     }
     fn stop_on_drop(&self) {
@@ -167,6 +194,37 @@ pub struct Cancellation {
     control: Arc<Control>,
 }
 impl Cancellation {
+    pub(crate) fn observe(&self, site: FailureSite, kind: Option<u8>, error: &Error) {
+        self.control.observe(site, kind, error);
+    }
+    pub(crate) fn first_failure(&self) -> Option<FailureObservation> {
+        self.control.failure.get().copied()
+    }
+
+    #[cfg(feature = "witness-timing")]
+    pub(crate) const fn wake_binding_bytes() -> usize {
+        std::mem::size_of::<Mutex<Option<Weak<crate::lock_wait::Gate>>>>()
+    }
+    pub(crate) fn stopped(&self) -> &AtomicBool {
+        &self.control.stopped
+    }
+    pub(crate) fn bind_tx_wake(&self, gate: &Arc<crate::lock_wait::Gate>) -> Result<()> {
+        let mut binding = self.control.tx_wake.lock().map_err(|_| Error::Worker)?;
+        let weak = Arc::downgrade(gate);
+        if binding
+            .as_ref()
+            .is_some_and(|old| !Weak::ptr_eq(old, &weak))
+        {
+            return Err(Error::Protocol);
+        }
+        *binding = Some(weak);
+        let stopped = self.control.stopped.load(Ordering::Acquire);
+        drop(binding);
+        if stopped {
+            gate.notify();
+        }
+        Ok(())
+    }
     pub(crate) fn check_delivery(&self) -> Result<()> {
         self.control.check_delivery()
     }
@@ -257,10 +315,13 @@ impl TcpMapping {
         socket.set_write_timeout(initial)?;
         let read = socket.try_clone()?;
         let control = Arc::new(Control {
+            failure_claimed: AtomicBool::new(false),
+            failure: OnceLock::new(),
             delivery_fenced: AtomicBool::new(false),
             scope,
             socket: socket.try_clone()?,
             stopped: AtomicBool::new(false),
+            tx_wake: Mutex::new(None),
         });
         let cap = if object {
             spiralcore_transfer::MAX_FRAME
@@ -444,7 +505,9 @@ impl Tx {
             crate::Purpose::Artifact => record::ARTIFACT,
         };
         let result = self.write_record(kind, &bytes, bytes.len(), false, until);
-        if result.is_err() {
+        if let Err(error) = &result {
+            self.control
+                .observe(FailureSite::ObjectWrite, Some(frame.kind), error);
             self.control.stop();
         }
         result
@@ -611,7 +674,8 @@ impl Rx {
             self.sequence = next;
             Ok(frame)
         })();
-        if result.is_err() {
+        if let Err(error) = &result {
+            self.control.observe(FailureSite::ObjectRead, None, error);
             self.control.stop();
         }
         result

@@ -68,3 +68,22 @@ They observed the same timestamp and one received `AlreadyExists`.
 The directory name now also includes the test's distinct mapped/guard mode.
 The failed run remains retained at
 [run 42889647457](https://github.com/R4-Laboratories/SpiralCore/actions/runs/42889647457).
+
+## Scoped coverage receipt
+
+The [compact coverage receipt](coverage/summary.json) pins source `8535b10d`
+against main `0198349f`. Selective LLVM instrumentation of FlowMux executed
+all 47 tests in 11 protected binaries on Wick. Changed production TLS/duplex
+lines covered **131/156 (83.974%)**; all mapped FlowMux production covered
+**2,129/2,336 (91.139%)**. Test-only hooks/modules are excluded explicitly in
+[the exclusion map](coverage/production-exclusions.json). LLVM emitted no
+branch mappings. The subsequent directory-name fix changes no production
+source; its separate two-test rerun passed.
+
+Source hashes matched the Git archive before and after collection, and all
+retained executable hashes stayed unchanged. Raw profiles, original binaries
+and JSON/LCOV exports remain on Wick under
+`/var/tmp/spiralcore-pr104-coverage-8535b10d-20261110`; their
+[artifact hashes](coverage/artifact.sha256), test counts and uncovered changed
+lines are retained here. Coverage is a component validation measure and is
+not a performance result.

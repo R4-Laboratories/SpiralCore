@@ -1,0 +1,861 @@
+{
+  "failed": {
+    "artifact": 13815117554,
+    "identity": {
+      "blocks_each_direction": 4096,
+      "watchdog_seconds": 240,
+      "lock_sha256": "3D549BC7F9A94A4BF057B19BA7C3E1106B5E89B7CB19433A6BAAA1BA15C5E385",
+      "source": "57b13eb53a23b35018da3cc6b1d9c0dcb2aa2904",
+      "attempt": "1",
+      "features": "witness-timing",
+      "scope": "instrumented native process; both peers on one runner; no MVM backend or WAN",
+      "run": "42927983955",
+      "tree": "cce2e94d568aaba7e3dad11d02ab49207dd832d5",
+      "image": "20261103.298.1",
+      "os": "Windows",
+      "arch": "X64"
+    },
+    "zip_sha256": "cc1f9ba79a9aaf44f9bb45ddd38b5ff141efd039b147c63834c91c2bae8977ee",
+    "member_hashes_pass": {
+      "identity.json": true,
+      "rustc.txt": true,
+      "tests.txt": true
+    },
+    "witness": [
+      "ORDERED_WITNESS success=false witness_timing=true snapshot=concurrent wall_us=242002462 original_gate_us=240000000 setup_wall_us=106088 setup_process_cpu_us=Some(15625) process_cpu_to_snapshot_us=Some(103046875) progress_write_ack_left_right_read_left_right=[3065, 3065, 3065, 3065] actual_tls=[TlsCounters { received: 4037050, sent: 4037085 }, TlsCounters { received: 4037085, sent: 4037050 }] scopes=unavailable_nonblocking scope_status_at_existing_failure_assertion=see_original_error rss_kib=None hwm_kib=None"
+    ],
+    "slots": {
+      "0": {
+        "PauseActual(Handshake)": {
+          "count": 4,
+          "total_ms": 29.2091,
+          "mean_ms": 7.302275,
+          "max_ms": 15.2788
+        },
+        "PauseActual(Read)": {
+          "count": 2,
+          "total_ms": 31.4441,
+          "mean_ms": 15.72205,
+          "max_ms": 15.8576
+        },
+        "Poll(Requested)": {
+          "count": 31975,
+          "total_ms": 637187.9559,
+          "mean_ms": 19.927692131352618,
+          "max_ms": 19.9994
+        },
+        "Poll(Actual)": {
+          "count": 31975,
+          "total_ms": 97738.1235,
+          "mean_ms": 3.0567044096950746,
+          "max_ms": 35.6627
+        },
+        "Poll(SocketRead)": {
+          "count": 13741,
+          "total_ms": 0.0,
+          "mean_ms": 0.0,
+          "max_ms": 0.0
+        },
+        "Poll(Wake)": {
+          "count": 18439,
+          "total_ms": 0.0,
+          "mean_ms": 0.0,
+          "max_ms": 0.0
+        },
+        "Poll(Empty)": {
+          "count": 2340,
+          "total_ms": 0.0,
+          "mean_ms": 0.0,
+          "max_ms": 0.0
+        },
+        "Count(SessionOperation)": {
+          "count": 123829,
+          "total_ms": 848.0295,
+          "mean_ms": 0.006848391733761882,
+          "max_ms": 10.3823
+        },
+        "Count(SessionContended)": {
+          "count": 2988,
+          "total_ms": 0.0,
+          "mean_ms": 0.0,
+          "max_ms": 0.0
+        },
+        "LockActual(Session)": {
+          "count": 4096,
+          "total_ms": 70.4716,
+          "mean_ms": 0.01720498046875,
+          "max_ms": 0.387
+        },
+        "LockResult(Session, Acquired)": {
+          "count": 76551,
+          "total_ms": 0.0,
+          "mean_ms": 0.0,
+          "max_ms": 0.0
+        }
+      },
+      "1": {
+        "PauseActual(Handshake)": {
+          "count": 4,
+          "total_ms": 44.7176,
+          "mean_ms": 11.1794,
+          "max_ms": 15.8297
+        },
+        "Poll(Requested)": {
+          "count": 31973,
+          "total_ms": 637048.4017,
+          "mean_ms": 19.924573912363556,
+          "max_ms": 19.9994
+        },
+        "Poll(Actual)": {
+          "count": 31973,
+          "total_ms": 89403.9986,
+          "mean_ms": 2.796234278922841,
+          "max_ms": 36.2794
+        },
+        "Poll(SocketRead)": {
+          "count": 13899,
+          "total_ms": 0.0,
+          "mean_ms": 0.0,
+          "max_ms": 0.0
+        },
+        "Poll(Wake)": {
+          "count": 18595,
+          "total_ms": 0.0,
+          "mean_ms": 0.0,
+          "max_ms": 0.0
+        },
+        "Poll(Empty)": {
+          "count": 2006,
+          "total_ms": 0.0,
+          "mean_ms": 0.0,
+          "max_ms": 0.0
+        },
+        "Poll(OwnerRefused)": {
+          "count": 1,
+          "total_ms": 0.0,
+          "mean_ms": 0.0,
+          "max_ms": 0.0
+        },
+        "Count(SessionOperation)": {
+          "count": 123820,
+          "total_ms": 824.7644,
+          "mean_ms": 0.006660994992731385,
+          "max_ms": 3.5603
+        },
+        "Count(SessionContended)": {
+          "count": 3011,
+          "total_ms": 0.0,
+          "mean_ms": 0.0,
+          "max_ms": 0.0
+        },
+        "LockActual(Session)": {
+          "count": 4131,
+          "total_ms": 73.0593,
+          "mean_ms": 0.01768562091503268,
+          "max_ms": 0.5518
+        },
+        "LockResult(Session, Acquired)": {
+          "count": 76573,
+          "total_ms": 0.0,
+          "mean_ms": 0.0,
+          "max_ms": 0.0
+        }
+      },
+      "2": {
+        "Frame(SenderLock, Begin)": {
+          "count": 3065,
+          "total_ms": 40.9468,
+          "mean_ms": 0.0133594779771615,
+          "max_ms": 0.2107
+        },
+        "Frame(SenderLock, Data)": {
+          "count": 3065,
+          "total_ms": 2.5137,
+          "mean_ms": 0.0008201305057096248,
+          "max_ms": 0.0913
+        },
+        "Frame(SenderLock, Commit)": {
+          "count": 3065,
+          "total_ms": 2.0961,
+          "mean_ms": 0.0006838825448613377,
+          "max_ms": 0.0435
+        },
+        "Frame(SenderSend, Begin)": {
+          "count": 3065,
+          "total_ms": 155.6956,
+          "mean_ms": 0.05079791190864601,
+          "max_ms": 7.0595
+        },
+        "Frame(SenderSend, Data)": {
+          "count": 3065,
+          "total_ms": 139.6763,
+          "mean_ms": 0.04557138662316476,
+          "max_ms": 1.0064
+        },
+        "Frame(SenderSend, Commit)": {
+          "count": 3065,
+          "total_ms": 122.0186,
+          "mean_ms": 0.03981030995106036,
+          "max_ms": 10.3897
+        },
+        "Frame(SenderWait, Begin)": {
+          "count": 3065,
+          "total_ms": 84001.8793,
+          "mean_ms": 27.406812169657425,
+          "max_ms": 1088.8898
+        },
+        "Frame(SenderWait, Data)": {
+          "count": 3065,
+          "total_ms": 20512.6659,
+          "mean_ms": 6.6925500489396414,
+          "max_ms": 419.8597
+        },
+        "Frame(SenderWait, Commit)": {
+          "count": 3065,
+          "total_ms": 134732.6792,
+          "mean_ms": 43.958459771615004,
+          "max_ms": 1055.6864
+        },
+        "Frame(ReceiverHandle, Begin)": {
+          "count": 3065,
+          "total_ms": 21201.5526,
+          "mean_ms": 6.917309168026101,
+          "max_ms": 93.1788
+        },
+        "Frame(ReceiverHandle, Data)": {
+          "count": 3065,
+          "total_ms": 32.9277,
+          "mean_ms": 0.010743132137030995,
+          "max_ms": 0.5045
+        },
+        "Frame(ReceiverHandle, Commit)": {
+          "count": 3065,
+          "total_ms": 119430.9625,
+          "mean_ms": 38.96605628058728,
+          "max_ms": 1088.0045
+        },
+        "Frame(ReceiverLock, Begin)": {
+          "count": 3065,
+          "total_ms": 2.8365,
+          "mean_ms": 0.0009254486133768353,
+          "max_ms": 0.0461
+        },
+        "Frame(ReceiverLock, Data)": {
+          "count": 3065,
+          "total_ms": 20.273,
+          "mean_ms": 0.006614355628058727,
+          "max_ms": 0.7731
+        },
+        "Frame(ReceiverLock, Commit)": {
+          "count": 3065,
+          "total_ms": 3.178,
+          "mean_ms": 0.0010368678629690048,
+          "max_ms": 0.0269
+        },
+        "Frame(ReceiverSend, Begin)": {
+          "count": 3065,
+          "total_ms": 123.8634,
+          "mean_ms": 0.04041220228384992,
+          "max_ms": 0.2312
+        },
+        "Frame(ReceiverSend, Data)": {
+          "count": 3065,
+          "total_ms": 72.2355,
+          "mean_ms": 0.023567862969004896,
+          "max_ms": 0.353
+        },
+        "Frame(ReceiverSend, Commit)": {
+          "count": 3065,
+          "total_ms": 210.6648,
+          "mean_ms": 0.06873239804241435,
+          "max_ms": 0.3634
+        },
+        "Count(WaitOk)": {
+          "count": 9195,
+          "total_ms": 0.0,
+          "mean_ms": 0.0,
+          "max_ms": 0.0
+        },
+        "Count(Ack)": {
+          "count": 3065,
+          "total_ms": 0.0,
+          "mean_ms": 0.0,
+          "max_ms": 0.0
+        },
+        "LockActual(Tx)": {
+          "count": 1568,
+          "total_ms": 56.5038,
+          "mean_ms": 0.03603558673469388,
+          "max_ms": 0.7715
+        },
+        "LockResult(Tx, Acquired)": {
+          "count": 18390,
+          "total_ms": 0.0,
+          "mean_ms": 0.0,
+          "max_ms": 0.0
+        }
+      },
+      "3": {
+        "Frame(SenderLock, Begin)": {
+          "count": 3065,
+          "total_ms": 43.3404,
+          "mean_ms": 0.01414042414355628,
+          "max_ms": 0.309
+        },
+        "Frame(SenderLock, Data)": {
+          "count": 3065,
+          "total_ms": 2.7011,
+          "mean_ms": 0.0008812724306688417,
+          "max_ms": 0.0349
+        },
+        "Frame(SenderLock, Commit)": {
+          "count": 3065,
+          "total_ms": 2.1123,
+          "mean_ms": 0.0006891680261011418,
+          "max_ms": 0.0362
+        },
+        "Frame(SenderSend, Begin)": {
+          "count": 3065,
+          "total_ms": 155.8208,
+          "mean_ms": 0.050838760195758566,
+          "max_ms": 7.7027
+        },
+        "Frame(SenderSend, Data)": {
+          "count": 3065,
+          "total_ms": 137.8501,
+          "mean_ms": 0.04497556280587276,
+          "max_ms": 0.6228
+        },
+        "Frame(SenderSend, Commit)": {
+          "count": 3065,
+          "total_ms": 106.1161,
+          "mean_ms": 0.03462189233278956,
+          "max_ms": 0.5381
+        },
+        "Frame(SenderWait, Begin)": {
+          "count": 3065,
+          "total_ms": 79819.7545,
+          "mean_ms": 26.042334257748774,
+          "max_ms": 1011.457
+        },
+        "Frame(SenderWait, Data)": {
+          "count": 3065,
+          "total_ms": 31375.5157,
+          "mean_ms": 10.236709853181077,
+          "max_ms": 1055.6982
+        },
+        "Frame(SenderWait, Commit)": {
+          "count": 3065,
+          "total_ms": 128066.7121,
+          "mean_ms": 41.7835928548124,
+          "max_ms": 1088.8893
+        },
+        "Frame(ReceiverHandle, Begin)": {
+          "count": 3065,
+          "total_ms": 21681.6099,
+          "mean_ms": 7.07393471451876,
+          "max_ms": 278.0338
+        },
+        "Frame(ReceiverHandle, Data)": {
+          "count": 3065,
+          "total_ms": 33.8664,
+          "mean_ms": 0.011049396411092984,
+          "max_ms": 0.3015
+        },
+        "Frame(ReceiverHandle, Commit)": {
+          "count": 3065,
+          "total_ms": 127233.7886,
+          "mean_ms": 41.51183967373572,
+          "max_ms": 1054.6021
+        },
+        "Frame(ReceiverLock, Begin)": {
+          "count": 3065,
+          "total_ms": 3.2139,
+          "mean_ms": 0.0010485807504078302,
+          "max_ms": 0.0581
+        },
+        "Frame(ReceiverLock, Data)": {
+          "count": 3065,
+          "total_ms": 29.4149,
+          "mean_ms": 0.009597030995106035,
+          "max_ms": 0.2262
+        },
+        "Frame(ReceiverLock, Commit)": {
+          "count": 3065,
+          "total_ms": 3.1642,
+          "mean_ms": 0.0010323654159869495,
+          "max_ms": 0.0269
+        },
+        "Frame(ReceiverSend, Begin)": {
+          "count": 3065,
+          "total_ms": 123.1666,
+          "mean_ms": 0.04018486133768352,
+          "max_ms": 0.2794
+        },
+        "Frame(ReceiverSend, Data)": {
+          "count": 3065,
+          "total_ms": 72.0586,
+          "mean_ms": 0.023510146818923328,
+          "max_ms": 0.2253
+        },
+        "Frame(ReceiverSend, Commit)": {
+          "count": 3065,
+          "total_ms": 215.4007,
+          "mean_ms": 0.07027755301794453,
+          "max_ms": 0.4041
+        },
+        "Count(WaitOk)": {
+          "count": 9195,
+          "total_ms": 0.0,
+          "mean_ms": 0.0,
+          "max_ms": 0.0
+        },
+        "Count(Ack)": {
+          "count": 3065,
+          "total_ms": 0.0,
+          "mean_ms": 0.0,
+          "max_ms": 0.0
+        },
+        "LockActual(Tx)": {
+          "count": 1809,
+          "total_ms": 67.3938,
+          "mean_ms": 0.0372547263681592,
+          "max_ms": 0.3072
+        },
+        "LockResult(Tx, Acquired)": {
+          "count": 18390,
+          "total_ms": 0.0,
+          "mean_ms": 0.0,
+          "max_ms": 0.0
+        }
+      }
+    }
+  },
+  "passed": {
+    "artifact": 13813812655,
+    "identity": {
+      "arch": "X64",
+      "lock_sha256": "3D549BC7F9A94A4BF057B19BA7C3E1106B5E89B7CB19433A6BAAA1BA15C5E385",
+      "scope": "instrumented native process; both peers on one runner; no MVM backend or WAN",
+      "tree": "c0ab4c814f6012b24ea562359dfeff3dae0c5297",
+      "blocks_each_direction": 4096,
+      "attempt": "1",
+      "watchdog_seconds": 240,
+      "os": "Windows",
+      "features": "witness-timing",
+      "run": "42925924991",
+      "source": "073f94ef35bb68e77a349dd3c843246237e8efbd",
+      "image": "20261103.298.1"
+    },
+    "zip_sha256": "b0369d3d12db132aa523158848fb3b1f74766a2ba00f67c6a01d588ec6d1ae44",
+    "member_hashes_pass": {
+      "identity.json": true,
+      "rustc.txt": true,
+      "tests.txt": true
+    },
+    "witness": [
+      "ORDERED_WITNESS success=true witness_timing=true snapshot=concurrent wall_us=193513521 original_gate_us=240000000 setup_wall_us=62448 setup_process_cpu_us=Some(15625) process_cpu_to_snapshot_us=Some(119234375) progress_write_ack_left_right_read_left_right=[4096, 4096, 4096, 4096] actual_tls=[TlsCounters { received: 5395015, sent: 5395050 }, TlsCounters { received: 5395050, sent: 5395015 }] scopes=unavailable_nonblocking scope_status_at_existing_failure_assertion=see_original_error rss_kib=None hwm_kib=None",
+      "ORDERED_BULK blocks_each_direction=4096 exact_bytes_each_direction=67108864 actual_tls_a_sent=5395050 actual_tls_a_received=5395015 peer_sent=5395015 peer_received=5395050 setup_wall_us=62448 lifecycle_wall_us=193576701 cpu_process_before=None cpu_process_setup=None cpu_process_after=None lifecycle_process_cpu_us=Some(119265625) cpu_ticks_per_second=Some(1000) rss_before_kib=None rss_prepared_kib=None process_hwm_kib=None core_pair_charge_each=8284092 reader_stack_each=2097152 left=OrderedSnapshot { attempts: 1, publications: 64, cache_bytes: 1051712, pinned: 0, evictions: 4032 } right=OrderedSnapshot { attempts: 1, publications: 64, cache_bytes: 1051712, pinned: 0, evictions: 4032 } files_left=(64, 1051712) files_right=(64, 1051712)"
+    ],
+    "slots": {
+      "0": {
+        "PauseActual(Handshake)": {
+          "count": 3,
+          "total_ms": 16.8952,
+          "mean_ms": 5.631733333333333,
+          "max_ms": 13.2898
+        },
+        "PauseActual(Read)": {
+          "count": 1,
+          "total_ms": 15.7748,
+          "mean_ms": 15.7748,
+          "max_ms": 15.7748
+        },
+        "Poll(Requested)": {
+          "count": 41284,
+          "total_ms": 824726.8214,
+          "mean_ms": 19.97691167038078,
+          "max_ms": 19.9994
+        },
+        "Poll(Actual)": {
+          "count": 41284,
+          "total_ms": 78817.7153,
+          "mean_ms": 1.9091588823757388,
+          "max_ms": 34.4435
+        },
+        "Poll(SocketRead)": {
+          "count": 18639,
+          "total_ms": 0.0,
+          "mean_ms": 0.0,
+          "max_ms": 0.0
+        },
+        "Poll(Wake)": {
+          "count": 24153,
+          "total_ms": 0.0,
+          "mean_ms": 0.0,
+          "max_ms": 0.0
+        },
+        "Poll(Empty)": {
+          "count": 405,
+          "total_ms": 0.0,
+          "mean_ms": 0.0,
+          "max_ms": 0.0
+        },
+        "Count(SessionOperation)": {
+          "count": 164141,
+          "total_ms": 811.217,
+          "mean_ms": 0.004942196038771544,
+          "max_ms": 0.5191
+        },
+        "Count(SessionContended)": {
+          "count": 2803,
+          "total_ms": 0.0,
+          "mean_ms": 0.0,
+          "max_ms": 0.0
+        },
+        "LockActual(Session)": {
+          "count": 4348,
+          "total_ms": 52.4713,
+          "mean_ms": 0.012067916283348665,
+          "max_ms": 0.5282
+        },
+        "LockResult(Session, Acquired)": {
+          "count": 101112,
+          "total_ms": 0.0,
+          "mean_ms": 0.0,
+          "max_ms": 0.0
+        }
+      },
+      "1": {
+        "PauseActual(Handshake)": {
+          "count": 3,
+          "total_ms": 16.8784,
+          "mean_ms": 5.626133333333333,
+          "max_ms": 13.789
+        },
+        "Poll(Requested)": {
+          "count": 40217,
+          "total_ms": 802832.9931,
+          "mean_ms": 19.962528112489743,
+          "max_ms": 19.9994
+        },
+        "Poll(Actual)": {
+          "count": 40217,
+          "total_ms": 80425.6185,
+          "mean_ms": 1.9997915931073924,
+          "max_ms": 35.2683
+        },
+        "Poll(SocketRead)": {
+          "count": 18029,
+          "total_ms": 0.0,
+          "mean_ms": 0.0,
+          "max_ms": 0.0
+        },
+        "Poll(Wake)": {
+          "count": 23664,
+          "total_ms": 0.0,
+          "mean_ms": 0.0,
+          "max_ms": 0.0
+        },
+        "Poll(Empty)": {
+          "count": 560,
+          "total_ms": 0.0,
+          "mean_ms": 0.0,
+          "max_ms": 0.0
+        },
+        "Count(SessionOperation)": {
+          "count": 163046,
+          "total_ms": 816.0976,
+          "mean_ms": 0.005005321197698809,
+          "max_ms": 1.0254
+        },
+        "Count(SessionContended)": {
+          "count": 2925,
+          "total_ms": 0.0,
+          "mean_ms": 0.0,
+          "max_ms": 0.0
+        },
+        "LockActual(Session)": {
+          "count": 4388,
+          "total_ms": 60.0038,
+          "mean_ms": 0.013674521422060165,
+          "max_ms": 0.1664
+        },
+        "LockResult(Session, Acquired)": {
+          "count": 101234,
+          "total_ms": 0.0,
+          "mean_ms": 0.0,
+          "max_ms": 0.0
+        }
+      },
+      "2": {
+        "Frame(SenderLock, Begin)": {
+          "count": 4096,
+          "total_ms": 6.6721,
+          "mean_ms": 0.0016289306640625,
+          "max_ms": 0.0526
+        },
+        "Frame(SenderLock, Data)": {
+          "count": 4096,
+          "total_ms": 2.8939,
+          "mean_ms": 0.0007065185546875,
+          "max_ms": 0.0285
+        },
+        "Frame(SenderLock, Commit)": {
+          "count": 4096,
+          "total_ms": 2.7927,
+          "mean_ms": 0.0006818115234375,
+          "max_ms": 0.0179
+        },
+        "Frame(SenderSend, Begin)": {
+          "count": 4096,
+          "total_ms": 137.5397,
+          "mean_ms": 0.0335790283203125,
+          "max_ms": 0.3127
+        },
+        "Frame(SenderSend, Data)": {
+          "count": 4096,
+          "total_ms": 159.5614,
+          "mean_ms": 0.038955419921875,
+          "max_ms": 0.2009
+        },
+        "Frame(SenderSend, Commit)": {
+          "count": 4096,
+          "total_ms": 145.0887,
+          "mean_ms": 0.0354220458984375,
+          "max_ms": 0.5552
+        },
+        "Frame(SenderWait, Begin)": {
+          "count": 4096,
+          "total_ms": 49359.9795,
+          "mean_ms": 12.050776245117188,
+          "max_ms": 313.8104
+        },
+        "Frame(SenderWait, Data)": {
+          "count": 4096,
+          "total_ms": 53329.7192,
+          "mean_ms": 13.0199509765625,
+          "max_ms": 359.9925
+        },
+        "Frame(SenderWait, Commit)": {
+          "count": 4096,
+          "total_ms": 90091.6816,
+          "mean_ms": 21.995039453125,
+          "max_ms": 184.3176
+        },
+        "Frame(ReceiverHandle, Begin)": {
+          "count": 4096,
+          "total_ms": 25056.6722,
+          "mean_ms": 6.117351611328125,
+          "max_ms": 40.9711
+        },
+        "Frame(ReceiverHandle, Data)": {
+          "count": 4096,
+          "total_ms": 29.1041,
+          "mean_ms": 0.0071054931640625,
+          "max_ms": 0.064
+        },
+        "Frame(ReceiverHandle, Commit)": {
+          "count": 4096,
+          "total_ms": 85409.3732,
+          "mean_ms": 20.85189775390625,
+          "max_ms": 358.8764
+        },
+        "Frame(ReceiverLock, Begin)": {
+          "count": 4096,
+          "total_ms": 2.6533,
+          "mean_ms": 0.0006477783203125,
+          "max_ms": 0.0192
+        },
+        "Frame(ReceiverLock, Data)": {
+          "count": 4096,
+          "total_ms": 77.921,
+          "mean_ms": 0.019023681640625,
+          "max_ms": 0.0826
+        },
+        "Frame(ReceiverLock, Commit)": {
+          "count": 4096,
+          "total_ms": 3.0486,
+          "mean_ms": 0.000744287109375,
+          "max_ms": 0.023
+        },
+        "Frame(ReceiverSend, Begin)": {
+          "count": 4096,
+          "total_ms": 124.1031,
+          "mean_ms": 0.0302986083984375,
+          "max_ms": 0.0925
+        },
+        "Frame(ReceiverSend, Data)": {
+          "count": 4096,
+          "total_ms": 59.6645,
+          "mean_ms": 0.0145665283203125,
+          "max_ms": 0.0466
+        },
+        "Frame(ReceiverSend, Commit)": {
+          "count": 4096,
+          "total_ms": 170.2411,
+          "mean_ms": 0.0415627685546875,
+          "max_ms": 0.1258
+        },
+        "Count(WaitOk)": {
+          "count": 12288,
+          "total_ms": 0.0,
+          "mean_ms": 0.0,
+          "max_ms": 0.0
+        },
+        "Count(Ack)": {
+          "count": 4096,
+          "total_ms": 0.0,
+          "mean_ms": 0.0,
+          "max_ms": 0.0
+        },
+        "LockActual(Tx)": {
+          "count": 2187,
+          "total_ms": 78.6783,
+          "mean_ms": 0.03597544581618656,
+          "max_ms": 0.0817
+        },
+        "LockResult(Tx, Acquired)": {
+          "count": 24578,
+          "total_ms": 0.0,
+          "mean_ms": 0.0,
+          "max_ms": 0.0
+        }
+      },
+      "3": {
+        "Frame(SenderLock, Begin)": {
+          "count": 4096,
+          "total_ms": 6.8811,
+          "mean_ms": 0.0016799560546875,
+          "max_ms": 0.0501
+        },
+        "Frame(SenderLock, Data)": {
+          "count": 4096,
+          "total_ms": 2.7677,
+          "mean_ms": 0.0006757080078125,
+          "max_ms": 0.022
+        },
+        "Frame(SenderLock, Commit)": {
+          "count": 4096,
+          "total_ms": 2.6656,
+          "mean_ms": 0.00065078125,
+          "max_ms": 0.0221
+        },
+        "Frame(SenderSend, Begin)": {
+          "count": 4096,
+          "total_ms": 140.402,
+          "mean_ms": 0.03427783203125,
+          "max_ms": 0.6897
+        },
+        "Frame(SenderSend, Data)": {
+          "count": 4096,
+          "total_ms": 161.7621,
+          "mean_ms": 0.0394927001953125,
+          "max_ms": 1.0629
+        },
+        "Frame(SenderSend, Commit)": {
+          "count": 4096,
+          "total_ms": 142.3345,
+          "mean_ms": 0.0347496337890625,
+          "max_ms": 0.3358
+        },
+        "Frame(SenderWait, Begin)": {
+          "count": 4096,
+          "total_ms": 59437.0225,
+          "mean_ms": 14.510991821289062,
+          "max_ms": 169.4101
+        },
+        "Frame(SenderWait, Data)": {
+          "count": 4096,
+          "total_ms": 42948.7632,
+          "mean_ms": 10.485537890625,
+          "max_ms": 184.2927
+        },
+        "Frame(SenderWait, Commit)": {
+          "count": 4096,
+          "total_ms": 90421.1631,
+          "mean_ms": 22.07547927246094,
+          "max_ms": 360.0194
+        },
+        "Frame(ReceiverHandle, Begin)": {
+          "count": 4096,
+          "total_ms": 24587.4349,
+          "mean_ms": 6.0027917236328125,
+          "max_ms": 26.5226
+        },
+        "Frame(ReceiverHandle, Data)": {
+          "count": 4096,
+          "total_ms": 28.3444,
+          "mean_ms": 0.00692001953125,
+          "max_ms": 0.046
+        },
+        "Frame(ReceiverHandle, Commit)": {
+          "count": 4096,
+          "total_ms": 84269.4036,
+          "mean_ms": 20.57358486328125,
+          "max_ms": 183.3941
+        },
+        "Frame(ReceiverLock, Begin)": {
+          "count": 4096,
+          "total_ms": 2.4167,
+          "mean_ms": 0.0005900146484375,
+          "max_ms": 0.0014
+        },
+        "Frame(ReceiverLock, Data)": {
+          "count": 4096,
+          "total_ms": 53.2729,
+          "mean_ms": 0.0130060791015625,
+          "max_ms": 0.1168
+        },
+        "Frame(ReceiverLock, Commit)": {
+          "count": 4096,
+          "total_ms": 2.6872,
+          "mean_ms": 0.0006560546875,
+          "max_ms": 0.0232
+        },
+        "Frame(ReceiverSend, Begin)": {
+          "count": 4096,
+          "total_ms": 133.4707,
+          "mean_ms": 0.0325856201171875,
+          "max_ms": 0.0844
+        },
+        "Frame(ReceiverSend, Data)": {
+          "count": 4096,
+          "total_ms": 57.8849,
+          "mean_ms": 0.0141320556640625,
+          "max_ms": 0.0602
+        },
+        "Frame(ReceiverSend, Commit)": {
+          "count": 4096,
+          "total_ms": 172.9656,
+          "mean_ms": 0.0422279296875,
+          "max_ms": 0.1048
+        },
+        "Count(WaitOk)": {
+          "count": 12288,
+          "total_ms": 0.0,
+          "mean_ms": 0.0,
+          "max_ms": 0.0
+        },
+        "Count(Ack)": {
+          "count": 4096,
+          "total_ms": 0.0,
+          "mean_ms": 0.0,
+          "max_ms": 0.0
+        },
+        "LockActual(Tx)": {
+          "count": 1522,
+          "total_ms": 54.6922,
+          "mean_ms": 0.03593442838370565,
+          "max_ms": 0.1161
+        },
+        "LockResult(Tx, Acquired)": {
+          "count": 24579,
+          "total_ms": 0.0,
+          "mean_ms": 0.0,
+          "max_ms": 0.0
+        }
+      }
+    }
+  }
+}

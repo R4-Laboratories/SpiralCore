@@ -3,10 +3,20 @@
 //! This grants no route/peer authority. Full object-v1 warm/Combined integration
 //! and the canonical post-admission endpoint hook remain separate required work.
 mod duplex;
+mod failure;
+#[cfg(feature = "witness-stall")]
+pub use duplex::stall;
+pub use failure::{FailureObservation, FailureReason, FailureSite};
+mod lock_wait;
 mod stream;
+#[cfg(feature = "witness-timing")]
+pub mod timing;
 pub use stream::MappedStream;
 mod object;
-pub use duplex::{BlockReceipt, Duplex, DuplexReader, DuplexWriter, JoinGuard, Role};
+pub use duplex::{
+    BlockReceipt, Duplex, DuplexReader, DuplexWriter, JoinGuard, READER_STACK_BYTES,
+    RetentionObserver, Role,
+};
 mod record;
 pub mod scope;
 mod tcp;

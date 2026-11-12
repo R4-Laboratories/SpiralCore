@@ -1,0 +1,45 @@
+{
+  "source_head": "19289a650ff69b8912c565182fb5d9e969e9cd22",
+  "scope": "four frozen candidate files; native Windows NOT_RUN; no Cargo builds or claimed performance gain",
+  "files": [
+    {
+      "path": "crates/spiralcore-storage-windows/src/windows.rs",
+      "sha256": "c407bd3c2e2c56536889d2cf796142795839004d6ec2dbc4da9fe8d750350c02"
+    },
+    {
+      "path": "crates/spiralcore-storage-windows/src/tests.rs",
+      "sha256": "158f5a39fe042441c0e3480a3aa095a27f1a89683d3ec19689faa829d6e26216"
+    },
+    {
+      "path": ".github/workflows/spiralcore-flowmux.yml",
+      "sha256": "5ea84715bb458b5b514aa6b0e30e62163ee3cae763f8f4b05e94fb1a8a999449"
+    },
+    {
+      "path": ".github/workflows/mvm-mailbox-portable.yml",
+      "sha256": "f41201b84d210d0a3418b78d8b462b8dab093ca4b854cf465194834c8396250e"
+    }
+  ],
+  "checks": [
+    {
+      "command": "ssh wick /var/tmp/spiralcore-review-tools-20261110/actionlint -shellcheck= - < .github/workflows/spiralcore-flowmux.yml",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": "ssh wick /var/tmp/spiralcore-review-tools-20261110/actionlint -shellcheck= - < .github/workflows/mvm-mailbox-portable.yml",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": "git diff --check -- crates/spiralcore-storage-windows/src/windows.rs crates/spiralcore-storage-windows/src/tests.rs .github/workflows/spiralcore-flowmux.yml .github/workflows/mvm-mailbox-portable.yml",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    }
+  ],
+  "actionlint_version": "vetted Wick 1.7.12",
+  "qualification": "Only uninstrumented FlowMux standalone pairs qualify for native paired cost comparison. Portable instrumented rows are execution/coverage evidence, not performance comparison. Existing 4096/240/2s native gate unchanged.",
+  "portable_change": "Exactly five Windows storage enumeration/assertion/receipt count lines updated2to3; unrelated two-MVM count and quota coverage threshold unchanged."
+}

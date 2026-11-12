@@ -235,7 +235,20 @@ fn full_delivery_queue_backpressures_then_times_out_without_extra_published_ack(
         "fifth block cannot receive Published while delivery queue remains full"
     );
     assert!(start.elapsed() < Duration::from_secs(2));
-    assert!(left_tx.send_block(vec![5; 1024]).is_err());
+    // The peer cannot send Published before delivery, so the short original
+    // send deadline expires before the receiver's two-second queue budget.
+    let first = left_tx
+        .cancellation
+        .first_failure()
+        .expect("original failure");
+    assert_eq!(first.site, crate::FailureSite::SenderReplyWait);
+    assert_eq!(first.frame_kind, Some(3));
+    assert_eq!(first.reason, crate::FailureReason::Timeout);
+    assert!(matches!(
+        left_tx.send_block(vec![5; 1024]),
+        Err(crate::Error::Cancelled)
+    ));
+    assert_eq!(left_tx.cancellation.first_failure(), Some(first));
     assert!(left_guard.join().is_err());
     assert!(right_guard.join().is_err());
     // Fatal timeout fences delivery even for the four previously verified
@@ -357,6 +370,12 @@ fn correct_object_published_from_wrong_direction_is_rejected() {
             guard.join(),
             Err(spiralcore_mvm_flowmux::Error::Protocol)
         ));
+        let original = writer
+            .cancellation
+            .first_failure()
+            .expect("original worker error");
+        assert_eq!(original.site, crate::FailureSite::WorkerExit);
+        assert_eq!(original.reason, crate::FailureReason::Protocol);
         peer.join().unwrap();
     });
 }
@@ -490,4 +509,129 @@ fn thirty_two_interleaved_requests_bound_a_waiting_local_operation() {
         ));
         remote.join().unwrap();
     });
+}
+
+#[test]
+fn oversized_application_offer_is_refused_before_shared_core_dispatch() {
+    use spiralcore_transfer::{
+        hash,
+        protocol::{Frame, Mode, Offer},
+    };
+    use std::{
+        io::{Read, Write},
+        sync::{
+            Arc,
+            atomic::{AtomicUsize, Ordering},
+        },
+    };
+    struct ObservedAuthority(Arc<AtomicUsize>);
+    impl Authority for ObservedAuthority {
+        fn authorize(&self, _: &Context) -> spiralcore_transfer::Result<()> {
+            self.0.fetch_add(1, Ordering::SeqCst);
+            Ok(())
+        }
+    }
+    let c = context();
+    let binding = Binding {
+        flow: c.namespace().unwrap(),
+        policy_sha256: [4; 32],
+        scope_commitment: [9; 32],
+    };
+    let mut caps = Capabilities::full();
+    caps.max_object_bytes = 65536;
+    let profile = caps.negotiate(&caps).unwrap();
+    let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+    let address = listener.local_addr().unwrap();
+    let socket = TcpStream::connect(address).unwrap();
+    let (mut peer, _) = listener.accept().unwrap();
+    peer.set_read_timeout(Some(Duration::from_secs(1))).unwrap();
+    peer.set_write_timeout(Some(Duration::from_secs(1)))
+        .unwrap();
+    let store =
+        Store(std::env::temp_dir().join(format!("flow-preallocation-{}", std::process::id())));
+    let calls = Arc::new(AtomicUsize::new(0));
+    let endpoint = ObjectEndpoint::open(
+        &store.0,
+        Limits::default(),
+        ObservedAuthority(calls.clone()),
+        profile,
+    )
+    .unwrap();
+    let sender = ObjectSender::new_with_profile(ObjectMode::Raw, &c, None, profile).unwrap();
+    let channel =
+        ObjectChannel::from_connected(socket, binding, address, Duration::from_secs(1), caps, caps)
+            .unwrap();
+    let (_writer, _reader, guard) = Duplex::spawn(channel, sender, endpoint, c, Role::Initiator)
+        .unwrap()
+        .split();
+    let frame = Frame {
+        kind: 1,
+        transfer: hash(
+            b"spiralcore.flow.application.v1\0",
+            &[&binding.flow, &[1], &0u64.to_be_bytes()],
+        ),
+        seq: 0,
+        body: Offer::cold(&vec![7; spiralcore_mvm_flowmux::MAX_BLOCK + 1], Mode::Raw)
+            .encode()
+            .unwrap(),
+    }
+    .encode()
+    .unwrap();
+    let mut header = b"SCFLW001".to_vec();
+    header.extend_from_slice(&[6, 1, 0, 0]);
+    header.extend_from_slice(&binding.directional_flow(Role::Acceptor));
+    header.extend_from_slice(&binding.policy_sha256);
+    header.extend_from_slice(&binding.scope_commitment);
+    header.extend_from_slice(&0u64.to_be_bytes());
+    header.extend_from_slice(&(frame.len() as u32).to_be_bytes());
+    assert_eq!(header.len(), spiralcore_mvm_flowmux::HEADER_LEN);
+    peer.write_all(&header).unwrap();
+    peer.write_all(&frame).unwrap();
+    assert_eq!(peer.read(&mut [0; 1]).unwrap(), 0);
+    assert!(matches!(
+        guard.join(),
+        Err(spiralcore_mvm_flowmux::Error::Limit)
+    ));
+    assert_eq!(
+        calls.load(Ordering::SeqCst),
+        0,
+        "oversized application Begin must not dispatch/allocate core state"
+    );
+}
+
+#[test]
+fn cancellation_wakes_original_tx_owner_and_conflicting_registration_is_refused() {
+    let mut pair = peers(
+        "tx-release-cancel",
+        ObjectMode::Whole,
+        [Role::Initiator, Role::Acceptor],
+        Duration::from_secs(2),
+    );
+    let tx = pair.left.0.tx.clone();
+    let cancellation = pair.left.0.cancellation.clone();
+    cancellation.bind_tx_wake(tx.gate()).unwrap();
+    let other = crate::lock_wait::ReleaseMutex::new(());
+    assert!(matches!(
+        cancellation.bind_tx_wake(other.gate()),
+        Err(crate::Error::Protocol)
+    ));
+    let held = tx.try_acquire().unwrap().unwrap();
+    std::thread::scope(|scope| {
+        let waiter = scope.spawn(|| {
+            super::acquire_tx(
+                &tx,
+                std::time::Instant::now() + Duration::from_secs(2),
+                &cancellation,
+            )
+            .err()
+        });
+        tx.wait_for_enrollment();
+        cancellation.cancel();
+        assert!(matches!(
+            waiter.join().unwrap(),
+            Some(crate::Error::Cancelled)
+        ));
+        drop(held);
+    });
+    let _ = pair.left.1.receive();
 }

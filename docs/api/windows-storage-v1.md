@@ -1,9 +1,9 @@
 # Native Windows private object storage v1
 
-Status: lead-approved contract; implementation candidate awaiting native
-qualification and independent security review. Delivery belongs to
-SpiralCore #46. Native Windows execution is NOT_RUN until the required hosted
-rows execute this source. This is an object receiver/client gateway storage
+Status: the baseline has [native component evidence](../network/installed-supervisor-results-2026-11-03.md#platform-scope).
+The 2026-11-10 quota-scan addition requires its own native qualification;
+Windows-target compilation alone does not establish that behavior. Delivery
+belongs to SpiralCore #46. This is an object receiver/client gateway storage
 profile, not a native Windows MVM backend, packet attachment or WAN result.
 
 ## Public behavior and ownership
@@ -15,7 +15,7 @@ owner locking and verified durable publication. Unix and Windows backends
 implement that interface; no second codec, store format or authority is added.
 
 The Win32 implementation lives in the independent Windows-only
-`spiralcore-storage-windows` crate. Its safe eight-operation interface returns
+`spiralcore-storage-windows` crate. Its safe file-operation interface returns
 typed `Storage`, `Unsupported` or `Limit` failures, mapped by the existing
 endpoint filesystem module. This isolates reviewed FFI while the entire
 transfer/protocol crate retains `#![forbid(unsafe_code)]`. The backend uses
@@ -50,7 +50,8 @@ as trusted same-UID/root mutation is for the Unix store.
 Open Windows objects using native handles with OPEN_REPARSE_POINT; inspect the
 actual handle, reject any reparse tag and non-disk/nonregular object, and require
 one link for files. Validate each existing ancestor as a real directory while
-retaining handles that deny deletion during the operation. Bound normalized
+retaining its handle during the operation. Attribute/security-only ancestry
+handles do not establish rename exclusion under Windows sharing rules. Bound normalized
 drive-absolute paths to 4096 UTF-16 units and 128 components; reject alternate
 streams, parent traversal, device/UNC prefixes and ambiguous trailing dots or
 spaces. Newly created child names remain the endpoint's fixed/hex names.
@@ -91,6 +92,33 @@ reset of an unknown nonempty root. Empty directory-creation staging names hold
 no payload and do not authorize cleanup outside the selected store. Publication
 failures retain the existing endpoint's refusal/retry semantics; this contract
 does not claim atomic revocation or guaranteed outcome after power loss.
+
+### Quota scan addition, 2026-11-10
+
+Windows accounting uses a synchronous scalar-only scan. After initial root
+capture through the existing drive-absolute checks, enumeration and child opens
+use the actual retained root and namespace handles. Shared ancestors retain
+their previous traversal checks and get no new write exclusion. Only owned
+directories are pinned with list/traverse/read-control access and read-only
+sharing. An incompatible owned-directory writer/deleter refuses the scan.
+There is no weaker fallback and no on-wire change.
+
+Native opens use one validated basename with `NtCreateFile.RootDirectory`;
+enumeration uses bounded handle-based directory records. Publication
+opens preserve their original generic-read/read-control access, sharing,
+effective SID, protected ACL, reparse and hardlink checks. Each held file must
+match the full enumerated file ID on the original volume before its length
+contributes to checked totals. The effective SID is queried afresh and must
+equal the opening identity. Only aggregate/scoped byte totals and a count leave
+the native function; its pins, paths and content handles remain private and end
+before mutation. Ordinary content reads retain their existing implementation.
+The admitted NTFS profile requests completed synchronous opens. An unexpected
+`STATUS_PENDING` is a fail-stop invariant violation: the process aborts rather
+than unwinding storage still potentially referenced by I/O. This is not support
+for asynchronous metadata operations or timed cancellation. A separate child
+test exercises that path without issuing actual pending I/O.
+The [design and native gates](../specs/2026-11-10-windows-quota-batch.md) record
+the stricter pin behavior and the unqualified platform/performance cases.
 
 The Windows primitive definitions follow Microsoft documentation for
 [CreateFileW](https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-createfilew),

@@ -5,6 +5,7 @@ on:
     paths:
       - 'crates/spiralcore-mvm-flowmux/**'
       - 'crates/spiralcore-transfer/**'
+      - 'crates/spiralcore-storage-windows/**'
       - 'crates/uor-r4-object-store/**'
       - 'docs/platforms/mvm-mailbox-portable.json'
       - '.github/workflows/spiralcore-flowmux.yml'
@@ -35,7 +36,7 @@ jobs:
     timeout-minutes: 30
     strategy:
       fail-fast: false
-      max-parallel: 2
+      max-parallel: 7
       matrix: ${{ fromJSON(needs.matrix.outputs.include) }}
     defaults:
       run:
@@ -70,6 +71,106 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Toolchain install failed' }
           rustc "+1.97.1-$env:NATIVE_TARGET" -vV | Tee-Object flowmux-evidence/rustc.txt
           if ($LASTEXITCODE -ne 0 -or !(Select-String -Path flowmux-evidence/rustc.txt -SimpleMatch -Pattern "host: $env:NATIVE_TARGET")) { throw 'Toolchain is not native' }
+      - name: Execute checked metadata guards and native paired comparison
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $false
+          $cargoArgs = @("+1.97.1-$env:NATIVE_TARGET", 'test', '--release', '--locked', '--manifest-path',
+            'crates/spiralcore-transfer/Cargo.toml', '--lib', 'endpoint::metadata_tests')
+          $expected = if ($env:RUNNER_OS -eq 'Windows') { 3 } else { 2 }
+          $listing = (& cargo @cargoArgs -- --list --format terse 2>&1 | Out-String)
+          $code = $LASTEXITCODE
+          $listing | Set-Content flowmux-evidence/metadata-list.txt
+          $listed = [regex]::Matches($listing, '(?m)^.+: test\r?$').Count
+          if ($code -ne 0 -or $listed -ne $expected) { throw "Expected $expected metadata guards, listed $listed" }
+          $log = (& cargo @cargoArgs -- --show-output --test-threads=1 --color never 2>&1 | Out-String)
+          $code = $LASTEXITCODE
+          $log | Set-Content flowmux-evidence/metadata-tests.txt
+          $log | Write-Output
+          $summaries = [regex]::Matches($log, 'test result: ok\. (\d+) passed; (\d+) failed; (\d+) ignored; (\d+) measured; (\d+) filtered out;')
+          if ($code -ne 0 -or $summaries.Count -ne 1) { throw 'Metadata guards failed' }
+          $g = $summaries[0].Groups
+          if ([int]$g[1].Value -ne $expected -or [int]$g[2].Value -ne 0 -or [int]$g[3].Value -ne 0 -or [int]$g[4].Value -ne 0) { throw 'Incomplete metadata guards' }
+          @{ listed = $listed; passed = [int]$g[1].Value; failed = 0; ignored = 0;
+            filtered_other_library_tests = [int]$g[5].Value;
+            scope = 'selected metadata equivalence guards; Windows includes six paired native trials'
+          } | ConvertTo-Json | Set-Content flowmux-evidence/metadata-counts.json
+          if ($env:RUNNER_OS -eq 'Windows') {
+            $pairs = [regex]::Matches($log, '(?m)^METADATA_OPEN_PAIR (.+)\r?$')
+            if ($pairs.Count -ne 6 -or [regex]::Matches($log, '(?m)^METADATA_OPEN_SETUP ').Count -ne 1 -or [regex]::Matches($log, '(?m)^METADATA_OPEN_GUARDS ').Count -ne 1) { throw 'Missing native metadata measurements or refusal guards' }
+            $rows = @($pairs | ForEach-Object { $_.Groups[1].Value | ConvertFrom-Json })
+            foreach ($row in $rows) {
+              if ($row.exact_readbacks -ne $true -or $row.files -ne 64) { throw 'Incomplete native paired metadata readback' }
+            }
+            $rows | ConvertTo-Json -Depth 6 | Set-Content flowmux-evidence/metadata-pairs.json
+          }
+          if (git status --porcelain -- crates/spiralcore-transfer/Cargo.lock) { throw 'Locked metadata execution changed source' }
+      - name: Execute native existing-file descriptor comparison
+        if: runner.os == 'Windows'
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $false
+          $cargoArgs = @("+1.97.1-$env:NATIVE_TARGET", 'test', '--release', '--locked', '--manifest-path',
+            'crates/spiralcore-storage-windows/Cargo.toml', '--lib',
+            'tests::existing_open_descriptor_elision_preserves_guards_and_records_paired_cost')
+          $listing = (& cargo @cargoArgs -- --list --format terse 2>&1 | Out-String)
+          $code = $LASTEXITCODE
+          $listing | Set-Content flowmux-evidence/existing-open-list.txt
+          $listed = [regex]::Matches($listing, '(?m)^.+: test\r?$').Count
+          if ($code -ne 0 -or $listed -ne 1) { throw "Expected one native existing-open comparison, listed $listed" }
+          $log = (& cargo @cargoArgs -- --exact --show-output --test-threads=1 --color never 2>&1 | Out-String)
+          $code = $LASTEXITCODE
+          $log | Set-Content flowmux-evidence/existing-open-tests.txt
+          $log | Write-Output
+          $summaries = [regex]::Matches($log, 'test result: ok\. (\d+) passed; (\d+) failed; (\d+) ignored; (\d+) measured; (\d+) filtered out;')
+          if ($code -ne 0 -or $summaries.Count -ne 1) { throw 'Native existing-open comparison failed' }
+          $g = $summaries[0].Groups
+          if ([int]$g[1].Value -ne 1 -or [int]$g[2].Value -ne 0 -or [int]$g[3].Value -ne 0 -or [int]$g[4].Value -ne 0) { throw 'Incomplete existing-open comparison' }
+          $pairs = [regex]::Matches($log, '(?m)^EXISTING_OPEN_PAIR (.+)\r?$')
+          $setup = [regex]::Matches($log, '(?m)^EXISTING_OPEN_SETUP (.+)\r?$')
+          $guards = [regex]::Matches($log, '(?m)^EXISTING_OPEN_GUARDS (.+)\r?$')
+          if ($pairs.Count -ne 6 -or $setup.Count -ne 1 -or $guards.Count -ne 1) { throw 'Missing existing-open paired measurements or guards' }
+          $rows = @($pairs | ForEach-Object { $_.Groups[1].Value | ConvertFrom-Json })
+          for ($i = 0; $i -lt 6; $i++) {
+            $row = $rows[$i]
+            $order = if ($i % 2 -eq 0) { 'old-new' } else { 'new-old' }
+            if ($row.trial -ne $i -or $row.order -ne $order -or $row.exact_readbacks -ne $true -or $row.files -ne 64 -or $row.bytes -ne 1048576) { throw 'Incomplete alternating existing-open readback' }
+          }
+          $guardRow = $guards[0].Groups[1].Value | ConvertFrom-Json
+          foreach ($name in @('exact_readbacks','noninherit','owner_dacl_unchanged','missing','directory','hardlink','conflicting_writer','broad_acl_no_repair','reparse_ancestor')) {
+            if ($guardRow.$name -ne $true) { throw "Missing existing-open guard: $name" }
+          }
+          @{ listed = $listed; passed = 1; failed = 0; ignored = 0;
+            filtered_other_storage_tests = [int]$g[5].Value; setup = ($setup[0].Groups[1].Value | ConvertFrom-Json);
+            pairs = $rows; guards = $guardRow; scope = 'native checked-open and full-read comparison; not network or MVM'
+          } | ConvertTo-Json -Depth 6 | Set-Content flowmux-evidence/existing-open-results.json
+          & cargo "+1.97.1-$env:NATIVE_TARGET" clippy --release --locked --manifest-path crates/spiralcore-storage-windows/Cargo.toml --all-targets -- -D warnings 2>&1 | Tee-Object flowmux-evidence/existing-open-clippy.txt
+          if ($LASTEXITCODE -ne 0) { throw 'Strict Windows storage Clippy failed' }
+          if (git status --porcelain -- crates/spiralcore-storage-windows/Cargo.lock) { throw 'Locked existing-open execution changed source' }
+      - name: Check single-victim verification and failed multi-victim preflight
+        run: |
+          $test = 'endpoint::ordered_eviction_tests::single_and_multiple_victim_validation_precedes_removal'
+          $log = (& cargo "+1.97.1-$env:NATIVE_TARGET" test --release --locked --manifest-path crates/spiralcore-transfer/Cargo.toml --lib $test -- --exact --show-output --color never 2>&1 | Out-String)
+          $code = $LASTEXITCODE
+          $log | Set-Content flowmux-evidence/single-eviction.txt
+          if ($code -ne 0 -or $log -notmatch 'ORDERED_SINGLE_EVICTION bytes=16384 full_reads=1' -or $log -notmatch 'test result: ok\. 1 passed; 0 failed; 0 ignored;') { throw 'Original single-victim read, expected charge and preflight controls failed' }
+      - name: Measure verified cold commit costs on Server 2025
+        if: matrix.id == 'windows2025-x64'
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $false
+          $selector = 'endpoint::commit_costs::cold_whole_ordered_commit_after_full_cache'
+          $log = (& cargo "+1.97.1-$env:NATIVE_TARGET" test --release --locked --manifest-path crates/spiralcore-transfer/Cargo.toml --lib $selector -- --exact --ignored --nocapture 2>&1 | Out-String)
+          $code = $LASTEXITCODE
+          $log | Set-Content flowmux-evidence/commit-costs.txt
+          $log | Write-Output
+          if ($code -ne 0 -or $log -notmatch 'test result: ok\. 1 passed; 0 failed; 0 ignored;' -or [regex]::Matches($log, '(?m)^ORDERED_COMMIT_EXACT ').Count -ne 3) {
+            throw 'Cold commit timings missing or exact readback failed'
+          }
+      - name: Strict metadata and transfer warnings
+        run: |
+          & cargo "+1.97.1-$env:NATIVE_TARGET" clippy --release --locked --keep-going --manifest-path crates/spiralcore-transfer/Cargo.toml --all-targets -- -D warnings 2>&1 | Tee-Object flowmux-evidence/metadata-clippy.txt
+          if ($LASTEXITCODE -ne 0) { throw 'Strict transfer Clippy failed' }
       - name: Execute nonzero paired TLS and exact-object tests
         run: |
           $ErrorActionPreference = 'Stop'
@@ -82,7 +183,7 @@ jobs:
           if ($code -ne 0) { throw 'Test listing failed' }
           $listed = [regex]::Matches($listing, '(?m)^.+: test\r?$').Count
           if ($listed -lt 34) { throw "Missing component coverage: $listed" }
-          $log = (& cargo @cargoArgs -- --format pretty --color never 2>&1 | Out-String)
+          $log = (& cargo @cargoArgs -- --format pretty --color never --show-output 2>&1 | Out-String)
           $code = $LASTEXITCODE
           $log | Set-Content flowmux-evidence/tests.txt
           $log | Write-Output
@@ -97,6 +198,31 @@ jobs:
           if ($passed -ne $listed) { throw 'Listed tests do not equal passed tests' }
           @{ listed = $listed; passed = $passed; failed = 0; ignored = 0; scope = 'component only' } | ConvertTo-Json | Set-Content flowmux-evidence/counts.json
           if (git status --porcelain -- crates/spiralcore-mvm-flowmux/Cargo.lock) { throw 'Locked execution changed source' }
+      - name: Execute ordered cache, Small resource and schema reuse regressions
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $false
+          $cargoArgs = @("+1.97.1-$env:NATIVE_TARGET", 'test', '--release', '--locked', '--manifest-path',
+            'crates/spiralcore-transfer/Cargo.toml', '--test', 'ordered_retention', '--test', 'small_resources', '--test', 'schema_reuse')
+          $listing = (& cargo @cargoArgs -- --list --format terse 2>&1 | Out-String)
+          $code = $LASTEXITCODE
+          $listing | Set-Content flowmux-evidence/ordered-list.txt
+          $listed = [regex]::Matches($listing, '(?m)^.+: test\r?$').Count
+          if ($code -ne 0 -or $listed -ne 20) { throw "Expected 20 ordered/Small/schema regressions, listed $listed" }
+          $log = (& cargo @cargoArgs -- --format pretty --color never 2>&1 | Out-String)
+          $code = $LASTEXITCODE
+          $log | Set-Content flowmux-evidence/ordered-tests.txt
+          $log | Write-Output
+          $summaries = [regex]::Matches($log, 'test result: ok\. (\d+) passed; (\d+) failed; (\d+) ignored; (\d+) measured; (\d+) filtered out;')
+          if ($code -ne 0 -or $summaries.Count -ne 3) { throw 'Ordered/Small/schema regressions failed' }
+          $passed = 0
+          foreach ($summary in $summaries) {
+            $g = $summary.Groups
+            if ([int]$g[2].Value -ne 0 -or [int]$g[3].Value -ne 0 -or [int]$g[4].Value -ne 0 -or [int]$g[5].Value -ne 0) { throw 'Incomplete ordered/Small coverage' }
+            $passed += [int]$g[1].Value
+          }
+          if ($passed -ne $listed) { throw 'Ordered listed/passed mismatch' }
+          @{ listed = $listed; passed = $passed; failed = 0; ignored = 0; scope = 'ordered cache, Small resources and schema reuse; component only' } | ConvertTo-Json | Set-Content flowmux-evidence/ordered-counts.json
       - name: Strict component warnings
         run: |
           & cargo "+1.97.1-$env:NATIVE_TARGET" clippy --release --locked --manifest-path crates/spiralcore-mvm-flowmux/Cargo.toml --all-targets -- -D warnings 2>&1 | Tee-Object flowmux-evidence/clippy.txt

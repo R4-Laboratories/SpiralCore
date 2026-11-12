@@ -28,6 +28,9 @@ mod unsupported {
     pub(in super::super) fn open_read(_: &Path) -> Result<File> {
         Err(Error::Unsupported)
     }
+    pub(in super::super) fn quota_file_len(_: &Path) -> Result<u64> {
+        Err(Error::Unsupported)
+    }
     pub(in super::super) fn create_new_file(_: &Path) -> Result<File> {
         Err(Error::Unsupported)
     }

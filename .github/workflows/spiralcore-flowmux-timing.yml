@@ -1,0 +1,187 @@
+name: SpiralCore native FlowMux timing witness
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'crates/spiralcore-mvm-flowmux/**'
+      - 'crates/spiralcore-transfer/**'
+      - 'crates/spiralcore-storage-windows/**'
+      - '.github/workflows/spiralcore-flowmux-timing.yml'
+permissions:
+  contents: read
+concurrency:
+  group: spiralcore-flowmux-timing-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  windows-timing:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: windows-2025
+            feature: witness-timing
+            artifact: flowmux-windows-timing
+          - runner: windows-2022
+            feature: witness-stall
+            artifact: flowmux-windows-stall
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 20
+    defaults:
+      run:
+        shell: pwsh
+    env:
+      DIAGNOSTIC_FEATURE: ${{ matrix.feature }}
+      CARGO_BUILD_JOBS: 2
+      CARGO_INCREMENTAL: 0
+      CARGO_TERM_COLOR: never
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Record native diagnostic source
+        run: |
+          $ErrorActionPreference = 'Stop'
+          New-Item -ItemType Directory timing-evidence | Out-Null
+          if ($env:RUNNER_OS -ne 'Windows' -or $env:RUNNER_ARCH -ne 'X64') { throw 'Native Windows x64 required' }
+          $source = (git rev-parse HEAD).Trim()
+          if ($LASTEXITCODE -ne 0) { throw 'Source identity failed' }
+          $tree = (git rev-parse 'HEAD^{tree}').Trim()
+          if ($LASTEXITCODE -ne 0) { throw 'Tree identity failed' }
+          @{ source = $source; tree = $tree; run = $env:GITHUB_RUN_ID;
+            attempt = $env:GITHUB_RUN_ATTEMPT; image = $env:ImageVersion;
+            os = $env:RUNNER_OS; arch = $env:RUNNER_ARCH;
+            features = $env:DIAGNOSTIC_FEATURE; blocks_each_direction = 4096; watchdog_seconds = 240;
+            scope = 'instrumented native process; both peers on one runner; no MVM backend or WAN';
+            lock_sha256 = (Get-FileHash crates/spiralcore-mvm-flowmux/Cargo.lock -Algorithm SHA256).Hash
+          } | ConvertTo-Json | Set-Content timing-evidence/identity.json
+      - name: Install pinned native toolchain
+        run: |
+          rustup toolchain install 1.97.1-x86_64-pc-windows-msvc --profile minimal
+          if ($LASTEXITCODE -ne 0) { throw 'Pinned Rust unavailable' }
+          rustc +1.97.1-x86_64-pc-windows-msvc -vV | Tee-Object timing-evidence/rustc.txt
+          if ($LASTEXITCODE -ne 0 -or !(Select-String -Path timing-evidence/rustc.txt -SimpleMatch 'host: x86_64-pc-windows-msvc')) { throw 'Native toolchain required' }
+      - name: Execute unchanged sustained workload with bounded timing
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $false
+          if ($env:DIAGNOSTIC_FEATURE -eq 'witness-stall') {
+            $control = (& cargo +1.97.1-x86_64-pc-windows-msvc test --release --locked --manifest-path crates/spiralcore-mvm-flowmux/Cargo.toml --features witness-stall --lib duplex::stall::tests::sample_is_nonblocking_and_keeps_the_original_deadline -- --exact --color never 2>&1 | Out-String)
+            $controlCode = $LASTEXITCODE
+            $control | Set-Content timing-evidence/stall-control.txt
+            if ($controlCode -ne 0 -or $control -notmatch 'test result: ok\. 1 passed; 0 failed;') { throw 'Missing original-deadline observation control' }
+          }
+          $log = (& cargo +1.97.1-x86_64-pc-windows-msvc test --release --locked --manifest-path crates/spiralcore-mvm-flowmux/Cargo.toml --features $env:DIAGNOSTIC_FEATURE --test ordered_stream -- --show-output --color never 2>&1 | Out-String)
+          $code = $LASTEXITCODE
+          $log | Set-Content timing-evidence/tests.txt
+          $log | Write-Output
+          if ($env:DIAGNOSTIC_FEATURE -eq 'witness-stall' -and $log -notmatch '(?m)^ORDERED_STALL_WINDOW observed=\d+ retained=[0-8] ') { throw 'Sampling window missing from original workload' }
+
+          if ($code -ne 0 -or $log -notmatch 'test result: ok\. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out;') { throw 'Instrumented sustained gate failed; preserve diagnostics' }
+          if (git status --porcelain -- crates/spiralcore-mvm-flowmux/Cargo.lock) { throw 'Locked execution changed source' }
+      - name: Checksum compact diagnostics
+        if: always()
+        run: |
+          if (Test-Path timing-evidence) {
+            Get-ChildItem timing-evidence -File | Sort-Object Name | ForEach-Object {
+              "$((Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant())  $($_.Name)"
+            } | Set-Content timing-evidence/SHA256SUMS
+          }
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: ${{ matrix.artifact }}-${{ github.run_attempt }}
+          path: timing-evidence/
+          if-no-files-found: error
+          retention-days: 14
+  macos-timing:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - fixture: ordered_stream
+            feature: witness-timing
+            artifact: flowmux-macos26-intel-timing
+          - fixture: ordered_artifacts
+            feature: witness-stall
+            artifact: flowmux-macos26-intel-artifact-stall
+    runs-on: macos-26-intel
+    timeout-minutes: 20
+    defaults:
+      run:
+        shell: pwsh
+    env:
+      DIAGNOSTIC_FEATURE: ${{ matrix.feature }}
+      FIXTURE: ${{ matrix.fixture }}
+      CARGO_BUILD_JOBS: 2
+      CARGO_INCREMENTAL: 0
+      CARGO_TERM_COLOR: never
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Record native diagnostic source
+        run: |
+          $ErrorActionPreference = 'Stop'
+          New-Item -ItemType Directory timing-evidence | Out-Null
+          if ($env:RUNNER_OS -ne 'macOS' -or $env:RUNNER_ARCH -ne 'X64') { throw 'Native macOS Intel x64 required' }
+          $machine = (uname -m).Trim()
+          if ($LASTEXITCODE -ne 0 -or $machine -ne 'x86_64') { throw 'Native Intel kernel required' }
+          $productVersion = (sw_vers -productVersion).Trim()
+          if ($LASTEXITCODE -ne 0 -or $productVersion -notmatch '^26\.') { throw 'Native macOS 26 required' }
+          $release = (sw_vers) -join "`n"
+          if ($LASTEXITCODE -ne 0) { throw 'Native OS identity failed' }
+          $kernel = (uname -a) -join "`n"
+          if ($LASTEXITCODE -ne 0) { throw 'Native kernel identity failed' }
+          $source = (git rev-parse HEAD).Trim()
+          if ($LASTEXITCODE -ne 0) { throw 'Source identity failed' }
+          $tree = (git rev-parse 'HEAD^{tree}').Trim()
+          if ($LASTEXITCODE -ne 0) { throw 'Tree identity failed' }
+          @{ source = $source; tree = $tree; run = $env:GITHUB_RUN_ID;
+            attempt = $env:GITHUB_RUN_ATTEMPT; image = $env:ImageVersion;
+            os = $env:RUNNER_OS; arch = $env:RUNNER_ARCH; machine = $machine;
+            os_release = $release; kernel = $kernel; runner_label = 'macos-26-intel';
+            expected_target = 'x86_64-apple-darwin'; operation_deadline_seconds = 2;
+            features = $env:DIAGNOSTIC_FEATURE; fixture = $env:FIXTURE;
+            blocks_each_direction = $(if ($env:FIXTURE -eq 'ordered_stream') { 4096 } else { 129 });
+            watchdog_seconds = $(if ($env:FIXTURE -eq 'ordered_stream') { 240 } else { $null });
+            per_operation_seconds = 2;
+            scope = 'instrumented native process; both peers on one runner; no MVM backend or WAN';
+            lock_sha256 = (Get-FileHash crates/spiralcore-mvm-flowmux/Cargo.lock -Algorithm SHA256).Hash
+          } | ConvertTo-Json | Set-Content timing-evidence/identity.json
+      - name: Install pinned native toolchain
+        run: |
+          rustup toolchain install 1.97.1-x86_64-apple-darwin --profile minimal
+          if ($LASTEXITCODE -ne 0) { throw 'Pinned Rust unavailable' }
+          rustc +1.97.1-x86_64-apple-darwin -vV | Tee-Object timing-evidence/rustc.txt
+          if ($LASTEXITCODE -ne 0 -or !(Select-String -Path timing-evidence/rustc.txt -SimpleMatch 'host: x86_64-apple-darwin')) { throw 'Native toolchain required' }
+      - name: Execute unchanged sustained workload with bounded timing
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $false
+          $log = (& cargo +1.97.1-x86_64-apple-darwin test --release --locked --manifest-path crates/spiralcore-mvm-flowmux/Cargo.toml --features $env:DIAGNOSTIC_FEATURE --test $env:FIXTURE -- --show-output --color never 2>&1 | Out-String)
+          $code = $LASTEXITCODE
+          $log | Set-Content timing-evidence/tests.txt
+          $log | Write-Output
+          if ($code -eq 0 -and $env:FIXTURE -eq 'ordered_artifacts') {
+            foreach ($mode in @('Warm','Runtime','Combined')) {
+              if ($log -notmatch "(?m)^ORDERED_STALL_WINDOW observed=\d+ retained=[0-8] fixture=ordered-artifacts-$mode ") { throw "Missing bounded $mode observation" }
+            }
+          }
+
+          if ($code -ne 0 -or $log -notmatch 'test result: ok\. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out;') { throw 'Instrumented sustained gate failed; preserve diagnostics' }
+          if (git status --porcelain -- crates/spiralcore-mvm-flowmux/Cargo.lock) { throw 'Locked execution changed source' }
+      - name: Checksum compact diagnostics
+        if: always()
+        run: |
+          if (Test-Path timing-evidence) {
+            Get-ChildItem timing-evidence -File | Sort-Object Name | ForEach-Object {
+              "$((Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant())  $($_.Name)"
+            } | Set-Content timing-evidence/SHA256SUMS
+          }
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: ${{ matrix.artifact }}-${{ github.run_attempt }}
+          path: timing-evidence/
+          if-no-files-found: error
+          retention-days: 14

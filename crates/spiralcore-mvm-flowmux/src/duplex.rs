@@ -1,3 +1,6 @@
+use crate::FailureSite;
+#[cfg(feature = "witness-timing")]
+use crate::timing::{FrameKind, Metric, Observation, Phase, TimingObserver};
 use crate::{
     Binding, Cancellation, Counters, Error, Event, MAX_BLOCK, ObjectChannel, ObjectRecord, Purpose,
     Result, Rx, Tx,
@@ -6,9 +9,11 @@ use spiralcore_transfer::{
     Id,
     client::Stats,
     endpoint::{Authority, Context},
-    hash,
     protocol::{Frame, Offer},
-    v1::{ObjectEndpoint, ObjectReceipt, ObjectSender},
+    v1::{
+        ObjectEndpoint, ObjectReceipt, ObjectSender, OrderedBinding, OrderedLane,
+        OrderedObjectEndpoint, OrderedSnapshot, ordered_transfer_id,
+    },
 };
 use std::{
     sync::{
@@ -19,6 +24,8 @@ use std::{
     thread::{self, JoinHandle},
     time::{Duration, Instant, SystemTime, UNIX_EPOCH},
 };
+/// One owned reader's explicit stack, charged separately from core workspace.
+pub const READER_STACK_BYTES: usize = 2 * 1024 * 1024;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Role {
@@ -40,13 +47,15 @@ impl Role {
     }
 }
 fn transfer(binding: Binding, role: Role, index: u64, artifact: bool) -> Id {
-    hash(
+    ordered_transfer_id(
         if artifact {
             b"spiralcore.flow.artifact.v1\0"
         } else {
             b"spiralcore.flow.application.v1\0"
         },
-        &[&binding.flow, &[role.tag()], &index.to_be_bytes()],
+        &binding.flow,
+        role.tag(),
+        index,
     )
 }
 fn lock<T>(value: &Mutex<T>) -> Result<MutexGuard<'_, T>> {
@@ -81,7 +90,14 @@ fn now() -> Result<u64> {
         .map_err(|_| Error::Protocol)?
         .as_secs())
 }
+#[cfg(feature = "witness-stall")]
+pub mod stall;
+#[cfg(feature = "witness-stall")]
+use stall::{SenderPhase, StallObserver, WorkerPhase};
+
 struct Expected {
+    #[cfg(feature = "witness-stall")]
+    kind: u8,
     purpose: Purpose,
     transfer: Id,
     seq: u64,
@@ -89,7 +105,34 @@ struct Expected {
     seen: Arc<AtomicUsize>,
 }
 type Pending = Arc<Mutex<Option<Expected>>>;
-type SharedTx = Arc<Mutex<Tx>>;
+type SharedTx = Arc<crate::lock_wait::ReleaseMutex<Tx>>;
+fn acquire_tx<'a>(
+    tx: &'a SharedTx,
+    until: Instant,
+    cancellation: &Cancellation,
+) -> Result<crate::lock_wait::Guard<'a, Tx>> {
+    cancellation.check()?;
+    let guard = tx
+        .acquire(until, cancellation.stopped())
+        .map_err(|error| match error {
+            crate::lock_wait::AcquireError::Timeout => Error::Timeout,
+            crate::lock_wait::AcquireError::Poisoned => Error::Worker,
+            crate::lock_wait::AcquireError::Stopped => {
+                cancellation.check().err().unwrap_or(Error::Closed)
+            }
+        })?;
+    cancellation.check()?;
+    remaining(until)?;
+    Ok(guard)
+}
+
+macro_rules! tx_lock {
+    ($tx:expr, $until:expr, $cancellation:expr, $timing:expr, $phase:ident, $kind:expr) => {{
+        #[cfg(feature = "witness-timing")]
+        let _span = $timing.span(Metric::Frame(Phase::$phase, $kind));
+        acquire_tx($tx, $until, $cancellation)
+    }};
+}
 
 #[derive(Debug)]
 pub struct BlockReceipt {
@@ -101,8 +144,51 @@ pub struct Duplex {
     writer: DuplexWriter,
     reader: DuplexReader,
     guard: JoinGuard,
+    retention: RetentionObserver,
+}
+/// Copied diagnostics only; it owns no endpoint, file, socket or resource lease.
+#[derive(Clone, Default)]
+pub struct RetentionObserver {
+    inner: Arc<Mutex<Option<OrderedSnapshot>>>,
+}
+impl RetentionObserver {
+    /// A concurrent diagnostic observation; never waits for the publisher.
+    #[cfg(feature = "witness-timing")]
+    pub fn try_snapshot(&self) -> Result<Option<OrderedSnapshot>> {
+        match self.inner.try_lock() {
+            Ok(snapshot) => Ok(*snapshot),
+            Err(std::sync::TryLockError::WouldBlock) => Err(Error::Timeout),
+            Err(std::sync::TryLockError::Poisoned(_)) => Err(Error::Worker),
+        }
+    }
+    pub fn snapshot(&self) -> Result<Option<OrderedSnapshot>> {
+        Ok(*lock(&self.inner)?)
+    }
+    fn publish(&self, snapshot: Option<OrderedSnapshot>) -> Result<()> {
+        *lock(&self.inner)? = snapshot;
+        Ok(())
+    }
 }
 impl Duplex {
+    /// Bounded diagnostics only in the opt-in stall witness.
+    #[cfg(feature = "witness-stall")]
+    pub fn stall_observer(&self) -> StallObserver {
+        self.writer.stall.clone()
+    }
+
+    /// Fixed additional TX wrapper/control state; excludes original TX and timing-owner heap.
+    #[cfg(feature = "witness-timing")]
+    pub const fn ownership_wait_bytes() -> usize {
+        crate::lock_wait::ReleaseMutex::<Tx>::additional_owned_bytes()
+            + Cancellation::wake_binding_bytes()
+    }
+    #[cfg(feature = "witness-timing")]
+    pub fn timing_observer(&self) -> TimingObserver {
+        self.writer.timing.clone()
+    }
+    pub fn retention_observer(&self) -> RetentionObserver {
+        self.retention.clone()
+    }
     pub(crate) fn stream_config(&self) -> (Cancellation, Duration) {
         (self.writer.cancellation.clone(), self.writer.timeout)
     }
@@ -128,13 +214,40 @@ impl Duplex {
         let cancellation = channel.cancellation();
         let timeout = channel.timeout;
         let binding = channel.binding;
-        let shared_tx = Arc::new(Mutex::new(channel.tx));
+        let endpoint = if endpoint.profile().capabilities().profile == 2 {
+            let ordered = OrderedBinding::new(
+                &context,
+                binding.flow,
+                role.remote().tag(),
+                b"spiralcore.flow.application.v1\0",
+                b"spiralcore.flow.artifact.v1\0",
+            )?;
+            ReceiveEndpoint::Ordered(Box::new(OrderedObjectEndpoint::new(
+                endpoint, ordered, &context,
+            )?))
+        } else {
+            ReceiveEndpoint::General(Box::new(endpoint))
+        };
+        #[cfg(feature = "witness-timing")]
+        let timing = TimingObserver::default();
+        let shared_tx = crate::lock_wait::ReleaseMutex::new(channel.tx);
+        #[cfg(feature = "witness-timing")]
+        let shared_tx = shared_tx.observed(timing.clone(), crate::timing::LockKind::Tx);
+        let shared_tx = Arc::new(shared_tx);
+        cancellation.bind_tx_wake(shared_tx.gate())?;
         let pending = Arc::new(Mutex::new(None));
         let closed = Arc::new(AtomicBool::new(false));
         let (responses, response_rx) = mpsc::sync_channel(1);
         let (delivery, delivery_rx) = mpsc::sync_channel(4);
         let (done, done_rx) = mpsc::sync_channel(1);
+        let retention = RetentionObserver::default();
+        #[cfg(feature = "witness-stall")]
+        let stall = StallObserver::new(pending.clone());
         let worker = Worker {
+            #[cfg(feature = "witness-stall")]
+            stall: stall.clone(),
+            #[cfg(feature = "witness-timing")]
+            timing: timing.clone(),
             completed: false,
             rx: channel.rx,
             tx: shared_tx.clone(),
@@ -146,13 +259,16 @@ impl Duplex {
             binding,
             role: role.remote(),
             index: 0,
+            artifact_index: 0,
             active: None,
             remote_closed: false,
             local_closed: closed.clone(),
             cancellation: cancellation.clone(),
             timeout,
+            retention: retention.clone(),
         };
         let child = thread::Builder::new()
+            .stack_size(READER_STACK_BYTES)
             .name("spiral-flow-reader".into())
             .spawn(move || {
                 let result = worker.run();
@@ -161,6 +277,10 @@ impl Duplex {
             })?;
         Ok(Self {
             writer: DuplexWriter {
+                #[cfg(feature = "witness-stall")]
+                stall,
+                #[cfg(feature = "witness-timing")]
+                timing,
                 tx: shared_tx,
                 pending,
                 responses: response_rx,
@@ -189,6 +309,7 @@ impl Duplex {
                 cancellation,
                 timeout,
             },
+            retention,
         })
     }
     pub fn split(self) -> (DuplexWriter, DuplexReader, JoinGuard) {
@@ -197,6 +318,10 @@ impl Duplex {
 }
 
 pub struct DuplexWriter {
+    #[cfg(feature = "witness-stall")]
+    stall: StallObserver,
+    #[cfg(feature = "witness-timing")]
+    timing: TimingObserver,
     tx: SharedTx,
     pending: Pending,
     responses: Receiver<Frame>,
@@ -211,6 +336,8 @@ pub struct DuplexWriter {
     timeout: Duration,
 }
 impl DuplexWriter {
+    // Diagnostic observers are optional; transport inputs stay unchanged.
+    #[allow(clippy::too_many_arguments)]
     fn exchange(
         tx: &SharedTx,
         pending: &Pending,
@@ -219,6 +346,9 @@ impl DuplexWriter {
         purpose: Purpose,
         until: Instant,
         budget: &Arc<AtomicUsize>,
+        cancellation: &Cancellation,
+        #[cfg(feature = "witness-timing")] timing: &TimingObserver,
+        #[cfg(feature = "witness-stall")] stall: &StallObserver,
     ) -> Result<Vec<Frame>> {
         if frames.is_empty() || frames.len() > 8 {
             return Err(Error::Limit);
@@ -238,6 +368,8 @@ impl DuplexWriter {
                     return Err(Error::Protocol);
                 }
                 *pending = Some(Expected {
+                    #[cfg(feature = "witness-stall")]
+                    kind: frame.kind,
                     purpose,
                     transfer: frame.transfer,
                     seq: frame.seq,
@@ -245,20 +377,67 @@ impl DuplexWriter {
                     seen: budget.clone(),
                 });
             }
-            lock_until(tx, until)?.send_object(frame, purpose, until)?;
-            let reply = responses
-                .recv_timeout(remaining(until)?)
+            {
+                #[cfg(feature = "witness-stall")]
+                stall.sender(SenderPhase::TxLock);
+                let mut tx = tx_lock!(
+                    tx,
+                    until,
+                    cancellation,
+                    timing,
+                    SenderLock,
+                    FrameKind::from_wire(frame.kind)
+                )
+                .inspect_err(|e| {
+                    cancellation.observe(FailureSite::SenderTxLock, Some(frame.kind), e)
+                })?;
+                #[cfg(feature = "witness-timing")]
+                let _span = timing.span(Metric::Frame(
+                    Phase::SenderSend,
+                    FrameKind::from_wire(frame.kind),
+                ));
+                #[cfg(feature = "witness-stall")]
+                stall.sender(SenderPhase::Send);
+                tx.send_object(frame, purpose, until)?;
+            }
+            #[cfg(feature = "witness-stall")]
+            stall.sender(SenderPhase::Wait);
+            let response = {
+                #[cfg(feature = "witness-timing")]
+                let _span = timing.span(Metric::Frame(
+                    Phase::SenderWait,
+                    FrameKind::from_wire(frame.kind),
+                ));
+                responses.recv_timeout(remaining(until).inspect_err(|e| {
+                    cancellation.observe(FailureSite::SenderReplyWait, Some(frame.kind), e)
+                })?)
+            };
+            #[cfg(feature = "witness-timing")]
+            timing.count(match &response {
+                Ok(reply) if reply.kind == 127 => Observation::WaitRefused,
+                Ok(_) => Observation::WaitOk,
+                Err(RecvTimeoutError::Timeout) => Observation::WaitTimeout,
+                Err(RecvTimeoutError::Disconnected) => Observation::WaitDisconnected,
+            });
+            let reply = response
                 .map_err(|error| match error {
                     RecvTimeoutError::Timeout => Error::Timeout,
                     RecvTimeoutError::Disconnected => Error::Closed,
+                })
+                .inspect_err(|e| {
+                    cancellation.observe(FailureSite::SenderReplyWait, Some(frame.kind), e)
                 })?;
-            remaining(until)?;
+            remaining(until).inspect_err(|e| {
+                cancellation.observe(FailureSite::SenderReplyWait, Some(frame.kind), e)
+            })?;
             let terminal = matches!(reply.kind, 103 | 127);
             replies.push(reply);
             if terminal {
                 break;
             }
         }
+        #[cfg(feature = "witness-stall")]
+        stall.sender(SenderPhase::Caller);
         Ok(replies)
     }
     fn run<T>(
@@ -281,22 +460,37 @@ impl DuplexWriter {
         let pending = &self.pending;
         let responses = &self.responses;
         let result = operation(&mut self.sender, &self.context, &mut |frames| {
-            Self::exchange(tx, pending, responses, frames, purpose, until, &budget).map_err(
-                |error| {
-                    transport_error = Some(error);
-                    spiralcore_transfer::Error::Unknown
-                },
+            Self::exchange(
+                tx,
+                pending,
+                responses,
+                frames,
+                purpose,
+                until,
+                &budget,
+                &self.cancellation,
+                #[cfg(feature = "witness-timing")]
+                &self.timing,
+                #[cfg(feature = "witness-stall")]
+                &self.stall,
             )
+            .map_err(|error| {
+                transport_error = Some(error);
+                spiralcore_transfer::Error::Unknown
+            })
         });
         match result {
             Ok(value) if Instant::now() < until => Ok(value),
             result => {
-                self.cancellation.cancel();
-                self.sender.invalidate_receiver_state();
-                Err(transport_error.unwrap_or(match result {
+                let failure = transport_error.unwrap_or(match result {
                     Ok(_) => Error::Timeout,
                     Err(error) => Error::Core(error),
-                }))
+                });
+                self.cancellation
+                    .observe(FailureSite::SenderOperation, None, &failure);
+                self.cancellation.cancel();
+                self.sender.invalidate_receiver_state();
+                Err(failure)
             }
         }
     }
@@ -314,6 +508,8 @@ impl DuplexWriter {
             sender.send_with_receipt(c, bytes, transfer, false, exchange)
         })?;
         self.index = next;
+        #[cfg(feature = "witness-timing")]
+        self.timing.count(Observation::Ack);
         Ok(BlockReceipt {
             index,
             transfer,
@@ -364,7 +560,7 @@ impl DuplexWriter {
             return Err(Error::Closed);
         }
         let result = (|| {
-            let mut tx = lock_until(&self.tx, until)?;
+            let mut tx = acquire_tx(&self.tx, until, &self.cancellation)?;
             tx.application_half_close(until)?;
             self.closed.store(true, Ordering::Release);
             Ok(())
@@ -407,11 +603,14 @@ impl DuplexReader {
                 Ok(event)
             }
             Err(error) => {
-                self.cancellation.cancel();
-                Err(match error {
+                let failure = match error {
                     RecvTimeoutError::Timeout => Error::Timeout,
                     RecvTimeoutError::Disconnected => Error::Closed,
-                })
+                };
+                self.cancellation
+                    .observe(FailureSite::CallerRead, None, &failure);
+                self.cancellation.cancel();
+                Err(failure)
             }
         }
     }
@@ -507,28 +706,78 @@ impl Drop for JoinGuard {
     }
 }
 
+enum ReceiveEndpoint<A: Authority> {
+    General(Box<ObjectEndpoint<A>>),
+    Ordered(Box<OrderedObjectEndpoint<A>>),
+}
+impl<A: Authority> ReceiveEndpoint<A> {
+    fn snapshot(&self, context: &Context) -> spiralcore_transfer::Result<Option<OrderedSnapshot>> {
+        match self {
+            Self::General(_) => Ok(None),
+            Self::Ordered(endpoint) => endpoint.snapshot(context).map(Some),
+        }
+    }
+    fn handle(
+        &mut self,
+        purpose: Purpose,
+        ordinal: u64,
+        context: &Context,
+        frame: &Frame,
+        now: u64,
+    ) -> spiralcore_transfer::Result<Frame> {
+        match self {
+            Self::General(endpoint) => endpoint.handle(context, frame, now),
+            Self::Ordered(endpoint) => endpoint.handle(
+                if purpose == Purpose::Application {
+                    OrderedLane::Application
+                } else {
+                    OrderedLane::Artifact
+                },
+                ordinal,
+                context,
+                frame,
+                now,
+            ),
+        }
+    }
+    fn read_object(&mut self, context: &Context, id: Id) -> spiralcore_transfer::Result<Vec<u8>> {
+        match self {
+            Self::General(endpoint) => endpoint.read_object(context, id),
+            Self::Ordered(endpoint) => endpoint.read_object(context, id),
+        }
+    }
+}
 struct Worker<A: Authority> {
+    #[cfg(feature = "witness-stall")]
+    stall: StallObserver,
+    #[cfg(feature = "witness-timing")]
+    timing: TimingObserver,
     completed: bool,
     rx: Rx,
     tx: SharedTx,
     pending: Pending,
     responses: SyncSender<Frame>,
     delivery: SyncSender<Event>,
-    endpoint: ObjectEndpoint<A>,
+    endpoint: ReceiveEndpoint<A>,
     context: Context,
     binding: Binding,
     role: Role,
     index: u64,
+    artifact_index: u64,
     active: Option<(Id, Id, u64)>,
     remote_closed: bool,
     local_closed: Arc<AtomicBool>,
     cancellation: Cancellation,
     timeout: Duration,
+    retention: RetentionObserver,
 }
 impl<A: Authority> Worker<A> {
     fn complete(&mut self) -> Result<(Counters, Counters)> {
         self.cancellation.check_delivery()?;
-        let counters = (lock(&self.tx)?.counters(), self.rx.counters());
+        let counters = (
+            acquire_tx(&self.tx, deadline(self.timeout)?, &self.cancellation)?.counters(),
+            self.rx.counters(),
+        );
         self.completed = true;
         self.cancellation.complete();
         Ok(counters)
@@ -563,42 +812,112 @@ impl<A: Authority> Worker<A> {
                 return Err(Error::Protocol);
             }
         }
-        let reply = self.endpoint.handle(&self.context, &request, now()?)?;
-        if purpose == Purpose::Application {
-            if matches!(request.kind, 1 | 4) {
-                let body = if request.kind == 4 {
-                    request.body.get(32..).ok_or(Error::Protocol)?
-                } else {
-                    &request.body
-                };
-                let offer = Offer::decode(body)?;
-                if offer.len == 0 || offer.len > MAX_BLOCK as u64 {
-                    return Err(Error::Limit);
-                }
-                let candidate = (request.transfer, offer.object, offer.len);
-                if self.active.is_some_and(|active| active != candidate) {
-                    return Err(Error::Protocol);
-                }
-                self.active = Some(candidate);
+        if purpose == Purpose::Application && matches!(request.kind, 1 | 4) {
+            let body = if request.kind == 4 {
+                request.body.get(32..).ok_or(Error::Protocol)?
+            } else {
+                &request.body
+            };
+            let offer = Offer::decode(body)?;
+            if offer.len == 0 || offer.len > MAX_BLOCK as u64 {
+                return Err(Error::Limit);
             }
-            if reply.kind == 103 {
-                let (_, id, len) = self.active.ok_or(Error::Protocol)?;
-                if reply.body != id {
-                    return Err(Error::Integrity);
-                }
-                let bytes = self.endpoint.read_object(&self.context, id)?;
-                if bytes.len() as u64 != len {
-                    return Err(Error::Integrity);
-                }
-                let next = self.index.checked_add(1).ok_or(Error::Sequence)?;
-                self.deliver(Event::Data(bytes), until)?;
-                self.index = next;
-                self.active = None;
+            let candidate = (request.transfer, offer.object, offer.len);
+            if self.active.is_some_and(|active| active != candidate) {
+                return Err(Error::Protocol);
             }
+            self.active = Some(candidate);
         }
-        lock_until(&self.tx, until)?.send_object(&reply, purpose, until)
+        let ordinal = if purpose == Purpose::Application {
+            self.index
+        } else {
+            self.artifact_index
+        };
+        #[cfg(feature = "witness-stall")]
+        self.stall
+            .mark(WorkerPhase::EndpointHandle, request.kind, ordinal);
+        let reply = {
+            #[cfg(feature = "witness-timing")]
+            let _span = self.timing.span(Metric::Frame(
+                Phase::ReceiverHandle,
+                FrameKind::from_wire(request.kind),
+            ));
+            self.endpoint
+                .handle(purpose, ordinal, &self.context, &request, now()?)
+                .map_err(Error::from)
+                .inspect_err(|e| {
+                    self.cancellation
+                        .observe(FailureSite::ReceiverHandle, Some(request.kind), e)
+                })?
+        };
+        #[cfg(feature = "witness-stall")]
+        self.stall
+            .mark(WorkerPhase::Retention, request.kind, ordinal);
+        self.retention
+            .publish(self.endpoint.snapshot(&self.context)?)?;
+        if purpose == Purpose::Application && reply.kind == 103 {
+            let (_, id, len) = self.active.ok_or(Error::Protocol)?;
+            if reply.body != id {
+                return Err(Error::Integrity);
+            }
+            #[cfg(feature = "witness-stall")]
+            self.stall
+                .mark(WorkerPhase::Readback, request.kind, ordinal);
+            let bytes = self
+                .endpoint
+                .read_object(&self.context, id)
+                .map_err(Error::from)
+                .inspect_err(|e| {
+                    self.cancellation
+                        .observe(FailureSite::ReceiverReadback, Some(request.kind), e)
+                })?;
+            if bytes.len() as u64 != len {
+                return Err(Error::Integrity);
+            }
+            let next = self.index.checked_add(1).ok_or(Error::Sequence)?;
+            #[cfg(feature = "witness-stall")]
+            self.stall
+                .mark(WorkerPhase::Delivery, request.kind, ordinal);
+            self.deliver(Event::Data(bytes), until).inspect_err(|e| {
+                self.cancellation
+                    .observe(FailureSite::ReceiverDelivery, Some(request.kind), e)
+            })?;
+            self.index = next;
+            self.active = None;
+        }
+        if purpose == Purpose::Artifact && reply.kind == 103 {
+            self.artifact_index = self.artifact_index.checked_add(1).ok_or(Error::Sequence)?;
+        }
+        #[cfg(feature = "witness-stall")]
+        self.stall
+            .mark(WorkerPhase::ReplyLock, request.kind, ordinal);
+        let mut tx = tx_lock!(
+            &self.tx,
+            until,
+            &self.cancellation,
+            &self.timing,
+            ReceiverLock,
+            FrameKind::from_wire(request.kind)
+        )
+        .inspect_err(|e| {
+            self.cancellation
+                .observe(FailureSite::ReceiverReplyLock, Some(request.kind), e)
+        })?;
+        #[cfg(feature = "witness-timing")]
+        let _span = self.timing.span(Metric::Frame(
+            Phase::ReceiverSend,
+            FrameKind::from_wire(request.kind),
+        ));
+        #[cfg(feature = "witness-stall")]
+        self.stall
+            .mark(WorkerPhase::ReplyWrite, request.kind, ordinal);
+        tx.send_object(&reply, purpose, until)
     }
     fn run(mut self) -> Result<(Counters, Counters)> {
+        self.run_inner()
+            .inspect_err(|e| self.cancellation.observe(FailureSite::WorkerExit, None, e))
+    }
+    fn run_inner(&mut self) -> Result<(Counters, Counters)> {
         loop {
             if self.remote_closed
                 && self.local_closed.load(Ordering::Acquire)
@@ -606,6 +925,8 @@ impl<A: Authority> Worker<A> {
             {
                 return self.complete();
             }
+            #[cfg(feature = "witness-stall")]
+            self.stall.mark(WorkerPhase::Poll, 0, self.index);
             match self.rx.poll_input() {
                 Ok(false) => continue,
                 Ok(true) => {}
@@ -617,7 +938,7 @@ impl<A: Authority> Worker<A> {
                     // A peer can observe our FIN before the writing thread
                     // publishes local_closed. Preserve the original TX barrier
                     // before deciding whether this EOF is a clean completion.
-                    let tx = lock(&self.tx)?;
+                    let tx = acquire_tx(&self.tx, deadline(self.timeout)?, &self.cancellation)?;
                     if self.local_closed.load(Ordering::Acquire) && lock(&self.pending)?.is_none() {
                         drop(tx);
                         return self.complete();
@@ -641,6 +962,8 @@ impl<A: Authority> Worker<A> {
                     until = until.min(expected.until);
                 }
             }
+            #[cfg(feature = "witness-stall")]
+            self.stall.mark(WorkerPhase::Receive, 0, self.index);
             match self.rx.receive_object(until)? {
                 ObjectRecord::Frame(purpose, frame) if matches!(frame.kind, 1..=6) => {
                     self.request(purpose, frame, until)?

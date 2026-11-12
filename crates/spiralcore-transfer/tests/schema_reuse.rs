@@ -235,9 +235,9 @@ fn warm_decoder_does_not_hide_corrupt_missing_or_unauthorized_artifact() {
             send(&mut ep, &c, mode, &artifact, &next, 4).unwrap_err(),
             Error::Missing
         );
-        std::fs::write(&path, original).unwrap();
-        use std::os::unix::fs::PermissionsExt;
-        std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o600)).unwrap();
+        // A fresh transfer recreates the canonical private publication on every OS.
+        seed(&mut ep, &c, &artifact, 9);
+        assert_eq!(std::fs::read(&path).unwrap(), original);
         authority.0.store(false, Ordering::SeqCst);
         assert_eq!(
             send(&mut ep, &c, mode, &artifact, &next, 5).unwrap_err(),
