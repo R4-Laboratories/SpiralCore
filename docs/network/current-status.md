@@ -11,7 +11,7 @@ tracks delivery. The next installed gate is an authorized Cast from guest A to
 guest B with exact readback inside the destination workload. Cross-host WAN and
 platform qualification follow. [Guest retry and worker capacity regressions](evidence/2026-11-12-paired-mailbox/README.md).
 
-Both addressed Firecracker guests now boot and reach workload activation. After the sealed image permissions were corrected, both guest agents refused the Cast endpoint authorization. Neither run produced a guest B readback. The original systemd scopes were stopped and verified empty after each pair. SDK-native rollback and coordinator exit receipts remain open. [Installed activation results and timings](evidence/2026-11-12-paired-mailbox/addressed-native-launch/guest-activation.md).
+Both addressed Firecracker roles booted in two paced runs. The source SDK admitted guest A each time. The destination SDK then reported that guest B was missing from the host name registry. All three paced-attempt coordinators returned exit 42. Exact destination workload readback is still open. [Installed results, CPU and timing](evidence/2026-11-12-paired-mailbox/addressed-native-launch/paced-runs.md).
 
 The installed addressed SDK now creates private VM and short Unix socket directories under either tested umask. Linux and macOS both passed the ownership and signed-publication controls. [Filesystem evidence](evidence/2026-11-12-paired-mailbox/installed-driver/private-state.md).
 
