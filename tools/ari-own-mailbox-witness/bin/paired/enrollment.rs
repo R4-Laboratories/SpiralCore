@@ -59,6 +59,10 @@ impl Enrollment {
         template.capability.address.authorization_domain = local.address.authorization_domain;
         template.capability.message_kinds = vec![MailboxMessageKind::Cast];
         template.routing.hop_limit = 1;
+        if cfg!(feature = "large-object-fixture") {
+            local.max_payload_bytes = super::fixture::FRAME_LEN as u32;
+            template.capability.max_payload_bytes = super::fixture::FRAME_LEN as u32;
+        }
         let mut external = template.capability.clone();
         external.subject = a.header.sender;
         external.capability_id = CapabilityId::from_bytes(rand::random());
@@ -142,7 +146,7 @@ impl Enrollment {
             receive_grant_sha256: journal_capability_digest(&grants.destination_receive)?,
             not_before_unix_ms: start,
             expires_at_unix_ms: end,
-            max_payload_bytes: 313,
+            max_payload_bytes: super::fixture::FRAME_LEN as u32,
         };
         let mut a = self.source;
         a.outbound_journal_v1 = Some(direction);

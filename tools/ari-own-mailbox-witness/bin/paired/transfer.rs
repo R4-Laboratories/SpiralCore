@@ -16,12 +16,12 @@ pub fn one(
     let transaction = Instant::now();
     let until = transaction + Duration::from_secs(50);
     let source_request = json!({"frame_hex":hex::encode(&raw),"recipient":hex::encode(direction.address.recipient.as_bytes()),"direction":hex::encode(commitment)});
-    let mut source_call = workload::Call::start(A, &source_request)?;
+    let mut source_call = workload::Call::start(A, &source_request, until)?;
     let mut staged = None;
     let mut relay = None;
     let mut first_receipt: Option<receipt_retry::FirstReceipt<MailboxEnvelope>> = None;
     let control = if let Some(n) = ordinal {
-        let stage = source_call.wait(until)?;
+        let stage = source_call.wait()?;
         let staged_ns = transaction.elapsed().as_nanos() as u64;
         staged = Some(stage);
         Some(series::admitted_control(
@@ -98,14 +98,16 @@ pub fn one(
     let (counts, v2, verified_ns) = relay.unwrap();
     let id = hex::encode(v2.receipt.message_id.as_bytes());
     ensure!(
-        source["role"] == "staged" && source["message_id"] == id && source["frame_bytes"] == 313,
+        source["role"] == "staged"
+            && source["message_id"] == id
+            && source["frame_bytes"] == super::fixture::FRAME_LEN,
         "B receipt differs from A original staged ID"
     );
     let mut b_request = json!({"message_id":id});
     if ordinal.is_some() {
         b_request["ephemeral_readback"] = json!(true);
     }
-    let mut bcall = workload::Call::start(B, &b_request)?;
+    let mut bcall = workload::Call::start(B, &b_request, until)?;
     let mut destination = loop {
         if let Some(v) = bcall.completed()? {
             break v;
@@ -119,7 +121,7 @@ pub fn one(
     ensure!(
         destination["role"] == "received_and_acknowledged"
             && destination["message_id"] == id
-            && destination["frame_bytes"] == 313
+            && destination["frame_bytes"] == super::fixture::FRAME_LEN
             && [
                 "receive_to_agent",
                 "receive_from_agent",

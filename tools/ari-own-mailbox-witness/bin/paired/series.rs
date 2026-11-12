@@ -24,8 +24,8 @@ pub fn admitted_control(
     let request = json!({"control_probe":ordinal, "direction":source_request["direction"],
         "recipient":source_request["recipient"]});
     let control_start = start.elapsed().as_nanos() as u64;
-    let mut call = Call::start(super::A, &request)?;
-    let mut result = call.wait(until)?;
+    let mut call = Call::start(super::A, &request, until)?;
+    let mut result = call.wait()?;
     let control_end = start.elapsed().as_nanos() as u64;
     ensure!(
         result["control_probe"] == ordinal
