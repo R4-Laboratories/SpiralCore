@@ -43,6 +43,84 @@ fn id(value: &Value, bytes: usize) -> Result<&str> {
     Ok(text)
 }
 
+#[derive(Clone, Copy)]
+pub(super) enum Codec {
+    Raw,
+    WholeZstd,
+}
+
+impl Codec {
+    pub(super) fn parse(label: &str) -> Result<Self> {
+        match label {
+            "raw" => Ok(Self::Raw),
+            "zstd-whole-v1" => Ok(Self::WholeZstd),
+            _ => anyhow::bail!("expected raw or zstd-whole-v1"),
+        }
+    }
+    fn label(self) -> &'static str {
+        match self {
+            Self::Raw => "raw",
+            Self::WholeZstd => "zstd-whole-v1",
+        }
+    }
+    fn mode(self) -> u64 {
+        match self {
+            Self::Raw => 0,
+            Self::WholeZstd => 9,
+        }
+    }
+}
+
+/// Compare the independent receiver's handled Offer/Data/Finish with A's
+/// codec report. A cold comparison must actually carry the selected encoding.
+fn check_codec(codec: Codec, source: &Value, dest: &[Value], warm: bool) -> Result<()> {
+    let mode = codec.mode();
+    ensure!(
+        number(source, "offered_mode")? == mode,
+        "sender used another codec"
+    );
+    number(source, "encoder_setup_ns")?;
+    number(source, "encoder_setup_cpu_ns")?;
+    let first = dest.first().context("no original Offer")?;
+    ensure!(
+        number(first, "frame_kind")? == 1 && number(first, "wire_mode")? == mode,
+        "callee observed another Offer"
+    );
+    if warm {
+        ensure!(
+            dest.len() == 1 && number(source, "data_bytes")? == 0,
+            "warm hit carried Data"
+        );
+        return Ok(());
+    }
+    ensure!(
+        dest.len() >= 3 && number(dest.last().unwrap(), "frame_kind")? == 3,
+        "cold run missing Finish"
+    );
+    let mut total = 0u64;
+    for row in &dest[1..dest.len() - 1] {
+        ensure!(
+            number(row, "frame_kind")? == 2 && number(row, "wire_mode")? == mode,
+            "callee observed another Data encoding"
+        );
+        let bytes = number(row, "data_payload_bytes")?;
+        let max = match codec {
+            Codec::Raw => 4091,
+            Codec::WholeZstd => 4090,
+        };
+        ensure!(
+            (1..=max).contains(&bytes),
+            "Data fragment exceeds original grant"
+        );
+        total = total.checked_add(bytes).context("Data length overflow")?;
+    }
+    ensure!(
+        number(source, "data_bytes")? == total,
+        "encoded body accounting differs across guests"
+    );
+    Ok(())
+}
+
 #[derive(Default)]
 struct Receiver {
     instance: Option<String>,
@@ -97,7 +175,13 @@ fn check_turn(row: &Value, tx: &str, seq: u64, worker: &str, body: &[u8]) -> Res
     }
 }
 
-fn check_sender(row: &Value, turns: usize, len: usize, warm: bool) -> Result<()> {
+fn check_sender(
+    row: &Value,
+    turns: usize,
+    len: usize,
+    warm: bool,
+    codec: Option<Codec>,
+) -> Result<()> {
     ensure!(
         number(row, "calls")? == turns as u64 && number(row, "object_bytes")? == len as u64,
         "A and B disagree on object length or Call count"
@@ -107,7 +191,12 @@ fn check_sender(row: &Value, turns: usize, len: usize, warm: bool) -> Result<()>
         if warm {
             turns == 1 && data == 0
         } else {
-            turns >= 3 && data == len as u64
+            turns >= 3
+                && if matches!(codec, Some(Codec::WholeZstd)) {
+                    data > 0
+                } else {
+                    data == len as u64
+                }
         },
         "expected cold literal transfer followed by a one-Call warm lookup"
     );
@@ -167,15 +256,22 @@ fn original_boots(home: &Path, pair: [u8; 32]) -> Result<[MailboxReaderBootBindi
     Ok(boots)
 }
 
-fn round(pair: &str, tx: &str, b_boot: &str, receiver: &mut Receiver, warm: bool) -> Result<Value> {
+fn round(
+    pair: &str,
+    tx: &str,
+    b_boot: &str,
+    receiver: &mut Receiver,
+    warm: bool,
+    codec: Option<Codec>,
+) -> Result<Value> {
     let start = Instant::now();
     let host_cpu = cpu_time::ProcessTime::now();
     let until = start + Duration::from_secs(45);
-    let mut a = workload::Call::start(
-        A,
-        &json!({"object_send":{"pair":pair, "transfer":tx, "payload_hex":hex::encode(BODY)}}),
-        until,
-    )?;
+    let mut task = json!({"pair":pair,"transfer":tx,"payload_hex":hex::encode(BODY)});
+    if let Some(codec) = codec {
+        task["codec"] = json!(codec.label());
+    }
+    let mut a = workload::Call::start(A, &json!({"object_send":task}), until)?;
     let mut source = None;
     let mut dest = Vec::new();
     let mut receiver_cpu = 0u64;
@@ -245,7 +341,10 @@ fn round(pair: &str, tx: &str, b_boot: &str, receiver: &mut Receiver, warm: bool
         "workload_stdin_bytes":sdk_in,"workload_stdout_bytes_including_readback":sdk_out});
     // Keep completed observations on stderr even if the expected reuse gate fails.
     eprintln!("{}", measured);
-    check_sender(&source, dest.len(), BODY.len(), warm)?;
+    check_sender(&source, dest.len(), BODY.len(), warm, codec)?;
+    if let Some(codec) = codec {
+        check_codec(codec, &source, &dest, warm)?;
+    }
     Ok(measured)
 }
 
@@ -255,11 +354,12 @@ pub fn run(pair: &str) -> Result<()> {
 }
 
 pub(super) fn measure(pair: &str) -> Result<Value> {
-    measure_observed(pair, |_, _| Ok(()))
+    measure_observed(pair, None, |_, _| Ok(()))
 }
 
 pub(super) fn measure_observed(
     pair: &str,
+    codec: Option<Codec>,
     mut after: impl FnMut(&str, &Value) -> Result<()>,
 ) -> Result<Value> {
     let bytes: [u8; 32] = hex::decode(pair)?
@@ -280,13 +380,13 @@ pub(super) fn measure_observed(
         json!({"pair":pair,"cold_transfer":cold_id,"warm_transfer":warm_id})
     );
     let mut worker = Receiver::default();
-    let cold = round(pair, &cold_id, &b_boot, &mut worker, false)?;
+    let cold = round(pair, &cold_id, &b_boot, &mut worker, false, codec)?;
     after("cold", &cold)?;
     ensure!(
         original_boots(&home, bytes)? == boots,
         "guest boots changed after cold transfer"
     );
-    let warm = round(pair, &warm_id, &b_boot, &mut worker, true)?;
+    let warm = round(pair, &warm_id, &b_boot, &mut worker, true, codec)?;
     after("warm", &warm)?;
     ensure!(
         original_boots(&home, bytes)? == boots
@@ -301,7 +401,7 @@ pub(super) fn measure_observed(
     );
     Ok(
         json!({"application_bytes_saved":cold_bytes-warm_bytes,"schema":"spiralcore.installed-object-repeat.v1","pair":pair,
-        "source_boot":hex::encode(boots[0].boot.as_bytes()),"receiver_boot":b_boot,"receiver_instance":worker.instance,
+        "matched_codec":codec.map(Codec::label),"source_boot":hex::encode(boots[0].boot.as_bytes()),"receiver_boot":b_boot,"receiver_instance":worker.instance,
         "object_bytes":BODY.len(),"cold":cold,"warm":warm,"host_relay_bytes":null,"network_wire_bytes":null}),
     )
 }
@@ -348,10 +448,33 @@ mod tests {
             "object_id":FIXTURE_ID,"cpu_ns":1,"wall_ns":2,
             "object_request_bytes":102,"object_reply_bytes":88,
             "operations_to_agent":1,"operations_from_agent":1,"ack_to_agent":1,"ack_from_agent":1});
-        assert!(check_sender(&row, 1, 4096, true).is_ok());
-        assert!(check_sender(&row, 2, 4096, true).is_err());
+        assert!(check_sender(&row, 1, 4096, true, None).is_ok());
+        assert!(check_sender(&row, 2, 4096, true, None).is_err());
         row["data_bytes"] = json!(4096);
-        assert!(check_sender(&row, 1, 4096, true).is_err());
-        assert!(check_sender(&row, 1, 4096, false).is_err());
+        assert!(check_sender(&row, 1, 4096, true, None).is_err());
+        assert!(check_sender(&row, 1, 4096, false, None).is_err());
+    }
+}
+
+#[cfg(test)]
+mod codec_controls {
+    use super::*;
+    #[test]
+    fn matched_zstd_requires_actual_encoded_call_and_original_peer_totals() {
+        let a = json!({"offered_mode":9,"encoder_setup_ns":1,"encoder_setup_cpu_ns":1,"data_bytes":4106});
+        let mut b = vec![
+            json!({"frame_kind":1,"wire_mode":9}),
+            json!({"frame_kind":2,"wire_mode":9,"data_payload_bytes":4090}),
+            json!({"frame_kind":2,"wire_mode":9,"data_payload_bytes":16}),
+            json!({"frame_kind":3}),
+        ];
+        assert!(check_codec(Codec::WholeZstd, &a, &b, false).is_ok());
+        assert!(check_codec(Codec::Raw, &a, &b, false).is_err());
+        assert!(check_codec(Codec::WholeZstd, &a, &b[..1], false).is_err());
+        b[2]["wire_mode"] = json!(0);
+        assert!(check_codec(Codec::WholeZstd, &a, &b, false).is_err());
+        b[2]["wire_mode"] = json!(9);
+        b[2]["data_payload_bytes"] = json!(15);
+        assert!(check_codec(Codec::WholeZstd, &a, &b, false).is_err());
     }
 }

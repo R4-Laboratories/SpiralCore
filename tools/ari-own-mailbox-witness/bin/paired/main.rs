@@ -420,7 +420,13 @@ fn main() -> Result<()> {
     if let [cmd, images @ ..] = args.as_slice()
         && cmd == "installed-object-repeat"
     {
-        return installed_object::run(images);
+        return installed_object::run(images, None);
+    }
+    #[cfg(all(target_os = "linux", feature = "installed-object-pair"))]
+    if let [cmd, mode, images @ ..] = args.as_slice()
+        && cmd == "installed-object-codec"
+    {
+        return installed_object::run(images, Some(object_repeat::Codec::parse(mode)?));
     }
     if args.as_slice() == ["object-enrollment-check"] {
         println!(

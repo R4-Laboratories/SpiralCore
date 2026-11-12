@@ -9,10 +9,12 @@ use mvm_core::mailbox::reader_wire::{
 use spiralcore_mvm_guest::{ReaderTraffic, application_reader_before};
 use spiralcore_transfer::{
     Id,
-    client::{RawFrameLimits, Stats, transfer_raw_leased},
+    client::{RawFrameLimits, Stats, transfer_raw_leased, transfer_zstd_whole_leased},
     endpoint::{Authority, Endpoint},
     hash,
-    protocol::Frame,
+    protocol::{Frame, Mode},
+    resource_profile::ResourceProfile,
+    zstd_whole::PreparedEncoder,
 };
 use std::{
     io::{Read, Write},
@@ -208,12 +210,13 @@ impl GuestObjectSource {
 
     /// A new logical transfer needs its own stable transfer ID. Reusing that
     /// ID reproduces each original Call identity and correlation exactly.
-    pub fn send_before(
+    fn send_before(
         &mut self,
         pair: Id,
         transfer: Id,
         bytes: &[u8],
         limits: RawFrameLimits,
+        encoder: Option<&mut PreparedEncoder>,
         deadline: Instant,
         traffic: &mut ObjectReaderTraffic,
     ) -> Result<Stats> {
@@ -221,51 +224,52 @@ impl GuestObjectSource {
             self.unsettled.is_none(),
             "original object Reply still needs settlement"
         );
-        transfer_raw_leased(
-            bytes,
-            transfer,
-            limits,
-            |request| -> Result<_> {
-                submit_before(
-                    pair,
-                    call_submission(&pair, request)?,
-                    deadline,
-                    &mut traffic.operations,
-                )?;
-                loop {
+        let exchange = |request: &Frame| -> Result<_> {
+            submit_before(
+                pair,
+                call_submission(&pair, request)?,
+                deadline,
+                &mut traffic.operations,
+            )?;
+            loop {
+                ensure!(
+                    Instant::now() < deadline,
+                    "waiting for original object Reply timed out"
+                );
+                if let Some(delivery) =
+                    ObjectDelivery::receive_before(pair, deadline, &mut traffic.operations)?
+                {
+                    let h = delivery.header();
                     ensure!(
-                        Instant::now() < deadline,
-                        "waiting for original object Reply timed out"
+                        h.correlation_id == correlation(&pair, request)
+                            && h.causation_id.as_bytes() == call_id(&pair, request).as_bytes(),
+                        "Reply does not identify the outstanding object Call"
                     );
-                    if let Some(delivery) =
-                        ObjectDelivery::receive_before(pair, deadline, &mut traffic.operations)?
-                    {
-                        let h = delivery.header();
-                        ensure!(
-                            h.correlation_id == correlation(&pair, request)
-                                && h.causation_id.as_bytes() == call_id(&pair, request).as_bytes(),
-                            "Reply does not identify the outstanding object Call"
-                        );
-                        return Ok((delivery.reply_frame()?.clone(), (request.seq, delivery)));
-                    }
-                    wait_to_poll(deadline);
+                    return Ok((delivery.reply_frame()?.clone(), (request.seq, delivery)));
                 }
-            },
-            |(seq, delivery)| {
-                self.unsettled = Some(PendingReply {
-                    pair,
-                    transfer,
-                    seq,
-                    delivery,
-                });
-                self.settle_before(pair, transfer, seq, deadline, &mut traffic.acknowledgments)
-                    .map_err(|error| {
-                        error.context(format!(
-                            "retry original Reply settlement for sequence {seq}"
-                        ))
-                    })
-            },
-        )
+                wait_to_poll(deadline);
+            }
+        };
+        let acknowledge = |(seq, delivery)| {
+            self.unsettled = Some(PendingReply {
+                pair,
+                transfer,
+                seq,
+                delivery,
+            });
+            self.settle_before(pair, transfer, seq, deadline, &mut traffic.acknowledgments)
+                .map_err(|error| {
+                    error.context(format!(
+                        "retry original Reply settlement for sequence {seq}"
+                    ))
+                })
+        };
+        match encoder {
+            Some(encoder) => {
+                transfer_zstd_whole_leased(encoder, bytes, transfer, limits, exchange, acknowledge)
+            }
+            None => transfer_raw_leased(bytes, transfer, limits, exchange, acknowledge),
+        }
     }
 }
 
@@ -279,7 +283,8 @@ pub(super) fn run_source(
     let pair = crate::field(task, "pair")?;
     let transfer = crate::field(task, "transfer")?;
     ensure!(
-        task.as_object().is_some_and(|fields| fields.len() == 3),
+        task.as_object()
+            .is_some_and(|fields| fields.len() == 3 + usize::from(fields.contains_key("codec"))),
         "unexpected object sender input"
     );
     let payload = task["payload_hex"]
@@ -290,6 +295,24 @@ pub(super) fn run_source(
         "object exceeds qualification workload size"
     );
     let bytes = hex::decode(payload)?;
+    let codec = match task.get("codec") {
+        None => Mode::Raw,
+        Some(v) if v == "raw" => Mode::Raw,
+        Some(v) if v == "zstd-whole-v1" => Mode::ZstdWholeV1,
+        _ => anyhow::bail!("unsupported object witness codec"),
+    };
+    let (mut encoder, setup_ns, setup_cpu_ns) = if codec == Mode::ZstdWholeV1 {
+        let start = Instant::now();
+        let cpu = cpu_time::ProcessTime::now();
+        let encoder = PreparedEncoder::new_with_resource_profile(ResourceProfile::SmallV1)?;
+        (
+            Some(encoder),
+            start.elapsed().as_nanos() as u64,
+            cpu.elapsed().as_nanos() as u64,
+        )
+    } else {
+        (None, 0, 0)
+    };
     let mut traffic = ObjectReaderTraffic::default();
     let stats = source.send_before(
         pair,
@@ -299,11 +322,13 @@ pub(super) fn run_source(
             request_bytes: 4152,
             reply_bytes: 88,
         },
+        encoder.as_mut(),
         deadline,
         &mut traffic,
     )?;
     Ok(serde_json::json!({
-        "object_id":hex::encode(stats.object), "object_bytes":bytes.len(),
+        "object_id":hex::encode(stats.object), "object_bytes":bytes.len(), "offered_mode":stats.mode as u8,
+        "encoder_setup_ns":setup_ns,"encoder_setup_cpu_ns":setup_cpu_ns,
         "object_request_bytes":stats.request_bytes, "object_reply_bytes":stats.response_bytes,
         "data_bytes":stats.data_bytes, "calls":stats.requests,
         "operations_to_agent":traffic.operations.written, "operations_from_agent":traffic.operations.read,
