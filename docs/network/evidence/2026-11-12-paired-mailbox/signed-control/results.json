@@ -1,0 +1,62 @@
+{
+  "mvm_commit": "b71beee44ed68348ce3488db920369e28f9da802",
+  "source_tree": "ef9923bfc19ca27ad5ba22fa1392235798c883da",
+  "platform": "Darwin-arm64",
+  "rustc": "rustc 1.97.1 (8bab26f4f 2026-07-14)",
+  "executables": [
+    {
+      "name": "mailbox_worker_control-c14ea6e47c3cbbf6",
+      "sha256": "d38aec5eef443290aaa1b14f04ba525c6b018395da7c734ff01a6e863ea18561"
+    },
+    {
+      "name": "mvm_hostd-0036286e677856cf",
+      "sha256": "0dead469086bf375acb3dd2d378ab34dbfab90b849e95fa634127ba422c71c98"
+    }
+  ],
+  "selected_suites": [
+    {
+      "log": "final-core.log",
+      "passed": 11,
+      "sha256": "8e025b42f60ba587b1d44cb5da4960bc2b868cb88473c0856a66f1b46da3a59a",
+      "measurements": []
+    },
+    {
+      "log": "final-host.log",
+      "passed": 1,
+      "sha256": "3a1838b23056cc515d04e55091103757e29b935e3cd5994c009a82ecfd6ff29d",
+      "measurements": [
+        "private_peer_loss body_bytes=257 prefix_bytes=4 reply_bytes=0 charged_bytes=32768 through_eof_ns=1376416 source_thread_cpu_ns=91792 receiver_thread_cpu_ns=57417"
+      ]
+    },
+    {
+      "log": "final-drain.log",
+      "passed": 1,
+      "sha256": "79bd87786024d070a95145d2d6fae7bd9aef5ae744559797a5bd7d25eba55fb2",
+      "measurements": []
+    },
+    {
+      "log": "final-direction.log",
+      "passed": 1,
+      "sha256": "5e81d636e1533759aa5d1d6e78c32284373d87a00639f5b454960bbd7ede663a",
+      "measurements": [
+        "original_source_turn accepted=false helper_to_relay=4974 relay_to_helper=0 helper_to_guest=52 guest_to_helper=255 elapsed_ns=5761000 helper_cpu_ns=3251709 guest_cpu_ns=128666 relay_cpu_ns=138959",
+        "original_source_turn accepted=true helper_to_relay=4974 relay_to_helper=11 helper_to_guest=194 guest_to_helper=255 elapsed_ns=4733375 helper_cpu_ns=3168625 guest_cpu_ns=43584 relay_cpu_ns=178334",
+        "ORIGINAL_DESTINATION_COMPONENT payload=5 peer_forward=4974 peer_reverse=11 role_forward=283 role_reverse=98 peer_cpu_ns=62458 helper_cpu_ns=6090708 guest_cpu_ns=43500 receive_through_join_ns=10115875",
+        "DEVELOPMENT_CAST payload=5 envelope_socket_forward=3449 envelope_socket_reverse=0 role_forward=283 role_reverse=98 prepare_cpu_ns=1020667 open_cpu_ns=695375 dispatch_cpu_ns=1278750 guest_cpu_ns=47125 prepare_through_verified_readback_ns=3257417",
+        "ORIGINAL_DESTINATION_COMPONENT payload=5 peer_forward=4966 peer_reverse=11 role_forward=283 role_reverse=98 peer_cpu_ns=64417 helper_cpu_ns=2262625 guest_cpu_ns=25542 receive_through_join_ns=2495750"
+      ]
+    }
+  ],
+  "scope": "Host component. The five-byte Unix sockets exercise actual data helpers; the new signed coordinator operation requires native integration for end-to-end results. One request attempt per original source helper including indeterminate results; the launcher requires two private admitted clients. The signed control never returns an inner message ID. No WAN or durable journal qualification.",
+  "patch_base": "36981259b447de8207c0949d102b1bb850d54bd9",
+  "source_files": 4555,
+  "patch_uncompressed_sha256": "66d02c4fe40bec223ad6011e9a2aced5e19b7acfa086062a786b0fbd5dc4f362",
+  "measured_boundaries": "Independent component exchanges only. The measured lost-reply pair uses separate original subprocesses. Successful and lost source turns use local Unix sockets and run before the independent destination readback; timings cannot be added into a guest transfer.",
+  "test_excerpts_sha256": "b7a6e3e7402faf713374462ed574fe22abd11dbdc6647eda5633b00f2c25b5df",
+  "failed_source": {
+    "mvm_commit": "c8113d63910a8a86da8c18396626a7af7f9db29c",
+    "log_sha256": "c67a45ed865b6da27f9cf424443528db1c790b744c8909b57ab0684ebbcee3df",
+    "compiler_diagnostic": "error[E0433]: cannot find `control` in `development`",
+    "correction": "restore pub mod control in development.rs"
+  }
+}
