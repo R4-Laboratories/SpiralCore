@@ -326,7 +326,15 @@ fn run(args: &[String]) -> Result<()> {
         ))?;
         observed[1] = mvm_client::AnyBackend::started_vm_kind(B).map(|kind| kind.as_str());
         native_backend::check_observation(native, observed[1]).map_err(anyhow::Error::msg)?;
-        meters[1] = Some(meter::OriginalMeter::open(B)?);
+        #[cfg(feature = "sender-ordinal-v1")]
+        let observed_meter = if ordinal_count.is_some() {
+            meter::OriginalMeter::open_ordinal(B)?
+        } else {
+            meter::OriginalMeter::open(B)?
+        };
+        #[cfg(not(feature = "sender-ordinal-v1"))]
+        let observed_meter = meter::OriginalMeter::open(B)?;
+        meters[1] = Some(observed_meter);
         let b = Arc::new(Mutex::new(
             state
                 .b_pending
@@ -353,7 +361,15 @@ fn run(args: &[String]) -> Result<()> {
         ))?;
         observed[0] = mvm_client::AnyBackend::started_vm_kind(A).map(|kind| kind.as_str());
         native_backend::check_observation(native, observed[0]).map_err(anyhow::Error::msg)?;
-        meters[0] = Some(meter::OriginalMeter::open(A)?);
+        #[cfg(feature = "sender-ordinal-v1")]
+        let observed_meter = if ordinal_count.is_some() {
+            meter::OriginalMeter::open_ordinal(A)?
+        } else {
+            meter::OriginalMeter::open(A)?
+        };
+        #[cfg(not(feature = "sender-ordinal-v1"))]
+        let observed_meter = meter::OriginalMeter::open(A)?;
+        meters[0] = Some(observed_meter);
         for (name, original, admitted) in [
             (A, grant, &astart.admitted),
             (B, setup.destination, &bstart.admitted),
@@ -429,6 +445,17 @@ fn run(args: &[String]) -> Result<()> {
             streams[i] = meter.finish(&home.join(format!("original-{}.counts", [A, B][i])))?;
         }
     }
+    let meters_complete = ordinal_count.is_none()
+        || streams.iter().all(|s| {
+            s["capture"] == "closed_session"
+                && s["completed_exchanges"].as_u64().is_some_and(|n| n > 0)
+                && s["guest_to_host_read_bytes"]
+                    .as_u64()
+                    .is_some_and(|n| n > 0)
+                && s["host_to_guest_write_accepted_bytes"]
+                    .as_u64()
+                    .is_some_and(|n| n > 0)
+        });
     let row = json!({"native_host":{"os":env::consts::OS,"architecture":env::consts::ARCH,
         "requested_backend":native,"observed_source_backend":observed[0],"observed_destination_backend":observed[1]},
         "original_5257_helper_streams_a_b":streams,"result":measured.as_ref().ok(),"transfer_error":measured.as_ref().err().map(|e|format!("{e:#}")),
@@ -440,6 +467,10 @@ fn run(args: &[String]) -> Result<()> {
     exit?;
     recorded?;
     measured?;
+    ensure!(
+        meters_complete,
+        "incomplete original sender-ordinal guest stream measurements"
+    );
     Ok(())
 }
 fn main() -> Result<()> {
