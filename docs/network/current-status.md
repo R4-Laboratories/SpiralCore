@@ -21,6 +21,8 @@ A coordinator handoff now checks the original helper’s kernel PID and addresse
 
 The two SDK launches now stage their signed source and destination roles together. The Linux workload tests record each edge independently, including exact bytes, CPU and elapsed time. [Guest roles and measurements](evidence/2026-11-12-paired-mailbox/guest-sdk/README.md).
 
+The destination helper now opens an authorized Cast and sends it to the guest role. In a macOS socket test, the complete peer frame carried 4,962 bytes forward and the verdict carried 11 bytes back for five exact application bytes. The installed two-guest A→B transfer still needs a native run. [Destination ingress, CPU and timing](evidence/2026-11-12-paired-mailbox/destination-ingress/README.md).
+
 ## Published checkpoints
 
 | Component | What the checkpoint establishes | Evidence |
