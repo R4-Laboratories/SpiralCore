@@ -4,6 +4,8 @@ Updated **2026-11-12**. Two independently admitted Firecracker guests on a Linux
 
 An earlier two-guest test exercised each guest’s own mailbox. A separate addressed attempt recorded a deadline failure and zero bytes on B’s port-5257 stream. [Independent own-mailbox measurements](evidence/2026-11-12-paired-mailbox/firecracker.md) · [Earlier addressed timeout](evidence/2026-11-12-paired-mailbox/addressed-native-launch/paired-deadline-native.md).
 
+The persistent machine SDK can now boot B with its original incoming journal policy and A with the independently authorized source/recipient pair. The orchestrator retains both owners through startup and rollback. Its typed stop waits for original VMM and helper exit before releasing runtime state. Apple Silicon macOS passed 217 launch and 14 original-helper tests. Linux passed 24 focused checks. [API, source and recorded checks](evidence/2026-11-12-paired-mailbox/persistent-sdk/README.md).
+
 The guest worker pool can return its final complete response while retaining the original process for collection. One macOS 257-byte process fixture returned in 60 ms, down from 2,174 ms. [Linux and macOS worker lifecycle tests](evidence/2026-11-12-paired-mailbox/warm-worker/README.md).
 
 A native macOS host test sealed 257 bytes, verified B’s V2 receipt over a Unix socket, reopened the original destination journal and read all 257 bytes back using B’s signed Receive. Its positive exchange used 5,503 bytes toward B and 1,119 bytes in reply. [Destination enrollment, CPU and timing](evidence/2026-11-12-paired-mailbox/durable-guest-binding/incoming-journal.md).
