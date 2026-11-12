@@ -83,9 +83,9 @@ The `object-reader-v1` guest workload uses the canonical local reader and the ex
 
 The worker stages each Call, asks the original agent for its destination admission status, then reads B’s correlated application Reply. It validates the object response before issuing the original reader ACK. A lost ACK response retains one original lease in that live worker. An explicit `object_settle` operation takes `pair`, `transfer`, and integer `seq` and retries that exact ACK. Its success confirms only that lease's settlement. Worker process restart and full transfer resumption require separate recovery.
 
-On B, `object_exchange::send_response_before` requires the original admitted Call delivery and a persistent shared object endpoint with a current application authority. It submits the reply bound to that exact signed Call lease and waits for the original agent’s matching V2 admission confirmation. The receiving application retains its Call lease until it can ACK. The installed host’s retained ciphertext, original backend ownership, receiver workload dispatch and native cold/repeat trial remain tracked in [#202](https://github.com/R4-Laboratories/SpiralCore/issues/202).
+On B, send `{"object_receive":{"pair":"<64 hex>","transfer":"<64 hex>","seq":0}}` for the first Offer. For each subsequent frame send its original sequence. Each successful response includes the same `receiver_instance` (32 hex characters) and authenticated `receiver_boot` (64 hex characters) through the live worker. B rechecks the exact enrolled Call at cache operations, retains its computed Reply across transient backpressure, waits for the original V2 and then ACKs the Call. `readback_hex` contains the full verified object only on publication or an exact-object cache hit. A repeated worker request after a lost successful stdout confirms the historical ACK. To obtain protected readback again, use a new authorized transfer. [Destination worker and incomplete-return control](../../docs/network/evidence/2026-11-12-paired-mailbox/paired-durable-native/object-guest-reader/destination-worker.md).
 
-For the Linux guest application component use the paired build layout above, with the [MVM contributor revision](https://github.com/Casey-allard/mvm/commit/b04ae4f084ee741bfc58ea51ce7ec672cf9a29cc) at `source`, the SpiralCore checkout at `spiralcore` and its `paired-guest` crate staged beside them. Run:
+For the Linux guest application component use the paired build layout above, with the [MVM contributor revision](https://github.com/Casey-allard/mvm/commit/c9d9fe87b27cd2e5fc64d2b1d9c3a31b522b2097) at `source`, the SpiralCore checkout at `spiralcore` and its `paired-guest` crate staged beside them. Run:
 
 ```sh
 cargo +1.97.1 test --locked --manifest-path paired-guest/Cargo.toml \
@@ -94,7 +94,7 @@ cargo +1.97.1 build --locked --manifest-path paired-guest/Cargo.toml \
   --features object-reader-v1,large-object-fixture --bins
 ```
 
-Linux x86-64 passed eight library checks and strict Clippy, and built both worker binaries. Two tests exchange the real typed reader messages on AF_UNIX socket pairs with fixture peers. They exercise matching staging, pending and terminal responses, including wrong ID, V1, refusal and ambiguous settlement controls. These tests do not boot guests or establish WAN or compression speed. A direct macOS build of the Linux workload encountered Linux-only socket flags. Apple Silicon host acceptance uses a Linux guest built for arm64.
+The predecessor Linux x86-64 sender component passed eight library checks and strict Clippy and built both worker binaries. Two tests exchange the real typed reader messages on AF_UNIX socket pairs with fixture peers. They exercise matching staging, pending and terminal responses, including wrong ID, V1, refusal and ambiguous settlement controls. These tests do not boot guests or establish WAN or compression speed. A direct macOS build of the Linux workload encountered Linux-only socket flags. Apple Silicon host acceptance uses a Linux guest built for arm64.
 
 ### Measuring an installed cold object and its exact repeat
 
