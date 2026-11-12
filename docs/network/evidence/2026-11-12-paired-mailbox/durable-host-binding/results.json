@@ -1,0 +1,77 @@
+{
+  "source": "668ca8d02238911170ed461f050ead8f9ef2f6af",
+  "mvm_original_v1": "ef1067e3bcce4f72bcd5cdacb6b914e76298ae20",
+  "mvm_trusted_host_local_journal": "543efc7f94aa756c09785b38bdd024b6ba8199c7",
+  "rustc": "1.97.1",
+  "profile": "unoptimized test, debug symbols disabled, no incremental",
+  "body_bytes": 257,
+  "frame_bytes": 313,
+  "samples_per_operation": 1,
+  "meter": "Canonical sender userspace reads and writes on successful Unix stream exchange only. Initial and repeated exchange timer ends after verification of original B receipt. Journal recovery and host-side read/ACK occur outside the retry timer.",
+  "application_cpu_us": null,
+  "journal_worker_cpu_us": null,
+  "wire_send_only_us": null,
+  "guest_vsock_bytes": null,
+  "wan_bytes": null,
+  "results": {
+    "macos_arm64": {
+      "log_sha256": "b8970d0848d33c3ee6b4a91b089b0b71f3699ab7674f2198a8a8096fbf19f68e",
+      "test_executable_sha256": "60fd7c6847762847a25d65ba26ecee118413bdbd0c9c8bf4b25bec81b9915cc6",
+      "passed": 1,
+      "turns": {
+        "admit": {
+          "sealed_envelope_bytes": 3760,
+          "to_journal_bytes": 5100,
+          "from_journal_bytes": 1020,
+          "verified_exchange_wall_us": 56624,
+          "sender_thread_cpu_us": 7200,
+          "whole_process_cpu_us": 20687
+        },
+        "retry": {
+          "sealed_envelope_bytes": 3760,
+          "to_journal_bytes": 5100,
+          "from_journal_bytes": 1020,
+          "verified_exchange_wall_us": 34259,
+          "sender_thread_cpu_us": 8486,
+          "whole_process_cpu_us": 12897
+        }
+      },
+      "prepare_wall_us": 3343,
+      "prepare_sender_thread_cpu_us": 3330
+    },
+    "linux_x86_64": {
+      "log_sha256": "7f20674fbd2b1261296abd79312bf2a3a73f4f947b436228864d080f85f39d16",
+      "test_executable_sha256": "4c4379a5acb0c2e4a90eb0d1e9fd4c5aadd46857e73e76316d1a75aa5351829a",
+      "passed": 1,
+      "turns": {
+        "admit": {
+          "sealed_envelope_bytes": 3756,
+          "to_journal_bytes": 5096,
+          "from_journal_bytes": 1020,
+          "verified_exchange_wall_us": 60068,
+          "sender_thread_cpu_us": 39725,
+          "whole_process_cpu_us": 53950
+        },
+        "retry": {
+          "sealed_envelope_bytes": 3756,
+          "to_journal_bytes": 5096,
+          "from_journal_bytes": 1020,
+          "verified_exchange_wall_us": 58524,
+          "sender_thread_cpu_us": 37275,
+          "whole_process_cpu_us": 49724
+        }
+      },
+      "prepare_wall_us": 30988,
+      "prepare_sender_thread_cpu_us": 30980
+    }
+  },
+  "body_sha256": "54acfbfedc4d8da40f76f275e1a98f10af8ef1fb9fb39e5a67a00aabcbe6597c",
+  "frame_sha256": "fb2170e3c5082bf1034bc526b60de2441ed0f89176cb4c3ed449ac313c4e7374",
+  "prior_sender_regression_linux": {
+    "call_send_passed": 6,
+    "receipt_send_passed": 4,
+    "combined_log_sha256": "3bac72d2ad8b2a5a984e90888b0f90539466a46f74f4811dcbb53badc1dfbf94",
+    "call_send_test_executable_sha256": "722eb58c708ed54757bfa93ccfd62fa886ecb98fc518df2d12d68a5f07f85de9",
+    "receipt_send_test_executable_sha256": "cf6663ccd539aa1a4dc60557711f60dd0761dc62011049db471762560eaf2d68"
+  }
+}
