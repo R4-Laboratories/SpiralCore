@@ -432,8 +432,6 @@ impl Tx {
                 Err(error) => return Err(error.into()),
             }
         }
-        #[cfg(test)]
-        if kind == record::APP_FIN { fin_tests::after_record_write(); }
         loop {
             self.control.check()?;
             self.socket.set_write_timeout(Some(poll_budget(until)?))?;
@@ -515,7 +513,23 @@ impl Tx {
         result
     }
     pub(crate) fn application_half_close(&mut self, until: Instant) -> Result<()> {
-        let result = self.write_record(record::APP_FIN, &[], 0, false, until);
+        let result = match &mut self.socket {
+            Carrier::Tls(socket) => (|| {
+                let next = self.sequence.checked_add(1).ok_or(Error::Sequence)?;
+                let header =
+                    record::header(self.binding, self.sequence, record::APP_FIN, 0, self.role)?;
+                socket.write_application_fin(&header, until, || self.control.check())?;
+                #[cfg(test)]
+                fin_tests::after_record_write();
+                self.control.check()?;
+                poll_budget(until)?;
+                self.counters.wire(header.len())?;
+                self.counters.complete(0, false)?;
+                self.sequence = next;
+                Ok(())
+            })(),
+            Carrier::Tcp(_) => self.write_record(record::APP_FIN, &[], 0, false, until),
+        };
         if result.is_err() {
             self.control.stop();
         }
