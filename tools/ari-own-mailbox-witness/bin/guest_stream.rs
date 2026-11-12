@@ -1,4 +1,6 @@
 pub(super) const SCOPE: &str = "mvm/owned-mailbox/guest-5257/post-mux-host-stream/v1";
+pub(super) const SELECTED_GUEST: &str =
+    "mvm/owned-mailbox/selected-object/guest-5257/post-mux-host-stream/v1";
 pub(super) const NAME: &str = "mailbox-guest-stream-v1.counts";
 
 // A prefix can still identify the last protocol phase. Publish totals only
@@ -8,6 +10,7 @@ pub(super) fn completed(raw: &str) -> Option<(u64, u64, u64, bool)> {
 }
 
 pub(super) fn completed_for(raw: &str, scope: &str) -> Option<(u64, u64, u64, u64, u64, bool)> {
+    let limit = if scope == SELECTED_GUEST { 512 } else { 64 };
     let mut lines = raw.strip_suffix('\n')?.lines();
     if lines.next()? != scope {
         return None;
@@ -24,9 +27,11 @@ pub(super) fn completed_for(raw: &str, scope: &str) -> Option<(u64, u64, u64, u6
         let kind = fields.next()?;
         let seq: u64 = fields.next()?.parse().ok()?;
         match kind {
-            "begin" if active.is_none() && seq == exchanges + 1 && seq <= 64 => active = Some(seq),
+            "begin" if active.is_none() && seq == exchanges + 1 && seq <= limit => {
+                active = Some(seq)
+            }
             "finish" if active.is_none() && seq == exchanges => finished = true,
-            "phase" if active == Some(seq) => match fields.next()? {
+            "phase" if scope == SCOPE && active == Some(seq) => match fields.next()? {
                 "submit_verdict"
                 | "reader_frame"
                 | "challenge_written"
@@ -69,6 +74,30 @@ pub(super) fn completed_for(raw: &str, scope: &str) -> Option<(u64, u64, u64, u6
 mod tests {
     use super::*;
 
+    #[test]
+    fn selected_guest_has_a_separate_bounded_counter_profile() {
+        let make = |scope: &str, n: usize| {
+            let mut s = format!("{scope}\n");
+            for i in 1..=n {
+                s.push_str(&format!("begin {i}\nend {i} 4 5 0 0 false\n"));
+            }
+            s.push_str(&format!("finish {n}\n"));
+            s
+        };
+        assert_eq!(
+            completed_for(&make(SELECTED_GUEST, 512), SELECTED_GUEST),
+            Some((512, 2048, 2560, 0, 0, true))
+        );
+        assert!(completed_for(&make(SELECTED_GUEST, 513), SELECTED_GUEST).is_none());
+        for other in [
+            SCOPE,
+            "mvm/owned-mailbox/selected-object/sealed-stream/read-write/v1",
+        ] {
+            assert!(completed_for(&make(other, 65), other).is_none());
+            assert!(completed_for(&make(SELECTED_GUEST, 1), other).is_none());
+        }
+        assert!(completed_for(&format!("{SELECTED_GUEST}\nbegin 1\nphase 1 reader_frame\nend 1 1 1 0 0 false\nfinish 1\n"),SELECTED_GUEST).is_none());
+    }
     #[test]
     fn totals_verified_exchanges_in_each_direction() {
         let raw = format!(
