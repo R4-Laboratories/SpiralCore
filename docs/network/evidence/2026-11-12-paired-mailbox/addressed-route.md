@@ -24,7 +24,7 @@ Ari’s mailbox hunk from MVM PR #5370 rejects a duration that cannot fit the so
 At MVM revision `50bc377cae41aa3cec10eb547d2d8ebcb6954d14`, run the following from the repository root. Append `-- --test-threads=1 --nocapture` to display each timing row. The Linux guest module includes an additional host-CID/socket-boundary check.
 
 ```sh
-cargo test --locked -p mvm-core --test mailbox_cast_endpoint
+cargo test --locked -p mvm-core --features test-support --test mailbox_cast_endpoint
 cargo test --locked -p mvm-agentd --lib mailbox_cast::tests::
 cargo test --locked -p mvm-hostd --lib addressed_cast_shares_the_two_workers_and_preserves_control_headroom
 cargo test --locked -p mvm-hostd --lib installed_default_mailbox_domains_differ_between_named_guests
