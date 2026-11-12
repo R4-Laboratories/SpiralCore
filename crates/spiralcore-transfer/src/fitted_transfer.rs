@@ -28,23 +28,28 @@ pub(crate) fn encoded_cap(mode: Mode, len: usize) -> Result<usize> {
     }
 }
 
+pub(crate) const DATA_HEADER: usize = 6;
+pub(crate) const MAX_FRAGMENTS: usize = 512;
+
+pub(crate) fn fragment(mode: Mode, chunk: &[u8]) -> Vec<u8> {
+    let mut body = Vec::with_capacity(chunk.len() + DATA_HEADER);
+    body.push(mode as u8);
+    body.extend_from_slice(&(chunk.len() as u32).to_le_bytes());
+    body.push(1);
+    body.extend_from_slice(chunk);
+    body
+}
+
 pub(crate) fn chunks(mode: Mode, encoded: &[u8]) -> Result<Vec<Vec<u8>>> {
     if !is_buffered(mode) {
         return Err(Error::Unsupported);
     }
-    if encoded.is_empty() || encoded.len().div_ceil(MAX_CHUNK) > 512 {
+    if encoded.is_empty() || encoded.len().div_ceil(MAX_CHUNK) > MAX_FRAGMENTS {
         return Err(Error::Limit);
     }
     Ok(encoded
         .chunks(MAX_CHUNK)
-        .map(|chunk| {
-            let mut body = Vec::with_capacity(chunk.len() + 6);
-            body.push(mode as u8);
-            body.extend_from_slice(&(chunk.len() as u32).to_le_bytes());
-            body.push(1);
-            body.extend_from_slice(chunk);
-            body
-        })
+        .map(|chunk| fragment(mode, chunk))
         .collect())
 }
 
@@ -64,7 +69,7 @@ pub(crate) fn append(
     if r.u8()? != 1 {
         return Err(Error::Unsupported);
     }
-    if n == 0 || n > MAX_CHUNK || *count >= 512 {
+    if n == 0 || n > MAX_CHUNK || *count >= MAX_FRAGMENTS {
         return Err(Error::Limit);
     }
     let chunk = r.take(n)?;

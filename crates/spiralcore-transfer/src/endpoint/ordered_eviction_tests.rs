@@ -80,3 +80,84 @@ fn single_and_multiple_victim_validation_precedes_removal() {
     assert_eq!(endpoint.read_object(&c, offer.object).unwrap(), bytes);
     assert!(endpoint.path(ns, second.object).exists());
 }
+
+#[test]
+fn application_commit_returns_one_independent_disk_readback() {
+    use crate::resource_profile::ResourceProfile;
+    use crate::v1::{
+        Capabilities, ObjectEndpoint, ObjectMode, ObjectSender, OrderedBinding, OrderedLane,
+        OrderedObjectEndpoint,
+    };
+    let context = crate::wan::context([7; 32]);
+    let root = metadata_tests::Fixture::new();
+    let r = ResourceProfile::SmallV1;
+    let caps = Capabilities::small_v1();
+    let profile = caps.negotiate(&caps).unwrap();
+    let endpoint = ObjectEndpoint::open_with_resource_profile(
+        &root.0,
+        r.receiver_limits(),
+        crate::wan::BenchAuthority,
+        profile,
+        r,
+    )
+    .unwrap();
+    let binding = OrderedBinding::new(
+        &context,
+        context.namespace().unwrap(),
+        0,
+        b"application\0",
+        b"artifact\0",
+    )
+    .unwrap();
+    let mut endpoint = OrderedObjectEndpoint::new(endpoint, binding.clone(), &context).unwrap();
+    let mut sender =
+        ObjectSender::new_with_resource_profile(ObjectMode::Whole, &context, None, profile, r)
+            .unwrap();
+    let expected = [b"independent exact bytes".as_slice(), &[0; 17]].concat();
+    let mut recovered = None;
+    let mut terminal = None;
+    sender
+        .send(
+            &context,
+            expected.clone(),
+            binding.transfer_id(OrderedLane::Application, 0),
+            false,
+            |frames| {
+                frames
+                    .iter()
+                    .map(|f| {
+                        FULL_READS.with(|n| n.set(0));
+                        let (reply, bytes) = endpoint.handle_application(0, &context, f, 1)?;
+                        if reply.kind == 103 {
+                            assert_eq!(
+                                FULL_READS.with(Cell::get),
+                                1,
+                                "one fresh disk read after publication"
+                            );
+                            assert!(recovered.is_none());
+                            recovered = bytes;
+                            terminal = Some(f.clone());
+                        } else {
+                            assert!(bytes.is_none());
+                        }
+                        Ok(reply)
+                    })
+                    .collect()
+            },
+        )
+        .unwrap();
+    assert_eq!(recovered.unwrap(), expected);
+    let id = object_id(&expected);
+    let path = root
+        .0
+        .join(hex(&context.namespace().unwrap()))
+        .join(format!("{}.object", hex(&id)));
+    let mut contents = fs::read(&path).unwrap();
+    *contents.last_mut().unwrap() ^= 1;
+    fs::write(path, contents).unwrap();
+    assert!(matches!(
+        endpoint.handle_application(0, &context, &terminal.unwrap(), 2),
+        Err(Error::Integrity)
+    ));
+    assert_eq!(endpoint.read_object(&context, id), Err(Error::Storage));
+}

@@ -724,26 +724,40 @@ impl<A: Authority> ReceiveEndpoint<A> {
         context: &Context,
         frame: &Frame,
         now: u64,
-    ) -> spiralcore_transfer::Result<Frame> {
+    ) -> spiralcore_transfer::Result<(Frame, Option<Vec<u8>>)> {
         match self {
-            Self::General(endpoint) => endpoint.handle(context, frame, now),
-            Self::Ordered(endpoint) => endpoint.handle(
-                if purpose == Purpose::Application {
-                    OrderedLane::Application
-                } else {
-                    OrderedLane::Artifact
-                },
-                ordinal,
-                context,
-                frame,
-                now,
-            ),
+            Self::General(endpoint) => endpoint
+                .handle(context, frame, now)
+                .map(|reply| (reply, None)),
+            Self::Ordered(endpoint) if purpose == Purpose::Application => {
+                endpoint.handle_application(ordinal, context, frame, now)
+            }
+            Self::Ordered(endpoint) => endpoint
+                .handle(OrderedLane::Artifact, ordinal, context, frame, now)
+                .map(|reply| (reply, None)),
         }
     }
-    fn read_object(&mut self, context: &Context, id: Id) -> spiralcore_transfer::Result<Vec<u8>> {
-        match self {
-            Self::General(endpoint) => endpoint.read_object(context, id),
-            Self::Ordered(endpoint) => endpoint.read_object(context, id),
+    fn enqueue(
+        &self,
+        context: &Context,
+        sender: &SyncSender<Event>,
+        event: Event,
+    ) -> Result<std::result::Result<(), TrySendError<Event>>> {
+        if let (Self::Ordered(endpoint), Event::Data(_)) = (self, &event) {
+            endpoint.check_delivery_authority(context)?;
+        }
+        Ok(sender.try_send(event))
+    }
+    fn application_bytes(
+        &mut self,
+        context: &Context,
+        id: Id,
+        verified: Option<Vec<u8>>,
+    ) -> spiralcore_transfer::Result<Vec<u8>> {
+        match (self, verified) {
+            (Self::General(endpoint), None) => endpoint.read_object(context, id),
+            (Self::Ordered(_), Some(bytes)) => Ok(bytes),
+            _ => Err(spiralcore_transfer::Error::Integrity),
         }
     }
 }
@@ -786,7 +800,10 @@ impl<A: Authority> Worker<A> {
         loop {
             self.cancellation.check()?;
             let left = remaining(until)?;
-            match self.delivery.try_send(event) {
+            match self
+                .endpoint
+                .enqueue(&self.context, &self.delivery, event)?
+            {
                 Ok(()) => return Ok(()),
                 Err(TrySendError::Disconnected(_)) => return Err(Error::Closed),
                 Err(TrySendError::Full(returned)) => {
@@ -836,7 +853,7 @@ impl<A: Authority> Worker<A> {
         #[cfg(feature = "witness-stall")]
         self.stall
             .mark(WorkerPhase::EndpointHandle, request.kind, ordinal);
-        let reply = {
+        let (reply, readback) = {
             #[cfg(feature = "witness-timing")]
             let _span = self.timing.span(Metric::Frame(
                 Phase::ReceiverHandle,
@@ -865,7 +882,7 @@ impl<A: Authority> Worker<A> {
                 .mark(WorkerPhase::Readback, request.kind, ordinal);
             let bytes = self
                 .endpoint
-                .read_object(&self.context, id)
+                .application_bytes(&self.context, id, readback)
                 .map_err(Error::from)
                 .inspect_err(|e| {
                     self.cancellation

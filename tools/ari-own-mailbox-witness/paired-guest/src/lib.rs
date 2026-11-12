@@ -193,6 +193,11 @@ fn run(call: WorkerCallRequest, worker: &mut Worker) -> Result<Value> {
     let value: Value = serde_json::from_slice(&call.stdin)?;
     let end = start + Duration::from_secs((call.timeout_secs - 1).min(30));
     let mut result = match &worker.role {
+        #[cfg(feature = "object-ack-loss-qualification")]
+        Role::Source if value.get("object_ack_control").is_some() => {
+            ensure!(value.as_object().is_some_and(|v| v.len() == 1), "ambiguous ACK qualification");
+            object_exchange::ack_loss::control(&mut worker.objects, &value["object_ack_control"], end)
+        }
         #[cfg(feature = "object-reader-v1")]
         Role::Source if value.get("object_settle").is_some() => {
             ensure!(value.as_object().is_some_and(|v| v.len() == 1), "ambiguous settlement operation");

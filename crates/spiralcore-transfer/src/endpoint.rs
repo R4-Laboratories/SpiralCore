@@ -1392,6 +1392,10 @@ impl<A: Authority> Endpoint<A> {
         Ok(records)
     }
     pub(crate) fn ordered_cache_meta(&self, c: &Context, id: Id) -> Result<(u64, u64)> {
+        self.ordered_cache_read(c, id)
+            .map(|(bytes, disk)| (bytes.len() as u64, disk))
+    }
+    pub(crate) fn ordered_cache_read(&self, c: &Context, id: Id) -> Result<(Vec<u8>, u64)> {
         self.authority.authorize(c)?;
         self.ordered_bounds()?;
         let p = self.publication(c.namespace()?, id)?;
@@ -1399,10 +1403,10 @@ impl<A: Authority> Endpoint<A> {
             return Err(Error::Limit);
         }
         self.reserve(p.len.checked_mul(2).ok_or(Error::Limit)?)?;
-        drop(read_publication(&p)?);
+        let bytes = read_publication(&p)?;
         self.authority.authorize(c)?;
         Ok((
-            p.len,
+            bytes,
             p.len
                 .checked_add(if p.manifest.is_some() { 81 } else { 49 })
                 .ok_or(Error::Limit)?,

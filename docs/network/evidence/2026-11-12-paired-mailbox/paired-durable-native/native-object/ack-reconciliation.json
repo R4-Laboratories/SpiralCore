@@ -1,0 +1,615 @@
+{
+  "schema": "spiralcore.installed-object-application-ack-loss.v1",
+  "source": "a9b3beed2bc076006eddcc14e4ea9f7a29181712",
+  "mvm_host": "30ca64feba564f8a3a3f62ee96c746c51176567c",
+  "mvm_guest": "c9d9fe87b27cd2e5fc64d2b1d9c3a31b522b2097",
+  "original_bytes": 4096,
+  "original_sha256": "4a29fe7d84bd3c8097343ec5723341ac8768f67914bf61e4d3c078bb6b5fc9d9",
+  "canonical_object_id": "0f6b13787cb3e42e48ab190848ddb08a9427a0eeebda8aa5b41f2095c9bedc51",
+  "native_backend": "firecracker",
+  "source_boot_worker_and_signed_lease_digest_equal_on_all_attempts": true,
+  "same_receiver_boot_worker_and_exact_readback_on_all_three_operations": true,
+  "initial_withheld_ack": {
+    "cpu_ns": 1724623,
+    "initial_ack_reader_write_read": [
+      2129,
+      2413
+    ],
+    "outcome": "application_ack_withheld",
+    "reply_kind": 103,
+    "wall_ns": 999961725
+  },
+  "original_b_call_ack": {
+    "cpu_ns": 7990469,
+    "exact_readback_bytes": 4096,
+    "frame_kind": 1,
+    "original_call_acknowledged": true,
+    "reader_bytes": {
+      "order": [
+        "operations_to_agent",
+        "operations_from_agent",
+        "ack_to_agent",
+        "ack_from_agent",
+        "authority_to_agent",
+        "authority_from_agent"
+      ],
+      "this_invocation": [
+        3094,
+        6374,
+        2139,
+        2420,
+        14434,
+        54410
+      ],
+      "worker_cumulative": [
+        21142,
+        44326,
+        12876,
+        14568,
+        74950,
+        281187
+      ]
+    },
+    "seq": 0,
+    "wall_ns": 741933181,
+    "wire_mode": 0
+  },
+  "control_rows": [
+    {
+      "cpu_ns": 35045,
+      "outcome": "wrong_sequence_refused",
+      "wall_ns": 37069
+    },
+    {
+      "cpu_ns": 85811,
+      "outcome": "pending_blocks_new_send",
+      "wall_ns": 87404
+    },
+    {
+      "ack_from_agent": 2413,
+      "ack_to_agent": 2129,
+      "cpu_ns": 264657,
+      "outcome": "original_lease_settled",
+      "settled_reply_seq": 0,
+      "wall_ns": 58952568
+    },
+    {
+      "cpu_ns": 50085,
+      "outcome": "empty_slot_refused",
+      "wall_ns": 53370
+    }
+  ],
+  "withheld_phase_meters_a_b": [
+    {
+      "guest_5257": {
+        "read": 8402,
+        "read_errors": 0,
+        "turns": 13,
+        "write": 46773,
+        "write_errors": 0
+      },
+      "sealed_in": {
+        "read": 5455,
+        "read_errors": 0,
+        "turns": 1,
+        "write": 1204,
+        "write_errors": 0
+      },
+      "sealed_out": {
+        "read": 1207,
+        "read_errors": 0,
+        "turns": 1,
+        "write": 6331,
+        "write_errors": 0
+      }
+    },
+    {
+      "guest_5257": {
+        "read": 19913,
+        "read_errors": 0,
+        "turns": 9,
+        "write": 46018,
+        "write_errors": 0
+      },
+      "sealed_in": {
+        "read": 6331,
+        "read_errors": 0,
+        "turns": 1,
+        "write": 1207,
+        "write_errors": 0
+      },
+      "sealed_out": {
+        "read": 1204,
+        "read_errors": 0,
+        "turns": 1,
+        "write": 5455,
+        "write_errors": 0
+      }
+    }
+  ],
+  "recovery_meters_a_b": [
+    {
+      "guest_5257": {
+        "read": 2409,
+        "read_errors": 0,
+        "turns": 1,
+        "write": 2413,
+        "write_errors": 0
+      },
+      "sealed_in": {
+        "read": 0,
+        "read_errors": 0,
+        "turns": 0,
+        "write": 0,
+        "write_errors": 0
+      },
+      "sealed_out": {
+        "read": 0,
+        "read_errors": 0,
+        "turns": 0,
+        "write": 0,
+        "write_errors": 0
+      }
+    },
+    {
+      "guest_5257": {
+        "read": 0,
+        "read_errors": 0,
+        "turns": 0,
+        "write": 0,
+        "write_errors": 0
+      },
+      "sealed_in": {
+        "read": 0,
+        "read_errors": 0,
+        "turns": 0,
+        "write": 0,
+        "write_errors": 0
+      },
+      "sealed_out": {
+        "read": 0,
+        "read_errors": 0,
+        "turns": 0,
+        "write": 0,
+        "write_errors": 0
+      }
+    }
+  ],
+  "per_control_meters_a_b": {
+    "refuse_wrong": [
+      {
+        "guest_5257": {
+          "read": 0,
+          "read_errors": 0,
+          "turns": 0,
+          "write": 0,
+          "write_errors": 0
+        },
+        "sealed_in": {
+          "read": 0,
+          "read_errors": 0,
+          "turns": 0,
+          "write": 0,
+          "write_errors": 0
+        },
+        "sealed_out": {
+          "read": 0,
+          "read_errors": 0,
+          "turns": 0,
+          "write": 0,
+          "write_errors": 0
+        }
+      },
+      {
+        "guest_5257": {
+          "read": 0,
+          "read_errors": 0,
+          "turns": 0,
+          "write": 0,
+          "write_errors": 0
+        },
+        "sealed_in": {
+          "read": 0,
+          "read_errors": 0,
+          "turns": 0,
+          "write": 0,
+          "write_errors": 0
+        },
+        "sealed_out": {
+          "read": 0,
+          "read_errors": 0,
+          "turns": 0,
+          "write": 0,
+          "write_errors": 0
+        }
+      }
+    ],
+    "refuse_new": [
+      {
+        "guest_5257": {
+          "read": 0,
+          "read_errors": 0,
+          "turns": 0,
+          "write": 0,
+          "write_errors": 0
+        },
+        "sealed_in": {
+          "read": 0,
+          "read_errors": 0,
+          "turns": 0,
+          "write": 0,
+          "write_errors": 0
+        },
+        "sealed_out": {
+          "read": 0,
+          "read_errors": 0,
+          "turns": 0,
+          "write": 0,
+          "write_errors": 0
+        }
+      },
+      {
+        "guest_5257": {
+          "read": 0,
+          "read_errors": 0,
+          "turns": 0,
+          "write": 0,
+          "write_errors": 0
+        },
+        "sealed_in": {
+          "read": 0,
+          "read_errors": 0,
+          "turns": 0,
+          "write": 0,
+          "write_errors": 0
+        },
+        "sealed_out": {
+          "read": 0,
+          "read_errors": 0,
+          "turns": 0,
+          "write": 0,
+          "write_errors": 0
+        }
+      }
+    ],
+    "settle": [
+      {
+        "guest_5257": {
+          "read": 2409,
+          "read_errors": 0,
+          "turns": 1,
+          "write": 2413,
+          "write_errors": 0
+        },
+        "sealed_in": {
+          "read": 0,
+          "read_errors": 0,
+          "turns": 0,
+          "write": 0,
+          "write_errors": 0
+        },
+        "sealed_out": {
+          "read": 0,
+          "read_errors": 0,
+          "turns": 0,
+          "write": 0,
+          "write_errors": 0
+        }
+      },
+      {
+        "guest_5257": {
+          "read": 0,
+          "read_errors": 0,
+          "turns": 0,
+          "write": 0,
+          "write_errors": 0
+        },
+        "sealed_in": {
+          "read": 0,
+          "read_errors": 0,
+          "turns": 0,
+          "write": 0,
+          "write_errors": 0
+        },
+        "sealed_out": {
+          "read": 0,
+          "read_errors": 0,
+          "turns": 0,
+          "write": 0,
+          "write_errors": 0
+        }
+      }
+    ],
+    "refuse_replay": [
+      {
+        "guest_5257": {
+          "read": 0,
+          "read_errors": 0,
+          "turns": 0,
+          "write": 0,
+          "write_errors": 0
+        },
+        "sealed_in": {
+          "read": 0,
+          "read_errors": 0,
+          "turns": 0,
+          "write": 0,
+          "write_errors": 0
+        },
+        "sealed_out": {
+          "read": 0,
+          "read_errors": 0,
+          "turns": 0,
+          "write": 0,
+          "write_errors": 0
+        }
+      },
+      {
+        "guest_5257": {
+          "read": 0,
+          "read_errors": 0,
+          "turns": 0,
+          "write": 0,
+          "write_errors": 0
+        },
+        "sealed_in": {
+          "read": 0,
+          "read_errors": 0,
+          "turns": 0,
+          "write": 0,
+          "write_errors": 0
+        },
+        "sealed_out": {
+          "read": 0,
+          "read_errors": 0,
+          "turns": 0,
+          "write": 0,
+          "write_errors": 0
+        }
+      }
+    ]
+  },
+  "fault_and_reconciliation_wall_ns": 1428400710,
+  "fault_and_reconciliation_coordinator_cpu_ns": 7144603,
+  "setup_to_both_starts_ns": 5340609993,
+  "driver_whole_wall_ns": 12048786823,
+  "driver_whole_cpu_ns": 8355136623,
+  "whole_process": "elapsed=12.15 user=10.40 system=0.25 max_rss_kib=84016 status=0",
+  "audit": "VERIFIED chain: 17 entries, 2 sessions, 2 seals",
+  "post_cleanup": "active_processes=0 active_scopes=0 definitions=0 vm_state_entries=0",
+  "original_statuses": [
+    {
+      "assisted": false,
+      "exit_code": 0,
+      "first_stop_attempt": true,
+      "name": "sc-journal-a",
+      "success": true
+    },
+    {
+      "assisted": false,
+      "exit_code": 0,
+      "first_stop_attempt": true,
+      "name": "sc-journal-b",
+      "success": true
+    }
+  ],
+  "whole_streams_a_b": [
+    {
+      "guest_5257": {
+        "capture": "closed_session",
+        "read": 55995,
+        "read_errors": 0,
+        "turns": 76,
+        "write": 271177,
+        "write_errors": 1
+      },
+      "sealed_in": {
+        "capture": "closed_session",
+        "read": 32665,
+        "read_errors": 0,
+        "turns": 6,
+        "write": 7253,
+        "write_errors": 0
+      },
+      "sealed_out": {
+        "capture": "closed_session",
+        "read": 7267,
+        "read_errors": 0,
+        "turns": 6,
+        "write": 45078,
+        "write_errors": 0
+      }
+    },
+    {
+      "guest_5257": {
+        "capture": "closed_session",
+        "read": 114993,
+        "read_errors": 0,
+        "turns": 64,
+        "write": 307957,
+        "write_errors": 0
+      },
+      "sealed_in": {
+        "capture": "closed_session",
+        "read": 45078,
+        "read_errors": 0,
+        "turns": 6,
+        "write": 7267,
+        "write_errors": 0
+      },
+      "sealed_out": {
+        "capture": "closed_session",
+        "read": 7253,
+        "read_errors": 0,
+        "turns": 6,
+        "write": 32665,
+        "write_errors": 0
+      }
+    }
+  ],
+  "host_sha256": {
+    "mvm-host-agent": "70a5cef5d06500eaf74c45cdc96464173816ca8ecf93475016314abc9e89b44c",
+    "mvm-mailbox": "eadf9b6379223490516e0faa7c32c80fd93540eb1f7df26317c80cec3f48c0d9",
+    "mvm-network-endpoint": "914a647bf4d007f7bc7063558ed3d4ef8c95f311b8b23ba9845a826e27a8d9e6",
+    "mvm-signer-helper": "c999eb976a779ab3cfacf2dcba709e13e1817612dcdbc5cc0ba7577f6a43be1f",
+    "paired-journal": "d7a3449b0bb37f502f691c0f63f01dacf795b6f516d0908bc65c46949a321233"
+  },
+  "guest_executables_sha256": {
+    "spiralcore-durable-source": "102c10c5c9946aac5469df217a3cab208299e44bcd5333eaa1f6eaeb2ad6eccf",
+    "spiralcore-durable-destination": "37269e928ea953a9990e7c1a3e42bc6d8403ca089ffe19251acd0ecc7d248ba8"
+  },
+  "role_images_sha256": {
+    "a": {
+      "rootfs.ext4": "6b01278d0f6166c85a3568116f40e0b382836d312d4d05dbea1160b94c5498c9",
+      "rootfs.verity": "4fb015f8bdf6e7926753840cff9bb69a44ca20017e22c9655e4bc7d908f83cd7",
+      "rootfs.roothash": "6be0a8ebfc2a3273a3a5cbe4d9bba715bdca6389203dcacf7290b7ef58ea9975",
+      "mvm-meta.json": "1e2ebf272b1b45cd2a9c4f1ea32b847c3824a8208dddeb07fb8d456c14be0a68"
+    },
+    "b": {
+      "rootfs.ext4": "0cea4f068df76aeb83de9f0c1a9a1310689e85c76b42f5584c6aa28987f03326",
+      "rootfs.verity": "c42c495cde0e76c18a081cd6b5c383975f30d64fcb546f4d06f77ded49cdea69",
+      "rootfs.roothash": "7a7af4b849ee4408a2c667a98627a6e2e18a49dbe797edb5bb8242c2054342e0",
+      "mvm-meta.json": "e279d13ea18d559f6c5f572e248f212c7856c678be9d7adcb5320a4c22a07ddf"
+    }
+  },
+  "original_file_sha256": {
+    "build/bin-digests": "8698424736f749c535c7ca46a6ef1ad7f6d711cf10d30da38ed11716507d9c39",
+    "build/driver-build.log": "07bdcae95a8c45635aa82e132d63c5c1e0fa64ca34c040071bf6fb5266a4fca3",
+    "build/driver-tests.log": "ec2461893f729ea7f4fc43654511094ab33caa35a4a151bc3a72a6399934c3a3",
+    "build/host.sha256": "63a8d1aeabc0d346ace3914192c7b308b33edbd47d04ee5d480f6cf93969f706",
+    "build/image-a.sha256": "5dc11279543c5e43b2cdc96eba76e6709f7ef9f216fc9dd95559a9f832b1e178",
+    "build/image-b.sha256": "f69b2ed96222432de9381ae4a11a0b4c4b24998624afbc90773259977d554f60",
+    "build/initial-worker-compile.log": "df333bea23c4e0f00f9c7a2deb9417d41fd5ed887aa2f413bd552086f9abcc27",
+    "build/runtime.json": "3738383d4edef0a7c15cbd4a8ce2550347f9a943f2fa5e461367e91d90e3ca40",
+    "build/worker-sha256": "053a6be4f001db61bf8de0df3e481daca4f384f0bf8067d62162559950a95c2e",
+    "build/workers.log": "ffcf9a0f56159ae723804c6fe00eefc4f906acbeb4c8704946d360215aba96fe",
+    "evidence/audit.log": "5b7cb24bc38132f35843e640eed08542a0c2870d9531d5568ac4fe243688e1d1",
+    "evidence/inputs-verified.log": "c17faf30e614e6574d62fc038f1bbda98924f56272aaad81de1e4f94966ed651",
+    "evidence/native.time": "08bb9f6692823e85988c0fe826eb5277b82fdc770d72c5a28830027bcd694038",
+    "evidence/scopes.after": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "evidence/teardown-verified.txt": "804231e7b4158b5945ede1d9291265786cf7654b1860dda42d28d11919f1ed88",
+    "home/object-pair-progress.jsonl": "2158b37779d0612e3ed2ed0dc01de3504becfebba5954fcc6a763458ec2c4072",
+    "home/object-pair-result.json": "61355c8463605b0674e89b160092cb33d84e7476014f9e814e2fbd29eed882e0",
+    "home/original-sc-journal-a-guest_5257.counts": "189211c835283efd8dbfcd5ff5b380fc84d31a408e47c3fc6fa73e779afa9f1e",
+    "home/original-sc-journal-a-sealed_in.counts": "140d9dd0a045269014f8fbd9f54dab30d15384fe75819b332211979dd75d6aef",
+    "home/original-sc-journal-a-sealed_out.counts": "32806c5fffb387a67ee5eedfd33de7a614ec3f2708c7be62ce82100a29161779",
+    "home/original-sc-journal-b-guest_5257.counts": "e9f55227714faf75b2efdd38d6487a95835ef25d81ecd92abdfca16118842640",
+    "home/original-sc-journal-b-sealed_in.counts": "36707fc568ae96f9f6a70bd1a92d0640ca7e0f8edc101d7d5e63d088180d4d14",
+    "home/original-sc-journal-b-sealed_out.counts": "cfa478364ee9340a8f725e1a70bd3213b5852404fd67bb9e78c6d5459079b4b1",
+    "home/paired-retirement.jsonl": "4ecd19450145bb63b443a2b3a6cad36c420a9b2c97d065dae534eb4cc42901f6"
+  },
+  "cold": {
+    "app_bytes": 4658,
+    "actual_data_bytes": 4096,
+    "calls": 4,
+    "through_both_ns": 3892240645,
+    "sender_cpu_ns": 6858971,
+    "receiver_cpu_ns": 27823177,
+    "coordinator_cpu_ns": 11557144,
+    "meters_a_b": [
+      {
+        "guest_5257": {
+          "read": 36469,
+          "read_errors": 0,
+          "turns": 47,
+          "write": 169620,
+          "write_errors": 0
+        },
+        "sealed_in": {
+          "read": 21731,
+          "read_errors": 0,
+          "turns": 4,
+          "write": 4831,
+          "write_errors": 0
+        },
+        "sealed_out": {
+          "read": 4838,
+          "read_errors": 0,
+          "turns": 4,
+          "write": 32400,
+          "write_errors": 0
+        }
+      },
+      {
+        "guest_5257": {
+          "read": 74195,
+          "read_errors": 0,
+          "turns": 44,
+          "write": 206817,
+          "write_errors": 0
+        },
+        "sealed_in": {
+          "read": 32400,
+          "read_errors": 0,
+          "turns": 4,
+          "write": 4838,
+          "write_errors": 0
+        },
+        "sealed_out": {
+          "read": 4831,
+          "read_errors": 0,
+          "turns": 4,
+          "write": 21731,
+          "write_errors": 0
+        }
+      }
+    ]
+  },
+  "warm": {
+    "app_bytes": 190,
+    "actual_data_bytes": 0,
+    "calls": 1,
+    "through_both_ns": 1035948672,
+    "sender_cpu_ns": 1735211,
+    "receiver_cpu_ns": 8120393,
+    "coordinator_cpu_ns": 4481814,
+    "meters_a_b": [
+      {
+        "guest_5257": {
+          "read": 8405,
+          "read_errors": 0,
+          "turns": 13,
+          "write": 46794,
+          "write_errors": 0
+        },
+        "sealed_in": {
+          "read": 5479,
+          "read_errors": 0,
+          "turns": 1,
+          "write": 1218,
+          "write_errors": 0
+        },
+        "sealed_out": {
+          "read": 1222,
+          "read_errors": 0,
+          "turns": 1,
+          "write": 6347,
+          "write_errors": 0
+        }
+      },
+      {
+        "guest_5257": {
+          "read": 20583,
+          "read_errors": 0,
+          "turns": 10,
+          "write": 49548,
+          "write_errors": 0
+        },
+        "sealed_in": {
+          "read": 6347,
+          "read_errors": 0,
+          "turns": 1,
+          "write": 1222,
+          "write_errors": 0
+        },
+        "sealed_out": {
+          "read": 1218,
+          "read_errors": 0,
+          "turns": 1,
+          "write": 5479,
+          "write_errors": 0
+        }
+      }
+    ]
+  }
+}
