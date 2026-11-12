@@ -98,6 +98,9 @@ pub(super) mod selected {
                     Some((n, read, write, re, we, finished)) => {
                         json!({"capture":if finished{"closed_session"}else{"complete_prefix"},"turns":n,"read":read,"write":write,"read_errors":re,"write_errors":we})
                     }
+                    None if capture.is_none() && text.strip_suffix('\n') == Some(scope) => {
+                        json!({"capture":"empty_prefix","turns":0,"read":0,"write":0,"read_errors":0,"write_errors":0})
+                    }
                     None => json!({"capture":"incomplete","read":null,"write":null}),
                 };
                 result.insert(key.into(), value);

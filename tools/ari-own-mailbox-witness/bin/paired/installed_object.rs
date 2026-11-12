@@ -41,6 +41,18 @@ fn closed(meters: &Value) -> Result<()> {
 fn verify_links(a: &Value, b: &Value) -> Result<()> {
     closed(a)?;
     closed(b)?;
+    positive_crossed_counts(a, b)
+}
+
+fn positive_crossed_counts(a: &Value, b: &Value) -> Result<()> {
+    for role in [a, b] {
+        for field in ["read", "write"] {
+            ensure!(
+                role["guest_5257"][field].as_u64().is_some_and(|n| n > 0),
+                "required guest I/O absent"
+            );
+        }
+    }
     for (source, destination) in [(a, b), (b, a)] {
         for (sent, accepted) in [("write", "read"), ("read", "write")] {
             let sent = source["sealed_out"][sent]
@@ -53,6 +65,55 @@ fn verify_links(a: &Value, b: &Value) -> Result<()> {
         }
     }
     Ok(())
+}
+const CHANNELS: [&str; 3] = ["guest_5257", "sealed_in", "sealed_out"];
+const FIELDS: [&str; 5] = ["read", "write", "turns", "read_errors", "write_errors"];
+
+fn boundary(meters: &[Option<Meters>; 2]) -> Result<[Value; 2]> {
+    let read = |slot: &Option<Meters>| {
+        slot.as_ref()
+            .context("missing original meter")?
+            .snapshot(None)
+    };
+    let until = Instant::now() + Duration::from_millis(350);
+    loop {
+        let snap = [read(&meters[0])?, read(&meters[1])?];
+        if snap
+            .iter()
+            .all(|vm| CHANNELS.iter().all(|&ch| vm[ch]["read"].is_u64()))
+            || Instant::now() >= until
+        {
+            return Ok(snap);
+        }
+        std::thread::sleep(Duration::from_millis(5));
+    }
+}
+
+fn phase_counts(before: &[Value; 2], after: &[Value; 2]) -> Result<[Value; 2]> {
+    let mut delta = [json!({}), json!({})];
+    for i in 0..2 {
+        for ch in CHANNELS {
+            for field in FIELDS {
+                let current = after[i][ch][field]
+                    .as_u64()
+                    .context("incomplete final phase boundary")?;
+                let previous = before[i][ch][field]
+                    .as_u64()
+                    .context("incomplete initial phase boundary")?;
+                delta[i][ch][field] = json!(
+                    current
+                        .checked_sub(previous)
+                        .context("original counter regressed")?
+                );
+            }
+            ensure!(
+                delta[i][ch]["read_errors"] == 0 && delta[i][ch]["write_errors"] == 0,
+                "I/O errors during the measured phase"
+            );
+        }
+    }
+    positive_crossed_counts(&delta[0], &delta[1])?;
+    Ok(delta)
 }
 fn start(
     name: &str,
@@ -187,22 +248,26 @@ pub fn run(args: &[String]) -> Result<()> {
         for (i, name) in [A, B].into_iter().enumerate() {
             meters[i] = Some(Meters::open(name)?);
         }
-        let snapshots = || -> Result<Vec<Value>> {
-            meters
-                .iter()
-                .map(|m| m.as_ref().context("missing original meter")?.snapshot(None))
-                .collect()
-        };
+        let mut previous = boundary(&meters)?;
+        let mut phases = serde_json::Map::new();
         event(
             &mut history,
-            &json!({"stage":"before_cold","meters_a_b":snapshots()?}),
+            &json!({"stage":"before_cold","meters_a_b":previous}),
         )?;
-        let result = object_repeat::measure_observed(&hex::encode(pair), |phase, row| {
+        let mut result = object_repeat::measure_observed(&hex::encode(pair), |phase, row| {
+            let observed = boundary(&meters)?;
+            let delta = phase_counts(&previous, &observed);
             event(
                 &mut history,
-                &json!({"stage":phase,"data":row,"meters_a_b":snapshots()?,"elapsed_ns":begin.elapsed().as_nanos() as u64}),
-            )
+                &json!({"stage":phase,"data":row,"meters_a_b":observed,"transport_delta":delta.as_ref().ok(),
+                "transport_delta_error":delta.as_ref().err().map(|e|format!("{e:#}")),"elapsed_ns":begin.elapsed().as_nanos() as u64}),
+            )?;
+            // Preserve the actual cold/warm application gate even if a capture is incomplete.
+            phases.insert(phase.into(),json!({"meters_a_b":delta.as_ref().ok(),"error":delta.err().map(|e|format!("{e:#}"))}));
+            previous = observed;
+            Ok(())
         })?;
+        result["transport_phases"] = Value::Object(phases);
         Ok(result)
     })();
     let pre_stop = event(
@@ -225,7 +290,13 @@ pub fn run(args: &[String]) -> Result<()> {
         "meter_error":captured.as_ref().err().map(|e|format!("{e:#}")),"link_error":links.as_ref().and_then(|r|r.as_ref().err()).map(|e|format!("{e:#}")),
         "whole_wall_ns":begin.elapsed().as_nanos() as u64,"driver_process_cpu_ns":cpu.elapsed().as_nanos() as u64,"wan":null});
     event(&mut final_report, &row)?;
-    measured?;
+    let data = measured?;
+    for phase in ["cold", "warm"] {
+        ensure!(
+            data["transport_phases"][phase]["meters_a_b"].is_array(),
+            "incomplete measured transport phase {phase}"
+        );
+    }
     pre_stop?;
     stopped?;
     captured?;
@@ -236,6 +307,28 @@ pub fn run(args: &[String]) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn phase_attribution_requires_complete_monotonic_guest_and_sealed_io() {
+        let fixture = |n| {
+            let turn = json!({"turns":n,"read":n,"write":n,"read_errors":0,"write_errors":0});
+            let role = json!({"guest_5257":turn,"sealed_in":turn,"sealed_out":turn});
+            [role.clone(), role]
+        };
+        let before = fixture(1);
+        let mut after = fixture(3);
+        assert_eq!(
+            phase_counts(&before, &after).unwrap()[1]["guest_5257"]["read"],
+            2
+        );
+        after[1]["guest_5257"]["write"] = json!(1);
+        assert!(phase_counts(&before, &after).is_err());
+        let mut after = fixture(3);
+        after[0]["sealed_out"]["write_errors"] = json!(1);
+        assert!(phase_counts(&before, &after).is_err());
+        after[0]["sealed_out"]["write_errors"] = Value::Null;
+        assert!(phase_counts(&before, &after).is_err());
+        assert!(phase_counts(&fixture(4), &fixture(3)).is_err());
+    }
     #[test]
     fn counts_only_agree_for_two_closed_crossed_sealed_links() {
         let frame = |r, w| json!({"capture":"closed_session","read":r,"write":w});
