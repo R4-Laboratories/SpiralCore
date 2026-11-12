@@ -128,6 +128,8 @@ progress, not installed MVM or WAN qualification.
 
 The ordered-cache successor [PR194](https://github.com/R4-Laboratories/SpiralCore/pull/194) carries forward the scoped FlowMux and Windows storage changes from [PR106](https://github.com/R4-Laboratories/SpiralCore/pull/106). Its ordinary Windows Server 2022 run reached the whole-test deadline after 3,598 blocks each way. The ordinary Windows Server 2025 run stopped on a read deadline despite a passing instrumented run. The release gate remains open. [Current platform measurements](evidence/2026-11-12-ordered-flowmux/README.md) · [Earlier development evidence](https://github.com/R4-Laboratories/SpiralCore/blob/5db896ab/docs/network/evidence/2026-11-10-ordered-scope/README.md)
 
+A later Windows Server 2025 ordinary stream stopped at block 2,352. In the same workflow, a separate Linux persistent HTTP test failed to reopen its cache. The Unix reopen correction passed the original two concurrent tests 30 times on Linux and preserves exclusive access during handoff. [Cache-reopen trace and results](evidence/2026-11-12-ordered-flowmux/cache-reopen.md) · [Latest Windows timing and quota measurements](https://github.com/R4-Laboratories/SpiralCore/issues/44#issuecomment-6831573987).
+
 ## Active upstream MVM coordination
 
 The verified-admission/Reply-authority API contribution is open upstream as draft

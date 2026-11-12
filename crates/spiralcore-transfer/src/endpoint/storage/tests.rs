@@ -69,6 +69,77 @@ fn context() -> Context {
     }
 }
 
+#[cfg(unix)]
+#[test]
+fn reopen_waits_for_a_transient_duplicate_of_the_original_lock() {
+    let fixture = Fixture::new();
+    let first = Endpoint::open(&fixture.0, Limits::default(), Allow).unwrap();
+    // dup and fork share the same open file description and its flock.
+    let inherited = first._owner.try_clone().unwrap();
+    drop(first);
+    let path = fixture.0.join(".owner");
+    let next = storage::open_owner(&path).unwrap();
+    assert!(matches!(
+        next.try_lock(),
+        Err(std::fs::TryLockError::WouldBlock)
+    ));
+
+    // Release the genuine inherited lock at the first retry. Advance the poll
+    // clock explicitly so a descheduled test process cannot consume the window.
+    let clock = std::cell::Cell::new(std::time::Instant::now());
+    let mut inherited = Some(inherited);
+    storage::lock_reopened_owner_with(
+        &next,
+        &path,
+        || clock.get(),
+        |interval| {
+            assert_eq!(interval, std::time::Duration::from_millis(2));
+            drop(inherited.take().expect("original duplicate was still held"));
+            clock.set(clock.get() + interval);
+        },
+    )
+    .unwrap();
+    assert!(inherited.is_none());
+    assert!(matches!(
+        Endpoint::open(&fixture.0, Limits::default(), Allow),
+        Err(Error::Storage)
+    ));
+    drop(next);
+    Endpoint::open(&fixture.0, Limits::default(), Allow).unwrap();
+}
+
+#[cfg(unix)]
+#[test]
+fn contended_handoff_revalidates_the_profile_and_named_owner() {
+    let fixture = Fixture::new();
+    drop(Endpoint::open(&fixture.0, Limits::default(), Allow).unwrap());
+    let marker = fixture.0.join(".spiralcore-profile-v1");
+    let path = fixture.0.join(".owner");
+    let file = storage::open_owner(&path).unwrap();
+    fs::write(&marker, b"unexpected profile").unwrap();
+    assert_eq!(
+        storage::lock_reopened_owner(&file, &path),
+        Err(Error::Storage)
+    );
+    drop(file);
+    assert_eq!(fs::read(&marker).unwrap(), b"unexpected profile");
+
+    fs::write(&marker, storage::PROFILE_CONTENT).unwrap();
+    let old = storage::open_owner(&path).unwrap();
+    fs::rename(&path, fixture.0.join("previous")).unwrap();
+    let replacement = storage::open_owner(&path).unwrap();
+    replacement.try_lock().unwrap();
+    assert_eq!(
+        storage::lock_reopened_owner(&old, &path),
+        Err(Error::Storage)
+    );
+    drop(old);
+    assert!(matches!(
+        storage::open_owner(&path).unwrap().try_lock(),
+        Err(std::fs::TryLockError::WouldBlock)
+    ));
+}
+
 #[test]
 fn published_bytes_survive_restart_and_fresh_read_rejects_corruption() {
     let fixture = Fixture::new();
