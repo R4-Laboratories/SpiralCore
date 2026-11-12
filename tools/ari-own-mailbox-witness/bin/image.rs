@@ -28,10 +28,12 @@ fn main() -> Result<(), Box<dyn Error>> {
     else {
         return Err("usage: ROLE PROGRAM TRUSTED_PROGRAM_SHA256 RUNTIME_BIN_DIR TRUSTED_WRAPPER_SHA256 FRESH_WORK_DIR".into());
     };
-    if role != "own" {
-        return Err("only own-mailbox workload is admitted".into());
-    }
-    let (machine, basename) = ("sc-ari-own", "spiralcore-durable-own-mailbox");
+    let (machine, basename) = match role.as_str() {
+        "own" => ("sc-ari-own", "spiralcore-durable-own-mailbox"),
+        "journal-a" => ("sc-journal-a", "spiralcore-durable-source"),
+        "journal-b" => ("sc-journal-b", "spiralcore-durable-destination"),
+        _ => return Err("unknown original mailbox workload role".into()),
+    };
     let work = Path::new(work);
     fs::DirBuilder::new().mode(0o700).create(work)?;
     let tree = work.join("stage");
@@ -93,12 +95,17 @@ fn main() -> Result<(), Box<dyn Error>> {
     // Never parse any application-supplied runtime configuration.
     let worker = RuntimeConfig {
         language: "rust".into(),
-        module: "own-mailbox".into(),
+        module: match role.as_str() {
+            "journal-a" => "journal-source",
+            "journal-b" => "journal-destination",
+            _ => "own-mailbox",
+        }
+        .into(),
         function: "main".into(),
         format: "binary".into(),
         source_path: guest_path,
         concurrency: Some(ConcurrencyConfig::WarmProcess(WarmProcessConfig {
-            max_calls_per_worker: 1,
+            max_calls_per_worker: if role == "own" { 1 } else { 2 },
             max_rss_mb: 64,
             pool_size: 1,
             in_process: InProcessMode::Serial,
