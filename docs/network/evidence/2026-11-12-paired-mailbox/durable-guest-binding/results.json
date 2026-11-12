@@ -1,0 +1,64 @@
+{
+  "spiralcore_source": "d07c0468061ae6d1aa222b42f5948a4c14b7cfe0",
+  "mvm_source": "543efc7f94aa756c09785b38bdd024b6ba8199c7",
+  "platform": "x86_64-unknown-linux-gnu, Linux 7.0.0-42-generic, Rust 1.97.1",
+  "profile": "unoptimized test, debuginfo=0, incremental off",
+  "executable_sha256": "e5d45bd3bee6ffc35a226de50f0babe06d106fb95d1420e77643326f293d7cef",
+  "measurement_scope": "one actual Linux process and Unix stream, original MVM workload seccomp program from a synthetic Standard+mailbox selection, serialized fixture-signed reader, one paired receive/ACK; no VM or real journal",
+  "suites": {
+    "outbox": {
+      "reported_passed": [
+        28
+      ],
+      "log_sha256": "991173d8308740d4a308c8230484247c5cedbeee77df4ebd77f0c7eaedecb157"
+    },
+    "agent-reader": {
+      "reported_passed": [
+        2
+      ],
+      "log_sha256": "1c9c817497b8fe73ee3c0f496b6f701a23782c567557a3d889856400bfc51d0c"
+    },
+    "reader": {
+      "reported_passed": [
+        4,
+        4
+      ],
+      "log_sha256": "3a420dff6d9ca65783d0a4ef874cc8c95af06b646f5e0b2844ae8e00fbe76941"
+    },
+    "seccomp": {
+      "reported_passed": [
+        1
+      ],
+      "log_sha256": "c35c7d8edf18ad6b9ebaf3ec6b052d8f69c528802895f85d15c6e86bb336eb63"
+    },
+    "adapter-final": {
+      "reported_passed": [
+        4
+      ],
+      "log_sha256": "2ad191c52e5e6e24335a757460e828c6cfa41029741dfda527c0f33c222f329f"
+    }
+  },
+  "actual": {
+    "frame_body_bytes": 257,
+    "encoded_bytes": 313,
+    "local_outbox_file_bytes": 377,
+    "receive_request_bytes": 54,
+    "delivery_response_bytes": 2009,
+    "ack_request_bytes": 1501,
+    "ack_response_bytes": 1764,
+    "application_thread_cpu_ns": 1804484,
+    "application_wall_ns": 3926032
+  },
+  "derived": {
+    "frame_header_bytes": 56,
+    "mvm_outbox_recipient_and_id_bytes": 64,
+    "base64_frame_bytes": 420,
+    "remaining_delivery_response_bytes": 1589,
+    "guest_reader_total_bytes": 5328
+  },
+  "warm_cache_state": null,
+  "host_guest_vsock_bytes": null,
+  "wan_bytes": null,
+  "send_only_time_ns": null,
+  "secure_zstd_comparison": null
+}
