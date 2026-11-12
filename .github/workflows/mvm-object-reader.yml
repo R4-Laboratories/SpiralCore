@@ -44,6 +44,6 @@ jobs:
           ln -s spiralcore/tools/ari-own-mailbox-witness/fixtures fixtures
           export CARGO_TARGET_DIR="$RUNNER_TEMP/object-reader-target"
           cargo +1.97.1 test --locked --manifest-path paired-guest/Cargo.toml \
-            --features object-reader-v1,large-object-fixture --all-targets
+            --features object-reader-v1,large-object-fixture,sender-ordinal-v1 --all-targets
           cargo +1.97.1 test --locked --manifest-path source/Cargo.toml \
             -p mvm-agentd --bin mvm-guest-agent mailbox_reader::object_guest_tests

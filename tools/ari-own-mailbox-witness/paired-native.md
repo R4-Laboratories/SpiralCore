@@ -34,6 +34,7 @@ Use an isolated Linux x86-64 KVM host and a new private MVM home with a workload
 | `spiralcore` | This repository |
 | `source` | Guest MVM checkout |
 | `paired-guest` | Copy of `spiralcore/tools/ari-own-mailbox-witness/paired-guest` |
+| `fixtures` | Link to `spiralcore/tools/ari-own-mailbox-witness/fixtures` for the compiled-in workload frames |
 | `host/source` | Host MVM checkout |
 | `host/witness` | Copy of `spiralcore/tools/ari-own-mailbox-witness` |
 
