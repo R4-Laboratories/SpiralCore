@@ -198,9 +198,11 @@ fn run(call: WorkerCallRequest, worker: &mut Worker) -> Result<Value> {
         Role::Source if value.get("control_probe").is_some() => control::probe(&value, end),
         Role::Source => stage(&value, end),
         #[cfg(feature="object-reader-v1")]
-        Role::Destination if value.get("object_receive").is_some()=>{
-            ensure!(value.as_object().is_some_and(|fields|fields.len()==1),"ambiguous object receive");
-            worker.destination.run(&value["object_receive"],end)
+        Role::Destination if value.get("object_receive").is_some() => {
+            ensure!(value.as_object().is_some_and(|fields| fields.len() == 1), "ambiguous object receive");
+            worker.destination.run(&value["object_receive"], end).map_err(|error| {
+                error.context(format!("destination attempt wall_ns={} cpu_ns={}", start.elapsed().as_nanos(), cpu.elapsed().as_nanos()))
+            })
         }
         Role::Destination => receive(&value, end),
     }?;
