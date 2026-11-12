@@ -32,7 +32,7 @@ struct Active {
 struct Gate {
     boot: MailboxReaderBootBinding,
     active: RefCell<Option<Active>>,
-    traffic: RefCell<ReaderTraffic>,
+    traffic: Rc<RefCell<ReaderTraffic>>,
 }
 impl Gate {
     fn check(&self, c: &Context) -> Result<()> {
@@ -98,7 +98,11 @@ struct Session {
     since: Instant,
 }
 impl Session {
-    fn start(call: Rc<ObjectDelivery>, until: Instant) -> Result<Self> {
+    fn start(
+        call: Rc<ObjectDelivery>,
+        until: Instant,
+        traffic: Rc<RefCell<ReaderTraffic>>,
+    ) -> Result<Self> {
         let boot = MailboxReaderBootBinding::load_guest_original()?;
         ensure!(
             Some(call.pair()) == boot.durable_object_pair_sha256_v1,
@@ -110,7 +114,7 @@ impl Session {
                 call: call.clone(),
                 until,
             })),
-            traffic: Default::default(),
+            traffic,
         });
         gate.check(&call.object_context())?;
         // Exclusive for this boot. Process loss leaves the original private
@@ -138,6 +142,9 @@ impl Session {
 
 enum Phase {
     Received,
+    Computed {
+        reply: spiralcore_transfer::protocol::Frame,
+    },
     Prepared {
         submission: ObjectSubmissionV1,
         readback: Option<Vec<u8>>,
@@ -155,10 +162,37 @@ pub(super) struct GuestDestination {
     session: Option<Session>,
     pending: Option<Pending>,
     last_ack: Option<Operation>,
+    operations: ReaderTraffic,
+    acknowledgments: ReaderTraffic,
+    authority: Rc<RefCell<ReaderTraffic>>,
 }
 
 impl GuestDestination {
     pub(super) fn run(&mut self, task: &Value, until: Instant) -> Result<Value> {
+        let before = self.counts();
+        let result = self.run_turn(task, until);
+        let total = self.counts();
+        let counters = json!({"this_invocation":std::array::from_fn::<u64,6,_>(|n|total[n]-before[n]),"worker_cumulative":total,"order":["operations_to_agent","operations_from_agent","ack_to_agent","ack_from_agent","authority_to_agent","authority_from_agent"]});
+        match result {
+            Ok(mut value) => {
+                value["reader_bytes"] = counters;
+                Ok(value)
+            }
+            Err(e) => Err(e.context(format!("destination reader bytes {counters}"))),
+        }
+    }
+    fn counts(&self) -> [u64; 6] {
+        let a = self.authority.borrow();
+        [
+            self.operations.written,
+            self.operations.read,
+            self.acknowledgments.written,
+            self.acknowledgments.read,
+            a.written,
+            a.read,
+        ]
+    }
+    fn run_turn(&mut self, task: &Value, until: Instant) -> Result<Value> {
         let op = Operation {
             pair: crate::field(task, "pair")?,
             transfer: crate::field(task, "transfer")?,
@@ -170,25 +204,27 @@ impl GuestDestination {
             task.as_object().is_some_and(|m| m.len() == 3),
             "unexpected receiver input"
         );
-        if self.last_ack == Some(op) {
-            return Ok(
-                json!({"original_call_acknowledged":true,"already_completed":true,"seq":op.seq}),
-            );
-        }
         if let Some(s) = &self.session {
             ensure!(
-                s.gate.boot.durable_object_pair_sha256_v1 == Some(op.pair),
-                "different resident object pair"
-            )
+                s.gate.boot.durable_object_pair_sha256_v1 == Some(op.pair)
+                    && MailboxReaderBootBinding::load_guest_original()? == s.gate.boot,
+                "different resident object pair or boot"
+            );
         }
-        let mut ops = ReaderTraffic::default();
+        if self.last_ack == Some(op) {
+            return Ok(
+                json!({"original_call_acknowledged":true,"already_completed":true,"seq":op.seq,"readback_status":"new_authorized_call_required"}),
+            );
+        }
         if self.pending.is_none() {
             loop {
                 ensure!(
                     Instant::now() < until,
                     "no original Call arrived before deadline"
                 );
-                if let Some(delivery) = ObjectDelivery::receive_before(op.pair, until, &mut ops)? {
+                if let Some(delivery) =
+                    ObjectDelivery::receive_before(op.pair, until, &mut self.operations)?
+                {
                     self.pending = Some(Pending {
                         call: Rc::new(delivery),
                         phase: Phase::Received,
@@ -212,11 +248,10 @@ impl GuestDestination {
             "different pending original Call"
         );
         if self.session.is_none() {
-            self.session = Some(Session::start(c.clone(), until)?);
+            self.session = Some(Session::start(c.clone(), until, self.authority.clone())?);
         }
         let s = self.session.as_mut().context("original receiver missing")?;
         let context = c.object_context();
-        let mut ack = ReaderTraffic::default();
         *s.gate.active.borrow_mut() = Some(Active {
             call: c.clone(),
             until,
@@ -231,6 +266,9 @@ impl GuestDestination {
                     }
                     Err(e) => f.reply(127, (e as u16).to_le_bytes().to_vec()),
                 };
+                p.phase = Phase::Computed { reply };
+            }
+            if let Phase::Computed { reply } = &p.phase {
                 let readback = if reply.kind == 103 {
                     let id: Id = reply.body.as_slice().try_into()?;
                     let bytes = s.endpoint.read_object(&context, id)?;
@@ -243,7 +281,7 @@ impl GuestDestination {
                     None
                 };
                 p.phase = Phase::Prepared {
-                    submission: object_exchange::response_submission(c, &reply)?,
+                    submission: object_exchange::response_submission(c, reply)?,
                     readback,
                 };
             }
@@ -253,21 +291,25 @@ impl GuestDestination {
             } = &mut p.phase
             {
                 s.gate.check(&context)?;
-                object_exchange::submit_before(op.pair, submission.clone(), until, &mut ops)?;
+                object_exchange::submit_before(
+                    op.pair,
+                    submission.clone(),
+                    until,
+                    &mut self.operations,
+                )?;
                 p.phase = Phase::Accepted {
                     readback: readback.take(),
                 };
             }
-            c.acknowledge_before(until, &mut ack)?;
+            c.acknowledge_before(until, &mut self.acknowledgments)?;
             Ok(())
         })();
         *s.gate.active.borrow_mut() = None;
-        let auth = std::mem::take(&mut *s.gate.traffic.borrow_mut());
         action?;
         let Phase::Accepted { readback } = &p.phase else {
             anyhow::bail!("missing original Reply acceptance")
         };
-        let result = json!({"original_call_acknowledged":true,"seq":op.seq,"transfer":hex::encode(op.transfer),"readback_hex":readback.as_ref().map(hex::encode),"operations_to_agent":ops.written,"operations_from_agent":ops.read,"ack_to_agent":ack.written,"ack_from_agent":ack.read,"authority_to_agent":auth.written,"authority_from_agent":auth.read});
+        let result = json!({"original_call_acknowledged":true,"seq":op.seq,"transfer":hex::encode(op.transfer),"readback_hex":readback.as_ref().map(hex::encode)});
         self.last_ack = Some(op);
         self.pending = None;
         Ok(result)
