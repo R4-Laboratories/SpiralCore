@@ -1,7 +1,6 @@
 # Networking delivery status
 
-Snapshot: **2026-11-11**, checked against published `origin/main`
-`80d6c08c89e5aa9a38f23290de1a12a3f7db912c` and the live GitHub issue graph.
+Updated **2026-11-12**. The Linux installed-lifecycle and macOS directional-byte results are on SpiralCore main at [e9ebf6d0](https://github.com/R4-Laboratories/SpiralCore/commit/e9ebf6d0e41edffc7c0000aacb3c0f77f5888c2e).
 This page separates accepted components, measured experiments and unmerged work.
 The [README](../../README.md) is the architecture/results entry point;
 [issue #42](https://github.com/R4-Laboratories/SpiralCore/issues/42) remains the
