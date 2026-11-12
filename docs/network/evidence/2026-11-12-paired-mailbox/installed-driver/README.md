@@ -7,3 +7,5 @@ Before either guest starts, both original signed boot files must match the bytes
 The driver supplies fresh binary input only to A. B receives its own fresh 32-byte challenge through an ordinary workload call. A returns its local message identifier. B must independently return every input byte followed by its challenge. The coordinator returns transient ingress acceptance and handles the signed credential and ciphertext. The driver records application CPU, host driver CPU, elapsed times and per-original guest stream counters. A destination journal receipt has its own acceptance gate. [Driver and reproduction](../../../../../tools/installed-mailbox-witness/CAST.md)
 
 The Linux driver and original coordinator API typechecked together. Focused component controls cover profile admission and two-sided publication. This packet contains no two-guest transfer measurement. The real Firecracker acceptance run has a separate record when executed. [Component results](results.json)
+
+Linux and macOS passed the installed SDK directory and signed-publication checks under both group-cooperative and private umasks. [Filesystem results](private-state.md)
