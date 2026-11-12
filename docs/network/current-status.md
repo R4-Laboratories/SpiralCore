@@ -670,3 +670,5 @@ and finite-queue losses remain part of the result.
 
 No FIPS/CUI, host-blind security, physical-energy, exact cross-node clock,
 general-purpose router or production-fleet qualification is claimed.
+
+The one-tenant worker-control tests distinguish mutation-lane EOF from a full-workspace connection reset. Both targeted controls now pass within the original 1 MiB limit. [Contention results and open collection assertion](evidence/2026-11-12-paired-mailbox/addressed-native-launch/worker-control-contention.md).
