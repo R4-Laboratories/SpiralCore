@@ -147,6 +147,13 @@ jobs:
           & cargo "+1.97.1-$env:NATIVE_TARGET" clippy --release --locked --manifest-path crates/spiralcore-storage-windows/Cargo.toml --all-targets -- -D warnings 2>&1 | Tee-Object flowmux-evidence/existing-open-clippy.txt
           if ($LASTEXITCODE -ne 0) { throw 'Strict Windows storage Clippy failed' }
           if (git status --porcelain -- crates/spiralcore-storage-windows/Cargo.lock) { throw 'Locked existing-open execution changed source' }
+      - name: Check single-victim verification and failed multi-victim preflight
+        run: |
+          $test = 'endpoint::ordered_eviction_tests::single_and_multiple_victim_validation_precedes_removal'
+          $log = (& cargo "+1.97.1-$env:NATIVE_TARGET" test --release --locked --manifest-path crates/spiralcore-transfer/Cargo.toml --lib $test -- --exact --show-output --color never 2>&1 | Out-String)
+          $code = $LASTEXITCODE
+          $log | Set-Content flowmux-evidence/single-eviction.txt
+          if ($code -ne 0 -or $log -notmatch 'ORDERED_SINGLE_EVICTION bytes=16384 full_reads=1' -or $log -notmatch 'test result: ok\. 1 passed; 0 failed; 0 ignored;') { throw 'Original single-victim read, expected charge and preflight controls failed' }
       - name: Strict metadata and transfer warnings
         run: |
           & cargo "+1.97.1-$env:NATIVE_TARGET" clippy --release --locked --keep-going --manifest-path crates/spiralcore-transfer/Cargo.toml --all-targets -- -D warnings 2>&1 | Tee-Object flowmux-evidence/metadata-clippy.txt

@@ -1403,13 +1403,20 @@ impl<A: Authority> Endpoint<A> {
                 .ok_or(Error::Limit)?,
         ))
     }
-    pub(crate) fn ordered_remove_cache(&mut self, c: &Context, id: Id) -> Result<()> {
+    fn ordered_remove_cache(&mut self, c: &Context, victim: &OrderedEviction) -> Result<()> {
         self.authority.authorize(c)?;
         self.ordered_bounds()?;
-        if self.ordered_active_objects(c)?.contains(&id) {
+        if self.ordered_active_objects(c)?.contains(&victim.id) {
             return Err(Error::Limit);
         }
-        let p = self.publication(c.namespace()?, id)?;
+        let p = self.publication(c.namespace()?, victim.id)?;
+        let disk = p
+            .len
+            .checked_add(if p.manifest.is_some() { 81 } else { 49 })
+            .ok_or(Error::Limit)?;
+        if (p.len, disk) != (victim.len, victim.disk) {
+            return Err(Error::Storage);
+        }
         if p.len > self.resources.max_artifact_len() as u64 {
             return Err(Error::Limit);
         }
@@ -1432,13 +1439,18 @@ impl<A: Authority> Endpoint<A> {
     ) -> Result<()> {
         // Recheck the whole set before deleting any file. The original
         // admitted attempt now holds its resident charge and pins its base.
-        for victim in evictions {
-            if self.ordered_cache_meta(c, victim.id).ok() != Some((victim.len, victim.disk)) {
-                return Err(Error::Storage);
+        // A single removal validates the original charge, bytes, pins and
+        // authority immediately before deletion. With multiple victims, verify
+        // the entire set first so an invalid later victim preserves the first.
+        if evictions.len() > 1 {
+            for victim in evictions {
+                if self.ordered_cache_meta(c, victim.id).ok() != Some((victim.len, victim.disk)) {
+                    return Err(Error::Storage);
+                }
             }
         }
         for victim in evictions {
-            self.ordered_remove_cache(c, victim.id)
+            self.ordered_remove_cache(c, victim)
                 .map_err(|_| Error::Storage)?;
         }
         Ok(())
@@ -1596,6 +1608,8 @@ fn owned_stage(s: &str) -> bool {
     digits(p.next()) && digits(p.next()) && p.next().is_none()
 }
 fn read_publication(p: &Publication) -> Result<Vec<u8>> {
+    #[cfg(test)]
+    ordered_eviction_tests::FULL_READS.with(|count| count.set(count.get() + 1));
     let mut f = storage::open_read(&p.path)?;
     let fresh = read_meta_file(&p.path, &mut f)?;
     if fresh.object != p.object || fresh.len != p.len || fresh.manifest != p.manifest {
@@ -1670,3 +1684,6 @@ mod storage_tests;
 #[cfg(test)]
 #[path = "endpoint/metadata_tests.rs"]
 mod metadata_tests;
+
+#[cfg(test)]
+mod ordered_eviction_tests;
