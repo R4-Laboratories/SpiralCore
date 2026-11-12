@@ -68,6 +68,13 @@ fn bind_unconfigured<T>(
 
 impl InstalledWitness {
     pub(super) fn start(cfg: &Config, helper: &Path) -> Result<Self> {
+        Self::start_profile(cfg, helper, None)
+    }
+    pub(super) fn start_profile(
+        cfg: &Config,
+        helper: &Path,
+        pair: Option<[&str; 2]>,
+    ) -> Result<Self> {
         let install = helper
             .parent()
             .context("missing installed binary directory")?;
@@ -94,12 +101,20 @@ impl InstalledWitness {
             "fresh witness tenant socket required"
         );
         let (report_socket, transmit) = std::os::unix::net::UnixDatagram::pair()?;
-        let child = Command::new(daemon)
+        let mut command = Command::new(daemon);
+        match pair {
+            Some(names) => {
+                command.arg("--owned-mailbox-pair-v1").args(names);
+            }
+            None => {
+                command.arg("--owned-mailbox-v1");
+            }
+        }
+        let child = command
             .env(
                 mvm_hostd::mailbox_service::guest_io::ENABLE_ENV,
                 mvm_hostd::mailbox_service::guest_io::private_channel::ISOLATED_HELPER_MODE,
             )
-            .arg("--owned-mailbox-v1")
             .env("MVM_HOST_AGENT_WORKER", "1")
             .env(
                 "MVM_HOST_AGENT_IDLE_TIMEOUT",
@@ -109,8 +124,11 @@ impl InstalledWitness {
             .stdout(Stdio::from(std::os::fd::OwnedFd::from(transmit)))
             .stderr(Stdio::inherit())
             .spawn()?;
-        let (original, provider) = bind_unconfigured(child, |owner| {
-            HostAgentMailboxProvisioner::from_original_worker(&cfg.home, owner)
+        let (original, provider) = bind_unconfigured(child, |owner| match pair {
+            Some(names) => {
+                HostAgentMailboxProvisioner::from_original_worker_pair(&cfg.home, owner, names)
+            }
+            None => HostAgentMailboxProvisioner::from_original_worker(&cfg.home, owner),
         })?;
         let mut child = original
             .lock()
@@ -174,6 +192,13 @@ impl InstalledWitness {
     }
 
     pub(super) fn observe_helper(&self, expected: &HeldExecutable) -> Result<ProcessObservation> {
+        self.observe_new_helper(expected, None)
+    }
+    pub(super) fn observe_new_helper(
+        &self,
+        expected: &HeldExecutable,
+        previous_pid: Option<u32>,
+    ) -> Result<ProcessObservation> {
         let parent = self
             .child
             .lock()
@@ -194,6 +219,9 @@ impl InstalledWitness {
         }
         let mut matched = None;
         for pid in pids {
+            if Some(pid) == previous_pid {
+                continue;
+            }
             let path = format!("/proc/{pid}/exe");
             let Ok(m) = fs::metadata(&path) else { continue };
             if !expected.matches_inode(m.dev(), m.ino())? {
@@ -201,7 +229,7 @@ impl InstalledWitness {
             }
             ensure!(
                 matched.is_none(),
-                "more than one installed helper in single-guest witness"
+                "more than one new installed mailbox helper"
             );
             matched = Some(ProcessObservation::capture_pid(pid, Some(expected))?);
         }

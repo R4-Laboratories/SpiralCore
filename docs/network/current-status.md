@@ -1,16 +1,15 @@
 # Networking delivery status
 
-Updated **2026-11-12**. One installed Linux/Firecracker guest delivered 1,024 exact bytes with 1,071 bidirectional mailbox stream bytes at the original helper. [Measured native run](evidence/2026-11-11-retained-recovery/installed-helper/README.md#measured-linux-guest-mailbox-stream).
-This page separates accepted components, measured experiments and unmerged work.
-The [README](../../README.md) is the architecture/results entry point;
-[issue #42](https://github.com/R4-Laboratories/SpiralCore/issues/42) remains the
-delivery authority. The complete MVM contribution is **not finished**.
+Updated **2026-11-12**. Two installed Linux/Firecracker guests served under one
+coordinator. Both delivered distinct byte-exact messages to the host under their
+own signed mailboxes, and guest B remained usable after guest A retired.
+[Native run and measured scope](evidence/2026-11-12-paired-mailbox/firecracker.md).
 
-For the two-guest milestone, the Linux coordinator now has an opt-in pair of
-named VM workers under one host budget. The Linux guest forwarder now retains its original at the replay and frame-size limits and after an indeterminate host reply. [Three regression results](evidence/2026-11-12-paired-mailbox/README.md#guest-outbox-custody-after-the-fix). The guest Submit retry path and
-destination Cast path have separate local socket measurements. The next native
-gate is an installed two-guest Cast with exact destination readback and
-independent worker shutdown. [Paired mailbox evidence](evidence/2026-11-12-paired-mailbox/README.md)
+The [README](../../README.md) presents the architecture and results. The
+[GitHub roadmap](https://github.com/R4-Laboratories/SpiralCore/issues/42)
+tracks delivery. The next installed gate is an authorized Cast from guest A to
+guest B with exact readback inside the destination workload. Cross-host WAN and
+platform qualification follow. [Guest retry and worker capacity regressions](evidence/2026-11-12-paired-mailbox/README.md).
 
 ## Published checkpoints
 

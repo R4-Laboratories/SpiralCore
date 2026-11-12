@@ -15,7 +15,7 @@ scratch=$(mktemp -d /var/tmp/sc.XXXXXXXX)
 cp -R tools/installed-mailbox-witness/. "$scratch/"
 cd "$scratch"
 sha256sum --check inputs.sha256
-revision=91fea4e72352f8fa676635ad38b34213cd3bbcb6
+revision=11c6f04bd1f6fa261b6543d678acf8226e699f33
 git init -q source
 git -C source fetch --depth=1 https://github.com/Casey-allard/mvm.git "$revision"
 git -C source checkout -q --detach FETCH_HEAD
@@ -82,3 +82,15 @@ The mailbox ID above is a synthetic fixture. Each invocation needs a fresh VM na
 `runtime.json` measures runtime preparation. `native.json` distinguishes setup, time spent receiving (including polling), full lifecycle wall time, and orchestrator process CPU. The payload length and digest refer to application bytes. Guest CPU and transport wire bytes have their own availability fields. This command provides a functional witness for the installed mailbox. Compression gains, sender/receiver CPU comparisons and WAN performance require a paired transfer benchmark.
 
 The measured helper emits one bounded receipt after its original dial thread joins. The original coordinator passes a dedicated anonymous datagram reader to the witness. Only the original helper inherits its paired writer. The witness accepts the owner-bound receipt after signed helper collection. It records elapsed wall time and orchestrator CPU through that collection, then separately observes the coordinator for up to 210 seconds. A coordinator timeout fails lifecycle acceptance while preserving the measured bytes. `guest_mailbox_stream_counts` records completed, post-mux reads and locally accepted writes on port 5257. It includes framing and attempted application exchanges that transferred bytes before a failure. Guest receipt of a reply, host API traffic, Firecracker CONNECT negotiation, virtio headers, NIC bytes and WAN transport require separate measurements. An absent, duplicate, overflowing or mismatched receipt leaves the measurement unavailable and fails the measured-witness gate.
+
+## Two named guests on one installed coordinator
+
+Prepare the same private Firecracker home and rootfs as for one guest, including the guest producer from this source revision. Start the paired profile with two distinct VM names and two distinct 32-byte mailbox identifiers. The host and guests use the source revision pinned above.
+
+```sh
+"$witness" --pair "$rootfs" spiralcore-alpha "$mailbox_a_hex" spiralcore-beta "$mailbox_b_hex" "$report_out"
+```
+
+The witness boots two 1-vCPU, 256 MiB guests without guest NICs. Each receives its own signed plan and local mailbox grant. The guest producer writes a distinct deterministic 1,024-byte message for each mailbox. Both helpers must be serving when the host reads the first message. The witness stops and collects that original worker, then verifies the second guest's readback while its own original worker remains live. Each per-helper byte report comes from a separate connected socket obtained before the next VM is launched.
+
+The JSON records plan and mailbox identities, exact lengths and hashes, byte counts in each direction, the receive and cleanup times, process CPU samples, and the shared coordinator's original exit. Guest-to-guest Cast, WAN and zstd are separate acceptance gates. A failed or incomplete run preserves its claim and reports which lifecycle and measurement steps were observed.
