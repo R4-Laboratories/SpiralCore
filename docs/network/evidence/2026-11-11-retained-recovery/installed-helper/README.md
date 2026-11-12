@@ -38,3 +38,24 @@ This was one development-build invocation. The complete fixture took **459.53 ms
 On Linux the previous provider kept a reaped child's slot alive after recording exit code 0. The repaired coordinator joins admitted control tasks before releasing that slot. The receipt survived the destruction of its provider and original cleanup actor, retaining **198 bytes** of the shared budget. Dropping the last receipt returned the ledger to **0 bytes**. The focused regression took **7.58 ms** and peaked at **13,212 KiB RSS**. The installed coordinator case using the injected pipe child took **15.35 ms** and peaked at **7,944 KiB RSS**. Both reported 0.00 s for each CPU counter at 0.01 s resolution. All 14 release-build cases passed. The original failing executable hash and its precise runtime were unavailable. [Linux repair](https://github.com/Casey-allard/mvm/commit/26ad942dcf2fe310afab8ef882241e970534a1f5) · [Linux measurements](linux-worker-retirement.json).
 
 Both runs used MVM 0.27 development source. To reproduce the macOS process tests, use `cargo test --locked -p mvm-hostd --test owned_mailbox_helper -- --nocapture --test-threads=1`. For Linux, run the names listed in the JSON with `cargo test --locked --release -p mvm-hostd --lib` or, for the installed coordinator, `--bin mvm-host-agent`, followed by the case name and `-- --exact --nocapture --test-threads=1`. The next acceptance run exercises the installed launcher, canonical helper and an actual Firecracker guest together.
+
+## Linux helper shutdown on MVM 0.28.0-rc.1
+
+Two Linux x86-64 tests started the installed `mvm-mailbox` executable. Both refused a foreign plan commitment, delegated the configuration pipe, waited for `Serving`, and read the empty canonical mailbox queue. One sent signed `Stop` and confirmed the exit receipt with a fresh `Query`. The other drained the coordinator while the helper was serving. Both observed exit code 0 and the return of the worker reservation. The test supplied the admitted factory to the coordinator. A separate process must still provision it through the installed service before the guest test can qualify that path.
+
+| One release-build run per case | Elapsed | Peak RSS |
+| --- | ---: | ---: |
+| Signed Stop followed by Query | 0.10 s | 14,572 KiB |
+| Coordinator shutdown | 0.10 s | 15,152 KiB |
+
+Both user and system CPU counters rounded to 0.00 s at 0.01 s resolution. The first invocation refused the group-writable Cargo executable. Installing the same executable bytes with mode 0700 admitted it. No payload crossed a guest socket in these lifecycle tests. [Measurements and executable hashes](linux-028-factory.json) · [Tested MVM source](https://github.com/Casey-allard/mvm/tree/54dde7b1bd30746867bba79b7895ea1ebe1ecde5).
+
+To reproduce on Linux, use a private target directory. Build the helper and test harness from that revision, then run the two explicitly selected process tests.
+
+```sh
+export CARGO_TARGET_DIR="$(mktemp -d)"
+cargo build --release --locked -p mvm-hostd --bin mvm-mailbox
+chmod 0700 "$CARGO_TARGET_DIR/release/mvm-mailbox"
+cargo test --release --locked -p mvm-hostd --bin mvm-host-agent \
+  worker_injected_owner_tests::installed_owned_helper_ -- --ignored --test-threads=1
+```
