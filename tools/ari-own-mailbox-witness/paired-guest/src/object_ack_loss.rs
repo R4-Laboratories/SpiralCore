@@ -51,7 +51,7 @@ impl WithholdOnce {
     }
 }
 
-pub(super) fn control(
+pub(crate) fn control(
     source: &mut GuestObjectSource,
     task: &Value,
     deadline: Instant,
