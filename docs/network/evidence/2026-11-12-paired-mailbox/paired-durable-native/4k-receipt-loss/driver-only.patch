@@ -1,0 +1,22 @@
+diff --git a/crates/mvm-hostd/src/mailbox_process/original_journal/relay.rs b/crates/mvm-hostd/src/mailbox_process/original_journal/relay.rs
+index 8dd5dd8..862a558 100644
+--- a/crates/mvm-hostd/src/mailbox_process/original_journal/relay.rs
++++ b/crates/mvm-hostd/src/mailbox_process/original_journal/relay.rs
+@@ -214,6 +214,17 @@ impl OriginalJournalSourceHost {
+                 && verdict.len() as u64 <= mvm_core::mailbox::frame::MAX_VERDICT_BYTES,
+             "incomplete or oversized B journal reply"
+         );
++        // Qualification-only orchestrator build. No alternate socket, helper or
++        // key. The original source observes EOF on this connection, and only
++        // the original guest agent may retry the same pending operation.
++        static DROPPED: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
++        if !DROPPED.swap(true, std::sync::atomic::Ordering::SeqCst) {
++            observe(&envelope, &verdict);
++            return Ok(Some(CompletedRelayIo {
++                sealed_to_destination: 4 + body.len(),
++                reply_to_source: 0,
++            }));
++        }
+         a.write_all(&verdict)?;
+         observe(&envelope, &verdict);
+         Ok(Some(CompletedRelayIo {
