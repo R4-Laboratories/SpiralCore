@@ -1,0 +1,54 @@
+{
+  "coordinator_exit": "exit status: 42",
+  "errors": [
+    "original A to B: exchanging bounded guest control frames: guest control operation exceeded its deadline"
+  ],
+  "expected_bytes": 257,
+  "expected_sha256": "f96985ec7eb6f44fe81d4856c22f7ee692c48fb9e8230592226f7a946cabec4a",
+  "guest_stream_scope": "mvm/owned-mailbox/guest-5257/post-mux-host-stream/v1",
+  "host_driver_process_cpu_ns": 8482157410,
+  "lifecycle_wall_ns": 121585978198,
+  "message_id_correlation_across_guests": null,
+  "participants": [
+    {
+      "cleanup": "canonical_cleanup_ok",
+      "guest_stream_counts": {
+        "dial_attempts": 1,
+        "failed_dials": 0,
+        "guest_to_host_read_bytes": 0,
+        "host_to_guest_write_accepted_bytes": 52,
+        "overflow": false,
+        "read_errors": 1,
+        "write_errors": 0,
+        "zero_data_connections": 0
+      },
+      "name": "spiralcore-cast-alpha",
+      "original_plan": "sha256:838a597e7c178cb020c56da39328d4f4b77816ab918063ffb6736035e76c40b7",
+      "retirement_wall_ns": 234503440,
+      "stop": "canonical_stop_ok"
+    },
+    {
+      "cleanup": "canonical_cleanup_ok",
+      "guest_stream_counts": {
+        "dial_attempts": 0,
+        "failed_dials": 0,
+        "guest_to_host_read_bytes": 0,
+        "host_to_guest_write_accepted_bytes": 0,
+        "overflow": false,
+        "read_errors": 0,
+        "write_errors": 0,
+        "zero_data_connections": 0
+      },
+      "name": "spiralcore-cast-beta",
+      "original_plan": "sha256:76a0995910ace8920b40a01063fdadb48f31b893caa409921e97cc3a8198ec4e",
+      "retirement_wall_ns": 104454628,
+      "stop": "canonical_stop_ok"
+    }
+  ],
+  "readback": null,
+  "scope": "Linux Firecracker same-host addressed Cast, ephemeral Submit and exact destination workload readback",
+  "send_only_ns": null,
+  "setup_wall_ns": 5686033307,
+  "status": "failed",
+  "wan_bytes": null
+}
