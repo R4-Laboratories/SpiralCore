@@ -73,6 +73,25 @@ impl ObjectDelivery {
     pub fn header(&self) -> &MailboxEnvelopeHeader {
         &self.header
     }
+    pub fn lease(&self) -> &SignedMailboxDeliveryLease {
+        &self.lease
+    }
+    /// Invoke only after processing the application result. An incomplete or
+    /// unrelated reply leaves the caller holding this same original lease.
+    pub fn acknowledge_before(&self, deadline: Instant, traffic: &mut ReaderTraffic) -> Result<()> {
+        let mut socket = application_reader_before(deadline, traffic)?;
+        write_application_request(
+            &mut socket,
+            &ApplicationReaderRequest::Ack {
+                lease: self.lease.clone(),
+            },
+        )?;
+        match read_response(&mut socket)? {
+            ReaderResponse::Acknowledged { ack } if ack.ack.lease == *self.lease => Ok(()),
+            ReaderResponse::Refused { reason } => Err(reason.into()),
+            _ => anyhow::bail!("original signed guest lease ACK mismatched"),
+        }
+    }
     /// A current application Authority must still authorize the same scope for
     /// cache lookup, storage and readback in the shared receiver.
     pub fn object_context(&self) -> Context {
