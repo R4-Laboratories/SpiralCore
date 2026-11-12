@@ -1,3 +1,4 @@
+mod retirement;
 use anyhow::{Context, Result, ensure};
 use cpu_time::ProcessTime;
 use mvm_agentd::worker_protocol::{
@@ -83,16 +84,7 @@ fn stage(v: &Value, deadline: Instant) -> Result<Value> {
             "canonical outbox directory changed"
         );
         let message_id = hex::encode(message.message_id.as_bytes());
-        for disposition in ["uncertain", "rejected"] {
-            let archived = dir.join(format!("{disposition}-{message_id}"));
-            match fs::symlink_metadata(archived) {
-                Err(e) if e.kind() == io::ErrorKind::NotFound => {}
-                Err(e) => return Err(e.into()),
-                Ok(_) => anyhow::bail!(
-                    "canonical guest archived the original operation as {disposition}"
-                ),
-            }
-        }
+        retirement::require_no_directed_archive(&slot, &message_id)?;
         result["outbox_retired_without_archive"] = json!(true);
         result["outbox_retirement_wait_ns"] = json!(staged_at.elapsed().as_nanos() as u64);
     }
