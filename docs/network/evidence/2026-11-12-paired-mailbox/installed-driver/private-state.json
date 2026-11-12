@@ -1,0 +1,128 @@
+{
+  "scope": "installed-pair filesystem creation and signed-publication unit tests",
+  "baseline_source": "5ae2cdc4977e12a574a5baa2e4f0522c3f7a1ae7",
+  "source": "62c6f6eedee19fa91089720c12d1941a0b67dac3",
+  "baseline": {
+    "platform": "Linux x86_64",
+    "umask": "0002",
+    "selector": "pair_publication_rejects_missing_stale_and_replaced_original_sidecars",
+    "passed": 0,
+    "failed": 1,
+    "diagnostic": "untrusted original sidecar directory",
+    "log_sha256": "ad4d990d3d621452643123192df5bf1effd453192f89f6deeda15a0818a88f89",
+    "independent_log_sha256": "b28b67aaa5e7b719bd33ac118c7119a6d89db340f887bb7b9a6325fd88679e19"
+  },
+  "tests": [
+    {
+      "platform": "Linux x86_64",
+      "umask": "0002",
+      "crate": "mvm-client",
+      "selector": "launch::cast_state::tests::",
+      "tests": [
+        "launch::cast_state::tests::original_cast_creates_private_state_and_refuses_unsafe_existing_namespace",
+        "launch::cast_state::tests::split_original_refuses_foreign_socket_before_cleanup_and_releases_empty_fresh_paths"
+      ],
+      "passed": 2,
+      "failed": 0,
+      "log_sha256": "d8c78f972181a5591103f6996e408787d374a43fa5e1d38c699bdfeaf97039b7",
+      "executable_sha256": "c58326886cd9edbbe970d7d25411ed6b6c82fa3657e1fb5beb03a18984af076b"
+    },
+    {
+      "platform": "Linux x86_64",
+      "umask": "0002",
+      "crate": "mvm-hostd",
+      "selector": "pair_publication_rejects_missing_stale_and_replaced_original_sidecars",
+      "tests": [
+        "mailbox_launch::cast_enrollment::publication::tests::pair_publication_rejects_missing_stale_and_replaced_original_sidecars"
+      ],
+      "passed": 1,
+      "failed": 0,
+      "log_sha256": "f3c89604212aa67ca737f2eebe81c44ec1ed5b8919e86431f6cef6ee479924d1",
+      "executable_sha256": "7f237a49e792c72b736a291f4ecfa597b5af238f38963eed4c5ce2d7608ed5ce"
+    },
+    {
+      "platform": "Linux x86_64",
+      "umask": "0077",
+      "crate": "mvm-client",
+      "selector": "launch::cast_state::tests::",
+      "tests": [
+        "launch::cast_state::tests::original_cast_creates_private_state_and_refuses_unsafe_existing_namespace",
+        "launch::cast_state::tests::split_original_refuses_foreign_socket_before_cleanup_and_releases_empty_fresh_paths"
+      ],
+      "passed": 2,
+      "failed": 0,
+      "log_sha256": "35ac653d78ad59174d7a1c45be339723ef3844db0e26ac5baf4526db97f3d034",
+      "executable_sha256": "c58326886cd9edbbe970d7d25411ed6b6c82fa3657e1fb5beb03a18984af076b"
+    },
+    {
+      "platform": "Linux x86_64",
+      "umask": "0077",
+      "crate": "mvm-hostd",
+      "selector": "pair_publication_rejects_missing_stale_and_replaced_original_sidecars",
+      "tests": [
+        "mailbox_launch::cast_enrollment::publication::tests::pair_publication_rejects_missing_stale_and_replaced_original_sidecars"
+      ],
+      "passed": 1,
+      "failed": 0,
+      "log_sha256": "279965613f93e2b43e222406bf43a49793673323274aa20b668d4aae318429cf",
+      "executable_sha256": "7f237a49e792c72b736a291f4ecfa597b5af238f38963eed4c5ce2d7608ed5ce"
+    },
+    {
+      "platform": "macOS arm64",
+      "umask": "0002",
+      "crate": "mvm-client",
+      "selector": "launch::cast_state::tests::",
+      "tests": [
+        "launch::cast_state::tests::original_cast_creates_private_state_and_refuses_unsafe_existing_namespace",
+        "launch::cast_state::tests::split_original_refuses_foreign_socket_before_cleanup_and_releases_empty_fresh_paths"
+      ],
+      "passed": 2,
+      "failed": 0,
+      "log_sha256": "c95123eec02be3a07626eafabdc29571248daaab7d9985560eba7f189207ad4e",
+      "executable_sha256": "280930a02cafacbcea17dba9c929066b1d03d5cf5ec7664064f4b4cc18c75cfa"
+    },
+    {
+      "platform": "macOS arm64",
+      "umask": "0002",
+      "crate": "mvm-hostd",
+      "selector": "pair_publication_rejects_missing_stale_and_replaced_original_sidecars",
+      "tests": [
+        "mailbox_launch::cast_enrollment::publication::tests::pair_publication_rejects_missing_stale_and_replaced_original_sidecars"
+      ],
+      "passed": 1,
+      "failed": 0,
+      "log_sha256": "ecb7f056691bd979121bf033a364232bec5f479736862bae300d25d44d959d79",
+      "executable_sha256": "590a0649bab495783dd436a8f4741e115d896e4a3e92d0fc25fecf518abf6978"
+    },
+    {
+      "platform": "macOS arm64",
+      "umask": "0077",
+      "crate": "mvm-client",
+      "selector": "launch::cast_state::tests::",
+      "tests": [
+        "launch::cast_state::tests::original_cast_creates_private_state_and_refuses_unsafe_existing_namespace",
+        "launch::cast_state::tests::split_original_refuses_foreign_socket_before_cleanup_and_releases_empty_fresh_paths"
+      ],
+      "passed": 2,
+      "failed": 0,
+      "log_sha256": "9897727be81e3c24fea6cdb2113dfae73b7f1ec3974544ea973f1473b06ecdf8",
+      "executable_sha256": "280930a02cafacbcea17dba9c929066b1d03d5cf5ec7664064f4b4cc18c75cfa"
+    },
+    {
+      "platform": "macOS arm64",
+      "umask": "0077",
+      "crate": "mvm-hostd",
+      "selector": "pair_publication_rejects_missing_stale_and_replaced_original_sidecars",
+      "tests": [
+        "mailbox_launch::cast_enrollment::publication::tests::pair_publication_rejects_missing_stale_and_replaced_original_sidecars"
+      ],
+      "passed": 1,
+      "failed": 0,
+      "log_sha256": "97bcc379e0ae71429edca958f8935462f3251bb713a2f049fb292e1206e84b3d",
+      "executable_sha256": "590a0649bab495783dd436a8f4741e115d896e4a3e92d0fc25fecf518abf6978"
+    }
+  ],
+  "vm_boots": 0,
+  "guest_traffic_bytes": null,
+  "wan_transfer_time_ns": null
+}
