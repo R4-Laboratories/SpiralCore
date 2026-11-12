@@ -151,6 +151,7 @@ enum Phase {
     },
     Prepared {
         submission: ObjectSubmissionV1,
+        refusal: Option<mvm_core::mailbox::frame::Refusal>,
         readback: Option<Vec<u8>>,
     },
     Accepted {
@@ -292,21 +293,31 @@ impl GuestDestination {
                 };
                 p.phase = Phase::Prepared {
                     submission: object_exchange::response_submission(c, reply)?,
+                    refusal: None,
                     readback,
                 };
             }
             if let Phase::Prepared {
                 submission,
+                refusal,
                 readback,
             } = &mut p.phase
             {
+                if let Some(reason) = refusal {
+                    return Err(anyhow::anyhow!("original Reply was refused: {reason}"));
+                }
                 s.gate.check(&context)?;
-                object_exchange::submit_before(
+                if let Err(e) = object_exchange::submit_before(
                     op.pair,
                     submission.clone(),
                     until,
                     &mut self.operations,
-                )?;
+                ) {
+                    if let Some(decoded) = e.downcast_ref::<object_exchange::SubmissionRefused>() {
+                        *refusal = Some(decoded.0.clone());
+                    }
+                    return Err(e);
+                }
                 p.phase = Phase::Accepted {
                     readback: readback.take(),
                 };

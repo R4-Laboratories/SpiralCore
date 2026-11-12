@@ -47,6 +47,16 @@ fn call_submission(pair: &Id, frame: &Frame) -> Result<ObjectSubmissionV1> {
     })
 }
 
+/// A fully decoded peer refusal is distinct from incomplete local socket I/O.
+#[derive(Debug)]
+pub(super) struct SubmissionRefused(pub mvm_core::mailbox::frame::Refusal);
+impl std::fmt::Display for SubmissionRefused {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.0.fmt(f)
+    }
+}
+impl std::error::Error for SubmissionRefused {}
+
 fn stage_on(io: &mut (impl Read + Write), pair: Id, submission: ObjectSubmissionV1) -> Result<()> {
     let expected = submission.message_id();
     write_application_request(
@@ -61,7 +71,7 @@ fn stage_on(io: &mut (impl Read + Write), pair: Id, submission: ObjectSubmission
             pair: got,
             message_id,
         } if got == pair && message_id == expected => Ok(()),
-        ReaderResponse::Refused { reason } => Err(reason.into()),
+        ReaderResponse::Refused { reason } => Err(SubmissionRefused(reason).into()),
         _ => anyhow::bail!("missing matching local object staging confirmation"),
     }
 }
@@ -88,7 +98,7 @@ fn status_on(io: &mut (impl Read + Write), pair: Id, id: MessageId) -> Result<bo
         {
             Ok(true)
         }
-        ReaderResponse::Refused { reason } => Err(reason.into()),
+        ReaderResponse::Refused { reason } => Err(SubmissionRefused(reason).into()),
         _ => anyhow::bail!("missing original destination acceptance for object submission"),
     }
 }
