@@ -4,6 +4,8 @@ Updated **2026-11-12**. Native Linux x86-64/Firecracker and Apple Silicon/HVF no
 
 Three 4 KiB operations on a fresh Linux Firecracker pair delivered all 12,288 bytes exactly, with three admitted control probes completed between staging and relay forwarding. The median through verified destination readback was 1.192 s. The same driver completed three original 257-byte operations on another fresh pair. The larger profile used 37,972 bytes toward B and 3,608 bytes back across the host relay. [Bytes, CPU, timing and original helper counters](evidence/2026-11-12-paired-mailbox/paired-durable-native/size-control/README.md).
 
+The installed Cast grants carry complete fixtures in one direction. The older authenticated Call/Reply mapping verified an exact 131,090-byte repeat with zero Data payload in a local component. An installed warm trial needs a separately admitted application return route. [Grant checks and measured component costs](evidence/2026-11-12-paired-mailbox/paired-durable-native/object-reply-boundary.md).
+
 One persistent Linux Firecracker pair verified eight separately addressed operations and eight admitted control Calls. The median time through signed receipt was 220.763 ms, and the median through B’s ACK and exact returned readback was 883.826 ms. Both original helpers exited cleanly. [Operation timing, bytes, CPU and scope](evidence/2026-11-12-paired-mailbox/paired-durable-native/sustained/README.md).
 
 ### Cross-host carrier handoff
