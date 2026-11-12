@@ -1037,7 +1037,7 @@ mod tests {
 
 #[cfg(test)]
 #[path = "tls/readiness_tests.rs"]
-mod readiness_tests;
+pub(crate) mod readiness_tests;
 
 fn lock_error(error: crate::lock_wait::AcquireError) -> io::Error {
     match error {

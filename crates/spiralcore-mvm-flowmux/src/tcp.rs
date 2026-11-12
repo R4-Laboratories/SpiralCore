@@ -432,6 +432,8 @@ impl Tx {
                 Err(error) => return Err(error.into()),
             }
         }
+        #[cfg(test)]
+        if kind == record::APP_FIN { fin_tests::after_record_write(); }
         loop {
             self.control.check()?;
             self.socket.set_write_timeout(Some(poll_budget(until)?))?;
@@ -726,3 +728,6 @@ mod timeout_tests {
         assert!(checked_timeout(other, requested, || Ok(Some(Duration::from_millis(1)))).is_err());
     }
 }
+
+#[cfg(test)]
+mod fin_tests;
