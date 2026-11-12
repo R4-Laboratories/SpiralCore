@@ -10,10 +10,10 @@ use mvm_core::{
     mailbox::{
         self, OpenContext, OpenedMailboxEnvelope, ReplayIdentity, ReplayProtector, SealRequest,
         transport::{
-            AuthorizedRoute, CancellationToken, ChannelLimits, OutboundAuthorization,
-            PeerTransport, PreparedMailboxEnvelope, SignedTransportBinding, TransportAssurance,
-            TransportBindingContext, TransportError, authorize_outbound, authorize_route,
-            prepare_mailbox_envelope,
+            AuthorizedMailboxFrame, AuthorizedRoute, CancellationToken, ChannelLimits,
+            OutboundAuthorization, PeerTransport, PreparedMailboxEnvelope, SignedTransportBinding,
+            TransportAssurance, TransportBindingContext, TransportError, authorize_outbound,
+            authorize_route, prepare_mailbox_envelope,
         },
     },
 };
@@ -1226,6 +1226,16 @@ fn fresh_id() -> Result<u64> {
     })
     .map_err(|_| ServiceError::Limit)
 }
+/// Borrowed proof for one externally implemented, bounded sender operation.
+pub struct AuthorizedSend<'a> {
+    pub route: &'a AuthorizedRoute,
+    pub envelope: &'a [u8],
+    pub capability: &'a SignedMailboxCapability,
+    pub header: &'a MailboxEnvelopeHeader,
+    pub destination_key: &'a VerifyingKey,
+    pub expires_at_unix_ms: i64,
+}
+
 impl MailboxBinding {
     pub fn send_prepared(
         &self,
@@ -1263,6 +1273,60 @@ impl MailboxBinding {
         cancel: &CancellationToken,
         now: ServiceTime,
     ) -> Result<usize> {
+        self.authorize_transport(
+            prepared,
+            expected,
+            cancel,
+            now,
+            |route, frame, _, limits| {
+                let mut channel = transport
+                    .connect(route, limits, cancel)
+                    .map_err(map_transport)?;
+                channel.try_send(frame, cancel).map_err(map_transport)?;
+                Ok(frame.encoded_len())
+            },
+        )
+    }
+
+    /// Authorize an endpoint-specific exchange under the current binding
+    /// generation. The callback may borrow the verified immutable inputs only
+    /// for this operation. It must use bounded I/O and must not re-enter this
+    /// binding while the policy guard is held.
+    pub fn with_authorized_transport<T>(
+        &self,
+        prepared: &PreparedMailboxEnvelope,
+        cancel: &CancellationToken,
+        now: ServiceTime,
+        exchange: impl FnOnce(AuthorizedSend<'_>) -> Result<T>,
+    ) -> Result<T> {
+        self.authorize_transport(prepared, None, cancel, now, |route, frame, header, _| {
+            exchange(AuthorizedSend {
+                route,
+                envelope: frame.encoded_bytes(),
+                capability: &self.config.capability,
+                header,
+                destination_key: &self.config.authority_key,
+                expires_at_unix_ms: header
+                    .expires_at_unix_ms
+                    .min(self.config.binding.claims.expires_at_unix_ms)
+                    .min(self.config.capability.grant.expires_at_unix_ms),
+            })
+        })
+    }
+
+    fn authorize_transport<T>(
+        &self,
+        prepared: &PreparedMailboxEnvelope,
+        expected: Option<SendExpectation>,
+        cancel: &CancellationToken,
+        now: ServiceTime,
+        exchange: impl FnOnce(
+            &AuthorizedRoute,
+            &AuthorizedMailboxFrame,
+            &MailboxEnvelopeHeader,
+            ChannelLimits,
+        ) -> Result<T>,
+    ) -> Result<T> {
         if cancel.is_cancelled() {
             return Err(ServiceError::Cancelled);
         }
@@ -1314,13 +1378,7 @@ impl MailboxBinding {
             return Err(ServiceError::Limit);
         }
         let limits = ChannelLimits::new(max, max).map_err(map_transport)?;
-        let mut channel = transport
-            .connect(&route, limits, cancel)
-            .map_err(map_transport)?;
-        channel
-            .try_send(&authorized, cancel)
-            .map_err(map_transport)?;
-        Ok(authorized.encoded_len())
+        exchange(&route, &authorized, verified.opened.header(), limits)
     }
     fn deadlines(
         &self,
