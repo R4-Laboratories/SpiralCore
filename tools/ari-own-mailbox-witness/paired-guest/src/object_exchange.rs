@@ -1,7 +1,7 @@
 //! Object-v1 application operations on the selected MVM durable reader.
 use crate::object_reader::ObjectDelivery;
 use anyhow::{Result, ensure};
-use mvm_contract::protocol::mailbox::{CorrelationId, MessageId};
+use mvm_contract::protocol::mailbox::{CorrelationId, DeliveryOutcome, MessageId, ProtocolVersion};
 use mvm_core::mailbox::reader_wire::{
     ApplicationReaderRequest, ObjectSubmissionV1, ReaderResponse, read_response,
     write_application_request,
@@ -66,16 +66,68 @@ fn stage_on(io: &mut (impl Read + Write), pair: Id, submission: ObjectSubmission
     }
 }
 
-fn stage_before(
+/// The original guest agent checks the destination signature and its signed
+/// role. Only its matching V2 terminal allows us to leave the local outbox.
+fn status_on(io: &mut (impl Read + Write), pair: Id, id: MessageId) -> Result<bool> {
+    write_application_request(
+        io,
+        &ApplicationReaderRequest::ObjectSubmissionStatusV1 {
+            pair,
+            message_id: id,
+        },
+    )?;
+    match read_response(io)? {
+        ReaderResponse::ObjectPendingV1 {
+            pair: p,
+            message_id,
+        } if p == pair && message_id == id => Ok(false),
+        ReaderResponse::ObjectAcceptedV1 { receipt }
+            if receipt.receipt.message_id == id
+                && receipt.receipt.protocol_version == ProtocolVersion::V2
+                && receipt.receipt.outcome == DeliveryOutcome::AcceptedLocalDurable =>
+        {
+            Ok(true)
+        }
+        ReaderResponse::Refused { reason } => Err(reason.into()),
+        _ => anyhow::bail!("missing original destination acceptance for object submission"),
+    }
+}
+
+fn wait_to_poll(deadline: Instant) {
+    std::thread::sleep(
+        Duration::from_millis(5).min(deadline.saturating_duration_since(Instant::now())),
+    );
+}
+
+fn submit_before(
     pair: Id,
     submission: ObjectSubmissionV1,
     deadline: Instant,
     traffic: &mut ReaderTraffic,
 ) -> Result<()> {
-    let mut io = application_reader_before(deadline, traffic)?;
-    stage_on(&mut io, pair, submission)?;
-    ensure!(Instant::now() < deadline, "object staging deadline expired");
-    Ok(())
+    let id = submission.message_id();
+    {
+        let mut io = application_reader_before(deadline, traffic)?;
+        stage_on(&mut io, pair, submission)?;
+    }
+    loop {
+        ensure!(
+            Instant::now() < deadline,
+            "object submission deadline expired"
+        );
+        let accepted = {
+            let mut io = application_reader_before(deadline, traffic)?;
+            status_on(&mut io, pair, id)?
+        };
+        ensure!(
+            Instant::now() < deadline,
+            "object submission status deadline expired"
+        );
+        if accepted {
+            return Ok(());
+        }
+        wait_to_poll(deadline);
+    }
 }
 
 /// The original mailbox retains durable intent. Keep the last accepted Reply
@@ -155,7 +207,7 @@ impl GuestObjectSource {
             transfer,
             limits,
             |request| -> Result<_> {
-                stage_before(
+                submit_before(
                     pair,
                     call_submission(&pair, request)?,
                     deadline,
@@ -177,10 +229,7 @@ impl GuestObjectSource {
                         );
                         return Ok((delivery.reply_frame()?.clone(), (request.seq, delivery)));
                     }
-                    std::thread::sleep(
-                        Duration::from_millis(5)
-                            .min(deadline.saturating_duration_since(Instant::now())),
-                    );
+                    wait_to_poll(deadline);
                 }
             },
             |(seq, delivery)| {
@@ -264,10 +313,10 @@ pub(super) fn retry_settlement(
     )
 }
 
-/// B stages its computed response against the original signed Call lease.
-/// This operation never ACKs that lease. The installed owner must first retain
-/// the response and the authority required for its retry across a lost receipt.
-pub fn stage_response_before<A: Authority>(
+/// B submits the computed response against the original signed Call lease and
+/// waits for original V2 destination acceptance. The caller retains the Call
+/// lease and may now ACK it, retrying that same ACK on ambiguous completion.
+pub fn send_response_before<A: Authority>(
     call: &ObjectDelivery,
     endpoint: &mut Endpoint<A>,
     monotonic_seconds: u64,
@@ -289,148 +338,7 @@ pub fn stage_response_before<A: Authority>(
         original_call: Box::new(call.lease().clone()),
         payload: reply.encode()?,
     };
-    stage_before(pair, submission, deadline, traffic)
+    submit_before(pair, submission, deadline, traffic)
 }
 #[cfg(test)]
-mod tests {
-    use super::*;
-    use mvm_core::mailbox::reader_wire::{read_application_request, write_response};
-    use std::os::unix::net::UnixStream;
-
-    #[test]
-    fn stage_requires_exact_local_pair_and_message_confirmation() {
-        let pair = [7; 32];
-        let request = Frame {
-            kind: 1,
-            transfer: [8; 32],
-            seq: 0,
-            body: vec![0, 9, 0],
-        };
-        for mismatch in [None, Some("pair"), Some("message")] {
-            let (mut app, mut agent) = UnixStream::pair().unwrap();
-            let id = call_id(&pair, &request);
-            let expected = request.encode().unwrap();
-            let peer = std::thread::spawn(move || {
-                let ApplicationReaderRequest::StageObjectV1 {
-                    pair: got,
-                    submission,
-                } = read_application_request(&mut agent).unwrap()
-                else {
-                    panic!("wrong operation")
-                };
-                assert_eq!(got, pair);
-                let ObjectSubmissionV1::Call {
-                    message_id,
-                    correlation_id,
-                    payload,
-                } = *submission
-                else {
-                    panic!("wrong direction")
-                };
-                assert_eq!(message_id, id);
-                assert_ne!(correlation_id.as_bytes(), &[0; 32]);
-                assert_eq!(payload, expected);
-                write_response(
-                    &mut agent,
-                    &ReaderResponse::ObjectStagedV1 {
-                        pair: if mismatch == Some("pair") {
-                            [42; 32]
-                        } else {
-                            pair
-                        },
-                        message_id: if mismatch == Some("message") {
-                            MessageId::from_bytes([9; 32])
-                        } else {
-                            id
-                        },
-                    },
-                )
-                .unwrap();
-            });
-            let result = stage_on(&mut app, pair, call_submission(&pair, &request).unwrap());
-            peer.join().unwrap();
-            assert_eq!(result.is_ok(), mismatch.is_none());
-        }
-    }
-}
-
-#[cfg(test)]
-mod identity_tests {
-    use super::*;
-
-    #[test]
-    fn replay_uses_the_same_logical_call_and_other_turns_cannot_alias_it() {
-        let pair = [7; 32];
-        let mut frame = Frame {
-            kind: 2,
-            transfer: [3; 32],
-            seq: 1,
-            body: vec![1, 2, 3],
-        };
-        let first = call_id(&pair, &frame);
-        let parent = correlation(&pair, &frame);
-        assert_ne!(first.as_bytes(), parent.as_bytes());
-        // A conflicting retry stays under the original ID, to be refused by
-        // MVM's immutable pending slot rather than issued as a new operation.
-        frame.body.push(0);
-        assert_eq!(first, call_id(&pair, &frame));
-        assert_eq!(parent, correlation(&pair, &frame));
-        assert_ne!(first, call_id(&[9; 32], &frame));
-        frame.seq += 1;
-        assert_ne!(first, call_id(&pair, &frame));
-        frame.seq -= 1;
-        frame.transfer[0] ^= 1;
-        assert_ne!(first, call_id(&pair, &frame));
-    }
-
-    #[test]
-    fn worker_rejects_oversized_payload_before_mailbox_access() {
-        let task = serde_json::json!({"pair":"01".repeat(32),"transfer":"02".repeat(32),
-            "payload_hex":"00".repeat(crate::fixture::BODY_LEN+1)});
-        let err = run_source(&mut GuestObjectSource::default(), &task, Instant::now()).unwrap_err();
-        assert_eq!(
-            err.to_string(),
-            "object exceeds qualification workload size"
-        );
-    }
-}
-
-#[cfg(test)]
-mod settlement_tests {
-    use super::*;
-    #[test]
-    fn retry_retains_exact_lease_and_refuses_another_operation() {
-        let pair = [1; 32];
-        let transfer = [2; 32];
-        let mut pending = Some(PendingReply {
-            pair,
-            transfer,
-            seq: 2,
-            delivery: vec![4, 5, 0],
-        });
-        let original = pending.as_ref().unwrap().delivery.as_ptr();
-        settle_original(&mut pending, pair, transfer, 2, |lease| {
-            assert_eq!(lease.as_ptr(), original);
-            anyhow::bail!("lost ACK response")
-        })
-        .unwrap_err();
-        for (p, t, s) in [
-            ([3; 32], transfer, 2),
-            (pair, [3; 32], 2),
-            (pair, transfer, 1),
-        ] {
-            settle_original(&mut pending, p, t, s, |_| {
-                panic!("unrelated settlement opened reader")
-            })
-            .unwrap_err();
-        }
-        settle_original(&mut pending, pair, transfer, 2, |lease| {
-            assert_eq!(lease.as_ptr(), original);
-            assert_eq!(lease, &[4, 5, 0]);
-            Ok(())
-        })
-        .unwrap();
-        assert!(pending.is_none());
-        settle_original(&mut pending, pair, transfer, 2, |_| panic!("settled twice")).unwrap_err();
-    }
-}
+mod tests;
