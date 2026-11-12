@@ -17,6 +17,8 @@ Ari’s [draft trusted-host journal](https://github.com/tinylabscom/mvm/pull/537
 
 Ari's journal draft already contains the verified admission and Reply authorization APIs from the contributor draft. Reconciling the pinned branches produced an identical source tree to Ari's draft. Linux passed 113 scoped checks, including the signed header 7 versus verifier 8 regression. [Source identity, receipt authority and compatibility tests](evidence/2026-11-12-paired-mailbox/addressed-native-launch/journal-reconciliation.md).
 
+A signed, B-addressed SpiralCore frame reached the canonical local-durable journal over a real Unix socket. After the service restarted, it returned the original signed V2 receipt for the same sealed bytes. A separately authorized host reader recovered the 313-byte frame and acknowledged it. The two-guest delivery gate remains open. [Host journal exchange, counters and timings](evidence/2026-11-12-paired-mailbox/durable-host-binding/README.md).
+
 The repaired SDK serialized concurrent VM name registration, TTL, readiness and stop updates in 13 passing Linux detached-launch tests. Replaying the two original guest grants independently located a 252 ms clock admission boundary. [SDK regression, original clock replay and limits](evidence/2026-11-12-paired-mailbox/addressed-native-launch/sdk-name-and-clock.md).
 
 Linux process tests for installed Firecracker rollback confirmed exit of the original API peer after its socket path was replaced. The replacement remained live. The earlier four native VMMs required administrative scope retirement. SDK rollback on a deliberately failed native launch remains open. [Original-process controls](evidence/2026-11-12-paired-mailbox/addressed-native-launch/original-firecracker-rollback.md).
