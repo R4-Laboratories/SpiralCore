@@ -246,8 +246,7 @@ enum BatchOutcome {
     Published,
     Need(Vec<Id>),
 }
-struct BatchSender<F> {
-    exchange: F,
+struct BatchSender {
     transfer: Id,
     next: u64,
     mode: Mode,
@@ -256,7 +255,27 @@ struct BatchSender<F> {
     accepted_upper: u64,
     stats: Stats,
 }
-impl<F: FnMut(&[Frame]) -> Result<Vec<Frame>>> BatchSender<F> {
+impl BatchSender {
+    fn new(offer: &Offer, transfer: Id) -> Self {
+        Self {
+            transfer,
+            next: 0,
+            mode: offer.mode,
+            has_base: offer.base.is_some(),
+            accepted: 0,
+            accepted_upper: 0,
+            stats: Stats {
+                object: offer.object,
+                mode: offer.mode,
+                request_bytes: 0,
+                response_bytes: 0,
+                data_bytes: 0,
+                records_sent: 0,
+                requests: 0,
+                elapsed_micros: 0,
+            },
+        }
+    }
     fn frame(&mut self, kind: u8, body: Vec<u8>) -> Result<Frame> {
         if self.next >= MAX_TRANSFER_FRAMES as u64 {
             return Err(Error::Limit);
@@ -270,7 +289,7 @@ impl<F: FnMut(&[Frame]) -> Result<Vec<Frame>>> BatchSender<F> {
         self.next += 1;
         Ok(frame)
     }
-    fn upload(&mut self, frames: &[Frame]) -> Result<BatchOutcome> {
+    fn record_requests(&mut self, frames: &[Frame]) -> Result<()> {
         if frames.is_empty() || frames.len() > MAX_BATCH_FRAMES {
             return Err(Error::Limit);
         }
@@ -278,7 +297,7 @@ impl<F: FnMut(&[Frame]) -> Result<Vec<Frame>>> BatchSender<F> {
         // Count every uploaded request before examining the reply prefix. A Begin cache hit may
         // stop the receiver, but cannot undo bytes already sent in this HTTP request body.
         for frame in frames {
-            let length = frame.encode()?.len();
+            let length = frame.encoded_len()?;
             bytes = bytes
                 .checked_add(FRAME_LENGTH_BYTES + length)
                 .ok_or(Error::Limit)?;
@@ -298,12 +317,14 @@ impl<F: FnMut(&[Frame]) -> Result<Vec<Frame>>> BatchSender<F> {
                 }
             }
         }
-        let replies = (self.exchange)(frames)?;
+        Ok(())
+    }
+    fn check_replies(&mut self, frames: &[Frame], replies: &[Frame]) -> Result<BatchOutcome> {
         if replies.is_empty() || replies.len() > frames.len() {
             return Err(Error::Integrity);
         }
-        for reply in &replies {
-            self.stats.response_bytes += reply.encode()?.len() as u64;
+        for reply in replies {
+            self.stats.response_bytes += reply.encoded_len()? as u64;
         }
         let reply_count = replies.len();
         for (index, (request, reply)) in frames.iter().zip(replies).enumerate() {
@@ -321,7 +342,7 @@ impl<F: FnMut(&[Frame]) -> Result<Vec<Frame>>> BatchSender<F> {
                 if !matches!(request.kind, 1 | 3) || !terminal {
                     return Err(Error::Integrity);
                 }
-                check_published(&reply, self.stats.object)?;
+                check_published(reply, self.stats.object)?;
                 return Ok(BatchOutcome::Published);
             }
             match request.kind {
@@ -379,7 +400,20 @@ impl<F: FnMut(&[Frame]) -> Result<Vec<Frame>>> BatchSender<F> {
         }
         Ok(BatchOutcome::Continue)
     }
-    fn plan(&mut self, frames: &[Frame]) -> Result<BatchOutcome> {
+    fn upload<F: FnMut(&[Frame]) -> Result<Vec<Frame>>>(
+        &mut self,
+        frames: &[Frame],
+        exchange: &mut F,
+    ) -> Result<BatchOutcome> {
+        self.record_requests(frames)?;
+        let replies = exchange(frames)?;
+        self.check_replies(frames, &replies)
+    }
+    fn plan<F: FnMut(&[Frame]) -> Result<Vec<Frame>>>(
+        &mut self,
+        frames: &[Frame],
+        exchange: &mut F,
+    ) -> Result<BatchOutcome> {
         let mut offset = 0;
         while offset < frames.len() {
             let mut end = offset;
@@ -395,7 +429,7 @@ impl<F: FnMut(&[Frame]) -> Result<Vec<Frame>>> BatchSender<F> {
             if end == offset {
                 return Err(Error::Limit);
             }
-            match self.upload(&frames[offset..end])? {
+            match self.upload(&frames[offset..end], exchange)? {
                 BatchOutcome::Continue => offset = end,
                 terminal => return Ok(terminal),
             }
@@ -481,6 +515,82 @@ pub struct RawFrameLimits {
     pub reply_bytes: usize,
 }
 
+impl RawFrameLimits {
+    fn raw_chunk(self, offer: &Offer, len: usize) -> Result<usize> {
+        let offer_bytes = Frame::HEADER_BYTES + offer.encode()?.len();
+        let published_bytes = Frame::HEADER_BYTES + offer.object.len();
+        if self.request_bytes < offer_bytes || self.reply_bytes < published_bytes {
+            return Err(Error::Limit);
+        }
+        // A literal Data body contains the encoding tag and original u32 length.
+        let chunk = self
+            .request_bytes
+            .checked_sub(Frame::HEADER_BYTES + 1 + size_of::<u32>())
+            .filter(|n| *n > 0)
+            .ok_or(Error::Limit)?
+            .min(MAX_CHUNK);
+        if len.div_ceil(chunk) > MAX_TRANSFER_FRAMES - 2 {
+            return Err(Error::Limit);
+        }
+        Ok(chunk)
+    }
+}
+
+/// Send one admitted Call at a time and settle its application Reply only after
+/// validating it. An exchange returns the decoded Reply and its original lease.
+/// A well-formed remote refusal is consumed and returned to the caller. A missing,
+/// mismatched or malformed response remains unsettled. An ambiguous settlement
+/// stops the transfer; recovery of the original lease belongs to the carrier.
+pub fn transfer_raw_leased<L, E: From<Error>>(
+    bytes: &[u8],
+    transfer_id: Id,
+    limits: RawFrameLimits,
+    mut exchange: impl FnMut(&Frame) -> std::result::Result<(Frame, L), E>,
+    mut acknowledge: impl FnMut(L) -> std::result::Result<(), E>,
+) -> std::result::Result<Stats, E> {
+    let start = Instant::now();
+    if bytes.len() > MAX_BATCHED_OBJECT {
+        return Err(Error::Limit.into());
+    }
+    let offer = Offer::cold(bytes, Mode::Raw);
+    let chunk = limits.raw_chunk(&offer, bytes.len())?;
+    let mut sender = BatchSender::new(&offer, transfer_id);
+    let mut request = sender.frame(1, offer.encode()?)?;
+    let mut chunks = bytes.chunks(chunk);
+    loop {
+        let requests = std::slice::from_ref(&request);
+        sender.record_requests(requests)?;
+        let (reply, lease) = exchange(&request)?;
+        if reply.encoded_len()? > limits.reply_bytes {
+            return Err(Error::Limit.into());
+        }
+        if reply.kind == 127 {
+            if reply.transfer != request.transfer || reply.seq != request.seq {
+                return Err(Error::Integrity.into());
+            }
+            let refusal = protocol_error(&reply.body)?;
+            acknowledge(lease)?;
+            return Err(refusal.into());
+        }
+        let outcome = sender.check_replies(requests, std::slice::from_ref(&reply))?;
+        acknowledge(lease)?;
+        if matches!(outcome, BatchOutcome::Published) {
+            sender.stats.elapsed_micros = start.elapsed().as_micros();
+            return Ok(sender.stats);
+        }
+        request = match chunks.next() {
+            Some(data) => {
+                let mut body = Vec::with_capacity(5 + data.len());
+                body.push(0);
+                body.extend_from_slice(&(data.len() as u32).to_le_bytes());
+                body.extend_from_slice(data);
+                sender.frame(2, body)?
+            }
+            None => sender.frame(3, Vec::new())?,
+        };
+    }
+}
+
 /// Use the existing Raw Offer, Data and Finish messages with a smaller Data
 /// chunk when required by the carrier. Check that a cold fallback can finish
 /// inside the sequence budget before sending even a warm probe.
@@ -496,21 +606,7 @@ pub fn transfer_raw_capped_batched<F: FnMut(&[Frame]) -> Result<Vec<Frame>>>(
         return Err(Error::Limit);
     }
     let offer = Offer::cold(bytes, Mode::Raw);
-    let offer_bytes = Frame::HEADER_BYTES + offer.encode()?.len();
-    let published_bytes = Frame::HEADER_BYTES + offer.object.len();
-    if limits.request_bytes < offer_bytes || limits.reply_bytes < published_bytes {
-        return Err(Error::Limit);
-    }
-    // A literal Data body contains the encoding tag and original u32 length.
-    let chunk = limits
-        .request_bytes
-        .checked_sub(Frame::HEADER_BYTES + 1 + size_of::<u32>())
-        .filter(|n| *n > 0)
-        .ok_or(Error::Limit)?
-        .min(MAX_CHUNK);
-    if bytes.len().div_ceil(chunk) > MAX_TRANSFER_FRAMES - 2 {
-        return Err(Error::Limit);
-    }
+    let chunk = limits.raw_chunk(&offer, bytes.len())?;
     send_batched(
         offer,
         BatchedPayload::Bytes(bytes, chunk),
@@ -1243,33 +1339,15 @@ fn send_batched<F: FnMut(&[Frame]) -> Result<Vec<Frame>>>(
     mut payload: BatchedPayload<'_>,
     transfer_id: Id,
     warm_probe: bool,
-    exchange: F,
+    mut exchange: F,
     start: Instant,
 ) -> Result<Stats> {
     let mode = offer.mode;
-    let mut sender = BatchSender {
-        exchange,
-        transfer: transfer_id,
-        next: 0,
-        mode,
-        has_base: offer.base.is_some(),
-        accepted: 0,
-        accepted_upper: 0,
-        stats: Stats {
-            object: offer.object,
-            mode,
-            request_bytes: 0,
-            response_bytes: 0,
-            data_bytes: 0,
-            records_sent: 0,
-            requests: 0,
-            elapsed_micros: 0,
-        },
-    };
+    let mut sender = BatchSender::new(&offer, transfer_id);
     let begin = sender.frame(1, offer.encode()?)?;
     let mut frames = Vec::new();
     if warm_probe {
-        match sender.upload(std::slice::from_ref(&begin))? {
+        match sender.upload(std::slice::from_ref(&begin), &mut exchange)? {
             BatchOutcome::Published => {
                 sender.stats.elapsed_micros = start.elapsed().as_micros();
                 return Ok(sender.stats);
@@ -1326,7 +1404,7 @@ fn send_batched<F: FnMut(&[Frame]) -> Result<Vec<Frame>>>(
     }
     for repair in 0..=2 {
         frames.push(sender.frame(3, vec![])?);
-        match sender.plan(&frames)? {
+        match sender.plan(&frames, &mut exchange)? {
             BatchOutcome::Published => {
                 sender.stats.elapsed_micros = start.elapsed().as_micros();
                 return Ok(sender.stats);
