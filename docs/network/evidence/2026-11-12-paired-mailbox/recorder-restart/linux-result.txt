@@ -1,0 +1,51 @@
+
+running 1 test
+test mailbox_process::tests::production_helper_requires_retained_custody_and_returns_signed_local_receipt ... READY
+METER_TIME initial_receipt 2425 256
+METER_TIME initial_helper 21651 5547
+METER_SUMMARY 5 4818 8722
+METER_START
+mvm/owned-mailbox/guest-5257/post-mux-host-stream/v1
+begin 1
+phase 1 submit_verdict
+end 1 80 1131 0 0 false
+begin 2
+phase 2 reader_frame
+phase 2 challenge_written
+phase 2 possession_received
+phase 2 lease_created
+end 2 352 5317 0 0 false
+begin 3
+phase 3 reader_frame
+phase 3 reader_refused
+end 3 2193 77 0 0 false
+begin 4
+phase 4 reader_frame
+phase 4 ack_committed
+end 4 2193 2197 0 0 false
+begin 5
+phase 5 submit_verdict
+end 5 0 0 1 1 false
+finish 5
+METER_END
+READY
+METER_TIME recovered_receipt 3161 176
+METER_TIME restarted_helper 509734 3957
+METER_SUMMARY 2 432 4479
+METER_START
+mvm/owned-mailbox/guest-5257/post-mux-host-stream/v1
+begin 1
+phase 1 submit_verdict
+end 1 80 1131 0 0 false
+begin 2
+phase 2 reader_frame
+phase 2 challenge_written
+phase 2 possession_received
+phase 2 reader_empty
+end 2 352 3348 0 0 false
+finish 2
+METER_END
+ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2394 filtered out; finished in 0.54s
+
