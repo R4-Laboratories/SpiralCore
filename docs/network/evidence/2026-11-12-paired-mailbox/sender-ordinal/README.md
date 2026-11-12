@@ -28,3 +28,27 @@ cargo test --locked --offline -p mvm-hostd --lib original_helpers_settle_ordinal
 ```
 
 The first selector passed 26 tests, including the legacy FIFO and directed arbitrary-ID capacity checks. The separate executable selector passed once and created two genuine Linux mailbox helpers. Its private guest streams and observed lifetime processes were test fixtures. Reopening A’s store in the capacity test measured persistent-state recovery within the same test process. VM boots, restart of both actual helpers on the same still-authorized guests, an aggregate capacity measurement, and more than 2,048 installed transfers remain open. [Acceptance criteria](https://github.com/R4-Laboratories/SpiralCore/issues/195)
+
+## Guest sender and original boot admission
+
+The original guest application can now stage one payload on its existing reader socket, request its status and explicitly settle the digest of B’s signed receipt. Staging acknowledges a local write. Status asks the original host to reauthorize the operation before disclosing a receipt. The host journal can retain 64 unsettled ordinals, while this version of the guest API admits one active application payload. [Guest API](https://github.com/Casey-allard/mvm/blob/4dcf544bed90bfc2cb90c065998a025b859ddab4/public/src/content/docs/reference/guest-agent.md)
+
+| macOS component check | Observed behavior |
+| --- | --- |
+| Original identity before activation | The initial regression test failed because a missing identity returned success on an ordinal boot. With the fix, a required but missing identity, a malformed identity and an orphaned key refuse startup. An ordinary sender with neither file keeps its Send-only path. |
+| Application and host reader frames | Eight guest reader tests passed, including an ordinal request on an ordinary boot. The separate application wire test round-tripped the allowed requests and refused an application-supplied settlement statement. |
+| Original guest outbox | Three store tests at `295792422` reopened one durable operation with the original in-memory key, bound settlement to the verified receipt, and refused a different key, missing active data or a damaged authenticated cursor. |
+
+The host projects its admitted sender choice as `mvm.mailbox.sender=ordinal-v1`. PID 1 checks the boot record against this token and requires the matching ACK key before starting an ordinal workload. The outbox encryption key lives in the original guest process. Recovery demonstrated by reopening those files applies while that key remains available. [Host projection](https://github.com/Casey-allard/mvm/blob/4dcf544bed90bfc2cb90c065998a025b859ddab4/crates/mvm-vmm/src/host/egress_bridge.rs) · [Original guest store](https://github.com/Casey-allard/mvm/blob/295792422ebc9ba537a084b3143f464c667f7039/crates/mvm-agentd/src/mailbox_outbox/ordinal.rs)
+
+The joined contributor revision is `4dcf544bed90bfc2cb90c065998a025b859ddab4`, Git tree `1565d3bdd9bdbf095f213fad3e5777efbae9199f`. It incorporates upstream MVM `b359f25f`. Use the following focused checks from that checkout.
+
+```sh
+cargo test --locked -p mvm-agentd --bin mvm-guest-agent mailbox::tests::
+cargo test --locked -p mvm-agentd --bin mvm-guest-agent mailbox_reader::
+cargo test --locked -p mvm-core --lib application_sender_requests
+cargo test --locked -p mvm-vmm --lib workload_cmdline_asserts_a_mailbox_only_for_a_granted_plan
+cargo test --locked -p mvm-agentd --lib mailbox_outbox::ordinal::tests::
+```
+
+These checks measure local startup, persistence and authorization. Application bytes, sealed bytes, guest vsock bytes, per-endpoint CPU and elapsed transfer time for the installed ordinal path require the two-guest run. [Installed acceptance tracker](https://github.com/R4-Laboratories/SpiralCore/issues/195)
