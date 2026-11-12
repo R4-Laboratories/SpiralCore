@@ -1,5 +1,28 @@
 # Installed object transfer between two Firecracker guests
 
+### Complete measurement on a fresh pair
+
+The second Linux trial equipped each original guest link with a bounded 512-exchange observer. Both original Firecracker guests returned the same 4,096-byte fixture on a four-Call cold transfer and a one-Call repeat. The receiver boot and worker instance matched across the two operations. All six independent observers produced closed final records, and the native qualification exited 0. [Exact per-direction counters, whole sessions, binary identities and timing](closed-streams.json) · [Qualified MVM host revision](https://github.com/Casey-allard/mvm/commit/30ca64feba564f8a3a3f62ee96c746c51176567c)
+
+| Measured boundary | Cold | Warm |
+|---|---:|---:|
+| Object requests / replies | 4,376 / 282 B | 102 / 88 B |
+| A port 5257, host read / write | 36,703 / 168,608 B | 8,487 / 46,467 B |
+| B port 5257, host read / write | 73,370 / 203,308 B | 20,362 / 49,497 B |
+| Both guest-port links, both directions | 481,989 B | 124,813 B |
+| Sealed A→B request / receipt back | 32,293 / 4,822 B | 6,304 / 1,200 B |
+| Sealed B→A reply / receipt back | 21,688 / 4,807 B | 5,463 / 1,203 B |
+| Unique sealed bytes | 63,610 B | 14,170 B |
+| A / B workload CPU | 5.144 / 23.898 ms | 1.819 / 7.404 ms |
+| Coordinator process CPU | 13.216 ms | 4.869 ms |
+| Time through both verified guest results | 3.793 s | 1.045 s |
+
+The guest-port totals include reader polling, authorization, submission, lease and ACK exchanges within each phase. The sealed totals count canonical mailbox requests and signed receipts once, after matching every write to the accepting peer's reads. Cold snapshots covered 47 exchanges on A's guest port and 43 on B's. The warm counts were 13 and 10. Neither phase recorded a read or write error. Over the complete lifecycle, A's guest-port observer recorded one write error outside those phases. Both guest-port observers closed, at 62 and 54 exchanges. Each of the four sealed observers closed at five exchanges.
+
+Setup through both verified SDK starts took 5.104 s. The complete command took 10.42 s wall, 9.88 s user CPU and 0.19 s system CPU, with peak RSS 84,856 KiB in GNU time's process accounting. Both original helpers exited 0 unassisted on their first SDK stop. No Firecracker process or active scope remained, and the audit verified 17 entries across two sessions and two seals. The two guests each used one vCPU and 256 MiB on one host with no guest NIC. Matched secured zstd, HVF for this object route, WAN and sustained capacity remain separate acceptance gates. [Driver revision](https://github.com/R4-Laboratories/SpiralCore/commit/876e10156d4344b0865f99196b0cef7488e8ca1a) · [Open acceptance criteria](https://github.com/R4-Laboratories/SpiralCore/issues/202)
+
+### First pilot with incomplete guest-port totals
+
 Two original MVMs on one x86_64 Linux host moved a 4,096-byte object through their signed Call, Reply and Receive grants. Both used the canonical guest mailbox on port 5257. The two host helpers exchanged sealed envelopes and signed receipts on their original connected Unix streams. Neither guest had a NIC. B read back the complete fixture twice, and the driver compared all 4,096 bytes each time. Both cold and warm requests reached the same B boot and worker instance. [Exact result and source identities](first.json) · [Sealed role images](../object-role-images.md)
 
 | One observed transfer | Cold | Warm repeat |
