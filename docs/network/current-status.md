@@ -26,6 +26,8 @@ One persistent Linux Firecracker pair verified eight separately addressed operat
 
 The Linux helper restart test now collects both original port-5257 transcripts across re-entry into the same VM state directory. The original signed receipt survived the restart, and an authenticated reader found the previously acknowledged queue empty. The two sessions recorded 4,818 / 8,722 and 432 / 4,479 bytes read / written at the host. [Host recovery test, exact counters and thread CPU](evidence/2026-11-12-paired-mailbox/recorder-restart/README.md)
 
+The Linux caller and callee workload images for the object pilot are sealed. Their embedded executables were read back byte for byte. Original image and nonce selection passed 4 paired-plan checks and 101 canonical admission checks. The installed two-guest object transfer remains open. [Workload identities and original-plan checks](evidence/2026-11-12-paired-mailbox/paired-durable-native/object-role-images.md)
+
 The selected object Call/Reply reader now checks the original signed lease against the complete header and body. A Linux guest-agent socket test recovered the same signed acceptance after a lost response and a reader restart. Separate Linux journal tests reopened B’s original Call and A’s correlated Reply. A’s signed ACK advanced the file anchor once and replayed unchanged after another reopen. [Reverse route and 61 test results](evidence/2026-11-12-paired-mailbox/paired-durable-native/object-guest-reader/reverse-journal.md). The installed cold/repeat trial remains open. [Exact component results and commands](evidence/2026-11-12-paired-mailbox/paired-durable-native/object-guest-reader/README.md) · [Issue #202](https://github.com/R4-Laboratories/SpiralCore/issues/202)
 
 ### Cross-host carrier handoff

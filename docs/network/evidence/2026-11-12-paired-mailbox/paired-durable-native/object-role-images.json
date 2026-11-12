@@ -1,0 +1,100 @@
+{
+  "schema": "spiralcore.installed-object.preparation.v1",
+  "platform": "Linux x86_64",
+  "spiralcore_operator": "b7ff80ab4d6a42387bce596a7930106b5e327d48",
+  "spiralcore_workloads": "584f7f29c3b67406525dba0002a3601264c1fbc6",
+  "mvm_guest": "c9d9fe87b27cd2e5fc64d2b1d9c3a31b522b2097",
+  "runtime": {
+    "arch": "x86_64",
+    "guest_archive_sha256": "187758c4b76fe3115a988ac06f3a66fa9e3755ac8478add0835b0c89747e268a",
+    "host_retention_ceiling_ms": 30000,
+    "initramfs_hash_record_sha256": "54c56ea86dca4b67fd0fb00c94289d5af18597dc52b549d719ff5466b4b93089",
+    "initramfs_sha256": "355178fda3476191089fafa7287a57ab55578f98cdc718f8ed9a3404baa76518",
+    "mvm_version": "0.28.0-rc.1",
+    "overlay_root_hash": "f641e1b84ce34ac68c6c70cf84d80eb2c8c9b0922ad044d4c88e97bf7f375c10",
+    "overlay_sha256": "aac5ea8c1f9f0816b244eb4b92bb249b24b64577020f741e01ee1689758754ee",
+    "overlay_verity_sha256": "a9f161da3dad3fdfb54cd8a6f569382dbbf3bab4fc6f11ce80e8ed698ef389e6",
+    "sdk_sidecars": 2
+  },
+  "roles": {
+    "a": {
+      "workload": "spiralcore-durable-source",
+      "bytes": 2825488,
+      "sha256": "e8403ef044ee0d88890abe04e6010c7ad954f5c7f5331618e47831638ba6bfc6",
+      "rootfs_bytes": 3559424,
+      "rootfs_sha256": "e1c9538a9dd52be55ed2064bba5605e891e4448a39091823a26c624756892b02",
+      "root_hash": "c57ded847fe2f02f40ef52ef8638287de87f9ce017345b19e68c9b27d06e4dbf",
+      "verity_sha256": "fe9bc548f6b88dc9181a5a4c425a03d5d0eb42115ad809d2e13102edfa70f213",
+      "metadata_sha256": "1e2ebf272b1b45cd2a9c4f1ea32b847c3824a8208dddeb07fb8d456c14be0a68",
+      "concurrency": {
+        "kind": "warm_process",
+        "max_calls_per_worker": 16,
+        "max_rss_mb": 64,
+        "pool_size": 1,
+        "in_process": "serial",
+        "max_queue_depth": 1
+      }
+    },
+    "b": {
+      "workload": "spiralcore-durable-destination",
+      "bytes": 2825488,
+      "sha256": "037cad09cf84e0b5b51f95af843d0dd2aad5bbcbad08795c56e9c94b83f33884",
+      "rootfs_bytes": 3559424,
+      "rootfs_sha256": "a0cfa1a1099e227d9a130a3ca74b280ef3f86e89f110adef9beb244df0f97fa0",
+      "root_hash": "d726968c853c25b094e3e61c49160d94f23e59207a7fad4eb44a448abfd02bd6",
+      "verity_sha256": "c563710d38a3c8b039552be945d10bc8bdced79214aad533ca2bc9409210b91c",
+      "metadata_sha256": "e279d13ea18d559f6c5f572e248f212c7856c678be9d7adcb5320a4c22a07ddf",
+      "concurrency": {
+        "kind": "warm_process",
+        "max_calls_per_worker": 8,
+        "max_rss_mb": 64,
+        "pool_size": 1,
+        "in_process": "serial",
+        "max_queue_depth": 1
+      }
+    }
+  },
+  "inputs": {
+    "guest_agent": "b33ed3064f2b17934d5bcda6a8d1551e9f40def3a5f2c9b42f6b22b6a0d4d6be",
+    "oci_wrapper": "950e2a44597a1fb9b43999b317d7e2fe3629e86634756a9af419dd1ff85db6cc",
+    "prepare_tool": "eeba035ff3ea22b34375faf94c934238eaf6d22cb0dae079b9d9d24bd17c3d01",
+    "image_tool": "85411d594957482c47d644bf3073c5a9f1f1a869903fb2b334d5ffa8c6b19b06",
+    "kernel": "1701ccb2c46b2497066225d6ba05f3f33a3a845ca636fbeedb202835c83b49b6"
+  },
+  "operator": {
+    "signatures": 4,
+    "test_cases": 1,
+    "expected_call_limit": 4152,
+    "expected_reply_limit": 88,
+    "max_outstanding_calls": 1,
+    "elapsed_s": 0.04,
+    "user_s": 0.02,
+    "system_s": 0.0,
+    "max_rss_kib": 33840,
+    "scope": "one fresh-home preflight process; GNU time 0.01 s resolution",
+    "exe_sha256": "b0a272c62f63760b5d26b90947334255fb9934a9665ef3cfc6a044fd9992254b",
+    "test_log_sha256": "9efa1cc42544620132dc5355a5d344f73840195893906cf5217af5ae42443667",
+    "timing_log_sha256": "070f7dd26929e61f9b842f585d8c43999470290cf9f9e05e70ee818b3f1fc1ae"
+  },
+  "native_workload_boots": 0,
+  "cold_warm_data": null,
+  "wan": null,
+  "pre_sign": {
+    "mvm_revision": "27debc8a0451e10256b48e20332691c052d1f345",
+    "platform": "Linux x86_64",
+    "object_pair": {
+      "passed": 4,
+      "failed": 0,
+      "elapsed_suite_s": 0.04,
+      "log_sha256": "3631c6e2d0263dff1199c0b430a97a86cb47139984b25ca75a490e5b2c2c4849"
+    },
+    "plan_admission": {
+      "passed": 101,
+      "failed": 0,
+      "elapsed_suite_s": 0.33,
+      "log_sha256": "9f1963734227962ab3b4d46e123111285457b1df7877eaf73c148c0faf71c3ca"
+    },
+    "test_exe_sha256": "b2ab888d8d915ff43ac1e84a4361d043bf9fcb71a5f7b59373e26a3df4dcb816",
+    "installed_service_activation": "refused at this revision"
+  }
+}
