@@ -15,6 +15,8 @@ The first installed addressed launch reached kernel admission. Both guests were 
 
 The installed addressed SDK now creates private VM and short Unix socket directories under either tested umask. Linux and macOS both passed the ownership and signed-publication controls. [Filesystem evidence](evidence/2026-11-12-paired-mailbox/installed-driver/private-state.md).
 
+The failed launch also exposed a coordinator retirement problem. Session probes repeatedly lost a brief daemon lock and restarted the idle timer. The watcher now retries that contention within its original admission deadline. The macOS host regression suite passed 18/18. [Original Linux observation and host tests](evidence/2026-11-12-paired-mailbox/addressed-native-launch/watcher-retirement.md)
+
 The addressed driver checks materialized role images and preserves the initial failure report through a late coordinator exit. Its Linux library suite passed nine tests. [Input and custody checks](evidence/2026-11-12-paired-mailbox/installed-driver/materialized-driver.md).
 
 ### Addressed mailbox delivery
