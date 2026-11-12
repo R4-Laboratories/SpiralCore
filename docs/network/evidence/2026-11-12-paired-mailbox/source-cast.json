@@ -1,0 +1,118 @@
+{
+  "metric_scope": "Single macOS arm64 test process. Source preparation through peer acknowledgment, including destination open and exact Deliver-role readback on two separate Unix socketpairs. No VM, WAN, codec selection, durable admission, workload processing, or transport-layer wire capture.",
+  "payload_hex": "0041ff4200",
+  "timing": "Monotonic elapsed and per-thread CPU in nanoseconds; setup of socketpairs and signed plans precedes the timer. Preparation is included in elapsed time. Counts come from actual successful socket reads and writes in both directions.",
+  "candidate": {
+    "commit": "32af78af211da2c331553014d00134808e9a009b",
+    "tree": "56edd895245f9ac0c61d75e784958301840b658e",
+    "tracked_blobs_verified": 4536,
+    "platform": "Darwin arm64",
+    "rustc": "rustc 1.97.1 (8bab26f4f 2026-07-14)",
+    "profile": "cargo test, debug symbols disabled, no incremental compilation",
+    "tests": [
+      {
+        "target": "tests/mailbox_cast_endpoint.rs",
+        "binary_sha256": "518ad5af1e789170640f0f64513614f039403e1f1da05cbca6f5dd43a69696ac",
+        "result": "test result: ok. 21 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.08s",
+        "log_sha256": "8c943efb37717add84983d3b16c258510cef2d03743c0da3241704de612e28cb"
+      },
+      {
+        "target": "tests/mailbox_local_frames.rs",
+        "binary_sha256": "804e5e2ef1dbf1b024bed4cb986b0eb67bbd334cd0899315bf222b6f67059eb5",
+        "result": "test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "log_sha256": "8c943efb37717add84983d3b16c258510cef2d03743c0da3241704de612e28cb"
+      },
+      {
+        "target": "tests/mailbox_submit_exchange.rs",
+        "binary_sha256": "41cb7fcb990de92fa7cff24cd25dbbfe9c38a457f9f00c4a1d047a8ca6c4e957",
+        "result": "test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "log_sha256": "8c943efb37717add84983d3b16c258510cef2d03743c0da3241704de612e28cb"
+      },
+      {
+        "target": "unittests src/lib.rs",
+        "binary_sha256": "353c898fb04e08cbc9c2ef26a99e58e8d998d8adc85943ee43ff3f0ff3075830",
+        "result": "test result: ok. 23 passed; 0 failed; 0 ignored; 0 measured; 2401 filtered out; finished in 0.55s",
+        "log_sha256": "ef70431d0ae9a5771cb1d5f486ff1c76ef7918f4530112a3411ab36f9cb352fb"
+      }
+    ],
+    "wire": [
+      {
+        "payload": 5,
+        "peer_forward": 4450,
+        "peer_reverse": 11,
+        "deliver_forward": 276,
+        "deliver_reverse": 98,
+        "prepare_ns": 1473666,
+        "through_ack_ns": 6358250,
+        "sender_cpu_ns": 1637792,
+        "destination_cpu_ns": 4392375,
+        "guest_role_cpu_ns": 37792
+      }
+    ]
+  },
+  "earlier_candidate": {
+    "commit": "8431596ab9a0cfa55260477c471b481c1961dcc2",
+    "tree": "66b5bc8c051b80ebde36ebde253eb07ba764f42e",
+    "tracked_blobs_verified": 4521,
+    "platform": "Darwin arm64",
+    "rustc": "rustc 1.97.1 (8bab26f4f 2026-07-14)",
+    "profile": "cargo test, debug symbols disabled, no incremental compilation",
+    "tests": [
+      {
+        "target": "tests/mailbox_cast_endpoint.rs",
+        "binary_sha256": "df71aa9f16cadd628604478d2c860ec3eba020ca7c4c57e9628d0ff8b54316d2",
+        "result": "test result: ok. 21 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.08s",
+        "log_sha256": "bed759d4cc03925d53e0ee9dd8dce65d693f035dc252bf3befee0592970e9f7d"
+      },
+      {
+        "target": "tests/mailbox_local_frames.rs",
+        "binary_sha256": "86c5f1034dcc2e4f7e91c452a12492aeb1026cc48305d78c1350644990021111",
+        "result": "test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "log_sha256": "bed759d4cc03925d53e0ee9dd8dce65d693f035dc252bf3befee0592970e9f7d"
+      },
+      {
+        "target": "tests/mailbox_submit_exchange.rs",
+        "binary_sha256": "309b2a0848bd66eced77517bd4079c1b32d77fd1a1b85125b70967228148c4c8",
+        "result": "test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "log_sha256": "bed759d4cc03925d53e0ee9dd8dce65d693f035dc252bf3befee0592970e9f7d"
+      },
+      {
+        "target": "unittests src/lib.rs",
+        "binary_sha256": "22b17bfdc7d1189d3ec5489acceb3a2cc2e6c6fcbb0c72755a11a0bde8e4e1d9",
+        "result": "test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 2411 filtered out; finished in 0.45s",
+        "log_sha256": "fa94f9b65ecb49c0d053413adf93032abbb60f012526529293528db2218a4be0"
+      }
+    ],
+    "wire": [
+      {
+        "payload": 5,
+        "peer_forward": 4457,
+        "peer_reverse": 11,
+        "deliver_forward": 276,
+        "deliver_reverse": 98,
+        "prepare_ns": 1340375,
+        "through_ack_ns": 4789584,
+        "sender_cpu_ns": 1511917,
+        "destination_cpu_ns": 3044125,
+        "guest_role_cpu_ns": 35417
+      }
+    ]
+  },
+  "retained_failures": [
+    {
+      "case": "exhausted original sequence",
+      "observed": "checked test encountered arithmetic overflow before the fix",
+      "log_sha256": "768589d8dc351bb783dae7b8e22bd18cdb37d77cfbbc2bdd7388e69e165a666d"
+    },
+    {
+      "case": "valid alternate tenant or domain",
+      "observed": "original check returned true for a foreign signed scope",
+      "log_sha256": "bf6671cb306a301fdedcee1dc7f3f282718c5c67f8f059bdec7155c928afbe4a"
+    },
+    {
+      "case": "tightened transfer limit",
+      "observed": "a retained 4096-byte-profile slot reopened under a 2048-byte profile",
+      "log_sha256": "a8b45c7848c10991eb9229e90ace21dec2018fcdb5e5892b0e00ce2cf218ed15"
+    }
+  ]
+}
