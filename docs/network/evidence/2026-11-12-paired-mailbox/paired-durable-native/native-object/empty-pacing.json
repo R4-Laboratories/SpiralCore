@@ -1,0 +1,1080 @@
+{
+  "baseline_app_source": "615d8ff98429b2339a069dcd0735c3df1a40af25",
+  "experimental_app_source": "b3e046d92fef449a79bc1502b9cdf37b23d2a17a",
+  "mvm_guest_agent_source": "c9d9fe87b27cd2e5fc64d2b1d9c3a31b522b2097",
+  "mvm_host_source": "30ca64feba564f8a3a3f62ee96c746c51176567c",
+  "arm_order": [
+    "old",
+    "new",
+    "new_reverse",
+    "old_reverse"
+  ],
+  "common_host_binaries": {
+    "mvm-host-agent": "70a5cef5d06500eaf74c45cdc96464173816ca8ecf93475016314abc9e89b44c",
+    "mvm-mailbox": "eadf9b6379223490516e0faa7c32c80fd93540eb1f7df26317c80cec3f48c0d9",
+    "mvm-network-endpoint": "914a647bf4d007f7bc7063558ed3d4ef8c95f311b8b23ba9845a826e27a8d9e6",
+    "mvm-signer-helper": "c999eb976a779ab3cfacf2dcba709e13e1817612dcdbc5cc0ba7577f6a43be1f",
+    "paired-journal": "6e6c3efdc1f3e81ad18130782103f7a85c9f718d0f22e2e72576e8bbbb2c6679"
+  },
+  "common_guest_archive_sha256": "187758c4b76fe3115a988ac06f3a66fa9e3755ac8478add0835b0c89747e268a",
+  "new_application_binaries": {
+    "spiralcore-durable-source": "2828f35687939c5a4f64d2086b19e6932bd81b946ebdce9d170df21dbe2cfbdc",
+    "spiralcore-durable-destination": "c6af3f517cc89dbcc9c5ba8552e3716e967f2396bb3421643067cc44666887ff"
+  },
+  "original_preboot_refusal_sha256": {
+    "audit.log": "4719ab376f80eceae6ef6483344d1835886b645eee39f39f3033ce101803062d",
+    "native.time": "b474c9a5caaee59f9460e35f75df6ff6fba97a12e8295966a0037c905d40e9c0",
+    "object-pair-progress.jsonl": "d224c2dce24f3b516ba7e05a4f4aa775089ab95e109d684dfb6f1d72a7545423",
+    "object-pair-result.json": "aa222a2849c3b4325f3edb51ef84a03562fb2864ace03f9ab79ff4702856526f"
+  },
+  "trials": [
+    {
+      "arm": "old",
+      "source_rootfs_sha256": "58adde52ce4d8bae993364598dafde80957ba666033eec6e434bd6df624ffc2f",
+      "destination_rootfs_sha256": "3f97cb27aa4a5a18e3e9c4f5a017b83a823d1bdd38149bbe38f69ea0640a48d9",
+      "original_port_5257_before_cold": [
+        {
+          "capture": "complete_prefix",
+          "read": 311,
+          "read_errors": 0,
+          "turns": 1,
+          "write": 5594,
+          "write_errors": 0
+        },
+        {
+          "capture": "complete_prefix",
+          "read": 311,
+          "read_errors": 0,
+          "turns": 1,
+          "write": 5596,
+          "write_errors": 0
+        }
+      ],
+      "startup_ns": 4875353259,
+      "worker_retirement": [
+        {
+          "assisted": false,
+          "exit_code": 0,
+          "first_stop_attempt": true,
+          "name": "sc-journal-a",
+          "success": true
+        },
+        {
+          "assisted": false,
+          "exit_code": 0,
+          "first_stop_attempt": true,
+          "name": "sc-journal-b",
+          "success": true
+        }
+      ],
+      "process_time": "elapsed=15.41 user=9.86 system=0.22 max_rss_kib=82328 status=0",
+      "driver_wall_ns": 15307156142,
+      "driver_process_cpu_ns": 7603572510,
+      "audit": "VERIFIED chain: 17 entries, 2 sessions, 2 seals",
+      "native_retirement_error": null,
+      "closed_meter_lifetime": [
+        {
+          "guest_5257": {
+            "capture": "closed_session",
+            "read": 67040,
+            "read_errors": 0,
+            "turns": 106,
+            "write": 377679,
+            "write_errors": 1
+          },
+          "sealed_in": {
+            "capture": "closed_session",
+            "read": 27227,
+            "read_errors": 0,
+            "turns": 5,
+            "write": 6044,
+            "write_errors": 0
+          },
+          "sealed_out": {
+            "capture": "closed_session",
+            "read": 6005,
+            "read_errors": 0,
+            "turns": 5,
+            "write": 38781,
+            "write_errors": 0
+          }
+        },
+        {
+          "guest_5257": {
+            "capture": "closed_session",
+            "read": 106448,
+            "read_errors": 0,
+            "turns": 79,
+            "write": 345052,
+            "write_errors": 0
+          },
+          "sealed_in": {
+            "capture": "closed_session",
+            "read": 38781,
+            "read_errors": 0,
+            "turns": 5,
+            "write": 6005,
+            "write_errors": 0
+          },
+          "sealed_out": {
+            "capture": "closed_session",
+            "read": 6044,
+            "read_errors": 0,
+            "turns": 5,
+            "write": 27227,
+            "write_errors": 0
+          }
+        }
+      ],
+      "phases": {
+        "cold": {
+          "object_bytes": 4096,
+          "exact_terminal_readback_bytes": 4096,
+          "data_literal_bytes": 4096,
+          "object_frame_bytes_both_directions": 4658,
+          "guest_a_cpu_ns": 9075207,
+          "guest_b_cpu_ns": 28330824,
+          "coordinator_cpu_ns": 21656481,
+          "through_both_guest_results_ns": 7997276160,
+          "guest_5257_bytes": 722855,
+          "unique_sealed_bytes": 63817,
+          "empty_shaped_samples_a_b": [
+            {
+              "turns": 70,
+              "guest_to_host": 34368,
+              "host_to_guest": 245571
+            },
+            {
+              "turns": 37,
+              "guest_to_host": 18140,
+              "host_to_guest": 128005
+            }
+          ],
+          "meter_deltas_a_b": [
+            {
+              "guest_5257": {
+                "read": 53845,
+                "read_errors": 0,
+                "turns": 82,
+                "write": 293419,
+                "write_errors": 0
+              },
+              "sealed_in": {
+                "read": 21752,
+                "read_errors": 0,
+                "turns": 4,
+                "write": 4834,
+                "write_errors": 0
+              },
+              "sealed_out": {
+                "read": 4801,
+                "read_errors": 0,
+                "turns": 4,
+                "write": 32430,
+                "write_errors": 0
+              }
+            },
+            {
+              "guest_5257": {
+                "read": 85726,
+                "read_errors": 0,
+                "turns": 68,
+                "write": 289865,
+                "write_errors": 0
+              },
+              "sealed_in": {
+                "read": 32430,
+                "read_errors": 0,
+                "turns": 4,
+                "write": 4801,
+                "write_errors": 0
+              },
+              "sealed_out": {
+                "read": 4834,
+                "read_errors": 0,
+                "turns": 4,
+                "write": 21752,
+                "write_errors": 0
+              }
+            }
+          ]
+        },
+        "warm": {
+          "object_bytes": 4096,
+          "exact_terminal_readback_bytes": 4096,
+          "data_literal_bytes": 0,
+          "object_frame_bytes_both_directions": 190,
+          "guest_a_cpu_ns": 2737956,
+          "guest_b_cpu_ns": 7193613,
+          "coordinator_cpu_ns": 6517091,
+          "through_both_guest_results_ns": 2085654322,
+          "guest_5257_bytes": 161552,
+          "unique_sealed_bytes": 14240,
+          "empty_shaped_samples_a_b": [
+            {
+              "turns": 19,
+              "guest_to_host": 9330,
+              "host_to_guest": 66645
+            },
+            {
+              "turns": 1,
+              "guest_to_host": 499,
+              "host_to_guest": 3457
+            }
+          ],
+          "meter_deltas_a_b": [
+            {
+              "guest_5257": {
+                "read": 12884,
+                "read_errors": 0,
+                "turns": 22,
+                "write": 78666,
+                "write_errors": 0
+              },
+              "sealed_in": {
+                "read": 5475,
+                "read_errors": 0,
+                "turns": 1,
+                "write": 1210,
+                "write_errors": 0
+              },
+              "sealed_out": {
+                "read": 1204,
+                "read_errors": 0,
+                "turns": 1,
+                "write": 6351,
+                "write_errors": 0
+              }
+            },
+            {
+              "guest_5257": {
+                "read": 20411,
+                "read_errors": 0,
+                "turns": 10,
+                "write": 49591,
+                "write_errors": 0
+              },
+              "sealed_in": {
+                "read": 6351,
+                "read_errors": 0,
+                "turns": 1,
+                "write": 1204,
+                "write_errors": 0
+              },
+              "sealed_out": {
+                "read": 1210,
+                "read_errors": 0,
+                "turns": 1,
+                "write": 5475,
+                "write_errors": 0
+              }
+            }
+          ]
+        }
+      },
+      "original_evidence_sha256": {
+        "audit.log": "5b7cb24bc38132f35843e640eed08542a0c2870d9531d5568ac4fe243688e1d1",
+        "host.sha256": "6e0c56fbcb0a2e964b8088a86cb87765d8789e9d2b3d3b494dfb9a8d02f2f0aa",
+        "inputs-verified.log": "c17faf30e614e6574d62fc038f1bbda98924f56272aaad81de1e4f94966ed651",
+        "native.time": "a39962d364fe77d8019a685cee75680e0b3ead20ca69916a25b3033b174389e1",
+        "run-control.log": "e98d1384518ccdfce351b3622850283fad4748ffa22af23bf46cc17695a17c25",
+        "scopes.after": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "object-pair-progress.jsonl": "e2ece4e26abbe69e4719d29d1f65426ecf60e1913687c345b0988d473ef7c6d7",
+        "object-pair-result.json": "e4ad8424632c8cdc42e81efe385b3d023795f2fd207b42599e4a8de33bcb103f",
+        "original-sc-journal-a-guest_5257.counts": "cef468ddd9760b029b19877643e54a688b00b6458e7764037a9e3c3c9a4d2719",
+        "original-sc-journal-a-sealed_in.counts": "7bf545a83bd0bfe13f0b5cb15091c5cf176d1352c0227a55882acf9805c4dedd",
+        "original-sc-journal-a-sealed_out.counts": "ffd97c88798604040b9a3b516a9985b1c3899eda5280cdf08f9448a74f961750",
+        "original-sc-journal-b-guest_5257.counts": "0f4466bd0a952099c37b344ce23fa3ac178e74d46d3fe83836848f96ae123ab5",
+        "original-sc-journal-b-sealed_in.counts": "79826fadba4fdd4c5842bd7f1b986521163f1369464bb39942d08d258d2365ad",
+        "original-sc-journal-b-sealed_out.counts": "f1d5e21719000596d3c0fdd1bfe64231a0456dcd94fb864cf0439d35e428779b",
+        "paired-retirement.jsonl": "4ecd19450145bb63b443a2b3a6cad36c420a9b2c97d065dae534eb4cc42901f6"
+      }
+    },
+    {
+      "arm": "new",
+      "source_rootfs_sha256": "c7e3827fe75bd19a08b69b385b4b9c15d7231076b0be815e0a96b5d6bab6c938",
+      "destination_rootfs_sha256": "3bd3f4f55d5457b0eeb0841af1d02d6ebdaa4a1c0e339bce80ce0f8342ee24e0",
+      "original_port_5257_before_cold": [
+        {
+          "capture": "complete_prefix",
+          "read": 610,
+          "read_errors": 0,
+          "turns": 2,
+          "write": 11160,
+          "write_errors": 0
+        },
+        {
+          "capture": "complete_prefix",
+          "read": 312,
+          "read_errors": 0,
+          "turns": 1,
+          "write": 5585,
+          "write_errors": 0
+        }
+      ],
+      "startup_ns": 4813772894,
+      "worker_retirement": [
+        {
+          "assisted": false,
+          "exit_code": 0,
+          "first_stop_attempt": true,
+          "name": "sc-journal-a",
+          "success": true
+        },
+        {
+          "assisted": false,
+          "exit_code": 0,
+          "first_stop_attempt": true,
+          "name": "sc-journal-b",
+          "success": true
+        }
+      ],
+      "process_time": "elapsed=18.34 user=9.72 system=0.19 max_rss_kib=82644 status=0",
+      "driver_wall_ns": 18241435893,
+      "driver_process_cpu_ns": 7629147289,
+      "audit": "VERIFIED chain: 17 entries, 2 sessions, 2 seals",
+      "native_retirement_error": null,
+      "closed_meter_lifetime": [
+        {
+          "guest_5257": {
+            "capture": "closed_session",
+            "read": 58926,
+            "read_errors": 0,
+            "turns": 90,
+            "write": 323431,
+            "write_errors": 1
+          },
+          "sealed_in": {
+            "capture": "closed_session",
+            "read": 27299,
+            "read_errors": 0,
+            "turns": 5,
+            "write": 6074,
+            "write_errors": 0
+          },
+          "sealed_out": {
+            "capture": "closed_session",
+            "read": 6044,
+            "read_errors": 0,
+            "turns": 5,
+            "write": 38657,
+            "write_errors": 0
+          }
+        },
+        {
+          "guest_5257": {
+            "capture": "closed_session",
+            "read": 105098,
+            "read_errors": 0,
+            "turns": 76,
+            "write": 336093,
+            "write_errors": 0
+          },
+          "sealed_in": {
+            "capture": "closed_session",
+            "read": 38657,
+            "read_errors": 0,
+            "turns": 5,
+            "write": 6044,
+            "write_errors": 0
+          },
+          "sealed_out": {
+            "capture": "closed_session",
+            "read": 6074,
+            "read_errors": 0,
+            "turns": 5,
+            "write": 27299,
+            "write_errors": 0
+          }
+        }
+      ],
+      "phases": {
+        "cold": {
+          "object_bytes": 4096,
+          "exact_terminal_readback_bytes": 4096,
+          "data_literal_bytes": 4096,
+          "object_frame_bytes_both_directions": 4658,
+          "guest_a_cpu_ns": 10594138,
+          "guest_b_cpu_ns": 28556580,
+          "coordinator_cpu_ns": 31944810,
+          "through_both_guest_results_ns": 10400827379,
+          "guest_5257_bytes": 660356,
+          "unique_sealed_bytes": 63868,
+          "empty_shaped_samples_a_b": [
+            {
+              "turns": 57,
+              "guest_to_host": 27928,
+              "host_to_guest": 199787
+            },
+            {
+              "turns": 34,
+              "guest_to_host": 16622,
+              "host_to_guest": 118951
+            }
+          ],
+          "meter_deltas_a_b": [
+            {
+              "guest_5257": {
+                "read": 47409,
+                "read_errors": 0,
+                "turns": 69,
+                "write": 247727,
+                "write_errors": 0
+              },
+              "sealed_in": {
+                "read": 21823,
+                "read_errors": 0,
+                "turns": 4,
+                "write": 4864,
+                "write_errors": 0
+              },
+              "sealed_out": {
+                "read": 4838,
+                "read_errors": 0,
+                "turns": 4,
+                "write": 32343,
+                "write_errors": 0
+              }
+            },
+            {
+              "guest_5257": {
+                "read": 84337,
+                "read_errors": 0,
+                "turns": 65,
+                "write": 280883,
+                "write_errors": 0
+              },
+              "sealed_in": {
+                "read": 32343,
+                "read_errors": 0,
+                "turns": 4,
+                "write": 4838,
+                "write_errors": 0
+              },
+              "sealed_out": {
+                "read": 4864,
+                "read_errors": 0,
+                "turns": 4,
+                "write": 21823,
+                "write_errors": 0
+              }
+            }
+          ]
+        },
+        "warm": {
+          "object_bytes": 4096,
+          "exact_terminal_readback_bytes": 4096,
+          "data_literal_bytes": 0,
+          "object_frame_bytes_both_directions": 190,
+          "guest_a_cpu_ns": 1692618,
+          "guest_b_cpu_ns": 7448931,
+          "coordinator_cpu_ns": 8026365,
+          "through_both_guest_results_ns": 2638341195,
+          "guest_5257_bytes": 145525,
+          "unique_sealed_bytes": 14206,
+          "empty_shaped_samples_a_b": [
+            {
+              "turns": 15,
+              "guest_to_host": 7369,
+              "host_to_guest": 52569
+            },
+            {
+              "turns": 1,
+              "guest_to_host": 492,
+              "host_to_guest": 3496
+            }
+          ],
+          "meter_deltas_a_b": [
+            {
+              "guest_5257": {
+                "read": 10907,
+                "read_errors": 0,
+                "turns": 18,
+                "write": 64544,
+                "write_errors": 0
+              },
+              "sealed_in": {
+                "read": 5476,
+                "read_errors": 0,
+                "turns": 1,
+                "write": 1210,
+                "write_errors": 0
+              },
+              "sealed_out": {
+                "read": 1206,
+                "read_errors": 0,
+                "turns": 1,
+                "write": 6314,
+                "write_errors": 0
+              }
+            },
+            {
+              "guest_5257": {
+                "read": 20449,
+                "read_errors": 0,
+                "turns": 10,
+                "write": 49625,
+                "write_errors": 0
+              },
+              "sealed_in": {
+                "read": 6314,
+                "read_errors": 0,
+                "turns": 1,
+                "write": 1206,
+                "write_errors": 0
+              },
+              "sealed_out": {
+                "read": 1210,
+                "read_errors": 0,
+                "turns": 1,
+                "write": 5476,
+                "write_errors": 0
+              }
+            }
+          ]
+        }
+      },
+      "original_evidence_sha256": {
+        "audit.log": "5b7cb24bc38132f35843e640eed08542a0c2870d9531d5568ac4fe243688e1d1",
+        "host.sha256": "6e0c56fbcb0a2e964b8088a86cb87765d8789e9d2b3d3b494dfb9a8d02f2f0aa",
+        "inputs-verified.log": "c17faf30e614e6574d62fc038f1bbda98924f56272aaad81de1e4f94966ed651",
+        "native.time": "f2654dd86649df23cba004e41f9e4b5f33bbcead620c8212558869228966ae16",
+        "run-control.log": "2fdd54f3e9d58084fa8efe398fa590119aff8b84d84d2516489f264d15acf507",
+        "scopes.after": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "object-pair-progress.jsonl": "99c6a69c8bfa93ef714e0d039a50a28407abc9a913c3190135650ffaf6c0d12a",
+        "object-pair-result.json": "f4f8cf26f646d83defbfb73403d0d1799def286c691a3add8c7a3d280cbc9111",
+        "original-sc-journal-a-guest_5257.counts": "6fbe1a1b3d8c48fccd971f11f6132cdbe51b802379a49bf3f5c6808a2148d315",
+        "original-sc-journal-a-sealed_in.counts": "e0d19f6a0d4aa7fed4b552d48d4dd52470255a72b633c7ed527ed5664ccc97b4",
+        "original-sc-journal-a-sealed_out.counts": "111e721a30d4028c39edf8f742066824d805af60db3166839f507d4200021146",
+        "original-sc-journal-b-guest_5257.counts": "95c8e1593053f8bebe3ab2800be14be85f285b9af78404364cd279b61d3e5402",
+        "original-sc-journal-b-sealed_in.counts": "1349f9d71794575bc6c34f9bbd5985a0bc4bd7812ece9cfb86e620b4b0945936",
+        "original-sc-journal-b-sealed_out.counts": "3c04994978fa08730ec10c1c43a669ee831d00efd488f15850abd001c4537acc",
+        "paired-retirement.jsonl": "4ecd19450145bb63b443a2b3a6cad36c420a9b2c97d065dae534eb4cc42901f6"
+      }
+    },
+    {
+      "arm": "new_reverse",
+      "source_rootfs_sha256": "c7e3827fe75bd19a08b69b385b4b9c15d7231076b0be815e0a96b5d6bab6c938",
+      "destination_rootfs_sha256": "3bd3f4f55d5457b0eeb0841af1d02d6ebdaa4a1c0e339bce80ce0f8342ee24e0",
+      "original_port_5257_before_cold": [
+        {
+          "capture": "complete_prefix",
+          "read": 310,
+          "read_errors": 0,
+          "turns": 1,
+          "write": 5577,
+          "write_errors": 0
+        },
+        {
+          "capture": "complete_prefix",
+          "read": 303,
+          "read_errors": 0,
+          "turns": 1,
+          "write": 5583,
+          "write_errors": 0
+        }
+      ],
+      "startup_ns": 4937351501,
+      "worker_retirement": [
+        {
+          "assisted": false,
+          "exit_code": 0,
+          "first_stop_attempt": true,
+          "name": "sc-journal-a",
+          "success": true
+        },
+        {
+          "assisted": false,
+          "exit_code": 0,
+          "first_stop_attempt": true,
+          "name": "sc-journal-b",
+          "success": true
+        }
+      ],
+      "process_time": "elapsed=15.47 user=9.64 system=0.17 max_rss_kib=76452 status=0",
+      "driver_wall_ns": 15370367521,
+      "driver_process_cpu_ns": 7764114346,
+      "audit": "VERIFIED chain: 17 entries, 2 sessions, 2 seals",
+      "native_retirement_error": null,
+      "closed_meter_lifetime": [
+        {
+          "guest_5257": {
+            "capture": "closed_session",
+            "read": 52043,
+            "read_errors": 0,
+            "turns": 76,
+            "write": 272028,
+            "write_errors": 1
+          },
+          "sealed_in": {
+            "capture": "closed_session",
+            "read": 27209,
+            "read_errors": 0,
+            "turns": 5,
+            "write": 6055,
+            "write_errors": 0
+          },
+          "sealed_out": {
+            "capture": "closed_session",
+            "read": 6021,
+            "read_errors": 0,
+            "turns": 5,
+            "write": 38663,
+            "write_errors": 0
+          }
+        },
+        {
+          "guest_5257": {
+            "capture": "closed_session",
+            "read": 101568,
+            "read_errors": 0,
+            "turns": 69,
+            "write": 311041,
+            "write_errors": 0
+          },
+          "sealed_in": {
+            "capture": "closed_session",
+            "read": 38663,
+            "read_errors": 0,
+            "turns": 5,
+            "write": 6021,
+            "write_errors": 0
+          },
+          "sealed_out": {
+            "capture": "closed_session",
+            "read": 6055,
+            "read_errors": 0,
+            "turns": 5,
+            "write": 27209,
+            "write_errors": 0
+          }
+        }
+      ],
+      "phases": {
+        "cold": {
+          "object_bytes": 4096,
+          "exact_terminal_readback_bytes": 4096,
+          "data_literal_bytes": 4096,
+          "object_frame_bytes_both_directions": 4658,
+          "guest_a_cpu_ns": 9099537,
+          "guest_b_cpu_ns": 28693163,
+          "coordinator_cpu_ns": 25426241,
+          "through_both_guest_results_ns": 8051148018,
+          "guest_5257_bytes": 591527,
+          "unique_sealed_bytes": 63744,
+          "empty_shaped_samples_a_b": [
+            {
+              "turns": 47,
+              "guest_to_host": 22925,
+              "host_to_guest": 164629
+            },
+            {
+              "turns": 27,
+              "guest_to_host": 13202,
+              "host_to_guest": 94163
+            }
+          ],
+          "meter_deltas_a_b": [
+            {
+              "guest_5257": {
+                "read": 42334,
+                "read_errors": 0,
+                "turns": 59,
+                "write": 212429,
+                "write_errors": 0
+              },
+              "sealed_in": {
+                "read": 21738,
+                "read_errors": 0,
+                "turns": 4,
+                "write": 4844,
+                "write_errors": 0
+              },
+              "sealed_out": {
+                "read": 4821,
+                "read_errors": 0,
+                "turns": 4,
+                "write": 32341,
+                "write_errors": 0
+              }
+            },
+            {
+              "guest_5257": {
+                "read": 80866,
+                "read_errors": 0,
+                "turns": 58,
+                "write": 255898,
+                "write_errors": 0
+              },
+              "sealed_in": {
+                "read": 32341,
+                "read_errors": 0,
+                "turns": 4,
+                "write": 4821,
+                "write_errors": 0
+              },
+              "sealed_out": {
+                "read": 4844,
+                "read_errors": 0,
+                "turns": 4,
+                "write": 21738,
+                "write_errors": 0
+              }
+            }
+          ]
+        },
+        "warm": {
+          "object_bytes": 4096,
+          "exact_terminal_readback_bytes": 4096,
+          "data_literal_bytes": 0,
+          "object_frame_bytes_both_directions": 190,
+          "guest_a_cpu_ns": 2195463,
+          "guest_b_cpu_ns": 7582667,
+          "coordinator_cpu_ns": 7089003,
+          "through_both_guest_results_ns": 2036114327,
+          "guest_5257_bytes": 133380,
+          "unique_sealed_bytes": 14204,
+          "empty_shaped_samples_a_b": [
+            {
+              "turns": 12,
+              "guest_to_host": 5855,
+              "host_to_guest": 42036
+            },
+            {
+              "turns": 1,
+              "guest_to_host": 492,
+              "host_to_guest": 3487
+            }
+          ],
+          "meter_deltas_a_b": [
+            {
+              "guest_5257": {
+                "read": 9399,
+                "read_errors": 0,
+                "turns": 15,
+                "write": 54022,
+                "write_errors": 0
+              },
+              "sealed_in": {
+                "read": 5471,
+                "read_errors": 0,
+                "turns": 1,
+                "write": 1211,
+                "write_errors": 0
+              },
+              "sealed_out": {
+                "read": 1200,
+                "read_errors": 0,
+                "turns": 1,
+                "write": 6322,
+                "write_errors": 0
+              }
+            },
+            {
+              "guest_5257": {
+                "read": 20399,
+                "read_errors": 0,
+                "turns": 10,
+                "write": 49560,
+                "write_errors": 0
+              },
+              "sealed_in": {
+                "read": 6322,
+                "read_errors": 0,
+                "turns": 1,
+                "write": 1200,
+                "write_errors": 0
+              },
+              "sealed_out": {
+                "read": 1211,
+                "read_errors": 0,
+                "turns": 1,
+                "write": 5471,
+                "write_errors": 0
+              }
+            }
+          ]
+        }
+      },
+      "original_evidence_sha256": {
+        "audit.log": "5b7cb24bc38132f35843e640eed08542a0c2870d9531d5568ac4fe243688e1d1",
+        "host.sha256": "6e0c56fbcb0a2e964b8088a86cb87765d8789e9d2b3d3b494dfb9a8d02f2f0aa",
+        "inputs-verified.log": "c17faf30e614e6574d62fc038f1bbda98924f56272aaad81de1e4f94966ed651",
+        "native.time": "4be294dad2d65d92874d0f851601edef3421c1602d5bbffff9ef7f31b2dae12d",
+        "run-control.log": "0c217ebb10e95d0477e72f3cf57c1afcae56f7d31718962eae76c94e3e4287ff",
+        "scopes.after": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "object-pair-progress.jsonl": "7ffbf4a7afcaf50ac2f3e6388c6a8b04506ee259a1501cc79df4edc0b3b36b3c",
+        "object-pair-result.json": "de8da9a0814ee9491c82696d44947d0ab00b82c80dfdd8f52e03ec7dcdc3877e",
+        "original-sc-journal-a-guest_5257.counts": "0070190c81f2645ef80432e3d4c3811a5328341d4d888d6dd2647abbb5680c7d",
+        "original-sc-journal-a-sealed_in.counts": "c6b078da4d41e297b8a59a82d05b01a4d00847230300448ac6e1371fb38a3ef6",
+        "original-sc-journal-a-sealed_out.counts": "cb8e6df37d9a0ef0a91fa54fdc27c3cb91dadda6ef1f496349102f5c9d6deeea",
+        "original-sc-journal-b-guest_5257.counts": "1d07b686e75ca35e126998e3c330342530d7825d8136748e3dec980f12d56ede",
+        "original-sc-journal-b-sealed_in.counts": "70172d655e0cec279f98181d16deae20b1a09234e3b0c9045fabe222583af469",
+        "original-sc-journal-b-sealed_out.counts": "683478ef6b08ece14bf3a837e59a8d0982b07419b7365a421e73308d11f24fd1",
+        "paired-retirement.jsonl": "4ecd19450145bb63b443a2b3a6cad36c420a9b2c97d065dae534eb4cc42901f6"
+      }
+    },
+    {
+      "arm": "old_reverse",
+      "source_rootfs_sha256": "58adde52ce4d8bae993364598dafde80957ba666033eec6e434bd6df624ffc2f",
+      "destination_rootfs_sha256": "3f97cb27aa4a5a18e3e9c4f5a017b83a823d1bdd38149bbe38f69ea0640a48d9",
+      "original_port_5257_before_cold": [
+        {
+          "capture": "complete_prefix",
+          "read": 310,
+          "read_errors": 0,
+          "turns": 1,
+          "write": 5577,
+          "write_errors": 0
+        },
+        {
+          "capture": "complete_prefix",
+          "read": 300,
+          "read_errors": 0,
+          "turns": 1,
+          "write": 5579,
+          "write_errors": 0
+        }
+      ],
+      "startup_ns": 4924492610,
+      "worker_retirement": [
+        {
+          "assisted": false,
+          "exit_code": 1,
+          "first_stop_attempt": true,
+          "name": "sc-journal-a",
+          "success": false
+        },
+        {
+          "assisted": false,
+          "exit_code": 0,
+          "first_stop_attempt": true,
+          "name": "sc-journal-b",
+          "success": true
+        }
+      ],
+      "process_time": "Command exited with non-zero status 1\nelapsed=12.05 user=9.60 system=0.19 max_rss_kib=77188 status=1",
+      "driver_wall_ns": 11950609272,
+      "driver_process_cpu_ns": 7786112467,
+      "audit": "VERIFIED chain: 17 entries, 2 sessions, 2 seals",
+      "native_retirement_error": "paired retirement needs review: sc-journal-a: assisted, delayed, or nonzero original exit",
+      "closed_meter_lifetime": [
+        {
+          "guest_5257": {
+            "capture": "closed_session",
+            "read": 52767,
+            "read_errors": 0,
+            "turns": 78,
+            "write": 277450,
+            "write_errors": 0
+          },
+          "sealed_in": {
+            "capture": "closed_session",
+            "read": 27171,
+            "read_errors": 0,
+            "turns": 5,
+            "write": 6008,
+            "write_errors": 0
+          },
+          "sealed_out": {
+            "capture": "closed_session",
+            "read": 6014,
+            "read_errors": 0,
+            "turns": 5,
+            "write": 38649,
+            "write_errors": 0
+          }
+        },
+        {
+          "guest_5257": {
+            "capture": "closed_session",
+            "read": 99032,
+            "read_errors": 0,
+            "turns": 64,
+            "write": 293489,
+            "write_errors": 0
+          },
+          "sealed_in": {
+            "capture": "closed_session",
+            "read": 38649,
+            "read_errors": 0,
+            "turns": 5,
+            "write": 6014,
+            "write_errors": 0
+          },
+          "sealed_out": {
+            "capture": "closed_session",
+            "read": 6008,
+            "read_errors": 0,
+            "turns": 5,
+            "write": 27171,
+            "write_errors": 0
+          }
+        }
+      ],
+      "phases": {
+        "cold": {
+          "object_bytes": 4096,
+          "exact_terminal_readback_bytes": 4096,
+          "data_literal_bytes": 4096,
+          "object_frame_bytes_both_directions": 4658,
+          "guest_a_cpu_ns": 8098114,
+          "guest_b_cpu_ns": 24596323,
+          "coordinator_cpu_ns": 18593698,
+          "through_both_guest_results_ns": 5245452164,
+          "guest_5257_bytes": 570055,
+          "unique_sealed_bytes": 63665,
+          "empty_shaped_samples_a_b": [
+            {
+              "turns": 47,
+              "guest_to_host": 22797,
+              "host_to_guest": 163667
+            },
+            {
+              "turns": 22,
+              "guest_to_host": 10670,
+              "host_to_guest": 76746
+            }
+          ],
+          "meter_deltas_a_b": [
+            {
+              "guest_5257": {
+                "read": 42149,
+                "read_errors": 0,
+                "turns": 59,
+                "write": 211209,
+                "write_errors": 0
+              },
+              "sealed_in": {
+                "read": 21713,
+                "read_errors": 0,
+                "turns": 4,
+                "write": 4809,
+                "write_errors": 0
+              },
+              "sealed_out": {
+                "read": 4812,
+                "read_errors": 0,
+                "turns": 4,
+                "write": 32331,
+                "write_errors": 0
+              }
+            },
+            {
+              "guest_5257": {
+                "read": 78310,
+                "read_errors": 0,
+                "turns": 53,
+                "write": 238387,
+                "write_errors": 0
+              },
+              "sealed_in": {
+                "read": 32331,
+                "read_errors": 0,
+                "turns": 4,
+                "write": 4812,
+                "write_errors": 0
+              },
+              "sealed_out": {
+                "read": 4809,
+                "read_errors": 0,
+                "turns": 4,
+                "write": 21713,
+                "write_errors": 0
+              }
+            }
+          ]
+        },
+        "warm": {
+          "object_bytes": 4096,
+          "exact_terminal_readback_bytes": 4096,
+          "data_literal_bytes": 0,
+          "object_frame_bytes_both_directions": 190,
+          "guest_a_cpu_ns": 2058018,
+          "guest_b_cpu_ns": 6635302,
+          "coordinator_cpu_ns": 5779500,
+          "through_both_guest_results_ns": 1440715635,
+          "guest_5257_bytes": 140917,
+          "unique_sealed_bytes": 14177,
+          "empty_shaped_samples_a_b": [
+            {
+              "turns": 14,
+              "guest_to_host": 6790,
+              "host_to_guest": 48758
+            },
+            {
+              "turns": 1,
+              "guest_to_host": 493,
+              "host_to_guest": 3483
+            }
+          ],
+          "meter_deltas_a_b": [
+            {
+              "guest_5257": {
+                "read": 10308,
+                "read_errors": 0,
+                "turns": 17,
+                "write": 60664,
+                "write_errors": 0
+              },
+              "sealed_in": {
+                "read": 5458,
+                "read_errors": 0,
+                "turns": 1,
+                "write": 1199,
+                "write_errors": 0
+              },
+              "sealed_out": {
+                "read": 1202,
+                "read_errors": 0,
+                "turns": 1,
+                "write": 6318,
+                "write_errors": 0
+              }
+            },
+            {
+              "guest_5257": {
+                "read": 20422,
+                "read_errors": 0,
+                "turns": 10,
+                "write": 49523,
+                "write_errors": 0
+              },
+              "sealed_in": {
+                "read": 6318,
+                "read_errors": 0,
+                "turns": 1,
+                "write": 1202,
+                "write_errors": 0
+              },
+              "sealed_out": {
+                "read": 1199,
+                "read_errors": 0,
+                "turns": 1,
+                "write": 5458,
+                "write_errors": 0
+              }
+            }
+          ]
+        }
+      },
+      "original_evidence_sha256": {
+        "audit.log": "5b7cb24bc38132f35843e640eed08542a0c2870d9531d5568ac4fe243688e1d1",
+        "host.sha256": "6e0c56fbcb0a2e964b8088a86cb87765d8789e9d2b3d3b494dfb9a8d02f2f0aa",
+        "inputs-verified.log": "c17faf30e614e6574d62fc038f1bbda98924f56272aaad81de1e4f94966ed651",
+        "native.time": "5358e6bb1f33da1f19d5510a76a2a3c3985e5ae11a74a5ae1a6ebb0278cfd569",
+        "run-control.log": "c1bd0b1782d82b5499831d05f5d806b382c24b856e7aa0b22689291705b73de3",
+        "scopes.after": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "object-pair-progress.jsonl": "f51128d4b1c5d63e2a831ce319281e068fe9dc02199235d8a52903a830d45260",
+        "object-pair-result.json": "9b837ad578f2d68f7ea833bca73d00e2b8d27b2abc230703a349241fb27d983a",
+        "original-sc-journal-a-guest_5257.counts": "b8c396767a2ccf536aae5d5ecc6df34f8ee8dd70be8261919b7c255df1abd319",
+        "original-sc-journal-a-sealed_in.counts": "eed4aaeaa2d20ab2ddf2dc23e8ccf03c7199076dafa679e72c1255a7b5308de0",
+        "original-sc-journal-a-sealed_out.counts": "bfdb3f346f97d6a72f4ca35c11687170fa8aa61ee3c6c805b9cd66fc8f8f7962",
+        "original-sc-journal-b-guest_5257.counts": "8dc1551c01036b9c131b0542aec23cd81fb8d85ea19308971a0d60c0ee14e6e9",
+        "original-sc-journal-b-sealed_in.counts": "57f68e6cacbb3c68ee6d8767f3d0ac75b73e5a6b9eb3b93337aff0ea77f53c4e",
+        "original-sc-journal-b-sealed_out.counts": "731d40af1dca03a5a6f6f58c87795f35b0e313446db35936bcc253004c4e7b28",
+        "paired-retirement.jsonl": "5e3defcfaac7e969efdcd523b313127e35be46277b7e053690bab7e7f360c856"
+      }
+    }
+  ]
+}
