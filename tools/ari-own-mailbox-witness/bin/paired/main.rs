@@ -31,8 +31,12 @@ use std::{
 
 pub const A: &str = "sc-journal-a";
 pub const B: &str = "sc-journal-b";
-const FRAME_HASH: &str = "ff26a66df5b1d9de994e60824757686d2af8eb4433b91e74a2f24b279f600044";
-const BODY: &[u8] = include_bytes!("../../fixtures/workload-body.bin");
+#[path = "../../paired-guest/src/fixture.rs"]
+mod fixture;
+#[cfg(not(feature = "large-object-fixture"))]
+const BODY: &[u8; fixture::BODY_LEN] = include_bytes!("../../fixtures/workload-body.bin");
+#[cfg(feature = "large-object-fixture")]
+const BODY: &[u8; fixture::BODY_LEN] = include_bytes!("../../fixtures/workload-4k-body.bin");
 type BHandle = Arc<Mutex<OriginalJournalDestination>>;
 type Runtime = tokio::runtime::Runtime;
 
@@ -230,8 +234,8 @@ fn run(args: &[String]) -> Result<()> {
         "paired guest images must identify distinct workloads"
     );
     ensure!(
-        fs::metadata(frame)?.len() == 313
-            && mvm_core::crypto::image_verify::sha256_file(Path::new(frame))? == FRAME_HASH,
+        fs::metadata(frame)?.len() == fixture::FRAME_LEN as u64
+            && mvm_core::crypto::image_verify::sha256_file(Path::new(frame))? == fixture::FRAME_SHA,
         "incorrect fixture frame"
     );
     let raw = fs::read(frame)?;
