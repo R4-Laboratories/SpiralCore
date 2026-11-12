@@ -9,3 +9,5 @@ The driver supplies fresh binary input only to A. B receives its own fresh 32-by
 The Linux driver and original coordinator API typechecked together. Focused component controls cover profile admission and two-sided publication. This packet contains no two-guest transfer measurement. The real Firecracker acceptance run has a separate record when executed. [Component results](results.json)
 
 Linux and macOS passed the installed SDK directory and signed-publication checks under both group-cooperative and private umasks. [Filesystem results](private-state.md)
+
+The addressed witness accepts verified role image files and records coordinator deadline failures before waiting for the same original process. [Materialized image and custody results](materialized-driver.md)

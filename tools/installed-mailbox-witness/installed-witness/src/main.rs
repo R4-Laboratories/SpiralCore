@@ -45,6 +45,7 @@ fn main() -> anyhow::Result<()> {
         .create_new(true)
         .mode(0o600)
         .open(&output_path)?;
+    let mut reported = false;
     let result = (|| -> anyhow::Result<serde_json::Value> {
         let config = Config {
             home: home.ok_or_else(|| anyhow::anyhow!("MVM_HOME required"))?,
@@ -78,7 +79,37 @@ fn main() -> anyhow::Result<()> {
             body[0] = 0;
             body[1] = 255;
             body[256] = 0;
-            return native::addressed_pair::run(&config, &b, &body);
+            return native::addressed_pair::run(
+                &config,
+                &b,
+                &body,
+                |failure| {
+                    reported = true;
+                    serde_json::to_writer_pretty(&mut output, failure)?;
+                    output.write_all(b"\n")?;
+                    output.sync_all()?;
+                    fs::File::open(&output_parent)?.sync_all()?;
+                    eprintln!(
+                        "addressed coordinator deadline recorded; original retirement pending"
+                    );
+                    Ok(())
+                },
+                |status| {
+                    let mut path = output_path.as_os_str().to_os_string();
+                    path.push(".coordinator-exit.json");
+                    let mut late = fs::OpenOptions::new()
+                        .create_new(true)
+                        .write(true)
+                        .mode(0o600)
+                        .open(path)?;
+                    let observation = serde_json::json!({"origin":"retained original Child", "exit_status":status.to_string(), "exit_code":status.code()});
+                    serde_json::to_writer(&mut late, &observation)?;
+                    late.write_all(b"\n")?;
+                    late.sync_all()?;
+                    fs::File::open(&output_parent)?.sync_all()?;
+                    Ok(())
+                },
+            );
         }
         let runtime = tokio::runtime::Builder::new_current_thread()
             .enable_all()
@@ -104,9 +135,11 @@ fn main() -> anyhow::Result<()> {
         Ok(record) => record,
         Err(error) => preflight_failure(&format!("{error:#}")),
     };
-    serde_json::to_writer_pretty(&mut output, &record)?;
-    output.write_all(b"\n")?;
-    output.sync_all()?;
+    if !reported {
+        serde_json::to_writer_pretty(&mut output, &record)?;
+        output.write_all(b"\n")?;
+        output.sync_all()?;
+    }
     anyhow::ensure!(
         record["status"] == "passed",
         "witness failed; inspect retained JSON evidence"

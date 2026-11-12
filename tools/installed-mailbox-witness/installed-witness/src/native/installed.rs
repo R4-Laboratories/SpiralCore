@@ -251,6 +251,14 @@ impl InstalledWitness {
         matched.context("original installed daemon has no matching helper child")
     }
 
+    pub(super) fn record_and_collect_late(
+        &self,
+        report: impl FnOnce() -> Result<()>,
+        observe: impl FnOnce(ExitStatus) -> Result<()>,
+    ) -> Result<()> {
+        record_and_collect(&self.child, report, observe)
+    }
+
     pub(super) fn finish(&mut self) -> Result<ExitStatus> {
         let until = Instant::now() + COLLECTED_WORKER_RETENTION + IDLE_HOLD + DRAIN_AND_OBSERVE;
         let mut child = self
@@ -273,9 +281,62 @@ impl InstalledWitness {
     }
 }
 
+// A report sink may fail. The original process must still be collected.
+fn record_and_collect(
+    child: &Mutex<Child>,
+    report: impl FnOnce() -> Result<()>,
+    observe: impl FnOnce(ExitStatus) -> Result<()>,
+) -> Result<()> {
+    let persisted = report();
+    let original_exit = child
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner)
+        .wait()?;
+    let observed = observe(original_exit);
+    persisted?;
+    observed
+}
+
 #[cfg(test)]
 mod binding_tests {
     use super::*;
+
+    #[test]
+    fn failed_observation_is_recorded_before_late_original_exit_even_on_sink_failure() {
+        for fail_sink in [false, true] {
+            let mut child = Command::new("/bin/sh")
+                .args(["-c", "read line; exit 42"])
+                .stdin(Stdio::piped())
+                .spawn()
+                .unwrap();
+            let gate = child.stdin.take().unwrap();
+            let child = Mutex::new(child);
+            let saved = std::cell::Cell::new(false);
+            let late = std::cell::Cell::new(false);
+            let result = record_and_collect(
+                &child,
+                || {
+                    assert!(child.lock().unwrap().try_wait()?.is_none());
+                    saved.set(true);
+                    drop(gate);
+                    ensure!(!fail_sink, "injected evidence sink refusal");
+                    Ok(())
+                },
+                |status| {
+                    assert!(saved.get());
+                    assert_eq!(status.code(), Some(42));
+                    late.set(true);
+                    Ok(())
+                },
+            );
+            assert_eq!(result.is_err(), fail_sink);
+            assert!(late.get());
+            assert_eq!(
+                child.lock().unwrap().try_wait().unwrap().unwrap().code(),
+                Some(42)
+            );
+        }
+    }
 
     #[test]
     fn provider_refusal_collects_the_original_before_sending_configuration() {

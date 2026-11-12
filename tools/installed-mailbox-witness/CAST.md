@@ -17,6 +17,8 @@ Build A’s `mvm-agentd --example original_submit_workload` for the same target.
 bash make-addressed-pair-rootfs.sh "$fresh_images" "$wrapper" "$submit_workload" "$receive_workload"
 ```
 
+The paired shell command prepares staging inputs. Pass those through the operator's canonical MVM runtime injector and ext4 materializer. Verify the resulting image, role executable, runtime configuration, sidecar and complete verity tree against the operator's trusted manifest. The driver takes the completed `a/image/rootfs.ext4` and `b/image/rootfs.ext4` files as its inputs. An unpacked SDK directory import regenerates runtime-owned configuration and is unsuitable for this fixture.
+
 The A image contains the Submit producer. The B image contains the recipient alone. B's signed execution plan selects the warm OCI recipient at `/usr/local/bin/spiralcore-cast-recipient`. The addressed driver configures the SDK for two named originals, reserves them concurrently, and requests one immutable direction with independently signed Send and Receive grants. The coordinator selects the development capacity with `--owned-mailbox-pair-v1 NAME_A NAME_B --immutable-cast-v1`. Pin the integrated MVM source and rebuilt guest assets before a native run. The previous native witness targets an earlier revision.
 
 ## Observe B independently
@@ -38,16 +40,16 @@ The paired workloads, original-bound carrier across the installed processes, and
 The standalone addressed manifest shares its Rust sources with the historical witness. It pins dependencies for the MVM source carrying the original-pair enrollment and opaque carrier operations. Use the exact MVM revision listed with the run. Place that source at `source/` beside both manifests and build with the same toolchain used for the endpoint processes.
 
 ```sh
-revision=5ae2cdc4977e12a574a5baa2e4f0522c3f7a1ae7
+revision=62c6f6eedee19fa91089720c12d1941a0b67dac3
 git -C source fetch --depth=1 https://github.com/Casey-allard/mvm.git "$revision"
 git -C source switch --detach "$revision"
 test "$(git -C source rev-parse HEAD)" = "$revision"
 cargo build --locked --manifest-path addressed-witness/Cargo.toml --bin spiralcore-mvm-canonical-witness
 "$CARGO_TARGET_DIR/debug/spiralcore-mvm-canonical-witness" --addressed \
-  "$fresh_images/a" spiralcore-alpha "$mailbox_a" \
-  "$fresh_images/b" spiralcore-beta "$mailbox_b" "$report"
+  "$verified_images/a/image/rootfs.ext4" spiralcore-cast-alpha "$mailbox_a" \
+  "$verified_images/b/image/rootfs.ext4" spiralcore-cast-beta "$mailbox_b" "$report"
 ```
 
 The driver generates 257 random fixture bytes with explicit binary boundary values. A receives them in an ordinary call to its original OCI workload. B receives only a fresh 32-byte challenge in its own call. The report checks every payload and challenge byte, records the two original post-I/O vsock meters where available, and separates guest workload CPU, host driver CPU, elapsed application time and lifecycle time. The outcome remains pending until those actual VM roles have run.
 
-For the installed two-guest test, prepare the two sealed ext4 files and verify their complete dm-verity trees before supplying them as SDK image inputs. [Build and verify the operator-selected guest images](operator-images/README.md)
+Each SDK launch emits its role and a stable outcome to stderr as soon as it returns. The driver omits untrusted error strings from those events. If coordinator retirement misses its deadline, the driver writes and syncs the failed report, retains its original child handle and keeps waiting. After that same child exits, the driver writes `REPORT_JSON.coordinator-exit.json` with the observed status. Late exit leaves the failed acceptance result in place.
