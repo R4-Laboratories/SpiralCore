@@ -1,0 +1,97 @@
+{
+  "driver_process_cpu_ns": 6112342424,
+  "native_host": {
+    "architecture": "x86_64",
+    "observed_destination_backend": "firecracker",
+    "observed_source_backend": "firecracker",
+    "os": "linux",
+    "requested_backend": "firecracker"
+  },
+  "original_5257_helper_streams_a_b": [
+    {
+      "capture": "closed_session",
+      "completed_exchanges": 3,
+      "guest_to_host_read_bytes": 8440,
+      "host_to_guest_write_accepted_bytes": 1238
+    },
+    {
+      "capture": "closed_session",
+      "completed_exchanges": 4,
+      "guest_to_host_read_bytes": 2986,
+      "host_to_guest_write_accepted_bytes": 16894
+    }
+  ],
+  "original_exits": [
+    {
+      "assisted": false,
+      "exit_code": 0,
+      "first_stop_attempt": true,
+      "name": "sc-journal-a",
+      "success": true
+    },
+    {
+      "assisted": false,
+      "exit_code": 0,
+      "first_stop_attempt": true,
+      "name": "sc-journal-b",
+      "success": true
+    }
+  ],
+  "result": {
+    "guest_a": {
+      "cpu_ns": 646975,
+      "frame_bytes": 4152,
+      "outbox_retired_without_archive": true,
+      "outbox_retirement_wait_ns": 157147672,
+      "probe_from_agent": 202,
+      "probe_to_agent": 351,
+      "role": "staged",
+      "wall_ns": 157794115
+    },
+    "guest_a_observed_receipt": null,
+    "guest_b": {
+      "ack_from_agent": 2288,
+      "ack_to_agent": 2009,
+      "after_ack": {
+        "empty": true,
+        "from_agent": 50,
+        "to_agent": 54
+      },
+      "cpu_ns": 602739,
+      "frame_bytes": 4152,
+      "receive_from_agent": 7633,
+      "receive_to_agent": 54,
+      "role": "received_and_acknowledged",
+      "wall_ns": 492231582
+    },
+    "receipt_outcome": "AcceptedLocalDurable",
+    "receipt_recovery": {
+      "exact_envelope_equal": true,
+      "exact_signed_receipt_bytes_equal": true,
+      "first_b_receipt_ns": 133385553,
+      "first_receipt_from_b": 1219,
+      "first_receipt_to_a": 0,
+      "first_sealed_a_to_b": 12685,
+      "retry_receipt_from_b": 1219,
+      "retry_receipt_to_a": 1219,
+      "retry_sealed_a_to_b": 12685,
+      "verified_retry_ns": 173946096
+    },
+    "sdk_call_application_io": {
+      "destination_reply_with_readback": 8528,
+      "destination_request": 81,
+      "source_reply": 272,
+      "source_request": 8478
+    },
+    "sealed_a_to_b_bytes": 12685,
+    "setup_ns": 5645762827,
+    "signed_b_to_a_bytes": 1219,
+    "through_observed_v2_ns": 173946096,
+    "through_verified_destination_call_ns": 774846634,
+    "verified_body_bytes": 4096,
+    "wan_bytes": null
+  },
+  "teardown_error": null,
+  "transfer_error": null,
+  "whole_wall_ns": 6721299161
+}
