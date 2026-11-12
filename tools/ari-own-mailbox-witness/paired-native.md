@@ -1,5 +1,20 @@
 # Native B-addressed journal qualification
 
+## Original sender ordinal campaign
+
+Build the host witness and both guest workloads with `sender-ordinal-v1`. Build the installed `mvm-mailbox` with `sender-ordinal-io-witness`. Use the signed ordinal boot projection and guest runtime from [the joined MVM revision](https://github.com/Casey-allard/mvm/commit/4dcf544bed90bfc2cb90c065998a025b859ddab4).
+
+```sh
+paired-journal --backend firecracker --sender-ordinals 65 \
+  "$rootfs_a" "$sha256_a" "$rootfs_b" "$sha256_b" "$fixture_frame"
+```
+
+The same admitted pair serves the entire campaign. For each ordinal, A stages a distinct 313-byte frame on its guest-local reader. B first performs an authenticated empty Receive. A then requests the original B receipt while the orchestrator services the sealed relay. B reads all 257 payload bytes back from its synced guest file and acknowledges its signed lease. The orchestrator compares all bytes, checks that A recovered the same signed receipt and requests explicit settlement of that receipt digest. The next frame starts only after A confirms the expected contiguous retired prefix.
+
+The private `sender-ordinal-series.jsonl` contains one synced row per completed ordinal. The row records workload CPU, SDK input/output sizes, authenticated reader bytes, sealed relay bytes and elapsed time. The two original helper descriptors supply full-session port-5257 read/write totals through retirement. SDK input/output counts exclude outer framing. The empty Receive precedes forwarding each frame, so its elapsed time measures a sequential control. The driver accepts counts from 1 to 2,049. Supported capacity requires a completed run at the claimed count.
+
+## Single transfer
+
 The fixture uses a fresh, private MVM home on one Linux host. It creates two persistent machine definitions, binds each to a separately measured root image, and grants one vCPU and 256 MiB per guest. Each image runs its own single process worker. Admission for A depends on the original executing B, B's signed source-directed Send, B's boot-enrolled Receive, A's own signed source scope and the operator-authorized 30-second retention ceiling. Co-location does not supply a credential.
 
 The host gives the 313-byte SpiralCore frame only to A. A checks the fixed frame digest, sends the authenticated direction probe to its local agent, reserves the original outbox operation, and returns only the staged message ID plus its counters. The host forwards the original sealed payload across the acquired A and B helpers. Its observation of the signed B V2 binds the address, execution epoch, time window, ciphertext commitment, delivery ID and original staged message ID. A returning `staged` does not acknowledge B. Positive transport and application results are recorded separately.
