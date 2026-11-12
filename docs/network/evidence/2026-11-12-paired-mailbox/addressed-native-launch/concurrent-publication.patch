@@ -1,0 +1,226 @@
+diff --git a/crates/mvm-core/src/tenant_lifecycle.rs b/crates/mvm-core/src/tenant_lifecycle.rs
+index b70e563402d5fccdc34b75e96171c88938740be2..93ce31a63442cc035953fc32df16e9afc5398680 100644
+--- a/crates/mvm-core/src/tenant_lifecycle.rs
++++ b/crates/mvm-core/src/tenant_lifecycle.rs
+@@ -532,7 +532,6 @@ impl TenantLifecycleGate {
+         ensure!(valid_component(tenant), "invalid lifecycle tenant");
+         let home = home.as_ref().to_path_buf();
+         let directory = crate::config::host_agent_dir_at(&home, tenant);
+-        require_no_intent(&directory)?;
+         let lock_path = directory.join("lifecycle.lock");
+         let expected = private_file_metadata(&lock_path)?;
+         ensure!(
+@@ -551,6 +550,12 @@ impl TenantLifecycleGate {
+             original_lock: Arc::new(original_lock),
+         };
+         gate.validate_directory()?;
++        if publication_intent_exists(&gate.directory)? {
++            // A live writer holds the original lock from intent creation through
++            // durable cleanup. Selecting a handle grants no operation. If the
++            // lock is free, check the marker under it and refuse a stranded write.
++            let _probe = gate.try_original_lock(&mut FileLock::try_acquire)?;
++        }
+         Ok(gate)
+     }
+
+@@ -707,26 +712,9 @@ impl TenantLifecycleGate {
+         deadline: Instant,
+         mut acquire: impl FnMut(&Path) -> Result<Option<FileLock>>,
+     ) -> Result<FileLock> {
+-        let path = self.directory.join("lifecycle.json");
+-        let lock_path = path.with_extension("lock");
+         loop {
+             ensure!(Instant::now() < deadline, "lifecycle lock deadline expired");
+-            self.validate_directory()?;
+-            require_no_intent(&self.directory)?;
+-            let before = private_file_metadata(&lock_path)?;
+-            ensure!(before.len() == 0, "lifecycle lock has unexpected contents");
+-            let original = self.original_lock.metadata()?;
+-            ensure!(
+-                same_file(&original, &before),
+-                "original lifecycle lock inode was replaced"
+-            );
+-            if let Some(lock) = acquire(&path)? {
+-                let after = private_file_metadata(&lock_path)?;
+-                ensure!(
+-                    same_file(&original, &lock.metadata()?) && same_file(&original, &after),
+-                    "lifecycle lock identity changed"
+-                );
+-                self.validate_directory()?;
++            if let Some(lock) = self.try_original_lock(&mut acquire)? {
+                 ensure!(Instant::now() < deadline, "lifecycle lock deadline expired");
+                 return Ok(lock);
+             }
+@@ -736,6 +724,33 @@ impl TenantLifecycleGate {
+         }
+     }
+
++    fn try_original_lock(
++        &self,
++        acquire: &mut impl FnMut(&Path) -> Result<Option<FileLock>>,
++    ) -> Result<Option<FileLock>> {
++        let path = self.directory.join("lifecycle.json");
++        let lock_path = path.with_extension("lock");
++        self.validate_directory()?;
++        let before = private_file_metadata(&lock_path)?;
++        ensure!(before.len() == 0, "lifecycle lock has unexpected contents");
++        let original = self.original_lock.metadata()?;
++        ensure!(
++            same_file(&original, &before),
++            "original lifecycle lock inode was replaced"
++        );
++        let Some(lock) = acquire(&path)? else {
++            return Ok(None);
++        };
++        let after = private_file_metadata(&lock_path)?;
++        ensure!(
++            same_file(&original, &lock.metadata()?) && same_file(&original, &after),
++            "lifecycle lock identity changed"
++        );
++        self.validate_directory()?;
++        require_no_intent(&self.directory)?;
++        Ok(Some(lock))
++    }
++
+     fn read_record(&self) -> Result<Record> {
+         require_no_intent(&self.directory)?;
+         let path = self.directory.join("lifecycle.json");
+@@ -853,6 +868,112 @@ impl TenantLifecycleGate {
+ #[cfg(all(test, unix))]
+ mod tests {
+     use super::*;
++    #[test]
++    fn two_original_launches_wait_for_live_publication_and_refuse_stranded_intent() -> Result<()> {
++        use std::sync::mpsc::sync_channel;
++
++        for failed_writer in [false, true] {
++            let home = tempfile::tempdir()?;
++            crate::private_fs::create_owned_private_dir(home.path())?;
++            let generation = LifecycleGeneration::new([7; 32], 1)?;
++            let deadline = || Instant::now() + Duration::from_secs(3);
++            let coordinator = LifecycleCoordinator::prepare_after_exclusion(
++                home.path(),
++                "tenant-a",
++                generation.clone(),
++                2,
++                deadline(),
++            )?;
++            coordinator.activate_after_reconciliation(&generation, deadline())?;
++            let first = coordinator
++                .gate
++                .reserve_launch("vm-a", "plan-a", deadline())?;
++            let (published, observed) = sync_channel(0);
++            let (resume, proceed) = sync_channel(0);
++            let second_gate = std::thread::scope(|scope| -> Result<TenantLifecycleGate> {
++                let gate = &coordinator.gate;
++                let writer = scope.spawn(move || -> Result<()> {
++                    let _held = gate.lock(deadline())?;
++                    let record = gate.read_record()?;
++                    gate.write_record_with(&record, |path, bytes| {
++                        published.send(()).map_err(std::io::Error::other)?;
++                        proceed
++                            .recv_timeout(Duration::from_secs(3))
++                            .map_err(std::io::Error::other)?;
++                        if failed_writer {
++                            return Err(std::io::Error::other("fixture publication interrupted"));
++                        }
++                        write_private(path, bytes)
++                    })
++                });
++                observed.recv_timeout(Duration::from_secs(3))?;
++                // The actual writer already published the durable intent and
++                // still owns the original file lock. A second constructor
++                // confers no admission. Its operation must wait or time out.
++                let result = (|| -> Result<TenantLifecycleGate> {
++                    let gate = TenantLifecycleGate::new(home.path(), "tenant-a")?;
++                    let error = gate
++                        .reserve_launch(
++                            "vm-b",
++                            "plan-b",
++                            Instant::now() + Duration::from_millis(15),
++                        )
++                        .err()
++                        .context("a second reservation passed the live publisher")?;
++                    ensure!(
++                        error
++                            .to_string()
++                            .contains("lifecycle lock deadline expired"),
++                        "{error}"
++                    );
++                    Ok(gate)
++                })();
++                resume.send(())?;
++                let writer_result = writer.join().expect("original writer panicked");
++                if failed_writer {
++                    ensure!(
++                        writer_result
++                            .unwrap_err()
++                            .to_string()
++                            .contains("fixture publication interrupted")
++                    );
++                } else {
++                    writer_result?;
++                }
++                result
++            })?;
++            if failed_writer {
++                assert!(TenantLifecycleGate::new(home.path(), "tenant-a").is_err());
++                let error = second_gate
++                    .reserve_launch("vm-b", "plan-b", deadline())
++                    .err()
++                    .context("a stranded publication admitted the second original")?;
++                assert!(
++                    error
++                        .to_string()
++                        .contains("publication intent remains unresolved")
++                );
++                assert!(
++                    coordinator
++                        .gate
++                        .directory
++                        .join(".lifecycle.intent")
++                        .is_file()
++                );
++                continue;
++            }
++            let mut second = second_gate.reserve_launch("vm-b", "plan-b", deadline())?;
++            assert_ne!(first.id(), second.id());
++            assert_eq!(second.generation(), first.generation());
++            let snapshot = coordinator.snapshot(deadline())?;
++            assert_eq!(snapshot.pending().len(), 2);
++            second.settle_after_original_cleanup(deadline(), || Ok(()))?;
++            let snapshot = coordinator.snapshot(deadline())?;
++            assert_eq!(snapshot.pending().len(), 1);
++            assert_eq!(snapshot.pending()[0].id(), first.id());
++        }
++        Ok(())
++    }
+
+     #[test]
+     fn activation_deadline_expiring_after_active_commit_never_releases_publication() {
+@@ -1370,14 +1491,22 @@ fn require_private_directory(path: &Path) -> Result<()> {
+     Ok(())
+ }
+
+-fn require_no_intent(directory: &Path) -> Result<()> {
++fn publication_intent_exists(directory: &Path) -> Result<bool> {
+     match fs::symlink_metadata(directory.join(".lifecycle.intent")) {
+-        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(()),
++        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(false),
+         Err(error) => Err(error).context("inspect lifecycle publication intent"),
+-        Ok(_) => anyhow::bail!("lifecycle publication intent remains unresolved"),
++        Ok(_) => Ok(true),
+     }
+ }
+
++fn require_no_intent(directory: &Path) -> Result<()> {
++    ensure!(
++        !publication_intent_exists(directory)?,
++        "lifecycle publication intent remains unresolved"
++    );
++    Ok(())
++}
++
+ fn valid_component(value: &str) -> bool {
+     valid_identity(value) && value != "." && value != ".." && !value.contains(['/', '\\'])
+ }

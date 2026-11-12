@@ -21,6 +21,8 @@ The addressed driver checks materialized role images and preserves the initial f
 
 ### Addressed mailbox delivery
 
+Concurrent SDK launches now wait on the tenant coordinator’s original publication lock. A surviving intent after writer failure still refuses admission. Linux passed ten lifecycle tests. macOS passed the same ten and fifteen public coordinator integration tests. [Publication and crash-recovery results](evidence/2026-11-12-paired-mailbox/addressed-native-launch/concurrent-publication.md)
+
 The intended path is **guest A Submit → original A helper → host coordinator → original B helper → guest B Deliver**. A seals the submission. The coordinator handles the signed Send credential and opaque envelope. B authenticates and opens that envelope before invoking its guest. The following steps have been exercised individually.
 
 | Step | Tested behavior | Evidence |
