@@ -11,3 +11,5 @@ Runs 10 and 11 delayed host boot after the original pair prepared its grants. At
 | 11 | 195.190 ms | 6.181 s | 9.134 s | 106.897 s | 42 |
 
 None of these runs produced guest B payload readback or guest mailbox transfer counters. The host operational audit contained two adjacent JSON records on one line in each run. The VM event inventory counts complete JSON values. Signed plan receipts are separate records. [Recorded bytes, scope, counters and report digests](paced-runs.json) · [Prior activation attempts](guest-activation.md)
+
+[Regression and bounded launch-volume lock correction for run 9](../launch-volume-leases/README.md)
