@@ -25,6 +25,8 @@ The addressed driver checks materialized role images and preserves the initial f
 
 ### Addressed mailbox delivery
 
+The two addressed workload calls and the signed route now share a 15-second host socket deadline. Linux passed 17 SDK dispatch tests and 11 witness tests. [Call lifecycle and component results](evidence/2026-11-12-paired-mailbox/addressed-native-launch/one-shot-call-deadline.md).
+
 A signed Query can now collect its original mailbox helper after a Stop timeout. Worker credit remains charged until the coordinator observes the child exit, and a later Query returns the same terminal status. The Linux worker owner suite passed 17/17. [Late worker collection](evidence/2026-11-12-paired-mailbox/addressed-native-launch/late-worker-collection.md)
 
 Concurrent SDK launches now wait on the tenant coordinator’s original publication lock. A surviving intent after writer failure still refuses admission. Linux passed ten lifecycle tests. macOS passed the same ten and fifteen public coordinator integration tests. [Publication and crash-recovery results](evidence/2026-11-12-paired-mailbox/addressed-native-launch/concurrent-publication.md)

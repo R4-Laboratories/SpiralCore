@@ -1,0 +1,33 @@
+{
+  "platform": "Linux x86_64",
+  "sdk_revision": "8b9f5573e5067a7da174e630d5be11aafe613892",
+  "driver_sdk_revision": "f8066c1f33436050db2ebcc55075368cc68c230c",
+  "driver_sdk_delta": "The final SDK adds only a synthetic host signer in its test fixture.",
+  "driver_cast_readback_sha256": "0d43ee0b22845a1e6b9e2c5506f54fccddd35fd000ecbc55f79236ffbbdc4b94",
+  "driver_addressed_pair_sha256": "9543bac37587b3b85c31ffe88e1b7f6f722399b6b437512e5d812e6d21ea2bfa",
+  "suites": [
+    {
+      "name": "SDK original one-shot control",
+      "passed": 17,
+      "failed": 0,
+      "elapsed_seconds": 0.22,
+      "log_sha256": "d15534f82f9f37b54c8077642be4bdfe34bf8f1f1076ab0e200c4b65fe42b8b5",
+      "executable_sha256": "add7ec594534cf64f939cc69b4a200b9ca3c07a3675216540fdd3a075373e03d",
+      "command": "cargo test --locked --offline -p mvm-client --lib entrypoint::dispatch::tests:: -- --test-threads=1"
+    },
+    {
+      "name": "Addressed installed driver components",
+      "passed": 11,
+      "failed": 0,
+      "elapsed_seconds": 1.55,
+      "log_sha256": "a6edda5b55519d5e69fbcbf43ef758f3fb4685eaaf0c5d8168b7c4ee2735a952",
+      "executable_sha256": "ab08285d54c632f23dc1cd93b26fb4e1d255a85b14576632d4abf7e1cc087cc7",
+      "command": "cargo test --locked --offline --manifest-path addressed-witness/Cargo.toml --lib -- --test-threads=1"
+    }
+  ],
+  "guest_runs": 0,
+  "verified_application_bytes": null,
+  "wire_bytes": null,
+  "workload_cpu_ns": null,
+  "transfer_elapsed_ns": null
+}

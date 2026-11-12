@@ -114,7 +114,7 @@ pub fn verify_during_delivery(
     a: OriginalParticipant<'_>,
     b: OriginalParticipant<'_>,
     expected: &[u8],
-    deliver: impl FnOnce() -> Result<()>,
+    deliver: impl FnOnce(Instant) -> Result<()>,
 ) -> Result<CastReadback> {
     ensure!(
         !expected.is_empty() && expected.len() <= MAX_FIXTURE,
@@ -140,17 +140,18 @@ pub fn verify_during_delivery(
     let (begun, notice) = mpsc::sync_channel(1);
     let destination = b.launch.machine.name.clone();
     let begin = Instant::now();
+    let deadline = begin + READBACK_WINDOW;
     let cpu = ProcessTime::now();
     let captured = thread::scope(|s| -> Result<CapturedOutput> {
         let call = s.spawn(|| -> Result<CapturedOutput> {
             // The thread is scheduled. The signal is not guest-readiness evidence.
             begun.send(()).context("source delivery turn closed")?;
-            call_original(&destination, challenge.to_vec())
+            call_original("destination", &destination, challenge.to_vec(), deadline)
         });
         let direction = notice
-            .recv_timeout(READBACK_WINDOW)
+            .recv_timeout(deadline.saturating_duration_since(Instant::now()))
             .context("destination dispatch did not start")
-            .and_then(|()| deliver());
+            .and_then(|()| deliver(deadline));
         let outcome = call
             .join()
             .map_err(|_| anyhow::anyhow!("destination call thread ended unexpectedly"))?;
@@ -178,13 +179,22 @@ pub fn verify_during_delivery(
     })
 }
 
-fn call_original(name: &str, input: Vec<u8>) -> Result<CapturedOutput> {
+fn call_original(
+    role: &str,
+    name: &str,
+    input: Vec<u8>,
+    deadline: Instant,
+) -> Result<CapturedOutput> {
+    eprintln!(
+        "addressed role={role} call=starting input_bytes={}",
+        input.len()
+    );
     let mut observer = ReadbackObserver {
         captured: CapturedOutput::default(),
         controls: false,
         captured_bytes: 0,
     };
-    let outcome = dispatch::dispatch(
+    let outcome = dispatch::dispatch_one_shot_before(
         EntrypointDispatch {
             vm_name: name,
             stdin: DispatchStdin::OneShot(input),
@@ -192,7 +202,31 @@ fn call_original(name: &str, input: Vec<u8>) -> Result<CapturedOutput> {
             session_id: None,
         },
         &mut observer,
-    )?;
+        deadline,
+    )
+    .inspect_err(|error| {
+        let phase = if error
+            .chain()
+            .any(|c| c.to_string() == "connecting bounded guest control stream")
+        {
+            "connect"
+        } else if error
+            .chain()
+            .any(|c| c.to_string() == "exchanging bounded guest control frames")
+        {
+            "control_exchange"
+        } else {
+            "dispatch"
+        };
+        eprintln!(
+            "addressed role={role} call=failed phase={phase} deadline_elapsed={}",
+            Instant::now() >= deadline
+        );
+    })?;
+    eprintln!(
+        "addressed role={role} call=terminal exit_code={}",
+        outcome.exit_code()
+    );
     ensure!(
         outcome.exit_code() == 0 && !observer.controls && !observer.captured.truncated,
         "original call did not finish with complete workload output"
@@ -217,15 +251,15 @@ pub fn verify_original_pair(
     a: OriginalParticipant<'_>,
     b: OriginalParticipant<'_>,
     expected: &[u8],
-    route: impl FnOnce() -> Result<()>,
+    route: impl FnOnce(Instant) -> Result<()>,
 ) -> Result<AddressedReadback> {
     let name = a.launch.machine.name.clone();
     let mut source = None;
-    let destination = verify_during_delivery(a, b, expected, || {
+    let destination = verify_during_delivery(a, b, expected, |deadline| {
         thread::scope(|scope| -> Result<()> {
             let send = scope.spawn(|| {
                 let start = Instant::now();
-                let out = call_original(&name, expected.to_vec())?;
+                let out = call_original("source", &name, expected.to_vec(), deadline)?;
                 let workload: WorkloadTime = serde_json::from_slice(&out.stderr)
                     .context("invalid original source workload timings")?;
                 let id: [u8; 32] = out.stdout.try_into().map_err(|_| {
@@ -234,7 +268,12 @@ pub fn verify_original_pair(
                 ensure!(id != [0; 32], "missing source message identifier");
                 Ok::<_, anyhow::Error>((id, start.elapsed().as_nanos(), workload))
             });
-            let routed = route();
+            eprintln!("addressed signed_route=starting");
+            let routed = route(deadline);
+            eprintln!(
+                "addressed signed_route={}",
+                if routed.is_ok() { "accepted" } else { "failed" }
+            );
             let (id, elapsed, workload) = send
                 .join()
                 .map_err(|_| anyhow::anyhow!("source workload call ended unexpectedly"))??;
