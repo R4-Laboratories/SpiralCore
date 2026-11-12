@@ -518,12 +518,16 @@ impl Tx {
                 let next = self.sequence.checked_add(1).ok_or(Error::Sequence)?;
                 let header =
                     record::header(self.binding, self.sequence, record::APP_FIN, 0, self.role)?;
-                socket.write_application_fin(&header, until, || self.control.check())?;
+                socket.write_application_fin(
+                    &header,
+                    until,
+                    || self.control.check(),
+                    |n| self.counters.wire(n),
+                )?;
                 #[cfg(test)]
                 fin_tests::after_record_write();
                 self.control.check()?;
                 poll_budget(until)?;
-                self.counters.wire(header.len())?;
                 self.counters.complete(0, false)?;
                 self.sequence = next;
                 Ok(())
