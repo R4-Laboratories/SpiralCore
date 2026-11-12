@@ -8,7 +8,8 @@ use std::os::unix::net::UnixStream;
 use std::path::Path;
 use std::time::{Duration, Instant};
 
-pub(super) struct ReaderIo {
+pub(super) struct ReaderIo<'a> {
+    traffic: &'a mut super::ReaderTraffic,
     socket: UnixStream,
     deadline: Instant,
 }
@@ -20,8 +21,12 @@ fn remaining(deadline: Instant) -> io::Result<Duration> {
         .ok_or_else(|| io::Error::new(io::ErrorKind::TimedOut, "MVM reader deadline"))
 }
 
-impl ReaderIo {
-    pub(super) fn connect(path: &Path, deadline: Instant) -> io::Result<Self> {
+impl<'a> ReaderIo<'a> {
+    pub(super) fn connect(
+        path: &Path,
+        deadline: Instant,
+        traffic: &'a mut super::ReaderTraffic,
+    ) -> io::Result<Self> {
         let path = SocketAddrUnix::new(path)?;
         let socket = socket_with(
             AddressFamily::UNIX,
@@ -35,6 +40,7 @@ impl ReaderIo {
                 Ok(()) => {
                     return Ok(Self {
                         socket: socket.into(),
+                        traffic,
                         deadline,
                     });
                 }
@@ -58,29 +64,45 @@ impl ReaderIo {
                         "MVM reader deadline",
                     ));
                 }
-                Ok(_) => return Ok(()),
+                Ok(_) => return remaining(self.deadline).map(|_| ()),
                 Err(rustix::io::Errno::INTR) => continue,
                 Err(error) => return Err(error.into()),
             }
         }
     }
 }
-impl Read for ReaderIo {
+impl Read for ReaderIo<'_> {
     fn read(&mut self, buffer: &mut [u8]) -> io::Result<usize> {
         loop {
             self.ready(PollFlags::IN)?;
             match self.socket.read(buffer) {
+                Ok(count) => {
+                    self.traffic.read = self
+                        .traffic
+                        .read
+                        .checked_add(count as u64)
+                        .ok_or_else(|| io::Error::other("reader byte count overflow"))?;
+                    return Ok(count);
+                }
                 Err(error) if error.kind() == io::ErrorKind::WouldBlock => continue,
                 result => return result,
             }
         }
     }
 }
-impl Write for ReaderIo {
+impl Write for ReaderIo<'_> {
     fn write(&mut self, buffer: &[u8]) -> io::Result<usize> {
         loop {
             self.ready(PollFlags::OUT)?;
             match self.socket.write(buffer) {
+                Ok(count) => {
+                    self.traffic.written = self
+                        .traffic
+                        .written
+                        .checked_add(count as u64)
+                        .ok_or_else(|| io::Error::other("reader byte count overflow"))?;
+                    return Ok(count);
+                }
                 Err(error) if error.kind() == io::ErrorKind::WouldBlock => continue,
                 result => return result,
             }

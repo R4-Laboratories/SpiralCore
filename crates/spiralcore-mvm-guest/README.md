@@ -26,3 +26,19 @@ cargo test --locked --manifest-path crates/spiralcore-mvm-guest/Cargo.toml --lib
 ```
 
 [Recorded Linux bytes, timings and qualification scope](../../docs/network/evidence/2026-11-12-paired-mailbox/durable-guest-binding/README.md)
+
+## Single-guest warm workload
+
+Install the static Linux executable at `/usr/local/bin/spiralcore-durable-own-mailbox` in an MVM workload image. Admit the trusted-host local-durable mailbox policy, its guest reader, one warm worker, and the normal private guest tmpfs. The caller supplies one canonical encoded SpiralCore frame in `WorkerCallRequest.stdin`, with an empty environment override list and a 45-second call budget. This fixture accepts an encoded frame of at most 16 KiB so the base64 payload and signed lease fit the upstream reader's 64 KiB JSON response limit.
+
+The workload reserves `/tmp/spiralcore-durable-own-mailbox` for one invocation per fresh guest boot and stages the frame to its own mailbox. It compares the received message ID and full encoded frame with the staged original. Before acknowledging the delivery it writes the received body to a private file, syncs the file and its directory, reopens it and compares every byte with the original body. The file remains in guest tmpfs until teardown. After a failed operation a second invocation in that boot refuses to restage. An interrupted ACK can leave the upstream outcome uncertain.
+
+A successful worker response contains compact JSON with the message ID, SHA-256 of the body, exact body and frame lengths, completed application socket bytes in both directions for Receive and ACK, empty-poll count, per-phase elapsed times, workload CPU time, and wall time. These clocks start inside the workload. Guest boot, host journal CPU, vsock traffic and any WAN carrier require separate measurements.
+
+```sh
+cargo test --locked --manifest-path crates/spiralcore-mvm-guest/Cargo.toml --all-targets
+cargo zigbuild --locked --release --target x86_64-unknown-linux-musl \
+  --manifest-path crates/spiralcore-mvm-guest/Cargo.toml --bin spiralcore-durable-own-mailbox
+```
+
+[Static binary and component measurements](../../docs/network/evidence/2026-11-12-paired-mailbox/durable-guest-binding/own-workload.json)

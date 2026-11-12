@@ -90,14 +90,22 @@ fn standard_mailbox_application_stages_receives_and_explicitly_acks_exact_frame(
         let pending = PendingFrame::new(&expected).unwrap();
         pending.stage_at(&slot).unwrap();
         staged_tx.send(pending.message_id()).unwrap();
-        let request = |value| request_at(value, &path, Instant::now() + Duration::from_secs(2));
+        let mut traffic = ReaderTraffic::default();
+        let mut request = |value| {
+            request_at(
+                value,
+                &path,
+                Instant::now() + Duration::from_secs(2),
+                &mut traffic,
+            )
+        };
         let delivery = decode_delivery(request(ApplicationReaderRequest::Receive).unwrap())
             .unwrap()
             .unwrap();
         assert_eq!(delivery.frame(), &expected);
         assert_eq!(delivery.message_id(), pending.message_id());
         delivery.ack_with(request).unwrap();
-        (cpu.elapsed(), start.elapsed())
+        (cpu.elapsed(), start.elapsed(), traffic)
     });
     let id = staged_rx.recv_timeout(Duration::from_secs(3)).unwrap();
     let mail =
@@ -187,7 +195,9 @@ fn standard_mailbox_application_stages_receives_and_explicitly_acks_exact_frame(
         write_response(&mut meter, &response).unwrap();
         operations.push((meter.read, meter.wrote));
     }
-    let (cpu, wall) = worker.join().unwrap();
+    let (cpu, wall, traffic) = worker.join().unwrap();
+    assert_eq!(traffic.written, (operations[0].0 + operations[1].0) as u64);
+    assert_eq!(traffic.read, (operations[0].1 + operations[1].1) as u64);
     println!(
         "frame_body_bytes=257 encoded_bytes={} local_outbox_file_bytes={} receive_request_bytes={} delivery_response_bytes={} ack_request_bytes={} ack_response_bytes={} application_thread_cpu_ns={} application_wall_ns={}",
         mail.body.len(),
@@ -237,7 +247,15 @@ fn reader_deadline_preserves_ambiguous_partial_response() {
         stop.recv_timeout(Duration::from_secs(3)).unwrap();
     });
     let deadline = Instant::now() + Duration::from_millis(120);
-    let response = request_at(ApplicationReaderRequest::Receive, &path, deadline);
+    let mut traffic = ReaderTraffic::default();
+    let response = request_at(
+        ApplicationReaderRequest::Receive,
+        &path,
+        deadline,
+        &mut traffic,
+    );
+    assert_eq!(traffic.read, 1);
+    assert!(traffic.written > 0);
     done.send(()).unwrap();
     server.join().unwrap();
     assert!(matches!(response, Err(Error::Io(ref e)) if e.kind()==io::ErrorKind::TimedOut));

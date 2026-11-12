@@ -20,6 +20,14 @@ use std::{
 
 mod reader_io;
 
+/// Bytes returned by completed guest-local application socket reads and writes,
+/// including partial replies and empty-mailbox polls. The caller owns the scope.
+#[derive(Debug, Default, Copy, Clone, PartialEq, Eq)]
+pub struct ReaderTraffic {
+    pub written: u64,
+    pub read: u64,
+}
+
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     #[error("SpiralCore frame: {0}")]
@@ -102,7 +110,18 @@ impl Delivery {
     /// Call only after the application has committed processing of this frame.
     /// Keep this delivery on error: an interrupted ACK reply is ambiguous.
     pub fn acknowledge(&self) -> Result<(), Error> {
-        self.ack_with(request)
+        self.acknowledge_before(
+            Instant::now() + Duration::from_secs(12),
+            &mut ReaderTraffic::default(),
+        )
+    }
+
+    pub fn acknowledge_before(
+        &self,
+        deadline: Instant,
+        traffic: &mut ReaderTraffic,
+    ) -> Result<(), Error> {
+        self.ack_with(|value| request(value, deadline, traffic))
     }
 
     fn ack_with(
@@ -119,11 +138,16 @@ impl Delivery {
     }
 }
 
-fn request(value: ApplicationReaderRequest) -> Result<ReaderResponse, Error> {
+fn request(
+    value: ApplicationReaderRequest,
+    deadline: Instant,
+    traffic: &mut ReaderTraffic,
+) -> Result<ReaderResponse, Error> {
     request_at(
         value,
         Path::new(GUEST_READER_SOCKET_PATH),
-        Instant::now() + Duration::from_secs(12),
+        deadline.min(Instant::now() + Duration::from_secs(12)),
+        traffic,
     )
 }
 
@@ -131,8 +155,9 @@ fn request_at(
     value: ApplicationReaderRequest,
     path: &Path,
     deadline: Instant,
+    traffic: &mut ReaderTraffic,
 ) -> Result<ReaderResponse, Error> {
-    let mut socket = reader_io::ReaderIo::connect(path, deadline)?;
+    let mut socket = reader_io::ReaderIo::connect(path, deadline, traffic)?;
     let result =
         write_application_request(&mut socket, &value).and_then(|()| read_response(&mut socket));
     // The wire codec maps I/O failures to protocol refusals. Preserve the
@@ -146,7 +171,22 @@ fn request_at(
 /// Read a delivery without acknowledging it. An empty mailbox returns None.
 /// MVM authenticates the local delivery lease before disclosing the message.
 pub fn receive() -> Result<Option<Delivery>, Error> {
-    decode_delivery(request(ApplicationReaderRequest::Receive)?)
+    receive_before(
+        Instant::now() + Duration::from_secs(12),
+        &mut ReaderTraffic::default(),
+    )
+}
+
+/// Receive against the caller's operation deadline. Counts completed local socket I/O.
+pub fn receive_before(
+    deadline: Instant,
+    traffic: &mut ReaderTraffic,
+) -> Result<Option<Delivery>, Error> {
+    decode_delivery(request(
+        ApplicationReaderRequest::Receive,
+        deadline,
+        traffic,
+    )?)
 }
 
 fn decode_delivery(response: ReaderResponse) -> Result<Option<Delivery>, Error> {
