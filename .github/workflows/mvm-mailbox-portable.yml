@@ -169,7 +169,7 @@ jobs:
           $ErrorActionPreference = 'Stop'
           $PSNativeCommandUseErrorActionPreference = $false
           $crate = 'crates/spiralcore-transfer/Cargo.toml'
-          $storageExpected = if ($IsWindows) { 4 } else { 3 }
+          $storageExpected = if ($IsWindows) { 4 } else { 5 }
           $endpointExpected = if ($IsWindows) { 20 } else { 21 }
           $targets = @(
             @{ id = 'private-object-storage'; flags = @('--lib', 'endpoint::storage_tests'); expected = $storageExpected; filtered = $true },

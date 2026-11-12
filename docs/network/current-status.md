@@ -10,6 +10,8 @@ The shared Raw sender now splits a 4,096-byte literal into two Data frames under
 
 The shared sender now validates and settles one application Reply before issuing the next Call. A component run on both Linux and macOS sent 4,658 encoded bytes cold and 190 bytes for the identical 4 KiB repeat, including both directions. [CPU, wall time, ACK failures and measurement boundary](evidence/2026-11-12-paired-mailbox/paired-durable-native/leased-object-sender.md).
 
+The Linux `mvm-mailbox` worker can handle a selected Object-v1 Call or Reply over the original guest agent and two host sockets. A focused check recovered the same sealed Call after a lost response. The executable, 19 component checks and separate guest/host counter definitions are published. Installed cold and warm transfer results remain open. [Source, test commands and measurement boundaries](evidence/2026-11-12-paired-mailbox/paired-durable-native/selected-worker.md).
+
 The paired qualification driver supplies the fixture only to A and requires B to return the exact bytes through its own reader on both the cold transfer and the repeat. It checks that the same B worker handled both phases and records application bytes, CPU and elapsed time. Running it against the installed two-guest return route remains open. [Command and counter definitions](../../tools/ari-own-mailbox-witness/paired-native.md#measuring-an-installed-cold-object-and-its-exact-repeat).
 
 The MVM source owner now stores the exact sealed Call or Reply before forwarding. On Linux, reopening and resending the same five-byte Call to a durable journal returned the identical signed receipt in five socket trials. The median first/retry exchange took 1.098/0.588 ms. The installed listener and two-guest warm repeat remain open. [Source, both directions of traffic and CPU](evidence/2026-11-12-paired-mailbox/paired-durable-native/original-object-intent.md).
@@ -127,6 +129,8 @@ failed Windows wake and macOS fixture attempts. This is accepted component
 progress, not installed MVM or WAN qualification.
 
 The ordered-cache successor [PR194](https://github.com/R4-Laboratories/SpiralCore/pull/194) carries forward the scoped FlowMux and Windows storage changes from [PR106](https://github.com/R4-Laboratories/SpiralCore/pull/106). Its ordinary Windows Server 2022 run reached the whole-test deadline after 3,598 blocks each way. The ordinary Windows Server 2025 run stopped on a read deadline despite a passing instrumented run. The release gate remains open. [Current platform measurements](evidence/2026-11-12-ordered-flowmux/README.md) · [Earlier development evidence](https://github.com/R4-Laboratories/SpiralCore/blob/5db896ab/docs/network/evidence/2026-11-10-ordered-scope/README.md)
+
+A later Windows Server 2025 ordinary stream stopped at block 2,352. In the same workflow, a separate Linux persistent HTTP test failed to reopen its cache. The Unix reopen correction passed the original two concurrent tests 30 times on Linux and preserves exclusive access during handoff. [Cache-reopen trace and results](evidence/2026-11-12-ordered-flowmux/cache-reopen.md) · [Latest Windows timing and quota measurements](https://github.com/R4-Laboratories/SpiralCore/issues/44#issuecomment-6831573987).
 
 ## Active upstream MVM coordination
 

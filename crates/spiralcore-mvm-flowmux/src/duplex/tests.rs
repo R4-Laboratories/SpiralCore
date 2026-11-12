@@ -1,4 +1,5 @@
-use spiralcore_mvm_flowmux::{Binding, Duplex, Event, ObjectChannel, Role};
+use crate as spiralcore_mvm_flowmux;
+use crate::{Binding, Duplex, Event, ObjectChannel, Role};
 use spiralcore_transfer::{
     endpoint::{Authority, Context, Limits},
     v1::{Capabilities, ObjectEndpoint, ObjectMode, ObjectSender},
@@ -220,14 +221,17 @@ fn full_delivery_queue_backpressures_then_times_out_without_extra_published_ack(
         "queue-bound",
         ObjectMode::Whole,
         [Role::Initiator, Role::Acceptor],
-        Duration::from_millis(180),
+        Duration::from_secs(2),
     );
     for i in 0..4 {
         left_tx.send_block(vec![i; 1024]).unwrap();
     }
     let start = std::time::Instant::now();
     assert!(
-        left_tx.send_block(vec![4; 1024]).is_err(),
+        matches!(
+            left_tx.send_until(vec![4; 1024], start + Duration::from_millis(180)),
+            Err(crate::Error::Timeout)
+        ),
         "fifth block cannot receive Published while delivery queue remains full"
     );
     assert!(start.elapsed() < Duration::from_secs(2));
