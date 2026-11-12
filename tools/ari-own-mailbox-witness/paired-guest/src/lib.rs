@@ -1,5 +1,7 @@
 mod control;
 mod fixture;
+#[cfg(feature="object-reader-v1")]
+pub mod object_reader;
 mod retirement;
 use anyhow::{Context, Result, ensure};
 use cpu_time::ProcessTime;
