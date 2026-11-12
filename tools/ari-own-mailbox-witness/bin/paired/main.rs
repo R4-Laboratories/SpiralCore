@@ -7,6 +7,8 @@ mod native_backend;
 mod object_enrollment;
 mod object_repeat;
 mod receipt_retry;
+#[cfg(feature = "sender-ordinal-v1")]
+mod sender_ordinal;
 mod series;
 mod transfer;
 mod workload;
@@ -234,12 +236,27 @@ fn run(args: &[String]) -> Result<()> {
         [flag, backend, rest @ ..] if flag == "--backend" => (Some(backend.as_str()), rest),
         _ => (None, args),
     };
+    #[cfg(feature = "sender-ordinal-v1")]
+    let (ordinal_count, inputs) = match inputs {
+        [flag, total, rest @ ..] if flag == "--sender-ordinals" => {
+            let count: usize = total.parse()?;
+            ensure!(
+                (1..=2049).contains(&count) && !cfg!(feature = "receipt-loss-qualification"),
+                "invalid ordinal campaign"
+            );
+            (Some(count), rest)
+        }
+        _ => (None, inputs),
+    };
+    #[cfg(not(feature = "sender-ordinal-v1"))]
+    let ordinal_count: Option<usize> = None;
     let (operations, inputs) = match inputs {
         [flag, total, rest @ ..] if flag == "--objects" => (Some(series::count(total)?), rest),
         _ => (None, inputs),
     };
     ensure!(
-        operations.is_none() || !cfg!(feature = "receipt-loss-qualification"),
+        operations.is_none()
+            || (ordinal_count.is_none() && !cfg!(feature = "receipt-loss-qualification")),
         "series and recovery are separate measurements"
     );
     let native = native_backend::select(env::consts::OS, env::consts::ARCH, requested)
@@ -277,6 +294,12 @@ fn run(args: &[String]) -> Result<()> {
     let mut state = State::default();
     let measured = (|| -> Result<Value> {
         let setup = Enrollment::new()?;
+        #[cfg(feature = "sender-ordinal-v1")]
+        let setup = {
+            let mut s = setup;
+            s.sender_ordinals = ordinal_count.is_some();
+            s
+        };
         for (i, name, path) in [(1, B, bi), (0, A, ai)] {
             let r =
                 LaunchRequest::builder(LifecycleMode::Persistent, RootfsSource::LocalPath(path))
@@ -285,7 +308,9 @@ fn run(args: &[String]) -> Result<()> {
                     .backend(native)
                     .cpus(1)
                     .memory_mib(256)
-                    .ttl_seconds(180)
+                    .ttl_seconds(
+                        ordinal_count.map_or(180, |n| (n as u64 * 2 + 60).clamp(180, 3600)),
+                    )
                     .build()?;
             backend.create_from_request(&r)?;
             state.defined[i] = true;
@@ -348,7 +373,15 @@ fn run(args: &[String]) -> Result<()> {
         let commitment = journal_direction_commitment(&boot)?;
         let setup_ns = begin.elapsed().as_nanos() as u64;
         let helper = state.a.as_mut().context("source helper missing")?;
-        let mut result = if let Some(count) = operations {
+        #[cfg(feature = "sender-ordinal-v1")]
+        let ordinal_result = ordinal_count
+            .map(|count| sender_ordinal::campaign(count, &home, &direction, commitment, helper))
+            .transpose()?;
+        #[cfg(not(feature = "sender-ordinal-v1"))]
+        let ordinal_result: Option<Value> = None;
+        let mut result = if let Some(row) = ordinal_result {
+            row
+        } else if let Some(count) = operations {
             let start = Instant::now();
             let mut rows = Vec::with_capacity(count);
             let mut progress = fs::OpenOptions::new()
