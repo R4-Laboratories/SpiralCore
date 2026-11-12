@@ -1844,6 +1844,10 @@ pub struct LocalMailboxService {
     scope_charges: HashMap<ScopeKey, Reservation>,
 }
 impl LocalMailboxService {
+    pub(crate) fn max_payload_bytes(&self) -> usize {
+        self.budget.limits.max_payload_bytes
+    }
+
     pub fn snapshot(&self) -> ServiceSnapshot {
         let (fifo_scopes, fifo_entries) = self.ordering.counts();
         ServiceSnapshot {

@@ -1,7 +1,7 @@
 //! Local metadata builders; MVM owns sealing and transport authorization.
 use crate::{
     receipt::receipt_content_type,
-    service::{AdmittedMessage, MailboxBinding, ServiceError, ServiceTime},
+    service::{AdmittedMessage, LocalMailboxService, MailboxBinding, ServiceError, ServiceTime},
 };
 use mvm_contract::protocol::mailbox::*;
 use mvm_core::mailbox::{
@@ -128,6 +128,53 @@ fn random_scope() -> OrderingScope {
         write!(&mut scope, "{byte:02x}").expect("writing to a String");
     }
     OrderingScope::parse(scope).expect("64 hexadecimal characters form an ordering scope")
+}
+
+/// Plan Raw frame sizes for the in-process Call/Reply mapping. Only public
+/// grant metadata is read. This snapshot grants no send or receive authority;
+/// request preparation, service admission and reply correlation still recheck
+/// the original scope on every turn.
+pub fn object_raw_frame_limits(
+    call: &MailboxBinding,
+    reply: &MailboxBinding,
+    services: [&LocalMailboxService; 2],
+    return_route: &ReplyRoute,
+    now: ServiceTime,
+) -> Result<spiralcore_transfer::client::RawFrameLimits> {
+    let object_type = crate::content_type().map_err(|_| ServiceError::State)?;
+    // The checks acquire each policy lock independently. Never hold one
+    // binding lock while validating the other.
+    // A registers Calls and admits Replies. B admits Calls and prepares Replies.
+    // Each plaintext is checked at both services.
+    let service_limit = services[0]
+        .max_payload_bytes()
+        .min(services[1].max_payload_bytes());
+    let capacity = |binding: &MailboxBinding, kind| {
+        binding.with_checked(now, |_, _| {
+            let grant = binding.capability_grant();
+            if grant.message_kinds != [kind] || !grant.content_types.contains(&object_type) {
+                return Err(ServiceError::Unauthorized);
+            }
+            Ok(service_limit.min(grant.max_payload_bytes as usize))
+        })
+    };
+    let request_bytes = capacity(call, MailboxMessageKind::Call)?;
+    let reply_bytes = capacity(reply, MailboxMessageKind::Reply)?;
+    let forward = call.capability_grant();
+    let reverse = reply.capability_grant();
+    if reverse.address != return_route.address
+        || reverse.capability_id != return_route.capability_id
+        || reverse.subject != forward.address.recipient
+        || reverse.address.recipient != forward.subject
+        || reverse.address.tenant != forward.address.tenant
+        || reverse.address.authorization_domain != forward.address.authorization_domain
+    {
+        return Err(ServiceError::Unauthorized);
+    }
+    Ok(spiralcore_transfer::client::RawFrameLimits {
+        request_bytes,
+        reply_bytes,
+    })
 }
 
 /// Authenticated producer namespace only, never a receiver authority lease.
