@@ -1,4 +1,4 @@
-use crate::{dag::Manifest, hash, Error, Id, Result, MAX_FRAME, MAX_OBJECT};
+use crate::{Error, Id, MAX_FRAME, MAX_OBJECT, Result, dag::Manifest, hash};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Frame {
@@ -8,14 +8,20 @@ pub struct Frame {
     pub body: Vec<u8>,
 }
 impl Frame {
-    pub fn encode(&self) -> Result<Vec<u8>> {
-        if self.body.len() > MAX_FRAME - 56 {
+    pub const HEADER_BYTES: usize = 56;
+
+    pub fn encoded_len(&self) -> Result<usize> {
+        if self.body.len() > MAX_FRAME - Self::HEADER_BYTES {
             return Err(Error::Limit);
         }
         if !matches!(self.kind, 1..=6 | 101..=105 | 127) {
             return Err(Error::Unsupported);
         }
-        let mut b = Vec::with_capacity(56 + self.body.len());
+        Ok(Self::HEADER_BYTES + self.body.len())
+    }
+
+    pub fn encode(&self) -> Result<Vec<u8>> {
+        let mut b = Vec::with_capacity(self.encoded_len()?);
         b.extend_from_slice(b"SCMOBJ01");
         b.extend_from_slice(&[self.kind, 0, 0, 0]);
         b.extend_from_slice(&self.transfer);

@@ -1,9 +1,9 @@
 //! Synchronous bounded sender. The exchange implementation owns transport authentication.
 use crate::{
+    Error, Id, MAX_CHUNK, MAX_OBJECT, Result,
     dag::{Graph, Node},
     prepared::PreparedDelta,
     protocol::{Frame, Mode, Offer, Reader},
-    Error, Id, Result, MAX_CHUNK, MAX_OBJECT,
 };
 use std::{collections::BTreeSet, time::Instant};
 
@@ -18,6 +18,8 @@ pub struct Stats {
     pub requests: usize,
     pub elapsed_micros: u128,
 }
+const MAX_TRANSFER_FRAMES: usize = 4096;
+
 struct Sender<F> {
     exchange: F,
     id: Id,
@@ -26,7 +28,7 @@ struct Sender<F> {
 }
 impl<F: FnMut(&Frame) -> Result<Frame>> Sender<F> {
     fn call(&mut self, kind: u8, body: Vec<u8>) -> Result<Frame> {
-        if self.seq >= 4096 {
+        if self.seq >= MAX_TRANSFER_FRAMES as u64 {
             return Err(Error::Limit);
         }
         let f = Frame {
@@ -256,7 +258,7 @@ struct BatchSender<F> {
 }
 impl<F: FnMut(&[Frame]) -> Result<Vec<Frame>>> BatchSender<F> {
     fn frame(&mut self, kind: u8, body: Vec<u8>) -> Result<Frame> {
-        if self.next >= 4096 {
+        if self.next >= MAX_TRANSFER_FRAMES as u64 {
             return Err(Error::Limit);
         }
         let frame = Frame {
@@ -479,6 +481,67 @@ fn repair_nodes_from<'a>(
 /// Begin/Data/Finish are uploaded together when they fit, even if Begin later returns Published.
 /// Request statistics count all uploaded frames; response statistics count only actual replies.
 /// Envelope/TLS/HTTP bytes belong to the adapter's separate measurements.
+/// Per-message plaintext budgets. These numbers constrain framing only; the
+/// exchange still owns authorization, receipt correlation and transport I/O.
+#[derive(Clone, Copy, Debug)]
+pub struct RawFrameLimits {
+    pub request_bytes: usize,
+    pub reply_bytes: usize,
+}
+
+/// Use the existing Raw Offer, Data and Finish messages with a smaller Data
+/// chunk when required by the carrier. Check that a cold fallback can finish
+/// inside the sequence budget before sending even a warm probe.
+pub fn transfer_raw_capped_batched<F: FnMut(&[Frame]) -> Result<Vec<Frame>>>(
+    bytes: &[u8],
+    transfer_id: Id,
+    warm_probe: bool,
+    limits: RawFrameLimits,
+    mut exchange: F,
+) -> Result<Stats> {
+    let start = Instant::now();
+    if bytes.len() > MAX_BATCHED_OBJECT {
+        return Err(Error::Limit);
+    }
+    let offer = Offer::cold(bytes, Mode::Raw);
+    let offer_bytes = Frame::HEADER_BYTES + offer.encode()?.len();
+    let published_bytes = Frame::HEADER_BYTES + offer.object.len();
+    if limits.request_bytes < offer_bytes || limits.reply_bytes < published_bytes {
+        return Err(Error::Limit);
+    }
+    // A literal Data body contains the encoding tag and original u32 length.
+    let chunk = limits
+        .request_bytes
+        .checked_sub(Frame::HEADER_BYTES + 1 + size_of::<u32>())
+        .filter(|n| *n > 0)
+        .ok_or(Error::Limit)?
+        .min(MAX_CHUNK);
+    if bytes.len().div_ceil(chunk) > MAX_TRANSFER_FRAMES - 2 {
+        return Err(Error::Limit);
+    }
+    send_batched(
+        offer,
+        BatchedPayload::Bytes(bytes, chunk),
+        transfer_id,
+        warm_probe,
+        |frames| {
+            for frame in frames {
+                if frame.encoded_len()? > limits.request_bytes {
+                    return Err(Error::Limit);
+                }
+            }
+            let replies = exchange(frames)?;
+            for frame in &replies {
+                if frame.encoded_len()? > limits.reply_bytes {
+                    return Err(Error::Limit);
+                }
+            }
+            Ok(replies)
+        },
+        start,
+    )
+}
+
 pub fn transfer_batched<F: FnMut(&[Frame]) -> Result<Vec<Frame>>>(
     bytes: &[u8],
     mode: Mode,
@@ -527,7 +590,7 @@ pub fn transfer_batched<F: FnMut(&[Frame]) -> Result<Vec<Frame>>>(
     };
     let payload = match &graph {
         Some(graph) => BatchedPayload::Graph(graph, base),
-        None => BatchedPayload::Bytes(bytes),
+        None => BatchedPayload::Bytes(bytes, MAX_CHUNK),
     };
     send_batched(offer, payload, transfer_id, warm_probe, exchange, start)
 }
@@ -552,7 +615,7 @@ pub(crate) fn transfer_acknowledged_repeat_batched<F: FnMut(&[Frame]) -> Result<
     };
     send_batched(
         offer,
-        BatchedPayload::Bytes(base.bytes()),
+        BatchedPayload::Bytes(base.bytes(), MAX_CHUNK),
         transfer_id,
         true,
         exchange,
@@ -747,7 +810,7 @@ pub fn transfer_schema_selection_batched<F: FnMut(&[Frame]) -> Result<Vec<Frame>
     match prepared.payload {
         crate::schema_selection::Payload::Raw(bytes) => send_batched(
             offer,
-            BatchedPayload::Bytes(&bytes),
+            BatchedPayload::Bytes(&bytes, MAX_CHUNK),
             transfer_id,
             warm_probe,
             exchange,
@@ -779,7 +842,7 @@ pub fn transfer_warm_selection_batched<F: FnMut(&[Frame]) -> Result<Vec<Frame>>>
     match prepared.payload {
         crate::schema_selection::Payload::Raw(bytes) => send_batched(
             offer,
-            BatchedPayload::Bytes(&bytes),
+            BatchedPayload::Bytes(&bytes, MAX_CHUNK),
             transfer_id,
             warm_probe,
             exchange,
@@ -1115,7 +1178,7 @@ where
     };
     let payload = match prepared.bodies {
         Some(bodies) => BatchedPayload::Encoded(bodies),
-        None => BatchedPayload::Bytes(target),
+        None => BatchedPayload::Bytes(target, MAX_CHUNK),
     };
     let transfer = send_batched(offer, payload, transfer_id, warm_probe, exchange, start)?;
     Ok(AdaptiveStats {
@@ -1157,7 +1220,7 @@ pub fn transfer_adaptive_batched<F: FnMut(&[Frame]) -> Result<Vec<Frame>>>(
     };
     let payload = match prepared.bodies {
         Some(bodies) => BatchedPayload::Encoded(bodies),
-        None => BatchedPayload::Bytes(target),
+        None => BatchedPayload::Bytes(target, MAX_CHUNK),
     };
     let transfer = send_batched(offer, payload, transfer_id, warm_probe, exchange, start)?;
     Ok(AdaptiveStats {
@@ -1167,7 +1230,7 @@ pub fn transfer_adaptive_batched<F: FnMut(&[Frame]) -> Result<Vec<Frame>>>(
 }
 
 enum BatchedPayload<'a> {
-    Bytes(&'a [u8]),
+    Bytes(&'a [u8], usize),
     Graph(&'a Graph, Option<&'a Graph>),
     Prepared(&'a PreparedDelta),
     Sparse(crate::delta::Recipe),
@@ -1233,8 +1296,8 @@ fn send_batched<F: FnMut(&[Frame]) -> Result<Vec<Frame>>>(
                 .collect::<Vec<_>>();
             sender.records(&nodes, &mut frames)?;
         }
-        BatchedPayload::Bytes(bytes) => {
-            for chunk in bytes.chunks(MAX_CHUNK) {
+        BatchedPayload::Bytes(bytes, chunk_size) => {
+            for chunk in bytes.chunks(*chunk_size) {
                 let compressed = if mode == Mode::Zstd {
                     Some(zstd::bulk::compress(chunk, 1).map_err(|_| Error::Malformed)?)
                 } else {
@@ -1274,7 +1337,7 @@ fn send_batched<F: FnMut(&[Frame]) -> Result<Vec<Frame>>>(
                     BatchedPayload::Prepared(target) => {
                         repair_nodes_from(ids, target.node_count(), |id| target.node(id))?
                     }
-                    BatchedPayload::Bytes(_)
+                    BatchedPayload::Bytes(_, _)
                     | BatchedPayload::Sparse(_)
                     | BatchedPayload::Prefix(_)
                     | BatchedPayload::Encoded(_) => return Err(Error::Integrity),

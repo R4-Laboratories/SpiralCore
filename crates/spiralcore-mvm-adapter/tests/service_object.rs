@@ -150,12 +150,19 @@ fn check_exact_repeat(binding: MailboxBinding, reverse: MailboxBinding, expected
         let mut reverse_envelopes = 0;
         let wall = std::time::Instant::now();
         let cpu = cpu_time::ThreadTime::now();
-        let stats = client::transfer_batched(
+        let limits = service_sender::object_raw_frame_limits(
+            &binding,
+            &reverse,
+            [&caller, &service],
+            route.as_ref().unwrap(),
+            now(),
+        )
+        .unwrap();
+        let stats = client::transfer_raw_capped_batched(
             &expected,
-            Mode::Raw,
-            None,
             [73 + attempt as u8; 32],
             warm,
+            limits,
             |frames| {
                 let mut replies = Vec::new();
                 for frame in frames {
@@ -444,4 +451,44 @@ fn admitted_cast_is_not_an_object_protocol_call() {
             .read_object(&binding, &message, object_id(&[]), now())
             .is_err()
     );
+}
+
+#[test]
+fn raw_budget_checks_both_original_grants_route_and_recipient_limits() {
+    use mvm_contract::protocol::mailbox::CapabilityId;
+    let call = binding();
+    let reply = reply_binding();
+    let local = |max_payload_bytes| {
+        LocalMailboxService::new(
+            HostBudget::new(ServiceLimits {
+                max_payload_bytes,
+                ..ServiceLimits::default()
+            })
+            .unwrap(),
+        )
+        .unwrap()
+    };
+    let b = local(1300);
+    let a = local(90);
+    let mut route = common::config(MailboxMessageKind::Call).reply_to.unwrap();
+    let lookup = |time, route: &_| {
+        service_sender::object_raw_frame_limits(&call, &reply, [&a, &b], route, time)
+    };
+    let limits = lookup(now(), &route).unwrap();
+    assert_eq!((limits.request_bytes, limits.reply_bytes), (90, 90));
+    assert!(matches!(
+        lookup(
+            ServiceTime {
+                unix_ms: 3000,
+                monotonic_ms: 1501
+            },
+            &route
+        ),
+        Err(ServiceError::Unauthorized)
+    ));
+    route.capability_id = CapabilityId::from_bytes([99; 32]);
+    assert!(matches!(
+        lookup(now(), &route),
+        Err(ServiceError::Unauthorized)
+    ));
 }

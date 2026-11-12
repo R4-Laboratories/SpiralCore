@@ -1,10 +1,10 @@
 use spiralcore_transfer::{
+    Error, Result,
     client::{transfer, transfer_batched},
     dag::Graph,
     endpoint::{Authority, Context, Endpoint, Limits},
     object_id,
     protocol::{Frame, Mode},
-    Error, Result,
 };
 use std::{
     path::PathBuf,
@@ -424,5 +424,101 @@ fn large_dag_is_split_with_bounded_batches_and_exact_sequence() {
     assert_eq!(
         endpoint.read_object(&context(), stats.object).unwrap(),
         payload
+    );
+}
+
+#[test]
+fn capped_raw_fits_each_frame_and_preserves_legacy_wire_at_the_default_cap() {
+    use spiralcore_transfer::client::{RawFrameLimits, transfer_raw_capped_batched};
+    let body = bytes(4096);
+    for (cap, payloads) in [(4152, vec![4091, 5]), (4157, vec![4096])] {
+        let root = Temp::new();
+        let mut endpoint = root.endpoint();
+        let mut sent = Vec::new();
+        let mut returned = Vec::new();
+        let stats = transfer_raw_capped_batched(
+            &body,
+            [45; 32],
+            false,
+            RawFrameLimits {
+                request_bytes: cap,
+                reply_bytes: 88,
+            },
+            |frames| {
+                sent.extend_from_slice(frames);
+                let replies = process(&mut endpoint, frames)?;
+                returned.extend_from_slice(&replies);
+                Ok(replies)
+            },
+        )
+        .unwrap();
+        assert_eq!(stats.data_bytes, 4096);
+        assert_eq!(
+            endpoint.read_object(&context(), stats.object).unwrap(),
+            body
+        );
+        assert_eq!(
+            sent.iter()
+                .filter(|f| f.kind == 2)
+                .map(|f| f.body.len() - 5)
+                .collect::<Vec<_>>(),
+            payloads
+        );
+        assert!(sent.iter().all(|f| f.encode().unwrap().len() <= cap));
+        assert!(returned.iter().all(|f| f.encode().unwrap().len() <= 88));
+        if cap == 4157 {
+            let mut legacy = Vec::new();
+            let root = Temp::new();
+            let mut endpoint = root.endpoint();
+            transfer_batched(&body, Mode::Raw, None, [45; 32], false, |frames| {
+                legacy.extend_from_slice(frames);
+                process(&mut endpoint, frames)
+            })
+            .unwrap();
+            assert_eq!(sent, legacy);
+        }
+    }
+}
+
+#[test]
+fn capped_raw_checks_offer_reply_and_sequence_limits_before_exchange() {
+    use spiralcore_transfer::client::{RawFrameLimits, transfer_raw_capped_batched};
+    for (request_bytes, reply_bytes, len) in [
+        (0, 88, 1),
+        (101, 88, 0),
+        (102, 87, 0),
+        (102, 88, 41 * 4094 + 1),
+    ] {
+        let result = transfer_raw_capped_batched(
+            &vec![0; len],
+            [46; 32],
+            true,
+            RawFrameLimits {
+                request_bytes,
+                reply_bytes,
+            },
+            |_| panic!("unusable cold fallback reached the carrier"),
+        );
+        assert!(matches!(result, Err(Error::Limit)));
+    }
+    let limits = RawFrameLimits {
+        request_bytes: 102,
+        reply_bytes: 88,
+    };
+    let result = transfer_raw_capped_batched(&[], [47; 32], true, limits, |frames| {
+        Ok(vec![frames[0].reply(103, vec![0; 33])])
+    });
+    assert!(matches!(result, Err(Error::Limit)));
+    let root = Temp::new();
+    let mut endpoint = root.endpoint();
+    let empty = transfer_raw_capped_batched(&[], [48; 32], true, limits, |frames| {
+        process(&mut endpoint, frames)
+    })
+    .unwrap();
+    assert!(
+        endpoint
+            .read_object(&context(), empty.object)
+            .unwrap()
+            .is_empty()
     );
 }
