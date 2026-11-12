@@ -1,9 +1,27 @@
 use anyhow::{Context, Result, ensure};
-use std::{env, path::PathBuf};
+use mvm_core::arch::GuestArch;
+use std::{env, ffi::OsString, path::PathBuf};
+
+fn inputs(mut args: impl Iterator<Item = OsString>) -> Result<(PathBuf, GuestArch)> {
+    let source = args.next().context("missing pinned source")?;
+    let arch = match args.next() {
+        None => GuestArch::host(),
+        Some(value) => value
+            .to_str()
+            .context("invalid guest architecture")?
+            .parse()?,
+    };
+    ensure!(
+        args.next().is_none(),
+        "expected prepare SOURCE [GUEST_ARCH]"
+    );
+    Ok((PathBuf::from(source), arch))
+}
+
 fn main() -> Result<()> {
+    let (source, arch) = inputs(env::args_os().skip(1))?;
+    let source = source.canonicalize()?;
     let home = PathBuf::from(env::var_os("MVM_HOME").context("MVM_HOME")?);
-    let source =
-        PathBuf::from(env::args_os().nth(1).context("missing pinned source")?).canonicalize()?;
     ensure!(
         home.is_absolute() && home.canonicalize()? == home && !home.join("vms").exists(),
         "isolated unoccupied native home required"
@@ -20,7 +38,6 @@ fn main() -> Result<()> {
         },
         None,
     )?;
-    let arch = mvm_core::arch::GuestArch::host();
     let cache = PathBuf::from(mvm_core::config::mvm_cache_dir());
     ensure!(cache.starts_with(&home), "shared default cache refused");
     let version = "0.28.0-rc.1";
@@ -38,4 +55,37 @@ fn main() -> Result<()> {
        "overlay_root_hash":pieces.runtime_overlay.roothash,"sdk_sidecars":pieces.sdk_sidecars.len(),"host_retention_ceiling_ms":30000})
     );
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use mvm_core::arch::GuestArch;
+    #[test]
+    fn selects_the_guest_architecture_before_preparing_private_state() {
+        assert_eq!(
+            inputs(["guest-source"].map(Into::into).into_iter()).unwrap(),
+            (PathBuf::from("guest-source"), GuestArch::host())
+        );
+        for (arg, expected) in [
+            ("aarch64", GuestArch::Aarch64),
+            ("x86_64", GuestArch::X86_64),
+        ] {
+            assert_eq!(
+                inputs(["guest-source", arg].map(Into::into).into_iter())
+                    .unwrap()
+                    .1,
+                expected
+            );
+        }
+        assert!(inputs(["guest-source", "sparc"].map(Into::into).into_iter()).is_err());
+        assert!(
+            inputs(
+                ["guest-source", "aarch64", "unexpected"]
+                    .map(Into::into)
+                    .into_iter()
+            )
+            .is_err()
+        );
+    }
 }
