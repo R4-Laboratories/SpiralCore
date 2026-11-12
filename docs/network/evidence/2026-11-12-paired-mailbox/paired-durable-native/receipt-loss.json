@@ -1,0 +1,193 @@
+{
+  "driver_process_cpu_ns": 5476908828,
+  "original_5257_helper_streams_a_b": [
+    {
+      "capture": "closed_session",
+      "completed_exchanges": 3,
+      "guest_to_host_read_bytes": 762,
+      "host_to_guest_write_accepted_bytes": 1222
+    },
+    {
+      "capture": "closed_session",
+      "completed_exchanges": 4,
+      "guest_to_host_read_bytes": 2990,
+      "host_to_guest_write_accepted_bytes": 11724
+    }
+  ],
+  "original_exits": [
+    {
+      "assisted": false,
+      "exit_code": 0,
+      "first_stop_attempt": true,
+      "name": "sc-journal-a",
+      "success": true
+    },
+    {
+      "assisted": false,
+      "exit_code": 0,
+      "first_stop_attempt": true,
+      "name": "sc-journal-b",
+      "success": true
+    }
+  ],
+  "result": {
+    "guest_a": {
+      "cpu_ns": 603556,
+      "frame_bytes": 313,
+      "outbox_retired_without_archive": true,
+      "outbox_retirement_wait_ns": 142440295,
+      "probe_from_agent": 196,
+      "probe_to_agent": 340,
+      "role": "staged",
+      "wall_ns": 143207324
+    },
+    "guest_a_observed_receipt": null,
+    "guest_b": {
+      "ack_from_agent": 2286,
+      "ack_to_agent": 2005,
+      "after_ack": {
+        "empty": true,
+        "from_agent": 50,
+        "to_agent": 54
+      },
+      "cpu_ns": 607280,
+      "frame_bytes": 313,
+      "receive_from_agent": 2513,
+      "receive_to_agent": 54,
+      "role": "received_and_acknowledged",
+      "wall_ns": 917186606
+    },
+    "receipt_outcome": "AcceptedLocalDurable",
+    "receipt_recovery": {
+      "exact_envelope_equal": true,
+      "exact_signed_receipt_bytes_equal": true,
+      "first_b_receipt_ns": 116159314,
+      "first_receipt_from_b": 1203,
+      "first_receipt_to_a": 0,
+      "first_sealed_a_to_b": 5814,
+      "retry_receipt_from_b": 1203,
+      "retry_receipt_to_a": 1203,
+      "retry_sealed_a_to_b": 5814,
+      "verified_retry_ns": 156536676
+    },
+    "sdk_call_application_io": {
+      "destination_reply_with_readback": 849,
+      "destination_request": 81,
+      "source_reply": 271,
+      "source_request": 800
+    },
+    "sealed_a_to_b_bytes": 5814,
+    "setup_ns": 4987215739,
+    "signed_b_to_a_bytes": 1203,
+    "through_observed_v2_ns": 156536676,
+    "through_verified_destination_call_ns": 1159651876,
+    "verified_body_bytes": 257,
+    "wan_bytes": null,
+    "original_message_id_matched": true
+  },
+  "teardown_error": null,
+  "transfer_error": null,
+  "whole_wall_ns": 6424490894,
+  "sample": {
+    "date": "2026-11-12",
+    "os": "Linux x86_64",
+    "backend": "Firecracker KVM",
+    "vcpus_per_vm": 1,
+    "memory_mib_per_vm": 256,
+    "guest_count": 2,
+    "fixture_body_sha256": "54acfbfedc4d8da40f76f275e1a98f10af8ef1fb9fb39e5a67a00aabcbe6597c",
+    "fixture_frame_sha256": "ff26a66df5b1d9de994e60824757686d2af8eb4433b91e74a2f24b279f600044",
+    "receipt_losses": 1,
+    "samples": 1,
+    "operator_retention_ms": 30000,
+    "unmeasured": [
+      "WAN",
+      "zstd baseline",
+      "separate send-only time",
+      "helper CPU",
+      "energy"
+    ]
+  },
+  "source": {
+    "spiralcore": "06df80d07c27f94115881bfa2f8d74bb5d542978",
+    "host_and_helpers": "27038e3f322e4336df180073e12cae59cc4dba54",
+    "guest_runtime": "93b3b65ae72a4746a54a21c7c158d5453cceb8f5",
+    "driver_only_overlay_sha256": "e8f8da3066cd2721212567b284f410046f092fa50dad1b873c5e39d75f33629a",
+    "local_driver_dependency_revision": "35c4dc19c99c36211207825024b8bfb08e265145"
+  },
+  "executables": {
+    "host": {
+      "paired-journal": "5b258b7f6ad7ae60ed65a0019289075067c756ef2e836308cc7c4f9b775435c2",
+      "image": "497e38ab746d00d8264601dbe4a99ca35457cd8acb6910f5d27cc8db4b8d1e23",
+      "mvm-mailbox": "392b36aebf1f04fde4bcbd0af6cd8321a47d3f6a08f59cc34c9d2ef3efde34f7",
+      "mvm-host-agent": "118f69f108a651dfe23879aa940e8e92a657ea9cf7fdf524b3583af215676102",
+      "mvm-network-endpoint": "3d60ca64905a42bfea56c622e54bf5eb64e7e9e56181cdb3f3244a666014b0d5",
+      "mvm-signer-helper": "c9e5bf150c35afeff7e26efbca48168ed244688e2a5232dd372ca08d5d824113",
+      "mvmctl": "3ba31dfc51fb6363731e87ded3b63753ea111ddb3345ca4086522ae863ac038a"
+    },
+    "guest": {
+      "spiralcore-durable-source": "134c7c49d070e62e1273ffc6bf0da4d55de024d9aad3ae8cf9417ed9b7670527",
+      "spiralcore-durable-destination": "fd1fc4d38ac1a483f739fd49ac434afad8ef80e4dab24a826b877236b0d66467"
+    }
+  },
+  "images": {
+    "a": {
+      "rootfs.ext4": "7624c538554728f753acb6785188709ee1b1f70978cad42d633580d58ac1dd29",
+      "rootfs.verity": "3285c10832d2a7b713279d74f003d8334635455c8b802f79e30a5f6435292e2f",
+      "rootfs.roothash": "a3728655899a9f3bf7b0d9608421b4519015cc8c74d270a1a100e5fa2018a31f",
+      "mvm-meta.json": "1e2ebf272b1b45cd2a9c4f1ea32b847c3824a8208dddeb07fb8d456c14be0a68"
+    },
+    "b": {
+      "rootfs.ext4": "b19d0513e1053b2be12a18e7fae38b9308f02e0a3dca9ccc40b8b53365a15c87",
+      "rootfs.verity": "26579fdf73646110634edd0721bea736ee0c6d50ab4219a3138f673b686df98e",
+      "rootfs.roothash": "617b144e4bfe21df6baaafdb9e4dbcd21300e80aa727a65a4e20afb21fa1bee9",
+      "mvm-meta.json": "e279d13ea18d559f6c5f572e248f212c7856c678be9d7adcb5320a4c22a07ddf"
+    }
+  },
+  "runtime": {
+    "arch": "x86_64",
+    "guest_archive_sha256": "fa939b0899e2a3f60ef7a6697f6bb24ae080c5ea38f60df991c10b8ba1b193e1",
+    "host_retention_ceiling_ms": 30000,
+    "initramfs_hash_record_sha256": "61933f8c8c8770c4a632853ba8aab85d9e0636e92895e9a63a92a8dee80afe63",
+    "initramfs_sha256": "854cf584a283ec04ca3e93ea955711cbed79aab0074f91ef1135f996ea2cb992",
+    "mvm_version": "0.28.0-rc.1",
+    "overlay_root_hash": "b5b0e686c0e711842d6139a2e1c8aecda19661cb820ce64e733c91961b70b33b",
+    "overlay_sha256": "2bce003dfaf6b2b138e8f6ad9f0808c2874e27cae9305f2a91d0a976ccc115b3",
+    "overlay_verity_sha256": "2c67e255e47a2604016ef248667d620768f0e09083942093ae8deb62ef29949a",
+    "sdk_sidecars": 2
+  },
+  "raw_artifact_sha256": {
+    "audit.log": "5b7cb24bc38132f35843e640eed08542a0c2870d9531d5568ac4fe243688e1d1",
+    "final-archive-control.log": "796bf773a898167d5a930a1db9d34d2124ad76b2a1fcae8f2aaa979201cee39d",
+    "final-controls.log": "295b0aec78db1ba9ddb918222f48fc9c15823805a546e3087c3d4bc3cee0c9d7",
+    "host-sha256": "e1ec57ce77d9765893a1347441af73718d3cb9c11afa21f7a54ee7dbde4b48e6",
+    "image-a.sha256": "fb33c45143dbff965e056709e374d89e738e6e856b353f2b05106c18031c77c7",
+    "image-b.sha256": "bb170d6ff0dca3babf2366e9904fc85c8bd1fb7c24935c3d078026e9d7bbb52a",
+    "native-checks.log": "aa49f58693ccb7885259949e5e84535063fbd4c792df46dc2427c49dd353b4ae",
+    "native.log": "a3ab2510923326097334e8dfb5fe58059b9c927566dd180221dda52224242bed",
+    "native.time": "99415640bb01b73a5427c1773b5ab4faf966e5b22c48c5bb517d2a1edda23e8f",
+    "original-sc-journal-a.counts": "87c00108f004fb362e4900ddfd4e455f58d288813f63bbb0aa8fb12888e73e81",
+    "original-sc-journal-b.counts": "beb8f58aed6b576daa86be5cd45333557a2e0d88aee7d2a06b339723519e3802",
+    "paired-result.json": "3c3bb09cca9d26752396f5391aa0d61355e409b5f99d79dc6d19228890932cd4",
+    "paired-retirement.jsonl": "4ecd19450145bb63b443a2b3a6cad36c420a9b2c97d065dae534eb4cc42901f6",
+    "paired-transfer-before-stop.json": "9a408e44f7c0f4d636a6aa6d7f28bd5f839db5cdba6d430b9d3245c5eda76523",
+    "runtime-fresh.json": "97b5ece13c7d862af7896b194e5e4788837af494d8476e6539958577e65444f2",
+    "worker-sha256": "ad3da3672b6af5d1cf917b61501504034d0a9c0ab89debc30560f2e88e289d23"
+  },
+  "external": {
+    "wall_seconds": 6.49,
+    "user_cpu_seconds": 5.54,
+    "system_cpu_seconds": 0.08,
+    "maximum_rss_kib": 82820,
+    "exit_status": 0
+  },
+  "audit": {
+    "entries": 17,
+    "sessions": 2,
+    "seals": 2
+  },
+  "remaining_original_processes": {
+    "firecracker": 0,
+    "mvm_mailbox": 0
+  }
+}
