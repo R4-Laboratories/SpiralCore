@@ -2,6 +2,8 @@ mod control;
 mod fixture;
 #[cfg(feature="object-reader-v1")]
 pub mod object_reader;
+#[cfg(feature = "object-reader-v1")]
+pub mod object_exchange;
 mod retirement;
 use anyhow::{Context, Result, ensure};
 use cpu_time::ProcessTime;
@@ -105,9 +107,8 @@ fn receive(v: &Value, deadline: Instant) -> Result<Value> {
     );
     let mut traffic = ReaderTraffic::default();
     let delivery = loop {
-        match receive_before(deadline, &mut traffic)? {
-            Some(x) => break x,
-            None => {}
+        if let Some(delivery) = receive_before(deadline, &mut traffic)? {
+            break delivery;
         }
         let remaining = deadline
             .checked_duration_since(Instant::now())
@@ -165,7 +166,12 @@ pub enum Role {
     Source,
     Destination,
 }
-fn run(call: WorkerCallRequest, role: &Role) -> Result<Value> {
+struct Worker {
+    role: Role,
+    #[cfg(feature = "object-reader-v1")]
+    objects: object_exchange::GuestObjectSource,
+}
+fn run(call: WorkerCallRequest, worker: &mut Worker) -> Result<Value> {
     let start = Instant::now();
     let cpu = ProcessTime::now();
     ensure!(
@@ -174,7 +180,17 @@ fn run(call: WorkerCallRequest, role: &Role) -> Result<Value> {
     );
     let value: Value = serde_json::from_slice(&call.stdin)?;
     let end = start + Duration::from_secs((call.timeout_secs - 1).min(30));
-    let mut result = match role {
+    let mut result = match &worker.role {
+        #[cfg(feature = "object-reader-v1")]
+        Role::Source if value.get("object_settle").is_some() => {
+            ensure!(value.as_object().is_some_and(|v| v.len() == 1), "ambiguous settlement operation");
+            object_exchange::retry_settlement(&mut worker.objects, &value["object_settle"], end)
+        }
+        #[cfg(feature = "object-reader-v1")]
+        Role::Source if value.get("object_send").is_some() => {
+            ensure!(value.as_object().is_some_and(|v| v.len() == 1), "ambiguous object worker operation");
+            object_exchange::run_source(&mut worker.objects, &value["object_send"], end)
+        }
         Role::Source if value.get("control_probe").is_some() => control::probe(&value, end),
         Role::Source => stage(&value, end),
         Role::Destination => receive(&value, end),
@@ -184,6 +200,11 @@ fn run(call: WorkerCallRequest, role: &Role) -> Result<Value> {
     Ok(result)
 }
 pub fn serve(role: Role) -> io::Result<()> {
+    let mut worker = Worker {
+        role,
+        #[cfg(feature = "object-reader-v1")]
+        objects: object_exchange::GuestObjectSource::default(),
+    };
     let mut input = io::stdin().lock();
     let mut output = io::stdout().lock();
     loop {
@@ -192,7 +213,7 @@ pub fn serve(role: Role) -> io::Result<()> {
             Err(e) if e.kind() == io::ErrorKind::UnexpectedEof => return Ok(()),
             Err(e) => return Err(e),
         };
-        let (stdout, stderr, code) = match run(call, &role) {
+        let (stdout, stderr, code) = match run(call, &mut worker) {
             Ok(val) => (val.to_string().into_bytes(), vec![], 0),
             Err(e) => (vec![], e.to_string().into_bytes(), 1),
         };

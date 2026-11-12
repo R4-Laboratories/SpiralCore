@@ -70,6 +70,9 @@ impl ObjectDelivery {
             _ => anyhow::bail!("expected an original object-pair delivery"),
         }
     }
+    pub(super) fn pair(&self) -> [u8; 32] {
+        self.pair
+    }
     pub fn header(&self) -> &MailboxEnvelopeHeader {
         &self.header
     }
