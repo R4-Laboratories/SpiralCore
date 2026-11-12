@@ -31,4 +31,6 @@ cargo test --locked -p mvm-hostd --lib a_retry_reuses_exact_sealed_intent_after_
 cargo test --locked -p mvm-core --lib mailbox::
 ```
 
+A subsequent build of the readback assertion used a fresh private Cargo target on Wick. All seven host tests passed. During the explicit destination-byte comparison, each exchange carried 5,419 B toward the journal and 1,059 B back. The first and retry receipts took 1.319 and 0.759 ms. The test executable SHA-256 was `08146ed4b652e7646e103a45721ec7dcf69030d3754e1a4018ab7a52a6a0c79f`.
+
 Each measurement launched the selected host test executable with `--exact mailbox_launch::object_pair::tests::original_seals_exact_object_bodies_and_restores_only_the_matching_retained_lease --nocapture`. The parent recorded monotonic wall time and the child’s user/system CPU and maximum resident set through `wait4`. All 4,512 tracked blobs were checked against the test host before measurement. The rows retain the binary digest and individual times.
