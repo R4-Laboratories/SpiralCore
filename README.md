@@ -31,7 +31,17 @@ checkpoint, not completion of that program.
 
 A subsequent Linux run kept both original Firecracker guests up for **eight separately addressed messages**. Each carried the same 257-byte body. Guest B returned every byte, then its application ACK was confirmed. The median was 220.763 ms through the verified receipt and 883.826 ms through ACK and independently checked readback. The relay carried 46,819 bytes forward and 9,590 back for 2,056 application bytes. Eight control calls completed while messages awaited forwarding. [Persistent-pair measurements and reproduction](docs/network/evidence/2026-11-12-paired-mailbox/paired-durable-native/sustained/README.md)
 
-**Warm-object status.** The installed guests transferred complete 257-byte and 4 KiB fixtures under a one-way Cast grant. In a separate local component with independent Call and Reply credentials, the receiver recovered a 131,090-byte repeat from a 102-byte Offer and returned an 88-byte object response. Carrying that response between installed guests requires a signed return route. [Authority, envelope overhead and CPU](docs/network/evidence/2026-11-12-paired-mailbox/paired-durable-native/object-reply-boundary.md)
+**Two installed Linux guests now exchange warm objects through their own mailboxes.** Guest A sent a 4 KiB object cold, then offered it again to the same worker on B. B returned all 4,096 bytes exactly on each transfer. The cold transfer required four signed Calls. The repeat needed one Call, one Reply and zero literal payload bytes.
+
+| Fully metered Firecracker pair on one Linux host | Cold | Exact repeat |
+|---|---:|---:|
+| Object-v1 requests and replies | 4,658 B | 190 B |
+| Both guest↔host vsock links at port 5257, reads plus writes | 481,989 B | 124,813 B |
+| Sealed helper↔helper socket traffic, including signed receipts | 63,610 B | 14,170 B |
+| CPU in A / B’s guest workloads | 5.144 / 23.898 ms | 1.819 / 7.404 ms |
+| Elapsed through both guest results and exact readback | 3.793 s | 1.045 s |
+
+On this pair the repeat used **74.1% fewer bytes across the two guest-vsock links** and **77.7% fewer bytes on the sealed host sockets**. These are separate observation points on the same delivery. All six original streams produced complete records. Both helpers stopped without assistance, and both VMMs exited. The earlier pilot retained its guest-port overflow at 64 exchanges. A matched secured zstd comparison, native HVF qualification for this object profile, and a two-host WAN trial remain open. [Reproduction, complete counters and earlier pilot](docs/network/evidence/2026-11-12-paired-mailbox/paired-durable-native/native-object/README.md)
 
 The four single-message trials are shown below.
 

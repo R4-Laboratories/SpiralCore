@@ -1,0 +1,262 @@
+{
+  "schema": "spiralcore.native-object-closed-streams.v1",
+  "mvm_host": "30ca64feba564f8a3a3f62ee96c746c51176567c",
+  "mvm_guest": "c9d9fe87b27cd2e5fc64d2b1d9c3a31b522b2097",
+  "spiralcore_driver": "876e10156d4344b0865f99196b0cef7488e8ca1a",
+  "spiralcore_workloads": "584f7f29c3b67406525dba0002a3601264c1fbc6",
+  "fixture_sha256": "4a29fe7d84bd3c8097343ec5723341ac8768f67914bf61e4d3c078bb6b5fc9d9",
+  "observed_backends": [
+    "firecracker",
+    "firecracker"
+  ],
+  "role_rootfs_sha256": [
+    "e1c9538a9dd52be55ed2064bba5605e891e4448a39091823a26c624756892b02",
+    "a0cfa1a1099e227d9a130a3ca74b280ef3f86e89f110adef9beb244df0f97fa0"
+  ],
+  "same_b_worker_and_boot": true,
+  "isolated_native_host": "x86_64 Linux Firecracker, one host, no guest NIC, 1 vCPU and 256 MiB per VM",
+  "setup_through_both_verified_starts_ns": 5104282543,
+  "rounds": {
+    "cold": {
+      "calls": 4,
+      "literal_bytes": 4096,
+      "object_request_bytes": 4376,
+      "object_reply_bytes": 282,
+      "verified_readback_bytes": 4096,
+      "application_total": 4658,
+      "meters_caller_callee": [
+        {
+          "guest_5257": {
+            "read": 36703,
+            "read_errors": 0,
+            "turns": 47,
+            "write": 168608,
+            "write_errors": 0
+          },
+          "sealed_in": {
+            "read": 21688,
+            "read_errors": 0,
+            "turns": 4,
+            "write": 4807,
+            "write_errors": 0
+          },
+          "sealed_out": {
+            "read": 4822,
+            "read_errors": 0,
+            "turns": 4,
+            "write": 32293,
+            "write_errors": 0
+          }
+        },
+        {
+          "guest_5257": {
+            "read": 73370,
+            "read_errors": 0,
+            "turns": 43,
+            "write": 203308,
+            "write_errors": 0
+          },
+          "sealed_in": {
+            "read": 32293,
+            "read_errors": 0,
+            "turns": 4,
+            "write": 4822,
+            "write_errors": 0
+          },
+          "sealed_out": {
+            "read": 4807,
+            "read_errors": 0,
+            "turns": 4,
+            "write": 21688,
+            "write_errors": 0
+          }
+        }
+      ],
+      "guest_5257_total": 481989,
+      "sealed_unique_total": 63610,
+      "sender_cpu_ns": 5144022,
+      "receiver_cpu_ns": 23898376,
+      "coordinator_cpu_ns": 13215679,
+      "time_through_both_guest_results_ns": 3792694220,
+      "workload_stdin_bytes": 9098,
+      "workload_stdout_including_readback_bytes": 10799
+    },
+    "warm": {
+      "calls": 1,
+      "literal_bytes": 0,
+      "object_request_bytes": 102,
+      "object_reply_bytes": 88,
+      "verified_readback_bytes": 4096,
+      "application_total": 190,
+      "meters_caller_callee": [
+        {
+          "guest_5257": {
+            "read": 8487,
+            "read_errors": 0,
+            "turns": 13,
+            "write": 46467,
+            "write_errors": 0
+          },
+          "sealed_in": {
+            "read": 5463,
+            "read_errors": 0,
+            "turns": 1,
+            "write": 1203,
+            "write_errors": 0
+          },
+          "sealed_out": {
+            "read": 1200,
+            "read_errors": 0,
+            "turns": 1,
+            "write": 6304,
+            "write_errors": 0
+          }
+        },
+        {
+          "guest_5257": {
+            "read": 20362,
+            "read_errors": 0,
+            "turns": 10,
+            "write": 49497,
+            "write_errors": 0
+          },
+          "sealed_in": {
+            "read": 6304,
+            "read_errors": 0,
+            "turns": 1,
+            "write": 1200,
+            "write_errors": 0
+          },
+          "sealed_out": {
+            "read": 1203,
+            "read_errors": 0,
+            "turns": 1,
+            "write": 5463,
+            "write_errors": 0
+          }
+        }
+      ],
+      "guest_5257_total": 124813,
+      "sealed_unique_total": 14170,
+      "sender_cpu_ns": 1819292,
+      "receiver_cpu_ns": 7404226,
+      "coordinator_cpu_ns": 4869412,
+      "time_through_both_guest_results_ns": 1045095376,
+      "workload_stdin_bytes": 8558,
+      "workload_stdout_including_readback_bytes": 9077
+    }
+  },
+  "closed_original_meter_lifetime_a_b": [
+    {
+      "guest_5257": {
+        "capture": "closed_session",
+        "read": 45498,
+        "read_errors": 0,
+        "turns": 62,
+        "write": 220648,
+        "write_errors": 1
+      },
+      "sealed_in": {
+        "capture": "closed_session",
+        "read": 27151,
+        "read_errors": 0,
+        "turns": 5,
+        "write": 6010,
+        "write_errors": 0
+      },
+      "sealed_out": {
+        "capture": "closed_session",
+        "read": 6022,
+        "read_errors": 0,
+        "turns": 5,
+        "write": 38597,
+        "write_errors": 0
+      }
+    },
+    {
+      "guest_5257": {
+        "capture": "closed_session",
+        "read": 94050,
+        "read_errors": 0,
+        "turns": 54,
+        "write": 258379,
+        "write_errors": 0
+      },
+      "sealed_in": {
+        "capture": "closed_session",
+        "read": 38597,
+        "read_errors": 0,
+        "turns": 5,
+        "write": 6022,
+        "write_errors": 0
+      },
+      "sealed_out": {
+        "capture": "closed_session",
+        "read": 6010,
+        "read_errors": 0,
+        "turns": 5,
+        "write": 27151,
+        "write_errors": 0
+      }
+    }
+  ],
+  "retirement": [
+    {
+      "assisted": false,
+      "exit_code": 0,
+      "first_stop_attempt": true,
+      "name": "sc-journal-a",
+      "success": true
+    },
+    {
+      "assisted": false,
+      "exit_code": 0,
+      "first_stop_attempt": true,
+      "name": "sc-journal-b",
+      "success": true
+    }
+  ],
+  "driver_process_cpu_ns": 8263480030,
+  "driver_whole_wall_ns": 10334827229,
+  "gnu_time": {
+    "wall_s": 10.42,
+    "user_s": 9.88,
+    "system_s": 0.19,
+    "max_rss_kib": 84856,
+    "exit": 0
+  },
+  "audit": {
+    "entries": 17,
+    "sessions": 2,
+    "seals": 2
+  },
+  "firecracker_after": 0,
+  "active_scopes_after": 0,
+  "matched_zstd_mvm_transport": null,
+  "wan": null,
+  "raw_sha256": {
+    "audit.log": "5b7cb24bc38132f35843e640eed08542a0c2870d9531d5568ac4fe243688e1d1",
+    "driver-tests.log": "634e4ce3a3713649faebdd6c034527448cfa8bc2518355db72da44a7bb6a0e2d",
+    "host.sha256": "76c395b07e9a43cc74b4baebff1622239566a0b0abc2d2e853da2c3e3b3aac62",
+    "inputs-host-source.log": "0da976b848f01c4f6ca1dc9979016ce9acbf38566caf931f789109a7552de767",
+    "inputs-verified.log": "c17faf30e614e6574d62fc038f1bbda98924f56272aaad81de1e4f94966ed651",
+    "native.time": "7be1011c3721f71e326084f9a7ee5ddd28ef1aa6cc23967fec7956de5984786f",
+    "object-pair-progress.jsonl": "eb2771e288d0fa54439cf606898ce2313525a3bf5966c5408945b332a6f9ab88",
+    "object-pair-result.json": "a8cf486956e0601e679c1ccb6bbc55bef3679e8c83a89c3742b5c563fe9d09d9",
+    "original-sc-journal-a-guest_5257.counts": "1c5eea7436e4a0c91e2ff57df8022cc3476c2ba3a56840ad5e554b513043fde3",
+    "original-sc-journal-a-sealed_in.counts": "911c9e0fa508093c205fe6510dd6f1618df7479d95cd1aa7806c8adf0d6d06e6",
+    "original-sc-journal-a-sealed_out.counts": "e04df69b5b8faa869f5d99743f049d445819ae6e3d77235e7e4dafd0f077c06d",
+    "original-sc-journal-b-guest_5257.counts": "f691588a90098b9e0e407160458ecae2a26a49077ae8b4ae6a5f2f5600f8d3a4",
+    "original-sc-journal-b-sealed_in.counts": "62ed10f8dbc7d737b18b965dfd3075ad20aae06c5cd556f257248cb194d36739",
+    "original-sc-journal-b-sealed_out.counts": "943ee6b9ad1b8f5add0d62bedc99f8ba67165e7efff2688742391c7481c8bc52",
+    "paired-retirement.jsonl": "4ecd19450145bb63b443a2b3a6cad36c420a9b2c97d065dae534eb4cc42901f6",
+    "scopes.after": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "host_binaries": {
+    "mvm-host-agent": "70a5cef5d06500eaf74c45cdc96464173816ca8ecf93475016314abc9e89b44c",
+    "mvm-mailbox": "eadf9b6379223490516e0faa7c32c80fd93540eb1f7df26317c80cec3f48c0d9",
+    "mvm-network-endpoint": "914a647bf4d007f7bc7063558ed3d4ef8c95f311b8b23ba9845a826e27a8d9e6",
+    "mvm-signer-helper": "c999eb976a779ab3cfacf2dcba709e13e1817612dcdbc5cc0ba7577f6a43be1f",
+    "paired-journal": "dd1872807709eb86e56105394e59acf98a2bc09d35e67b34cdb0ba0b415cdd4c"
+  }
+}

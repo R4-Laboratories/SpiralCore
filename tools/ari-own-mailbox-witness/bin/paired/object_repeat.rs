@@ -250,6 +250,18 @@ fn round(pair: &str, tx: &str, b_boot: &str, receiver: &mut Receiver, warm: bool
 }
 
 pub fn run(pair: &str) -> Result<()> {
+    println!("{}", measure(pair)?);
+    Ok(())
+}
+
+pub(super) fn measure(pair: &str) -> Result<Value> {
+    measure_observed(pair, |_, _| Ok(()))
+}
+
+pub(super) fn measure_observed(
+    pair: &str,
+    mut after: impl FnMut(&str, &Value) -> Result<()>,
+) -> Result<Value> {
     let bytes: [u8; 32] = hex::decode(pair)?
         .try_into()
         .map_err(|_| anyhow::anyhow!("pair must contain 32 bytes"))?;
@@ -269,11 +281,13 @@ pub fn run(pair: &str) -> Result<()> {
     );
     let mut worker = Receiver::default();
     let cold = round(pair, &cold_id, &b_boot, &mut worker, false)?;
+    after("cold", &cold)?;
     ensure!(
         original_boots(&home, bytes)? == boots,
         "guest boots changed after cold transfer"
     );
     let warm = round(pair, &warm_id, &b_boot, &mut worker, true)?;
+    after("warm", &warm)?;
     ensure!(
         original_boots(&home, bytes)? == boots
             && cold["guest_a"]["object_id"] == warm["guest_a"]["object_id"],
@@ -285,13 +299,11 @@ pub fn run(pair: &str) -> Result<()> {
         warm_bytes < cold_bytes,
         "warm transfer did not reduce application traffic"
     );
-    println!(
-        "{}",
+    Ok(
         json!({"application_bytes_saved":cold_bytes-warm_bytes,"schema":"spiralcore.installed-object-repeat.v1","pair":pair,
         "source_boot":hex::encode(boots[0].boot.as_bytes()),"receiver_boot":b_boot,"receiver_instance":worker.instance,
-        "object_bytes":BODY.len(),"cold":cold,"warm":warm,"host_relay_bytes":null,"network_wire_bytes":null})
-    );
-    Ok(())
+        "object_bytes":BODY.len(),"cold":cold,"warm":warm,"host_relay_bytes":null,"network_wire_bytes":null}),
+    )
 }
 
 #[cfg(test)]
