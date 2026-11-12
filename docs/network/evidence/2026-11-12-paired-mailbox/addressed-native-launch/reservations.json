@@ -1,0 +1,128 @@
+{
+  "scope": "Linux x86-64 installed coordinator, two independent original SDK launches, sealed inputs; synthetic same-host A to B test",
+  "mvm_source": "a571b4957e2e72064ef8dd59f972757da31feddb",
+  "guest_runtime_source": "9d7224cf1d08949aed0b08311e9ed94d1f904303",
+  "linux_host_watcher_tests_passed": 18,
+  "attempts": [
+    {
+      "attempt": 3,
+      "driver": "4ccf1371470fea6a611e54ac046399f87ce3135d",
+      "report_sha256": "c1f5774e2e922a8e8eabfef4401c37ab6b4ac2a0548316fdd7b30cf5678ab96c",
+      "rootfs_sha256": [
+        "cef3dcafb5ae749d348d16cf3781e0db29c743ab3f5686dd9041db4c353bbeac",
+        "0b8f6ef26a558dae78cba0f048637473ca0bfad65341e9f26a34350ede502dc1"
+      ],
+      "outcome": "failed_preflight",
+      "expected_bytes": null,
+      "setup_wall_ns": null,
+      "host_driver_process_cpu_ns": null,
+      "lifecycle_wall_ns": null,
+      "coordinator_exit": null,
+      "readback": null,
+      "send_only_ns": null,
+      "wan_bytes": null,
+      "partitions": [],
+      "failure": "fresh home lacked provisioned resource owner"
+    },
+    {
+      "attempt": 4,
+      "driver": "4ccf1371470fea6a611e54ac046399f87ce3135d",
+      "report_sha256": "c41b6c19904e84a882df822b945e1d4a2111f0145f6fe72c069758217bb1f64a",
+      "rootfs_sha256": [
+        "cef3dcafb5ae749d348d16cf3781e0db29c743ab3f5686dd9041db4c353bbeac",
+        "0b8f6ef26a558dae78cba0f048637473ca0bfad65341e9f26a34350ede502dc1"
+      ],
+      "outcome": "failed",
+      "expected_bytes": 257,
+      "setup_wall_ns": 4645320535,
+      "host_driver_process_cpu_ns": 7119148815,
+      "lifecycle_wall_ns": 104983634876,
+      "coordinator_exit": "exit status: 42",
+      "readback": null,
+      "send_only_ns": null,
+      "wan_bytes": null,
+      "partitions": [
+        {
+          "role": "alpha",
+          "stop": "NOT_AUTHORIZED",
+          "cleanup": "RETAINED_UNOWNED_LAUNCH",
+          "guest_stream_counts": null
+        },
+        {
+          "role": "beta",
+          "stop": "NOT_AUTHORIZED",
+          "cleanup": "RETAINED_UNOWNED_LAUNCH",
+          "guest_stream_counts": null
+        }
+      ],
+      "tenant": {
+        "phase": "Drained",
+        "unresolved": false,
+        "pending": 0
+      },
+      "original_owner_record": {
+        "alpha": "PendingV1",
+        "beta": "Owned"
+      },
+      "admitted_plan_receipts": 2,
+      "errors": [
+        "spiralcore-cast-alpha launch: SDK launch refused (BACKEND_ERROR, sdk_error)",
+        "spiralcore-cast-beta launch: SDK launch refused (BACKEND_ERROR, sdk_error)",
+        "spiralcore-cast-alpha receipt: original signed controller absent",
+        "spiralcore-cast-beta receipt: original signed controller absent"
+      ]
+    },
+    {
+      "attempt": 5,
+      "driver": "8f01c5762f11e37e63cd0731dab23215767497f0",
+      "report_sha256": "2d45251ed7c76d5a8a604258b8115b88ae0564cb8817614b82cda4d0eaf91b2a",
+      "rootfs_sha256": [
+        "cef3dcafb5ae749d348d16cf3781e0db29c743ab3f5686dd9041db4c353bbeac",
+        "0b8f6ef26a558dae78cba0f048637473ca0bfad65341e9f26a34350ede502dc1"
+      ],
+      "outcome": "failed",
+      "expected_bytes": 257,
+      "setup_wall_ns": 4662622845,
+      "host_driver_process_cpu_ns": 7162230497,
+      "lifecycle_wall_ns": 105005837637,
+      "coordinator_exit": "exit status: 42",
+      "readback": null,
+      "send_only_ns": null,
+      "wan_bytes": null,
+      "partitions": [
+        {
+          "role": "alpha",
+          "stop": "NOT_AUTHORIZED",
+          "cleanup": "RETAINED_UNOWNED_LAUNCH",
+          "guest_stream_counts": null
+        },
+        {
+          "role": "beta",
+          "stop": "NOT_AUTHORIZED",
+          "cleanup": "RETAINED_UNOWNED_LAUNCH",
+          "guest_stream_counts": null
+        }
+      ],
+      "tenant": {
+        "phase": "Drained",
+        "unresolved": false,
+        "pending": 0
+      },
+      "original_owner_record": {
+        "alpha": "Owned",
+        "beta": "PendingV1"
+      },
+      "admitted_plan_receipts": 2,
+      "errors": [
+        "spiralcore-cast-alpha launch: SDK launch refused (BACKEND_ERROR, sdk_error)",
+        "spiralcore-cast-beta launch: SDK launch refused (BACKEND_ERROR, sdk_error)",
+        "spiralcore-cast-alpha receipt: original signed controller absent",
+        "spiralcore-cast-beta receipt: original signed controller absent"
+      ],
+      "refusal_by_role": {
+        "destination": "unresolved_lifecycle_publication",
+        "source": "cast_lane_unavailable"
+      }
+    }
+  ]
+}
