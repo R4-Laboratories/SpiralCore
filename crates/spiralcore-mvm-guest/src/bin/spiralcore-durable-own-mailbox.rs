@@ -40,19 +40,28 @@ fn commit_body(dir: &Path, delivered: &[u8], original: &[u8]) -> Result<[u8; 32]
     Ok(Sha256::digest(readback).into())
 }
 
-fn transfer(call: WorkerCallRequest) -> Result<Value> {
-    let start = Instant::now();
-    let cpu = ProcessTime::now();
-    if !call.env.is_empty() || call.timeout_secs <= 1 {
-        return Err("expected encoded frame, no overrides, and a bounded call budget".into());
+// The guest agent attaches runtime paths to every call. They have no
+// meaning for this workload: the fixed own-mailbox endpoints come from MVM.
+fn original_input(call: &WorkerCallRequest) -> Result<(Frame, Duration)> {
+    if call.timeout_secs <= 1 {
+        return Err("expected a bounded worker call budget".into());
     }
-    let deadline = start + Duration::from_secs((call.timeout_secs - 1).min(40));
     // The signed reader reply has a 64 KiB JSON limit and base64-encodes
     // its payload alongside the signed lease. This fixture admits 16 KiB.
     if call.stdin.len() > 16 * 1024 {
         return Err("own-mailbox qualification frame exceeds 16 KiB".into());
     }
-    let original = Frame::decode(&call.stdin)?;
+    Ok((
+        Frame::decode(&call.stdin)?,
+        Duration::from_secs((call.timeout_secs - 1).min(40)),
+    ))
+}
+
+fn transfer(call: WorkerCallRequest) -> Result<Value> {
+    let start = Instant::now();
+    let cpu = ProcessTime::now();
+    let (original, budget) = original_input(&call)?;
+    let deadline = start + budget;
     let pending = PendingFrame::new(&original)?;
     if pending.encoded() != call.stdin {
         return Err("noncanonical input".into());
@@ -150,6 +159,33 @@ mod tests {
         );
         let different = tempfile::tempdir().unwrap();
         assert!(commit_body(different.path(), b"one", b"one\0").is_err());
+    }
+
+    #[test]
+    fn runtime_overlay_metadata_cannot_change_original_frame_or_call_budget() {
+        let root = tempfile::tempdir().unwrap();
+        std::fs::write(root.path().join("VERSION"), b"1").unwrap();
+        std::fs::create_dir(root.path().join("sdk-py")).unwrap();
+        let env = mvm_agentd::workload_env::with_runtime_overlay_env(
+            vec![("recipient".into(), "ignored".into())],
+            root.path(),
+        );
+        assert!(env.iter().any(|(k, _)| k == "MVM_RUNTIME_OVERLAY"));
+        let original = Frame {
+            kind: 2,
+            transfer: [7; 32],
+            seq: 1,
+            body: vec![0, 255, 0],
+        };
+        let call = WorkerCallRequest {
+            stdin: original.encode().unwrap(),
+            timeout_secs: 45,
+            env,
+        };
+        assert_eq!(
+            original_input(&call).unwrap(),
+            (original, Duration::from_secs(40))
+        );
     }
 
     #[test]
