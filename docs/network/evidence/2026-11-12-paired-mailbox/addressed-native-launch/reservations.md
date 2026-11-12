@@ -2,7 +2,7 @@
 
 Two signed plans reached admission on each of two fresh Linux installations on Wick. The installed coordinator returned its expected original-child exit status of 42 on both runs. Neither launch pair reached the workloads. The 257-byte fixture has no destination readback, vsock transfer counts or transfer timing from these runs. [Recorded results, meter scopes and report digests](reservations.json)
 
-| Installed run | Guest A original owner record | Guest B original owner record | Both SDK launch attempts, wall | Driver process CPU over lifecycle | Full lifecycle, wall |
+| Installed run | Guest A original owner record | Guest B original owner record | Coordinator setup and both SDK launch attempts, wall | Driver process CPU over lifecycle | Full lifecycle, wall |
 |---|---|---|---:|---:|---:|
 | 4 | PendingV1 | Owned | 4.645 s | 7.119 s | 104.984 s |
 | 5 | Owned | PendingV1 | 4.663 s | 7.162 s | 105.006 s |
