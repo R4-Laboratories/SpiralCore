@@ -11,6 +11,8 @@ tracks delivery. The next installed gate is an authorized Cast from guest A to
 guest B with exact readback inside the destination workload. Cross-host WAN and
 platform qualification follow. [Guest retry and worker capacity regressions](evidence/2026-11-12-paired-mailbox/README.md).
 
+The first installed addressed launch reached kernel admission. Both guests were refused before boot because the staged kernel lacked its original digest sidecar. A fresh installation passed the kernel resolver. SDK root filesystem materialization also replaced the test workloads’ image-supplied startup metadata. The next run needs the operator-approved entrypoint and worker configuration verified inside the actual boot images. [Failed launch, timings and recovery](evidence/2026-11-12-paired-mailbox/addressed-native-launch/README.md).
+
 ### Addressed mailbox delivery
 
 The intended path is **guest A Submit → original A helper → host coordinator → original B helper → guest B Deliver**. A seals the submission. The coordinator handles the signed Send credential and opaque envelope. B authenticates and opens that envelope before invoking its guest. The following steps have been exercised individually.
