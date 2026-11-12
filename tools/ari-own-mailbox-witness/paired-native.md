@@ -76,3 +76,22 @@ paired-journal --backend firecracker --objects 3 \
 ```
 
 For the comparison, build both workloads and the driver with the large-object feature disabled, use a fresh private installation and the original `fixtures/workload-frame.bin`. Keep the original per-object reports, both port-5257 counters, teardown statuses and the audit verification. [Recorded size comparison](../../docs/network/evidence/2026-11-12-paired-mailbox/paired-durable-native/size-control/README.md)
+
+### Application Call and Reply on the selected object pair
+
+The `object-reader-v1` guest workload uses the canonical local reader and the existing Object-v1 sender. With `large-object-fixture` it accepts up to 4,096 input bytes. The source worker accepts a bounded `object_send` operation containing the 32-byte pair commitment, a caller-retained unique 32-byte transfer ID, and the original byte string. Encode these as lowercase hex in fields `pair`, `transfer`, and `payload_hex`. The caller must retain the same logical ID and input across an uncertain submission. Each Call sequence derives a stable message ID and a separate correlation ID in the selected pair.
+
+The worker stages each Call, asks the original agent for its destination admission status, then reads B’s correlated application Reply. It validates the object response before issuing the original reader ACK. A lost ACK response retains one original lease in that live worker. An explicit `object_settle` operation takes `pair`, `transfer`, and integer `seq` and retries that exact ACK. Its success confirms only that lease's settlement. Worker process restart and full transfer resumption require separate recovery.
+
+On B, `object_exchange::send_response_before` requires the original admitted Call delivery and a persistent shared object endpoint with a current application authority. It submits the reply bound to that exact signed Call lease and waits for the original agent’s matching V2 admission confirmation. The receiving application retains its Call lease until it can ACK. The installed host’s retained ciphertext, original backend ownership, receiver workload dispatch and native cold/repeat trial remain tracked in [#202](https://github.com/R4-Laboratories/SpiralCore/issues/202).
+
+For the Linux guest application component use the paired build layout above, with the [MVM contributor revision](https://github.com/Casey-allard/mvm/commit/b04ae4f084ee741bfc58ea51ce7ec672cf9a29cc) at `source`, the SpiralCore checkout at `spiralcore` and its `paired-guest` crate staged beside them. Run:
+
+```sh
+cargo +1.97.1 test --locked --manifest-path paired-guest/Cargo.toml \
+  --features object-reader-v1,large-object-fixture --all-targets
+cargo +1.97.1 build --locked --manifest-path paired-guest/Cargo.toml \
+  --features object-reader-v1,large-object-fixture --bins
+```
+
+Linux x86-64 passed eight library checks and strict Clippy, and built both worker binaries. Two tests exchange the real typed reader messages on AF_UNIX socket pairs with fixture peers. They exercise matching staging, pending and terminal responses, including wrong ID, V1, refusal and ambiguous settlement controls. These tests do not boot guests or establish WAN or compression speed. A direct macOS build of the Linux workload encountered Linux-only socket flags. Apple Silicon host acceptance uses a Linux guest built for arm64.
