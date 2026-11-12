@@ -15,7 +15,7 @@ scratch=$(mktemp -d /var/tmp/sc.XXXXXXXX)
 cp -R tools/installed-mailbox-witness/. "$scratch/"
 cd "$scratch"
 sha256sum --check inputs.sha256
-revision=a7e8e5f9f17e6f5bfb8e33da24962abfe38f43ef
+revision=91fea4e72352f8fa676635ad38b34213cd3bbcb6
 git init -q source
 git -C source fetch --depth=1 https://github.com/Casey-allard/mvm.git "$revision"
 git -C source checkout -q --detach FETCH_HEAD
@@ -81,4 +81,4 @@ The mailbox ID above is a synthetic fixture. Each invocation needs a fresh VM na
 
 `runtime.json` measures runtime preparation. `native.json` distinguishes setup, time spent receiving (including polling), full lifecycle wall time, and orchestrator process CPU. The payload length and digest refer to application bytes. Guest CPU and transport wire bytes have their own availability fields. This command provides a functional witness for the installed mailbox. Compression gains, sender/receiver CPU comparisons and WAN performance require a paired transfer benchmark.
 
-The measured helper emits one bounded receipt after its original dial thread joins. The receiver accepts that receipt only after signed helper collection and coordinator retirement. `guest_mailbox_stream_counts` records completed, post-mux reads and locally accepted writes on port 5257. It includes framing and attempted application exchanges that transferred bytes before a failure. Guest receipt of a reply, host API traffic, Firecracker CONNECT negotiation, virtio headers, NIC bytes and WAN transport require separate measurements. An absent, duplicate, overflowing or mismatched receipt leaves the measurement unavailable and fails the measured-witness gate.
+The measured helper emits one bounded receipt after its original dial thread joins. The original coordinator passes a dedicated anonymous datagram reader to the witness. Only the original helper inherits its paired writer. The witness accepts the owner-bound receipt after signed helper collection. It records elapsed wall time and orchestrator CPU through that collection, then separately observes the coordinator for up to 210 seconds. A coordinator timeout fails lifecycle acceptance while preserving the measured bytes. `guest_mailbox_stream_counts` records completed, post-mux reads and locally accepted writes on port 5257. It includes framing and attempted application exchanges that transferred bytes before a failure. Guest receipt of a reply, host API traffic, Firecracker CONNECT negotiation, virtio headers, NIC bytes and WAN transport require separate measurements. An absent, duplicate, overflowing or mismatched receipt leaves the measurement unavailable and fails the measured-witness gate.
