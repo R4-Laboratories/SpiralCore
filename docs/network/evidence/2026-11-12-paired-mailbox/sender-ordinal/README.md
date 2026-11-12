@@ -52,3 +52,22 @@ cargo test --locked -p mvm-agentd --lib mailbox_outbox::ordinal::tests::
 ```
 
 These checks measure local startup, persistence and authorization. Application bytes, sealed bytes, guest vsock bytes, per-endpoint CPU and elapsed transfer time for the installed ordinal path require the two-guest run. [Installed acceptance tracker](https://github.com/R4-Laboratories/SpiralCore/issues/195)
+
+## Two original Firecracker guests, 65 distinct ordinals
+
+A single admitted pair on x86-64 Linux delivered 65 different 257-byte bodies, 16,705 bytes in total. Each used a 313-byte application frame. B read its synced file back and ACKed the lease. A recovered exactly the signed B V2 receipt observed on the original relay and settled its digest. The retired prefix reached 65. Both SDK starts used one vCPU and 256 MiB guests with no guest NIC. The signed source boot selected `ordinal_v1`, a one-hour capability window and 313-byte frames. [Full measurements and binary identities](native-65.json) · [Witness invocation](../../../../../tools/ari-own-mailbox-witness/paired-native.md)
+
+| Observed boundary | A | B |
+| --- | ---: | ---: |
+| Workload CPU for all operations, ms | 25.803 | 39.082 |
+| Application → original guest reader, bytes | 85,061 | 138,749 |
+| Original guest reader → application, bytes | 122,014 | 318,089 |
+| SDK workload stdin / stdout, bytes | 28,573 / 43,026 | 10,187 / 58,611 |
+| Original host port 5257 read / accepted write, bytes | 85,628 / 108,178 | 195,615 / 771,394 |
+| Port 5257 returned exchanges / read errors / write errors | 131 / 0 / 1 | 196 / 0 / 1 |
+
+The original relay handled 379,499 sealed bytes toward B and 78,825 signed reply bytes toward A. Both full-session port-5257 observers closed. Each recorded one write error and the byte counts reflect positive system-call returns. These aggregate files do not identify the operation that saw the error. The SDK stdin/stdout counts exclude outer RPC framing. The application, relay and guest socket counts describe different layers.
+
+Setup took 6.163 s. The series completed in 98.492 s. Measured from the start of each ordinal, the median / p95 times were 243.80 / 273.98 ms to the host-verified B receipt, 1.409 / 1.507 s through the destination readback, and 1.487 / 1.595 s through A's settlement. Each ordinal included an authenticated empty Receive at B after local staging and before forwarding. All 65 controls were sequential and their median elapsed time was 76.14 ms. The driver recorded no pending-status retries. The driver used 8.277 s of process CPU. GNU time recorded 104.98 s wall, 16.12 s user CPU, 0.88 s system CPU and 82,440 KiB maximum RSS for its measured process tree. Guest workloads used release builds and the host SDK driver and helpers used debug builds.
+
+Both original helpers exited with code 0 on their first unassisted stop. The audit chain verified 17 entries, two sessions and two seals. No Firecracker process, mailbox helper or active MVM scope remained. The test kept one outstanding operation at a time. Live both-helper restart, larger sustained counts, multi-tenant contention and WAN operation have separate acceptance gates. [Original host and guest source](https://github.com/Casey-allard/mvm/commit/4dcf544bed90bfc2cb90c065998a025b859ddab4) · [Sender retention tracker](https://github.com/R4-Laboratories/SpiralCore/issues/195)

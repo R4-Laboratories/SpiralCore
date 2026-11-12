@@ -27,6 +27,8 @@ use std::{
 };
 
 pub struct Enrollment {
+    #[cfg(feature = "sender-ordinal-v1")]
+    pub sender_ordinals: bool,
     pub source: MailboxGrant,
     pub destination: MailboxGrant,
     pub policy: IncomingJournalPolicy,
@@ -77,6 +79,8 @@ impl Enrollment {
         destination.incoming_journal_policy_sha256_v1 = Some(policy.commitment()?);
         let incoming = IncomingJournalAdmission::install(&destination, &policy)?;
         Ok(Self {
+            #[cfg(feature = "sender-ordinal-v1")]
+            sender_ordinals: false,
             source,
             destination,
             policy,
@@ -124,6 +128,10 @@ impl Enrollment {
             .unwrap();
         ensure!(end > start, "empty signed credential intersection");
         let direction = MailboxJournalDirectionV1 {
+            #[cfg(feature = "sender-ordinal-v1")]
+            sender_settlement: self
+                .sender_ordinals
+                .then_some(mvm_contract::protocol::mailbox::SenderSettlementProfile::OrdinalV1),
             source: grants.destination_send.grant.subject,
             destination_plan_sha256: hex::decode(
                 plan.plan_id

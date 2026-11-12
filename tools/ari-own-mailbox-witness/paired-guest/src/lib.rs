@@ -1,4 +1,6 @@
 mod control;
+#[cfg(feature = "sender-ordinal-v1")]
+mod sender_ordinal;
 mod fixture;
 #[cfg(feature="object-reader-v1")]
 pub mod object_reader;
@@ -102,9 +104,13 @@ fn stage(v: &Value, deadline: Instant) -> Result<Value> {
 }
 fn receive(v: &Value, deadline: Instant) -> Result<Value> {
     let id = field(v, "message_id")?;
+    #[cfg(feature = "sender-ordinal-v1")]
+    let ordinal=v.get("ordinal_readback").map(|n| n.as_u64().context("invalid readback ordinal")).transpose()?;
+    #[cfg(not(feature = "sender-ordinal-v1"))]
+    let ordinal:Option<u64>=None;
     ensure!(
-        v.as_object()
-            .is_some_and(|o| o.len() == 1 || (o.len() == 2 && v["ephemeral_readback"] == true)),
+        v.as_object().is_some_and(|o| if ordinal.is_some() {o.len()==3 && v["ephemeral_readback"]==true}
+            else {o.len()==1 || (o.len()==2 && v["ephemeral_readback"]==true)}),
         "unexpected destination Call parameters"
     );
     let mut traffic = ReaderTraffic::default();
@@ -123,8 +129,10 @@ fn receive(v: &Value, deadline: Instant) -> Result<Value> {
         *delivery.message_id().as_bytes() == id
             && frame.len() == FRAME
             && body.len() == LEN
-            && hex::encode(Sha256::digest(&frame)) == FRAME_SHA
-            && hex::encode(Sha256::digest(body)) == BODY_SHA,
+            && match ordinal {
+                Some(n)=> fixture::ordinal_frame(n).is_some_and(|expected| frame==expected),
+                None=>hex::encode(Sha256::digest(&frame)) == FRAME_SHA && hex::encode(Sha256::digest(body)) == BODY_SHA,
+            },
         "destination lease disagrees with original message or fixture digest"
     );
     let path = "/tmp/spiralcore-paired-received";
@@ -200,6 +208,10 @@ fn run(call: WorkerCallRequest, worker: &mut Worker) -> Result<Value> {
             ensure!(value.as_object().is_some_and(|v| v.len() == 1), "ambiguous object worker operation");
             object_exchange::run_source(&mut worker.objects, &value["object_send"], end)
         }
+        #[cfg(feature = "sender-ordinal-v1")]
+        Role::Source if value.get("sender_ordinal").is_some() => sender_ordinal::run(&value, end),
+        #[cfg(feature = "sender-ordinal-v1")]
+        Role::Destination if value.get("ordinal_empty_control").is_some() => sender_ordinal::empty(&value, end),
         Role::Source if value.get("control_probe").is_some() => control::probe(&value, end),
         Role::Source => stage(&value, end),
         #[cfg(feature="object-reader-v1")]

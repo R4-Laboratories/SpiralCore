@@ -7,6 +7,8 @@ mod native_backend;
 mod object_enrollment;
 mod object_repeat;
 mod receipt_retry;
+#[cfg(feature = "sender-ordinal-v1")]
+mod sender_ordinal;
 mod series;
 mod transfer;
 mod workload;
@@ -234,12 +236,27 @@ fn run(args: &[String]) -> Result<()> {
         [flag, backend, rest @ ..] if flag == "--backend" => (Some(backend.as_str()), rest),
         _ => (None, args),
     };
+    #[cfg(feature = "sender-ordinal-v1")]
+    let (ordinal_count, inputs) = match inputs {
+        [flag, total, rest @ ..] if flag == "--sender-ordinals" => {
+            let count: usize = total.parse()?;
+            ensure!(
+                (1..=2049).contains(&count) && !cfg!(feature = "receipt-loss-qualification"),
+                "invalid ordinal campaign"
+            );
+            (Some(count), rest)
+        }
+        _ => (None, inputs),
+    };
+    #[cfg(not(feature = "sender-ordinal-v1"))]
+    let ordinal_count: Option<usize> = None;
     let (operations, inputs) = match inputs {
         [flag, total, rest @ ..] if flag == "--objects" => (Some(series::count(total)?), rest),
         _ => (None, inputs),
     };
     ensure!(
-        operations.is_none() || !cfg!(feature = "receipt-loss-qualification"),
+        operations.is_none()
+            || (ordinal_count.is_none() && !cfg!(feature = "receipt-loss-qualification")),
         "series and recovery are separate measurements"
     );
     let native = native_backend::select(env::consts::OS, env::consts::ARCH, requested)
@@ -277,6 +294,12 @@ fn run(args: &[String]) -> Result<()> {
     let mut state = State::default();
     let measured = (|| -> Result<Value> {
         let setup = Enrollment::new()?;
+        #[cfg(feature = "sender-ordinal-v1")]
+        let setup = {
+            let mut s = setup;
+            s.sender_ordinals = ordinal_count.is_some();
+            s
+        };
         for (i, name, path) in [(1, B, bi), (0, A, ai)] {
             let r =
                 LaunchRequest::builder(LifecycleMode::Persistent, RootfsSource::LocalPath(path))
@@ -285,7 +308,9 @@ fn run(args: &[String]) -> Result<()> {
                     .backend(native)
                     .cpus(1)
                     .memory_mib(256)
-                    .ttl_seconds(180)
+                    .ttl_seconds(
+                        ordinal_count.map_or(180, |n| (n as u64 * 2 + 60).clamp(180, 3600)),
+                    )
                     .build()?;
             backend.create_from_request(&r)?;
             state.defined[i] = true;
@@ -301,7 +326,15 @@ fn run(args: &[String]) -> Result<()> {
         ))?;
         observed[1] = mvm_client::AnyBackend::started_vm_kind(B).map(|kind| kind.as_str());
         native_backend::check_observation(native, observed[1]).map_err(anyhow::Error::msg)?;
-        meters[1] = Some(meter::OriginalMeter::open(B)?);
+        #[cfg(feature = "sender-ordinal-v1")]
+        let observed_meter = if ordinal_count.is_some() {
+            meter::OriginalMeter::open_ordinal(B)?
+        } else {
+            meter::OriginalMeter::open(B)?
+        };
+        #[cfg(not(feature = "sender-ordinal-v1"))]
+        let observed_meter = meter::OriginalMeter::open(B)?;
+        meters[1] = Some(observed_meter);
         let b = Arc::new(Mutex::new(
             state
                 .b_pending
@@ -328,7 +361,15 @@ fn run(args: &[String]) -> Result<()> {
         ))?;
         observed[0] = mvm_client::AnyBackend::started_vm_kind(A).map(|kind| kind.as_str());
         native_backend::check_observation(native, observed[0]).map_err(anyhow::Error::msg)?;
-        meters[0] = Some(meter::OriginalMeter::open(A)?);
+        #[cfg(feature = "sender-ordinal-v1")]
+        let observed_meter = if ordinal_count.is_some() {
+            meter::OriginalMeter::open_ordinal(A)?
+        } else {
+            meter::OriginalMeter::open(A)?
+        };
+        #[cfg(not(feature = "sender-ordinal-v1"))]
+        let observed_meter = meter::OriginalMeter::open(A)?;
+        meters[0] = Some(observed_meter);
         for (name, original, admitted) in [
             (A, grant, &astart.admitted),
             (B, setup.destination, &bstart.admitted),
@@ -348,7 +389,15 @@ fn run(args: &[String]) -> Result<()> {
         let commitment = journal_direction_commitment(&boot)?;
         let setup_ns = begin.elapsed().as_nanos() as u64;
         let helper = state.a.as_mut().context("source helper missing")?;
-        let mut result = if let Some(count) = operations {
+        #[cfg(feature = "sender-ordinal-v1")]
+        let ordinal_result = ordinal_count
+            .map(|count| sender_ordinal::campaign(count, &home, &direction, commitment, helper))
+            .transpose()?;
+        #[cfg(not(feature = "sender-ordinal-v1"))]
+        let ordinal_result: Option<Value> = None;
+        let mut result = if let Some(row) = ordinal_result {
+            row
+        } else if let Some(count) = operations {
             let start = Instant::now();
             let mut rows = Vec::with_capacity(count);
             let mut progress = fs::OpenOptions::new()
@@ -396,6 +445,17 @@ fn run(args: &[String]) -> Result<()> {
             streams[i] = meter.finish(&home.join(format!("original-{}.counts", [A, B][i])))?;
         }
     }
+    let meters_complete = ordinal_count.is_none()
+        || streams.iter().all(|s| {
+            s["capture"] == "closed_session"
+                && s["completed_exchanges"].as_u64().is_some_and(|n| n > 0)
+                && s["guest_to_host_read_bytes"]
+                    .as_u64()
+                    .is_some_and(|n| n > 0)
+                && s["host_to_guest_write_accepted_bytes"]
+                    .as_u64()
+                    .is_some_and(|n| n > 0)
+        });
     let row = json!({"native_host":{"os":env::consts::OS,"architecture":env::consts::ARCH,
         "requested_backend":native,"observed_source_backend":observed[0],"observed_destination_backend":observed[1]},
         "original_5257_helper_streams_a_b":streams,"result":measured.as_ref().ok(),"transfer_error":measured.as_ref().err().map(|e|format!("{e:#}")),
@@ -407,6 +467,10 @@ fn run(args: &[String]) -> Result<()> {
     exit?;
     recorded?;
     measured?;
+    ensure!(
+        meters_complete,
+        "incomplete original sender-ordinal guest stream measurements"
+    );
     Ok(())
 }
 fn main() -> Result<()> {
