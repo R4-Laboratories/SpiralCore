@@ -1,0 +1,48 @@
+[
+  {
+    "role": "a",
+    "image_bytes": 1470464,
+    "image_sha256": "b61cd509acc27f3b091d01b4c5a3c0156665c0c59a5ff945abdd7491f7c251d6",
+    "verity_root": "a4f9863ba8ab65de26c88ad4dc24056556069b087744c0460fb369e8f00e556d",
+    "verity_tree_sha256": "8c302385652761a9219cf5ce2df9c56d0b2983a3122eef60ea1f746a61898b4e",
+    "workload_path": "/usr/local/bin/spiralcore-mailbox-producer",
+    "workload_bytes": 717576,
+    "workload_sha256": "cfce88360c319ea605f670c02843e36f482356c899b20bbb8f2654a7a56a7902",
+    "wrapper_sha256": "64e8b2577db974fbf716ca344a50c39bac5e989beeeff68aa6682effd76de5e9",
+    "worker": {
+      "kind": "warm_process",
+      "max_calls_per_worker": 100,
+      "max_rss_mb": 64,
+      "pool_size": 1,
+      "in_process": "serial",
+      "max_queue_depth": 1
+    },
+    "entrypoint": "/usr/lib/mvm/wrappers/oci-entrypoint",
+    "require_grant": true,
+    "negative_control": "scrubbed",
+    "verify": "debugfs readback and independent full dm-verity v1 tree recomputation"
+  },
+  {
+    "role": "b",
+    "image_bytes": 1458176,
+    "image_sha256": "a0b27ae7a19c4c1d0bb086c76c8e014bf32284791005ca0ce904ab392138ecdb",
+    "verity_root": "f4984a980fcce70a1b5c10f3d4cca9c73def811e6242fd12cedc17c849a23084",
+    "verity_tree_sha256": "0047849563cc7e6baca7980af947ba500b0ef453581fcabef3bf5f9fd59f3690",
+    "workload_path": "/usr/local/bin/spiralcore-cast-recipient",
+    "workload_bytes": 708576,
+    "workload_sha256": "961336687077f651d4ee264fd528434b5ceaa4901410e0b7be2362730368b8bc",
+    "wrapper_sha256": "64e8b2577db974fbf716ca344a50c39bac5e989beeeff68aa6682effd76de5e9",
+    "worker": {
+      "kind": "warm_process",
+      "max_calls_per_worker": 100,
+      "max_rss_mb": 64,
+      "pool_size": 1,
+      "in_process": "serial",
+      "max_queue_depth": 1
+    },
+    "entrypoint": "/usr/lib/mvm/wrappers/oci-entrypoint",
+    "require_grant": true,
+    "negative_control": "scrubbed",
+    "verify": "debugfs readback and independent full dm-verity v1 tree recomputation"
+  }
+]

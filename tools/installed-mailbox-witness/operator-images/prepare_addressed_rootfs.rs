@@ -37,8 +37,16 @@ fn main() -> Result<(), Box<dyn Error>> {
     fs::DirBuilder::new().mode(0o700).create(work)?;
     let tree = work.join("stage");
     let output = work.join("image");
-    fs::create_dir_all(tree.join("usr/local/bin"))?;
-    fs::create_dir(&output)?;
+    // Host staging stays private. These ancestors become root-owned directories
+    // inside ext4 and must be traversable by the guest service after UID drop.
+    // The injector creates and modes its own runtime-owned subdirectories.
+    fs::DirBuilder::new().mode(0o700).create(&tree)?;
+    for relative in ["etc", "usr", "usr/lib", "usr/local", "usr/local/bin"] {
+        let path = tree.join(relative);
+        fs::create_dir(&path)?;
+        fs::set_permissions(&path, fs::Permissions::from_mode(0o755))?;
+    }
+    fs::DirBuilder::new().mode(0o700).create(&output)?;
     let guest_path = format!("/usr/local/bin/{basename}");
     let staged_program = tree.join(&guest_path[1..]);
     fs::copy(program, &staged_program)?;
@@ -117,6 +125,14 @@ fn main() -> Result<(), Box<dyn Error>> {
         .with_entrypoint_argv(entry.argv)
         .with_libc(mvm_build::guest_libc::detect_guest_libc(&tree))
         .write_to_dir(&output)?;
+    for name in [
+        "rootfs.ext4",
+        "rootfs.verity",
+        "rootfs.roothash",
+        "mvm-meta.json",
+    ] {
+        fs::set_permissions(output.join(name), fs::Permissions::from_mode(0o400))?;
+    }
     println!("{} {}", sha256_file(&image)?, image.display());
     Ok(())
 }
