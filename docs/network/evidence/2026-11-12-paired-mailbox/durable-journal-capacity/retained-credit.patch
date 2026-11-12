@@ -1,0 +1,58 @@
+diff --git a/crates/mvm-core/src/mailbox/journal.rs b/crates/mvm-core/src/mailbox/journal.rs
+index c2d99cf31..ad9e53813 100644
+--- a/crates/mvm-core/src/mailbox/journal.rs
++++ b/crates/mvm-core/src/mailbox/journal.rs
+@@ -823,7 +823,14 @@ impl MailboxJournal {
+                 signer,
+             )?);
+         }
+-        if self.tip.cursor >= self.limits.max_records as u64 {
++        // Local checkpoints advance the authenticated cursor even when they
++        // retire old records. Charge every retained replay identity; append
++        // separately enforces the resident record and byte limits.
++        let at_capacity = match tier {
++            AcceptanceTier::Local => self.seen.len() >= self.limits.max_records,
++            AcceptanceTier::Independent => self.tip.cursor >= self.limits.max_records as u64,
++        };
++        if at_capacity {
+             return Err(JournalError::Full);
+         }
+         let accepted = receipt(match tier {
+diff --git a/crates/mvm-core/src/mailbox/journal/checkpoint.rs b/crates/mvm-core/src/mailbox/journal/checkpoint.rs
+index 25e3663f5..a1fffcbba 100644
+--- a/crates/mvm-core/src/mailbox/journal/checkpoint.rs
++++ b/crates/mvm-core/src/mailbox/journal/checkpoint.rs
+@@ -103,6 +103,9 @@ impl MailboxJournal {
+                 &Signature::from_bytes(&signature),
+             )
+             .map_err(|_| JournalError::Corrupt)?;
++        if state.entries.len() > self.limits.max_records {
++            return Err(JournalError::Full);
++        }
+         let mut seen = BTreeMap::new();
+         let mut order = Vec::new();
+         for CheckpointEntry {
+diff --git a/crates/mvm-core/src/mailbox/journal/recovery.rs b/crates/mvm-core/src/mailbox/journal/recovery.rs
+index 1422b6b6c..121b1eb25 100644
+--- a/crates/mvm-core/src/mailbox/journal/recovery.rs
++++ b/crates/mvm-core/src/mailbox/journal/recovery.rs
+@@ -121,6 +121,9 @@ impl MailboxJournal {
+             paths.into_iter().partition(|(cursor, _)| *cursor > start);
+         paths.sort();
+         let mut suffix_synced = false;
++        if paths.len() > limits.max_records.saturating_sub(journal.records) {
++            return Err(JournalError::Full);
++        }
+         for (_, path) in paths {
+             let cursor = journal
+                 .tip
+@@ -173,6 +176,9 @@ impl MailboxJournal {
+                     receipt,
+                     authorization_signature,
+                 } => {
++                    if journal.seen.len() >= limits.max_records {
++                        return Err(JournalError::Full);
++                    }
+                     let expected_outcome = match journal.tier {
+                         AcceptanceTier::Independent => DeliveryOutcome::AcceptedDurable,
+                         AcceptanceTier::Local => DeliveryOutcome::AcceptedLocalDurable,
