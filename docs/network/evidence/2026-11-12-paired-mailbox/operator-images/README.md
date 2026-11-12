@@ -1,6 +1,6 @@
 # Verified role images for the addressed two-guest test
 
-A real SDK launch of the earlier unpacked directories removed their image-authored launch controls during normal OCI injection. This qualification produced one sealed ext4 file per role on Linux x86_64. In both images, the MVM-owned OCI wrapper starts the selected workload, the runtime grants one serial worker with a one-call queue, a 64 MiB RSS recycling threshold and a 100-call recycling limit, and the guest requires a launch-provisioned verb grant. [Original launch record](../addressed-native-launch/README.md) · [Rust builder and reproduction commands](../../../../../tools/installed-mailbox-witness/operator-images/README.md)
+A real SDK launch of the earlier unpacked directories removed their image-authored launch controls during normal OCI injection. This qualification produced one sealed ext4 file per role on Linux x86_64. In both images, the MVM-owned OCI wrapper starts the selected workload, the runtime grants one serial worker with a one-call queue, a 64 MiB RSS recycling threshold and a 100-call recycling limit, and the guest requires a launch-provisioned verb grant. [Original launch record](../addressed-native-launch/README.md) · [Rust builder and reproduction commands at the tested revision](https://github.com/R4-Laboratories/SpiralCore/blob/353038c3229e1f873b8c2ed4b600df7943dc5444/tools/installed-mailbox-witness/operator-images/README.md)
 
 | Role | Workload bytes | Sealed ext4 bytes | Initial build wall | Initial user + system CPU | Reviewed rebuild wall | Reviewed user + system CPU |
 |---|---:|---:|---:|---:|---:|---:|
@@ -12,3 +12,5 @@ Times are single host image-preparation observations at the resolution of GNU ti
 The injector discarded planted input copies of the entrypoint, image runtime, worker policy and a sentinel. Only the operator generated the worker policy, using the guest's own Rust type before sealing. Independent readback verified that the source image contained only the source executable of the pair and that the recipient contained only the recipient executable. The verifier also refused an inherited `PYTHONOPTIMIZE=1` before producing output.
 
 This packet establishes the contents and integrity of the images handed to the launcher. It contains no guest execution, application readback, network byte counts, transfer latency or WAN comparison. [Mailbox acceptance tracker](https://github.com/R4-Laboratories/SpiralCore/issues/43)
+
+A subsequent guest launch exposed a parent-directory permission error. The corrected images were read as the guest service identity through actual read-only ext4 mounts. [Permission regression and replacement digests](../operator-image-service-access/README.md)
