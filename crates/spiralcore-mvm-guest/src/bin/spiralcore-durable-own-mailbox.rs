@@ -15,7 +15,7 @@ use std::{
     io::{self, Read, Write},
     os::unix::fs::{DirBuilderExt, OpenOptionsExt},
     path::Path,
-    time::{Duration, Instant},
+    time::{Duration, Instant, SystemTime, UNIX_EPOCH},
 };
 
 type Result<T> = std::result::Result<T, Box<dyn Error>>;
@@ -57,6 +57,42 @@ fn original_input(call: &WorkerCallRequest) -> Result<(Frame, Duration)> {
     ))
 }
 
+fn unix_ms() -> Option<u64> {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .ok()?
+        .as_millis()
+        .try_into()
+        .ok()
+}
+
+struct Phase {
+    name: &'static str,
+    start: Instant,
+    unix_start_ms: Option<u64>,
+}
+
+impl Phase {
+    fn begin(name: &'static str) -> Self {
+        Self {
+            name,
+            start: Instant::now(),
+            unix_start_ms: unix_ms(),
+        }
+    }
+
+    fn failure(&self, error: &dyn Error, traffic: ReaderTraffic) -> io::Error {
+        // Only fixed phases, clock samples, completed byte counts and the local
+        // adapter error are returned. No message, lease, grant or peer bytes.
+        io::Error::other(json!({
+            "phase": self.name, "reason": error.to_string(),
+            "phase_guest_unix_start_ms": self.unix_start_ms, "phase_guest_unix_end_ms": unix_ms(),
+            "phase_elapsed_ns": self.start.elapsed().as_nanos() as u64,
+            "guest_reader_written_bytes": traffic.written, "guest_reader_read_bytes": traffic.read,
+        }).to_string())
+    }
+}
+
 fn transfer(call: WorkerCallRequest) -> Result<Value> {
     let start = Instant::now();
     let cpu = ProcessTime::now();
@@ -71,32 +107,43 @@ fn transfer(call: WorkerCallRequest) -> Result<Value> {
     // operation before staging. On error or uncertain ACK, retain its evidence.
     let dir = Path::new("/tmp/spiralcore-durable-own-mailbox");
     DirBuilder::new().mode(0o700).create(dir)?;
-    let stage_start = Instant::now();
-    pending.stage()?;
-    let stage_ns = stage_start.elapsed().as_nanos() as u64;
+    let stage = Phase::begin("stage");
+    pending
+        .stage()
+        .map_err(|err| stage.failure(&err, ReaderTraffic::default()))?;
+    let stage_ns = stage.start.elapsed().as_nanos() as u64;
     let mut receive_io = ReaderTraffic::default();
     let mut empty_polls = 0;
-    let read_start = Instant::now();
+    let read = Phase::begin("receive");
     let delivery = loop {
-        if let Some(delivery) = receive_before(deadline, &mut receive_io)? {
+        if let Some(delivery) = receive_before(deadline, &mut receive_io)
+            .map_err(|err| read.failure(&err, receive_io))?
+        {
             break delivery;
         }
         empty_polls += 1;
         let remaining = deadline
             .checked_duration_since(Instant::now())
-            .ok_or_else(|| io::Error::new(io::ErrorKind::TimedOut, "waiting for own delivery"))?;
+            .ok_or_else(|| {
+                read.failure(
+                    &io::Error::new(io::ErrorKind::TimedOut, "waiting for own delivery"),
+                    receive_io,
+                )
+            })?;
         std::thread::sleep(remaining.min(Duration::from_millis(100)));
     };
-    let read_ns = read_start.elapsed().as_nanos() as u64;
+    let read_ns = read.start.elapsed().as_nanos() as u64;
     let verify_start = Instant::now();
     if delivery.message_id() != pending.message_id() || delivery.frame().encode()? != call.stdin {
         return Err("received lease or frame differs from the staged original".into());
     }
     let digest = commit_body(dir, &delivery.frame().body, &original.body)?;
     let commit_ns = verify_start.elapsed().as_nanos() as u64;
-    let ack_start = Instant::now();
+    let ack = Phase::begin("ack");
     let mut ack_io = ReaderTraffic::default();
-    delivery.acknowledge_before(deadline, &mut ack_io)?;
+    delivery
+        .acknowledge_before(deadline, &mut ack_io)
+        .map_err(|err| ack.failure(&err, ack_io))?;
     Ok(json!({
         "profile": "mvm_own_mailbox_guest_v1",
         "message_id": hex(pending.message_id().as_bytes()),
@@ -104,7 +151,7 @@ fn transfer(call: WorkerCallRequest) -> Result<Value> {
         "empty_polls": empty_polls, "receive_request_bytes": receive_io.written,
         "receive_response_bytes": receive_io.read, "ack_request_bytes": ack_io.written,
         "ack_response_bytes": ack_io.read, "stage_ns": stage_ns, "receive_ns": read_ns,
-        "compare_and_file_commit_ns": commit_ns, "ack_ns": ack_start.elapsed().as_nanos() as u64,
+        "compare_and_file_commit_ns": commit_ns, "ack_ns": ack.start.elapsed().as_nanos() as u64,
         "workload_process_cpu_ns": cpu.elapsed().as_nanos() as u64,
         "workload_wall_ns": start.elapsed().as_nanos() as u64,
     }))
@@ -143,6 +190,29 @@ fn main() -> io::Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn refused_receive_and_ack_report_their_own_traffic() {
+        for (phase, written, read) in [("receive", 54, 39), ("ack", 1501, 0)] {
+            let clock = Phase::begin(phase);
+            let err = spiralcore_mvm_guest::Error::Mailbox(
+                mvm_core::mailbox::frame::Refusal::NotAuthorized,
+            );
+            let json: Value = serde_json::from_str(
+                &clock
+                    .failure(&err, ReaderTraffic { written, read })
+                    .to_string(),
+            )
+            .unwrap();
+            assert_eq!(json["phase"], phase);
+            assert_eq!(json["reason"], err.to_string());
+            assert_eq!(json["guest_reader_written_bytes"], written);
+            assert_eq!(json["guest_reader_read_bytes"], read);
+            assert!(json["phase_guest_unix_start_ms"].is_u64());
+            assert!(json["phase_guest_unix_end_ms"].is_u64());
+            assert!(json["phase_elapsed_ns"].is_u64());
+        }
+    }
 
     #[test]
     fn file_commit_is_exact_and_single_use() {
