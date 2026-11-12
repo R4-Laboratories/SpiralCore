@@ -73,6 +73,9 @@ impl ObjectDelivery {
     pub(super) fn pair(&self) -> [u8; 32] {
         self.pair
     }
+    pub(super) fn frame(&self) -> &Frame {
+        &self.frame
+    }
     pub fn header(&self) -> &MailboxEnvelopeHeader {
         &self.header
     }

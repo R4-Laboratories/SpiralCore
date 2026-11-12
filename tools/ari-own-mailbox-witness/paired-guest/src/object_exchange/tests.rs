@@ -222,3 +222,31 @@ fn only_matching_pending_can_be_polled_and_only_original_v2_can_finish() {
         peer.join().unwrap();
     }
 }
+
+/// Invoked by the MVM cross-package test in its private mount namespace.
+#[test]
+#[ignore]
+fn emit_first_object_call_for_guest_component() {
+    use spiralcore_transfer::protocol::{Mode, Offer};
+    let pair: Id = hex::decode(std::env::var("SC_TEST_ORIGINAL_PAIR").unwrap())
+        .unwrap()
+        .try_into()
+        .unwrap();
+    let f = Frame {
+        kind: 1,
+        transfer: [31; 32],
+        seq: 0,
+        body: Offer::cold(b"ab\0cd", Mode::Raw).encode().unwrap(),
+    };
+    let ObjectSubmissionV1::Call {
+        message_id,
+        correlation_id,
+        payload,
+    } = call_submission(&pair, &f).unwrap()
+    else {
+        panic!()
+    };
+    let bytes=serde_json::to_vec(&serde_json::json!({"message":message_id,"correlation":correlation_id,
+      "payload":payload,"input":{"object_receive":{"pair":hex::encode(pair),"transfer":hex::encode(f.transfer),"seq":f.seq}}})).unwrap();
+    std::fs::write(std::env::var_os("SC_TEST_CALL_FIXTURE").unwrap(), bytes).unwrap();
+}
