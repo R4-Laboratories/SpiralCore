@@ -146,7 +146,13 @@ fn each_entry(directory: &File, mut inspect: impl FnMut(Entry) -> Result<()>) ->
         }
     }
 }
-fn relative(parent: &File, entry: &Entry, directory: bool, serial: u32, sid: &Sid) -> Result<File> {
+fn relative(
+    parent: &File,
+    entry: &Entry,
+    directory: bool,
+    serial: u32,
+    sid: &Sid,
+) -> Result<(File, BY_HANDLE_FILE_INFORMATION)> {
     child_name(&entry.name)?;
     if entry.id == 0 {
         return Err(Error::Storage);
@@ -216,7 +222,7 @@ fn relative(parent: &File, entry: &Entry, directory: bool, serial: u32, sid: &Si
     if actual.dwVolumeSerialNumber != serial || id != entry.id {
         return Err(Error::Storage);
     }
-    Ok(file)
+    Ok((file, actual))
 }
 struct QuotaRoot {
     file: File,
@@ -299,7 +305,7 @@ pub fn quota_usage(
         if units > 4096 {
             return Err(Error::Limit);
         }
-        let directory = relative(&root.file, &entry, true, root.serial, &root.check()?)?;
+        let (directory, _) = relative(&root.file, &entry, true, root.serial, &root.check()?)?;
         #[cfg(test)]
         super::super::tests::quota_namespace_pinned();
         each_entry(&directory, |file| {
@@ -315,8 +321,10 @@ pub fn quota_usage(
             }
             let sid = root.check()?;
             private(&directory, true, &sid)?;
-            let opened = relative(&directory, &file, false, root.serial, &sid)?;
-            let length = opened.metadata()?.len();
+            // Use the EOF already queried on the same checked share-read handle
+            // after ACL validation and matched to the enumerated file identity.
+            let (_opened, info) = relative(&directory, &file, false, root.serial, &sid)?;
+            let length = (u64::from(info.nFileSizeHigh) << 32) | u64::from(info.nFileSizeLow);
             all = all.checked_add(length).ok_or(Error::Limit)?;
             if entry.name == scoped_namespace {
                 scoped = scoped.checked_add(length).ok_or(Error::Limit)?;
