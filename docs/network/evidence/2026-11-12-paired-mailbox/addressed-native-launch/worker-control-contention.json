@@ -1,0 +1,52 @@
+{
+  "scope": "Linux x86_64, one tenant, signed original worker controls on local Unix socket",
+  "product_baseline": "0f174e37facb0ee1e3a69dce3a08cab451b71f21",
+  "source": "2ae85317df9337705b52d01662c3ba0d335563b3",
+  "lane_red": {
+    "test_source": "532117913e7327f97f60f5706ae496880e5456b6",
+    "control": "signed initial Acquire with actual daemon mutation lane held",
+    "error_kind": "UnexpectedEof",
+    "error": "worker control EOF",
+    "log_sha256": "de2fc96bb3c61835bf7321a4072269f996c78fd8c4caf1f9a3c216a984b5f781"
+  },
+  "workspace_red": {
+    "test_source": "67d1801ecdc6f636274d8ed51426f15662fdccbc",
+    "control": "signed Query with two original reservations and sole control workspace already charged",
+    "error_kind": "ConnectionReset",
+    "os_error": 104,
+    "log_sha256": "7ee533ad4ebb6779b7916fa344ca1c102caa64d80532fafb0f098be7c000472c"
+  },
+  "original_cast_profile": {
+    "shared_limit_bytes": 1048576,
+    "fixed_actor_bytes": 137216,
+    "worker_bytes_each": 245760,
+    "control_workspace_bytes": 327680,
+    "two_reserved_workers_and_one_workspace_bytes": 956416
+  },
+  "green": [
+    {
+      "selector": "full_pair_reuses_single_control_workspace_for_signed_query",
+      "passed": 1,
+      "failed": 0,
+      "log_sha256": "383e4e23c5c5b48e12598d3f04505d08b467a85af8fb396bd9c923169622fcc6"
+    },
+    {
+      "selector": "signed_initial_worker_waits_for_held_mutation_lane_and_rechecks_expiry",
+      "passed": 1,
+      "failed": 0,
+      "log_sha256": "19481935aba6dd11aac99696e9df941d49c01f22236d2d1787da1d16434ab1b6"
+    }
+  ],
+  "suite": {
+    "passed": 16,
+    "failed": 1,
+    "failed_selector": "stop_timeout_retains_original_owner_and_credit_until_later_collection",
+    "log_sha256": "fce825775016c780f6d4fcd80e381da84addbb6fe7b555fe9c7785a5e242ecb2",
+    "unchanged_product_baseline_log_sha256": "3b2bedaf5655e8f33f2c22d619c806e65ebc5f48c04609d9151d360fd4c7b872"
+  },
+  "test_binary_sha256": "fc8209c1feae30270442a2592402b633081709e4463a832924c16b4b07f6ef8c",
+  "vm_boots": 0,
+  "guest_payload_bytes": null,
+  "wan_bytes": null,
+  "transfer_time_ns": null
+}
