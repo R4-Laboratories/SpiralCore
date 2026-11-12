@@ -75,6 +75,55 @@ fn materialized_role(path: &std::path::Path) -> Result<()> {
     Ok(())
 }
 
+// Explicit local operator evidence. The private file is never included in a
+// report or printed; it lives inside the already validated private test home.
+struct PrivateLaunchDiagnostics(std::sync::Mutex<fs::File>);
+impl PrivateLaunchDiagnostics {
+    fn open(home: &std::path::Path) -> Result<Option<Arc<Self>>> {
+        match std::env::var_os("SPIRALCORE_PRIVATE_LAUNCH_DIAGNOSTICS").as_deref() {
+            None => Ok(None),
+            Some(v) if v == "1" => Ok(Some(Arc::new(Self::create(home)?))),
+            _ => anyhow::bail!("private diagnostics option must be 1 or absent"),
+        }
+    }
+    fn create(home: &std::path::Path) -> Result<Self> {
+        use std::os::unix::fs::OpenOptionsExt;
+        let f = fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .mode(0o600)
+            .open(home.join("addressed-sdk.private.jsonl"))?;
+        Ok(Self(std::sync::Mutex::new(f)))
+    }
+    fn record(&self, phase: &'static str, role: &'static str, detail: &str) -> Result<()> {
+        use std::io::Write;
+        let end = detail.floor_char_boundary(4096);
+        let mut f = self
+            .0
+            .lock()
+            .map_err(|_| anyhow::anyhow!("private diagnostic writer unavailable"))?;
+        serde_json::to_writer(
+            &mut *f,
+            &json!({"phase":phase,"role":role,"cause":&detail[..end],"truncated":end<detail.len()}),
+        )?;
+        f.write_all(b"\n")?;
+        f.sync_all()?;
+        Ok(())
+    }
+}
+fn observe_refusal(
+    sink: &Option<Arc<PrivateLaunchDiagnostics>>,
+    phase: &'static str,
+    role: &'static str,
+    detail: impl FnOnce() -> String,
+) {
+    if let Some(sink) = sink
+        && sink.record(phase, role, &detail()).is_err()
+    {
+        eprintln!("addressed private diagnostic unavailable role={role} phase={phase}");
+    }
+}
+
 fn launch_diagnostic(err: &mvm_core::client::MvmError) -> (&'static str, &'static str) {
     use mvm_core::client::MvmError;
     let detail = match err {
@@ -135,6 +184,8 @@ pub fn run(
         "two original roles and a bounded addressed body required"
     );
     let (helper, _image, claim, held) = claim_fresh_home(first)?;
+    let diagnostics = PrivateLaunchDiagnostics::open(&first.home)?;
+    let prepare_diagnostics = diagnostics.clone();
     let (tx, rx) = mpsc::sync_channel(1);
     let home = first.home.clone();
     let prepare: Arc<PrepareBoth> = Arc::new(move |a, b, deadline| {
@@ -150,7 +201,15 @@ pub fn run(
                 config: b.config(),
             },
             deadline,
-        )?;
+        )
+        .inspect_err(|e| {
+            observe_refusal(
+                &prepare_diagnostics,
+                "signed_direction_prepare",
+                "pair",
+                || format!("{e:#}"),
+            )
+        })?;
         tx.try_send(pair.retained)
             .map_err(|_| anyhow::anyhow!("pair issuer already used or closed"))?;
         Ok([
@@ -183,6 +242,7 @@ pub fn run(
     let launches = thread::scope(|scope| {
         let jobs = reqs.map(|(role, req)| {
             let provider = installed.provider.clone();
+            let diagnostics = diagnostics.clone();
             scope.spawn(move || -> Result<LaunchOutcome> {
                 let local =
                     LocalBackend::with_hypervisor("firecracker").with_installed_mailbox(provider);
@@ -195,6 +255,7 @@ pub fn run(
                         Ok(vm)
                     }
                     Err(error) => {
+                        observe_refusal(&diagnostics, "sdk_launch", role, || error.to_string());
                         let (code, detail) = launch_diagnostic(&error);
                         eprintln!(
                             "addressed role={role} launch=failed code={code} category={detail}"
