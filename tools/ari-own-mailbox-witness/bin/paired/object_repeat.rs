@@ -43,6 +43,36 @@ fn id(value: &Value, bytes: usize) -> Result<&str> {
     Ok(text)
 }
 
+#[derive(Default)]
+struct Receiver {
+    instance: Option<String>,
+    counters: Option<[u64; 6]>,
+}
+
+fn reader_counts(traffic: &Value, previous: Option<[u64; 6]>) -> Result<[u64; 6]> {
+    ensure!(
+        traffic["order"] == json!(COUNTERS),
+        "unexpected reader counter order"
+    );
+    let current: [u64; 6] = serde_json::from_value(traffic["this_invocation"].clone())?;
+    let total: [u64; 6] = serde_json::from_value(traffic["worker_cumulative"].clone())?;
+    for i in 0..6 {
+        ensure!(
+            current[i] > 0 && current[i] <= total[i],
+            "missing reader traffic for {}",
+            COUNTERS[i]
+        );
+        if let Some(prior) = previous {
+            ensure!(
+                total[i].checked_sub(prior[i]) == Some(current[i]),
+                "discontinuous reader counter for {}",
+                COUNTERS[i]
+            );
+        }
+    }
+    Ok(total)
+}
+
 fn check_turn(row: &Value, tx: &str, seq: u64, worker: &str, body: &[u8]) -> Result<bool> {
     ensure!(
         row["transfer"] == tx && row["seq"] == seq && id(&row["receiver_instance"], 16)? == worker,
@@ -51,14 +81,6 @@ fn check_turn(row: &Value, tx: &str, seq: u64, worker: &str, body: &[u8]) -> Res
     ensure!(
         row["original_call_acknowledged"] == true && row["already_completed"] != true,
         "fresh original Call acknowledgment required"
-    );
-    let traffic = &row["reader_bytes"];
-    ensure!(
-        traffic["order"] == json!(COUNTERS)
-            && traffic["this_invocation"]
-                .as_array()
-                .is_some_and(|a| a.len() == 6 && a.iter().all(Value::is_u64)),
-        "invalid destination reader counters"
     );
     number(row, "cpu_ns")?;
     number(row, "wall_ns")?;
@@ -145,13 +167,7 @@ fn original_boots(home: &Path, pair: [u8; 32]) -> Result<[MailboxReaderBootBindi
     Ok(boots)
 }
 
-fn round(
-    pair: &str,
-    tx: &str,
-    b_boot: &str,
-    instance: &mut Option<String>,
-    warm: bool,
-) -> Result<Value> {
+fn round(pair: &str, tx: &str, b_boot: &str, receiver: &mut Receiver, warm: bool) -> Result<Value> {
     let start = Instant::now();
     let host_cpu = cpu_time::ProcessTime::now();
     let until = start + Duration::from_secs(45);
@@ -193,8 +209,9 @@ fn round(
             "B did not use the selected boot"
         );
         let who = id(&row["receiver_instance"], 16)?;
-        let worker = instance.get_or_insert_with(|| who.to_owned());
+        let worker = receiver.instance.get_or_insert_with(|| who.to_owned());
         exact = check_turn(&row, tx, seq, worker, BODY)?;
+        receiver.counters = Some(reader_counts(&row["reader_bytes"], receiver.counters)?);
         receiver_cpu = receiver_cpu
             .checked_add(number(&row, "cpu_ns")?)
             .context("receiver CPU overflow")?;
@@ -225,7 +242,7 @@ fn round(
         "application_bytes_both_directions":application_bytes, "workload_cpu_ns":workload_cpu,
         "coordinator_process_cpu_ns":host_cpu.elapsed().as_nanos() as u64,
         "receiver_cpu_ns":receiver_cpu, "through_both_guest_results_ns":elapsed.as_nanos() as u64,
-        "sdk_request_bytes":sdk_in,"sdk_response_bytes_including_readback":sdk_out});
+        "workload_stdin_bytes":sdk_in,"workload_stdout_bytes_including_readback":sdk_out});
     // Keep completed observations on stderr even if the expected reuse gate fails.
     eprintln!("{}", measured);
     check_sender(&source, dest.len(), BODY.len(), warm)?;
@@ -250,7 +267,7 @@ pub fn run(pair: &str) -> Result<()> {
         "{}",
         json!({"pair":pair,"cold_transfer":cold_id,"warm_transfer":warm_id})
     );
-    let mut worker = None;
+    let mut worker = Receiver::default();
     let cold = round(pair, &cold_id, &b_boot, &mut worker, false)?;
     ensure!(
         original_boots(&home, bytes)? == boots,
@@ -271,7 +288,7 @@ pub fn run(pair: &str) -> Result<()> {
     println!(
         "{}",
         json!({"application_bytes_saved":cold_bytes-warm_bytes,"schema":"spiralcore.installed-object-repeat.v1","pair":pair,
-        "source_boot":hex::encode(boots[0].boot.as_bytes()),"receiver_boot":b_boot,"receiver_instance":worker,
+        "source_boot":hex::encode(boots[0].boot.as_bytes()),"receiver_boot":b_boot,"receiver_instance":worker.instance,
         "object_bytes":BODY.len(),"cold":cold,"warm":warm,"host_relay_bytes":null,"network_wire_bytes":null})
     );
     Ok(())
@@ -296,6 +313,21 @@ mod tests {
         assert!(!check_turn(&row, &tx, 2, &worker, b"a\0").unwrap());
         row["already_completed"] = json!(true);
         assert!(check_turn(&row, &tx, 2, &worker, b"a\0").is_err());
+    }
+
+    #[test]
+    fn receiver_counts_must_cover_every_fresh_reader_operation() {
+        let mut row = json!({"order":COUNTERS,"this_invocation":[1,2,3,4,5,6],
+            "worker_cumulative":[11,12,13,14,15,16]});
+        assert_eq!(
+            reader_counts(&row, Some([10; 6])).unwrap(),
+            [11, 12, 13, 14, 15, 16]
+        );
+        assert!(reader_counts(&row, Some([11; 6])).is_err());
+        row["this_invocation"][2] = json!(0);
+        assert!(reader_counts(&row, None).is_err());
+        row["this_invocation"][2] = json!(18);
+        assert!(reader_counts(&row, None).is_err());
     }
 
     #[test]
