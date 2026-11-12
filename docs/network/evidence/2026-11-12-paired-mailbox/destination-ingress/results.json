@@ -1,0 +1,44 @@
+{
+  "mvm_commit": "5e854749594f90d94ab2ca873f7818f9aa32b3e2",
+  "test_binary_sha256": "73e5d84e21205c131a265982d54881817169e3f5ebb9fce90ab921f8b6aede40",
+  "target": "arm64-Darwin",
+  "rustc": "rustc 1.97.1 (8bab26f4f 2026-07-14)",
+  "selectors": [
+    {
+      "passed": 4,
+      "raw_compiler_and_test_log_sha256": "d24be5c2db1a7ae5bee2342612f4a29c95b66e75ee62b6c44bf48ae8b7ae02bd",
+      "excerpt": "development.txt",
+      "excerpt_sha256": "20c63a13f248593bdb0a1d99391dba9ff26dfb798ae026fab457e20a91798fd5"
+    },
+    {
+      "passed": 1,
+      "raw_compiler_and_test_log_sha256": "f5b6d98cde206fd0205d571dfd83426943e72e18d877c0630daf327f70a56e6a",
+      "excerpt": "socket.txt",
+      "excerpt_sha256": "e79f969285b567065fec5055eaa65c8c03de297000207448a732eeb77f5677ea"
+    },
+    {
+      "passed": 1,
+      "raw_compiler_and_test_log_sha256": "8b8eb12c30bb4b8038a045f460d312c03a95d31e8a6e1884052c8dbb71d86607",
+      "excerpt": "scope.txt",
+      "excerpt_sha256": "159ad494c689af954b7a89a59113af9d0acede63ec87b9d618dfe9bd10694804"
+    }
+  ],
+  "input_hex": "0041ff4200",
+  "exact_readback": true,
+  "scope": "component on two AF_UNIX socketpairs; no guest, WAN, durable commit, or zstd comparison",
+  "meter_boundary": "after endpoint and test frames prepared until complete peer verdict at EOF and joined exact guest readback; no seal, setup or durable commit",
+  "test_profile": "unoptimized no debug symbols; one observed exchange",
+  "observation": {
+    "payload": 5,
+    "peer_forward": 4962,
+    "peer_reverse": 11,
+    "role_forward": 283,
+    "role_reverse": 98,
+    "peer_cpu_ns": 249125,
+    "helper_cpu_ns": 4123833,
+    "guest_cpu_ns": 26416,
+    "receive_through_join_ns": 4525208
+  },
+  "mvm_parent": "8ff62f25aa549967fb76aad879927537ee5609d8",
+  "decompressed_patch_sha256": "0f05927e4c857f65220205e359541a879d6f0af08857ec3cd082414499f60953"
+}
