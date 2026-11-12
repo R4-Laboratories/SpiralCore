@@ -1,0 +1,306 @@
+{
+  "application_bytes_each": 4096,
+  "frame_bytes_each": 4152,
+  "host_product": "8238000662f59893b6ec703ab4b37d7a86c08340",
+  "guest_runtime_source": "93b3b65ae72a4746a54a21c7c158d5453cceb8f5",
+  "driver_source": "cfeb388fdb30f57d0ee1cf39d5de243fb03ca4ea",
+  "report_scope": "One original host, two new Firecracker guests per profile, three distinct IDs. Controls complete after staging and before forwarding.",
+  "native_host": {
+    "architecture": "x86_64",
+    "observed_destination_backend": "firecracker",
+    "observed_source_backend": "firecracker",
+    "os": "linux",
+    "requested_backend": "firecracker"
+  },
+  "setup_ns": 4631778364,
+  "series_ns": 3592564630,
+  "driver_cpu_ns": 5182245597,
+  "driver_whole_wall_ns": 8528390554,
+  "whole_command_gnu_time": "wall=8.59 user=5.48 system=0.11 max_rss_kib=75052 status=0",
+  "original_helper_streams_5257_a_b": [
+    {
+      "capture": "closed_session",
+      "completed_exchanges": 4,
+      "guest_to_host_read_bytes": 12660,
+      "host_to_guest_write_accepted_bytes": 3608
+    },
+    {
+      "capture": "closed_session",
+      "completed_exchanges": 7,
+      "guest_to_host_read_bytes": 7835,
+      "host_to_guest_write_accepted_bytes": 39898
+    }
+  ],
+  "original_helper_exits": [
+    {
+      "assisted": false,
+      "exit_code": 0,
+      "first_stop_attempt": true,
+      "name": "sc-journal-a",
+      "success": true
+    },
+    {
+      "assisted": false,
+      "exit_code": 0,
+      "first_stop_attempt": true,
+      "name": "sc-journal-b",
+      "success": true
+    }
+  ],
+  "audit": "VERIFIED chain: 17 entries, 2 sessions, 2 seals",
+  "stats": {
+    "relay_forward_bytes": {
+      "sum": 37972,
+      "median": 12659,
+      "max": 12670
+    },
+    "relay_return_bytes": {
+      "sum": 3608,
+      "median": 1202,
+      "max": 1209
+    },
+    "a_cpu_ns": {
+      "sum": 548227,
+      "median": 181600,
+      "max": 200155
+    },
+    "b_cpu_ns": {
+      "sum": 1601321,
+      "median": 502271,
+      "max": 607688
+    },
+    "control_cpu_ns": {
+      "sum": 172663,
+      "median": 62385,
+      "max": 78467
+    },
+    "control_host_wall_ns": {
+      "sum": 238305388,
+      "median": 81039163,
+      "max": 81212843
+    },
+    "to_signed_v2_ns": {
+      "sum": 663399544,
+      "median": 226014230,
+      "max": 232573947
+    },
+    "to_checked_readback_ns": {
+      "sum": 3583686689,
+      "median": 1192365698,
+      "max": 1225358947
+    }
+  },
+  "rows": [
+    {
+      "guest_a": {
+        "cpu_ns": 166472,
+        "frame_bytes": 4152,
+        "probe_from_agent": 203,
+        "probe_to_agent": 347,
+        "role": "staged",
+        "wall_ns": 279775
+      },
+      "guest_a_observed_receipt": null,
+      "guest_b": {
+        "ack_from_agent": 2271,
+        "ack_to_agent": 1988,
+        "cpu_ns": 607688,
+        "frame_bytes": 4152,
+        "receive_from_agent": 7612,
+        "receive_to_agent": 54,
+        "role": "received_and_acknowledged",
+        "wall_ns": 908849462
+      },
+      "interleaved_control": {
+        "agent_reply_bytes": 203,
+        "agent_request_bytes": 347,
+        "control_probe": 1,
+        "cpu_ns": 31811,
+        "data_staged_before_control_ns": 81207203,
+        "end_ns": 157264663,
+        "sdk_reply_bytes": 101,
+        "sdk_request_bytes": 177,
+        "start_ns": 81211281,
+        "wall_ns": 133089
+      },
+      "receipt_outcome": "AcceptedLocalDurable",
+      "receipt_recovery": null,
+      "sdk_call_application_io": {
+        "destination_reply_with_readback": 8471,
+        "destination_request": 107,
+        "source_reply": 193,
+        "source_request": 8478
+      },
+      "sealed_a_to_b_bytes": 12670,
+      "signed_b_to_a_bytes": 1209,
+      "through_observed_v2_ns": 204811367,
+      "through_verified_destination_call_ns": 1192365698,
+      "verified_body_bytes": 4096,
+      "wan_bytes": null,
+      "message_id_sha256": "76386d9aa2b847e9499c0d454fca2d8ce258e04676f7e9a09d369673a427c951"
+    },
+    {
+      "guest_a": {
+        "cpu_ns": 200155,
+        "frame_bytes": 4152,
+        "probe_from_agent": 203,
+        "probe_to_agent": 347,
+        "role": "staged",
+        "wall_ns": 341421
+      },
+      "guest_a_observed_receipt": null,
+      "guest_b": {
+        "ack_from_agent": 2266,
+        "ack_to_agent": 1984,
+        "cpu_ns": 502271,
+        "frame_bytes": 4152,
+        "receive_from_agent": 7608,
+        "receive_to_agent": 54,
+        "role": "received_and_acknowledged",
+        "wall_ns": 923949576
+      },
+      "interleaved_control": {
+        "agent_reply_bytes": 203,
+        "agent_request_bytes": 347,
+        "control_probe": 2,
+        "cpu_ns": 78467,
+        "data_staged_before_control_ns": 91650794,
+        "end_ns": 172867545,
+        "sdk_reply_bytes": 101,
+        "sdk_request_bytes": 177,
+        "start_ns": 91654702,
+        "wall_ns": 322666
+      },
+      "receipt_outcome": "AcceptedLocalDurable",
+      "receipt_recovery": null,
+      "sdk_call_application_io": {
+        "destination_reply_with_readback": 8471,
+        "destination_request": 107,
+        "source_reply": 193,
+        "source_request": 8478
+      },
+      "sealed_a_to_b_bytes": 12659,
+      "signed_b_to_a_bytes": 1202,
+      "through_observed_v2_ns": 232573947,
+      "through_verified_destination_call_ns": 1225358947,
+      "verified_body_bytes": 4096,
+      "wan_bytes": null,
+      "message_id_sha256": "901ef57b7e6b3bf629741d563e1091b346f2d368436c5822c4d46284dc97a8e7"
+    },
+    {
+      "guest_a": {
+        "cpu_ns": 181600,
+        "frame_bytes": 4152,
+        "probe_from_agent": 203,
+        "probe_to_agent": 347,
+        "role": "staged",
+        "wall_ns": 377258
+      },
+      "guest_a_observed_receipt": null,
+      "guest_b": {
+        "ack_from_agent": 2256,
+        "ack_to_agent": 1976,
+        "cpu_ns": 491362,
+        "frame_bytes": 4152,
+        "receive_from_agent": 7600,
+        "receive_to_agent": 54,
+        "role": "received_and_acknowledged",
+        "wall_ns": 893295086
+      },
+      "interleaved_control": {
+        "agent_reply_bytes": 203,
+        "agent_request_bytes": 347,
+        "control_probe": 3,
+        "cpu_ns": 62385,
+        "data_staged_before_control_ns": 91639012,
+        "end_ns": 172681902,
+        "sdk_reply_bytes": 101,
+        "sdk_request_bytes": 177,
+        "start_ns": 91642739,
+        "wall_ns": 188013
+      },
+      "receipt_outcome": "AcceptedLocalDurable",
+      "receipt_recovery": null,
+      "sdk_call_application_io": {
+        "destination_reply_with_readback": 8471,
+        "destination_request": 107,
+        "source_reply": 193,
+        "source_request": 8478
+      },
+      "sealed_a_to_b_bytes": 12643,
+      "signed_b_to_a_bytes": 1197,
+      "through_observed_v2_ns": 226014230,
+      "through_verified_destination_call_ns": 1165962044,
+      "verified_body_bytes": 4096,
+      "wan_bytes": null,
+      "message_id_sha256": "f9f4227f65efff885fa373e55a2edf91213c208ff8cafebc021a6d32f74ace7f"
+    }
+  ],
+  "artifact_hashes": {
+    "host-sha256": {
+      "paired-journal": "2a4d7cb1884a1e3b43a6d06de7db95a2b44e3066c037d16e961f7bdba5de8e49",
+      "image": "85411d594957482c47d644bf3073c5a9f1f1a869903fb2b334d5ffa8c6b19b06",
+      "mvm-mailbox": "0cc277b47807e330ef0a29e877a6044421cbc9503a05e8db1b6ff3c597856093",
+      "mvm-host-agent": "c4722228c8a65946aa1579835cabfed35bc1a6abdf25224d6160a589de270563",
+      "mvm-signer-helper": "07a2e2aa9d834242c60cefcb5b1bf333ed882322b1c43879b932378fd8fb5ac0",
+      "mvm-network-endpoint": "0f738a2d6e255b9c3222975235d2fd6ed711b196a0df1f69804714986b26ed8a",
+      "mvmctl": "8130448a7d528814a77d0bef23cf50fc7a1c32d7a80aa245e469d765d056763f"
+    },
+    "worker-sha256": {
+      "spiralcore-durable-destination": "7c9a6eb93e0574c015624d5caf3a629eb8c92272812d22141dbab613044e5101",
+      "spiralcore-durable-source": "21e9b600a9525d372accdf65ac492343a15e0a5621c4541702b5971a067db39d"
+    },
+    "mvm-runtime-sha256": {
+      "mvm-guest-agent": "21390409134dc4354ac28e1d3c1c23598d40b7c57b250dcabf7ee45b5b21da39",
+      "mvm-oci-entrypoint": "7f2c86d2dbe3b5ab36c36e89d1dd46070d831229040ea480d3dffbf24563a7d6",
+      "mvm-guest-netinit": "b1d791a20e81c4eeb2cd09f01ffd4779ebe3a76baf3988f555cd9e59dd5266ec",
+      "mvm-egress-client": "72c6e59948c0780be8fb7d30b07558e9a283148da730ed76b6dfc70fe65b918e"
+    },
+    "image-a.sha256": {
+      "rootfs.ext4": "b5992179ad0a7df1659c194dc4345d9c50e493ea06e847c615694c6cc2e199b8",
+      "rootfs.verity": "8ba26e71a0d8b35dfa07095eee10700bbfce906e32e18ada30ff581501fce35a",
+      "rootfs.roothash": "faaae59e12552ed69be3478c866d6356a6230e4ffec96512fb125b598fe9b794",
+      "mvm-meta.json": "1e2ebf272b1b45cd2a9c4f1ea32b847c3824a8208dddeb07fb8d456c14be0a68"
+    },
+    "image-b.sha256": {
+      "rootfs.ext4": "917c5fe639e82e351a0b00ec4f001266039a9343d3bf5c39ba1c58fd74b72582",
+      "rootfs.verity": "f93f1124086d6ff7d780a082787e5e8ca9160eb66b005288355190ba394311f2",
+      "rootfs.roothash": "7d6a561e3fbec1412ef980c1c4c0a01c3e000b6bb8f28fcff341efc2ae767255",
+      "mvm-meta.json": "e279d13ea18d559f6c5f572e248f212c7856c678be9d7adcb5320a4c22a07ddf"
+    }
+  },
+  "raw_record_sha256": {
+    "paired-result.json": "85dc0852cb68f40d693f3c9b649183047a2c817bd4647f89e01fdac3ab17645d",
+    "paired-series.jsonl": "9e7394fbf21a3eb316738be6493b6da7e19fa3a7f316117c37390dc4cb5d2e77",
+    "paired-retirement.jsonl": "4ecd19450145bb63b443a2b3a6cad36c420a9b2c97d065dae534eb4cc42901f6",
+    "native.time": "e0962c0287c15cfa6b122cc1387aca347a20ee650f61a0cc068d5471e72657fe",
+    "original-sc-journal-a.counts": "57bfe1e4caba626b0ed4f83a7d352302069b2e6b5ebf6ae83d3bbc267888082d",
+    "original-sc-journal-b.counts": "a00622bd173fed082fdbfc4d066a64b05754c8709b32537dac9601201828e543",
+    "audit.log": "5b7cb24bc38132f35843e640eed08542a0c2870d9531d5568ac4fe243688e1d1",
+    "runtime.json": "97b5ece13c7d862af7896b194e5e4788837af494d8476e6539958577e65444f2",
+    "host-tests.log": "4571f43eedb59156afcc1fa09783f2649dad833a6320864950128ffb6e84fe69",
+    "guest-tests.log": "ea0bd7e47bdb6229c1beca93f51cdffb23049a4c6c0196dd79bc3f1bbf60e272",
+    "host-sha256": "082eec54db19d9629ad0430d9a8c0c177b3ef6dcd8847011d017d38e1fcde65e",
+    "worker-sha256": "9ba8999c6f19ee12288a39a43f5db573f26ee2c32392e9ae36fd1c44b797a63c",
+    "mvm-runtime-sha256": "9bedc3e3891ef22e021d397019141a90c45f7f8d0606dcd856c0788102794071",
+    "image-a.sha256": "f7137214ceda672b5a3bb4080d19976bc8124618a59e94ccce6e03b331cefcea",
+    "image-b.sha256": "2cd205db53341d8f856642c1ee75057460281498e4ccdaeeaf5b11e5c1beba58"
+  },
+  "runtime": {
+    "arch": "x86_64",
+    "guest_archive_sha256": "fa939b0899e2a3f60ef7a6697f6bb24ae080c5ea38f60df991c10b8ba1b193e1",
+    "host_retention_ceiling_ms": 30000,
+    "initramfs_hash_record_sha256": "61933f8c8c8770c4a632853ba8aab85d9e0636e92895e9a63a92a8dee80afe63",
+    "initramfs_sha256": "854cf584a283ec04ca3e93ea955711cbed79aab0074f91ef1135f996ea2cb992",
+    "mvm_version": "0.28.0-rc.1",
+    "overlay_root_hash": "b5b0e686c0e711842d6139a2e1c8aecda19661cb820ce64e733c91961b70b33b",
+    "overlay_sha256": "2bce003dfaf6b2b138e8f6ad9f0808c2874e27cae9305f2a91d0a976ccc115b3",
+    "overlay_verity_sha256": "2c67e255e47a2604016ef248667d620768f0e09083942093ae8deb62ef29949a",
+    "sdk_sidecars": 2
+  },
+  "unit_test_output": {
+    "host-tests.log": "test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.11s",
+    "guest-tests.log": "test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s"
+  },
+  "wan_bytes": null
+}

@@ -64,3 +64,15 @@ Rebuild the two sealed images using those workload executables and the original 
 The paired driver accepts `--backend firecracker` on Linux x86-64 or arm64 and `--backend hvf` on Apple Silicon macOS. Omitting the flag selects the native backend for those host targets. The SDK still enforces its own backend availability and version requirements. Both persistent role definitions and both original SDK starts use the same selection. After each start, the driver reads MVM’s per-VM backend marker through `AnyBackend::started_vm_kind`. A missing or mismatched marker stops the trial and enters the original-owner cleanup path. The final result records the requested backend and the separately observed source and destination markers, including null for a role whose start never returned.
 
 For HVF, use the existing native MVM supervisor and its verified arm64 Linux kernel, guest agent and OCI wrapper. Build both distinct guest workloads for `aarch64-unknown-linux-musl` and rebuild their sealed role images with the same `image` program. Keep the signed 30-second mailbox ceiling, original service executables and private MVM home. Invoke `paired-journal --backend hvf A_EXT4 A_SHA256 B_EXT4 B_SHA256 fixtures/workload-frame.bin`. The Linux sample above used Firecracker. Each platform’s native delivery and lifecycle results are tracked separately in [#46](https://github.com/R4-Laboratories/SpiralCore/issues/46).
+
+### 4 KiB fixture with interleaved control
+
+Use the same paired build layout, host service binaries, 30-second retention ceiling and verified runtime. Build the host driver with features `paired-journal-qualification,large-object-fixture` and the two guest workloads with `large-object-fixture`. Prepare the authority and runtime in a fresh private MVM home. Seal each workload with its corresponding `series-a` or `series-b` role. This selects the known 4,152-byte frame at both workloads and in the source's signed outbound direction. Verify `fixtures/sha256.txt` before running.
+
+```sh
+paired-journal --backend firecracker --objects 3 \
+  "$source_ext4" "$source_sha256" "$destination_ext4" "$destination_sha256" \
+  fixtures/workload-4k-frame.bin
+```
+
+For the comparison, build both workloads and the driver with the large-object feature disabled, use a fresh private installation and the original `fixtures/workload-frame.bin`. Keep the original per-object reports, both port-5257 counters, teardown statuses and the audit verification. [Recorded size comparison](../../docs/network/evidence/2026-11-12-paired-mailbox/paired-durable-native/size-control/README.md)
