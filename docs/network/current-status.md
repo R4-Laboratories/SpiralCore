@@ -6,6 +6,12 @@ The [README](../../README.md) is the architecture/results entry point;
 [issue #42](https://github.com/R4-Laboratories/SpiralCore/issues/42) remains the
 delivery authority. The complete MVM contribution is **not finished**.
 
+For the two-guest milestone, the Linux coordinator now has an opt-in pair of
+named VM workers under one host budget. The guest Submit retry path and
+destination Cast path have separate local socket measurements. The next native
+gate is an installed two-guest Cast with exact destination readback and
+independent worker shutdown. [Paired mailbox evidence](evidence/2026-11-12-paired-mailbox/README.md)
+
 ## Published checkpoints
 
 | Component | What the checkpoint establishes | Evidence |
