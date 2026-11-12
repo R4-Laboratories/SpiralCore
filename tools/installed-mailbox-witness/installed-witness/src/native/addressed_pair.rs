@@ -25,6 +25,23 @@ fn materialized_role(path: &std::path::Path) -> Result<()> {
         "addressed role requires a materialized rootfs.ext4"
     );
     let dir = path.parent().context("role image directory missing")?;
+    use std::os::unix::fs::MetadataExt;
+    ensure!(
+        dir.is_absolute() && fs::canonicalize(dir)? == dir,
+        "role image directory must be canonical"
+    );
+    let uid = rustix::process::geteuid().as_raw();
+    for ancestor in dir.ancestors() {
+        let m = fs::symlink_metadata(ancestor)?;
+        let protected = m.mode() & 0o022 == 0;
+        let system_tmp = matches!(ancestor.to_str(), Some("/tmp" | "/var/tmp"))
+            && m.uid() == 0
+            && m.mode() & 0o1000 != 0;
+        ensure!(
+            m.is_dir() && (m.uid() == 0 || m.uid() == uid) && (protected || system_tmp),
+            "role image namespace writable by another principal"
+        );
+    }
     for name in [
         "rootfs.verity",
         "rootfs.roothash",
@@ -37,6 +54,13 @@ fn materialized_role(path: &std::path::Path) -> Result<()> {
             m.is_file() && m.len() > 0,
             "incomplete materialized role metadata"
         );
+        match name {
+            "rootfs.roothash" => ensure!(m.len() <= 65, "role verity root too large"),
+            mvm_core::guest_sidecar::SIDECAR_FILENAME => {
+                ensure!(m.len() <= 65536, "role metadata too large")
+            }
+            _ => (),
+        }
     }
     ensure!(
         mvm_build::run_image::rootfs_build_is_complete(path),
@@ -313,11 +337,7 @@ pub fn run(
     if drain_failed {
         // Persist the observation deadline before waiting on the original
         // Child. Even an output error must not relinquish the process handle.
-        let saved = record_failed(&record);
-        let late = installed.collect_after_deadline()?;
-        let observed = record_late(late);
-        saved?;
-        observed?;
+        installed.record_and_collect_late(|| record_failed(&record), record_late)?;
     }
     Ok(record)
 }
@@ -362,6 +382,13 @@ mod tests {
             fs::set_permissions(&path, fs::Permissions::from_mode(0o600))?;
         }
         materialized_role(&image)?;
+        fs::set_permissions(&dir, fs::Permissions::from_mode(0o770))?;
+        assert!(materialized_role(&image).is_err());
+        fs::set_permissions(&dir, fs::Permissions::from_mode(0o700))?;
+        let hash = dir.join("rootfs.roothash");
+        fs::write(&hash, "a".repeat(4096))?;
+        assert!(materialized_role(&image).is_err());
+        fs::write(hash, "ab".repeat(32))?;
         let tree = dir.join("rootfs.verity");
         fs::remove_file(&tree)?;
         symlink(&image, &tree)?;
