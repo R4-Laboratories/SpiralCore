@@ -17,6 +17,8 @@ The source can now seal an authorized Cast at its original worker and reuse the 
 
 Linux and macOS component tests recovered the same five-byte Cast using a fresh directional key and the source and destination workers’ separate wrapping keys. The public enrollment binds the guest boot record to the original worker pair. The installed two-VM route remains open. [Directional key placement, socket bytes and CPU](evidence/2026-11-12-paired-mailbox/directional-key/README.md).
 
+A coordinator handoff now checks the original helper’s kernel PID and addressed readiness. Losing the reply keeps 32 KiB charged until the original helper is collected. Two real helper processes exercised this boundary on macOS. [Original helper custody and measured readback](evidence/2026-11-12-paired-mailbox/helper-handoff.md).
+
 ## Published checkpoints
 
 | Component | What the checkpoint establishes | Evidence |
