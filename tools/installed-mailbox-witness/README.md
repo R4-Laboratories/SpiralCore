@@ -74,7 +74,7 @@ jq -e '.status == "passed" and .exact_readback == true and
        .received_bytes == 1024 and .expected_sha256 == .received_sha256' results/native.json
 ```
 
-The mailbox ID above is a synthetic fixture. Each invocation needs a fresh VM namespace and an unused report path outside the private MVM home. On failure, preserve the report and inspect the original process and service state before disposing of the test directory. In this revision a failure attaching the SDK provider after daemon startup, or a timeout waiting for idle retirement, can leave the daemon alive. Only count retirement when the runner records it.
+The mailbox ID above is a synthetic fixture. Each invocation needs a fresh VM namespace and an unused report path outside the private MVM home. On failure, preserve the report and inspect the original process and service state before disposing of the test directory. The [first installed run's source](https://github.com/R4-Laboratories/SpiralCore/tree/4980cf8e3fa8ffbbcaa3f8596d54fd3276331bf9/tools/installed-mailbox-witness) attached its SDK provider after starting the daemon. The current runner retains the original child before releasing its configuration and collects it if provider binding fails. A timeout waiting for idle retirement can still leave the daemon alive. Only count retirement when the runner records it.
 
 ## Read the measurements
 
