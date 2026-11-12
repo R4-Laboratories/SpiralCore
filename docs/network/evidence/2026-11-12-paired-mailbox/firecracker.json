@@ -1,0 +1,152 @@
+{
+  "scope": "Two native x86-64 Linux/Firecracker MVMs on one host. Two independent signed own-mailbox grants and payloads, consumed by the host. One measured run.",
+  "source": {
+    "mvm_commit": "11c6f04bd1f6fa261b6543d678acf8226e699f33",
+    "mvm_tree": "6c48ad97ac8ae8a353b1a7099da2f8187d55cfd2",
+    "spiralcore_witness_commit": "d7bca81e515e3c975e73dbdf2364fe3688f964af"
+  },
+  "raw_native": {
+    "bytes": 6135,
+    "sha256": "cbd9fe36c283bb8663fbc9df766dc71a06e8a161cebd1c5eec29883fb081560d"
+  },
+  "resources": {
+    "guests": 2,
+    "vcpu_per_guest": 1,
+    "memory_mib_per_guest": 256,
+    "guest_nic": false
+  },
+  "results": {
+    "both_originals_serving": true,
+    "second_served_after_first_retirement": true,
+    "original_coordinator_exit": "exit status: 42",
+    "terminal": {
+      "phase": "Drained",
+      "unresolved": false,
+      "pending_count": 0,
+      "revision": 55
+    },
+    "lifecycle_wall_ns": 104401737109,
+    "host_orchestrator_cpu_ns": 472204585,
+    "host_readback_wall_scope": "Elapsed from the consumer receive attempt through complete verified readback for an already-running VM; excludes producer start, provision, and final service drain.",
+    "guest_cpu_ns": null,
+    "send_only_ns": null,
+    "wan_bytes": null,
+    "zstd_comparison": null
+  },
+  "guests": [
+    {
+      "name": "spiralcore-alpha",
+      "received_bytes": 1024,
+      "received_sha256": "13fbc61cfbb3c38e00bc6f552504afe2e4d750a60693a8ebf41bcebf0ca1b4f6",
+      "exact_readback": true,
+      "setup_wall_ns": 741314275,
+      "receive_wall_ns": 3200864,
+      "receive_probes": 1,
+      "stop_and_receipt_wall_ns": 143460579,
+      "signed_helper_exit": "signed original exit 0",
+      "guest_stream_scope": "mvm/owned-mailbox/guest-5257/post-mux-host-stream/v1",
+      "guest_stream_counts": {
+        "dial_attempts": 2,
+        "failed_dials": 0,
+        "guest_to_host_read_bytes": 1060,
+        "host_to_guest_write_accepted_bytes": 11,
+        "overflow": false,
+        "read_errors": 0,
+        "write_errors": 0,
+        "zero_data_connections": 1
+      },
+      "owner_generation": 1,
+      "signed_plan_id": "sha256:e04e60cef46b881e123c467f3918f4b128a1ba9d544cd1b9a21d12a853b7578f",
+      "cleanup": "canonical_cleanup_ok",
+      "stop": "canonical_stop_ok"
+    },
+    {
+      "name": "spiralcore-beta",
+      "received_bytes": 1024,
+      "received_sha256": "f3aab349fc288dc76ec2a720e6fc063e0cbdb2e7942cbf2b1b908ab4182bd042",
+      "exact_readback": true,
+      "setup_wall_ns": 320475458,
+      "receive_wall_ns": 3012967,
+      "receive_probes": 1,
+      "stop_and_receipt_wall_ns": 124184156,
+      "signed_helper_exit": "signed original exit 0",
+      "guest_stream_scope": "mvm/owned-mailbox/guest-5257/post-mux-host-stream/v1",
+      "guest_stream_counts": {
+        "dial_attempts": 2,
+        "failed_dials": 0,
+        "guest_to_host_read_bytes": 1060,
+        "host_to_guest_write_accepted_bytes": 11,
+        "overflow": false,
+        "read_errors": 0,
+        "write_errors": 0,
+        "zero_data_connections": 1
+      },
+      "owner_generation": 2,
+      "signed_plan_id": "sha256:33673efea879eb69eb601cbb46e29628855876fb128278004071475100f93ead",
+      "cleanup": "canonical_cleanup_ok",
+      "stop": "canonical_stop_ok"
+    }
+  ],
+  "guest_artifacts": {
+    "spiralcore-alpha": {
+      "source_revision": "11c6f04bd1f6fa261b6543d678acf8226e699f33",
+      "artifact_build_commit": "11c6f04bd1f6fa261b6543d678acf8226e699f33",
+      "guest_source_fingerprint": "edbf9d404d1dcc9f9595402e17f84547dd9250af320c2402fe62547468844308",
+      "archive_sha256": "0a8fbabb4e59709457947fe449f995cf958d527a8d7c3bea497ea176fb41ced9",
+      "runtime_overlay_sha256": "cf40fbdbcdff90b32968140f747d302eaf8ddaee33c546d640ccd21ba19928c4",
+      "embedded_overlay_agent_sha256": "1c7117c6af1b225adaf53336e502ee1f14f33017853b545c6c1bce8753605016",
+      "initramfs_gzip_sha256": "4a335d14e7aff32b9c0d64d2d5ddb3859579006da061aad14989886205c55c18",
+      "decompressed_initramfs_cpio_sha256": "524fd3d0f1598f14e1f79663fcf845c93776a943832c69b586162bd1da023939",
+      "embedded_init_binary_sha256": "8ddb7509cac7229240a43ff3b19c22f6ba767b20a974c25ea291df138faa7e54",
+      "verity_root_hash": "6205bf480647a582c9a94cc1503558f3d75a86bdb1b246bc3c6669efe3ff5a68",
+      "overlay_verity_sha256": "4968f899a59c819e4e47247239902c102ae98b5833505e09b1108c7dbc062fe2",
+      "retained_generation": {
+        "vm_name": "spiralcore-alpha",
+        "status": "retained-before-spawn",
+        "provenance": "source"
+      }
+    },
+    "spiralcore-beta": {
+      "source_revision": "11c6f04bd1f6fa261b6543d678acf8226e699f33",
+      "artifact_build_commit": "11c6f04bd1f6fa261b6543d678acf8226e699f33",
+      "guest_source_fingerprint": "edbf9d404d1dcc9f9595402e17f84547dd9250af320c2402fe62547468844308",
+      "archive_sha256": "0a8fbabb4e59709457947fe449f995cf958d527a8d7c3bea497ea176fb41ced9",
+      "runtime_overlay_sha256": "cf40fbdbcdff90b32968140f747d302eaf8ddaee33c546d640ccd21ba19928c4",
+      "embedded_overlay_agent_sha256": "1c7117c6af1b225adaf53336e502ee1f14f33017853b545c6c1bce8753605016",
+      "initramfs_gzip_sha256": "4a335d14e7aff32b9c0d64d2d5ddb3859579006da061aad14989886205c55c18",
+      "decompressed_initramfs_cpio_sha256": "524fd3d0f1598f14e1f79663fcf845c93776a943832c69b586162bd1da023939",
+      "embedded_init_binary_sha256": "8ddb7509cac7229240a43ff3b19c22f6ba767b20a974c25ea291df138faa7e54",
+      "verity_root_hash": "6205bf480647a582c9a94cc1503558f3d75a86bdb1b246bc3c6669efe3ff5a68",
+      "overlay_verity_sha256": "4968f899a59c819e4e47247239902c102ae98b5833505e09b1108c7dbc062fe2",
+      "retained_generation": {
+        "vm_name": "spiralcore-beta",
+        "status": "retained-before-spawn",
+        "provenance": "source"
+      }
+    }
+  },
+  "release_build": {
+    "binary_sha256": {
+      "preparer": "88f6be1c6b0b36805f26dbaccf3e75e3e99d3ef62d11b6132ff1cd65077ea198",
+      "witness": "5ec8facddd911dd5cfff91094ec071a9d98dcfd71b268648f03584993d34f95f",
+      "mvm-host-agent": "9a97149b47b2593ba8ab3c77648c792b5a507fb03e4995009fffab1d531f8196",
+      "mvm-mailbox": "07dc12ae51c3f9c0fe0c2f180151c7dde15306cda5dbdcb411575ddb43ca09c3",
+      "mvm-network-endpoint": "518e1e5f59d462aa700be08218bf962da0bbe67fb74a60f06a45a090d390bf28",
+      "mvm-signer-helper": "ad50f425a0f53ec63985ecd18ff189f3759f62113506c645600bbc0ba865e191"
+    },
+    "paired_guest_producer_and_installed_copy_sha256": "a6cfa4a6e1ba82b9b41a090dcbf553c2b273c177c619ec3ddd0ea7153d4bc98a",
+    "firecracker_sha256": "99ad0f5cd0514a88aad0e9ae8cfdb3cc3b4ab9d190e1194602406c786b5de7a5",
+    "prior_host_build_failure": "Initial cached standalone host services build failed with a missing mailbox owner field; before boot, invalidated the locally sourced packages in the relevant Cargo targets, rebuilt from the pinned source, and checked packaged producer bytes.",
+    "faulty_build_exit": 101,
+    "independent_harness_rebuild_identical": true,
+    "guest_archive_vs_previous_original": "2884634e4287109741842e519d368c7b3869f1de0fbd351163380979417ba460"
+  },
+  "open": [
+    "Cross-principal guest-to-guest delivery",
+    "Durable destination admission",
+    "Two-host WAN",
+    "Guest-only CPU time",
+    "Saturation capacity",
+    "Codec or zstd comparison"
+  ]
+}
