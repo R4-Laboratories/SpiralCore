@@ -1,0 +1,39 @@
+final-core.log
+running 11 tests
+test acquire_commitment_changes_with_any_immutable_admission_context ... ok
+test cast_turn_requires_two_bound_owners_live_deadline_and_terminal_serving_verdict ... ok
+test cleanup_context_commitment_is_bound_even_with_valid_host_signature ... ok
+test cleanup_query_remains_available_after_expiry_but_start_work_does_not ... ok
+test legacy_signed_shape_and_unit_ok_stay_exact ... ok
+test lookup_requires_original_nonce_and_context_without_delegating_or_extending_admission ... ok
+test release_before_spawn_proof_is_only_valid_for_the_explicit_operation ... ok
+test response_correlates_exact_request_and_original_owner_before_fd_exposure ... ok
+test signed_worker_request_binds_domain_version_and_every_context_field ... ok
+test stop_can_collect_existing_owner_after_admission_expiry_but_not_after_deadline ... ok
+test worker_signed_jcs_matches_independent_fixed_vector ... ok
+
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+final-host.log
+running 1 test
+test broker::mailbox_workers::tests::lost_peer_reply_keeps_cast_workspace_until_the_original_child_exits ... private_peer_loss body_bytes=257 prefix_bytes=4 reply_bytes=0 charged_bytes=32768 through_eof_ns=1376416 source_thread_cpu_ns=91792 receiver_thread_cpu_ns=57417
+ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2432 filtered out; finished in 0.04s
+
+final-drain.log
+running 1 test
+test broker::mailbox_workers::tests::provider_fence_waits_original_activation_beyond_grace_without_renewing_it ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2432 filtered out; finished in 0.03s
+
+final-direction.log
+running 1 test
+test mailbox_launch::cast_pair::development::tests::independent_original_development_keys_carry_exact_bytes_and_refuse_swaps ... original_source_turn accepted=false helper_to_relay=4974 relay_to_helper=0 helper_to_guest=52 guest_to_helper=255 elapsed_ns=5761000 helper_cpu_ns=3251709 guest_cpu_ns=128666 relay_cpu_ns=138959
+original_source_turn accepted=true helper_to_relay=4974 relay_to_helper=11 helper_to_guest=194 guest_to_helper=255 elapsed_ns=4733375 helper_cpu_ns=3168625 guest_cpu_ns=43584 relay_cpu_ns=178334
+ORIGINAL_DESTINATION_COMPONENT payload=5 peer_forward=4974 peer_reverse=11 role_forward=283 role_reverse=98 peer_cpu_ns=62458 helper_cpu_ns=6090708 guest_cpu_ns=43500 receive_through_join_ns=10115875
+DEVELOPMENT_CAST payload=5 envelope_socket_forward=3449 envelope_socket_reverse=0 role_forward=283 role_reverse=98 prepare_cpu_ns=1020667 open_cpu_ns=695375 dispatch_cpu_ns=1278750 guest_cpu_ns=47125 prepare_through_verified_readback_ns=3257417
+ORIGINAL_DESTINATION_COMPONENT payload=5 peer_forward=4966 peer_reverse=11 role_forward=283 role_reverse=98 peer_cpu_ns=64417 helper_cpu_ns=2262625 guest_cpu_ns=25542 receive_through_join_ns=2495750
+ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2432 filtered out; finished in 0.16s
