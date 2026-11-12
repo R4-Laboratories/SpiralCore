@@ -1,0 +1,137 @@
+--- a/crates/mvm-hostd/src/mailbox_process.rs
++++ b/crates/mvm-hostd/src/mailbox_process.rs
+@@ -787,6 +787,10 @@
+     Ok(child)
+ }
+ 
++#[cfg(all(test, feature = "durable-guest-io-witness"))]
++#[path = "mailbox_process/closed_meter.rs"]
++mod closed_meter;
++
+ #[cfg(test)]
+ mod tests {
+     use super::*;
+@@ -1303,12 +1307,15 @@
+         use mvm_contract::protocol::mailbox::{DeliveryOutcome, PrincipalId};
+         use mvm_core::mailbox::frame::{OWN_MAILBOX_RECIPIENT, OutboxMessage};
+ 
+-        let home = tempfile::tempdir_in("/tmp").expect("isolated host home");
++        use std::os::unix::fs::PermissionsExt;
++        let mut private_dir = tempfile::Builder::new();
++        private_dir.permissions(std::fs::Permissions::from_mode(0o700));
++        let home = private_dir.tempdir_in("/tmp").expect("isolated host home");
+         let mut env = mvm_core::util::test_env::TestEnv::new();
+         env.isolate_mvm_home(home.path());
+         let keys_dir = mvm_core::config::mvm_keys_dir();
+         crate::audit::host_keypair::load_or_init_at(&keys_dir).expect("host signer");
+-        let state = tempfile::tempdir_in("/tmp").expect("VM state");
++        let state = private_dir.tempdir_in("/tmp").expect("VM state");
+         let mut grant = grant(&keys_dir);
+         grant.retention = Some(
+             mvm_contract::protocol::mailbox::MailboxRetentionPolicy::new(10_000)
+@@ -1402,7 +1409,11 @@
+         };
+         let (stopped_tx, stopped_rx) = sync_channel(1);
+         let helper = std::thread::spawn(move || {
++            #[cfg(feature = "durable-guest-io-witness")]
++            let clock = closed_meter::Timing::start();
+             let outcome = serve_verified(config);
++            #[cfg(feature = "durable-guest-io-witness")]
++            clock.record("initial_helper");
+             let _ = stopped_tx.send(());
+             outcome
+         });
+@@ -1415,15 +1426,20 @@
+         let retry_outbox = outbox.clone();
+         let send_listener = std::sync::Arc::clone(&listener);
+         let guest = std::thread::spawn(move || {
++            #[cfg(feature = "durable-guest-io-witness")]
++            let clock = closed_meter::Timing::start();
+             let mut stream = accept_guest(&send_listener);
+-            mvm_agentd::mailbox_outbox::forward_local_outbox(
++            let receipt = mvm_agentd::mailbox_outbox::forward_local_outbox(
+                 &mut stream,
+                 &outbox,
+                 &ed25519_dalek::VerifyingKey::from_bytes(&grant.authority_key).expect("authority"),
+                 grant.mailbox,
+                 grant.epoch,
+             )
+-            .expect("verified signed local receipt")
++            .expect("verified signed local receipt");
++            #[cfg(feature = "durable-guest-io-witness")]
++            clock.record("initial_receipt");
++            receipt
+         });
+         let accepted = match guest.join() {
+             Ok(accepted) => accepted,
+@@ -1538,6 +1554,9 @@
+             .recv_timeout(Duration::from_secs(20))
+             .expect("helper stopped after VM state moved");
+         helper.join().expect("helper task").expect("clean stop");
++        #[cfg(feature = "durable-guest-io-witness")]
++        let first = closed_meter::collect(&parked, &home.path().join("first-meter"))
++            .expect("collect first closed session");
+         std::fs::rename(&parked, &state_path).expect("restore same VM identity");
+         let anchor = FileJournalAnchor::open(&paths.anchor, address, retained.anchor_key())
+             .expect("held local anchor");
+@@ -1576,7 +1595,11 @@
+         };
+         let (restarted_tx, restarted_rx) = sync_channel(1);
+         let restarted = std::thread::spawn(move || {
++            #[cfg(feature = "durable-guest-io-witness")]
++            let clock = closed_meter::Timing::start();
+             let outcome = serve_verified(config);
++            #[cfg(feature = "durable-guest-io-witness")]
++            clock.record("restarted_helper");
+             let _ = restarted_tx.send(());
+             outcome
+         });
+@@ -1584,15 +1607,20 @@
+             .expect("replay same operation");
+         let retry_listener = std::sync::Arc::clone(&listener);
+         let retry = std::thread::spawn(move || {
++            #[cfg(feature = "durable-guest-io-witness")]
++            let clock = closed_meter::Timing::start();
+             let mut stream = accept_guest(&retry_listener);
+-            mvm_agentd::mailbox_outbox::forward_local_outbox(
++            let receipt = mvm_agentd::mailbox_outbox::forward_local_outbox(
+                 &mut stream,
+                 &retry_outbox,
+                 &ed25519_dalek::VerifyingKey::from_bytes(&grant.authority_key).expect("authority"),
+                 grant.mailbox,
+                 grant.epoch,
+             )
+-            .expect("recover exact signed receipt")
++            .expect("recover exact signed receipt");
++            #[cfg(feature = "durable-guest-io-witness")]
++            clock.record("recovered_receipt");
++            receipt
+         })
+         .join()
+         .expect("retry guest");
+@@ -1623,6 +1651,8 @@
+         );
+         drop(receiving);
+         drop(listener);
++        #[cfg(feature = "durable-guest-io-witness")]
++        std::fs::rename(state.path(), &parked).expect("park second original");
+         drop(state);
+         restarted_rx
+             .recv_timeout(Duration::from_secs(20))
+@@ -1631,6 +1661,16 @@
+             .join()
+             .expect("restarted helper task")
+             .expect("clean stop");
++        #[cfg(feature = "durable-guest-io-witness")]
++        {
++            closed_meter::collect(&parked, &home.path().join("second-meter"))
++                .expect("collect restarted session");
++            assert_eq!(
++                std::fs::read_to_string(home.path().join("first-meter").join(closed_meter::NAME))
++                    .unwrap(),
++                first
++            );
++        }
+         assert!(
+             paths.journal.is_dir(),
+             "VM teardown cannot erase accepted history"
