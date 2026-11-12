@@ -153,3 +153,44 @@ impl Enrollment {
         Ok((a, PairedJournalAdmission::new(b, grants, deadline)))
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use mvm_contract::protocol::mailbox::{CapabilityOperations, ContentType, MailboxOperation};
+    use mvm_core::mailbox::verify_capability_signature;
+
+    #[test]
+    fn installed_pair_issues_forward_cast_without_an_object_return_route() -> Result<()> {
+        let _home = mvm_core::util::test_env::TestEnv::new();
+        let enrollment = Enrollment::new()?;
+        let incoming = &enrollment.policy;
+        let source = &incoming.source_scope.grant;
+        let guest_message = ContentType::parse("application/vnd.mvm.guest-message", 1)?;
+        for (signed, owner) in [
+            (&incoming.source_scope, enrollment.source),
+            (&incoming.destination_send, enrollment.destination),
+        ] {
+            verify_capability_signature(
+                signed,
+                &ed25519_dalek::VerifyingKey::from_bytes(&owner.authority_key)?,
+            )?;
+            assert_eq!(signed.grant.address.mailbox, owner.mailbox);
+            assert_eq!(signed.grant.subject, source.subject);
+            assert_eq!(signed.grant.message_kinds, [MailboxMessageKind::Cast]);
+            assert_eq!(signed.grant.content_types, [guest_message.clone()]);
+            assert_eq!(
+                signed.grant.operations,
+                CapabilityOperations::from_operations(&[MailboxOperation::Send])
+            );
+        }
+        assert_ne!(incoming.destination_template.header.sender, source.subject);
+        assert_ne!(enrollment.source.mailbox, enrollment.destination.mailbox);
+        assert_eq!(enrollment.destination.outbound_journal_v1, None);
+        assert_eq!(
+            enrollment.destination.incoming_journal_policy_sha256_v1,
+            Some(incoming.commitment()?)
+        );
+        Ok(())
+    }
+}
