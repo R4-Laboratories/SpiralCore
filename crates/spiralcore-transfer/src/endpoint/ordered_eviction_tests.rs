@@ -3,7 +3,40 @@ use super::*;
 use std::cell::Cell;
 
 thread_local! {
+    pub(super) static HEADER_READS: Cell<usize> = const { Cell::new(0) };
     pub(super) static FULL_READS: Cell<usize> = const { Cell::new(0) };
+}
+
+#[test]
+fn an_ordered_read_uses_the_current_private_file_from_header_through_eof() {
+    let root = metadata_tests::Fixture::new();
+    let resources = crate::resource_profile::ResourceProfile::SmallV1;
+    let context = crate::wan::context([7; 32]);
+    let ns = context.namespace().unwrap();
+    let mut endpoint = Endpoint::open_with_resource_profile(
+        &root.0,
+        resources.receiver_limits(),
+        crate::wan::BenchAuthority,
+        resources,
+    )
+    .unwrap();
+    let body = [b"original publication".as_slice(), &[0; 17]].concat();
+    let offer = Offer::cold(&body, Mode::Raw);
+    endpoint.publish(&context, ns, &offer, &body, None).unwrap();
+    HEADER_READS.with(|count| count.set(0));
+    assert_eq!(
+        endpoint.ordered_cache_read(&context, offer.object).unwrap(),
+        (body.clone(), body.len() as u64 + 49)
+    );
+    assert_eq!(HEADER_READS.with(Cell::get), 1, "one fresh checked header");
+    let path = endpoint.path(ns, offer.object);
+    let mut bytes = fs::read(&path).unwrap();
+    *bytes.last_mut().unwrap() ^= 1;
+    fs::write(&path, bytes).unwrap();
+    assert_eq!(
+        endpoint.ordered_cache_read(&context, offer.object),
+        Err(Error::Integrity)
+    );
 }
 
 #[test]
