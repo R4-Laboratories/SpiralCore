@@ -24,6 +24,8 @@ In the selected host provisioning test, A sealed a 5-byte Call and B sealed a 7-
 
 The Linux SDK can retain the original Firecracker configuration peer and the reader binding written to its guest identity drive. Process and drive tests cover a replacement socket and a refused second identity issue. [Original-owner component results](evidence/2026-11-12-paired-mailbox/paired-durable-native/original-firecracker-handoff.md).
 
+The selected HVF cold-launch path now captures the public reader record written to the original identity drive. Linux component checks distinguished two boots under the same signed plan. The Apple worker lifetime channel and a native selected-pair transfer remain open. [HVF reader binding and scope](evidence/2026-11-12-paired-mailbox/paired-durable-native/hvf-original-reader.md).
+
 One persistent Linux Firecracker pair verified eight separately addressed operations and eight admitted control Calls. The median time through signed receipt was 220.763 ms, and the median through B’s ACK and exact returned readback was 883.826 ms. Both original helpers exited cleanly. [Operation timing, bytes, CPU and scope](evidence/2026-11-12-paired-mailbox/paired-durable-native/sustained/README.md).
 
 The Linux helper restart test now collects both original port-5257 transcripts across re-entry into the same VM state directory. The original signed receipt survived the restart, and an authenticated reader found the previously acknowledged queue empty. The two sessions recorded 4,818 / 8,722 and 432 / 4,479 bytes read / written at the host. [Host recovery test, exact counters and thread CPU](evidence/2026-11-12-paired-mailbox/recorder-restart/README.md)
