@@ -226,6 +226,8 @@ control exited 42. The [nine-check source revision](https://github.com/Casey-all
 
 The [installed-helper report](evidence/2026-11-11-retained-recovery/installed-helper/README.md) records 27 passing Linux checks. The coordinator collected an injected per-VM child through its original owner and preserved exit code 0. A follow-up Linux run verified that the final receipt releases its shared quota. On macOS the real helper delivered 4,098 exact bytes over a synthetic guest socket. Installed launcher integration and a Firecracker guest transfer remain open. On MVM 0.28.0-rc.1, 19 Linux guest-agent and outbox checks passed. Two further Linux tests started the installed helper, read its empty canonical queue and collected it through signed Stop or coordinator shutdown. Each took 0.10 s with a fixture supplying the factory. [Test scope and measurements](evidence/2026-11-11-retained-recovery/installed-helper/README.md#linux-helper-shutdown-on-mvm-0280-rc1).
 
+The [installed SDK results](evidence/2026-11-11-retained-recovery/installed-helper/README.md#installed-sdk-launch-and-reservation-recovery) cover nine macOS ownership and launch checks. A subsequent broker repair returns the sole worker slot when the factory proves that no child was created. An uncertain spawn retains that slot. The first installed profile is limited to one local worker.
+
 [PR #95](https://github.com/R4-Laboratories/SpiralCore/pull/95) adds canonical
 transport-binding revocation to the mailbox adapter. Live Call and Reply keep
 both checked policy generations through transport admission. Prepared receipts

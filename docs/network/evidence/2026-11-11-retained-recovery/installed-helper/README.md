@@ -59,3 +59,13 @@ chmod 0700 "$CARGO_TARGET_DIR/release/mvm-mailbox"
 cargo test --release --locked -p mvm-hostd --bin mvm-host-agent \
   worker_injected_owner_tests::installed_owned_helper_ -- --ignored --test-threads=1
 ```
+
+## Installed SDK launch and reservation recovery
+
+With a persistent mailbox grant, the SDK sends the admitted plan's commitment to the installed host agent. The client checks the connected process against an observer created from the installation manager's original worker. It saves a signed locator under the VM name before requesting a mailbox slot. A subsequent client needs access to that manager's original process identity to resume cleanup. When lookup succeeds, it saves the signed Stop locator before it can remove VM state. The first profile admits one local worker. [SDK implementation](https://github.com/Casey-allard/mvm/tree/04c8881926f1180f51b38871c23292ffe8fd7032/crates/mvm-client/src/launch).
+
+Seven Apple Silicon SDK tests verified ownership, signature and file checks, independent-process exclusion, and preservation of an uncertain acquisition. Together they took 180.16 ms wall, 12.20 ms user CPU and 34.36 ms system CPU. Two additional checks used the persistent start and stopped-machine cleanup paths. Start preserved the original files while another launch held the VM name. Cleanup still removed a stopped machine's unowned state. [Measurements and executable identity](macos-028-sdk.json).
+
+A missing VM state directory exposed a capacity bug. The broker charged its only worker slot and refused to release it even though the factory had failed before creating a child. The repaired factory distinguishes a known failure before spawn from an uncertain outcome. The regression released the first reservation, admitted a different VM and completed coordinator retirement. A second test verified that an uncertain or panicked spawn retains its reservation and cannot start another worker. [Repair and regression source](https://github.com/Casey-allard/mvm/commit/e2a388860db3a5ac6b71a9e0e78a90f42265eb2e).
+
+The runs above exercised host lifecycle operations. Recovery across terminal-receipt expiry, co-admission with broker services and integrated guest transfer have separate acceptance criteria. [Installed service tracker](https://github.com/R4-Laboratories/SpiralCore/issues/111).

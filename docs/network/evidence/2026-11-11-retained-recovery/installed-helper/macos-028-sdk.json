@@ -1,0 +1,67 @@
+{
+  "platform": "Apple Silicon macOS",
+  "sdk": {
+    "source": "04c8881926f1180f51b38871c23292ffe8fd7032",
+    "platform": "macOS arm64",
+    "binary_sha256": "176ff34772d03076ec4c707dfff86e0ac310b1043edfb61c61fd8162dde70634",
+    "cases": [
+      {
+        "tests": [
+          "launch::mailbox_owner::tests::absent_owner_stop_preserves_legacy_result_under_name_lock",
+          "launch::mailbox_owner::tests::forged_stop_locator_remains_on_disk_and_cannot_authorize_vm_cleanup",
+          "launch::mailbox_owner::tests::independent_process_cannot_claim_active_vm",
+          "launch::mailbox_owner::tests::malformed_or_linked_locator_never_allows_cleanup",
+          "launch::mailbox_owner::tests::original_claim_excludes_same_name_and_allows_another_vm",
+          "launch::mailbox_owner::tests::refuses_linked_state_directory_and_claim_file",
+          "launch::mailbox_owner::tests::uncertain_acquire_survives_reopen_and_prevents_runtime_deletion"
+        ],
+        "passed": 7,
+        "wall_ms": 180.155458,
+        "user_ms": 12.197,
+        "system_ms": 34.364
+      },
+      {
+        "tests": [
+          "launch::machine_start::tests::persistent_start_preserves_runtime_while_an_original_mailbox_launch_holds_the_name"
+        ],
+        "passed": 1,
+        "wall_ms": 25.67112499999996,
+        "user_ms": 5.056999999999999,
+        "system_ms": 6.995000000000001
+      },
+      {
+        "tests": [
+          "launch::machine_start::tests::a_stopped_machines_leftover_runtime_state_is_cleared_before_it_starts_again"
+        ],
+        "passed": 1,
+        "wall_ms": 12.03299999999996,
+        "user_ms": 4.077000000000001,
+        "system_ms": 4.8020000000000005
+      }
+    ],
+    "scope": "SDK ownership and preflight checks. No VM, object transfer or WAN."
+  },
+  "reservation_release": {
+    "before": "04c8881926f1180f51b38871c23292ffe8fd7032",
+    "after": "e2a388860db3a5ac6b71a9e0e78a90f42265eb2e",
+    "cases": [
+      {
+        "test": "broker::mailbox_workers::tests::missing_vm_state_before_spawn_allows_signed_release_and_joined_retirement",
+        "outcome": "ok",
+        "source_packet_sha256": "dcbf6974539f4a32e1afff8a735b6058be0b1597ec98dd87d36ffd86cec2e62b"
+      },
+      {
+        "test": "broker::mailbox_workers::tests::uncertain_or_panicked_spawn_cannot_redelegate_or_release",
+        "outcome": "ok",
+        "source_packet_sha256": "dcbf6974539f4a32e1afff8a735b6058be0b1597ec98dd87d36ffd86cec2e62b"
+      },
+      {
+        "test": "broker::mailbox_workers::tests::missing_vm_state_before_spawn_allows_signed_release_and_joined_retirement",
+        "outcome": "FAILED",
+        "source_packet_sha256": "0e6318187efcf4872b3094b034defffdcb9144e174166b4752dc538ebee77b1c",
+        "original_refusal": "original worker spawn was attempted"
+      }
+    ]
+  },
+  "cpu_scope": "getrusage(RUSAGE_CHILDREN), delta for each full test harness invocation. Wall time includes process startup. No payload or VM in these checks."
+}
