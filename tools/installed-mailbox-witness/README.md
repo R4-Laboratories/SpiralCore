@@ -1,6 +1,6 @@
 # One installed mailbox on Linux/Firecracker
 
-This witness sends a deterministic 1,024-byte message from one Linux guest through MVM's canonical outbox. The host uses the installed mailbox service to read it and compares every byte. The run also exercises signed Stop, collection of the original helper process, and retirement of the host coordinator. The guest requests one vCPU, 256 MiB RAM, and a 180-second TTL. The result applies to one host and one guest. [Recorded attempts and results](../../docs/network/evidence/2026-11-11-retained-recovery/installed-helper/README.md)
+This witness tests whether one Linux guest can deliver a deterministic 1,024-byte message through MVM's canonical outbox. A pass requires the installed host service to return every byte exactly. The run also exercises signed Stop, collection of the original helper process, and retirement of the host coordinator. The guest requests one vCPU, 256 MiB RAM, and a 180-second TTL. The result applies to one host and one guest. [Recorded attempts and results](../../docs/network/evidence/2026-11-11-retained-recovery/installed-helper/README.md)
 
 ## Prepare the sources and assets
 
