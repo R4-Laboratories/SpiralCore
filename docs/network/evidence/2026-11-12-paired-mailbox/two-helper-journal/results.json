@@ -1,0 +1,102 @@
+{
+  "scope": "single debug run on x86-64 Linux, two original host helper processes, synthetic guest streams and signed fixture boot/reader, no hypervisor",
+  "canonical_upstream": "543efc7f94aa756c09785b38bdd024b6ba8199c7",
+  "public_source_base": "9d08b503c0d5a85c21e097edd05760024115d17d",
+  "tested_mvm_source": "a9f6ce034aa3e2251cdbd0a41e334ab938881ded",
+  "tested_mvm_tree": "cbff01b12fbb50963ef83bc579e1a66f37983cca",
+  "git_patch_sha256": "f1e7a1028c52b1567f6c296465be6018d23be23bcc4d5fe8df18c536a41c61cd",
+  "host_binary_sha256": "c77c47ccb27d1234fe8285a2a49a9082ba1dfe86772a62537f358d53cb19f7a5",
+  "test_executable_sha256": "a3bab5ecc71051d458b00cd348a1b01ca68076dfe55e144bda7def76a0e19cdd",
+  "payload": {
+    "bytes": 257,
+    "pattern": "00 through ff followed by 00",
+    "sha256": "54acfbfedc4d8da40f76f275e1a98f10af8ef1fb9fb39e5a67a00aabcbe6597c",
+    "original_recovered_by_fixture_reader": true,
+    "explicit_correlated_fixture_ack_echo_verified": true
+  },
+  "directions": [
+    {
+      "turn": 0,
+      "fixture_a_submit_bytes": 325,
+      "a_sealed_relay_to_b_bytes": 5539,
+      "b_v2_relay_to_a_bytes": 1145,
+      "fixture_a_return_bytes_read": 0,
+      "guest_submit_to_verified_v2_ns": null
+    },
+    {
+      "turn": 1,
+      "fixture_a_submit_bytes": 325,
+      "a_sealed_relay_to_b_bytes": 5539,
+      "b_v2_relay_to_a_bytes": 1145,
+      "fixture_a_return_bytes_read": 1145,
+      "guest_submit_to_verified_v2_ns": 19024177
+    },
+    {
+      "turn": 2,
+      "fixture_a_submit_bytes": 325,
+      "a_sealed_relay_to_b_bytes": 5539,
+      "b_v2_relay_to_a_bytes": 1145,
+      "fixture_a_return_bytes_read": 1145,
+      "guest_submit_to_verified_v2_ns": 20275768
+    }
+  ],
+  "first_fixture_connection_through_b_ack_ns": 59147038,
+  "b_reader_exchange": {
+    "receive_guest_to_helper_bytes": 342,
+    "receive_helper_to_guest_bytes": 5700,
+    "ack_guest_to_helper_bytes": 2217,
+    "ack_helper_to_guest_bytes": 2221
+  },
+  "whole_command": {
+    "wall_seconds": 0.66,
+    "user_cpu_seconds": 0.03,
+    "system_cpu_seconds": 0.01,
+    "max_rss_kib": 35960,
+    "exit_code": 0,
+    "original_helper_exits_verified_success": 2
+  },
+  "qualification": {
+    "journal_selector": {
+      "passed": 31,
+      "failed": 0,
+      "ignored": 1,
+      "filtered": 2340,
+      "elapsed_s": 0.55
+    },
+    "explicit_two_helper_test": {
+      "passed": 1,
+      "failed": 0,
+      "single_sample": true
+    }
+  },
+  "retained_raw_sha256": {
+    "two-helper-dd.log": "489406461cac64f8562e5dbac5bcb9251c731e27647bffa3ccfba58bdad9549d",
+    "two-helper-458.log": "316ca14592c1edf3dfba8775bb1fc29d3372009b08351bb1bb458e3848b79c40",
+    "qualified-a9f.log": "c5ba6c020a1952fad5b324933bd05817c87ddf8c649a5f5b10c1f06207c13214",
+    "two-helper-a9f-measured.log": "15ea03004682a2a5493ad5012727eaff579e43e728758282e637c281eed24688",
+    "two-helper-a9f.time": "39deba82c984590573e766d06fa5bf3dc7f2ea3a299db1ebf60eb085cb50d734"
+  },
+  "earlier_failures": [
+    {
+      "source": "dd124326f227ffbd23bd0370a555e14a735ae393",
+      "result": "initial binary delivered through relay but timed out waiting for original helper exits while synthetic listeners remained open"
+    },
+    {
+      "source": "458b07f42e3b8a385a64eff107dfe03d97db0e85",
+      "result": "test helper return tuple did not compile after adding a fixture ACK key"
+    }
+  ],
+  "unmeasured": {
+    "per_endpoint_cpu": null,
+    "physical_carrier_bytes": null,
+    "send_only_time": null,
+    "vm_or_wan_time": null,
+    "zstd_baseline": null,
+    "first_source_helper_write_to_disconnected_fixture_guest": null
+  },
+  "reproduction": [
+    "cargo +1.97.1 build --locked --offline -p mvm-hostd --bin mvm-mailbox",
+    "cargo +1.97.1 test --locked --offline -p mvm-hostd --lib journal -- --test-threads=1",
+    "cargo +1.97.1 test --locked --offline -p mvm-hostd --lib original_a_and_b_helpers_relay_same_sealed_intent_after_lost_guest_reply -- --ignored --nocapture --test-threads=1"
+  ]
+}

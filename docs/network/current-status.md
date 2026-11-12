@@ -15,6 +15,8 @@ Two original Firecracker guests now retire through the SDK without operator inte
 
 A native macOS host test sealed 257 bytes, verified B’s V2 receipt over a Unix socket, reopened the original destination journal and read all 257 bytes back using B’s signed Receive. Its positive exchange used 5,503 bytes toward B and 1,119 bytes in reply. [Destination enrollment, CPU and timing](evidence/2026-11-12-paired-mailbox/durable-guest-binding/incoming-journal.md).
 
+Two original Linux mailbox helper processes exchanged a B-addressed message on Unix sockets. After a lost reply, both retries returned B’s original signed V2 receipt. A fixture reader recovered all 257 bytes and acknowledged them. Each relay turn used 5,539 bytes toward B and 1,145 bytes back. [Two-helper measurements and installed scope](evidence/2026-11-12-paired-mailbox/two-helper-journal/README.md).
+
 Linux host tests now cover original mailbox helper ownership across socket replacement and launcher failure, and exact source ciphertext retries with an independent destination credential. [Source, regression tests and remaining installed gate](evidence/2026-11-12-paired-mailbox/durable-guest-binding/original-journal-host.md).
 
 A guest-side candidate now keeps an explicitly B-addressed pending operation across a lost reply, fences older boot or agent versions, and removes the original bytes after verifying a matching B receipt. Six directed and nine original mailbox component tests passed on macOS. [Original scope, wire costs and installed gates](evidence/2026-11-12-paired-mailbox/durable-guest-binding/directed-source.md).
