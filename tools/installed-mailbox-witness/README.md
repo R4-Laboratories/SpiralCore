@@ -15,7 +15,7 @@ scratch=$(mktemp -d /var/tmp/sc.XXXXXXXX)
 cp -R tools/installed-mailbox-witness/. "$scratch/"
 cd "$scratch"
 sha256sum --check inputs.sha256
-revision=a23e0b54d7c1bd2ea7976a57a77c6b5b60205fb2
+revision=f780207089dbc1c90876c44d54e7221b6d79108d
 git init -q source
 git -C source fetch --depth=1 https://github.com/Casey-allard/mvm.git "$revision"
 git -C source checkout -q --detach FETCH_HEAD
@@ -39,8 +39,8 @@ cargo build --release --locked --manifest-path preparer/Cargo.toml
 cargo build --release --locked --manifest-path installed-witness/Cargo.toml \
     --bin spiralcore-mvm-canonical-witness
 cargo build --release --locked --manifest-path source/Cargo.toml -p mvm-hostd \
-    --bin mvm-host-agent --bin mvm-mailbox --bin mvm-signer-helper
-for service in mvm-host-agent mvm-mailbox mvm-signer-helper; do
+    --bin mvm-host-agent --bin mvm-mailbox --bin mvm-signer-helper --bin mvm-network-endpoint
+for service in mvm-host-agent mvm-mailbox mvm-signer-helper mvm-network-endpoint; do
     install -m 500 "$CARGO_TARGET_DIR/release/$service" "install/$service"
 done
 
@@ -63,6 +63,7 @@ install -m 600 "$WORKLOAD_KERNEL" "$kernel_dir/vmlinux"
 sha256sum "$kernel_dir/vmlinux" | cut -d ' ' -f 1 > "$kernel_dir/vmlinux.sha256"
 
 export MVM_MAILBOX_PATH="$scratch/install/mvm-mailbox"
+export MVM_FC_IDLE_POOL=0 MVM_SUBSTITUTION_ENDPOINT_PATH="$scratch/install/mvm-network-endpoint"
 export MVM_RUNTIME_OVERLAY_ACQUIRE_MODE=build MVM_RUNTIME_OVERLAY_SOURCE_ROOT="$scratch/source"
 : "${MVM_FIRECRACKER_BIN:?set the absolute path to the verified Firecracker binary}"
 export MVM_FIRECRACKER_BIN
