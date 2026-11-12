@@ -1,0 +1,98 @@
+{
+  "scope": "native test processes and a real bounded warm-worker pipe fixture, no VM or network carrier",
+  "mvm_source": "0b35a72f3adcbe843b09700401f466f4d7952868",
+  "source_base": "1755a2dea880ae5b7fcdf0479ca7f9807face651",
+  "tree": "6f69fdd79020de99f5336a96ee35f57f6ab86627",
+  "patch_sha256": "38f174a00995d05af87b08a2f2ccdc3abc2ade954f2a0cb2eb7e1ecb0d6a46f2",
+  "macos_red": {
+    "unregistered_original": {
+      "source": "7715e2ed6baad8de4cd8aa7ebb1a24a442eb88a3",
+      "timeout_seconds": 8,
+      "test_elapsed_seconds": 8.01
+    },
+    "synchronous_recycle": {
+      "source": "f1b7134d7fbaabb0b613d5774a98493b3d4e6dbe",
+      "response_ns": 2174242125,
+      "slot_when_response_returned": "replacement idle"
+    },
+    "inherited_output": {
+      "source": "c149129c56abbd44a44f05144af75c7f27e7743a",
+      "call_ns": 4086782459,
+      "call_deadline_seconds": 1
+    }
+  },
+  "macos": {
+    "warm_worker_suite_passed": 19,
+    "unit_suites_passed": {
+      "agentd": 981
+    },
+    "exact_echo_bytes": 257,
+    "worker_pool_process_elapsed_ns": {
+      "final_complete_response": 60170875,
+      "through_available_replacement": 2088841834,
+      "exited_leader_pipe_holder": 224979208,
+      "first_echo_before_exit": 60269916,
+      "stale_pipe_error": 55487750,
+      "through_replacement_echo": 298090125
+    },
+    "separate_single_call_fixture_invocation": {
+      "scope": "whole test process and its accounted children, including setup and cleanup; coarse CPU counters rounded by operating-system time utility",
+      "wall_seconds": 2.17,
+      "user_seconds": 0.01,
+      "system_seconds": 0.01,
+      "peak_rss_bytes": 6864896
+    },
+    "executable_sha256": {
+      "warm_worker": "b33e7844f23852db8f9284a7b4e259b941574a896d7fe4635d06739d97e067ce",
+      "agentd_units": "1f2f3b05d1f427e32b436d392e268e354caceb7e31a164704a36c86b975c46fd"
+    }
+  },
+  "linux": {
+    "warm_worker_suite_passed": 21,
+    "unit_suites_passed": {
+      "child": 12,
+      "hook": 10
+    },
+    "exact_echo_bytes": 257,
+    "worker_pool_process_elapsed_ns": {
+      "final_complete_response": 50261635,
+      "through_available_replacement": 2063699881,
+      "exited_leader_pipe_holder": 200980377,
+      "first_echo_before_exit": 50682488,
+      "stale_pipe_error": 198237,
+      "through_replacement_echo": 248317146
+    },
+    "separate_single_call_fixture_invocation": {
+      "scope": "whole test process and its accounted children, including setup and cleanup; coarse CPU counters rounded by operating-system time utility",
+      "wall_seconds": 4.07,
+      "user_seconds": 0.01,
+      "system_seconds": 0.0,
+      "peak_rss_bytes": 3756032
+    },
+    "executable_sha256": {
+      "warm_worker": "dbb1833bb3379a2474cb102e0aa62b17b09eb9fd49082e71b60c0c790be65b74",
+      "agentd_units": "deb69ee76aaf33d288f6b5d3e5ae96cc26ad2542fd92eadad4281723c8c1cf53"
+    }
+  },
+  "unmeasured": [
+    "baseline CPU",
+    "socket/wire bytes",
+    "SDK verification latency",
+    "guest CPU",
+    "WAN transport",
+    "energy",
+    "fleet fairness"
+  ],
+  "raw_log_sha256": {
+    "red-behavior.log": "187f807aba67113afd51463e4a3ee7529970c02521cce7abf2132f21505ea385",
+    "ordering-red.log": "7dc0e54be55b37585c8285e4318037c6c2a44f479fcb098e6f6da392dbc180f0",
+    "group-red.log": "f957aac783745e2f6222c9cb6756798d8cba08528e39a7d48d4679e08e0ad48e",
+    "release-linux-child.log": "665aedff36be20d6dfc9247cafdd6281d58c68313a86b1de589bbaf5142aabb8",
+    "release-linux-hook.log": "8d23dae24fc226d2cf397171a15f80ddd06c28812682b3c90105d3feae942c0d",
+    "release-linux-warm.log": "30a9e3ee6726b13a305e186bf8f5d233ea2b3ebafa5842e344e75cc7e50853ed",
+    "release-linux-meter.log": "4ce2ab6a034b3e096857da41b8bfd799100600d2b1fc63e95ab34cfa04bbdfba",
+    "release-mac-agentd.log": "6a995e6e87beaff9ed9182a28885d163f4c88bb2a4806bfc7b1ea6fe44fa9ce9",
+    "release-mac-warm.log": "c85c6d5a8025606c5146441e175fa34a8ce6b24238324e8ecebae505004b14a4",
+    "release-mac-meter.log": "b6810ce3ba3c97c5173b93c370c5a3e4abbf6faf434abc0f064cf167459d6529"
+  }
+}

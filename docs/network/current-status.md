@@ -13,6 +13,8 @@ platform qualification follow. [Guest retry and worker capacity regressions](evi
 
 Two original Firecracker guests now retire through the SDK without operator intervention after both addressed workload Calls exceed their shared 15-second deadline. The driver used 8.482 s of CPU over a 121.586 s lifecycle. A’s port-5257 stream accepted 52 bytes toward the guest and returned none. B recorded no dial or exact readback. [Native measurements and comparison with assisted teardown](evidence/2026-11-12-paired-mailbox/addressed-native-launch/paired-deadline-native.md).
 
+The guest worker pool can return its final complete response while retaining the original process for collection. One macOS 257-byte process fixture returned in 60 ms, down from 2,174 ms. [Linux and macOS worker lifecycle tests](evidence/2026-11-12-paired-mailbox/warm-worker/README.md).
+
 A native macOS host test sealed 257 bytes, verified B’s V2 receipt over a Unix socket, reopened the original destination journal and read all 257 bytes back using B’s signed Receive. Its positive exchange used 5,503 bytes toward B and 1,119 bytes in reply. [Destination enrollment, CPU and timing](evidence/2026-11-12-paired-mailbox/durable-guest-binding/incoming-journal.md).
 
 Two original Linux mailbox helper processes exchanged a B-addressed message on Unix sockets. After a lost reply, both retries returned B’s original signed V2 receipt. A fixture reader recovered all 257 bytes and acknowledged them. Each relay turn used 5,539 bytes toward B and 1,145 bytes back. [Two-helper measurements and installed scope](evidence/2026-11-12-paired-mailbox/two-helper-journal/README.md).
