@@ -3,11 +3,11 @@ use anyhow::{Context, Result, ensure};
 use serde::Serialize;
 use std::path::PathBuf;
 mod payload;
-pub use payload::expected_body;
+pub use payload::{expected_body, paired_body};
 #[cfg(all(feature = "native", target_os = "linux"))]
 pub mod native;
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Config {
     pub home: PathBuf,
     pub rootfs: PathBuf,
@@ -116,7 +116,7 @@ pub async fn cleanup_after_launch<T>(
     }
 }
 pub fn preflight_failure(error: &str) -> serde_json::Value {
-    serde_json::json!({ "sdk_source": "91fea4e72352f8fa676635ad38b34213cd3bbcb6", "status": "failed_preflight", "native_transfer": "NOT_RUN", "received_bytes": null, "received_sha256": null, "error": error })
+    serde_json::json!({ "sdk_source": "11c6f04bd1f6fa261b6543d678acf8226e699f33", "status": "failed_preflight", "native_transfer": "NOT_RUN", "received_bytes": null, "received_sha256": null, "error": error })
 }
 
 /// Bounded external probes for this diagnostic consumer, not a service poll loop.
