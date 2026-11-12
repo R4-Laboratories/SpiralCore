@@ -47,6 +47,11 @@ fn transfer(call: WorkerCallRequest) -> Result<Value> {
         return Err("expected encoded frame, no overrides, and a bounded call budget".into());
     }
     let deadline = start + Duration::from_secs((call.timeout_secs - 1).min(40));
+    // The signed reader reply has a 64 KiB JSON limit and base64-encodes
+    // its payload alongside the signed lease. This fixture admits 16 KiB.
+    if call.stdin.len() > 16 * 1024 {
+        return Err("own-mailbox qualification frame exceeds 16 KiB".into());
+    }
     let original = Frame::decode(&call.stdin)?;
     let pending = PendingFrame::new(&original)?;
     if pending.encoded() != call.stdin {
@@ -154,6 +159,20 @@ mod tests {
             timeout_secs,
             env,
         };
+        let too_large = Frame {
+            kind: 1,
+            transfer: [0; 32],
+            seq: 1,
+            body: vec![1; 16 * 1024],
+        }
+        .encode()
+        .unwrap();
+        assert!(
+            transfer(call(too_large, 45, vec![]))
+                .unwrap_err()
+                .to_string()
+                .contains("exceeds 16 KiB")
+        );
         assert!(transfer(call(vec![0], 45, vec![])).is_err());
         assert!(transfer(call(vec![], 0, vec![])).is_err());
         assert!(
