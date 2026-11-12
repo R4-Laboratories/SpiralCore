@@ -1,0 +1,117 @@
+{
+  "measurement": {
+    "source": "a7e8e5f9f17e6f5bfb8e33da24962abfe38f43ef",
+    "test_binary_sha256": "adaace833e0d3790fa9edd2f459c502022b79e9652c26a7c11bdaaffd43660db",
+    "profile": "macOS arm64 original installed helper, synthetic guest socket, one transfer",
+    "test_selector": "original_helper_post_io_matches_independent_guest_meter_and_excludes_host_receive",
+    "payload_bytes": 4098,
+    "guest_to_helper_stream_bytes": 4134,
+    "helper_to_guest_stream_bytes": 11,
+    "bidirectional_guest_stream_total_bytes": 4145,
+    "send_to_verified_readback_us": 3441,
+    "test_process_wall_ms": 254.726334,
+    "test_child_user_ms": 12.655999999999999,
+    "test_child_system_ms": 20.375999999999998,
+    "exact_byte_comparison_passed": true,
+    "scope": "The original helper report equaled both independent socket counters. Stream bytes exclude host consumer traffic, guest dial setup, host framing below this stream, and optional local witness datagram. Test process CPU/time includes the helper and harness lifecycle. No native guest, network device, WAN, object codec or zstd running."
+  },
+  "before": {
+    "source": "f2804fe8268219b558da69527a88807879f849b2",
+    "tree": "11fee37c456d78d220a99124d14b50f8c61388ff",
+    "platform": "macOS arm64",
+    "scope": "Local host control, storage and boot-ownership checks; no guest payload or WAN. Run timing excludes Cargo builds. CPU is RUSAGE_CHILDREN delta for each suite invocation.",
+    "builds": [
+      {
+        "target": "mvm-hostd-lib",
+        "exit": 0
+      },
+      {
+        "target": "mvm-hostd-owned_mailbox_helper",
+        "exit": 0
+      }
+    ],
+    "cases": [
+      {
+        "target": "mvm-hostd-lib",
+        "selector": "mailbox_service::guest_io::tests::",
+        "test_binary_sha256": "7a9ae00064ab9ebf3de3e82081eecdce8639e50f4e4608c3191ca3bc8cfbdd19",
+        "exit": 0,
+        "passed": 2,
+        "wall_ms": 1149.3845410000176,
+        "user_ms": 6.911999999999807,
+        "system_ms": 10.915000000000674,
+        "tests": [
+          "mailbox_service::guest_io::tests::measured_guest_stream_preserves_partial_io_errors_eof_and_isolation",
+          "mailbox_service::guest_io::tests::report_datagram_requires_one_complete_original_nonoverflowing_session"
+        ],
+        "failed_tests": []
+      },
+      {
+        "target": "mvm-hostd-owned_mailbox_helper",
+        "selector": "original_helper_post_io_matches_independent_guest_meter_and_excludes_host_receive",
+        "test_binary_sha256": "73da27a83c701dc4aee8b74eed3c5bc1fc5c3e1ac1583299a6c69dbd1ece3b59",
+        "exit": 101,
+        "passed": 0,
+        "wall_ms": 497.48008300002766,
+        "user_ms": 20.46300000000656,
+        "system_ms": 28.37300000000198,
+        "tests": [],
+        "failed_tests": [
+          "original_helper_post_io_matches_independent_guest_meter_and_excludes_host_receive"
+        ]
+      }
+    ],
+    "distinct_passing_tests": 2,
+    "distinct_failed_tests": 1
+  },
+  "after": {
+    "source": "a7e8e5f9f17e6f5bfb8e33da24962abfe38f43ef",
+    "tree": "ff186e09df80888bd6e83cd5899901efcfa5ea1f",
+    "platform": "macOS arm64",
+    "scope": "Local host control, storage and boot-ownership checks; no guest payload or WAN. Run timing excludes Cargo builds. CPU is RUSAGE_CHILDREN delta for each suite invocation.",
+    "builds": [
+      {
+        "target": "mvm-hostd-lib",
+        "exit": 0
+      },
+      {
+        "target": "mvm-hostd-owned_mailbox_helper",
+        "exit": 0
+      }
+    ],
+    "cases": [
+      {
+        "target": "mvm-hostd-lib",
+        "selector": "mailbox_service::guest_io::tests::",
+        "test_binary_sha256": "b54812a675f2e3fc350d7e5a125f65834a6bb3aaf1255c27f1cee6b4f2d58e7a",
+        "exit": 0,
+        "passed": 3,
+        "wall_ms": 1176.353750000004,
+        "user_ms": 4.809999999999093,
+        "system_ms": 9.466999999999892,
+        "tests": [
+          "mailbox_service::guest_io::tests::measured_guest_stream_preserves_partial_io_errors_eof_and_isolation",
+          "mailbox_service::guest_io::tests::original_report_after_writer_exit_distinguishes_missing_single_and_duplicate",
+          "mailbox_service::guest_io::tests::report_datagram_requires_one_complete_original_nonoverflowing_session"
+        ],
+        "failed_tests": []
+      },
+      {
+        "target": "mvm-hostd-owned_mailbox_helper",
+        "selector": "original_helper_post_io_matches_independent_guest_meter_and_excludes_host_receive",
+        "test_binary_sha256": "adaace833e0d3790fa9edd2f459c502022b79e9652c26a7c11bdaaffd43660db",
+        "exit": 0,
+        "passed": 1,
+        "wall_ms": 536.9010419999967,
+        "user_ms": 20.843999999996754,
+        "system_ms": 32.77300000000061,
+        "tests": [
+          "original_helper_post_io_matches_independent_guest_meter_and_excludes_host_receive"
+        ],
+        "failed_tests": []
+      }
+    ],
+    "distinct_passing_tests": 4,
+    "distinct_failed_tests": 0
+  }
+}

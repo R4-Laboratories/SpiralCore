@@ -136,3 +136,9 @@ On the next run the witness held the original coordinator handle through MVM's 6
 | Maximum RSS reported by GNU time | 58,344 KiB |
 
 The measured guest and host use the canonical mailbox service on vsock port 5257. This test exercises guest to host on one machine. It has no guest CPU counter, transport byte totals, send-only timer, or zstd comparison. An authenticated telemetry session was outside the observed result. [Measurements, exact bytes and final tenant state](linux-028-installed-complete-lifecycle.json) · [Reproduction instructions](../../../../../tools/installed-mailbox-witness/README.md).
+
+## Directional byte counts with an independent macOS socket fixture
+
+An opt-in counter at the guest-facing helper stream records bytes actually read and bytes accepted by writes. In a separate macOS test, the real helper and an independent synthetic guest endpoint both counted **4,134 bytes toward the helper and 11 bytes back** while the host recovered a 4,098-byte message exactly. The 4,145 counted bytes cover the connected mailbox stream after setup. Host-consumer I/O, guest-dial setup, virtio framing, WAN transport and the separate measurement channel are outside that count.
+
+Send through verified readback took 3.441 ms, and the test lifecycle consumed 33.032 ms of child-process CPU. The first run recovered the message but could not verify the counter report after its Darwin socket peer closed. After the repair all four measurement checks passed, including missing and duplicate report handling. This test exercised a synthetic socket on one Mac. The preceding real Firecracker guest used the earlier helper and has no measured stream-byte total. [Implementation](https://github.com/Casey-allard/mvm/commit/a7e8e5f9f17e6f5bfb8e33da24962abfe38f43ef) · [Before/after results and measured bytes](macos-028-directional-mailbox-bytes.json).
