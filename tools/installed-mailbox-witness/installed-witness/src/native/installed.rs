@@ -18,6 +18,12 @@ use std::{
     time::{Duration, Instant},
 };
 
+const IDLE_HOLD: Duration = Duration::from_secs(40);
+// mvm-hostd keeps a collected worker queryable for 60s. Only after that
+// retention does the coordinator's ordinary no-registration idle hold begin.
+const COLLECTED_WORKER_RETENTION: Duration = Duration::from_secs(60);
+const DRAIN_AND_OBSERVE: Duration = Duration::from_secs(30);
+
 pub(super) struct InstalledWitness {
     pub(super) provider: Arc<HostAgentMailboxProvisioner>,
     child: Arc<Mutex<Child>>,
@@ -87,7 +93,10 @@ impl InstalledWitness {
         let child = Command::new(daemon)
             .arg("--owned-mailbox-v1")
             .env("MVM_HOST_AGENT_WORKER", "1")
-            .env("MVM_HOST_AGENT_IDLE_TIMEOUT", "40")
+            .env(
+                "MVM_HOST_AGENT_IDLE_TIMEOUT",
+                IDLE_HOLD.as_secs().to_string(),
+            )
             .stdin(Stdio::piped())
             .stdout(Stdio::null())
             .stderr(Stdio::inherit())
@@ -191,7 +200,7 @@ impl InstalledWitness {
     }
 
     pub(super) fn finish(&mut self) -> Result<ExitStatus> {
-        let until = Instant::now() + Duration::from_secs(60);
+        let until = Instant::now() + COLLECTED_WORKER_RETENTION + IDLE_HOLD + DRAIN_AND_OBSERVE;
         let mut child = self
             .child
             .lock()

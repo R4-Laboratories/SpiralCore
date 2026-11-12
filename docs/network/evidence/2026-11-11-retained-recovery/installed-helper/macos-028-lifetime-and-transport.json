@@ -1,0 +1,153 @@
+{
+  "lifetime": {
+    "source": "096c9ccaa8db01cc5ca6e081df1129e7f865d818",
+    "tree": "49f9357b6a5b27221dc0493cf7998b5b77036630",
+    "platform": "macOS arm64",
+    "scope": "Local host control, storage and boot-ownership checks; no guest payload or WAN. Run timing excludes Cargo builds. CPU is RUSAGE_CHILDREN delta for each suite invocation.",
+    "builds": [
+      {
+        "target": "mvm-backends-lib",
+        "exit": 0
+      },
+      {
+        "target": "mvm-hostd-lib",
+        "exit": 0
+      },
+      {
+        "target": "mvm-client-lib",
+        "exit": 0
+      }
+    ],
+    "cases": [
+      {
+        "target": "mvm-backends-lib",
+        "selector": "pid_marker_tests::",
+        "test_binary_sha256": "8575af2194374e0a51bd77d766614b1ca106199bf29c3c3276e263dce5846b43",
+        "exit": 0,
+        "passed": 5,
+        "wall_ms": 289.18700000000007,
+        "user_ms": 3.865999999999481,
+        "system_ms": 7.572000000000134,
+        "tests": [
+          "driver::hvf_process::pid_marker_tests::a_marker_recording_the_start_time_reads_as_its_pid",
+          "driver::hvf_process::pid_marker_tests::a_marker_that_is_not_a_pid_reads_as_none",
+          "driver::hvf_process::pid_marker_tests::a_recycled_pid_reads_dead_through_the_hvf_marker",
+          "driver::hvf_process::pid_marker_tests::the_record_the_supervisor_publishes_reads_back_live",
+          "driver::libkrun_process::pid_marker_tests::a_marker_recording_the_start_time_reads_as_its_pid"
+        ],
+        "failed_tests": []
+      },
+      {
+        "target": "mvm-backends-lib",
+        "selector": "prelaunch_failure_releases_support_and_survives_legacy_anyhow_boundary",
+        "test_binary_sha256": "8575af2194374e0a51bd77d766614b1ca106199bf29c3c3276e263dce5846b43",
+        "exit": 0,
+        "passed": 1,
+        "wall_ms": 10.13412499999955,
+        "user_ms": 3.486000000000544,
+        "system_ms": 3.6199999999999566,
+        "tests": [
+          "driver::hvf::cold_channel::tests::prelaunch_failure_releases_support_and_survives_legacy_anyhow_boundary"
+        ],
+        "failed_tests": []
+      },
+      {
+        "target": "mvm-hostd-lib",
+        "selector": "mailbox_process::owned_client::native_start::tests::",
+        "test_binary_sha256": "e7ae0c813fd1854ba8432a2d2901446db6b0d9d9912bfd542c7375de01b6a55d",
+        "exit": 0,
+        "passed": 2,
+        "wall_ms": 1434.3692500000031,
+        "user_ms": 8.651999999997884,
+        "system_ms": 15.989000000001141,
+        "tests": [
+          "mailbox_process::owned_client::native_start::tests::entered_backend_error_survives_retry_without_claiming_exit_or_releasing_another_owner",
+          "mailbox_process::owned_client::native_start::tests::panicked_backend_keeps_original_slot_and_blocks_cleanup"
+        ],
+        "failed_tests": []
+      },
+      {
+        "target": "mvm-client-lib",
+        "selector": "launch::mailbox_owner::tests::",
+        "test_binary_sha256": "43d330d6ca50ed287684fbf153338e12a16e32b7e924ba847b6f7cde98b173da",
+        "exit": 0,
+        "passed": 8,
+        "wall_ms": 1431.5447080000183,
+        "user_ms": 32.7959999999905,
+        "system_ms": 80.55599999999963,
+        "tests": [
+          "launch::mailbox_owner::tests::absent_owner_stop_preserves_legacy_result_under_name_lock",
+          "launch::mailbox_owner::tests::forged_stop_locator_remains_on_disk_and_cannot_authorize_vm_cleanup",
+          "launch::mailbox_owner::tests::independent_process_cannot_claim_active_vm",
+          "launch::mailbox_owner::tests::lost_acquire_reply_recovers_only_original_and_persists_stop_before_cleanup",
+          "launch::mailbox_owner::tests::malformed_or_linked_locator_never_allows_cleanup",
+          "launch::mailbox_owner::tests::original_claim_excludes_same_name_and_allows_another_vm",
+          "launch::mailbox_owner::tests::refuses_linked_state_directory_and_claim_file",
+          "launch::mailbox_owner::tests::uncertain_acquire_survives_reopen_and_prevents_runtime_deletion"
+        ],
+        "failed_tests": [],
+        "child_harnesses": [
+          {
+            "outcome": "ok",
+            "passed": 1,
+            "failed": 0
+          }
+        ]
+      }
+    ],
+    "distinct_passing_tests": 16,
+    "distinct_failed_tests": 0
+  },
+  "transport": {
+    "source": "a2d446baa49b64e3816f597ba1f4e4019c1ff867",
+    "tree": "4c16774168a5522a7244342e2a28882fb39159c0",
+    "platform": "macOS arm64",
+    "scope": "Local host control, storage and boot-ownership checks; no guest payload or WAN. Run timing excludes Cargo builds. CPU is RUSAGE_CHILDREN delta for each suite invocation.",
+    "builds": [
+      {
+        "target": "mvm-vmm-mailbox_worker_transport",
+        "exit": 0
+      }
+    ],
+    "cases": [
+      {
+        "target": "mvm-vmm-mailbox_worker_transport",
+        "selector": "",
+        "test_binary_sha256": "a6c1a704ca0274fb961f830489d9a33bc6c6b02010eccf2d379dfca17fa40dff",
+        "exit": 0,
+        "passed": 13,
+        "wall_ms": 326.81787499999973,
+        "user_ms": 7.943000000000033,
+        "system_ms": 9.379000000000026,
+        "tests": [
+          "bad_marker_oversize_truncated_and_expired_frames_fail_closed",
+          "companion_deregister_requires_the_bound_owner_and_a_regular_ok_reply",
+          "delegated_config_refuses_a_regular_file_before_writing",
+          "excess_and_truncated_rights_are_all_closed",
+          "first_delegation_without_descriptor_is_rejected",
+          "new_wire_response_is_canonical_typed_control_variant",
+          "no_descriptor_for_query_and_wrong_fd_kind_rejected_before_send",
+          "partial_frame_cannot_restart_absolute_deadline",
+          "rights_on_length_prefix_are_rejected_and_closed",
+          "transferred_writer_is_closed_on_bad_marker_length_json_eof_and_timeout",
+          "unqualified_platform_refuses_pipe_delegation_explicitly",
+          "worker_request_uses_the_daemons_existing_length_and_signed_body",
+          "wrong_kind_from_untrusted_raw_sender_is_closed"
+        ],
+        "failed_tests": []
+      }
+    ],
+    "distinct_passing_tests": 13,
+    "distinct_failed_tests": 0
+  },
+  "supervisor": {
+    "source": "096c9ccaa8db01cc5ca6e081df1129e7f865d818",
+    "tree": "49f9357b6a5b27221dc0493cf7998b5b77036630",
+    "target": "mvm-hvf-supervisor",
+    "profile": "dev, debug=0",
+    "binary_sha256": "33dc0dfbea4d5af2920012942f1366707cd2cff9f6c563dd132d05c3b3f5e085",
+    "size_bytes": 39293056,
+    "built": true,
+    "launched": false
+  }
+}

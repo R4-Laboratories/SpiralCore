@@ -94,3 +94,45 @@ This run localizes the failure to installed host coordination before the first a
 ## Keeping the installed control socket reachable
 
 The installed worker can have a live Unix listener and no legacy supervisor PID file. During telemetry startup, the legacy launcher treated that configuration as stale and removed the socket pathname. On Linux the focused regression reproduced the loss of the original listener address. With the repair, the launcher left the inode in place, declined to adopt it, and a subsequent client could still connect. The failed native run's coordinator and signer subsequently exited under operator cleanup using held kernel process handles. That cleanup produced no signed mailbox Stop or original child-wait receipt. [Implementation](https://github.com/Casey-allard/mvm/commit/f780207089dbc1c90876c44d54e7221b6d79108d) · [Regression and cleanup record](linux-028-control-socket-recovery.json).
+
+## Original mailbox and broker ownership on Apple Silicon
+
+The combined SDK, host, runtime, control encoding, socket transport and HVF checks passed 46 distinct cases and failed one. The SDK recovered from a lost acquisition response by looking up the original worker and persisting its signed Stop record before cleanup. The host also admitted broker and mailbox services for the same original VM, and fenced publication of the new broker listener against a concurrent release. The eight SDK ownership cases took 1,440.43 ms wall and 78.81 ms total process CPU. This timer includes test-process startup. No guest object was transferred.
+
+The failing case was descriptor cleanup after rejecting a control message with excess file descriptors on macOS. Twelve of the thirteen socket transport checks passed on this revision. The [per-suite results](macos-028-owner-and-broker.json) record the failure, binary hashes and CPU and wall times; child test processes are excluded from the distinct-case count. [MVM development source](https://github.com/Casey-allard/mvm/commit/93e8608cf158c8e529b4c54af959c63551470051).
+
+The Darwin transport repair passed all 13 cases, including the unchanged regression that failed above. The run took 326.82 ms wall and 17.32 ms CPU across the test harness. The upstream HVF supervisor start-time fix was also incorporated. On that intermediate revision, 16 host-side ownership and process-identity checks passed, and the native supervisor binary built. Those checks did not launch a guest. [Transport repair](https://github.com/Casey-allard/mvm/commit/a2d446baa49b64e3816f597ba1f4e4019c1ff867) · [Platform evidence](macos-028-lifetime-and-transport.json).
+
+## Installed guest delivered 1,024 exact bytes
+
+One Linux x86-64 Firecracker guest delivered the deterministic 1,024-byte fixture over the canonical MVM mailbox. Its length, SHA-256 and direct byte comparison all matched. The SDK completed signed Stop and removed the VM's runtime state and persistent definition. The original VM process and per-VM mailbox helper exited; the signed worker receipt recorded helper exit code 0. The tenant coordinator remained alive at the 60-second retirement deadline, so the **full lifecycle result is failed**.
+
+| Single guest, one local transfer | Observed |
+| --- | ---: |
+| Guest application bytes / verified host bytes | 1,024 / 1,024 |
+| Setup through admitted launch | 755.703 ms |
+| Receive through exact readback, including two polling probes | 106.467 ms |
+| Full lifecycle including coordinator timeout | 61.047 s |
+| Host orchestrator CPU across the lifecycle | 415.087 ms |
+| Guest CPU, send-only time and transport bytes in either direction | Unavailable |
+
+One earlier attempt with the same source was rejected before guest boot because the test cache directory was group-writable. The repeat used a new private home and retained the source and binary pins. The timer above covers a functional mailbox receive on one host. The test used the plain mailbox message, with no object-codec or zstd comparison. [Both attempts, binary identities and measured times](linux-028-installed-readback.json).
+
+## Retrying the final owner-file operation after 60 seconds
+
+On macOS, the same surviving SDK controller completed the final signed owner-file retirement after the helper's receipt expired. It already had confirmation for helper and companion-service retirement and had successfully completed local backend cleanup. The retry finished the file operation without reissuing Stop, reacquiring a worker or repeating destructive VM cleanup. The opt-in test waited 61 seconds; it took 61.155 seconds wall and 68.16 ms process CPU. The previous implementation failed this case when it tried to reconnect to the retired listener. Losing the original controller, or lacking confirmation that destructive cleanup succeeded, remains a separate recovery condition. [Combined implementation](https://github.com/Casey-allard/mvm/commit/ef5894e146398572fe00a12ad01a938fc758ac01) · [Retained failure and 30 distinct passing checks](macos-028-terminal-retirement.json).
+
+## Complete Linux guest-to-host mailbox lifecycle
+
+On the next run the witness held the original coordinator handle through MVM's 60-second worker-receipt retention window and the subsequent 40-second idle hold. The witness allowed 30 additional seconds for draining and observation. MVM's production timeouts stayed the same. All lifecycle checks passed. The guest and original mailbox helper exited, the coordinator collected its signer, the witness collected the original coordinator with its expected idle exit code 42, and the tenant reached `Drained` with zero pending operations.
+
+| One guest, Linux x86-64, Firecracker 1.17.0 | Measured |
+| --- | ---: |
+| Guest application bytes / bytewise-verified host bytes | 1,024 / 1,024 |
+| Setup through admitted launch | 707.430 ms |
+| Receive including two application polls | 104.049 ms |
+| Host orchestrator CPU across the lifecycle | 440.364 ms |
+| Full lifecycle including receipt retention and idle shutdown | 120.494 s |
+| Maximum RSS reported by GNU time | 58,344 KiB |
+
+The measured guest and host use the canonical mailbox service on vsock port 5257. This test exercises guest to host on one machine. It has no guest CPU counter, transport byte totals, send-only timer, or zstd comparison. An authenticated telemetry session was outside the observed result. [Measurements, exact bytes and final tenant state](linux-028-installed-complete-lifecycle.json) · [Reproduction instructions](../../../../../tools/installed-mailbox-witness/README.md).
