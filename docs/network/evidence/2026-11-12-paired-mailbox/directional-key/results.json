@@ -1,0 +1,127 @@
+{
+  "schema": "spiralcore.mvm.development-directional-cast-evidence.v1",
+  "scope": "Five synthetic bytes 00 41 ff 42 00; MVM hostd library component on local Unix stream pairs. Signed plans, three independently supplied signed credentials, separate original role keys and caller-owned synthetic original worker identities. Guest-role thread receives exact data. Each platform was measured once at its indicated revision.",
+  "measurement": "First source preparation through destination inbox readback. Envelope socket contains just the canonical encoded envelope. The supplied credentials, KEK bootstrap, outer framing/ack, startup, durable receipt, network transport and VM lifecycle are outside this interval. Bytes on the separate guest-role socket count both directions. Thread CPU excludes waits.",
+  "configured_limits": {
+    "shared_host_tenant_bytes": 1048576,
+    "encoded_envelope_bytes_max": 4096,
+    "full_worker_frame_bytes_max": 8192,
+    "development_queue_frames_per_worker": 2,
+    "source_generation_credit_bytes": 32768,
+    "forwarding_credit_bytes": 32768,
+    "private_wrapped_capsule_bytes_each": 60
+  },
+  "runs": {
+    "linux-x86_64": {
+      "mvm_commit": "edb2136c02fe2b9574d3d3991d4c072a0359a27a",
+      "mvm_tree": "f64c57e7174923bfe6ed619c8cd0538ef0640ac9",
+      "verified_source_files": 4538,
+      "native_platform": "Linux x86_64",
+      "hostd_test_binary_sha256": "4998201356c4e418adb711dd96df16a6190b38a4167053e4952605a48a40480d",
+      "evidence_log": "linux-x86_64.txt",
+      "evidence_sha256": "e6e200d9c698cfc670833afa28e2259f9b4608d2557a7e04044241d5fe27008f",
+      "cargo_profile": "test, dev/test debug=0, incremental=0, jobs=2",
+      "socket_fixture": {
+        "payload": 5,
+        "envelope_socket_forward": 3449,
+        "envelope_socket_reverse": 0,
+        "role_forward": 283,
+        "role_reverse": 98,
+        "prepare_cpu_ns": 578925,
+        "open_cpu_ns": 474821,
+        "dispatch_cpu_ns": 388929,
+        "guest_cpu_ns": 44714,
+        "prepare_through_verified_readback_ns": 1647599
+      },
+      "hostd_selectors": {
+        "independent_original_development_keys_carry_exact_bytes_and_refuse_swaps": {
+          "exit": 0,
+          "elapsed_ns": 11396577,
+          "user_ms": 8.377,
+          "system_ms": 2.393,
+          "log_sha256": "e6e200d9c698cfc670833afa28e2259f9b4608d2557a7e04044241d5fe27008f"
+        },
+        "addressed_cast_shares_the_two_workers_and_preserves_control_headroom": {
+          "exit": 0,
+          "elapsed_ns": 2876058,
+          "user_ms": 1.475,
+          "system_ms": 1.475,
+          "log_sha256": "0dce1e87a15385b9ab1cd6339ba0fb3f44b3a1a72ef9fb1c815bd92f2e84a9b3"
+        },
+        "development_source_and_routed_turn_share_the_unchanged_host_budget": {
+          "exit": 0,
+          "elapsed_ns": 2667090,
+          "user_ms": 1.323,
+          "system_ms": 1.324,
+          "log_sha256": "83bd985b0415631cedf7c9433e099fd78f7db2ad886f3c3a0bdefa0238966506"
+        },
+        "original_scope_refuses_validly_signed_foreign_tenant_or_domain": {
+          "exit": 0,
+          "elapsed_ns": 3874370,
+          "user_ms": 0.938,
+          "system_ms": 2.816,
+          "log_sha256": "c53334969d6d895231a9257c057910424ee0761352113e401df9c42322820e66"
+        }
+      }
+    },
+    "macos-arm64": {
+      "mvm_commit": "ca26ff453a0012e5894f91484471b3f170853769",
+      "mvm_tree": "5efdc72cc38e7e56d0e4d1368ffc5b22f655018e",
+      "verified_source_files": 4538,
+      "native_platform": "Darwin arm64",
+      "hostd_test_binary_sha256": "2cf09298692925cd84657caf1566add83e866cbe67a4df8d5b3d87980196ff1a",
+      "evidence_log": "macos-arm64.txt",
+      "evidence_sha256": "203c572a40e2cd17055772742b17c53cf88b25218ac953cf2eb40681affc5898",
+      "cargo_profile": "test, dev/test debug=0, incremental=0, jobs=2",
+      "socket_fixture": {
+        "payload": 5,
+        "envelope_socket_forward": 3443,
+        "envelope_socket_reverse": 0,
+        "role_forward": 283,
+        "role_reverse": 98,
+        "prepare_cpu_ns": 1106917,
+        "open_cpu_ns": 1547292,
+        "dispatch_cpu_ns": 483833,
+        "guest_cpu_ns": 34250,
+        "prepare_through_verified_readback_ns": 3654583
+      },
+      "hostd_selectors": {
+        "independent_original_development_keys_carry_exact_bytes_and_refuse_swaps": {
+          "exit": 0,
+          "elapsed_ns": 1202806583,
+          "user_ms": 18.729,
+          "system_ms": 18.484,
+          "log_sha256": "203c572a40e2cd17055772742b17c53cf88b25218ac953cf2eb40681affc5898"
+        },
+        "addressed_cast_shares_the_two_workers_and_preserves_control_headroom": {
+          "exit": 0,
+          "elapsed_ns": 12870875,
+          "user_ms": 4.869,
+          "system_ms": 6.412,
+          "log_sha256": "2498c42e28f0aff75778f12050b6df4b7e42b1f2eaad5d5610a1b57ec4868c29"
+        },
+        "development_source_and_routed_turn_share_the_unchanged_host_budget": {
+          "exit": 0,
+          "elapsed_ns": 11800125,
+          "user_ms": 5.013,
+          "system_ms": 3.26,
+          "log_sha256": "11495cf77a6eb606060f47b46332741560f2116f0991df20e2b68ad8fe69dbbf"
+        },
+        "original_scope_refuses_validly_signed_foreign_tenant_or_domain": {
+          "exit": 0,
+          "elapsed_ns": 36829542,
+          "user_ms": 6.336,
+          "system_ms": 4.572,
+          "log_sha256": "ff6a9be8820adf5ac4c312c36478b3418ce5d389df0b28b0c37bed417c90fc21"
+        },
+        "original_development_pair_binding_is_atomic_and_cannot_rotate": {
+          "exit": 0,
+          "elapsed_ns": 12356583,
+          "user_ms": 5.186,
+          "system_ms": 3.387,
+          "log_sha256": "e9941a37cf1f5394b84cad24c17fa7b93c5604921dbff5bc2c25509eea98ad70"
+        }
+      }
+    }
+  }
+}
