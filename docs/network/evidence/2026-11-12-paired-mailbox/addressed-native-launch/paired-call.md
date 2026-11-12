@@ -11,7 +11,7 @@ Both original Linux/Firecracker guests booted, and both SDK launch calls returne
 | Driver CPU through final coordinator exit | 8.379 s |
 | Full lifecycle wall time, including intervention and retirement | 292.932 s |
 
-The 52 bytes account for traffic on A’s mailbox stream only. The counters exclude the separate workload Call channels. There is no payload delivery, send-only latency or zstd comparison established by this run. [Original mailbox meter scope](../firecracker.md)
+The 52 bytes account for traffic on A’s mailbox stream only. The counters exclude the separate workload Call channels. Guest workload CPU and codec CPU were unmeasured. There is no payload delivery, send-only latency or zstd comparison established by this run. [Original mailbox meter scope](../firecracker.md)
 
 Both guest consoles recorded the OCI wrapper failing with EPERM after the warm worker spawned. Both signed plans specified the Standard seccomp tier. The host requested a 15-second Call deadline. The driver remained blocked in the Call path well beyond that deadline. The operators observed two workload-exit listeners and two blocked receives on sockets connected to the original VMMs. Determining the denied guest operation and bounding the host receive are separate work items.
 
