@@ -1,0 +1,224 @@
+{
+  "profile": "MVM 0.28.0-rc.1; Linux x86_64 Firecracker 1.17.0; Standard signed Prod mailbox; one persistent VM per fresh home",
+  "vcpu": 1,
+  "memory_mib": 256,
+  "host_retention_ceiling_ms": 30000,
+  "signed_retention_ms": 10000,
+  "shared_runtime": {
+    "arch": "x86_64",
+    "guest_archive_sha256": "b14f222e3fa9452c59e1df9f293e6691e4945a96ea758003b02dc4bc302e8c85",
+    "host_retention_ceiling_ms": 30000,
+    "initramfs_hash_record_sha256": "171524acfc56988c82eb6da8a54686005de2673ae8e3b8e3d0d5411292aaaf85",
+    "initramfs_sha256": "66c57d9e98a74e490c2d95ada0069b2efd397d6a3f7847452e6266f1aea7a6bc",
+    "mvm_version": "0.28.0-rc.1",
+    "overlay_root_hash": "83decbbca358a340fb1cfa1c39dc5708ee88f4a49e1995b6fa577f9ffe84a1ae",
+    "overlay_sha256": "d71eae35c6a1fad8b69b21b80708438bb67e58202a070fc3ad7b09c873e10f50",
+    "overlay_verity_sha256": "053b9d160b0210734b58df4e449ed2ec271b600595c4b35a5c538ee60fb07d15",
+    "sdk_sidecars": 2
+  },
+  "official_guest_files_sha256": {
+    "mvm-guest-agent": "8d556545107520ca68470801ff38bcc39c0cf03b40554a1eb54885cce3ec113c",
+    "mvm-guest-netinit": "0d764ea3038b9d64d3b975f83673775ab11e186455e32cd1e7903d91be2ed284",
+    "mvm-oci-entrypoint": "34b3b5360a3a19aa29ab562fae5469ceb07e07fc0e98e21b90db77d7a9d2c773",
+    "mvm-egress-client": "b1f5538d5eba9b38c938e3ff403c1e90ccc3231f18d0c10078f89f4b8a8aa25e"
+  },
+  "kernel_sha256": "1701ccb2c46b2497066225d6ba05f3f33a3a845ca636fbeedb202835c83b49b6",
+  "firecracker_sha256": "99ad0f5cd0514a88aad0e9ae8cfdb3cc3b4ab9d190e1194602406c786b5de7a5",
+  "fixture_sha256": {
+    "workload-frame.bin": "ff26a66df5b1d9de994e60824757686d2af8eb4433b91e74a2f24b279f600044",
+    "workload-body.bin": "54acfbfedc4d8da40f76f275e1a98f10af8ef1fb9fb39e5a67a00aabcbe6597c"
+  },
+  "inputs": {
+    "body_bytes": 257,
+    "frame_bytes": 313,
+    "body": "all byte values in ascending order followed by one zero"
+  },
+  "sdk_regressions": {
+    "clean_combined_source": "2c7067890b54f07a7f2f0cbd17aa80bf5d1419f6",
+    "clean_tree": "eb64efb6861efcf5b4327c5ea229820004d9e3cb",
+    "api_mismatch_log_sha256": "86851d947edd7a206e782264dcde3141083da70c035b1e5a73ee4daf17b692c3",
+    "unsigned_retention_fixture_log_sha256": "d16849cc5cb74ffb7fccdd6588958ac9b27675e29359bfaecb07ab9a56630855",
+    "qualified_source": "1755a2dea880ae5b7fcdf0479ca7f9807face651",
+    "passed": {
+      "persistent_request_mailbox_reaches_canonical_backend_admission": "9b36bc35a5ba57578a0fc26f30d9d2798568ecda9028db7aba48b82de85995b0",
+      "persistent_definition_restart_does_not_inherit_request_mailbox": "491a23efd053bab2bfa602e5c39f55336d21c7c6889ad302fd4c2f05483ef19e"
+    }
+  },
+  "trials": [
+    {
+      "trial": 1,
+      "mvm_commit": "543efc7f94aa756c09785b38bdd024b6ba8199c7",
+      "workload_source": "0385b57722f528c2411e9a00424c2da3e97bc3b0",
+      "workload_elf_sha256": "f3952e3bbc4c1cfd72a0d6416d6ff8fe62eb3186252c302a1147af037333127e",
+      "result": "mailbox_posture_absent",
+      "guest_count": 1,
+      "verified_original_mailbox_posture": false,
+      "canonical_application_calls": 0,
+      "application_call_input_bytes": 0,
+      "journal_entries_after_stop": 0,
+      "anchor_cursor_read_after_stop": null,
+      "retained_journal_file_bytes": [],
+      "retained_anchor_file_bytes": null,
+      "source_attempt_counter": null,
+      "verified_application_readback": false,
+      "verified_application_ack": false,
+      "guest_application_cpu_ns": null,
+      "reader_socket_bytes": null,
+      "port_5257_total_wire_bytes": null,
+      "verified_transfer_ns": null,
+      "host_command": {
+        "wall_s": 3.95,
+        "user_s": 4.4,
+        "system_s": 0.07,
+        "max_rss_kib": 82540
+      },
+      "audit_after_stop": {
+        "entries": 11,
+        "sessions": 1,
+        "seals": 1,
+        "verified": true
+      },
+      "host_executables_sha256": {
+        "mvm-host-agent": "896381b1fc2f5e0b40686e36f7543ffecbc7f8fff680f5789c8824152806409e",
+        "mvm-mailbox": "0c38b601f81953c218129a70b516d56b4cbae27002c14736823b3b3618b9fc1f",
+        "mvm-network-endpoint": "999198d67d52b6bcc67a965eae8054c92f88919070e21085aaad77885dbc671d",
+        "mvm-signer-helper": "fc15bde04293362feb9b82cb06267a9eb3bb3e439d1e82be65541ce282cbcc73",
+        "mvmctl": "842e6bf5827108e84f4225893c88d3c1f8870dc0b755a8c62422b606b9d9ec32"
+      },
+      "witness_executables_sha256": {
+        "own-mailbox": "d05517a264f0b5787c8c07b854503d7eab6efee46a11cf2bd9de9ce09cf4c0b4",
+        "image": "c7a02a91e38afdf06b044f00f39f3ebb83e6c25bc131509ce29a910f1572fbb8",
+        "prepare": "eeba035ff3ea22b34375faf94c934238eaf6d22cb0dae079b9d9d24bd17c3d01"
+      },
+      "sealed_image_files_sha256": {
+        "rootfs.ext4": "01c14b0cdea72cf92a26cf4a96a2322ba2b68e37abacb431d6c8ccc19564a6dc",
+        "rootfs.verity": "0c4300dcbcd156a7c7db9d823b9eaff2ab0f8a7031e52c29409fac24d65ffa98",
+        "rootfs.roothash": "112ee2a27436caa23e6672b2e9e8467c94190500e638e41331d4f05385373e36",
+        "mvm-meta.json": "9bfaef19683a08fd8c4d7b1616c30fadfee1f0d8d000ec0a36cb144532ea91f2"
+      },
+      "observation_hashes": {
+        "driver.log": "6b54d4fc81f46434840826b838052de5379806a8c7339b249f439429fb15d237",
+        "usage.txt": "f3fded7f018de0e231b6830a42e9757989c2228969cf5ddd74111bbf97274859",
+        "audit-first.log": "ae8324081703e83566d86e5fcd166848fa52c13fa3ebf61073ff249e21b88701"
+      }
+    },
+    {
+      "trial": 2,
+      "mvm_commit": "1755a2dea880ae5b7fcdf0479ca7f9807face651",
+      "workload_source": "0385b57722f528c2411e9a00424c2da3e97bc3b0",
+      "workload_elf_sha256": "f3952e3bbc4c1cfd72a0d6416d6ff8fe62eb3186252c302a1147af037333127e",
+      "result": "workload_rejected_agent_runtime_metadata",
+      "guest_count": 1,
+      "verified_original_mailbox_posture": true,
+      "canonical_application_calls": 1,
+      "application_call_input_bytes": 313,
+      "journal_entries_after_stop": 0,
+      "anchor_cursor_read_after_stop": null,
+      "retained_journal_file_bytes": [],
+      "retained_anchor_file_bytes": null,
+      "source_attempt_counter": null,
+      "verified_application_readback": false,
+      "verified_application_ack": false,
+      "guest_application_cpu_ns": null,
+      "reader_socket_bytes": null,
+      "port_5257_total_wire_bytes": null,
+      "verified_transfer_ns": null,
+      "host_command": {
+        "wall_s": 6.32,
+        "user_s": 4.57,
+        "system_s": 0.08,
+        "max_rss_kib": 81648
+      },
+      "audit_after_stop": {
+        "entries": 11,
+        "sessions": 1,
+        "seals": 1,
+        "verified": true
+      },
+      "host_executables_sha256": {
+        "mvm-host-agent": "896381b1fc2f5e0b40686e36f7543ffecbc7f8fff680f5789c8824152806409e",
+        "mvm-mailbox": "0c38b601f81953c218129a70b516d56b4cbae27002c14736823b3b3618b9fc1f",
+        "mvm-network-endpoint": "999198d67d52b6bcc67a965eae8054c92f88919070e21085aaad77885dbc671d",
+        "mvm-signer-helper": "fc15bde04293362feb9b82cb06267a9eb3bb3e439d1e82be65541ce282cbcc73",
+        "mvmctl": "842e6bf5827108e84f4225893c88d3c1f8870dc0b755a8c62422b606b9d9ec32"
+      },
+      "witness_executables_sha256": {
+        "own-mailbox": "6d30dfc94af88f713fdbdab8d907d806c143cd325befd517ca4c9c542cd7093f",
+        "image": "c7a02a91e38afdf06b044f00f39f3ebb83e6c25bc131509ce29a910f1572fbb8",
+        "prepare": "eeba035ff3ea22b34375faf94c934238eaf6d22cb0dae079b9d9d24bd17c3d01"
+      },
+      "sealed_image_files_sha256": {
+        "rootfs.ext4": "01c14b0cdea72cf92a26cf4a96a2322ba2b68e37abacb431d6c8ccc19564a6dc",
+        "rootfs.verity": "0c4300dcbcd156a7c7db9d823b9eaff2ab0f8a7031e52c29409fac24d65ffa98",
+        "rootfs.roothash": "112ee2a27436caa23e6672b2e9e8467c94190500e638e41331d4f05385373e36",
+        "mvm-meta.json": "9bfaef19683a08fd8c4d7b1616c30fadfee1f0d8d000ec0a36cb144532ea91f2"
+      },
+      "observation_hashes": {
+        "driver.log": "a44dba30cb5193192fc1bc05d74717bc90e52039cc98f632cf15710f1e11f5e5",
+        "usage.txt": "f5f0d1d6dc2633d0d28255bd3d1694e2f0469ffb175fac7cd701977cf2bfb558",
+        "audit-second.log": "ae8324081703e83566d86e5fcd166848fa52c13fa3ebf61073ff249e21b88701",
+        "workload-error.log": "611f87b0533c4ea5f8bced1ee37ab6cbb4da6cd5ac5c2f490deb3b81edd9a35b"
+      }
+    },
+    {
+      "trial": 3,
+      "mvm_commit": "1755a2dea880ae5b7fcdf0479ca7f9807face651",
+      "workload_source": "01c8ad87856b81440353fed0c07bc703b12dbebd",
+      "workload_elf_sha256": "8651d96a37895c0b3e447dccf1ce348fafcb53f4171097503cfe61c578c95814",
+      "result": "reader_not_authorized_after_journal_entry",
+      "guest_count": 1,
+      "verified_original_mailbox_posture": true,
+      "canonical_application_calls": 1,
+      "application_call_input_bytes": 313,
+      "journal_entries_after_stop": 1,
+      "anchor_cursor_read_after_stop": 1,
+      "retained_journal_file_bytes": [
+        12009
+      ],
+      "retained_anchor_file_bytes": 803,
+      "source_attempt_counter": 1,
+      "verified_application_readback": false,
+      "verified_application_ack": false,
+      "guest_application_cpu_ns": null,
+      "reader_socket_bytes": null,
+      "port_5257_total_wire_bytes": null,
+      "verified_transfer_ns": null,
+      "host_command": {
+        "wall_s": 6.22,
+        "user_s": 4.53,
+        "system_s": 0.09,
+        "max_rss_kib": 80136
+      },
+      "audit_after_stop": {
+        "entries": 11,
+        "sessions": 1,
+        "seals": 1,
+        "verified": true
+      },
+      "host_executables_sha256": {
+        "mvm-host-agent": "896381b1fc2f5e0b40686e36f7543ffecbc7f8fff680f5789c8824152806409e",
+        "mvm-mailbox": "0c38b601f81953c218129a70b516d56b4cbae27002c14736823b3b3618b9fc1f",
+        "mvm-network-endpoint": "999198d67d52b6bcc67a965eae8054c92f88919070e21085aaad77885dbc671d",
+        "mvm-signer-helper": "fc15bde04293362feb9b82cb06267a9eb3bb3e439d1e82be65541ce282cbcc73",
+        "mvmctl": "842e6bf5827108e84f4225893c88d3c1f8870dc0b755a8c62422b606b9d9ec32"
+      },
+      "witness_executables_sha256": {
+        "own-mailbox": "78e167be582305144ebc6c08c1273f3a1d9b4bab81bf7ab67105b88ad63b927b",
+        "prepare": "eeba035ff3ea22b34375faf94c934238eaf6d22cb0dae079b9d9d24bd17c3d01",
+        "image": "c7a02a91e38afdf06b044f00f39f3ebb83e6c25bc131509ce29a910f1572fbb8"
+      },
+      "sealed_image_files_sha256": {
+        "rootfs.ext4": "c0e6ca8c1a4f1d1c4fb1bb6ca82e53c92652db7fa85852d38d3041eb0564472a",
+        "rootfs.verity": "88a1acbb0f4e1827f82b18af3020231fb7bbb6ba47bb9ae7f3fb8934b7db1ba6",
+        "rootfs.roothash": "3c55f64871794c9dd8627d8f2309a202c65519a3cc15fd688314acd1f675ecf1",
+        "mvm-meta.json": "9bfaef19683a08fd8c4d7b1616c30fadfee1f0d8d000ec0a36cb144532ea91f2"
+      },
+      "observation_hashes": {
+        "driver.log": "a44dba30cb5193192fc1bc05d74717bc90e52039cc98f632cf15710f1e11f5e5",
+        "usage.txt": "0dfec014c436f48703f6a072fbbf38e5b742e37a24fcff4a6090ef453ed93833",
+        "audit-third.log": "ae8324081703e83566d86e5fcd166848fa52c13fa3ebf61073ff249e21b88701",
+        "workload-error.log": "5413857ea79590cf5c7b4a37aff6c8bd4ff0d88d2fa21e2cf667f969963c0b19"
+      }
+    }
+  ]
+}

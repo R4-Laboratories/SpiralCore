@@ -1,0 +1,31 @@
+[package]
+name = "spiralcore-ari-native-witness"
+version = "0.1.0"
+edition = "2024"
+publish = false
+[workspace]
+[dependencies]
+anyhow = "=1.0.103"
+serde_json = "=1.0.151"
+cpu-time = "1.0"
+tokio = { version = "=1.53.3", features = ["rt"] }
+mvm-client = { path = "../source/crates/mvm-client" }
+mvm-agentd = { path = "../source/crates/mvm-agentd" }
+mvm-build = { path = "../source/crates/mvm-build" }
+mvm-core = { path = "../source/crates/mvm-core", features = ["host-state"] }
+[patch.crates-io]
+am-fs-ext4 = { path = "../source/third_party/am-fs-ext4" }
+arrayref = { path = "../source/third_party/arrayref" }
+gix = { path = "../source/third_party/gix-0.87.1" }
+gix-object = { path = "../source/third_party/gix-object-0.64.1" }
+notify = { path = "../source/third_party/notify-8.2.0" }
+io-extras = { path = "../source/third_party/io-extras-0.19.0" }
+[[bin]]
+name = "prepare"
+path = "bin/prepare.rs"
+[[bin]]
+name = "image"
+path = "bin/image.rs"
+[[bin]]
+name = "own-mailbox"
+path = "bin/launch.rs"
