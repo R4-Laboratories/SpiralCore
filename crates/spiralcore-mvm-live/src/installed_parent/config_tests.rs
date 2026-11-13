@@ -108,6 +108,44 @@ fn config(provider: &InstalledParentProvider, name: &str) -> (Arc<VmGrant>, VmSt
 }
 
 #[test]
+fn obtaining_a_registration_callback_requires_an_existing_original_registrar() {
+    let (_home, mut supervisor, provider) = endpoint_tests::fixture();
+    let preparation = provider
+        .prepare_vm(
+            &VmStartConfig {
+                name: "missing-registrar".into(),
+                tenant_id: Some("local".into()),
+                memory_mib: 1024,
+                cpus: 1,
+                ..Default::default()
+            },
+            "local",
+            native_backend(),
+        )
+        .unwrap();
+    let (lifetime, mut owner) = preparation.begin_launch().unwrap();
+    let before = supervisor.managed_resources().snapshot().unwrap().usage;
+    let error = owner
+        .original_registrar()
+        .err()
+        .expect("fixture has no tenant registrar");
+    assert_eq!(
+        error.to_string(),
+        "original registered tenant daemon missing"
+    );
+    assert_eq!(
+        before,
+        supervisor.managed_resources().snapshot().unwrap().usage
+    );
+    assert_eq!(before.guests, 1);
+    // No backend or registrar was invoked in this component.
+    owner.completed = true;
+    drop((owner, lifetime, provider));
+    supervisor.close_admission();
+    supervisor.try_finish().unwrap();
+}
+
+#[test]
 fn original_config_binds_opaque_workload_to_generated_vm_and_registration_once() {
     let (home, mut supervisor, provider) = endpoint_tests::fixture();
     let admitted = admitted(home.path(), "signed-workload-label");
