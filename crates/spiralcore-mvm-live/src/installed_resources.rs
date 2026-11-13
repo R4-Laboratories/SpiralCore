@@ -86,7 +86,7 @@ impl ManagedLimits {
             && usage.workers <= self.workers
             && usage.guests <= self.guests
     }
-    fn host() -> Self {
+    pub(crate) fn host() -> Self {
         Self {
             host_resident_bytes: 512 * MIB,
             guest_memory_bytes: 2048 * MIB,
@@ -96,7 +96,7 @@ impl ManagedLimits {
             guests: 2,
         }
     }
-    fn tenant() -> Self {
+    pub(crate) fn tenant() -> Self {
         Self {
             host_resident_bytes: 256 * MIB,
             cache_disk_bytes: 512 * MIB,
@@ -161,6 +161,8 @@ impl Default for Ledger {
 }
 struct Shared {
     authority: Arc<InstalledAuthority>,
+    host: ManagedLimits,
+    tenant: ManagedLimits,
     ledger: Mutex<Ledger>,
     fenced: AtomicBool,
     quarantined: AtomicBool,
@@ -195,10 +197,15 @@ impl ManagedResourceBudget {
         Arc::ptr_eq(&self.shared, &other.shared)
     }
 
-    pub(crate) fn new_installed(authority: Arc<InstalledAuthority>) -> Self {
+    pub(crate) fn new_installed(
+        authority: Arc<InstalledAuthority>,
+        (host, tenant): (ManagedLimits, ManagedLimits),
+    ) -> Self {
         Self {
             shared: Arc::new(Shared {
                 authority,
+                host,
+                tenant,
                 ledger: Mutex::new(Ledger::default()),
                 fenced: AtomicBool::new(false),
                 quarantined: AtomicBool::new(false),
@@ -206,7 +213,7 @@ impl ManagedResourceBudget {
         }
     }
     pub fn limits(&self) -> ManagedLimits {
-        ManagedLimits::host()
+        self.shared.host
     }
     pub(crate) fn original_vm_serial(
         &self,
@@ -264,7 +271,7 @@ impl ManagedResourceBudget {
             .add(claim)
             .ok_or(ManagedResourceError::Overflow)?;
         let scoped = previous.add(claim).ok_or(ManagedResourceError::Overflow)?;
-        if !ManagedLimits::host().admits(host) || !ManagedLimits::tenant().admits(scoped) {
+        if !self.shared.host.admits(host) || !self.shared.tenant.admits(scoped) {
             return Err(ManagedResourceError::Full);
         }
         let serial = ledger.next;

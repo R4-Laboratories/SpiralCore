@@ -21,15 +21,48 @@ use std::{
 
 pub struct InstalledConfig {
     canonical: bool,
+    paired_endpoints: bool,
 }
 impl InstalledConfig {
     pub fn native_profile() -> Self {
-        Self { canonical: false }
+        Self {
+            canonical: false,
+            paired_endpoints: false,
+        }
     }
     /// Fresh provisioning for the canonical resource/disk contract. The stamp
     /// identifies included model definitions, not an executed child or RSS.
     pub fn canonical_native_profile() -> Self {
-        Self { canonical: true }
+        Self {
+            canonical: true,
+            paired_endpoints: false,
+        }
+    }
+    /// Fresh, separate operator profile for two six-worker endpoints plus their
+    /// one shared ten-thread tenant daemon/signer. It preserves two VM slots.
+    pub fn two_endpoint_witness_profile() -> Self {
+        Self {
+            canonical: true,
+            paired_endpoints: true,
+        }
+    }
+    fn managed_limits(
+        &self,
+    ) -> (
+        crate::installed_resources::ManagedLimits,
+        crate::installed_resources::ManagedLimits,
+    ) {
+        use crate::installed_resources::ManagedLimits;
+        let mut host = ManagedLimits::host();
+        let mut tenant = ManagedLimits::tenant();
+        if self.paired_endpoints {
+            // 512 MiB per installation and tenant funds two 136 MiB endpoint
+            // partitions, two independently capped helpers, and original owners.
+            host.workers = 22;
+            tenant.workers = host.workers;
+            tenant.host_resident_bytes = host.host_resident_bytes;
+        }
+        (host, tenant)
     }
     pub fn profile_hash(&self) -> [u8; 32] {
         let mut digest = Sha256::new();
@@ -71,6 +104,22 @@ impl InstalledConfig {
             ] {
                 digest.update((definition.len() as u64).to_be_bytes());
                 digest.update(definition);
+            }
+        }
+        if self.paired_endpoints {
+            digest.update(b"spiralcore/two-endpoint-witness/v1\0");
+            let (host, tenant) = self.managed_limits();
+            for limits in [host, tenant] {
+                for bound in [
+                    limits.host_resident_bytes,
+                    limits.guest_memory_bytes,
+                    limits.cache_disk_bytes,
+                    limits.staging_disk_bytes,
+                    limits.workers,
+                    limits.guests,
+                ] {
+                    digest.update(bound.to_be_bytes());
+                }
             }
         }
         digest.finalize().into()
@@ -312,7 +361,8 @@ impl InstalledSupervisor {
             canonical: config.canonical,
         });
         let budget = HostTransportBudget::new_installed(config.transport(), authority.clone())?;
-        let resources = ManagedResourceBudget::new_installed(authority.clone());
+        let resources =
+            ManagedResourceBudget::new_installed(authority.clone(), config.managed_limits());
         Ok(Self {
             authority,
             budget,
