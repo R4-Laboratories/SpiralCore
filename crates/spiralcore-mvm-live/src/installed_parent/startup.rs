@@ -129,10 +129,18 @@ impl PreparedParentVm {
             claim.host_metadata_bytes,
             disk,
         )?;
-        // Preparation itself may leave authenticated files even if it fails.
-        prepared.grant.retain_portable_debt(&pin, archive_bytes)?;
         let registry = mvm_core::plan::bundle::BundleRegistry::default_path()?;
         let archive = registry.archive_path(&pin.bundle_sha256);
+        {
+            let decoded =
+                mvm_core::plan::bundle::read_exact_bundle_archive(&archive, archive_bytes)?;
+            ensure!(
+                format!("{:x}", Sha256::digest(&decoded)) == pin.bundle_sha256,
+                "original installed archive differs from the signed startup pin"
+            );
+        }
+        // Preparation may leave authenticated files even when it later refuses.
+        prepared.grant.retain_portable_debt(&pin, archive_bytes)?;
         let kernel = Arc::new(
             mvm_client::launch::canonical_linux::prepare_canonical_linux(
                 &archive,
@@ -254,6 +262,15 @@ impl VmGrant {
             .startup
             .as_ref()
             .ok_or_else(|| anyhow!("original startup absent"))?;
+        let required_phase = if copy.is_some() {
+            Phase::Active
+        } else {
+            Phase::Held
+        };
+        ensure!(
+            startup.phase == required_phase,
+            "original startup phase differs"
+        );
         let prepared = startup
             .canonical
             .as_ref()

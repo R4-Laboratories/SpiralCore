@@ -103,14 +103,45 @@ fn filesystem_bytes(directory: &File) -> Result<u64> {
         matches!(info.f_type, libc::EXT4_SUPER_MAGIC | libc::XFS_SUPER_MAGIC),
         "startup requires a local disk-backed filesystem"
     );
-    let block_size = u64::try_from(info.f_bsize)?;
-    ensure!(
-        block_size > 0 && info.f_blocks > 0,
-        "empty filesystem geometry"
+    // f_blocks omits the ext4 and XFS metadata. Charge the kernel-reported
+    // block device extent, including filesystem overhead and reserved blocks.
+    let dev = directory.metadata()?.dev();
+    let path = format!(
+        "/sys/dev/block/{}:{}/size",
+        libc::major(dev),
+        libc::minor(dev)
     );
-    info.f_blocks
-        .checked_mul(block_size)
-        .ok_or_else(|| anyhow::anyhow!("filesystem extent overflow"))
+    let size = File::open(path)?;
+    let mut fs_kind = MaybeUninit::uninit();
+    // SAFETY: this file descriptor is live; fstatfs writes the supplied statfs.
+    if unsafe { libc::fstatfs(size.as_raw_fd(), fs_kind.as_mut_ptr()) } != 0 {
+        return Err(io::Error::last_os_error().into());
+    }
+    // SAFETY: success initializes the whole statfs.
+    ensure!(
+        unsafe { fs_kind.assume_init() }.f_type == libc::SYSFS_MAGIC,
+        "block geometry is not from sysfs"
+    );
+    let mut sectors = String::new();
+    size.take(32).read_to_string(&mut sectors)?;
+    ensure!(
+        sectors.ends_with('\n') && sectors.len() < 32,
+        "invalid original block device geometry"
+    );
+    let bytes = sectors
+        .trim_end()
+        .parse::<u64>()?
+        .checked_mul(512)
+        .ok_or_else(|| anyhow::anyhow!("block device extent overflow"))?;
+    ensure!(
+        bytes > 0
+            && info
+                .f_blocks
+                .checked_mul(u64::try_from(info.f_bsize)?)
+                .is_some_and(|fs_bytes| fs_bytes > 0 && fs_bytes <= bytes),
+        "invalid backing extent"
+    );
+    Ok(bytes)
 }
 
 fn reject_submounts(home: &Path, scratch: &Path) -> Result<()> {
