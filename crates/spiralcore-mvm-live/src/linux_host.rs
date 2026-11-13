@@ -124,7 +124,7 @@ pub fn initramfs(guest_elf: &[u8], bootstrap_json: &[u8]) -> Result<Vec<u8>> {
         0o600,
         bootstrap_json.to_vec(),
     ));
-    let archive = build_newc_cpio(&entries);
+    let archive = build_newc_cpio(&entries)?;
     if archive.len() > MAX_INITRAMFS {
         return Err(invalid("initramfs exceeds its byte limit").into());
     }
@@ -161,7 +161,7 @@ pub fn worker(kernel: &Path, disk: Option<&Path>, mailbox_socket: Option<&Path>)
     worker_with_profile(kernel, disk, mailbox_socket, Default::default())
 }
 
-/// Use MVM's existing NIC-less Firecracker driver and the canonical typed service.
+/// Run the historical keyless verifier on the existing NIC-less Firecracker driver.
 #[cfg(target_os = "linux")]
 pub fn worker_with_profile(
     kernel: &Path,
@@ -169,37 +169,23 @@ pub fn worker_with_profile(
     mailbox_socket: Option<&Path>,
     profile: crate::config::MailboxBandwidthProfile,
 ) -> Result<Value> {
-    linux::worker(kernel, disk, mailbox_socket, profile, None)
+    if mailbox_socket.is_some() {
+        return Err(io::Error::new(io::ErrorKind::Unsupported,
+            "caller-provided Firecracker mailbox socket unavailable; use the original signed SDK mailbox service").into());
+    }
+    linux::worker(kernel, disk, profile)
 }
 
 #[cfg(target_os = "linux")]
 pub fn worker_installed(
-    kernel: &Path,
-    disk: Option<&Path>,
-    mailbox_socket: Option<&Path>,
-    profile: crate::config::MailboxBandwidthProfile,
-    expected_role: u8,
+    _kernel: &Path,
+    _disk: Option<&Path>,
+    _mailbox_socket: Option<&Path>,
+    _profile: crate::config::MailboxBandwidthProfile,
+    _expected_role: u8,
 ) -> Result<Value> {
-    let wall = std::time::Instant::now();
-    let cpu = cpu_time::ProcessTime::try_now()?;
-    let mut context =
-        crate::installed_worker::InstalledWorkerContext::from_inherited_fd(expected_role)?;
-    let input = context.read_initrd()?;
-    let setup_cpu = u64::try_from(cpu.try_elapsed()?.as_micros())?;
-    let setup_wall = u64::try_from(wall.elapsed().as_micros())?;
-    let mut value = linux::worker(
-        kernel,
-        disk,
-        mailbox_socket,
-        profile,
-        Some((context, input)),
-    )?;
-    value["installed_control_input_cpu_us"] = serde_json::json!(setup_cpu);
-    value["installed_control_input_wall_us"] = serde_json::json!(setup_wall);
-    value["worker_process_cpu_us"] =
-        serde_json::json!(u64::try_from(cpu.try_elapsed()?.as_micros())?);
-    value["worker_wall_us"] = serde_json::json!(u64::try_from(wall.elapsed().as_micros())?);
-    Ok(value)
+    Err(io::Error::new(io::ErrorKind::Unsupported,
+        "historical worker lease cannot authorize a current installed Firecracker launch; use the original SDK host lifetime").into())
 }
 
 /// Recover only this witness worker's owned VM after a forced worker exit.
@@ -331,9 +317,7 @@ mod linux {
     pub(super) fn worker(
         kernel: &Path,
         disk: Option<&Path>,
-        socket: Option<&Path>,
         profile: crate::config::MailboxBandwidthProfile,
-        installed: Option<(crate::installed_worker::InstalledWorkerContext, Vec<u8>)>,
     ) -> Result<Value> {
         let wall = Instant::now();
         let cpu = ProcessTime::try_now()?;
@@ -353,17 +337,11 @@ mod linux {
         let kernel_file = File::open(kernel)?;
         let kernel_sha256 =
             mvm_core::crypto::verified_digest::sha256_open_file_verified(&kernel_file)?;
-        let (mut installed, initrd) = match installed {
-            Some((context, input)) => (Some(context), input),
-            None => {
-                let mut input = Vec::new();
-                std::io::stdin()
-                    .lock()
-                    .take(MAX_INITRAMFS as u64 + 1)
-                    .read_to_end(&mut input)?;
-                (None, input)
-            }
-        };
+        let mut initrd = Vec::new();
+        std::io::stdin()
+            .lock()
+            .take(MAX_INITRAMFS as u64 + 1)
+            .read_to_end(&mut initrd)?;
         if initrd.is_empty() || initrd.len() > MAX_INITRAMFS {
             return Err(invalid("bounded initramfs input required").into());
         }
@@ -421,7 +399,6 @@ mod linux {
             .map(|p| {
                 OpenOptions::new()
                     .read(true)
-                    .write(true)
                     .custom_flags(libc::O_NOFOLLOW | libc::O_CLOEXEC)
                     .open(p)
             })
@@ -460,7 +437,7 @@ mod linux {
             blocks: disk
                 .map(|p| BlockDev {
                     source: p.to_path_buf(),
-                    read_only: socket.is_none(),
+                    read_only: true,
                     ephemeral: false,
                     slot: 0,
                 })
@@ -475,11 +452,6 @@ mod linux {
                 host_uds: mvm_core::exit_capture::exit_file_path(&state),
                 direction: VsockDirection::GuestDials,
             })
-            .chain(socket.map(|p| VsockPort {
-                service: GuestService::Mailbox,
-                host_uds: p.to_path_buf(),
-                direction: VsockDirection::GuestDials,
-            }))
             .collect(),
             console: ConsoleCapture {
                 log_path: console.clone(),
@@ -490,32 +462,16 @@ mod linux {
             plan_binding: None,
         };
         let custody = prepare_disk_custody(&spec, backing.as_ref())?;
-        let host_lease = if let Some(context) = &mut installed {
-            context.authorize_boot()?;
-            let handoff = context.holder_handoff()?;
-            use mvm_backends::driver::fc::{HostLeaseExpectation, PreparedHostLifetimeLease};
-            Some(PreparedHostLifetimeLease::bind(
-                handoff.directory,
-                handoff.holder,
-                HostLeaseExpectation {
-                    state_name: "state.bin".into(),
-                    state_bytes: handoff.state_bytes,
-                    state_sha256: handoff.state_sha256,
-                    absent_names: [".state.next".into(), ".state.intent".into()],
-                },
-            )?)
-        } else {
-            None
+        let files = mvm_vmm::driver::prepared_disks::PreparedBootFiles {
+            kernel: None,
+            writable: custody,
+            data: None,
         };
         let boot_at = Instant::now();
         let vm = OwnedVm(
-            match host_lease {
-                Some(lease) => {
-                    FcDriver::new().boot_custodied_with_host_lease(&spec, None, custody, lease)
-                }
-                None => FcDriver::new().boot_custodied(&spec, None, custody),
-            }
-            .map_err(|e| io::Error::other(format!("MVM Firecracker boot failed: {e}")))?,
+            FcDriver::new()
+                .boot_custodied(&spec, files)
+                .map_err(|e| io::Error::other(format!("MVM Firecracker boot failed: {e}")))?,
         );
         let boot_wall_us = micros(boot_at.elapsed())?;
         let pid =
@@ -625,7 +581,7 @@ mod linux {
             .map(|_| micros(sync_at.elapsed()))
             .transpose()?;
         Ok(
-            json!({"event":"worker_done","ok":true,"installed_host_lease":installed.is_some(),"installed_generation":installed.as_ref().map(|c|c.binding().generation),"installed_role":installed.as_ref().map(|c|c.binding().role),"backend_exit_confirmed":true,"backend":"firecracker","guest_events":completion.events,"console":String::from_utf8(bytes)?,"kernel_sha256":kernel_sha256,"worker_process_cpu_us":micros(cpu.try_elapsed()?)?,"worker_wall_us":micros(wall.elapsed())?,"boot_wall_us":boot_wall_us,"backing_disk_sync_us":sync_us,"backing_disk_synced":backing.is_some(),"guest_ready_host_unix_ms":ready_host,"guest_ready_guest_unix_ms":completion.guest_ready_unix_ms,"guest_clock_offset_ms":completion.clock_offset_ms,"firecracker_observed_cpu_us":vmm_cpu,"firecracker_cpu_scope":"last observed /proc stat sample before owned VMM termination; excludes stop work; not added to guest CPU","mailbox_bandwidth_profile":profile,"mailbox_rate_enforced":false,"mailbox_rate_bytes_per_second":null,"mailbox_burst_bytes":null,"requested_mailbox_rate_bytes_per_second":profile.bytes_per_second(),"requested_mailbox_burst_bytes":profile.burst_bytes(),"stopped_by_watchdog":false,"workload_exit_code":0,"process_exit_observed":true,"terminal_contract":"canonical-workload-exit-zero-and-successful-guest-done-then-owned-host-termination","natural_poweroff_observed":false}),
+            json!({"event":"worker_done","ok":true,"installed_host_lease":false,"installed_generation":null,"installed_role":null,"backend_exit_confirmed":true,"backend":"firecracker","guest_events":completion.events,"console":String::from_utf8(bytes)?,"kernel_sha256":kernel_sha256,"worker_process_cpu_us":micros(cpu.try_elapsed()?)?,"worker_wall_us":micros(wall.elapsed())?,"boot_wall_us":boot_wall_us,"backing_disk_sync_us":sync_us,"backing_disk_synced":backing.is_some(),"guest_ready_host_unix_ms":ready_host,"guest_ready_guest_unix_ms":completion.guest_ready_unix_ms,"guest_clock_offset_ms":completion.clock_offset_ms,"firecracker_observed_cpu_us":vmm_cpu,"firecracker_cpu_scope":"last observed /proc stat sample before owned VMM termination; excludes stop work; not added to guest CPU","mailbox_bandwidth_profile":profile,"mailbox_rate_enforced":false,"mailbox_rate_bytes_per_second":null,"mailbox_burst_bytes":null,"requested_mailbox_rate_bytes_per_second":profile.bytes_per_second(),"requested_mailbox_burst_bytes":profile.burst_bytes(),"stopped_by_watchdog":false,"workload_exit_code":0,"process_exit_observed":true,"terminal_contract":"canonical-workload-exit-zero-and-successful-guest-done-then-owned-host-termination","natural_poweroff_observed":false}),
         )
     }
     #[cfg(test)]
@@ -744,6 +700,22 @@ mod tests {
         value[20..24].copy_from_slice(&1_u32.to_le_bytes());
         value[52..54].copy_from_slice(&64_u16.to_le_bytes());
         value
+    }
+
+    #[test]
+    #[cfg(target_os = "linux")]
+    fn unowned_legacy_mailbox_and_installed_lease_refuse_before_input_or_boot() {
+        let missing = Path::new("/absent-sc-legacy-fc-fixture");
+        for result in [
+            worker(missing, None, Some(missing)),
+            worker_installed(missing, None, None, Default::default(), 1),
+        ] {
+            let err = result.unwrap_err();
+            assert_eq!(
+                err.downcast_ref::<io::Error>().unwrap().kind(),
+                io::ErrorKind::Unsupported
+            );
+        }
     }
 
     #[test]

@@ -164,3 +164,11 @@ own signed network plan, funds the original tenant daemon and signer, and retain
 its endpoint partition until typed disposal. The library's new managed owner and
 the reference mailbox driver have separate integration results.
 [Installed mailbox driver and reproducer](../../tools/ari-own-mailbox-witness/paired-native.md)
+
+The historical Firecracker launcher also accepted a caller-supplied mailbox
+socket and a lease-only worker. The current Firecracker driver requires an
+original SDK host lifetime for a managed launch. Both historical entries refuse
+before reading worker input or touching a VM. The standalone keyless verifier
+still opens the original disk for read-only verification. The historical guest
+sender and receiver refuse at startup before opening a mailbox connection. The
+managed library still needs qualification of its public end-to-end SDK startup.
