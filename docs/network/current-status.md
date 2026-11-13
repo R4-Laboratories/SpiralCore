@@ -361,7 +361,7 @@ are required. The linked issues were open at this snapshot.
 |---|---|---|
 | [#43 mailbox](https://github.com/R4-Laboratories/SpiralCore/issues/43) | Canonical resident service, original admitted-plan/child ownership, aggregate plaintext/cache/workspace budgets, shutdown and orphan recovery | Published development witnesses and prerequisites do not complete the installed service |
 | [#43 / #49 sustained sessions](https://github.com/R4-Laboratories/SpiralCore/issues/49) | Final acknowledgment recovery, safe retention/expiry, native qualification beyond the 2,048-Call witness guard and measured control/data coexistence | An installed Firecracker session completed 2,311 Calls and recovered a withheld Finish receipt after replay tracker expiry. A separate durable mailbox pair verified 2,049 distinct sender ordinals. Measured concurrency and production retention remain open. |
-| [#44 FlowMux](https://github.com/R4-Laboratories/SpiralCore/issues/44) | Actual admitted destination/protocol, independent queues/audit/rates, installed lifecycle and shared-core mapping | The paired stream component is accepted; canonical MVM activation is still unmerged work |
+| [#44 FlowMux](https://github.com/R4-Laboratories/SpiralCore/issues/44) | Actual admitted destination/protocol, independent queues/audit/rates, installed lifecycle and shared-core mapping | Paired stream components and one installed Linux guest passed. Full package release, sustained operation, concurrent capacity and WAN remain open. |
 | [#45 owner access](https://github.com/R4-Laboratories/SpiralCore/issues/45) | Separately admitted development access and sealed typed operations, bounded lifecycle and shared-core payload mapping | Implementation is active and unmerged; no implicit shell/PTY permission or development fallback in sealed mode |
 | [#46 platforms](https://github.com/R4-Laboratories/SpiralCore/issues/46) | Exact OS/version/architecture/role matrix and durable client/gateway qualification | Native component rows are recorded; remaining end-to-end platform and backend gates stay open |
 | [#47 WAN/upstream](https://github.com/R4-Laboratories/SpiralCore/issues/47) | Current canonical direct/relay two-host WAN, reproducible supported package and reviewed upstream contribution | Historical WAN is a different source/transport; final canonical WAN and upstream package remain open |
@@ -393,6 +393,8 @@ release and cross-platform WAN remain open. The reports retain byte counts,
 CPU, elapsed time, source pins and failed runs.
 
 ## Current installed FlowMux qualification
+
+One x86_64 Linux Firecracker guest executed its signed entrypoint, observed the denied CONNECT, and verified the permitted 5,804-byte echo in each direction through the original installed FlowMux endpoint. The guest echo phase took 179.469 ms wall and 2.770 ms process CPU. The peer counted 3,661 TLS bytes received and 3,234 sent. The original SDK and tenant retired, with four retained resource reservations verified. This host-local source checkpoint leaves cross-host, WAN, fleet capacity and final package qualification open. [Trial 9 measurements and acceptance boundaries](evidence/2026-11-12-installed-flowmux-startup/verified-echo.md)
 
 The [MVM contribution fork checkpoint](https://github.com/Casey-allard/mvm/commit/9c2361423c86082a48d23e3f5651cb3ff0881e3f)
 includes the original host-agent registration and signer check. The

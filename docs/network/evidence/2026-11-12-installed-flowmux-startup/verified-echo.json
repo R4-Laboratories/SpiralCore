@@ -1,0 +1,205 @@
+{
+  "trial": 9,
+  "native": "one x86_64 Linux Firecracker/KVM guest and a host-local cooperating peer",
+  "spiralcore_source": "8f0a1e363704a3348d9fde51658a10bffa0347cd",
+  "mvm_sdk_and_helpers": "fc09150b5c08bc037c5c5f66daa461648f1fb911",
+  "issuer_and_peer_mvm": "372f0a3e630fd9a1d6af43c3a0baca39484241ba",
+  "signed_bundle_sha256": "deba11e2c4b7efe441211f3ae79c76b205da468821ed6162114b97f890b5f319",
+  "decoded_bundle_bytes": 61860864,
+  "controller_hard_as_mib": 768,
+  "guest_memory_mib": 256,
+  "physical_volume_mib": 512,
+  "aggregate_resident_budget_mib": 2048,
+  "mvm_source_files_and_modes_matched": 4631,
+  "controller": [
+    {
+      "audit_bytes": 8388608,
+      "bootstrap_upper_bytes": 67698688,
+      "collector_bytes": 27394048,
+      "controller_bytes": 65536,
+      "phase": "funded_endpoint_metadata",
+      "reader_bytes": 65536,
+      "relay_bytes": 81920,
+      "scanner_bytes": 24363008,
+      "scanner_rules": 5,
+      "total_bytes": 128057344
+    },
+    {
+      "agent_refusal": null,
+      "dispatch_ns": 232034574,
+      "launch_ns": 32235299808,
+      "original_workload_exit": 0,
+      "phase": "original_entrypoint",
+      "prepared_ns": 6188641063,
+      "stderr_bytes": 0
+    },
+    {
+      "phase": "guest_proxy_rows",
+      "rows": [
+        {
+          "guest_proxy": {
+            "application_received_bytes": 0,
+            "application_sent_bytes": 0,
+            "completed": true,
+            "connect_request_bytes": 79,
+            "connect_response_bytes": 64,
+            "elapsed_ns": 6961262,
+            "process_cpu_ns": 1150120
+          },
+          "phase": "denied"
+        },
+        {
+          "guest_proxy": {
+            "application_received_bytes": 5804,
+            "application_sent_bytes": 5804,
+            "completed": true,
+            "connect_request_bytes": 69,
+            "connect_response_bytes": 39,
+            "elapsed_ns": 179468664,
+            "process_cpu_ns": 2770237
+          },
+          "phase": "echo"
+        }
+      ]
+    },
+    {
+      "phase": "sdk_retirement",
+      "retired": true,
+      "through_retirement_ns": 32647609664
+    },
+    {
+      "all_resources_released": false,
+      "charged": {
+        "cache_disk_bytes": 9494528,
+        "guest_memory_bytes": 0,
+        "guests": 0,
+        "host_carrier_bytes": 0,
+        "host_codec_bytes": 0,
+        "host_metadata_bytes": 806371328,
+        "host_plaintext_bytes": 0,
+        "host_stack_bytes": 0,
+        "staging_disk_bytes": 536875008,
+        "workers": 0
+      },
+      "phase": "installed_resources",
+      "tenant_stopped": true
+    },
+    {
+      "phase": "controller_high_water",
+      "virtual_peak_kib": 571940
+    },
+    {
+      "phase": "controller_high_water",
+      "resident_peak_kib": 274548
+    },
+    {
+      "phase": "original_retained_reservations",
+      "verified_four": true
+    }
+  ],
+  "peer": {
+    "accept_to_half_close_ns": 166194533,
+    "echo_received": 5804,
+    "echo_written": 5804,
+    "scope": "external one-session cooperating endpoint",
+    "stream_id": 3,
+    "tls_rx": 3661,
+    "tls_tx": 3234
+  },
+  "command_resource_units": [
+    "wall_seconds",
+    "user_seconds",
+    "system_seconds",
+    "maxrss_kib"
+  ],
+  "command_resources": {
+    "install": [
+      5.46,
+      4.81,
+      0.28,
+      11116
+    ],
+    "sdk": [
+      32.83,
+      29.99,
+      1.63,
+      274548
+    ],
+    "peer": [
+      32.58,
+      0.01,
+      0,
+      9788
+    ]
+  },
+  "exit_status": {
+    "sdk": 0,
+    "peer": 0,
+    "namespace": 0
+  },
+  "remaining_firecracker_processes": 0,
+  "loop_attachments_after": 0,
+  "mount_visible_after": false,
+  "measured_wan_bytes": null,
+  "all_iface_or_tcp_bytes": null,
+  "drained_file_sha256": {
+    ".archived-audit-0": "a925545cec1af7ea331311b0e78ea4c28d028f84596e0d815f01f607da744f89",
+    "console.log": "3061511b8489c75efa2ec061d2b0cd69808de929f4baf30e3e884ae93f084a3e",
+    "firecracker.log": "46c34cd9816c224f9f6c511d568639e36c7048cff2591cc2f17bf6664d591332",
+    "flowmux-guest.json": "08901c72834c60b6d2f78240db17e766b371a24691f93029cc75a2b92a216a02",
+    "flowmux-operator.json": "ab29c8012c13e212d35ec528aa4f179b25de593511a2bf370b7790aebe84d0c6",
+    "local.fm-a.workload.jsonl": "797636b4a4b5f3bb0b280a68b8dc5abedbfc727a05d2498d85a436cf06381e95",
+    "network-endpoint.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "original-stat": "2e9474d678d26d93f555d8a0cf5406dd9d5573fc3ce165d76c769bf195552bfa"
+  },
+  "binary_sha256": {
+    "issuer": "3a045093ceba5ffb61e908db7d2758932714b81a133e2d0a6a176ca37c593329",
+    "peer": "203bec89d5c0c998cdafd446c0906dc922e66d3a6e9d02dd4e853592e091a32f",
+    "controller": "de3f2f6ed01836f1ba9d7c1c07315f570222be94f20e7615735a9e846bce3651",
+    "tenant_daemon": "64af03b2b694047bff7061588ae941d2682550bdc1e45d6ddb32814384db4d5b",
+    "endpoint": "6fee384690cdda71ebbae79299c639a556b3c1835f12d3b7d4601f648e03d154",
+    "signer": "fa52d753afb39eb1bce03a84a646780fc32894fb68cf724aff905ca3b8072c7e",
+    "firecracker": "99ad0f5cd0514a88aad0e9ae8cfdb3cc3b4ab9d190e1194602406c786b5de7a5"
+  },
+  "component_log_sha256": {
+    "actual-issuer-fc09150b.log": "2fe82148e434d2fb161af6c751a58b1e93f74b2bec7081fa4de30c72e869281c",
+    "ordinary-issuer-fc09150b.log": "9236491994c0c118812b7603043af2d09e752837d69bac93f6cbadf7da65215e",
+    "stale-scope-fc09150b.log": "7b15a3917e5fa98536236d6b4b535087839254329d618142872b0ee662cad46d",
+    "original-stage-fc09150b.log": "0a413cd7c927c33ffc9079628dc7168d5d77db3f25ffa9ea23e9596ea417aa8d",
+    "original-scope-fc09150b.log": "51ff160432fd51e8a604bc300cab4e51af1a3b37cc3f1e1b30174e8f9edaf702",
+    "registered-fc09150b.log": "35ca4ceaf64b259dc77b146a1242ebcb56fcb8978f175f894c7e24516ed9a298",
+    "registered-strict-fc09150b.log": "13806e5e9757c7bd5369768964dc21e0a8f9ebbc7b7f213b6b979c9bf287a509"
+  },
+  "raw_sha256": {
+    "controller.log": "5d053fcba4c9030e281053362d4977a51016abece4614e969a8fbbccd7215c0c",
+    "controller.time": "06512e915666d48bd14974cdd952709896344a071e0f8042bdb15f383062ef56",
+    "drained.sha256": "c0fae434d8842e14edc5272924960979feb48344a1c0efbf76d9f87ede74848f",
+    "executables.sha256": "ad8cb6fa804114f27749cacc9fc98bbc1e5347e24e5141e6bc2bc421bb6bcbac",
+    "final-fs.txt": "a2d88a24c59878d816f4b80d0578ceb11970ac91f002985b3c438721b2f070ed",
+    "guest-log-sizes": "385c7f887121b30f7a7aad718784d250e4694a7f26575c6c92967d59393dadb1",
+    "install.time": "a9045b9cbd64267f782607135badac8a508ba4623d0c045388fc8e22f8194bb2",
+    "loop-after": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "peer.err": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "peer.log": "63ebb89974b3f1571c6e0bf64c7d502065f951520c0855410304900ea7e0852f",
+    "peer.time": "63015779ca2af97ce597505868f16c5aa21f4edec99fa35fd389d3efaf216073",
+    "registered-checks-fc09150b.sha256": "b1ddc3f200cbd04a8bb003d2976a38550afc73622bba3d9f4016381aa946793a",
+    "results": "d3ef8a56b4af5972564748666a59be39ad24d3cea7dcdf59a33e44bdf8554fc1"
+  },
+  "application_stream_payload": {
+    "bytes_per_direction": 5804,
+    "sha256": "a4f977caee35a4401bb52fed28e57253f7c056d52066d9719c2d3eff562a9790",
+    "construction": "200 repetitions of the 29-byte JSON line plus four binary bytes"
+  },
+  "signed_audit_content": {
+    "length": 2336,
+    "sha256": "797636b4a4b5f3bb0b280a68b8dc5abedbfc727a05d2498d85a436cf06381e95",
+    "signed_entries": 2,
+    "matching_allows": 1,
+    "matching_denies": 1,
+    "checker_exit": 0,
+    "checker_source_sha256": "f14522d4ab671286f4118ffc763d27ac9b93264cb00670471393b129d3a79f15",
+    "checker_binary_sha256": "773ccfb4a9b6da97dabad36d2b1023da8b9b3febed7b8fc08f413d11828dae40",
+    "checker_receipt_sha256": "d7d26cd59bdce9e37c0735b27ac9b9f58edc6161de5b1d5edd981039bd20eb99",
+    "scope": "independent copied signed chain content; original held descriptor and retirement verified by installed owner"
+  }
+}

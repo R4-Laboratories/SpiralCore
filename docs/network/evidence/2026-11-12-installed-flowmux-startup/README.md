@@ -1,6 +1,8 @@
 # Installed FlowMux startup on Linux Firecracker
 
-The sixth attempt booted the signed guest into its agent on Wick. The agent refused host control because its kernel command line lacked the host signer’s public key. The installed key file existed and was 32 bytes. The Firecracker boot-source request lacked the corresponding token. The SDK returned a startup error, the cooperating peer timed out, and the intended 5,804-byte echo in each direction remains unverified. [Source identities, original log digests and measurements](results.json)
+[Trial 9](verified-echo.md) completed the signed one-guest invocation and verified the 5,804-byte echo in each direction. The eight earlier trials below preserve the startup and authorization failures.
+
+The sixth attempt booted the signed guest into its agent on Wick. The agent refused host control because its kernel command line lacked the host signer’s public key. The installed key file existed and was 32 bytes. The Firecracker boot-source request lacked the corresponding token. The SDK returned a startup error, the cooperating peer timed out, and no echo completed in that trial. [Source identities, original log digests and measurements](results.json)
 
 | Trial | Controller AS / device (MiB) | First observed refusal | Command wall (s) | User / system CPU (s) | Peak RSS (KiB) |
 |---|---:|---|---:|---:|---:|
@@ -15,7 +17,7 @@ The physical backing was a private ext4 volume in a disposable mount namespace. 
 
 The final metadata reservation was 128,057,344 bytes. The signed policy selected five scanner rules. The controller used the MVM collector and scanner queries and reserved the maximum supported bootstrap configuration before registration. The generated configuration’s actual node count was unavailable to the producer. Trial 6 recorded a 637,120 KiB virtual address-space high-water mark and a 265,340 KiB resident high-water mark. The table uses GNU time for the SDK command and its collected children. The issuer and cooperating peer were timed separately. These rows provide no application transfer time, CPU cost or network byte count.
 
-After trial 6 the tenant helper reported a successful stop. The SDK refused the kernel retirement receipt because the generation was unbound to a process. Its resource ledger retained one guest, 256 MiB of guest RAM and 17 workers. No Firecracker remained. The next gate requires the original registered signer key on the boot command line, original-owned process binding and a verified workload exit, echo and retirement.
+After trial 6 the tenant helper reported a successful stop. The SDK refused the kernel retirement receipt because the generation was unbound to a process. Its resource ledger retained one guest, 256 MiB of guest RAM and 17 workers. No Firecracker remained. At that point the next gate required the registered signer key on the boot command line, binding the original process, and observing workload exit, echo and retirement.
 
 Trial 7 reached original guest activation and SDK retirement. Its driver waited for a detached exit before sending the separate workload invocation. [Trial 7 measurements and audit boundary](activation-only.md)
 
