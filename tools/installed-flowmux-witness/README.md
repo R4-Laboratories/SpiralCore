@@ -6,7 +6,7 @@ The workload requests one denied destination and one permitted literal IPv4 dest
 
 ## Qualification boundary
 
-The first installed native result is recorded in [verified-echo.md](../../docs/network/evidence/2026-11-12-installed-flowmux-startup/verified-echo.md). It used its own recorded source and executable identities. This package is a successor with explicit operator inputs; those earlier results do not qualify a new package build.
+The first installed native result is recorded in [verified-echo.md](../../docs/network/evidence/2026-11-12-installed-flowmux-startup/verified-echo.md). The [public runner's native result](../../docs/network/evidence/2026-11-12-installed-flowmux-startup/public-run.md) records this successor's locked build, source identities, exact readback, CPU and original-owner retirement. That run pairs the public host integration with a separately pinned official rc.2 guest runtime; it does not establish a single-revision guest/host build. Each result qualifies only its recorded components.
 
 The installer and peer use the same pinned MVM revision. Their direct SpiralCore dependencies use the exact Git revision used by `mvm-hostd`, so the concrete scope, sender and receiver types share one Cargo identity. The controller is a separate executable. Inspect the manifests and resolved lockfiles when changing a pin; do not substitute local source paths or treat a type-check against existing artifacts as a locked build.
 
@@ -60,7 +60,7 @@ cargo +1.97.1 build --locked --manifest-path tools/installed-flowmux-witness/Car
   --features installed-linux --bins
 ```
 
-Use the existing shared target and bounded build jobs. Build MVM's `mvm-host-agent`, `mvm-network-endpoint`, `mvm-signer-helper` and the guest runtime against the same selected MVM source. Build the SpiralCore `installed_flowmux` integration target with `canonical-host`. Before executing it, require the executable to list `installed_original_flowmux_workload: test`; a successful zero-test command is a refusal condition in the runner. The helper directory must also contain the normally provisioned runtime dependencies required by those helpers.
+Use the existing shared target and bounded build jobs. Build MVM's `mvm-host-agent`, `mvm-network-endpoint` and `mvm-signer-helper` against the same selected MVM source as the host SDK. Record the guest runtime's independent source and asset identity: the measured run uses the official rc.2 guest inputs listed in its report. A newly built guest runtime requires its own sealed package and qualification. Build the SpiralCore `installed_flowmux` integration target with `canonical-host`. Before executing it, require the executable to list `installed_original_flowmux_workload: test`; a successful zero-test command is a refusal condition in the runner. The helper directory must also contain the normally provisioned runtime dependencies required by those helpers.
 
 ## Run on an approved Linux/KVM host
 
