@@ -108,7 +108,7 @@ async fn run_guest(
         input.bundle_pin,
         n,
         additional(768 << 20)?,
-        additional(256 << 20)?,
+        additional(512 << 20)?,
     )?;
     let req = LaunchRequest::builder(
         LifecycleMode::Transient,
@@ -172,8 +172,8 @@ fn installed_original_flowmux_workload() -> Result<()> {
     let (mut host, mut tenant) = InstalledConfig::two_endpoint_witness_profile().managed_limits();
     host.host_resident_bytes = 2 << 30;
     tenant.host_resident_bytes = 2 << 30;
-    host.staging_disk_bytes = 512 << 20;
-    tenant.staging_disk_bytes = 512 << 20;
+    host.staging_disk_bytes = 768 << 20;
+    tenant.staging_disk_bytes = 768 << 20;
     let config = InstalledConfig::with_funded_pair_limits(host, tenant)?;
     let owner = InstallationOwner::initialize(
         &home.join("installation"),
