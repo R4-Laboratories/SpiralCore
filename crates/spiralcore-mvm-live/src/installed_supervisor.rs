@@ -226,6 +226,16 @@ impl InstalledNativeIssuer {
     }
 
     #[cfg(feature = "canonical-host")]
+    pub(crate) fn portable_debt(
+        &self,
+        slot: usize,
+        commitment: &[u8; 32],
+        original: Option<&std::fs::File>,
+    ) -> Result<std::fs::File> {
+        self.authority
+            .with_disk_owner(|owner, epoch| owner.portable_debt(epoch, slot, commitment, original))
+    }
+    #[cfg(feature = "canonical-host")]
     pub(crate) fn record_audit_debt(
         &self,
         index: usize,
@@ -330,6 +340,8 @@ pub struct InstalledSupervisor {
     parent_controller: Mutex<std::sync::Weak<()>>,
     #[cfg(feature = "canonical-host")]
     pub(crate) audit_inventory: Arc<Mutex<crate::installed_parent::audit_archive::Inventory>>,
+    #[cfg(feature = "canonical-host")]
+    pub(crate) portable_inventory: Arc<Mutex<crate::installed_parent::startup::Inventory>>,
     authority: Arc<InstalledAuthority>,
     budget: HostTransportBudget,
     resources: ManagedResourceBudget,
@@ -397,6 +409,8 @@ impl InstalledSupervisor {
             parent_controller: Mutex::default(),
             #[cfg(feature = "canonical-host")]
             audit_inventory: Arc::default(),
+            #[cfg(feature = "canonical-host")]
+            portable_inventory: Arc::default(),
             authority,
             budget,
             resources,

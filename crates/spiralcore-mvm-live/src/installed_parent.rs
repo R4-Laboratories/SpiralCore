@@ -26,7 +26,7 @@ mod host_agent;
 mod tenant_agent;
 pub use tenant_agent::TenantHelperLimits;
 #[path = "installed_parent/startup.rs"]
-mod startup;
+pub(crate) mod startup;
 pub use startup::PortableStartupQuote;
 
 #[cfg(test)]
@@ -52,6 +52,7 @@ struct Shared {
     endpoint_inputs: Option<endpoint::EndpointOwnerInputs>,
     tenant_helper: Mutex<tenant_agent::TenantSlot>,
     audit_debts: Arc<Mutex<audit_archive::Inventory>>,
+    portable_debts: Arc<Mutex<startup::Inventory>>,
 }
 
 /// Local parent admission, never a replacement for signed MVM authorization.
@@ -105,10 +106,6 @@ impl GrantLifecycle {
         Ok(())
     }
     fn seal_retired(&mut self) -> Result<()> {
-        ensure!(
-            self.startup.is_none(),
-            "original portable runtime disk custody remains charged"
-        );
         ensure!(
             self.admitted_plan.is_some(),
             "original canonical admission unavailable"
@@ -191,6 +188,7 @@ impl ParentLaunchOwner {
 
     fn complete_already_drained(&mut self) -> Result<()> {
         self.grant.reservation.check_retained_identity()?;
+        self.grant.check_retired_portable_debt()?;
         self.grant
             .lifecycle
             .lock()
@@ -329,6 +327,7 @@ impl InstalledParentProvider {
                 endpoint_inputs: None,
                 tenant_helper: Mutex::new(tenant_agent::TenantSlot::Vacant),
                 audit_debts: supervisor.audit_inventory.clone(),
+                portable_debts: supervisor.portable_inventory.clone(),
             }),
         })
     }

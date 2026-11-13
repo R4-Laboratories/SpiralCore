@@ -695,13 +695,18 @@ fn original_portable_workspace_is_funded_once_and_does_not_refund_retained_disk(
     );
     assert_eq!(
         funded.staging_disk_bytes,
-        unfunded.staging_disk_bytes + 20480
+        unfunded.staging_disk_bytes + 20480 + 4096
     );
     let (lifetime, mut owner) = prepared.begin_launch().unwrap();
     let anchor = lifetime.into_anchor();
     provider
         .check_portable_startup_workspace(&anchor, &pin)
         .unwrap();
+    let record = _home.path().join("installation/.retained-portable-0");
+    assert!(
+        record.is_file(),
+        "initial workspace preflight missed persistent debt"
+    );
     let mut wrong = pin.clone();
     wrong.bundle_sha256 = "b".repeat(64);
     assert!(
@@ -744,18 +749,23 @@ fn original_portable_workspace_is_funded_once_and_does_not_refund_retained_disk(
         supervisor.managed_resources().snapshot().unwrap().usage,
         bound_usage
     );
-    assert!(grant.lifecycle.lock().unwrap().seal_retired().is_err());
-
-    // Test-only cleanup. The synthetic callback test issued no runtime files.
-    owner.completed = true;
+    // Exercise the accounting boundary only; no native retirement is minted here.
+    grant.check_retired_portable_debt().unwrap();
+    let parked = record.with_extension("parked");
+    std::fs::rename(&record, &parked).unwrap();
+    std::fs::write(&record, std::fs::read(&parked).unwrap()).unwrap();
+    assert!(grant.check_retired_portable_debt().is_err());
+    std::fs::remove_file(&record).unwrap();
+    std::fs::rename(&parked, &record).unwrap();
+    owner.complete_already_drained().unwrap();
     drop((anchor, grant, owner));
-    assert_eq!(
-        supervisor.managed_resources().snapshot().unwrap().usage,
-        before
-    );
+    let left = supervisor.managed_resources().snapshot().unwrap().usage;
+    assert_eq!(left.guests, before.guests);
+    assert_eq!(left.host_metadata_bytes, before.host_metadata_bytes + 12288);
+    assert_eq!(left.staging_disk_bytes, before.staging_disk_bytes + 24576);
     drop(provider);
     supervisor.close_admission();
-    supervisor.try_finish().unwrap();
+    assert!(supervisor.try_finish().is_err());
 }
 
 #[test]

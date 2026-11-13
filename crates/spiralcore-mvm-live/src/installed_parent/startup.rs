@@ -2,7 +2,7 @@
 use super::*;
 
 use mvm_core::{host_lifetime::HostLifetimeAnchor, plan::PlanArtifact};
-use std::num::NonZeroU64;
+use std::{fs::File, num::NonZeroU64};
 
 /// Installer-supplied bounds for one verified portable bundle. Workspace
 /// excludes the archive input buffer. Storage excludes the retained archive
@@ -36,7 +36,9 @@ impl PortableStartupQuote {
             archive_bytes,
             claim: ManagedClaim {
                 host_metadata_bytes: sum(workspace_bytes)?,
-                staging_disk_bytes: sum(storage_bytes)?,
+                staging_disk_bytes: sum(storage_bytes)?
+                    .checked_add(4096)
+                    .ok_or_else(|| anyhow!("portable inventory block overflow"))?,
                 ..Default::default()
             },
         })
@@ -54,6 +56,30 @@ pub(super) struct StartupWorkspace {
     quote: PortableStartupQuote,
     credit: ManagedReservation,
     pub(super) phase: Phase,
+}
+
+// Scope, original archive pin and all charged dimensions are committed before
+// the caller may touch materialized files. Each slot survives provider rotation.
+struct Debt {
+    serial: u64,
+    commitment: [u8; 32],
+    credit: ManagedReservation,
+    marker: Option<File>,
+}
+
+#[derive(Default)]
+pub(crate) struct Inventory(
+    [Option<Debt>; crate::installed_owner::retained_telemetry::MAX_ENTRIES],
+);
+
+impl Drop for Inventory {
+    fn drop(&mut self) {
+        // The installation denial latch survives the controller; a process
+        // dropping its last supervisor cannot declare the artifacts disposed.
+        for debt in self.0.iter_mut().filter_map(Option::take) {
+            std::mem::forget(debt.credit);
+        }
+    }
 }
 
 impl PreparedParentVm {
@@ -119,7 +145,7 @@ impl VmGrant {
     ) -> Result<()> {
         self.check_open()?;
         let bytes = owner.portable_archive_bytes(pin)?;
-        let credit = {
+        let (credit, commitment) = {
             let lifecycle = self
                 .lifecycle
                 .lock()
@@ -135,9 +161,109 @@ impl VmGrant {
                     && startup.quote.archive_bytes == bytes,
                 "portable quote differs from the original held workspace"
             );
-            startup.credit.clone()
+            let commitment = Sha256::digest(serde_json::to_vec(&(
+                "SpiralCore/installed-portable-debt/v1",
+                &self.tenant,
+                &self.binding,
+                pin,
+                bytes.get(),
+                startup.quote.claim.host_metadata_bytes,
+                startup.quote.claim.staging_disk_bytes,
+                startup.credit.serial(),
+            ))?)
+            .into();
+            (startup.credit.clone(), commitment)
         };
         credit.check_current()?;
+        let parent = self
+            .parent
+            .upgrade()
+            .ok_or_else(|| anyhow!("original parent unavailable"))?;
+        let mut inventory = parent
+            .portable_debts
+            .lock()
+            .map_err(|_| anyhow!("portable inventory poisoned"))?;
+        let serial = credit.serial();
+        let index = inventory
+            .0
+            .iter()
+            .position(|d| d.as_ref().is_some_and(|d| d.serial == serial));
+        if let Some(index) = index {
+            let debt = inventory.0[index]
+                .as_ref()
+                .expect("matched original portable debit");
+            ensure!(
+                debt.commitment == commitment,
+                "original portable commitment differs"
+            );
+            let marker = debt
+                .marker
+                .as_ref()
+                .ok_or_else(|| anyhow!("original portable record uncertain"))?;
+            parent
+                .issuer
+                .portable_debt(index, &commitment, Some(marker))?;
+        } else {
+            let index = inventory
+                .0
+                .iter()
+                .position(Option::is_none)
+                .ok_or_else(|| anyhow!("portable inventory full"))?;
+            let debt = inventory.0[index].insert(Debt {
+                serial,
+                commitment,
+                credit,
+                marker: None,
+            });
+            match parent.issuer.portable_debt(index, &commitment, None) {
+                Ok(file) => debt.marker = Some(file),
+                Err(error) => {
+                    parent.issuer.close_admission();
+                    return Err(error.into());
+                }
+            }
+        }
+        Ok(())
+    }
+
+    pub(super) fn check_retired_portable_debt(&self) -> Result<()> {
+        let serial = {
+            let lifecycle = self
+                .lifecycle
+                .lock()
+                .map_err(|_| anyhow!("parent lifecycle poisoned"))?;
+            let Some(startup) = &lifecycle.startup else {
+                return Ok(());
+            };
+            startup.credit.check_retained_identity()?;
+            startup.credit.serial()
+        };
+        let parent = self
+            .parent
+            .upgrade()
+            .ok_or_else(|| anyhow!("original parent unavailable"))?;
+        let inventory = parent
+            .portable_debts
+            .lock()
+            .map_err(|_| anyhow!("portable inventory poisoned"))?;
+        let (index, debt) = inventory
+            .0
+            .iter()
+            .enumerate()
+            .find_map(|(index, item)| {
+                item.as_ref()
+                    .filter(|d| d.serial == serial)
+                    .map(|d| (index, d))
+            })
+            .ok_or_else(|| anyhow!("original portable debit not retained"))?;
+        let marker = debt
+            .marker
+            .as_ref()
+            .ok_or_else(|| anyhow!("original portable record uncertain"))?;
+        parent
+            .issuer
+            .portable_debt(index, &debt.commitment, Some(marker))?;
+        debt.credit.check_retained_identity()?;
         Ok(())
     }
 

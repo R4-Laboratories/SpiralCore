@@ -397,6 +397,57 @@ impl InstallationOwner {
         self.storage.check()
     }
 
+    /// Keep the charge for possible portable runtime files under the original
+    /// installation. This record proves reservation, never archive disposition.
+    #[cfg(feature = "canonical-host")]
+    pub(crate) fn portable_debt(
+        &self,
+        epoch: Epoch,
+        slot: usize,
+        commitment: &[u8; 32],
+        existing: Option<&File>,
+    ) -> Result<File> {
+        use std::os::unix::fs::FileExt;
+        self.active_binding(epoch)?;
+        if slot >= MAX_ENTRIES {
+            return Err(OwnerError::InvalidStorage);
+        }
+        self.latch_retained_debt(epoch)?;
+        let name = format!(".retained-portable-{slot}");
+        let dir = &self.storage.directory;
+        let mut bytes = Vec::with_capacity(112);
+        bytes.extend_from_slice(b"SCPORT01");
+        bytes.extend_from_slice(&epoch.key.installation);
+        bytes.extend_from_slice(&epoch.key.profile);
+        bytes.extend_from_slice(&epoch.generation.to_le_bytes());
+        bytes.extend_from_slice(commitment);
+        let file = if let Some(original) = existing {
+            let named = open_at(dir, &name, libc::O_RDONLY)?;
+            if object_id(original)? != object_id(&named)?
+                || named.metadata()?.len() != bytes.len() as u64
+            {
+                return Err(OwnerError::Fenced);
+            }
+            let mut readback = [0u8; 112];
+            original.read_exact_at(&mut readback, 0)?;
+            if readback.as_slice() != bytes {
+                return Err(OwnerError::Fenced);
+            }
+            named
+        } else {
+            let mut held = open_at(dir, &name, libc::O_CREAT | libc::O_EXCL | libc::O_RDWR)?;
+            held.write_all(&bytes)?;
+            held.sync_all()?;
+            dir.sync_all()?;
+            held
+        };
+        self.storage.check()?;
+        if object_id(&open_at(dir, &name, libc::O_RDONLY)?)? != object_id(&file)? {
+            return Err(OwnerError::Fenced);
+        }
+        Ok(file)
+    }
+
     fn latch_retained_debt(&self, epoch: Epoch) -> Result<()> {
         use std::os::unix::fs::FileExt;
         self.storage.check()?;
