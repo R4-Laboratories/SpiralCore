@@ -18,3 +18,5 @@ The final metadata reservation was 128,057,344 bytes. The signed policy selected
 After trial 6 the tenant helper reported a successful stop. The SDK refused the kernel retirement receipt because the generation was unbound to a process. Its resource ledger retained one guest, 256 MiB of guest RAM and 17 workers. No Firecracker remained. The next gate requires the original registered signer key on the boot command line, original-owned process binding and a verified workload exit, echo and retirement.
 
 Trial 7 reached original guest activation and SDK retirement. Its driver waited for a detached exit before sending the separate workload invocation. [Trial 7 measurements and audit boundary](activation-only.md)
+
+[Trial 8](entrypoint-grant.md) follows the original signed two-verb plan through startup and retirement, including the missing guest-specific grant and the peer's accept deadline.
