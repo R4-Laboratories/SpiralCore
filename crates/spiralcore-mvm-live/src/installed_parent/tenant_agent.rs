@@ -35,7 +35,7 @@ impl TenantHelperLimits {
             staging_disk_bytes: 2 * JOURNAL_BYTES,
             // The pinned owned binaries each use their main thread plus Tokio's
             // two worker threads and at most two blocking threads.
-            workers: 2 * (1 + 2 + 2),
+            workers: u64::try_from(mvm_vmm::host::host_agent_spawn::OWNED_TENANT_MAX_THREADS)?,
             ..Default::default()
         })
     }
