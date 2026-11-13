@@ -281,6 +281,10 @@ impl Drop for DropRootCleanup {
 
 #[test]
 fn controller_drop_reaps_its_exact_live_child_before_releasing_owner_exclusion() {
+    mvm_core::util::test_env::isolated_lock_probe(probe_controller_drop);
+}
+
+fn probe_controller_drop() {
     let base = std::env::temp_dir().join(format!(
         "spiral-worker-drop-{}-{}",
         std::process::id(),

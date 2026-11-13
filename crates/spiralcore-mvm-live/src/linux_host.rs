@@ -653,6 +653,10 @@ mod linux {
         }
         #[test]
         fn custody_excludes_a_competing_writer_without_truncating_the_sidecar() {
+            mvm_core::util::test_env::isolated_lock_probe(probe_competing_writer);
+        }
+
+        fn probe_competing_writer() {
             use mvm_core::util::writable_image::{LockedWritableImage, sidecar_lock_path};
             let temp = tempfile::tempdir().unwrap();
             let path = temp.path().join("disk");

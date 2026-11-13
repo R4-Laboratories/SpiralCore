@@ -59,7 +59,11 @@ fn completed_with_socket<S: SocketIo + 'static>(wrap: impl FnOnce(TcpStream) -> 
     .unwrap();
     let mut caller = Session::new(&pair.sender, &broker_context().unwrap()).unwrap();
     let mut receiver = Session::new(&pair.receiver, &broker_context().unwrap()).unwrap();
-    let (socket, peer_socket, gate) = gate::Gate::start_withheld(Some(2), None).unwrap();
+    // This fixture keeps the original TCP relay alive for the complete series
+    // of authorized replays. Individual transport/receipt deadlines stay bounded.
+    let [socket, a] = gate::tcp_pair().unwrap();
+    let [b, peer_socket] = gate::tcp_pair().unwrap();
+    let gate = gate::Gate::between(a, b, Some(2), None, Duration::from_secs(30)).unwrap();
     let close = peer_socket.try_clone().unwrap();
     let stream = StreamTransport::new(
         wrap(socket),
@@ -413,7 +417,12 @@ impl SocketIo for PartialAck {
 fn partial_tail_ack_uses_carried_absolute_cap_and_fences_without_refunding_owned_wire() {
     let state = std::sync::Arc::new(std::sync::Mutex::new(AckBackpressure::default()));
     let observed = state.clone();
-    let mut fixture = completed_with_socket(|socket| PartialAck { socket, state });
+    let mut socket_probe = None;
+    let mut fixture = completed_with_socket(|socket| {
+        socket_probe = Some(socket.try_clone().unwrap());
+        PartialAck { socket, state }
+    });
+    let socket_probe = socket_probe.unwrap();
     let original = fixture
         .caller
         .completed_tail
@@ -425,10 +434,19 @@ fn partial_tail_ack_uses_carried_absolute_cap_and_fences_without_refunding_owned
     let before = fixture.stream.counters().unwrap();
     // Narrow the retained absolute cap for a fast deterministic I/O conformance
     // test. Signed lifetime/owner clocks remain the original admitted values.
+    // Ask for the original replay first and observe it actually arriving before
+    // starting the injected ACK-write window. A bounded peek consumes no
+    // application bytes and does not advance the protocol.
+    fixture.signal.request_replay().unwrap();
+    let until = Instant::now() + Duration::from_secs(5);
+    let mut pending = [0u8; 1];
+    socket_probe
+        .set_read_timeout(Some(until.saturating_duration_since(Instant::now())))
+        .unwrap();
+    assert_eq!(socket_probe.peek(&mut pending).unwrap(), 1);
     let cap = Instant::now() + Duration::from_millis(600);
     fixture.caller.completed_tail.as_mut().unwrap().deadline = cap;
     observed.lock().unwrap().armed = true;
-    fixture.signal.request_replay().unwrap();
     let error = fixture
         .caller
         .drive_completed_tail(&fixture.stream, &fixture.cancel)

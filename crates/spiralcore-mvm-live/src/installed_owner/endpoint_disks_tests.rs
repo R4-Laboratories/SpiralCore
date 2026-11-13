@@ -265,6 +265,10 @@ fn directory_buffer_profile_rejects_unbounded_platform_allocation_inputs() {
 
 #[test]
 fn live_retirement_removes_only_its_store_while_another_holder_remains() {
+    mvm_core::util::test_env::isolated_lock_probe(probe_live_retirement);
+}
+
+fn probe_live_retirement() {
     use std::os::unix::fs::OpenOptionsExt;
     let f = Fixture::new();
     let mut owner = InstallationOwner::initialize(&f.root, f.key).unwrap();

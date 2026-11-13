@@ -67,6 +67,10 @@ fn retained_catalog_preserves_original_debt_after_scope_drop_and_close() {
 
 #[test]
 fn lost_retained_catalog_cannot_be_replaced_by_a_new_scope_append() {
+    mvm_core::util::test_env::isolated_lock_probe(probe_lost_catalog);
+}
+
+fn probe_lost_catalog() {
     let home = tempfile::Builder::new()
         .permissions(fs::Permissions::from_mode(0o700))
         .tempdir()
@@ -210,6 +214,10 @@ fn lost_catalog_after_process_exit_cannot_reset_the_epoch() {
 
 #[test]
 fn write_only_records_refuse_before_bound_publication_and_can_retry_readable() {
+    mvm_core::util::test_env::isolated_lock_probe(probe_write_only_records);
+}
+
+fn probe_write_only_records() {
     use std::{io::Write, os::unix::fs::OpenOptionsExt};
     let home = tempfile::Builder::new()
         .permissions(fs::Permissions::from_mode(0o700))

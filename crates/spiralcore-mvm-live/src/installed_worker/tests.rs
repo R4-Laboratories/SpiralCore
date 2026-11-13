@@ -306,6 +306,10 @@ fn bounded_write_deadline_keeps_partial_progress_without_restart() {
 
 #[test]
 fn actual_controller_death_before_go_refuses_and_worker_lifetime_exits() {
+    mvm_core::util::test_env::isolated_lock_probe(probe_pre_go_controller_exit);
+}
+
+fn probe_pre_go_controller_exit() {
     let mut case = Case::new();
     let exact = format!(
         "{}::child_entry",

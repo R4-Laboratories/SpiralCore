@@ -327,6 +327,10 @@ fn postrename_directory_sync_failure_must_survive_owner_drop_as_a_durable_fence(
 
 #[test]
 fn failed_initial_intent_barriers_preserve_original_state_and_fence_reopen() {
+    mvm_core::util::test_env::isolated_lock_probe(probe_initial_intent_barriers);
+}
+
+fn probe_initial_intent_barriers() {
     for mode in [
         Mode::IntentFileSyncFailure,
         Mode::IntentDirectorySyncFailure,
@@ -376,6 +380,10 @@ fn failed_initial_intent_barriers_preserve_original_state_and_fence_reopen() {
 
 #[test]
 fn failed_postcommit_cleanup_sync_fences_owner_but_absent_marker_allows_durable_successor() {
+    mvm_core::util::test_env::isolated_lock_probe(probe_failed_postcommit_cleanup);
+}
+
+fn probe_failed_postcommit_cleanup() {
     for operation in ["finish", "reconcile"] {
         let fixture = Fixture::new();
         let mut owner = InstallationOwner::initialize(&fixture.root, key()).unwrap();
