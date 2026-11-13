@@ -1,10 +1,9 @@
 use super::{ControlError, Result};
+#[cfg(any(all(target_os = "macos", target_arch = "aarch64"), test))]
+use std::os::fd::{FromRawFd, OwnedFd};
 use std::{
     io::{self, Read, Write},
-    os::{
-        fd::{AsRawFd, FromRawFd, OwnedFd},
-        unix::net::UnixStream,
-    },
+    os::{fd::AsRawFd, unix::net::UnixStream},
     time::{Duration, Instant},
 };
 
@@ -84,6 +83,7 @@ pub(super) fn write_all(
     remaining(deadline)?;
     Ok(())
 }
+#[cfg(any(all(target_os = "macos", target_arch = "aarch64"), test))]
 pub(super) fn read_input(
     stream: &mut UnixStream,
     maximum: usize,
@@ -123,6 +123,7 @@ pub(super) fn read_input(
         }
     }
 }
+#[cfg(any(all(target_os = "macos", target_arch = "aarch64"), test))]
 pub(super) fn duplicate_stream(fd: i32) -> Result<UnixStream> {
     // SAFETY: atomic duplication rejects an invalid inherited descriptor.
     let copy = unsafe { libc::fcntl(fd, libc::F_DUPFD_CLOEXEC, 3) };

@@ -1,18 +1,22 @@
 //! Private host-local installed worker grants; never an MVM network envelope.
+#[cfg(any(all(target_os = "macos", target_arch = "aarch64"), test))]
+use crate::installed_owner::{HolderHandoff, HolderLease};
 use crate::{
-    installed_owner::{HolderHandoff, HolderLease, InstallationKey, OwnerError},
+    installed_owner::{InstallationKey, OwnerError},
     installed_supervisor::WorkerBinding,
 };
+#[cfg(any(all(target_os = "macos", target_arch = "aarch64"), test))]
 use mvm_vmm::host::{
     process_exit::{ProcessExitObserver, ProcessExitWait},
     uds_peer::connected_peer_pid,
 };
+#[cfg(any(all(target_os = "macos", target_arch = "aarch64"), test))]
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::{
     fmt, io,
     net::Shutdown,
     os::unix::{ffi::OsStrExt, net::UnixStream},
     path::Component,
-    sync::atomic::{AtomicBool, Ordering},
     time::{Duration, Instant},
 };
 
@@ -24,7 +28,9 @@ use codec::{Record, read_record, write_record};
 const START_LIMIT: Duration = Duration::from_secs(40);
 const MAX_INITRAMFS: usize = 64 * 1024 * 1024;
 const MAX_ROOT: usize = 896;
+#[cfg(any(all(target_os = "macos", target_arch = "aarch64"), test))]
 const CONTROL_FD: i32 = 198;
+#[cfg(any(all(target_os = "macos", target_arch = "aarch64"), test))]
 static CHILD_TAKEN: AtomicBool = AtomicBool::new(false);
 
 #[derive(Debug)]
@@ -34,6 +40,7 @@ pub(crate) enum ControlError {
     Protocol,
     State,
     Deadline,
+    #[cfg(any(all(target_os = "macos", target_arch = "aarch64"), test))]
     Peer,
 }
 impl fmt::Display for ControlError {
@@ -44,6 +51,7 @@ impl fmt::Display for ControlError {
             Self::Protocol => f.write_str("installed worker protocol refusal"),
             Self::State => f.write_str("installed worker phase refusal"),
             Self::Deadline => f.write_str("installed worker deadline"),
+            #[cfg(any(all(target_os = "macos", target_arch = "aarch64"), test))]
             Self::Peer => f.write_str("installed worker peer unavailable"),
         }
     }
@@ -233,6 +241,7 @@ impl ParentControl {
     }
 }
 
+#[cfg(any(all(target_os = "macos", target_arch = "aarch64"), test))]
 #[derive(PartialEq, Eq)]
 enum ChildPhase {
     Input,
@@ -240,6 +249,7 @@ enum ChildPhase {
     Authorized,
     Failed,
 }
+#[cfg(any(all(target_os = "macos", target_arch = "aarch64"), test))]
 pub(crate) struct InstalledWorkerContext {
     binding: WorkerBinding,
     holder: HolderLease,
@@ -249,6 +259,7 @@ pub(crate) struct InstalledWorkerContext {
     first: [u8; 32],
     phase: ChildPhase,
 }
+#[cfg(any(all(target_os = "macos", target_arch = "aarch64"), test))]
 impl InstalledWorkerContext {
     pub(crate) fn from_inherited_fd(expected_role: u8) -> Result<Self> {
         let deadline = Instant::now()
@@ -367,6 +378,7 @@ impl InstalledWorkerContext {
             Ok(())
         })
     }
+    #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
     pub(crate) fn binding(&self) -> &WorkerBinding {
         &self.binding
     }
@@ -381,6 +393,7 @@ impl InstalledWorkerContext {
         Ok(self.holder.prepare_handoff()?)
     }
 }
+#[cfg(any(all(target_os = "macos", target_arch = "aarch64"), test))]
 fn check_peer(observer: &ProcessExitObserver, deadline: Instant) -> Result<()> {
     io_util::remaining(deadline)?;
     match observer
