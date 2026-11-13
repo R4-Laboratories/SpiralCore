@@ -107,7 +107,7 @@ async fn run_guest(
     let quote = PortableStartupQuote::new(
         input.bundle_pin,
         n,
-        additional(512 << 20)?,
+        additional(768 << 20)?,
         additional(256 << 20)?,
     )?;
     let req = LaunchRequest::builder(
@@ -217,6 +217,26 @@ fn installed_original_flowmux_workload() -> Result<()> {
         json!({"phase":"installed_resources","tenant_stopped":stopped.is_ok(),
         "all_resources_released":finished.is_ok(),"charged":charged.usage})
     );
+    let status = std::fs::read_to_string("/proc/self/status")?;
+    for (field, name) in [
+        ("VmPeak:", "virtual_peak_kib"),
+        ("VmHWM:", "resident_peak_kib"),
+    ] {
+        let line = status
+            .lines()
+            .find(|line| line.starts_with(field))
+            .context("kernel process high-water mark missing")?;
+        let mut fields = line.split_ascii_whitespace().skip(1);
+        let kib: u64 = fields
+            .next()
+            .context("kernel process high-water value missing")?
+            .parse()?;
+        ensure!(
+            fields.next() == Some("kB") && fields.next().is_none(),
+            "unexpected kernel process high-water units"
+        );
+        println!("{}", json!({"phase": "controller_high_water", (name): kib}));
+    }
     let (retained, observed) = result?;
     stopped?;
     retained.verify(&supervisor, observed)?;
