@@ -8,7 +8,10 @@ The manual route seals a staged ELF with MVM's image builder and runs the SDK's 
 
 ```sh
 cargo run --locked --features canonical-host --example installed_flowmux_fixture -- \
-  "$GUEST_ELF" "$TRUSTED_ELF_SHA256" 192.168.103.59 "$NEW_OUTPUT_DIR"
+  "${SC_FLOWMUX_GUEST_ELF:?set the verified guest ELF path}" \
+  "${SC_FLOWMUX_GUEST_SHA256:?set its independently recorded SHA-256}" \
+  "${SC_FLOWMUX_FIXTURE_IPV4:?set the canonical fixture IPv4}" \
+  "${SC_FLOWMUX_NEW_OUTPUT:?set a fresh private output path}"
 ```
 
 Run from the live crate on x86-64 Linux with an explicit, operator-owned private producer `MVM_HOME`. Supply the guest ELF built with `SPIRALCORE_FLOWMUX_FIXTURE_IPV4` set to the same address and its independently recorded SHA-256. Require lowercase 64-hex SHA-256 and a literal IPv4 whose parsed value renders identically. Require a fresh output leaf under a private operator-owned parent. Reject aliases, existing destinations and unsafe permissions before signing. Stage privately, verify the actual staged ELF against the supplied digest, and publish a complete packet without overwriting an existing destination.
@@ -16,7 +19,7 @@ Run from the live crate on x86-64 Linux with an explicit, operator-owned private
 ## Producer and operator boundaries
 
 1. Capture the current signed revocation proof through `ImageSetRevocationStore::in_mvm_home().capture_applied_proof`. Acquire `PreparedPortableBootAssets::acquire(GuestArch::X86_64)`. MVM authenticates the pinned image-set kernel and CLI runtime quartet: archive, checksum, signature bundle and checksum signature bundle. The observed availability of the rc.2 release files establishes download availability only. A missing, stale, mismatched or unverifiable input stops publication.
-2. Stage the program at `/usr/local/bin/spiralcore-flowmux-proxy-guest`. Set `ImageRuntimeConfig` argv to that path, `denied.flowmux.test:38443`, and `<canonical IPv4>:38443`. Use `InjectAndMaterializeRequest` with the acquired `guest_binaries()`, `InProcessOnly` and `sealed(true)`, then call `inject_and_materialize`. Reopen the guest sidecar and compare its argv with the descriptor. Use the original rootfs, verity tree and root hash.
+2. Stage the program at `/usr/local/bin/spiralcore-flowmux-proxy-guest`. Set `ImageRuntimeConfig` argv to that path, `denied.flowmux.test:38443`, and the canonical IPv4 string followed by `:38443`. Use `InjectAndMaterializeRequest` with the acquired `guest_binaries()`, `InProcessOnly` and `sealed(true)`, then call `inject_and_materialize`. Reopen the guest sidecar and compare its argv with the descriptor. Use the original rootfs, verity tree and root hash.
 3. Construct the validated environment for `spiralcore/spiralcore-flowmux-proxy-guest@0.1.0`, target `x86_64-linux`, one CPU and 256 MiB. Its sole capability is egress and its sole allowed destination is the literal IPv4 on port 38443. Volumes, secret slots and services are empty. The existing installer issues the host-vsock-proxy plan; the guest has no NIC.
 4. Use `mvm_client::bundle::{BundleExportInputs, PostureInputs, HostBundleSigner}` with the original acquired kernel and initramfs, verity inputs, matching resources, environment and sealed egress posture. Require the operator's existing producer signer. MVM's `ed25519_keypair::load_existing` and `HostBundleSigner::from(HostSigner)` allow loading that identity without first-use key creation. Use the standard signer exclusively in memory. Stage, verify and publish through the original boot closure. Reopen the archive with the expected publisher public key and check signed descriptor equality, archive length and digest before handing it to the installer.
 
