@@ -1,10 +1,7 @@
 //! Private host-local installed worker grants; never an MVM network envelope.
 #[cfg(any(all(target_os = "macos", target_arch = "aarch64"), test))]
-use crate::installed_owner::{HolderHandoff, HolderLease};
-use crate::{
-    installed_owner::{InstallationKey, OwnerError},
-    installed_supervisor::WorkerBinding,
-};
+use crate::installed_owner::{HolderHandoff, HolderLease, InstallationKey};
+use crate::{installed_owner::OwnerError, installed_supervisor::WorkerBinding};
 #[cfg(any(all(target_os = "macos", target_arch = "aarch64"), test))]
 use mvm_vmm::host::{
     process_exit::{ProcessExitObserver, ProcessExitWait},
