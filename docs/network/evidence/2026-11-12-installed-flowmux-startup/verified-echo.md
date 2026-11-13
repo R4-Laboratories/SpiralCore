@@ -1,6 +1,6 @@
 # Installed FlowMux echo on Linux Firecracker
 
-Trial 9 completed one cold, signed entrypoint invocation in an x86_64 Linux Firecracker guest. The application received HTTP 403 for its denied destination. Its second CONNECT received HTTP 200, sent 5,804 bytes, read the full 5,804-byte echo, checked equality and reached EOF. The independent, mutually authenticated cooperating peer checked the complete original payload before echoing it. The guest exited zero with no stderr. The unchanged workload package and fresh signed two-verb plan used the same finite resources as [trial 8](entrypoint-grant.md). [Exact results and artifact digests](verified-echo.json)
+Trial 9 completed one cold, signed entrypoint invocation in an x86_64 Linux Firecracker guest under the Dev posture. The application received HTTP 403 for its denied destination. Its second CONNECT received HTTP 200, sent 5,804 bytes, read the full 5,804-byte echo, checked equality and reached EOF. The independent, mutually authenticated cooperating peer checked the complete original payload before echoing it. The guest exited zero with no stderr. The unchanged workload package and fresh signed two-verb plan used the same finite resources as [trial 8](entrypoint-grant.md). [Exact results and artifact digests](verified-echo.json)
 
 | Observation | Sent | Received | Wall time | Process CPU |
 |---|---:|---:|---:|---:|

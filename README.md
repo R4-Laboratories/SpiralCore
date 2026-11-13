@@ -75,9 +75,11 @@ signer before exiting. Retirement with a per-VM mailbox helper remains open.
 | Cooperating objects | Authenticated QUIC object service; shared runtime/cache/schema core; exact durable readback | Current-source two-host Internet WAN qualification |
 | Ordinary TCP/UDP | Linux TUN paired tunnel over authenticated QUIC; real IPv4/IPv6 flows and calibrated shaped-link trials | Other packet-attachment platforms and deployment/WAN acceptance |
 | MVM mailbox | Canonical encrypted envelopes, native HVF/Firecracker transfers, and installed Firecracker qualification for sustained Calls and receipt recovery | Complete installed-service release, concurrent capacity, canonical WAN, and security qualification |
-| FlowMux stream component | Authenticated paired TCP/TLS/object mapping, cancellation and FIN ownership; **47 component tests per native role on the PR104 release** | Canonical admitted MVM binding, installed lifecycle, sustained capacity and WAN |
+| MVM FlowMux | Cross-platform paired stream components and one installed Linux Firecracker guest with verified policy decisions and exact application readback | Full installed package release, sustained operation, concurrent capacity and cross-host WAN |
 | Installation/storage foundations | Installed-owner/supervisor components, managed reservations and native Windows private-storage components | End-to-end aggregate ownership, recovery and supported capacity envelope |
 | Owner access | Development/sealed-mode integration is active, unmerged work | Canonical authority/lifecycle, shared-core payload binding and native acceptance |
+
+One x86_64 Linux Firecracker guest ran under the Dev profile on a single host. Its original FlowMux endpoint denied one CONNECT and allowed the enrolled peer. The guest verified the entire 5,804-byte echo in each direction, and the signed audit recorded both decisions. The guest echo phase took 179.469 ms wall time and 2.770 ms of process CPU. Cold startup through SDK return took 32.235 s. The VM and tenant retired, with all four retained resource reservations verified. Cross-host WAN and matched codec baselines remain open. [Trial 9 measurements](docs/network/evidence/2026-11-12-installed-flowmux-startup/verified-echo.md)
 
 The earlier FlowMux component baseline was [PR72](https://github.com/R4-Laboratories/SpiralCore/pull/72),
 merged as `25a1c786`; [PR77](https://github.com/R4-Laboratories/SpiralCore/pull/77)
