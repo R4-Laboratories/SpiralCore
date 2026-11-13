@@ -274,8 +274,10 @@ impl InstalledParentProvider {
                 permit.check_authority(&registrar)
             }
             Err(error) => {
+                let reason =
+                    format!("original tenant startup failed, cleanup custody retained: {error:#}");
                 *slot = TenantSlot::Uncertain { error, permit };
-                anyhow::bail!("original tenant startup failed; cleanup custody retained")
+                Err(anyhow!(reason))
             }
         }
     }
