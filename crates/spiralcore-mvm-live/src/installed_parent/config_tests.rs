@@ -558,7 +558,7 @@ fn tenant_helper_funds_both_process_limits_and_both_journal_generations() {
     };
     let claim = limits.claim().unwrap();
     assert_eq!(claim.host_carrier_bytes, 2 * (32 << 20));
-    assert_eq!(claim.workers, 2);
+    assert_eq!(claim.workers, 10);
     assert_eq!(claim.staging_disk_bytes, 2 * (64 << 10));
     assert!(claim.host_metadata_bytes >= 2 * (64 << 10));
     assert_eq!(claim.guests, 0);

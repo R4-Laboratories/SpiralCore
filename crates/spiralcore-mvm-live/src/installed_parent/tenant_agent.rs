@@ -33,7 +33,9 @@ impl TenantHelperLimits {
             // Bound two parent-side control frames plus fixed ownership/paths.
             host_metadata_bytes: 2 * JOURNAL_BYTES + super::BOOKKEEPING_BYTES + 4 * 4096,
             staging_disk_bytes: 2 * JOURNAL_BYTES,
-            workers: 2,
+            // The pinned owned binaries each use their main thread plus Tokio's
+            // two worker threads and at most two blocking threads.
+            workers: 2 * (1 + 2 + 2),
             ..Default::default()
         })
     }
