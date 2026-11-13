@@ -31,10 +31,16 @@ pub mod installed_resources;
 ))]
 pub mod installed_disk;
 
-#[cfg(all(feature = "canonical-host", any(target_os = "linux", all(target_os = "macos", target_arch = "aarch64"))))]
+#[cfg(all(
+    feature = "canonical-host",
+    any(target_os = "linux", all(target_os = "macos", target_arch = "aarch64"))
+))]
 pub(crate) mod installed_retained;
 
-#[cfg(all(feature = "canonical-host", any(target_os = "linux", all(target_os = "macos", target_arch = "aarch64"))))]
+#[cfg(all(
+    feature = "canonical-host",
+    any(target_os = "linux", all(target_os = "macos", target_arch = "aarch64"))
+))]
 pub mod installed_parent;
 
 #[cfg(any(
@@ -43,7 +49,10 @@ pub mod installed_parent;
 ))]
 pub(crate) mod installed_worker;
 
-#[cfg(any(all(target_os = "linux", feature = "linux-host"), all(test, target_os = "macos")))]
+#[cfg(any(
+    all(target_os = "linux", feature = "linux-host"),
+    all(test, target_os = "macos")
+))]
 pub mod linux_host;
 
 #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
