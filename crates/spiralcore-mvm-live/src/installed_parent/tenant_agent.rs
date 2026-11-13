@@ -231,14 +231,35 @@ impl Drop for Shared {
             .tenant_helper
             .get_mut()
             .unwrap_or_else(|poison| poison.into_inner());
-        if matches!(
-            slot,
-            TenantSlot::Ready { .. } | TenantSlot::Uncertain { .. }
-        ) {
-            // Destruction of the controller is not an original retirement receipt.
-            // Preserve the actual process owner and its debit on ambiguous shutdown.
-            std::mem::forget(std::mem::replace(slot, TenantSlot::Retired));
+        // The canonical owner can still positively shut down on drop. If its
+        // original retirement fails, MVM keeps the live processes quarantined;
+        // retain the corresponding reservation too.
+        if retire_processes(slot).is_err() {
+            match slot {
+                TenantSlot::Ready { permit, .. } | TenantSlot::Uncertain { permit, .. } => {
+                    std::mem::forget(permit.reservation.clone());
+                }
+                TenantSlot::Vacant | TenantSlot::Retired => {}
+            }
         }
+    }
+}
+fn retire_processes(slot: &mut TenantSlot) -> Result<()> {
+    match slot {
+        TenantSlot::Ready { original, permit } => {
+            permit.reservation.check_retained_identity()?;
+            original.shutdown()
+        }
+        TenantSlot::Uncertain { error, permit } => {
+            permit.reservation.check_retained_identity()?;
+            error
+                .downcast_mut::<OwnedHostAgentSpawnError>()
+                .ok_or_else(|| anyhow!("original tenant startup disposal unproved"))?
+                .agent_mut()
+                .shutdown()
+        }
+        TenantSlot::Retired => Ok(()),
+        TenantSlot::Vacant => anyhow::bail!("original tenant helper was not started"),
     }
 }
 impl Shared {
@@ -341,22 +362,7 @@ impl InstalledParentProvider {
             .tenant_helper
             .lock()
             .map_err(|_| anyhow!("tenant helper custody poisoned"))?;
-        match &mut *slot {
-            TenantSlot::Ready { original, permit } => {
-                permit.reservation.check_retained_identity()?;
-                original.shutdown()?;
-            }
-            TenantSlot::Uncertain { error, permit } => {
-                permit.reservation.check_retained_identity()?;
-                error
-                    .downcast_mut::<OwnedHostAgentSpawnError>()
-                    .ok_or_else(|| anyhow!("original tenant startup disposal unproved"))?
-                    .agent_mut()
-                    .shutdown()?;
-            }
-            TenantSlot::Retired => return Ok(()),
-            TenantSlot::Vacant => anyhow::bail!("original tenant helper was not started"),
-        }
+        retire_processes(&mut slot)?;
         // Disarm the conservative Drop disposition only after canonical disposal.
         *slot = TenantSlot::Retired;
         Ok(())
