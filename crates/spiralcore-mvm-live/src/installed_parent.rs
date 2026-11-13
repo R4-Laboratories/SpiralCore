@@ -136,6 +136,58 @@ pub struct ParentLaunchOwner {
     endpoint_retirement: Option<mvm_client::EndpointRetirement>,
 }
 impl ParentLaunchOwner {
+    /// Release an unused preflight only when the SDK returns the unconsumed
+    /// lifetime issued by this same linear owner.
+    pub fn cancel_unused(
+        &mut self,
+        unused: &mvm_client::UnusedHostLifetimePreparation,
+    ) -> Result<()> {
+        ensure!(
+            unused.binding() == &self.grant.binding && unused.retains_parent_owner(&self.grant),
+            "foreign unused host lifetime"
+        );
+        self.grant.reservation.check_retained_identity()?;
+        self.grant
+            .lifecycle
+            .lock()
+            .map_err(|_| anyhow!("parent lifecycle poisoned"))?
+            .seal_unused()?;
+        self.completed = true;
+        Ok(())
+    }
+
+    /// Finalize a positively stopped SDK outcome after explicit endpoint disposal.
+    pub fn finish_retired(&mut self, outcome: &mvm_client::LaunchOutcome) -> Result<()> {
+        outcome.with_owned_retirement(|receipt| self.require_original_retirement(receipt))??;
+        self.complete_already_drained()
+    }
+
+    /// Failed native startup uses the receipt from that same backend's pending stop.
+    pub fn finish_pending_retired(&mut self, receipt: &mvm_client::OwnedRetirement) -> Result<()> {
+        self.require_original_retirement(receipt)?;
+        self.complete_already_drained()
+    }
+
+    fn require_original_retirement(&self, receipt: &mvm_client::OwnedRetirement) -> Result<()> {
+        let permit: Arc<dyn CoreCurrentParentPermit> = self.grant.clone();
+        ensure!(
+            receipt.binding() == &self.grant.binding && receipt.retains_parent_permit(&permit),
+            "retirement differs from original VM owner"
+        );
+        Ok(())
+    }
+
+    fn complete_already_drained(&mut self) -> Result<()> {
+        self.grant.reservation.check_retained_identity()?;
+        self.grant
+            .lifecycle
+            .lock()
+            .map_err(|_| anyhow!("parent lifecycle poisoned"))?
+            .seal_retired()?;
+        self.completed = true;
+        Ok(())
+    }
+
     pub fn binding(&self) -> &HostLaunchBinding {
         &self.grant.binding
     }
