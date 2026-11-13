@@ -77,6 +77,11 @@ pub struct StallSample {
     pub pending: PendingSample,
 }
 impl StallObserver {
+    #[cfg(test)]
+    pub(super) fn with_commit_stages<R>(&self, operation: impl FnOnce() -> R) -> R {
+        operation()
+    }
+
     pub(super) fn new(pending: Pending) -> Self {
         Self {
             marks: Arc::new(Marks {
@@ -191,6 +196,7 @@ mod tests {
                 remaining_ms: 0
             }
         );
+        check_commit_stages(&observer, now);
         observer.mark(WorkerPhase::Delivery, 3, 2024);
         observer.delivery_failed(&crate::Error::Timeout);
         assert_eq!(observer.sample(now).worker_phase, "delivery_timeout");
@@ -219,5 +225,77 @@ mod tests {
         assert_eq!(observer.sample(now).pending, PendingSample::Empty);
         drop(pending);
         assert_eq!(observer.sample(now).pending, PendingSample::Detached);
+    }
+
+    fn check_commit_stages(observer: &StallObserver, now: Instant) {
+        use spiralcore_transfer::witness_stall::{CommitStage::*, with_stage};
+        let sibling_pending = Arc::new(Mutex::new(None));
+        let sibling = StallObserver::new(sibling_pending.clone());
+        sibling.mark(WorkerPhase::EndpointHandle, 3, 17);
+        let sample = |phase| {
+            let current = observer.sample(now);
+            assert_eq!(
+                (
+                    current.worker_phase,
+                    current.worker_kind,
+                    current.worker_ordinal
+                ),
+                (phase, 3, 2024)
+            );
+            assert_eq!(current.sender_phase, "wait_reply");
+            assert_eq!(
+                current.pending,
+                PendingSample::Frame {
+                    kind: 3,
+                    sequence: 2,
+                    remaining_ms: 99
+                }
+            );
+            let other = sibling.sample(now);
+            assert_eq!(
+                (other.worker_phase, other.worker_ordinal),
+                ("endpoint_handle", 17)
+            );
+            assert_eq!(other.pending, PendingSample::Empty);
+        };
+        observer.with_commit_stages(|| {
+            for (stage, name) in [
+                (Lookup, "commit_lookup"),
+                (Quota, "commit_quota"),
+                (StageWrite, "commit_stage_write"),
+                (FileSync, "commit_file_sync"),
+                (NamespacePublish, "commit_namespace_publish"),
+                (VerifyPublished, "commit_verify_published"),
+                (OrderedReadback, "commit_ordered_readback"),
+            ] {
+                assert!(matches!(
+                    with_stage(stage, || {
+                        sample(name);
+                        Err::<(), _>(crate::Error::Timeout)
+                    }),
+                    Err(crate::Error::Timeout)
+                ));
+                sample("endpoint_handle");
+            }
+            with_stage(StageWrite, || {
+                let panic = std::panic::catch_unwind(|| {
+                    with_stage(FileSync, || std::panic::panic_any(37u8))
+                });
+                assert_eq!(panic.unwrap_err().downcast_ref::<u8>(), Some(&37));
+                sample("commit_stage_write");
+            });
+            sample("endpoint_handle");
+            let panic = std::panic::catch_unwind(|| {
+                sibling.with_commit_stages(|| {
+                    with_stage(Quota, || {
+                        assert_eq!(sibling.sample(now).worker_phase, "commit_quota");
+                        std::panic::panic_any(93u8)
+                    })
+                })
+            });
+            assert_eq!(panic.unwrap_err().downcast_ref::<u8>(), Some(&93));
+            with_stage(Lookup, || sample("commit_lookup"));
+        });
+        with_stage(Quota, || sample("endpoint_handle"));
     }
 }

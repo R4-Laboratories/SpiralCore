@@ -177,6 +177,34 @@ jobs:
           cargo +1.97.1 clippy --locked --manifest-path crates/spiralcore-mvm-live/Cargo.toml \
             --features canonical-host --example installed_flowmux_fixture -- -D warnings \
             2>&1 | tee fixture-evidence/clippy.txt
+      - name: Qualify private native input handoff
+        run: |
+          set -euo pipefail
+          manifest="$GITHUB_WORKSPACE/crates/spiralcore-mvm-live/Cargo.toml"
+          cargo +1.97.1 test --locked --manifest-path "$manifest" --features canonical-host \
+            --test fixture_native_handoff --no-run --message-format=json > "$RUNNER_TEMP/handoff-build.jsonl"
+          exe=$(jq -ers --arg manifest "$manifest" '
+            [.[] | select(.reason=="compiler-artifact" and .manifest_path==$manifest and .profile.test==true
+              and .target.name=="fixture_native_handoff" and .target.kind==["test"]
+              and (.features|index("canonical-host")) and .executable) | .executable]
+              | select(length==1) | first' "$RUNNER_TEMP/handoff-build.jsonl")
+          [[ "$(realpath "$exe")" == "$CARGO_TARGET_DIR"/debug/deps/* && -x "$exe" ]]
+          sha256sum "$exe" > fixture-evidence/handoff-before.sha256
+          set +e
+          "$exe" --nocapture --color never 2>&1 | tee fixture-evidence/handoff-tests.txt
+          codes=("${PIPESTATUS[@]}")
+          set -e
+          printf 'test_exit=%s capture_exit=%s\n' "${codes[0]}" "${codes[1]}" > fixture-evidence/handoff-exit.txt
+          sha256sum "$exe" > fixture-evidence/handoff-after.sha256
+          cmp fixture-evidence/handoff-before.sha256 fixture-evidence/handoff-after.sha256
+          python3 - <<'PY'
+          import pathlib, re
+          text = pathlib.Path("fixture-evidence/handoff-tests.txt").read_text()
+          rows = re.findall(r"^test result: (?:ok|FAILED)\. (\d+) passed; (\d+) failed; 0 ignored; 0 measured; 0 filtered out;", text, re.M)
+          assert len(rows) == 1 and sum(map(int, rows[0])) == 5, "expected exactly five handoff controls"
+          PY
+          test "${codes[1]}" = 0
+          exit "${codes[0]}"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:
