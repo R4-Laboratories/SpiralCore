@@ -791,3 +791,63 @@ fn one_installed_tenant_registrar_selects_two_distinct_original_grants() {
     drop(a);
     assert!(selector.original_grant("local", "original-a").is_err());
 }
+
+#[cfg(target_os = "linux")]
+#[test]
+fn original_sdk_driver_holds_the_unpolled_launch_then_refunds_its_exact_preparation() {
+    let (_home, mut supervisor, provider) = endpoint_tests::fixture();
+    let before = supervisor.managed_resources().snapshot().unwrap().usage;
+    let backend = mvm_client::LocalBackend::with_hypervisor("firecracker");
+    let request = mvm_client::LaunchRequest::builder(
+        mvm_client::LifecycleMode::Transient,
+        mvm_client::RootfsSource::LocalPath("/unread/in-this-test".into()),
+    )
+    .name("original-driver")
+    .backend("firecracker")
+    .build()
+    .unwrap();
+    let prepared = provider
+        .prepare_request(&request, "local", BackendKind::Firecracker)
+        .unwrap();
+    let mut driver = prepared.canonical_driver(&backend);
+    assert_eq!(
+        supervisor
+            .managed_resources()
+            .snapshot()
+            .unwrap()
+            .usage
+            .guests,
+        before.guests + 1
+    );
+    assert!(driver.outcome().is_err());
+    let policy = mvm_hostd::run::DirectTcpPolicy {
+        mapping: selected_policy().payload_mapping().unwrap().clone(),
+        peers: Vec::new(),
+    };
+    drop(driver.start(request.clone(), policy.clone()));
+    assert!(driver.outcome().is_err());
+    let refusal = {
+        use std::{
+            future::Future,
+            task::{Context, Poll, Waker},
+        };
+        let mut start = std::pin::pin!(driver.start(request, policy));
+        match start.as_mut().poll(&mut Context::from_waker(Waker::noop())) {
+            Poll::Ready(Err(error)) => error,
+            _ => panic!("unfunded request reached asynchronous SDK dispatch"),
+        }
+    };
+    assert_eq!(
+        refusal.to_string(),
+        "original canonical startup not prepared"
+    );
+    // The unpolled future performed no SDK call or activation.
+    drop(driver);
+    assert_eq!(
+        supervisor.managed_resources().snapshot().unwrap().usage,
+        before
+    );
+    drop(provider);
+    supervisor.close_admission();
+    supervisor.try_finish().unwrap();
+}

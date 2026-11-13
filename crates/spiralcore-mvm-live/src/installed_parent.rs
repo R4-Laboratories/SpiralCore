@@ -29,6 +29,11 @@ pub use tenant_agent::TenantHelperLimits;
 pub(crate) mod startup;
 pub use startup::PortableStartupQuote;
 #[cfg(target_os = "linux")]
+#[path = "installed_parent/driver.rs"]
+mod driver;
+#[cfg(target_os = "linux")]
+pub use driver::CanonicalLaunch;
+#[cfg(target_os = "linux")]
 #[path = "installed_parent/startup_bounds.rs"]
 mod startup_bounds;
 

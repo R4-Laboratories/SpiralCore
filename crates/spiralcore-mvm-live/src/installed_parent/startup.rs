@@ -183,6 +183,23 @@ impl PreparedParentVm {
         Ok((prepared, kernel))
     }
 
+    #[cfg(target_os = "linux")]
+    pub(super) fn original_kernel(
+        &self,
+    ) -> Result<Arc<mvm_core::canonical_linux::PreparedCanonicalLinux>> {
+        let lifecycle = self
+            .grant
+            .lifecycle
+            .lock()
+            .map_err(|_| anyhow!("parent lifecycle poisoned"))?;
+        let workspace = lifecycle
+            .startup
+            .as_ref()
+            .and_then(|startup| startup.canonical.as_ref())
+            .ok_or_else(|| anyhow!("original canonical startup not prepared"))?;
+        Ok(workspace.kernel.clone())
+    }
+
     pub fn with_portable_startup(self, quote: PortableStartupQuote) -> Result<Self> {
         self.grant.check_open()?;
         let parent = self
