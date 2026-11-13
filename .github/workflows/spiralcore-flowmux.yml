@@ -77,7 +77,7 @@ jobs:
           $PSNativeCommandUseErrorActionPreference = $false
           $cargoArgs = @("+1.97.1-$env:NATIVE_TARGET", 'test', '--release', '--locked', '--manifest-path',
             'crates/spiralcore-transfer/Cargo.toml', '--lib', 'endpoint::metadata_tests')
-          $expected = if ($env:RUNNER_OS -eq 'Windows') { 3 } else { 2 }
+          $expected = if ($env:RUNNER_OS -eq 'Windows') { 3 } else { 4 }
           $listing = (& cargo @cargoArgs -- --list --format terse 2>&1 | Out-String)
           $code = $LASTEXITCODE
           $listing | Set-Content flowmux-evidence/metadata-list.txt
@@ -105,6 +105,37 @@ jobs:
             $rows | ConvertTo-Json -Depth 6 | Set-Content flowmux-evidence/metadata-pairs.json
           }
           if (git status --porcelain -- crates/spiralcore-transfer/Cargo.lock) { throw 'Locked metadata execution changed source' }
+      - name: Execute native Unix owned-store guards
+        if: runner.os == 'Linux' || runner.os == 'macOS'
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $false
+          $primitiveCount = if ($env:RUNNER_OS -eq 'Linux') { 18 } else { 17 }
+          $scopes = @(
+            @{ Name = 'owned-primitives'; Selector = @('--lib', 'endpoint::storage::owned::tests::'); Expected = $primitiveCount },
+            @{ Name = 'owned-store'; Selector = @('--test', 'owned_store'); Expected = 5 },
+            @{ Name = 'owned-resources'; Selector = @('--test', 'owned_store_resources'); Expected = 1 }
+          )
+          foreach ($scope in $scopes) {
+            $name = $scope.Name
+            $cargoArgs = @("+1.97.1-$env:NATIVE_TARGET", 'test', '--release', '--locked', '--manifest-path',
+              'crates/spiralcore-transfer/Cargo.toml') + $scope.Selector
+            $listing = (& cargo @cargoArgs -- --list --format terse 2>&1 | Out-String)
+            $code = $LASTEXITCODE
+            $listing | Set-Content "flowmux-evidence/$name-list.txt"
+            $listed = [regex]::Matches($listing, '(?m)^.+: test\r?$').Count
+            if ($code -ne 0 -or $listed -ne $scope.Expected) { throw "Expected $($scope.Expected) $name tests, listed $listed" }
+            $log = (& cargo @cargoArgs -- --show-output --color never 2>&1 | Out-String)
+            $code = $LASTEXITCODE
+            $log | Set-Content "flowmux-evidence/$name-tests.txt"
+            $summaries = [regex]::Matches($log, '(?m)^test result: ok\. (\d+) passed; (\d+) failed; (\d+) ignored; (\d+) measured; (\d+) filtered out;')
+            if ($code -ne 0 -or $summaries.Count -ne 1) { throw "Failed $name tests; see $name-tests.txt" }
+            $g = $summaries[0].Groups
+            if ([int]$g[1].Value -ne $scope.Expected -or [int]$g[2].Value -ne 0 -or [int]$g[3].Value -ne 0 -or [int]$g[4].Value -ne 0) { throw "Incomplete $name test execution" }
+            if ($name -ne 'owned-primitives' -and [int]$g[5].Value -ne 0) { throw "Filtered integration tests in $name" }
+          }
+          $lockChanges = git status --porcelain -- crates/spiralcore-transfer/Cargo.lock
+          if ($LASTEXITCODE -ne 0 -or $lockChanges) { throw 'Could not confirm unchanged transfer lockfile' }
       - name: Execute native existing-file descriptor comparison
         if: runner.os == 'Windows'
         run: |

@@ -1,0 +1,143 @@
+{
+  "scope": "Mapped macOS production lines in the four new Unix backend files only; not branch, whole-crate, Linux-only code or source-function coverage. Raw LLVM monomorphizations remain in LCOV.",
+  "rustc": "1.97.1 (8bab26f4f 2026-07-14)",
+  "llvm": "22.1.6",
+  "tests": {
+    "passed": 80,
+    "ignored": 1,
+    "ignored_scope": "existing explicitly ignored native filesystem timing witness"
+  },
+  "files": [
+    {
+      "file": "crates/spiralcore-transfer/src/endpoint/storage/owned.rs",
+      "source_sha256": "8522b7886adc7bfffcb8e93197dc3ba22541f76488b5ad04729ea75908f402df",
+      "mapped_production_lines": 167,
+      "covered_production_lines": 160,
+      "excluded_cfg_test_source_lines": [
+        49,
+        50,
+        79,
+        80,
+        109,
+        110,
+        114,
+        115,
+        116,
+        117,
+        118,
+        119,
+        120,
+        121,
+        122,
+        123,
+        124,
+        125,
+        126
+      ],
+      "excluded_mapped_lines": [
+        109,
+        110,
+        115,
+        116,
+        117,
+        120,
+        121,
+        122,
+        124,
+        126
+      ],
+      "uncovered_production_lines": [
+        161,
+        190,
+        203,
+        213,
+        220,
+        230,
+        265
+      ]
+    },
+    {
+      "file": "crates/spiralcore-transfer/src/endpoint/storage/owned/io.rs",
+      "source_sha256": "2738c2022cbf8272646f855d33d55a921524bf4e5488e10e82f8bfab874f0d6d",
+      "mapped_production_lines": 133,
+      "covered_production_lines": 127,
+      "excluded_cfg_test_source_lines": [],
+      "excluded_mapped_lines": [],
+      "uncovered_production_lines": [
+        40,
+        69,
+        98,
+        138,
+        152,
+        185
+      ]
+    },
+    {
+      "file": "crates/spiralcore-transfer/src/endpoint/storage/owned/retire.rs",
+      "source_sha256": "18eb573cc8885b933d9a2556bc3f3b3e6313b5d05bc11a8a89d121c1505cdf4a",
+      "mapped_production_lines": 196,
+      "covered_production_lines": 184,
+      "excluded_cfg_test_source_lines": [],
+      "excluded_mapped_lines": [],
+      "uncovered_production_lines": [
+        30,
+        60,
+        66,
+        72,
+        85,
+        95,
+        101,
+        140,
+        148,
+        189,
+        205,
+        237
+      ]
+    },
+    {
+      "file": "crates/spiralcore-transfer/src/endpoint/storage/owned/walk.rs",
+      "source_sha256": "76498057e952f5c427adf4ac5145c6975fd2cd5f1a437f65592620161705716d",
+      "mapped_production_lines": 141,
+      "covered_production_lines": 136,
+      "excluded_cfg_test_source_lines": [
+        142,
+        143
+      ],
+      "excluded_mapped_lines": [
+        143
+      ],
+      "uncovered_production_lines": [
+        37,
+        55,
+        63,
+        65,
+        161
+      ]
+    }
+  ],
+  "mapped_production_lines": 637,
+  "covered_production_lines": 607,
+  "raw_lcov_sha256": "4b23955c9c3efce973033359c92eca75ba62c6402cdbcaa2390d72f8fa8dd8b9",
+  "published_lcov_sha256": "94e715acc900bc524eb2579dbb20d350a39d647b8a2a31f307de57a6f7151aca",
+  "publication_normalization": "Keep only these four files and replace absolute SF prefix with repository-relative paths; preserve all counts.",
+  "instrumented_binaries": [
+    {
+      "target": "spiralcore_transfer",
+      "binary_sha256": "c491906e729150e121953e12982a36283f848c89f24fcffe913b6fb33eb0bdae",
+      "bytes": 8471952
+    },
+    {
+      "target": "owned_store",
+      "binary_sha256": "fc398fb52f5f21c3f1aee812b9089efaf9810bc8480eeff9feb0cb70b96115e4",
+      "bytes": 7888640
+    },
+    {
+      "target": "owned_store_resources",
+      "binary_sha256": "88e1766ec1cd64498ecd963a8626f91c4f27b997e0c0be76c614715175a625c5",
+      "bytes": 1989696
+    }
+  ],
+  "wrapper_source": "#!/bin/sh\nrustc_bin=$1\nshift\nif [ \"${CARGO_PKG_NAME-}\" = spiralcore-transfer ]; then\n    exec \"$rustc_bin\" -C instrument-coverage \"$@\"\nfi\nexec \"$rustc_bin\" \"$@\"\n",
+  "profraw_files": 7,
+  "profraw_bytes": 676648
+}

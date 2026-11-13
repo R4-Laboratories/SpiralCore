@@ -75,7 +75,11 @@ fn reopen_waits_for_a_transient_duplicate_of_the_original_lock() {
     let fixture = Fixture::new();
     let first = Endpoint::open(&fixture.0, Limits::default(), Allow).unwrap();
     // dup and fork share the same open file description and its flock.
-    let inherited = first._owner.try_clone().unwrap();
+    let inherited = match &first.root {
+        StoreRoot::Path { _owner, .. } => _owner.try_clone().unwrap(),
+        #[cfg(any(target_os = "linux", target_os = "macos"))]
+        StoreRoot::Owned(_) => panic!("expected a Path endpoint"),
+    };
     drop(first);
     let path = fixture.0.join(".owner");
     let next = storage::open_owner(&path).unwrap();

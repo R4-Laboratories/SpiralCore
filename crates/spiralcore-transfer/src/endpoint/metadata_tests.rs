@@ -30,8 +30,8 @@ fn legacy_read_meta(path: &Path) -> Result<Publication> {
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Err(Error::Unknown),
         Err(_) => return Err(Error::Storage),
     }
-    let mut file = storage::open_read(path)?;
-    read_meta_file(path, &mut file)
+    let file = storage::open_read(path)?;
+    read_meta_file(Locator::Path(path.to_owned()), &file)
 }
 fn signature(p: &Publication) -> (u64, Id, Option<Id>) {
     (p.len, p.object, p.manifest)
@@ -302,4 +302,86 @@ $descriptor.GetBinaryForm($normalized,0)
             "owned store cleanup completed after exact readback"
         );
     }
+}
+
+#[cfg(any(target_os = "linux", target_os = "macos"))]
+#[test]
+fn original_file_verifies_named_digest_and_small_body_limit() {
+    let fixture = Fixture::new();
+    let original = fixture.0.join("record");
+    let bytes = b"original\0record\0\0";
+    let id = object_id(bytes);
+    write_record(&original, bytes);
+    let verify = |id, cap| verify_owned_file(id, storage::open_read(&original).unwrap(), cap);
+    assert_eq!(verify(id, bytes.len() as u64), Ok(()));
+    assert_eq!(verify([9; 32], bytes.len() as u64), Err(Error::Integrity));
+    assert_eq!(verify(id, bytes.len() as u64 - 1), Err(Error::Limit));
+    let mut corrupt = fs::read(&original).unwrap();
+    *corrupt.last_mut().unwrap() ^= 1;
+    fs::write(&original, corrupt).unwrap();
+    assert_eq!(verify(id, bytes.len() as u64), Err(Error::Integrity));
+}
+
+#[cfg(any(target_os = "linux", target_os = "macos"))]
+#[test]
+fn owned_receipts_retry_original_durability_after_ambiguous_rename() {
+    let root = Fixture::new();
+    let child = root.0.join("cache");
+    private_dir(&child).unwrap();
+    let resources = crate::resource_profile::ResourceProfile::SmallV1;
+    let limits = resources.receiver_limits();
+    let c = crate::wan::context([11; 32]);
+    let ns = c.namespace().unwrap();
+    let lease = OwnedStoreLease::capture(
+        Arc::new(File::open(&root.0).unwrap()),
+        "cache".as_ref(),
+        Arc::new(File::open(&child).unwrap()),
+        OwnedStorePolicy::small_v1(&limits, 102, OwnedLaneNamespaces::One(ns)).unwrap(),
+    )
+    .unwrap();
+    let mut endpoint =
+        Endpoint::open_at(&lease, limits, crate::wan::BenchAuthority, resources).unwrap();
+    let body = b"original durable receipt\0\0";
+    let offer = Offer::cold(body, Mode::Raw);
+    let begin = Frame {
+        kind: 1,
+        transfer: [2; 32],
+        seq: 0,
+        body: offer.encode().unwrap(),
+    };
+    let mut probe = Frame {
+        kind: 4,
+        transfer: [3; 32],
+        seq: 0,
+        body: offer.id().unwrap().to_vec(),
+    };
+    probe.body.extend_from_slice(&begin.body);
+    // The original staged file was synced and renamed, but the final directory
+    // sync did not complete. Its discoverable name is insufficient for a receipt.
+    lease.fail_next_publication_sync();
+    assert_eq!(
+        endpoint.publish(&c, ns, &offer, body, None),
+        Err(Error::Storage)
+    );
+    assert_eq!(endpoint.read_object(&c, offer.object).unwrap(), body);
+    for frame in [&probe, &begin] {
+        lease.fail_next_publication_sync();
+        assert_eq!(endpoint.handle(&c, frame, 1), Err(Error::Storage));
+        let receipt = endpoint.handle(&c, frame, 1).unwrap();
+        assert_eq!(
+            (receipt.kind, receipt.body.as_slice()),
+            (103, offer.object.as_slice())
+        );
+    }
+    probe.transfer = begin.transfer;
+    probe.seq = 1;
+    lease.fail_next_publication_sync();
+    assert_eq!(endpoint.handle(&c, &probe, 1), Err(Error::Storage));
+    assert_eq!(endpoint.handle(&c, &probe, 1).unwrap().kind, 103);
+    lease.fail_next_publication_sync();
+    assert_eq!(
+        endpoint.publish(&c, ns, &offer, body, None),
+        Err(Error::Storage)
+    );
+    endpoint.publish(&c, ns, &offer, body, None).unwrap();
 }
