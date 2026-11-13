@@ -1,6 +1,7 @@
 //! One receiver phase and a nonblocking view of the writer's original pending
 //! frame. No data bytes, file paths, credentials or transfer IDs are retained.
 use super::Pending;
+use spiralcore_transfer::witness_stall::{CommitObserver, CommitStage, with_observer};
 use std::{
     sync::{
         Arc,
@@ -21,8 +22,15 @@ pub(super) enum WorkerPhase {
     Delivery,
     ReplyLock,
     ReplyWrite,
+    CommitLookup,
+    CommitQuota,
+    CommitStageWrite,
+    CommitFileSync,
+    CommitNamespacePublish,
+    CommitVerifyPublished,
+    CommitOrderedReadback,
 }
-const PHASE_NAMES: [&str; 9] = [
+const PHASE_NAMES: [&str; 16] = [
     "starting",
     "poll",
     "receive",
@@ -32,6 +40,13 @@ const PHASE_NAMES: [&str; 9] = [
     "delivery",
     "reply_lock",
     "reply_write",
+    "commit_lookup",
+    "commit_quota",
+    "commit_stage_write",
+    "commit_file_sync",
+    "commit_namespace_publish",
+    "commit_verify_published",
+    "commit_ordered_readback",
 ];
 // Only the receiver writes this word. A new phase clears all delivery flags.
 const DELIVERY_FULL: u64 = 1 << 5;
@@ -49,6 +64,25 @@ const SENDER_NAMES: [&str; 4] = ["caller", "tx_lock", "send", "wait_reply"];
 struct Marks {
     worker: AtomicU64,
     sender: AtomicU8,
+}
+
+impl CommitObserver for Marks {
+    fn mark_stage(&self, stage: Option<CommitStage>) {
+        let phase = match stage {
+            None => WorkerPhase::EndpointHandle,
+            Some(CommitStage::Lookup) => WorkerPhase::CommitLookup,
+            Some(CommitStage::Quota) => WorkerPhase::CommitQuota,
+            Some(CommitStage::StageWrite) => WorkerPhase::CommitStageWrite,
+            Some(CommitStage::FileSync) => WorkerPhase::CommitFileSync,
+            Some(CommitStage::NamespacePublish) => WorkerPhase::CommitNamespacePublish,
+            Some(CommitStage::VerifyPublished) => WorkerPhase::CommitVerifyPublished,
+            Some(CommitStage::OrderedReadback) => WorkerPhase::CommitOrderedReadback,
+        };
+        // The bound worker is the sole writer. Preserve its kind and ordinal.
+        let word = self.worker.load(Ordering::Relaxed);
+        self.worker
+            .store((word & !0xff) | phase as u64, Ordering::Relaxed);
+    }
 }
 
 #[derive(Clone)]
@@ -77,9 +111,8 @@ pub struct StallSample {
     pub pending: PendingSample,
 }
 impl StallObserver {
-    #[cfg(test)]
     pub(super) fn with_commit_stages<R>(&self, operation: impl FnOnce() -> R) -> R {
-        operation()
+        with_observer(self.marks.clone(), operation)
     }
 
     pub(super) fn new(pending: Pending) -> Self {

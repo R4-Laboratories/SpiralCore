@@ -863,13 +863,30 @@ impl<A: Authority> Worker<A> {
                 Phase::ReceiverHandle,
                 FrameKind::from_wire(request.kind),
             ));
-            self.endpoint
-                .handle(purpose, ordinal, &self.context, &request, now()?)
-                .map_err(Error::from)
-                .inspect_err(|e| {
-                    self.cancellation
-                        .observe(FailureSite::ReceiverHandle, Some(request.kind), e)
-                })?
+            let sampled_now = now()?;
+            #[cfg(feature = "witness-stall")]
+            let result = {
+                let ordered_commit = purpose == Purpose::Application
+                    && request.kind == 3
+                    && matches!(&self.endpoint, ReceiveEndpoint::Ordered(_));
+                let mut handle = || {
+                    self.endpoint
+                        .handle(purpose, ordinal, &self.context, &request, sampled_now)
+                };
+                if ordered_commit {
+                    self.stall.with_commit_stages(handle)
+                } else {
+                    handle()
+                }
+            };
+            #[cfg(not(feature = "witness-stall"))]
+            let result =
+                self.endpoint
+                    .handle(purpose, ordinal, &self.context, &request, sampled_now);
+            result.map_err(Error::from).inspect_err(|e| {
+                self.cancellation
+                    .observe(FailureSite::ReceiverHandle, Some(request.kind), e)
+            })?
         };
         #[cfg(feature = "witness-stall")]
         self.stall

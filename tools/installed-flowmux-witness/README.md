@@ -46,6 +46,11 @@ cargo +1.97.1 test --locked --manifest-path crates/spiralcore-mvm-live/Cargo.tom
   --ignored --exact signed_fixture_reopens_with_original_publisher --nocapture
 ```
 
+
+For a separately authorized native run, set `SC_FLOWMUX_NATIVE_READY` to a **fresh absolute filename** under an operator-owned `0700` directory before starting the export test. With the variable unset, the test removes its temporary workspace. With it set, a successful test transfers ownership of that private workspace to the operator. The `0600` ready file contains only `root`, `dev`, `ino`, `uid` and `archive_sha256`. Its path and contents belong in private job state. Wait for the **original test process to exit successfully** before using the file. A failed publication or directory sync can leave a ready file whose workspace has already been removed.
+
+Reopen the absolute, unaliased `root` as a current-owner `0700` directory and compare the device, inode and UID with the record. Verify the SHA-256 of `root/packet/workload.mvmpkg` against both the ready file and the successful export result. Only the seven previously checked files beneath `root/packet` are public inputs. The producer and consumer homes remain private. Recheck the original workspace identity before cleanup and remove it after the runner has released its inputs. The ready file grants no guest or network authority.
+
 Use two separate, fresh, operator-owned role directories beneath a private parent. Directories must be `0700`; input files must be regular, single-link, owner-only `0600` files. The reader rejects unsafe files instead of repairing their permissions. Private keys and issued operator packets must never enter Git, CI artifacts or a public result archive.
 
 Both role directories contain the same bounded `profile.json` with these fields:

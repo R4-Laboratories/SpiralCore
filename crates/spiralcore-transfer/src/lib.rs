@@ -1,5 +1,21 @@
 #![forbid(unsafe_code)]
 
+// Without the diagnostic feature the original storage expression is unchanged.
+macro_rules! commit_stage {
+    ($stage:ident, $operation:expr) => {{
+        #[cfg(feature = "witness-stall")]
+        {
+            $crate::witness_stall::with_stage($crate::witness_stall::CommitStage::$stage, || {
+                $operation
+            })
+        }
+        #[cfg(not(feature = "witness-stall"))]
+        {
+            $operation
+        }
+    }};
+}
+
 pub mod client;
 pub mod dag;
 pub mod delta;

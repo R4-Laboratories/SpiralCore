@@ -2,6 +2,9 @@
 //! official assets. The consumer verifies and attaches the signed inputs offline.
 #![cfg(all(target_os = "linux", target_arch = "x86_64"))]
 
+#[path = "support/native_handoff.rs"]
+mod native_handoff;
+
 use anyhow::{Context, Result, ensure};
 use mvm_client::{image_admin::revocations, launch::bundle_runtime::attach_if_installed_bundle};
 use mvm_core::{
@@ -427,6 +430,8 @@ fn signed_fixture_reopens_with_original_publisher() -> Result<()> {
         (root.dev(), root.ino()) == (after.dev(), after.ino()) && inventory(&output)? == original,
         "occupied packet changed"
     );
+    let ready = std::env::var_os("SC_FLOWMUX_NATIVE_READY").map(PathBuf::from);
+    native_handoff::finish(working, ready.as_deref(), digest)?;
     println!(
         "FIXTURE_EXPORT_RESULT {}",
         json!({"guest_sha256":inputs.digest,"archive_sha256":digest,

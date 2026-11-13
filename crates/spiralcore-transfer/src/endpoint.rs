@@ -1382,14 +1382,16 @@ impl<A: Authority> Endpoint<A> {
         bytes: &[u8],
         mid: Option<Id>,
     ) -> Result<()> {
-        match self.open_publication(ns, offer.object) {
+        match commit_stage!(Lookup, self.open_publication(ns, offer.object)) {
             Ok(record) => {
-                verify_publication(&record.meta, &record.file, bytes)?;
-                record.check_named()?;
+                commit_stage!(VerifyPublished, {
+                    verify_publication(&record.meta, &record.file, bytes)?;
+                    record.check_named()
+                })?;
                 match &record.meta.path {
                     Locator::Path(path) => {
                         drop(record.file);
-                        storage::sync_existing(path)?;
+                        commit_stage!(FileSync, storage::sync_existing(path))?;
                     }
                     #[cfg(any(target_os = "linux", target_os = "macos"))]
                     Locator::Owned(lease, ns) => {
@@ -1408,7 +1410,7 @@ impl<A: Authority> Endpoint<A> {
             Err(Error::Unknown) => {}
             Err(e) => return Err(e),
         }
-        let (scoped, all, count) = self.disk_usage(ns)?;
+        let (scoped, all, count) = commit_stage!(Quota, self.disk_usage(ns))?;
         let len = bytes.len() as u64 + if mid.is_some() { 81 } else { 49 };
         if scoped.checked_add(len).ok_or(Error::Limit)? > self.limits.namespace_bytes
             || all.checked_add(len).ok_or(Error::Limit)? > self.limits.cache_bytes
@@ -1427,14 +1429,14 @@ impl<A: Authority> Endpoint<A> {
                 let parent = path.parent().ok_or(Error::Storage)?;
                 private_dir(parent)?;
                 let tmp = parent.join(&stage);
-                let mut f = storage::create_new_file(&tmp)?;
+                let mut f = commit_stage!(StageWrite, storage::create_new_file(&tmp))?;
                 let result = (|| {
-                    write_record(&mut f, offer, mid, bytes)?;
+                    commit_stage!(StageWrite, write_record(&mut f, offer, mid, bytes))?;
                     drop(f);
                     self.authorize(context)?;
                     #[cfg(test)]
                     let _publish = commit_costs::span(commit_costs::Stage::NamespacePublish);
-                    storage::publish(&tmp, &path, root)
+                    commit_stage!(NamespacePublish, storage::publish(&tmp, &path, root))
                 })();
                 if result.is_err() {
                     let _ = storage::remove_stage(&tmp);
@@ -1450,18 +1452,24 @@ impl<A: Authority> Endpoint<A> {
                 };
                 lease.check_room(extra)?;
                 let dir = lease.open_namespace(ns, true)?;
-                let mut f = owned::create_new_at(dir.as_fd(), stage.as_ref())?;
+                let mut f = commit_stage!(
+                    StageWrite,
+                    owned::create_new_at(dir.as_fd(), stage.as_ref())
+                )?;
                 let result = (|| {
-                    write_record(&mut f, offer, mid, bytes)?;
+                    commit_stage!(StageWrite, write_record(&mut f, offer, mid, bytes))?;
                     self.authorize(context)?;
                     #[cfg(test)]
                     let _publish = commit_costs::span(commit_costs::Stage::NamespacePublish);
-                    lease.publish_at(
-                        ns,
-                        dir.as_fd(),
-                        stage.as_ref(),
-                        object_name(&offer.object).as_ref(),
-                        &f,
+                    commit_stage!(
+                        NamespacePublish,
+                        lease.publish_at(
+                            ns,
+                            dir.as_fd(),
+                            stage.as_ref(),
+                            object_name(&offer.object).as_ref(),
+                            &f,
+                        )
                     )
                 })();
                 if let Err(e) = result {
@@ -1479,9 +1487,11 @@ impl<A: Authority> Endpoint<A> {
         }
         #[cfg(test)]
         let _verify = commit_costs::span(commit_costs::Stage::VerifyPublished);
-        let published = self.open_publication(ns, offer.object)?;
-        verify_publication(&published.meta, &published.file, bytes)?;
-        published.check_named()?;
+        let published = commit_stage!(VerifyPublished, self.open_publication(ns, offer.object))?;
+        commit_stage!(VerifyPublished, {
+            verify_publication(&published.meta, &published.file, bytes)?;
+            published.check_named()
+        })?;
         self.authorize(context)
     }
     /// Serialized verification; the returned Vec is then owned/accounted by the caller.
@@ -1834,7 +1844,7 @@ fn write_record(file: &mut File, offer: &Offer, mid: Option<Id>, bytes: &[u8]) -
     file.write_all(bytes)?;
     #[cfg(test)]
     let _file_sync = commit_costs::span(commit_costs::Stage::FileSync);
-    file.sync_all()?;
+    commit_stage!(FileSync, file.sync_all())?;
     Ok(())
 }
 
