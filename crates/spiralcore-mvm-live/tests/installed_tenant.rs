@@ -20,6 +20,8 @@ fn original_ledger_funds_installed_daemon_and_signer_through_both_exits() -> Res
         home.metadata()?.permissions().mode() & 0o077 == 0,
         "private home required"
     );
+    // Provision the original test installation with its normal operator key.
+    mvm_hostd::audit::host_keypair::load_or_init_at(&mvm_core::config::mvm_keys_dir())?;
     let config = InstalledConfig::two_endpoint_witness_profile();
     let key = InstallationKey {
         installation: [19; 32],
