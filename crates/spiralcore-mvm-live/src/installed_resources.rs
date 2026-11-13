@@ -193,6 +193,7 @@ pub struct ManagedResourceBudget {
 }
 impl ManagedResourceBudget {
     /// Identity comparison only; equal limits/usage do not identify one owner.
+    #[cfg(feature = "canonical-host")]
     pub(crate) fn same_pool(&self, other: &Self) -> bool {
         Arc::ptr_eq(&self.shared, &other.shared)
     }
@@ -420,6 +421,7 @@ impl ManagedReservation {
     }
     /// Existing ownership only. Normal admission close does not revoke cleanup;
     /// a poisoned/fenced or inconsistent original ledger still refuses it.
+    #[cfg(any(feature = "canonical-host", test))]
     pub(crate) fn check_retained_identity(&self) -> Result<()> {
         let shared = &self.owner.shared;
         let ledger = shared.ledger()?;

@@ -200,8 +200,11 @@ pub(crate) struct DiskStore {
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum RetirementProgress {
     Live,
+    #[cfg(any(feature = "canonical-host", test))]
     NamespaceUnlinked,
+    #[cfg(any(feature = "canonical-host", test))]
     NamespaceSynced,
+    #[cfg(any(feature = "canonical-host", test))]
     Complete,
 }
 pub(crate) struct DiskPrepareFailure {
@@ -700,6 +703,7 @@ impl InstallationOwner {
     /// Filesystem primitive for the resident's sealed original-child retirement
     /// path. The caller must retain that receipt and the actual disk credit.
     /// This method is private to the trusted embedding; it creates no exit proof.
+    #[cfg(any(feature = "canonical-host", test))]
     pub(crate) fn retire_endpoint_disk(&mut self, store: &mut DiskStore) -> Result<()> {
         self.disk_epoch(store.epoch)?;
         if store.retirement == RetirementProgress::Complete {
