@@ -138,3 +138,29 @@ paired-journal --backend firecracker --restart-helpers --sender-ordinals 1 \
 After A verifies B's original acceptance and before B reads or acknowledges the delivery, the controller interrupts and replaces A's helper, then B's helper. Each returned child status must identify SIGKILL. Both guest VMs keep running. A must recover the same accepted message ID and receipt digest through its restarted helper. B then reads the original 257 bytes from its restarted journal and acknowledges its original lease. A settles that original receipt. The normal ordinal result adds a `helper_recovery` object with restart intervals, original exit signals and the additional A status operation's byte and CPU counters. The ordinary campaign keeps its existing result fields.
 
 This mode measures recovery after acceptance and before guest readback and settlement. The initial signed receipt has already reached A. The separate lost-receipt witness exercises loss before that confirmation. Controlled restart refuses on other host platforms before interrupting a helper.
+
+## FlowMux loopback proxy workload
+
+Build the `spiralcore-flowmux-proxy-guest` binary from `paired-guest` in the same pinned sibling source layout. Package it as the entrypoint of a separate signed non-root Linux workload. The signed environment and image entrypoint arguments must match. For example, with the registered echo port set to 38443, the two arguments are `denied.mvm.peer:38443 cooperator.mvm.peer:38443`. The denied fixture name must be absent from the authorized route. Both phases share a 15-second deadline.
+
+The workload opens the numeric loopback HTTP proxy supplied in `HTTP_PROXY` by the admitted guest environment. MVM owns the FlowMux connection on port 5253 and its signing material. The first CONNECT must return the proxy's empty 403 response followed by EOF. The second must return its canonical 200 response before the workload writes the registered fixture's 5,804 bytes. The workload half-closes its write side and compares the complete echo, including the trailing zero bytes, through EOF.
+
+Each attempted phase emits one JSON line with its outcome, successful socket bytes for the CONNECT headers and application body in each direction, process CPU nanoseconds and elapsed nanoseconds. An I/O or validation failure exits nonzero after the phase row. These counts cover the guest application’s loopback socket. The host witness must independently record the original policy decision, zero accepts for the denied peer, the registered peer's exact readback and the transport counters for any claimed host or wire measurements.
+
+Eight local loopback controls passed on macOS. A separate Linux component ran the sealed workload’s static x86-64 ELF as a non-root process against a fixture proxy. This was one observed run of each phase.
+
+| Phase | CONNECT sent / received (B) | Application sent / received (B) | Elapsed (ms) | Workload process CPU (ms) |
+| --- | ---: | ---: | ---: | ---: |
+| Denied peer | 71 / 64 | 0 / 0 | 1.549 | 0.488 |
+| Registered peer fixture echo | 79 / 39 | 5,804 / 5,804 | 2.444 | 0.331 |
+
+The release ELF was built from SpiralCore `f7947346` with Rust 1.97.1 and MVM `a7670d85613fd44b36c8fb14030c975b615a8def`. The offline build updated five MVM path dependencies from rc.1 to rc.2 in the staged workload lockfile, then built with `--locked`. The staged Cargo.lock SHA-256 was `3eee8de95a293c786ae25d7d30a870e5a9fa37c0eb8c04a61c4372613b6eacbf`. The Linux loopback fixture measured the ELF identified below. Guest boot, host enforcement, transport bytes and WAN performance require separate observations.
+
+| Sealed image input or artifact | SHA-256 |
+| --- | --- |
+| 801,240-byte workload ELF, reopened from ext4 | `abd798c8ed89e473578f445fc5c4a8965be773eb727196617725d420ed135fce` |
+| Original MVM rc.2 OCI entrypoint wrapper, reopened from ext4 | `df4f6b8b883f94ff558b16249fb9e5dd3979b7bbcb562b7de19e57557293064d` |
+| 1,536,000-byte ext4 image | `25a98f0cce2b795ef9a647559b0da5a8f02ce13d87f5e2d5cb18dad05221ed9f` |
+| Environment descriptor supplied for signing | `5d145ba505f0d2fb558546a9ea04dc6affa48ed7abdb6e4750d97e2de15160b6` |
+
+The image sidecar and the entrypoint configuration reopened from ext4 both matched the descriptor’s three argv elements. The descriptor requests one CPU, 256 MiB and egress to the registered peer on port 38443. The signed rc.2 runtime archive named source `849382ad417a28f3d68b051411b5ae3bab591b13`. Its guest proxy response and workload environment sources match the MVM revision used to build the workload.
