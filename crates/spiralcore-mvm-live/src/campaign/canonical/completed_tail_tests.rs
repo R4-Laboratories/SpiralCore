@@ -38,8 +38,15 @@ fn completed_ack_loss_through_actual_duplex_relay_replays_exactly_then_reopens_a
         std::process::id(),
         rand::random::<u64>()
     )));
+    // The test bridge stays live across all seven transfers, including the lost
+    // ACK. Each production call and signed envelope enforces its own deadline.
     let (caller_socket, receiver_socket, gate, relay) =
-        super::reconciliation_tests::relayed_transport(&pair, Some(2), None);
+        super::reconciliation_tests::relayed_transport(
+            &pair,
+            Some(2),
+            None,
+            Duration::from_secs(30),
+        );
     let gate_state = gate.shared();
     let close = receiver_socket.try_clone().unwrap();
     let cache_path = cache.0.clone();

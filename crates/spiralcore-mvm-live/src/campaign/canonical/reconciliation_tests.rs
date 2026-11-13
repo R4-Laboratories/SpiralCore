@@ -84,6 +84,7 @@ pub(super) fn relayed_transport(
     pair: &Pair,
     forward_withheld: Option<u64>,
     reverse_withheld: Option<u64>,
+    gate_lifetime: Duration,
 ) -> (TcpStream, std::os::unix::net::UnixStream, gate::Gate, Relay) {
     use crate::orchestrator::{RouteAdmission, relay_for_test, transport_budget};
     use std::os::unix::net::UnixStream;
@@ -121,7 +122,14 @@ pub(super) fn relayed_transport(
         worker: Some(worker),
         budget,
     };
-    let gate = gate::Gate::between(gate_a, gate_b, forward_withheld, reverse_withheld).unwrap();
+    let gate = gate::Gate::between(
+        gate_a,
+        gate_b,
+        forward_withheld,
+        reverse_withheld,
+        gate_lifetime,
+    )
+    .unwrap();
     (caller, receiver, gate, relay)
 }
 impl Workers {
@@ -267,7 +275,7 @@ fn explicit_retry_recovers_missing_call_receipt_and_reply_ack_direct() {
 ))]
 fn explicit_retry_recovers_missing_reply_through_actual_duplex_relay() {
     let pair = fault_pair();
-    let (a, b, gate, relay) = relayed_transport(&pair, None, Some(2));
+    let (a, b, gate, relay) = relayed_transport(&pair, None, Some(2), WATCHDOG);
     exercise_active_receiver_transport(
         pair,
         (a, b, gate, Some(relay), HandshakeRole::Initiator),
@@ -282,7 +290,7 @@ fn explicit_retry_recovers_missing_reply_through_actual_duplex_relay() {
 ))]
 fn explicit_retry_recovers_missing_receipt_and_ack_through_actual_duplex_relay() {
     let pair = fault_pair();
-    let (a, b, gate, relay) = relayed_transport(&pair, Some(2), Some(1));
+    let (a, b, gate, relay) = relayed_transport(&pair, Some(2), Some(1), WATCHDOG);
     exercise_active_receiver_transport(
         pair,
         (a, b, gate, Some(relay), HandshakeRole::Initiator),
@@ -297,7 +305,7 @@ fn explicit_retry_recovers_missing_receipt_and_ack_through_actual_duplex_relay()
 ))]
 fn explicit_retry_recovers_missing_call_receipt_through_actual_duplex_relay() {
     let pair = fault_pair();
-    let (a, b, gate, relay) = relayed_transport(&pair, None, Some(1));
+    let (a, b, gate, relay) = relayed_transport(&pair, None, Some(1), WATCHDOG);
     missing_call_receipt_transport(pair, (a, b, gate, Some(relay), HandshakeRole::Initiator));
 }
 

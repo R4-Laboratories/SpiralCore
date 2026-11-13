@@ -88,7 +88,7 @@ impl Gate {
     ) -> Result<(TcpStream, TcpStream, Self)> {
         let [caller, a] = tcp_pair()?;
         let [b, receiver] = tcp_pair()?;
-        let gate = Self::between(a, b, forward_withheld, reverse_withheld)?;
+        let gate = Self::between(a, b, forward_withheld, reverse_withheld, WATCHDOG)?;
         Ok((caller, receiver, gate))
     }
     pub fn between<A: GateSocket + 'static, B: GateSocket + 'static>(
@@ -96,6 +96,7 @@ impl Gate {
         mut b: B,
         forward_withheld: Option<u64>,
         reverse_withheld: Option<u64>,
+        lifetime: Duration,
     ) -> Result<Self> {
         // All fallible cloning precedes worker startup. Two retained handles
         // provide teardown authority without taking either reader mutex.
@@ -108,7 +109,7 @@ impl Gate {
         let cancel = CancellationToken::default();
         let token = cancel.clone();
         let worker = std::thread::spawn(move || {
-            let deadline = Instant::now() + WATCHDOG;
+            let deadline = Instant::now() + lifetime;
             let mut ac = StreamCounters::default();
             let mut bc = StreamCounters::default();
             live::handshake_stream(&mut a, HandshakeRole::Acceptor, &token, deadline, &mut ac)?;
