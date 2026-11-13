@@ -1,0 +1,79 @@
+{
+  "linux_strict_clippy": {
+    "original_receipt_sha256": "7e0c629036e821c94d6f9a6ce3f319370953071c64f1b1a4c76d47e7cf5caf6c",
+    "receipt": {
+      "command": [
+        "cargo",
+        "clippy",
+        "--locked",
+        "--offline",
+        "--manifest-path",
+        "crates/spiralcore-transfer/Cargo.toml",
+        "--all-targets",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "status": 0,
+      "wall_seconds": 62.31072617799509,
+      "user_seconds": 102.22915,
+      "system_seconds": 22.323459,
+      "log_sha256": "e4e27313a39ce9a619d346b57873519e71f32c7817296f7a3dbbe4252c9beb8d"
+    }
+  },
+  "isolated_benchmark_replay": {
+    "original_receipt_sha256": "23188c53b22b58fcc81f5cfcd031c211d179072fa8b4e87df349294f7167df09",
+    "receipt": {
+      "command": [
+        "/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/debug/deps/benchmark-7ffbf07e16e25441",
+        "--exact",
+        "full_one_trial_http_campaign_qualifies_exact_bytes_after_restart",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "status": 0,
+      "binary_sha256": "0516139767c3ee5da3f1efd4a5f886a5ac37dec8f89e45d2c44a508fc2617b3c",
+      "temporary_storage": "existing owned disk-backed directory, TMPDIR only change from original binary",
+      "free_bytes_before": 2054594560,
+      "free_bytes_after": 2051239936,
+      "wall_seconds": 63.001858814037405,
+      "user_seconds": 60.83527,
+      "system_seconds": 1.8578169999999998,
+      "log_sha256": "5c85db248d713af4f29bf63b6f51deebad5f9b3a75146b20a64b18b881357ec0"
+    }
+  },
+  "first_broad_failure": {
+    "original_receipt_sha256": "612d8f67993c66b0e0d9d64f895fb64fbc30dd551801995a6d4a19c4d667e1c8",
+    "receipt": [
+      {
+        "name": "all-targets-v3",
+        "command": [
+          "cargo",
+          "test",
+          "--locked",
+          "--offline",
+          "--manifest-path",
+          "crates/spiralcore-transfer/Cargo.toml",
+          "--all-targets"
+        ],
+        "source_manifest_sha256": "e5b7be7be8e6ac64fe8b3b4f2713a3a634faf1b01138bfd455fbf69c8ae687af",
+        "reference_manifest_sha256": "4da785ceac6fa98b38236f8695cff4b32846e6de324f71ccaaf3814570182b50",
+        "status": 101,
+        "wall_seconds": 105.0585219329223,
+        "user_seconds": 163.143415,
+        "system_seconds": 7.520202,
+        "free_bytes": 2054516736,
+        "log_sha256": "a9fb1dae46db1d29551face776a29f4170053b905750122bcfd98c5e353d7681"
+      }
+    ]
+  },
+  "scope": "Component Linux build/test evidence. The replay selects one exact test with one test thread and an owned disk-backed TMPDIR; it is not a transfer-latency or original errno measurement. Full admitted-TMPDIR suite rerun is pending.",
+  "original_errno": "Not retained: the test removed its receipts while unwinding. The original failure is not assigned a definitive errno.",
+  "post_failure_tmp_user_quota_observation": {
+    "used_bytes": 25437118464,
+    "soft_limit_bytes": 25538117632,
+    "hard_limit_bytes": 25538117632,
+    "remaining_bytes": 100999168,
+    "scope": "Independent read-only quota observation after the failed run; not the original failing syscall."
+  }
+}

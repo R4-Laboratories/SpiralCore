@@ -29,7 +29,7 @@ fn an_ordered_read_uses_the_current_private_file_from_header_through_eof() {
         (body.clone(), body.len() as u64 + 49)
     );
     assert_eq!(HEADER_READS.with(Cell::get), 1, "one fresh checked header");
-    let path = endpoint.path(ns, offer.object);
+    let path = endpoint.path(ns, offer.object).unwrap();
     let mut bytes = fs::read(&path).unwrap();
     *bytes.last_mut().unwrap() ^= 1;
     fs::write(&path, bytes).unwrap();
@@ -70,7 +70,7 @@ fn single_and_multiple_victim_validation_precedes_removal() {
         bytes.len()
     );
     assert_eq!(reads, 1);
-    assert!(!endpoint.path(ns, victim.id).exists());
+    assert!(!endpoint.path(ns, victim.id).unwrap().exists());
 
     endpoint.publish(&c, ns, &offer, &bytes, None).unwrap();
     let bad_charge = OrderedEviction {
@@ -89,7 +89,7 @@ fn single_and_multiple_victim_validation_precedes_removal() {
         .unwrap();
     let mut file = fs::OpenOptions::new()
         .write(true)
-        .open(endpoint.path(ns, second.object))
+        .open(endpoint.path(ns, second.object).unwrap())
         .unwrap();
     use std::io::{Seek, SeekFrom};
     file.seek(SeekFrom::Start(49)).unwrap();
@@ -105,13 +105,13 @@ fn single_and_multiple_victim_validation_precedes_removal() {
         endpoint.apply_ordered_evictions(&c, std::slice::from_ref(&poisoned)),
         Err(Error::Storage)
     );
-    assert!(endpoint.path(ns, second.object).exists());
+    assert!(endpoint.path(ns, second.object).unwrap().exists());
     assert_eq!(
         endpoint.apply_ordered_evictions(&c, &[victim, poisoned]),
         Err(Error::Storage)
     );
     assert_eq!(endpoint.read_object(&c, offer.object).unwrap(), bytes);
-    assert!(endpoint.path(ns, second.object).exists());
+    assert!(endpoint.path(ns, second.object).unwrap().exists());
 }
 
 #[test]
@@ -193,4 +193,77 @@ fn application_commit_returns_one_independent_disk_readback() {
         Err(Error::Integrity)
     ));
     assert_eq!(endpoint.read_object(&context, id), Err(Error::Storage));
+}
+
+#[cfg(any(target_os = "linux", target_os = "macos"))]
+#[test]
+fn owned_ordered_victim_requires_live_authority_and_intact_sibling() {
+    use crate::resource_profile::ResourceProfile;
+    use std::cell::Cell;
+
+    struct Gate(Arc<std::sync::atomic::AtomicBool>);
+    impl Authority for Gate {
+        fn authorize(&self, _: &Context) -> Result<()> {
+            if self.0.load(Ordering::SeqCst) {
+                Ok(())
+            } else {
+                Err(Error::Unauthorized)
+            }
+        }
+    }
+
+    let root = metadata_tests::Fixture::new();
+    let child = root.0.join("cache");
+    private_dir(&child).unwrap();
+    let c = crate::wan::context([8; 32]);
+    let ns = c.namespace().unwrap();
+    let r = ResourceProfile::SmallV1;
+    let limits = r.receiver_limits();
+    let lease = OwnedStoreLease::capture(
+        Arc::new(File::open(&root.0).unwrap()),
+        "cache".as_ref(),
+        Arc::new(File::open(&child).unwrap()),
+        OwnedStorePolicy::small_v1(&limits, 102, OwnedLaneNamespaces::One(ns)).unwrap(),
+    )
+    .unwrap();
+    let allowed = Arc::new(std::sync::atomic::AtomicBool::new(true));
+    let mut endpoint = Endpoint::open_at(&lease, limits, Gate(allowed.clone()), r).unwrap();
+    let first = Offer::cold(b"first", Mode::Raw);
+    let second = Offer::cold(b"second", Mode::Raw);
+    for (offer, body) in [
+        (&first, b"first".as_slice()),
+        (&second, b"second".as_slice()),
+    ] {
+        endpoint.publish(&c, ns, offer, body, None).unwrap();
+    }
+    assert_eq!(endpoint.ordered_cache_scan(&c).unwrap().len(), 2);
+    let victim = |offer: &Offer| OrderedEviction {
+        id: offer.object,
+        len: offer.len,
+        disk: offer.len + 49,
+    };
+    allowed.store(false, Ordering::SeqCst);
+    assert_eq!(
+        endpoint.ordered_remove_cache(&c, &victim(&first)),
+        Err(Error::Unauthorized)
+    );
+    assert_eq!(
+        endpoint.read_object(&c, first.object),
+        Err(Error::Unauthorized)
+    );
+    allowed.store(true, Ordering::SeqCst);
+    let path = child.join(hex(&ns)).join(object_name(&second.object));
+    let mut bytes = fs::read(&path).unwrap();
+    *bytes.last_mut().unwrap() ^= 1;
+    fs::write(&path, &bytes).unwrap();
+    assert_eq!(
+        endpoint.apply_ordered_evictions(&c, &[victim(&first), victim(&second)]),
+        Err(Error::Storage)
+    );
+    assert_eq!(endpoint.read_object(&c, first.object).unwrap(), b"first");
+    FULL_READS.with(|n| n.set(0));
+    endpoint.ordered_remove_cache(&c, &victim(&first)).unwrap();
+    assert_eq!(FULL_READS.with(Cell::get), 1);
+    assert_eq!(endpoint.read_object(&c, first.object), Err(Error::Unknown));
+    assert!(path.is_file());
 }

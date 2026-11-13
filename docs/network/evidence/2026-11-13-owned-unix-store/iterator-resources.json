@@ -1,0 +1,41 @@
+{
+  "conditions": [
+    "local APFS",
+    "MNT_UNION absent",
+    "same checked fsid",
+    "no telldir use",
+    "trusted private mount ownership"
+  ],
+  "darwin_two_iterator_peak_requested_bytes_including_controls": 18752,
+  "darwin_two_iterator_steady_requested_bytes_including_controls": 16704,
+  "disassembly_sha256": "138fa93154f47588ea267cbc6dd43b9f04261c21e9018449ef77fec4bbd0b832",
+  "dylib_version": [
+    1786,
+    0,
+    1
+  ],
+  "linux_backend": "rustix 1.1.6 linux_raw on 64-bit LP64",
+  "linux_two_iterator_moving_reallocation_peak_requested_bytes": 122880,
+  "malloc_good_size": {
+    "1024": 1024,
+    "160": 160,
+    "2048": 2048,
+    "8192": 8192
+  },
+  "names_metadata_allocator_and_stacks_not_included": true,
+  "os": [
+    "ProductName:\t\tmacOS",
+    "ProductVersion:\t\t27.0",
+    "BuildVersion:\t\t26A5378n"
+  ],
+  "reproduce_disassembly": "xcrun dyld_info -disassemble /usr/lib/system/libsystem_c.dylib",
+  "scope": "Exact loaded-library requested allocation sizes; not process RSS or full per-store allocation budget",
+  "source_version": [
+    1786,
+    0,
+    1,
+    0,
+    0
+  ],
+  "uuid": "9551a968-1e9b-33c2-9d58-2151018e2542"
+}
