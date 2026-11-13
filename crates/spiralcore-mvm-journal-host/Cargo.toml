@@ -10,8 +10,8 @@ publish = false
 
 [dependencies]
 spiralcore-mvm-adapter = { path = "../spiralcore-mvm-adapter", features = ["live"] }
-mvm-core = { git = "https://github.com/Casey-allard/mvm", rev = "ef1067e3bcce4f72bcd5cdacb6b914e76298ae20", default-features = false }
-mvm-contract = { git = "https://github.com/Casey-allard/mvm", rev = "ef1067e3bcce4f72bcd5cdacb6b914e76298ae20", default-features = false, features = ["protocol"] }
+mvm-core = { git = "https://github.com/Casey-allard/mvm", rev = "7b22454077530e96146d68204b711de53e3d05a8", default-features = false }
+mvm-contract = { git = "https://github.com/Casey-allard/mvm", rev = "7b22454077530e96146d68204b711de53e3d05a8", default-features = false, features = ["protocol"] }
 journal-core = { package = "mvm-core", git = "https://github.com/tinylabscom/mvm", rev = "543efc7f94aa756c09785b38bdd024b6ba8199c7", default-features = false }
 journal-contract = { package = "mvm-contract", git = "https://github.com/tinylabscom/mvm", rev = "543efc7f94aa756c09785b38bdd024b6ba8199c7", default-features = false, features = ["protocol"] }
 mvm-agentd = { git = "https://github.com/tinylabscom/mvm", rev = "543efc7f94aa756c09785b38bdd024b6ba8199c7", default-features = false }
@@ -30,3 +30,18 @@ sha2 = "0.10"
 [profile.dev]
 debug = 0
 incremental = false
+
+# Cargo reads optimization profiles from the invoking package. Preserve MVM's
+# dev/test settings for the crypto used by signed operations and their deadlines.
+[profile.dev.package.mvm-core]
+opt-level = 2
+[profile.dev.package.sha2]
+opt-level = 3
+[profile.dev.package.ring]
+opt-level = 3
+[profile.dev.package.zeroize]
+opt-level = 3
+[profile.dev.package.curve25519-dalek]
+opt-level = 3
+[profile.dev.package.ed25519-dalek]
+opt-level = 3

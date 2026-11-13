@@ -86,7 +86,7 @@ impl ManagedLimits {
             && usage.workers <= self.workers
             && usage.guests <= self.guests
     }
-    fn host() -> Self {
+    pub(crate) fn host() -> Self {
         Self {
             host_resident_bytes: 512 * MIB,
             guest_memory_bytes: 2048 * MIB,
@@ -96,7 +96,7 @@ impl ManagedLimits {
             guests: 2,
         }
     }
-    fn tenant() -> Self {
+    pub(crate) fn tenant() -> Self {
         Self {
             host_resident_bytes: 256 * MIB,
             cache_disk_bytes: 512 * MIB,
@@ -161,6 +161,8 @@ impl Default for Ledger {
 }
 struct Shared {
     authority: Arc<InstalledAuthority>,
+    host: ManagedLimits,
+    tenant: ManagedLimits,
     ledger: Mutex<Ledger>,
     fenced: AtomicBool,
     quarantined: AtomicBool,
@@ -190,10 +192,21 @@ pub struct ManagedResourceBudget {
     shared: Arc<Shared>,
 }
 impl ManagedResourceBudget {
-    pub(crate) fn new_installed(authority: Arc<InstalledAuthority>) -> Self {
+    /// Identity comparison only; equal limits/usage do not identify one owner.
+    #[cfg(feature = "canonical-host")]
+    pub(crate) fn same_pool(&self, other: &Self) -> bool {
+        Arc::ptr_eq(&self.shared, &other.shared)
+    }
+
+    pub(crate) fn new_installed(
+        authority: Arc<InstalledAuthority>,
+        (host, tenant): (ManagedLimits, ManagedLimits),
+    ) -> Self {
         Self {
             shared: Arc::new(Shared {
                 authority,
+                host,
+                tenant,
                 ledger: Mutex::new(Ledger::default()),
                 fenced: AtomicBool::new(false),
                 quarantined: AtomicBool::new(false),
@@ -201,7 +214,26 @@ impl ManagedResourceBudget {
         }
     }
     pub fn limits(&self) -> ManagedLimits {
-        ManagedLimits::host()
+        self.shared.host
+    }
+    pub(crate) fn original_vm_serial(
+        &self,
+        parent: &ManagedReservation,
+        tenant: [u8; 32],
+    ) -> Result<u64> {
+        if !Arc::ptr_eq(&self.shared, &parent.owner.shared) {
+            return Err(ManagedResourceError::InvalidClaim);
+        }
+        parent.check_current()?;
+        let ledger = self.shared.ledger()?;
+        let slot = ledger.slots[parent.owner.slot].ok_or(ManagedResourceError::State)?;
+        if slot.serial != parent.serial()
+            || slot.claim.guests != 1
+            || ledger.tenants[slot.tenant].is_none_or(|entry| entry.id != tenant)
+        {
+            return Err(ManagedResourceError::InvalidClaim);
+        }
+        Ok(slot.serial)
     }
     pub fn reserve(&self, tenant: [u8; 32], claim: ManagedClaim) -> Result<ManagedReservation> {
         claim.valid()?;
@@ -240,7 +272,7 @@ impl ManagedResourceBudget {
             .add(claim)
             .ok_or(ManagedResourceError::Overflow)?;
         let scoped = previous.add(claim).ok_or(ManagedResourceError::Overflow)?;
-        if !ManagedLimits::host().admits(host) || !ManagedLimits::tenant().admits(scoped) {
+        if !self.shared.host.admits(host) || !self.shared.tenant.admits(scoped) {
             return Err(ManagedResourceError::Full);
         }
         let serial = ledger.next;
@@ -270,6 +302,56 @@ impl ManagedResourceBudget {
             }),
         })
     }
+    /// Compare every live ledger slot, its tenant and every charged dimension to
+    /// the original reservations independently retained by the sealed inventories.
+    #[cfg(feature = "canonical-host")]
+    pub(crate) fn verify_only_retained(&self, retained: &[&ManagedReservation]) -> Result<()> {
+        let ledger = self.shared.ledger()?;
+        if self.shared.fenced.load(Ordering::Acquire)
+            || ledger.slots.iter().flatten().count() != retained.len()
+        {
+            return Err(ManagedResourceError::State);
+        }
+        let mut total = ManagedClaim::default();
+        let mut tenants = [ManagedClaim::default(); TENANTS];
+        let mut seen = [false; SLOTS];
+        for held in retained {
+            let owner = &held.owner;
+            let slot = ledger
+                .slots
+                .get(owner.slot)
+                .copied()
+                .flatten()
+                .ok_or(ManagedResourceError::State)?;
+            if !Arc::ptr_eq(&owner.shared, &self.shared)
+                || slot.serial != owner.serial
+                || seen[owner.slot]
+            {
+                return Err(ManagedResourceError::State);
+            }
+            seen[owner.slot] = true;
+            let used = tenants
+                .get_mut(slot.tenant)
+                .ok_or(ManagedResourceError::State)?;
+            *used = used.add(slot.claim).ok_or(ManagedResourceError::Overflow)?;
+            total = total
+                .add(slot.claim)
+                .ok_or(ManagedResourceError::Overflow)?;
+        }
+        if total != ledger.usage
+            || ledger
+                .tenants
+                .iter()
+                .zip(tenants)
+                .any(|(actual, expected)| {
+                    actual.map(|tenant| tenant.usage).unwrap_or_default() != expected
+                })
+        {
+            return Err(ManagedResourceError::State);
+        }
+        Ok(())
+    }
+
     pub fn snapshot(&self) -> Result<ManagedSnapshot> {
         let ledger = self.shared.ledger()?;
         if self.shared.fenced.load(Ordering::Acquire) {
@@ -333,6 +415,41 @@ pub struct ManagedReservation {
     owner: Arc<Reservation>,
 }
 impl ManagedReservation {
+    /// Identity within this original pool; never a transferable capability.
+    pub fn serial(&self) -> u64 {
+        self.owner.serial
+    }
+    /// Existing ownership only. Normal admission close does not revoke cleanup;
+    /// a poisoned/fenced or inconsistent original ledger still refuses it.
+    #[cfg(any(feature = "canonical-host", test))]
+    pub(crate) fn check_retained_identity(&self) -> Result<()> {
+        let shared = &self.owner.shared;
+        let ledger = shared.ledger()?;
+        if shared.fenced.load(Ordering::Acquire) {
+            return Err(ManagedResourceError::Fenced);
+        }
+        let original = ledger
+            .slots
+            .get(self.owner.slot)
+            .copied()
+            .flatten()
+            .filter(|slot| slot.serial == self.owner.serial);
+        let valid = original.is_some_and(|slot| {
+            ledger
+                .tenants
+                .get(slot.tenant)
+                .copied()
+                .flatten()
+                .is_some_and(|tenant| {
+                    ledger.usage.sub(slot.claim).is_some() && tenant.usage.sub(slot.claim).is_some()
+                })
+        });
+        if !valid {
+            shared.fence();
+            return Err(ManagedResourceError::State);
+        }
+        Ok(())
+    }
     pub fn check_current(&self) -> Result<()> {
         if !self.owner.shared.open() {
             return Err(ManagedResourceError::Fenced);
@@ -347,7 +464,7 @@ impl ManagedReservation {
             .get(self.owner.slot)
             .copied()
             .flatten()
-            .filter(|s| s.serial == self.owner.serial);
+            .filter(|s| s.serial == self.serial());
         if current_slot.is_none_or(|s| ledger.tenants.get(s.tenant).is_none_or(Option::is_none)) {
             self.owner.shared.fence();
             return Err(ManagedResourceError::State);
@@ -408,7 +525,101 @@ mod tests {
         }
     }
     #[test]
+    fn retained_identity_allows_normal_close_without_reopening_admission() {
+        mvm_core::util::test_env::isolated_lock_probe(probe_normal_close);
+    }
+
+    fn probe_normal_close() {
+        let f = Fixture::new();
+        let (mut owner, _) = f.owner();
+        let pool = owner.managed_resources().clone();
+        let lease = pool
+            .reserve(
+                [7; 32],
+                ManagedClaim {
+                    host_metadata_bytes: 4096,
+                    ..Default::default()
+                },
+            )
+            .unwrap();
+        owner.close_admission();
+        assert!(lease.check_current().is_err());
+        lease.check_retained_identity().unwrap();
+        assert!(
+            pool.reserve(
+                [7; 32],
+                ManagedClaim {
+                    host_metadata_bytes: 1,
+                    ..Default::default()
+                }
+            )
+            .is_err()
+        );
+        assert_eq!(pool.snapshot().unwrap().active_reservations, 1);
+        drop(lease);
+        owner.try_finish().unwrap();
+    }
+
+    #[test]
+    fn retained_identity_refuses_accounting_faults_before_cleanup_completion() {
+        mvm_core::util::test_env::isolated_lock_probe(probe_retained_identity_faults);
+    }
+
+    fn probe_retained_identity_faults() {
+        for fault in 0..6 {
+            let f = Fixture::new();
+            let (mut owner, _) = f.owner();
+            let pool = owner.managed_resources().clone();
+            let lease = pool
+                .reserve(
+                    [8; 32],
+                    ManagedClaim {
+                        host_metadata_bytes: 4096,
+                        ..Default::default()
+                    },
+                )
+                .unwrap();
+            let index = lease.owner.slot;
+            if fault == 5 {
+                let shared = pool.shared.clone();
+                assert!(
+                    std::thread::spawn(move || {
+                        let _guard = shared.ledger.lock().unwrap();
+                        panic!("owned retained identity poison fixture");
+                    })
+                    .join()
+                    .is_err()
+                );
+            } else {
+                let mut ledger = pool.shared.ledger.lock().unwrap();
+                match fault {
+                    0 => ledger.slots[index].as_mut().unwrap().serial += 1,
+                    1 => ledger.slots[index].as_mut().unwrap().tenant = TENANTS,
+                    2 => ledger.tenants[0] = None,
+                    3 => ledger.usage.host_metadata_bytes = 0,
+                    4 => {
+                        ledger.tenants[0]
+                            .as_mut()
+                            .unwrap()
+                            .usage
+                            .host_metadata_bytes = 0
+                    }
+                    _ => unreachable!(),
+                }
+            }
+            assert!(lease.check_retained_identity().is_err());
+            assert!(pool.snapshot().is_err());
+            owner.close_admission();
+            assert!(owner.try_finish().is_err());
+        }
+    }
+
+    #[test]
     fn accounting_corruption_never_panics_refunds_or_releases_exclusion() {
+        mvm_core::util::test_env::isolated_lock_probe(probe_accounting_corruption);
+    }
+
+    fn probe_accounting_corruption() {
         for fault in 0..5 {
             let f = Fixture::new();
             let (mut owner, key) = f.owner();

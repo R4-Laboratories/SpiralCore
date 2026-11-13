@@ -1,6 +1,6 @@
 # Networking delivery status
 
-Updated **2026-11-12**. Native Linux x86-64/Firecracker and Apple Silicon/HVF now have clean and lost-first-receipt results on the same corrected MVM host source. Across four single-host trials, B verified, reopened and acknowledged every original byte. In the Linux clean run the relay carried 5,808 B toward B and 1,188 B back, with verified receipt in 105.627 ms and confirmed readback in 0.440133 s. The Linux retry recovered the identical signed receipt in 161.334 ms and completed application readback and the empty probe in 1.361047 s. All original VMMs stopped and all original mailbox helpers exited unassisted. [Linux measurements](evidence/2026-11-12-paired-mailbox/paired-durable-native/linux-823.md) · [Apple measurements](evidence/2026-11-12-paired-mailbox/paired-durable-native/arm64-hvf.md) · [Earlier Linux clean run](evidence/2026-11-12-paired-mailbox/paired-durable-native/graceful.md) · [WAN delivery](https://github.com/R4-Laboratories/SpiralCore/issues/47) · [Platform matrix](https://github.com/R4-Laboratories/SpiralCore/issues/46).
+Updated **2026-11-13**. Native Linux x86-64/Firecracker and Apple Silicon/HVF now have clean and lost-first-receipt results on the same corrected MVM host source. Across four single-host trials, B verified, reopened and acknowledged every original byte. In the Linux clean run the relay carried 5,808 B toward B and 1,188 B back, with verified receipt in 105.627 ms and confirmed readback in 0.440133 s. The Linux retry recovered the identical signed receipt in 161.334 ms and completed application readback and the empty probe in 1.361047 s. All original VMMs stopped and all original mailbox helpers exited unassisted. [Linux measurements](evidence/2026-11-12-paired-mailbox/paired-durable-native/linux-823.md) · [Apple measurements](evidence/2026-11-12-paired-mailbox/paired-durable-native/arm64-hvf.md) · [Earlier Linux clean run](evidence/2026-11-12-paired-mailbox/paired-durable-native/graceful.md) · [WAN delivery](https://github.com/R4-Laboratories/SpiralCore/issues/47) · [Platform matrix](https://github.com/R4-Laboratories/SpiralCore/issues/46).
 
 On Linux, two original Firecracker guests recovered ordinal 1 after the controller replaced both mailbox helpers. A recovered the original signed receipt. B read and acknowledged 257 exact bytes, and A settled the ordinal in 1.271 s from staging. Both replacement helpers stopped cleanly. The interrupted helpers yielded partial port-5257 measurements. [Original row, four transcripts and timings](evidence/2026-11-12-paired-mailbox/sender-ordinal/native-helper-restart/README.md).
 
@@ -158,6 +158,8 @@ The verified application readback and final TLS shutdown changes merged in PR #2
 
 ## Active upstream MVM coordination
 
+As of **2026-11-13**, the published host integration is MVM fork [`7b224540`](https://github.com/Casey-allard/mvm/commit/7b22454077530e96146d68204b711de53e3d05a8). It incorporates upstream through `c0f15d82` and Ari's public local-durable PR #5377 through `f7536f65`. The public installed FlowMux result above qualifies its recorded host/guest combination. A newer upstream refresh found main `87010fc3` and mailbox PR head `2e5ec98d`; those later changes are reviewed but are not part of that native result. Ari's journal/signer/service ownership remains intact. [Refresh and integration consequences](https://github.com/R4-Laboratories/SpiralCore/issues/42#issuecomment-6849111548)
+
 The verified-admission/Reply-authority API contribution is open upstream as draft
 [MVM #5328](https://github.com/tinylabscom/mvm/pull/5328), with verified head
 `78d30afb8c2d988657951933b01dad2945b7328a`. Its implemented admission capsule
@@ -173,9 +175,8 @@ is [accepted by this contribution](https://github.com/tinylabscom/mvm/pull/5328#
 the separate guest Receive/ACK owner retains hostd mailbox process/service/reader
 and agentd guest integration; the journal owner retains the existing core journal
 and focused tests/docs. We retain the four #5328 API files and disjoint original-child/
-lifecycle work. This supersedes the earlier service-file assignment. The private
-guest/journal source still requires an approved readable patch and explicit handoff
-before overlapping edits or integration qualification. The [journal handoff proposal](../specs/2026-11-10-canonical-mailbox-journal-handoff.md)
+lifecycle work. This supersedes the earlier service-file assignment. The previously private
+guest/journal stack is now public in [MVM #5377](https://github.com/tinylabscom/mvm/pull/5377); overlapping edits still require owner coordination. The [journal handoff proposal](../specs/2026-11-10-canonical-mailbox-journal-handoff.md)
 records this split and the accepted versioned history-key lookup contract, including
 the distinct envelope/history keys and the remaining key-custody trust-boundary
 decision. The original-child broker work continues independently. Durable acceptance
@@ -184,8 +185,8 @@ independent anchor commit, recoverable history-key custody and qualified service
 integration; the capsule itself establishes none of those later decisions.
 
 A narrow SDK fix is submitted separately as
-[MVM #5336](https://github.com/tinylabscom/mvm/pull/5336), head
-`18b58e1ad2262a1c0bfa23d51f8e5679d3376f60`. A persistent request dropped its
+[MVM #5336](https://github.com/tinylabscom/mvm/pull/5336), now at
+`9105b02b4228a744c23b9742890c39db345f96cd` after merging upstream `c0f15d82` without rewriting its original source history. Its [CI run](https://github.com/tinylabscom/mvm/actions/runs/43383672321) requires maintainer approval and has executed no checks. The following regression/native measurements belong to the original `18b58e1a` head. A persistent request dropped its
 mailbox grant before canonical admission. The fix forwards it for that start
 while ordinary restart remains ungranted. The [recorded regression qualification](evidence/2026-11-11-mvm-sdk-mailbox/README.md)
 contains actual RED/GREEN, 55 passing launch-module tests, overlapping 31-test
@@ -198,7 +199,7 @@ failed: Stop/remove returned success but the original helper was still a zombie.
 missing lifetime owner/collected exit. This is one local raw-mailbox case,
 without wire counts, guest CPU, compression/zstd comparison or WAN qualification.
 
-The proposed reliable local-service contract and bounded frame codec are public
+An earlier proposed reliable local-service contract and bounded frame codec are public
 on the [development branch](https://github.com/Casey-allard/mvm/tree/89c24132851b7b7e78eb2ec4e45a3153f2718247).
 It incorporates the SDK grant fix and upstream through `46d50a5f`; runtime
 activation remains unavailable, and qualification of the composed source is
@@ -394,7 +395,7 @@ CPU, elapsed time, source pins and failed runs.
 
 ## Current installed FlowMux qualification
 
-One x86_64 Linux Firecracker guest executed its signed entrypoint, observed the denied CONNECT, and verified the permitted 5,804-byte echo in each direction through the original installed FlowMux endpoint. The guest echo phase took 179.469 ms wall and 2.770 ms process CPU. The peer counted 3,661 TLS bytes received and 3,234 sent. The original SDK and tenant retired, with four retained resource reservations verified. This host-local source checkpoint leaves cross-host, WAN, fleet capacity and final package qualification open. [Trial 9 measurements and acceptance boundaries](evidence/2026-11-12-installed-flowmux-startup/verified-echo.md)
+The public installed FlowMux runner completed a fresh signed invocation on Linux x86-64/Firecracker. At final source `a7eea837`, the guest observed the refused destination and recovered the exact 5,804-byte echo in 199.140 ms with 4.863 ms guest process CPU. The peer counted 3,661 incoming and 3,234 outgoing TLS bytes. Preparation through original-owner retirement took 15.090 s; the original guest and workers retired and four retained reservation identities were verified. The locked consumer builds use public MVM host source `7b224540`, paired with a separately pinned official rc.2 guest runtime. Both Linux feature configurations passed strict Clippy; six public-package tests and 160 default-parallel canonical controller library tests passed. Signed host audit decisions are bound to the original session/workload, while their plan/image fields remain unbound. Cross-host WAN, concurrent capacity, complete storage reclamation and final package acceptance remain open. [Final source, CPU, bytes and reproduction](evidence/2026-11-12-installed-flowmux-startup/public-final-run.md) · [First public run and retained failures](evidence/2026-11-12-installed-flowmux-startup/public-run.md) · [Earlier trial 9](evidence/2026-11-12-installed-flowmux-startup/verified-echo.md)
 
 The [MVM contribution fork checkpoint](https://github.com/Casey-allard/mvm/commit/9c2361423c86082a48d23e3f5651cb3ff0881e3f)
 includes the original host-agent registration and signer check. The

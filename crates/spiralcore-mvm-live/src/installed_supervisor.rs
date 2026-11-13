@@ -4,8 +4,8 @@ use crate::{
     host_budget::{
         HostTransportBudget, TransportBudgetConfig, TransportBudgetError, TransportLimits,
     },
-    installed_owner::{Epoch, InstallationOwner, OwnerError},
-    installed_resources::{ManagedResourceBudget, ManagedResourceError},
+    installed_owner::{Epoch, HolderHandoff, InstallationBinding, InstallationOwner, OwnerError},
+    installed_resources::{ManagedLimits, ManagedResourceBudget, ManagedResourceError},
 };
 use sha2::{Digest, Sha256};
 use std::{
@@ -20,17 +20,140 @@ use std::{
 };
 
 pub struct InstalledConfig {
-    _private: (),
+    canonical: bool,
+    paired_endpoints: bool,
+    funded_limits: Option<(ManagedLimits, ManagedLimits)>,
 }
 impl InstalledConfig {
     pub fn native_profile() -> Self {
-        Self { _private: () }
+        Self {
+            canonical: false,
+            paired_endpoints: false,
+            funded_limits: None,
+        }
+    }
+    /// Fresh provisioning for the canonical resource/disk contract. The stamp
+    /// identifies included model definitions, not an executed child or RSS.
+    pub fn canonical_native_profile() -> Self {
+        Self {
+            canonical: true,
+            paired_endpoints: false,
+            funded_limits: None,
+        }
+    }
+    /// Fresh, separate operator profile for two six-worker endpoints plus their
+    /// one shared ten-thread tenant daemon/signer and two original FC exit-capture workers.
+    pub fn two_endpoint_witness_profile() -> Self {
+        Self {
+            canonical: true,
+            paired_endpoints: true,
+            funded_limits: None,
+        }
+    }
+    /// Provision a fresh installation with operator-declared byte ceilings.
+    /// Thread, guest and transport concurrency remain the original pair profile.
+    pub fn with_funded_pair_limits(host: ManagedLimits, tenant: ManagedLimits) -> Result<Self> {
+        let profile = Self::two_endpoint_witness_profile();
+        let (original_host, original_tenant) = profile.managed_limits();
+        for (provisioned, original) in [(host, original_host), (tenant, original_tenant)] {
+            if provisioned.guests != original.guests
+                || provisioned.workers != original.workers
+                || provisioned.guest_memory_bytes != original.guest_memory_bytes
+            {
+                return Err(SupervisorError::Profile);
+            }
+        }
+        for (outer, inner) in [
+            (host.host_resident_bytes, tenant.host_resident_bytes),
+            (host.cache_disk_bytes, tenant.cache_disk_bytes),
+            (host.staging_disk_bytes, tenant.staging_disk_bytes),
+        ] {
+            if inner == 0 || inner > outer {
+                return Err(SupervisorError::Profile);
+            }
+        }
+        Ok(Self {
+            funded_limits: Some((host, tenant)),
+            ..profile
+        })
+    }
+
+    pub fn managed_limits(&self) -> (ManagedLimits, ManagedLimits) {
+        if let Some(limits) = self.funded_limits {
+            return limits;
+        }
+        let mut host = ManagedLimits::host();
+        let mut tenant = ManagedLimits::tenant();
+        if self.paired_endpoints {
+            // These byte ceilings apply to the aggregate. Actual process
+            // reservations may exhaust them before both endpoints fit.
+            host.workers = 10 + 2 * (6 + 1);
+            tenant.workers = host.workers;
+            tenant.host_resident_bytes = host.host_resident_bytes;
+        }
+        (host, tenant)
     }
     pub fn profile_hash(&self) -> [u8; 32] {
         let mut digest = Sha256::new();
         digest.update(b"spiralcore/installed-profile/v1\0");
         for value in [2_u64, 2, 524_288, 1, 262_144, 2, 1, 1024] {
             digest.update(value.to_be_bytes());
+        }
+        if self.canonical {
+            digest.update(b"spiralcore/canonical-installed-model-definition/v2\0");
+            for tag in [
+                b"endpoint-bootstrap-v1".as_slice(),
+                b"owned-helper-model-v1",
+                b"disposable-inventory-v1",
+                b"retained-telemetry-catalog-v1",
+                b"native-fc-hvf-role-v1",
+            ] {
+                digest.update((tag.len() as u64).to_be_bytes());
+                digest.update(tag);
+            }
+            digest.update(usize::BITS.to_be_bytes());
+            digest.update(std::env::consts::OS.as_bytes());
+            digest.update(std::env::consts::ARCH.as_bytes());
+            // These are compiled-in definition stamps. Final activation also
+            // requires the actual one-Core/MVM build closure and child checks.
+            for definition in [
+                include_bytes!("../Cargo.toml").as_slice(),
+                include_bytes!("installed_resources.rs").as_slice(),
+                include_bytes!("installed_owner/endpoint_disks.rs").as_slice(),
+                include_bytes!("installed_owner/retained_telemetry.rs").as_slice(),
+                include_bytes!("installed_retained.rs").as_slice(),
+                include_bytes!("../../spiralcore-transfer/Cargo.toml").as_slice(),
+                include_bytes!("../../spiralcore-transfer/Cargo.lock").as_slice(),
+                include_bytes!("../../spiralcore-transfer/src/resource_profile.rs").as_slice(),
+                include_bytes!("../../spiralcore-transfer/src/schema.rs").as_slice(),
+                include_bytes!("../../spiralcore-transfer/src/schema_zstd.rs").as_slice(),
+                include_bytes!("../../spiralcore-transfer/src/session.rs").as_slice(),
+                include_bytes!("../../spiralcore-transfer/src/endpoint.rs").as_slice(),
+                include_bytes!("../../spiralcore-transfer/src/v1/ordered.rs").as_slice(),
+            ] {
+                digest.update((definition.len() as u64).to_be_bytes());
+                digest.update(definition);
+            }
+        }
+        if self.paired_endpoints {
+            if self.funded_limits.is_some() {
+                digest.update(b"spiralcore/operator-funded-endpoint-pair/v1\0");
+            } else {
+                digest.update(b"spiralcore/two-endpoint-witness/v2\0");
+            }
+            let (host, tenant) = self.managed_limits();
+            for limits in [host, tenant] {
+                for bound in [
+                    limits.host_resident_bytes,
+                    limits.guest_memory_bytes,
+                    limits.cache_disk_bytes,
+                    limits.staging_disk_bytes,
+                    limits.workers,
+                    limits.guests,
+                ] {
+                    digest.update(bound.to_be_bytes());
+                }
+            }
         }
         digest.finalize().into()
     }
@@ -65,6 +188,11 @@ impl fmt::Display for SupervisorError {
     }
 }
 impl std::error::Error for SupervisorError {}
+impl From<io::Error> for SupervisorError {
+    fn from(error: io::Error) -> Self {
+        Self::Io(error)
+    }
+}
 impl From<OwnerError> for SupervisorError {
     fn from(error: OwnerError) -> Self {
         Self::Owner(error)
@@ -87,8 +215,19 @@ pub(crate) struct InstalledAuthority {
     epoch: Epoch,
     open: AtomicBool,
     workers: Mutex<WorkerLedger>,
+    canonical: bool,
 }
 impl InstalledAuthority {
+    pub(crate) fn with_disk_owner<T>(
+        &self,
+        operation: impl FnOnce(&mut InstallationOwner, Epoch) -> std::result::Result<T, OwnerError>,
+    ) -> Result<T> {
+        let mut owner = self.owner.lock().map_err(|_| {
+            self.close_admission();
+            SupervisorError::State
+        })?;
+        operation(&mut owner, self.epoch).map_err(Into::into)
+    }
     pub(crate) fn admission_open(&self) -> bool {
         self.open.load(Ordering::Acquire)
     }
@@ -105,6 +244,75 @@ impl InstalledAuthority {
             self.close_admission();
             SupervisorError::State
         })
+    }
+}
+
+/// Original descriptor custody for the installed parent's native bridge.
+/// This grants no VM or service permission and retains no idle SH descriptor.
+pub struct InstalledNativeIssuer {
+    authority: Arc<InstalledAuthority>,
+}
+impl InstalledNativeIssuer {
+    #[cfg(feature = "canonical-host")]
+    pub(crate) fn close_admission(&self) {
+        self.authority.close_admission();
+    }
+
+    #[cfg(feature = "canonical-host")]
+    pub(crate) fn portable_debt(
+        &self,
+        slot: usize,
+        commitment: &[u8; 32],
+        original: Option<&std::fs::File>,
+    ) -> Result<std::fs::File> {
+        self.authority
+            .with_disk_owner(|owner, epoch| owner.portable_debt(epoch, slot, commitment, original))
+    }
+    #[cfg(feature = "canonical-host")]
+    pub(crate) fn record_audit_debt(
+        &self,
+        index: usize,
+        grant: u64,
+        scope: [u8; 32],
+        cap: u64,
+    ) -> Result<std::fs::File> {
+        self.authority.with_disk_owner(|owner, epoch| {
+            owner.record_audit_debt(epoch, index, grant, scope, cap)
+        })
+    }
+    #[cfg(feature = "canonical-host")]
+    pub(crate) fn archive_audit(
+        &self,
+        active: usize,
+        archive: usize,
+        original: &std::fs::File,
+        terminal: &[u8],
+    ) -> Result<()> {
+        self.authority.with_disk_owner(|owner, epoch| {
+            owner.archive_audit(epoch, active, archive, original, terminal)
+        })
+    }
+    pub fn prepare(&self) -> Result<(InstallationBinding, HolderHandoff)> {
+        if !self.authority.admission_open() {
+            return Err(SupervisorError::State);
+        }
+        let result = (|| {
+            let owner = self
+                .authority
+                .owner
+                .lock()
+                .map_err(|_| SupervisorError::State)?;
+            let binding = owner.active_binding(self.authority.epoch)?;
+            let handoff = owner.prepare_original_handoff(self.authority.epoch)?;
+            if !self.authority.admission_open() {
+                return Err(SupervisorError::State);
+            }
+            Ok((binding, handoff))
+        })();
+        if result.is_err() {
+            self.authority.close_admission();
+        }
+        result
     }
 }
 
@@ -161,13 +369,70 @@ enum Phase {
 }
 
 pub struct InstalledSupervisor {
+    #[cfg(feature = "canonical-host")]
+    parent_controller: Mutex<std::sync::Weak<()>>,
+    #[cfg(feature = "canonical-host")]
+    pub(crate) audit_inventory: Arc<Mutex<crate::installed_parent::audit_archive::Inventory>>,
+    #[cfg(feature = "canonical-host")]
+    pub(crate) portable_inventory: Arc<Mutex<crate::installed_parent::startup::Inventory>>,
     authority: Arc<InstalledAuthority>,
     budget: HostTransportBudget,
     resources: ManagedResourceBudget,
+    #[cfg(feature = "canonical-host")]
+    retained: Mutex<Option<Arc<crate::installed_retained::RetainedTelemetryInventory>>>,
     phase: Phase,
     session_started: bool,
 }
 impl InstalledSupervisor {
+    #[cfg(feature = "canonical-host")]
+    pub(crate) fn claim_parent_controller(&self) -> Result<Arc<()>> {
+        let mut held = self
+            .parent_controller
+            .lock()
+            .map_err(|_| SupervisorError::State)?;
+        if held.upgrade().is_some() {
+            return Err(SupervisorError::Busy);
+        }
+        let token = Arc::new(());
+        *held = Arc::downgrade(&token);
+        Ok(token)
+    }
+    pub(crate) fn require_canonical_profile(&self) -> Result<()> {
+        if self.authority.canonical {
+            Ok(())
+        } else {
+            Err(SupervisorError::Profile)
+        }
+    }
+    pub(crate) fn disk_authority(&self) -> Arc<InstalledAuthority> {
+        self.authority.clone()
+    }
+    pub fn endpoint_disk_inventory(&self) -> Result<crate::installed_disk::EndpointDiskInventory> {
+        crate::installed_disk::EndpointDiskInventory::new(self)
+    }
+    #[cfg(feature = "canonical-host")]
+    pub(crate) fn retained_telemetry_inventory(
+        &self,
+    ) -> Result<Arc<crate::installed_retained::RetainedTelemetryInventory>> {
+        let mut original = self.retained.lock().map_err(|_| SupervisorError::State)?;
+        if original.is_none() {
+            *original = Some(crate::installed_retained::RetainedTelemetryInventory::new(
+                self,
+            )?);
+        }
+        original.as_ref().cloned().ok_or(SupervisorError::State)
+    }
+    #[cfg(feature = "canonical-host")]
+    pub(crate) fn existing_retained_telemetry(
+        &self,
+    ) -> Result<Arc<crate::installed_retained::RetainedTelemetryInventory>> {
+        self.retained
+            .lock()
+            .map_err(|_| SupervisorError::State)?
+            .as_ref()
+            .cloned()
+            .ok_or(SupervisorError::State)
+    }
     pub fn start(mut owner: InstallationOwner, config: InstalledConfig) -> Result<Self> {
         if owner.profile_hash()? != config.profile_hash() {
             return Err(SupervisorError::Profile);
@@ -178,13 +443,23 @@ impl InstalledSupervisor {
             epoch,
             open: AtomicBool::new(true),
             workers: Mutex::new(WorkerLedger::default()),
+            canonical: config.canonical,
         });
         let budget = HostTransportBudget::new_installed(config.transport(), authority.clone())?;
-        let resources = ManagedResourceBudget::new_installed(authority.clone());
+        let resources =
+            ManagedResourceBudget::new_installed(authority.clone(), config.managed_limits());
         Ok(Self {
+            #[cfg(feature = "canonical-host")]
+            parent_controller: Mutex::default(),
+            #[cfg(feature = "canonical-host")]
+            audit_inventory: Arc::default(),
+            #[cfg(feature = "canonical-host")]
+            portable_inventory: Arc::default(),
             authority,
             budget,
             resources,
+            #[cfg(feature = "canonical-host")]
+            retained: Mutex::new(None),
             phase: Phase::Open,
             session_started: false,
         })
@@ -194,6 +469,11 @@ impl InstalledSupervisor {
     }
     pub fn managed_resources(&self) -> &ManagedResourceBudget {
         &self.resources
+    }
+    pub fn native_issuer(&self) -> InstalledNativeIssuer {
+        InstalledNativeIssuer {
+            authority: self.authority.clone(),
+        }
     }
     pub(crate) fn claim_session(&mut self) -> Result<()> {
         if self.phase != Phase::Open || !self.authority.admission_open() || self.session_started {
@@ -416,6 +696,21 @@ impl InstalledSupervisor {
         if snapshot.usage != TransportLimits::default() {
             return Err(SupervisorError::Busy);
         }
+        #[cfg(feature = "canonical-host")]
+        {
+            let retained = self
+                .retained
+                .get_mut()
+                .map_err(|_| SupervisorError::State)?;
+            if retained
+                .as_ref()
+                .is_some_and(|inventory| !inventory.is_empty().unwrap_or(false))
+            {
+                return Err(SupervisorError::Busy);
+            }
+            // Other actual aliases keep the original bookkeeping charged.
+            retained.take();
+        }
         if !self.resources.ensure_drained()? {
             return Err(SupervisorError::Busy);
         }
@@ -542,3 +837,7 @@ mod spawn_tests;
 #[cfg(test)]
 #[path = "installed_supervisor/drain_tests.rs"]
 mod drain_tests;
+
+#[cfg(all(test, feature = "canonical-host"))]
+#[path = "installed_supervisor/retained_tests.rs"]
+mod retained_tests;

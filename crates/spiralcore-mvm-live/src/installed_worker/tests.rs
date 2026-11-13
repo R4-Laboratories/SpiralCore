@@ -130,6 +130,10 @@ impl Drop for Target {
 
 #[test]
 fn five_records_authorize_exact_input_and_retain_actual_holder_until_context_exit() {
+    mvm_core::util::test_env::isolated_lock_probe(probe_holder_until_exit);
+}
+
+fn probe_holder_until_exit() {
     let mut case = Case::new();
     let (mut parent, endpoint) = ParentControl::pair().unwrap();
     let (stdin, mut input) = UnixStream::pair().unwrap();
@@ -150,6 +154,12 @@ fn five_records_authorize_exact_input_and_retain_actual_holder_until_context_exi
 
 #[test]
 fn go_rejects_changed_original_facts_and_child_cannot_boot_after_refusal() {
+    mvm_core::util::test_env::isolated_lock_probe(
+        probe_go_rejects_changed_original_facts_and_child_cannot_boot_after_refusal,
+    );
+}
+
+fn probe_go_rejects_changed_original_facts_and_child_cannot_boot_after_refusal() {
     for change in 0..8 {
         let case = Case::new();
         let (mut parent, endpoint) = ParentControl::pair().unwrap();
@@ -178,6 +188,12 @@ fn go_rejects_changed_original_facts_and_child_cannot_boot_after_refusal() {
 
 #[test]
 fn invalid_profile_role_and_closed_parent_refuse_before_child_activation() {
+    mvm_core::util::test_env::isolated_lock_probe(
+        probe_invalid_profile_role_and_closed_parent_refuse_before_child_activation,
+    );
+}
+
+fn probe_invalid_profile_role_and_closed_parent_refuse_before_child_activation() {
     for change in 0..3 {
         let case = Case::new();
         let (mut parent, endpoint) = ParentControl::pair().unwrap();
@@ -201,6 +217,12 @@ fn invalid_profile_role_and_closed_parent_refuse_before_child_activation() {
 
 #[test]
 fn oversize_and_partial_records_refuse_without_refreshing_original_deadline() {
+    mvm_core::util::test_env::isolated_lock_probe(
+        probe_oversize_and_partial_records_refuse_without_refreshing_original_deadline,
+    );
+}
+
+fn probe_oversize_and_partial_records_refuse_without_refreshing_original_deadline() {
     let (mut parent, mut endpoint) = ParentControl::pair().unwrap();
     endpoint.write_all(&1025_u32.to_be_bytes()).unwrap();
     assert!(parent.receive_challenge().is_err());
@@ -216,6 +238,12 @@ fn oversize_and_partial_records_refuse_without_refreshing_original_deadline() {
 
 #[test]
 fn child_rejects_wrong_nonce_and_valid_but_wrong_expected_role() {
+    mvm_core::util::test_env::isolated_lock_probe(
+        probe_child_rejects_wrong_nonce_and_valid_but_wrong_expected_role,
+    );
+}
+
+fn probe_child_rejects_wrong_nonce_and_valid_but_wrong_expected_role() {
     for wrong_nonce in [true, false] {
         let case = Case::new();
         let (mut parent, endpoint) = ParentControl::pair().unwrap();
@@ -241,6 +269,10 @@ fn child_rejects_wrong_nonce_and_valid_but_wrong_expected_role() {
 
 #[test]
 fn child_rejects_a_forged_go_nonce_epoch_role_or_root_spelling() {
+    mvm_core::util::test_env::isolated_lock_probe(probe_forged_go);
+}
+
+fn probe_forged_go() {
     for change in 0..4 {
         let case = Case::new();
         let (mut parent, endpoint) = ParentControl::pair().unwrap();
@@ -306,6 +338,10 @@ fn bounded_write_deadline_keeps_partial_progress_without_restart() {
 
 #[test]
 fn actual_controller_death_before_go_refuses_and_worker_lifetime_exits() {
+    mvm_core::util::test_env::isolated_lock_probe(probe_pre_go_controller_exit);
+}
+
+fn probe_pre_go_controller_exit() {
     let mut case = Case::new();
     let exact = format!(
         "{}::child_entry",

@@ -219,6 +219,12 @@ struct AbaObservation {
 
 #[test]
 fn holders_aba_must_reject_the_actual_wrong_fd_and_never_retire_live_original_holders() {
+    mvm_core::util::test_env::isolated_lock_probe(
+        probe_holders_aba_must_reject_the_actual_wrong_fd_and_never_retire_live_original_holders,
+    );
+}
+
+fn probe_holders_aba_must_reject_the_actual_wrong_fd_and_never_retire_live_original_holders() {
     let mut observations = Vec::new();
     for operation in ["acquire-sh", "finish-ex", "reconcile-ex"] {
         let fixture = Fixture::new();
@@ -277,6 +283,12 @@ struct SyncObservation {
 
 #[test]
 fn postrename_directory_sync_failure_must_survive_owner_drop_as_a_durable_fence() {
+    mvm_core::util::test_env::isolated_lock_probe(
+        probe_postrename_directory_sync_failure_must_survive_owner_drop_as_a_durable_fence,
+    );
+}
+
+fn probe_postrename_directory_sync_failure_must_survive_owner_drop_as_a_durable_fence() {
     let mut observations = Vec::new();
     for operation in ["finish", "reconcile"] {
         let fixture = Fixture::new();
@@ -327,6 +339,10 @@ fn postrename_directory_sync_failure_must_survive_owner_drop_as_a_durable_fence(
 
 #[test]
 fn failed_initial_intent_barriers_preserve_original_state_and_fence_reopen() {
+    mvm_core::util::test_env::isolated_lock_probe(probe_initial_intent_barriers);
+}
+
+fn probe_initial_intent_barriers() {
     for mode in [
         Mode::IntentFileSyncFailure,
         Mode::IntentDirectorySyncFailure,
@@ -376,6 +392,10 @@ fn failed_initial_intent_barriers_preserve_original_state_and_fence_reopen() {
 
 #[test]
 fn failed_postcommit_cleanup_sync_fences_owner_but_absent_marker_allows_durable_successor() {
+    mvm_core::util::test_env::isolated_lock_probe(probe_failed_postcommit_cleanup);
+}
+
+fn probe_failed_postcommit_cleanup() {
     for operation in ["finish", "reconcile"] {
         let fixture = Fixture::new();
         let mut owner = InstallationOwner::initialize(&fixture.root, key()).unwrap();
@@ -413,4 +433,45 @@ fn failed_postcommit_cleanup_sync_fences_owner_but_absent_marker_allows_durable_
             epoch.generation() + 1
         );
     }
+}
+
+#[cfg(feature = "canonical-host")]
+#[test]
+fn archive_publication_reuses_original_active_slot_and_refuses_substitute() {
+    mvm_core::util::test_env::isolated_lock_probe(
+        probe_archive_publication_reuses_original_active_slot_and_refuses_substitute,
+    );
+}
+
+#[cfg(feature = "canonical-host")]
+fn probe_archive_publication_reuses_original_active_slot_and_refuses_substitute() {
+    let fixture = Fixture::new();
+    let mut owner = InstallationOwner::initialize(&fixture.root, key()).unwrap();
+    let epoch = owner.begin().unwrap();
+    let original = owner.record_audit_debt(epoch, 0, 1, [1; 32], 4096).unwrap();
+    let terminal = [55; 32];
+    owner
+        .archive_audit(epoch, 0, 0, &original, &terminal)
+        .unwrap();
+    owner
+        .archive_audit(epoch, 0, 0, &original, &terminal)
+        .unwrap();
+    assert!(
+        owner
+            .archive_audit(epoch, 0, 0, &original, &[56; 32])
+            .is_err()
+    );
+    let second = owner.record_audit_debt(epoch, 0, 2, [2; 32], 4096).unwrap();
+    assert!(
+        owner
+            .archive_audit(epoch, 0, 0, &original, &terminal)
+            .is_err()
+    );
+    assert!(
+        owner
+            .archive_audit(epoch, 0, 0, &second, &terminal)
+            .is_err()
+    );
+    assert!(fixture.root.join(".retained-audit-0").is_file());
+    assert!(owner.finish(epoch).is_err());
 }

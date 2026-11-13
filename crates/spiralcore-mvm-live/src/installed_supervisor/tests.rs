@@ -2,7 +2,7 @@ use super::*;
 use crate::installed_owner::{HolderLease, InstallationKey};
 use std::{
     fs,
-    os::unix::fs::DirBuilderExt,
+    os::unix::fs::{DirBuilderExt, PermissionsExt},
     path::PathBuf,
     process::{Child, ChildStdin, Command, ExitStatus, Stdio},
     time::{Duration, Instant, SystemTime, UNIX_EPOCH},
@@ -114,6 +114,10 @@ impl Drop for Case {
 
 #[test]
 fn two_worker_slots_require_reaping_and_confirmation_and_reject_stale_tokens() {
+    mvm_core::util::test_env::isolated_lock_probe(probe_two_worker_slots);
+}
+
+fn probe_two_worker_slots() {
     {
         let mut abandoned = Case::new();
         let first = abandoned
@@ -191,6 +195,10 @@ fn two_worker_slots_require_reaping_and_confirmation_and_reject_stale_tokens() {
 
 #[test]
 fn live_children_block_finish_and_reaped_failure_closes_launch_but_allows_global_retirement() {
+    mvm_core::util::test_env::isolated_lock_probe(probe_live_children);
+}
+
+fn probe_live_children() {
     {
         let mut live = Case::new();
         let worker = live.reserve(WorkerRole::Sender);
@@ -281,6 +289,10 @@ impl Drop for DropRootCleanup {
 
 #[test]
 fn controller_drop_reaps_its_exact_live_child_before_releasing_owner_exclusion() {
+    mvm_core::util::test_env::isolated_lock_probe(probe_controller_drop);
+}
+
+fn probe_controller_drop() {
     let base = std::env::temp_dir().join(format!(
         "spiral-worker-drop-{}-{}",
         std::process::id(),
@@ -353,5 +365,66 @@ fn controller_drop_reaps_its_exact_live_child_before_releasing_owner_exclusion()
         (observed_wait, observed_errno),
         (-1, Some(libc::ECHILD)),
         "controller Drop released owner EX without positively reaping its exact live Child"
+    );
+}
+
+#[test]
+fn explicitly_provisioned_pair_charges_the_selected_limits_and_refuses_a_foreign_stamp() {
+    mvm_core::util::test_env::isolated_lock_probe(probe_explicit_pair_limits);
+}
+
+fn probe_explicit_pair_limits() {
+    let fallback = InstalledConfig::two_endpoint_witness_profile();
+    let fallback_hash = fallback.profile_hash();
+    let mut host = fallback.managed_limits().0;
+    let mut tenant = fallback.managed_limits().1;
+    host.host_resident_bytes = 2 << 30;
+    tenant.host_resident_bytes = host.host_resident_bytes;
+    let explicit = InstalledConfig::with_funded_pair_limits(host, tenant).unwrap();
+    assert_ne!(explicit.profile_hash(), fallback_hash);
+    let home = tempfile::Builder::new()
+        .permissions(fs::Permissions::from_mode(0o700))
+        .tempdir()
+        .unwrap();
+    let parent = home.path().join("operator");
+    let key = InstallationKey {
+        installation: [32; 32],
+        profile: explicit.profile_hash(),
+    };
+    let owner = InstallationOwner::initialize(&parent, key).unwrap();
+    assert!(matches!(
+        InstalledSupervisor::start(owner, fallback),
+        Err(SupervisorError::Profile)
+    ));
+    let owner = InstallationOwner::open(&parent, key).unwrap();
+    let mut supervisor = InstalledSupervisor::start(owner, explicit).unwrap();
+    let claim = crate::installed_resources::ManagedClaim {
+        host_metadata_bytes: host.host_resident_bytes,
+        ..Default::default()
+    };
+    let original = supervisor
+        .managed_resources()
+        .reserve([2; 32], claim)
+        .unwrap();
+    assert!(
+        supervisor
+            .managed_resources()
+            .reserve(
+                [2; 32],
+                crate::installed_resources::ManagedClaim {
+                    host_metadata_bytes: 1,
+                    ..Default::default()
+                }
+            )
+            .is_err()
+    );
+    drop(original);
+    supervisor.close_admission();
+    supervisor.try_finish().unwrap();
+    tenant.workers = host.workers + 1;
+    assert!(InstalledConfig::with_funded_pair_limits(host, tenant).is_err());
+    assert_eq!(
+        InstalledConfig::two_endpoint_witness_profile().profile_hash(),
+        fallback_hash
     );
 }

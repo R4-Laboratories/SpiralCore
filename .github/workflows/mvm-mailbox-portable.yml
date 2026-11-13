@@ -295,12 +295,12 @@ jobs:
             # Checkout may use CRLF; retain the raw hash and bind the exact LF Git content.
             $quotaText = [IO.File]::ReadAllText($quota).Replace("`r`n", "`n")
             $quotaLfHash = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([Text.Encoding]::UTF8.GetBytes($quotaText))).ToLowerInvariant()
-            if ($quotaLfHash -ne '9dd7b0284b1821d5ba804ccdf9438702c5a93999d9658cd32882f91baa58c5e5') { throw 'Quota test-hook exclusion source hash changed; re-review exact ranges' }
+            if ($quotaLfHash -ne 'd97849869668f3f08d90638e5373bda2b2348e01350c59c82b6bc343243f26c6') { throw 'Quota test-hook exclusion source hash changed; re-review exact ranges' }
             $sourceLines = [IO.File]::ReadAllLines($quota)
             $exclusions = @(
-              @{ start = 206; end = 211; text = @('    #[cfg(test)]', '    if super::super::tests::pending_requested() {', '        // The actual call has completed before simulating the invariant.', '        eprintln!("QUOTA_UNEXPECTED_PENDING_FAIL_STOP");', '        require_completed(STATUS_PENDING);', '    }') },
-              @{ start = 213; end = 214; text = @('        #[cfg(test)]', '        eprintln!("QUOTA_NT_OPEN_REFUSAL directory={directory} status={status:#x}");') },
-              @{ start = 309; end = 310; text = @('        #[cfg(test)]', '        super::super::tests::quota_namespace_pinned();') }
+              @{ start = 210; end = 215; text = @('    #[cfg(test)]', '    if super::super::tests::pending_requested() {', '        // The actual call has completed before simulating the invariant.', '        eprintln!("QUOTA_UNEXPECTED_PENDING_FAIL_STOP");', '        require_completed(STATUS_PENDING);', '    }') },
+              @{ start = 217; end = 218; text = @('        #[cfg(test)]', '        eprintln!("QUOTA_NT_OPEN_REFUSAL directory={directory} status={status:#x}");') },
+              @{ start = 313; end = 314; text = @('        #[cfg(test)]', '        super::super::tests::quota_namespace_pinned();') }
             )
             $excluded = @{}
             foreach ($range in $exclusions) {

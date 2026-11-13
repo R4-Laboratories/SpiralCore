@@ -153,7 +153,6 @@ mod linux {
         vsock::{self, VolumeConfig, VolumeConfigKind},
     };
     use serde_json::{Value, json};
-    use spiralcore_mvm_adapter::live::HandshakeRole;
     use std::{
         fs::{File, OpenOptions},
         io::{self, Read, Write},
@@ -204,6 +203,9 @@ mod linux {
         guest_mount::mount_early_filesystems().map_err(|_| "mount_early")?;
         let bootstrap = bootstrap().map_err(|_| "bootstrap")?;
         *report_exit = bootstrap.report_exit;
+        if bootstrap.role != Role::Verify {
+            return Err("signed_sdk_guest_mailbox_required");
+        }
         restore_clock::resync(bootstrap.utc_seconds).map_err(|_| "clock_resync")?;
         record(
             out,
@@ -212,68 +214,32 @@ mod linux {
                 "role": bootstrap.role, "utc_unix_ms": now_ms().map_err(|_| "clock_read")?,
             }),
         )?;
-        if bootstrap.role != Role::Sender {
-            // Rust flush only queues tty bytes. Finish the ready line before
-            // mount can emit kernel printk output through the same UART.
-            drain_console(out)?;
-            *data_mount_attempted = true;
-            guest_mount::mount_volumes(
-                &[VolumeConfig {
-                    tag: "spiral-cache".into(),
-                    mountpoint: "/data".into(),
-                    read_only: bootstrap.role == Role::Verify,
-                    kind: VolumeConfigKind::Block,
-                    device: Some("/dev/vda".into()),
-                    label: Some("spiral-cache".into()),
-                }],
-                Path::new("/"),
-            )
-            .map_err(|_| "mount_data")?;
-            record(
-                out,
-                json!({
-                    "event": "guest_disk_mounted", "read_only": bootstrap.role == Role::Verify,
-                    "label": "spiral-cache",
-                }),
-            )?;
-        }
-        if bootstrap.role == Role::Verify {
-            campaign::verify(
-                &bootstrap.plan,
-                Path::new("/data/cache"),
-                &bootstrap.published,
-                out,
-            )
-            .map_err(|_| "verify_campaign")?;
-        } else {
-            let fd =
-                vsock::sys::dial(vsock::HOST_CID, vsock::MAILBOX_PORT).map_err(|_| "vsock_dial")?;
-            let socket = UnixStream::from(fd);
-            record(
-                out,
-                json!({
-                    "event": "guest_connected", "cid": vsock::HOST_CID,
-                    "port": vsock::MAILBOX_PORT,
-                }),
-            )?;
-            match bootstrap.role {
-                Role::Sender => {
-                    campaign::sender(&bootstrap, socket, HandshakeRole::Initiator, out)
-                        .map_err(|_| "sender_campaign")?;
-                }
-                Role::Receiver => {
-                    campaign::receiver(
-                        &bootstrap,
-                        Path::new("/data/cache"),
-                        socket,
-                        HandshakeRole::Initiator,
-                        out,
-                    )
-                    .map_err(|_| "receiver_campaign")?;
-                }
-                Role::Verify => unreachable!(),
-            }
-        }
+        // Flush the ready line before mount writes to the same UART.
+        drain_console(out)?;
+        *data_mount_attempted = true;
+        guest_mount::mount_volumes(
+            &[VolumeConfig {
+                tag: "spiral-cache".into(),
+                mountpoint: "/data".into(),
+                read_only: true,
+                kind: VolumeConfigKind::Block,
+                device: Some("/dev/vda".into()),
+                label: Some("spiral-cache".into()),
+            }],
+            Path::new("/"),
+        )
+        .map_err(|_| "mount_data")?;
+        record(
+            out,
+            json!({"event":"guest_disk_mounted","read_only":true,"label":"spiral-cache"}),
+        )?;
+        campaign::verify(
+            &bootstrap.plan,
+            Path::new("/data/cache"),
+            &bootstrap.published,
+            out,
+        )
+        .map_err(|_| "verify_campaign")?;
         Ok(())
     }
 

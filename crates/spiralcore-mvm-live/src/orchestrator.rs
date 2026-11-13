@@ -884,6 +884,7 @@ mod tests {
                 cancel.cancel();
             }
             if mode == "failed-write" {
+                sink.shutdown(Shutdown::Both).unwrap();
                 drop(sink);
             }
             let mut read = StreamCounters::default();

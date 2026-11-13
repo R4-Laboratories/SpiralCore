@@ -18,14 +18,47 @@ a new guest mounts that disk read-only and verifies exact bytes with no mailbox
 credentials. That historical readback is distinct from authorization to resume a
 new execution epoch.
 
-The current dependency is the explicit contribution-preparation fork commit
-`ae12e9deb41cc9a3264196ce22ebc72d4042883d`, based on upstream `6ae461a`.
-See `mvm-service-patch/` for the reproducible patch bundle and provenance.
+The current manifest selects the published contribution checkpoint
+`7b22454077530e96146d68204b711de53e3d05a8`. Historical measurements retain
+their original source identities; this pin does not upgrade those results into
+qualification of a new build. The `mvm-service-patch/` bundle reproduces the older
+`ae12e9deb41cc9a3264196ce22ebc72d4042883d` preparation based on upstream
+`6ae461a`; it is historical provenance, not a replacement for the current lock.
 The historical `mvm-patch/` bundle and prior results remain pinned to
 `3104a12c5b071a6851323fa8115d2afaf3f0bb8b`; they do not qualify the new service.
 Port **5257 is experimental**. The production supervisor continues to
 leave this binding disabled. The existing policy-controlled FlowMux port 5253 is
 unchanged. No guest networking interface or general TCP/IP bridge is installed.
+
+## Installed canonical FlowMux controller
+
+The separate `canonical-host` feature enables the original installed parent,
+signed-plan SDK launch, retained entrypoint channel and original-owner retirement.
+It is opt-in; `live` remains the default. The installed FlowMux case currently
+requires an approved Linux x86_64/Firecracker host, a funded private volume,
+matched helper executables and a genuinely signed role. It uses FlowMux port
+5253 and does not grant mailbox or guest-network authority.
+
+Build the actual named integration target using the existing shared target:
+
+```sh
+cargo +1.97.1 test --locked --manifest-path crates/spiralcore-mvm-live/Cargo.toml \
+  --features canonical-host --test installed_flowmux --no-run
+```
+
+The resulting executable must list `installed_original_flowmux_workload: test`.
+Its ignored native case is run only by the explicit installed harness, with
+the original operator packet and resource owners. Ordinary component tests or
+a command that executes zero tests do not qualify the installed path. The
+[public installer, peer and Linux runner](../../tools/installed-flowmux-witness/README.md)
+document the exact role inputs, process limits and required result boundaries.
+
+The controller's relative Cargo patches unify its local SpiralCore types with
+the same tracked sources MVM pins at `7458294c`. They introduce no second codec.
+Cargo also needs explicit access to MVM's published vendored `gix` patches,
+because it does not inherit a Git dependency's workspace patches. Inspect actual
+resolved package IDs after changing these pins; compilation and native lifecycle
+acceptance remain separate from dependency resolution.
 
 ## Build and run
 
@@ -146,3 +179,56 @@ The supplied demonstration uses public/synthetic data and has no FIPS validation
 or CUI accreditation claim. Full upstream MVM workspace qualification, production
 mailbox lifecycle, remote orchestration, Iroh, new-epoch cache migration and
 arbitrary host power-loss recovery remain separate work.
+
+## Current signed service and historical HVF witness
+
+The direct HVF development worker described above used the contribution fork at
+`ef1067e3bcce4f72bcd5cdacb6b914e76298ae20` to attach an explicitly supplied
+mailbox socket. Its `standard` and `experimental64` plan values remain decodable
+for historical measurements. On the current MVM interface, the worker refuses a
+supplied mailbox socket before reading a kernel, disk or inherited launch channel.
+A disk-only run reports no mailbox rate enforcement.
+
+The installed reference driver uses two signed originals, the canonical mailbox
+helper on port 5257, and the destination guest's own reader and acknowledgment.
+Its reproduction procedure records SDK readback, guest traffic, relay counters
+and original shutdown independently. The managed FlowMux endpoint owner uses its
+own signed network plan, funds the original tenant daemon and signer, and retains
+its endpoint partition until typed disposal. The library's new managed owner and
+the reference mailbox driver have separate integration results.
+[Installed mailbox driver and reproducer](../../tools/ari-own-mailbox-witness/paired-native.md)
+
+The historical Firecracker launcher also accepted a caller-supplied mailbox
+socket and a lease-only worker. The current Firecracker driver requires an
+original SDK host lifetime for a managed launch. Both historical entries refuse
+before reading worker input or touching a VM. The standalone keyless verifier
+still opens the original disk for read-only verification. The historical guest
+sender and receiver refuse at startup before opening a mailbox connection. The
+managed library still needs qualification of its public end-to-end SDK startup.
+
+### Managed Linux startup resources
+
+For an installed Firecracker bundle, the operator reserves the controller's
+entire address-space limit and the capacity of its local startup filesystem.
+`PreparedParentVm::prepare_canonical_startup` checks those limits, records the
+original reservation and calls MVM's canonical Linux preparer against the
+already-installed signed archive. Pass its returned kernel owner, the original
+lifetime and signed mapping to `LocalBackend::try_launch_with_canonical_direct_policy`.
+The private workload-root copy spends its signed length against that same
+reservation after plan admission. The original DATA disk has separate custody.
+
+The current profile checks the hard Linux `RLIMIT_AS` and the total capacity
+of disk-backed ext4 or XFS. It requires private `MVM_HOME` and scratch
+directories on that filesystem, with no nested mounts or split socket
+directory. The operator retains control of path and mount configuration. An
+ordinary directory on a large shared filesystem does not satisfy a smaller
+quota by reporting enough free space. The storage budget also covers runtime
+snapshots and the two native log files, `console.log` and `firecracker.log`.
+Both stderr and the Firecracker logging API can write the latter. The workload
+audit-chain limit measures a separate file.
+
+The cryptographic checks require the genuine release-matched CLI runtime and
+the enabled MVM manifest verifier. Startup custody on this profile remains
+subject to an installed test with those inputs and the original backing
+filesystem. A returned endpoint receipt and a controller test each prove only
+their own resource transitions.

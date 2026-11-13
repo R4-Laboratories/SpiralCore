@@ -57,10 +57,12 @@ jobs:
           manifest=crates/spiralcore-mvm-live/tests/installed-owner-harness/Cargo.toml
           # Linux fork/vfork briefly inherits unrelated test FDs until exec.
           # Keep process-lifetime fixtures serial; do not weaken Busy refusal.
-          cargo +1.97.1 test --locked --manifest-path "$manifest" --lib -- --test-threads=1 2>&1 | tee owner-evidence/unit.txt
-          grep -E '^test result: ok\. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in [0-9.]+s$' owner-evidence/unit.txt
+          # The single executable runs the 18 owner cases plus the platform lifecycle cases.
           cargo +1.97.1 test --locked --manifest-path "$manifest" --test lifecycle -- --test-threads=1 2>&1 | tee owner-evidence/lifecycle.txt
-          grep -E "^test result: ok\. $EXPECTED_LIFECYCLE passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in [0-9.]+s$" owner-evidence/lifecycle.txt
+          grep -E "^test result: ok\\. $((18 + EXPECTED_LIFECYCLE)) passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in [0-9.]+s$" owner-evidence/lifecycle.txt
+          [[ $(grep -Ec '^test installed_owner::.* \.\.\. ok$' owner-evidence/lifecycle.txt) -eq 18 ]]
+          grep -Fx 'test installed_owner::endpoint_disks::tests::process_kills_at_publication_boundaries_do_not_skip_required_recovery ... ok' owner-evidence/lifecycle.txt
+          grep -Fx 'test owner_death_does_not_retire_an_epoch_while_an_independent_process_holds_sh ... ok' owner-evidence/lifecycle.txt
           cargo +1.97.1 clippy --locked --manifest-path "$manifest" --all-targets -- -D warnings 2>&1 | tee owner-evidence/clippy.txt
           shasum -a 256 -c owner-evidence/source.sha256
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02

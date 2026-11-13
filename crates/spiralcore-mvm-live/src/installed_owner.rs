@@ -27,6 +27,13 @@ const RECORD_BYTES: usize = 176;
 const BODY_BYTES: usize = 144;
 const DOMAIN: &[u8] = b"spiralcore/installed-owner/v1\0";
 
+#[path = "installed_owner/endpoint_disks.rs"]
+pub mod endpoint_disks;
+
+#[cfg(feature = "canonical-host")]
+#[path = "installed_owner/retained_telemetry.rs"]
+pub(crate) mod retained_telemetry;
+
 #[cfg(test)]
 #[path = "installed_owner/binding_tests.rs"]
 mod binding_tests;
@@ -394,27 +401,61 @@ impl Storage {
         Ok(())
     }
     fn no_temp(&self) -> Result<()> {
-        for name in [NEXT, INTENT] {
-            let name = CString::new(name).expect("fixed name");
-            let mut stat = std::mem::MaybeUninit::<libc::stat>::uninit();
-            // SAFETY: live directory/name, writable output; output is not read.
-            let result = unsafe {
-                libc::fstatat(
-                    self.directory.as_raw_fd(),
-                    name.as_ptr(),
-                    stat.as_mut_ptr(),
-                    libc::AT_SYMLINK_NOFOLLOW,
-                )
-            };
-            if result == 0 {
+        self.absent_names(&[NEXT, INTENT])
+    }
+    fn no_endpoint_disks(&self) -> Result<()> {
+        // Only the explicit disk inventory owner can prove its metadata empty
+        // and durably remove it. Generic epoch transitions cannot reset a lost
+        // process's disk charge, including an incomplete first publication.
+        // A retained catalog may itself be lost. The original owner inode is
+        // already bound by the epoch record; its monotonic denial latch must
+        // also remain empty before generic transitions can assert no debt.
+        if open_at(&self.directory, OWNER, libc::O_RDONLY)?
+            .metadata()?
+            .len()
+            != 0
+        {
+            return Err(OwnerError::Fenced);
+        }
+        self.absent_names(&[
+            ".endpoint-disks.bin",
+            ".endpoint-disks.intent",
+            ".endpoint-disks.next",
+            ".retained-telemetry.bin",
+            ".retained-telemetry.intent",
+            ".retained-telemetry.next",
+        ])?;
+        endpoint_disks::no_namespaces(&self.directory)
+    }
+    fn absent_names(&self, names: &[&str]) -> Result<()> {
+        for &name in names {
+            if self.name_present(name)? {
                 return Err(OwnerError::Fenced);
-            }
-            let error = io::Error::last_os_error();
-            if error.kind() != io::ErrorKind::NotFound {
-                return Err(error.into());
             }
         }
         Ok(())
+    }
+    fn name_present(&self, name: &str) -> Result<bool> {
+        let name = CString::new(name).map_err(|_| OwnerError::InvalidStorage)?;
+        let mut stat = std::mem::MaybeUninit::<libc::stat>::uninit();
+        // SAFETY: live directory/name, writable output; output is not read.
+        if unsafe {
+            libc::fstatat(
+                self.directory.as_raw_fd(),
+                name.as_ptr(),
+                stat.as_mut_ptr(),
+                libc::AT_SYMLINK_NOFOLLOW,
+            )
+        } == 0
+        {
+            return Ok(true);
+        }
+        let error = io::Error::last_os_error();
+        if error.kind() == io::ErrorKind::NotFound {
+            Ok(false)
+        } else {
+            Err(error.into())
+        }
     }
     fn read(&self) -> Result<Record> {
         self.check()?;
@@ -600,6 +641,17 @@ impl InstallationOwner {
         })
     }
 
+    /// Duplicate the original active holder for an owned native handoff.
+    /// This retains exclusion, not boot authority, and never reopens a path to
+    /// manufacture a replacement holder after this owner released its lease.
+    pub fn prepare_original_handoff(&self, expected: Epoch) -> Result<HolderHandoff> {
+        self.active_binding(expected)?;
+        self.supervisor
+            .as_ref()
+            .ok_or(OwnerError::StaleEpoch)?
+            .prepare_handoff()
+    }
+
     /// Fresh local provisioning identity; it conveys no guest boot permission.
     pub fn profile_hash(&self) -> Result<[u8; 32]> {
         Ok(self.current()?.key.profile)
@@ -702,6 +754,7 @@ impl InstallationOwner {
     }
     pub fn begin(&mut self) -> Result<Epoch> {
         let mut record = self.current()?;
+        self.storage.no_endpoint_disks()?;
         if record.phase != Phase::Clean {
             return Err(OwnerError::RecoveryRequired);
         }
@@ -733,6 +786,7 @@ impl InstallationOwner {
         {
             return Err(OwnerError::StaleEpoch);
         }
+        self.storage.no_endpoint_disks()?;
         self.supervisor.take();
         let _exclusive = self.holders_for_transition()?;
         record.phase = Phase::Clean;
@@ -740,6 +794,7 @@ impl InstallationOwner {
     }
     pub fn reconcile(&mut self) -> Result<Recovery> {
         let mut record = self.current()?;
+        self.storage.no_endpoint_disks()?;
         if record.phase == Phase::Clean {
             return Ok(Recovery::AlreadyClean);
         }

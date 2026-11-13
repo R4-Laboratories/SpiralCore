@@ -117,6 +117,7 @@ impl SocketIo for PartialRetry {
 }
 
 struct Report {
+    seeded_at: Instant,
     result: Result<(Context, Frame)>,
     session: Session,
     original_wire: Vec<u8>,
@@ -443,11 +444,6 @@ fn pair() -> Pair {
     })
     .unwrap()
 }
-fn wait_at(at: Instant) {
-    while let Some(wait) = at.checked_duration_since(Instant::now()) {
-        std::thread::park_timeout(wait);
-    }
-}
 fn evidence(name: &str, value: &Value) {
     let Some(directory) = std::env::var_os("SPIRALCORE_RECONCILIATION_EVIDENCE_DIR") else {
         return;
@@ -509,8 +505,7 @@ fn canonical_ack_initial_reply_and_cached_reply_partial_writes_keep_original_exp
             seq: 0,
             body: Offer::cold(b"x", Mode::Raw).encode().unwrap(),
         };
-        let seeded = Instant::now();
-        let call_wire = short_call(&mut sender, &request, SIGNED_TTL, mode == "ack");
+
         let stall_frame = if mode == "cached-reply" { 3 } else { 2 };
         let bootstrap = if mode == "ack" {
             &pair.sender
@@ -518,9 +513,7 @@ fn canonical_ack_initial_reply_and_cached_reply_partial_writes_keep_original_exp
             &pair.receiver
         };
         let (stream, state, observed) = scripted(bootstrap, Some(stall_frame));
-        if mode != "ack" {
-            enqueue(&state, &call_wire);
-        }
+
         let budget_owner = if mode == "ack" {
             sender_broker.clone()
         } else {
@@ -542,8 +535,20 @@ fn canonical_ack_initial_reply_and_cached_reply_partial_writes_keep_original_exp
             ColdGraphPolicy::Disabled,
         )
         .unwrap();
-        let mut session = if mode == "ack" { sender } else { receiver };
+        // Start the real signed 900 ms lifetime after the disk and original
+        // stream have been prepared. The writer accepts an authenticated prefix
+        // and then stalls until that same original deadline.
+        let seeded = Instant::now();
+        let call_wire = short_call(&mut sender, &request, SIGNED_TTL, mode == "ack");
+        if mode != "ack" {
+            enqueue(&state, &call_wire);
+        }
         let is_caller = mode == "ack";
+        let (mut session, mut peer) = if is_caller {
+            (sender, receiver)
+        } else {
+            (receiver, sender)
+        };
         let worker = std::thread::spawn(move || {
             let wall = Instant::now();
             let result = (|| -> Result<()> {
@@ -601,6 +606,8 @@ fn canonical_ack_initial_reply_and_cached_reply_partial_writes_keep_original_exp
             observed.recv_timeout(Duration::from_millis(500)).unwrap(),
             1
         );
+        let observed_at = seeded.elapsed();
+        let mut reply_queued_at = None;
         let mut reply_wire = None;
         if mode == "ack" {
             let actual = frames(&state.lock().unwrap().written)[0].clone();
@@ -611,13 +618,9 @@ fn canonical_ack_initial_reply_and_cached_reply_partial_writes_keep_original_exp
                 seq: 0,
                 body: vec![8, 0, 7],
             };
-            let wire = canonical_reply(
-                &mut Session::new(&pair.receiver, &receiver_broker).unwrap(),
-                &actual,
-                &reply,
-            );
-            wait_at(seeded + Duration::from_millis(600));
+            let wire = canonical_reply(&mut peer, &actual, &reply);
             enqueue(&state, &wire);
+            reply_queued_at = Some(seeded.elapsed());
             reply_wire = Some(wire);
         } else if mode == "cached-reply" {
             assert_eq!(
@@ -625,7 +628,6 @@ fn canonical_ack_initial_reply_and_cached_reply_partial_writes_keep_original_exp
                 2
             );
             reply_wire = Some(frames(&state.lock().unwrap().written)[1].clone());
-            wait_at(seeded + Duration::from_millis(600));
             enqueue(&state, &call_wire);
         }
         let completed = done
@@ -635,11 +637,13 @@ fn canonical_ack_initial_reply_and_cached_reply_partial_writes_keep_original_exp
         let state = state.lock().unwrap();
         let complete = frames(&state.written);
         let partial_at = frame_start(&state.written, stall_frame).unwrap();
-        let declared = u32::from_be_bytes(
-            state.written[partial_at..partial_at + 4]
-                .try_into()
-                .unwrap(),
-        ) as usize;
+        let prefix = state.written.get(partial_at..partial_at + 4).unwrap_or_else(|| {
+            panic!(
+                "{mode}: missing frame {stall_frame} length, completed={completed}, call_observed={observed_at:?}, reply_queued={reply_queued_at:?}, result={:?}, wall_us={}, stalls={}, accepted={}, incoming={}, reads={}, writes={}",
+                case.result, case.wall_us, state.stalls, state.written.len(), state.incoming.len(), state.reads, state.writes
+            )
+        });
+        let declared = u32::from_be_bytes(prefix.try_into().unwrap()) as usize;
         let charged = budget_owner
             .with_time::<_, ServiceError>(|budget, _| budget.snapshot())
             .unwrap();
@@ -748,7 +752,7 @@ fn explicit_controller_stops_at_eight_identical_wire_sends_and_silence_never_ret
             &mut caller,
             &request,
             if requests_enabled {
-                Duration::from_secs(3)
+                Duration::from_secs(10)
             } else {
                 SIGNED_TTL
             },
@@ -761,6 +765,15 @@ fn explicit_controller_stops_at_eight_identical_wire_sends_and_silence_never_ret
         let watched = state.clone();
         let (done_tx, done) = mpsc::channel();
         let started = Instant::now();
+        // The send-ceiling case observes eight distinct idle turns, each with
+        // original signature verification. Its watchdog is separate from the
+        // short signed expiry used to prove silence never retransmits.
+        let deadline = started
+            + if requests_enabled {
+                Duration::from_secs(8)
+            } else {
+                Duration::from_millis(2700)
+            };
         let worker = std::thread::spawn(move || {
             let wall = Instant::now();
             let result = (|| -> Result<()> {
@@ -802,7 +815,9 @@ fn explicit_controller_stops_at_eight_identical_wire_sends_and_silence_never_ret
         };
         for ordinal in 1..=if requests_enabled { 8 } else { 1 } {
             assert_eq!(
-                observed.recv_timeout(Duration::from_millis(500)).unwrap(),
+                observed
+                    .recv_timeout(deadline.saturating_duration_since(Instant::now()))
+                    .unwrap(),
                 ordinal
             );
             if requests_enabled {
@@ -810,9 +825,7 @@ fn explicit_controller_stops_at_eight_identical_wire_sends_and_silence_never_ret
             }
         }
         let completed = done
-            .recv_timeout(
-                (started + Duration::from_millis(2700)).saturating_duration_since(Instant::now()),
-            )
+            .recv_timeout(deadline.saturating_duration_since(Instant::now()))
             .is_ok();
         let case = worker.finish();
         let state = state.lock().unwrap();
@@ -905,26 +918,6 @@ fn late_explicit_call_retry_partial_write_keeps_original_signed_deadline_and_ide
         body: Vec::new(),
     };
     let payload = request.encode().unwrap();
-    let seeded_at = Instant::now();
-    broker
-        .with_time(|_, now| -> Result<()> {
-            // Allocate the ordinary signed options once, with a shorter legitimate
-            // lifetime, before the initial registration/send. No header mutation.
-            let mut options = caller.ordering.next_for_binding(
-                &caller.outgoing,
-                mvm_contract::protocol::mailbox::ContentType::parse(
-                    spiralcore_mvm_adapter::CONTENT_TYPE,
-                    1,
-                )?,
-                now,
-                now.unix_ms + i64::try_from(SIGNED_TTL.as_millis())?,
-                ISSUANCE_POLICY,
-            )?;
-            options.reply_to = caller.reply_to;
-            caller.pending = Some(PendingCall::new(payload, options, now));
-            Ok(())
-        })
-        .unwrap();
     let (initial_tx, initial_sent) = mpsc::sync_channel(1);
     let state = Arc::new(Mutex::new(State {
         incoming: b"SCMVS001".iter().copied().collect(),
@@ -958,10 +951,28 @@ fn late_explicit_call_retry_partial_write_keeps_original_signed_deadline_and_ide
     let (done_tx, done) = mpsc::channel();
     let worker = std::thread::spawn(move || {
         let wall = Instant::now();
-        let result = (|| -> Result<_> {
-            stream.handshake(HandshakeRole::Initiator, &token)?;
-            caller.call_with_reconciliation(&request, &stream, &token, requests)
-        })();
+        stream.handshake(HandshakeRole::Initiator, &token).unwrap();
+        let seeded_at = Instant::now();
+        broker
+            .with_time(|_, now| -> Result<()> {
+                // Allocate the ordinary signed options once, with a shorter legitimate
+                // lifetime, before the initial registration/send. No header mutation.
+                let mut options = caller.ordering.next_for_binding(
+                    &caller.outgoing,
+                    mvm_contract::protocol::mailbox::ContentType::parse(
+                        spiralcore_mvm_adapter::CONTENT_TYPE,
+                        1,
+                    )?,
+                    now,
+                    now.unix_ms + i64::try_from(SIGNED_TTL.as_millis())?,
+                    ISSUANCE_POLICY,
+                )?;
+                options.reply_to = caller.reply_to;
+                caller.pending = Some(PendingCall::new(payload, options, now));
+                Ok(())
+            })
+            .unwrap();
+        let result = caller.call_with_reconciliation(&request, &stream, &token, requests);
         let lifecycle_wall_us = u64::try_from(wall.elapsed().as_micros()).unwrap();
         let pending = caller.pending.as_ref().unwrap();
         let original_wire = pending.encoded().unwrap().to_vec();
@@ -990,6 +1001,7 @@ fn late_explicit_call_retry_partial_write_keeps_original_signed_deadline_and_ide
         };
         let _ = done_tx.send(());
         Report {
+            seeded_at,
             result,
             session: caller,
             original_wire,
@@ -1008,14 +1020,11 @@ fn late_explicit_call_retry_partial_write_keeps_original_signed_deadline_and_ide
         cancel,
         worker: Some(worker),
     };
-    let command_at = initial_sent
-        .recv_timeout(Duration::from_millis(500))
-        .unwrap();
+    let command_at = initial_sent.recv_timeout(PARENT_TIMEOUT).unwrap();
     assert_eq!(signal.request_retry(), Ok(()));
-    let completed = done
-        .recv_timeout((seeded_at + WATCHDOG).saturating_duration_since(Instant::now()))
-        .is_ok();
+    let completed = done.recv_timeout(WATCHDOG).is_ok();
     let report = worker.finish();
+    let seeded_at = report.seeded_at;
     let state = state.lock().unwrap();
     let outcome = report.result.as_ref().err().map(ToString::to_string);
     if let Some(directory) = std::env::var_os("SPIRALCORE_RECONCILIATION_EVIDENCE_DIR") {

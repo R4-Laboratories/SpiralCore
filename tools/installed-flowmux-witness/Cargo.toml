@@ -1,0 +1,83 @@
+[package]
+name = "installed-flowmux-witness"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.97"
+license = "MIT"
+publish = false
+autobins = false
+
+[workspace]
+
+[features]
+default = []
+installed-linux = [
+    "dep:anyhow",
+    "dep:chrono",
+    "dep:ed25519-dalek",
+    "dep:hex",
+    "dep:mvm-contract",
+    "dep:mvm-core",
+    "dep:mvm-hostd",
+    "dep:rustix",
+    "dep:serde",
+    "dep:serde_json",
+    "dep:sha2",
+    "dep:spiralcore-mvm-flowmux",
+    "dep:spiralcore-transfer",
+    "dep:tempfile",
+    "dep:zeroize",
+]
+
+[[bin]]
+name = "flowmux-install"
+path = "src/bin/install.rs"
+required-features = ["installed-linux"]
+
+[[bin]]
+name = "flowmux-peer"
+path = "src/bin/peer.rs"
+required-features = ["installed-linux"]
+
+[target.'cfg(target_os = "linux")'.dependencies]
+anyhow = { version = "1", optional = true }
+chrono = { version = "0.4", optional = true }
+ed25519-dalek = { version = "3", features = ["pkcs8"], optional = true }
+hex = { version = "0.4", optional = true }
+mvm-contract = { git = "https://github.com/Casey-allard/mvm", rev = "7b22454077530e96146d68204b711de53e3d05a8", default-features = false, features = ["protocol"], optional = true }
+mvm-core = { git = "https://github.com/Casey-allard/mvm", rev = "7b22454077530e96146d68204b711de53e3d05a8", default-features = false, features = ["host-state","manifest-verify"], optional = true }
+mvm-hostd = { git = "https://github.com/Casey-allard/mvm", rev = "7b22454077530e96146d68204b711de53e3d05a8", default-features = false, optional = true }
+rustix = { version = "1", features = ["fs","event","process"], optional = true }
+serde = { version = "1", features = ["derive"], optional = true }
+serde_json = { version = "1", optional = true }
+sha2 = { version = "0.11", optional = true }
+spiralcore-mvm-flowmux = { git = "https://github.com/R4-Laboratories/SpiralCore", rev = "7458294c9bdf8eaca19aafe9b5dafbda4f0da6f6", optional = true }
+spiralcore-transfer = { git = "https://github.com/R4-Laboratories/SpiralCore", rev = "7458294c9bdf8eaca19aafe9b5dafbda4f0da6f6", optional = true }
+tempfile = { version = "3", optional = true }
+zeroize = { version = "1", optional = true }
+
+[profile.dev]
+debug = 0
+incremental = false
+
+[profile.test]
+debug = 0
+incremental = false
+
+[profile.dev.package.mvm-core]
+opt-level = 2
+[profile.dev.package.sha2]
+opt-level = 3
+[profile.dev.package.ring]
+opt-level = 3
+[profile.dev.package.zeroize]
+opt-level = 3
+[profile.dev.package.curve25519-dalek]
+opt-level = 3
+[profile.dev.package.ed25519-dalek]
+opt-level = 3
+
+# The MVM workspace supplies these fixes for its Git object reader.
+[patch.crates-io]
+gix = { git = "https://github.com/Casey-allard/mvm", rev = "7b22454077530e96146d68204b711de53e3d05a8" }
+gix-object = { git = "https://github.com/Casey-allard/mvm", rev = "7b22454077530e96146d68204b711de53e3d05a8" }

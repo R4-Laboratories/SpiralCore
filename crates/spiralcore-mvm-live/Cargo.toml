@@ -4,19 +4,20 @@ version = "0.1.0"
 edition = "2024"
 rust-version = "1.97"
 publish = false
-description = "Bounded native HVF guest/vsock integration witness for SpiralCore"
+description = "Bounded native MVM/vsock integration witness for SpiralCore"
 
 [features]
 default = ["live"]
 live = []
+canonical-host = ["linux-host", "dep:anyhow", "dep:mvm-client", "dep:mvm-hostd"]
 linux-host = ["dep:mvm-backends", "dep:mvm-vmm", "dep:mvm-net", "dep:mvm-build", "dep:mvm-fs"]
 
 [dependencies]
 spiralcore-gateway-core = { path = "../spiralcore-gateway-core", features = ["hardware-sha256"] }
 spiralcore-mvm-adapter = { path = "../spiralcore-mvm-adapter", features = ["live", "hardware-sha256"] }
 spiralcore-transfer = { path = "../spiralcore-transfer", features = ["hardware-sha256"] }
-mvm-core = { git = "https://github.com/Casey-allard/mvm", rev = "ef1067e3bcce4f72bcd5cdacb6b914e76298ae20", default-features = false }
-mvm-contract = { git = "https://github.com/Casey-allard/mvm", rev = "ef1067e3bcce4f72bcd5cdacb6b914e76298ae20", default-features = false, features = ["protocol"] }
+mvm-core = { git = "https://github.com/Casey-allard/mvm", rev = "7b22454077530e96146d68204b711de53e3d05a8", default-features = false }
+mvm-contract = { git = "https://github.com/Casey-allard/mvm", rev = "7b22454077530e96146d68204b711de53e3d05a8", default-features = false, features = ["protocol"] }
 ed25519-dalek = "3"
 rand = "0.10"
 serde = { version = "1", features = ["derive"] }
@@ -25,26 +26,48 @@ sha2 = "0.10"
 cpu-time = "1"
 libc = "0.2"
 
+[target.'cfg(any(target_os = "linux", all(target_os = "macos", target_arch = "aarch64")))'.dependencies]
+anyhow = { version = "1", optional = true }
+mvm-net = { git = "https://github.com/Casey-allard/mvm", rev = "7b22454077530e96146d68204b711de53e3d05a8", default-features = false, optional = true }
+mvm-client = { git = "https://github.com/Casey-allard/mvm", rev = "7b22454077530e96146d68204b711de53e3d05a8", default-features = false, features = ["manifest-verify"], optional = true }
+mvm-hostd = { git = "https://github.com/Casey-allard/mvm", rev = "7b22454077530e96146d68204b711de53e3d05a8", default-features = false, optional = true }
+
 [target.'cfg(all(target_os = "macos", target_arch = "aarch64"))'.dependencies]
-mvm-vmm = { git = "https://github.com/Casey-allard/mvm", rev = "ef1067e3bcce4f72bcd5cdacb6b914e76298ae20", default-features = false }
-mvm-runtime = { git = "https://github.com/Casey-allard/mvm", rev = "ef1067e3bcce4f72bcd5cdacb6b914e76298ae20", default-features = false }
-mvm-build = { git = "https://github.com/Casey-allard/mvm", rev = "ef1067e3bcce4f72bcd5cdacb6b914e76298ae20", default-features = false }
-mvm-fs = { git = "https://github.com/Casey-allard/mvm", rev = "ef1067e3bcce4f72bcd5cdacb6b914e76298ae20", default-features = false }
+mvm-vmm = { git = "https://github.com/Casey-allard/mvm", rev = "7b22454077530e96146d68204b711de53e3d05a8", default-features = false }
+mvm-runtime = { git = "https://github.com/Casey-allard/mvm", rev = "7b22454077530e96146d68204b711de53e3d05a8", default-features = false }
+mvm-build = { git = "https://github.com/Casey-allard/mvm", rev = "7b22454077530e96146d68204b711de53e3d05a8", default-features = false }
+mvm-fs = { git = "https://github.com/Casey-allard/mvm", rev = "7b22454077530e96146d68204b711de53e3d05a8", default-features = false }
 
 [target.'cfg(target_os = "linux")'.dependencies]
-mvm-agentd = { git = "https://github.com/Casey-allard/mvm", rev = "ef1067e3bcce4f72bcd5cdacb6b914e76298ae20", default-features = false }
-mvm-backends = { git = "https://github.com/Casey-allard/mvm", rev = "ef1067e3bcce4f72bcd5cdacb6b914e76298ae20", default-features = false, optional = true }
-mvm-vmm = { git = "https://github.com/Casey-allard/mvm", rev = "ef1067e3bcce4f72bcd5cdacb6b914e76298ae20", default-features = false, optional = true }
-mvm-net = { git = "https://github.com/Casey-allard/mvm", rev = "ef1067e3bcce4f72bcd5cdacb6b914e76298ae20", default-features = false, optional = true }
-mvm-build = { git = "https://github.com/Casey-allard/mvm", rev = "ef1067e3bcce4f72bcd5cdacb6b914e76298ae20", default-features = false, optional = true }
-mvm-fs = { git = "https://github.com/Casey-allard/mvm", rev = "ef1067e3bcce4f72bcd5cdacb6b914e76298ae20", default-features = false, optional = true }
+mvm-agentd = { git = "https://github.com/Casey-allard/mvm", rev = "7b22454077530e96146d68204b711de53e3d05a8", default-features = false }
+mvm-backends = { git = "https://github.com/Casey-allard/mvm", rev = "7b22454077530e96146d68204b711de53e3d05a8", default-features = false, optional = true }
+mvm-vmm = { git = "https://github.com/Casey-allard/mvm", rev = "7b22454077530e96146d68204b711de53e3d05a8", default-features = false, optional = true }
+mvm-build = { git = "https://github.com/Casey-allard/mvm", rev = "7b22454077530e96146d68204b711de53e3d05a8", default-features = false, optional = true }
+mvm-fs = { git = "https://github.com/Casey-allard/mvm", rev = "7b22454077530e96146d68204b711de53e3d05a8", default-features = false, optional = true }
 
 [dev-dependencies]
+mvm-core = { git = "https://github.com/Casey-allard/mvm", rev = "7b22454077530e96146d68204b711de53e3d05a8", default-features = false, features = ["test-support"] }
 tempfile = "3"
 
 [[test]]
 name = "adapter_live"
 path = "../spiralcore-mvm-adapter/tests/live.rs"
+
+[[test]]
+name = "installed_flowmux"
+path = "tests/installed_flowmux.rs"
+required-features = ["canonical-host"]
+
+# The SDK and hostd pass SpiralCore types in one executable. Both use the
+# tracked sources matching hostd's pinned SpiralCore revision.
+[patch."https://github.com/R4-Laboratories/SpiralCore"]
+spiralcore-mvm-flowmux = { path = "../spiralcore-mvm-flowmux" }
+spiralcore-transfer = { path = "../spiralcore-transfer" }
+
+# Cargo does not inherit a Git dependency workspace's registry patches.
+[patch.crates-io]
+gix = { git = "https://github.com/Casey-allard/mvm", rev = "7b22454077530e96146d68204b711de53e3d05a8" }
+gix-object = { git = "https://github.com/Casey-allard/mvm", rev = "7b22454077530e96146d68204b711de53e3d05a8" }
 
 [profile.dev]
 debug = 0
@@ -53,3 +76,18 @@ incremental = false
 [profile.test]
 debug = 0
 incremental = false
+
+# Cargo reads optimization profiles from the invoking package. Preserve MVM's
+# dev/test settings for the crypto used by signed operations and their deadlines.
+[profile.dev.package.mvm-core]
+opt-level = 2
+[profile.dev.package.sha2]
+opt-level = 3
+[profile.dev.package.ring]
+opt-level = 3
+[profile.dev.package.zeroize]
+opt-level = 3
+[profile.dev.package.curve25519-dalek]
+opt-level = 3
+[profile.dev.package.ed25519-dalek]
+opt-level = 3

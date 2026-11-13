@@ -1,8 +1,10 @@
 #[path = "../../../src/host_budget.rs"]
 pub mod host_budget;
+#[path = "../../../src/installed_disk.rs"]
+pub mod installed_disk;
 #[path = "../../../src/installed_owner.rs"]
 pub mod installed_owner;
-#[path = "../../../src/installed_supervisor.rs"]
-pub mod installed_supervisor;
 #[path = "../../../src/installed_resources.rs"]
 pub mod installed_resources;
+#[path = "../../../src/installed_supervisor.rs"]
+pub mod installed_supervisor;
