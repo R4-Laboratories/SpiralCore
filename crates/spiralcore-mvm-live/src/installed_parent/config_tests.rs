@@ -702,9 +702,11 @@ fn original_portable_workspace_is_funded_once_and_does_not_refund_retained_disk(
     );
     let (lifetime, mut owner) = prepared.begin_launch().unwrap();
     let anchor = lifetime.into_anchor();
-    provider
-        .check_portable_startup_workspace(&anchor, &pin)
-        .unwrap();
+    let refused = provider.check_portable_startup_workspace(&anchor, &pin);
+    assert!(refused.is_err(), "a quote alone admitted a materializer with unbounded scratch");
+    assert!(!_home.path().join("installation/.retained-portable-0").exists());
+    // Exercise the original inventory independently from kernel-enforced launch limits.
+    grant.check_portable_quote(&anchor, &pin).unwrap();
     let record = _home.path().join("installation/.retained-portable-0");
     assert!(
         record.is_file(),
@@ -713,8 +715,8 @@ fn original_portable_workspace_is_funded_once_and_does_not_refund_retained_disk(
     let mut wrong = pin.clone();
     wrong.bundle_sha256 = "b".repeat(64);
     assert!(
-        provider
-            .check_portable_startup_workspace(&anchor, &wrong)
+        grant
+            .check_portable_quote(&anchor, &wrong)
             .is_err()
     );
     assert!(grant.begin_startup_workspace(&grant.binding).is_err());
@@ -742,8 +744,8 @@ fn original_portable_workspace_is_funded_once_and_does_not_refund_retained_disk(
     grant.begin_startup_workspace(&grant.binding).unwrap();
     assert!(grant.begin_startup_workspace(&grant.binding).is_err());
     assert!(
-        provider
-            .check_portable_startup_workspace(&anchor, &pin)
+        grant
+            .check_portable_quote(&anchor, &pin)
             .is_err()
     );
     grant.complete_startup_workspace(&grant.binding).unwrap();

@@ -678,18 +678,6 @@ impl InstalledParentProvider {
 }
 
 impl ParentAdmissionProvider for InstalledParentProvider {
-    fn check_portable_startup_workspace(
-        &self,
-        owner: &Arc<mvm_core::host_lifetime::HostLifetimeAnchor>,
-        pin: &mvm_core::plan::PlanArtifact,
-    ) -> Result<()> {
-        let grant = self.original_grant(owner.binding())?;
-        ensure!(
-            owner.retains_parent_owner(&grant),
-            "foreign original portable archive owner"
-        );
-        grant.check_portable_quote(owner, pin)
-    }
     fn bind(
         &self,
         admitted: &AdmittedPlan,
