@@ -1,5 +1,7 @@
 # Original sender ordinal and receipt settlement
 
+One installed Firecracker pair retained its original signed receipt and 257-byte delivery across replacement of both mailbox helpers before B read the message. [Measurements and original transcripts](native-helper-restart/README.md)
+
 The opt-in `OrdinalV1` profile gave the original Linux sender a bounded retry window. In one component check B opened sequences 1 through 65 and recovered each three-byte payload exactly. The source reopened the identical 5,159-byte frame for ordinal 1 after losing its in-memory state. Separate original Linux helper processes exercised the normal durable-journal transport with a 257-byte input and fixture guest sockets. [Reviewed contributor source](https://github.com/Casey-allard/mvm/commit/121ff94ea1a22d5d5156230318aa139264ccea3a) · [Scale gate](https://github.com/R4-Laboratories/SpiralCore/issues/195)
 
 | Linux check | Observation |
