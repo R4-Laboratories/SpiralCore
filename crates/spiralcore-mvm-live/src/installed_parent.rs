@@ -28,6 +28,9 @@ pub use tenant_agent::TenantHelperLimits;
 #[path = "installed_parent/startup.rs"]
 pub(crate) mod startup;
 pub use startup::PortableStartupQuote;
+#[cfg(target_os = "linux")]
+#[path = "installed_parent/startup_bounds.rs"]
+mod startup_bounds;
 
 #[cfg(test)]
 #[path = "installed_parent/config_tests.rs"]
@@ -498,6 +501,17 @@ impl VmGrant {
 }
 
 impl CoreCurrentParentPermit for VmGrant {
+    #[cfg(target_os = "linux")]
+    fn authorize_original_root_copy(
+        &self,
+        binding: &HostLaunchBinding,
+        kernel: &Arc<mvm_core::canonical_linux::PreparedCanonicalLinux>,
+        directory: &std::fs::File,
+        bytes: std::num::NonZeroU64,
+    ) -> Result<()> {
+        self.check_current(binding)?;
+        self.check_original_kernel(kernel, Some((directory, bytes)))
+    }
     fn begin_startup_workspace(&self, binding: &HostLaunchBinding) -> Result<()> {
         self.transition_portable_workspace(binding, startup::Phase::Held, startup::Phase::Active)
     }
@@ -678,6 +692,25 @@ impl InstalledParentProvider {
 }
 
 impl ParentAdmissionProvider for InstalledParentProvider {
+    #[cfg(target_os = "linux")]
+    fn check_canonical_startup_workspace(
+        &self,
+        owner: &Arc<mvm_core::host_lifetime::HostLifetimeAnchor>,
+        kernel: &Arc<mvm_core::canonical_linux::PreparedCanonicalLinux>,
+        pin: &mvm_core::plan::PlanArtifact,
+    ) -> Result<()> {
+        let grant = self.original_grant(owner.binding())?;
+        ensure!(
+            owner.retains_parent_owner(&grant)
+                && kernel.pin() == pin
+                && owner
+                    .canonical_kernel()
+                    .is_some_and(|original| Arc::ptr_eq(original, kernel)),
+            "foreign original canonical startup"
+        );
+        grant.check_original_kernel(kernel, None)?;
+        grant.check_portable_quote(owner, pin)
+    }
     fn bind(
         &self,
         admitted: &AdmittedPlan,

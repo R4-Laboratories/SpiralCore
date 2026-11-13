@@ -295,7 +295,7 @@ impl RegistrationBinding {
             .verify_current()
     }
 }
-fn same_directory(left: &File, right: &File) -> Result<bool> {
+pub(super) fn same_directory(left: &File, right: &File) -> Result<bool> {
     let a = left.metadata()?;
     let b = right.metadata()?;
     Ok(a.is_dir() && b.is_dir() && (a.dev(), a.ino()) == (b.dev(), b.ino()))

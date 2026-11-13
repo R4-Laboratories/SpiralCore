@@ -208,7 +208,9 @@ fn issued_original_guard_is_one_shot_acyclic_and_quarantines_unproven_resources(
             .is_err()
     );
     let before = supervisor.managed_resources().snapshot().unwrap();
-    assert_eq!(before.usage.workers, 1);
+    // The original Firecracker exit listener is charged separately from this fixture endpoint.
+    let workers = 1 + u64::from(cfg!(target_os = "linux"));
+    assert_eq!(before.usage.workers, workers);
     assert_eq!(
         before.usage.cache_disk_bytes,
         mvm_vmm::host::telemetry_provisioning::DEFAULT_RECORDS_BYTE_CAP
@@ -242,7 +244,7 @@ fn issued_original_guard_is_one_shot_acyclic_and_quarantines_unproven_resources(
     drop((partition, erased, guard, provider));
     let after = supervisor.managed_resources().snapshot().unwrap();
     assert_eq!(after.usage.guests, 1);
-    assert_eq!(after.usage.workers, 1);
+    assert_eq!(after.usage.workers, workers);
     assert_eq!(
         after.usage.cache_disk_bytes,
         mvm_vmm::host::telemetry_provisioning::DEFAULT_RECORDS_BYTE_CAP

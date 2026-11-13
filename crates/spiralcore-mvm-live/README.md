@@ -172,3 +172,30 @@ before reading worker input or touching a VM. The standalone keyless verifier
 still opens the original disk for read-only verification. The historical guest
 sender and receiver refuse at startup before opening a mailbox connection. The
 managed library still needs qualification of its public end-to-end SDK startup.
+
+### Managed Linux startup resources
+
+For an installed Firecracker bundle, the operator reserves the controller's
+entire address-space limit and the capacity of its local startup filesystem.
+`PreparedParentVm::prepare_canonical_startup` checks those limits, records the
+original reservation and calls MVM's canonical Linux preparer against the
+already-installed signed archive. Pass its returned kernel owner, the original
+lifetime and signed mapping to `LocalBackend::try_launch_with_canonical_direct_policy`.
+The private workload-root copy spends its signed length against that same
+reservation after plan admission. The original DATA disk has separate custody.
+
+The current profile checks the hard Linux `RLIMIT_AS` and the total capacity
+of disk-backed ext4 or XFS. It requires private `MVM_HOME` and scratch
+directories on that filesystem, with no nested mounts or split socket
+directory. The operator retains control of path and mount configuration. An
+ordinary directory on a large shared filesystem does not satisfy a smaller
+quota by reporting enough free space. The storage budget also covers runtime
+snapshots and the two native log files, `console.log` and `firecracker.log`.
+Both stderr and the Firecracker logging API can write the latter. The workload
+audit-chain limit measures a separate file.
+
+The cryptographic checks require the genuine release-matched CLI runtime and
+the enabled MVM manifest verifier. Startup custody on this profile remains
+subject to an installed test with those inputs and the original backing
+filesystem. A returned endpoint receipt and a controller test each prove only
+their own resource transitions.

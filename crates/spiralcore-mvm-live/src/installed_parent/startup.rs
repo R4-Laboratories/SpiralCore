@@ -11,6 +11,15 @@ pub struct PortableStartupQuote {
     pin: PlanArtifact,
     archive_bytes: NonZeroU64,
     claim: ManagedClaim,
+    #[cfg(target_os = "linux")]
+    workspace_disk: u64,
+}
+
+#[cfg(target_os = "linux")]
+struct CanonicalWorkspace {
+    kernel: Arc<mvm_core::canonical_linux::PreparedCanonicalLinux>,
+    bounds: super::startup_bounds::StartupBounds,
+    root_bytes: NonZeroU64,
 }
 
 impl PortableStartupQuote {
@@ -34,6 +43,8 @@ impl PortableStartupQuote {
         Ok(Self {
             pin,
             archive_bytes,
+            #[cfg(target_os = "linux")]
+            workspace_disk: storage_bytes.get(),
             claim: ManagedClaim {
                 host_metadata_bytes: sum(workspace_bytes)?,
                 staging_disk_bytes: sum(storage_bytes)?
@@ -56,6 +67,8 @@ pub(super) struct StartupWorkspace {
     quote: PortableStartupQuote,
     credit: ManagedReservation,
     pub(super) phase: Phase,
+    #[cfg(target_os = "linux")]
+    canonical: Option<CanonicalWorkspace>,
 }
 
 // Scope, original archive pin and all charged dimensions are committed before
@@ -83,6 +96,92 @@ impl Drop for Inventory {
 }
 
 impl PreparedParentVm {
+    /// Reserve a complete process and filesystem envelope before asking the
+    /// canonical SDK to authenticate an already installed bundle. The returned
+    /// kernel must be passed unchanged to try_launch_with_canonical_direct_policy.
+    #[cfg(target_os = "linux")]
+    pub fn prepare_canonical_startup(
+        self,
+        quote: PortableStartupQuote,
+    ) -> Result<(Self, Arc<mvm_core::canonical_linux::PreparedCanonicalLinux>)> {
+        ensure!(
+            self.grant.binding.backend == BackendKind::Firecracker,
+            "canonical startup requires the original Firecracker binding"
+        );
+        let home = mvm_core::config::mvm_home_strict()?;
+        let scratch = std::env::temp_dir();
+        let state = mvm_core::config::vm_state_dir_at(&home, &self.grant.binding.vm_name);
+        let tenant = mvm_core::config::host_agent_dir_at(&home, &self.grant.tenant);
+        ensure!(
+            mvm_core::config::vm_socket_dir_at(&state) == state
+                && mvm_core::config::host_agent_socket_dir_in(&tenant) == tenant,
+            "startup sockets must remain in the funded filesystem"
+        );
+        let pin = quote.pin.clone();
+        let archive_bytes = quote.archive_bytes;
+        let claim = quote.claim;
+        let storage = quote.workspace_disk;
+        let disk = archive_bytes.get() + storage; // checked by PortableStartupQuote::new
+        let prepared = self.with_portable_startup(quote)?;
+        let bounds = super::startup_bounds::StartupBounds::capture(
+            &home,
+            &scratch,
+            claim.host_metadata_bytes,
+            disk,
+        )?;
+        // Preparation itself may leave authenticated files even if it fails.
+        prepared.grant.retain_portable_debt(&pin, archive_bytes)?;
+        let registry = mvm_core::plan::bundle::BundleRegistry::default_path()?;
+        let archive = registry.archive_path(&pin.bundle_sha256);
+        let kernel = Arc::new(
+            mvm_client::launch::canonical_linux::prepare_canonical_linux(
+                &archive,
+                &pin,
+                BackendKind::Firecracker,
+            )?,
+        );
+        ensure!(
+            kernel.pin() == &pin
+                && kernel.arch() == mvm_core::arch::GuestArch::host()
+                && kernel.backend() == BackendKind::Firecracker,
+            "prepared kernel differs from the original installed bundle"
+        );
+        let root_bytes = NonZeroU64::new(kernel.workload_root_declaration()?.size_bytes)
+            .ok_or_else(|| anyhow!("empty original workload root"))?;
+        ensure!(
+            root_bytes
+                .get()
+                .checked_add(kernel.kernel_declaration().size)
+                .is_some_and(|both| both <= storage),
+            "signed root and kernel exceed charged storage"
+        );
+        bounds.check(
+            &mvm_core::config::mvm_home_strict()?,
+            &std::env::temp_dir(),
+            claim.host_metadata_bytes,
+            disk,
+        )?;
+        bounds.check_generation(kernel.generation_directory_file())?;
+        {
+            let mut lifecycle = prepared
+                .grant
+                .lifecycle
+                .lock()
+                .map_err(|_| anyhow!("parent lifecycle poisoned"))?;
+            lifecycle.check_launch_open()?;
+            lifecycle
+                .startup
+                .as_mut()
+                .ok_or_else(|| anyhow!("original startup reservation missing"))?
+                .canonical = Some(CanonicalWorkspace {
+                kernel: kernel.clone(),
+                bounds,
+                root_bytes,
+            });
+        }
+        Ok((prepared, kernel))
+    }
+
     pub fn with_portable_startup(self, quote: PortableStartupQuote) -> Result<Self> {
         self.grant.check_open()?;
         let parent = self
@@ -110,6 +209,8 @@ impl PreparedParentVm {
                 quote,
                 credit,
                 phase: Phase::Held,
+                #[cfg(target_os = "linux")]
+                canonical: None,
             });
         }
         Ok(self)
@@ -138,13 +239,63 @@ impl VmGrant {
         }
     }
 
+    #[cfg(target_os = "linux")]
+    pub(super) fn check_original_kernel(
+        &self,
+        kernel: &Arc<mvm_core::canonical_linux::PreparedCanonicalLinux>,
+        copy: Option<(&File, NonZeroU64)>,
+    ) -> Result<()> {
+        let lifecycle = self
+            .lifecycle
+            .lock()
+            .map_err(|_| anyhow!("parent lifecycle poisoned"))?;
+        lifecycle.check_launch_open()?;
+        let startup = lifecycle
+            .startup
+            .as_ref()
+            .ok_or_else(|| anyhow!("original startup absent"))?;
+        let prepared = startup
+            .canonical
+            .as_ref()
+            .ok_or_else(|| anyhow!("prepared canonical startup absent"))?;
+        ensure!(
+            Arc::ptr_eq(&prepared.kernel, kernel),
+            "foreign original canonical kernel"
+        );
+        startup.credit.check_current()?;
+        prepared.bounds.check(
+            &mvm_core::config::mvm_home_strict()?,
+            &std::env::temp_dir(),
+            startup.quote.claim.host_metadata_bytes,
+            startup.quote.archive_bytes.get() + startup.quote.workspace_disk,
+        )?;
+        prepared
+            .bounds
+            .check_generation(kernel.generation_directory_file())?;
+        if let Some((directory, bytes)) = copy {
+            ensure!(
+                bytes == prepared.root_bytes
+                    && super::host_agent::same_directory(
+                        directory,
+                        kernel.generation_directory_file()
+                    )?,
+                "root copy differs from the originally paid file extent or generation"
+            );
+        }
+        Ok(())
+    }
+
     pub(super) fn check_portable_quote(
         &self,
         owner: &Arc<HostLifetimeAnchor>,
         pin: &PlanArtifact,
     ) -> Result<()> {
         self.check_open()?;
-        let bytes = owner.portable_archive_bytes(pin)?;
+        self.retain_portable_debt(pin, owner.portable_archive_bytes(pin)?)
+    }
+
+    fn retain_portable_debt(&self, pin: &PlanArtifact, bytes: NonZeroU64) -> Result<()> {
+        self.check_open()?;
         let (credit, commitment) = {
             let lifecycle = self
                 .lifecycle

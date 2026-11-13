@@ -464,6 +464,7 @@ mod linux {
         let custody = prepare_disk_custody(&spec, backing.as_ref())?;
         let files = mvm_vmm::driver::prepared_disks::PreparedBootFiles {
             kernel: None,
+            workload_root: None,
             writable: custody,
             data: None,
         };
