@@ -131,21 +131,14 @@ impl PreparedParentVm {
         )?;
         let registry = mvm_core::plan::bundle::BundleRegistry::default_path()?;
         let archive = registry.archive_path(&pin.bundle_sha256);
-        {
-            let decoded =
-                mvm_core::plan::bundle::read_exact_bundle_archive(&archive, archive_bytes)?;
-            ensure!(
-                format!("{:x}", Sha256::digest(&decoded)) == pin.bundle_sha256,
-                "original installed archive differs from the signed startup pin"
-            );
-        }
         // Preparation may leave authenticated files even when it later refuses.
         prepared.grant.retain_portable_debt(&pin, archive_bytes)?;
         let kernel = Arc::new(
-            mvm_client::launch::canonical_linux::prepare_canonical_linux(
+            mvm_client::launch::canonical_linux::prepare_funded_canonical_linux(
                 &archive,
                 &pin,
                 BackendKind::Firecracker,
+                archive_bytes,
             )?,
         );
         ensure!(
