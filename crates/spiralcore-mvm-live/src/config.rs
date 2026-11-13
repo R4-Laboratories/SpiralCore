@@ -1,7 +1,7 @@
 //! Private, ephemeral launch provisioning for the development witness.
 use crate::Result;
 use ed25519_dalek::{SigningKey, VerifyingKey};
-pub use mvm_contract::protocol::mailbox::MailboxBandwidthProfile;
+
 use mvm_contract::protocol::mailbox::*;
 use mvm_core::{
     crypto::aead::Key,
@@ -16,6 +16,38 @@ use mvm_core::{
 use serde::{Deserialize, Serialize};
 use spiralcore_mvm_adapter::{CONTENT_TYPE, Direction, DirectionConfig, Policy};
 use std::time::{SystemTime, UNIX_EPOCH};
+
+/// Measurement settings understood by previously saved development trials.
+/// Current installed admission and rate enforcement belong to the original SDK/helper.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub enum LegacyWitnessBandwidth {
+    #[default]
+    #[serde(rename = "standard")]
+    Standard,
+    #[serde(rename = "experimental64")]
+    Experimental64MiB,
+}
+
+impl LegacyWitnessBandwidth {
+    pub const fn bytes_per_second(self) -> u64 {
+        match self {
+            Self::Standard => 4 << 20,
+            Self::Experimental64MiB => 64 << 20,
+        }
+    }
+    pub const fn burst_bytes(self) -> u64 {
+        8 << 20
+    }
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Standard => "standard",
+            Self::Experimental64MiB => "experimental64",
+        }
+    }
+}
+
+/// Compatibility spelling for callers decoding development witness plans.
+pub type MailboxBandwidthProfile = LegacyWitnessBandwidth;
 
 pub fn now_ms() -> Result<i64> {
     Ok(i64::try_from(
@@ -54,7 +86,9 @@ pub fn parse_arm(value: &str) -> Result<Arm> {
         "combined-cpu" => Ok(Arm::CombinedCpu),
         "whole-mixed" => Ok(Arm::WholeMixed),
         "raw-mixed" => Ok(Arm::RawMixed),
-        _ => Err("arm must be warm, whole, raw, combined, combined-cpu, whole-mixed or raw-mixed".into()),
+        _ => Err(
+            "arm must be warm, whole, raw, combined, combined-cpu, whole-mixed or raw-mixed".into(),
+        ),
     }
 }
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -73,7 +107,7 @@ pub struct Plan {
     pub bandwidth_profile: MailboxBandwidthProfile,
 }
 
-/// Parse only the two fixed host-authorized profiles; omission preserves legacy policy.
+/// Decode the two historical witness settings, including the omitted default.
 pub fn parse_bandwidth_profile(value: Option<&str>) -> Result<MailboxBandwidthProfile> {
     match value {
         None | Some("standard") => Ok(MailboxBandwidthProfile::Standard),

@@ -100,7 +100,7 @@ pub fn initramfs(guest_elf: &[u8], bootstrap_json: &[u8]) -> Result<Vec<u8>> {
         0o600,
         bootstrap_json.to_vec(),
     ));
-    let archive = build_newc_cpio(&entries);
+    let archive = build_newc_cpio(&entries)?;
     if archive.len() > MAX_INITRAMFS {
         return Err(invalid("packed initramfs exceeds its byte limit").into());
     }
@@ -307,14 +307,25 @@ pub fn worker(kernel: &Path, disk: Option<&Path>, mailbox_socket: Option<&Path>)
     worker_with_profile(kernel, disk, mailbox_socket, Default::default())
 }
 
-/// Host-selected bounded profile. The guest bootstrap cannot widen this choice.
+fn require_original_mailbox_path(socket: Option<&Path>) -> io::Result<()> {
+    if socket.is_some() {
+        return Err(io::Error::new(
+            io::ErrorKind::Unsupported,
+            "caller-provided HVF mailbox socket unavailable; launch the original signed SDK pair with tools/ari-own-mailbox-witness (paired-journal)",
+        ));
+    }
+    Ok(())
+}
+
+/// Legacy profile is retained for measurement of the development worker.
 pub fn worker_with_profile(
     kernel: &Path,
     disk: Option<&Path>,
     mailbox_socket: Option<&Path>,
     bandwidth_profile: crate::config::MailboxBandwidthProfile,
 ) -> Result<Value> {
-    worker_prepared(kernel, disk, mailbox_socket, bandwidth_profile, None)
+    require_original_mailbox_path(mailbox_socket)?;
+    worker_prepared(kernel, disk, bandwidth_profile, None)
 }
 
 pub fn worker_installed(
@@ -324,6 +335,7 @@ pub fn worker_installed(
     bandwidth_profile: crate::config::MailboxBandwidthProfile,
     expected_role: u8,
 ) -> Result<Value> {
+    require_original_mailbox_path(mailbox_socket)?;
     let wall = Instant::now();
     let cpu = ProcessTime::try_now()?;
     let mut context =
@@ -331,13 +343,7 @@ pub fn worker_installed(
     let input = context.read_initrd()?;
     let setup_cpu = micros(cpu.try_elapsed()?)?;
     let setup_wall = micros(wall.elapsed())?;
-    let mut value = worker_prepared(
-        kernel,
-        disk,
-        mailbox_socket,
-        bandwidth_profile,
-        Some((context, input)),
-    )?;
+    let mut value = worker_prepared(kernel, disk, bandwidth_profile, Some((context, input)))?;
     value["installed_control_input_cpu_us"] = json!(setup_cpu);
     value["installed_control_input_wall_us"] = json!(setup_wall);
     value["worker_process_cpu_us"] = json!(micros(cpu.try_elapsed()?)?);
@@ -348,7 +354,6 @@ pub fn worker_installed(
 fn worker_prepared(
     kernel: &Path,
     disk: Option<&Path>,
-    mailbox_socket: Option<&Path>,
     bandwidth_profile: crate::config::MailboxBandwidthProfile,
     installed: Option<(crate::installed_worker::InstalledWorkerContext, Vec<u8>)>,
 ) -> Result<Value> {
@@ -374,15 +379,13 @@ fn worker_prepared(
     let kernel_sha256 = mvm_core::crypto::verified_digest::sha256_open_file_verified(&kernel_file)?;
     let (backing, disks) = match disk {
         Some(path) => {
-            let (held, image) = prepare_disk(path, mailbox_socket.is_none())?;
+            let (held, image) = prepare_disk(path, true)?;
             (Some(held), vec![image])
         }
         None => (None, Vec::new()),
     };
     let capture = Arc::new(Mutex::new(ConsoleCapture::default()));
     let channels = HostChannels {
-        mailbox_socket: mailbox_socket.map(Path::to_path_buf),
-        mailbox_bandwidth_profile: bandwidth_profile,
         mem_mib: 1024,
         vcpus: 1,
         console_sink: Some(Box::new(BoundedConsole(Arc::clone(&capture)))),
@@ -394,7 +397,7 @@ fn worker_prepared(
             .literal_bootargs(&bootargs)?
             .initramfs(Some(&initrd))
             .disks(disks)
-            .vsock(mailbox_socket.is_some())
+            .vsock(false)
             .channels(channels)
             .build();
     let _host_lifetime = if let Some(context) = &mut installed {
@@ -447,8 +450,9 @@ fn worker_prepared(
         "installed_role": installed.as_ref().map(|c| c.binding().role),
         "backend_exit_confirmed": true,
         "mailbox_bandwidth_profile": bandwidth_profile,
-        "mailbox_rate_bytes_per_second": bandwidth_profile.bytes_per_second(),
-        "mailbox_burst_bytes": bandwidth_profile.burst_bytes(),
+        "mailbox_rate_enforced": false,
+        "mailbox_rate_bytes_per_second": null,
+        "mailbox_burst_bytes": null,
         "ok": true,
         "console": String::from_utf8(console)?,
         "guest_events": events,
@@ -676,5 +680,22 @@ mod tests {
         assert_eq!(checked_ready_clock(&capture).unwrap().2, 5000);
         capture.ready_clock.as_mut().unwrap().guest_unix_ms += 1;
         assert!(checked_ready_clock(&capture).is_err());
+    }
+}
+
+#[cfg(test)]
+#[test]
+fn legacy_mailbox_path_refuses_before_worker_or_kernel_inputs() {
+    let kernel = Path::new("/nonexistent-fixture-kernel");
+    let socket = Some(Path::new("/nonexistent-fixture-mailbox"));
+    for result in [
+        worker(kernel, None, socket),
+        worker_installed(kernel, None, socket, Default::default(), 1),
+    ] {
+        let err = result.expect_err("unadmitted caller-supplied mailbox");
+        assert_eq!(
+            err.downcast_ref::<io::Error>().map(io::Error::kind),
+            Some(io::ErrorKind::Unsupported)
+        );
     }
 }

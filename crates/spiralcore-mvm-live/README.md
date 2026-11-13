@@ -146,3 +146,21 @@ The supplied demonstration uses public/synthetic data and has no FIPS validation
 or CUI accreditation claim. Full upstream MVM workspace qualification, production
 mailbox lifecycle, remote orchestration, Iroh, new-epoch cache migration and
 arbitrary host power-loss recovery remain separate work.
+
+## Current signed service and historical HVF witness
+
+The direct HVF development worker described above used the contribution fork at
+`ef1067e3bcce4f72bcd5cdacb6b914e76298ae20` to attach an explicitly supplied
+mailbox socket. Its `standard` and `experimental64` plan values remain decodable
+for historical measurements. On the current MVM interface, the worker refuses a
+supplied mailbox socket before reading a kernel, disk or inherited launch channel.
+A disk-only run reports no mailbox rate enforcement.
+
+The installed reference driver uses two signed originals, the canonical mailbox
+helper on port 5257, and the destination guest's own reader and acknowledgment.
+Its reproduction procedure records SDK readback, guest traffic, relay counters
+and original shutdown independently. The managed FlowMux endpoint owner uses its
+own signed network plan, funds the original tenant daemon and signer, and retains
+its endpoint partition until typed disposal. The library's new managed owner and
+the reference mailbox driver have separate integration results.
+[Installed mailbox driver and reproducer](../../tools/ari-own-mailbox-witness/paired-native.md)
