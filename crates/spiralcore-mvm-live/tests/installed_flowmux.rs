@@ -77,18 +77,56 @@ fn publish_guest(home: &Path, plan_id: &str, observed: ObservedFlowMuxGuest) -> 
     Ok(())
 }
 
-fn partition() -> EndpointPartitionLimits {
-    EndpointPartitionLimits {
+fn partition(signed: &SignedExecutionPlan) -> Result<EndpointPartitionLimits> {
+    let keys = mvm_core::user_config::load_strict(None)?.trusted_plan_signer_keys()?;
+    let trusted: Vec<_> = keys
+        .iter()
+        .map(|(name, key)| (name.as_str(), key))
+        .collect();
+    let plan = mvm_core::plan::verify_plan(signed, &trusted)?;
+    let collector = mvm_hostd::telemetry_collector::owned_collector_requirements()?;
+    let scanner = mvm_hostd::telemetry_collector::owned_scanner_requested_bytes(&plan.redaction)?;
+    let rules =
+        mvm_hostd::stream::redact::StreamRedaction::owned_pii_requirements(&plan.redaction)?
+            .rule_count;
+    let controller =
+        mvm_hostd::installed_endpoint::owned_network_runtime_requirements()?.controller;
+    // The real typed configuration includes post-registration identities. Reserve
+    // its entire allowed shape here. MVM charges the exact node count at handoff.
+    let bootstrap_max =
+        mvm_vmm::host::network_endpoint_spawn::INSTALLED_BOOTSTRAP_MIN_BYTES + 65_536 * 1024;
+    let one_relay = (16 + 64) << 10;
+    let one_reader = 64 << 10;
+    let metadata = [
+        collector.known_metadata_bytes,
+        scanner,
+        controller.controller_metadata_bytes,
+        mvm_hostd::owned_resources::WORKSPACE_BYTES,
+        one_relay,
+        one_reader,
+        bootstrap_max,
+    ]
+    .into_iter()
+    .try_fold(0u64, u64::checked_add)
+    .context("endpoint metadata sum overflow")?;
+    println!(
+        "{}",
+        json!({"phase":"funded_endpoint_metadata","scanner_rules":rules,"scanner_bytes":scanner,
+        "collector_bytes":collector.known_metadata_bytes,"bootstrap_upper_bytes":bootstrap_max,
+        "controller_bytes":controller.controller_metadata_bytes,"audit_bytes":mvm_hostd::owned_resources::WORKSPACE_BYTES,
+        "relay_bytes":one_relay,"reader_bytes":one_reader,"total_bytes":metadata})
+    );
+    Ok(EndpointPartitionLimits {
         host_plaintext_bytes: 16 << 20,
         host_codec_bytes: 16 << 20,
         host_carrier_bytes: 8 << 20,
-        host_metadata_bytes: 48 << 20,
+        host_metadata_bytes: metadata,
         host_stack_bytes: 48 << 20,
         cache_disk_bytes: 32 << 20,
         staging_disk_bytes: 4 << 20,
         workers: 6,
         max_streams: 1,
-    }
+    })
 }
 
 async fn run_guest(
@@ -184,7 +222,7 @@ fn installed_original_flowmux_workload() -> Result<()> {
     )?;
     let mut supervisor = InstalledSupervisor::start(owner, config)?;
     let mut provider = InstalledParentProvider::new(&supervisor)?;
-    provider.configure_object_tcp(&supervisor, partition())?;
+    provider.configure_object_tcp(&supervisor, partition(&packet.signed_plan)?)?;
     let backend = LocalBackend::with_hypervisor("firecracker");
     let helper = provider.start_tenant_helper(
         "local",
