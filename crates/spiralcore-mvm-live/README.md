@@ -18,14 +18,47 @@ a new guest mounts that disk read-only and verifies exact bytes with no mailbox
 credentials. That historical readback is distinct from authorization to resume a
 new execution epoch.
 
-The current dependency is the explicit contribution-preparation fork commit
-`ae12e9deb41cc9a3264196ce22ebc72d4042883d`, based on upstream `6ae461a`.
-See `mvm-service-patch/` for the reproducible patch bundle and provenance.
+The current manifest selects the published contribution checkpoint
+`7b22454077530e96146d68204b711de53e3d05a8`. Historical measurements retain
+their original source identities; this pin does not upgrade those results into
+qualification of a new build. The `mvm-service-patch/` bundle reproduces the older
+`ae12e9deb41cc9a3264196ce22ebc72d4042883d` preparation based on upstream
+`6ae461a`; it is historical provenance, not a replacement for the current lock.
 The historical `mvm-patch/` bundle and prior results remain pinned to
 `3104a12c5b071a6851323fa8115d2afaf3f0bb8b`; they do not qualify the new service.
 Port **5257 is experimental**. The production supervisor continues to
 leave this binding disabled. The existing policy-controlled FlowMux port 5253 is
 unchanged. No guest networking interface or general TCP/IP bridge is installed.
+
+## Installed canonical FlowMux controller
+
+The separate `canonical-host` feature enables the original installed parent,
+signed-plan SDK launch, retained entrypoint channel and original-owner retirement.
+It is opt-in; `live` remains the default. The installed FlowMux case currently
+requires an approved Linux x86_64/Firecracker host, a funded private volume,
+matched helper executables and a genuinely signed role. It uses FlowMux port
+5253 and does not grant mailbox or guest-network authority.
+
+Build the actual named integration target using the existing shared target:
+
+```sh
+cargo +1.97.1 test --locked --manifest-path crates/spiralcore-mvm-live/Cargo.toml \
+  --features canonical-host --test installed_flowmux --no-run
+```
+
+The resulting executable must list `installed_original_flowmux_workload: test`.
+Its ignored native case is run only by the explicit installed harness, with
+the original operator packet and resource owners. Ordinary component tests or
+a command that executes zero tests do not qualify the installed path. The
+[public installer, peer and Linux runner](../../tools/installed-flowmux-witness/README.md)
+document the exact role inputs, process limits and required result boundaries.
+
+The controller's relative Cargo patches unify its local SpiralCore types with
+the same tracked sources MVM pins at `7458294c`. They introduce no second codec.
+Cargo also needs explicit access to MVM's published vendored `gix` patches,
+because it does not inherit a Git dependency's workspace patches. Inspect actual
+resolved package IDs after changing these pins; compilation and native lifecycle
+acceptance remain separate from dependency resolution.
 
 ## Build and run
 

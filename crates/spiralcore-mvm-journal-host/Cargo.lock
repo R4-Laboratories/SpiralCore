@@ -2243,23 +2243,6 @@ dependencies = [
 
 [[package]]
 name = "mvm-contract"
-version = "0.27.0-rc.1"
-source = "git+https://github.com/Casey-allard/mvm?rev=ef1067e3bcce4f72bcd5cdacb6b914e76298ae20#ef1067e3bcce4f72bcd5cdacb6b914e76298ae20"
-dependencies = [
- "anyhow",
- "base64",
- "bytes",
- "chrono",
- "ed25519-dalek",
- "ipnet",
- "serde",
- "serde_json",
- "sha2 0.11.1",
- "thiserror",
-]
-
-[[package]]
-name = "mvm-contract"
 version = "0.28.0-rc.1"
 source = "git+https://github.com/tinylabscom/mvm?rev=543efc7f94aa756c09785b38bdd024b6ba8199c7#543efc7f94aa756c09785b38bdd024b6ba8199c7"
 dependencies = [
@@ -2277,36 +2260,20 @@ dependencies = [
 ]
 
 [[package]]
-name = "mvm-core"
-version = "0.27.0-rc.1"
-source = "git+https://github.com/Casey-allard/mvm?rev=ef1067e3bcce4f72bcd5cdacb6b914e76298ae20#ef1067e3bcce4f72bcd5cdacb6b914e76298ae20"
+name = "mvm-contract"
+version = "0.28.0-rc.2"
+source = "git+https://github.com/Casey-allard/mvm?rev=7b22454077530e96146d68204b711de53e3d05a8#7b22454077530e96146d68204b711de53e3d05a8"
 dependencies = [
- "aes-gcm",
  "anyhow",
  "base64",
+ "bytes",
  "chrono",
- "core-foundation",
  "ed25519-dalek",
- "hex",
- "hmac",
- "libc",
- "mvm-contract 0.27.0-rc.1",
- "mvm-macho-sign 0.27.0-rc.1",
- "plist",
- "rand",
- "rustix",
- "secrecy",
- "security-framework",
+ "ipnet",
  "serde",
- "serde_jcs",
  "serde_json",
  "sha2 0.11.1",
- "tempfile",
  "thiserror",
- "tracing",
- "uuid",
- "x25519-dalek",
- "zeroize",
 ]
 
 [[package]]
@@ -2346,6 +2313,39 @@ dependencies = [
  "toml",
  "tracing",
  "unicode-normalization",
+ "uuid",
+ "x25519-dalek",
+ "zeroize",
+]
+
+[[package]]
+name = "mvm-core"
+version = "0.28.0-rc.2"
+source = "git+https://github.com/Casey-allard/mvm?rev=7b22454077530e96146d68204b711de53e3d05a8#7b22454077530e96146d68204b711de53e3d05a8"
+dependencies = [
+ "aes-gcm",
+ "anyhow",
+ "base64",
+ "chrono",
+ "core-foundation",
+ "ed25519-dalek",
+ "hex",
+ "hmac",
+ "libc",
+ "mvm-contract 0.28.0-rc.2",
+ "mvm-macho-sign 0.28.0-rc.2",
+ "plist",
+ "rand",
+ "rustix",
+ "secrecy",
+ "security-framework",
+ "serde",
+ "serde_jcs",
+ "serde_json",
+ "sha2 0.11.1",
+ "tempfile",
+ "thiserror",
+ "tracing",
  "uuid",
  "x25519-dalek",
  "zeroize",
@@ -2450,8 +2450,8 @@ dependencies = [
 
 [[package]]
 name = "mvm-macho-sign"
-version = "0.27.0-rc.1"
-source = "git+https://github.com/Casey-allard/mvm?rev=ef1067e3bcce4f72bcd5cdacb6b914e76298ae20#ef1067e3bcce4f72bcd5cdacb6b914e76298ae20"
+version = "0.28.0-rc.1"
+source = "git+https://github.com/tinylabscom/mvm?rev=543efc7f94aa756c09785b38bdd024b6ba8199c7#543efc7f94aa756c09785b38bdd024b6ba8199c7"
 dependencies = [
  "plist",
  "sha1",
@@ -2460,8 +2460,8 @@ dependencies = [
 
 [[package]]
 name = "mvm-macho-sign"
-version = "0.28.0-rc.1"
-source = "git+https://github.com/tinylabscom/mvm?rev=543efc7f94aa756c09785b38bdd024b6ba8199c7#543efc7f94aa756c09785b38bdd024b6ba8199c7"
+version = "0.28.0-rc.2"
+source = "git+https://github.com/Casey-allard/mvm?rev=7b22454077530e96146d68204b711de53e3d05a8#7b22454077530e96146d68204b711de53e3d05a8"
 dependencies = [
  "plist",
  "sha1",
@@ -3280,8 +3280,8 @@ version = "0.1.0"
 dependencies = [
  "cpu-time",
  "ed25519-dalek",
- "mvm-contract 0.27.0-rc.1",
- "mvm-core 0.27.0-rc.1",
+ "mvm-contract 0.28.0-rc.2",
+ "mvm-core 0.28.0-rc.2",
  "rand",
  "serde",
  "serde_jcs",
@@ -3297,10 +3297,10 @@ dependencies = [
  "cpu-time",
  "ed25519-dalek",
  "mvm-agentd",
- "mvm-contract 0.27.0-rc.1",
  "mvm-contract 0.28.0-rc.1",
- "mvm-core 0.27.0-rc.1",
+ "mvm-contract 0.28.0-rc.2",
  "mvm-core 0.28.0-rc.1",
+ "mvm-core 0.28.0-rc.2",
  "mvm-hostd",
  "rand",
  "serde_json",
