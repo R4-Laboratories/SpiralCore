@@ -2,6 +2,9 @@
 //! original bundle and peer policy before invoking this test in its funded home.
 #![cfg(all(target_os = "linux", feature = "canonical-host"))]
 
+#[path = "installed_flowmux/output.rs"]
+mod output;
+
 use anyhow::{Context, Result, ensure};
 use mvm_client::{LaunchRequest, LifecycleMode, LocalBackend, RootfsSource};
 use mvm_contract::{peer::PeerBinding, policy::network_policy::CooperatingPayloadPolicy};
@@ -134,7 +137,8 @@ async fn run_guest(
     input: OperatorInputs,
     provider: &InstalledParentProvider,
     backend: &LocalBackend,
-) -> Result<(SingleGuestRetention, ObservedFlowMuxGuest)> {
+    retention: &mut Option<(SingleGuestRetention, ObservedFlowMuxGuest)>,
+) -> Result<()> {
     let n = input.decoded_archive_bytes;
     let additional = |total: u64| {
         total
@@ -174,19 +178,36 @@ async fn run_guest(
         launch.start(req, policy).await?;
         let launch_ns = started.elapsed().as_nanos();
         let observed = launch.flowmux_guest()?;
+        *retention = Some((retained, observed));
         publish_guest(home, &launch.outcome()?.plan_id, observed)?;
-        let exit = launch.wait_until(Instant::now() + Duration::from_secs(40))?;
-        let evidence = json!({
-            "phase": "workload_exit", "prepared_ns": prepared_ns, "launch_ns": launch_ns,
-            "original_exit_code": exit.code, "success": exit.success,
-            "through_exit_ns": started.elapsed().as_nanos()
-        });
-        println!("{evidence}");
-        ensure!(
-            exit.success && exit.code == Some(0),
-            "original workload did not return zero"
+        let mut output = output::GuestOutput::default();
+        let dispatch_start = Instant::now();
+        let dispatch = launch.run_entrypoint(dispatch_start + Duration::from_secs(40), &mut output);
+        let terminal = dispatch.as_ref().ok().map(|call| &call.terminal);
+        let exit = match terminal {
+            Some(mvm_client::entrypoint::CallTerminal::Exited { code }) => Some(*code),
+            _ => None,
+        };
+        println!(
+            "{}",
+            json!({
+                "phase": "original_entrypoint", "prepared_ns": prepared_ns, "launch_ns": launch_ns,
+                "dispatch_ns": dispatch_start.elapsed().as_nanos(), "original_workload_exit": exit,
+                "agent_refusal": terminal.and_then(mvm_client::entrypoint::CallTerminal::label),
+                "stderr_bytes": output.stderr_bytes,
+            })
         );
-        Ok(observed)
+        let rows = output.report();
+        if let Ok(ref phases) = rows {
+            println!("{}", json!({"phase":"guest_proxy_rows", "rows":phases}));
+        }
+        dispatch?;
+        ensure!(
+            exit == Some(0),
+            "original guest entrypoint did not exit zero"
+        );
+        output::verify(&rows?)?;
+        Ok(())
     }
     .await;
     let retired = launch.retire().await;
@@ -197,9 +218,8 @@ async fn run_guest(
     if let Err(ref error) = retired {
         eprintln!("original SDK retirement: {error:#}");
     }
-    let observed = result?;
-    retired?;
-    Ok((retained, observed))
+    result?;
+    retired
 }
 
 #[test]
@@ -232,12 +252,17 @@ fn installed_original_flowmux_workload() -> Result<()> {
         },
     );
     let provider = Arc::new(provider);
+    let mut retention = None;
     let result = (|| -> Result<_> {
         helper?;
         provider.install_sdk_registrar(&backend, "local")?;
         mvm_hostd::host_lifetime_parent::install(provider.clone())?;
         mvm_client::registry_application::discovery::block_on(run_guest(
-            &home, packet, &provider, &backend,
+            &home,
+            packet,
+            &provider,
+            &backend,
+            &mut retention,
         ))
     })();
     drop(backend);
@@ -275,9 +300,20 @@ fn installed_original_flowmux_workload() -> Result<()> {
         );
         println!("{}", json!({"phase": "controller_high_water", (name): kib}));
     }
-    let (retained, observed) = result?;
+    let verified = retention
+        .map(|(retained, observed)| retained.verify(&supervisor, observed))
+        .transpose();
+    println!(
+        "{}",
+        json!({"phase": "original_retained_reservations",
+                            "verified_four": matches!(&verified, Ok(Some(())))})
+    );
+    if let Err(error) = &verified {
+        eprintln!("original retained reservation check: {error:#}");
+    }
+    result?;
     stopped?;
-    retained.verify(&supervisor, observed)?;
+    verified?.context("expected the original retained reservation record")?;
     ensure!(
         matches!(finished, Err(SupervisorError::Busy)),
         "verified retained storage must keep its original charge"

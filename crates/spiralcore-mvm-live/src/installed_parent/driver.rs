@@ -121,6 +121,17 @@ impl CanonicalLaunch<'_> {
         endpoint.observed_guest(&outcome.admitted.plan_id().0)
     }
 
+    /// Invoke the boot-validated workload once on the original admitted guest.
+    pub fn run_entrypoint(
+        &self,
+        until: std::time::Instant,
+        observer: &mut dyn mvm_client::entrypoint::CallObserver,
+    ) -> Result<mvm_client::entrypoint::CallOutcome> {
+        Ok(self
+            .backend
+            .run_owned_entrypoint(self.outcome()?, until, observer)?)
+    }
+
     /// Read this boot's original workload exit report within one absolute deadline.
     pub fn wait_until(
         &self,
