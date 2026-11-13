@@ -109,6 +109,12 @@ fn config(provider: &InstalledParentProvider, name: &str) -> (Arc<VmGrant>, VmSt
 
 #[test]
 fn obtaining_a_registration_callback_requires_an_existing_original_registrar() {
+    mvm_core::util::test_env::isolated_lock_probe(
+        probe_obtaining_a_registration_callback_requires_an_existing_original_registrar,
+    );
+}
+
+fn probe_obtaining_a_registration_callback_requires_an_existing_original_registrar() {
     let (_home, mut supervisor, provider) = endpoint_tests::fixture();
     let preparation = provider
         .prepare_vm(
@@ -147,6 +153,12 @@ fn obtaining_a_registration_callback_requires_an_existing_original_registrar() {
 
 #[test]
 fn original_config_binds_opaque_workload_to_generated_vm_and_registration_once() {
+    mvm_core::util::test_env::isolated_lock_probe(
+        probe_original_config_binds_opaque_workload_to_generated_vm_and_registration_once,
+    );
+}
+
+fn probe_original_config_binds_opaque_workload_to_generated_vm_and_registration_once() {
     let (home, mut supervisor, provider) = endpoint_tests::fixture();
     let admitted = admitted(home.path(), "signed-workload-label");
     let (grant, mut config) = config(&provider, "generated-vm-name");
@@ -191,6 +203,10 @@ fn original_config_binds_opaque_workload_to_generated_vm_and_registration_once()
 
 #[test]
 fn equal_projection_from_another_actual_owner_cannot_bind_original_grant() {
+    mvm_core::util::test_env::isolated_lock_probe(probe_foreign_projection);
+}
+
+fn probe_foreign_projection() {
     let (home, mut supervisor, provider) = endpoint_tests::fixture();
     let (_foreign_home, mut foreign, foreign_provider) = endpoint_tests::fixture();
     let admitted = admitted(home.path(), "same-vm-name");
@@ -218,6 +234,12 @@ fn equal_projection_from_another_actual_owner_cannot_bind_original_grant() {
 
 #[test]
 fn substituted_signed_projection_and_tenant_refuse_before_parent_binding() {
+    mvm_core::util::test_env::isolated_lock_probe(
+        probe_substituted_signed_projection_and_tenant_refuse_before_parent_binding,
+    );
+}
+
+fn probe_substituted_signed_projection_and_tenant_refuse_before_parent_binding() {
     let (home, mut supervisor, provider) = endpoint_tests::fixture();
     let admitted = admitted(home.path(), "generated-vm-name");
     let changed = self::admitted(home.path(), "substituted-workload");
@@ -248,6 +270,12 @@ fn substituted_signed_projection_and_tenant_refuse_before_parent_binding() {
 
 #[test]
 fn unsupported_registration_preflight_does_not_consume_original_binding() {
+    mvm_core::util::test_env::isolated_lock_probe(
+        probe_unsupported_registration_preflight_does_not_consume_original_binding,
+    );
+}
+
+fn probe_unsupported_registration_preflight_does_not_consume_original_binding() {
     let (home, mut supervisor, provider) = endpoint_tests::fixture();
     let admitted = admitted(home.path(), "generated-vm-name");
     let (grant, mut config) = config(&provider, "generated-vm-name");
@@ -379,6 +407,12 @@ fn selected_policy() -> mvm_core::policy::network_policy::NetworkPolicy {
 
 #[test]
 fn signed_object_policy_and_private_publisher_bind_only_to_original_armed_config() {
+    mvm_core::util::test_env::isolated_lock_probe(
+        probe_signed_object_policy_and_private_publisher_bind_only_to_original_armed_config,
+    );
+}
+
+fn probe_signed_object_policy_and_private_publisher_bind_only_to_original_armed_config() {
     let (home, mut supervisor, provider) = endpoint_tests::fixture();
     let policy = selected_policy();
     let admitted = admit_with_network(home.path(), "signed-role", Some(&policy));
@@ -509,6 +543,13 @@ fn operator_partition() -> mvm_core::host_lifetime::EndpointPartitionLimits {
 #[cfg(target_os = "linux")]
 #[test]
 fn public_selected_handoff_charges_one_pool_and_refuses_second_claim_before_disk_effects() {
+    mvm_core::util::test_env::isolated_lock_probe(
+        probe_public_selected_handoff_charges_one_pool_and_refuses_second_claim_before_disk_effects,
+    );
+}
+
+#[cfg(target_os = "linux")]
+fn probe_public_selected_handoff_charges_one_pool_and_refuses_second_claim_before_disk_effects() {
     let (home, supervisor, mut provider) = endpoint_tests::fixture();
     provider
         .configure_object_tcp(&supervisor, operator_partition())
@@ -590,6 +631,13 @@ fn public_selected_handoff_charges_one_pool_and_refuses_second_claim_before_disk
 #[cfg(not(target_os = "linux"))]
 #[test]
 fn public_selected_configuration_refuses_missing_kernel_bound_before_charging() {
+    mvm_core::util::test_env::isolated_lock_probe(
+        probe_public_selected_configuration_refuses_missing_kernel_bound_before_charging,
+    );
+}
+
+#[cfg(not(target_os = "linux"))]
+fn probe_public_selected_configuration_refuses_missing_kernel_bound_before_charging() {
     let (_home, mut supervisor, mut provider) = endpoint_tests::fixture();
     let before = supervisor.managed_resources().snapshot().unwrap().usage;
     let error = provider
@@ -632,6 +680,12 @@ fn tenant_helper_funds_both_process_limits_and_both_journal_generations() {
 
 #[test]
 fn original_audit_bucket_is_persisted_once_and_survives_vm_disposal() {
+    mvm_core::util::test_env::isolated_lock_probe(
+        probe_original_audit_bucket_is_persisted_once_and_survives_vm_disposal,
+    );
+}
+
+fn probe_original_audit_bucket_is_persisted_once_and_survives_vm_disposal() {
     let (home, mut supervisor, provider) = endpoint_tests::fixture();
     let (grant, mut config) = config(&provider, "retained-audit");
     let admitted = admitted(home.path(), "retained-audit");
@@ -699,6 +753,12 @@ fn original_audit_bucket_is_persisted_once_and_survives_vm_disposal() {
 
 #[test]
 fn same_supervisor_has_one_active_tenant_controller_and_one_archive() {
+    mvm_core::util::test_env::isolated_lock_probe(
+        probe_same_supervisor_has_one_active_tenant_controller_and_one_archive,
+    );
+}
+
+fn probe_same_supervisor_has_one_active_tenant_controller_and_one_archive() {
     let (_home, supervisor, provider) = endpoint_tests::fixture();
     assert!(InstalledParentProvider::new(&supervisor).is_err());
     let inventory = provider.shared.audit_debts.clone();
@@ -712,6 +772,12 @@ fn same_supervisor_has_one_active_tenant_controller_and_one_archive() {
 
 #[test]
 fn original_portable_workspace_is_funded_once_and_does_not_refund_retained_disk() {
+    mvm_core::util::test_env::isolated_lock_probe(
+        probe_original_portable_workspace_is_funded_once_and_does_not_refund_retained_disk,
+    );
+}
+
+fn probe_original_portable_workspace_is_funded_once_and_does_not_refund_retained_disk() {
     use mvm_core::plan::{KeyId, PlanArtifact};
     use std::num::NonZeroU64;
 
@@ -830,6 +896,12 @@ fn original_portable_workspace_is_funded_once_and_does_not_refund_retained_disk(
 
 #[test]
 fn one_installed_tenant_registrar_selects_two_distinct_original_grants() {
+    mvm_core::util::test_env::isolated_lock_probe(
+        probe_one_installed_tenant_registrar_selects_two_distinct_original_grants,
+    );
+}
+
+fn probe_one_installed_tenant_registrar_selects_two_distinct_original_grants() {
     let (_home, _supervisor, provider) = endpoint_tests::fixture();
     let a = endpoint_tests::grant(&provider, "original-a");
     let b = endpoint_tests::grant(&provider, "original-b");
@@ -850,6 +922,13 @@ fn one_installed_tenant_registrar_selects_two_distinct_original_grants() {
 #[cfg(target_os = "linux")]
 #[test]
 fn original_sdk_driver_holds_the_unpolled_launch_then_refunds_its_exact_preparation() {
+    mvm_core::util::test_env::isolated_lock_probe(
+        probe_original_sdk_driver_holds_the_unpolled_launch_then_refunds_its_exact_preparation,
+    );
+}
+
+#[cfg(target_os = "linux")]
+fn probe_original_sdk_driver_holds_the_unpolled_launch_then_refunds_its_exact_preparation() {
     let (_home, mut supervisor, provider) = endpoint_tests::fixture();
     let before = supervisor.managed_resources().snapshot().unwrap().usage;
     let backend = mvm_client::LocalBackend::with_hypervisor("firecracker");

@@ -543,8 +543,12 @@ fn canonical_ack_initial_reply_and_cached_reply_partial_writes_keep_original_exp
         if mode != "ack" {
             enqueue(&state, &call_wire);
         }
-        let mut session = if mode == "ack" { sender } else { receiver };
         let is_caller = mode == "ack";
+        let (mut session, mut peer) = if is_caller {
+            (sender, receiver)
+        } else {
+            (receiver, sender)
+        };
         let worker = std::thread::spawn(move || {
             let wall = Instant::now();
             let result = (|| -> Result<()> {
@@ -602,6 +606,8 @@ fn canonical_ack_initial_reply_and_cached_reply_partial_writes_keep_original_exp
             observed.recv_timeout(Duration::from_millis(500)).unwrap(),
             1
         );
+        let observed_at = seeded.elapsed();
+        let mut reply_queued_at = None;
         let mut reply_wire = None;
         if mode == "ack" {
             let actual = frames(&state.lock().unwrap().written)[0].clone();
@@ -612,12 +618,9 @@ fn canonical_ack_initial_reply_and_cached_reply_partial_writes_keep_original_exp
                 seq: 0,
                 body: vec![8, 0, 7],
             };
-            let wire = canonical_reply(
-                &mut Session::new(&pair.receiver, &receiver_broker).unwrap(),
-                &actual,
-                &reply,
-            );
+            let wire = canonical_reply(&mut peer, &actual, &reply);
             enqueue(&state, &wire);
+            reply_queued_at = Some(seeded.elapsed());
             reply_wire = Some(wire);
         } else if mode == "cached-reply" {
             assert_eq!(
@@ -634,11 +637,13 @@ fn canonical_ack_initial_reply_and_cached_reply_partial_writes_keep_original_exp
         let state = state.lock().unwrap();
         let complete = frames(&state.written);
         let partial_at = frame_start(&state.written, stall_frame).unwrap();
-        let declared = u32::from_be_bytes(
-            state.written[partial_at..partial_at + 4]
-                .try_into()
-                .unwrap(),
-        ) as usize;
+        let prefix = state.written.get(partial_at..partial_at + 4).unwrap_or_else(|| {
+            panic!(
+                "{mode}: missing frame {stall_frame} length, completed={completed}, call_observed={observed_at:?}, reply_queued={reply_queued_at:?}, result={:?}, wall_us={}, stalls={}, accepted={}, incoming={}, reads={}, writes={}",
+                case.result, case.wall_us, state.stalls, state.written.len(), state.incoming.len(), state.reads, state.writes
+            )
+        });
+        let declared = u32::from_be_bytes(prefix.try_into().unwrap()) as usize;
         let charged = budget_owner
             .with_time::<_, ServiceError>(|budget, _| budget.snapshot())
             .unwrap();
@@ -967,9 +972,7 @@ fn late_explicit_call_retry_partial_write_keeps_original_signed_deadline_and_ide
                 Ok(())
             })
             .unwrap();
-        let result = (|| -> Result<_> {
-            caller.call_with_reconciliation(&request, &stream, &token, requests)
-        })();
+        let result = caller.call_with_reconciliation(&request, &stream, &token, requests);
         let lifecycle_wall_us = u64::try_from(wall.elapsed().as_micros()).unwrap();
         let pending = caller.pending.as_ref().unwrap();
         let original_wire = pending.encoded().unwrap().to_vec();

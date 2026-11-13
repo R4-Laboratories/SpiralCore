@@ -43,6 +43,12 @@ impl Drop for BindingCase {
 
 #[test]
 fn active_binding_returns_only_original_identity_and_current_active_epoch() {
+    mvm_core::util::test_env::isolated_lock_probe(
+        probe_active_binding_returns_only_original_identity_and_current_active_epoch,
+    );
+}
+
+fn probe_active_binding_returns_only_original_identity_and_current_active_epoch() {
     let fixture = BindingCase::new();
     let mut owner = InstallationOwner::initialize(&fixture.root, fixture.key).unwrap();
     let first = owner.begin().unwrap();
@@ -71,6 +77,12 @@ fn active_binding_returns_only_original_identity_and_current_active_epoch() {
 
 #[test]
 fn active_binding_uses_the_existing_canonical_storage_fence() {
+    mvm_core::util::test_env::isolated_lock_probe(
+        probe_active_binding_uses_the_existing_canonical_storage_fence,
+    );
+}
+
+fn probe_active_binding_uses_the_existing_canonical_storage_fence() {
     let fixture = BindingCase::new();
     let mut owner = InstallationOwner::initialize(&fixture.root, fixture.key).unwrap();
     let epoch = owner.begin().unwrap();
@@ -91,6 +103,12 @@ fn active_binding_uses_the_existing_canonical_storage_fence() {
 
 #[test]
 fn original_holder_handoff_retains_exclusion_after_its_owner_is_dropped() {
+    mvm_core::util::test_env::isolated_lock_probe(
+        probe_original_holder_handoff_retains_exclusion_after_its_owner_is_dropped,
+    );
+}
+
+fn probe_original_holder_handoff_retains_exclusion_after_its_owner_is_dropped() {
     let fixture = BindingCase::new();
     let mut owner = InstallationOwner::initialize(&fixture.root, fixture.key).unwrap();
     let epoch = owner.begin().unwrap();
@@ -113,6 +131,12 @@ fn original_holder_handoff_retains_exclusion_after_its_owner_is_dropped() {
 
 #[test]
 fn original_holder_handoff_refuses_old_epochs_and_the_actual_storage_fence() {
+    mvm_core::util::test_env::isolated_lock_probe(
+        probe_original_holder_handoff_refuses_old_epochs_and_the_actual_storage_fence,
+    );
+}
+
+fn probe_original_holder_handoff_refuses_old_epochs_and_the_actual_storage_fence() {
     let fixture = BindingCase::new();
     let mut owner = InstallationOwner::initialize(&fixture.root, fixture.key).unwrap();
     let old = owner.begin().unwrap();

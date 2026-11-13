@@ -7,6 +7,12 @@ use std::{
 
 #[test]
 fn retained_catalog_preserves_original_debt_after_scope_drop_and_close() {
+    mvm_core::util::test_env::isolated_lock_probe(
+        probe_retained_catalog_preserves_original_debt_after_scope_drop_and_close,
+    );
+}
+
+fn probe_retained_catalog_preserves_original_debt_after_scope_drop_and_close() {
     let home = tempfile::Builder::new()
         .permissions(fs::Permissions::from_mode(0o700))
         .tempdir()
@@ -174,6 +180,12 @@ fn lost_catalog_restart_helper() {
 
 #[test]
 fn lost_catalog_after_process_exit_cannot_reset_the_epoch() {
+    mvm_core::util::test_env::isolated_lock_probe(
+        probe_lost_catalog_after_process_exit_cannot_reset_the_epoch,
+    );
+}
+
+fn probe_lost_catalog_after_process_exit_cannot_reset_the_epoch() {
     let home = tempfile::Builder::new()
         .permissions(fs::Permissions::from_mode(0o700))
         .tempdir()

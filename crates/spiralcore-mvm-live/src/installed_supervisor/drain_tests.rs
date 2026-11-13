@@ -26,6 +26,10 @@ impl Drop for Running {
 
 #[test]
 fn close_and_drain_reaps_exact_child_but_retirement_still_requires_holder_exclusion() {
+    mvm_core::util::test_env::isolated_lock_probe(probe_drained_holder);
+}
+
+fn probe_drained_holder() {
     let base = std::env::temp_dir().join(format!(
         "spiral-worker-drain-{}-{}",
         std::process::id(),

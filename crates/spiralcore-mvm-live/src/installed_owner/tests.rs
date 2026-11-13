@@ -219,6 +219,12 @@ struct AbaObservation {
 
 #[test]
 fn holders_aba_must_reject_the_actual_wrong_fd_and_never_retire_live_original_holders() {
+    mvm_core::util::test_env::isolated_lock_probe(
+        probe_holders_aba_must_reject_the_actual_wrong_fd_and_never_retire_live_original_holders,
+    );
+}
+
+fn probe_holders_aba_must_reject_the_actual_wrong_fd_and_never_retire_live_original_holders() {
     let mut observations = Vec::new();
     for operation in ["acquire-sh", "finish-ex", "reconcile-ex"] {
         let fixture = Fixture::new();
@@ -277,6 +283,12 @@ struct SyncObservation {
 
 #[test]
 fn postrename_directory_sync_failure_must_survive_owner_drop_as_a_durable_fence() {
+    mvm_core::util::test_env::isolated_lock_probe(
+        probe_postrename_directory_sync_failure_must_survive_owner_drop_as_a_durable_fence,
+    );
+}
+
+fn probe_postrename_directory_sync_failure_must_survive_owner_drop_as_a_durable_fence() {
     let mut observations = Vec::new();
     for operation in ["finish", "reconcile"] {
         let fixture = Fixture::new();
@@ -426,6 +438,13 @@ fn probe_failed_postcommit_cleanup() {
 #[cfg(feature = "canonical-host")]
 #[test]
 fn archive_publication_reuses_original_active_slot_and_refuses_substitute() {
+    mvm_core::util::test_env::isolated_lock_probe(
+        probe_archive_publication_reuses_original_active_slot_and_refuses_substitute,
+    );
+}
+
+#[cfg(feature = "canonical-host")]
+fn probe_archive_publication_reuses_original_active_slot_and_refuses_substitute() {
     let fixture = Fixture::new();
     let mut owner = InstallationOwner::initialize(&fixture.root, key()).unwrap();
     let epoch = owner.begin().unwrap();

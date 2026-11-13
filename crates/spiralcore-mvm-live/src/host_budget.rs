@@ -549,11 +549,23 @@ mod tests {
 
         #[test]
         fn underflow_closes_installed_worker_authority_immediately() {
+            mvm_core::util::test_env::isolated_lock_probe(
+                probe_underflow_closes_installed_worker_authority_immediately,
+            );
+        }
+
+        fn probe_underflow_closes_installed_worker_authority_immediately() {
             assert_fault_closes_authority(false);
         }
 
         #[test]
         fn poison_closes_installed_worker_authority_immediately() {
+            mvm_core::util::test_env::isolated_lock_probe(
+                probe_poison_closes_installed_worker_authority_immediately,
+            );
+        }
+
+        fn probe_poison_closes_installed_worker_authority_immediately() {
             assert_fault_closes_authority(true);
         }
     }

@@ -88,6 +88,10 @@ fn fixture_admit(prepared: &PreparedParentVm) {
 
 #[test]
 fn missing_profile_refuses_before_any_endpoint_credit_or_disk_effect() {
+    mvm_core::util::test_env::isolated_lock_probe(probe_missing_profile);
+}
+
+fn probe_missing_profile() {
     let (_home, mut supervisor, provider) = fixture();
     let prepared = grant(&provider, "endpoint-profile-gate");
     fixture_admit(&prepared);
@@ -114,6 +118,12 @@ fn missing_profile_refuses_before_any_endpoint_credit_or_disk_effect() {
 
 #[test]
 fn mandatory_telemetry_capacity_refuses_before_endpoint_credit_or_disk_effect() {
+    mvm_core::util::test_env::isolated_lock_probe(
+        probe_mandatory_telemetry_capacity_refuses_before_endpoint_credit_or_disk_effect,
+    );
+}
+
+fn probe_mandatory_telemetry_capacity_refuses_before_endpoint_credit_or_disk_effect() {
     let (home, mut supervisor, mut provider) = fixture();
     // This deliberately undersized TOTAL allowance cannot contain the
     // mandatory canonical records buffer, regardless of available host quota.
@@ -182,6 +192,12 @@ fn probe_foreign_supervisor() {
 
 #[test]
 fn issued_original_guard_is_one_shot_acyclic_and_quarantines_unproven_resources() {
+    mvm_core::util::test_env::isolated_lock_probe(
+        probe_issued_original_guard_is_one_shot_acyclic_and_quarantines_unproven_resources,
+    );
+}
+
+fn probe_issued_original_guard_is_one_shot_acyclic_and_quarantines_unproven_resources() {
     let (_home, mut supervisor, mut provider) = fixture();
     provider
         .configure_endpoints(&supervisor, fixture_profile())
@@ -262,6 +278,12 @@ fn issued_original_guard_is_one_shot_acyclic_and_quarantines_unproven_resources(
 
 #[test]
 fn flowmux_guest_observation_requires_original_registered_directories() {
+    mvm_core::util::test_env::isolated_lock_probe(
+        probe_flowmux_guest_observation_requires_original_registered_directories,
+    );
+}
+
+fn probe_flowmux_guest_observation_requires_original_registered_directories() {
     use mvm_core::host_lifetime::EndpointPartitionGuard;
     let (_home, supervisor, mut provider) = fixture();
     provider
@@ -301,6 +323,12 @@ fn flowmux_guest_observation_requires_original_registered_directories() {
 
 #[test]
 fn retained_credits_reject_equal_sized_foreign_or_additional_originals() {
+    mvm_core::util::test_env::isolated_lock_probe(
+        probe_retained_credits_reject_equal_sized_foreign_or_additional_originals,
+    );
+}
+
+fn probe_retained_credits_reject_equal_sized_foreign_or_additional_originals() {
     let (_h, a, _p) = fixture();
     let (_other, b, _p2) = fixture();
     let ap = a.managed_resources();

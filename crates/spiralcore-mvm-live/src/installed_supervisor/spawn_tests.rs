@@ -70,6 +70,10 @@ impl Drop for Case {
 
 #[test]
 fn definite_spawn_failure_closes_launch_and_clears_only_its_proven_empty_slot() {
+    mvm_core::util::test_env::isolated_lock_probe(probe_definite_spawn_failure);
+}
+
+fn probe_definite_spawn_failure() {
     {
         let mut case = Case::new();
         let missing = case.root.join("nonexistent-worker");
@@ -164,6 +168,10 @@ fn probe_owned_spawn() {
 
 #[test]
 fn binding_requires_the_original_live_child_and_fresh_canonical_owner_state() {
+    mvm_core::util::test_env::isolated_lock_probe(probe_original_child_binding);
+}
+
+fn probe_original_child_binding() {
     let mut case = Case::new();
     let (reader, writer) = UnixStream::pair().unwrap();
     case.writer = Some(writer);

@@ -64,6 +64,19 @@ incremental = false
 debug = 0
 incremental = false
 
+[profile.dev.package.mvm-core]
+opt-level = 2
+[profile.dev.package.sha2]
+opt-level = 3
+[profile.dev.package.ring]
+opt-level = 3
+[profile.dev.package.zeroize]
+opt-level = 3
+[profile.dev.package.curve25519-dalek]
+opt-level = 3
+[profile.dev.package.ed25519-dalek]
+opt-level = 3
+
 # The MVM workspace supplies these fixes for its Git object reader.
 [patch.crates-io]
 gix = { git = "https://github.com/Casey-allard/mvm", rev = "7b22454077530e96146d68204b711de53e3d05a8" }

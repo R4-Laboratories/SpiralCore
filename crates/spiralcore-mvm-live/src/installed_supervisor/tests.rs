@@ -114,6 +114,10 @@ impl Drop for Case {
 
 #[test]
 fn two_worker_slots_require_reaping_and_confirmation_and_reject_stale_tokens() {
+    mvm_core::util::test_env::isolated_lock_probe(probe_two_worker_slots);
+}
+
+fn probe_two_worker_slots() {
     {
         let mut abandoned = Case::new();
         let first = abandoned
@@ -191,6 +195,10 @@ fn two_worker_slots_require_reaping_and_confirmation_and_reject_stale_tokens() {
 
 #[test]
 fn live_children_block_finish_and_reaped_failure_closes_launch_but_allows_global_retirement() {
+    mvm_core::util::test_env::isolated_lock_probe(probe_live_children);
+}
+
+fn probe_live_children() {
     {
         let mut live = Case::new();
         let worker = live.reserve(WorkerRole::Sender);
@@ -362,6 +370,10 @@ fn probe_controller_drop() {
 
 #[test]
 fn explicitly_provisioned_pair_charges_the_selected_limits_and_refuses_a_foreign_stamp() {
+    mvm_core::util::test_env::isolated_lock_probe(probe_explicit_pair_limits);
+}
+
+fn probe_explicit_pair_limits() {
     let fallback = InstalledConfig::two_endpoint_witness_profile();
     let fallback_hash = fallback.profile_hash();
     let mut host = fallback.managed_limits().0;

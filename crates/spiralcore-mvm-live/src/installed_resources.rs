@@ -524,6 +524,10 @@ mod tests {
     }
     #[test]
     fn retained_identity_allows_normal_close_without_reopening_admission() {
+        mvm_core::util::test_env::isolated_lock_probe(probe_normal_close);
+    }
+
+    fn probe_normal_close() {
         let f = Fixture::new();
         let (mut owner, _) = f.owner();
         let pool = owner.managed_resources().clone();
@@ -556,6 +560,10 @@ mod tests {
 
     #[test]
     fn retained_identity_refuses_accounting_faults_before_cleanup_completion() {
+        mvm_core::util::test_env::isolated_lock_probe(probe_retained_identity_faults);
+    }
+
+    fn probe_retained_identity_faults() {
         for fault in 0..6 {
             let f = Fixture::new();
             let (mut owner, _) = f.owner();
@@ -606,6 +614,10 @@ mod tests {
 
     #[test]
     fn accounting_corruption_never_panics_refunds_or_releases_exclusion() {
+        mvm_core::util::test_env::isolated_lock_probe(probe_accounting_corruption);
+    }
+
+    fn probe_accounting_corruption() {
         for fault in 0..5 {
             let f = Fixture::new();
             let (mut owner, key) = f.owner();

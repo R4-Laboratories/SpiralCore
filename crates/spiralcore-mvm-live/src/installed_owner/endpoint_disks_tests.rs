@@ -67,6 +67,12 @@ fn fail_remove(point: &'static str) -> Result<()> {
 }
 #[test]
 fn postrename_sync_failure_keeps_creation_intent_and_blocks_generic_retirement() {
+    mvm_core::util::test_env::isolated_lock_probe(
+        probe_postrename_sync_failure_keeps_creation_intent_and_blocks_generic_retirement,
+    );
+}
+
+fn probe_postrename_sync_failure_keeps_creation_intent_and_blocks_generic_retirement() {
     let f = Fixture::new();
     let mut owner = InstallationOwner::initialize(&f.root, f.key).unwrap();
     let epoch = owner.begin().unwrap();
@@ -87,6 +93,10 @@ fn postrename_sync_failure_keeps_creation_intent_and_blocks_generic_retirement()
 }
 #[test]
 fn removal_sync_failure_retains_cleanup_identity_and_recovers_missing_directory() {
+    mvm_core::util::test_env::isolated_lock_probe(probe_removal_sync);
+}
+
+fn probe_removal_sync() {
     let f = Fixture::new();
     let mut owner = InstallationOwner::initialize(&f.root, f.key).unwrap();
     let epoch = owner.begin().unwrap();
@@ -163,6 +173,10 @@ impl Drop for OriginalChild {
 }
 #[test]
 fn process_kills_at_publication_boundaries_do_not_skip_required_recovery() {
+    mvm_core::util::test_env::isolated_lock_probe(probe_publication_crashes);
+}
+
+fn probe_publication_crashes() {
     use std::{
         io::{BufRead, BufReader},
         os::unix::process::ExitStatusExt,
@@ -337,6 +351,10 @@ fn fail_final_publish(point: &'static str) -> Result<()> {
 }
 #[test]
 fn live_cleanup_resumes_after_removal_or_final_publication_failure() {
+    mvm_core::util::test_env::isolated_lock_probe(probe_live_cleanup);
+}
+
+fn probe_live_cleanup() {
     for hook in [fail_remove as FaultHook, fail_final_publish as FaultHook] {
         let f = Fixture::new();
         let mut owner = InstallationOwner::initialize(&f.root, f.key).unwrap();
@@ -371,6 +389,12 @@ fn live_cleanup_resumes_after_removal_or_final_publication_failure() {
 
 #[test]
 fn live_retirement_cannot_infer_progress_from_missing_active_or_cleanup_names() {
+    mvm_core::util::test_env::isolated_lock_probe(
+        probe_live_retirement_cannot_infer_progress_from_missing_active_or_cleanup_names,
+    );
+}
+
+fn probe_live_retirement_cannot_infer_progress_from_missing_active_or_cleanup_names() {
     let f = Fixture::new();
     let mut owner = InstallationOwner::initialize(&f.root, f.key).unwrap();
     let epoch = owner.begin().unwrap();
@@ -400,6 +424,10 @@ fn live_retirement_cannot_infer_progress_from_missing_active_or_cleanup_names() 
 
 #[test]
 fn live_retirement_missing_entry_refuses_until_original_remove_is_synced() {
+    mvm_core::util::test_env::isolated_lock_probe(probe_missing_entry);
+}
+
+fn probe_missing_entry() {
     let f = Fixture::new();
     let mut owner = InstallationOwner::initialize(&f.root, f.key).unwrap();
     let epoch = owner.begin().unwrap();
@@ -421,6 +449,10 @@ fn live_retirement_missing_entry_refuses_until_original_remove_is_synced() {
 
 #[test]
 fn live_retirement_does_not_adopt_a_recreated_namespace() {
+    mvm_core::util::test_env::isolated_lock_probe(probe_recreated_namespace);
+}
+
+fn probe_recreated_namespace() {
     use std::os::unix::fs::OpenOptionsExt;
     let f = Fixture::new();
     let mut owner = InstallationOwner::initialize(&f.root, f.key).unwrap();
