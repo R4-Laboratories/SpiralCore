@@ -42,6 +42,18 @@ fn target(authority: &str) -> Result<()> {
         .rsplit_once(':')
         .context("expected DNS name and port")?;
     port_number(port)?;
+    if let Ok(ip) = host.parse::<Ipv4Addr>() {
+        ensure!(
+            ip.to_string() == host
+                && !ip.is_loopback()
+                && !ip.is_link_local()
+                && !ip.is_unspecified()
+                && !ip.is_multicast()
+                && !ip.is_broadcast(),
+            "invalid fixture peer address"
+        );
+        return Ok(());
+    }
     ensure!(
         host.len() <= 253
             && host.contains('.')
@@ -182,6 +194,15 @@ fn row(c: &Count, cpu: ProcessTime, start: Instant, completed: bool) -> Result<s
     )
 }
 
+// Sign the role image after compiling its explicit fixture peer into the ELF.
+fn literal_targets(denied: &str, allowed: &str, pin: Option<&str>) -> bool {
+    let Some(host) = pin else { return false };
+    host.parse::<Ipv4Addr>().is_ok()
+        && target(allowed).is_ok()
+        && allowed.strip_suffix(":38443") == Some(host)
+        && denied == "denied.flowmux.test:38443"
+}
+
 fn targets(denied: &str, allowed: &str) -> Result<()> {
     target(denied)?;
     target(allowed)?;
@@ -213,7 +234,14 @@ fn run() -> Result<()> {
     let allowed = allowed
         .to_str()
         .context("expected ASCII allowed authority")?;
-    targets(denied, allowed)?;
+    if let Some(pin) = option_env!("SPIRALCORE_FLOWMUX_FIXTURE_IPV4") {
+        ensure!(
+            literal_targets(denied, allowed, Some(pin)),
+            "invalid literal fixture peers"
+        );
+    } else {
+        targets(denied, allowed)?;
+    }
     let url = std::env::var_os("HTTP_PROXY")
         .and_then(|v| v.into_string().ok())
         .context("missing or invalid admitted HTTP proxy")?;

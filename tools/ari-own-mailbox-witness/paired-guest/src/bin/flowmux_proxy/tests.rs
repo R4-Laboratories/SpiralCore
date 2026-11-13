@@ -230,3 +230,33 @@ fn a_refusal_on_the_allowed_turn_sends_no_body() {
     assert_eq!(c.body_tx, 0);
     peer.join().unwrap();
 }
+
+#[test]
+fn selected_literal_profile_binds_exact_peer_port_and_denied_name() {
+    let host = "192.0.2.5";
+    let allowed = "192.0.2.5:38443";
+    let denied = "denied.flowmux.test:38443";
+    assert!(literal_targets(denied, allowed, Some(host)));
+    for (d, a) in [
+        (denied, "192.0.2.6:38443"),
+        (denied, "192.0.2.5:38444"),
+        (denied, "192.000.2.5:38443"),
+        (denied, "192.0.2.5:038443"),
+        ("denied.flowmux.test:443", allowed),
+        ("cooperator.mvm.peer:38443", allowed),
+        (denied, "[::ffff:192.0.2.5]:38443"),
+        (denied, "192.0.2.5@localhost:38443"),
+    ] {
+        assert!(!literal_targets(d, a, Some(host)));
+    }
+    assert!(!literal_targets(denied, allowed, None));
+    for ip in [
+        "127.0.0.1",
+        "169.254.169.254",
+        "0.0.0.0",
+        "224.0.0.1",
+        "255.255.255.255",
+    ] {
+        assert!(!literal_targets(denied, &format!("{ip}:38443"), Some(ip)));
+    }
+}
