@@ -8,6 +8,11 @@ publish = false
 [features]
 default = ["linux-host"]
 linux-host = []
+# The standalone harness imports production resource modules without MVM's
+# canonical-host dependencies. Cargo validates that cfg without exposing it as
+# a selectable harness feature.
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(feature, values("canonical-host"))'] }
 [lib]
 doctest = false
 [[bin]]
