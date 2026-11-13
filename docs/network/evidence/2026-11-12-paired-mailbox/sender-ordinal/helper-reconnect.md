@@ -18,7 +18,7 @@ The controller holds the actual original children, checks both VMM identities, s
 
 An earlier Linux run refused the group-writable Cargo install directory. A second run used a private installation, observed two pre-replacement relay turns, then hit a broken pipe on a queued predecessor dial. The final fixture pins each unserved connection to its still-live original child, collects that child, accepts at most the original CONNECT prefix through EOF, and checks that no further connection was skipped. On macOS the earlier fixture separately recorded an unobserved turn, an inherited nonblocking socket and a dead-peer identity query refused with ENOTCONN. The kernel no longer exposes that peer PID after exit. [Retained failure and control hashes](helper-reconnect.json)
 
-Linux can remove a stale service socket only after matching its retained inode and observing connection refusal. On macOS the SDK requires an already-vacant pathname. A live-guest helper-replacement trial and the sustained ordinal gate have separate acceptance criteria. [Issue #195](https://github.com/R4-Laboratories/SpiralCore/issues/195)
+Linux can remove a stale service socket only after matching its retained inode and observing connection refusal. At this historical revision, macOS recovery required an already-vacant pathname. The [later directory-watch implementation](darwin-helper-reconnect.md) qualifies occupied stale-socket recovery in the paired-process fixture. A live-guest helper-replacement trial and the sustained ordinal gate have separate acceptance criteria. [Issue #195](https://github.com/R4-Laboratories/SpiralCore/issues/195)
 
 ## macOS arm64 with a vacant service pathname
 

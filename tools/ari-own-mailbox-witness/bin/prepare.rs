@@ -18,6 +18,28 @@ fn inputs(mut args: impl Iterator<Item = OsString>) -> Result<(PathBuf, GuestArc
     Ok((PathBuf::from(source), arch))
 }
 
+fn workspace_version(manifest: &str) -> Result<String> {
+    manifest
+        .parse::<toml::Table>()?
+        .get("workspace")
+        .and_then(|w| w.get("package"))
+        .and_then(|pkg| pkg.get("version"))
+        .and_then(toml::Value::as_str)
+        .map(str::to_owned)
+        .context("missing MVM workspace package version")
+}
+
+fn matched_workspace_version(source_manifest: &str) -> Result<String> {
+    // Cargo.toml declares each linked MVM crate under ../source; from bin/
+    // that same workspace manifest is ../../source/Cargo.toml.
+    let linked = workspace_version(include_str!("../../source/Cargo.toml"))?;
+    ensure!(
+        workspace_version(source_manifest)? == linked,
+        "guest source version differs from the linked host"
+    );
+    Ok(linked)
+}
+
 fn main() -> Result<()> {
     let (source, arch) = inputs(env::args_os().skip(1))?;
     let source = source.canonicalize()?;
@@ -40,7 +62,8 @@ fn main() -> Result<()> {
     )?;
     let cache = PathBuf::from(mvm_core::config::mvm_cache_dir());
     ensure!(cache.starts_with(&home), "shared default cache refused");
-    let version = "0.28.0-rc.1";
+    let version = matched_workspace_version(&std::fs::read_to_string(source.join("Cargo.toml"))?)?;
+    let version = version.as_str();
     let runtime = mvm_build::guest_runtime::resolve_or_build_source_guest_runtime(
         &cache, version, arch, &source,
     )?;
@@ -61,6 +84,26 @@ fn main() -> Result<()> {
 mod tests {
     use super::*;
     use mvm_core::arch::GuestArch;
+    #[test]
+    fn guest_runtime_uses_the_linked_mvm_workspace_version() {
+        let linked = include_str!("../../source/Cargo.toml");
+        assert_eq!(
+            matched_workspace_version(linked).unwrap(),
+            workspace_version(linked).unwrap()
+        );
+        for invalid in ["", "bad [", "[workspace.package]\nversion=2"] {
+            assert!(matched_workspace_version(invalid).is_err());
+        }
+        let wrong = "[workspace.package]\nversion='0.0.0-unrelated'";
+        assert_eq!(workspace_version(wrong).unwrap(), "0.0.0-unrelated");
+        assert!(
+            matched_workspace_version(wrong)
+                .unwrap_err()
+                .to_string()
+                .contains("differs")
+        );
+    }
+
     #[test]
     fn selects_the_guest_architecture_before_preparing_private_state() {
         assert_eq!(

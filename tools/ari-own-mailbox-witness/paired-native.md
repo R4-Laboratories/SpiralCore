@@ -125,3 +125,48 @@ The driver submits the fixture only to `sc-journal-a`. It asks `sc-journal-b` to
 The final JSON gives the Object-v1 request and reply bytes, per-role reader I/O and process CPU, serialized workload stdin and stdout including the readback, and elapsed time through both guest results. These stream counts exclude outer SDK framing. Coordinator CPU excludes its SDK subprocesses. The application total excludes envelopes and vsock framing. Collect the original port-5257 counters, sealed relay counters, and retirement outcomes from the running owner separately. The driver leaves host relay and network wire byte totals null. The qualification command requires a running installed pair. Its component checks alone establish no transfer-time or WAN result.
 
 In an independently created, owner-only empty qualification home, `paired-journal object-enrollment-check` checks the four original Call, Reply and Receive credentials before launching any VM. It requires the 30-second operator retention ceiling and refuses an existing mailbox template. The installed orchestrator must use the in-process preparation once and retain the exact nonces, grants and image digests through signing and registration. A second preflight cannot recreate the original signed pair. [Linux role image and grant checks](../../docs/network/evidence/2026-11-12-paired-mailbox/paired-durable-native/object-role-images.md)
+
+## Controlled helper restart before readback
+
+The Linux controller can run one ordinal with `--restart-helpers --sender-ordinals 1`. Build the host witness against the MVM SDK that provides `OriginalJournalSourceHost::restart_helper`. The guest workload and sealed runtime retain their admitted ordinal profile.
+
+```sh
+paired-journal --backend firecracker --restart-helpers --sender-ordinals 1 \
+  "$rootfs_a" "$sha256_a" "$rootfs_b" "$sha256_b" "$frame"
+```
+
+After A verifies B's original acceptance and before B reads or acknowledges the delivery, the controller interrupts and replaces A's helper, then B's helper. Each returned child status must identify SIGKILL. Both guest VMs keep running. A must recover the same accepted message ID and receipt digest through its restarted helper. B then reads the original 257 bytes from its restarted journal and acknowledges its original lease. A settles that original receipt. The normal ordinal result adds a `helper_recovery` object with restart intervals, original exit signals and the additional A status operation's byte and CPU counters. The ordinary campaign keeps its existing result fields.
+
+This mode measures recovery after acceptance and before guest readback and settlement. The initial signed receipt has already reached A. The separate lost-receipt witness exercises loss before that confirmation. Controlled restart refuses on other host platforms before interrupting a helper.
+
+## FlowMux loopback proxy workload
+
+Build the `spiralcore-flowmux-proxy-guest` binary from `paired-guest` in the same pinned sibling source layout. Package it as the entrypoint of a separate signed non-root Linux workload. The signed environment and image entrypoint arguments must match. For example, with the registered echo port set to 38443, the two arguments are `denied.mvm.peer:38443 cooperator.mvm.peer:38443`. The denied fixture name must be absent from the authorized route. Both phases share a 15-second deadline.
+
+The workload opens the numeric loopback HTTP proxy supplied in `HTTP_PROXY` by the admitted guest environment. MVM owns the FlowMux connection on port 5253 and its signing material. The first CONNECT must return the proxy's empty 403 response followed by EOF. The second must return its canonical 200 response before the workload writes the registered fixture's 5,804 bytes. The workload half-closes its write side and compares the complete echo, including the trailing zero bytes, through EOF.
+
+Each attempted phase emits one JSON line with its outcome, successful socket bytes for the CONNECT headers and application body in each direction, process CPU nanoseconds and elapsed nanoseconds. An I/O or validation failure exits nonzero after the phase row. These counts cover the guest application’s loopback socket. The host witness must independently record the original policy decision, zero accepts for the denied peer, the registered peer's exact readback and the transport counters for any claimed host or wire measurements.
+
+Eight local loopback controls passed on macOS. A separate Linux component ran the sealed workload’s static x86-64 ELF as a non-root process against a fixture proxy. This was one observed run of each phase.
+
+| Phase | CONNECT sent / received (B) | Application sent / received (B) | Elapsed (ms) | Workload process CPU (ms) |
+| --- | ---: | ---: | ---: | ---: |
+| Denied peer | 71 / 64 | 0 / 0 | 1.549 | 0.488 |
+| Registered peer fixture echo | 79 / 39 | 5,804 / 5,804 | 2.444 | 0.331 |
+
+The release ELF was built from SpiralCore `f7947346` with Rust 1.97.1 and MVM `a7670d85613fd44b36c8fb14030c975b615a8def`. The offline build updated five MVM path dependencies from rc.1 to rc.2 in the staged workload lockfile, then built with `--locked`. The staged Cargo.lock SHA-256 was `3eee8de95a293c786ae25d7d30a870e5a9fa37c0eb8c04a61c4372613b6eacbf`. The Linux loopback fixture measured the ELF identified below. Guest boot, host enforcement, transport bytes and WAN performance require separate observations.
+
+| Sealed image input or artifact | SHA-256 |
+| --- | --- |
+| 801,240-byte workload ELF, reopened from ext4 | `abd798c8ed89e473578f445fc5c4a8965be773eb727196617725d420ed135fce` |
+| Original MVM rc.2 OCI entrypoint wrapper, reopened from ext4 | `df4f6b8b883f94ff558b16249fb9e5dd3979b7bbcb562b7de19e57557293064d` |
+| 1,536,000-byte ext4 image | `25a98f0cce2b795ef9a647559b0da5a8f02ce13d87f5e2d5cb18dad05221ed9f` |
+| Environment descriptor supplied for signing | `5d145ba505f0d2fb558546a9ea04dc6affa48ed7abdb6e4750d97e2de15160b6` |
+
+The image sidecar and the entrypoint configuration reopened from ext4 both matched the descriptor’s three argv elements. The descriptor requests one CPU, 256 MiB and egress to the registered peer on port 38443. The signed rc.2 runtime archive named source `849382ad417a28f3d68b051411b5ae3bab591b13`. Its guest proxy response and workload environment sources match the MVM revision used to build the workload.
+
+### Literal endpoint for ordinary MVM egress
+
+The role above uses a registered peer name. The ordinary host egress policy refused that name during preflight. To exercise its exact IPv4 rule, build a separate image from the same binary with `SPIRALCORE_FLOWMUX_FIXTURE_IPV4` set **at compile time** to the operator-approved fixture peer. Set the signed entrypoint arguments to `denied.flowmux.test:38443` and the canonical dotted IPv4 followed by `:38443`. Include only that exact IPv4 and port in the descriptor's egress allow-list. Reopen and compare both argv records and the ELF from each newly sealed image.
+
+The pinned executable checks both arguments before opening the local workload proxy. A different address, port, spelling, denied name or registered-name argument fails this check. The application continues to use the operator-provided loopback proxy for the actual connection. The registered host endpoint and MVM policy still independently authorize the route. Preserve the earlier named-role refusal when reporting the installed result.

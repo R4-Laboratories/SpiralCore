@@ -1,0 +1,237 @@
+{
+  "scope": "One synthetic ordinal, two original x86_64 Linux Firecracker VMs, one vCPU and 256 MiB per VM, guest NIC disabled. One source and one destination mailbox helper replaced while both VMs remained live.",
+  "mvm_revision": "cef3b6feaac41c42dda434ef98f541432c62995b",
+  "mvm_tree": "c0a507a17b00eb46a6a3f74aa725686a49ef8a78",
+  "spiralcore_witness_revision": "0b19ecb10fb3080a7e853af302b3e2114f9be232",
+  "spiralcore_witness_tree": "d7b18b6bec80ec7c4bc3d74d71a809dc810954eb",
+  "lock_sha256": "1b7de9074ec9247f2bddf43a45a99b9226e4f89e4e1362b4725024c761014883",
+  "driver_lock_diff_sha256": "66ac55e030078894b20dba895a1624fb6adae99a2d78d4ff97e81e96934f0e30",
+  "workloads": {
+    "spiralcore_revision": "613a32f5a45568de8517d9fd777bf5aafe0d33e9",
+    "mvm_guest_api_revision": "88bb9341e2dffda9feb17ef112b10866e7fbedb0",
+    "ext4_and_sidecars": {
+      "a": {
+        "rootfs.ext4": "b2c534e54b3258dc06d37c259e589d53fcb4b79a33bf27b41a8215131d6830e4",
+        "rootfs.verity": "ca87220b5f250b739b1bbe636ca704d541e847fad907baa27082e4796e6a4747",
+        "rootfs.roothash": "d4e480c8bfa5312a39a93ec0a293700375ba54771ca59ae173853b2a001807c5",
+        "mvm-meta.json": "1e2ebf272b1b45cd2a9c4f1ea32b847c3824a8208dddeb07fb8d456c14be0a68"
+      },
+      "b": {
+        "rootfs.ext4": "1f41f8d849d9c6094a5d494a9100b356202e6af67d708df1769ebbfd60b72b75",
+        "rootfs.verity": "b44837a2f5712eb45dc444a810f4769ee2a545150aed4442c42b3d17cb2dc051",
+        "rootfs.roothash": "f97121f56c67ae007007af093b0a52cfc1686215e238a975fb746e9e23a64262",
+        "mvm-meta.json": "e279d13ea18d559f6c5f572e248f212c7856c678be9d7adcb5320a4c22a07ddf"
+      }
+    },
+    "application_elf_sha256": {
+      "a": "e9e0aba5547c502b65f27a59f4669373fcad2368a94e794d4d63327db6271f1c",
+      "b": "8bd937e1c8f02914816edf0a7835fbd89debc346b440d81a3045844c35a6b69f"
+    }
+  },
+  "runtime": {
+    "source": {
+      "commit": "cef3b6feaac41c42dda434ef98f541432c62995b",
+      "worktree": {
+        "state": "clean"
+      }
+    },
+    "mvm_version": "0.28.0-rc.2",
+    "guest_source_fingerprint": "c2fa92be81f4f15a4804d608586943b61a37ff83f1529126a1894e22d5ed6591",
+    "sdk_cdylib_source_fingerprint": "2632f4708e78cc7233f5a022b6bdbc79393e827cad789a16540ec64ce3a2e08d",
+    "guest_agent_digests": {
+      "x86_64/bin/mvm-guest-agent": "28a1c9bd3fad85b892e271bd456fb29792c38c445ff7357b262605d3016709f1",
+      "x86_64/initramfs/mvm-guest-agent": "c2adeb7003412e3af5efaaa7ae8f766dc5601941456b4bb8d2a090fad93a7f61"
+    },
+    "guest_runtime": {
+      "arch": "x86_64",
+      "guest_archive_sha256": "ccb00a298a612415e8925a26595dcfdc03db72145e0b9c0e607765b8a028b6a0",
+      "host_retention_ceiling_ms": 30000,
+      "initramfs_hash_record_sha256": "be41ebb9447211ec4eb8205d14b50baff386531cd88de75274272016b96a9d9a",
+      "initramfs_sha256": "7db62e2f26f550569569a3b9c720722e6c8ccd936492be4c0745b5dfe84f1085",
+      "mvm_version": "0.28.0-rc.2",
+      "overlay_root_hash": "fe39647d9862c803d98083260bf3cab2ebd5f01158857ce11fdb7f7b7e45a5be",
+      "overlay_sha256": "bb489b57b5795065cd9e265a07a46d86a3c32234c3be4cd08ada167456e117ab",
+      "overlay_verity_sha256": "e76680b273bbce2ccd18604fcfc9d000009d3c12fec2eccb0f89b856b8bd1148",
+      "sdk_sidecars": 2
+    }
+  },
+  "runtime_build_gnu_time": "wall=2241.57 user=4006.36 system=259.78 maxrss_kib=2941528 status=0",
+  "installed_executables": {
+    "mvm-host-agent": "10466310715f5804f089944b74f75cc7b783ab7837f2cc18d698343c849d998d",
+    "mvm-mailbox": "d8d092f4c6eb092caf1b7a53434bc6caa23d761921fec89682c4779fa9968ccd",
+    "mvm-network-endpoint": "fdddaad484702b5826a3aa40b78115f682ae27b0ad7d562c1d6163f560d81bee",
+    "mvm-signer-helper": "338814512f93c3f6694d6883a1de05ba06af81bfbc2adfd20f9c7276ff79bf14",
+    "mvmctl": "562d684b51f53da085edb7825bd46a1a076b526e6d9e9b6025c6d9a4a8441d69",
+    "paired-journal": "d329524ebac303c86e39887ba7ff3db414e7bac44933978e096dc91c4f703a8e",
+    "prepare": "15e407327f8b5bbd84f709bc0c44a52e6b82f52570156ef45d1d2557f444ffdb"
+  },
+  "native_backend": {
+    "architecture": "x86_64",
+    "observed_destination_backend": "firecracker",
+    "observed_source_backend": "firecracker",
+    "os": "linux",
+    "requested_backend": "firecracker"
+  },
+  "measurement": {
+    "original_row_sha256": "50ed9293aed26f5cf554c198cde18753ee6b4dd4cc4d17c9d6ac4ff51a46d785",
+    "verified_guest_sdk_traffic": {
+      "a": {
+        "guest_worker_cpu_ns": 2734551,
+        "sdk_input_bytes": 555,
+        "sdk_output_bytes": 936,
+        "worker_to_agent_bytes": 1560,
+        "agent_to_worker_bytes": 3282
+      },
+      "b": {
+        "guest_worker_cpu_ns": 1821337,
+        "sdk_input_bytes": 155,
+        "sdk_output_bytes": 902,
+        "worker_to_agent_bytes": 2108,
+        "agent_to_worker_bytes": 4841
+      }
+    },
+    "last_sampled_vm_scope_resource_highs": {
+      "b": {
+        "cpu_usec": 289642,
+        "memory_peak_bytes": 38846464
+      },
+      "a": {
+        "cpu_usec": 298391,
+        "memory_peak_bytes": 38858752
+      }
+    },
+    "host_measure": "wall=9.21 user=7.88 system=0.60 max_rss_kib=84504 status=0",
+    "source_to_destination_sealed_bytes": 5846,
+    "destination_to_source_receipt_bytes": 1198,
+    "verified_receipt_ns": 319436960,
+    "verified_b_readback_ns": 1178538280,
+    "settled_ns": 1270975583,
+    "replacements": [
+      {
+        "elapsed_ns": 106011916,
+        "helper": "Source",
+        "original_exit_signal": 9
+      },
+      {
+        "elapsed_ns": 107363644,
+        "helper": "Destination",
+        "original_exit_signal": 9
+      }
+    ],
+    "original_guest_port_meters": [
+      {
+        "capture": "prefix_only",
+        "completed_exchanges": 1,
+        "guest_to_host_read_bytes": 682,
+        "host_to_guest_write_accepted_bytes": 1417,
+        "read_errors": 0,
+        "write_errors": 0
+      },
+      {
+        "capture": "prefix_only",
+        "completed_exchanges": 1,
+        "guest_to_host_read_bytes": 348,
+        "host_to_guest_write_accepted_bytes": 3520,
+        "read_errors": 0,
+        "write_errors": 0
+      }
+    ],
+    "replacement_guest_port_meters": [
+      {
+        "capture": "closed_session",
+        "completed_exchanges": 3,
+        "guest_to_host_read_bytes": 1321,
+        "host_to_guest_write_accepted_bytes": 1651,
+        "read_errors": 0,
+        "write_errors": 1
+      },
+      {
+        "capture": "closed_session",
+        "completed_exchanges": 3,
+        "guest_to_host_read_bytes": 2638,
+        "host_to_guest_write_accepted_bytes": 8259,
+        "read_errors": 0,
+        "write_errors": 1
+      }
+    ],
+    "coordinator_cpu_ns": 8011002196,
+    "coordinator_wall_ns": 9107439267,
+    "original_exits": [
+      {
+        "assisted": false,
+        "exit_code": 0,
+        "first_stop_attempt": true,
+        "name": "sc-journal-a",
+        "success": true
+      },
+      {
+        "assisted": false,
+        "exit_code": 0,
+        "first_stop_attempt": true,
+        "name": "sc-journal-b",
+        "success": true
+      }
+    ]
+  },
+  "audit": "VERIFIED chain: 17 entries, 2 sessions, 2 seals",
+  "final_counts": [
+    "driver=0 audit=0",
+    "remaining_vmm=0",
+    "remaining_helpers=0"
+  ],
+  "final_original_vm_scope": [
+    "a inactive absent",
+    "b inactive absent"
+  ],
+  "full_host_load_at_start": "20:00:22 up 6 days, 23:52,  5 users,  load average: 16.99, 17.23, 17.12",
+  "public_artifact_sha256": {
+    "original-sc-journal-a.counts": "fc7bef8966eafdcf85cfd5ec415229f1b4ce50a0eae973669d73d2f2f26962bc",
+    "original-sc-journal-b.counts": "c7ed56e2b268b1830d64fa7f2c53ced1d2fedafefbbdaf43a719575cb9304259",
+    "replacement-sc-journal-a.counts": "1e65b8fa38dd1946548fcc0bd66dc24bb5ade920d8ba5c58a3b582f7bd9feeb5",
+    "replacement-sc-journal-b.counts": "62c657d5b9bd7d96711d9d77266a9a63020ff89b321a6e926e572944ab5b7957",
+    "sender-ordinal-series.jsonl": "50ed9293aed26f5cf554c198cde18753ee6b4dd4cc4d17c9d6ac4ff51a46d785"
+  },
+  "retained_private_evidence_sha256": {
+    "after": "7015d6bf5358cba46a0f2155aad3d37d2b607893114cc349d8131d3cbff6e8f4",
+    "audit.log": "5b7cb24bc38132f35843e640eed08542a0c2870d9531d5568ac4fe243688e1d1",
+    "host-load-at-start.txt": "734b8e9ac80178f8b771f55f193d20f77ab8b02361ad6c0a05e2ac9e6883559e",
+    "images-verified": "4faead86276bb5d12ab6c5ab749aeb32d6f4ec9a9973f28720ef47a33e53c690",
+    "install-verified": "7cfa140446fdb5468ff9c540a838a79d560c26fc37214f565ef76ca592331bc5",
+    "native.time": "b489f28c9aa3a3e51f1e5686177d56f9eed9dae138efbf8431f0f7f27d37205d",
+    "original-scope-final.txt": "c91b2824fbd3e928862a33c753d01353cb3ca1a1db7d042ec133bd72327e4993",
+    "remaining-scopes": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "scope-resources.txt": "6d46eb4c95223be7f9edc18da8a87cf83fa97274246c1a9859672f8b9b544e93",
+    "original-sc-journal-a.counts": "fc7bef8966eafdcf85cfd5ec415229f1b4ce50a0eae973669d73d2f2f26962bc",
+    "original-sc-journal-b.counts": "c7ed56e2b268b1830d64fa7f2c53ced1d2fedafefbbdaf43a719575cb9304259",
+    "paired-result.json": "0972313f5ec1f16a367c2495dbd50c129d85fa5efb631254d50bcaa17bec2215",
+    "paired-retirement.jsonl": "4ecd19450145bb63b443a2b3a6cad36c420a9b2c97d065dae534eb4cc42901f6",
+    "replacement-sc-journal-a.counts": "1e65b8fa38dd1946548fcc0bd66dc24bb5ade920d8ba5c58a3b582f7bd9feeb5",
+    "replacement-sc-journal-b.counts": "62c657d5b9bd7d96711d9d77266a9a63020ff89b321a6e926e572944ab5b7957",
+    "sender-ordinal-series.jsonl": "50ed9293aed26f5cf554c198cde18753ee6b4dd4cc4d17c9d6ac4ff51a46d785"
+  },
+  "controls": {
+    "predecessor": "3c4e763a0e35c9e0332183e7a6174968aed8cd99",
+    "original_helper_reconnect": "0/1 then 1/1",
+    "surrounding_original_journal": "25 passed, 3 ignored",
+    "aggregate": "3/3",
+    "paired_driver": "22/22",
+    "prepare": "2/2",
+    "feature_strict_clippy": "passed",
+    "linux_workspace_all_targets": "passed",
+    "linux_conformance_bdd_all_targets": "compiled",
+    "log_sha256": {
+      "aggregate.log": "77a3049a352ad45a3787f026419cad8bf8bce226e18482ba31d8d641fbfb2cf0",
+      "bdd-linux.log": "73052b4e34d38e553ef357f71bbb96175848e23864d1db7434a710f83923fce5",
+      "controls.log": "1fd4db7feb1cd7cb735d11c00a390ccce69bfd2d843c1f7b0d1936aa7d59977b",
+      "driver-tests.log": "fc7c6a1458f711a17245e2ba14bd594eb7c07edfdaeeeee57630ec1a7490442b",
+      "meter-red.log": "516a5df676a3f14c7d1a655247452d823a2424479628dcc851c4dbf63eb2cce0",
+      "pair.log": "ab8926a4a07c7290ce3f47de5646395b117f798fd736ce897a82f9c1aec364be",
+      "prepare-tests.log": "f85170c6711f63fe036ca27f3351cfdd04b83b65b1ab3897c3bcc59e341e18c5",
+      "runtime-source-red.log": "37ceceb11bc704d0a255f7fbd8bd448d112983103a2bd5b37973a23f80f98749",
+      "strict-linux.log": "7d742c80b85fd32a767d2e2e65787390a7adb4c39fe5050107cdc1b5b875865c",
+      "workspace-linux.log": "4e70a94b36578a8a4006f8f3b401203a66850e28b3ed1ece1c8970ce12eb64d7"
+    }
+  },
+  "wan_bytes": null,
+  "predecessor_whole_session_bytes": null
+}
