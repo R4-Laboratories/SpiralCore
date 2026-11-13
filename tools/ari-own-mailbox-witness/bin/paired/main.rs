@@ -335,7 +335,9 @@ fn run(args: &[String]) -> Result<()> {
         observed[1] = mvm_client::AnyBackend::started_vm_kind(B).map(|kind| kind.as_str());
         native_backend::check_observation(native, observed[1]).map_err(anyhow::Error::msg)?;
         #[cfg(feature = "sender-ordinal-v1")]
-        let observed_meter = if ordinal_count.is_some() {
+        let observed_meter = if restart_helpers {
+            meter::OriginalMeter::open_predecessor(B)?
+        } else if ordinal_count.is_some() {
             meter::OriginalMeter::open_ordinal(B)?
         } else {
             meter::OriginalMeter::open(B)?
@@ -370,7 +372,9 @@ fn run(args: &[String]) -> Result<()> {
         observed[0] = mvm_client::AnyBackend::started_vm_kind(A).map(|kind| kind.as_str());
         native_backend::check_observation(native, observed[0]).map_err(anyhow::Error::msg)?;
         #[cfg(feature = "sender-ordinal-v1")]
-        let observed_meter = if ordinal_count.is_some() {
+        let observed_meter = if restart_helpers {
+            meter::OriginalMeter::open_predecessor(A)?
+        } else if ordinal_count.is_some() {
             meter::OriginalMeter::open_ordinal(A)?
         } else {
             meter::OriginalMeter::open(A)?
@@ -455,6 +459,9 @@ fn run(args: &[String]) -> Result<()> {
         first.sync_all()?;
         Ok(())
     })();
+    // Acquire originals before typed SDK stop removes each VM state directory.
+    // If a capture fails, still complete retirement using the retained owners.
+    let successors = restart_helpers.then(|| [A, B].map(meter::OriginalMeter::open_replacement));
     let exit = state.retire(&backend, &rt, &home);
     let mut streams = [Value::Null, Value::Null];
     for (i, meter) in meters.into_iter().enumerate() {
@@ -462,20 +469,33 @@ fn run(args: &[String]) -> Result<()> {
             streams[i] = meter.finish(&home.join(format!("original-{}.counts", [A, B][i])))?;
         }
     }
-    let meters_complete = ordinal_count.is_none()
-        || streams.iter().all(|s| {
-            s["capture"] == "closed_session"
-                && s["completed_exchanges"].as_u64().is_some_and(|n| n > 0)
-                && s["guest_to_host_read_bytes"]
-                    .as_u64()
-                    .is_some_and(|n| n > 0)
-                && s["host_to_guest_write_accepted_bytes"]
-                    .as_u64()
-                    .is_some_and(|n| n > 0)
-        });
+    let mut successor_streams = [Value::Null, Value::Null];
+    if let Some(held) = successors {
+        for (i, meter) in held.into_iter().enumerate() {
+            if let Ok(meter) = meter {
+                successor_streams[i] =
+                    meter.finish(&home.join(format!("replacement-{}.counts", [A, B][i])))?;
+            }
+        }
+    }
+    let meters_complete = if restart_helpers {
+        recovery_meters(&streams, &successor_streams)
+    } else {
+        ordinal_count.is_none()
+            || streams.iter().all(|s| {
+                s["capture"] == "closed_session"
+                    && s["completed_exchanges"].as_u64().is_some_and(|n| n > 0)
+                    && s["guest_to_host_read_bytes"]
+                        .as_u64()
+                        .is_some_and(|n| n > 0)
+                    && s["host_to_guest_write_accepted_bytes"]
+                        .as_u64()
+                        .is_some_and(|n| n > 0)
+            })
+    };
     let row = json!({"native_host":{"os":env::consts::OS,"architecture":env::consts::ARCH,
         "requested_backend":native,"observed_source_backend":observed[0],"observed_destination_backend":observed[1]},
-        "original_5257_helper_streams_a_b":streams,"result":measured.as_ref().ok(),"transfer_error":measured.as_ref().err().map(|e|format!("{e:#}")),
+        "original_5257_helper_streams_a_b":streams,"replacement_5257_helper_streams_a_b":restart_helpers.then_some(successor_streams),"result":measured.as_ref().ok(),"transfer_error":measured.as_ref().err().map(|e|format!("{e:#}")),
         "original_exits":exit.as_ref().ok(),"teardown_error":exit.as_ref().err().map(|e|format!("{e:#}")),"driver_process_cpu_ns":cpu.elapsed().as_nanos() as u64,
         "whole_wall_ns":begin.elapsed().as_nanos() as u64});
     serde_json::to_writer(&mut output, &row)?;
@@ -489,6 +509,22 @@ fn run(args: &[String]) -> Result<()> {
         "incomplete original sender-ordinal guest stream measurements"
     );
     Ok(())
+}
+fn recovery_meters(originals: &[Value; 2], replacements: &[Value; 2]) -> bool {
+    [(originals, "prefix_only"), (replacements, "closed_session")]
+        .into_iter()
+        .all(|(meters, expected)| {
+            meters.iter().all(|s| {
+                s["capture"] == expected
+                    && [
+                        "completed_exchanges",
+                        "guest_to_host_read_bytes",
+                        "host_to_guest_write_accepted_bytes",
+                    ]
+                    .iter()
+                    .all(|k| s[k].as_u64().is_some_and(|n| n > 0))
+            })
+        })
 }
 fn main() -> Result<()> {
     let args: Vec<_> = env::args().skip(1).collect();
