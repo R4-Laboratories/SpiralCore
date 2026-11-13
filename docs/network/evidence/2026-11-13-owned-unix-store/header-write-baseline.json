@@ -1,0 +1,232 @@
+{
+  "scope": "Hosted ordered_stream component, both endpoints in one Windows process",
+  "pr_head": "2c9c2633e6cf4244947cd2eba819257aa3f9978d",
+  "tested_merge": "782d04a3666ae6a4b94bf965bffc36acf04033ce",
+  "common_tree": "ddde55b58a0c40ca722409dc266f1ff17203e442",
+  "original_endpoint_rs_sha256": "c845b85b6ee7277696158871d76086f6f0d9487558212369795a981e31c65d78",
+  "lock_sha256": "eda224172e7f53a824d1db84260ce9ed1cbb77bfe12066928c769edfa399d005",
+  "rustc": "1.97.1",
+  "profile": "release",
+  "block_bytes": 16384,
+  "target_blocks_each_direction": 4096,
+  "operation_deadline_seconds": 2,
+  "workload_deadline_seconds": 240,
+  "max_retained_publications_per_endpoint": 64,
+  "unit_notes": "Time in microseconds except libtest duration in seconds. Process CPU covers both endpoints together. Null means unavailable in the original artifact. TLS counts are actual socket bytes at the concurrent snapshot.",
+  "rows": [
+    {
+      "run": "43496596957",
+      "artifact_id": "14073347124",
+      "runner": "windows-11-arm",
+      "runner_image": "20261101.203.1",
+      "rust_host": "aarch64-pc-windows-msvc",
+      "features": [
+        "default"
+      ],
+      "result": "fail",
+      "completed_write_ack_left_right": [
+        424,
+        424
+      ],
+      "verified_read_blocks_left_right": [
+        424,
+        424
+      ],
+      "verified_read_bytes_left_right": [
+        6946816,
+        6946816
+      ],
+      "tls_snapshot_left_right": [
+        {
+          "received": 559950,
+          "sent": 559985
+        },
+        {
+          "received": 559985,
+          "sent": 559950
+        }
+      ],
+      "setup_wall_us": 120781,
+      "setup_process_cpu_us": 31250,
+      "snapshot_wall_us": 17286923,
+      "snapshot_process_cpu_us": 11671875,
+      "libtest_elapsed_s": 18.53,
+      "lifecycle_wall_us": null,
+      "lifecycle_process_cpu_us": null,
+      "executable": {
+        "name": "ordered_stream-d874df40873f659d.exe",
+        "sha256_before_and_after": null,
+        "length": null
+      },
+      "archive": {
+        "zip_sha256": "0630a108c22bc53943f1c9da6dfaa6c54be7af21a9aaa412c7d8bdb915ce2af9",
+        "manifest_sha256": "1583863366260c5bb704e9f0b1b0df4a80009199688e8f27e4db19b3bbe81589",
+        "verified_members": 14,
+        "tests_txt_sha256": "1eed1bedea7a3bad162ea41f0b232f82ddf114f413feb31fa8d0d278b31048e9"
+      },
+      "first_failure_per_role": {
+        "0": "site: CallerRead, reason: Timeout, frame_kind: None",
+        "1": "site: SenderReplyWait, reason: Timeout, frame_kind: Some(3)"
+      }
+    },
+    {
+      "run": "43496597282",
+      "artifact_id": "14072018506",
+      "runner": "windows-2025",
+      "runner_image": "20261103.298.1",
+      "rust_host": "x86_64-pc-windows-msvc",
+      "features": [
+        "default",
+        "witness-timing"
+      ],
+      "result": "fail",
+      "completed_write_ack_left_right": [
+        230,
+        230
+      ],
+      "verified_read_blocks_left_right": [
+        230,
+        230
+      ],
+      "verified_read_bytes_left_right": [
+        3768320,
+        3768320
+      ],
+      "tls_snapshot_left_right": [
+        {
+          "received": 304024,
+          "sent": 304282
+        },
+        {
+          "received": 304074,
+          "sent": 304024
+        }
+      ],
+      "setup_wall_us": 98501,
+      "setup_process_cpu_us": 31250,
+      "snapshot_wall_us": 31350726,
+      "snapshot_process_cpu_us": 5750000,
+      "libtest_elapsed_s": 33.5,
+      "lifecycle_wall_us": null,
+      "lifecycle_process_cpu_us": null,
+      "executable": {
+        "name": "ordered_stream-6d6807d891d1495a.exe",
+        "sha256_before_and_after": "20c2345bd70d455aa74fdf6591bbe468d02ba3cafba03de21358fcaaf39367a8",
+        "length": 3848192
+      },
+      "archive": {
+        "zip_sha256": "dfd05aa2382b78182a065e7e799d2c9aa3f32b05eb30cab448a2d317d57d2164",
+        "manifest_sha256": "254bc585eb42da4d8fe9cd00d7fb3d1e9a0faa92667823e9f14fc46bfe6accd3",
+        "verified_members": 5,
+        "tests_txt_sha256": "5a1f4d5ef1a371ec31fdc36710593ea63d998fbd29595dfd69a3a869f6237561"
+      },
+      "first_failure_per_role": {
+        "0": "site: WorkerExit, reason: Io(ConnectionReset), frame_kind: None",
+        "1": "site: CallerRead, reason: Timeout, frame_kind: None"
+      }
+    },
+    {
+      "run": "43496596957",
+      "artifact_id": "14073117630",
+      "runner": "windows-2025",
+      "runner_image": "20261103.298.1",
+      "rust_host": "x86_64-pc-windows-msvc",
+      "features": [
+        "default"
+      ],
+      "result": "pass",
+      "completed_write_ack_left_right": [
+        4096,
+        4096
+      ],
+      "verified_read_blocks_left_right": [
+        4096,
+        4096
+      ],
+      "verified_read_bytes_left_right": [
+        67108864,
+        67108864
+      ],
+      "tls_snapshot_left_right": [
+        {
+          "received": 5395015,
+          "sent": 5395050
+        },
+        {
+          "received": 5395050,
+          "sent": 5395015
+        }
+      ],
+      "setup_wall_us": 70301,
+      "setup_process_cpu_us": 31250,
+      "snapshot_wall_us": 181846895,
+      "snapshot_process_cpu_us": 103906250,
+      "libtest_elapsed_s": 181.93,
+      "lifecycle_wall_us": 181901685,
+      "lifecycle_process_cpu_us": 103906250,
+      "executable": {
+        "name": "ordered_stream-c43c3372c7fdd5c2.exe",
+        "sha256_before_and_after": null,
+        "length": null
+      },
+      "archive": {
+        "zip_sha256": "44fa2aa19bd29c089367d0a247a94d321c528fdab7fcd6babf792f4d6b26bc49",
+        "manifest_sha256": "1b501f3d387614bdd0e0fc4e960c8cec0a1b4bdb0dc304191259e0663360052a",
+        "verified_members": 20,
+        "tests_txt_sha256": "17fc98a5ad89928584753a5404a2d185f3051c95e4b7ddaccf1701a88d55f247"
+      }
+    },
+    {
+      "run": "43496597282",
+      "artifact_id": "14072316288",
+      "runner": "windows-2025",
+      "runner_image": "20261103.298.1",
+      "rust_host": "x86_64-pc-windows-msvc",
+      "features": [
+        "default",
+        "witness-stall"
+      ],
+      "result": "pass",
+      "completed_write_ack_left_right": [
+        4096,
+        4096
+      ],
+      "verified_read_blocks_left_right": [
+        4096,
+        4096
+      ],
+      "verified_read_bytes_left_right": [
+        67108864,
+        67108864
+      ],
+      "tls_snapshot_left_right": [
+        {
+          "received": 5395015,
+          "sent": 5395050
+        },
+        {
+          "received": 5395050,
+          "sent": 5395015
+        }
+      ],
+      "setup_wall_us": 94198,
+      "setup_process_cpu_us": 0,
+      "snapshot_wall_us": 152602786,
+      "snapshot_process_cpu_us": 72937500,
+      "libtest_elapsed_s": 152.71,
+      "lifecycle_wall_us": 152687079,
+      "lifecycle_process_cpu_us": 72968750,
+      "executable": {
+        "name": "ordered_stream-5697056f003419f5.exe",
+        "sha256_before_and_after": "502de4dc51310a424ab46785bc135b569d40ac33b27c41382e3c061419dbe35a",
+        "length": 3860480
+      },
+      "archive": {
+        "zip_sha256": "157c71707e099f3552f64c7c559238772e86b62e8315aba85c9f9b9b891def15",
+        "manifest_sha256": "210e3d27986aab4179bf4919a0248944df232f38ea6903b333997e6f9fd3195a",
+        "verified_members": 6,
+        "tests_txt_sha256": "d790041182279f34c6f7c033c78afe548ef337a2d607f150f2d555ac9c5c207a"
+      }
+    }
+  ]
+}
