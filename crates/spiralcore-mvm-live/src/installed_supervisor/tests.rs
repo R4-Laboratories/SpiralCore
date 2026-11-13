@@ -8,6 +8,43 @@ use std::{
     time::{Duration, Instant, SystemTime, UNIX_EPOCH},
 };
 
+#[test]
+fn codec_store_descriptor_caps_require_original_operator_funding() {
+    let (mut host, mut tenant) = InstalledConfig::two_endpoint_witness_profile().managed_limits();
+    tenant.codec_store_file_descriptors = host.codec_store_file_descriptors + 1;
+    assert!(InstalledConfig::with_funded_pair_limits(host, tenant).is_err());
+    host.codec_store_file_descriptors = 0;
+    tenant.codec_store_file_descriptors = 0;
+    assert!(InstalledConfig::with_funded_pair_limits(host, tenant).is_ok());
+}
+
+#[test]
+fn codec_store_descriptor_caps_change_the_original_profile_stamp() {
+    let (host, mut tenant) = InstalledConfig::two_endpoint_witness_profile().managed_limits();
+    let original = InstalledConfig::with_funded_pair_limits(host, tenant).unwrap();
+    tenant.codec_store_file_descriptors -= 1;
+    let reduced = InstalledConfig::with_funded_pair_limits(host, tenant).unwrap();
+    assert_ne!(original.profile_hash(), reduced.profile_hash());
+}
+
+#[test]
+fn codec_store_descriptors_require_a_fresh_canonical_profile() {
+    let mut legacy = Sha256::new();
+    legacy.update(b"spiralcore/installed-profile/v1\0");
+    for value in [2_u64, 2, 524_288, 1, 262_144, 2, 1, 1024] {
+        legacy.update(value.to_be_bytes());
+    }
+    let legacy: [u8; 32] = legacy.finalize().into();
+    let config = InstalledConfig::native_profile();
+    assert_eq!(config.profile_hash(), legacy);
+    let (host, tenant) = config.managed_limits();
+    assert_eq!(host.codec_store_file_descriptors, 0);
+    assert_eq!(tenant.codec_store_file_descriptors, 0);
+    let (host, tenant) = InstalledConfig::canonical_native_profile().managed_limits();
+    assert!(host.codec_store_file_descriptors > 0);
+    assert!(tenant.codec_store_file_descriptors > 0);
+}
+
 struct Case {
     controller: InstalledSupervisor,
     grants: Vec<WorkerGrant>,

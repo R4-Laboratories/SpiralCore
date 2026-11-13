@@ -1,5 +1,6 @@
 //! Policy/storage integration; private fixture admission is not native proof.
 use super::*;
+use crate::installed_resources::ManagedResourceError;
 use mvm_core::host_lifetime::EndpointPartitionLimits;
 use std::{fs, os::unix::fs::PermissionsExt};
 
@@ -50,11 +51,17 @@ fn fixture_profile() -> endpoint::QualifiedEndpointProfile {
     )
 }
 fn fixture_profile_with_cache(cache_disk_bytes: u64) -> endpoint::QualifiedEndpointProfile {
+    fixture_profile_with_codec(cache_disk_bytes, 65536)
+}
+fn fixture_profile_with_codec(
+    cache_disk_bytes: u64,
+    host_codec_bytes: u64,
+) -> endpoint::QualifiedEndpointProfile {
     // Only private tests may supply these synthetic policy limits. They do not
     // activate native support or qualify a real bootstrap/codec resource model.
     endpoint::QualifiedEndpointProfile::fixture(EndpointPartitionLimits {
         host_plaintext_bytes: 65536,
-        host_codec_bytes: 65536,
+        host_codec_bytes,
         host_carrier_bytes: 65536,
         host_metadata_bytes: 65536,
         host_stack_bytes: 65536,
@@ -162,6 +169,134 @@ fn probe_mandatory_telemetry_capacity_refuses_before_endpoint_credit_or_disk_eff
     drop(provider);
     supervisor.close_admission();
     supervisor.try_finish().unwrap();
+}
+
+#[test]
+fn store_descriptor_shortage_refuses_before_retained_credit_or_disk_effect() {
+    mvm_core::util::test_env::isolated_lock_probe(probe_store_descriptor_shortage);
+}
+
+fn probe_store_descriptor_shortage() {
+    let (home, mut supervisor, mut provider) = fixture();
+    provider
+        .configure_endpoints(&supervisor, fixture_profile())
+        .unwrap();
+    let prepared = grant(&provider, "store-descriptor-shortage");
+    fixture_admit(&prepared);
+    let pool = supervisor.managed_resources();
+    let (host, _) =
+        crate::installed_supervisor::InstalledConfig::canonical_native_profile().managed_limits();
+    let held = pool
+        .reserve(
+            [11; 32],
+            ManagedClaim {
+                codec_store_file_descriptors: host
+                    .codec_store_file_descriptors
+                    .checked_sub(6)
+                    .unwrap(),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+    let before = pool.snapshot().unwrap();
+    let names = || {
+        let mut names: Vec<_> = fs::read_dir(home.path().join("installation"))
+            .unwrap()
+            .map(|entry| entry.unwrap().file_name())
+            .collect();
+        names.sort();
+        names
+    };
+    let original_names = names();
+    let result = prepared
+        .grant
+        .prepare_endpoint_partition(prepared.binding());
+    let error = result.expect_err("six remaining descriptors must refuse the endpoint");
+    assert_eq!(
+        error.downcast_ref::<ManagedResourceError>(),
+        Some(&ManagedResourceError::Full)
+    );
+    assert_eq!(
+        prepared.grant.lifecycle.lock().unwrap().endpoint,
+        EndpointIssuance::NeverIssued
+    );
+    assert_eq!(pool.snapshot().unwrap().usage, before.usage);
+    assert_eq!(
+        pool.snapshot().unwrap().active_reservations,
+        before.active_reservations
+    );
+    assert_eq!(names(), original_names);
+    drop((held, prepared, provider));
+    supervisor.close_admission();
+    supervisor.try_finish().unwrap();
+}
+
+#[test]
+fn store_guard_requires_original_codec_workspace_and_descriptor_debit() {
+    mvm_core::util::test_env::isolated_lock_probe(probe_original_store_funding);
+}
+
+fn probe_original_store_funding() {
+    use mvm_core::host_lifetime::EndpointPartitionGuard;
+    let quote =
+        mvm_hostd::supervisor::flowmux::SpiralCorePayloadFactory::owned_store_requirements()
+            .unwrap();
+    let codec = spiralcore_transfer::resource_profile::ResourceProfile::SmallV1
+        .operation_charge()
+        .unwrap()
+        .checked_add(quote.workspace_bytes)
+        .unwrap();
+    for (bytes, funded) in [(codec - 1, false), (codec, true)] {
+        let (_home, supervisor, mut provider) = fixture();
+        provider
+            .configure_endpoints(
+                &supervisor,
+                fixture_profile_with_codec(
+                    mvm_vmm::host::telemetry_provisioning::DEFAULT_RECORDS_BYTE_CAP + 65536,
+                    bytes,
+                ),
+            )
+            .unwrap();
+        let prepared = grant(&provider, "store-funding");
+        fixture_admit(&prepared);
+        let before = supervisor.managed_resources().snapshot().unwrap().usage;
+        let partition = prepared
+            .grant
+            .prepare_endpoint_partition(prepared.binding())
+            .unwrap();
+        let after = supervisor.managed_resources().snapshot().unwrap().usage;
+        assert_eq!(
+            after.codec_store_file_descriptors - before.codec_store_file_descriptors,
+            7
+        );
+        assert_eq!(after.host_codec_bytes - before.host_codec_bytes, bytes);
+        let funding = partition.check_owned_payload_store_resources();
+        if funded {
+            funding.expect("original store reservation is fully funded");
+        } else {
+            assert_eq!(
+                funding.unwrap_err().downcast_ref::<ManagedResourceError>(),
+                Some(&ManagedResourceError::Full)
+            );
+        }
+        let guard = prepared
+            .grant
+            .lifecycle
+            .lock()
+            .unwrap()
+            .endpoint_owner
+            .clone()
+            .unwrap();
+        let mut substituted = partition.projection().clone();
+        substituted.partition_serial += 1;
+        assert!(
+            guard
+                .check_owned_payload_store_resources(&substituted)
+                .is_err()
+        );
+        provider.close_admission();
+        assert!(partition.check_owned_payload_store_resources().is_err());
+    }
 }
 
 #[test]

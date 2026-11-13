@@ -67,7 +67,7 @@
       }
     ]
   },
-  "scope": "Component Linux build/test evidence. The replay selects one exact test with one test thread and an owned disk-backed TMPDIR; it is not a transfer-latency or original errno measurement. Full admitted-TMPDIR suite rerun is pending.",
+  "scope": "Component Linux build/test evidence. The full suite passed with complete reference/runtime inputs and an owned disk-backed TMPDIR. Whole-suite CPU and elapsed time are not per-transfer performance. Earlier failures and missing original errno remain recorded.",
   "original_errno": "Not retained: the test removed its receipts while unwinding. The original failure is not assigned a definitive errno.",
   "post_failure_tmp_user_quota_observation": {
     "used_bytes": 25437118464,
@@ -75,5 +75,21 @@
     "hard_limit_bytes": 25538117632,
     "remaining_bytes": 100999168,
     "scope": "Independent read-only quota observation after the failed run; not the original failing syscall."
+  },
+  "complete_inputs_all_targets": {
+    "status": 0,
+    "summaries": 65,
+    "passed": 520,
+    "failed": 0,
+    "ignored": 4,
+    "wall_seconds": 436.7566849340219,
+    "user_seconds": 760.780049,
+    "system_seconds": 10.914753,
+    "source_manifest_sha256": "e5b7be7be8e6ac64fe8b3b4f2713a3a634faf1b01138bfd455fbf69c8ae687af",
+    "reference_manifest_sha256": "4da785ceac6fa98b38236f8695cff4b32846e6de324f71ccaaf3814570182b50",
+    "runtime_inputs_manifest_sha256": "aa1d49a7d13fd6ad9eef2e1dcf49a414212f424b97851c4e668ebad8a1d5e2fa",
+    "temporary_storage": "original owned disk-backed TMPDIR; unchanged workload and limits",
+    "log_sha256": "ce71adf966047f135f33860ba0308ea20d136cbbc7811194a40a3eb8cee16db6",
+    "compiler_scope": "Compiler version was not recorded in the run receipt; do not attribute this result to the MVM Rust 1.97.1 closure."
   }
 }
