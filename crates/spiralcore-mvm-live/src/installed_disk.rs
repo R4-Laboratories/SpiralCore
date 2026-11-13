@@ -114,6 +114,20 @@ impl PreparedEndpointStore {
     pub fn path(&self) -> &Path {
         &self.store.as_ref().expect("owned prepared store").path
     }
+    /// Reopen the original namespace relative to its held installation descriptor.
+    pub fn check_current(&self) -> Result<()> {
+        let (parent, disk) = self.reservation.as_ref().ok_or(SupervisorError::State)?;
+        parent.check_current()?;
+        disk.check_current()?;
+        self.authority.with_disk_owner(|owner, _| {
+            owner.check_endpoint_disk(
+                self.store
+                    .as_ref()
+                    .ok_or(crate::installed_owner::OwnerError::Fenced)?,
+            )
+        })
+    }
+
     pub fn cancel_unused(mut self) -> Result<()> {
         self.authority.with_disk_owner(|owner, _| {
             owner.cancel_unused_endpoint_disk(self.store.as_ref().expect("owned prepared store"))
@@ -122,6 +136,57 @@ impl PreparedEndpointStore {
         self.reservation.take();
         Ok(())
     }
+    /// The resident retains the sealed original receipt across the whole I/O
+    /// barrier. Admission may be closed; cleanup uses identity, not new authority.
+    #[cfg(feature = "canonical-host")]
+    pub(crate) fn retire_with_endpoint_receipt(
+        &mut self,
+        receipt: &mvm_client::EndpointRetirement,
+        guard: &Arc<dyn mvm_core::host_lifetime::EndpointPartitionGuard>,
+        expected: &mvm_core::host_lifetime::EndpointPartitionProjection,
+    ) -> Result<()> {
+        if !receipt.retains_partition_guard(guard)
+            || receipt.projection() != expected
+            || !projection_matches_store(expected, &self.binding())
+        {
+            return Err(SupervisorError::Profile);
+        }
+        let store = self.store.as_mut().ok_or(SupervisorError::State)?;
+        self.authority
+            .with_disk_owner(|owner, _| owner.retire_endpoint_disk(store))?;
+        // Keep the completed original store identity until this owner drops.
+        // Any failed I/O above leaves both the store and this SAME credit held.
+        self.reservation.take();
+        Ok(())
+    }
+}
+
+#[cfg(feature = "canonical-host")]
+fn projection_matches_store(
+    projection: &mvm_core::host_lifetime::EndpointPartitionProjection,
+    actual: &EndpointDiskBinding<'_>,
+) -> bool {
+    let Some(store) = &projection.store else {
+        return false;
+    };
+    projection.version == 1
+        && projection.profile == 2
+        && projection.binding.installation == actual.key.installation
+        && projection.binding.profile == actual.key.profile
+        && projection.binding.generation == actual.generation
+        && projection.binding.grant_serial == actual.parent_serial
+        && projection.session == actual.session
+        && store.version == 1
+        && store.path == actual.path
+        && store.device == actual.device
+        && store.inode == actual.inode
+        && store.reservation_serial == actual.reservation_serial
+        && store.tenant == actual.tenant
+        && store.session == actual.session
+        && projection.limits.cache_disk_bytes.checked_sub(
+            crate::installed_retained::RECORD_BYTES + crate::installed_retained::SIDECAR_BYTES,
+        ) == Some(actual.cache_bytes)
+        && projection.limits.staging_disk_bytes == actual.staging_bytes
 }
 impl Drop for PreparedEndpointStore {
     fn drop(&mut self) {

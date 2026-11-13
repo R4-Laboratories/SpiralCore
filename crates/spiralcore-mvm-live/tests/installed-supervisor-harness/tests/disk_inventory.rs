@@ -711,3 +711,30 @@ fn only_original_vm_reservation_can_prepare_store_and_unhanded_cancel_refunds_it
     fs::remove_dir_all(base).unwrap();
     fs::remove_dir_all(foreign_base).unwrap();
 }
+
+#[test]
+fn selected_store_rejects_replaced_namespace_and_keeps_both_reservations() {
+    let (base, mut supervisor) = fixture();
+    let parent = guest(&supervisor, request().tenant);
+    let inventory = supervisor.endpoint_disk_inventory().unwrap();
+    let store = inventory.prepare(&parent, request()).unwrap();
+    store.check_current().unwrap();
+    let original = store.path().with_extension("original-fixture");
+    std::fs::rename(store.path(), &original).unwrap();
+    std::fs::create_dir(store.path()).unwrap();
+    let before = supervisor.managed_resources().snapshot().unwrap().usage;
+    assert!(store.check_current().is_err());
+    assert_eq!(
+        supervisor.managed_resources().snapshot().unwrap().usage,
+        before
+    );
+    std::fs::remove_dir(store.path()).unwrap();
+    std::fs::rename(original, store.path()).unwrap();
+    store.check_current().unwrap();
+    store.cancel_unused().unwrap();
+    drop((parent, inventory));
+    supervisor.close_admission();
+    supervisor.try_finish().unwrap();
+    drop(supervisor);
+    std::fs::remove_dir_all(base).unwrap();
+}

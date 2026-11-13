@@ -43,6 +43,7 @@ impl InstalledConfig {
                 b"endpoint-bootstrap-v1".as_slice(),
                 b"owned-helper-model-v1",
                 b"disposable-inventory-v1",
+                b"retained-telemetry-catalog-v1",
                 b"native-fc-hvf-role-v1",
             ] {
                 digest.update((tag.len() as u64).to_be_bytes());
@@ -57,6 +58,8 @@ impl InstalledConfig {
                 include_bytes!("../Cargo.toml").as_slice(),
                 include_bytes!("installed_resources.rs").as_slice(),
                 include_bytes!("installed_owner/endpoint_disks.rs").as_slice(),
+                include_bytes!("installed_owner/retained_telemetry.rs").as_slice(),
+                include_bytes!("installed_retained.rs").as_slice(),
                 include_bytes!("../../spiralcore-transfer/Cargo.toml").as_slice(),
                 include_bytes!("../../spiralcore-transfer/Cargo.lock").as_slice(),
                 include_bytes!("../../spiralcore-transfer/src/resource_profile.rs").as_slice(),
@@ -103,6 +106,11 @@ impl fmt::Display for SupervisorError {
     }
 }
 impl std::error::Error for SupervisorError {}
+impl From<io::Error> for SupervisorError {
+    fn from(error: io::Error) -> Self {
+        Self::Io(error)
+    }
+}
 impl From<OwnerError> for SupervisorError {
     fn from(error: OwnerError) -> Self {
         Self::Owner(error)
@@ -243,6 +251,8 @@ pub struct InstalledSupervisor {
     authority: Arc<InstalledAuthority>,
     budget: HostTransportBudget,
     resources: ManagedResourceBudget,
+    #[cfg(feature = "canonical-host")]
+    retained: Mutex<Option<Arc<crate::installed_retained::RetainedTelemetryInventory>>>,
     phase: Phase,
     session_started: bool,
 }
@@ -259,6 +269,16 @@ impl InstalledSupervisor {
     }
     pub fn endpoint_disk_inventory(&self) -> Result<crate::installed_disk::EndpointDiskInventory> {
         crate::installed_disk::EndpointDiskInventory::new(self)
+    }
+    #[cfg(feature = "canonical-host")]
+    pub(crate) fn retained_telemetry_inventory(
+        &self,
+    ) -> Result<Arc<crate::installed_retained::RetainedTelemetryInventory>> {
+        let mut original = self.retained.lock().map_err(|_| SupervisorError::State)?;
+        if original.is_none() {
+            *original = Some(crate::installed_retained::RetainedTelemetryInventory::new(self)?);
+        }
+        original.as_ref().cloned().ok_or(SupervisorError::State)
     }
     pub fn start(mut owner: InstallationOwner, config: InstalledConfig) -> Result<Self> {
         if owner.profile_hash()? != config.profile_hash() {
@@ -278,6 +298,8 @@ impl InstalledSupervisor {
             authority,
             budget,
             resources,
+            #[cfg(feature = "canonical-host")]
+            retained: Mutex::new(None),
             phase: Phase::Open,
             session_started: false,
         })
@@ -514,6 +536,15 @@ impl InstalledSupervisor {
         if snapshot.usage != TransportLimits::default() {
             return Err(SupervisorError::Busy);
         }
+        #[cfg(feature = "canonical-host")]
+        {
+            let retained = self.retained.get_mut().map_err(|_| SupervisorError::State)?;
+            if retained.as_ref().is_some_and(|inventory| !inventory.is_empty().unwrap_or(false)) {
+                return Err(SupervisorError::Busy);
+            }
+            // Other actual aliases keep the original bookkeeping charged.
+            retained.take();
+        }
         if !self.resources.ensure_drained()? {
             return Err(SupervisorError::Busy);
         }
@@ -640,3 +671,7 @@ mod spawn_tests;
 #[cfg(test)]
 #[path = "installed_supervisor/drain_tests.rs"]
 mod drain_tests;
+
+#[cfg(all(test, feature = "canonical-host"))]
+#[path = "installed_supervisor/retained_tests.rs"]
+mod retained_tests;

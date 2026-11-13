@@ -262,3 +262,193 @@ fn directory_buffer_profile_rejects_unbounded_platform_allocation_inputs() {
     assert!(scan_limits(None, true).is_err());
     assert!(scan_limits(Some(4096), true).is_err());
 }
+
+#[test]
+fn live_retirement_removes_only_its_store_while_another_holder_remains() {
+    use std::os::unix::fs::OpenOptionsExt;
+    let f = Fixture::new();
+    let mut owner = InstallationOwner::initialize(&f.root, f.key).unwrap();
+    let epoch = owner.begin().unwrap();
+    let mut store = owner
+        .prepare_endpoint_disk(epoch, 1, request())
+        .ok()
+        .unwrap();
+    let sibling = owner
+        .prepare_endpoint_disk(
+            epoch,
+            2,
+            EndpointDiskRequest {
+                session: [3; 32],
+                ..request()
+            },
+        )
+        .ok()
+        .unwrap();
+    let holder = HolderLease::acquire(&f.root, f.key, epoch.generation()).unwrap();
+    let mut file = fs::OpenOptions::new()
+        .create_new(true)
+        .write(true)
+        .mode(0o600)
+        .open(store.path.join("cache-object"))
+        .unwrap();
+    file.write_all(b"original cache bytes").unwrap();
+    file.sync_all().unwrap();
+    drop(file);
+    fs::write(f.base.join("audit-excluded"), b"retained audit").unwrap();
+    owner.retire_endpoint_disk(&mut store).unwrap();
+    assert!(!store.path.exists());
+    assert!(sibling.path.is_dir());
+    assert_eq!(
+        fs::read(f.base.join("audit-excluded")).unwrap(),
+        b"retained audit"
+    );
+    assert_eq!(owner.storage.disk_snapshot(epoch).unwrap().entries.len(), 1);
+    owner.retire_endpoint_disk(&mut store).unwrap();
+    owner.cancel_unused_endpoint_disk(&sibling).unwrap();
+    assert!(
+        owner.finish(epoch).is_err(),
+        "live holder still fences global retirement"
+    );
+    drop(holder);
+    // A failed global finish is intentionally fenced; use the original
+    // process-exclusion recovery path rather than resetting that owner.
+    drop(owner);
+    let mut owner = InstallationOwner::open(&f.root, f.key).unwrap();
+    owner.reconcile().unwrap();
+}
+
+fn fail_final_publish(point: &'static str) -> Result<()> {
+    thread_local! { static COUNT: std::cell::Cell<u32> = const { std::cell::Cell::new(0) }; }
+    if point == "publish-before-parent-sync" {
+        let n = COUNT.with(|c| {
+            let n = c.get() + 1;
+            c.set(n);
+            n
+        });
+        if n == 2 {
+            return Err(io::Error::other("injected final inventory sync failure").into());
+        }
+    }
+    Ok(())
+}
+#[test]
+fn live_cleanup_resumes_after_removal_or_final_publication_failure() {
+    for hook in [fail_remove as FaultHook, fail_final_publish as FaultHook] {
+        let f = Fixture::new();
+        let mut owner = InstallationOwner::initialize(&f.root, f.key).unwrap();
+        let epoch = owner.begin().unwrap();
+        let mut store = owner
+            .prepare_endpoint_disk(epoch, 1, request())
+            .ok()
+            .unwrap();
+        HOOK.with(|h| *h.borrow_mut() = Some(hook));
+        assert!(owner.retire_endpoint_disk(&mut store).is_err());
+        HOOK.with(|h| *h.borrow_mut() = None);
+        assert!(!store.path.exists());
+        eprintln!(
+            "retire diagnostic: nlink={} namespace_synced={} inventory_phases={:?}",
+            store.directory.metadata().unwrap().nlink(),
+            store.retirement == RetirementProgress::NamespaceSynced,
+            owner
+                .storage
+                .disk_snapshot(epoch)
+                .unwrap()
+                .entries
+                .iter()
+                .map(|e| e.phase)
+                .collect::<Vec<_>>()
+        );
+        owner.retire_endpoint_disk(&mut store).unwrap();
+        owner.retire_endpoint_disk(&mut store).unwrap();
+        assert!(!f.root.join(INVENTORY).exists());
+        owner.finish(epoch).unwrap();
+    }
+}
+
+#[test]
+fn live_retirement_cannot_infer_progress_from_missing_active_or_cleanup_names() {
+    let f = Fixture::new();
+    let mut owner = InstallationOwner::initialize(&f.root, f.key).unwrap();
+    let epoch = owner.begin().unwrap();
+    let mut store = owner
+        .prepare_endpoint_disk(epoch, 1, request())
+        .ok()
+        .unwrap();
+    fs::remove_dir(&store.path).unwrap();
+    let before = fs::read(f.root.join(INVENTORY)).unwrap();
+    assert!(owner.retire_endpoint_disk(&mut store).is_err());
+    assert_eq!(fs::read(f.root.join(INVENTORY)).unwrap(), before);
+    let mut snapshot = owner.storage.disk_snapshot(epoch).unwrap();
+    snapshot.entries[0].phase = 3;
+    owner.storage.publish_disks(&snapshot).unwrap();
+    let before = fs::read(f.root.join(INVENTORY)).unwrap();
+    assert!(
+        owner.retire_endpoint_disk(&mut store).is_err(),
+        "a durable intent alone is not this live store's unlink proof"
+    );
+    assert_eq!(fs::read(f.root.join(INVENTORY)).unwrap(), before);
+    drop(store);
+    drop(owner);
+    let mut owner = InstallationOwner::open(&f.root, f.key).unwrap();
+    assert_eq!(owner.recover_endpoint_disks().unwrap(), 1);
+    owner.reconcile().unwrap();
+}
+
+#[test]
+fn live_retirement_missing_entry_refuses_until_original_remove_is_synced() {
+    let f = Fixture::new();
+    let mut owner = InstallationOwner::initialize(&f.root, f.key).unwrap();
+    let epoch = owner.begin().unwrap();
+    let mut store = owner
+        .prepare_endpoint_disk(epoch, 1, request())
+        .ok()
+        .unwrap();
+    HOOK.with(|h| *h.borrow_mut() = Some(fail_remove));
+    assert!(owner.retire_endpoint_disk(&mut store).is_err());
+    HOOK.with(|h| *h.borrow_mut() = None);
+    let snapshot = owner.storage.disk_snapshot(epoch).unwrap();
+    fs::remove_file(f.root.join(INVENTORY)).unwrap();
+    assert!(owner.retire_endpoint_disk(&mut store).is_err());
+    assert!(!f.root.join(INVENTORY).exists());
+    owner.storage.publish_disks(&snapshot).unwrap();
+    owner.retire_endpoint_disk(&mut store).unwrap();
+    owner.finish(epoch).unwrap();
+}
+
+#[test]
+fn live_retirement_does_not_adopt_a_recreated_namespace() {
+    use std::os::unix::fs::OpenOptionsExt;
+    let f = Fixture::new();
+    let mut owner = InstallationOwner::initialize(&f.root, f.key).unwrap();
+    let epoch = owner.begin().unwrap();
+    let mut store = owner
+        .prepare_endpoint_disk(epoch, 1, request())
+        .ok()
+        .unwrap();
+    HOOK.with(|h| *h.borrow_mut() = Some(fail_remove));
+    assert!(owner.retire_endpoint_disk(&mut store).is_err());
+    HOOK.with(|h| *h.borrow_mut() = None);
+    let before = fs::read(f.root.join(INVENTORY)).unwrap();
+    fs::DirBuilder::new()
+        .mode(0o700)
+        .create(&store.path)
+        .unwrap();
+    let mut file = fs::OpenOptions::new()
+        .create_new(true)
+        .write(true)
+        .mode(0o600)
+        .open(store.path.join("foreign"))
+        .unwrap();
+    file.write_all(b"preserve replacement").unwrap();
+    drop(file);
+    assert!(owner.retire_endpoint_disk(&mut store).is_err());
+    assert_eq!(fs::read(f.root.join(INVENTORY)).unwrap(), before);
+    assert_eq!(
+        fs::read(store.path.join("foreign")).unwrap(),
+        b"preserve replacement"
+    );
+    fs::remove_file(store.path.join("foreign")).unwrap();
+    fs::remove_dir(&store.path).unwrap();
+    owner.retire_endpoint_disk(&mut store).unwrap();
+    owner.finish(epoch).unwrap();
+}

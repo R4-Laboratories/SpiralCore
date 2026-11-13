@@ -30,6 +30,10 @@ const DOMAIN: &[u8] = b"spiralcore/installed-owner/v1\0";
 #[path = "installed_owner/endpoint_disks.rs"]
 pub mod endpoint_disks;
 
+#[cfg(feature = "canonical-host")]
+#[path = "installed_owner/retained_telemetry.rs"]
+pub(crate) mod retained_telemetry;
+
 #[cfg(test)]
 #[path = "installed_owner/binding_tests.rs"]
 mod binding_tests;
@@ -403,10 +407,23 @@ impl Storage {
         // Only the explicit disk inventory owner can prove its metadata empty
         // and durably remove it. Generic epoch transitions cannot reset a lost
         // process's disk charge, including an incomplete first publication.
+        // A retained catalog may itself be lost. The original owner inode is
+        // already bound by the epoch record; its monotonic denial latch must
+        // also remain empty before generic transitions can assert no debt.
+        if open_at(&self.directory, OWNER, libc::O_RDONLY)?
+            .metadata()?
+            .len()
+            != 0
+        {
+            return Err(OwnerError::Fenced);
+        }
         self.absent_names(&[
             ".endpoint-disks.bin",
             ".endpoint-disks.intent",
             ".endpoint-disks.next",
+            ".retained-telemetry.bin",
+            ".retained-telemetry.intent",
+            ".retained-telemetry.next",
         ])?;
         endpoint_disks::no_namespaces(&self.directory)
     }
