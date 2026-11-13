@@ -95,7 +95,7 @@ jobs:
       - name: Record source and pinned compiler
         run: |
           set -euo pipefail
-          rustup toolchain install 1.97.1 --profile minimal
+          rustup toolchain install 1.97.1 --profile minimal --component clippy
           mkdir fixture-evidence
           echo "CARGO_TARGET_DIR=$RUNNER_TEMP/fixture-target" >> "$GITHUB_ENV"
           git rev-parse HEAD 'HEAD^{tree}' > fixture-evidence/source-and-tree.txt
@@ -166,6 +166,12 @@ jobs:
           if code == 0 and footer[0] != ("ok", "5", "0"):
               sys.exit("Successful fixture must pass all five tests")
           sys.exit(code)
+      - name: Check fixture producer warnings
+        run: |
+          set -euo pipefail
+          cargo +1.97.1 clippy --locked --manifest-path crates/spiralcore-mvm-live/Cargo.toml \
+            --features canonical-host --example installed_flowmux_fixture -- -D warnings \
+            2>&1 | tee fixture-evidence/clippy.txt
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:
