@@ -341,7 +341,7 @@ impl InstallationOwner {
         let active = [".retained-audit-0", ".retained-audit-1"]
             .get(index)
             .ok_or(OwnerError::InvalidStorage)?;
-        if archive >= MAX_ENTRIES || terminal.is_empty() || terminal.len() > 2048 {
+        if archive >= MAX_ENTRIES || terminal.is_empty() || terminal.len() > 12 * 1024 {
             return Err(OwnerError::InvalidStorage);
         }
         let arch_name = format!(".archived-audit-{archive}");
@@ -351,7 +351,7 @@ impl InstallationOwner {
             return Err(OwnerError::Fenced);
         }
         original.read_exact_at(&mut record, 0)?;
-        let mut bytes = Vec::with_capacity(2304);
+        let mut bytes = Vec::with_capacity(8 + 16 + record.len() + terminal.len() + 32);
         bytes.extend_from_slice(b"SCAARC01");
         bytes.extend_from_slice(&original_id.device.to_le_bytes());
         bytes.extend_from_slice(&original_id.inode.to_le_bytes());

@@ -91,9 +91,9 @@ impl Shared {
             ManagedClaim {
                 cache_disk_bytes: cap
                     .get()
-                    .checked_add(2 * 4096)
+                    .checked_add(4 * 4096)
                     .ok_or_else(|| anyhow!("audit debt overflow"))?,
-                host_metadata_bytes: BOOKKEEPING_BYTES,
+                host_metadata_bytes: 16 * 1024,
                 ..Default::default()
             },
         )?;
@@ -192,8 +192,9 @@ impl Shared {
             },
         )?;
         let statement = serde_json::to_vec(&(
-            terminal,
-            file.verifying_key(),
+            file.signed_registered(),
+            file.signed_terminal()
+                .ok_or_else(|| anyhow!("original signed terminal unavailable"))?,
             result.entries,
             result.sha256,
         ))?;

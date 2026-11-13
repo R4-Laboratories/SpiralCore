@@ -11,6 +11,73 @@ use std::{
     path::{Path, PathBuf},
 };
 
+/// One immutable original registrar can serve two reservations on the installed SDK runner.
+/// The callback selects a grant only inside its original tenant controller;
+/// each selected grant independently verifies the signed registration and original directories.
+pub(super) struct TenantRegistrationOwner(Weak<Shared>);
+impl TenantRegistrationOwner {
+    pub(super) fn new(shared: &Arc<Shared>) -> Self {
+        Self(Arc::downgrade(shared))
+    }
+    pub(super) fn original_grant(&self, tenant: &str, vm: &str) -> Result<Arc<VmGrant>> {
+        let parent = self
+            .0
+            .upgrade()
+            .ok_or_else(|| anyhow!("original installed parent missing"))?;
+        let registry = parent
+            .registry
+            .lock()
+            .map_err(|_| anyhow!("original VM registry poisoned"))?;
+        registry
+            .slots
+            .iter()
+            .filter_map(Weak::upgrade)
+            .find(|g| g.tenant == tenant && g.binding.vm_name == vm)
+            .ok_or_else(|| anyhow!("original tenant VM reservation missing"))
+    }
+}
+impl RegisteredEndpointOwner for TenantRegistrationOwner {
+    fn bind_registration(
+        &self,
+        registrar: &OwnedHostAgentRegistrar,
+        registration: &OwnedVmRegistration,
+        params: &HostAgentServicesParams<'_>,
+    ) -> Result<()> {
+        let grant = self.original_grant(
+            params
+                .tenant_id
+                .ok_or_else(|| anyhow!("original tenant missing"))?,
+            params.vm_name,
+        )?;
+        grant.bind_registration(registrar, registration, params)
+    }
+    fn retired_audit(
+        &self,
+        registration: &OwnedVmRegistration,
+        file: &mvm_vmm::host::host_agent_spawn::RegisteredAuditFile,
+    ) -> Result<()> {
+        let opened = file.registered();
+        self.original_grant(&opened.tenant, &opened.vm)?
+            .retired_audit(registration, file)
+    }
+}
+impl InstalledParentProvider {
+    /// Install the original funded tenant registrar once on this SDK runner.
+    /// The resident also retains and registers this provider with MVM host admission.
+    pub fn install_sdk_registrar(
+        &self,
+        backend: &mvm_client::LocalBackend,
+        tenant: &str,
+    ) -> Result<()> {
+        let (registrar, permit) = self.shared.tenant_registrar(tenant)?;
+        permit.check_authority(&registrar)?;
+        let registrar = registrar
+            .with_registration_owner(Arc::new(TenantRegistrationOwner::new(&self.shared)))?;
+        backend.install_owned_host_agent(registrar)?;
+        Ok(())
+    }
+}
+
 impl ParentLaunchOwner {
     /// Register this launch through its original tenant daemon. Only the signed
     /// registration callback can pin state and socket directories for telemetry.

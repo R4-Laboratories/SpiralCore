@@ -25,6 +25,9 @@ mod host_agent;
 #[path = "installed_parent/tenant_agent.rs"]
 mod tenant_agent;
 pub use tenant_agent::TenantHelperLimits;
+#[path = "installed_parent/startup.rs"]
+mod startup;
+pub use startup::PortableStartupQuote;
 
 #[cfg(test)]
 #[path = "installed_parent/config_tests.rs"]
@@ -82,6 +85,7 @@ struct GrantLifecycle {
     admitted_session: Option<[u8; 32]>,
     selected_network: Option<mvm_vmm::host::network_endpoint_spawn::AdmittedNetworkPlan>,
     registration: Option<Arc<host_agent::RegistrationBinding>>,
+    startup: Option<startup::StartupWorkspace>,
     endpoint: EndpointIssuance,
     endpoint_owner: Option<Arc<endpoint::RootEndpointOwner>>,
     retired: bool,
@@ -101,6 +105,10 @@ impl GrantLifecycle {
         Ok(())
     }
     fn seal_retired(&mut self) -> Result<()> {
+        ensure!(
+            self.startup.is_none(),
+            "original portable runtime disk custody remains charged"
+        );
         ensure!(
             self.admitted_plan.is_some(),
             "original canonical admission unavailable"
@@ -283,7 +291,8 @@ impl PreparedParentVm {
             },
             binding: self.grant.binding.clone(),
         };
-        PreparedHostLifetime::bind(inputs, self.grant)
+        let lifetime = PreparedHostLifetime::bind(inputs, self.grant.clone())?;
+        self.grant.bind_portable_quote(lifetime)
     }
 }
 
@@ -473,10 +482,33 @@ impl VmGrant {
 }
 
 impl CoreCurrentParentPermit for VmGrant {
+    fn begin_startup_workspace(&self, binding: &HostLaunchBinding) -> Result<()> {
+        self.transition_portable_workspace(binding, startup::Phase::Held, startup::Phase::Active)
+    }
+    fn complete_startup_workspace(&self, binding: &HostLaunchBinding) -> Result<()> {
+        self.transition_portable_workspace(
+            binding,
+            startup::Phase::Active,
+            startup::Phase::Complete,
+        )
+    }
     fn prepare_endpoint_partition(
         &self,
         binding: &HostLaunchBinding,
     ) -> Result<mvm_core::host_lifetime::PreparedEndpointPartition> {
+        {
+            let lifecycle = self
+                .lifecycle
+                .lock()
+                .map_err(|_| anyhow!("parent lifecycle poisoned"))?;
+            ensure!(
+                lifecycle
+                    .startup
+                    .as_ref()
+                    .is_none_or(|s| s.phase == startup::Phase::Complete),
+                "original portable workspace has not completed"
+            );
+        }
         self.prepare_original_endpoint(binding)
     }
 
@@ -503,12 +535,7 @@ impl CoreCurrentParentPermit for VmGrant {
 }
 
 impl InstalledParentProvider {
-    fn bind_original_admission(
-        &self,
-        admitted: &AdmittedPlan,
-        binding: &HostLaunchBinding,
-        config: Option<&mvm_core::vm_backend::VmStartConfig>,
-    ) -> Result<Arc<dyn CoreCurrentParentPermit>> {
+    fn original_grant(&self, binding: &HostLaunchBinding) -> Result<Arc<VmGrant>> {
         let grant = {
             let registry = self
                 .shared
@@ -523,6 +550,15 @@ impl InstalledParentProvider {
                 .find(|grant| grant.binding == *binding)
                 .ok_or_else(|| anyhow!("original parent grant unavailable"))?
         };
+        Ok(grant)
+    }
+    fn bind_original_admission(
+        &self,
+        admitted: &AdmittedPlan,
+        binding: &HostLaunchBinding,
+        config: Option<&mvm_core::vm_backend::VmStartConfig>,
+    ) -> Result<Arc<dyn CoreCurrentParentPermit>> {
+        let grant = self.original_grant(binding)?;
         grant.reservation.check_current()?;
         grant.check_open()?;
         ensure!(
@@ -626,6 +662,18 @@ impl InstalledParentProvider {
 }
 
 impl ParentAdmissionProvider for InstalledParentProvider {
+    fn check_portable_startup_workspace(
+        &self,
+        owner: &Arc<mvm_core::host_lifetime::HostLifetimeAnchor>,
+        pin: &mvm_core::plan::PlanArtifact,
+    ) -> Result<()> {
+        let grant = self.original_grant(owner.binding())?;
+        ensure!(
+            owner.retains_parent_owner(&grant),
+            "foreign original portable archive owner"
+        );
+        grant.check_portable_quote(owner, pin)
+    }
     fn bind(
         &self,
         admitted: &AdmittedPlan,

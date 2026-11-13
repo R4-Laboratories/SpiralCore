@@ -353,7 +353,7 @@ mod test_bundle {
         plan.asset_identities.push(
             mvm_core::plan::AssetIdentity::new(
                 mvm_core::plan::AssetKind::Policy,
-                "network",
+                "network_policy",
                 mvm_core::policy::network_policy::content_sha256(policy),
             )
             .unwrap(),
@@ -603,7 +603,7 @@ fn original_audit_bucket_is_persisted_once_and_survives_vm_disposal() {
     let after = supervisor.managed_resources().snapshot().unwrap().usage;
     assert_eq!(
         after.cache_disk_bytes - before.cache_disk_bytes,
-        cap.get() + 2 * 4096
+        cap.get() + 4 * 4096
     );
     provider
         .shared
@@ -650,4 +650,129 @@ fn same_supervisor_has_one_active_tenant_controller_and_one_archive() {
     drop(grant);
     let successor = InstalledParentProvider::new(&supervisor).unwrap();
     assert!(Arc::ptr_eq(&inventory, &successor.shared.audit_debts));
+}
+
+#[test]
+fn original_portable_workspace_is_funded_once_and_does_not_refund_retained_disk() {
+    use mvm_core::plan::{KeyId, PlanArtifact};
+    use std::num::NonZeroU64;
+
+    let (_home, mut supervisor, provider) = endpoint_tests::fixture();
+    let before = supervisor.managed_resources().snapshot().unwrap().usage;
+    let pin = PlanArtifact::new("a".repeat(64), &[7; 64], KeyId("installer".into()));
+    let prepare = || {
+        provider
+            .prepare_vm(
+                &VmStartConfig {
+                    name: "quoted-runtime".into(),
+                    tenant_id: Some("local".into()),
+                    cpus: 1,
+                    memory_mib: 1024,
+                    ..Default::default()
+                },
+                "local",
+                native_backend(),
+            )
+            .unwrap()
+    };
+    let quote = || {
+        PortableStartupQuote::new(
+            pin.clone(),
+            NonZeroU64::new(4096).unwrap(),
+            NonZeroU64::new(8192).unwrap(),
+            NonZeroU64::new(16384).unwrap(),
+        )
+        .unwrap()
+    };
+    let prepared = prepare();
+    let grant = prepared.grant.clone();
+    let unfunded = supervisor.managed_resources().snapshot().unwrap().usage;
+    let prepared = prepared.with_portable_startup(quote()).unwrap();
+    let funded = supervisor.managed_resources().snapshot().unwrap().usage;
+    assert_eq!(
+        funded.host_metadata_bytes,
+        unfunded.host_metadata_bytes + 12288
+    );
+    assert_eq!(
+        funded.staging_disk_bytes,
+        unfunded.staging_disk_bytes + 20480
+    );
+    let (lifetime, mut owner) = prepared.begin_launch().unwrap();
+    let anchor = lifetime.into_anchor();
+    provider
+        .check_portable_startup_workspace(&anchor, &pin)
+        .unwrap();
+    let mut wrong = pin.clone();
+    wrong.bundle_sha256 = "b".repeat(64);
+    assert!(
+        provider
+            .check_portable_startup_workspace(&anchor, &wrong)
+            .is_err()
+    );
+    assert!(grant.begin_startup_workspace(&grant.binding).is_err());
+    assert!(grant.complete_startup_workspace(&grant.binding).is_err());
+
+    // Isolate the workspace callbacks from opaque admission and native boot.
+    // Use the genuine signed admission, freshness and binding for transitions.
+    let mut signed_config = VmStartConfig {
+        name: "quoted-runtime".into(),
+        tenant_id: Some("local".into()),
+        cpus: 1,
+        memory_mib: 1024,
+        ..Default::default()
+    };
+    let admitted = admitted(_home.path(), "quoted-runtime");
+    signed_config.plan_json = Some(serde_json::to_string(admitted.signed()).unwrap());
+    anchor.bind_to_config(&mut signed_config).unwrap();
+    provider
+        .bind_config(&admitted, &signed_config, native_backend())
+        .unwrap();
+    drop(signed_config);
+    let bound_usage = supervisor.managed_resources().snapshot().unwrap().usage;
+    assert_eq!(bound_usage.staging_disk_bytes, funded.staging_disk_bytes);
+    assert!(grant.complete_startup_workspace(&grant.binding).is_err());
+    grant.begin_startup_workspace(&grant.binding).unwrap();
+    assert!(grant.begin_startup_workspace(&grant.binding).is_err());
+    assert!(
+        provider
+            .check_portable_startup_workspace(&anchor, &pin)
+            .is_err()
+    );
+    grant.complete_startup_workspace(&grant.binding).unwrap();
+    assert!(grant.complete_startup_workspace(&grant.binding).is_err());
+    assert_eq!(
+        supervisor.managed_resources().snapshot().unwrap().usage,
+        bound_usage
+    );
+    assert!(grant.lifecycle.lock().unwrap().seal_retired().is_err());
+
+    // Test-only cleanup. The synthetic callback test issued no runtime files.
+    owner.completed = true;
+    drop((anchor, grant, owner));
+    assert_eq!(
+        supervisor.managed_resources().snapshot().unwrap().usage,
+        before
+    );
+    drop(provider);
+    supervisor.close_admission();
+    supervisor.try_finish().unwrap();
+}
+
+#[test]
+fn one_installed_tenant_registrar_selects_two_distinct_original_grants() {
+    let (_home, _supervisor, provider) = endpoint_tests::fixture();
+    let a = endpoint_tests::grant(&provider, "original-a");
+    let b = endpoint_tests::grant(&provider, "original-b");
+    let selector = host_agent::TenantRegistrationOwner::new(&provider.shared);
+    assert!(Arc::ptr_eq(
+        &a.grant,
+        &selector.original_grant("local", "original-a").unwrap()
+    ));
+    assert!(Arc::ptr_eq(
+        &b.grant,
+        &selector.original_grant("local", "original-b").unwrap()
+    ));
+    assert!(selector.original_grant("foreign", "original-a").is_err());
+    drop(a);
+    assert!(selector.original_grant("local", "original-a").is_err());
 }
