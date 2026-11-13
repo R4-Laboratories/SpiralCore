@@ -1819,13 +1819,18 @@ fn state_reply(f: &Frame, s: &Attempt) -> Frame {
     f.reply(105, b)
 }
 fn write_record(file: &mut File, offer: &Offer, mid: Option<Id>, bytes: &[u8]) -> Result<()> {
-    file.write_all(b"SCPUB001")?;
-    file.write_all(&offer.len.to_le_bytes())?;
-    file.write_all(&offer.object)?;
-    file.write_all(&[u8::from(mid.is_some())])?;
-    if let Some(m) = mid {
-        file.write_all(&m)?;
-    }
+    let mut header = [0u8; 81];
+    header[..8].copy_from_slice(b"SCPUB001");
+    header[8..16].copy_from_slice(&offer.len.to_le_bytes());
+    header[16..48].copy_from_slice(&offer.object);
+    let header_len = if let Some(manifest) = mid {
+        header[48] = 1;
+        header[49..].copy_from_slice(&manifest);
+        header.len()
+    } else {
+        49
+    };
+    file.write_all(&header[..header_len])?;
     file.write_all(bytes)?;
     #[cfg(test)]
     let _file_sync = commit_costs::span(commit_costs::Stage::FileSync);
