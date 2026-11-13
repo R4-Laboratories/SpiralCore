@@ -18,6 +18,17 @@ fn inputs(mut args: impl Iterator<Item = OsString>) -> Result<(PathBuf, GuestArc
     Ok((PathBuf::from(source), arch))
 }
 
+fn workspace_version(manifest: &str) -> Result<String> {
+    manifest
+        .parse::<toml::Table>()?
+        .get("workspace")
+        .and_then(|w| w.get("package"))
+        .and_then(|pkg| pkg.get("version"))
+        .and_then(toml::Value::as_str)
+        .map(str::to_owned)
+        .context("missing MVM workspace package version")
+}
+
 fn main() -> Result<()> {
     let (source, arch) = inputs(env::args_os().skip(1))?;
     let source = source.canonicalize()?;
@@ -40,7 +51,13 @@ fn main() -> Result<()> {
     )?;
     let cache = PathBuf::from(mvm_core::config::mvm_cache_dir());
     ensure!(cache.starts_with(&home), "shared default cache refused");
-    let version = "0.28.0-rc.1";
+    let linked = workspace_version(include_str!("../../source/Cargo.toml"))?;
+    let requested = workspace_version(&std::fs::read_to_string(source.join("Cargo.toml"))?)?;
+    ensure!(
+        requested == linked,
+        "guest source version differs from the linked host"
+    );
+    let version = linked.as_str();
     let runtime = mvm_build::guest_runtime::resolve_or_build_source_guest_runtime(
         &cache, version, arch, &source,
     )?;
