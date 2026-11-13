@@ -1658,8 +1658,15 @@ impl<A: Authority> Endpoint<A> {
         // Reuse the existing private-file deletion backend under this actual
         // exclusive endpoint owner; Windows checks ACL/reparse/hardlink state
         // and applies disposition to its exact opened file handle.
-        let path = match &p.path {
-            Locator::Path(path) => path,
+        match &p.path {
+            Locator::Path(path) => {
+                drop(record.file);
+                storage::remove_stage(path)?;
+                match fs::symlink_metadata(path) {
+                    Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(()),
+                    _ => Err(Error::Storage),
+                }
+            }
             #[cfg(any(target_os = "linux", target_os = "macos"))]
             Locator::Owned(lease, ns) => {
                 let dir = record.directory.as_ref().ok_or(Error::Storage)?;
@@ -1667,17 +1674,11 @@ impl<A: Authority> Endpoint<A> {
                 lease.check_namespace(*ns, dir.as_fd())?;
                 owned::unlink_checked_at(dir.as_fd(), name.as_ref(), &record.file)?;
                 lease.sync_namespace(*ns, dir.as_fd())?;
-                return match owned::open_read_at(dir.as_fd(), name.as_ref()) {
+                match owned::open_read_at(dir.as_fd(), name.as_ref()) {
                     Err(Error::Unknown) => Ok(()),
                     _ => Err(Error::Storage),
-                };
+                }
             }
-        };
-        drop(record.file);
-        storage::remove_stage(path)?;
-        match fs::symlink_metadata(path) {
-            Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(()),
-            _ => Err(Error::Storage),
         }
     }
     fn apply_ordered_evictions(
