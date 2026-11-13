@@ -5,7 +5,7 @@ use crate::{
         HostTransportBudget, TransportBudgetConfig, TransportBudgetError, TransportLimits,
     },
     installed_owner::{Epoch, HolderHandoff, InstallationBinding, InstallationOwner, OwnerError},
-    installed_resources::{ManagedResourceBudget, ManagedResourceError},
+    installed_resources::{ManagedLimits, ManagedResourceBudget, ManagedResourceError},
 };
 use sha2::{Digest, Sha256};
 use std::{
@@ -22,12 +22,14 @@ use std::{
 pub struct InstalledConfig {
     canonical: bool,
     paired_endpoints: bool,
+    funded_limits: Option<(ManagedLimits, ManagedLimits)>,
 }
 impl InstalledConfig {
     pub fn native_profile() -> Self {
         Self {
             canonical: false,
             paired_endpoints: false,
+            funded_limits: None,
         }
     }
     /// Fresh provisioning for the canonical resource/disk contract. The stamp
@@ -36,6 +38,7 @@ impl InstalledConfig {
         Self {
             canonical: true,
             paired_endpoints: false,
+            funded_limits: None,
         }
     }
     /// Fresh, separate operator profile for two six-worker endpoints plus their
@@ -44,20 +47,46 @@ impl InstalledConfig {
         Self {
             canonical: true,
             paired_endpoints: true,
+            funded_limits: None,
         }
     }
-    fn managed_limits(
-        &self,
-    ) -> (
-        crate::installed_resources::ManagedLimits,
-        crate::installed_resources::ManagedLimits,
-    ) {
-        use crate::installed_resources::ManagedLimits;
+    /// Provision a fresh installation with operator-declared byte ceilings.
+    /// Thread, guest and transport concurrency remain the original pair profile.
+    pub fn with_funded_pair_limits(host: ManagedLimits, tenant: ManagedLimits) -> Result<Self> {
+        let profile = Self::two_endpoint_witness_profile();
+        let (original_host, original_tenant) = profile.managed_limits();
+        for (provisioned, original) in [(host, original_host), (tenant, original_tenant)] {
+            if provisioned.guests != original.guests
+                || provisioned.workers != original.workers
+                || provisioned.guest_memory_bytes != original.guest_memory_bytes
+            {
+                return Err(SupervisorError::Profile);
+            }
+        }
+        for (outer, inner) in [
+            (host.host_resident_bytes, tenant.host_resident_bytes),
+            (host.cache_disk_bytes, tenant.cache_disk_bytes),
+            (host.staging_disk_bytes, tenant.staging_disk_bytes),
+        ] {
+            if inner == 0 || inner > outer {
+                return Err(SupervisorError::Profile);
+            }
+        }
+        Ok(Self {
+            funded_limits: Some((host, tenant)),
+            ..profile
+        })
+    }
+
+    pub fn managed_limits(&self) -> (ManagedLimits, ManagedLimits) {
+        if let Some(limits) = self.funded_limits {
+            return limits;
+        }
         let mut host = ManagedLimits::host();
         let mut tenant = ManagedLimits::tenant();
         if self.paired_endpoints {
-            // 512 MiB per installation and tenant funds two 136 MiB endpoint
-            // partitions, two independently capped helpers, and original owners.
+            // These byte ceilings apply to the aggregate. Actual process
+            // reservations may exhaust them before both endpoints fit.
             host.workers = 10 + 2 * (6 + 1);
             tenant.workers = host.workers;
             tenant.host_resident_bytes = host.host_resident_bytes;
@@ -107,7 +136,11 @@ impl InstalledConfig {
             }
         }
         if self.paired_endpoints {
-            digest.update(b"spiralcore/two-endpoint-witness/v2\0");
+            if self.funded_limits.is_some() {
+                digest.update(b"spiralcore/operator-funded-endpoint-pair/v1\0");
+            } else {
+                digest.update(b"spiralcore/two-endpoint-witness/v2\0");
+            }
             let (host, tenant) = self.managed_limits();
             for limits in [host, tenant] {
                 for bound in [
