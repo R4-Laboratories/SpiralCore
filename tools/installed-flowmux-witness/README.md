@@ -12,7 +12,19 @@ The installer and peer use the same pinned MVM revision. Their direct SpiralCore
 
 ## Prepare the authenticated inputs
 
-On x86-64 Linux, the fixture producer builds the signed workload from the guest ELF and the operator's independently recorded SHA-256. Build the ELF with `SPIRALCORE_FLOWMUX_FIXTURE_IPV4` set to the same IPv4 address passed here. The explicit producer `MVM_HOME` must already contain its signing identity and current authenticated image-set revocation proof. MVM verifies the official kernel and guest runtime during acquisition. Use a fresh absolute output name beneath an operator-owned `0700` directory.
+On x86-64 Linux, the fixture producer builds the signed workload from the guest ELF and the operator's independently recorded SHA-256. The standalone guest manifest builds the original guest source. On an x86-64 GNU/Linux host, use the musl target and the linker shipped with Rust 1.97.1. Set `SC_FLOWMUX_FIXTURE_IPV4` to the literal IPv4 address of the admitted peer. The guest records that address at compile time, and the producer must receive the same address. The explicit producer `MVM_HOME` must already contain its signing identity and current authenticated image-set revocation proof. MVM verifies the official kernel and guest runtime during acquisition. Use a fresh absolute output name beneath an operator-owned `0700` directory.
+
+```bash
+rustup target add --toolchain 1.97.1 x86_64-unknown-linux-musl
+export SPIRALCORE_FLOWMUX_FIXTURE_IPV4="${SC_FLOWMUX_FIXTURE_IPV4:?set the admitted peer IPv4}"
+export CARGO_TARGET_X86_64_UNKNOWN_LINUX_MUSL_LINKER="$(rustc +1.97.1 --print sysroot)/lib/rustlib/x86_64-unknown-linux-gnu/bin/rust-lld"
+export CARGO_TARGET_X86_64_UNKNOWN_LINUX_MUSL_RUSTFLAGS='-C linker-flavor=ld.lld'
+cargo +1.97.1 build --locked --release --target x86_64-unknown-linux-musl \
+  --manifest-path tools/installed-flowmux-witness/guest/Cargo.toml \
+  --bin spiralcore-flowmux-proxy-guest
+```
+
+Set `SC_FLOWMUX_GUEST_ELF` to the absolute path of `x86_64-unknown-linux-musl/release/spiralcore-flowmux-proxy-guest` under the build's target directory. Record and verify its SHA-256 independently before running the producer.
 
 ```bash
 MVM_HOME="${SC_FLOWMUX_PRODUCER_HOME:?set the private producer home}" \
@@ -25,6 +37,14 @@ MVM_HOME="${SC_FLOWMUX_PRODUCER_HOME:?set the private producer home}" \
 ```
 
 The producer reopens the signed archive before publishing the packet. Check `publisher.pub` and the two values in `install.json` against your independent publisher and revocation policy. Use `profile-facts.json` for the address, port and archive identity when preparing the two role directories below. Supply your selected issuer ID and TLS server name to complete `profile.json`. Keep the producer home separate from the empty installation home used by the runner.
+
+To qualify a signed export on x86-64 Linux, set `SC_FLOWMUX_FIXTURE_PRODUCER` to the absolute path of the normal compiled example, and set `SC_FLOWMUX_REVOCATIONS` and `SC_FLOWMUX_REVOCATIONS_BUNDLE` to the current official signed inputs. Supply the same guest ELF, independent SHA-256 and IPv4 variables shown above. Run the command below from the repository root. The test creates a disposable signing identity, checks all seven packet members and opens the archive under its preselected public key in a separate consumer home. The SDK verifies the Firecracker kernel and signed rc.2 runtime offline after the producer acquires the official assets. The test checks that a repeat leaves the packet intact and prints its public identities. The one-guest procedure below exercises boot and transfer separately.
+
+```bash
+cargo +1.97.1 test --locked --manifest-path crates/spiralcore-mvm-live/Cargo.toml \
+  --features canonical-host --test fixture_export -- \
+  --ignored --exact signed_fixture_reopens_with_original_publisher --nocapture
+```
 
 Use two separate, fresh, operator-owned role directories beneath a private parent. Directories must be `0700`; input files must be regular, single-link, owner-only `0600` files. The reader rejects unsafe files instead of repairing their permissions. Private keys and issued operator packets must never enter Git, CI artifacts or a public result archive.
 
