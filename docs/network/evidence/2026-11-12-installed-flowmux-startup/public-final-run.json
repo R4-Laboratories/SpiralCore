@@ -1,0 +1,315 @@
+{
+  "record_version": 1,
+  "date": "2026-11-13",
+  "trial": "public-native.QCrJpqLz",
+  "scope": "one same-host Linux x86_64 Firecracker Dev guest; cooperating TCP/TLS peer; synthetic input",
+  "source": {
+    "spiralcore": "a7eea8373ea321e0fa873f82d6d42af45c2c9c47",
+    "mvm_host_integration": "7b22454077530e96146d68204b711de53e3d05a8",
+    "guest_runtime_release": "v0.28.0-rc.2",
+    "guest_runtime_producer_source": "849382ad417a28f3d68b051411b5ae3bab591b13",
+    "guest_runtime_producer_run": 43344965783,
+    "kernel_image_set": "0.2.4",
+    "single_revision_guest_host": false,
+    "artifacts": {
+      "guest_runtime_archive_sha256": "8a36fae9e7444f92b3beaa1ed7d78c68003ea2f8d2d72320361cfa906a829921",
+      "guest_runtime_archive_bytes": 20753385,
+      "guest_agent_sha256": "9d6e79717b442c0ad6e9f5a51332e2b7d695a80b4f7a1928055ec935e12691d8",
+      "guest_egress_client_sha256": "83fed18426f5e5c616fce7e8c5645f7816c651d3afa4c9702a640142b0e43649",
+      "guest_oci_entrypoint_sha256": "df4f6b8b883f94ff558b16249fb9e5dd3979b7bbcb562b7de19e57557293064d",
+      "guest_measured_role_sha256": "d289a88097d7a90b92314e457cb436d3704c57e699598040d3f36c01400ab793",
+      "kernel_sha256": "1701ccb2c46b2497066225d6ba05f3f33a3a845ca636fbeedb202835c83b49b6",
+      "kernel_image_manifest_sha256": "5033520a59514f5d206d76d13db8c9b7e5841f068c83dd8585ef141879a1bb24",
+      "sealed_workload_sha256": "deba11e2c4b7efe441211f3ae79c76b205da468821ed6162114b97f890b5f319",
+      "sealed_workload_bytes": 61860864
+    }
+  },
+  "limits": {
+    "vcpus": 1,
+    "guest_memory_mib": 256,
+    "guest_nic": false,
+    "filesystem_extent_bytes": 536870912,
+    "installer_address_space_bytes": 536870912,
+    "peer_address_space_bytes": 201326592,
+    "controller_address_space_bytes": 805306368
+  },
+  "statuses": {
+    "sdk": 0,
+    "peer": 0,
+    "namespace": 0
+  },
+  "controller_rows": [
+    {
+      "audit_bytes": 8388608,
+      "bootstrap_upper_bytes": 67698688,
+      "collector_bytes": 27394048,
+      "controller_bytes": 65536,
+      "phase": "funded_endpoint_metadata",
+      "reader_bytes": 65536,
+      "relay_bytes": 81920,
+      "scanner_bytes": 24363008,
+      "scanner_rules": 5,
+      "total_bytes": 128057344
+    },
+    {
+      "agent_refusal": null,
+      "dispatch_ns": 266702106,
+      "launch_ns": 14630560268,
+      "original_workload_exit": 0,
+      "phase": "original_entrypoint",
+      "prepared_ns": 1814730951,
+      "stderr_bytes": 0
+    },
+    {
+      "phase": "guest_proxy_rows",
+      "rows": [
+        {
+          "guest_proxy": {
+            "application_received_bytes": 0,
+            "application_sent_bytes": 0,
+            "completed": true,
+            "connect_request_bytes": 79,
+            "connect_response_bytes": 64,
+            "elapsed_ns": 9544149,
+            "process_cpu_ns": 1901599
+          },
+          "phase": "denied"
+        },
+        {
+          "guest_proxy": {
+            "application_received_bytes": 5804,
+            "application_sent_bytes": 5804,
+            "completed": true,
+            "connect_request_bytes": 69,
+            "connect_response_bytes": 39,
+            "elapsed_ns": 199139856,
+            "process_cpu_ns": 4863295
+          },
+          "phase": "echo"
+        }
+      ]
+    },
+    {
+      "phase": "sdk_retirement",
+      "retired": true,
+      "through_retirement_ns": 15090177144
+    },
+    {
+      "all_resources_released": false,
+      "charged": {
+        "cache_disk_bytes": 9494528,
+        "guest_memory_bytes": 0,
+        "guests": 0,
+        "host_carrier_bytes": 0,
+        "host_codec_bytes": 0,
+        "host_metadata_bytes": 806371328,
+        "host_plaintext_bytes": 0,
+        "host_stack_bytes": 0,
+        "staging_disk_bytes": 536875008,
+        "workers": 0
+      },
+      "phase": "installed_resources",
+      "tenant_stopped": true
+    },
+    {
+      "phase": "controller_high_water",
+      "virtual_peak_kib": 633040
+    },
+    {
+      "phase": "controller_high_water",
+      "resident_peak_kib": 266676
+    },
+    {
+      "phase": "original_retained_reservations",
+      "verified_four": true
+    }
+  ],
+  "peer": {
+    "accept_to_half_close_ns": 180872756,
+    "echo_received": 5804,
+    "echo_written": 5804,
+    "scope": "external one-session cooperating endpoint",
+    "stream_id": 3,
+    "tls_rx": 3661,
+    "tls_tx": 3234
+  },
+  "gnu_time": {
+    "install": {
+      "wall_s": 7.7,
+      "user_cpu_s": 6.6,
+      "system_cpu_s": 0.5,
+      "max_rss_kib": 10940,
+      "major_page_faults": 4,
+      "minor_page_faults": 601,
+      "exit": 0
+    },
+    "controller": {
+      "wall_s": 15.35,
+      "user_cpu_s": 11.79,
+      "system_cpu_s": 2.2,
+      "max_rss_kib": 266676,
+      "major_page_faults": 929,
+      "minor_page_faults": 92925,
+      "exit": 0
+    },
+    "peer": {
+      "wall_s": 15.09,
+      "user_cpu_s": 0.02,
+      "system_cpu_s": 0.02,
+      "max_rss_kib": 8476,
+      "major_page_faults": 118,
+      "minor_page_faults": 871,
+      "exit": 0
+    }
+  },
+  "filesystem": {
+    "installed_used_bytes": 97509376,
+    "final_used_bytes": 138100736
+  },
+  "executables_sha256": {
+    "flowmux-install": "c55c408efbba45c8592c44985573b1a6e36d01edfefd4eea55f6694ec2d398bd",
+    "flowmux-peer": "6eeacdb796cb3e0d750804860833e4691f9d5d1c5e0c82f267f476b2bf38730a",
+    "installed_flowmux-f128e0b7797c94fd": "5014165ac276ff48afd147ffb687d6cbe0a459c4ceca048147c7aed7206e15a8",
+    "mvm-host-agent": "b01d51c66a8af8214435f45184da5134b1cce881e792454cb3fc2a81571113cc",
+    "mvm-network-endpoint": "b77927af7980b95065d5a73f29210f3b5ecbf2f39de8c7b8e6ec00b2225a2453",
+    "mvm-signer-helper": "d1a39b0e7e9e94c99ea34d7fbf66b9329cafd5b1f761f989c956848d5d7637b1",
+    "firecracker": "99ad0f5cd0514a88aad0e9ae8cfdb3cc3b4ab9d190e1194602406c786b5de7a5"
+  },
+  "drained_sha256": {
+    "./.archived-audit-0": "fae86c3a16cb7f5cdcf77446d903ba477dc2e8485f08a67b710d233602c0c6a3",
+    "./console.log": "46d02435b6d9cab08f8c22b0b60f229263abf0a6c01f169b7615176f36a4b681",
+    "./firecracker.log": "9fc181d111016d674749cbc5b45bc2ad780ff98ebecf9715c06135af050104da",
+    "./flowmux-guest.json": "95789363cf80058661ec2deac144239a00a442af3b883f273f9d1e0533f497ab",
+    "./flowmux-operator.json": "cea98d7f5aa9298b4653aef5365b9ccb42a1e32ec1e4b7732cf192f7e0667a46",
+    "./local.fm-a.workload.jsonl": "9204916a1d9be3cb2e5b0b58e5198138b9184f69428c63e37a58797a4f14961e",
+    "./network-endpoint.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "./original-stat": "fd6a123953f692b2f6b9823477bfb9b73a448f28d4f94c7983822179d9452de9"
+  },
+  "raw_sha256": {
+    "controller.log": "07e9225d75d51592c46e51f8ece68f2772c8ca1b7c7692b1737b4b49649865e0",
+    "peer.log": "03f39eb8a87bcbcccbddd0575cd384a329e8e741324b1c8509d3681f06d30370",
+    "install.time": "c1bec75f176fec4ae4de5292899861d3df8bd7bee179549094a03b2d1570bc5e",
+    "controller.time": "c1ce00effd68d4e182f6217907174c07136d1656a2a1665437945f18ce242871",
+    "peer.time": "19b5555e022da5908b3a95198b87a3c33fb9c61ef8bd87d9b7bf4a9851427ccb"
+  },
+  "audit": {
+    "copied_content": {
+      "evidence": "verified_copied_audit_content",
+      "length": 2336,
+      "matching_allows": 1,
+      "matching_denies": 1,
+      "sha256": "9204916a1d9be3cb2e5b0b58e5198138b9184f69428c63e37a58797a4f14961e",
+      "signed_entries": 2,
+      "tenant": "local",
+      "workload": "fm-a",
+      "matches_original_published_session": true,
+      "matches_original_selected_peer": true
+    },
+    "verification_exit": 0,
+    "verifier_executable_sha256": "773ccfb4a9b6da97dabad36d2b1023da8b9b3febed7b8fc08f413d11828dae40",
+    "verifier_source_sha256": "f14522d4ab671286f4118ffc763d27ac9b93264cb00670471393b129d3a79f15",
+    "receipt_sha256": "f6fc39409c4622fbc875a2f0dc00427f705c7bf5ba1b1651a333060de95c7d04",
+    "verifier_dependency_scope": "previously built canonical MVM reader, separate from current host build",
+    "plan_uuid_in_both_events": "00000000-0000-0000-0000-000000000000",
+    "image_name_in_both_events": "<unbound>",
+    "proves_plan_or_image_binding": false,
+    "original_public_half_sha256": "d35231d29319837128fc68ff2769a5ee826e10bd3c1d92f807abb8f511e6219a"
+  },
+  "consumer_checks": {
+    "public_package_tests": 6,
+    "public_strict_clippy_exit": 0,
+    "public_binary_build_exit": 0,
+    "controller_lib": {
+      "passed": 160,
+      "failed": 0,
+      "ignored": 0,
+      "filtered": 0,
+      "default_parallel": true,
+      "elapsed_s": 3.03
+    },
+    "controller_strict_clippy_exit": 0,
+    "controller_output_cases_passed": 2,
+    "native_named_test": {
+      "passed": 1,
+      "failed": 0,
+      "filtered_output_cases": 2
+    },
+    "shell_controls": 11,
+    "public_test_log_sha256": "c2c5728bbb3c3e2ee0753298862105ac7fe56652afca08a9bcc514f2cc5fc1fc",
+    "public_clippy_log_sha256": "0168e3c99675e6d289018ddbcd42cb56e18212bff4d185168400bf76b7c75ab3",
+    "public_build_log_sha256": "d7332fb9d8c2b5f789765ab3d9e347147df221310b5e5acccbd5151193410d4d",
+    "feature_profiles": {
+      "linux_host_strict_before": 101,
+      "linux_host_strict_after": 0,
+      "canonical_host_strict": 0,
+      "default_guest_check": 0,
+      "synthetic_analyzer": 0,
+      "owner_tests": 29,
+      "owner_strict": 0,
+      "supervisor_targets_passed": [
+        33,
+        1,
+        19,
+        3,
+        2,
+        11
+      ],
+      "receipt_sha256": "9cb2e04ab95c2a4d6e9198d3908ffd179c0b76b1c0810ef6f778dcce8b6b1dc6"
+    },
+    "root_fmt_changed_rust_files": 53,
+    "profile_fix_source_sha256": {
+      "endpoint_disks.rs": "4072e859bed6052f7b0f9efddc538096d071cc9ac74669889f801d1581b33356",
+      "installed_resources.rs": "06bb572085e7c2a2516367a9faa65b137e337e9c8bfc88232e9893c663c3b007"
+    }
+  },
+  "installer_preflight_before": {
+    "wall_s": 21.88,
+    "user_cpu_s": 20.36,
+    "system_cpu_s": 0.75,
+    "max_rss_kib": 13320,
+    "major_page_faults": 85,
+    "minor_page_faults": 671,
+    "time_record_sha256": "8192aa06ceeadb9c1fc67c161a781e5767ff2cfc57ea8c27fab9df7b71257e6a",
+    "sample_count": 1,
+    "guest_stream_transferred": false,
+    "causal_speedup_established": false
+  },
+  "cleanup": {
+    "original_helpers_and_firecracker_absent": true,
+    "original_mount_absent": true,
+    "original_loop_absent": true,
+    "login_groups_unchanged": true,
+    "independent_audit_complete": true,
+    "backing_image_retained": false,
+    "disposable_image_removed_after_verification": true,
+    "removed_allocated_bytes": 318996480,
+    "observed_recovered_bytes": 318996480,
+    "receipt_sha256": "0af91ded3cda57fa41b412cf7b057eb220202f5f7bb7e71981a714295e584eda",
+    "changes_measured_ledger_disposition": false
+  },
+  "not_qualified": [
+    "raw_or_zstd_comparison",
+    "physical_nic_wire_bytes",
+    "WAN",
+    "two_guest_installed_FlowMux",
+    "sustained_capacity",
+    "plan_bound_host_audit",
+    "single_revision_guest_host",
+    "FIPS",
+    "CUI",
+    "physical_energy"
+  ],
+  "public_packet_policy": "Original host address, session, audit public key and plan ID remain in the private hashed receipts; public measurements retain scope-verification outcome and original artifact digests.",
+  "preceding_trial": {
+    "record": "public-run.json",
+    "source": "7583bd8c97b7471a8f831b331906aac2ed2d2222",
+    "controller_sha256": "1368832f0adb4ad5d86193b5463374450cf80fc50294ca9e3872875074f782ff",
+    "reinterpretation_or_relabel": false
+  },
+  "premerge_reviews": {
+    "source": "a7eea8373ea321e0fa873f82d6d42af45c2c9c47",
+    "pipeline_sha256": "9e882eaf96b4861eabee14bb1ce7779056295d0c36af14bf577132a3871c745c",
+    "code_rust_sha256": "20cbe3de411d666bd87a7e56ceb7282df72140db8617a762b18eeae4684b884d",
+    "security_sha256": "b86e98c4c22f715f1c0845664c0a7c9bf96df4f9be8575b5e6e8aea0342cfca6"
+  }
+}

@@ -1,0 +1,71 @@
+{
+  "prior": {
+    "zip_sha256": "559c49f84e27bf4ac8fbcb6d8ba0394e84c0a6b3cc209a7f37cc793994d10ccf",
+    "members_verified": 20,
+    "identity": {
+      "scope": "native process; paired TCP/TLS/shared-object component; no MVM backend or WAN",
+      "arch": "X64",
+      "source": "14ec065fdb636d356db4483155c9e8d3b5bf0c5b",
+      "os": "Windows",
+      "description": "Microsoft Windows 10.0.26100",
+      "lock_sha256": "3D549BC7F9A94A4BF057B19BA7C3E1106B5E89B7CB19433A6BAAA1BA15C5E385",
+      "image": "20261103.298.1",
+      "attempt": "1",
+      "run": "43405633108"
+    },
+    "rustc_sha256": "20815ee828e9107afea25520937957032db8ca234a25409cc7acffbdfbd4d392",
+    "binary_path": "Running tests\\ordered_stream.rs (crates\\spiralcore-mvm-flowmux\\target\\release\\deps\\ordered_stream-c43c3372c7fdd5c2.exe)",
+    "binary_bytes_sha256": null,
+    "witness": [
+      "ORDERED_WITNESS success=true witness_timing=false snapshot=concurrent wall_us=239228741 original_gate_us=240000000 setup_wall_us=65773 setup_process_cpu_us=Some(15625) process_cpu_to_snapshot_us=Some(89671875) progress_write_ack_left_right_read_left_right=[4096, 4096, 4096, 4096] actual_tls=[TlsCounters { received: 5395015, sent: 5395050 }, TlsCounters { received: 5395050, sent: 5395015 }] scopes=unavailable_nonblocking scope_status_at_existing_failure_assertion=see_original_error rss_kib=None hwm_kib=None",
+      "ORDERED_BULK blocks_each_direction=4096 exact_bytes_each_direction=67108864 actual_tls_a_sent=5395050 actual_tls_a_received=5395015 peer_sent=5395015 peer_received=5395050 setup_wall_us=65773 lifecycle_wall_us=241787469 cpu_process_before=None cpu_process_setup=None cpu_process_after=None lifecycle_process_cpu_us=Some(89718750) cpu_ticks_per_second=Some(1000) rss_before_kib=None rss_prepared_kib=None process_hwm_kib=None core_pair_charge_each=8284092 reader_stack_each=2097152 left=OrderedSnapshot { attempts: 1, publications: 64, cache_bytes: 1051712, pinned: 0, evictions: 4032 } right=OrderedSnapshot { attempts: 1, publications: 64, cache_bytes: 1051712, pinned: 0, evictions: 4032 } files_left=(64, 1051712) files_right=(64, 1051712)"
+    ],
+    "separate_commit_control": [
+      "ORDERED_COMMIT_COST trial=0 blocks=128 stage=Quota calls=256 wall_ns=623824600 thread_cpu_ns=531250000",
+      "ORDERED_COMMIT_COST trial=0 blocks=128 stage=Block calls=128 wall_ns=2856260400 thread_cpu_ns=1359375000",
+      "ORDERED_COMMIT_COST trial=1 blocks=128 stage=Quota calls=256 wall_ns=624487100 thread_cpu_ns=546875000",
+      "ORDERED_COMMIT_COST trial=1 blocks=128 stage=Block calls=128 wall_ns=3785137100 thread_cpu_ns=1296875000",
+      "ORDERED_COMMIT_COST trial=2 blocks=128 stage=Quota calls=256 wall_ns=615786100 thread_cpu_ns=546875000",
+      "ORDERED_COMMIT_COST trial=2 blocks=128 stage=Block calls=128 wall_ns=3062355800 thread_cpu_ns=1250000000"
+    ]
+  },
+  "failure": {
+    "zip_sha256": "ad1e432ac04f8bc1372c6f43ed0c920960a6080f017e6d3b0b218870b4fcd225",
+    "members_verified": 15,
+    "identity": {
+      "scope": "native process; paired TCP/TLS/shared-object component; no MVM backend or WAN",
+      "source": "fdebf098e81cf0d9466e15fe6c6603e46e69836d",
+      "image": "20261103.298.1",
+      "run": "43408894339",
+      "os": "Windows",
+      "description": "Microsoft Windows 10.0.26100",
+      "arch": "X64",
+      "attempt": "1",
+      "lock_sha256": "3D549BC7F9A94A4BF057B19BA7C3E1106B5E89B7CB19433A6BAAA1BA15C5E385"
+    },
+    "rustc_sha256": "20815ee828e9107afea25520937957032db8ca234a25409cc7acffbdfbd4d392",
+    "binary_path": "Running tests\\ordered_stream.rs (crates\\spiralcore-mvm-flowmux\\target\\release\\deps\\ordered_stream-c43c3372c7fdd5c2.exe)",
+    "binary_bytes_sha256": null,
+    "witness": [
+      "ORDERED_WITNESS success=false witness_timing=false snapshot=concurrent wall_us=242026714 original_gate_us=240000000 setup_wall_us=84299 setup_process_cpu_us=Some(15625) process_cpu_to_snapshot_us=Some(112546875) progress_write_ack_left_right_read_left_right=[3613, 3613, 3613, 3613] actual_tls=[TlsCounters { received: 4758764, sent: 4758799 }, TlsCounters { received: 4758799, sent: 4758764 }] scopes=unavailable_nonblocking scope_status_at_existing_failure_assertion=see_original_error rss_kib=None hwm_kib=None",
+      "original240s fixture deadline at block3613; retained=Ok(Some(OrderedSnapshot { attempts: 1, publications: 64, cache_bytes: 1051712, pinned: 0, evictions: 3549 })); left_scope=Ok(()); right_scope=Ok(())",
+      "original240s fixture deadline at block3613; retained=Ok(Some(OrderedSnapshot { attempts: 1, publications: 64, cache_bytes: 1051712, pinned: 0, evictions: 3549 })); left_scope=Ok(()); right_scope=Ok(())",
+      "block3613 read: flowmux mapping: Timeout; ORDERED_FIRST_FAILURE role=1 operation=read local=Some(FailureObservation { site: CallerRead, reason: Timeout, frame_kind: None })",
+      "block3613 read: flowmux mapping: Closed; ORDERED_FIRST_FAILURE role=0 operation=read local=Some(FailureObservation { site: WorkerExit, reason: Io(UnexpectedEof), frame_kind: None })"
+    ],
+    "separate_commit_control": [
+      "ORDERED_COMMIT_COST trial=0 blocks=128 stage=Quota calls=256 wall_ns=885241800 thread_cpu_ns=781250000",
+      "ORDERED_COMMIT_COST trial=0 blocks=128 stage=Block calls=128 wall_ns=4001682600 thread_cpu_ns=1781250000",
+      "ORDERED_COMMIT_COST trial=1 blocks=128 stage=Quota calls=256 wall_ns=878969200 thread_cpu_ns=671875000",
+      "ORDERED_COMMIT_COST trial=1 blocks=128 stage=Block calls=128 wall_ns=4023741600 thread_cpu_ns=1734375000",
+      "ORDERED_COMMIT_COST trial=2 blocks=128 stage=Quota calls=256 wall_ns=888207000 thread_cpu_ns=859375000",
+      "ORDERED_COMMIT_COST trial=2 blocks=128 stage=Block calls=128 wall_ns=4044462000 thread_cpu_ns=1781250000"
+    ]
+  },
+  "matched_git_objects": {
+    "workflow": "331d844978259a5656878242c525967ca84e3b9b",
+    "flowmux": "f4b9bb8f554496a6ca59fadd19146ad8861f2f78",
+    "transfer": "efa0d8ca0288d8e1bc41f84175670f39b25a3379",
+    "windows-storage": "e421bf4a9e0cd66565d50640c26b6e16598df1df"
+  }
+}
