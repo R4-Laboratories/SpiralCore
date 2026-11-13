@@ -16,6 +16,8 @@ use mvm_hostd::{host_lifetime_parent::ParentAdmissionProvider, plan_admission::A
 use sha2::{Digest, Sha256};
 use std::sync::{Arc, Mutex, Weak};
 
+#[path = "installed_parent/audit_archive.rs"]
+pub(crate) mod audit_archive;
 #[path = "installed_parent/endpoint.rs"]
 mod endpoint;
 #[path = "installed_parent/host_agent.rs"]
@@ -40,12 +42,13 @@ struct Registry {
 }
 struct Shared {
     registry: Mutex<Registry>,
+    _original_controller: Arc<()>,
     pool: ManagedResourceBudget,
     issuer: InstalledNativeIssuer,
     _bookkeeping: ManagedReservation,
     endpoint_inputs: Option<endpoint::EndpointOwnerInputs>,
     tenant_helper: Mutex<tenant_agent::TenantSlot>,
-    audit_debts: Mutex<[Option<tenant_agent::AuditDebt>; 2]>,
+    audit_debts: Arc<Mutex<audit_archive::Inventory>>,
 }
 
 /// Local parent admission, never a replacement for signed MVM authorization.
@@ -57,6 +60,7 @@ struct VmGrant {
     tenant: String,
     reservation: ManagedReservation,
     parent: Weak<Shared>,
+    _original_controller: Arc<()>,
     lifecycle: Mutex<GrantLifecycle>,
     original: Weak<VmGrant>,
 }
@@ -302,8 +306,10 @@ impl InstalledParentProvider {
                 ..Default::default()
             },
         )?;
+        let original_controller = supervisor.claim_parent_controller()?;
         Ok(Self {
             shared: Arc::new(Shared {
+                _original_controller: original_controller,
                 registry: Mutex::new(Registry {
                     closed: false,
                     slots: std::array::from_fn(|_| Weak::new()),
@@ -313,7 +319,7 @@ impl InstalledParentProvider {
                 _bookkeeping: bookkeeping,
                 endpoint_inputs: None,
                 tenant_helper: Mutex::new(tenant_agent::TenantSlot::Vacant),
-                audit_debts: Mutex::new(std::array::from_fn(|_| None)),
+                audit_debts: supervisor.audit_inventory.clone(),
             }),
         })
     }
@@ -437,6 +443,7 @@ impl InstalledParentProvider {
             tenant: tenant.into(),
             reservation,
             parent: Arc::downgrade(&self.shared),
+            _original_controller: self.shared._original_controller.clone(),
             lifecycle: Mutex::new(GrantLifecycle::default()),
             original: original.clone(),
         });

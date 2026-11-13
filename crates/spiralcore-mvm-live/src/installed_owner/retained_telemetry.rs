@@ -294,7 +294,7 @@ impl InstallationOwner {
         grant: u64,
         scope: [u8; 32],
         cap: u64,
-    ) -> Result<()> {
+    ) -> Result<File> {
         self.active_binding(epoch)?;
         let name = [".retained-audit-0", ".retained-audit-1"]
             .get(index)
@@ -316,11 +316,84 @@ impl InstallationOwner {
         let mut record = open_at(
             &self.storage.directory,
             name,
-            libc::O_CREAT | libc::O_EXCL | libc::O_WRONLY,
+            libc::O_CREAT | libc::O_EXCL | libc::O_RDWR,
         )?;
         record.write_all(&bytes)?;
         record.sync_all()?;
         self.storage.directory.sync_all()?;
+        self.storage.check()?;
+        Ok(record)
+    }
+
+    /// Commit terminal evidence under the original directory before recycling
+    /// an active inventory slot. This only unlinks the inventory row. The
+    /// signed audit chain and its secondary head remain in their original places.
+    pub(crate) fn archive_audit(
+        &self,
+        epoch: Epoch,
+        index: usize,
+        archive: usize,
+        original: &File,
+        terminal: &[u8],
+    ) -> Result<()> {
+        use std::os::unix::fs::FileExt;
+        self.active_binding(epoch)?;
+        let active = [".retained-audit-0", ".retained-audit-1"]
+            .get(index)
+            .ok_or(OwnerError::InvalidStorage)?;
+        if archive >= MAX_ENTRIES || terminal.is_empty() || terminal.len() > 2048 {
+            return Err(OwnerError::InvalidStorage);
+        }
+        let arch_name = format!(".archived-audit-{archive}");
+        let original_id = object_id(original)?;
+        let mut record = [0; 160];
+        if original.metadata()?.len() != record.len() as u64 {
+            return Err(OwnerError::Fenced);
+        }
+        original.read_exact_at(&mut record, 0)?;
+        let mut bytes = Vec::with_capacity(2304);
+        bytes.extend_from_slice(b"SCAARC01");
+        bytes.extend_from_slice(&original_id.device.to_le_bytes());
+        bytes.extend_from_slice(&original_id.inode.to_le_bytes());
+        bytes.extend_from_slice(&record);
+        bytes.extend_from_slice(terminal);
+        bytes.extend_from_slice(&Sha256::digest(&bytes));
+        let dir = &self.storage.directory;
+        let check_active = || -> Result<()> {
+            if object_id(&open_at(dir, active, libc::O_RDONLY)?)? != original_id {
+                return Err(OwnerError::Fenced);
+            }
+            Ok(())
+        };
+        let mut archived = if self.storage.name_present(&arch_name)? {
+            let file = open_at(dir, &arch_name, libc::O_RDONLY)?;
+            let mut saved = vec![0; bytes.len()];
+            if file.metadata()?.len() != bytes.len() as u64 {
+                return Err(OwnerError::Fenced);
+            }
+            file.read_exact_at(&mut saved, 0)?;
+            if saved != bytes {
+                return Err(OwnerError::Fenced);
+            }
+            file
+        } else {
+            check_active()?;
+            let mut file = open_at(dir, &arch_name, libc::O_CREAT | libc::O_EXCL | libc::O_RDWR)?;
+            file.write_all(&bytes)?;
+            file
+        };
+        archived.flush()?;
+        archived.sync_all()?;
+        dir.sync_all()?;
+        self.storage.check()?;
+        if object_id(&open_at(dir, &arch_name, libc::O_RDONLY)?)? != object_id(&archived)? {
+            return Err(OwnerError::Fenced);
+        }
+        if self.storage.name_present(active)? {
+            check_active()?;
+            super::endpoint_disks::unlink(dir, active, false)?;
+        }
+        dir.sync_all()?;
         self.storage.check()
     }
 

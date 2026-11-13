@@ -232,9 +232,21 @@ impl InstalledNativeIssuer {
         grant: u64,
         scope: [u8; 32],
         cap: u64,
-    ) -> Result<()> {
+    ) -> Result<std::fs::File> {
         self.authority.with_disk_owner(|owner, epoch| {
             owner.record_audit_debt(epoch, index, grant, scope, cap)
+        })
+    }
+    #[cfg(feature = "canonical-host")]
+    pub(crate) fn archive_audit(
+        &self,
+        active: usize,
+        archive: usize,
+        original: &std::fs::File,
+        terminal: &[u8],
+    ) -> Result<()> {
+        self.authority.with_disk_owner(|owner, epoch| {
+            owner.archive_audit(epoch, active, archive, original, terminal)
         })
     }
     pub fn prepare(&self) -> Result<(InstallationBinding, HolderHandoff)> {
@@ -314,6 +326,10 @@ enum Phase {
 }
 
 pub struct InstalledSupervisor {
+    #[cfg(feature = "canonical-host")]
+    parent_controller: Mutex<std::sync::Weak<()>>,
+    #[cfg(feature = "canonical-host")]
+    pub(crate) audit_inventory: Arc<Mutex<crate::installed_parent::audit_archive::Inventory>>,
     authority: Arc<InstalledAuthority>,
     budget: HostTransportBudget,
     resources: ManagedResourceBudget,
@@ -323,6 +339,19 @@ pub struct InstalledSupervisor {
     session_started: bool,
 }
 impl InstalledSupervisor {
+    #[cfg(feature = "canonical-host")]
+    pub(crate) fn claim_parent_controller(&self) -> Result<Arc<()>> {
+        let mut held = self
+            .parent_controller
+            .lock()
+            .map_err(|_| SupervisorError::State)?;
+        if held.upgrade().is_some() {
+            return Err(SupervisorError::Busy);
+        }
+        let token = Arc::new(());
+        *held = Arc::downgrade(&token);
+        Ok(token)
+    }
     pub(crate) fn require_canonical_profile(&self) -> Result<()> {
         if self.authority.canonical {
             Ok(())
@@ -364,6 +393,10 @@ impl InstalledSupervisor {
         let resources =
             ManagedResourceBudget::new_installed(authority.clone(), config.managed_limits());
         Ok(Self {
+            #[cfg(feature = "canonical-host")]
+            parent_controller: Mutex::default(),
+            #[cfg(feature = "canonical-host")]
+            audit_inventory: Arc::default(),
             authority,
             budget,
             resources,

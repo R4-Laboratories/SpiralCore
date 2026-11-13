@@ -78,7 +78,30 @@ impl RegisteredEndpointOwner for VmGrant {
         let (state, sockets) = registration.original_directories(registrar, params)?;
         registration.check_current_for(registrar, params)?;
         grant.check_current(&grant.binding)?;
-        facts.pin_original(state, sockets)
+        facts.pin_original(state, sockets)?;
+        parent.enroll_audit(
+            self,
+            registration
+                .registered_audit()
+                .ok_or_else(|| anyhow!("original signer inventory missing"))?,
+        )
+    }
+
+    fn retired_audit(
+        &self,
+        registration: &OwnedVmRegistration,
+        file: &mvm_vmm::host::host_agent_spawn::RegisteredAuditFile,
+    ) -> Result<()> {
+        ensure!(
+            registration
+                .registered_audit()
+                .is_some_and(|held| std::ptr::eq(file, held)),
+            "foreign original registered archive"
+        );
+        self.parent
+            .upgrade()
+            .ok_or_else(|| anyhow!("original installed parent missing"))?
+            .adopt_audit(self, file)
     }
 }
 pub(super) struct RegistrationBinding {

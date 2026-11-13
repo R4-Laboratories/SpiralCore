@@ -225,7 +225,7 @@ impl DiskStore {
         }
     }
 }
-fn unlink(dir: &File, name: &str, directory: bool) -> Result<()> {
+pub(super) fn unlink(dir: &File, name: &str, directory: bool) -> Result<()> {
     let name = CString::new(name).map_err(|_| OwnerError::InvalidStorage)?;
     // SAFETY: owned live parent descriptor, checked one-component name.
     if unsafe {

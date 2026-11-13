@@ -414,3 +414,37 @@ fn failed_postcommit_cleanup_sync_fences_owner_but_absent_marker_allows_durable_
         );
     }
 }
+
+#[cfg(feature = "canonical-host")]
+#[test]
+fn archive_publication_reuses_original_active_slot_and_refuses_substitute() {
+    let fixture = Fixture::new();
+    let mut owner = InstallationOwner::initialize(&fixture.root, key()).unwrap();
+    let epoch = owner.begin().unwrap();
+    let original = owner.record_audit_debt(epoch, 0, 1, [1; 32], 4096).unwrap();
+    let terminal = [55; 32];
+    owner
+        .archive_audit(epoch, 0, 0, &original, &terminal)
+        .unwrap();
+    owner
+        .archive_audit(epoch, 0, 0, &original, &terminal)
+        .unwrap();
+    assert!(
+        owner
+            .archive_audit(epoch, 0, 0, &original, &[56; 32])
+            .is_err()
+    );
+    let second = owner.record_audit_debt(epoch, 0, 2, [2; 32], 4096).unwrap();
+    assert!(
+        owner
+            .archive_audit(epoch, 0, 0, &original, &terminal)
+            .is_err()
+    );
+    assert!(
+        owner
+            .archive_audit(epoch, 0, 0, &second, &terminal)
+            .is_err()
+    );
+    assert!(fixture.root.join(".retained-audit-0").is_file());
+    assert!(owner.finish(epoch).is_err());
+}

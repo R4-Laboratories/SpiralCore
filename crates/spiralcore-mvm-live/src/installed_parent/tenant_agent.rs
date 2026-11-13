@@ -153,80 +153,8 @@ pub(super) enum TenantSlot {
     Retired,
 }
 
-pub(super) struct AuditDebt {
-    grant_serial: u64,
-    scope: [u8; 32],
-    cap: NonZeroU64,
-    reservation: ManagedReservation,
-}
-
-impl Shared {
-    pub(super) fn reserve_audit_debt(
-        &self,
-        grant: &VmGrant,
-        facts: &host_agent::RegistrationBinding,
-        cap: NonZeroU64,
-    ) -> Result<()> {
-        let mut slots = self
-            .audit_debts
-            .lock()
-            .map_err(|_| anyhow!("audit debt inventory poisoned"))?;
-        let scope = facts.commitment();
-        if let Some(debt) = slots
-            .iter()
-            .flatten()
-            .find(|d| d.grant_serial == grant.binding.grant_serial)
-        {
-            ensure!(
-                debt.cap == cap && debt.scope == scope,
-                "original retained audit claim differs"
-            );
-            return debt.reservation.check_current().map_err(Into::into);
-        }
-        let index = slots
-            .iter()
-            .position(Option::is_none)
-            .ok_or_else(|| anyhow!("original retained audit slots full"))?;
-        let reservation = self.pool.reserve(
-            tenant_tag(&grant.tenant),
-            ManagedClaim {
-                // Audit data survives both native actors. Bound the original and
-                // temporary secondary chain head plus the one private inventory row.
-                cache_disk_bytes: cap
-                    .get()
-                    .checked_add(2 * 4096)
-                    .ok_or_else(|| anyhow!("audit debt overflow"))?,
-                ..Default::default()
-            },
-        )?;
-        slots[index] = Some(AuditDebt {
-            grant_serial: grant.binding.grant_serial,
-            scope,
-            cap,
-            reservation,
-        });
-        let result =
-            self.issuer
-                .record_audit_debt(index, grant.binding.grant_serial, scope, cap.get());
-        if result.is_err() {
-            // Any partial publication is ambiguous. A retry cannot infer a committed record.
-            self.issuer.close_admission();
-        }
-        result.map_err(Into::into)
-    }
-}
-
 impl Drop for Shared {
     fn drop(&mut self) {
-        for debt in self
-            .audit_debts
-            .get_mut()
-            .unwrap_or_else(|e| e.into_inner())
-            .iter_mut()
-            .filter_map(Option::take)
-        {
-            std::mem::forget(debt.reservation);
-        }
         let slot = self
             .tenant_helper
             .get_mut()

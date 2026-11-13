@@ -25,7 +25,7 @@ pub(super) fn fixture() -> (
     let provider = InstalledParentProvider::new(&supervisor).unwrap();
     (home, supervisor, provider)
 }
-fn grant(provider: &InstalledParentProvider, name: &str) -> PreparedParentVm {
+pub(super) fn grant(provider: &InstalledParentProvider, name: &str) -> PreparedParentVm {
     provider
         .prepare_vm(
             &VmStartConfig {

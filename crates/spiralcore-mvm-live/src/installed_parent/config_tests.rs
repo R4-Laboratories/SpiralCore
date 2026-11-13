@@ -638,3 +638,16 @@ fn original_audit_bucket_is_persisted_once_and_survives_vm_disposal() {
     supervisor.close_admission();
     assert!(supervisor.try_finish().is_err());
 }
+
+#[test]
+fn same_supervisor_has_one_active_tenant_controller_and_one_archive() {
+    let (_home, supervisor, provider) = endpoint_tests::fixture();
+    assert!(InstalledParentProvider::new(&supervisor).is_err());
+    let inventory = provider.shared.audit_debts.clone();
+    let grant = endpoint_tests::grant(&provider, "controller-token-test");
+    drop(provider);
+    assert!(InstalledParentProvider::new(&supervisor).is_err());
+    drop(grant);
+    let successor = InstalledParentProvider::new(&supervisor).unwrap();
+    assert!(Arc::ptr_eq(&inventory, &successor.shared.audit_debts));
+}
