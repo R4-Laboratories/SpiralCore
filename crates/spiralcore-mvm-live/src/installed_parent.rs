@@ -20,6 +20,9 @@ use std::sync::{Arc, Mutex, Weak};
 mod endpoint;
 #[path = "installed_parent/host_agent.rs"]
 mod host_agent;
+#[path = "installed_parent/tenant_agent.rs"]
+mod tenant_agent;
+pub use tenant_agent::TenantHelperLimits;
 
 #[cfg(test)]
 #[path = "installed_parent/config_tests.rs"]
@@ -41,7 +44,8 @@ struct Shared {
     issuer: InstalledNativeIssuer,
     _bookkeeping: ManagedReservation,
     endpoint_inputs: Option<endpoint::EndpointOwnerInputs>,
-    registrar: Option<host_agent::OriginalRegistrar>,
+    tenant_helper: Mutex<tenant_agent::TenantSlot>,
+    audit_debts: Mutex<[Option<tenant_agent::AuditDebt>; 2]>,
 }
 
 /// Local parent admission, never a replacement for signed MVM authorization.
@@ -256,7 +260,8 @@ impl InstalledParentProvider {
                 issuer: supervisor.native_issuer(),
                 _bookkeeping: bookkeeping,
                 endpoint_inputs: None,
-                registrar: None,
+                tenant_helper: Mutex::new(tenant_agent::TenantSlot::Vacant),
+                audit_debts: Mutex::new(std::array::from_fn(|_| None)),
             }),
         })
     }

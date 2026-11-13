@@ -287,6 +287,43 @@ impl Storage {
 }
 
 impl InstallationOwner {
+    pub(crate) fn record_audit_debt(
+        &mut self,
+        epoch: Epoch,
+        index: usize,
+        grant: u64,
+        scope: [u8; 32],
+        cap: u64,
+    ) -> Result<()> {
+        self.active_binding(epoch)?;
+        let name = [".retained-audit-0", ".retained-audit-1"]
+            .get(index)
+            .ok_or(OwnerError::InvalidStorage)?;
+        if grant == 0 || cap == 0 {
+            return Err(OwnerError::InvalidStorage);
+        }
+        self.latch_retained_debt(epoch)?;
+        let mut bytes = Vec::with_capacity(160);
+        bytes.extend_from_slice(b"SCAUDT01");
+        bytes.extend_from_slice(&epoch.key.installation);
+        bytes.extend_from_slice(&epoch.key.profile);
+        bytes.extend_from_slice(&epoch.generation.to_le_bytes());
+        bytes.extend_from_slice(&grant.to_le_bytes());
+        bytes.extend_from_slice(&scope);
+        bytes.extend_from_slice(&cap.to_le_bytes());
+        let digest = Sha256::digest(&bytes);
+        bytes.extend_from_slice(&digest);
+        let mut record = open_at(
+            &self.storage.directory,
+            name,
+            libc::O_CREAT | libc::O_EXCL | libc::O_WRONLY,
+        )?;
+        record.write_all(&bytes)?;
+        record.sync_all()?;
+        self.storage.directory.sync_all()?;
+        self.storage.check()
+    }
+
     fn latch_retained_debt(&self, epoch: Epoch) -> Result<()> {
         use std::os::unix::fs::FileExt;
         self.storage.check()?;

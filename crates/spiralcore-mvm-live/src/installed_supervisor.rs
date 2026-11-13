@@ -171,6 +171,23 @@ pub struct InstalledNativeIssuer {
     authority: Arc<InstalledAuthority>,
 }
 impl InstalledNativeIssuer {
+    #[cfg(feature = "canonical-host")]
+    pub(crate) fn close_admission(&self) {
+        self.authority.close_admission();
+    }
+
+    #[cfg(feature = "canonical-host")]
+    pub(crate) fn record_audit_debt(
+        &self,
+        index: usize,
+        grant: u64,
+        scope: [u8; 32],
+        cap: u64,
+    ) -> Result<()> {
+        self.authority.with_disk_owner(|owner, epoch| {
+            owner.record_audit_debt(epoch, index, grant, scope, cap)
+        })
+    }
     pub fn prepare(&self) -> Result<(InstallationBinding, HolderHandoff)> {
         if !self.authority.admission_open() {
             return Err(SupervisorError::State);
@@ -276,7 +293,9 @@ impl InstalledSupervisor {
     ) -> Result<Arc<crate::installed_retained::RetainedTelemetryInventory>> {
         let mut original = self.retained.lock().map_err(|_| SupervisorError::State)?;
         if original.is_none() {
-            *original = Some(crate::installed_retained::RetainedTelemetryInventory::new(self)?);
+            *original = Some(crate::installed_retained::RetainedTelemetryInventory::new(
+                self,
+            )?);
         }
         original.as_ref().cloned().ok_or(SupervisorError::State)
     }
@@ -538,8 +557,14 @@ impl InstalledSupervisor {
         }
         #[cfg(feature = "canonical-host")]
         {
-            let retained = self.retained.get_mut().map_err(|_| SupervisorError::State)?;
-            if retained.as_ref().is_some_and(|inventory| !inventory.is_empty().unwrap_or(false)) {
+            let retained = self
+                .retained
+                .get_mut()
+                .map_err(|_| SupervisorError::State)?;
+            if retained
+                .as_ref()
+                .is_some_and(|inventory| !inventory.is_empty().unwrap_or(false))
+            {
                 return Err(SupervisorError::Busy);
             }
             // Other actual aliases keep the original bookkeeping charged.

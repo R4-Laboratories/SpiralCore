@@ -1,6 +1,6 @@
 //! Retain the existing signed VM registration under the original installed holder.
 use super::*;
-use mvm_core::host_lifetime::{HostLifetimeAnchor, PreparedHostLifetimeLease};
+use mvm_core::host_lifetime::HostLifetimeAnchor;
 use mvm_vmm::host::host_agent_spawn::{
     HostAgentServicesParams, OwnedHostAgentRegistrar, OwnedVmRegistration, RegisteredEndpointOwner,
 };
@@ -10,64 +10,6 @@ use std::{
     os::unix::fs::MetadataExt,
     path::{Path, PathBuf},
 };
-
-pub(super) struct OriginalRegistrar {
-    registrar: OwnedHostAgentRegistrar,
-    holder: PreparedHostLifetimeLease,
-    tenant: String,
-}
-
-impl InstalledParentProvider {
-    /// Bind the pre-existing tenant daemon to the same original installation before
-    /// issuing a VM grant. This operation never starts or funds a second daemon.
-    pub fn attach_registrar(
-        &mut self,
-        registrar: &OwnedHostAgentRegistrar,
-        tenant: &str,
-    ) -> Result<()> {
-        mvm_core::naming::validate_vm_name(tenant)?;
-        let parent = Arc::get_mut(&mut self.shared)
-            .ok_or_else(|| anyhow!("original parent already published"))?;
-        ensure!(
-            parent.registrar.is_none()
-                && !parent
-                    .registry
-                    .get_mut()
-                    .map_err(|_| anyhow!("parent registry poisoned"))?
-                    .closed,
-            "original registrar already installed or parent closed"
-        );
-        ensure!(
-            parent
-                .registry
-                .get_mut()
-                .map_err(|_| anyhow!("parent registry poisoned"))?
-                .slots
-                .iter()
-                .all(|slot| slot.strong_count() == 0),
-            "original VM grant already issued"
-        );
-        let (_, h) = parent.issuer.prepare()?;
-        let holder = PreparedHostLifetimeLease::bind(
-            h.directory,
-            h.holder,
-            HostLeaseExpectation {
-                state_name: "state.bin".into(),
-                state_bytes: h.state_bytes,
-                state_sha256: h.state_sha256,
-                absent_names: [".state.next".into(), ".state.intent".into()],
-            },
-        )?;
-        registrar.check_current_for_tenant(tenant)?;
-        registrar.check_original_holder(&holder)?;
-        parent.registrar = Some(OriginalRegistrar {
-            registrar: registrar.clone(),
-            holder,
-            tenant: tenant.into(),
-        });
-        Ok(())
-    }
-}
 
 impl ParentLaunchOwner {
     /// Register this launch through its original tenant daemon. Only the signed
@@ -87,19 +29,9 @@ impl ParentLaunchOwner {
             .parent
             .upgrade()
             .ok_or_else(|| anyhow!("original installed parent missing"))?;
-        let original = parent
-            .registrar
-            .as_ref()
-            .ok_or_else(|| anyhow!("original registered tenant daemon missing"))?;
-        ensure!(
-            original.tenant == grant.tenant,
-            "original registrar tenant differs"
-        );
-        original.registrar.check_original_holder(&original.holder)?;
-        original
-            .registrar
-            .clone()
-            .with_registration_owner(grant.clone())
+        let (original, permit) = parent.tenant_registrar(&grant.tenant)?;
+        permit.check_authority(&original)?;
+        original.with_registration_owner(grant.clone())
     }
 }
 
@@ -119,16 +51,12 @@ impl RegisteredEndpointOwner for VmGrant {
             .parent
             .upgrade()
             .ok_or_else(|| anyhow!("original installed parent missing"))?;
-        let original = parent
-            .registrar
-            .as_ref()
-            .ok_or_else(|| anyhow!("original registered tenant daemon missing"))?;
+        let (original, funded) = parent.tenant_registrar(&grant.tenant)?;
         ensure!(
-            original.tenant == grant.tenant && registrar.same_original(&original.registrar),
+            registrar.same_original(&original),
             "original registrar differs"
         );
-        registrar.check_current_for_tenant(&grant.tenant)?;
-        registrar.check_original_holder(&original.holder)?;
+        funded.check_authority(registrar)?;
         let facts = grant
             .lifecycle
             .lock()
@@ -146,12 +74,7 @@ impl RegisteredEndpointOwner for VmGrant {
             "original registration launch differs"
         );
         anchor.verify_current()?;
-        ensure!(
-            params.state_dir == facts.state
-                && params.broker_listen_socket == facts.broker
-                && commitment(params)? == facts.commitment,
-            "signed registration facts differ"
-        );
+        facts.check_request(params)?;
         let (state, sockets) = registration.original_directories(registrar, params)?;
         registration.check_current_for(registrar, params)?;
         grant.check_current(&grant.binding)?;
@@ -217,6 +140,22 @@ fn commitment(params: &HostAgentServicesParams<'_>) -> Result<[u8; 32]> {
 }
 
 impl RegistrationBinding {
+    pub(super) fn commitment(&self) -> [u8; 32] {
+        self.commitment
+    }
+    pub(super) fn check_request(&self, params: &HostAgentServicesParams<'_>) -> Result<()> {
+        ensure!(
+            params.state_dir == self.state
+                && params.broker_listen_socket == self.broker
+                && commitment(params)? == self.commitment,
+            "signed registration facts differ"
+        );
+        self.anchor
+            .upgrade()
+            .ok_or_else(|| anyhow!("original launch anchor missing"))?
+            .verify_current()
+    }
+
     fn pin_original(&self, state: &File, sockets: &File) -> Result<()> {
         let parent = self
             .broker

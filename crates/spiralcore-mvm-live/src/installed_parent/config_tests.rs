@@ -549,3 +549,92 @@ fn public_selected_configuration_refuses_missing_kernel_bound_before_charging() 
     supervisor.close_admission();
     supervisor.try_finish().unwrap();
 }
+
+#[test]
+fn tenant_helper_funds_both_process_limits_and_both_journal_generations() {
+    let limits = TenantHelperLimits {
+        process_address_space_bytes: std::num::NonZeroU64::new(32 << 20).unwrap(),
+        audit_chain_bytes: std::num::NonZeroU64::new(1 << 20).unwrap(),
+    };
+    let claim = limits.claim().unwrap();
+    assert_eq!(claim.host_carrier_bytes, 2 * (32 << 20));
+    assert_eq!(claim.workers, 2);
+    assert_eq!(claim.staging_disk_bytes, 2 * (64 << 10));
+    assert!(claim.host_metadata_bytes >= 2 * (64 << 10));
+    assert_eq!(claim.guests, 0);
+    assert!(
+        TenantHelperLimits {
+            audit_chain_bytes: std::num::NonZeroU64::MIN,
+            process_address_space_bytes: std::num::NonZeroU64::MAX
+        }
+        .claim()
+        .is_err()
+    );
+}
+
+#[test]
+fn original_audit_bucket_is_persisted_once_and_survives_vm_disposal() {
+    let (home, mut supervisor, provider) = endpoint_tests::fixture();
+    let (grant, mut config) = config(&provider, "retained-audit");
+    let admitted = admitted(home.path(), "retained-audit");
+    config.plan_json = Some(serde_json::to_string(admitted.signed()).unwrap());
+    let permit = provider
+        .bind_config(&admitted, &config, native_backend())
+        .unwrap();
+    config
+        .host_lifetime
+        .as_ref()
+        .unwrap()
+        .bind_parent_permit(&config, native_backend(), permit)
+        .unwrap();
+    let facts = grant
+        .lifecycle
+        .lock()
+        .unwrap()
+        .registration
+        .clone()
+        .unwrap();
+    let cap = std::num::NonZeroU64::new(16 * 1024).unwrap();
+    let before = supervisor.managed_resources().snapshot().unwrap().usage;
+    provider
+        .shared
+        .reserve_audit_debt(&grant, &facts, cap)
+        .unwrap();
+    let after = supervisor.managed_resources().snapshot().unwrap().usage;
+    assert_eq!(
+        after.cache_disk_bytes - before.cache_disk_bytes,
+        cap.get() + 2 * 4096
+    );
+    provider
+        .shared
+        .reserve_audit_debt(&grant, &facts, cap)
+        .unwrap();
+    assert!(
+        provider
+            .shared
+            .reserve_audit_debt(&grant, &facts, std::num::NonZeroU64::MIN)
+            .is_err()
+    );
+    assert_eq!(
+        supervisor.managed_resources().snapshot().unwrap().usage,
+        after
+    );
+    drop((config, grant, provider));
+    assert!(
+        supervisor
+            .managed_resources()
+            .snapshot()
+            .unwrap()
+            .usage
+            .cache_disk_bytes
+            >= cap.get()
+    );
+    let record = std::fs::read(home.path().join("installation/.retained-audit-0")).unwrap();
+    assert_eq!(&record[..8], b"SCAUDT01");
+    assert_eq!(
+        &record[record.len() - 32..],
+        Sha256::digest(&record[..record.len() - 32]).as_slice()
+    );
+    supervisor.close_admission();
+    assert!(supervisor.try_finish().is_err());
+}
