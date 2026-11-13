@@ -394,6 +394,8 @@ CPU, elapsed time, source pins and failed runs.
 
 ## Current installed FlowMux qualification
 
+One x86_64 Linux Firecracker guest executed its signed entrypoint, observed the denied CONNECT, and verified the permitted 5,804-byte echo in each direction through the original installed FlowMux endpoint. The guest echo phase took 179.469 ms wall and 2.770 ms process CPU. The peer counted 3,661 TLS bytes received and 3,234 sent. The original SDK and tenant retired, with four retained resource reservations verified. This host-local source checkpoint leaves cross-host, WAN, fleet capacity and final package qualification open. [Trial 9 measurements and acceptance boundaries](evidence/2026-11-12-installed-flowmux-startup/verified-echo.md)
+
 The [MVM contribution fork checkpoint](https://github.com/Casey-allard/mvm/commit/9c2361423c86082a48d23e3f5651cb3ff0881e3f)
 includes the original host-agent registration and signer check. The
 [hosted helper run](https://github.com/R4-Laboratories/SpiralCore/actions/runs/42135824037)
