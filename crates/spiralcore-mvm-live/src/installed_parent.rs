@@ -326,6 +326,44 @@ impl InstalledParentProvider {
         }
     }
 
+    /// Reserve from the SDK request that will consume the prepared lifetime.
+    /// The request supplies sizing hints only; bind_config still verifies the
+    /// original signed plan, tenant, network asset and armed grant.
+    pub fn prepare_request(
+        &self,
+        request: &mvm_client::LaunchRequest,
+        tenant: &str,
+        backend: BackendKind,
+    ) -> Result<PreparedParentVm> {
+        let intent = request.host_lifetime_intent();
+        ensure!(
+            intent.mode == mvm_client::LifecycleMode::Transient,
+            "owned endpoint requires a transient SDK launch"
+        );
+        let backend_name = match backend {
+            BackendKind::Firecracker => "firecracker",
+            BackendKind::Hvf => "hvf",
+            _ => anyhow::bail!("unsupported installed native backend"),
+        };
+        ensure!(
+            intent
+                .backend
+                .as_deref()
+                .is_none_or(|requested| requested == backend_name),
+            "SDK backend differs"
+        );
+        let config = VmStartConfig {
+            name: intent
+                .name
+                .ok_or_else(|| anyhow!("owned SDK VM name missing"))?,
+            cpus: intent.cpus,
+            memory_mib: intent.memory_mib,
+            tenant_id: Some(tenant.to_owned()),
+            ..Default::default()
+        };
+        self.prepare_vm(&config, tenant, backend)
+    }
+
     pub fn prepare_vm(
         &self,
         config: &VmStartConfig,
