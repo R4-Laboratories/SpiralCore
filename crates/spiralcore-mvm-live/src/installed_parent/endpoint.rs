@@ -278,14 +278,18 @@ impl VmGrant {
         };
         let reservation = parent.pool.reserve(tenant_tag(&self.tenant), claim)?;
         let serial = reservation.serial();
-        attempt.resources.as_mut().unwrap().endpoint = Some(reservation);
+        let resources = attempt
+            .resources
+            .as_mut()
+            .ok_or_else(|| anyhow!("endpoint preparation lost its resource guard"))?;
+        resources.endpoint = Some(reservation);
         let retained = inputs.retained.reserve_for_endpoint(
             tenant_tag(&self.tenant),
             session,
             binding.grant_serial,
         )?;
         attempt.effects_possible = true;
-        attempt.resources.as_mut().unwrap().retained = Some((inputs.retained.clone(), retained));
+        resources.retained = Some((inputs.retained.clone(), retained));
         let store = inputs.inventory.prepare(
             &self.reservation,
             EndpointDiskRequest {
@@ -300,15 +304,7 @@ impl VmGrant {
                 staging_bytes: inputs.profile.limits.staging_disk_bytes,
             },
         )?;
-        attempt.resources.as_mut().unwrap().store = Some(store);
-        let locator = attempt
-            .resources
-            .as_ref()
-            .unwrap()
-            .store
-            .as_ref()
-            .unwrap()
-            .binding();
+        let locator = resources.store.insert(store).binding();
         let plan = self
             .lifecycle
             .lock()
@@ -338,7 +334,12 @@ impl VmGrant {
         let owner = Arc::new(RootEndpointOwner {
             original: self.original.clone(),
             projection: projection.clone(),
-            resources: Mutex::new(attempt.resources.take().unwrap()),
+            resources: Mutex::new(
+                attempt
+                    .resources
+                    .take()
+                    .ok_or_else(|| anyhow!("endpoint preparation lost its resource guard"))?,
+            ),
         });
         {
             let mut state = self

@@ -120,7 +120,11 @@ impl Snapshot {
         if bytes.len() < HEADER + 32 || bytes.len() > MAX_BYTES || &bytes[..8] != MAGIC {
             return Err(OwnerError::Fenced);
         }
-        let count = u16::from_le_bytes(bytes[80..82].try_into().unwrap()) as usize;
+        let count = u16::from_le_bytes(
+            bytes[80..82]
+                .try_into()
+                .expect("fixed-width inventory field"),
+        ) as usize;
         if count > MAX_RECORDS
             || bytes.len() != HEADER + count * ENTRY + 32
             || bytes[82..84] != [0; 2]
@@ -134,21 +138,37 @@ impl Snapshot {
             return Err(OwnerError::Fenced);
         }
         let actual = InstallationKey {
-            installation: bytes[8..40].try_into().unwrap(),
-            profile: bytes[40..72].try_into().unwrap(),
+            installation: bytes[8..40]
+                .try_into()
+                .expect("fixed-width inventory field"),
+            profile: bytes[40..72]
+                .try_into()
+                .expect("fixed-width inventory field"),
         };
-        if actual != key || u64::from_le_bytes(bytes[72..80].try_into().unwrap()) != generation {
+        if actual != key
+            || u64::from_le_bytes(
+                bytes[72..80]
+                    .try_into()
+                    .expect("fixed-width inventory field"),
+            ) != generation
+        {
             return Err(OwnerError::StaleEpoch);
         }
         let mut entries = Vec::with_capacity(count);
         for raw in bytes[HEADER..bytes.len() - 32].chunks_exact(ENTRY) {
-            let number = |at| u64::from_le_bytes(raw[at..at + 8].try_into().unwrap());
+            let number = |at| {
+                u64::from_le_bytes(
+                    raw[at..at + 8]
+                        .try_into()
+                        .expect("fixed-width inventory field"),
+                )
+            };
             if raw[97..104] != [0; 7] {
                 return Err(OwnerError::Fenced);
             }
             entries.push(Entry {
-                tenant: raw[..32].try_into().unwrap(),
-                session: raw[32..64].try_into().unwrap(),
+                tenant: raw[..32].try_into().expect("fixed-width inventory field"),
+                session: raw[32..64].try_into().expect("fixed-width inventory field"),
                 parent: number(64),
                 serial: number(72),
                 cache: number(80),
@@ -422,8 +442,8 @@ impl Storage {
         file.sync_all()?;
         #[cfg(test)]
         tests::checkpoint("intent-file-synced")?;
-        let from = CString::new(INTENT).unwrap();
-        let to = CString::new(INVENTORY).unwrap();
+        let from = CString::new(INTENT).expect("static intent name has no NUL");
+        let to = CString::new(INVENTORY).expect("static inventory name has no NUL");
         self.check()?;
         // SAFETY: fixed names on the same original validated parent.
         if unsafe {
@@ -609,7 +629,7 @@ impl InstallationOwner {
             self.storage.publish_disks(&snapshot)?;
             #[cfg(test)]
             tests::checkpoint("creation-committed")?;
-            let c = CString::new(name.as_str()).unwrap();
+            let c = CString::new(name.as_str()).map_err(|_| OwnerError::InvalidStorage)?;
             // SAFETY: generated single component relative to original private root.
             if unsafe { libc::mkdirat(self.storage.directory.as_raw_fd(), c.as_ptr(), 0o700) } != 0
             {
@@ -627,7 +647,10 @@ impl InstallationOwner {
                 inode: id.inode,
                 ..entry
             };
-            *snapshot.entries.last_mut().unwrap() = active;
+            *snapshot
+                .entries
+                .last_mut()
+                .ok_or(OwnerError::InvalidStorage)? = active;
             self.storage.publish_disks(&snapshot)?;
             #[cfg(test)]
             tests::checkpoint("active-committed")?;

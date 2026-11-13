@@ -2,7 +2,7 @@
 use super::*;
 use mvm_core::host_lifetime::{HostLifetimeAnchor, PreparedHostLifetimeLease};
 use mvm_vmm::host::host_agent_spawn::{
-    HostAgentServicesParams, OwnedHostAgentRegistrar, OwnedVmRegistration,
+    HostAgentServicesParams, OwnedHostAgentRegistrar, OwnedVmRegistration, RegisteredEndpointOwner,
 };
 use std::{
     fs::File,
@@ -70,14 +70,50 @@ impl InstalledParentProvider {
 }
 
 impl ParentLaunchOwner {
-    /// Called after the original signed RegisterVm and before endpoint handoff.
-    pub fn bind_registration(
+    /// Register this launch through its original tenant daemon. Only the signed
+    /// registration callback can pin state and socket directories for telemetry.
+    pub fn original_registrar(&self) -> Result<OwnedHostAgentRegistrar> {
+        let grant = &self.grant;
+        grant.check_open()?;
+        {
+            let lifecycle = grant
+                .lifecycle
+                .lock()
+                .map_err(|_| anyhow!("parent lifecycle poisoned"))?;
+            lifecycle.check_launch_open()?;
+            ensure!(lifecycle.armed, "original VM launch is not armed");
+        }
+        let parent = grant
+            .parent
+            .upgrade()
+            .ok_or_else(|| anyhow!("original installed parent missing"))?;
+        let original = parent
+            .registrar
+            .as_ref()
+            .ok_or_else(|| anyhow!("original registered tenant daemon missing"))?;
+        ensure!(
+            original.tenant == grant.tenant,
+            "original registrar tenant differs"
+        );
+        original.registrar.check_original_holder(&original.holder)?;
+        original
+            .registrar
+            .clone()
+            .with_registration_owner(grant.clone())
+    }
+}
+
+impl RegisteredEndpointOwner for VmGrant {
+    fn bind_registration(
         &self,
         registrar: &OwnedHostAgentRegistrar,
         registration: &OwnedVmRegistration,
         params: &HostAgentServicesParams<'_>,
     ) -> Result<()> {
-        let grant = &self.grant;
+        let grant = self
+            .original
+            .upgrade()
+            .ok_or_else(|| anyhow!("original VM grant missing"))?;
         grant.check_current(&grant.binding)?;
         let parent = grant
             .parent
@@ -117,9 +153,9 @@ impl ParentLaunchOwner {
             "signed registration facts differ"
         );
         let (state, sockets) = registration.original_directories(registrar, params)?;
-        facts.pin_original(state, sockets)?;
         registration.check_current_for(registrar, params)?;
-        grant.check_current(&grant.binding)
+        grant.check_current(&grant.binding)?;
+        facts.pin_original(state, sockets)
     }
 }
 pub(super) struct RegistrationBinding {

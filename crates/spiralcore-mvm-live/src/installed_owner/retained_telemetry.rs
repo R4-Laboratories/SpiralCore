@@ -169,7 +169,11 @@ impl Catalog {
         if bytes.len() < HEADER + 32 || bytes.len() > MAX_BYTES || &bytes[..8] != MAGIC {
             return Err(OwnerError::Fenced);
         }
-        let count = u16::from_le_bytes(bytes[80..82].try_into().unwrap()) as usize;
+        let count = u16::from_le_bytes(
+            bytes[80..82]
+                .try_into()
+                .expect("fixed-width inventory field"),
+        ) as usize;
         if count > MAX_ENTRIES
             || bytes.len() != HEADER + count * ENTRY + 32
             || bytes[8..40] != epoch.key.installation
@@ -187,8 +191,18 @@ impl Catalog {
         }
         let mut entries = Vec::with_capacity(count);
         for raw in bytes[HEADER..bytes.len() - 32].chunks_exact(ENTRY) {
-            let number = |at| u64::from_le_bytes(raw[at..at + 8].try_into().unwrap());
-            let len = u16::from_le_bytes(raw[120..122].try_into().unwrap()) as usize;
+            let number = |at| {
+                u64::from_le_bytes(
+                    raw[at..at + 8]
+                        .try_into()
+                        .expect("fixed-width inventory field"),
+                )
+            };
+            let len = u16::from_le_bytes(
+                raw[120..122]
+                    .try_into()
+                    .expect("fixed-width inventory field"),
+            ) as usize;
             if len > 4096
                 || raw[113..120] != [0; 7]
                 || raw[122..128] != [0; 6]
@@ -198,8 +212,8 @@ impl Catalog {
                 return Err(OwnerError::Fenced);
             }
             entries.push(RetainedRecord {
-                tenant: raw[..32].try_into().unwrap(),
-                session: raw[32..64].try_into().unwrap(),
+                tenant: raw[..32].try_into().expect("fixed-width inventory field"),
+                session: raw[32..64].try_into().expect("fixed-width inventory field"),
                 parent: number(64),
                 serial: number(72),
                 records: number(80),
@@ -211,7 +225,9 @@ impl Catalog {
                 record_id: (number(4224), number(4232)),
                 key_id: (number(4240), number(4248)),
                 sealed_len: number(4256),
-                sealed_sha256: raw[4264..4296].try_into().unwrap(),
+                sealed_sha256: raw[4264..4296]
+                    .try_into()
+                    .expect("fixed-width inventory field"),
             });
         }
         let catalog = Self { epoch, entries };
@@ -250,8 +266,8 @@ impl Storage {
         )?;
         file.write_all(&bytes)?;
         file.sync_all()?;
-        let from = CString::new(CATALOG_INTENT).unwrap();
-        let to = CString::new(CATALOG).unwrap();
+        let from = CString::new(CATALOG_INTENT).expect("static catalog intent name has no NUL");
+        let to = CString::new(CATALOG).expect("static catalog name has no NUL");
         self.check()?;
         // SAFETY: fixed names under the original private installation directory.
         if unsafe {
