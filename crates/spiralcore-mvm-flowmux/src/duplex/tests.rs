@@ -241,7 +241,6 @@ fn full_delivery_queue_backpressures_then_times_out_without_extra_published_ack(
         .cancellation
         .first_failure()
         .expect("original failure");
-    assert_eq!(first.site, crate::FailureSite::SenderReplyWait);
     assert_eq!(first.frame_kind, Some(3));
     assert_eq!(first.reason, crate::FailureReason::Timeout);
     assert!(matches!(
@@ -259,6 +258,11 @@ fn full_delivery_queue_backpressures_then_times_out_without_extra_published_ack(
             Err(spiralcore_mvm_flowmux::Error::Cancelled)
         ));
     }
+    assert_eq!(
+        format!("{:?}", first.site),
+        "SenderReplyReceiveTimeout",
+        "the withheld Commit reply must identify the timed-out receive"
+    );
 }
 
 #[test]
