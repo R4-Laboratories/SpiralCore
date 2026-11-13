@@ -759,3 +759,10 @@ No FIPS/CUI, host-blind security, physical-energy, exact cross-node clock,
 general-purpose router or production-fleet qualification is claimed.
 
 The one-tenant worker-control tests distinguish mutation-lane EOF from a full-workspace connection reset. Both targeted controls now pass within the original 1 MiB limit. [Contention results and open collection assertion](evidence/2026-11-12-paired-mailbox/addressed-native-launch/worker-control-contention.md).
+
+
+## Latest native platform checkpoint
+
+[PR #256](https://github.com/R4-Laboratories/SpiralCore/pull/256) merged the public installed FlowMux package and controller/parent ownership work at `e1a662c3`, after 28 executed CI jobs passed. The original Windows Server 2025 sustained component gate recovered 64 MiB in each direction in 211.688 s total lifecycle time, using 88.859 s process CPU, while retaining 64 publications per endpoint. A separate native coverage run measured 94.94% production-line coverage for the changed Windows quota module only. Prior deadline failures remain recorded; these unmatched hosted runs do not isolate an optimization speedup. [Bytes, CPU, elapsed time, source/artifact pins and coverage](evidence/2026-11-13-windows-sustained-stream/README.md).
+
+This does not qualify a Windows MVM host, canonical two-host WAN, customer capacity or the newer MVM mailbox integration. The current public installed native witness keeps its original `a7eea837` controller and `7b224540` MVM host source identities.
