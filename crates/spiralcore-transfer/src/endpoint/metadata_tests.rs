@@ -52,6 +52,7 @@ fn both_refuse(path: &Path, expected: Error) {
 #[test]
 fn metadata_paths_preserve_header_length_missing_and_exact_body_checks() {
     let fixture = Fixture::new();
+    assert_legacy_record_bytes(&fixture);
     let path = fixture.0.join("payload.object");
     let bytes = b"\0exact metadata\0trailing zeros\0\0";
     write_record(&path, bytes);
@@ -84,6 +85,32 @@ fn metadata_paths_preserve_header_length_missing_and_exact_body_checks() {
     fs::write(&path, &original).unwrap();
     assert_eq!(read_publication(&read_meta(&path).unwrap()).unwrap(), bytes);
 }
+
+fn assert_legacy_record_bytes(fixture: &Fixture) {
+    const PREFIX: &[u8; 48] = b"SCPUB001\x05\0\0\0\0\0\0\0\
+        \x83\x52\x42\x8b\xef\x1b\x1f\x9f\xc5\xf9\x4c\xfb\xf4\x9d\x60\x67\
+        \xfa\xb8\xc0\xb3\x15\x0c\x86\x06\x2a\xe9\x0d\x1c\x4b\x36\xf1\x1b";
+    const BODY: &[u8] = b"\0\xffA\0\0";
+    let offer = Offer::cold(BODY, Mode::Raw);
+    for (name, manifest, suffix) in [
+        ("plain.object", None, &b"\0"[..]),
+        (
+            "manifest.object",
+            Some(*b"abcdefghijklmnopqrstuvwxyz012345"),
+            &b"\x01abcdefghijklmnopqrstuvwxyz012345"[..],
+        ),
+    ] {
+        let path = fixture.0.join(name);
+        let mut file = storage::create_new_file(&path).unwrap();
+        super::write_record(&mut file, &offer, manifest, BODY).unwrap();
+        drop(file);
+        assert_eq!(
+            fs::read(path).unwrap(),
+            [PREFIX.as_slice(), suffix, BODY].concat()
+        );
+    }
+}
+
 #[test]
 fn metadata_paths_reject_hardlinks_without_changing_the_original_bytes() {
     let fixture = Fixture::new();

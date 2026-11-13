@@ -80,3 +80,96 @@ jobs:
             --manifest-path crates/spiralcore-mvm-live/Cargo.toml \
             --all-targets
           bash crates/spiralcore-mvm-live/scripts/test-combined-analysis.sh
+  fixture-producer:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      CARGO_BUILD_JOBS: 2
+      CARGO_INCREMENTAL: 0
+      CARGO_PROFILE_DEV_DEBUG: 0
+      CARGO_PROFILE_TEST_DEBUG: 0
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Record source and pinned compiler
+        run: |
+          set -euo pipefail
+          rustup toolchain install 1.97.1 --profile minimal
+          mkdir fixture-evidence
+          echo "CARGO_TARGET_DIR=$RUNNER_TEMP/fixture-target" >> "$GITHUB_ENV"
+          git rev-parse HEAD 'HEAD^{tree}' > fixture-evidence/source-and-tree.txt
+          sha256sum crates/spiralcore-transfer/src/endpoint.rs > fixture-evidence/endpoint.sha256
+          jq -er .mvm_source docs/platforms/mvm-mailbox-portable.json > fixture-evidence/mvm-source.txt
+          rustc +1.97.1 -vV > fixture-evidence/rustc.txt
+      - name: Check the original metadata and exact body fixture
+        run: |
+          set -euo pipefail
+          cargo +1.97.1 test --locked --manifest-path crates/spiralcore-transfer/Cargo.toml --lib \
+            endpoint::metadata_tests::metadata_paths_preserve_header_length_missing_and_exact_body_checks \
+            -- --exact 2>&1 | tee fixture-evidence/core-test.txt
+          grep -Eq '^test result: ok\. 1 passed; 0 failed; 0 ignored;' fixture-evidence/core-test.txt
+      - name: Build the fixture producer test executable
+        run: |
+          cargo +1.97.1 test --locked --manifest-path crates/spiralcore-mvm-live/Cargo.toml \
+            --features canonical-host --example installed_flowmux_fixture --no-run \
+            --message-format=json > "$RUNNER_TEMP/fixture-build.jsonl"
+      - name: Run the identified fixture and record its result
+        shell: python
+        run: |
+          import hashlib, json, os, re, subprocess, sys
+          from pathlib import Path
+
+          root = Path.cwd()
+          manifest = root / "crates/spiralcore-mvm-live/Cargo.toml"
+          evidence = root / "fixture-evidence"
+          messages = Path(os.environ["RUNNER_TEMP"]) / "fixture-build.jsonl"
+          with messages.open() as src:
+              matches = [m for m in map(json.loads, src) if m["reason"] == "compiler-artifact"
+                         and m["manifest_path"] == str(manifest) and m["profile"]["test"]
+                         and m["target"]["name"] == "installed_flowmux_fixture"
+                         and m["target"]["kind"] == ["example"] and "canonical-host" in m["features"]
+                         and m.get("executable")]
+          if len(matches) != 1:
+              sys.exit("Expected exactly one fixture producer test executable")
+          exe = Path(matches[0]["executable"]).resolve(strict=True)
+          if not exe.is_relative_to(Path(os.environ["CARGO_TARGET_DIR"]).resolve()):
+              sys.exit("Unexpected fixture executable location")
+
+          def identity():
+              with exe.open("rb") as f:
+                  digest = hashlib.sha256()
+                  for block in iter(lambda: f.read(1 << 20), b""):
+                      digest.update(block)
+                  return {"name": exe.name, "bytes": os.fstat(f.fileno()).st_size, "sha256": digest.hexdigest()}
+
+          before, code = identity(), None
+          (evidence / "executable-before.json").write_text(json.dumps(before) + "\n")
+          try:
+              with (evidence / "fixture-tests.txt").open("w") as log:
+                  proc = subprocess.Popen([exe, "--nocapture", "--color", "never"], cwd=manifest.parent,
+                                          stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+                  for line in proc.stdout:
+                      log.write(line)
+                      print(line, end="", flush=True)
+                  code = proc.wait()
+          finally:
+              after = identity()
+              (evidence / "executable-after.json").write_text(json.dumps({**after, "exit": code}) + "\n")
+          if after != before:
+              sys.exit("Fixture executable changed during the run")
+          footer = re.findall(r"^test result: (ok|FAILED)\. (\d+) passed; (\d+) failed; 0 ignored; 0 measured; 0 filtered out;",
+                              (evidence / "fixture-tests.txt").read_text(), re.M)
+          if len(footer) != 1 or int(footer[0][1]) + int(footer[0][2]) != 5:
+              print("Expected one five-test fixture result", file=sys.stderr)
+              sys.exit(code or 1)
+          if code == 0 and footer[0] != ("ok", "5", "0"):
+              sys.exit("Successful fixture must pass all five tests")
+          sys.exit(code)
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: fixture-producer-${{ github.run_attempt }}
+          path: fixture-evidence/
+          if-no-files-found: error
+          retention-days: 14

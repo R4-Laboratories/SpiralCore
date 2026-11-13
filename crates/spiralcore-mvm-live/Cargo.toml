@@ -49,6 +49,11 @@ mvm-fs = { git = "https://github.com/Casey-allard/mvm", rev = "31f8a562f19d9eac8
 mvm-core = { git = "https://github.com/Casey-allard/mvm", rev = "31f8a562f19d9eac89cb0d078b507770bb592262", default-features = false, features = ["test-support"] }
 tempfile = "3"
 
+[[example]]
+name = "installed_flowmux_fixture"
+path = "examples/installed_flowmux_fixture.rs"
+required-features = ["canonical-host"]
+
 [[test]]
 name = "adapter_live"
 path = "../spiralcore-mvm-adapter/tests/live.rs"
