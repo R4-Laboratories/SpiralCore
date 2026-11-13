@@ -33,6 +33,15 @@ pub use startup::PortableStartupQuote;
 mod driver;
 #[cfg(target_os = "linux")]
 pub use driver::CanonicalLaunch;
+
+/// Public keys and session observed during one original registered endpoint boot.
+/// A cooperating receiver still verifies the signed plan and each flow independently.
+#[derive(Clone, Copy, Debug, Eq, PartialEq, serde::Serialize)]
+pub struct ObservedFlowMuxGuest {
+    pub session: [u8; 32],
+    pub guest: [u8; 32],
+    pub host: [u8; 32],
+}
 #[cfg(target_os = "linux")]
 #[path = "installed_parent/startup_bounds.rs"]
 mod startup_bounds;

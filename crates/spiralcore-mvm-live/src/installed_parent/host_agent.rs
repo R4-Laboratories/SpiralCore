@@ -271,6 +271,10 @@ impl RegistrationBinding {
     }
     pub(super) fn check_retained_state(&self, path: &Path, directory: &File) -> Result<()> {
         ensure!(path == self.state, "retained VM state path differs");
+        self.check_directories(Some(directory))
+    }
+
+    pub(super) fn check_directories(&self, expected_state: Option<&File>) -> Result<()> {
         let held = self
             .directories
             .lock()
@@ -285,10 +289,13 @@ impl RegistrationBinding {
                 .ok_or_else(|| anyhow!("original broker parent absent"))?,
             sockets,
         )?;
-        ensure!(
-            same_directory(directory, state)?,
-            "retained state directory differs from original registration"
-        );
+        if let Some(expected) = expected_state {
+            ensure!(
+                same_directory(expected, state)?,
+                "retained state directory differs from original registration"
+            );
+        }
+
         self.anchor
             .upgrade()
             .ok_or_else(|| anyhow!("original anchor unavailable"))?

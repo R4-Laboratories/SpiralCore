@@ -103,6 +103,32 @@ impl CanonicalLaunch<'_> {
         }
     }
 
+    /// The original admitted session and the guest public key observed at boot.
+    pub fn flowmux_guest(&self) -> Result<ObservedFlowMuxGuest> {
+        let outcome = self.outcome()?;
+        let State::Active(active) = &self.state else {
+            unreachable!("outcome requires the active original owner");
+        };
+        let endpoint = active
+            .owner
+            .grant
+            .lifecycle
+            .lock()
+            .map_err(|_| anyhow!("parent lifecycle poisoned"))?
+            .endpoint_owner
+            .clone()
+            .ok_or_else(|| anyhow!("original endpoint missing"))?;
+        endpoint.observed_guest(&outcome.admitted.plan_id().0)
+    }
+
+    /// Read this boot's original workload exit report within one absolute deadline.
+    pub fn wait_until(
+        &self,
+        until: std::time::Instant,
+    ) -> Result<mvm_core::vm_backend::VmExitStatus> {
+        Ok(self.backend.wait_owned_until(self.outcome()?, until)?)
+    }
+
     /// Retirement may be retried after an original stop, archive or disk I/O failure.
     pub async fn retire(&mut self) -> Result<()> {
         let State::Active(active) = &mut self.state else {

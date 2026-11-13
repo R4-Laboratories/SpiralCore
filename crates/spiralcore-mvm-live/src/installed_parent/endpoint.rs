@@ -179,6 +179,7 @@ pub(super) struct RootEndpointOwner {
     original: Weak<VmGrant>,
     projection: EndpointPartitionProjection,
     resources: Mutex<Resources>,
+    identity: std::sync::OnceLock<ObservedFlowMuxGuest>,
 }
 impl Drop for Resources {
     fn drop(&mut self) {
@@ -333,6 +334,7 @@ impl VmGrant {
         };
         let owner = Arc::new(RootEndpointOwner {
             original: self.original.clone(),
+            identity: Default::default(),
             projection: projection.clone(),
             resources: Mutex::new(
                 attempt
@@ -359,6 +361,33 @@ impl VmGrant {
     }
 }
 impl EndpointPartitionGuard for RootEndpointOwner {
+    fn observe_flowmux_guest(
+        &self,
+        projection: &EndpointPartitionProjection,
+        guest: [u8; 32],
+        host: [u8; 32],
+    ) -> Result<()> {
+        self.check_current(projection)?;
+        let registration = self.original_registration()?;
+        registration.check_directories(None)?;
+        ensure!(
+            !ed25519_dalek::VerifyingKey::from_bytes(&guest)?.is_weak()
+                && !ed25519_dalek::VerifyingKey::from_bytes(&host)?.is_weak(),
+            "invalid original FlowMux guest verifying key"
+        );
+        let observed = ObservedFlowMuxGuest {
+            session: projection.session,
+            guest,
+            host,
+        };
+        ensure!(
+            self.identity.get_or_init(|| observed) == &observed,
+            "original FlowMux guest key changed"
+        );
+        registration.check_directories(None)?;
+        self.check_current(projection)
+    }
+
     fn prepare_retained_telemetry(
         &self,
         projection: &EndpointPartitionProjection,
@@ -452,19 +481,36 @@ impl RootEndpointOwner {
         directory: &std::fs::File,
     ) -> Result<()> {
         self.check_current(projection)?;
+        self.original_registration()?
+            .check_retained_state(state, directory)
+    }
+
+    fn original_registration(&self) -> Result<Arc<host_agent::RegistrationBinding>> {
         let grant = self
             .original
             .upgrade()
             .ok_or_else(|| anyhow!("original grant unavailable"))?;
-        let registration = grant
+        grant
             .lifecycle
             .lock()
             .map_err(|_| anyhow!("parent lifecycle poisoned"))?
             .registration
-            .as_ref()
-            .cloned()
-            .ok_or_else(|| anyhow!("original registration missing"))?;
-        registration.check_retained_state(state, directory)
+            .clone()
+            .ok_or_else(|| anyhow!("original registration missing"))
+    }
+
+    #[cfg(any(target_os = "linux", test))]
+    pub(super) fn observed_guest(&self, plan_id: &str) -> Result<ObservedFlowMuxGuest> {
+        ensure!(
+            plan_id == self.projection.admitted_plan_id,
+            "different admitted plan"
+        );
+        self.check_current(&self.projection)?;
+        self.original_registration()?.check_directories(None)?;
+        self.identity
+            .get()
+            .copied()
+            .ok_or_else(|| anyhow!("original FlowMux keys not observed"))
     }
     pub(super) fn matches_receipt(
         self: &Arc<Self>,
