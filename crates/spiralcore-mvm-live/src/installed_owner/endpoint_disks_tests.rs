@@ -82,7 +82,11 @@ fn probe_postrename_sync_failure_keeps_creation_intent_and_blocks_generic_retire
         failed.is_err(),
         "injected directory sync must fail preparation"
     );
-    assert!(failed.err().unwrap().may_have_effects);
+    let failure = failed.err().unwrap();
+    assert!(failure.may_have_effects);
+    assert!(
+        matches!(failure.error, OwnerError::Io(e) if e.to_string() == "injected disk parent sync failure")
+    );
     HOOK.with(|h| *h.borrow_mut() = None);
     assert!(f.root.join(INVENTORY).exists());
     assert!(owner.finish(epoch).is_err());
@@ -184,6 +188,10 @@ fn probe_publication_crashes() {
         sync::mpsc,
         time::Duration,
     };
+    let helper = format!(
+        "{}::publication_crash_helper",
+        module_path!().split_once("::").unwrap().1
+    );
     for (point, ambiguous, count) in [
         ("intent-file-written", false, 0),
         ("intent-file-synced", false, 0),
@@ -199,11 +207,7 @@ fn probe_publication_crashes() {
     ] {
         let f = Fixture::new();
         let child = Command::new(std::env::current_exe().unwrap())
-            .args([
-                "--exact",
-                "installed_owner::endpoint_disks::tests::publication_crash_helper",
-                "--nocapture",
-            ])
+            .args(["--exact", &helper, "--nocapture"])
             .env("SPIRAL_DISK_TEST_BASE", &f.base)
             .env("SPIRAL_DISK_TEST_POINT", point)
             .stdin(Stdio::piped())
@@ -291,6 +295,12 @@ fn probe_live_retirement() {
         .prepare_endpoint_disk(epoch, 1, request())
         .ok()
         .unwrap();
+    owner.check_endpoint_disk(&store).unwrap();
+    let binding = store.binding();
+    assert_eq!(binding.key, f.key);
+    assert_eq!(binding.generation, epoch.generation());
+    assert_eq!(binding.reservation_serial, 1);
+    assert_eq!(binding.session, request().session);
     let sibling = owner
         .prepare_endpoint_disk(
             epoch,

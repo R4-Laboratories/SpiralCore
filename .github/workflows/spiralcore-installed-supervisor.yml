@@ -64,7 +64,7 @@ jobs:
           cargo +1.97.1 test --release --locked \
             --manifest-path crates/spiralcore-mvm-live/tests/installed-supervisor-harness/Cargo.toml \
             --all-targets -- --test-threads=1 2>&1 | tee parent-evidence/tests.txt
-          for expected in 18 3 11; do
+          for expected in 33 3 11; do
             grep -E "^test result: ok\\. $expected passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in [0-9.]+s$" parent-evidence/tests.txt
           done
           shasum -a 256 -c parent-evidence/source.sha256 > parent-evidence/source-after.txt

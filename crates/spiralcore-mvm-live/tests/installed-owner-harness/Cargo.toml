@@ -7,13 +7,15 @@ publish = false
 
 [workspace]
 
-[lib]
-name = "installed_owner"
-path = "../../src/installed_owner.rs"
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(feature, values("canonical-host"))'] }
 
 [dependencies]
 libc = "0.2"
 sha2 = "0.10"
+
+[dev-dependencies]
+mvm-core = { git = "https://github.com/Casey-allard/mvm", rev = "7b22454077530e96146d68204b711de53e3d05a8", default-features = false, features = ["test-support"] }
 
 [profile.release]
 debug = 0

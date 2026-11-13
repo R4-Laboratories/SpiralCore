@@ -1,5 +1,8 @@
 #![cfg(unix)]
 
+#[path = "../../../src/installed_owner.rs"]
+pub mod installed_owner;
+
 use installed_owner::{
     HolderLease, InstallationKey, InstallationOwner, OwnerError, Phase, Recovery,
 };
