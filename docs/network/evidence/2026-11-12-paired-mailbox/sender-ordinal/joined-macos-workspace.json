@@ -1,0 +1,214 @@
+{
+  "platform": "macOS arm64",
+  "revision": "9035492d7979c90dee0538649735ebed2358145d",
+  "tree": "b4ae5add45d8d73c9290577233fa3d51fb5451ac",
+  "parents": [
+    "cf7d67f6a5f4d6f2c398589636346e6fe6570502",
+    "cef3b6feaac41c42dda434ef98f541432c62995b"
+  ],
+  "verified_clean_worktree": true,
+  "changed_file_sha256": {
+    "scripts/run-cve-2026-80521-gcp.test.sh": "a1904f667816b80d48bf2ad0c3433d94bdfdcfef2da9cd96c4b899b785b98c9b",
+    "crates/mvm-hostd/src/mailbox_process.rs": "1306ce9d1a84e165de63127864fb9702ecc994a60f5fba9330d2e279358c1b58",
+    "crates/mvm-hostd/src/mailbox_service/durable.rs": "623d428eef20f7151f10785c7e1f2e4a35d852c29c41c172413edbfb5f7a3c3f",
+    "crates/mvm-hostd/src/mailbox_service/durable/witness_io/aggregate.rs": "16faba6fbf96f57d56e3fb671b2a9a9ffc7144b84f3c8cac1124d3bcc2e219b7"
+  },
+  "original_gate": {
+    "check": "final-workspace",
+    "command": [
+      "cargo",
+      "+1.97.1",
+      "test",
+      "--locked",
+      "--offline",
+      "--workspace",
+      "--",
+      "--test-threads=1"
+    ],
+    "exit_code": 101,
+    "elapsed_s": 1872.5528530409938,
+    "source": "3c4e763a0e35c9e0332183e7a6174968aed8cd99",
+    "failed_target": {
+      "target": "cve_lab_gcp_controller",
+      "entry": "tests/cve_lab_gcp_controller.rs",
+      "outcome": "FAILED",
+      "passed": 1,
+      "failed": 1,
+      "ignored": 0,
+      "measured": 0,
+      "filtered_out": 0,
+      "elapsed_s": 1.27
+    },
+    "observed_failure": "create-failure: expected 0 instance deletions, got 1"
+  },
+  "single_test_expectation_fix": "cf7d67f6a5f4d6f2c398589636346e6fe6570502",
+  "joined_gates": [
+    {
+      "check": "repaired-workspace",
+      "exit_code": 0,
+      "command": [
+        "cargo",
+        "+1.97.1",
+        "test",
+        "--locked",
+        "--offline",
+        "--workspace",
+        "--",
+        "--test-threads=1"
+      ],
+      "elapsed_s": 1072.6666204159992
+    },
+    {
+      "check": "repaired-clippy",
+      "exit_code": 0,
+      "command": [
+        "cargo",
+        "+1.97.1",
+        "clippy",
+        "--locked",
+        "--offline",
+        "--workspace",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "elapsed_s": 104.47933720800211
+    }
+  ],
+  "selected_workspace_target_summaries": [
+    {
+      "target": "mvm_agentd",
+      "entry": "unittests src/lib.rs",
+      "outcome": "ok",
+      "passed": 1080,
+      "failed": 0,
+      "ignored": 0,
+      "measured": 0,
+      "filtered_out": 0,
+      "elapsed_s": 22.51
+    },
+    {
+      "target": "mvm_client",
+      "entry": "unittests src/lib.rs",
+      "outcome": "ok",
+      "passed": 1487,
+      "failed": 0,
+      "ignored": 6,
+      "measured": 0,
+      "filtered_out": 0,
+      "elapsed_s": 56.09
+    },
+    {
+      "target": "mvm_contract",
+      "entry": "unittests src/lib.rs",
+      "outcome": "ok",
+      "passed": 1215,
+      "failed": 0,
+      "ignored": 0,
+      "measured": 0,
+      "filtered_out": 0,
+      "elapsed_s": 0.98
+    },
+    {
+      "target": "mvm_core",
+      "entry": "unittests src/lib.rs",
+      "outcome": "ok",
+      "passed": 3029,
+      "failed": 0,
+      "ignored": 2,
+      "measured": 0,
+      "filtered_out": 0,
+      "elapsed_s": 33.39
+    },
+    {
+      "target": "mvm_hostd",
+      "entry": "unittests src/lib.rs",
+      "outcome": "ok",
+      "passed": 2393,
+      "failed": 0,
+      "ignored": 15,
+      "measured": 0,
+      "filtered_out": 0,
+      "elapsed_s": 87.05
+    },
+    {
+      "target": "mvm_vmm",
+      "entry": "unittests src/lib.rs",
+      "outcome": "ok",
+      "passed": 1079,
+      "failed": 0,
+      "ignored": 1,
+      "measured": 0,
+      "filtered_out": 0,
+      "elapsed_s": 20.7
+    },
+    {
+      "target": "cve_lab_gcp_controller",
+      "entry": "tests/cve_lab_gcp_controller.rs",
+      "outcome": "ok",
+      "passed": 2,
+      "failed": 0,
+      "ignored": 0,
+      "measured": 0,
+      "filtered_out": 0,
+      "elapsed_s": 1.48
+    },
+    {
+      "target": "xtask",
+      "entry": "unittests src/lib.rs",
+      "outcome": "ok",
+      "passed": 10,
+      "failed": 0,
+      "ignored": 0,
+      "measured": 0,
+      "filtered_out": 0,
+      "elapsed_s": 0.0
+    },
+    {
+      "target": "xtask",
+      "entry": "unittests src/main.rs",
+      "outcome": "ok",
+      "passed": 1040,
+      "failed": 0,
+      "ignored": 0,
+      "measured": 0,
+      "filtered_out": 0,
+      "elapsed_s": 57.25
+    }
+  ],
+  "distinct_linux_runtime_revision": "cef3b6feaac41c42dda434ef98f541432c62995b",
+  "retained_artifacts": {
+    "final-workspace.log": {
+      "size_bytes": 1756549,
+      "sha256": "e93bed4e2ac6b9292b014ea9c502b0d8c5f43cb56cb27090f29d109ab79ef99d"
+    },
+    "final-check-results.json": {
+      "size_bytes": 325,
+      "sha256": "f1d7866ec96095dc7f9b3df799393085d9f201a0358ace567d6b1d2da29e5968"
+    },
+    "repaired-workspace.log": {
+      "size_bytes": 1895224,
+      "sha256": "d3b15422c1fa9f4458fdc4f045e6d08a93939c90cf2d1d7e2ce6603dbdcb11f4"
+    },
+    "repaired-clippy.log": {
+      "size_bytes": 13378,
+      "sha256": "015df66cba9d0402a8a8a3c1266ac2388326ca8495acd69fdbb75d6eae617f5b"
+    },
+    "repaired-source.json": {
+      "size_bytes": 590,
+      "sha256": "9a6a9b8d966a894ccc6872c46c9c3e25e55d4be36790ecad50edfcd9322a7ecc"
+    },
+    "repaired-check-results.json": {
+      "size_bytes": 1612,
+      "sha256": "70b81fe8f03e5ebe5506b82fa69c585c30221747575c09e0e111bce2010ad483"
+    },
+    "cve-wrapper-green.log": {
+      "size_bytes": 49,
+      "sha256": "d8377276a13ee700cfe26784c391e09309d81e52cce8332979b00a9ffc2c8af6"
+    },
+    "gcp-wrapper-green.log": {
+      "size_bytes": 114,
+      "sha256": "04d7cf3a06a232bcafa87a1515623118c1ff9b5351edc2977a9ba4f2b0e3623f"
+    }
+  }
+}
