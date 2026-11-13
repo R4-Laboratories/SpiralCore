@@ -164,3 +164,9 @@ The release ELF was built from SpiralCore `f7947346` with Rust 1.97.1 and MVM `a
 | Environment descriptor supplied for signing | `5d145ba505f0d2fb558546a9ea04dc6affa48ed7abdb6e4750d97e2de15160b6` |
 
 The image sidecar and the entrypoint configuration reopened from ext4 both matched the descriptor’s three argv elements. The descriptor requests one CPU, 256 MiB and egress to the registered peer on port 38443. The signed rc.2 runtime archive named source `849382ad417a28f3d68b051411b5ae3bab591b13`. Its guest proxy response and workload environment sources match the MVM revision used to build the workload.
+
+### Literal endpoint for ordinary MVM egress
+
+The role above uses a registered peer name. The ordinary host egress policy refused that name during preflight. To exercise its exact IPv4 rule, build a separate image from the same binary with `SPIRALCORE_FLOWMUX_FIXTURE_IPV4` set **at compile time** to the operator-approved fixture peer. Set the signed entrypoint arguments to `denied.flowmux.test:38443` and the canonical dotted IPv4 followed by `:38443`. Include only that exact IPv4 and port in the descriptor's egress allow-list. Reopen and compare both argv records and the ELF from each newly sealed image.
+
+The pinned executable checks both arguments before opening the local workload proxy. A different address, port, spelling, denied name or registered-name argument fails this check. The application continues to use the operator-provided loopback proxy for the actual connection. The registered host endpoint and MVM policy still independently authorize the route. Preserve the earlier named-role refusal when reporting the installed result.
