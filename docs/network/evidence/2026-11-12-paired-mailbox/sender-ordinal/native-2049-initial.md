@@ -25,3 +25,7 @@ B's original anchor ended at cursor 4,442. Record 4,441 accepted ordinal 1,481 a
 | 4,442 | 7,338 | 33,563,218 |
 
 At cursor 4,441 the journal crossed its 33,554,432-byte maintenance threshold. The pinned implementation tries to encode all protected records in one checkpoint, subject to a 16 MiB record maximum and a 64 MiB journal quota. The signed retention window still protected these records. A subsequent deterministic component test reproduced a fatal automatic checkpoint refusal under space pressure. The native run did not capture the helper's exact error. This trial covers one guest pair on one Linux host. [Sender retention](https://github.com/R4-Laboratories/SpiralCore/issues/195) · [Sustained capacity](https://github.com/R4-Laboratories/SpiralCore/issues/49)
+
+### Per-transfer records
+
+The downloadable gzip contains every completed original JSONL row (1,480 rows, 2,927,846 bytes after decompression). Each row exposes measurement counters, elapsed times, a synthetic message ID, and a digest of the verified B receipt. The JSON manifest gives SHA-256 for both representations. [Download original rows](native-2049-initial-rows.jsonl.gz) · [Verify hashes](native-2049-initial.json)
