@@ -50,14 +50,14 @@ fn original_native_issuer_rechecks_close_and_retains_only_its_real_owner() {
 }
 
 #[test]
-fn two_endpoint_operator_profile_reserves_22_workers_and_keeps_the_default_at_16() {
+fn two_endpoint_operator_profile_funds_both_capture_workers_and_preserves_the_default() {
     use installed_supervisor_harness::installed_resources::ManagedClaim;
     let base = std::env::temp_dir().join(format!("sc-paired-budget-{}", std::process::id()));
     fs::DirBuilder::new().mode(0o700).create(&base).unwrap();
     let default = InstalledConfig::canonical_native_profile();
     let pair = InstalledConfig::two_endpoint_witness_profile();
     assert_ne!(default.profile_hash(), pair.profile_hash());
-    for (name, config, capacity) in [("default", default, 16), ("pair", pair, 22)] {
+    for (name, config, capacity) in [("default", default, 16), ("pair", pair, 24)] {
         let key = InstallationKey {
             installation: [75; 32],
             profile: config.profile_hash(),
@@ -75,11 +75,15 @@ fn two_endpoint_operator_profile_reserves_22_workers_and_keeps_the_default_at_16
         };
         let originals = pool.reserve([7; 32], claim(10)).unwrap();
         let a = pool.reserve([7; 32], claim(6)).unwrap();
+        let a_capture = pool.reserve([7; 32], claim(1));
         let b = pool.reserve([7; 32], claim(6));
-        assert_eq!(b.is_ok(), capacity == 22);
+        let b_capture = pool.reserve([7; 32], claim(1));
+        assert_eq!(a_capture.is_ok(), capacity == 24);
+        assert_eq!(b.is_ok(), capacity == 24);
+        assert_eq!(b_capture.is_ok(), capacity == 24);
         assert_eq!(pool.snapshot().unwrap().usage.workers, capacity);
         assert!(pool.reserve([8; 32], claim(1)).is_err());
-        drop((originals, a, b));
+        drop((originals, a, a_capture, b, b_capture));
         supervisor.close_admission();
         supervisor.try_finish().unwrap();
     }

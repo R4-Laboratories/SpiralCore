@@ -406,11 +406,28 @@ impl InstalledParentProvider {
                     && backend == BackendKind::Hvf),
             "unsupported installed native role"
         );
+        // The selected FC driver's original workload-exit listener lives until
+        // native settlement. Its worker and known Rust stack stay with the VM.
+        #[cfg(target_os = "linux")]
+        let (workers, host_stack_bytes) =
+            if self.shared.endpoint_inputs.is_some() && backend == BackendKind::Firecracker {
+                (
+                    1,
+                    mvm_vmm::host::fc_lifetime::worker_terms::owned_exit_capture_stack_terms()?
+                        .known_rust_bytes,
+                )
+            } else {
+                (0, 0)
+            };
+        #[cfg(not(target_os = "linux"))]
+        let (workers, host_stack_bytes) = (0, 0);
         // Fresh filesystem checks occur before taking the registry lock.
         let reservation = self.shared.pool.reserve(
             tenant_tag(tenant),
             ManagedClaim {
                 host_metadata_bytes: BOOKKEEPING_BYTES,
+                workers,
+                host_stack_bytes,
                 guest_memory_bytes: u64::from(config.memory_mib) * MIB,
                 guests: 1,
                 ..Default::default()

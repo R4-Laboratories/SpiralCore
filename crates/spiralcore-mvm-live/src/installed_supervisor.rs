@@ -39,7 +39,7 @@ impl InstalledConfig {
         }
     }
     /// Fresh, separate operator profile for two six-worker endpoints plus their
-    /// one shared ten-thread tenant daemon/signer. It preserves two VM slots.
+    /// one shared ten-thread tenant daemon/signer and two original FC exit-capture workers.
     pub fn two_endpoint_witness_profile() -> Self {
         Self {
             canonical: true,
@@ -58,7 +58,7 @@ impl InstalledConfig {
         if self.paired_endpoints {
             // 512 MiB per installation and tenant funds two 136 MiB endpoint
             // partitions, two independently capped helpers, and original owners.
-            host.workers = 22;
+            host.workers = 10 + 2 * (6 + 1);
             tenant.workers = host.workers;
             tenant.host_resident_bytes = host.host_resident_bytes;
         }
@@ -107,7 +107,7 @@ impl InstalledConfig {
             }
         }
         if self.paired_endpoints {
-            digest.update(b"spiralcore/two-endpoint-witness/v1\0");
+            digest.update(b"spiralcore/two-endpoint-witness/v2\0");
             let (host, tenant) = self.managed_limits();
             for limits in [host, tenant] {
                 for bound in [

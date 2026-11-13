@@ -487,6 +487,9 @@ fn public_selected_handoff_charges_one_pool_and_refuses_second_claim_before_disk
     let (anchor, a, _original_a) = admit("public-selected-a");
     let (other, b, _original_b) = admit("public-selected-b");
     let before = supervisor.managed_resources().snapshot().unwrap();
+    let stack = mvm_vmm::host::fc_lifetime::worker_terms::owned_exit_capture_stack_terms().unwrap();
+    assert_eq!(before.usage.workers, 2);
+    assert_eq!(before.usage.host_stack_bytes, 2 * stack.known_rust_bytes);
     let first = anchor
         .prepare_endpoint_handoff(&a, native_backend())
         .unwrap();
