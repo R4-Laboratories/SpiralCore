@@ -154,7 +154,7 @@ Eight local loopback controls passed on macOS. A separate Linux component ran th
 | Denied peer | 71 / 64 | 0 / 0 | 1.549 | 0.488 |
 | Registered peer fixture echo | 79 / 39 | 5,804 / 5,804 | 2.444 | 0.331 |
 
-The release ELF was built from SpiralCore `f7947346` with Rust 1.97.1 and MVM `a7670d85613fd44b36c8fb14030c975b615a8def`. The offline build updated five MVM path dependencies from rc.1 to rc.2 in the staged workload lockfile, then built with `--locked`. Its SHA-256 was `3eee8de95a293c786ae25d7d30a870e5a9fa37c0eb8c04a61c4372613b6eacbf`. The Linux loopback fixture measured the ELF identified below. Guest boot, host enforcement, transport bytes and WAN performance require separate observations.
+The release ELF was built from SpiralCore `f7947346` with Rust 1.97.1 and MVM `a7670d85613fd44b36c8fb14030c975b615a8def`. The offline build updated five MVM path dependencies from rc.1 to rc.2 in the staged workload lockfile, then built with `--locked`. The staged Cargo.lock SHA-256 was `3eee8de95a293c786ae25d7d30a870e5a9fa37c0eb8c04a61c4372613b6eacbf`. The Linux loopback fixture measured the ELF identified below. Guest boot, host enforcement, transport bytes and WAN performance require separate observations.
 
 | Sealed image input or artifact | SHA-256 |
 | --- | --- |
