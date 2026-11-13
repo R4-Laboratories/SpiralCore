@@ -1,5 +1,7 @@
 # Original-owner MVM store integration
 
+The successor [Linux registered-endpoint result](linux-installed-retirement.md) completes exact readback and original-owner retirement on published MVM `31f8a562`. It repairs the confined namespace-publication syscall and separates orderly admission closure from hard failure. The measurements below retain their original `c07d912e` source and scope; they are not relabeled as successor runs.
+
 The MVM host adapter now keeps the originally admitted parent and child directory descriptors throughout SmallV1 receive, reader shutdown and retirement. Its two original macOS relay-custody regressions pass. This is native host-process component evidence; it does not qualify an installed guest, two-host WAN transfer or a production capacity envelope.
 
 The [MVM contributor checkpoint](https://github.com/Casey-allard/mvm/commit/c07d912e79cb1623bd26516fb6a48eddb640e01b) is published. The adapter consumes SpiralCore revision `4ea98b9e27116a163c9767f5a351bf177eff3b6b`. The implementation preserves the wire format and object identity. The original MVM partition guard must approve store funding before the selected endpoint creates effects. An implementation that has not supplied that guard refuses activation.

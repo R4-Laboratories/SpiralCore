@@ -807,6 +807,10 @@ impl<A: Authority> Worker<A> {
                 Ok(()) => return Ok(()),
                 Err(TrySendError::Disconnected(_)) => return Err(Error::Closed),
                 Err(TrySendError::Full(returned)) => {
+                    #[cfg(feature = "witness-stall")]
+                    if matches!(&returned, Event::Data(_)) {
+                        self.stall.delivery_full();
+                    }
                     event = returned;
                     thread::park_timeout(left.min(Duration::from_millis(5)));
                 }
@@ -896,6 +900,8 @@ impl<A: Authority> Worker<A> {
             self.stall
                 .mark(WorkerPhase::Delivery, request.kind, ordinal);
             self.deliver(Event::Data(bytes), until).inspect_err(|e| {
+                #[cfg(feature = "witness-stall")]
+                self.stall.delivery_failed(e);
                 self.cancellation
                     .observe(FailureSite::ReceiverDelivery, Some(request.kind), e)
             })?;

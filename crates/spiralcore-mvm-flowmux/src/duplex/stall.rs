@@ -33,6 +33,10 @@ const PHASE_NAMES: [&str; 9] = [
     "reply_lock",
     "reply_write",
 ];
+// Only the receiver writes this word. A new phase clears all delivery flags.
+const DELIVERY_FULL: u64 = 1 << 5;
+const DELIVERY_TIMEOUT: u64 = 1 << 6;
+const DELIVERY_ERROR: u64 = 1 << 7;
 
 #[repr(u8)]
 pub(super) enum SenderPhase {
@@ -87,6 +91,17 @@ impl StallObserver {
         let word = (ordinal.min(u64::MAX >> 16) << 16) | (u64::from(kind) << 8) | phase as u64;
         self.marks.worker.store(word, Ordering::Relaxed);
     }
+    pub(super) fn delivery_full(&self) {
+        self.marks.worker.fetch_or(DELIVERY_FULL, Ordering::Relaxed);
+    }
+    pub(super) fn delivery_failed(&self, error: &crate::Error) {
+        let flag = if matches!(error, crate::Error::Timeout) {
+            DELIVERY_TIMEOUT
+        } else {
+            DELIVERY_ERROR
+        };
+        self.marks.worker.fetch_or(flag, Ordering::Relaxed);
+    }
     pub(super) fn sender(&self, phase: SenderPhase) {
         self.marks.sender.store(phase as u8, Ordering::Relaxed);
     }
@@ -110,9 +125,17 @@ impl StallObserver {
             Some(Err(std::sync::TryLockError::WouldBlock)) => PendingSample::Busy,
             Some(Err(std::sync::TryLockError::Poisoned(_))) => PendingSample::Poisoned,
         };
+        let worker_phase = match phase & (DELIVERY_FULL | DELIVERY_TIMEOUT | DELIVERY_ERROR) {
+            0 => PHASE_NAMES[(phase as u8) as usize],
+            DELIVERY_FULL => "delivery_queue_full",
+            DELIVERY_TIMEOUT => "delivery_timeout",
+            DELIVERY_ERROR => "delivery_error",
+            flags if flags == DELIVERY_FULL | DELIVERY_TIMEOUT => "delivery_timeout_after_full",
+            _ => "delivery_error_after_full",
+        };
         StallSample {
             sender_phase: SENDER_NAMES[self.marks.sender.load(Ordering::Relaxed) as usize],
-            worker_phase: PHASE_NAMES[(phase & 255) as usize],
+            worker_phase,
             worker_kind: (phase >> 8) as u8,
             worker_ordinal: phase >> 16,
             pending,
@@ -168,6 +191,27 @@ mod tests {
                 remaining_ms: 0
             }
         );
+        observer.mark(WorkerPhase::Delivery, 3, 2024);
+        observer.delivery_failed(&crate::Error::Timeout);
+        assert_eq!(observer.sample(now).worker_phase, "delivery_timeout");
+        observer.mark(WorkerPhase::Delivery, 3, 2025);
+        assert_eq!(observer.sample(now).worker_phase, "delivery");
+        observer.delivery_full();
+        let full = observer.sample(now);
+        assert_eq!(
+            (full.worker_phase, full.worker_kind, full.worker_ordinal),
+            ("delivery_queue_full", 3, 2025)
+        );
+        observer.delivery_failed(&crate::Error::Timeout);
+        assert_eq!(
+            observer.sample(now).worker_phase,
+            "delivery_timeout_after_full"
+        );
+        observer.mark(WorkerPhase::Delivery, 3, 2026);
+        observer.delivery_failed(&crate::Error::Cancelled);
+        assert_eq!(observer.sample(now).worker_phase, "delivery_error");
+        observer.mark(WorkerPhase::ReplyLock, 3, 2027);
+        assert_eq!(observer.sample(now).worker_phase, "reply_lock");
         let guard = pending.lock().unwrap();
         assert_eq!(observer.sample(now).pending, PendingSample::Busy);
         drop(guard);
