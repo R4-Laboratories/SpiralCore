@@ -125,3 +125,16 @@ The driver submits the fixture only to `sc-journal-a`. It asks `sc-journal-b` to
 The final JSON gives the Object-v1 request and reply bytes, per-role reader I/O and process CPU, serialized workload stdin and stdout including the readback, and elapsed time through both guest results. These stream counts exclude outer SDK framing. Coordinator CPU excludes its SDK subprocesses. The application total excludes envelopes and vsock framing. Collect the original port-5257 counters, sealed relay counters, and retirement outcomes from the running owner separately. The driver leaves host relay and network wire byte totals null. The qualification command requires a running installed pair. Its component checks alone establish no transfer-time or WAN result.
 
 In an independently created, owner-only empty qualification home, `paired-journal object-enrollment-check` checks the four original Call, Reply and Receive credentials before launching any VM. It requires the 30-second operator retention ceiling and refuses an existing mailbox template. The installed orchestrator must use the in-process preparation once and retain the exact nonces, grants and image digests through signing and registration. A second preflight cannot recreate the original signed pair. [Linux role image and grant checks](../../docs/network/evidence/2026-11-12-paired-mailbox/paired-durable-native/object-role-images.md)
+
+## Controlled helper restart before readback
+
+The Linux controller can run one ordinal with `--restart-helpers --sender-ordinals 1`. Build the host witness against the MVM SDK that provides `OriginalJournalSourceHost::restart_helper`. The guest workload and sealed runtime retain their admitted ordinal profile.
+
+```sh
+paired-journal --backend firecracker --restart-helpers --sender-ordinals 1 \
+  "$rootfs_a" "$sha256_a" "$rootfs_b" "$sha256_b" "$frame"
+```
+
+After A verifies B's original acceptance and before B reads or acknowledges the delivery, the controller interrupts and replaces A's helper, then B's helper. Each returned child status must identify SIGKILL. Both guest VMs keep running. A must recover the same accepted message ID and receipt digest through its restarted helper. B then reads the original 257 bytes from its restarted journal and acknowledges its original lease. A settles that original receipt. The normal ordinal result adds a `helper_recovery` object with restart intervals, original exit signals and the additional A status operation's byte and CPU counters. The ordinary campaign keeps its existing result fields.
+
+This mode measures recovery after acceptance and before guest readback and settlement. The initial signed receipt has already reached A. The separate lost-receipt witness exercises loss before that confirmation. Controlled restart refuses on other host platforms before interrupting a helper.

@@ -11,6 +11,7 @@ mod stream;
 pub struct OriginalMeter {
     file: File,
     ordinal: bool,
+    interrupted: bool,
 }
 impl OriginalMeter {
     pub fn open(name: &str) -> Result<Self> {
@@ -22,6 +23,17 @@ impl OriginalMeter {
         original.ordinal = true;
         Ok(original)
     }
+    #[cfg(feature = "sender-ordinal-v1")]
+    pub fn open_predecessor(name: &str) -> Result<Self> {
+        let mut meter = Self::open(name)?;
+        meter.interrupted = true;
+        Ok(meter)
+    }
+
+    pub fn open_replacement(name: &str) -> Result<Self> {
+        Self::open_named(name, "mailbox-guest-stream-replacement-v1.counts")
+    }
+
     fn open_named(name: &str, filename: &str) -> Result<Self> {
         let base = mvm_core::config::vm_state_dir(name);
         let path = base.join(filename);
@@ -43,6 +55,7 @@ impl OriginalMeter {
         Ok(Self {
             file,
             ordinal: false,
+            interrupted: false,
         })
     }
     pub fn finish(self, path: &Path) -> Result<Value> {
@@ -63,9 +76,18 @@ impl OriginalMeter {
         if self.ordinal {
             return Ok(ordinal_total(&bytes).unwrap_or_else(|| json!({"capture":"incomplete"})));
         }
-        Ok(match stream::completed(&bytes) {
-            Some((n, read, write, whole)) => {
-                json!({"completed_exchanges":n,"guest_to_host_read_bytes":read,"host_to_guest_write_accepted_bytes":write,"capture":if whole{"closed_session"}else{"prefix_only"}})
+        if self.interrupted {
+            return Ok(match stream::interrupted(&bytes) {
+                Some((n, r, w, re, we, _)) => {
+                    json!({"capture":"prefix_only","completed_exchanges":n,
+                    "guest_to_host_read_bytes":r,"host_to_guest_write_accepted_bytes":w,"read_errors":re,"write_errors":we})
+                }
+                None => json!({"capture":"incomplete"}),
+            });
+        }
+        Ok(match stream::completed_for(&bytes, stream::SCOPE) {
+            Some((n, read, write, re, we, whole)) => {
+                json!({"completed_exchanges":n,"guest_to_host_read_bytes":read,"host_to_guest_write_accepted_bytes":write,"read_errors":re,"write_errors":we,"capture":if whole{"closed_session"}else{"prefix_only"}})
             }
             None => {
                 json!({"capture":"incomplete","completed_exchanges":null,"guest_to_host_read_bytes":null,"host_to_guest_write_accepted_bytes":null})

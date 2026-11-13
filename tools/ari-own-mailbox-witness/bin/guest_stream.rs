@@ -10,6 +10,21 @@ pub(super) fn completed(raw: &str) -> Option<(u64, u64, u64, bool)> {
 }
 
 pub(super) fn completed_for(raw: &str, scope: &str) -> Option<(u64, u64, u64, u64, u64, bool)> {
+    parse_records(raw, scope, false)
+}
+
+// A definitively interrupted original helper can have one unfinished exchange.
+// Only previously completed end rows contribute. No full-lifetime total exists.
+pub(super) fn interrupted(raw: &str) -> Option<(u64, u64, u64, u64, u64, bool)> {
+    let parsed = parse_records(raw, SCOPE, true)?;
+    (!parsed.5).then_some(parsed)
+}
+
+fn parse_records(
+    raw: &str,
+    scope: &str,
+    interrupted: bool,
+) -> Option<(u64, u64, u64, u64, u64, bool)> {
     let limit = if scope == SELECTED_GUEST { 512 } else { 64 };
     let mut lines = raw.strip_suffix('\n')?.lines();
     if lines.next()? != scope {
@@ -60,7 +75,7 @@ pub(super) fn completed_for(raw: &str, scope: &str) -> Option<(u64, u64, u64, u6
             return None;
         }
     }
-    ((finished || exchanges > 0) && active.is_none()).then_some((
+    ((finished || exchanges > 0) && (active.is_none() || interrupted)).then_some((
         exchanges,
         read,
         written,
@@ -73,6 +88,20 @@ pub(super) fn completed_for(raw: &str, scope: &str) -> Option<(u64, u64, u64, u6
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn interrupted_original_keeps_only_completed_exchanges() {
+        let base = format!("{SCOPE}\nbegin 1\nend 1 9 8 1 0 false\n");
+        for tail in ["", "begin 2\nphase 2 reader_frame\n"] {
+            assert_eq!(
+                interrupted(&format!("{base}{tail}")),
+                Some((1, 9, 8, 1, 0, false))
+            );
+        }
+        for tail in ["finish 1\n", "begin 3\n", "begin 2\nwrong 2\n", "end 2 1"] {
+            assert!(interrupted(&format!("{base}{tail}")).is_none());
+        }
+    }
 
     #[test]
     fn selected_guest_has_a_separate_bounded_counter_profile() {

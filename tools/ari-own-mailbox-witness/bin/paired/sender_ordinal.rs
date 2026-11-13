@@ -3,12 +3,14 @@ use super::{A, B, fixture, verify_return, workload::Call};
 use anyhow::{Context, Result, ensure};
 use mvm_contract::protocol::mailbox::MailboxJournalDirectionV1;
 use mvm_core::mailbox::sender_ordinal::{SenderOrdinalV1, SenderSettlementV1};
-use mvm_hostd::mailbox_process::original_journal::relay::OriginalJournalSourceHost;
+use mvm_hostd::mailbox_process::original_journal::{
+    JournalHelper, relay::OriginalJournalSourceHost,
+};
 use serde_json::{Value, json};
 use std::{
     fs::OpenOptions,
     io::Write,
-    os::unix::fs::OpenOptionsExt,
+    os::unix::{fs::OpenOptionsExt, process::ExitStatusExt},
     path::Path,
     time::{Duration, Instant},
 };
@@ -26,6 +28,7 @@ fn one(
     d: &MailboxJournalDirectionV1,
     commitment: [u8; 32],
     owner: &mut OriginalJournalSourceHost,
+    restart_helpers: bool,
 ) -> Result<Value> {
     let begin = Instant::now();
     let until = begin + Duration::from_secs(50);
@@ -105,6 +108,32 @@ fn one(
         source["receipt_digest"] == digest,
         "A recovered a different signed B receipt"
     );
+    let helper_recovery = if restart_helpers {
+        let mut restarts = Vec::new();
+        for which in [JournalHelper::Source, JournalHelper::Destination] {
+            let start = Instant::now();
+            let status = owner.restart_helper(which, until)?;
+            ensure!(
+                status.signal() == Some(libc::SIGKILL),
+                "original helper was not interrupted by the controller"
+            );
+            restarts.push(json!({
+                "helper": format!("{which:?}"),
+                "original_exit_signal": status.signal(),
+                "elapsed_ns": start.elapsed().as_nanos(),
+            }));
+        }
+        let recovered = worker(A, &operation("status"), until)?;
+        ensure!(
+            recovered["outcome"] == "accepted"
+                && recovered["message_id"] == id
+                && recovered["receipt_digest"] == digest,
+            "helper recovery changed the original accepted receipt"
+        );
+        Some(json!({"restarts":restarts,"source_status":recovered}))
+    } else {
+        None
+    };
     let mut b = worker(
         B,
         &json!({"message_id":id,"ephemeral_readback":true,"ordinal_readback":n}),
@@ -158,13 +187,15 @@ fn one(
             && settle["retired_through"] == n,
         "contiguous signed settlement absent"
     );
-    Ok(
-        json!({"ordinal":n,"source_stage":stage,"source_return":source,"source_settlement":settle,"destination":b,"empty_control":control,
+    let mut row = json!({"ordinal":n,"source_stage":stage,"source_return":source,"source_settlement":settle,"destination":b,"empty_control":control,
         "staged_ns":staged_ns,"control_start_ns":control_begin_ns,"control_end_ns":control_end_ns,"verified_host_receipt_ns":relay_at_ns,"verified_guest_readback_ns":readback_at_ns,"verified_settlement_ns":begin.elapsed().as_nanos(),
         "source_status_calls":poll_count,"source_status_request_bytes":req_bytes,"source_status_response_bytes":reply_bytes,"pending_status_guest_cpu_ns":pending_cpu,"pending_status_agent_written":pending_write,"pending_status_agent_read":pending_read,"pending_settlement_statuses":pending_settles,"pending_settlement_agent_written":settle_write,"pending_settlement_agent_read":settle_read,"pending_settlement_cpu_ns":settle_cpu,
         "pending_settlement_sdk_request_bytes":pending_sdk_request,"pending_settlement_sdk_response_bytes":pending_sdk_response,
-        "sealed_to_b":counts.sealed_to_destination,"signed_to_a":counts.reply_to_source,"exact_bytes":recovered.len()}),
-    )
+        "sealed_to_b":counts.sealed_to_destination,"signed_to_a":counts.reply_to_source,"exact_bytes":recovered.len()});
+    if let Some(recovery) = helper_recovery {
+        row["helper_recovery"] = recovery;
+    }
+    Ok(row)
 }
 pub fn campaign(
     count: usize,
@@ -172,9 +203,12 @@ pub fn campaign(
     d: &MailboxJournalDirectionV1,
     commitment: [u8; 32],
     owner: &mut OriginalJournalSourceHost,
+    restart_helpers: bool,
 ) -> Result<Value> {
     ensure!(
-        (1..=2049).contains(&count) && d.sender_settlement.is_some(),
+        (1..=2049).contains(&count)
+            && d.sender_settlement.is_some()
+            && (!restart_helpers || count == 1),
         "ordinal campaign was not selected"
     );
     let mut out = OpenOptions::new()
@@ -186,7 +220,7 @@ pub fn campaign(
     let mut forward = 0_u64;
     let mut reverse = 0_u64;
     for ordinal in 1..=count {
-        let row = one(ordinal as u64, d, commitment, owner)
+        let row = one(ordinal as u64, d, commitment, owner, restart_helpers)
             .with_context(|| format!("ordinal {ordinal}/{count}"))?;
         forward += row["sealed_to_b"].as_u64().context("missing frame count")?;
         reverse += row["signed_to_a"]
