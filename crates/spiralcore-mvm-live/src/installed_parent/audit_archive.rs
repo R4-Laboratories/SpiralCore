@@ -27,6 +27,27 @@ pub(crate) struct Inventory {
     archive: [Option<Archive>; crate::installed_owner::retained_telemetry::MAX_ENTRIES],
 }
 
+impl Inventory {
+    pub(crate) fn original_archived(&self, grant: u64) -> Result<ManagedReservation> {
+        ensure!(
+            self.active.iter().all(Option::is_none),
+            "pending audit adoption"
+        );
+        let mut archived = self.archive.iter().flatten();
+        let original = archived
+            .next()
+            .ok_or_else(|| anyhow!("original audit is not archived"))?;
+        ensure!(
+            archived.next().is_none()
+                && original.debt.serial == grant
+                && original.debt.generation.is_some()
+                && !original.statement.is_empty(),
+            "archive differs from original VM grant"
+        );
+        Ok(original.debt.reservation.clone())
+    }
+}
+
 impl Drop for Inventory {
     fn drop(&mut self) {
         for debt in self.active.iter_mut().filter_map(Option::take).chain(

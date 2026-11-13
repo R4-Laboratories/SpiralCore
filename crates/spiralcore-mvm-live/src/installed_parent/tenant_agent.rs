@@ -236,10 +236,7 @@ impl InstalledParentProvider {
             "original tenant helper already issued"
         );
         let reservation = parent.pool.reserve(tenant_tag(tenant), limits.claim()?)?;
-        let settings = match EgressProxySpawnConfig::from_host_config()? {
-            None => InstalledEndpointSettings::ResolvedDirect,
-            Some(_) => anyhow::bail!("configured proxy outside funded direct endpoint profile"),
-        };
+        let settings = funded_direct_settings(EgressProxySpawnConfig::from_host_config()?)?;
         let holder = || -> Result<PreparedHostLifetimeLease> {
             let (_, h) = parent.issuer.prepare()?;
             PreparedHostLifetimeLease::bind(
@@ -294,5 +291,44 @@ impl InstalledParentProvider {
         // Disarm the conservative Drop disposition only after canonical disposal.
         *slot = TenantSlot::Retired;
         Ok(())
+    }
+}
+
+fn funded_direct_settings(
+    proxy: Option<EgressProxySpawnConfig>,
+) -> Result<InstalledEndpointSettings> {
+    if let Some(config) = proxy {
+        ensure!(
+            config.resolve()?.is_none(),
+            "configured proxy outside funded direct endpoint profile"
+        );
+    }
+    Ok(InstalledEndpointSettings::ResolvedDirect)
+}
+
+#[cfg(test)]
+mod direct_settings_tests {
+    use super::*;
+
+    #[test]
+    fn explicit_direct_table_and_only_effective_direct_settings_are_funded() {
+        for config in [None, Some(EgressProxySpawnConfig::default())] {
+            assert!(matches!(
+                funded_direct_settings(config).unwrap(),
+                InstalledEndpointSettings::ResolvedDirect
+            ));
+        }
+        for proxy in [
+            EgressProxySpawnConfig {
+                https: Some("http://localhost:3128".into()),
+                ..Default::default()
+            },
+            EgressProxySpawnConfig {
+                http: Some("http://localhost:3128".into()),
+                ..Default::default()
+            },
+        ] {
+            assert!(funded_direct_settings(Some(proxy)).is_err());
+        }
     }
 }

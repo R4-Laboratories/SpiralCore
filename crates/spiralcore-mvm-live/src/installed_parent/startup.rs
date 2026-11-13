@@ -85,6 +85,20 @@ pub(crate) struct Inventory(
     [Option<Debt>; crate::installed_owner::retained_telemetry::MAX_ENTRIES],
 );
 
+impl Inventory {
+    pub(crate) fn original_retained(&self, serial: u64) -> Result<ManagedReservation> {
+        let mut debts = self.0.iter().flatten();
+        let debt = debts
+            .next()
+            .ok_or_else(|| anyhow!("portable inventory is empty"))?;
+        ensure!(
+            debts.next().is_none() && debt.marker.is_some() && debt.serial == serial,
+            "portable inventory differs from the one original workspace"
+        );
+        Ok(debt.credit.clone())
+    }
+}
+
 impl Drop for Inventory {
     fn drop(&mut self) {
         // The installation denial latch survives the controller; a process
@@ -198,6 +212,20 @@ impl PreparedParentVm {
             .and_then(|startup| startup.canonical.as_ref())
             .ok_or_else(|| anyhow!("original canonical startup not prepared"))?;
         Ok(workspace.kernel.clone())
+    }
+
+    pub(crate) fn original_startup_serial(&self) -> Result<u64> {
+        let state = self
+            .grant
+            .lifecycle
+            .lock()
+            .map_err(|_| anyhow!("original grant poisoned"))?;
+        Ok(state
+            .startup
+            .as_ref()
+            .ok_or_else(|| anyhow!("original startup unavailable"))?
+            .credit
+            .serial())
     }
 
     pub fn with_portable_startup(self, quote: PortableStartupQuote) -> Result<Self> {

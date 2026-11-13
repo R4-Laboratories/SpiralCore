@@ -269,6 +269,23 @@ impl RegistrationBinding {
         }
         Ok(())
     }
+    #[cfg(test)]
+    pub(super) fn pin_fixture_directories(&self) -> Result<()> {
+        use std::os::unix::fs::DirBuilderExt;
+        std::fs::DirBuilder::new()
+            .recursive(true)
+            .mode(0o700)
+            .create(&self.state)?;
+        let sockets = self
+            .broker
+            .parent()
+            .ok_or_else(|| anyhow!("fixture broker parent absent"))?;
+        std::fs::DirBuilder::new()
+            .recursive(true)
+            .mode(0o700)
+            .create(sockets)?;
+        self.pin_original(&File::open(&self.state)?, &File::open(sockets)?)
+    }
     pub(super) fn check_retained_state(&self, path: &Path, directory: &File) -> Result<()> {
         ensure!(path == self.state, "retained VM state path differs");
         self.check_directories(Some(directory))

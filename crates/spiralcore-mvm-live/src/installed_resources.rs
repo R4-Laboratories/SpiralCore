@@ -301,6 +301,56 @@ impl ManagedResourceBudget {
             }),
         })
     }
+    /// Compare every live ledger slot, its tenant and every charged dimension to
+    /// the original reservations independently retained by the sealed inventories.
+    #[cfg(feature = "canonical-host")]
+    pub(crate) fn verify_only_retained(&self, retained: &[&ManagedReservation]) -> Result<()> {
+        let ledger = self.shared.ledger()?;
+        if self.shared.fenced.load(Ordering::Acquire)
+            || ledger.slots.iter().flatten().count() != retained.len()
+        {
+            return Err(ManagedResourceError::State);
+        }
+        let mut total = ManagedClaim::default();
+        let mut tenants = [ManagedClaim::default(); TENANTS];
+        let mut seen = [false; SLOTS];
+        for held in retained {
+            let owner = &held.owner;
+            let slot = ledger
+                .slots
+                .get(owner.slot)
+                .copied()
+                .flatten()
+                .ok_or(ManagedResourceError::State)?;
+            if !Arc::ptr_eq(&owner.shared, &self.shared)
+                || slot.serial != owner.serial
+                || seen[owner.slot]
+            {
+                return Err(ManagedResourceError::State);
+            }
+            seen[owner.slot] = true;
+            let used = tenants
+                .get_mut(slot.tenant)
+                .ok_or(ManagedResourceError::State)?;
+            *used = used.add(slot.claim).ok_or(ManagedResourceError::Overflow)?;
+            total = total
+                .add(slot.claim)
+                .ok_or(ManagedResourceError::Overflow)?;
+        }
+        if total != ledger.usage
+            || ledger
+                .tenants
+                .iter()
+                .zip(tenants)
+                .any(|(actual, expected)| {
+                    actual.map(|tenant| tenant.usage).unwrap_or_default() != expected
+                })
+        {
+            return Err(ManagedResourceError::State);
+        }
+        Ok(())
+    }
+
     pub fn snapshot(&self) -> Result<ManagedSnapshot> {
         let ledger = self.shared.ledger()?;
         if self.shared.fenced.load(Ordering::Acquire) {

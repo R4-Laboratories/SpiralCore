@@ -435,6 +435,61 @@ fn signed_object_policy_and_private_publisher_bind_only_to_original_armed_config
     supervisor.try_finish().unwrap();
 }
 
+#[cfg(target_os = "linux")]
+#[test]
+fn registered_flowmux_observation_is_immutable_and_fenced_at_retirement() {
+    mvm_core::util::test_env::isolated_lock_probe(|| {
+        let (home, supervisor, mut provider) = endpoint_tests::fixture();
+        let mut env = mvm_core::util::test_env::TestEnv::new();
+        env.set("MVM_HOME", home.path());
+        provider
+            .configure_object_tcp(&supervisor, operator_partition())
+            .unwrap();
+        let policy = selected_policy();
+        let admitted = admit_with_network(home.path(), "observed-guest", Some(&policy));
+        let (grant, mut cfg) = config(&provider, "observed-guest");
+        cfg.network_policy = policy;
+        cfg.plan_json = Some(serde_json::to_string(admitted.signed()).unwrap());
+        let permit = provider
+            .bind_config(&admitted, &cfg, native_backend())
+            .unwrap();
+        let anchor = cfg.host_lifetime.as_ref().unwrap();
+        anchor
+            .bind_parent_permit(&cfg, native_backend(), permit)
+            .unwrap();
+        let handoff = anchor
+            .prepare_endpoint_handoff(&cfg, native_backend())
+            .unwrap();
+        let state = grant.lifecycle.lock().unwrap();
+        let registration = state.registration.clone().unwrap();
+        let endpoint = state.endpoint_owner.clone().unwrap();
+        drop(state);
+        let get = |n| {
+            ed25519_dalek::SigningKey::from_bytes(&[n; 32])
+                .verifying_key()
+                .to_bytes()
+        };
+        let guest = get(24);
+        let host = get(25);
+        assert!(handoff.observe_flowmux_guest(guest, host).is_err());
+        registration.pin_fixture_directories().unwrap();
+        assert!(endpoint.observed_guest(&admitted.plan_id().0).is_err());
+        handoff.observe_flowmux_guest(guest, host).unwrap();
+        handoff.observe_flowmux_guest(guest, host).unwrap();
+        assert!(handoff.observe_flowmux_guest(get(26), host).is_err());
+        assert!(handoff.observe_flowmux_guest(guest, get(27)).is_err());
+        assert!(endpoint.observed_guest("different-plan").is_err());
+        let observed = endpoint.observed_guest(&admitted.plan_id().0).unwrap();
+        assert_eq!(
+            (observed.session, observed.guest, observed.host),
+            (handoff.partition().projection().session, guest, host)
+        );
+        grant.lifecycle.lock().unwrap().retired = true;
+        assert!(handoff.observe_flowmux_guest(guest, host).is_err());
+        assert!(endpoint.observed_guest(&admitted.plan_id().0).is_err());
+    });
+}
+
 fn operator_partition() -> mvm_core::host_lifetime::EndpointPartitionLimits {
     // Explicit fixture operator allocations from a single installed tenant.
     // Never estimated RAM or disk quota derived from the signed network limits.

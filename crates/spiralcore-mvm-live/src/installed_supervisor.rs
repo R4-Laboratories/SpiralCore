@@ -422,6 +422,17 @@ impl InstalledSupervisor {
         }
         original.as_ref().cloned().ok_or(SupervisorError::State)
     }
+    #[cfg(feature = "canonical-host")]
+    pub(crate) fn existing_retained_telemetry(
+        &self,
+    ) -> Result<Arc<crate::installed_retained::RetainedTelemetryInventory>> {
+        self.retained
+            .lock()
+            .map_err(|_| SupervisorError::State)?
+            .as_ref()
+            .cloned()
+            .ok_or(SupervisorError::State)
+    }
     pub fn start(mut owner: InstallationOwner, config: InstalledConfig) -> Result<Self> {
         if owner.profile_hash()? != config.profile_hash() {
             return Err(SupervisorError::Profile);

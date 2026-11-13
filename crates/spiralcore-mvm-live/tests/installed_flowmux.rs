@@ -16,7 +16,8 @@ use serde_json::json;
 use spiralcore_mvm_live::{
     installed_owner::{InstallationKey, InstallationOwner},
     installed_parent::{
-        InstalledParentProvider, ObservedFlowMuxGuest, PortableStartupQuote, TenantHelperLimits,
+        InstalledParentProvider, ObservedFlowMuxGuest, PortableStartupQuote, SingleGuestRetention,
+        TenantHelperLimits,
     },
     installed_supervisor::{InstalledConfig, InstalledSupervisor, SupervisorError},
 };
@@ -95,7 +96,7 @@ async fn run_guest(
     input: OperatorInputs,
     provider: &InstalledParentProvider,
     backend: &LocalBackend,
-) -> Result<()> {
+) -> Result<(SingleGuestRetention, ObservedFlowMuxGuest)> {
     let n = input.decoded_archive_bytes;
     let additional = |total: u64| {
         total
@@ -124,6 +125,7 @@ async fn run_guest(
     let (original, _kernel) = provider
         .prepare_request(&req, "local", BackendKind::Firecracker)?
         .prepare_canonical_startup(quote)?;
+    let retained = original.single_guest_retention()?;
     let prepared_ns = started.elapsed().as_nanos();
     let mut launch = original.canonical_driver(backend);
     let policy = DirectTcpPolicy {
@@ -146,7 +148,7 @@ async fn run_guest(
             exit.success && exit.code == Some(0),
             "original workload did not return zero"
         );
-        Ok(())
+        Ok(observed)
     }
     .await;
     let retired = launch.retire().await;
@@ -157,7 +159,9 @@ async fn run_guest(
     if let Err(ref error) = retired {
         eprintln!("original SDK retirement: {error:#}");
     }
-    result.and(retired)
+    let observed = result?;
+    retired?;
+    Ok((retained, observed))
 }
 
 #[test]
@@ -190,7 +194,7 @@ fn installed_original_flowmux_workload() -> Result<()> {
         },
     );
     let provider = Arc::new(provider);
-    let result = (|| -> Result<()> {
+    let result = (|| -> Result<_> {
         helper?;
         provider.install_sdk_registrar(&backend, "local")?;
         mvm_hostd::host_lifetime_parent::install(provider.clone())?;
@@ -213,21 +217,12 @@ fn installed_original_flowmux_workload() -> Result<()> {
         json!({"phase":"installed_resources","tenant_stopped":stopped.is_ok(),
         "all_resources_released":finished.is_ok(),"charged":charged.usage})
     );
-    result.and(stopped)?;
+    let (retained, observed) = result?;
+    stopped?;
+    retained.verify(&supervisor, observed)?;
     ensure!(
-        !charged.fenced
-            && charged.usage.workers == 0
-            && charged.usage.guests == 0
-            && charged.usage.guest_memory_bytes == 0,
-        "original live resources remain charged"
+        matches!(finished, Err(SupervisorError::Busy)),
+        "verified retained storage must keep its original charge"
     );
-    match finished {
-        Ok(()) => Ok(()),
-        Err(SupervisorError::Busy)
-            if charged.usage.cache_disk_bytes != 0 || charged.usage.staging_disk_bytes != 0 =>
-        {
-            Ok(())
-        }
-        Err(error) => Err(error.into()),
-    }
+    Ok(())
 }

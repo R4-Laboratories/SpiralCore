@@ -156,6 +156,10 @@ fn mandatory_telemetry_capacity_refuses_before_endpoint_credit_or_disk_effect() 
 
 #[test]
 fn foreign_supervisor_cannot_supply_an_endpoint_inventory() {
+    mvm_core::util::test_env::isolated_lock_probe(probe_foreign_supervisor);
+}
+
+fn probe_foreign_supervisor() {
     let (_home, mut supervisor, mut provider) = fixture();
     let (_foreign_home, mut foreign, foreign_provider) = fixture();
     let before = foreign.managed_resources().snapshot().unwrap().usage;
@@ -254,4 +258,64 @@ fn issued_original_guard_is_one_shot_acyclic_and_quarantines_unproven_resources(
     assert!(supervisor.try_finish().is_err());
     // No guest ran. Original uncertain credits intentionally survive until
     // this isolated test process exits, rather than publishing a false drain.
+}
+
+#[test]
+fn flowmux_guest_observation_requires_original_registered_directories() {
+    use mvm_core::host_lifetime::EndpointPartitionGuard;
+    let (_home, supervisor, mut provider) = fixture();
+    provider
+        .configure_endpoints(&supervisor, fixture_profile())
+        .unwrap();
+    let prepared = grant(&provider, "endpoint-guest-observation");
+    fixture_admit(&prepared);
+    let partition = prepared
+        .grant
+        .prepare_endpoint_partition(prepared.binding())
+        .unwrap();
+    let guard = prepared
+        .grant
+        .lifecycle
+        .lock()
+        .unwrap()
+        .endpoint_owner
+        .clone()
+        .unwrap();
+    let prior = ed25519_dalek::SigningKey::from_bytes(&[14; 32])
+        .verifying_key()
+        .to_bytes();
+    assert!(
+        guard
+            .observe_flowmux_guest(partition.projection(), prior, prior)
+            .is_err()
+    );
+    let mut changed = partition.projection().clone();
+    changed.session[0] ^= 1;
+    assert!(guard.observe_flowmux_guest(&changed, prior, prior).is_err());
+    assert!(
+        guard
+            .observed_guest(&partition.projection().admitted_plan_id)
+            .is_err()
+    );
+}
+
+#[test]
+fn retained_credits_reject_equal_sized_foreign_or_additional_originals() {
+    let (_h, a, _p) = fixture();
+    let (_other, b, _p2) = fixture();
+    let ap = a.managed_resources();
+    let bp = b.managed_resources();
+    let claim = ManagedClaim {
+        cache_disk_bytes: 1,
+        ..Default::default()
+    };
+    let first = ap.reserve([12; 32], claim).unwrap();
+    let other = bp.reserve([12; 32], claim).unwrap();
+    let extra = ap.reserve([12; 32], claim).unwrap();
+    assert!(ap.verify_only_retained(&[&first, &other]).is_err());
+    assert!(ap.verify_only_retained(&[&first, &first]).is_err());
+    assert!(ap.verify_only_retained(&[&first, &extra]).is_err()); // installing provider still holds a reservation
+    drop(_p);
+    assert!(ap.verify_only_retained(&[&first]).is_err());
+    ap.verify_only_retained(&[&first, &extra]).unwrap();
 }

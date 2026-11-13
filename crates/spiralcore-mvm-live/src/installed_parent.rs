@@ -319,6 +319,59 @@ fn tenant_tag(tenant: &str) -> [u8; 32] {
     hash.finalize().into()
 }
 
+/// Original single-guest installation record retained across SDK and tenant retirement.
+pub struct SingleGuestRetention {
+    pool: ManagedResourceBudget,
+    grant: u64,
+    startup: u64,
+}
+
+impl PreparedParentVm {
+    pub fn single_guest_retention(&self) -> Result<SingleGuestRetention> {
+        let parent = self
+            .grant
+            .parent
+            .upgrade()
+            .ok_or_else(|| anyhow!("original parent missing"))?;
+        Ok(SingleGuestRetention {
+            pool: parent.pool.clone(),
+            grant: self.binding().grant_serial,
+            startup: self.original_startup_serial()?,
+        })
+    }
+}
+
+impl SingleGuestRetention {
+    /// Verify that the pool contains exactly the original portable reservation,
+    /// archived audit reservation, sealed telemetry reservation and telemetry catalog.
+    pub fn verify(
+        &self,
+        supervisor: &InstalledSupervisor,
+        observed: ObservedFlowMuxGuest,
+    ) -> Result<()> {
+        ensure!(
+            self.pool.same_pool(supervisor.managed_resources()),
+            "foreign installed supervisor"
+        );
+        let startup = supervisor
+            .portable_inventory
+            .lock()
+            .map_err(|_| anyhow!("portable inventory poisoned"))?
+            .original_retained(self.startup)?;
+        let audit = supervisor
+            .audit_inventory
+            .lock()
+            .map_err(|_| anyhow!("audit inventory poisoned"))?
+            .original_archived(self.grant)?;
+        let [catalog, telemetry] = supervisor
+            .existing_retained_telemetry()?
+            .original_sealed(self.grant, observed.session)?;
+        Ok(self
+            .pool
+            .verify_only_retained(&[&startup, &audit, &catalog, &telemetry])?)
+    }
+}
+
 impl InstalledParentProvider {
     pub fn new(supervisor: &InstalledSupervisor) -> Result<Self> {
         supervisor.require_canonical_profile()?;

@@ -82,6 +82,25 @@ impl RetainedTelemetryInventory {
             entries: Mutex::new(std::array::from_fn(|_| None)),
         }))
     }
+    #[cfg(feature = "canonical-host")]
+    pub(crate) fn original_sealed(
+        &self,
+        grant: u64,
+        session: [u8; 32],
+    ) -> Result<[ManagedReservation; 2]> {
+        let entries = self.entries.lock().map_err(|_| SupervisorError::State)?;
+        let mut values = entries.iter().flatten();
+        let original = values.next().ok_or(SupervisorError::State)?;
+        if values.next().is_some()
+            || original.phase != Phase::Sealed
+            || original.parent != grant
+            || original.session != session
+            || original.record.is_none()
+        {
+            return Err(SupervisorError::State);
+        }
+        Ok([self.metadata.clone(), original.reservation.clone()])
+    }
     pub(crate) fn is_empty(&self) -> Result<bool> {
         Ok(self
             .entries
