@@ -48,12 +48,13 @@ fn require_completed(status: i32) {
     }
 }
 
-struct Entry {
+struct Entry<'a> {
     name: String,
+    units: &'a [u16],
     directory: bool,
     id: u64,
 }
-fn each_entry(directory: &File, mut inspect: impl FnMut(Entry) -> Result<()>) -> Result<()> {
+fn each_entry(directory: &File, mut inspect: impl FnMut(Entry<'_>) -> Result<()>) -> Result<()> {
     let mut buffer = vec![0u64; ENUM_WORDS];
     let capacity = buffer.len() * size_of::<u64>();
     let prefix = std::mem::offset_of!(FILE_ID_BOTH_DIR_INFO, FileName);
@@ -135,6 +136,7 @@ fn each_entry(directory: &File, mut inspect: impl FnMut(Entry) -> Result<()>) ->
                 child_name(&name)?;
                 inspect(Entry {
                     name,
+                    units,
                     directory: record.FileAttributes & FILE_ATTRIBUTE_DIRECTORY != 0,
                     id: record.FileId as u64,
                 })?;
@@ -148,7 +150,7 @@ fn each_entry(directory: &File, mut inspect: impl FnMut(Entry) -> Result<()>) ->
 }
 fn relative(
     parent: &File,
-    entry: &Entry,
+    entry: &Entry<'_>,
     directory: bool,
     serial: u32,
     sid: &Sid,
@@ -157,11 +159,13 @@ fn relative(
     if entry.id == 0 {
         return Err(Error::Storage);
     }
-    let mut units: Vec<u16> = entry.name.encode_utf16().collect();
+    let bytes = size_of_val(entry.units) as u16;
     let name = UNICODE_STRING {
-        Length: (units.len() * 2) as u16,
-        MaximumLength: (units.len() * 2) as u16,
-        Buffer: units.as_mut_ptr(),
+        Length: bytes,
+        MaximumLength: bytes,
+        // NtCreateFile reads ObjectName. The enumeration buffer stays live and
+        // unchanged until this synchronous callback returns (at most 510 bytes per name).
+        Buffer: entry.units.as_ptr().cast_mut(),
     };
     let attributes = OBJECT_ATTRIBUTES {
         Length: size_of::<OBJECT_ATTRIBUTES>() as u32,
@@ -301,7 +305,7 @@ pub fn quota_usage(
         if root.depth + 2 > 128 {
             return Err(Error::Limit);
         }
-        let units = root.units + 1 + entry.name.encode_utf16().count();
+        let units = root.units + 1 + entry.units.len();
         if units > 4096 {
             return Err(Error::Limit);
         }
@@ -316,7 +320,7 @@ pub fn quota_usage(
                 return Ok(());
             }
             count = count.checked_add(1).ok_or(Error::Limit)?;
-            if count > max_files || units + 1 + file.name.encode_utf16().count() > 4096 {
+            if count > max_files || units + 1 + file.units.len() > 4096 {
                 return Err(Error::Limit);
             }
             let sid = root.check()?;
