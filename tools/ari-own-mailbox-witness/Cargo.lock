@@ -2595,7 +2595,7 @@ dependencies = [
  "serde_json",
  "sha2 0.11.0",
  "spiralcore-mvm-flowmux",
- "spiralcore-transfer",
+ "spiralcore-transfer 0.1.0 (git+https://github.com/R4-Laboratories/SpiralCore?rev=4ea98b9e27116a163c9767f5a351bf177eff3b6b)",
  "sysinfo",
  "tar",
  "thiserror",
@@ -3800,7 +3800,7 @@ dependencies = [
 name = "spiralcore-gateway-core"
 version = "0.1.0"
 dependencies = [
- "spiralcore-transfer",
+ "spiralcore-transfer 0.1.0",
  "zstd",
 ]
 
@@ -3817,17 +3817,18 @@ dependencies = [
  "serde_jcs",
  "serde_json",
  "sha2 0.10.9",
- "spiralcore-transfer",
+ "spiralcore-transfer 0.1.0",
 ]
 
 [[package]]
 name = "spiralcore-mvm-flowmux"
 version = "0.1.0"
+source = "git+https://github.com/R4-Laboratories/SpiralCore?rev=4ea98b9e27116a163c9767f5a351bf177eff3b6b#4ea98b9e27116a163c9767f5a351bf177eff3b6b"
 dependencies = [
  "mio",
  "rustls",
  "sha2 0.10.9",
- "spiralcore-transfer",
+ "spiralcore-transfer 0.1.0 (git+https://github.com/R4-Laboratories/SpiralCore?rev=4ea98b9e27116a163c9767f5a351bf177eff3b6b)",
 ]
 
 [[package]]
@@ -3855,12 +3856,20 @@ dependencies = [
  "sha2 0.10.9",
  "spiralcore-gateway-core",
  "spiralcore-mvm-adapter",
- "spiralcore-transfer",
+ "spiralcore-transfer 0.1.0",
 ]
 
 [[package]]
 name = "spiralcore-storage-windows"
 version = "0.1.0"
+dependencies = [
+ "windows-sys 0.61.2",
+]
+
+[[package]]
+name = "spiralcore-storage-windows"
+version = "0.1.0"
+source = "git+https://github.com/R4-Laboratories/SpiralCore?rev=4ea98b9e27116a163c9767f5a351bf177eff3b6b#4ea98b9e27116a163c9767f5a351bf177eff3b6b"
 dependencies = [
  "windows-sys 0.61.2",
 ]
@@ -3878,9 +3887,32 @@ dependencies = [
  "serde",
  "serde_json",
  "sha2 0.10.9",
- "spiralcore-storage-windows",
+ "spiralcore-storage-windows 0.1.0",
  "subtle",
- "uor-r4-object-store",
+ "uor-r4-object-store 0.1.0",
+ "ureq",
+ "url",
+ "zstd",
+ "zstd-sys",
+]
+
+[[package]]
+name = "spiralcore-transfer"
+version = "0.1.0"
+source = "git+https://github.com/R4-Laboratories/SpiralCore?rev=4ea98b9e27116a163c9767f5a351bf177eff3b6b#4ea98b9e27116a163c9767f5a351bf177eff3b6b"
+dependencies = [
+ "cpu-time",
+ "httparse",
+ "libc",
+ "libm",
+ "memchr",
+ "rustix",
+ "serde",
+ "serde_json",
+ "sha2 0.10.9",
+ "spiralcore-storage-windows 0.1.0 (git+https://github.com/R4-Laboratories/SpiralCore?rev=4ea98b9e27116a163c9767f5a351bf177eff3b6b)",
+ "subtle",
+ "uor-r4-object-store 0.1.0 (git+https://github.com/R4-Laboratories/SpiralCore?rev=4ea98b9e27116a163c9767f5a351bf177eff3b6b)",
  "ureq",
  "url",
  "zstd",
@@ -4343,6 +4375,14 @@ checksum = "8ecb6da28b8a351d773b68d5825ac39017e680750f980f3a1a85cd8dd28a47c1"
 [[package]]
 name = "uor-r4-object-store"
 version = "0.1.0"
+dependencies = [
+ "sha2 0.10.9",
+]
+
+[[package]]
+name = "uor-r4-object-store"
+version = "0.1.0"
+source = "git+https://github.com/R4-Laboratories/SpiralCore?rev=4ea98b9e27116a163c9767f5a351bf177eff3b6b#4ea98b9e27116a163c9767f5a351bf177eff3b6b"
 dependencies = [
  "sha2 0.10.9",
 ]
@@ -5139,23 +5179,3 @@ version = "0.19.0"
 [[patch.unused]]
 name = "notify"
 version = "8.2.0"
-
-[[patch.unused]]
-name = "mvm-capture"
-version = "0.28.0-rc.3"
-
-[[patch.unused]]
-name = "mvm-cli"
-version = "0.28.0-rc.3"
-
-[[patch.unused]]
-name = "mvm-conformance"
-version = "0.28.0-rc.3"
-
-[[patch.unused]]
-name = "mvm-gpu"
-version = "0.28.0-rc.3"
-
-[[patch.unused]]
-name = "mvm-hostlib"
-version = "0.28.0-rc.3"

@@ -505,6 +505,8 @@ fn run(args: &[String]) -> Result<()> {
         }
         let boot = MailboxReaderBootBinding::load(&mvm_core::config::vm_state_dir(A))?;
         boot.check_plan(admissions[0].plan())?;
+        let source_plan = admissions[0].plan().plan_id.clone();
+        let destination_plan = admissions[1].plan().plan_id.clone();
         let commitment = journal_direction_commitment(&boot)?;
         let setup_ns = begin.elapsed().as_nanos() as u64;
         let helper = state.a.as_mut().context("source helper missing")?;
@@ -546,11 +548,29 @@ fn run(args: &[String]) -> Result<()> {
             json!({"completed_objects":rows.len(),"unique_message_ids":ids.len(),
                 "series_elapsed_ns":start.elapsed().as_nanos() as u64,"transfers":rows})
         } else {
-            transfer::one(&raw, &direction, commitment, helper, None)?
+            #[cfg(all(target_os = "linux", feature = "installed-collector-pair"))]
+            let row = if let Some((pair, _)) = &mut collector {
+                transfer::one_with_calls(&raw, &direction, commitment, helper, None, pair)?
+            } else {
+                transfer::one(&raw, &direction, commitment, helper, None)?
+            };
+            #[cfg(not(all(target_os = "linux", feature = "installed-collector-pair")))]
+            let row = transfer::one(&raw, &direction, commitment, helper, None)?;
+            row
         };
         result["setup_ns"] = json!(setup_ns);
-        result["source_plan"] = json!(admissions[0].plan().plan_id);
-        result["destination_plan"] = json!(admissions[1].plan().plan_id);
+        result["source_plan"] = json!(source_plan);
+        result["destination_plan"] = json!(destination_plan);
+        result["call_transport"] = json!(if collector_mode {
+            "original_owned_journal_control"
+        } else {
+            "ordinary_sdk_process"
+        });
+        result["driver_cpu_domain"] = json!(if collector_mode {
+            "controller process includes SDK call/handshake work; excludes guest, mailbox children and other processes"
+        } else {
+            "controller process excludes SDK call subprocess CPU"
+        });
         Ok(result)
     })();
     let recorded = (|| -> Result<()> {
@@ -625,14 +645,23 @@ fn run(args: &[String]) -> Result<()> {
                         .is_some_and(|n| n > 0)
             })
     };
+    #[cfg(all(target_os = "linux", feature = "installed-collector-pair"))]
+    let collector_limits = Some((
+        installed_collector::START_MEMORY_BYTES,
+        installed_collector::START_DISK_BYTES,
+        installed_collector::HOST_RESIDENT_BYTES,
+        installed_collector::TENANT_PROCESS_AS,
+    ));
+    #[cfg(not(all(target_os = "linux", feature = "installed-collector-pair")))]
+    let collector_limits: Option<(u64, u64, u64, u64)> = None;
     let row = json!({"native_host":{"os":env::consts::OS,"architecture":env::consts::ARCH,
     "requested_backend":native,"observed_source_backend":observed[0],"observed_destination_backend":observed[1]},
     "original_5257_helper_streams_a_b":streams,"replacement_5257_helper_streams_a_b":restart_helpers.then_some(successor_streams),"result":measured.as_ref().ok(),"transfer_error":measured.as_ref().err().map(|e|format!("{e:#}")),
         "original_exits":exit.as_ref().ok(),"teardown_error":exit.as_ref().err().map(|e|format!("{e:#}")),"meter_errors":meter_errors,"driver_process_cpu_ns":cpu.elapsed().as_nanos() as u64,
     "whole_wall_ns":begin.elapsed().as_nanos() as u64,
-    "installed_collector":collector_mode.then(||json!({
-        "per_start_memory_ceiling_bytes":640u64<<20,"per_start_disk_ceiling_bytes":512u64<<20,
-        "host_resident_ceiling_bytes":2u64<<30,"tenant_process_address_space_bytes":192u64<<20,
+    "installed_collector":collector_mode.then_some(collector_limits).flatten().map(|(memory,disk,resident,tenant)|json!({
+        "per_start_memory_ceiling_bytes":memory,"per_start_disk_ceiling_bytes":disk,
+        "host_resident_ceiling_bytes":resident,"tenant_process_address_space_bytes":tenant,
         "requested_guest_memory_bytes":512u64<<20,
         "initial_resources":collector_before,
         "before_stop_resources":collector_before_stop.as_ref().and_then(|r|r.as_ref().ok()),

@@ -16,6 +16,11 @@ use spiralcore_mvm_live::{
 };
 use std::{io::Read, num::NonZeroU64};
 
+pub(super) const HOST_RESIDENT_BYTES: u64 = 3 << 30;
+pub(super) const START_MEMORY_BYTES: u64 = 1 << 30;
+pub(super) const START_DISK_BYTES: u64 = 512 << 20;
+pub(super) const TENANT_PROCESS_AS: u64 = 192 << 20;
+
 struct Role {
     pin: mvm_core::plan::PlanArtifact,
     archive: NonZeroU64,
@@ -37,8 +42,8 @@ impl Operator {
         PortableStartupQuote::new(
             role.pin.clone(),
             role.archive,
-            additional(1024 << 20)?,
-            additional(512 << 20)?,
+            additional(START_MEMORY_BYTES)?,
+            additional(START_DISK_BYTES)?,
         )
     }
 }
@@ -98,8 +103,8 @@ pub fn operator(home: &Path) -> Result<(CollectorPair, Operator)> {
     packet.quote(A)?;
     packet.quote(B)?;
     let (mut host, mut tenant) = InstalledConfig::two_endpoint_witness_profile().managed_limits();
-    host.host_resident_bytes = 3 << 30;
-    tenant.host_resident_bytes = 3 << 30;
+    host.host_resident_bytes = HOST_RESIDENT_BYTES;
+    tenant.host_resident_bytes = HOST_RESIDENT_BYTES;
     host.staging_disk_bytes = 1200 << 20;
     tenant.staging_disk_bytes = 1200 << 20;
     let config = InstalledConfig::with_funded_pair_limits(host, tenant)?;
@@ -115,7 +120,7 @@ pub fn operator(home: &Path) -> Result<(CollectorPair, Operator)> {
         max_streams: 1,
     };
     let helper = TenantHelperLimits {
-        process_address_space_bytes: NonZeroU64::new(192 << 20).unwrap(),
+        process_address_space_bytes: NonZeroU64::new(TENANT_PROCESS_AS).unwrap(),
         audit_chain_bytes: NonZeroU64::new(1 << 20).unwrap(),
     };
     Ok((CollectorPair::new(home, config, partition, helper)?, packet))
@@ -444,6 +449,40 @@ impl Drop for CollectorPair {
                 self.supervisor.take(),
             ));
         }
+    }
+}
+
+impl workload::CallBoundary for CollectorPair {
+    fn start(
+        &mut self,
+        name: &str,
+        payload: &Value,
+        until: Instant,
+    ) -> Result<Box<dyn workload::PendingCall>> {
+        let input = serde_json::to_vec(payload)?;
+        ensure!(
+            input.len() <= fixture::CALL_INPUT_LIMIT,
+            "oversized fixture Call"
+        );
+        let owner = self.slots[index(name)?]
+            .started
+            .as_mut()
+            .context("original owned journal call custody missing")?;
+        let mut output = mvm_client::entrypoint::dispatch::CapturedOutput::default();
+        let outcome = owner.run_entrypoint(&input, until, &mut output)?;
+        ensure!(
+            outcome.exit_code() == 0
+                && !output.truncated
+                && output.stdout.len() <= workload::CALL_OUTPUT_LIMIT,
+            "original owned workload failed: {:?}",
+            outcome.terminal
+        );
+        let value = serde_json::from_slice(&output.stdout)?;
+        Ok(Box::new(workload::CompletedCall {
+            value: Some(value),
+            input_bytes: input.len(),
+            output_bytes: output.stdout.len(),
+        }))
     }
 }
 
