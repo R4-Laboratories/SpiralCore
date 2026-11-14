@@ -104,7 +104,7 @@
     "manifest_sha256": "837078db1fac3a7b503b770c31c21c5b1b96e10e69669af8e44bc4d8f9959a0e"
   },
   "spiralcore_witness_revision": "e08ee099f7727599d5af7d22794d6370ead487da",
-  "scope": "Signed fixture production succeeded. Native trials 1\u20139 failed before pair transfer; trials 7\u20139 positively collected the original destination helper and retired its telemetry endpoint. Trial 9 passed destination readiness after fixing zero-as-unbounded execution. Full paired transfer and retirement are not yet qualified.",
+  "scope": "Signed fixture production succeeded. Native trials 1\u201310 failed before pair transfer. Trials 7\u201310 positively collected the original destination helper and retired its telemetry endpoint; trial9 passed destination readiness; trial10 opened the mandatory meter then refused source preparation ENOSPC. Full paired transfer and retirement remain unqualified.",
   "metadata_package_counts": {
     "mvm-client": 1,
     "mvm-core": 1,
@@ -340,5 +340,75 @@
     "bytes": 64764700,
     "manifest_sha256": "8c4ae693130b329678695b4b07e9b7aeb94113f9a32fb85fb6a95a89972a07e1",
     "mismatches": []
+  },
+  "native10": {
+    "transfer_error": "original owned journal startup: verifying retained portable CLI runtime release proof: guest runtime io: No space left on device (os error 28) at path \"/tmp/sc-collector-Ir2OHGRW/t/.tmpxinBcj\": No space left on device (os error 28) at path \"/tmp/sc-collector-Ir2OHGRW/t/.tmpxinBcj\"",
+    "teardown_error": "installed collector retirement: sc-journal-a: original source journal missing",
+    "driver_process_cpu_ns": 10542016752,
+    "whole_wall_ns": 12666673350,
+    "result": null,
+    "result_sha256": "4ddb1d005f29c96aaa606c7906bb0048a66124b856b998594ae9284bcb73f181",
+    "original_retirement_rows": [
+      {
+        "collected": false,
+        "error": "original source journal missing",
+        "name": "sc-journal-a"
+      },
+      {
+        "assisted": false,
+        "collected": true,
+        "exit_code": 0,
+        "name": "sc-journal-b",
+        "success": true
+      }
+    ],
+    "executables": {
+      "mvmctl": {
+        "sha256": "f4ef4bdf8846fcdcfd8d41cbf802ea23bf04c4b9ede8ebc0e1c9065652e10c27",
+        "bytes": 178965920,
+        "mode": "0o755"
+      },
+      "mvm-signer-helper": {
+        "sha256": "76975cada8f95c733427280dded1234ad007b590df055e96358d756217c4edc9",
+        "bytes": 20271104,
+        "mode": "0o755"
+      },
+      "paired-journal": {
+        "sha256": "8ac5649bc87185ed1cf56220e089d7f7e845cfcbe42808d2f1a25a40db565feb",
+        "bytes": 101167936,
+        "mode": "0o755"
+      },
+      "mvm-network-endpoint": {
+        "sha256": "aba93aabbe265ad998144d039b5d22c0c533a33f8c2d2e4eaee3b2c16ea59446",
+        "bytes": 49838344,
+        "mode": "0o755"
+      },
+      "firecracker": {
+        "sha256": "99ad0f5cd0514a88aad0e9ae8cfdb3cc3b4ab9d190e1194602406c786b5de7a5",
+        "bytes": 3676680,
+        "mode": "0o755"
+      },
+      "mvm-host-agent": {
+        "sha256": "b722203bc8980f3914afea2f89e939b22a4036905d9b7880ee305b1a390154ea",
+        "bytes": 28745616,
+        "mode": "0o755"
+      },
+      "collector-fixture": {
+        "sha256": "44227fb2a61ca80d98e470842befe8f41cc6ffedbfc0d1215fcfded03cb47306",
+        "bytes": 31272392,
+        "mode": "0o755"
+      },
+      "mvm-mailbox": {
+        "sha256": "404f6eb57910bbdd26b6180707e6ee1ada8acaeb82eab7a6cc11a5c04e702202",
+        "bytes": 22555376,
+        "mode": "0o755"
+      },
+      "collector-install": {
+        "sha256": "e1f9adcfe50e6693b916f9426cccf0aff5e2db365319f040f097964688de612b",
+        "bytes": 18865176,
+        "mode": "0o755"
+      }
+    },
+    "diagnosis": "Destination readiness and required meter acquisition passed. Source canonical runtime proof refused ENOSPC on finite512MiB. Helper measurement feature enabled; no data transfer. Destination original helper collected unassisted0. Successor explicitly funds larger finite filesystem; no guard removed."
   }
 }

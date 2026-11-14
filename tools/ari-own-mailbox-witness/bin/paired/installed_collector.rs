@@ -18,7 +18,8 @@ use std::{io::Read, num::NonZeroU64};
 
 pub(super) const HOST_RESIDENT_BYTES: u64 = 3 << 30;
 pub(super) const START_MEMORY_BYTES: u64 = 1 << 30;
-pub(super) const START_DISK_BYTES: u64 = 512 << 20;
+pub(super) const START_DISK_BYTES: u64 = 1 << 30;
+pub(super) const STAGING_DISK_BYTES: u64 = 2400 << 20;
 pub(super) const TENANT_PROCESS_AS: u64 = 192 << 20;
 
 struct Role {
@@ -105,8 +106,8 @@ pub fn operator(home: &Path) -> Result<(CollectorPair, Operator)> {
     let (mut host, mut tenant) = InstalledConfig::two_endpoint_witness_profile().managed_limits();
     host.host_resident_bytes = HOST_RESIDENT_BYTES;
     tenant.host_resident_bytes = HOST_RESIDENT_BYTES;
-    host.staging_disk_bytes = 1200 << 20;
-    tenant.staging_disk_bytes = 1200 << 20;
+    host.staging_disk_bytes = STAGING_DISK_BYTES;
+    tenant.staging_disk_bytes = STAGING_DISK_BYTES;
     let config = InstalledConfig::with_funded_pair_limits(host, tenant)?;
     let partition = EndpointPartitionLimits {
         host_plaintext_bytes: 0,
