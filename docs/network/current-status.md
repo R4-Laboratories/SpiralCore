@@ -4,9 +4,13 @@ The independent-reply progress successor is published in draft [PR #278](https:/
 Linux source `e03c878e` passed the full component suite (45 unit tests), strict
 Clippy, resource guards and 100 held-inbound-work repeats. A 64 MiB-per-direction
 exact-byte local run took 43.39 s wall and 4.67 s process CPU. Windows 2025's
-instrumented sustained test failed its unchanged 2 s operation deadline; the
-seven-platform default-feature run remains in progress at this evidence snapshot.
-The code is unmerged. This is not installed MVM/WAN, customer-scale or FIPS
+instrumented sustained test failed its unchanged 2 s operation deadline. The
+seven-platform default-feature run has now completed: Ubuntu x64/ARM, macOS
+Intel/ARM and Windows 2022 pass; Windows ARM fails original Limit custody with a
+consequential ConnectionReset, and Windows 2025 fails sustained delivery with a
+timeout. The code remains draft, unmerged and conflicting with current main.
+[Complete restart context and final CI snapshot](handovers/2026-11-14-restart/README.md).
+ This is not installed MVM/WAN, customer-scale or FIPS
 acceptance. [Results, bounds and retained failures](evidence/2026-11-14-reply-progress/README.md).
 
 The default-feature Windows direction control passed both Server 2022/2025
