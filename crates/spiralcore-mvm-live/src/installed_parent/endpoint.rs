@@ -9,6 +9,29 @@ use mvm_core::host_lifetime::{
     EndpointStoreLocator, PreparedEndpointPartition,
 };
 
+struct StoreFunding {
+    file_descriptors: u64,
+    codec_bytes: u64,
+}
+
+impl StoreFunding {
+    fn for_serial_endpoint() -> Result<Self> {
+        let quote =
+            mvm_hostd::supervisor::flowmux::SpiralCorePayloadFactory::owned_store_requirements()?;
+        // One shared parent and one active store in the installed serial profile.
+        let file_descriptors = u64::from(quote.shared_parent_fds) + u64::from(quote.fds_per_store);
+        let codec_bytes = spiralcore_transfer::resource_profile::ResourceProfile::SmallV1
+            .operation_charge()
+            .map_err(|error| anyhow!("{error:?}"))?
+            .checked_add(quote.workspace_bytes)
+            .ok_or_else(|| anyhow!("endpoint store workspace requirement overflow"))?;
+        Ok(Self {
+            file_descriptors,
+            codec_bytes,
+        })
+    }
+}
+
 pub(super) struct QualifiedEndpointProfile {
     limits: EndpointPartitionLimits,
 }
@@ -66,10 +89,7 @@ impl QualifiedEndpointProfile {
                         + u32::from(runtime.additional_threads)
                 && limits.host_stack_bytes >= stacks
                 && limits.host_metadata_bytes >= metadata
-                && limits.host_codec_bytes
-                    >= profile
-                        .operation_charge()
-                        .map_err(|error| anyhow!("{error:?}"))?
+                && limits.host_codec_bytes >= StoreFunding::for_serial_endpoint()?.codec_bytes
                 && limits.host_carrier_bytes > 0
                 && limits.host_plaintext_bytes > 0
                 && disposable >= disk,
@@ -90,7 +110,7 @@ impl QualifiedEndpointProfile {
             "endpoint owner metadata model insufficient"
         );
         ensure!(
-            self.limits.workers > 0 && self.limits.max_streams > 0,
+            self.limits.workers > 0 && self.limits.max_streams == 1,
             "endpoint worker model missing"
         );
         // The projection's disk allowance includes the mandatory collector;
@@ -105,6 +125,7 @@ impl QualifiedEndpointProfile {
         Ok(ManagedClaim {
             host_plaintext_bytes: self.limits.host_plaintext_bytes,
             host_codec_bytes: self.limits.host_codec_bytes,
+            codec_store_file_descriptors: StoreFunding::for_serial_endpoint()?.file_descriptors,
             host_carrier_bytes: self.limits.host_carrier_bytes,
             host_metadata_bytes: self.limits.host_metadata_bytes,
             host_stack_bytes: self.limits.host_stack_bytes,
@@ -361,6 +382,30 @@ impl VmGrant {
     }
 }
 impl EndpointPartitionGuard for RootEndpointOwner {
+    fn check_owned_payload_store_resources(
+        &self,
+        projection: &EndpointPartitionProjection,
+    ) -> Result<()> {
+        self.check_current(projection)?;
+        let funding = StoreFunding::for_serial_endpoint()?;
+        {
+            let resources = self
+                .resources
+                .lock()
+                .map_err(|_| anyhow!("endpoint resources poisoned"))?;
+            let original = resources
+                .endpoint
+                .as_ref()
+                .ok_or_else(|| anyhow!("endpoint credit missing"))?;
+            ensure!(
+                original.serial() == projection.partition_serial,
+                "endpoint reservation serial differs"
+            );
+            original.check_codec_store_funding(funding.file_descriptors, funding.codec_bytes)?;
+        }
+        self.check_current(projection)
+    }
+
     fn observe_flowmux_guest(
         &self,
         projection: &EndpointPartitionProjection,

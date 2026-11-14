@@ -1,7 +1,9 @@
 //! Original installed portable workspace and storage custody.
 use super::*;
 
-use mvm_core::{host_lifetime::HostLifetimeAnchor, plan::PlanArtifact};
+#[cfg(any(target_os = "linux", test))]
+use mvm_core::host_lifetime::HostLifetimeAnchor;
+use mvm_core::plan::PlanArtifact;
 use std::{fs::File, num::NonZeroU64};
 
 /// Installer-supplied bounds for one verified portable bundle. Workspace
@@ -340,6 +342,7 @@ impl VmGrant {
         Ok(())
     }
 
+    #[cfg(any(target_os = "linux", test))]
     pub(super) fn check_portable_quote(
         &self,
         owner: &Arc<HostLifetimeAnchor>,
@@ -349,6 +352,7 @@ impl VmGrant {
         self.retain_portable_debt(pin, owner.portable_archive_bytes(pin)?)
     }
 
+    #[cfg(any(target_os = "linux", test))]
     fn retain_portable_debt(&self, pin: &PlanArtifact, bytes: NonZeroU64) -> Result<()> {
         self.check_open()?;
         let (credit, commitment) = {

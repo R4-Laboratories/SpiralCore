@@ -1,0 +1,206 @@
+{
+  "schema": 1,
+  "scope": "single-host Linux x86_64 Firecracker signed installed FlowMux functional witness",
+  "mvm_source": "31f8a562f19d9eac89cb0d078b507770bb592262",
+  "sc_controller_roles_source": "0669c8f4db439f804cf26119a6d971b5015e0d94",
+  "sc_export_handoff_guest_source": "757b41913f1b2e46ddf18392551fcf27020432ae",
+  "archive_bytes": 62385152,
+  "archive_sha256": "28b7c51b34933bf51f271f167b8240edae23e79d228bcd497b55197094f26b95",
+  "guest_sha256": "7cd3aedb078148902adfda4d7950839316df68f018ea18dc80888603db2c606d",
+  "canonical_runtime": "0.28.0-rc.2",
+  "firecracker_version": "1.17.0",
+  "executables_sha256": {
+    "mvm-signer-helper": "e0619ed357780b9ab02173f2d9c879a917ee7565c9d5cb3b11ae4676d713e4e3",
+    "mvm-network-endpoint": "603b39f0de591e45528ebd7986c6a824b6d773ee407165869d47e972bbc679aa",
+    "mvm-host-agent": "c1e666cc6c8e48c27653dbf4bc837feeb0a2ad706701d7e214e57e062101eef3",
+    "flowmux-peer": "63a922d05330ee8fa5f500efce3ee62b1e89e3f5c44d0d854e4cd3447120ce17",
+    "fixture-producer": "807b95bda54d4eefae219fe6376efe33c550d5fde1a26b377b3150164131d468",
+    "controller": "aa01fc88daa0203e78df311303afe4b64d644bea6e5ef1d3b646d14954d0c209",
+    "guest": "7cd3aedb078148902adfda4d7950839316df68f018ea18dc80888603db2c606d",
+    "flowmux-install": "1ef7536364ad6dd4b723d5e29b9fa1b43d01aea685d67e50182f8c31073e08f1"
+  },
+  "firecracker_sha256": "99ad0f5cd0514a88aad0e9ae8cfdb3cc3b4ab9d190e1194602406c786b5de7a5",
+  "controller_phases": [
+    {
+      "audit_bytes": 8388608,
+      "bootstrap_upper_bytes": 67698688,
+      "collector_bytes": 27394048,
+      "controller_bytes": 65536,
+      "phase": "funded_endpoint_metadata",
+      "reader_bytes": 65536,
+      "relay_bytes": 81920,
+      "scanner_bytes": 24363008,
+      "scanner_rules": 5,
+      "total_bytes": 128057344
+    },
+    {
+      "agent_refusal": null,
+      "dispatch_ns": 153992795,
+      "launch_ns": 6178563302,
+      "original_workload_exit": 0,
+      "phase": "original_entrypoint",
+      "prepared_ns": 944875902,
+      "stderr_bytes": 0
+    },
+    {
+      "phase": "guest_proxy_rows",
+      "rows": [
+        {
+          "guest_proxy": {
+            "application_received_bytes": 0,
+            "application_sent_bytes": 0,
+            "completed": true,
+            "connect_request_bytes": 79,
+            "connect_response_bytes": 64,
+            "elapsed_ns": 3058270,
+            "process_cpu_ns": 754944
+          },
+          "phase": "denied"
+        },
+        {
+          "guest_proxy": {
+            "application_received_bytes": 5804,
+            "application_sent_bytes": 5804,
+            "completed": true,
+            "connect_request_bytes": 69,
+            "connect_response_bytes": 39,
+            "elapsed_ns": 120258685,
+            "process_cpu_ns": 1099387
+          },
+          "phase": "echo"
+        }
+      ]
+    },
+    {
+      "phase": "sdk_retirement",
+      "retired": true,
+      "through_retirement_ns": 6496494804
+    },
+    {
+      "all_resources_released": false,
+      "charged": {
+        "cache_disk_bytes": 9494528,
+        "codec_store_file_descriptors": 0,
+        "guest_memory_bytes": 0,
+        "guests": 0,
+        "host_carrier_bytes": 0,
+        "host_codec_bytes": 0,
+        "host_metadata_bytes": 806371328,
+        "host_plaintext_bytes": 0,
+        "host_stack_bytes": 0,
+        "staging_disk_bytes": 536875008,
+        "workers": 0
+      },
+      "phase": "installed_resources",
+      "tenant_stopped": true
+    },
+    {
+      "phase": "controller_high_water",
+      "virtual_peak_kib": 765116
+    },
+    {
+      "phase": "controller_high_water",
+      "resident_peak_kib": 275088
+    },
+    {
+      "phase": "original_retained_reservations",
+      "verified_four": true
+    }
+  ],
+  "peer": [
+    {
+      "accept_to_half_close_ns": 113005782,
+      "echo_received": 5804,
+      "echo_written": 5804,
+      "scope": "external one-session cooperating endpoint",
+      "stream_id": 3,
+      "tls_rx": 3664,
+      "tls_tx": 3234
+    }
+  ],
+  "process_times": {
+    "install": {
+      "user_s": 4.8,
+      "system_s": 0.06,
+      "max_rss_kib": 11076.0,
+      "wall_display": "0:05.26"
+    },
+    "controller": {
+      "user_s": 5.12,
+      "system_s": 0.26,
+      "max_rss_kib": 275088.0,
+      "wall_display": "0:06.62"
+    },
+    "peer": {
+      "user_s": 0.0,
+      "system_s": 0.0,
+      "max_rss_kib": 10144.0,
+      "wall_display": "0:06.41"
+    }
+  },
+  "result": "sdk=0; peer=0; namespace_exit=0",
+  "evidence_sha256": {
+    "controller.log": "a5f1fa1a0a85ec54b48a3bfc2cb7b3c8ef22d02ad6461bb393fd9693eddef10b",
+    "peer.log": "253ba77457f69816b49ab5040bff925ceebcd84d22528c66508670178653e9ae",
+    "controller.time": "5cb2f31c4c6b41ebcceefd8b2cb4ef6e9d3aea49a2494e691eb0aa660dc6b42b",
+    "peer.time": "af8b2ad00977fe8e6afb4b4e8b3a0f5c45d13fe72d1a27076b8057d7010e9d31",
+    "install.time": "30a7994edb13c592a553ce6c6ce290292d62b95b3b6c3cf688ad5907f693c3eb",
+    "drained.sha256": "e6862c7968f4925c30486d49e51bb9de00ce8ac79b7262e443932a3fe4129d66",
+    "results": "d3ef8a56b4af5972564748666a59be39ad24d3cea7dcdf59a33e44bdf8554fc1"
+  },
+  "audit_raw_sha256": "5f193a98c2a8ae2cc04e8e27e24d6b6908cc85d124ebdcfdb3530e635a957c59",
+  "audit_archive_sha256": "4baafcb24fd41287749a8ff7cfcfc039b6d25caf5a2f72b23c015181ebb7b29f",
+  "cleanup": {
+    "original_processes_absent": true,
+    "loop_absent": true,
+    "mount_absent": true,
+    "removed_owned_backing_bytes": 536870912
+  },
+  "bounds": {
+    "guest_vcpus": 1,
+    "guest_memory_mib": 256,
+    "guest_nic": false,
+    "controller_address_space_mib": 768,
+    "peer_address_space_mib": 192,
+    "finite_filesystem_mib": 512,
+    "aggregate_scope_memory_mib": 2048,
+    "aggregate_scope_cpu_percent": 200
+  },
+  "limitations": [
+    "No matched raw or zstd transfer baseline",
+    "No WAN or physical NIC measurement",
+    "Guest CPU is separate from host/controller process CPU",
+    "GNU time maximum RSS is not simultaneous aggregate memory",
+    "Remaining retained resource reservations are charged intentionally",
+    "Development publisher and cryptography are not FIPS qualification"
+  ],
+  "independent_audit": {
+    "evidence": "verified_copied_audit_content",
+    "length": 2336,
+    "sha256": "5f193a98c2a8ae2cc04e8e27e24d6b6908cc85d124ebdcfdb3530e635a957c59",
+    "signed_entries": 2,
+    "matching_allows": 1,
+    "matching_denies": 1,
+    "archive_trailer_verified": true,
+    "archive_statement_hash_matches": true,
+    "registered_terminal_key_matches_original_host": true,
+    "verifier_sha256": "773ccfb4a9b6da97dabad36d2b1023da8b9b3febed7b8fc08f413d11828dae40",
+    "scope": "independent copied chain content; original descriptor/inventory custody verified by original native owner",
+    "older_verifier_closure": {
+      "receipt_sha256": "a4b97fc7faca8478c9824ddae9c4a7b3b7e5a51449e0cf1ea8d4d2154884ca86",
+      "source_sha256": "f14522d4ab671286f4118ffc763d27ac9b93264cb00670471393b129d3a79f15",
+      "library_sha256": {
+        "mvm_hostd": "a059579a07e416b7ddcd9adfaa5d376c218eabdc0551b3b83c6d290d51b7d94d",
+        "serde_json": "8980f791b3561f2b000ddaf114bc71f1fc00f89ba6d2017bb509d0f323531e46",
+        "anyhow": "29ff235d0dcb02fe1b4a228a380565d20aa11b4fa2d5300504cf60fe481537bd",
+        "ed25519_dalek": "4e0b7c1e677fc4e12c0c95ca9ed270f2e27e9221c187628a81e94e669e98669d",
+        "sha2": "bef1dc19e81c8c4b27a12d4b93db36c318fe60ce3e9948cb676cb9dc1592fe23",
+        "hex": "dcf4c562129a16238b57fa2bfe1989869564ed33865b5e1380c87b21a65d522e",
+        "libc": "5b30efd8e528a1b43b57b2d5dbcae3d6ecd80ff7d94b4fa4e56ddef54de5f188",
+        "tempfile": "3c5727f796edeca8d2b353a45b0cda9b29562db6a4eb2ef5cdd17fd63d128971"
+      },
+      "compiler": "rustc 1.97.1 (8bab26f4f 2026-07-14)\nbinary: rustc\ncommit-hash: 8bab26f4f68e0e26f0bb7960be334d5b520ea452\ncommit-date: 2026-07-14\nhost: aarch64-apple-darwin\nrelease: 1.97.1\nLLVM version: 22.1.6\n",
+      "scope": "Previously compiled canonical audit checker; no rebuild against current host source"
+    }
+  }
+}

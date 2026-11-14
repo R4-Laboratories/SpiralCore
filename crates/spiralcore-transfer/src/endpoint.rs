@@ -16,7 +16,11 @@ use std::{
     sync::{Arc, Mutex},
 };
 mod storage;
+#[cfg(any(target_os = "linux", target_os = "macos"))]
+pub use storage::owned::{OwnedLaneNamespaces, OwnedStoreLease, OwnedStorePolicy};
 use storage::{private_dir, private_file};
+#[cfg(any(target_os = "linux", target_os = "macos"))]
+use {std::os::fd::AsFd, storage::owned};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Context {
@@ -66,7 +70,7 @@ pub enum ColdGraphPolicy {
     Disabled,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Limits {
     pub max_nodes: usize,
     pub max_active: usize,
@@ -143,10 +147,35 @@ impl Attempt {
         self.clear();
     }
 }
+enum StoreRoot {
+    Path {
+        path: PathBuf,
+        _owner: File,
+    },
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    Owned(OwnedStoreLease),
+}
+
+impl StoreRoot {
+    fn path(&self) -> Result<&Path> {
+        match self {
+            Self::Path { path, .. } => Ok(path),
+            #[cfg(any(target_os = "linux", target_os = "macos"))]
+            Self::Owned(_) => Err(Error::Storage),
+        }
+    }
+}
+
+#[derive(Clone)]
+enum Locator {
+    Path(PathBuf),
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    Owned(OwnedStoreLease, Id),
+}
+
 pub struct Endpoint<A: Authority> {
     resources: crate::resource_profile::ResourceProfile,
-    root: PathBuf,
-    _owner: File,
+    root: StoreRoot,
     limits: Limits,
     cold_graph_policy: ColdGraphPolicy,
     authority: A,
@@ -177,11 +206,41 @@ pub struct GraphCacheStats {
     pub entries: usize,
 }
 #[derive(Clone)]
-struct Publication {
-    path: PathBuf,
+struct Publication<L = Locator> {
+    path: L,
     len: u64,
     object: Id,
     manifest: Option<Id>,
+}
+// An owned read holds the original namespace alongside the checked file until
+// the operation verifies the named file and namespace one last time.
+struct OpenPublication {
+    meta: Publication,
+    file: File,
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    directory: Option<File>,
+}
+impl OpenPublication {
+    fn check_named(&self) -> Result<()> {
+        #[cfg(any(target_os = "linux", target_os = "macos"))]
+        if let Locator::Owned(lease, ns) = &self.meta.path {
+            let dir = self.directory.as_ref().ok_or(Error::Storage)?;
+            owned::check_file_at(
+                dir.as_fd(),
+                object_name(&self.meta.object).as_ref(),
+                &self.file,
+            )?;
+            lease.check_namespace(*ns, dir.as_fd())?;
+        }
+        Ok(())
+    }
+}
+impl<L> Publication<L> {
+    fn disk_len(&self) -> Result<u64> {
+        self.len
+            .checked_add(if self.manifest.is_some() { 81 } else { 49 })
+            .ok_or(Error::Limit)
+    }
 }
 static TEMP: AtomicU64 = AtomicU64::new(0);
 
@@ -194,7 +253,12 @@ pub(crate) struct OrderedEviction {
 
 impl<A: Authority> Endpoint<A> {
     pub(crate) fn authorize(&self, context: &Context) -> Result<()> {
-        self.authority.authorize(context)
+        self.authority.authorize(context)?;
+        #[cfg(any(target_os = "linux", target_os = "macos"))]
+        if let StoreRoot::Owned(lease) = &self.root {
+            lease.check_lane(context.namespace()?)?;
+        }
+        Ok(())
     }
     pub fn open(root: &Path, limits: Limits, authority: A) -> Result<Self> {
         Self::open_with_policy(root, limits, authority, ColdGraphPolicy::EagerBounded)
@@ -233,16 +297,7 @@ impl<A: Authority> Endpoint<A> {
         cold_graph_policy: ColdGraphPolicy,
         resources: crate::resource_profile::ResourceProfile,
     ) -> Result<Self> {
-        resources.check_limits(&limits)?;
-        if limits.max_active == 0
-            || limits.max_active > 4
-            || limits.max_nodes == 0
-            || limits.max_states < limits.max_active
-            || limits.graph_cache_bytes > 64 << 20
-            || limits.graph_cache_entries > 32
-        {
-            return Err(Error::Limit);
-        }
+        Self::validate_limits(&limits, resources)?;
         private_dir(root)?;
         let marker = root.join(".spiralcore-profile-v1");
         let initialized = marker.exists();
@@ -277,10 +332,62 @@ impl<A: Authority> Endpoint<A> {
                 }
             }
         }
-        Ok(Self {
+        Ok(Self::from_store(
+            StoreRoot::Path {
+                path: root.to_path_buf(),
+                _owner: owner,
+            },
+            limits,
+            authority,
+            cold_graph_policy,
             resources,
-            root: root.to_path_buf(),
-            _owner: owner,
+        ))
+    }
+
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    pub(crate) fn open_at(
+        lease: &OwnedStoreLease,
+        limits: Limits,
+        authority: A,
+        resources: crate::resource_profile::ResourceProfile,
+    ) -> Result<Self> {
+        Self::validate_limits(&limits, resources)?;
+        lease.claim(&limits, resources)?;
+        Ok(Self::from_store(
+            StoreRoot::Owned(lease.clone()),
+            limits,
+            authority,
+            ColdGraphPolicy::Disabled,
+            resources,
+        ))
+    }
+
+    fn validate_limits(
+        limits: &Limits,
+        resources: crate::resource_profile::ResourceProfile,
+    ) -> Result<()> {
+        resources.check_limits(limits)?;
+        if limits.max_active == 0
+            || limits.max_active > 4
+            || limits.max_nodes == 0
+            || limits.max_states < limits.max_active
+            || limits.graph_cache_bytes > 64 << 20
+            || limits.graph_cache_entries > 32
+        {
+            return Err(Error::Limit);
+        }
+        Ok(())
+    }
+    fn from_store(
+        root: StoreRoot,
+        limits: Limits,
+        authority: A,
+        cold_graph_policy: ColdGraphPolicy,
+        resources: crate::resource_profile::ResourceProfile,
+    ) -> Self {
+        Self {
+            resources,
+            root,
             limits,
             cold_graph_policy,
             authority,
@@ -290,12 +397,14 @@ impl<A: Authority> Endpoint<A> {
             codec_cache_enabled: false,
             codecs: BTreeMap::new(),
             codec_stats: CodecCacheStats::default(),
-        })
+        }
     }
-    fn path(&self, ns: Id, id: Id) -> PathBuf {
-        self.root
+    fn path(&self, ns: Id, id: Id) -> Result<PathBuf> {
+        Ok(self
+            .root
+            .path()?
             .join(hex(&ns))
-            .join(format!("{}.object", hex(&id)))
+            .join(format!("{}.object", hex(&id))))
     }
     fn charged(&self) -> u64 {
         self.graph_cache_stats().resident_bytes
@@ -481,7 +590,7 @@ impl<A: Authority> Endpoint<A> {
         now: u64,
         evictions: &[OrderedEviction],
     ) -> Result<Frame> {
-        self.authority.authorize(c)?;
+        self.authorize(c)?;
         let ns = c.namespace()?;
         if self.resources == crate::resource_profile::ResourceProfile::SmallV1
             && matches!(f.kind, 1 | 4)
@@ -524,11 +633,11 @@ impl<A: Authority> Endpoint<A> {
                     return Err(Error::Integrity);
                 }
                 self.reserve_with_eviction(p.len.checked_mul(2).ok_or(Error::Limit)?)?;
-                let bytes = read_publication(&p)?;
+                let bytes = read_publication_for_receipt(&p)?;
                 if bytes.len() as u64 != offer.len {
                     return Err(Error::Integrity);
                 }
-                self.authority.authorize(c)?;
+                self.authorize(c)?;
                 return Ok(f.reply(103, offer.object.to_vec()));
             }
             if f.kind != 1 {
@@ -780,7 +889,7 @@ impl<A: Authority> Endpoint<A> {
         };
         let reply = match existing {
             Ok(p) => {
-                let data = read_publication(&p)?;
+                let data = read_publication_for_receipt(&p)?;
                 if data.len() as u64 != offer.len {
                     return Err(Error::Integrity);
                 }
@@ -839,7 +948,7 @@ impl<A: Authority> Endpoint<A> {
             }
             Err(e) => return Err(e),
         };
-        self.authority.authorize(c)?;
+        self.authorize(c)?;
         s.ledger.insert(0, (digest, reply.clone()));
         self.attempts.insert((ns, f.transfer), s);
         Ok(reply)
@@ -860,11 +969,11 @@ impl<A: Authority> Endpoint<A> {
                         .and_then(|n| n.checked_add(history_charge(s)))
                         .ok_or(Error::Limit)?,
                 )?;
-                let bytes = read_publication(&p)?;
+                let bytes = read_publication_for_receipt(&p)?;
                 if bytes.len() as u64 != offer.len {
                     return Err(Error::Integrity);
                 }
-                self.authority.authorize(c)?;
+                self.authorize(c)?;
                 return Ok(f.reply(103, offer.object.to_vec()));
             }
             if !matches!(f.kind, 5 | 6) {
@@ -966,7 +1075,7 @@ impl<A: Authority> Endpoint<A> {
                         Err(e) => return Err(e),
                     }
                 };
-                self.authority.authorize(c)?;
+                self.authorize(c)?;
                 self.publish(c, ns, &s.offer, &s.bytes, mid)?;
                 s.state = 1;
                 s.clear();
@@ -1129,22 +1238,57 @@ impl<A: Authority> Endpoint<A> {
         }
     }
     fn publication(&self, ns: Id, id: Id) -> Result<Publication> {
-        self.open_publication(ns, id).map(|(metadata, _)| metadata)
+        self.open_publication(ns, id).map(|record| record.meta)
     }
-    fn open_publication(&self, ns: Id, id: Id) -> Result<(Publication, File)> {
-        let dir = self.root.join(hex(&ns));
+    fn open_publication(&self, ns: Id, id: Id) -> Result<OpenPublication> {
+        #[cfg(any(target_os = "linux", target_os = "macos"))]
+        if let StoreRoot::Owned(lease) = &self.root {
+            let dir = lease.open_namespace(ns, false)?;
+            let (meta, file) = open_owned_meta(lease, ns, dir.as_fd(), object_name(&id).as_ref())?;
+            lease.check_namespace(ns, dir.as_fd())?;
+            return Ok(OpenPublication {
+                meta,
+                file,
+                directory: Some(dir),
+            });
+        }
+        let dir = self.root.path()?.join(hex(&ns));
         if !dir.exists() {
             return Err(Error::Unknown);
         }
         private_dir(&dir)?;
-        let (p, file) = open_meta(&self.path(ns, id))?;
+        let (p, file) = open_meta(&self.path(ns, id)?)?;
         if p.object != id {
             return Err(Error::Integrity);
         }
-        Ok((p, file))
+        Ok(OpenPublication {
+            meta: p,
+            file,
+            #[cfg(any(target_os = "linux", target_os = "macos"))]
+            directory: None,
+        })
     }
     fn find_base(&self, ns: Id, mid: Id) -> Result<Publication> {
-        let dir = self.root.join(hex(&ns));
+        #[cfg(any(target_os = "linux", target_os = "macos"))]
+        if let StoreRoot::Owned(lease) = &self.root {
+            let mut found = None;
+            let mut count = 0;
+            lease.visit(Some(ns), |_, dir, name| {
+                if Path::new(name).extension() == Some("object".as_ref()) {
+                    count += 1;
+                    if count > self.limits.max_publications {
+                        return Err(Error::Limit);
+                    }
+                    let (p, _) = open_owned_meta(lease, ns, dir, name)?;
+                    if p.manifest == Some(mid) && found.is_none() {
+                        found = Some(p);
+                    }
+                }
+                Ok(())
+            })?;
+            return found.ok_or(Error::Missing);
+        }
+        let dir = self.root.path()?.join(hex(&ns));
         if dir.exists() {
             private_dir(&dir)?;
         }
@@ -1175,14 +1319,33 @@ impl<A: Authority> Endpoint<A> {
     fn disk_usage(&self, ns: Id) -> Result<(u64, u64, usize)> {
         #[cfg(test)]
         let _quota = commit_costs::span(commit_costs::Stage::Quota);
+        #[cfg(any(target_os = "linux", target_os = "macos"))]
+        if let StoreRoot::Owned(lease) = &self.root {
+            let (mut scoped, mut all, mut count) = (0u64, 0u64, 0);
+            lease.visit(None, |space, dir, name| {
+                if space.is_some() && Path::new(name).extension() == Some("object".as_ref()) {
+                    let n = owned::quota_len_at(dir, name)?;
+                    all = all.checked_add(n).ok_or(Error::Limit)?;
+                    if space == Some(ns) {
+                        scoped = scoped.checked_add(n).ok_or(Error::Limit)?;
+                    }
+                    count += 1;
+                    if count > self.limits.max_publications {
+                        return Err(Error::Limit);
+                    }
+                }
+                Ok(())
+            })?;
+            return Ok((scoped, all, count));
+        }
         #[cfg(windows)]
-        return storage::quota_usage(&self.root, &hex(&ns), self.limits.max_publications);
+        return storage::quota_usage(self.root.path()?, &hex(&ns), self.limits.max_publications);
         #[cfg(not(windows))]
         {
             let mut all = 0u64;
             let mut scoped = 0u64;
             let mut count = 0;
-            for d in fs::read_dir(&self.root)? {
+            for d in fs::read_dir(self.root.path()?)? {
                 let d = d?;
                 if !d.file_type()?.is_dir()
                     || !canonical_namespace(&d.file_name().to_string_lossy())
@@ -1219,17 +1382,35 @@ impl<A: Authority> Endpoint<A> {
         bytes: &[u8],
         mid: Option<Id>,
     ) -> Result<()> {
-        match self.open_publication(ns, offer.object) {
-            Ok((p, file)) => {
-                verify_publication(&p, file, bytes)?;
-                storage::sync_existing(&p.path)?;
-                self.authority.authorize(context)?;
+        match commit_stage!(Lookup, self.open_publication(ns, offer.object)) {
+            Ok(record) => {
+                commit_stage!(VerifyPublished, {
+                    verify_publication(&record.meta, &record.file, bytes)?;
+                    record.check_named()
+                })?;
+                match &record.meta.path {
+                    Locator::Path(path) => {
+                        drop(record.file);
+                        commit_stage!(FileSync, storage::sync_existing(path))?;
+                    }
+                    #[cfg(any(target_os = "linux", target_os = "macos"))]
+                    Locator::Owned(lease, ns) => {
+                        let dir = record.directory.as_ref().ok_or(Error::Storage)?;
+                        lease.sync_publication(
+                            *ns,
+                            dir.as_fd(),
+                            object_name(&record.meta.object).as_ref(),
+                            &record.file,
+                        )?;
+                    }
+                }
+                self.authorize(context)?;
                 return Ok(());
             }
             Err(Error::Unknown) => {}
             Err(e) => return Err(e),
         }
-        let (scoped, all, count) = self.disk_usage(ns)?;
+        let (scoped, all, count) = commit_stage!(Quota, self.disk_usage(ns))?;
         let len = bytes.len() as u64 + if mid.is_some() { 81 } else { 49 };
         if scoped.checked_add(len).ok_or(Error::Limit)? > self.limits.namespace_bytes
             || all.checked_add(len).ok_or(Error::Limit)? > self.limits.cache_bytes
@@ -1237,53 +1418,85 @@ impl<A: Authority> Endpoint<A> {
         {
             return Err(Error::Limit);
         }
-        let path = self.path(ns, offer.object);
-        let parent = path.parent().ok_or(Error::Storage)?;
-        private_dir(parent)?;
-        let tmp = parent.join(format!(
+        let stage = format!(
             ".stage-{}-{}",
             std::process::id(),
             TEMP.fetch_add(1, Ordering::Relaxed)
-        ));
-        let mut created = false;
-        let result = (|| {
-            let mut f = storage::create_new_file(&tmp)?;
-            created = true;
-            f.write_all(b"SCPUB001")?;
-            f.write_all(&offer.len.to_le_bytes())?;
-            f.write_all(&offer.object)?;
-            f.write_all(&[u8::from(mid.is_some())])?;
-            if let Some(m) = mid {
-                f.write_all(&m)?;
+        );
+        match &self.root {
+            StoreRoot::Path { path: root, .. } => {
+                let path = self.path(ns, offer.object)?;
+                let parent = path.parent().ok_or(Error::Storage)?;
+                private_dir(parent)?;
+                let tmp = parent.join(&stage);
+                let mut f = commit_stage!(StageWrite, storage::create_new_file(&tmp))?;
+                let result = (|| {
+                    commit_stage!(StageWrite, write_record(&mut f, offer, mid, bytes))?;
+                    drop(f);
+                    self.authorize(context)?;
+                    #[cfg(test)]
+                    let _publish = commit_costs::span(commit_costs::Stage::NamespacePublish);
+                    commit_stage!(NamespacePublish, storage::publish(&tmp, &path, root))
+                })();
+                if result.is_err() {
+                    let _ = storage::remove_stage(&tmp);
+                }
+                result?;
             }
-            f.write_all(bytes)?;
-            #[cfg(test)]
-            let file_sync = commit_costs::span(commit_costs::Stage::FileSync);
-            f.sync_all()?;
-            #[cfg(test)]
-            drop(file_sync);
-            drop(f);
-            self.authority.authorize(context)?;
-            #[cfg(test)]
-            let publish = commit_costs::span(commit_costs::Stage::NamespacePublish);
-            storage::publish(&tmp, &path, &self.root)?;
-            #[cfg(test)]
-            drop(publish);
-            #[cfg(test)]
-            let _verify = commit_costs::span(commit_costs::Stage::VerifyPublished);
-            let (published, file) = self.open_publication(ns, offer.object)?;
-            verify_publication(&published, file, bytes)?;
-            self.authority.authorize(context)?;
-            Ok(())
-        })();
-        if result.is_err() && created {
-            let _ = storage::remove_stage(&tmp);
+            #[cfg(any(target_os = "linux", target_os = "macos"))]
+            StoreRoot::Owned(lease) => {
+                let extra = match lease.open_namespace(ns, false) {
+                    Ok(_) => 1,
+                    Err(Error::Unknown) => 2,
+                    Err(e) => return Err(e),
+                };
+                lease.check_room(extra)?;
+                let dir = lease.open_namespace(ns, true)?;
+                let mut f = commit_stage!(
+                    StageWrite,
+                    owned::create_new_at(dir.as_fd(), stage.as_ref())
+                )?;
+                let result = (|| {
+                    commit_stage!(StageWrite, write_record(&mut f, offer, mid, bytes))?;
+                    self.authorize(context)?;
+                    #[cfg(test)]
+                    let _publish = commit_costs::span(commit_costs::Stage::NamespacePublish);
+                    commit_stage!(
+                        NamespacePublish,
+                        lease.publish_at(
+                            ns,
+                            dir.as_fd(),
+                            stage.as_ref(),
+                            object_name(&offer.object).as_ref(),
+                            &f,
+                        )
+                    )
+                })();
+                if let Err(e) = result {
+                    lease.check_namespace(ns, dir.as_fd())?;
+                    // Only the still-named original stage may be removed. A completed rename
+                    // can leave a final publication after a later sync failure.
+                    match owned::open_read_at(dir.as_fd(), stage.as_ref()) {
+                        Ok(_) => owned::unlink_checked_at(dir.as_fd(), stage.as_ref(), &f)?,
+                        Err(Error::Unknown) => (),
+                        Err(error) => return Err(error),
+                    }
+                    return Err(e);
+                }
+            }
         }
-        result
+        #[cfg(test)]
+        let _verify = commit_costs::span(commit_costs::Stage::VerifyPublished);
+        let published = commit_stage!(VerifyPublished, self.open_publication(ns, offer.object))?;
+        commit_stage!(VerifyPublished, {
+            verify_publication(&published.meta, &published.file, bytes)?;
+            published.check_named()
+        })?;
+        self.authorize(context)
     }
     /// Serialized verification; the returned Vec is then owned/accounted by the caller.
     pub fn read_object(&mut self, c: &Context, id: Id) -> Result<Vec<u8>> {
-        self.authority.authorize(c)?;
+        self.authorize(c)?;
         let p = self.publication(c.namespace()?, id)?;
         if self.resources == crate::resource_profile::ResourceProfile::SmallV1
             && p.len > self.resources.max_artifact_len() as u64
@@ -1292,7 +1505,7 @@ impl<A: Authority> Endpoint<A> {
         }
         self.reserve_with_eviction(p.len.checked_mul(2).ok_or(Error::Limit)?)?;
         let bytes = read_publication(&p)?;
-        self.authority.authorize(c)?;
+        self.authorize(c)?;
         Ok(bytes)
     }
     // Only the explicit ordered Small facade may retire/evict. Ordinary v1
@@ -1308,7 +1521,7 @@ impl<A: Authority> Endpoint<A> {
         ))
     }
     pub(crate) fn ordered_attempt_count(&self, c: &Context) -> Result<usize> {
-        self.authority.authorize(c)?;
+        self.authorize(c)?;
         let ns = c.namespace()?;
         if self.attempts.keys().any(|(space, _)| *space != ns) {
             return Err(Error::Unauthorized);
@@ -1316,7 +1529,7 @@ impl<A: Authority> Endpoint<A> {
         Ok(self.attempts.len())
     }
     pub(crate) fn ordered_active_objects(&self, c: &Context) -> Result<BTreeSet<Id>> {
-        self.authority.authorize(c)?;
+        self.authorize(c)?;
         self.ordered_bounds()?;
         let ns = c.namespace()?;
         let mut pinned = BTreeSet::new();
@@ -1334,7 +1547,7 @@ impl<A: Authority> Endpoint<A> {
         Ok(pinned)
     }
     pub(crate) fn ordered_retire(&mut self, c: &Context, transfer: Id) -> Result<()> {
-        self.authority.authorize(c)?;
+        self.authorize(c)?;
         self.ordered_bounds()?;
         let key = (c.namespace()?, transfer);
         if self
@@ -1350,12 +1563,40 @@ impl<A: Authority> Endpoint<A> {
         Ok(())
     }
     pub(crate) fn ordered_cache_scan(&self, c: &Context) -> Result<Vec<(Id, u64, u64)>> {
-        self.authority.authorize(c)?;
+        self.authorize(c)?;
         self.ordered_bounds()?;
         let ns = c.namespace()?;
         let namespace = hex(&ns);
         let mut records = Vec::new();
-        for entry in fs::read_dir(&self.root)? {
+        #[cfg(any(target_os = "linux", target_os = "macos"))]
+        if let StoreRoot::Owned(lease) = &self.root {
+            lease.visit(None, |space, dir, name| {
+                if space.is_none() {
+                    if name != ".owner" && name != ".spiralcore-profile-v1" {
+                        let id = crate::wan::parse_id(name.to_str().ok_or(Error::Storage)?)
+                            .map_err(|_| Error::Storage)?;
+                        // A canonical name alone does not prove a directory occupies it.
+                        lease.open_namespace(id, false)?;
+                    }
+                    return Ok(());
+                }
+                if space != Some(ns) {
+                    return Ok(());
+                }
+                if records.len() >= self.limits.max_publications {
+                    return Err(Error::Limit);
+                }
+                let (p, file) = open_owned_meta(lease, ns, dir, name)?;
+                self.reserve(p.len.checked_mul(2).ok_or(Error::Limit)?)?;
+                drop(read_publication_body(&p, &file)?);
+                owned::check_file_at(dir, name, &file)?;
+                records.push((p.object, p.len, p.disk_len()?));
+                Ok(())
+            })?;
+            self.authorize(c)?;
+            return Ok(records);
+        }
+        for entry in fs::read_dir(self.root.path()?)? {
             let entry = entry?;
             let name = entry.file_name();
             if name == ".owner" || name == ".spiralcore-profile-v1" {
@@ -1380,18 +1621,10 @@ impl<A: Authority> Endpoint<A> {
                 // Scan uses one bounded verification buffer at a time; the
                 // retained index contains IDs/scalars, never copied paths.
                 drop(read_publication(&publication)?);
-                let disk = publication
-                    .len
-                    .checked_add(if publication.manifest.is_some() {
-                        81
-                    } else {
-                        49
-                    })
-                    .ok_or(Error::Limit)?;
-                records.push((publication.object, publication.len, disk));
+                records.push((publication.object, publication.len, publication.disk_len()?));
             }
         }
-        self.authority.authorize(c)?;
+        self.authorize(c)?;
         Ok(records)
     }
     pub(crate) fn ordered_cache_meta(&self, c: &Context, id: Id) -> Result<(u64, u64)> {
@@ -1399,35 +1632,30 @@ impl<A: Authority> Endpoint<A> {
             .map(|(bytes, disk)| (bytes.len() as u64, disk))
     }
     pub(crate) fn ordered_cache_read(&self, c: &Context, id: Id) -> Result<(Vec<u8>, u64)> {
-        self.authority.authorize(c)?;
+        self.authorize(c)?;
         self.ordered_bounds()?;
-        let (p, file) = self.open_publication(c.namespace()?, id)?;
+        let record = self.open_publication(c.namespace()?, id)?;
+        let p = &record.meta;
         if p.len > self.resources.max_artifact_len() as u64 {
             return Err(Error::Limit);
         }
         self.reserve(p.len.checked_mul(2).ok_or(Error::Limit)?)?;
-        let bytes = read_publication_body(&p, file)?;
-        self.authority.authorize(c)?;
-        Ok((
-            bytes,
-            p.len
-                .checked_add(if p.manifest.is_some() { 81 } else { 49 })
-                .ok_or(Error::Limit)?,
-        ))
+        let bytes = read_publication_body(p, &record.file)?;
+        record.check_named()?;
+        self.authorize(c)?;
+        Ok((bytes, p.disk_len()?))
     }
     fn ordered_remove_cache(&mut self, c: &Context, victim: &OrderedEviction) -> Result<()> {
         #[cfg(test)]
         let _victim = commit_costs::span(commit_costs::Stage::Victim);
-        self.authority.authorize(c)?;
+        self.authorize(c)?;
         self.ordered_bounds()?;
         if self.ordered_active_objects(c)?.contains(&victim.id) {
             return Err(Error::Limit);
         }
-        let (p, file) = self.open_publication(c.namespace()?, victim.id)?;
-        let disk = p
-            .len
-            .checked_add(if p.manifest.is_some() { 81 } else { 49 })
-            .ok_or(Error::Limit)?;
+        let record = self.open_publication(c.namespace()?, victim.id)?;
+        let p = &record.meta;
+        let disk = p.disk_len()?;
         if (p.len, disk) != (victim.len, victim.disk) {
             return Err(Error::Storage);
         }
@@ -1435,15 +1663,32 @@ impl<A: Authority> Endpoint<A> {
             return Err(Error::Limit);
         }
         self.reserve(p.len.checked_mul(2).ok_or(Error::Limit)?)?;
-        drop(read_publication_body(&p, file)?);
-        self.authority.authorize(c)?;
+        drop(read_publication_body(p, &record.file)?);
+        self.authorize(c)?;
         // Reuse the existing private-file deletion backend under this actual
         // exclusive endpoint owner; Windows checks ACL/reparse/hardlink state
         // and applies disposition to its exact opened file handle.
-        storage::remove_stage(&p.path)?;
-        match fs::symlink_metadata(&p.path) {
-            Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(()),
-            _ => Err(Error::Storage),
+        match &p.path {
+            Locator::Path(path) => {
+                drop(record.file);
+                storage::remove_stage(path)?;
+                match fs::symlink_metadata(path) {
+                    Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(()),
+                    _ => Err(Error::Storage),
+                }
+            }
+            #[cfg(any(target_os = "linux", target_os = "macos"))]
+            Locator::Owned(lease, ns) => {
+                let dir = record.directory.as_ref().ok_or(Error::Storage)?;
+                let name = object_name(&p.object);
+                lease.check_namespace(*ns, dir.as_fd())?;
+                owned::unlink_checked_at(dir.as_fd(), name.as_ref(), &record.file)?;
+                lease.sync_namespace(*ns, dir.as_fd())?;
+                match owned::open_read_at(dir.as_fd(), name.as_ref()) {
+                    Err(Error::Unknown) => Ok(()),
+                    _ => Err(Error::Storage),
+                }
+            }
         }
     }
     fn apply_ordered_evictions(
@@ -1469,12 +1714,33 @@ impl<A: Authority> Endpoint<A> {
         }
         Ok(())
     }
+    fn stored_len(&self, ns: Id, id: Id) -> Result<u64> {
+        #[cfg(any(target_os = "linux", target_os = "macos"))]
+        if let StoreRoot::Owned(lease) = &self.root {
+            let dir = lease.open_namespace(ns, false)?;
+            let length = owned::quota_len_at(dir.as_fd(), object_name(&id).as_ref())?;
+            lease.check_namespace(ns, dir.as_fd())?;
+            return Ok(length);
+        }
+        storage::quota_file_len(&self.path(ns, id)?)
+    }
+    fn is_stored(&self, ns: Id, id: Id) -> Result<bool> {
+        match &self.root {
+            StoreRoot::Path { .. } => Ok(self.path(ns, id)?.exists()),
+            #[cfg(any(target_os = "linux", target_os = "macos"))]
+            StoreRoot::Owned(_) => match self.stored_len(ns, id) {
+                Ok(_) => Ok(true),
+                Err(Error::Unknown) => Ok(false),
+                Err(e) => Err(e),
+            },
+        }
+    }
     fn admit_disk(&self, ns: Id, offer: &Offer, evictions: &[OrderedEviction]) -> Result<()> {
         let (mut scoped, mut all, mut count) = self.disk_usage(ns)?;
         // Ordered Small admission projects the exact space to be freed.
         // The ordered owner performs deletions only after Begin succeeds.
         for victim in evictions {
-            let bytes = storage::quota_file_len(&self.path(ns, victim.id))?;
+            let bytes = self.stored_len(ns, victim.id)?;
             if bytes != victim.disk {
                 return Err(Error::Storage);
             }
@@ -1484,7 +1750,7 @@ impl<A: Authority> Endpoint<A> {
         }
         let mut pending = BTreeMap::new();
         for ((space, _), s) in &self.attempts {
-            if s.state == 0 && !self.path(*space, s.offer.object).exists() {
+            if s.state == 0 && !self.is_stored(*space, s.offer.object)? {
                 if *space == ns && s.offer.object == offer.object && s.offer.len != offer.len {
                     return Err(Error::Integrity);
                 }
@@ -1562,6 +1828,44 @@ fn state_reply(f: &Frame, s: &Attempt) -> Frame {
     b.extend_from_slice(&s.accepted.to_le_bytes());
     f.reply(105, b)
 }
+fn write_record(file: &mut File, offer: &Offer, mid: Option<Id>, bytes: &[u8]) -> Result<()> {
+    let mut header = [0u8; 81];
+    header[..8].copy_from_slice(b"SCPUB001");
+    header[8..16].copy_from_slice(&offer.len.to_le_bytes());
+    header[16..48].copy_from_slice(&offer.object);
+    let header_len = if let Some(manifest) = mid {
+        header[48] = 1;
+        header[49..].copy_from_slice(&manifest);
+        header.len()
+    } else {
+        49
+    };
+    file.write_all(&header[..header_len])?;
+    file.write_all(bytes)?;
+    #[cfg(test)]
+    let _file_sync = commit_costs::span(commit_costs::Stage::FileSync);
+    commit_stage!(FileSync, file.sync_all())?;
+    Ok(())
+}
+
+#[cfg(any(target_os = "linux", target_os = "macos"))]
+fn open_owned_meta(
+    lease: &OwnedStoreLease,
+    ns: Id,
+    dir: std::os::fd::BorrowedFd<'_>,
+    name: &std::ffi::OsStr,
+) -> Result<(Publication, File)> {
+    let f = owned::open_read_at(dir, name)?;
+    let p = read_meta_file(Locator::Owned(lease.clone(), ns), &f)?;
+    if name != object_name(&p.object).as_str() {
+        return Err(Error::Integrity);
+    }
+    if p.len > crate::resource_profile::SMALL_ARTIFACT as u64 {
+        return Err(Error::Limit);
+    }
+    Ok((p, f))
+}
+
 fn read_meta(path: &Path) -> Result<Publication> {
     open_meta(path).map(|(metadata, _)| metadata)
 }
@@ -1576,11 +1880,11 @@ fn open_meta(path: &Path) -> Result<(Publication, File)> {
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Err(Error::Unknown),
         Err(_) => return Err(Error::Storage),
     }
-    let mut f = storage::open_read(path)?;
-    let metadata = read_meta_file(path, &mut f)?;
+    let f = storage::open_read(path)?;
+    let metadata = read_meta_file(Locator::Path(path.to_owned()), &f)?;
     Ok((metadata, f))
 }
-fn read_meta_file(path: &Path, f: &mut File) -> Result<Publication> {
+fn read_meta_file<L>(path: L, mut f: &File) -> Result<Publication<L>> {
     #[cfg(test)]
     ordered_eviction_tests::HEADER_READS.with(|count| count.set(count.get() + 1));
     let mut h = [0u8; 49];
@@ -1606,11 +1910,28 @@ fn read_meta_file(path: &Path, f: &mut File) -> Result<Publication> {
         return Err(Error::Integrity);
     }
     Ok(Publication {
-        path: path.to_path_buf(),
+        path,
         len,
         object,
         manifest,
     })
+}
+
+#[cfg(any(target_os = "linux", target_os = "macos"))]
+fn verify_owned_file(id: Id, file: File, max_body: u64) -> Result<()> {
+    let metadata = read_meta_file((), &file)?;
+    if metadata.object != id {
+        return Err(Error::Integrity);
+    }
+    if metadata.len > max_body {
+        return Err(Error::Limit);
+    }
+    read_publication_body(&metadata, file).map(drop)
+}
+
+#[cfg(any(target_os = "linux", target_os = "macos"))]
+fn object_name(id: &Id) -> String {
+    format!("{}.object", hex(id))
 }
 
 fn canonical_namespace(s: &str) -> bool {
@@ -1627,16 +1948,50 @@ fn owned_stage(s: &str) -> bool {
         |x: Option<&str>| x.is_some_and(|x| !x.is_empty() && x.bytes().all(|b| b.is_ascii_digit()));
     digits(p.next()) && digits(p.next()) && p.next().is_none()
 }
+fn read_publication_for_receipt(p: &Publication) -> Result<Vec<u8>> {
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    if let Locator::Owned(lease, ns) = &p.path {
+        return read_owned_publication(p, lease, *ns, true);
+    }
+    read_publication(p)
+}
 fn read_publication(p: &Publication) -> Result<Vec<u8>> {
-    let mut f = storage::open_read(&p.path)?;
-    let fresh = read_meta_file(&p.path, &mut f)?;
+    match &p.path {
+        Locator::Path(path) => read_reopened_publication(p, &storage::open_read(path)?),
+        #[cfg(any(target_os = "linux", target_os = "macos"))]
+        Locator::Owned(lease, ns) => read_owned_publication(p, lease, *ns, false),
+    }
+}
+#[cfg(any(target_os = "linux", target_os = "macos"))]
+fn read_owned_publication(
+    p: &Publication,
+    lease: &OwnedStoreLease,
+    ns: Id,
+    durable_receipt: bool,
+) -> Result<Vec<u8>> {
+    let dir = lease.open_namespace(ns, false)?;
+    let name = object_name(&p.object);
+    let file = owned::open_read_at(dir.as_fd(), name.as_ref())?;
+    let bytes = read_reopened_publication(p, &file)?;
+    if durable_receipt {
+        // A previous rename may be visible even though its directory sync failed.
+        // Finish the original durability barrier before returning Already.
+        lease.sync_publication(ns, dir.as_fd(), name.as_ref(), &file)?;
+    } else {
+        owned::check_file_at(dir.as_fd(), name.as_ref(), &file)?;
+        lease.check_namespace(ns, dir.as_fd())?;
+    }
+    Ok(bytes)
+}
+fn read_reopened_publication(p: &Publication, f: &File) -> Result<Vec<u8>> {
+    let fresh = read_meta_file((), f)?;
     if fresh.object != p.object || fresh.len != p.len || fresh.manifest != p.manifest {
         return Err(Error::Integrity);
     }
     read_publication_body(p, f)
 }
 // The freshly opened, checked file is positioned just after its validated header.
-fn read_publication_body(p: &Publication, f: File) -> Result<Vec<u8>> {
+fn read_publication_body<L>(p: &Publication<L>, f: impl Read) -> Result<Vec<u8>> {
     #[cfg(test)]
     ordered_eviction_tests::FULL_READS.with(|count| count.set(count.get() + 1));
     let mut data = Vec::new();
@@ -1648,7 +2003,7 @@ fn read_publication_body(p: &Publication, f: File) -> Result<Vec<u8>> {
     }
     Ok(data)
 }
-fn verify_publication(p: &Publication, mut f: File, expected: &[u8]) -> Result<()> {
+fn verify_publication<L>(p: &Publication<L>, mut f: impl Read, expected: &[u8]) -> Result<()> {
     if expected.len() as u64 != p.len || object_id(expected) != p.object {
         return Err(Error::Integrity);
     }

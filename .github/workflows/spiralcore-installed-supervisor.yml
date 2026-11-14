@@ -9,6 +9,12 @@ on:
       - 'crates/spiralcore-mvm-live/src/installed_supervisor.rs'
       - 'crates/spiralcore-mvm-live/src/installed_supervisor/**'
       - 'crates/spiralcore-mvm-live/src/installed_resources.rs'
+      - 'crates/spiralcore-mvm-live/src/installed_parent.rs'
+      - 'crates/spiralcore-mvm-live/src/installed_parent/**'
+      - 'crates/spiralcore-mvm-live/Cargo.toml'
+      - 'crates/spiralcore-mvm-live/Cargo.lock'
+      - 'crates/spiralcore-mvm-adapter/Cargo.toml'
+      - 'crates/spiralcore-mvm-adapter/Cargo.lock'
       - 'crates/spiralcore-mvm-live/tests/installed-supervisor-harness/**'
       - '.github/workflows/spiralcore-installed-supervisor.yml'
 permissions:
@@ -64,7 +70,7 @@ jobs:
           cargo +1.97.1 test --release --locked \
             --manifest-path crates/spiralcore-mvm-live/tests/installed-supervisor-harness/Cargo.toml \
             --all-targets -- --test-threads=1 2>&1 | tee parent-evidence/tests.txt
-          for expected in 33 3 11; do
+          for expected in 38 3 11; do
             grep -E "^test result: ok\\. $expected passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in [0-9.]+s$" parent-evidence/tests.txt
           done
           shasum -a 256 -c parent-evidence/source.sha256 > parent-evidence/source-after.txt
@@ -73,4 +79,57 @@ jobs:
         with:
           name: installed-parent-${{ matrix.target }}-${{ github.run_attempt }}
           path: parent-evidence/
+          retention-days: 14
+  canonical-endpoint:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {runner: ubuntu-24.04, target: x86_64-unknown-linux-gnu}
+          - {runner: ubuntu-24.04-arm, target: aarch64-unknown-linux-gnu}
+          - {runner: macos-26, target: aarch64-apple-darwin}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    env:
+      CARGO_BUILD_JOBS: 2
+      CARGO_INCREMENTAL: 0
+      EXPECTED_TARGET: ${{ matrix.target }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - name: Install pinned toolchain
+        run: rustup toolchain install 1.97.1 --profile minimal
+      - name: Bind canonical adapter source
+        run: |
+          set -euo pipefail
+          mkdir endpoint-evidence
+          git rev-parse HEAD > endpoint-evidence/source-commit.txt
+          [[ "$(git rev-parse HEAD)" == "${{ github.event.pull_request.head.sha }}" ]]
+          rustc +1.97.1 -vV > endpoint-evidence/rustc.txt
+          grep -Fx "host: $EXPECTED_TARGET" endpoint-evidence/rustc.txt
+          git ls-files -z -- crates/spiralcore-mvm-live crates/spiralcore-mvm-adapter \
+            crates/spiralcore-transfer crates/spiralcore-mvm-flowmux \
+            crates/spiralcore-gateway-core crates/uor-r4-object-store \
+            | xargs -0 shasum -a 256 > endpoint-evidence/source.sha256
+      - name: Canonical parent store and original budget checks
+        env:
+          CARGO_TARGET_DIR: ${{ runner.temp }}/canonical-endpoint-target
+        run: |
+          set -euo pipefail
+          cargo +1.97.1 test --locked \
+            --manifest-path crates/spiralcore-mvm-live/Cargo.toml \
+            --features canonical-host --lib installed_parent::endpoint_tests:: \
+            -- --test-threads=1 2>&1 | tee endpoint-evidence/tests.txt
+          grep -E '^test result: ok\. 8 passed; 0 failed; 0 ignored; 0 measured;' endpoint-evidence/tests.txt
+          shasum -a 256 -c endpoint-evidence/source.sha256 > endpoint-evidence/source-after.txt
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: canonical-endpoint-${{ matrix.target }}-${{ github.run_attempt }}
+          path: endpoint-evidence/
           retention-days: 14

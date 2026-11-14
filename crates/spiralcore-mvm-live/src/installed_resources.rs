@@ -11,6 +11,8 @@ use std::{
 const SLOTS: usize = 128;
 const TENANTS: usize = 32;
 const MIB: u64 = 1024 * 1024;
+// One SmallV1 store per guest: shared parent, child directory, owner lock and four transient FDs.
+const CODEC_STORE_FDS_PER_GUEST: u64 = 7;
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize)]
 pub struct ManagedClaim {
@@ -22,6 +24,7 @@ pub struct ManagedClaim {
     pub guest_memory_bytes: u64,
     pub cache_disk_bytes: u64,
     pub staging_disk_bytes: u64,
+    pub codec_store_file_descriptors: u64,
     pub workers: u64,
     pub guests: u64,
 }
@@ -37,6 +40,9 @@ macro_rules! arithmetic {
                 guest_memory_bytes: self.guest_memory_bytes.$op(rhs.guest_memory_bytes)?,
                 cache_disk_bytes: self.cache_disk_bytes.$op(rhs.cache_disk_bytes)?,
                 staging_disk_bytes: self.staging_disk_bytes.$op(rhs.staging_disk_bytes)?,
+                codec_store_file_descriptors: self
+                    .codec_store_file_descriptors
+                    .$op(rhs.codec_store_file_descriptors)?,
                 workers: self.workers.$op(rhs.workers)?,
                 guests: self.guests.$op(rhs.guests)?,
             })
@@ -72,6 +78,8 @@ pub struct ManagedLimits {
     pub guest_memory_bytes: u64,
     pub cache_disk_bytes: u64,
     pub staging_disk_bytes: u64,
+    /// Admission ceiling for descriptors charged to codec stores.
+    pub codec_store_file_descriptors: u64,
     pub workers: u64,
     pub guests: u64,
 }
@@ -83,17 +91,20 @@ impl ManagedLimits {
             && usage.guest_memory_bytes <= self.guest_memory_bytes
             && usage.cache_disk_bytes <= self.cache_disk_bytes
             && usage.staging_disk_bytes <= self.staging_disk_bytes
+            && usage.codec_store_file_descriptors <= self.codec_store_file_descriptors
             && usage.workers <= self.workers
             && usage.guests <= self.guests
     }
     pub(crate) fn host() -> Self {
+        let guests = 2;
         Self {
             host_resident_bytes: 512 * MIB,
             guest_memory_bytes: 2048 * MIB,
             cache_disk_bytes: 1024 * MIB,
             staging_disk_bytes: 512 * MIB,
+            codec_store_file_descriptors: guests * CODEC_STORE_FDS_PER_GUEST,
             workers: 16,
-            guests: 2,
+            guests,
         }
     }
     pub(crate) fn tenant() -> Self {
@@ -419,6 +430,28 @@ impl ManagedReservation {
     pub fn serial(&self) -> u64 {
         self.owner.serial
     }
+    #[cfg(any(feature = "canonical-host", test))]
+    pub(crate) fn check_codec_store_funding(
+        &self,
+        descriptors: u64,
+        codec_bytes: u64,
+    ) -> Result<()> {
+        self.check_current()?;
+        let ledger = self.owner.shared.ledger()?;
+        let claim = ledger
+            .slots
+            .get(self.owner.slot)
+            .copied()
+            .flatten()
+            .filter(|slot| slot.serial == self.serial())
+            .ok_or(ManagedResourceError::State)?
+            .claim;
+        if claim.codec_store_file_descriptors < descriptors || claim.host_codec_bytes < codec_bytes
+        {
+            return Err(ManagedResourceError::Full);
+        }
+        Ok(())
+    }
     /// Existing ownership only. Normal admission close does not revoke cleanup;
     /// a poisoned/fenced or inconsistent original ledger still refuses it.
     #[cfg(any(feature = "canonical-host", test))]
@@ -510,7 +543,9 @@ mod tests {
             Self(path)
         }
         fn owner(&self) -> (InstalledSupervisor, InstallationKey) {
-            let config = InstalledConfig::native_profile();
+            self.owner_with(InstalledConfig::native_profile())
+        }
+        fn owner_with(&self, config: InstalledConfig) -> (InstalledSupervisor, InstallationKey) {
             let key = InstallationKey {
                 installation: [92; 32],
                 profile: config.profile_hash(),
@@ -524,6 +559,99 @@ mod tests {
             fs::remove_dir_all(&self.0).unwrap();
         }
     }
+    #[test]
+    fn codec_store_descriptors_stay_in_the_original_reservation() {
+        mvm_core::util::test_env::isolated_lock_probe(probe_codec_store_descriptors);
+    }
+
+    fn probe_codec_store_descriptors() {
+        let claim = ManagedClaim {
+            codec_store_file_descriptors: 7,
+            ..Default::default()
+        };
+        let defaults = InstalledConfig::two_endpoint_witness_profile().managed_limits();
+        for limit in [defaults.0, defaults.1] {
+            assert_eq!(limit.codec_store_file_descriptors, limit.guests * 7);
+        }
+        for (host_ceiling, tenant_ceiling) in [(6, 6), (7, 6), (7, 7)] {
+            let fixture = Fixture::new();
+            let (mut host, mut tenant) = defaults;
+            host.codec_store_file_descriptors = host_ceiling;
+            tenant.codec_store_file_descriptors = tenant_ceiling;
+            let config = InstalledConfig::with_funded_pair_limits(host, tenant).unwrap();
+            let (mut owner, _) = fixture.owner_with(config);
+            let pool = owner.managed_resources().clone();
+            let result = pool.reserve([7; 32], claim);
+            if tenant_ceiling < 7 {
+                assert!(matches!(result, Err(ManagedResourceError::Full)));
+                let snapshot = pool.snapshot().unwrap();
+                assert_eq!(snapshot.usage, ManagedClaim::default());
+                assert_eq!(snapshot.active_reservations, 0);
+                assert_eq!(snapshot.registered_tenants, 0);
+            } else {
+                let original = result.unwrap();
+                let retained = original.clone();
+                assert_eq!(original.serial(), retained.serial());
+                assert!(matches!(
+                    pool.reserve([8; 32], claim),
+                    Err(ManagedResourceError::Full)
+                ));
+                owner.close_admission();
+                drop(original);
+                retained.check_retained_identity().unwrap();
+                let snapshot = pool.snapshot().unwrap();
+                assert_eq!(snapshot.usage, claim);
+                assert_eq!(snapshot.active_reservations, 1);
+                assert!(!pool.ensure_drained().unwrap());
+                assert!(matches!(
+                    owner.try_finish(),
+                    Err(crate::installed_supervisor::SupervisorError::Busy)
+                ));
+                drop(retained);
+                assert!(pool.ensure_drained().unwrap());
+            }
+            owner.close_admission();
+            owner.try_finish().unwrap();
+        }
+    }
+
+    #[test]
+    fn codec_store_funding_checks_the_original_live_slot() {
+        mvm_core::util::test_env::isolated_lock_probe(|| {
+            let fixture = Fixture::new();
+            let (mut owner, _) = fixture.owner_with(InstalledConfig::canonical_native_profile());
+            let pool = owner.managed_resources().clone();
+            let original = pool
+                .reserve(
+                    [7; 32],
+                    ManagedClaim {
+                        host_codec_bytes: 1024,
+                        codec_store_file_descriptors: 7,
+                        ..Default::default()
+                    },
+                )
+                .unwrap();
+            let unrelated = pool
+                .reserve(
+                    [7; 32],
+                    ManagedClaim {
+                        host_metadata_bytes: 1,
+                        ..Default::default()
+                    },
+                )
+                .unwrap();
+            original.check_codec_store_funding(7, 1024).unwrap();
+            assert!(original.check_codec_store_funding(8, 1024).is_err());
+            assert!(original.check_codec_store_funding(7, 1025).is_err());
+            assert!(unrelated.check_codec_store_funding(7, 1024).is_err());
+            owner.close_admission();
+            assert!(original.check_codec_store_funding(7, 1024).is_err());
+            original.check_retained_identity().unwrap();
+            drop((original, unrelated));
+            owner.try_finish().unwrap();
+        });
+    }
+
     #[test]
     fn retained_identity_allows_normal_close_without_reopening_admission() {
         mvm_core::util::test_env::isolated_lock_probe(probe_normal_close);

@@ -1,0 +1,76 @@
+{
+  "run": 43506622776,
+  "job": 132165881465,
+  "source_head": "f4b6d0dfea2036ebed9419a228ae5a9a1396080f",
+  "artifact_id": 14077032767,
+  "artifact_sha256": "270a2554c312395113055727be1c849e72f74ff55dde518572e746910bd1c9a0",
+  "members": {
+    "source.txt": {
+      "sha256": "ce208534279aab0012d613bc80e16707690551b14d39a3fa503c015f380f6ca4",
+      "text": "f4b6d0dfea2036ebed9419a228ae5a9a1396080f\na686cb72039dbfa29517ada30eaa3b3fb7077d94\nrustc 1.97.1 (8bab26f4f 2026-07-14)\nbinary: rustc\ncommit-hash: 8bab26f4f68e0e26f0bb7960be334d5b520ea452\ncommit-date: 2026-07-14\nhost: x86_64-unknown-linux-gnu\nrelease: 1.97.1\nLLVM version: 22.1.6\ngit+https://github.com/Casey-allard/mvm?rev=31f8a562f19d9eac89cb0d078b507770bb592262#31f8a562f19d9eac89cb0d078b507770bb592262\n915a6001b6df936a43b2cfdf2f4034b73d665bfe7fa5af2f64799edbff698e02  tools/installed-flowmux-witness/guest/Cargo.lock\n0df06ecee987192360e2c3d21dec194893c7150273c5239ac3e696534efa61d8  crates/spiralcore-mvm-live/Cargo.lock\n748aa46cf43a53a7657840649041ea99b152b44fe12c39e259ec30e31e1aa12c  spiralcore-flowmux-proxy-guest\nd482bdc4107713d72219597df53f83b7962c6c7f4813175e8d8d4d933e3752c9  revocations.json\n995b673c7f77eb6c1672211cb637acf7e0c4ed2a3f53ea5d9893430c1294931d  revocations.json.bundle\noriginal_main_revision=2c9c2633e6cf4244947cd2eba819257aa3f9978d original_blob=877a64ef68aed0cd9ea1d75f93dfe3f7c0ff7636 composition=one_file_overlay\ncdd4664f04994abee17b680ae993c621646f1f428671f04fe08d6a9c6eb1f4d4  crates/spiralcore-mvm-live/examples/installed_flowmux_fixture.rs\n"
+    },
+    "programs.sha256": {
+      "sha256": "de4eecd3913c5c2ce2bb30413f9aefa1135c917e517a77f14e19ef3486ce9d40",
+      "text": "fbdfd2d4e7c72ac7dd21b9cdf7107a8ca157d686ea547ecd41c4b8f17657291f  /home/runner/work/_temp/export-target/debug/deps/fixture_export-a43ff85017e93a12\nb2511c58a26d6ca8c4ce3ac94ae780b7f4e9bb6fa7e3e71082cf41e7a2168875  original-producer\n7d0d7be31929dab776c2e43bbc99bff9cc60f4e18ed354f17ed789dff5d80dff  candidate-producer\n"
+    },
+    "original-time.txt": {
+      "sha256": "c4182d6ff9b02371481debaf675301da46512a4a453dc31d6a6e94ac31a12251",
+      "text": "setup_export_wall_s=0.03 user_s=0.02 system_s=0.00 max_rss_kib=11480 exit=101\n"
+    },
+    "candidate-time.txt": {
+      "sha256": "321a9efacb3446644585f9f754c0d2664f53ceee275649058441c376cbdda4af",
+      "text": "setup_export_wall_s=26.54 user_s=23.74 system_s=0.98 max_rss_kib=67320 exit=0\n"
+    },
+    "outcomes.txt": {
+      "sha256": "7d49bd772421c11d5cdd910db6fe10703eefd87642ba00d0e8cfff9a990e87bd",
+      "text": "original exit=101\noriginal: verified inputs reached producer invocation\noriginal: producer refused verified inputs with original scaffold error; one test failed\ncandidate exit=0\ncandidate: verified inputs reached producer invocation\ncandidate: signed archive reopened; one test passed\n"
+    },
+    "result.json": {
+      "sha256": "c6540b38d32ea7f6dac478ce361cb8476bba9efc1f4456dea734b61887276230",
+      "text": "{\"guest_sha256\":\"748aa46cf43a53a7657840649041ea99b152b44fe12c39e259ec30e31e1aa12c\",\"archive_sha256\":\"47c637dd5050b3f003c9fb34db9b5cf20d94e0ec38ebd95596e87bafac143987\",\"archive_bytes\":62385152,\"publisher_key_id\":\"035cec4201d356337d914da2a76d24a7\",\"revocation_publication\":2,\"public_members\":7,\"canonical_runtime\":\"0.28.0-rc.2\",\"repeat_refusal\":true}\n"
+    }
+  },
+  "scope": "Actual canonical signed workload export, expected-key archive reopening, explicit revocation-policy binding, offline kernel/runtime preparation and occupied-output refusal; no VM, transfer, WAN, fleet or FIPS qualification",
+  "test_source_sha256": "220f3d5d4ae0f8da9e91d1f7269ba02c31ba849c2287dcc5aac86a19fa72d3bb",
+  "workflow_sha256": "d01d94e05d5d653e16cb583255d75f5e41e5aa64b4232f58181be0f10800b55e",
+  "job_log_sha256": "3cc67edad538b48a7bae4c45a2db476b6d712bf89b45037dede3bfaba5477e92",
+  "guest_unit_tests": {
+    "passed": 9,
+    "failed": 0,
+    "ignored": 0,
+    "seconds": 0.01
+  },
+  "clippy": {
+    "qualification_test": "passed -D warnings",
+    "guest_all_targets": "passed -D warnings"
+  },
+  "original_control": {
+    "composition": "Only the producer main file from 2c9c2633 was overlaid on the candidate source/harness; it is not a complete original-checkout benchmark",
+    "exit": 101,
+    "expected_failure": "fixture producer is not implemented",
+    "wall_s": 0.03,
+    "user_s": 0.02,
+    "system_s": 0.0,
+    "max_rss_kib": 11480
+  },
+  "candidate": {
+    "exit": 0,
+    "wall_s": 26.54,
+    "user_s": 23.74,
+    "system_s": 0.98,
+    "cpu_user_plus_system_s": 24.72,
+    "max_rss_kib": 67320,
+    "archive": {
+      "guest_sha256": "748aa46cf43a53a7657840649041ea99b152b44fe12c39e259ec30e31e1aa12c",
+      "archive_sha256": "47c637dd5050b3f003c9fb34db9b5cf20d94e0ec38ebd95596e87bafac143987",
+      "archive_bytes": 62385152,
+      "publisher_key_id": "035cec4201d356337d914da2a76d24a7",
+      "revocation_publication": 2,
+      "public_members": 7,
+      "canonical_runtime": "0.28.0-rc.2",
+      "repeat_refusal": true
+    }
+  },
+  "measurement_boundary": "GNU time wraps the qualification test and its producer children after compilation; includes fresh private-home setup, asset acquisition, materialization, signing, archive/install verification, occupied-output control and teardown. Maximum RSS is the reported process maximum, not simultaneous aggregate tree memory. Application-transfer metrics NOT_RUN; asset-download traffic NOT_MEASURED.",
+  "retention": "Only six named public report files retained; the temporary private workspace and generated packet are not uploaded."
+}

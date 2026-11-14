@@ -24,6 +24,9 @@ jobs:
           - runner: windows-2022
             feature: witness-stall
             artifact: flowmux-windows-stall
+          - runner: windows-2025
+            feature: witness-stall
+            artifact: flowmux-windows2025-stall
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 20
     defaults:
@@ -70,9 +73,40 @@ jobs:
             $control | Set-Content timing-evidence/stall-control.txt
             if ($controlCode -ne 0 -or $control -notmatch 'test result: ok\. 1 passed; 0 failed;') { throw 'Missing original-deadline observation control' }
           }
-          $log = (& cargo +1.97.1-x86_64-pc-windows-msvc test --release --locked --manifest-path crates/spiralcore-mvm-flowmux/Cargo.toml --features $env:DIAGNOSTIC_FEATURE --test ordered_stream -- --show-output --color never 2>&1 | Out-String)
-          $code = $LASTEXITCODE
-          $log | Set-Content timing-evidence/tests.txt
+          $package = (Resolve-Path crates/spiralcore-mvm-flowmux).Path
+          $manifest = Join-Path $package 'Cargo.toml'
+          $artifacts = @(& cargo +1.97.1-x86_64-pc-windows-msvc test --release --locked --manifest-path $manifest --features $env:DIAGNOSTIC_FEATURE --test ordered_stream --no-run --message-format=json |
+            ForEach-Object { ConvertFrom-Json -InputObject $_ } |
+            Where-Object {
+              $_.reason -eq 'compiler-artifact' -and $_.manifest_path -eq $manifest -and
+              $_.target.name -eq 'ordered_stream' -and $_.target.kind -contains 'test' -and
+              $_.profile.test -eq $true -and $_.features -contains $env:DIAGNOSTIC_FEATURE -and $_.executable
+            })
+          if ($LASTEXITCODE -ne 0 -or $artifacts.Count -ne 1) { throw 'Expected one compiled ordered_stream test executable' }
+          $artifact = $artifacts[0]
+          $exe = (Get-Item -LiteralPath $artifact.executable).FullName
+          $before = (Get-FileHash -LiteralPath $exe -Algorithm SHA256).Hash
+          $length = (Get-Item -LiteralPath $exe).Length
+          $identity = Get-Content -Raw timing-evidence/identity.json | ConvertFrom-Json
+          @{ source = $identity.source; tree = $identity.tree; package_id = $artifact.package_id;
+            toolchain = '1.97.1-x86_64-pc-windows-msvc'; features = @($artifact.features);
+            profile = 'release'; target = $artifact.target.name; executable = (Split-Path -Leaf $exe);
+            length = $length; sha256 = $before
+          } | ConvertTo-Json | Set-Content timing-evidence/executable-before.json
+          $code = $null
+          Push-Location -LiteralPath $package
+          try {
+            $log = (& $exe --show-output --color never 2>&1 | Out-String)
+            $code = $LASTEXITCODE
+          } finally {
+            Pop-Location
+            $log | Set-Content timing-evidence/tests.txt
+            $after = (Get-FileHash -LiteralPath $exe -Algorithm SHA256).Hash
+            $afterLength = (Get-Item -LiteralPath $exe).Length
+            @{ exit_code = $code; length = $afterLength; sha256 = $after } |
+              ConvertTo-Json | Set-Content timing-evidence/executable-after.json
+            if ($after -ne $before -or $afterLength -ne $length) { throw 'Ordered stream executable changed during the run' }
+          }
           $log | Write-Output
           if ($env:DIAGNOSTIC_FEATURE -eq 'witness-stall' -and $log -notmatch '(?m)^ORDERED_STALL_WINDOW observed=\d+ retained=[0-8] ') { throw 'Sampling window missing from original workload' }
 

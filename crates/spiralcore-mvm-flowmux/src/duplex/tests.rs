@@ -75,16 +75,32 @@ fn simultaneous_identical_objects_keep_distinct_direction_ids_and_reverse_after_
         make(server, peer, &right_store, Role::Acceptor);
     std::thread::scope(|scope| {
         let left = scope.spawn(move || {
-            let receipt = left_tx.send_block(vec![42; 8192]).unwrap();
+            let receipt = left_tx.send_block(vec![42; 8192]).unwrap_or_else(|error| {
+                panic!(
+                    "left send: {error}; first failure: {:?}",
+                    left_tx.cancellation.first_failure()
+                )
+            });
             left_tx.half_close().unwrap();
             receipt
         });
         let right = scope.spawn(move || {
-            let receipt = right_tx.send_block(vec![42; 8192]).unwrap();
+            let receipt = right_tx.send_block(vec![42; 8192]).unwrap_or_else(|error| {
+                panic!(
+                    "right send: {error}; first failure: {:?}",
+                    right_tx.cancellation.first_failure()
+                )
+            });
             right_tx.half_close().unwrap();
             receipt
         });
-        assert_eq!(left_rx.receive().unwrap(), Event::Data(vec![42; 8192]));
+        let first_data = left_rx.receive().unwrap_or_else(|error| {
+            panic!(
+                "left receive: {error}; first failure: {:?}",
+                left_rx.cancellation.first_failure()
+            )
+        });
+        assert_eq!(first_data, Event::Data(vec![42; 8192]));
         assert_eq!(right_rx.receive().unwrap(), Event::Data(vec![42; 8192]));
         assert_eq!(left_rx.receive().unwrap(), Event::HalfClose);
         assert_eq!(right_rx.receive().unwrap(), Event::HalfClose);
@@ -241,7 +257,6 @@ fn full_delivery_queue_backpressures_then_times_out_without_extra_published_ack(
         .cancellation
         .first_failure()
         .expect("original failure");
-    assert_eq!(first.site, crate::FailureSite::SenderReplyWait);
     assert_eq!(first.frame_kind, Some(3));
     assert_eq!(first.reason, crate::FailureReason::Timeout);
     assert!(matches!(
@@ -259,6 +274,11 @@ fn full_delivery_queue_backpressures_then_times_out_without_extra_published_ack(
             Err(spiralcore_mvm_flowmux::Error::Cancelled)
         ));
     }
+    assert_eq!(
+        first.site,
+        crate::FailureSite::SenderReplyReceiveTimeout,
+        "the withheld Commit reply must identify the timed-out receive"
+    );
 }
 
 #[test]

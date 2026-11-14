@@ -409,7 +409,11 @@ impl DuplexWriter {
                     FrameKind::from_wire(frame.kind),
                 ));
                 responses.recv_timeout(remaining(until).inspect_err(|e| {
-                    cancellation.observe(FailureSite::SenderReplyWait, Some(frame.kind), e)
+                    cancellation.observe(
+                        FailureSite::SenderReplyExpiredBeforeReceive,
+                        Some(frame.kind),
+                        e,
+                    )
                 })?)
             };
             #[cfg(feature = "witness-timing")]
@@ -419,16 +423,23 @@ impl DuplexWriter {
                 Err(RecvTimeoutError::Timeout) => Observation::WaitTimeout,
                 Err(RecvTimeoutError::Disconnected) => Observation::WaitDisconnected,
             });
-            let reply = response
-                .map_err(|error| match error {
-                    RecvTimeoutError::Timeout => Error::Timeout,
-                    RecvTimeoutError::Disconnected => Error::Closed,
-                })
-                .inspect_err(|e| {
-                    cancellation.observe(FailureSite::SenderReplyWait, Some(frame.kind), e)
-                })?;
+            let reply = response.map_err(|error| match error {
+                RecvTimeoutError::Timeout => {
+                    cancellation.observe(
+                        FailureSite::SenderReplyReceiveTimeout,
+                        Some(frame.kind),
+                        &Error::Timeout,
+                    );
+                    Error::Timeout
+                }
+                RecvTimeoutError::Disconnected => Error::Closed,
+            })?;
             remaining(until).inspect_err(|e| {
-                cancellation.observe(FailureSite::SenderReplyWait, Some(frame.kind), e)
+                cancellation.observe(
+                    FailureSite::SenderReplyExpiredAfterReceive,
+                    Some(frame.kind),
+                    e,
+                )
             })?;
             let terminal = matches!(reply.kind, 103 | 127);
             replies.push(reply);
@@ -807,6 +818,10 @@ impl<A: Authority> Worker<A> {
                 Ok(()) => return Ok(()),
                 Err(TrySendError::Disconnected(_)) => return Err(Error::Closed),
                 Err(TrySendError::Full(returned)) => {
+                    #[cfg(feature = "witness-stall")]
+                    if matches!(&returned, Event::Data(_)) {
+                        self.stall.delivery_full();
+                    }
                     event = returned;
                     thread::park_timeout(left.min(Duration::from_millis(5)));
                 }
@@ -859,13 +874,30 @@ impl<A: Authority> Worker<A> {
                 Phase::ReceiverHandle,
                 FrameKind::from_wire(request.kind),
             ));
-            self.endpoint
-                .handle(purpose, ordinal, &self.context, &request, now()?)
-                .map_err(Error::from)
-                .inspect_err(|e| {
-                    self.cancellation
-                        .observe(FailureSite::ReceiverHandle, Some(request.kind), e)
-                })?
+            let sampled_now = now()?;
+            #[cfg(feature = "witness-stall")]
+            let result = {
+                let ordered_commit = purpose == Purpose::Application
+                    && request.kind == 3
+                    && matches!(&self.endpoint, ReceiveEndpoint::Ordered(_));
+                let mut handle = || {
+                    self.endpoint
+                        .handle(purpose, ordinal, &self.context, &request, sampled_now)
+                };
+                if ordered_commit {
+                    self.stall.with_commit_stages(handle)
+                } else {
+                    handle()
+                }
+            };
+            #[cfg(not(feature = "witness-stall"))]
+            let result =
+                self.endpoint
+                    .handle(purpose, ordinal, &self.context, &request, sampled_now);
+            result.map_err(Error::from).inspect_err(|e| {
+                self.cancellation
+                    .observe(FailureSite::ReceiverHandle, Some(request.kind), e)
+            })?
         };
         #[cfg(feature = "witness-stall")]
         self.stall
@@ -896,6 +928,8 @@ impl<A: Authority> Worker<A> {
             self.stall
                 .mark(WorkerPhase::Delivery, request.kind, ordinal);
             self.deliver(Event::Data(bytes), until).inspect_err(|e| {
+                #[cfg(feature = "witness-stall")]
+                self.stall.delivery_failed(e);
                 self.cancellation
                     .observe(FailureSite::ReceiverDelivery, Some(request.kind), e)
             })?;

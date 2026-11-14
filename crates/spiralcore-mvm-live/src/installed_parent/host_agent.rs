@@ -269,7 +269,7 @@ impl RegistrationBinding {
         }
         Ok(())
     }
-    #[cfg(test)]
+    #[cfg(all(test, target_os = "linux"))]
     pub(super) fn pin_fixture_directories(&self) -> Result<()> {
         use std::os::unix::fs::DirBuilderExt;
         std::fs::DirBuilder::new()

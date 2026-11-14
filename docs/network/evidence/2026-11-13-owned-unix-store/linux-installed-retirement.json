@@ -1,0 +1,385 @@
+{
+  "schema_version": 1,
+  "scope": "native Linux registered host-process FlowMux fixture and original-store retirement; no booted guest or WAN",
+  "mvm_revision": "31f8a562f19d9eac89cb0d078b507770bb592262",
+  "mvm_tree": "4cb85849688d8eeb394de780c911c8894cc98206",
+  "source_verification": {
+    "base_revision": "c07d912e79cb1623bd26516fb6a48eddb640e01b",
+    "verified_files": 4645,
+    "verified_bytes": 64526282,
+    "changed_paths": [
+      "crates/mvm-hostd/src/installed_endpoint.rs",
+      "crates/mvm-hostd/src/jailer/SECCOMP.md",
+      "crates/mvm-hostd/src/jailer/seccomp.rs",
+      "crates/mvm-hostd/src/jailer/seccomp_owned_store_tests.rs",
+      "crates/mvm-hostd/src/supervisor/flowmux.rs",
+      "crates/mvm-hostd/src/supervisor/flowmux/spiralcore_payload.rs",
+      "crates/mvm-hostd/src/supervisor/flowmux/spiralcore_payload/pool_close_tests.rs",
+      "crates/mvm-hostd/tests/registered_direct_tcp.rs",
+      "crates/mvm-hostd/tests/support/registered_direct_peer.rs",
+      "crates/mvm-vmm/src/host/network_endpoint_spawn/installed.rs",
+      "crates/mvm-vmm/src/host/network_endpoint_spawn/installed/audit.rs",
+      "crates/mvm-vmm/src/host/network_endpoint_spawn/installed/tests.rs",
+      "xtask/src/check_rust_footprint.rs"
+    ],
+    "manifest_sha256": "d1834661f37dbe26a8ae8789f6092092fe6180ab1026a5373e3e8e0186a359b0",
+    "published_tree_binding": "All 4645 frozen file modes and Git blobs equal published MVM 31f8a562f19d9eac89cb0d078b507770bb592262 tree 4cb85849688d8eeb394de780c911c8894cc98206",
+    "legacy_receipt_revision_fields": "Runner revision fields name base c07d912e; the full verified source with its 13 recorded changes is the published tree above."
+  },
+  "changed_file_sha256": {
+    "crates/mvm-hostd/src/installed_endpoint.rs": "ce64b54ad0177ad324bcf3e65d32df390a9d35e9549ba47247b7b6fca4790686",
+    "crates/mvm-hostd/src/jailer/SECCOMP.md": "9b4924f3c6391b1cc8f191f9bd0ba16a76cd783bc111b754d1d4a36931a37460",
+    "crates/mvm-hostd/src/jailer/seccomp.rs": "4ca00065a9a53dfe4c0191ed66b1de7c3547975712a14b19e2e665e33f664b6f",
+    "crates/mvm-hostd/src/jailer/seccomp_owned_store_tests.rs": "db1d974b43981a01999a1509fbc4f57ea9b9dbe2e2ac4b8de32ec2c0c671fa5a",
+    "crates/mvm-hostd/src/supervisor/flowmux.rs": "e33743e98c18c38db40e8ff4ff6c171173baf936ae9a9813b6d050020188509a",
+    "crates/mvm-hostd/src/supervisor/flowmux/spiralcore_payload.rs": "97bd94bae112a4ef2187aae0ec163c9569abb7202d55381c536d840517aa3943",
+    "crates/mvm-hostd/src/supervisor/flowmux/spiralcore_payload/pool_close_tests.rs": "bb7c533e829b14746e524890e374ae375dec5f102932756f6f608d330a3c2d2b",
+    "crates/mvm-hostd/tests/registered_direct_tcp.rs": "a3de8849380d2a4447d370dc854d1beb36075ce4028f1eaad4f4aff2d3bbd530",
+    "crates/mvm-hostd/tests/support/registered_direct_peer.rs": "392fcffc41a2ea42cd22276fd649e2673aa5cb86581e9b04e04b1c955f02b3e7",
+    "crates/mvm-vmm/src/host/network_endpoint_spawn/installed.rs": "651f5eee9104b3e86d0eb41cf151b912ada827f5ac276e2c565bec42028aff66",
+    "crates/mvm-vmm/src/host/network_endpoint_spawn/installed/audit.rs": "64b1817cff1e3ca55ef0fce5c60a35b581ea8b398c35dfdfb8809d9471865eef",
+    "crates/mvm-vmm/src/host/network_endpoint_spawn/installed/tests.rs": "1c2d41e20d9205ff7467da335940de397482d3b95865e3bc805ec108edaa8f29",
+    "xtask/src/check_rust_footprint.rs": "8e8f69a61825edf1c25418d693ba903567e71bf35123ed891f0ec16932d4e998"
+  },
+  "registered_transfer": {
+    "status": "PASS",
+    "app_bytes_each_direction": 5804,
+    "tls_bytes_to_cooperating_peer": 3657,
+    "tls_bytes_from_cooperating_peer": 3234,
+    "tls_bytes_total": 6891,
+    "byte_scope": "Actual TLS counters on cooperating-peer connection, including handshake. Excludes guest-side Unix stream, host-control channels and TCP/IP overhead. No matched raw or zstd baseline in this functional run.",
+    "setup_to_hello_ms": 91.263262,
+    "valid_open_to_verified_half_close_ms": 34.724295,
+    "retirement_with_archive_retry_ms": 43.623994,
+    "driver_wall_seconds": 0.21561970002949238,
+    "gnu_time_wall_seconds_rounded": 0.18,
+    "user_cpu_seconds_rounded": 0.08,
+    "system_cpu_seconds_rounded": 0.05,
+    "cpu_scope": "GNU time for test process and waited descendants, including fixture work; no per-codec breakdown",
+    "maximum_rss_kib": 25316,
+    "rss_scope": "GNU time maximum, not simultaneous aggregate memory of all processes",
+    "executable_sha256": "c509defd3464ec73e34c62770d4d3bfd814b75cef37b6cb8990a35049090ad01",
+    "helpers_sha256": {
+      "mvm-signer-helper": "ec4dd2d58ac1ea94fc0c514dad7f2d3eb4f1224d20ca5e154f257ed5490c30da",
+      "mvm-network-endpoint": "c400d4b716549d102c78dd6d845b62c2e5347eb403de7bba7a6e4b2f37a07688",
+      "mvm-host-signer": "b17ed164e52cf4de5bf44c1afa97100918af15c27f30ccba0a3996ed8f032acc",
+      "mvm-broker": "1d8a272a5f018c83a0763e590e4078c5362a60b6b97bf69326b82611fdc61c54",
+      "mvm-host-agent": "e81465f074da95bc94fb02a2ae00798a932dbdc1acfcdee899d1c8a79392f1f4",
+      "mvm-mailbox": "43b422aa1b56ed8eb5931965bb2bcbb920d10e6692641018ba497807386b95bd",
+      "mvm-hvf-supervisor": "72a6180a8d0744ec099924af74e63f78afdfd63385583b693b3c88976165b3b9",
+      "mvm-audit-signer": "a752ee3c925e17974c03a775568d291cb5a2668ab3de82cb62a3f61f453e86e3",
+      "mvm-extension-provider": "dbf37e2504b2c7ca766eef62ce6f286d2a4ee5e5ca9b0cf51bae9995f209c6af"
+    },
+    "log_sha256": "a3a3f5f63f014434899883d673cbbecf7ea0e4e6690ff2760a454454fa19f6b5",
+    "usage_sha256": "d37d98b7a1ccd9b5e91e7a54b5a8db594151c2120e7ef7a537623554c4dcd762"
+  },
+  "regressions": {
+    "linux_hostd_library": {
+      "passed": 2492,
+      "failed": 0,
+      "ignored": 15,
+      "test_seconds": 53.12
+    },
+    "linux_vmm_library": {
+      "passed": 1112,
+      "failed": 0,
+      "ignored": 4,
+      "test_seconds": 16.75
+    },
+    "linux_library_execution": {
+      "revision": "c07d912e79cb1623bd26516fb6a48eddb640e01b",
+      "source": "/var/tmp/sc-direct-flowmux.iptmjZre/source-c07.zjcaw7Q7",
+      "command": [
+        "/home/callard/.cargo/bin/cargo",
+        "+1.97.1",
+        "test",
+        "--locked",
+        "--offline",
+        "-p",
+        "mvm-hostd",
+        "-p",
+        "mvm-vmm",
+        "--lib",
+        "--",
+        "--test-threads=2"
+      ],
+      "status": 0,
+      "refusal": null,
+      "wall_seconds": 70.44729271298274,
+      "user_seconds": 21.734702000000002,
+      "system_seconds": 6.280435,
+      "observed_minimum_free_bytes": 510723108864,
+      "after_free_bytes": 510726647808,
+      "artifacts": [],
+      "log_sha256": "5991fc4f2359ebb8c79f0e9ccaf8b51e9a75898b8413ed5fe6bcc7d8735e5f88"
+    },
+    "macos_original_lease_tests": {
+      "passed": 9,
+      "failed": 0,
+      "ignored": 0,
+      "test_seconds": 0.07,
+      "log_sha256": "e925143859370c36860ac06bf979f2a3abd7d67791c0c36734b2cab42eed75ce"
+    },
+    "linux_original_lease_controls": {
+      "passed": 10,
+      "failed": 0,
+      "ignored": 0,
+      "receipt": {
+        "base_revision": "c07d912e79cb1623bd26516fb6a48eddb640e01b",
+        "command": [
+          "/usr/bin/time",
+          "-v",
+          "-o",
+          "/var/tmp/sc-direct-flowmux.iptmjZre/evidence/c07-closing-green-vmm-usage.txt",
+          "/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/debug/deps/mvm_vmm-a2e43f6982ef184a",
+          "host::network_endpoint_spawn::installed::tests::",
+          "--nocapture"
+        ],
+        "status": 0,
+        "wall_seconds": 0.06477197003550828,
+        "executable_sha256": "7e232b13da8eacb6bdaf0f8093ab6cfd5f9e95027c0573c5613f8420d728ab4e",
+        "log_sha256": "de0330be0f2bc28dcdbda4bba1423791ea612dcd9ee89261872f66656f38de8d",
+        "usage_sha256": "0bba1507bdf06d0b4d8784a40a3db4ae186fb84d8c5d0e74d7e578545a9c1878"
+      }
+    },
+    "linux_confined_store_controls": {
+      "passed": 4,
+      "failed": 0,
+      "ignored": 0,
+      "includes": "seven rename publication/refusal child cases",
+      "receipt": {
+        "base_revision": "c07d912e79cb1623bd26516fb6a48eddb640e01b",
+        "production_seccomp_sha256": "4ca00065a9a53dfe4c0191ed66b1de7c3547975712a14b19e2e665e33f664b6f",
+        "test_source_sha256": "db1d974b43981a01999a1509fbc4f57ea9b9dbe2e2ac4b8de32ec2c0c671fa5a",
+        "command": [
+          "/usr/bin/time",
+          "-v",
+          "-o",
+          "/var/tmp/sc-direct-flowmux.iptmjZre/evidence/c07-renameat-green-kernel-usage.txt",
+          "/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/debug/deps/mvm_hostd-d2262037db1cbb19",
+          "jailer::seccomp::owned_store_tests::",
+          "--nocapture"
+        ],
+        "status": 0,
+        "wall_seconds": 8.795497930026613,
+        "executable_sha256": "81f1211e81315d77b927cdbc43c35d293444204c9e319cda3649b084988a5bbc",
+        "log_sha256": "c0ed0be57b978a3a186732eabec90b6d50a816b73a011c93ec72557a7468987e",
+        "usage_sha256": "6dd8c1534149257d0aee250df0875f586885ee5d78d258fcae74cf912f2f47c9"
+      }
+    },
+    "linux_workspace_all_targets_clippy": {
+      "revision": "c07d912e79cb1623bd26516fb6a48eddb640e01b",
+      "source": "/var/tmp/sc-direct-flowmux.iptmjZre/source-c07.zjcaw7Q7",
+      "command": [
+        "/home/callard/.cargo/bin/cargo",
+        "+1.97.1",
+        "clippy",
+        "--locked",
+        "--offline",
+        "--workspace",
+        "--all-targets",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "status": 0,
+      "refusal": null,
+      "wall_seconds": 309.60565037699416,
+      "user_seconds": 521.1324900000001,
+      "system_seconds": 73.318434,
+      "observed_minimum_free_bytes": 510260133888,
+      "after_free_bytes": 510260133888,
+      "artifacts": [],
+      "log_sha256": "f77bd15289b5f52033ceccecee62bba4abf95da4c20195b44aa9b5864051e333"
+    },
+    "macos_workspace_all_targets_clippy": {
+      "status": "PASS",
+      "log_sha256": "cc9525c8f75fd90980cabfa53b37ca88c4f4d2c712efd29df4ed69060542d5fd"
+    },
+    "macos_footprint": {
+      "files": 2956,
+      "sloc": 1039567,
+      "physical_lines": 1310430,
+      "ceilings": {
+        "sloc": 1039600,
+        "physical_lines": 1310500
+      },
+      "all_categories_counted": true,
+      "downward_ratchet": 10000,
+      "log_sha256": "b4c56c889be751f4e7c7082d8cb1d5bee030f89449ce6ef7cd2fa4293b4f5cbe"
+    }
+  },
+  "retained_negative_results": {
+    "original_filter_kernel_regression": {
+      "base_revision": "c07d912e79cb1623bd26516fb6a48eddb640e01b",
+      "production_seccomp_sha256": "615752e32a57d689289653f7c0913b94228f1446ef66d057d04da6b11252842a",
+      "test_source_sha256": "db1d974b43981a01999a1509fbc4f57ea9b9dbe2e2ac4b8de32ec2c0c671fa5a",
+      "command": [
+        "/usr/bin/time",
+        "-v",
+        "-o",
+        "/var/tmp/sc-direct-flowmux.iptmjZre/evidence/c07-renameat-red-kernel-usage.txt",
+        "/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/debug/deps/mvm_hostd-d2262037db1cbb19",
+        "--exact",
+        "jailer::seccomp::owned_store_tests::renameat_publication_requires_original_store_or_exact_state_descriptors",
+        "--nocapture"
+      ],
+      "status": 101,
+      "wall_seconds": 1.3704289169982076,
+      "executable_sha256": "c2194f0e4f636d5720211943dff87321488b2c2303cbb27f3cb4e71e5f9b9889",
+      "log_sha256": "9eb84c906fe3167ac20615261366b9369323fc36fe0e86f3e566ae57f9343c8a",
+      "usage_sha256": "2d363fbfc50038102d0370e1fb668d304f01bc6877bf6d352ac56e9128bb80d9"
+    },
+    "readback_before_shutdown_fix": {
+      "base_revision": "c07d912e79cb1623bd26516fb6a48eddb640e01b",
+      "seccomp_sha256": "4ca00065a9a53dfe4c0191ed66b1de7c3547975712a14b19e2e665e33f664b6f",
+      "test_source_sha256": "a3de8849380d2a4447d370dc854d1beb36075ce4028f1eaad4f4aff2d3bbd530",
+      "command": [
+        "/usr/bin/time",
+        "-v",
+        "-o",
+        "/var/tmp/sc-direct-flowmux.iptmjZre/evidence/c07-drain-diagnostic-transfer-usage.txt",
+        "/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/debug/deps/registered_direct_tcp-e9bff04c12840b4a",
+        "registered_prepare::registered_direct_tcp_transfers_exact_bytes_and_refunds_a_failed_peer",
+        "--exact",
+        "--nocapture"
+      ],
+      "status": 101,
+      "wall_seconds": 0.21594776003621519,
+      "executable_sha256": "b23e8b5b19c6d0caea013d5eb000b17165ab91351b2724c71fa01e84cd095b0b",
+      "log_sha256": "297c7e4c8876334a41e042aad78d8740c50150bdca67970a2b5b08baa151053d",
+      "usage_sha256": "5ecc6ab93cf572bf87cb5e1f3885654341b33ee9b1e40e6793962a53f69f5968"
+    },
+    "old_control_pipe_and_stale_holder": {
+      "base_revision": "c07d912e79cb1623bd26516fb6a48eddb640e01b",
+      "test_source_sha256": "b050b62476b72b92121926af356c2babe98eba188e2f46b9e040b46788eda06c",
+      "executable_sha256": "a5f58fe5ce4da18399373b1c5e79bb7f08c67ca8a8b39804932e29614039c0cd",
+      "rows": [
+        {
+          "selector": "unexpected_control_byte_followed_by_eof_cannot_prove_drain",
+          "command": [
+            "/usr/bin/time",
+            "-v",
+            "-o",
+            "/var/tmp/sc-direct-flowmux.iptmjZre/evidence/c07-closing-red-extra-byte-usage.txt",
+            "/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/debug/deps/mvm_vmm-a2e43f6982ef184a",
+            "unexpected_control_byte_followed_by_eof_cannot_prove_drain",
+            "--nocapture"
+          ],
+          "status": 101,
+          "wall_seconds": 0.032597364974208176,
+          "log_sha256": "546bbb6adbc02f4d6219bcdf5c4e5814de122709713ea5eaca00a65a4b259d4d",
+          "usage_sha256": "12f7f4cea242aae33f1ac61ab5f64ee5e3aa15eccd7cea50fbd08995ed6c0d4b"
+        },
+        {
+          "selector": "real_child_lease_checks_original_holder_and_never_resets_after_failure",
+          "command": [
+            "/usr/bin/time",
+            "-v",
+            "-o",
+            "/var/tmp/sc-direct-flowmux.iptmjZre/evidence/c07-closing-red-stale-holder-usage.txt",
+            "/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/debug/deps/mvm_vmm-a2e43f6982ef184a",
+            "real_child_lease_checks_original_holder_and_never_resets_after_failure",
+            "--nocapture"
+          ],
+          "status": 101,
+          "wall_seconds": 0.0163341659354046,
+          "log_sha256": "c285d1b959a3f48941438508529d34622d42e7a3433244c4cf5009373e98dd7f",
+          "usage_sha256": "b55496d4286bc7aff8c55cd5b17b59f94e6f3ae270e5dfd56907237da6fc830e"
+        }
+      ]
+    },
+    "first_library_run_permissive_environment": {
+      "revision": "c07d912e79cb1623bd26516fb6a48eddb640e01b",
+      "source": "/var/tmp/sc-direct-flowmux.iptmjZre/source-c07.zjcaw7Q7",
+      "command": [
+        "/home/callard/.cargo/bin/cargo",
+        "+1.97.1",
+        "test",
+        "--locked",
+        "--offline",
+        "-p",
+        "mvm-hostd",
+        "-p",
+        "mvm-vmm",
+        "--lib",
+        "--",
+        "--test-threads=2"
+      ],
+      "status": 101,
+      "refusal": null,
+      "wall_seconds": 106.92152901203372,
+      "user_seconds": 130.588092,
+      "system_seconds": 13.793631,
+      "observed_minimum_free_bytes": 510726504448,
+      "after_free_bytes": 510727303168,
+      "artifacts": [],
+      "log_sha256": "a99814b5425baf51ed2e2bd714d6ee3f0138d2e93f84a6f65bf27d34678bf2e3"
+    },
+    "same_executable_environment_controls": {
+      "source_manifest_sha256": "d1834661f37dbe26a8ae8789f6092092fe6180ab1026a5373e3e8e0186a359b0",
+      "executable_sha256": "444d5071dd93bd388d4cfd5026446fb77bb6a8fcb9db5fc57ab854d3aeac2114",
+      "environment": {
+        "TMPDIR": "/home/callard/.cache/spiralcore-mvm-tests-20261113",
+        "umask": "0077"
+      },
+      "rows": [
+        {
+          "command": [
+            "/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/debug/deps/mvm_hostd-d2262037db1cbb19",
+            "--exact",
+            "run::tests::cached_runtime_propagates_checked_source_and_refuses_tampering_without_fallback",
+            "--nocapture"
+          ],
+          "status": 0,
+          "one_test_passed": true,
+          "wall_seconds": 0.26546409202273935,
+          "log_sha256": "7226fc4052d1098465a128161a7f53b2fa688f2218422d4a43ae24dc36d1c2e6"
+        },
+        {
+          "command": [
+            "/var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/debug/deps/mvm_hostd-d2262037db1cbb19",
+            "--exact",
+            "stream::broker::tests::a_redaction_failure_is_counted_and_never_persisted_raw",
+            "--nocapture"
+          ],
+          "status": 0,
+          "one_test_passed": true,
+          "wall_seconds": 0.016739543061703444,
+          "log_sha256": "761504cf9026660bf884adde4bbedda8099e3cf21bce67c16cae1c326b1811f7"
+        }
+      ]
+    }
+  },
+  "qualification_exclusions": [
+    "booted Firecracker/HVF guest on this source",
+    "physical vsock device in this fixture",
+    "cross-host direct or relay WAN",
+    "sustained or fleet capacity",
+    "matched zstd/raw performance comparison",
+    "FIPS/CUI certification",
+    "full MVM workspace test suite"
+  ],
+  "spiralcore_downstream_validation": {
+    "mvm_revision": "31f8a562f19d9eac89cb0d078b507770bb592262",
+    "canonical_host_library": {
+      "passed": 170,
+      "failed": 0,
+      "ignored": 0,
+      "test_seconds": 22.61
+    },
+    "adapter_live": {
+      "passed": 11,
+      "failed": 0,
+      "ignored": 0,
+      "test_seconds": 1.01
+    },
+    "test_log_sha256": "f7fa6ff6060f64306c8c0b5f14061f5bc2ad2807803247183de0cd7d3207b6f4",
+    "canonical_host_all_targets_clippy": {
+      "status": "PASS",
+      "log_sha256": "67f3a0ff7c9c8f5e4056971f8f1c4237da594921b7f06c598bd1ef7de103368c"
+    },
+    "source_alignment_receipt": "public-source-alignment.json",
+    "scope": "Native macOS host-process library/socket fixtures; not installed guest or Linux installer execution"
+  }
+}
