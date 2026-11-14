@@ -2,7 +2,7 @@ use super::{produce, verify_sidecar};
 use std::{fs, net::Ipv4Addr, os::unix::fs::PermissionsExt};
 
 fn refusal(ip: &str, mode: u32, occupied: bool, expected: &str) {
-    let private = tempfile::tempdir().unwrap();
+    let private = tempfile::Builder::new().permissions(fs::Permissions::from_mode(0o700)).tempdir().unwrap();
     let input = std::env::current_exe().unwrap();
     let parent = private.path().join("packets");
     fs::create_dir(&parent).unwrap();
@@ -13,7 +13,7 @@ fn refusal(ip: &str, mode: u32, occupied: bool, expected: &str) {
         fs::write(output.join("original"), b"retain").unwrap();
     }
     let err = produce(&input, &"0".repeat(64), ip, &output).unwrap_err();
-    assert_eq!(err.to_string(), expected);
+    assert_eq!(err.to_string(), expected, "{err:#}; parent={}", parent.display());
     if occupied {
         assert_eq!(fs::read(output.join("original")).unwrap(), b"retain");
         assert_eq!(fs::read_dir(&output).unwrap().count(), 1);

@@ -133,6 +133,11 @@ jobs:
           CARGO_TARGET_DIR: ${{ runner.temp }}/canonical-endpoint-target
         run: |
           set -euo pipefail
+          # The canonical controller refuses an unbounded or oversized main stack.
+          ulimit -S -s > endpoint-evidence/stack-before-kib.txt
+          ulimit -S -s 8192
+          ulimit -S -s > endpoint-evidence/stack-configured-kib.txt
+          test "$(ulimit -S -s)" = 8192
           cargo +1.97.1 test --locked \
             --manifest-path crates/spiralcore-mvm-live/Cargo.toml \
             --features canonical-host --lib installed_parent::collector_tests:: \
