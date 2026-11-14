@@ -1,3 +1,14 @@
+# Networking delivery status
+
+The independent-reply progress successor is published in draft [PR #278](https://github.com/R4-Laboratories/SpiralCore/pull/278).
+Linux source `e03c878e` passed the full component suite (45 unit tests), strict
+Clippy, resource guards and 100 held-inbound-work repeats. A 64 MiB-per-direction
+exact-byte local run took 43.39 s wall and 4.67 s process CPU. Windows 2025's
+instrumented sustained test failed its unchanged 2 s operation deadline; the
+seven-platform default-feature run remains in progress at this evidence snapshot.
+The code is unmerged. This is not installed MVM/WAN, customer-scale or FIPS
+acceptance. [Results, bounds and retained failures](evidence/2026-11-14-reply-progress/README.md).
+
 The default-feature Windows direction control passed both Server 2022/2025
 layouts and Windows ARM simultaneous transfer at 64 MiB exact bytes per direction.
 The ARM alternating control failed the unchanged 240-second workload gate near
@@ -13,8 +24,6 @@ pass. The helper fixtures recover exact 257-byte payloads; they use fixture gues
 and VMM counterparts, not booted MVMs. Earlier parallel/setup/inventory failures
 remain recorded. This does not close detached recovery or signed-runtime/WAN
 acceptance. [Source qualification and measured recovery](evidence/2026-11-14-helper-configuration-custody/README.md).
-
-# Networking delivery status
 
 Contributor MVM `0909b7ec` now preserves the exact unused journal preparation
 through early stopped-definition/image resolution refusal. Its opaque handoff

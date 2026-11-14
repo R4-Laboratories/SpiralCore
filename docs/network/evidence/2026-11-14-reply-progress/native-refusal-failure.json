@@ -1,0 +1,15 @@
+{
+  "source": "f0e28718427f14806bbf7b3ad4485d4293474065",
+  "run": "https://github.com/R4-Laboratories/SpiralCore/actions/runs/43619933134",
+  "job": 132523147432,
+  "job_log_sha256": "61c2decaa9a67649b385de1dc2de3e17837e907f11f2b5b39bbf6c95e01d7fac",
+  "selected_original_log_lines": [
+    "2026-11-14T17:15:17.3167255Z test duplex::tests::thirty_two_interleaved_requests_bound_a_waiting_local_operation ... FAILED",
+    "2026-11-14T17:15:17.3245931Z ---- duplex::tests::thirty_two_interleaved_requests_bound_a_waiting_local_operation stdout ----",
+    "2026-11-14T17:15:17.3246691Z thread 'duplex::tests::thirty_two_interleaved_requests_bound_a_waiting_local_operation' (4365) panicked at src/duplex/tests.rs:510:9:",
+    "2026-11-14T17:15:17.3247417Z assertion failed: matches!(guard.join(), Err(spiralcore_mvm_flowmux::Error::Limit))",
+    "2026-11-14T17:15:17.3248664Z     duplex::tests::thirty_two_interleaved_requests_bound_a_waiting_local_operation",
+    "2026-11-14T17:15:17.3249233Z test result: FAILED. 42 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.21s"
+  ],
+  "scope": "Existing 32-frame negative test refused traffic but its original worker join did not return the required Limit category. Actual returned variant was not printed by this assertion. No accepted fix or historical Windows root cause follows from this row."
+}
