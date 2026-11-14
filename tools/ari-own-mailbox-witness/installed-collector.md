@@ -109,3 +109,13 @@ filesystem. The successor funds a 1024 MiB finite filesystem and two conservativ
 1024 MiB startup storage reservations inside 2400 MiB shared staging credit.
 Guest memory and the 3 GiB host resident limit are unchanged. This is a witness
 capacity correction, not a storage-check exemption or a fleet-capacity result.
+
+Native trial 12 passed the canonical original-owner entrypoint check after the
+pre-admission binding correction in contributor MVM `61f727164`. Both original
+helpers and collectors retired cleanly again. Application delivery remains
+unqualified: the source workload exited 1, and its console shows the verified
+rc.3 signed runtime candidate refusing a 2553-byte mailbox boot record against
+its 2048-byte bound. Current host source permits 8192 bytes. A compatible verified
+runtime is required; successful artifact verification alone does not establish
+that host/guest contract compatibility. Do not patch a signed runtime in place
+or weaken its bound to label this test passed.
