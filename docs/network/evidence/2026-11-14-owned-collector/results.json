@@ -1,0 +1,581 @@
+{
+  "source": {
+    "revision": "841fec80e56f7f65271c099b551afe431e5ffb60",
+    "tracked_files": 4659,
+    "bytes": 64689193,
+    "mismatches": [],
+    "note": "Tracked source snapshot verification; transported baseline Git metadata remains 468661f4. Untracked SDK compile-contract RED is excluded."
+  },
+  "logs": [
+    {
+      "stage": "red",
+      "bytes": 3209,
+      "sha256": "baf4743dbdb4edc284626bf90b22f894fca367502b08438a4f9ff69d7048a320",
+      "nonzero_test_results": [],
+      "tests": [],
+      "finished": [],
+      "errors": [
+        "error[E0432]: unresolved import `mvm_vmm::host::network_endpoint_spawn::spawn_telemetry_collector_installed_registered`",
+        "error: could not compile `mvm-hostd` (test \"registered_direct_tcp\") due to 1 previous error"
+      ]
+    },
+    {
+      "stage": "green",
+      "bytes": 2796,
+      "sha256": "78576fd5cbc8b8868412aca5e69d13146459aabefbeede34c9be6111df4229c8",
+      "nonzero_test_results": [
+        "test result: FAILED. 2 passed; 2 failed; 0 ignored; 0 measured; 3 filtered out; finished in 0.13s"
+      ],
+      "tests": [
+        [
+          "registered_prepare::telemetry_tests::registered_telemetry_collects_its_original_child_and_retains_files",
+          "FAILED"
+        ],
+        [
+          "registered_prepare::telemetry_tests::registered_telemetry_refuses_changed_redaction_before_effects",
+          "FAILED"
+        ],
+        [
+          "registered_prepare::telemetry_tests::registered_telemetry_refuses_foreign_registration_before_effects",
+          "ok"
+        ],
+        [
+          "registered_prepare::telemetry_tests::registered_telemetry_refuses_missing_retained_credit_before_effects",
+          "ok"
+        ]
+      ],
+      "finished": [
+        "    Finished `test` profile [unoptimized] target(s) in 1m 38s"
+      ],
+      "errors": [
+        "error: test failed, to rerun pass `-p mvm-hostd --test registered_direct_tcp`"
+      ]
+    },
+    {
+      "stage": "green2",
+      "bytes": 1330,
+      "sha256": "6db7e0a27de0fece938be61e93e7baf5f44d5bd48ceda1b076e97acb36b28384",
+      "nonzero_test_results": [
+        "test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 3 filtered out; finished in 0.16s"
+      ],
+      "tests": [
+        [
+          "registered_prepare::telemetry_tests::registered_telemetry_collects_its_original_child_and_retains_files",
+          "ok"
+        ],
+        [
+          "registered_prepare::telemetry_tests::registered_telemetry_refuses_changed_redaction_before_effects",
+          "ok"
+        ],
+        [
+          "registered_prepare::telemetry_tests::registered_telemetry_refuses_foreign_registration_before_effects",
+          "ok"
+        ],
+        [
+          "registered_prepare::telemetry_tests::registered_telemetry_refuses_missing_retained_credit_before_effects",
+          "ok"
+        ]
+      ],
+      "finished": [
+        "    Finished `test` profile [unoptimized] target(s) in 42.39s"
+      ],
+      "errors": []
+    },
+    {
+      "stage": "regression",
+      "bytes": 1057,
+      "sha256": "f5c62601b5812b096ad12d31e112b6a14244b2bf9323d1366c49fcf3e783c144",
+      "nonzero_test_results": [
+        "test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.31s"
+      ],
+      "tests": [
+        [
+          "a_terminal_archive_retry_retains_only_its_original_registration",
+          "ok"
+        ],
+        [
+          "registered_prepare::registered_direct_tcp_transfers_exact_bytes_and_refunds_a_failed_peer",
+          "ok"
+        ],
+        [
+          "registered_prepare::store_preflight_requires_the_original_funded_fixture_guard",
+          "ok"
+        ],
+        [
+          "registered_prepare::telemetry_tests::registered_telemetry_collects_its_original_child_and_retains_files",
+          "ok"
+        ],
+        [
+          "registered_prepare::telemetry_tests::registered_telemetry_refuses_changed_redaction_before_effects",
+          "ok"
+        ],
+        [
+          "registered_prepare::telemetry_tests::registered_telemetry_refuses_foreign_registration_before_effects",
+          "ok"
+        ],
+        [
+          "registered_prepare::telemetry_tests::registered_telemetry_refuses_missing_retained_credit_before_effects",
+          "ok"
+        ]
+      ],
+      "finished": [
+        "    Finished `test` profile [unoptimized] target(s) in 0.33s"
+      ],
+      "errors": []
+    },
+    {
+      "stage": "protection",
+      "bytes": 6262,
+      "sha256": "2fa10950c488f9ac7e5f9ae75763a68f5e9f6ae7a091fe0e2138328fa640b277",
+      "nonzero_test_results": [
+        "test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 2115 filtered out; finished in 0.00s"
+      ],
+      "tests": [
+        [
+          "runtime_state_protection::tests::clean_original_state_passes_without_changing_files",
+          "ok"
+        ],
+        [
+          "runtime_state_protection::tests::exact_absence_is_distinct_from_replacement_or_symlink",
+          "ok"
+        ],
+        [
+          "runtime_state_protection::tests::fresh_check_detects_marker_published_after_initial_check",
+          "ok"
+        ],
+        [
+          "runtime_state_protection::tests::independent_original_child_is_denied_while_guard_is_held",
+          "ok"
+        ],
+        [
+          "runtime_state_protection::tests::independent_same_process_open_cannot_bypass_lock",
+          "ok"
+        ],
+        [
+          "runtime_state_protection::tests::lock_contention_child",
+          "ok"
+        ],
+        [
+          "runtime_state_protection::tests::lock_symlink_hardlink_mode_and_type_are_not_adopted",
+          "ok"
+        ],
+        [
+          "runtime_state_protection::tests::malformed_evidence_symlink_and_directory_are_also_denials",
+          "ok"
+        ],
+        [
+          "runtime_state_protection::tests::replaced_parent_and_lock_are_refused",
+          "ok"
+        ],
+        [
+          "runtime_state_protection::tests::replacement_state_is_refused_before_removal",
+          "ok"
+        ],
+        [
+          "runtime_state_protection::tests::telemetry_or_markers_refuse_even_without_a_valid_retention_marker",
+          "ok"
+        ],
+        [
+          "runtime_state_protection::tests::writable_parent_or_state_refuses_without_chmod",
+          "ok"
+        ]
+      ],
+      "finished": [
+        "    Finished `test` profile [unoptimized] target(s) in 2m 02s"
+      ],
+      "errors": []
+    },
+    {
+      "stage": "clippy",
+      "bytes": 4978,
+      "sha256": "3912114c7c699b056d40344b1f80ae2fdf71c7dd2f16242f5680e1f2b9939fda",
+      "nonzero_test_results": [],
+      "tests": [],
+      "finished": [
+        "    Finished `dev` profile [unoptimized] target(s) in 46.53s"
+      ],
+      "errors": []
+    },
+    {
+      "stage": "red2",
+      "bytes": 553,
+      "sha256": "0ed8fc6fb4ba58ac541de67943c77ba2433011d358fb0f0c5f99ef470e29f974",
+      "nonzero_test_results": [],
+      "tests": [],
+      "finished": [],
+      "errors": [
+        "error[E0609]: no field `sha256` on type `&mut AssetIdentity`",
+        "error: could not compile `mvm-hostd` (test \"registered_direct_tcp\") due to 1 previous error"
+      ]
+    },
+    {
+      "stage": "policy-red",
+      "bytes": 1856,
+      "sha256": "f87e058185b551a824eb75288c196803a54443b28cbb6e10851f2f66e16cf7f6",
+      "nonzero_test_results": [
+        "test result: FAILED. 4 passed; 2 failed; 0 ignored; 0 measured; 3 filtered out; finished in 0.35s"
+      ],
+      "tests": [
+        [
+          "registered_prepare::telemetry_tests::registered_telemetry_collects_its_original_child_and_retains_files",
+          "ok"
+        ],
+        [
+          "registered_prepare::telemetry_tests::registered_telemetry_refuses_a_different_signed_network_policy_before_effects",
+          "FAILED"
+        ],
+        [
+          "registered_prepare::telemetry_tests::registered_telemetry_refuses_changed_redaction_before_effects",
+          "ok"
+        ],
+        [
+          "registered_prepare::telemetry_tests::registered_telemetry_refuses_duplicate_signed_network_policies_before_effects",
+          "FAILED"
+        ],
+        [
+          "registered_prepare::telemetry_tests::registered_telemetry_refuses_foreign_registration_before_effects",
+          "ok"
+        ],
+        [
+          "registered_prepare::telemetry_tests::registered_telemetry_refuses_missing_retained_credit_before_effects",
+          "ok"
+        ]
+      ],
+      "finished": [
+        "    Finished `test` profile [unoptimized] target(s) in 1.56s"
+      ],
+      "errors": [
+        "error: test failed, to rerun pass `-p mvm-hostd --test registered_direct_tcp`"
+      ]
+    },
+    {
+      "stage": "policy-green",
+      "bytes": 2596,
+      "sha256": "83c52b650b5512d87d379a978a1a5a2b8e86b62b74993ebeee6a9ea5b367b2c4",
+      "nonzero_test_results": [
+        "test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.34s"
+      ],
+      "tests": [
+        [
+          "a_terminal_archive_retry_retains_only_its_original_registration",
+          "ok"
+        ],
+        [
+          "registered_prepare::registered_direct_tcp_transfers_exact_bytes_and_refunds_a_failed_peer",
+          "ok"
+        ],
+        [
+          "registered_prepare::store_preflight_requires_the_original_funded_fixture_guard",
+          "ok"
+        ],
+        [
+          "registered_prepare::telemetry_tests::registered_telemetry_collects_its_original_child_and_retains_files",
+          "ok"
+        ],
+        [
+          "registered_prepare::telemetry_tests::registered_telemetry_refuses_a_different_signed_network_policy_before_effects",
+          "ok"
+        ],
+        [
+          "registered_prepare::telemetry_tests::registered_telemetry_refuses_changed_redaction_before_effects",
+          "ok"
+        ],
+        [
+          "registered_prepare::telemetry_tests::registered_telemetry_refuses_duplicate_signed_network_policies_before_effects",
+          "ok"
+        ],
+        [
+          "registered_prepare::telemetry_tests::registered_telemetry_refuses_foreign_registration_before_effects",
+          "ok"
+        ],
+        [
+          "registered_prepare::telemetry_tests::registered_telemetry_refuses_missing_retained_credit_before_effects",
+          "ok"
+        ]
+      ],
+      "finished": [
+        "    Finished `test` profile [unoptimized] target(s) in 1m 53s"
+      ],
+      "errors": []
+    },
+    {
+      "stage": "runtime-red",
+      "bytes": 4174,
+      "sha256": "926dd7c1e9f569c6a0786a39d91c1a0730df949912555380f9da76dc49a78303",
+      "nonzero_test_results": [
+        "test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 1414 filtered out; finished in 0.00s"
+      ],
+      "tests": [
+        [
+          "workload_runner::runner::installed_tests::deny_all_installed_collector_uses_the_original_registered_host_anchor",
+          "FAILED"
+        ]
+      ],
+      "finished": [
+        "    Finished `test` profile [unoptimized] target(s) in 1m 43s"
+      ],
+      "errors": [
+        "error: test failed, to rerun pass `-p mvm-runtime --lib`"
+      ]
+    },
+    {
+      "stage": "selection-red",
+      "bytes": 2234,
+      "sha256": "c5a1cb5492ce1d912b35338fbc2c44181880b778f06abd6c3d3689f314aced81",
+      "nonzero_test_results": [
+        "test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 1416 filtered out; finished in 0.00s"
+      ],
+      "tests": [
+        [
+          "workload_runner::runner::installed_tests::unselected_installed_deny_all_does_not_select_a_registered_collector",
+          "FAILED"
+        ]
+      ],
+      "finished": [
+        "    Finished `test` profile [unoptimized] target(s) in 1m 36s"
+      ],
+      "errors": [
+        "error: test failed, to rerun pass `-p mvm-runtime --lib`"
+      ]
+    },
+    {
+      "stage": "runtime-green",
+      "bytes": 3403,
+      "sha256": "8ab752ec64e044628195c1dddc1e1a20215b45776a9c3b01c8c802b95bfd94a9",
+      "nonzero_test_results": [
+        "test result: ok. 16 passed; 0 failed; 0 ignored; 0 measured; 1401 filtered out; finished in 0.01s"
+      ],
+      "tests": [
+        [
+          "workload_runner::runner::installed::entrypoint::tests::lost_parent_authority_withholds_originating_event_and_terminal",
+          "ok"
+        ],
+        [
+          "workload_runner::runner::installed::retirement_tests::consumed_receipt_retains_original_parent_until_its_drop",
+          "ok"
+        ],
+        [
+          "workload_runner::runner::installed::retirement_tests::helper_free_bookkeeping_never_invents_an_endpoint_retirement",
+          "ok"
+        ],
+        [
+          "workload_runner::runner::installed::retirement_tests::retired_record_is_not_evicted_by_other_slot_turnover",
+          "ok"
+        ],
+        [
+          "workload_runner::runner::installed::retirement_tests::retirement_checks_exact_installed_parent_permit_not_copied_facts",
+          "ok"
+        ],
+        [
+          "workload_runner::runner::installed::retirement_tests::retirement_consume_requires_this_exact_terminal_record",
+          "ok"
+        ],
+        [
+          "workload_runner::runner::installed::startup_failure::tests::each_typed_stage_uses_only_its_fixed_public_name",
+          "ok"
+        ],
+        [
+          "workload_runner::runner::installed::startup_failure::tests::stage_projection_preserves_unique_mutable_cleanup_and_hides_backend_text",
+          "ok"
+        ],
+        [
+          "workload_runner::runner::installed::startup_failure::tests::unknown_original_failure_keeps_the_existing_opaque_message",
+          "ok"
+        ],
+        [
+          "workload_runner::runner::installed_tests::deny_all_installed_collector_uses_the_original_registered_host_anchor",
+          "ok"
+        ],
+        [
+          "workload_runner::runner::installed_tests::installed_pre_dispatch_failure_retains_and_retires_endpoint",
+          "ok"
+        ],
+        [
+          "workload_runner::runner::installed_tests::owned_native_handle_survives_canonical_runner_start_return",
+          "ok"
+        ],
+        [
+          "workload_runner::runner::installed_tests::portable_startup_requires_original_workspace_before_runtime_effects",
+          "ok"
+        ],
+        [
+          "workload_runner::runner::installed_tests::selected_installed_collector_refuses_an_unsupported_spawner_before_dispatch",
+          "ok"
+        ],
+        [
+          "workload_runner::runner::installed_tests::unselected_installed_deny_all_does_not_select_a_registered_collector",
+          "ok"
+        ],
+        [
+          "workload_runner::runner::installed_tests::unsupported_native_driver_refuses_before_reserving_installed_custody",
+          "ok"
+        ]
+      ],
+      "finished": [
+        "    Finished `test` profile [unoptimized] target(s) in 1m 36s"
+      ],
+      "errors": []
+    },
+    {
+      "stage": "core-green",
+      "bytes": 1818,
+      "sha256": "5ab8badcb71d39f055d05236f87d5437a35242da5c4a20301ebaff7b48c18ddb",
+      "nonzero_test_results": [
+        "test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 2117 filtered out; finished in 0.00s"
+      ],
+      "tests": [
+        [
+          "host_lifetime::endpoint::retained_telemetry_tests::collector_selection_poison_keeps_original_registration_required",
+          "ok"
+        ],
+        [
+          "host_lifetime::endpoint::retained_telemetry_tests::default_file_binding_is_typed_unsupported_and_keeps_borrowed_files_live",
+          "ok"
+        ],
+        [
+          "host_lifetime::endpoint::retained_telemetry_tests::default_retained_provider_refuses_without_effects",
+          "ok"
+        ],
+        [
+          "host_lifetime::endpoint::retained_telemetry_tests::file_binding_freshness_checks_refuse_before_callback_and_after_retaining_files",
+          "ok"
+        ],
+        [
+          "host_lifetime::endpoint::retained_telemetry_tests::file_binding_requires_preparation_and_original_borrows_and_refuses_replacement",
+          "ok"
+        ],
+        [
+          "host_lifetime::endpoint::retained_telemetry_tests::fresh_parent_and_guard_checks_surround_callback_and_refusals_remain_errors",
+          "ok"
+        ],
+        [
+          "host_lifetime::endpoint::retained_telemetry_tests::owned_store_resource_guard_default_refuses_before_effects",
+          "ok"
+        ],
+        [
+          "host_lifetime::endpoint::retained_telemetry_tests::owned_store_resource_guard_uses_original_and_rechecks_freshness",
+          "ok"
+        ],
+        [
+          "host_lifetime::endpoint::retained_telemetry_tests::same_guard_receives_original_borrow_and_refuses_foreign_or_replaced_directory",
+          "ok"
+        ],
+        [
+          "host_lifetime::native_stack::tests::known_stack_terms_include_the_rounded_signal_mapping_and_guard",
+          "ok"
+        ],
+        [
+          "host_lifetime::native_stack::tests::unsupported_native_facts_do_not_produce_a_stack_charge",
+          "ok"
+        ]
+      ],
+      "finished": [
+        "    Finished `test` profile [unoptimized] target(s) in 1m 21s"
+      ],
+      "errors": []
+    },
+    {
+      "stage": "final-registered",
+      "bytes": 2596,
+      "sha256": "59c53340e51bf92223557a53658fdf0b185bbc6b69926fac1d2b38fb90482caf",
+      "nonzero_test_results": [
+        "test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.37s"
+      ],
+      "tests": [
+        [
+          "a_terminal_archive_retry_retains_only_its_original_registration",
+          "ok"
+        ],
+        [
+          "registered_prepare::registered_direct_tcp_transfers_exact_bytes_and_refunds_a_failed_peer",
+          "ok"
+        ],
+        [
+          "registered_prepare::store_preflight_requires_the_original_funded_fixture_guard",
+          "ok"
+        ],
+        [
+          "registered_prepare::telemetry_tests::registered_telemetry_collects_its_original_child_and_retains_files",
+          "ok"
+        ],
+        [
+          "registered_prepare::telemetry_tests::registered_telemetry_refuses_a_different_signed_network_policy_before_effects",
+          "ok"
+        ],
+        [
+          "registered_prepare::telemetry_tests::registered_telemetry_refuses_changed_redaction_before_effects",
+          "ok"
+        ],
+        [
+          "registered_prepare::telemetry_tests::registered_telemetry_refuses_duplicate_signed_network_policies_before_effects",
+          "ok"
+        ],
+        [
+          "registered_prepare::telemetry_tests::registered_telemetry_refuses_foreign_registration_before_effects",
+          "ok"
+        ],
+        [
+          "registered_prepare::telemetry_tests::registered_telemetry_refuses_missing_retained_credit_before_effects",
+          "ok"
+        ]
+      ],
+      "finished": [
+        "    Finished `test` profile [unoptimized] target(s) in 1m 39s"
+      ],
+      "errors": []
+    },
+    {
+      "stage": "final-clippy",
+      "bytes": 1345,
+      "sha256": "c5b8c156a2888e7fe8317818b2c24d64db696c7a01e85dc009ad99ce637b59d9",
+      "nonzero_test_results": [],
+      "tests": [],
+      "finished": [
+        "    Finished `dev` profile [unoptimized] target(s) in 40.64s"
+      ],
+      "errors": []
+    },
+    {
+      "stage": "sdk-contract-red",
+      "bytes": 4700,
+      "sha256": "517d5c2e4cbf11c140a8d89e44303df954fc8c0afbcc332b4faf6e13593dfa87",
+      "nonzero_test_results": [],
+      "tests": [],
+      "finished": [],
+      "errors": [
+        "error[E0425]: cannot find type `OwnedJournalStart` in module `mvm_client::launch::persistent::journal`",
+        "error[E0599]: no method named `start_persistent_with_journal_and_host_lifetime` found for reference `&mvm_client::LocalBackend` in the current scope",
+        "error: could not compile `mvm-client` (test \"persistent_journal_host_lifetime\") due to 2 previous errors"
+      ]
+    }
+  ],
+  "status": "component-qualified; funded persistent journal integration incomplete",
+  "source_tree": "7684672b40edffa64c7198a89d26b56ae9a0b30c",
+  "source_manifest_sha256": "55b9c95edf60f99caf61b75543b97603340ec34c675f9cc70aea58f5e1b567df",
+  "environment": {
+    "host": "wick",
+    "os": "Linux",
+    "toolchain": "Rust 1.97.1",
+    "mode": "unoptimized Cargo test/dev profiles; locked and offline",
+    "jobs": 2,
+    "cpu_quota_percent": 200,
+    "memory_max_bytes": 6442450944,
+    "gpu_used": false,
+    "build_target": "existing shared Cargo target"
+  },
+  "final_batch": {
+    "systemd_invocation": "92f5c1b605364a34aa0e1271a21778b5",
+    "exit_code": 0,
+    "wall_seconds": 318.948,
+    "cpu_seconds": 583.865,
+    "memory_peak_reported": "3.9G",
+    "scope": "compilation and validation service; not application transfer CPU or timing"
+  },
+  "limits": [
+    "No persistent two-MVM retirement rerun after this change",
+    "No WAN or matched zstd trial",
+    "No full workspace, BDD/gated or platform acceptance for this successor",
+    "No FIPS/CUI or fleet qualification"
+  ],
+  "sdk_contract_red_fixture_sha256": "c2b8736ea2239b67795bfbdb8ee5c286de9ed02020e47a45ea89e31fdd334bf6"
+}
