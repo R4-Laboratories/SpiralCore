@@ -6,7 +6,8 @@ development tool, not a completed native retirement result or a new protocol.
 The original enrollment, canonical mailbox grants, receipt verification,
 exact readback and bidirectional byte meters remain the data path.
 
-Use a coherent contributor MVM checkout containing `0835ef0ad` at `../source`.
+Use the coherent contributor MVM source [`dad9fecc5`](https://github.com/Casey-allard/mvm/commit/dad9fecc5)
+at `../source`, including its owned journal control and readiness integration.
 The optional `spiralcore-mvm-live` dependency must resolve to that same MVM
 package family through an explicit Cargo patch configuration. The contributor
 host pins SpiralCore `4ea98b9e`; its transfer/FlowMux packages and their path
@@ -14,6 +15,31 @@ dependencies must remain one coherent family. Do not combine the newer host's
 owned-store APIs with an older codec or create duplicate authority/codec types.
 Record the patch configuration, source hashes and metadata package identities
 with each execution. The tool does not update product dependency pins.
+
+Build the original measured mailbox helper from that same source with the
+canonical **`durable-guest-io-witness`** feature enabled:
+
+```sh
+cargo +1.97.1 build --locked --offline --manifest-path ../source/Cargo.toml \
+  -p mvm-hostd --features durable-guest-io-witness --bin mvm-mailbox
+```
+
+Record the actual executable length, SHA-256, source revision and build command.
+Install the measured helper with mode **0755**, and point `MVM_MAILBOX_PATH` at
+that exact original executable before launching the fresh pair. The helper
+feature creates `mailbox-guest-stream-v1.counts` through the canonical durable
+service meter. Enabling only a host-driver feature does not instrument a
+separately built helper. The ordinary helper build emits no such counter file;
+the witness must refuse its missing meter rather than create one or waive the
+byte-accounting gate.
+
+Native attempt 9 passed B's owned readiness/startup and subsequently failed
+before attempting A because the separately built helper omitted this feature,
+leaving the required meter absent. B's original helper was again collected
+unassisted with exit 0. This is a failed pair attempt, not a transfer result or
+complete lifecycle qualification. Rebuilding the correctly featured helper is
+the required preparation correction; no policy, retirement or measurement gate
+is bypassed.
 
 The three tools are:
 

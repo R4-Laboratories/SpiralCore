@@ -1,0 +1,39 @@
+{
+  "source": {
+    "revision": "dad9fecc5d19bed3d0312f656ea4912fc2607d32",
+    "files": 4667,
+    "bytes": 64764700,
+    "manifest_sha256": "8c4ae693130b329678695b4b07e9b7aeb94113f9a32fb85fb6a95a89972a07e1",
+    "mismatches": []
+  },
+  "native8_signed_timeouts": {
+    "boot_secs": 60,
+    "exec_secs": 0
+  },
+  "fix": "Journal exec_secs0 means no execution-duration cap; caller absolute deadline and signed valid_until remain mandatory. One-shot unchanged. Close authenticated activation continuation explicitly.",
+  "tests": {
+    "fc": {
+      "passed": 12,
+      "ignored": 1,
+      "log_sha256": "a2f6924c003eec42208479ae005e815ba78b0e1ce9c2f5024304792a9d6fa559"
+    },
+    "runtime": {
+      "passed": 7,
+      "ignored": 0,
+      "log_sha256": "9595f5b6cc35fbcc5bfc0949c8f13c667d122b3d401d643343b539253985664e"
+    }
+  },
+  "strict_clippy": {
+    "crates": [
+      "mvm-vmm",
+      "mvm-backends",
+      "mvm-runtime",
+      "mvm-client"
+    ],
+    "all_targets": true,
+    "warnings": "denied",
+    "passed": true,
+    "log_sha256": "1cce62bba507500d87fae19c7444ac3cf11004585fd218a6dceb3750d2c9466b"
+  },
+  "security_review": "Scoped independent source review PASS; no native lifecycle claim from review."
+}

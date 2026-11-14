@@ -99,12 +99,20 @@ impl Enrollment {
             plan.mailbox == Some(self.destination) && plan.image.name == super::B,
             "unexpected destination plan"
         );
-        let boot = MailboxReaderBootBinding::load(&mvm_core::config::vm_state_dir(super::B))?;
-        boot.check_plan(plan)?;
+        let state_dir = mvm_core::config::vm_state_dir(super::B);
+        let boot = MailboxReaderBootBinding::load(&state_dir).with_context(|| {
+            format!(
+                "load original destination mailbox boot binding from {}",
+                state_dir.display()
+            )
+        })?;
+        boot.check_plan(plan)
+            .context("verify original destination mailbox boot against actual admission")?;
         let receive = b
             .lock()
             .map_err(|_| anyhow::anyhow!("destination owner unavailable"))?
-            .original_receive()?
+            .original_receive()
+            .context("obtain original destination receive capability for source enrollment")?
             .clone();
         let grants = Arc::new(JournalCredentials {
             source_scope: self.policy.source_scope.clone(),

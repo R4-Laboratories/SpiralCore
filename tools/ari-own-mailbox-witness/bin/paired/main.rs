@@ -433,11 +433,15 @@ fn run(args: &[String]) -> Result<()> {
             .as_ref()
             .context("destination start missing")?
             .admitted;
-        let (grant, auth) = setup.bind_source(
-            destination_admitted,
-            b,
-            Instant::now() + Duration::from_secs(90),
-        )?;
+        let (grant, auth) = setup
+            .bind_source(
+                destination_admitted,
+                b,
+                Instant::now() + Duration::from_secs(90),
+            )
+            .context(
+                "bind source enrollment after original destination startup and meter acquisition",
+            )?;
         let direction = grant
             .outbound_journal_v1
             .context("missing outbound direction")?;
