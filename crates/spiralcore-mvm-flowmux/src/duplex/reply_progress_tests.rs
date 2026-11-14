@@ -1,6 +1,9 @@
 //! Trusted connected-transport control; no authenticated MVM or WAN is fabricated.
 use super::*;
-use spiralcore_transfer::{resource_profile::ResourceProfile, v1::Capabilities};
+use spiralcore_transfer::{
+    resource_profile::ResourceProfile,
+    v1::{Capabilities, ObjectMode},
+};
 use std::net::{TcpListener, TcpStream};
 
 struct Gate {
