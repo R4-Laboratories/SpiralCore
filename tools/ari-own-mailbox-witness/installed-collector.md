@@ -169,7 +169,9 @@ application delivery. The paired command retains its original missing-definition
 error and returns nonzero even when recovery passes. Helper exit statuses and
 transfer measurements are absent because no workload or application transfer
 ran. The current source has 27 collector-driver tests and strict Clippy passing;
-the bounded host execution is a separate acceptance gate.
+the bounded host execution now passes its separate recovery gate.
+[Original host result and retained accounting](../../docs/network/evidence/2026-11-14-unused-parent-cancellation/README.md)
+record the exact source and its limits.
 
 Ari must publish the compatible guest runtime: no contributor release-signing
 process is currently available. The unsigned compatibility archive is a build

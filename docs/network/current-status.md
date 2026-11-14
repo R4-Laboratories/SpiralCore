@@ -5,7 +5,13 @@ through early stopped-definition/image resolution refusal. Its opaque handoff
 can use the existing original-parent cancellation API; returning it does not
 itself refund credit. Sixteen focused checks, constructor privacy, final strict
 Clippy, Linux/BDD gated compilation and workspace tests under umask 0022 passed.
-Actual journal-caller cancellation and uncertain/detached recovery remain open.
+The actual journal caller now also passes a bounded Linux host test: the
+original parent cancels exactly one unused 256 MiB guest reservation after a
+missing-definition refusal, premature/repeated operations refuse, and the
+original service shuts down with zero guests/workers. No workload or application
+transfer ran; portable debt remains retained. Controller wall/CPU were
+1.235/0.646 seconds. Uncertain/detached recovery remains open.
+[Original-parent recovery result](evidence/2026-11-14-unused-parent-cancellation/README.md).
 [Original-token recovery, retained failures and source identities](evidence/2026-11-14-unused-journal-preparation/README.md).
 
 The current contributor host now refuses unsupported mailbox runtime profiles

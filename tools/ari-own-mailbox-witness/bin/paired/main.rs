@@ -827,7 +827,12 @@ mod tests {
     fn collector_rejects_series_before_opening_operator_inputs() {
         let args = ["--installed-collector", "--objects", "2"].map(str::to_owned);
         let error = run(&args).expect_err("collector series must refuse before setup");
-        assert!(error.to_string().contains("clean 257-byte profile"));
+        let expected = if cfg!(feature = "receipt-loss-qualification") {
+            "series and recovery are separate measurements"
+        } else {
+            "clean 257-byte profile"
+        };
+        assert!(error.to_string().contains(expected));
     }
 
     #[cfg(not(all(target_os = "linux", feature = "installed-collector-pair")))]
@@ -854,10 +859,11 @@ mod tests {
     fn helper_restart_refuses_a_campaign_before_preparing_guests() {
         let args = ["--restart-helpers", "--sender-ordinals", "2"].map(str::to_owned);
         let error = run(&args).expect_err("multi-ordinal restart must refuse before setup");
-        assert!(
-            error
-                .to_string()
-                .contains("requires one Linux sender ordinal")
-        );
+        let expected = if cfg!(feature = "receipt-loss-qualification") {
+            "invalid ordinal campaign"
+        } else {
+            "requires one Linux sender ordinal"
+        };
+        assert!(error.to_string().contains(expected));
     }
 }
