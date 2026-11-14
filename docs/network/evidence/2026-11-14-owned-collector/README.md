@@ -1,6 +1,6 @@
 # Owned collector component and the remaining persistent integration
 
-**The registered collector component is qualified; the original paired-MVM retirement failure remains open.** Contributor MVM [`841fec80e`](https://github.com/Casey-allard/mvm/commit/841fec80e56f7f65271c099b551afe431e5ffb60) contains the implemented successor. This is a Linux registered-process and runtime-ownership checkpoint, without a newly completed MVM/WAN witness.
+**The registered collector component is qualified. A later two-guest native trial positively retired both original helpers and collectors; its first application call still refused admission.** See the [current native journal report](native-journal.md). The component results below retain their original scope. Contributor MVM [`841fec80e`](https://github.com/Casey-allard/mvm/commit/841fec80e56f7f65271c099b551afe431e5ffb60) contains the implemented successor. This is a Linux registered-process and runtime-ownership checkpoint, without a newly completed MVM/WAN witness.
 
 ## Implemented behavior
 

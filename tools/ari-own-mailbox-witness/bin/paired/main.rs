@@ -1,5 +1,7 @@
 //! One synthetic B-addressed operation through two original persistent native guests.
 mod enrollment;
+#[cfg(all(target_os = "linux", feature = "installed-collector-pair"))]
+mod installed_collector;
 #[cfg(all(target_os = "linux", feature = "installed-object-pair"))]
 mod installed_object;
 mod meter;
@@ -232,6 +234,18 @@ impl State {
     }
 }
 fn run(args: &[String]) -> Result<()> {
+    let (collector_mode, args) = match args {
+        [flag, rest @ ..] if flag == "--installed-collector" => (true, rest),
+        _ => (false, args),
+    };
+    ensure!(
+        !collector_mode
+            || cfg!(all(
+                target_os = "linux",
+                feature = "installed-collector-pair"
+            )),
+        "installed collector mode requires its Linux feature"
+    );
     let (requested, inputs) = match args {
         [flag, backend, rest @ ..] if flag == "--backend" => (Some(backend.as_str()), rest),
         _ => (None, args),
@@ -267,8 +281,23 @@ fn run(args: &[String]) -> Result<()> {
             || (ordinal_count.is_none() && !cfg!(feature = "receipt-loss-qualification")),
         "series and recovery are separate measurements"
     );
+    ensure!(
+        !collector_mode
+            || (!restart_helpers
+                && ordinal_count.is_none()
+                && operations.is_none()
+                && !cfg!(feature = "receipt-loss-qualification")
+                && !cfg!(feature = "large-object-fixture")
+                && !cfg!(feature = "sender-ordinal-v1")
+                && !cfg!(feature = "installed-object-pair")),
+        "installed collector requires the clean 257-byte profile"
+    );
     let native = native_backend::select(env::consts::OS, env::consts::ARCH, requested)
         .map_err(anyhow::Error::msg)?;
+    ensure!(
+        !collector_mode || native == "firecracker",
+        "collector requires Firecracker"
+    );
     let [ar, ad, br, bd, frame] = inputs else {
         anyhow::bail!("expected A ext4 + digest, B ext4 + digest, and fixture frame")
     };
@@ -291,13 +320,32 @@ fn run(args: &[String]) -> Result<()> {
         .create_new(true)
         .mode(0o600)
         .open(report)?;
-    let backend = LocalBackend::with_hypervisor(native);
+    let begin = Instant::now();
+    let cpu = cpu_time::ProcessTime::now();
+    #[cfg(all(target_os = "linux", feature = "installed-collector-pair"))]
+    let mut collector = if collector_mode {
+        Some(installed_collector::operator(&home)?)
+    } else {
+        None
+    };
+    #[cfg(all(target_os = "linux", feature = "installed-collector-pair"))]
+    let backend = collector
+        .as_ref()
+        .map(|(pair, _)| Arc::clone(pair.backend()))
+        .unwrap_or_else(|| Arc::new(LocalBackend::with_hypervisor(native)));
+    #[cfg(not(all(target_os = "linux", feature = "installed-collector-pair")))]
+    let backend = Arc::new(LocalBackend::with_hypervisor(native));
+    #[cfg(all(target_os = "linux", feature = "installed-collector-pair"))]
+    let collector_before = collector
+        .as_ref()
+        .map(|(pair, _)| pair.resources())
+        .transpose()?;
+    #[cfg(not(all(target_os = "linux", feature = "installed-collector-pair")))]
+    let collector_before: Option<Value> = None;
     let mut observed = [None; 2];
     let rt = tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()?;
-    let begin = Instant::now();
-    let cpu = cpu_time::ProcessTime::now();
     let mut meters: [Option<meter::OriginalMeter>; 2] = [None, None];
     let mut state = State::default();
     let measured = (|| -> Result<Value> {
@@ -308,7 +356,7 @@ fn run(args: &[String]) -> Result<()> {
             s.sender_ordinals = ordinal_count.is_some();
             s
         };
-        for (i, name, path) in [(1, B, bi), (0, A, ai)] {
+        for (i, name, path) in [(1, B, bi.clone()), (0, A, ai.clone())] {
             let r =
                 LaunchRequest::builder(LifecycleMode::Persistent, RootfsSource::LocalPath(path))
                     .name(name)
@@ -324,14 +372,33 @@ fn run(args: &[String]) -> Result<()> {
             state.defined[i] = true;
         }
         state.attempted[1] = true;
-        let bstart = rt.block_on(backend.start_persistent_with_journal(
+        let mut destination = InstalledJournal::Destination {
+            admission: &setup.incoming,
+            owner: &mut state.b_pending,
+        };
+        #[cfg(all(target_os = "linux", feature = "installed-collector-pair"))]
+        let bstart = if let Some((pair, operator)) = &mut collector {
+            rt.block_on(pair.start(
+                B,
+                operator.quote(B)?,
+                &bi,
+                setup.destination,
+                &mut destination,
+            ))?;
+            None
+        } else {
+            Some(rt.block_on(backend.start_persistent_with_journal(
+                B,
+                setup.destination,
+                &mut destination,
+            ))?)
+        };
+        #[cfg(not(all(target_os = "linux", feature = "installed-collector-pair")))]
+        let bstart = Some(rt.block_on(backend.start_persistent_with_journal(
             B,
             setup.destination,
-            &mut InstalledJournal::Destination {
-                admission: &setup.incoming,
-                owner: &mut state.b_pending,
-            },
-        ))?;
+            &mut destination,
+        ))?);
         observed[1] = mvm_client::AnyBackend::started_vm_kind(B).map(|kind| kind.as_str());
         native_backend::check_observation(native, observed[1]).map_err(anyhow::Error::msg)?;
         #[cfg(feature = "sender-ordinal-v1")]
@@ -352,23 +419,47 @@ fn run(args: &[String]) -> Result<()> {
                 .context("destination not owned after start")?,
         ));
         state.b = Some(b.clone());
-        let (grant, auth) = setup.bind_source(
-            &bstart.admitted,
-            b,
-            Instant::now() + Duration::from_secs(90),
-        )?;
+        #[cfg(all(target_os = "linux", feature = "installed-collector-pair"))]
+        let destination_admitted = if let Some((pair, _)) = &collector {
+            &pair.machine(B)?.admitted
+        } else {
+            &bstart
+                .as_ref()
+                .context("ordinary destination start missing")?
+                .admitted
+        };
+        #[cfg(not(all(target_os = "linux", feature = "installed-collector-pair")))]
+        let destination_admitted = &bstart
+            .as_ref()
+            .context("destination start missing")?
+            .admitted;
+        let (grant, auth) = setup
+            .bind_source(
+                destination_admitted,
+                b,
+                Instant::now() + Duration::from_secs(90),
+            )
+            .context(
+                "bind source enrollment after original destination startup and meter acquisition",
+            )?;
         let direction = grant
             .outbound_journal_v1
             .context("missing outbound direction")?;
         state.attempted[0] = true;
-        let astart = rt.block_on(backend.start_persistent_with_journal(
-            A,
-            grant,
-            &mut InstalledJournal::Source {
-                admission: &auth,
-                owner: &mut state.a,
-            },
-        ))?;
+        let mut source = InstalledJournal::Source {
+            admission: &auth,
+            owner: &mut state.a,
+        };
+        #[cfg(all(target_os = "linux", feature = "installed-collector-pair"))]
+        let astart = if let Some((pair, operator)) = &mut collector {
+            rt.block_on(pair.start(A, operator.quote(A)?, &ai, grant, &mut source))?;
+            None
+        } else {
+            Some(rt.block_on(backend.start_persistent_with_journal(A, grant, &mut source))?)
+        };
+        #[cfg(not(all(target_os = "linux", feature = "installed-collector-pair")))]
+        let astart =
+            Some(rt.block_on(backend.start_persistent_with_journal(A, grant, &mut source))?);
         observed[0] = mvm_client::AnyBackend::started_vm_kind(A).map(|kind| kind.as_str());
         native_backend::check_observation(native, observed[0]).map_err(anyhow::Error::msg)?;
         #[cfg(feature = "sender-ordinal-v1")]
@@ -382,9 +473,29 @@ fn run(args: &[String]) -> Result<()> {
         #[cfg(not(feature = "sender-ordinal-v1"))]
         let observed_meter = meter::OriginalMeter::open(A)?;
         meters[0] = Some(observed_meter);
+        #[cfg(all(target_os = "linux", feature = "installed-collector-pair"))]
+        let admissions = if let Some((pair, _)) = &collector {
+            [&pair.machine(A)?.admitted, &pair.machine(B)?.admitted]
+        } else {
+            [
+                &astart.as_ref().context("source start missing")?.admitted,
+                &bstart
+                    .as_ref()
+                    .context("destination start missing")?
+                    .admitted,
+            ]
+        };
+        #[cfg(not(all(target_os = "linux", feature = "installed-collector-pair")))]
+        let admissions = [
+            &astart.as_ref().context("source start missing")?.admitted,
+            &bstart
+                .as_ref()
+                .context("destination start missing")?
+                .admitted,
+        ];
         for (name, original, admitted) in [
-            (A, grant, &astart.admitted),
-            (B, setup.destination, &bstart.admitted),
+            (A, grant, admissions[0]),
+            (B, setup.destination, admissions[1]),
         ] {
             let posture = admitted
                 .mailbox_posture()
@@ -397,7 +508,9 @@ fn run(args: &[String]) -> Result<()> {
             posture.verify(admitted.plan(), name)?;
         }
         let boot = MailboxReaderBootBinding::load(&mvm_core::config::vm_state_dir(A))?;
-        boot.check_plan(astart.admitted.plan())?;
+        boot.check_plan(admissions[0].plan())?;
+        let source_plan = admissions[0].plan().plan_id.clone();
+        let destination_plan = admissions[1].plan().plan_id.clone();
         let commitment = journal_direction_commitment(&boot)?;
         let setup_ns = begin.elapsed().as_nanos() as u64;
         let helper = state.a.as_mut().context("source helper missing")?;
@@ -439,11 +552,29 @@ fn run(args: &[String]) -> Result<()> {
             json!({"completed_objects":rows.len(),"unique_message_ids":ids.len(),
                 "series_elapsed_ns":start.elapsed().as_nanos() as u64,"transfers":rows})
         } else {
-            transfer::one(&raw, &direction, commitment, helper, None)?
+            #[cfg(all(target_os = "linux", feature = "installed-collector-pair"))]
+            let row = if let Some((pair, _)) = &mut collector {
+                transfer::one_with_calls(&raw, &direction, commitment, helper, None, pair)?
+            } else {
+                transfer::one(&raw, &direction, commitment, helper, None)?
+            };
+            #[cfg(not(all(target_os = "linux", feature = "installed-collector-pair")))]
+            let row = transfer::one(&raw, &direction, commitment, helper, None)?;
+            row
         };
         result["setup_ns"] = json!(setup_ns);
-        result["source_plan"] = json!(astart.admitted.plan().plan_id);
-        result["destination_plan"] = json!(bstart.admitted.plan().plan_id);
+        result["source_plan"] = json!(source_plan);
+        result["destination_plan"] = json!(destination_plan);
+        result["call_transport"] = json!(if collector_mode {
+            "original_owned_journal_control"
+        } else {
+            "ordinary_sdk_process"
+        });
+        result["driver_cpu_domain"] = json!(if collector_mode {
+            "controller process includes SDK call/handshake work; excludes guest, mailbox children and other processes"
+        } else {
+            "controller process excludes SDK call subprocess CPU"
+        });
         Ok(result)
     })();
     let recorded = (|| -> Result<()> {
@@ -462,11 +593,36 @@ fn run(args: &[String]) -> Result<()> {
     // Acquire originals before typed SDK stop removes each VM state directory.
     // If a capture fails, still complete retirement using the retained owners.
     let successors = restart_helpers.then(|| [A, B].map(meter::OriginalMeter::open_replacement));
+    #[cfg(all(target_os = "linux", feature = "installed-collector-pair"))]
+    let collector_before_stop = collector.as_ref().map(|(pair, _)| pair.resources());
+    #[cfg(not(all(target_os = "linux", feature = "installed-collector-pair")))]
+    let collector_before_stop: Option<Result<Value>> = None;
+    #[cfg(all(target_os = "linux", feature = "installed-collector-pair"))]
+    let exit = if let Some((pair, _)) = &mut collector {
+        drop(backend);
+        installed_collector::retire(pair, &mut state, &home)
+    } else {
+        state.retire(&backend, &rt, &home)
+    };
+    #[cfg(not(all(target_os = "linux", feature = "installed-collector-pair")))]
     let exit = state.retire(&backend, &rt, &home);
+    #[cfg(all(target_os = "linux", feature = "installed-collector-pair"))]
+    let collector_after = collector.as_ref().map(|(pair, _)| pair.resources());
+    #[cfg(not(all(target_os = "linux", feature = "installed-collector-pair")))]
+    let collector_after: Option<Result<Value>> = None;
+    if collector_mode && exit.is_err() {
+        // The original journal handles accompany the retained SDK/parent owners.
+        // Failed retirement never falls through to ordinary cleanup on Drop.
+        std::mem::forget(std::mem::take(&mut state));
+    }
     let mut streams = [Value::Null, Value::Null];
+    let mut meter_errors = Vec::new();
     for (i, meter) in meters.into_iter().enumerate() {
         if let Some(meter) = meter {
-            streams[i] = meter.finish(&home.join(format!("original-{}.counts", [A, B][i])))?;
+            match meter.finish(&home.join(format!("original-{}.counts", [A, B][i]))) {
+                Ok(row) => streams[i] = row,
+                Err(error) => meter_errors.push(format!("{}: {error:#}", [A, B][i])),
+            }
         }
     }
     let mut successor_streams = [Value::Null, Value::Null];
@@ -481,7 +637,7 @@ fn run(args: &[String]) -> Result<()> {
     let meters_complete = if restart_helpers {
         recovery_meters(&streams, &successor_streams)
     } else {
-        ordinal_count.is_none()
+        (ordinal_count.is_none() && !collector_mode)
             || streams.iter().all(|s| {
                 s["capture"] == "closed_session"
                     && s["completed_exchanges"].as_u64().is_some_and(|n| n > 0)
@@ -493,17 +649,41 @@ fn run(args: &[String]) -> Result<()> {
                         .is_some_and(|n| n > 0)
             })
     };
+    #[cfg(all(target_os = "linux", feature = "installed-collector-pair"))]
+    let collector_limits = Some((
+        installed_collector::START_MEMORY_BYTES,
+        installed_collector::START_DISK_BYTES,
+        installed_collector::HOST_RESIDENT_BYTES,
+        installed_collector::TENANT_PROCESS_AS,
+    ));
+    #[cfg(not(all(target_os = "linux", feature = "installed-collector-pair")))]
+    let collector_limits: Option<(u64, u64, u64, u64)> = None;
     let row = json!({"native_host":{"os":env::consts::OS,"architecture":env::consts::ARCH,
-        "requested_backend":native,"observed_source_backend":observed[0],"observed_destination_backend":observed[1]},
-        "original_5257_helper_streams_a_b":streams,"replacement_5257_helper_streams_a_b":restart_helpers.then_some(successor_streams),"result":measured.as_ref().ok(),"transfer_error":measured.as_ref().err().map(|e|format!("{e:#}")),
-        "original_exits":exit.as_ref().ok(),"teardown_error":exit.as_ref().err().map(|e|format!("{e:#}")),"driver_process_cpu_ns":cpu.elapsed().as_nanos() as u64,
-        "whole_wall_ns":begin.elapsed().as_nanos() as u64});
+    "requested_backend":native,"observed_source_backend":observed[0],"observed_destination_backend":observed[1]},
+    "original_5257_helper_streams_a_b":streams,"replacement_5257_helper_streams_a_b":restart_helpers.then_some(successor_streams),"result":measured.as_ref().ok(),"transfer_error":measured.as_ref().err().map(|e|format!("{e:#}")),
+        "original_exits":exit.as_ref().ok(),"teardown_error":exit.as_ref().err().map(|e|format!("{e:#}")),"meter_errors":meter_errors,"driver_process_cpu_ns":cpu.elapsed().as_nanos() as u64,
+    "whole_wall_ns":begin.elapsed().as_nanos() as u64,
+    "installed_collector":collector_mode.then_some(collector_limits).flatten().map(|(memory,disk,resident,tenant)|json!({
+        "per_start_memory_ceiling_bytes":memory,"per_start_disk_ceiling_bytes":disk,
+        "host_resident_ceiling_bytes":resident,"tenant_process_address_space_bytes":tenant,
+        "requested_guest_memory_bytes":512u64<<20,
+        "initial_resources":collector_before,
+        "before_stop_resources":collector_before_stop.as_ref().and_then(|r|r.as_ref().ok()),
+        "before_stop_resource_error":collector_before_stop.as_ref().and_then(|r|r.as_ref().err()).map(|e|format!("{e:#}")),
+        "after_stop_resources":collector_after.as_ref().and_then(|r|r.as_ref().ok()),
+        "after_stop_resource_error":collector_after.as_ref().and_then(|r|r.as_ref().err()).map(|e|format!("{e:#}")),
+        "runtime_state_removed":false,"wan":null
+    }))});
     serde_json::to_writer(&mut output, &row)?;
     output.write_all(b"\n")?;
     output.sync_all()?;
     exit?;
     recorded?;
     measured?;
+    ensure!(
+        meter_errors.is_empty(),
+        "original byte meter finalization failed"
+    );
     ensure!(
         meters_complete,
         "incomplete original sender-ordinal guest stream measurements"
@@ -569,6 +749,22 @@ fn main() -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::run;
+
+    #[cfg(all(target_os = "linux", feature = "installed-collector-pair"))]
+    #[test]
+    fn collector_rejects_series_before_opening_operator_inputs() {
+        let args = ["--installed-collector", "--objects", "2"].map(str::to_owned);
+        let error = run(&args).expect_err("collector series must refuse before setup");
+        assert!(error.to_string().contains("clean 257-byte profile"));
+    }
+
+    #[cfg(not(all(target_os = "linux", feature = "installed-collector-pair")))]
+    #[test]
+    fn collector_requires_the_explicit_linux_feature_before_setup() {
+        let args = ["--installed-collector"].map(str::to_owned);
+        let error = run(&args).expect_err("unavailable collector must refuse before setup");
+        assert!(error.to_string().contains("requires its Linux feature"));
+    }
 
     #[test]
     fn helper_restart_requires_an_explicit_single_ordinal() {

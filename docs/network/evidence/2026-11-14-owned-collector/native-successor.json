@@ -1,0 +1,601 @@
+{
+  "native1": {
+    "paired_result_sha256": "7553339baa68930b0a2494f1d01b14ef14cdfeb58d2ba5e20dde18d53940c95a",
+    "transfer_error": "original owned journal startup: firecracker needs a verified workload kernel at /tmp/sc-collector-cQoD9ADO/h/cache/kernels/x86_64/workload/vmlinux, and this process does not build one \u2014 create it once with `mvmctl kernel build --which workload`, then retry",
+    "teardown_error": "installed collector retirement: sc-journal-a: original journal was not attempted; preserve definition; sc-journal-b: original destination journal missing",
+    "driver_process_cpu_ns": 4744043426,
+    "whole_wall_ns": 5403043608,
+    "controller_time": [
+      "User time (seconds): 4.71",
+      "System time (seconds): 0.10",
+      "Elapsed (wall clock) time (h:mm:ss or m:ss): 0:05.50",
+      "Maximum resident set size (kbytes): 40528",
+      "Exit status: 1"
+    ],
+    "result": null
+  },
+  "native2": {
+    "paired_result_sha256": "7333efbab9a7084a055a0bf5c7b09864b101c5d8a39cb441e6c7ceb0e8c3712f",
+    "transfer_error": "original owned journal startup: bundle re-verify for pin 782029f2c00e9fb66b38fdbd3457b3506c3534605ec1f71a99be62e14340b9c4",
+    "teardown_error": "installed collector retirement: sc-journal-a: original journal was not attempted; preserve definition; sc-journal-b: original destination journal missing",
+    "driver_process_cpu_ns": 29754889109,
+    "whole_wall_ns": 30489813519,
+    "controller_time": [
+      "User time (seconds): 29.45",
+      "System time (seconds): 0.36",
+      "Elapsed (wall clock) time (h:mm:ss or m:ss): 0:30.58",
+      "Maximum resident set size (kbytes): 273152",
+      "Exit status: 1"
+    ],
+    "result": null
+  },
+  "producer": {
+    "time": [
+      "User time (seconds): 39.42",
+      "System time (seconds): 0.78",
+      "Elapsed (wall clock) time (h:mm:ss or m:ss): 0:44.54",
+      "Maximum resident set size (kbytes): 63892",
+      "Exit status: 0"
+    ],
+    "roles": {
+      "sc-journal-a": {
+        "archive_sha256": "d2720156e2f7cc91dec306556eadf70522377c70a8126e94ab808a8a7a5fbc3f",
+        "bytes": 64493056,
+        "pin": {
+          "bundle_sha256": "d2720156e2f7cc91dec306556eadf70522377c70a8126e94ab808a8a7a5fbc3f",
+          "manifest_sig_base64": "4znM4PQaYiAG7cSTfIsHs0gb9nifsmGBgC4gg4vOXaBvusN+r3DAc81oVl6CexdwnxcaZ9r6EAExeXwFJlFVDw==",
+          "key_id": "b20c1fa800c02f447174d345e242841b"
+        }
+      },
+      "sc-journal-b": {
+        "archive_sha256": "782029f2c00e9fb66b38fdbd3457b3506c3534605ec1f71a99be62e14340b9c4",
+        "bytes": 64493056,
+        "pin": {
+          "bundle_sha256": "782029f2c00e9fb66b38fdbd3457b3506c3534605ec1f71a99be62e14340b9c4",
+          "manifest_sig_base64": "WO5My/YGXVE10kpRdxLIx4Umo6llCHzIOwz/Ka4J8t86pIYsMc48mdBL42+ZGOuD+KYIipp7gFdBywvFJ6xeAA==",
+          "key_id": "b20c1fa800c02f447174d345e242841b"
+        }
+      }
+    },
+    "executables": {
+      "mvmctl": {
+        "bytes": 178965920,
+        "sha256": "f4ef4bdf8846fcdcfd8d41cbf802ea23bf04c4b9ede8ebc0e1c9065652e10c27"
+      },
+      "mvm-signer-helper": {
+        "bytes": 20267872,
+        "sha256": "b812fef0e76c5eb35e15bc13b9c1d91f815be8217050e14592af05741ee5f3cc"
+      },
+      "paired-journal": {
+        "bytes": 110824528,
+        "sha256": "712ede8ab0a19a89f51ef5f80f4007627ea8593d175678c9df6d77e3bfb073b0"
+      },
+      "mvm-network-endpoint": {
+        "bytes": 49837024,
+        "sha256": "706b47117b30354bd9a419d716b92a0035db852d00fbb05ab6c097a9ae84c9f0"
+      },
+      "firecracker": {
+        "bytes": 3676680,
+        "sha256": "99ad0f5cd0514a88aad0e9ae8cfdb3cc3b4ab9d190e1194602406c786b5de7a5"
+      },
+      "mvm-host-agent": {
+        "bytes": 28742632,
+        "sha256": "123ef21b471c955d6bcb16d609f265a9308b700bf2a8a4e7bc8596f7da745dd8"
+      },
+      "collector-fixture": {
+        "bytes": 32333296,
+        "sha256": "0d70222b3d1e069c54dfa4f18a026e5afcb4ff0ab7762beb4347d3f2db113dae"
+      },
+      "mvm-mailbox": {
+        "bytes": 22425528,
+        "sha256": "6323709a0094f5d0a2b84ead8f629f71fc8f8bf0d1afdf4c4f5ae323658b4555"
+      },
+      "collector-install": {
+        "bytes": 22433720,
+        "sha256": "09ac74f4ea07aa433e4985284ee31381629ea2fc2e39844497a3431a8dceecf2"
+      }
+    }
+  },
+  "mvm_source": {
+    "tracked_files": 4663,
+    "bytes": 64724947,
+    "mismatches": [],
+    "revision": "0835ef0ad63c107cf876805da9aa739fd333716e",
+    "manifest_sha256": "837078db1fac3a7b503b770c31c21c5b1b96e10e69669af8e44bc4d8f9959a0e"
+  },
+  "spiralcore_witness_revision": "e08ee099f7727599d5af7d22794d6370ead487da",
+  "scope": "Native11 positively qualifies original-owner startup/readiness and clean retirement of both installed Linux/Firecracker journal guests and telemetry collectors. It does not qualify data transfer: canonical SDK entrypoint refused a missing admitted original-owner binding. Earlier failures retained. No WAN, compression, sustained capacity or release claim.",
+  "metadata_package_counts": {
+    "mvm-client": 1,
+    "mvm-core": 1,
+    "mvm-contract": 1,
+    "mvm-hostd": 1,
+    "mvm-runtime": 1,
+    "spiralcore-transfer": 1,
+    "spiralcore-mvm-flowmux": 1,
+    "spiralcore-mvm-live": 1
+  },
+  "patch_config_sha256": "029b8693311be5d5d65a291ea3adb88c9c88b5ffd177ce98063e9cb5763d4c60",
+  "native3": {
+    "result_sha256": "7ea5fd8ffb084bc005104982574fadaec8113d5cabb4a25d831c1531ac61b1cc",
+    "transfer_error": "original owned journal startup: bundle re-verify for pin 782029f2c00e9fb66b38fdbd3457b3506c3534605ec1f71a99be62e14340b9c4: bundle verification failed: manifest JSON parse failed: tar entry body read: out of memory: manifest JSON parse failed: tar entry body read: out of memory",
+    "teardown_error": "installed collector retirement: sc-journal-a: original journal was not attempted; preserve definition; sc-journal-b: original destination journal missing",
+    "driver_process_cpu_ns": 28298965042,
+    "whole_wall_ns": 28928136238,
+    "result": null,
+    "original_retirement_rows": [
+      {
+        "collected": false,
+        "error": "original journal was not attempted; preserve definition",
+        "name": "sc-journal-a"
+      },
+      {
+        "collected": false,
+        "error": "original destination journal missing",
+        "name": "sc-journal-b"
+      }
+    ]
+  },
+  "native4": {
+    "result_sha256": "5900100b4da143cf91c375f57192ea829f84eb67f0e579598b74a049a090a1d8",
+    "transfer_error": "original owned journal startup: original-boot-grant: registered entrypoint requires only the two admitted ephemeral verbs",
+    "teardown_error": "installed collector retirement: sc-journal-a: original journal was not attempted; preserve definition; sc-journal-b: original destination journal missing",
+    "driver_process_cpu_ns": 34819872995,
+    "whole_wall_ns": 35466707903,
+    "result": null,
+    "original_retirement_rows": [
+      {
+        "collected": false,
+        "error": "original journal was not attempted; preserve definition",
+        "name": "sc-journal-a"
+      },
+      {
+        "collected": false,
+        "error": "original destination journal missing",
+        "name": "sc-journal-b"
+      }
+    ],
+    "known_report_defect": "Historical JSON limit labels remain 2 GiB/640 MiB; actual trial4-7 configuration was 3 GiB host resident and 1 GiB controller startup; corrected source uses shared constants."
+  },
+  "native5": {
+    "result_sha256": "5e21d5f2c20b392157c6ad99c26bce8ca7bf3a345dbe055308c467fc87ee931b",
+    "transfer_error": "original owned journal startup: original-boot-grant: registered entrypoint requires only the two admitted ephemeral verbs",
+    "teardown_error": "installed collector retirement: sc-journal-a: original journal was not attempted; preserve definition; sc-journal-b: original destination journal missing",
+    "driver_process_cpu_ns": 8172154359,
+    "whole_wall_ns": 8811399493,
+    "result": null,
+    "original_retirement_rows": [
+      {
+        "collected": false,
+        "error": "original journal was not attempted; preserve definition",
+        "name": "sc-journal-a"
+      },
+      {
+        "collected": false,
+        "error": "original destination journal missing",
+        "name": "sc-journal-b"
+      }
+    ],
+    "known_report_defect": "Historical JSON limit labels remain 2 GiB/640 MiB; actual trial4-7 configuration was 3 GiB host resident and 1 GiB controller startup; corrected source uses shared constants."
+  },
+  "native6": {
+    "result_sha256": "dfd476cdd4047daf38a62d0d75f612a1500e9b087823a3d5f34792ca0a7d2996",
+    "transfer_error": "original owned journal startup: untrusted helper executable",
+    "teardown_error": "installed collector retirement: sc-journal-a: original journal was not attempted; preserve definition; sc-journal-b: original destination journal missing",
+    "driver_process_cpu_ns": 8841900745,
+    "whole_wall_ns": 10111648820,
+    "result": null,
+    "original_retirement_rows": [
+      {
+        "collected": false,
+        "error": "original journal was not attempted; preserve definition",
+        "name": "sc-journal-a"
+      },
+      {
+        "collected": false,
+        "error": "original destination journal missing",
+        "name": "sc-journal-b"
+      }
+    ],
+    "containment": {
+      "pid": 2393014,
+      "scope": "sc-journal-b-18e7dd869f96f1e4-248354.scope",
+      "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/sc-journal-b-18e7dd869f96f1e4-248354.scope",
+      "scope_pids": [
+        2393014
+      ],
+      "original_child_status": "unavailable after failed controller exit",
+      "classification": "assisted containment only; native lifecycle failed"
+    },
+    "known_report_defect": "Historical JSON limit labels remain 2 GiB/640 MiB; actual trial4-7 configuration was 3 GiB host resident and 1 GiB controller startup; corrected source uses shared constants."
+  },
+  "native7": {
+    "result_sha256": "3c004fb1cf6673178a4906984352d4ab64e3fb627d68586247c1b27d743f64c1",
+    "transfer_error": "original owned journal startup: guest control for machine \"sc-journal-b\" did not become ready within 30s; the partial start was rolled back",
+    "teardown_error": "installed collector retirement: sc-journal-a: original journal was not attempted; preserve definition",
+    "driver_process_cpu_ns": 9833637883,
+    "whole_wall_ns": 41361268252,
+    "result": null,
+    "original_retirement_rows": [
+      {
+        "collected": false,
+        "error": "original journal was not attempted; preserve definition",
+        "name": "sc-journal-a"
+      },
+      {
+        "assisted": false,
+        "collected": true,
+        "exit_code": 0,
+        "name": "sc-journal-b",
+        "success": true
+      }
+    ],
+    "known_report_defect": "Historical JSON limit labels remain 2 GiB/640 MiB; actual trial4-7 configuration was 3 GiB host resident and 1 GiB controller startup; corrected source uses shared constants."
+  },
+  "native7_interpretation": "Failed startup and no transfer. B original mailbox Child exited unassisted0 and parent accepted/sealed original endpoint retirement; overallpair incomplete and original reservations retained.",
+  "native8": {
+    "transfer_error": "original owned journal startup: original owned journal readiness failed: original entrypoint deadline expired",
+    "teardown_error": "installed collector retirement: sc-journal-a: original journal was not attempted; preserve definition",
+    "driver_process_cpu_ns": 8844953792,
+    "whole_wall_ns": 10383354535,
+    "result": null,
+    "result_sha256": "03eb25d39533f3c8a5372ffa85a7164f15e5ffc53b0ec40ee16ab1c6e2e305f7",
+    "original_retirement_rows": [
+      {
+        "collected": false,
+        "error": "original journal was not attempted; preserve definition",
+        "name": "sc-journal-a"
+      },
+      {
+        "assisted": false,
+        "collected": true,
+        "exit_code": 0,
+        "name": "sc-journal-b",
+        "success": true
+      }
+    ],
+    "mvm_source": "47fb890be",
+    "spiralcore_source": "ca751429",
+    "signed_timeouts": {
+      "boot_secs": 60,
+      "exec_secs": 0
+    },
+    "diagnosis": "Journal pre-operation deadline incorrectly interpreted canonical zero/unbounded execution cap as an expired deadline; no journal dial or data transfer. Original destination helper collected unassisted with exit 0; original endpoint retirement and retained telemetry publication succeeded. Source not attempted; overall pair failed."
+  },
+  "native9": {
+    "transfer_error": "No such file or directory (os error 2)",
+    "teardown_error": "installed collector retirement: sc-journal-a: original journal was not attempted; preserve definition",
+    "driver_process_cpu_ns": 8767268564,
+    "whole_wall_ns": 9911401195,
+    "result": null,
+    "result_sha256": "2bb84ede7a0675825a4dea40faf4ccb132d52b932e9209d878d05ddac0e0d7bf",
+    "original_retirement_rows": [
+      {
+        "collected": false,
+        "error": "original journal was not attempted; preserve definition",
+        "name": "sc-journal-a"
+      },
+      {
+        "assisted": false,
+        "collected": true,
+        "exit_code": 0,
+        "name": "sc-journal-b",
+        "success": true
+      }
+    ],
+    "mvm_source": "dad9fecc5d19bed3d0312f656ea4912fc2607d32",
+    "spiralcore_source": "ca751429",
+    "executables": {
+      "mvmctl": {
+        "sha256": "f4ef4bdf8846fcdcfd8d41cbf802ea23bf04c4b9ede8ebc0e1c9065652e10c27",
+        "bytes": 178965920,
+        "mode": "0o755"
+      },
+      "mvm-signer-helper": {
+        "sha256": "76975cada8f95c733427280dded1234ad007b590df055e96358d756217c4edc9",
+        "bytes": 20271104,
+        "mode": "0o755"
+      },
+      "paired-journal": {
+        "sha256": "3e1081775c7eea64861d0a5cf648951b55af8be385ffc8ecbb660a0b9bcd182f",
+        "bytes": 101161048,
+        "mode": "0o755"
+      },
+      "mvm-network-endpoint": {
+        "sha256": "aba93aabbe265ad998144d039b5d22c0c533a33f8c2d2e4eaee3b2c16ea59446",
+        "bytes": 49838344,
+        "mode": "0o755"
+      },
+      "firecracker": {
+        "sha256": "99ad0f5cd0514a88aad0e9ae8cfdb3cc3b4ab9d190e1194602406c786b5de7a5",
+        "bytes": 3676680,
+        "mode": "0o755"
+      },
+      "mvm-host-agent": {
+        "sha256": "b722203bc8980f3914afea2f89e939b22a4036905d9b7880ee305b1a390154ea",
+        "bytes": 28745616,
+        "mode": "0o755"
+      },
+      "collector-fixture": {
+        "sha256": "44227fb2a61ca80d98e470842befe8f41cc6ffedbfc0d1215fcfded03cb47306",
+        "bytes": 31272392,
+        "mode": "0o755"
+      },
+      "mvm-mailbox": {
+        "sha256": "5615c0b09469d7898d41216f9002d21b30ee25b463e9b11acab428fc17b4aca5",
+        "bytes": 22432064,
+        "mode": "0o755"
+      },
+      "collector-install": {
+        "sha256": "e1f9adcfe50e6693b916f9426cccf0aff5e2db365319f040f097964688de612b",
+        "bytes": 18865176,
+        "mode": "0o755"
+      }
+    },
+    "diagnosis": "Destination original-owner startup and readiness succeeded after correcting the journal deadline. Witness stopped on missing mailbox-guest-stream-v1.counts: helper build omitted canonical durable-guest-io-witness feature. No meter fabricated, no data transfer, overall pair failed. Original destination helper retired unassisted with exit 0."
+  },
+  "mvm_source_successor": {
+    "revision": "dad9fecc5d19bed3d0312f656ea4912fc2607d32",
+    "files": 4667,
+    "bytes": 64764700,
+    "manifest_sha256": "8c4ae693130b329678695b4b07e9b7aeb94113f9a32fb85fb6a95a89972a07e1",
+    "mismatches": []
+  },
+  "native10": {
+    "transfer_error": "original owned journal startup: verifying retained portable CLI runtime release proof: guest runtime io: No space left on device (os error 28) at path \"/tmp/sc-collector-Ir2OHGRW/t/.tmpxinBcj\": No space left on device (os error 28) at path \"/tmp/sc-collector-Ir2OHGRW/t/.tmpxinBcj\"",
+    "teardown_error": "installed collector retirement: sc-journal-a: original source journal missing",
+    "driver_process_cpu_ns": 10542016752,
+    "whole_wall_ns": 12666673350,
+    "result": null,
+    "result_sha256": "4ddb1d005f29c96aaa606c7906bb0048a66124b856b998594ae9284bcb73f181",
+    "original_retirement_rows": [
+      {
+        "collected": false,
+        "error": "original source journal missing",
+        "name": "sc-journal-a"
+      },
+      {
+        "assisted": false,
+        "collected": true,
+        "exit_code": 0,
+        "name": "sc-journal-b",
+        "success": true
+      }
+    ],
+    "executables": {
+      "mvmctl": {
+        "sha256": "f4ef4bdf8846fcdcfd8d41cbf802ea23bf04c4b9ede8ebc0e1c9065652e10c27",
+        "bytes": 178965920,
+        "mode": "0o755"
+      },
+      "mvm-signer-helper": {
+        "sha256": "76975cada8f95c733427280dded1234ad007b590df055e96358d756217c4edc9",
+        "bytes": 20271104,
+        "mode": "0o755"
+      },
+      "paired-journal": {
+        "sha256": "8ac5649bc87185ed1cf56220e089d7f7e845cfcbe42808d2f1a25a40db565feb",
+        "bytes": 101167936,
+        "mode": "0o755"
+      },
+      "mvm-network-endpoint": {
+        "sha256": "aba93aabbe265ad998144d039b5d22c0c533a33f8c2d2e4eaee3b2c16ea59446",
+        "bytes": 49838344,
+        "mode": "0o755"
+      },
+      "firecracker": {
+        "sha256": "99ad0f5cd0514a88aad0e9ae8cfdb3cc3b4ab9d190e1194602406c786b5de7a5",
+        "bytes": 3676680,
+        "mode": "0o755"
+      },
+      "mvm-host-agent": {
+        "sha256": "b722203bc8980f3914afea2f89e939b22a4036905d9b7880ee305b1a390154ea",
+        "bytes": 28745616,
+        "mode": "0o755"
+      },
+      "collector-fixture": {
+        "sha256": "44227fb2a61ca80d98e470842befe8f41cc6ffedbfc0d1215fcfded03cb47306",
+        "bytes": 31272392,
+        "mode": "0o755"
+      },
+      "mvm-mailbox": {
+        "sha256": "404f6eb57910bbdd26b6180707e6ee1ada8acaeb82eab7a6cc11a5c04e702202",
+        "bytes": 22555376,
+        "mode": "0o755"
+      },
+      "collector-install": {
+        "sha256": "e1f9adcfe50e6693b916f9426cccf0aff5e2db365319f040f097964688de612b",
+        "bytes": 18865176,
+        "mode": "0o755"
+      }
+    },
+    "diagnosis": "Destination readiness and required meter acquisition passed. Source canonical runtime proof refused ENOSPC on finite512MiB. Helper measurement feature enabled; no data transfer. Destination original helper collected unassisted0. Successor explicitly funds larger finite filesystem; no guard removed."
+  },
+  "native11": {
+    "transfer_error": "entrypoint differs from original signed direct launch",
+    "teardown_error": null,
+    "driver_process_cpu_ns": 17738456701,
+    "whole_wall_ns": 21431524182,
+    "result": null,
+    "original_exits": {
+      "definitions_removed": false,
+      "original_helpers": [
+        {
+          "assisted": false,
+          "collected": true,
+          "exit_code": 0,
+          "name": "sc-journal-a",
+          "success": true
+        },
+        {
+          "assisted": false,
+          "collected": true,
+          "exit_code": 0,
+          "name": "sc-journal-b",
+          "success": true
+        }
+      ],
+      "retained_resources": {
+        "active_reservations": 9,
+        "fenced": true,
+        "peak_host_resident_bytes": 2807848960,
+        "registered_tenants": 4,
+        "scope": "installation-managed-resources",
+        "usage": {
+          "cache_disk_bytes": 18980864,
+          "guest_memory_bytes": 0,
+          "guests": 0,
+          "host_carrier_bytes": 0,
+          "host_codec_bytes": 0,
+          "host_metadata_bytes": 2149093376,
+          "host_plaintext_bytes": 0,
+          "host_stack_bytes": 0,
+          "staging_disk_bytes": 2147491840,
+          "workers": 0
+        },
+        "version": 1
+      },
+      "runtime_state_removed": false
+    },
+    "installed_collector": {
+      "after_stop_resource_error": null,
+      "after_stop_resources": {
+        "active_reservations": 9,
+        "fenced": true,
+        "peak_host_resident_bytes": 2807848960,
+        "registered_tenants": 4,
+        "scope": "installation-managed-resources",
+        "usage": {
+          "cache_disk_bytes": 18980864,
+          "guest_memory_bytes": 0,
+          "guests": 0,
+          "host_carrier_bytes": 0,
+          "host_codec_bytes": 0,
+          "host_metadata_bytes": 2149093376,
+          "host_plaintext_bytes": 0,
+          "host_stack_bytes": 0,
+          "staging_disk_bytes": 2147491840,
+          "workers": 0
+        },
+        "version": 1
+      },
+      "before_stop_resource_error": null,
+      "before_stop_resources": {
+        "active_reservations": 16,
+        "fenced": false,
+        "peak_host_resident_bytes": 2807848960,
+        "registered_tenants": 4,
+        "scope": "installation-managed-resources",
+        "usage": {
+          "cache_disk_bytes": 18980864,
+          "guest_memory_bytes": 536870912,
+          "guests": 2,
+          "host_carrier_bytes": 402653184,
+          "host_codec_bytes": 0,
+          "host_metadata_bytes": 2350645248,
+          "host_plaintext_bytes": 0,
+          "host_stack_bytes": 54550528,
+          "staging_disk_bytes": 2147622912,
+          "workers": 20
+        },
+        "version": 1
+      },
+      "host_resident_ceiling_bytes": 3221225472,
+      "initial_resources": {
+        "active_reservations": 4,
+        "fenced": false,
+        "peak_host_resident_bytes": 404381696,
+        "registered_tenants": 4,
+        "scope": "installation-managed-resources",
+        "usage": {
+          "cache_disk_bytes": 8192,
+          "guest_memory_bytes": 0,
+          "guests": 0,
+          "host_carrier_bytes": 402653184,
+          "host_codec_bytes": 0,
+          "host_metadata_bytes": 1728512,
+          "host_plaintext_bytes": 0,
+          "host_stack_bytes": 0,
+          "staging_disk_bytes": 131072,
+          "workers": 10
+        },
+        "version": 1
+      },
+      "per_start_disk_ceiling_bytes": 1073741824,
+      "per_start_memory_ceiling_bytes": 1073741824,
+      "requested_guest_memory_bytes": 536870912,
+      "runtime_state_removed": false,
+      "tenant_process_address_space_bytes": 201326592,
+      "wan": null
+    },
+    "result_sha256": "ceb0538f1a29dd3173fc5243eb737908f8873c47786b9453692768225e06179a",
+    "original_retirement_rows": [
+      {
+        "assisted": false,
+        "collected": true,
+        "exit_code": 0,
+        "name": "sc-journal-a",
+        "success": true
+      },
+      {
+        "assisted": false,
+        "collected": true,
+        "exit_code": 0,
+        "name": "sc-journal-b",
+        "success": true
+      }
+    ],
+    "executables": {
+      "mvmctl": {
+        "sha256": "f4ef4bdf8846fcdcfd8d41cbf802ea23bf04c4b9ede8ebc0e1c9065652e10c27",
+        "bytes": 178965920,
+        "mode": "0o755"
+      },
+      "mvm-signer-helper": {
+        "sha256": "76975cada8f95c733427280dded1234ad007b590df055e96358d756217c4edc9",
+        "bytes": 20271104,
+        "mode": "0o755"
+      },
+      "paired-journal": {
+        "sha256": "bf3fc87e7ef6054347ee0f5fc93e81b3eefb1dc4fa1f208f62ef0096a9ba2fa9",
+        "bytes": 101168000,
+        "mode": "0o755"
+      },
+      "mvm-network-endpoint": {
+        "sha256": "aba93aabbe265ad998144d039b5d22c0c533a33f8c2d2e4eaee3b2c16ea59446",
+        "bytes": 49838344,
+        "mode": "0o755"
+      },
+      "firecracker": {
+        "sha256": "99ad0f5cd0514a88aad0e9ae8cfdb3cc3b4ab9d190e1194602406c786b5de7a5",
+        "bytes": 3676680,
+        "mode": "0o755"
+      },
+      "mvm-host-agent": {
+        "sha256": "b722203bc8980f3914afea2f89e939b22a4036905d9b7880ee305b1a390154ea",
+        "bytes": 28745616,
+        "mode": "0o755"
+      },
+      "collector-fixture": {
+        "sha256": "44227fb2a61ca80d98e470842befe8f41cc6ffedbfc0d1215fcfded03cb47306",
+        "bytes": 31272392,
+        "mode": "0o755"
+      },
+      "mvm-mailbox": {
+        "sha256": "404f6eb57910bbdd26b6180707e6ee1ada8acaeb82eab7a6cc11a5c04e702202",
+        "bytes": 22555376,
+        "mode": "0o755"
+      },
+      "collector-install": {
+        "sha256": "e1f9adcfe50e6693b916f9426cccf0aff5e2db365319f040f097964688de612b",
+        "bytes": 18865176,
+        "mode": "0o755"
+      }
+    },
+    "mvm_source": "dad9fecc5d19bed3d0312f656ea4912fc2607d32",
+    "spiralcore_source": "6c793c93",
+    "finite_device_bytes": 1073741824,
+    "host_and_tenant_staging_ceiling_bytes": 2516582400,
+    "diagnosis": "Both actual guests passed original-owner startup and readiness; both required meters acquired. SDK entrypoint refused missing admission direct_owner binding before data transfer. Both original helpers collected unassisted exit0 and original endpoint retirement/parent telemetry publication succeeded. No definition/retained-artifact deletion, no forced cleanup. Full transfer acceptance remains open."
+  }
+}

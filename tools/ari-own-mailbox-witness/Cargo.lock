@@ -2595,7 +2595,7 @@ dependencies = [
  "serde_json",
  "sha2 0.11.0",
  "spiralcore-mvm-flowmux",
- "spiralcore-transfer",
+ "spiralcore-transfer 0.1.0 (git+https://github.com/R4-Laboratories/SpiralCore?rev=4ea98b9e27116a163c9767f5a351bf177eff3b6b)",
  "sysinfo",
  "tar",
  "thiserror",
@@ -3538,6 +3538,7 @@ dependencies = [
  "cfg-if",
  "cpufeatures 0.2.17",
  "digest 0.10.7",
+ "sha2-asm",
 ]
 
 [[package]]
@@ -3549,6 +3550,15 @@ dependencies = [
  "cfg-if",
  "cpufeatures 0.3.0",
  "digest 0.11.3",
+]
+
+[[package]]
+name = "sha2-asm"
+version = "0.6.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b845214d6175804686b2bd482bcffe96651bb2d1200742b712003504a2dac1ab"
+dependencies = [
+ "cc",
 ]
 
 [[package]]
@@ -3780,8 +3790,34 @@ dependencies = [
  "mvm-hostd",
  "rand",
  "serde_json",
+ "spiralcore-mvm-live",
+ "tempfile",
  "tokio",
  "toml",
+]
+
+[[package]]
+name = "spiralcore-gateway-core"
+version = "0.1.0"
+dependencies = [
+ "spiralcore-transfer 0.1.0",
+ "zstd",
+]
+
+[[package]]
+name = "spiralcore-mvm-adapter"
+version = "0.1.0"
+dependencies = [
+ "cpu-time",
+ "ed25519-dalek",
+ "mvm-contract",
+ "mvm-core",
+ "rand",
+ "serde",
+ "serde_jcs",
+ "serde_json",
+ "sha2 0.10.9",
+ "spiralcore-transfer 0.1.0",
 ]
 
 [[package]]
@@ -3792,7 +3828,42 @@ dependencies = [
  "mio",
  "rustls",
  "sha2 0.10.9",
- "spiralcore-transfer",
+ "spiralcore-transfer 0.1.0 (git+https://github.com/R4-Laboratories/SpiralCore?rev=4ea98b9e27116a163c9767f5a351bf177eff3b6b)",
+]
+
+[[package]]
+name = "spiralcore-mvm-live"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "cpu-time",
+ "ed25519-dalek",
+ "libc",
+ "mvm-agentd",
+ "mvm-backends",
+ "mvm-build",
+ "mvm-client",
+ "mvm-contract",
+ "mvm-core",
+ "mvm-fs",
+ "mvm-hostd",
+ "mvm-net",
+ "mvm-runtime",
+ "mvm-vmm",
+ "rand",
+ "serde",
+ "serde_json",
+ "sha2 0.10.9",
+ "spiralcore-gateway-core",
+ "spiralcore-mvm-adapter",
+ "spiralcore-transfer 0.1.0",
+]
+
+[[package]]
+name = "spiralcore-storage-windows"
+version = "0.1.0"
+dependencies = [
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -3801,6 +3872,28 @@ version = "0.1.0"
 source = "git+https://github.com/R4-Laboratories/SpiralCore?rev=4ea98b9e27116a163c9767f5a351bf177eff3b6b#4ea98b9e27116a163c9767f5a351bf177eff3b6b"
 dependencies = [
  "windows-sys 0.61.2",
+]
+
+[[package]]
+name = "spiralcore-transfer"
+version = "0.1.0"
+dependencies = [
+ "cpu-time",
+ "httparse",
+ "libc",
+ "libm",
+ "memchr",
+ "rustix",
+ "serde",
+ "serde_json",
+ "sha2 0.10.9",
+ "spiralcore-storage-windows 0.1.0",
+ "subtle",
+ "uor-r4-object-store 0.1.0",
+ "ureq",
+ "url",
+ "zstd",
+ "zstd-sys",
 ]
 
 [[package]]
@@ -3817,9 +3910,9 @@ dependencies = [
  "serde",
  "serde_json",
  "sha2 0.10.9",
- "spiralcore-storage-windows",
+ "spiralcore-storage-windows 0.1.0 (git+https://github.com/R4-Laboratories/SpiralCore?rev=4ea98b9e27116a163c9767f5a351bf177eff3b6b)",
  "subtle",
- "uor-r4-object-store",
+ "uor-r4-object-store 0.1.0 (git+https://github.com/R4-Laboratories/SpiralCore?rev=4ea98b9e27116a163c9767f5a351bf177eff3b6b)",
  "ureq",
  "url",
  "zstd",
@@ -4278,6 +4371,13 @@ name = "untrusted"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8ecb6da28b8a351d773b68d5825ac39017e680750f980f3a1a85cd8dd28a47c1"
+
+[[package]]
+name = "uor-r4-object-store"
+version = "0.1.0"
+dependencies = [
+ "sha2 0.10.9",
+]
 
 [[package]]
 name = "uor-r4-object-store"
