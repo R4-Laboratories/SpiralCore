@@ -29,4 +29,19 @@ Qualified candidate SHA-256:
 
 The old public `SenderReplyWait` enum variant remains available. Adding variants to this exhaustive Rust enum can require downstream match updates. These are local diagnostic categories, not new protocol outcomes or signed meanings.
 
-This change does not establish the cause or a fix for the intermittent Windows/macOS timeout. The original platform failures and PR #260 merge hold remain. The next evidence must come from the unchanged hosted workload with the more precise error observation.
+The original platform failures remain recorded. The following hosted results qualify the diagnostic on the unchanged workload.
+
+## Hosted successor
+
+PR head `c26b5d2c2c4935a50b1b06f6d181fea9442bfae3` ran as merge checkout `e14c1f57be42f569e1a58defb7c4e325681486d3`. The ordinary Windows Server 2025 x64 test stopped at the **240-second workload deadline**. Both writers reached the deadline check before starting block 3944. Each direction had acknowledged and verified 3,944 of 4,096 blocks of 16,384 bytes (64,618,496 bytes each way). Both retention snapshots showed 64 publications and 3,880 evictions, and both scope checks passed. The failure snapshot recorded 242.012476 s wall and 115.687500 s process CPU. Neither writer reported a sender-reply failure. The readers subsequently reported `CallerRead/Timeout` and `WorkerExit/Io(UnexpectedEof)`. The ordinary job recorded the Cargo executable name `ordered_stream-c43c3372c7fdd5c2.exe`; its binary SHA-256 was unavailable. [Windows Server 2025 job](https://github.com/R4-Laboratories/SpiralCore/actions/runs/43530853202/job/132248013601)
+
+The ordinary Intel macOS job passed the previously failing simultaneous-duplex test and verified all 4,096 blocks each way (95.927427 s snapshot wall, 57.421218 s process CPU). Two separately compiled Server 2025 variants also finished all 4,096 blocks each way: `witness-timing` in 215.982573 s wall / 122.703125 s CPU and `witness-stall` in 181.513092 s / 83.312500 s. Their executable hashes matched before and after each run. These measurements leave the source of the ordinary job’s elapsed time unresolved. [Intel macOS job](https://github.com/R4-Laboratories/SpiralCore/actions/runs/43530853202/job/132248013800) · [Timing job](https://github.com/R4-Laboratories/SpiralCore/actions/runs/43530853121/job/132247882507) · [Stall job](https://github.com/R4-Laboratories/SpiralCore/actions/runs/43530853121/job/132247882935)
+
+Each downloaded ZIP matched its GitHub artifact digest. All members listed in each `SHA256SUMS` matched their recorded hashes.
+
+| Artifact | ZIP SHA-256 | `tests.txt` SHA-256 |
+| --- | --- | --- |
+| [Windows Server 2025 default](https://github.com/R4-Laboratories/SpiralCore/actions/runs/43530853202/artifacts/14087633789) | `cf6aa8e9b1f36764d6bd08582c276b481406a1b48ed8aa1e264e7c78f8bde1d4` | `e8cdb8e31f31a9c4f9a8cd70048aac8b61931b96770deba9f621c107fb966c6c` |
+| [Intel macOS default](https://github.com/R4-Laboratories/SpiralCore/actions/runs/43530853202/artifacts/14088098454) | `af85cd70e886820577c21dd9884550099c0e44ffbf047f87dbda0d2ebc5f9288` | `bd0d2e1cdeff8a40cfb17d89a0ff8dba6d84c121d6887c027276261049afd735` |
+| [Windows Server 2025 timing](https://github.com/R4-Laboratories/SpiralCore/actions/runs/43530853121/artifacts/14087537520) | `cfd0f86d4c6e91c1602cfab89ecba1d2fbf978b311afefc175e146348396bff0` | `92f7a7b9733391ad04cf135c1f56c22c6370ae5b7fa1ba255afbb13103b5b38d` |
+| [Windows Server 2025 stall](https://github.com/R4-Laboratories/SpiralCore/actions/runs/43530853121/artifacts/14087467439) | `4277cbfb4283cafce76ac63789ddbce020a14217e72485d4564e942f0a2a26ec` | `6636ae26c52e458411b2f436c0110ebc0a899ce25f44d8782bb03fdc3fb397be` |
