@@ -303,3 +303,29 @@ $descriptor.GetBinaryForm($normalized,0)
         );
     }
 }
+
+#[test]
+fn publication_header_preserves_both_layouts_in_one_complete_write() {
+    #[derive(Default)]
+    struct Sink { bytes: Vec<u8>, writes: usize }
+    impl Write for Sink {
+        fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
+            self.writes += 1;
+            self.bytes.extend_from_slice(bytes);
+            Ok(bytes.len())
+        }
+        fn flush(&mut self) -> std::io::Result<()> { Ok(()) }
+    }
+    let offer = Offer::cold(b"exact\0", Mode::Raw);
+    for manifest in [None, Some([0x79; 32])] {
+        let mut sink = Sink::default();
+        write_publication_header(&mut sink, &offer, manifest).unwrap();
+        assert_eq!(sink.writes, 1, "one fixed header write before body/durability");
+        assert_eq!(&sink.bytes[..8], b"SCPUB001");
+        assert_eq!(&sink.bytes[8..16], &6u64.to_le_bytes());
+        assert_eq!(&sink.bytes[16..48], &offer.object);
+        assert_eq!(sink.bytes[48], u8::from(manifest.is_some()));
+        assert_eq!(sink.bytes.len(), if manifest.is_some() { 81 } else { 49 });
+        if let Some(id) = manifest { assert_eq!(&sink.bytes[49..], &id); }
+    }
+}

@@ -59,6 +59,19 @@ jobs:
           if ($env:RUNNER_OS -ne $env:EXPECTED_OS -or $env:RUNNER_ARCH -ne $env:EXPECTED_ARCH) { throw 'Native runner mismatch' }
           $source = (git rev-parse HEAD).Trim()
           if ($LASTEXITCODE -ne 0) { throw 'Source identity failed' }
+          if ($env:RUNNER_OS -eq 'Windows') {
+            $storeRoot = $env:RUNNER_TEMP
+            if (!$storeRoot -or [System.IO.Path]::GetPathRoot($storeRoot) -notmatch '^[A-Za-z]:\\$' -or !(Test-Path -LiteralPath $storeRoot -PathType Container)) { throw 'Explicit native runner scratch root unavailable' }
+            $drive = [System.IO.DriveInfo]::new([System.IO.Path]::GetPathRoot($storeRoot))
+            if (!$drive.IsReady) { throw 'Runner scratch volume is not ready' }
+            @{ selected_store_temp = $storeRoot; original_tmp = $env:TMP; original_temp = $env:TEMP;
+              filesystem = $drive.DriveFormat; drive_type = $drive.DriveType.ToString();
+              size = $drive.TotalSize; available = $drive.AvailableFreeSpace;
+              scope = 'explicit CI scratch volume; OS-default temp failures remain separate'
+            } | ConvertTo-Json | Set-Content flowmux-evidence/storage.json
+            "TMP=$storeRoot" | Add-Content $env:GITHUB_ENV
+            "TEMP=$storeRoot" | Add-Content $env:GITHUB_ENV
+          }
           @{ source = $source; run = $env:GITHUB_RUN_ID; attempt = $env:GITHUB_RUN_ATTEMPT;
             os = $env:RUNNER_OS; arch = $env:RUNNER_ARCH; image = $env:ImageVersion;
             description = [System.Runtime.InteropServices.RuntimeInformation]::OSDescription;
@@ -71,13 +84,24 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Toolchain install failed' }
           rustc "+1.97.1-$env:NATIVE_TARGET" -vV | Tee-Object flowmux-evidence/rustc.txt
           if ($LASTEXITCODE -ne 0 -or !(Select-String -Path flowmux-evidence/rustc.txt -SimpleMatch -Pattern "host: $env:NATIVE_TARGET")) { throw 'Toolchain is not native' }
+      - name: Execute native decoder and reply-progress controls
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $false
+          $cargoArgs = @("+1.97.1-$env:NATIVE_TARGET", 'test', '--release', '--locked', '--manifest-path',
+            'crates/spiralcore-mvm-flowmux/Cargo.toml', '--lib')
+          $log = (& cargo @cargoArgs -- --show-output --test-threads=1 --color never 2>&1 | Out-String)
+          $code = $LASTEXITCODE
+          $log | Set-Content flowmux-evidence/reply-progress-controls.txt
+          $log | Write-Output
+          if ($code -ne 0 -or $log -notmatch 'test result: ok\. [1-9][0-9]* passed; 0 failed; 0 ignored; 0 measured; 0 filtered out;') { throw 'Native reply-progress controls failed' }
       - name: Execute checked metadata guards and native paired comparison
         run: |
           $ErrorActionPreference = 'Stop'
           $PSNativeCommandUseErrorActionPreference = $false
           $cargoArgs = @("+1.97.1-$env:NATIVE_TARGET", 'test', '--release', '--locked', '--manifest-path',
             'crates/spiralcore-transfer/Cargo.toml', '--lib', 'endpoint::metadata_tests')
-          $expected = if ($env:RUNNER_OS -eq 'Windows') { 3 } else { 2 }
+          $expected = if ($env:RUNNER_OS -eq 'Windows') { 4 } else { 3 }
           $listing = (& cargo @cargoArgs -- --list --format terse 2>&1 | Out-String)
           $code = $LASTEXITCODE
           $listing | Set-Content flowmux-evidence/metadata-list.txt
@@ -187,6 +211,15 @@ jobs:
           $code = $LASTEXITCODE
           $log | Set-Content flowmux-evidence/tests.txt
           $log | Write-Output
+          if ($env:RUNNER_OS -eq 'Windows') {
+            $observed = [regex]::Matches($log, '(?m)^ORDERED_STORAGE_ROOT temp=(.+)\r?$')
+            if ($observed.Count -ne 1) { throw 'Missing actual Rust storage root' }
+            $actual = [System.IO.Path]::GetFullPath($observed[0].Groups[1].Value.Trim()).TrimEnd('\')
+            $selected = [System.IO.Path]::GetFullPath($env:RUNNER_TEMP).TrimEnd('\')
+            @{ actual = $actual; configured = $selected; matches = ($actual -ieq $selected) } |
+              ConvertTo-Json | Set-Content flowmux-evidence/storage-observed.json
+            if ($actual -ine $selected) { throw 'Rust fixture did not use the selected scratch root' }
+          }
           $summaries = [regex]::Matches($log, 'test result: ok\. (\d+) passed; (\d+) failed; (\d+) ignored; (\d+) measured; (\d+) filtered out;')
           if ($code -ne 0 -or $summaries.Count -eq 0) { throw 'Native component tests failed' }
           $passed = 0

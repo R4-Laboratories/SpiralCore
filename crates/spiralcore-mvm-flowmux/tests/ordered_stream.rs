@@ -124,6 +124,12 @@ impl Drop for WitnessReport<'_> {
                 std::mem::size_of::<[AtomicU64; 4]>() + 2 * std::mem::size_of::<usize>(),
                 self.retention.map(|r| r.try_snapshot())
             );
+            let _ = writeln!(
+                std::io::stderr(),
+                "ORDERED_COMMIT_SUBSTAGES scope=process_aggregate_both_endpoints outside_small_v1=true lifetime=process fixed_static_bytes={} overlapping_not_additive=true wall_and_cpu_maxima_independent=true {:?}",
+                spiralcore_transfer::endpoint::commit_timing::fixed_static_bytes(),
+                spiralcore_transfer::endpoint::commit_timing::snapshot()
+            );
             // Format one snapshot at a time; no event collection or variable buffer.
             for (slot, observer) in self.timing.iter().enumerate() {
                 let _ = writeln!(
@@ -214,6 +220,10 @@ fn four_thousand_distinct_blocks_each_direction_keep_exact_bytes_and_bounded_ret
     };
     let left_auth = authorize(Role::Initiator);
     let right_auth = authorize(Role::Acceptor);
+    eprintln!(
+        "ORDERED_STORAGE_ROOT temp={}",
+        std::env::temp_dir().display()
+    );
     let stores = [
         Store(std::env::temp_dir().join(format!("ordered-stream-left-{}", std::process::id()))),
         Store(std::env::temp_dir().join(format!("ordered-stream-right-{}", std::process::id()))),

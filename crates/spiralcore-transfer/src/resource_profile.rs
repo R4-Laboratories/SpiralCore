@@ -1,7 +1,7 @@
 //! Local admission bounds for the explicitly agreed SmallV1 codec profile.
 //! Declared bytes are not RSS. An embedding reserves one aggregate envelope
 //! before constructing both endpoints and keeps it through all retained state.
-use crate::{endpoint::Limits, protocol::Mode, Error, Result};
+use crate::{Error, Result, endpoint::Limits, protocol::Mode};
 use zstd::zstd_safe::{CCtx, CParameter, Strategy};
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -137,7 +137,7 @@ impl ResourceProfile {
             .and_then(|n| n.checked_add(6 * SMALL_ARTIFACT as u64))
             .and_then(|n| n.checked_add(self.decoder_charge()))
             .and_then(|n| n.checked_add(crate::schema::PREPARED_CHARGE))
-            .and_then(|n| n.checked_add(320 * KIB))
+            .and_then(|n| n.checked_add(328 * KIB))
             .ok_or(Error::Limit)
     }
     pub fn operation_charge(self) -> Result<u64> {

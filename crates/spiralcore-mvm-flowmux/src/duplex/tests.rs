@@ -21,7 +21,7 @@ impl Drop for Store {
         let _ = std::fs::remove_dir_all(&self.0);
     }
 }
-fn context() -> Context {
+pub(super) fn context() -> Context {
     Context {
         tenant: "duplex-test".into(),
         domain: "cooperating".into(),
@@ -507,10 +507,11 @@ fn thirty_two_interleaved_requests_bound_a_waiting_local_operation() {
             }
         });
         assert!(writer.send_block(vec![2; 1024]).is_err());
-        assert!(matches!(
-            guard.join(),
-            Err(spiralcore_mvm_flowmux::Error::Limit)
-        ));
+        let joined = guard.join();
+        assert!(
+            matches!(joined, Err(spiralcore_mvm_flowmux::Error::Limit)),
+            "original terminal refusal: {joined:?}"
+        );
         remote.join().unwrap();
     });
 }

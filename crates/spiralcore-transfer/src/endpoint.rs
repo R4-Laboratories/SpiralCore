@@ -192,6 +192,26 @@ pub(crate) struct OrderedEviction {
     pub(crate) disk: u64,
 }
 
+fn write_publication_header(
+    output: &mut impl Write,
+    offer: &Offer,
+    manifest: Option<Id>,
+) -> Result<()> {
+    let mut header = [0u8; 81];
+    header[..8].copy_from_slice(b"SCPUB001");
+    header[8..16].copy_from_slice(&offer.len.to_le_bytes());
+    header[16..48].copy_from_slice(&offer.object);
+    header[48] = u8::from(manifest.is_some());
+    let len = if let Some(id) = manifest {
+        header[49..].copy_from_slice(&id);
+        81
+    } else {
+        49
+    };
+    output.write_all(&header[..len])?;
+    Ok(())
+}
+
 impl<A: Authority> Endpoint<A> {
     pub(crate) fn authorize(&self, context: &Context) -> Result<()> {
         self.authority.authorize(context)
@@ -1175,6 +1195,8 @@ impl<A: Authority> Endpoint<A> {
     fn disk_usage(&self, ns: Id) -> Result<(u64, u64, usize)> {
         #[cfg(test)]
         let _quota = commit_costs::span(commit_costs::Stage::Quota);
+        #[cfg(feature = "witness-timing")]
+        let _diagnostic_quota = commit_timing::span(commit_timing::Stage::Quota);
         #[cfg(windows)]
         return storage::quota_usage(&self.root, &hex(&ns), self.limits.max_publications);
         #[cfg(not(windows))]
@@ -1247,30 +1269,38 @@ impl<A: Authority> Endpoint<A> {
         ));
         let mut created = false;
         let result = (|| {
+            #[cfg(feature = "witness-timing")]
+            let diagnostic_create_write = commit_timing::span(commit_timing::Stage::CreateWrite);
             let mut f = storage::create_new_file(&tmp)?;
             created = true;
-            f.write_all(b"SCPUB001")?;
-            f.write_all(&offer.len.to_le_bytes())?;
-            f.write_all(&offer.object)?;
-            f.write_all(&[u8::from(mid.is_some())])?;
-            if let Some(m) = mid {
-                f.write_all(&m)?;
-            }
+            write_publication_header(&mut f, offer, mid)?;
             f.write_all(bytes)?;
+            #[cfg(feature = "witness-timing")]
+            drop(diagnostic_create_write);
             #[cfg(test)]
             let file_sync = commit_costs::span(commit_costs::Stage::FileSync);
+            #[cfg(feature = "witness-timing")]
+            let diagnostic_file_sync = commit_timing::span(commit_timing::Stage::FileSync);
             f.sync_all()?;
             #[cfg(test)]
             drop(file_sync);
+            #[cfg(feature = "witness-timing")]
+            drop(diagnostic_file_sync);
             drop(f);
             self.authority.authorize(context)?;
             #[cfg(test)]
             let publish = commit_costs::span(commit_costs::Stage::NamespacePublish);
+            #[cfg(feature = "witness-timing")]
+            let diagnostic_publish = commit_timing::span(commit_timing::Stage::NamespacePublish);
             storage::publish(&tmp, &path, &self.root)?;
             #[cfg(test)]
             drop(publish);
+            #[cfg(feature = "witness-timing")]
+            drop(diagnostic_publish);
             #[cfg(test)]
             let _verify = commit_costs::span(commit_costs::Stage::VerifyPublished);
+            #[cfg(feature = "witness-timing")]
+            let _diagnostic_verify = commit_timing::span(commit_timing::Stage::VerifyPublished);
             let (published, file) = self.open_publication(ns, offer.object)?;
             verify_publication(&published, file, bytes)?;
             self.authority.authorize(context)?;
@@ -1399,6 +1429,8 @@ impl<A: Authority> Endpoint<A> {
             .map(|(bytes, disk)| (bytes.len() as u64, disk))
     }
     pub(crate) fn ordered_cache_read(&self, c: &Context, id: Id) -> Result<(Vec<u8>, u64)> {
+        #[cfg(feature = "witness-timing")]
+        let _diagnostic_readback = commit_timing::span(commit_timing::Stage::Readback);
         self.authority.authorize(c)?;
         self.ordered_bounds()?;
         let (p, file) = self.open_publication(c.namespace()?, id)?;
@@ -1418,6 +1450,8 @@ impl<A: Authority> Endpoint<A> {
     fn ordered_remove_cache(&mut self, c: &Context, victim: &OrderedEviction) -> Result<()> {
         #[cfg(test)]
         let _victim = commit_costs::span(commit_costs::Stage::Victim);
+        #[cfg(feature = "witness-timing")]
+        let _diagnostic_victim = commit_timing::span(commit_timing::Stage::Victim);
         self.authority.authorize(c)?;
         self.ordered_bounds()?;
         if self.ordered_active_objects(c)?.contains(&victim.id) {
@@ -1707,3 +1741,6 @@ mod ordered_eviction_tests;
 
 #[cfg(test)]
 mod commit_costs;
+
+#[cfg(feature = "witness-timing")]
+pub mod commit_timing;
