@@ -1,5 +1,5 @@
 //! Run a bounded campaign on the same originally admitted A and B.
-use super::{A, B, fixture, verify_return, workload::Call};
+use super::{A, B, fixture, ordinal_fixture, verify_return, workload::Call};
 use anyhow::{Context, Result, ensure};
 use mvm_contract::protocol::mailbox::MailboxJournalDirectionV1;
 use mvm_core::mailbox::sender_ordinal::{SenderOrdinalV1, SenderSettlementV1};

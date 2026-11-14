@@ -141,3 +141,37 @@ reported retry field is true only after that actual retry and SDK finalization.
 An uncertain helper outcome cannot use this path. No helper exit code is invented.
 An unattempted source remains a failure, so the expected failed-start scenario
 may qualify the destination's recovery while the overall pair still fails.
+
+## Unused preparation and original-parent cancellation
+
+Contributor SDK `0909b7ec11942abbc48c47229e27533ba170bbcb` preserves the
+original preparation when stopped-definition or image resolution refuses before
+entering canonical startup. The collector caller retains that SDK proof and the
+original parent together. It invokes the existing parent cancellation API only
+for this unused state; an attempted or uncertain creation follows its existing
+retirement path. Obtaining the proof alone does not refund a reservation.
+
+```text
+paired-journal --installed-collector --unused-definition-refusal --backend firecracker A_ROOTFS A_SHA256 B_ROOTFS B_SHA256 FRAME
+```
+
+This separate negative campaign installs both signed role bundles, creates only
+A's stopped definition, and attempts B through the actual SDK. It deliberately
+boots no workload. Closing the service while the original parent is pending
+must refuse without changing its reservation. Cancellation must return exactly
+that unused guest reservation; repeating cancellation must refuse. Only then
+may the original service owners shut down. Portable preparation debt and
+protected definitions remain retained. A previously retired slot cannot qualify
+as a never-dispatched slot merely because its handles are empty.
+
+The `unused_preparation_recovery` result records these checks separately from
+application delivery. The paired command retains its original missing-definition
+error and returns nonzero even when recovery passes. Helper exit statuses and
+transfer measurements are absent because no workload or application transfer
+ran. The current source has 27 collector-driver tests and strict Clippy passing;
+the bounded host execution is a separate acceptance gate.
+
+Ari must publish the compatible guest runtime: no contributor release-signing
+process is currently available. The unsigned compatibility archive is a build
+witness only. This no-dispatch recovery campaign cannot establish acceptance of
+that archive or replace a fresh signed-runtime paired transfer.
