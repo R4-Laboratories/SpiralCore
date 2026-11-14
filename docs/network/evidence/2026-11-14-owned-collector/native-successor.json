@@ -1,0 +1,119 @@
+{
+  "native1": {
+    "paired_result_sha256": "7553339baa68930b0a2494f1d01b14ef14cdfeb58d2ba5e20dde18d53940c95a",
+    "transfer_error": "original owned journal startup: firecracker needs a verified workload kernel at /tmp/sc-collector-cQoD9ADO/h/cache/kernels/x86_64/workload/vmlinux, and this process does not build one \u2014 create it once with `mvmctl kernel build --which workload`, then retry",
+    "teardown_error": "installed collector retirement: sc-journal-a: original journal was not attempted; preserve definition; sc-journal-b: original destination journal missing",
+    "driver_process_cpu_ns": 4744043426,
+    "whole_wall_ns": 5403043608,
+    "controller_time": [
+      "User time (seconds): 4.71",
+      "System time (seconds): 0.10",
+      "Elapsed (wall clock) time (h:mm:ss or m:ss): 0:05.50",
+      "Maximum resident set size (kbytes): 40528",
+      "Exit status: 1"
+    ],
+    "result": null
+  },
+  "native2": {
+    "paired_result_sha256": "7333efbab9a7084a055a0bf5c7b09864b101c5d8a39cb441e6c7ceb0e8c3712f",
+    "transfer_error": "original owned journal startup: bundle re-verify for pin 782029f2c00e9fb66b38fdbd3457b3506c3534605ec1f71a99be62e14340b9c4",
+    "teardown_error": "installed collector retirement: sc-journal-a: original journal was not attempted; preserve definition; sc-journal-b: original destination journal missing",
+    "driver_process_cpu_ns": 29754889109,
+    "whole_wall_ns": 30489813519,
+    "controller_time": [
+      "User time (seconds): 29.45",
+      "System time (seconds): 0.36",
+      "Elapsed (wall clock) time (h:mm:ss or m:ss): 0:30.58",
+      "Maximum resident set size (kbytes): 273152",
+      "Exit status: 1"
+    ],
+    "result": null
+  },
+  "producer": {
+    "time": [
+      "User time (seconds): 39.42",
+      "System time (seconds): 0.78",
+      "Elapsed (wall clock) time (h:mm:ss or m:ss): 0:44.54",
+      "Maximum resident set size (kbytes): 63892",
+      "Exit status: 0"
+    ],
+    "roles": {
+      "sc-journal-a": {
+        "archive_sha256": "d2720156e2f7cc91dec306556eadf70522377c70a8126e94ab808a8a7a5fbc3f",
+        "bytes": 64493056,
+        "pin": {
+          "bundle_sha256": "d2720156e2f7cc91dec306556eadf70522377c70a8126e94ab808a8a7a5fbc3f",
+          "manifest_sig_base64": "4znM4PQaYiAG7cSTfIsHs0gb9nifsmGBgC4gg4vOXaBvusN+r3DAc81oVl6CexdwnxcaZ9r6EAExeXwFJlFVDw==",
+          "key_id": "b20c1fa800c02f447174d345e242841b"
+        }
+      },
+      "sc-journal-b": {
+        "archive_sha256": "782029f2c00e9fb66b38fdbd3457b3506c3534605ec1f71a99be62e14340b9c4",
+        "bytes": 64493056,
+        "pin": {
+          "bundle_sha256": "782029f2c00e9fb66b38fdbd3457b3506c3534605ec1f71a99be62e14340b9c4",
+          "manifest_sig_base64": "WO5My/YGXVE10kpRdxLIx4Umo6llCHzIOwz/Ka4J8t86pIYsMc48mdBL42+ZGOuD+KYIipp7gFdBywvFJ6xeAA==",
+          "key_id": "b20c1fa800c02f447174d345e242841b"
+        }
+      }
+    },
+    "executables": {
+      "mvmctl": {
+        "bytes": 178965920,
+        "sha256": "f4ef4bdf8846fcdcfd8d41cbf802ea23bf04c4b9ede8ebc0e1c9065652e10c27"
+      },
+      "mvm-signer-helper": {
+        "bytes": 20267872,
+        "sha256": "b812fef0e76c5eb35e15bc13b9c1d91f815be8217050e14592af05741ee5f3cc"
+      },
+      "paired-journal": {
+        "bytes": 110824528,
+        "sha256": "712ede8ab0a19a89f51ef5f80f4007627ea8593d175678c9df6d77e3bfb073b0"
+      },
+      "mvm-network-endpoint": {
+        "bytes": 49837024,
+        "sha256": "706b47117b30354bd9a419d716b92a0035db852d00fbb05ab6c097a9ae84c9f0"
+      },
+      "firecracker": {
+        "bytes": 3676680,
+        "sha256": "99ad0f5cd0514a88aad0e9ae8cfdb3cc3b4ab9d190e1194602406c786b5de7a5"
+      },
+      "mvm-host-agent": {
+        "bytes": 28742632,
+        "sha256": "123ef21b471c955d6bcb16d609f265a9308b700bf2a8a4e7bc8596f7da745dd8"
+      },
+      "collector-fixture": {
+        "bytes": 32333296,
+        "sha256": "0d70222b3d1e069c54dfa4f18a026e5afcb4ff0ab7762beb4347d3f2db113dae"
+      },
+      "mvm-mailbox": {
+        "bytes": 22425528,
+        "sha256": "6323709a0094f5d0a2b84ead8f629f71fc8f8bf0d1afdf4c4f5ae323658b4555"
+      },
+      "collector-install": {
+        "bytes": 22433720,
+        "sha256": "09ac74f4ea07aa433e4985284ee31381629ea2fc2e39844497a3431a8dceecf2"
+      }
+    }
+  },
+  "mvm_source": {
+    "tracked_files": 4663,
+    "bytes": 64724947,
+    "mismatches": [],
+    "revision": "0835ef0ad63c107cf876805da9aa739fd333716e",
+    "manifest_sha256": "837078db1fac3a7b503b770c31c21c5b1b96e10e69669af8e44bc4d8f9959a0e"
+  },
+  "spiralcore_witness_revision": "e08ee099f7727599d5af7d22794d6370ead487da",
+  "scope": "Signed fixture production succeeded; both native attempts failed before transfer. No positive retirement or throughput result.",
+  "metadata_package_counts": {
+    "mvm-client": 1,
+    "mvm-core": 1,
+    "mvm-contract": 1,
+    "mvm-hostd": 1,
+    "mvm-runtime": 1,
+    "spiralcore-transfer": 1,
+    "spiralcore-mvm-flowmux": 1,
+    "spiralcore-mvm-live": 1
+  },
+  "patch_config_sha256": "029b8693311be5d5d65a291ea3adb88c9c88b5ffd177ce98063e9cb5763d4c60"
+}

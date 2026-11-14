@@ -41,14 +41,14 @@ length and SHA-256 before native dispatch. The clean mode refuses mixed
 object/recovery/ordinal campaigns; startup failure does not fall back to ordinary
 SDK startup.
 
-The declared witness envelope is a shared 2 GiB host resident budget, 1200 MiB
-staging, 640 MiB memory and 512 MiB storage per startup quote, 192 MiB per tenant
+The declared witness envelope is a shared 3 GiB host resident budget, 1200 MiB
+staging, 1024 MiB memory and 512 MiB storage per startup quote, 192 MiB per tenant
 helper process and 96 MiB metadata + 24 MiB stack per collector partition. Each
 partition has four workers, one stream and 8 MiB + 32 KiB retained-record credit,
 with zero codec/carrier/plaintext/staging allowance. These are funded ceilings,
 not measured memory or fleet capacity. Both canonical preparation calls must
 run in the same private finite disk-backed filesystem, at most 512 MiB, with a
-hard controller address-space limit no greater than 640 MiB. A directory on the
+hard controller address-space limit no greater than 1024 MiB. A directory on the
 host's unrestricted filesystem does not satisfy the contract.
 
 Stop attempts both original owners, preserves failed custody, and transfers the
@@ -74,3 +74,5 @@ explicitly make their temporary parent private under Wick's group-writable
 default umask. Review additionally found and fixed the root-to-signed-bundle
 binding and the installer's cached-manifest trust defect. These failed gates
 remain part of qualification history.
+
+The first installed attempt retained a missing ambient verified-kernel cache refusal. The next attempts verified bundles but failed before transfer when canonical re-verification exhausted the original 640 MiB controller address-space limit. The successor explicitly funds 1024 MiB per startup within the shared 3 GiB host resident allowance; guest requests remain two times 256 MiB. No check is waived. These failed attempts and subsequent native results must remain separate.

@@ -37,7 +37,7 @@ impl Operator {
         PortableStartupQuote::new(
             role.pin.clone(),
             role.archive,
-            additional(640 << 20)?,
+            additional(1024 << 20)?,
             additional(512 << 20)?,
         )
     }
@@ -98,8 +98,8 @@ pub fn operator(home: &Path) -> Result<(CollectorPair, Operator)> {
     packet.quote(A)?;
     packet.quote(B)?;
     let (mut host, mut tenant) = InstalledConfig::two_endpoint_witness_profile().managed_limits();
-    host.host_resident_bytes = 2 << 30;
-    tenant.host_resident_bytes = 2 << 30;
+    host.host_resident_bytes = 3 << 30;
+    tenant.host_resident_bytes = 3 << 30;
     host.staging_disk_bytes = 1200 << 20;
     tenant.staging_disk_bytes = 1200 << 20;
     let config = InstalledConfig::with_funded_pair_limits(host, tenant)?;
@@ -317,7 +317,7 @@ impl CollectorPair {
                 Ok(())
             }
             Err(failed) => {
-                let error = anyhow::anyhow!("original owned journal startup: {failed}");
+                let error = anyhow::anyhow!("original owned journal startup: {:#}", failed.error());
                 self.slots[i].failed = Some(failed);
                 Err(error)
             }
