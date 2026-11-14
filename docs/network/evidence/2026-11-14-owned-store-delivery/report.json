@@ -1,0 +1,461 @@
+{
+  "source": "0a3a2f696ad918dcb46f1192c2750e1d8d88d2c7",
+  "tree": "e80dfec21720b9f0ab49dcd5034359a8a85601bc",
+  "base": "415c9fd1560506a7a1a2d7e5a46b4645cc3ac584",
+  "scope": "native Linux host process/component and resource controls; no booted MVM or WAN",
+  "source_manifest": {
+    "files": 606,
+    "sha256": "48c955e773aa833c253af7dae0ae80cbda405eda9d1956434a78b3191a3d817d",
+    "includes": "tracked crates, tools, platform manifest and included schema/runtime evidence fixtures"
+  },
+  "mvm_dependency": "468661f47e01d0f59c6f1da4e35a968ceccb3ad2",
+  "checks": {
+    "primitives": {
+      "summaries": [
+        {
+          "status": "ok",
+          "passed": 18,
+          "failed": 0,
+          "ignored": 0,
+          "measured": 0,
+          "filtered": 59
+        }
+      ],
+      "cargo_exit": 0,
+      "command": "cargo +1.97.1 test --release --locked --offline --manifest-path crates/spiralcore-transfer/Cargo.toml --lib endpoint::storage::owned::tests:: -- --test-threads=1"
+    },
+    "public": {
+      "summaries": [
+        {
+          "status": "ok",
+          "passed": 5,
+          "failed": 0,
+          "ignored": 0,
+          "measured": 0,
+          "filtered": 0
+        }
+      ],
+      "cargo_exit": 0,
+      "command": "cargo +1.97.1 test --release --locked --offline --manifest-path crates/spiralcore-transfer/Cargo.toml --test owned_store -- --nocapture --test-threads=1"
+    },
+    "resources": {
+      "summaries": [
+        {
+          "status": "ok",
+          "passed": 1,
+          "failed": 0,
+          "ignored": 0,
+          "measured": 0,
+          "filtered": 0
+        }
+      ],
+      "cargo_exit": 0,
+      "command": "cargo +1.97.1 test --release --locked --offline --manifest-path crates/spiralcore-transfer/Cargo.toml --test owned_store_resources -- --nocapture --test-threads=1"
+    },
+    "transfer-strict": {
+      "summaries": [
+
+      ],
+      "cargo_exit": 0,
+      "command": "cargo +1.97.1 clippy --release --locked --offline --manifest-path crates/spiralcore-transfer/Cargo.toml --all-targets --all-features -- -D warnings"
+    },
+    "flowmux-final-strict": {
+      "summaries": [
+
+      ],
+      "cargo_exit": 0,
+      "command": "cargo +1.97.1 clippy --release --locked --offline --manifest-path crates/spiralcore-mvm-flowmux/Cargo.toml --all-targets --all-features -- -D warnings"
+    },
+    "parent": {
+      "summaries": [
+        {
+          "status": "ok",
+          "passed": 8,
+          "failed": 0,
+          "ignored": 0,
+          "measured": 0,
+          "filtered": 165
+        }
+      ],
+      "cargo_exit": 0,
+      "command": "cargo +1.97.1 test --locked --offline --manifest-path crates/spiralcore-mvm-live/Cargo.toml --features canonical-host --lib installed_parent::endpoint_tests:: -- --test-threads=1"
+    },
+    "ledger": {
+      "summaries": [
+        {
+          "status": "ok",
+          "passed": 38,
+          "failed": 0,
+          "ignored": 0,
+          "measured": 0,
+          "filtered": 0
+        },
+        {
+          "status": "ok",
+          "passed": 1,
+          "failed": 0,
+          "ignored": 0,
+          "measured": 0,
+          "filtered": 0
+        },
+        {
+          "status": "ok",
+          "passed": 19,
+          "failed": 0,
+          "ignored": 0,
+          "measured": 0,
+          "filtered": 0
+        },
+        {
+          "status": "ok",
+          "passed": 3,
+          "failed": 0,
+          "ignored": 0,
+          "measured": 0,
+          "filtered": 0
+        },
+        {
+          "status": "ok",
+          "passed": 2,
+          "failed": 0,
+          "ignored": 0,
+          "measured": 0,
+          "filtered": 0
+        },
+        {
+          "status": "ok",
+          "passed": 11,
+          "failed": 0,
+          "ignored": 0,
+          "measured": 0,
+          "filtered": 0
+        }
+      ],
+      "cargo_exit": 0,
+      "command": "cargo +1.97.1 test --release --locked --offline --manifest-path crates/spiralcore-mvm-live/tests/installed-supervisor-harness/Cargo.toml --all-targets -- --test-threads=1"
+    },
+    "flowmux": {
+      "summaries": [
+        {
+          "status": "ok",
+          "passed": 50,
+          "failed": 0,
+          "ignored": 0,
+          "measured": 0,
+          "filtered": 0
+        },
+        {
+          "status": "ok",
+          "passed": 10,
+          "failed": 0,
+          "ignored": 0,
+          "measured": 0,
+          "filtered": 0
+        },
+        {
+          "status": "ok",
+          "passed": 4,
+          "failed": 0,
+          "ignored": 0,
+          "measured": 0,
+          "filtered": 0
+        },
+        {
+          "status": "ok",
+          "passed": 1,
+          "failed": 0,
+          "ignored": 0,
+          "measured": 0,
+          "filtered": 0
+        },
+        {
+          "status": "ok",
+          "passed": 4,
+          "failed": 0,
+          "ignored": 0,
+          "measured": 0,
+          "filtered": 0
+        },
+        {
+          "status": "ok",
+          "passed": 1,
+          "failed": 0,
+          "ignored": 0,
+          "measured": 0,
+          "filtered": 0
+        },
+        {
+          "status": "ok",
+          "passed": 1,
+          "failed": 0,
+          "ignored": 0,
+          "measured": 0,
+          "filtered": 0
+        },
+        {
+          "status": "ok",
+          "passed": 8,
+          "failed": 0,
+          "ignored": 0,
+          "measured": 0,
+          "filtered": 0
+        },
+        {
+          "status": "ok",
+          "passed": 2,
+          "failed": 0,
+          "ignored": 0,
+          "measured": 0,
+          "filtered": 0
+        },
+        {
+          "status": "ok",
+          "passed": 2,
+          "failed": 0,
+          "ignored": 0,
+          "measured": 0,
+          "filtered": 0
+        },
+        {
+          "status": "ok",
+          "passed": 2,
+          "failed": 0,
+          "ignored": 0,
+          "measured": 0,
+          "filtered": 0
+        },
+        {
+          "status": "ok",
+          "passed": 2,
+          "failed": 0,
+          "ignored": 0,
+          "measured": 0,
+          "filtered": 0
+        },
+        {
+          "status": "ok",
+          "passed": 0,
+          "failed": 0,
+          "ignored": 0,
+          "measured": 0,
+          "filtered": 0
+        }
+      ],
+      "cargo_exit": 0,
+      "command": "cargo +1.97.1 test --release --locked --offline --manifest-path crates/spiralcore-mvm-flowmux/Cargo.toml -- --test-threads=1"
+    },
+    "canonical": {
+      "summaries": [
+        {
+          "status": "ok",
+          "passed": 1,
+          "failed": 0,
+          "ignored": 0,
+          "measured": 0,
+          "filtered": 172
+        },
+        {
+          "status": "ok",
+          "passed": 173,
+          "failed": 0,
+          "ignored": 0,
+          "measured": 0,
+          "filtered": 0
+        }
+      ],
+      "cargo_exit": 0,
+      "command": "cargo +1.97.1 test --locked --offline --manifest-path crates/spiralcore-mvm-live/Cargo.toml --features canonical-host --lib -- --test-threads=1"
+    },
+    "canonical-final-strict": {
+      "summaries": [
+
+      ],
+      "cargo_exit": 0,
+      "command": "cargo +1.97.1 clippy --locked --offline --manifest-path crates/spiralcore-mvm-live/Cargo.toml --features canonical-host --all-targets -- -D warnings"
+    },
+    "collector-final": {
+      "summaries": [
+        {
+          "status": "ok",
+          "passed": 4,
+          "failed": 0,
+          "ignored": 0,
+          "measured": 0,
+          "filtered": 169
+        }
+      ],
+      "cargo_exit": 0,
+      "command": "cargo +1.97.1 test --locked --offline --manifest-path crates/spiralcore-mvm-live/Cargo.toml --features canonical-host --lib installed_parent::collector_tests:: -- --test-threads=1"
+    },
+    "producer": {
+      "summaries": [
+        {
+          "status": "ok",
+          "passed": 5,
+          "failed": 0,
+          "ignored": 0,
+          "measured": 0,
+          "filtered": 0
+        }
+      ],
+      "cargo_exit": 0,
+      "command": "cargo +1.97.1 test --locked --offline --manifest-path crates/spiralcore-mvm-live/Cargo.toml --features canonical-host --example installed_flowmux_fixture -- --nocapture"
+    },
+    "fixture-handoff": {
+      "summaries": [
+        {
+          "status": "ok",
+          "passed": 5,
+          "failed": 0,
+          "ignored": 0,
+          "measured": 0,
+          "filtered": 0
+        }
+      ],
+      "cargo_exit": 0,
+      "command": "cargo +1.97.1 test --locked --offline --manifest-path crates/spiralcore-mvm-live/Cargo.toml --features canonical-host --test fixture_native_handoff -- --test-threads=1"
+    },
+    "fixture-export": {
+      "summaries": [
+        {
+          "status": "ok",
+          "passed": 0,
+          "failed": 0,
+          "ignored": 1,
+          "measured": 0,
+          "filtered": 0
+        }
+      ],
+      "cargo_exit": 0,
+      "command": "cargo +1.97.1 test --locked --offline --manifest-path crates/spiralcore-mvm-live/Cargo.toml --features canonical-host --test fixture_export -- --test-threads=1"
+    },
+    "concurrent-observed": {
+      "summaries": [
+        {
+          "status": "ok",
+          "passed": 1,
+          "failed": 0,
+          "ignored": 0,
+          "measured": 0,
+          "filtered": 76
+        }
+      ],
+      "cargo_exit": null,
+      "command": null
+    },
+    "lifecycle": {
+      "summaries": [
+        {
+          "status": "ok",
+          "passed": 1,
+          "failed": 0,
+          "ignored": 0,
+          "measured": 0,
+          "filtered": 0
+        }
+      ],
+      "cargo_exit": 0,
+      "command": "cargo +1.97.1 test --release --locked --offline --manifest-path crates/spiralcore-mvm-flowmux/Cargo.toml --test ordered_stream -- --exact four_thousand_distinct_blocks_each_direction_keep_exact_bytes_and_bounded_retention --show-output"
+    }
+  },
+  "owned_transfer_rows": [
+    {
+      "warm": false,
+      "exact_body_bytes": 9,
+      "actual_encoded_request_bytes": 228,
+      "actual_encoded_reply_bytes": 218,
+      "send_through_exact_readback_wall_ns": 8524988,
+      "process_cpu_ns": 200625
+    },
+    {
+      "warm": false,
+      "exact_body_bytes": 16,
+      "actual_encoded_request_bytes": 235,
+      "actual_encoded_reply_bytes": 218,
+      "send_through_exact_readback_wall_ns": 9342166,
+      "process_cpu_ns": 172613
+    },
+    {
+      "warm": true,
+      "exact_body_bytes": 16,
+      "actual_encoded_request_bytes": 102,
+      "actual_encoded_reply_bytes": 88,
+      "send_through_exact_readback_wall_ns": 2588808,
+      "process_cpu_ns": 74440
+    }
+  ],
+  "concurrent_observation": "OWNED_CONCURRENT_SCAN stores=2 transient_fds=8 persistent_fds=9 observed_fds=17 observer_fds=1 wall_ns=249195 process_cpu_ns=398266",
+  "retained_lifecycle": "OWNED_RESOURCE stores=2 base_fds=3 persistent_fds=8 final_fds=3 observer_fds=1 wall_ns=23530491 process_cpu_ns=453017",
+  "retained_failures": [
+    "collector-red-invalid-config: initial fixture selected wrong concurrency profile; not behavioral RED",
+    "collector-red:10b0e3a0 production plus collector-regression.patch fails managed resources Full before effects",
+    "flowmux-stale-diagnostic:49 passed,1 failed; obsolete recv_timeout label after merged cooperative routing",
+    "transfer-strict-missing-inputs: source staging omitted compile-time evidence inputs; exact tracked inputs restored",
+    "producer-parent-failure/error-chain/path-diagnostic: unsafe temporary ancestor inherited umask0002; explicit fixture0700 fix",
+    "hosted5e1 collector controls: unsupported original stack envelope; existing runtime guard preserved, supported8MiB qualification configured"
+  ],
+  "not_qualified": [
+    "signed fixture export test was ignored in this final campaign; earlier genuine signed-export/native reports retain original revisions",
+    "separate sender/receiver CPU unavailable for in-process peers",
+    "full allocator/libc proof or fleet memory/capacity from FD observations",
+    "new MVM boot, current paired mailbox runtime, WAN, MVMD, FIPS/CUI"
+  ],
+  "resource_scope": {
+    "systemd_memory_max_bytes": 6442450944,
+    "cpu_quota": "200%",
+    "jobs": 2,
+    "cargo_target": "existing shared target on Wick",
+    "local_build_tree_created": false,
+    "evidence": "evidence/systemd-scopes.txt and campaign-commands/",
+    "property_record_limit": "Properties establish only the named recorded invocations; garbage-collected success units may appear as empty/default placeholders, not terminal configuration proof."
+  },
+  "sustained_snapshot_before_cleanup": "ORDERED_WITNESS success=true witness_timing=false snapshot=concurrent wall_us=68786058 original_gate_us=240000000 setup_wall_us=26998 setup_process_cpu_us=Some(1395) process_cpu_to_snapshot_us=Some(4619766) progress_write_ack_left_right_read_left_right=[4096, 4096, 4096, 4096] actual_tls=[TlsCounters { received: 5395015, sent: 5395050 }, TlsCounters { received: 5395050, sent: 5395015 }] scopes=unavailable_nonblocking scope_status_at_existing_failure_assertion=see_original_error rss_kib=Some(6776) hwm_kib=Some(6776)",
+  "sustained_lifecycle": {
+    "raw": "ORDERED_BULK blocks_each_direction=4096 exact_bytes_each_direction=67108864 actual_tls_a_sent=5395050 actual_tls_a_received=5395015 peer_sent=5395015 peer_received=5395050 setup_wall_us=21979 lifecycle_wall_us=40924472 cpu_process_before=Some((0, 0)) cpu_process_setup=Some((0, 0)) cpu_process_after=Some((217, 166)) lifecycle_process_cpu_us=Some(3839583) cpu_ticks_per_second=Some(100) rss_before_kib=Some(3572) rss_prepared_kib=Some(5676) process_hwm_kib=Some(6940) core_pair_charge_each=8292284 reader_stack_each=2097152 left=OrderedSnapshot { attempts: 1, publications: 64, cache_bytes: 1051712, pinned: 0, evictions: 4032 } right=OrderedSnapshot { attempts: 1, publications: 64, cache_bytes: 1051712, pinned: 0, evictions: 4032 } files_left=(64, 1051712) files_right=(64, 1051712)",
+    "exact_bytes_each_direction": 67108864,
+    "blocks_each_direction": 4096,
+    "tls_sent_each_direction": [
+      5395050,
+      5395015
+    ],
+    "tls_transmitted_total_bytes": 10790065,
+    "setup_wall_us": 21979,
+    "setup_process_cpu_us": 1305,
+    "post_cleanup_lifecycle_wall_us": 40924472,
+    "post_cleanup_lifecycle_process_cpu_us": 3839583,
+    "process_hwm_kib": 6940,
+    "scope": "two peers in one native process; after original workers retired, fixture stores dropped and paths verified absent; no isolated sender/receiver CPU"
+  },
+  "compiler": {
+    "actual_campaign_rustc": "/home/callard/.cargo/bin/rustc\nrustc 1.97.1 (8bab26f4f 2026-07-14)\nbinary: rustc\ncommit-hash: 8bab26f4f68e0e26f0bb7960be334d5b520ea452\ncommit-date: 2026-07-14\nhost: x86_64-unknown-linux-gnu\nrelease: 1.97.1\nLLVM version: 22.1.6\n",
+    "actual_campaign_cargo": "/home/callard/.cargo/bin/cargo\ncargo 1.97.1 (c980f4866 2026-06-30)\nrelease: 1.97.1\ncommit-hash: c980f4866141969fab6254a680546a277789d6f0\ncommit-date: 2026-06-30\nhost: x86_64-unknown-linux-gnu\nlibgit2: 1.9.2 (sys:0.20.4 vendored)\nlibcurl: 8.20.0-DEV (sys:0.4.88+curl-8.20.0 vendored ssl:OpenSSL/3.6.2)\nssl: OpenSSL 3.6.2 7 Apr 2026\nos: Ubuntu 26.4.0 (resolute) [64-bit]\n",
+    "host_default_note": "host-default-rustc.txt was captured outside the campaign PATH and is not the compiler used by cargo+1.97.1",
+    "executable_hashes": "evidence/compiler-executables.sha256"
+  },
+  "archive": {
+    "name": "wick-logs.tar.gz",
+    "bytes": 103549,
+    "sha256": "0aac9d1897da1618421c8a836399efdc407f36012e378f7f4f286e2c5aaa5fb0"
+  },
+  "verification": {
+    "early_548_scope": "source-final-after.txt before included fixtures were added to manifest",
+    "final_606_scope": "source-complete-after.txt and source-lifecycle-after.txt; all606 match final repository objects"
+  },
+  "native": {
+    "receipt": "native/source-and-measurements.json",
+    "archive_inventory": "native/verification.json",
+    "archives": 19,
+    "archive_members": 246,
+    "embedded_checksum_entries_verified": 180,
+    "source_file_checks_verified": 1158,
+    "ci_merge_commit": "6234b65ccbc47ad3e4562fe802c375a6730162cd",
+    "ci_tree": "e80dfec21720b9f0ab49dcd5034359a8a85601bc",
+    "final_check_state": "38 SUCCESS,4 SKIPPED,0 failure/pending; final-checks.json/final-runs.json"
+  },
+  "delivery": {
+    "pr": 260,
+    "merged_commit": "adcc7197aa277277be5d074383c6267476163206",
+    "released_tree": "e80dfec21720b9f0ab49dcd5034359a8a85601bc",
+    "released_tree_equals_reviewed_and_ci_tree": true
+  }
+}
