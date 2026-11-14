@@ -10,7 +10,7 @@ MVM contributor `468661f47e01d0f59c6f1da4e35a968ceccb3ad2`, tree `ceea5a0d51e373
 | `cargo +1.97.1 check --locked --offline -p mvm-conformance --all-targets --features bdd` | 0 |
 | Enclosing runner | 0 |
 
-The raw test log contains 323 successful libtest summaries totaling 21,705 reported passes and 75 ignores. This is **not a distinct-test census**: nested subprocess output may repeat summaries. BDD was compiled, not executed. Native GNU all-targets compilation covers the recorded Linux target; it is not the literal Zig or `just check::gated` recipe. Clippy took 17.31 s, all-targets check 71 s and BDD compilation 43.66 s. Driver-presence expectations were explicit; no GPU workload ran.
+The raw test log contains 323 successful libtest summaries totaling 21,705 reported passes and 75 ignores. This is **not a distinct-test census**: nested subprocess output may repeat summaries. BDD was compiled, not executed. Native GNU all-targets compilation covers the recorded Linux target; it is not the literal Zig or `just check::gated` recipe. Cargo reported 17.31 s for Clippy, 71 s for the all-targets check and 43.66 s for BDD compilation; the corresponding complete command wall times were 17.90 s, 71.82 s and 43.74 s. Driver-presence expectations were explicit; no GPU workload ran.
 
 Both source receipts matched 4,655 tracked entries / 64,659,163 bytes. Source manifest SHA-256: `48ff22ed15e5d3b89be61c8209f6260549450ffa91bf56d21798d2f66c9b1e86`. Raw workspace log: 1,962,138 bytes, SHA-256 `1c56e9fcca5b907d3021ae253fb0e38531d169979c3b6f7ab91108060b0c565e`. Retained private evidence directory: `mvm-468661-workspace-022.qjWlLBhG` on the Linux test host.
 

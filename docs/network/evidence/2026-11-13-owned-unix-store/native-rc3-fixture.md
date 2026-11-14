@@ -45,7 +45,7 @@ The existing `tools/installed-flowmux-witness/run-linux.sh` used one vCPU, 256 M
 | Controller maximum RSS / virtual peak | 277,212 / 766,124 KiB |
 | Original test / peer / namespace | One selected test passed; all three exits 0 |
 
-The phase markers are cumulative boundaries, not disjoint phases to add together. Guest process CPU is separate from controller GNU-time accounting. Peak RSS is not simultaneous aggregate host memory. TLS counts omit lower-layer headers, retransmissions and other host traffic. One trial supplies no latency distribution, throughput ceiling or compression speedup.
+Prepared, launch and through-retirement markers are cumulative from controller start; dispatch measures its own interval. These overlapping boundaries must not be added as disjoint phases. Guest process CPU is separate from controller GNU-time accounting. Peak RSS is not simultaneous aggregate host memory. TLS counts omit lower-layer headers, retransmissions and other host traffic. One trial supplies no latency distribution, throughput ceiling or compression speedup.
 
 ## Audit and original-owner retirement
 
