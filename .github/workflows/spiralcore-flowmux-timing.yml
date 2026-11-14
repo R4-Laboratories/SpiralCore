@@ -1,6 +1,11 @@
 name: SpiralCore native FlowMux timing witness
 on:
   workflow_dispatch:
+    inputs:
+      duplex_control:
+        description: Run default-feature simultaneous/alternating controls only
+        type: boolean
+        default: false
   pull_request:
     paths:
       - 'crates/spiralcore-mvm-flowmux/**'
@@ -14,6 +19,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   windows-timing:
+    if: ${{ github.event_name != 'workflow_dispatch' || !inputs.duplex_control }}
     strategy:
       fail-fast: false
       matrix:
@@ -128,6 +134,7 @@ jobs:
           if-no-files-found: error
           retention-days: 14
   macos-timing:
+    if: ${{ github.event_name != 'workflow_dispatch' || !inputs.duplex_control }}
     strategy:
       fail-fast: false
       matrix:
@@ -217,5 +224,123 @@ jobs:
         with:
           name: ${{ matrix.artifact }}-${{ github.run_attempt }}
           path: timing-evidence/
+          if-no-files-found: error
+          retention-days: 14
+
+  duplex-control:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.duplex_control }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: windows-2022
+            target: x86_64-pc-windows-msvc
+            arch: X64
+            order: 0
+          - runner: windows-2025
+            target: x86_64-pc-windows-msvc
+            arch: X64
+            order: 1
+          - runner: windows-11-arm
+            target: aarch64-pc-windows-msvc
+            arch: ARM64
+            order: 2
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: pwsh
+    env:
+      NATIVE_TARGET: ${{ matrix.target }}
+      EXPECTED_ARCH: ${{ matrix.arch }}
+      CONTROL_ORDER: ${{ matrix.order }}
+      CARGO_BUILD_JOBS: 2
+      CARGO_INCREMENTAL: 0
+      CARGO_TERM_COLOR: never
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Record control source and native toolchain
+        run: |
+          $ErrorActionPreference = 'Stop'
+          New-Item -ItemType Directory duplex-evidence | Out-Null
+          if ($env:RUNNER_OS -ne 'Windows' -or $env:RUNNER_ARCH -ne $env:EXPECTED_ARCH) { throw 'Native Windows runner required' }
+          $source = (git rev-parse HEAD).Trim()
+          if ($LASTEXITCODE -ne 0) { throw 'Source identity failed' }
+          $tree = (git rev-parse 'HEAD^{tree}').Trim()
+          if ($LASTEXITCODE -ne 0) { throw 'Tree identity failed' }
+          @{ source = $source; tree = $tree; run = $env:GITHUB_RUN_ID;
+            attempt = $env:GITHUB_RUN_ATTEMPT; image = $env:ImageVersion;
+            os = $env:RUNNER_OS; arch = $env:RUNNER_ARCH; target = $env:NATIVE_TARGET;
+            operation_seconds = 2; workload_seconds = 240; enrollment_seconds = 270;
+            blocks_each_direction = 4096; bytes_each_direction = 67108864;
+            features = @(); scope = 'paired local native process controls; no MVM backend or WAN';
+            lock_sha256 = (Get-FileHash crates/spiralcore-mvm-flowmux/Cargo.lock -Algorithm SHA256).Hash
+          } | ConvertTo-Json -Depth 5 | Set-Content duplex-evidence/identity.json
+          rustup toolchain install "1.97.1-$env:NATIVE_TARGET" --profile minimal --component clippy
+          if ($LASTEXITCODE -ne 0) { throw 'Pinned toolchain unavailable' }
+          rustc "+1.97.1-$env:NATIVE_TARGET" -vV | Set-Content duplex-evidence/rustc.txt
+          if ($LASTEXITCODE -ne 0 -or !(Select-String -Path duplex-evidence/rustc.txt -SimpleMatch "host: $env:NATIVE_TARGET")) { throw 'Native target required' }
+      - name: Build once and execute both layouts under the original gates
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $false
+          $package = (Resolve-Path crates/spiralcore-mvm-flowmux).Path
+          $manifest = Join-Path $package 'Cargo.toml'
+          & cargo "+1.97.1-$env:NATIVE_TARGET" clippy --release --locked --manifest-path $manifest --test ordered_stream -- -D warnings
+          if ($LASTEXITCODE -ne 0) { throw 'Control Clippy failed' }
+          $artifacts = @(& cargo "+1.97.1-$env:NATIVE_TARGET" test --release --locked --manifest-path $manifest --test ordered_stream --no-run --message-format=json |
+            ForEach-Object { ConvertFrom-Json -InputObject $_ } |
+            Where-Object { $_.reason -eq 'compiler-artifact' -and $_.manifest_path -eq $manifest -and $_.target.name -eq 'ordered_stream' -and $_.profile.test -eq $true -and $_.executable })
+          if ($LASTEXITCODE -ne 0 -or $artifacts.Count -ne 1) { throw 'One ordered stream executable required' }
+          $artifact = $artifacts[0]
+          if ($artifact.features -contains 'witness-timing' -or $artifact.features -contains 'witness-stall') { throw 'Default-feature control required' }
+          $exe = (Get-Item -LiteralPath $artifact.executable).FullName
+          $before = (Get-FileHash -LiteralPath $exe -Algorithm SHA256).Hash
+          $length = (Get-Item -LiteralPath $exe).Length
+          @{ package_id = $artifact.package_id; features = @($artifact.features);
+            executable = (Split-Path -Leaf $exe); bytes = $length; sha256 = $before
+          } | ConvertTo-Json -Depth 5 | Set-Content duplex-evidence/executable.json
+          $order = if (([long]$env:GITHUB_RUN_ID + [int]$env:CONTROL_ORDER) % 2 -eq 0) { @('simultaneous','alternating') } else { @('alternating','simultaneous') }
+          $results = @()
+          $allPassed = $true
+          foreach ($mode in $order) {
+            $env:SPIRALCORE_ORDERED_LAYOUT = $mode
+            $log = ''
+            $code = $null
+            Push-Location -LiteralPath $package
+            try {
+              $log = (& $exe four_thousand_distinct_blocks_each_direction_keep_exact_bytes_and_bounded_retention --exact --show-output --color never 2>&1 | Out-String)
+              $code = $LASTEXITCODE
+            } finally {
+              Pop-Location
+              Remove-Item Env:SPIRALCORE_ORDERED_LAYOUT -ErrorAction SilentlyContinue
+              $log | Set-Content "duplex-evidence/$mode.txt"
+            }
+            $after = (Get-FileHash -LiteralPath $exe -Algorithm SHA256).Hash
+            $afterLength = (Get-Item -LiteralPath $exe).Length
+            $passed = $code -eq 0 -and $log -match 'test result: ok\. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out;' -and $log -match "ORDERED_LAYOUT mode=$mode blocks_each_direction=4096 operation_seconds=2 workload_seconds=240" -and $log -match 'exact_bytes_each_direction=67108864'
+            $results += @{ layout = $mode; exit_code = $code; passed = $passed; sha256_after = $after; bytes_after = $afterLength }
+            $results | ConvertTo-Json -Depth 5 | Set-Content duplex-evidence/results.json
+            $log | Write-Output
+            if ($after -ne $before -or $afterLength -ne $length) { throw 'Control executable changed' }
+            if (!$passed) { $allPassed = $false }
+          }
+          if (git status --porcelain -- crates/spiralcore-mvm-flowmux/Cargo.lock) { throw 'Locked control changed source' }
+          if (!$allPassed) { throw 'Paired control contains a failure; both outcomes retained' }
+      - name: Checksum paired evidence
+        if: always()
+        run: |
+          if (Test-Path duplex-evidence) {
+            Get-ChildItem duplex-evidence -File | Sort-Object Name | ForEach-Object {
+              "$((Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant())  $($_.Name)"
+            } | Set-Content duplex-evidence/SHA256SUMS
+          }
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: flowmux-duplex-control-${{ matrix.runner }}-${{ github.run_attempt }}
+          path: duplex-evidence/
           if-no-files-found: error
           retention-days: 14

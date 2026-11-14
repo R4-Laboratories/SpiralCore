@@ -18,6 +18,7 @@ use std::{
     sync::{
         Arc,
         atomic::{AtomicU64, Ordering},
+        mpsc::{Receiver, SyncSender, sync_channel},
     },
     time::{Duration, Instant},
 };
@@ -135,9 +136,43 @@ impl Drop for WitnessReport<'_> {
         }
     }
 }
+struct Turn {
+    receive: Receiver<u64>,
+    give: SyncSender<u64>,
+}
+fn alternating_turns() -> [Turn; 2] {
+    let (left_send, left_receive) = sync_channel(1);
+    let (right_send, right_receive) = sync_channel(1);
+    left_send.try_send(0).unwrap();
+    [
+        Turn {
+            receive: left_receive,
+            give: right_send,
+        },
+        Turn {
+            receive: right_receive,
+            give: left_send,
+        },
+    ]
+}
+
 #[test]
 fn four_thousand_distinct_blocks_each_direction_keep_exact_bytes_and_bounded_retention() {
     const BLOCKS: u64 = 4096;
+    let alternating = match std::env::var("SPIRALCORE_ORDERED_LAYOUT") {
+        Err(std::env::VarError::NotPresent) => false,
+        Ok(value) if value == "simultaneous" => false,
+        Ok(value) if value == "alternating" => true,
+        _ => panic!("unsupported ordered fixture layout"),
+    };
+    eprintln!(
+        "ORDERED_LAYOUT mode={} blocks_each_direction={BLOCKS} operation_seconds=2 workload_seconds=240",
+        if alternating {
+            "alternating"
+        } else {
+            "simultaneous"
+        }
+    );
     let tick_rate = std::process::Command::new("getconf")
         .arg("CLK_TCK")
         .output()
@@ -304,9 +339,15 @@ fn four_thousand_distinct_blocks_each_direction_keep_exact_bytes_and_bounded_ret
             });
             complete
         };
+        let [left_turn, right_turn] = if alternating {
+            alternating_turns().map(Some)
+        } else {
+            [None, None]
+        };
         let writer = |mut stream: MappedStream,
                       direction: usize,
-                      observer: spiralcore_mvm_flowmux::RetentionObserver| {
+                      observer: spiralcore_mvm_flowmux::RetentionObserver,
+                      turn: Option<Turn>| {
             for index in 0..BLOCKS {
                 assert!(
                     Instant::now() < run_until,
@@ -315,6 +356,24 @@ fn four_thousand_distinct_blocks_each_direction_keep_exact_bytes_and_bounded_ret
                     left_auth.check(),
                     right_auth.check()
                 );
+                if let Some(turn) = &turn {
+                    let remaining = run_until
+                        .checked_duration_since(Instant::now())
+                        .expect("original240s fixture deadline while waiting for direction");
+                    let ordinal = turn
+                        .receive
+                        .recv_timeout(remaining)
+                        .expect("paired direction ended or original workload deadline expired");
+                    assert_eq!(
+                        ordinal,
+                        2 * index + direction as u64,
+                        "original direction token"
+                    );
+                    assert!(
+                        Instant::now() < run_until,
+                        "original240s fixture deadline after direction wait"
+                    );
+                }
                 stream.write_all(&block(index)).unwrap_or_else(|error| {
                     eprintln!(
                         "ORDERED_FIRST_FAILURE role={direction} operation=write local={:?}",
@@ -335,6 +394,13 @@ fn four_thousand_distinct_blocks_each_direction_keep_exact_bytes_and_bounded_ret
                 assert!(state.attempts <= 2, "{state:?}");
                 assert!(state.publications <= 64, "{state:?}");
                 assert!(state.cache_bytes <= 8 << 20, "{state:?}");
+                if let Some(turn) = &turn
+                    && (direction == 0 || index + 1 < BLOCKS)
+                {
+                    turn.give
+                        .try_send(2 * index + direction as u64 + 1)
+                        .expect("bounded next-direction token must have exactly one receiver");
+                }
             }
             stream.shutdown(Shutdown::Write).unwrap();
         };
@@ -356,8 +422,8 @@ fn four_thousand_distinct_blocks_each_direction_keep_exact_bytes_and_bounded_ret
         let right_read = right.clone();
         let left_observer = left_state.clone();
         let right_observer = right_state.clone();
-        let lw = scope.spawn(move || writer(left_write, 0, right_observer));
-        let rw = scope.spawn(move || writer(right_write, 1, left_observer));
+        let lw = scope.spawn(move || writer(left_write, 0, right_observer, left_turn));
+        let rw = scope.spawn(move || writer(right_write, 1, left_observer, right_turn));
         let lr = scope.spawn(move || reader(left_read, 0));
         let rr = scope.spawn(move || reader(right_read, 1));
         lw.join().unwrap();
