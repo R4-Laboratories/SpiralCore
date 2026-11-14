@@ -62,3 +62,26 @@ path = "bin/collector_fixture.rs"
 [[bin]]
 name = "collector-install"
 path = "bin/collector_install.rs"
+
+# Standalone tools do not inherit MVM's workspace profiles. Preserve the same
+# optimized admission and cryptographic callers used by the canonical host.
+[profile.dev]
+debug = 0
+incremental = false
+
+[profile.test]
+debug = 0
+incremental = false
+
+[profile.dev.package.mvm-core]
+opt-level = 2
+[profile.dev.package.sha2]
+opt-level = 3
+[profile.dev.package.ring]
+opt-level = 3
+[profile.dev.package.zeroize]
+opt-level = 3
+[profile.dev.package.curve25519-dalek]
+opt-level = 3
+[profile.dev.package.ed25519-dalek]
+opt-level = 3
