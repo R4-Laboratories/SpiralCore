@@ -1,3 +1,12 @@
+Contributor MVM `639cdc36e` closes a post-spawn helper configuration-unwind
+window while preserving the actual original Child and failed-readiness owner.
+Four new child controls, spawn inventory, three original-helper process fixtures,
+strict workspace Clippy, gated compilation and the full serial workspace suite
+pass. The helper fixtures recover exact 257-byte payloads; they use fixture guest
+and VMM counterparts, not booted MVMs. Earlier parallel/setup/inventory failures
+remain recorded. This does not close detached recovery or signed-runtime/WAN
+acceptance. [Source qualification and measured recovery](evidence/2026-11-14-helper-configuration-custody/README.md).
+
 # Networking delivery status
 
 Contributor MVM `0909b7ec` now preserves the exact unused journal preparation

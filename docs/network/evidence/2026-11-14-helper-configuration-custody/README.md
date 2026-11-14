@@ -18,10 +18,11 @@ after child collection. These are host component tests, with no booted MVM.
 The existing journal suite passed **39 tests**, including these four, with three
 actual-helper fixtures ignored because they require a separately compiled helper.
 Strict all-target workspace Clippy and Linux/BDD gated compilation passed.
-Final-source workspace and explicit original-helper checks are still running
-under the original `sc-helper-config-final-checks` unit on Wick. This draft
-report is not a completed qualification. No completed release claim follows from a live
-job or a compilation result.
+Final source `639cdc36e` passes the complete serial workspace suite and doctests,
+strict all-target workspace Clippy, Linux/BDD gated compilation, the helper
+spawn inventory and all three separately invoked original-helper process tests.
+The original `sc-helper-config-final-checks` unit ended with status 0. This is
+component/source qualification, not complete native MVM or release acceptance.
 
 The preferred `just tests::scoped` command could not run because cargo-nextest is
 absent on Wick. Its setup failure was retained; focused `cargo test` supplied the
@@ -44,8 +45,10 @@ The configured serial run reached the final tooling suite and found a real
 mistake in the new fixture: raw `Command::new` violated MVM's helper environment
 inventory. Candidate `639cdc36e` replaces it with the canonical `helper_command`;
 production custody code is unchanged from `ae2717f0f`. The final four child tests
-pass, and the inventory, strict/gated, helper-process and full-workspace checks
-are being rerun for that final source. All prior failures remain retained.
+pass. The inventory, strict/gated, helper-process and complete serial workspace
+checks also pass for that final source. All prior failures remain retained.
+The final test environment sets `MVM_GPU_TEST_EXPECT_NATIVE=1` and uses one test
+thread. The parallel fixture failure is not diagnosed or counted as repaired.
 
 ## Explicit original-helper process results
 
@@ -69,9 +72,10 @@ compilation; its maximum RSS was 2,577,612 KiB. The fixtures themselves finished
 in 0.95 s. Per-transaction process CPU was not measured. These are recovery
 checks, not compression or zstd benchmarks.
 
-[Exact measurements and boundaries](original-process-results.json). The final
-workspace suite remains running, and this PR remains a draft until its result
-is recorded.
+[Exact measurements and boundaries](original-process-results.json) ·
+[Final verification and retained raw-log hashes](validation-receipt.json).
+The receipt lists original per-target summaries, including nested fixture
+summaries; those rows must not be added as a unique-test count.
 
 ## Exceptional state and limits
 
