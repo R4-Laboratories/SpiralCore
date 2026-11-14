@@ -143,7 +143,10 @@ mod tests {
             Some((0, 0, 0, 0, 0, true))
         );
         assert_eq!(completed_for(&format!("{raw}finish 2\n"), SCOPE), None);
-        assert_eq!(completed_for(&format!("{raw}finish 1\nbegin 2\n"), SCOPE), None);
+        assert_eq!(
+            completed_for(&format!("{raw}finish 1\nbegin 2\n"), SCOPE),
+            None
+        );
     }
 
     #[test]
