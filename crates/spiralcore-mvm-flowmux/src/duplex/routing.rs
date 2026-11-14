@@ -61,6 +61,7 @@ pub(super) struct Routing {
     responses: SyncSender<Frame>,
     wake: Arc<Wake>,
     busy: AtomicBool,
+    fatal: Mutex<Option<Error>>,
 }
 pub(super) struct Inbound(Arc<Routing>);
 impl Drop for Inbound {
@@ -84,7 +85,19 @@ impl Routing {
             responses,
             wake,
             busy: AtomicBool::new(false),
+            fatal: Mutex::new(None),
         }))
+    }
+    /// Synchronize with a decoder failure that may already have cancelled the socket.
+    pub(super) fn finish<T>(&self, result: Result<T>) -> Result<T> {
+        let _reader = self.reader()?;
+        let fatal = lock(&self.fatal)?.take();
+        match (result, fatal) {
+            (Ok(_), Some(error)) | (Err(Error::Cancelled | Error::Closed), Some(error)) => {
+                Err(error)
+            }
+            (result, _) => result,
+        }
     }
     pub(super) fn ready(&self) {
         self.wake.notify();
@@ -151,25 +164,40 @@ impl Routing {
         if !self.busy.load(Ordering::Acquire) || lock(&self.pending)?.is_none() {
             return Ok(false);
         }
-        let rx = held.as_mut().ok_or(Error::Closed)?;
-        // A retained prefix belongs to the original worker. Do not spin or read past it.
-        if rx.object_deadline().is_some() {
-            return Ok(false);
-        }
-        if !rx.poll_input()? {
-            return Ok(true);
-        }
-        let until = self.read_deadline(rx, until)?;
-        if rx.prepare_object(until)? {
-            match rx.receive_object(until)? {
-                ObjectRecord::Frame(purpose, frame) => self.route(purpose, frame)?,
-                ObjectRecord::ApplicationHalfClose | ObjectRecord::TransportFin => {
-                    return Err(Error::Protocol);
+        let result = (|| {
+            let rx = held.as_mut().ok_or(Error::Closed)?;
+            // A retained prefix belongs to the original worker. Do not spin or read past it.
+            if rx.object_deadline().is_some() {
+                return Ok(false);
+            }
+            if !rx.poll_input()? {
+                return Ok(true);
+            }
+            let until = self.read_deadline(rx, until)?;
+            if rx.prepare_object(until)? {
+                match rx.receive_object(until)? {
+                    ObjectRecord::Frame(purpose, frame) => self.route(purpose, frame)?,
+                    ObjectRecord::ApplicationHalfClose | ObjectRecord::TransportFin => {
+                        return Err(Error::Protocol);
+                    }
                 }
             }
+            Ok(rx.object_deadline().is_none())
+        })();
+        match result {
+            Ok(progress) => Ok(progress),
+            Err(error) => {
+                let copy = copy_error(&error);
+                let mut fatal = lock(&self.fatal)?;
+                if fatal.is_none() {
+                    *fatal = Some(error);
+                }
+                // The original Rx guard outlives publication, including internal socket stop.
+                Err(copy)
+            }
         }
-        Ok(rx.object_deadline().is_none())
     }
+
     pub(super) fn wait_reply(
         &self,
         responses: &Receiver<Frame>,
@@ -191,6 +219,27 @@ impl Routing {
             }
             self.wake.wait(until, cancellation)?;
         }
+    }
+}
+
+fn copy_error(error: &Error) -> Error {
+    match error {
+        Error::Io(error) => Error::Io(error.raw_os_error().map_or_else(
+            || std::io::Error::new(error.kind(), "cooperative object reader failed"),
+            std::io::Error::from_raw_os_error,
+        )),
+        Error::Core(error) => Error::Core(*error),
+        Error::InvalidBinding => Error::InvalidBinding,
+        Error::PeerMismatch => Error::PeerMismatch,
+        Error::Limit => Error::Limit,
+        Error::Protocol => Error::Protocol,
+        Error::Sequence => Error::Sequence,
+        Error::Integrity => Error::Integrity,
+        Error::Truncated => Error::Truncated,
+        Error::Timeout => Error::Timeout,
+        Error::Cancelled => Error::Cancelled,
+        Error::Closed => Error::Closed,
+        Error::Worker => Error::Worker,
     }
 }
 
@@ -388,6 +437,39 @@ mod tests {
             ),
             Err(Error::Protocol)
         ));
+    }
+    #[test]
+    fn original_owner_collects_decode_failure_published_after_socket_cancellation() {
+        let pair = pair();
+        let held = pair.routing.reader().unwrap();
+        pair.cancellation.cancel();
+        std::thread::scope(|scope| {
+            let (entered, entry) = mpsc::sync_channel(1);
+            let routing = pair.routing.clone();
+            let owner = scope.spawn(move || {
+                entered.send(()).unwrap();
+                routing.finish::<()>(Err(Error::Cancelled))
+            });
+            entry.recv_timeout(Duration::from_secs(1)).unwrap();
+            *lock(&pair.routing.fatal).unwrap() = Some(Error::Limit);
+            drop(held);
+            assert!(matches!(owner.join().unwrap(), Err(Error::Limit)));
+        });
+        assert!(lock(&pair.routing.fatal).unwrap().is_none());
+    }
+    #[test]
+    fn assisting_failure_preserves_independent_worker_refusal_and_cannot_make_success() {
+        let pair = pair();
+        *lock(&pair.routing.fatal).unwrap() = Some(Error::Limit);
+        assert!(matches!(
+            pair.routing.finish::<()>(Err(Error::Integrity)),
+            Err(Error::Integrity)
+        ));
+        assert!(lock(&pair.routing.fatal).unwrap().is_none());
+        *lock(&pair.routing.fatal).unwrap() = Some(Error::Protocol);
+        assert!(matches!(pair.routing.finish(Ok(())), Err(Error::Protocol)));
+        let os = Error::Io(std::io::Error::from_raw_os_error(13));
+        assert!(matches!(copy_error(&os), Error::Io(error) if error.raw_os_error() == Some(13)));
     }
     #[test]
     fn retirement_removes_original_rx_even_with_caller_reference() {

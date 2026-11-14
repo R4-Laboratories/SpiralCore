@@ -933,7 +933,9 @@ impl<A: Authority> Worker<A> {
         tx.send_object(&reply, purpose, until)
     }
     fn run(mut self) -> Result<(Counters, Counters)> {
-        self.run_inner()
+        let result = self.run_inner();
+        self.routing
+            .finish(result)
             .inspect_err(|e| self.cancellation.observe(FailureSite::WorkerExit, None, e))
     }
     fn run_inner(&mut self) -> Result<(Counters, Counters)> {
