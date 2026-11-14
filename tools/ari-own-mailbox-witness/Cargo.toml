@@ -10,6 +10,7 @@ object-ack-loss-qualification = ["installed-object-pair"]
 large-object-fixture = []
 paired-journal-qualification = []
 installed-object-pair = ["paired-journal-qualification", "large-object-fixture"]
+installed-collector-pair = ["paired-journal-qualification", "dep:spiralcore-mvm-live"]
 receipt-loss-qualification = ["paired-journal-qualification"]
 [dependencies]
 libc = "=0.2.186"
@@ -24,9 +25,11 @@ mvm-build = { path = "../source/crates/mvm-build" }
 mvm-core = { path = "../source/crates/mvm-core", features = ["host-state"] }
 mvm-hostd = { path = "../source/crates/mvm-hostd" }
 mvm-contract = { path = "../source/crates/mvm-contract", features = ["protocol"] }
+tempfile = "3"
 hex = "0.4"
 rand = "0.10"
 ed25519-dalek = "3"
+spiralcore-mvm-live = { path = "../../crates/spiralcore-mvm-live", features = ["canonical-host"], optional = true }
 [dev-dependencies]
 mvm-core = { path = "../source/crates/mvm-core", features = ["test-support"] }
 
@@ -51,3 +54,11 @@ path = "bin/launch.rs"
 name = "paired-journal"
 path = "bin/paired/main.rs"
 required-features = ["paired-journal-qualification"]
+
+[[bin]]
+name = "collector-fixture"
+path = "bin/collector_fixture.rs"
+
+[[bin]]
+name = "collector-install"
+path = "bin/collector_install.rs"

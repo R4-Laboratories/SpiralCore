@@ -188,7 +188,10 @@ mod tests {
             assert_eq!(signed.grant.address.mailbox, owner.mailbox);
             assert_eq!(signed.grant.subject, source.subject);
             assert_eq!(signed.grant.message_kinds, [MailboxMessageKind::Cast]);
-            assert_eq!(signed.grant.content_types, [guest_message.clone()]);
+            assert_eq!(
+                signed.grant.content_types.as_slice(),
+                std::slice::from_ref(&guest_message)
+            );
             assert_eq!(
                 signed.grant.operations,
                 CapabilityOperations::from_operations(&[MailboxOperation::Send])
