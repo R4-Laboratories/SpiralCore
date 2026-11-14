@@ -16,6 +16,7 @@ use spiralcore_mvm_live::{
     installed_parent::{
         InstalledParentProvider, ParentLaunchOwner, PortableStartupQuote, TenantHelperLimits,
     },
+    installed_resources::ManagedSnapshot,
     installed_supervisor::{InstalledConfig, InstalledSupervisor},
 };
 use std::{io::Read, num::NonZeroU64};
@@ -136,6 +137,7 @@ pub fn retire(pair: &mut CollectorPair, state: &mut State, home: &Path) -> Resul
     enum Retired {
         Helper(JournalStopOutcome),
         NoHelper(NoHelperRetirement),
+        Unused,
     }
     let history = fs::OpenOptions::new()
         .write(true)
@@ -158,6 +160,8 @@ pub fn retire(pair: &mut CollectorPair, state: &mut State, home: &Path) -> Resul
                 Err(anyhow::anyhow!(
                     "original journal was not attempted; preserve definition"
                 ))
+            } else if pair.slots[i].unused.is_some() {
+                pair.cancel_unused(name).map(|()| Retired::Unused)
             } else if pair.slots[i].failed.as_ref().is_some_and(|failed| {
                 failed.helper_disposition() == JournalStartDisposition::NoExec
             }) {
@@ -192,6 +196,9 @@ pub fn retire(pair: &mut CollectorPair, state: &mut State, home: &Path) -> Resul
                     .map(Retired::Helper)
             };
         let row = match result {
+            Ok(Retired::Unused) => json!({"name":name,"preparation_not_entered":true,
+                "workload_not_dispatched":true,"unused_parent_cancelled":true,
+                "runtime_state_removed":false,"definitions_removed":false}),
             Ok(Retired::NoHelper(_proof)) => {
                 json!({"name":name,"helper_not_executed":true,"native_collected":true,
                     "collector_parent_published":true,"runtime_state_removed":false,
@@ -241,17 +248,46 @@ pub fn retire(pair: &mut CollectorPair, state: &mut State, home: &Path) -> Resul
     )
 }
 
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+enum Disposition {
+    #[default]
+    Fresh,
+    Attempted,
+    UnusedCancelled,
+    Retired,
+}
+impl Disposition {
+    fn complete(self) -> bool {
+        matches!(self, Self::UnusedCancelled | Self::Retired)
+    }
+    fn never_dispatched(self) -> bool {
+        matches!(self, Self::Fresh | Self::UnusedCancelled)
+    }
+}
+
 #[derive(Default)]
 struct Slot {
     parent: Option<ParentLaunchOwner>,
     started: Option<OwnedJournalStart>,
     failed: Option<OwnedJournalStartFailure>,
+    unused: Option<mvm_client::UnusedHostLifetimePreparation>,
     endpoint: Option<mvm_client::EndpointRetirement>,
     endpoint_transferred: bool,
-    stopped: bool,
+    disposition: Disposition,
     no_helper_callback_retry_injected: bool,
     no_helper_callback_retry_observed: bool,
     no_helper_parent_published: bool,
+}
+impl Slot {
+    fn permits_no_dispatch_close(&self) -> bool {
+        self.disposition.never_dispatched()
+            && self.parent.is_none()
+            && self.started.is_none()
+            && self.failed.is_none()
+            && self.unused.is_none()
+            && self.endpoint.is_none()
+            && !self.endpoint_transferred
+    }
 }
 
 /// One shared host/tenant ledger and one actual backend for both original names.
@@ -262,6 +298,7 @@ pub struct CollectorPair {
     backend: Option<Arc<LocalBackend>>,
     slots: [Slot; 2],
     no_helper_callback_retry: bool,
+    services_closed: bool,
 }
 
 fn index(name: &str) -> Result<usize> {
@@ -325,6 +362,7 @@ impl CollectorPair {
             backend: Some(backend),
             slots: std::array::from_fn(|_| Slot::default()),
             no_helper_callback_retry: false,
+            services_closed: false,
         })
     }
 
@@ -333,9 +371,12 @@ impl CollectorPair {
     /// permits an immediate retry through the same SDK failure object.
     pub fn enable_no_helper_callback_retry(&mut self) -> Result<()> {
         ensure!(
-            self.slots.iter().all(|slot| slot.parent.is_none()
-                && slot.started.is_none()
-                && slot.failed.is_none()),
+            self.slots
+                .iter()
+                .all(|slot| slot.disposition == Disposition::Fresh
+                    && slot.parent.is_none()
+                    && slot.started.is_none()
+                    && slot.failed.is_none()),
             "callback retry witness must be selected before any launch"
         );
         self.no_helper_callback_retry = true;
@@ -358,7 +399,9 @@ impl CollectorPair {
     ) -> Result<()> {
         let i = index(name)?;
         ensure!(
-            self.slots[i].parent.is_none(),
+            !self.services_closed
+                && self.slots[i].disposition == Disposition::Fresh
+                && self.slots[i].parent.is_none(),
             "original collector start already attempted"
         );
         let provider = self
@@ -382,6 +425,7 @@ impl CollectorPair {
         require_signed_root(rootfs, kernel.workload_root_declaration()?)?;
         let (mut lifetime, parent) = prepared.begin_launch()?;
         self.slots[i].parent = Some(parent);
+        self.slots[i].disposition = Disposition::Attempted;
         lifetime.select_canonical_kernel(kernel)?;
         let result = self
             .backend()
@@ -394,10 +438,37 @@ impl CollectorPair {
             }
             Err(failed) => {
                 let error = anyhow::anyhow!("original owned journal startup: {:#}", failed.error());
-                self.slots[i].failed = Some(failed);
+                match failed.into_unused_for_parent() {
+                    Ok(unused) => self.slots[i].unused = Some(unused),
+                    Err(failed) => self.slots[i].failed = Some(failed),
+                }
                 Err(error)
             }
         }
+    }
+
+    /// Cancel only the opaque unused token returned by this slot's SDK call.
+    /// Failure keeps both the original proof and original parent for retry.
+    pub fn cancel_unused(&mut self, name: &str) -> Result<()> {
+        let slot = &mut self.slots[index(name)?];
+        ensure!(
+            !self.services_closed
+                && slot.disposition == Disposition::Attempted
+                && slot.started.is_none()
+                && slot.failed.is_none()
+                && slot.endpoint.is_none()
+                && !slot.endpoint_transferred,
+            "original startup is not an unused preparation"
+        );
+        let proof = slot.unused.as_ref().context("SDK unused proof missing")?;
+        slot.parent
+            .as_mut()
+            .context("original unused parent missing")?
+            .cancel_unused(proof)?;
+        drop(slot.unused.take());
+        drop(slot.parent.take());
+        slot.disposition = Disposition::UnusedCancelled;
+        Ok(())
     }
 
     /// Borrow the actual SDK admission for the unchanged enrollment/posture checks.
@@ -418,14 +489,17 @@ impl CollectorPair {
         until: Instant,
     ) -> Result<JournalStopOutcome> {
         let slot = &mut self.slots[index(name)?];
-        ensure!(!slot.stopped, "original journal already collected");
+        ensure!(
+            !slot.disposition.complete(),
+            "original journal already collected"
+        );
         let Slot {
             parent,
             started,
             failed,
             endpoint,
             endpoint_transferred,
-            stopped,
+            disposition,
             ..
         } = slot;
         let parent = parent.as_mut().context("original parent owner missing")?;
@@ -442,7 +516,7 @@ impl CollectorPair {
         } else {
             anyhow::bail!("original SDK startup custody missing")
         };
-        *stopped = true;
+        *disposition = Disposition::Retired;
         Ok(outcome)
     }
 
@@ -455,7 +529,10 @@ impl CollectorPair {
         until: Instant,
     ) -> Result<NoHelperRetirement> {
         let slot = &mut self.slots[index(name)?];
-        ensure!(!slot.stopped, "original no-helper startup already retired");
+        ensure!(
+            !slot.disposition.complete(),
+            "original no-helper startup already retired"
+        );
         let failed = slot
             .failed
             .as_mut()
@@ -501,32 +578,51 @@ impl CollectorPair {
             "original parent callback publication was not observed"
         );
         slot.no_helper_callback_retry_observed = slot.no_helper_callback_retry_injected;
-        slot.stopped = true;
+        slot.disposition = Disposition::Retired;
         Ok(proof)
     }
 
     pub fn resources(&self) -> Result<Value> {
-        Ok(serde_json::to_value(
-            self.supervisor
-                .as_ref()
-                .context("original supervisor missing")?
-                .managed_resources()
-                .snapshot()?,
-        )?)
+        Ok(serde_json::to_value(self.snapshot()?)?)
+    }
+
+    fn snapshot(&self) -> Result<ManagedSnapshot> {
+        Ok(self
+            .supervisor
+            .as_ref()
+            .context("original supervisor missing")?
+            .managed_resources()
+            .snapshot()?)
     }
 
     /// Stop only the original tenant service after both journals were collected.
     /// Retained telemetry/startup debt remains booked; no definition or state reaping.
     pub fn close(&mut self) -> Result<Value> {
         ensure!(
-            self.slots.iter().all(|slot| slot.stopped),
+            self.slots.iter().all(|slot| slot.disposition.complete()),
             "original pair retirement incomplete"
         );
         for slot in &mut self.slots {
             drop(slot.started.take());
             drop(slot.failed.take());
+            drop(slot.unused.take());
             drop(slot.parent.take());
         }
+        self.close_services()
+    }
+
+    /// This guard accepts original fresh/cancelled slots, never cleared fields
+    /// from a normally retired or uncertain workload.
+    pub fn close_without_workload_dispatch(&mut self) -> Result<Value> {
+        ensure!(
+            self.slots.iter().all(Slot::permits_no_dispatch_close),
+            "original undispatched close has pending or dispatched custody"
+        );
+        self.close_services()
+    }
+
+    fn close_services(&mut self) -> Result<Value> {
+        ensure!(!self.services_closed, "original services already closed");
         drop(self.backend.take());
         let provider = self.provider.take().context("original provider missing")?;
         provider.close_admission();
@@ -546,8 +642,90 @@ impl CollectorPair {
             .as_mut()
             .context("original supervisor missing")?
             .close_admission();
+        self.services_closed = true;
         self.resources()
     }
+}
+
+/// Actual SDK refusal and original-parent accounting, without guest dispatch.
+/// The enclosing paired transfer still returns its original application error.
+pub fn qualify_unused_refusal(
+    pair: &mut CollectorPair,
+    state: &State,
+    initial: &Value,
+    refusal: &anyhow::Error,
+) -> Result<Value> {
+    ensure!(
+        state.attempted == [false, true]
+            && state.defined == [true, false]
+            && state.a.is_none()
+            && state.b.is_none()
+            && state.b_pending.is_none()
+            && format!("{refusal:#}").contains("does not exist")
+            && pair.slots[1].unused.is_some(),
+        "original stopped-definition refusal and SDK unused proof required"
+    );
+    ensure!(
+        initial["usage"]["guests"] == 0 && initial["usage"]["guest_memory_bytes"] == 0,
+        "unused campaign requires the original empty guest budget"
+    );
+    let before = pair.snapshot()?;
+    ensure!(
+        before.usage.guests == 1 && before.usage.guest_memory_bytes == 256 << 20 && !before.fenced,
+        "original unused guest reservation was not retained"
+    );
+    let premature = pair
+        .close_without_workload_dispatch()
+        .err()
+        .context("pending original ownership permitted service close")?;
+    ensure!(
+        premature
+            .to_string()
+            .contains("pending or dispatched custody"),
+        "premature close did not refuse at the original custody gate"
+    );
+    let preserved = pair.snapshot()?;
+    ensure!(
+        preserved.usage == before.usage
+            && preserved.active_reservations == before.active_reservations,
+        "refused close changed the original reservation"
+    );
+    pair.cancel_unused(B)?;
+    let cancelled = pair.snapshot()?;
+    ensure!(
+        cancelled.usage.guests == 0
+            && cancelled.usage.guest_memory_bytes == 0
+            && cancelled.active_reservations.checked_add(1) == Some(before.active_reservations),
+        "original parent did not release exactly its unused VM reservation"
+    );
+    let repeat = pair
+        .cancel_unused(B)
+        .err()
+        .context("repeat cancellation was accepted")?;
+    ensure!(
+        repeat.to_string().contains("not an unused preparation"),
+        "repeat cancellation did not refuse at the original phase gate"
+    );
+    let repeated = pair.snapshot()?;
+    ensure!(
+        repeated.usage == cancelled.usage
+            && repeated.active_reservations == cancelled.active_reservations,
+        "repeat refusal changed reserved credit"
+    );
+    let closed = pair.close_without_workload_dispatch()?;
+    ensure!(
+        closed["usage"]["guests"] == 0 && closed["usage"]["workers"] == 0,
+        "original service shutdown left live resource charges"
+    );
+    Ok(
+        json!({"sdk_preparation_not_entered":true,"workload_not_dispatched":true,
+        "guest_reservations_initial_pending_cancelled":[0,1,0],
+        "premature_close_refused":true,"repeat_cancel_refused":true,
+        "original_parent_cancelled":true,"original_service_shutdown_completed":true,
+        "before_cancellation":before,"after_cancellation":cancelled,"after_service_shutdown":closed,
+        "application_transfer_executed":false,"runtime_state_removed":false,
+        "definitions_removed":false,"wan":null}),
+    )
 }
 
 impl Drop for CollectorPair {
@@ -555,7 +733,7 @@ impl Drop for CollectorPair {
         if self
             .slots
             .iter()
-            .any(|slot| slot.parent.is_some() && !slot.stopped)
+            .any(|slot| slot.parent.is_some() && !slot.disposition.complete())
         {
             // Abandonment is never positive retirement or a budget refund.
             std::mem::forget(std::mem::replace(
@@ -618,6 +796,24 @@ fn require_signed_root(rootfs: &Path, root: &mvm_core::plan::bundle::BundleArtif
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn no_dispatch_close_distinguishes_fresh_cancelled_and_retired_slots() {
+        for (disposition, allowed) in [
+            (Disposition::Fresh, true),
+            (Disposition::Attempted, false),
+            (Disposition::UnusedCancelled, true),
+            (Disposition::Retired, false),
+        ] {
+            let mut slot = Slot {
+                disposition,
+                ..Slot::default()
+            };
+            assert_eq!(slot.permits_no_dispatch_close(), allowed);
+            slot.endpoint_transferred = true;
+            assert!(!slot.permits_no_dispatch_close());
+        }
+    }
 
     #[test]
     fn role_root_requires_signed_length_and_exact_digest() {

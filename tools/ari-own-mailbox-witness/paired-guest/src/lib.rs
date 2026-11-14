@@ -2,6 +2,7 @@ mod control;
 #[cfg(feature = "sender-ordinal-v1")]
 mod sender_ordinal;
 mod fixture;
+mod ordinal_fixture;
 #[cfg(feature="object-reader-v1")]
 pub mod object_reader;
 #[cfg(feature = "object-reader-v1")]
@@ -130,7 +131,7 @@ fn receive(v: &Value, deadline: Instant) -> Result<Value> {
             && frame.len() == FRAME
             && body.len() == LEN
             && match ordinal {
-                Some(n)=> fixture::ordinal_frame(n).is_some_and(|expected| frame==expected),
+                Some(n)=> ordinal_fixture::ordinal_frame(n).is_some_and(|expected| frame==expected),
                 None=>hex::encode(Sha256::digest(&frame)) == FRAME_SHA && hex::encode(Sha256::digest(body)) == BODY_SHA,
             },
         "destination lease disagrees with original message or fixture digest"

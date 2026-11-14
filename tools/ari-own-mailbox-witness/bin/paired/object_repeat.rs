@@ -43,18 +43,26 @@ fn id(value: &Value, bytes: usize) -> Result<&str> {
     Ok(text)
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub(super) enum Codec {
     Raw,
     WholeZstd,
 }
 
 impl Codec {
+    #[cfg(feature = "installed-object-pair")]
     pub(super) fn parse(label: &str) -> Result<Self> {
         match label {
             "raw" => Ok(Self::Raw),
             "zstd-whole-v1" => Ok(Self::WholeZstd),
             _ => anyhow::bail!("expected raw or zstd-whole-v1"),
+        }
+    }
+    fn from_mode(mode: u64) -> Result<Self> {
+        match mode {
+            0 => Ok(Self::Raw),
+            9 => Ok(Self::WholeZstd),
+            _ => anyhow::bail!("unsupported matched codec mode"),
         }
     }
     fn label(self) -> &'static str {
@@ -76,7 +84,7 @@ impl Codec {
 fn check_codec(codec: Codec, source: &Value, dest: &[Value], warm: bool) -> Result<()> {
     let mode = codec.mode();
     ensure!(
-        number(source, "offered_mode")? == mode,
+        Codec::from_mode(number(source, "offered_mode")?)? == codec,
         "sender used another codec"
     );
     number(source, "encoder_setup_ns")?;
@@ -465,6 +473,14 @@ mod tests {
 #[cfg(test)]
 mod codec_controls {
     use super::*;
+    #[test]
+    fn matched_codec_decoder_refuses_unselected_wire_modes() {
+        assert!(Codec::from_mode(0).is_ok_and(|codec| codec == Codec::Raw));
+        assert!(Codec::from_mode(9).is_ok_and(|codec| codec == Codec::WholeZstd));
+        for mode in [1, 8, 10, u64::MAX] {
+            assert!(Codec::from_mode(mode).is_err());
+        }
+    }
     #[test]
     fn matched_zstd_requires_actual_encoded_call_and_original_peer_totals() {
         let a = json!({"offered_mode":9,"encoder_setup_ns":1,"encoder_setup_cpu_ns":1,"data_bytes":4106});

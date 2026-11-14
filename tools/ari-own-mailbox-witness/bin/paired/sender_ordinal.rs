@@ -143,7 +143,7 @@ fn one(
         b["role"] == "received_and_acknowledged" && b["message_id"] == id,
         "missing B signed ACK"
     );
-    let expected = fixture::ordinal_frame(n).context("ordinal outside fixture range")?;
+    let expected = ordinal_fixture::ordinal_frame(n).context("ordinal outside fixture range")?;
     let hex = b
         .as_object_mut()
         .context("missing destination result")?
