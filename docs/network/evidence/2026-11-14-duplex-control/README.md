@@ -6,7 +6,7 @@ for a kind-3 reply while both scopes remain valid. Its receiver thread also
 handles incoming storage work synchronously, so delayed local reply routing is
 a hypothesis; the log does not prove that the remote endpoint withheld a reply.
 
-The same ordered-stream fixture now accepts the test-only environment selector
+At executed source `13ff238d`, the ordered-stream fixture accepts the test-only environment selector
 `SPIRALCORE_ORDERED_LAYOUT=simultaneous` or `alternating`. Absence retains the
 simultaneous workload. Unknown values refuse before endpoint setup. Production
 library code, encoding, authority and wire meanings are unchanged.
