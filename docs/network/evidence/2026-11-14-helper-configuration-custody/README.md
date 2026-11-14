@@ -47,6 +47,32 @@ production custody code is unchanged from `ae2717f0f`. The final four child test
 pass, and the inventory, strict/gated, helper-process and full-workspace checks
 are being rerun for that final source. All prior failures remain retained.
 
+## Explicit original-helper process results
+
+The final-source **three original-helper fixtures pass** after building the
+matching `mvm-mailbox` executable. These are real helpers with synthetic guest
+streams and VMM-lifetime processes, not booted MVMs. Each verifies exact 257-byte
+readback. The reconnect fixture also collects both predecessor helpers and
+refuses current revocation. Signed ordinal settlement retires one contiguous
+ordinal only after the verified receipt.
+
+| Component case | Sealed relay A to B | Reply relay B to A | Connection through B ACK | A / B unassisted exit |
+|---|---:|---:|---:|---:|
+| Lost guest reply | 5,534 bytes per attempt | 1,136 bytes per attempt | 57.697 ms | 207.747 / 10.346 ms |
+| Helper reconnect | 5,513 bytes per attempt | 1,139 bytes per attempt | 81.901 ms | 222.935 / 15.343 ms |
+| Signed ordinal settlement | 5,550 bytes | 1,145 bytes | Unmeasured | 222.875 / 10.331 ms |
+
+The first two cases record turns 0, 1 and 2. Relay counters and B's guest-reader
+counters measure separate I/O surfaces; they are not complete transport or WAN
+byte totals. The test command took 27.54 s wall and 32.06 + 2.20 s CPU including
+compilation; its maximum RSS was 2,577,612 KiB. The fixtures themselves finished
+in 0.95 s. Per-transaction process CPU was not measured. These are recovery
+checks, not compression or zstd benchmarks.
+
+[Exact measurements and boundaries](original-process-results.json). The final
+workspace suite remains running, and this PR remains a draft until its result
+is recorded.
+
 ## Exceptional state and limits
 
 The child and marker remain in their original owners. A caught panic is neither
