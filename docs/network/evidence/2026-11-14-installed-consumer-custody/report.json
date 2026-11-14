@@ -1,0 +1,871 @@
+{
+  "scope": "native host-process installed reader/store consumer; no booted MVM, WAN or final acceptance",
+  "source": {
+    "mvm_commit": "611a3c76bf6f064760e5adef4fa7befbeb4eb650",
+    "mvm_tree": "fa41026dfd45841dab26655030629e10d3ca2712",
+    "baseline": "472914d5216091aea5e572276989a3215d0b2a73",
+    "upstream_baseline": "a3c23063b",
+    "version": "0.28.0-rc.3",
+    "newer_upstream_observed": "2033b886926b86a2e2d6e7df8a504a00695a4cb1 (rc.4; not qualified by this campaign)",
+    "shared_core": "adcc7197aa277277be5d074383c6267476163206",
+    "sc_candidate": "1079f2445a5f4fc30ca8a8a8bc8d3c9658715d6b",
+    "tracked_files": 4679,
+    "tracked_bytes": 64901324,
+    "manifest_sha256": "16d55ab597c2e17eb2907147c1945255479f1d047dcaf0a2c043b9564f1a763a",
+    "source_checks": [
+      {
+        "file": "mvm-store-final-source-after.txt",
+        "verified_files": 4679
+      },
+      {
+        "file": "mvm-store-post-source-before.txt",
+        "verified_files": 4679
+      },
+      {
+        "file": "mvm-store-post-source-after.txt",
+        "verified_files": 4679
+      }
+    ],
+    "sc_tree": "4f1e27dbf25ad0fdb85f509bebb80320fff3c42a",
+    "ci_merge": {
+      "parents": [
+        "5dc220abbd28eea0aca70a4683314c990395cf44",
+        "1079f2445a5f4fc30ca8a8a8bc8d3c9658715d6b"
+      ],
+      "sha": "6c5ed74f400d17fffc1813d78e86c3aae55a557b",
+      "tree": "4f1e27dbf25ad0fdb85f509bebb80320fff3c42a"
+    }
+  },
+  "local_checks": {
+    "baseline": {
+      "exit_status": 0,
+      "raw_log": "mvm-store-baseline.log",
+      "result_rows": [
+        "test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 2520 filtered out; finished in 0.06s"
+      ],
+      "gnu_time": {
+        "user_seconds": 0.12,
+        "system_seconds": 0.06,
+        "elapsed": "0:00.25",
+        "max_rss_kib": 129332
+      }
+    },
+    "custody": {
+      "exit_status": 0,
+      "raw_log": "mvm-store-custody.log",
+      "result_rows": [
+        "test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 2520 filtered out; finished in 0.08s"
+      ],
+      "gnu_time": {
+        "user_seconds": 28.51,
+        "system_seconds": 2.03,
+        "elapsed": "0:22.97",
+        "max_rss_kib": 2554892
+      }
+    },
+    "payload": {
+      "exit_status": 0,
+      "raw_log": "mvm-store-payload.log",
+      "result_rows": [
+        "test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 2511 filtered out; finished in 0.01s"
+      ],
+      "gnu_time": {
+        "user_seconds": 0.12,
+        "system_seconds": 0.05,
+        "elapsed": "0:00.18",
+        "max_rss_kib": 130248
+      }
+    },
+    "registered": {
+      "exit_status": 0,
+      "raw_log": "mvm-store-registered.log",
+      "result_rows": [
+        "test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.05s"
+      ],
+      "gnu_time": {
+        "user_seconds": 23.22,
+        "system_seconds": 4.48,
+        "elapsed": "0:19.32",
+        "max_rss_kib": 1534212
+      }
+    },
+    "format": {
+      "exit_status": 0,
+      "raw_log": "mvm-store-format.log",
+      "result_rows": [
+
+      ],
+      "gnu_time": {
+        "user_seconds": 4.4,
+        "system_seconds": 0.07,
+        "elapsed": "0:04.50",
+        "max_rss_kib": 192412
+      }
+    },
+    "strict": {
+      "exit_status": 0,
+      "raw_log": "mvm-store-strict.log",
+      "result_rows": [
+
+      ],
+      "gnu_time": {
+        "user_seconds": 182.39,
+        "system_seconds": 18.26,
+        "elapsed": "1:49.34",
+        "max_rss_kib": 1818192
+      }
+    },
+    "gated": {
+      "exit_status": 0,
+      "raw_log": "mvm-store-gated.log",
+      "result_rows": [
+
+      ],
+      "gnu_time": {
+        "user_seconds": 166.05,
+        "system_seconds": 20.41,
+        "elapsed": "1:52.39",
+        "max_rss_kib": 1772392
+      }
+    },
+    "provenance": {
+      "exit_status": 0,
+      "raw_log": "mvm-store-provenance.log",
+      "result_rows": [
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 1433 filtered out; finished in 1.58s"
+      ],
+      "gnu_time": {
+        "user_seconds": 76.93,
+        "system_seconds": 2.54,
+        "elapsed": "0:44.33",
+        "max_rss_kib": 1366436
+      }
+    },
+    "workspace-final": {
+      "exit_status": 0,
+      "raw_log": "mvm-store-workspace-final.log",
+      "result_rows": [
+        "test result: ok. 67 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s",
+        "test result: ok. 1149 passed; 0 failed; 4 ignored; 0 measured; 0 filtered out; finished in 23.15s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 97 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.57s",
+        "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 0 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s",
+        "test result: ok. 15 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 6.46s",
+        "test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 7.08s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.05s",
+        "test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s",
+        "test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.07s",
+        "test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.21s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 20 filtered out; finished in 0.45s",
+        "test result: ok. 21 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 10.26s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 477 filtered out; finished in 0.00s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 477 filtered out; finished in 0.00s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 477 filtered out; finished in 0.00s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 477 filtered out; finished in 0.00s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 477 filtered out; finished in 0.00s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 477 filtered out; finished in 0.00s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 477 filtered out; finished in 0.00s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 477 filtered out; finished in 0.00s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 477 filtered out; finished in 0.06s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 477 filtered out; finished in 0.00s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 477 filtered out; finished in 0.00s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 477 filtered out; finished in 0.00s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 477 filtered out; finished in 0.00s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 477 filtered out; finished in 0.00s",
+        "test result: ok. 476 passed; 0 failed; 2 ignored; 0 measured; 0 filtered out; finished in 6.09s",
+        "test result: ok. 1431 passed; 0 failed; 6 ignored; 0 measured; 0 filtered out; finished in 10.09s",
+        "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 4.01s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.08s",
+        "test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 184 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.11s",
+        "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 179 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.07s",
+        "test result: ok. 42 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 23 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.44s",
+        "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s",
+        "test result: ok. 37 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.17s",
+        "test result: ok. 30 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.98s",
+        "test result: ok. 2906 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 49.40s",
+        "test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s",
+        "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s",
+        "test result: ok. 50 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.22s",
+        "test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.11s",
+        "test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.83s",
+        "test result: ok. 0 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.07s",
+        "test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s",
+        "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s",
+        "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.51s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.35s",
+        "test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.10s",
+        "test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.19s",
+        "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 1497 passed; 0 failed; 3 ignored; 0 measured; 0 filtered out; finished in 34.57s",
+        "test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.15s",
+        "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 0 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.81s",
+        "test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.05s",
+        "test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.19s",
+        "test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.25s",
+        "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 283 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.49s",
+        "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.24s",
+        "test result: ok. 177 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.15s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 17 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.32s",
+        "test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s",
+        "test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s",
+        "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.28s",
+        "test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.46s",
+        "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 1232 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.57s",
+        "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s",
+        "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s",
+        "test result: ok. 3083 passed; 0 failed; 2 ignored; 0 measured; 0 filtered out; finished in 18.77s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.12s",
+        "test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.58s",
+        "test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s",
+        "test result: ok. 27 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.08s",
+        "test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s",
+        "test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 20 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 0 passed; 0 failed; 3 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 5 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 557 filtered out; finished in 0.00s",
+        "test result: ok. 558 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 8.29s",
+        "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s",
+        "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 28 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.16s",
+        "test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s",
+        "test result: ok. 23 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 16 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 1.49s",
+        "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s",
+        "test result: ok. 45 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s",
+        "test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2523 filtered out; finished in 0.00s",
+        "test result: ok. 2509 passed; 0 failed; 15 ignored; 0 measured; 0 filtered out; finished in 81.85s",
+        "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 26 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.05s",
+        "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.41s",
+        "test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s",
+        "test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.93s",
+        "test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.58s",
+        "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s",
+        "test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.91s",
+        "test result: ok. 0 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.16s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s",
+        "test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.24s",
+        "test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.07s",
+        "test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s",
+        "test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.98s",
+        "test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 0 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s",
+        "test result: ok. 21 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.82s",
+        "test result: ok. 9 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.01s",
+        "test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 4.38s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.12s",
+        "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.84s",
+        "test result: ok. 0 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 0 passed; 0 failed; 2 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.21s",
+        "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.02s",
+        "test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s",
+        "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.02s",
+        "test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.77s",
+        "test result: ok. 173 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.51s",
+        "test result: ok. 62 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.72s",
+        "test result: ok. 34 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.17s",
+        "test result: ok. 17 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.29s",
+        "test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.07s",
+        "test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s",
+        "test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 1463 passed; 0 failed; 11 ignored; 0 measured; 0 filtered out; finished in 31.30s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 0 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 0 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 0 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s",
+        "test result: ok. 115 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.09s",
+        "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.25s",
+        "test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 47 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 1115 filtered out; finished in 0.00s",
+        "test result: ok. 1112 passed; 0 failed; 4 ignored; 0 measured; 0 filtered out; finished in 21.66s",
+        "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.56s",
+        "test result: ok. 52 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 5.91s",
+        "test result: ok. 26 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.37s",
+        "test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.65s",
+        "test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.95s",
+        "test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.06s",
+        "test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.95s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s",
+        "test result: ok. 106 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 11.60s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.06s",
+        "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.16s",
+        "test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.23s",
+        "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.32s",
+        "test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.07s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 54 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 10.31s",
+        "test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s",
+        "test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 18 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.97s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s",
+        "test result: ok. 68 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 12.71s",
+        "test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.27s",
+        "test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.74s",
+        "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.22s",
+        "test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s",
+        "test result: ok. 45 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s",
+        "test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.47s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.16s",
+        "test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.06s",
+        "test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.29s",
+        "test result: ok. 53 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s",
+        "test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.31s",
+        "test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.29s",
+        "test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.26s",
+        "test result: ok. 40 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.07s",
+        "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.12s",
+        "test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s",
+        "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.11s",
+        "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.11s",
+        "test result: ok. 39 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 118.47s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.10s",
+        "test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.25s",
+        "test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s",
+        "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.11s",
+        "test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.92s",
+        "test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.06s",
+        "test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 3 filtered out; finished in 0.04s",
+        "test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.21s",
+        "test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 1055 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 28.45s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s",
+        "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.30s",
+        "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 3 passed; 0 failed; 4 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.48s",
+        "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 0 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.05s",
+        "test result: ok. 0 passed; 0 failed; 3 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s"
+      ],
+      "gnu_time": {
+        "user_seconds": 392.52,
+        "system_seconds": 120.65,
+        "elapsed": "11:45.98",
+        "max_rss_kib": 4322900
+      }
+    },
+    "registered-isolated": {
+      "exit_status": 0,
+      "raw_log": "mvm-store-registered-isolated.log",
+      "result_rows": [
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 8 filtered out; finished in 0.25s"
+      ],
+      "gnu_time": {
+        "user_seconds": 0.02,
+        "system_seconds": 0.02,
+        "elapsed": "0:00.24",
+        "max_rss_kib": 25260
+      }
+    }
+  },
+  "registered_isolated": {
+    "raw_measurement": "direct_tcp_readback app_bytes_each_way=5804 tls_to_peer=3657 tls_from_peer=3234 setup_to_hello_ns=99201043 valid_open_to_verified_half_close_ns=62863567 retirement_with_archive_retry_ns=74031218",
+    "metrics": {
+      "app_bytes_each_way": 5804,
+      "tls_to_peer": 3657,
+      "tls_from_peer": 3234,
+      "setup_to_hello_ns": 99201043,
+      "valid_open_to_verified_half_close_ns": 62863567,
+      "retirement_with_archive_retry_ns": 74031218
+    },
+    "actual_tls_total": 6891,
+    "command_cost": {
+      "user_seconds": 0.02,
+      "system_seconds": 0.02,
+      "elapsed": "0:00.24",
+      "max_rss_kib": 25260
+    },
+    "executable_before": "7b4d3f170969a1ea75291ccdb0df110eefd4a20b426d9bbc1201c2cf9e2dc276  /var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/debug/deps/registered_direct_tcp-41fe2141683c756b",
+    "executable_after": "7b4d3f170969a1ea75291ccdb0df110eefd4a20b426d9bbc1201c2cf9e2dc276  /var/tmp/sc-direct-flowmux.iptmjZre/source/.mvm-test/target/debug/deps/registered_direct_tcp-41fe2141683c756b",
+    "cpu_scope": "whole fixture and reaped children; no separate sender/receiver or phase CPU",
+    "counter_scope": "TLS bytes both directions; no TCP/IP or retransmission accounting",
+    "fidelity": "5804 exact bytes each way, byte equality and authenticated HalfClose before original retirement"
+  },
+  "graph_comparison": [
+    {
+      "scope": "aarch64-apple-darwin",
+      "baseline": {
+        "file": "mvm-store-matched-aarch64-apple-darwin-baseline.txt",
+        "sha256": "d5233d851bbb9613a5920ee01f4e156d6a07987bfd1d57e4c767c6a32d3a38ba",
+        "bytes": 150536
+      },
+      "candidate": {
+        "file": "mvm-store-matched-aarch64-apple-darwin-candidate.txt",
+        "sha256": "b0cee2005aee4394b7c9febdccd502341729bd9b1c720140700c3a9a115bcb3b",
+        "bytes": 150536
+      },
+      "identical_after_pin_normalization": true,
+      "execution_claim": false
+    },
+    {
+      "scope": "aarch64-pc-windows-msvc",
+      "baseline": {
+        "file": "mvm-store-matched-aarch64-pc-windows-msvc-baseline.txt",
+        "sha256": "a1a779957cc4691961f4e2950fab26cf97c6c0c11b87591a4f9fb3dabdda2228",
+        "bytes": 163419
+      },
+      "candidate": {
+        "file": "mvm-store-matched-aarch64-pc-windows-msvc-candidate.txt",
+        "sha256": "86f1434bee8a3e1351afdb6862a1ca45e6abe2d727487834d7accfcd8a4a673d",
+        "bytes": 163419
+      },
+      "identical_after_pin_normalization": true,
+      "execution_claim": false
+    },
+    {
+      "scope": "aarch64-unknown-linux-gnu",
+      "baseline": {
+        "file": "mvm-store-matched-aarch64-unknown-linux-gnu-baseline.txt",
+        "sha256": "18916f6ab72656f5ca033841ae81c26ea5fe8249778eeb86b54393e1d875caaf",
+        "bytes": 151846
+      },
+      "candidate": {
+        "file": "mvm-store-matched-aarch64-unknown-linux-gnu-candidate.txt",
+        "sha256": "474e7cc7d93fd327de5a4598f22eff661a09179e24a1f22c9429081b869eb4c3",
+        "bytes": 151846
+      },
+      "identical_after_pin_normalization": true,
+      "execution_claim": false
+    },
+    {
+      "scope": "mvm-builder-guest",
+      "baseline": {
+        "file": "mvm-store-matched-mvm-builder-guest-baseline.txt",
+        "sha256": "54ad644c3f43c94c7e8c1069cd787a771d27220929ffb94e40d6d702ff51a298",
+        "bytes": 4131
+      },
+      "candidate": {
+        "file": "mvm-store-matched-mvm-builder-guest-candidate.txt",
+        "sha256": "54ad644c3f43c94c7e8c1069cd787a771d27220929ffb94e40d6d702ff51a298",
+        "bytes": 4131
+      },
+      "identical_after_pin_normalization": true,
+      "execution_claim": false
+    },
+    {
+      "scope": "mvmctl",
+      "baseline": {
+        "file": "mvm-store-matched-mvmctl-baseline.txt",
+        "sha256": "679beb9c91f3874c38b596473fe0d28612af612045d15f5e4b9cf65b57a859d7",
+        "bytes": 36799
+      },
+      "candidate": {
+        "file": "mvm-store-matched-mvmctl-candidate.txt",
+        "sha256": "240ede630f9542743033d2adc06c7b3c0eac5bcae84aca08b2e1a2260df9ddd2",
+        "bytes": 36799
+      },
+      "identical_after_pin_normalization": true,
+      "execution_claim": false
+    },
+    {
+      "scope": "x86_64-apple-darwin",
+      "baseline": {
+        "file": "mvm-store-matched-x86_64-apple-darwin-baseline.txt",
+        "sha256": "916a2da31cf37b9dad378e2bd95ff4eb6cfd6ad77b2bff4a2511aae213ab6bb7",
+        "bytes": 150965
+      },
+      "candidate": {
+        "file": "mvm-store-matched-x86_64-apple-darwin-candidate.txt",
+        "sha256": "12866a472e34b688f1ca17105e9ff8a1252545c0d67f1d63c1619cf8442e17fa",
+        "bytes": 150965
+      },
+      "identical_after_pin_normalization": true,
+      "execution_claim": false
+    },
+    {
+      "scope": "x86_64-pc-windows-msvc",
+      "baseline": {
+        "file": "mvm-store-matched-x86_64-pc-windows-msvc-baseline.txt",
+        "sha256": "788e8b3ebd1a227be06d72c573680d4b6576f6686d83e08461da6f26e74813df",
+        "bytes": 163591
+      },
+      "candidate": {
+        "file": "mvm-store-matched-x86_64-pc-windows-msvc-candidate.txt",
+        "sha256": "ca0e5a31f26ed163b41c0ccf380d6c192c3c9200b70929a01840916b23aa24d1",
+        "bytes": 163591
+      },
+      "identical_after_pin_normalization": true,
+      "execution_claim": false
+    },
+    {
+      "scope": "x86_64-unknown-linux-gnu",
+      "baseline": {
+        "file": "mvm-store-matched-x86_64-unknown-linux-gnu-baseline.txt",
+        "sha256": "3d41c5c43e6d0569065f1eb0cd8c070c00248b188377f374532315950171eacf",
+        "bytes": 152265
+      },
+      "candidate": {
+        "file": "mvm-store-matched-x86_64-unknown-linux-gnu-candidate.txt",
+        "sha256": "3aa580fd67b86f833b7109254ab6e0c3a8b641256922e667fb11013f5dc9603f",
+        "bytes": 152265
+      },
+      "identical_after_pin_normalization": true,
+      "execution_claim": false
+    }
+  ],
+  "native_campaign": {
+    "run_id": 43652869041,
+    "head": "1079f2445a5f4fc30ca8a8a8bc8d3c9658715d6b",
+    "artifact_details": "native/verified.json",
+    "controls_per_host": 6,
+    "hosts": [
+      "aarch64-unknown-linux-gnu",
+      "x86_64-unknown-linux-gnu",
+      "aarch64-apple-darwin"
+    ],
+    "source_files_verified_per_host": 4679
+  },
+  "qualification_resources": {
+    "requested_memory_max_bytes": 6442450944,
+    "requested_memory_swap_max": 0,
+    "requested_cpu_quota_percent": 200,
+    "cargo_build_jobs": 2,
+    "rust": "1.97.1",
+    "successful_transient_unit_properties": "garbage-collected/default placeholders in unit-outcomes are not terminal resource-limit evidence",
+    "active_unit_observation": "An active workspace observation recorded MemoryPeak6442450944 and CPUUsage379086590000ns in the execution transcript. This usage observation does not independently prove configured ceilings.",
+    "memory_claim_limit": "build/test resource scope does not establish installed allocator or fleet bounds"
+  },
+  "notes": [
+    "No summed workspace test count: raw result rows can overlap child scopes.",
+    "Native control timing is 0.01-second resolution; displayed zero is below resolution.",
+    "The overwritten umask-failure raw log is unavailable; excerpts and journal retained.",
+    "All five #42 outcomes, signed-runtime/private-MVMD gates and #258 full acceptance remain open."
+  ],
+  "final_pr_checks": {
+    "success": 35,
+    "skipped": 1,
+    "pending": 0,
+    "failing": 0,
+    "checks": [
+      {
+        "link": "https://github.com/R4-Laboratories/SpiralCore/actions/runs/43652869042/job/132625226531",
+        "name": "TLS/object stream / macos26-arm64",
+        "state": "SUCCESS"
+      },
+      {
+        "link": "https://github.com/R4-Laboratories/SpiralCore/actions/runs/43652869042/job/132625226548",
+        "name": "TLS/object stream / macos26-intel",
+        "state": "SUCCESS"
+      },
+      {
+        "link": "https://github.com/R4-Laboratories/SpiralCore/actions/runs/43652869042/job/132625226482",
+        "name": "TLS/object stream / windows2025-x64",
+        "state": "SUCCESS"
+      },
+      {
+        "link": "https://github.com/R4-Laboratories/SpiralCore/actions/runs/43652869042/job/132625226497",
+        "name": "TLS/object stream / windows2022-x64",
+        "state": "SUCCESS"
+      },
+      {
+        "link": "https://github.com/R4-Laboratories/SpiralCore/actions/runs/43652869042/job/132625226520",
+        "name": "TLS/object stream / windows11-arm64",
+        "state": "SUCCESS"
+      },
+      {
+        "link": "https://github.com/R4-Laboratories/SpiralCore/actions/runs/43652869007/job/132625192802",
+        "name": "Ephemeral mailbox / macos26-arm64",
+        "state": "SUCCESS"
+      },
+      {
+        "link": "https://github.com/R4-Laboratories/SpiralCore/actions/runs/43652869066/job/132624946445",
+        "name": "native-owner (macos-26, aarch64-apple-darwin, 12)",
+        "state": "SUCCESS"
+      },
+      {
+        "link": "https://github.com/R4-Laboratories/SpiralCore/actions/runs/43652869007/job/132625192841",
+        "name": "Ephemeral mailbox / windows2025-x64",
+        "state": "SUCCESS"
+      },
+      {
+        "link": "https://github.com/R4-Laboratories/SpiralCore/actions/runs/43652869042/job/132625226536",
+        "name": "TLS/object stream / ubuntu24-x64",
+        "state": "SUCCESS"
+      },
+      {
+        "link": "https://github.com/R4-Laboratories/SpiralCore/actions/runs/43652869007/job/132625192813",
+        "name": "Ephemeral mailbox / ubuntu24-x64",
+        "state": "SUCCESS"
+      },
+      {
+        "link": "https://github.com/R4-Laboratories/SpiralCore/actions/runs/43652869007/job/132625192807",
+        "name": "Ephemeral mailbox / windows2022-x64",
+        "state": "SUCCESS"
+      },
+      {
+        "link": "https://github.com/R4-Laboratories/SpiralCore/actions/runs/43652869042/job/132625226544",
+        "name": "TLS/object stream / ubuntu24-arm64",
+        "state": "SUCCESS"
+      },
+      {
+        "link": "https://github.com/R4-Laboratories/SpiralCore/actions/runs/43652869007/job/132625192774",
+        "name": "Ephemeral mailbox / ubuntu24-arm64",
+        "state": "SUCCESS"
+      },
+      {
+        "link": "https://github.com/R4-Laboratories/SpiralCore/actions/runs/43652869007/job/132625192743",
+        "name": "Ephemeral mailbox / windows11-arm64",
+        "state": "SUCCESS"
+      },
+      {
+        "link": "https://github.com/R4-Laboratories/SpiralCore/actions/runs/43652869007/job/132625192765",
+        "name": "Ephemeral mailbox / macos26-intel",
+        "state": "SUCCESS"
+      },
+      {
+        "link": "https://github.com/R4-Laboratories/SpiralCore/actions/runs/43652869041/job/132624946320",
+        "name": "native-store-consumer (macos-26, aarch64-apple-darwin)",
+        "state": "SUCCESS"
+      },
+      {
+        "link": "https://github.com/R4-Laboratories/SpiralCore/actions/runs/43652869042/job/132624988524",
+        "name": "matrix",
+        "state": "SUCCESS"
+      },
+      {
+        "link": "https://github.com/R4-Laboratories/SpiralCore/actions/runs/43652869007/job/132624985391",
+        "name": "matrix",
+        "state": "SUCCESS"
+      },
+      {
+        "link": "https://github.com/R4-Laboratories/SpiralCore/actions/runs/43652869066/job/132624946372",
+        "name": "native-owner (macos-26-intel, x86_64-apple-darwin, 12)",
+        "state": "SUCCESS"
+      },
+      {
+        "link": "https://github.com/R4-Laboratories/SpiralCore/actions/runs/43652869041/job/132624946310",
+        "name": "canonical-endpoint (ubuntu-24.04-arm, aarch64-unknown-linux-gnu)",
+        "state": "SUCCESS"
+      },
+      {
+        "link": "https://github.com/R4-Laboratories/SpiralCore/actions/runs/43652869066/job/132624946318",
+        "name": "native-owner (ubuntu-24.04-arm, aarch64-unknown-linux-gnu, 11)",
+        "state": "SUCCESS"
+      },
+      {
+        "link": "https://github.com/R4-Laboratories/SpiralCore/actions/runs/43652869041/job/132624946330",
+        "name": "native-parent (macos-26, aarch64-apple-darwin)",
+        "state": "SUCCESS"
+      },
+      {
+        "link": "https://github.com/R4-Laboratories/SpiralCore/actions/runs/43652869032/job/132624946152",
+        "name": "Portable core (windows-2025)",
+        "state": "SUCCESS"
+      },
+      {
+        "link": "https://github.com/R4-Laboratories/SpiralCore/actions/runs/43652869017/job/132624946200",
+        "name": "linux-host-build-and-contracts",
+        "state": "SUCCESS"
+      },
+      {
+        "link": "https://github.com/R4-Laboratories/SpiralCore/actions/runs/43652869041/job/132624946231",
+        "name": "canonical-endpoint (macos-26, aarch64-apple-darwin)",
+        "state": "SUCCESS"
+      },
+      {
+        "link": "https://github.com/R4-Laboratories/SpiralCore/actions/runs/43652869032/job/132624946124",
+        "name": "linux-guest",
+        "state": "SUCCESS"
+      },
+      {
+        "link": "https://github.com/R4-Laboratories/SpiralCore/actions/runs/43652869041/job/132624946342",
+        "name": "native-store-consumer (ubuntu-24.04, x86_64-unknown-linux-gnu)",
+        "state": "SUCCESS"
+      },
+      {
+        "link": "https://github.com/R4-Laboratories/SpiralCore/actions/runs/43652869041/job/132624946084",
+        "name": "native-parent (ubuntu-24.04-arm, aarch64-unknown-linux-gnu)",
+        "state": "SUCCESS"
+      },
+      {
+        "link": "https://github.com/R4-Laboratories/SpiralCore/actions/runs/43652869066/job/132624946145",
+        "name": "native-owner (ubuntu-24.04, x86_64-unknown-linux-gnu, 11)",
+        "state": "SUCCESS"
+      },
+      {
+        "link": "https://github.com/R4-Laboratories/SpiralCore/actions/runs/43652869041/job/132624946264",
+        "name": "native-store-consumer (ubuntu-24.04-arm, aarch64-unknown-linux-gnu)",
+        "state": "SUCCESS"
+      },
+      {
+        "link": "https://github.com/R4-Laboratories/SpiralCore/actions/runs/43652869041/job/132624946300",
+        "name": "canonical-endpoint (ubuntu-24.04, x86_64-unknown-linux-gnu)",
+        "state": "SUCCESS"
+      },
+      {
+        "link": "https://github.com/R4-Laboratories/SpiralCore/actions/runs/43652869041/job/132624946289",
+        "name": "native-parent (ubuntu-24.04, x86_64-unknown-linux-gnu)",
+        "state": "SUCCESS"
+      },
+      {
+        "link": "https://github.com/R4-Laboratories/SpiralCore/actions/runs/43652869032/job/132624945912",
+        "name": "Portable core (windows-11-arm)",
+        "state": "SUCCESS"
+      },
+      {
+        "link": "https://github.com/R4-Laboratories/SpiralCore/actions/runs/43652869017/job/132624945980",
+        "name": "fixture-producer",
+        "state": "SUCCESS"
+      },
+      {
+        "link": "https://github.com/R4-Laboratories/SpiralCore/actions/runs/43652869032/job/132624946108",
+        "name": "Portable core (windows-2022)",
+        "state": "SUCCESS"
+      },
+      {
+        "link": "https://github.com/R4-Laboratories/SpiralCore/actions/runs/43652869017/job/132624947130",
+        "name": "genuine-export",
+        "state": "SKIPPED"
+      }
+    ]
+  },
+  "delivery": {
+    "pr": "https://github.com/R4-Laboratories/SpiralCore/pull/285",
+    "merged_commit": "acd399032d7c863f0e23f04874ad453a9b73a48f",
+    "tree": "4f1e27dbf25ad0fdb85f509bebb80320fff3c42a",
+    "released_tree_equals_candidate_and_ci_merge": true,
+    "mvm_final_upstream_pr_opened": false,
+    "full_mvm_goal": "active",
+    "issue258": "open"
+  }
+}
